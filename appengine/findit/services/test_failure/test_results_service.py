@@ -27,7 +27,8 @@ def GetFailedTestsInformationFromTestResult(test_results_object):
     if not failed_test_log.get(test_name):
       # No failure log for this test.
       test_location, _ = test_results_object.GetTestLocation(test_name)
-
+      if not test_location or not test_location.get('file'):
+        continue
       failed_test_log[test_name] = base64.b64encode(test_location['file'])
 
   return failed_test_log, reliable_failed_tests

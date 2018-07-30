@@ -64,9 +64,10 @@ class TestResultsUtilTest(wf_testcase.WaterfallTestCase):
         'bluetooth/requestDevice/chooser/new-scan-device-changed.html': (
             base64.b64encode('third_party/WebKit/LayoutTests/bluetooth/request'
                              'Device/chooser/new-scan-device-changed.html')),
-        'virtual/spv2/fast/css/error-in-last-decl.html': base64.b64encode(
-            'third_party/WebKit/LayoutTests/fast/css/error-in-last-decl.html'
-        ),
+        'virtual/spv2/fast/css/error-in-last-decl.html':
+            base64.b64encode(
+                'third_party/WebKit/LayoutTests/fast/css/'
+                'error-in-last-decl.html'),
         'virtual/high-contrast-mode/paint/high-contrast-mode/image-filter-none/'
         'gradient-noinvert.html':
             base64.b64encode(
@@ -102,3 +103,15 @@ class TestResultsUtilTest(wf_testcase.WaterfallTestCase):
         test_results_service.GetFailedTestsInformationFromTestResult(
             _GTEST_RESULT)[0])
     self.assertFalse(mock_tl.called)
+
+  @mock.patch.object(_GTEST_RESULT, 'GetTestLocation', return_value=(None, 'e'))
+  @mock.patch.object(_GTEST_RESULT, 'GetFailedTestsInformation')
+  def testGetFailedTestsInformationFromTestResultNoTestLocation(
+      self, mock_i, _):
+    failed_test_log = {}
+    reliable_failed_tests = {'test1': 'test1', 'test2': 'test2'}
+    mock_i.return_value = (failed_test_log, reliable_failed_tests)
+    self.assertEqual(
+        {},
+        test_results_service.GetFailedTestsInformationFromTestResult(
+            _GTEST_RESULT)[0])
