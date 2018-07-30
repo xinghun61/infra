@@ -61,17 +61,14 @@ class MrIssueDetails extends ReduxMixin(Polymer.Element) {
   }
 
   _updateIssue(commentData, delta, isDescription) {
-    const baseMessage = {
+    const message = {
       trace: {token: this.token},
       issue_ref: {
         project_name: this.projectName,
         local_id: this.issueId,
       },
-    };
-
-    const message = Object.assign({}, baseMessage, {
       comment_content: commentData || '',
-    });
+    };
 
     if (delta) {
       message.delta = delta;
@@ -81,22 +78,7 @@ class MrIssueDetails extends ReduxMixin(Polymer.Element) {
       message.is_description = true;
     }
 
-    this.dispatch({type: actionType.UPDATE_ISSUE_START});
-
-    window.prpcClient.call(
-      'monorail.Issues', 'UpdateIssue', message
-    ).then((resp) => {
-      this.dispatch({
-        type: actionType.UPDATE_ISSUE_SUCCESS,
-        issue: resp.issue,
-      });
-      actionCreator.fetchComments(this.dispatch.bind(this), baseMessage);
-    }, (error) => {
-      this.dispatch({
-        type: actionType.UPDATE_ISSUE_FAILURE,
-        error: error,
-      });
-    });
+    actionCreator.updateIssue(this.dispatch.bind(this), message);
   }
 
   _filterComments(comments) {

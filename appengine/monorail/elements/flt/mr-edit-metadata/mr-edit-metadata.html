@@ -63,13 +63,25 @@
 
         <select id="statusInput">
           <template is="dom-repeat" items="[[statuses]]">
-            <option value$="[[item]]" selected$="[[_computeIsSelected(issueStatus, item)]]">[[item]]</option>
+            <option
+              value$="[[item.status]]"
+              hidden$="[[_statusIsHidden(status, item)]]"
+              selected$="[[_computeIsSelected(status, item.status)]]"
+            >
+              [[item.status]]
+              <template is="dom-if" if="[[item.docstring]]">
+                - [[item.docstring]]
+              </template>
+            </option>
           </template>
         </select>
 
         <template is="dom-if" if="[[_and(isApprover, isApproval)]]">
           <label for="approversInput" on-click="_clickLabelForCustomInput">Approvers:</label>
-          <mr-multi-input id="approversInput" values="[[_mapUserRefsToNames(approvers)]]"></mr-multi-input>
+          <mr-multi-input
+            id="approversInput"
+            values="[[_mapUserRefsToNames(approvers)]]"
+          ></mr-multi-input>
         </template>
 
         <template is="dom-repeat" items="[[users]]" as="user">
@@ -98,17 +110,17 @@
           </div>
         </template>
         <template is="dom-if" if="[[!isApproval]]">
-          <label for="blockedOnInput">Blocked on:</label>
-          <input id="blockedOnInput" value$="[[_joinValues(_blockedOnIds)]]" />
+          <label for="blockedOnInput" on-click="_clickLabelForCustomInput">Blocked on:</label>
+          <mr-multi-input id="blockedOnInput" values="[[_blockedOnIds]]"></mr-multi-input>
 
-          <label for="blockingInput">Blocking:</label>
-          <input id="blockingInput" value$="[[_joinValues(_blockingIds)]]" />
+          <label for="blockingInput" on-click="_clickLabelForCustomInput">Blocking:</label>
+          <mr-multi-input id="blockingInput" values="[[_blockingIds]]"></mr-multi-input>
 
-          <label for="labelsInput">Labels:</label>
-          <input id="labelsInput" value$="[[_joinValues(_labelNames)]]" />
+          <label for="labelsInput" on-click="_clickLabelForCustomInput">Labels:</label>
+          <mr-multi-input id="labelsInput" values="[[labelNames]]"></mr-multi-input>
         </template>
       </div>
-      <textarea id="commentText" value="{{_newCommentText::input}}" placeholder="Comment to explain this change"></textarea>
+      <textarea id="commentText" placeholder="Comment to explain this change"></textarea>
     </form>
   </template>
   <script src="./mr-edit-metadata.js"></script>

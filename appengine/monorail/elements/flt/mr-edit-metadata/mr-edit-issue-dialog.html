@@ -7,6 +7,7 @@
 <link rel="import" href="../../redux/redux-mixin.html">
 <link rel="import" href="../mr-edit-metadata/mr-edit-metadata.html">
 <link rel="import" href="../shared/mr-flt-styles.html">
+<link rel="import" href="../shared/flt-helpers.html">
 
 <dom-module id="mr-edit-issue-dialog">
   <template>
@@ -35,14 +36,14 @@
         id="metadataForm"
         owner="[[issue.ownerRef]]"
         cc="[[issue.ccRefs]]"
-        issue-status="[[issue.statusRef]]"
+        status="[[issue.statusRef.status]]"
         statuses="[[statuses]]"
         summary="[[issue.summary]]"
         components="[[issue.componentRefs]]"
         field-list="[[_fieldList]]"
         blocked-on="[[issue.blockedOnIssueRefs]]"
         blocking="[[issue.blockingIssueRefs]]"
-        labels="[[issue.labelRefs]]"
+        label-names="[[_labelNames]]"
       ></mr-edit-metadata>
       <div class="dialog-actions">
         <chops-button on-click="cancel" class="de-emphasized">

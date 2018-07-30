@@ -99,7 +99,8 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
       statuses: {
         type: Array,
         value: () => {
-          return Object.keys(STATUS_CLASS_MAP);
+          return Object.keys(STATUS_CLASS_MAP).map(
+            (status) => ({status, rank: 1}));
         },
       },
       _availableStatuses: {
@@ -175,10 +176,10 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
 
     const approverEquals = (a, b) => (a.toLowerCase() === b.toLowerCase());
 
-    const approversAdd = this._arrayDifference(newApprovers, oldApprovers,
+    const approversAdd = fltHelpers.arrayDifference(newApprovers, oldApprovers,
       approverEquals);
-    const approversRemove = this._arrayDifference(oldApprovers, newApprovers,
-      approverEquals);
+    const approversRemove = fltHelpers.arrayDifference(oldApprovers,
+      newApprovers, approverEquals);
 
     if (approversAdd.length > 0) {
       delta['approver_refs_add'] = this._displayNamesToUserRefs(approversAdd);
@@ -194,17 +195,6 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
     }
 
     this.cancel();
-  }
-
-  // With lists a and b, get the elements that are in a but not in b.
-  // result = a - b
-  _arrayDifference(listA, listB, equals) {
-    if (!equals) {
-      equals = (a, b) => (a === b);
-    }
-    return listA.filter((a) => {
-      return !listB.find((b) => (equals(a, b)));
-    });
   }
 
   _displayNamesToUserRefs(list) {
@@ -319,10 +309,10 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
   _filterStatuses(status, statuses, isApprover) {
     return statuses.filter((s) => {
       // These statuses should only be set by approvers.
-      if (!isApprover && ['NA', 'Approved', 'NotApproved'].includes(s)) {
+      if (!isApprover && ['NA', 'Approved', 'NotApproved'].includes(s.status)) {
         return false;
       }
-      return s === status || s !== 'NotSet';
+      return s.status === status || s.status !== 'NotSet';
     });
   }
 

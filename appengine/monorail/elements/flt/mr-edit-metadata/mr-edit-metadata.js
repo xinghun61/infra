@@ -13,19 +13,18 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
 
   static get properties() {
     return {
-      approvalStatus: String,
       approvers: Array,
       setter: Object,
       summary: String,
       cc: Array,
       components: Array,
       fieldList: Array,
-      issueStatus: String,
+      status: String,
       statuses: Array,
       blockedOn: Array,
       blocking: Array,
       owner: Object,
-      labels: Array,
+      labelNames: Array,
       projectName: {
         type: String,
         statePath: 'projectName',
@@ -46,11 +45,6 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
         type: Array,
         computed: '_computeBlockerIds(blocking, projectName)',
       },
-      _labelNames: {
-        type: Array,
-        computed: '_computeLabelNames(labels)',
-      },
-      _newCommentText: String,
     };
   }
 
@@ -61,20 +55,28 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
     // wrapped in ShadowDOM, those inputs don't get reset with the rest of
     // the form. Haven't been able to figure out a way to replicate form reset
     // behavior with custom input elements.
-    Polymer.dom(this.root).querySelector('#approversInput').reset();
+    if (this.isApproval) {
+      Polymer.dom(this.root).querySelector('#approversInput').reset();
+    } else {
+      Polymer.dom(this.root).querySelector('#blockingInput').reset();
+      Polymer.dom(this.root).querySelector('#blockedOnInput').reset();
+      Polymer.dom(this.root).querySelector('#labelsInput').reset();
+    }
   }
 
   getData() {
     const result = {
       status: this.$.statusInput.value,
-      comment: this._newCommentText,
+      comment: this.$.commentText.value,
     };
+    const root = Polymer.dom(this.root);
     if (!this.isApproval) {
-      result['summary'] = this.$.summaryInput.value;
+      result['summary'] = root.querySelector('#summaryInput').value;
+      result['labels'] = root.querySelector('#labelsInput').getValue();
+      result['blockedOn'] = root.querySelector('#blockedOnInput').getValue();
+      result['blocking'] = root.querySelector('#blockingInput').getValue();
     } else {
-      result['approvers'] = Polymer.dom(this.root).querySelector(
-        '#approversInput'
-      ).getValue() || [];
+      result['approvers'] = root.querySelector('#approversInput').getValue();
     }
     return result;
   }
@@ -90,13 +92,6 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
         return v.localId;
       }
       return `${v.projectName}:${v.localId}`;
-    });
-  }
-
-  _computeLabelNames(labels) {
-    if (!labels) return [];
-    return labels.map((l) => {
-      return l.label;
     });
   }
 
@@ -124,6 +119,10 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
 
   _joinValues(arr) {
     return arr.join(',');
+  }
+
+  _statusIsHidden(status, statusDef) {
+    return !statusDef.rank && statusDef.status !== status;
   }
 }
 

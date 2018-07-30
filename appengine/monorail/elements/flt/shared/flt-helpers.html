@@ -1,0 +1,18 @@
+<script>
+  (function(window) {
+    const fltHelpers = Object.freeze({
+      // With lists a and b, get the elements that are in a but not in b.
+      // result = a - b
+      arrayDifference: (listA, listB, equals) => {
+        if (!equals) {
+          equals = (a, b) => (a === b);
+        }
+        return listA.filter((a) => {
+          return !listB.find((b) => (equals(a, b)));
+        });
+      },
+    });
+
+    window.fltHelpers = fltHelpers || {};
+  })(window);
+</script>
