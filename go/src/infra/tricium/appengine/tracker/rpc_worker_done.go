@@ -6,7 +6,6 @@ package tracker
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
@@ -14,12 +13,11 @@ import (
 	ds "go.chromium.org/gae/service/datastore"
 	tq "go.chromium.org/gae/service/taskqueue"
 	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
-
+	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
@@ -28,21 +26,24 @@ import (
 )
 
 // WorkerDone tracks the completion of a worker.
-func (*trackerServer) WorkerDone(c context.Context, req *admin.WorkerDoneRequest) (*admin.WorkerDoneResponse, error) {
+func (*trackerServer) WorkerDone(c context.Context, req *admin.WorkerDoneRequest) (res *admin.WorkerDoneResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(c, err)
+	}()
 	if req.RunId == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "missing run ID")
+		return nil, errors.New("missing run ID", grpcutil.InvalidArgumentTag)
 	}
 	if req.Worker == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "missing worker")
+		return nil, errors.New("missing worker", grpcutil.InvalidArgumentTag)
 	}
 	if req.IsolatedOutputHash == "" && req.BuildbucketOutput == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "missing output")
+		return nil, errors.New("missing output", grpcutil.InvalidArgumentTag)
 	}
 	if req.IsolatedOutputHash != "" && req.BuildbucketOutput != "" {
-		return nil, status.Errorf(codes.InvalidArgument, "too many results (both isolate and buildbucket exist)")
+		return nil, errors.New("too many results (both isolate and buildbucket exist)", grpcutil.InvalidArgumentTag)
 	}
 	if err := workerDone(c, req, common.IsolateServer); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to track worker completion: %v", err)
+		return nil, errors.Annotate(err, "failed to track worker completion").Tag(grpcutil.InternalTag).Err()
 	}
 	return &admin.WorkerDoneResponse{}, nil
 }
@@ -60,7 +61,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	workflowRunKey := ds.NewKey(c, "WorkflowRun", "", 1, requestKey)
 	functionName, platformName, err := track.ExtractFunctionPlatform(req.Worker)
 	if err != nil {
-		return fmt.Errorf("failed to extract function name: %v", err)
+		return errors.Annotate(err, "failed to extract function name").Err()
 	}
 	functionRunKey := ds.NewKey(c, "FunctionRun", functionName, 0, workflowRunKey)
 	workerKey := ds.NewKey(c, "WorkerRun", req.Worker, 0, functionRunKey)
@@ -68,7 +69,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	// If this worker is already marked as done, abort.
 	workerRes := &track.WorkerRunResult{ID: 1, Parent: workerKey}
 	if err := ds.Get(c, workerRes); err != nil {
-		return fmt.Errorf("failed to read state of WorkerRunResult: %v", err)
+		return errors.Annotate(err, "failed to read state of WorkerRunResult").Err()
 	}
 	if tricium.IsDone(workerRes.State) {
 		logging.Fields{
@@ -80,7 +81,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	// Get run entity for this worker.
 	run := &track.WorkflowRun{ID: 1, Parent: requestKey}
 	if err := ds.Get(c, run); err != nil {
-		return fmt.Errorf("failed to get WorkflowRun: %v", err)
+		return errors.Annotate(err, "failed to get WorkflowRun").Err()
 	}
 
 	// Process isolated/buildbucket output and collect comments.
@@ -88,13 +89,13 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	comments, err := collectComments(c, req.State, req.Provides, isolator, run.IsolateServerURL,
 		req.IsolatedOutputHash, req.BuildbucketOutput, functionName, workerKey)
 	if err != nil {
-		return fmt.Errorf("failed to get worker results: %v", err)
+		return errors.Annotate(err, "failed to get worker results").Err()
 	}
 
 	// Compute state of parent function.
 	functionRun := &track.FunctionRun{ID: functionName, Parent: workflowRunKey}
 	if err := ds.Get(c, functionRun); err != nil {
-		return fmt.Errorf("failed to get FunctionRun entity: %v", err)
+		return errors.Annotate(err, "failed to get FunctionRun entity").Err()
 	}
 	workerResults := []*track.WorkerRunResult{}
 	for _, workerName := range functionRun.Workers {
@@ -102,7 +103,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		workerResults = append(workerResults, &track.WorkerRunResult{ID: 1, Parent: workerKey})
 	}
 	if err := ds.Get(c, workerResults); err != nil {
-		return fmt.Errorf("failed to get WorkerRunResult entities: %v", err)
+		return errors.Annotate(err, "failed to get WorkerRunResult entities").Err()
 	}
 	functionState := tricium.State_SUCCESS
 	functionNumComments := len(comments)
@@ -145,7 +146,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		runResults = append(runResults, &track.FunctionRunResult{ID: 1, Parent: functionRunKey})
 	}
 	if err := ds.Get(c, runResults); err != nil {
-		return fmt.Errorf("failed to retrieve FunctionRunResult entities: %v", err)
+		return errors.Annotate(err, "failed to retrieve FunctionRunResult entities").Err()
 	}
 	runState := tricium.State_SUCCESS
 	runNumComments := functionNumComments
@@ -183,7 +184,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 					return nil
 				}
 				if err := ds.Put(c, comments); err != nil {
-					return fmt.Errorf("failed to add Comment entries: %v", err)
+					return errors.Annotate(err, "failed to add Comment entries").Err()
 				}
 				entities := make([]interface{}, 0, len(comments)*2)
 				for _, comment := range comments {
@@ -198,7 +199,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 					}...)
 				}
 				if err := ds.Put(c, entities); err != nil {
-					return fmt.Errorf("failed to add CommentSelection/CommentFeedback entries: %v", err)
+					return errors.Annotate(err, "failed to add CommentSelection/CommentFeedback entries").Err()
 				}
 				// Monitor comment count per category.
 				commentCount.Set(c, int64(len(comments)), functionName, platformName)
@@ -212,7 +213,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 				workerRes.BuildbucketOutput = req.BuildbucketOutput
 				workerRes.NumComments = len(comments)
 				if err := ds.Put(c, workerRes); err != nil {
-					return fmt.Errorf("failed to update WorkerRunResult: %v", err)
+					return errors.Annotate(err, "failed to update WorkerRunResult").Err()
 				}
 				// Monitor worker success/failure.
 				if req.State == tricium.State_SUCCESS {
@@ -227,7 +228,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 			taskC <- func() error {
 				fr := &track.FunctionRunResult{ID: 1, Parent: functionRunKey}
 				if err := ds.Get(c, fr); err != nil {
-					return fmt.Errorf("failed to get FunctionRunResult (function: %s): %v", functionName, err)
+					return errors.Reason("failed to get FunctionRunResult (function: %s): %v", functionName, err).Err()
 				}
 				if fr.State != functionState {
 					fr.State = functionState
@@ -237,7 +238,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 						"num comments": fr.NumComments,
 					}.Debugf(c, "[tracker] Updating state of function.")
 					if err := ds.Put(c, fr); err != nil {
-						return fmt.Errorf("failed to update FunctionRunResult: %v", err)
+						return errors.Annotate(err, "failed to update FunctionRunResult").Err()
 					}
 				}
 				return nil
@@ -247,13 +248,13 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 			taskC <- func() error {
 				rr := &track.WorkflowRunResult{ID: 1, Parent: workflowRunKey}
 				if err := ds.Get(c, rr); err != nil {
-					return fmt.Errorf("failed to get WorkflowRunResult entity: %v", err)
+					return errors.Annotate(err, "failed to get WorkflowRunResult entity").Err()
 				}
 				if rr.State != runState {
 					rr.State = runState
 					rr.NumComments = runNumComments
 					if err := ds.Put(c, rr); err != nil {
-						return fmt.Errorf("failed to update WorkflowRunResult entity: %v", err)
+						return errors.Annotate(err, "failed to update WorkflowRunResult entity").Err()
 					}
 				}
 				return nil
@@ -266,12 +267,12 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 				}
 				ar := &track.AnalyzeRequestResult{ID: 1, Parent: requestKey}
 				if err := ds.Get(c, ar); err != nil {
-					return fmt.Errorf("failed to get AnalyzeRequestResult entity: %v", err)
+					return errors.Annotate(err, "failed to get AnalyzeRequestResult entity").Err()
 				}
 				if ar.State != runState {
 					ar.State = runState
 					if err := ds.Put(c, ar); err != nil {
-						return fmt.Errorf("failed to update AnalyzeRequestResult entity: %v", err)
+						return errors.Annotate(err, "failed to update AnalyzeRequestResult entity").Err()
 					}
 				}
 				return nil
@@ -283,7 +284,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	// Notify reporter.
 	request := &track.AnalyzeRequest{ID: req.RunId}
 	if err := ds.Get(c, request); err != nil {
-		return fmt.Errorf("failed to get AnalyzeRequest entity (run ID: %d): %v", req.RunId, err)
+		return errors.Reason("failed to get AnalyzeRequest entity (run ID: %d): %v", req.RunId, err).Err()
 	}
 	if request.GerritProject != "" && request.GerritChange != "" {
 		if tricium.IsDone(functionState) {
@@ -296,12 +297,12 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 				Analyzer: functionRun.ID,
 			})
 			if err != nil {
-				return fmt.Errorf("failed to encode ReportResults request: %v", err)
+				return errors.Annotate(err, "failed to encode ReportResults request").Err()
 			}
 			t := tq.NewPOSTTask("/gerrit/internal/report-results", nil)
 			t.Payload = b
 			if err = tq.Add(c, common.GerritReporterQueue, t); err != nil {
-				return fmt.Errorf("failed to enqueue reporter results request: %v", err)
+				return errors.Annotate(err, "failed to enqueue reporter results request").Err()
 			}
 		}
 	}
@@ -322,27 +323,27 @@ func collectComments(c context.Context, state tricium.State, t tricium.Data_Type
 	case tricium.Data_RESULTS:
 		if buildbucketOutput != "" {
 			if err := json.Unmarshal([]byte(buildbucketOutput), &results); err != nil {
-				return comments, fmt.Errorf("failed to unmarshal results data: %v", err)
+				return comments, errors.Annotate(err, "failed to unmarshal results data").Err()
 			}
 		} else {
 			resultsStr, err := isolator.FetchIsolatedResults(c, isolateServerURL, isolatedOutputHash)
 			if err != nil {
-				return comments, fmt.Errorf("failed to fetch isolated worker result: %v", err)
+				return comments, errors.Annotate(err, "failed to fetch isolated worker result").Err()
 			}
 			logging.Infof(c, "Fetched isolated result (%q): %q", isolatedOutputHash, resultsStr)
 			if err := jsonpb.UnmarshalString(resultsStr, &results); err != nil {
-				return comments, fmt.Errorf("failed to unmarshal results data: %v", err)
+				return comments, errors.Annotate(err, "failed to unmarshal results data").Err()
 			}
 		}
 		for _, comment := range results.Comments {
 			uuid, err := uuid.NewRandom()
 			if err != nil {
-				return comments, fmt.Errorf("failed to generated UUID for comment: %v", err)
+				return comments, errors.Annotate(err, "failed to generated UUID for comment").Err()
 			}
 			comment.Id = uuid.String()
 			j, err := (&jsonpb.Marshaler{}).MarshalToString(comment)
 			if err != nil {
-				return comments, fmt.Errorf("failed to marshal comment data: %v", err)
+				return comments, errors.Annotate(err, "failed to marshal comment data").Err()
 			}
 			comments = append(comments, &track.Comment{
 				Parent:       workerKey,

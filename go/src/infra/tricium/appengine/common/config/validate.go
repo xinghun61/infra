@@ -7,19 +7,21 @@ package config
 import (
 	"fmt"
 
+	"go.chromium.org/luci/common/errors"
+
 	"infra/tricium/api/v1"
 )
 
 // Validate validates the provided project config using the provided service config.
 func Validate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig) (*tricium.ProjectConfig, error) {
 	if sc.SwarmingServer == "" {
-		return nil, fmt.Errorf("missing swarming server URL in service config")
+		return nil, errors.Reason("missing swarming server URL in service config").Err()
 	}
 	if sc.IsolateServer == "" {
-		return nil, fmt.Errorf("missing isolate server URL in service config")
+		return nil, errors.Reason("missing isolate server URL in service config").Err()
 	}
 	if pc.SwarmingServiceAccount == "" {
-		return nil, fmt.Errorf("missing swarming service account for project: %+v", pc)
+		return nil, errors.Reason("missing swarming service account for project: %+v", pc).Err()
 	}
 	res := &tricium.ProjectConfig{
 		Acls:       pc.Acls,
@@ -39,14 +41,14 @@ func Validate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig) (*tricium.Pr
 			res.Functions = append(res.Functions, f)
 		}
 		if err := tricium.ValidateFunction(functions[s.Function], sc); err != nil {
-			return nil, fmt.Errorf("function is not valid: %v", err)
+			return nil, errors.Annotate(err, "function is not valid").Err()
 		}
 		if !tricium.SupportsPlatform(functions[s.Function], s.Platform) {
-			return nil, fmt.Errorf("no support for platform %s by function %s", s.Platform, s.Function)
+			return nil, errors.Reason("no support for platform %s by function %s", s.Platform, s.Function).Err()
 		}
 		for _, c := range s.Configs {
 			if !tricium.SupportsConfig(functions[s.Function], c) {
-				return nil, fmt.Errorf("no support for config %s by function %s", c.Name, s.Function)
+				return nil, errors.Reason("no support for config %s by function %s", c.Name, s.Function).Err()
 			}
 		}
 	}
@@ -69,15 +71,15 @@ func mergeFunctions(function string, sc *tricium.ServiceConfig, sa, pa *tricium.
 	// TODO(emso): extract nil checks an similar out of this function and
 	// let if focus on only merging.
 	if sa == nil && pa == nil {
-		return nil, fmt.Errorf("unknown function %s", function)
+		return nil, errors.Reason("unknown function %s", function).Err()
 	}
 	res := &tricium.Function{Name: function}
 	if sa != nil {
 		if err := tricium.ValidateFunction(sa, sc); err != nil {
-			return nil, fmt.Errorf("invalid service function config for %s: %v", function, err)
+			return nil, errors.Reason("invalid service function config for %s: %v", function, err).Err()
 		}
 		if sa.GetNeeds() == tricium.Data_NONE || sa.GetProvides() == tricium.Data_NONE {
-			return nil, fmt.Errorf("service function config must have data dependencies, function: %s", function)
+			return nil, errors.Reason("service function config must have data dependencies, function: %s", function).Err()
 		}
 		res.Type = sa.Type
 		res.Needs = sa.Needs
@@ -98,11 +100,11 @@ func mergeFunctions(function string, sc *tricium.ServiceConfig, sa, pa *tricium.
 		if sa != nil &&
 			(pa.GetNeeds() != tricium.Data_NONE && pa.GetNeeds() != sa.GetNeeds() ||
 				pa.GetProvides() != tricium.Data_NONE && pa.GetProvides() != sa.GetProvides()) {
-			return nil, fmt.Errorf("change of service function data dependencies not allowed, function: %s", function)
+			return nil, errors.Reason("change of service function data dependencies not allowed, function: %s", function).Err()
 		}
 		if sa == nil {
 			if pa.GetNeeds() == tricium.Data_NONE || pa.GetProvides() == tricium.Data_NONE {
-				return nil, fmt.Errorf("project function config is missing data dependencies, function: %s", function)
+				return nil, errors.Reason("project function config is missing data dependencies, function: %s", function).Err()
 			}
 			res.Needs = pa.Needs
 			res.Provides = pa.Provides
@@ -116,7 +118,7 @@ func mergeFunctions(function string, sc *tricium.ServiceConfig, sa, pa *tricium.
 			pa.Provides = sa.Provides
 		}
 		if err := tricium.ValidateFunction(pa, sc); err != nil {
-			return nil, fmt.Errorf("invalid project function config for %s: %v", function, err)
+			return nil, errors.Reason("invalid project function config for %s: %v", function, err).Err()
 		}
 		if pa.GetPathFilters() != nil {
 			res.PathFilters = pa.PathFilters

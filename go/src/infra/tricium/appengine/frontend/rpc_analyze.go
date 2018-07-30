@@ -5,7 +5,6 @@
 package frontend
 
 import (
-	"fmt"
 	"regexp"
 	"strconv"
 
@@ -13,13 +12,11 @@ import (
 	ds "go.chromium.org/gae/service/datastore"
 	tq "go.chromium.org/gae/service/taskqueue"
 	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
-
+	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
@@ -39,14 +36,18 @@ var server = &TriciumServer{}
 // Launches a workflow customized to the project and listed paths. The run ID
 // in the response can be used to track the progress and results of the request
 // via the Tricium UI.
-func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) (*tricium.AnalyzeResponse, error) {
+func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) (res *tricium.AnalyzeResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(c, err)
+	}()
 	if err := validateAnalyzeRequest(c, req); err != nil {
 		return nil, err
 	}
 	logging.Infof(c, "[frontend] Analyze request received and validated.")
-	runID, code, err := analyzeWithAuth(c, req, config.LuciConfigServer)
+	runID, err := analyzeWithAuth(c, req, config.LuciConfigServer)
 	if err != nil {
-		return nil, status.Errorf(code, "analyze request failed: %v", err)
+		return nil, errors.Annotate(err, "invalid request").
+			Tag(grpcutil.InvalidArgumentTag).Err()
 	}
 	logging.Fields{
 		"run ID": runID,
@@ -54,48 +55,49 @@ func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) 
 	return &tricium.AnalyzeResponse{RunId: runID}, nil
 }
 
-// validateAnalyzeRequest returns nil if the request was valid,
-// or a grpc error with a reaosn if the request is invalid.
+// validateAnalyzeRequest returns an error if the request is invalid.
+//
+// The returned error should be tagged for gRPC by the caller.
 func validateAnalyzeRequest(c context.Context, req *tricium.AnalyzeRequest) error {
 	if req.Project == "" {
-		return status.Errorf(codes.InvalidArgument, "missing project")
+		return errors.Reason("missing project").Err()
 	}
 	if len(req.Files) == 0 {
-		return status.Errorf(codes.InvalidArgument, "missing paths")
+		return errors.Reason("missing paths").Err()
 	}
 	switch source := req.Source.(type) {
 	case *tricium.AnalyzeRequest_GitCommit:
 		gc := source.GitCommit
 		if gc.Url == "" {
-			return status.Errorf(codes.InvalidArgument, "missing git repo URL")
+			return errors.Reason("missing git repo URL").Err()
 		}
 		if gc.Ref == "" {
-			return status.Errorf(codes.InvalidArgument, "missing git ref")
+			return errors.Reason("missing git ref").Err()
 		}
 	case *tricium.AnalyzeRequest_GerritRevision:
 		gr := source.GerritRevision
 		if gr.Host == "" {
-			return status.Errorf(codes.InvalidArgument, "missing Gerrit host")
+			return errors.Reason("missing Gerrit host").Err()
 		}
 		if gr.Project == "" {
-			return status.Errorf(codes.InvalidArgument, "missing Gerrit project")
+			return errors.Reason("missing Gerrit project").Err()
 		}
 		if gr.Change == "" {
-			return status.Errorf(codes.InvalidArgument, "missing Gerrit change ID")
+			return errors.Reason("missing Gerrit change ID").Err()
 		}
 		if match, _ := regexp.MatchString(".+~.+~I[0-9a-fA-F]{40}.*", gr.Change); !match {
-			return status.Errorf(codes.InvalidArgument, "invalid Gerrit change ID: "+gr.Change)
+			return errors.Reason("invalid Gerrit change ID: " + gr.Change).Err()
 		}
 		if gr.GitUrl == "" {
-			return status.Errorf(codes.InvalidArgument, "missing git repo URL for Gerrit change")
+			return errors.Reason("missing git repo URL for Gerrit change").Err()
 		}
 		if gr.GitRef == "" {
-			return status.Errorf(codes.InvalidArgument, "missing Gerrit revision git ref")
+			return errors.Reason("missing Gerrit revision git ref").Err()
 		}
 	case nil:
-		return status.Errorf(codes.InvalidArgument, "missing source")
+		return errors.Reason("missing source").Err()
 	default:
-		return status.Errorf(codes.InvalidArgument, "unexpected source type")
+		return errors.Reason("unexpected source type").Err()
 	}
 	return nil
 }
@@ -104,30 +106,34 @@ func validateAnalyzeRequest(c context.Context, req *tricium.AnalyzeRequest) erro
 //
 // This wrapper is used by the Analyze RPC call and the unwrapped method is
 // used by requests coming in via the internal analyze queue.
-func analyzeWithAuth(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderAPI) (string, codes.Code, error) {
+func analyzeWithAuth(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderAPI) (string, error) {
 	pc, err := cp.GetProjectConfig(c, req.Project)
 	if err != nil {
-		return "", codes.Internal, fmt.Errorf("failed to get project config, project: %q: %v", req.Project, err)
+		return "", errors.Annotate(err, "failed to get project config %q", req.Project).
+			Tag(grpcutil.InternalTag).Err()
 	}
 	ok, err := tricium.CanRequest(c, pc)
 	if err != nil {
-		return "", codes.Internal, fmt.Errorf("failed to authorize: %v", err)
+		return "", errors.Annotate(err, "failed to authorize").
+			Tag(grpcutil.InternalTag).Err()
 	}
 	if !ok {
-		return "", codes.PermissionDenied, fmt.Errorf("no request access for project %q", req.Project)
+		return "", errors.Reason("no request access for project %q", req.Project).
+			Tag(grpcutil.PermissionDeniedTag).Err()
 	}
 	runID, err := analyze(c, req, cp)
 	if err != nil {
-		return runID, codes.Internal, err
+		return runID, errors.Annotate(err, "failed to analyze").
+			Tag(grpcutil.InternalTag).Err()
 	}
-	return runID, codes.OK, nil
+	return runID, nil
 }
 
 func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderAPI) (string, error) {
 	// Construct the track.AnalyzeRequest entity.
 	pc, err := cp.GetProjectConfig(c, req.Project)
 	if err != nil {
-		return "", fmt.Errorf("failed to get project config: %v", err)
+		return "", errors.Annotate(err, "failed to get project config").Err()
 	}
 	var paths []string
 	for _, file := range req.Files {
@@ -140,7 +146,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 	}
 	repo := tricium.LookupRepoDetails(pc, req)
 	if repo == nil {
-		return "", fmt.Errorf("failed to find matching repo in project config: %v", req.Project)
+		return "", errors.Reason("failed to find matching repo in project config: %v", req.Project).Err()
 	}
 	if source := req.GetGerritRevision(); source != nil {
 		request.GerritHost = source.Host
@@ -153,7 +159,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 		request.GitURL = source.Url
 		request.GitRef = source.Ref
 	} else {
-		return "", fmt.Errorf("unsupported request source")
+		return "", errors.Reason("unsupported request source").Err()
 	}
 
 	// TODO(qyearsley): Verify that there is no current run for this request,
@@ -183,7 +189,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 	err = ds.RunInTransaction(c, func(c context.Context) (err error) {
 		// Add request entity to get ID.
 		if err := ds.Put(c, request); err != nil {
-			return fmt.Errorf("failed to store AnalyzeRequest entity: %v", err)
+			return errors.Annotate(err, "failed to store AnalyzeRequest entity").Err()
 		}
 		// We can do a few things in parallel when starting an analyze request.
 		return parallel.FanOutIn(func(taskC chan<- func() error) {
@@ -192,7 +198,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 			taskC <- func() error {
 				requestRes.Parent = ds.KeyForObj(c, request)
 				if err := ds.Put(c, requestRes); err != nil {
-					return fmt.Errorf("failed to store AnalyzeRequestResult entity: %v", err)
+					return errors.Annotate(err, "failed to store AnalyzeRequestResult entity").Err()
 				}
 				return nil
 			}
@@ -203,7 +209,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 				t := tq.NewPOSTTask("/launcher/internal/launch", nil)
 				b, err := proto.Marshal(lr)
 				if err != nil {
-					return fmt.Errorf("failed to enqueue launch request: %v", err)
+					return errors.Annotate(err, "failed to enqueue launch request").Err()
 				}
 				t.Payload = b
 				return tq.Add(c, common.LauncherQueue, t)
@@ -220,14 +226,14 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 					RunID: request.ID,
 				}
 				if err := ds.Put(c, g); err != nil {
-					return fmt.Errorf("failed to store GerritChangeIDtoRunID entity: %v", err)
+					return errors.Annotate(err, "failed to store GerritChangeIDtoRunID entity").Err()
 				}
 				return nil
 			}
 		})
 	}, &ds.TransactionOptions{XG: true})
 	if err != nil {
-		return "", fmt.Errorf("failed to track and launch request: %v", err)
+		return "", errors.Annotate(err, "failed to track and launch request").Err()
 	}
 	// Monitor analyze requests per project.
 	analyzeRequestCount.Add(c, 1, request.Project)

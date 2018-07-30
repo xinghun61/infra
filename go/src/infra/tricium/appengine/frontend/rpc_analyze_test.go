@@ -13,7 +13,6 @@ import (
 	"go.chromium.org/luci/auth/identity"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/authtest"
-
 	"golang.org/x/net/context"
 
 	"infra/tricium/api/v1"
@@ -75,7 +74,7 @@ func TestAnalyze(t *testing.T) {
 				Identity: identity.Identity(okACLUser),
 			})
 
-			_, _, err := analyzeWithAuth(ctx, &tricium.AnalyzeRequest{
+			_, err := analyzeWithAuth(ctx, &tricium.AnalyzeRequest{
 				Project: project,
 				Files: []*tricium.Data_File{
 					{

@@ -5,21 +5,21 @@
 package frontend
 
 import (
-	"fmt"
-
 	ds "go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common/track"
 )
 
 // ReportNotUseful processes one report not useful request to Tricium.
-func (r *TriciumServer) ReportNotUseful(c context.Context,
-	req *tricium.ReportNotUsefulRequest) (*tricium.ReportNotUsefulResponse, error) {
+func (r *TriciumServer) ReportNotUseful(c context.Context, req *tricium.ReportNotUsefulRequest) (res *tricium.ReportNotUsefulResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(c, err)
+	}()
 	logging.Fields{
 		"comment ID": req.CommentId,
 	}.Infof(c, "[frontend] Report not useful request received.")
@@ -28,14 +28,15 @@ func (r *TriciumServer) ReportNotUseful(c context.Context,
 	}
 	response, err := reportNotUseful(c, req.CommentId)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "report not useful request failed: %v", err)
+		return nil, errors.Annotate(err, "report not useful request failed").
+			Tag(grpcutil.InternalTag).Err()
 	}
 	return response, nil
 }
 
 func validateReportRequest(c context.Context, req *tricium.ReportNotUsefulRequest) error {
 	if req.CommentId == "" {
-		return status.Errorf(codes.InvalidArgument, "missing comment_id")
+		return errors.New("missing comment_id", grpcutil.InvalidArgumentTag)
 	}
 	return nil
 }
@@ -68,13 +69,13 @@ func reportNotUseful(c context.Context, commentID string) (*tricium.ReportNotUse
 func getCommentByID(c context.Context, id string) (*track.Comment, error) {
 	var comments []*track.Comment
 	if err := ds.GetAll(c, ds.NewQuery("Comment").Eq("UUID", id), &comments); err != nil {
-		return nil, fmt.Errorf("failed to get Comment entity: %v", err)
+		return nil, errors.Annotate(err, "failed to get Comment").Err()
 	}
 	if len(comments) == 0 {
-		return nil, fmt.Errorf("zero comments with UUID: %s", id)
+		return nil, errors.Reason("zero comments with UUID %q", id).Err()
 	}
 	if len(comments) > 1 {
-		return nil, fmt.Errorf("multiple comments with the UUID: %s", id)
+		return nil, errors.Reason("multiple comments with UUID %q", id).Err()
 	}
 	return comments[0], nil
 }
@@ -82,12 +83,12 @@ func getCommentByID(c context.Context, id string) (*track.Comment, error) {
 func incrementCount(c context.Context, comment *track.Comment) error {
 	feedback := &track.CommentFeedback{ID: 1, Parent: ds.KeyForObj(c, comment)}
 	if err := ds.Get(c, feedback); err != nil {
-		return fmt.Errorf("failed to get CommentFeedback entity: %v", err)
+		return errors.Annotate(err, "failed to get CommentFeedback").Err()
 	}
 	// TODO(qyearsley): Add protection against multiple clicks by one user.
 	feedback.NotUsefulReports++
 	if err := ds.Put(c, feedback); err != nil {
-		return fmt.Errorf("failed to store CommentFeedback entity: %v", err)
+		return errors.Annotate(err, "failed to store CommentFeedback").Err()
 	}
 	return nil
 }

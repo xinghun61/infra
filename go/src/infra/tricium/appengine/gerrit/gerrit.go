@@ -18,6 +18,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/waigani/diffparser"
 	"go.chromium.org/gae/service/info"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
 	gr "golang.org/x/build/gerrit"
@@ -157,11 +158,11 @@ func (g gerritServer) GetChangedLines(c context.Context, host, change, revision 
 		return ChangedLinesInfo{}, err
 	}
 	if string(response) == "" {
-		return ChangedLinesInfo{}, fmt.Errorf("empty patch response")
+		return ChangedLinesInfo{}, errors.New("empty patch response")
 	}
 	changedLines, err := getChangedLinesFromPatch(string(response))
 	if err != nil {
-		return ChangedLinesInfo{}, fmt.Errorf("unable to extracted changed lines from patch: %v", err)
+		return ChangedLinesInfo{}, errors.Annotate(err, "unable to extracted changed lines from patch").Err()
 	}
 	return changedLines, nil
 }
@@ -276,13 +277,13 @@ func composeChangesQueryURL(host, project string, lastTimestamp time.Time, offse
 func (gerritServer) setReview(c context.Context, host, change, revision string, r *reviewInput) error {
 	data, err := json.Marshal(r)
 	if err != nil {
-		return fmt.Errorf("failed to marshal ReviewInput: %v", err)
+		return errors.Annotate(err, "failed to marshal ReviewInput").Err()
 	}
 	url := fmt.Sprintf("https://%s/a/changes/%s/revisions/%s/review", host, change, common.PatchSetNumber(revision))
 	logging.Debugf(c, "Using set review URL %q.", url)
 	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
 	if err != nil {
-		return fmt.Errorf("failed to create POST request: %v", err)
+		return errors.Annotate(err, "failed to create POST request").Err()
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
@@ -299,7 +300,7 @@ func (gerritServer) setReview(c context.Context, host, change, revision string, 
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to connect to Gerrit, code: %d, %v", resp.StatusCode, err)
+		return errors.Annotate(err, "failed to connect to Gerrit, code: %d", resp.StatusCode).Err()
 	}
 	return nil
 }

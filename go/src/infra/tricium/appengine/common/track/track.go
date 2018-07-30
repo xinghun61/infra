@@ -49,11 +49,11 @@
 package track
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
 	ds "go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/errors"
 
 	"infra/tricium/api/v1"
 )
@@ -313,7 +313,7 @@ const workerSeparator = "_"
 func ExtractFunctionPlatform(workerName string) (string, string, error) {
 	parts := strings.SplitN(workerName, workerSeparator, 2)
 	if len(parts) != 2 {
-		return "", "", fmt.Errorf("malformed worker name: %s", workerName)
+		return "", "", errors.Reason("malformed worker name: %s", workerName).Err()
 	}
 	return parts[0], parts[1], nil
 

@@ -7,19 +7,17 @@ package common
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"net/http"
-
-	"golang.org/x/net/context"
 
 	"github.com/golang/protobuf/jsonpb"
 	isolateservice "go.chromium.org/luci/common/api/isolate/isolateservice/v1"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/isolated"
 	"go.chromium.org/luci/common/isolatedclient"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/server/auth"
+	"golang.org/x/net/context"
 
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
@@ -80,7 +78,7 @@ func (s isolateServer) IsolateGitFileDetails(c context.Context, serverURL string
 	// Create Git file details chunk.
 	gitDetailsData, err := (&jsonpb.Marshaler{}).MarshalToString(d)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal git file details to JSON: %v", err)
+		return "", errors.Annotate(err, "failed to marshal git file details to JSON").Err()
 	}
 	gitDetailsSize := int64(len(gitDetailsData))
 	chunks[0] = &isoChunk{
@@ -97,12 +95,12 @@ func (s isolateServer) IsolateGitFileDetails(c context.Context, serverURL string
 	iso := isolated.New()
 	path, err := tricium.GetPathForDataType(d)
 	if err != nil {
-		return "", fmt.Errorf("failed to get data file path, data: %v", d)
+		return "", errors.Reason("failed to get data file path, data: %v", d).Err()
 	}
 	iso.Files[path] = *chunks[0].file
 	isoData, err := json.Marshal(iso)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal git file details isolate: %v", err)
+		return "", errors.Annotate(err, "failed to marshal git file details isolate").Err()
 	}
 	isoSize := int64(len(isoData))
 	chunks[1] = &isoChunk{
@@ -117,7 +115,7 @@ func (s isolateServer) IsolateGitFileDetails(c context.Context, serverURL string
 
 	// Isolate chunks.
 	if err := s.isolateChunks(c, serverURL, chunks); err != nil {
-		return "", fmt.Errorf("failed to isolate chunks: %v", err)
+		return "", errors.Annotate(err, "failed to isolate chunks").Err()
 	}
 
 	// Return isolate hash.
@@ -135,14 +133,14 @@ func (s isolateServer) IsolateWorker(c context.Context, serverURL string, worker
 	case *admin.Worker_Cmd:
 		iso.Command = append([]string{wi.Cmd.Exec}, wi.Cmd.Args...)
 	case nil:
-		return "", fmt.Errorf("missing Impl when isolating worker %s", worker.Name)
+		return "", errors.Reason("missing Impl when isolating worker %s", worker.Name).Err()
 	default:
-		return "", fmt.Errorf("Impl.Impl has unexpected type %T", wi)
+		return "", errors.Reason("Impl.Impl has unexpected type %T", wi).Err()
 	}
 	iso.Includes = []isolated.HexDigest{isolated.HexDigest(isolatedInput)}
 	isoData, err := json.Marshal(iso)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal worker isolate: %v", err)
+		return "", errors.Annotate(err, "failed to marshal worker isolate").Err()
 	}
 	isoSize := int64(len(isoData))
 	chunk := &isoChunk{
@@ -155,7 +153,7 @@ func (s isolateServer) IsolateWorker(c context.Context, serverURL string, worker
 		Size:   &isoSize,
 	}
 	if err := s.isolateChunks(c, serverURL, []*isoChunk{chunk}); err != nil {
-		return "", fmt.Errorf("failed to isolate chunk: %v", err)
+		return "", errors.Annotate(err, "failed to isolate chunk").Err()
 	}
 	return string(chunk.file.Digest), nil
 }
@@ -165,14 +163,14 @@ func (s isolateServer) LayerIsolates(c context.Context, serverURL, isolatedInput
 	mode := 0444
 	outIso, err := s.fetchIsolated(c, serverURL, isolatedOutput)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch output isolate: %v", err)
+		return "", errors.Annotate(err, "failed to fetch output isolate").Err()
 	}
 	iso := isolated.New()
 	iso.Files = outIso.Files
 	iso.Includes = []isolated.HexDigest{isolated.HexDigest(isolatedInput)}
 	isoData, err := json.Marshal(iso)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal layered isolate: %v", err)
+		return "", errors.Annotate(err, "failed to marshal layered isolate").Err()
 	}
 	isoSize := int64(len(isoData))
 	chunk := &isoChunk{
@@ -185,7 +183,7 @@ func (s isolateServer) LayerIsolates(c context.Context, serverURL, isolatedInput
 		Size:   &isoSize,
 	}
 	if err := s.isolateChunks(c, serverURL, []*isoChunk{chunk}); err != nil {
-		return "", fmt.Errorf("failed to isolate chunk for layered isolate: %v", err)
+		return "", errors.Annotate(err, "failed to isolate chunk for layered isolate").Err()
 	}
 	return string(chunk.file.Digest), nil
 }
@@ -194,15 +192,15 @@ func (s isolateServer) LayerIsolates(c context.Context, serverURL, isolatedInput
 func (s isolateServer) FetchIsolatedResults(c context.Context, serverURL, isolatedOutput string) (string, error) {
 	outIso, err := s.fetchIsolated(c, serverURL, isolatedOutput)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch output isolate: %v", err)
+		return "", errors.Annotate(err, "failed to fetch output isolate").Err()
 	}
 	resultsFile, ok := outIso.Files["tricium/data/results.json"]
 	if !ok {
-		return "", fmt.Errorf("missing results file in isolated output, isolated output: %s", isolatedOutput)
+		return "", errors.Reason("missing results file in isolated output, isolated output: %s", isolatedOutput).Err()
 	}
 	buf := &buffer{}
 	if err := s.fetch(c, serverURL, string(resultsFile.Digest), buf); err != nil {
-		return "", fmt.Errorf("failed to fetch result file: %v", err)
+		return "", errors.Annotate(err, "failed to fetch result file").Err()
 	}
 	// TODO(emso): Switch to io.Reader to avoid keeping the whole buffer in memory.
 	return string(buf.Bytes()), nil
@@ -224,7 +222,7 @@ func (s isolateServer) isolateChunks(c context.Context, serverURL string, chunks
 	}
 	states, err := client.Contains(c, dgsts)
 	if err != nil {
-		return fmt.Errorf("failed to check isolate contains: %v", err)
+		return errors.Annotate(err, "failed to check isolate contains").Err()
 	}
 	// Push chunks not already present in parallel.
 	return parallel.FanOutIn(func(ch chan<- func() error) {
@@ -245,7 +243,7 @@ func (s isolateServer) fetch(c context.Context, serverURL, digest string, buf *b
 		return err
 	}
 	if err := client.Fetch(c, isolated.HexDigest(digest), buf); err != nil {
-		return fmt.Errorf("failed to fetch: %v", err)
+		return errors.Annotate(err, "failed to fetch").Err()
 	}
 	return nil
 }
@@ -253,7 +251,7 @@ func (s isolateServer) fetch(c context.Context, serverURL, digest string, buf *b
 func (s isolateServer) fetchIsolated(c context.Context, serverURL, digest string) (*isolated.Isolated, error) {
 	buf := &buffer{}
 	if err := s.fetch(c, serverURL, digest, buf); err != nil {
-		return nil, fmt.Errorf("failed to fetch isolated: %v", err)
+		return nil, errors.Annotate(err, "failed to fetch isolated").Err()
 	}
 	iso := &isolated.Isolated{}
 	json.Unmarshal(buf.Bytes(), iso)
@@ -267,11 +265,11 @@ func (s isolateServer) fetchIsolated(c context.Context, serverURL, digest string
 func (s isolateServer) createIsolateClient(c context.Context, serverURL string) (*isolatedclient.Client, error) {
 	authTransport, err := auth.GetRPCTransport(c, auth.AsSelf)
 	if err != nil {
-		return nil, fmt.Errorf("failed to setup auth transport for isolate client: %v", err)
+		return nil, errors.Annotate(err, "failed to setup auth transport for isolate client").Err()
 	}
 	anonTransport, err := auth.GetRPCTransport(c, auth.NoAuth)
 	if err != nil {
-		return nil, fmt.Errorf("failed to setup anonymous transport for isolate client: %v", err)
+		return nil, errors.Annotate(err, "failed to setup anonymous transport for isolate client").Err()
 	}
 	// TODO(emso): Add check of devserver/dev instance or prod and select isolate server accordingly.
 	return isolatedclient.New(&http.Client{Transport: anonTransport}, &http.Client{Transport: authTransport},
@@ -290,7 +288,7 @@ type buffer struct {
 
 func (f *buffer) Seek(a int64, b int) (int64, error) {
 	if a != 0 || b != 0 {
-		return 0, errors.New("non-zero value given to buffer.Seek")
+		return 0, errors.Reason("non-zero value given to buffer.Seek").Err()
 	}
 	f.Reset()
 	return 0, nil

@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"go.chromium.org/luci/common/api/swarming/swarming/v1"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/isolatedclient"
 	"go.chromium.org/luci/common/logging"
-
 	"golang.org/x/net/context"
 
 	admin "infra/tricium/api/admin/v1"
@@ -40,7 +40,7 @@ func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL s
 		// Note that ':' may appear in the value but not the key.
 		dim := strings.SplitN(d, ":", 2)
 		if len(dim) != 2 {
-			return nil, fmt.Errorf("failed to split dimension: %q", d)
+			return nil, errors.Reason("failed to split dimension: %q", d).Err()
 		}
 		dims = append(dims, &swarming.SwarmingRpcsStringPair{Key: dim[0], Value: dim[1]})
 	}
@@ -57,13 +57,11 @@ func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL s
 	c, _ = context.WithTimeout(c, 60*time.Second)
 	oauthClient, err := getOAuthClient(c)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "failed to create oauth client")
-		return nil, fmt.Errorf("failed to create oauth client: %v", err)
+		return nil, errors.Annotate(err, "failed to create oauth client").Err()
 	}
 	swarmingService, err := swarming.New(oauthClient)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "failed to create swarming client")
-		return nil, fmt.Errorf("failed to create swarming client: %v", err)
+		return nil, errors.Annotate(err, "failed to create swarming client").Err()
 	}
 	// TODO(emso): Read timeouts from the analyzer config.
 	// Prepare properties.
@@ -92,8 +90,7 @@ func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL s
 		Tags:           tags,
 	}).Do()
 	if err != nil {
-		logging.WithError(err).Errorf(c, "failed to trigger swarming task")
-		return nil, fmt.Errorf("failed to trigger swarming task: %v", err)
+		return nil, errors.Annotate(err, "failed to trigger swarming task").Err()
 	}
 	logging.Fields{
 		"task ID":       res.TaskId,
@@ -111,16 +108,16 @@ func (s swarmingServer) Collect(c context.Context, serverURL, taskID string, bui
 	c, _ = context.WithTimeout(c, 60*time.Second)
 	oauthClient, err := getOAuthClient(c)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create oauth client: %v", err)
+		return nil, errors.Annotate(err, "failed to create oauth client").Err()
 	}
 	swarmingService, err := swarming.New(oauthClient)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create swarming client: %v", err)
+		return nil, errors.Annotate(err, "failed to create swarming client").Err()
 	}
 	swarmingService.BasePath = fmt.Sprintf("%s%s", serverURL, swarmingBasePath)
 	taskResult, err := swarmingService.Task.Result(taskID).Do()
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve task result from swarming: %v", err)
+		return nil, errors.Annotate(err, "failed to retrieve task result from swarming").Err()
 	}
 
 	var result *CollectResult

@@ -5,15 +5,12 @@
 package tracker
 
 import (
-	"fmt"
-
 	ds "go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
-
+	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
@@ -21,21 +18,25 @@ import (
 )
 
 // WorkerLaunched tracks the launch of a worker.
-func (*trackerServer) WorkerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) (*admin.WorkerLaunchedResponse, error) {
+func (*trackerServer) WorkerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) (res *admin.WorkerLaunchedResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(c, err)
+	}()
 	if req.RunId == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "missing run ID")
+		return nil, errors.New("missing run ID", grpcutil.InvalidArgumentTag)
 	}
 	if req.Worker == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "missing worker")
+		return nil, errors.New("missing worker", grpcutil.InvalidArgumentTag)
 	}
 	if req.IsolatedInputHash == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "missing isolated input hash")
+		return nil, errors.New("missing isolated input hash", grpcutil.InvalidArgumentTag)
 	}
 	if req.SwarmingTaskId == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "missing swarming task ID")
+		return nil, errors.New("missing swarming task ID", grpcutil.InvalidArgumentTag)
 	}
 	if err := workerLaunched(c, req); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to track worker launched: %v", err)
+		return nil, errors.Annotate(err, "failed to track worker launched").
+			Tag(grpcutil.InternalTag).Err()
 	}
 	return &admin.WorkerLaunchedResponse{}, nil
 }
@@ -53,7 +54,7 @@ func workerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) error {
 	runKey := ds.NewKey(c, "WorkflowRun", "", 1, requestKey)
 	name, _, err := track.ExtractFunctionPlatform(req.Worker)
 	if err != nil {
-		return fmt.Errorf("failed to extract function name: %v", err)
+		return errors.Annotate(err, "failed to extract function name").Err()
 	}
 	functionRunKey := ds.NewKey(c, "FunctionRun", name, 0, runKey)
 	workerKey := ds.NewKey(c, "WorkerRun", req.Worker, 0, functionRunKey)
@@ -63,7 +64,7 @@ func workerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) error {
 			taskC <- func() error {
 				wr := &track.WorkerRunResult{ID: 1, Parent: workerKey}
 				if err := ds.Get(c, wr); err != nil {
-					return fmt.Errorf("failed to get WorkerRunResult: %v", err)
+					return errors.Annotate(err, "failed to get WorkerRunResult").Err()
 				}
 				if wr.State == tricium.State_PENDING {
 					wr.State = tricium.State_RUNNING
@@ -71,7 +72,7 @@ func workerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) error {
 					wr.SwarmingTaskID = req.SwarmingTaskId
 					wr.BuildbucketBuildID = req.BuildbucketBuildId
 					if err := ds.Put(c, wr); err != nil {
-						return fmt.Errorf("failed to update WorkerRunResult: %v", err)
+						return errors.Annotate(err, "failed to update WorkerRunResult").Err()
 					}
 				} else {
 					logging.Fields{
@@ -86,12 +87,12 @@ func workerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) error {
 			taskC <- func() error {
 				fr := &track.FunctionRunResult{ID: 1, Parent: functionRunKey}
 				if err := ds.Get(c, fr); err != nil {
-					return fmt.Errorf("failed to get FunctionRunResult: %v", err)
+					return errors.Annotate(err, "failed to get FunctionRunResult").Err()
 				}
 				if fr.State == tricium.State_PENDING {
 					fr.State = tricium.State_RUNNING
 					if err := ds.Put(c, fr); err != nil {
-						return fmt.Errorf("failed to update FunctionRunResult to launched: %v", err)
+						return errors.Annotate(err, "failed to update FunctionRunResult to launched").Err()
 					}
 				}
 				return nil
@@ -103,7 +104,7 @@ func workerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) error {
 	// Notify reporter.
 	request := &track.AnalyzeRequest{ID: req.RunId}
 	if err := ds.Get(c, request); err != nil {
-		return fmt.Errorf("failed to get AnalyzeRequest entity (run ID: %d): %v", req.RunId, err)
+		return errors.Annotate(err, "failed to get AnalyzeRequest entity (run ID: %d)", req.RunId).Err()
 	}
 	return nil
 }

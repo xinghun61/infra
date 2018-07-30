@@ -7,16 +7,15 @@ package driver
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/golang/protobuf/proto"
 	ds "go.chromium.org/gae/service/datastore"
 	tq "go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/router"
-
 	"golang.org/x/net/context"
 
 	"google.golang.org/api/pubsub/v1"
@@ -173,7 +172,7 @@ func handlePubSubMessage(c context.Context, msg *pubsub.PubsubMessage) error {
 	}.Infof(c, "[driver] PubSub message received.")
 	tr, taskID, err := decodePubsubMessage(c, msg)
 	if err != nil {
-		return fmt.Errorf("failed to decode PubSub message: %v", err)
+		return errors.Annotate(err, "failed to decode PubSub message").Err()
 	}
 	logging.Fields{
 		"task ID":        taskID,
@@ -183,14 +182,14 @@ func handlePubSubMessage(c context.Context, msg *pubsub.PubsubMessage) error {
 	received := &ReceivedPubSubMessage{ID: taskID}
 	err = ds.Get(c, received)
 	if err != nil && err != ds.ErrNoSuchEntity {
-		return fmt.Errorf("failed to get receivedPubSubMessage: %v", err)
+		return errors.Annotate(err, "failed to get receivedPubSubMessage").Err()
 	}
 	// If message not already received, store to prevent duplicate processing.
 	if err == ds.ErrNoSuchEntity {
 		received.RunID = tr.RunId
 		received.Worker = tr.Worker
 		if err := ds.Put(c, received); err != nil {
-			return fmt.Errorf("failed to store receivedPubSubMessage: %v", err)
+			return errors.Annotate(err, "failed to store receivedPubSubMessage").Err()
 		}
 	} else {
 		logging.Fields{
@@ -220,12 +219,12 @@ func handlePubSubMessage(c context.Context, msg *pubsub.PubsubMessage) error {
 func enqueueCollectRequest(c context.Context, request *admin.CollectRequest) error {
 	b, err := proto.Marshal(request)
 	if err != nil {
-		return fmt.Errorf("failed to marshal collect request: %v", err)
+		return errors.Annotate(err, "failed to marshal collect request").Err()
 	}
 	t := tq.NewPOSTTask("/driver/internal/collect", nil)
 	t.Payload = b
 	if err := tq.Add(c, common.DriverQueue, t); err != nil {
-		return fmt.Errorf("failed to enqueue collect request: %v", err)
+		return errors.Annotate(err, "failed to enqueue collect request").Err()
 	}
 	return nil
 }
@@ -240,19 +239,19 @@ func enqueueCollectRequest(c context.Context, request *admin.CollectRequest) err
 func decodePubsubMessage(c context.Context, msg *pubsub.PubsubMessage) (*admin.TriggerRequest, string, error) {
 	data, err := base64.StdEncoding.DecodeString(msg.Data)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to base64 decode pubsub message: %v", err)
+		return nil, "", errors.Annotate(err, "failed to base64 decode pubsub message").Err()
 	}
 	p := payload{}
 	if err := json.Unmarshal(data, &p); err != nil {
-		return nil, "", fmt.Errorf("failed to unmarshal pubsub JSON payload: %v", err)
+		return nil, "", errors.Annotate(err, "failed to unmarshal pubsub JSON payload").Err()
 	}
 	userdata, err := base64.StdEncoding.DecodeString(p.Userdata)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to base64 decode pubsub userdata: %v", err)
+		return nil, "", errors.Annotate(err, "failed to base64 decode pubsub userdata").Err()
 	}
 	tr := &admin.TriggerRequest{}
 	if err := proto.Unmarshal([]byte(userdata), tr); err != nil {
-		return nil, "", fmt.Errorf("failed to unmarshal pubsub proto userdata: %v", err)
+		return nil, "", errors.Annotate(err, "failed to unmarshal pubsub proto userdata").Err()
 	}
 	return tr, p.TaskID, nil
 }

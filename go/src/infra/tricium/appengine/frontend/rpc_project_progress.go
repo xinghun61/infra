@@ -5,16 +5,13 @@
 package frontend
 
 import (
-	"fmt"
 	"strconv"
 
 	ds "go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
-
+	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common/config"
@@ -22,7 +19,10 @@ import (
 )
 
 // ProjectProgress implements Tricium.ProjectProgress.
-func (r *TriciumServer) ProjectProgress(c context.Context, req *tricium.ProjectProgressRequest) (*tricium.ProjectProgressResponse, error) {
+func (r *TriciumServer) ProjectProgress(c context.Context, req *tricium.ProjectProgressRequest) (res *tricium.ProjectProgressResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(c, err)
+	}()
 	project, err := validateProjectProgressRequest(c, req)
 	if err != nil {
 		return nil, err
@@ -30,9 +30,9 @@ func (r *TriciumServer) ProjectProgress(c context.Context, req *tricium.ProjectP
 	logging.Fields{
 		"project": project,
 	}.Infof(c, "[frontend] Project progress request received and validated.")
-	runProgress, errCode, err := projectProgress(c, project, config.LuciConfigServer)
+	runProgress, err := projectProgress(c, project, config.LuciConfigServer)
 	if err != nil {
-		return nil, status.Errorf(errCode, "project progress failed: %v", err)
+		return nil, err
 	}
 	logging.Infof(c, "[frontend] Project progress completed.")
 	return &tricium.ProjectProgressResponse{
@@ -42,26 +42,29 @@ func (r *TriciumServer) ProjectProgress(c context.Context, req *tricium.ProjectP
 
 func validateProjectProgressRequest(c context.Context, req *tricium.ProjectProgressRequest) (string, error) {
 	if req.Project == "" {
-		return "", status.Errorf(codes.InvalidArgument, "missing Tricium project")
+		return "", errors.New("missing Tricium project", grpcutil.InvalidArgumentTag)
 	}
 	return req.Project, nil
 }
 
-func projectProgress(c context.Context, project string, cp config.ProviderAPI) ([]*tricium.RunProgress, codes.Code, error) {
+func projectProgress(c context.Context, project string, cp config.ProviderAPI) ([]*tricium.RunProgress, error) {
 	var runProgress []*tricium.RunProgress
 	var requests []*track.AnalyzeRequest
 	if err := ds.GetAll(c, ds.NewQuery("AnalyzeRequest").Eq("Project", project), &requests); err != nil {
-		return nil, codes.Internal, fmt.Errorf("failed to retrieve AnalyzeRequest entities: %v", err)
+		return nil, errors.Annotate(err, "failed to get AnalyzeRequests").
+			Tag(grpcutil.InternalTag).Err()
 	}
 	for _, r := range requests {
 		key := ds.KeyForObj(c, r)
 		res := &track.AnalyzeRequestResult{ID: 1, Parent: key}
 		if err := ds.Get(c, res); err != nil {
-			return nil, codes.Internal, fmt.Errorf("failed to retrieve AnalyzerRequestResult: %v", err)
+			return nil, errors.Annotate(err, "failed to get AnalyzeRequestResult").
+				Tag(grpcutil.InternalTag).Err()
 		}
 		var functionResults []*track.FunctionRunResult
 		if err := ds.GetAll(c, ds.NewQuery("FunctionRunResult").Ancestor(key), &functionResults); err != nil {
-			return nil, codes.Internal, fmt.Errorf("failed to retrieve FunctionRunResult: %v", err)
+			return nil, errors.Annotate(err, "failed to get FunctionRunResult").
+				Tag(grpcutil.InternalTag).Err()
 		}
 		numComments := 0
 		for _, ar := range functionResults {
@@ -73,5 +76,5 @@ func projectProgress(c context.Context, project string, cp config.ProviderAPI) (
 			NumComments: int32(numComments),
 		})
 	}
-	return runProgress, codes.OK, nil
+	return runProgress, nil
 }

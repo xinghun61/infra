@@ -5,16 +5,14 @@
 package common
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
 
 	"go.chromium.org/gae/service/info"
+	"go.chromium.org/luci/common/errors"
 	gcps "go.chromium.org/luci/common/gcloud/pubsub"
-
 	"golang.org/x/net/context"
-
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/pubsub/v1"
 	"google.golang.org/appengine"
@@ -68,11 +66,11 @@ func (pubsubServer) Setup(c context.Context) error {
 	}.Infof(c, "Pubsub set up.")
 	transport, err := auth.GetRPCTransport(c, auth.AsSelf, auth.WithScopes(pubsub.PubsubScope))
 	if err != nil {
-		return fmt.Errorf("failed to create HTTP transport: %v", err)
+		return errors.Annotate(err, "failed to create HTTP transport").Err()
 	}
 	service, err := pubsub.New(&http.Client{Transport: transport})
 	if err != nil {
-		return fmt.Errorf("failed to create HTTP client: %v", err)
+		return errors.Annotate(err, "failed to create HTTP client").Err()
 	}
 	// Create the subscription to this topic. Ignore HTTP 409 (means the subscription already exists).
 	_, err = service.Projects.Subscriptions.Create(sub, &pubsub.Subscription{
@@ -83,7 +81,7 @@ func (pubsubServer) Setup(c context.Context) error {
 		},
 	}).Context(c).Do()
 	if err != nil && !isHTTP409(err) {
-		return fmt.Errorf("failed to check subscription: %v", err)
+		return errors.Annotate(err, "failed to check subscription").Err()
 	}
 	return nil
 }
@@ -96,11 +94,11 @@ func (pubsubServer) Pull(c context.Context) (*pubsub.PubsubMessage, error) {
 	}.Infof(c, "Pub/Sub pull")
 	transport, err := auth.GetRPCTransport(c, auth.AsSelf, auth.WithScopes(pubsub.PubsubScope))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP transport: %v", err)
+		return nil, errors.Annotate(err, "failed to create HTTP transport").Err()
 	}
 	service, err := pubsub.New(&http.Client{Transport: transport})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP client: %v", err)
+		return nil, errors.Annotate(err, "failed to create HTTP client").Err()
 	}
 	// Pull one message.
 	resp, err := service.Projects.Subscriptions.Pull(sub, &pubsub.PullRequest{
@@ -108,7 +106,7 @@ func (pubsubServer) Pull(c context.Context) (*pubsub.PubsubMessage, error) {
 		MaxMessages:       1,
 	}).Context(c).Do()
 	if err != nil {
-		return nil, fmt.Errorf("failed to pull pubsub message: %v", err)
+		return nil, errors.Annotate(err, "failed to pull pubsub message").Err()
 	}
 	var msg *pubsub.PubsubMessage
 	var ack func()
@@ -130,7 +128,7 @@ func (pubsubServer) Pull(c context.Context) (*pubsub.PubsubMessage, error) {
 		// Pulled one pubsub message.
 		msg = resp.ReceivedMessages[0].Message
 	default:
-		panic(errors.New("received more than one message from PubSub while asking for only one"))
+		panic(errors.Reason("received more than one message from PubSub while asking for only one").Err())
 	}
 	ack()
 	return msg, nil

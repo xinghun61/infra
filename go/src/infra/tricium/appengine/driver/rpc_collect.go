@@ -5,16 +5,12 @@
 package driver
 
 import (
-	"fmt"
-
-	"golang.org/x/net/context"
-
 	"github.com/golang/protobuf/proto"
 	tq "go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"go.chromium.org/luci/grpc/grpcutil"
+	"golang.org/x/net/context"
 
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
@@ -23,27 +19,31 @@ import (
 )
 
 // Collect processes one collect request to the Tricium driver.
-func (*driverServer) Collect(c context.Context, req *admin.CollectRequest) (*admin.CollectResponse, error) {
+func (*driverServer) Collect(c context.Context, req *admin.CollectRequest) (res *admin.CollectResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(c, err)
+	}()
 	logging.Fields{
 		"run ID":  req.RunId,
 		"worker":  req.Worker,
 		"task ID": req.TaskId,
 	}.Infof(c, "[driver] Collect request received.")
 	if err := validateCollectRequest(req); err != nil {
-		return nil, err
+		return nil, errors.Annotate(err, "invalid request").
+			Tag(grpcutil.InvalidArgumentTag).Err()
 	}
 	if err := collect(c, req, config.WorkflowCache, common.SwarmingServer, common.IsolateServer); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to collect: %v", err)
+		return nil, err
 	}
 	return &admin.CollectResponse{}, nil
 }
 
 func validateCollectRequest(req *admin.CollectRequest) error {
 	if req.RunId == 0 {
-		return status.Errorf(codes.InvalidArgument, "missing run ID")
+		return errors.New("missing run ID")
 	}
 	if req.Worker == "" {
-		return status.Errorf(codes.InvalidArgument, "missing worker name")
+		return errors.New("missing worker name")
 	}
 	return nil
 }
@@ -52,12 +52,12 @@ func collect(c context.Context, req *admin.CollectRequest,
 	wp config.WorkflowCacheAPI, sw common.TaskServerAPI, isolator common.IsolateAPI) error {
 	wf, err := wp.GetWorkflow(c, req.RunId)
 	if err != nil {
-		return fmt.Errorf("failed to read workflow config: %v", err)
+		return errors.Annotate(err, "failed to read workflow config").Err()
 	}
 
 	w, err := wf.GetWorker(req.Worker)
 	if err != nil {
-		return fmt.Errorf("failed to get worker: %v", err)
+		return errors.Annotate(err, "failed to get worker").Err()
 	}
 
 	var result *common.CollectResult
@@ -71,12 +71,12 @@ func collect(c context.Context, req *admin.CollectRequest,
 	case *admin.Worker_Cmd:
 		result, err = sw.Collect(c, wf.SwarmingServer, req.TaskId, req.BuildId)
 		if err != nil {
-			return fmt.Errorf("failed to collect task: %v", err)
+			return errors.Annotate(err, "failed to collect task").Err()
 		}
 	case nil:
-		return fmt.Errorf("missing Impl when isolating worker %s", w.Name)
+		return errors.Reason("missing Impl when isolating worker %s", w.Name).Err()
 	default:
-		return fmt.Errorf("Impl.Impl has unexpected type %T", wi)
+		return errors.Reason("Impl.Impl has unexpected type %T", wi).Err()
 	}
 
 	if result.State == common.Pending {
@@ -106,12 +106,12 @@ func collect(c context.Context, req *admin.CollectRequest,
 		BuildbucketOutput:  result.BuildbucketOutput,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to encode worker done request: %v", err)
+		return errors.Annotate(err, "failed to encode worker done request").Err()
 	}
 	t := tq.NewPOSTTask("/tracker/internal/worker-done", nil)
 	t.Payload = b
 	if err := tq.Add(c, common.TrackerQueue, t); err != nil {
-		return fmt.Errorf("failed to enqueue track request: %v", err)
+		return errors.Annotate(err, "failed to enqueue track request").Err()
 	}
 
 	// Abort here if worker failed and mark descendants as failures.
@@ -132,14 +132,14 @@ func collect(c context.Context, req *admin.CollectRequest,
 				State:  tricium.State_ABORTED,
 			})
 			if err != nil {
-				return fmt.Errorf("failed to encode worker done request: %v", err)
+				return errors.Annotate(err, "failed to encode worker done request").Err()
 			}
 			t := tq.NewPOSTTask("/tracker/internal/worker-done", nil)
 			t.Payload = b
 			tasks = append(tasks, t)
 		}
 		if err := tq.Add(c, common.TrackerQueue, tasks...); err != nil {
-			return fmt.Errorf("failed to enqueue track request: %v", err)
+			return errors.Annotate(err, "failed to enqueue track request").Err()
 		}
 		return nil
 	}
@@ -149,7 +149,7 @@ func collect(c context.Context, req *admin.CollectRequest,
 	isolatedInput, err := isolator.LayerIsolates(
 		c, wf.IsolateServer, req.IsolatedInputHash, result.IsolatedOutputHash)
 	if err != nil {
-		return fmt.Errorf("failed layer isolates: %v", err)
+		return errors.Annotate(err, "failed layer isolates").Err()
 	}
 
 	// Enqueue trigger requests for successors.
@@ -160,12 +160,12 @@ func collect(c context.Context, req *admin.CollectRequest,
 			Worker:            worker,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to marshal successor trigger request: %v", err)
+			return errors.Annotate(err, "failed to marshal successor trigger request").Err()
 		}
 		t := tq.NewPOSTTask("/driver/internal/trigger", nil)
 		t.Payload = b
 		if err := tq.Add(c, common.DriverQueue, t); err != nil {
-			return fmt.Errorf("failed to enqueue collect request: %v", err)
+			return errors.Annotate(err, "failed to enqueue collect request").Err()
 		}
 	}
 	return nil

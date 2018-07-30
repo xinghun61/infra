@@ -5,35 +5,37 @@
 package frontend
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/golang/protobuf/jsonpb"
 	ds "go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common/track"
 )
 
 // Results processes one results request to Tricium.
-func (r *TriciumServer) Results(c context.Context, req *tricium.ResultsRequest) (*tricium.ResultsResponse, error) {
+func (r *TriciumServer) Results(c context.Context, req *tricium.ResultsRequest) (res *tricium.ResultsResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(c, err)
+	}()
 	logging.Fields{
 		"run ID": req.RunId,
 	}.Infof(c, "[frontend] Results request received.")
 	if req.RunId == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "missing run ID")
+		return nil, errors.Reason("missing run ID").Tag(grpcutil.InvalidArgumentTag).Err()
 	}
 	runID, err := strconv.ParseInt(req.RunId, 10, 64)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid run ID %s: %v", req.RunId, err)
+		return nil, errors.Annotate(err, "invalid run ID %s", req.RunId).Tag(grpcutil.InvalidArgumentTag).Err()
 	}
 	results, isMerged, err := results(c, runID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "results request failed: %v", err)
+		return nil, errors.Annotate(err, "results request failed").Tag(grpcutil.InternalTag).Err()
 	}
 	logging.Infof(c, "[frontend] Results request completed: %v", results)
 	return &tricium.ResultsResponse{Results: results, IsMerged: isMerged}, nil
@@ -42,7 +44,7 @@ func (r *TriciumServer) Results(c context.Context, req *tricium.ResultsRequest) 
 func results(c context.Context, runID int64) (*tricium.Data_Results, bool, error) {
 	comments, err := track.FetchComments(c, runID)
 	if err != nil {
-		return nil, false, fmt.Errorf("failed to get comments: %v", err)
+		return nil, false, errors.Annotate(err, "failed to get Comments").Err()
 	}
 	isMerged := false
 	res := &tricium.Data_Results{}
@@ -50,12 +52,12 @@ func results(c context.Context, runID int64) (*tricium.Data_Results, bool, error
 		commentKey := ds.KeyForObj(c, comment)
 		cr := &track.CommentSelection{ID: 1, Parent: commentKey}
 		if err := ds.Get(c, cr); err != nil {
-			return nil, false, fmt.Errorf("failed to get CommentSelection: %v", err)
+			return nil, false, errors.Annotate(err, "failed to get CommentSelection").Err()
 		}
 		if cr.Included {
 			comm := &tricium.Data_Comment{}
 			if err := jsonpb.UnmarshalString(string(comment.Comment), comm); err != nil {
-				return nil, false, fmt.Errorf("failed to unmarshal comment: %v", err)
+				return nil, false, errors.Annotate(err, "failed to unmarshal comment").Err()
 			}
 			res.Comments = append(res.Comments, comm)
 			res.Platforms |= comment.Platforms
@@ -66,7 +68,7 @@ func results(c context.Context, runID int64) (*tricium.Data_Results, bool, error
 	// Monitor results requests per project and run ID.
 	request := &track.AnalyzeRequest{ID: runID}
 	if err := ds.Get(c, request); err != nil {
-		return res, isMerged, fmt.Errorf("failed to get AnalyzeRequest: %v", err)
+		return res, isMerged, errors.Annotate(err, "failed to get AnalyzeRequest").Err()
 	}
 	resultsRequestCount.Add(c, 1, request.Project, strconv.FormatInt(runID, 10))
 	return res, isMerged, nil

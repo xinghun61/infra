@@ -5,15 +5,12 @@
 package tracker
 
 import (
-	"fmt"
-
 	ds "go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
-
+	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
@@ -27,16 +24,18 @@ type trackerServer struct{}
 var server = &trackerServer{}
 
 // WorkflowLaunched tracks the launch of a workflow.
-func (*trackerServer) WorkflowLaunched(
-	c context.Context, req *admin.WorkflowLaunchedRequest) (*admin.WorkflowLaunchedResponse, error) {
+func (*trackerServer) WorkflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest) (res *admin.WorkflowLaunchedResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(c, err)
+	}()
 	logging.Fields{
 		"run ID": req.RunId,
 	}.Infof(c, "[tracker] Received workflow launched request.")
 	if req.RunId == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "missing run ID")
+		return nil, errors.Reason("missing run ID").Tag(grpcutil.InvalidArgumentTag).Err()
 	}
 	if err := workflowLaunched(c, req, config.WorkflowCache); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to track workflow launched: %v", err)
+		return nil, errors.Annotate(err, "failed to track workflow launched").Tag(grpcutil.InternalTag).Err()
 	}
 	return &admin.WorkflowLaunchedResponse{}, nil
 }
@@ -44,7 +43,7 @@ func (*trackerServer) WorkflowLaunched(
 func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp config.WorkflowCacheAPI) error {
 	wf, err := wp.GetWorkflow(c, req.RunId)
 	if err != nil {
-		return fmt.Errorf("failed to read workflow config: %v", err)
+		return errors.Annotate(err, "failed to read workflow config").Err()
 	}
 	// Prepare function and worker invocation tracking entries to store.
 	fw, functions := extractFunctionWorkerStructure(c, wf)
@@ -60,7 +59,7 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 			Functions:         functions,
 		}
 		if err := ds.Put(c, workflowRun); err != nil {
-			return fmt.Errorf("failed to store WorkflowRun entity (run ID: %d): %v", req.RunId, err)
+			return errors.Reason("failed to store WorkflowRun entity (run ID: %d): %v", req.RunId, err).Err()
 		}
 		runKey := ds.KeyForObj(c, workflowRun)
 		return parallel.FanOutIn(func(taskC chan<- func() error) {
@@ -73,7 +72,7 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 					State:  tricium.State_RUNNING,
 				}
 				if err := ds.Put(c, r); err != nil {
-					return fmt.Errorf("failed to mark request as launched: %v", err)
+					return errors.Annotate(err, "failed to mark request as launched").Err()
 				}
 				return nil
 			}
@@ -86,7 +85,7 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 					State:  tricium.State_RUNNING,
 				}
 				if err := ds.Put(c, r); err != nil {
-					return fmt.Errorf("failed to mark workflow as launched: %v", err)
+					return errors.Annotate(err, "failed to mark workflow as launched").Err()
 				}
 				return nil
 			}
@@ -127,7 +126,7 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 					}
 				}
 				if err := ds.Put(c, entities); err != nil {
-					return fmt.Errorf("failed to store function and worker entities: %v", err)
+					return errors.Annotate(err, "failed to store function and worker entities").Err()
 				}
 				return nil
 			}

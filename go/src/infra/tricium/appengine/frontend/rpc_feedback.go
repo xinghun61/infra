@@ -5,18 +5,15 @@
 package frontend
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
-
+	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common/track"
@@ -25,7 +22,10 @@ import (
 const longForm = "2006-01-02T08:04:05Z"
 
 // Feedback processes one feedback request to Tricium.
-func (r *TriciumServer) Feedback(c context.Context, req *tricium.FeedbackRequest) (*tricium.FeedbackResponse, error) {
+func (r *TriciumServer) Feedback(c context.Context, req *tricium.FeedbackRequest) (res *tricium.FeedbackResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(c, err)
+	}()
 	logging.Fields{
 		"category":   req.Category,
 		"start_time": req.StartTime,
@@ -33,36 +33,41 @@ func (r *TriciumServer) Feedback(c context.Context, req *tricium.FeedbackRequest
 	}.Infof(c, "[frontend] Feedback request received.")
 	stime, etime, err := validateFeedbackRequest(c, req)
 	if err != nil {
-		return nil, err
+		return nil, errors.Annotate(err, "invalid request").
+			Tag(grpcutil.InvalidArgumentTag).Err()
 	}
 	count, reports, err := feedback(c, req.Category, stime, etime)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "feedback request failed: %v", err)
+		return nil, err
 	}
 	return &tricium.FeedbackResponse{Comments: int32(count), NotUsefulReports: int32(reports)}, nil
 }
 
+// validateAnalyzeRequest returns the parsed time range, and an error if the
+// request is invalid.
+//
+// The returned error should be tagged for gRPC by the caller.
 func validateFeedbackRequest(c context.Context, req *tricium.FeedbackRequest) (time.Time, time.Time, error) {
 	stime := time.Unix(0, 0).UTC() // Beginning of Unix time.
 	etime := clock.Now(c).UTC()
 	var err error
 	if req.Category == "" {
-		return stime, etime, status.Errorf(codes.InvalidArgument, "missing category")
+		return stime, etime, errors.New("missing category")
 	}
 	if req.StartTime != "" {
 		stime, err = time.Parse(longForm, req.StartTime)
 		if err != nil {
-			return stime, etime, status.Errorf(codes.InvalidArgument, "invalid start_time: %v", err)
+			return stime, etime, errors.Annotate(err, "invalid start_time").Err()
 		}
 	}
 	if req.EndTime != "" {
 		etime, err = time.Parse(longForm, req.EndTime)
 		if err != nil {
-			return stime, etime, status.Errorf(codes.InvalidArgument, "invalid end_time: %v", err)
+			return stime, etime, errors.Annotate(err, "invalid end_time").Err()
 		}
 	}
 	if etime.Before(stime) {
-		return stime, etime, status.Errorf(codes.InvalidArgument, "start_time/end_time out of order")
+		return stime, etime, errors.New("start_time/end_time out of order")
 	}
 	return stime, etime, nil
 }
@@ -75,7 +80,7 @@ func feedback(c context.Context, category string, stime, etime time.Time) (int, 
 	// exposed for feedback which means they have no feedback data to contribute.
 	var comments []*track.Comment
 	if err := ds.GetAll(c, ds.NewQuery("Comment").Eq("Analyzer", analyzer).Gte("CreationTime", stime).Lte("CreationTime", etime), &comments); err != nil {
-		return 0, 0, fmt.Errorf("failed to retrieve Comment entities: %v", err)
+		return 0, 0, errors.Annotate(err, "failed to retrieve Comment entities").Err()
 	}
 	if len(comments) == 0 {
 		logging.Fields{
@@ -95,7 +100,7 @@ func feedback(c context.Context, category string, stime, etime time.Time) (int, 
 		}
 	}
 	if err := ds.Get(c, entities); err != nil {
-		return 0, 0, fmt.Errorf("failed to retrieve CommentFeedback entities: %v", err)
+		return 0, 0, errors.Annotate(err, "failed to retrieve CommentFeedback entities").Err()
 	}
 	count := 0
 	reports := 0

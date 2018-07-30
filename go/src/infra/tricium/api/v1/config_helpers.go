@@ -234,5 +234,5 @@ func LookupDataTypeDetails(sc *ServiceConfig, dt Data_Type) (*Data_TypeDetails, 
 			return d, nil
 		}
 	}
-	return nil, fmt.Errorf("data type undefined: %v", dt)
+	return nil, errors.Reason("data type undefined: %v", dt).Err()
 }

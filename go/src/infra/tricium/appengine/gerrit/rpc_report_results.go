@@ -5,15 +5,13 @@
 package gerrit
 
 import (
-	"fmt"
-
 	"github.com/golang/protobuf/jsonpb"
 	ds "go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
+	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
@@ -25,15 +23,19 @@ const (
 )
 
 // ReportResults processes one report results request.
-func (r *gerritReporter) ReportResults(c context.Context, req *admin.ReportResultsRequest) (*admin.ReportResultsResponse, error) {
+func (r *gerritReporter) ReportResults(c context.Context, req *admin.ReportResultsRequest) (res *admin.ReportResultsResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(c, err)
+	}()
 	logging.Fields{
 		"run ID": req.RunId,
 	}.Infof(c, "[gerrit] ReportResults request received.")
 	if req.RunId == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "missing run ID")
+		return nil, errors.New("missing run ID", grpcutil.InvalidArgumentTag)
 	}
 	if err := reportResults(c, req, GerritServer); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to report results to Gerrit: %v", err)
+		return nil, errors.Annotate(err, "failed to report results").
+			Tag(grpcutil.InternalTag).Err()
 	}
 	return &admin.ReportResultsResponse{}, nil
 }
@@ -42,7 +44,7 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 	// Get Git details first, since other things depend on this.
 	request := &track.AnalyzeRequest{ID: req.RunId}
 	if err := ds.Get(c, request); err != nil {
-		return fmt.Errorf("failed to get AnalyzeRequest entity (ID: %d): %v", req.RunId, err)
+		return errors.Annotate(err, "failed to get AnalyzeRequest").Err()
 	}
 	var includedComments []*track.Comment
 	err := parallel.FanOutIn(func(taskC chan<- func() error) {
@@ -54,7 +56,7 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 			analyzerKey := ds.NewKey(c, "FunctionRun", req.Analyzer, 0, runKey)
 			var fetchedComments []*track.Comment
 			if err := ds.GetAll(c, ds.NewQuery("Comment").Ancestor(analyzerKey), &fetchedComments); err != nil {
-				return fmt.Errorf("failed to retrieve comments: %v", err)
+				return errors.Annotate(err, "failed to retrieve comments").Err()
 			}
 
 			// Get the changed lines for this revision.
@@ -64,7 +66,7 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 			}
 
 			if err != nil {
-				return fmt.Errorf("failed to get changed lines: %v", err)
+				return errors.Annotate(err, "failed to get changed lines").Err()
 			}
 
 			// Only include selected comments that are within the changed lines.
@@ -75,7 +77,7 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 				commentKey := ds.KeyForObj(c, comment)
 				selection := &track.CommentSelection{ID: 1, Parent: commentKey}
 				if err := ds.Get(c, selection); err != nil {
-					return fmt.Errorf("failed to get CommentSelection: %v", err)
+					return errors.Annotate(err, "failed to get CommentSelection").Err()
 				}
 				if selection.Included {
 					includedComments = append(includedComments, comment)

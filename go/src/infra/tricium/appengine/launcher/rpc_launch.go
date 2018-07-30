@@ -6,17 +6,14 @@ package launcher
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/golang/protobuf/proto"
 	ds "go.chromium.org/gae/service/datastore"
 	tq "go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
-
+	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
@@ -30,30 +27,44 @@ type launcherServer struct{}
 var server = &launcherServer{}
 
 // Launch processes one launch request to the Tricium Launcher.
-func (r *launcherServer) Launch(c context.Context, req *admin.LaunchRequest) (*admin.LaunchResponse, error) {
+func (r *launcherServer) Launch(c context.Context, req *admin.LaunchRequest) (res *admin.LaunchResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(c, err)
+	}()
 	logging.Fields{
 		"run ID": req.RunId,
 	}.Infof(c, "[launcher] Launch request received.")
-	if req.RunId == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "missing run ID")
-	}
-	if req.Project == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "missing project")
-	}
-	if req.GitUrl == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "missing git URL")
-	}
-	if req.GitRef == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "missing git ref")
-	}
-	if len(req.Files) == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "missing files to analyze")
+	if err := validateLaunchRequest(req); err != nil {
+		return nil, errors.Annotate(err, "invalid request").
+			Tag(grpcutil.InvalidArgumentTag).Err()
 	}
 	if err := launch(c, req, config.LuciConfigServer, common.IsolateServer,
 		common.SwarmingServer, common.PubsubServer); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to launch workflow: %v", err)
+		return nil, err
 	}
 	return &admin.LaunchResponse{}, nil
+}
+
+// validateAnalyzeRequest returns an error if the request is invalid.
+//
+// The returned error should be tagged for gRPC by the caller.
+func validateLaunchRequest(req *admin.LaunchRequest) error {
+	if req.RunId == 0 {
+		return errors.New("missing run ID")
+	}
+	if req.Project == "" {
+		return errors.New("missing project")
+	}
+	if req.GitUrl == "" {
+		return errors.New("missing git URL")
+	}
+	if req.GitRef == "" {
+		return errors.New("missing git ref")
+	}
+	if len(req.Files) == 0 {
+		return errors.New("missing files to analyze")
+	}
+	return nil
 }
 
 func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, isolator common.IsolateAPI,
@@ -69,13 +80,11 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 	// Generate workflow and convert to string.
 	sc, err := cp.GetServiceConfig(c)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "failed to get service config")
-		return err
+		return errors.Annotate(err, "failed to get service config").Err()
 	}
 	pc, err := cp.GetProjectConfig(c, req.Project)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "failed to get project config")
-		return err
+		return errors.Annotate(err, "failed to get project config").Err()
 	}
 	configJSON, _ := json.Marshal(pc)
 	logging.Fields{
@@ -84,17 +93,17 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 	}.Debugf(c, "Got project config")
 	wf, err := config.Generate(sc, pc, req.Files)
 	if err != nil {
-		return fmt.Errorf("failed to generate workflow config for project %s: %v", req.Project, err)
+		return errors.Annotate(err, "failed to generate workflow config for project %q", req.Project).Err()
 	}
 
 	// Set up pubsub for worker completion notification.
 	err = pubsub.Setup(c)
 	if err != nil {
-		return fmt.Errorf("failed to setup pubsub for workflow: %v", err)
+		return errors.Annotate(err, "failed to setup pubsub for workflow").Err()
 	}
 	wfb, err := proto.Marshal(wf)
 	if err != nil {
-		return fmt.Errorf("failed to marshal workflow proto: %v", err)
+		return errors.Annotate(err, "failed to marshal workflow proto").Err()
 	}
 
 	// Prepare workflow config entry to store.
@@ -106,7 +115,7 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 	// Prepare workflow launched request.
 	b, err := proto.Marshal(&admin.WorkflowLaunchedRequest{RunId: req.RunId})
 	if err != nil {
-		return fmt.Errorf("failed to marshal trigger request proto: %v", err)
+		return errors.Annotate(err, "failed to marshal trigger request proto").Err()
 	}
 	wfTask := tq.NewPOSTTask("/tracker/internal/workflow-launched", nil)
 	wfTask.Payload = b
@@ -118,7 +127,7 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 		Files:      req.Files,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to isolate git file details: %v", err)
+		return errors.Annotate(err, "failed to isolate git file details").Err()
 	}
 	logging.Infof(c, "[launcher] Isolated git file details, hash: %q", inputHash)
 
@@ -133,7 +142,7 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 			Worker:            worker,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to encode driver request: %v", err)
+			return errors.Annotate(err, "failed to encode driver request").Err()
 		}
 		t := tq.NewPOSTTask("/driver/internal/trigger", nil)
 		t.Payload = b
@@ -142,7 +151,7 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 	return ds.RunInTransaction(c, func(c context.Context) (err error) {
 		// Store workflow config.
 		if err := ds.Put(c, wfConfig); err != nil {
-			return fmt.Errorf("failed to store workflow: %v", err)
+			return errors.Annotate(err, "failed to store workflow").Err()
 		}
 		// Run the below two operations in parallel.
 		done := make(chan error)
@@ -155,14 +164,14 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 			// Mark workflow as launched. Processing of this
 			// request needs the stored workflow config.
 			if err := tq.Add(c, common.TrackerQueue, wfTask); err != nil {
-				done <- fmt.Errorf("failed to enqueue workflow launched track request: %v", err)
+				done <- errors.Annotate(err, "failed to enqueue workflow launched track request").Err()
 			}
 			done <- nil
 		}()
 		// Trigger root workers. Processing of this request needs the
 		// stored workflow config.
 		if err := tq.Add(c, common.DriverQueue, wTasks...); err != nil {
-			return fmt.Errorf("failed to enqueue trigger request(s) for root worker(s): %v", err)
+			return errors.Annotate(err, "failed to enqueue trigger request(s) for root worker(s)").Err()
 		}
 		return nil
 	}, nil)

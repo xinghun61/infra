@@ -87,7 +87,7 @@ func (c byUpdatedTime) Less(i, j int) bool { return c[i].Updated.Time().Before(c
 func poll(c context.Context, gerrit API, cp config.ProviderAPI) error {
 	projects, err := cp.GetAllProjectConfigs(c)
 	if err != nil {
-		return fmt.Errorf("failed to get all service configs: %v", err)
+		return errors.Annotate(err, "failed to get all service configs").Err()
 	}
 
 	// Sort the names so that we can iterate through them in a
@@ -141,7 +141,7 @@ func pollProject(c context.Context, triciumProject string, repo *tricium.RepoDet
 	p := &Project{ID: gerritProjectID(gerritProject.Host, gerritProject.Project)}
 	if err := ds.Get(c, p); err != nil {
 		if err != ds.ErrNoSuchEntity {
-			return fmt.Errorf("failed to get Project entity: %v", err)
+			return errors.Annotate(err, "failed to get Project entity").Err()
 		}
 		logging.Fields{
 			"gerrit project ID": p.ID,
@@ -161,7 +161,7 @@ func pollProject(c context.Context, triciumProject string, repo *tricium.RepoDet
 		p.LastPoll = clock.Now(c).UTC()
 		logging.Debugf(c, "Storing project data: %+v", p)
 		if err := ds.Put(c, p); err != nil {
-			return fmt.Errorf("failed to store Project entity: %v", err)
+			return errors.Annotate(err, "failed to store Project entity").Err()
 		}
 		return nil
 	}
@@ -186,7 +186,7 @@ func pollProject(c context.Context, triciumProject string, repo *tricium.RepoDet
 	for {
 		chgs, more, err := gerrit.QueryChanges(c, p.Instance, p.Project, p.LastPoll, s)
 		if err != nil {
-			return fmt.Errorf("failed to query for change: %v", err)
+			return errors.Annotate(err, "failed to query for change").Err()
 		}
 		s += len(chgs)
 		changes = append(changes, chgs...)
@@ -213,7 +213,7 @@ func pollProject(c context.Context, triciumProject string, repo *tricium.RepoDet
 	// Extract updates.
 	diff, uchanges, dchanges, err := extractUpdates(c, p, changes)
 	if err != nil {
-		return fmt.Errorf("failed to extract updates: %v", err)
+		return errors.Annotate(err, "failed to extract updates").Err()
 	}
 
 	// Store updated tracking data.
@@ -251,7 +251,7 @@ func pollProject(c context.Context, triciumProject string, repo *tricium.RepoDet
 			taskC <- func() error {
 				p.LastPoll = changes[0].Updated.Time()
 				if err := ds.Put(c, p); err != nil {
-					return fmt.Errorf("failed to update last poll timestamp: %v", err)
+					return errors.Annotate(err, "failed to update last poll timestamp").Err()
 				}
 				return nil
 			}
@@ -385,7 +385,7 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, repo *tr
 		}
 		b, err := proto.Marshal(req)
 		if err != nil {
-			return fmt.Errorf("failed to marshal Analyze request: %v", err)
+			return errors.Annotate(err, "failed to marshal Analyze request").Err()
 		}
 		t := tq.NewPOSTTask("/internal/analyze", nil)
 		t.Payload = b
@@ -393,7 +393,7 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, repo *tr
 		tasks = append(tasks, t)
 	}
 	if err := tq.Add(ctx, common.AnalyzeQueue, tasks...); err != nil {
-		return fmt.Errorf("failed to enqueue Analyze request: %v", err)
+		return errors.Annotate(err, "failed to enqueue Analyze request").Err()
 	}
 	return nil
 }

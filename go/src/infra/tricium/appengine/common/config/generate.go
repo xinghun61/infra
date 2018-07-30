@@ -5,9 +5,10 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
+
+	"go.chromium.org/luci/common/errors"
 
 	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
@@ -22,7 +23,7 @@ import (
 func Generate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig, files []*tricium.Data_File) (*admin.Workflow, error) {
 	vpc, err := Validate(sc, pc)
 	if err != nil {
-		return nil, fmt.Errorf("failed to validate project config: %v", err)
+		return nil, errors.Annotate(err, "failed to validate project config").Err()
 	}
 	var workers []*admin.Worker
 	functions := map[string]*tricium.Function{}
@@ -30,24 +31,24 @@ func Generate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig, files []*tri
 		if _, ok := functions[s.Function]; !ok {
 			f := tricium.LookupFunction(vpc.Functions, s.Function)
 			if f == nil {
-				return nil, fmt.Errorf("failed to lookup project function: %v", err)
+				return nil, errors.Annotate(err, "failed to lookup project function").Err()
 			}
 			functions[s.Function] = f
 		}
 		shouldInclude, err := includeFunction(functions[s.Function], files)
 		if err != nil {
-			return nil, fmt.Errorf("failed include function check: %v", err)
+			return nil, errors.Annotate(err, "failed include function check").Err()
 		}
 		if shouldInclude {
 			w, err := createWorker(s, sc, functions[s.Function])
 			if err != nil {
-				return nil, fmt.Errorf("failed to create worker: %v", err)
+				return nil, errors.Annotate(err, "failed to create worker").Err()
 			}
 			workers = append(workers, w)
 		}
 	}
 	if err := resolveSuccessorWorkers(sc, workers); err != nil {
-		return nil, fmt.Errorf("workflow is not sane: %v", err)
+		return nil, errors.Annotate(err, "workflow is not sane").Err()
 	}
 
 	return &admin.Workflow{
@@ -72,7 +73,7 @@ func resolveSuccessorWorkers(sc *tricium.ServiceConfig, workers []*admin.Worker)
 	specific := map[tricium.Data_Type]bool{}
 	for _, d := range sc.GetDataDetails() {
 		if _, ok := specific[d.Type]; ok {
-			return fmt.Errorf("multiple declarations of the same data type in the service config, type: %s", d)
+			return errors.Reason("multiple declarations of the same data type in the service config, type: %s", d).Err()
 		}
 		specific[d.Type] = d.IsPlatformSpecific
 	}
@@ -111,7 +112,7 @@ func checkWorkflowSanity(workers []*admin.Worker) error {
 		}
 	}
 	if len(visited) < len(workers) {
-		return errors.New("non-accessible workers in workflow")
+		return errors.Reason("non-accessible workers in workflow").Err()
 	}
 	return nil
 }
@@ -123,13 +124,13 @@ func checkWorkflowSanity(workers []*admin.Worker) error {
 // multiple paths to a worker.
 func checkWorkerDeps(w *admin.Worker, m map[string]*admin.Worker, visited map[string]*admin.Worker) error {
 	if _, ok := visited[w.Name]; ok {
-		return fmt.Errorf("multiple paths to worker %s", w.Name)
+		return errors.Reason("multiple paths to worker %s", w.Name).Err()
 	}
 	visited[w.Name] = w
 	for _, n := range w.Next {
 		wn, ok := m[n]
 		if !ok {
-			return fmt.Errorf("unknown next worker %s", n)
+			return errors.Reason("unknown next worker %s", n).Err()
 		}
 		if err := checkWorkerDeps(wn, m, visited); err != nil {
 			return err
@@ -158,7 +159,7 @@ func includeFunction(f *tricium.Function, files []*tricium.Data_File) (bool, err
 		for _, filter := range f.PathFilters {
 			ok, err := filepath.Match(filter, filepath.Base(p))
 			if err != nil {
-				return false, fmt.Errorf("failed to check path filter %s for path %s", filter, p)
+				return false, errors.Reason("failed to check path filter %s for path %s", filter, p).Err()
 			}
 			if ok {
 				return true, nil
@@ -201,9 +202,9 @@ func createWorker(s *tricium.Selection, sc *tricium.ServiceConfig, f *tricium.Fu
 		}
 		w.Impl = &admin.Worker_Cmd{Cmd: ii.Cmd}
 	case nil:
-		return nil, fmt.Errorf("missing Impl when constructing worker %s", w.Name)
+		return nil, errors.Reason("missing Impl when constructing worker %s", w.Name).Err()
 	default:
-		return nil, fmt.Errorf("Impl.Impl has unexpected type %T", ii)
+		return nil, errors.Reason("Impl.Impl has unexpected type %T", ii).Err()
 	}
 	return w, nil
 }

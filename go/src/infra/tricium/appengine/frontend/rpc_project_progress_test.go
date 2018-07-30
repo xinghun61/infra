@@ -85,7 +85,7 @@ func TestProjectProgress(t *testing.T) {
 			ctx = auth.WithState(ctx, &authtest.FakeState{
 				Identity: identity.Identity(okACLUser),
 			})
-			runProgress, _, err := projectProgress(ctx, project, &mockConfigProvider{})
+			runProgress, err := projectProgress(ctx, project, &mockConfigProvider{})
 			So(err, ShouldBeNil)
 			So(len(runProgress), ShouldEqual, 1)
 			So(runProgress[0].RunId, ShouldEqual, strconv.FormatInt(runID, 10))

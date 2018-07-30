@@ -6,18 +6,15 @@ package driver
 
 import (
 	"encoding/base64"
-	"fmt"
 	"strconv"
 
 	"github.com/golang/protobuf/proto"
 	ds "go.chromium.org/gae/service/datastore"
 	tq "go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
-
+	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/appengine/common"
@@ -33,16 +30,17 @@ var server = &driverServer{}
 // Trigger triggers processes one trigger request to the Tricium driver.
 func (*driverServer) Trigger(c context.Context, req *admin.TriggerRequest) (*admin.TriggerResponse, error) {
 	if req.RunId == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "missing run ID")
+		return nil, errors.New("missing run ID", grpcutil.InvalidArgumentTag)
 	}
 	if req.Worker == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "missing worker name")
+		return nil, errors.New("missing worker name", grpcutil.InvalidArgumentTag)
 	}
 	if req.IsolatedInputHash == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "missing isolated input hash")
+		return nil, errors.New("missing isolated input hash", grpcutil.InvalidArgumentTag)
 	}
 	if err := trigger(c, req, config.WorkflowCache, common.SwarmingServer, common.IsolateServer); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to trigger worker: %v", err)
+		return nil, errors.Annotate(err, "failed to trigger worker").
+			Tag(grpcutil.InternalTag).Err()
 	}
 	return &admin.TriggerResponse{}, nil
 }
@@ -50,11 +48,11 @@ func (*driverServer) Trigger(c context.Context, req *admin.TriggerRequest) (*adm
 func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCacheAPI, sw common.TaskServerAPI, isolator common.IsolateAPI) error {
 	workflow, err := wp.GetWorkflow(c, req.RunId)
 	if err != nil {
-		return fmt.Errorf("failed to read workflow config: %v", err)
+		return errors.Annotate(err, "failed to read workflow config").Err()
 	}
 	worker, err := workflow.GetWorker(req.Worker)
 	if err != nil {
-		return fmt.Errorf("unknown worker in workflow, worker: %s", worker.Name)
+		return errors.Annotate(err, "failed to get worker %q", req.Worker).Err()
 	}
 	tags := swarmingTags(c, req.Worker, req.RunId)
 	// TODO(emso): Auth check.
@@ -63,8 +61,7 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCac
 	// Create PubSub userdata for trigger request.
 	b, err := proto.Marshal(req)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "failed to marshal trigger request for PubSub user data")
-		return fmt.Errorf("failed to marshal PubSub user data for swarming task: %v", err)
+		return errors.Annotate(err, "failed to marshal PubSub user data for swarming task").Err()
 	}
 	userdata := base64.StdEncoding.EncodeToString(b)
 	logging.Infof(c, "[driver] PubSub userdata for trigger: %q", userdata)
@@ -77,18 +74,18 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCac
 	case *admin.Worker_Cmd:
 		workerIsolate, err := isolator.IsolateWorker(c, workflow.IsolateServer, worker, req.IsolatedInputHash)
 		if err != nil {
-			return fmt.Errorf("failed to isolate command for trigger: %v", err)
+			return errors.Annotate(err, "failed to isolate command for trigger").Err()
 		}
 		logging.Infof(c, "[driver] Created worker isolate, hash: %q", workerIsolate)
 		// Trigger worker.
 		result, err = sw.Trigger(c, workflow.SwarmingServer, workflow.IsolateServer, worker, workerIsolate, userdata, tags)
 		if err != nil {
-			return fmt.Errorf("failed to call trigger on swarming API: %v", err)
+			return errors.Annotate(err, "failed to call trigger on swarming API").Err()
 		}
 	case nil:
-		return fmt.Errorf("missing Impl when isolating worker %s", worker.Name)
+		return errors.Reason("missing Impl when isolating worker %s", worker.Name).Err()
 	default:
-		return fmt.Errorf("Impl.Impl has unexpected type %T", wi)
+		return errors.Reason("Impl.Impl has unexpected type %T", wi).Err()
 	}
 	// Mark worker as launched.
 	b, err = proto.Marshal(&admin.WorkerLaunchedRequest{
@@ -99,7 +96,7 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCac
 		BuildbucketBuildId: result.BuildID,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to encode worker launched request: %v", err)
+		return errors.Annotate(err, "failed to encode worker launched request").Err()
 	}
 	t := tq.NewPOSTTask("/tracker/internal/worker-launched", nil)
 	t.Payload = b
