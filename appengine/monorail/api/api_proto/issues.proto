@@ -24,6 +24,7 @@ service Issues {
   // which may have just comment content and no delta.
   // There is no GetComment method, clients should use ListComments.
   rpc ListComments (ListCommentsRequest) returns (ListCommentsResponse) {}
+  rpc ListActivities (ListActivitiesRequest) returns (ListActivitiesResponse) {}
   rpc DeleteComment (DeleteCommentRequest) returns (google.protobuf.Empty) {}
   rpc UpdateApproval (UpdateApprovalRequest)
       returns (UpdateApprovalResponse) {}
@@ -127,6 +128,24 @@ message ListCommentsResponse {
   // allowed to see it.
   repeated Comment comments = 1;
 }
+
+
+// Next available tag: 5
+message ListActivitiesRequest {
+  // TODO(tyreej) description
+  RequestTrace trace = 1;
+  UserRef user_ref = 2;
+  fixed32 before = 3;
+  fixed32 after = 4;
+}
+
+// Next available tag: 3
+message ListActivitiesResponse {
+  // TODO(tyreej) description
+  repeated Comment comments = 1;
+  repeated IssueSummary issue_summaries = 2;
+}
+
 
 // Next available tag: 5
 message DeleteCommentRequest {

@@ -941,7 +941,6 @@ class ConfigService(object):
       else:
         config_dict[project_id] = tracker_bizobj.MakeDefaultProjectIssueConfig(
             project_id)
-
     return config_dict
 
   def UpdateConfig(
@@ -1143,7 +1142,17 @@ class IssueService(object):
       self, cnxn, num=50, before=None, after=None,
       project_ids=None, user_ids=None, ascending=False):
     self.get_issue_acitivity_called = True
-    return []
+    comments_dict = self.comments_by_cid
+    comments = []
+    for value in comments_dict.values():
+      if project_ids is not None:
+        if value.issue_id > 0 and value.issue_id in self.issues_by_iid:
+          issue = self.issues_by_iid[value.issue_id]
+          if issue.project_id in project_ids:
+            comments.append(value)
+      else:
+        comments.append(value)
+    return comments
 
   def EnqueueIssuesForIndexing(self, _cnxn, issues):
     self.enqueue_issues_called = True

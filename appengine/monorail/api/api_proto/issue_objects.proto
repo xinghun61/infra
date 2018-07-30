@@ -123,6 +123,12 @@ message Issue {
   repeated PhaseDef phases = 22;
 }
 
+// Next available tag:
+message IssueSummary {
+  string project_name = 1;
+  uint32 local_id = 2;
+  string summary = 3;
+}
 
 // Next available tag:3
 message PhaseDef {

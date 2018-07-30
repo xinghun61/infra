@@ -19,6 +19,7 @@ from framework import framework_views
 from proto import tracker_pb2
 from search import searchpipeline
 from tracker import tracker_bizobj
+from tracker import tracker_helpers
 
 
 class IssuesServicer(monorail_servicer.MonorailServicer):
@@ -184,6 +185,48 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     return response
 
   @monorail_servicer.PRPCMethod
+  def ListActivities(self, mc, request):
+    """Return issue activities by a specified user in a response proto."""
+    user = self.services.user.GetUser(mc.cnxn, request.user_ref.user_id)
+    comments = self.services.issue.GetIssueActivity(
+        mc.cnxn, user_ids={request.user_ref.user_id})
+    issues = self.services.issue.GetIssues(
+        mc.cnxn, {c.issue_id for c in comments})
+    project_dict = tracker_helpers.GetAllIssueProjects(
+        mc.cnxn, issues, self.services.project)
+    config_dict = self.services.config.GetProjectConfigs(
+        mc.cnxn, project_dict.keys())
+    allowed_issues = tracker_helpers.FilterOutNonViewableIssues(
+        mc.auth.effective_ids, user, project_dict,
+        config_dict, issues)
+    issue_dict = {issue.issue_id: issue for issue in allowed_issues}
+    comments = [
+        c for c in comments if c.issue_id in issue_dict]
+    users_by_id = framework_views.MakeAllUserViews(
+        mc.cnxn, self.services.user, [request.user_ref.user_id])
+    for project in project_dict.values():
+      framework_views.RevealAllEmailsToMembers(mc.auth, project, users_by_id)
+
+    with mc.profiler.Phase('converting to response objects'):
+      converted_comments = []
+      for c in comments:
+        issue = issue_dict.get(c.issue_id)
+        result = converters.ConvertComment(
+            issue, c,
+            users_by_id,
+            config_dict.get(issue.project_id),
+            {c.id: 1} if c.is_description else {},
+            mc.auth.user_id)
+        converted_comments.append(result)
+      converted_issues = [issue_objects_pb2.IssueSummary(
+          project_name=issue.project_name, local_id=issue.local_id,
+          summary=issue.summary) for issue in allowed_issues]
+      response = issues_pb2.ListActivitiesResponse(
+          comments=converted_comments, issue_summaries=converted_issues)
+
+    return response
+
+  @monorail_servicer.PRPCMethod
   def DeleteComment(self, mc, request):
     _project, issue, _config = self._GetProjectIssueAndConfig(
         mc, request, use_cache=False)
@@ -208,7 +251,6 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
           request.field_ref.field_name, config)
       if not approval_fd:
         raise exceptions.NoSuchFieldDefException()
-
       approval_delta = converters.IngestApprovalDelta(
           mc.cnxn, self.services.user, request.approval_delta,
           mc.auth.user_id, config)

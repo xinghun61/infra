@@ -57,7 +57,7 @@ class ActivitiesTest(unittest.TestCase):
   def testActivities_NoUpdates(self):
     mr = testing_helpers.MakeMonorailRequest()
     updates_data = activities.GatherUpdatesData(
-        self.services, mr, project_ids=[self.project_id],
+        self.services, mr, project_ids=[256],
         user_ids=None, ending=None, updates_page_url=None, autolink=None,
         highlight=None)
 

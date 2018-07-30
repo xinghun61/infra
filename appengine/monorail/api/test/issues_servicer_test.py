@@ -426,6 +426,36 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertEqual(expected_0, actual_0)
     self.assertEqual(expected_1, actual_1)
 
+  def testListActivities_Normal(self):
+    """We can get issue activity."""
+    comment = tracker_pb2.IssueComment(
+        user_id=111L, timestamp=self.NOW, content='sum',
+        project_id=789, issue_id=self.issue_1.issue_id, sequence=1)
+    self.services.issue.TestAddComment(comment, self.issue_1.local_id)
+    self.services.issue.TestAddIssue(self.issue_1)
+    request = issues_pb2.ListActivitiesRequest()
+    request.user_ref.user_id = 111L
+    config = tracker_pb2.ProjectIssueConfig(project_id=789,
+        field_defs=[self.fd_1])
+    self.services.config.StoreConfig(self.cnxn, config)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+
+    response = self.CallWrapped(self.issues_svcr.ListActivities, mc, request)
+    actual_0 = response.comments[0]
+    actual_1 = response.issue_summaries[0]
+    expected_0 = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=0, is_deleted=False,
+        commenter=common_pb2.UserRef(
+            user_id=111L, display_name='owner@example.com'),
+        timestamp=self.NOW, content='sum', is_spam=False,
+        description_num=1)
+    expected_1 = issue_objects_pb2.IssueSummary(project_name='proj', local_id=1,
+        summary='sum')
+    self.assertEqual(expected_0, actual_0)
+    self.assertEqual(expected_1, actual_1)
+
   @patch('testing.fake.IssueService.SoftDeleteComment')
   def testDeleteComment_Invalid(self, fake_softdeletecomment):
     """We reject requests to delete a non-existent comment."""
