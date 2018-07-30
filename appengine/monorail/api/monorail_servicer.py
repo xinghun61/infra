@@ -129,27 +129,15 @@ class MonorailServicer(object):
       raise permissions.BannedUserException(
           'The user %s has been banned from using this site' %
           mc.auth.email)
-    trace = request.trace if hasattr(request, 'trace') else None
-    if trace and trace.reason:
-      logging.info('Request reason: %r', trace.reason)
-    if trace and trace.request_id:
-      # TODO(jrobbins): Ignore requests with duplicate request_ids.
-      logging.info('request_id: %r', trace.request_id)
-    # TODO(jrobbins): open the API to more than just signed in project members.
-    if not settings.dev_mode:
-      if not mc.auth.user_id:
-        logging.info('TODO: open API to anon users')
-        raise permissions.PermissionException()
-      if trace:
-        xsrf.ValidateToken(
-          trace.token, mc.auth.user_id, xsrf.XHR_SERVLET_PATH)
 
-      project = self.GetRequestProject(mc.cnxn, request)
-      if project:
-        if not framework_bizobj.UserIsInProject(
-            project, mc.auth.effective_ids):
-          logging.info('TODO: open API to non-project-members')
-          raise permissions.PermissionException()
+    if request.trace.reason:
+      logging.info('Request reason: %r', request.trace.reason)
+    if request.trace.request_id:
+      # TODO(jrobbins): Ignore requests with duplicate request_ids.
+      logging.info('request_id: %r', request.trace.request_id)
+    if not settings.dev_mode:
+      xsrf.ValidateToken(
+          request.trace.token, mc.auth.user_id, xsrf.XHR_SERVLET_PATH)
 
   def GetRequestProject(self, cnxn, request):
     """Return the Project business object that the user is viewing or None."""
