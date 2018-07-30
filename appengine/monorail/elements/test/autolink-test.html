@@ -12,20 +12,18 @@
   suite('crbug component functions', function() {
       const {lookup, extractRefs, replacers} = components.get('01-tracker-crbug');
 
-      test('Extract project and local ids', function() {
+      test('Extract crbug project and local ids', function() {
           let match = new RegExp(replacers[0].re, 'g').exec('https://crbug.com/monorail/1234');
           let ref = extractRefs(match);
-          assert.deepEqual(ref, {project_name: 'monorail', local_id: '1234'});
+          assert.deepEqual(ref, {projectName: 'monorail', localId: '1234'});
       });
 
-      test('Replace crbug plain text', function() {
-          let {re, replacerFunc} = replacers[0];
-
-          // Match is found in components.
-          let str = 'crbug.com/monorail/1234';
-          let match = new RegExp(re, 'g').exec(str);
-          let components = {closedRefs: [{localId: 1234, projectName: 'monorail'}, {}]};
-          let actualRun = replacerFunc(match, components);
+      test('Replace crbug with found components', function() {
+          const {re, replacerFunc} = replacers[0];
+          const str = 'crbug.com/monorail/1234';
+          const match = new RegExp(re, 'g').exec(str);
+          const components = {closedRefs: [{localId: 1234, projectName: 'monorail'}, {}]};
+          const actualRun = replacerFunc(match, components);
           assert.deepEqual(
               actualRun,
               {
@@ -35,12 +33,14 @@
                   content: str
               }
           );
+      });
 
-          // Match has no project name.
-          str = 'crbug.com/1234';
-          match = new RegExp(re, 'g').exec(str);
-          components = {openRefs: [{localId: 134}, {localId: 1234, projectName: 'chromium'}]};
-          actualRun = replacerFunc(match, components);
+      test('Replace crbug with default project_name', function() {
+          const {re, replacerFunc} = replacers[0];
+          const str = 'crbug.com/1234';
+          const match = new RegExp(re, 'g').exec(str);
+          const components = {openRefs: [{localId: 134}, {localId: 1234, projectName: 'chromium'}]};
+          const actualRun = replacerFunc(match, components);
           assert.deepEqual(
               actualRun,
               {
@@ -50,11 +50,67 @@
                   content: str
               }
           );
+      });
 
-          // Match is not in components.
-          components = {};
-          actualRun = replacerFunc(match, components);
+      test('Replace crbug with no found components', function() {
+          const {re, replacerFunc} = replacers[0];
+          const str = 'crbug.com/1234';
+          const match = new RegExp(re, 'g').exec(str);
+          const components = {};
+          const actualRun = replacerFunc(match, components);
           assert.deepEqual(actualRun, {content: str});
+      });
+  });
+
+  suite('regular tracker component functions', function() {
+      const {lookup, extractRefs, replacers} = components.get('02-tracker-regular');
+      const str = 'bugs=123, monorail:234 or #345 and proj:#456';
+      const {re, replacerFunc} = replacers[0];
+      const match = new RegExp(re, 'g').exec(str);
+
+      test('Extract tracker projects and local ids', function() {
+          const actualRefs = extractRefs(match);
+          assert.deepEqual(
+              actualRefs,
+              [{projectName: 'chromium', localId: '123'},
+               {projectName: 'monorail', localId: '234'},
+               {projectName: 'monorail', localId: '345'},
+               {projectName: 'proj', localId: '456'}]);
+      });
+
+      test('Replace tracker refs.', function() {
+          const components = {
+              openRefs: [
+                  {projectName: 'monorail', localId: 888},
+                  {projectName: 'chromium', localId: '123'},
+              ],
+              closedRefs: [
+                  {projectName: 'proj', localId: 456},
+              ]
+          };
+          const actualTextRuns = replacerFunc(match, components);
+          assert.deepEqual(actualTextRuns,
+                           [
+                               {
+                                   tag: 'a',
+                                   href:'/p/chromium/issues/detail?id=123',
+                                   css: '',
+                                   content: '123',
+                               },
+                               {
+                                   content: 'monorail:234',
+                               },
+                               {
+                                   content: '#345',
+                               },
+                               {
+                                   tag: 'a',
+                                   href:'/p/proj/issues/detail?id=456',
+                                   css: 'strikeThrough',
+                                   content: 'proj:#456',
+                               },
+                           ]
+                          );
       });
   });
 </script>

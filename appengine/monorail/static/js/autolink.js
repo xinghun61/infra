@@ -6,16 +6,25 @@
 (function(window) {
   'use strict';
 
-  const CRBUG_LINK_RE = '(?<prefix>\\b(https?:\/\/)?crbug\\.com\/)((?<project_name>\\b[-a-z0-9]+)(?<separator>\/))?(?<local_id>\\d+)\\b(?<anchor>\\#c[0-9]+)?';
-  const crbugReReplacers = [{re: CRBUG_LINK_RE, replacerFunc: ReplaceIssueRef}];
+  const CRBUG_LINK_STR = '(?<prefix>\\b(https?:\/\/)?crbug\\.com\/)((?<projectName>\\b[-a-z0-9]+)(?<separator>\/))?(?<localId>\\d+)\\b(?<anchor>\\#c[0-9]+)?';
+  const ISSUE_TRACKER_STR = '(?<prefix>\\b(issues?|bugs?)[ \\t]*(:|=)?)([ \\t]*(?<projectName>\\b[-a-z0-9]+[:\\#])?(?<numberSign>\\#?)(?<localId>\\d+)\\b(,?[ \\t]*(and|or)?)?)+';
+  const PROJECT_LOCALID_STR = '([ \\t]*(?<projectName>\\b[-a-z0-9]+[:\\#])?(?<numberSign>\\#?)(?<localId>\\d+))'
 
   const Components = new Map();
   Components.set(
       '01-tracker-crbug',
       {
         lookup: LookupReferencedIssues,
-        extractRefs: ExtractProjectAndIssueIds,
-        replacers: crbugReReplacers,
+        extractRefs: ExtractCrbugProjectAndIssueIds,
+        replacers: [{re: CRBUG_LINK_STR, replacerFunc: ReplaceCrbugIssueRef}],
+      }
+  );
+  Components.set(
+      '02-tracker-regular',
+      {
+        lookup: LookupReferencedIssues,
+        extractRefs: ExtractTrackerProjectAndIssueIds,
+        replacers: [{re: ISSUE_TRACKER_STR, replacerFunc: ReplaceTrackerIssueRef}],
       }
   );
 
@@ -36,33 +45,63 @@
   }
 
   // Extract referenced artifacts info functions.
-  function ExtractProjectAndIssueIds(match, default_project_name='chromium') {
+  function ExtractCrbugProjectAndIssueIds(match, defaultProjectName='chromium') {
     const groups = match.groups;
-    const project_name = groups.project_name ? groups.project_name : default_project_name;
-    return {project_name: project_name, local_id: groups.local_id};
+    const projectName = groups.projectName || defaultProjectName;
+    return {projectName: projectName, localId: groups.localId};
+  }
+
+  function ExtractTrackerProjectAndIssueIds(match, defaultProjectName='chromium') {
+    const issueRefRE = new RegExp(PROJECT_LOCALID_STR, 'g');
+    let refMatch;
+    let refs = [];
+    while ((refMatch = issueRefRE.exec(match[0])) !== null) {
+      if (refMatch.groups.projectName) {
+        defaultProjectName = refMatch.groups.projectName.slice(0, -1);
+      }
+      refs.push({projectName: defaultProjectName, localId: refMatch.groups.localId});
+    }
+    return refs;
   }
 
   // Replace plain text references with links functions.
-  function ReplaceIssueRef(match, components, default_project_name='chromium') {
-    const projectName = match.groups.project_name || default_project_name;
-    const localId = match.groups.local_id;
+  function ReplaceIssueRef(stringMatch, projectName, localId, components) {
     if (components.openRefs && components.openRefs.length) {
       const openRef = components.openRefs.find(ref => {
           return (ref.localId == localId) && (ref.projectName === projectName);
       });
       if (openRef) {
-        return createIssueRefRun(projectName, localId, false, match[0]);
+        return createIssueRefRun(projectName, localId, false, stringMatch);
       }
     }
     if (components.closedRefs && components.closedRefs.length) {
       const closedRef = components.closedRefs.find(ref => {
-	  return (ref.localId == localId) && (ref.projectName == projectName);
+          return (ref.localId == localId) && (ref.projectName == projectName);
       });
       if (closedRef) {
-        return createIssueRefRun(projectName, localId, true, match[0]);
+        return createIssueRefRun(projectName, localId, true, stringMatch);
       }
     }
-    return {content: match[0]};
+    return {content: stringMatch};
+  }
+
+  function ReplaceCrbugIssueRef(match, components, defaultProjectName='chromium') {
+    const projectName = match.groups.projectName || defaultProjectName;
+    const localId = match.groups.localId;
+    return ReplaceIssueRef(match[0], projectName, localId, components);
+  }
+
+  function ReplaceTrackerIssueRef(match, components, defaultProjectName='chromium') {
+    const issueRefRE = new RegExp(PROJECT_LOCALID_STR, 'g');
+    let textRuns = [];
+    let refMatch;
+    while ((refMatch = issueRefRE.exec(match[0])) !== null) {
+      if (refMatch.groups.projectName) {
+        defaultProjectName = refMatch.groups.projectName.slice(0, -1);
+      }
+      textRuns.push(ReplaceIssueRef(refMatch[0].trim(), defaultProjectName, refMatch.groups.localId, components));
+    };
+    return textRuns;
   }
 
   // Create custom textrun functions.
