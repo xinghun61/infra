@@ -2,22 +2,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-.PHONY: test python codespell
+.PHONY: test
 
-spellchecker: python codespell
+spellchecker: codespell_dict
 	go build -o spellchecker
 
 test: spellchecker
-	./spellchecker -input=test -output=test-out
+	./spellchecker -input=test -output=out
 
-spellchecker.cipd: spellchecker python codespell
-	cipd pkg-build -pkg-def cipd.yaml -out spellchecker.cipd
-
-python:
-	cipd install -root python infra/python/cpython/linux-amd64
-
-codespell:
-	PYTHONUSERBASE=codespell pip install --ignore-installed --user codespell
+codespell_dict:
+	wget https://raw.githubusercontent.com/codespell-project/codespell/master/codespell_lib/data/dictionary.txt
 
 clean:
-	rm -rf codespell pylint.cipd python spellchecker out
+	rm -rf spellchecker.cipd spellchecker out

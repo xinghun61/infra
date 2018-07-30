@@ -1,0 +1,35 @@
+{
+  ".py": {
+    "single-line": "#",
+    "multi-line start": "\"\"\"",
+    "multi-line end": "\"\"\""
+  },
+  ".go": {
+    "single-line": "//",
+    "multi-line start": "/*",
+    "multi-line end": "*/"
+  },
+  ".c": {
+    "single-line": "//",
+    "multi-line start": "/*",
+    "multi-line end": "*/"
+  },
+  ".cpp": {
+    "single-line": "//",
+    "multi-line start": "/*",
+    "multi-line end": "*/"
+  },
+  ".js": {
+    "single-line": "//",
+    "multi-line start": "/*",
+    "multi-line end": "*/"
+  },
+  ".css": {
+    "multi-line start": "/*",
+    "multi-line end": "*/"
+  },
+  ".html": {
+    "multi-line start": "<!--",
+    "multi-line end": "-->"
+  }
+}

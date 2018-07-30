@@ -1,4 +1,4 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2018 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,31 +6,32 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
-	"infra/tricium/api/v1"
+	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"regexp"
-	"strconv"
 	"strings"
+
+	"infra/tricium/api/v1"
 )
 
-// Paths to the required resources relative to the executable directory.
+type commentFormat struct {
+	singleLine     string
+	multilineStart string
+	multilineEnd   string
+}
+
 const (
-	pythonPath           = "python/bin/python"
-	codespellPath        = "codespell/bin/codespell"
-	codespellPackagePath = "codespell/lib/python2.7/site-packages"
+	commentsJSONPath = "comment_formats.json"
+	dictPath         = "dictionary.txt"
 )
 
-// The CodeSpell current output format is: {path}:{line}: {misspelling} ==> {fix}
-// OR {path}:{line}: {misspelling} ==> {fix1}, {fix2}, ..., {fixN}
-// OR {path}:{line}: {misspelling} ==> {fix1}, {fix2}, ..., {fixN}  | {reason}
-const msgRegex = `^(.+?):([0-9]+): (.+)  ==> ([^,|]+)((, [^,|]+)*)(\| .+)?`
-
+// TODO(diegomtzg): Do we want to keep a whitelist of words or just remove them from the dictionary?
 var whitelistWords = []string{"gae"}
+var textFileExts = []string{".txt", ".md"}
 
 func main() {
 	inputDir := flag.String("input", "", "Path to root of Tricium input")
@@ -40,14 +41,6 @@ func main() {
 		log.Fatalf("Unexpected argument")
 	}
 
-	// Retrieve the path name for the executable that started the current process.
-	ex, err := os.Executable()
-	if err != nil {
-		log.Fatal(err)
-	}
-	exPath := filepath.Dir(ex)
-	log.Printf("Using executable path: %s", exPath)
-
 	// Read Tricium input FILES data.
 	input := &tricium.Data_Files{}
 	if err := tricium.ReadDataType(*inputDir, input); err != nil {
@@ -55,52 +48,17 @@ func main() {
 	}
 	log.Printf("Read FILES data: %#v", input)
 
+	dict := buildDict(dictPath)
 	results := &tricium.Data_Results{}
-	cmdName := filepath.Join(exPath, pythonPath)
 
 	for _, file := range input.Files {
 		if !file.IsBinary {
-			cmdArgs := []string{filepath.Join(exPath, codespellPath),
-				filepath.Join(*inputDir, file.Path), "--quiet-level=3"}
+			p := filepath.Join(*inputDir, file.Path)
 
-			cmd := exec.Command(cmdName, cmdArgs...)
-			log.Printf("Command: %#v; args: %#v", cmdName, cmdArgs)
+			f := openFileOrDie(p)
+			defer closeFileOrDie(f)
 
-			// Set PYTHONPATH for the command to run so that the bundled version of pylint and its dependencies are used.
-			os.Setenv("PYTHONPATH", codespellPackagePath)
-
-			stdoutPipe, err := cmd.StdoutPipe()
-			if err != nil {
-				fmt.Fprintln(os.Stderr, "Error creating StdoutPipe for Cmd", err)
-				os.Exit(1)
-			}
-
-			p := file.Path
-			f, err := os.Open(filepath.Join(*inputDir, p))
-			if err != nil {
-				log.Fatalf("Failed to open file: %v, path: %s", err, p)
-			}
-			defer func() {
-				if err := f.Close(); err != nil {
-					log.Fatalf("Failed to close file: %v, path: %s", err, p)
-				}
-			}()
-
-			// Creates a Scanner from codespell's output to stdout.
-			stdoutScanner := bufio.NewScanner(stdoutPipe)
-
-			done := make(chan bool)
-			go scanCodespellOutput(stdoutScanner, bufio.NewScanner(f), results, done)
-
-			// CodeSpell will start producing output to stdout (and therefore to the scanner).
-			if err = cmd.Start(); err != nil {
-				fmt.Fprintln(os.Stderr, "Error starting Cmd", err)
-				os.Exit(1)
-			}
-
-			// Halts until parsing the codespell output is completed.
-			<-done
-			cmd.Wait()
+			analyzeFile(bufio.NewScanner(f), p, dict, results)
 		}
 	}
 
@@ -112,134 +70,66 @@ func main() {
 	log.Printf("Wrote RESULTS data, path: %q, value: %+v\n", path, results)
 }
 
-// scanCodespellOutput reads CodeSpell's output line by line and populates results.
-func scanCodespellOutput(stdoutScanner *bufio.Scanner, fileScanner *bufio.Scanner, results *tricium.Data_Results, done chan bool) {
-	currFileLine := 1
-	lastReadLine := ""
-	// Read line by line, adding comments to the output.
-	for stdoutScanner.Scan() {
-		line := stdoutScanner.Text()
+func analyzeFile(scanner *bufio.Scanner, filePath string, dict map[string][]string,
+	results *tricium.Data_Results) {
+	lineno := 1
+	inTxtFile, inBlockComment, lastWordInBlock := false, false, false
+	fileExt := filepath.Ext(filePath)
 
-		comment, currLine, readLine := parseCodespellLine(line, fileScanner, currFileLine, lastReadLine)
+	// Skip files with no extension since we don't know what type of file they are.
+	if fileExt == "" {
+		return
+	}
 
-		// Update current line and last read line so that scanner can start counting from the appropriate line.
-		currFileLine = currLine
-		lastReadLine = readLine
+	// The analyzer should check every word if the file is a text document.
+	if inSlice(fileExt, textFileExts) {
+		inTxtFile = true
+	}
 
-		if comment == nil {
-			log.Printf("SKIPPING %q", line)
-		} else {
-			log.Printf("ADDING   %q", line)
-			results.Comments = append(results.Comments, comment)
+	commentPatterns := getLangCommentPattern(fileExt)
+
+	for scanner.Scan() {
+		inSingleComment := false
+
+		line := scanner.Text()
+		words := strings.Fields(line)
+
+		// TODO(diegomtzg): Also check string literals, not just comments.
+		for _, word := range words {
+			// Some languages don't have single line comments (e.g. HTML), so ignore this check.
+			if len(commentPatterns.singleLine) > 0 && strings.Contains(word, commentPatterns.singleLine) {
+				inSingleComment = true
+				word = strings.SplitN(word, commentPatterns.singleLine, 2)[1]
+			} else if strings.Contains(word, commentPatterns.multilineStart) {
+				// TODO(diegomtzg): A line could have multiple block comments (currently not supported)
+				inBlockComment = true
+				word = strings.Split(word, commentPatterns.multilineStart)[1]
+			}
+			if strings.Contains(word, commentPatterns.multilineEnd) {
+				lastWordInBlock = true
+				word = strings.Split(word, commentPatterns.multilineEnd)[0]
+			}
+
+			if len(word) > 0 && (inTxtFile || inSingleComment || inBlockComment) {
+				if fixes, ok := dict[word]; ok {
+					if comment := buildMisspellingComment(word, fixes, line, lineno, filePath); comment != nil {
+						results.Comments = append(results.Comments, comment)
+					}
+				}
+			}
+
+			if lastWordInBlock {
+				inBlockComment = false
+				lastWordInBlock = false
+			}
 		}
+		// Line ends, no longer in single-line comment.
+		inSingleComment = false
+		lineno++
 	}
-
-	// Testing is done without a valid channel.
-	if done != nil {
-		done <- true
+	if err := scanner.Err(); err != nil {
+		log.Fatalf("Failed to read file: %v, path: %s", err, filePath)
 	}
-}
-
-// Parses one line of Codespell output to produce a comment.
-//
-// Returns the produced comment, the number of lines read in the file and the
-// last line read from the file.
-// Returns nil if the given line doesn't match the expected pattern.
-// See the constant msgRegex defined above for the expected message format.
-func parseCodespellLine(stdoutLine string, fileScanner *bufio.Scanner,
-	currFileLine int, lastReadLine string) (*tricium.Data_Comment, int, string) {
-	re := regexp.MustCompile(msgRegex)
-	match := re.FindStringSubmatch(stdoutLine)
-	if match == nil {
-		return nil, currFileLine, ""
-	}
-	lineno, err := strconv.Atoi(match[2])
-	if err != nil {
-		return nil, currFileLine, ""
-	}
-
-	// Ignore whitelisted words (such as GAE) while using the same
-	// default dictionary from CodeSpell (in case of updates).
-	if isWhitelisted(match[3]) {
-		log.Printf("IGNORING: %q is a whitelisted word.", match[3])
-		return nil, currFileLine, ""
-	}
-
-	// Ignore words that have a reason to be disabled in the default CodeSpell dictionary.
-	if len(match[7]) > 0 {
-		log.Printf("IGNORING: %q has a reason to be disabled in the default CodeSpell dictionary.", match[3])
-		return nil, currFileLine, ""
-	}
-
-	// If there are multiple misspellings on the same line, use the line from the previous
-	// iteration rather than looking forward in the file.
-	var fileLine string
-	var linesRead int
-	if lineno < currFileLine {
-		fileLine = lastReadLine
-	} else {
-		fileLine, linesRead = getLineFromFile(fileScanner, currFileLine, lineno)
-	}
-	startChar, endChar := findWordInLine(match[3], fileLine)
-
-	replacements := []string{match[4]}
-	replacements = append(replacements, strings.Split(match[5], ", ")...)
-
-	var validReplacements []string
-	var suggestions []*tricium.Data_Suggestion
-	for _, replacement := range replacements {
-		if len(replacement) > 0 {
-			// Get rid of trailing white space if word has only 1 suggestion and a reason.
-			replacement = strings.TrimSpace(replacement)
-			validReplacements = append(validReplacements, replacement)
-			suggestions = append(suggestions, &tricium.Data_Suggestion{
-				Description: fmt.Sprintf("Misspelling fix suggestion"),
-				Replacements: []*tricium.Data_Replacement{
-					{
-						Path:        match[1],
-						Replacement: replacement,
-						StartLine:   int32(lineno),
-						EndLine:     int32(lineno),
-						StartChar:   int32(startChar),
-						EndChar:     int32(startChar + len(replacement)),
-					},
-				},
-			})
-		}
-	}
-
-	return &tricium.Data_Comment{
-		Path: match[1],
-		Message: fmt.Sprintf("%q is a possible misspelling of: %s", match[3],
-			strings.Join(validReplacements, ", ")),
-		Category:    "SpellChecker",
-		StartLine:   int32(lineno),
-		EndLine:     int32(lineno),
-		StartChar:   int32(startChar),
-		EndChar:     int32(endChar),
-		Suggestions: suggestions,
-	}, currFileLine + linesRead, fileLine
-}
-
-// Given a line number, gets the line it corresponds to in a file.
-//
-// It is assumed that it will be called in order (since the scanner advances
-// to the given line and cannot go back).
-func getLineFromFile(fileScanner *bufio.Scanner, currLine int, lineno int) (string, int) {
-	// Advance file pointer to specified line. The codespell output is ordered by line
-	// numbers so no need to reset file scanner position.
-	linesRead := 0
-	for fileScanner.Scan() {
-		linesRead++
-		if currLine != lineno {
-			currLine++
-		} else {
-			return fileScanner.Text(), linesRead
-		}
-	}
-
-	// Could not find line in file.
-	return "", linesRead
 }
 
 // Finds the character range of a word in a given line.
@@ -251,10 +141,117 @@ func findWordInLine(word string, line string) (int, int) {
 	return startChar, startChar + len(word)
 }
 
-// Checks whether a word is in the whitelist (case-insensitive) in case it is a misspelling
-// according to CodeSpell but is used frequently in the codebase i.e. GAE.
-func isWhitelisted(word string) bool {
-	for _, w := range whitelistWords {
+func buildDict(dictPath string) map[string][]string {
+	f := openFileOrDie(dictPath)
+	defer closeFileOrDie(f)
+
+	dictMap := make(map[string][]string)
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		// Misspellings are at data[0] and fixes are at data[1].
+		data := strings.Split(line, "->")
+		fixes := strings.Split(data[1], ", ")
+		dictMap[data[0]] = fixes
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatalf("Failed to read file: %v, path: %s", err, dictPath)
+	}
+
+	return dictMap
+}
+
+func buildMisspellingComment(misspelling string, fixes []string, line string, lineno int,
+	path string) *tricium.Data_Comment {
+	// If there is more than one fix and the last character of the last element of fixes
+	// doesn't have a comma, the word has a reason to be disabled.
+	if len(fixes) > 1 && !strings.HasSuffix(fixes[len(fixes)-1], ",") {
+		log.Printf("SKIPPING: %q has a reason to be disabled "+
+			"in the CodeSpell dictionary.", misspelling)
+		return nil
+	}
+
+	// Get rid of trailing comma in last fix.
+	fixes[len(fixes)-1] = strings.Replace(fixes[len(fixes)-1], ",", "", -1)
+	log.Printf("ADDING %q with fixes: %q\n", misspelling, fixes)
+	startChar, endChar := findWordInLine(misspelling, line)
+
+	var suggestions []*tricium.Data_Suggestion
+	for _, fix := range fixes {
+		suggestions = append(suggestions, &tricium.Data_Suggestion{
+			Description: fmt.Sprintf("Misspelling fix suggestion"),
+			Replacements: []*tricium.Data_Replacement{
+				{
+					Path:        path,
+					Replacement: fix,
+					StartLine:   int32(lineno),
+					EndLine:     int32(lineno),
+					StartChar:   int32(startChar),
+					EndChar:     int32(startChar + len(fix)),
+				},
+			},
+		})
+	}
+
+	return &tricium.Data_Comment{
+		Path: path,
+		Message: fmt.Sprintf("%q is a possible misspelling of: %s", misspelling,
+			strings.Join(fixes, ", ")),
+		Category:    "SpellChecker",
+		StartLine:   int32(lineno),
+		EndLine:     int32(lineno),
+		StartChar:   int32(startChar),
+		EndChar:     int32(endChar),
+		Suggestions: suggestions,
+	}
+}
+
+// Gets the appropriate comment pattern for the programming lanaguage determined by the given
+// file extension.
+func getLangCommentPattern(fileExt string) *commentFormat {
+	commentFmtMap := loadCommentsJSONFile()
+	cmtFormatEntry := commentFmtMap[fileExt]
+	commentPatterns := &commentFormat{
+		singleLine:     cmtFormatEntry["single-line"],
+		multilineStart: cmtFormatEntry["multi-line start"],
+		multilineEnd:   cmtFormatEntry["multi-line end"],
+	}
+
+	return commentPatterns
+}
+
+func loadCommentsJSONFile() map[string]map[string]string {
+	var commentsMap map[string]map[string]string
+
+	f := openFileOrDie(commentsJSONPath)
+	defer closeFileOrDie(f)
+
+	jsonBytes, _ := ioutil.ReadAll(f)
+	if err := json.Unmarshal(jsonBytes, &commentsMap); err != nil {
+		log.Fatalf("Failed to read JSON file: %v", err)
+	}
+
+	return commentsMap
+}
+
+func openFileOrDie(path string) *os.File {
+	f, err := os.Open(path)
+	if err != nil {
+		log.Fatalf("Failed to open file: %v, path: %s", err, path)
+	}
+	return f
+}
+
+func closeFileOrDie(file *os.File) {
+	if err := file.Close(); err != nil {
+		log.Fatalf("Failed to close file: %v", err)
+	}
+}
+
+// Checks whether a word is in a slice of strings (case-insensitive).
+func inSlice(word string, arr []string) bool {
+	for _, w := range arr {
 		if strings.EqualFold(w, word) {
 			return true
 		}
