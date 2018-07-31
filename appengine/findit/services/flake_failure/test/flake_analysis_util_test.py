@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import copy
 from datetime import datetime
 from datetime import timedelta
 import mock
@@ -11,35 +12,40 @@ from google.appengine.ext import ndb
 from dto.flake_swarming_task_output import FlakeSwarmingTaskOutput
 from dto import swarming_task_error
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from infra_api_clients.swarming import swarming_util
+from infra_api_clients.swarming.swarming_bot_counts import SwarmingBotCounts
 from libs import time_util
 from libs.gitiles.change_log import ChangeLog
 from model.flake.flake_culprit import FlakeCulprit
+from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-# TODO(crbug.com/809885): Merge flake_analysis_util.py.
 from services.flake_failure import flake_analysis_util
 from services.flake_failure import flake_constants
-from waterfall.flake import flake_analysis_util as flake_util
+from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 from waterfall.test.wf_testcase import WaterfallTestCase
 
 
 class FlakeAnalysisUtilTest(WaterfallTestCase):
 
   def testCanStartAnalysis(self):
-    self.assertTrue(flake_analysis_util.CanStartAnalysis(None, 0, True))
-    self.assertTrue(flake_analysis_util.CanStartAnalysis(None, 10, False))
-    self.assertFalse(flake_analysis_util.CanStartAnalysis(None, 0, False))
+    self.assertTrue(flake_analysis_util._CanStartAnalysis(None, 0, True))
+    self.assertTrue(flake_analysis_util._CanStartAnalysis(None, 10, False))
+    self.assertFalse(flake_analysis_util._CanStartAnalysis(None, 0, False))
 
-  @mock.patch.object(flake_util, 'BotsAvailableForTask', return_value=True)
+  @mock.patch.object(
+      flake_analysis_util, '_BotsAvailableForTask', return_value=True)
   def testCanStartAnalysisBotsAvailable(self, _):
-    self.assertTrue(flake_analysis_util.CanStartAnalysis(None, 0, False))
+    self.assertTrue(flake_analysis_util._CanStartAnalysis(None, 0, False))
 
-  @mock.patch.object(flake_util, 'BotsAvailableForTask', return_value=False)
+  @mock.patch.object(
+      flake_analysis_util, '_BotsAvailableForTask', return_value=False)
   def testCanStartAnalysisNoBotsAvailable(self, _):
-    self.assertFalse(flake_analysis_util.CanStartAnalysis(None, 0, False))
+    self.assertFalse(flake_analysis_util._CanStartAnalysis(None, 0, False))
 
   @mock.patch.object(
       flake_analysis_util, 'ShouldThrottleAnalysis', return_value=False)
-  @mock.patch.object(flake_analysis_util, 'CanStartAnalysis', return_value=True)
+  @mock.patch.object(
+      flake_analysis_util, '_CanStartAnalysis', return_value=True)
   def testCanStartAnalysisImmediately(self, *_):
     self.assertTrue(
         flake_analysis_util.CanStartAnalysisImmediately(None, 0, False))
@@ -66,36 +72,31 @@ class FlakeAnalysisUtilTest(WaterfallTestCase):
         flake_analysis_util.CanFailedSwarmingTaskBeSalvaged(task_output))
 
   @mock.patch.object(
-      flake_util,
+      flake_analysis_util,
       'GetETAToStartAnalysis',
       return_value=datetime(2017, 12, 10, 0, 0, 0, 0))
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2017, 12, 10, 0, 0, 0, 0))
   def testCalculateDelaySecondsBetweenRetries(self, *_):
-    self.assertEqual(0,
-                     flake_analysis_util.CalculateDelaySecondsBetweenRetries(
-                         0, False))
-    self.assertEqual(120,
-                     flake_analysis_util.CalculateDelaySecondsBetweenRetries(
-                         1, False))
-    self.assertEqual(0,
-                     flake_analysis_util.CalculateDelaySecondsBetweenRetries(
-                         flake_constants.MAX_RETRY_TIMES + 1, False))
+    self.assertEqual(
+        0, flake_analysis_util.CalculateDelaySecondsBetweenRetries(0, False))
+    self.assertEqual(
+        120, flake_analysis_util.CalculateDelaySecondsBetweenRetries(1, False))
+    self.assertEqual(
+        0,
+        flake_analysis_util.CalculateDelaySecondsBetweenRetries(
+            flake_constants.MAX_RETRY_TIMES + 1, False))
 
   def testShouldThrottleAnalysis(self):
     self.UpdateUnitTestConfigSettings(
         config_property='check_flake_settings',
-        override_data={
-            'throttle_flake_analyses': True
-        })
+        override_data={'throttle_flake_analyses': True})
     self.assertTrue(flake_analysis_util.ShouldThrottleAnalysis())
 
   def testShouldThrottleAnalysisNotThrottled(self):
     self.UpdateUnitTestConfigSettings(
         config_property='check_flake_settings',
-        override_data={
-            'throttle_flake_analyses': False
-        })
+        override_data={'throttle_flake_analyses': False})
     self.assertFalse(flake_analysis_util.ShouldThrottleAnalysis())
 
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
@@ -177,3 +178,92 @@ class FlakeAnalysisUtilTest(WaterfallTestCase):
     self.assertEqual(revision, culprit.revision)
     self.assertIsNone(culprit.url)
     self.assertEqual(repo_name, culprit.repo_name)
+
+  def testGetIterationsToRerun(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
+    analysis.algorithm_parameters = {
+        'swarming_rerun': {
+            'iterations_to_rerun': 1
+        }
+    }
+    self.assertEqual(1, flake_analysis_util.GetIterationsToRerun(
+        None, analysis))
+    self.assertEqual(2, flake_analysis_util.GetIterationsToRerun(2, analysis))
+
+  def testCalculateNumberOfIterationsToRunWithinTimeout(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
+    analysis.data_points = []
+    analysis.put()
+
+    timeout_per_test = 60
+    self.assertEqual(
+        flake_analysis_util.CalculateNumberOfIterationsToRunWithinTimeout(
+            analysis, timeout_per_test), 60)
+
+  def testCalculateNumberOfIterationsToRunWithinTimeoutWithZero(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
+    analysis.data_points = []
+    analysis.put()
+
+    timeout_per_test = 10000
+    self.assertEqual(
+        flake_analysis_util.CalculateNumberOfIterationsToRunWithinTimeout(
+            analysis, timeout_per_test), 1)
+
+  def testGetETAToStartAnalysisWhenManuallyTriggered(self):
+    mocked_utcnow = datetime.utcnow()
+    self.MockUTCNow(mocked_utcnow)
+    self.assertEqual(mocked_utcnow,
+                     flake_analysis_util.GetETAToStartAnalysis(True))
+
+  def testGetETAToStartAnalysisWhenTriggeredOnPSTWeekend(self):
+    # Sunday 1pm in PST, and Sunday 8pm in UTC.
+    mocked_pst_now = datetime(2016, 9, 04, 13, 0, 0, 0)
+    mocked_utc_now = datetime(2016, 9, 04, 20, 0, 0, 0)
+    self.MockUTCNow(mocked_utc_now)
+    with mock.patch('libs.time_util.GetPSTNow') as timezone_func:
+      timezone_func.side_effect = [mocked_pst_now, None]
+      self.assertEqual(mocked_utc_now,
+                       flake_analysis_util.GetETAToStartAnalysis(False))
+
+  def testGetETAToStartAnalysisWhenTriggeredOffPeakHoursOnPSTWeekday(self):
+    # Tuesday 1am in PST, and Tuesday 8am in UTC.
+    mocked_pst_now = datetime(2016, 9, 20, 1, 0, 0, 0)
+    mocked_utc_now = datetime(2016, 9, 20, 8, 0, 0, 0)
+    self.MockUTCNow(mocked_utc_now)
+    with mock.patch('libs.time_util.GetPSTNow') as timezone_func:
+      timezone_func.side_effect = [mocked_pst_now, None]
+      self.assertEqual(mocked_utc_now,
+                       flake_analysis_util.GetETAToStartAnalysis(False))
+
+  def testGetETAToStartAnalysisWhenTriggeredInPeakHoursOnPSTWeekday(self):
+    # Tuesday 12pm in PST, and Tuesday 8pm in UTC.
+    seconds_delay = 10
+    mocked_utc_now = datetime(2016, 9, 21, 20, 0, 0, 0)
+    mocked_pst_now = datetime(2016, 9, 21, 12, 0, 0, 0)
+    mocked_utc_eta = datetime(2016, 9, 22, 2, 0, seconds_delay)
+    self.MockUTCNow(mocked_utc_now)
+    with mock.patch('libs.time_util.GetPSTNow') as (
+        timezone_func), mock.patch('random.randint') as random_func:
+      timezone_func.side_effect = [mocked_pst_now, mocked_utc_eta]
+      random_func.side_effect = [seconds_delay, None]
+      self.assertEqual(mocked_utc_eta,
+                       flake_analysis_util.GetETAToStartAnalysis(False))
+
+  @mock.patch.object(swarming_util, 'GetBotCounts')
+  def testCheckBotsAvailability(self, mock_fn):
+    step_metadata = {'dimensions': {'os': 'OS'}}
+
+    mock_fn.return_value = SwarmingBotCounts({
+        'count': 20,
+        'dead': 1,
+        'quarantined': 0,
+        'busy': 5
+    })
+
+    self.assertFalse(flake_analysis_util._BotsAvailableForTask(None))
+    self.assertTrue(flake_analysis_util._BotsAvailableForTask(step_metadata))

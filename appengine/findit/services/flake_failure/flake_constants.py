@@ -55,6 +55,12 @@ DEFAULT_MINIMUM_CONFIDENCE_TO_CREATE_BUG = 0.9
 # Default minimum confidence score to post notifications to code reviews.
 DEFAULT_MINIMUM_CONFIDENCE_SCORE_TO_UPDATE_CR = 0.7
 
+# Default number of bots on swarming needed to trigger tasks immediately.
+DEFAULT_MINIMUM_NUMBER_AVAILABLE_BOTS = 5
+
+# Default minimum percentag of bots on swarming available to trigger tasks.
+DEFAULT_MINIMUM_PERCENTAGE_AVAILABLE_BOTS = 0.1
+
 # Default iterations to rerun if our config is empty.
 DEFAULT_SWARMING_TASK_ITERATIONS_TO_RERUN = 100
 
