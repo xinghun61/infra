@@ -10,10 +10,9 @@ import urllib
 
 from buildbucket_proto.build_pb2 import Build
 from buildbucket_proto.rpc_pb2 import GetBuildRequest
-
+from common.findit_http_client import FinditHttpClient
 from gae_libs.http import auth_util
 from libs.math.integers import constrain
-from common.findit_http_client import FinditHttpClient
 
 # https://github.com/grpc/grpc-go/blob/master/codes/codes.go
 GRPC_OK = '0'
@@ -319,3 +318,15 @@ def GetV2Build(build_id, fields=None):
   logging.warning('Unexpected prpc code: %s',
                   response_headers.get('X-Prpc-Grpc-Code'))
   return None
+
+
+def GetBuildNumberFromBuildId(build_id):
+  """Extracts the build number given a build id."""
+  try:
+    build_proto = GetV2Build(build_id)
+    build_properties = dict(build_proto.output.properties.items())
+    return int(build_properties['buildnumber'])
+  except Exception as e:
+    logging.error('Unable to get build number from build id %s' % build_id)
+    logging.error(e.message)
+    return None

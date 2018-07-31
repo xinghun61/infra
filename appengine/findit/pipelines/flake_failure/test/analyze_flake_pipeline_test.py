@@ -234,7 +234,8 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
 
     expected_next_commit_position_input = NextCommitPositionInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
-        commit_position_range=IntRange(lower=None, upper=None))
+        commit_position_range=IntRange(lower=None, upper=None),
+        step_metadata=step_metadata)
 
     expected_next_commit_position_output = NextCommitPositionOutput(
         next_commit_position=next_commit_position, culprit_commit_position=None)

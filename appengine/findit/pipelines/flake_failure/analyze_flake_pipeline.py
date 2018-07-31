@@ -239,7 +239,8 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
             self.CreateInputObjectInstance(
                 NextCommitPositionInput,
                 analysis_urlsafe_key=analysis_urlsafe_key,
-                commit_position_range=parameters.commit_position_range))
+                commit_position_range=parameters.commit_position_range,
+                step_metadata=parameters.step_metadata))
 
         # Recurse on the new commit position.
         yield RecursiveAnalyzeFlakePipeline(

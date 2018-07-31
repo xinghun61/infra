@@ -6,6 +6,7 @@ from datetime import datetime
 import logging
 import mock
 
+from common.waterfall import buildbucket_client
 from dto.int_range import IntRange
 from gae_libs.testcase import TestCase
 from libs import analysis_status
@@ -14,7 +15,7 @@ from model import triage_status
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-from waterfall.build_info import BuildInfo
+from model.isolated_target import IsolatedTarget
 
 
 class MasterFlakeAnalysisTest(TestCase):
@@ -303,18 +304,20 @@ class MasterFlakeAnalysisTest(TestCase):
         DataPoint.Create(commit_position=1007),
         DataPoint.Create(commit_position=1010)
     ]
-    self.assertEqual(analysis.data_points[-2:],
-                     analysis.GetDataPointsWithinCommitPositionRange(
-                         IntRange(lower=1007, upper=2000)))
+    self.assertEqual(
+        analysis.data_points[-2:],
+        analysis.GetDataPointsWithinCommitPositionRange(
+            IntRange(lower=1007, upper=2000)))
     self.assertEqual([analysis.data_points[0]],
                      analysis.GetDataPointsWithinCommitPositionRange(
                          IntRange(lower=None, upper=1000)))
     self.assertEqual([analysis.data_points[-1]],
                      analysis.GetDataPointsWithinCommitPositionRange(
                          IntRange(lower=1010, upper=None)))
-    self.assertEqual(analysis.data_points,
-                     analysis.GetDataPointsWithinCommitPositionRange(
-                         IntRange(lower=None, upper=None)))
+    self.assertEqual(
+        analysis.data_points,
+        analysis.GetDataPointsWithinCommitPositionRange(
+            IntRange(lower=None, upper=None)))
 
   def testGetLatestRegressionRangeRangeNoDataPoints(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
@@ -411,20 +414,26 @@ class MasterFlakeAnalysisTest(TestCase):
     self.assertEqual(start_time, analysis.start_time)
 
   def testUpdateSuspectedBuildExistingSuspectedBuild(self):
+    lower_bound_commit_position = 90
+    upper_bound_commit_position = 100
+    build_id = 1000
+
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
-        DataPoint.Create(commit_position=100),
-        DataPoint.Create(commit_position=90),
+        DataPoint.Create(commit_position=upper_bound_commit_position),
+        DataPoint.Create(commit_position=lower_bound_commit_position),
     ]
     analysis.suspected_flake_build_number = 123
     analysis.Save()
 
-    lower_bound_build = BuildInfo('m', 'b', 123)
-    lower_bound_build.commit_position = 100
-    upper_bound_build = BuildInfo('m', 'b', 124)
-    upper_bound_build.commit_position = 110
+    lower_bound_target = IsolatedTarget.Create(build_id - 1, '', '', 'm', 'b',
+                                               '', '', '', '', '', '',
+                                               lower_bound_commit_position)
+    upper_bound_target = IsolatedTarget.Create(build_id, '', '', 'm', 'b', '',
+                                               '', '', '', '', '',
+                                               upper_bound_commit_position)
 
-    analysis.UpdateSuspectedBuild(lower_bound_build, upper_bound_build)
+    analysis.UpdateSuspectedBuild(lower_bound_target, upper_bound_target)
 
     self.assertEqual(123, analysis.suspected_flake_build_number)
 
@@ -436,31 +445,43 @@ class MasterFlakeAnalysisTest(TestCase):
     ]
     analysis.Save()
 
-    lower_bound_build = BuildInfo('m', 'b', 122)
-    lower_bound_build.commit_position = 90
-    upper_bound_build = BuildInfo('m', 'b', 123)
-    upper_bound_build.commit_position = 100
+    lower_bound_target = IsolatedTarget.Create(999, '', '', 'm', 'b', '', '',
+                                               '', '', '', '', 90)
+    upper_bound_target = IsolatedTarget.Create(1000, '', '', 'm', 'b', '', '',
+                                               '', '', '', '', 100)
 
-    analysis.UpdateSuspectedBuild(lower_bound_build, upper_bound_build)
-
+    analysis.UpdateSuspectedBuild(lower_bound_target, upper_bound_target)
     self.assertIsNone(analysis.suspected_flake_build_number)
 
-  def testUpdateSuspectedBuild(self):
+  @mock.patch.object(buildbucket_client, 'GetBuildNumberFromBuildId')
+  def testUpdateSuspectedBuild(self, mock_build_number):
+    build_number = 120
+    build_id = 1200
+    mock_build_number.return_value = build_number
+
+    lower_bound_commit_position = 90
+    upper_bound_commit_position = 100
+
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
-        DataPoint.Create(commit_position=100, pass_rate=0.4),
-        DataPoint.Create(commit_position=90, pass_rate=1.0),
+        DataPoint.Create(
+            commit_position=upper_bound_commit_position, pass_rate=0.4),
+        DataPoint.Create(
+            commit_position=lower_bound_commit_position, pass_rate=1.0),
     ]
     analysis.Save()
 
-    lower_bound_build = BuildInfo('m', 'b', 122)
-    lower_bound_build.commit_position = 90
-    upper_bound_build = BuildInfo('m', 'b', 123)
-    upper_bound_build.commit_position = 100
+    lower_bound_target = IsolatedTarget.Create(build_id - 1, '', '', 'm', 'b',
+                                               '', '', '', '', '', '',
+                                               lower_bound_commit_position)
+    upper_bound_target = IsolatedTarget.Create(build_id, '', '', 'm', 'b', '',
+                                               '', '', '', '', '',
+                                               upper_bound_commit_position)
 
-    analysis.UpdateSuspectedBuild(lower_bound_build, upper_bound_build)
+    analysis.UpdateSuspectedBuild(lower_bound_target, upper_bound_target)
 
-    self.assertEqual(123, analysis.suspected_flake_build_number)
+    self.assertEqual(build_id, analysis.suspected_build_id)
+    self.assertEqual(build_number, analysis.suspected_flake_build_number)
 
   def testRemoveDataPointWithBuildNumber(self):
     data_points = [
@@ -527,9 +548,10 @@ class MasterFlakeAnalysisTest(TestCase):
     self.assertIsNone(
         analysis.FindMatchingDataPointWithCommitPosition(
             new_data_point.commit_position))
-    self.assertEqual(old_data_point,
-                     analysis.FindMatchingDataPointWithCommitPosition(
-                         old_data_point.commit_position))
+    self.assertEqual(
+        old_data_point,
+        analysis.FindMatchingDataPointWithCommitPosition(
+            old_data_point.commit_position))
 
   def testFindMatchingDataPointWithBuildNumber(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
@@ -572,7 +594,7 @@ class MasterFlakeAnalysisTest(TestCase):
 
   def testCanRunHeuristicAnalysisNotYetRan(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.suspected_flake_build_number = 123
+    analysis.suspected_build_id = 123
     analysis.heuristic_analysis_status = analysis_status.PENDING
 
     self.assertTrue(analysis.CanRunHeuristicAnalysis())

@@ -8,6 +8,8 @@ import logging
 from common.constants import SUPPORTED_ISOLATED_SCRIPT_TESTS
 from common.findit_http_client import FinditHttpClient
 from libs.test_results.webkit_layout_test_results import WebkitLayoutTestResults
+from model.isolated_target import IsolatedTarget
+from services import constants
 from services import swarming
 from waterfall import build_util
 from waterfall import buildbot
@@ -130,6 +132,43 @@ def GetValidBuild(master_name, builder_name, requested_build_number, step_name,
   return None
 
 
+def GetBoundingIsolatedTargets(master_name, builder_name, target_name,
+                               commit_position):
+  """Determines the IsolatedTarget instances surrounding a commit position.
+
+  Args:
+    master_name (str): The name of the master to search by.
+    builder_name (str): The name of the builder to search by.
+    target_name (str): The name of the target to search by, e.g.
+        'browser_tests'.
+    commit_position (int): The desired commit position to find neighboring
+        IsolatedTargets.
+
+  Returns:
+    (IsolatedTarget, IsolatedTarget): The lower and upper bound IsolatedTargets.
+  """
+  upper_bound_targets = (
+      IsolatedTarget.FindIsolateAtOrAfterCommitPositionByMaster(
+          master_name, builder_name, constants.GITILES_HOST,
+          constants.GITILES_PROJECT, constants.GITILES_REF, target_name,
+          commit_position))
+  lower_bound_targets = (
+      IsolatedTarget.FindIsolateBeforeCommitPositionByMaster(
+          master_name, builder_name, constants.GITILES_HOST,
+          constants.GITILES_PROJECT, constants.GITILES_REF, target_name,
+          commit_position))
+
+  assert upper_bound_targets, ((
+      'Unable to detect isolated targets at for {}/{} with minimum commit '
+      'position {}').format(master_name, builder_name, commit_position))
+
+  assert lower_bound_targets, ((
+      'Unable to detect isolated targets at for {}/{} below commit position'
+      ' {}').format(master_name, builder_name, commit_position))
+
+  return lower_bound_targets[0], upper_bound_targets[0]
+
+
 # TODO(crbug/804617): Modify this function to use new LUCI API when ready.
 def GetValidBoundingBuildsForStep(
     master_name, builder_name, step_name, lower_bound_build_number,
@@ -166,10 +205,11 @@ def GetValidBoundingBuildsForStep(
         boundary build, that boundary build is returned as both the lower and
         upper bound build.
   """
-  logging.debug('GetBoundingBuildsForStep being called for %s/%s/%s with build '
-                'number bounds (%d, %d) at commit position %d', master_name,
-                builder_name, step_name, lower_bound_build_number or -1,
-                upper_bound_build_number or -1, requested_commit_position)
+  logging.debug(
+      'GetBoundingBuildsForStep being called for %s/%s/%s with build '
+      'number bounds (%d, %d) at commit position %d', master_name, builder_name,
+      step_name, lower_bound_build_number or -1, upper_bound_build_number or -1,
+      requested_commit_position)
 
   assert upper_bound_build_number is not None, 'upper_bound can\'t be None'
 
@@ -181,8 +221,8 @@ def GetValidBoundingBuildsForStep(
       master_name, builder_name, upper_bound_build_number)
   assert latest_build_info.commit_position is not None
 
-  lower_bound_build_number = _GetLowerBoundBuildNumber(lower_bound_build_number,
-                                                       upper_bound_build_number)
+  lower_bound_build_number = _GetLowerBoundBuildNumber(
+      lower_bound_build_number, upper_bound_build_number)
   logging.info('Found lower_bound_build_number to be %d.',
                lower_bound_build_number)
 

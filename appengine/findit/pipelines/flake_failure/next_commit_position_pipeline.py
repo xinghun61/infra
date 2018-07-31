@@ -5,6 +5,7 @@
 from google.appengine.ext import ndb
 
 from dto.int_range import IntRange
+from dto.step_metadata import StepMetadata
 from gae_libs.pipelines import SynchronousPipeline
 from libs.structured_object import StructuredObject
 from services import step_util
@@ -19,6 +20,9 @@ class NextCommitPositionInput(StructuredObject):
 
   # The upper and lower bound commit positions not to exceed.
   commit_position_range = IntRange
+
+  # Info about the test to identify nearby IsolatedTargets.
+  step_metadata = StepMetadata
 
 
 class NextCommitPositionOutput(StructuredObject):
@@ -97,14 +101,14 @@ class NextCommitPositionPipeline(SynchronousPipeline):
 
     # Round off the next calculated commit position to the nearest builds on
     # both sides.
-    # Use the detected build_number as the upper bound.
-    lower_bound_build, upper_bound_build = (
-        step_util.GetValidBoundingBuildsForStep(
-            master_name, builder_name, analysis.step_name, None,
-            analysis.build_number, calculated_next_commit_position))
+    target_name = parameters.step_metadata.isolate_target_name
+    lower_bound_target, upper_bound_target = (
+        step_util.GetBoundingIsolatedTargets(master_name, builder_name,
+                                             target_name,
+                                             calculated_next_commit_position))
 
     # Update the analysis' suspected build cycle if identified.
-    analysis.UpdateSuspectedBuild(lower_bound_build, upper_bound_build)
+    analysis.UpdateSuspectedBuild(lower_bound_target, upper_bound_target)
 
     # When identifying the neighboring builds of the requested commit position,
     # heuristic analysis may become eligible if the neighboring builds are
@@ -129,8 +133,8 @@ class NextCommitPositionPipeline(SynchronousPipeline):
     # Pick the commit position of the returned neighboring builds that has not
     # yet been analyzed if possible, or the commit position itself when not.
     build_range = IntRange(
-        lower=lower_bound_build.commit_position,
-        upper=upper_bound_build.commit_position)
+        lower=lower_bound_target.commit_position,
+        upper=upper_bound_target.commit_position)
     actual_next_commit_position = (
         next_commit_position_utils.GetNextCommitPositionFromBuildRange(
             analysis, build_range, calculated_next_commit_position))

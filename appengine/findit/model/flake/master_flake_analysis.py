@@ -7,6 +7,7 @@ import logging
 
 from google.appengine.ext import ndb
 
+from common.waterfall import buildbucket_client
 from dto.flake_analysis_error import FlakeAnalysisError
 from dto.int_range import IntRange
 from gae_libs.model.versioned_model import VersionedModel
@@ -257,7 +258,8 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
         analysis_status.ERROR
     ]
 
-    return (self.suspected_flake_build_number is not None and
+    return ((self.suspected_build_id is not None or
+             self.suspected_flake_build_number is not None) and
             self.heuristic_analysis_status not in already_run_statuses)
 
   def UpdateTriageResult(self,
@@ -363,6 +365,7 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
     self.correct_regression_range = None
     self.correct_culprit = None
     self.algorithm_parameters = None
+    self.suspected_build_id = None
     self.suspected_flake_build_number = None
     self.suspect_urlsafe_keys = []
     self.culprit_urlsafe_key = None
@@ -492,7 +495,7 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
       self.Update(
           start_time=time_util.GetUTCNow(), status=analysis_status.RUNNING)
 
-  def UpdateSuspectedBuild(self, lower_bound_build, upper_bound_build):
+  def UpdateSuspectedBuild(self, lower_bound_target, upper_bound_target):
     """Sets the suspected build number if appropriate.
 
       A suspected build cycle can be set when a regression range is identified
@@ -500,29 +503,40 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
 
     Args:
       analysis_urlsafe_key (str): The key to the analysis to update.
-      lower_bound_build (BuildInfo): The earlier build whose commit position to
-          check.
-      upper_bound_build (BuildInfo): The later build whose commit
-          position to check, assumed to be 1 build cycle apartlower_bound_build.
+      lower_bound_target (IsolatedTarget): The earlier isolated target whose
+          commit position to check.
+      upper_bound_build (IsolatedTarget): The later isolated target whose commit
+          position to check.
     """
-    lower_bound = lower_bound_build.commit_position
-    upper_bound = upper_bound_build.commit_position
-    assert upper_bound > lower_bound
+    lower_bound = lower_bound_target.commit_position
+    upper_bound = upper_bound_target.commit_position
+    assert upper_bound > lower_bound, ((
+        'Upper bound target commit position {} must be greater than lower '
+        'bound target {} commit position').format(upper_bound, lower_bound))
 
     lower_bound_data_point = self.FindMatchingDataPointWithCommitPosition(
         lower_bound)
     upper_bound_data_point = self.FindMatchingDataPointWithCommitPosition(
         upper_bound)
 
-    if (self.suspected_flake_build_number is None and lower_bound_data_point and
+    if (self.suspected_flake_build_number is None and
+        self.suspected_build_id is None and lower_bound_data_point and
         upper_bound_data_point):
       assert pass_rate_util.IsStableDefaultThresholds(
           lower_bound_data_point.pass_rate), (
-              'Lower bound build must be stable in order to have a suspect')
+              'Lower bound must be stable in order to have a suspect')
       assert not pass_rate_util.IsStableDefaultThresholds(
           upper_bound_data_point.pass_rate), (
-              'Upper bound build must be flaky in order to have a suspect')
-      self.Update(suspected_flake_build_number=upper_bound_build.build_number)
+              'Upper bound must be flaky in order to have a suspect')
+      build_id = upper_bound_target.build_id
+
+      # Temporarily maintain suspected_flake_build_number to support legacy
+      # analyses.
+      suspected_build_number = buildbucket_client.GetBuildNumberFromBuildId(
+          build_id)
+      self.Update(
+          suspected_build_id=build_id,
+          suspected_flake_build_number=suspected_build_number)
 
   def Update(self, **kwargs):
     """Updates fields according to what's specified in kwargs.
@@ -601,6 +615,9 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
   # The suspected build number to have introduced the flakiness.
   # TODO(crbug.com/799324): Remove once build numbers are deprecated in LUCI.
   suspected_flake_build_number = ndb.IntegerProperty()
+
+  # The build id of the build cycle suspected to contain the culprit.
+  suspected_build_id = ndb.IntegerProperty()
 
   # The confidence in the suspected build to have introduced the flakiness.
   confidence_in_suspected_build = ndb.FloatProperty(indexed=False)

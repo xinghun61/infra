@@ -6,6 +6,7 @@ import mock
 
 from libs.test_results.gtest_test_results import GtestTestResults
 from libs.test_results.webkit_layout_test_results import WebkitLayoutTestResults
+from model.isolated_target import IsolatedTarget
 from services import step_util
 from services import swarming
 from waterfall import build_util
@@ -29,6 +30,38 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(50, step_util._GetLowerBoundBuildNumber(None, 100, 200))
     self.assertEqual(100, step_util._GetLowerBoundBuildNumber(None, 600, 500))
 
+  def testGetBoundingIsolatedTargets(self):
+    lower_bound_commit_position = 1000
+    upper_bound_commit_position = 1010
+    requested_commit_position = 1005
+    build_id = 10000
+    target_name = 'browser_tests'
+    master_name = 'm'
+    builder_name = 'b'
+    luci_name = 'chromium'
+    bucket_name = 'ci'
+    gitiles_host = 'chromium.googlesource.com'
+    gitiles_project = 'chromium/src'
+    gitiles_ref = 'refs/heads/master'
+    gerrit_patch = ''
+
+    lower_bound_target = IsolatedTarget.Create(
+        build_id - 1, luci_name, bucket_name, master_name, builder_name,
+        gitiles_host, gitiles_project, gitiles_ref, gerrit_patch, target_name,
+        'hash_1', lower_bound_commit_position)
+    lower_bound_target.put()
+
+    upper_bound_target = IsolatedTarget.Create(
+        build_id, luci_name, bucket_name, master_name, builder_name,
+        gitiles_host, gitiles_project, gitiles_ref, gerrit_patch, target_name,
+        'hash_2', upper_bound_commit_position)
+    upper_bound_target.put()
+
+    self.assertEqual((lower_bound_target, upper_bound_target),
+                     step_util.GetBoundingIsolatedTargets(
+                         master_name, builder_name, target_name,
+                         requested_commit_position))
+
   @mock.patch.object(build_util, 'GetBuildInfo')
   def testGetValidBuildSearchAscendingWithinRange(self, mocked_get_build_info):
     master_name = 'm'
@@ -46,9 +79,10 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
         (mock.ANY, valid_build_102),
     ]
 
-    self.assertEqual(valid_build_102,
-                     step_util.GetValidBuild(master_name, builder_name, 100,
-                                             step_name, True, 2))
+    self.assertEqual(
+        valid_build_102,
+        step_util.GetValidBuild(master_name, builder_name, 100, step_name, True,
+                                2))
 
   @mock.patch.object(build_util, 'GetBuildInfo')
   def testGetValidBuildSearchAscendingOutOfRange(self, mocked_get_build_info):
@@ -88,9 +122,10 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
         (mock.ANY, valid_build_98),
     ]
 
-    self.assertEqual(valid_build_98,
-                     step_util.GetValidBuild(master_name, builder_name, 100,
-                                             step_name, True, 2))
+    self.assertEqual(
+        valid_build_98,
+        step_util.GetValidBuild(master_name, builder_name, 100, step_name, True,
+                                2))
 
   @mock.patch.object(
       swarming, 'CanFindSwarmingTaskFromBuildForAStep', return_value=True)

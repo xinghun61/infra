@@ -36,11 +36,11 @@ class BuildBucketClientTest(testing.AppengineTestCase):
                        buildbucket_client._GetBucketName(master_name))
 
   def testTryJobToBuildbucketRequestWithTests(self):
-    try_job = buildbucket_client.TryJob('m', 'b', {'a': '1'}, ['a'], {
-        'tests': {
+    try_job = buildbucket_client.TryJob(
+        'm', 'b', {'a': '1'}, ['a'],
+        {'tests': {
             'a_tests': ['Test.One', 'Test.Two']
-        }
-    })
+        }})
     expceted_parameters = {
         'builder_name': 'b',
         'properties': {
@@ -98,9 +98,10 @@ class BuildBucketClientTest(testing.AppengineTestCase):
   def testTryJobToSwarmbucketRequestWithOverrides(self):
     try_job = buildbucket_client.TryJob(
         'luci.c',
-        'b', {'a': '1',
-              'recipe': 'b'}, ['a'],
-        {'tests': {
+        'b', {
+            'a': '1',
+            'recipe': 'b'
+        }, ['a'], {'tests': {
             'a_tests': ['Test.One', 'Test.Two'],
         }},
         'builder_abc123', ['os:Linux'],
@@ -290,3 +291,30 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     binary_data = mock_build.SerializeToString()
     mock_post.return_value = (404, binary_data, mock_headers)
     self.assertIsNone(buildbucket_client.GetV2Build(8945610992972640896))
+
+  @mock.patch.object(FinditHttpClient, 'Post')
+  def testGetBuildNumberFromBuildId(self, mock_post):
+    build_id = 10000
+    expected_build_number = 12345
+    mock_build = Build()
+    mock_build.id = build_id
+    mock_build.status = 12
+    mock_build.output.properties['mastername'] = 'chromium.linux'
+    mock_build.output.properties['buildername'] = 'Linux Builder'
+    mock_build.output.properties['buildnumber'] = expected_build_number
+    mock_build.output.properties.get_or_create_struct(
+        'swarm_hashes_ref/heads/mockmaster(at){#123}')[
+            'mock_target'] = 'mock_hash'
+    gitiles_commit = mock_build.input.gitiles_commit
+    gitiles_commit.host = 'gitiles.host'
+    gitiles_commit.project = 'gitiles/project'
+    gitiles_commit.ref = 'refs/heads/mockmaster'
+    mock_build.builder.project = 'mock_luci_project'
+    mock_build.builder.bucket = 'mock_bucket'
+    mock_build.builder.builder = 'Linux Builder'
+    mock_headers = {'X-Prpc-Grpc-Code': '0'}
+    binary_data = mock_build.SerializeToString()
+    mock_post.return_value = (200, binary_data, mock_headers)
+
+    self.assertEqual(expected_build_number,
+                     buildbucket_client.GetBuildNumberFromBuildId(build_id))
