@@ -351,9 +351,13 @@ class CompileHeuristicAnalysisOutput(StructuredObject):
   heuristic_result = CompileHeuristicResult
 
 
+class TestHeuristicResultForOneTest(HeuristicResultSubFailure):
+  test_name = basestring
+
+
 # Structured objects related to heuristic result for test failures.
 class TestHeuristicResultFailureTestsInOneStep(TypedList):
-  _value_type = HeuristicResultSubFailure
+  _element_type = TestHeuristicResultForOneTest
 
 
 class TestHeuristicResultFailure(HeuristicResultFailure):

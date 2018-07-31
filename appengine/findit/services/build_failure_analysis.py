@@ -116,8 +116,8 @@ class _Justification(object):
     else:
       if changed_line_numbers:
         hint = '%s %s[%s] (and it was in log)' % (
-            change_action, changed_src_file_path,
-            ', '.join(map(str, changed_line_numbers)))
+            change_action, changed_src_file_path, ', '.join(
+                map(str, changed_line_numbers)))
       else:
         hint = '%s %s (and it was in log)' % (change_action,
                                               changed_src_file_path)
@@ -142,23 +142,22 @@ class _Justification(object):
       url_to_changes_in_roll = '%s/+log/%s' % (dep_repo_url, dep_old_revision)
 
     if roll_file_change_type == ChangeType.ADD:
-      hint = ('%s dependency %s with changes in %s '
-              '(and %s(added) was in log)' %
-              (change_action, dep_path, url_to_changes_in_roll,
-               file_path_in_log))
+      hint = (
+          '%s dependency %s with changes in %s '
+          '(and %s(added) was in log)' %
+          (change_action, dep_path, url_to_changes_in_roll, file_path_in_log))
     elif roll_file_change_type == ChangeType.DELETE:
-      hint = ('%s dependency %s with changes in %s '
-              '(and %s(deleted) was in log)' %
-              (change_action, dep_path, url_to_changes_in_roll,
-               file_path_in_log))
+      hint = (
+          '%s dependency %s with changes in %s '
+          '(and %s(deleted) was in log)' %
+          (change_action, dep_path, url_to_changes_in_roll, file_path_in_log))
     elif changed_line_numbers:
       hint = ('%s dependency %s with changes in %s (and %s[%s] was in log)' %
               (change_action, dep_path, url_to_changes_in_roll,
                file_path_in_log, ', '.join(map(str, changed_line_numbers))))
     else:
-      hint = ('%s dependency %s with changes in %s (and %s was in log)' %
-              (change_action, dep_path, url_to_changes_in_roll,
-               file_path_in_log))
+      hint = ('%s dependency %s with changes in %s (and %s was in log)' % (
+          change_action, dep_path, url_to_changes_in_roll, file_path_in_log))
 
     self._hints[hint] = score
     self._score += score

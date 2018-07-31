@@ -243,3 +243,32 @@ def HeuristicAnalysisForCompile(heuristic_params):
       signals=CompileFailureSignals.FromSerializable(signals),
       heuristic_result=CompileHeuristicResult.FromSerializable(
           heuristic_result))
+
+
+def GetSuspectedCLsWithCompileFailures(heuristic_result):
+  """Generates a list of suspected CLs with compile failures.
+
+  Args:
+    heuristic_result(dict): the heuristic_result from which to
+      generate the list of suspected CLs with failures. It should be a
+      serialized CompileHeuristicResult.
+
+  Returns:
+    A list of suspected CLs with failures that each could look like:
+        [step_name, revision, None]
+    This is to make the result be consistent with test failure analyses, where
+    the supected CL info would be [step_name, revision, test_name].
+  """
+
+  if not heuristic_result:
+    return []
+
+  suspected_cls_with_failures = []
+  # Iterates through the failures and suspected_cls, appending suspected
+  # CLs and failures to the list.
+  for failure in heuristic_result['failures']:
+    for suspected_cl in failure['suspected_cls']:
+      suspected_cls_with_failures.append(
+          [failure['step_name'], suspected_cl['revision'], None])
+
+  return suspected_cls_with_failures

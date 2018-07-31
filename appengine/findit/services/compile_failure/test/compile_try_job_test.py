@@ -1390,3 +1390,15 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
         result=CompileTryJobResult.FromSerializable(compile_result))
     culprits, _ = compile_try_job.IdentifyCompileTryJobCulprit(parameters)
     self.assertIsNone(culprits)
+
+  @mock.patch.object(try_job_service, 'OnTryJobStateChanged', return_value=None)
+  def testOnTryJobStateChangedNoResult(self, mock_fn):
+    self.assertIsNone(compile_try_job.OnTryJobStateChanged('try_job_id', {}))
+    mock_fn.assert_called_once_with('try_job_id', failure_type.COMPILE, {})
+
+  @mock.patch.object(try_job_service, 'OnTryJobStateChanged', return_value={})
+  def testOnTryJobStateChanged(self, mock_fn):
+    self.assertEqual(
+        CompileTryJobResult.FromSerializable({}),
+        compile_try_job.OnTryJobStateChanged('try_job_id', {}))
+    mock_fn.assert_called_once_with('try_job_id', failure_type.COMPILE, {})

@@ -26,8 +26,8 @@ from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from services import build_failure_analysis
 from services import git
-from services import swarmbot_util
 from services import try_job as try_job_service
+from services.compile_failure import compile_failure_analysis
 from services.parameters import CompileTryJobResult
 from services.parameters import RunCompileTryJobParameters
 from waterfall import suspected_cl_util
@@ -61,6 +61,9 @@ def _IsCompileFailureUniqueAcrossPlatforms(
   if not output_nodes:
     return True
   groups = _GetMatchingCompileFailureGroups(output_nodes)
+  suspected_cls_with_failures = (
+      compile_failure_analysis.GetSuspectedCLsWithCompileFailures(
+          heuristic_result))
 
   return try_job_service.IsBuildFailureUniqueAcrossPlatforms(
       master_name,
@@ -68,7 +71,7 @@ def _IsCompileFailureUniqueAcrossPlatforms(
       build_number,
       build_failure_type,
       blame_list,
-      heuristic_result,
+      suspected_cls_with_failures,
       groups,
       output_nodes=output_nodes)
 

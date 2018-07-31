@@ -16,6 +16,7 @@ from services.test_failure import ci_test_failure
 from services.parameters import TestFailureInfo
 from services.parameters import TestHeuristicAnalysisOutput
 from services.parameters import TestHeuristicAnalysisParameters
+from services.parameters import TestHeuristicResult
 from services.test.build_failure_analysis_test import ChangeLogFromDict
 from services.test_failure import extract_test_signal
 from services.test_failure import test_failure_analysis
@@ -956,3 +957,60 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertEqual(expected_result, analysis.result)
     self.assertEqual(flaky_tests, analysis.flaky_tests)
+
+  @mock.patch.object(ci_failure, 'GetCanonicalStepName', return_value='step3')
+  def testGetSuspectedCLsWithFailures(self, _):
+    heuristic_result = {
+        'failures': [{
+            'step_name': 'step1',
+            'suspected_cls': [],
+        }, {
+            'step_name': 'step2',
+            'suspected_cls': [
+                {
+                    'revision': 'r1',
+                },
+                {
+                    'revision': 'r2',
+                },
+            ],
+        }, {
+            'step_name':
+                'step3',
+            'suspected_cls': [{
+                'revision': 'r3',
+            }],
+            'tests': [{
+                'test_name': 'super_test_1',
+                'suspected_cls': [{
+                    'revision': 'abc'
+                }]
+            }, {
+                'test_name': 'super_test_2',
+                'suspected_cls': [{
+                    'revision': 'def'
+                }, {
+                    'revision': 'ghi'
+                }]
+            }]
+        }]
+    }
+    expected_suspected_revisions = [['step2', 'r1', None], [
+        'step2', 'r2', None
+    ], ['step3', 'abc', 'super_test_1'], ['step3', 'def', 'super_test_2'],
+                                    ['step3', 'ghi', 'super_test_2']]
+    self.assertEqual(
+        expected_suspected_revisions,
+        sorted(
+            test_failure_analysis.GetSuspectedCLsWithFailures(
+                'm', 'b', 123,
+                TestHeuristicResult.FromSerializable(heuristic_result))))
+
+  def testGetSuspectedCLsWithTestFailuresNoHeuristicResult(self):
+    heuristic_result = TestHeuristicResult.FromSerializable({})
+    expected_suspected_revisions = []
+    self.assertEqual(
+        expected_suspected_revisions,
+        sorted(
+            test_failure_analysis.GetSuspectedCLsWithFailures(
+                'm', 'b', 123, heuristic_result)))

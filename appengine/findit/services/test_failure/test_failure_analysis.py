@@ -380,3 +380,47 @@ def GetsFirstFailureAtTestLevel(master_name, builder_name, build_number,
   if not force:
     analysis.put()
   return result_steps
+
+
+def GetSuspectedCLsWithFailures(master_name, builder_name, build_number,
+                                heuristic_result):
+  """Generates a list of suspected CLs with failures.
+
+  Args:
+    master_name (str): Name of the master.
+    builder_name (str): Name of the builder.
+    build_number (int): Number of the failed build.
+    heuristic_result (TestHeuristicResult): the heuristic_result from which to
+      generate the list of suspected CLs with failures.
+
+  Returns:
+    A list of suspected CLs with failures that each could look like:
+
+        [step_name, revision, test_name]
+
+    or could look like:
+
+        [step_name, revision, None]
+  """
+
+  if not heuristic_result:
+    return []
+
+  suspected_cls_with_failures = []
+  # Iterates through the failures, tests, and suspected_cls, appending suspected
+  # CLs and failures to the list.
+  for failure in heuristic_result['failures']:
+    if failure.tests:
+      for test in failure.tests:
+        for suspected_cl in test.suspected_cls or []:
+          suspected_cls_with_failures.append([
+              ci_failure.GetCanonicalStepName(master_name, builder_name,
+                                              build_number, failure.step_name),
+              suspected_cl.revision, test.test_name
+          ])
+    else:
+      for suspected_cl in failure.suspected_cls:
+        suspected_cls_with_failures.append(
+            [failure.step_name, suspected_cl.revision, None])
+
+  return suspected_cls_with_failures

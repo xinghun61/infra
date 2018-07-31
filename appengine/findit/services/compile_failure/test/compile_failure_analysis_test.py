@@ -491,3 +491,37 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         result,
         CompileHeuristicAnalysisOutput.FromSerializable(expected_result))
+
+  def testGetSuspectedCLsWithCompileFailuresNoHeuristicResult(self):
+    heuristic_result = None
+    expected_suspected_revisions = []
+    self.assertEqual(
+        expected_suspected_revisions,
+        sorted(
+            compile_failure_analysis.GetSuspectedCLsWithCompileFailures(
+                heuristic_result)))
+
+  def testGetSuspectedCLsWithCompileFailures(self):
+    heuristic_result = {
+        'failures': [{
+            'step_name': 'step1',
+            'suspected_cls': [],
+        }, {
+            'step_name': 'step2',
+            'suspected_cls': [
+                {
+                    'revision': 'r1',
+                },
+                {
+                    'revision': 'r2',
+                },
+            ],
+        }]
+    }
+    expected_suspected_revisions = [['step2', 'r1', None],
+                                    ['step2', 'r2', None]]
+    self.assertEqual(
+        expected_suspected_revisions,
+        sorted(
+            compile_failure_analysis.GetSuspectedCLsWithCompileFailures(
+                heuristic_result)))

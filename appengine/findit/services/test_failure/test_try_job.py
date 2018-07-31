@@ -27,7 +27,6 @@ from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from services import build_failure_analysis
 from services import git
-from services import swarmbot_util
 from services import try_job as try_job_service
 from services.parameters import RunTestTryJobParameters
 from services.parameters import TestTryJobResult
@@ -118,6 +117,9 @@ def _IsTestFailureUniqueAcrossPlatforms(master_name, builder_name, build_number,
   if not failed_steps_and_tests:
     return True
   groups = _GetMatchingTestFailureGroups(failed_steps_and_tests)
+  suspected_cls_with_failures = (
+      test_failure_analysis.GetSuspectedCLsWithFailures(
+          master_name, builder_name, build_number, heuristic_result))
 
   # TODO(crbug/808699): update this function call when refactor
   # start_compile_try_job_pipeline.
@@ -127,7 +129,7 @@ def _IsTestFailureUniqueAcrossPlatforms(master_name, builder_name, build_number,
       build_number,
       build_failure_type,
       blame_list,
-      heuristic_result.ToSerializable(),
+      suspected_cls_with_failures,
       groups,
       failed_steps_and_tests=failed_steps_and_tests)
 

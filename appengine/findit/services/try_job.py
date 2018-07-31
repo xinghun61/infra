@@ -38,7 +38,6 @@ from gae_libs import token
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from libs import time_util
-from libs.test_results import test_results_util
 from model import result_status
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.wf_analysis import WfAnalysis
@@ -64,47 +63,6 @@ def _ShouldBailOutForOutdatedBuild(build):
 
 def _BlameListsIntersection(blame_list_1, blame_list_2):
   return set(blame_list_1) & set(blame_list_2)
-
-
-def _GetSuspectedCLsWithFailures(heuristic_result):
-  """Generates a list of suspected CLs with failures.
-
-  Args:
-    heuristic_result: the heuristic_result from which to generate the list of
-    suspected CLs with failures.
-
-  Returns:
-    A list of suspected CLs with failures that each could look like:
-
-        [step_name, revision, test_name]
-
-    or could look like:
-
-        [step_name, revision, None]
-  """
-  suspected_cls_with_failures = []
-
-  if not heuristic_result:
-    return suspected_cls_with_failures
-
-  # Iterates through the failures, tests, and suspected_cls, appending suspected
-  # CLs and failures to the list.
-  for failure in heuristic_result['failures']:
-    if failure.get('tests'):
-      for test in failure['tests']:
-        for suspected_cl in test.get('suspected_cls') or []:
-          suspected_cls_with_failures.append([
-              test_results_util.RemoveSuffixFromStepName(failure['step_name']),
-              suspected_cl['revision'], test['test_name']
-          ])
-    else:
-      for suspected_cl in failure['suspected_cls']:
-        suspected_cls_with_failures.append([
-            test_results_util.RemoveSuffixFromStepName(failure['step_name']),
-            suspected_cl['revision'], None
-        ])
-
-  return suspected_cls_with_failures
 
 
 def _LinkAnalysisToBuildFailureGroup(master_name, builder_name, build_number,
@@ -186,12 +144,11 @@ def IsBuildFailureUniqueAcrossPlatforms(master_name,
                                         build_number,
                                         build_failure_type,
                                         blame_list,
-                                        heuristic_result,
+                                        suspected_tuples,
                                         groups,
                                         output_nodes=None,
                                         failed_steps_and_tests=None):
   """Checks if there is an existing group with the same failure and suspects."""
-  suspected_tuples = sorted(_GetSuspectedCLsWithFailures(heuristic_result))
   existing_group = _GetMatchingGroup(groups, blame_list, suspected_tuples)
 
   # Create a new WfFailureGroup if we've encountered a unique build failure.
@@ -451,9 +408,10 @@ def PrepareParametersToScheduleTryJob(master_name, builder_name, build_number,
   return parameters
 
 
-def _GetError(
-    buildbucket_build=None, buildbucket_error=None,
-    timed_out=False, no_report=False):
+def _GetError(buildbucket_build=None,
+              buildbucket_error=None,
+              timed_out=False,
+              no_report=False):
   """Determines whether or not a try job error occured.
 
   Args:
@@ -760,8 +718,11 @@ def OnTryJobStateChanged(try_job_id, job_type, build_json):
     OnTryJobRunning(parameters, try_job_data, build, error=None)
   else:
     error_dict, error_code = _GetError(buildbucket_build=build)
-    UpdateTryJobMetadata(try_job_data, buildbucket_build=build,
-                         error_dict=error_dict, error_code=error_code)
+    UpdateTryJobMetadata(
+        try_job_data,
+        buildbucket_build=build,
+        error_dict=error_dict,
+        error_code=error_code)
 
 
 def OnTryJobTimeout(try_job_id, job_type):
@@ -793,11 +754,16 @@ def OnTryJobCompleted(params, try_job_data, build, error):
                       'due to exception %s.' % (try_job_id, e.message))
 
   error_dict, error_code = _GetError(
-      buildbucket_build=build, buildbucket_error=error, timed_out=False,
+      buildbucket_build=build,
+      buildbucket_error=error,
+      timed_out=False,
       no_report=report == {})
   UpdateTryJobMetadata(
-      try_job_data, try_job_type, buildbucket_build=build,
-      error_dict=error_dict, error_code=error_code,
+      try_job_data,
+      try_job_type,
+      buildbucket_build=build,
+      error_dict=error_dict,
+      error_code=error_code,
       report=report or {})
   result_to_update = _UpdateTryJobEntity(params['urlsafe_try_job_key'],
                                          try_job_type, try_job_id, build.url,
@@ -814,11 +780,16 @@ def OnTryJobRunning(params, try_job_data, build, error):
   # Update as much try job metadata as soon as possible to avoid data
   # loss in case of errors.
   error_dict, error_code = _GetError(
-      buildbucket_build=build, buildbucket_error=error, timed_out=False,
+      buildbucket_build=build,
+      buildbucket_error=error,
+      timed_out=False,
       no_report=False)
   UpdateTryJobMetadata(
-      try_job_data, try_job_type, buildbucket_build=build,
-      error_dict=error_dict, error_code=error_code,
+      try_job_data,
+      try_job_type,
+      buildbucket_build=build,
+      error_dict=error_dict,
+      error_code=error_code,
       report=None)
 
   return _GetUpdatedParams(
