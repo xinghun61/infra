@@ -16,11 +16,6 @@ _UNSUPPORTED_MASTERS = [
     'chromium.perf',
 ]
 
-_DEFAULT_DIMENSIONS = ['pool:luci.chromium.findit']
-
-SWARMBUCKET_MASTER = 'luci.chromium.findit'
-SWARMBUCKET_BUILDER = 'findit_variable'
-
 
 def _ConvertOldMastersFormatToNew(masters_to_blacklisted_steps):
   """Converts the old masters format to the new rules dict.
@@ -55,45 +50,6 @@ def _ConvertOldMastersFormatToNew(masters_to_blacklisted_steps):
       supported_masters[master]['unsupported_steps'] = unsupported_steps
 
   return steps_for_masters_rules_in_latest_format
-
-
-def _ConvertOldTrybotFormatToNew(builders_to_trybots):
-  """Converts the legacy trybot mapping format into the updated one.
-
-  Args:
-    builders_to_trybots (dict): A dict in the legacy format
-        {
-            'master': {
-                'builder': {
-                    'mastername': 'tryserver master name',
-                    'buildername': 'waterfall_trybot',
-                },
-                ...
-            },
-            ...
-        }
-
-  Returns:
-        {
-            'master': {
-                'builder': {
-                    'mastername': 'tryserver master name',
-                    'waterfall_trybot': 'waterfall_trybot',
-                    'flake_trybot': 'flake_trybot'
-                },
-                ...
-            },
-            ...
-        }
-  """
-  for builders in builders_to_trybots.itervalues():
-    for trybot_mapping in builders.itervalues():
-      trybot = trybot_mapping.get('buildername')
-      if trybot:
-        trybot_mapping.update({'waterfall_trybot': trybot})
-        trybot_mapping.update({'flake_trybot': trybot})
-        trybot_mapping.pop('buildername')
-  return builders_to_trybots
 
 
 def GetStepsForMastersRules(settings=None, version=None):
@@ -152,127 +108,6 @@ def StepIsSupportedForMaster(step_name, master_name):
   return (step_name in supported_steps or
           (step_name not in unsupported_steps and
            step_name not in global_unsupported_steps))
-
-
-def GetFlakeTrybot(wf_mastername, wf_buildername):
-  """Returns tryserver master and builder for running flake try jobs.
-
-  Args:
-    wf_mastername: The mastername of a waterfall builder.
-    wf_buildername: The buildername of a waterfall builder.
-
-  Returns:
-    (tryserver_mastername, tryserver_buildername)
-    The trybot mastername and buildername to re-run flake try jobs, or
-    (None, None) if not supported.
-  """
-  mastername, trybot = GetSwarmbucketBot(wf_mastername, wf_buildername)
-  if mastername and trybot:
-    return mastername, trybot
-
-  bot_dict = _GetTrybotConfig(wf_mastername, wf_buildername)
-  return bot_dict.get('mastername'), bot_dict.get('flake_trybot')
-
-
-def IsCompileBuilder(master_name, builder_name):
-  # TODO(robertocn): Find a more reliable way to determine if a builder
-  #     is a compile builder.
-  return (master_name == 'chromium' or 'build' in builder_name.lower())
-
-
-def GetSupportedCompileBuilders(platform=None):
-  """Get waterfall builders that can trigger compile analyses.
-
-  Args:
-    platform (str): one of {win, android, unix, mac, ios} if given, only return
-        builders for that platform.
-  """
-  result = []
-  all_trybots = FinditConfig.Get().builders_to_trybots
-  for master_name, builders in all_trybots.iteritems():
-    for builder_name in builders:
-      if (IsCompileBuilder(master_name, builder_name) and
-          GetSwarmbucketBot(master_name, builder_name) != (None, None)):
-        if not platform or platform == GetOSPlatformName(
-            master_name, builder_name):
-          result.append({'master': master_name, 'builder': builder_name})
-  return result
-
-
-def _GetTrybotConfig(master, builder):
-  trybot_config = _ConvertOldTrybotFormatToNew(
-      FinditConfig.Get().builders_to_trybots)
-  return trybot_config.get(master, {}).get(builder, {})
-
-
-def GetTrybotDimensions(wf_mastername, wf_buildername):
-  """Returns dimensions for a tryjob via swarmbucket.
-
-  Args:
-    wf_mastername: The mastername of a waterfall builder.
-    wf_buildername: The buildername of a waterfall builder.
-
-  Returns:
-    (list of str)
-    Colon-separated pairs of key:value identifying the swarming dimensions
-    required to match the configuration of the main waterfall builder.
-  """
-
-  bot_config = _GetTrybotConfig(wf_mastername, wf_buildername)
-  if 'dimensions' in bot_config:
-    return _MergeDimensions(_DEFAULT_DIMENSIONS, bot_config.get('dimensions'))
-  return None
-
-
-def _MergeDimensions(original, overrides):
-  original = original or []
-  overrides = overrides or []
-  # Dimensions is a list of colon separated strings.
-  original_dict = dict([x.split(':', 1) for x in original])
-  overrides_dict = dict([x.split(':', 1) for x in overrides])
-  original_dict.update(overrides_dict)
-  return ['%s:%s' % x for x in original_dict.items()]
-
-
-def GetSwarmbucketBot(wf_mastername, wf_buildername):
-  """If configured return master and buildername for the swarmbucket trybot.
-
-  This currently supports both the default builder ('findit_variable') or custom
-  configs, this will depend on whether 'use_swarmbucket' is set in the trybot
-  mapping or custom values for 'swarmbucket_{mastername, trybot}' are set.
-  """
-  bot_dict = _GetTrybotConfig(wf_mastername, wf_buildername)
-
-  # TODO(crbug.com/787918): Add this parameter to wf_config.py.
-  if bot_dict.get('use_swarmbucket'):
-    return SWARMBUCKET_MASTER, SWARMBUCKET_BUILDER
-
-  if 'swarmbucket_mastername' in bot_dict and 'swarmbucket_trybot' in bot_dict:
-    return bot_dict['swarmbucket_mastername'], bot_dict['swarmbucket_trybot']
-
-  return None, None
-
-
-def GetWaterfallTrybot(wf_mastername, wf_buildername):
-  """Returns tryserver master and builder for running reliable failure try jobs.
-
-  Args:
-    wf_mastername: The mastername of a waterfall builder.
-    wf_buildername: The buildername of a waterfall builder.
-
-  Returns:
-    (tryserver_mastername, tryserver_buildername)
-    The trybot mastername and buildername to rerun reliable failures
-    (compile/test) in exactly the same configuration as the given main waterfall
-    builder. If the given waterfall builder is not supported yet, (None, None)
-    is returned.
-  """
-  mastername, trybot = GetSwarmbucketBot(wf_mastername, wf_buildername)
-  if mastername and trybot:
-    return mastername, trybot
-
-  bot_dict = _GetTrybotConfig(wf_mastername, wf_buildername)
-  return bot_dict.get('mastername'), bot_dict.get('waterfall_trybot')
 
 
 def EnableStrictRegexForCompileLinkFailures(wf_mastername, wf_buildername):

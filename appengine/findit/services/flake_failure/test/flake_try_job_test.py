@@ -23,7 +23,6 @@ from services import swarmed_test_util
 from services import try_job as try_job_service
 from services.flake_failure import flake_constants
 from services.flake_failure import flake_try_job
-from waterfall import waterfall_config
 
 _GTEST_RESULTS = GtestTestResults(None)
 
@@ -368,8 +367,7 @@ class FlakeTryJobServiceTest(TestCase):
     try_job = flake_try_job.UpdateTryJob('m', 'b', 's1', 't1', 'hash', build_id)
     self.assertEqual(try_job.try_job_ids[0], build_id)
 
-  @mock.patch.object(
-      waterfall_config, 'GetFlakeTrybot', return_value=('m', 'b'))
+  @mock.patch.object(try_job_service, 'GetTrybot', return_value=('m', 'b'))
   @mock.patch.object(flake_try_job, 'GetBuildProperties', return_value={})
   @mock.patch.object(
       try_job_service, 'TriggerTryJob', return_value=('id', None))
@@ -419,8 +417,7 @@ class FlakeTryJobServiceTest(TestCase):
       self.message = message
       self.reason = reason
 
-  @mock.patch.object(
-      waterfall_config, 'GetFlakeTrybot', return_value=('m', 'b'))
+  @mock.patch.object(try_job_service, 'GetTrybot', return_value=('m', 'b'))
   @mock.patch.object(flake_try_job, 'GetBuildProperties', return_value={})
   @mock.patch.object(
       try_job_service,

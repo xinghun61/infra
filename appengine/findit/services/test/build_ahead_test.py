@@ -8,6 +8,7 @@ import random
 from google.appengine.ext import ndb
 
 from common.findit_http_client import FinditHttpClient
+from common.swarmbucket import swarmbucket
 from common.waterfall import buildbucket_client
 from model.build_ahead_try_job import BuildAheadTryJob
 from model.wf_try_bot_cache import WfTryBotCache
@@ -23,8 +24,10 @@ CN = 'builder_cc0b584fcab5ab502af9c154891c705115ea1fefd4d176cabf5d04ae0cd4e18c'
 
 class BuildAheadTest(wf_testcase.WaterfallTestCase):
 
+  @mock.patch.object(swarmbucket, 'GetDimensionsForBuilder')
   @mock.patch.object(buildbucket_client, 'TriggerTryJobs')
-  def testBuildAhead(self, mock_trigger):
+  def testBuildAhead(self, mock_trigger, mock_dimensions):
+    mock_dimensions.return_value = ['os:Mac-10.9', 'cpu:x86-64']
     _ = build_ahead.TriggerBuildAhead('master2', 'builder5', 'some_bot')
     mock_trigger.assert_called_once_with([
         buildbucket_client.TryJob(

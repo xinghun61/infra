@@ -6,6 +6,7 @@ import logging
 import mock
 
 from common import exceptions
+from common.swarmbucket import swarmbucket
 from common.waterfall import failure_type
 from dto.collect_swarming_task_results_outputs import (
     CollectSwarmingTaskResultsOutputs)
@@ -829,7 +830,9 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(test_try_job, 'GetReliableTests', return_value={})
   @mock.patch('services.swarmbot_util.GetCacheName', return_value='cache')
-  def testGetParametersToScheduleTestTryJob(self, *_):
+  @mock.patch.object(swarmbucket, 'GetDimensionsForBuilder')
+  def testGetParametersToScheduleTestTryJob(self, mock_dimensions, *_):
+    mock_dimensions.return_value = ['os:Mac-10.9', 'cpu:x86-64']
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
@@ -1913,8 +1916,6 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     culprits, _ = test_try_job.IdentifyTestTryJobCulprits(parameters)
     self.assertIsNone(culprits)
 
-  @mock.patch.object(
-      waterfall_config, 'GetWaterfallTrybot', return_value=('m', 'b'))
   @mock.patch.object(test_try_job, 'GetBuildProperties', return_value={})
   @mock.patch.object(try_job_service, 'TriggerTryJob', return_value=('1', None))
   def testSuccessfullyScheduleNewTryJobForTest(self, *_):
@@ -1947,8 +1948,6 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
 
     try_job_data = WfTryJobData.Get(try_job_id)
     self.assertIsNotNone(try_job_data)
-    self.assertEqual(try_job_data.master_name, master_name)
-    self.assertEqual(try_job_data.builder_name, builder_name)
     self.assertEqual(try_job_data.build_number, build_number)
     self.assertEqual(
         try_job_data.try_job_type,
@@ -1962,8 +1961,6 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
       self.message = message
       self.reason = reason
 
-  @mock.patch.object(
-      waterfall_config, 'GetWaterfallTrybot', return_value=('m', 'b'))
   @mock.patch.object(test_try_job, 'GetBuildProperties', return_value={})
   @mock.patch.object(
       try_job_service,

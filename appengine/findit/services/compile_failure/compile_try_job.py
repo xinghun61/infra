@@ -347,8 +347,7 @@ def ScheduleCompileTryJob(parameters, runner_id):
   master_name, builder_name, build_number = (parameters.build_key.GetParts())
   properties = GetBuildProperties(parameters)
   additional_parameters = {'compile_targets': parameters.compile_targets}
-  tryserver_mastername, tryserver_buildername = (
-      waterfall_config.GetWaterfallTrybot(master_name, builder_name))
+  tryserver_mastername, tryserver_buildername = try_job_service.GetTrybot()
 
   build_id, error = try_job_service.TriggerTryJob(
       master_name, builder_name, tryserver_mastername, tryserver_buildername,

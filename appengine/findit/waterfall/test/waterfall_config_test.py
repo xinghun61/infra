@@ -24,135 +24,6 @@ class MastersTest(wf_testcase.WaterfallTestCase):
                          'master2': {}
                      }))
 
-  def testConvertOldTrybotFormatToNew(self):
-    self.assertEqual({
-        'master_1': {
-            'builder_1': {
-                'mastername': 'tryserver.chromium.master_1',
-                'waterfall_trybot': 'trybot_1',
-                'flake_trybot': 'trybot_1',
-            },
-            'builder_2': {
-                'mastername': 'tryserver.chromium.master_1',
-                'waterfall_trybot': 'trybot_2',
-                'flake_trybot': 'trybot_2',
-            }
-        },
-        'master_2': {
-            'builder_3': {
-                'mastername': 'tryserver.chromium.master_2',
-                'waterfall_trybot': 'trybot_3',
-                'flake_trybot': 'trybot_3',
-            },
-            'builder_4': {
-                'mastername': 'tryserver.chromium.master_2',
-                'waterfall_trybot': 'trybot_4',
-                'flake_trybot': 'trybot_4',
-            }
-        },
-    },
-                     waterfall_config._ConvertOldTrybotFormatToNew({
-                         'master_1': {
-                             'builder_1': {
-                                 'mastername': 'tryserver.chromium.master_1',
-                                 'buildername': 'trybot_1',
-                             },
-                             'builder_2': {
-                                 'mastername': 'tryserver.chromium.master_1',
-                                 'buildername': 'trybot_2'
-                             }
-                         },
-                         'master_2': {
-                             'builder_3': {
-                                 'mastername': 'tryserver.chromium.master_2',
-                                 'buildername': 'trybot_3'
-                             },
-                             'builder_4': {
-                                 'mastername': 'tryserver.chromium.master_2',
-                                 'buildername': 'trybot_4'
-                             }
-                         }
-                     }))
-    self.assertEqual({
-        'master_1': {
-            'builder_1': {
-                'mastername': 'tryserver.chromium.master_1',
-                'waterfall_trybot': 'trybot_1',
-                'flake_trybot': 'trybot_1',
-            },
-            'builder_2': {
-                'mastername': 'tryserver.chromium.master_1',
-                'waterfall_trybot': 'trybot_2',
-                'flake_trybot': 'trybot_2',
-            }
-        },
-        'master_2': {
-            'builder_3': {
-                'mastername': 'tryserver.chromium.master_2',
-                'waterfall_trybot': 'trybot_3',
-                'flake_trybot': 'trybot_3',
-            },
-            'builder_4': {
-                'mastername': 'tryserver.chromium.master_2',
-                'waterfall_trybot': 'trybot_4',
-                'flake_trybot': 'trybot_4',
-            }
-        },
-    },
-                     waterfall_config._ConvertOldTrybotFormatToNew({
-                         'master_1': {
-                             'builder_1': {
-                                 'mastername': 'tryserver.chromium.master_1',
-                                 'waterfall_trybot': 'trybot_1',
-                                 'flake_trybot': 'trybot_1',
-                             },
-                             'builder_2': {
-                                 'mastername': 'tryserver.chromium.master_1',
-                                 'waterfall_trybot': 'trybot_2',
-                                 'flake_trybot': 'trybot_2',
-                             }
-                         },
-                         'master_2': {
-                             'builder_3': {
-                                 'mastername': 'tryserver.chromium.master_2',
-                                 'waterfall_trybot': 'trybot_3',
-                                 'flake_trybot': 'trybot_3',
-                             },
-                             'builder_4': {
-                                 'mastername': 'tryserver.chromium.master_2',
-                                 'waterfall_trybot': 'trybot_4',
-                                 'flake_trybot': 'trybot_4',
-                             }
-                         }
-                     }))
-
-  @mock.patch.object(waterfall_config, "GetSwarmbucketBot")
-  def testGetAllSupportedCompileBuilders(self, mock_swarmbucket):
-    mock_swarmbucket.return_value = ('luci.chromium.findit', 'findit_variable')
-    expected = [{
-        'builder': 'builder1',
-        'master': 'master1'
-    }, {
-        'builder': 'builder5',
-        'master': 'master2'
-    }, {
-        'builder': 'builder4',
-        'master': 'master2'
-    }, {
-        'builder': 'builder3',
-        'master': 'master2'
-    }, {
-        'builder': 'builder2',
-        'master': 'master2'
-    }, {
-        'builder': 'Linux',
-        'master': 'chromium'
-    }]
-    self.assertEqual(expected, waterfall_config.GetSupportedCompileBuilders())
-    expected = [{'builder': 'Linux', 'master': 'chromium'}]
-    self.assertEqual(
-        expected, waterfall_config.GetSupportedCompileBuilders(platform='unix'))
-
   def testGetStepsForMastersRulesWithSettingsProvided(self):
 
     class MockSettings():
@@ -199,26 +70,6 @@ class MastersTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(
         waterfall_config.StepIsSupportedForMaster('unsupported_step7',
                                                   'master3'))
-
-  def testGetWaterfallTrybot(self):
-    self.assertEqual(('tryserver1', 'trybot1'),
-                     waterfall_config.GetWaterfallTrybot('master1', 'builder1'))
-    self.assertEqual(('swarming_tryserver2', 'swarming_trybot2'),
-                     waterfall_config.GetWaterfallTrybot('master2', 'builder4'))
-    self.assertEqual(('luci.chromium.findit', 'findit_variable'),
-                     waterfall_config.GetWaterfallTrybot('master2', 'builder5'))
-    self.assertEqual((None, None),
-                     waterfall_config.GetWaterfallTrybot('master3', 'builder3'))
-
-  def testGetFlakeTrybot(self):
-    self.assertEqual(('tryserver1', 'trybot1_flake'),
-                     waterfall_config.GetFlakeTrybot('master1', 'builder1'))
-    self.assertEqual((None, None),
-                     waterfall_config.GetFlakeTrybot('master3', 'builder3'))
-    self.assertEqual(('swarming_tryserver2', 'swarming_trybot2'),
-                     waterfall_config.GetFlakeTrybot('master2', 'builder4'))
-    self.assertEqual(('luci.chromium.findit', 'findit_variable'),
-                     waterfall_config.GetFlakeTrybot('master2', 'builder5'))
 
   def testGetTryJobSettings(self):
     self.assertEqual({
@@ -341,9 +192,3 @@ class MastersTest(wf_testcase.WaterfallTestCase):
         'gerrit_hosts': ['chromium-review.googlesource.com'],
         'commit_bot_emails': ['commit-bot@chromium.org'],
     }, waterfall_config.GetCodeReviewSettings())
-
-  def testGetTrybotDimensions(self):
-    self.assertEqual(['os:Mac-10.9', 'cpu:x86-64', 'pool:luci.chromium.findit'],
-                     waterfall_config.GetTrybotDimensions('m', 'b'))
-    self.assertIsNone(
-        waterfall_config.GetTrybotDimensions('master1', 'builder1'))

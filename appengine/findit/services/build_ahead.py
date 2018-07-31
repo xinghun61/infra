@@ -18,6 +18,7 @@ from services import bot_db
 from services import constants
 from services import git
 from services import swarmbot_util
+from services import try_job as try_job_service
 from waterfall import waterfall_config
 
 LOW_COMMITS_PER_HOUR = 3
@@ -144,11 +145,10 @@ def TriggerBuildAhead(wf_master, wf_builder, bot):
   """
   cache_name = swarmbot_util.GetCacheName(wf_master, wf_builder)
   recipe = 'findit/chromium/compile'
-  dimensions = waterfall_config.GetTrybotDimensions(wf_master, wf_builder)
+  dimensions = try_job_service.GetTrybotDimensions(wf_master, wf_builder)
   if bot:
-    dimensions = waterfall_config._MergeDimensions(dimensions, ['id:%s' % bot])
-  master_name, builder_name = waterfall_config.GetSwarmbucketBot(
-      wf_master, wf_builder)
+    dimensions = try_job_service.MergeDimensions(dimensions, ['id:%s' % bot])
+  master_name, builder_name = try_job_service.GetTrybot()
   # By setting the revisions to (HEAD~1, HEAD), we get the findit compile recipe
   # to do a build at the tip of the tree without adding any special cases to the
   # recipe.

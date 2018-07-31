@@ -106,16 +106,6 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         try_job_service.NeedANewWaterfallTryJob(master_name, builder_name,
                                                 build_number, False, False))
 
-  def testNotNeedANewWaterfallTryJobIfBuilderIsNotSupportedYet(self):
-    master_name = 'master3'
-    builder_name = 'builder3'
-    build_number = 223
-    WfAnalysis.Create(master_name, builder_name, build_number).put()
-
-    self.assertFalse(
-        try_job_service.NeedANewWaterfallTryJob(master_name, builder_name,
-                                                build_number, False))
-
   @mock.patch.object(
       try_job_service, '_ShouldBailOutForOutdatedBuild', return_value=True)
   def testBailOutForTryJobWithOutdatedTimestamp(self, _):
@@ -487,7 +477,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(error)
 
   @mock.patch.object(try_job_service, 'buildbucket_client')
-  @mock.patch.object(waterfall_config, 'GetWaterfallTrybot')
+  @mock.patch.object(try_job_service, 'GetTrybot')
   def testTriggerTryJobSwarming(self, _mock_waterfall, mock_client):
     master_name = 'm'
     builder_name = 'b'
@@ -602,7 +592,9 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     try_job_service.UpdateTryJobResult(try_job_result, new_result, '123')
     self.assertEqual(expected_updated_result, try_job_result)
 
-  def testPrepareParametersToScheduleTryJob(self):
+  @mock.patch.object(swarmbucket, 'GetDimensionsForBuilder')
+  def testPrepareParametersToScheduleTryJob(self, mock_dimensions):
+    mock_dimensions.return_value = ['os:Mac-10.9', 'cpu:x86-64']
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
@@ -813,8 +805,10 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     try_job_service._UpdateLastBuildbucketResponse(None, None)
     self.assertFalse(mock_fn.called)
 
+  @mock.patch.object(swarmbucket, 'GetDimensionsForBuilder')
   @mock.patch.object(WfTryJobData, 'put')
-  def testUpdateLastBuildbucketResponse(self, _):
+  def testUpdateLastBuildbucketResponse(self, _, mock_dimensions):
+    mock_dimensions.return_value = ['os:Mac-10.9', 'cpu:x86-64']
     try_job_data = WfTryJobData.Create('m/b/123')
     response = {'id': '1'}
     build = buildbucket_client.BuildbucketBuild(response)
@@ -1110,15 +1104,6 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
 
     try_job_service.GetDimensionsFromBuildInfo(build_info)
     mocked_dimensions.assert_called_once_with('bucket', 'pb')
-
-  @mock.patch.object(waterfall_config, 'GetTrybotDimensions')
-  def testGetDimensionsFromBuildInfoBuildbot(self, mocked_dimensions):
-    build_info = BuildInfo('m', 'b', 123)
-    build_info.parent_buildername = 'pb'
-    build_info.parent_mastername = 'pm'
-
-    try_job_service.GetDimensionsFromBuildInfo(build_info)
-    mocked_dimensions.assert_called_once_with('pm', 'pb')
 
   @mock.patch.object(time, 'time', return_value=1511298536.959618)
   @mock.patch.object(waterfall_config, 'GetTryJobSettings')
@@ -1577,3 +1562,13 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         expected_culprits,
         try_job_service.GetCulpritsWithoutNoBlameAccountsCLS(culprits))
+
+  def testGetTrybot(self):
+    self.assertEqual(('luci.chromium.findit', 'findit_variable'),
+                     try_job_service.GetTrybot())
+
+  @mock.patch.object(swarmbucket, 'GetDimensionsForBuilder')
+  def testGetTrybotDimensions(self, mock_dimensions):
+    mock_dimensions.return_value = ['os:Mac-10.9', 'cpu:x86-64']
+    self.assertEqual(['os:Mac-10.9', 'cpu:x86-64', 'pool:luci.chromium.findit'],
+                     try_job_service.GetTrybotDimensions('m', 'b'))

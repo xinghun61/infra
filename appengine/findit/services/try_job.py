@@ -55,6 +55,12 @@ from waterfall import waterfall_config
 
 UNKNOWN = 'UNKNOWN'
 
+_DEFAULT_DIMENSIONS = ['pool:luci.chromium.findit']
+_CI_BUCKET = 'luci.chromium.ci'
+
+SWARMBUCKET_MASTER = 'luci.chromium.findit'
+SWARMBUCKET_BUILDER = 'findit_variable'
+
 
 def _ShouldBailOutForOutdatedBuild(build):
   return (build.start_time is None or
@@ -182,18 +188,10 @@ def NeedANewWaterfallTryJob(master_name,
                             build_completed=True):
   """Preliminary check if a new try job is needed.
 
-  Don't need try job if build not completed yet.
-  Checks if a tryserver is setup for the builder,
-  and only runs for builds start within 24 hours, unless it's a forced rerun.
+  Don't need try job if build not completed yet, only runs for builds started
+  within 24 hours, unless it's a forced rerun.
   """
   if not build_completed:
-    return False
-
-  tryserver_mastername, tryserver_buildername = (
-      waterfall_config.GetWaterfallTrybot(master_name, builder_name))
-
-  if not tryserver_mastername or not tryserver_buildername:
-    logging.info('%s, %s is not supported yet.', master_name, builder_name)
     return False
 
   if not force_try_job:
@@ -312,7 +310,6 @@ def TriggerTryJob(master_name, builder_name, tryserver_mastername,
       tryserver_mastername, tryserver_buildername, properties, [],
       additional_parameters, cache_name, dimensions,
       CreatePubSubCallback(runner_id))
-  # This is a no-op if the tryjob is not on swarmbucket.
   swarmbot_util.AssignWarmCacheHost(try_job, cache_name, FinditHttpClient())
   error, build = buildbucket_client.TriggerTryJobs([try_job])[0]
 
@@ -387,15 +384,8 @@ def PrepareParametersToScheduleTryJob(master_name, builder_name, build_number,
   match_mastername = failure_info.parent_mastername or master_name
   match_buildername = failure_info.parent_buildername or builder_name
 
-  # Dimensions should be obtained dynamically via the swarmbucket api if the
-  # original failure happened on a LUCI builder. Fallback to the static mapping
-  # otherwise.
-  if failure_info.is_luci:
-    parameters['dimensions'] = swarmbucket.GetDimensionsForBuilder(
-        failure_info.buildbucket_bucket, match_buildername)
-  else:
-    parameters['dimensions'] = waterfall_config.GetTrybotDimensions(
-        match_mastername, match_buildername)
+  parameters['dimensions'] = GetTrybotDimensions(
+      failure_info.buildbucket_bucket, match_buildername)
 
   parameters['cache_name'] = swarmbot_util.GetCacheName(match_mastername,
                                                         match_buildername)
@@ -624,13 +614,10 @@ def GetDimensionsFromBuildInfo(build_info):
   parent_mastername = build_info.parent_mastername or build_info.master_name
   parent_buildername = build_info.parent_buildername or build_info.builder_name
 
-  if build_info.is_luci and build_info.buildbucket_bucket:
-    # For luci builds, use swarmbucket.
-    return swarmbucket.GetDimensionsForBuilder(build_info.buildbucket_bucket,
-                                               parent_buildername)
-  # Fallback to static mapping otherwise.
-  return waterfall_config.GetTrybotDimensions(parent_mastername,
-                                              parent_buildername) or []
+  return GetTrybotDimensions(
+      parent_mastername,
+      parent_buildername,
+      bucket=build_info.buildbucket_bucket)
 
 
 def GetOrCreateTryJobData(try_job_type, try_job_id, urlsafe_try_job_key):
@@ -830,3 +817,24 @@ def GetCulpritsWithoutNoBlameAccountsCLS(culprits):
     updated_culprits[revision] = culprit
 
   return updated_culprits
+
+
+def GetTrybotDimensions(_wf_mastername, wf_buildername, bucket=None):
+  bucket = bucket or _CI_BUCKET
+  return MergeDimensions(
+      _DEFAULT_DIMENSIONS,
+      swarmbucket.GetDimensionsForBuilder(bucket, wf_buildername))
+
+
+def MergeDimensions(original, overrides):
+  original = original or []
+  overrides = overrides or []
+  # Dimensions is a list of colon separated strings.
+  original_dict = dict([x.split(':', 1) for x in original])
+  overrides_dict = dict([x.split(':', 1) for x in overrides])
+  original_dict.update(overrides_dict)
+  return ['%s:%s' % x for x in original_dict.items()]
+
+
+def GetTrybot():
+  return SWARMBUCKET_MASTER, SWARMBUCKET_BUILDER

@@ -6,6 +6,7 @@ from datetime import datetime
 import mock
 
 from common import constants
+from common.swarmbucket import swarmbucket
 from dto.int_range import IntRange
 from dto.step_metadata import StepMetadata
 from libs import analysis_status
@@ -153,14 +154,16 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
       self.assertIsNotNone(analysis)
 
   @mock.patch.object(ci_failure, 'GetStepMetadata', return_value={})
+  @mock.patch.object(swarmbucket, 'GetDimensionsForBuilder')
   @mock.patch.object(build_util, 'GetBuildInfo')
   @mock.patch.object(initialize_flake_pipeline, '_NeedANewAnalysis')
   @mock.patch('waterfall.flake.initialize_flake_pipeline.AnalyzeFlakePipeline')
   @mock.patch('waterfall.flake.initialize_flake_pipeline.MasterFlakeAnalysis')
   def testRerunAnalysisWithAnalyzeFlakePipeline(
       self, mocked_analysis, mocked_pipeline, mocked_need_analysis,
-      mocked_build_info, *_):
+      mocked_build_info, mock_dimensions, *_):
 
+    mock_dimensions.return_value = ['os:Mac', 'cpu:x86']
     start_commit_position = 1000
     start_build_info = BuildInfo('m', 'b 1', 123)
     start_build_info.commit_position = start_commit_position
@@ -188,7 +191,8 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
             culprit_commit_position=None,
             next_commit_position=start_commit_position),
         commit_position_range=IntRange(lower=None, upper=start_commit_position),
-        dimensions=ListOfBasestring.FromSerializable([]),
+        dimensions=ListOfBasestring.FromSerializable(
+            ['os:Mac', 'cpu:x86', 'pool:luci.chromium.findit']),
         manually_triggered=manually_triggered,
         retries=0,
         step_metadata=StepMetadata.FromSerializable({}))

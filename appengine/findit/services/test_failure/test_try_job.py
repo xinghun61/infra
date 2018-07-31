@@ -539,8 +539,7 @@ def ScheduleTestTryJob(parameters, notification_id):
   properties = GetBuildProperties(parameters)
   additional_parameters = {'tests': parameters.targeted_tests}
 
-  tryserver_mastername, tryserver_buildername = (
-      waterfall_config.GetWaterfallTrybot(master_name, builder_name))
+  tryserver_mastername, tryserver_buildername = try_job_service.GetTrybot()
 
   build_id, error = try_job_service.TriggerTryJob(
       master_name, builder_name, tryserver_mastername, tryserver_buildername,

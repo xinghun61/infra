@@ -34,9 +34,9 @@ from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobPipeline)
 from services import swarmbot_util
 from services import swarming
+from services import try_job as try_job_service
 from waterfall import build_util
 from waterfall import buildbot
-from waterfall import waterfall_config
 from waterfall.build_info import BuildInfo
 from waterfall.test.wf_testcase import WaterfallTestCase
 
@@ -189,7 +189,7 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
 
     self.assertEqual(expected_output.ToSerializable(), pipeline_output)
 
-  @mock.patch.object(waterfall_config, 'GetTrybotDimensions')
+  @mock.patch.object(try_job_service, 'GetTrybotDimensions')
   @mock.patch.object(swarmbot_util, 'GetCacheName')
   @mock.patch.object(build_util, 'GetBuildInfo')
   def testGetIsolateShaForCommitPositionPipelineCommitLevel(

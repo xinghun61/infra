@@ -321,8 +321,7 @@ def ScheduleFlakeTryJob(parameters, runner_id):
       0,
       skip_tests=True)
 
-  tryserver_mastername, tryserver_buildername = (
-      waterfall_config.GetFlakeTrybot(master_name, builder_name))
+  tryserver_mastername, tryserver_buildername = try_job_service.GetTrybot()
 
   assert tryserver_mastername and tryserver_buildername, (
       'No tryserver master/builder is set for {}/{}'.format(
