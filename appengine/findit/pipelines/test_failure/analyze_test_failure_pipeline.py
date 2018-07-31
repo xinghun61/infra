@@ -16,7 +16,6 @@ from gae_libs import appengine_util
 from gae_libs import pipelines
 from gae_libs.pipelines import GeneratorPipeline
 from gae_libs.pipelines import pipeline
-from libs import analysis_status
 from libs.structured_object import StructuredObject
 from model.wf_analysis import WfAnalysis
 from pipelines import report_event_pipeline
@@ -28,13 +27,13 @@ from pipelines.test_failure.run_swarming_tasks_pipeline import (
     RunSwarmingTasksPipeline)
 from pipelines.test_failure.start_test_try_job_pipeline import (
     StartTestTryJobPipeline)
+from pipelines.trigger_flake_analyses_pipeline import (
+    TriggerFlakeAnalysesPipeline)
 from services import build_failure_analysis
 from services.parameters import BuildKey
 from services.parameters import TestFailureInfo
 from services.parameters import TestHeuristicAnalysisOutput
 from services.parameters import TestHeuristicAnalysisParameters
-from waterfall.flake.trigger_flake_analyses_pipeline import (
-    TriggerFlakeAnalysesPipeline)
 
 
 class AnalyzeTestFailureInput(StructuredObject):
@@ -155,5 +154,4 @@ class AnalyzeTestFailurePipeline(GeneratorPipeline):
             report_event_input)
 
       # Trigger flake analysis on flaky tests, if any.
-      yield TriggerFlakeAnalysesPipeline(master_name, builder_name,
-                                         build_number)
+      yield TriggerFlakeAnalysesPipeline(pipeline_input.build_key)

@@ -5,30 +5,26 @@
 from collections import defaultdict
 import logging
 
-from gae_libs.pipeline_wrapper import BasePipeline
+from gae_libs.pipelines import GeneratorPipeline
 from libs import time_util
 from model.flake import triggering_sources
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.wf_analysis import WfAnalysis
 from services import ci_failure
 from services import monitoring
+from services.parameters import BuildKey
 from waterfall import waterfall_config
 from waterfall.flake import flake_analysis_service
 
 
-class TriggerFlakeAnalysesPipeline(BasePipeline):
+class TriggerFlakeAnalysesPipeline(GeneratorPipeline):
   """A pipeline that automatically triggers flake analyses."""
+  input_type = BuildKey
 
-  # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number):
+  def RunImpl(self, build_key):
     """Triggers flake analyses for flaky tests found by build failure analysis.
-
-    Args:
-      master_name (str): The master name.
-      builder_name (str): The builder name.
-      build_number (int): The build number.
     """
-
+    master_name, builder_name, build_number = build_key.GetParts()
     flake_settings = waterfall_config.GetCheckFlakeSettings()
     throttled = flake_settings.get('throttle_flake_analyses', True)
 

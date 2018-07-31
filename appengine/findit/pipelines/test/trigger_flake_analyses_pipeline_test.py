@@ -7,10 +7,11 @@ import mock
 from gae_libs.pipelines import pipeline_handlers
 from services import ci_failure
 from model.wf_analysis import WfAnalysis
+from pipelines.trigger_flake_analyses_pipeline import (
+    TriggerFlakeAnalysesPipeline)
+from services.parameters import BuildKey
 from waterfall import waterfall_config
 from waterfall.flake import flake_analysis_service
-from waterfall.flake.trigger_flake_analyses_pipeline import (
-    TriggerFlakeAnalysesPipeline)
 from waterfall.test import wf_testcase
 
 
@@ -40,11 +41,16 @@ class TriggerFlakeAnalysesPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.flaky_tests = {step_name: [test_name, 'Unittest1.Subtest2']}
     analysis.put()
 
+    build_key = BuildKey(
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number)
+
     with mock.patch.object(
         flake_analysis_service,
         'ScheduleAnalysisForFlake') as mocked_ScheduleAnalysisForFlake:
-      pipeline = TriggerFlakeAnalysesPipeline()
-      pipeline.run(master_name, builder_name, build_number)
+      pipeline = TriggerFlakeAnalysesPipeline(build_key)
+      pipeline.RunImpl(build_key)
       self.assertTrue(mocked_ScheduleAnalysisForFlake.called)
       mock_monitoring.assert_has_calls([
           mock.call('a_tests', 'a_tests', 'analyzed', 1),
@@ -74,11 +80,16 @@ class TriggerFlakeAnalysesPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.flaky_tests = {step_name: [test_name]}
     analysis.put()
 
+    build_key = BuildKey(
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number)
+
     with mock.patch.object(
         flake_analysis_service,
         'ScheduleAnalysisForFlake') as mocked_ScheduleAnalysisForFlake:
-      pipeline = TriggerFlakeAnalysesPipeline()
-      pipeline.run(master_name, builder_name, build_number)
+      pipeline = TriggerFlakeAnalysesPipeline(build_key)
+      pipeline.RunImpl(build_key)
       self.assertTrue(mocked_ScheduleAnalysisForFlake.called)
       mock_monitoring.assert_has_calls(
           [mock.call('a_tests', 'a_tests', 'analyzed', 1)])
@@ -95,9 +106,14 @@ class TriggerFlakeAnalysesPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
+    build_key = BuildKey(
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number)
+
     with mock.patch.object(
         flake_analysis_service, 'ScheduleAnalysisForFlake',
         return_value=False) as mocked_ScheduleAnalysisForFlake:
-      pipeline = TriggerFlakeAnalysesPipeline()
-      pipeline.run(master_name, builder_name, build_number)
+      pipeline = TriggerFlakeAnalysesPipeline(build_key)
+      pipeline.RunImpl(build_key)
       self.assertFalse(mocked_ScheduleAnalysisForFlake.called)
