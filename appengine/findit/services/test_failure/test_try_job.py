@@ -280,8 +280,7 @@ def GetParametersToScheduleTestTryJob(master_name, builder_name, build_number,
   # TODO(crbug/808699):  update this function call when refactor
   # start_compile_try_job_pipeline.
   parameters = try_job_service.PrepareParametersToScheduleTryJob(
-      master_name, builder_name, build_number, failure_info.ToSerializable(),
-      heuristic_result.ToSerializable()
+      master_name, builder_name, build_number, failure_info, heuristic_result
       if heuristic_result else None, urlsafe_try_job_key)
 
   parameters['good_revision'] = _GetGoodRevisionTest(master_name, builder_name,

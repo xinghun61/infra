@@ -6,7 +6,6 @@ from gae_libs.pipelines import GeneratorPipeline
 from pipelines.compile_failure import (
     revert_and_notify_compile_culprit_pipeline as revert_pipeline)
 from services import consistent_failure_culprits
-from services import git
 from services.compile_failure import compile_try_job
 from services.parameters import BuildKey
 from services.parameters import CulpritActionParameters

@@ -9,7 +9,7 @@ from common import exceptions
 from common.waterfall import failure_type
 from dto.collect_swarming_task_results_outputs import (
     CollectSwarmingTaskResultsOutputs)
-from dto.start_try_job_inputs import StartTestTryJobInputs
+from dto.start_waterfall_try_job_inputs import StartTestTryJobInputs
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from libs.gitiles.change_log import Contributor

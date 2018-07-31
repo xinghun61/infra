@@ -39,7 +39,7 @@ def _GetOutputNodes(signals):
     return []
 
   # Compile failures with no output nodes will be considered unique.
-  return signals['compile'].get('failed_output_nodes') or []
+  return signals['compile'].failed_output_nodes or []
 
 
 def _GetMatchingCompileFailureGroups(output_nodes):
@@ -79,27 +79,21 @@ def _IsCompileFailureUniqueAcrossPlatforms(
 def _NeedANewCompileTryJob(master_name, builder_name, build_number,
                            failure_info):
 
-  compile_failure = failure_info['failed_steps'].get('compile') or {}
+  compile_failure = failure_info.failed_steps.get('compile') or None
   if compile_failure:
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     analysis.failure_result_map['compile'] = BaseBuildModel.CreateBuildId(
-        master_name, builder_name, compile_failure['first_failure'])
+        master_name, builder_name, compile_failure.first_failure)
     analysis.put()
 
-    if (compile_failure.get('supported') and
-        compile_failure['first_failure'] == compile_failure['current_failure']):
+    if (compile_failure.supported and
+        compile_failure.first_failure == compile_failure.current_failure):
       return True
 
   return False
 
 
-def NeedANewCompileTryJob(master_name,
-                          builder_name,
-                          build_number,
-                          failure_info,
-                          signals,
-                          heuristic_result,
-                          force_try_job=False):
+def NeedANewCompileTryJob(start_try_job_input):
   """Decides if a new compile try job is needed.
 
   A new compile try job is needed if:
@@ -112,20 +106,23 @@ def NeedANewCompileTryJob(master_name,
     A bool to indicate if a new try job is needed.
     A key to the entity of the try job.
   """
+  master_name, builder_name, build_number = (
+      start_try_job_input.build_key.GetParts())
   need_new_try_job = try_job_service.NeedANewWaterfallTryJob(
-      master_name, builder_name, build_number, force_try_job)
+      master_name, builder_name, build_number, start_try_job_input.force)
 
   if not need_new_try_job:
     return False, None
 
-  try_job_type = failure_info['failure_type']
+  try_job_type = start_try_job_input.heuristic_result.failure_info.failure_type
   if try_job_type != failure_type.COMPILE:
     logging.error('Checking for a compile try job but got a %s failure.',
                   failure_type.GetDescriptionForFailureType(try_job_type))
     return False, None
 
-  need_new_try_job = _NeedANewCompileTryJob(master_name, builder_name,
-                                            build_number, failure_info)
+  need_new_try_job = _NeedANewCompileTryJob(
+      master_name, builder_name, build_number,
+      start_try_job_input.heuristic_result.failure_info)
 
   # TODO(chanli): enable the feature to trigger single try job for a group
   # when notification is ready.
@@ -138,11 +135,13 @@ def NeedANewCompileTryJob(master_name,
   if need_new_try_job:
     _IsCompileFailureUniqueAcrossPlatforms(
         master_name, builder_name, build_number, try_job_type,
-        failure_info['builds'][str(build_number)]['blame_list'], signals,
-        heuristic_result)
+        start_try_job_input.heuristic_result.failure_info.builds[str(
+            build_number)].blame_list,
+        start_try_job_input.heuristic_result.signals,
+        start_try_job_input.heuristic_result.heuristic_result)
 
   try_job_was_created, try_job_key = try_job_service.ReviveOrCreateTryJobEntity(
-      master_name, builder_name, build_number, force_try_job)
+      master_name, builder_name, build_number, start_try_job_input.force)
   need_new_try_job = need_new_try_job and try_job_was_created
   return need_new_try_job, try_job_key
 
@@ -153,53 +152,59 @@ def _GetFailedTargetsFromSignals(signals, master_name, builder_name):
   if not signals or 'compile' not in signals:
     return compile_targets
 
-  if signals['compile'].get('failed_output_nodes'):
-    return signals['compile'].get('failed_output_nodes')
+  if signals['compile'].failed_output_nodes:
+    return signals['compile'].failed_output_nodes
 
   strict_regex = waterfall_config.EnableStrictRegexForCompileLinkFailures(
       master_name, builder_name)
-  for source_target in signals['compile'].get('failed_targets') or []:
+  for source_target in signals['compile'].failed_targets or []:
     # For link failures, we pass the executable targets directly to try-job, and
     # there is no 'source' for link failures.
     # For compile failures, only pass the object files as the compile targets
     # for the bots that we use strict regex to extract such information.
-    if not source_target.get('source') or strict_regex:
-      compile_targets.append(source_target.get('target'))
+    if not source_target.source or strict_regex:
+      compile_targets.append(source_target.target)
 
   return compile_targets
 
 
 def _GetLastPassCompile(build_number, failed_steps):
   if (failed_steps.get('compile') and
-      failed_steps['compile']['first_failure'] == build_number and
-      failed_steps['compile'].get('last_pass') is not None):
-    return failed_steps['compile']['last_pass']
+      failed_steps['compile'].first_failure == build_number and
+      failed_steps['compile'].last_pass is not None):
+    return failed_steps['compile'].last_pass
   return None
 
 
 def _GetGoodRevisionCompile(master_name, builder_name, build_number,
                             failure_info):
-  last_pass = _GetLastPassCompile(build_number, failure_info['failed_steps'])
+  last_pass = _GetLastPassCompile(build_number, failure_info.failed_steps)
   if last_pass is None:
     logging.warning(
         'Couldn"t start try job for build %s, %s, %d because'
         ' last_pass is not found.', master_name, builder_name, build_number)
     return None
 
-  return failure_info['builds'][str(last_pass)]['chromium_revision']
+  return failure_info.builds[str(last_pass)].chromium_revision
 
 
-def GetParametersToScheduleCompileTryJob(master_name, builder_name,
-                                         build_number, failure_info, signals,
-                                         heuristic_result, urlsafe_try_job_key):
+def GetParametersToScheduleCompileTryJob(start_compile_try_job_input,
+                                         urlsafe_try_job_key):
+
+  master_name, builder_name, build_number = (
+      start_compile_try_job_input.build_key.GetParts())
+  failure_info = start_compile_try_job_input.heuristic_result.failure_info
+
   parameters = try_job_service.PrepareParametersToScheduleTryJob(
-      master_name, builder_name, build_number, failure_info, heuristic_result,
+      master_name, builder_name, build_number, failure_info,
+      start_compile_try_job_input.heuristic_result.heuristic_result,
       urlsafe_try_job_key)
 
   parameters['good_revision'] = _GetGoodRevisionCompile(
       master_name, builder_name, build_number, failure_info)
   parameters['compile_targets'] = _GetFailedTargetsFromSignals(
-      signals, master_name, builder_name)
+      start_compile_try_job_input.heuristic_result.signals, master_name,
+      builder_name)
 
   return RunCompileTryJobParameters.FromSerializable(parameters)
 
@@ -242,7 +247,7 @@ def CompileFailureIsFlaky(result):
 
 @ndb.transactional
 def UpdateTryJobResult(parameters, culprits):
-  master_name, builder_name, build_number = (parameters.build_key.GetParts())
+  master_name, builder_name, build_number = parameters.build_key.GetParts()
   try_job = WfTryJob.Get(master_name, builder_name, build_number)
   new_result = parameters.result.ToSerializable() if parameters.result else {}
   try_job_id = parameters.result.try_job_id if parameters.result else None

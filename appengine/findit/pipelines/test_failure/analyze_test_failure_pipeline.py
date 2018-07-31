@@ -11,7 +11,7 @@ from dto.collect_swarming_task_results_inputs import (
 from dto.collect_swarming_task_results_outputs import (
     CollectSwarmingTaskResultsOutputs)
 from dto.run_swarming_tasks_input import RunSwarmingTasksInput
-from dto.start_try_job_inputs import StartTestTryJobInputs
+from dto.start_waterfall_try_job_inputs import StartTestTryJobInputs
 from gae_libs import appengine_util
 from gae_libs import pipelines
 from gae_libs.pipelines import pipeline
@@ -97,7 +97,7 @@ class AnalyzeTestFailurePipeline(BasePipeline):
   def _ContinueTryJobPipeline(self, failure_info):
 
     heuristic_result = {'failure_info': failure_info, 'heuristic_result': None}
-    start_try_job_inputs = StartTestTryJobInputs(
+    start_waterfall_try_job_inputs = StartTestTryJobInputs(
         build_key=BuildKey(
             master_name=self.master_name,
             builder_name=self.builder_name,
@@ -108,7 +108,7 @@ class AnalyzeTestFailurePipeline(BasePipeline):
             heuristic_result),
         consistent_failures=CollectSwarmingTaskResultsOutputs.FromSerializable(
             {}))
-    try_job_pipeline = StartTestTryJobPipeline(start_try_job_inputs)
+    try_job_pipeline = StartTestTryJobPipeline(start_waterfall_try_job_inputs)
     try_job_pipeline.target = appengine_util.GetTargetNameForModule(
         constants.WATERFALL_BACKEND)
     try_job_pipeline.start(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
@@ -169,14 +169,14 @@ class AnalyzeTestFailurePipeline(BasePipeline):
       consistent_failures = yield CollectSwarmingTaskResultsPipeline(
           collect_task_results_inputs)
 
-      start_try_job_inputs = pipelines.CreateInputObjectInstance(
+      start_waterfall_try_job_inputs = pipelines.CreateInputObjectInstance(
           StartTestTryJobInputs,
           build_key=build_key,
           build_completed=build_completed,
           force=force,
           heuristic_result=heuristic_result,
           consistent_failures=consistent_failures)
-      yield StartTestTryJobPipeline(start_try_job_inputs)
+      yield StartTestTryJobPipeline(start_waterfall_try_job_inputs)
 
       if not force:
         # Report event to BQ.

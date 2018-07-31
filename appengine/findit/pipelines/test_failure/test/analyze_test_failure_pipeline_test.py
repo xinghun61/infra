@@ -10,7 +10,7 @@ from dto.collect_swarming_task_results_inputs import (
 from dto.collect_swarming_task_results_outputs import (
     CollectSwarmingTaskResultsOutputs)
 from dto.run_swarming_tasks_input import RunSwarmingTasksInput
-from dto.start_try_job_inputs import StartTestTryJobInputs
+from dto.start_waterfall_try_job_inputs import StartTestTryJobInputs
 from gae_libs import pipelines
 from gae_libs.pipelines import pipeline_handlers
 from libs import analysis_status
@@ -80,7 +80,7 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
         analyze_test_failure_pipeline.CollectSwarmingTaskResultsPipeline,
         collect_task_results_inputs, consistent_failures)
 
-    start_try_job_inputs = StartTestTryJobInputs(
+    start_waterfall_try_job_inputs = StartTestTryJobInputs(
         build_key=build_key,
         build_completed=True,
         force=False,
@@ -88,7 +88,7 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
         consistent_failures=consistent_failures)
     self.MockGeneratorPipeline(
         analyze_test_failure_pipeline.StartTestTryJobPipeline,
-        start_try_job_inputs, None)
+        start_waterfall_try_job_inputs, None)
 
     self.MockPipeline(
         analyze_test_failure_pipeline.TriggerFlakeAnalysesPipeline,
@@ -151,7 +151,7 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
         analyze_test_failure_pipeline.CollectSwarmingTaskResultsPipeline,
         collect_task_results_inputs, consistent_failures)
 
-    start_try_job_inputs = StartTestTryJobInputs(
+    start_waterfall_try_job_inputs = StartTestTryJobInputs(
         build_key=build_key,
         build_completed=True,
         force=True,
@@ -159,7 +159,7 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
         consistent_failures=consistent_failures)
     self.MockGeneratorPipeline(
         analyze_test_failure_pipeline.StartTestTryJobPipeline,
-        start_try_job_inputs, None)
+        start_waterfall_try_job_inputs, None)
 
     self.MockPipeline(
         analyze_test_failure_pipeline.TriggerFlakeAnalysesPipeline,

@@ -7,6 +7,7 @@ import mock
 
 from common import exceptions
 from common.waterfall import failure_type
+from dto.start_waterfall_try_job_inputs import StartCompileTryJobInput
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from libs.gitiles.change_log import Contributor
@@ -19,7 +20,12 @@ from model.wf_try_job_data import WfTryJobData
 from services import build_failure_analysis
 from services import try_job as try_job_service
 from services.compile_failure import compile_try_job
+from services.parameters import BaseFailedSteps
 from services.parameters import BuildKey
+from services.parameters import CompileFailureInfo
+from services.parameters import CompileFailureSignals
+from services.parameters import CompileHeuristicAnalysisOutput
+from services.parameters import CompileHeuristicResult
 from services.parameters import CompileTryJobReport
 from services.parameters import CompileTryJobResult
 from services.parameters import IdentifyCompileTryJobCulpritParameters
@@ -90,7 +96,11 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
     blame_list = ['a']
 
-    signals = {'compile': {'failed_output_nodes': []}}
+    signals = CompileFailureSignals.FromSerializable({
+        'compile': {
+            'failed_output_nodes': []
+        }
+    })
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have zero failed output nodes.
@@ -110,7 +120,11 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
     blame_list = ['a']
 
-    signals = {'compile': {'failed_output_nodes': ['abc.obj']}}
+    signals = CompileFailureSignals.FromSerializable({
+        'compile': {
+            'failed_output_nodes': ['abc.obj']
+        }
+    })
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed output nodes.
@@ -132,7 +146,11 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
     blame_list = ['a']
 
-    signals = {'compile': {'failed_output_nodes': ['abc.obj']}}
+    signals = CompileFailureSignals.FromSerializable({
+        'compile': {
+            'failed_output_nodes': ['abc.obj']
+        }
+    })
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed output nodes.
@@ -162,16 +180,20 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
     blame_list = ['a']
 
-    signals = {'compile': {'failed_output_nodes': ['abc.obj']}}
+    signals = CompileFailureSignals.FromSerializable({
+        'compile': {
+            'failed_output_nodes': ['abc.obj']
+        }
+    })
 
-    heuristic_result = {
+    heuristic_result = CompileHeuristicResult.FromSerializable({
         'failures': [{
             'step_name': 'step1',
             'suspected_cls': [{
                 'revision': 'rev1',
             }],
         }]
-    }
+    })
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed output nodes.
@@ -201,7 +223,11 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
     blame_list = ['a']
 
-    signals = {'compile': {'failed_output_nodes': ['abc.obj']}}
+    signals = CompileFailureSignals.FromSerializable({
+        'compile': {
+            'failed_output_nodes': ['abc.obj']
+        }
+    })
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed output nodes.
@@ -233,7 +259,11 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
     blame_list_2 = ['b']
 
-    signals = {'compile': {'failed_output_nodes': ['abc.obj']}}
+    signals = CompileFailureSignals.FromSerializable({
+        'compile': {
+            'failed_output_nodes': ['abc.obj']
+        }
+    })
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed output nodes.
@@ -263,25 +293,29 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
     blame_list = ['a']
 
-    signals = {'compile': {'failed_output_nodes': ['abc.obj']}}
+    signals = CompileFailureSignals.FromSerializable({
+        'compile': {
+            'failed_output_nodes': ['abc.obj']
+        }
+    })
 
-    heuristic_result_1 = {
+    heuristic_result_1 = CompileHeuristicResult.FromSerializable({
         'failures': [{
             'step_name': 'step1',
             'suspected_cls': [{
                 'revision': 'rev1',
             }],
         }]
-    }
+    })
 
-    heuristic_result_2 = {
+    heuristic_result_2 = CompileHeuristicResult.FromSerializable({
         'failures': [{
             'step_name': 'step1',
             'suspected_cls': [{
                 'revision': 'rev2',
             }],
         }]
-    }
+    })
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed output nodes.
@@ -311,9 +345,17 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
     blame_list = ['a']
 
-    signals_1 = {'compile': {'failed_output_nodes': ['abc.obj']}}
+    signals_1 = CompileFailureSignals.FromSerializable({
+        'compile': {
+            'failed_output_nodes': ['abc.obj']
+        }
+    })
 
-    signals_2 = {'compile': {'failed_output_nodes': ['def.obj']}}
+    signals_2 = CompileFailureSignals.FromSerializable({
+        'compile': {
+            'failed_output_nodes': ['def.obj']
+        }
+    })
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed output nodes.
@@ -381,8 +423,19 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
     mock_fn.return_value = False
     expected_key = WfTryJob.Create(master_name, builder_name,
                                    build_number).key.urlsafe()
-    need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(
-        master_name, builder_name, build_number, failure_info, None, None)
+
+    params = StartCompileTryJobInput(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        heuristic_result=CompileHeuristicAnalysisOutput(
+            failure_info=CompileFailureInfo.FromSerializable(failure_info),
+            signals=None,
+            heuristic_result=None),
+        build_completed=True,
+        force=False)
+    need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(params)
 
     self.assertFalse(need_try_job)
     self.assertEqual(expected_key, try_job_key)
@@ -426,8 +479,18 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
     mock_fn.return_value = False
 
-    need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(
-        master_name, builder_name, build_number, failure_info, None, None)
+    params = StartCompileTryJobInput(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        heuristic_result=CompileHeuristicAnalysisOutput(
+            failure_info=CompileFailureInfo.FromSerializable(failure_info),
+            signals=None,
+            heuristic_result=None),
+        build_completed=True,
+        force=False)
+    need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(params)
 
     self.assertFalse(need_try_job)
     self.assertEqual(try_job_key, try_job.key.urlsafe())
@@ -470,8 +533,18 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
     mock_fn.return_value = False
 
-    need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(
-        master_name, builder_name, build_number, failure_info, None, None)
+    params = StartCompileTryJobInput(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        heuristic_result=CompileHeuristicAnalysisOutput(
+            failure_info=CompileFailureInfo.FromSerializable(failure_info),
+            signals=None,
+            heuristic_result=None),
+        build_completed=True,
+        force=False)
+    need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(params)
 
     self.assertTrue(need_try_job)
     self.assertEqual(try_job.key.urlsafe(), try_job_key)
@@ -514,8 +587,18 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
     mock_fn.return_value = False
 
-    need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(
-        master_name, builder_name, build_number, failure_info, None, None)
+    params = StartCompileTryJobInput(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        heuristic_result=CompileHeuristicAnalysisOutput(
+            failure_info=CompileFailureInfo.FromSerializable(failure_info),
+            signals=None,
+            heuristic_result=None),
+        build_completed=True,
+        force=False)
+    need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(params)
 
     self.assertTrue(need_try_job)
     self.assertEqual(try_job.key.urlsafe(), try_job_key)
@@ -559,8 +642,18 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
     mock_fn.return_value = False
 
-    need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(
-        master_name, builder_name, build_number, failure_info, None, None)
+    params = StartCompileTryJobInput(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        heuristic_result=CompileHeuristicAnalysisOutput(
+            failure_info=CompileFailureInfo.FromSerializable(failure_info),
+            signals=None,
+            heuristic_result=None),
+        build_completed=True,
+        force=False)
+    need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(params)
 
     self.assertTrue(need_try_job)
     self.assertIsNotNone(try_job_key)
@@ -601,8 +694,18 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
     mock_fn.return_value = False
 
-    need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(
-        master_name, builder_name, build_number, failure_info, None, None)
+    params = StartCompileTryJobInput(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        heuristic_result=CompileHeuristicAnalysisOutput(
+            failure_info=CompileFailureInfo.FromSerializable(failure_info),
+            signals=None,
+            heuristic_result=None),
+        build_completed=True,
+        force=False)
+    need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(params)
 
     self.assertTrue(need_try_job)
     self.assertIsNotNone(try_job_key)
@@ -614,8 +717,16 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 223
 
-    need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(
-        master_name, builder_name, build_number, None, None, None)
+    params = StartCompileTryJobInput(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        heuristic_result=CompileHeuristicAnalysisOutput(
+            failure_info=None, signals=None, heuristic_result=None),
+        build_completed=True,
+        force=False)
+    need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(params)
 
     self.assertFalse(need_try_job)
     self.assertIsNone(try_job_key)
@@ -645,8 +756,18 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
     mock_fn.return_value = False
 
-    need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(
-        master_name, builder_name, build_number, failure_info, None, None)
+    params = StartCompileTryJobInput(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        heuristic_result=CompileHeuristicAnalysisOutput(
+            failure_info=CompileFailureInfo.FromSerializable(failure_info),
+            signals=None,
+            heuristic_result=None),
+        build_completed=True,
+        force=False)
+    need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(params)
 
     self.assertFalse(need_try_job)
     self.assertIsNone(try_job_key)
@@ -677,14 +798,25 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
     mock_fn.return_value = False
     expected_try_job_key = WfTryJob.Create(master_name, builder_name,
                                            build_number).key.urlsafe()
-    need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(
-        master_name, builder_name, build_number, failure_info, None, None)
+
+    params = StartCompileTryJobInput(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        heuristic_result=CompileHeuristicAnalysisOutput(
+            failure_info=CompileFailureInfo.FromSerializable(failure_info),
+            signals=None,
+            heuristic_result=None),
+        build_completed=True,
+        force=False)
+    need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(params)
 
     self.assertFalse(need_try_job)
     self.assertEqual(expected_try_job_key, try_job_key)
 
   def testUseFailedOutputNodesFromSignals(self):
-    signals = {
+    signals = CompileFailureSignals.FromSerializable({
         'compile': {
             'failed_targets': [
                 {
@@ -697,7 +829,7 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
             ],
             'failed_output_nodes': ['a', 'b'],
         }
-    }
+    })
 
     self.assertEqual(
         compile_try_job._GetFailedTargetsFromSignals(signals, 'm', 'b'),
@@ -705,14 +837,16 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
   def testGetFailedTargetsFromSignals(self):
     self.assertEqual(
-        compile_try_job._GetFailedTargetsFromSignals({}, 'm', 'b'), [])
+        compile_try_job._GetFailedTargetsFromSignals(
+            CompileFailureSignals.FromSerializable({}), 'm', 'b'), [])
 
     self.assertEqual(
-        compile_try_job._GetFailedTargetsFromSignals({
-            'compile': {}
-        }, 'm', 'b'), [])
+        compile_try_job._GetFailedTargetsFromSignals(
+            CompileFailureSignals.FromSerializable({
+                'compile': {}
+            }), 'm', 'b'), [])
 
-    signals = {
+    signals = CompileFailureSignals.FromSerializable({
         'compile': {
             'failed_targets': [{
                 'target': 'a.exe'
@@ -721,39 +855,49 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
                 'target': 'b.o'
             }]
         }
-    }
+    })
 
     self.assertEqual(
         compile_try_job._GetFailedTargetsFromSignals(signals, 'm', 'b'),
         ['a.exe'])
 
   def testUseObjectFilesAsFailedTargetIfStrictRegexUsed(self):
-    signals = {
+    signals = CompileFailureSignals.FromSerializable({
         'compile': {
             'failed_targets': [{
                 'source': 'b.cc',
                 'target': 'b.o'
             },]
         }
-    }
+    })
 
     self.assertEqual(
         compile_try_job._GetFailedTargetsFromSignals(signals, 'master1',
                                                      'builder1'), ['b.o'])
 
   def testGetLastPassCurrentBuildIsNotFirstFailure(self):
-    failed_steps = {'compile': {'first_failure': 1, 'last_pass': 0}}
+    failed_steps = BaseFailedSteps.FromSerializable({
+        'compile': {
+            'first_failure': 1,
+            'last_pass': 0
+        }
+    })
     self.assertIsNone(compile_try_job._GetLastPassCompile(2, failed_steps))
 
   def testGetLastPassCompile(self):
-    failed_steps = {'compile': {'first_failure': 1, 'last_pass': 0}}
+    failed_steps = BaseFailedSteps.FromSerializable({
+        'compile': {
+            'first_failure': 1,
+            'last_pass': 0
+        }
+    })
     self.assertEqual(0, compile_try_job._GetLastPassCompile(1, failed_steps))
 
   def testGetGoodRevisionCompile(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
-    failure_info = {
+    failure_info = CompileFailureInfo.FromSerializable({
         'failed_steps': {
             'compile': {
                 'first_failure': 1,
@@ -768,7 +912,7 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
                 'chromium_revision': 'rev2'
             }
         }
-    }
+    })
     self.assertEqual(
         'rev1',
         compile_try_job._GetGoodRevisionCompile(master_name, builder_name,
@@ -778,7 +922,7 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
-    failure_info = {
+    failure_info = CompileFailureInfo.FromSerializable({
         'failed_steps': {
             'compile': {
                 'first_failure': 1,
@@ -793,7 +937,7 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
                 'chromium_revision': 'rev2'
             }
         }
-    }
+    })
     self.assertIsNone(
         compile_try_job._GetGoodRevisionCompile(master_name, builder_name,
                                                 build_number, failure_info))
@@ -857,9 +1001,19 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
         compile_targets=[],
         urlsafe_try_job_key='urlsafe_try_job_key')
 
+    start_compile_try_job_input = StartCompileTryJobInput(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        heuristic_result=CompileHeuristicAnalysisOutput(
+            failure_info=CompileFailureInfo.FromSerializable(failure_info),
+            signals=None,
+            heuristic_result=None),
+        build_completed=True,
+        force=False)
     parameter = compile_try_job.GetParametersToScheduleCompileTryJob(
-        master_name, builder_name, build_number, failure_info, None, None,
-        'urlsafe_try_job_key')
+        start_compile_try_job_input, 'urlsafe_try_job_key')
     self.assertEqual(expected_parameter, parameter)
     self.assertEqual(expected_parameters_dict, parameter.ToSerializable())
 

@@ -213,8 +213,8 @@ def GetSuspectsFromHeuristicResult(heuristic_result):
 
   suspected_revisions = set()
   for failure in heuristic_result.get('failures') or []:
-    for cl in failure['suspected_cls']:
-      suspected_revisions.add(cl['revision'])
+    for cl in failure.suspected_cls:
+      suspected_revisions.add(cl.revision)
   return list(suspected_revisions)
 
 
@@ -384,15 +384,15 @@ def PrepareParametersToScheduleTryJob(master_name, builder_name, build_number,
   }
 
   # For test failure we need to match the parent builder when possible.
-  match_mastername = failure_info.get('parent_mastername') or master_name
-  match_buildername = failure_info.get('parent_buildername') or builder_name
+  match_mastername = failure_info.parent_mastername or master_name
+  match_buildername = failure_info.parent_buildername or builder_name
 
   # Dimensions should be obtained dynamically via the swarmbucket api if the
   # original failure happened on a LUCI builder. Fallback to the static mapping
   # otherwise.
-  if failure_info['is_luci']:
+  if failure_info.is_luci:
     parameters['dimensions'] = swarmbucket.GetDimensionsForBuilder(
-        failure_info['buildbucket_bucket'], match_buildername)
+        failure_info.buildbucket_bucket, match_buildername)
   else:
     parameters['dimensions'] = waterfall_config.GetTrybotDimensions(
         match_mastername, match_buildername)
@@ -400,8 +400,8 @@ def PrepareParametersToScheduleTryJob(master_name, builder_name, build_number,
   parameters['cache_name'] = swarmbot_util.GetCacheName(match_mastername,
                                                         match_buildername)
 
-  parameters['bad_revision'] = failure_info['builds'][str(build_number)][
-      'chromium_revision']
+  builds = failure_info.builds
+  parameters['bad_revision'] = builds[str(build_number)].chromium_revision
   parameters['suspected_revisions'] = GetSuspectsFromHeuristicResult(
       heuristic_result)
   parameters['urlsafe_try_job_key'] = urlsafe_try_job_key
@@ -423,7 +423,7 @@ def _GetError(buildbucket_build=None,
 
   Returns:
     A tuple containing an error dict and number representing an error code, or
-    (None, None) if no error was determined to have occured.
+    (None, None) if no error was determined to have occurred.
   """
   buildbucket_response = buildbucket_build.response if buildbucket_build else {}
   if buildbucket_error:
@@ -537,7 +537,7 @@ def _RecordCacheStats(build, report):
    - The last revision that the bot synced to under the specific work
      directory (named cache) it used for its local checkout.
    - The latest revision fetched into the bot's local git cache, which is shared
-     accross all work directories.
+     across all work directories.
 
   These are saved as commit positions rather than revision hashes for faster
   comparisons when selecting a bot for new tryjobs.
@@ -628,10 +628,9 @@ def GetDimensionsFromBuildInfo(build_info):
     # For luci builds, use swarmbucket.
     return swarmbucket.GetDimensionsForBuilder(build_info.buildbucket_bucket,
                                                parent_buildername)
-  else:
-    # Fallback to static mapping otherwise.
-    return waterfall_config.GetTrybotDimensions(parent_mastername,
-                                                parent_buildername) or []
+  # Fallback to static mapping otherwise.
+  return waterfall_config.GetTrybotDimensions(parent_mastername,
+                                              parent_buildername) or []
 
 
 def GetOrCreateTryJobData(try_job_type, try_job_id, urlsafe_try_job_key):

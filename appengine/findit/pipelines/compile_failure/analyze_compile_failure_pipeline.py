@@ -6,6 +6,7 @@ import logging
 
 from common import constants
 from common import monitoring
+from dto.start_waterfall_try_job_inputs import StartCompileTryJobInput
 from gae_libs import appengine_util
 from gae_libs import pipelines
 from gae_libs.pipeline_wrapper import BasePipeline
@@ -17,7 +18,9 @@ from pipelines.compile_failure.heuristic_analysis_for_compile_pipeline import (
     HeuristicAnalysisForCompilePipeline)
 from pipelines.compile_failure.start_compile_try_job_pipeline import (
     StartCompileTryJobPipeline)
+from services.parameters import BuildKey
 from services.parameters import CompileFailureInfo
+from services.parameters import CompileHeuristicAnalysisOutput
 from services.parameters import CompileHeuristicAnalysisParameters
 
 
@@ -82,9 +85,16 @@ class AnalyzeCompileFailurePipeline(BasePipeline):
         'signals': signals,
         'heuristic_result': None
     }
-    try_job_pipeline = StartCompileTryJobPipeline(
-        self.master_name, self.builder_name, self.build_number,
-        heuristic_result, self.build_completed, self.force)
+    start_compile_try_job_input = StartCompileTryJobInput(
+        build_key=BuildKey(
+            master_name=self.master_name,
+            builder_name=self.builder_name,
+            build_number=self.build_number),
+        heuristic_result=CompileHeuristicAnalysisOutput.FromSerializable(
+            heuristic_result),
+        build_completed=self.build_completed,
+        force=self.force)
+    try_job_pipeline = StartCompileTryJobPipeline(start_compile_try_job_input)
     try_job_pipeline.target = appengine_util.GetTargetNameForModule(
         constants.WATERFALL_BACKEND)
     try_job_pipeline.start(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
@@ -122,8 +132,16 @@ class AnalyzeCompileFailurePipeline(BasePipeline):
     # Try job approach.
     # Checks if first time failures happen and starts a try job if yes.
     with pipelines.pipeline.InOrder():
-      yield StartCompileTryJobPipeline(master_name, builder_name, build_number,
-                                       heuristic_result, build_completed, force)
+      start_compile_try_job_input = pipelines.CreateInputObjectInstance(
+          StartCompileTryJobInput,
+          build_key=BuildKey(
+              master_name=master_name,
+              builder_name=builder_name,
+              build_number=build_number),
+          heuristic_result=heuristic_result,
+          build_completed=build_completed,
+          force=force)
+      yield StartCompileTryJobPipeline(start_compile_try_job_input)
       # Report event to BQ.
       report_event_input = pipelines.CreateInputObjectInstance(
           report_event_pipeline.ReportEventInput,

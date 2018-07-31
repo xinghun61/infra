@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from dto.start_try_job_inputs import StartTestTryJobInputs
+from dto.start_waterfall_try_job_inputs import StartTestTryJobInputs
 from gae_libs import pipelines
 from gae_libs.pipelines import GeneratorPipeline
 from pipelines.test_failure.identify_test_try_job_culprit_pipeline import (

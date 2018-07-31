@@ -34,6 +34,8 @@ from model.wf_try_job_data import WfTryJobData
 from services import swarmbot_util
 from services import try_job as try_job_service
 from services.parameters import BuildKey
+from services.parameters import CompileFailureInfo
+from services.parameters import CompileHeuristicResult
 from services.parameters import CompileTryJobResult
 from services.parameters import RunCompileTryJobParameters
 from waterfall import build_util
@@ -240,7 +242,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     self.assertIsNotNone(try_job_key)
 
   def testGetSuspectsFromHeuristicResult(self):
-    heuristic_result = {
+    heuristic_result = CompileHeuristicResult.FromSerializable({
         'failures': [{
             'step_name': 'compile',
             'suspected_cls': [
@@ -252,14 +254,15 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
                 },
             ],
         },]
-    }
+    })
     expected_suspected_revisions = ['r1', 'r2']
     self.assertEqual(
         expected_suspected_revisions,
         try_job_service.GetSuspectsFromHeuristicResult(heuristic_result))
 
   def testNoSuspectsIfNoHeuristicResult(self):
-    self.assertEqual([], try_job_service.GetSuspectsFromHeuristicResult({}))
+
+    self.assertEqual([], try_job_service.GetSuspectsFromHeuristicResult(None))
 
   def testGetResultAnalysisStatusWithTryJobCulpritNotFoundUntriaged(self):
     # Heuristic analysis provided no results, but the try job found a culprit.
@@ -604,7 +607,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 1
 
-    failure_info = {
+    failure_info = CompileFailureInfo.FromSerializable({
         'is_luci': None,
         'buildbucket_bucket': None,
         'buildbucket_id': None,
@@ -613,7 +616,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
                 'chromium_revision': 'rev2'
             }
         }
-    }
+    })
 
     expected_parameters = {
         'build_key': {
@@ -622,7 +625,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
             'build_number': build_number
         },
         'dimensions': [
-            u'os:Mac-10.9', u'cpu:x86-64', 'pool:luci.chromium.findit'
+            'os:Mac-10.9', 'cpu:x86-64', 'pool:luci.chromium.findit'
         ],
         'cache_name':
             _CACHE_NAME,
@@ -636,19 +639,19 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         expected_parameters,
         try_job_service.PrepareParametersToScheduleTryJob(
-            master_name, builder_name, build_number, failure_info, {},
-            'urlsafe_try_job_key'))
+            master_name, builder_name, build_number, failure_info,
+            CompileHeuristicResult.FromSerializable({}), 'urlsafe_try_job_key'))
 
   @mock.patch.object(swarmbucket, 'GetDimensionsForBuilder')
   def testPrepareParametersToScheduleTryJobLUCI(self, mock_fn):
     mock_fn.return_value = [
-        u'os:Mac-10.9', u'cpu:x86-64', 'pool:luci.chromium.findit'
+        'os:Mac-10.9', 'cpu:x86-64', 'pool:luci.chromium.findit'
     ]
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
 
-    failure_info = {
+    failure_info = CompileFailureInfo.FromSerializable({
         'is_luci': True,
         'buildbucket_bucket': 'luci.chromium.ci',
         'buildbucket_id': '8000111222333444555666',
@@ -657,7 +660,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
                 'chromium_revision': 'rev2'
             }
         }
-    }
+    })
 
     expected_parameters = {
         'build_key': {
@@ -666,7 +669,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
             'build_number': build_number
         },
         'dimensions': [
-            u'os:Mac-10.9', u'cpu:x86-64', 'pool:luci.chromium.findit'
+            'os:Mac-10.9', 'cpu:x86-64', 'pool:luci.chromium.findit'
         ],
         'cache_name':
             _CACHE_NAME,
@@ -680,8 +683,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         expected_parameters,
         try_job_service.PrepareParametersToScheduleTryJob(
-            master_name, builder_name, build_number, failure_info, {},
-            'urlsafe_try_job_key'))
+            master_name, builder_name, build_number, failure_info,
+            CompileHeuristicResult.FromSerializable({}), 'urlsafe_try_job_key'))
 
   def testUpdateTryJobMetadataForBuildError(self):
     error_dict = {'message': 'message', 'reason': 'BUILD_NOT_FOUND'}

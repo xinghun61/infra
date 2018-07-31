@@ -249,9 +249,8 @@ def GetSuspectedCLsWithCompileFailures(heuristic_result):
   """Generates a list of suspected CLs with compile failures.
 
   Args:
-    heuristic_result(dict): the heuristic_result from which to
-      generate the list of suspected CLs with failures. It should be a
-      serialized CompileHeuristicResult.
+    heuristic_result(CompileHeuristicResult): the heuristic_result from which to
+      generate the list of suspected CLs with failures.
 
   Returns:
     A list of suspected CLs with failures that each could look like:
@@ -267,8 +266,8 @@ def GetSuspectedCLsWithCompileFailures(heuristic_result):
   # Iterates through the failures and suspected_cls, appending suspected
   # CLs and failures to the list.
   for failure in heuristic_result['failures']:
-    for suspected_cl in failure['suspected_cls']:
+    for suspected_cl in failure.suspected_cls:
       suspected_cls_with_failures.append(
-          [failure['step_name'], suspected_cl['revision'], None])
+          [failure.step_name, suspected_cl.revision, None])
 
   return suspected_cls_with_failures

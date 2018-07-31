@@ -6,6 +6,7 @@ import logging
 import mock
 
 from common import constants
+from dto.start_waterfall_try_job_inputs import StartCompileTryJobInput
 from gae_libs import pipelines
 from gae_libs.pipelines import pipeline_handlers
 from libs import analysis_status
@@ -14,6 +15,7 @@ from pipelines import report_event_pipeline
 from pipelines.compile_failure import analyze_compile_failure_pipeline
 from pipelines.compile_failure.analyze_compile_failure_pipeline import (
     AnalyzeCompileFailurePipeline)
+from services.parameters import BuildKey
 from services.parameters import CompileHeuristicAnalysisOutput
 from services.parameters import CompileHeuristicAnalysisParameters
 from waterfall.test import wf_testcase
@@ -47,22 +49,26 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
         'failure_info': current_failure_info,
         'build_completed': False
     })
-    heuristic_output = {
+    heuristic_output = CompileHeuristicAnalysisOutput.FromSerializable({
         'failure_info': None,
         'signals': None,
         'heuristic_result': None
-    }
+    })
     self.MockSynchronousPipeline(
         analyze_compile_failure_pipeline.HeuristicAnalysisForCompilePipeline,
-        heuristic_params, CompileHeuristicAnalysisOutput.FromSerializable({}))
-    self.MockPipeline(
+        heuristic_params, heuristic_output)
+
+    start_try_job_params = StartCompileTryJobInput(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        heuristic_result=heuristic_output,
+        build_completed=False,
+        force=False)
+    self.MockGeneratorPipeline(
         analyze_compile_failure_pipeline.StartCompileTryJobPipeline,
-        'try_job_result',
-        expected_args=[
-            master_name, builder_name, build_number, heuristic_output, False,
-            False
-        ],
-        expected_kwargs={})
+        start_try_job_params, False)
 
     report_event_input = pipelines.CreateInputObjectInstance(
         report_event_pipeline.ReportEventInput,
@@ -94,22 +100,26 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
         'failure_info': current_failure_info,
         'build_completed': False
     })
-    heuristic_output = {
+    heuristic_output = CompileHeuristicAnalysisOutput.FromSerializable({
         'failure_info': None,
         'signals': None,
         'heuristic_result': None
-    }
+    })
     self.MockSynchronousPipeline(
         analyze_compile_failure_pipeline.HeuristicAnalysisForCompilePipeline,
-        heuristic_params, CompileHeuristicAnalysisOutput.FromSerializable({}))
-    self.MockPipeline(
+        heuristic_params, heuristic_output)
+
+    start_try_job_params = StartCompileTryJobInput(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        heuristic_result=heuristic_output,
+        build_completed=False,
+        force=True)
+    self.MockGeneratorPipeline(
         analyze_compile_failure_pipeline.StartCompileTryJobPipeline,
-        'try_job_result',
-        expected_args=[
-            master_name, builder_name, build_number, heuristic_output, False,
-            True
-        ],
-        expected_kwargs={})
+        start_try_job_params, False)
 
     root_pipeline = AnalyzeCompileFailurePipeline(
         master_name, builder_name, build_number, current_failure_info, False,
@@ -181,10 +191,12 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 124
     failure_info = {
-        'compile': {
-            'last_pass': 122,
-            'current_failure': 123,
-            'first_failure': 123
+        'failed_steps': {
+            'compile': {
+                'last_pass': 122,
+                'current_failure': 123,
+                'first_failure': 123
+            }
         }
     }
 
@@ -200,13 +212,20 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, None, False, False)
     root_pipeline._HandleUnexpectedAborting(True)
 
-    heuristic_result = {
+    heuristic_result = CompileHeuristicAnalysisOutput.FromSerializable({
         'failure_info': failure_info,
         'signals': {},
         'heuristic_result': None
-    }
-    mocked_pipeline.assert_called_once_with(
-        master_name, builder_name, build_number, heuristic_result, False, False)
+    })
+    start_try_job_params = StartCompileTryJobInput(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        heuristic_result=heuristic_result,
+        build_completed=False,
+        force=False)
+    mocked_pipeline.assert_called_once_with(start_try_job_params)
     mocked_pipeline.assert_has_calls(
         [mock.call().start(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)])
     mock_log.assert_called_once_with(

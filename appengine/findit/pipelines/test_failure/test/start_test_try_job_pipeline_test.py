@@ -7,7 +7,7 @@ import mock
 from common.waterfall import failure_type
 from dto.collect_swarming_task_results_outputs import (
     CollectSwarmingTaskResultsOutputs)
-from dto.start_try_job_inputs import StartTestTryJobInputs
+from dto.start_waterfall_try_job_inputs import StartTestTryJobInputs
 from gae_libs.pipelines import pipeline_handlers
 from model.wf_try_job import WfTryJob
 from pipelines.test_failure import start_test_try_job_pipeline

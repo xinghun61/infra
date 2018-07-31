@@ -6,6 +6,7 @@ from dto.collect_swarming_task_results_outputs import (
     CollectSwarmingTaskResultsOutputs)
 from libs.structured_object import StructuredObject
 from services.parameters import BuildKey
+from services.parameters import CompileHeuristicAnalysisOutput
 from services.parameters import TestHeuristicAnalysisOutput
 
 
@@ -20,3 +21,8 @@ class StartTestTryJobInputs(StartTryJobInputs):
   """This class defines the input of StartTestTryJobPipeline."""
   heuristic_result = TestHeuristicAnalysisOutput
   consistent_failures = CollectSwarmingTaskResultsOutputs
+
+
+class StartCompileTryJobInput(StartTryJobInputs):
+  """This class defines the input of StartCompileTryJobPipeline."""
+  heuristic_result = CompileHeuristicAnalysisOutput

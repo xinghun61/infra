@@ -17,6 +17,7 @@ from services.compile_failure import extract_compile_signal
 from services.parameters import CompileFailureInfo
 from services.parameters import CompileHeuristicAnalysisOutput
 from services.parameters import CompileHeuristicAnalysisParameters
+from services.parameters import CompileHeuristicResult
 from services.test.build_failure_analysis_test import ChangeLogFromDict
 from waterfall import waterfall_config
 from waterfall.test import wf_testcase
@@ -493,16 +494,14 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         CompileHeuristicAnalysisOutput.FromSerializable(expected_result))
 
   def testGetSuspectedCLsWithCompileFailuresNoHeuristicResult(self):
-    heuristic_result = None
     expected_suspected_revisions = []
     self.assertEqual(
         expected_suspected_revisions,
         sorted(
-            compile_failure_analysis.GetSuspectedCLsWithCompileFailures(
-                heuristic_result)))
+            compile_failure_analysis.GetSuspectedCLsWithCompileFailures(None)))
 
   def testGetSuspectedCLsWithCompileFailures(self):
-    heuristic_result = {
+    heuristic_result = CompileHeuristicResult.FromSerializable({
         'failures': [{
             'step_name': 'step1',
             'suspected_cls': [],
@@ -517,7 +516,7 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                 },
             ],
         }]
-    }
+    })
     expected_suspected_revisions = [['step2', 'r1', None],
                                     ['step2', 'r2', None]]
     self.assertEqual(

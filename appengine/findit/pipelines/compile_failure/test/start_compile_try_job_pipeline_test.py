@@ -5,6 +5,7 @@
 import mock
 
 from common.waterfall import failure_type
+from dto.start_waterfall_try_job_inputs import StartCompileTryJobInput
 from gae_libs.pipelines import pipeline_handlers
 from model.wf_try_job import WfTryJob
 from pipelines.compile_failure import (identify_compile_try_job_culprit_pipeline
@@ -17,6 +18,7 @@ from pipelines.compile_failure.start_compile_try_job_pipeline import (
 from services import try_job as try_job_service
 from services.compile_failure import compile_try_job
 from services.parameters import BuildKey
+from services.parameters import CompileHeuristicAnalysisOutput
 from services.parameters import CompileTryJobResult
 from services.parameters import IdentifyCompileTryJobCulpritParameters
 from services.parameters import RunCompileTryJobParameters
@@ -32,8 +34,14 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'signals': {},
         'heuristic_result': {}
     }
-    pipeline = StartCompileTryJobPipeline()
-    result = pipeline.run('m', 'b', 1, heuristic_result, False, False)
+    start_try_job_params = StartCompileTryJobInput(
+        build_key=BuildKey(master_name='m', builder_name='b', build_number=1),
+        heuristic_result=CompileHeuristicAnalysisOutput.FromSerializable(
+            heuristic_result),
+        build_completed=False,
+        force=False)
+    pipeline = StartCompileTryJobPipeline(start_try_job_params)
+    result = pipeline.RunImpl(start_try_job_params)
     self.assertEqual(list(result), [])
 
   @mock.patch.object(RunCompileTryJobPipeline, 'TimeoutSeconds', return_value=0)
@@ -43,6 +51,10 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
+    build_key = BuildKey(
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number)
     try_job_type = failure_type.COMPILE
     failure_info = {
         'failure_type': try_job_type,
@@ -106,10 +118,7 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         start_compile_try_job_pipeline.RunCompileTryJobPipeline, pipeline_input,
         expected_compile_result)
     identify_culprit_input = IdentifyCompileTryJobCulpritParameters(
-        build_key=BuildKey(
-            master_name=master_name,
-            builder_name=builder_name,
-            build_number=build_number),
+        build_key=build_key,
         result=CompileTryJobResult.FromSerializable(expected_compile_result))
     self.MockGeneratorPipeline(
         culprit_pipeline.IdentifyCompileTryJobCulpritPipeline,
@@ -120,8 +129,14 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'signals': {},
         'heuristic_result': {}
     }
-    pipeline = StartCompileTryJobPipeline('m', 'b', 1, heuristic_result, True,
-                                          False)
+
+    start_try_job_params = StartCompileTryJobInput(
+        build_key=build_key,
+        heuristic_result=CompileHeuristicAnalysisOutput.FromSerializable(
+            heuristic_result),
+        build_completed=True,
+        force=False)
+    pipeline = StartCompileTryJobPipeline(start_try_job_params)
     pipeline.start()
     self.execute_queued_tasks()
 
@@ -194,8 +209,13 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'signals': {},
         'heuristic_result': {}
     }
-    pipeline = StartCompileTryJobPipeline('m', 'b', 1, heuristic_result, True,
-                                          False)
+    start_try_job_params = StartCompileTryJobInput(
+        build_key=BuildKey(master_name='m', builder_name='b', build_number=1),
+        heuristic_result=CompileHeuristicAnalysisOutput.FromSerializable(
+            heuristic_result),
+        build_completed=True,
+        force=False)
+    pipeline = StartCompileTryJobPipeline(start_try_job_params)
     pipeline.start()
     self.execute_queued_tasks()
 
@@ -209,8 +229,14 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'signals': {},
         'heuristic_result': {}
     }
-    pipeline = StartCompileTryJobPipeline()
-    result = pipeline.run('m', 'b', 1, heuristic_result, True, False)
+    start_try_job_params = StartCompileTryJobInput(
+        build_key=BuildKey(master_name='m', builder_name='b', build_number=1),
+        heuristic_result=CompileHeuristicAnalysisOutput.FromSerializable(
+            heuristic_result),
+        build_completed=True,
+        force=False)
+    pipeline = StartCompileTryJobPipeline(start_try_job_params)
+    result = pipeline.RunImpl(start_try_job_params)
     self.assertEqual(list(result), [])
     self.assertFalse(mock_pipeline.called)
 
@@ -230,7 +256,13 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'signals': {},
         'heuristic_result': {}
     }
-    pipeline = StartCompileTryJobPipeline()
-    result = pipeline.run('m', 'b', 1, heuristic_result, True, False)
+    start_try_job_params = StartCompileTryJobInput(
+        build_key=BuildKey(master_name='m', builder_name='b', build_number=1),
+        heuristic_result=CompileHeuristicAnalysisOutput.FromSerializable(
+            heuristic_result),
+        build_completed=True,
+        force=False)
+    pipeline = StartCompileTryJobPipeline(start_try_job_params)
+    result = pipeline.RunImpl(start_try_job_params)
     self.assertEqual(list(result), [])
     self.assertFalse(mock_pipeline.called)
