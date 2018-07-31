@@ -17,10 +17,13 @@ from pipelines.compile_failure.analyze_compile_failure_pipeline import (
 from pipelines.compile_failure.analyze_compile_failure_pipeline import (
     AnalyzeCompileFailurePipeline)
 from pipelines.test_failure.analyze_test_failure_pipeline import (
+    AnalyzeTestFailureInput)
+from pipelines.test_failure.analyze_test_failure_pipeline import (
     AnalyzeTestFailurePipeline)
 from services import ci_failure
 from services.parameters import BuildKey
 from services.parameters import CompileFailureInfo
+from services.parameters import TestFailureInfo
 
 
 @ndb.transactional
@@ -110,23 +113,27 @@ def ScheduleAnalysisIfNeeded(master_name,
         master_name, builder_name, build_number)
     if not should_proceed:
       return WfAnalysis.Get(master_name, builder_name, build_number)
+    build_key = BuildKey(
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number)
 
     if failure_info['failure_type'] == failure_type.COMPILE:
       # Use new compile pipelines.
       compile_pipeline_input = AnalyzeCompileFailureInput(
-          build_key=BuildKey(
-              master_name=master_name,
-              builder_name=builder_name,
-              build_number=build_number),
+          build_key=build_key,
           current_failure_info=CompileFailureInfo.FromSerializable(
               failure_info),
           build_completed=build_completed,
           force=force)
       pipeline_job = AnalyzeCompileFailurePipeline(compile_pipeline_input)
     else:
-      pipeline_job = AnalyzeTestFailurePipeline(master_name, builder_name,
-                                                build_number, failure_info,
-                                                build_completed, force)
+      test_pipeline_input = AnalyzeTestFailureInput(
+          build_key=build_key,
+          current_failure_info=TestFailureInfo.FromSerializable(failure_info),
+          build_completed=build_completed,
+          force=force)
+      pipeline_job = AnalyzeTestFailurePipeline(test_pipeline_input)
     # Explicitly run analysis in the backend module "waterfall-backend".
     # Note: Just setting the target in queue.yaml does NOT work for pipeline
     # when deployed to App Engine, but it does work in dev-server locally.

@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 from datetime import datetime
-import json
 
 from common.waterfall import failure_type
 from gae_libs.testcase import TestCase
