@@ -13,10 +13,14 @@ from libs import analysis_status
 from libs import time_util
 from model.wf_analysis import WfAnalysis
 from pipelines.compile_failure.analyze_compile_failure_pipeline import (
+    AnalyzeCompileFailureInput)
+from pipelines.compile_failure.analyze_compile_failure_pipeline import (
     AnalyzeCompileFailurePipeline)
 from pipelines.test_failure.analyze_test_failure_pipeline import (
     AnalyzeTestFailurePipeline)
 from services import ci_failure
+from services.parameters import BuildKey
+from services.parameters import CompileFailureInfo
 
 
 @ndb.transactional
@@ -49,9 +53,7 @@ def NeedANewAnalysis(master_name, builder_name, build_number, failed_steps,
       logging.info('Existing analysis is not completed yet. No new analysis.')
       return False
 
-    analysis.Reset()
-    analysis.request_time = time_util.GetUTCNow()
-    analysis.put()
+    analysis.Reset(request_time=time_util.GetUTCNow())
     return True
   elif failed_steps and analysis.completed:
     # If there is any new failed step, a new analysis is needed.
@@ -61,9 +63,7 @@ def NeedANewAnalysis(master_name, builder_name, build_number, failed_steps,
         continue
 
       logging.info('At least one new failed step is detected: %s', step)
-      analysis.Reset()
-      analysis.request_time = time_util.GetUTCNow()
-      analysis.put()
+      analysis.Reset(request_time=time_util.GetUTCNow())
       return True
 
   # Start a new analysis if the build cycle wasn't completed in last analysis,
@@ -113,9 +113,16 @@ def ScheduleAnalysisIfNeeded(master_name,
 
     if failure_info['failure_type'] == failure_type.COMPILE:
       # Use new compile pipelines.
-      pipeline_job = AnalyzeCompileFailurePipeline(master_name, builder_name,
-                                                   build_number, failure_info,
-                                                   build_completed, force)
+      compile_pipeline_input = AnalyzeCompileFailureInput(
+          build_key=BuildKey(
+              master_name=master_name,
+              builder_name=builder_name,
+              build_number=build_number),
+          current_failure_info=CompileFailureInfo.FromSerializable(
+              failure_info),
+          build_completed=build_completed,
+          force=force)
+      pipeline_job = AnalyzeCompileFailurePipeline(compile_pipeline_input)
     else:
       pipeline_job = AnalyzeTestFailurePipeline(master_name, builder_name,
                                                 build_number, failure_info,
@@ -133,7 +140,7 @@ def ScheduleAnalysisIfNeeded(master_name,
 
     logging.info('An analysis was scheduled for build %s, %s, %s: %s',
                  master_name, builder_name, build_number,
-                 pipeline_job.pipeline_status_path())
+                 pipeline_job.pipeline_status_path)
   else:
     logging.info('An analysis is not needed for build %s, %s, %s', master_name,
                  builder_name, build_number)

@@ -19,9 +19,9 @@ class WfAnalysis(BaseBuildModel):
 
   @staticmethod
   def _CreateKey(master_name, builder_name, build_number):  # pragma: no cover
-    return ndb.Key('WfAnalysis',
-                   BaseBuildModel.CreateBuildId(master_name, builder_name,
-                                                build_number))
+    return ndb.Key(
+        'WfAnalysis',
+        BaseBuildModel.CreateBuildId(master_name, builder_name, build_number))
 
   @staticmethod
   def Create(master_name, builder_name, build_number):  # pragma: no cover
@@ -89,14 +89,24 @@ class WfAnalysis(BaseBuildModel):
     return self.result_status in (result_status.FOUND_CORRECT_DUPLICATE,
                                   result_status.FOUND_INCORRECT_DUPLICATE)
 
-  def Reset(self):  # pragma: no cover
+  def Reset(self,
+            pipeline_status_path=None,
+            status=analysis_status.PENDING,
+            analysis_result_status=None,
+            request_time=None,
+            start_time=None,
+            end_time=None,
+            version=None,
+            aborted=False):
     """Resets to the state as if no analysis is run."""
-    self.pipeline_status_path = None
-    self.status = analysis_status.PENDING
-    self.aborted = False
-    self.request_time = None
-    self.start_time = None
-    self.end_time = None
+    self.pipeline_status_path = pipeline_status_path
+    self.status = status
+    self.result_status = analysis_result_status
+    self.aborted = aborted
+    self.request_time = request_time or self.request_time
+    self.start_time = start_time
+    self.end_time = end_time
+    self.version = version
     self.failure_result_map = self.failure_result_map or {}
 
   @property

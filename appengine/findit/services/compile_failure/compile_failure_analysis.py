@@ -8,6 +8,7 @@ import logging
 
 from common import constants
 from common.findit_http_client import FinditHttpClient
+from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from services import build_failure_analysis
 from services import ci_failure

@@ -6,6 +6,7 @@ import logging
 import mock
 
 from common import constants
+from common import monitoring
 from dto.start_waterfall_try_job_inputs import StartCompileTryJobInput
 from gae_libs import pipelines
 from gae_libs.pipelines import pipeline_handlers
@@ -14,8 +15,11 @@ from model.wf_analysis import WfAnalysis
 from pipelines import report_event_pipeline
 from pipelines.compile_failure import analyze_compile_failure_pipeline
 from pipelines.compile_failure.analyze_compile_failure_pipeline import (
+    AnalyzeCompileFailureInput)
+from pipelines.compile_failure.analyze_compile_failure_pipeline import (
     AnalyzeCompileFailurePipeline)
 from services.parameters import BuildKey
+from services.parameters import CompileFailureInfo
 from services.parameters import CompileHeuristicAnalysisOutput
 from services.parameters import CompileHeuristicAnalysisParameters
 from waterfall.test import wf_testcase
@@ -78,9 +82,16 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
         report_event_pipeline.ReportAnalysisEventPipeline, report_event_input,
         None)
 
-    root_pipeline = AnalyzeCompileFailurePipeline(
-        master_name, builder_name, build_number, current_failure_info, False,
-        False)
+    pipeline_input = AnalyzeCompileFailureInput(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        current_failure_info=CompileFailureInfo.FromSerializable(
+            current_failure_info),
+        build_completed=False,
+        force=False)
+    root_pipeline = AnalyzeCompileFailurePipeline(pipeline_input)
     root_pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
@@ -121,29 +132,21 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
         analyze_compile_failure_pipeline.StartCompileTryJobPipeline,
         start_try_job_params, False)
 
-    root_pipeline = AnalyzeCompileFailurePipeline(
-        master_name, builder_name, build_number, current_failure_info, False,
-        True)
+    pipeline_input = AnalyzeCompileFailureInput(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        current_failure_info=CompileFailureInfo.FromSerializable(
+            current_failure_info),
+        build_completed=False,
+        force=True)
+    root_pipeline = AnalyzeCompileFailurePipeline(pipeline_input)
     root_pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertEqual(analysis_status.RUNNING, analysis.status)
     mock_reporting.assert_not_called()
-
-  def testBuildFailurePipelineStartWithNoneResultStatus(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 124
-
-    self._SetupAnalysis(master_name, builder_name, build_number)
-
-    root_pipeline = AnalyzeCompileFailurePipeline(
-        master_name, builder_name, build_number, None, False, False)
-    root_pipeline._ResetAnalysis(master_name, builder_name, build_number)
-    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-    self.assertIsNotNone(analysis)
-    self.assertEqual(analysis_status.RUNNING, analysis.status)
-    self.assertIsNone(analysis.result_status)
 
   def testAnalyzeCompileFailurePipelineAbortedIfWithError(self):
     master_name = 'm'
@@ -153,9 +156,16 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
     self._SetupAnalysis(
         master_name, builder_name, build_number, status=analysis_status.RUNNING)
 
-    root_pipeline = AnalyzeCompileFailurePipeline(
-        master_name, builder_name, build_number, None, False, False)
-    root_pipeline._HandleUnexpectedAborting(True)
+    pipeline_input = AnalyzeCompileFailureInput(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        current_failure_info=CompileFailureInfo.FromSerializable({}),
+        build_completed=False,
+        force=True)
+    root_pipeline = AnalyzeCompileFailurePipeline(pipeline_input)
+    root_pipeline.OnAbort(pipeline_input)
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNotNone(analysis)
@@ -174,9 +184,16 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
         build_number,
         status=analysis_status.COMPLETED)
 
-    root_pipeline = AnalyzeCompileFailurePipeline(
-        master_name, builder_name, build_number, None, False, False)
-    root_pipeline._HandleUnexpectedAborting(True)
+    pipeline_input = AnalyzeCompileFailureInput(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        current_failure_info=CompileFailureInfo.FromSerializable({}),
+        build_completed=False,
+        force=True)
+    root_pipeline = AnalyzeCompileFailurePipeline(pipeline_input)
+    root_pipeline.OnAbort(pipeline_input)
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNotNone(analysis)
@@ -208,9 +225,16 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
         signals={},
         failure_info=failure_info)
 
-    root_pipeline = AnalyzeCompileFailurePipeline(
-        master_name, builder_name, build_number, None, False, False)
-    root_pipeline._HandleUnexpectedAborting(True)
+    pipeline_input = AnalyzeCompileFailureInput(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        current_failure_info=CompileFailureInfo.FromSerializable({}),
+        build_completed=False,
+        force=False)
+    root_pipeline = AnalyzeCompileFailurePipeline(pipeline_input)
+    root_pipeline.OnAbort(pipeline_input)
 
     heuristic_result = CompileHeuristicAnalysisOutput.FromSerializable({
         'failure_info': failure_info,
@@ -230,6 +254,29 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
         [mock.call().start(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)])
     mock_log.assert_called_once_with(
         'A try job pipeline for build %s, %s, %s starts after heuristic '
-        'analysis was aborted. Check pipeline at: %s.',
-        root_pipeline.master_name, root_pipeline.builder_name,
-        root_pipeline.build_number, root_pipeline.pipeline_status_path())
+        'analysis was aborted. Check pipeline at: %s.', master_name,
+        builder_name, build_number, root_pipeline.pipeline_status_path)
+
+  @mock.patch.object(monitoring.completed_pipelines, 'increment')
+  def testOnFinalized(self, mock_mon):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 124
+
+    self._SetupAnalysis(
+        master_name,
+        builder_name,
+        build_number,
+        status=analysis_status.COMPLETED)
+
+    pipeline_input = AnalyzeCompileFailureInput(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        current_failure_info=CompileFailureInfo.FromSerializable({}),
+        build_completed=False,
+        force=True)
+    root_pipeline = AnalyzeCompileFailurePipeline(pipeline_input)
+    root_pipeline.OnFinalized(pipeline_input)
+    mock_mon.assert_called_once_with({'type': 'compile'})

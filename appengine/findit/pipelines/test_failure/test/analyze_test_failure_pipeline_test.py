@@ -176,21 +176,6 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(analysis_status.RUNNING, analysis.status)
     mock_reporting.assert_not_called()
 
-  def testBuildFailurePipelineStartWithNoneResultStatus(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 124
-
-    self._SetupAnalysis(master_name, builder_name, build_number)
-
-    root_pipeline = AnalyzeTestFailurePipeline(master_name, builder_name,
-                                               build_number, None, False, False)
-    root_pipeline._ResetAnalysis(master_name, builder_name, build_number)
-    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-    self.assertIsNotNone(analysis)
-    self.assertEqual(analysis_status.RUNNING, analysis.status)
-    self.assertIsNone(analysis.result_status)
-
   def testAnalyzeTestFailurePipelineAbortedIfWithError(self):
     master_name = 'm'
     builder_name = 'b'

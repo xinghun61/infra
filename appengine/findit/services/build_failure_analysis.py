@@ -29,7 +29,6 @@ from model.wf_suspected_cl import WfSuspectedCL
 from services import files
 from services import git
 from waterfall import suspected_cl_util
-from waterfall import waterfall_config
 from waterfall.failure_signal import FailureSignal
 
 
@@ -543,7 +542,7 @@ def AnalyzeOneCL(build_number,
                  change_log,
                  deps_info,
                  use_ninja_output=False):
-  """Checkes one CL to see if it's a suspect."""
+  """Checks one CL to see if it's a suspect."""
 
   if change_log and change_log.author.email in NO_BLAME_ACTION_ACCOUNTS:
     # This change should never be flagged as suspect.
@@ -651,3 +650,49 @@ def GetHeuristicSuspectedCLs(master_name, builder_name, build_number):
       suspects.append(culprit.key.urlsafe())
 
   return suspects
+
+
+def ResetAnalysisForANewAnalysis(master_name, builder_name, build_number,
+                                 pipeline_status_path, current_version):
+  """Resets the WfAnalysis object to start a new analysis."""
+  analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+  analysis.Reset(
+      pipeline_status_path=pipeline_status_path,
+      status=analysis_status.RUNNING,
+      analysis_result_status=None,
+      start_time=time_util.GetUTCNow(),
+      end_time=None,
+      version=current_version)
+
+
+def UpdateAbortedAnalysis(parameters):
+  """Updates analysis and checks if there is enough information to run a try job
+   even if analysis aborts.
+
+  Args:
+    parameters(AnalyzeCompileFailureInput): Inputs to analyze a compile failure.
+
+  Returns:
+    (WfAnalysis, bool): WfAnalysis object and a bool value indicates if can
+      resume the try job or not.
+  """
+  master_name, builder_name, build_number = parameters.build_key.GetParts()
+  analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+  assert analysis, ('WfAnalysis Object for {}/{}/{} was missing'.format(
+      master_name, builder_name, build_number))
+
+  # Heuristic analysis could have already completed, while triggering the
+  # try job kept failing and lead to the abort.
+  run_try_job = False
+  if not analysis.completed:
+    # Heuristic analysis is aborted.
+    analysis.status = analysis_status.ERROR
+    analysis.result_status = None
+
+    if analysis.failure_info:
+      # We need failure_info to run try jobs,
+      # while signals is optional for compile try jobs.
+      run_try_job = True
+  analysis.aborted = True
+  analysis.put()
+  return analysis, run_try_job

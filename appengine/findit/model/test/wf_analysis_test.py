@@ -220,3 +220,14 @@ class WfAnalysisTest(TestCase):
     analysis.put()
     self.assertEqual(sample_flaky_tests,
                      analysis._GetMergedFlakyTests(sample_flaky_tests))
+
+  def testReset(self):
+    master_name = 'm1'
+    builder_name = 'b'
+    build_number = 1
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.status = analysis_status.COMPLETED
+    analysis.put()
+    analysis.Reset()
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    self.assertEqual(analysis_status.PENDING, analysis.status)

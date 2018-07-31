@@ -19,7 +19,11 @@ from libs.gitiles.diff import ChangeType
 from model import result_status
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
+from pipelines.compile_failure.analyze_compile_failure_pipeline import (
+    AnalyzeCompileFailureInput)
 from services import build_failure_analysis
+from services.parameters import BuildKey
+from services.parameters import CompileFailureInfo
 from services.parameters import TestFailedStep
 from waterfall.failure_signal import FailureSignal
 from waterfall.test import wf_testcase
@@ -985,9 +989,10 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'suspected_cls': [],
         'supported': True
     }
-    self.assertEqual(expected_result,
-                     build_failure_analysis.InitializeStepLevelResult(
-                         step_name, step_failure_info))
+    self.assertEqual(
+        expected_result,
+        build_failure_analysis.InitializeStepLevelResult(
+            step_name, step_failure_info))
 
   def testAddFileChangeMultipleOccurance(self):
     justification = build_failure_analysis._Justification()
@@ -1062,11 +1067,86 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
     suspected_cls = [culprit.key.urlsafe()]
 
-    self.assertEqual(suspected_cls,
-                     build_failure_analysis.GetHeuristicSuspectedCLs(
-                         'm', 'b', 123).ToSerializable())
+    self.assertEqual(
+        suspected_cls,
+        build_failure_analysis.GetHeuristicSuspectedCLs('m', 'b',
+                                                        123).ToSerializable())
 
   def testGetHeuristicSuspectedCLsNoAnalysis(self):
     self.assertEqual([],
                      build_failure_analysis.GetHeuristicSuspectedCLs(
                          'm', 'b', 123).ToSerializable())
+
+  def testResetAnalysisForANewAnalysis(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 98
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.status = analysis_status.COMPLETED
+    analysis.put()
+    build_failure_analysis.ResetAnalysisForANewAnalysis(
+        master_name, builder_name, build_number, 'pipeline_status_path',
+        '12345')
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    self.assertEqual(analysis_status.RUNNING, analysis.status)
+
+  def testUpdateAbortedAnalysisNoTryJob(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 124
+    parameter = AnalyzeCompileFailureInput(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        current_failure_info=CompileFailureInfo.FromSerializable({}),
+        build_completed=False,
+        force=True)
+    WfAnalysis.Create(master_name, builder_name, build_number).put()
+    analysis, run_try_job = build_failure_analysis.UpdateAbortedAnalysis(
+        parameter)
+    self.assertEqual(analysis_status.ERROR, analysis.status)
+    self.assertTrue(analysis.aborted)
+    self.assertFalse(run_try_job)
+
+  def testUpdateAbortedAnalysisTryJob(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 124
+    parameter = AnalyzeCompileFailureInput(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        current_failure_info=CompileFailureInfo.FromSerializable({}),
+        build_completed=False,
+        force=True)
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.failure_info = {'failed_steps': {}}
+    analysis.put()
+    analysis, run_try_job = build_failure_analysis.UpdateAbortedAnalysis(
+        parameter)
+    self.assertEqual(analysis_status.ERROR, analysis.status)
+    self.assertTrue(analysis.aborted)
+    self.assertTrue(run_try_job)
+
+  def testUpdateAbortedAnalysisErrorAfterHeuristic(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 124
+    parameter = AnalyzeCompileFailureInput(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        current_failure_info=CompileFailureInfo.FromSerializable({}),
+        build_completed=False,
+        force=True)
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.status = analysis_status.COMPLETED
+    analysis.put()
+    analysis, run_try_job = build_failure_analysis.UpdateAbortedAnalysis(
+        parameter)
+    self.assertEqual(analysis_status.COMPLETED, analysis.status)
+    self.assertTrue(analysis.aborted)
+    self.assertFalse(run_try_job)

@@ -17,7 +17,6 @@ from gae_libs import pipelines
 from gae_libs.pipelines import pipeline
 from gae_libs.pipeline_wrapper import BasePipeline
 from libs import analysis_status
-from libs import time_util
 from model.wf_analysis import WfAnalysis
 from pipelines import report_event_pipeline
 from pipelines.test_failure.collect_swarming_task_results_pipeline import (
@@ -28,6 +27,7 @@ from pipelines.test_failure.run_swarming_tasks_pipeline import (
     RunSwarmingTasksPipeline)
 from pipelines.test_failure.start_test_try_job_pipeline import (
     StartTestTryJobPipeline)
+from services import build_failure_analysis
 from services.parameters import BuildKey
 from services.parameters import TestFailureInfo
 from services.parameters import TestHeuristicAnalysisOutput
@@ -117,20 +117,12 @@ class AnalyzeTestFailurePipeline(BasePipeline):
         'analysis was aborted. Check pipeline at: %s.', self.master_name,
         self.builder_name, self.build_number, self.pipeline_status_path())
 
-  def _ResetAnalysis(self, master_name, builder_name, build_number):
-    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-    analysis.pipeline_status_path = self.pipeline_status_path()
-    analysis.status = analysis_status.RUNNING
-    analysis.result_status = None
-    analysis.start_time = time_util.GetUTCNow()
-    analysis.version = appengine_util.GetCurrentVersion()
-    analysis.end_time = None
-    analysis.put()
-
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, build_number, current_failure_info,
           build_completed, force):
-    self._ResetAnalysis(master_name, builder_name, build_number)
+    build_failure_analysis.ResetAnalysisForANewAnalysis(
+        master_name, builder_name, build_number, self.pipeline_status_path(),
+        appengine_util.GetCurrentVersion())
 
     # The yield statements below return PipelineFutures, which allow subsequent
     # pipelines to refer to previous output values.

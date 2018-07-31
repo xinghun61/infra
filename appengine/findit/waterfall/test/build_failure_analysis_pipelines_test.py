@@ -11,6 +11,8 @@ from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from gae_libs.pipelines import pipeline_handlers
 from services import ci_failure
+from services.parameters import BuildKey
+from services.parameters import CompileFailureInfo
 from waterfall import build_failure_analysis_pipelines
 from waterfall.test import wf_testcase
 
@@ -157,13 +159,20 @@ class BuildFailureAnalysisPipelinesTest(wf_testcase.WaterfallTestCase):
     }
     mock_info.return_value = failure_info, True
 
-    self.MockPipeline(
+    compile_pipeline_input = (
+        build_failure_analysis_pipelines.AnalyzeCompileFailureInput(
+            build_key=BuildKey(
+                master_name=master_name,
+                builder_name=builder_name,
+                build_number=build_number),
+            current_failure_info=CompileFailureInfo.FromSerializable(
+                failure_info),
+            build_completed=False,
+            force=False))
+
+    self.MockGeneratorPipeline(
         build_failure_analysis_pipelines.AnalyzeCompileFailurePipeline,
-        'failure_info',
-        expected_args=[
-            master_name, builder_name, build_number, failure_info, False, False
-        ],
-        expected_kwargs={})
+        compile_pipeline_input, None)
 
     build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
         master_name,
