@@ -12,7 +12,8 @@ PROTOC := "../../cipd/protoc"
 MODULES := default frontend waterfall-backend flake-detection-backend
 LOCAL_VERSION := `$(INFRAPYTHON) $(GAE_PY) version`
 LOCAL_HASH := `git rev-parse --short HEAD`
-REMOTE_VERSION := `$(INFRAPYTHON) $(GAE_PY) active -b -A $(APPID)`
+# If there are multiple active versions just use the latest one.
+REMOTE_VERSION := `$(INFRAPYTHON) $(GAE_PY) active -b -A $(APPID)|tail -n 1`
 REMOTE_HASH := `python -c "print '$$($(INFRAPYTHON) $(GAE_PY) active -b -A $(APPID))'.split('-')[:2][-1]"`
 
 
