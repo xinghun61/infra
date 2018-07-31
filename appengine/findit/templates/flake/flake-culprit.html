@@ -42,7 +42,7 @@
               </a>
             </td>
             <td>
-              {% if analysis.confidence_in_culprit %}
+              {% if analysis.confidence_in_culprit is not none %}
                 {{ '%0.1f%%' % (analysis.confidence_in_culprit * 100) }}
               {% endif %}
             </td>
