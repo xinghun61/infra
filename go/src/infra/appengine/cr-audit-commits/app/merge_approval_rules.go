@@ -35,7 +35,7 @@ func OnlyMergeApprovedChange(ctx context.Context, ap *AuditParams, rc *RelevantC
 
 	// Exclude Chrome TPM changes
 	for _, tpm := range chromeTPMs {
-		if rc.AuthorAccount == tpm {
+		if (rc.AuthorAccount == tpm) || (rc.CommitterAccount == tpm) {
 			result.RuleResultStatus = rulePassed
 			return result
 		}
@@ -62,11 +62,8 @@ func OnlyMergeApprovedChange(ctx context.Context, ap *AuditParams, rc *RelevantC
 		mergeLabel := fmt.Sprintf(mergeApprovedLabel, milestone)
 		vIssue, err := issueFromID(ctx, ap.RepoCfg, int32(bugNumber), cs)
 		if err != nil {
-			result.Message = fmt.Sprintf("Revision %s was merged to %s release branch with an invalid bug attached!"+
-				"\nPlease explain why this change was merged to the branch!", rc.CommitHash, ap.RepoCfg.BranchName)
-			return result
+			continue
 		}
-
 		// Check if the issue has a merge approval label in the comment history
 		comments, _ := listCommentsFromIssueID(ctx, ap.RepoCfg, vIssue.Id, cs)
 		for _, comment := range comments {
@@ -87,7 +84,6 @@ func OnlyMergeApprovedChange(ctx context.Context, ap *AuditParams, rc *RelevantC
 			}
 		}
 	}
-
 	result.Message = fmt.Sprintf("Revision %s was merged to %s branch with no merge approval from "+
 		"a TPM! \nPlease explain why this change was merged to the branch!", rc.CommitHash, ap.RepoCfg.BranchName)
 	return result
