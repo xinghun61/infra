@@ -4,12 +4,13 @@
   <template>
     <template is="dom-if" if="[[userId]]">
       <a
+        id="userLink"
         href$="/u/[[userId]]"
         title$="[[displayName]]"
       >
         [[displayName]]</a>
     </template>
-    <span hidden$="[[userId]]">
+    <span id="userText" hidden$="[[userId]]">
       [[displayName]]</span>
   </template>
   <script src="./mr-user-link.js"></script>

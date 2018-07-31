@@ -1,0 +1,39 @@
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/elements/mr-user-link/mr-user-link.html">
+<test-fixture id="basic">
+  <template>
+    <mr-user-link></mr-user-link>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+
+  suite('basic tests', function() {
+    var element;
+
+    setup(function() {
+      element = fixture('basic');
+    });
+
+    test('renders', function(done) {
+      flush(() => {
+        assert.isDefined(element, 'element is defined');
+        done();
+      });
+    });
+
+    test('no link when no userId', function(done) {
+      element.displayName = 'Hello world';
+      flush(() => {
+        expect(element.$.userLink).be.hidden;
+        expect(element.$.userText).be.visible;
+        assert.equal(element.$.userText.textContent.trim(), 'Hello world');
+        done();
+      });
+    });
+  });
+})();
+</script>
