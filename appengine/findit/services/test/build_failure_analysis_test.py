@@ -10,6 +10,7 @@ from common.constants import NO_BLAME_ACTION_ACCOUNTS
 from common.waterfall import failure_type
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
+from libs import time_util
 from libs.gitiles.blame import Blame
 from libs.gitiles.blame import Region
 from libs.gitiles.change_log import ChangeLog
@@ -1077,18 +1078,24 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                      build_failure_analysis.GetHeuristicSuspectedCLs(
                          'm', 'b', 123).ToSerializable())
 
-  def testResetAnalysisForANewAnalysis(self):
+  @mock.patch.object(time_util, 'GetUTCNow')
+  def testResetAnalysisForANewAnalysis(self, mock_now):
     master_name = 'm'
     builder_name = 'b'
     build_number = 98
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.status = analysis_status.COMPLETED
     analysis.put()
+
+    now_time = datetime(2018, 7, 31, 0, 0, 0)
+    mock_now.return_value = now_time
+
     build_failure_analysis.ResetAnalysisForANewAnalysis(
         master_name, builder_name, build_number, 'pipeline_status_path',
         '12345')
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertEqual(analysis_status.RUNNING, analysis.status)
+    self.assertEqual(now_time, analysis.start_time)
 
   def testUpdateAbortedAnalysisNoTryJob(self):
     master_name = 'm'

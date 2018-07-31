@@ -108,6 +108,7 @@ class WfAnalysis(BaseBuildModel):
     self.end_time = end_time
     self.version = version
     self.failure_result_map = self.failure_result_map or {}
+    self.put()
 
   @property
   def failure_type(self):
