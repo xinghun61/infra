@@ -94,10 +94,11 @@ class ShowFlakeTest(WaterfallTestCase):
     flake_dict['flake_issue']['issue_link'] = FlakeIssue.GetLinkForIssue(
         flake_issue.monorail_project, flake_issue.issue_id)
 
-    # TODO(crbug.com/864426): Polymer renders int64 type to a random number in
-    # html template variable replacement, and this is causing all the link on
-    # flake detection frontend page to point to 404, so convert int64 to str to
-    # work this around. Remove the hack once the bug is fixed.
+    # JavaScript numbers are always stored as double precision floating point
+    # numbers, where the number (the fraction) is stored in bits 0 to 51, the
+    # exponent in bits 52 to 62, and the sign in bit 63. So integers are
+    # accurate up to 15 digits. To keep the precision of build ids (int 64),
+    # convert them to string before rendering HTML pages.
     for occurrence in flake_dict['occurrences']:
       occurrence['build_id'] = str(occurrence['build_id'])
       occurrence['reference_succeeded_build_id'] = str(
