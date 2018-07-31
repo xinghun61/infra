@@ -49,9 +49,6 @@ func validateWorkerDoneRequest(req *admin.WorkerDoneRequest) error {
 	if req.Worker == "" {
 		return errors.New("missing worker")
 	}
-	if req.IsolatedOutputHash == "" && req.BuildbucketOutput == "" {
-		return errors.New("missing output")
-	}
 	if req.IsolatedOutputHash != "" && req.BuildbucketOutput != "" {
 		return errors.New("too many results (both isolate and buildbucket exist)")
 	}
@@ -94,12 +91,17 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		return errors.Annotate(err, "failed to get WorkflowRun").Err()
 	}
 
-	// Process isolated/buildbucket output and collect comments.
-	// NB! This only applies to successful analyzer functions outputting comments.
-	comments, err := collectComments(c, req.State, req.Provides, isolator, run.IsolateServerURL,
-		req.IsolatedOutputHash, req.BuildbucketOutput, functionName, workerKey)
-	if err != nil {
-		return errors.Annotate(err, "failed to get worker results").Err()
+	// Process output and collect comments.
+	// This should only be done for successful analyzers with results.
+	var comments []*track.Comment
+	hasOutput := req.IsolatedOutputHash != "" || req.BuildbucketOutput == ""
+	isAnalyzer := req.Provides == tricium.Data_RESULTS
+	if req.State == tricium.State_SUCCESS && isAnalyzer && hasOutput {
+		comments, err = collectComments(c, isolator, run.IsolateServerURL,
+			req.IsolatedOutputHash, req.BuildbucketOutput, functionName, workerKey)
+		if err != nil {
+			return errors.Annotate(err, "failed to get worker results").Err()
+		}
 	}
 
 	// Compute state of parent function.
@@ -329,19 +331,8 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 // collectComments collects the comments in the results from the analyzer.
 //
 // Exactly one of isolatedOutputHash and buildbucketOutput should be populated.
-func collectComments(c context.Context, state tricium.State, t tricium.Data_Type, isolator common.IsolateAPI,
-	isolateServerURL, isolatedOutputHash, buildbucketOutput, analyzerName string, workerKey *ds.Key) ([]*track.Comment, error) {
+func collectComments(c context.Context, isolator common.IsolateAPI, isolateServerURL, isolatedOutputHash, buildbucketOutput, analyzerName string, workerKey *ds.Key) ([]*track.Comment, error) {
 	var comments []*track.Comment
-
-	// Only collect comments if function completed successfully.
-	if state != tricium.State_SUCCESS {
-		return comments, nil
-	}
-	// Only collect comments if the function is an analyzer.
-	if t != tricium.Data_RESULTS {
-		return comments, nil
-	}
-
 	results := tricium.Data_Results{}
 	if buildbucketOutput != "" {
 		if err := json.Unmarshal([]byte(buildbucketOutput), &results); err != nil {

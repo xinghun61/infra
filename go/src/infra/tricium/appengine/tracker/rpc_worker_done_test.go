@@ -256,11 +256,11 @@ func TestValidateWorkerDoneRequestRequest(t *testing.T) {
 		}), ShouldNotBeNil)
 	})
 
-	Convey("Request with no output is invalid", t, func() {
+	Convey("Request with no output is valid", t, func() {
 		So(validateWorkerDoneRequest(&admin.WorkerDoneRequest{
 			RunId:  1234,
 			Worker: "MyLint_Ubuntu",
-		}), ShouldNotBeNil)
+		}), ShouldBeNil)
 	})
 
 	Convey("Providing buildbucket output but not isolated output is OK", t, func() {
