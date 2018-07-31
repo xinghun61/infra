@@ -1,0 +1,20 @@
+runtime: go
+api_version: go1.8
+
+handlers:
+  - url: /images
+    static_dir: images
+    secure: always
+
+  - url: /css
+    static_dir: css
+    secure: always
+
+  - url: /
+    script: _go_app
+    secure: always
+
+  - url: /.*
+    script: _go_app
+    login: required
+    secure: always
