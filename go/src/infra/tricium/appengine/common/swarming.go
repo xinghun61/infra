@@ -120,7 +120,7 @@ func (s swarmingServer) Collect(c context.Context, serverURL, taskID string, bui
 		return nil, errors.Annotate(err, "failed to retrieve task result from swarming").Err()
 	}
 
-	var result *CollectResult
+	result := &CollectResult{}
 	if taskResult.OutputsRef == nil || taskResult.OutputsRef.Isolated == "" {
 		logging.Fields{
 			"task ID":    taskID,
