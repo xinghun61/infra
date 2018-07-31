@@ -8,7 +8,6 @@ import mock
 from common import constants
 from common import monitoring
 from dto.start_waterfall_try_job_inputs import StartCompileTryJobInput
-from gae_libs import pipelines
 from gae_libs.pipelines import pipeline_handlers
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
@@ -74,8 +73,7 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
         analyze_compile_failure_pipeline.StartCompileTryJobPipeline,
         start_try_job_params, False)
 
-    report_event_input = pipelines.CreateInputObjectInstance(
-        report_event_pipeline.ReportEventInput,
+    report_event_input = report_event_pipeline.ReportEventInput(
         analysis_urlsafe_key=WfAnalysis.Get(master_name, builder_name,
                                             build_number).key.urlsafe())
     self.MockGeneratorPipeline(

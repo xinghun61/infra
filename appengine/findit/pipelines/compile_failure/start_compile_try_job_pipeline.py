@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 from dto.start_waterfall_try_job_inputs import StartCompileTryJobInput
-from gae_libs import pipelines
 from gae_libs.pipelines import GeneratorPipeline
 from services.compile_failure import compile_try_job
 from pipelines.compile_failure import (identify_compile_try_job_culprit_pipeline
@@ -35,7 +34,7 @@ class StartCompileTryJobPipeline(GeneratorPipeline):
 
     try_job_result = yield RunCompileTryJobPipeline(parameters)
 
-    identify_culprit_input = pipelines.CreateInputObjectInstance(
+    identify_culprit_input = self.CreateInputObjectInstance(
         IdentifyCompileTryJobCulpritParameters,
         build_key=pipeline_input.build_key,
         result=try_job_result)

@@ -4,7 +4,6 @@
 
 from common.waterfall import failure_type
 from gae_libs.pipelines import GeneratorPipeline
-from gae_libs.pipelines import CreateInputObjectInstance
 from model.base_build_model import BaseBuildModel
 from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
 from pipelines.send_notification_for_culprit_pipeline import (
@@ -55,7 +54,7 @@ class RevertAndNotifyTestCulpritPipeline(GeneratorPipeline):
 
       # Checks if any of the culprits was also found by heuristic analysis,
       # if so send notification right away.
-      send_notification_to_culprit_input = CreateInputObjectInstance(
+      send_notification_to_culprit_input = self.CreateInputObjectInstance(
           SendNotificationForCulpritParameters,
           cl_key=culprit_key,
           force_notify=culprit_action.ShouldForceNotify(culprit_key,

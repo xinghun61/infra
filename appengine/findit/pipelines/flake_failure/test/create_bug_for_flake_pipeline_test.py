@@ -6,7 +6,6 @@ import mock
 
 from dto.step_metadata import StepMetadata
 from dto.test_location import TestLocation
-from gae_libs.pipelines import CreateInputObjectInstance
 from gae_libs.pipelines import pipeline_handlers
 from infra_api_clients.swarming.swarming_task_data import SwarmingTaskData
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
@@ -90,8 +89,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     request = FlakeAnalysisRequest.Create(test_name, False, None)
     request.Save()
 
-    create_bug_input = CreateInputObjectInstance(
-        CreateBugForFlakePipelineInputObject,
+    create_bug_input = CreateBugForFlakePipelineInputObject(
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
         step_metadata=step_metadata,
         test_location=TestLocation(file='foo/bar', line=1))
@@ -125,10 +123,10 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.MockGeneratorPipeline(DetermineApproximatePassRatePipeline,
                                expected_pass_rate_input, None)
 
-    expected_input_object = CreateInputObjectInstance(
-        create_bug_for_flake_pipeline._CreateBugIfStillFlakyInputObject,
-        analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
-        commit_position=recent_commit_position)
+    expected_input_object = (
+        create_bug_for_flake_pipeline._CreateBugIfStillFlakyInputObject(
+            analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+            commit_position=recent_commit_position))
 
     self.MockGeneratorPipeline(
         create_bug_for_flake_pipeline._CreateBugIfStillFlaky,
@@ -182,18 +180,17 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     request = FlakeAnalysisRequest.Create(test_name, False, None)
     request.Save()
 
-    create_bug_input = CreateInputObjectInstance(
-        CreateBugForFlakePipelineInputObject,
+    create_bug_input = CreateBugForFlakePipelineInputObject(
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
         step_metadata=None,
         test_location=TestLocation(file='foo/bar', line=1))
 
     pipeline_job = CreateBugForFlakePipeline(create_bug_input)
 
-    expected_input_object = CreateInputObjectInstance(
-        create_bug_for_flake_pipeline._CreateBugIfStillFlakyInputObject,
-        analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
-        commit_position=most_recent_commit_position)
+    expected_input_object = (
+        create_bug_for_flake_pipeline._CreateBugIfStillFlakyInputObject(
+            analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+            commit_position=most_recent_commit_position))
 
     self.MockGeneratorPipeline(
         create_bug_for_flake_pipeline._CreateBugIfStillFlaky,
@@ -232,8 +229,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     request = FlakeAnalysisRequest.Create(test_name, False, None)
     request.Save()
 
-    create_bug_input = CreateInputObjectInstance(
-        CreateBugForFlakePipelineInputObject,
+    create_bug_input = CreateBugForFlakePipelineInputObject(
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
         step_metadata=None,
         test_location=TestLocation(file='/foo/bar', line=2))
@@ -271,8 +267,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     request = FlakeAnalysisRequest.Create(test_name, False, None)
     request.Save()
 
-    create_bug_input = CreateInputObjectInstance(
-        CreateBugForFlakePipelineInputObject,
+    create_bug_input = CreateBugForFlakePipelineInputObject(
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
         step_metadata=None,
         test_location=TestLocation(file='/foo/bar', line=1))
@@ -306,8 +301,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     request = FlakeAnalysisRequest.Create(test_name, False, None)
     request.Save()
 
-    create_bug_input = CreateInputObjectInstance(
-        CreateBugForFlakePipelineInputObject,
+    create_bug_input = CreateBugForFlakePipelineInputObject(
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
         step_metadata=None,
         test_location=TestLocation(file='/foo/bar', line=1))
@@ -341,8 +335,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     request = FlakeAnalysisRequest.Create(test_name, False, None)
     request.Save()
 
-    create_bug_input = CreateInputObjectInstance(
-        CreateBugForFlakePipelineInputObject,
+    create_bug_input = CreateBugForFlakePipelineInputObject(
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
         step_metadata=None,
         test_location=TestLocation(file='/foo/bar', line=1))
@@ -380,8 +373,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     request = FlakeAnalysisRequest.Create(test_name, False, None)
     request.Save()
 
-    create_bug_input = CreateInputObjectInstance(
-        CreateBugForFlakePipelineInputObject,
+    create_bug_input = CreateBugForFlakePipelineInputObject(
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
         step_metadata=None,
         test_location=TestLocation(file='/foo/bar', line=1))
@@ -419,10 +411,10 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     request = FlakeAnalysisRequest.Create(test_name, False, None)
     request.Save()
 
-    create_bug_input = CreateInputObjectInstance(
-        create_bug_for_flake_pipeline._CreateBugIfStillFlakyInputObject,
-        analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
-        commit_position=recent_commit_position)
+    create_bug_input = (
+        create_bug_for_flake_pipeline._CreateBugIfStillFlakyInputObject(
+            analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+            commit_position=recent_commit_position))
     pipeline_job = create_bug_for_flake_pipeline._CreateBugIfStillFlaky(
         create_bug_input)
     pipeline_job.start()
@@ -453,10 +445,10 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     request = FlakeAnalysisRequest.Create(test_name, False, None)
     request.Save()
 
-    create_bug_input = CreateInputObjectInstance(
-        create_bug_for_flake_pipeline._CreateBugIfStillFlakyInputObject,
-        analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
-        commit_position=recent_commit_position)
+    create_bug_input = (
+        create_bug_for_flake_pipeline._CreateBugIfStillFlakyInputObject(
+            analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+            commit_position=recent_commit_position))
     pipeline_job = create_bug_for_flake_pipeline._CreateBugIfStillFlaky(
         create_bug_input)
     pipeline_job.start()
@@ -487,10 +479,10 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     request = FlakeAnalysisRequest.Create(test_name, False, None)
     request.Save()
 
-    create_bug_input = CreateInputObjectInstance(
-        create_bug_for_flake_pipeline._CreateBugIfStillFlakyInputObject,
-        analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
-        commit_position=recent_commit_position)
+    create_bug_input = (
+        create_bug_for_flake_pipeline._CreateBugIfStillFlakyInputObject(
+            analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+            commit_position=recent_commit_position))
     pipeline_job = create_bug_for_flake_pipeline._CreateBugIfStillFlaky(
         create_bug_input)
     pipeline_job.start()
@@ -524,10 +516,10 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     request = FlakeAnalysisRequest.Create(test_name, False, None)
     request.Save()
 
-    create_bug_input = CreateInputObjectInstance(
-        create_bug_for_flake_pipeline._CreateBugIfStillFlakyInputObject,
-        analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
-        commit_position=recent_commit_position)
+    create_bug_input = (
+        create_bug_for_flake_pipeline._CreateBugIfStillFlakyInputObject(
+            analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+            commit_position=recent_commit_position))
     pipeline_job = create_bug_for_flake_pipeline._CreateBugIfStillFlaky(
         create_bug_input)
     pipeline_job.start()

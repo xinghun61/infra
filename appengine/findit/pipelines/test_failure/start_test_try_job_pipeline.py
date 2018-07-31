@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 from dto.start_waterfall_try_job_inputs import StartTestTryJobInputs
-from gae_libs import pipelines
 from gae_libs.pipelines import GeneratorPipeline
 from pipelines.test_failure.identify_test_try_job_culprit_pipeline import (
     IdentifyTestTryJobCulpritPipeline)
@@ -26,7 +25,7 @@ class StartTestTryJobPipeline(GeneratorPipeline):
 
     try_job_result = yield RunTestTryJobPipeline(parameters)
 
-    identify_culprit_input = pipelines.CreateInputObjectInstance(
+    identify_culprit_input = self.CreateInputObjectInstance(
         IdentifyTestTryJobCulpritParameters,
         build_key=start_test_try_job_inputs.build_key,
         result=try_job_result)

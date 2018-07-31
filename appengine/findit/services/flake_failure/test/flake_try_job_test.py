@@ -8,7 +8,6 @@ from common import exceptions
 from common.waterfall import failure_type
 from dto.flake_try_job_report import FlakeTryJobReport
 from dto.flake_try_job_result import FlakeTryJobResult
-from gae_libs.pipelines import CreateInputObjectInstance
 from gae_libs.testcase import TestCase
 from libs.list_of_basestring import ListOfBasestring
 from libs.test_results import test_results_util
@@ -388,8 +387,7 @@ class FlakeTryJobServiceTest(TestCase):
                                  test_name, revision)
     try_job.put()
 
-    parameters = CreateInputObjectInstance(
-        RunFlakeTryJobParameters,
+    parameters = RunFlakeTryJobParameters(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         revision=revision,
         flake_cache_name=None,

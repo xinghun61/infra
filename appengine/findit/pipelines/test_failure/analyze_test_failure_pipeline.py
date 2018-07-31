@@ -13,7 +13,6 @@ from dto.collect_swarming_task_results_outputs import (
 from dto.run_swarming_tasks_input import RunSwarmingTasksInput
 from dto.start_waterfall_try_job_inputs import StartTestTryJobInputs
 from gae_libs import appengine_util
-from gae_libs import pipelines
 from gae_libs.pipelines import GeneratorPipeline
 from gae_libs.pipelines import pipeline
 from libs.structured_object import StructuredObject
@@ -116,7 +115,7 @@ class AnalyzeTestFailurePipeline(GeneratorPipeline):
 
     # Try job approach.
     with pipeline.InOrder():
-      run_tasks_inputs = pipelines.CreateInputObjectInstance(
+      run_tasks_inputs = self.CreateInputObjectInstance(
           RunSwarmingTasksInput,
           build_key=pipeline_input.build_key,
           heuristic_result=heuristic_result,
@@ -126,7 +125,7 @@ class AnalyzeTestFailurePipeline(GeneratorPipeline):
       # This pipeline will run before build completes.
       yield RunSwarmingTasksPipeline(run_tasks_inputs)
 
-      collect_task_results_inputs = pipelines.CreateInputObjectInstance(
+      collect_task_results_inputs = self.CreateInputObjectInstance(
           CollectSwarmingTaskResultsInputs,
           build_key=pipeline_input.build_key,
           build_completed=pipeline_input.build_completed)
@@ -135,7 +134,7 @@ class AnalyzeTestFailurePipeline(GeneratorPipeline):
       consistent_failures = yield CollectSwarmingTaskResultsPipeline(
           collect_task_results_inputs)
 
-      start_waterfall_try_job_inputs = pipelines.CreateInputObjectInstance(
+      start_waterfall_try_job_inputs = self.CreateInputObjectInstance(
           StartTestTryJobInputs,
           build_key=pipeline_input.build_key,
           build_completed=pipeline_input.build_completed,
@@ -146,7 +145,7 @@ class AnalyzeTestFailurePipeline(GeneratorPipeline):
 
       if not pipeline_input.force:
         # Report event to BQ.
-        report_event_input = pipelines.CreateInputObjectInstance(
+        report_event_input = self.CreateInputObjectInstance(
             report_event_pipeline.ReportEventInput,
             analysis_urlsafe_key=WfAnalysis.Get(master_name, builder_name,
                                                 build_number).key.urlsafe())

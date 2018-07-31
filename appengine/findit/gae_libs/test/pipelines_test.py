@@ -184,27 +184,6 @@ class _GeneratorPipelineUnwrapInput(pipelines.GeneratorPipeline):
 class PipelinesTest(TestCase):
   app_module = pipelines.pipeline_handlers._APP
 
-  def testModuleCreateInputObjectInstance(self):
-    input_obj = pipelines.CreateInputObjectInstance(_SimpleInfo, param=1)
-    self.assertEqual(input_obj.param, 1)
-
-    p = _GeneratorPipelineUnwrapInput(input_obj)
-    p.start()
-    self.execute_queued_tasks()
-    p = pipelines.pipeline.Pipeline.from_id(p.pipeline_id)
-    self.assertFalse(p.was_aborted)
-
-  def testModuleCreateInputObjectInstanceWithWrongType(self):
-    with self.assertRaises(AssertionError):
-      pipelines.CreateInputObjectInstance(_SimpleInfo, param='foo')
-
-  def testModuleCreateInputObjectInstanceWithFuture(self):
-    future = pipelines.pipeline.PipelineFuture([1])
-    input_obj = pipelines.CreateInputObjectInstance(_SimpleInfo, param=future)
-    input_obj_dict = input_obj.ToSerializable()
-    self.assertTrue('param' in input_obj_dict)
-    self.assertEqual(input_obj_dict['param'], future)
-
   def testAssertionForOnlyOnePositionalInputParameter(self):
     cases = [
         (['a', 'b'], {}),

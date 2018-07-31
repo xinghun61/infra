@@ -19,7 +19,6 @@ from pipelines.test_failure.revert_and_notify_test_culprit_pipeline import (
 from services import ci_failure
 from services import constants as services_constants
 from services import culprit_action
-from services import gerrit
 from services.parameters import BuildKey
 from services.parameters import CreateRevertCLParameters
 from services.parameters import CulpritActionParameters
@@ -37,9 +36,7 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       test_culprit_action, 'CanAutoCommitRevertByFindit', return_value=False)
   @mock.patch.object(ci_failure, 'AnyNewBuildSucceeded', return_value=False)
-  @mock.patch.object(revert_and_notify_test_culprit_pipeline,
-                     'CreateInputObjectInstance')
-  def testSendNotificationForTestCulpritNoRevert(self, mock_input, *_):
+  def testSendNotificationForTestCulpritNoRevert(self, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
@@ -53,9 +50,8 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     input_object = SendNotificationForCulpritParameters(
         cl_key=cl_key,
         force_notify=True,
-        revert_status=None,
+        revert_status=services_constants.SKIPPED,
         failure_type=failure_type.TEST)
-    mock_input.return_value = input_object
     self.MockSynchronousPipeline(SendNotificationForCulpritPipeline,
                                  input_object, True)
 

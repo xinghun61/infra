@@ -101,7 +101,7 @@ class AnalyzeCompileFailurePipeline(GeneratorPipeline):
     # Try job approach.
     # Checks if first time failures happen and starts a try job if yes.
     with pipelines.pipeline.InOrder():
-      start_compile_try_job_input = pipelines.CreateInputObjectInstance(
+      start_compile_try_job_input = self.CreateInputObjectInstance(
           StartCompileTryJobInput,
           build_key=BuildKey(
               master_name=master_name,
@@ -112,7 +112,7 @@ class AnalyzeCompileFailurePipeline(GeneratorPipeline):
           force=pipeline_input.force)
       yield StartCompileTryJobPipeline(start_compile_try_job_input)
       # Report event to BQ.
-      report_event_input = pipelines.CreateInputObjectInstance(
+      report_event_input = self.CreateInputObjectInstance(
           report_event_pipeline.ReportEventInput,
           analysis_urlsafe_key=WfAnalysis.Get(master_name, builder_name,
                                               build_number).key.urlsafe())

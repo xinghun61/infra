@@ -12,7 +12,6 @@ from dto.collect_swarming_task_results_outputs import (
     CollectSwarmingTaskResultsOutputs)
 from dto.run_swarming_tasks_input import RunSwarmingTasksInput
 from dto.start_waterfall_try_job_inputs import StartTestTryJobInputs
-from gae_libs import pipelines
 from gae_libs.pipelines import pipeline_handlers
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
@@ -98,8 +97,7 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
         analyze_test_failure_pipeline.TriggerFlakeAnalysesPipeline, build_key,
         None)
 
-    report_event_input = pipelines.CreateInputObjectInstance(
-        report_event_pipeline.ReportEventInput,
+    report_event_input = report_event_pipeline.ReportEventInput(
         analysis_urlsafe_key=analysis.key.urlsafe())
     self.MockGeneratorPipeline(
         report_event_pipeline.ReportAnalysisEventPipeline, report_event_input,
