@@ -15,9 +15,11 @@
 package app
 
 import (
+	"net/http"
+
+	"infra/appengine/crosskylabadmin/app/config"
 	"infra/appengine/crosskylabadmin/app/cron"
 	"infra/appengine/crosskylabadmin/app/frontend"
-	"net/http"
 
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/common/data/rand/mathrand"
@@ -31,11 +33,11 @@ func init() {
 	mathrand.SeedRandomly()
 
 	r := router.New()
-	mwBase := standard.Base()
+	mwBase := standard.Base().Extend(config.Middleware)
 
 	// Install auth, config and tsmon handlers.
 	standard.InstallHandlers(r)
-	frontend.InstallHandlers(r, standard.Base())
+	frontend.InstallHandlers(r, mwBase)
 	cron.InstallHandlers(r, mwBase)
 
 	http.DefaultServeMux.Handle("/", r)
