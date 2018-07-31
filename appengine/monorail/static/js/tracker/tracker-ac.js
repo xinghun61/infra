@@ -1075,6 +1075,46 @@ function TKR_updateJsonDataWithMembersResponse(jsonData, membersResponse) {
 
 
 /**
+ * Convert the Config object resulting of a monorail.Projects GetConfig to the
+ * format expected by TKR_fetchOptions, and update jsonData with it.
+ * @param {object} jsonData The object used by TKR_fetchOptions to set up
+ * autocomplete.
+ * @param {object} config A pRPC Config object with the results of the call.
+ */
+function TKR_updateJsonDataWithConfig(jsonData, config) {
+  // Split statusDefs into open and closed name-doc objects.
+  jsonData.open = [];
+  jsonData.closed = [];
+  for (const s of config.statusDefs) {
+    const item = {
+      name: s.status,
+      doc: s.docstring,
+    };
+    if (s.meansOpen) {
+      jsonData.open.push(item);
+    } else {
+      jsonData.closed.push(item);
+    }
+  }
+
+  // Filter out deprecated components and normalize to name-doc object.
+  jsonData.components = [];
+  for (const c of config.componentDefs) {
+    if (!c.deprecated) {
+      jsonData.components.push({
+          name: c.path,
+          doc: c.docstring,
+      });
+    }
+  }
+
+  jsonData.strict = config.restrictToKnown;
+  jsonData.excl_prefixes = config.exclusiveLabelPrefixes.map(
+      prefix => prefix.toLowerCase());
+}
+
+
+/**
  * Contact the server to fetch the set of autocomplete options for the
  * current project.  This is done with XMLHTTPRequest because the list
  * could be long, and most of the time, the user will only view an
@@ -1087,16 +1127,32 @@ function TKR_fetchOptions(projectName, token, cct) {
   const projectPart = projectName ? '/p/' + projectName : '/hosting';
   const optionsURL = `${projectPart}/feeds/issueOptions?token=${token}&cct=${cct}`;
   const membersURL = `${projectPart}/feeds/issueOptionsMembers?token=${token}&cct=${cct}`;
+  const prpcClient = new window.chops.rpc.PrpcClient({
+    insecure: Boolean(location.hostname === 'localhost'),
+    fetchImpl: (url, options) => {
+      options.credentials = 'same-origin';
+      return fetch(url, options);
+    },
+  });
+
+  const message = {
+    trace: {
+      token: window.CS_env.token,
+    },
+    project_name: projectName,
+  };
 
   const promises = [
       CS_fetch(optionsURL),
       CS_fetch(membersURL),
+      prpcClient.call('monorail.Projects', 'GetConfig', message),
   ];
 
   Promise.all(promises).then(responses => {
     // Merge result objects.
-    let jsonData = responses[0];
+    const jsonData = responses[0];
     TKR_updateJsonDataWithMembersResponse(jsonData, responses[1]);
+    TKR_updateJsonDataWithConfig(jsonData, responses[2]);
 
     TKR_setUpHotlistsStore(jsonData.hotlists);
     TKR_setUpStatusStore(jsonData.open, jsonData.closed);
