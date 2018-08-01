@@ -1,0 +1,24 @@
+<meta name=viewport content="width=device-width, user-scalable=no">
+<link rel="icon" type="image/vnd.microsoft.icon" href="/static/images/monorail.ico">
+
+<script type="text/javascript" src="/bower_components/chopsui/prpc-client.js" nonce="[nonce]"></script>
+
+<script type="text/javascript"  nonce="[nonce]">
+  window.prpcClient = new window.chops.rpc.PrpcClient({
+      insecure: Boolean(location.hostname === 'localhost'),
+      fetchImpl: (url, options) => {
+          options.credentials = 'same-origin';
+          return fetch(url, options);
+      },
+  });
+</script>
+
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Roboto', 'Noto', sans-serif;
+    line-height: 1.5;
+  }
+</style>
