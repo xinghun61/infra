@@ -2,15 +2,25 @@ queue:
 - name: analyze-queue
   mode: push
   rate: 1/s
+  retry_parameters:
+    task_retry_limit: 10
 - name: launcher-queue
   mode: push
   rate: 1/s
+  retry_parameters:
+    task_retry_limit: 10
 - name: driver-queue
   mode: push
   rate: 1/s
+  retry_parameters:
+    task_retry_limit: 10
 - name: tracker-queue
   mode: push
   rate: 1/s
+  retry_parameters:
+    task_retry_limit: 10
 - name: gerrit-reporter-queue
   mode: push
   rate: 1/s
+  retry_parameters:
+    task_retry_limit: 10
