@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import datetime
+import logging
 import mock
 import os
 
@@ -496,6 +497,14 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
   def testAnyNewBuildSucceeded(self, mock_fn, *_):
     mock_fn.side_effect = [buildbot.FAILURE, buildbot.FAILURE]
     self.assertFalse(ci_failure.AnyNewBuildSucceeded('m', 'b', 123))
+
+  @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[])
+  @mock.patch.object(logging, 'error')
+  def testAnyNewBuildSucceededNoNewerBuild(self, mock_logging, _):
+    self.assertTrue(ci_failure.AnyNewBuildSucceeded('m', 'b', 123))
+    mock_logging.assert_called_once_with(
+        'Failed to get latest build numbers for builder %s/%s since %d.', 'm',
+        'b', 123)
 
   @mock.patch.object(
       build_util,
