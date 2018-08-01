@@ -14,18 +14,20 @@ from common.swarmbucket import swarmbucket
 _MOCK_TASK_DEF_RESPONSE = json.dumps({
     'task_definition':
         json.dumps({
-            'properties': {
-                'dimensions': [{
-                    'value': 'x86-64',
-                    'key': 'cpu'
-                }, {
-                    'value': 'Ubuntu-14.04',
-                    'key': 'os'
-                }, {
-                    'value': 'Chrome.LUCI',
-                    'key': 'pool'
-                }]
-            }
+            'task_slices': [{
+                'properties': {
+                    'dimensions': [{
+                        'value': 'x86-64',
+                        'key': 'cpu'
+                    }, {
+                        'value': 'Ubuntu-14.04',
+                        'key': 'os'
+                    }, {
+                        'value': 'Chrome.LUCI',
+                        'key': 'pool'
+                    }]
+                }
+            }]
         }),
 })
 

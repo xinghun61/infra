@@ -60,7 +60,10 @@ def GetDimensionsForBuilder(
   # For more information, refer to buildbucket's code for this in:
   # https://cs.chromium.org/search/?q=%22def+_create_task_def_async%22&ssfr=1&sq=package:chromium&type=cs
   task_def = json.loads(response.get('task_definition', '{}'))
-  dimensions = task_def.get('properties', {}).get('dimensions', [])
+  if not task_def:
+    return []
+  dimensions = task_def['task_slices'][0].get('properties', {}).get(
+      'dimensions', [])
   if dimensions_whitelist is None:
     return [
         '%s:%s' % (d.get('key', ''), d.get('value', '')) for d in dimensions
