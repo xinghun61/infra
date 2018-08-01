@@ -130,14 +130,15 @@
         approval-status="[[_status]]"
         approvers="[[approvers]]"
         setter="[[setter]]"
-        field-list="[[_fieldList]]"
+        field-defs="[[fieldDefs]]"
+        field-values="[[fieldValues]]"
       ></mr-metadata>
       <mr-inline-editor
-          content="[[_survey.content]]"
-          title$="[[fieldName]] Survey"
-          edit-text="Edit responses"
-          placeholder="Survey content and answer"
-          on-save="[[_updateSurvey]]"
+        content="[[_survey.content]]"
+        title$="[[fieldName]] Survey"
+        edit-text="Edit responses"
+        placeholder="Survey content and answer"
+        on-save="[[_updateSurvey]]"
       >
         <div class="survey">
           <mr-comment-content content="[[_survey.content]]"></mr-comment-content>
@@ -156,7 +157,8 @@
       <mr-edit-metadata
         id="metadataForm"
         approvers="[[approvers]]"
-        field-list="[[_fieldList]]"
+        field-defs="[[fieldDefs]]"
+        field-values="[[fieldValues]]"
         statuses="[[_availableStatuses]]"
         status="[[_status]]"
         is-approver="[[_isApprovalOwner]]"

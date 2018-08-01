@@ -88,7 +88,8 @@
       cc="[[issue.ccRefs]]"
       issue-status="[[issue.statusRef]]"
       components="[[issue.componentRefs]]"
-      field-list="[[_fieldList]]"
+      field-defs="[[_fieldDefs]]"
+      field-values="[[issue.fieldValues]]"
       blocked-on="[[issue.blockedOnIssueRefs]]"
       blocking="[[issue.blockingIssueRefs]]"
       modified-timestamp="[[issue.modifiedTimestamp]]"
@@ -96,7 +97,7 @@
 
     <div class="labels-container">
       <template is="dom-repeat" items="[[issue.labelRefs]]" as="label">
-        <a href$="/p/[[item.projectName]]/issues/list?q=label:[[label.label]]" class="label" data-derived$="[[label.isDerived]]">[[label.label]]</a>
+        <a href$="/p/[[projectName]]/issues/list?q=label:[[label.label]]" class="label" data-derived$="[[label.isDerived]]">[[label.label]]</a>
         <br />
       </template>
     </div>

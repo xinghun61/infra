@@ -25,6 +25,10 @@ class MrIssueMetadata extends ReduxMixin(Polymer.Element) {
         type: Object,
         statePath: 'projectName',
       },
+      projectConfig: {
+        type: Object,
+        statePath: 'projectConfig',
+      },
       isStarred: {
         type: Boolean,
         value: false,
@@ -42,13 +46,17 @@ class MrIssueMetadata extends ReduxMixin(Polymer.Element) {
         type: String,
         statePath: 'token',
       },
-      _fieldList: {
+      _fieldDefs: {
         type: Array,
-        computed: '_computeFieldList(issue.fieldValues)',
+        computed: '_computeIssueFieldDefs(projectConfig.fieldDefs, _type)',
       },
       _canStar: {
         type: Boolean,
         computed: '_computeCanStar(fetchingIsStarred, starringIssue)',
+      },
+      _type: {
+        type: String,
+        computed: '_computeIssueType(issue.labelRefs)',
       },
     };
   }
@@ -96,8 +104,12 @@ class MrIssueMetadata extends ReduxMixin(Polymer.Element) {
     return !(fetching || starring);
   }
 
-  _computeFieldList(fields) {
-    return computeFunction.computeFieldList(fields, null);
+  _computeIssueType(labelRefs) {
+    return computeFunction.computeIssueType(labelRefs);
+  }
+
+  _computeIssueFieldDefs(fields, applicableType) {
+    return computeFunction.computeFieldDefs(fields, applicableType, null);
   }
 
   _renderPluralS(count) {

@@ -6,12 +6,13 @@
 <link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
 
 <link rel="import" href="../../mr-user-link/mr-user-link.html">
-<link rel="import" href="../shared/mr-flt-styles.html">
 <link rel="import" href="../../redux/redux-mixin.html">
+<link rel="import" href="../../redux/compute-functions.html">
+<link rel="import" href="../mr-metadata/mr-field-values.html">
 
 <dom-module id="mr-metadata">
   <template>
-    <style include="mr-flt-styles">
+    <style>
       :host {
         display: table;
         table-layout: fixed;
@@ -116,31 +117,15 @@
       </tr>
     </template>
 
-    <template is="dom-repeat" items="[[fieldList]]" as="field">
+    <template is="dom-repeat" items="[[fieldDefs]]" as="field">
       <tr>
         <th>[[field.fieldRef.fieldName]]:</th>
         <td>
-          <template is="dom-if" if="[[_fieldIsUrl(field.fieldRef.type)]]">
-            <template is="dom-repeat" items="[[field.values]]" as="value">
-              <a href$="[[value]]">[[value]]</a>
-            </template>
-          </template>
-
-          <template is="dom-if" if="[[_fieldIsUser(field.fieldRef.type)]]">
-            <template is="dom-repeat" items="[[field.values]]" as="value">
-              <mr-user-link
-                user-id="[[value]]"
-                display-name="[[value]]"
-              ></mr-user-link>
-            </template>
-          </template>
-
-          <template is="dom-if" if="[[_fieldIsRemainingTypes(field.fieldRef.type)]]">
-            <template is="dom-repeat" items="[[field.values]]" as="value">
-              <a href$="/p/[[projectName]]/issues/list?q=[[field.fieldRef.fieldName]]=&quot;[[value]]&quot;">
-                [[value]]</a><span hidden$="[[_isLastItem(field.values.length,index)]]">,</span>
-            </template>
-          </template>
+          <mr-field-values
+            field-def="[[field]]"
+            values="[[_valuesForDef(field, _fieldValueMap)]]"
+            project-name="[[projectName]]"
+          ></mr-field-values>
         </td>
       </tr>
     </template>

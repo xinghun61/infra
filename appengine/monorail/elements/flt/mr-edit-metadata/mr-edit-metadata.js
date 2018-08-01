@@ -18,7 +18,8 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
       summary: String,
       cc: Array,
       components: Array,
-      fieldList: Array,
+      fieldDefs: Array,
+      fieldValues: Array,
       status: String,
       statuses: Array,
       blockedOn: Array,
@@ -45,6 +46,10 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
         type: Array,
         computed: '_computeBlockerIds(blocking, projectName)',
       },
+      _fieldValueMap: {
+        type: Object,
+        computed: '_computeFieldValueMap(fieldValues)',
+      },
     };
   }
 
@@ -56,8 +61,12 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
     // the form. Haven't been able to figure out a way to replicate form reset
     // behavior with custom input elements.
     if (this.isApproval) {
-      Polymer.dom(this.root).querySelector('#approversInput').reset();
+      if (this.isApprover) {
+        Polymer.dom(this.root).querySelector('#approversInput').reset();
+      }
     } else {
+      Polymer.dom(this.root).querySelector('#ownerInput').reset();
+      Polymer.dom(this.root).querySelector('#ccInput').reset();
       Polymer.dom(this.root).querySelector('#blockingInput').reset();
       Polymer.dom(this.root).querySelector('#blockedOnInput').reset();
       Polymer.dom(this.root).querySelector('#labelsInput').reset();
@@ -70,13 +79,17 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
       comment: this.$.commentText.value,
     };
     const root = Polymer.dom(this.root);
-    if (!this.isApproval) {
+    if (this.isApproval) {
+      if (this.isApprover) {
+        result['approvers'] = root.querySelector('#approversInput').getValue();
+      }
+    } else {
       result['summary'] = root.querySelector('#summaryInput').value;
       result['labels'] = root.querySelector('#labelsInput').getValue();
       result['blockedOn'] = root.querySelector('#blockedOnInput').getValue();
       result['blocking'] = root.querySelector('#blockingInput').getValue();
-    } else {
-      result['approvers'] = root.querySelector('#approversInput').getValue();
+      result['owner'] = root.querySelector('#ownerInput').getValue();
+      result['cc'] = root.querySelector('#ccInput').getValue();
     }
     return result;
   }
@@ -93,6 +106,10 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
       }
       return `${v.projectName}:${v.localId}`;
     });
+  }
+
+  _computeFieldValueMap(fields) {
+    return computeFunction.computeFieldValueMap(fields);
   }
 
   // For simulating && in templating.
@@ -117,8 +134,8 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
     return users.map((u) => (u.displayName));
   }
 
-  _joinValues(arr) {
-    return arr.join(',');
+  _wrapList(items) {
+    return [items];
   }
 
   _statusIsHidden(status, statusDef) {

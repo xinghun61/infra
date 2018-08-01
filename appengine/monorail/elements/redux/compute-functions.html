@@ -1,33 +1,71 @@
 <script>
   (function(window) {
     // Functions to compute commonly reused derived data.
-    // TODO(zhangtiff): Memoize computed data to avoid recomputing.
-    // Inspired by: https://redux.js.org/recipes/computing-derived-data
+    // TODO(zhangtiff): Consider using Reselect to make this nicer.
+    // https://redux.js.org/recipes/computing-derived-data
 
     const computeFunction = Object.freeze({
+      computeIssueType: (labelRefs) => {
+        if (!labelRefs) return null;
+        const prefix = 'type-';
+        const typeLabel = labelRefs.find(
+          (l) => (l.label.toLowerCase().startsWith(prefix))
+        );
+        if (typeLabel) {
+          return typeLabel.label.substring(prefix.length);
+        }
+        return null;
+      },
       // values (from issue.fieldValues) is an array with one entry per value.
-      // We want to remap each fieldRef into its own list entry and filter
-      // those lists based on approvals.
-      computeFieldList: (values, approvalName) => {
-        if (!values) return [];
-        const fieldMap = values.reduce((acc, v) => {
-          // Filter out field values that don't belong to this approval.
-          if (!approvalName && !v.fieldRef.approvalName) return acc;
-          if (v.fieldRef.approvalName !== approvalName) return acc;
-
+      // We want to turn this into a map of fieldNames -> values.
+      // TODO(zhangtiff): Use Reselect to calculate this so we don't have to
+      // recompute it so often.
+      computeFieldValueMap: (values) => {
+        if (!values) return {};
+        return values.reduce((acc, v) => {
           const fieldName = v.fieldRef.fieldName;
           if (!(fieldName in acc)) {
-            acc[fieldName] = {
-              values: [v.value],
-              fieldRef: v.fieldRef,
-            };
+            acc[fieldName] = [v.value];
           } else {
-            acc[fieldName].values.push(v.value);
+            acc[fieldName].push(v.value);
           }
           return acc;
         }, {});
+      },
+      computeFieldDefs: (fields, issueType, approvalName, isPhaseField) => {
+        if (!fields) return [];
+        return fields.filter((f) => {
+          issueType = issueType || '';
+          approvalName = approvalName || '';
 
-        return Object.keys(fieldMap).map((field) => (fieldMap[field]));
+          const lookingForApprovalFields = approvalName.length > 0;
+
+          // Skip approval type fields here.
+          if (f.fieldRef.type === 'APPROVAL_TYPE') {
+            return false;
+          }
+
+          // If the fieldDef is a phase field, whether we want it or not is
+          // based completely on whether we're looking for a phase.
+          if(f.isPhaseField) {
+            return isPhaseField;
+          }
+
+          // If this fieldDef belongs to only one type, filter out the field if
+          // that type isn't the specified issueType.
+          if (f.applicableType && issueType.toLowerCase()
+              !== f.applicableType.toLowerCase()) {
+            return false;
+          }
+
+          // Look for approval fieldDefs if we want them.
+          if(f.fieldRef && f.fieldRef.approvalName) {
+            return lookingForApprovalFields && approvalName.toLowerCase()
+                === f.fieldRef.approvalName.toLowerCase();
+          }
+
+          return !lookingForApprovalFields;
+        });
       },
     });
 

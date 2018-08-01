@@ -16,9 +16,14 @@ class MrMultiInput extends Polymer.Element {
 
   static get properties() {
     return {
-      // By default, there's no max. Set this to 1 to make this a single input.
-      // TODO(zhangtiff): Add validation for going over the max.
-      max: {
+      delimiter: {
+        type: String,
+        value: ',',
+      },
+      // By default, there's no limit to how many values can be inputted.
+      // Set this to 1 to make this into a single input.
+      // TODO(zhangtiff): Add validation for going over the limit.
+      limit: {
         type: Number,
         value: 0,
       },
@@ -44,13 +49,13 @@ class MrMultiInput extends Polymer.Element {
   }
 
   getValue() {
-    let valueList = this.$.multiInput.value.split(',');
+    let valueList = this.$.multiInput.value.split(this.delimiter);
     valueList = valueList.map((s) => (s.trim()));
     valueList = valueList.filter((s) => (s.length > 0));
-    if (this.max && valueList.length > this.max) {
+    if (this.limit && valueList.length > this.limit) {
       // TODO(zhangtiff): Handle this case in a more user friendly way.
-      console.error('Input has more values than max.');
-      valueList = valueList.slice(0, this.max);
+      console.error('Input has more values than limit.');
+      valueList = valueList.slice(0, this.limit);
     }
     return valueList;
   }

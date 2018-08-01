@@ -1,5 +1,6 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../redux/redux-mixin.html">
+<link rel="import" href="../../redux/compute-functions.html">
 <link rel="import" href="./mr-multi-input.html">
 
 <dom-module id="mr-edit-metadata">
@@ -75,6 +76,22 @@
             </option>
           </template>
         </select>
+
+
+        <template is="dom-if" if="[[!isApproval]]">
+          <label for="ownerInput" on-click="_clickLabelForCustomInput">Owner:</label>
+          <mr-multi-input
+            id="ownerInput"
+            values="[[_wrapList(owner.displayName)]]"
+            limit=1
+          ></mr-multi-input>
+
+          <label for="ccInput" on-click="_clickLabelForCustomInput">CC:</label>
+          <mr-multi-input
+            id="ccInput"
+            values="[[_mapUserRefsToNames(cc)]]"
+          ></mr-multi-input>
+        </template>
 
         <template is="dom-if" if="[[_and(isApprover, isApproval)]]">
           <label for="approversInput" on-click="_clickLabelForCustomInput">Approvers:</label>

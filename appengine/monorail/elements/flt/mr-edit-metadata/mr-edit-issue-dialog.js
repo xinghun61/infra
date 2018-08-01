@@ -22,14 +22,17 @@ class MrEditIssueDialog extends ReduxMixin(Polymer.Element) {
         statePath: 'issueId',
       },
       projectName: {
-        type: Number,
+        type: String,
         statePath: 'projectName',
+      },
+      projectConfig: {
+        type: Object,
+        statePath: 'projectConfig',
       },
       openedDialog: {
         type: Number,
         statePath: 'openedDialog',
       },
-      // TODO(zhangtiff): Get real data from jsonfeed API.
       statuses: {
         type: Array,
         statePath: 'projectConfig.statusDefs',
@@ -42,9 +45,13 @@ class MrEditIssueDialog extends ReduxMixin(Polymer.Element) {
         type: Array,
         computed: '_computeLabelNames(issue.labelRefs)',
       },
-      _fieldList: {
+      _fieldDefs: {
         type: Array,
-        computed: '_computeFieldList(issue.fieldValues)',
+        computed: '_computeIssueFieldDefs(projectConfig.fieldDefs, _type)',
+      },
+      _type: {
+        type: String,
+        computed: '_computeIssueType(issue.labelRefs)',
       },
       _opened: {
         type: Boolean,
@@ -64,8 +71,12 @@ class MrEditIssueDialog extends ReduxMixin(Polymer.Element) {
     return labels.map((l) => l.label);
   }
 
-  _computeFieldList(fields) {
-    return computeFunction.computeFieldList(fields, null);
+  _computeIssueType(labelRefs) {
+    return computeFunction.computeIssueType(labelRefs);
+  }
+
+  _computeIssueFieldDefs(fields, applicableType) {
+    return computeFunction.computeFieldDefs(fields, applicableType, null);
   }
 
   _computeOpened(openedDialog) {

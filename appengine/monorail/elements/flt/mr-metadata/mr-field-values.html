@@ -1,0 +1,34 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../../mr-user-link/mr-user-link.html">
+
+<dom-module id="mr-field-values">
+  <template>
+    <template is="dom-if" if="[[_fieldIsUrl(fieldDef.fieldRef.type)]]">
+      <template is="dom-repeat" items="[[values]]" as="value">
+        <a href$="[[value]]">[[value]]</a>
+      </template>
+    </template>
+
+    <template is="dom-if" if="[[_fieldIsUser(fieldDef.fieldRef.type)]]">
+      <template is="dom-repeat" items="[[values]]" as="value">
+        <mr-user-link
+          user-id="[[value]]"
+          display-name="[[value]]"
+        ></mr-user-link>
+      </template>
+    </template>
+
+    <template is="dom-if" if="[[_fieldIsRemainingTypes(fieldDef.fieldRef.type)]]">
+      <template is="dom-repeat" items="[[values]]" as="value">
+        <a href$="/p/[[projectName]]/issues/list?q=[[fieldDef.fieldRef.fieldName]]=&quot;[[value]]&quot;">
+          [[value]]</a><span hidden$="[[_isLastItem(values.length, index)]]">,</span>
+      </template>
+    </template>
+
+    <template is="dom-if" if="[[!values.length]]">
+      ----
+    </template>
+  </template>
+  <script src="./mr-field-values.js"></script>
+<dom-module>

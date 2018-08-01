@@ -18,7 +18,8 @@ class MrMetadata extends ReduxMixin(Polymer.Element) {
       setter: Object,
       cc: Array,
       components: Array,
-      fieldList: Array,
+      fieldDefs: Array,
+      fieldValues: Array,
       issueStatus: String,
       blockedOn: Array,
       blocking: Array,
@@ -27,40 +28,20 @@ class MrMetadata extends ReduxMixin(Polymer.Element) {
         type: String,
         statePath: 'projectName',
       },
+      _fieldValueMap: {
+        type: Object,
+        computed: '_computeFieldValueMap(fieldValues)',
+      },
     };
   }
 
-  _fieldIsDate(type) {
-    return type === 'DATE_TYPE';
+  _computeFieldValueMap(fields) {
+    return computeFunction.computeFieldValueMap(fields);
   }
 
-  _fieldIsEnum(type) {
-    return type === 'ENUM_TYPE';
-  }
-
-  _fieldIsInt(type) {
-    return type === 'INT_TYPE';
-  }
-
-  _fieldIsStr(type) {
-    return type === 'STR_TYPE';
-  }
-
-  _fieldIsUser(type) {
-    return type === 'USER_TYPE';
-  }
-
-  _fieldIsUrl(type) {
-    return type === 'URL_TYPE';
-  }
-
-  _fieldIsRemainingTypes(type) {
-    return this._fieldIsDate(type) || this._fieldIsEnum(type) ||
-      this._fieldIsInt(type) || this._fieldIsStr(type);
-  }
-
-  _isLastItem(l, i) {
-    return i >= l - 1;
+  _valuesForDef(fieldDef, fieldValueMap) {
+    if (!(fieldDef.fieldRef.fieldName in fieldValueMap)) return [];
+    return fieldValueMap[fieldDef.fieldRef.fieldName];
   }
 }
 

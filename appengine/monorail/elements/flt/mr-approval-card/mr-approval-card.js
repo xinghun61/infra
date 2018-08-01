@@ -58,9 +58,14 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
       approvalComments: Array,
       phaseName: String,
       setter: Object,
-      fields: {
+      fieldValues: {
         type: Array,
         statePath: 'issue.fieldValues',
+      },
+      fieldDefs: {
+        type: Array,
+        computed:
+          '_computeApprovalFieldDefs(projectConfig.fieldDefs, fieldName)',
       },
       token: {
         type: String,
@@ -73,6 +78,10 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
       issueId: {
         type: String,
         statePath: 'issueId',
+      },
+      projectConfig: {
+        type: Object,
+        statePath: 'projectConfig',
       },
       projectName: {
         type: String,
@@ -120,10 +129,6 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
         computed: '_computeIsApprovalOwner(approvers, user)',
         observer: '_openUserCards',
       },
-      _fieldList: {
-        type: Array,
-        computed: '_computeFieldList(fields, fieldName)',
-      },
       _expandIcon: {
         type: String,
         computed: '_computeExpandIcon(opened)',
@@ -168,11 +173,22 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
       delta['status'] = TEXT_TO_STATUS_ENUM[data.status];
     }
 
-    // Map oldApprovers from userRef objects into raw display names to make
-    // the array the same format as newApprovers.
-    // TODO(zhangtiff): Figure out how to handle truncated display names.
+    if (data.approvers) {
+      this._saveApprovers(data.approvers, delta);
+    }
+
+    if (data.comment || Object.keys(delta).length > 0) {
+      this._updateApproval(data.comment, delta);
+    }
+
+    this.cancel();
+  }
+
+  // Map oldApprovers from userRef objects into raw display names to make
+  // the array the same format as newApprovers.
+  // TODO(zhangtiff): Figure out how to handle truncated display names.
+  _saveApprovers(newApprovers, delta) {
     const oldApprovers = this.approvers.map((a) => (a.displayName));
-    const newApprovers = data.approvers;
 
     const approverEquals = (a, b) => (a.toLowerCase() === b.toLowerCase());
 
@@ -189,12 +205,6 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
       delta['approver_refs_remove'] = this._displayNamesToUserRefs(
         approversRemove);
     }
-
-    if (data.comment || Object.keys(delta).length > 0) {
-      this._updateApproval(data.comment, delta);
-    }
-
-    this.cancel();
   }
 
   _displayNamesToUserRefs(list) {
@@ -286,6 +296,10 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
     )).splice(1);
   }
 
+  _computeApprovalFieldDefs(fields, approvalName) {
+    return computeFunction.computeFieldDefs(fields, null, approvalName);
+  }
+
   // TODO(zhangtiff): Change data flow here so that this is only computed
   // once for all approvals.
   _computeSurvey(comments, fieldName) {
@@ -298,12 +312,6 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
       }
     }
     return {};
-  }
-
-  // TODO(zhangtiff): Change data flow here so that approvals are only
-  // separated once then passed around later.
-  _computeFieldList(fields, fieldName) {
-    return computeFunction.computeFieldList(fields, fieldName);
   }
 
   _filterStatuses(status, statuses, isApprover) {
