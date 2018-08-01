@@ -96,18 +96,7 @@
 
       connectedCallback() {
         super.connectedCallback();
-        this.initClient();
         this.fetchData();
-      }
-
-      initClient() {
-        this.prpcClient = new window.chops.rpc.PrpcClient({
-          insecure: Boolean(location.hostname === 'localhost'),
-          fetchImpl: (url, options) => {
-            options.credentials = 'same-origin';
-            return fetch(url, options);
-          },
-        });
       }
 
       fetchData() {
@@ -153,7 +142,7 @@
             project_name: this.projectName,
             query: query,
           };
-          const callPromise = this.prpcClient.call('monorail.Issues',
+          const callPromise = window.prpcClient.call('monorail.Issues',
               'IssueSnapshot', message);
           return callPromise.then(response => {
             resolve({
