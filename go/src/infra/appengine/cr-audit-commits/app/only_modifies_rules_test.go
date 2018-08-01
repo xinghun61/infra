@@ -366,7 +366,7 @@ func TestReleaseBotRules(t *testing.T) {
 				},
 			}, nil)
 			// Run rule
-			rr := OnlyModifiesVersionFile(ctx, ap, rc, testClients)
+			rr := OnlyModifiesReleaseFiles(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 			So(rr.Message, ShouldEqual, "")
@@ -403,7 +403,7 @@ func TestReleaseBotRules(t *testing.T) {
 					},
 				}, nil)
 				// Run rule
-				rr := OnlyModifiesVersionFile(ctx, ap, rc, testClients)
+				rr := OnlyModifiesReleaseFiles(ctx, ap, rc, testClients)
 				// Check result code
 				So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			})
@@ -432,7 +432,7 @@ func TestReleaseBotRules(t *testing.T) {
 					},
 				}, nil)
 				// Run rule
-				rr := OnlyModifiesVersionFile(ctx, ap, rc, testClients)
+				rr := OnlyModifiesReleaseFiles(ctx, ap, rc, testClients)
 				// Check result code
 				So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			})

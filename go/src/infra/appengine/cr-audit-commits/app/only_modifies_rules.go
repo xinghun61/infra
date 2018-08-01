@@ -20,10 +20,14 @@ const (
 	TYPE_FILE = "file"
 )
 
-// OnlyModifiesVersionFile is a RuleFunc that verifies that the only filed
-// modified by the audited CL is ``chrome/VERSION``.
-func OnlyModifiesVersionFile(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-	return OnlyModifiesFileRule(ctx, ap, rc, cs, "OnlyModifiesVersionFile", "chrome/VERSION")
+// OnlyModifiesReleaseFiles is a RuleFunc that verifies that only
+// release-related files are modified by the audited CL.
+func OnlyModifiesReleaseFiles(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+	files := []string{
+		"chrome/MAJOR_BRANCH_DATE",
+		"chrome/VERSION",
+	}
+	return OnlyModifiesFilesRule(ctx, ap, rc, cs, "OnlyModifiesReleaseFiles", files)
 }
 
 // OnlyModifiesFileRule is a shared implementation for RuleFuncs which verify

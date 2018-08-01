@@ -125,7 +125,7 @@ var RuleMap = map[string]*RepoConfig{
 			"release-bot-rules": AccountRules{
 				Account: "chrome-release-bot@chromium.org",
 				Funcs: []RuleFunc{
-					OnlyModifiesVersionFile,
+					OnlyModifiesReleaseFiles,
 				},
 				notificationFunction: fileBugForReleaseBotViolation,
 			},
