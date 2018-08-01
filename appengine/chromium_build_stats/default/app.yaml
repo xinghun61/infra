@@ -10,7 +10,6 @@
 #  $ ../goenv.sh goapp deploy
 #
 application: chromium-build-stats
-version: 1
 runtime: go
 api_version: go1
 

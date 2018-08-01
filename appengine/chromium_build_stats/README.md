@@ -23,10 +23,14 @@ How to:
  )
 
  to deploy to production
-  $ ./goenv.sh goapp deploy default
+  $ ./goenv.sh goapp deploy --version $version default
  (or
-  $ cd default; ../goenv.sh goapp deploy
+  $ cd default; ../goenv.sh goapp deploy --version $version
  )
+ version would be $(git log -1 --pretty=format:git-%H)
+
+ and need to [migrate traffic](https://cloud.google.com/appengine/docs/standard/go/migrating-traffic).
+
  NOTE: Check ninja trace data after deploy. If it's not accessible,
  you must forget to generate trace-viewer contents (See the first item of
  this how-to). Re-generate it and deploy again.
