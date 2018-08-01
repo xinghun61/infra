@@ -89,14 +89,15 @@ func analyzeHandler(ctx *router.Context) {
 		return
 	}
 	if err = validateAnalyzeRequest(c, ar); err != nil {
-		logging.WithError(err).Errorf(c, "[frontend] Got invalid analyze request.")
+		logging.WithError(err).Errorf(c, "[frontend] Got invalid Analyze request.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	logging.Infof(c, "[frontend] Analyze request: %+v", ar)
-	if _, err := analyze(c, ar, config.LuciConfigServer); err != nil {
-		logging.WithError(err).Errorf(c, "[frontend] Failed to call Tricium.Analyze.")
+	runID, err := analyze(c, ar, config.LuciConfigServer)
+	if err != nil {
+		logging.WithError(err).Errorf(c, "[frontend] Failed to call analyze.")
 		switch grpc.Code(err) {
 		case codes.InvalidArgument:
 			w.WriteHeader(http.StatusBadRequest)
@@ -105,6 +106,8 @@ func analyzeHandler(ctx *router.Context) {
 		}
 		return
 	}
-	logging.Infof(c, "[frontend] Successfully completed analyze.")
+	logging.Fields{
+		"run ID": runID,
+	}.Infof(c, "[frontend] Successfully completed Analyze.")
 	w.WriteHeader(http.StatusOK)
 }
