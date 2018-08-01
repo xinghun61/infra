@@ -42,6 +42,20 @@ IS_WINDOWS = sys.platform == 'win32'
 # .exe on Windows.
 EXE_SUFFIX = '.exe' if IS_WINDOWS else ''
 
+# All GOARCHs we are willing to cross-compile for.
+KNOWN_GOARCHS = frozenset([
+  '386',
+  'amd64',
+  'arm',
+  'arm64',
+  'mips',
+  'mips64',
+  'mips64le',
+  'ppc64',
+  'ppc64le',
+  's390x',
+])
+
 
 class PackageDefException(Exception):
   """Raised if a package definition is invalid."""
@@ -672,8 +686,7 @@ def get_target_package_vars():
   goos = os.environ['GOOS']
   goarch = os.environ['GOARCH']
 
-  if goarch not in ('386', 'amd64', 'arm', 'arm64', 'mips', 'mips64', 's390x',
-                    'ppc64', 'ppc64le'):
+  if goarch not in KNOWN_GOARCHS:
     raise BuildException('Unsupported GOARCH %s' % goarch)
 
   # There are many ARMs, pick the concrete instruction set. 'v6' is the default,

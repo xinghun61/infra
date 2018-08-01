@@ -6,6 +6,7 @@ platforms:
   - linux-arm64
   - linux-armv6l
   - linux-mips64
+  - linux-mips64le
   - mac-amd64
   - windows-386
   - windows-amd64
