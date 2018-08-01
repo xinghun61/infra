@@ -125,7 +125,7 @@ def _main_wheel_build(args, system):
 
 def _main_wheel_dump(args, system):
   try:
-    md = markdown.Generator.create(system)
+    md = markdown.Generator()
     for build in wheel.SPECS.itervalues():
       for plat in platform.ALL.itervalues():
         if not build.supported(plat):
