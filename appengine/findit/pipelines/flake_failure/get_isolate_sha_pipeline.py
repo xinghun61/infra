@@ -119,9 +119,15 @@ class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
     commit_position = parameters.commit_position
     target_name = parameters.step_metadata.isolate_target_name
 
+    _, reference_build_info = build_util.GetBuildInfo(master_name, builder_name,
+                                                      analysis.build_number)
+    parent_mastername = (reference_build_info.parent_mastername or master_name)
+    parent_buildername = (
+        reference_build_info.parent_buildername or builder_name)
+
     targets = (
         IsolatedTarget.FindIsolateAtOrAfterCommitPositionByMaster(
-            master_name, builder_name, constants.GITILES_HOST,
+            parent_mastername, parent_buildername, constants.GITILES_HOST,
             constants.GITILES_PROJECT, constants.GITILES_REF, target_name,
             commit_position))
 
@@ -138,12 +144,6 @@ class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
       yield GetIsolateShaForTargetPipeline(get_target_input)
     else:
       # The requested commit position needs to be compiled.
-      _, reference_build_info = build_util.GetBuildInfo(
-          master_name, builder_name, analysis.build_number)
-      parent_mastername = (
-          reference_build_info.parent_mastername or master_name)
-      parent_buildername = (
-          reference_build_info.parent_buildername or builder_name)
       cache_name = swarmbot_util.GetCacheName(
           parent_mastername,
           parent_buildername,

@@ -122,9 +122,13 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
 
     self.assertEqual(expected_output, pipeline_output)
 
-  def testGetIsolateShaForCommitPositionPipelineMatchingTarget(self):
+  @mock.patch.object(build_util, 'GetBuildInfo')
+  def testGetIsolateShaForCommitPositionPipelineMatchingTarget(
+      self, mocked_reference_build):
     master_name = 'm'
     builder_name = 'b'
+    parent_mastername = 'p_m'
+    parent_buildername = 'p_b'
     build_number = 100
     build_id = 123
     step_name = 's'
@@ -150,8 +154,14 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
                                           build_number, step_name, test_name)
     analysis.Save()
 
+    build = BuildInfo(master_name, builder_name, build_number)
+    build.commit_position = requested_commit_position
+    build.parent_mastername = parent_mastername
+    build.parent_buildername = parent_buildername
+    mocked_reference_build.return_value = (None, build)
+
     isolated_target = IsolatedTarget.Create(
-        build_id, luci_name, bucket_name, master_name, builder_name,
+        build_id, luci_name, bucket_name, parent_mastername, parent_buildername,
         gitiles_host, gitiles_project, gitiles_ref, gerrit_patch, target_name,
         isolated_hash, requested_commit_position)
     isolated_target.put()

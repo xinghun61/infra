@@ -12,6 +12,7 @@ from services import step_util
 from services.flake_failure import heuristic_analysis
 from services.flake_failure import lookback_algorithm
 from services.flake_failure import next_commit_position_utils
+from waterfall import build_util
 
 
 class NextCommitPositionInput(StructuredObject):
@@ -101,10 +102,16 @@ class NextCommitPositionPipeline(SynchronousPipeline):
 
     # Round off the next calculated commit position to the nearest builds on
     # both sides.
+    _, reference_build_info = build_util.GetBuildInfo(master_name, builder_name,
+                                                      analysis.build_number)
+    parent_mastername = reference_build_info.parent_mastername or master_name
+    parent_buildername = (
+        reference_build_info.parent_buildername or builder_name)
+
     target_name = parameters.step_metadata.isolate_target_name
     lower_bound_target, upper_bound_target = (
-        step_util.GetBoundingIsolatedTargets(master_name, builder_name,
-                                             target_name,
+        step_util.GetBoundingIsolatedTargets(parent_mastername,
+                                             parent_buildername, target_name,
                                              calculated_next_commit_position))
 
     # Update the analysis' suspected build cycle if identified.

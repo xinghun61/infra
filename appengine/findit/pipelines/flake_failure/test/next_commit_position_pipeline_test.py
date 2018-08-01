@@ -20,6 +20,8 @@ from services import step_util
 from services.flake_failure import heuristic_analysis
 from services.flake_failure import lookback_algorithm
 from services.flake_failure import next_commit_position_utils
+from waterfall import build_util
+from waterfall.build_info import BuildInfo
 from waterfall.test.wf_testcase import WaterfallTestCase
 
 
@@ -186,13 +188,15 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     self.assertEqual(expected_next_commit_position,
                      next_commit_position_output['next_commit_position'])
 
+  @mock.patch.object(build_util, 'GetBuildInfo')
   @mock.patch.object(lookback_algorithm, 'GetNextCommitPosition')
   @mock.patch.object(MasterFlakeAnalysis, 'CanRunHeuristicAnalysis')
   @mock.patch.object(next_commit_position_utils,
                      'GetNextCommitPositionFromHeuristicResults')
   @mock.patch.object(heuristic_analysis, 'RunHeuristicAnalysis')
   def testNextCommitPositionPipelineRunHeuristicResultsNoResults(
-      self, _, mock_heuristic_result, mock_can_run_heuristic, mock_next_commit):
+      self, _, mock_heuristic_result, mock_can_run_heuristic, mock_next_commit,
+      mock_reference_build):
     master_name = 'm'
     builder_name = 'b'
     build_number = 105
@@ -224,6 +228,10 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
         swarm_task_ids=None,
         waterfall_buildername=None,
         waterfall_mastername=None)
+
+    reference_build = BuildInfo(master_name, builder_name, build_number)
+    reference_build.commit_position = start_commit_position
+    mock_reference_build.return_value = (None, reference_build)
 
     luci_name = 'chromium'
     bucket_name = 'ci'
@@ -298,10 +306,13 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
 
   @mock.patch.object(lookback_algorithm, 'GetNextCommitPosition')
   @mock.patch.object(MasterFlakeAnalysis, 'CanRunHeuristicAnalysis')
-  def testNextCommitPositionPipelineContinueAnalysis(self, mock_heuristic,
-                                                     mock_next_commit):
+  @mock.patch.object(build_util, 'GetBuildInfo')
+  def testNextCommitPositionPipelineContinueAnalysis(
+      self, mock_reference_build, mock_heuristic, mock_next_commit):
     master_name = 'm'
     builder_name = 'b'
+    parent_mastername = 'p_m'
+    parent_buildername = 'p_b'
     build_number = 100
     build_id = 10000
     step_name = 's'
@@ -320,6 +331,11 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
         waterfall_buildername=None,
         waterfall_mastername=None)
 
+    reference_build = BuildInfo(master_name, builder_name, build_number)
+    reference_build.commit_position = start_commit_position
+    reference_build.parent_mastername = parent_mastername
+    reference_build.parent_buildername = parent_buildername
+    mock_reference_build.return_value = (None, reference_build)
     mock_heuristic.return_value = False
 
     calculated_next_commit_position = 999
@@ -346,13 +362,13 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     gerrit_patch = ''
 
     lower_bound_target = IsolatedTarget.Create(
-        build_id - 1, luci_name, bucket_name, master_name, builder_name,
-        gitiles_host, gitiles_project, gitiles_ref, gerrit_patch, target_name,
-        'hash_1', expected_next_commit_position)
+        build_id - 1, luci_name, bucket_name, parent_mastername,
+        parent_buildername, gitiles_host, gitiles_project, gitiles_ref,
+        gerrit_patch, target_name, 'hash_1', expected_next_commit_position)
     lower_bound_target.put()
 
     upper_bound_target = IsolatedTarget.Create(
-        build_id, luci_name, bucket_name, master_name, builder_name,
+        build_id, luci_name, bucket_name, parent_mastername, parent_buildername,
         gitiles_host, gitiles_project, gitiles_ref, gerrit_patch, target_name,
         'hash_2', start_commit_position)
     upper_bound_target.put()
