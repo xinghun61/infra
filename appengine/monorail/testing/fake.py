@@ -216,6 +216,12 @@ class UserGroupService(object):
     for user_id in user_ids:
       self.role_dict.setdefault(group_id, {})[user_id] = role
 
+  def LookupAllMemberships(self, _cnxn, user_ids, use_cache=True):
+    return {
+        user_id: self.LookupMemberships(_cnxn, user_id)
+        for user_id in user_ids
+    }
+
   def LookupMemberships(self, _cnxn, user_id):
     memberships = {
         group_id for group_id, member_ids in self.group_members.iteritems()

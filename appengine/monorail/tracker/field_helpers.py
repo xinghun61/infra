@@ -230,6 +230,25 @@ def ParseFieldValues(
   return field_values
 
 
+def ValidateUserField(project, field_def, user_auth):
+  """Validate a custom user field from the AuthData of an user."""
+  if user_auth.user_pb.user_id == INVALID_USER_ID:
+    return 'User not found'
+  if field_def.needs_member:
+    user_value_in_project = framework_bizobj.UserIsInProject(
+        project, user_auth.effective_ids)
+    if not user_value_in_project:
+      return 'User must be a member of the project'
+    if field_def.needs_perm:
+      user_perms = permissions.GetPermissions(
+          user_auth.user_pb, user_auth.effective_ids, project)
+      has_perm = user_perms.CanUsePerm(
+          field_def.needs_perm, user_auth.effective_ids, project, [])
+      if not has_perm:
+        return 'User must have permission "%s"' % field_def.needs_perm
+  return None
+
+
 def ValidateCustomField(mr, project, services, field_def, field_val):
   """Validate one custom field value and return an error string or None."""
   if field_def.field_type == tracker_pb2.FieldTypes.INT_TYPE:
@@ -252,23 +271,10 @@ def ValidateCustomField(mr, project, services, field_def, field_val):
         return None
 
   elif field_def.field_type == tracker_pb2.FieldTypes.USER_TYPE:
-    if field_val.user_id == INVALID_USER_ID:
-      return 'User not found'
-    if field_def.needs_member:
-      auth = authdata.AuthData.FromUserID(
-          mr.cnxn, field_val.user_id, services)
-      user_value_in_project = framework_bizobj.UserIsInProject(
-          project, auth.effective_ids)
-      if not user_value_in_project:
-        return 'User must be a member of the project'
-      if field_def.needs_perm:
-        field_val_user = services.user.GetUser(mr.cnxn, field_val.user_id)
-        user_perms = permissions.GetPermissions(
-            field_val_user, auth.effective_ids, project)
-        has_perm = user_perms.CanUsePerm(
-            field_def.needs_perm, auth.effective_ids, project, [])
-        if not has_perm:
-          return 'User must have permission "%s"' % field_def.needs_perm
+    field_val_user = services.user.GetUser(mr.cnxn, field_val.user_id)
+    auth = authdata.AuthData.FromUser(
+        mr.cnxn, field_val_user, services, effective_ids=None)
+    return ValidateUserField(project, field_def, auth)
 
   elif field_def.field_type == tracker_pb2.FieldTypes.DATE_TYPE:
     # TODO(jrobbins): date validation
@@ -298,11 +304,18 @@ def ValidateCustomFields(mr, services, field_values, config, errors):
         errors.SetCustomFieldError(fv.field_id, err_msg)
 
 
-def FilterValidFieldValues(mr, project, services, field_def, field_values):
+def FilterValidUserFieldValues(mr, project, services, field_def, user_views):
   """Return the field values that are valid for the given field def."""
-  return [
-      fv for fv in field_values
-      if ValidateCustomField(mr, project, services, field_def, fv) is None]
+  # Batch-request the effective ids to save time.
+  effective_ids_by_user = services.usergroup.LookupAllMemberships(
+      mr.cnxn, [uv.user_id for uv in user_views])
+  result = []
+  for uv in user_views:
+    auth = authdata.AuthData.FromUser(
+        mr.cnxn, uv.user, services, effective_ids_by_user[uv.user_id])
+    if ValidateUserField(project, field_def, auth) is None:
+      result.append(uv)
+  return result
 
 
 def FormatUrlFieldValue(url_str):

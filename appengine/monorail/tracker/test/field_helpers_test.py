@@ -9,6 +9,7 @@ import time
 import unittest
 
 from framework import template_helpers
+from proto import project_pb2
 from proto import tracker_pb2
 from services import service_manager
 from testing import fake
@@ -22,6 +23,8 @@ class FieldHelpersTest(unittest.TestCase):
   def setUp(self):
     self.config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     self.services = service_manager.Services(
+        usergroup=fake.UserGroupService(),
+        config=fake.ConfigService(),
         user=fake.UserService())
     self.mr = testing_helpers.MakeMonorailRequest(
         project=fake.Project(), services=self.services)
@@ -368,21 +371,6 @@ class FieldHelpersTest(unittest.TestCase):
         self.mr, self.mr.project, self.services, fd, fv)
     self.assertEqual('Value must be >= 1', msg)
 
-  def test_FilterIntType(self):
-    fd = tracker_bizobj.MakeFieldDef(
-        123, 789, 'CPU', tracker_pb2.FieldTypes.INT_TYPE, None,
-        '', False, False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
-    fd.min_value = 1
-    fd.max_value = 100
-    fvs = [
-        tracker_bizobj.MakeFieldValue(123, 200, None, None, None, None, False),
-        tracker_bizobj.MakeFieldValue(124, 99, None, None, None, None, False),
-        tracker_bizobj.MakeFieldValue(125, 0, None, None, None, None, False)]
-    self.assertEqual([fvs[1]],
-                     field_helpers.FilterValidFieldValues(
-                         self.mr, self.mr.project, self.services, fd, fvs))
-
   def test_StrType(self):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'CPU', tracker_pb2.FieldTypes.STR_TYPE, None,
@@ -404,22 +392,126 @@ class FieldHelpersTest(unittest.TestCase):
         self.mr, self.mr.project, self.services, fd, fv)
     self.assertIsNone(msg)
 
-  def test_FilterStrType(self):
+  def test_UserType(self):
     fd = tracker_bizobj.MakeFieldDef(
-        123, 789, 'CPU', tracker_pb2.FieldTypes.STR_TYPE, None,
+        123, 789, 'Fake Field', tracker_pb2.FieldTypes.USER_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
-    fd.regex = r'^\d*$'
-    fvs = [
-        tracker_bizobj.MakeFieldValue(123, None, 'x3', None, None, None, False),
-        tracker_bizobj.MakeFieldValue(124, None, '33', None, None, None, False),
-        tracker_bizobj.MakeFieldValue(125, None, '', None, None, None, False)]
-    self.assertEqual([fvs[1], fvs[2]],
-                     field_helpers.FilterValidFieldValues(
-                         self.mr, self.mr.project, self.services, fd, fvs))
 
-  def test_UserType(self):
-    pass  # TODO(jrobbins): write this test.
+    self.services.user.TestAddUser('owner@example.com', 111L)
+    self.mr.project.owner_ids.extend([111L])
+    owner = tracker_bizobj.MakeFieldValue(
+        fd.field_id, None, None, 111L, None, None, False)
+
+    self.services.user.TestAddUser('committer@example.com', 222L)
+    self.mr.project.committer_ids.extend([222L])
+    self.mr.project.extra_perms = [
+        project_pb2.Project.ExtraPerms(
+            member_id=222L,
+            perms=['FooPerm'])]
+    committer = tracker_bizobj.MakeFieldValue(
+        fd.field_id, None, None, 222L, None, None, False)
+
+    self.services.user.TestAddUser('user@example.com', 333L)
+    user = tracker_bizobj.MakeFieldValue(
+        fd.field_id, None, None, 333L, None, None, False)
+
+    # Normal
+    for fv in (owner, committer, user):
+      msg = field_helpers.ValidateCustomField(
+          self.mr, self.mr.project, self.services, fd, fv)
+      self.assertIsNone(msg)
+
+    # Needs to be member (user isn't a member).
+    fd.needs_member = True
+    for fv in (owner, committer):
+      msg = field_helpers.ValidateCustomField(
+          self.mr, self.mr.project, self.services, fd, fv)
+      self.assertIsNone(msg)
+    msg = field_helpers.ValidateCustomField(
+        self.mr, self.mr.project, self.services, fd, user)
+    self.assertEqual('User must be a member of the project', msg)
+
+    # Needs DeleteAny permission (only owner has it).
+    fd.needs_perm = 'DeleteAny'
+    msg = field_helpers.ValidateCustomField(
+        self.mr, self.mr.project, self.services, fd, owner)
+    self.assertIsNone(msg)
+    msg = field_helpers.ValidateCustomField(
+        self.mr, self.mr.project, self.services, fd, committer)
+    self.assertEqual('User must have permission "DeleteAny"', msg)
+    msg = field_helpers.ValidateCustomField(
+        self.mr, self.mr.project, self.services, fd, user)
+    self.assertEqual('User must be a member of the project', msg)
+
+    # Needs custom permission (only committer has it).
+    fd.needs_perm = 'FooPerm'
+    msg = field_helpers.ValidateCustomField(
+        self.mr, self.mr.project, self.services, fd, owner)
+    self.assertEqual('User must have permission "FooPerm"', msg)
+    msg = field_helpers.ValidateCustomField(
+        self.mr, self.mr.project, self.services, fd, committer)
+    self.assertIsNone(msg)
+    msg = field_helpers.ValidateCustomField(
+        self.mr, self.mr.project, self.services, fd, user)
+    self.assertEqual('User must be a member of the project', msg)
+
+  def test_FilterUserType(self):
+    fd = tracker_bizobj.MakeFieldDef(
+        123, 789, 'Fake Field', tracker_pb2.FieldTypes.USER_TYPE, None,
+        '', False, False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
+
+    owner = testing_helpers.Blank(
+        user_id=111,
+        user=self.services.user.TestAddUser('owner@example.com', 111L))
+    self.mr.project.owner_ids.extend([111L])
+
+    committer = testing_helpers.Blank(
+        user_id=222L,
+        user=self.services.user.TestAddUser('committer@example.com', 222L))
+    self.mr.project.committer_ids.extend([222L])
+    self.mr.project.extra_perms = [
+        project_pb2.Project.ExtraPerms(
+            member_id=222L,
+            perms=['FooPerm'])]
+
+    user = testing_helpers.Blank(
+        user_id=333L,
+        user=self.services.user.TestAddUser('user@example.com', 333L))
+    tracker_bizobj.MakeFieldValue(
+        fd.field_id, None, None, 333L, None, None, False)
+
+    # Normal
+    self.assertEqual(
+        [owner, committer, user],
+        field_helpers.FilterValidUserFieldValues(
+            self.mr, self.mr.project, self.services, fd,
+            [owner, committer, user]))
+
+    # Needs member
+    fd.needs_member = True
+    self.assertEqual(
+        [owner, committer],
+        field_helpers.FilterValidUserFieldValues(
+            self.mr, self.mr.project, self.services, fd,
+            [owner, committer, user]))
+
+    # Needs "DeleteAny" permission (only owner has it)
+    fd.needs_perm = 'DeleteAny'
+    self.assertEqual(
+        [owner],
+        field_helpers.FilterValidUserFieldValues(
+            self.mr, self.mr.project, self.services, fd,
+            [owner, committer, user]))
+
+    # Needs custom permission (only committer has it)
+    fd.needs_perm = 'FooPerm'
+    self.assertEqual(
+        [committer],
+        field_helpers.FilterValidUserFieldValues(
+            self.mr, self.mr.project, self.services, fd,
+            [owner, committer, user]))
 
   def test_DateType(self):
     pass  # TODO(jrobbins): write this test. @@@

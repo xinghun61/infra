@@ -162,7 +162,7 @@ def GetFieldOptions(mr, services, config, visible_member_views,
 
     qualified_users = []
     if fd.needs_perm:
-      qualified_users = field_helpers.FilterValidFieldValues(
+      qualified_users = field_helpers.FilterValidUserFieldValues(
           mr, mr.project, services, fd, visible_member_views)
 
     fdv = tracker_views.FieldDefView(fd, config)

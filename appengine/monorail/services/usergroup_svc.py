@@ -240,9 +240,11 @@ class UserGroupService(object):
     owner_ids_dict = {}
     for gid in group_ids:
       all_descendants = self.group_dag.GetAllDescendants(cnxn, gid, True)
-      indirect_member_rows = self.usergroup_tbl.Select(
-          cnxn, cols=['user_id'], distinct=True,
-          group_id=all_descendants)
+      indirect_member_rows = []
+      if all_descendants:
+        indirect_member_rows = self.usergroup_tbl.Select(
+            cnxn, cols=['user_id'], distinct=True,
+            group_id=all_descendants)
 
       # Owners must have direct membership. All indirect users are members.
       owner_ids_dict[gid] = [m[0] for m in direct_member_rows

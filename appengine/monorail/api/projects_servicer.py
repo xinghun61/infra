@@ -105,7 +105,7 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
     field_options = []
     for fd in config.field_defs:
       if fd.needs_perm and not fd.is_deleted:
-        qualified_users = field_helpers.FilterValidFieldValues(
+        qualified_users = field_helpers.FilterValidUserFieldValues(
             mc, project, self.services, fd, users_by_id.values())
         field_options.append(converters.ConvertFieldOptions(
             fd, [uv.user_id for uv in qualified_users], users_by_id, config))

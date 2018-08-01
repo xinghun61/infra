@@ -80,8 +80,9 @@ class AuthData(object):
       auth.user_id = services.user.LookupUserID(
           cnxn, email, autocreate=autocreate)
       assert auth.user_id
+      cls._FinishInitialization(
+          cnxn, auth, services, user_pb=None, effective_ids=None)
 
-    cls._FinishInitialization(cnxn, auth, services)
     return auth
 
   @classmethod
@@ -100,21 +101,42 @@ class AuthData(object):
     auth.user_id = user_id
     if auth.user_id:
       auth.email = services.user.LookupUserEmail(cnxn, user_id)
+      cls._FinishInitialization(
+          cnxn, auth, services, user_pb=None, effective_ids=None)
 
-    cls._FinishInitialization(cnxn, auth, services)
     return auth
 
   @classmethod
-  def _FinishInitialization(cls, cnxn, auth, services):
+  def FromUser(cls, cnxn, user, services, effective_ids=None):
+    """Determine auth information for the given user.
+
+    Args:
+      cnxn: monorail connection to the database.
+      user: user protobuf.
+      services: connections to backend servers.
+
+    Returns:
+      A new AuthData object.
+    """
+    auth = cls()
+    auth.user_id = user.user_id
+    if auth.user_id:
+      auth.email = user.email
+      cls._FinishInitialization(cnxn, auth, services, user, effective_ids)
+
+    return auth
+
+  @classmethod
+  def _FinishInitialization(cls, cnxn, auth, services, user_pb=None,
+                            effective_ids=None):
     """Fill in the test of the fields based on the user_id."""
     # TODO(jrobbins): re-implement same_org
-    if auth.user_id:
-      auth.effective_ids = services.usergroup.LookupMemberships(
-          cnxn, auth.user_id)
-      auth.effective_ids.add(auth.user_id)
-      auth.user_pb = services.user.GetUser(cnxn, auth.user_id)
-      if auth.user_pb:
-        auth.user_view = framework_views.UserView(auth.user_pb)
+    auth.effective_ids = effective_ids or services.usergroup.LookupMemberships(
+        cnxn, auth.user_id)
+    auth.effective_ids.add(auth.user_id)
+    auth.user_pb = user_pb or services.user.GetUser(cnxn, auth.user_id)
+    if auth.user_pb:
+      auth.user_view = framework_views.UserView(auth.user_pb)
 
   def __repr__(self):
     """Return a string more useful for debugging."""

@@ -176,10 +176,11 @@ class UserGroupServiceTest(unittest.TestCase):
         self.cnxn, cols=['user_id', 'group_id', 'role'], distinct=True,
         group_id=group_ids).AndReturn(direct_member_rows)
     for gid in group_ids:
-      self.usergroup_service.usergroup_tbl.Select(
-          self.cnxn, cols=['user_id'], distinct=True,
-          group_id=descedants_dict.get(gid, [])).AndReturn(
-          indirect_member_rows_dict.get(gid, []))
+      if descedants_dict.get(gid, []):
+        self.usergroup_service.usergroup_tbl.Select(
+            self.cnxn, cols=['user_id'], distinct=True,
+            group_id=descedants_dict.get(gid, [])).AndReturn(
+            indirect_member_rows_dict.get(gid, []))
 
   def testLookupAllMembers(self):
     self.usergroup_service.group_dag.initialized = True
