@@ -1048,7 +1048,9 @@ function TKR_setUpProjectStore(projects, multiValue) {
  * @param {object} membersResponse The response of the issueOptionMembers
  * request.
  */
-function TKR_updateJsonDataWithMembersResponse(jsonData, membersResponse) {
+function TKR_convertMembersResponse(membersResponse) {
+  const jsonData = {};
+
   // TODO(jeffcarp): Abandon concept of a def object for members.
   const groupEmailsDict = {};
   membersResponse.group_emails.forEach(email => groupEmailsDict[email] = true);
@@ -1071,17 +1073,19 @@ function TKR_updateJsonDataWithMembersResponse(jsonData, membersResponse) {
             idx => jsonData.memberEmails[idx]),
       })
   );
+
+  return jsonData;
 }
 
 
 /**
  * Convert the Config object resulting of a monorail.Projects GetConfig to the
- * format expected by TKR_fetchOptions, and update jsonData with it.
- * @param {object} jsonData The object used by TKR_fetchOptions to set up
- * autocomplete.
+ * format expected by TKR_fetchOptions.
  * @param {object} config A pRPC Config object with the results of the call.
  */
-function TKR_updateJsonDataWithConfig(jsonData, config) {
+function TKR_convertConfig(config) {
+  const jsonData = {};
+
   // Split statusDefs into open and closed name-doc objects.
   jsonData.open = [];
   jsonData.closed = [];
@@ -1111,6 +1115,8 @@ function TKR_updateJsonDataWithConfig(jsonData, config) {
   jsonData.strict = config.restrictToKnown;
   jsonData.excl_prefixes = config.exclusiveLabelPrefixes.map(
       prefix => prefix.toLowerCase());
+
+  return jsonData;
 }
 
 
@@ -1142,30 +1148,52 @@ function TKR_fetchOptions(projectName, token, cct) {
     project_name: projectName,
   };
 
-  const promises = [
-      CS_fetch(optionsURL),
-      CS_fetch(membersURL),
-      prpcClient.call('monorail.Projects', 'GetConfig', message),
-  ];
+  const optionsPromise = CS_fetch(optionsURL);
+  const membersPromise = CS_fetch(membersURL);
+  const configPromise = prpcClient.call('monorail.Projects', 'GetConfig',
+      message);
 
-  Promise.all(promises).then(responses => {
+  const allPromises = [];
+
+  allPromises.push(
+      optionsPromise.then(jsonData => {
+        TKR_setUpHotlistsStore(jsonData.hotlists);
+        TKR_setUpLabelStore(jsonData.labels);
+        TKR_setUpCustomPermissionsStore(jsonData.custom_permissions);
+        TKR_exclPrefixes = jsonData.excl_prefixes;
+        TKR_prepLabelAC(TKR_labelFieldIDPrefix);
+        TKR_restrict_to_known = jsonData.strict;
+
+        return jsonData;
+  }));
+
+  allPromises.push(
+      membersPromise.then(membersResponse => {
+        const jsonData = TKR_convertMembersResponse(membersResponse);
+
+        TKR_setUpMemberStore(jsonData.memberEmails, jsonData.nonGroupEmails);
+        TKR_prepOwnerField(jsonData.memberEmails);
+        TKR_setUpUserAutocompleteStores(jsonData.fields, jsonData.memberEmails);
+
+        return jsonData;
+  }));
+
+  allPromises.push(
+      configPromise.then(config => {
+        const jsonData = TKR_convertConfig(config);
+
+        TKR_setUpStatusStore(jsonData.open, jsonData.closed);
+        TKR_setUpComponentStore(jsonData.components);
+
+        return jsonData;
+  }));
+
+  Promise.all(allPromises).then(responses => {
     // Merge result objects.
-    const jsonData = responses[0];
-    TKR_updateJsonDataWithMembersResponse(jsonData, responses[1]);
-    TKR_updateJsonDataWithConfig(jsonData, responses[2]);
-
-    TKR_setUpHotlistsStore(jsonData.hotlists);
-    TKR_setUpStatusStore(jsonData.open, jsonData.closed);
-    TKR_setUpLabelStore(jsonData.labels);
-    TKR_setUpComponentStore(jsonData.components);
-    TKR_setUpCustomPermissionsStore(jsonData.custom_permissions);
-    TKR_exclPrefixes = jsonData.excl_prefixes;
-    TKR_prepLabelAC(TKR_labelFieldIDPrefix);
-    TKR_restrict_to_known = jsonData.strict;
-
-    TKR_setUpMemberStore(jsonData.memberEmails, jsonData.nonGroupEmails);
-    TKR_prepOwnerField(jsonData.memberEmails);
-    TKR_setUpUserAutocompleteStores(jsonData.fields, jsonData.memberEmails);
+    const jsonData = {};
+    for (const response of responses) {
+      Object.assign(jsonData, response);
+    }
 
     /* QuickEdit is not yet in Monorail. crbug.com/monorail/1926
     TKR_setUpQuickEditStore(
