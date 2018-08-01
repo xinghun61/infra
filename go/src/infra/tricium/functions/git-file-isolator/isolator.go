@@ -49,6 +49,7 @@ func main() {
 			"--no-recurse-submodules", input.Repository, input.Ref),
 		exec.Command("git", "checkout", "FETCH_HEAD", "--"),
 	}
+
 	// Explicitly add the list of files to the command line to checkout
 	// to speed things up.
 	// NB! The max length for a command line supported by the OS may be
@@ -66,13 +67,25 @@ func main() {
 	}
 
 	// Copy files to output directory for isolation.
+	// Skip over any files which couldn't be copied and don't
+	// include them in the output.
+	output := &tricium.Data_Files{}
 	for _, file := range input.Files {
+		log.Printf("Preparing to copy file %q.", file.Path)
+		src := filepath.Join(dir, file.Path)
+		if fileInfo, err := os.Lstat(file.Path); err != nil {
+			log.Fatalf("Failed to stat file: %v", err)
+		} else if !fileInfo.Mode().IsRegular() {
+			log.Printf("Skipping file %q with mode %s.", src, fileInfo.Mode())
+			continue
+		}
+
 		dest := filepath.Join(*outputDir, file.Path)
 		if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
 			log.Fatalf("Failed to create dirs for file: %v", err)
 		}
-		src := filepath.Join(dir, file.Path)
 		cmd := exec.Command("cp", src, dest)
+
 		stderr, err := cmd.StderrPipe()
 		if err != nil {
 			log.Fatalf("Failed to read stderr: %v", err)
@@ -85,12 +98,10 @@ func main() {
 		if err := cmd.Wait(); err != nil {
 			log.Fatalf("Command failed: %v, stderr: %s", err, slurp)
 		}
+		output.Files = append(output.Files, file)
 	}
 
 	// Write Tricium output FILES data.
-	output := &tricium.Data_Files{
-		Files: input.Files,
-	}
 	path, err := tricium.WriteDataType(*outputDir, output)
 	if err != nil {
 		log.Fatalf("Failed to write FILES data: %v", err)
