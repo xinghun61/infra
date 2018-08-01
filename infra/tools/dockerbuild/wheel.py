@@ -445,6 +445,7 @@ SPECS = {s.spec.tag: s for s in (
   Universal('pytest-cov', '2.5.1'),
   Universal('pytz', '2018.4'),
   Universal('requests', '2.13.0'),
+  UniversalSource('requests-unixsocket', '0.1.5'),
   Universal('rsa', '3.4.2'),
   Universal('selenium', '3.4.1'),
   Universal('setuptools', '34.3.2'),

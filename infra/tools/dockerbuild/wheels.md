@@ -1687,6 +1687,20 @@ wheel: <
 
 * *universal*
 
+## **requests-unixsocket**
+
+### 0.1.5
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/requests-unixsocket-py2_py3"
+  version: "version:0.1.5"
+>
+```
+
+
+* *universal*
+
 ## **rsa**
 
 ### 3.4.2
