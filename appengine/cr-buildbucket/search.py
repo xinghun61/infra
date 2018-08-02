@@ -133,6 +133,8 @@ class Query(object):
       canary=None,
       create_time_low=None,
       create_time_high=None,
+      build_low=None,
+      build_high=None,
       include_experimental=None
   ):
     """Initializes Query.
@@ -157,6 +159,8 @@ class Query(object):
         create_time attribute. Inclusive.
       create_time_high (datetime.datetime): if not None, maximum value of
         create_time attribute. Exclusive.
+      build_low (int): if not None, id of the minimum build. Inclusive.
+      build_high (int): if not None, id of the maximal build. Exclusive.
       include_experimental (bool): if true, search results will include
         experimental builds. Otherwise, experimental builds will be excluded.
     """
@@ -171,6 +175,8 @@ class Query(object):
     self.canary = canary
     self.create_time_low = create_time_low
     self.create_time_high = create_time_high
+    self.build_low = build_low
+    self.build_high = build_high
     self.max_builds = max_builds
     self.start_cursor = start_cursor
     self.include_experimental = include_experimental
@@ -196,6 +202,37 @@ class Query(object):
   def status_is_v2(self):
     return isinstance(self.status, int)
 
+  def validate(self):
+    """Raises errors.InvalidInputError if self is invalid."""
+    if not isinstance(self.status, (type(None), StatusFilter, int)):
+      raise errors.InvalidInputError(
+          'status must be a StatusFilter, int or None'
+      )
+    if self.buckets is not None and not isinstance(self.buckets, list):
+      raise errors.InvalidInputError('Buckets must be a list or None')
+    buildtags.validate_tags(self.tags, 'search')
+
+    create_time_range = (
+        self.create_time_low is not None or self.create_time_high is not None
+    )
+    build_range = self.build_low is not None or self.build_high is not None
+    if create_time_range and build_range:
+      raise errors.InvalidInputError(
+          'create_time_low and create_time_high are mutually exclusive with '
+          'build_low and build_high'
+      )
+
+  def get_create_time_order_build_id_range(self):
+    """Returns low/high build id range for results ordered by creation time.
+
+    Low boundary is inclusive. High boundary is exclusive.
+    Assumes self is valid.
+    """
+    if self.build_low is not None or self.build_high is not None:
+      return (self.build_low, self.build_high)
+    else:
+      return model.build_id_range(self.create_time_low, self.create_time_high)
+
 
 @ndb.tasklet
 def search_async(q):
@@ -209,12 +246,11 @@ def search_async(q):
       builds (list of Build): query result.
       next_cursor (string): cursor for the next page.
         None if there are no more builds.
-  """
-  assert isinstance(q.status, (type(None), StatusFilter, int)), q.status
-  if q.buckets is not None and not isinstance(q.buckets, list):
-    raise errors.InvalidInputError('Buckets must be a list or None')
-  buildtags.validate_tags(q.tags, 'search')
 
+  Raises:
+    errors.InvalidInputError if q is invalid.
+  """
+  q.validate()
   q = q.copy()
   if (q.create_time_low is not None and
       q.create_time_low < model.BEGINING_OF_THE_WORLD):
@@ -332,7 +368,7 @@ def _query_search_async(q):
   if q.buckets and not check_buckets_locally:
     dq = dq.filter(model.Build.bucket.IN(q.buckets))
 
-  id_low, id_high = model.build_id_range(q.create_time_low, q.create_time_high)
+  id_low, id_high = q.get_create_time_order_build_id_range()
   if id_low is not None:
     dq = dq.filter(model.Build.key >= ndb.Key(model.Build, id_low))
   if id_high is not None:
@@ -386,7 +422,7 @@ def _tag_index_search_async(q):
 
   # Determine build id range we are considering.
   # id_low is inclusive, id_high is exclusive.
-  id_low, id_high = model.build_id_range(q.create_time_low, q.create_time_high)
+  id_low, id_high = q.get_create_time_order_build_id_range()
   id_low = 0 if id_low is None else id_low
   id_high = (1 << 64) - 1 if id_high is None else id_high
   if q.start_cursor:

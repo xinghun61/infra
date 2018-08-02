@@ -177,3 +177,10 @@ class BuildPredicateTests(BaseTestCase):
         tags=[common_pb2.StringPair(key='', value='')],
     )
     self.assert_invalid(msg, r'tags: Invalid tag')
+
+  def test_two_ranges(self):
+    msg = rpc_pb2.BuildPredicate(
+        create_time=common_pb2.TimeRange(),
+        build=rpc_pb2.BuildRange(),
+    )
+    self.assert_invalid(msg, r'create_time and build are mutually exclusive')

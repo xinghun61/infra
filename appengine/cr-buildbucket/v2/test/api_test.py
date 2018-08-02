@@ -358,3 +358,11 @@ class BuildPredicateToSearchQueryTests(BaseTestCase):
     q = api.build_predicate_to_search_query(predicate)
     self.assertEqual(q.create_time_low, datetime.datetime(2018, 1, 1))
     self.assertEqual(q.create_time_high, datetime.datetime(2018, 1, 2))
+
+  def test_build_range(self):
+    predicate = rpc_pb2.BuildPredicate(
+        build=rpc_pb2.BuildRange(start_build_id=100, end_build_id=90),
+    )
+    q = api.build_predicate_to_search_query(predicate)
+    self.assertEqual(q.build_low, 100)
+    self.assertEqual(q.build_high, 90)

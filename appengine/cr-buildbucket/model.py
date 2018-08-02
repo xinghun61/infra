@@ -80,7 +80,7 @@ class PubSubCallback(ndb.Model):
 
 class BucketState(ndb.Model):
   """Persistent state of a single bucket."""
-  # If True, no new bulids may be leased for this bucket.
+  # If True, no new builds may be leased for this bucket.
   is_paused = ndb.BooleanProperty()
 
 

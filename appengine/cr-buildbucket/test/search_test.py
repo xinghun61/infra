@@ -20,6 +20,24 @@ import search
 import user
 
 
+class ValidateQueryTests(testing.AppengineTestCase):
+
+  def test_invalid_status(self):
+    q = search.Query(status=[],)
+    err_pattern = r'status must be a StatusFilter, int or None'
+    with self.assertRaisesRegexp(errors.InvalidInputError, err_pattern):
+      q.validate()
+
+  def test_two_ranges(self):
+    q = search.Query(
+        create_time_low=datetime.datetime(2018, 1, 1),
+        build_high=1000,
+    )
+    err_pattern = r'mutually exclusive'
+    with self.assertRaisesRegexp(errors.InvalidInputError, err_pattern):
+      q.validate()
+
+
 class SearchTest(testing.AppengineTestCase):
   INDEXED_TAG = 'buildset:1'
 
@@ -105,6 +123,10 @@ class SearchTest(testing.AppengineTestCase):
 
   def search(self, **query_attrs):
     return search.search_async(search.Query(**query_attrs)).get_result()
+
+  def assert_equal_keys(self, first, second):
+    keys = lambda builds: [b.key for b in builds]
+    self.assertEqual(keys(first), keys(second))
 
   def test_search(self):
     build2 = model.Build(bucket=self.test_build.bucket)
@@ -296,6 +318,28 @@ class SearchTest(testing.AppengineTestCase):
         tags=[self.INDEXED_TAG],
     )
     self.assertEqual(builds, [build2])
+
+  def test_search_by_build_id_range_lo(self):
+    builds = self.put_many_builds(count=5)
+    # make builds order same as search results order
+    builds.reverse()
+
+    actual, _ = self.search(build_low=builds[0].key.id())
+    self.assert_equal_keys(builds, actual)
+
+    actual, _ = self.search(build_low=builds[0].key.id() + 1)
+    self.assert_equal_keys(builds[1:], actual)
+
+  def test_search_by_build_id_range_hi(self):
+    builds = self.put_many_builds(count=5)
+    # make builds order same as search results order
+    builds.reverse()
+
+    actual, _ = self.search(build_high=builds[-1].key.id())
+    self.assert_equal_keys(builds[:-1], actual)
+
+    actual, _ = self.search(build_high=builds[-1].key.id() + 1)
+    self.assert_equal_keys(builds, actual)
 
   def test_search_by_creation_time_range(self):
     too_old = model.BEGINING_OF_THE_WORLD - datetime.timedelta(milliseconds=1)

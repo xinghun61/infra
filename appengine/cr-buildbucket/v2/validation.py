@@ -87,6 +87,9 @@ def validate_build_predicate(predicate):
       validate_builder_id(predicate.builder)
   _check_repeated(predicate, 'gerrit_changes', validate_gerrit_change)
 
+  if predicate.HasField('create_time') and predicate.HasField('build'):
+    _err('create_time and build are mutually exclusive')
+
   if not predicate.HasField('builder') and not predicate.gerrit_changes:
     _err('builder or gerrit_changes is required')
 

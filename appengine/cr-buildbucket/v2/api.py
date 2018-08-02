@@ -130,7 +130,10 @@ def builds_to_v2_async(builds, build_mask):
 
 
 def build_predicate_to_search_query(predicate):
-  """Converts a rpc_pb2.BuildPredicate to search.Query."""
+  """Converts a rpc_pb2.BuildPredicate to search.Query.
+
+  Assumes predicate is valid.
+  """
   q = search.Query(
       tags=[buildtags.unparse(p.key, p.value) for p in predicate.tags],
       created_by=predicate.created_by or None,
@@ -160,6 +163,12 @@ def build_predicate_to_search_query(predicate):
     q.create_time_low = predicate.create_time.start_time.ToDatetime()
   if predicate.create_time.HasField('end_time'):
     q.create_time_high = predicate.create_time.end_time.ToDatetime()
+
+  # Filter by build range.
+  if predicate.HasField('build'):
+    # 0 means no boundary.
+    q.build_low = predicate.build.start_build_id or None
+    q.build_high = predicate.build.end_build_id or None
 
   return q
 
