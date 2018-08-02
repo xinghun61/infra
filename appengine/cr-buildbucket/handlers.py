@@ -82,8 +82,8 @@ class TaskCancelSwarmingTask(webapp2.RequestHandler):  # pragma: no cover
 class UnregisterBuilders(webapp2.RequestHandler):  # pragma: no cover
   """Unregisters builders that didn't have builds for a long time."""
 
-  @decorators.require_taskqueue('backend-default')
-  def post(self):
+  @decorators.require_cronjob
+  def get(self):
     service.unregister_builders()
 
 
