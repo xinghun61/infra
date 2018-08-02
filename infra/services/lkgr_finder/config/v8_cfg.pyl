@@ -42,6 +42,7 @@
         'V8 Linux64 Jumbo - debug',
         'V8 Linux64 Jumbo - limited',
         'V8 Linux64 Jumbo - limited - debug',
+        'V8 Linux64 TSAN - builder',
         'V8 Linux64 TSAN',
         'V8 Linux - arm64 - sim - MSAN',
         # TODO(machenbach): Enable once crbug.com/382930 is resolved.
