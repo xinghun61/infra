@@ -73,7 +73,7 @@ func main() {
 	for _, file := range input.Files {
 		log.Printf("Preparing to copy file %q.", file.Path)
 		src := filepath.Join(dir, file.Path)
-		if fileInfo, err := os.Lstat(file.Path); err != nil {
+		if fileInfo, err := os.Lstat(src); err != nil {
 			log.Fatalf("Failed to stat file: %v", err)
 		} else if !fileInfo.Mode().IsRegular() {
 			log.Printf("Skipping file %q with mode %s.", src, fileInfo.Mode())
