@@ -10,20 +10,21 @@
   const components = window.__autolink.Components;
   const createIssueRefRun = window.__autolink.createIssueRefRun;
   suite('crbug component functions', function() {
-      const {lookup, extractRefs, replacers} = components.get('01-tracker-crbug');
+      const {lookup, extractRefs, reStrs, replacer} = components.get('01-tracker-crbug');
 
       test('Extract crbug project and local ids', function() {
-          let match = new RegExp(replacers[0].re, 'gi').exec('https://crbug.com/monorail/1234');
+          let match = reStrs[0].exec('https://crbug.com/monorail/1234');
+          reStrs[0].lastIndex = 0;
           let ref = extractRefs(match);
           assert.deepEqual(ref, {projectName: 'monorail', localId: '1234'});
       });
 
       test('Replace crbug with found components', function() {
-          const {re, replacerFunc} = replacers[0];
           const str = 'crbug.com/monorail/1234';
-          const match = new RegExp(re, 'gi').exec(str);
+          const match = reStrs[0].exec(str);
+          reStrs[0].lastIndex = 0;
           const components = {closedRefs: [{localId: 1234, projectName: 'monorail'}, {}]};
-          const actualRun = replacerFunc(match, components);
+          const actualRun = replacer(match, components);
           assert.deepEqual(
               actualRun,
               {
@@ -36,11 +37,11 @@
       });
 
       test('Replace crbug with default project_name', function() {
-          const {re, replacerFunc} = replacers[0];
           const str = 'crbug.com/1234';
-          const match = new RegExp(re, 'gi').exec(str);
+          const match = reStrs[0].exec(str);
+          reStrs[0].lastIndex = 0;
           const components = {openRefs: [{localId: 134}, {localId: 1234, projectName: 'chromium'}]};
-          const actualRun = replacerFunc(match, components);
+          const actualRun = replacer(match, components);
           assert.deepEqual(
               actualRun,
               {
@@ -53,20 +54,20 @@
       });
 
       test('Replace crbug with no found components', function() {
-          const {re, replacerFunc} = replacers[0];
           const str = 'crbug.com/1234';
-          const match = new RegExp(re, 'gi').exec(str);
+          const match = reStrs[0].exec(str);
+          reStrs[0].lastIndex = 0;
           const components = {};
-          const actualRun = replacerFunc(match, components);
+          const actualRun = replacer(match, components);
           assert.deepEqual(actualRun, {content: str});
       });
   });
 
   suite('regular tracker component functions', function() {
-      const {lookup, extractRefs, replacers} = components.get('02-tracker-regular');
+      const {lookup, extractRefs, reStrs, replacer} = components.get('02-tracker-regular');
       const str = 'bugs=123, monorail:234 or #345 and PROJ:#456';
-      const {re, replacerFunc} = replacers[0];
-      const match = new RegExp(re, 'gi').exec(str);
+      const match = reStrs[0].exec(str);
+      reStrs[0].lastIndex = 0;
 
       test('Extract tracker projects and local ids', function() {
           const actualRefs = extractRefs(match);
@@ -88,7 +89,7 @@
                   {projectName: 'proj', localId: 456},
               ]
           };
-          const actualTextRuns = replacerFunc(match, components);
+          const actualTextRuns = replacer(match, components);
           assert.deepEqual(
               actualTextRuns,
               [
@@ -112,11 +113,10 @@
   });
 
   suite('user email component functions', function() {
-      const {lookup, extractRefs, replacers} = components.get('03-user-emails');
-      const {re, replacerFunc} = replacers[0];
+      const {lookup, extractRefs, reStrs, replacer} = components.get('03-user-emails');
       const str = 'We should ask User1@gmail.com to confirm.';
-      const regex = new RegExp(re, 'gi');
-      const match = regex.exec(str);
+      const match = reStrs[0].exec(str);
+      reStrs[0].lastIndex = 0;
 
       test('Extract user email', function() {
           const actualEmail = extractRefs(match, 'unusedProjectName');
@@ -126,7 +126,7 @@
       test('Replace existing user.', function() {
           const components = {
               users: [{email: 'user2@gmail.com'}, {email: 'user1@gmail.com'}]};
-          const actualTextRun = replacerFunc(match, components);
+          const actualTextRun = replacer(match, components);
           assert.deepEqual(
               actualTextRun,
               {tag: 'a', href: '/u/User1@gmail.com', content: 'User1@gmail.com'}
@@ -134,7 +134,7 @@
       });
 
       test('Replace non-existent user.', function() {
-          const actualTextRun = replacerFunc(match, {});
+          const actualTextRun = replacer(match, {});
           assert.deepEqual(
               actualTextRun,
               {
@@ -145,5 +145,72 @@
           );
       });
 
+  });
+
+  suite('url component functions.', function() {
+      const {lookup, extracRefs, reStrs, replacer} = components.get('04-urls');
+
+      test('test short link regex string', function() {
+          const shortLinkRE = reStrs[0];
+          const str = 'go/shortlinks ./_go/shortlinks bo/short bo/1234  https://who/shortlinks go/hey/?wct=(go)';
+          let match;
+          let actualMatches = [];
+          while ((match = shortLinkRE.exec(str)) !== null) {
+              actualMatches.push(match[0]);
+          }
+          assert.deepEqual(
+              actualMatches, ['go/shortlinks', 'https://who/shortlinks', 'go/hey/?wct=(go)']);
+      });
+
+      test('test numeric short linke regex string', function() {
+          const shortNumLinkRE = reStrs[1];
+          const str = 'go/nono omg/ohno omg/123 .cl/123 b/1234'
+          let match;
+          let actualMatches = [];
+          while ((match = shortNumLinkRE.exec(str)) !== null) {
+              actualMatches.push(match[0]);
+          }
+          assert.deepEqual(
+              actualMatches, ['omg/123', 'b/1234']);
+      });
+
+      test('test implied link regex string', function() {
+          const impliedLinkRE = reStrs[2];
+          const str = 'incomplete.com .help.com hey.net/other="(blah)"';
+          let match;
+          let actualMatches = [];
+          while ((match = impliedLinkRE.exec(str)) !== null) {
+              actualMatches.push(match[0]);
+          }
+          assert.deepEqual(
+              actualMatches, ['incomplete.com', 'hey.net/other="(blah)"']);
+      });
+
+      test('test full link regex string', function() {
+          const isLinkRE = reStrs[3];
+          const str = 'https://www.go.com nospacehttps://www.blah.com http://website.net/other="(}])"><)'
+          let match;
+          let actualMatches = [];
+          while ((match = isLinkRE.exec(str)) !== null) {
+              actualMatches.push(match[0]);
+          }
+          assert.deepEqual(
+              actualMatches, ['https://www.go.com', 'http://website.net/other="(}])">']);
+      });
+
+      test('Replace URL plain text', function() {
+          const match = reStrs[2].exec('link here: (website.net/other="here").');
+          reStrs[2].lastIndex = 0;
+          const actualTextRuns = replacer(match);
+          console.log(JSON.stringify(actualTextRuns));
+          assert.deepEqual(
+              actualTextRuns,
+              [{tag: 'a',
+                href: 'https://website.net/other="here"',
+                content: 'website.net/other="here"',
+               },
+               {content: ').'}]
+          );
+      });
   });
 </script>

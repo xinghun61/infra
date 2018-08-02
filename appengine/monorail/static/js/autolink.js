@@ -5,11 +5,25 @@
 
 (function(window) {
   'use strict';
-
-  const CRBUG_LINK_STR = '(?<prefix>\\b(https?:\/\/)?crbug\\.com\/)((?<projectName>\\b[-a-z0-9]+)(?<separator>\/))?(?<localId>\\d+)\\b(?<anchor>\\#c[0-9]+)?';
-  const ISSUE_TRACKER_STR = '(?<prefix>\\b(issues?|bugs?)[ \\t]*(:|=)?)([ \\t]*(?<projectName>\\b[-a-z0-9]+[:\\#])?(?<numberSign>\\#?)(?<localId>\\d+)\\b(,?[ \\t]*(and|or)?)?)+';
-  const PROJECT_LOCALID_STR = '([ \\t]*(?<projectName>\\b[-a-z0-9]+[:\\#])?(?<numberSign>\\#?)(?<localId>\\d+))';
-  const IMPLIED_EMAIL_STR = '\\b[a-z]((-|\\.)?[a-z0-9])+@[a-z]((-|\\.)?[a-z0-9])+\\.(com|net|org|edu)\\b';
+  const CRBUG_LINK_RE = /(?<prefix>\b(https?:\/\/)?crbug\.com\/)((?<projectName>\b[-a-z0-9]+)(?<separator>\/))?(?<localId>\d+)\b(?<anchor>\#c[0-9]+)?/gi;
+  const ISSUE_TRACKER_RE = /(?<prefix>\b(issues?|bugs?)[ \t]*(:|=)?)([ \t]*(?<projectName>\b[-a-z0-9]+[:\#])?(?<numberSign>\#?)(?<localId>\d+)\b(,?[ \t]*(and|or)?)?)+/gi;
+  const PROJECT_LOCALID_RE = /([ \t]*(?<projectName>\b[-a-z0-9]+[:\#])?(?<numberSign>\#?)(?<localId>\d+))/gi;
+  const IMPLIED_EMAIL_RE = /\b[a-z]((-|\.)?[a-z0-9])+@[a-z]((-|\.)?[a-z0-9])+\.(com|net|org|edu)\b/gi;
+  const SHORT_LINK_RE = /(?<![-/._])\b(https?:\/\/|ftp:\/\/|mailto:)?(go|g|shortn|who|teams)\/([^\s<]+)/gi;
+  const NUMERIC_SHORT_LINK_RE = /(?<![-/._])\b(https?:\/\/|ftp:\/\/)?(b|t|o|omg|cl|cr)\/([0-9]+)/gi;
+  const IMPLIED_LINK_RE = /(?<![-/._])\b[a-z]((-|\.)?[a-z0-9])+\.(com|net|org|edu)\b(\/[^\s<]*)?/gi;
+  const IS_LINK_RE = /\b(https?:\/\/|ftp:\/\/|mailto:)([^\s<]+)/gi;
+  const LINK_TRAILING_CHARS = [
+    [null, ':'],
+    [null, '.'],
+    [null, ','],
+    [null, '>'],
+    ['(', ')'],
+    ['[', ']'],
+    ['{', '}'],
+    ["'", "'"],
+    ['"', '"'],
+  ];
 
   const Components = new Map();
   Components.set(
@@ -17,7 +31,9 @@
       {
         lookup: LookupReferencedIssues,
         extractRefs: ExtractCrbugProjectAndIssueIds,
-        replacers: [{re: CRBUG_LINK_STR, replacerFunc: ReplaceCrbugIssueRef}],
+        reStrs: [CRBUG_LINK_RE],
+	replacer: ReplaceCrbugIssueRef,
+
       }
   );
   Components.set(
@@ -25,17 +41,33 @@
       {
         lookup: LookupReferencedIssues,
         extractRefs: ExtractTrackerProjectAndIssueIds,
-        replacers: [{re: ISSUE_TRACKER_STR, replacerFunc: ReplaceTrackerIssueRef}],
+        reStrs: [ISSUE_TRACKER_RE],
+        replacer: ReplaceTrackerIssueRef,
       }
   );
+  // TODO(jojwang):monorail:4033, in getReferencedArtifacts and markupAutolinks loops,
+  // consider skipping processing steps for components that do not have
+  // useful/valid lookup and extractRefs functions (if skipping makes code more readable).
   Components.set(
       '03-user-emails',
       {
         lookup: LookupReferencedUsers,
         extractRefs: (match, _defaultProjectName) => { return match[0]; },
-        replacers: [{re: IMPLIED_EMAIL_STR, replacerFunc: ReplaceUserRef}],
+        reStrs: [IMPLIED_EMAIL_RE],
+        replacer: ReplaceUserRef,
       }
-  )
+  );
+  Components.set(
+      '04-urls',
+      {
+        lookup: (_refs, _token, _comp) => {
+          return {'componentName': '04-urls', 'existingRefs': {}}; },
+        extractRefs: (match, _defaultProjectName) => { return match[0]; },
+        reStrs: [SHORT_LINK_RE, NUMERIC_SHORT_LINK_RE, IMPLIED_LINK_RE, IS_LINK_RE],
+        replacer: ReplaceLinkRef,
+      }
+  );
+
 
   // Lookup referenced artifacts functions.
   function LookupReferencedIssues(issueRefs, token, componentName) {
@@ -66,7 +98,7 @@
   }
 
   function ExtractTrackerProjectAndIssueIds(match, defaultProjectName='chromium') {
-    const issueRefRE = new RegExp(PROJECT_LOCALID_STR, 'gi');
+    const issueRefRE = PROJECT_LOCALID_RE;
     let refMatch;
     let refs = [];
     while ((refMatch = issueRefRE.exec(match[0])) !== null) {
@@ -107,7 +139,7 @@
   }
 
   function ReplaceTrackerIssueRef(match, components, defaultProjectName='chromium') {
-    const issueRefRE = new RegExp(PROJECT_LOCALID_STR, 'gi');
+    const issueRefRE = PROJECT_LOCALID_RE;
     let textRuns = [];
     let refMatch;
     while ((refMatch = issueRefRE.exec(match[0])) !== null) {
@@ -133,6 +165,31 @@
     }
     textRun.href = `mailto:${match[0]}`;
     return textRun;
+  }
+
+  function ReplaceLinkRef(match, _componets, _defaultProjectName) {
+    let content = match[0];
+    let trailing = '';
+    LINK_TRAILING_CHARS.forEach(([begin, end]) => {
+      if (content.endsWith(end)) {
+        if (!begin || !content.slice(0, -end.length).includes(begin)) {
+          trailing = end + trailing;
+          content = content.slice(0, -end.length);
+        }
+      }
+    });
+    let href = content;
+    let lowerHref = href.toLowerCase();
+    if (!lowerHref.startsWith('http') || !lowerHref.startsWith('ftp') ||
+        !lowerHref.startsWith('mailto')) {
+      href = 'https://' + href;
+    }
+
+    let textRuns = [{content: content, tag: 'a', href: href}]
+    if (trailing.length) {
+      textRuns.push({content: trailing});
+    }
+    return textRuns;
   }
 
   // Create custom textrun functions.
