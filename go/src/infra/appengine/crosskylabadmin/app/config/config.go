@@ -57,12 +57,12 @@ func Middleware(c *router.Context, next router.Handler) {
 		return
 	}
 
-	c.Context = use(c.Context, &cfg)
+	c.Context = Use(c.Context, &cfg)
 	next(c)
 }
 
-// use installs cfg into c.
-func use(c context.Context, cfg *Config) context.Context {
+// Use installs cfg into c.
+func Use(c context.Context, cfg *Config) context.Context {
 	return context.WithValue(c, contextKey, cfg)
 }
 

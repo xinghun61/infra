@@ -30,6 +30,7 @@ import (
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
+	"infra/appengine/crosskylabadmin/app/config"
 )
 
 // TrackerServerImpl implements the fleet.TrackerServer interface.
@@ -43,12 +44,13 @@ func (tsi *TrackerServerImpl) RefreshBots(c context.Context, req *fleet.RefreshB
 		err = grpcutil.GRPCifyAndLogErr(c, err)
 	}()
 
-	sc, err := tsi.SwarmingClient(c, swarmingInstance)
+	cfg := config.Get(c)
+	sc, err := tsi.SwarmingClient(c, cfg.Swarming.Host)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to obtain Swarming client").Err()
 	}
 
-	bots, err := getBotsFromSwarming(c, sc, req.Selectors)
+	bots, err := getBotsFromSwarming(c, sc, cfg.Swarming.BotPool, req.Selectors)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to get bots from Swarming").Err()
 	}
@@ -92,12 +94,12 @@ func (tsi *TrackerServerImpl) SummarizeBots(c context.Context, req *fleet.Summar
 }
 
 // getBotsFromSwarming lists bots by calling the Swarming service.
-func getBotsFromSwarming(c context.Context, sc clients.SwarmingClient, sels []*fleet.BotSelector) ([]*swarming.SwarmingRpcsBotInfo, error) {
+func getBotsFromSwarming(c context.Context, sc clients.SwarmingClient, pool string, sels []*fleet.BotSelector) ([]*swarming.SwarmingRpcsBotInfo, error) {
 	// No filters implies get all bots.
 	if len(sels) == 0 {
-		bots, err := sc.ListAliveBotsInPool(c, swarmingBotPool, strpair.Map{})
+		bots, err := sc.ListAliveBotsInPool(c, pool, strpair.Map{})
 		if err != nil {
-			return nil, errors.Annotate(err, "failed to get bots in pool %s", swarmingBotPool).Err()
+			return nil, errors.Annotate(err, "failed to get bots in pool %s", pool).Err()
 		}
 		return bots, nil
 	}
@@ -113,7 +115,7 @@ func getBotsFromSwarming(c context.Context, sc clients.SwarmingClient, sels []*f
 			// In-scope variable for goroutine closure.
 			sel := sels[i]
 			workC <- func() error {
-				bs, ierr := getFilteredBotsFromSwarming(c, sc, sel)
+				bs, ierr := getFilteredBotsFromSwarming(c, sc, pool, sel)
 				if ierr != nil {
 					return ierr
 				}
@@ -129,13 +131,13 @@ func getBotsFromSwarming(c context.Context, sc clients.SwarmingClient, sels []*f
 
 // getFilteredBotsFromSwarming lists bots for a single selector by calling the Swarming service.
 // This function is intended to be used in a parallel.WorkPool().
-func getFilteredBotsFromSwarming(c context.Context, sc clients.SwarmingClient, sel *fleet.BotSelector) ([]*swarming.SwarmingRpcsBotInfo, error) {
+func getFilteredBotsFromSwarming(c context.Context, sc clients.SwarmingClient, pool string, sel *fleet.BotSelector) ([]*swarming.SwarmingRpcsBotInfo, error) {
 	dims := strpair.Map{
 		clients.DutIDDimensionKey: []string{sel.DutId},
 	}
-	bs, err := sc.ListAliveBotsInPool(c, swarmingBotPool, dims)
+	bs, err := sc.ListAliveBotsInPool(c, pool, dims)
 	if err != nil {
-		return nil, errors.Annotate(err, "failed to get bots in pool %s with dimensions %s", swarmingBotPool, dims).Err()
+		return nil, errors.Annotate(err, "failed to get bots in pool %s with dimensions %s", pool, dims).Err()
 	}
 	return bs, nil
 }

@@ -19,13 +19,42 @@ import (
 	"sort"
 	"sync"
 
+	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/appengine/gaetesting"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/data/strpair"
+	"go.chromium.org/luci/common/proto/google"
 	"golang.org/x/net/context"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
+	"infra/appengine/crosskylabadmin/app/config"
 )
+
+func testingContext() context.Context {
+	c := gaetesting.TestingContextWithAppID("dev~infra-crosskylabadmin")
+	c = config.Use(c, &config.Config{
+		AccessGroup: "fake-access-group",
+		Swarming: &config.Swarming{
+			Host:              "https://fake-host.appspot.com",
+			BotPool:           "ChromeOSSkylab",
+			FleetAdminTaskTag: "fake-tag",
+			LuciProjectTag:    "fake-project",
+		},
+		Tasker: &config.Tasker{
+			BackgroundTaskExecutionTimeoutSecs: 3600,
+			BackgroundTaskExpirationSecs:       300,
+		},
+		Cron: &config.Cron{
+			FleetAdminTaskPriority:     33,
+			EnsureTasksCount:           3,
+			RepairIdleDuration:         google.NewDuration(10),
+			RepairAttemptDelayDuration: google.NewDuration(10),
+		},
+	})
+	datastore.GetTestable(c).Consistent(true)
+	return c
+}
 
 // fakeSwarmingClient implements SwarmingClient.
 type fakeSwarmingClient struct {

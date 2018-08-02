@@ -23,43 +23,15 @@ package cron
 
 import (
 	"fmt"
-	"math"
 	"net/http"
-	"time"
 
 	"go.chromium.org/luci/appengine/gaemiddleware"
 	"go.chromium.org/luci/common/logging"
-	"go.chromium.org/luci/common/proto/google"
 	"go.chromium.org/luci/server/router"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/appengine/crosskylabadmin/app/config"
 	"infra/appengine/crosskylabadmin/app/frontend"
-)
-
-// TODO(pprabhu) Move these to luci-config (and out of this package).
-const (
-	// crosskylabadminProdHost is the prod AE instance of this app.
-	crosskylabadminProdHost = "chromeos-skylab-bot-fleet.appspot.com"
-
-	// fleetAdminTaskPriority is the swarming task priority of the created background tasks.
-	//
-	// This must be numerically smaller (i.e. more important) than Skylab's test
-	// task priority range [49-255] and numerically larger than the minimum
-	// allowed Swarming priority (20) for non administrator users.
-	fleetAdminTaskPriority = 30
-	// ensureTasksCount is the number of background tasks maintained against each bot.
-	ensureTasksCount = 3
-	// repairIdleDuration is the duration for which a bot in the fleet must have
-	// been idle for a repair task to be created against it.
-	repairIdleDuration = 10 * time.Minute
-	// repairAttemptDelayDuration is the time between successive attempts at repairing
-	// repair failed bots in the fleet.
-	repairAttemptDelayDuration = 1 * time.Hour
-)
-
-const (
-	// cronTQ is the name of the push queue servicing cron requests.
-	cronTQ = "crons"
 )
 
 // InstallHandlers installs handlers for cron jobs that are part of this app.
@@ -88,17 +60,13 @@ func refreshBotsCronHandler(c *router.Context) error {
 // ensureBackgroundTasksCronHandler ensures that the configured number of admin tasks
 // are pending against the fleet.
 func ensureBackgroundTasksCronHandler(c *router.Context) error {
-	count := int32(ensureTasksCount)
-	if int(count) != ensureTasksCount {
-		return fmt.Errorf("Requested too many tasks: %d. Must be less than %d", count, math.MaxInt32)
-	}
-
+	cfg := config.Get(c.Context).Cron
 	ttypes := []fleet.TaskType{fleet.TaskType_Cleanup, fleet.TaskType_Reset, fleet.TaskType_Repair}
 	tsi := frontend.TaskerServerImpl{}
 	for _, ttype := range ttypes {
 		resp, err := tsi.EnsureBackgroundTasks(c.Context, &fleet.EnsureBackgroundTasksRequest{
-			Priority:  int64(fleetAdminTaskPriority),
-			TaskCount: count,
+			Priority:  cfg.FleetAdminTaskPriority,
+			TaskCount: cfg.EnsureTasksCount,
 			Type:      ttype,
 		})
 		if err != nil {
@@ -107,7 +75,7 @@ func ensureBackgroundTasksCronHandler(c *router.Context) error {
 		logging.Infof(c.Context, "Scheduled background %s tasks for %d bots", ttype.String(), len(resp.BotTasks))
 		numIncompleteBots := 0
 		for _, bt := range resp.BotTasks {
-			if len(bt.Tasks) != int(count) {
+			if len(bt.Tasks) != int(cfg.EnsureTasksCount) {
 				numIncompleteBots = numIncompleteBots + 1
 			}
 		}
@@ -120,10 +88,11 @@ func ensureBackgroundTasksCronHandler(c *router.Context) error {
 
 // triggerRepairOnIdleCronHandler triggers repair tasks on idle bots in the fleet.
 func triggerRepairOnIdleCronHandler(c *router.Context) error {
+	cfg := config.Get(c.Context).Cron
 	tsi := frontend.TaskerServerImpl{}
 	resp, err := tsi.TriggerRepairOnIdle(c.Context, &fleet.TriggerRepairOnIdleRequest{
-		IdleDuration: google.NewDuration(repairIdleDuration),
-		Priority:     int64(fleetAdminTaskPriority),
+		IdleDuration: cfg.RepairIdleDuration,
+		Priority:     cfg.FleetAdminTaskPriority,
 	})
 	if err != nil {
 		return err
@@ -135,10 +104,11 @@ func triggerRepairOnIdleCronHandler(c *router.Context) error {
 
 // triggerRepairOnIdleCronHandler triggers repair tasks on idle bots in the fleet.
 func triggerRepairOnRepairFailedCronHandler(c *router.Context) error {
+	cfg := config.Get(c.Context).Cron
 	tsi := frontend.TaskerServerImpl{}
 	resp, err := tsi.TriggerRepairOnRepairFailed(c.Context, &fleet.TriggerRepairOnRepairFailedRequest{
-		Priority:            int64(fleetAdminTaskPriority),
-		TimeSinceLastRepair: google.NewDuration(repairAttemptDelayDuration),
+		Priority:            cfg.FleetAdminTaskPriority,
+		TimeSinceLastRepair: cfg.RepairAttemptDelayDuration,
 	})
 	if err != nil {
 		return err

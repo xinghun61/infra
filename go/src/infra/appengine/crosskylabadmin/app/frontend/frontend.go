@@ -18,6 +18,7 @@ package frontend
 
 import (
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/appengine/crosskylabadmin/app/config"
 
 	"github.com/golang/protobuf/proto"
 	"go.chromium.org/luci/appengine/gaeauth/server"
@@ -30,32 +31,6 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-)
-
-// These are app-wide constants related to the Swarming setup of ChromeOS Skylab.
-//
-// TODO(pprabhu): Use luci-config for these configuration options.
-const (
-	// accessGroup is the luci-auth group controlling access to admin app APIs.
-	accessGroup = "chromeos-skylab-bot-fleet-access"
-	// backgroundTaskExecutionTimeoutSecs is the execution timeout (in
-	// seconds) for background tasks created by tasker.
-	//
-	// Repair tasks can take ~90 minutes to complete in the worst case (two AU
-	// attempts and one USB install attempt).
-	backgroundTaskExecutionTimeoutSecs = 60 * 90
-	// backgroundTaskExpirationSecs is the expiration time (in seconds) for
-	// background tasks created by tasker.
-	backgroundTaskExpirationSecs = 60 * 10
-	// fleetAdminTaskTag identifies all tasks created by the fleet admin app.
-	fleetAdminTaskTag = "skylab:fleet_admin"
-	// luciProjectTag is the swarming tag that associates the task with a
-	// luci project, allowing milo to work with the swarming UI.
-	luciProjectTag = "luci_project:chromiumos"
-	// swarmingBotPool is the swarming pool containing skylab bots.
-	swarmingBotPool = "ChromeOSSkylab"
-	// swarmingInstance is the swarming instance hosting skylab bots.
-	swarmingInstance = "chrome-swarming.appspot.com"
 )
 
 // InstallHandlers installs the handlers implemented by the frontend package.
@@ -88,7 +63,7 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 // Servers should use checkAccess as a Prelude while handling requests to uniformly
 // check access across the API.
 func checkAccess(c context.Context, _ string, _ proto.Message) (context.Context, error) {
-	switch allow, err := auth.IsMember(c, accessGroup); {
+	switch allow, err := auth.IsMember(c, config.Get(c).AccessGroup); {
 	case err != nil:
 		return c, status.Errorf(codes.Internal, "can't check ACL - %s", err)
 	case !allow:

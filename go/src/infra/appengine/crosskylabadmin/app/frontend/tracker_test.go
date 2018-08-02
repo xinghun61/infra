@@ -19,13 +19,12 @@ import (
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
-	"go.chromium.org/gae/service/datastore"
-	"go.chromium.org/luci/appengine/gaetesting"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"golang.org/x/net/context"
 
 	"infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
+	"infra/appengine/crosskylabadmin/app/config"
 )
 
 // TestRefreshAndSummarizeBots tests the RefreshBots-SummarizeBots API.
@@ -34,10 +33,9 @@ import (
 func TestRefreshAndSummarizeBots(t *testing.T) {
 	t.Parallel()
 	Convey("In testing context", t, FailureHalts, func() {
-		c := gaetesting.TestingContextWithAppID("dev~infra-crosskylabadmin")
-		datastore.GetTestable(c).Consistent(true)
+		c := testingContext()
 		fakeSwarming := &fakeSwarmingClient{
-			pool:    swarmingBotPool,
+			pool:    config.Get(c).Swarming.BotPool,
 			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
 		}
 		tracker := TrackerServerImpl{
@@ -299,10 +297,9 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 func TestRefreshAndSummarizeBotsFields(t *testing.T) {
 	t.Parallel()
 	Convey("In testing context", t, FailureHalts, func() {
-		c := gaetesting.TestingContextWithAppID("dev~infra-crosskylabadmin")
-		datastore.GetTestable(c).Consistent(true)
+		c := testingContext()
 		fakeSwarming := &fakeSwarmingClient{
-			pool:    swarmingBotPool,
+			pool:    config.Get(c).Swarming.BotPool,
 			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
 		}
 		tracker := TrackerServerImpl{
