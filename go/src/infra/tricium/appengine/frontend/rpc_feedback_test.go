@@ -100,7 +100,7 @@ func TestFeedback(t *testing.T) {
 		So(ds.Put(ctx, selection2), ShouldBeNil)
 
 		Convey("Feedback request for unknown category", func() {
-			st, et, _ := validateFeedbackRequest(ctx, &tricium.FeedbackRequest{Category: "Hello"})
+			st, et, _ := parseTimeRange(ctx, "", "")
 			count, reports, err := feedback(ctx, "Hello", st, et)
 			So(err, ShouldBeNil)
 			So(count, ShouldEqual, 0)
@@ -108,7 +108,7 @@ func TestFeedback(t *testing.T) {
 		})
 
 		Convey("Feedback request for known analyzer name", func() {
-			st, et, _ := validateFeedbackRequest(ctx, &tricium.FeedbackRequest{Category: functionName})
+			st, et, _ := parseTimeRange(ctx, "", "")
 			count, reports, err := feedback(ctx, functionName, st, et)
 			So(err, ShouldBeNil)
 			So(count, ShouldEqual, 2)
@@ -123,28 +123,50 @@ func TestFeedback(t *testing.T) {
 		})
 
 		Convey("Feedback request for subcategory", func() {
-			st, et, _ := validateFeedbackRequest(ctx, &tricium.FeedbackRequest{Category: category1})
+			st, et, _ := parseTimeRange(ctx, "", "")
 			count, reports, err := feedback(ctx, category1, st, et)
 			So(err, ShouldBeNil)
 			So(count, ShouldEqual, 1)
 			So(reports, ShouldEqual, 2)
 		})
+	})
+}
 
-		Convey("Validates valid request", func() {
-			_, _, err := validateFeedbackRequest(ctx, &tricium.FeedbackRequest{
-				Category:  category1,
-				StartTime: stime.Format(longForm),
-				EndTime:   etime.Format(longForm),
-			})
+func TestParseTimeRange(t *testing.T) {
+	Convey("Test Environment", t, func() {
+		ctx := triciumtest.Context()
+		epoch := time.Unix(0, 0).UTC()
+		now := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
+		ctx, _ = testclock.UseTime(ctx, now)
+
+		Convey("No start or end specified", func() {
+			st, et, err := parseTimeRange(ctx, "", "")
+			So(st, ShouldEqual, epoch)
+			So(et, ShouldEqual, now)
 			So(err, ShouldBeNil)
 		})
 
-		Convey("Fails invalid request", func() {
-			_, _, err := validateFeedbackRequest(ctx, &tricium.FeedbackRequest{
-				Category:  category1,
-				StartTime: etime.Format(longForm), // Times given in reversed order.
-				EndTime:   stime.Format(longForm),
-			})
+		Convey("Both start and end time specified", func() {
+			st, et, err := parseTimeRange(ctx, "2016-11-05T00:00:00Z", "2016-11-08T00:00:00Z")
+			So(err, ShouldBeNil)
+			So(st, ShouldEqual, time.Date(2016, 11, 5, 0, 0, 0, 0, time.UTC))
+			So(et, ShouldEqual, time.Date(2016, 11, 8, 0, 0, 0, 0, time.UTC))
+		})
+
+		Convey("Dates without times", func() {
+			_, _, err := parseTimeRange(ctx, "2016-11-05", "2016-11-08")
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Sub-second precisions", func() {
+			st, et, err := parseTimeRange(ctx, "2016-11-05T00:00:00.000Z", "2016-11-08T00:00:00.000Z")
+			So(err, ShouldBeNil)
+			So(st, ShouldEqual, time.Date(2016, 11, 5, 0, 0, 0, 0, time.UTC))
+			So(et, ShouldEqual, time.Date(2016, 11, 8, 0, 0, 0, 0, time.UTC))
+		})
+
+		Convey("Reversed time", func() {
+			_, _, err := parseTimeRange(ctx, "2016-11-08T00:00:00Z", "2016-11-05T00:00:00Z")
 			So(err, ShouldNotBeNil)
 		})
 	})

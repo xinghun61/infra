@@ -19,8 +19,6 @@ import (
 	"infra/tricium/appengine/common/track"
 )
 
-const longForm = "2006-01-02T08:04:05Z"
-
 // Feedback processes one feedback request to Tricium.
 func (r *TriciumServer) Feedback(c context.Context, req *tricium.FeedbackRequest) (res *tricium.FeedbackResponse, err error) {
 	defer func() {
@@ -31,10 +29,12 @@ func (r *TriciumServer) Feedback(c context.Context, req *tricium.FeedbackRequest
 		"start_time": req.StartTime,
 		"end_time":   req.EndTime,
 	}.Infof(c, "[frontend] Feedback request received.")
-	stime, etime, err := validateFeedbackRequest(c, req)
+	if req.Category == "" {
+		return nil, errors.New("missing category", grpcutil.InvalidArgumentTag)
+	}
+	stime, etime, err := parseTimeRange(c, req.StartTime, req.EndTime)
 	if err != nil {
-		return nil, errors.Annotate(err, "invalid request").
-			Tag(grpcutil.InvalidArgumentTag).Err()
+		return nil, errors.Annotate(err, "invalid time range").Tag(grpcutil.InvalidArgumentTag).Err()
 	}
 	count, reports, err := feedback(c, req.Category, stime, etime)
 	if err != nil {
@@ -43,25 +43,24 @@ func (r *TriciumServer) Feedback(c context.Context, req *tricium.FeedbackRequest
 	return &tricium.FeedbackResponse{Comments: int32(count), NotUsefulReports: int32(reports)}, nil
 }
 
-// validateAnalyzeRequest returns the parsed time range, and an error if the
-// request is invalid.
+// parseTimeRange returns the parsed time range and checks for validity.
+//
+// Start and end time can be empty, in which case the intent is to have
+// an open-ended range. No start or end is meant to mean "all time".
 //
 // The returned error should be tagged for gRPC by the caller.
-func validateFeedbackRequest(c context.Context, req *tricium.FeedbackRequest) (time.Time, time.Time, error) {
+func parseTimeRange(c context.Context, start, end string) (time.Time, time.Time, error) {
 	stime := time.Unix(0, 0).UTC() // Beginning of Unix time.
 	etime := clock.Now(c).UTC()
 	var err error
-	if req.Category == "" {
-		return stime, etime, errors.New("missing category")
-	}
-	if req.StartTime != "" {
-		stime, err = time.Parse(longForm, req.StartTime)
+	if start != "" {
+		stime, err = time.Parse(time.RFC3339, start)
 		if err != nil {
 			return stime, etime, errors.Annotate(err, "invalid start_time").Err()
 		}
 	}
-	if req.EndTime != "" {
-		etime, err = time.Parse(longForm, req.EndTime)
+	if end != "" {
+		etime, err = time.Parse(time.RFC3339, end)
 		if err != nil {
 			return stime, etime, errors.Annotate(err, "invalid end_time").Err()
 		}
