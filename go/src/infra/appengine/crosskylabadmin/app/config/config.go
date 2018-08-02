@@ -17,12 +17,16 @@ package config
 import (
 	"net/http"
 
+	"github.com/golang/protobuf/proto"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/config/server/cfgclient"
 	"go.chromium.org/luci/config/server/cfgclient/textproto"
+	"go.chromium.org/luci/config/validation"
 	"go.chromium.org/luci/server/router"
 	"golang.org/x/net/context"
 )
+
+const configFile = "config.cfg"
 
 // unique type to prevent assignment.
 type contextKeyType struct{}
@@ -43,7 +47,7 @@ func Middleware(c *router.Context, next router.Handler) {
 		c.Context,
 		cfgclient.AsService,
 		cfgclient.CurrentServiceConfigSet(c.Context),
-		"config.cfg",
+		configFile,
 		textproto.Message(&cfg),
 		nil,
 	)
@@ -60,4 +64,19 @@ func Middleware(c *router.Context, next router.Handler) {
 // use installs cfg into c.
 func use(c context.Context, cfg *Config) context.Context {
 	return context.WithValue(c, contextKey, cfg)
+}
+
+// SetupValidation adds validation rules for configuration data pushed via luci-config.
+func SetupValidation() {
+	rules := &validation.Rules
+	rules.Add("services/${appid}", configFile, validateConfig)
+}
+
+func validateConfig(c *validation.Context, configSet, path string, content []byte) error {
+	cfg := &Config{}
+	if err := proto.UnmarshalText(string(content), cfg); err != nil {
+		c.Errorf("not a valid Config proto message: %s", err)
+		return nil
+	}
+	return nil
 }

@@ -31,3 +31,6 @@ cron:
     # retries is enough to paper over trasient Swarming service failures. Beyond
     # that, we can always catch the next cron train.
     job_retry_limit: 3
+- description: LUCI config datastore cache periodic refresh
+  url: /admin/config/cache/manager
+  schedule: every 10 minutes

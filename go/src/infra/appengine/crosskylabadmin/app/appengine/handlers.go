@@ -42,5 +42,7 @@ func init() {
 	frontend.InstallHandlers(r, mwBase)
 	cron.InstallHandlers(r, mwBase)
 
+	config.SetupValidation()
+
 	http.DefaultServeMux.Handle("/", r)
 }
