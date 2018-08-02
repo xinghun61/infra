@@ -45,6 +45,11 @@ message ServiceConfig {
   //
   // This should be a full URL with no trailing slash.
   string isolate_server = 8;
+
+  // Buildbucket server to use for this service instance.
+  //
+  // This should be a hostname.
+  string buildbucket_server = 9;
 }
 
 // Tricium project configuration.

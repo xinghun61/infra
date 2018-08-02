@@ -150,6 +150,10 @@ func progress(c context.Context, runID int64) (tricium.State, []*tricium.Functio
 			p.SwarmingUrl = workflowRun.SwarmingServerURL
 			p.SwarmingTaskId = wr.SwarmingTaskID
 		}
+		if wr.BuildbucketBuildID > 0 {
+			p.BuildbucketHost = workflowRun.BuildbucketServer
+			p.BuildbucketBuildId = wr.BuildbucketBuildID
+		}
 		res = append(res, p)
 	}
 	// Monitor progress requests per project and run ID.

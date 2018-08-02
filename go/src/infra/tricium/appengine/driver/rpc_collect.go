@@ -32,7 +32,8 @@ func (*driverServer) Collect(c context.Context, req *admin.CollectRequest) (res 
 		return nil, errors.Annotate(err, "invalid request").
 			Tag(grpcutil.InvalidArgumentTag).Err()
 	}
-	if err := collect(c, req, config.WorkflowCache, common.SwarmingServer, common.IsolateServer); err != nil {
+
+	if err := collect(c, req, config.WorkflowCache, common.SwarmingServer, common.BuildbucketServer, common.IsolateServer); err != nil {
 		return nil, err
 	}
 	return &admin.CollectResponse{}, nil
@@ -49,12 +50,11 @@ func validateCollectRequest(req *admin.CollectRequest) error {
 }
 
 func collect(c context.Context, req *admin.CollectRequest,
-	wp config.WorkflowCacheAPI, sw common.TaskServerAPI, isolator common.IsolateAPI) error {
+	wp config.WorkflowCacheAPI, sw, bb common.TaskServerAPI, isolator common.IsolateAPI) error {
 	wf, err := wp.GetWorkflow(c, req.RunId)
 	if err != nil {
 		return errors.Annotate(err, "failed to read workflow config").Err()
 	}
-
 	w, err := wf.GetWorker(req.Worker)
 	if err != nil {
 		return errors.Annotate(err, "failed to get worker").Err()
@@ -63,13 +63,18 @@ func collect(c context.Context, req *admin.CollectRequest,
 	var result *common.CollectResult
 	switch wi := w.Impl.(type) {
 	case *admin.Worker_Recipe:
-		// TODO(juliehockett): implement the buildbucket TaskServerAPI collect
-		result = &common.CollectResult{
-			State:             common.Success,
-			BuildbucketOutput: "{}",
+		result, err = bb.Collect(c, &common.CollectParameters{
+			Server:  wf.BuildbucketServer,
+			BuildID: req.BuildId,
+		})
+		if err != nil {
+			return errors.Annotate(err, "failed to collect task").Err()
 		}
 	case *admin.Worker_Cmd:
-		result, err = sw.Collect(c, wf.SwarmingServer, req.TaskId, req.BuildId)
+		result, err = sw.Collect(c, &common.CollectParameters{
+			Server: wf.SwarmingServer,
+			TaskID: req.TaskId,
+		})
 		if err != nil {
 			return errors.Annotate(err, "failed to collect task").Err()
 		}

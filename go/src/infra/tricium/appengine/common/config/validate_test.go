@@ -18,8 +18,9 @@ func TestValidate(t *testing.T) {
 		platform := tricium.Platform_UBUNTU
 		config := "enable"
 		sd := &tricium.ServiceConfig{
-			SwarmingServer: "chromium-swarm-dev",
-			IsolateServer:  "isolatedserver-dev",
+			SwarmingServer:    "chromium-swarm-dev",
+			BuildbucketServer: "cr-buildbucket-dev",
+			IsolateServer:     "isolatedserver-dev",
 			Platforms: []*tricium.Platform_Details{
 				{
 					Name:       platform,

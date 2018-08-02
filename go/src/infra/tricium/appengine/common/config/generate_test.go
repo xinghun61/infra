@@ -24,8 +24,9 @@ const (
 
 var (
 	sc = &tricium.ServiceConfig{
-		SwarmingServer: "chromium-swarm-dev",
-		IsolateServer:  "isolatedserver-dev",
+		SwarmingServer:    "chromium-swarm-dev",
+		BuildbucketServer: "cr-buildbucket-dev",
+		IsolateServer:     "isolatedserver-dev",
 		Platforms: []*tricium.Platform_Details{
 			{
 				Name:       platform,
@@ -391,6 +392,7 @@ func TestCreateWorker(t *testing.T) {
 							Recipe: &tricium.Recipe{
 								CipdPackage: "path/to/cipd/package",
 								CipdVersion: "version",
+								Name:        "recipe",
 							},
 						},
 						Deadline: deadline,
@@ -407,6 +409,13 @@ func TestCreateWorker(t *testing.T) {
 			So(w.Dimensions[0], ShouldEqual, dimension)
 			So(len(w.CipdPackages), ShouldEqual, 1)
 			So(w.Deadline, ShouldEqual, deadline)
+			wi := w.Impl.(*admin.Worker_Recipe)
+			if wi == nil {
+				fail("Incorrect worker type")
+			}
+			So(wi.Recipe.CipdPackage, ShouldEqual, "path/to/cipd/package")
+			So(wi.Recipe.CipdVersion, ShouldEqual, "version")
+			So(wi.Recipe.Name, ShouldEqual, "recipe")
 		})
 	})
 }

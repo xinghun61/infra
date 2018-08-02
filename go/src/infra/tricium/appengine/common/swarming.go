@@ -14,8 +14,6 @@ import (
 	"go.chromium.org/luci/common/isolatedclient"
 	"go.chromium.org/luci/common/logging"
 	"golang.org/x/net/context"
-
-	admin "infra/tricium/api/admin/v1"
 )
 
 const (
@@ -31,11 +29,11 @@ type swarmingServer struct {
 }
 
 // Trigger implements the TaskServerAPI.
-func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL string, worker *admin.Worker, workerIsolate, pubsubUserdata string, tags []string) (*TriggerResult, error) {
+func (s swarmingServer) Trigger(c context.Context, params *TriggerParameters) (*TriggerResult, error) {
 	pubsubTopic := topic(c)
 	// Prepare task dimensions.
 	dims := []*swarming.SwarmingRpcsStringPair{}
-	for _, d := range worker.Dimensions {
+	for _, d := range params.Worker.Dimensions {
 		// Extracting dimension key and value.
 		// Note that ':' may appear in the value but not the key.
 		dim := strings.SplitN(d, ":", 2)
@@ -46,7 +44,7 @@ func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL s
 	}
 	// Prepare CIPD input packages.
 	cipd := &swarming.SwarmingRpcsCipdInput{}
-	for _, p := range worker.CipdPackages {
+	for _, p := range params.Worker.CipdPackages {
 		cipd.Packages = append(cipd.Packages, &swarming.SwarmingRpcsCipdPackage{
 			PackageName: p.PackageName,
 			Path:        p.Path,
@@ -70,8 +68,8 @@ func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL s
 		ExecutionTimeoutSecs: 600,
 		IoTimeoutSecs:        600,
 		InputsRef: &swarming.SwarmingRpcsFilesRef{
-			Isolated:       workerIsolate,
-			Isolatedserver: isolateServerURL,
+			Isolated:       params.WorkerIsolate,
+			Isolatedserver: params.IsolateServerURL,
 			Namespace:      isolatedclient.DefaultNamespace,
 		},
 	}
@@ -79,31 +77,31 @@ func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL s
 	if len(cipd.Packages) > 0 {
 		props.CipdInput = cipd
 	}
-	swarmingService.BasePath = fmt.Sprintf("%s%s", serverURL, swarmingBasePath)
+	swarmingService.BasePath = fmt.Sprintf("%s%s", params.Server, swarmingBasePath)
 	res, err := swarmingService.Tasks.New(&swarming.SwarmingRpcsNewTaskRequest{
-		Name:           "tricium:" + worker.Name,
+		Name:           "tricium:" + params.Worker.Name,
 		Priority:       100,
 		ExpirationSecs: 21600,
 		Properties:     props,
 		PubsubTopic:    pubsubTopic,
-		PubsubUserdata: pubsubUserdata,
-		Tags:           tags,
+		PubsubUserdata: params.PubsubUserdata,
+		Tags:           params.Tags,
 	}).Do()
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to trigger swarming task").Err()
 	}
 	logging.Fields{
 		"task ID":       res.TaskId,
-		"worker":        worker.Name,
+		"worker":        params.Worker.Name,
 		"dimensions":    dims,
 		"pubsub topic":  pubsubTopic,
-		"input isolate": workerIsolate,
+		"input isolate": params.WorkerIsolate,
 	}.Infof(c, "Worker triggered")
 	return &TriggerResult{TaskID: res.TaskId}, nil
 }
 
 // Collect implements the TaskServerAPI.
-func (s swarmingServer) Collect(c context.Context, serverURL, taskID string, buildID int64) (*CollectResult, error) {
+func (s swarmingServer) Collect(c context.Context, params *CollectParameters) (*CollectResult, error) {
 	// Need to increase the timeout to get a response from the Swarming service.
 	c, _ = context.WithTimeout(c, 60*time.Second)
 	oauthClient, err := getOAuthClient(c)
@@ -114,8 +112,8 @@ func (s swarmingServer) Collect(c context.Context, serverURL, taskID string, bui
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create swarming client").Err()
 	}
-	swarmingService.BasePath = fmt.Sprintf("%s%s", serverURL, swarmingBasePath)
-	taskResult, err := swarmingService.Task.Result(taskID).Do()
+	swarmingService.BasePath = fmt.Sprintf("%s%s", params.Server, swarmingBasePath)
+	taskResult, err := swarmingService.Task.Result(params.TaskID).Do()
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to retrieve task result from swarming").Err()
 	}
@@ -123,7 +121,7 @@ func (s swarmingServer) Collect(c context.Context, serverURL, taskID string, bui
 	result := &CollectResult{}
 	if taskResult.OutputsRef == nil || taskResult.OutputsRef.Isolated == "" {
 		logging.Fields{
-			"task ID":    taskID,
+			"task ID":    params.TaskID,
 			"task state": result.State,
 		}.Warningf(c, "Task had no output.")
 	} else {

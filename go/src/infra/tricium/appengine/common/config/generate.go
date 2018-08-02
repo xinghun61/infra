@@ -52,11 +52,12 @@ func Generate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig, files []*tri
 	}
 
 	return &admin.Workflow{
-		ServiceAccount: pc.SwarmingServiceAccount,
-		Workers:        workers,
-		SwarmingServer: sc.SwarmingServer,
-		IsolateServer:  sc.IsolateServer,
-		Functions:      vpc.Functions,
+		ServiceAccount:    pc.SwarmingServiceAccount,
+		Workers:           workers,
+		SwarmingServer:    sc.SwarmingServer,
+		BuildbucketServer: sc.BuildbucketServer,
+		IsolateServer:     sc.IsolateServer,
+		Functions:         vpc.Functions,
 	}, nil
 }
 
@@ -194,7 +195,8 @@ func createWorker(s *tricium.Selection, sc *tricium.ServiceConfig, f *tricium.Fu
 	}
 	switch ii := i.Impl.(type) {
 	case *tricium.Impl_Recipe:
-		// TODO(qyearsley): Implement worker set up for recipe-based analyzers.
+		// TODO(juliehockett): Pass along config information.
+		w.Impl = &admin.Worker_Recipe{Recipe: ii.Recipe}
 	case *tricium.Impl_Cmd:
 		cmd := ii.Cmd
 		for _, c := range s.Configs {

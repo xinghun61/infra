@@ -56,6 +56,7 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 			Parent:            requestKey,
 			IsolateServerURL:  wf.IsolateServer,
 			SwarmingServerURL: wf.SwarmingServer,
+			BuildbucketServer: wf.BuildbucketServer,
 			Functions:         functions,
 		}
 		if err := ds.Put(c, workflowRun); err != nil {

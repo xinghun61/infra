@@ -34,8 +34,9 @@ type mockConfigProvider struct {
 
 func (*mockConfigProvider) GetServiceConfig(c context.Context) (*tricium.ServiceConfig, error) {
 	return &tricium.ServiceConfig{
-		SwarmingServer: "chromium-swarm-dev",
-		IsolateServer:  "isolatedserver-dev",
+		SwarmingServer:    "chromium-swarm-dev",
+		BuildbucketServer: "cr-buildbucket-dev",
+		IsolateServer:     "isolatedserver-dev",
 		Platforms: []*tricium.Platform_Details{
 			{
 				Name:       tricium.Platform_UBUNTU,

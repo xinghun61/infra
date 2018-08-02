@@ -22,10 +22,10 @@ type mockSwarming struct {
 	State common.ResultState
 }
 
-func (mockSwarming) Trigger(c context.Context, serverURL, isolateServerURL string, worker *admin.Worker, workerIsolate, pubsubUserdata string, tags []string) (*common.TriggerResult, error) {
+func (mockSwarming) Trigger(c context.Context, params *common.TriggerParameters) (*common.TriggerResult, error) {
 	return &common.TriggerResult{TaskID: "mocktaskid"}, nil
 }
-func (m mockSwarming) Collect(c context.Context, serverURL, taskID string, buildID int64) (*common.CollectResult, error) {
+func (m mockSwarming) Collect(c context.Context, params *common.CollectParameters) (*common.CollectResult, error) {
 	return &common.CollectResult{
 		State:              m.State,
 		IsolatedOutputHash: "mockisolatedoutput",
@@ -41,7 +41,7 @@ func TestCollectRequest(t *testing.T) {
 			err := collect(ctx, &admin.CollectRequest{
 				RunId:  runID,
 				Worker: "World",
-			}, mockWorkflowProvider{}, common.MockTaskServerAPI, common.MockIsolator)
+			}, mockWorkflowProvider{}, common.MockTaskServerAPI, common.MockTaskServerAPI, common.MockIsolator)
 			So(err, ShouldBeNil)
 
 			Convey("Enqueues track request", func() {
@@ -59,7 +59,7 @@ func TestCollectRequest(t *testing.T) {
 				Worker: "World",
 			}, mockWorkflowProvider{}, mockSwarming{
 				State: common.Failure,
-			}, common.MockIsolator)
+			}, common.MockTaskServerAPI, common.MockIsolator)
 			So(err, ShouldBeNil)
 
 			Convey("Enqueues track requests", func() {
@@ -75,7 +75,7 @@ func TestCollectRequest(t *testing.T) {
 			err := collect(ctx, &admin.CollectRequest{
 				RunId:  runID,
 				Worker: "Hello",
-			}, mockWorkflowProvider{}, common.MockTaskServerAPI, common.MockIsolator)
+			}, mockWorkflowProvider{}, common.MockTaskServerAPI, common.MockTaskServerAPI, common.MockIsolator)
 			So(err, ShouldBeNil)
 
 			Convey("Enqueues track request", func() {
@@ -92,7 +92,7 @@ func TestCollectRequest(t *testing.T) {
 					Worker: "Hello",
 				}, mockWorkflowProvider{}, mockSwarming{
 					State: common.Pending,
-				}, common.MockIsolator)
+				}, common.MockTaskServerAPI, common.MockIsolator)
 				So(err, ShouldBeNil)
 
 				Convey("Re-enqueues the a driver (collect) request", func() {

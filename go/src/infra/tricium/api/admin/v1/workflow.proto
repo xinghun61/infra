@@ -23,6 +23,7 @@ message Workflow {
   // Function definitions used for this workflow; these contain the function
   // owner and component, to be used when filling out a bug filing template.
   repeated tricium.Function functions = 5;
+  string buildbucket_server = 6;
 }
 
 // A Tricium worker includes the details needed to execute a function on a

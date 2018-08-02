@@ -42,7 +42,7 @@ func (mockWorkflowProvider) GetWorkflow(c context.Context, runID int64) (*admin.
 			{
 				Name:  "Goodbye",
 				Needs: tricium.Data_CLANG_DETAILS,
-				Impl:  &admin.Worker_Cmd{},
+				Impl:  &admin.Worker_Recipe{},
 			},
 		},
 	}, nil
@@ -57,7 +57,7 @@ func TestTriggerRequest(t *testing.T) {
 			err := trigger(ctx, &admin.TriggerRequest{
 				RunId:  runID,
 				Worker: "Hello",
-			}, mockWorkflowProvider{}, common.MockTaskServerAPI, common.MockIsolator)
+			}, mockWorkflowProvider{}, common.MockTaskServerAPI, common.MockTaskServerAPI, common.MockIsolator)
 			So(err, ShouldBeNil)
 			Convey("Enqueues track request", func() {
 				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.TrackerQueue]), ShouldEqual, 1)

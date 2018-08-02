@@ -178,6 +178,12 @@ message FunctionProgress {
   //
   // For analyzers that are done and produce comments.
   int32 num_comments = 6;
+
+  // Host for the buildbucket server running tasks for the workers of the function.
+  string buildbucket_host = 7;
+
+  // The ID of the buildbucket build triggered for the function worker.
+  int64 buildbucket_build_id = 8;
 }
 
 message ProjectProgressRequest {

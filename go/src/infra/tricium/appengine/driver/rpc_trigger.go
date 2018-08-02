@@ -38,14 +38,14 @@ func (*driverServer) Trigger(c context.Context, req *admin.TriggerRequest) (*adm
 	if req.IsolatedInputHash == "" {
 		return nil, errors.New("missing isolated input hash", grpcutil.InvalidArgumentTag)
 	}
-	if err := trigger(c, req, config.WorkflowCache, common.SwarmingServer, common.IsolateServer); err != nil {
+	if err := trigger(c, req, config.WorkflowCache, common.SwarmingServer, common.BuildbucketServer, common.IsolateServer); err != nil {
 		return nil, errors.Annotate(err, "failed to trigger worker").
 			Tag(grpcutil.InternalTag).Err()
 	}
 	return &admin.TriggerResponse{}, nil
 }
 
-func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCacheAPI, sw common.TaskServerAPI, isolator common.IsolateAPI) error {
+func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCacheAPI, sw, bb common.TaskServerAPI, isolator common.IsolateAPI) error {
 	workflow, err := wp.GetWorkflow(c, req.RunId)
 	if err != nil {
 		return errors.Annotate(err, "failed to read workflow config").Err()
@@ -69,8 +69,17 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCac
 	var result *common.TriggerResult
 	switch wi := worker.Impl.(type) {
 	case *admin.Worker_Recipe:
-		// TODO(juliehockett): implement the buildbucket TaskServerAPI trigger
-		result = &common.TriggerResult{BuildID: 12345}
+		// Trigger worker.
+		result, err = bb.Trigger(c, &common.TriggerParameters{
+			Server:           workflow.BuildbucketServer,
+			IsolateServerURL: workflow.IsolateServer,
+			Worker:           worker,
+			PubsubUserdata:   userdata,
+			Tags:             tags,
+		})
+		if err != nil {
+			return errors.Annotate(err, "failed to call trigger on buildbucket API").Err()
+		}
 	case *admin.Worker_Cmd:
 		workerIsolate, err := isolator.IsolateWorker(c, workflow.IsolateServer, worker, req.IsolatedInputHash)
 		if err != nil {
@@ -78,7 +87,14 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCac
 		}
 		logging.Infof(c, "[driver] Created worker isolate, hash: %q", workerIsolate)
 		// Trigger worker.
-		result, err = sw.Trigger(c, workflow.SwarmingServer, workflow.IsolateServer, worker, workerIsolate, userdata, tags)
+		result, err = sw.Trigger(c, &common.TriggerParameters{
+			Server:           workflow.SwarmingServer,
+			IsolateServerURL: workflow.IsolateServer,
+			Worker:           worker,
+			WorkerIsolate:    workerIsolate,
+			PubsubUserdata:   userdata,
+			Tags:             tags,
+		})
 		if err != nil {
 			return errors.Annotate(err, "failed to call trigger on swarming API").Err()
 		}
