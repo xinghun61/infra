@@ -21,7 +21,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"go.chromium.org/luci/appengine/gaeauth/server"
-	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/grpc/discovery"
 	"go.chromium.org/luci/grpc/grpcmon"
 	"go.chromium.org/luci/grpc/grpcutil"
@@ -75,7 +74,7 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 
 	discovery.Enable(&api)
 
-	mwAuthenticated := standard.Base().Extend(
+	mwAuthenticated := mwBase.Extend(
 		auth.Authenticate(
 			server.UsersAPIAuthMethod{},
 			&server.OAuth2Method{Scopes: []string{server.EmailScope}},
