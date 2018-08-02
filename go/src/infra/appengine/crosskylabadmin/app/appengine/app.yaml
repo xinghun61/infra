@@ -1,5 +1,3 @@
-application: chromeos-skylab-bot-fleet
-version: 1
 module: default
 runtime: go
 api_version: go1

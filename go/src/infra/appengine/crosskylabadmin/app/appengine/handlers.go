@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package app
+// Package appengine is the entry point of this app.
+// Appengine requires the entry point to be a leaf package.
+package appengine
 
 import (
 	"net/http"
