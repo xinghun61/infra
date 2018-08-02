@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-
+// TODO(jojwang): monorail:4033, rename reStrs -> regexs/refRes/etc.
 (function(window) {
   'use strict';
   const CRBUG_LINK_RE = /(?<prefix>\b(https?:\/\/)?crbug\.com\/)((?<projectName>\b[-a-z0-9]+)(?<separator>\/))?(?<localId>\d+)\b(?<anchor>\#c[0-9]+)?/gi;
@@ -60,21 +60,19 @@
   Components.set(
       '04-urls',
       {
-        lookup: (_refs, _token, _comp) => {
-          return {'componentName': '04-urls', 'existingRefs': {}}; },
+        lookup: null,
         extractRefs: (match, _defaultProjectName) => { return match[0]; },
         reStrs: [SHORT_LINK_RE, NUMERIC_SHORT_LINK_RE, IMPLIED_LINK_RE, IS_LINK_RE],
         replacer: ReplaceLinkRef,
       }
   );
 
-
   // Lookup referenced artifacts functions.
-  function LookupReferencedIssues(issueRefs, token, componentName) {
+  function LookupReferencedIssues(issueRefs, trace, componentName) {
     return new Promise((resolve, reject) => {
       const message = {
-        trace: {token: token},
-        issue_refs: issueRefs,
+        trace: trace,
+        issueRefs: issueRefs,
       };
       const listReferencedIssues =  window.prpcClient.call(
           'monorail.Issues', 'ListReferencedIssues', message
@@ -85,16 +83,26 @@
     });
   }
 
-  function LookupReferencedUsers(emails, token, componentName) {
-    // TODO(jojwang): monorail:4033, implement this.
-    return true;
+  function LookupReferencedUsers(emails, trace, componentName) {
+    return new Promise((resolve, reject) => {
+      const message = {
+        trace: trace,
+        emails: emails,
+      };
+      const listReferencedUsers = window.prpcClient.call(
+          'monorail.Users', 'ListReferencedUsers', message
+      );
+      return listReferencedUsers.then(response => {
+        resolve({'componentName': componentName, 'existingUsers': response.users});
+      });
+    });
   }
 
   // Extract referenced artifacts info functions.
   function ExtractCrbugProjectAndIssueIds(match, defaultProjectName='chromium') {
     const groups = match.groups;
     const projectName = groups.projectName || defaultProjectName;
-    return {projectName: projectName, localId: groups.localId};
+    return [{projectName: projectName, localId: groups.localId}];
   }
 
   function ExtractTrackerProjectAndIssueIds(match, defaultProjectName='chromium') {
@@ -202,7 +210,29 @@
     };
   }
 
-  window.__autolink = window.__autolink || {};
-  Object.assign(window.__autolink, {Components, createIssueRefRun});
+  function getReferencedArtifacts(comments, trace) {
+    return new Promise((resolve, reject) => {
+      let artifactsByComponents = new Map();
+      let fetchPromises = [];
+      Components.forEach(({lookup, extractRefs, reStrs, replacer}, componentName) => {
+        if (lookup !== null) {
+          let refs = [];
+          reStrs.forEach(re => {
+            let match;
+            comments.forEach(comment => {
+              while((match = re.exec(comment.content)) !== null) {
+                refs.push.apply(refs, extractRefs(match));
+              };
+            });
+          });
+          fetchPromises.push(lookup(refs, trace, componentName));
+        }
+      });
+      resolve(Promise.all(fetchPromises));
+    });
+  }
 
+  // TODO(jojwang): retire passing functions via window when we switch to ES modules.
+  window.__autolink = window.__autolink || {};
+  Object.assign(window.__autolink, {Components, getReferencedArtifacts});
 })(window);

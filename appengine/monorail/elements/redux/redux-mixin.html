@@ -43,6 +43,10 @@
       FETCH_COMMENTS_SUCCESS: 'FETCH_COMMENTS_SUCCESS',
       FETCH_COMMENTS_FAILURE: 'FETCH_COMMENTS_FAILURE',
 
+      FETCH_REFERENCES_START: 'FETCH_REFERENCES_START',
+      FETCH_REFERENCES_SUCCESS: 'FETCH_REFERENCES_SUCCESS',
+      FETCH_REFERENCES_FAILURE: 'FETCH_REFERENCES_FAILURE',
+
       UPDATE_ISSUE_START: 'UPDATE_ISSUE_START',
       UPDATE_ISSUE_SUCCESS: 'UPDATE_ISSUE_SUCCESS',
       UPDATE_ISSUE_FAILURE: 'UPDATE_ISSUE_FAILURE',
@@ -53,6 +57,21 @@
     };
 
     const actionCreator = {
+      fetchReferences: (dispatch, comments, trace) => {
+        dispatch({type: actionType.FETCH_REFERENCES_START});
+
+        window.__autolink.getReferencedArtifacts(comments, trace).then((refs) => {
+          dispatch({
+            type: actionType.FETCH_REFERENCES_SUCCESS,
+            commentReferences: refs,
+          });
+        }, (error) => {
+          dispatch({
+            type: actionType.FETCH_REFERENCES_FAILURE,
+            error,
+          });
+        });
+      },
       fetchComments: (dispatch, message) => {
         dispatch({type: actionType.FETCH_COMMENTS_START});
 
@@ -65,6 +84,7 @@
             type: actionType.FETCH_COMMENTS_SUCCESS,
             comments: resp.comments,
           });
+            actionCreator.fetchReferences(dispatch, resp.comments, message.trace);
         }, (error) => {
           this.dispatch({
             type: actionType.FETCH_COMMENTS_FAILURE,
@@ -121,6 +141,7 @@
       projectConfig: {},
       issue: {},
       comments: [],
+      commentReferences: [],
       isStarred: false,
       token: null,
 
@@ -135,6 +156,9 @@
 
       fetchingComments: false,
       fetchCommentsError: null,
+
+      fetchingReferences: false,
+      fetchingReferencesError: null,
 
       starringIssue: false,
       starIssueError: null,
@@ -250,7 +274,8 @@
 
         // Request for getting comments for an issue.
         case actionType.FETCH_COMMENTS_START:
-          return Object.assign({}, state, {
+            return Object.assign({}, state, {
+            commentReferences: [],
             fetchCommentsError: null,
             fetchingComments: true,
           });
@@ -263,6 +288,23 @@
           return Object.assign({}, state, {
             fetchCommentsError: action.error,
             fetchingComments: false,
+          });
+
+         // Request for getting comments for an issue.
+        case actionType.FETCH_REFERENCES_START:
+          return Object.assign({}, state, {
+            fetchReferencesError: null,
+            fetchingReferences: true,
+          });
+        case actionType.FETCH_REFERENCES_SUCCESS:
+          return Object.assign({}, state, {
+            commentReferences: action.commentReferences,
+            fetchingReferences: false,
+          });
+        case actionType.FETCH_REFERENCES_FAILURE:
+          return Object.assign({}, state, {
+            fetchReferencesError: action.error,
+            fetchingReferences: false,
           });
 
         // Request for getting whether an issue is starred.

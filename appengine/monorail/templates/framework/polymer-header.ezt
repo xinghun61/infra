@@ -13,6 +13,8 @@
   });
 </script>
 
+<script src="/static/js/autolink.js" nonce="[nonce]"></script>
+
 <style>
   * {
     box-sizing: border-box;
