@@ -14,14 +14,13 @@ from components import utils
 
 # Some of these imports are required to populate proto symbol db.
 from proto import common_pb2
-from proto import build_pb2
+from proto import build_pb2  # pylint: disable=unused-import
 from proto import rpc_pb2  # pylint: disable=unused-import
 from proto import rpc_prpc_pb2
 from proto import step_pb2  # pylint: disable=unused-import
 
 from v2 import validation
 from v2 import default_field_masks
-import annotations
 import buildtags
 import model
 import search
@@ -194,6 +193,7 @@ def search_builds_async(req, _ctx, mask):
   """Searches for builds."""
   validation.validate_search_builds_request(req)
   q = build_predicate_to_search_query(req.predicate)
+  q.max_builds = req.page_size or None
   q.start_cursor = req.page_token
 
   builds_v1, cursor = yield search.search_async(q)

@@ -248,6 +248,8 @@ class SearchTests(BaseTestCase):
                 project='chromium', bucket='try', builder='linux-try'
             ),
         ),
+        page_size=10,
+        page_token='page token',
     )
     res = self.call(self.api.SearchBuilds, req)
 
@@ -257,7 +259,8 @@ class SearchTests(BaseTestCase):
             tags=['builder:linux-try'],
             include_experimental=False,
             status=common_pb2.STATUS_UNSPECIFIED,
-            start_cursor='',
+            max_builds=10,
+            start_cursor='page token',
         )
     )
     self.assertEqual(len(res.builds), 2)
