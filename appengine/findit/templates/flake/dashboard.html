@@ -277,9 +277,6 @@
           <td>
             {% if analysis.suspected_build %}
               Regression: build <a href="https://luci-milo.appspot.com/buildbot/{{ analysis.master_name }}/{{ analysis.builder_name }}/{{ analysis.suspected_build }}" target="_blank">{{ analysis.suspected_build }}</a>
-              {% if analysis.confidence_in_suspected_build %}
-                ({{ '%0.1f%%' % (analysis.confidence_in_suspected_build * 100) }})
-              {% endif %}
               <br>
             {% endif %}
             {% if analysis.culprit %}

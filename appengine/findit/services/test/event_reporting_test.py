@@ -255,8 +255,8 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
         'host: "chromium-review.googlesource.com"\nproject: "chromium"\nref: '
         '"refs/heads/master"\nrevision: "revision"\nconfidence: 1.0\n')
 
-    self.assertEqual(event.analysis_info.outcomes, [
-        findit_pb2.SUSPECT, findit_pb2.CULPRIT])
+    self.assertEqual(event.analysis_info.outcomes,
+                     [findit_pb2.SUSPECT, findit_pb2.CULPRIT])
     self.assertEqual(event.analysis_info.actions, [findit_pb2.CL_COMMENTED])
     self.assertTrue(event.flake)
 
@@ -290,7 +290,6 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
         DataPoint.Create()
     ]
     analysis.suspected_flake_build_number = 5
-    analysis.confidence_in_suspected_build = .5
     analysis.start_time = datetime.datetime(2017, 1, 1)
     analysis.end_time = datetime.datetime(2017, 1, 2)
     analysis.culprit_urlsafe_key = culprit.key.urlsafe()
@@ -330,8 +329,8 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
         'host: "chromium-review.googlesource.com"\nproject: "chromium"\nref: '
         '"refs/heads/master"\nrevision: "revision"\nconfidence: 1.0\n')
 
-    self.assertEqual(event.analysis_info.outcomes, [
-        findit_pb2.SUSPECT, findit_pb2.CULPRIT])
+    self.assertEqual(event.analysis_info.outcomes,
+                     [findit_pb2.SUSPECT, findit_pb2.CULPRIT])
     self.assertEqual(event.analysis_info.actions, [findit_pb2.BUG_CREATED])
 
   @mock.patch.object(
@@ -405,8 +404,8 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
         'host: "chromium-review.googlesource.com"\nproject: "chromium"\nref: '
         '"refs/heads/master"\nrevision: "revision"\nconfidence: 1.0\n')
 
-    self.assertEqual(event.analysis_info.outcomes, [
-        findit_pb2.SUSPECT, findit_pb2.CULPRIT])
+    self.assertEqual(event.analysis_info.outcomes,
+                     [findit_pb2.SUSPECT, findit_pb2.CULPRIT])
     self.assertEqual(event.analysis_info.actions, [findit_pb2.BUG_COMMENTED])
 
   @mock.patch.object(
@@ -481,8 +480,8 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
         'host: "chromium-review.googlesource.com"\nproject: "chromium"\nref: '
         '"refs/heads/master"\nrevision: "revision"\nconfidence: 1.0\n')
 
-    self.assertEqual(event.analysis_info.outcomes, [
-        findit_pb2.SUSPECT, findit_pb2.CULPRIT])
+    self.assertEqual(event.analysis_info.outcomes,
+                     [findit_pb2.SUSPECT, findit_pb2.CULPRIT])
     self.assertEqual(event.analysis_info.actions,
                      [findit_pb2.REVERT_CREATED, findit_pb2.REVERT_SUBMITTED])
 

@@ -47,13 +47,10 @@ def _GetSuspectedFlakeInfo(analysis):
 
   if not data_point:  # Workaround for analyses by the new pipeline.
     return {
-        'confidence': analysis.confidence_in_suspected_build,
         'build_number': analysis.suspected_flake_build_number,
     }
 
   return {
-      'confidence':
-          analysis.confidence_in_suspected_build,
       'build_number':
           analysis.suspected_flake_build_number,
       'commit_position':
@@ -323,8 +320,9 @@ class CheckFlake(BaseHandler):
       return self.CreateError(
           'Cannot rerun analysis if one is currently running or pending.', 400)
 
-    logging.info('Rerun button pushed, analysis will be reset and triggered.\n'
-                 'Analysis key: %s', key)
+    logging.info(
+        'Rerun button pushed, analysis will be reset and triggered.\n'
+        'Analysis key: %s', key)
 
     request = FlakeAnalysisRequest.Create(analysis.original_test_name, False,
                                           analysis.bug_id)
@@ -489,14 +487,12 @@ class CheckFlake(BaseHandler):
     build_level_number, revision_level_number = _GetNumbersOfDataPointGroups(
         analysis.data_points)
     regression_range = analysis.GetLatestRegressionRange()
-    regression_range_confidence = suspected_flake.get('confidence', 0)
     culprit_confidence = culprit.get('confidence', 0)
 
     def AsPercentString(val):
       """0-1 as a percent, rounded and returned as a string"""
       return "{0:d}".format(int(round(val * 100.0))) if val else ''
 
-    regression_range_confidence = AsPercentString(regression_range_confidence)
     culprit_confidence = AsPercentString(culprit_confidence)
 
     status = analysis.status
@@ -572,8 +568,6 @@ class CheckFlake(BaseHandler):
             regression_range.upper,
         'regression_range_lower':
             regression_range.lower,
-        'regression_range_confidence':
-            regression_range_confidence,
         'culprit_url':
             culprit.get('url', ''),
         'culprit_revision': (culprit.get('commit_position', 0) or

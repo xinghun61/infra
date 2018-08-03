@@ -128,8 +128,6 @@ class ListFlakes(BaseHandler):
               analysis.bug_id,
           'confidence_in_culprit':
               analysis.confidence_in_culprit,
-          'confidence_in_suspected_build':
-              analysis.confidence_in_suspected_build,
           'culprit':
               culprit.to_dict() if culprit else {},
           'key':

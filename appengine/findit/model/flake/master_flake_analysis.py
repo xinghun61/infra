@@ -548,8 +548,6 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
       algorithm_parameters (dict): The analysis' algorithm parameters.
       confidence_in_culprit (float): Confidence score for the suspected culprit
           CL, if any.
-      confidence_in_suspected_build (float): Confidence score for the suspected
-          build number.
       culprit_urlsafe_key (str): The urlsafe-key coresponding to a FlakeCulprit
           that caused flakiness.
       end_time (datetime): The timestamp that the overall analysis is completed.
@@ -618,9 +616,6 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
 
   # The build id of the build cycle suspected to contain the culprit.
   suspected_build_id = ndb.IntegerProperty()
-
-  # The confidence in the suspected build to have introduced the flakiness.
-  confidence_in_suspected_build = ndb.FloatProperty(indexed=False)
 
   # The confidence in the suspected CL to have introduced the flakiness.
   confidence_in_culprit = ndb.FloatProperty(indexed=False)

@@ -90,9 +90,6 @@
                 <span class$="[[status]]">&nbsp;&nbsp;&nbsp;</span>
                 <template is="dom-if" if="[[regressionRangeFound(regressionRangeLower, regressionRangeUpper)]]">
                   <a href$="https://crrev.com/[[regressionRangeLower]]..[[regressionRangeUpper]]?pretty=fuller">[[regressionRangeLower]]..[[regressionRangeUpper]]</a>
-                  <template is="dom-if" if="[[regressionRangeConfidence]]">
-                    (Confidence [[regressionRangeConfidence]]%)
-                  </template>
                 </template>
                 <template is="dom-if" if="[[onlyUpperBoundFound(regressionRangeLower, regressionRangeUpper)]]">
                   ?..[[regressionRangeUpper]]
@@ -159,7 +156,6 @@
 
         properties: {
           status: String,
-          regressionRangeConfidence: String,
           regressionRangeUpper: String,
           regressionRangeLower: String,
 
