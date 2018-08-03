@@ -55,6 +55,9 @@
         text-decoration: none;
         color: hsl(0, 0%, 20%);
       }
+      a.page-link {
+        padding-bottom: 0.5em;
+      }
       [slot="markdown-html"] pre {
         background: hsl(0, 0%, 96%);
         padding: 1em 32px;
@@ -69,7 +72,7 @@
         loading="{{_loading}}"
         last-error="{{_error}}">
     </iron-ajax>
-    <chops-header app-title="ChOpsUI Gallery" logo-src="/images/chromium.png">
+    <chops-header app-title="ChopsUI Gallery" logo-src="/images/chromium.png">
       <span slot="subheader">
         &gt; [[_title]]
       </span>
@@ -83,7 +86,8 @@
     <div class="container">
       <div class="nav-menu">
         <h3>Help Pages</h3>
-        <a href="/help/style">Style Guide</a>
+        <a class="page-link" href="/help/about">About ChopsUI</a>
+        <a class="page-link" href="/help/style">Style Guide</a>
         <iron-doc-nav
             descriptor="[[_descriptor]]"
             base-href=""

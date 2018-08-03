@@ -33,7 +33,7 @@ class CgApp extends Polymer.Element {
   }
 
   _titleChanged(title) {
-    window.document.title = `ChOpsUI Gallery - ${title}`;
+    window.document.title = `ChopsUI Gallery - ${title}`;
   }
 }
 
