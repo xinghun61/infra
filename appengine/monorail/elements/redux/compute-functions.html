@@ -32,6 +32,16 @@
           return acc;
         }, {});
       },
+      // Enum fields in Monorail have their options stored in labels with the
+      // field name as the prefix. This gets the values for a specific field
+      // given a fieldName.
+      computeOptionsForField: (labelDefs, fieldName) => {
+        return labelDefs.filter((label) => {
+          return label.label.toLowerCase().startsWith(fieldName.toLowerCase());
+        });
+      },
+      // Filter fieldDefs to get the field defs applicable to a specific issue
+      // or approval.
       computeFieldDefs: (fields, issueType, approvalName, isPhaseField) => {
         if (!fields) return [];
         return fields.filter((f) => {

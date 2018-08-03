@@ -26,6 +26,10 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
       blocking: Array,
       owner: Object,
       labelNames: Array,
+      projectConfig: {
+        type: String,
+        statePath: 'projectConfig',
+      },
       projectName: {
         type: String,
         statePath: 'projectName',
@@ -49,6 +53,7 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
       _fieldValueMap: {
         type: Object,
         computed: '_computeFieldValueMap(fieldValues)',
+        value: () => {},
       },
     };
   }
@@ -130,12 +135,21 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
     }
   }
 
+  _idForField(name) {
+    return `${name}Input`;
+  }
+
   _mapUserRefsToNames(users) {
     return users.map((u) => (u.displayName));
   }
 
-  _wrapList(items) {
-    return [items];
+  _optionsForField(labelDefs, name) {
+    return computeFunction.computeOptionsForField(labelDefs, name);
+  }
+
+  _valuesForField(fieldValueMap, name) {
+    if (!(name in fieldValueMap)) return [];
+    return fieldValueMap[name];
   }
 
   _statusIsHidden(status, statusDef) {

@@ -1,14 +1,14 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../redux/redux-mixin.html">
 <link rel="import" href="../../redux/compute-functions.html">
-<link rel="import" href="./mr-multi-input.html">
+<link rel="import" href="./mr-edit-field.html">
 
 <dom-module id="mr-edit-metadata">
   <template>
     <style>
       :host {
         display: block;
-        --mr-multi-input-styles: {
+        --mr-edit-field-styles: {
           box-sizing: border-box;
           width: 100%;
           padding: 0.25em 4px;
@@ -16,17 +16,11 @@
       }
       select,
       input {
-        @apply --mr-multi-input-styles;
-      }
-      input[type="checkbox"] {
-        width: auto;
+        @apply --mr-edit-field-styles;
       }
       label {
         font-weight: bold;
         word-wrap: break-word;
-      }
-      label.checkbox {
-        font-weight: normal;
       }
       textarea {
         width: 100%;
@@ -80,61 +74,70 @@
 
         <template is="dom-if" if="[[!isApproval]]">
           <label for="ownerInput" on-click="_clickLabelForCustomInput">Owner:</label>
-          <mr-multi-input
+          <mr-edit-field
             id="ownerInput"
-            values="[[_wrapList(owner.displayName)]]"
-            limit=1
-          ></mr-multi-input>
+            type="USER_TYPE"
+            value="[[owner.displayName]]"
+          ></mr-edit-field>
 
           <label for="ccInput" on-click="_clickLabelForCustomInput">CC:</label>
-          <mr-multi-input
+          <mr-edit-field
             id="ccInput"
+            type="USER_TYPE"
             values="[[_mapUserRefsToNames(cc)]]"
-          ></mr-multi-input>
+            multi
+          ></mr-edit-field>
         </template>
 
         <template is="dom-if" if="[[_and(isApprover, isApproval)]]">
           <label for="approversInput" on-click="_clickLabelForCustomInput">Approvers:</label>
-          <mr-multi-input
+          <mr-edit-field
             id="approversInput"
+            type="USER_TYPE"
             values="[[_mapUserRefsToNames(approvers)]]"
-          ></mr-multi-input>
+            multi
+          ></mr-edit-field>
         </template>
 
-        <template is="dom-repeat" items="[[users]]" as="user">
-          <label for$="[[_idForField(user.name)]]">[[user.name]]:</label>
+        <template is="dom-repeat" items="[[fieldDefs]]" as="field">
+          <label
+            for$="[[_idForField(field.fieldRef.fieldName)]]"
+            on-click="_clickLabelForCustomInput"
+            title$="[[field.docstring]]"
+          >
+            [[field.fieldRef.fieldName]]:
+          </label>
+          <mr-edit-field
+            id$="[[_idForField(field.fieldRef.fieldName)]]"
+            name="[[field.fieldRef.fieldName]]"
+            type="[[field.fieldRef.type]]"
+            options="[[_optionsForField(projectConfig.labelDefs, field.fieldRef.fieldName)]]"
+            values="[[_valuesForField(_fieldValueMap, field.fieldRef.fieldName)]]"
+            multi="[[field.isMultivalued]]"
+          ></mr-edit-field>
+        </template>
 
-          <!--TODO(zhangtiff): Replace this with a multi input widget once
-          we have a stable and reliable one. -->
-          <input id$="[[_idForField(user.name)]]" value$="[[_joinValues(user.values)]]" />
-        </template>
-        <template is="dom-repeat" items="[[urls]]" as="url">
-          <label for$="[[_idForField(url.name)]]">[[url.name]]:</label>
-          <input id$="[[_idForField(url.name)]]" value$="[[_joinValues(url.values)]]" />
-        </template>
-        <template is="dom-repeat" items="[[enums]]" as="enum">
-          <label for$="[[_idForField(enum.name)]]">[[enum.name]]:</label>
-          <div>
-            <template is="dom-repeat" items="[[enum.choices]]" as="choice">
-              <label class="checkbox" for$="[[_idForField(enum.name, choice)]]">
-                <input
-                  id$="[[_idForField(enum.name, choice)]]"
-                  type="checkbox" name="[[enum.name]]" value="choice"
-                />
-                [[choice]]
-              </label>
-            </template>
-          </div>
-        </template>
         <template is="dom-if" if="[[!isApproval]]">
           <label for="blockedOnInput" on-click="_clickLabelForCustomInput">Blocked on:</label>
-          <mr-multi-input id="blockedOnInput" values="[[_blockedOnIds]]"></mr-multi-input>
+          <mr-edit-field
+            id="blockedOnInput"
+            values="[[_blockedOnIds]]"
+            multi
+          ></mr-edit-field>
 
           <label for="blockingInput" on-click="_clickLabelForCustomInput">Blocking:</label>
-          <mr-multi-input id="blockingInput" values="[[_blockingIds]]"></mr-multi-input>
+          <mr-edit-field
+            id="blockingInput"
+            values="[[_blockingIds]]"
+            multi
+          ></mr-edit-field>
 
           <label for="labelsInput" on-click="_clickLabelForCustomInput">Labels:</label>
-          <mr-multi-input id="labelsInput" values="[[labelNames]]"></mr-multi-input>
+          <mr-edit-field
+            id="labelsInput"
+            values="[[labelNames]]"
+            multi
+          ></mr-edit-field>
         </template>
       </div>
       <textarea id="commentText" placeholder="Comment to explain this change"></textarea>

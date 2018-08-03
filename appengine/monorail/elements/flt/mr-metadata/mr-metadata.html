@@ -122,8 +122,9 @@
         <th>[[field.fieldRef.fieldName]]:</th>
         <td>
           <mr-field-values
-            field-def="[[field]]"
-            values="[[_valuesForDef(field, _fieldValueMap)]]"
+            name="[[field.fieldRef.fieldName]]"
+            type="[[field.fieldRef.type]]"
+            values="[[_valuesForDef(field.fieldRef.fieldName, _fieldValueMap)]]"
             project-name="[[projectName]]"
           ></mr-field-values>
         </td>

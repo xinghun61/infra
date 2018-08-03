@@ -4,13 +4,13 @@
 
 <dom-module id="mr-field-values">
   <template>
-    <template is="dom-if" if="[[_fieldIsUrl(fieldDef.fieldRef.type)]]">
+    <template is="dom-if" if="[[_fieldIsUrl(type)]]">
       <template is="dom-repeat" items="[[values]]" as="value">
         <a href$="[[value]]">[[value]]</a>
       </template>
     </template>
 
-    <template is="dom-if" if="[[_fieldIsUser(fieldDef.fieldRef.type)]]">
+    <template is="dom-if" if="[[_fieldIsUser(type)]]">
       <template is="dom-repeat" items="[[values]]" as="value">
         <mr-user-link
           user-id="[[value]]"
@@ -19,9 +19,9 @@
       </template>
     </template>
 
-    <template is="dom-if" if="[[_fieldIsRemainingTypes(fieldDef.fieldRef.type)]]">
+    <template is="dom-if" if="[[_fieldIsRemainingTypes(type)]]">
       <template is="dom-repeat" items="[[values]]" as="value">
-        <a href$="/p/[[projectName]]/issues/list?q=[[fieldDef.fieldRef.fieldName]]=&quot;[[value]]&quot;">
+        <a href$="/p/[[projectName]]/issues/list?q=[[name]]=&quot;[[value]]&quot;">
           [[value]]</a><span hidden$="[[_isLastItem(values.length, index)]]">,</span>
       </template>
     </template>

@@ -31,6 +31,7 @@ class MrMetadata extends ReduxMixin(Polymer.Element) {
       _fieldValueMap: {
         type: Object,
         computed: '_computeFieldValueMap(fieldValues)',
+        value: {},
       },
     };
   }
@@ -39,9 +40,9 @@ class MrMetadata extends ReduxMixin(Polymer.Element) {
     return computeFunction.computeFieldValueMap(fields);
   }
 
-  _valuesForDef(fieldDef, fieldValueMap) {
-    if (!(fieldDef.fieldRef.fieldName in fieldValueMap)) return [];
-    return fieldValueMap[fieldDef.fieldRef.fieldName];
+  _valuesForDef(name, fieldValueMap) {
+    if (!(name in fieldValueMap)) return [];
+    return fieldValueMap[name];
   }
 }
 

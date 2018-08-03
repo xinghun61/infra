@@ -14,7 +14,8 @@ class MrFieldValues extends Polymer.Element {
 
   static get properties() {
     return {
-      fieldDef: Object,
+      name: String,
+      type: Object,
       projectName: String,
       values: Array,
     };

@@ -1,0 +1,49 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+
+<dom-module id="mr-edit-field">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+      input,
+      select {
+        @apply --mr-edit-field-styles;
+      }
+      input[type="checkbox"] {
+        width: auto;
+      }
+    </style>
+    <template is="dom-if" if="[[_fieldIsEnum(type)]]">
+      <template is="dom-if" if="[[multi]]">
+        <template is="dom-repeat" items="[[options]]" as="option">
+          <label title$="[[option.docstring]]">
+            <input
+              type="checkbox"
+              name$="[[option.label]]"
+              value$="[[option.label]]"
+              checked$="[[_opionInValues(values, option.label)]]"
+            />
+            [[_stripPrefix(option.label, name)]]
+          </label>
+        </template>
+      </template>
+      <select id="editSelect" hidden$="[[multi]]">
+        <template is="dom-repeat" items="[[options]]" as="option">
+          <option
+            value$="[[option.label]]"
+            selected$="[[_computeIsSelected(value, option.label)]]"
+          >
+            [[_stripPrefix(option.label, name)]]
+            <template is="dom-if" if="[[option.docstring]]">
+              - [[option.docstring]]
+            </template>
+          </option>
+        </template>
+      </select>
+    </template>
+
+    <input id="editInput" value$="[[_defaultValue]]" hidden$="[[!_fieldIsBasic]]" />
+  </template>
+  <script src="./mr-edit-field.js"></script>
+<dom-module>
