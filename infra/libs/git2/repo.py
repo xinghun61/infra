@@ -29,7 +29,27 @@ class Repo(object):
   """
   MAX_CACHE_SIZE = 1024
 
-  def __init__(self, url):
+  DEFAULT_REFS = (
+    'refs/*config',        # e.g. refs/meta/config, refs/infra/config
+    'refs/*config/main',   # e.g. refs/gsubtreed-config/main
+    'refs/branch-heads/*',
+    'refs/heads/*',
+    'refs/notes/*',
+    'refs/tags/*',
+  )
+
+  def __init__(self, url, whitelist_refs=DEFAULT_REFS):
+    """Creates a new Repo for the given git repo `url`.
+
+    Args:
+      url (str) - The URL of the repo to manage. Can be any URL scheme that git
+        supports (including `file://`).
+      whitelist_refs (iterable[str]) - The refs to include in this mirror. By
+        default this includes known config refs, heads, branch-heads, notes and
+        tags. This list excludes gerrit CL metadata which has on the order of a
+        ~million extra refs (as of 2018Q3). Unfortunately there's no simple way
+        to BLACKLIST refs as of git 2.18.
+    """
     self.dry_run = False
     self.repos_dir = None
     self.netrc_file = None
@@ -39,6 +59,7 @@ class Repo(object):
     self._commit_cache = collections.OrderedDict()
     self._log = LOGGER.getChild('Repo')
     self._queued_refs = {}
+    self._whitelist_refs = sorted(whitelist_refs)
 
   def __hash__(self):
     return hash((self._url, self._repo_path))
@@ -116,6 +137,16 @@ class Repo(object):
         if add_entry:
           with open(altfile, 'a') as f:
             print >> f, share_objects
+
+      # First config resets all fetch refs
+      first = True
+      for pattern in self._whitelist_refs:
+        self.run(*[
+          'config',
+          '--replace-all' if first else '--add',
+          'remote.origin.fetch', '+%s:%s' % (pattern, pattern)
+        ], cwd=path)
+        first = False
 
     if not os.path.isdir(rpath):
       self._log.debug('initializing %r -> %r', self, rpath)
