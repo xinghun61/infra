@@ -7,7 +7,7 @@
   'use strict';
   const CRBUG_LINK_RE = /(?<prefix>\b(https?:\/\/)?crbug\.com\/)((?<projectName>\b[-a-z0-9]+)(?<separator>\/))?(?<localId>\d+)\b(?<anchor>\#c[0-9]+)?/gi;
   const ISSUE_TRACKER_RE = /(?<prefix>\b(issues?|bugs?)[ \t]*(:|=)?)([ \t]*(?<projectName>\b[-a-z0-9]+[:\#])?(?<numberSign>\#?)(?<localId>\d+)\b(,?[ \t]*(and|or)?)?)+/gi;
-  const PROJECT_LOCALID_RE = /([ \t]*(?<projectName>\b[-a-z0-9]+[:\#])?(?<numberSign>\#?)(?<localId>\d+))/gi;
+  const PROJECT_LOCALID_RE = /((?<projectName>\b[-a-z0-9]+[:\#])?(?<numberSign>\#?)(?<localId>\d+))/gi;
   const IMPLIED_EMAIL_RE = /\b[a-z]((-|\.)?[a-z0-9])+@[a-z]((-|\.)?[a-z0-9])+\.(com|net|org|edu)\b/gi;
   const SHORT_LINK_RE = /(?<![-/._])\b(https?:\/\/|ftp:\/\/|mailto:)?(go|g|shortn|who|teams)\/([^\s<]+)/gi;
   const NUMERIC_SHORT_LINK_RE = /(?<![-/._])\b(https?:\/\/|ftp:\/\/)?(b|t|o|omg|cl|cr)\/([0-9]+)/gi;
@@ -143,19 +143,29 @@
   function ReplaceCrbugIssueRef(match, components, defaultProjectName='chromium') {
     const projectName = match.groups.projectName || defaultProjectName;
     const localId = match.groups.localId;
-    return ReplaceIssueRef(match[0], projectName, localId, components);
+    return [ReplaceIssueRef(match[0], projectName, localId, components)];
   }
 
   function ReplaceTrackerIssueRef(match, components, defaultProjectName='chromium') {
     const issueRefRE = PROJECT_LOCALID_RE;
     let textRuns = [];
     let refMatch;
+    let pos = 0;
     while ((refMatch = issueRefRE.exec(match[0])) !== null) {
+      if (refMatch.index > pos) {
+        // Create textrun for content between previous and current match.
+        textRuns.push({content: match[0].slice(pos, refMatch.index)});
+      }
       if (refMatch.groups.projectName) {
         defaultProjectName = refMatch.groups.projectName.slice(0, -1);
       }
-      textRuns.push(ReplaceIssueRef(refMatch[0].trim(), defaultProjectName, refMatch.groups.localId, components));
-    };
+      textRuns.push(ReplaceIssueRef(
+          refMatch[0], defaultProjectName, refMatch.groups.localId, components));
+      pos = refMatch.index + refMatch[0].length;
+    }
+    if (match[0].slice(pos) !== '') {
+      textRuns.push({content: match[0].slice(pos)});
+    }
     return textRuns;
   }
 
@@ -168,11 +178,11 @@
       });
       if (existingUser) {
         textRun.href = `/u/${match[0]}`;
-        return textRun;
+        return [textRun];
       }
     }
     textRun.href = `mailto:${match[0]}`;
-    return textRun;
+    return [textRun];
   }
 
   function ReplaceLinkRef(match, _componets, _defaultProjectName) {
@@ -232,7 +242,63 @@
     });
   }
 
+  function markupAutolinks(plainString, componentRefs) {
+    const chunks = plainString.trim().split(/(<b>[^<\n]+<\/b>)|(\r?\n)/);
+    let textRuns = [];
+    chunks.filter(Boolean).forEach(chunk => {
+      if (chunk.match(/\r/) || chunk.match(/\n/)) {
+        textRuns.push({tag: 'br'});
+      } else if (chunk.startsWith('<b>') && chunk.endsWith('</b>')) {
+        textRuns.push({content: chunk.slice(3, -4), tag: 'b'});
+      } else {
+        textRuns.push.apply(textRuns, autolinkChunk(chunk, componentRefs));
+      }
+    });
+    return textRuns;
+  }
+
+  function autolinkChunk(chunk, componentRefs) {
+    // TODO(jojwang): monorail:4033, make componentRefs a Map() in
+    // redux-mixin and remove the next 5 lines.
+    let textRuns = [{content: chunk}];
+    const componentRefsMap = new Map();
+    componentRefs.forEach(({componentName, existingRefs}) => {
+      componentRefsMap.set(componentName, existingRefs);
+    });
+    Components.forEach(({lookup, extractRefs, reStrs, replacer}, componentName) => {
+      reStrs.forEach(re => {
+        textRuns = applyLinks(textRuns, replacer, re, componentRefsMap.get(componentName));
+      });
+    });
+    return textRuns;
+  }
+
+  function applyLinks(textRuns, replacer, re, existingRefs) {
+    let resultRuns = [];
+    textRuns.forEach(textRun => {
+      if (textRun.tag) {
+        resultRuns.push(textRun);
+      } else {
+        const content = textRun.content;
+        let pos = 0;
+        let match;
+        while((match = re.exec(content)) !== null) {
+          if (match.index > pos) {
+            // Create textrun for content between previous and current match.
+            resultRuns.push({content: content.slice(pos, match.index)});
+          }
+          resultRuns.push.apply(resultRuns, replacer(match, existingRefs));
+          pos = match.index + match[0].length;
+        }
+        if (content.slice(pos) !== '') {
+          resultRuns.push({content: content.slice(pos)});
+        }
+      }
+    });
+    return resultRuns;
+  }
+
   // TODO(jojwang): retire passing functions via window when we switch to ES modules.
   window.__autolink = window.__autolink || {};
-  Object.assign(window.__autolink, {Components, getReferencedArtifacts});
+  Object.assign(window.__autolink, {Components, getReferencedArtifacts, markupAutolinks});
 })(window);

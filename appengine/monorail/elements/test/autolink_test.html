@@ -7,8 +7,10 @@
 <script src="/static/js/autolink.js"></script>
 <script>
   'use strict';
+  // TODO(jojwang): monorail:4033, fix indent style, 2 spaces for any continued indentation.
   const components = window.__autolink.Components;
   const createIssueRefRun = window.__autolink.createIssueRefRun;
+  const markupAutolinks = window.__autolink.markupAutolinks;
   suite('crbug component functions', function() {
       const {lookup, extractRefs, reStrs, replacer} = components.get('01-tracker-crbug');
 
@@ -16,7 +18,7 @@
           let match = reStrs[0].exec('https://crbug.com/monorail/1234');
           reStrs[0].lastIndex = 0;
           let ref = extractRefs(match);
-          assert.deepEqual(ref, {projectName: 'monorail', localId: '1234'});
+          assert.deepEqual(ref, [{projectName: 'monorail', localId: '1234'}]);
       });
 
       test('Replace crbug with found components', function() {
@@ -27,12 +29,12 @@
           const actualRun = replacer(match, components);
           assert.deepEqual(
               actualRun,
-              {
+              [{
                   tag: 'a',
                   css: 'strikeThrough',
                   href:'/p/monorail/issues/detail?id=1234',
                   content: str
-              }
+              }]
           );
       });
 
@@ -44,12 +46,12 @@
           const actualRun = replacer(match, components);
           assert.deepEqual(
               actualRun,
-              {
+              [{
                   tag: 'a',
                   href:'/p/chromium/issues/detail?id=1234',
                   css:'',
                   content: str
-              }
+              }]
           );
       });
 
@@ -59,7 +61,7 @@
           reStrs[0].lastIndex = 0;
           const components = {};
           const actualRun = replacer(match, components);
-          assert.deepEqual(actualRun, {content: str});
+          assert.deepEqual(actualRun, [{content: str}]);
       });
   });
 
@@ -93,14 +95,18 @@
           assert.deepEqual(
               actualTextRuns,
               [
+                  {content: 'bugs='},
                   {
                       tag: 'a',
                       href:'/p/chromium/issues/detail?id=123',
                       css: '',
                       content: '123',
                   },
+                  {content: ', '},
                   {content: 'monorail:234'},
+                  {content: ' or '},
                   {content: '#345'},
+                  {content: ' and '},
                   {
                       tag: 'a',
                       href:'/p/PROJ/issues/detail?id=456',
@@ -129,7 +135,7 @@
           const actualTextRun = replacer(match, components);
           assert.deepEqual(
               actualTextRun,
-              {tag: 'a', href: '/u/User1@gmail.com', content: 'User1@gmail.com'}
+              [{tag: 'a', href: '/u/User1@gmail.com', content: 'User1@gmail.com'}]
           );
       });
 
@@ -137,11 +143,11 @@
           const actualTextRun = replacer(match, {});
           assert.deepEqual(
               actualTextRun,
-              {
+              [{
                   tag: 'a',
                   href: 'mailto:User1@gmail.com',
                   content: 'User1@gmail.com',
-              }
+              }]
           );
       });
 
@@ -202,7 +208,6 @@
           const match = reStrs[2].exec('link here: (website.net/other="here").');
           reStrs[2].lastIndex = 0;
           const actualTextRuns = replacer(match);
-          console.log(JSON.stringify(actualTextRuns));
           assert.deepEqual(
               actualTextRuns,
               [{tag: 'a',
@@ -211,6 +216,84 @@
                },
                {content: ').'}]
           );
+      });
+  });
+
+  suite('markupAutolinks tests', function() {
+      const componentRefs = [
+          {
+              componentName: '01-tracker-crbug',
+              existingRefs: {openRefs: [], closedRefs: [{projectName: 'chromium', localId: 99}]},
+          },
+          {
+              componentName: '02-tracker-regular',
+              existingRefs: {openRefs: [{projectName: 'monorail', localId: 123}], closedRefs: [{projectName: 'chromium', localId: 456}]},
+          },
+          {
+              componentName: '03-user-emails',
+              existingRefs: {users: [{email: 'user2@example.com'}]},
+          },
+      ];
+
+      test('empty string does not cause error', function() {
+          const actualTextRuns = markupAutolinks('', componentRefs);
+          assert.deepEqual(actualTextRuns, []);
+      });
+
+      test('no nested autolinking', function() {
+          const plainString = 'test <b>autolinking go/testlink</b> is not nested';
+          const actualTextRuns = markupAutolinks(plainString, componentRefs);
+          assert.deepEqual(
+              actualTextRuns, [
+                  {content: 'test '},
+                  {content: 'autolinking go/testlink', tag: 'b'},
+                  {content: ' is not nested'},
+              ]);
+      });
+
+      test('different component types are correctly linked', function() {
+          const plainString = 'test (User2@example.com and crbug.com/99) get linked';
+          const actualTextRuns = markupAutolinks(plainString, componentRefs);
+          assert.deepEqual(
+              actualTextRuns, [
+                  {content: 'test ('},
+                  {content: 'User2@example.com', tag: 'a', href: '/u/User2@example.com'},
+                  {content: ' and '},
+                  {content: 'crbug.com/99', tag: 'a', href: '/p/chromium/issues/detail?id=99', css: 'strikeThrough'},
+                  {content: ') get linked'},
+              ]);
+      });
+
+      test('only existing issues get linked', function() {
+          const plainString = 'only existing bugs = 456, monorail:123, 234 and chromium:345 get linked';
+          const actualTextRuns = markupAutolinks(plainString, componentRefs);
+          assert.deepEqual(
+              actualTextRuns, [
+                  {content: 'only existing '},
+                  {content: 'bugs = '},
+                  {content: '456', tag: 'a', href: '/p/chromium/issues/detail?id=456', css: 'strikeThrough'},
+                  {content: ', '},
+                  {content: 'monorail:123', tag: 'a', href: '/p/monorail/issues/detail?id=123', css: ''},
+                  {content: ', '},
+                  {content: '234'},
+                  {content: ' and '},
+                  {content: 'chromium:345'},
+                  {content: ' '},
+                  {content: 'get linked'},
+              ]);
+      });
+
+      test('multilined bolds are not bolded', function() {
+          const plainString = '<b>no multiline bolding \nnot allowed go/survey is still linked</b>';
+          const actualTextRuns = markupAutolinks(plainString, componentRefs);
+          assert.deepEqual(
+              actualTextRuns, [
+                  {content: '<b>no multiline bolding '},
+                  {tag: 'br'},
+                  {content: 'not allowed '},
+                  {content: 'go/survey', tag: 'a', href: 'https://go/survey'},
+                  {content: ' is still linked</b>'},
+              ]);
       });
   });
 </script>
