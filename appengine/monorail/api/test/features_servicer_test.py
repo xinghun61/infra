@@ -51,6 +51,30 @@ class FeaturesServicerTest(unittest.TestCase):
   def CallWrapped(self, wrapped_handler, *args, **kwargs):
     return wrapped_handler.wrapped(self.features_svcr, *args, **kwargs)
 
+  def testListHotlistsByUser_SearchByEmail(self):
+    """We can get a list of hotlists for a given email."""
+    # Public hostlist owned by 'owner@example.com'
+    self.services.features.CreateHotlist(
+        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[222L])
+
+    # Query for issues for 'owner@example.com'
+    user_ref = common_pb2.UserRef(display_name='owner@example.com')
+    request = features_pb2.ListHotlistsByUserRequest(user=user_ref)
+
+    # We're authenticated as 'foo@example.com'
+    mc = monorailcontext.MonorailContext(self.services, cnxn=self.cnxn)
+
+    response = self.CallWrapped(self.features_svcr.ListHotlistsByUser, mc,
+                                request)
+    self.assertEqual(1, len(response.hotlists))
+    hotlist = response.hotlists[0]
+    self.assertEqual(111L, hotlist.owner_ref.user_id)
+    self.assertEqual('ow...@example.com', hotlist.owner_ref.display_name)
+    self.assertEqual('Fake Hotlist', hotlist.name)
+    self.assertEqual('Summary', hotlist.summary)
+    self.assertEqual('Description', hotlist.description)
+
   def testListHotlistsByUser_SearchByOwner(self):
     """We can get a list of hotlists for a given user."""
     # Public hostlist owned by 'owner@example.com'

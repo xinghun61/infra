@@ -27,9 +27,12 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
   @monorail_servicer.PRPCMethod
   def ListHotlistsByUser(self, mc, request):
     """Return the specified project config."""
+    user_id = converters.IngestUserRefs(
+        mc.cnxn, [request.user], self.services.user)[0]
+
     with work_env.WorkEnv(mc, self.services) as we:
       # List hotlists for the currently authenticated user.
-      hotlists = we.ListHotlistsByUser(request.user.user_id)
+      hotlists = we.ListHotlistsByUser(user_id)
 
     with mc.profiler.Phase('making user views'):
       users_involved = features_bizobj.UsersOwnersOfHotlists(hotlists)
@@ -43,4 +46,5 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
 
     result = features_pb2.ListHotlistsByUserResponse(
         hotlists=converted_hotlists)
+
     return result
