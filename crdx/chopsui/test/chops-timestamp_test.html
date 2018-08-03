@@ -26,7 +26,7 @@
       element.dateFormat = "ddd D MMM 'YY, h:mm a [LSKJFLSKDJFLKSDFJ]";
 
       element.date = new Date();
-      sinon.assert.calledTwice(formattingStub);
+      sinon.assert.calledOnce(formattingStub);
       done();
     });
 

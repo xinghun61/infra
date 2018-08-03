@@ -76,25 +76,21 @@
       }
     </style>
     <div id="carouselRoot" class="carousel-content">
-      <template is="dom-if" if="[[_showNav]]">
-        <button id="prevImage"
-            class="img-wrapper prev-image"
-            on-click="_focusPrevImage">
-          <img src$="[[_prevImage]]" />
-        </button>
-      </template>
+      <button id="prevImage" hidden$="[[!_showNav]]"
+          class="img-wrapper prev-image"
+          on-click="_focusPrevImage">
+        <img src$="[[_prevImage]]" />
+      </button>
       <button
           class="img-wrapper focused"
           on-click="_focusedImageClicked">
         <img src$="[[_focusedImage]]" />
       </button>
-      <template is="dom-if" if="[[_showNav]]">
-        <button id="nextImage"
-            class="img-wrapper next-image"
-            on-click="_focusNextImage">
-          <img src$="[[_nextImage]]" />
-        </button>
-      </template>
+      <button id="nextImage" hidden$="[[!_showNav]]"
+          class="img-wrapper next-image"
+          on-click="_focusNextImage">
+        <img src$="[[_nextImage]]" />
+      </button>
     </div>
     <template is="dom-if" if="[[_showNav]]">
       <div id="carouselNav" class="carousel-nav">
