@@ -56,12 +56,13 @@ class HeuristicAnalysisTest(wf_testcase.WaterfallTestCase):
     revision_range = ['r2', 'r3']
     expected_suspected_revisions = ['r2']
 
-    self.assertEqual(expected_suspected_revisions,
-                     heuristic_analysis.GetSuspectedRevisions(
-                         blame, revision_range))
+    self.assertEqual(
+        expected_suspected_revisions,
+        heuristic_analysis.GetSuspectedRevisions(blame, revision_range))
     self.assertEqual([], heuristic_analysis.GetSuspectedRevisions([], ['r1']))
     self.assertEqual([], heuristic_analysis.GetSuspectedRevisions(
         blame, ['r4']))
+    self.assertEqual([], heuristic_analysis.GetSuspectedRevisions(None, None))
 
   def testListCommitPositionsFromSuspectedRanges(self):
     self.assertEqual(  # No heuristic results.
@@ -228,6 +229,41 @@ class HeuristicAnalysisTest(wf_testcase.WaterfallTestCase):
     analysis.data_points = [
         DataPoint.Create(commit_position=1000, git_hash='r1000')
     ]
+    analysis.Save()
+
+    self.assertEqual([],
+                     heuristic_analysis.IdentifySuspectedRevisions(analysis))
+
+  @mock.patch.object(swarmed_test_util, 'GetTestLocation')
+  @mock.patch.object(CachedGitilesRepository, 'GetBlame', return_value=None)
+  def testIdentifySuspectedRangesFailedToGetBlame(self, _, mock_test_location):
+    mock_test_location.return_value = TestLocation(file='a/b.cc', line=1)
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(commit_position=1000, git_hash='r1000', pass_rate=0.5),
+        DataPoint.Create(commit_position=997, git_hash='r997', pass_rate=1.0)
+    ]
+
+    analysis.Save()
+
+    self.assertEqual([],
+                     heuristic_analysis.IdentifySuspectedRevisions(analysis))
+
+  @mock.patch.object(swarmed_test_util, 'GetTestLocation')
+  @mock.patch.object(CachedGitilesRepository, 'GetBlame')
+  @mock.patch.object(git, 'GetCommitsBetweenRevisionsInOrder', return_value=[])
+  def testIdentifySuspectedRangesFailedToGetRevisions(self, _, mock_blame,
+                                                      mock_test_location):
+    mock_blame.return_value = [Blame('r1000', 'a/b.cc')]
+    mock_test_location.return_value = TestLocation(file='a/b.cc', line=1)
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(commit_position=1000, git_hash='r1000', pass_rate=0.5),
+        DataPoint.Create(commit_position=997, git_hash='r997', pass_rate=1.0)
+    ]
+
     analysis.Save()
 
     self.assertEqual([],

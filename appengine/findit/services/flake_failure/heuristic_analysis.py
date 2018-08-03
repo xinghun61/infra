@@ -67,6 +67,9 @@ def GetSuspectedRevisions(git_blame, revision_range):
   # to perform a more sophisticated heuristic analysis that examines each
   # revision in greater depth, such as adding or modifying related files and
   # score them appropriately.
+  if not git_blame or not revision_range:
+    return []
+
   return list(
       set(region.revision for region in git_blame) & set(revision_range))
 
@@ -106,6 +109,11 @@ def IdentifySuspectedRevisions(analysis):
                                      constants.CHROMIUM_GIT_REPOSITORY_URL)
   git_blame = git_repo.GetBlame(normalized_file_path, upper_data_point.git_hash)
 
+  if git_blame is None:
+    analysis.LogWarning('Failed to get git blame for {}, {}'.format(
+        normalized_file_path, upper_data_point.git_hash))
+    return []
+
   lower_data_point = analysis.FindMatchingDataPointWithCommitPosition(
       regression_range.lower)
   assert lower_data_point, (
@@ -114,6 +122,11 @@ def IdentifySuspectedRevisions(analysis):
 
   revisions = git.GetCommitsBetweenRevisionsInOrder(
       lower_data_point.git_hash, upper_data_point.git_hash, True)
+
+  if not revisions:
+    analysis.LogWarning('Failed to get revisions in range [{}, {}]'.format(
+        lower_data_point.git_hash, upper_data_point.git_hash))
+    return []
 
   return GetSuspectedRevisions(git_blame, revisions)
 
