@@ -1121,6 +1121,21 @@ function TKR_convertConfig(config) {
 
 
 /**
+ * Convert the Config object resulting of a monorail.Projects GetLabelOptions
+ * call to the format expected by TKR_fetchOptions.
+ * @param {object} config A pRPC LabelDef object with the results of the call.
+ */
+function TKR_convertLabels(labelsResponse) {
+  const jsonData = {};
+
+  jsonData.labels = labelsResponse.labelOptions.map(
+      label => ({name: label.label, doc: label.docstring}));
+
+  return jsonData;
+}
+
+
+/**
  * Contact the server to fetch the set of autocomplete options for the
  * current project.  This is done with XMLHTTPRequest because the list
  * could be long, and most of the time, the user will only view an
@@ -1152,17 +1167,24 @@ function TKR_fetchOptions(projectName, token, cct) {
   const membersPromise = CS_fetch(membersURL);
   const configPromise = prpcClient.call('monorail.Projects', 'GetConfig',
       message);
+  const labelsPromise = prpcClient.call('monorail.Projects', 'GetLabelOptions',
+      message);
 
   const allPromises = [];
 
   allPromises.push(
       optionsPromise.then(jsonData => {
         TKR_setUpHotlistsStore(jsonData.hotlists);
-        TKR_setUpLabelStore(jsonData.labels);
         TKR_setUpCustomPermissionsStore(jsonData.custom_permissions);
-        TKR_exclPrefixes = jsonData.excl_prefixes;
-        TKR_prepLabelAC(TKR_labelFieldIDPrefix);
-        TKR_restrict_to_known = jsonData.strict;
+
+        return jsonData;
+  }));
+
+  allPromises.push(
+      labelsPromise.then(labelsResponse => {
+        const jsonData = TKR_convertLabels(labelsResponse);
+
+        TKR_setUpLabelStore(jsonData.labels);
 
         return jsonData;
   }));
@@ -1184,6 +1206,8 @@ function TKR_fetchOptions(projectName, token, cct) {
 
         TKR_setUpStatusStore(jsonData.open, jsonData.closed);
         TKR_setUpComponentStore(jsonData.components);
+        TKR_exclPrefixes = jsonData.excl_prefixes;
+        TKR_restrict_to_known = jsonData.strict;
 
         return jsonData;
   }));
@@ -1200,6 +1224,11 @@ function TKR_fetchOptions(projectName, token, cct) {
        jsonData.labels, jsonData.memberEmails, jsonData.open, jsonData.closed,
        jsonData.nonGroupEmails);
     */
+
+    // We need to wait until both exclusive prefixes (in configPromise) and
+    // labels (in labelsPromise) have been read.
+    TKR_prepLabelAC(TKR_labelFieldIDPrefix);
+
     TKR_setUpSearchStore(
        jsonData.labels, jsonData.memberEmails, jsonData.open, jsonData.closed,
        jsonData.components, jsonData.fields, jsonData.nonGroupEmails);
