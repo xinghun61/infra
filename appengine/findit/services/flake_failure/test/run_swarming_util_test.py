@@ -31,17 +31,32 @@ class RunSwarmingUtilTest(wf_testcase.WaterfallTestCase):
             pass_rate=0.3)
     ]
     analysis.Save()
-    self.assertEqual(8,
-                     run_swarming_util._EstimateSwarmingIterationTimeout(
-                         analysis, commit_position))
+    self.assertEqual(
+        8,
+        run_swarming_util._EstimateSwarmingIterationTimeout(
+            analysis, commit_position))
 
   def testEstimateSwarmingIterationTimeoutNoDataPoints(self):
     commit_position = 1000
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
-    self.assertEqual(120,
-                     run_swarming_util._EstimateSwarmingIterationTimeout(
-                         analysis, commit_position))
+    self.assertEqual(
+        120,
+        run_swarming_util._EstimateSwarmingIterationTimeout(
+            analysis, commit_position))
+
+  def testEstimateSwarmingIterationTimeoutWithDataPointsError(self):
+    commit_position = 1000
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(commit_position=1000, elapsed_seconds=0, iterations=0)
+    ]
+    analysis.Save()
+    self.assertEqual(
+        120,
+        run_swarming_util._EstimateSwarmingIterationTimeout(
+            analysis, commit_position))
 
   def testEstimateTimeoutForTask(self):
     self.assertEqual(3600, run_swarming_util._EstimateTimeoutForTask(1, 1))
@@ -114,10 +129,8 @@ class RunSwarmingUtilTest(wf_testcase.WaterfallTestCase):
     analysis.start_time = datetime(2018, 1, 23, 1, 0, 0)
     analysis.end_time = datetime(2018, 1, 23, 1, 1, 0)
     analysis.Save()
-    run_swarming_util.ReportSwarmingTaskError(analysis,
-                                              SwarmingTaskError(
-                                                  code=error_code,
-                                                  message=error_message))
+    run_swarming_util.ReportSwarmingTaskError(
+        analysis, SwarmingTaskError(code=error_code, message=error_message))
 
     self.assertEqual(error_code, analysis.error['code'])
     self.assertEqual(error_message, analysis.error['message'])

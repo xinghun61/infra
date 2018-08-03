@@ -87,7 +87,7 @@ class DetermineApproximatePassRatePipeline(GeneratorPipeline):
       previous_pass_count = 0
       previous_pass_rate = None
 
-    # Abandon the analysis if there were too many erros generating a single
+    # Abandon the analysis if there were too many errors generating a single
     # data point.
     if error and data_point_util.MaximumSwarmingTaskRetriesReached(data_point):
       run_swarming_util.ReportSwarmingTaskError(analysis, error)

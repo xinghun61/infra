@@ -53,14 +53,16 @@ def _EstimateSwarmingIterationTimeout(analysis, commit_position):
   data_point = analysis.FindMatchingDataPointWithCommitPosition(commit_position)
   check_flake_settings = waterfall_config.GetCheckFlakeSettings()
 
-  if not data_point:
+  if (not data_point or data_point.elapsed_seconds == 0 or
+      data_point.iterations == 0):
+    # There is insufficient data to calculate a timeout, either there is no
+    # data point or the existing one had an error.
     return check_flake_settings.get(
         'timeout_per_test_seconds',
         flake_constants.DEFAULT_TIMEOUT_PER_TEST_SECONDS)
 
-  assert data_point.elapsed_seconds > 0
-  assert data_point.iterations > 0
-  assert data_point.pass_rate >= 0
+  assert data_point.pass_rate >= 0, (
+      'Rerunning swarming task on data point with nonexistent test!')
 
   # Set lower threshold for timeout per iteration.
   time_per_iteration = (
