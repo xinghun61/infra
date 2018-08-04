@@ -151,14 +151,26 @@ def CanRevertForAnalysis(analysis):
   previous_data_point = analysis.FindMatchingDataPointWithCommitPosition(
       culprit.commit_position - 1)
 
-  return bool(
-      analysis.status == analysis_status.COMPLETED and
-      analysis.bug_id is not None and
-      floating_point_util.AlmostEquals(analysis.confidence_in_culprit, 1.0) and
-      previous_data_point is not None and floating_point_util.AlmostEquals(
-          previous_data_point.pass_rate,
-          flake_constants.PASS_RATE_TEST_NOT_FOUND) and
-      git.ChangeCommittedWithinTime(culprit.revision))
+  if not analysis.status == analysis_status.COMPLETED:
+    analysis.LogInfo('Cannot revert culprit for an analysis that is not '
+                     'completed successfully')
+    return False
+
+  if not floating_point_util.AlmostEquals(analysis.confidence_in_culprit, 1.0):
+    analysis.LogInfo('Cannot revert culprit for an analysis with insufficient '
+                     'confidence {}'.format(analysis.confidence_in_culprit))
+    return False
+
+  if (previous_data_point is None or not floating_point_util.AlmostEquals(
+      previous_data_point.pass_rate, flake_constants.PASS_RATE_TEST_NOT_FOUND)):
+    analysis.LogInfo('Cannot revert non-newly-added tests')
+    return False
+
+  if not git.ChangeCommittedWithinTime(culprit.revision):
+    analysis.LogInfo('Cannot revert culprit > 24 hours old')
+    return False
+
+  return True
 
 
 def CulpritAddedNewFlakyTest(analysis, culprit_commit_position):
