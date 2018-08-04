@@ -187,7 +187,9 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
   @monorail_servicer.PRPCMethod
   def ListActivities(self, mc, request):
     """Return issue activities by a specified user in a response proto."""
-    user = self.services.user.GetUser(mc.cnxn, request.user_ref.user_id)
+    converted_user = converters.IngestUserRefs(mc.cnxn,[request.user_ref],
+        self.services.user)[0]
+    user = self.services.user.GetUser(mc.cnxn, converted_user)
     comments = self.services.issue.GetIssueActivity(
         mc.cnxn, user_ids={request.user_ref.user_id})
     issues = self.services.issue.GetIssues(

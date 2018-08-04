@@ -1,0 +1,73 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/chopsui/chops-timestamp.html">
+
+
+
+<dom-module id="mr-comments-list">
+  <template>
+    <style>
+      table {
+        color: Coral;
+      }
+      .ellipsis {
+        max-width: 100ch;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+      tr {
+        font-size: 90%;
+        font-weight: normal;
+        text-align: left;
+        cursor: pointer;
+        margin: 0 auto;
+        padding: 2em 1em;
+        width: 60%;
+        height: 40px;
+      }
+      td {
+        background: #f1f1f1;
+        cursor: pointer;
+        cursor: hand;
+      }
+      th {
+        border-top: 1px solid #fff;
+        text-decoration: none;
+        margin-right: 0;
+        padding-right: 0;
+        white-space:nowrap;
+        background: #e3e9ff;
+        text-align: left;
+        padding: 3px;
+        border: 0;
+        border-right: 1px solid #fff;
+      }
+      th:last-child { border-right: 0; }
+      tr:nth-child(even) { background: #f8f8f8; }
+    </style>
+    <table>
+     <tbody>
+       <tr id="heading-row">
+         <th style="width:20%;">Date</th>
+         <th style="width:10%;">Project</th>
+         <th style="width:50%;">Comment</th>
+         <th style="width:20%;">Issue Link</th>
+       </tr>
+
+       <template is="dom-repeat" items="[[comments]]" as="comment">
+         <tr id="row">
+           <td><chops-timestamp timestamp="[[comment.timestamp]]"></chops-timestamp></td>
+           <td>[[comment.projectName]]</td>
+           <td class="ellipsis">[[comment.content]]</td>
+           <td>
+             <a href$="/p/[[comment.projectName]]/issues/detail?id=[[comment.localId]]">
+               <paper-button>Issue [[comment.localId]]</paper-button>
+             </a>
+           </td>
+         </tr>
+       </template>
+   </tbody>
+ </table>
+  </template>
+  <script src="./mr-comments-list.js"></script>
+</dom-module>

@@ -4,6 +4,8 @@
 
 <link rel="import" href="../../mr-header/mr-header.html">
 <link rel="import" href="../mr-activity-table/mr-activity-table.html">
+<link rel="import" href="../mr-comments-list/mr-comments-list.html">
+
 
 <dom-module id="mr-profile-page">
   <template>
@@ -26,6 +28,7 @@
     </mr-header>
     <div class="container">
       <mr-activity-table></mr-activity-table>
+      <mr-comments-list token="[[token]]" user="[[user]]" viewed-user-id="[[viewedUserId]]"></mr-comments-list>
     </div>
   </template>
   <script src="./mr-profile-page.js"></script>

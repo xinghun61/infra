@@ -17,6 +17,7 @@ class MrProfilePage extends Polymer.Element {
       logoutUrl: String,
       loginUrl: String,
       viewedUser: String,
+      viewedUserId: Number,
       token: String,
     };
   }

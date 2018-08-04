@@ -12,6 +12,7 @@
 [end]
 
 <mr-profile-page
+  viewed-user-id="[viewed_user_id]"
   viewed-user="[viewed_user_display_name]" [if-any logged_in_user]
   user="[logged_in_user.email]"[end]
   login-url="[login_url]"
