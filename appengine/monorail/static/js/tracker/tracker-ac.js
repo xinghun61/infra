@@ -1169,22 +1169,14 @@ function TKR_fetchOptions(projectName, token, cct) {
       message);
   const labelsPromise = prpcClient.call('monorail.Projects', 'GetLabelOptions',
       message);
+  const customPermissionsPromise = prpcClient.call(
+      'monorail.Projects', 'GetCustomPermissions', message);
 
   const allPromises = [];
 
   allPromises.push(
       optionsPromise.then(jsonData => {
         TKR_setUpHotlistsStore(jsonData.hotlists);
-        TKR_setUpCustomPermissionsStore(jsonData.custom_permissions);
-
-        return jsonData;
-  }));
-
-  allPromises.push(
-      labelsPromise.then(labelsResponse => {
-        const jsonData = TKR_convertLabels(labelsResponse);
-
-        TKR_setUpLabelStore(jsonData.labels);
 
         return jsonData;
   }));
@@ -1211,6 +1203,21 @@ function TKR_fetchOptions(projectName, token, cct) {
 
         return jsonData;
   }));
+
+  allPromises.push(
+      labelsPromise.then(labelsResponse => {
+        const jsonData = TKR_convertLabels(labelsResponse);
+
+        TKR_setUpLabelStore(jsonData.labels);
+
+        return jsonData;
+  }));
+
+  // We won't need custom permissions later, so there'se no need to add it to
+  // allPromises.
+  customPermissionsPromise.then(customPermissionsResponse => {
+    TKR_setUpCustomPermissionsStore(customPermissionsResponse.permissions);
+  });
 
   Promise.all(allPromises).then(responses => {
     // Merge result objects.
