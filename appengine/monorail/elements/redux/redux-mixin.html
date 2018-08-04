@@ -61,9 +61,13 @@
         dispatch({type: actionType.FETCH_REFERENCES_START});
 
         window.__autolink.getReferencedArtifacts(comments, trace).then((refs) => {
+          commentRefs = new Map();
+          refs.forEach(({componentName, existingRefs}) => {
+            commentRefs.set(componentName, existingRefs);
+          });
           dispatch({
             type: actionType.FETCH_REFERENCES_SUCCESS,
-            commentReferences: refs,
+            commentReferences: commentRefs,
           });
         }, (error) => {
           dispatch({
@@ -141,7 +145,7 @@
       projectConfig: {},
       issue: {},
       comments: [],
-      commentReferences: [],
+      commentReferences: new Map(),
       isStarred: false,
       token: null,
 
@@ -274,8 +278,8 @@
 
         // Request for getting comments for an issue.
         case actionType.FETCH_COMMENTS_START:
-            return Object.assign({}, state, {
-            commentReferences: [],
+          return Object.assign({}, state, {
+            commentReferences: new Map(),
             fetchCommentsError: null,
             fetchingComments: true,
           });

@@ -19,7 +19,10 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
       cc: Array,
       components: Array,
       fieldDefs: Array,
-      fieldValues: Array,
+      fieldValues: {
+        type: Array,
+        value: () => [],
+      },
       status: String,
       statuses: Array,
       blockedOn: Array,

@@ -52,7 +52,7 @@
       '03-user-emails',
       {
         lookup: LookupReferencedUsers,
-        extractRefs: (match, _defaultProjectName) => { return match[0]; },
+        extractRefs: (match, _defaultProjectName) => { return [match[0]]; },
         reStrs: [IMPLIED_EMAIL_RE],
         replacer: ReplaceUserRef,
       }
@@ -61,7 +61,7 @@
       '04-urls',
       {
         lookup: null,
-        extractRefs: (match, _defaultProjectName) => { return match[0]; },
+        extractRefs: (match, _defaultProjectName) => { return [match[0]]; },
         reStrs: [SHORT_LINK_RE, NUMERIC_SHORT_LINK_RE, IMPLIED_LINK_RE, IS_LINK_RE],
         replacer: ReplaceLinkRef,
       }
@@ -93,7 +93,7 @@
           'monorail.Users', 'ListReferencedUsers', message
       );
       return listReferencedUsers.then(response => {
-        resolve({'componentName': componentName, 'existingUsers': response.users});
+        resolve({'componentName': componentName, 'existingRefs': response});
       });
     });
   }
@@ -141,12 +141,14 @@
   }
 
   function ReplaceCrbugIssueRef(match, components, defaultProjectName='chromium') {
+    components = components || {};
     const projectName = match.groups.projectName || defaultProjectName;
     const localId = match.groups.localId;
     return [ReplaceIssueRef(match[0], projectName, localId, components)];
   }
 
   function ReplaceTrackerIssueRef(match, components, defaultProjectName='chromium') {
+    components = components || {};
     const issueRefRE = PROJECT_LOCALID_RE;
     let textRuns = [];
     let refMatch;
@@ -170,6 +172,7 @@
   }
 
   function ReplaceUserRef(match, components, _defaultProjectName) {
+    components = components || {};
     let href;
     let textRun = {content: match[0], tag: 'a'};
     if (components.users && components.users.length) {
@@ -235,7 +238,9 @@
               };
             });
           });
-          fetchPromises.push(lookup(refs, trace, componentName));
+          if (refs.length) {
+            fetchPromises.push(lookup(refs, trace, componentName));
+          }
         }
       });
       resolve(Promise.all(fetchPromises));
@@ -246,7 +251,7 @@
     const chunks = plainString.trim().split(/(<b>[^<\n]+<\/b>)|(\r?\n)/);
     let textRuns = [];
     chunks.filter(Boolean).forEach(chunk => {
-      if (chunk.match(/\r/) || chunk.match(/\n/)) {
+      if (chunk.match(/^\r$/) || chunk.match(/^\n$/)) {
         textRuns.push({tag: 'br'});
       } else if (chunk.startsWith('<b>') && chunk.endsWith('</b>')) {
         textRuns.push({content: chunk.slice(3, -4), tag: 'b'});
@@ -258,16 +263,10 @@
   }
 
   function autolinkChunk(chunk, componentRefs) {
-    // TODO(jojwang): monorail:4033, make componentRefs a Map() in
-    // redux-mixin and remove the next 5 lines.
     let textRuns = [{content: chunk}];
-    const componentRefsMap = new Map();
-    componentRefs.forEach(({componentName, existingRefs}) => {
-      componentRefsMap.set(componentName, existingRefs);
-    });
     Components.forEach(({lookup, extractRefs, reStrs, replacer}, componentName) => {
       reStrs.forEach(re => {
-        textRuns = applyLinks(textRuns, replacer, re, componentRefsMap.get(componentName));
+        textRuns = applyLinks(textRuns, replacer, re, componentRefs.get(componentName));
       });
     });
     return textRuns;

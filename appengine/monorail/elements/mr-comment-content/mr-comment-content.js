@@ -6,7 +6,7 @@
  * Displays text for a comment.
  *
  */
-class MrCommentContent extends Polymer.Element {
+class MrCommentContent extends ReduxMixin(Polymer.Element) {
   static get is() {
     return 'mr-comment-content';
   }
@@ -14,6 +14,10 @@ class MrCommentContent extends Polymer.Element {
   static get properties() {
     return {
       content: String,
+      commentReferences: {
+	type: Object,
+	statePath: 'commentReferences',
+      },
       // NOTE: This is not secure. It's just to temporarily remove extra HTML
       // that would show as plaintext.
       _contentWithoutHtml: {
@@ -29,7 +33,7 @@ class MrCommentContent extends Polymer.Element {
 
   static get observers() {
     return [
-      '_computeTextRuns(content)',
+      '_computeTextRuns(content, commentReferences)',
     ]
   }
 
@@ -47,25 +51,14 @@ class MrCommentContent extends Polymer.Element {
     return tag == str;
   }
 
-  _computeTextRuns(content) {
-    // TODO(jojwang): monorail:4033, add autolinking for issues, users, links, etc.
-    const chunks = content.trim().split(/(<b>[^<\n]+<\/b>)|(\r?\n)/);
-    let textRuns = [];
-    chunks.forEach(chunk => {
-      if (chunk) {
-        let textRun = {};
-        if (chunk.match(/\r/) || chunk.match(/\n/)) {
-          textRun.tag = 'br';
-        } else if (chunk.startsWith('<b>') && chunk.endsWith('</b>')) {
-          textRun.content = chunk.slice(3,-4);
-          textRun.tag = 'b';
-        } else {
-          textRun.content = chunk;
-        }
-        textRuns.push(textRun);
-      }
-    });
-    this.set('_textRuns', textRuns);
+  _computeTextRuns(content, commentReferences) {
+    this.set('_textRuns', []);
+    if (content) {
+      Polymer.RenderStatus.afterNextRender(this, function() {
+        const autolinkedTextRuns = window.__autolink.markupAutolinks(content, commentReferences);
+        this.set('_textRuns', autolinkedTextRuns);
+      });
+    }
   }
 }
 customElements.define(MrCommentContent.is, MrCommentContent);

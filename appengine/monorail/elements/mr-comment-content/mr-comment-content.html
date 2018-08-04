@@ -11,6 +11,7 @@
     <template is="dom-repeat" items="[[_textRuns]]" as="run">
       <b hidden$="[[!_isTagEqual(run.tag, 'b')]]">[[run.content]]</b>
       <br hidden$="[[!_isTagEqual(run.tag, 'br')]]"/>
+      <a hidden$="[[!_isTagEqual(run.tag, 'a')]]" href$="[[run.href]]">[[run.content]]</a>
       <span hidden$="[[run.tag]]">[[run.content]]</span>
     </template>
   </template>

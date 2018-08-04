@@ -220,20 +220,16 @@
   });
 
   suite('markupAutolinks tests', function() {
-      const componentRefs = [
-          {
-              componentName: '01-tracker-crbug',
-              existingRefs: {openRefs: [], closedRefs: [{projectName: 'chromium', localId: 99}]},
-          },
-          {
-              componentName: '02-tracker-regular',
-              existingRefs: {openRefs: [{projectName: 'monorail', localId: 123}], closedRefs: [{projectName: 'chromium', localId: 456}]},
-          },
-          {
-              componentName: '03-user-emails',
-              existingRefs: {users: [{email: 'user2@example.com'}]},
-          },
-      ];
+      const componentRefs = new Map();
+      componentRefs.set('01-tracker-crbug', {
+          openRefs: [],
+          closedRefs: [{projectName: 'chromium', localId: 99}]
+      });
+      componentRefs.set('02-tracker-regular', {
+          openRefs: [{projectName: 'monorail', localId: 123}],
+          closedRefs: [{projectName: 'chromium', localId: 456}]
+      });
+      componentRefs.set('03-user-emails', {users: [{email: 'user2@example.com'}]});
 
       test('empty string does not cause error', function() {
           const actualTextRuns = markupAutolinks('', componentRefs);
