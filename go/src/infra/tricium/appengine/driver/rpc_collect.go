@@ -64,7 +64,7 @@ func collect(c context.Context, req *admin.CollectRequest,
 	switch wi := w.Impl.(type) {
 	case *admin.Worker_Recipe:
 		result, err = bb.Collect(c, &common.CollectParameters{
-			Server:  wf.BuildbucketServer,
+			Server:  wf.BuildbucketServerHost,
 			BuildID: req.BuildId,
 		})
 		if err != nil {

@@ -52,12 +52,12 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 	if err := ds.RunInTransaction(c, func(c context.Context) (err error) {
 		// Store the root of the workflow.
 		workflowRun := &track.WorkflowRun{
-			ID:                1,
-			Parent:            requestKey,
-			IsolateServerURL:  wf.IsolateServer,
-			SwarmingServerURL: wf.SwarmingServer,
-			BuildbucketServer: wf.BuildbucketServer,
-			Functions:         functions,
+			ID:                    1,
+			Parent:                requestKey,
+			IsolateServerURL:      wf.IsolateServer,
+			SwarmingServerURL:     wf.SwarmingServer,
+			BuildbucketServerHost: wf.BuildbucketServerHost,
+			Functions:             functions,
 		}
 		if err := ds.Put(c, workflowRun); err != nil {
 			return errors.Reason("failed to store WorkflowRun entity (run ID: %d): %v", req.RunId, err).Err()

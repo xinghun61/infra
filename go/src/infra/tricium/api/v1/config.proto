@@ -48,8 +48,8 @@ message ServiceConfig {
 
   // Buildbucket server to use for this service instance.
   //
-  // This should be a hostname.
-  string buildbucket_server = 9;
+  // This should be a hostname, no schema or trailing slash.
+  string buildbucket_server_host = 9;
 }
 
 // Tricium project configuration.

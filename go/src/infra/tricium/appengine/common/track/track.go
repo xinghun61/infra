@@ -111,7 +111,8 @@ type WorkflowRun struct {
 	IsolateServerURL string `gae:",noindex"`
 	// Swarming server URL.
 	SwarmingServerURL string `gae:",noindex"`
-	BuildbucketServer string `gae:",noindex"`
+	// Buildbucket server hostname.
+	BuildbucketServerHost string `gae:",noindex"`
 }
 
 // WorkflowRunResult tracks the state of a workflow run.

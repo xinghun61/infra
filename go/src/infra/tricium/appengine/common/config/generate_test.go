@@ -24,9 +24,9 @@ const (
 
 var (
 	sc = &tricium.ServiceConfig{
-		SwarmingServer:    "chromium-swarm-dev",
-		BuildbucketServer: "cr-buildbucket-dev",
-		IsolateServer:     "isolatedserver-dev",
+		BuildbucketServerHost: "cr-buildbucket-dev.appspot.com",
+		IsolateServer:         "https://isolatedserver-dev.appspot.com",
+		SwarmingServer:        "https://chromium-swarm-dev.appspot.com",
 		Platforms: []*tricium.Platform_Details{
 			{
 				Name:       platform,

@@ -41,7 +41,7 @@ func (s buildbucketServer) Trigger(c context.Context, params *TriggerParameters)
 		return nil, errors.Annotate(err, "failed to create buildbucket client").Err()
 	}
 
-	buildbucketService.BasePath = fmt.Sprintf("%s%s", params.Server, buildbucketBasePath)
+	buildbucketService.BasePath = fmt.Sprintf("https://%s%s", params.Server, buildbucketBasePath)
 
 	// Prepare recipe details.
 	recipe, ok := params.Worker.Impl.(*admin.Worker_Recipe)
@@ -49,12 +49,12 @@ func (s buildbucketServer) Trigger(c context.Context, params *TriggerParameters)
 		return nil, errors.Annotate(err, "buildbucket client function must be a recipe").Err()
 	}
 
-	parameters_json, err := swarmingParametersJSON(params.Server, params.Worker, recipe)
+	parametersJSON, err := swarmingParametersJSON(params.Server, params.Worker, recipe)
 	if err != nil {
 		return nil, err
 	}
 
-	req := makeRequest(topic(c), params.PubsubUserdata, parameters_json, params.Tags)
+	req := makeRequest(topic(c), params.PubsubUserdata, parametersJSON, params.Tags)
 	res, err := buildbucketService.Put(req).Context(c).Do()
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to trigger buildbucket build").Err()
@@ -112,21 +112,21 @@ func swarmingParametersJSON(serverURL string, worker *admin.Worker, recipe *admi
 			},
 		},
 	}
-	parameters_json, err := json.Marshal(parameters)
+	parametersJSON, err := json.Marshal(parameters)
 	if err != nil {
 		return "", errors.Annotate(err, "could not marshal recipe into JSON").Err()
 	}
 
-	return string(parameters_json), err
+	return string(parametersJSON), err
 }
 
-func makeRequest(pubsubTopic, pubsubUserdata, parameters_json string, tags []string) *bbapi.ApiPutRequestMessage {
+func makeRequest(pubsubTopic, pubsubUserdata, parametersJSON string, tags []string) *bbapi.ApiPutRequestMessage {
 	return &bbapi.ApiPutRequestMessage{
 		PubsubCallback: &bbapi.ApiPubSubCallbackMessage{
 			Topic:    pubsubTopic,
 			UserData: pubsubUserdata,
 		},
 		Tags:           tags,
-		ParametersJson: parameters_json,
+		ParametersJson: parametersJSON,
 	}
 }

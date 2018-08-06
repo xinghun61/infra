@@ -52,12 +52,12 @@ func Generate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig, files []*tri
 	}
 
 	return &admin.Workflow{
-		ServiceAccount:    pc.SwarmingServiceAccount,
-		Workers:           workers,
-		SwarmingServer:    sc.SwarmingServer,
-		BuildbucketServer: sc.BuildbucketServer,
-		IsolateServer:     sc.IsolateServer,
-		Functions:         vpc.Functions,
+		ServiceAccount:        pc.SwarmingServiceAccount,
+		Workers:               workers,
+		SwarmingServer:        sc.SwarmingServer,
+		BuildbucketServerHost: sc.BuildbucketServerHost,
+		IsolateServer:         sc.IsolateServer,
+		Functions:             vpc.Functions,
 	}, nil
 }
 

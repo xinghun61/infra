@@ -71,7 +71,7 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCac
 	case *admin.Worker_Recipe:
 		// Trigger worker.
 		result, err = bb.Trigger(c, &common.TriggerParameters{
-			Server:           workflow.BuildbucketServer,
+			Server:           workflow.BuildbucketServerHost,
 			IsolateServerURL: workflow.IsolateServer,
 			Worker:           worker,
 			PubsubUserdata:   userdata,
