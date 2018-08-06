@@ -21,8 +21,7 @@ func Validate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig) (*tricium.Pr
 		return nil, errors.Reason("missing isolate server URL in service config").Err()
 	}
 	if sc.BuildbucketServerHost == "" {
-		// TODO(qyearsley): Update this after service configs are updated.
-		sc.BuildbucketServerHost = "cr-buildbucket.appspot.com"
+		return nil, errors.Reason("missing buildbucket server host in service config").Err()
 	}
 	if pc.SwarmingServiceAccount == "" {
 		return nil, errors.Reason("missing swarming service account for project: %+v", pc).Err()
