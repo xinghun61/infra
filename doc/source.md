@@ -66,10 +66,11 @@ See [Contributing](contributing.md).
 
 ## Troubleshooting
 
-If you're a Googler and get authentication errors when running
-`fetch infra_internal` you may need to add authentication for the internal repos
-to your .gitcookies file. Visit chrome-internal.googlesource.com/new-password,
-choose to authenticate only chromium.googlesource.com, and follow the provided directions.
+If you're a Googler and get authentication errors when running `fetch
+infra_internal` you may need to add authentication for the internal repos to
+your .gitcookies file. Visit chrome-internal.googlesource.com/new-password,
+choose to authenticate only chrome-internal.googlesource.com, and follow the
+provided directions.
 
 If you're not running a supported distribution, `fetch infra` will
 probably fail complaining that it cannot find some packages on Cloud
