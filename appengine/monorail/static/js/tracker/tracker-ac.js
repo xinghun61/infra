@@ -1136,6 +1136,39 @@ function TKR_convertLabels(labelsResponse) {
 
 
 /**
+ * Convert the Config object resulting of a monorail.Features ListHotlistsByUser
+ * call to the format expected by TKR_fetchOptions.
+ * @param {object} config A pRPC ListHotlistsByUserResponse with the results of
+ * the call.
+ */
+function TKR_convertHotlists(hotlistsResponse) {
+  if (hotlistsResponse.hotlists === undefined) {
+    return [];
+  }
+
+  let seen = new Set();
+  let ambiguousNames = new Set();
+
+  hotlistsResponse.hotlists.forEach(hotlist => {
+    if (seen.has(hotlist.name)) {
+      ambiguousNames.add(hotlist.name);
+    }
+    seen.add(hotlist.name);
+  });
+
+  const hotlists = hotlistsResponse.hotlists.map(hotlist => {
+    let ref_str = hotlist.name;
+    if (ambiguousNames.has(hotlist.name)) {
+      ref_str = hotlist.owner_ref.display_name + ':' + ref_str;
+    }
+    return {ref_str: ref_str, summary: hotlist.summary};
+  });
+
+  return hotlists;
+}
+
+
+/**
  * Contact the server to fetch the set of autocomplete options for the
  * current project.  This is done with XMLHTTPRequest because the list
  * could be long, and most of the time, the user will only view an
@@ -1146,7 +1179,6 @@ function TKR_convertLabels(labelsResponse) {
  */
 function TKR_fetchOptions(projectName, token, cct) {
   const projectPart = projectName ? '/p/' + projectName : '/hosting';
-  const optionsURL = `${projectPart}/feeds/issueOptions?token=${token}&cct=${cct}`;
   const membersURL = `${projectPart}/feeds/issueOptionsMembers?token=${token}&cct=${cct}`;
   const prpcClient = new window.chops.rpc.PrpcClient({
     insecure: Boolean(location.hostname === 'localhost'),
@@ -1156,30 +1188,33 @@ function TKR_fetchOptions(projectName, token, cct) {
     },
   });
 
-  const message = {
+  const projectRequestMessage = {
     trace: {
       token: window.CS_env.token,
     },
     project_name: projectName,
   };
 
-  const optionsPromise = CS_fetch(optionsURL);
+  const userRequestMessage = {
+    trace: {
+      token: window.CS_env.token,
+    },
+    user: {
+      display_name: window.CS_env.loggedInUserEmail,
+    },
+  };
+
   const membersPromise = CS_fetch(membersURL);
   const configPromise = prpcClient.call('monorail.Projects', 'GetConfig',
-      message);
+      projectRequestMessage);
   const labelsPromise = prpcClient.call('monorail.Projects', 'GetLabelOptions',
-      message);
+      projectRequestMessage);
   const customPermissionsPromise = prpcClient.call(
-      'monorail.Projects', 'GetCustomPermissions', message);
+      'monorail.Projects', 'GetCustomPermissions', projectRequestMessage);
+  const hotlistsPromise = prpcClient.call('monorail.Features',
+      'ListHotlistsByUser', userRequestMessage);
 
   const allPromises = [];
-
-  allPromises.push(
-      optionsPromise.then(jsonData => {
-        TKR_setUpHotlistsStore(jsonData.hotlists);
-
-        return jsonData;
-  }));
 
   allPromises.push(
       membersPromise.then(membersResponse => {
@@ -1213,10 +1248,14 @@ function TKR_fetchOptions(projectName, token, cct) {
         return jsonData;
   }));
 
-  // We won't need custom permissions later, so there'se no need to add it to
-  // allPromises.
+  // We won't need custom permissions or hotlists later, so there'se no need to
+  // add them to allPromises.
   customPermissionsPromise.then(customPermissionsResponse => {
     TKR_setUpCustomPermissionsStore(customPermissionsResponse.permissions);
+  });
+
+  hotlistsPromise.then(hotlistsResponse => {
+    TKR_setUpHotlistsStore(TKR_convertHotlists(hotlistsResponse));
   });
 
   Promise.all(allPromises).then(responses => {
