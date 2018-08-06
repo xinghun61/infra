@@ -36,6 +36,9 @@ GCLIENT_ROOT = os.path.dirname(ROOT)
 # Where to upload packages to by default.
 PACKAGE_REPO_SERVICE = 'https://chrome-infra-packages.appspot.com'
 
+# Hash algorithm to use for calculating instance IDs.
+HASH_ALGO = 'sha256'
+
 # True if running on Windows.
 IS_WINDOWS = sys.platform == 'win32'
 
@@ -835,6 +838,7 @@ def build_pkg(cipd_exe, pkg_def, out_file, package_vars):
     for k, v in sorted(package_vars.items()):
       args.extend(['-pkg-var', '%s:%s' % (k, v)])
     args.extend(['-out', out_file])
+    args.extend(['-hash-algo', HASH_ALGO])
     exit_code, json_output = run_cipd(cipd_exe, 'pkg-build', args)
     if exit_code:
       print
@@ -875,6 +879,7 @@ def upload_pkg(cipd_exe, pkg_file, service_url, tags, service_account):
   if service_account:
     args.extend(['-service-account-json', service_account])
   args.append(pkg_file)
+  args.extend(['-hash-algo', HASH_ALGO])
   exit_code, json_output = run_cipd(cipd_exe, 'pkg-register', args)
   if exit_code:
     print

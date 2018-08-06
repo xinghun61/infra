@@ -778,6 +778,7 @@ def bundle(workspace, out_file=None):
       cmd = ['pkg-build', '-pkg-def', tmp, '-out', out_file]
     else:
       cmd = ['create', '-pkg-def', tmp, '-tag', ver, '-ref', 'latest']
+    cmd.extend(['-hash-algo', 'sha256'])
     if cipd(workspace, cmd):
       print 'FAILED! See logs.'
       return 1
