@@ -118,40 +118,24 @@ _MOCK_ACTION_SETTINGS = {
 }
 
 _MOCK_CHECK_FLAKE_SETTINGS = {
-    'swarming_rerun': {
-        'lower_flake_threshold': 0.02,
-        'upper_flake_threshold': 0.98,
-        'max_flake_in_a_row': 4,
-        'max_stable_in_a_row': 4,
-        'iterations_to_rerun': 100,
-        'max_build_numbers_to_look_back': 1000,
-        'max_dive_in_a_row': 4,
-        'dive_rate_threshold': 0.4,
-        'use_nearby_neighbor': True,
-        'max_iterations_to_rerun': 800,
-        'per_iteration_timeout_seconds': 60,
-        'timeout_per_test_seconds': 120,
-        'timeout_per_swarming_task_seconds': 3600,
-        'swarming_task_cushion': 2.0,
-        'swarming_task_retries_per_build': 2,
-        'iterations_to_run_after_timeout': 10,
-        'max_iterations_per_task': 200,
-    },
-    'try_job_rerun': {
-        'lower_flake_threshold': 0.02,
-        'upper_flake_threshold': 0.98,
-        'max_flake_in_a_row': 0,
-        'max_stable_in_a_row': 0,
-        'iterations_to_rerun': 100,
-    },
     'autorevert_enabled': True,
     'create_monorail_bug': True,
-    'new_flake_bugs_per_day': 2,
-    'update_monorail_bug': True,
-    'minimum_confidence_score_to_run_tryjobs': 0.6,
+    'iterations_to_run_after_timeout': 10,
+    'lower_flake_threshold': 1e-7,
+    'upper_flake_threshold': 0.9999999,
+    'max_commit_positions_to_look_back': 5000,
+    'max_iterations_per_task': 200,
+    'max_iterations_to_rerun': 400,
+    'minimum_confidence_to_create_bug': .9,
     'minimum_confidence_to_update_cr': 0.5,
+    'new_flake_bugs_per_day': 2,
+    'per_iteration_timeout_seconds': 60,
+    'swarming_task_cushion': 2.0,
+    'swarming_task_retries_per_build': 2,
     'throttle_flake_analyses': True,
-    'minimum_confidence_to_create_bug': .9
+    'timeout_per_test_seconds': 120,
+    'timeout_per_swarming_task_seconds': 3600,
+    'update_monorail_bug': True,
 }
 
 _MOCK_CODE_REVIEW_SETTINGS = {
@@ -674,9 +658,10 @@ class ConfigTest(testing.AppengineTestCase):
 
   def testFormatTimestamp(self):
     self.assertIsNone(config._FormatTimestamp(None))
-    self.assertEqual('2016-02-25 01:02:03',
-                     config._FormatTimestamp(
-                         datetime.datetime(2016, 2, 25, 1, 2, 3, 123456)))
+    self.assertEqual(
+        '2016-02-25 01:02:03',
+        config._FormatTimestamp(
+            datetime.datetime(2016, 2, 25, 1, 2, 3, 123456)))
 
   @mock.patch('gae_libs.token.ValidateAuthToken')
   def testPostConfigurationSettings(self, mocked_ValidateAuthToken):

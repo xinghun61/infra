@@ -279,9 +279,8 @@ def _ValidateConfig(name, d, spec):
       errors.append(err)
     # Validate type.
     elif key in d and not isinstance(d[key], required_type):
-      err = 'Expected key %s, value %r to be %s in config % s' % (key, d[key],
-                                                                  required_type,
-                                                                  name)
+      err = 'Expected key %s, value %r to be %s in config % s' % (
+          key, d[key], required_type, name)
       logging.error(err)
       errors.append(err)
     # Custom validator is a spec.
@@ -327,38 +326,22 @@ _CONFIG_SPEC = {  # yapf: disable
     'check_flake_settings': (dict, True, {
         'autorevert_enabled': bool,
         'create_monorail_bug': bool,
-        'minimum_confidence_score_to_run_tryjobs': float,
+        'iterations_to_run_after_timeout': int,
+        'lower_flake_threshold': float,
+        'max_commit_positions_to_look_back': int,
+        'max_iterations_per_task': int,
+        'max_iterations_to_rerun': int,
         'minimum_confidence_to_create_bug': float,
         'minimum_confidence_to_update_cr': float,
         'new_flake_bugs_per_day': int,
-        'swarming_rerun': (dict, True, {
-            'dive_rate_threshold': float,
-            'iterations_to_rerun': int,
-            'iterations_to_run_after_timeout': int,
-            'lower_flake_threshold': float,
-            'max_build_numbers_to_look_back': int,
-            'max_dive_in_a_row': int,
-            'max_flake_in_a_row': int,
-            'max_iterations_per_task': int,
-            'max_iterations_to_rerun': int,
-            'max_stable_in_a_row': int,
-            'per_iteration_timeout_seconds': int,
-            'swarming_task_cushion': float,
-            'swarming_task_retries_per_build': int,
-            'timeout_per_swarming_task_seconds': int,
-            'timeout_per_test_seconds': int,
-            'upper_flake_threshold': float,
-            'use_nearby_neighbor': bool,
-        }),
+        'per_iteration_timeout_seconds': int,
+        'swarming_task_cushion': float,
+        'swarming_task_retries_per_build': int,
         'throttle_flake_analyses': bool,
-        'try_job_rerun': (dict, True, {
-            'iterations_to_rerun': int,
-            'lower_flake_threshold': float,
-            'max_flake_in_a_row': int,
-            'max_stable_in_a_row': int,
-            'upper_flake_threshold': float,
-        }),
+        'timeout_per_swarming_task_seconds': int,
+        'timeout_per_test_seconds': int,
         'update_monorail_bug': bool,
+        'upper_flake_threshold': float,
     }),
     'code_review_settings': (dict, True, {
         'commit_bot_emails': list,
