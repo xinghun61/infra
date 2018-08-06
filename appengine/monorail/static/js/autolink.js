@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// TODO(jojwang): monorail:4033, rename reStrs -> regexs/refRes/etc.
 (function(window) {
   'use strict';
   const CRBUG_LINK_RE = /(?<prefix>\b(https?:\/\/)?crbug\.com\/)((?<projectName>\b[-a-z0-9]+)(?<separator>\/))?(?<localId>\d+)\b(?<anchor>\#c[0-9]+)?/gi;
@@ -31,8 +30,8 @@
       {
         lookup: LookupReferencedIssues,
         extractRefs: ExtractCrbugProjectAndIssueIds,
-        reStrs: [CRBUG_LINK_RE],
-	replacer: ReplaceCrbugIssueRef,
+        refRegs: [CRBUG_LINK_RE],
+        replacer: ReplaceCrbugIssueRef,
 
       }
   );
@@ -41,19 +40,16 @@
       {
         lookup: LookupReferencedIssues,
         extractRefs: ExtractTrackerProjectAndIssueIds,
-        reStrs: [ISSUE_TRACKER_RE],
+        refRegs: [ISSUE_TRACKER_RE],
         replacer: ReplaceTrackerIssueRef,
       }
   );
-  // TODO(jojwang):monorail:4033, in getReferencedArtifacts and markupAutolinks loops,
-  // consider skipping processing steps for components that do not have
-  // useful/valid lookup and extractRefs functions (if skipping makes code more readable).
   Components.set(
       '03-user-emails',
       {
         lookup: LookupReferencedUsers,
         extractRefs: (match, _defaultProjectName) => { return [match[0]]; },
-        reStrs: [IMPLIED_EMAIL_RE],
+        refRegs: [IMPLIED_EMAIL_RE],
         replacer: ReplaceUserRef,
       }
   );
@@ -62,7 +58,7 @@
       {
         lookup: null,
         extractRefs: (match, _defaultProjectName) => { return [match[0]]; },
-        reStrs: [SHORT_LINK_RE, NUMERIC_SHORT_LINK_RE, IMPLIED_LINK_RE, IS_LINK_RE],
+        refRegs: [SHORT_LINK_RE, NUMERIC_SHORT_LINK_RE, IMPLIED_LINK_RE, IS_LINK_RE],
         replacer: ReplaceLinkRef,
       }
   );
@@ -227,10 +223,10 @@
     return new Promise((resolve, reject) => {
       let artifactsByComponents = new Map();
       let fetchPromises = [];
-      Components.forEach(({lookup, extractRefs, reStrs, replacer}, componentName) => {
+      Components.forEach(({lookup, extractRefs, refRegs, replacer}, componentName) => {
         if (lookup !== null) {
           let refs = [];
-          reStrs.forEach(re => {
+          refRegs.forEach(re => {
             let match;
             comments.forEach(comment => {
               while((match = re.exec(comment.content)) !== null) {
@@ -264,8 +260,8 @@
 
   function autolinkChunk(chunk, componentRefs) {
     let textRuns = [{content: chunk}];
-    Components.forEach(({lookup, extractRefs, reStrs, replacer}, componentName) => {
-      reStrs.forEach(re => {
+    Components.forEach(({lookup, extractRefs, refRegs, replacer}, componentName) => {
+      refRegs.forEach(re => {
         textRuns = applyLinks(textRuns, replacer, re, componentRefs.get(componentName));
       });
     });
