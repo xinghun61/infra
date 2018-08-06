@@ -25,7 +25,7 @@ DEFAULT_ITERATIONS_PER_TASK = 35
 DEFAULT_ITERATIONS_TO_RUN_AFTER_TIMEOUT = 10
 
 # The maximum pass rate of a data point to be considered stable and failing.
-DEFAULT_LOWER_FLAKE_THRESHOLD = 0.02
+DEFAULT_LOWER_FLAKE_THRESHOLD = 1e-7
 
 # Number of bugs for flaky tests allowed to be filed per day.
 DEFAULT_NEW_FLAKE_BUGS_PER_DAY = 2
@@ -71,7 +71,7 @@ DEFAULT_TIMEOUT_PER_SWARMING_TASK_SECONDS = 60 * 60
 DEFAULT_TIMEOUT_PER_TEST_SECONDS = 120
 
 # The minimum pass rate of a data point to be considered stable and passing.
-DEFAULT_UPPER_FLAKE_THRESHOLD = 0.98
+DEFAULT_UPPER_FLAKE_THRESHOLD = 0.9999999
 
 # Epsilon for floating point comparison.
 EPSILON = 0.001

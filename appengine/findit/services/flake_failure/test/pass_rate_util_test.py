@@ -56,14 +56,14 @@ class PassRateUtilTest(WaterfallTestCase):
   def testHasSSufficientInformationNoPassRate(self):
     self.assertFalse(pass_rate_util.HasSufficientInformation(None, 0, 0, 0))
 
-  def testHasSSufficientInformationEarlyFlakyInsufficientIterations(self):
-    self.assertFalse(pass_rate_util.HasSufficientInformation(0.5, 2, 0.5, 2))
-
   def testHasSSufficientInformationEarlyFlaky(self):
     self.assertTrue(pass_rate_util.HasSufficientInformation(0.5, 20, 0.5, 20))
 
   def testHasSufficientInformationFlaky(self):
     self.assertTrue(pass_rate_util.HasSufficientInformation(0.5, 100, 0.5, 30))
+
+  def testHasSufficientInformationStable(self):
+    self.assertTrue(pass_rate_util.HasSufficientInformation(1.0, 400, 1.0, 30))
 
   def testHasSufficientInformationEarlyStable(self):
     self.assertFalse(pass_rate_util.HasSufficientInformation(0.0, 3, 0.0, 3))
@@ -94,9 +94,11 @@ class PassRateUtilTest(WaterfallTestCase):
   def testIsStableDefaultTresholds(self):
     self.assertTrue(pass_rate_util.IsStableDefaultThresholds(-1))
     self.assertTrue(pass_rate_util.IsStableDefaultThresholds(0.0))
-    self.assertTrue(pass_rate_util.IsStableDefaultThresholds(0.02))
-    self.assertTrue(pass_rate_util.IsStableDefaultThresholds(0.98))
+    self.assertTrue(pass_rate_util.IsStableDefaultThresholds(1e-8))
     self.assertTrue(pass_rate_util.IsStableDefaultThresholds(1.0))
+    self.assertTrue(pass_rate_util.IsStableDefaultThresholds(1.0 - 1e-8))
+    self.assertFalse(pass_rate_util.IsStableDefaultThresholds(0.02))
+    self.assertFalse(pass_rate_util.IsStableDefaultThresholds(0.98))
     self.assertFalse(pass_rate_util.IsStableDefaultThresholds(0.5))
 
   def testMinimumIterationsReached(self):

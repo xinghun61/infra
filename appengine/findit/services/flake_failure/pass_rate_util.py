@@ -113,11 +113,7 @@ def HasSufficientInformation(overall_pass_rate, total_iterations,
         proceed.
   """
   flake_settings = waterfall_config.GetCheckFlakeSettings()
-  lower_flake_threshold = flake_settings.get(
-      'lower_flake_threshold', flake_constants.DEFAULT_LOWER_FLAKE_THRESHOLD)
-  upper_flake_threshold = flake_settings.get(
-      'upper_flake_threshold', flake_constants.DEFAULT_UPPER_FLAKE_THRESHOLD)
-  minimum_iterations = waterfall_config.GetCheckFlakeSettings().get(
+  minimum_iterations = flake_settings.get(
       'minimum_iterations_required_for_confergence',
       flake_constants.MINIMUM_ITERATIONS_REQUIRED_FOR_CONVERGENCE)
 
@@ -126,8 +122,7 @@ def HasSufficientInformation(overall_pass_rate, total_iterations,
 
   if MinimumIterationsReached(total_iterations):
     # The test is already flaky beyond reasonable doubt.
-    if not IsStable(overall_pass_rate, lower_flake_threshold,
-                    upper_flake_threshold):
+    if not IsStableDefaultThresholds(overall_pass_rate):
       return True
 
     # The test is stable thus far. Check for convergence.
@@ -137,17 +132,22 @@ def HasSufficientInformation(overall_pass_rate, total_iterations,
   # For cases with few iterations, check if the test is flaky or stable by
   # checking its theoretical pass rate padded up to the minimum required
   # iterations with both passes and fails. Only if it is flaky with both
-  # theoretical values can it safely be deemed flaky.
+  # theoretical values can it safely be deemed flaky. For example, if exactly
+  # 2 iterations have been run, with 1 passing and 1 failing, then the pass rate
+  # is 50%. However because there are only 2 iterations, calling this flaky
+  # immediately may be too low of a sample. Assume 100 iterations are needed for
+  # confidence, then attempt to pad 99 failures to give a theoretical minimum
+  # pass rate of 1% (which is flaky), and 99 passes to give a maximum pass rate
+  # of 100% (which is stable). Because there is a discrepancy, the original 1
+  # pass in 2 iterations is considered insufficient information.
   overall_pass_count = float(overall_pass_rate * total_iterations)
   theoretical_minimum_pass_rate = overall_pass_count / minimum_iterations
-  theoretical_maximum_pass_rate = ((
-      overall_pass_count + minimum_iterations - total_iterations) /
-                                   minimum_iterations)
+  theoretical_maximum_pass_rate = (
+      (overall_pass_count + minimum_iterations - total_iterations) /
+      minimum_iterations)
 
-  return (not IsStable(theoretical_minimum_pass_rate, lower_flake_threshold,
-                       upper_flake_threshold) and
-          not IsStable(theoretical_maximum_pass_rate, lower_flake_threshold,
-                       upper_flake_threshold))
+  return (not IsStableDefaultThresholds(theoretical_minimum_pass_rate) and
+          not IsStableDefaultThresholds(theoretical_maximum_pass_rate))
 
 
 def IsFullyStable(pass_rate):
