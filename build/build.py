@@ -878,8 +878,8 @@ def upload_pkg(cipd_exe, pkg_file, service_url, tags, service_account):
   args.extend(['-ref', 'latest'])
   if service_account:
     args.extend(['-service-account-json', service_account])
-  args.append(pkg_file)
   args.extend(['-hash-algo', HASH_ALGO])
+  args.append(pkg_file)
   exit_code, json_output = run_cipd(cipd_exe, 'pkg-register', args)
   if exit_code:
     print
