@@ -7,9 +7,8 @@ default module
 
 How to:
 
- to generate trace-viewer contents
-  $ cd default; go generate
- it will use ../third_party/catapult/tracing/bin/trace2html
+ to re-generate trace-viewer contents
+  $ cd default; <CHROMIUM_SRC>/third_party/catapult/tracing/bin/trace2html tmpl/dummy.json --output=tmpl/trace-viewer.html
 
  to compile
    $ cd default; ../goenv.sh goapp build

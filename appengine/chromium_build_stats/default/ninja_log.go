@@ -150,8 +150,6 @@ ninja end: {{ .EndTime }} <br />
 	traceViewerTmpl = traceviewer.Must(traceviewer.Parse("tmpl/trace-viewer.html"))
 )
 
-//go:generate ../../third_party/catapult/tracing/bin/trace2html tmpl/dummy.json --output=tmpl/trace-viewer.html
-
 func init() {
 	http.Handle("/ninja_log/", http.StripPrefix("/ninja_log/", http.HandlerFunc(ninjaLogHandler)))
 }
