@@ -46,7 +46,7 @@ class MrInlineEditor extends Polymer.Element {
   }
 
   save() {
-    if (this.onSave) {
+    if (this.onSave && this._newContent) {
       this.onSave(this._newContent);
     }
     this.cancel();
