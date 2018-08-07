@@ -1,4 +1,6 @@
 package: infra/tricium/function/spellchecker
 install_mode: copy
 data:
+  - file: comment_formats.json
+  - file: dictionary.txt
   - file: spellchecker

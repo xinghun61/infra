@@ -1,6 +1,6 @@
 # Spellchecker
 
-Tricium analyzer to check spelling.
+Tricium analyzer to check spelling on comments and text files.
 
 Consumes Tricium FILES and produces Tricium RESULTS comments.
 

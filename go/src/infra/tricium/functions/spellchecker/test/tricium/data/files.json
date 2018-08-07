@@ -1,5 +1,6 @@
 {
 	"files": [
-		{ "path": "example.c", "is_binary": false }
+		{ "path": "example.c", "is_binary": false },
+		{ "path": "example.txt", "is_binary": false }
 	]
 }

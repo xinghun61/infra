@@ -13,6 +13,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"infra/tricium/api/v1"
@@ -29,9 +30,22 @@ const (
 	dictPath         = "dictionary.txt"
 )
 
-// TODO(diegomtzg): Do we want to keep a whitelist of words or just remove them from the dictionary?
-var whitelistWords = []string{"gae"}
-var textFileExts = []string{".txt", ".md"}
+type state int
+
+const (
+	lineComment state = iota
+	blockComment
+	noComment
+)
+
+var (
+	whitelistWords = []string{"gae"}
+	textFileExts   = []string{".txt", ".md"}
+	dict           map[string][]string
+
+	// Define what counts as non-word characters.
+	nonWord = regexp.MustCompile("[^a-zA-Z0-9'-]")
+)
 
 func main() {
 	inputDir := flag.String("input", "", "Path to root of Tricium input")
@@ -48,7 +62,6 @@ func main() {
 	}
 	log.Printf("Read FILES data: %#v", input)
 
-	dict := buildDict(dictPath)
 	results := &tricium.Data_Results{}
 
 	for _, file := range input.Files {
@@ -58,7 +71,7 @@ func main() {
 			f := openFileOrDie(p)
 			defer closeFileOrDie(f)
 
-			analyzeFile(bufio.NewScanner(f), p, dict, results)
+			analyzeFile(bufio.NewScanner(f), p, results)
 		}
 	}
 
@@ -70,66 +83,122 @@ func main() {
 	log.Printf("Wrote RESULTS data, path: %q, value: %+v\n", path, results)
 }
 
-func analyzeFile(scanner *bufio.Scanner, filePath string, dict map[string][]string,
-	results *tricium.Data_Results) {
+// Analyzes file line by line to find misspellings within comments.
+// TODO(diegomtzg): Add support for string literals.
+func analyzeFile(scanner *bufio.Scanner, filePath string, results *tricium.Data_Results) {
 	lineno := 1
-	inTxtFile, inBlockComment, lastWordInBlock := false, false, false
+	s := noComment
 	fileExt := filepath.Ext(filePath)
 
-	// Skip files with no extension since we don't know what type of file they are.
-	if fileExt == "" {
-		return
-	}
-
-	// The analyzer should check every word if the file is a text document.
-	if inSlice(fileExt, textFileExts) {
-		inTxtFile = true
-	}
-
+	dict = buildDict()
 	commentPatterns := getLangCommentPattern(fileExt)
 
+	// The analyzer should check every word if the file is a
+	// text document or if it has no extension.
+	checkEveryWord := fileExt == "" || inSlice(fileExt, textFileExts)
+
 	for scanner.Scan() {
-		inSingleComment := false
-
 		line := scanner.Text()
-		words := strings.Fields(line)
 
-		// TODO(diegomtzg): Also check string literals, not just comments.
-		for _, word := range words {
-			// Some languages don't have single line comments (e.g. HTML), so ignore this check.
-			if len(commentPatterns.singleLine) > 0 && strings.Contains(word, commentPatterns.singleLine) {
-				inSingleComment = true
-				word = strings.SplitN(word, commentPatterns.singleLine, 2)[1]
-			} else if strings.Contains(word, commentPatterns.multilineStart) {
-				// TODO(diegomtzg): A line could have multiple block comments (currently not supported)
-				inBlockComment = true
-				word = strings.Split(word, commentPatterns.multilineStart)[1]
-			}
-			if strings.Contains(word, commentPatterns.multilineEnd) {
-				lastWordInBlock = true
-				word = strings.Split(word, commentPatterns.multilineEnd)[0]
-			}
-
-			if len(word) > 0 && (inTxtFile || inSingleComment || inBlockComment) {
-				if fixes, ok := dict[word]; ok {
-					if comment := buildMisspellingComment(word, fixes, line, lineno, filePath); comment != nil {
-						results.Comments = append(results.Comments, comment)
-					}
-				}
-			}
-
-			if lastWordInBlock {
-				inBlockComment = false
-				lastWordInBlock = false
+		// Note: Because we split the file lines by whitespace (to analyze each word), we don't
+		// handle multi-word misspellings, although they do exist in the CodeSpell dictionary.
+		for _, commentWord := range strings.Fields(line) {
+			if checkEveryWord {
+				var comments []*tricium.Data_Comment
+				analyzeWords(line, commentWord, "", lineno, filePath, &comments)
+				results.Comments = append(results.Comments, comments...)
+			} else {
+				comments := s.processCommentWord(line, commentWord, commentPatterns, lineno, filePath)
+				results.Comments = append(results.Comments, comments...)
 			}
 		}
-		// Line ends, no longer in single-line comment.
-		inSingleComment = false
+
+		// End of line, reset state if it is a single line comment.
+		if s == lineComment {
+			s = noComment
+		}
+
 		lineno++
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatalf("Failed to read file: %v, path: %s", err, filePath)
 	}
+}
+
+// Process the given commentWord and change state appropriately depending on which
+// comment characters are found in the given word. Returns the generated Tricium comments.
+func (s *state) processCommentWord(line, commentWord string, commentPatterns commentFormat,
+	lineno int, filePath string) []*tricium.Data_Comment {
+	var comments []*tricium.Data_Comment
+
+	for i := 0; i < len(commentWord); {
+		switch {
+		case *s == lineComment:
+			// Still in single-comment started in a previous word.
+			i += analyzeWords(line, string(commentWord[i:]), "",
+				lineno, filePath, &comments)
+		case *s == blockComment && i+len(commentPatterns.multilineEnd) <= len(commentWord) &&
+			string(commentWord[i:i+len(commentPatterns.multilineEnd)]) == commentPatterns.multilineEnd:
+			// Currently in block comment and found end of block comment character.
+			*s = noComment
+			i += len(commentPatterns.multilineEnd)
+		case *s == blockComment:
+			// Still in block comment started in a previous line or word.
+			i += analyzeWords(line, string(commentWord[i:]), commentPatterns.multilineEnd,
+				lineno, filePath, &comments)
+		case len(commentPatterns.singleLine) > 0 && i+len(commentPatterns.singleLine) <= len(commentWord) &&
+			string(commentWord[i:i+len(commentPatterns.singleLine)]) == commentPatterns.singleLine:
+			// Found single-line comment character.
+			*s = lineComment
+			stopIdx := analyzeWords(line, string(commentWord[i+len(commentPatterns.singleLine):]),
+				"", lineno, filePath, &comments)
+			i += len(commentPatterns.singleLine) + stopIdx
+		case i+len(commentPatterns.multilineStart) <= len(commentWord) &&
+			string(commentWord[i:i+len(commentPatterns.multilineStart)]) == commentPatterns.multilineStart:
+			// Found block comment character.
+			*s = blockComment
+			stopIdx := analyzeWords(line, string(commentWord[i+len(commentPatterns.multilineStart):]),
+				commentPatterns.multilineEnd, lineno, filePath, &comments)
+			i += len(commentPatterns.multilineStart) + stopIdx
+		default:
+			// Don't start analyzing words until a comment character is found.
+			i++
+		}
+	}
+
+	return comments
+}
+
+// Checks words in a string which could contain multiple words separated by comment characters.
+//
+// Checks words until the state changes (e.g. we exit a comment). Returns the index after the
+// word that caused the state to change so that calling function can continue from there.
+func analyzeWords(line, commentWord, stopPattern string,
+	lineno int, filePath string, comments *[]*tricium.Data_Comment) int {
+
+	// If the current word does not contain the end of state pattern or if no end of state
+	// pattern was specified, check the entire word/s for misspellings.
+	stopIdx := strings.Index(commentWord, stopPattern)
+	if stopIdx < 0 || stopPattern == "" {
+		stopIdx = len(commentWord)
+	}
+
+	// Trim to only include parts of the word in current state.
+	commentWord = string(commentWord[:stopIdx])
+
+	// A single word (delimited by whitespace) could have multiple words delimited by
+	// comment characters, so we split it by said characters and check the words individually.
+	for _, wordToCheck := range strings.Fields(nonWord.ReplaceAllString(commentWord, " ")) {
+		startChar, endChar := findWordInLine(wordToCheck, line)
+		if fixes, ok := dict[wordToCheck]; ok && !inSlice(wordToCheck, whitelistWords) {
+			if c := buildMisspellingComment(wordToCheck, fixes, startChar, endChar,
+				lineno, filePath); c != nil {
+				*comments = append(*comments, c)
+			}
+		}
+	}
+
+	return stopIdx
 }
 
 // Finds the character range of a word in a given line.
@@ -141,29 +210,9 @@ func findWordInLine(word string, line string) (int, int) {
 	return startChar, startChar + len(word)
 }
 
-func buildDict(dictPath string) map[string][]string {
-	f := openFileOrDie(dictPath)
-	defer closeFileOrDie(f)
-
-	dictMap := make(map[string][]string)
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		// Misspellings are at data[0] and fixes are at data[1].
-		data := strings.Split(line, "->")
-		fixes := strings.Split(data[1], ", ")
-		dictMap[data[0]] = fixes
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatalf("Failed to read file: %v, path: %s", err, dictPath)
-	}
-
-	return dictMap
-}
-
-func buildMisspellingComment(misspelling string, fixes []string, line string, lineno int,
-	path string) *tricium.Data_Comment {
+// Helper function to convert misspelling information into a tricium comment.
+func buildMisspellingComment(misspelling string, fixes []string, startChar int,
+	endChar int, lineno int, path string) *tricium.Data_Comment {
 	// If there is more than one fix and the last character of the last element of fixes
 	// doesn't have a comma, the word has a reason to be disabled.
 	if len(fixes) > 1 && !strings.HasSuffix(fixes[len(fixes)-1], ",") {
@@ -175,7 +224,6 @@ func buildMisspellingComment(misspelling string, fixes []string, line string, li
 	// Get rid of trailing comma in last fix.
 	fixes[len(fixes)-1] = strings.Replace(fixes[len(fixes)-1], ",", "", -1)
 	log.Printf("ADDING %q with fixes: %q\n", misspelling, fixes)
-	startChar, endChar := findWordInLine(misspelling, line)
 
 	var suggestions []*tricium.Data_Suggestion
 	for _, fix := range fixes {
@@ -207,20 +255,45 @@ func buildMisspellingComment(misspelling string, fixes []string, line string, li
 	}
 }
 
-// Gets the appropriate comment pattern for the programming lanaguage determined by the given
+// Gets the appropriate comment pattern for the programming language determined by the given
 // file extension.
-func getLangCommentPattern(fileExt string) *commentFormat {
+func getLangCommentPattern(fileExt string) commentFormat {
 	commentFmtMap := loadCommentsJSONFile()
 	cmtFormatEntry := commentFmtMap[fileExt]
-	commentPatterns := &commentFormat{
+	return commentFormat{
 		singleLine:     cmtFormatEntry["single-line"],
 		multilineStart: cmtFormatEntry["multi-line start"],
 		multilineEnd:   cmtFormatEntry["multi-line end"],
 	}
-
-	return commentPatterns
 }
 
+// Helper function to turn the codespell dictionary file into a map of
+// misspellings to slice of fixes.
+func buildDict() map[string][]string {
+	f := openFileOrDie(dictPath)
+	defer closeFileOrDie(f)
+
+	dictMap := make(map[string][]string)
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		// Lines in the CodeSpell dictionary look like:
+		// "{misspelling}->{fix1, fix2, ...} with the last one
+		// being an optional reason to disable the word.
+		data := strings.Split(line, "->")
+		fixes := strings.Split(data[1], ", ")
+		dictMap[data[0]] = fixes
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatalf("Failed to read file: %v, path: %s", err, dictPath)
+	}
+
+	return dictMap
+}
+
+// Helper function to load the JSON file containing the currently supported file extensions
+// and their respective comment formats.
 func loadCommentsJSONFile() map[string]map[string]string {
 	var commentsMap map[string]map[string]string
 

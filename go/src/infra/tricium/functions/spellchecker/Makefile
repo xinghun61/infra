@@ -10,7 +10,10 @@ spellchecker: codespell_dict
 test: spellchecker
 	./spellchecker -input=test -output=out
 
+# Updating the dictionary periodically is a good idea to get new words to check
+# but is not necessary.
 codespell_dict:
+	rm dictionary.txt
 	wget https://raw.githubusercontent.com/codespell-project/codespell/master/codespell_lib/data/dictionary.txt
 
 clean:
