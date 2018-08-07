@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -45,6 +46,12 @@ of this command (stdout) to an intermediate file for quick edits.
 
 			ret.Flags.Var(&ret.overrides, "O",
 				"(repeatable) override a repo dependency. Takes a parameter of `project_id=/path/to/local/repo`.")
+
+			ret.Flags.DurationVar(&ret.debugSleep, "debug-sleep", 0,
+				"Injects an extra 'sleep' time into the recipe shim which will sleep for the "+
+					"designated amount of time after the recipe completes to allow SSH "+
+					"debugging of failed recipe state. This accepts a duration like `2h`. "+
+					"Valid units are 's', 'm', or 'h'.")
 			return ret
 		},
 	}
@@ -55,6 +62,8 @@ type cmdEditRecipeBundle struct {
 
 	logCfg    logging.Config
 	authFlags authcli.Flags
+
+	debugSleep time.Duration
 
 	overrides stringmapflag.Value
 }
@@ -92,14 +101,46 @@ func (c *cmdEditRecipeBundle) validateFlags(ctx context.Context, args []string) 
 		}
 	}
 
+	switch {
+	case c.debugSleep == 0:
+		// OK
+
+	case c.debugSleep < 0:
+		err = errors.Reason(
+			"-debug-sleep %q: duration may not be negative", c.debugSleep).Err()
+		return
+
+	case c.debugSleep < 10*time.Minute:
+		err = errors.Reason(
+			"-debug-sleep %q: duration is less than 10 minutes... are you sure you want that?",
+			c.debugSleep).Err()
+		return
+	}
+
 	return c.authFlags.Options()
 }
 
-func (c *cmdEditRecipeBundle) prepBundle(ctx context.Context, recipesPy, subdir string) (string, error) {
-	retDir, err := ioutil.TempDir("", "luci-editor-bundle")
+func appendText(path, fmtStr string, items ...interface{}) error {
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0666)
 	if err != nil {
-		return "", errors.Annotate(err, "generating bundle tempdir").Err()
+		return err
 	}
+	defer file.Close()
+	_, err = fmt.Fprintf(file, fmtStr, items...)
+	return err
+}
+
+func (c *cmdEditRecipeBundle) prepBundle(ctx context.Context, recipesPy, subdir string) (retDir string, err error) {
+	if retDir, err = ioutil.TempDir("", "luci-editor-bundle"); err != nil {
+		err = errors.Annotate(err, "generating bundle tempdir").Err()
+		return
+	}
+
+	defer func() {
+		if err != nil {
+			os.RemoveAll(retDir)
+		}
+	}()
 
 	args := []string{
 		recipesPy,
@@ -116,12 +157,24 @@ func (c *cmdEditRecipeBundle) prepBundle(ctx context.Context, recipesPy, subdir 
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 	}
-	if err := cmdErr(cmd.Run(), "creating bundle"); err != nil {
-		os.RemoveAll(retDir)
-		return "", err
+	if err = cmdErr(cmd.Run(), "creating bundle"); err != nil {
+		return
+	}
+	if c.debugSleep != 0 {
+		fname := filepath.Join(retDir, subdir, "recipes")
+		seconds := c.debugSleep / time.Second
+		msg := "echo ENTERING DEBUG SLEEP. SSH to the bot to debug."
+
+		if err = appendText(fname, "\n%s\nsleep %d\n", msg, seconds); err != nil {
+			return
+		}
+		// Wait for a bogus event that won't occur... Windows sucks, amirite?
+		if err = appendText(fname+".bat", "\r\n%s\r\nwaitfor /t %d DebugSessionEnd\r\n", msg, seconds); err != nil {
+			return
+		}
 	}
 
-	return retDir, nil
+	return
 }
 
 // findRecipesPy locates the current repo's `recipes.py`. It does this by:
