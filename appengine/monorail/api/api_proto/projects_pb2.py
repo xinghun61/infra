@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='api/api_proto/projects.proto',
   package='monorail',
   syntax='proto3',
-  serialized_pb=_b('\n\x1c\x61pi/api_proto/projects.proto\x12\x08monorail\x1a\x1a\x61pi/api_proto/common.proto\x1a#api/api_proto/project_objects.proto\"<\n\x13ListProjectsRequest\x12\x11\n\tpage_size\x18\x01 \x01(\x05\x12\x12\n\npage_token\x18\x02 \x01(\t\"T\n\x14ListProjectsResponse\x12#\n\x08projects\x18\x01 \x03(\x0b\x32\x11.monorail.Project\x12\x17\n\x0fnext_page_token\x18\x02 \x01(\t\"O\n\x10GetConfigRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\"Z\n\x1bGetCustomPermissionsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\"3\n\x1cGetCustomPermissionsResponse\x12\x13\n\x0bpermissions\x18\x01 \x03(\t\"W\n\x18GetVisibleMembersRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\"h\n\x19GetVisibleMembersResponse\x12$\n\tuser_refs\x18\x01 \x03(\x0b\x32\x11.monorail.UserRef\x12%\n\ngroup_refs\x18\x02 \x03(\x0b\x32\x11.monorail.UserRef\"U\n\x16GetFieldOptionsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\"H\n\x17GetFieldOptionsResponse\x12-\n\rfield_options\x18\x01 \x03(\x0b\x32\x16.monorail.FieldOptions\"U\n\x16GetLabelOptionsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\"D\n\x17GetLabelOptionsResponse\x12)\n\rlabel_options\x18\x01 \x03(\x0b\x32\x12.monorail.LabelDef2\x95\x04\n\x08Projects\x12O\n\x0cListProjects\x12\x1d.monorail.ListProjectsRequest\x1a\x1e.monorail.ListProjectsResponse\"\x00\x12;\n\tGetConfig\x12\x1a.monorail.GetConfigRequest\x1a\x10.monorail.Config\"\x00\x12g\n\x14GetCustomPermissions\x12%.monorail.GetCustomPermissionsRequest\x1a&.monorail.GetCustomPermissionsResponse\"\x00\x12^\n\x11GetVisibleMembers\x12\".monorail.GetVisibleMembersRequest\x1a#.monorail.GetVisibleMembersResponse\"\x00\x12X\n\x0fGetFieldOptions\x12 .monorail.GetFieldOptionsRequest\x1a!.monorail.GetFieldOptionsResponse\"\x00\x12X\n\x0fGetLabelOptions\x12 .monorail.GetLabelOptionsRequest\x1a!.monorail.GetLabelOptionsResponse\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x1c\x61pi/api_proto/projects.proto\x12\x08monorail\x1a\x1a\x61pi/api_proto/common.proto\x1a#api/api_proto/project_objects.proto\"<\n\x13ListProjectsRequest\x12\x11\n\tpage_size\x18\x01 \x01(\x05\x12\x12\n\npage_token\x18\x02 \x01(\t\"T\n\x14ListProjectsResponse\x12#\n\x08projects\x18\x01 \x03(\x0b\x32\x11.monorail.Project\x12\x17\n\x0fnext_page_token\x18\x02 \x01(\t\"O\n\x10GetConfigRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\"Z\n\x1bGetCustomPermissionsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\"3\n\x1cGetCustomPermissionsResponse\x12\x13\n\x0bpermissions\x18\x01 \x03(\t\"W\n\x18GetVisibleMembersRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\"h\n\x19GetVisibleMembersResponse\x12$\n\tuser_refs\x18\x01 \x03(\x0b\x32\x11.monorail.UserRef\x12%\n\ngroup_refs\x18\x02 \x03(\x0b\x32\x11.monorail.UserRef\"U\n\x16GetFieldOptionsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\"H\n\x17GetFieldOptionsResponse\x12-\n\rfield_options\x18\x01 \x03(\x0b\x32\x16.monorail.FieldOptions\"U\n\x16GetLabelOptionsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\"D\n\x17GetLabelOptionsResponse\x12)\n\rlabel_options\x18\x01 \x03(\x0b\x32\x12.monorail.LabelDef\"R\n\x13ListStatusesRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\"\x8e\x01\n\x14ListStatusesResponse\x12(\n\x0bstatus_defs\x18\x01 \x03(\x0b\x32\x13.monorail.StatusDef\x12\x31\n\x14statuses_offer_merge\x18\x02 \x03(\x0b\x32\x13.monorail.StatusRef\x12\x19\n\x11restrict_to_known\x18\x03 \x01(\x08\"p\n\x15ListComponentsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\x12\x1a\n\x12include_admin_info\x18\x03 \x01(\x08\"H\n\x16ListComponentsResponse\x12.\n\x0e\x63omponent_defs\x18\x01 \x03(\x0b\x32\x16.monorail.ComponentDef2\xbd\x05\n\x08Projects\x12O\n\x0cListProjects\x12\x1d.monorail.ListProjectsRequest\x1a\x1e.monorail.ListProjectsResponse\"\x00\x12;\n\tGetConfig\x12\x1a.monorail.GetConfigRequest\x1a\x10.monorail.Config\"\x00\x12g\n\x14GetCustomPermissions\x12%.monorail.GetCustomPermissionsRequest\x1a&.monorail.GetCustomPermissionsResponse\"\x00\x12^\n\x11GetVisibleMembers\x12\".monorail.GetVisibleMembersRequest\x1a#.monorail.GetVisibleMembersResponse\"\x00\x12X\n\x0fGetFieldOptions\x12 .monorail.GetFieldOptionsRequest\x1a!.monorail.GetFieldOptionsResponse\"\x00\x12X\n\x0fGetLabelOptions\x12 .monorail.GetLabelOptionsRequest\x1a!.monorail.GetLabelOptionsResponse\"\x00\x12O\n\x0cListStatuses\x12\x1d.monorail.ListStatusesRequest\x1a\x1e.monorail.ListStatusesResponse\"\x00\x12U\n\x0eListComponents\x12\x1f.monorail.ListComponentsRequest\x1a .monorail.ListComponentsResponse\"\x00\x62\x06proto3')
   ,
   dependencies=[api_dot_api__proto_dot_common__pb2.DESCRIPTOR,api_dot_api__proto_dot_project__objects__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -425,6 +425,165 @@ _GETLABELOPTIONSRESPONSE = _descriptor.Descriptor(
   serialized_end=992,
 )
 
+
+_LISTSTATUSESREQUEST = _descriptor.Descriptor(
+  name='ListStatusesRequest',
+  full_name='monorail.ListStatusesRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='trace', full_name='monorail.ListStatusesRequest.trace', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='project_name', full_name='monorail.ListStatusesRequest.project_name', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=994,
+  serialized_end=1076,
+)
+
+
+_LISTSTATUSESRESPONSE = _descriptor.Descriptor(
+  name='ListStatusesResponse',
+  full_name='monorail.ListStatusesResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='status_defs', full_name='monorail.ListStatusesResponse.status_defs', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='statuses_offer_merge', full_name='monorail.ListStatusesResponse.statuses_offer_merge', index=1,
+      number=2, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='restrict_to_known', full_name='monorail.ListStatusesResponse.restrict_to_known', index=2,
+      number=3, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1079,
+  serialized_end=1221,
+)
+
+
+_LISTCOMPONENTSREQUEST = _descriptor.Descriptor(
+  name='ListComponentsRequest',
+  full_name='monorail.ListComponentsRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='trace', full_name='monorail.ListComponentsRequest.trace', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='project_name', full_name='monorail.ListComponentsRequest.project_name', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='include_admin_info', full_name='monorail.ListComponentsRequest.include_admin_info', index=2,
+      number=3, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1223,
+  serialized_end=1335,
+)
+
+
+_LISTCOMPONENTSRESPONSE = _descriptor.Descriptor(
+  name='ListComponentsResponse',
+  full_name='monorail.ListComponentsResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='component_defs', full_name='monorail.ListComponentsResponse.component_defs', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1337,
+  serialized_end=1409,
+)
+
 _LISTPROJECTSRESPONSE.fields_by_name['projects'].message_type = api_dot_api__proto_dot_project__objects__pb2._PROJECT
 _GETCONFIGREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _GETCUSTOMPERMISSIONSREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
@@ -435,6 +594,11 @@ _GETFIELDOPTIONSREQUEST.fields_by_name['trace'].message_type = api_dot_api__prot
 _GETFIELDOPTIONSRESPONSE.fields_by_name['field_options'].message_type = api_dot_api__proto_dot_project__objects__pb2._FIELDOPTIONS
 _GETLABELOPTIONSREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _GETLABELOPTIONSRESPONSE.fields_by_name['label_options'].message_type = api_dot_api__proto_dot_project__objects__pb2._LABELDEF
+_LISTSTATUSESREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
+_LISTSTATUSESRESPONSE.fields_by_name['status_defs'].message_type = api_dot_api__proto_dot_project__objects__pb2._STATUSDEF
+_LISTSTATUSESRESPONSE.fields_by_name['statuses_offer_merge'].message_type = api_dot_api__proto_dot_common__pb2._STATUSREF
+_LISTCOMPONENTSREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
+_LISTCOMPONENTSRESPONSE.fields_by_name['component_defs'].message_type = api_dot_api__proto_dot_project__objects__pb2._COMPONENTDEF
 DESCRIPTOR.message_types_by_name['ListProjectsRequest'] = _LISTPROJECTSREQUEST
 DESCRIPTOR.message_types_by_name['ListProjectsResponse'] = _LISTPROJECTSRESPONSE
 DESCRIPTOR.message_types_by_name['GetConfigRequest'] = _GETCONFIGREQUEST
@@ -446,6 +610,10 @@ DESCRIPTOR.message_types_by_name['GetFieldOptionsRequest'] = _GETFIELDOPTIONSREQ
 DESCRIPTOR.message_types_by_name['GetFieldOptionsResponse'] = _GETFIELDOPTIONSRESPONSE
 DESCRIPTOR.message_types_by_name['GetLabelOptionsRequest'] = _GETLABELOPTIONSREQUEST
 DESCRIPTOR.message_types_by_name['GetLabelOptionsResponse'] = _GETLABELOPTIONSRESPONSE
+DESCRIPTOR.message_types_by_name['ListStatusesRequest'] = _LISTSTATUSESREQUEST
+DESCRIPTOR.message_types_by_name['ListStatusesResponse'] = _LISTSTATUSESRESPONSE
+DESCRIPTOR.message_types_by_name['ListComponentsRequest'] = _LISTCOMPONENTSREQUEST
+DESCRIPTOR.message_types_by_name['ListComponentsResponse'] = _LISTCOMPONENTSRESPONSE
 
 ListProjectsRequest = _reflection.GeneratedProtocolMessageType('ListProjectsRequest', (_message.Message,), dict(
   DESCRIPTOR = _LISTPROJECTSREQUEST,
@@ -523,6 +691,34 @@ GetLabelOptionsResponse = _reflection.GeneratedProtocolMessageType('GetLabelOpti
   # @@protoc_insertion_point(class_scope:monorail.GetLabelOptionsResponse)
   ))
 _sym_db.RegisterMessage(GetLabelOptionsResponse)
+
+ListStatusesRequest = _reflection.GeneratedProtocolMessageType('ListStatusesRequest', (_message.Message,), dict(
+  DESCRIPTOR = _LISTSTATUSESREQUEST,
+  __module__ = 'api.api_proto.projects_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.ListStatusesRequest)
+  ))
+_sym_db.RegisterMessage(ListStatusesRequest)
+
+ListStatusesResponse = _reflection.GeneratedProtocolMessageType('ListStatusesResponse', (_message.Message,), dict(
+  DESCRIPTOR = _LISTSTATUSESRESPONSE,
+  __module__ = 'api.api_proto.projects_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.ListStatusesResponse)
+  ))
+_sym_db.RegisterMessage(ListStatusesResponse)
+
+ListComponentsRequest = _reflection.GeneratedProtocolMessageType('ListComponentsRequest', (_message.Message,), dict(
+  DESCRIPTOR = _LISTCOMPONENTSREQUEST,
+  __module__ = 'api.api_proto.projects_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.ListComponentsRequest)
+  ))
+_sym_db.RegisterMessage(ListComponentsRequest)
+
+ListComponentsResponse = _reflection.GeneratedProtocolMessageType('ListComponentsResponse', (_message.Message,), dict(
+  DESCRIPTOR = _LISTCOMPONENTSRESPONSE,
+  __module__ = 'api.api_proto.projects_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.ListComponentsResponse)
+  ))
+_sym_db.RegisterMessage(ListComponentsResponse)
 
 
 # @@protoc_insertion_point(module_scope)

@@ -56,6 +56,7 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
       users_by_id = framework_views.MakeAllUserViews(
           mc.cnxn, self.services.user, users_involved)
       framework_views.RevealAllEmailsToMembers(mc.auth, project, users_by_id)
+
       label_ids = tracker_bizobj.LabelIDsInvolvedInConfig(config)
       labels_by_id = {
         label_id: self.services.config.LookupLabel(
@@ -131,4 +132,60 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
 
     result = projects_pb2.GetLabelOptionsResponse(
         label_options=label_defs)
+    return result
+
+  @monorail_servicer.PRPCMethod
+  def ListStatuses(self, mc, request):
+    """Return all well-known statuses in the specified project."""
+    project = self._GetProject(mc, request)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      config = we.GetProjectConfig(project.project_id)
+
+    status_defs = [
+        converters.ConvertStatusDef(sd)
+        for sd in config.well_known_statuses]
+    statuses_offer_merge = [
+        converters.ConvertStatusRef(sd.status, None, config)
+        for sd in config.well_known_statuses
+        if sd.status in config.statuses_offer_merge]
+
+    result = projects_pb2.ListStatusesResponse(
+        status_defs=status_defs,
+        statuses_offer_merge=statuses_offer_merge,
+        restrict_to_known=config.restrict_to_known)
+    return result
+
+  @monorail_servicer.PRPCMethod
+  def ListComponents(self, mc, request):
+    """Return all component defs in the specified project."""
+    project = self._GetProject(mc, request)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      config = we.GetProjectConfig(project.project_id)
+
+    with mc.profiler.Phase('making user views'):
+      users_by_id = {}
+      if request.include_admin_info:
+        users_involved = tracker_bizobj.UsersInvolvedInConfig(config)
+        users_by_id = framework_views.MakeAllUserViews(
+            mc.cnxn, self.services.user, users_involved)
+        framework_views.RevealAllEmailsToMembers(mc.auth, project, users_by_id)
+
+    with mc.profiler.Phase('looking up labels'):
+      labels_by_id = {}
+      if request.include_admin_info:
+        label_ids = tracker_bizobj.LabelIDsInvolvedInConfig(config)
+        labels_by_id = {
+          label_id: self.services.config.LookupLabel(
+              mc.cnxn, config.project_id, label_id)
+          for label_id in label_ids}
+
+    component_defs = [
+        converters.ConvertComponentDef(
+            cd, users_by_id, labels_by_id, request.include_admin_info)
+        for cd in config.component_defs]
+
+    result = projects_pb2.ListComponentsResponse(
+        component_defs=component_defs)
     return result

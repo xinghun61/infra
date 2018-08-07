@@ -602,27 +602,34 @@ def ConvertCommitList(commits):
 
 # Convert and ingest objects in project_objects.proto.
 
-def ConvertStatusDef(status_def, rank):
+def ConvertStatusDef(status_def):
   """Convert a protorpc StatusDef into a protoc StatusDef."""
-  return project_objects_pb2.StatusDef(
+  result = project_objects_pb2.StatusDef(
       status=status_def.status,
       means_open=status_def.means_open,
-      rank=rank,
       docstring=status_def.status_docstring,
       deprecated=status_def.deprecated)
+  return result
 
 
-def ConvertLabelDef(label_def, rank):
+def ConvertLabelDef(label_def):
   """Convert a protorpc LabelDef into a protoc LabelDef."""
-  return project_objects_pb2.LabelDef(
+  result = project_objects_pb2.LabelDef(
       label=label_def.label,
-      rank=rank,
       docstring=label_def.label_docstring,
       deprecated=label_def.deprecated)
+  return result
 
 
-def ConvertComponentDef(component_def, users_by_id, labels_by_id):
+def ConvertComponentDef(
+  component_def, users_by_id, labels_by_id, include_admin_info):
   """Convert a protorpc ComponentDef into a protoc ComponentDef."""
+  if not include_admin_info:
+    return project_objects_pb2.ComponentDef(
+        path=component_def.path,
+        docstring=component_def.docstring,
+        deprecated=component_def.deprecated)
+
   admin_refs = ConvertUserRefs(component_def.admin_ids, [], users_by_id)
   cc_refs = ConvertUserRefs(component_def.cc_ids, [], users_by_id)
   labels = [labels_by_id[lid] for lid in component_def.label_ids]
@@ -642,7 +649,7 @@ def ConvertComponentDef(component_def, users_by_id, labels_by_id):
       label_refs=label_refs)
 
 
-def ConvertFieldDef(field_def, users_by_id, config):
+def ConvertFieldDef(field_def, users_by_id, config, include_admin_info):
   """Convert a protorpc FieldDef into a protoc FieldDef."""
   parent_approval_name = None
   if field_def.approval_id:
@@ -652,6 +659,12 @@ def ConvertFieldDef(field_def, users_by_id, config):
   field_ref = ConvertFieldRef(
       field_def.field_id, field_def.field_name, field_def.field_type,
       parent_approval_name)
+
+  if not include_admin_info:
+    return project_objects_pb2.FieldDef(
+        field_ref=field_ref,
+        docstring=field_def.docstring)
+
   admin_refs = ConvertUserRefs(field_def.admin_ids, [], users_by_id)
   # TODO(jrobbins): validation, permission granting, and notification options.
 
@@ -666,11 +679,14 @@ def ConvertFieldDef(field_def, users_by_id, config):
       is_phase_field=field_def.is_phase_field)
 
 
-def ConvertApprovalDef(approval_def, users_by_id, config):
+def ConvertApprovalDef(approval_def, users_by_id, config, include_admin_info):
   """Convert a protorpc ApprovalDef into a protoc ApprovalDef."""
   field_def = tracker_bizobj.FindFieldDefByID(approval_def.approval_id, config)
   field_ref = ConvertFieldRef(field_def.field_id, field_def.field_name,
                               field_def.field_type, None)
+  if not include_admin_info:
+    return project_objects_pb2.ApprovalDef(field_ref=field_ref)
+
   approver_refs = ConvertUserRefs(approval_def.approver_ids, [], users_by_id)
   return project_objects_pb2.ApprovalDef(
       field_ref=field_ref,
@@ -678,30 +694,28 @@ def ConvertApprovalDef(approval_def, users_by_id, config):
       survey=approval_def.survey)
 
 
-def ConvertConfig(project, config, users_by_id, labels_by_id):
+def ConvertConfig(
+    project, config, users_by_id, labels_by_id):
   """Convert a protorpc ProjectIssueConfig into a protoc Config."""
   status_defs = [
-      ConvertStatusDef(sd, rank)
-      for rank, sd in enumerate(config.well_known_statuses)]
+      ConvertStatusDef(sd)
+      for sd in config.well_known_statuses]
   statuses_offer_merge = [
-      common_pb2.StatusRef(
-          status=sd.status,
-          means_open=sd.means_open,
-          is_derived=False)
+      ConvertStatusRef(sd.status, None, config)
       for sd in config.well_known_statuses
-      if sd.status in config.statuses_offer_merge
-  ]
+      if sd.status in config.statuses_offer_merge]
   label_defs = [
-      ConvertLabelDef(ld, rank)
-      for rank, ld in enumerate(config.well_known_labels)]
+      ConvertLabelDef(ld)
+      for ld in config.well_known_labels]
   component_defs = [
-      ConvertComponentDef(cd, users_by_id, labels_by_id)
+      ConvertComponentDef(
+          cd, users_by_id, labels_by_id, True)
       for cd in config.component_defs]
   field_defs = [
-      ConvertFieldDef(fd, users_by_id, config)
+      ConvertFieldDef(fd, users_by_id, config, True)
       for fd in config.field_defs]
   approval_defs = [
-      ConvertApprovalDef(ad, users_by_id, config)
+      ConvertApprovalDef(ad, users_by_id, config, True)
       for ad in config.approval_defs]
   result = project_objects_pb2.Config(
       project_name=project.project_name,

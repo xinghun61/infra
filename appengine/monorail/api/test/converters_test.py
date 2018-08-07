@@ -904,38 +904,39 @@ class ConverterFunctionsTest(unittest.TestCase):
   def testConvertStatusDef(self):
     """We can convert a status definition to protoc."""
     status_def = tracker_pb2.StatusDef(status='Started')
-    actual = converters.ConvertStatusDef(status_def, 1)
+    actual = converters.ConvertStatusDef(status_def)
     self.assertEqual('Started', actual.status)
     self.assertFalse(actual.means_open)
     self.assertEqual('', actual.docstring)
     self.assertFalse(actual.deprecated)
-    self.assertEqual(1, actual.rank)
+    # rank is not set on output, only used when setting a new rank.
+    self.assertEqual(0, actual.rank)
 
     status_def = tracker_pb2.StatusDef(
         status='New', means_open=True, status_docstring='doc', deprecated=True)
-    actual = converters.ConvertStatusDef(status_def, 2)
+    actual = converters.ConvertStatusDef(status_def)
     self.assertEqual('New', actual.status)
     self.assertTrue(actual.means_open)
     self.assertEqual('doc', actual.docstring)
     self.assertTrue(actual.deprecated)
-    self.assertEqual(2, actual.rank)
+    self.assertEqual(0, actual.rank)
 
   def testConvertLabelDef(self):
     """We can convert a label definition to protoc."""
     label_def = tracker_pb2.LabelDef(label='Security')
-    actual = converters.ConvertLabelDef(label_def, 1)
+    actual = converters.ConvertLabelDef(label_def)
     self.assertEqual('Security', actual.label)
     self.assertEqual('', actual.docstring)
     self.assertFalse(actual.deprecated)
-    self.assertEqual(1, actual.rank)
+    # rank is not set on output, only used when setting a new rank.
+    self.assertEqual(0, actual.rank)
 
     label_def = tracker_pb2.LabelDef(
         label='UI', label_docstring='doc', deprecated=True)
-    actual = converters.ConvertLabelDef(label_def, 2)
+    actual = converters.ConvertLabelDef(label_def)
     self.assertEqual('UI', actual.label)
     self.assertEqual('doc', actual.docstring)
     self.assertTrue(actual.deprecated)
-    self.assertEqual(2, actual.rank)
 
   def testConvertComponentDef_Simple(self):
     """We can convert a minimal component definition to protoc."""
@@ -944,9 +945,10 @@ class ConverterFunctionsTest(unittest.TestCase):
         path='Frontend', docstring='doc', created=now, creator_id=111L,
         modified=now + 1, modifier_id=111L)
     actual = converters.ConvertComponentDef(
-        component_def, self.users_by_id, {})
+        component_def, self.users_by_id, {}, True)
     self.assertEqual('Frontend', actual.path)
     self.assertEqual('doc', actual.docstring)
+    self.assertFalse(actual.deprecated)
     self.assertEqual(now, actual.created)
     self.assertEqual(111L, actual.creator_ref.user_id)
     self.assertEqual(now + 1, actual.modified)
@@ -957,24 +959,37 @@ class ConverterFunctionsTest(unittest.TestCase):
     """We can convert a component def that has CC'd users and adds labels."""
     labels_by_id = {1: 'Security', 2: 'Usability'}
     component_def = tracker_pb2.ComponentDef(
-        path='Frontend', admin_ids=[111L], cc_ids=[222L], label_ids=[1, 2])
+        path='Frontend', admin_ids=[111L], cc_ids=[222L], label_ids=[1, 2],
+        docstring='doc')
     actual = converters.ConvertComponentDef(
-        component_def, self.users_by_id, labels_by_id)
+        component_def, self.users_by_id, labels_by_id, True)
     self.assertEqual('Frontend', actual.path)
+    self.assertEqual('doc', actual.docstring)
     self.assertEqual(1, len(actual.admin_refs))
     self.assertEqual(111L, actual.admin_refs[0].user_id)
     self.assertEqual(1, len(actual.cc_refs))
+    self.assertFalse(actual.deprecated)
     self.assertEqual(222L, actual.cc_refs[0].user_id)
     self.assertEqual(2, len(actual.label_refs))
     self.assertEqual('Security', actual.label_refs[0].label)
     self.assertEqual('Usability', actual.label_refs[1].label)
+
+    # Without include_admin_info, some fields are not set.
+    actual = converters.ConvertComponentDef(
+        component_def, self.users_by_id, labels_by_id, False)
+    self.assertEqual('Frontend', actual.path)
+    self.assertEqual('doc', actual.docstring)
+    self.assertEqual(0, len(actual.admin_refs))
+    self.assertEqual(0, len(actual.cc_refs))
+    self.assertFalse(actual.deprecated)
+    self.assertEqual(0, len(actual.label_refs))
 
   def testConvertFieldDef_Simple(self):
     """We can convert a minimal field definition to protoc."""
     field_def = tracker_pb2.FieldDef(
         field_name='EstDays', field_type=tracker_pb2.FieldTypes.INT_TYPE)
     actual = converters.ConvertFieldDef(
-        field_def, self.users_by_id, self.config)
+        field_def, self.users_by_id, self.config, True)
     self.assertEqual('EstDays', actual.field_ref.field_name)
     self.assertEqual(common_pb2.INT_TYPE, actual.field_ref.type)
     self.assertEqual('', actual.field_ref.approval_name)
@@ -992,7 +1007,7 @@ class ConverterFunctionsTest(unittest.TestCase):
         is_multivalued=True, docstring='doc', admin_ids=[111L],
         is_phase_field=True)
     actual = converters.ConvertFieldDef(
-        field_def, self.users_by_id, self.config)
+        field_def, self.users_by_id, self.config, True)
     self.assertEqual('DesignDocs', actual.field_ref.field_name)
     self.assertEqual(common_pb2.URL_TYPE, actual.field_ref.type)
     self.assertEqual('', actual.field_ref.approval_name)
@@ -1005,6 +1020,20 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertTrue(actual.is_multivalued)
     self.assertTrue(actual.is_phase_field)
 
+    # Without include_admin_info, some fields are not set.
+    actual = converters.ConvertFieldDef(
+        field_def, self.users_by_id, self.config, False)
+    self.assertEqual('DesignDocs', actual.field_ref.field_name)
+    self.assertEqual(common_pb2.URL_TYPE, actual.field_ref.type)
+    self.assertEqual('', actual.field_ref.approval_name)
+    self.assertEqual('', actual.applicable_type)
+    self.assertEqual('doc', actual.docstring)
+    self.assertEqual(0, len(actual.admin_refs))
+    self.assertFalse(actual.is_required)
+    self.assertFalse(actual.is_niche)
+    self.assertFalse(actual.is_multivalued)
+    self.assertFalse(actual.is_phase_field)
+
   def testConvertFieldDef_FieldOfAnApproval(self):
     """We can convert a field that is part of an approval."""
     self.config.field_defs = [self.fd_1, self.fd_2, self.fd_3]
@@ -1012,7 +1041,7 @@ class ConverterFunctionsTest(unittest.TestCase):
         field_name='Waiver', field_type=tracker_pb2.FieldTypes.URL_TYPE,
         approval_id=self.fd_3.field_id)
     actual = converters.ConvertFieldDef(
-        field_def, self.users_by_id, self.config)
+        field_def, self.users_by_id, self.config, True)
     self.assertEqual('Waiver', actual.field_ref.field_name)
     self.assertEqual('LegalApproval', actual.field_ref.approval_name)
 
@@ -1021,7 +1050,7 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.config.field_defs = [self.fd_1, self.fd_2, self.fd_3]
     approval_def = tracker_pb2.ApprovalDef(approval_id=3)
     actual = converters.ConvertApprovalDef(
-        approval_def, self.users_by_id, self.config)
+        approval_def, self.users_by_id, self.config, True)
     self.assertEqual('LegalApproval', actual.field_ref.field_name)
     self.assertEqual(common_pb2.APPROVAL_TYPE, actual.field_ref.type)
     self.assertEqual(0, len(actual.approver_refs))
@@ -1030,12 +1059,20 @@ class ConverterFunctionsTest(unittest.TestCase):
     approval_def = tracker_pb2.ApprovalDef(
         approval_id=3, approver_ids=[111L], survey='What?')
     actual = converters.ConvertApprovalDef(
-        approval_def, self.users_by_id, self.config)
+        approval_def, self.users_by_id, self.config, True)
     self.assertEqual('LegalApproval', actual.field_ref.field_name)
     self.assertEqual(common_pb2.APPROVAL_TYPE, actual.field_ref.type)
     self.assertEqual(1, len(actual.approver_refs))
     self.assertEqual(111L, actual.approver_refs[0].user_id)
     self.assertEqual('What?', actual.survey)
+
+    # Without include_admin_info, some fields are not set.
+    actual = converters.ConvertApprovalDef(
+        approval_def, self.users_by_id, self.config, False)
+    self.assertEqual('LegalApproval', actual.field_ref.field_name)
+    self.assertEqual(common_pb2.APPROVAL_TYPE, actual.field_ref.type)
+    self.assertEqual(0, len(actual.approver_refs))
+    self.assertEqual('', actual.survey)
 
   def testConvertConfig_Simple(self):
     """We can convert a simple config to protoc."""

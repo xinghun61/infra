@@ -19,6 +19,8 @@ service Projects {
   rpc GetVisibleMembers (GetVisibleMembersRequest) returns (GetVisibleMembersResponse) {}
   rpc GetFieldOptions (GetFieldOptionsRequest) returns (GetFieldOptionsResponse) {}
   rpc GetLabelOptions (GetLabelOptionsRequest) returns (GetLabelOptionsResponse) {}
+  rpc ListStatuses (ListStatusesRequest) returns (ListStatusesResponse) {}
+  rpc ListComponents (ListComponentsRequest) returns (ListComponentsResponse) {}
 }
 
 
@@ -91,4 +93,33 @@ message GetLabelOptionsRequest {
 // Next available tag: 2
 message GetLabelOptionsResponse {
   repeated LabelDef label_options = 1;
+}
+
+
+// Next available tag: 3
+message ListStatusesRequest {
+  RequestTrace trace = 1;
+  string project_name = 2;
+}
+
+
+// Next available tag: 4
+message ListStatusesResponse {
+  repeated StatusDef status_defs = 1;
+  repeated StatusRef statuses_offer_merge = 2;
+  bool restrict_to_known = 3;
+}
+
+
+// Next available tag: 4
+message ListComponentsRequest {
+  RequestTrace trace = 1;
+  string project_name = 2;
+  bool include_admin_info = 3;
+}
+
+
+// Next available tag: 2
+message ListComponentsResponse {
+  repeated ComponentDef component_defs = 1;
 }

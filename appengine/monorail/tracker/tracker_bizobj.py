@@ -757,6 +757,20 @@ def UsersInvolvedInTemplate(template):
   return result
 
 
+def UsersInvolvedInComponents(component_defs):
+  """Return a set of user IDs referenced in the given components."""
+  result = set()
+  for cd in component_defs:
+    result.update(cd.admin_ids)
+    result.update(cd.cc_ids)
+    if cd.creator_id:
+      result.add(cd.creator_id)
+    if cd.modifier_id:
+      result.add(cd.modifier_id)
+
+  return result
+
+
 def UsersInvolvedInConfig(config):
   """Return a set of all user IDs referenced in the config."""
   result = set()
@@ -764,13 +778,7 @@ def UsersInvolvedInConfig(config):
     result.update(ad.approver_ids)
   for fd in config.field_defs:
     result.update(fd.admin_ids)
-  for cd in config.component_defs:
-    result.update(cd.admin_ids)
-    result.update(cd.cc_ids)
-    if cd.creator_id:
-      result.add(cd.creator_id)
-    if cd.modifier_id:
-      result.add(cd.modifier_id)
+  result.update(UsersInvolvedInComponents(config.component_defs))
   return result
 
 
