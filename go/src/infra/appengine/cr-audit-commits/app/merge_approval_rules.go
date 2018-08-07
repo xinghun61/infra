@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"go.chromium.org/luci/common/logging"
 	"golang.org/x/net/context"
 )
 
@@ -55,6 +56,7 @@ func OnlyMergeApprovedChange(ctx context.Context, ap *AuditParams, rc *RelevantC
 	for _, bug := range bugList {
 		bugNumber, err := strconv.Atoi(bug)
 		if err != nil {
+			logging.WithError(err).Errorf(ctx, "Found an invalid bug %s on relevant commit %s", bug, rc.CommitHash)
 			continue
 		}
 		milestone, success = GetToken(ctx, "MilestoneNumber", ap.RepoCfg.Metadata)
@@ -64,6 +66,7 @@ func OnlyMergeApprovedChange(ctx context.Context, ap *AuditParams, rc *RelevantC
 		mergeLabel := fmt.Sprintf(mergeApprovedLabel, milestone)
 		vIssue, err := issueFromID(ctx, ap.RepoCfg, int32(bugNumber), cs)
 		if err != nil {
+			logging.WithError(err).Errorf(ctx, "Found an invalid Monorail bug %s on relevant commit %s", bugNumber, rc.CommitHash)
 			continue
 		}
 		// Check if the issue has a merge approval label in the comment history
@@ -81,10 +84,12 @@ func OnlyMergeApprovedChange(ctx context.Context, ap *AuditParams, rc *RelevantC
 							return result
 						}
 					}
+					logging.WithError(err).Errorf(ctx, "Found merge approval label %s from a non TPM %s", label, author)
 					break
 				}
 			}
 		}
+		logging.Errorf(ctx, "Bug %s does not have label %s", bugNumber, mergeLabel)
 	}
 	result.Message = fmt.Sprintf("Revision %s was merged to %s branch with no merge approval from "+
 		"a TPM! \nPlease explain why this change was merged to the branch!", rc.CommitHash, ap.RepoCfg.BranchName)
