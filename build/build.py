@@ -617,8 +617,11 @@ def enumerate_packages(py_venv, package_def_dir, package_def_files):
   """
   paths = []
   if not package_def_files:
-    # All existing package by default.
-    paths = glob.glob(os.path.join(package_def_dir, '*.yaml'))
+    # All existing non-disabled packages by default.
+    paths = [
+      p for p in glob.glob(os.path.join(package_def_dir, '*.yaml'))
+      if not p.endswith('disabled.yaml')
+    ]
   else:
     # Otherwise pick only the ones in 'package_def_files' list.
     for name in package_def_files:

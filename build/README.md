@@ -135,6 +135,8 @@ all necessary files for packaging):
 * `go_packages`
 * `generate_bat_shim`
 
+Packages that are defined in `*disabled.yaml` files are skipped by build.py.
+
 
 Strings interpolation
 ---------------------
