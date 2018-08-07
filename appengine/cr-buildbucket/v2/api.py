@@ -19,6 +19,7 @@ from proto import rpc_pb2  # pylint: disable=unused-import
 from proto import rpc_prpc_pb2
 from proto import step_pb2  # pylint: disable=unused-import
 
+from v2 import tokens
 from v2 import validation
 from v2 import default_field_masks
 import buildtags
@@ -26,6 +27,10 @@ import model
 import search
 import service
 import v2
+
+# Header for passing token to authenticate build messages, e.g. UpdateBuild RPC.
+# Lowercase because metadata is stored in lowercase.
+BUILD_TOKEN_HEADER = 'x-build-token'
 
 
 class StatusCodeError(Exception):
@@ -49,6 +54,7 @@ def status_code_error_class(code):
 
 NotFound = status_code_error_class(prpc.StatusCode.NOT_FOUND)
 InvalidArgument = status_code_error_class(prpc.StatusCode.INVALID_ARGUMENT)
+Unauthenticated = status_code_error_class(prpc.StatusCode.UNAUTHENTICATED)
 
 METHODS_BY_NAME = {
     m.name: m
@@ -216,6 +222,27 @@ def search_builds_async(req, _ctx, mask):
   )
 
 
+def validate_build_token(req, ctx):
+  """Validates build token stored in RPC metadata."""
+  metadata = dict(ctx.invocation_metadata())
+  token = metadata.get(BUILD_TOKEN_HEADER)
+  if not token:
+    raise Unauthenticated('missing token in build update request')
+
+  try:
+    tokens.validate_build_token(token, req.build.id)
+  except auth.tokens.InvalidTokenError as e:
+    raise Unauthenticated(e.message)
+
+
+@rpc_impl_async('UpdateBuild')
+@ndb.tasklet
+def update_build_async(req, ctx, _mask):
+  # TODO(jchinlee): Implement.
+  validate_build_token(req, ctx)
+  raise ndb.Return(req.build)
+
+
 # Maps an rpc_pb2.BatchRequest.Request field name to an async function
 #   (req, ctx) => ndb.Future of res.
 BATCH_REQUEST_TYPE_TO_RPC_IMPL = {
@@ -240,6 +267,9 @@ class BuildsApi(object):
 
   def SearchBuilds(self, req, ctx):
     return search_builds_async(req, ctx).get_result()
+
+  def UpdateBuild(self, req, ctx):
+    return update_build_async(req, ctx).get_result()
 
   def Batch(self, req, ctx):
 

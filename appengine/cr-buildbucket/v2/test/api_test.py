@@ -24,6 +24,7 @@ from proto import rpc_pb2
 from proto import step_pb2
 from test import test_util
 from v2 import api
+from v2 import tokens
 import annotations
 import buildtags
 import model
@@ -55,10 +56,11 @@ class BaseTestCase(testing.AppengineTestCase):
       self,
       method,
       req,
+      ctx=None,
       expected_code=prpc.StatusCode.OK,
       expected_details=None
   ):
-    ctx = prpc_context.ServicerContext()
+    ctx = ctx or prpc_context.ServicerContext()
     res = method(req, ctx)
     self.assertEqual(ctx.code, expected_code)
     if expected_details is not None:
@@ -267,6 +269,69 @@ class SearchTests(BaseTestCase):
     self.assertEqual(res.builds[0].id, 54)
     self.assertEqual(res.builds[1].id, 55)
     self.assertEqual(res.next_page_token, 'next page token')
+
+
+class UpdateBuildTests(BaseTestCase):
+
+  def _mk_update_req(self, build_id, token):
+    build = build_pb2.Build(
+        id=build_id,
+        status=common_pb2.STARTED,
+    )
+    build_req = rpc_pb2.UpdateBuildRequest(build=build)
+    ctx = prpc_context.ServicerContext()
+    if token:
+      metadata = ctx.invocation_metadata()
+      metadata.append((api.BUILD_TOKEN_HEADER.lower(), token))
+    return build_req, ctx
+
+  @mock.patch('components.utils.time_time', autospec=True)
+  def test_valid(self, mock_time):
+    mock_time.side_effect = iter([1, 2, 3, 4])
+    build_id = 123
+    token = tokens.generate_build_token(build_id)
+    req, ctx = self._mk_update_req(build_id, token)
+    actual = self.call(self.api.UpdateBuild, req, ctx=ctx)
+    expected = build_pb2.Build(id=build_id, status=common_pb2.STARTED)
+    self.assertEqual(actual, expected)
+
+  def test_missing_token(self):
+    req, ctx = self._mk_update_req(123, None)
+    self.call(
+        self.api.UpdateBuild,
+        req,
+        ctx=ctx,
+        expected_code=prpc.StatusCode.UNAUTHENTICATED,
+        expected_details='missing token in build update request'
+    )
+
+  @mock.patch('components.utils.time_time', autospec=True)
+  def test_bad_token(self, mock_time):
+    mock_time.side_effect = iter([1, 2, 3, 4])
+    token = tokens.generate_build_token(456)
+    req, ctx = self._mk_update_req(123, token)
+    self.call(
+        self.api.UpdateBuild,
+        req,
+        ctx=ctx,
+        expected_code=prpc.StatusCode.UNAUTHENTICATED
+    )
+
+  @mock.patch('components.utils.time_time', autospec=True)
+  def test_expired_token(self, mock_time):
+    mock_time.side_effect = iter([
+        2 * i * model.BUILD_TIMEOUT.total_seconds() for i in range(4)
+    ])
+    build_id = 123
+    token = tokens.generate_build_token(build_id)
+    req, ctx = self._mk_update_req(build_id, token)
+    self.call(
+        self.api.UpdateBuild,
+        req,
+        ctx=ctx,
+        expected_code=prpc.StatusCode.UNAUTHENTICATED,
+        expected_details='Bad token: expired'
+    )
 
 
 class BatchTests(BaseTestCase):
