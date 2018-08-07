@@ -147,7 +147,6 @@ CREATE PROCEDURE BackfillIssueSnapshotsChunk(IN chunk_size INT UNSIGNED,
 BEGIN
 
   DECLARE done TINYINT DEFAULT FALSE;
-  DECLARE is_duplicate TINYINT DEFAULT FALSE;
 
   DECLARE c_issue_id INT;
   DECLARE c_issue_shard INT;
@@ -165,13 +164,15 @@ BEGIN
 
   DECLARE curs CURSOR FOR
     SELECT i.id, i.shard, i.project_id, i.local_id, i.status_id, i.opened,
-      CASE sd.means_open WHEN true THEN (
-        -- If a snapshot for this Issue already exists, make the new snapshot's
-        -- period_end the period_start of the existing snapshot.
-        SELECT IFNULL((
-            SELECT period_start FROM IssueSnapshot WHERE issue_id = i.id LIMIT 1
-        ), 4294967295)
-      ) ELSE i.closed END,
+      -- If a snapshot for this Issue already exists, make the new snapshot's
+      -- period_end the period_start of the existing snapshot.
+      (SELECT IFNULL((
+          SELECT period_start
+          FROM IssueSnapshot
+          WHERE issue_id = i.id
+          ORDER BY period_start ASC
+          LIMIT 1
+      ), 4294967295)),
       sd.means_open,
       i.reporter_id, i.owner_id
     FROM Issue i
@@ -180,17 +181,9 @@ BEGIN
 
   DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
 
-  -- Handle duplicates. Using this along with UNIQUE indexes is how we make
-  -- the backfill idempotent.
-  DECLARE CONTINUE HANDLER FOR SQLSTATE '23000' BEGIN
-    SET is_duplicate = TRUE;
-  END;
-
   OPEN curs;
 
   issue_loop: LOOP
-    SET is_duplicate = FALSE;
-
     FETCH curs INTO c_issue_id, c_issue_shard, c_issue_project_id,
       c_issue_local_id, c_issue_status_id, c_issue_opened, c_issue_closed,
       c_issue_is_open, c_reporter_id, c_owner_id;
@@ -219,10 +212,6 @@ BEGIN
     (c_issue_id, c_issue_shard, c_issue_project_id,
     c_issue_local_id, c_issue_status_id, c_issue_opened,
     c_issue_closed, c_issue_is_open, c_reporter_id, c_owner_id);
-
-    IF is_duplicate THEN
-      ITERATE issue_loop;
-    END IF;
 
     SET write_counter = write_counter + 1;
 
