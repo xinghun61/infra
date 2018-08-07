@@ -150,7 +150,7 @@ class ProjectServiceTest(unittest.TestCase):
     self.mox.VerifyAll()
     self.assertEqual({123: 'proj1', 234: 'proj2'}, name_dict)
 
-  def SetUpGetProjects(self):
+  def SetUpGetProjects(self, roles=None, extra_perms=None):
     project_rows = [
         (234, 'proj2', 'test proj 2', 'test project', 'live', 'anyone', '', '',
          None, '', 0, 50 * 1024 * 1024, NOW, NOW, None, True, False,
@@ -160,10 +160,10 @@ class ProjectServiceTest(unittest.TestCase):
         project_id=[234]).AndReturn(project_rows)
     self.project_service.user2project_tbl.Select(
         self.cnxn, cols=['project_id', 'user_id', 'role_name'],
-        project_id=[234]).AndReturn([])
+        project_id=[234]).AndReturn(roles or [])
     self.project_service.extraperm_tbl.Select(
         self.cnxn, cols=project_svc.EXTRAPERM_COLS,
-        project_id=[234]).AndReturn([])
+        project_id=[234]).AndReturn(extra_perms or [])
 
   def testGetProjects(self):
     self.project_service.project_2lc.CacheItem(123, self.proj1)
@@ -175,6 +175,21 @@ class ProjectServiceTest(unittest.TestCase):
     self.assertItemsEqual([123, 234], project_dict.keys())
     self.assertEqual('proj1', project_dict[123].project_name)
     self.assertEqual('proj2', project_dict[234].project_name)
+
+  def testGetProjects_ExtraPerms(self):
+    self.SetUpGetProjects(extra_perms=[(234, 222L, 'BarPerm'),
+                                       (234, 111L, 'FooPerm')])
+    self.mox.ReplayAll()
+    project_dict = self.project_service.GetProjects(self.cnxn, [234])
+    self.mox.VerifyAll()
+    self.assertItemsEqual([234], project_dict.keys())
+    self.assertEqual(
+        [project_pb2.Project.ExtraPerms(
+             member_id=111L, perms=['FooPerm']),
+         project_pb2.Project.ExtraPerms(
+             member_id=222L, perms=['BarPerm'])],
+        project_dict[234].extra_perms)
+
 
   def testGetVisibleLiveProjects_AnyoneAccessWithUser(self):
     project_rows = [
@@ -456,7 +471,7 @@ class ProjectServiceTest(unittest.TestCase):
     self.cnxn.Commit()
 
   def testUpdateExtraPerms(self):
-    self.SetUpGetProjects()
+    self.SetUpGetProjects(roles=[(234, 111L, 'owner')])
     self.SetUpUpdateExtraPerms()
     self.mox.ReplayAll()
     self.project_service.UpdateExtraPerms(

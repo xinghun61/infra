@@ -19,6 +19,7 @@ The project status is one of the project states defined in project_pb2,
 or a special constant defined below.  Likewise for access level.
 """
 
+import bisect
 import logging
 import time
 
@@ -457,7 +458,7 @@ def GetExtraPerms(project, member_id):
     specified user in this project.  The list will often be empty.
   """
 
-  extra_perms = FindExtraPerms(project, member_id)
+  _, extra_perms = FindExtraPerms(project, member_id)
 
   if extra_perms:
     return list(extra_perms.perms)
@@ -474,22 +475,35 @@ def FindExtraPerms(project, member_id):
     member_id: user ID of a project owner, member, or contributor.
 
   Returns:
-    An ExtraPerms PB, or None.
+    A pair (idx, extra_perms).
+    * If project is None or member_id is not part of the project, both are None.
+    * If member_id has no extra_perms, extra_perms is None, and idx points to
+      the position where it should go to keep the ExtraPerms sorted in project.
+    * Otherwise, idx is the position of member_id in the project's extra_perms,
+      and extra_perms is an ExtraPerms PB.
   """
+  class ExtraPermsView(object):
+    def __len__(self):
+      return len(project.extra_perms)
+    def __getitem__(self, idx):
+      return project.extra_perms[idx].member_id
+
   if not project:
     # TODO(jrobbins): maybe define extra perms for site-wide operations.
-    return None
+    return None, None
 
   # Users who have no current role cannot have any extra perms.  Don't
   # consider effective_ids (which includes user groups) for this check.
   if not framework_bizobj.UserIsInProject(project, {member_id}):
-    return None
+    return None, None
 
-  for extra_perms in project.extra_perms:
-    if extra_perms.member_id == member_id:
-      return extra_perms
-
-  return None
+  extra_perms_view = ExtraPermsView()
+  # Find the index of the first extra_perms.member_id greater than or equal to
+  # member_id.
+  idx = bisect.bisect_left(extra_perms_view, member_id)
+  if idx >= len(project.extra_perms) or extra_perms_view[idx] > member_id:
+    return idx, None
+  return idx, project.extra_perms[idx]
 
 
 def GetCustomPermissions(project):

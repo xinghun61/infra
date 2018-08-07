@@ -1222,10 +1222,6 @@ class ClientConfigApi(remote.Service):
                 mar.cnxn, p_id, owner_ids, committer_ids,
                 contributor_ids)
           if perm.extra_permissions:
-            member_extra_perms = permissions.FindExtraPerms(project, user_id)
-            if (member_extra_perms and
-                set(member_extra_perms.perms) == set(perm.extra_permissions)):
-              continue
             logging.info('Update project %s extra perm %s for user %s',
                          project.project_name, perm.extra_permissions,
                          client.client_email)

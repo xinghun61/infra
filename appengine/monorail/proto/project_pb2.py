@@ -96,6 +96,7 @@ class Project(messages.Message):
     perms = messages.StringField(2, repeated=True)
 
   extra_perms = messages.MessageField(ExtraPerms, 16, repeated=True)
+  extra_perms_are_sorted = messages.BooleanField(17, default=False)
 
   # Project owners may choose to have ALL issue change notifications go to a
   # mailing list (in addition to going directly to the users interested

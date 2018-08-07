@@ -58,6 +58,10 @@ class ProjectTwoLevelCache(caches.AbstractTwoLevelCache):
         cachemanager, 'project', 'project:', project_pb2.Project)
     self.project_service = project_service
 
+  # TODO(ehmaldonado): Remove after next release.
+  def _CheckCompatibility(self, project):
+    return project.extra_perms_are_sorted
+
   def _DeserializeProjects(
       self, project_rows, role_rows, extraperm_rows):
     """Convert database rows into a dictionary of Project PB keyed by ID."""
@@ -106,15 +110,16 @@ class ProjectTwoLevelCache(caches.AbstractTwoLevelCache):
       elif role_name == 'contributor':
         project.contributor_ids.append(user_id)
 
+    perms = {}
     for project_id, user_id, perm in extraperm_rows:
-      project = project_dict[project_id]
-      extra_perms = permissions.FindExtraPerms(project, user_id)
-      if not extra_perms:
-        extra_perms = project_pb2.Project.ExtraPerms(
-            member_id=user_id)
-        project.extra_perms.append(extra_perms)
+      perms.setdefault(project_id, {}).setdefault(user_id, []).append(perm)
 
-      extra_perms.perms.append(perm)
+    for project_id, perms_by_user in perms.iteritems():
+      project = project_dict[project_id]
+      project.extra_perms_are_sorted = True
+      for user_id, extra_perms in sorted(perms_by_user.iteritems()):
+        project.extra_perms.append(project_pb2.Project.ExtraPerms(
+            member_id=user_id, perms=extra_perms))
 
     return project_dict
 
@@ -526,10 +531,13 @@ class ProjectService(object):
     # shared with any other thread.
     project = self.GetProject(cnxn, project_id, use_cache=False)
 
-    member_extra_perms = permissions.FindExtraPerms(project, member_id)
+    idx, member_extra_perms = permissions.FindExtraPerms(project, member_id)
     if not member_extra_perms and not extra_perms:
       return
     if member_extra_perms and list(member_extra_perms.perms) == extra_perms:
+      return
+    # Either project is None or member_id is not a member of the project.
+    if idx is None:
       return
 
     if member_extra_perms:
@@ -537,7 +545,8 @@ class ProjectService(object):
     else:
       member_extra_perms = project_pb2.Project.ExtraPerms(
           member_id=member_id, perms=extra_perms)
-      project.extra_perms.append(member_extra_perms)
+      # Keep the list of extra_perms sorted by member id.
+      project.extra_perms.insert(idx, member_extra_perms)
 
     self.extraperm_tbl.Delete(
         cnxn, project_id=project_id, user_id=member_id, commit=False)

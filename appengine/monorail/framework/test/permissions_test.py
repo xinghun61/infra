@@ -352,11 +352,11 @@ class PermissionsTest(unittest.TestCase):
   def testGetExtraPerms(self):
     project = project_pb2.Project()
     project.committer_ids.append(222L)
-    project.extra_perms.append(project_pb2.Project.ExtraPerms(
-        member_id=222L, perms=['a', 'b', 'c']))
     # User 1 is a former member with left-over extra perms that don't count.
     project.extra_perms.append(project_pb2.Project.ExtraPerms(
         member_id=111L, perms=['a', 'b', 'c']))
+    project.extra_perms.append(project_pb2.Project.ExtraPerms(
+        member_id=222L, perms=['a', 'b', 'c']))
 
     self.assertListEqual(
         [],
