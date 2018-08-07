@@ -17,7 +17,7 @@ from services import issue_tracking_service
 
 # Maximum number of Monorail issues allowed to be created or updated in any 24h
 # window.
-_CREATE_OR_UPDATE_ISSUES_LIMIT_24H = 10
+_CREATE_OR_UPDATE_ISSUES_LIMIT_24H = 30
 
 # Minimum number of occurrences of a flaky test that are associated with
 # different CLs within the past 24h are required in order to report the flake.
