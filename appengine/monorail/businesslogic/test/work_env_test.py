@@ -310,7 +310,7 @@ class WorkEnvTest(unittest.TestCase):
     """We return only existing or visible issues even w/out project names."""
     ref_tuples = [
         (None, 1), ('other-proj', 1), ('proj', 99),
-        ('ghost-proj', 1), ('proj', 42)]
+        ('ghost-proj', 1), ('proj', 42), ('other-proj', 1)]
     issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     private = fake.MakeTestIssue(789, 42, 'sum', 'New', 422L, issue_id=78942)
