@@ -16,6 +16,7 @@ class MrCommentContent extends ReduxMixin(Polymer.Element) {
       content: String,
       commentReferences: {
 	type: Object,
+	value: () => new Map(),
 	statePath: 'commentReferences',
       },
       // NOTE: This is not secure. It's just to temporarily remove extra HTML
