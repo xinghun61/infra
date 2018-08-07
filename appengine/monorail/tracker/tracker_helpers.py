@@ -179,7 +179,6 @@ def MarkupDescriptionOnInput(content, tmpl_text):
     The description content text with template lines highlighted.
   """
   tmpl_lines = tmpl_text.split('\n')
-  print(tmpl_lines)
   tmpl_lines = [pl.strip() for pl in tmpl_lines if pl.strip()]
 
   entered_lines = content.split('\n')
