@@ -1079,17 +1079,17 @@ function TKR_convertMembersResponse(membersResponse) {
 
 
 /**
- * Convert the Config object resulting of a monorail.Projects GetConfig to the
- * format expected by TKR_fetchOptions.
- * @param {object} config A pRPC Config object with the results of the call.
+ * Convert the object resulting of a monorail.Projects ListStatuses to
+ * the format expected by TKR_fetchOptions.
+ * @param {object} config A pRPC ListStatusesResponse object.
  */
-function TKR_convertConfig(config) {
+function TKR_convertStatuses(statusesResponse) {
   const jsonData = {};
 
   // Split statusDefs into open and closed name-doc objects.
   jsonData.open = [];
   jsonData.closed = [];
-  for (const s of config.statusDefs) {
+  for (const s of statusesResponse.statusDefs) {
     const item = {
       name: s.status,
       doc: s.docstring,
@@ -1101,9 +1101,23 @@ function TKR_convertConfig(config) {
     }
   }
 
+  jsonData.strict = statusesResponse.restrictToKnown;
+
+  return jsonData;
+}
+
+
+/**
+ * Convert the object resulting of a monorail.Projects ListComponents to
+ * the format expected by TKR_fetchOptions.
+ * @param {object} config A pRPC ListComponentsResponse object.
+ */
+function TKR_convertComponents(componentsResponse) {
+  const jsonData = {};
+
   // Filter out deprecated components and normalize to name-doc object.
   jsonData.components = [];
-  for (const c of config.componentDefs) {
+  for (const c of componentsResponse.componentDefs) {
     if (!c.deprecated) {
       jsonData.components.push({
           name: c.path,
@@ -1111,10 +1125,6 @@ function TKR_convertConfig(config) {
       });
     }
   }
-
-  jsonData.strict = config.restrictToKnown;
-  jsonData.excl_prefixes = config.exclusiveLabelPrefixes.map(
-      prefix => prefix.toLowerCase());
 
   return jsonData;
 }
@@ -1130,6 +1140,9 @@ function TKR_convertLabels(labelsResponse) {
 
   jsonData.labels = labelsResponse.labelOptions.map(
       label => ({name: label.label, doc: label.docstring}));
+
+  jsonData.excl_prefixes = labelsResponse.exclusiveLabelPrefixes.map(
+      prefix => prefix.toLowerCase());
 
   return jsonData;
 }
@@ -1205,14 +1218,16 @@ function TKR_fetchOptions(projectName, token, cct) {
   };
 
   const membersPromise = CS_fetch(membersURL);
-  const configPromise = prpcClient.call('monorail.Projects', 'GetConfig',
-      projectRequestMessage);
-  const labelsPromise = prpcClient.call('monorail.Projects', 'GetLabelOptions',
-      projectRequestMessage);
+  const statusesPromise = prpcClient.call(
+      'monorail.Projects', 'ListStatuses', projectRequestMessage);
+  const componentsPromise = prpcClient.call(
+      'monorail.Projects', 'ListComponents', projectRequestMessage);
+  const labelsPromise = prpcClient.call(
+      'monorail.Projects', 'GetLabelOptions', projectRequestMessage);
   const customPermissionsPromise = prpcClient.call(
       'monorail.Projects', 'GetCustomPermissions', projectRequestMessage);
-  const hotlistsPromise = prpcClient.call('monorail.Features',
-      'ListHotlistsByUser', userRequestMessage);
+  const hotlistsPromise = prpcClient.call(
+      'monorail.Features', 'ListHotlistsByUser', userRequestMessage);
 
   const allPromises = [];
 
@@ -1228,13 +1243,20 @@ function TKR_fetchOptions(projectName, token, cct) {
   }));
 
   allPromises.push(
-      configPromise.then(config => {
-        const jsonData = TKR_convertConfig(config);
+      statusesPromise.then(statusesResponse => {
+        const jsonData = TKR_convertStatuses(statusesResponse);
 
         TKR_setUpStatusStore(jsonData.open, jsonData.closed);
-        TKR_setUpComponentStore(jsonData.components);
-        TKR_exclPrefixes = jsonData.excl_prefixes;
         TKR_restrict_to_known = jsonData.strict;
+
+        return jsonData;
+  }));
+
+  allPromises.push(
+      componentsPromise.then(componentsResponse => {
+        const jsonData = TKR_convertComponents(componentsResponse);
+
+        TKR_setUpComponentStore(jsonData.components);
 
         return jsonData;
   }));
@@ -1243,6 +1265,7 @@ function TKR_fetchOptions(projectName, token, cct) {
       labelsPromise.then(labelsResponse => {
         const jsonData = TKR_convertLabels(labelsResponse);
 
+        TKR_exclPrefixes = jsonData.excl_prefixes;
         TKR_setUpLabelStore(jsonData.labels);
 
         return jsonData;
