@@ -90,9 +90,10 @@ message GetLabelOptionsRequest {
 }
 
 
-// Next available tag: 2
+// Next available tag: 3
 message GetLabelOptionsResponse {
   repeated LabelDef label_options = 1;
+  repeated string exclusive_label_prefixes = 2;
 }
 
 

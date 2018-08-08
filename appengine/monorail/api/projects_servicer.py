@@ -131,7 +131,8 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
         for label in label_options]
 
     result = projects_pb2.GetLabelOptionsResponse(
-        label_options=label_defs)
+        label_options=label_defs,
+        exclusive_label_prefixes=config.exclusive_label_prefixes)
     return result
 
   @monorail_servicer.PRPCMethod
