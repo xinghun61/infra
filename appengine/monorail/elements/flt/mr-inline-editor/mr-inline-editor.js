@@ -14,7 +14,10 @@ class MrInlineEditor extends Polymer.Element {
 
   static get properties() {
     return {
-      content: String,
+      content: {
+        type: String,
+        observer: '_processRawContent',
+      },
       _displayedContent: String,
       editing: {
         type: Boolean,
@@ -34,14 +37,7 @@ class MrInlineEditor extends Polymer.Element {
         value: 'Editable content',
       },
       onSave: Function,
-      _newContent: String,
     };
-  }
-
-  static get observers() {
-    return [
-      '_processRawContent(content)',
-    ]
   }
 
   _processRawContent(content) {
@@ -83,16 +79,13 @@ class MrInlineEditor extends Polymer.Element {
 
   _markupNewContent() {
     const lines = this._displayedContent.trim().split('\n');
-    let markedContent = '';
-    let markedLines = [];
-    lines.forEach(line => {
+    let markedLines = lines.map(line => {
       let markedLine = line;
-      this._boldLines.forEach(boldLine => {
-        if (line.startsWith(boldLine)) {
-          markedLine = `<b>${boldLine}</b>${line.slice(boldLine.length)}`;
-        }
-      });
-      markedLines.push(markedLine);
+      const matchingBoldLine = this._boldLines.find(boldLine => (line.startsWith(boldLine)));
+      if (matchingBoldLine) {
+        markedLine = `<b>${matchingBoldLine}</b>${line.slice(matchingBoldLine.length)}`;
+      }
+      return markedLine;
     });
     return markedLines.join('\n');
   }
