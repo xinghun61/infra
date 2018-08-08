@@ -5,6 +5,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 
@@ -20,7 +21,7 @@ import (
 // The workflow will be computed from the validated and merged config for the
 // project in question, and filtered to only include workers relevant to the
 // files to be analyzed.
-func Generate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig, files []*tricium.Data_File) (*admin.Workflow, error) {
+func Generate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig, files []*tricium.Data_File, gitRef, gitURL string) (*admin.Workflow, error) {
 	vpc, err := Validate(sc, pc)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to validate project config").Err()
@@ -40,7 +41,7 @@ func Generate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig, files []*tri
 			return nil, errors.Annotate(err, "failed include function check").Err()
 		}
 		if shouldInclude {
-			w, err := createWorker(s, sc, functions[s.Function])
+			w, err := createWorker(s, sc, functions[s.Function], gitRef, gitURL)
 			if err != nil {
 				return nil, errors.Annotate(err, "failed to create worker").Err()
 			}
@@ -174,7 +175,7 @@ func includeFunction(f *tricium.Function, files []*tricium.Data_File) (bool, err
 // service config.
 //
 // The provided function is assumed to be verified.
-func createWorker(s *tricium.Selection, sc *tricium.ServiceConfig, f *tricium.Function) (*admin.Worker, error) {
+func createWorker(s *tricium.Selection, sc *tricium.ServiceConfig, f *tricium.Function, gitRef, gitURL string) (*admin.Worker, error) {
 	i := tricium.LookupImplForPlatform(f, s.Platform) // If verified, there should be an Impl.
 	p := tricium.LookupPlatform(sc, s.Platform)       // If verified, the platform should be known.
 	// TODO(qyearsley): The character that's used as a separator in worker
@@ -195,7 +196,22 @@ func createWorker(s *tricium.Selection, sc *tricium.ServiceConfig, f *tricium.Fu
 	}
 	switch ii := i.Impl.(type) {
 	case *tricium.Impl_Recipe:
-		// TODO(juliehockett): Pass along config information.
+		recipe := ii.Recipe
+		var properties map[string]interface{}
+		err := json.Unmarshal([]byte(recipe.Properties), &properties)
+		if err != nil {
+			return nil, errors.Annotate(err, "failed to unmarshal").Err()
+		}
+		for _, c := range s.Configs {
+			properties[c.Name] = c.Value
+		}
+		properties["ref"] = gitRef
+		properties["repository"] = gitURL
+		properties_bytes, err := json.Marshal(properties)
+		if err != nil {
+			return nil, errors.Annotate(err, "failed to marshal").Err()
+		}
+		recipe.Properties = string(properties_bytes)
 		w.Impl = &admin.Worker_Recipe{Recipe: ii.Recipe}
 	case *tricium.Impl_Cmd:
 		cmd := ii.Cmd

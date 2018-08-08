@@ -5,6 +5,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -137,7 +138,7 @@ func TestGenerate(t *testing.T) {
 			SwarmingServiceAccount: "swarming@email.com",
 		}
 		Convey("Correct selection generates workflow", func() {
-			wf, err := Generate(sc, pc, []*tricium.Data_File{})
+			wf, err := Generate(sc, pc, []*tricium.Data_File{}, "refs/1234/2", "https://chromium-review.googlesource.com/infra")
 			So(err, ShouldBeNil)
 			So(len(wf.Workers), ShouldEqual, 3)
 		})
@@ -303,6 +304,8 @@ func TestCreateWorker(t *testing.T) {
 		analyzer := "PyLint"
 		config := "enable"
 		configValue := "all"
+		gitRef := "refs/1234/2"
+		gitURL := "https://chromium-review.googlesource.com/infra"
 		selection := &tricium.Selection{
 			Function: analyzer,
 			Platform: platform,
@@ -349,7 +352,7 @@ func TestCreateWorker(t *testing.T) {
 					},
 				},
 			}
-			w, err := createWorker(selection, sc, f)
+			w, err := createWorker(selection, sc, f, gitRef, gitURL)
 			So(err, ShouldBeNil)
 			So(w.Name, ShouldEqual, fmt.Sprintf("%s_%s", analyzer, platform))
 			So(w.Needs, ShouldEqual, f.Needs)
@@ -359,16 +362,13 @@ func TestCreateWorker(t *testing.T) {
 			So(w.Dimensions[0], ShouldEqual, dimension)
 			So(len(w.CipdPackages), ShouldEqual, 1)
 			So(w.Deadline, ShouldEqual, deadline)
-			switch wi := w.Impl.(type) {
-			case *admin.Worker_Cmd:
-				So(len(wi.Cmd.Args), ShouldEqual, 2)
-				So(wi.Cmd.Args[0], ShouldEqual, fmt.Sprintf("--%s", config))
-				So(wi.Cmd.Args[1], ShouldEqual, configValue)
-			case *admin.Worker_Recipe, nil:
+			wi := w.Impl.(*admin.Worker_Cmd)
+			if wi == nil {
 				fail("Incorrect worker type")
-			default:
-				fail("Unset worker type")
 			}
+			So(len(wi.Cmd.Args), ShouldEqual, 2)
+			So(wi.Cmd.Args[0], ShouldEqual, fmt.Sprintf("--%s", config))
+			So(wi.Cmd.Args[1], ShouldEqual, configValue)
 		})
 
 		Convey("Correctly creates recipe-based worker", func() {
@@ -393,13 +393,14 @@ func TestCreateWorker(t *testing.T) {
 								CipdPackage: "path/to/cipd/package",
 								CipdVersion: "version",
 								Name:        "recipe",
+								Properties:  "{\"prop\": \"infra\"}",
 							},
 						},
 						Deadline: deadline,
 					},
 				},
 			}
-			w, err := createWorker(selection, sc, f)
+			w, err := createWorker(selection, sc, f, gitRef, gitURL)
 			So(err, ShouldBeNil)
 			So(w.Name, ShouldEqual, fmt.Sprintf("%s_%s", analyzer, platform))
 			So(w.Needs, ShouldEqual, f.Needs)
@@ -416,6 +417,18 @@ func TestCreateWorker(t *testing.T) {
 			So(wi.Recipe.CipdPackage, ShouldEqual, "path/to/cipd/package")
 			So(wi.Recipe.CipdVersion, ShouldEqual, "version")
 			So(wi.Recipe.Name, ShouldEqual, "recipe")
+			var actualProperties map[string]interface{}
+			err = json.Unmarshal([]byte(wi.Recipe.Properties), &actualProperties)
+			if err != nil {
+				fail("Unable to marshal properties")
+			}
+			expectedProperties := map[string]interface{}{
+				"prop":       "infra",
+				"enable":     "all",
+				"ref":        "refs/1234/2",
+				"repository": "https://chromium-review.googlesource.com/infra",
+			}
+			So(actualProperties, ShouldResemble, expectedProperties)
 		})
 	})
 }

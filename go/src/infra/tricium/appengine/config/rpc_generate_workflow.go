@@ -25,7 +25,7 @@ func (*configServer) GenerateWorkflow(c context.Context, req *admin.GenerateWork
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get service config: %v", err)
 	}
-	wf, err := config.Generate(sc, pc, req.Files)
+	wf, err := config.Generate(sc, pc, req.Files, "", "")
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to validate config: %v", err)
 	}

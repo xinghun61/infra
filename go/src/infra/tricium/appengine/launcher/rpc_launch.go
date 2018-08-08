@@ -91,7 +91,7 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 		"project": req.Project,
 		"config":  string(configJSON),
 	}.Debugf(c, "Got project config")
-	wf, err := config.Generate(sc, pc, req.Files)
+	wf, err := config.Generate(sc, pc, req.Files, req.GitRef, req.GitUrl)
 	if err != nil {
 		return errors.Annotate(err, "failed to generate workflow config for project %q", req.Project).Err()
 	}
