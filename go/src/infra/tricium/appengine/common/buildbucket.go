@@ -104,6 +104,7 @@ func (s buildbucketServer) Collect(c context.Context, params *CollectParameters)
 func swarmingParametersJSON(serverURL string, worker *admin.Worker, recipe *admin.Worker_Recipe) (string, error) {
 	// Prepare swarming overrides.
 	parameters := map[string]interface{}{
+		"builder_name": "tricium",
 		"swarming": map[string]interface{}{
 			"hostname": serverURL,
 			"override_builder_cfg": map[string]interface{}{
@@ -122,6 +123,7 @@ func swarmingParametersJSON(serverURL string, worker *admin.Worker, recipe *admi
 
 func makeRequest(pubsubTopic, pubsubUserdata, parametersJSON string, tags []string) *bbapi.ApiPutRequestMessage {
 	return &bbapi.ApiPutRequestMessage{
+		Bucket: "luci.infra.tricium",
 		PubsubCallback: &bbapi.ApiPubSubCallbackMessage{
 			Topic:    pubsubTopic,
 			UserData: pubsubUserdata,

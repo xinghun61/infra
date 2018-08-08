@@ -26,7 +26,7 @@ func TestParametersJSON(t *testing.T) {
 		}}
 		actual, err := swarmingParametersJSON(serverURL, w, recipe)
 		So(err, ShouldBeNil)
-		expected := `{"swarming":{"hostname":"https://chromium-swarm-dev.appspot.com","override_builder_cfg":{"dimensions":["pool:Chrome","os:Ubuntu13.04"],"recipe":{"Recipe":{"name":"recipe"}}}}}`
+		expected := `{"builder_name":"tricium","swarming":{"hostname":"https://chromium-swarm-dev.appspot.com","override_builder_cfg":{"dimensions":["pool:Chrome","os:Ubuntu13.04"],"recipe":{"Recipe":{"name":"recipe"}}}}}`
 		So(actual, ShouldEqual, expected)
 	})
 }
@@ -41,6 +41,7 @@ func TestMakeRequest(t *testing.T) {
 		So(
 			makeRequest(pubsubTopic, pubsubUserdata, parameters_json, tags),
 			ShouldResemble, &bbapi.ApiPutRequestMessage{
+				Bucket: "luci.infra.tricium",
 				PubsubCallback: &bbapi.ApiPubSubCallbackMessage{
 					Topic:    pubsubTopic,
 					UserData: pubsubUserdata,
