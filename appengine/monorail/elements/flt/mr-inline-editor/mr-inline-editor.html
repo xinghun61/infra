@@ -59,9 +59,9 @@
     </h3>
     <textarea id="textEditor"
         class="content"
-        value="{{_displayedContent::input}}"
+        value="{{_newContent::input}}"
         hidden$="[[!editing]]"
-        placeholder$="[[placeholder]]"></textarea>
+        placeholder$="[[placeholder]]">[[content]]</textarea>
     <div class="content" hidden$="[[editing]]">
       <slot></slot>
     </div>
