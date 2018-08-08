@@ -30,7 +30,7 @@
           actualRun,
           [{
             tag: 'a',
-            css: 'strikeThrough',
+            css: 'strike-through',
             href:'/p/monorail/issues/detail?id=1234',
             content: str
           }]
@@ -109,7 +109,7 @@
             {
               tag: 'a',
               href:'/p/PROJ/issues/detail?id=456',
-              css: 'strikeThrough',
+              css: 'strike-through',
               content: 'PROJ:#456',
             },
           ]
@@ -311,7 +311,7 @@
             {content: 'test ('},
             {content: 'User2@example.com', tag: 'a', href: '/u/User2@example.com'},
             {content: ' and '},
-            {content: 'crbug.com/99', tag: 'a', href: '/p/chromium/issues/detail?id=99', css: 'strikeThrough'},
+            {content: 'crbug.com/99', tag: 'a', href: '/p/chromium/issues/detail?id=99', css: 'strike-through'},
             {content: ') get linked'},
           ]);
     });
@@ -323,7 +323,7 @@
           actualTextRuns, [
             {content: 'only existing '},
             {content: 'bugs = '},
-            {content: '456', tag: 'a', href: '/p/chromium/issues/detail?id=456', css: 'strikeThrough'},
+            {content: '456', tag: 'a', href: '/p/chromium/issues/detail?id=456', css: 'strike-through'},
             {content: ', '},
             {content: 'monorail:123', tag: 'a', href: '/p/monorail/issues/detail?id=123', css: ''},
             {content: ', '},

@@ -230,7 +230,7 @@
   function createIssueRefRun(projectName, localId, isClosed, content) {
     return {
       tag: 'a',
-      css: isClosed ? 'strikeThrough' : '',
+      css: isClosed ? 'strike-through' : '',
       href: `/p/${projectName}/issues/detail?id=${localId}`,
       content: content,
     };
