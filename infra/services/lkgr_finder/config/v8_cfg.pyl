@@ -74,7 +74,6 @@
         'V8 Linux - arm - sim - debug',
         'V8 Linux - arm64 - sim',
         'V8 Linux - arm64 - sim - debug',
-        'V8 Linux - mipsel - sim - builder',
       ],
     },  # client.v8.ports
     'client.v8.fyi': {
