@@ -217,6 +217,64 @@
     });
   });
 
+  suite('versioncontrol component functions.', function() {
+    const {lookup, extracRefs, refRegs, replacer} = components.get('06-versioncontrol');
+
+    test('test git hash regex', function() {
+      const gitHashRE = refRegs[0];
+      const str =
+          'r63b72a71d5fbce6739c51c3846dd94bd62b91091 blha blah ' +
+          'Revision 63b72a71d5fbce6739c51c3846dd94bd62b91091 blah balh ' +
+          '63b72a71d5fbce6739c51c3846dd94bd62b91091 ' +
+          'Revision63b72a71d5fbce6739c51c3846dd94bd62b91091';
+      let match;
+      let actualMatches = [];
+      while ((match = gitHashRE.exec(str)) !== null) {
+        actualMatches.push(match[0]);
+      }
+      assert.deepEqual(
+          actualMatches, [
+            'r63b72a71d5fbce6739c51c3846dd94bd62b91091',
+            'Revision 63b72a71d5fbce6739c51c3846dd94bd62b91091',
+            '63b72a71d5fbce6739c51c3846dd94bd62b91091',
+          ]);
+    });
+
+    test('test svn regex', function() {
+      const svnRE = refRegs[1];
+      const str =
+          'r1234 blah blah ' +
+          'Revision 123456 blah balh ' +
+          'r12345678' +
+          '1234';
+      let match;
+      let actualMatches = [];
+      while ((match = svnRE.exec(str)) !== null) {
+        actualMatches.push(match[0]);
+      }
+      assert.deepEqual(
+          actualMatches, [
+            'r1234',
+            'Revision 123456',
+          ]);
+    });
+
+    test('replace revision refs plain text', function() {
+        const str = 'r63b72a71d5fbce6739c51c3846dd94bd62b91091';
+      const match = refRegs[0].exec(str);
+      const actualTextRuns = replacer(match);
+      refRegs[0].lastIndex = 0;
+      assert.deepEqual(
+          actualTextRuns,
+          [{
+            content: 'r63b72a71d5fbce6739c51c3846dd94bd62b91091',
+            tag: 'a',
+            href: 'https://crrev.com/63b72a71d5fbce6739c51c3846dd94bd62b91091',
+          }]);
+    });
+  });
+
+
   suite('markupAutolinks tests', function() {
     const componentRefs = new Map();
     componentRefs.set('01-tracker-crbug', {

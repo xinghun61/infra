@@ -12,6 +12,8 @@
   const NUMERIC_SHORT_LINK_RE = /(?<![-/._])\b(https?:\/\/|ftp:\/\/)?(b|t|o|omg|cl|cr)\/([0-9]+)/gi;
   const IMPLIED_LINK_RE = /(?<![-/._])\b[a-z]((-|\.)?[a-z0-9])+\.(com|net|org|edu)\b(\/[^\s<]*)?/gi;
   const IS_LINK_RE = /\b(https?:\/\/|ftp:\/\/|mailto:)([^\s<]+)/gi;
+  const GIT_HASH_RE = /\b(?<prefix>r(evision\s+#?)?)?(?<revNum>([a-f0-9]{40}))\b/gi;
+  const SVN_REF_RE = /\b(?<prefix>r(evision\s+#?)?)(?<revNum>([0-9]{4,7}))\b/gi;
   const LINK_TRAILING_CHARS = [
     [null, ':'],
     [null, '.'],
@@ -60,6 +62,15 @@
         extractRefs: (match, _defaultProjectName) => { return [match[0]]; },
         refRegs: [SHORT_LINK_RE, NUMERIC_SHORT_LINK_RE, IMPLIED_LINK_RE, IS_LINK_RE],
         replacer: ReplaceLinkRef,
+      }
+  );
+  Components.set(
+      '06-versioncontrol',
+      {
+        lookup: null,
+        extractRefs: (match, _defaultProjectName) => { return [match[0]]; },
+        refRegs: [GIT_HASH_RE, SVN_REF_RE],
+        replacer: ReplaceRevisionRef,
       }
   );
 
@@ -207,6 +218,12 @@
       textRuns.push({content: trailing});
     }
     return textRuns;
+  }
+
+  function ReplaceRevisionRef(match, _components, _defaultProjectName) {
+    const content = match[0];
+    const href = `https://crrev.com/${match.groups.revNum}`;
+    return [{content: content, tag: 'a', href: href}];
   }
 
   // Create custom textrun functions.
