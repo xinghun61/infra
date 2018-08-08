@@ -201,6 +201,12 @@ func Register() {
 }
 
 func updateCPUMetrics(c context.Context) error {
+	cpuCounts, err := cpu.Counts(true)
+	if err != nil {
+		return err
+	}
+	cpuCount.Set(c, int64(cpuCounts))
+
 	cpuTimes, err := cpu.Times(false)
 	if err != nil {
 		return err

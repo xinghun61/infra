@@ -25,6 +25,7 @@ func TestMetrics(t *testing.T) {
 
 	Convey("CPU", t, func() {
 		So(updateCPUMetrics(c), ShouldBeNil)
+		So(cpuCount.Get(c), ShouldBeGreaterThan, 0)
 
 		// Small fudge factor because sometimes this isn't exact.
 		const aBitLessThanZero = -0.001
