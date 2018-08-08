@@ -587,16 +587,8 @@ def _create_task_def_async(
   swarming_tags.sort()
 
   task = apply_if_tags(task)
+  assert len(task['task_slices']) == 1, len(task['task_slices'])
 
-  # Upgrade old style properties into task_slices.
-  if task.get('properties') and not task.get('task_slices'):
-    task['task_slices'] = [
-        {
-            'expiration_secs': task.pop('expiration_secs', '3600'),
-            'properties': task.pop('properties'),
-            'wait_for_capacity': False,
-        },
-    ]
   if builder_cfg.expiration_secs > 0:
     task['task_slices'][-1]['expiration_secs'] = str(
         builder_cfg.expiration_secs

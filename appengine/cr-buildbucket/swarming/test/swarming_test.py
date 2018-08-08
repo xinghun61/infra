@@ -175,8 +175,6 @@ class SwarmingTest(BaseTest):
             'buildbucket:${bucket}:${builder}',
         'priority':
             '100',
-        'expiration_secs':
-            '3600',
         'tags': [
             (
                 'log_location:logdog://luci-logdog-dev.appspot.com/${project}/'
@@ -184,41 +182,45 @@ class SwarmingTest(BaseTest):
             ),
             'luci_project:${project}',
         ],
-        'properties': {
-            'execution_timeout_secs':
-                '3600',
-            'extra_args': [
-                'cook',
-                '-repository',
-                '${repository}',
-                '-revision',
-                '${revision}',
-                '-recipe',
-                '${recipe}',
-                '-properties',
-                '${properties_json}',
-                '-logdog-project',
-                '${project}',
-            ],
-            'caches': [{
-                'path': '${cache_dir}/builder',
-                'name': 'builder_${builder_hash}'
-            }],
-            'cipd_input': {
-                'packages': [
-                    {
-                        'package_name': 'infra/test/bar/${os_ver}',
-                        'path': '.',
-                        'version': 'latest',
-                    },
-                    {
-                        'package_name': 'infra/test/foo/${platform}',
-                        'path': 'third_party',
-                        'version': 'stable',
-                    },
+        'task_slices': [{
+            'expiration_secs': '3600',
+            'properties': {
+                'execution_timeout_secs':
+                    '3600',
+                'extra_args': [
+                    'cook',
+                    '-repository',
+                    '${repository}',
+                    '-revision',
+                    '${revision}',
+                    '-recipe',
+                    '${recipe}',
+                    '-properties',
+                    '${properties_json}',
+                    '-logdog-project',
+                    '${project}',
                 ],
+                'caches': [{
+                    'path': '${cache_dir}/builder',
+                    'name': 'builder_${builder_hash}'
+                }],
+                'cipd_input': {
+                    'packages': [
+                        {
+                            'package_name': 'infra/test/bar/${os_ver}',
+                            'path': '.',
+                            'version': 'latest',
+                        },
+                        {
+                            'package_name': 'infra/test/foo/${platform}',
+                            'path': 'third_party',
+                            'version': 'stable',
+                        },
+                    ],
+                },
             },
-        },
+            'wait_for_capacity': False,
+        },],
         'numerical_value_for_coverage_in_format_obj':
             42,
     }
