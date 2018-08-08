@@ -39,9 +39,10 @@ message ListReferencedUsersResponse {
 
 // Next available tag: 4
 message GetUserCommitsRequest {
-  string email = 1;
-  fixed32 from_timestamp = 2;
-  fixed32 until_timestamp = 3;
+  RequestTrace trace = 1;
+  string email = 2;
+  fixed32 from_timestamp = 3;
+  fixed32 until_timestamp = 4;
 }
 
 

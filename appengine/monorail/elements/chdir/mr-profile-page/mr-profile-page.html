@@ -5,14 +5,19 @@
 <link rel="import" href="../../mr-header/mr-header.html">
 <link rel="import" href="../mr-activity-table/mr-activity-table.html">
 <link rel="import" href="../mr-comments-list/mr-comments-list.html">
-
+<link rel="import" href="../mr-commit-table/mr-commit-table.html">
 
 <dom-module id="mr-profile-page">
   <template>
     <style>
       .container {
-        width: 100%;
+        width: 70%;
         padding: 1em 16px;
+      }
+      .commitTable {
+        width: 80%;
+        overflow-x: auto;
+        height: 400px;
       }
     </style>
     <app-location query-params="{{queryParams}}" url-space-regex="^/u/(.*)/polymer$"></app-location>
@@ -29,6 +34,9 @@
     <div class="container">
       <mr-activity-table></mr-activity-table>
       <mr-comments-list token="[[token]]" user="[[user]]" viewed-user-id="[[viewedUserId]]"></mr-comments-list>
+    </div>
+    <div class="commitTable">
+      <mr-commit-table token="[[token]]" user="[[viewedUser]]"></mr-commit-table>
     </div>
   </template>
   <script src="./mr-profile-page.js"></script>

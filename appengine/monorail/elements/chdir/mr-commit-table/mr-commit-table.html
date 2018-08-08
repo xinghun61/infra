@@ -1,0 +1,59 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/chopsui/chops-timestamp.html">
+
+<dom-module id="mr-commit-table">
+  <template>
+    <style>
+      table {
+        word-wrap: break-word;
+        width: 100%;
+      }
+      tr {
+        font-size: 90%;
+        font-weight: normal;
+        text-align: left;
+        margin: 0 auto;
+        padding: 2em 1em;
+        height: 20px;
+      }
+      td {
+        background: #f8f8f8;
+        padding: 4px;
+        padding-left: 8px;
+        text-overflow: ellipsis;
+      }
+      th {
+        text-decoration: none;
+        margin-right: 0;
+        padding-right: 0;
+        padding-left: 8px;
+        white-space: nowrap;
+        background: #e3e9ff;
+        text-align: left;
+        border-right: 1px solid #fff;
+        border-top: 1px solid #fff;
+      }
+      th:last-child { border-right: 0; }
+      tr:nth-child(even) { background: #f8f8f8; }
+    </style>
+    <table cellspacing="0" cellpadding="0">
+      <tbody>
+        <tr id="headingRow">
+          <th style="width:15%;">Time</th>
+          <th style="width:15%;">Commit SHA</th>
+          <th style="width:15%;">Repo</th>
+          <th style="width:55%;">Commit Message</th>
+        </tr>
+        <template is="dom-repeat" items="[[commits]]" as="commit">
+          <tr id="row">
+            <td style="width:15%;"><chops-timestamp timestamp="[[commit.commitTime]]" short></chops-timestamp></td>
+            <td style="width:15%;">[[_truncateSHA(commit.commitSha)]]</td>
+            <td style="width:15%;">[[_truncateRepo(commit.commitRepoUrl)]]</td>
+            <td style="width:55%;">[[_truncateMessage(commit.commitMessage)]]</td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </template>
+  <script src="./mr-commit-table.js"></script>
+</dom-module>
