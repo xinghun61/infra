@@ -38,6 +38,7 @@ disable=
   global-statement,
   import-error,        # Not supported if only files in change are present.
   invalid-name,        # Different projects have different naming conventions.
+  line-too-long,
   locally-disabled,
   locally-enabled,
   logging-not-lazy,
