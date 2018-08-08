@@ -42,24 +42,15 @@ func TestMergeApprovalRules(t *testing.T) {
 		}
 		testClients := &Clients{}
 		testClients.monorail = mockMonorailClient{
-			il: &monorail.IssuesListResponse{
-				Items: []*monorail.Issue{
-					{},
-				},
-			},
+			gi: &monorail.Issue{},
 			ii: &monorail.InsertIssueResponse{
 				Issue: &monorail.Issue{},
 			},
 		}
 		Convey("Change to commit has a valid bug with merge approval label in comment history", func() {
 			testClients.monorail = mockMonorailClient{
-				il: &monorail.IssuesListResponse{
-					Items: []*monorail.Issue{
-						{
-							Id: 123456,
-						},
-					},
-					TotalResults: 1,
+				gi: &monorail.Issue{
+					Id: 123456,
 				},
 				cl: &monorail.ListCommentsResponse{
 					Items: []*monorail.Comment{
@@ -85,13 +76,8 @@ func TestMergeApprovalRules(t *testing.T) {
 		})
 		Convey("Change to commit has multiple bugs including an invalid one", func() {
 			testClients.monorail = mockMonorailClient{
-				il: &monorail.IssuesListResponse{
-					Items: []*monorail.Issue{
-						{
-							Id: 123456,
-						},
-					},
-					TotalResults: 1,
+				gi: &monorail.Issue{
+					Id: 123456,
 				},
 				cl: &monorail.ListCommentsResponse{
 					Items: []*monorail.Comment{
@@ -117,14 +103,9 @@ func TestMergeApprovalRules(t *testing.T) {
 		})
 		Convey("Change to commit has an invalid bug and a valid one with no merge approval label", func() {
 			testClients.monorail = mockMonorailClient{
-				il: &monorail.IssuesListResponse{
-					Items: []*monorail.Issue{
-						{
-							Id:     123456,
-							Labels: []string{},
-						},
-					},
-					TotalResults: 1,
+				gi: &monorail.Issue{
+					Id:     123456,
+					Labels: []string{},
 				},
 				cl: &monorail.ListCommentsResponse{
 					Items: []*monorail.Comment{
@@ -146,19 +127,12 @@ func TestMergeApprovalRules(t *testing.T) {
 		})
 		Convey("Change to commit has multiple invalid bugs", func() {
 			testClients.monorail = mockMonorailClient{
-				il: &monorail.IssuesListResponse{
-					Items: []*monorail.Issue{
-						{
-							Id:     123456,
-							Labels: []string{},
-						},
-					},
-					TotalResults: 1,
+				gi: &monorail.Issue{
+					Id:     123456,
+					Labels: []string{},
 				},
-				ii: &monorail.InsertIssueResponse{
-					Issue: &monorail.Issue{
-						Id: 123456,
-					},
+				cl: &monorail.ListCommentsResponse{
+					Items: []*monorail.Comment{},
 				},
 			}
 			rc.CommitMessage = "All bugs listed on this change to commit are all invalid \nBug: 654321, 587469"

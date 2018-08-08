@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 
 	"golang.org/x/net/context"
@@ -168,21 +167,13 @@ func postIssue(ctx context.Context, cfg *RepoConfig, s, d string, cs *Clients, c
 }
 
 func issueFromID(ctx context.Context, cfg *RepoConfig, ID int32, cs *Clients) (*monorail.Issue, error) {
-	req := &monorail.IssuesListRequest{
-		ProjectId: cfg.MonorailProject,
-		Can:       monorail.IssuesListRequest_ALL,
-		Q:         strconv.Itoa(int(ID)),
+	req := &monorail.GetIssueRequest{
+		Issue: &monorail.IssueRef{
+			IssueId:   ID,
+			ProjectId: cfg.MonorailProject,
+		},
 	}
-	resp, err := cs.monorail.IssuesList(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	for _, iss := range resp.Items {
-		if iss.Id == ID {
-			return iss, nil
-		}
-	}
-	return nil, fmt.Errorf("could not find an issue with ID %d", ID)
+	return cs.monorail.GetIssue(ctx, req)
 }
 
 func listCommentsFromIssueID(ctx context.Context, cfg *RepoConfig, ID int32, cs *Clients) ([]*monorail.Comment, error) {
