@@ -19,6 +19,16 @@
     "multi-line start": "/*",
     "multi-line end": "*/"
   },
+  ".cc": {
+    "single-line": "//",
+    "multi-line start": "/*",
+    "multi-line end": "*/"
+  },
+  ".h": {
+    "single-line": "//",
+    "multi-line start": "/*",
+    "multi-line end": "*/"
+  },
   ".js": {
     "single-line": "//",
     "multi-line start": "/*",
