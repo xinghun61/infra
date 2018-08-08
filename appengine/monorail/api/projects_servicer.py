@@ -94,27 +94,6 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
     return result
 
   @monorail_servicer.PRPCMethod
-  def GetFieldOptions(self, mc, request):
-    """Return the possible users for each user field that needs permissions."""
-    project = self._GetProject(mc, request)
-
-    with work_env.WorkEnv(mc, self.services) as we:
-      config = we.GetProjectConfig(project.project_id)
-
-    users_by_id = tracker_helpers.GetVisibleMembers(mc, project, self.services)
-
-    field_options = []
-    for fd in config.field_defs:
-      if fd.needs_perm and not fd.is_deleted:
-        qualified_users = field_helpers.FilterValidUserFieldValues(
-            mc, project, self.services, fd, users_by_id.values())
-        field_options.append(converters.ConvertFieldOptions(
-            fd, [uv.user_id for uv in qualified_users], users_by_id, config))
-
-    result = projects_pb2.GetFieldOptionsResponse(field_options=field_options)
-    return result
-
-  @monorail_servicer.PRPCMethod
   def GetLabelOptions(self, mc, request):
     """Return the label options for autocomplete for the given project."""
     project = self._GetProject(mc, request)
@@ -190,3 +169,31 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
     result = projects_pb2.ListComponentsResponse(
         component_defs=component_defs)
     return result
+
+  @monorail_servicer.PRPCMethod
+  def ListFields(self, mc, request):
+    """List all fields for the specified project."""
+    project = self._GetProject(mc, request)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      config = we.GetProjectConfig(project.project_id)
+
+    users_by_id = tracker_helpers.GetVisibleMembers(mc, project, self.services)
+
+    field_defs = []
+    for fd in config.field_defs:
+      if fd.is_deleted:
+        continue
+
+      user_choices = []
+      if fd.needs_perm and request.include_user_choices:
+        qualified_users = field_helpers.FilterValidUserFieldValues(
+            mc, project, self.services, fd, users_by_id.values())
+        user_choices = [uv.user_id for uv in qualified_users]
+
+      field_defs.append(converters.ConvertFieldDef(
+          fd, user_choices, users_by_id, config, request.include_admin_info))
+
+    result = projects_pb2.ListFieldsResponse(field_defs=field_defs)
+    return result
+

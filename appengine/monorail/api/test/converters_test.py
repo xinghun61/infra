@@ -928,8 +928,6 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual('Security', actual.label)
     self.assertEqual('', actual.docstring)
     self.assertFalse(actual.deprecated)
-    # rank is not set on output, only used when setting a new rank.
-    self.assertEqual(0, actual.rank)
 
     label_def = tracker_pb2.LabelDef(
         label='UI', label_docstring='doc', deprecated=True)
@@ -989,7 +987,7 @@ class ConverterFunctionsTest(unittest.TestCase):
     field_def = tracker_pb2.FieldDef(
         field_name='EstDays', field_type=tracker_pb2.FieldTypes.INT_TYPE)
     actual = converters.ConvertFieldDef(
-        field_def, self.users_by_id, self.config, True)
+        field_def, [], self.users_by_id, self.config, True)
     self.assertEqual('EstDays', actual.field_ref.field_name)
     self.assertEqual(common_pb2.INT_TYPE, actual.field_ref.type)
     self.assertEqual('', actual.field_ref.approval_name)
@@ -1007,7 +1005,7 @@ class ConverterFunctionsTest(unittest.TestCase):
         is_multivalued=True, docstring='doc', admin_ids=[111L],
         is_phase_field=True)
     actual = converters.ConvertFieldDef(
-        field_def, self.users_by_id, self.config, True)
+        field_def, [], self.users_by_id, self.config, True)
     self.assertEqual('DesignDocs', actual.field_ref.field_name)
     self.assertEqual(common_pb2.URL_TYPE, actual.field_ref.type)
     self.assertEqual('', actual.field_ref.approval_name)
@@ -1022,7 +1020,7 @@ class ConverterFunctionsTest(unittest.TestCase):
 
     # Without include_admin_info, some fields are not set.
     actual = converters.ConvertFieldDef(
-        field_def, self.users_by_id, self.config, False)
+        field_def, [], self.users_by_id, self.config, False)
     self.assertEqual('DesignDocs', actual.field_ref.field_name)
     self.assertEqual(common_pb2.URL_TYPE, actual.field_ref.type)
     self.assertEqual('', actual.field_ref.approval_name)
@@ -1041,9 +1039,34 @@ class ConverterFunctionsTest(unittest.TestCase):
         field_name='Waiver', field_type=tracker_pb2.FieldTypes.URL_TYPE,
         approval_id=self.fd_3.field_id)
     actual = converters.ConvertFieldDef(
-        field_def, self.users_by_id, self.config, True)
+        field_def, [], self.users_by_id, self.config, True)
     self.assertEqual('Waiver', actual.field_ref.field_name)
     self.assertEqual('LegalApproval', actual.field_ref.approval_name)
+
+  def testConvertFieldDef_UserChoices(self):
+    """We can convert an user type field that need special permissions."""
+    field_def = tracker_pb2.FieldDef(
+        field_name='PM', field_type=tracker_pb2.FieldTypes.USER_TYPE)
+    actual = converters.ConvertFieldDef(
+        field_def, [111L, 333L], self.users_by_id, self.config, False)
+    self.assertEqual('PM', actual.field_ref.field_name)
+    self.assertEqual(
+        [111L, 333L],
+        [user_ref.user_id for user_ref in actual.user_choices])
+    self.assertEqual(
+        ['one@example.com', 'banned@example.com'],
+        [user_ref.display_name for user_ref in actual.user_choices])
+
+  def testConvertFieldDef_EnumChoices(self):
+    """We can convert an enum type field."""
+    field_def = tracker_pb2.FieldDef(
+        field_name='Type', field_type=tracker_pb2.FieldTypes.ENUM_TYPE)
+    actual = converters.ConvertFieldDef(
+        field_def, [], self.users_by_id, self.config, False)
+    self.assertEqual('Type', actual.field_ref.field_name)
+    self.assertEqual(
+        ['Defect', 'Enhancement', 'Task', 'Other'],
+        [label_def.label for label_def in actual.enum_choices])
 
   def testConvertApprovalDef(self):
     """We can convert an ApprovalDef to protoc."""
@@ -1127,19 +1150,3 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual('A fake hotlist.', actual.summary)
     self.assertEqual(
         'Detailed description of the fake hotlist.', actual.description)
-
-  def testConvertFieldOptions(self):
-    """We can convert a field def an a list of users to FieldOptions protoc."""
-    self.config.field_defs = [self.fd_1, self.fd_2, self.fd_3]
-    field_def = tracker_pb2.FieldDef(
-        field_name='Waiver', field_type=tracker_pb2.FieldTypes.URL_TYPE,
-        approval_id=self.fd_3.field_id)
-    actual = converters.ConvertFieldOptions(
-        field_def, [111L, 333L], self.users_by_id, self.config)
-    self.assertEqual('Waiver', actual.field_ref.field_name)
-    self.assertEqual('LegalApproval', actual.field_ref.approval_name)
-    self.assertEqual(common_pb2.URL_TYPE, actual.field_ref.type)
-    self.assertEqual([111L, 333L],
-                     [user_ref.user_id for user_ref in actual.user_refs])
-    self.assertEqual(['one@example.com', 'banned@example.com'],
-                     [user_ref.display_name for user_ref in actual.user_refs])

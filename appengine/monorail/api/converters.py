@@ -649,7 +649,8 @@ def ConvertComponentDef(
       label_refs=label_refs)
 
 
-def ConvertFieldDef(field_def, users_by_id, config, include_admin_info):
+def ConvertFieldDef(field_def, user_choices, users_by_id, config,
+                    include_admin_info):
   """Convert a protorpc FieldDef into a protoc FieldDef."""
   parent_approval_name = None
   if field_def.approval_id:
@@ -660,10 +661,23 @@ def ConvertFieldDef(field_def, users_by_id, config, include_admin_info):
       field_def.field_id, field_def.field_name, field_def.field_type,
       parent_approval_name)
 
+  enum_choices = []
+  if field_def.field_type == tracker_pb2.FieldTypes.ENUM_TYPE:
+    masked_labels = tracker_helpers.LabelsMaskedByFields(
+        config, [field_def.field_name], True)
+    enum_choices = [
+        project_objects_pb2.LabelDef(
+            label=label.name,
+            docstring=label.docstring,
+            deprecated=(label.commented == '#'))
+        for label in masked_labels]
+
   if not include_admin_info:
     return project_objects_pb2.FieldDef(
         field_ref=field_ref,
-        docstring=field_def.docstring)
+        docstring=field_def.docstring,
+        user_choices=ConvertUserRefs(user_choices, [], users_by_id),
+        enum_choices=enum_choices)
 
   admin_refs = ConvertUserRefs(field_def.admin_ids, [], users_by_id)
   # TODO(jrobbins): validation, permission granting, and notification options.
@@ -676,7 +690,8 @@ def ConvertFieldDef(field_def, users_by_id, config, include_admin_info):
       is_multivalued=field_def.is_multivalued,
       docstring=field_def.docstring,
       admin_refs=admin_refs,
-      is_phase_field=field_def.is_phase_field)
+      is_phase_field=field_def.is_phase_field,
+      enum_choices=enum_choices)
 
 
 def ConvertApprovalDef(approval_def, users_by_id, config, include_admin_info):
@@ -712,7 +727,7 @@ def ConvertConfig(
           cd, users_by_id, labels_by_id, True)
       for cd in config.component_defs]
   field_defs = [
-      ConvertFieldDef(fd, users_by_id, config, True)
+      ConvertFieldDef(fd, [], users_by_id, config, True)
       for fd in config.field_defs]
   approval_defs = [
       ConvertApprovalDef(ad, users_by_id, config, True)
@@ -739,21 +754,4 @@ def ConvertHotlist(hotlist, users_by_id):
       name=hotlist.name,
       summary=hotlist.summary,
       description=hotlist.description)
-  return result
-
-
-def ConvertFieldOptions(field_def, qualified_users, users_by_id, config):
-  parent_approval_name = None
-  if field_def.approval_id:
-    parent_fd = tracker_bizobj.FindFieldDefByID(field_def.approval_id, config)
-    if parent_fd:
-      parent_approval_name = parent_fd.field_name
-  field_ref = ConvertFieldRef(
-      field_def.field_id, field_def.field_name, field_def.field_type,
-      parent_approval_name)
-
-  user_refs = ConvertUserRefs(qualified_users, [], users_by_id)
-
-  result = project_objects_pb2.FieldOptions(
-      field_ref=field_ref, user_refs=user_refs)
   return result

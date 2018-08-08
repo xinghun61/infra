@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='api/api_proto/project_objects.proto',
   package='monorail',
   syntax='proto3',
-  serialized_pb=_b('\n#api/api_proto/project_objects.proto\x12\x08monorail\x1a\x1a\x61pi/api_proto/common.proto\"=\n\x07Project\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07summary\x18\x02 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x03 \x01(\t\"d\n\tStatusDef\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x12\n\nmeans_open\x18\x02 \x01(\x08\x12\x0c\n\x04rank\x18\x03 \x01(\r\x12\x11\n\tdocstring\x18\x04 \x01(\t\x12\x12\n\ndeprecated\x18\x05 \x01(\x08\"N\n\x08LabelDef\x12\r\n\x05label\x18\x01 \x01(\t\x12\x0c\n\x04rank\x18\x02 \x01(\r\x12\x11\n\tdocstring\x18\x03 \x01(\t\x12\x12\n\ndeprecated\x18\x04 \x01(\x08\"\xaa\x02\n\x0c\x43omponentDef\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x11\n\tdocstring\x18\x02 \x01(\t\x12%\n\nadmin_refs\x18\x03 \x03(\x0b\x32\x11.monorail.UserRef\x12\"\n\x07\x63\x63_refs\x18\x04 \x03(\x0b\x32\x11.monorail.UserRef\x12\x12\n\ndeprecated\x18\x05 \x01(\x08\x12\x0f\n\x07\x63reated\x18\x06 \x01(\x07\x12&\n\x0b\x63reator_ref\x18\x07 \x01(\x0b\x32\x11.monorail.UserRef\x12\x10\n\x08modified\x18\x08 \x01(\x07\x12\'\n\x0cmodifier_ref\x18\t \x01(\x0b\x32\x11.monorail.UserRef\x12&\n\nlabel_refs\x18\n \x03(\x0b\x32\x12.monorail.LabelRef\"\xdb\x01\n\x08\x46ieldDef\x12%\n\tfield_ref\x18\x01 \x01(\x0b\x32\x12.monorail.FieldRef\x12\x17\n\x0f\x61pplicable_type\x18\x02 \x01(\t\x12\x13\n\x0bis_required\x18\x03 \x01(\x08\x12\x10\n\x08is_niche\x18\x04 \x01(\x08\x12\x16\n\x0eis_multivalued\x18\x05 \x01(\x08\x12\x11\n\tdocstring\x18\x06 \x01(\t\x12%\n\nadmin_refs\x18\x07 \x03(\x0b\x32\x11.monorail.UserRef\x12\x16\n\x0eis_phase_field\x18\x08 \x01(\x08\"[\n\x0c\x46ieldOptions\x12%\n\tfield_ref\x18\x01 \x01(\x0b\x32\x12.monorail.FieldRef\x12$\n\tuser_refs\x18\x02 \x03(\x0b\x32\x11.monorail.UserRef\"n\n\x0b\x41pprovalDef\x12%\n\tfield_ref\x18\x01 \x01(\x0b\x32\x12.monorail.FieldRef\x12(\n\rapprover_refs\x18\x02 \x03(\x0b\x32\x11.monorail.UserRef\x12\x0e\n\x06survey\x18\x03 \x01(\t\"\xe6\x02\n\x06\x43onfig\x12\x14\n\x0cproject_name\x18\x01 \x01(\t\x12(\n\x0bstatus_defs\x18\x02 \x03(\x0b\x32\x13.monorail.StatusDef\x12\x31\n\x14statuses_offer_merge\x18\x03 \x03(\x0b\x32\x13.monorail.StatusRef\x12&\n\nlabel_defs\x18\x04 \x03(\x0b\x32\x12.monorail.LabelDef\x12 \n\x18\x65xclusive_label_prefixes\x18\x05 \x03(\t\x12.\n\x0e\x63omponent_defs\x18\x06 \x03(\x0b\x32\x16.monorail.ComponentDef\x12&\n\nfield_defs\x18\x07 \x03(\x0b\x32\x12.monorail.FieldDef\x12,\n\rapproval_defs\x18\x08 \x03(\x0b\x32\x15.monorail.ApprovalDef\x12\x19\n\x11restrict_to_known\x18\t \x01(\x08\x62\x06proto3')
+  serialized_pb=_b('\n#api/api_proto/project_objects.proto\x12\x08monorail\x1a\x1a\x61pi/api_proto/common.proto\"=\n\x07Project\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07summary\x18\x02 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x03 \x01(\t\"d\n\tStatusDef\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x12\n\nmeans_open\x18\x02 \x01(\x08\x12\x0c\n\x04rank\x18\x03 \x01(\r\x12\x11\n\tdocstring\x18\x04 \x01(\t\x12\x12\n\ndeprecated\x18\x05 \x01(\x08\"@\n\x08LabelDef\x12\r\n\x05label\x18\x01 \x01(\t\x12\x11\n\tdocstring\x18\x03 \x01(\t\x12\x12\n\ndeprecated\x18\x04 \x01(\x08\"\xaa\x02\n\x0c\x43omponentDef\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x11\n\tdocstring\x18\x02 \x01(\t\x12%\n\nadmin_refs\x18\x03 \x03(\x0b\x32\x11.monorail.UserRef\x12\"\n\x07\x63\x63_refs\x18\x04 \x03(\x0b\x32\x11.monorail.UserRef\x12\x12\n\ndeprecated\x18\x05 \x01(\x08\x12\x0f\n\x07\x63reated\x18\x06 \x01(\x07\x12&\n\x0b\x63reator_ref\x18\x07 \x01(\x0b\x32\x11.monorail.UserRef\x12\x10\n\x08modified\x18\x08 \x01(\x07\x12\'\n\x0cmodifier_ref\x18\t \x01(\x0b\x32\x11.monorail.UserRef\x12&\n\nlabel_refs\x18\n \x03(\x0b\x32\x12.monorail.LabelRef\"\xae\x02\n\x08\x46ieldDef\x12%\n\tfield_ref\x18\x01 \x01(\x0b\x32\x12.monorail.FieldRef\x12\x17\n\x0f\x61pplicable_type\x18\x02 \x01(\t\x12\x13\n\x0bis_required\x18\x03 \x01(\x08\x12\x10\n\x08is_niche\x18\x04 \x01(\x08\x12\x16\n\x0eis_multivalued\x18\x05 \x01(\x08\x12\x11\n\tdocstring\x18\x06 \x01(\t\x12%\n\nadmin_refs\x18\x07 \x03(\x0b\x32\x11.monorail.UserRef\x12\x16\n\x0eis_phase_field\x18\x08 \x01(\x08\x12\'\n\x0cuser_choices\x18\t \x03(\x0b\x32\x11.monorail.UserRef\x12(\n\x0c\x65num_choices\x18\n \x03(\x0b\x32\x12.monorail.LabelDef\"[\n\x0c\x46ieldOptions\x12%\n\tfield_ref\x18\x01 \x01(\x0b\x32\x12.monorail.FieldRef\x12$\n\tuser_refs\x18\x02 \x03(\x0b\x32\x11.monorail.UserRef\"n\n\x0b\x41pprovalDef\x12%\n\tfield_ref\x18\x01 \x01(\x0b\x32\x12.monorail.FieldRef\x12(\n\rapprover_refs\x18\x02 \x03(\x0b\x32\x11.monorail.UserRef\x12\x0e\n\x06survey\x18\x03 \x01(\t\"\xe6\x02\n\x06\x43onfig\x12\x14\n\x0cproject_name\x18\x01 \x01(\t\x12(\n\x0bstatus_defs\x18\x02 \x03(\x0b\x32\x13.monorail.StatusDef\x12\x31\n\x14statuses_offer_merge\x18\x03 \x03(\x0b\x32\x13.monorail.StatusRef\x12&\n\nlabel_defs\x18\x04 \x03(\x0b\x32\x12.monorail.LabelDef\x12 \n\x18\x65xclusive_label_prefixes\x18\x05 \x03(\t\x12.\n\x0e\x63omponent_defs\x18\x06 \x03(\x0b\x32\x16.monorail.ComponentDef\x12&\n\nfield_defs\x18\x07 \x03(\x0b\x32\x12.monorail.FieldDef\x12,\n\rapproval_defs\x18\x08 \x03(\x0b\x32\x15.monorail.ApprovalDef\x12\x19\n\x11restrict_to_known\x18\t \x01(\x08\x62\x06proto3')
   ,
   dependencies=[api_dot_api__proto_dot_common__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -147,21 +147,14 @@ _LABELDEF = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='rank', full_name='monorail.LabelDef.rank', index=1,
-      number=2, type=13, cpp_type=3, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='docstring', full_name='monorail.LabelDef.docstring', index=2,
+      name='docstring', full_name='monorail.LabelDef.docstring', index=1,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='deprecated', full_name='monorail.LabelDef.deprecated', index=3,
+      name='deprecated', full_name='monorail.LabelDef.deprecated', index=2,
       number=4, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -180,7 +173,7 @@ _LABELDEF = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=242,
-  serialized_end=320,
+  serialized_end=306,
 )
 
 
@@ -273,8 +266,8 @@ _COMPONENTDEF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=323,
-  serialized_end=621,
+  serialized_start=309,
+  serialized_end=607,
 )
 
 
@@ -341,6 +334,20 @@ _FIELDDEF = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='user_choices', full_name='monorail.FieldDef.user_choices', index=8,
+      number=9, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='enum_choices', full_name='monorail.FieldDef.enum_choices', index=9,
+      number=10, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -353,8 +360,8 @@ _FIELDDEF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=624,
-  serialized_end=843,
+  serialized_start=610,
+  serialized_end=912,
 )
 
 
@@ -391,8 +398,8 @@ _FIELDOPTIONS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=845,
-  serialized_end=936,
+  serialized_start=914,
+  serialized_end=1005,
 )
 
 
@@ -436,8 +443,8 @@ _APPROVALDEF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=938,
-  serialized_end=1048,
+  serialized_start=1007,
+  serialized_end=1117,
 )
 
 
@@ -523,8 +530,8 @@ _CONFIG = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1051,
-  serialized_end=1409,
+  serialized_start=1120,
+  serialized_end=1478,
 )
 
 _COMPONENTDEF.fields_by_name['admin_refs'].message_type = api_dot_api__proto_dot_common__pb2._USERREF
@@ -534,6 +541,8 @@ _COMPONENTDEF.fields_by_name['modifier_ref'].message_type = api_dot_api__proto_d
 _COMPONENTDEF.fields_by_name['label_refs'].message_type = api_dot_api__proto_dot_common__pb2._LABELREF
 _FIELDDEF.fields_by_name['field_ref'].message_type = api_dot_api__proto_dot_common__pb2._FIELDREF
 _FIELDDEF.fields_by_name['admin_refs'].message_type = api_dot_api__proto_dot_common__pb2._USERREF
+_FIELDDEF.fields_by_name['user_choices'].message_type = api_dot_api__proto_dot_common__pb2._USERREF
+_FIELDDEF.fields_by_name['enum_choices'].message_type = _LABELDEF
 _FIELDOPTIONS.fields_by_name['field_ref'].message_type = api_dot_api__proto_dot_common__pb2._FIELDREF
 _FIELDOPTIONS.fields_by_name['user_refs'].message_type = api_dot_api__proto_dot_common__pb2._USERREF
 _APPROVALDEF.fields_by_name['field_ref'].message_type = api_dot_api__proto_dot_common__pb2._FIELDREF

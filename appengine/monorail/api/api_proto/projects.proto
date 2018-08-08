@@ -17,10 +17,10 @@ service Projects {
   rpc GetConfig (GetConfigRequest) returns (Config) {}
   rpc GetCustomPermissions (GetCustomPermissionsRequest) returns (GetCustomPermissionsResponse) {}
   rpc GetVisibleMembers (GetVisibleMembersRequest) returns (GetVisibleMembersResponse) {}
-  rpc GetFieldOptions (GetFieldOptionsRequest) returns (GetFieldOptionsResponse) {}
   rpc GetLabelOptions (GetLabelOptionsRequest) returns (GetLabelOptionsResponse) {}
   rpc ListStatuses (ListStatusesRequest) returns (ListStatusesResponse) {}
   rpc ListComponents (ListComponentsRequest) returns (ListComponentsResponse) {}
+  rpc ListFields (ListFieldsRequest) returns (ListFieldsResponse) {}
 }
 
 
@@ -71,19 +71,6 @@ message GetVisibleMembersResponse {
 
 
 // Next available tag: 3
-message GetFieldOptionsRequest {
-  RequestTrace trace = 1;
-  string project_name = 2;
-}
-
-
-// Next available tag: 2
-message GetFieldOptionsResponse {
-  repeated FieldOptions field_options = 1;
-}
-
-
-// Next available tag: 3
 message GetLabelOptionsRequest {
   RequestTrace trace = 1;
   string project_name = 2;
@@ -123,4 +110,19 @@ message ListComponentsRequest {
 // Next available tag: 2
 message ListComponentsResponse {
   repeated ComponentDef component_defs = 1;
+}
+
+
+// Next available tag: 5
+message ListFieldsRequest {
+  RequestTrace trace = 1;
+  string project_name = 2;
+  bool include_admin_info = 3;
+  bool include_user_choices = 4;
+}
+
+
+// Next available tag: 2
+message ListFieldsResponse {
+  repeated FieldDef field_defs = 1;
 }

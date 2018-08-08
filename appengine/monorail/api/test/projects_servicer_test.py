@@ -260,95 +260,150 @@ class ProjectsServicerTest(unittest.TestCase):
     self.assertVisibleMembers([111L, 222L, 333L, 999L], [999L],
                               requester='owner@example.com')
 
-  def AddUserField(self, name, needs_member=None, needs_perm=None):
-    if needs_perm:
-      needs_member = True
-    self.services.config.CreateFieldDef(
-        self.cnxn, self.project.project_id, name, 'USER_TYPE',
-        applic_type=None, applic_pred=None, is_required=False, is_niche=False,
-        is_multivalued=False, min_value=None, max_value=None, regex=None,
-        needs_member=needs_member, needs_perm=needs_perm, grants_perm=False,
-        notify_on=None, date_action_str=None, docstring='Field Docstring',
-        admin_ids=None)
+  def AddField(self, name, **kwargs):
+    if kwargs.get('needs_perm'):
+      kwargs['needs_member'] = True
+    kwargs.setdefault('cnxn', self.cnxn)
+    kwargs.setdefault('project_id', self.project.project_id)
+    kwargs.setdefault('field_name', name)
+    kwargs.setdefault('field_type_str', 'USER_TYPE')
+    for arg in ('applic_type', 'applic_pred', 'is_required', 'is_niche',
+                'is_multivalued', 'min_value', 'max_value', 'regex',
+                'needs_member', 'needs_perm', 'grants_perm', 'notify_on',
+                'date_action_str', 'docstring', 'admin_ids'):
+      kwargs.setdefault(arg, None)
 
-  def testGetFieldOptions_Normal(self):
-    self.AddUserField('Foo Field', needs_perm=permissions.EDIT_ISSUE)
+    self.services.config.CreateFieldDef(**kwargs)
 
-    request = projects_pb2.GetFieldOptionsRequest(project_name='proj')
+  def testListFields_Normal(self):
+    self.AddField('Foo Field', needs_perm=permissions.EDIT_ISSUE)
+
+    request = projects_pb2.ListFieldsRequest(
+        project_name='proj', include_user_choices=True)
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
     response = self.CallWrapped(
-        self.projects_svcr.GetFieldOptions, mc, request)
+        self.projects_svcr.ListFields, mc, request)
 
-    self.assertEqual(1, len(response.field_options))
-    field = response.field_options[0]
+    self.assertEqual(1, len(response.field_defs))
+    field = response.field_defs[0]
     self.assertEqual('Foo Field', field.field_ref.field_name)
     self.assertEqual(
         [111L, 222L],
-        sorted([user_ref.user_id for user_ref in field.user_refs]))
+        sorted([user_ref.user_id for user_ref in field.user_choices]))
 
-  def testGetFieldOptions_CustomPermission(self):
-    self.AddUserField('Foo Field', needs_perm='FooPerm')
+  def testListFields_DontIncludeUserChoices(self):
+    self.AddField('Foo Field', needs_perm=permissions.EDIT_ISSUE)
+
+    request = projects_pb2.ListFieldsRequest(project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.projects_svcr.ListFields, mc, request)
+
+    self.assertEqual(1, len(response.field_defs))
+    field = response.field_defs[0]
+    self.assertEqual(0, len(field.user_choices))
+
+  def testListFields_IncludeAdminInfo(self):
+    self.AddField('Foo Field', needs_perm=permissions.EDIT_ISSUE, is_niche=True,
+                  applic_type='Foo Applic Type')
+
+    request = projects_pb2.ListFieldsRequest(
+        project_name='proj', include_admin_info=True)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.projects_svcr.ListFields, mc, request)
+
+    self.assertEqual(1, len(response.field_defs))
+    field = response.field_defs[0]
+    self.assertEqual('Foo Field', field.field_ref.field_name)
+    self.assertEqual(True, field.is_niche)
+    self.assertEqual('Foo Applic Type', field.applicable_type)
+
+  def testListFields_EnumFieldChoices(self):
+    self.AddField('Type', field_type_str='ENUM_TYPE')
+
+    request = projects_pb2.ListFieldsRequest(project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.projects_svcr.ListFields, mc, request)
+
+    self.assertEqual(1, len(response.field_defs))
+    field = response.field_defs[0]
+    self.assertEqual('Type', field.field_ref.field_name)
+    self.assertEqual(
+        ['Defect', 'Enhancement', 'Task', 'Other'],
+        [label.label for label in field.enum_choices])
+
+  def testListFields_CustomPermission(self):
+    self.AddField('Foo Field', needs_perm='FooPerm')
     self.project.extra_perms = [
         project_pb2.Project.ExtraPerms(
             member_id=222L,
             perms=['FooPerm'])]
 
-    request = projects_pb2.GetFieldOptionsRequest(project_name='proj')
+    request = projects_pb2.ListFieldsRequest(
+        project_name='proj', include_user_choices=True)
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
     response = self.CallWrapped(
-        self.projects_svcr.GetFieldOptions, mc, request)
+        self.projects_svcr.ListFields, mc, request)
 
-    self.assertEqual(1, len(response.field_options))
-    field = response.field_options[0]
+    self.assertEqual(1, len(response.field_defs))
+    field = response.field_defs[0]
     self.assertEqual('Foo Field', field.field_ref.field_name)
     self.assertEqual(
         [222L],
-        sorted([user_ref.user_id for user_ref in field.user_refs]))
+        sorted([user_ref.user_id for user_ref in field.user_choices]))
 
-  def testGetFieldOptions_NoPermissionsNeeded(self):
-    self.AddUserField('Foo Field')
+  def testListFields_NoPermissionsNeeded(self):
+    self.AddField('Foo Field')
 
-    request = projects_pb2.GetFieldOptionsRequest(project_name='proj')
+    request = projects_pb2.ListFieldsRequest(project_name='proj')
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
     response = self.CallWrapped(
-        self.projects_svcr.GetFieldOptions, mc, request)
+        self.projects_svcr.ListFields, mc, request)
 
-    self.assertEqual(0, len(response.field_options))
+    self.assertEqual(1, len(response.field_defs))
+    field = response.field_defs[0]
+    self.assertEqual('Foo Field', field.field_ref.field_name)
 
-  def testGetFieldOptions_MultipleFields(self):
-    self.AddUserField('Bar Field', needs_perm=permissions.VIEW)
-    self.AddUserField('Foo Field', needs_perm=permissions.EDIT_ISSUE)
+  def testListFields_MultipleFields(self):
+    self.AddField('Bar Field', needs_perm=permissions.VIEW)
+    self.AddField('Foo Field', needs_perm=permissions.EDIT_ISSUE)
 
-    request = projects_pb2.GetFieldOptionsRequest(project_name='proj')
+    request = projects_pb2.ListFieldsRequest(
+        project_name='proj', include_user_choices=True)
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
     response = self.CallWrapped(
-        self.projects_svcr.GetFieldOptions, mc, request)
+        self.projects_svcr.ListFields, mc, request)
 
-    self.assertEqual(2, len(response.field_options))
-    field_options = sorted(
-        response.field_options, key=lambda field: field.field_ref.field_name)
+    self.assertEqual(2, len(response.field_defs))
+    field_defs = sorted(
+        response.field_defs, key=lambda field: field.field_ref.field_name)
 
     self.assertEqual(
         ['Bar Field', 'Foo Field'],
-        [field.field_ref.field_name for field in field_options])
+        [field.field_ref.field_name for field in field_defs])
     self.assertEqual(
         [[111L, 222L, 333L],
          [111L, 222L]],
-        [sorted(user_ref.user_id for user_ref in field.user_refs)
-         for field in field_options])
+        [sorted(user_ref.user_id for user_ref in field.user_choices)
+         for field in field_defs])
 
-  def testGetFieldOptions_NoFields(self):
-    request = projects_pb2.GetFieldOptionsRequest(project_name='proj')
+  def testListFields_NoFields(self):
+    request = projects_pb2.ListFieldsRequest(project_name='proj')
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
     response = self.CallWrapped(
-        self.projects_svcr.GetFieldOptions, mc, request)
+        self.projects_svcr.ListFields, mc, request)
 
-    self.assertEqual(0, len(response.field_options))
+    self.assertEqual(0, len(response.field_defs))
 
   def testGetLabelOptions_Normal(self):
     request = projects_pb2.GetLabelOptionsRequest(project_name='proj')
@@ -392,7 +447,7 @@ class ProjectsServicerTest(unittest.TestCase):
         sorted(label.label for label in response.label_options))
 
   def testGetLabelOptions_FieldMasksLabel(self):
-    self.AddUserField('Type')
+    self.AddField('Type')
 
     request = projects_pb2.GetLabelOptionsRequest(project_name='proj')
     mc = monorailcontext.MonorailContext(

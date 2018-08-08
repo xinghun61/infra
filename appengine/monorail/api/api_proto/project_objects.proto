@@ -34,7 +34,6 @@ message StatusDef {
 // Next available tag: 5
 message LabelDef {
   string label = 1;
-  uint32 rank = 2;
   string docstring = 3;
   bool deprecated = 4;
 }
@@ -67,6 +66,8 @@ message FieldDef {
   repeated UserRef admin_refs = 7;
   // TODO(jrobbins): validation, permission granting, and notification options.
   bool is_phase_field = 8;
+  repeated UserRef user_choices = 9;
+  repeated LabelDef enum_choices = 10;
 }
 
 
