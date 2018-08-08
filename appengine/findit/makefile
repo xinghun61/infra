@@ -62,7 +62,7 @@ deploy-prod: _deploy
 	@echo "Changelogs:"
 	@echo "https://chromium.googlesource.com/infra/infra/+log/"\
 	"$(REMOTE_HASH)..$(LOCAL_HASH)"\
-	"/appengine/findit"
+	"/appengine/findit?pretty=fuller"
 	@echo
 	@echo "If your bug fixes/features are included in the release," \
 	      "please verify on ${app_id} and mark them as verified on" \
