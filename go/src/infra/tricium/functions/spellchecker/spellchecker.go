@@ -20,9 +20,9 @@ import (
 )
 
 type commentFormat struct {
-	lineStart  string
-	blockStart string
-	blockEnd   string
+	LineStart  string `json:"line_start"`
+	BlockStart string `json:"block_start"`
+	BlockEnd   string `json:"block_end"`
 }
 
 const (
@@ -90,12 +90,19 @@ func analyzeFile(scanner *bufio.Scanner, filePath string, results *tricium.Data_
 	s := noComment
 	fileExt := filepath.Ext(filePath)
 
+	// TODO(qyearsley): Read dictionary and comment patterns once for all files,
+	// and pass them in to this functionary (performance optimization).
 	dict = buildDict()
 	commentPatterns := getLangCommentPattern(fileExt)
 
-	// The analyzer should check every word if the file is a
-	// text document or if it has no extension.
-	checkEveryWord := fileExt == "" || inSlice(fileExt, textFileExts)
+	// The analyzer should check every word if the file is a text document.
+	checkEveryWord := inSlice(fileExt, textFileExts)
+
+	if commentPatterns == nil && !checkEveryWord {
+		// If the file type is unknown, skip the file, since there may be
+		// unknown source types that potentially have false positives.
+		return
+	}
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -127,7 +134,7 @@ func analyzeFile(scanner *bufio.Scanner, filePath string, results *tricium.Data_
 
 // Process the given commentWord and change state appropriately depending on which
 // comment characters are found in the given word. Returns the generated Tricium comments.
-func (s *state) processCommentWord(line, commentWord string, commentPatterns commentFormat,
+func (s *state) processCommentWord(line, commentWord string, commentPatterns *commentFormat,
 	lineno int, filePath string) []*tricium.Data_Comment {
 	var comments []*tricium.Data_Comment
 
@@ -137,29 +144,29 @@ func (s *state) processCommentWord(line, commentWord string, commentPatterns com
 			// Still in single-comment started in a previous word.
 			i += analyzeWords(line, string(commentWord[i:]), "",
 				lineno, filePath, &comments)
-		case *s == blockComment && i+len(commentPatterns.blockEnd) <= len(commentWord) &&
-			string(commentWord[i:i+len(commentPatterns.blockEnd)]) == commentPatterns.blockEnd:
+		case *s == blockComment && i+len(commentPatterns.BlockEnd) <= len(commentWord) &&
+			string(commentWord[i:i+len(commentPatterns.BlockEnd)]) == commentPatterns.BlockEnd:
 			// Currently in block comment and found end of block comment character.
 			*s = noComment
-			i += len(commentPatterns.blockEnd)
+			i += len(commentPatterns.BlockEnd)
 		case *s == blockComment:
 			// Still in block comment started in a previous line or word.
-			i += analyzeWords(line, string(commentWord[i:]), commentPatterns.blockEnd,
+			i += analyzeWords(line, string(commentWord[i:]), commentPatterns.BlockEnd,
 				lineno, filePath, &comments)
-		case len(commentPatterns.lineStart) > 0 && i+len(commentPatterns.lineStart) <= len(commentWord) &&
-			string(commentWord[i:i+len(commentPatterns.lineStart)]) == commentPatterns.lineStart:
+		case len(commentPatterns.LineStart) > 0 && i+len(commentPatterns.LineStart) <= len(commentWord) &&
+			string(commentWord[i:i+len(commentPatterns.LineStart)]) == commentPatterns.LineStart:
 			// Found single-line comment character.
 			*s = lineComment
-			stopIdx := analyzeWords(line, string(commentWord[i+len(commentPatterns.lineStart):]),
+			stopIdx := analyzeWords(line, string(commentWord[i+len(commentPatterns.LineStart):]),
 				"", lineno, filePath, &comments)
-			i += len(commentPatterns.lineStart) + stopIdx
-		case i+len(commentPatterns.blockStart) <= len(commentWord) &&
-			string(commentWord[i:i+len(commentPatterns.blockStart)]) == commentPatterns.blockStart:
+			i += len(commentPatterns.LineStart) + stopIdx
+		case i+len(commentPatterns.BlockStart) <= len(commentWord) &&
+			string(commentWord[i:i+len(commentPatterns.BlockStart)]) == commentPatterns.BlockStart:
 			// Found block comment character.
 			*s = blockComment
-			stopIdx := analyzeWords(line, string(commentWord[i+len(commentPatterns.blockStart):]),
-				commentPatterns.blockEnd, lineno, filePath, &comments)
-			i += len(commentPatterns.blockStart) + stopIdx
+			stopIdx := analyzeWords(line, string(commentWord[i+len(commentPatterns.BlockStart):]),
+				commentPatterns.BlockEnd, lineno, filePath, &comments)
+			i += len(commentPatterns.BlockStart) + stopIdx
 		default:
 			// Don't start analyzing words until a comment character is found.
 			i++
@@ -274,14 +281,9 @@ func fixesMessage(fixes []string) string {
 
 // Gets the appropriate comment pattern for the programming language determined by the given
 // file extension.
-func getLangCommentPattern(fileExt string) commentFormat {
+func getLangCommentPattern(fileExt string) *commentFormat {
 	commentFmtMap := loadCommentsJSONFile()
-	cmtFormatEntry := commentFmtMap[fileExt]
-	return commentFormat{
-		lineStart:  cmtFormatEntry["line_start"],
-		blockStart: cmtFormatEntry["block_start"],
-		blockEnd:   cmtFormatEntry["block_end"],
-	}
+	return commentFmtMap[fileExt]
 }
 
 // Helper function to turn the codespell dictionary file into a map of
@@ -311,8 +313,8 @@ func buildDict() map[string][]string {
 
 // Helper function to load the JSON file containing the currently supported file extensions
 // and their respective comment formats.
-func loadCommentsJSONFile() map[string]map[string]string {
-	var commentsMap map[string]map[string]string
+func loadCommentsJSONFile() map[string]*commentFormat {
+	var commentsMap map[string]*commentFormat
 
 	f := openFileOrDie(commentsJSONPath)
 	defer closeFileOrDie(f)

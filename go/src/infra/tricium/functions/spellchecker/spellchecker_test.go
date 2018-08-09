@@ -17,24 +17,21 @@ import (
 func TestSpellChecker(t *testing.T) {
 	Convey("analyzeFiles", t, func() {
 		Convey("The appropriate comment formats are determined from the file extensions", func() {
-			pythonFormat := getLangCommentPattern(".py")
-			So(pythonFormat, ShouldResemble, commentFormat{
-				lineStart:  "#",
-				blockStart: `"""`,
-				blockEnd:   `"""`,
+			So(getLangCommentPattern(".py"), ShouldResemble, &commentFormat{
+				LineStart:  "#",
+				BlockStart: `"""`,
+				BlockEnd:   `"""`,
 			})
 
-			cFormat := getLangCommentPattern(".c")
-			So(cFormat, ShouldResemble, commentFormat{
-				lineStart:  "//",
-				blockStart: `/*`,
-				blockEnd:   `*/`,
+			So(getLangCommentPattern(".c"), ShouldResemble, &commentFormat{
+				LineStart:  "//",
+				BlockStart: `/*`,
+				BlockEnd:   `*/`,
 			})
 
-			htmlFormat := getLangCommentPattern(".html")
-			So(htmlFormat, ShouldResemble, commentFormat{
-				blockStart: `<!--`,
-				blockEnd:   `-->`,
+			So(getLangCommentPattern(".html"), ShouldResemble, &commentFormat{
+				BlockStart: `<!--`,
+				BlockEnd:   `-->`,
 			})
 		})
 
@@ -399,39 +396,9 @@ func TestSpellChecker(t *testing.T) {
 
 		Convey("Analyzing file with unknown extension generates appropriate comments", func() {
 			fileContent := "familes\n"
-
-			expected := &tricium.Data_Results{
-				Comments: []*tricium.Data_Comment{
-					{
-						Path:      "test.asdf",
-						Message:   `"familes" is a possible misspelling of "families".`,
-						Category:  "SpellChecker",
-						StartLine: 1,
-						EndLine:   1,
-						StartChar: 0,
-						EndChar:   7,
-						Suggestions: []*tricium.Data_Suggestion{
-							{
-								Description: "Misspelling fix suggestion",
-								Replacements: []*tricium.Data_Replacement{
-									{
-										Path:        "test.asdf",
-										Replacement: "families",
-										StartLine:   1,
-										EndLine:     1,
-										StartChar:   0,
-										EndChar:     8,
-									},
-								},
-							},
-						},
-					},
-				},
-			}
-
 			results := &tricium.Data_Results{}
 			analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.asdf", results)
-			So(results, ShouldResemble, expected)
+			So(len(results.Comments), ShouldEqual, 0)
 		})
 
 		Convey("Analyzing HTML file (no single line comment pattern) generates appropriate comments", func() {
