@@ -29,6 +29,11 @@ PLATFORM_DIMENSION_MAP = {
 }
 BUILD_AHEAD_PLATFORMS = sorted(PLATFORM_DIMENSION_MAP.keys())
 
+# If a build ahead cannot get started in 4 minutes, give up. The bots are
+# probably doing something important.
+# 4 minutes because findit checks them every 5 minutes.
+BUILD_AHEAD_EXPIRATION_SECS = 240
+
 # How many commit positions it takes for the copy of a cache to be considered
 # stale.
 STALE_CACHE_AGE = 1000  # Nice round number, usually less than a week.
@@ -174,6 +179,7 @@ def TriggerBuildAhead(wf_master, wf_builder, bot):
       cache_name=cache_name,
       dimensions=dimensions,
       priority=BUILD_AHEAD_PRIORITY,
+      expiration_secs=BUILD_AHEAD_EXPIRATION_SECS,
   )
   return buildbucket_client.TriggerTryJobs([build_ahead_tryjob])[0]
 

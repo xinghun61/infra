@@ -77,6 +77,9 @@ class TryJob(
             'dimensions',  # Optional. Dimensions used to match a Swarmingbot.
             'pubsub_callback',  # Optional. PubSub callback info.
             'priority',  # Optional swarming priority 1 (high) thru 200 (low).
+            'expiration_secs', # Optional seconds to expire the try job. i.e.
+                               # give up if no bot becomes available when the
+                               # task has been pending this long.
         ))):
   """Represents a try-job to be triggered through Buildbucket.
 
@@ -93,11 +96,13 @@ class TryJob(
       cache_name=None,
       dimensions=None,
       pubsub_callback=None,
-      priority=None):
+      priority=None,
+      expiration_secs=None):
     return super(cls,
                  TryJob).__new__(cls, master_name, builder_name, properties,
                                  tags, additional_build_parameters, cache_name,
-                                 dimensions, pubsub_callback, priority)
+                                 dimensions, pubsub_callback, priority,
+                                 expiration_secs)
 
   def _AddSwarmbucketOverrides(self, parameters):
     assert self.cache_name
@@ -121,6 +126,10 @@ class TryJob(
             'Priority in swarming is limited to values between 1 and 255, '
             'constraining %d to %d' % (self.priority, priority))
       parameters['swarming']['override_builder_cfg']['priority'] = priority
+
+    if self.expiration_secs is not None:
+      parameters['swarming']['override_builder_cfg'][
+          'expiration_secs'] = int(self.expiration_secs)
 
     if self.dimensions:
       parameters['swarming']['override_builder_cfg']['dimensions'] = (
