@@ -20,9 +20,9 @@ import (
 )
 
 type commentFormat struct {
-	singleLine     string
-	multilineStart string
-	multilineEnd   string
+	lineStart  string
+	blockStart string
+	blockEnd   string
 }
 
 const (
@@ -137,29 +137,29 @@ func (s *state) processCommentWord(line, commentWord string, commentPatterns com
 			// Still in single-comment started in a previous word.
 			i += analyzeWords(line, string(commentWord[i:]), "",
 				lineno, filePath, &comments)
-		case *s == blockComment && i+len(commentPatterns.multilineEnd) <= len(commentWord) &&
-			string(commentWord[i:i+len(commentPatterns.multilineEnd)]) == commentPatterns.multilineEnd:
+		case *s == blockComment && i+len(commentPatterns.blockEnd) <= len(commentWord) &&
+			string(commentWord[i:i+len(commentPatterns.blockEnd)]) == commentPatterns.blockEnd:
 			// Currently in block comment and found end of block comment character.
 			*s = noComment
-			i += len(commentPatterns.multilineEnd)
+			i += len(commentPatterns.blockEnd)
 		case *s == blockComment:
 			// Still in block comment started in a previous line or word.
-			i += analyzeWords(line, string(commentWord[i:]), commentPatterns.multilineEnd,
+			i += analyzeWords(line, string(commentWord[i:]), commentPatterns.blockEnd,
 				lineno, filePath, &comments)
-		case len(commentPatterns.singleLine) > 0 && i+len(commentPatterns.singleLine) <= len(commentWord) &&
-			string(commentWord[i:i+len(commentPatterns.singleLine)]) == commentPatterns.singleLine:
+		case len(commentPatterns.lineStart) > 0 && i+len(commentPatterns.lineStart) <= len(commentWord) &&
+			string(commentWord[i:i+len(commentPatterns.lineStart)]) == commentPatterns.lineStart:
 			// Found single-line comment character.
 			*s = lineComment
-			stopIdx := analyzeWords(line, string(commentWord[i+len(commentPatterns.singleLine):]),
+			stopIdx := analyzeWords(line, string(commentWord[i+len(commentPatterns.lineStart):]),
 				"", lineno, filePath, &comments)
-			i += len(commentPatterns.singleLine) + stopIdx
-		case i+len(commentPatterns.multilineStart) <= len(commentWord) &&
-			string(commentWord[i:i+len(commentPatterns.multilineStart)]) == commentPatterns.multilineStart:
+			i += len(commentPatterns.lineStart) + stopIdx
+		case i+len(commentPatterns.blockStart) <= len(commentWord) &&
+			string(commentWord[i:i+len(commentPatterns.blockStart)]) == commentPatterns.blockStart:
 			// Found block comment character.
 			*s = blockComment
-			stopIdx := analyzeWords(line, string(commentWord[i+len(commentPatterns.multilineStart):]),
-				commentPatterns.multilineEnd, lineno, filePath, &comments)
-			i += len(commentPatterns.multilineStart) + stopIdx
+			stopIdx := analyzeWords(line, string(commentWord[i+len(commentPatterns.blockStart):]),
+				commentPatterns.blockEnd, lineno, filePath, &comments)
+			i += len(commentPatterns.blockStart) + stopIdx
 		default:
 			// Don't start analyzing words until a comment character is found.
 			i++
@@ -261,9 +261,9 @@ func getLangCommentPattern(fileExt string) commentFormat {
 	commentFmtMap := loadCommentsJSONFile()
 	cmtFormatEntry := commentFmtMap[fileExt]
 	return commentFormat{
-		singleLine:     cmtFormatEntry["single-line"],
-		multilineStart: cmtFormatEntry["multi-line start"],
-		multilineEnd:   cmtFormatEntry["multi-line end"],
+		lineStart:  cmtFormatEntry["line_start"],
+		blockStart: cmtFormatEntry["block_start"],
+		blockEnd:   cmtFormatEntry["block_end"],
 	}
 }
 

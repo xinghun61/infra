@@ -19,22 +19,22 @@ func TestSpellChecker(t *testing.T) {
 		Convey("The appropriate comment formats are determined from the file extensions", func() {
 			pythonFormat := getLangCommentPattern(".py")
 			So(pythonFormat, ShouldResemble, commentFormat{
-				singleLine:     "#",
-				multilineStart: `"""`,
-				multilineEnd:   `"""`,
+				lineStart:  "#",
+				blockStart: `"""`,
+				blockEnd:   `"""`,
 			})
 
 			cFormat := getLangCommentPattern(".c")
 			So(cFormat, ShouldResemble, commentFormat{
-				singleLine:     "//",
-				multilineStart: `/*`,
-				multilineEnd:   `*/`,
+				lineStart:  "//",
+				blockStart: `/*`,
+				blockEnd:   `*/`,
 			})
 
 			htmlFormat := getLangCommentPattern(".html")
 			So(htmlFormat, ShouldResemble, commentFormat{
-				multilineStart: `<!--`,
-				multilineEnd:   `-->`,
+				blockStart: `<!--`,
+				blockEnd:   `-->`,
 			})
 		})
 
