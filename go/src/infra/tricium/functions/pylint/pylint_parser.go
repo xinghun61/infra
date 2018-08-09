@@ -18,10 +18,10 @@ import (
 	"infra/tricium/api/v1"
 )
 
-// The Pylint output format is adjustable, for details see
+// The Pylint output format is adjustable, for details, see:
 // https://docs.pylint.org/en/1.6.0/output.html
 // The current format is {path}:{line}:{column} [{category}/{symbol}] {msg}
-const msgRegex = `^(.+?):([0-9]+):([0-9]+) \[(.+)/(.+)\] (.+)$`
+var msgRegex = regexp.MustCompile(`^(.+?):([0-9]+):([0-9]+) \[(.+)/(.+)\] (.+)$`)
 
 // Paths to the required resources relative to the executable directory.
 const (
@@ -33,6 +33,8 @@ const (
 func main() {
 	inputDir := flag.String("input", "", "Path to root of Tricium input")
 	outputDir := flag.String("output", "", "Path to root of Tricium output")
+	// TODO(qyearsley): Add flags for disabling/enabling warnings; this
+	// would enable specifying warnings in project configs.
 	flag.Parse()
 	if flag.NArg() != 0 {
 		log.Fatalf("Unexpected argument")
@@ -62,6 +64,8 @@ func main() {
 	// Invoke Pylint on the given paths.
 	// In the output, we want relative paths from the repository root, which
 	// will be the same as relative paths from the input directory root.
+	// TODO(qyearsley): Specify the output format with a flag so that
+	// the output format doesn't depend on the pylintrc file.
 	cmdName := filepath.Join(exPath, pythonPath)
 	cmdArgs := []string{filepath.Join(exPath, pylintPath), "--rcfile",
 		filepath.Join(exPath, "pylintrc")}
@@ -71,7 +75,8 @@ func main() {
 	cmd := exec.Command(cmdName, cmdArgs...)
 	log.Printf("Command: %#v; args: %#v", cmdName, cmdArgs)
 
-	// Set PYTHONPATH for the command to run so that the bundled version of pylint and its dependencies are used.
+	// Set PYTHONPATH for the command to run so that the bundled version of
+	// pylint and its dependencies are used.
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("PYTHONPATH=%s", pylintPackagePath))
 	cmd.Env = env
@@ -86,25 +91,26 @@ func main() {
 	scanner := bufio.NewScanner(stdoutReader)
 	output := &tricium.Data_Results{}
 
-	// Prepare to parse the pylint output in a separate goroutine in case it is very large.
+	// Prepare to parse the pylint output in a separate goroutine in case it is
+	// very large.
 	done := make(chan bool)
 	go scanPylintOutput(scanner, output, done)
 
-	// Pylint will start producing output to stdout (and therefore to the scanner).
+	// Pylint will start producing output to stdout, and therefore to the
+	// scanner.
 	err = cmd.Start()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error starting Cmd", err)
 		os.Exit(1)
 	}
 
-	// Halts until parsing the pylint output has finished, making sure that all the data
-	// has been read from stdout (preventing race conditions/non-determinism).
-	// From the golang exec documentation: "It is incorrect to call Wait before
-	// all reads from the pipe have completed".
+	// Halts until parsing the pylint output has finished, making sure that all
+	// the data has been read from stderr, preventing race conditions or
+	// non-determinism. See: https://golang.org/pkg/os/exec/#Cmd.StderrPipe.
 	<-done
 
-	// A non-zero exit status for Pylint doesn't mean that an error occurred, so we don't
-	// need to look at the error returned by Wait.
+	// A non-zero exit status for Pylint doesn't mean that an error occurred,
+	// so we don't need to look at the error returned by Wait.
 	cmd.Wait()
 
 	// Write Tricium RESULTS data.
@@ -117,7 +123,8 @@ func main() {
 
 // scanPylintOutput reads Pylint output line by line and populates results.
 //
-// It must notify the calling function when it is done by sending true into the done channel.
+// It must notify the calling function when it is done by sending true into the
+// done channel.
 func scanPylintOutput(scanner *bufio.Scanner, results *tricium.Data_Results, done chan bool) {
 	// Read line by line, adding comments to the output.
 	for scanner.Scan() {
@@ -135,7 +142,8 @@ func scanPylintOutput(scanner *bufio.Scanner, results *tricium.Data_Results, don
 		log.Fatalf("Failed to read file: %v", err)
 	}
 
-	// Testing is done without a valid channel
+	// Testing may be done without without a valid channel.
+	// TODO(qyearsley): Add valid channel in tests.
 	if done != nil {
 		done <- true
 	}
@@ -144,10 +152,8 @@ func scanPylintOutput(scanner *bufio.Scanner, results *tricium.Data_Results, don
 // parsePylintLine parses one line of Pylint output to produce a comment.
 //
 // Returns nil if the given line doesn't match the expected pattern.
-// See the constant msgRegex defined above for the expected message format.
 func parsePylintLine(line string) *tricium.Data_Comment {
-	re := regexp.MustCompile(msgRegex)
-	match := re.FindStringSubmatch(line)
+	match := msgRegex.FindStringSubmatch(line)
 	if match == nil {
 		return nil
 	}
@@ -161,7 +167,7 @@ func parsePylintLine(line string) *tricium.Data_Comment {
 	}
 	return &tricium.Data_Comment{
 		Path:      match[1],
-		Message:   match[6],
+		Message:   fmt.Sprintf("%s.\nTo disable, add: # pylint: disable=%s", match[6], match[5]),
 		Category:  fmt.Sprintf("Pylint/%s/%s", match[4], match[5]),
 		StartLine: int32(lineno),
 		StartChar: int32(column),

@@ -40,50 +40,57 @@ func TestPylintParsingFunctions(t *testing.T) {
 			expected := &tricium.Data_Results{
 				Comments: []*tricium.Data_Comment{
 					{
-						Path:      "test.py",
-						Message:   "Empty function docstring",
+						Path: "test.py",
+						Message: "Empty function docstring.\n" +
+							"To disable, add: # pylint: disable=empty-docstring",
 						Category:  "Pylint/convention/empty-docstring",
 						StartLine: 6,
 						StartChar: 0,
 					},
 					{
-						Path:      "test.py",
-						Message:   "Unused argument 'y'",
+						Path: "test.py",
+						Message: "Unused argument 'y'.\n" +
+							"To disable, add: # pylint: disable=unused-argument",
 						Category:  "Pylint/warning/unused-argument",
 						StartLine: 6,
 						StartChar: 15,
 					},
 					{
-						Path:      "test.py",
-						Message:   "Unused argument 'z'",
+						Path: "test.py",
+						Message: "Unused argument 'z'.\n" +
+							"To disable, add: # pylint: disable=unused-argument",
 						Category:  "Pylint/warning/unused-argument",
 						StartLine: 6,
 						StartChar: 18,
 					},
 					{
-						Path:      "test.py",
-						Message:   "Unnecessary pass statement",
+						Path: "test.py",
+						Message: "Unnecessary pass statement.\n" +
+							"To disable, add: # pylint: disable=unnecessary-pass",
 						Category:  "Pylint/warning/unnecessary-pass",
 						StartLine: 12,
 						StartChar: 2,
 					},
 					{
-						Path:      "test.py",
-						Message:   "Using possibly undefined loop variable 'a'",
+						Path: "test.py",
+						Message: "Using possibly undefined loop variable 'a'.\n" +
+							"To disable, add: # pylint: disable=undefined-loop-variable",
 						Category:  "Pylint/warning/undefined-loop-variable",
 						StartLine: 19,
 						StartChar: 10,
 					},
 					{
-						Path:      "test.py",
-						Message:   "Unused variable 'a'",
+						Path: "test.py",
+						Message: "Unused variable 'a'.\n" +
+							"To disable, add: # pylint: disable=unused-variable",
 						Category:  "Pylint/warning/unused-variable",
 						StartLine: 18,
 						StartChar: 6,
 					},
 					{
-						Path:      "test.py",
-						Message:   "Undefined variable 'main'",
+						Path: "test.py",
+						Message: "Undefined variable 'main'.\n" +
+							"To disable, add: # pylint: disable=undefined-variable",
 						Category:  "Pylint/error/undefined-variable",
 						StartLine: 26,
 						StartChar: 0,
@@ -102,8 +109,9 @@ func TestPylintParsingFunctions(t *testing.T) {
 		Convey("Parsing valid line gives a comment", func() {
 			line := "src/foo.py:45:12 [warning/unused-argument] Unused argument 'z'"
 			So(parsePylintLine(line), ShouldResemble, &tricium.Data_Comment{
-				Category:  "Pylint/warning/unused-argument",
-				Message:   "Unused argument 'z'",
+				Category: "Pylint/warning/unused-argument",
+				Message: "Unused argument 'z'.\n" +
+					"To disable, add: # pylint: disable=unused-argument",
 				Path:      "src/foo.py",
 				StartLine: 45,
 				StartChar: 12,
