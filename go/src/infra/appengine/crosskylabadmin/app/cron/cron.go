@@ -47,7 +47,11 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 }
 
 // refreshBotsCronHandler refreshes the swarming bot information about the whole fleet.
-func refreshBotsCronHandler(c *router.Context) error {
+func refreshBotsCronHandler(c *router.Context) (err error) {
+	defer func() {
+		refreshBotsTick.Add(c.Context, 1, err == nil)
+	}()
+
 	tsi := frontend.TrackerServerImpl{}
 	resp, err := tsi.RefreshBots(c.Context, &fleet.RefreshBotsRequest{})
 	if err != nil {
@@ -59,7 +63,11 @@ func refreshBotsCronHandler(c *router.Context) error {
 
 // ensureBackgroundTasksCronHandler ensures that the configured number of admin tasks
 // are pending against the fleet.
-func ensureBackgroundTasksCronHandler(c *router.Context) error {
+func ensureBackgroundTasksCronHandler(c *router.Context) (err error) {
+	defer func() {
+		ensureBackgroundTasksTick.Add(c.Context, 1, err == nil)
+	}()
+
 	cfg := config.Get(c.Context).Cron
 	ttypes := []fleet.TaskType{fleet.TaskType_Cleanup, fleet.TaskType_Reset, fleet.TaskType_Repair}
 	tsi := frontend.TaskerServerImpl{}
@@ -87,7 +95,11 @@ func ensureBackgroundTasksCronHandler(c *router.Context) error {
 }
 
 // triggerRepairOnIdleCronHandler triggers repair tasks on idle bots in the fleet.
-func triggerRepairOnIdleCronHandler(c *router.Context) error {
+func triggerRepairOnIdleCronHandler(c *router.Context) (err error) {
+	defer func() {
+		triggerRepairOnIdleTick.Add(c.Context, 1, err == nil)
+	}()
+
 	cfg := config.Get(c.Context).Cron
 	tsi := frontend.TaskerServerImpl{}
 	resp, err := tsi.TriggerRepairOnIdle(c.Context, &fleet.TriggerRepairOnIdleRequest{
@@ -103,7 +115,11 @@ func triggerRepairOnIdleCronHandler(c *router.Context) error {
 }
 
 // triggerRepairOnIdleCronHandler triggers repair tasks on idle bots in the fleet.
-func triggerRepairOnRepairFailedCronHandler(c *router.Context) error {
+func triggerRepairOnRepairFailedCronHandler(c *router.Context) (err error) {
+	defer func() {
+		triggerRepairOnRepairFailedTick.Add(c.Context, 1, err == nil)
+	}()
+
 	cfg := config.Get(c.Context).Cron
 	tsi := frontend.TaskerServerImpl{}
 	resp, err := tsi.TriggerRepairOnRepairFailed(c.Context, &fleet.TriggerRepairOnRepairFailedRequest{

@@ -34,3 +34,6 @@ cron:
 - description: LUCI config datastore cache periodic refresh
   url: /admin/config/cache/manager
   schedule: every 10 minutes
+- description: tsmon house keeping
+  url: /internal/cron/ts_mon/housekeeping
+  schedule: every 1 minutes
