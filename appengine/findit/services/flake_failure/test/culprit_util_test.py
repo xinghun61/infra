@@ -381,49 +381,25 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
-    analysis.Update(culprit_urlsafe_key=culprit.key.urlsafe())
-    self.assertFalse(culprit_util.CanRevertForAnalysis(analysis))
-
     analysis.data_points = [
         DataPoint.Create(commit_position=99, pass_rate=-1.0)
     ]
     analysis.Update(
-        status=analysis_status.COMPLETED,
-        confidence_in_culprit=1.0,
-        bug_id=12345)
+        confidence_in_culprit=1.0, culprit_urlsafe_key=culprit.key.urlsafe())
     self.assertTrue(culprit_util.CanRevertForAnalysis(analysis))
     mock_time_fn.assert_called_with('r13')
-
-  def testCanRevertForAnalysisWithErrorReturnsFalse(self):
-    culprit = FlakeCulprit.Create('chromium', 'r13', 100)
-    culprit.put()
-
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
-    analysis.Update(culprit_urlsafe_key=culprit.key.urlsafe())
-    self.assertFalse(culprit_util.CanRevertForAnalysis(analysis))
-
-    analysis.data_points = [
-        DataPoint.Create(commit_position=99, pass_rate=-1.0)
-    ]
-    analysis.Update(
-        status=analysis_status.ERROR, confidence_in_culprit=1.0, bug_id=12345)
-    self.assertFalse(culprit_util.CanRevertForAnalysis(analysis))
 
   def testCanRevertForAnalysisInsufficientConfidenceReturnsFalse(self):
     culprit = FlakeCulprit.Create('chromium', 'r13', 100)
     culprit.put()
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
-    analysis.Update(culprit_urlsafe_key=culprit.key.urlsafe())
-    self.assertFalse(culprit_util.CanRevertForAnalysis(analysis))
-
     analysis.data_points = [
         DataPoint.Create(commit_position=99, pass_rate=-1.0)
     ]
     analysis.Update(
-        status=analysis_status.COMPLETED,
-        confidence_in_culprit=0.1,
-        bug_id=12345)
+        confidence_in_culprit=0.1, culprit_urlsafe_key=culprit.key.urlsafe())
+
     self.assertFalse(culprit_util.CanRevertForAnalysis(analysis))
 
   def testCanRevertForAnalysisNotNewlyAddedTest(self):
@@ -431,14 +407,10 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
-    analysis.Update(culprit_urlsafe_key=culprit.key.urlsafe())
-    self.assertFalse(culprit_util.CanRevertForAnalysis(analysis))
-
     analysis.data_points = [DataPoint.Create(commit_position=99, pass_rate=1.0)]
     analysis.Update(
-        status=analysis_status.COMPLETED,
-        confidence_in_culprit=1.0,
-        bug_id=12345)
+        confidence_in_culprit=1.0, culprit_urlsafe_key=culprit.key.urlsafe())
+
     self.assertFalse(culprit_util.CanRevertForAnalysis(analysis))
 
   @mock.patch.object(git, 'ChangeCommittedWithinTime', return_value=False)
@@ -447,16 +419,12 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
-    analysis.Update(culprit_urlsafe_key=culprit.key.urlsafe())
-    self.assertFalse(culprit_util.CanRevertForAnalysis(analysis))
-
     analysis.data_points = [
         DataPoint.Create(commit_position=99, pass_rate=-1.0)
     ]
     analysis.Update(
-        status=analysis_status.COMPLETED,
-        confidence_in_culprit=1.0,
-        bug_id=12345)
+        confidence_in_culprit=1.0, culprit_urlsafe_key=culprit.key.urlsafe())
+
     self.assertFalse(culprit_util.CanRevertForAnalysis(analysis))
     mock_time_fn.assert_called_with('r13')
 

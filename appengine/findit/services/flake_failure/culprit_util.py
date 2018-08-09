@@ -138,25 +138,23 @@ def CanRevertForAnalysis(analysis):
   """Returns True if the analysis can be reverted, false otherwise.
 
   Several conditions must be satisfied for this to happen:
-  1. Analysis must have been completed with no errors.
-  2. Findit must have filed a bug for this (implies test is still flaky).
-  3. The test must be newly-added.
-  4. The commit must have happened in the last 24 hours. This is to reduce the
+  1. There must be sufficient confidence in the culprit.
+  2. The test must be newly-added.
+  3. The commit must have happened in the last 24 hours. This is to reduce the
      likelyhood that other changes have landed since the culprit that may depend
      on it such that reverting it would introduce further breakages.
+  4. TODO(crbug.com/872839): Check the test is still flaky in a recent build
+     before reverting.
   """
   culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
-  assert culprit
+  assert culprit, 'Culprit unexpectedly missing from datastore'
 
   previous_data_point = analysis.FindMatchingDataPointWithCommitPosition(
       culprit.commit_position - 1)
 
-  if not analysis.status == analysis_status.COMPLETED:
-    analysis.LogInfo('Cannot revert culprit for an analysis that is not '
-                     'completed successfully')
-    return False
-
-  if not floating_point_util.AlmostEquals(analysis.confidence_in_culprit, 1.0):
+  if (analysis.confidence_in_culprit is None or
+      not floating_point_util.AlmostEquals(analysis.confidence_in_culprit,
+                                           1.0)):
     analysis.LogInfo('Cannot revert culprit for an analysis with insufficient '
                      'confidence {}'.format(analysis.confidence_in_culprit))
     return False
