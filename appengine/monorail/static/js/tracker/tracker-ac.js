@@ -333,14 +333,14 @@ function TKR_setUpSearchStore(
   for (i = 0; i < fieldDefs.length; i++) {
     var fieldName = fieldDefs[i]['field_name'];
     var fieldType = fieldDefs[i]['field_type'];
-    if (fieldType == '1') {  // enum type
+    if (fieldType == 'ENUM_TYPE') {
       var choices = fieldDefs[i]['choices'];
       TKR_addACItemList(searchWords, docDict, fieldName + '=', choices);
       TKR_addACItemList(searchWordsNeg, docDict, '-' + fieldName + '=', choices);
-    } else if (fieldType == '3') {  // string types
+    } else if (fieldType == 'STR_TYPE') {
       TKR_addACItem(searchWords, docDict, fieldName + ':',
           fieldDefs[i]['docstring']);
-    } else if (fieldType == '5') {  // string types
+    } else if (fieldType == 'DATE_TYPE') {
       TKR_addACItem(searchWords, docDict, fieldName + ':',
           fieldDefs[i]['docstring']);
       TKR_addACDateItems(searchWords, docDict, fieldName, fieldName);
@@ -653,10 +653,8 @@ function TKR_setUpMemberStore(memberDefs, nonGroupMemberDefs) {
  * instead of _AC_Simple_Store?
  * @param {Array} fieldDefs An array of field definitions, only some
  * of which have a 'user_indexes' entry.
- * @param {Array} memberDefs An array of definitions of the project
- * members.  Each definition has a name and docstring.
  */
-function TKR_setUpUserAutocompleteStores(fieldDefs, memberDefs) {
+function TKR_setUpUserAutocompleteStores(fieldDefs) {
   fieldDefs.forEach(fieldDef => {
     if (fieldDef.qualifiedMembers) {
       var us = makeOneUserAutocompleteStore(fieldDef);
@@ -1041,47 +1039,9 @@ function TKR_setUpProjectStore(projects, multiValue) {
 
 
 /**
- * Convert the response of issueOptionsMembers to the format expected by
- * TKR_fetchOptions, and update jsonData with it.
- * @param {object} jsonData The object used by TKR_fetchOptions to set up
- * autocomplete.
- * @param {object} membersResponse The response of the issueOptionMembers
- * request.
- */
-function TKR_convertMembersResponse(membersResponse) {
-  const jsonData = {};
-
-  // TODO(jeffcarp): Abandon concept of a def object for members.
-  const groupEmailsDict = {};
-  membersResponse.group_emails.forEach(email => groupEmailsDict[email] = true);
-  jsonData.nonGroupEmails = membersResponse.members
-      .filter(email => {
-        return !groupEmailsDict.hasOwnProperty(email);
-      })
-      .map(email => ({name: email}));
-  jsonData.memberEmails =  membersResponse.members.map(
-      email => ({name: email}));
-
-  jsonData.fields = membersResponse.fields.map(field =>
-      ({
-        field_id: field.field_id,
-        field_name: field.field_name,
-        field_type: field.field_type,
-        choices: field.choices,
-        docstring: field.docstring,
-        qualifiedMembers: (field.user_indexes || []).map(
-            idx => jsonData.memberEmails[idx]),
-      })
-  );
-
-  return jsonData;
-}
-
-
-/**
  * Convert the object resulting of a monorail.Projects ListStatuses to
  * the format expected by TKR_fetchOptions.
- * @param {object} config A pRPC ListStatusesResponse object.
+ * @param {object} statusesResponse A pRPC ListStatusesResponse object.
  */
 function TKR_convertStatuses(statusesResponse) {
   const jsonData = {};
@@ -1110,7 +1070,7 @@ function TKR_convertStatuses(statusesResponse) {
 /**
  * Convert the object resulting of a monorail.Projects ListComponents to
  * the format expected by TKR_fetchOptions.
- * @param {object} config A pRPC ListComponentsResponse object.
+ * @param {object} componentsResponse A pRPC ListComponentsResponse object.
  */
 function TKR_convertComponents(componentsResponse) {
   const jsonData = {};
@@ -1131,9 +1091,9 @@ function TKR_convertComponents(componentsResponse) {
 
 
 /**
- * Convert the Config object resulting of a monorail.Projects GetLabelOptions
+ * Convert the object resulting of a monorail.Projects GetLabelOptions
  * call to the format expected by TKR_fetchOptions.
- * @param {object} config A pRPC LabelDef object with the results of the call.
+ * @param {object} labelsResponse A pRPC GetLabelOptionsResponse.
  */
 function TKR_convertLabels(labelsResponse) {
   const jsonData = {};
@@ -1149,10 +1109,53 @@ function TKR_convertLabels(labelsResponse) {
 
 
 /**
- * Convert the Config object resulting of a monorail.Features ListHotlistsByUser
+ * Convert the object resulting of a monorail.Projects GetVisibleMembers
  * call to the format expected by TKR_fetchOptions.
- * @param {object} config A pRPC ListHotlistsByUserResponse with the results of
- * the call.
+ * @param {object} visibleMembersResponse A pRPC GetVisibleMembersResponse.
+ */
+function TKR_convertVisibleMembers(visibleMembersResponse) {
+  const jsonData = {};
+
+  const groupEmails = new Set((visibleMembersResponse.groupRefs || []).map(
+      groupRef => groupRef.displayName));
+
+  jsonData.memberEmails = visibleMembersResponse.userRefs.map(
+      userRef => ({name: userRef.displayName}));
+  jsonData.nonGroupEmails = jsonData.memberEmails.filter(
+      memberEmail => !groupEmails.has(memberEmail));
+
+  return jsonData;
+}
+
+
+/**
+ * Convert the object resulting of a monorail.Projects ListFields to
+ * the format expected by TKR_fetchOptions.
+ * @param {object} fieldsResponse A pRPC ListFieldsResponse object.
+ */
+function TKR_convertFields(fieldsResponse) {
+  const jsonData = {};
+
+  jsonData.fields = fieldsResponse.fieldDefs.map(field =>
+      ({
+        field_id: field.fieldRef.fieldId,
+        field_name: field.fieldRef.fieldName,
+        field_type: field.fieldRef.type,
+        choices: (field.enumChoices || []),
+        docstring: field.docstring,
+        qualifiedMembers: (field.userChoices || []).map(
+            userRef => ({name: userRef.displayName})),
+      })
+  );
+
+  return jsonData;
+}
+
+
+/**
+ * Convert the object resulting of a monorail.Features ListHotlistsByUser
+ * call to the format expected by TKR_fetchOptions.
+ * @param {object} hotlistsResponse A pRPC ListHotlistsByUserResponse object.
  */
 function TKR_convertHotlists(hotlistsResponse) {
   if (hotlistsResponse.hotlists === undefined) {
@@ -1187,12 +1190,8 @@ function TKR_convertHotlists(hotlistsResponse) {
  * could be long, and most of the time, the user will only view an
  * issue not edit it.
  * @param {string} projectName The name of the current project.
- * @param {string} token The user's url-command-attack-prevention token.
- * @param {number} cct The project's cached-content-timestamp.
  */
-function TKR_fetchOptions(projectName, token, cct) {
-  const projectPart = projectName ? '/p/' + projectName : '/hosting';
-  const membersURL = `${projectPart}/feeds/issueOptionsMembers?token=${token}&cct=${cct}`;
+function TKR_fetchOptions(projectName) {
   const prpcClient = new window.chops.rpc.PrpcClient({
     insecure: Boolean(location.hostname === 'localhost'),
     fetchImpl: (url, options) => {
@@ -1208,6 +1207,14 @@ function TKR_fetchOptions(projectName, token, cct) {
     project_name: projectName,
   };
 
+  const fieldsRequestMessage = {
+    trace: {
+      token: window.CS_env.token,
+    },
+    project_name: projectName,
+    include_user_choices: true,
+  };
+
   const userRequestMessage = {
     trace: {
       token: window.CS_env.token,
@@ -1217,30 +1224,22 @@ function TKR_fetchOptions(projectName, token, cct) {
     },
   };
 
-  const membersPromise = CS_fetch(membersURL);
   const statusesPromise = prpcClient.call(
       'monorail.Projects', 'ListStatuses', projectRequestMessage);
   const componentsPromise = prpcClient.call(
       'monorail.Projects', 'ListComponents', projectRequestMessage);
   const labelsPromise = prpcClient.call(
       'monorail.Projects', 'GetLabelOptions', projectRequestMessage);
+  const visibleMembersPromise = prpcClient.call(
+      'monorail.Projects', 'GetVisibleMembers', projectRequestMessage);
+  const fieldsPromise = prpcClient.call(
+      'monorail.Projects', 'ListFields', fieldsRequestMessage);
   const customPermissionsPromise = prpcClient.call(
       'monorail.Projects', 'GetCustomPermissions', projectRequestMessage);
   const hotlistsPromise = prpcClient.call(
       'monorail.Features', 'ListHotlistsByUser', userRequestMessage);
 
   const allPromises = [];
-
-  allPromises.push(
-      membersPromise.then(membersResponse => {
-        const jsonData = TKR_convertMembersResponse(membersResponse);
-
-        TKR_setUpMemberStore(jsonData.memberEmails, jsonData.nonGroupEmails);
-        TKR_prepOwnerField(jsonData.memberEmails);
-        TKR_setUpUserAutocompleteStores(jsonData.fields, jsonData.memberEmails);
-
-        return jsonData;
-  }));
 
   allPromises.push(
       statusesPromise.then(statusesResponse => {
@@ -1267,6 +1266,25 @@ function TKR_fetchOptions(projectName, token, cct) {
 
         TKR_exclPrefixes = jsonData.excl_prefixes;
         TKR_setUpLabelStore(jsonData.labels);
+
+        return jsonData;
+  }));
+
+  allPromises.push(
+      visibleMembersPromise.then(visibleMembersResponse => {
+        const jsonData = TKR_convertVisibleMembers(visibleMembersResponse);
+
+        TKR_setUpMemberStore(jsonData.memberEmails, jsonData.nonGroupEmails);
+        TKR_prepOwnerField(jsonData.memberEmails);
+
+        return jsonData;
+  }));
+
+  allPromises.push(
+      fieldsPromise.then(fieldsResponse => {
+        const jsonData = TKR_convertFields(fieldsResponse);
+
+        TKR_setUpUserAutocompleteStores(jsonData.fields);
 
         return jsonData;
   }));
