@@ -1,0 +1,130 @@
+[
+  {
+    "cmd": [
+      "cipd",
+      "ensure",
+      "-root",
+      "[START_DIR]/nodejs",
+      "-ensure-file",
+      "infra/nodejs/nodejs/${platform} latest",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json"
+    ],
+    "name": "ensure_installed",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-latest----------\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/nodejs/nodejs/${platform}\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/nodejs/bin/npm",
+      "view",
+      "firebase-tools",
+      "version"
+    ],
+    "cwd": "[START_DIR]/nodejs",
+    "env": {
+      "PATH": "[START_DIR]/nodejs/bin"
+    },
+    "name": "fetch firebase-tools version",
+    "stdout": "/path/to/tmp/"
+  },
+  {
+    "cmd": [
+      "cipd",
+      "search",
+      "infra/npm/firebase-tools",
+      "-tag",
+      "version:3.19.3",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json"
+    ],
+    "name": "cipd search infra/npm/firebase-tools version:3.19.3",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/nodejs/bin/npm",
+      "install",
+      "firebase-tools"
+    ],
+    "cwd": "[START_DIR]/nodejs",
+    "env": {
+      "PATH": "[START_DIR]/nodejs/bin"
+    },
+    "name": "fetch firebase-tools"
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-build",
+      "-in",
+      "[START_DIR]/nodejs/node_modules",
+      "-name",
+      "infra/npm/firebase-tools",
+      "-out",
+      "[START_DIR]/nodejs/node_modules/package.cipd",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-install-mode",
+      "copy"
+    ],
+    "name": "build firebase-tools",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/npm/firebase-tools\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-register",
+      "[START_DIR]/nodejs/node_modules/package.cipd",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json",
+      "-ref",
+      "latest",
+      "-tag",
+      "version:3.19.3"
+    ],
+    "name": "register infra/npm/firebase-tools",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/npm/firebase-tools\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]

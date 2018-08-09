@@ -1,0 +1,18 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "import sys; sys.exit(0)"
+    ],
+    "name": "Only built on Linux",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@No need.@@@"
+    ]
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]

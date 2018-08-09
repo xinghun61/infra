@@ -10,6 +10,7 @@ from . import ninja as tpp_ninja
 from . import cmake as tpp_cmake
 from . import swig as tpp_swig
 from . import go as tpp_go
+from . import firebase as tpp_firebase
 from . import dep as tpp_dep
 from .support_prefix import SupportPrefix
 
@@ -104,6 +105,10 @@ class ThirdPartyPackagesApi(recipe_api.RecipeApi):
   @property
   def go(self):
     return self._get_singleton(tpp_go.GoApi)
+
+  @property
+  def firebase(self):
+    return self._get_singleton(tpp_firebase.FirebaseApi)
 
   @property
   def dep(self):

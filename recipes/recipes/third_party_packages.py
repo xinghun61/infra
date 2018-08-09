@@ -50,6 +50,8 @@ def RunSteps(api, cross_platform):
       api.third_party_packages.swig.package()
     with api.step.nest('go'):
       api.third_party_packages.go.package()
+    with api.step.nest('firebase'):
+      api.third_party_packages.firebase.package()
     with api.step.nest('dep'):
       api.third_party_packages.dep.package()
 
@@ -114,6 +116,10 @@ def GenTests(api):
           'platform': platform,
         },
         '1.2.3' + api.third_party_packages.go.PACKAGE_VERSION_SUFFIX) +
+      cipd_search(
+        'firebase',
+        api.third_party_packages.firebase.PACKAGE_NAME,
+        '3.19.3' + api.third_party_packages.firebase.PACKAGE_VERSION_SUFFIX) +
       api.step_data('dep.refs',
         api.gitiles.make_refs_test_data('refs/tags/v0.3.1')) +
       cipd_search(
