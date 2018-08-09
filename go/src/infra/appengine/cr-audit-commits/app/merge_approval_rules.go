@@ -66,6 +66,12 @@ func OnlyMergeApprovedChange(ctx context.Context, ap *AuditParams, rc *RelevantC
 		vIssue, err := issueFromID(ctx, ap.RepoCfg, int32(bugNumber), cs)
 		if err != nil {
 			logging.WithError(err).Errorf(ctx, "Found an invalid Monorail bug %s on relevant commit %s", bugNumber, rc.CommitHash)
+			// TODO:crbug/872793 Remove the if condition below when permission is granted to the audit app to view security bugs
+			if strings.Contains(err.Error(), "403 Forbidden") {
+				result.Message = fmt.Sprintf("Revision %s was not audited because of crbug/872793 ", rc.CommitHash)
+				result.RuleResultStatus = ruleSkipped
+				return result
+			}
 			continue
 		}
 		// Check if the issue has a merge approval label in the comment history
