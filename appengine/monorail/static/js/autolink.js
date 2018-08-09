@@ -261,6 +261,7 @@
   }
 
   function markupAutolinks(plainString, componentRefs) {
+    plainString = plainString || '';
     const chunks = plainString.trim().split(/(<b>[^<\n]+<\/b>)|(\r?\n)/);
     let textRuns = [];
     chunks.filter(Boolean).forEach(chunk => {

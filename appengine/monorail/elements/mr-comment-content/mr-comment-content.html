@@ -8,11 +8,6 @@
           text-decoration: line-through;
       }
     </style>
-    <template is="dom-if" if="[[!_textRuns.length]]">
-      <template is="dom-repeat" items="[[_computeCommentLines(_contentWithoutHtml)]]" as="line">
-        [[line]]<br />
-      </template>
-    </template>
     <template is="dom-repeat" items="[[_textRuns]]" as="run">
       <b hidden$="[[!_isTagEqual(run.tag, 'b')]]">[[run.content]]</b>
       <br hidden$="[[!_isTagEqual(run.tag, 'br')]]"/>
