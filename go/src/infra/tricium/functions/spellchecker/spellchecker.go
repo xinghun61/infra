@@ -243,15 +243,32 @@ func buildMisspellingComment(misspelling string, fixes []string, startChar int,
 	}
 
 	return &tricium.Data_Comment{
-		Path: path,
-		Message: fmt.Sprintf("%q is a possible misspelling of: %s", misspelling,
-			strings.Join(fixes, ", ")),
+		Path:        path,
+		Message:     fmt.Sprintf("%q is a possible misspelling of %s.", misspelling, fixesMessage(fixes)),
 		Category:    "SpellChecker",
 		StartLine:   int32(lineno),
 		EndLine:     int32(lineno),
 		StartChar:   int32(startChar),
 		EndChar:     int32(endChar),
 		Suggestions: suggestions,
+	}
+}
+
+func fixesMessage(fixes []string) string {
+	switch n := len(fixes); n {
+	case 0:
+		return "<nothing>"
+	case 1:
+		return fmt.Sprintf("%q", fixes[0])
+	case 2:
+		return fmt.Sprintf("%q or %q", fixes[0], fixes[1])
+	default:
+		var b strings.Builder
+		for i := 0; i < n-1; i++ {
+			fmt.Fprintf(&b, "%q, ", fixes[i])
+		}
+		fmt.Fprintf(&b, "or %q", fixes[n-1])
+		return b.String()
 	}
 }
 

@@ -49,7 +49,7 @@ func TestSpellChecker(t *testing.T) {
 				Comments: []*tricium.Data_Comment{
 					{
 						Path:      "test.c",
-						Message:   `"iminent" is a possible misspelling of: eminent, imminent, immanent`,
+						Message:   `"iminent" is a possible misspelling of "eminent", "imminent", or "immanent".`,
 						Category:  "SpellChecker",
 						StartLine: 1,
 						EndLine:   1,
@@ -99,7 +99,7 @@ func TestSpellChecker(t *testing.T) {
 					},
 					{
 						Path:      "test.c",
-						Message:   `"combinatins" is a possible misspelling of: combinations`,
+						Message:   `"combinatins" is a possible misspelling of "combinations".`,
 						Category:  "SpellChecker",
 						StartLine: 5,
 						EndLine:   5,
@@ -136,7 +136,7 @@ func TestSpellChecker(t *testing.T) {
 				Comments: []*tricium.Data_Comment{
 					{
 						Path:      "test.c",
-						Message:   `"beggining" is a possible misspelling of: beginning`,
+						Message:   `"beggining" is a possible misspelling of "beginning".`,
 						Category:  "SpellChecker",
 						StartLine: 1,
 						EndLine:   1,
@@ -160,7 +160,7 @@ func TestSpellChecker(t *testing.T) {
 					},
 					{
 						Path:      "test.c",
-						Message:   `"beccause" is a possible misspelling of: because`,
+						Message:   `"beccause" is a possible misspelling of "because".`,
 						Category:  "SpellChecker",
 						StartLine: 1,
 						EndLine:   1,
@@ -197,7 +197,7 @@ func TestSpellChecker(t *testing.T) {
 				Comments: []*tricium.Data_Comment{
 					{
 						Path:      "test.c",
-						Message:   `"abandonded" is a possible misspelling of: abandoned`,
+						Message:   `"abandonded" is a possible misspelling of "abandoned".`,
 						Category:  "SpellChecker",
 						StartLine: 2,
 						EndLine:   2,
@@ -221,7 +221,7 @@ func TestSpellChecker(t *testing.T) {
 					},
 					{
 						Path:      "test.c",
-						Message:   `"calcualtion" is a possible misspelling of: calculation`,
+						Message:   `"calcualtion" is a possible misspelling of "calculation".`,
 						Category:  "SpellChecker",
 						StartLine: 3,
 						EndLine:   3,
@@ -258,7 +258,7 @@ func TestSpellChecker(t *testing.T) {
 				Comments: []*tricium.Data_Comment{
 					{
 						Path:      "test.c",
-						Message:   `"doccument" is a possible misspelling of: document`,
+						Message:   `"doccument" is a possible misspelling of "document".`,
 						Category:  "SpellChecker",
 						StartLine: 1,
 						EndLine:   1,
@@ -282,7 +282,7 @@ func TestSpellChecker(t *testing.T) {
 					},
 					{
 						Path:      "test.c",
-						Message:   `"divertion" is a possible misspelling of: diversion`,
+						Message:   `"divertion" is a possible misspelling of "diversion".`,
 						Category:  "SpellChecker",
 						StartLine: 1,
 						EndLine:   1,
@@ -306,7 +306,7 @@ func TestSpellChecker(t *testing.T) {
 					},
 					{
 						Path:      "test.c",
-						Message:   `"docrines" is a possible misspelling of: doctrines`,
+						Message:   `"docrines" is a possible misspelling of "doctrines".`,
 						Category:  "SpellChecker",
 						StartLine: 1,
 						EndLine:   1,
@@ -343,7 +343,7 @@ func TestSpellChecker(t *testing.T) {
 				Comments: []*tricium.Data_Comment{
 					{
 						Path:      "test.txt",
-						Message:   `"familes" is a possible misspelling of: families`,
+						Message:   `"familes" is a possible misspelling of "families".`,
 						Category:  "SpellChecker",
 						StartLine: 1,
 						EndLine:   1,
@@ -367,7 +367,7 @@ func TestSpellChecker(t *testing.T) {
 					},
 					{
 						Path:      "test.txt",
-						Message:   `"faund" is a possible misspelling of: found`,
+						Message:   `"faund" is a possible misspelling of "found".`,
 						Category:  "SpellChecker",
 						StartLine: 2,
 						EndLine:   2,
@@ -404,7 +404,7 @@ func TestSpellChecker(t *testing.T) {
 				Comments: []*tricium.Data_Comment{
 					{
 						Path:      "test.asdf",
-						Message:   `"familes" is a possible misspelling of: families`,
+						Message:   `"familes" is a possible misspelling of "families".`,
 						Category:  "SpellChecker",
 						StartLine: 1,
 						EndLine:   1,
@@ -441,7 +441,7 @@ func TestSpellChecker(t *testing.T) {
 				Comments: []*tricium.Data_Comment{
 					{
 						Path:      "test.html",
-						Message:   `"coment" is a possible misspelling of: comment`,
+						Message:   `"coment" is a possible misspelling of "comment".`,
 						Category:  "SpellChecker",
 						StartLine: 4,
 						EndLine:   4,
