@@ -197,10 +197,12 @@ func createWorker(s *tricium.Selection, sc *tricium.ServiceConfig, f *tricium.Fu
 	switch ii := i.Impl.(type) {
 	case *tricium.Impl_Recipe:
 		recipe := ii.Recipe
-		var properties map[string]interface{}
-		err := json.Unmarshal([]byte(recipe.Properties), &properties)
-		if err != nil {
-			return nil, errors.Annotate(err, "failed to unmarshal").Err()
+		properties := make(map[string]interface{})
+		if recipe.Properties != "" {
+			err := json.Unmarshal([]byte(recipe.Properties), &properties)
+			if err != nil {
+				return nil, errors.Annotate(err, "failed to unmarshal").Err()
+			}
 		}
 		for _, c := range s.Configs {
 			properties[c.Name] = c.Value
