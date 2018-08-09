@@ -7,6 +7,7 @@
 
 import logging
 import time
+import json
 
 from third_party import ezt
 
@@ -56,6 +57,7 @@ class UserProfile(servlet.Servlet):
     starred_user_dict = framework_views.MakeAllUserViews(
         mr.cnxn, self.services.user, starred_user_ids)
     starred_users = starred_user_dict.values()
+    starred_users_json = json.dumps(starred_users)
 
     is_user_starred = self._IsUserStarred(
         mr.cnxn, mr.auth.user_id, mr.viewed_user_auth.user_id)
@@ -121,6 +123,7 @@ class UserProfile(servlet.Servlet):
                 p, starred=p.project_id in logged_in_starred_pids)
             for p in starred_projects],
         'starred_users': starred_users,
+        'starred_users_json': starred_users_json,
         'is_user_starred': ezt.boolean(is_user_starred),
         'viewing_user_page': ezt.boolean(True),
         'last_visit_str': last_visit_str,

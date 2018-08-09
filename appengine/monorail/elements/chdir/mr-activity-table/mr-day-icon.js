@@ -10,42 +10,26 @@ class MrDayIcon extends Polymer.Element {
       activityLevel: {
         type: Number,
         reflectToAttribute: true,
-        computed: 'computeActivityLevel(changes, bugs)',
       },
-      changes: {
+      commits: {
         type: Number,
-        value: 0,
+      },
+      comments: {
+        type: Number,
+      },
+      date: {
+        type: Number,
       },
       class: {
         type: String,
         reflectToAttribute: true,
         computed: '_computeClass(selected)',
       },
-      bugs: {
-        type: Number,
-        value: 0,
-      },
       selected: {
         type: Boolean,
         value: false,
       },
     };
-  }
-
-  computeActivityLevel(cls, bugs) {
-    const activityNum = cls + bugs;
-    if (activityNum >= 7) {
-      // High.
-      return 3;
-    } else if (activityNum >= 3) {
-      // Medium.
-      return 2;
-    } else if (activityNum > 0) {
-      // Low.
-      return 1;
-    }
-    // None
-    return 0;
   }
 
   _computeClass(selected) {

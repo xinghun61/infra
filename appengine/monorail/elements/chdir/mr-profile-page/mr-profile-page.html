@@ -10,9 +10,64 @@
 <dom-module id="mr-profile-page">
   <template>
     <style>
-      .container {
+      .history-container {
         width: 70%;
         padding: 1em 16px;
+        padding-top: 35px;
+        padding-bottom: 75px;
+        padding-left: 30px;
+        padding-right: 30px;
+        display: flex;
+        flex-direction: column;
+        flex-wrap: no-wrap;
+        min-height: 100%;
+      }
+      .dataTable {
+        width: 80%;
+        overflow-x: auto;
+        margin-bottom: 55px;
+        margin-left: 30px;
+        margin-right: 30px;
+        max-height: 300px;
+      }
+      .activityGraph {
+        width: 80%;
+        overflow-x: auto;
+        margin-bottom: 55px;
+        margin-left: 30px;
+        margin-right: 30px;
+        max-height: 300px;
+      }
+      .metadata-container {
+        font-size: 85%;
+        background: hsl(120, 35%, 95%);
+        border: 1px solid hsl(120, 15%, 90%);
+        width: 15%;
+        min-width: 256px;
+        flex-grow: 0;
+        flex-shrink: 0;
+        margin-right: 16px;
+        box-sizing: border-box;
+        min-height: 100%;
+      }
+      .container-outside {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 100%;
+        margin: auto;
+        padding: 0.75em 8px;
+        display: flex;
+        align-items: stretch;
+        justify-content: space-between;
+        flex-direction: row;
+        flex-wrap: no-wrap;
+        flex-grow: 0;
+        min-height: 100%;
+      }
+      .profile-data {
+        text-align: center;
+        padding-top: 40%;
+        font-size: 110%;
       }
       .commitTable {
         width: 80%;
@@ -31,12 +86,43 @@
         &gt; Viewing Profile: [[viewedUser]]
       </span>
     </mr-header>
-    <div class="container">
-      <mr-activity-table></mr-activity-table>
-      <mr-comments-list token="[[token]]" user="[[user]]" viewed-user-id="[[viewedUserId]]"></mr-comments-list>
-    </div>
-    <div class="commitTable">
-      <mr-commit-table token="[[token]]" user="[[viewedUser]]"></mr-commit-table>
+    <div class="container-outside">
+      <div class="metadata-container">
+        <div class="profile-data">
+          [[viewedUser]] <br>
+          <b>Last visit:</b> [[lastVisitStr]] <br>
+          <b>Starred Developers:</b> [[_checkStarredUsers(starredUsers)]]
+        </div>
+      </div>
+      <div class="history-container">
+        <div class="activityGraph">
+          <mr-activity-table
+            token="[[token]]"
+            user="[[viewedUser]]"
+            viewed-user-id="[[viewedUserId]]"
+            commits="[[commits]]"
+            comments="[[comments]]"
+            selected-date="{{selectedDate}}"
+          ></mr-activity-table>
+        </div>
+        <div class="dataTable">
+          <mr-commit-table
+            token="[[token]]"
+            user="[[viewedUser]]"
+            commits="[[commits]]"
+            selected-date="{{selectedDate}}">
+          </mr-commit-table>
+        </div>
+        <div class="dataTable">
+          <mr-comments-list
+            token="[[token]]"
+            user="[[viewedUser]]"
+            viewed-user-id="[[viewedUserId]]"
+            comments="[[comments]]"
+            selected-date="{{selectedDate}}">
+          </mr-comments-list>
+        </div>
+      </div>
     </div>
   </template>
   <script src="./mr-profile-page.js"></script>

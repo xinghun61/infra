@@ -15,9 +15,13 @@ class MrCommitTable extends Polymer.Element {
     return {
       commits: {
         type: Array,
+        notify: true,
+        value: [],
       },
       displayedCommits: {
         type: Array,
+        computed: "_computedCommits(selectedDate,commits)",
+        value: [],
       },
       commitsLoaded: {
         type: Boolean,
@@ -30,37 +34,50 @@ class MrCommitTable extends Polymer.Element {
       },
       user: {
         type: String,
-        observer: '_getCommits',
+      },
+      selectedDate: {
+        type: Number,
+        notify: true,
+      },
+      emptyList: {
+        type: Boolean,
+        computed: "_checkIfCommitsEmpty(displayedCommits)",
       },
     };
   }
 
-  _getCommits(user) {
-    const d = new Date();
-    const n = d.getTime();
-    let currentTime = n / 1000;
-    currentTime = Math.ceil(currentTime);
-    let fromTime = currentTime - 31536000;
+  _computedCommits(selectedDate,commits) {
+    if (selectedDate == undefined) {
+      return commits;
+    } else {
+      let computedCommits = [];
+      if (commits == undefined) {
+        return computedCommits;
+      }
+      for (let i = 0; i < commits.length; i++) {
+        if(commits[i].commitTime <= selectedDate &&
+           commits[i].commitTime >= (selectedDate - 86400)) {
+          computedCommits.push(commits[i]);
+        }
+      }
+      return computedCommits;
+    }
+  }
 
-    const message = {
-      trace: {token: this.token},
-      email: user,
-      from_timestamp: fromTime,
-      until_timestamp: currentTime,
-    };
-
-    const getCommits = window.prpcClient.call(
-      'monorail.Users', 'GetUserCommits', message
-    );
-
-    getCommits.then((resp) => {
-      this.commits = resp.userCommits;
-    }, (error) => {
-    });
+  _checkEmptyList(list) {
+    if (list.length != 0) {
+      return list;
+    }else{
+      return ["None"];
+    }
   }
 
   _truncateSHA(sha) {
     return sha.substring(0,6);
+  }
+
+  _checkIfCommitsEmpty(displayedCommits) {
+    return !displayedCommits || displayCommits.length === 0;
   }
 
   _truncateRepo(repo) {

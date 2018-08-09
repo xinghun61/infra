@@ -33,6 +33,7 @@
         border-right: 1px solid #fff;
         border-top: 1px solid #fff;
       }
+
       th:last-child { border-right: 0; }
       tr:nth-child(even) { background: #f8f8f8; }
     </style>
@@ -44,13 +45,18 @@
           <th style="width:15%;">Repo</th>
           <th style="width:55%;">Commit Message</th>
         </tr>
-        <template is="dom-repeat" items="[[commits]]" as="commit">
+        <template is="dom-repeat" items="[[displayedCommits]]" as="commit">
           <tr id="row">
             <td style="width:15%;"><chops-timestamp timestamp="[[commit.commitTime]]" short></chops-timestamp></td>
-            <td style="width:15%;">[[_truncateSHA(commit.commitSha)]]</td>
+            <td style="width:15%;"><a class="nav-link" href$="[[commit.commitRepoUrl]]/+/[[commit.commitSha]]">[[_truncateSHA(commit.commitSha)]]</a></td>
             <td style="width:15%;">[[_truncateRepo(commit.commitRepoUrl)]]</td>
             <td style="width:55%;">[[_truncateMessage(commit.commitMessage)]]</td>
           </tr>
+        </template>
+        <template is="dom-if" if="[[_checkIfCommitsEmpty(displayedCommits)]]">
+          <tr>
+            <td colspan="4"><i>No commits.</i></td>
+          <tr>
         </template>
       </tbody>
     </table>

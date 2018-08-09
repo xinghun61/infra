@@ -7,14 +7,17 @@
       :host {
         background-color: hsl(0, 0%, 95%);
         margin: 0.25em 8px;
-        height: 32px;
-        width: 32px;
+        height: 20px;
+        width: 20px;
         border: 2px solid white;
         transition: border-color .5s ease-in-out;
       }
       :host(:hover) {
         cursor: pointer;
         border-color: hsl(87, 20%, 45%);
+      }
+      :host([activity-level="0"]) {
+        background-color: hsl(107, 10%, 97%);
       }
       :host([activity-level="1"]) {
         background-color: hsl(87, 70%, 87%);
@@ -25,13 +28,14 @@
       :host([activity-level="3"]) {
         background-color: hsl(87, 80%, 40%);
       }
-      :host.selected {
+      :host([class="selected"]) {
         border-color: hsl(0, 0%, 13%);
       }
     </style>
     <paper-tooltip>
-      [[changes]] CLs<br />
-      [[bugs]] bugs
+      [[commits]] Commits<br />
+      [[comments]] Comments<br />
+      <chops-timestamp timestamp="[[date]]"></chops-timestamp>
     </paper-tooltip>
   </template>
   <script src="./mr-day-icon.js"></script>

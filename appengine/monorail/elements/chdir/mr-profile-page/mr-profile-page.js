@@ -13,13 +13,77 @@ class MrProfilePage extends Polymer.Element {
 
   static get properties() {
     return {
-      user: String,
+      user: {
+        type: String,
+        observer: '_getUserData',
+      },
       logoutUrl: String,
       loginUrl: String,
       viewedUser: String,
       viewedUserId: Number,
       token: String,
+      lastVisitStr: String,
+      starredUsers: Array,
+      commits: {
+        type: Array,
+      },
+      comments: {
+        type: Array,
+      },
+      selectedDate: {
+        type: Number,
+      },
     };
+  }
+
+  _checkStarredUsers(list){
+    if (list.length != 0) {
+      return list;
+    }else{
+      return ["None"];
+    }
+  }
+
+  _getUserData() {
+    const d = new Date();
+    const n = d.getTime();
+    let currentTime = n / 1000;
+    currentTime = Math.ceil(currentTime);
+    let fromTime = currentTime - 31536000;
+
+    const commitMessage = {
+      trace: {token: this.token},
+      email: this.viewedUser,
+      from_timestamp: fromTime,
+      until_timestamp: currentTime,
+    };
+
+    const getCommits = window.prpcClient.call(
+      'monorail.Users', 'GetUserCommits', commitMessage
+    );
+
+    getCommits.then((resp) => {
+      this.commits = resp.userCommits;
+    }, (error) => {
+    });
+
+    const commentMessage = {
+      trace: {
+        token: this.token,
+      },
+      user_ref: {
+        user_id: this.viewedUserId,
+      },
+    };
+
+    const listActivities = window.prpcClient.call(
+      'monorail.Issues', 'ListActivities', commentMessage
+    );
+
+    listActivities.then(
+      (resp) => {this.comments = resp.comments;},
+      (error) => {}
+    );
   }
 }
 

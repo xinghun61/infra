@@ -6,46 +6,43 @@
 <dom-module id="mr-comments-list">
   <template>
     <style>
-      table {
-        color: Coral;
-      }
       .ellipsis {
-        max-width: 100ch;
+        max-width: 50%;
         text-overflow: ellipsis;
         overflow: hidden;
         white-space: nowrap;
+      }
+      table {
+        word-wrap: break-word;
+        width: 100%;
       }
       tr {
         font-size: 90%;
         font-weight: normal;
         text-align: left;
-        cursor: pointer;
         margin: 0 auto;
         padding: 2em 1em;
-        width: 60%;
-        height: 40px;
+        height: 20px;
       }
       td {
-        background: #f1f1f1;
-        cursor: pointer;
-        cursor: hand;
+        background: #f8f8f8;
+        padding: 4px;
+        padding-left: 8px;
+        text-overflow: ellipsis;
       }
       th {
-        border-top: 1px solid #fff;
         text-decoration: none;
         margin-right: 0;
         padding-right: 0;
-        white-space:nowrap;
+        padding-left: 8px;
+        white-space: nowrap;
         background: #e3e9ff;
         text-align: left;
-        padding: 3px;
-        border: 0;
         border-right: 1px solid #fff;
+        border-top: 1px solid #fff;
       }
-      th:last-child { border-right: 0; }
-      tr:nth-child(even) { background: #f8f8f8; }
     </style>
-    <table>
+    <table cellspacing="0" cellpadding="0">
      <tbody>
        <tr id="heading-row">
          <th style="width:20%;">Date</th>
@@ -54,17 +51,22 @@
          <th style="width:20%;">Issue Link</th>
        </tr>
 
-       <template is="dom-repeat" items="[[comments]]" as="comment">
+       <template is="dom-repeat" items="[[displayedComments]]" as="comment">
          <tr id="row">
-           <td><chops-timestamp timestamp="[[comment.timestamp]]"></chops-timestamp></td>
-           <td>[[comment.projectName]]</td>
-           <td class="ellipsis">[[comment.content]]</td>
-           <td>
+           <td style="width:20%;"><chops-timestamp timestamp="[[comment.timestamp]]" short></chops-timestamp></td>
+           <td style="width:10%;">[[comment.projectName]]</td>
+           <td class="ellipsis" style="width:50%;">[[_truncateMessage(comment.content)]]</td>
+           <td style="width:20%;">
              <a href$="/p/[[comment.projectName]]/issues/detail?id=[[comment.localId]]">
                <paper-button>Issue [[comment.localId]]</paper-button>
              </a>
            </td>
          </tr>
+       </template>
+       <template is="dom-if" if="[[_checkIfCommentsEmpty(displayedComments)]]">
+         <tr>
+           <td colspan="4"><i>No comments.</i></td>
+         <tr>
        </template>
    </tbody>
  </table>

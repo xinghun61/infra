@@ -6,31 +6,37 @@
     :host {
       display: grid;
       /* 8 columns = 7 days of the week + 1 column to label the week */
-      grid-template-columns: auto auto auto auto auto auto auto auto;
-      grid-template-rows: auto;
+      grid-auto-flow: column;
+      grid-auto-columns: auto auto auto auto auto auto auto auto auto auto auto auto auto;
+      grid-template-rows: auto auto auto auto auto auto auto;
       margin: auto;
       width: 90%;
       text-align: center;
-      line-height: 150%;
+      line-height: 110%;
       justify-items: center;
+      min-height: 30%;
+    }
+    span {
+      font-size: 10px;
+      place-self: center;
     }
     </style>
 
-    <span>&nbsp;<!-- empty column header for weekLabel column --></span>
     <template is="dom-repeat" items="[[daysOfWeek]]">
       <span>[[item]]</span>
     </template>
-
-    <template is="dom-repeat" items="[[weeks]]" as="week">
-      <span>[[week.label]]</span>
-      <template is="dom-repeat" items="[[week.days]]" as="day">
-        <mr-day-icon changes="[[day.changes]]"
-                  bugs="[[day.bugs]]"
+      <template is="dom-repeat" items="[[startWeekday]]">
+      <span></span>
+      </template>
+      <template is="dom-repeat" items="[[activityArray]]" as="day">
+        <mr-day-icon activity-level="[[day.activityNum]]"
                   on-tap="_onDaySelected"
-                  selected="[[_computeIsSelected(day, day.day)]]">
+                  selected="[[_computeIsSelected(selectedDate, day.date)]]"
+                  commits="[[day.commits]]"
+                  comments="[[day.comments]]"
+                  date="[[day.date]]">
         </mr-day-icon>
       </template>
-    </template>
   </template>
   <script src="./mr-activity-table.js"></script>
 </dom-module>
