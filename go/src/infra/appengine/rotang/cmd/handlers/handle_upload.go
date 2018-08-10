@@ -2,16 +2,18 @@ package handlers
 
 import (
 	"bytes"
-	"infra/appengine/rotang/pkg/datastore"
-	"infra/appengine/rotang/pkg/jsoncfg"
-	"infra/appengine/rotang/pkg/rotang"
 	"io"
 	"net/http"
 	"strings"
 
+	"infra/appengine/rotang/pkg/datastore"
+	"infra/appengine/rotang/pkg/jsoncfg"
+
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -35,7 +37,11 @@ func HandleUpload(ctx *router.Context) {
 		return
 	}
 
-	var ds rotang.ConfigStorer = datastore.New()
+	ds, err := datastore.New(ctx.Context)
+	if err != nil {
+		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	for {
 		part, err := mr.NextPart()
@@ -55,13 +61,19 @@ func HandleUpload(ctx *router.Context) {
 			logging.Errorf(ctx.Context, "File: %q containing: %q failed to Copy: %v", part.FileName(), buf, err)
 			continue
 		}
-		rotaCfg, err := jsoncfg.BuildConfigurationFromJSON(buf.Bytes())
+		rotaCfg, members, err := jsoncfg.BuildConfigurationFromJSON(buf.Bytes())
 		if err != nil {
 			logging.Errorf(ctx.Context, "File: %q failed to parse: %v", part.FileName(), err, "</br>")
 			http.Error(ctx.Writer, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if err := ds.StoreRotaConfig(ctx.Context, rotaCfg); err != nil {
+		for _, m := range members {
+			if err := ds.CreateMember(ctx.Context, &m); err != nil && status.Code(err) != codes.AlreadyExists {
+				http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+		if err := ds.CreateRotaConfig(ctx.Context, rotaCfg); err != nil {
 			logging.Errorf(ctx.Context, "File: %q failed to store: %v", part.FileName(), err)
 			continue
 		}

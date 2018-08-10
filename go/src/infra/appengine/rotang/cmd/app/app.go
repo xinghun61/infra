@@ -2,7 +2,9 @@
 package app
 
 import (
-	"infra/appengine/rotang/cmd/app/handlers"
+	"net/http"
+
+	"infra/appengine/rotang/cmd/handlers"
 
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/server/router"
@@ -15,10 +17,12 @@ func init() {
 	middleware := standard.Base()
 
 	tmw := middleware.Extend(templates.WithTemplates(&templates.Bundle{
-		Loader: templates.FileSystemLoader("templates"),
+		Loader: templates.FileSystemLoader("../handlers/templates"),
 	}))
 
 	r.GET("/", tmw, handlers.HandleIndex)
 	r.GET("/upload", tmw, handlers.HandleUpload)
 	r.POST("/upload", tmw, handlers.HandleUpload)
+
+	http.DefaultServeMux.Handle("/", r)
 }

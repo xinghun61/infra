@@ -2,30 +2,35 @@
 package datastore
 
 import (
-	"context"
 	"time"
 
-	"infra/appengine/rotang/pkg/rotang"
+	"infra/appengine/rotang"
 
-	"golang.org/x/oauth2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"go.chromium.org/gae/service/datastore"
+	"golang.org/x/net/context"
 )
 
 const (
-	rotaKind       = "DsRotaConfig"
-	memberKind     = "DsMember"
-	shiftKind      = "DsShifts"
-	shiftEntryKind = "DsShiftEntry"
-	memberOOOKind  = "DsOOOMember"
+	rotaKind   = "DsRotaConfig"
+	memberKind = "DsMember"
+	rootKind   = "DsRoot"
+	root       = "root"
 )
+
+// DsRoot identifies the root of the Rota datastore.
+type DsRoot struct {
+	ID string `gae:"$id"`
+}
 
 // DsRotaConfig is used to store a RotaConfiguration in Datastore.
 type DsRotaConfig struct {
-	ID  string `gae:"$id"`
-	Cfg rotang.Config
+	Key     *datastore.Key `gae:"$parent"`
+	ID      string         `gae:"$id"`
+	Cfg     rotang.Config
+	Members []rotang.ShiftMember
 }
 
 // DsMember is used to store a rotang.Member in Datastore.
@@ -36,78 +41,233 @@ type DsMember struct {
 	TZ     string
 }
 
-// DsToken is used to store oauth2 tokens in Datastore.
-type DsToken struct {
-	Email string `gae:"$id"`
-	Token oauth2.Token
-}
-
-// DsShifts is used to store rotang.Shifs in Datastore.
-type DsShifts struct {
-	Name string `gae:"$id"`
-}
-
-// DsOOOMember is used to store OOO information in Datastore.
-type DsOOOMember struct {
-	Idx    int
-	Key    *datastore.Key `gae:"$parent"`
-	Email  string         `gae:"$id"`
-	Member rotang.Member
-	TZ     string
-}
-
-// DsShiftEntry is the Datastore representation of rotang.ShiftEntry.
-type DsShiftEntry struct {
-	Key       *datastore.Key `gae:"$parent"`
-	Name      string
-	ID        string `gae:"$id"`
-	StartTime time.Time
-	EndTime   time.Time
-	Comment   string
-}
-
 // _ make sure Store confirms with the Storer and TokenStore interfaces.
 var (
 	_ rotang.ConfigStorer = &Store{}
+	_ rotang.MemberStorer = &Store{}
 )
 
 // Store represents a datatore entity.
 type Store struct {
 }
 
-// New creates a new Datastore backed store.
-func New() *Store {
-	return &Store{}
+func rootKey(ctx context.Context) *datastore.Key {
+	return datastore.NewKey(ctx, rootKind, root, 0, datastore.KeyForObj(ctx, &DsRoot{ID: root}))
 }
 
-// StoreRotaConfig stores a rotang.Configuration in Datastore.
-func (s *Store) StoreRotaConfig(ctx context.Context, rotation *rotang.Configuration) error {
+// New creates a new Datastore backed store.
+func New(ctx context.Context) (*Store, error) {
+	root := &DsRoot{
+		ID: root,
+	}
+	if err := datastore.RunInTransaction(ctx, func(ctx context.Context) error {
+		if err := datastore.Get(ctx, root); err != nil {
+			if err == datastore.ErrNoSuchEntity {
+				return datastore.Put(ctx, root)
+			}
+			return err
+		}
+		return nil
+	}, nil); err != nil {
+		return nil, err
+	}
+	return &Store{}, nil
+}
+
+// Member fetches the matching Member from datastore.
+func (s *Store) Member(ctx context.Context, email string) (*rotang.Member, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	if email == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "email needs to be set")
+	}
+	dsMember := &DsMember{
+		Key:   rootKey(ctx),
+		Email: email,
+	}
+	if err := datastore.Get(ctx, dsMember); err != nil {
+		if err == datastore.ErrNoSuchEntity {
+			return nil, status.Errorf(codes.NotFound, "member not found")
+		}
+		return nil, err
+	}
+	m, err := convertMembers([]DsMember{
+		*dsMember,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(m) != 1 {
+		return nil, status.Errorf(codes.NotFound, "wrong number of members returned from datastore")
+	}
+	member := m[0]
+	return &member, nil
+}
+
+// CreateMember stores a new member in datastore.
+func (s *Store) CreateMember(ctx context.Context, member *rotang.Member) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if member.Email == "" {
+		return status.Errorf(codes.InvalidArgument, "Email must be set")
+	}
+	dsMember := DsMember{
+		Key:    rootKey(ctx),
+		Email:  member.Email,
+		Member: *member,
+		TZ:     member.TZ.String(),
+	}
+
+	return datastore.RunInTransaction(ctx, func(ctx context.Context) error {
+
+		if err := datastore.Get(ctx, &dsMember); err != datastore.ErrNoSuchEntity {
+			if err != nil {
+				return err
+			}
+			return status.Errorf(codes.AlreadyExists, "member key: %q already exist", member.Email)
+		}
+		return datastore.Put(ctx, &dsMember)
+	}, nil)
+}
+
+// DeleteMember deletes a member from datastore.
+func (s *Store) DeleteMember(ctx context.Context, email string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return datastore.Delete(ctx, &DsMember{
+		Key:   rootKey(ctx),
+		Email: email,
+	})
+}
+
+// UpdateMember updates an existing member.
+func (s *Store) UpdateMember(ctx context.Context, member *rotang.Member) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if member.Email == "" {
+		return status.Errorf(codes.InvalidArgument, "member Email must be set")
+	}
+	dsMember := DsMember{
+		Key:   rootKey(ctx),
+		Email: member.Email,
+	}
+	return datastore.RunInTransaction(ctx, func(ctx context.Context) error {
+		if err := datastore.Get(ctx, &dsMember); err != nil {
+			if err == datastore.ErrNoSuchEntity {
+				return status.Errorf(codes.NotFound, "member: %q not found", dsMember.Email)
+			}
+			return err
+		}
+		return datastore.Put(ctx, &DsMember{
+			Key:    rootKey(ctx),
+			Email:  member.Email,
+			Member: *member,
+			TZ:     member.TZ.String(),
+		})
+	}, nil)
+}
+
+func convertMembers(dsMembers []DsMember) ([]rotang.Member, error) {
+	var members []rotang.Member
+	for _, m := range dsMembers {
+		loc, err := time.LoadLocation(m.TZ)
+		if err != nil {
+			return nil, err
+		}
+		m.Member.TZ = *loc
+		members = append(members, m.Member)
+	}
+	return members, nil
+}
+
+// CreateRotaConfig stores a rotang.Configuration in Datastore.
+func (s *Store) CreateRotaConfig(ctx context.Context, rotation *rotang.Configuration) error {
 	// The datastore doesn't seem to check the context so might as well do it here.
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 	rotation.Config.Shifts.StartTime = rotation.Config.Shifts.StartTime.UTC()
-	// The datastore Flattening can't handle slices of structs inside of structs.
-	// To handle this the members are put in separate with the configuration as the parent.
-	rotaCfg := DsRotaConfig{
-		ID:  rotation.Config.Name,
-		Cfg: rotation.Config,
+
+	cfg := DsRotaConfig{
+		Key:     rootKey(ctx),
+		ID:      rotation.Config.Name,
+		Cfg:     rotation.Config,
+		Members: rotation.Members,
 	}
-	var dsMembers []DsMember
-	for _, member := range rotation.Rotation.Members {
-		dsMembers = append(dsMembers, DsMember{
-			Key:    datastore.NewKey(ctx, rotaKind, rotaCfg.ID, 0, nil),
-			Email:  member.Email,
-			Member: member,
-			TZ:     member.TZ.String(),
-		})
-	}
-	return datastore.Put(ctx, &rotaCfg, dsMembers)
+
+	return datastore.RunInTransaction(ctx, func(ctx context.Context) error {
+		for _, m := range rotation.Members {
+			if _, err := s.Member(ctx, m.Email); err != nil {
+				return err
+			}
+		}
+
+		if err := datastore.Get(ctx, &cfg); err != nil {
+			if err == datastore.ErrNoSuchEntity {
+				return datastore.Put(ctx, &DsRotaConfig{
+					Key:     rootKey(ctx),
+					ID:      rotation.Config.Name,
+					Cfg:     rotation.Config,
+					Members: rotation.Members,
+				})
+			}
+		}
+		return status.Errorf(codes.AlreadyExists, "rota already exists")
+	}, nil)
 }
 
-// FetchRotaConfig fetches the Rota specified in `name`. If name is left empty all the rotas in store is returned.
-func (s *Store) FetchRotaConfig(ctx context.Context, name string) ([]*rotang.Configuration, error) {
-	// The datastore doesn't seem to check the context so might as well do it here.
+// UpdateRotaConfig updates an existing Configuration entry.
+func (s *Store) UpdateRotaConfig(ctx context.Context, rotation *rotang.Configuration) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	rotation.Config.Shifts.StartTime = rotation.Config.Shifts.StartTime.UTC()
+
+	cfg := DsRotaConfig{
+		Key: rootKey(ctx),
+		ID:  rotation.Config.Name,
+	}
+
+	return datastore.RunInTransaction(ctx, func(ctx context.Context) error {
+		if err := datastore.Get(ctx, &cfg); err != nil {
+			return err
+		}
+		return datastore.Put(ctx, &DsRotaConfig{
+			Key:     rootKey(ctx),
+			ID:      rotation.Config.Name,
+			Cfg:     rotation.Config,
+			Members: rotation.Members,
+		})
+	}, nil)
+
+}
+
+// MemberOf returns the rotas the specified email is a member of.
+func (s *Store) MemberOf(ctx context.Context, email string) ([]string, error) {
+	cs, err := s.RotaConfig(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+	var res []string
+	for _, cfg := range cs {
+		for _, m := range cfg.Members {
+			if m.Email == email {
+				res = append(res, cfg.Config.Name)
+				break
+			}
+		}
+	}
+	return res, nil
+}
+
+// RotaConfig fetches the Rota specified in `name`. If name is left empty all the rotas in store is returned.
+func (s *Store) RotaConfig(ctx context.Context, name string) ([]*rotang.Configuration, error) {
+	// The datastore doesn't seem to check the context so migh as well do it here.
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -125,7 +285,8 @@ func (s *Store) FetchRotaConfig(ctx context.Context, name string) ([]*rotang.Con
 	}
 	if len(rotas) < 1 {
 		r := DsRotaConfig{
-			ID: name,
+			Key: rootKey(ctx),
+			ID:  name,
 		}
 		if err := datastore.Get(ctx, &r); err != nil {
 			return nil, err
@@ -135,28 +296,9 @@ func (s *Store) FetchRotaConfig(ctx context.Context, name string) ([]*rotang.Con
 
 	var res []*rotang.Configuration
 	for _, rotaCfg := range rotas {
-
-		queryMembers := datastore.NewQuery(memberKind).Ancestor(datastore.KeyForObj(ctx, &rotaCfg))
-
-		var dsMembers []DsMember
-		if err := datastore.GetAll(ctx, queryMembers, &dsMembers); err != nil {
-			return nil, err
-		}
-
-		var rotaMembers []rotang.Member
-		for _, member := range dsMembers {
-			loc, err := time.LoadLocation(member.TZ)
-			if err != nil {
-				return nil, err
-			}
-			member.Member.TZ = *loc
-			rotaMembers = append(rotaMembers, member.Member)
-		}
 		res = append(res, &rotang.Configuration{
-			Config: rotaCfg.Cfg,
-			Rotation: rotang.Members{
-				Members: rotaMembers,
-			},
+			Config:  rotaCfg.Cfg,
+			Members: rotaCfg.Members,
 		})
 	}
 	return res, nil
@@ -168,7 +310,8 @@ func (s *Store) DeleteRotaConfig(ctx context.Context, name string) error {
 		return err
 	}
 	key, err := datastore.KeyForObjErr(ctx, &DsRotaConfig{
-		ID: name,
+		Key: rootKey(ctx),
+		ID:  name,
 	})
 	if err != nil {
 		return err
@@ -178,38 +321,69 @@ func (s *Store) DeleteRotaConfig(ctx context.Context, name string) error {
 		return err
 	}
 	return datastore.Delete(ctx, &DsRotaConfig{
-		ID: name,
+		Key: rootKey(ctx),
+		ID:  name,
 	}, children)
 }
 
-// AddMember adds a members to the specified rotang.
-func (s *Store) AddMember(ctx context.Context, rota string, member rotang.Member) error {
+// AddRotaMember adds a members to the specified rota.
+func (s *Store) AddRotaMember(ctx context.Context, rota string, member rotang.ShiftMember) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 
-	if err := datastore.Get(ctx, &DsRotaConfig{
-		ID: rota,
-	}); err != nil {
+	if _, err := s.Member(ctx, member.Email); err != nil {
 		return err
 	}
-	return datastore.Put(ctx, &DsMember{
-		Key:    datastore.NewKey(ctx, rotaKind, rota, 0, nil),
-		Email:  member.Email,
-		TZ:     member.TZ.String(),
-		Member: member,
-	})
+
+	cfg := DsRotaConfig{
+		Key: rootKey(ctx),
+		ID:  rota,
+	}
+
+	return datastore.RunInTransaction(ctx, func(ctx context.Context) error {
+		if err := datastore.Get(ctx, &cfg); err != nil {
+			return err
+		}
+		for _, m := range cfg.Members {
+			if m.Email == member.Email {
+				return status.Errorf(codes.AlreadyExists, "member already exists")
+			}
+		}
+		cfg.Members = append(cfg.Members, member)
+
+		return datastore.Put(ctx, &cfg)
+	}, nil)
 }
 
-// DeleteMember deletes a member in a rotang.
-func (s *Store) DeleteMember(ctx context.Context, rota, email string) error {
+// DeleteRotaMember deletes a member in a rotang.
+func (s *Store) DeleteRotaMember(ctx context.Context, rota, email string) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	return datastore.Delete(ctx, &DsMember{
-		Key:   datastore.NewKey(ctx, rotaKind, rota, 0, nil),
-		Email: email,
-	})
+
+	if rota == "" || email == "" {
+		return status.Errorf(codes.InvalidArgument, "rota and email must be set")
+	}
+
+	return datastore.RunInTransaction(ctx, func(ctx context.Context) error {
+
+		cfg := DsRotaConfig{
+			Key: rootKey(ctx),
+			ID:  rota,
+		}
+		if err := datastore.Get(ctx, &cfg); err != nil {
+			return err
+		}
+		for i, m := range cfg.Members {
+			if m.Email == email {
+				cfg.Members = append(cfg.Members[:i], cfg.Members[i+1:]...)
+				return datastore.Put(ctx, &cfg)
+			}
+
+		}
+		return status.Errorf(codes.NotFound, "member not found")
+	}, nil)
 }
 
 // TestTable is used to setup a consistent table for testing.

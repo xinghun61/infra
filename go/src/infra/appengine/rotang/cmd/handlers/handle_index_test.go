@@ -41,7 +41,7 @@ func TestHandleIndex(t *testing.T) {
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
 			tst.ctx.Context = templates.Use(tst.ctx.Context, &templates.Bundle{
-				Loader: templates.FileSystemLoader("../templates"),
+				Loader: templates.FileSystemLoader(templatesLocation),
 			}, nil)
 
 			HandleIndex(tst.ctx)

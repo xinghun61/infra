@@ -3,8 +3,6 @@ package handlers
 import (
 	"bytes"
 	"context"
-	"infra/appengine/rotang/pkg/datastore"
-	"infra/appengine/rotang/pkg/rotang"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -13,15 +11,18 @@ import (
 	"testing"
 	"time"
 
+	"infra/appengine/rotang"
+	"infra/appengine/rotang/pkg/datastore"
+
 	"github.com/kylelemons/godebug/pretty"
 	"go.chromium.org/luci/appengine/gaetesting"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
 )
 
+const templatesLocation = "templates"
+
 const (
-	pacificTZ    = "US/Pacific"
-	euTZ         = "UTC"
 	jsonRotation = `
 		{
 			"rotation_config": {
@@ -174,7 +175,7 @@ func TestUploadGet(t *testing.T) {
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
 			tst.ctx.Context = templates.Use(tst.ctx.Context, &templates.Bundle{
-				Loader: templates.FileSystemLoader("../templates"),
+				Loader: templates.FileSystemLoader(templatesLocation),
 			}, nil)
 		})
 
@@ -188,11 +189,6 @@ func TestUploadGet(t *testing.T) {
 }
 
 func TestHandleUpload(t *testing.T) {
-	usLocation, err := time.LoadLocation(pacificTZ)
-	if err != nil {
-		t.Fatalf("time.LoadLocation(%q) failed: %v", pacificTZ, err)
-	}
-
 	var mtvMidnight = func() time.Time {
 		t, err := time.Parse(time.RFC822, "02 Jan 06 00:00 PDT")
 		if err != nil {
@@ -200,11 +196,6 @@ func TestHandleUpload(t *testing.T) {
 		}
 		return t
 	}()
-
-	euLocation, err := time.LoadLocation(euTZ)
-	if err != nil {
-		t.Fatalf("time.LoadLocation(%q) failed: %v", euTZ, err)
-	}
 
 	ctx := newTestContext()
 	ctxCancel, cancel := context.WithCancel(ctx)
@@ -255,23 +246,18 @@ func TestHandleUpload(t *testing.T) {
 							},
 						},
 					},
-					Rotation: rotang.Members{
-						Members: []rotang.Member{
-							{
-								Name:  "Test Bot",
-								Email: "letestbot@google.com",
-								TZ:    *usLocation,
-							},
-							{
-								Name:  "Test Sheriff",
-								Email: "testsheriff@google.com",
-								TZ:    *usLocation,
-							},
-							{
-								Name:  "Yet Another Test Sheriff",
-								Email: "anothersheriff@google.com",
-								TZ:    *usLocation,
-							},
+					Members: []rotang.ShiftMember{
+						{
+							Email:     "letestbot@google.com",
+							ShiftName: "MTV all day",
+						},
+						{
+							Email:     "testsheriff@google.com",
+							ShiftName: "MTV all day",
+						},
+						{
+							Email:     "anothersheriff@google.com",
+							ShiftName: "MTV all day",
 						},
 					},
 				},
@@ -349,23 +335,18 @@ func TestHandleUpload(t *testing.T) {
 							},
 						},
 					},
-					Rotation: rotang.Members{
-						Members: []rotang.Member{
-							{
-								Name:  "Test Bot",
-								Email: "letestbot@google.com",
-								TZ:    *usLocation,
-							},
-							{
-								Name:  "Test Sheriff",
-								Email: "testsheriff@google.com",
-								TZ:    *usLocation,
-							},
-							{
-								Name:  "Yet Another Test Sheriff",
-								Email: "anothersheriff@google.com",
-								TZ:    *usLocation,
-							},
+					Members: []rotang.ShiftMember{
+						{
+							Email:     "letestbot@google.com",
+							ShiftName: "MTV all day",
+						},
+						{
+							Email:     "testsheriff@google.com",
+							ShiftName: "MTV all day",
+						},
+						{
+							Email:     "anothersheriff@google.com",
+							ShiftName: "MTV all day",
 						},
 					},
 				}, {
@@ -394,28 +375,22 @@ func TestHandleUpload(t *testing.T) {
 							},
 						},
 					},
-					Rotation: rotang.Members{
-						Members: []rotang.Member{
-							{
-								Name:  "Test Bot",
-								Email: "test+one@google.com",
-								TZ:    *euLocation,
-							},
-							{
-								Name:  "Test Sheriff",
-								Email: "test+two@google.com",
-								TZ:    *euLocation,
-							},
-							{
-								Name:  "Yet Another Test Sheriff",
-								Email: "test+three@google.com",
-								TZ:    *euLocation,
-							},
-							{
-								Name:  "Another codesearch wiz",
-								Email: "test+four@google.com",
-								TZ:    *euLocation,
-							},
+					Members: []rotang.ShiftMember{
+						{
+							Email:     "test+one@google.com",
+							ShiftName: "MTV all day",
+						},
+						{
+							Email:     "test+two@google.com",
+							ShiftName: "MTV all day",
+						},
+						{
+							Email:     "test+three@google.com",
+							ShiftName: "MTV all day",
+						},
+						{
+							Email:     "test+four@google.com",
+							ShiftName: "MTV all day",
 						},
 					},
 				},
@@ -466,23 +441,18 @@ func TestHandleUpload(t *testing.T) {
 							},
 						},
 					},
-					Rotation: rotang.Members{
-						Members: []rotang.Member{
-							{
-								Name:  "Test Bot",
-								Email: "letestbot@google.com",
-								TZ:    *usLocation,
-							},
-							{
-								Name:  "Test Sheriff",
-								Email: "testsheriff@google.com",
-								TZ:    *usLocation,
-							},
-							{
-								Name:  "Yet Another Test Sheriff",
-								Email: "anothersheriff@google.com",
-								TZ:    *usLocation,
-							},
+					Members: []rotang.ShiftMember{
+						{
+							Email:     "letestbot@google.com",
+							ShiftName: "MTV all day",
+						},
+						{
+							Email:     "testsheriff@google.com",
+							ShiftName: "MTV all day",
+						},
+						{
+							Email:     "anothersheriff@google.com",
+							ShiftName: "MTV all day",
 						},
 					},
 				}, {
@@ -511,28 +481,22 @@ func TestHandleUpload(t *testing.T) {
 							},
 						},
 					},
-					Rotation: rotang.Members{
-						Members: []rotang.Member{
-							{
-								Name:  "Test Bot",
-								Email: "test+one@google.com",
-								TZ:    *euLocation,
-							},
-							{
-								Name:  "Test Sheriff",
-								Email: "test+two@google.com",
-								TZ:    *euLocation,
-							},
-							{
-								Name:  "Yet Another Test Sheriff",
-								Email: "test+three@google.com",
-								TZ:    *euLocation,
-							},
-							{
-								Name:  "Another codesearch wiz",
-								Email: "test+four@google.com",
-								TZ:    *euLocation,
-							},
+					Members: []rotang.ShiftMember{
+						{
+							Email:     "test+one@google.com",
+							ShiftName: "MTV all day",
+						},
+						{
+							Email:     "test+two@google.com",
+							ShiftName: "MTV all day",
+						},
+						{
+							Email:     "test+three@google.com",
+							ShiftName: "MTV all day",
+						},
+						{
+							Email:     "test+four@google.com",
+							ShiftName: "MTV all day",
 						},
 					},
 				},
@@ -547,7 +511,10 @@ func TestHandleUpload(t *testing.T) {
 		},
 	}
 
-	var s rotang.ConfigStorer = datastore.New()
+	s, err := datastore.New(ctx)
+	if err != nil {
+		t.Fatalf("datastore.New(_) failed: %v", err)
+	}
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
@@ -561,7 +528,7 @@ func TestHandleUpload(t *testing.T) {
 				return
 			}
 
-			gotRotas, err := s.FetchRotaConfig(ctx, "")
+			gotRotas, err := s.RotaConfig(ctx, "")
 			if err != nil {
 				t.Fatalf("%s: s.FetchRota(ctx,\"\") failed: %v", tst.name, err)
 			}
@@ -573,14 +540,14 @@ func TestHandleUpload(t *testing.T) {
 			})
 
 			for _, r := range gotRotas {
-				sort.Slice(r.Rotation.Members, func(i, j int) bool {
-					return r.Rotation.Members[i].Email < r.Rotation.Members[j].Email
+				sort.Slice(r.Members, func(i, j int) bool {
+					return r.Members[i].Email < r.Members[j].Email
 				})
 				defer s.DeleteRotaConfig(ctx, r.Config.Name)
 			}
 			for _, r := range tst.want {
-				sort.Slice(r.Rotation.Members, func(i, j int) bool {
-					return r.Rotation.Members[i].Email < r.Rotation.Members[j].Email
+				sort.Slice(r.Members, func(i, j int) bool {
+					return r.Members[i].Email < r.Members[j].Email
 				})
 			}
 

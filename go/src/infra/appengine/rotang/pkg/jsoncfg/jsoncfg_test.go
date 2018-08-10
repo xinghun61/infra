@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"infra/appengine/rotang/pkg/rotang"
+	"infra/appengine/rotang"
 
 	"github.com/kylelemons/godebug/pretty"
 )
@@ -90,7 +90,6 @@ var (
 )
 
 func TestReadJson(t *testing.T) {
-
 	usLocation, err := time.LoadLocation(pacificTZ)
 	if err != nil {
 		t.Fatalf("time.LoadLocation(%q) failed: %v", pacificTZ, err)
@@ -101,10 +100,11 @@ func TestReadJson(t *testing.T) {
 	}
 
 	tests := []struct {
-		name       string
-		jsonIn     string
-		fail       bool
-		wantConfig rotang.Configuration
+		name        string
+		jsonIn      string
+		fail        bool
+		wantConfig  rotang.Configuration
+		wantMembers []rotang.Member
 	}{
 		{
 			name:   "simple success",
@@ -135,24 +135,36 @@ func TestReadJson(t *testing.T) {
 						Generator: "Legacy",
 					},
 				},
-				Rotation: rotang.Members{
-					Members: []rotang.Member{
-						{
-							Name:  "French Test Bot",
-							Email: "letestbot@google.com",
-							TZ:    *usLocation,
-						},
-						{
-							Name:  "Test Sheriff",
-							Email: "testsheriff@google.com",
-							TZ:    *usLocation,
-						},
-						{
-							Name:  "Yet Another Test Sheriff",
-							Email: "anothersheriff@google.com",
-							TZ:    *usLocation,
-						},
+				Members: []rotang.ShiftMember{
+					{
+						Email:     "letestbot@google.com",
+						ShiftName: "MTV all day",
 					},
+					{
+						Email:     "testsheriff@google.com",
+						ShiftName: "MTV all day",
+					},
+					{
+						Email:     "anothersheriff@google.com",
+						ShiftName: "MTV all day",
+					},
+				},
+			},
+			wantMembers: []rotang.Member{
+				{
+					Name:  "French Test Bot",
+					Email: "letestbot@google.com",
+					TZ:    *usLocation,
+				},
+				{
+					Name:  "Test Sheriff",
+					Email: "testsheriff@google.com",
+					TZ:    *usLocation,
+				},
+				{
+					Name:  "Yet Another Test Sheriff",
+					Email: "anothersheriff@google.com",
+					TZ:    *usLocation,
 				},
 			},
 		}, {
@@ -188,36 +200,52 @@ func TestReadJson(t *testing.T) {
 						},
 					},
 				},
-				Rotation: rotang.Members{
-					Members: []rotang.Member{
-						{
-							Name:  "Test Bot",
-							Email: "test+one@google.com",
-							TZ:    *euLocation,
-						},
-						{
-							Name:  "Test Sheriff",
-							Email: "test+two@google.com",
-							TZ:    *euLocation,
-						},
-						{
-							Name:  "Yet Another Test Sheriff",
-							Email: "test+three@google.com",
-							TZ:    *euLocation,
-						},
-						{
-							Name:  "Another codesearch wiz",
-							Email: "test+four@google.com",
-							TZ:    *euLocation,
-						},
+				Members: []rotang.ShiftMember{
+					{
+						Email:     "test+one@google.com",
+						ShiftName: "MTV all day",
 					},
+					{
+						Email:     "test+two@google.com",
+						ShiftName: "MTV all day",
+					},
+					{
+						Email:     "test+three@google.com",
+						ShiftName: "MTV all day",
+					},
+					{
+						Email:     "test+four@google.com",
+						ShiftName: "MTV all day",
+					},
+				},
+			},
+			wantMembers: []rotang.Member{
+				{
+					Name:  "Test Bot",
+					Email: "test+one@google.com",
+					TZ:    *euLocation,
+				},
+				{
+					Name:  "Test Sheriff",
+					Email: "test+two@google.com",
+					TZ:    *euLocation,
+				},
+				{
+					Name:  "Yet Another Test Sheriff",
+					Email: "test+three@google.com",
+					TZ:    *euLocation,
+				},
+				{
+					Name:  "Another codesearch wiz",
+					Email: "test+four@google.com",
+					TZ:    *euLocation,
 				},
 			},
 		},
 	}
 
 	for _, tst := range tests {
-		res, err := BuildConfigurationFromJSON([]byte(tst.jsonIn))
+		config, members, err := BuildConfigurationFromJSON([]byte(tst.jsonIn))
 		if got, want := (err != nil), tst.fail; got != want {
 			t.Errorf("%s: BuildConfigurationFromJSON() = %t want: %t, err: %v", tst.name, got, want, err)
 			continue
@@ -225,8 +253,11 @@ func TestReadJson(t *testing.T) {
 		if err != nil {
 			continue
 		}
-		if diff := pretty.Compare(res, tst.wantConfig); diff != "" {
-			t.Errorf("%s: BuildConfiguration() , diff -want +got: \n%s", tst.name, diff)
+		if diff := pretty.Compare(config, tst.wantConfig); diff != "" {
+			t.Errorf("%s: BuildConfiguration() differs -want +got: \n%s", tst.name, diff)
+		}
+		if diff := pretty.Compare(members, tst.wantMembers); diff != "" {
+			t.Errorf("%s: BuildConfiguration() differs -want +got \n%s", tst.name, diff)
 		}
 	}
 }

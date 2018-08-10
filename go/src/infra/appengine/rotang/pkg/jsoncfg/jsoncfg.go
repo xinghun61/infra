@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"infra/appengine/rotang/pkg/rotang"
+	"infra/appengine/rotang"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -21,19 +21,24 @@ var mtvMidnight = func() time.Time {
 	return t
 }()
 
+// JSONMembers is used to convert rota members.
+type JSONMembers struct {
+	Members []rotang.Member `json:"person"`
+}
+
 // JSONRota is used to convert the legacy JSON based sheriff rotation configuration.
 type JSONRota struct {
 	Configuration JSONConfiguration `json:"rotation_config"`
-	PSTRotation   rotang.Members    `json:"rotation_list_pacific"`
-	EURotation    rotang.Members    `json:"rotation_list_default"`
-	OtherRotation rotang.Members    `json:"rotation_list_other"`
+	PSTRotation   JSONMembers       `json:"rotation_list_pacific"`
+	EURotation    JSONMembers       `json:"rotation_list_default"`
+	OtherRotation JSONMembers       `json:"rotation_list_other"`
 }
 
 // JSONMultiConfigRota is used to convert the legacy JSON based sheriff rotation configuration.
 type JSONMultiConfigRota struct {
 	Configuration []JSONConfiguration `json:"rotation_config"`
-	PSTRotation   rotang.Members      `json:"rotation_list_pacific"`
-	EURotation    rotang.Members      `json:"rotation_list_default"`
+	PSTRotation   JSONMembers         `json:"rotation_list_pacific"`
+	EURotation    JSONMembers         `json:"rotation_list_default"`
 }
 
 // JSONConfiguration contains the configuration part of the rotation.
@@ -54,6 +59,7 @@ const (
 	defaultDaysToSchedule = 10
 	pacificTZ             = "US/Pacific"
 	euTZ                  = "UTC"
+	defaultShiftName      = "MTV all day"
 )
 
 func handleJSON(data []byte) (*JSONRota, error) {
@@ -78,34 +84,46 @@ func handleJSON(data []byte) (*JSONRota, error) {
 
 // BuildConfigurationFromJSON converts the Sheriff json configuration
 //  to the native rota configuration.
-func BuildConfigurationFromJSON(data []byte) (*rotang.Configuration, error) {
+func BuildConfigurationFromJSON(data []byte) (*rotang.Configuration, []rotang.Member, error) {
 	jsonRota, err := handleJSON(data)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	usLocation, err := time.LoadLocation(pacificTZ)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	euLocation, err := time.LoadLocation(euTZ)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	var mbs rotang.Members
+	var (
+		mbs          []rotang.Member
+		shiftMembers []rotang.ShiftMember
+	)
+
 	for _, m := range jsonRota.PSTRotation.Members {
-		mbs.Members = append(mbs.Members, rotang.Member{
+		mbs = append(mbs, rotang.Member{
 			Name:  m.Name,
 			Email: m.Email,
 			TZ:    *usLocation,
 		})
+		shiftMembers = append(shiftMembers, rotang.ShiftMember{
+			Email:     m.Email,
+			ShiftName: defaultShiftName,
+		})
 	}
 	for _, m := range append(jsonRota.EURotation.Members, jsonRota.OtherRotation.Members...) {
-		mbs.Members = append(mbs.Members, rotang.Member{
+		mbs = append(mbs, rotang.Member{
 			Name:  m.Name,
 			Email: m.Email,
 			TZ:    *euLocation,
+		})
+		shiftMembers = append(shiftMembers, rotang.ShiftMember{
+			Email:     m.Email,
+			ShiftName: defaultShiftName,
 		})
 	}
 
@@ -129,13 +147,13 @@ func BuildConfigurationFromJSON(data []byte) (*rotang.Configuration, error) {
 				Length:       jsonRota.Configuration.RotationLength,
 				Shifts: []rotang.Shift{
 					{
-						Name:     "MTV all day",
+						Name:     defaultShiftName,
 						Duration: time.Duration(24 * time.Hour),
 					},
 				},
 				Generator: "Legacy",
 			},
 		},
-		Rotation: mbs,
-	}, nil
+		Members: shiftMembers,
+	}, mbs, nil
 }

@@ -2,9 +2,9 @@
 package rotang
 
 import (
-	"context"
 	"time"
 
+	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 )
 
@@ -18,8 +18,8 @@ type Rota struct {
 
 // Configuration represents a rota configuration.
 type Configuration struct {
-	Config   Config
-	Rotation Members
+	Config  Config
+	Members []ShiftMember
 }
 
 // Config contains the rota configuration.
@@ -49,8 +49,7 @@ type ShiftConfig struct {
 	Shifts []Shift
 	// ShiftMembers specifides number of members per shift.
 	ShiftMembers int
-	// Generator contains the generator used to generate the rotation.
-	Generator string
+	Generator    string
 }
 
 // Shift represents a shift in a 24h rotation.
@@ -66,7 +65,7 @@ type ShiftEntry struct {
 	// Name of the Shift this entry belongs to.
 	Name string
 	// OnCall are the members on-call for this shift.
-	OnCall    []Member
+	OnCall    []ShiftMember
 	StartTime time.Time
 	EndTime   time.Time
 	// Comment is an optional comment where the rota algo
@@ -85,9 +84,10 @@ type Email struct {
 	DaysBeforeNotify int
 }
 
-// Members contains the members of the rotation.
-type Members struct {
-	Members []Member `json:"person"`
+// ShiftMember holds the information needed for a member of a shift.
+type ShiftMember struct {
+	Email     string
+	ShiftName string
 }
 
 // Member represents one member of a rotation.
@@ -126,34 +126,47 @@ const (
 
 // ConfigStorer defines the Store interface.
 type ConfigStorer interface {
-	// StoreRotaConfig stores a Configuration in backend storage.
-	StoreRotaConfig(ctx context.Context, cfg *Configuration) error
-	// FetchRotaConfig fetches the specified rota Configuration from backend storage.
+	// CreateRotaConfig stores a Configuration in backend storage.
+	CreateRotaConfig(ctx context.Context, cfg *Configuration) error
+	// UpdateRotaConfig updates the specified configuration.
+	UpdateRotaConfig(ctx context.Context, cfg *Configuration) error
+	// RotaConfig fetches the specified rota Configuration from backend storage.
 	// Leaving `name` empty will return a slice of all stored rota configurations.
-	FetchRotaConfig(ctx context.Context, name string) ([]*Configuration, error)
+	RotaConfig(ctx context.Context, name string) ([]*Configuration, error)
 	// DeleteRotaConfig removes the specified rota from backend storage.
 	DeleteRotaConfig(ctx context.Context, name string) error
-	// AddMember add a member to the backend store.
-	AddMember(ctx context.Context, rota string, member Member) error
-	// DeleteMember deletes the specified member from backend storage.
-	DeleteMember(ctx context.Context, rota, email string) error
+	// AddRotaMember add a member to the backend store.
+	AddRotaMember(ctx context.Context, rota string, member ShiftMember) error
+	// DeleteRotaMember deletes the specified member from backend storage.
+	DeleteRotaMember(ctx context.Context, rota, email string) error
+	// MemberOf returns the rotations the specified email is a member of.
+	MemberOf(ctx context.Context, email string) ([]string, error)
+}
+
+// MemberStorer defines the member store interface.
+type MemberStorer interface {
+	Member(ctx context.Context, email string) (*Member, error)
+	CreateMember(ctx context.Context, member *Member) error
+	UpdateMember(cxt context.Context, in *Member) error
+	DeleteMember(ctx context.Context, email string) error
 }
 
 // TokenStorer is used to store OAuth2 tokens.
 type TokenStorer interface {
-	StoreToken(ctx context.Context, email string, token *oauth2.Token) error
-	FetchToken(ctx context.Context, email string) (*oauth2.Token, error)
-	RemoveToken(ctx context.Context, email string) error
+	CreateToken(ctx context.Context, email string, token *oauth2.Token) error
+	Token(ctx context.Context, email string) (*oauth2.Token, error)
+	DeleteToken(ctx context.Context, email string) error
 }
 
 // ShiftStorer is used to store Shift entries.
 type ShiftStorer interface {
 	AddShifts(ctx context.Context, rota string, entries []ShiftEntry) error
 	FetchShifts(cxt context.Context, rota string) ([]ShiftEntry, error)
+	DeleteShifts(ctx context.Context, rota string) error
 }
 
 // RotaGenerator is used to generate oncall rotations.
 type RotaGenerator interface {
 	Name() string
-	Generate(sc *ShiftConfig, start time.Time, previous []ShiftEntry, members []Member, shiftsToSchedule int) ([]ShiftEntry, error)
+	Generate(sc *Configuration, start time.Time, previous []ShiftEntry, members []Member, shiftsToSchedule int) ([]ShiftEntry, error)
 }
