@@ -1,6 +1,7 @@
 package testexpectations
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -27,105 +28,6 @@ var (
 		"StaleTestExpectations": "third_party/WebKit/LayoutTests/StaleTestExpectations", // Platform-specific lines that have been in TestExpectations for many months. They‘re moved here to get them out of the way of people doing rebaselines since they’re clearly not getting fixed anytime soon.
 		"W3CImportExpectations": "third_party/WebKit/LayoutTests/W3CImportExpectations", // A record of which W3C tests should be imported or skipped.
 	}
-
-	// BuilderConfigs maps builder names to layout test configuration settings.
-	// Copied from /chromium/src/third_party/WebKit/Tools/Scripts/webkitpy/common/config/builders.py
-	// TODO(seanmccullough): Fetch this from gitiles once it's kept in a separate json file.
-	BuilderConfigs = map[string]*BuilderConfig{
-		"WebKit Win7": {
-			PortName:   "win-win7",
-			Specifiers: []string{"Win7", "Release"},
-		},
-		"WebKit Win7 (dbg)": {
-			PortName:   "win-win7",
-			Specifiers: []string{"Win7", "Debug"},
-		},
-		"WebKit Win10": {
-			PortName:   "win-win10",
-			Specifiers: []string{"Win10", "Release"},
-		},
-		"WebKit Linux Trusty": {
-			PortName:   "linux-trusty",
-			Specifiers: []string{"Trusty", "Release"},
-		},
-		"WebKit Linux Trusty (dbg)": {
-			PortName:   "linux-trusty",
-			Specifiers: []string{"Trusty", "Debug"},
-		},
-		"WebKit Mac10.9": {
-			PortName:   "mac-mac10.9",
-			Specifiers: []string{"Mac10.9", "Release"},
-		},
-		"WebKit Mac10.10": {
-			PortName:   "mac-mac10.10",
-			Specifiers: []string{"Mac10.10", "Release"},
-		},
-		"WebKit Mac10.11": {
-			PortName:   "mac-mac10.11",
-			Specifiers: []string{"Mac10.11", "Release"},
-		},
-		"WebKit Mac10.11 (dbg)": {
-			PortName:   "mac-mac10.11",
-			Specifiers: []string{"Mac10.11", "Debug"},
-		},
-		"WebKit Mac10.13 (retina)": {
-			PortName:   "mac-retina",
-			Specifiers: []string{"Retina", "Release"},
-		},
-		"WebKit Mac10.12": {
-			PortName:   "mac-mac10.12",
-			Specifiers: []string{"Mac10.12", "Release"},
-		},
-		"WebKit Android (Nexus4)": {
-			PortName:   "android-kitkat",
-			Specifiers: []string{"KitKat", "Release"},
-		},
-		"linux_trusty_blink_rel": {
-			PortName:     "linux-trusty",
-			Specifiers:   []string{"Trusty", "Release"},
-			IsTryBuilder: true,
-		},
-		"mac10.9_blink_rel": {
-			PortName:     "mac-mac10.9",
-			Specifiers:   []string{"Mac10.9", "Release"},
-			IsTryBuilder: true,
-		},
-		"mac10.10_blink_rel": {
-			PortName:     "mac-mac10.10",
-			Specifiers:   []string{"Mac10.10", "Release"},
-			IsTryBuilder: true,
-		},
-		"mac10.11_blink_rel": {
-			PortName:     "mac-mac10.11",
-			Specifiers:   []string{"Mac10.11", "Release"},
-			IsTryBuilder: true,
-		},
-		"mac10.11_retina_blink_rel": {
-			PortName:     "mac-retina",
-			Specifiers:   []string{"Retina", "Release"},
-			IsTryBuilder: true,
-		},
-		"mac10.12_blink_rel": {
-			PortName:     "mac-mac10.12",
-			Specifiers:   []string{"Mac10.12", "Release"},
-			IsTryBuilder: true,
-		},
-		"win7_blink_rel": {
-			PortName:     "win-win7",
-			Specifiers:   []string{"Win7", "Release"},
-			IsTryBuilder: true,
-		},
-		"win10_blink_rel": {
-			PortName:     "win-win10",
-			Specifiers:   []string{"Win10", "Release"},
-			IsTryBuilder: true,
-		},
-		"android_blink_rel": {
-			PortName:     "android-kitkat",
-			Specifiers:   []string{"KitKat", "Release"},
-			IsTryBuilder: true,
-		},
-	}
 )
 
 // BuilderConfig represents the expectation settings for a builder.
@@ -136,6 +38,24 @@ type BuilderConfig struct {
 	Specifiers []string `json:"specifiers"`
 	// IsTryBuilder is true if the builder is a trybot.
 	IsTryBuilder bool `json:"is_try_builder"`
+}
+
+const builderConfigFile = "third_party/blink/tools/blinkpy/common/config/builders.json"
+
+// LoadBuilderConfigs loads bulders.json from gitiles.
+func LoadBuilderConfigs(c context.Context) (map[string]*BuilderConfig, error) {
+	ret := map[string]*BuilderConfig{}
+	URL := fmt.Sprintf("https://chromium.googlesource.com/chromium/src/+/master/%s?format=TEXT", builderConfigFile)
+	b, err := client.GetGitilesCached(c, URL)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(b, &ret); err != nil {
+		return nil, err
+	}
+
+	return ret, nil
 }
 
 // FileSet is a set of expectation files.

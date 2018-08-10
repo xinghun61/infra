@@ -5,6 +5,7 @@
 package step
 
 import (
+	"encoding/json"
 	"net/url"
 	"testing"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"infra/appengine/test-results/model"
 	"infra/monitoring/messages"
 
+	"go.chromium.org/gae/impl/dummy"
 	"go.chromium.org/gae/service/info"
 	"go.chromium.org/gae/service/urlfetch"
 	"go.chromium.org/luci/appengine/gaetesting"
@@ -38,8 +40,12 @@ func (gi giMock) AccessToken(scopes ...string) (token string, expiry time.Time, 
 }
 
 func setUpGitiles(c context.Context) context.Context {
+	data, _ := json.Marshal(map[string]*te.BuilderConfig{})
+
 	return urlfetch.Set(c, &testhelper.MockGitilesTransport{
-		Responses: map[string]string{},
+		Responses: map[string]string{
+			"https://chromium.googlesource.com/chromium/src/+/master/third_party/blink/tools/blinkpy/common/config/builders.json?format=TEXT": string(data),
+		},
 	})
 }
 
@@ -421,11 +427,16 @@ func TestTestStepFailureAlerts(t *testing.T) {
 					c := gaetesting.TestingContext()
 					c = authtest.MockAuthConfig(c)
 					c = gologger.StdConfig.Use(c)
+
 					testResultsFake := testhelper.NewFakeServer()
 					defer testResultsFake.Server.Close()
 					finditFake := testhelper.NewFakeServer()
 					defer finditFake.Server.Close()
 					te.LayoutTestExpectations = map[string]string{}
+
+					c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
+						return giMock{dummy.Info(), "", time.Now(), nil}
+					})
 
 					c = setUpGitiles(c)
 					c = client.WithFindit(c, finditFake.Server.URL)

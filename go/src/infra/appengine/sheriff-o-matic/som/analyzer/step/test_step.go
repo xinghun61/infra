@@ -112,6 +112,10 @@ type TestWithResult struct {
 // server which corresponds to the failure.
 func testFailureAnalyzer(ctx context.Context, fs []*messages.BuildStep, tree string) ([]messages.ReasonRaw, []error) {
 	results := make([]messages.ReasonRaw, len(fs))
+	builderConfigs, err := te.LoadBuilderConfigs(ctx)
+	if err != nil {
+		return nil, []error{err}
+	}
 
 	for i, f := range fs {
 		rslt, err := testAnalyzeFailure(ctx, f)
@@ -137,9 +141,9 @@ func testFailureAnalyzer(ctx context.Context, fs []*messages.BuildStep, tree str
 				}
 			}
 
-			config, ok := te.BuilderConfigs[f.Build.BuilderName]
+			config, ok := builderConfigs[f.Build.BuilderName]
 			if !ok {
-				logging.Warningf(ctx, "no config (out of %d) for %s", len(te.BuilderConfigs), f.Build.BuilderName)
+				logging.Warningf(ctx, "no config (out of %d) for %s", len(builderConfigs), f.Build.BuilderName)
 				continue
 			}
 			exps, err := getExpectationsForTest(ctx, r.TestName, config)
