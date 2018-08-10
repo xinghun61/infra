@@ -1,3 +1,14 @@
+# Release Notes sheriff-o-matic 2018-08-10
+
+- 2 commits, 0 bugs affected since be4350e (2018-07-25T23:10:09Z)
+- 1 Authors:
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [[som] Remove hard-coded builder configs, read json from gitiles.](https://chromium-review.googlesource.com/1170308) (seanmccullough@chromium.org)
+- [[som] Update RELNOTES.md for release](https://chromium-review.googlesource.com/1150763) (seanmccullough@chromium.org)
+
 # Release Notes sheriff-o-matic 2018-07-25
 
 - 2 commits, 2 bugs affected since 7f4c64d (2018-07-18T21:05:34Z)
