@@ -15,9 +15,12 @@ class BuildConfiguration(ndb.Model):
   luci_bucket = ndb.StringProperty(required=True)
   luci_builder = ndb.StringProperty(required=True)
 
-  # Required by Flake Analyzer to trigger flake analysis. This should be
-  # removed once Flake Analyzer doesn't depend on them anymore.
+  # Required for legacy reasons, such as:
+  # 1. Flake Analyzer to trigger flake analysis.
+  # 2. To obtain isolate_target_name/step_metadata of a step in a build.
+  # This should be removed once all builders are migrated to LUCI.
   legacy_master_name = ndb.StringProperty(indexed=False, required=True)
+  legacy_build_number = ndb.IntegerProperty(indexed=False, required=True)
 
 
 class CQFalseRejectionFlakeOccurrence(ndb.Model):
@@ -70,8 +73,9 @@ class CQFalseRejectionFlakeOccurrence(ndb.Model):
 
   @classmethod
   def Create(cls, build_id, step_name, test_name, luci_project, luci_bucket,
-             luci_builder, legacy_master_name, reference_succeeded_build_id,
-             time_happened, gerrit_cl_id, parent_flake_key):
+             luci_builder, legacy_master_name, legacy_build_number,
+             reference_succeeded_build_id, time_happened, gerrit_cl_id,
+             parent_flake_key):
     """Creates a cq false rejection flake occurrence.
 
     Args:
@@ -87,7 +91,8 @@ class CQFalseRejectionFlakeOccurrence(ndb.Model):
         luci_project=luci_project,
         luci_bucket=luci_bucket,
         luci_builder=luci_builder,
-        legacy_master_name=legacy_master_name)
+        legacy_master_name=legacy_master_name,
+        legacy_build_number=legacy_build_number)
 
     return cls(
         build_id=build_id,

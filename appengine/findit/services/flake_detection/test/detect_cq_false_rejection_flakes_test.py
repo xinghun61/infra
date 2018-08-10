@@ -46,6 +46,10 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
                 'mode': 'NULLABLE'
             }, {
                 'type': 'INTEGER',
+                'name': 'legacy_build_number',
+                'mode': 'NULLABLE'
+            }, {
+                'type': 'INTEGER',
                 'name': 'build_id',
                 'mode': 'NULLABLE'
             }, {
@@ -78,6 +82,7 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
                              luci_bucket='try',
                              luci_builder='linux_chromium_rel_ng',
                              legacy_master_name='tryserver.chromium.linux',
+                             legacy_build_number='999',
                              build_id='123',
                              reference_succeeded_build_id='456',
                              step_name='fake_step',
@@ -104,6 +109,9 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
             },
             {
                 'v': legacy_master_name
+            },
+            {
+                'v': legacy_build_number
             },
             {
                 'v': build_id

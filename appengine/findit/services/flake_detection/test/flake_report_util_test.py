@@ -38,6 +38,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
         luci_bucket='try',
         luci_builder='linux_chromium_rel_ng',
         legacy_master_name='tryserver.chromium.linux',
+        legacy_build_number=999,
         reference_succeeded_build_id=456,
         time_happened=datetime.datetime.utcnow())
     flake_occurrence.put()
@@ -192,12 +193,15 @@ class FlakeReportUtilTest(WaterfallTestCase):
     flake_report_util.CreateIssueForFlake(
         flake=flake, occurrences=occurrences, previous_tracking_bug_id=56789)
 
+    expected_flake_url = (
+        'https://findit-for-me.appspot.com/flake/detection/show-flake?key=%s'
+    ) % flake.key.urlsafe()
     mock_create_bug_fn.assert_called_once_with(
         normalized_step_name='step',
         normalized_test_name='test',
         num_occurrences=3,
         monorail_project='chromium',
-        flake_url='https://findit-for-me.appspot.com/flake/detection/show-flake?key=agx0ZXN0YmVkLXRlc3RyHQsSBUZsYWtlIhJjaHJvbWl1bUBzdGVwQHRlc3QM', # pylint: disable=line-too-long
+        flake_url=expected_flake_url,
         previous_tracking_bug_id=56789)
 
     flake_issue = flake.flake_issue_key.get()
@@ -217,12 +221,15 @@ class FlakeReportUtilTest(WaterfallTestCase):
     flake_report_util.UpdateIssueForFlake(
         flake=flake, occurrences=occurrences, previous_tracking_bug_id=56789)
 
+    expected_flake_url = (
+        'https://findit-for-me.appspot.com/flake/detection/show-flake?key=%s'
+    ) % flake.key.urlsafe()
     mock_update_bug_fn.assert_called_once_with(
         bug_id=12345,
         normalized_test_name='test',
         num_occurrences=3,
         monorail_project='chromium',
-        flake_url='https://findit-for-me.appspot.com/flake/detection/show-flake?key=agx0ZXN0YmVkLXRlc3RyHQsSBUZsYWtlIhJjaHJvbWl1bUBzdGVwQHRlc3QM', # pylint: disable=line-too-long
+        flake_url=expected_flake_url,
         previous_tracking_bug_id=56789)
 
     flake_issue = flake.flake_issue_key.get()

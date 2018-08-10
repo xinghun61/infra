@@ -49,6 +49,7 @@ def _CreateFlakeOccurrenceFromRow(row):
   luci_bucket = row['luci_bucket']
   luci_builder = row['luci_builder']
   legacy_master_name = row['legacy_master_name']
+  legacy_build_number = row['legacy_build_number']
   reference_succeeded_build_id = row['reference_succeeded_build_id']
   time_happened = row['test_start_msec']
   gerrit_cl_id = row['gerrit_cl_id']
@@ -60,6 +61,7 @@ def _CreateFlakeOccurrenceFromRow(row):
       luci_bucket=luci_bucket,
       luci_builder=luci_builder,
       legacy_master_name=legacy_master_name,
+      legacy_build_number=legacy_build_number,
       reference_succeeded_build_id=reference_succeeded_build_id,
       time_happened=time_happened,
       gerrit_cl_id=gerrit_cl_id,

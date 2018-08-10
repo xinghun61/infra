@@ -351,7 +351,7 @@ SELECT
   entire_build.build_id,
   entire_build.reference_succeeded_build_id,
   test_run.buildbot_info.master_name AS legacy_master_name,
-  test_run.buildbot_info.build_number,
+  test_run.buildbot_info.build_number AS legacy_build_number,
   # Info about the test.
   test_run.step_name,
   test_run.test_name,
