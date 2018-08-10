@@ -43,16 +43,16 @@ class WCTApi(recipe_api.RecipeApi):
     with self.m.context(env=env):
       self.m.step('Print chrome version', [chrome_bin, '--version'])
 
-    with self.m.context(env=env, cwd=root):
-      self.m.step('Install node modules', [node_path.join('npm'), 'install',
-          '--no-save'])
+    if self.m.path.exists(self.m.path.join(root, 'package.json')):
+        with self.m.context(env=env, cwd=root):
+          self.m.step('Install node modules', [node_path.join('npm'), 'install',
+              '--no-save'])
 
     with self.m.context(env=env):
       self.m.step('Install bower', [node_path.join('npm'), 'install', '-g',
           'bower'])
     with self.m.context(env=env, cwd=root):
       self.m.step('Install bower packages', ['bower', 'install'])
-    with self.m.context(env=env):
+    with self.m.context(env=env, cwd=root):
       self.m.step(step_name, ['xvfb-run', '-a', wct_bin, '--base', root,
           '--chrome', chrome_bin, '--prefix', prefix])
-

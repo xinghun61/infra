@@ -176,6 +176,18 @@
     "cmd": [
       "[START_DIR]/packages/bin/npm",
       "install",
+      "--no-save"
+    ],
+    "cwd": "[START_DIR]/infra/appengine/monorail",
+    "env": {
+      "PATH": "[START_DIR]/packages/bin:<PATH>"
+    },
+    "name": "Install node modules"
+  },
+  {
+    "cmd": [
+      "[START_DIR]/packages/bin/npm",
+      "install",
       "-g",
       "bower"
     ],
