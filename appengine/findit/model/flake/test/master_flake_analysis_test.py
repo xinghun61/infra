@@ -16,6 +16,7 @@ from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.isolated_target import IsolatedTarget
+from waterfall.build_info import BuildInfo
 
 
 class MasterFlakeAnalysisTest(TestCase):
@@ -482,6 +483,24 @@ class MasterFlakeAnalysisTest(TestCase):
 
     self.assertEqual(build_id, analysis.suspected_build_id)
     self.assertEqual(build_number, analysis.suspected_flake_build_number)
+
+  def testUpdateSuspectedBuildUsingBuildInfo(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(commit_position=100, pass_rate=0.4),
+        DataPoint.Create(commit_position=90, pass_rate=1.0),
+    ]
+    analysis.Save()
+
+    lower_bound_build = BuildInfo('m', 'b', 122)
+    lower_bound_build.commit_position = 90
+    upper_bound_build = BuildInfo('m', 'b', 123)
+    upper_bound_build.commit_position = 100
+
+    analysis.UpdateSuspectedBuildUsingBuildInfo(lower_bound_build,
+                                                upper_bound_build)
+
+    self.assertEqual(123, analysis.suspected_flake_build_number)
 
   def testRemoveDataPointWithBuildNumber(self):
     data_points = [

@@ -502,7 +502,6 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
       and spans at most a single build cycle.
 
     Args:
-      analysis_urlsafe_key (str): The key to the analysis to update.
       lower_bound_target (IsolatedTarget): The earlier isolated target whose
           commit position to check.
       upper_bound_build (IsolatedTarget): The later isolated target whose commit
@@ -537,6 +536,44 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
       self.Update(
           suspected_build_id=build_id,
           suspected_flake_build_number=suspected_build_number)
+
+  def UpdateSuspectedBuildUsingBuildInfo(self, lower_bound_build,
+                                         upper_bound_build):
+    """Sets the suspected build number if appropriate.
+
+      A suspected build cycle can be set when a regression range is identified
+      and spans at most a single build cycle.
+
+      TODO(crbug.com/872992): This function should be deprecated as soon as the
+      LUCI migration is 100% complete.
+
+    Args:
+      lower_bound_build (BuildInfo): The earlier build whose commit position to
+          check.
+      upper_bound_build (BuildInfo): The later build whose commit
+          position to check, assumed to be 1 build cycle apart from
+          lower_bound_build.
+    """
+    lower_bound_commit_position = lower_bound_build.commit_position
+    upper_bound_commit_position = upper_bound_build.commit_position
+    assert upper_bound_commit_position > lower_bound_commit_position, (
+        'Upper bound {} must be > lower bound {}'.format(
+            upper_bound_commit_position, lower_bound_commit_position))
+
+    lower_bound_data_point = self.FindMatchingDataPointWithCommitPosition(
+        lower_bound_commit_position)
+    upper_bound_data_point = self.FindMatchingDataPointWithCommitPosition(
+        upper_bound_commit_position)
+
+    if (self.suspected_flake_build_number is None and lower_bound_data_point and
+        upper_bound_data_point):  # pragma: no branch
+      assert pass_rate_util.IsStableDefaultThresholds(
+          lower_bound_data_point.pass_rate), (
+              'Lower bound build must be stable in order to have a suspect')
+      assert not pass_rate_util.IsStableDefaultThresholds(
+          upper_bound_data_point.pass_rate), (
+              'Upper bound build must be flaky in order to have a suspect')
+      self.Update(suspected_flake_build_number=upper_bound_build.build_number)
 
   def Update(self, **kwargs):
     """Updates fields according to what's specified in kwargs.

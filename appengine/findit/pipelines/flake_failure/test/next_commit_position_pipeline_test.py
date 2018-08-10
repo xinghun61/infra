@@ -396,3 +396,73 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     self.assertIsNone(next_commit_position_output['culprit_commit_position'])
     self.assertEqual(expected_next_commit_position,
                      next_commit_position_output['next_commit_position'])
+
+  @mock.patch.object(build_util, 'GetBuildInfo')
+  @mock.patch.object(lookback_algorithm, 'GetNextCommitPosition')
+  @mock.patch.object(step_util, 'GetValidBoundingBuildsForStep')
+  @mock.patch.object(step_util, 'GetBoundingIsolatedTargets')
+  @mock.patch.object(MasterFlakeAnalysis, 'CanRunHeuristicAnalysis')
+  def testNextCommitPositionPipelineContinueAnalysisFallbackToBuildInfo(
+      self, mock_heuristic, mock_targets, mock_bounding_builds,
+      mock_next_commit, mock_reference_build):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    start_commit_position = 1000
+    expected_next_commit_position = 990
+
+    mock_heuristic.return_value = False
+
+    calculated_next_commit_position = 999
+    culprit_commit_position = None
+    mock_next_commit.return_value = (calculated_next_commit_position,
+                                     culprit_commit_position)
+
+    target_name = 'browser_tests'
+    step_metadata = StepMetadata(
+        canonical_step_name=None,
+        dimensions=None,
+        full_step_name=None,
+        isolate_target_name=target_name,
+        patched=True,
+        swarm_task_ids=None,
+        waterfall_buildername=None,
+        waterfall_mastername=None)
+
+    reference_build = BuildInfo(master_name, builder_name, build_number)
+    reference_build.commit_position = start_commit_position
+    mock_reference_build.return_value = (None, reference_build)
+
+    lower_bound_build = BuildInfo(master_name, builder_name, build_number - 1)
+    lower_bound_build.commit_position = expected_next_commit_position
+    upper_bound_build = BuildInfo(master_name, builder_name, build_number)
+    upper_bound_build.commit_position = start_commit_position
+    mock_bounding_builds.return_value = (lower_bound_build, upper_bound_build)
+
+    mock_targets.side_effect = AssertionError()
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.data_points = [
+        DataPoint.Create(commit_position=start_commit_position)
+    ]
+    analysis.Save()
+
+    next_commit_position_input = NextCommitPositionInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        commit_position_range=IntRange(lower=None, upper=start_commit_position),
+        step_metadata=step_metadata)
+
+    pipeline_job = NextCommitPositionPipeline(next_commit_position_input)
+    pipeline_job.start()
+    self.execute_queued_tasks()
+
+    pipeline_job = pipelines.pipeline.Pipeline.from_id(pipeline_job.pipeline_id)
+    next_commit_position_output = pipeline_job.outputs.default.value
+
+    self.assertFalse(pipeline_job.was_aborted)
+    self.assertIsNone(next_commit_position_output['culprit_commit_position'])
+    self.assertEqual(expected_next_commit_position,
+                     next_commit_position_output['next_commit_position'])

@@ -107,15 +107,36 @@ class NextCommitPositionPipeline(SynchronousPipeline):
     parent_mastername = reference_build_info.parent_mastername or master_name
     parent_buildername = (
         reference_build_info.parent_buildername or builder_name)
-
     target_name = parameters.step_metadata.isolate_target_name
-    lower_bound_target, upper_bound_target = (
-        step_util.GetBoundingIsolatedTargets(parent_mastername,
-                                             parent_buildername, target_name,
-                                             calculated_next_commit_position))
 
-    # Update the analysis' suspected build cycle if identified.
-    analysis.UpdateSuspectedBuild(lower_bound_target, upper_bound_target)
+    try:
+      lower_bound_target, upper_bound_target = (
+          step_util.GetBoundingIsolatedTargets(parent_mastername,
+                                               parent_buildername, target_name,
+                                               calculated_next_commit_position))
+
+      # Update the analysis' suspected build cycle if identified.
+      analysis.UpdateSuspectedBuild(lower_bound_target, upper_bound_target)
+      lower_bound_commit_position = lower_bound_target.commit_position
+      upper_bound_commit_position = upper_bound_target.commit_position
+    except AssertionError as e:
+      # Fallback to searching buildbot in case builds aren't indexed as
+      # IsolatedTargets.
+      # TODO(crbug.com/872992): Remove fallback logic.
+      analysis.LogError(e.message)
+      analysis.LogWarning(
+          ('Failed to determine isolated targets surrounding {}. Falling back '
+           'to searching buildbot').format(calculated_next_commit_position))
+
+      lower_bound_build, upper_bound_build = (
+          step_util.GetValidBoundingBuildsForStep(
+              master_name, builder_name, analysis.step_name, None,
+              analysis.build_number, calculated_next_commit_position))
+
+      # Update the analysis' suspected build cycle if identified.
+      analysis.UpdateSuspectedBuild(lower_bound_build, upper_bound_build)
+      lower_bound_commit_position = lower_bound_build.commit_position
+      upper_bound_commit_position = upper_bound_build.commit_position
 
     # When identifying the neighboring builds of the requested commit position,
     # heuristic analysis may become eligible if the neighboring builds are
@@ -128,7 +149,7 @@ class NextCommitPositionPipeline(SynchronousPipeline):
       next_commit_position = (
           next_commit_position_utils.GetNextCommitPositionFromHeuristicResults(
               analysis_urlsafe_key))
-      if next_commit_position is not None:
+      if next_commit_position is not None:  # pragma: no branch
         assert not analysis.FindMatchingDataPointWithCommitPosition(
             next_commit_position
         ), ('Newly run heuristic results suggest commit position {} which has '
@@ -140,8 +161,7 @@ class NextCommitPositionPipeline(SynchronousPipeline):
     # Pick the commit position of the returned neighboring builds that has not
     # yet been analyzed if possible, or the commit position itself when not.
     build_range = IntRange(
-        lower=lower_bound_target.commit_position,
-        upper=upper_bound_target.commit_position)
+        lower=lower_bound_commit_position, upper=upper_bound_commit_position)
     actual_next_commit_position = (
         next_commit_position_utils.GetNextCommitPositionFromBuildRange(
             analysis, build_range, calculated_next_commit_position))
