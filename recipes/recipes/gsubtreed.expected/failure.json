@@ -1,0 +1,147 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
+      "config",
+      "--spec",
+      "cache_dir = '[CACHE]/git'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]"
+    ],
+    "env_suffixes": {
+      "PATH": [
+        "RECIPE_PACKAGE_REPO[depot_tools]"
+      ]
+    },
+    "infra_step": true,
+    "name": "gclient setup",
+    "timeout": 600
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
+      "sync",
+      "--verbose",
+      "--nohooks",
+      "-j8",
+      "--reset",
+      "--force",
+      "--upstream",
+      "--no-nag-max",
+      "--with_branch_heads",
+      "--with_tags",
+      "--delete_unversioned_trees",
+      "--revision",
+      "infra@origin/deployed",
+      "--output-json",
+      "/path/to/tmp/json"
+    ],
+    "env_suffixes": {
+      "PATH": [
+        "RECIPE_PACKAGE_REPO[depot_tools]"
+      ]
+    },
+    "infra_step": true,
+    "name": "gclient sync",
+    "timeout": 600,
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"solutions\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"infra/\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"revision\": \"5e03a58dc0850e5137a8ebbce29610670c756aed\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@SET_BUILD_PROPERTY@got_revision@\"5e03a58dc0850e5137a8ebbce29610670c756aed\"@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
+      "recurse",
+      "git",
+      "config",
+      "user.name",
+      "local_bot"
+    ],
+    "env_suffixes": {
+      "PATH": [
+        "RECIPE_PACKAGE_REPO[depot_tools]"
+      ]
+    },
+    "infra_step": true,
+    "name": "gclient recurse (git config user.name)",
+    "timeout": 600
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
+      "recurse",
+      "git",
+      "config",
+      "user.email",
+      "local_bot@example.com"
+    ],
+    "env_suffixes": {
+      "PATH": [
+        "RECIPE_PACKAGE_REPO[depot_tools]"
+      ]
+    },
+    "infra_step": true,
+    "name": "gclient recurse (git config user.email)",
+    "timeout": 600
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
+      "runhooks"
+    ],
+    "cwd": "[START_DIR]/infra",
+    "env_suffixes": {
+      "PATH": [
+        "RECIPE_PACKAGE_REPO[depot_tools]"
+      ]
+    },
+    "name": "gclient runhooks"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/infra/run.py",
+      "infra.services.gsubtreed",
+      "--verbose",
+      "--duration",
+      "600",
+      "--max_errors",
+      "5",
+      "--repo_dir",
+      "[START_DIR]/gsubtreed-work-dir",
+      "--json_output",
+      "/path/to/tmp/json",
+      "https://chromium.googlesource.com/chromium/src"
+    ],
+    "name": "gsubtreed",
+    "~followup_annotations": [
+      "step returned non-zero exit code: 1",
+      "@@@STEP_TEXT@</br></br>some/path: 5</br>some: 10@@@",
+      "@@@STEP_SUMMARY_TEXT@commits: 15@@@",
+      "@@@STEP_FAILURE@@@"
+    ]
+  },
+  {
+    "name": "$result",
+    "reason": "Step('gsubtreed') failed with return_code 1",
+    "recipe_result": null,
+    "status_code": 1
+  }
+]

@@ -13,6 +13,9 @@ per-file goma_hello_world.py=tikuta@chromium.org
 per-file goma_hello_world.py=yyanagisawa@chromium.org
 per-file goma_hello_world.py=vadimsh@chromium.org
 
+per-file gsubtreed.py=iannucci@chromium.org
+per-file gsubtreed.py=tandrii@chromium.org
+
 per-file infra_*.py=iannucci@chromium.org
 per-file infra_*.py=tandrii@chromium.org
 per-file infra_*.py=vadimsh@chromium.org
