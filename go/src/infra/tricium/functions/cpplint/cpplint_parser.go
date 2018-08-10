@@ -23,26 +23,27 @@ const (
 	cpplintPath = "cpplint.py"
 )
 
-// The cpplint current output format is: {path}:{line}: {msg}  [{category}/{symbol}] [{confidence}]
-const msgRegex = `^(.+):([0-9]+):  (.+)  \[(.+)/(.+)\] \[([1-5])\]`
+// Format: {path}:{line}: {msg}  [{category}/{symbol}] [{confidence}]
+var msgRegex = regexp.MustCompile(`^(.+):([0-9]+):  (.+)  \[(.+)/(.+)\] \[([1-5])\]`)
 
-// TODO(diegomtzg): This parser is almost identical to the pylint parser, only differences are the regex,
-// the fact that cpplint's output goes to stderr and the fact that cpplint's warnings don't have column numbers.
+// TODO(crbug/873202): This parser is almost identical to the pylint parser,
+// some common parts might be extracted.
 func main() {
 	inputDir := flag.String("input", "", "Path to root of Tricium input")
 	outputDir := flag.String("output", "", "Path to root of Tricium output")
+	// TODO(qyearsley): Add a filter/verbose flag and use it when invoking cpplint.
 	flag.Parse()
 	if flag.NArg() != 0 {
 		log.Fatalf("Unexpected argument")
 	}
 
-	// Retrieve the path name for the executable that started the current process.
+	// Retrieve the path name for the executable that started the current
+	// process, so that we can build an absolute path below.
 	ex, err := os.Executable()
 	if err != nil {
 		log.Fatal(err)
 	}
 	exPath := filepath.Dir(ex)
-	exPath = ""
 	log.Printf("Using executable path: %s", exPath)
 
 	// Read Tricium input FILES data.
@@ -54,7 +55,11 @@ func main() {
 
 	// TODO(diegomtzg): We could specify a certain type of comments to filter out.
 	cmdName := filepath.Join(exPath, pythonPath)
-	cmdArgs := []string{filepath.Join(exPath, cpplintPath)}
+	cmdArgs := []string{
+		filepath.Join(exPath, cpplintPath),
+		"--verbose=4",
+		"--filter=-whitespace",
+	}
 	for _, file := range input.Files {
 		cmdArgs = append(cmdArgs, filepath.Join(*inputDir, file.Path))
 	}
@@ -117,11 +122,11 @@ func scanCpplintOutput(scanner *bufio.Scanner, results *tricium.Data_Results, do
 
 // Parses one line of cpplint output to produce a comment.
 //
-// Returns the produced comment or nil if the given line doesn't match the expected pattern.
-// See the constant msgRegex defined above for the expected message format.
+// Returns the produced comment or nil if the given line doesn't match the
+// expected pattern. See the constant msgRegex defined above for the expected
+// message format.
 func parseCpplintLine(line string) *tricium.Data_Comment {
-	re := regexp.MustCompile(msgRegex)
-	match := re.FindStringSubmatch(line)
+	match := msgRegex.FindStringSubmatch(line)
 	if match == nil {
 		return nil
 	}
@@ -130,14 +135,13 @@ func parseCpplintLine(line string) *tricium.Data_Comment {
 		return nil
 	}
 
-	// TODO(diegomtzg): Consider only adding comments that have a high confidence.
 	conf, err := strconv.Atoi(match[6])
 	if err != nil {
 		return nil
 	}
 	return &tricium.Data_Comment{
 		Path:      match[1],
-		Message:   fmt.Sprintf("%s | Confidence (1-5): %d", match[3], conf),
+		Message:   fmt.Sprintf("%s (confidence %d/5).", match[3], conf),
 		Category:  fmt.Sprintf("Cpplint/%s/%s", match[4], match[5]),
 		StartLine: int32(lineno),
 	}

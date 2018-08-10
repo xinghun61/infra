@@ -28,51 +28,30 @@ func TestPylintParsingFunctions(t *testing.T) {
 			So(results.Comments, ShouldBeEmpty)
 		})
 
-		Convey("Parsing normal pylint output generates the appropriate comments", func() {
-			output := "test.cpp:2:  Line ends in whitespace.  Consider deleting these extra spaces.  [whitespace/end_of_line] [4]\n" +
-				"test.cpp:0:  No copyright message found.  You should have a line: \"Copyright [year] <Copyright Owner>\"  [legal/copyright] [5]\n" +
-				"test.cpp:141:  If an else has a brace on one side, it should have it on both  [readability/braces] [5]\n" +
-				"test.cpp:42:  Add #include <vector> for vector<>  [build/include_what_you_use] [4]\n" +
-				"test.cpp:125:  An else should appear on the same line as the preceding }  [whitespace/newline] [4]\n" +
-				"test.cpp:129:  Tab found; better to use spaces  [whitespace/tab] [1]\n"
+		Convey("Parsing normal cpplint output generates the appropriate comments", func() {
+			output := "test.cc:0:  No copyright message found  [legal/copyright] [5]\n" +
+				"test.cc:141:  If an else has a brace on one side, it should have it on both  [readability/braces] [5]\n" +
+				"test.cc:42:  Add #include <vector> for vector<>  [build/include_what_you_use] [4]\n"
 
 			expected := &tricium.Data_Results{
 				Comments: []*tricium.Data_Comment{
 					{
-						Category:  "Cpplint/whitespace/end_of_line",
-						Message:   "Line ends in whitespace.  Consider deleting these extra spaces. | Confidence (1-5): 4",
-						Path:      "test.cpp",
-						StartLine: 2,
-					},
-					{
 						Category:  "Cpplint/legal/copyright",
-						Message:   "No copyright message found.  You should have a line: \"Copyright [year] <Copyright Owner>\" | Confidence (1-5): 5",
-						Path:      "test.cpp",
+						Message:   "No copyright message found (confidence 5/5).",
+						Path:      "test.cc",
 						StartLine: 0,
 					},
 					{
 						Category:  "Cpplint/readability/braces",
-						Message:   "If an else has a brace on one side, it should have it on both | Confidence (1-5): 5",
-						Path:      "test.cpp",
+						Message:   "If an else has a brace on one side, it should have it on both (confidence 5/5).",
+						Path:      "test.cc",
 						StartLine: 141,
 					},
 					{
 						Category:  "Cpplint/build/include_what_you_use",
-						Message:   "Add #include <vector> for vector<> | Confidence (1-5): 4",
-						Path:      "test.cpp",
+						Message:   "Add #include <vector> for vector<> (confidence 4/5).",
+						Path:      "test.cc",
 						StartLine: 42,
-					},
-					{
-						Category:  "Cpplint/whitespace/newline",
-						Message:   "An else should appear on the same line as the preceding } | Confidence (1-5): 4",
-						Path:      "test.cpp",
-						StartLine: 125,
-					},
-					{
-						Category:  "Cpplint/whitespace/tab",
-						Message:   "Tab found; better to use spaces | Confidence (1-5): 1",
-						Path:      "test.cpp",
-						StartLine: 129,
 					},
 				},
 			}
@@ -86,11 +65,11 @@ func TestPylintParsingFunctions(t *testing.T) {
 	Convey("parsePylintLine", t, func() {
 
 		Convey("Parsing valid line gives a comment", func() {
-			line := "test.cpp:148:  Line ends in whitespace.  Consider deleting these extra spaces.  [whitespace/end_of_line] [4]"
+			line := "test.cc:148:  This is the helpful explanation  [readability/foo] [4]"
 			So(parseCpplintLine(line), ShouldResemble, &tricium.Data_Comment{
-				Category:  "Cpplint/whitespace/end_of_line",
-				Message:   "Line ends in whitespace.  Consider deleting these extra spaces. | Confidence (1-5): 4",
-				Path:      "test.cpp",
+				Category:  "Cpplint/readability/foo",
+				Message:   "This is the helpful explanation (confidence 4/5).",
+				Path:      "test.cc",
 				StartLine: 148,
 			})
 		})
