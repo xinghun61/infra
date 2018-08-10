@@ -547,6 +547,30 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
         ci_failure.GetCanonicalStepName('m', 'b', 200,
                                         'step_name on a platform'))
 
+  @mock.patch.object(
+      ci_failure,
+      'GetStepMetadata',
+      return_value={'isolate_target_name': 'browser_tests'})
+  def testGetIsolateTargetName(self, _):
+    self.assertEqual(
+        'browser_tests',
+        ci_failure.GetIsolateTargetName(
+            'm', 'b', 200, 'viz_browser_tests (with patch) on Android'))
+
+  @mock.patch.object(ci_failure, 'GetStepMetadata', return_value=None)
+  def testGetIsolateTargetNameStepMetadataIsNone(self, _):
+    self.assertEqual(
+        None,
+        ci_failure.GetIsolateTargetName(
+            'm', 'b', 200, 'viz_browser_tests (with patch) on Android'))
+
+  @mock.patch.object(ci_failure, 'GetStepMetadata', return_value={'a': 'b'})
+  def testGetIsolateTargetNameIsolateTargetNameIsMissing(self, _):
+    self.assertEqual(
+        None,
+        ci_failure.GetIsolateTargetName(
+            'm', 'b', 200, 'viz_browser_tests (with patch) on Android'))
+
   def testGetGoodRevision(self):
     failed_steps = {
         'a': {

@@ -81,6 +81,25 @@ def GetCanonicalStepName(master_name, builder_name, build_number, step_name):
       'canonical_step_name') if step_metadata else step_name
 
 
+def GetIsolateTargetName(master_name, builder_name, build_number, step_name):
+  """ Returns the isolate_target_name in the step_metadata.
+
+  Args:
+    master_name: Master name of the build.
+    builder_name: Builder name of the build.
+    build_number: Build number of the build.
+    step_name: The original step name to get isolate_target_name for, and the
+               step name may contain hardware information and 'with(out) patch'
+               suffixes.
+
+  Returns:
+    The isolate_target_name if it exists, otherwise, None.
+  """
+  step_metadata = GetStepMetadata(master_name, builder_name, build_number,
+                                  step_name)
+  return step_metadata.get('isolate_target_name') if step_metadata else None
+
+
 def _StepIsSupportedForMaster(master_name, builder_name, build_number,
                               step_name):
   if step_name == 'compile':
