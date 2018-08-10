@@ -30,6 +30,10 @@ limitations under the License. */}}
           <tr>
             <td>Name</td>
             <td>Total builders</td>
+            <td title="Not Prod on LUCI and found on Buildbot">Not Flipped</td>
+            <td title="Prod on LUCI and found on Buildbot">Need Decom</td>
+            <td title="Prod on LUCI and not found on Buildbot">Decommed</td>
+            <td title="Not Prod on LUCI and not found on Buildbot">Not Found on Buildbot</td>
             <td>WAI builders</td>
             <td>Migrated builders</td>
           </tr>
@@ -41,6 +45,10 @@ limitations under the License. */}}
               <a href="masters/{{$m.Name}}/">{{$m.Name}}</a>
             </td>
             <td>{{$m.TotalBuilderCount}}</td>
+            <td class="bg-danger">{{index $m.LUCIBuildbotCounts 0 1}}</td>
+            <td class="bg-success">{{index $m.LUCIBuildbotCounts 1 1}}</td>
+            <td class="bg-info">{{index $m.LUCIBuildbotCounts 1 0}}</td>
+            <td class="bg-warning">{{index $m.LUCIBuildbotCounts 0 0}}</td>
             <td>{{$m.WAIBuilderCount}} ({{$m.WAIBuilderPercent}}%)</td>
             <td>{{$m.MigratedBuilderCount}} ({{$m.MigratedBuilderPercent}}%)</td>
           </tr>

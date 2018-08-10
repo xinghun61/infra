@@ -73,14 +73,18 @@ func TestIndex(t *testing.T) {
 						Master:  "tryserver.chromium.linux",
 						Builder: "linux_chromium_asan_rel_ng",
 					},
-					Migration: storage.BuilderMigration{Status: storage.StatusLUCINotWAI},
+					LUCIIsProd:    true,
+					NotOnBuildbot: false,
+					Migration:     storage.BuilderMigration{Status: storage.StatusLUCINotWAI},
 				},
 				&storage.Builder{
 					ID: storage.BuilderID{
 						Master:  "tryserver.chromium.linux",
 						Builder: "linux_chromium_rel_ng",
 					},
-					Migration: storage.BuilderMigration{Status: storage.StatusMigrated},
+					LUCIIsProd:    true,
+					NotOnBuildbot: false,
+					Migration:     storage.BuilderMigration{Status: storage.StatusMigrated},
 				},
 
 				&storage.Builder{
@@ -88,14 +92,18 @@ func TestIndex(t *testing.T) {
 						Master:  "tryserver.chromium.mac",
 						Builder: "mac_chromium_asan_rel_ng",
 					},
-					Migration: storage.BuilderMigration{Status: storage.StatusLUCIWAI},
+					LUCIIsProd:    false,
+					NotOnBuildbot: false,
+					Migration:     storage.BuilderMigration{Status: storage.StatusLUCIWAI},
 				},
 				&storage.Builder{
 					ID: storage.BuilderID{
 						Master:  "tryserver.chromium.mac",
 						Builder: "mac_chromium_rel_ng",
 					},
-					Migration: storage.BuilderMigration{Status: storage.StatusMigrated},
+					LUCIIsProd:    true,
+					NotOnBuildbot: true,
+					Migration:     storage.BuilderMigration{Status: storage.StatusMigrated},
 				},
 			)
 			So(err, ShouldBeNil)
@@ -106,6 +114,7 @@ func TestIndex(t *testing.T) {
 				Masters: []*indexMasterViewModel{
 					{
 						Name:                   "tryserver.chromium.linux",
+						LUCIBuildbotCounts:     [2][2]int{{0, 0}, {0, 2}},
 						WAIBuilderCount:        1,
 						WAIBuilderPercent:      50,
 						MigratedBuilderCount:   1,
@@ -114,6 +123,7 @@ func TestIndex(t *testing.T) {
 					},
 					{
 						Name:                   "tryserver.chromium.mac",
+						LUCIBuildbotCounts:     [2][2]int{{0, 1}, {1, 0}},
 						WAIBuilderCount:        2,
 						WAIBuilderPercent:      100,
 						MigratedBuilderCount:   1,
@@ -148,8 +158,9 @@ func TestIndex(t *testing.T) {
 			So(model, ShouldResemble, &indexViewModel{
 				Masters: []*indexMasterViewModel{
 					{
-						Name:              "tryserver.chromium.linux",
-						TotalBuilderCount: 1,
+						Name:               "tryserver.chromium.linux",
+						TotalBuilderCount:  1,
+						LUCIBuildbotCounts: [2][2]int{{0, 1}, {0, 0}},
 					},
 				},
 			})
@@ -184,12 +195,14 @@ func TestIndex(t *testing.T) {
 			So(model, ShouldResemble, &indexViewModel{
 				Masters: []*indexMasterViewModel{
 					{
-						Name:              "internal.tryserver.chromium.linux",
-						TotalBuilderCount: 1,
+						Name:               "internal.tryserver.chromium.linux",
+						TotalBuilderCount:  1,
+						LUCIBuildbotCounts: [2][2]int{{0, 1}, {0, 0}},
 					},
 					{
-						Name:              "tryserver.chromium.linux",
-						TotalBuilderCount: 1,
+						Name:               "tryserver.chromium.linux",
+						TotalBuilderCount:  1,
+						LUCIBuildbotCounts: [2][2]int{{0, 1}, {0, 0}},
 					},
 				},
 			})

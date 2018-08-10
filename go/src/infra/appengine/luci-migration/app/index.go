@@ -36,6 +36,10 @@ type indexViewModel struct {
 type indexMasterViewModel struct {
 	Name string
 
+	// Counts of builders in combinations:
+	// i: 0 -> not prod on LUCI; 1 -> prod on LUCI
+	// j: 0 -> not found on Buildbot; 1 -> found on Buildbot
+	LUCIBuildbotCounts     [2][2]int
 	WAIBuilderCount        int
 	WAIBuilderPercent      int
 	MigratedBuilderCount   int
@@ -84,6 +88,16 @@ func indexPage(c context.Context) (*indexViewModel, error) {
 		}
 
 		m.TotalBuilderCount++
+
+		i, j := 0, 0
+		if b.LUCIIsProd {
+			i = 1
+		}
+		if !b.NotOnBuildbot {
+			j = 1
+		}
+		m.LUCIBuildbotCounts[i][j]++
+
 		switch b.Migration.Status {
 		case storage.StatusMigrated:
 			m.MigratedBuilderCount++

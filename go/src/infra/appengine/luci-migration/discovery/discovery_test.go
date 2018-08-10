@@ -28,6 +28,7 @@ import (
 
 	"go.chromium.org/gae/impl/memory"
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/clock/testclock"
 	"go.chromium.org/luci/common/testing/prpctest"
 	"go.chromium.org/luci/milo/api/proto"
 
@@ -52,6 +53,8 @@ func TestDiscovery(t *testing.T) {
 				},
 			},
 		})
+		c, _ = testclock.UseTime(c, testclock.TestRecentTimeUTC)
+		datastore.GetTestable(c).Consistent(true)
 
 		// Make tryserver.chromium.linux:linux_chromium_rel_ng known.
 		chromiumRelNg := &storage.Builder{
@@ -62,21 +65,30 @@ func TestDiscovery(t *testing.T) {
 			ID:      bid("tryserver.chromium.linux", "deleted"),
 			IssueID: storage.IssueID{Hostname: "monorail-prod.appspot.com", Project: "chromium", ID: 55},
 		}
-		migratedBuilder := &storage.Builder{
-			ID:        bid("tryserver.chromium.linux", "migrated"),
+		flippedBuilder := &storage.Builder{
+			ID:        bid("tryserver.chromium.linux", "migrated_not_decommed"),
 			IssueID:   storage.IssueID{Hostname: "monorail-prod.appspot.com", Project: "chromium", ID: 60},
 			Migration: storage.BuilderMigration{Status: storage.StatusMigrated},
 		}
-		err := datastore.Put(c, chromiumRelNg, deletedBuilder, migratedBuilder)
+		err := datastore.Put(c, chromiumRelNg, deletedBuilder, flippedBuilder)
 		So(err, ShouldBeNil)
 		datastore.GetTestable(c).CatchupIndexes()
 
 		// Mock Buildbot service.
 		buildbotServer := prpctest.Server{}
 		milo.RegisterBuildbotServer(&buildbotServer, &buildbotMock{
-			builders: map[string]struct{}{
-				"linux_chromium_rel_ng":      {},
-				"linux_chromium_asan_rel_ng": {},
+			builders: []map[string]struct{}{
+				{
+					"linux_chromium_rel_ng":      {},
+					"linux_chromium_asan_rel_ng": {},
+					"migrated_not_decommed":      {},
+				},
+				{
+					"deleted":                    {},
+					"linux_chromium_rel_ng":      {},
+					"linux_chromium_asan_rel_ng": {},
+					"migrated_not_decommed":      {},
+				},
 			},
 		})
 		buildbotServer.Start(c)
@@ -117,9 +129,7 @@ func TestDiscovery(t *testing.T) {
 		// Verify sent monorail requests.
 		So(bugReqs, ShouldHaveLength, 1)
 		So(bugReqs[0].Issue.Summary, ShouldEqual, "Migrate \"linux_chromium_asan_rel_ng\" to LUCI")
-		So(commentReqs, ShouldHaveLength, 1)
-		So(commentReqs[0].Issue, ShouldResemble, &monorail.IssueRef{ProjectId: "chromium", IssueId: 55})
-		So(commentReqs[0].Comment.Updates.Status, ShouldEqual, monorail.StatusFixed)
+		So(commentReqs, ShouldHaveLength, 0)
 
 		// Verify linux_chromium_asan_rel_ng was discovered.
 		chromiumAsanRelNg := &storage.Builder{
@@ -134,6 +144,8 @@ func TestDiscovery(t *testing.T) {
 
 			IssueID:                 storage.IssueID{Hostname: "monorail-prod.appspot.com", Project: "chromium", ID: 56},
 			IssueDescriptionVersion: bugs.DescriptionVersion,
+
+			NotOnBuildbot: false,
 		})
 
 		// Verify linux_chromium_rel_ng was not rediscovered.
@@ -141,20 +153,45 @@ func TestDiscovery(t *testing.T) {
 		err = datastore.Get(c, chromiumRelNg)
 		So(err, ShouldBeNil)
 		So(chromiumRelNg.IssueID.ID, ShouldEqual, 54) // was not overwritten during discovery
+		So(chromiumRelNg.NotOnBuildbot, ShouldEqual, false)
+
+		// Verify lost builder got its entity updated.
+		err = datastore.Get(c, deletedBuilder)
+		So(err, ShouldBeNil)
+		So(deletedBuilder.NotOnBuildbot, ShouldEqual, true)
+
+		Convey("rediscovery", func() {
+			err = d.Discover(c, linuxTryserver)
+			So(err, ShouldBeNil)
+
+			// Verify re-found builder got its entity updated.
+			err = datastore.Get(c, deletedBuilder)
+			So(err, ShouldBeNil)
+			So(deletedBuilder.NotOnBuildbot, ShouldEqual, false)
+
+			// Verify sent monorail requests (should be same as before rediscovery; no new bugs).
+			So(bugReqs, ShouldHaveLength, 1)
+		})
 	})
 }
 
 type buildbotMock struct {
-	builders map[string]struct{}
+	counter  int
+	builders []map[string]struct{}
 }
 
 func (m *buildbotMock) GetCompressedMasterJSON(c context.Context, req *milo.MasterRequest) (*milo.CompressedMasterJSON, error) {
+	if m.counter >= len(m.builders) {
+		panic("more calls to Buildbot mock than expected")
+	}
+
 	if !req.NoEmulation {
 		return nil, fmt.Errorf("did not disable emulation")
 	}
 	masterJSON := masterJSON{
-		Builders: m.builders,
+		Builders: m.builders[m.counter],
 	}
+	m.counter++
 	buf := &bytes.Buffer{}
 	gzipped := gzip.NewWriter(buf)
 	err := json.NewEncoder(gzipped).Encode(masterJSON)

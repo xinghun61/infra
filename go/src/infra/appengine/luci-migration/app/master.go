@@ -91,10 +91,24 @@ func masterPage(c context.Context, master *config.Master) (*masterViewModel, err
 		})
 	})
 
+	// Generally, show ones that need attention at the top. For example:
+	//  * not prod on LUCI but on Buildbot
+	//  * prod on LUCI but on Buildbot
+	//  * prod on LUCI and not on Buildbot
+	//  * not prod on LUCI and not on Buildbot
 	sort.Slice(model.Builders, func(i, j int) bool {
 		a := model.Builders[i]
 		b := model.Builders[j]
 		switch {
+		// If a is on Buildbot and b is not, show a first.
+		case a.NotOnBuildbot != b.NotOnBuildbot:
+			return !a.NotOnBuildbot
+		// If a is not prod on LUCI and b is, show a first if both are on Buildbot
+		// If neither are, show b first.
+		case !a.NotOnBuildbot && a.LUCIIsProd != b.LUCIIsProd: // both on Buildbot
+			return !a.LUCIIsProd // show non-prod first
+		case a.NotOnBuildbot && a.LUCIIsProd != b.LUCIIsProd: // neither on Buildbot
+			return a.LUCIIsProd // show prod first
 		case a.Migration.Status < b.Migration.Status:
 			return true
 		case a.Migration.Status > b.Migration.Status:

@@ -145,5 +145,58 @@ func TestMaster(t *testing.T) {
 				},
 			})
 		})
+
+		Convey("ordering", func() {
+			deleted := &storage.Builder{
+				ID: storage.BuilderID{
+					Master:  "chromium.foo",
+					Builder: "lost from Buildbot",
+				},
+				Kind:          storage.BuilderKind,
+				LUCIIsProd:    false,
+				NotOnBuildbot: true,
+			}
+			needsDecom := &storage.Builder{
+				ID: storage.BuilderID{
+					Master:  "chromium.foo",
+					Builder: "needs decom",
+				},
+				Kind:          storage.BuilderKind,
+				LUCIIsProd:    true,
+				NotOnBuildbot: false,
+			}
+			needsFlip := &storage.Builder{
+				ID: storage.BuilderID{
+					Master:  "chromium.foo",
+					Builder: "needs flip",
+				},
+				Kind:          storage.BuilderKind,
+				LUCIIsProd:    false,
+				NotOnBuildbot: false,
+			}
+			decommed := &storage.Builder{
+				ID: storage.BuilderID{
+					Master:  "chromium.foo",
+					Builder: "decommed",
+				},
+				Kind:          storage.BuilderKind,
+				LUCIIsProd:    true,
+				NotOnBuildbot: true,
+			}
+			err := datastore.Put(c, deleted, needsDecom, needsFlip, decommed)
+			So(err, ShouldBeNil)
+
+			master := &config.Master{
+				Name: "chromium.foo",
+			}
+			model, err := handle(c, master)
+			So(err, ShouldBeNil)
+			So(model.Builders, ShouldResemble, []masterBuilderViewModel{
+				{Builder: needsFlip},
+				{Builder: needsDecom},
+				{Builder: decommed},
+				{Builder: deleted},
+			})
+		})
 	})
 }

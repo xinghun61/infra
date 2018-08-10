@@ -52,7 +52,7 @@ func (d *Builders) Discover(c context.Context, master *config.Master) error {
 	if err != nil {
 		return errors.Annotate(err, "could not fetch builder names from master %s", master.Name).Err()
 	}
-	toRegister := stringset.NewFromSlice(names...)
+	buildbotBuilders := stringset.NewFromSlice(names...)
 
 	return parallel.FanOutIn(func(work chan<- func() error) {
 		dsWork := func(title, builder string, f func() error) {
@@ -70,12 +70,17 @@ func (d *Builders) Discover(c context.Context, master *config.Master) error {
 			}
 		}
 
-		q := storage.BuilderMasterFilter(c, nil, master.Name)
+		q := storage.BuilderMasterFilter(c, nil, master.Name).Eq("NotOnBuildbot", false)
 		err := datastore.RunBatch(c, 32, q, func(b *storage.Builder) error {
-			if !toRegister.Del(b.ID.Builder) && b.Migration.Status < storage.StatusMigrated {
-				// The Buildbot builder no longer exists. Perhaps it was migrated!
-				dsWork("mark as migrated", b.ID.Builder, func() error {
-					return d.markMigrated(c, b)
+			// If we "lost" a Buildbot builder and there is no data from the LUCI builder, it may have
+			// been deleted or renamed, or there was a blip in liveness signal.
+			// We can't a priori distinguish between these two cases, so just store that the builder no
+			// longer exists on Buildbot. Filtering these out of the LUCIIsProd percent calculation will
+			// surface how many flipped builders we still need to decom, and how many existing builders
+			// still need to be flipped.
+			if !buildbotBuilders.Has(b.ID.Builder) {
+				dsWork("mark lost Buildbot builder", b.ID.Builder, func() error {
+					return d.markLostBuilder(c, b)
 				})
 			}
 			return nil
@@ -84,7 +89,7 @@ func (d *Builders) Discover(c context.Context, master *config.Master) error {
 			work <- func() error { return err }
 			return
 		}
-		toRegister.Iter(func(name string) bool {
+		buildbotBuilders.Iter(func(name string) bool {
 			dsWork("register builder", name, func() error {
 				return d.registerBuilder(c, master, name)
 			})
@@ -93,28 +98,25 @@ func (d *Builders) Discover(c context.Context, master *config.Master) error {
 	})
 }
 
-func (d *Builders) markMigrated(c context.Context, builder *storage.Builder) error {
-	builder.Migration = storage.BuilderMigration{
-		Status: storage.StatusMigrated,
-	}
-	if err := bugs.PostComment(c, d.Monorail, builder); err != nil {
-		return errors.Annotate(err, "could not mark the bug as fixed").Err()
-	}
-
-	// Note: if this transaction ultimately fails (rare case), we will post the
-	// monorail comment again.
+func (d *Builders) markLostBuilder(c context.Context, builder *storage.Builder) error {
 	return datastore.RunInTransaction(c, func(c context.Context) error {
 		if err := datastore.Get(c, builder); err != nil {
 			return err
 		}
 
+		// If we're already not on Buildbot, nothing to do.
+		if builder.NotOnBuildbot {
+			return nil
+		}
+
+		builder.NotOnBuildbot = true
 		builder.Migration = storage.BuilderMigration{
-			Status:       storage.StatusMigrated,
+			Status:       storage.StatusUnknown,
 			AnalysisTime: clock.Now(c),
 		}
 		details := &storage.BuilderMigrationDetails{
 			Parent:      datastore.KeyForObj(c, builder),
-			TrustedHTML: "The builder is marked as Migrated because Buildbot builder no longer exists",
+			TrustedHTML: "The builder could not be found on Buildbot so has been marked status Unknown",
 		}
 
 		return datastore.Put(c, builder, details)
@@ -128,21 +130,38 @@ func (d *Builders) registerBuilder(c context.Context, master *config.Master, nam
 		OS:             master.Os,
 	}
 
-	// Create a Monorail issue.
-	if deadline, ok := c.Deadline(); ok {
-		if deadline.Sub(clock.Now(c)) < time.Minute {
-			// Do not start creating a bug if we don't have much time
-			return fmt.Errorf("too close to deadline")
+	// If the builder already exists, we don't need to register it again.
+	// Do update that it was [re]found on Buildbot, though.
+	return datastore.RunInTransaction(c, func(c context.Context) error {
+		err := datastore.Get(c, builder)
+		switch {
+		case err == nil:
+			// Only update if the last known state was "not on Buildbot".
+			if builder.NotOnBuildbot {
+				builder.NotOnBuildbot = false
+				return datastore.Put(c, builder)
+			}
+			return nil
+		case err != datastore.ErrNoSuchEntity:
+			return err
 		}
 
-	}
-	builder.IssueID.Hostname = d.MonorailHostname
-	builder.IssueID.Project = monorailProject
-	if err := bugs.CreateBuilderBug(c, d.Monorail, builder); err != nil {
-		return errors.Annotate(err, "could not create a monorail bug for builder %q", &builder.ID).Err()
-	}
+		// Create a Monorail issue.
+		if deadline, ok := c.Deadline(); ok {
+			if deadline.Sub(clock.Now(c)) < time.Minute {
+				// Do not start creating a bug if we don't have much time
+				return fmt.Errorf("too close to deadline")
+			}
+		}
 
-	return datastore.Put(c, builder)
+		builder.IssueID.Hostname = d.MonorailHostname
+		builder.IssueID.Project = monorailProject
+		if err := bugs.CreateBuilderBug(c, d.Monorail, builder); err != nil {
+			return errors.Annotate(err, "could not create a monorail bug for builder %q", &builder.ID).Err()
+		}
+
+		return datastore.Put(c, builder)
+	}, nil)
 }
 
 type masterJSON struct {

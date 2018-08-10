@@ -31,6 +31,7 @@ limitations under the License. */}}
           <tr>
             <td>Builder</td>
             <td>LUCI is Prod</td>
+            <td>Builder on Buildbot</td>
             <td>Migration Status</td>
     {{if $m.Tryjobs}}
             <td>Experiment percentage</td>
@@ -46,6 +47,7 @@ limitations under the License. */}}
               <a href="builders/{{$b.ID.Builder}}">{{$b.ID.Builder}}</a>
             </td>
             <td>{{$b.LUCIIsProd}}</td>
+            <td>{{not $b.NotOnBuildbot}}</td>
             <td>
               {{if ne $b.Migration.Status 0}}{{$b.Migration.Status}}{{end}}
             </td>

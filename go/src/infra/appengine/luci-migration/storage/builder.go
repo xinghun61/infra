@@ -60,7 +60,8 @@ type Builder struct {
 
 	MostRecentNotification Notification
 
-	LUCIIsProd bool
+	LUCIIsProd    bool
+	NotOnBuildbot bool
 
 	Expando datastore.PropertyMap `gae:",extra"` // future or deprecated fields
 }
