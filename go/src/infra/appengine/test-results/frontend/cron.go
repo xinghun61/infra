@@ -6,6 +6,7 @@ package frontend
 
 import (
 	"net/http"
+	"sync"
 	"time"
 
 	"infra/appengine/test-results/model"
@@ -27,7 +28,10 @@ func deleteOldResultsHandler(rc *router.Context) {
 	// Buffer the channel to 2x batch size to ensure that we are not sending
 	// keys faster than we can schedule deletion tasks.
 	keyCh := make(chan *datastore.Key, 1000)
+
+	var mu sync.Mutex
 	entitiesDeleted := 0
+
 	var queryErr error
 	go func() {
 		defer close(keyCh)
@@ -60,7 +64,9 @@ func deleteOldResultsHandler(rc *router.Context) {
 					// https://crbug.com/741236 for more details.
 					logging.WithError(err).Warningf(c, "Failed to delete some entities")
 				} else {
+					mu.Lock()
 					entitiesDeleted += len(keys2)
+					mu.Unlock()
 				}
 				return nil
 			}
@@ -79,6 +85,8 @@ func deleteOldResultsHandler(rc *router.Context) {
 		}
 	})
 
+	mu.Lock()
+	defer mu.Unlock()
 	if queryErr != nil && entitiesDeleted == 0 {
 		// Normally the error would be datastore timeout from the Run operation
 		// and we should not log it because we'll simply continue deleting

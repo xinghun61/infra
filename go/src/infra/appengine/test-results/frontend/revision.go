@@ -61,14 +61,17 @@ func revisionHandler(c *router.Context) {
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 
+	start := c.Request.FormValue("start")
+	end := c.Request.FormValue("end")
+
 	go func() {
 		defer wg.Done()
-		hash, err := client.commitHash(c.Request.FormValue("start"))
+		hash, err := client.commitHash(start)
 		results[0] = result{hash, err}
 	}()
 	go func() {
 		defer wg.Done()
-		hash, err := client.commitHash(c.Request.FormValue("end"))
+		hash, err := client.commitHash(end)
 		results[1] = result{hash, err}
 	}()
 
