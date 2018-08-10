@@ -266,6 +266,7 @@ def validate_builder_cfg(builder, mixin_names, final, ctx):
 
   cache_paths = set()
   cache_names = set()
+  fallback_secs = set()
   for i, c in enumerate(builder.caches):
     with ctx.prefix('cache #%d: ', i + 1):
       validate_cache_entry(c, ctx)
@@ -279,6 +280,18 @@ def validate_builder_cfg(builder, mixin_names, final, ctx):
           ctx.error('duplicate path')
         else:
           cache_paths.add(c.path)
+        if c.wait_for_warm_cache_secs:
+          if c.wait_for_warm_cache_secs < 60:
+            ctx.error('wait_for_warm_cache_secs must be at least 60 seconds')
+          elif c.wait_for_warm_cache_secs % 60:
+            ctx.error('wait_for_warm_cache_secs must be rounded on 60 seconds')
+          fallback_secs.add(c.wait_for_warm_cache_secs)
+  if len(fallback_secs) > 7:
+    # There can only be 8 task_slices.
+    ctx.error(
+        'too many different (%d) wait_for_warm_cache_secs values; max 7' %
+        len(fallback_secs)
+    )
 
   with ctx.prefix('recipe: '):
     validate_recipe_cfg(builder.recipe, ctx, final=final)

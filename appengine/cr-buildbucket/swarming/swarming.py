@@ -409,8 +409,15 @@ def _create_task_def_async(
   Raises:
     errors.InvalidInputError if build.parameters are invalid.
   """
+  assert isinstance(swarming_cfg,
+                    project_config_pb2.Swarming), type(swarming_cfg)
+  assert isinstance(builder_cfg, project_config_pb2.Builder), type(builder_cfg)
+  assert isinstance(build, model.Build), type(build)
   assert build.key and build.key.id(), build.key
   assert build.url, 'build.url should have been initialized'
+  assert isinstance(build_number,
+                    int) or build_number is None, type(build_number)
+  assert isinstance(fake_build, bool), type(fake_build)
   params = copy.deepcopy(build.parameters) or {}
   build.parameters_actual = params
   # params is an alias for build.parameters_actual.
@@ -587,14 +594,43 @@ def _create_task_def_async(
   swarming_tags.sort()
 
   task = apply_if_tags(task)
-  assert len(task['task_slices']) == 1, len(task['task_slices'])
+  if len(task['task_slices']) != 1:
+    raise errors.InvalidInputError(
+        'base swarming task template can only have one task_slices'
+    )
 
   if builder_cfg.expiration_secs > 0:
-    task['task_slices'][-1]['expiration_secs'] = str(
-        builder_cfg.expiration_secs
-    )
-  for t in task['task_slices']:
-    _setup_props(build, builder_cfg, extra_cipd_packages, t['properties'])
+    task['task_slices'][0]['expiration_secs'] = str(builder_cfg.expiration_secs)
+  # Now take a look to generate a fallback! This is done by inspecting the
+  # Builder named caches for the flag "wait_for_warm_cache_secs".
+  cache_fallbacks = _setup_props(
+      build,
+      builder_cfg,
+      extra_cipd_packages,
+      task['task_slices'][0]['properties'],
+  )
+
+  if cache_fallbacks:
+    # Create a fallback by copying the original task slice, each time adding a
+    # dimension for the requested caches and the corresponding expiration.
+    last_delay = 0
+    base_task_slice = task['task_slices'].pop()
+    for delay_secs, cache_names in cache_fallbacks:
+      t = {
+          'expiration_secs': str(delay_secs - last_delay),
+          'properties': copy.deepcopy(base_task_slice['properties']),
+          'wait_for_capacity': base_task_slice['wait_for_capacity'],
+      }
+      last_delay = delay_secs
+      t['properties']['dimensions'].extend({
+          'key': 'cache',
+          'value': cache_name,
+      } for cache_name in cache_names)
+      task['task_slices'].append(t)
+    # Tweak expiration on the base_task_slice.
+    exp = max(int(base_task_slice['expiration_secs']) - last_delay, 60)
+    base_task_slice['expiration_secs'] = str(exp)
+    task['task_slices'].append(base_task_slice)
 
   if not fake_build:  # pragma: no branch | covered by swarmbucketapi_test.py
     task['pubsub_topic'] = (
@@ -615,7 +651,13 @@ def _create_task_def_async(
 
 
 def _setup_props(build, builder_cfg, extra_cipd_packages, task_properties):
-  """Fills a TaskProperties."""
+  """Fills a TaskProperties.
+
+  Updates task_properties.
+
+  Returns:
+    list of tuple (delay, list(caches)) for cache fallback.
+  """
   task_properties.setdefault('env', []).append({
       'key': 'BUILDBUCKET_EXPERIMENTAL',
       'value': str(build.experimental).upper(),
@@ -631,26 +673,29 @@ def _setup_props(build, builder_cfg, extra_cipd_packages, task_properties):
       'key': k, 'value': v
   } for k, v in swarmingcfg_module.read_dimensions(builder_cfg)]
 
-  # TODO(maruel): Enable task slice for optional named cache;
-  # https://crbug.com/847602.
-  _add_named_caches(builder_cfg, task_properties)
+  out = _add_named_caches(builder_cfg, task_properties)
 
   if builder_cfg.execution_timeout_secs > 0:
     task_properties['execution_timeout_secs'] = str(
         builder_cfg.execution_timeout_secs
     )
+  return out
 
 
 def _add_named_caches(builder_cfg, task_properties):
   """Adds/replaces named caches to/in the task properties.
 
   Assumes builder_cfg is valid.
+
+  Returns:
+    list of tuple (delay, list(caches)) for cache fallback.
   """
   template_caches = task_properties.get('caches', [])
   task_properties['caches'] = []
 
   names = set()
   paths = set()
+  cache_fallbacks = {}
   for c in builder_cfg.caches:
     if c.path.startswith('cache/'):  # pragma: no cover
       # TODO(nodir): remove this code path onces clients remove "cache/" from
@@ -664,12 +709,22 @@ def _add_named_caches(builder_cfg, task_properties):
         'path': cache_path,
         'name': c.name,
     })
+    if c.wait_for_warm_cache_secs:
+      cache_fallbacks.setdefault(c.wait_for_warm_cache_secs, []).append(c.name)
 
   for c in template_caches:
     if c.get('path') not in paths and c.get('name') not in names:
       task_properties['caches'].append(c)
 
   task_properties['caches'].sort(key=lambda p: p.get('path'))
+
+  # Now add all the cache entries to the previous ones.
+  out = []
+  entries = []
+  for delay, items in sorted(cache_fallbacks.iteritems(), reverse=True):
+    entries.extend(items)
+    out.insert(0, (delay, sorted(entries)))
+  return out
 
 
 @ndb.tasklet

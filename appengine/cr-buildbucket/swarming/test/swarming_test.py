@@ -303,6 +303,99 @@ class SwarmingTest(BaseTest):
         ]
     )
 
+  def test_cache_fallback(self):
+    # Creates 3 task_slices.
+    builder_cfg = self.bucket_cfg.swarming.builders[0]
+    builder_cfg.caches.add(
+        path='builder',
+        name='shared_builder_cache',
+        wait_for_warm_cache_secs=60,
+    )
+    builder_cfg.caches.add(
+        path='second',
+        name='second_cache',
+        wait_for_warm_cache_secs=360,
+    )
+
+    build = mkBuild(
+        parameters={
+            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
+        },
+        tags=['builder:linux_chromium_rel_ng'],
+    )
+
+    task_def = swarming.prepare_task_def_async(build).get_result()
+
+    self.assertEqual(3, len(task_def['task_slices']))
+    for t in task_def['task_slices']:
+      # They all use the same cache definitions.
+      self.assertEqual(
+          t['properties']['caches'], [
+              {'path': u'cache/a', 'name': u'a'},
+              {'path': u'cache/builder', 'name': u'shared_builder_cache'},
+              {'path': u'cache/git_cache', 'name': u'git_chromium'},
+              {'path': u'cache/out', 'name': u'build_chromium'},
+              {'path': u'cache/second', 'name': u'second_cache'},
+          ]
+      )
+
+    # But the dimensions are different. 'cache' is injected.
+    self.assertEqual(
+        task_def['task_slices'][0]['properties']['dimensions'], [
+            {'key': u'cores', 'value': u'8'},
+            {'key': u'os', 'value': u'Ubuntu'},
+            {'key': u'pool', 'value': u'Chrome'},
+            {'key': 'cache', 'value': u'second_cache'},
+            {'key': 'cache', 'value': u'shared_builder_cache'},
+        ]
+    )
+    self.assertEqual(task_def['task_slices'][0]['expiration_secs'], '60')
+
+    self.assertEqual(
+        task_def['task_slices'][1]['properties']['dimensions'], [
+            {'key': u'cores', 'value': u'8'},
+            {'key': u'os', 'value': u'Ubuntu'},
+            {'key': u'pool', 'value': u'Chrome'},
+            {'key': 'cache', 'value': u'second_cache'},
+        ]
+    )
+    # 360-60
+    self.assertEqual(task_def['task_slices'][1]['expiration_secs'], '300')
+
+    # The cold fallback.
+    self.assertEqual(
+        task_def['task_slices'][2]['properties']['dimensions'], [
+            {'key': u'cores', 'value': u'8'},
+            {'key': u'os', 'value': u'Ubuntu'},
+            {'key': u'pool', 'value': u'Chrome'},
+        ]
+    )
+    # 3600-360
+    self.assertEqual(task_def['task_slices'][2]['expiration_secs'], '3240')
+
+  def test_cache_fallback_fail_multiple_task_slices(self):
+    # Make it so the swarming task template has two task_slices, which is
+    # incompatible with a builder using wait_for_warm_cache_secs.
+    self.task_template['task_slices'].append(
+        self.task_template['task_slices'][0]
+    )
+    builder_cfg = self.bucket_cfg.swarming.builders[0]
+    builder_cfg.caches.add(
+        path='builder',
+        name='shared_builder_cache',
+        wait_for_warm_cache_secs=60,
+    )
+
+    build = mkBuild(
+        parameters={
+            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
+        },
+        tags=['builder:linux_chromium_rel_ng'],
+    )
+
+    with self.assertRaises(errors.InvalidInputError):
+      swarming.prepare_task_def_async(build).get_result()
+
   def test_recipe_cipd_package(self):
     build = mkBuild(
         parameters={

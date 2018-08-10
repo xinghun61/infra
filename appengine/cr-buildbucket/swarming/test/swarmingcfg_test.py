@@ -260,6 +260,52 @@ class ProjectCfgTest(testing.AppengineTestCase):
         '''
           hostname: "example.com"
           builders {
+            name: "rel"
+            caches { path: "a" name: "a" wait_for_warm_cache_secs: 61 }
+          }
+        ''', '', [
+            'builder rel: cache #1: wait_for_warm_cache_secs must be rounded '
+            'on 60 seconds',
+        ]
+    )
+
+    self.cfg_test(
+        '''
+          hostname: "example.com"
+          builders {
+            name: "rel"
+            caches { path: "a" name: "a" wait_for_warm_cache_secs: 59 }
+          }
+        ''', '', [
+            'builder rel: cache #1: wait_for_warm_cache_secs must be at least '
+            '60 seconds'
+        ]
+    )
+
+    self.cfg_test(
+        '''
+          hostname: "example.com"
+          builders {
+            name: "rel"
+            caches { path: "a" name: "a" wait_for_warm_cache_secs: 60 }
+            caches { path: "b" name: "b" wait_for_warm_cache_secs: 120 }
+            caches { path: "c" name: "c" wait_for_warm_cache_secs: 180 }
+            caches { path: "d" name: "d" wait_for_warm_cache_secs: 240 }
+            caches { path: "e" name: "e" wait_for_warm_cache_secs: 300 }
+            caches { path: "f" name: "f" wait_for_warm_cache_secs: 360 }
+            caches { path: "g" name: "g" wait_for_warm_cache_secs: 420 }
+            caches { path: "h" name: "h" wait_for_warm_cache_secs: 480 }
+          }
+        ''', '', [
+            'builder rel: too many different (8) wait_for_warm_cache_secs '
+            'values; max 7',
+        ]
+    )
+
+    self.cfg_test(
+        '''
+          hostname: "example.com"
+          builders {
             name: "b"
             service_account: "not an email"
           }
