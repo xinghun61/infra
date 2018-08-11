@@ -96,9 +96,9 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 		return nil
 	}
 	if len(includedComments) > maxComments {
-
 		logging.Fields{
 			"num comments": len(includedComments),
+			"max comments": maxComments,
 		}.Infof(c, "Too many comments, not reporting results.")
 		return nil
 	}
