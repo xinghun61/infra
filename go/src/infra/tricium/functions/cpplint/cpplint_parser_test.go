@@ -36,20 +36,24 @@ func TestPylintParsingFunctions(t *testing.T) {
 			expected := &tricium.Data_Results{
 				Comments: []*tricium.Data_Comment{
 					{
-						Category:  "Cpplint/legal/copyright",
-						Message:   "No copyright message found (confidence 5/5).",
+						Category: "Cpplint/legal/copyright",
+						Message: "No copyright message found (confidence 5/5).\n" +
+							"To disable, add: // NOLINT(legal/copyright)",
 						Path:      "test.cc",
 						StartLine: 0,
 					},
 					{
-						Category:  "Cpplint/readability/braces",
-						Message:   "If an else has a brace on one side, it should have it on both (confidence 5/5).",
+						Category: "Cpplint/readability/braces",
+						Message: "If an else has a brace on one side, " +
+							"it should have it on both (confidence 5/5).\n" +
+							"To disable, add: // NOLINT(readability/braces)",
 						Path:      "test.cc",
 						StartLine: 141,
 					},
 					{
-						Category:  "Cpplint/build/include_what_you_use",
-						Message:   "Add #include <vector> for vector<> (confidence 4/5).",
+						Category: "Cpplint/build/include_what_you_use",
+						Message: "Add #include <vector> for vector<> (confidence 4/5).\n" +
+							"To disable, add: // NOLINT(build/include_what_you_use)",
 						Path:      "test.cc",
 						StartLine: 42,
 					},
@@ -67,8 +71,9 @@ func TestPylintParsingFunctions(t *testing.T) {
 		Convey("Parsing valid line gives a comment", func() {
 			line := "test.cc:148:  This is the helpful explanation  [readability/foo] [4]"
 			So(parseCpplintLine(line), ShouldResemble, &tricium.Data_Comment{
-				Category:  "Cpplint/readability/foo",
-				Message:   "This is the helpful explanation (confidence 4/5).",
+				Category: "Cpplint/readability/foo",
+				Message: "This is the helpful explanation (confidence 4/5).\n" +
+					"To disable, add: // NOLINT(readability/foo)",
 				Path:      "test.cc",
 				StartLine: 148,
 			})

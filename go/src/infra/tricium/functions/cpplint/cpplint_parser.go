@@ -134,15 +134,17 @@ func parseCpplintLine(line string) *tricium.Data_Comment {
 	if err != nil {
 		return nil
 	}
-
-	conf, err := strconv.Atoi(match[6])
+	category := fmt.Sprintf("%s/%s", match[4], match[5])
+	confidence, err := strconv.Atoi(match[6])
 	if err != nil {
 		return nil
 	}
 	return &tricium.Data_Comment{
-		Path:      match[1],
-		Message:   fmt.Sprintf("%s (confidence %d/5).", match[3], conf),
-		Category:  fmt.Sprintf("Cpplint/%s/%s", match[4], match[5]),
+		Path: match[1],
+		Message: fmt.Sprintf(
+			"%s (confidence %d/5).\nTo disable, add: // NOLINT(%s)",
+			match[3], confidence, category),
+		Category:  fmt.Sprintf("Cpplint/%s", category),
 		StartLine: int32(lineno),
 	}
 }
