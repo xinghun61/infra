@@ -1,0 +1,31 @@
+// Copyright 2018 The LUCI Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+package account;
+
+import "infra/qscheduler/qslib/types/vector/vector.proto";
+
+// Config represents per-quota-account configuration information, such
+// as the recharge parameters. This does not represent anything about the
+// current state of an account.
+message Config {
+  // The rates (per second) at which per-priority accounts grow.
+  vector.Vector charge_rate = 1;
+
+  // The maximum value that per-priority accounts grow to.
+  vector.Vector max_balance = 2;
+
+  // The maximum number of concurrent paid jobs that this account will pay for (0 = no limit).
+  int32 max_fanout = 3;
+}
