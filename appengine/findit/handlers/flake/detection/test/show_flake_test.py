@@ -49,8 +49,8 @@ class ShowFlakeTest(WaterfallTestCase):
     luci_project = 'chromium'
     step_name = 'step'
     test_name = 'test'
-    normalized_step_name = Flake.NormalizeStepName(step_name)
-    normalized_test_name = Flake.NormalizeTestName(test_name)
+    normalized_step_name = 'normalized_step_name'
+    normalized_test_name = 'normalized_test_name'
     flake = Flake.Create(
         luci_project=luci_project,
         normalized_step_name=normalized_step_name,

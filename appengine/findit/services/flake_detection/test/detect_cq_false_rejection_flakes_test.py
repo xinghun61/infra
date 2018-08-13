@@ -136,6 +136,15 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
     query_response['rows'].append(row)
     query_response['totalRows'] = str(int(query_response['totalRows']) + 1)
 
+  def setUp(self):
+    super(DetectCQFalseRejectionFlakesTest, self).setUp()
+
+    # NormalizeStepName performs network requests, needs to be mocked.
+    patcher = mock.patch.object(
+        Flake, 'NormalizeStepName', return_value='normalized_step_name')
+    self.addCleanup(patcher.stop)
+    patcher.start()
+
   @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
   def testOneFlakeOccurrence(self, mocked_get_client):
     query_response = self._GetEmptyQueryResponse()

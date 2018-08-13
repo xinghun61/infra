@@ -23,7 +23,15 @@ def _CreateFlakeFromRow(row):
   luci_project = row['luci_project']
   step_name = row['step_name']
   test_name = row['test_name']
-  normalized_step_name = Flake.NormalizeStepName(step_name)
+  luci_builder = row['luci_builder']
+  legacy_master_name = row['legacy_master_name']
+  legacy_build_number = row['legacy_build_number']
+
+  normalized_step_name = Flake.NormalizeStepName(
+      step_name=step_name,
+      master_name=legacy_master_name,
+      builder_name=luci_builder,
+      build_number=legacy_build_number)
   normalized_test_name = Flake.NormalizeTestName(test_name)
 
   return Flake.Create(
@@ -37,8 +45,17 @@ def _CreateFlakeOccurrenceFromRow(row):
   luci_project = row['luci_project']
   step_name = row['step_name']
   test_name = row['test_name']
-  normalized_step_name = Flake.NormalizeStepName(step_name)
+  luci_builder = row['luci_builder']
+  legacy_master_name = row['legacy_master_name']
+  legacy_build_number = row['legacy_build_number']
+
+  normalized_step_name = Flake.NormalizeStepName(
+      step_name=step_name,
+      master_name=legacy_master_name,
+      builder_name=luci_builder,
+      build_number=legacy_build_number)
   normalized_test_name = Flake.NormalizeTestName(test_name)
+
   flake_id = Flake.GetId(
       luci_project=luci_project,
       normalized_step_name=normalized_step_name,
@@ -47,9 +64,6 @@ def _CreateFlakeOccurrenceFromRow(row):
 
   build_id = row['build_id']
   luci_bucket = row['luci_bucket']
-  luci_builder = row['luci_builder']
-  legacy_master_name = row['legacy_master_name']
-  legacy_build_number = row['legacy_build_number']
   reference_succeeded_build_id = row['reference_succeeded_build_id']
   time_happened = row['test_start_msec']
   gerrit_cl_id = row['gerrit_cl_id']

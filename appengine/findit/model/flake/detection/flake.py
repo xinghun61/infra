@@ -2,10 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+
 from google.appengine.ext import ndb
 
 from libs import gtest_name_util
 from model.flake.detection.flake_issue import FlakeIssue
+from services import ci_failure
 
 
 class Flake(ndb.Model):
@@ -17,9 +20,23 @@ class Flake(ndb.Model):
   # luci-config/projects.cfg
   luci_project = ndb.StringProperty(required=True)
 
-  # normalized_step_name is step_name without hardware information, 'with patch'
-  # and 'without patch' postfix.
-  # For example: 'angle_unittests (with patch) on Android' -> 'angle_unittests'.
+  # normalized_step_name is the base test target name of a step where tests are
+  # actually defined.
+  #
+  # Be more specific on base_test_target. For GTest-based tests that run the
+  # binaries as it is, base_test_target equals the test target name.
+  # For example, 'base_unittests (with patch) on Android' -> 'base_unittests'.
+  #
+  # For gtest targets that run the binaries with command line arguments to
+  # enable specific features, base_test_target equals the name of the underlying
+  # test target actually compiles the binary. For example,
+  # 'viz_browser_tests (with patch) on Android' -> 'browser_tests'.
+  #
+  # For script Tests, base_test_target equals the test target name with one
+  # exception: '.*_webkit_layout_tests' maps to 'webkit_layout_tests'.
+  # For example,
+  # 'site_per_process_webkit_layout_tests (with patch)' -> 'webkit_layout_tests'
+  # and 'chromedriver_py_tests (with patch)' -> 'chromedriver_py_tests'.
   normalized_step_name = ndb.StringProperty(required=True)
 
   # normalized_test_name is test_name without 'PRE_' prefixes and parameters.
@@ -49,17 +66,62 @@ class Flake(ndb.Model):
         normalized_test_name=normalized_test_name,
         id=flake_id)
 
-  # TODO(crbug.com/848867): Correctly handles different step names that map to
-  # the same target/binary.
+  # TODO(crbug.com/873256): Switch to use base_test_target and refactor this out
+  # to services/step.py (with a better name) for reuse by other code once the
+  # base_test_target field is in place.
   @staticmethod
-  def NormalizeStepName(step_name):
-    """Removes platform information, 'with patch' and 'without patch' postfix
-    from the step_name.
+  def NormalizeStepName(step_name, master_name, builder_name, build_number):
+    """Normalizes step name according to the above mentioned definitions.
 
-    For example, 'angle_unittests (with patch) on Android' becomes
-    'angle_unittests'.
+    The most reliable solution to obtain base test target names is to add a
+    base_test_target field in the GN templates that define the tests and expose
+    them through step_metadata, but unfortunately, it doesn't exist yet.
+
+    The closest thing that exists is isolate_target_name in the step_metadata.
+    Though the isolate_target_name may go away eventually, it will be kept as it
+    is until base_test_target is in place, so it is safe to use
+    isolate_target_name as a temporary workaround.
+
+    Args:
+      step_name: The original step name, and it may contain hardware information
+                 and 'with(out) patch' suffixes.
+      master_name: Master name of the build of the step.
+      builder_name: Builder name of the build of the step.
+      build_number: Build number of the build of the step.
+      
+    Returns:
+      Normalized version of the given step name.
     """
-    return step_name.split(' ')[0]
+    isolate_target_name = ci_failure.GetIsolateTargetName(
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number,
+        step_name=step_name)
+    if isolate_target_name:
+      if 'webkit_layout_tests' in isolate_target_name:
+        return 'webkit_layout_tests'
+
+      return isolate_target_name
+
+    # In case isolate_target_name doesn't exist, fall back to
+    # canonical_step_name or step_name.split()[0].
+    logging.error((
+        'Failed to obtain isolate_target_name for step: %s in build: %s/%s/%s. '
+        'Fall back to use canonical_step_name.') % (step_name, master_name,
+                                                    builder_name, build_number))
+    canonical_step_name = ci_failure.GetCanonicalStepName(
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number,
+        step_name=step_name)
+    if canonical_step_name:
+      return canonical_step_name
+
+    logging.error((
+        'Failed to obtain canonical_step_name for step: %s in build: %s/%s/%s. '
+        'Fall back to use step_name.split()[0].') %
+                  (step_name, master_name, builder_name, build_number))
+    return step_name.split()[0]
 
   @staticmethod
   def NormalizeTestName(test_name):
@@ -69,6 +131,13 @@ class Flake(ndb.Model):
     'ColorSpaceTest.testNullTransform'.
 
     Note that this method is a no-op for non-gtests.
+
+    Args:
+      test_name: The original test name, and it may contain parameters and
+                 prefixes for gtests.
+
+    Returns:
+      Normalized version of the given test name.
     """
     return gtest_name_util.RemoveAllPrefixesFromTestName(
         gtest_name_util.RemoveParametersFromTestName(test_name))

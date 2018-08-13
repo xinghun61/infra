@@ -1,28 +1,101 @@
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+import mock
 
-from gae_libs.testcase import TestCase
 from model.flake.detection.flake import Flake
+from services import ci_failure
+from waterfall.test import wf_testcase
 
 
-class FlakeTest(TestCase):
+class FlakeTest(wf_testcase.WaterfallTestCase):
 
-  def testNormalizeStepName(self):
-    self.assertEqual('test_target', Flake.NormalizeStepName('test_target'))
-
-    self.assertEqual('test_target',
-                     Flake.NormalizeStepName('test_target on Android'))
-
+  @mock.patch.object(
+      ci_failure, 'GetCanonicalStepName', return_value='canonical_step_name')
+  @mock.patch.object(
+      ci_failure, 'GetIsolateTargetName', return_value='isolate_target_name')
+  def testNormalizeStepName(self, mocked_get_isolate_target_name,
+                            mocked_get_canonical_step_name):
     self.assertEqual(
-        'test_target',
-        Flake.NormalizeStepName('test_target (with patch) on Android'))
-
-    # Only '(with patch)' that appears as a postfix is stripped off.
-    self.assertEqual(
-        'fake(withpatch)test_target',
+        'isolate_target_name',
         Flake.NormalizeStepName(
-            'fake(withpatch)test_target (with patch) on Android'))
+            step_name='step_name (with patch) on Android',
+            master_name='m',
+            builder_name='b',
+            build_number=200))
+    mocked_get_isolate_target_name.assert_called_once(
+        master_name='m',
+        builder_name='b',
+        build_number=200,
+        step_name='step_name (with patch) on Android')
+    mocked_get_canonical_step_name.assert_not_called()
+
+  @mock.patch.object(
+      ci_failure, 'GetCanonicalStepName', return_value='canonical_step_name')
+  @mock.patch.object(
+      ci_failure,
+      'GetIsolateTargetName',
+      return_value='webkit_layout_tests_exparchive')
+  def testNormalizeStepNameForWebkitLayoutTests(
+      self, mocked_get_isolate_target_name, mocked_get_canonical_step_name):
+    self.assertEqual(
+        'webkit_layout_tests',
+        Flake.NormalizeStepName(
+            step_name='site_per_process_webkit_layout_tests (with patch)',
+            master_name='m',
+            builder_name='b',
+            build_number=200))
+    mocked_get_isolate_target_name.assert_called_once(
+        master_name='m',
+        builder_name='b',
+        build_number=200,
+        step_name='step_name (with patch) on Android')
+    mocked_get_canonical_step_name.assert_not_called()
+
+  @mock.patch.object(
+      ci_failure, 'GetCanonicalStepName', return_value='canonical_step_name')
+  @mock.patch.object(ci_failure, 'GetIsolateTargetName', return_value=None)
+  def testNormalizeStepNameIsolateTargetNameIsMissing(
+      self, mocked_get_isolate_target_name, mocked_get_canonical_step_name):
+    self.assertEqual(
+        'canonical_step_name',
+        Flake.NormalizeStepName(
+            step_name='step_name (with patch) on Android',
+            master_name='m',
+            builder_name='b',
+            build_number=200))
+    mocked_get_isolate_target_name.assert_called_once(
+        master_name='m',
+        builder_name='b',
+        build_number=200,
+        step_name='step_name (with patch) on Android')
+    mocked_get_canonical_step_name.assert_called_once(
+        master_name='m',
+        builder_name='b',
+        build_number=200,
+        step_name='step_name (with patch) on Android')
+
+  @mock.patch.object(ci_failure, 'GetCanonicalStepName', return_value=None)
+  @mock.patch.object(ci_failure, 'GetIsolateTargetName', return_value=None)
+  def testNormalizeStepNameCannonicalStepNameIsMissing(
+      self, mocked_get_isolate_target_name, mocked_get_canonical_step_name):
+    self.assertEqual(
+        'step_name',
+        Flake.NormalizeStepName(
+            step_name='step_name (with patch) on Android',
+            master_name='m',
+            builder_name='b',
+            build_number=200))
+    mocked_get_isolate_target_name.assert_called_once(
+        master_name='m',
+        builder_name='b',
+        build_number=200,
+        step_name='step_name (with patch) on Android')
+    mocked_get_canonical_step_name.assert_called_once(
+        master_name='m',
+        builder_name='b',
+        build_number=200,
+        step_name='step_name (with patch) on Android')
 
   def testNormalizeTestName(self):
     self.assertEqual('suite.test', Flake.NormalizeTestName('suite.test'))
