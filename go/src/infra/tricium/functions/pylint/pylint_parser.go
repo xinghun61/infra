@@ -18,9 +18,11 @@ import (
 	"infra/tricium/api/v1"
 )
 
-// The Pylint output format is adjustable, for details, see:
-// https://docs.pylint.org/en/1.6.0/output.html
-// The current format is {path}:{line}:{column} [{category}/{symbol}] {msg}
+// The pylint output format specification.
+// See: https://docs.pylint.org/en/1.6.0/output.html
+const msgTemplate = "{path}:{line}:{column} [{category}/{symbol}] {msg}"
+
+// The related regexp for parsing the above output format.
 var msgRegex = regexp.MustCompile(`^(.+?):([0-9]+):([0-9]+) \[(.+)/(.+)\] (.+)$`)
 
 // Paths to the required resources relative to the executable directory.
@@ -64,11 +66,12 @@ func main() {
 	// Invoke Pylint on the given paths.
 	// In the output, we want relative paths from the repository root, which
 	// will be the same as relative paths from the input directory root.
-	// TODO(qyearsley): Specify the output format with a flag so that
-	// the output format doesn't depend on the pylintrc file.
 	cmdName := filepath.Join(exPath, pythonPath)
-	cmdArgs := []string{filepath.Join(exPath, pylintPath), "--rcfile",
-		filepath.Join(exPath, "pylintrc")}
+	cmdArgs := []string{
+		filepath.Join(exPath, pylintPath),
+		"--rcfile", filepath.Join(exPath, "pylintrc"),
+		"--msg-template", msgTemplate,
+	}
 	for _, file := range files {
 		cmdArgs = append(cmdArgs, filepath.Join(*inputDir, file.Path))
 	}

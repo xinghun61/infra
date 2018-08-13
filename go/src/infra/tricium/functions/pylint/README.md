@@ -10,7 +10,7 @@ Local testing:
 
 ```
 $ go build
-$ ./ --input=test --output=output
+$ ./ --input=test --output=out
 ```
 
 ## Deployment
