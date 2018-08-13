@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	buildbucketBasePath = "/_ah/buildbucket/v1/"
+	buildbucketBasePath = "/_ah/api/buildbucket/v1/builds"
 )
 
 // BuildbucketServer implements the ServerAPI for the buildbucket service.
@@ -55,6 +55,11 @@ func (s buildbucketServer) Trigger(c context.Context, params *TriggerParameters)
 	}
 
 	req := makeRequest(topic(c), params.PubsubUserdata, parametersJSON, params.Tags)
+	logging.Fields{
+		"bucket": req.Bucket,
+		"tags":   req.Tags,
+		"params": req.ParametersJson,
+	}.Infof(c, "[buildbucket] Trigger request.")
 	res, err := buildbucketService.Put(req).Context(c).Do()
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to trigger buildbucket build").Err()
