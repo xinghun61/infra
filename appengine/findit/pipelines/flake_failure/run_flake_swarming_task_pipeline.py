@@ -13,8 +13,20 @@ from services.flake_failure import flake_swarming
 
 
 class RunFlakeSwarmingTaskInput(StructuredObject):
-  # The urlsafe key of the MasterFlakeAnalysis in progress.
-  analysis_urlsafe_key = basestring
+  # The name of the master on which to find a reference task.
+  master_name = basestring
+
+  # The name of the builder on which to find a reference task.
+  builder_name = basestring
+
+  # A reference build number from which find a reference task.
+  reference_build_number = int
+
+  # The name of the step that contains the test to run.
+  step_name = basestring
+
+  # The name of the test to run.
+  test_name = basestring
 
   # The commit position to run the flake swarming task against.
   commit_position = int
@@ -53,9 +65,15 @@ class RunFlakeSwarmingTaskPipeline(AsynchronousPipeline):
       return
 
     task_id = flake_swarming.TriggerSwarmingTask(
-        pipeline_parameters.analysis_urlsafe_key,
-        pipeline_parameters.isolate_sha, pipeline_parameters.iterations,
-        pipeline_parameters.timeout_seconds, self.pipeline_id)
+        master_name=pipeline_parameters.master_name,
+        builder_name=pipeline_parameters.builder_name,
+        reference_build_number=pipeline_parameters.reference_build_number,
+        step_name=pipeline_parameters.step_name,
+        test_name=pipeline_parameters.test_name,
+        isolate_sha=pipeline_parameters.isolate_sha,
+        iterations=pipeline_parameters.iterations,
+        timeout_seconds=pipeline_parameters.timeout_seconds,
+        runner_id=self.pipeline_id)
 
     if not task_id:
       # Retry upon failure.

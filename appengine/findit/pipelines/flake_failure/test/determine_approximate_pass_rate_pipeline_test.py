@@ -37,8 +37,11 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
   def testDetermineApproximatePassRateFirstRunNewDataPoint(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.Save()
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
     commit_position = 1000
     incoming_pass_count = 15
     iterations = 30
@@ -49,6 +52,10 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     completed_time = datetime(2018, 1, 1, 1, 0, 0)
     build_url = 'url'
     try_job_url = None
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.Save()
 
     isolate_sha_output = GetIsolateShaOutput(
         build_url=build_url, isolate_sha=isolate_sha, try_job_url=try_job_url)
@@ -61,10 +68,14 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
         revision=revision)
 
     flake_swarming_task_input = RunFlakeSwarmingTaskInput(
-        analysis_urlsafe_key=analysis.key.urlsafe(),
+        builder_name=builder_name,
         commit_position=commit_position,
         isolate_sha=isolate_sha,
         iterations=iterations,
+        master_name=master_name,
+        reference_build_number=build_number,
+        step_name=step_name,
+        test_name=test_name,
         timeout_seconds=timeout_seconds)
 
     flake_swarming_task_output = FlakeSwarmingTaskOutput(
@@ -305,6 +316,11 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
   @mock.patch.object(
       pass_rate_util, 'HasSufficientInformation', return_value=False)
   def testDetermineApproximatePassRateNotYetConverged(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
     commit_position = 1000
     incoming_pass_count = 15
     iterations_completed = 30
@@ -321,7 +337,8 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     isolate_sha_output = GetIsolateShaOutput(
         build_url=build_url, isolate_sha=isolate_sha, try_job_url=try_job_url)
 
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
     analysis.data_points = [
         DataPoint.Create(
             pass_rate=incoming_pass_rate,
@@ -347,10 +364,14 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
         revision=revision)
 
     flake_swarming_task_input = RunFlakeSwarmingTaskInput(
-        analysis_urlsafe_key=analysis.key.urlsafe(),
+        builder_name=builder_name,
         commit_position=commit_position,
         isolate_sha=isolate_sha,
         iterations=expected_iterations,
+        master_name=master_name,
+        reference_build_number=build_number,
+        step_name=step_name,
+        test_name=test_name,
         timeout_seconds=timeout_seconds)
 
     flake_swarming_task_output = FlakeSwarmingTaskOutput(

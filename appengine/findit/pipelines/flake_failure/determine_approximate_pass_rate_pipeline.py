@@ -132,10 +132,14 @@ class DetermineApproximatePassRatePipeline(GeneratorPipeline):
     with pipeline.InOrder():
       swarming_task_input = self.CreateInputObjectInstance(
           RunFlakeSwarmingTaskInput,
-          analysis_urlsafe_key=analysis_urlsafe_key,
+          builder_name=analysis.builder_name,
           commit_position=commit_position,
           isolate_sha=get_isolate_sha_output.isolate_sha,
           iterations=iterations_for_task,
+          master_name=analysis.master_name,
+          reference_build_number=analysis.build_number,
+          step_name=analysis.step_name,
+          test_name=analysis.test_name,
           timeout_seconds=time_for_task_seconds)
 
       swarming_task_output = yield RunFlakeSwarmingTaskPipeline(

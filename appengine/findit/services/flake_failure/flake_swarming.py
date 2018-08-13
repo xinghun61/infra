@@ -4,8 +4,6 @@
 """Functions for operating on swarming reruns for flaky tests.
 """
 
-from google.appengine.ext import ndb
-
 from common.findit_http_client import FinditHttpClient
 from dto import swarming_task_error
 from dto.flake_swarming_task_output import FlakeSwarmingTaskOutput
@@ -145,18 +143,27 @@ def CreateNewSwarmingTaskRequest(
   return new_request
 
 
-def TriggerSwarmingTask(analysis_urlsafe_key, isolate_sha, iterations,
+def TriggerSwarmingTask(master_name, builder_name, reference_build_number,
+                        step_name, test_name, isolate_sha, iterations,
                         timeout_seconds, runner_id):
-  """Triggers a flake swarming rerun of a test against a given isolate sha."""
-  analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
-  assert analysis
+  """Triggers a flake swarming rerun of a test against a given isolate sha.
 
-  master_name = analysis.master_name
-  builder_name = analysis.builder_name
-  reference_build_number = analysis.build_number
-  step_name = analysis.step_name
-  test_name = analysis.test_name
+  Args:
+    master_name (str): The name of the master to find a reference task.
+    builder_name (str): The name of the builder to find a reference task.
+    reference_build_number (int): A representative build number to find a
+        reference build.
+    step_name (str): The name of the step on which the flaky test lives.
+    test_name (str): The name of the test to trigger the swarming task against.
+    isolate_sha (str): The location of the compiled binares to trigger a task
+        against.
+    timeout_seconds (int): The maximum allotted time for the task to complete.
+    runner_id (str): The identifier for the caller of this function to post
+        pubsub notifications to about task state changes.
 
+  Returns:
+    task_id (str): The resulting task id that is triggered on Swarming.
+  """
   # 1. Retrieve the reference swarming task with matching configuration of the
   # build that flakiness was first identified in.
   ref_task_id, ref_request = swarming.GetReferredSwarmingTaskRequestInfo(
