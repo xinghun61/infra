@@ -245,7 +245,10 @@ func buildMisspellingComment(misspelling string, fixes []string, startChar int,
 					StartLine:   int32(lineno),
 					EndLine:     int32(lineno),
 					StartChar:   int32(startChar),
-					EndChar:     int32(startChar + len(fix)),
+					// TODO(qyearsley): EndChar should be the end char for the
+					// misspelling to be replace, and should not depend on
+					// the replacement word.
+					EndChar: int32(startChar + len(fix)),
 				},
 			},
 		})
