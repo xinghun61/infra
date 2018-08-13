@@ -44,7 +44,9 @@ var (
 	dict           map[string][]string
 
 	// Define what counts as non-word characters.
-	nonWord = regexp.MustCompile("[^a-zA-Z0-9'-]")
+	nonWord   = regexp.MustCompile(`[^a-zA-Z0-9'-]`)
+	emailAddr = regexp.MustCompile(`\w+@\w+\.\w+`)
+	todoNote  = regexp.MustCompile(`TODO\(\w+\)`)
 )
 
 func main() {
@@ -176,10 +178,12 @@ func (s *state) processCommentWord(line, commentWord string, commentPatterns *co
 	return comments
 }
 
-// Checks words in a string which could contain multiple words separated by comment characters.
+// Checks words in a string which could contain multiple words separated by
+// comment characters.
 //
-// Checks words until the state changes (e.g. we exit a comment). Returns the index after the
-// word that caused the state to change so that calling function can continue from there.
+// Checks words until the state changes (e.g. we exit a comment). Returns the
+// index after the word that caused the state to change so that calling
+// function can continue from there.
 func analyzeWords(line, commentWord, stopPattern string,
 	lineno int, filePath string, comments *[]*tricium.Data_Comment) int {
 
@@ -192,6 +196,13 @@ func analyzeWords(line, commentWord, stopPattern string,
 
 	// Trim to only include parts of the word in current state.
 	commentWord = string(commentWord[:stopIdx])
+
+	// Words should not be flagged if they appear to be usernames.
+	// Note that this will skip over any other misspellings in
+	// commentWord, but this should be relatively rare.
+	if emailAddr.MatchString(commentWord) || todoNote.MatchString(commentWord) {
+		return stopIdx
+	}
 
 	// A single word (delimited by whitespace) could have multiple words delimited by
 	// comment characters, so we split it by said characters and check the words individually.

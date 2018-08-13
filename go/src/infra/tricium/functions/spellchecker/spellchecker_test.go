@@ -413,7 +413,14 @@ func TestSpellCheckerAnalyzeFiles(t *testing.T) {
 		fileContent := "familes\n"
 		results := &tricium.Data_Results{}
 		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.asdf", results)
-		So(len(results.Comments), ShouldEqual, 0)
+		So(results.Comments, ShouldBeEmpty)
+	})
+
+	Convey("Usernames are not flagged as misspellings.", t, func() {
+		fileContent := "TODO(faund): Contact govement@chromium.org/coment"
+		results := &tricium.Data_Results{}
+		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.txt", results)
+		So(results.Comments, ShouldBeEmpty)
 	})
 
 	Convey("Analyzing HTML file generates appropriate comments", t, func() {
