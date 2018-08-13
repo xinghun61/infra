@@ -889,6 +889,8 @@ def upload_pkg(cipd_exe, pkg_file, service_url, tags, service_account):
     print >> sys.stderr, 'FAILED! ' * 10
     raise UploadException('Failed to upload the CIPD package, see logs')
   info = json_output['result']
+  info['url'] = '%s/p/%s/+/%s' % (
+      service_url, info['package'], info['instance_id'])
   print '%s %s' % (info['package'], info['instance_id'])
   return info
 
