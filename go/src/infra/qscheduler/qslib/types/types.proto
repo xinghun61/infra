@@ -1,0 +1,54 @@
+// Copyright 2018 The LUCI Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+package types;
+
+import "infra/qscheduler/qslib/types/task/task.proto";
+import "infra/qscheduler/qslib/types/vector/vector.proto";
+import "infra/qscheduler/qslib/types/account/account.proto";
+
+
+// Worker represents a resource that can run 1 task at a time. This corresponds
+// to the swarming concept of a Bot. This representation considers only the
+// subset of Labels that are Provisionable (can be changed by running a task),
+// because the quota scheduler algorithm is expected to run against a pool of
+// otherwise homogenous workers.
+message Worker {
+  string id = 1;
+  repeated string labels = 2;
+  task.Run running_task = 3;
+}
+
+// State represents the overall state of a quota scheduler worker pool,
+// account set, and task queue. This is represented separately from
+// configuration information. The state is expected to be updated frequently,
+// on each scheduler tick.
+message State {
+  // Requests that are waiting to be assigned to a worker, keyed by
+  // request id.
+  map<string, task.Request> requests = 1;
+
+  // Balance of all quota accounts for this pool, keyed by account id.
+  map<string, vector.Vector> balances = 2;
+
+  // Workers that may run tasks, and their states, keyed by worker id.
+  map<string, Worker> workers = 3;
+}
+
+// Config represents configuration information about the behavior of accounts
+// for this quota scheduler pool.
+message Config {
+  // Configuration for a given account, keyed by account id.
+  map<string, account.Config> account_configs = 1;
+}

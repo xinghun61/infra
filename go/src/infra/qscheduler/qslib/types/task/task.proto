@@ -1,0 +1,45 @@
+// Copyright 2018 The LUCI Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+package task;
+
+import "google/protobuf/timestamp.proto";
+import "infra/qscheduler/qslib/types/vector/vector.proto";
+
+// Request represents a requested task in the queue, and refers to the
+// quota account to run it against. This representation intentionally
+// excludes most of the details of a Swarming task request.
+message Request {
+  string id = 1;
+
+  string account_id = 2;
+
+  google.protobuf.Timestamp enqueue_time = 3;
+
+  // The set of Provisionable Labels for this task.
+  repeated string labels = 4;
+}
+
+// Run represents a task that has been assigned to a worker and is
+// now running.
+message Run {
+  // The total cost that has been incurred on this task while running.
+  vector.Vector cost = 1;
+
+  // The request that this running task corresponds to.
+  Request request = 2;
+
+  // The current priority level of the running task.
+  int32 priority = 3;
+}

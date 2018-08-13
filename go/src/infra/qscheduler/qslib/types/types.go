@@ -12,6 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package vector
+package types
 
-//go:generate cproto
+import (
+	"infra/qscheduler/qslib/types/account"
+	"infra/qscheduler/qslib/types/task"
+	"infra/qscheduler/qslib/types/vector"
+)
+
+// NewConfig creates an returns a new Config instance with all maps initialized.
+func NewConfig() *Config {
+	return &Config{
+		AccountConfigs: map[string]*account.Config{},
+	}
+}
+
+// NewState creates an returns a new State instance with all maps initialized.
+func NewState() *State {
+	return &State{
+		Balances: map[string]*vector.Vector{},
+		Requests: map[string]*task.Request{},
+		Workers:  map[string]*Worker{},
+	}
+}

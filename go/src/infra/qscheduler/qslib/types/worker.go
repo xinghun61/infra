@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package vector
+package types
 
-//go:generate cproto
+// IsIdle returns whether the given worker is currently idle.
+func (w *Worker) IsIdle() bool {
+	return w.RunningTask == nil
+}

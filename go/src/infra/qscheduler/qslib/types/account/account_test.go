@@ -15,8 +15,9 @@
 package account
 
 import (
-	"infra/qscheduler/qslib/types/vector"
 	"testing"
+
+	"infra/qscheduler/qslib/types/vector"
 )
 
 func TestBestPriority(t *testing.T) {
