@@ -11,9 +11,13 @@ from dto.step_metadata import StepMetadata
 from gae_libs import pipelines
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs.list_of_basestring import ListOfBasestring
-from model.isolated_target import IsolatedTarget
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.isolated_target import IsolatedTarget
+from pipelines.flake_failure.get_isolate_sha_pipeline import (
+    GetIsolateShaForBuildParameters)
+from pipelines.flake_failure.get_isolate_sha_pipeline import (
+    GetIsolateShaForBuildPipeline)
 from pipelines.flake_failure.get_isolate_sha_pipeline import (
     GetIsolateShaForCommitPositionParameters)
 from pipelines.flake_failure.get_isolate_sha_pipeline import (
@@ -32,6 +36,7 @@ from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobParameters)
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobPipeline)
+from services import step_util
 from services import swarmbot_util
 from services import swarming
 from services import try_job as try_job_service
@@ -43,6 +48,29 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 
 class GetIsolateShaPipelineTest(WaterfallTestCase):
   app_module = pipeline_handlers._APP
+
+  @mock.patch.object(swarming, 'GetIsolatedShaForStep')
+  def testGetIsolateShaForBuildPipeline(self, mocked_get_isolate_sha):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    url = 'url'
+    sha = 'sha1'
+    mocked_get_isolate_sha.return_value = sha
+
+    get_build_sha_parameters = GetIsolateShaForBuildParameters(
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number,
+        url=url,
+        step_name=step_name)
+
+    pipeline_job = GetIsolateShaForBuildPipeline(get_build_sha_parameters)
+    pipeline_job.start()
+    self.execute_queued_tasks()
+
+    self.assertTrue(mocked_get_isolate_sha.called)
 
   def testGetIsolateShaForTargetPipeline(self):
     master_name = 'm'
@@ -299,3 +327,73 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     pipeline_job = GetIsolateShaForCommitPositionPipeline(get_sha_input)
     pipeline_job.start()
     self.execute_queued_tasks()
+
+  @mock.patch.object(step_util, 'GetValidBoundingBuildsForStep')
+  @mock.patch.object(buildbot, 'CreateBuildUrl')
+  @mock.patch.object(build_util, 'GetBuildInfo')
+  @mock.patch.object(
+      IsolatedTarget,
+      'FindIsolateAtOrAfterCommitPositionByMaster',
+      return_value=[])
+  def testGetIsolateShaForCommitPositionPipelineFallbackBuildLevel(
+      self, _, mocked_reference_build, mocked_url, mocked_build_info):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    requested_commit_position = 1000
+    requested_revision = 'r1000'
+    expected_sha = 'sha1'
+    build_url = 'url'
+    target_name = 'browser_tests'
+    step_metadata = StepMetadata(
+        canonical_step_name=None,
+        dimensions=None,
+        full_step_name=None,
+        isolate_target_name=target_name,
+        patched=True,
+        swarm_task_ids=None,
+        waterfall_buildername=None,
+        waterfall_mastername=None)
+
+    mocked_url.return_value = build_url
+
+    expected_output = GetIsolateShaOutput(
+        isolate_sha=expected_sha, build_url=build_url, try_job_url=None)
+
+    build = BuildInfo(master_name, builder_name, build_number)
+    build.commit_position = requested_commit_position
+    mocked_build_info.return_value = (None, build)
+    mocked_reference_build.return_value = (None, build)
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.Save()
+
+    get_build_sha_parameters = GetIsolateShaForBuildParameters(
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number,
+        url=build_url,
+        step_name=step_name)
+
+    get_sha_input = GetIsolateShaForCommitPositionParameters(
+        analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+        commit_position=requested_commit_position,
+        dimensions=ListOfBasestring.FromSerializable([]),
+        revision=requested_revision,
+        step_metadata=step_metadata,
+        upper_bound_build_number=analysis.build_number)
+
+    self.MockSynchronousPipeline(GetIsolateShaForBuildPipeline,
+                                 get_build_sha_parameters, expected_output)
+
+    pipeline_job = GetIsolateShaForCommitPositionPipeline(get_sha_input)
+    pipeline_job.start()
+    self.execute_queued_tasks()
+
+    pipeline_job = pipelines.pipeline.Pipeline.from_id(pipeline_job.pipeline_id)
+    pipeline_output = pipeline_job.outputs.default.value
+
+    self.assertEqual(expected_output.ToSerializable(), pipeline_output)

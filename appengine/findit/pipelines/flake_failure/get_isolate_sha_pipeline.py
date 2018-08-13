@@ -18,12 +18,31 @@ from pipelines.flake_failure.run_flake_try_job_pipeline import (
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobPipeline)
 from services import constants
+from services import step_util
 from services import swarmbot_util
 from services import swarming
 from services.flake_failure import flake_constants
 from services.flake_failure import flake_try_job
 from waterfall import build_util
 from waterfall import buildbot
+
+
+class GetIsolateShaForBuildParameters(StructuredObject):
+  # The name of the master to query for a pre-determined sha.
+  master_name = basestring
+
+  # The name of the builder to query for a pre-determined sha.
+  builder_name = basestring
+
+  # The build number whose to query for a pre-detrermined sha.
+  build_number = int
+
+  # The url to the build page corresponding to master_name, builder_name
+  # build_number.
+  url = basestring
+
+  # The name of the step to query for a pre-determined sha.
+  step_name = basestring
 
 
 class GetIsolateShaForCommitPositionParameters(StructuredObject):
@@ -68,6 +87,18 @@ class GetIsolateShaOutput(StructuredObject):
 class GetIsolateShaForTargetInput(StructuredObject):
   # The urlsafe key to an IsolatedTarget to extract the isolated hash.
   isolated_target_urlsafe_key = basestring
+
+
+class GetIsolateShaForBuildPipeline(SynchronousPipeline):
+  input_type = GetIsolateShaForBuildParameters
+  output_type = GetIsolateShaOutput
+
+  def RunImpl(self, parameters):
+    isolate_sha = swarming.GetIsolatedShaForStep(
+        parameters.master_name, parameters.builder_name,
+        parameters.build_number, parameters.step_name, FinditHttpClient())
+    return GetIsolateShaOutput(
+        isolate_sha=isolate_sha, build_url=parameters.url, try_job_url=None)
 
 
 class GetIsolateShaForTargetPipeline(SynchronousPipeline):
@@ -117,6 +148,7 @@ class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
     master_name = analysis.master_name
     builder_name = analysis.builder_name
     commit_position = parameters.commit_position
+    step_name = analysis.step_name
     target_name = parameters.step_metadata.isolate_target_name
 
     _, reference_build_info = build_util.GetBuildInfo(master_name, builder_name,
@@ -131,41 +163,69 @@ class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
             constants.GITILES_PROJECT, constants.GITILES_REF, target_name,
             commit_position))
 
-    assert targets, ((
-        'No IsolatedTargets found for {}/{} with minimum commit position '
-        '{}').format(master_name, builder_name, commit_position))
+    # TODO(crbug.com/872992): Remove this entire branch's fallback logic once
+    # LUCI migration is complete.
+    if not targets:
+      analysis.LogInfo(
+          ('No IsolatedTargets found for {}/{} with minimum commit position '
+           '{}. Falling back to searching buildbot').format(
+               master_name, builder_name, commit_position))
+      _, earliest_containing_build = step_util.GetValidBoundingBuildsForStep(
+          master_name, builder_name, step_name, None,
+          parameters.upper_bound_build_number, commit_position)
 
-    upper_bound_target = targets[0]
+      assert earliest_containing_build, (
+          'Unable to find nearest build cycle with minimum commit position '
+          '{}'.format(commit_position))
 
-    if upper_bound_target.commit_position == commit_position:
-      # The requested commit position is that of a found IsolatedTarget.
-      get_target_input = GetIsolateShaForTargetInput(
-          isolated_target_urlsafe_key=upper_bound_target.key.urlsafe())
-      yield GetIsolateShaForTargetPipeline(get_target_input)
-    else:
-      # The requested commit position needs to be compiled.
-      cache_name = swarmbot_util.GetCacheName(
-          parent_mastername,
-          parent_buildername,
-          suffix=flake_constants.FLAKE_CACHE_SUFFIX)
-      step_name = analysis.step_name
-      test_name = analysis.test_name
+      build_commit_position = earliest_containing_build.commit_position
+      assert build_commit_position >= commit_position, (
+          'Upper bound build commit position {} is before {}'.format(
+              build_commit_position, commit_position))
 
-      try_job = flake_try_job.GetTryJob(master_name, builder_name, step_name,
-                                        test_name, parameters.revision)
-      run_flake_try_job_parameters = self.CreateInputObjectInstance(
-          RunFlakeTryJobParameters,
-          analysis_urlsafe_key=parameters.analysis_urlsafe_key,
-          revision=parameters.revision,
-          flake_cache_name=cache_name,
-          dimensions=parameters.dimensions,
-          urlsafe_try_job_key=try_job.key.urlsafe())
+      if build_commit_position == commit_position:  # pragma: no branch
+        get_build_sha_parameters = self.CreateInputObjectInstance(
+            GetIsolateShaForBuildParameters,
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=earliest_containing_build.build_number,
+            step_name=step_name,
+            url=buildbot.CreateBuildUrl(master_name, builder_name,
+                                        earliest_containing_build.build_number))
+        yield GetIsolateShaForBuildPipeline(get_build_sha_parameters)
+        return
 
-      with pipeline.InOrder():
-        try_job_result = yield RunFlakeTryJobPipeline(
-            run_flake_try_job_parameters)
-        get_isolate_sha_from_try_job_input = self.CreateInputObjectInstance(
-            GetIsolateShaForTryJobParameters,
-            try_job_result=try_job_result,
-            step_name=step_name)
-        yield GetIsolateShaForTryJobPipeline(get_isolate_sha_from_try_job_input)
+    if targets:
+      upper_bound_target = targets[0]
+      if upper_bound_target.commit_position == commit_position:
+        # The requested commit position is that of a found IsolatedTarget.
+        get_target_input = GetIsolateShaForTargetInput(
+            isolated_target_urlsafe_key=upper_bound_target.key.urlsafe())
+        yield GetIsolateShaForTargetPipeline(get_target_input)
+        return
+
+    # The requested commit position needs to be compiled.
+    cache_name = swarmbot_util.GetCacheName(
+        parent_mastername,
+        parent_buildername,
+        suffix=flake_constants.FLAKE_CACHE_SUFFIX)
+    test_name = analysis.test_name
+
+    try_job = flake_try_job.GetTryJob(master_name, builder_name, step_name,
+                                      test_name, parameters.revision)
+    run_flake_try_job_parameters = self.CreateInputObjectInstance(
+        RunFlakeTryJobParameters,
+        analysis_urlsafe_key=parameters.analysis_urlsafe_key,
+        revision=parameters.revision,
+        flake_cache_name=cache_name,
+        dimensions=parameters.dimensions,
+        urlsafe_try_job_key=try_job.key.urlsafe())
+
+    with pipeline.InOrder():
+      try_job_result = yield RunFlakeTryJobPipeline(
+          run_flake_try_job_parameters)
+      get_isolate_sha_from_try_job_input = self.CreateInputObjectInstance(
+          GetIsolateShaForTryJobParameters,
+          try_job_result=try_job_result,
+          step_name=step_name)
+      yield GetIsolateShaForTryJobPipeline(get_isolate_sha_from_try_job_input)
