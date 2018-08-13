@@ -61,7 +61,7 @@ func (s buildbucketServer) Trigger(c context.Context, params *TriggerParameters)
 		"params": req.ParametersJson,
 	}.Infof(c, "[buildbucket] Trigger request.")
 	res, err := buildbucketService.Put(req).Context(c).Do()
-	if err != nil {
+	if err != nil || res.Build == nil {
 		return nil, errors.Annotate(err, "failed to trigger buildbucket build").Err()
 	}
 
@@ -114,7 +114,7 @@ func swarmingParametersJSON(serverURL string, worker *admin.Worker, recipe *admi
 			"hostname": serverURL,
 			"override_builder_cfg": map[string]interface{}{
 				"dimensions": worker.Dimensions,
-				"recipe":     recipe,
+				"recipe":     recipe.Recipe.Name,
 			},
 		},
 	}
