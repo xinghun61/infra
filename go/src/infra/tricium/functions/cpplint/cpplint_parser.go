@@ -1,5 +1,5 @@
 // Copyright 2017 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
+
 // found in the LICENSE file.
 
 package main
@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 // Paths to the required resources relative to the executable directory.
@@ -31,7 +32,8 @@ var msgRegex = regexp.MustCompile(`^(.+):([0-9]+):  (.+)  \[(.+)/(.+)\] \[([1-5]
 func main() {
 	inputDir := flag.String("input", "", "Path to root of Tricium input")
 	outputDir := flag.String("output", "", "Path to root of Tricium output")
-	// TODO(qyearsley): Add a filter/verbose flag and use it when invoking cpplint.
+	// TODO(qyearsley): Add flags for filter, verbose and root and use them
+	// when invoking cpplint, so that these can be specified project repos.
 	flag.Parse()
 	if flag.NArg() != 0 {
 		log.Fatalf("Unexpected argument")
@@ -53,12 +55,15 @@ func main() {
 	}
 	log.Printf("Read FILES data: %#v", input)
 
-	// TODO(diegomtzg): We could specify a certain type of comments to filter out.
+	filters := []string{
+		"-whitespace",
+		"-build/header_guard", // --root must be specified for this check.
+	}
 	cmdName := filepath.Join(exPath, pythonPath)
 	cmdArgs := []string{
 		filepath.Join(exPath, cpplintPath),
 		"--verbose=4",
-		"--filter=-whitespace",
+		"--filter=" + strings.Join(filters, ","),
 	}
 	for _, file := range input.Files {
 		cmdArgs = append(cmdArgs, filepath.Join(*inputDir, file.Path))
@@ -134,7 +139,7 @@ func parseCpplintLine(line string) *tricium.Data_Comment {
 	if err != nil {
 		return nil
 	}
-	category := fmt.Sprintf("%s/%s", match[4], match[5])
+	category := match[4] + "/" + match[5]
 	confidence, err := strconv.Atoi(match[6])
 	if err != nil {
 		return nil
@@ -144,7 +149,7 @@ func parseCpplintLine(line string) *tricium.Data_Comment {
 		Message: fmt.Sprintf(
 			"%s (confidence %d/5).\nTo disable, add: // NOLINT(%s)",
 			match[3], confidence, category),
-		Category:  fmt.Sprintf("Cpplint/%s", category),
+		Category:  "Cpplint/" + category,
 		StartLine: int32(lineno),
 	}
 }
