@@ -1,37 +1,129 @@
 #!/usr/bin/env python
 """
 This is a helper script for making pRPC API calls during local development.
+
+Usage examples:
+
+To test an anonymous request to your own local monorail server:
+1. Run 'make serve' in another shell
+2. `./api/test_call monorail.Projects ListComponents
+     '{"project_name": "monorail", "include_admin_info": true}'`
+
+To test a signed in request to your own local monorail server:
+1. Run 'make serve' in another shell
+2. `./api/test_call monorail.Projects ListComponents
+     '{"project_name": "monorail", "include_admin_info": true}'
+     --test_account=test@example.com`
+Note that test account email address must always end in @example.com.
+
+To test an anonymous request to your monorail staging server:
+1. Deploy your staging server version, e.g., 12345-76697e9-tainted-jrobbins.
+2. Visit your staging server in a new incognito window and view source
+   to find the XSRF token for the anonymous user in JS var CS_env['token'].
+3. `./api/test_call monorail.Projects ListComponents
+    '{"project_name": "monorail", "include_admin_info": true}'
+    --host=12345-76697e9-tainted-jrobbins-dot-monorail-staging.appspot.com
+    --xsrf-token='THE_ANON_TOKEN'`
+
+To test a signed-in request to your monorail staging server using
+the client_id for monorail-staging and your own account:
+1. Make sure that you have a role in the monorail-staging project.
+2. Have your account whitelisted by email address.
+3. Download the monorail-staging app credientials via
+   `gcloud --project=monorail-staging auth login`.
+4. `./api/test_call monorail.Projects ListComponents
+    '{"project_name": "monorail", "include_admin_info": true}'
+    --host=12345-76697e9-tainted-jrobbins-dot-monorail-staging.appspot.com
+    --use-app-credentials`
+
+To test a signed-in request to your monorail staging server using
+a service account client secrets file that you download:
+(Note: This is not recommended for prod because downloading secrets
+is a bad practice.)
+1. Create a service account via the Cloud Console for any project.
+   Choose "IAM & Admin" > "Service accounts".
+   Press "+ Create Service Account".
+   Fill in the form and submit it to save a service account .json file
+   to your local disk.  Keep this file private.
+2. File an issue on /p/monorail to whitelist your client_id and/or
+   client_email.  Or, author a CL yourself to add it to the whitelist.
+3. `./api/test_call monorail.Projects ListComponents
+    '{"project_name": "monorail", "include_admin_info": true}'
+    --host=12345-76697e9-tainted-jrobbins-dot-monorail-staging.appspot.com
+    --service-account=FILENAME_OF_SERVICE_ACCOUNT_JSON_FILE`
 """
 
 import argparse
 import errno
 import json
 import logging
-import urllib2
+import os
+import sys
+
+
+monorail_dir = os.path.dirname(os.path.abspath(__file__ + '/..'))
+third_party_path = os.path.join(monorail_dir, 'third_party')
+if third_party_path not in sys.path:
+  sys.path.insert(0, third_party_path)
+
+import httplib2
+from oauth2client.client import GoogleCredentials
 
 
 URL_BASE = 'http://localhost:8080/prpc/'
+OAUTH_SCOPE = 'https://www.googleapis.com/auth/userinfo.email'
 
+def make_http(args):
+  """Return an httplib2.Http object, with or without oauth."""
+  http = httplib2.Http()
+  credentials = None
+  if args.use_app_credentials:
+    credentials = GoogleCredentials.get_application_default()
+  if args.service_account:
+    credentials = GoogleCredentials.from_stream(args.service_account)
+    logging.debug('Will request as user %r', credentials.service_account_email)
+
+  if credentials:
+    credentials = credentials.create_scoped([OAUTH_SCOPE])
+    logging.debug('Will request as client %r', credentials.client_id)
+    if not args.host:
+      print ('[ERROR] OAuth on localhost will always see user '
+             'example@example.com, so we do not support that.\n'
+             'Instead, add --server=YOUR_STAGING_SERVER, '
+             'or use --test_account=USER@example.com.')
+      sys.exit(1)
+
+    http = credentials.authorize(http)
+
+  return http
 
 def make_call(service, method, json_body, args):
+  """Call the server and print the response contents."""
   body = json.loads(json_body)
   if args.test_account or args.xsrf_token:
     body['trace'] = {}
     body['trace']['test_account'] = args.test_account
     body['trace']['token'] = args.xsrf_token
 
-  url = '%s%s/%s' % (URL_BASE, service, method)
-  request = urllib2.Request(url)
-  request.add_header('Content-Type', 'application/json')
-  request.add_header('Accept', 'application/json')
+  url_base = URL_BASE
+  if args.host:
+    url_base = 'https://%s/prpc/' % args.host
+  url = '%s%s/%s' % (url_base, service, method)
+  logging.debug('Request URL: %s', url)
+
+  http = make_http(args)
+  headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      }
   body = json.dumps(body)
-  request.add_data(body)
 
   logging.debug('Body: %r' % body)
   try:
-    contents = urllib2.urlopen(request).read()
+    response, contents = http.request(
+        url, method='POST', body=body, headers=headers)
     logging.info('Received response: %s', contents)
-  except urllib2.URLError as e:
+  except httplib2.HttpLib2Error as e:
     if hasattr(e.reason, 'errno') and e.reason.errno == errno.ECONNREFUSED:
       print '[Error] Could not reach server. Is it running?'
     else:
@@ -46,6 +138,13 @@ if __name__ == '__main__':
   parser.add_argument('--test-account',
       help='Test account to use, in the form of an email.')
   parser.add_argument('--xsrf-token', help='Custom XSRF token.')
+  parser.add_argument('--host', help='remote server FQDN.')
+  parser.add_argument(
+      '--use-app-credentials',
+      help='Use credentials of a GAE app that you are signed into via gcloud.',
+      action='store_true')
+  parser.add_argument(
+      '--service-account', help='Service account credentials JSON file name.')
   parser.add_argument('-v', '--verbose', action='store_true')
   args = parser.parse_args()
 

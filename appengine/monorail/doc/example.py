@@ -14,7 +14,6 @@ DISCOVERY_URL = (
 
 # Get credentials to authorize http object
 storage = Storage('Your-local-credential-file')
-storage.acquire_lock()
 credentials = storage.get()
 http = credentials.authorize(httplib2.Http())
 

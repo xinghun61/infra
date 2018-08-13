@@ -6,8 +6,9 @@
 """Tests for MonorailServicer."""
 
 import unittest
-
+import mock
 import mox
+
 from components.prpc import server
 from components.prpc import codes
 from components.prpc import context
@@ -60,7 +61,7 @@ class UpdateSomethingRequest(testing_helpers.Blank):
   def __init__(self, token, *args, **kwargs):
     super(UpdateSomethingRequest, self).__init__(*args, **kwargs)
     self.trace = testing_helpers.Blank(
-        token=token, reason='', request_id='')
+        token=token, reason='', request_id='', test_account='')
 
 
 class ListSomethingRequest(testing_helpers.Blank):
@@ -68,7 +69,7 @@ class ListSomethingRequest(testing_helpers.Blank):
   def __init__(self, token, *args, **kwargs):
     super(ListSomethingRequest, self).__init__(*args, **kwargs)
     self.trace = testing_helpers.Blank(
-        token=token, reason='', request_id='')
+        token=token, reason='', request_id='', test_account='')
 
 
 
@@ -103,6 +104,7 @@ class MonorailServicerTest(unittest.TestCase):
     self.testbed.activate()
     self.testbed.init_memcache_stub()
     self.testbed.init_datastore_v3_stub()
+    self.testbed.init_user_stub()
 
     self.cnxn = fake.MonorailConnection()
     self.services = service_manager.Services(
@@ -118,6 +120,11 @@ class MonorailServicerTest(unittest.TestCase):
     self.prpc_context = context.ServicerContext()
     self.prpc_context.set_code(codes.StatusCode.OK)
     self.auth = authdata.AuthData(user_id=222L, email='nonmember@example.com')
+
+    self.oauth_patcher = mock.patch(
+        'google.appengine.api.oauth.get_current_user')
+    self.mock_oauth_gcu = self.oauth_patcher.start()
+    self.mock_oauth_gcu.return_value = None
 
   def tearDown(self):
     self.mox.UnsetStubs()
@@ -185,18 +192,32 @@ class MonorailServicerTest(unittest.TestCase):
     self.assertTrue(self.svcr.was_called)
     self.assertIsNone(self.svcr.seen_mc.cnxn)  # Because of CleanUp().
 
-  def testGetRequester_Normal(self):
-    """We get the email address of the signed in user."""
+  def testGetRequester_Cookie(self):
+    """We get the email address of the signed in user using cookie auth."""
+    # Signed out.
     self.assertIsNone(self.svcr.GetRequester(self.request))
+
+    # Signed in with cookie auth.
     self.testbed.setup_env(user_email='user@example.com', overwrite=True)
     self.assertEqual('user@example.com', self.svcr.GetRequester(self.request))
+
+  def testGetRequester_Oauth(self):
+    """We get the email address of the signed in user using oauth."""
+    # Signed out.
+    self.assertIsNone(self.svcr.GetRequester(self.request))
+
+    # Signed in with oauth.
+    self.mock_oauth_gcu.return_value = testing_helpers.Blank(
+        email=lambda: 'robot@example.com')
+    self.assertEqual('robot@example.com', self.svcr.GetRequester(self.request))
 
   def testGetRequester_TestAccountOnAppspot(self):
     """Specifying test_account is ignore on deployed server."""
     # pylint: disable=attribute-defined-outside-init
     self.request.trace = testing_helpers.Blank(
         test_account='test@example.com')
-    self.assertIsNone(self.svcr.GetRequester(self.request))
+    with self.assertRaises(exceptions.InputException):
+      self.svcr.GetRequester(self.request)
 
   def testGetRequester_TestAccountOnDev(self):
     """For integration testing, we can set test_account on dev_server."""
@@ -213,7 +234,8 @@ class MonorailServicerTest(unittest.TestCase):
       # pylint: disable=attribute-defined-outside-init
       self.request.trace = testing_helpers.Blank(
           test_account='test@anythingelse.com')
-      self.assertIsNone(self.svcr.GetRequester(self.request))
+      with self.assertRaises(exceptions.InputException):
+        self.svcr.GetRequester(self.request)
     finally:
       settings.dev_mode = orig_dev_mode
 
@@ -269,41 +291,92 @@ class MonorailServicerTest(unittest.TestCase):
     self.svcr.AssertBaseChecks(mc, self.request)
 
   def testAssertBaseChecks_ProjectMember(self):
-    """We currently only whitelist signed-in project members."""
+    """We allow signed-in project members."""
     # pylint: disable=attribute-defined-outside-init
     self.request.project_name = 'proj'
     self.project.committer_ids.append(222L)
     mc = monorailcontext.MonorailContext(self.services, auth=self.auth)
     self.svcr.AssertBaseChecks(mc, self.request)
 
-  def testAssertBaseChecks_XSRFToken(self):
+  @mock.patch('google.appengine.api.oauth.get_client_id')
+  def testAssertWhitelistedOrXSRF_Email(self, mock_get_client_id):
+    """A requester (oauth or cookie) can be whitelisted by email."""
+    # Disable special whitelisting of the default client_id while testing.
+    mock_get_client_id.return_value = None
+    # Take away the XSRF token.
+    self.request.trace.token = ''
+
+    # pylint: disable=attribute-defined-outside-init
+    self.request.project_name = 'proj'
+    self.project.committer_ids.append(222L)
+    mc = monorailcontext.MonorailContext(self.services, auth=self.auth)
+
+    # nonmember@example.com is not whitelisted.
+    with self.assertRaises(xsrf.TokenIncorrect):
+      self.auth.user_pb.email = 'nonmember@example.com'
+      self.svcr.AssertWhitelistedOrXSRF(mc, self.request)
+
+    # This email is whitelisted in testing/api_clients.cfg.
+    self.auth.user_pb.email = '123456789@developer.gserviceaccount.com'
+    self.svcr.AssertWhitelistedOrXSRF(mc, self.request)
+
+  @mock.patch('google.appengine.api.oauth.get_client_id')
+  def testAssertWhitelistedOrXSRF_Client(self, mock_get_client_id):
+    """An oauth requester can be whitelisted by client ID."""
+    # Take away the XSRF token.
+    self.request.trace.token = ''
+
+    # pylint: disable=attribute-defined-outside-init
+    self.request.project_name = 'proj'
+    self.project.committer_ids.append(222L)
+    mc = monorailcontext.MonorailContext(self.services, auth=self.auth)
+
+    # No client_id provided.
+    with self.assertRaises(xsrf.TokenIncorrect):
+      mock_get_client_id.return_value = None
+      self.svcr.AssertWhitelistedOrXSRF(mc, self.request)
+
+    # client_id is not whitelisted.
+    with self.assertRaises(xsrf.TokenIncorrect):
+      mock_get_client_id.return_value = '0000000'
+      self.svcr.AssertWhitelistedOrXSRF(mc, self.request)
+
+    # This client_id is whitelisted in testing/api_clients.cfg.
+    mock_get_client_id.return_value = '123456789.apps.googleusercontent.com'
+    self.svcr.AssertWhitelistedOrXSRF(mc, self.request)
+
+  @mock.patch('google.appengine.api.oauth.get_client_id')
+  def testAssertWhitelistedOrXSRF_XSRFToken(self, mock_get_client_id):
     """Our API is limited to our client by checking an XSRF token."""
+    # Disable special whitelisting of the default client_id while testing.
+    mock_get_client_id.return_value = None
+
     # pylint: disable=attribute-defined-outside-init
     self.request.project_name = 'proj'
     self.project.committer_ids.append(222L)
     mc = monorailcontext.MonorailContext(self.services, auth=self.auth)
 
     # The token set in setUp() works with self.auth.
-    self.svcr.AssertBaseChecks(mc, self.request)
+    self.svcr.AssertWhitelistedOrXSRF(mc, self.request)
 
     # Passing no request.trace.token is OK in dev_mode
     try:
       orig_dev_mode = settings.dev_mode
       settings.dev_mode = True
       self.request.trace.token = ''
-      self.svcr.AssertBaseChecks(mc, self.request)
+      self.svcr.AssertWhitelistedOrXSRF(mc, self.request)
     finally:
       settings.dev_mode = orig_dev_mode
 
     # We detect a missing token.
     self.request.trace.token = ''
     with self.assertRaises(xsrf.TokenIncorrect):
-      self.svcr.AssertBaseChecks(mc, self.request)
+      self.svcr.AssertWhitelistedOrXSRF(mc, self.request)
 
     # We detect a malformed, inappropriate, or expired token.
     self.request.trace.token = 'bad token'
     with self.assertRaises(xsrf.TokenIncorrect):
-      self.svcr.AssertBaseChecks(mc, self.request)
+      self.svcr.AssertWhitelistedOrXSRF(mc, self.request)
 
   def testGetRequestProject(self):
     """We get a project specified by request field project_name."""
