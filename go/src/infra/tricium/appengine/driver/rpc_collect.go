@@ -60,7 +60,7 @@ func collect(c context.Context, req *admin.CollectRequest,
 		return errors.Annotate(err, "failed to get worker").Err()
 	}
 
-	var result *common.CollectResult
+	result := &common.CollectResult{}
 	switch wi := w.Impl.(type) {
 	case *admin.Worker_Recipe:
 		result, err = bb.Collect(c, &common.CollectParameters{

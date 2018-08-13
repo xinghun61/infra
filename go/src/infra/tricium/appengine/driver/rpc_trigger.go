@@ -66,7 +66,7 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCac
 	userdata := base64.StdEncoding.EncodeToString(b)
 	logging.Infof(c, "[driver] PubSub userdata for trigger: %q", userdata)
 
-	var result *common.TriggerResult
+	result := &common.TriggerResult{}
 	switch wi := worker.Impl.(type) {
 	case *admin.Worker_Recipe:
 		// Trigger worker.

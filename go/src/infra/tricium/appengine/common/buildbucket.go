@@ -61,8 +61,11 @@ func (s buildbucketServer) Trigger(c context.Context, params *TriggerParameters)
 		"params": req.ParametersJson,
 	}.Infof(c, "[buildbucket] Trigger request.")
 	res, err := buildbucketService.Put(req).Context(c).Do()
-	if err != nil || res.Build == nil {
+	if err != nil {
 		return nil, errors.Annotate(err, "failed to trigger buildbucket build").Err()
+	}
+	if res == nil || res.Build == nil {
+		return nil, errors.Reason("empty buildbucket response %+v", res).Err()
 	}
 
 	resJSON, err := json.MarshalIndent(res, "", "  ")
