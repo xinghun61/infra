@@ -197,7 +197,7 @@ func analyzeWords(line, commentWord, stopPattern string,
 	// comment characters, so we split it by said characters and check the words individually.
 	for _, wordToCheck := range strings.Fields(nonWord.ReplaceAllString(commentWord, " ")) {
 		startChar, endChar := findWordInLine(wordToCheck, line)
-		if fixes, ok := dict[wordToCheck]; ok && !inSlice(wordToCheck, whitelistWords) {
+		if fixes, ok := dict[strings.ToLower(wordToCheck)]; ok && !inSlice(wordToCheck, whitelistWords) {
 			if c := buildMisspellingComment(wordToCheck, fixes, startChar, endChar,
 				lineno, filePath); c != nil {
 				*comments = append(*comments, c)
@@ -232,6 +232,8 @@ func buildMisspellingComment(misspelling string, fixes []string, startChar int,
 	fixes[len(fixes)-1] = strings.Replace(fixes[len(fixes)-1], ",", "", -1)
 	log.Printf("ADDING %q with fixes: %q\n", misspelling, fixes)
 
+	fixes = convertCaseOfFixes(misspelling, fixes)
+
 	var suggestions []*tricium.Data_Suggestion
 	for _, fix := range fixes {
 		suggestions = append(suggestions, &tricium.Data_Suggestion{
@@ -261,6 +263,33 @@ func buildMisspellingComment(misspelling string, fixes []string, startChar int,
 	}
 }
 
+// convertCaseOfFixes changes the case of all fixes to match the misspelling.
+func convertCaseOfFixes(misspelling string, fixes []string) []string {
+	var out []string
+	for _, f := range fixes {
+		out = append(out, matchCase(f, misspelling))
+	}
+	return out
+}
+
+// matchCase changes the case of a word to match the target.
+//
+// For example, if the misspelling in the text is "Coment", the dictionary will
+// map "coment" to "comment", but when constructing the suggestion we'd like to
+// propose replacing "Coment" with "Comment", so we want to convert the
+// proposed fix to match the misspelling in the original text. The input word
+// expected to always be all-lowercase.
+func matchCase(word string, target string) string {
+	if strings.ToUpper(target) == target {
+		return strings.ToUpper(word)
+	}
+	if strings.Title(target) == target {
+		return strings.Title(word)
+	}
+	return word
+}
+
+// fixesMessage constructs a string listing the possible fixes.
 func fixesMessage(fixes []string) string {
 	switch n := len(fixes); n {
 	case 0:
@@ -286,8 +315,9 @@ func getLangCommentPattern(fileExt string) *commentFormat {
 	return commentFmtMap[fileExt]
 }
 
-// Helper function to turn the codespell dictionary file into a map of
-// misspellings to slice of fixes.
+// buildDict constructs a map of misspellings to slices of proposed fixes.
+//
+// All keys in the dictionary are lower-case.
 func buildDict() map[string][]string {
 	f := openFileOrDie(dictPath)
 	defer closeFileOrDie(f)
@@ -300,9 +330,9 @@ func buildDict() map[string][]string {
 		// Lines in the CodeSpell dictionary look like:
 		// "{misspelling}->{fix1, fix2, ...} with the last one
 		// being an optional reason to disable the word.
-		data := strings.Split(line, "->")
-		fixes := strings.Split(data[1], ", ")
-		dictMap[data[0]] = fixes
+		parts := strings.Split(line, "->")
+		fixes := strings.Split(parts[1], ", ")
+		dictMap[strings.ToLower(parts[0])] = fixes
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatalf("Failed to read file: %v, path: %s", err, dictPath)

@@ -36,11 +36,10 @@ func TestSpellChecker(t *testing.T) {
 		})
 
 		Convey("Analyzing normal C file generates the appropriate comments", func() {
-			fileContent := "//iminent\n" +
-				"not a comment so aberation shouldn't be flagged\n" +
-				"//wanna has a reason to be disabled\n" +
-				"/*a\ncombinatins of\nlines\n" +
-				"ignore GAE*/\n"
+			fileContent := "// The misspelling iminent is mapped to three possible fixes.\n" +
+				"This is not in a comment so aberation shouldn't be flagged.\n" +
+				"//The word wanna has a reason to be disabled, so isn't flagged\n" +
+				"/*Here are\ncombinatins of\nlines.\nAnd GAE is ignored.*/\n"
 
 			expected := &tricium.Data_Results{
 				Comments: []*tricium.Data_Comment{
@@ -50,8 +49,8 @@ func TestSpellChecker(t *testing.T) {
 						Category:  "SpellChecker",
 						StartLine: 1,
 						EndLine:   1,
-						StartChar: 2,
-						EndChar:   9,
+						StartChar: 19,
+						EndChar:   26,
 						Suggestions: []*tricium.Data_Suggestion{
 							{
 								Description: "Misspelling fix suggestion",
@@ -61,8 +60,8 @@ func TestSpellChecker(t *testing.T) {
 										Replacement: "eminent",
 										StartLine:   1,
 										EndLine:     1,
-										StartChar:   2,
-										EndChar:     9,
+										StartChar:   19,
+										EndChar:     26,
 									},
 								},
 							},
@@ -74,8 +73,8 @@ func TestSpellChecker(t *testing.T) {
 										Replacement: "imminent",
 										StartLine:   1,
 										EndLine:     1,
-										StartChar:   2,
-										EndChar:     10,
+										StartChar:   19,
+										EndChar:     27,
 									},
 								},
 							},
@@ -87,8 +86,8 @@ func TestSpellChecker(t *testing.T) {
 										Replacement: "immanent",
 										StartLine:   1,
 										EndLine:     1,
-										StartChar:   2,
-										EndChar:     10,
+										StartChar:   19,
+										EndChar:     27,
 									},
 								},
 							},
@@ -188,7 +187,7 @@ func TestSpellChecker(t *testing.T) {
 		})
 
 		Convey("Block comment across multiple lines generates appropriate results", func() {
-			fileContent := "/*an\nabandonded\ncalcualtion*/\n"
+			fileContent := "/*An\nabandonded\ncalcualtion.*/\n"
 
 			expected := &tricium.Data_Results{
 				Comments: []*tricium.Data_Comment{
@@ -249,13 +248,13 @@ func TestSpellChecker(t *testing.T) {
 		})
 
 		Convey("One line comment with multiple comment patterns generates appropriate results", func() {
-			fileContent := "//doccument//divertion docrines\ndoas\n"
+			fileContent := "//Doccument//divertion, docrines\ndoas\n"
 
 			expected := &tricium.Data_Results{
 				Comments: []*tricium.Data_Comment{
 					{
 						Path:      "test.c",
-						Message:   `"doccument" is a possible misspelling of "document".`,
+						Message:   `"Doccument" is a possible misspelling of "Document".`,
 						Category:  "SpellChecker",
 						StartLine: 1,
 						EndLine:   1,
@@ -267,7 +266,7 @@ func TestSpellChecker(t *testing.T) {
 								Replacements: []*tricium.Data_Replacement{
 									{
 										Path:        "test.c",
-										Replacement: "document",
+										Replacement: "Document",
 										StartLine:   1,
 										EndLine:     1,
 										StartChar:   2,
@@ -307,8 +306,8 @@ func TestSpellChecker(t *testing.T) {
 						Category:  "SpellChecker",
 						StartLine: 1,
 						EndLine:   1,
-						StartChar: 23,
-						EndChar:   31,
+						StartChar: 24,
+						EndChar:   32,
 						Suggestions: []*tricium.Data_Suggestion{
 							{
 								Description: "Misspelling fix suggestion",
@@ -318,8 +317,8 @@ func TestSpellChecker(t *testing.T) {
 										Replacement: "doctrines",
 										StartLine:   1,
 										EndLine:     1,
-										StartChar:   23,
-										EndChar:     32,
+										StartChar:   24,
+										EndChar:     33,
 									},
 								},
 							},
@@ -334,13 +333,13 @@ func TestSpellChecker(t *testing.T) {
 		})
 
 		Convey("Analyzing text file generates the appropriate comments", func() {
-			fileContent := "familes\nfaund\nnormal\n"
+			fileContent := "Familes\nfaund\nnormal\n"
 
 			expected := &tricium.Data_Results{
 				Comments: []*tricium.Data_Comment{
 					{
 						Path:      "test.txt",
-						Message:   `"familes" is a possible misspelling of "families".`,
+						Message:   `"Familes" is a possible misspelling of "Families".`,
 						Category:  "SpellChecker",
 						StartLine: 1,
 						EndLine:   1,
@@ -352,7 +351,7 @@ func TestSpellChecker(t *testing.T) {
 								Replacements: []*tricium.Data_Replacement{
 									{
 										Path:        "test.txt",
-										Replacement: "families",
+										Replacement: "Families",
 										StartLine:   1,
 										EndLine:     1,
 										StartChar:   0,
@@ -436,6 +435,20 @@ func TestSpellChecker(t *testing.T) {
 			results := &tricium.Data_Results{}
 			analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.html", results)
 			So(results, ShouldResemble, expected)
+		})
+
+		Convey("matchCase converts to upper-case if target appears to be upper-case", func() {
+			So(matchCase("myword", "TARGET"), ShouldEqual, "MYWORD")
+			So(matchCase("myword", "A"), ShouldEqual, "MYWORD")
+		})
+
+		Convey("matchCase converts to title-case if target appears to be title case", func() {
+			So(matchCase("myword", "Myword"), ShouldEqual, "Myword")
+			So(matchCase("myword", "TarGet"), ShouldEqual, "Myword")
+		})
+
+		Convey("matchCase doesn't convert case if the target has irregular case", func() {
+			So(matchCase("myword", "tArGeT"), ShouldEqual, "myword")
 		})
 	})
 }
