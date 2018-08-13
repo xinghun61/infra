@@ -195,6 +195,34 @@ class WorkEnvTest(unittest.TestCase):
       with self.work_env as we:
         we.IsProjectStarred(999)
 
+  def testGetProjectStarCount_Normal(self):
+    """We can count the stars of a project."""
+    self.SignIn()
+    with self.work_env as we:
+      self.assertEqual(0, we.GetProjectStarCount(789))
+      we.StarProject(789, True)
+      self.assertEqual(1, we.GetProjectStarCount(789))
+
+    self.SignIn(user_id=self.admin_user.user_id)
+    with self.work_env as we:
+      we.StarProject(789, True)
+      self.assertEqual(2, we.GetProjectStarCount(789))
+      we.StarProject(789, False)
+      self.assertEqual(1, we.GetProjectStarCount(789))
+
+  def testGetProjectStarCount_NoSuchProject(self):
+    """We can't count stars of a nonexistent project."""
+    self.SignIn()
+    with self.assertRaises(exceptions.NoSuchProjectException):
+      with self.work_env as we:
+        we.GetProjectStarCount(999)
+
+  def testGetProjectStarCount_NoProjectSpecified(self):
+    """A project ID must be specified."""
+    with self.work_env as we:
+      with self.assertRaises(exceptions.InputException):
+        self.assertFalse(we.GetProjectStarCount(None))
+
   def testListStarredProjects_ViewingSelf(self):
     """A user can view their own starred projects, if they still have access."""
     project1 = self.services.project.TestAddProject('proj1', project_id=1)

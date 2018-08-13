@@ -317,9 +317,30 @@ class WorkEnv(object):
       return False
 
     with self.mc.profiler.Phase('checking project star %r' % project_id):
+      # Make sure the project exists and user has permission to see it.
       _project = self.GetProject(project_id)
       return self.services.project_star.IsItemStarredBy(
         self.mc.cnxn, project_id, self.mc.auth.user_id)
+
+  def GetProjectStarCount(self, project_id):
+    """Return the number of times the project has been starred.
+
+    Args:
+      project_id: int ID of the project to check.
+
+    Returns:
+      The number of times the project has been starred.
+
+    Raises:
+      NoSuchProjectException: There is no project with that ID.
+    """
+    if project_id is None:
+      raise exceptions.InputException('No project specified')
+
+    with self.mc.profiler.Phase('counting stars for project %r' % project_id):
+      # Make sure the project exists and user has permission to see it.
+      _project = self.GetProject(project_id)
+      return self.services.project_star.CountItemStars(self.mc.cnxn, project_id)
 
   def ListStarredProjects(self, viewed_user_id=None):
     """Return a list of projects starred by the current or viewed user.

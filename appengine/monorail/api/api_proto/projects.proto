@@ -21,6 +21,7 @@ service Projects {
   rpc ListStatuses (ListStatusesRequest) returns (ListStatusesResponse) {}
   rpc ListComponents (ListComponentsRequest) returns (ListComponentsResponse) {}
   rpc ListFields (ListFieldsRequest) returns (ListFieldsResponse) {}
+  rpc GetStarCount (GetStarCountRequest) returns (GetStarCountResponse) {}
 }
 
 
@@ -125,4 +126,17 @@ message ListFieldsRequest {
 // Next available tag: 2
 message ListFieldsResponse {
   repeated FieldDef field_defs = 1;
+}
+
+
+// Next available tag: 3
+message GetStarCountRequest {
+  RequestTrace trace = 1;
+  string project_name = 2;
+}
+
+
+// Next available tag: 2
+message GetStarCountResponse {
+  uint32 star_count = 1;
 }

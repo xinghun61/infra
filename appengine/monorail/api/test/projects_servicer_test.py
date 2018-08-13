@@ -35,6 +35,7 @@ class ProjectsServicerTest(unittest.TestCase):
         user=fake.UserService(),
         usergroup=fake.UserGroupService(),
         project=fake.ProjectService(),
+        project_star=fake.ProjectStarService(),
         features=fake.FeaturesService())
 
     self.services.user.TestAddUser('owner@example.com', 111L)
@@ -466,3 +467,44 @@ class ProjectsServicerTest(unittest.TestCase):
         sorted(expected_label_names),
         sorted(label.label for label in response.label_options))
 
+  def CallGetStarCount(self):
+    request = projects_pb2.GetStarCountRequest(project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.projects_svcr.GetStarCount, mc, request)
+    return response.star_count
+
+  def SetStar(self, user_id=111L, starred=True):
+    self.services.project_star.SetStar(
+        self.cnxn, self.project.project_id, user_id, starred)
+
+  def testGetStarCount_Normal(self):
+    self.assertEqual(0, self.CallGetStarCount())
+    self.SetStar()
+    self.assertEqual(1, self.CallGetStarCount())
+
+  def testGetStarCount_StarTwiceSameUser(self):
+    self.SetStar()
+    self.SetStar()
+    self.assertEqual(1, self.CallGetStarCount())
+
+  def testGetStarCount_StarTwiceDifferentUser(self):
+    self.SetStar()
+    self.SetStar(user_id=222L)
+    self.assertEqual(2, self.CallGetStarCount())
+
+  def testGetStarCount_RemoveStarTwiceSameUser(self):
+    self.SetStar()
+    self.assertEqual(1, self.CallGetStarCount())
+    self.SetStar(starred=False)
+    self.SetStar(starred=False)
+    self.assertEqual(0, self.CallGetStarCount())
+
+  def testGetStarCount_RemoveStarTwiceDifferentUser(self):
+    self.SetStar()
+    self.SetStar(user_id=222L)
+    self.assertEqual(2, self.CallGetStarCount())
+    self.SetStar(starred=False)
+    self.SetStar(user_id=222L, starred=False)
+    self.assertEqual(0, self.CallGetStarCount())
