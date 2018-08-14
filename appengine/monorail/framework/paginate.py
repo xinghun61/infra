@@ -65,18 +65,20 @@ class VirtualPagination(object):
       else:
         list_servlet_rel_url = list_page_url
 
+      recognized_params = [(name, mr.GetParam(name)) for name in
+                          framework_helpers.RECOGNIZED_PARAMS]
       self.reload_url = framework_helpers.FormatURL(
-          mr, list_servlet_rel_url,
+          recognized_params, list_servlet_rel_url,
           **{start_param: self.start, num_param: self.num})
 
       if prev_start != self.start:
         self.prev_url = framework_helpers.FormatURL(
-            mr, list_servlet_rel_url,
+             recognized_params, list_servlet_rel_url,
             **{start_param: prev_start, num_param: self.num})
       if ((count_up and next_start < self.total_count) or
           (not count_up and next_start >= 1)):
         self.next_url = framework_helpers.FormatURL(
-            mr, list_servlet_rel_url,
+           recognized_params, list_servlet_rel_url,
             **{start_param: next_start, num_param: self.num})
 
     self.visible = ezt.boolean(self.last != self.start)

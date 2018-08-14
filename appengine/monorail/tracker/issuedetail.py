@@ -1356,7 +1356,10 @@ class FlipperRedirectBase(servlet.Servlet):
         adj_issue = GetAdjacentIssue(we, current_issue,
             hotlist=hotlist, next_issue=self.next_handler)
         path = '/p/%s%s' % (adj_issue.project_name, urls.ISSUE_DETAIL)
-        url = framework_helpers.FormatURL(self.mr, path, id=adj_issue.local_id)
+        url = framework_helpers.FormatURL(
+            [(name, self.mr.GetParam(name)) for
+             name in framework_helpers.RECOGNIZED_PARAMS],
+            path, id=adj_issue.local_id)
       except exceptions.NoSuchIssueException:
         config = we.GetProjectConfig(self.mr.project_id)
         url = _ComputeBackToListURL(self.mr, current_issue, config,
@@ -1402,16 +1405,19 @@ class FlipperIndex(jsonfeed.JsonFeed):
 
     prev_url = None
     next_url = None
-
+    recognized_params = [(name, mr.GetParam(name)) for name in
+                           framework_helpers.RECOGNIZED_PARAMS]
     if prev_iid:
       prev_issue = we.services.issue.GetIssue(mr.cnxn, prev_iid)
       path = '/p/%s%s' % (prev_issue.project_name, urls.ISSUE_DETAIL)
-      prev_url = framework_helpers.FormatURL(mr, path, id=prev_issue.local_id)
+      prev_url = framework_helpers.FormatURL(
+          recognized_params, path, id=prev_issue.local_id)
 
     if next_iid:
       next_issue = we.services.issue.GetIssue(mr.cnxn, next_iid)
       path = '/p/%s%s' % (next_issue.project_name, urls.ISSUE_DETAIL)
-      next_url = framework_helpers.FormatURL(mr, path, id=next_issue.local_id)
+      next_url = framework_helpers.FormatURL(
+          recognized_params, path, id=next_issue.local_id)
 
     return {
       'prev_iid': prev_iid,

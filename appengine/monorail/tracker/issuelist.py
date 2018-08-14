@@ -228,7 +228,9 @@ class IssueList(servlet.Servlet):
         'default_colspec': tracker_constants.DEFAULT_COL_SPEC,
         'default_results_per_page': tracker_constants.DEFAULT_RESULTS_PER_PAGE,
         'csv_link': framework_helpers.FormatURL(
-            mr, 'csv', num=settings.max_artifact_search_results_per_page),
+            [(name, mr.GetParam(name)) for name in
+             framework_helpers.RECOGNIZED_PARAMS],
+            'csv', num=settings.max_artifact_search_results_per_page),
         'preview_on_hover': ezt.boolean(
             _ShouldPreviewOnHover(mr.auth.user_pb)),
         }

@@ -105,7 +105,9 @@ class HotlistIssues(servlet.Servlet):
                       'colspec': mr.col_spec,
                       'allow_rerank': ezt.boolean(allow_rerank),
                       'csv_link': framework_helpers.FormatURL(
-                          mr, '%d/csv' % mr.hotlist_id, num=100),
+                          [(name, mr.GetParam(name)) for name in
+                           framework_helpers.RECOGNIZED_PARAMS],
+                          '%d/csv' % mr.hotlist_id, num=100),
                       'is_hotlist': ezt.boolean(True),
                       'col_spec': mr.col_spec.lower(),
                       'viewing_user_page': ezt.boolean(True),

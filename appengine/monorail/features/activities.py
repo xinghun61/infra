@@ -156,7 +156,7 @@ def GatherUpdatesData(
   if not user_ids and not project_ids:
     updates_data['no_stars'] = ezt.boolean(True)
     return updates_data
-    
+
   ascending = bool(mr.after)
   with mr.profiler.Phase('get activities'):
     comments = services.issue.GetIssueActivity(mr.cnxn, num=num,
@@ -252,12 +252,14 @@ def GatherUpdatesData(
   next_url = None
   if updates_page_url:
     list_servlet_rel_url = updates_page_url.split('/')[-1]
+    recognized_params = [(name, mr.GetParam(name))
+                         for name in framework_helpers.RECOGNIZED_PARAMS]
     if displayed_activities and (mr.before or mr.after):
       prev_url = framework_helpers.FormatURL(
-          mr, list_servlet_rel_url, after=new_after)
+          recognized_params, list_servlet_rel_url, after=new_after)
     if mr.after or len(comments) > UPDATES_PER_PAGE:
       next_url = framework_helpers.FormatURL(
-          mr, list_servlet_rel_url, before=new_before)
+          recognized_params, list_servlet_rel_url, before=new_before)
 
   if prev_url or next_url:
     pagination = template_helpers.EZTItem(

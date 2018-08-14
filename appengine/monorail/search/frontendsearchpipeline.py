@@ -826,8 +826,10 @@ def _StartBackendSearchCall(
   """Ask a backend to query one shard of the database."""
   shard_id, subquery = shard_key
   backend_host = modules.get_hostname(module='besearch')
+  recognized_params = [(name, mr.GetParam(name)) for name in
+                       framework_helpers.RECOGNIZED_PARAMS]
   url = 'http://%s%s' % (backend_host, framework_helpers.FormatURL(
-      mr, urls.BACKEND_SEARCH,
+      recognized_params, urls.BACKEND_SEARCH,
       projects=','.join(query_project_names),
       q=subquery, start=0, num=mr.start + mr.num,
       logged_in_user_id=mr.auth.user_id or 0,

@@ -172,7 +172,9 @@ class UrlFormattingTest(unittest.TestCase):
   def testFormatURL(self):
     mr = testing_helpers.MakeMonorailRequest()
     path = '/dude/wheres/my/car'
-    url = framework_helpers.FormatURL(mr, path)
+    recognized_params = [(name, mr.GetParam(name)) for name in
+                         framework_helpers.RECOGNIZED_PARAMS]
+    url = framework_helpers.FormatURL(recognized_params, path)
     self.assertEqual(path, url)
 
   def testFormatURLWithRecognizedParams(self):
@@ -184,7 +186,10 @@ class UrlFormattingTest(unittest.TestCase):
     path = '/dude/wheres/my/car'
     expected = '%s?%s' % (path, '&'.join(query))
     mr = testing_helpers.MakeMonorailRequest(path=expected)
-    url = framework_helpers.FormatURL(mr, path)  # No added params.
+    recognized_params = [(name, mr.GetParam(name)) for name in
+                         framework_helpers.RECOGNIZED_PARAMS]
+    # No added params.
+    url = framework_helpers.FormatURL(recognized_params, path)
     self.assertEqual(expected, url)
 
   def testFormatURLWithKeywordArgs(self):
@@ -201,7 +206,10 @@ class UrlFormattingTest(unittest.TestCase):
     query_pairs.append('start=486')
     query_string = '&'.join(query_pairs)
     expected = '%s?%s' % (path, query_string)
-    url = framework_helpers.FormatURL(mr, path, can='yep', start=486)
+    recognized_params = [(name, mr.GetParam(name)) for name in
+                         framework_helpers.RECOGNIZED_PARAMS]
+    url = framework_helpers.FormatURL(
+        recognized_params, path, can='yep', start=486)
     self.assertEqual(expected, url)
 
   def testFormatURLWithKeywordArgsAndID(self):
@@ -219,13 +227,19 @@ class UrlFormattingTest(unittest.TestCase):
     query_pairs.append('start=486')
     query_string = '&'.join(query_pairs)
     expected = '%s?%s' % (path, query_string)
-    url = framework_helpers.FormatURL(mr, path, can='yep', start=486, id=200)
+    recognized_params = [(name, mr.GetParam(name)) for name in
+                         framework_helpers.RECOGNIZED_PARAMS]
+    url = framework_helpers.FormatURL(
+        recognized_params, path, can='yep', start=486, id=200)
     self.assertEqual(expected, url)
 
   def testFormatURLWithStrangeParams(self):
     mr = testing_helpers.MakeMonorailRequest(path='/foo?start=0')
+    recognized_params = [(name, mr.GetParam(name)) for name in
+                         framework_helpers.RECOGNIZED_PARAMS]
     url = framework_helpers.FormatURL(
-        mr, '/foo', r=0, path='/foo/bar', sketchy='/foo/ bar baz ')
+        recognized_params, '/foo',
+        r=0, path='/foo/bar', sketchy='/foo/ bar baz ')
     self.assertEqual(
         '/foo?start=0&path=/foo/bar&r=0&sketchy=/foo/%20bar%20baz%20',
         url)

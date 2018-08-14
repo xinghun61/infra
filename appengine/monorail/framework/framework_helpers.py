@@ -201,7 +201,9 @@ def FormatAbsoluteURL(
     the same domain as the current request.
   """
   path_and_args = FormatURL(
-      mr if copy_params else None, servlet_name, **kwargs)
+      [(name, mr.GetParam(name)) for name in RECOGNIZED_PARAMS]
+      if copy_params else None,
+      servlet_name, **kwargs)
   scheme = scheme or mr.request.scheme
 
   project_base = ''
@@ -254,7 +256,7 @@ def FormatMovedProjectURL(mr, moved_to):
   return '/p/%s%s' % (project_name, rest_of_url)
 
 
-def FormatURL(mr, servlet_path, **kwargs):
+def FormatURL(recognized_params, servlet_path, **kwargs):
   """Return a project relative URL to a servlet with old and new params."""
   # Standard params not overridden in **kwargs come first, followed by kwargs.
   # The exception is the 'id' param. If present then the 'id' param always comes
@@ -262,10 +264,9 @@ def FormatURL(mr, servlet_path, **kwargs):
   all_params = []
   if kwargs.get('id'):
     all_params.append(('id', kwargs['id']))
-  if mr:
+  if recognized_params:
     all_params.extend(
-        (name, mr.GetParam(name)) for name in RECOGNIZED_PARAMS
-        if name not in kwargs)
+        param for param in recognized_params if param[0] not in kwargs)
 
   all_params.extend(
       # Ignore the 'id' param since we already added it above.
