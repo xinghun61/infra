@@ -39,12 +39,20 @@ const (
 )
 
 var (
-	whitelistWords = []string{"gae"}
-	textFileExts   = []string{".txt", ".md"}
-	dict           map[string][]string
+	// Words that might be in the dictionary but shouldn't be flagged.
+	whitelistWords = []string{
+		"backed", // "backed by"
+		"ect",    // effective connection type
+		"gae",    // Google App Engine
+		"seeked", // JS event
+	}
+	textFileExts = []string{".txt", ".md"}
+	dict         map[string][]string
 
-	// Define what counts as non-word characters.
-	nonWord   = regexp.MustCompile(`[^a-zA-Z0-9'-]`)
+	// What counts as non-word characters for the purpose of splitting.
+	nonWord = regexp.MustCompile(`[^a-zA-Z0-9'-]`)
+
+	// Patterns within which we don't want to flag misspellings.
 	emailAddr = regexp.MustCompile(`\w+@\w+\.\w+`)
 	todoNote  = regexp.MustCompile(`TODO\(\w+\)`)
 )
