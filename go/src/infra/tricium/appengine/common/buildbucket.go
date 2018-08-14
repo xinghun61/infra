@@ -117,7 +117,10 @@ func swarmingParametersJSON(serverURL string, worker *admin.Worker, recipe *admi
 			"hostname": serverURL,
 			"override_builder_cfg": map[string]interface{}{
 				"dimensions": worker.Dimensions,
-				"recipe":     recipe.Recipe.Name,
+				"recipe": map[string]interface{}{
+					"name":         recipe.Recipe.Name,
+					"properties_j": recipe.Recipe.Properties,
+				},
 			},
 		},
 	}

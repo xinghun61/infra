@@ -22,11 +22,12 @@ func TestParametersJSON(t *testing.T) {
 			Dimensions: []string{"pool:Chrome", "os:Ubuntu13.04"},
 		}
 		recipe := &admin.Worker_Recipe{&tricium.Recipe{
-			Name: "recipe",
+			Name:       "recipe",
+			Properties: "{\"enable\": \"all\"}",
 		}}
 		actual, err := swarmingParametersJSON(serverURL, w, recipe)
 		So(err, ShouldBeNil)
-		expected := `{"builder_name":"tricium","swarming":{"hostname":"https://chromium-swarm-dev.appspot.com","override_builder_cfg":{"dimensions":["pool:Chrome","os:Ubuntu13.04"],"recipe":"recipe"}}}`
+		expected := `{"builder_name":"tricium","swarming":{"hostname":"https://chromium-swarm-dev.appspot.com","override_builder_cfg":{"dimensions":["pool:Chrome","os:Ubuntu13.04"],"recipe":{"name":"recipe","properties_j":"{\"enable\": \"all\"}"}}}}`
 		So(actual, ShouldEqual, expected)
 	})
 }
