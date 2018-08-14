@@ -17,7 +17,7 @@ class MrCommentList extends Polymer.Element {
       },
       displayedComments: {
         type: Array,
-        computed: "_computedComments(selectedDate,comments)",
+        computed: '_computedComments(selectedDate, comments)',
         value: [],
       },
       viewedUserId: {
@@ -33,11 +33,11 @@ class MrCommentList extends Polymer.Element {
         type: Number,
         notify: true,
       },
-    }
+    };
   }
 
   _truncateMessage(message) {
-    return message.substring(0, message.indexOf("\n"));
+    return message && message.substring(0, message.indexOf('\n'));
   }
 
   _computedComments(selectedDate, comments) {
@@ -49,7 +49,7 @@ class MrCommentList extends Polymer.Element {
         return computedComments;
       }
       for (let i = 0; i < comments.length; i++) {
-        if(comments[i].timestamp <= selectedDate &&
+        if (comments[i].timestamp <= selectedDate &&
            comments[i].timestamp >= (selectedDate - 86400)) {
           computedComments.push(comments[i]);
         }
@@ -59,8 +59,7 @@ class MrCommentList extends Polymer.Element {
   }
 
   _checkIfCommentsEmpty(displayedComments) {
-    return !displayedComments || displayComments.length === 0;
+    return !displayedComments || displayedComments.length === 0;
   }
-
 }
-customElements.define(MrCommentList.is, MrCommentList)
+customElements.define(MrCommentList.is, MrCommentList);

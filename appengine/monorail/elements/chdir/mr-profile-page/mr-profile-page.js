@@ -33,14 +33,18 @@ class MrProfilePage extends Polymer.Element {
       selectedDate: {
         type: Number,
       },
+      _hideActivityTracker: {
+        type: Boolean,
+        computed: '_computeHideActivityTracker(user, viewedUser)',
+      },
     };
   }
 
-  _checkStarredUsers(list){
+  _checkStarredUsers(list) {
     if (list.length != 0) {
       return list;
-    }else{
-      return ["None"];
+    } else {
+      return ['None'];
     }
   }
 
@@ -81,9 +85,15 @@ class MrProfilePage extends Polymer.Element {
     );
 
     listActivities.then(
-      (resp) => {this.comments = resp.comments;},
+      (resp) => {
+        this.comments = resp.comments;
+      },
       (error) => {}
     );
+  }
+
+  _computeHideActivityTracker(user, viewedUser) {
+    return user !== viewedUser;
   }
 }
 

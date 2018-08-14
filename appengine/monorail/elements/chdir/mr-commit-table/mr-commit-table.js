@@ -20,7 +20,7 @@ class MrCommitTable extends Polymer.Element {
       },
       displayedCommits: {
         type: Array,
-        computed: "_computedCommits(selectedDate,commits)",
+        computed: '_computedCommits(selectedDate, commits)',
         value: [],
       },
       commitsLoaded: {
@@ -41,12 +41,12 @@ class MrCommitTable extends Polymer.Element {
       },
       emptyList: {
         type: Boolean,
-        computed: "_checkIfCommitsEmpty(displayedCommits)",
+        computed: '_checkIfCommitsEmpty(displayedCommits)',
       },
     };
   }
 
-  _computedCommits(selectedDate,commits) {
+  _computedCommits(selectedDate, commits) {
     if (selectedDate == undefined) {
       return commits;
     } else {
@@ -55,7 +55,7 @@ class MrCommitTable extends Polymer.Element {
         return computedCommits;
       }
       for (let i = 0; i < commits.length; i++) {
-        if(commits[i].commitTime <= selectedDate &&
+        if (commits[i].commitTime <= selectedDate &&
            commits[i].commitTime >= (selectedDate - 86400)) {
           computedCommits.push(commits[i]);
         }
@@ -67,32 +67,30 @@ class MrCommitTable extends Polymer.Element {
   _checkEmptyList(list) {
     if (list.length != 0) {
       return list;
-    }else{
-      return ["None"];
+    } else {
+      return ['None'];
     }
   }
 
   _truncateSHA(sha) {
-    return sha.substring(0,6);
+    return sha.substring(0, 6);
   }
 
   _checkIfCommitsEmpty(displayedCommits) {
-    return !displayedCommits || displayCommits.length === 0;
+    return !displayedCommits || displayedCommits.length === 0;
   }
 
   _truncateRepo(repo) {
-    var url = repo.substring(8,repo.length-1);
-    var myProject = url.substring(0,
-      url.indexOf("."));
+    let url = repo.substring(8, repo.length - 1);
+    let myProject = url.substring(0, url.indexOf('.'));
 
-    var myDirectory = url.substring(url.indexOf("/")+1, url.length);
-    var myRepo = myProject + " " + myDirectory;
+    let myDirectory = url.substring(url.indexOf('/') + 1, url.length);
+    let myRepo = myProject + ' ' + myDirectory;
     return myRepo;
   }
 
   _truncateMessage(message) {
-    return message.substring(0, message.indexOf("\n"));
+    return message.substring(0, message.indexOf('\n'));
   }
-
 }
 customElements.define(MrCommitTable.is, MrCommitTable);

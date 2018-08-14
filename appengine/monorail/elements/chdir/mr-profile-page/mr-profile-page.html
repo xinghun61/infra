@@ -95,8 +95,9 @@
         </div>
       </div>
       <div class="history-container">
-        <div class="activityGraph">
+        <template is="dom-if" if="[[!_hideActivityTracker]]">
           <mr-activity-table
+            class="activityGraph"
             token="[[token]]"
             user="[[viewedUser]]"
             viewed-user-id="[[viewedUserId]]"
@@ -104,7 +105,7 @@
             comments="[[comments]]"
             selected-date="{{selectedDate}}"
           ></mr-activity-table>
-        </div>
+        </template>
         <div class="dataTable">
           <mr-commit-table
             token="[[token]]"
