@@ -23,23 +23,19 @@ class MrEditField extends Polymer.Element {
         value: false,
       },
       name: String,
-      // Values is a one way mapping. Do not add expect values to represent the
-      // current data in the form element. Use getValue() instead.
-      values: {
+      initialValues: {
         type: Array,
         value: () => [],
-        notify: false,
       },
-      value: String,
       // For enum fields, the possible options that you have. Each entry is a
-      // label type.
+      // label type with an additional optionName field added.
       options: {
         type: Array,
         value: () => [],
       },
-      _defaultValue: {
+      _initialValue: {
         type: String,
-        computed: '_computeDefaultValue(value, values, multi)',
+        computed: '_computeInitialValue(initialValues)',
       },
       // Set to true if a field uses a standard input instead of any sort of
       // fancier edit type.
@@ -58,23 +54,65 @@ class MrEditField extends Polymer.Element {
   }
 
   reset() {
+    const input = this._getInput();
     if (this._fieldIsBasic) {
-      this._getInput().value = this._defaultValue;
+      input.value = this._initialValue;
+    }
+    if (this._fieldIsEnum(this.type)) {
+      if (this.multi) {
+        Polymer.dom(this.root).querySelectorAll('.enum-input').forEach(
+          (checkbox) => {
+            checkbox.checked = this._optionInValues(
+              this.initialValues, checkbox.value);
+          }
+        );
+      } else {
+        const options = Array.from(input.querySelectorAll('option'));
+        input.selectedIndex = options.findIndex((option) => {
+          return this._computeIsSelected(this._initialValue,
+            option.value);
+        });
+      }
     }
   }
 
-  getValue() {
-    if (this._fieldIsEnum(this.type)) {
-      throw new Error('Enum values not implemented yet!');
+  getValuesAdded() {
+    return fltHelpers.arrayDifference(this.getValues(), this.initialValues,
+      this._equalsIgnoreCase);
+  }
+
+  getValuesRemoved() {
+    return fltHelpers.arrayDifference(this.initialValues, this.getValues(),
+      this._equalsIgnoreCase);
+  }
+
+  getValues() {
+    const value = this.getValue();
+    if (Array.isArray(value)) {
+      return value;
     }
+    return value ? [value] : [];
+  }
+
+  getValue() {
     const val = this._getInput().value;
     if (this.multi) {
-      let valueList = val.split(this.delimiter);
-      valueList = valueList.map((s) => (s.trim()));
-      valueList = valueList.filter((s) => (s.length > 0));
-      return valueList;
+      if (this._fieldIsEnum(this.type)) {
+        const checkboxes = Array.from(Polymer.dom(this.root).querySelectorAll(
+          '.enum-input'));
+        return checkboxes.filter((c) => c.checked).map((c) => c.value);
+      } else {
+        let valueList = val.split(this.delimiter);
+        valueList = valueList.map((s) => (s.trim()));
+        valueList = valueList.filter((s) => (s.length > 0));
+        return valueList;
+      }
     }
     return val;
+  }
+
+  _equalsIgnoreCase(a, b) {
+    return a.toLowerCase() === b.toLowerCase();
   }
 
   // TODO(zhangtiff): We want to gradually make this list longer as we handle
@@ -107,28 +145,23 @@ class MrEditField extends Polymer.Element {
     return type === 'URL_TYPE';
   }
 
-  _computeDefaultValue(value, values, multi) {
-    if (multi) {
-      return values.join(',');
-    }
-    return value;
+  _computeInitialValue(values) {
+    return values.join(',');
   }
 
   _getInput() {
+    if (this._fieldIsEnum(this.type) && !this.multi) {
+      return Polymer.dom(this.root).querySelector('#editSelect');
+    }
     return Polymer.dom(this.root).querySelector('#editInput');
   }
 
-  _opionInValues(values, option) {
-    return values.includes(option);
+  _optionInValues(values, optionName) {
+    return values.includes(optionName);
   }
 
-  _stripPrefix(s, prefix) {
-    // Add 1 for the dash (-) separator.
-    return s.substring(prefix.length + 1);
-  }
-
-  _computeIsSelected(value, option) {
-    return value === option;
+  _computeIsSelected(initialValue, optionName) {
+    return initialValue === optionName;
   }
 }
 

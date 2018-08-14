@@ -13,22 +13,49 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
 
   static get properties() {
     return {
-      approvers: Array,
-      setter: Object,
+      approvers: {
+        type: Array,
+        value: () => [],
+      },
+      setter: {
+        type: Object,
+        value: () => {},
+      },
       summary: String,
-      cc: Array,
-      components: Array,
-      fieldDefs: Array,
+      cc: {
+        type: Array,
+        value: () => [],
+      },
+      components: {
+        type: Array,
+        value: () => [],
+      },
+      fieldDefs: {
+        type: Array,
+        value: () => [],
+      },
       fieldValues: {
         type: Array,
         value: () => [],
       },
       status: String,
-      statuses: Array,
-      blockedOn: Array,
-      blocking: Array,
-      owner: Object,
-      labelNames: Array,
+      statuses: {
+        type: Array,
+        value: () => [],
+      },
+      blockedOn: {
+        type: Array,
+        value: () => [],
+      },
+      blocking: {
+        type: Array,
+        value: () => [],
+      },
+      ownerName: String,
+      labelNames: {
+        type: Array,
+        value: () => [],
+      },
       projectConfig: {
         type: String,
         statePath: 'projectConfig',
@@ -44,14 +71,6 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
       isApprover: {
         type: Boolean,
         value: false,
-      },
-      _blockedOnIds: {
-        type: Array,
-        computed: '_computeBlockerIds(blockedOn, projectName)',
-      },
-      _blockingIds: {
-        type: Array,
-        computed: '_computeBlockerIds(blocking, projectName)',
       },
       _fieldValueMap: {
         type: Object,
@@ -73,32 +92,99 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
         Polymer.dom(this.root).querySelector('#approversInput').reset();
       }
     } else {
-      Polymer.dom(this.root).querySelector('#ownerInput').reset();
-      Polymer.dom(this.root).querySelector('#ccInput').reset();
-      Polymer.dom(this.root).querySelector('#blockingInput').reset();
-      Polymer.dom(this.root).querySelector('#blockedOnInput').reset();
-      Polymer.dom(this.root).querySelector('#labelsInput').reset();
+      Polymer.dom(this.root).querySelectorAll('mr-edit-field').forEach((el) => {
+        el.reset();
+      });
     }
   }
 
-  getData() {
-    const result = {
-      status: this.$.statusInput.value,
-      comment: this.$.commentText.value,
-    };
+  getDelta() {
+    const result = {};
     const root = Polymer.dom(this.root);
+
+    const newStatus = this.$.statusInput.value;
+    if (newStatus !== this.status) {
+      result['status'] = newStatus;
+    }
+
+    const commentContent = this.$.commentText.value;
+    if (commentContent) {
+      result['comment'] = commentContent;
+    }
+
     if (this.isApproval) {
       if (this.isApprover) {
-        result['approvers'] = root.querySelector('#approversInput').getValue();
+        const approversInput = root.querySelector('#approversInput');
+        result['approversAdded'] = approversInput.getValuesAdded();
+        result['approversRemoved'] = approversInput.getValuesRemoved();
       }
     } else {
-      result['summary'] = root.querySelector('#summaryInput').value;
-      result['labels'] = root.querySelector('#labelsInput').getValue();
-      result['blockedOn'] = root.querySelector('#blockedOnInput').getValue();
-      result['blocking'] = root.querySelector('#blockingInput').getValue();
-      result['owner'] = root.querySelector('#ownerInput').getValue();
-      result['cc'] = root.querySelector('#ccInput').getValue();
+      // TODO(zhangtiff): Consider representing baked-in fields such as owner,
+      // cc, and status similarly to custom fields to reduce repeated code.
+
+      const newSummary = root.querySelector('#summaryInput').value;
+      if (newSummary !== this.summary) {
+        result['summary'] = newSummary;
+      }
+
+      // Labels.
+      const labelsInput = root.querySelector('#labelsInput');
+      result['labelsAdded'] = labelsInput.getValuesAdded();
+      result['labelsRemoved'] = labelsInput.getValuesRemoved();
+
+      const newOwner = root.querySelector('#ownerInput').getValue();
+      if (newOwner !== this.ownerName) {
+        result['owner'] = newOwner;
+      }
+
+      const ccInput = root.querySelector('#ccInput');
+      result['ccAdded'] = ccInput.getValuesAdded();
+      result['ccRemoved'] = ccInput.getValuesRemoved();
+
+      const componentsInput = root.querySelector('#componentsInput');
+      result['componentsAdded'] = componentsInput.getValuesAdded();
+      result['componentsRemoved'] = componentsInput.getValuesRemoved();
+
+      const blockedOnInput = root.querySelector('#blockedOnInput');
+      result['blockedOnAdded'] = blockedOnInput.getValuesAdded();
+      result['blockedOnRemoved'] = blockedOnInput.getValuesRemoved();
+
+      const blockingInput = root.querySelector('#blockingInput');
+      result['blockingAdded'] = blockingInput.getValuesAdded();
+      result['blockingRemoved'] = blockingInput.getValuesRemoved();
     }
+
+    result['fieldValuesAdded'] = [];
+    result['fieldValuesRemoved'] = [];
+
+    this.fieldDefs.forEach((field) => {
+      const fieldName = field.fieldRef.fieldName;
+      const input = root.querySelector(
+        `#${this._idForField(fieldName)}`);
+      const valuesAdded = input.getValuesAdded();
+      const valuesRemoved = input.getValuesRemoved();
+
+      valuesAdded.forEach((v) => {
+        result['fieldValuesAdded'].push({
+          fieldRef: {
+            fieldName: field.fieldRef.fieldName,
+          },
+          value: v,
+        });
+      });
+
+      if (field.isMultiValued) {
+        valuesRemoved.forEach((v) => {
+          result['fieldValuesRemoved'].push({
+            fieldRef: {
+              fieldName: field.fieldRef.fieldName,
+            },
+            value: v,
+          });
+        });
+      }
+    });
+
     return result;
   }
 
@@ -106,11 +192,11 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
     return a === b;
   }
 
-  _computeBlockerIds(arr, projectName) {
+  _mapBlockerRefsToIdStrings(arr, projectName) {
     if (!arr || !arr.length) return [];
     return arr.map((v) => {
       if (v.projectName === projectName) {
-        return v.localId;
+        return `${v.localId}`;
       }
       return `${v.projectName}:${v.localId}`;
     });
@@ -146,6 +232,10 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
     return users.map((u) => (u.displayName));
   }
 
+  _mapComponentRefsToNames(components) {
+    return components.map((c) => c.path);
+  }
+
   _optionsForField(labelDefs, name) {
     return computeFunction.computeOptionsForField(labelDefs, name);
   }
@@ -155,8 +245,8 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
     return fieldValueMap[name];
   }
 
-  _statusIsHidden(status, statusDef) {
-    return !statusDef.rank && statusDef.status !== status;
+  _wrapList(item) {
+    return [item];
   }
 }
 

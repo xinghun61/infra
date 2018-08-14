@@ -90,7 +90,7 @@
           });
             actionCreator.fetchReferences(dispatch, resp.comments, message.trace);
         }, (error) => {
-          this.dispatch({
+          dispatch({
             type: actionType.FETCH_COMMENTS_FAILURE,
             error,
           });
@@ -127,7 +127,7 @@
           });
           const fetchCommentsMessage = {
             trace: message.trace,
-            issue_ref: message.issue_ref,
+            issueRef: message.issueRef,
           };
           actionCreator.fetchComments(dispatch, fetchCommentsMessage);
         }, (error) => {

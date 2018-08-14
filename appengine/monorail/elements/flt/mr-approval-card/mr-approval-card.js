@@ -166,15 +166,24 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
   }
 
   save() {
-    const data = this.$.metadataForm.getData();
-    const delta = {};
+    const data = this.$.metadataForm.getDelta();
+    let delta = {};
 
-    if (data.status !== this._status) {
+    if (data.status) {
       delta['status'] = TEXT_TO_STATUS_ENUM[data.status];
     }
 
-    if (data.approvers) {
-      this._saveApprovers(data.approvers, delta);
+    const approversAdded = data.approversAdded || [];
+    const approversRemoved = data.approversRemoved || [];
+
+    if (approversAdded.length > 0) {
+      delta['approverRefsAdd'] = this._displayNamesToUserRefs(
+        approversAdded);
+    }
+
+    if (approversRemoved.length > 0) {
+      delta['approverRefsRemove'] = this._displayNamesToUserRefs(
+        approversRemoved);
     }
 
     if (data.comment || Object.keys(delta).length > 0) {
@@ -184,31 +193,8 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
     this.cancel();
   }
 
-  // Map oldApprovers from userRef objects into raw display names to make
-  // the array the same format as newApprovers.
-  // TODO(zhangtiff): Figure out how to handle truncated display names.
-  _saveApprovers(newApprovers, delta) {
-    const oldApprovers = this.approvers.map((a) => (a.displayName));
-
-    const approverEquals = (a, b) => (a.toLowerCase() === b.toLowerCase());
-
-    const approversAdd = fltHelpers.arrayDifference(newApprovers, oldApprovers,
-      approverEquals);
-    const approversRemove = fltHelpers.arrayDifference(oldApprovers,
-      newApprovers, approverEquals);
-
-    if (approversAdd.length > 0) {
-      delta['approver_refs_add'] = this._displayNamesToUserRefs(approversAdd);
-    }
-
-    if (approversRemove.length > 0) {
-      delta['approver_refs_remove'] = this._displayNamesToUserRefs(
-        approversRemove);
-    }
-  }
-
   _displayNamesToUserRefs(list) {
-    return list.map((name) => ({'display_name': name}));
+    return list.map((name) => ({'displayName': name}));
   }
 
   toggleCard(evt) {
@@ -222,25 +208,25 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
   _updateApproval(commentData, delta, isDescription) {
     const baseMessage = {
       trace: {token: this.token},
-      issue_ref: {
-        project_name: this.projectName,
-        local_id: this.issueId,
+      issueRef: {
+        projectName: this.projectName,
+        localId: this.issueId,
       },
     };
     const message = Object.assign({}, baseMessage, {
-      field_ref: {
+      fieldRef: {
         type: 'APPROVAL_TYPE',
-        field_name: this.fieldName,
+        fieldName: this.fieldName,
       },
-      comment_content: commentData || '',
+      commentContent: commentData || '',
     });
 
     if (delta) {
-      message.approval_delta = delta;
+      message.approvalDelta = delta;
     }
 
     if (isDescription) {
-      message.is_description = true;
+      message.isDescription = true;
     }
 
     this.dispatch({type: actionType.UPDATE_APPROVAL_START});

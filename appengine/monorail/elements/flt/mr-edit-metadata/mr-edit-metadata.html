@@ -60,7 +60,6 @@
           <template is="dom-repeat" items="[[statuses]]">
             <option
               value$="[[item.status]]"
-              hidden$="[[_statusIsHidden(status, item)]]"
               selected$="[[_computeIsSelected(status, item.status)]]"
             >
               [[item.status]]
@@ -77,14 +76,22 @@
           <mr-edit-field
             id="ownerInput"
             type="USER_TYPE"
-            value="[[owner.displayName]]"
+            initial-values="[[_wrapList(ownerName)]]"
           ></mr-edit-field>
 
           <label for="ccInput" on-click="_clickLabelForCustomInput">CC:</label>
           <mr-edit-field
             id="ccInput"
             type="USER_TYPE"
-            values="[[_mapUserRefsToNames(cc)]]"
+            initial-values="[[_mapUserRefsToNames(cc)]]"
+            multi
+          ></mr-edit-field>
+
+          <label for="componentsInput" on-click="_clickLabelForCustomInput">Components:</label>
+          <mr-edit-field
+            id="componentsInput"
+            type="STR_TYPE"
+            initial-values="[[_mapComponentRefsToNames(components)]]"
             multi
           ></mr-edit-field>
         </template>
@@ -94,7 +101,7 @@
           <mr-edit-field
             id="approversInput"
             type="USER_TYPE"
-            values="[[_mapUserRefsToNames(approvers)]]"
+            initial-values="[[_mapUserRefsToNames(approvers)]]"
             multi
           ></mr-edit-field>
         </template>
@@ -112,7 +119,7 @@
             name="[[field.fieldRef.fieldName]]"
             type="[[field.fieldRef.type]]"
             options="[[_optionsForField(projectConfig.labelDefs, field.fieldRef.fieldName)]]"
-            values="[[_valuesForField(_fieldValueMap, field.fieldRef.fieldName)]]"
+            initial-values="[[_valuesForField(_fieldValueMap, field.fieldRef.fieldName)]]"
             multi="[[field.isMultivalued]]"
           ></mr-edit-field>
         </template>
@@ -121,21 +128,21 @@
           <label for="blockedOnInput" on-click="_clickLabelForCustomInput">Blocked on:</label>
           <mr-edit-field
             id="blockedOnInput"
-            values="[[_blockedOnIds]]"
+            initial-values="[[_mapBlockerRefsToIdStrings(blockedOn, projectName)]]"
             multi
           ></mr-edit-field>
 
           <label for="blockingInput" on-click="_clickLabelForCustomInput">Blocking:</label>
           <mr-edit-field
             id="blockingInput"
-            values="[[_blockingIds]]"
+            initial-values="[[_mapBlockerRefsToIdStrings(blocking, projectName)]]"
             multi
           ></mr-edit-field>
 
           <label for="labelsInput" on-click="_clickLabelForCustomInput">Labels:</label>
           <mr-edit-field
             id="labelsInput"
-            values="[[labelNames]]"
+            initial-values="[[labelNames]]"
             multi
           ></mr-edit-field>
         </template>

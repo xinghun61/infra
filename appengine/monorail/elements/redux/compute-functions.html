@@ -38,6 +38,10 @@
       computeOptionsForField: (labelDefs, fieldName) => {
         return labelDefs.filter((label) => {
           return label.label.toLowerCase().startsWith(fieldName.toLowerCase());
+        }).map((enumLabel) => {
+          enumLabel.optionName = enumLabel.label.substring(
+            fieldName.length + 1);
+          return enumLabel;
         });
       },
       // Filter fieldDefs to get the field defs applicable to a specific issue

@@ -63,11 +63,11 @@ class MrIssueDetails extends ReduxMixin(Polymer.Element) {
   _updateIssue(commentData, delta, isDescription) {
     const message = {
       trace: {token: this.token},
-      issue_ref: {
-        project_name: this.projectName,
-        local_id: this.issueId,
+      issueRef: {
+        projectName: this.projectName,
+        localId: this.issueId,
       },
-      comment_content: commentData || '',
+      commentContent: commentData || '',
     };
 
     if (delta) {
@@ -75,7 +75,7 @@ class MrIssueDetails extends ReduxMixin(Polymer.Element) {
     }
 
     if (isDescription) {
-      message.is_description = true;
+      message.isDescription = true;
     }
 
     actionCreator.updateIssue(this.dispatch.bind(this), message);

@@ -35,7 +35,8 @@
         text-align: center;
         box-sizing: border-box;
         padding: 0.5em 8px;
-        border-top: 1px solid hsl(120, 15%, 90%);
+        border-bottom: 1px solid hsl(120, 15%, 90%);
+        margin-bottom: 1em;
       }
       .restricted {
         background: hsl(30, 100%, 93%);
@@ -72,6 +73,12 @@
         cursor: default;
       }
     </style>
+    <div class="edit-container">
+      <chops-button on-click="edit">
+        <iron-icon icon="create"></iron-icon>
+        Edit feature metadata
+      </chops-button>
+    </div>
     <div class="star-line">
       <button on-click="toggleStar" disabled$="[[!_canStar]]">
         <template is="dom-if" if="[[isStarred]]">
@@ -104,13 +111,6 @@
     <div class="restricted">
       <strong><iron-icon icon="lock"></iron-icon>Restricted</strong>
       Only users with Google permission can see this issue.
-    </div>
-
-    <div class="edit-container">
-      <chops-button on-click="edit">
-        <iron-icon icon="create"></iron-icon>
-        Edit feature metadata
-      </chops-button>
     </div>
   </template>
   <script src="./mr-issue-metadata.js"></script>

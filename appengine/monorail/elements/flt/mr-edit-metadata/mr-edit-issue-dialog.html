@@ -7,7 +7,6 @@
 <link rel="import" href="../../redux/redux-mixin.html">
 <link rel="import" href="../mr-edit-metadata/mr-edit-metadata.html">
 <link rel="import" href="../shared/mr-flt-styles.html">
-<link rel="import" href="../shared/flt-helpers.html">
 
 <dom-module id="mr-edit-issue-dialog">
   <template>
@@ -34,7 +33,7 @@
       </h3>
       <mr-edit-metadata
         id="metadataForm"
-        owner="[[issue.ownerRef]]"
+        owner-name="[[_omitEmptyDisplayName(issue.ownerRef.displayName)]]"
         cc="[[issue.ccRefs]]"
         status="[[issue.statusRef.status]]"
         statuses="[[statuses]]"

@@ -1,4 +1,5 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../shared/flt-helpers.html">
 
 <dom-module id="mr-edit-field">
   <template>
@@ -19,22 +20,24 @@
         <template is="dom-repeat" items="[[options]]" as="option">
           <label title$="[[option.docstring]]">
             <input
+              class="enum-input"
               type="checkbox"
-              name$="[[option.label]]"
-              value$="[[option.label]]"
-              checked$="[[_opionInValues(values, option.label)]]"
+              name$="[[name]]"
+              value$="[[option.optionName]]"
+              checked$="[[_optionInValues(initialValues, option.optionName)]]"
             />
-            [[_stripPrefix(option.label, name)]]
+            [[option.optionName]]
           </label>
         </template>
       </template>
       <select id="editSelect" hidden$="[[multi]]">
+        <option value="">----</option>
         <template is="dom-repeat" items="[[options]]" as="option">
           <option
-            value$="[[option.label]]"
-            selected$="[[_computeIsSelected(value, option.label)]]"
+            value$="[[option.optionName]]"
+            selected$="[[_computeIsSelected(_initialValue, option.optionName)]]"
           >
-            [[_stripPrefix(option.label, name)]]
+            [[option.optionName]]
             <template is="dom-if" if="[[option.docstring]]">
               - [[option.docstring]]
             </template>
@@ -43,7 +46,7 @@
       </select>
     </template>
 
-    <input id="editInput" value$="[[_defaultValue]]" hidden$="[[!_fieldIsBasic]]" />
+    <input id="editInput" value$="[[_initialValue]]" hidden$="[[!_fieldIsBasic]]" />
   </template>
   <script src="./mr-edit-field.js"></script>
 <dom-module>
