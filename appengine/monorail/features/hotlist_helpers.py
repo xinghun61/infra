@@ -77,11 +77,9 @@ def GetSortedHotlistIssues(
     sortable_postproc.update(
         {'adder': lambda user_view: user_view.email,
         })
-    if not mr.sort_spec:
-      mr.sort_spec = 'rank'
     sorted_issues = sorting.SortArtifacts(
-        mr, allowed_issues, harmonized_config, sortable_fields,
-        sortable_postproc,
+        allowed_issues, harmonized_config, sortable_fields,
+        sortable_postproc, mr.group_by_spec, mr.sort_spec or 'rank',
         users_by_id=issues_users_by_id, tie_breakers=['rank', 'id'])
     return sorted_issues, hotlist_issues_context, issues_users_by_id
 

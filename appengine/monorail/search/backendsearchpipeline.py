@@ -97,7 +97,8 @@ class BackendSearchPipeline(object):
 
     slice_term = ('Issue.shard = %s', [self.mr.shard_id])
 
-    sd = sorting.ComputeSortDirectives(self.mr, self.harmonized_config)
+    sd = sorting.ComputeSortDirectives(
+        self.harmonized_config, self.mr.group_by_spec, self.mr.sort_spec)
 
     self.result_iids_promise = framework_helpers.Promise(
         _GetQueryResultIIDs, self.mr.cnxn,

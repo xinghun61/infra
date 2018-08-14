@@ -79,20 +79,21 @@ def InvalidateArtValuesKeys(cnxn, keys):
 
 
 def SortArtifacts(
-    mr, artifacts, config, accessors, postprocessors, users_by_id=None,
-    tie_breakers=None):
+    artifacts, config, accessors, postprocessors, group_by_spec, sort_spec,
+    users_by_id=None, tie_breakers=None):
   """Return a list of artifacts sorted by the user's sort specification.
 
   In the following, an "accessor" is a function(art) -> [field_value, ...].
 
   Args:
-    mr: commonly used info parsed from the request, including query.
     artifacts: an unsorted list of project artifact PBs.
     config: Project config PB instance that defines the sort order for
         labels and statuses in this project.
     accessors: dict {column_name: accessor} to get values from the artifacts.
     postprocessors: dict {column_name: postprocessor} to get user emails
         and timestamps.
+    group_by_spec: string that lists the grouping order
+    sort_spec: string that lists the sort order
     users_by_id: optional dictionary {user_id: user_view,...} for all users
         who participate in the list of artifacts.
     tie_breakers: list of column names to add to the end of the sort
@@ -111,7 +112,8 @@ def SortArtifacts(
   faster overall than doing multiple stable-sorts or doing one sort
   using a multi-field comparison function.
   """
-  sort_directives = ComputeSortDirectives(mr, config, tie_breakers=tie_breakers)
+  sort_directives = ComputeSortDirectives(
+      config, group_by_spec, sort_spec, tie_breakers=tie_breakers)
 
   # Build a list of accessors that will extract sort keys from the issues.
   accessor_pairs = [
@@ -138,13 +140,14 @@ def SortArtifacts(
   return sorted(artifacts, key=SortKey)
 
 
-def ComputeSortDirectives(mr, config, tie_breakers=None):
+def ComputeSortDirectives(config, group_by_spec, sort_spec, tie_breakers=None):
   """Return a list with sort directives to be used in sorting.
 
   Args:
-    mr: commonly used info parsed from the request, including query.
     config: Project config PB instance that defines the sort order for
         labels and statuses in this project.
+    group_by_spec: string that lists the grouping order
+    sort_spec: string that lists the sort order
     tie_breakers: list of column names to add to the end of the sort
         spec if they are not already somewhere in the sort spec.
 
@@ -156,7 +159,7 @@ def ComputeSortDirectives(mr, config, tie_breakers=None):
   if tie_breakers is None:
     tie_breakers = ['id']
   sort_spec = '%s %s %s' % (
-      mr.group_by_spec, mr.sort_spec, config.default_sort_spec)
+      group_by_spec, sort_spec, config.default_sort_spec)
   # Sort specs can have interfering sort orders, so remove any duplicates.
   field_names = set()
   sort_directives = []

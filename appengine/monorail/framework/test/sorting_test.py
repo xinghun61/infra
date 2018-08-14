@@ -6,6 +6,8 @@
 """Unit tests for sorting.py functions."""
 
 import unittest
+# For convenient debugging
+import logging
 
 import mox
 
@@ -204,24 +206,16 @@ class SortingTest(unittest.TestCase):
 
   def testComputeSortDirectives(self):
     config = tracker_pb2.ProjectIssueConfig()
-    mr = testing_helpers.MakeMonorailRequest(
-        path='/p/proj/issues/detail?id=123')
     self.assertEquals(['project', 'id'],
-                      sorting.ComputeSortDirectives(mr, config))
+                      sorting.ComputeSortDirectives(config, '', ''))
 
-    mr = testing_helpers.MakeMonorailRequest(
-        path='/p/proj/issues/detail?id=123&sort=a b C')
     self.assertEquals(['a', 'b', 'c', 'project', 'id'],
-                      sorting.ComputeSortDirectives(mr, config))
+                      sorting.ComputeSortDirectives(config, '', 'a b C'))
 
     config.default_sort_spec = 'id -reporter Owner'
-    mr = testing_helpers.MakeMonorailRequest(
-        path='/p/proj/issues/detail?id=123')
     self.assertEquals(['id', '-reporter', 'owner', 'project'],
-                      sorting.ComputeSortDirectives(mr, config))
+                      sorting.ComputeSortDirectives(config, '', ''))
 
-    mr = testing_helpers.MakeMonorailRequest(
-        path='/p/proj/issues/detail?id=123&sort=A -b c -owner')
     self.assertEquals(
-        ['a', '-b', 'c', '-owner', 'id', '-reporter', 'project'],
-        sorting.ComputeSortDirectives(mr, config))
+        ['x', '-b', 'a', 'c', '-owner', 'id', '-reporter', 'project'],
+        sorting.ComputeSortDirectives(config, 'x -b', 'A -b c -owner'))

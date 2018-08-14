@@ -891,8 +891,6 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
         cache_manager=fake.CacheManager())
     sorting.InitializeArtValues(services)
 
-    mr = testing_helpers.MakeMonorailRequest(path='/p/proj/issues/list?q=foo')
-    mr.sort_spec = 'priority'
     issue_1 = fake.MakeTestIssue(
       789, 1, 'one', 'New', 111L, labels=['Priority-High'])
     issue_2 = fake.MakeTestIssue(
@@ -902,7 +900,8 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     issues = [issue_1, issue_2, issue_3]
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
 
-    sorted_issues = frontendsearchpipeline._SortIssues(mr, issues, config, {})
+    sorted_issues = frontendsearchpipeline._SortIssues(
+        issues, config, {}, '', 'priority')
 
     self.assertEqual(
       [issue_1, issue_3, issue_2],  # Order is high, medium, low.

@@ -203,8 +203,8 @@ class FrontendSearchPipeline(object):
     self._LookupNeededUsers(self.allowed_results)
     with self.mr.profiler.Phase('merging and sorting issues'):
       self.allowed_results = _SortIssues(
-          self.mr, self.allowed_results, self.harmonized_config,
-          self.users_by_id)
+          self.allowed_results, self.harmonized_config, self.users_by_id,
+          self.mr.group_by_spec, self.mr.sort_spec)
 
   def _NarrowFilteredIIDs(self):
     """Combine filtered shards into a range of IIDs for issues to sort.
@@ -237,7 +237,8 @@ class FrontendSearchPipeline(object):
 
     self._LookupNeededUsers(sample_issues)
     sample_issues = _SortIssues(
-        self.mr, sample_issues, self.harmonized_config, self.users_by_id)
+        sample_issues, self.harmonized_config, self.users_by_id,
+        self.mr.group_by_spec, self.mr.sort_spec)
     sample_iid_tuples = [
         (issue.issue_id, sample_iids_to_shard[issue.issue_id])
         for issue in sample_issues]
@@ -296,10 +297,12 @@ class FrontendSearchPipeline(object):
     # 4. Combine the results.
     index = sum(preceeding_counts.itervalues())
     prev_candidates = _SortIssues(
-        self.mr, prev_candidates, self.harmonized_config, self.users_by_id)
+        prev_candidates, self.harmonized_config, self.users_by_id,
+        self.mr.group_by_spec, self.mr.sort_spec)
     prev_iid = prev_candidates[-1].issue_id if prev_candidates else None
     next_candidates = _SortIssues(
-        self.mr, next_candidates, self.harmonized_config, self.users_by_id)
+        next_candidates, self.harmonized_config, self.users_by_id,
+        self.mr.group_by_spec, self.mr.sort_spec)
     next_iid = next_candidates[0].issue_id if next_candidates else None
 
     return prev_iid, index, next_iid
@@ -319,7 +322,8 @@ class FrontendSearchPipeline(object):
 
     self._LookupNeededUsers(issues_on_hand)
     sorted_on_hand = _SortIssues(
-        self.mr, issues_on_hand, self.harmonized_config, self.users_by_id)
+        issues_on_hand, self.harmonized_config, self.users_by_id,
+        self.mr.group_by_spec, self.mr.sort_spec)
     sorted_on_hand_iids = [soh.issue_id for soh in sorted_on_hand]
     index_in_on_hand = sorted_on_hand_iids.index(issue.issue_id)
 
@@ -343,7 +347,8 @@ class FrontendSearchPipeline(object):
       fetched_issues.append(issue)
     self._LookupNeededUsers(fetched_issues)
     sorted_fetched = _SortIssues(
-        self.mr, fetched_issues, self.harmonized_config, self.users_by_id)
+        fetched_issues, self.harmonized_config, self.users_by_id,
+        self.mr.group_by_spec, self.mr.sort_spec)
     sorted_fetched_iids = [sf.issue_id for sf in sorted_fetched]
     index_in_fetched = sorted_fetched_iids.index(issue.issue_id)
 
@@ -750,7 +755,8 @@ def _GetCachedSearchResults(
       mr.me_user_id, canned_query)
   mr.warnings.extend(warnings)
 
-  sd = sorting.ComputeSortDirectives(mr, harmonized_config)
+  sd = sorting.ComputeSortDirectives(
+      harmonized_config, mr.group_by_spec, mr.sort_spec)
   sd_str = ' '.join(sd)
   memcache_key_prefix = '%s;%s' % (projects_str, canned_query)
   limit_reached_key_prefix = '%s;%s' % (projects_str, canned_query)
@@ -1036,20 +1042,23 @@ def _CalcSamplePositions(sharded_iids, sample_iids):
   return sample_positions
 
 
-def _SortIssues(mr, issues, config, users_by_id):
+def _SortIssues(issues, config, users_by_id, group_by_spec, sort_spec):
   """Sort the found issues based on the request and config values.
 
   Args:
-    mr: common information parsed from the HTTP request.
     issues: A list of issues to be sorted.
     config: A ProjectIssueConfig that could impact sort order.
     users_by_id: dictionary {user_id: user_view,...} for all users who
       participate in any issue in the entire list.
+    group_by_spec: string that lists the grouping order
+    sort_spec: string that lists the sort order
+
 
   Returns:
     A sorted list of issues, based on parameters from mr and config.
   """
   issues = sorting.SortArtifacts(
-      mr, issues, config, tracker_helpers.SORTABLE_FIELDS,
-      tracker_helpers.SORTABLE_FIELDS_POSTPROCESSORS, users_by_id=users_by_id)
+      issues, config, tracker_helpers.SORTABLE_FIELDS,
+      tracker_helpers.SORTABLE_FIELDS_POSTPROCESSORS, group_by_spec,
+      sort_spec, users_by_id=users_by_id)
   return issues
