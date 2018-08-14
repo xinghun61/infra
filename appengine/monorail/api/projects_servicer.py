@@ -198,14 +198,14 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
     return result
 
   @monorail_servicer.PRPCMethod
-  def GetStarCount(self, mc, request):
+  def GetProjectStarCount(self, mc, request):
     """Get the star count for the specified project."""
     project = self._GetProject(mc, request)
 
     with work_env.WorkEnv(mc, self.services) as we:
       star_count = we.GetProjectStarCount(project.project_id)
 
-    result = projects_pb2.GetStarCountResponse(star_count=star_count)
+    result = projects_pb2.GetProjectStarCountResponse(star_count=star_count)
     return result
 
   @monorail_servicer.PRPCMethod

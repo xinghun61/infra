@@ -785,18 +785,82 @@ class WorkEnv(object):
           self.mc.cnxn, user_id_dict.values())
     return users_by_id.values()
 
+  def StarUser(self, user_id, starred):
+    """Star or unstar the specified user.
+
+    Args:
+      user_id: int ID of the user to star/unstar.
+      starred: true to add a star, false to remove it.
+
+    Returns:
+      Nothing.
+
+    Raises:
+      NoSuchUserException: There is no user with that ID.
+    """
+    if not self.mc.auth.user_id:
+      raise exceptions.InputException('No current user specified')
+
+    with self.mc.profiler.Phase('(un)starring user %r' % user_id):
+      # Make sure the user exists and user has permission to see it.
+      self.services.user.LookupUserEmail(self.mc.cnxn, user_id)
+      self.services.user_star.SetStar(
+          self.mc.cnxn, user_id, self.mc.auth.user_id, starred)
+
+  def IsUserStarred(self, user_id):
+    """Return True if the current user has starred the given user.
+
+    Args:
+      user_id: int ID of the user to check.
+
+    Returns:
+      True if starred.
+
+    Raises:
+      NoSuchUserException: There is no user with that ID.
+    """
+    if user_id is None:
+      raise exceptions.InputException('No user specified')
+
+    if not self.mc.auth.user_id:
+      return False
+
+    with self.mc.profiler.Phase('checking user star %r' % user_id):
+      # Make sure the user exists.
+      self.services.user.LookupUserEmail(self.mc.cnxn, user_id)
+      return self.services.user_star.IsItemStarredBy(
+        self.mc.cnxn, user_id, self.mc.auth.user_id)
+
+  def GetUserStarCount(self, user_id):
+    """Return the number of times the user has been starred.
+
+    Args:
+      user_id: int ID of the user to check.
+
+    Returns:
+      The number of times the user has been starred.
+
+    Raises:
+      NoSuchUserException: There is no user with that ID.
+    """
+    if user_id is None:
+      raise exceptions.InputException('No user specified')
+
+    with self.mc.profiler.Phase('counting stars for user %r' % user_id):
+      # Make sure the user exists.
+      self.services.user.LookupUserEmail(self.mc.cnxn, user_id)
+      return self.services.user_star.CountItemStars(self.mc.cnxn, user_id)
+
   # FUTURE: GetUser()
   # FUTURE: UpdateUser()
   # FUTURE: DeleteUser()
-  # FUTURE: StarUser()
-  # FUTURE: IsUserStarred()
   # FUTURE: ListStarredUsers()
 
   def GetUserCommits(self, user_id, from_timestamp, to_timestamp):
     """Return a user's commits given their user id or email.
 
     Args:
-      user_id: int project ID of the project that contains the issue.
+      user_id: int user ID.
 
     Returns:
       A list of commits from the given user.

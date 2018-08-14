@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='api/api_proto/users.proto',
   package='monorail',
   syntax='proto3',
-  serialized_pb=_b('\n\x19\x61pi/api_proto/users.proto\x12\x08monorail\x1a api/api_proto/user_objects.proto\x1a\x1a\x61pi/api_proto/common.proto\"&\n\x04User\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x0f\n\x07user_id\x18\x02 \x01(\x03\"S\n\x1aListReferencedUsersRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x0e\n\x06\x65mails\x18\x02 \x03(\t\"<\n\x1bListReferencedUsersResponse\x12\x1d\n\x05users\x18\x01 \x03(\x0b\x32\x0e.monorail.User\"~\n\x15GetUserCommitsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\r\n\x05\x65mail\x18\x02 \x01(\t\x12\x16\n\x0e\x66rom_timestamp\x18\x03 \x01(\x07\x12\x17\n\x0funtil_timestamp\x18\x04 \x01(\x07\"@\n\x16GetUserCommitsResponse\x12&\n\x0cuser_commits\x18\x01 \x03(\x0b\x32\x10.monorail.Commit2\xf4\x01\n\x05Users\x12.\n\x07GetUser\x12\x11.monorail.UserRef\x1a\x0e.monorail.User\"\x00\x12\x64\n\x13ListReferencedUsers\x12$.monorail.ListReferencedUsersRequest\x1a%.monorail.ListReferencedUsersResponse\"\x00\x12U\n\x0eGetUserCommits\x12\x1f.monorail.GetUserCommitsRequest\x1a .monorail.GetUserCommitsResponse\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x19\x61pi/api_proto/users.proto\x12\x08monorail\x1a api/api_proto/user_objects.proto\x1a\x1a\x61pi/api_proto/common.proto\"&\n\x04User\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x0f\n\x07user_id\x18\x02 \x01(\x03\"S\n\x1aListReferencedUsersRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x0e\n\x06\x65mails\x18\x02 \x03(\t\"<\n\x1bListReferencedUsersResponse\x12\x1d\n\x05users\x18\x01 \x03(\x0b\x32\x0e.monorail.User\"~\n\x15GetUserCommitsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\r\n\x05\x65mail\x18\x02 \x01(\t\x12\x16\n\x0e\x66rom_timestamp\x18\x03 \x01(\x07\x12\x17\n\x0funtil_timestamp\x18\x04 \x01(\x07\"@\n\x16GetUserCommitsResponse\x12&\n\x0cuser_commits\x18\x01 \x03(\x0b\x32\x10.monorail.Commit\"e\n\x17GetUserStarCountRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12#\n\x08user_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\".\n\x18GetUserStarCountResponse\x12\x12\n\nstar_count\x18\x01 \x01(\r\"n\n\x0fStarUserRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12#\n\x08user_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\x12\x0f\n\x07starred\x18\x03 \x01(\x08\"&\n\x10StarUserResponse\x12\x12\n\nstar_count\x18\x01 \x01(\r2\x96\x03\n\x05Users\x12.\n\x07GetUser\x12\x11.monorail.UserRef\x1a\x0e.monorail.User\"\x00\x12\x64\n\x13ListReferencedUsers\x12$.monorail.ListReferencedUsersRequest\x1a%.monorail.ListReferencedUsersResponse\"\x00\x12U\n\x0eGetUserCommits\x12\x1f.monorail.GetUserCommitsRequest\x1a .monorail.GetUserCommitsResponse\"\x00\x12[\n\x10GetUserStarCount\x12!.monorail.GetUserStarCountRequest\x1a\".monorail.GetUserStarCountResponse\"\x00\x12\x43\n\x08StarUser\x12\x19.monorail.StarUserRequest\x1a\x1a.monorail.StarUserResponse\"\x00\x62\x06proto3')
   ,
   dependencies=[api_dot_api__proto_dot_user__objects__pb2.DESCRIPTOR,api_dot_api__proto_dot_common__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -218,15 +218,168 @@ _GETUSERCOMMITSRESPONSE = _descriptor.Descriptor(
   serialized_end=480,
 )
 
+
+_GETUSERSTARCOUNTREQUEST = _descriptor.Descriptor(
+  name='GetUserStarCountRequest',
+  full_name='monorail.GetUserStarCountRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='trace', full_name='monorail.GetUserStarCountRequest.trace', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='user_ref', full_name='monorail.GetUserStarCountRequest.user_ref', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=482,
+  serialized_end=583,
+)
+
+
+_GETUSERSTARCOUNTRESPONSE = _descriptor.Descriptor(
+  name='GetUserStarCountResponse',
+  full_name='monorail.GetUserStarCountResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='star_count', full_name='monorail.GetUserStarCountResponse.star_count', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=585,
+  serialized_end=631,
+)
+
+
+_STARUSERREQUEST = _descriptor.Descriptor(
+  name='StarUserRequest',
+  full_name='monorail.StarUserRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='trace', full_name='monorail.StarUserRequest.trace', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='user_ref', full_name='monorail.StarUserRequest.user_ref', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='starred', full_name='monorail.StarUserRequest.starred', index=2,
+      number=3, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=633,
+  serialized_end=743,
+)
+
+
+_STARUSERRESPONSE = _descriptor.Descriptor(
+  name='StarUserResponse',
+  full_name='monorail.StarUserResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='star_count', full_name='monorail.StarUserResponse.star_count', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=745,
+  serialized_end=783,
+)
+
 _LISTREFERENCEDUSERSREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _LISTREFERENCEDUSERSRESPONSE.fields_by_name['users'].message_type = _USER
 _GETUSERCOMMITSREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _GETUSERCOMMITSRESPONSE.fields_by_name['user_commits'].message_type = api_dot_api__proto_dot_user__objects__pb2._COMMIT
+_GETUSERSTARCOUNTREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
+_GETUSERSTARCOUNTREQUEST.fields_by_name['user_ref'].message_type = api_dot_api__proto_dot_common__pb2._USERREF
+_STARUSERREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
+_STARUSERREQUEST.fields_by_name['user_ref'].message_type = api_dot_api__proto_dot_common__pb2._USERREF
 DESCRIPTOR.message_types_by_name['User'] = _USER
 DESCRIPTOR.message_types_by_name['ListReferencedUsersRequest'] = _LISTREFERENCEDUSERSREQUEST
 DESCRIPTOR.message_types_by_name['ListReferencedUsersResponse'] = _LISTREFERENCEDUSERSRESPONSE
 DESCRIPTOR.message_types_by_name['GetUserCommitsRequest'] = _GETUSERCOMMITSREQUEST
 DESCRIPTOR.message_types_by_name['GetUserCommitsResponse'] = _GETUSERCOMMITSRESPONSE
+DESCRIPTOR.message_types_by_name['GetUserStarCountRequest'] = _GETUSERSTARCOUNTREQUEST
+DESCRIPTOR.message_types_by_name['GetUserStarCountResponse'] = _GETUSERSTARCOUNTRESPONSE
+DESCRIPTOR.message_types_by_name['StarUserRequest'] = _STARUSERREQUEST
+DESCRIPTOR.message_types_by_name['StarUserResponse'] = _STARUSERRESPONSE
 
 User = _reflection.GeneratedProtocolMessageType('User', (_message.Message,), dict(
   DESCRIPTOR = _USER,
@@ -262,6 +415,34 @@ GetUserCommitsResponse = _reflection.GeneratedProtocolMessageType('GetUserCommit
   # @@protoc_insertion_point(class_scope:monorail.GetUserCommitsResponse)
   ))
 _sym_db.RegisterMessage(GetUserCommitsResponse)
+
+GetUserStarCountRequest = _reflection.GeneratedProtocolMessageType('GetUserStarCountRequest', (_message.Message,), dict(
+  DESCRIPTOR = _GETUSERSTARCOUNTREQUEST,
+  __module__ = 'api.api_proto.users_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.GetUserStarCountRequest)
+  ))
+_sym_db.RegisterMessage(GetUserStarCountRequest)
+
+GetUserStarCountResponse = _reflection.GeneratedProtocolMessageType('GetUserStarCountResponse', (_message.Message,), dict(
+  DESCRIPTOR = _GETUSERSTARCOUNTRESPONSE,
+  __module__ = 'api.api_proto.users_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.GetUserStarCountResponse)
+  ))
+_sym_db.RegisterMessage(GetUserStarCountResponse)
+
+StarUserRequest = _reflection.GeneratedProtocolMessageType('StarUserRequest', (_message.Message,), dict(
+  DESCRIPTOR = _STARUSERREQUEST,
+  __module__ = 'api.api_proto.users_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.StarUserRequest)
+  ))
+_sym_db.RegisterMessage(StarUserRequest)
+
+StarUserResponse = _reflection.GeneratedProtocolMessageType('StarUserResponse', (_message.Message,), dict(
+  DESCRIPTOR = _STARUSERRESPONSE,
+  __module__ = 'api.api_proto.users_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.StarUserResponse)
+  ))
+_sym_db.RegisterMessage(StarUserResponse)
 
 
 # @@protoc_insertion_point(module_scope)

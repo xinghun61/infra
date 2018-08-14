@@ -62,3 +62,28 @@ class UsersServicer(monorail_servicer.MonorailServicer):
       response = users_pb2.GetUserCommitsResponse(
           user_commits=converted_commits)
       return response
+
+  @monorail_servicer.PRPCMethod
+  def GetUserStarCount(self, mc, request):
+    """Return the star count for a given user."""
+    user_id = converters.IngestUserRefs(
+        mc.cnxn, [request.user_ref], self.services.user)[0]
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      star_count = we.GetUserStarCount(user_id)
+
+    result = users_pb2.GetUserStarCountResponse(star_count=star_count)
+    return result
+
+  @monorail_servicer.PRPCMethod
+  def StarUser(self, mc, request):
+    """Star a given user."""
+    user_id = converters.IngestUserRefs(
+        mc.cnxn, [request.user_ref], self.services.user)[0]
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      we.StarUser(user_id, request.starred)
+      star_count = we.GetUserStarCount(user_id)
+
+    result = users_pb2.StarUserResponse(star_count=star_count)
+    return result

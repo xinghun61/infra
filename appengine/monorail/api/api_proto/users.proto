@@ -14,6 +14,8 @@ service Users {
   rpc GetUser (UserRef) returns (User) {}
   rpc ListReferencedUsers (ListReferencedUsersRequest) returns (ListReferencedUsersResponse) {}
   rpc GetUserCommits (GetUserCommitsRequest) returns (GetUserCommitsResponse) {}
+  rpc GetUserStarCount (GetUserStarCountRequest) returns (GetUserStarCountResponse) {}
+  rpc StarUser (StarUserRequest) returns (StarUserResponse) {}
 }
 
 
@@ -48,4 +50,31 @@ message GetUserCommitsRequest {
 
 message GetUserCommitsResponse {
   repeated Commit user_commits = 1;
+}
+
+
+// Next available tag: 3
+message GetUserStarCountRequest {
+  RequestTrace trace = 1;
+  UserRef user_ref = 2;
+}
+
+
+// Next available tag: 2
+message GetUserStarCountResponse {
+  uint32 star_count = 1;
+}
+
+
+// Next available tag: 4
+message StarUserRequest {
+  RequestTrace trace = 1;
+  UserRef user_ref = 2;
+  bool starred = 3;
+}
+
+
+// Next available tag: 2
+message StarUserResponse {
+  uint32 star_count = 1;
 }

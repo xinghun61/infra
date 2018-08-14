@@ -36,6 +36,7 @@ class WorkEnvTest(unittest.TestCase):
         project=fake.ProjectService(),
         issue_star=fake.IssueStarService(),
         project_star=fake.ProjectStarService(),
+        user_star=fake.UserStarService(),
         features=fake.FeaturesService(),
         template=Mock(spec=template_svc.TemplateService),
         spam=fake.SpamService())
@@ -44,6 +45,7 @@ class WorkEnvTest(unittest.TestCase):
     self.admin_user = self.services.user.TestAddUser(
         'admin@example.com', 444L)
     self.admin_user.is_site_admin = True
+    self.services.user.TestAddUser('user_111@example.com', 111L)
     self.mr = testing_helpers.MakeMonorailRequest(project=self.project)
     self.mr.perms = permissions.READ_ONLY_PERMISSIONSET
 
@@ -743,11 +745,78 @@ class WorkEnvTest(unittest.TestCase):
           ['test4@example.com', 'test5@example.com', 'test6@example.com', ''])
       self.assertItemsEqual(users, [user5, user6])
 
+  def testStarUser_Normal(self):
+    """We can star and unstar a user."""
+    self.SignIn()
+    with self.work_env as we:
+      self.assertFalse(we.IsUserStarred(111L))
+      we.StarUser(111L, True)
+      self.assertTrue(we.IsUserStarred(111L))
+      we.StarUser(111L, False)
+      self.assertFalse(we.IsUserStarred(111L))
+
+  def testStarUser_NoSuchUser(self):
+    """We can't star a nonexistent user."""
+    self.SignIn()
+    with self.assertRaises(exceptions.NoSuchUserException):
+      with self.work_env as we:
+        we.StarUser(999, True)
+
+  def testStarUser_Anon(self):
+    """Anon user can't star a user."""
+    with self.assertRaises(exceptions.InputException):
+      with self.work_env as we:
+        we.StarUser(111L, True)
+
+  def testIsUserStarred_Normal(self):
+    """We can check if a user is starred."""
+    # Tested by method testStarUser_Normal().
+    pass
+
+  def testIsUserStarred_NoUserSpecified(self):
+    """A user ID must be specified."""
+    with self.work_env as we:
+      with self.assertRaises(exceptions.InputException):
+        self.assertFalse(we.IsUserStarred(None))
+
+  def testIsUserStarred_NoSuchUser(self):
+    """We can't check for stars on a nonexistent user."""
+    self.SignIn()
+    with self.assertRaises(exceptions.NoSuchUserException):
+      with self.work_env as we:
+        we.IsUserStarred(999)
+
+  def testGetUserStarCount_Normal(self):
+    """We can count the stars of a user."""
+    self.SignIn()
+    with self.work_env as we:
+      self.assertEqual(0, we.GetUserStarCount(111L))
+      we.StarUser(111L, True)
+      self.assertEqual(1, we.GetUserStarCount(111L))
+
+    self.SignIn(user_id=self.admin_user.user_id)
+    with self.work_env as we:
+      we.StarUser(111L, True)
+      self.assertEqual(2, we.GetUserStarCount(111L))
+      we.StarUser(111L, False)
+      self.assertEqual(1, we.GetUserStarCount(111L))
+
+  def testGetUserStarCount_NoSuchUser(self):
+    """We can't count stars of a nonexistent user."""
+    self.SignIn()
+    with self.assertRaises(exceptions.NoSuchUserException):
+      with self.work_env as we:
+        we.GetUserStarCount(111111L)
+
+  def testGetUserStarCount_NoUserSpecified(self):
+    """A user ID must be specified."""
+    with self.work_env as we:
+      with self.assertRaises(exceptions.InputException):
+        self.assertFalse(we.GetUserStarCount(None))
+
   # FUTURE: GetUser()
   # FUTURE: UpdateUser()
   # FUTURE: DeleteUser()
-  # FUTURE: StarUser()
-  # FUTURE: IsUserStarred()
   # FUTURE: ListStarredUsers()
 
   # FUTURE: CreateGroup()
