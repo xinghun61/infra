@@ -475,36 +475,46 @@ class ProjectsServicerTest(unittest.TestCase):
         self.projects_svcr.GetStarCount, mc, request)
     return response.star_count
 
-  def SetStar(self, user_id=111L, starred=True):
-    self.services.project_star.SetStar(
-        self.cnxn, self.project.project_id, user_id, starred)
+  def CallStarProject(self, requester='owner@example.com', starred=True):
+    request = projects_pb2.StarProjectRequest(
+        project_name='proj', starred=starred)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester=requester)
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(
+        self.projects_svcr.StarProject, mc, request)
+    return response.star_count
 
-  def testGetStarCount_Normal(self):
+  def testStarCount_Normal(self):
     self.assertEqual(0, self.CallGetStarCount())
-    self.SetStar()
+    self.assertEqual(1, self.CallStarProject())
     self.assertEqual(1, self.CallGetStarCount())
 
-  def testGetStarCount_StarTwiceSameUser(self):
-    self.SetStar()
-    self.SetStar()
+  def testStarCount_StarTwiceSameUser(self):
+    self.assertEqual(1, self.CallStarProject())
+    self.assertEqual(1, self.CallStarProject())
     self.assertEqual(1, self.CallGetStarCount())
 
-  def testGetStarCount_StarTwiceDifferentUser(self):
-    self.SetStar()
-    self.SetStar(user_id=222L)
+  def testStarCount_StarTwiceDifferentUser(self):
+    self.assertEqual(1, self.CallStarProject())
+    self.assertEqual(2, self.CallStarProject(requester='user_222@example.com'))
     self.assertEqual(2, self.CallGetStarCount())
 
-  def testGetStarCount_RemoveStarTwiceSameUser(self):
-    self.SetStar()
+  def testStarCount_RemoveStarTwiceSameUser(self):
+    self.assertEqual(1, self.CallStarProject())
     self.assertEqual(1, self.CallGetStarCount())
-    self.SetStar(starred=False)
-    self.SetStar(starred=False)
+
+    self.assertEqual(0, self.CallStarProject(starred=False))
+    self.assertEqual(0, self.CallStarProject(starred=False))
     self.assertEqual(0, self.CallGetStarCount())
 
-  def testGetStarCount_RemoveStarTwiceDifferentUser(self):
-    self.SetStar()
-    self.SetStar(user_id=222L)
+  def testStarCount_RemoveStarTwiceDifferentUser(self):
+    self.assertEqual(1, self.CallStarProject())
+    self.assertEqual(2, self.CallStarProject(requester='user_222@example.com'))
     self.assertEqual(2, self.CallGetStarCount())
-    self.SetStar(starred=False)
-    self.SetStar(user_id=222L, starred=False)
+
+    self.assertEqual(1, self.CallStarProject(starred=False))
+    self.assertEqual(
+        0,
+        self.CallStarProject(requester='user_222@example.com', starred=False))
     self.assertEqual(0, self.CallGetStarCount())

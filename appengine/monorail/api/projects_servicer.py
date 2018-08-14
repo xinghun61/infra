@@ -207,3 +207,15 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
 
     result = projects_pb2.GetStarCountResponse(star_count=star_count)
     return result
+
+  @monorail_servicer.PRPCMethod
+  def StarProject(self, mc, request):
+    """Star the specified project."""
+    project = self._GetProject(mc, request)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      we.StarProject(project.project_id, request.starred)
+      star_count = we.GetProjectStarCount(project.project_id)
+
+    result = projects_pb2.StarProjectResponse(star_count=star_count)
+    return result
