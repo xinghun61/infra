@@ -34,7 +34,8 @@ class FeaturesServicerTest(unittest.TestCase):
         user=fake.UserService(),
         usergroup=fake.UserGroupService(),
         project=fake.ProjectService(),
-        features=fake.FeaturesService())
+        features=fake.FeaturesService(),
+        hotlist_star=fake.HotlistStarService())
     self.user = self.services.user.TestAddUser('owner@example.com', 111L)
     self.user = self.services.user.TestAddUser('editor@example.com', 222L)
     self.user = self.services.user.TestAddUser('foo@example.com', 333L)
@@ -251,3 +252,74 @@ class FeaturesServicerTest(unittest.TestCase):
                                 request)
 
     self.assertEqual(0, len(response.hotlists))
+
+  def CallGetStarCount(self):
+    # Query for hotlists for 'owner@example.com'
+    owner_ref = common_pb2.UserRef(user_id=111L)
+    hotlist_ref = common_pb2.HotlistRef(name='Fake Hotlist', owner=owner_ref)
+    request = features_pb2.GetHotlistStarCountRequest(hotlist_ref=hotlist_ref)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.features_svcr.GetHotlistStarCount, mc, request)
+    return response.star_count
+
+  def CallStar(self, requester='owner@example.com', starred=True):
+    # Query for hotlists for 'owner@example.com'
+    owner_ref = common_pb2.UserRef(user_id=111L)
+    hotlist_ref = common_pb2.HotlistRef(name='Fake Hotlist', owner=owner_ref)
+    request = features_pb2.StarHotlistRequest(
+        hotlist_ref=hotlist_ref, starred=starred)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester=requester)
+    response = self.CallWrapped(
+        self.features_svcr.StarHotlist, mc, request)
+    return response.star_count
+
+  def testStarCount_Normal(self):
+    self.services.features.CreateHotlist(
+        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[222L])
+    self.assertEqual(0, self.CallGetStarCount())
+    self.assertEqual(1, self.CallStar())
+    self.assertEqual(1, self.CallGetStarCount())
+
+  def testStarCount_StarTwiceSameUser(self):
+    self.services.features.CreateHotlist(
+        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[222L])
+    self.assertEqual(1, self.CallStar())
+    self.assertEqual(1, self.CallStar())
+    self.assertEqual(1, self.CallGetStarCount())
+
+  def testStarCount_StarTwiceDifferentUser(self):
+    self.services.features.CreateHotlist(
+        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[222L])
+    self.assertEqual(1, self.CallStar())
+    self.assertEqual(2, self.CallStar(requester='user_222@example.com'))
+    self.assertEqual(2, self.CallGetStarCount())
+
+  def testStarCount_RemoveStarTwiceSameUser(self):
+    self.services.features.CreateHotlist(
+        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[222L])
+    self.assertEqual(1, self.CallStar())
+    self.assertEqual(1, self.CallGetStarCount())
+
+    self.assertEqual(0, self.CallStar(starred=False))
+    self.assertEqual(0, self.CallStar(starred=False))
+    self.assertEqual(0, self.CallGetStarCount())
+
+  def testStarCount_RemoveStarTwiceDifferentUser(self):
+    self.services.features.CreateHotlist(
+        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[222L])
+    self.assertEqual(1, self.CallStar())
+    self.assertEqual(2, self.CallStar(requester='user_222@example.com'))
+    self.assertEqual(2, self.CallGetStarCount())
+
+    self.assertEqual(1, self.CallStar(starred=False))
+    self.assertEqual(
+        0, self.CallStar(requester='user_222@example.com', starred=False))
+    self.assertEqual(0, self.CallGetStarCount())

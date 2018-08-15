@@ -21,6 +21,7 @@ from proto import user_pb2
 from testing import fake
 from testing import testing_helpers
 from tracker import tracker_bizobj
+from services import features_svc
 from services import service_manager
 
 
@@ -39,7 +40,8 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.services = service_manager.Services(
         issue=fake.IssueService(),
         project=fake.ProjectService(),
-        user=fake.UserService())
+        user=fake.UserService(),
+        features=fake.FeaturesService())
     self.cnxn = fake.MonorailConnection()
     self.project = self.services.project.TestAddProject(
         'proj', project_id=789)
@@ -900,6 +902,29 @@ class ConverterFunctionsTest(unittest.TestCase):
                 int_value=2, field_id=6, phase_id=1, derived=False)
         ]
     )
+
+  def testIngestHotlistRef(self):
+    self.services.user.TestAddUser('user1@example.com', 111L)
+    hotlist = self.services.features.CreateHotlist(
+        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[222L])
+
+    owner_ref = common_pb2.UserRef(user_id=111L)
+    hotlist_ref = common_pb2.HotlistRef(name='Fake Hotlist', owner=owner_ref)
+
+    actual_hotlist_id = converters.IngestHotlistRef(
+        self.cnxn, self.services.user, self.services.features, hotlist_ref)
+    self.assertEqual(actual_hotlist_id, hotlist.hotlist_id)
+
+  def testIngestHotlistRef_NoSuchIssue(self):
+    self.services.user.TestAddUser('user1@example.com', 111L)
+
+    owner_ref = common_pb2.UserRef(user_id=111L)
+    hotlist_ref = common_pb2.HotlistRef(name='Fake Hotlist', owner=owner_ref)
+
+    with self.assertRaises(features_svc.NoSuchHotlistException):
+      converters.IngestHotlistRef(
+          self.cnxn, self.services.user, self.services.features, hotlist_ref)
 
   def testConvertStatusDef(self):
     """We can convert a status definition to protoc."""

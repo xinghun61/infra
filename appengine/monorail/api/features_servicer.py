@@ -48,3 +48,30 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
         hotlists=converted_hotlists)
 
     return result
+
+  @monorail_servicer.PRPCMethod
+  def GetHotlistStarCount(self, mc, request):
+    """Get the star count for the specified hotlist."""
+    hotlist_id = converters.IngestHotlistRef(
+        mc.cnxn, self.services.user, self.services.features,
+        request.hotlist_ref)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      star_count = we.GetHotlistStarCount(hotlist_id)
+
+    result = features_pb2.GetHotlistStarCountResponse(star_count=star_count)
+    return result
+
+  @monorail_servicer.PRPCMethod
+  def StarHotlist(self, mc, request):
+    """Star the specified hotlist."""
+    hotlist_id = converters.IngestHotlistRef(
+        mc.cnxn, self.services.user, self.services.features,
+        request.hotlist_ref)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      we.StarHotlist(hotlist_id, request.starred)
+      star_count = we.GetHotlistStarCount(hotlist_id)
+
+    result = features_pb2.StarHotlistResponse(star_count=star_count)
+    return result

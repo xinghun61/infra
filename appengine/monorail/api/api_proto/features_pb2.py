@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='api/api_proto/features.proto',
   package='monorail',
   syntax='proto3',
-  serialized_pb=_b('\n\x1c\x61pi/api_proto/features.proto\x12\x08monorail\x1a\x1a\x61pi/api_proto/common.proto\x1a$api/api_proto/features_objects.proto\"c\n\x19ListHotlistsByUserRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x1f\n\x04user\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\"A\n\x1aListHotlistsByUserResponse\x12#\n\x08hotlists\x18\x01 \x03(\x0b\x32\x11.monorail.Hotlist2m\n\x08\x46\x65\x61tures\x12\x61\n\x12ListHotlistsByUser\x12#.monorail.ListHotlistsByUserRequest\x1a$.monorail.ListHotlistsByUserResponse\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x1c\x61pi/api_proto/features.proto\x12\x08monorail\x1a\x1a\x61pi/api_proto/common.proto\x1a$api/api_proto/features_objects.proto\"c\n\x19ListHotlistsByUserRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x1f\n\x04user\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\"A\n\x1aListHotlistsByUserResponse\x12#\n\x08hotlists\x18\x01 \x03(\x0b\x32\x11.monorail.Hotlist\"n\n\x1aGetHotlistStarCountRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12)\n\x0bhotlist_ref\x18\x02 \x01(\x0b\x32\x14.monorail.HotlistRef\"1\n\x1bGetHotlistStarCountResponse\x12\x12\n\nstar_count\x18\x01 \x01(\r\"w\n\x12StarHotlistRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12)\n\x0bhotlist_ref\x18\x02 \x01(\x0b\x32\x14.monorail.HotlistRef\x12\x0f\n\x07starred\x18\x03 \x01(\x08\")\n\x13StarHotlistResponse\x12\x12\n\nstar_count\x18\x01 \x01(\r2\xa1\x02\n\x08\x46\x65\x61tures\x12\x61\n\x12ListHotlistsByUser\x12#.monorail.ListHotlistsByUserRequest\x1a$.monorail.ListHotlistsByUserResponse\"\x00\x12\x64\n\x13GetHotlistStarCount\x12$.monorail.GetHotlistStarCountRequest\x1a%.monorail.GetHotlistStarCountResponse\"\x00\x12L\n\x0bStarHotlist\x12\x1c.monorail.StarHotlistRequest\x1a\x1d.monorail.StarHotlistResponse\"\x00\x62\x06proto3')
   ,
   dependencies=[api_dot_api__proto_dot_common__pb2.DESCRIPTOR,api_dot_api__proto_dot_features__objects__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -97,11 +97,164 @@ _LISTHOTLISTSBYUSERRESPONSE = _descriptor.Descriptor(
   serialized_end=274,
 )
 
+
+_GETHOTLISTSTARCOUNTREQUEST = _descriptor.Descriptor(
+  name='GetHotlistStarCountRequest',
+  full_name='monorail.GetHotlistStarCountRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='trace', full_name='monorail.GetHotlistStarCountRequest.trace', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='hotlist_ref', full_name='monorail.GetHotlistStarCountRequest.hotlist_ref', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=276,
+  serialized_end=386,
+)
+
+
+_GETHOTLISTSTARCOUNTRESPONSE = _descriptor.Descriptor(
+  name='GetHotlistStarCountResponse',
+  full_name='monorail.GetHotlistStarCountResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='star_count', full_name='monorail.GetHotlistStarCountResponse.star_count', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=388,
+  serialized_end=437,
+)
+
+
+_STARHOTLISTREQUEST = _descriptor.Descriptor(
+  name='StarHotlistRequest',
+  full_name='monorail.StarHotlistRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='trace', full_name='monorail.StarHotlistRequest.trace', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='hotlist_ref', full_name='monorail.StarHotlistRequest.hotlist_ref', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='starred', full_name='monorail.StarHotlistRequest.starred', index=2,
+      number=3, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=439,
+  serialized_end=558,
+)
+
+
+_STARHOTLISTRESPONSE = _descriptor.Descriptor(
+  name='StarHotlistResponse',
+  full_name='monorail.StarHotlistResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='star_count', full_name='monorail.StarHotlistResponse.star_count', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=560,
+  serialized_end=601,
+)
+
 _LISTHOTLISTSBYUSERREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _LISTHOTLISTSBYUSERREQUEST.fields_by_name['user'].message_type = api_dot_api__proto_dot_common__pb2._USERREF
 _LISTHOTLISTSBYUSERRESPONSE.fields_by_name['hotlists'].message_type = api_dot_api__proto_dot_features__objects__pb2._HOTLIST
+_GETHOTLISTSTARCOUNTREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
+_GETHOTLISTSTARCOUNTREQUEST.fields_by_name['hotlist_ref'].message_type = api_dot_api__proto_dot_common__pb2._HOTLISTREF
+_STARHOTLISTREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
+_STARHOTLISTREQUEST.fields_by_name['hotlist_ref'].message_type = api_dot_api__proto_dot_common__pb2._HOTLISTREF
 DESCRIPTOR.message_types_by_name['ListHotlistsByUserRequest'] = _LISTHOTLISTSBYUSERREQUEST
 DESCRIPTOR.message_types_by_name['ListHotlistsByUserResponse'] = _LISTHOTLISTSBYUSERRESPONSE
+DESCRIPTOR.message_types_by_name['GetHotlistStarCountRequest'] = _GETHOTLISTSTARCOUNTREQUEST
+DESCRIPTOR.message_types_by_name['GetHotlistStarCountResponse'] = _GETHOTLISTSTARCOUNTRESPONSE
+DESCRIPTOR.message_types_by_name['StarHotlistRequest'] = _STARHOTLISTREQUEST
+DESCRIPTOR.message_types_by_name['StarHotlistResponse'] = _STARHOTLISTRESPONSE
 
 ListHotlistsByUserRequest = _reflection.GeneratedProtocolMessageType('ListHotlistsByUserRequest', (_message.Message,), dict(
   DESCRIPTOR = _LISTHOTLISTSBYUSERREQUEST,
@@ -116,6 +269,34 @@ ListHotlistsByUserResponse = _reflection.GeneratedProtocolMessageType('ListHotli
   # @@protoc_insertion_point(class_scope:monorail.ListHotlistsByUserResponse)
   ))
 _sym_db.RegisterMessage(ListHotlistsByUserResponse)
+
+GetHotlistStarCountRequest = _reflection.GeneratedProtocolMessageType('GetHotlistStarCountRequest', (_message.Message,), dict(
+  DESCRIPTOR = _GETHOTLISTSTARCOUNTREQUEST,
+  __module__ = 'api.api_proto.features_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.GetHotlistStarCountRequest)
+  ))
+_sym_db.RegisterMessage(GetHotlistStarCountRequest)
+
+GetHotlistStarCountResponse = _reflection.GeneratedProtocolMessageType('GetHotlistStarCountResponse', (_message.Message,), dict(
+  DESCRIPTOR = _GETHOTLISTSTARCOUNTRESPONSE,
+  __module__ = 'api.api_proto.features_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.GetHotlistStarCountResponse)
+  ))
+_sym_db.RegisterMessage(GetHotlistStarCountResponse)
+
+StarHotlistRequest = _reflection.GeneratedProtocolMessageType('StarHotlistRequest', (_message.Message,), dict(
+  DESCRIPTOR = _STARHOTLISTREQUEST,
+  __module__ = 'api.api_proto.features_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.StarHotlistRequest)
+  ))
+_sym_db.RegisterMessage(StarHotlistRequest)
+
+StarHotlistResponse = _reflection.GeneratedProtocolMessageType('StarHotlistResponse', (_message.Message,), dict(
+  DESCRIPTOR = _STARHOTLISTRESPONSE,
+  __module__ = 'api.api_proto.features_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.StarHotlistResponse)
+  ))
+_sym_db.RegisterMessage(StarHotlistResponse)
 
 
 # @@protoc_insertion_point(module_scope)

@@ -86,3 +86,10 @@ message UserRef {
   string display_name = 2;  // email, or obscured like "usern...@example.com".
   bool is_derived = 3;
 }
+
+
+// Next available tag: 3
+message HotlistRef {
+  string name = 1;
+  UserRef owner = 2;
+}

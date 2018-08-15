@@ -18,6 +18,7 @@ from framework import permissions
 from features import send_notifications
 from proto import project_pb2
 from proto import tracker_pb2
+from services import features_svc
 from services import service_manager
 from services import template_svc
 from testing import fake
@@ -823,6 +824,29 @@ class WorkEnvTest(unittest.TestCase):
   # FUTURE: ListGroups()
   # FUTURE: UpdateGroup()
   # FUTURE: DeleteGroup()
+
+  def testGetHotlist_Normal(self):
+    """We can get an existing hotlist by hotlist_id."""
+    hotlist = self.work_env.services.features.CreateHotlist(
+        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[])
+
+    with self.work_env as we:
+      actual = we.GetHotlist(hotlist.hotlist_id)
+
+    self.assertEqual(hotlist, actual)
+
+  def testGetHotlist_NoneHotlist(self):
+    """We reject attempts to pass a None hotlist_id."""
+    with self.assertRaises(exceptions.InputException):
+      with self.work_env as we:
+        _actual = we.GetHotlist(None)
+
+  def testGetHotlist_NoSuchHotlist(self):
+    """We reject attempts to get a non-existent hotlist."""
+    with self.assertRaises(features_svc.NoSuchHotlistException):
+      with self.work_env as we:
+        _actual = we.GetHotlist(999)
 
   def testListHotlistsByUser_Normal(self):
     self.work_env.services.features.CreateHotlist(

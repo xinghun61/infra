@@ -23,6 +23,7 @@ from api.api_proto import users_pb2
 from framework import exceptions
 from framework import filecontent
 from framework import framework_constants
+from services import features_svc
 from tracker import attachment_helpers
 from tracker import field_helpers
 from tracker import tracker_bizobj
@@ -579,6 +580,16 @@ def IngestFieldValues(cnxn, user_service, field_values, config, phases=None):
       ejected_fvs.append(ejected_fv)
 
   return ejected_fvs
+
+
+def IngestHotlistRef(cnxn, user_service, features_service, hotlist_ref):
+  name = hotlist_ref.name
+  owner_id = IngestUserRefs(cnxn, [hotlist_ref.owner], user_service)[0]
+  hotlists = features_service.LookupHotlistIDs(cnxn, [name], [owner_id])
+  if (name, owner_id) not in hotlists:
+    raise features_svc.NoSuchHotlistException()
+  return hotlists[(name, owner_id)]
+
 
 def ConvertCommit(
     commit_sha, author_id, commit_time, commit_message, commit_repo_url):

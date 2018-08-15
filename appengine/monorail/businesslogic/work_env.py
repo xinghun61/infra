@@ -83,7 +83,6 @@ class WorkEnv(object):
       raise permissions.PermissionException(
           'User is not allowed to view this project')
 
-
   def _AssertPermInProject(self, perm, project):
     """Make sure the user may use perm in the given project."""
     permitted = self.mc.perms.CanUsePerm(
@@ -117,6 +116,12 @@ class WorkEnv(object):
     if not permitted:
       raise permissions.PermissionException(
         'User lacks permission %r in issue' % perm)
+
+  def _AssertUserCanViewHotlist(self, hotlist):
+    """Make sure the user may view the hotlist."""
+    if not permissions.CanViewHotlist(self.mc.auth.effective_ids, hotlist):
+      raise permissions.PermissionException(
+          'User is not allowed to view this hotlist')
 
   ### Site methods
 
@@ -890,6 +895,28 @@ class WorkEnv(object):
 
   ### Hotlist methods
 
+  def GetHotlist(self, hotlist_id, use_cache=True):
+    """Return the specified hotlist.
+
+    Args:
+      hotlist_id: int hotlist_id of the hotlist to retrieve.
+      use_cache: set to false when doing read-modify-write.
+
+    Returns:
+      The specified hotlist.
+
+    Raises:
+      NoSuchHotlistException: There is no hotlist with that ID.
+    """
+    if hotlist_id is None:
+      raise exceptions.InputException('No hotlist specified')
+
+    with self.mc.profiler.Phase('getting hotlist %r' % hotlist_id):
+      hotlist = self.services.features.GetHotlist(
+          self.mc.cnxn, hotlist_id, use_cache=use_cache)
+    self._AssertUserCanViewHotlist(hotlist)
+    return hotlist
+
   def ListHotlistsByUser(self, user_id):
     """Return the hotlists for the given user.
 
@@ -909,6 +936,75 @@ class WorkEnv(object):
         for hotlist in hotlists
         if permissions.CanViewHotlist(self.mc.auth.effective_ids, hotlist)]
     return result
+
+  def StarHotlist(self, hotlist_id, starred):
+    """Star or unstar the specified hotlist.
+
+    Args:
+      hotlist_id: int ID of the hotlist to star/unstar.
+      starred: true to add a star, false to remove it.
+
+    Returns:
+      Nothing.
+
+    Raises:
+      NoSuchHotlistException: There is no hotlist with that ID.
+    """
+    if hotlist_id is None:
+      raise exceptions.InputException('No hotlist specified')
+
+    if not self.mc.auth.user_id:
+      raise exceptions.InputException('No current user specified')
+
+    with self.mc.profiler.Phase('(un)starring hotlist %r' % hotlist_id):
+      # Make sure the hotlist exists and user has permission to see it.
+      self.GetHotlist(hotlist_id)
+      self.services.hotlist_star.SetStar(
+          self.mc.cnxn, hotlist_id, self.mc.auth.user_id, starred)
+
+  def IsHotlistStarred(self, hotlist_id):
+    """Return True if the current hotlist has starred the given hotlist.
+
+    Args:
+      hotlist_id: int ID of the hotlist to check.
+
+    Returns:
+      True if starred.
+
+    Raises:
+      NoSuchHotlistException: There is no hotlist with that ID.
+    """
+    if hotlist_id is None:
+      raise exceptions.InputException('No hotlist specified')
+
+    if not self.mc.auth.user_id:
+      return False
+
+    with self.mc.profiler.Phase('checking hotlist star %r' % hotlist_id):
+      # Make sure the hotlist exists and user has permission to see it.
+      self.GetHotlist(hotlist_id)
+      return self.services.hotlist_star.IsItemStarredBy(
+        self.mc.cnxn, hotlist_id, self.mc.auth.user_id)
+
+  def GetHotlistStarCount(self, hotlist_id):
+    """Return the number of times the hotlist has been starred.
+
+    Args:
+      hotlist_id: int ID of the hotlist to check.
+
+    Returns:
+      The number of times the hotlist has been starred.
+
+    Raises:
+      NoSuchHotlistException: There is no hotlist with that ID.
+    """
+    if hotlist_id is None:
+      raise exceptions.InputException('No hotlist specified')
+
+    with self.mc.profiler.Phase('counting stars for hotlist %r' % hotlist_id):
+      # Make sure the hotlist exists and user has permission to see it.
+      self.GetHotlist(hotlist_id)
+      return self.services.hotlist_star.CountItemStars(self.mc.cnxn, hotlist_id)
 
   # FUTURE: CreateHotlist()
   # FUTURE: UpdateHotlist()

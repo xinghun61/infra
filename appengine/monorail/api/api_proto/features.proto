@@ -12,13 +12,46 @@ import "api/api_proto/features_objects.proto";
 
 service Features {
   rpc ListHotlistsByUser (ListHotlistsByUserRequest) returns (ListHotlistsByUserResponse) {}
+  rpc GetHotlistStarCount (GetHotlistStarCountRequest) returns (GetHotlistStarCountResponse) {}
+  rpc StarHotlist (StarHotlistRequest) returns (StarHotlistResponse) {}
 }
 
+
+// Next available tag: 3
 message ListHotlistsByUserRequest {
   RequestTrace trace = 1;
   UserRef user = 2;
 }
 
+
+// Next available tag: 2
 message ListHotlistsByUserResponse {
   repeated Hotlist hotlists = 1;
+}
+
+
+// Next available tag: 3
+message GetHotlistStarCountRequest {
+  RequestTrace trace = 1;
+  HotlistRef hotlist_ref = 2;
+}
+
+
+// Next available tag: 2
+message GetHotlistStarCountResponse {
+  uint32 star_count = 1;
+}
+
+
+// Next available tag: 4
+message StarHotlistRequest {
+  RequestTrace trace = 1;
+  HotlistRef hotlist_ref = 2;
+  bool starred = 3;
+}
+
+
+// Next available tag: 2
+message StarHotlistResponse {
+  uint32 star_count = 1;
 }
