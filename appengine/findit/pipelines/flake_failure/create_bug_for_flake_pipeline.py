@@ -73,11 +73,15 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
     assert analysis
 
     if not issue_tracking_service.ShouldFileBugForAnalysis(analysis):
-      existing_test_bug_id = (
-          issue_tracking_service.GetExistingBugIdForCustomizedField(
-              analysis.test_name))
-      if existing_test_bug_id and not analysis.bug_id:
-        analysis.Update(bug_id=existing_test_bug_id)
+      if not analysis.bug_id:
+        bug_id = (
+            issue_tracking_service.GetExistingBugIdForCustomizedField(
+                analysis.test_name) or
+            issue_tracking_service.GetOpenBugIdForLabel(
+                label=analysis.test_name) or
+            issue_tracking_service.GetExistingOpenBugIdForTest(
+                analysis.test_name))
+        analysis.Update(bug_id=bug_id)
       return
 
     most_recent_build_number = build_util.GetLatestBuildNumber(

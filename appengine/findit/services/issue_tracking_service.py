@@ -131,9 +131,23 @@ def _GetOpenIssues(query, monorail_project):
 def OpenBugAlreadyExistsForLabel(
     test_name, monorail_project=flake_constants.CHROMIUM_PROJECT_NAME):
   """Returns True if the bug with the given label exists on monorail."""
-  assert test_name
-  open_issues = _GetOpenIssues('label:%s' % test_name, monorail_project)
-  return len(open_issues) > 0
+  return GetOpenBugIdForLabel(test_name, monorail_project) is not None
+
+
+def GetOpenBugIdForLabel(
+    label, monorail_project=flake_constants.CHROMIUM_PROJECT_NAME):
+  """Returns the id of the bug matches the given label.
+
+  Args:
+    label: The label to search for.
+    monorail_project: The monorail project to search for.
+
+  Returns:
+    Id of the bug if it exists, otherwise, None.
+  """
+  assert label, 'Bug label cannot be None or empty.'
+  open_issues = _GetOpenIssues('label:%s' % label, monorail_project)
+  return open_issues[0].id if open_issues else None
 
 
 def OpenBugAlreadyExistsForId(bug_id, project_id='chromium'):
@@ -386,7 +400,7 @@ def GetExistingOpenBugForTest(test_name, project_id='chromium'):
     project_id: The Monorail project to search for.
 
   Returns:
-    Bug id if exists, otherwise None.
+    Bug if exists, otherwise None.
   """
   assert test_name
   query = _BUG_SUMMARY_SEARCH_QUERY_TEMPLATE.format(test_name)
@@ -395,6 +409,20 @@ def GetExistingOpenBugForTest(test_name, project_id='chromium'):
     return open_issues[0]
 
   return None
+
+
+def GetExistingOpenBugIdForTest(test_name, project_id='chromium'):
+  """Search for test_name issues that are about flakiness, and return id.
+
+  Args:
+    test_name: The test name to search for.
+    project_id: The Monorail project to search for.
+
+  Returns:
+    Bug id if exists, otherwise None.
+  """
+  issue = GetExistingOpenBugForTest(test_name, project_id)
+  return issue.id if issue else None
 
 
 def OpenBugAlreadyExistsForTest(test_name):

@@ -279,13 +279,18 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertTrue(test_enabled_fn.called)
 
   @mock.patch.object(
+      issue_tracking_service, 'GetExistingOpenBugForTest', return_value=None)
+  @mock.patch.object(
+      issue_tracking_service, 'GetOpenBugIdForLabel', return_value=None)
+  @mock.patch.object(
       issue_tracking_service,
       'GetExistingBugIdForCustomizedField',
       return_value=None)
   @mock.patch.object(
       issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=False)
-  def testCreateBugForFlakePipelineWhenShouldFileReturnsFalse(
-      self, should_file_fn, _):
+  def testShouldFileBugReturnsFalse(self, should_file_fn,
+                                    mock_bug_for_custom_field,
+                                    mock_bug_for_label, mock_bug_for_test):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -312,14 +317,23 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertTrue(should_file_fn.called)
     self.assertFalse(analysis.has_attempted_filing)
 
+    mock_bug_for_custom_field.assert_called('t', 'chromium')
+    mock_bug_for_label.assert_called('t', 'chromium')
+    mock_bug_for_test.assert_called('t', 'chromium')
+
   @mock.patch.object(
       issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service, 'GetExistingOpenBugForTest', return_value=None)
+  @mock.patch.object(
+      issue_tracking_service, 'GetOpenBugIdForLabel', return_value=None)
   @mock.patch.object(
       issue_tracking_service,
       'GetExistingBugIdForCustomizedField',
       return_value=1234)
-  def testCreateBugForFlakePipelineWhenShouldFileReturnsFalseWithExistingBug(
-      self, existing_bug_id_fn, should_file_fn):
+  def testShouldFileReturnsFalseWithBugForCustomizedField(
+      self, mock_bug_for_custom_field, mock_bug_for_label, mock_bug_for_test,
+      should_file_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -346,7 +360,101 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertTrue(should_file_fn.called)
     self.assertFalse(analysis.has_attempted_filing)
     self.assertEqual(1234, analysis.bug_id)
-    self.assertTrue(existing_bug_id_fn.called)
+
+    mock_bug_for_custom_field.assert_called('t', 'chromium')
+    mock_bug_for_label.assert_not_called()
+    mock_bug_for_test.assert_not_called()
+
+  @mock.patch.object(
+      issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service, 'GetExistingOpenBugForTest', return_value=None)
+  @mock.patch.object(
+      issue_tracking_service, 'GetOpenBugIdForLabel', return_value=1234)
+  @mock.patch.object(
+      issue_tracking_service,
+      'GetExistingBugIdForCustomizedField',
+      return_value=None)
+  def testShouldFileReturnsFalseWithOpenBugForLabel(
+      self, mock_bug_for_custom_field, mock_bug_for_label, mock_bug_for_test,
+      should_file_fn):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+
+    # Create a flake analysis with no bug.
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.Save()
+
+    # Create a flake analysis request with no bug.
+    request = FlakeAnalysisRequest.Create(test_name, False, None)
+    request.Save()
+
+    create_bug_input = CreateBugForFlakePipelineInputObject(
+        analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+        step_metadata=None,
+        test_location=TestLocation(file='/foo/bar', line=1))
+    pipeline_job = CreateBugForFlakePipeline(create_bug_input)
+    pipeline_job.start()
+    self.execute_queued_tasks()
+
+    self.assertTrue(should_file_fn.called)
+    self.assertFalse(analysis.has_attempted_filing)
+    self.assertEqual(1234, analysis.bug_id)
+
+    mock_bug_for_custom_field.assert_called('t', 'chromium')
+    mock_bug_for_label.assert_called('t', 'chromium')
+    mock_bug_for_test.assert_not_called()
+
+  @mock.patch.object(
+      issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=False)
+  @mock.patch.object(issue_tracking_service, 'GetExistingOpenBugForTest')
+  @mock.patch.object(
+      issue_tracking_service, 'GetOpenBugIdForLabel', return_value=None)
+  @mock.patch.object(
+      issue_tracking_service,
+      'GetExistingBugIdForCustomizedField',
+      return_value=None)
+  def testShouldFileReturnsFalseWithOpenBugForTest(
+      self, mock_bug_for_custom_field, mock_bug_for_label, mock_bug_for_test,
+      should_file_fn):
+    mock_issue = mock.Mock()
+    mock_issue.id = 1234
+    mock_bug_for_test.return_value = mock_issue
+
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+
+    # Create a flake analysis with no bug.
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.Save()
+
+    # Create a flake analysis request with no bug.
+    request = FlakeAnalysisRequest.Create(test_name, False, None)
+    request.Save()
+
+    create_bug_input = CreateBugForFlakePipelineInputObject(
+        analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+        step_metadata=None,
+        test_location=TestLocation(file='/foo/bar', line=1))
+    pipeline_job = CreateBugForFlakePipeline(create_bug_input)
+    pipeline_job.start()
+    self.execute_queued_tasks()
+
+    self.assertTrue(should_file_fn.called)
+    self.assertFalse(analysis.has_attempted_filing)
+    self.assertEqual(1234, analysis.bug_id)
+
+    mock_bug_for_custom_field.assert_called('t', 'chromium')
+    mock_bug_for_label.assert_called('t', 'chromium')
+    mock_bug_for_test.assert_called('t', 'chromium')
 
   @mock.patch.object(swarmed_test_util, 'IsTestEnabled', return_value=True)
   @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=None)
