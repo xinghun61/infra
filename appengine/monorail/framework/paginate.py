@@ -12,29 +12,35 @@ from third_party import ezt
 import settings
 from framework import framework_helpers
 
-
+# If extracting items_per_page and start values from a MonorailRequest object,
+# keep in mind that mr.num and mr.GetPositiveIntParam may return different
+# values. mr.num is the result of calling mr.GetPositiveIntParam with a default
+# value.
 class VirtualPagination(object):
   """Class to calc Prev and Next pagination links based on result counts."""
 
-  def __init__(self, mr, total_count, items_per_page,
-               list_page_url=None, count_up=True,
-               start_param='start', num_param='num', max_num=None):
+  def __init__(self, total_count, items_per_page, start, list_page_url=None,
+               count_up=True, start_param_name='start', num_param_name='num',
+               max_num=None, url_params=None, project_name=None):
     """Given 'num' and 'start' params, determine Prev and Next links.
 
     Args:
-      mr: commonly used info parsed from the request.
       total_count: total number of artifacts that satisfy the query.
       items_per_page: number of items to display on each page, e.g., 25.
+      start: the start index of the pagination page.
       list_page_url: URL of the web application page that is displaying
         the list of artifacts.  Used to build the Prev and Next URLs.
         If None, no URLs will be built.
       count_up: if False, count down from total_count.
-      start_param: query string parameter name to use for the start
+      start_param_name: query string parameter name for the start value
         of the pagination page.
-      num_param: query string parameter name to use for the number of items
+      num_param: query string parameter name for the number of items
         to show on a pagination page.
       max_num: optional limit on the value of the num param.  If not given,
         settings.max_artifact_search_results_per_page is used.
+      url_params: list of (param_name, param_value) we want to keep
+        in any new urls.
+      project_name: the name of the project we are operating in.
     """
     self.total_count = total_count
     self.prev_url = ''
@@ -44,42 +50,40 @@ class VirtualPagination(object):
     if max_num is None:
       max_num = settings.max_artifact_search_results_per_page
 
-    self.num = mr.GetPositiveIntParam(num_param, items_per_page)
+    self.num = items_per_page
     self.num = min(self.num, max_num)
 
     if count_up:
-      self.start = mr.GetPositiveIntParam(start_param, 0)
+      self.start = start or 0
       self.last = min(self.total_count, self.start + self.num)
       prev_start = max(0, self.start - self.num)
       next_start = self.start + self.num
     else:
-      self.start = mr.GetPositiveIntParam(start_param, self.total_count)
+      self.start = start or self.total_count
       self.last = max(0, self.start - self.num)
       prev_start = min(self.total_count, self.start + self.num)
       next_start = self.start - self.num
 
     if list_page_url:
-      if mr.project_name:
+      if project_name:
         list_servlet_rel_url = '/p/%s%s' % (
-            mr.project_name, list_page_url)
+            project_name, list_page_url)
       else:
         list_servlet_rel_url = list_page_url
 
-      recognized_params = [(name, mr.GetParam(name)) for name in
-                          framework_helpers.RECOGNIZED_PARAMS]
       self.reload_url = framework_helpers.FormatURL(
-          recognized_params, list_servlet_rel_url,
-          **{start_param: self.start, num_param: self.num})
+          url_params, list_servlet_rel_url,
+          **{start_param_name: self.start, num_param_name: self.num})
 
       if prev_start != self.start:
         self.prev_url = framework_helpers.FormatURL(
-             recognized_params, list_servlet_rel_url,
-            **{start_param: prev_start, num_param: self.num})
+             url_params, list_servlet_rel_url,
+            **{start_param_name: prev_start, num_param_name: self.num})
       if ((count_up and next_start < self.total_count) or
           (not count_up and next_start >= 1)):
         self.next_url = framework_helpers.FormatURL(
-           recognized_params, list_servlet_rel_url,
-            **{start_param: next_start, num_param: self.num})
+           url_params, list_servlet_rel_url,
+            **{start_param_name: next_start, num_param_name: self.num})
 
     self.visible = ezt.boolean(self.last != self.start)
 
@@ -99,14 +103,15 @@ class ArtifactPagination(VirtualPagination):
   """Class to calc Prev and Next pagination links based on a results list."""
 
   def __init__(
-      self, mr, results, items_per_page, list_page_url, total_count=None,
-      limit_reached=False, skipped=0):
+      self, results, items_per_page, start, project_name, list_page_url,
+      total_count=None, limit_reached=False, skipped=0, url_params=None):
     """Given 'num' and 'start' params, determine Prev and Next links.
 
     Args:
-      mr: commonly used info parsed from the request.
       results: a list of artifact ids that satisfy the query.
       items_per_page: number of items to display on each page, e.g., 25.
+      start: the start index of the pagination page.
+      project_name: the name of the project we are operating in.
       list_page_url: URL of the web application page that is displaying
         the list of artifacts.  Used to build the Prev and Next URLs.
       total_count: specify total result count rather than the length of results
@@ -114,11 +119,14 @@ class ArtifactPagination(VirtualPagination):
         not be fetched because a limit was reached.
       skipped: optional int number of items that were skipped and left off the
         front of results.
+      url_params: list of (param_name, param_value) we want to keep
+        in any new urls.
     """
     if total_count is None:
       total_count = skipped + len(results)
     super(ArtifactPagination, self).__init__(
-        mr, total_count, items_per_page, list_page_url=list_page_url)
+        total_count, items_per_page, start, list_page_url=list_page_url,
+        project_name=project_name, url_params=url_params)
 
     self.limit_reached = ezt.boolean(limit_reached)
     # Determine which of those results should be visible on the current page.

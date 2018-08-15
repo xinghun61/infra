@@ -303,9 +303,16 @@ class HotlistIssues(servlet.Servlet):
         users_by_id, starred_iid_set, grid_limited, related_issues,
         hotlist_context_dict=hotlist_context_dict)
 
+    url_params = [(name, mr.GetParam(name)) for name in
+                  framework_helpers.RECOGNIZED_PARAMS]
+    # We are passing in None for the project_name in ArtifactPagination
+    # because we are not operating under any project.
     grid_view_data.update({'pagination': paginate.ArtifactPagination(
-          mr, allowed_issues, features_constants.DEFAULT_RESULTS_PER_PAGE,
-          total_count=len(allowed_issues),
-          list_page_url=urls.HOTLIST_ISSUES)})
+          allowed_issues,
+          mr.GetPositiveIntParam(
+              'num', features_constants.DEFAULT_RESULTS_PER_PAGE),
+          mr.GetPositiveIntParam('start'), None,
+          urls.HOTLIST_ISSUES, total_count=len(allowed_issues),
+          url_params=url_params)})
 
     return grid_view_data

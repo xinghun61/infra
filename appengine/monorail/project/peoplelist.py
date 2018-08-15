@@ -80,8 +80,12 @@ class PeopleList(servlet.Servlet):
           project_commitments, ac_exclusion_ids, no_expand_ids, group_ids)
       all_member_views = owner_views + committer_views + contributor_views
 
+    url_params = [(name, mr.GetParam(name)) for name in
+                  framework_helpers.RECOGNIZED_PARAMS]
     pagination = paginate.ArtifactPagination(
-        mr, all_member_views, MEMBERS_PER_PAGE, urls.PEOPLE_LIST)
+        all_member_views, mr.GetPositiveIntParam('num', MEMBERS_PER_PAGE),
+        mr.GetPositiveIntParam('start'), mr.project_name, urls.PEOPLE_LIST,
+        url_params=url_params)
 
     offer_membership_editing = mr.perms.HasPerm(
         permissions.EDIT_PROJECT, mr.auth.user_id, mr.project)

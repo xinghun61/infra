@@ -63,9 +63,14 @@ class HotlistPeopleList(servlet.Servlet):
                                              users_by_id)
       all_member_views = owner_views + editor_views + follower_views
 
+    url_params = [(name, mr.GetParam(name)) for name in
+                  framework_helpers.RECOGNIZED_PARAMS]
+    # We are passing in None for the project_name because we are not operating
+    # under any project.
     pagination = paginate.ArtifactPagination(
-        mr, all_member_views, MEMBERS_PER_PAGE,'%s%s' % (
-              hotlist_url, urls.HOTLIST_PEOPLE))
+        all_member_views, mr.GetPositiveIntParam('num', MEMBERS_PER_PAGE),
+        mr.GetPositiveIntParam('start'), None,
+        '%s%s' % (hotlist_url, urls.HOTLIST_PEOPLE), url_params=url_params)
 
     offer_membership_editing = permissions.CanAdministerHotlist(
         mr.auth.effective_ids, mr.hotlist)

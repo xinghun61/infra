@@ -88,8 +88,12 @@ class GroupDetail(servlet.Servlet):
     group_view = sitewide_views.GroupView(
         mr.viewed_user_auth.email, len(member_ids), group_settings,
         mr.viewed_user_auth.user_id)
+    url_params = [(name, mr.GetParam(name)) for name in
+                  framework_helpers.RECOGNIZED_PARAMS]
     pagination = paginate.ArtifactPagination(
-        mr, member_user_views, MEMBERS_PER_PAGE, group_view.detail_url)
+        member_user_views, mr.GetPositiveIntParam('num', MEMBERS_PER_PAGE),
+        mr.GetPositiveIntParam('start'), mr.project_name, group_view.detail_url,
+        url_params=url_params)
 
     is_imported_group = bool(group_settings.ext_group_type)
 

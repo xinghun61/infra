@@ -434,11 +434,16 @@ class FrontendSearchPipeline(object):
     These two actions are intertwined because we try to only
     retrieve the Issues on the current pagination page.
     """
+    url_params = [(name, self.mr.GetParam(name)) for name in
+                  framework_helpers.RECOGNIZED_PARAMS]
     if self.grid_mode:
       # We don't paginate the grid view.  But, pagination object shows counts.
       self.pagination = paginate.ArtifactPagination(
-          self.mr, self.allowed_results, self.default_results_per_page,
-          total_count=self.total_count, list_page_url=urls.ISSUE_LIST)
+          self.allowed_results,
+          self.mr.GetPositiveIntParam('num', self.default_results_per_page),
+          self.mr.GetPositiveIntParam('start'),
+          self.mr.project_name, urls.ISSUE_LIST,
+          total_count=self.total_count, url_params=url_params)
       # We limited the results, but still show the original total count.
       self.visible_results = self.allowed_results
 
@@ -448,9 +453,12 @@ class FrontendSearchPipeline(object):
       for shard_limit_reached in self.search_limit_reached.values():
         limit_reached |= shard_limit_reached
       self.pagination = paginate.ArtifactPagination(
-          self.mr, self.allowed_results, self.default_results_per_page,
-          total_count=self.total_count, list_page_url=urls.ISSUE_LIST,
-          limit_reached=limit_reached, skipped=self.num_skipped_at_start)
+          self.allowed_results,
+          self.mr.GetPositiveIntParam('num', self.default_results_per_page),
+          self.mr.GetPositiveIntParam('start'), self.mr.project_name,
+          urls.ISSUE_LIST, total_count=self.total_count,
+          limit_reached=limit_reached, skipped=self.num_skipped_at_start,
+          url_params=url_params)
       self.visible_results = self.pagination.visible_results
 
     # If we were not forced to look up visible users already, do it now.

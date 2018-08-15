@@ -351,12 +351,16 @@ def PaginateComments(mr, issue, issuecomment_list, config):
       allowed_comments.append(c)
 
   pagination_url = '%s?id=%d' % (urls.ISSUE_DETAIL, issue.local_id)
+  url_params = [(name, mr.GetParam(name)) for name in
+                framework_helpers.RECOGNIZED_PARAMS]
   pagination = paginate.VirtualPagination(
-      mr, len(allowed_comments),
-      framework_constants.DEFAULT_COMMENTS_PER_PAGE,
-      list_page_url=pagination_url,
-      count_up=False, start_param='cstart', num_param='cnum',
-      max_num=settings.max_comments_per_page)
+      len(allowed_comments),
+      mr.GetPositiveIntParam(
+          'cnum', framework_constants.DEFAULT_COMMENTS_PER_PAGE),
+      mr.GetPositiveIntParam('cstart'),
+      list_page_url=pagination_url, project_name=mr.project_name,
+      count_up=False, start_param_name='cstart', num_param_name='cnum',
+      max_num=settings.max_comments_per_page, url_params=url_params)
   if pagination.last == 1 and pagination.start == len(allowed_comments):
     pagination.visible = ezt.boolean(False)
   visible_comments = allowed_comments[

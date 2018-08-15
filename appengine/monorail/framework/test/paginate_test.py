@@ -16,56 +16,59 @@ class PaginateTest(unittest.TestCase):
   def testVirtualPagination(self):
     # Paginating 0 results on a page that can hold 100.
     mr = testing_helpers.MakeMonorailRequest(path='/issues/list')
-    vp = paginate.VirtualPagination(mr, 0, 100)
+    total_count = 0
+    items_per_page = 100
+    start = 0
+    vp = paginate.VirtualPagination(total_count, items_per_page, start)
     self.assertEquals(vp.num, 100)
     self.assertEquals(vp.start, 1)
     self.assertEquals(vp.last, 0)
     self.assertFalse(vp.visible)
 
-    # Paginationg 12 results on a page that can hold 100.
+    # Paginating 12 results on a page that can hold 100.
     mr = testing_helpers.MakeMonorailRequest(path='/issues/list')
-    vp = paginate.VirtualPagination(mr, 12, 100)
+    vp = paginate.VirtualPagination(12, 100, 0)
     self.assertEquals(vp.num, 100)
     self.assertEquals(vp.start, 1)
     self.assertEquals(vp.last, 12)
     self.assertTrue(vp.visible)
 
-    # Paginationg 12 results on a page that can hold 10.
+    # Paginating 12 results on a page that can hold 10.
     mr = testing_helpers.MakeMonorailRequest(path='/issues/list?num=10')
-    vp = paginate.VirtualPagination(mr, 12, 100)
+    vp = paginate.VirtualPagination(12, 10, 0)
     self.assertEquals(vp.num, 10)
     self.assertEquals(vp.start, 1)
     self.assertEquals(vp.last, 10)
     self.assertTrue(vp.visible)
 
-    # Paginationg 12 results starting at 5 on page that can hold 10.
+    # Paginating 12 results starting at 5 on page that can hold 10.
     mr = testing_helpers.MakeMonorailRequest(
         path='/issues/list?start=5&num=10')
-    vp = paginate.VirtualPagination(mr, 12, 100)
+    vp = paginate.VirtualPagination(12, 10, 5)
     self.assertEquals(vp.num, 10)
     self.assertEquals(vp.start, 6)
     self.assertEquals(vp.last, 12)
     self.assertTrue(vp.visible)
 
-    # Paginationg 123 results on a page that can hold 100.
+    # Paginating 123 results on a page that can hold 100.
     mr = testing_helpers.MakeMonorailRequest(path='/issues/list')
-    vp = paginate.VirtualPagination(mr, 123, 100)
+    vp = paginate.VirtualPagination(123, 100, 0)
     self.assertEquals(vp.num, 100)
     self.assertEquals(vp.start, 1)
     self.assertEquals(vp.last, 100)
     self.assertTrue(vp.visible)
 
-    # Paginationg 123 results on second page that can hold 100.
+    # Paginating 123 results on second page that can hold 100.
     mr = testing_helpers.MakeMonorailRequest(path='/issues/list?start=100')
-    vp = paginate.VirtualPagination(mr, 123, 100)
+    vp = paginate.VirtualPagination(123, 100, 100)
     self.assertEquals(vp.num, 100)
     self.assertEquals(vp.start, 101)
     self.assertEquals(vp.last, 123)
     self.assertTrue(vp.visible)
 
-    # Paginationg a huge number of objects will show at most 5000 per page.
+    # Paginating a huge number of objects will show at most 1000 per page.
     mr = testing_helpers.MakeMonorailRequest(path='/issues/list?num=9999')
-    vp = paginate.VirtualPagination(mr, 12345, 100)
+    vp = paginate.VirtualPagination(12345, 9999, 0)
     self.assertEquals(vp.num, 1000)
     self.assertEquals(vp.start, 1)
     self.assertEquals(vp.last, 1000)
@@ -75,7 +78,7 @@ class PaginateTest(unittest.TestCase):
     mr = testing_helpers.MakeMonorailRequest(path='/hotlists/17?num=5&start=4')
     mr.hotlist_id = 17
     mr.auth.user_id = 112
-    vp = paginate.VirtualPagination(mr, 12, 5,
+    vp = paginate.VirtualPagination(12, 5, 4,
                                     list_page_url='/u/112/hotlists/17')
     self.assertEquals(vp.num, 5)
     self.assertEquals(vp.start, 5)

@@ -50,7 +50,11 @@ class ProjectSearchPipeline(object):
           key=lambda p: p.project_name)
       logging.info('project_list is %r', project_list)
 
+    url_params = [(name, self.mr.GetParam(name)) for name in
+                  framework_helpers.RECOGNIZED_PARAMS]
     self.pagination = paginate.ArtifactPagination(
-        self.mr, project_list, self.default_results_per_page,
-        list_page_url)
+        project_list,
+        self.mr.GetPositiveIntParam('num', self.default_results_per_page),
+        self.mr.GetPositiveIntParam('start'), self.mr.project_name,
+        list_page_url, url_params=url_params)
     self.visible_results = self.pagination.visible_results

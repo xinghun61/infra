@@ -135,9 +135,14 @@ def CreateHotlistTableData(mr, hotlist_issues, services):
     unshown_columns = table_view_helpers.ComputeUnshownColumns(
         sorted_issues, mr.col_spec.split(), harmonized_config,
         features_constants.OTHER_BUILT_IN_COLS)
+    url_params = [(name, mr.GetParam(name)) for name in
+                  framework_helpers.RECOGNIZED_PARAMS]
+    # We are passing in None for the project_name because we are not operating
+    # under any project.
     pagination = paginate.ArtifactPagination(
-        mr, sorted_issues, mr.num,
-        GetURLOfHotlist(mr.cnxn, mr.hotlist, services.user), len(sorted_issues))
+        sorted_issues, mr.num, mr.GetPositiveIntParam('start'),
+        None, GetURLOfHotlist(mr.cnxn, mr.hotlist, services.user),
+        total_count=len(sorted_issues), url_params=url_params)
 
     sort_spec = '%s %s %s' % (
         mr.group_by_spec, mr.sort_spec, harmonized_config.default_sort_spec)

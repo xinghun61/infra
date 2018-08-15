@@ -156,8 +156,12 @@ class ModerationQueue(servlet.Servlet):
         self.services.issue, self.services.spam, self.services.user,
         issue_items)
 
-    p = paginate.ArtifactPagination(mr, [], mr.num, urls.SPAM_MODERATION_QUEUE,
-        total_count)
+    url_params = [(name, mr.GetParam(name)) for name in
+                  framework_helpers.RECOGNIZED_PARAMS]
+    p = paginate.ArtifactPagination(
+        [], mr.num, mr.GetPositiveIntParam('start'),
+        mr.project_name, urls.SPAM_MODERATION_QUEUE, total_count=total_count,
+        url_params=url_params)
 
     return {
         'issue_queue': issue_queue,
