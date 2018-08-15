@@ -34,9 +34,9 @@ class TriciumRun extends LitElement {
     return html`
       <p>
         <b>${f.name}</b>
-        (State: ${f.state},
+        (State: ${f.state || 'PENDING'},
         <a href$="${f.swarmingUrl}/task?id=${f.swarmingTaskId}">Swarming task</a>,
-        comments: ${f.numComments})
+        comments: ${f.numComments || 0})
       </p>
     `;
   }
