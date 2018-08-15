@@ -13,9 +13,12 @@ from components.prpc import context
 from components.prpc import server
 
 from api import projects_servicer
+from api.api_proto import common_pb2
+from api.api_proto import project_objects_pb2
 from api.api_proto import projects_pb2
 from framework import authdata
 from framework import exceptions
+from framework import framework_constants
 from framework import monorailcontext
 from framework import permissions
 from proto import project_pb2
@@ -260,6 +263,110 @@ class ProjectsServicerTest(unittest.TestCase):
     self.project.contributor_ids.extend([999L])
     self.assertVisibleMembers([111L, 222L, 333L, 999L], [999L],
                               requester='owner@example.com')
+
+  def testListStatuses(self):
+    request = projects_pb2.ListStatusesRequest(project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.projects_svcr.ListStatuses, mc, request)
+    self.assertFalse(response.restrict_to_known)
+    self.assertEqual(
+        [('New', True),
+         ('Accepted', True),
+         ('Started', True),
+         ('Fixed', False),
+         ('Verified', False),
+         ('Invalid', False),
+         ('Duplicate', False),
+         ('WontFix', False),
+         ('Done', False)],
+        [(status_def.status, status_def.means_open)
+         for status_def in response.status_defs])
+    self.assertEqual(
+        [('Duplicate', False)],
+        [(status_def.status, status_def.means_open)
+         for status_def in response.statuses_offer_merge])
+
+  def testListComponents(self):
+    self.services.config.CreateComponentDef(
+        self.cnxn, self.project.project_id, 'Foo', 'Foo Component', True, [],
+        [], True, 111L, [])
+    self.services.config.CreateComponentDef(
+        self.cnxn, self.project.project_id, 'Bar', 'Bar Component', False, [],
+        [], True, 111L, [])
+    self.services.config.CreateComponentDef(
+        self.cnxn, self.project.project_id, 'Bar>Baz', 'Baz Component',
+        False, [], [], True, 111L, [])
+
+    request = projects_pb2.ListComponentsRequest(project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.projects_svcr.ListComponents, mc, request)
+
+    self.assertEqual(
+        [project_objects_pb2.ComponentDef(
+            path='Foo',
+            docstring='Foo Component',
+            deprecated=True),
+         project_objects_pb2.ComponentDef(
+             path='Bar',
+             docstring='Bar Component',
+             deprecated=False),
+         project_objects_pb2.ComponentDef(
+             path='Bar>Baz',
+             docstring='Baz Component',
+             deprecated=False)],
+        list(response.component_defs))
+
+  def testListComponents_IncludeAdminInfo(self):
+    self.services.config.CreateComponentDef(
+        self.cnxn, self.project.project_id, 'Foo', 'Foo Component', True, [],
+        [], 1234567, 111L, [])
+    self.services.config.CreateComponentDef(
+        self.cnxn, self.project.project_id, 'Bar', 'Bar Component', False, [],
+        [], 1234568, 111L, [])
+    self.services.config.CreateComponentDef(
+        self.cnxn, self.project.project_id, 'Bar>Baz', 'Baz Component',
+        False, [], [], 1234569, 111L, [])
+    creator_ref = common_pb2.UserRef(
+        user_id=111L,
+        display_name='owner@example.com')
+    no_user_ref = common_pb2.UserRef(
+        display_name=framework_constants.NO_USER_NAME)
+
+    request = projects_pb2.ListComponentsRequest(
+        project_name='proj', include_admin_info=True)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.projects_svcr.ListComponents, mc, request)
+
+    self.assertEqual(
+        [project_objects_pb2.ComponentDef(
+            path='Foo',
+            docstring='Foo Component',
+            deprecated=True,
+            created=1234567,
+            creator_ref=creator_ref,
+             modifier_ref=no_user_ref),
+         project_objects_pb2.ComponentDef(
+             path='Bar',
+             docstring='Bar Component',
+             deprecated=False,
+             created=1234568,
+             creator_ref=creator_ref,
+             modifier_ref=no_user_ref),
+         project_objects_pb2.ComponentDef(
+             path='Bar>Baz',
+             docstring='Baz Component',
+             deprecated=False,
+             created=1234569,
+             creator_ref=creator_ref,
+             modifier_ref=no_user_ref),
+            ],
+        list(response.component_defs))
 
   def AddField(self, name, **kwargs):
     if kwargs.get('needs_perm'):
