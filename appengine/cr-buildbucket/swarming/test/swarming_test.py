@@ -4,6 +4,7 @@
 
 import base64
 import contextlib
+import copy
 import datetime
 import json
 import logging
@@ -202,7 +203,8 @@ class SwarmingTest(BaseTest):
                 ],
                 'caches': [{
                     'path': '${cache_dir}/builder',
-                    'name': 'builder_${builder_hash}'
+                    'name': 'builder_${builder_hash}',
+                    'wait_for_warm_cache_secs': 60,
                 }],
                 'cipd_input': {
                     'packages': [
@@ -457,11 +459,14 @@ class SwarmingTest(BaseTest):
 
     task_def = swarming.prepare_task_def_async(build).get_result()
 
-    self.assertEqual(task_def['task_slices'][0]['expiration_secs'], '120')
+    self.assertEqual(2, len(task_def['task_slices']))
+    self.assertEqual(task_def['task_slices'][0]['expiration_secs'], '60')
+    self.assertEqual(task_def['task_slices'][1]['expiration_secs'], '60')
 
     builder_cfg.expiration_secs = 60
     task_def = swarming.prepare_task_def_async(build).get_result()
     self.assertEqual(task_def['task_slices'][0]['expiration_secs'], '60')
+    self.assertEqual(task_def['task_slices'][1]['expiration_secs'], '60')
 
   def test_auto_builder_dimension(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
@@ -477,10 +482,11 @@ class SwarmingTest(BaseTest):
     task_def = swarming.prepare_task_def_async(build).get_result()
     self.assertEqual(
         task_def['task_slices'][0]['properties']['dimensions'], [
-            {'key': 'builder', 'value': 'linux_chromium_rel_ng'},
-            {'key': 'cores', 'value': '8'},
-            {'key': 'os', 'value': 'Ubuntu'},
-            {'key': 'pool', 'value': 'Chrome'},
+            {'key': 'builder', 'value': u'linux_chromium_rel_ng'},
+            {'key': u'cores', 'value': u'8'},
+            {'key': u'os', 'value': u'Ubuntu'},
+            {'key': u'pool', 'value': u'Chrome'},
+            {'key': 'cache', 'value': LINUX_CHROMIUM_REL_NG_CACHE_NAME},
         ]
     )
 
@@ -489,10 +495,11 @@ class SwarmingTest(BaseTest):
     task_def = swarming.prepare_task_def_async(build).get_result()
     self.assertEqual(
         task_def['task_slices'][0]['properties']['dimensions'], [
-            {'key': 'builder', 'value': 'custom'},
-            {'key': 'cores', 'value': '8'},
-            {'key': 'os', 'value': 'Ubuntu'},
-            {'key': 'pool', 'value': 'Chrome'},
+            {'key': u'builder', 'value': u'custom'},
+            {'key': u'cores', 'value': u'8'},
+            {'key': u'os', 'value': u'Ubuntu'},
+            {'key': u'pool', 'value': u'Chrome'},
+            {'key': 'cache', 'value': LINUX_CHROMIUM_REL_NG_CACHE_NAME},
         ]
     )
 
@@ -734,6 +741,12 @@ class SwarmingTest(BaseTest):
             ],
         },
     }
+    # The swarming template has fallback.
+    props_def_first = copy.deepcopy(props_def)
+    props_def_first['dimensions'].append({
+        'key': 'cache',
+        'value': LINUX_CHROMIUM_REL_NG_CACHE_NAME,
+    })
     expected_task_def = {
         'name':
             'buildbucket:luci.chromium.try:linux_chromium_rel_ng',
@@ -759,11 +772,18 @@ class SwarmingTest(BaseTest):
         ],
         'pool_task_template':
             'CANARY_NEVER',
-        'task_slices': [{
-            'expiration_secs': '3600',
-            'properties': props_def,
-            'wait_for_capacity': False,
-        }],
+        'task_slices': [
+            {
+                'expiration_secs': '60',
+                'properties': props_def_first,
+                'wait_for_capacity': False,
+            },
+            {
+                'expiration_secs': '3540',
+                'properties': props_def,
+                'wait_for_capacity': False,
+            },
+        ],
         'pubsub_topic':
             'projects/testbed-test/topics/swarming',
         'pubsub_userdata':
@@ -1112,6 +1132,12 @@ class SwarmingTest(BaseTest):
             ],
         },
     }
+    # The swarming template has fallback.
+    props_def_first = copy.deepcopy(props_def)
+    props_def_first['dimensions'].append({
+        'key': 'cache',
+        'value': LINUX_CHROMIUM_REL_NG_CACHE_NAME,
+    })
     expected_task_def = {
         'name':
             'buildbucket:luci.chromium.try:linux_chromium_rel_ng-canary',
@@ -1136,11 +1162,18 @@ class SwarmingTest(BaseTest):
         ],
         'pool_task_template':
             'CANARY_PREFER',
-        'task_slices': [{
-            'expiration_secs': '3600',
-            'properties': props_def,
-            'wait_for_capacity': False,
-        }],
+        'task_slices': [
+            {
+                'expiration_secs': '60',
+                'properties': props_def_first,
+                'wait_for_capacity': False,
+            },
+            {
+                'expiration_secs': '3540',
+                'properties': props_def,
+                'wait_for_capacity': False,
+            },
+        ],
         'pubsub_topic':
             'projects/testbed-test/topics/swarming',
         'pubsub_userdata':

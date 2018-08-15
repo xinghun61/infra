@@ -696,6 +696,7 @@ def _add_named_caches(builder_cfg, task_properties):
   names = set()
   paths = set()
   cache_fallbacks = {}
+  # Look for builder specific named caches.
   for c in builder_cfg.caches:
     if c.path.startswith('cache/'):  # pragma: no cover
       # TODO(nodir): remove this code path onces clients remove "cache/" from
@@ -712,9 +713,17 @@ def _add_named_caches(builder_cfg, task_properties):
     if c.wait_for_warm_cache_secs:
       cache_fallbacks.setdefault(c.wait_for_warm_cache_secs, []).append(c.name)
 
+  # Look for named cache fallback from the swarming task template itself.
   for c in template_caches:
+    # Only process the caches that were not overridden.
     if c.get('path') not in paths and c.get('name') not in names:
-      task_properties['caches'].append(c)
+      task_properties['caches'].append({
+          u'name': c['name'],
+          u'path': c['path'],
+      })
+      v = c.get('wait_for_warm_cache_secs')
+      if v:
+        cache_fallbacks.setdefault(v, []).append(c['name'])
 
   task_properties['caches'].sort(key=lambda p: p.get('path'))
 
