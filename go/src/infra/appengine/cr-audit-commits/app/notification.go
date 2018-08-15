@@ -127,7 +127,7 @@ func fileBugForViolation(ctx context.Context, cfg *RepoConfig, rc *RelevantCommi
 			// associated with the datastore entity for this commit.
 			issueID = existingIssue.Id
 
-			err = postComment(ctx, cfg, existingIssue.Id, resultText(cfg, rc, true), cs)
+			err = postComment(ctx, cfg, existingIssue.Id, resultText(cfg, rc, true), cs, labels)
 			if err != nil {
 				return "", err
 			}

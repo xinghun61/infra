@@ -126,10 +126,13 @@ func getIssueBySummaryAndAccount(ctx context.Context, cfg *RepoConfig, s, a stri
 	return nil, nil
 }
 
-func postComment(ctx context.Context, cfg *RepoConfig, iID int32, c string, cs *Clients) error {
+func postComment(ctx context.Context, cfg *RepoConfig, iID int32, c string, cs *Clients, labels []string) error {
 	req := &monorail.InsertCommentRequest{
 		Comment: &monorail.InsertCommentRequest_Comment{
 			Content: c,
+			Updates: &monorail.Update{
+				Labels: labels,
+			},
 		},
 		Issue: &monorail.IssueRef{
 			IssueId:   iID,
