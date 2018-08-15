@@ -266,9 +266,8 @@ def ParseStepUrl(url):
 def CreateBuildUrl(master_name, builder_name, build_number):
   """Creates the url for the given build."""
   builder_name = urllib.quote(builder_name)
-  return 'https://ci.chromium.org/buildbot/%s/%s/%s' % (master_name,
-                                                        builder_name,
-                                                        build_number)
+  return 'https://ci.chromium.org/buildbot/%s/%s/%s' % (
+      master_name, builder_name, build_number)
 
 
 def GetBuildDataFromMilo(master_name, builder_name, build_number, http_client):
@@ -325,7 +324,7 @@ def GetBuildResult(build_data_json):
   return build_data_json.get('results')
 
 
-def _GetCommitPosition(commit_position_line):
+def GetCommitPosition(commit_position_line):
   if commit_position_line:
     match = _COMMIT_POSITION_PATTERN.match(commit_position_line)
     if match:
@@ -349,7 +348,7 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
   build_info.build_start_time = GetBuildStartTime(data_json)
   build_info.build_end_time = GetBuildEndTime(data_json)
   build_info.chromium_revision = chromium_revision
-  build_info.commit_position = _GetCommitPosition(commit_position_line)
+  build_info.commit_position = GetCommitPosition(commit_position_line)
   build_info.completed = data_json.get('currentStep') is None
   build_info.result = GetBuildResult(data_json)
   build_info.parent_buildername = parent_buildername

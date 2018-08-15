@@ -19,6 +19,7 @@ from services import constants
 from services import git
 from services import swarmbot_util
 from services import try_job as try_job_service
+from waterfall import buildbot
 from waterfall import waterfall_config
 
 LOW_COMMITS_PER_HOUR = 3
@@ -100,7 +101,9 @@ def _PickRandomBuilder(builders):
   for b in builders:
     b['newest_build'] = max(
         b['cache_stats'].full_build_commit_positions.values() or [0])
-  newest_build = max([b['newest_build'] for b in builders])
+  # Do `or 1000` to avoid zero weight choices when the cache is new. Any
+  # number greater than zero would work.
+  newest_build = max([b['newest_build'] for b in builders]) or 1000
   for b in builders:
     b['cache_age'] = newest_build - b['newest_build']
 
@@ -214,10 +217,37 @@ def _UpdateRunningBuilds():
     for error, build in updated_builds:
       if not error:
         if build.status == build.COMPLETED:
-          BuildAheadTryJob.Get(build.id).MarkComplete(build.response)
+          build_ahead = BuildAheadTryJob.Get(build.id)
+          build_ahead.MarkComplete(build.response)
+          if build.response['result'] == 'SUCCESS':
+            # If the build ahead was successful, record the fact that the cache
+            # is fully built at this commit position, on this particular bot.
+            _RecordFullBuild(build, build_ahead)
         else:
           result.append(build)
   return result
+
+
+def _RecordFullBuild(build, build_ahead):
+  properties = json.loads(build.response.get('result_details_json', '{}')).get(
+      'properties', {})
+  built_cp_string = properties.get('got_revision_cp')
+  bot_id = properties.get('bot_id')
+  if built_cp_string and bot_id:
+    built_cp = buildbot.GetCommitPosition(built_cp_string)
+    if built_cp:
+      cache = WfTryBotCache.Get(build_ahead.cache_name)
+      cache.full_build_commit_positions[bot_id] = built_cp
+      cache.put()
+      return
+  try:
+    # Raise an exception and catch immediately so that logging.exception can
+    # attach a stack trace to the entry and thus make error reporting detect it.
+    raise ValueError('bot_id and got_revision_cp are both required')
+  except ValueError:
+    logging.exception(
+        'Buildahead with build id %s completed successfully, but does not have '
+        'valid "got_revision_cp" and "bot_id" properties.', build.id)
 
 
 def _TriggerAndSave(master, builder, cache_name, platform, bot):

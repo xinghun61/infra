@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
 import mock
 import random
 
@@ -129,8 +130,19 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
     mock_get_tryjobs.return_value = [
         (None,
          buildbucket_client.BuildbucketBuild({
-             'id': '80000001',
-             'status': 'COMPLETED'
+             'id':
+                 '80000001',
+             'result':
+                 'SUCCESS',
+             'result_details_json':
+                 json.dumps({
+                     'properties': {
+                         'got_revision_cp': 'refs/heads/master@{#1}',
+                         'bot_id': 'bot_1'
+                     }
+                 }),
+             'status':
+                 'COMPLETED'
          })),
         (None,
          buildbucket_client.BuildbucketBuild({
@@ -144,20 +156,39 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
          })),
     ]
     self.assertEqual(2, len(build_ahead._UpdateRunningBuilds()))
+    self.assertEqual(
+        WfTryBotCache.Get('cache_1').full_build_commit_positions['bot_1'], 1)
 
     mock_get_tryjobs.return_value = [
-        (None,
-         buildbucket_client.BuildbucketBuild({
-             'id': '80000002',
-             'status': 'COMPLETED'
-         })),
+        (
+            None,
+            buildbucket_client.BuildbucketBuild({
+                'id':
+                    '80000002',
+                'result':
+                    'SUCCESS',
+                # Note the missing commit position.
+                'result_details_json':
+                    json.dumps({
+                        'properties': {
+                            'bot_id': 'bot_2'
+                        }
+                    }),
+                'status':
+                    'COMPLETED'
+            })),
         (None,
          buildbucket_client.BuildbucketBuild({
              'id': '80000003',
+             'result': 'FAILURE',
              'status': 'COMPLETED'
          })),
     ]
     self.assertEqual(0, len(build_ahead._UpdateRunningBuilds()))
+    self.assertNotIn('bot_2',
+                     WfTryBotCache.Get('cache_2').full_build_commit_positions)
+    self.assertNotIn('bot_3',
+                     WfTryBotCache.Get('cache_3').full_build_commit_positions)
 
     BuildAheadTryJob.Create('80000004', 'mac', 'cache_4').put()
     mock_get_tryjobs.return_value = [(buildbucket_client.BuildbucketError({
@@ -311,8 +342,8 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(build_ahead, 'TriggerBuildAhead')
   def testTriggerAndSave(self, mock_trigger):
-    mock_trigger.return_value = Exception("Dummy exception"), None
-    with self.assertRaisesRegexp(Exception, ".*Dummy.*"):
+    mock_trigger.return_value = Exception('Dummy exception'), None
+    with self.assertRaisesRegexp(Exception, '.*Dummy.*'):
       build_ahead._TriggerAndSave('master', 'builder', 'cache_name', 'platform',
                                   'bot')
 

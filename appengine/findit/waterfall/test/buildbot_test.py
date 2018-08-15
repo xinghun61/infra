@@ -179,9 +179,9 @@ class BuildBotTest(unittest.TestCase):
     build_number = 123
     expected_url = ('https://ci.chromium.org/buildbot/a/'
                     'Win7%20Tests%20%281%29/123')
-    self.assertEqual(expected_url,
-                     buildbot.CreateBuildUrl(master_name, builder_name,
-                                             build_number))
+    self.assertEqual(
+        expected_url,
+        buildbot.CreateBuildUrl(master_name, builder_name, build_number))
 
   @mock.patch.object(rpc_util, 'DownloadJsonData')
   def testGetBuildDataFromMiloSuccess(self, mock_fn):
@@ -409,11 +409,11 @@ class BuildBotTest(unittest.TestCase):
     self.assertEqual(expected_blame_list, build_info.blame_list)
 
   def testGetCommitPosition(self):
-    self.assertIsNone(buildbot._GetCommitPosition(None))
-    self.assertIsNone(buildbot._GetCommitPosition(''))
-    self.assertIsNone(buildbot._GetCommitPosition('not a commit position'))
+    self.assertIsNone(buildbot.GetCommitPosition(None))
+    self.assertIsNone(buildbot.GetCommitPosition(''))
+    self.assertIsNone(buildbot.GetCommitPosition('not a commit position'))
     self.assertEqual(438538,
-                     buildbot._GetCommitPosition('refs/heads/master@{#438538}'))
+                     buildbot.GetCommitPosition('refs/heads/master@{#438538}'))
 
   def testValidateBuildUrl(self):
     swarm_url = 'https://luci-milo.appspot.com/swarming/task/3595be5002f4bc10'
