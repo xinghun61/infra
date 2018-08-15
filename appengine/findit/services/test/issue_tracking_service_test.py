@@ -122,14 +122,14 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     analysis.Save()
 
     self.assertTrue(issue_tracking_service.ShouldFileBugForAnalysis(analysis))
-    self.assertTrue(label_exists_fn.called)
-    self.assertTrue(id_exists_fn.called)
-    self.assertTrue(sufficient_confidence_fn.called)
-    self.assertTrue(previous_attempt_fn.called)
-    self.assertTrue(feature_enabled_fn.called)
-    self.assertTrue(under_limit_fn.called)
-    self.assertTrue(field_exists_fn.called)
-    self.assertTrue(test_exists_fn.called)
+    label_exists_fn.assert_called()
+    id_exists_fn.assert_not_called()
+    sufficient_confidence_fn.assert_called()
+    previous_attempt_fn.assert_called()
+    feature_enabled_fn.assert_called()
+    under_limit_fn.assert_called()
+    field_exists_fn.assert_called()
+    test_exists_fn.assert_called()
 
   @mock.patch.object(
       issue_tracking_service, 'OpenBugAlreadyExistsForTest', return_value=False)

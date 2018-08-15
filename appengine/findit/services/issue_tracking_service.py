@@ -228,7 +228,7 @@ def ShouldFileBugForAnalysis(analysis):
     return False
 
   # Check if there's already a bug attached to this issue.
-  if OpenBugAlreadyExistsForId(analysis.bug_id):
+  if analysis.bug_id and OpenBugAlreadyExistsForId(analysis.bug_id):
     analysis.LogInfo('Bug with id {} already exists.'.format(analysis.bug_id))
     return False
 
