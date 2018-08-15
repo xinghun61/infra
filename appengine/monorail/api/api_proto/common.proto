@@ -88,8 +88,10 @@ message UserRef {
 }
 
 
-// Next available tag: 3
+// Next available tag: 4
 message HotlistRef {
-  string name = 1;
-  UserRef owner = 2;
+  // TODO(4131): Don't use hotlist IDs to identify hotlists.
+  uint64 hotlist_id = 1;
+  string name = 2;
+  UserRef owner = 3;
 }

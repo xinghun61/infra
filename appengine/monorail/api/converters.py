@@ -583,6 +583,11 @@ def IngestFieldValues(cnxn, user_service, field_values, config, phases=None):
 
 
 def IngestHotlistRef(cnxn, user_service, features_service, hotlist_ref):
+  # If a hotlist ID was specified, verify it actually match existing hotlists.
+  if hotlist_ref.hotlist_id:
+    features_service.GetHotlist(cnxn, hotlist_ref.hotlist_id)
+    return hotlist_ref.hotlist_id
+
   name = hotlist_ref.name
   owner_id = IngestUserRefs(cnxn, [hotlist_ref.owner], user_service)[0]
   hotlists = features_service.LookupHotlistIDs(cnxn, [name], [owner_id])

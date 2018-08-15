@@ -916,7 +916,25 @@ class ConverterFunctionsTest(unittest.TestCase):
         self.cnxn, self.services.user, self.services.features, hotlist_ref)
     self.assertEqual(actual_hotlist_id, hotlist.hotlist_id)
 
-  def testIngestHotlistRef_NoSuchIssue(self):
+  def testIngestHotlistRef_HotlistID(self):
+    self.services.user.TestAddUser('user1@example.com', 111L)
+    hotlist = self.services.features.CreateHotlist(
+        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[222L])
+
+    hotlist_ref = common_pb2.HotlistRef(hotlist_id=hotlist.hotlist_id)
+
+    actual_hotlist_id = converters.IngestHotlistRef(
+        self.cnxn, self.services.user, self.services.features, hotlist_ref)
+    self.assertEqual(actual_hotlist_id, hotlist.hotlist_id)
+
+  def testIngestHotlistRef_NonExistentHotlistID(self):
+    hotlist_ref = common_pb2.HotlistRef(hotlist_id=1234L)
+    with self.assertRaises(features_svc.NoSuchHotlistException):
+      converters.IngestHotlistRef(
+          self.cnxn, self.services.user, self.services.features, hotlist_ref)
+
+  def testIngestHotlistRef_NoSuchHotlist(self):
     self.services.user.TestAddUser('user1@example.com', 111L)
 
     owner_ref = common_pb2.UserRef(user_id=111L)
