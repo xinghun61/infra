@@ -31,6 +31,7 @@ type TriggerParameters struct {
 	WorkerIsolate    string
 	PubsubUserdata   string
 	Tags             []string
+	GerritProps      map[string]string
 }
 
 // TriggerResult contains the return value of a Trigger call to a TaskServerAPI.

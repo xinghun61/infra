@@ -5,6 +5,7 @@
 package common
 
 import (
+	"encoding/json"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -23,12 +24,39 @@ func TestParametersJSON(t *testing.T) {
 		}
 		recipe := &admin.Worker_Recipe{&tricium.Recipe{
 			Name:       "recipe",
-			Properties: "{\"enable\": \"all\"}",
+			Properties: "{\"enable\":\"all\"}",
 		}}
-		actual, err := swarmingParametersJSON(serverURL, w, recipe)
+		gerrit := map[string]string{
+			"gerrit_project":   "infra",
+			"gerrit_change":    "ChangeId",
+			"gerrit_cl_number": "1234",
+			"gerrit_patch_set": "2",
+		}
+		actual_bytes, err := swarmingParametersJSON(serverURL, w, recipe, gerrit)
 		So(err, ShouldBeNil)
-		expected := `{"builder_name":"tricium","swarming":{"hostname":"https://chromium-swarm-dev.appspot.com","override_builder_cfg":{"dimensions":["pool:Chrome","os:Ubuntu13.04"],"recipe":{"name":"recipe","properties_j":"{\"enable\": \"all\"}"}}}}`
-		So(actual, ShouldEqual, expected)
+		actual := make(map[string]interface{})
+		err = json.Unmarshal([]byte(actual_bytes), &actual)
+		So(err, ShouldBeNil)
+		expected := map[string]interface{}{
+			"builder_name": "tricium",
+			"properties": map[string]interface{}{
+				"enable": "all",
+				"gerrit_props": map[string]interface{}{
+					"gerrit_project":   "infra",
+					"gerrit_change":    "ChangeId",
+					"gerrit_cl_number": "1234",
+					"gerrit_patch_set": "2",
+				},
+			},
+			"swarming": map[string]interface{}{
+				"hostname": "https://chromium-swarm-dev.appspot.com",
+				"override_builder_cfg": map[string]interface{}{
+					"dimensions": []interface{}{"pool:Chrome", "os:Ubuntu13.04"},
+					"recipe":     map[string]interface{}{"name": "recipe"},
+				},
+			},
+		}
+		So(actual, ShouldResemble, expected)
 	})
 }
 

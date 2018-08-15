@@ -54,7 +54,8 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCac
 	if err != nil {
 		return errors.Annotate(err, "failed to get worker %q", req.Worker).Err()
 	}
-	tags := swarmingTags(c, req.Worker, req.RunId)
+	gerrit := fetchGerritDetails(c, req.RunId)
+	tags := swarmingTags(c, req.Worker, req.RunId, gerrit)
 	// TODO(emso): Auth check.
 	// TODO(emso): Runtime type check.
 
@@ -70,12 +71,14 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCac
 	switch wi := worker.Impl.(type) {
 	case *admin.Worker_Recipe:
 		// Trigger worker.
+		gerritProps := gerritProperties(c, gerrit)
 		result, err = bb.Trigger(c, &common.TriggerParameters{
 			Server:           workflow.BuildbucketServerHost,
 			IsolateServerURL: workflow.IsolateServer,
 			Worker:           worker,
 			PubsubUserdata:   userdata,
 			Tags:             tags,
+			GerritProps:      gerritProps,
 		})
 		if err != nil {
 			return errors.Annotate(err, "failed to call trigger on buildbucket API").Err()
@@ -119,12 +122,19 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCac
 	return tq.Add(c, common.TrackerQueue, t)
 }
 
+type gerritDetails struct {
+	project string
+	change  string
+	cl      string
+	patch   string
+}
+
 // swarmingTags generates tags to send when triggering tasks.
 //
 // These tags can be used later when querying tasks, so
 // any attribute of a job that we may want to query or filter
 // by could be added as a tag.
-func swarmingTags(c context.Context, worker string, runID int64) []string {
+func swarmingTags(c context.Context, worker string, runID int64, gerrit gerritDetails) []string {
 	function, platform, err := track.ExtractFunctionPlatform(worker)
 	if err != nil {
 		logging.WithError(err).Errorf(c, "failed to split worker name: %s", worker)
@@ -136,20 +146,42 @@ func swarmingTags(c context.Context, worker string, runID int64) []string {
 		"run_id:" + strconv.FormatInt(runID, 10),
 		"tricium:1",
 	}
-	// Add Gerrit details if applicable.
-	request := &track.AnalyzeRequest{ID: runID}
-	if err := ds.Get(c, request); err != nil {
-		logging.WithError(err).Errorf(c, "failed to get request for run ID: %d", runID)
-		return tags
-	}
-	if request.GerritProject != "" && request.GerritChange != "" {
-		cl, patch := common.ExtractCLPatchSetNumbers(request.GitRef)
+	if gerrit.project != "" {
 		tags = append(tags,
-			"gerrit_project:"+request.GerritProject,
-			"gerrit_change:"+request.GerritChange,
-			"gerrit_cl_number:"+cl,
-			"gerrit_patch_set:"+patch,
+			"gerrit_project:"+gerrit.project,
+			"gerrit_change:"+gerrit.change,
+			"gerrit_cl_number:"+gerrit.cl,
+			"gerrit_patch_set:"+gerrit.patch,
 		)
 	}
 	return tags
+}
+
+func gerritProperties(c context.Context, gerrit gerritDetails) map[string]string {
+	// Add Gerrit details if applicable.
+	props := make(map[string]string)
+	if gerrit.project != "" {
+		props["gerrit_project"] = gerrit.project
+		props["gerrit_change"] = gerrit.change
+		props["gerrit_cl_number"] = gerrit.cl
+		props["gerrit_patch_set"] = gerrit.patch
+	}
+	return props
+}
+
+func fetchGerritDetails(c context.Context, runID int64) gerritDetails {
+	var gerrit gerritDetails
+	request := &track.AnalyzeRequest{ID: runID}
+	if err := ds.Get(c, request); err != nil {
+		logging.WithError(err).Errorf(c, "failed to get request for run ID: %d", runID)
+		return gerrit
+	}
+	if request.GerritProject != "" && request.GerritChange != "" {
+		cl, patch := common.ExtractCLPatchSetNumbers(request.GitRef)
+		gerrit.project = request.GerritProject
+		gerrit.change = request.GerritChange
+		gerrit.cl = cl
+		gerrit.patch = patch
+	}
+	return gerrit
 }

@@ -89,7 +89,12 @@ func TestHelperFunctions(t *testing.T) {
 		}), ShouldBeNil)
 
 		Convey("Swarming tags include Gerrit details for Gerrit requests", func() {
-			So(swarmingTags(ctx, "Spacey_UBUNTU", 123), ShouldResemble, []string{
+			gerrit := fetchGerritDetails(ctx, 123)
+			So(gerrit.project, ShouldEqual, "my-project")
+			So(gerrit.change, ShouldEqual, "my-project~master~I8473b95934b5732ac55d26311a706c9c2bde9940")
+			So(gerrit.cl, ShouldEqual, "597")
+			So(gerrit.patch, ShouldEqual, "2")
+			So(swarmingTags(ctx, "Spacey_UBUNTU", 123, gerrit), ShouldResemble, []string{
 				"function:Spacey",
 				"platform:UBUNTU",
 				"run_id:123",
@@ -99,21 +104,38 @@ func TestHelperFunctions(t *testing.T) {
 				"gerrit_cl_number:597",
 				"gerrit_patch_set:2",
 			})
-
 		})
 
+		Convey("Gerrit props populate Gerrit details for Gerrit requests", func() {
+			gerrit := fetchGerritDetails(ctx, 123)
+			So(gerrit.project, ShouldEqual, "my-project")
+			So(gerrit.change, ShouldEqual, "my-project~master~I8473b95934b5732ac55d26311a706c9c2bde9940")
+			So(gerrit.cl, ShouldEqual, "597")
+			So(gerrit.patch, ShouldEqual, "2")
+			gerritProps := gerritProperties(ctx, gerrit)
+			So(gerritProps["gerrit_project"], ShouldEqual, "my-project")
+			So(gerritProps["gerrit_change"], ShouldEqual, "my-project~master~I8473b95934b5732ac55d26311a706c9c2bde9940")
+			So(gerritProps["gerrit_cl_number"], ShouldEqual, "597")
+			So(gerritProps["gerrit_patch_set"], ShouldEqual, "2")
+		})
+
+		var gerritProps gerritDetails
+
 		Convey("Swarming tags omit Gerrit details for non-Gerrit requests", func() {
-			So(swarmingTags(ctx, "Pylint_UBUNTU", 321), ShouldResemble, []string{
+			gerrit := fetchGerritDetails(ctx, 321)
+			So(gerrit, ShouldResemble, gerritProps)
+			So(swarmingTags(ctx, "Pylint_UBUNTU", 321, gerrit), ShouldResemble, []string{
 				"function:Pylint",
 				"platform:UBUNTU",
 				"run_id:321",
 				"tricium:1",
 			})
-
 		})
 
 		Convey("Swarming tags omit Gerrit details if run not found", func() {
-			So(swarmingTags(ctx, "Spacey_UBUNTU", 789), ShouldResemble, []string{
+			gerrit := fetchGerritDetails(ctx, 789)
+			So(gerrit, ShouldResemble, gerritProps)
+			So(swarmingTags(ctx, "Spacey_UBUNTU", 789, gerrit), ShouldResemble, []string{
 				"function:Spacey",
 				"platform:UBUNTU",
 				"run_id:789",
@@ -122,7 +144,7 @@ func TestHelperFunctions(t *testing.T) {
 		})
 
 		Convey("Swarming tags are nil for invalid worker names", func() {
-			So(swarmingTags(ctx, "invalidworker", 1), ShouldBeNil)
+			So(swarmingTags(ctx, "invalidworker", 1, gerritProps), ShouldBeNil)
 		})
 	})
 }
