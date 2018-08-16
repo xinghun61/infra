@@ -7,6 +7,7 @@ package model
 import (
 	"fmt"
 	"io"
+	"sync"
 	"time"
 
 	"golang.org/x/net/context"
@@ -216,8 +217,11 @@ func writeDataEntries(c context.Context, r io.Reader) ([]*datastore.Key, error) 
 
 	// Read data from "r" one blob at a time.
 	buf := make([]byte, maxBlobLen)
-	var keys []*datastore.Key
+
 	finished := false
+
+	var dataEntries []*DataEntry
+
 	for !finished {
 		// Read as much as possible into "buf". If we read any data, add another
 		// DataEntry and keep reading.
@@ -232,29 +236,48 @@ func writeDataEntries(c context.Context, r io.Reader) ([]*datastore.Key, error) 
 		default:
 			// Actual Reader error.
 			logging.WithError(err).Errorf(c, "Failed to read from Reader.")
-			return keys, err
+			return nil, err
 		}
 
 		if count > 0 {
-			dataEntry := &DataEntry{
-				Data:    buf[:count],
-				Created: clock.Get(c).Now().UTC(),
-			}
-			if err := datastore.Put(c, dataEntry); err != nil {
-				logging.WithError(err).Errorf(c, "Failed to put DataEntry #%d.", len(keys))
-				return keys, err
-			}
-
-			logging.Fields{
-				"index": len(keys),
-				"size":  len(dataEntry.Data),
-				"id":    dataEntry.ID,
-			}.Debugf(c, "Added data entry.")
-			keys = append(keys, datastore.KeyForObj(c, dataEntry))
+			dataEntries = append(dataEntries,
+				&DataEntry{
+					Data:    buf[:count],
+					Created: clock.Get(c).Now().UTC(),
+				})
 		}
 	}
 
-	return keys, nil
+	var mu sync.Mutex
+	var keys []*datastore.Key
+
+	const datastorePutWokers = 16
+
+	err := parallel.WorkPool(datastorePutWokers, func(workC chan<- func() error) {
+		for _, dataEntry := range dataEntries {
+			dataEntry := dataEntry
+			workC <- func() error {
+				err := datastore.Put(c, dataEntry)
+
+				mu.Lock()
+				defer mu.Unlock()
+				if err != nil {
+					logging.WithError(err).Errorf(c, "Failed to put DataEntry #%d.", len(keys))
+					return err
+				}
+
+				logging.Fields{
+					"index": len(keys),
+					"size":  len(dataEntry.Data),
+					"id":    dataEntry.ID,
+				}.Debugf(c, "Added data entry.")
+				keys = append(keys, datastore.KeyForObj(c, dataEntry))
+				return nil
+			}
+		}
+	})
+
+	return keys, err
 }
 
 // updatedBlobKeys fetches the updated blob keys for the old keys from their blobstore migration
