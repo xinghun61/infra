@@ -99,18 +99,14 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
       issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
       issue_tracking_service,
-      'OpenBugAlreadyExistsForLabel',
-      return_value=False)
-  @mock.patch.object(
-      issue_tracking_service,
       'BugAlreadyExistsForCustomField',
       return_value=False)
   @mock.patch.object(
       issue_tracking_service, 'OpenBugAlreadyExistsForTest', return_value=False)
-  def testShouldFileBugForAnalysis(
-      self, test_exists_fn, field_exists_fn, label_exists_fn, id_exists_fn,
-      sufficient_confidence_fn, previous_attempt_fn, feature_enabled_fn,
-      under_limit_fn):
+  def testShouldFileBugForAnalysis(self, test_exists_fn, field_exists_fn,
+                                   id_exists_fn, sufficient_confidence_fn,
+                                   previous_attempt_fn, feature_enabled_fn,
+                                   under_limit_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -122,7 +118,6 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     analysis.Save()
 
     self.assertTrue(issue_tracking_service.ShouldFileBugForAnalysis(analysis))
-    label_exists_fn.assert_called()
     id_exists_fn.assert_not_called()
     sufficient_confidence_fn.assert_called()
     previous_attempt_fn.assert_called()
@@ -141,10 +136,6 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
       issue_tracking_service,
       'HasSufficientConfidenceInCulprit',
       return_value=True)
-  @mock.patch.object(
-      issue_tracking_service,
-      'OpenBugAlreadyExistsForLabel',
-      return_value=False)
   @mock.patch.object(
       issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
@@ -178,10 +169,6 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
       'HasSufficientConfidenceInCulprit',
       return_value=True)
   @mock.patch.object(
-      issue_tracking_service,
-      'OpenBugAlreadyExistsForLabel',
-      return_value=False)
-  @mock.patch.object(
       issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=True)
   def testShouldFileBugForAnalysisWhenBugIdExists(self, id_exists_fn, *_):
     master_name = 'm'
@@ -207,41 +194,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       issue_tracking_service, '_HasPreviousAttempt', return_value=False)
   @mock.patch.object(
-      issue_tracking_service,
-      'HasSufficientConfidenceInCulprit',
-      return_value=True)
-  @mock.patch.object(
       issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
-  @mock.patch.object(
-      issue_tracking_service, 'OpenBugAlreadyExistsForLabel', return_value=True)
-  def testShouldFileBugForAnalysisWhenLabelExists(self, label_exists_fn, *_):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-
-    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
-                                          build_number, step_name, test_name)
-    analysis.Save()
-
-    self.assertFalse(issue_tracking_service.ShouldFileBugForAnalysis(analysis))
-    self.assertTrue(label_exists_fn.called)
-
-  @mock.patch.object(
-      issue_tracking_service, 'OpenBugAlreadyExistsForTest', return_value=False)
-  @mock.patch.object(
-      issue_tracking_service, 'UnderDailyLimit', return_value=True)
-  @mock.patch.object(
-      issue_tracking_service, 'IsBugFilingEnabled', return_value=True)
-  @mock.patch.object(
-      issue_tracking_service, '_HasPreviousAttempt', return_value=False)
-  @mock.patch.object(
-      issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
-  @mock.patch.object(
-      issue_tracking_service,
-      'OpenBugAlreadyExistsForLabel',
-      return_value=False)
   @mock.patch.object(
       issue_tracking_service,
       'HasSufficientConfidenceInCulprit',
@@ -272,10 +225,6 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
       issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
       issue_tracking_service,
-      'OpenBugAlreadyExistsForLabel',
-      return_value=False)
-  @mock.patch.object(
-      issue_tracking_service,
       'HasSufficientConfidenceInCulprit',
       return_value=True)
   @mock.patch.object(
@@ -303,10 +252,6 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
       issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
       issue_tracking_service,
-      'OpenBugAlreadyExistsForLabel',
-      return_value=False)
-  @mock.patch.object(
-      issue_tracking_service,
       'HasSufficientConfidenceInCulprit',
       return_value=True)
   @mock.patch.object(
@@ -332,10 +277,6 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
       issue_tracking_service, 'IsBugFilingEnabled', return_value=True)
   @mock.patch.object(
       issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
-  @mock.patch.object(
-      issue_tracking_service,
-      'OpenBugAlreadyExistsForLabel',
-      return_value=False)
   @mock.patch.object(
       issue_tracking_service,
       'HasSufficientConfidenceInCulprit',
@@ -370,10 +311,6 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
       issue_tracking_service, 'IsBugFilingEnabled', return_value=True)
   @mock.patch.object(
       issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
-  @mock.patch.object(
-      issue_tracking_service,
-      'OpenBugAlreadyExistsForLabel',
-      return_value=False)
   @mock.patch.object(
       issue_tracking_service,
       'HasSufficientConfidenceInCulprit',
@@ -539,58 +476,6 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(mock_api.return_value.getIssue.called)
     args, _ = mock_api.return_value.getIssue.call_args
     self.assertEqual((1234,), args)
-    mock_api.reset_mock()
-
-  @mock.patch.object(
-      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 3))
-  @mock.patch('services.issue_tracking_service.IssueTrackerAPI')
-  def testOpenBugAlreadyExistsForLabel(self, mock_api, _):
-    with self.assertRaises(AssertionError):
-      issue_tracking_service.OpenBugAlreadyExistsForLabel(None)
-
-    mock_api.return_value.getIssues.return_value = None
-    self.assertFalse(
-        issue_tracking_service.OpenBugAlreadyExistsForLabel('test'))
-    self.assertTrue(mock_api.return_value.getIssues.called)
-    args, _ = mock_api.return_value.getIssues.call_args
-    self.assertEqual(('label:test',), args)
-    mock_api.reset_mock()
-
-    mock_issue = mock.MagicMock()
-    mock_issue.open = True
-    mock_issue.updated = datetime.datetime(2017, 1, 1)
-    mock_api.return_value.getIssues.return_value = [mock_issue]
-    self.assertTrue(issue_tracking_service.OpenBugAlreadyExistsForLabel('test'))
-    self.assertTrue(mock_api.return_value.getIssues.called)
-    args, _ = mock_api.return_value.getIssues.call_args
-    self.assertEqual(('label:test',), args)
-    mock_api.reset_mock()
-
-    mock_issue_1 = mock.MagicMock()
-    mock_issue_1.open = True
-    mock_issue_1.updated = datetime.datetime(2017, 1, 1)
-    mock_issue_2 = mock.MagicMock()
-    mock_issue_2.open = False
-    mock_issue_2.updated = datetime.datetime(2017, 1, 1)
-    mock_api.return_value.getIssues.return_value = [mock_issue_1, mock_issue_2]
-    self.assertTrue(issue_tracking_service.OpenBugAlreadyExistsForLabel('test'))
-    self.assertTrue(mock_api.return_value.getIssues.called)
-    args, _ = mock_api.return_value.getIssues.call_args
-    self.assertEqual(('label:test',), args)
-    mock_api.reset_mock()
-
-    mock_issue_1 = mock.MagicMock()
-    mock_issue_1.open = False
-    mock_issue_1.updated = datetime.datetime(2017, 1, 2)
-    mock_issue_2 = mock.MagicMock()
-    mock_issue_2.open = False
-    mock_issue_2.updated = datetime.datetime(2017, 1, 1)
-    mock_api.return_value.getIssues.return_value = [mock_issue_1, mock_issue_2]
-    self.assertFalse(
-        issue_tracking_service.OpenBugAlreadyExistsForLabel('test'))
-    self.assertTrue(mock_api.return_value.getIssues.called)
-    args, _ = mock_api.return_value.getIssues.call_args
-    self.assertEqual(('label:test',), args)
     mock_api.reset_mock()
 
   @mock.patch.object(issue_tracking_service,
@@ -955,7 +840,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     normalized_test_name = 'suite.test'
     num_occurrences = 5
     monorail_project = 'chromium'
-    flake_url = 'https://findit-for-me-staging.com/flake/detection/show-flake?key=1212' # pylint: disable=line-too-long
+    flake_url = 'https://findit-for-me-staging.com/flake/detection/show-flake?key=1212'  # pylint: disable=line-too-long
     previous_tracking_bug_id = None
 
     issue_id = issue_tracking_service.CreateBugForFlakeDetection(
@@ -1007,7 +892,7 @@ as untriaged.""")
     num_occurrences = 5
     monorail_project = 'chromium'
     previous_tracking_bug_id = 56789
-    flake_url = 'https://findit-for-me-staging.com/flake/detection/show-flake?key=1212' # pylint: disable=line-too-long
+    flake_url = 'https://findit-for-me-staging.com/flake/detection/show-flake?key=1212'  # pylint: disable=line-too-long
 
     issue_tracking_service.CreateBugForFlakeDetection(
         normalized_step_name=normalized_step_name,
@@ -1029,7 +914,7 @@ as untriaged.""")
     normalized_test_name = 'suite.test'
     num_occurrences = 5
     monorail_project = 'chromium'
-    flake_url = 'https://findit-for-me-staging.com/flake/detection/show-flake?key=1212' # pylint: disable=line-too-long
+    flake_url = 'https://findit-for-me-staging.com/flake/detection/show-flake?key=1212'  # pylint: disable=line-too-long
     issue_id = 12345
     issue = Issue({
         'status': 'Available',
@@ -1078,7 +963,7 @@ Feedback is welcome! Please use component Tools>Test>FindIt>Flakiness.""")
     normalized_test_name = 'suite.test'
     num_occurrences = 5
     monorail_project = 'chromium'
-    flake_url = 'https://findit-for-me-staging.com/flake/detection/show-flake?key=1212' # pylint: disable=line-too-long
+    flake_url = 'https://findit-for-me-staging.com/flake/detection/show-flake?key=1212'  # pylint: disable=line-too-long
     issue_id = 12345
     previous_tracking_bug_id = 56789
     issue = Issue({

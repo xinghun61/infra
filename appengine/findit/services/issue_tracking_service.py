@@ -128,28 +128,6 @@ def _GetOpenIssues(query, monorail_project):
   return [issue for issue in issues if issue.open]
 
 
-def OpenBugAlreadyExistsForLabel(
-    test_name, monorail_project=flake_constants.CHROMIUM_PROJECT_NAME):
-  """Returns True if the bug with the given label exists on monorail."""
-  return GetOpenBugIdForLabel(test_name, monorail_project) is not None
-
-
-def GetOpenBugIdForLabel(
-    label, monorail_project=flake_constants.CHROMIUM_PROJECT_NAME):
-  """Returns the id of the bug matches the given label.
-
-  Args:
-    label: The label to search for.
-    monorail_project: The monorail project to search for.
-
-  Returns:
-    Id of the bug if it exists, otherwise, None.
-  """
-  assert label, 'Bug label cannot be None or empty.'
-  open_issues = _GetOpenIssues('label:%s' % label, monorail_project)
-  return open_issues[0].id if open_issues else None
-
-
 def OpenBugAlreadyExistsForId(bug_id, project_id='chromium'):
   """Returns True if the bug exists and is open on monorail."""
   existing_bug = GetBugForId(bug_id, project_id)
@@ -244,12 +222,6 @@ def ShouldFileBugForAnalysis(analysis):
   # Check if there's already a bug attached to this issue.
   if analysis.bug_id and OpenBugAlreadyExistsForId(analysis.bug_id):
     analysis.LogInfo('Bug with id {} already exists.'.format(analysis.bug_id))
-    return False
-
-  # TODO(crbug.com/808199): Turn off label checking when CTF is offline.
-  if OpenBugAlreadyExistsForLabel(analysis.test_name):
-    analysis.LogInfo('Bug already exists for label {}'.format(
-        analysis.test_name))
     return False
 
   if BugAlreadyExistsForCustomField(analysis.test_name):

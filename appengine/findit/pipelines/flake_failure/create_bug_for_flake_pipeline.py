@@ -77,8 +77,6 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
         bug_id = (
             issue_tracking_service.GetExistingBugIdForCustomizedField(
                 analysis.test_name) or
-            issue_tracking_service.GetOpenBugIdForLabel(
-                label=analysis.test_name) or
             issue_tracking_service.GetExistingOpenBugIdForTest(
                 analysis.test_name))
         analysis.Update(bug_id=bug_id)
