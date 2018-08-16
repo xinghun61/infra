@@ -116,10 +116,10 @@
   },
   # expect_tests is maintained by Chrome Infra
   'expect_tests': {
-    'version': '0.3.24',
+    'version': '0.3.25',
     'build': '0',
     'repo': 'infra/testing/expect_tests',
-    'rev': 'a3d5a2bcda6876ad4b6dfcbaef3fa6cff77f350b',
+    'rev': 'c3766acb62c87bf616b40922f5e3c4857533c37f',
   },
   'futures': {
     'build': '0',
