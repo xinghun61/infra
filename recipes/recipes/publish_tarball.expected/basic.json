@@ -210,7 +210,6 @@
       "--force-local-build",
       "--without-android",
       "--use-system-cmake",
-      "--if-needed",
       "--gcc-toolchain=/usr",
       "--skip-build"
     ],

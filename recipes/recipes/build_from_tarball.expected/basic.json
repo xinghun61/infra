@@ -40,7 +40,6 @@
       "-u",
       "[START_DIR]/build_dir/chromium-69.0.3491.0/tools/clang/scripts/update.py",
       "--force-local-build",
-      "--if-needed",
       "--without-android",
       "--skip-checkout"
     ],

@@ -247,7 +247,7 @@ def RunSteps(api):
     api.step('download clang sources', [
         api.path['checkout'].join('tools', 'clang', 'scripts', 'update.py'),
         '--force-local-build', '--without-android', '--use-system-cmake',
-        '--if-needed', '--gcc-toolchain=/usr', '--skip-build'])
+        '--gcc-toolchain=/usr', '--skip-build'])
 
   api.python('fetch android AFDO profile', api.path['checkout'].join(
       'chrome', 'android', 'profiles', 'update_afdo_profile.py'), [])

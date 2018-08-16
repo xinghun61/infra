@@ -75,9 +75,7 @@ def RunSteps(api):
       api.python(
           'Build clang.',
           api.path.join(src_dir, 'tools', 'clang', 'scripts', 'update.py'), [
-              '--force-local-build', '--if-needed', '--without-android',
-              '--skip-checkout'
-          ])
+              '--force-local-build', '--without-android', '--skip-checkout'])
       gn_bootstrap_args = ['--gn-gen-args=%s' % ' '.join(gn_args)]
       if [int(x) for x in version.split('.')] >= [69, 0, 3491, 0]:
         # TODO(thomasanderson): Add libc++ sources to gn so this flag is not
