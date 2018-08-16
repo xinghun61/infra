@@ -39,7 +39,7 @@ func (m *NinjaTask) Reset()         { *m = NinjaTask{} }
 func (m *NinjaTask) String() string { return proto.CompactTextString(m) }
 func (*NinjaTask) ProtoMessage()    {}
 func (*NinjaTask) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ninjalog_0e31da128301b380, []int{0}
+	return fileDescriptor_ninjalog_a59e46b33dd86639, []int{0}
 }
 func (m *NinjaTask) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_NinjaTask.Unmarshal(m, b)
@@ -114,7 +114,7 @@ func (m *NinjaTask_LogEntry) Reset()         { *m = NinjaTask_LogEntry{} }
 func (m *NinjaTask_LogEntry) String() string { return proto.CompactTextString(m) }
 func (*NinjaTask_LogEntry) ProtoMessage()    {}
 func (*NinjaTask_LogEntry) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ninjalog_0e31da128301b380, []int{0, 0}
+	return fileDescriptor_ninjalog_a59e46b33dd86639, []int{0, 0}
 }
 func (m *NinjaTask_LogEntry) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_NinjaTask_LogEntry.Unmarshal(m, b)
@@ -167,9 +167,9 @@ func init() {
 	proto.RegisterType((*NinjaTask_LogEntry)(nil), "ninjalog.NinjaTask.LogEntry")
 }
 
-func init() { proto.RegisterFile("ninjalog.proto", fileDescriptor_ninjalog_0e31da128301b380) }
+func init() { proto.RegisterFile("ninjalog.proto", fileDescriptor_ninjalog_a59e46b33dd86639) }
 
-var fileDescriptor_ninjalog_0e31da128301b380 = []byte{
+var fileDescriptor_ninjalog_a59e46b33dd86639 = []byte{
 	// 298 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x4f, 0xb1, 0x4e, 0xf3, 0x30,
 	0x18, 0x94, 0xff, 0xf4, 0xa7, 0xc9, 0xd7, 0x52, 0x81, 0x27, 0xb7, 0x20, 0x14, 0x98, 0x32, 0xb9,
