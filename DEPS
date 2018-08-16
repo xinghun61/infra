@@ -94,6 +94,10 @@ deps = {
      "{external_github}/golang/oauth2.git@" +
      "cb029f4c1f58850787981eefaf9d9bf547c1a722",
 
+  "infra/appengine/third_party/src/github.com/golang/protobuf":
+     "{external_github}/golang/protobuf.git@" +
+     "b4deda0973fb4c70b50d226b1af49f3da59f5265",
+
   "infra/appengine/third_party/npm_modules": {
      "url":
         "{chromium_git}/infra/third_party/npm_modules.git@" +

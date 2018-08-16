@@ -1,0 +1,41 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+package ninjalog;
+
+import "google/protobuf/duration.proto";
+
+message NinjaTask {
+  // Identifier of build used in buildbucket api v2 (go/buildbucket-api-v2)
+  int64 build_id = 1;
+
+  // Step name to distinguish multiple compile steps in a build.
+  string step_name = 2;
+
+  // ninja’s -j value
+  int64 jobs = 3;
+
+  // Ninja log entry.
+  // https://github.com/ninja-build/ninja/blob/265a6eaf399778c746c7d2c02b8742f3c0ff07e9/src/build_log.h#L54
+  message LogEntry {
+    // Output filenames of task grouped by command_hash.
+    repeated string outputs = 1;
+
+    // Hash of running command.
+    string command_hash = 2;
+
+    // Duration between the time starting task and the time when ninja started.
+    google.protobuf.Duration start_duration = 3;
+
+    // Duration between the time ending task and the time when ninja started.
+    google.protobuf.Duration end_duration = 4;
+  }
+
+  LogEntry log_entry = 4;
+
+  // Weighted build time. This lets us know less parallelized slow build tasks.
+  // More details in https://chromium.googlesource.com/chromium/tools/depot_tools/+/5888d6f676722fdac3f65e673c0232667309296c/post_build_ninja_summary.py#52
+  google.protobuf.Duration weighted_duration = 5;
+}
