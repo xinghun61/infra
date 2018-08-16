@@ -115,19 +115,19 @@ func ParseLogline(line []byte) (Logline, error) {
 
 	// Parse restline as `(\d+) *(.*)`
 	restline := strings.TrimLeftFunc(string(line[1+len(timestampLayout):]), isSpace)
-	afterThreadId := strings.TrimLeftFunc(restline, unicode.IsDigit)
-	if afterThreadId == restline {
+	afterThreadID := strings.TrimLeftFunc(restline, unicode.IsDigit)
+	if afterThreadID == restline {
 		// Not match with `(\d+)'.
 		return Logline{Lines: []string{string(line)}}, nil
 	}
 
-	threadId := restline[:len(restline)-len(afterThreadId)]
+	threadID := restline[:len(restline)-len(afterThreadID)]
 
 	return Logline{
 		Level:     lv,
 		Timestamp: t,
-		ThreadID:  threadId,
-		Lines:     []string{strings.TrimLeftFunc(afterThreadId, isSpace)},
+		ThreadID:  threadID,
+		Lines:     []string{strings.TrimLeftFunc(afterThreadID, isSpace)},
 	}, nil
 }
 

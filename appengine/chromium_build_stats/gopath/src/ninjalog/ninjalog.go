@@ -63,11 +63,13 @@ func (s Steps) Reverse() {
 // ByEnd is used to sort by end time.
 type ByEnd struct{ Steps }
 
+// Less is used to sort a list by Steps End time.
 func (s ByEnd) Less(i, j int) bool { return s.Steps[i].End < s.Steps[j].End }
 
 // ByDuration is used to sort by duration.
 type ByDuration struct{ Steps }
 
+// Less is used to sort a list by Steps Duration.
 func (s ByDuration) Less(i, j int) bool { return s.Steps[i].Duration() < s.Steps[j].Duration() }
 
 // ByWeightedTime is used to sort by weighted time.
@@ -76,6 +78,7 @@ type ByWeightedTime struct {
 	Steps
 }
 
+// Less is used to sort a list by Weighted duration.
 func (s ByWeightedTime) Less(i, j int) bool {
 	return s.Weighted[s.Steps[i].Out] < s.Weighted[s.Steps[j].Out]
 }
@@ -190,7 +193,7 @@ func lineToStep(line string) (Step, error) {
 	// Due to slowness of strings.Split in App Engine Go,
 	// we use more faster implementation.
 	fields := make([]string, 0, 5)
-	for i := 0; i < 5; i += 1 {
+	for i := 0; i < 5; i++ {
 		m := strings.IndexByte(line, '\t')
 		if m < 0 {
 			m = len(line)

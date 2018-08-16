@@ -26,7 +26,7 @@ const (
 	// Linking is other compilation mode.
 	Linking
 
-	// Number of CompilerMode.
+	// NumCompileMode is number of CompilerMode.
 	NumCompileMode int = iota
 )
 
@@ -95,6 +95,7 @@ func (tl TaskLogs) Less(i, j int) bool { return tl[i].ID < tl[j].ID }
 // ByDuration sorts a list of TaskLogs by duration.
 type ByDuration struct{ TaskLogs }
 
+// Less is used to sort a list of TaskLogs by Duration.
 func (tl ByDuration) Less(i, j int) bool {
 	if id, jd := tl.TaskLogs[i].Duration(), tl.TaskLogs[j].Duration(); id != jd {
 		return id < jd
@@ -105,6 +106,7 @@ func (tl ByDuration) Less(i, j int) bool {
 // ByRunDuration sorts a list of TaskLogs by run duration.
 type ByRunDuration struct{ TaskLogs }
 
+// Less is used to sort a list of TaskLogs by RunDuration.
 func (tl ByRunDuration) Less(i, j int) bool {
 	if ir, jr := tl.TaskLogs[i].RunDuration(), tl.TaskLogs[j].RunDuration(); ir != jr {
 		return ir < jr
@@ -115,6 +117,7 @@ func (tl ByRunDuration) Less(i, j int) bool {
 // ByPending sorts a list of TaskLogs by pending.
 type ByPending struct{ TaskLogs }
 
+// Less is used to sort a list of TaskLogs by Pending.
 func (tl ByPending) Less(i, j int) bool {
 	if ip, jp := tl.TaskLogs[i].Pending(), tl.TaskLogs[j].Pending(); ip != jp {
 		return ip < jp
@@ -240,18 +243,18 @@ func parseTaskLine(line string) []string {
 		return nil
 	}
 	afterTask := line[taskIdx+len(task):]
-	afterTaskId := strings.TrimLeftFunc(afterTask, unicode.IsDigit)
-	if afterTaskId == afterTask {
+	afterTaskID := strings.TrimLeftFunc(afterTask, unicode.IsDigit)
+	if afterTaskID == afterTask {
 		return nil
 	}
 
-	if !strings.HasPrefix(afterTaskId, " ") {
+	if !strings.HasPrefix(afterTaskID, " ") {
 		return nil
 	}
 
-	taskId := afterTask[:len(afterTask)-len(afterTaskId)]
+	taskID := afterTask[:len(afterTask)-len(afterTaskID)]
 
-	return []string{line, taskId, afterTaskId[1:]}
+	return []string{line, taskID, afterTaskID[1:]}
 }
 
 // Parse parses compiler_proxy.
@@ -358,6 +361,7 @@ func (cpl *CompilerProxyLog) taskLog(id string, tm time.Time, logLine Logline) *
 	return t
 }
 
+// Duration returns duration of running time of compiler_proxy.
 func (cpl *CompilerProxyLog) Duration() time.Duration {
 	return cpl.Closed.Sub(cpl.Created)
 }
