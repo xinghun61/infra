@@ -17,7 +17,6 @@ import (
 
 func TestParametersJSON(t *testing.T) {
 	Convey("Creates parameters_json string", t, func() {
-		serverURL := "https://chromium-swarm-dev.appspot.com"
 		w := &admin.Worker{
 			Name:       "FileIsolator",
 			Dimensions: []string{"pool:Chrome", "os:Ubuntu13.04"},
@@ -32,7 +31,7 @@ func TestParametersJSON(t *testing.T) {
 			"gerrit_cl_number": "1234",
 			"gerrit_patch_set": "2",
 		}
-		actual_bytes, err := swarmingParametersJSON(serverURL, w, recipe, gerrit)
+		actual_bytes, err := swarmingParametersJSON(w, recipe, gerrit)
 		So(err, ShouldBeNil)
 		actual := make(map[string]interface{})
 		err = json.Unmarshal([]byte(actual_bytes), &actual)
@@ -49,7 +48,6 @@ func TestParametersJSON(t *testing.T) {
 				},
 			},
 			"swarming": map[string]interface{}{
-				"hostname": "https://chromium-swarm-dev.appspot.com",
 				"override_builder_cfg": map[string]interface{}{
 					"dimensions": []interface{}{"pool:Chrome", "os:Ubuntu13.04"},
 					"recipe":     map[string]interface{}{"name": "recipe"},
