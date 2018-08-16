@@ -419,6 +419,7 @@ SPECS = {s.spec.tag: s for s in (
   Universal('mock', '2.0.0'),
   Universal('more-itertools', '4.1.0'),
   UniversalSource('mox', '0.5.3'),
+  Universal('nose', '1.3.7'),
   UniversalSource('oauth2client', '3.0.0'),
   Universal('oauth2client', '4.0.0'),
   Universal('oauth2client', '4.1.2'),

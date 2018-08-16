@@ -1137,6 +1137,20 @@ wheel: <
 
 * *universal*
 
+## **nose**
+
+### 1.3.7
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/nose-py2_py3"
+  version: "version:1.3.7"
+>
+```
+
+
+* *universal*
+
 ## **numpy**
 
 ### 1.11.3
