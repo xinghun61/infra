@@ -35,9 +35,14 @@ const (
 )
 
 // BestPriorityFor determines the highest available priority for a quota
-// account, given its balance. If the account is out of quota, this is
-// the FreeBucket.
-func BestPriorityFor(balance vector.Vector) int32 {
+// account, given its balance.
+//
+// If the account is out of quota, or if the supplied balance is a nil
+// pointer, then this returns FreeBucket.
+func BestPriorityFor(balance *vector.Vector) int32 {
+	if balance == nil {
+		return FreeBucket
+	}
 	for priority, value := range balance.Values {
 		if value > 0 {
 			return int32(priority)

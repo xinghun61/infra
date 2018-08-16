@@ -25,10 +25,12 @@ func TestBestPriority(t *testing.T) {
 	expects := []int32{
 		FreeBucket,
 		1,
+		FreeBucket,
 	}
 	actuals := []int32{
-		BestPriorityFor(*vector.New()),
-		BestPriorityFor(*vector.New(0, 1, 0)),
+		BestPriorityFor(vector.New()),
+		BestPriorityFor(vector.New(0, 1, 0)),
+		BestPriorityFor(nil),
 	}
 
 	for i, expect := range expects {
