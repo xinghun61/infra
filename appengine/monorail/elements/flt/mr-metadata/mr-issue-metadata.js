@@ -75,9 +75,9 @@ class MrIssueMetadata extends ReduxMixin(Polymer.Element) {
     const newIsStarred = !this.isStarred;
     const message = {
       trace: {token: this.token},
-      issue_ref: {
-        project_name: this.projectName,
-        local_id: this.issueId,
+      issueRef: {
+        projectName: this.projectName,
+        localId: this.issueId,
       },
       starred: newIsStarred,
     };

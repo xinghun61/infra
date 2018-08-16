@@ -81,7 +81,7 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
 
     const message = {
       trace: {token: this.token},
-      project_name: projectName,
+      projectName,
     };
 
     const getConfig = window.prpcClient.call(

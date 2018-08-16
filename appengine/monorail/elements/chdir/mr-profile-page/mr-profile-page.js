@@ -58,8 +58,8 @@ class MrProfilePage extends Polymer.Element {
     const commitMessage = {
       trace: {token: this.token},
       email: this.viewedUser,
-      from_timestamp: fromTime,
-      until_timestamp: currentTime,
+      fromTimestamp: fromTime,
+      untilTimestamp: currentTime,
     };
 
     const getCommits = window.prpcClient.call(
@@ -75,8 +75,8 @@ class MrProfilePage extends Polymer.Element {
       trace: {
         token: this.token,
       },
-      user_ref: {
-        user_id: this.viewedUserId,
+      userRef: {
+        userId: this.viewedUserId,
       },
     };
 
