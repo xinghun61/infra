@@ -623,7 +623,7 @@ def _create_task_def_async(
       }
       last_delay = delay_secs
       t['properties']['dimensions'].extend({
-          'key': 'cache',
+          'key': 'caches',
           'value': cache_name,
       } for cache_name in cache_names)
       task['task_slices'].append(t)
