@@ -1282,6 +1282,9 @@ function TKR_fetchOptions(projectName) {
 
   allPromises.push(
       fieldsPromise.then(fieldsResponse => {
+        if (Object.keys(fieldsResponse).length === 0) {
+          return {};
+        }
         const jsonData = TKR_convertFields(fieldsResponse);
 
         TKR_setUpUserAutocompleteStores(jsonData.fields);
@@ -1289,9 +1292,12 @@ function TKR_fetchOptions(projectName) {
         return jsonData;
   }));
 
-  // We won't need custom permissions or hotlists later, so there'se no need to
+  // We won't need custom permissions or hotlists later, so there's no need to
   // add them to allPromises.
   customPermissionsPromise.then(customPermissionsResponse => {
+    if (Object.keys(customPermissionsResponse).length === 0) {
+      return {};
+    }
     TKR_setUpCustomPermissionsStore(customPermissionsResponse.permissions);
   });
 
