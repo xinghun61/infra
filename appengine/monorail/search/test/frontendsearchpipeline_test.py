@@ -14,6 +14,7 @@ from google.appengine.ext import testbed
 from google.appengine.api import urlfetch
 
 import settings
+from framework import framework_helpers
 from framework import sorting
 from framework import urls
 from proto import ast_pb2
@@ -47,6 +48,8 @@ class FrontendSearchPipelineTest(unittest.TestCase):
     self.mr = testing_helpers.MakeMonorailRequest(
       path='/p/proj/issues/list', project=self.project)
     self.mr.me_user_id = 111L
+    self.url_params = [(name, self.mr.GetParam(name)) for name in
+                       framework_helpers.RECOGNIZED_PARAMS]
 
     self.issue_1 = fake.MakeTestIssue(
       789, 1, 'one', 'New', 111L, labels=['Priority-High'])
@@ -77,7 +80,9 @@ class FrontendSearchPipelineTest(unittest.TestCase):
     self.mox.StubOutWithMock(frontendsearchpipeline, '_StartBackendSearch')
     frontendsearchpipeline._StartBackendSearch(
       self.mr, ['proj'], [789], mox.IsA(tracker_pb2.ProjectIssueConfig),
-      unfiltered_iids, {}, nonviewable_iids, set(), self.services).AndReturn([])
+      unfiltered_iids, {}, nonviewable_iids, set(), self.services,
+      self.mr.me_user_id,
+      self.mr.auth.user_id or 0, 100, self.url_params).AndReturn([])
     self.mox.StubOutWithMock(frontendsearchpipeline, '_FinishBackendSearch')
     frontendsearchpipeline._FinishBackendSearch([])
     self.mox.ReplayAll()
@@ -99,8 +104,9 @@ class FrontendSearchPipelineTest(unittest.TestCase):
     self.mox.StubOutWithMock(frontendsearchpipeline, '_StartBackendSearch')
     frontendsearchpipeline._StartBackendSearch(
       self.mr, ['other', 'proj'], [789, 790],
-      mox.IsA(tracker_pb2.ProjectIssueConfig),
-      unfiltered_iids, {}, nonviewable_iids, set(), self.services).AndReturn([])
+      mox.IsA(tracker_pb2.ProjectIssueConfig), unfiltered_iids, {},
+      nonviewable_iids, set(), self.services, self.mr.me_user_id,
+      self.mr.auth.user_id or 0, 100, self.url_params).AndReturn([])
     self.mox.StubOutWithMock(frontendsearchpipeline, '_FinishBackendSearch')
     frontendsearchpipeline._FinishBackendSearch([])
     self.mox.ReplayAll()
@@ -125,7 +131,9 @@ class FrontendSearchPipelineTest(unittest.TestCase):
     frontendsearchpipeline._StartBackendSearch(
       self.mr, ['proj'], [789],
       mox.IsA(tracker_pb2.ProjectIssueConfig),
-      unfiltered_iids, {}, nonviewable_iids, set(), self.services).AndReturn([])
+      unfiltered_iids, {}, nonviewable_iids, set(), self.services,
+      self.mr.me_user_id,
+      self.mr.auth.user_id, 100, self.url_params).AndReturn([])
     self.mox.StubOutWithMock(frontendsearchpipeline, '_FinishBackendSearch')
     frontendsearchpipeline._FinishBackendSearch([])
     self.mox.ReplayAll()
@@ -675,15 +683,22 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
       a_fake_rpc)
     modules.get_hostname(module='besearch')
     urlfetch.make_fetch_call(
-      a_fake_rpc, mox.StrContains(urls.BACKEND_SEARCH), follow_redirects=False,
+      a_fake_rpc, mox.StrContains(
+          urls.BACKEND_SEARCH + '?groupby=cc&invalidation_timestep=12345&'
+          +'logged_in_user_id=777&me_user_id=555&'
+          +'num=201&projects=proj&q=priority%3Dhigh&shard_id=2&start=0'),
+          follow_redirects=False,
       headers=mox.IsA(dict))
     self.mox.ReplayAll()
 
     processed_invalidations_up_to = 12345
-    mr = testing_helpers.MakeMonorailRequest(path='/p/proj/issues/list?q=foo')
-    mr.me_user_id = 111L
+    me_user_id = 555L
+    logged_in_user_id = 777L
+    new_url_num = 201
+    url_params = [('num', '300'), ('groupby', 'cc')]
     frontendsearchpipeline._StartBackendSearchCall(
-      mr, ['proj'], (2, 'priority=high'), processed_invalidations_up_to)
+        ['proj'], (2, 'priority=high'), processed_invalidations_up_to,
+        me_user_id, logged_in_user_id, new_url_num, url_params)
     self.mox.VerifyAll()
 
   def testStartBackendNonviewableCall(self):
@@ -715,14 +730,17 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     search_limit_reached = {}  # Booleans accumulate here, per-shard.
     processed_invalidations_up_to = 12345
 
-    mr = testing_helpers.MakeMonorailRequest(path='/p/proj/issues/list?q=foo')
-    mr.me_user_id = 111L
+    me_user_id = 111L
+    logged_in_user_id = 0
+    new_url_num = 100
+    url_params = None
     error_responses = set()
 
     self.mox.StubOutWithMock(frontendsearchpipeline, '_StartBackendSearchCall')
     frontendsearchpipeline._HandleBackendSearchResponse(
-     mr, ['proj'], rpc_tuple, rpc_tuples, 0, filtered_iids,
-      search_limit_reached, processed_invalidations_up_to, error_responses)
+        ['proj'], rpc_tuple, rpc_tuples, 0, filtered_iids,
+        search_limit_reached, processed_invalidations_up_to, error_responses,
+        me_user_id, logged_in_user_id, new_url_num, url_params)
     self.assertEqual([], rpc_tuples)
     self.assertIn(2, error_responses)
 
@@ -744,12 +762,15 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     search_limit_reached = {}  # Booleans accumulate here, per-shard.
     processed_invalidations_up_to = 12345
 
-    mr = testing_helpers.MakeMonorailRequest(path='/p/proj/issues/list?q=foo')
-    mr.me_user_id = 111L
+    me_user_id = 111L
+    logged_in_user_id = 0
+    new_url_num = 100
+    url_params = None
     error_responses = set()
     frontendsearchpipeline._HandleBackendSearchResponse(
-      mr, ['proj'], rpc_tuple, rpc_tuples, 2, filtered_iids,
-      search_limit_reached, processed_invalidations_up_to, error_responses)
+      ['proj'], rpc_tuple, rpc_tuples, 2, filtered_iids,
+      search_limit_reached, processed_invalidations_up_to, error_responses,
+      me_user_id, logged_in_user_id, new_url_num, url_params)
     self.assertEqual([], rpc_tuples)
     self.assertEqual({2: []}, filtered_iids)
     self.assertEqual({2: False}, search_limit_reached)
@@ -773,12 +794,15 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     search_limit_reached = {}  # Booleans accumulate here, per-shard.
     processed_invalidations_up_to = 12345
 
-    mr = testing_helpers.MakeMonorailRequest(path='/p/proj/issues/list?q=foo')
-    mr.me_user_id = 111L
+    me_user_id = 111L
+    logged_in_user_id = 0
+    new_url_num = 100
+    url_params = None
     error_responses = set()
     frontendsearchpipeline._HandleBackendSearchResponse(
-      mr, ['proj'], rpc_tuple, rpc_tuples, 2, filtered_iids,
-      search_limit_reached, processed_invalidations_up_to, error_responses)
+      ['proj'], rpc_tuple, rpc_tuples, 2, filtered_iids,
+      search_limit_reached, processed_invalidations_up_to, error_responses,
+      me_user_id, logged_in_user_id, new_url_num, url_params)
     self.assertEqual([], rpc_tuples)
     self.assertEqual({2: [10002, 10042]}, filtered_iids)
     self.assertEqual({2: False}, search_limit_reached)
@@ -795,19 +819,23 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     processed_invalidations_up_to = 12345
     error_responses = set()
 
-    mr = testing_helpers.MakeMonorailRequest(path='/p/proj/issues/list?q=foo')
-    mr.me_user_id = 111L
+    me_user_id = 111L
+    logged_in_user_id = 0
+    new_url_num = 100
+    url_params = None
 
     self.mox.StubOutWithMock(frontendsearchpipeline, '_StartBackendSearchCall')
     a_fake_rpc = testing_helpers.Blank(callback=None)
     rpc = frontendsearchpipeline._StartBackendSearchCall(
-      mr, ['proj'], 2, processed_invalidations_up_to, failfast=False
+        ['proj'], 2, processed_invalidations_up_to,
+        me_user_id, logged_in_user_id, new_url_num, url_params, failfast=False
       ).AndReturn(a_fake_rpc)
     self.mox.ReplayAll()
 
     frontendsearchpipeline._HandleBackendSearchResponse(
-      mr, ['proj'], rpc_tuple, rpc_tuples, 2, filtered_iids,
-      search_limit_reached, processed_invalidations_up_to, error_responses)
+        ['proj'], rpc_tuple, rpc_tuples, 2, filtered_iids,
+        search_limit_reached, processed_invalidations_up_to, error_responses,
+        me_user_id, logged_in_user_id, new_url_num, url_params)
     self.mox.VerifyAll()
     _, retry_shard_id, retry_rpc = rpc_tuples[0]
     self.assertEqual(2, retry_shard_id)

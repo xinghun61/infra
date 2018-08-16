@@ -70,6 +70,8 @@ class FrontendSearchPipeline(object):
 
   def __init__(self, mr, services, default_results_per_page):
     self.mr = mr
+    self.url_params = [(name, self.mr.GetParam(name)) for name in
+                       framework_helpers.RECOGNIZED_PARAMS]
     self.services = services
     self.default_results_per_page = default_results_per_page
     self.grid_mode = (mr.mode == 'grid')
@@ -130,7 +132,9 @@ class FrontendSearchPipeline(object):
           self.mr, self.query_project_names, self.query_project_ids,
           self.harmonized_config, self.unfiltered_iids,
           self.search_limit_reached, self.nonviewable_iids,
-          self.error_responses, self.services)
+          self.error_responses, self.services, self.mr.me_user_id,
+          self.mr.auth.user_id or 0, self.mr.num + self.mr.start,
+          self.url_params)
 
     with self.mr.profiler.Phase('Waiting for Backends'):
       try:
@@ -434,8 +438,6 @@ class FrontendSearchPipeline(object):
     These two actions are intertwined because we try to only
     retrieve the Issues on the current pagination page.
     """
-    url_params = [(name, self.mr.GetParam(name)) for name in
-                  framework_helpers.RECOGNIZED_PARAMS]
     if self.grid_mode:
       # We don't paginate the grid view.  But, pagination object shows counts.
       self.pagination = paginate.ArtifactPagination(
@@ -443,7 +445,7 @@ class FrontendSearchPipeline(object):
           self.mr.GetPositiveIntParam('num', self.default_results_per_page),
           self.mr.GetPositiveIntParam('start'),
           self.mr.project_name, urls.ISSUE_LIST,
-          total_count=self.total_count, url_params=url_params)
+          total_count=self.total_count, url_params=self.url_params)
       # We limited the results, but still show the original total count.
       self.visible_results = self.allowed_results
 
@@ -458,7 +460,7 @@ class FrontendSearchPipeline(object):
           self.mr.GetPositiveIntParam('start'), self.mr.project_name,
           urls.ISSUE_LIST, total_count=self.total_count,
           limit_reached=limit_reached, skipped=self.num_skipped_at_start,
-          url_params=url_params)
+          url_params=self.url_params)
       self.visible_results = self.pagination.visible_results
 
     # If we were not forced to look up visible users already, do it now.
@@ -513,7 +515,8 @@ def _MakeBackendCallback(func, *args):
 def _StartBackendSearch(
     mr, query_project_names, query_project_ids, harmonized_config,
     unfiltered_iids_dict, search_limit_reached_dict,
-    nonviewable_iids, error_responses, services):
+    nonviewable_iids, error_responses, services, me_user_id,
+    logged_in_user_id, new_url_num, url_params):
   """Request that our backends search and return a list of matching issue IDs.
 
   Args:
@@ -532,6 +535,14 @@ def _StartBackendSearch(
         projects being searched that the signed in user cannot view.
     error_responses: shard_iids of shards that encountered errors.
     services: connections to backends.
+    me_user_id: None when no user is logged in, or user ID of the logged in
+        user when doing an interactive search, or the viewed user ID when
+        viewing someone else's dashboard, or the subscribing user's ID when
+        evaluating subscriptions.
+    logged_in_user_id: user_id of the logged in user, 0 otherwise
+    new_url_num: the new value of the 'num' parameter
+    url_params: list of (param_name, param_value) we want to keep
+        in any new urls.
 
   Returns:
     A list of rpc_tuples that can be passed to _FinishBackendSearch to wait
@@ -579,15 +590,16 @@ def _StartBackendSearch(
   # come back, they are also put into unfiltered_iids_dict.
   for shard_key in needed_shard_keys:
     rpc = _StartBackendSearchCall(
-        mr, query_project_names, shard_key,
-        services.cache_manager.processed_invalidations_up_to)
+        query_project_names, shard_key,
+        services.cache_manager.processed_invalidations_up_to,
+        me_user_id, logged_in_user_id, new_url_num, url_params)
     rpc_tuple = (time.time(), shard_key, rpc)
     rpc.callback = _MakeBackendCallback(
-        _HandleBackendSearchResponse, mr, query_project_names, rpc_tuple,
+        _HandleBackendSearchResponse, query_project_names, rpc_tuple,
         rpc_tuples, settings.backend_retries, unfiltered_iids_dict,
         search_limit_reached_dict,
         services.cache_manager.processed_invalidations_up_to,
-        error_responses)
+        error_responses, me_user_id, logged_in_user_id, new_url_num, url_params)
     rpc_tuples.append(rpc_tuple)
 
   return rpc_tuples
@@ -835,19 +847,18 @@ def _MakeBackendRequestHeaders(failfast):
 
 
 def _StartBackendSearchCall(
-    mr, query_project_names, shard_key, invalidation_timestep,
+    query_project_names, shard_key, invalidation_timestep,
+    me_user_id, logged_in_user_id, new_url_num, url_params,
     deadline=None, failfast=True):
   """Ask a backend to query one shard of the database."""
   shard_id, subquery = shard_key
   backend_host = modules.get_hostname(module='besearch')
-  recognized_params = [(name, mr.GetParam(name)) for name in
-                       framework_helpers.RECOGNIZED_PARAMS]
   url = 'http://%s%s' % (backend_host, framework_helpers.FormatURL(
-      recognized_params, urls.BACKEND_SEARCH,
+      url_params, urls.BACKEND_SEARCH,
       projects=','.join(query_project_names),
-      q=subquery, start=0, num=mr.start + mr.num,
-      logged_in_user_id=mr.auth.user_id or 0,
-      me_user_id=mr.me_user_id, shard_id=shard_id,
+      q=subquery, start=0, num=new_url_num,
+      logged_in_user_id=logged_in_user_id,
+      me_user_id=me_user_id, shard_id=shard_id,
       invalidation_timestep=invalidation_timestep))
   logging.info('\n\nCalling backend: %s', url)
   rpc = urlfetch.create_rpc(
@@ -878,9 +889,9 @@ def _StartBackendNonviewableCall(
 
 
 def _HandleBackendSearchResponse(
-    mr, query_project_names, rpc_tuple, rpc_tuples, remaining_retries,
+    query_project_names, rpc_tuple, rpc_tuples, remaining_retries,
     unfiltered_iids, search_limit_reached, invalidation_timestep,
-    error_responses):
+    error_responses, me_user_id, logged_in_user_id, new_url_num, url_params):
   """Process one backend response and retry if there was an error."""
   start_time, shard_key, rpc = rpc_tuple
   duration_sec = time.time() - start_time
@@ -920,13 +931,15 @@ def _HandleBackendSearchResponse(
 
     logging.error('backend call for shard %r failed, retrying', shard_key)
     retry_rpc = _StartBackendSearchCall(
-        mr, query_project_names, shard_key, invalidation_timestep,
+        query_project_names, shard_key, invalidation_timestep,
+        me_user_id, logged_in_user_id, new_url_num, url_params,
         failfast=remaining_retries > 2)
     retry_rpc_tuple = (time.time(), shard_key, retry_rpc)
     retry_rpc.callback = _MakeBackendCallback(
-        _HandleBackendSearchResponse, mr, query_project_names,
+        _HandleBackendSearchResponse, query_project_names,
         retry_rpc_tuple, rpc_tuples, remaining_retries - 1, unfiltered_iids,
-        search_limit_reached, invalidation_timestep, error_responses)
+        search_limit_reached, invalidation_timestep, error_responses,
+        me_user_id, logged_in_user_id, new_url_num, url_params)
     rpc_tuples.append(retry_rpc_tuple)
 
 
