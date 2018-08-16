@@ -30,6 +30,15 @@
       th {
         text-align: left;
       }
+      .group-separator {
+        border-top: 1px solid hsl(120, 15%, 85%);
+      }
+      .group-title {
+        font-weight: normal;
+        font-style: oblique;
+        border-bottom: 1px solid hsl(120, 15%, 85%);
+        text-align: center;
+      }
     </style>
     <template is="dom-if" if="[[approvalStatus]]">
       <tr>
@@ -117,7 +126,31 @@
       </tr>
     </template>
 
-    <template is="dom-repeat" items="[[fieldDefs]]" as="field">
+    <template is="dom-repeat" items="[[_fieldGroupsWithDefs]]" as="group">
+      <tr>
+        <th class="group-title" colspan="2">
+          [[group.groupName]]
+        </th>
+      </tr>
+      <template is="dom-repeat" items="[[group.fieldDefs]]" as="field">
+        <tr>
+          <th>[[field.fieldRef.fieldName]]:</th>
+          <td>
+            <mr-field-values
+              name="[[field.fieldRef.fieldName]]"
+              type="[[field.fieldRef.type]]"
+              values="[[_valuesForDef(field.fieldRef.fieldName, _fieldValueMap)]]"
+              project-name="[[projectName]]"
+            ></mr-field-values>
+          </td>
+        </tr>
+      </template>
+      <tr>
+        <th class="group-separator" colspan="2"></th>
+      </tr>
+    </template>
+
+    <template is="dom-repeat" items="[[_fieldDefsWithoutGroup]]" as="field">
       <tr>
         <th>[[field.fieldRef.fieldName]]:</th>
         <td>

@@ -5,14 +5,13 @@
     // https://redux.js.org/recipes/computing-derived-data
 
     const computeFunction = Object.freeze({
-      computeIssueType: (labelRefs) => {
-        if (!labelRefs) return null;
-        const prefix = 'type-';
-        const typeLabel = labelRefs.find(
-          (l) => (l.label.toLowerCase().startsWith(prefix))
+      computeIssueType: (fieldValues) => {
+        if (!fieldValues) return null;
+        const typeFieldValue = fieldValues.find(
+          (f) => (f.fieldRef.fieldName === 'Type')
         );
-        if (typeLabel) {
-          return typeLabel.label.substring(prefix.length);
+        if (typeFieldValue) {
+          return typeFieldValue.value;
         }
         return null;
       },

@@ -56,7 +56,7 @@ class MrIssueMetadata extends ReduxMixin(Polymer.Element) {
       },
       _type: {
         type: String,
-        computed: '_computeIssueType(issue.labelRefs)',
+        computed: '_computeIssueType(issue.fieldValues)',
       },
     };
   }
@@ -104,8 +104,8 @@ class MrIssueMetadata extends ReduxMixin(Polymer.Element) {
     return !(fetching || starring);
   }
 
-  _computeIssueType(labelRefs) {
-    return computeFunction.computeIssueType(labelRefs);
+  _computeIssueType(fieldValues) {
+    return computeFunction.computeIssueType(fieldValues);
   }
 
   _computeIssueFieldDefs(fields, applicableType) {
