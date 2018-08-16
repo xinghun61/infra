@@ -240,32 +240,32 @@ func TestDurationDistribution(t *testing.T) {
 	st := timeAt("2014/09/11 17:43:51.000000")
 
 	tl := []*TaskLog{
-		&TaskLog{
+		{
 			ID:        "1",
 			StartTime: st.Add(1 * time.Second),
 			EndTime:   st.Add(2 * time.Second),
 		},
-		&TaskLog{
+		{
 			ID:        "2",
 			StartTime: st.Add(2 * time.Second),
 			EndTime:   st.Add(4 * time.Second),
 		},
-		&TaskLog{
+		{
 			ID:        "3",
 			StartTime: st.Add(3 * time.Second),
 			EndTime:   st.Add(4 * time.Second),
 		},
-		&TaskLog{
+		{
 			ID:        "4",
 			StartTime: st.Add(4 * time.Second),
 			EndTime:   st.Add(5 * time.Second),
 		},
-		&TaskLog{
+		{
 			ID:        "5",
 			StartTime: st.Add(5 * time.Second),
 			EndTime:   st.Add(8 * time.Second),
 		},
-		&TaskLog{
+		{
 			ID:        "6",
 			StartTime: st.Add(6 * time.Second),
 			EndTime:   st.Add(7 * time.Second),

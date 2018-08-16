@@ -73,19 +73,19 @@ F0911 03:42:27.789012 27539 compiler_info.cc:2128] Unknown compiler type
 	}
 
 	want := []Logline{
-		Logline{
+		{
 			Level:     Info,
 			Timestamp: timeAt("2014/09/11 03:41:26.740263"),
 			ThreadID:  "27529",
 			Lines:     []string{"breakpad_linux.cc:51] initialized breakpad."},
 		},
-		Logline{
+		{
 			Level:     Info,
 			Timestamp: timeAt("2014/09/11 03:41:26.740641"),
 			ThreadID:  "27529",
 			Lines:     []string{"compiler_proxy.cc:1498] goma built revision bb0fd40be997d444c8e82b54ddd0361148ba1379@1408698434"},
 		},
-		Logline{
+		{
 			Level:     Info,
 			Timestamp: timeAt("2014/09/11 03:41:26.740849"),
 			ThreadID:  "27529",
@@ -99,7 +99,7 @@ F0911 03:42:27.789012 27539 compiler_info.cc:2128] Unknown compiler type
 				"GOMA_USE_SSL=true",
 			},
 		},
-		Logline{
+		{
 			Level:     Info,
 			Timestamp: timeAt("2014/09/11 03:41:26.902179"),
 			ThreadID:  "27539",
@@ -110,25 +110,25 @@ F0911 03:42:27.789012 27539 compiler_info.cc:2128] Unknown compiler type
 				"  Serial Number: 421 (0x1a5)",
 			},
 		},
-		Logline{
+		{
 			Level:     Warning,
 			Timestamp: timeAt("2014/09/11 03:41:26.921205"),
 			ThreadID:  "27539",
 			Lines:     []string{"http_rpc.cc:454] compress failed: err=-5"},
 		},
-		Logline{
+		{
 			Level:     Info,
 			Timestamp: timeAt("2014/09/11 03:41:26.997308"),
 			ThreadID:  "27539",
 			Lines:     []string{"openssl_engine.cc:769] We may reject if the domain is not listed in loaded CRLs."},
 		},
-		Logline{
+		{
 			Level:     Error,
 			Timestamp: timeAt("2014/09/11 03:42:26.123456"),
 			ThreadID:  "27539",
 			Lines:     []string{"compile_task.cc:3974] Task:1194 Try:0: Missing 5 input files."},
 		},
-		Logline{
+		{
 			Level:     Fatal,
 			Timestamp: timeAt("2014/09/11 03:42:27.789012"),
 			ThreadID:  "27539",
