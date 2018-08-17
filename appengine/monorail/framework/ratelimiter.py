@@ -11,6 +11,7 @@ This is intented to be used for automatic DDoS protection.
 
 import datetime
 import logging
+import os
 import settings
 import time
 
@@ -83,14 +84,28 @@ def _CacheKeys(request, now_sec):
 
 
 def _CreateApiCacheKeys(client_id, client_email, now_sec):
+  country = os.environ.get('HTTP_X_APPENGINE_COUNTRY')
+  ip = os.environ.get('REMOTE_ADDR')
   now = datetime.datetime.fromtimestamp(now_sec)
   minute_buckets = [now - datetime.timedelta(minutes=m) for m in
                     range(N_MINUTES)]
+  minute_strs = [str(minute_bucket.replace(second=0, microsecond=0))
+                 for minute_bucket in minute_buckets]
   keys = []
 
-  keys.append(['apiratelimit-%s-%s-%s' % (client_id, client_email,
-      str(minute_bucket.replace(second=0, microsecond=0)))
-      for minute_bucket in minute_buckets])
+  if client_id:
+    keys.append(['apiratelimit-%s-%s' % (client_id, minute_str)
+                 for minute_str in minute_strs])
+  if client_email:
+    keys.append(['apiratelimit-%s-%s' % (client_email, minute_str)
+                 for minute_str in minute_strs])
+  else:
+    keys.append(['apiratelimit-%s-%s' % (ip, minute_str)
+                 for minute_str in minute_strs])
+    if country in COUNTRY_LIMITS:
+      keys.append(['apiratelimit-%s-%s' % (country, minute_str)
+                   for minute_str in minute_strs])
+
   return keys
 
 
