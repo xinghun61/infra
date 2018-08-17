@@ -115,10 +115,10 @@ func (s OrderedRequests) ForPriority(priority int32) OrderedRequests {
 // FreeBucket).
 //
 // TODO: Possible optimizations:
-//   - Pass in a heap instead of a sorted list, and when demoting a job, demote
-//     it and heap fix it. Rather than modify the list and re-sort. This should
+//   - Pass in a heap instead of a sorted slice, and when demoting a job, demote
+//     it and heap fix it. Rather than modify the slice and re-sort. This should
 //     be a bit faster, because this function is likely to only demote a
-//     fraction of jobs in the list.
+//     fraction of jobs in the slice.
 func demoteTasksBeyondFanout(prioritizedRequests OrderedRequests, state *types.State, config *types.Config) {
 	tasksPerAccount := make(map[string]int32)
 	for _, w := range state.Workers {

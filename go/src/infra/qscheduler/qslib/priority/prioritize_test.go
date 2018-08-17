@@ -66,7 +66,7 @@ func TestBasicPrioritization(t *testing.T) {
 	for _, test := range cases {
 		actual := PrioritizeRequests(&test.state, &test.config)
 		if !reflect.DeepEqual(actual, test.expected) {
-			t.Errorf("With state %+v got priority list %+v, want %+v", test.state, actual, test.expected)
+			t.Errorf("With state %+v got priority slice %+v, want %+v", test.state, actual, test.expected)
 		}
 	}
 }
@@ -250,7 +250,7 @@ func TestPrioritize(t *testing.T) {
 	for i, exp := range expected {
 		act := actual[i]
 		if !reflect.DeepEqual(act, exp) {
-			t.Errorf("%dth element of lists differ, got %+v, want %+v", i, act, exp)
+			t.Errorf("%dth element of slices differ, got %+v, want %+v", i, act, exp)
 		}
 	}
 }
