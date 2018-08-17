@@ -75,6 +75,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         commit_position_range=IntRange(lower=None, upper=None),
         dimensions=ListOfBasestring.FromSerializable([]),
         manually_triggered=False,
+        rerun=False,
         retries=0,
         step_metadata=None)
 
@@ -138,6 +139,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         commit_position_range=IntRange(lower=None, upper=None),
         dimensions=ListOfBasestring.FromSerializable([]),
         manually_triggered=False,
+        rerun=False,
         retries=0,
         step_metadata=None)
 
@@ -175,6 +177,66 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
     self.assertEqual(result_status.FOUND_UNTRIAGED, analysis.result_status)
     mocked_revision.assert_called_once_with(mock.ANY, 999)
+
+  @mock.patch.object(crrev, 'RedirectByCommitPosition')
+  @mock.patch.object(flake_analysis_util, 'UpdateCulprit')
+  @mock.patch.object(confidence_score_util, 'CalculateCulpritConfidenceScore')
+  @mock.patch.object(swarmed_test_util, 'GetTestLocation')
+  def testAnalyzeFlakePipelineAnalysisFinishedWithCulpritRerun(
+      self, mocked_test_location, mocked_confidence, mocked_culprit,
+      mocked_revision):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+    culprit_commit_position = 999
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.data_points = [
+        DataPoint.Create(commit_position=culprit_commit_position)
+    ]
+    analysis.original_master_name = master_name
+    analysis.original_builder_name = builder_name
+    analysis.original_build_number = build_number
+    analysis.original_step_name = step_name
+    analysis.original_test_name = test_name
+    analysis.Save()
+
+    culprit_revision = 'r999'
+    confidence_score = 0.85
+    culprit = FlakeCulprit.Create('chromium', culprit_revision,
+                                  culprit_commit_position)
+    culprit.put()
+
+    test_location = TestLocation(file='f', line=123)
+    mocked_test_location.return_value = test_location
+    mocked_revision.return_value = {'git_sha': culprit_revision}
+    mocked_confidence.return_value = confidence_score
+    mocked_culprit.return_value = culprit
+
+    analyze_flake_input = AnalyzeFlakeInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        analyze_commit_position_parameters=NextCommitPositionOutput(
+            next_commit_position=None,
+            culprit_commit_position=culprit_commit_position),
+        commit_position_range=IntRange(lower=None, upper=None),
+        dimensions=ListOfBasestring.FromSerializable([]),
+        manually_triggered=False,
+        rerun=True,
+        retries=0,
+        step_metadata=None)
+
+    pipeline_job = AnalyzeFlakePipeline(analyze_flake_input)
+    pipeline_job.start()
+    self.execute_queued_tasks()
+
+    self.assertIsNotNone(analysis.culprit_urlsafe_key)
+    self.assertTrue(mocked_culprit.called)
+    self.assertEqual(confidence_score, analysis.confidence_in_culprit)
+    self.assertEqual(analysis_status.COMPLETED, analysis.status)
+    self.assertEqual(result_status.FOUND_UNTRIAGED, analysis.result_status)
 
   @mock.patch.object(
       flake_analysis_util, 'CanStartAnalysisImmediately', return_value=True)
@@ -214,6 +276,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         commit_position_range=IntRange(lower=None, upper=None),
         dimensions=ListOfBasestring.FromSerializable(['os:testOS']),
         manually_triggered=False,
+        rerun=False,
         retries=0,
         step_metadata=step_metadata)
 
@@ -246,6 +309,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         commit_position_range=IntRange(lower=None, upper=None),
         dimensions=ListOfBasestring.FromSerializable(['os:testOS']),
         manually_triggered=False,
+        rerun=False,
         retries=0,
         step_metadata=step_metadata)
 
@@ -303,6 +367,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         commit_position_range=IntRange(lower=None, upper=None),
         dimensions=ListOfBasestring.FromSerializable(['os:testOS']),
         manually_triggered=False,
+        rerun=False,
         retries=0,
         step_metadata=step_metadata)
 
@@ -314,6 +379,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         commit_position_range=IntRange(lower=None, upper=None),
         dimensions=ListOfBasestring.FromSerializable(['os:testOS']),
         manually_triggered=False,
+        rerun=False,
         retries=1,
         step_metadata=step_metadata)
 
@@ -338,6 +404,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         commit_position_range=IntRange(lower=None, upper=None),
         dimensions=ListOfBasestring.FromSerializable(['os:testOS']),
         manually_triggered=False,
+        rerun=False,
         retries=0,
         step_metadata=None)
 
@@ -357,6 +424,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         commit_position_range=IntRange(lower=None, upper=None),
         dimensions=ListOfBasestring.FromSerializable(['os:testOS']),
         manually_triggered=False,
+        rerun=False,
         retries=0,
         step_metadata=None)
 
@@ -375,6 +443,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         commit_position_range=IntRange(lower=None, upper=None),
         dimensions=ListOfBasestring.FromSerializable([]),
         manually_triggered=False,
+        rerun=False,
         retries=0,
         step_metadata=None)
 

@@ -198,6 +198,7 @@ def ScheduleAnalysisIfNeeded(
         dimensions=ListOfBasestring.FromSerializable(dimensions),
         manually_triggered=manually_triggered,
         retries=0,
+        rerun=force,
         step_metadata=StepMetadata.FromSerializable(step_metadata))
 
     pipeline_job = AnalyzeFlakePipeline(analyze_flake_input)

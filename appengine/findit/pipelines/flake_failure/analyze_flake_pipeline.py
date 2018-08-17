@@ -70,6 +70,11 @@ class AnalyzeFlakeInput(StructuredObject):
   # A flag indicating this pipeline was triggered by a human request.
   manually_triggered = bool
 
+  # Whether this is an admin-triggered rerun of an existing analysis. Not to be
+  # confused with manually_triggered, which can be a manual request via Findit's
+  # homepage.
+  rerun = bool
+
   # The number of times bots have been checked for availability.
   retries = int
 
@@ -150,19 +155,24 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
           culprit_urlsafe_key=culprit.key.urlsafe(),
           result_status=result_status.FOUND_UNTRIAGED)
 
-      # Determine the test's location for filing bugs.
-      culprit_data_point = analysis.FindMatchingDataPointWithCommitPosition(
-          culprit_commit_position)
-      assert culprit_data_point
-      test_location = swarmed_test_util.GetTestLocation(
-          culprit_data_point.GetSwarmingTaskId(), analysis.test_name)
-
-      # Data needed for reverts.
-      build_id = BaseBuildModel.CreateBuildId(analysis.original_master_name,
-                                              analysis.original_builder_name,
-                                              analysis.original_build_number)
+      if parameters.rerun:
+        # Skip performing auto actions for rerun to prevent spamming.
+        analysis.LogInfo('Bailing out of taking auto actions for admin rerun')
+        return
 
       with pipeline.InOrder():
+        # Determine the test's location for filing bugs.
+        culprit_data_point = analysis.FindMatchingDataPointWithCommitPosition(
+            culprit_commit_position)
+        assert culprit_data_point, 'Culprit unexpectedly missing!'
+
+        test_location = swarmed_test_util.GetTestLocation(
+            culprit_data_point.GetSwarmingTaskId(), analysis.test_name)
+
+        # Data needed for reverts.
+        build_id = BaseBuildModel.CreateBuildId(analysis.original_master_name,
+                                                analysis.original_builder_name,
+                                                analysis.original_build_number)
         # Log Monorail bug.
         yield CreateBugForFlakePipeline(
             self.CreateInputObjectInstance(
@@ -251,6 +261,7 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
                 commit_position_range=parameters.commit_position_range,
                 dimensions=parameters.dimensions,
                 manually_triggered=parameters.manually_triggered,
+                rerun=parameters.rerun,
                 retries=0,
                 step_metadata=parameters.step_metadata))
     else:

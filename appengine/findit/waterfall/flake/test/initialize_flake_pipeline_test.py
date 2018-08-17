@@ -194,6 +194,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
         dimensions=ListOfBasestring.FromSerializable(
             ['os:Mac', 'cpu:x86', 'pool:luci.chromium.findit']),
         manually_triggered=manually_triggered,
+        rerun=True,
         retries=0,
         step_metadata=StepMetadata.FromSerializable({}))
 
