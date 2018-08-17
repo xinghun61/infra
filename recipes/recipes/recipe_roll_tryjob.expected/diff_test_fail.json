@@ -305,10 +305,8 @@
       "[CLEANUP]/bot_update",
       "--output_json",
       "/path/to/tmp/json",
-      "--gerrit_repo",
-      "https://chromium.googlesource.com/chromium/tools/depot_tools",
-      "--gerrit_ref",
-      "refs/changes/89/456789/12",
+      "--patch_ref",
+      "https://chromium.googlesource.com/chromium/tools/depot_tools@refs/changes/89/456789/12",
       "--revision",
       "recipe_engine@88cacb3086f508cc2e4c620a968149db53e34e35"
     ],
