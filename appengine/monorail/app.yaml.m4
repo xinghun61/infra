@@ -11,10 +11,23 @@ threadsafe: no
 
 default_expiration: "3600d"
 
+ifdef(`PROD', `
 instance_class: F4
 automatic_scaling:
   min_idle_instances: 25
   max_pending_latency: 0.2s
+')
+
+ifdef(`STAGING', `
+instance_class: F4
+automatic_scaling:
+  min_idle_instances: 25
+  max_pending_latency: 0.2s
+')
+
+ifdef(`DEMO', `
+instance_class: F4
+')
 
 handlers:
 - url: /_ah/api/.*

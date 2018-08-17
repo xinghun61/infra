@@ -81,6 +81,8 @@ COMMIT_DATA_CRON = '/_cron/getCommitsCron'
 
 # URLs of handlers needed for GAE instance management.
 WARMUP = '/_ah/warmup'
+START = '/_ah/start'
+STOP = '/_ah/stop'
 
 # URLs of User pages
 SAVED_QUERIES = '/queries'

@@ -10,10 +10,23 @@ runtime: python27
 api_version: 1
 threadsafe: no
 
+ifdef(`PROD', `
 instance_class: F4
 automatic_scaling:
   min_idle_instances: 40
   max_pending_latency: 0.2s
+')
+
+ifdef(`STAGING', `
+instance_class: F4
+automatic_scaling:
+  min_idle_instances: 40
+  max_pending_latency: 0.2s
+')
+
+ifdef(`DEMO', `
+instance_class: F4
+')
 
 handlers:
 - url: /_ah/warmup
@@ -22,6 +35,14 @@ handlers:
 
 - url: /_backend/.*
   script: monorailapp.app
+
+- url: /_ah/start
+  script: monorailapp.app
+  login: admin
+
+- url: /_ah/stop
+  script: monorailapp.app
+  login: admin
 
 inbound_services:
 - warmup

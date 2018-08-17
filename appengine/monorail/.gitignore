@@ -14,3 +14,7 @@ workspace.xml
 elements/**/*\.vulcanized.*
 bower_components
 node_modules
+elements/mock-data/*\.json
+!elements/mock-data/gates-mock.json
+app.yaml
+module-besearch.yaml

@@ -52,21 +52,21 @@ coverage:
 	../../test.py test appengine/monorail --html-report ~/monorail-coverage
 
 # Commands for running locally using dev_appserver.
-serve: deps
+serve: deps config_local
 	@echo "---[Starting SDK AppEngine Server]---"
 	$(GAE_PY) devserver -- $(DEV_APPSERVER_FLAGS)
 
-serve_email: deps
+serve_email: deps config_local
 	@echo "---[Starting SDK AppEngine Server]---"
 	$(GAE_PY) devserver -- $(DEV_APPSERVER_FLAGS) --enable_sendmail=True
 
 # The _remote commands expose the app on 0.0.0.0, so that it is externally
 # accessible by hostname:port, rather than just localhost:port.
-serve_remote: deps
+serve_remote: deps config_local
 	@echo "---[Starting SDK AppEngine Server]---"
 	$(GAE_PY) devserver -o -- $(DEV_APPSERVER_FLAGS)
 
-serve_remote_email:
+serve_remote_email: config_local
 	@echo "---[Starting SDK AppEngine Server]---"
 	$(GAE_PY) devserver -o -- $(DEV_APPSERVER_FLAGS) --enable_sendmail=True
 
@@ -98,17 +98,39 @@ wct_debug: deps
 pylint:
 	pylint -f parseable *py {$(PY_DIRS)}{/,/test/}*py
 
+config_prod:
+	m4 -DPROD < app.yaml.m4 > app.yaml
+	m4 -DPROD < module-besearch.yaml.m4 > module-besearch.yaml
+
+config_staging:
+	m4 -DSTAGING < app.yaml.m4 > app.yaml
+	m4 -DSTAGING < module-besearch.yaml.m4 > module-besearch.yaml
+
+config_demo:
+	m4 -DDEMO < app.yaml.m4 > app.yaml
+	m4 -DDEMO < module-besearch.yaml.m4 > module-besearch.yaml
+
+config_local:
+	m4 app.yaml.m4 > app.yaml
+	m4 module-besearch.yaml.m4 > module-besearch.yaml
+
+# For deploying demo versions, e.g. context for a code review.
+deploy_demo: deps vulcanize config_demo
+	@echo "---[Demo $(STAGEID)]---"
+	$(GAE_PY) upload -A $(STAGEID) $(FRONTEND_MODULES) $(BACKEND_MODULES)
+	make clean_vulcanized
+
 # AppEngine apps can be tested locally and in non-default versions upload to
 # the main app-id, but it is still sometimes useful to have a completely
 # separate app-id.  E.g., for testing inbound email, load testing, or using
 # throwaway databases.
-deploy_staging: deps vulcanize
+deploy_staging: deps vulcanize config_staging
 	@echo "---[Staging $(STAGEID)]---"
 	$(GAE_PY) upload -A $(STAGEID) $(FRONTEND_MODULES) $(BACKEND_MODULES)
 	make clean_vulcanized
 
 # This is our production server that users actually use.
-deploy_prod: deps vulcanize
+deploy_prod: deps vulcanize config_prod
 	@echo "---[Deploying prod instance $(PRODID)]---"
 	$(GAE_PY) upload -A $(PRODID) $(FRONTEND_MODULES) $(BACKEND_MODULES)
 	make clean_vulcanized
