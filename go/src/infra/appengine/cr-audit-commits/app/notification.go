@@ -6,6 +6,7 @@ package crauditcommits
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"golang.org/x/net/context"
@@ -59,6 +60,17 @@ func fileBugForMergeApprovalViolation(ctx context.Context, cfg *RepoConfig, rc *
 		return "", fmt.Errorf("MilestoneNumber not specified in repository configuration")
 	}
 	labels := []string{"CommitLog-Audit-Violation", "Merge-Without-Approval", fmt.Sprintf("M-%s", milestone)}
+	for _, result := range rc.Result {
+		bug, success := GetToken(ctx, "BugNumber", result.MetaData)
+		if success && state == "" {
+			bugID, _ := strconv.Atoi(bug)
+			err := postComment(ctx, cfg, int32(bugID), resultText(cfg, rc, true), cs, labels)
+			if err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("Comment posted on BUG=%d", int32(bugID)), nil
+		}
+	}
 	return fileBugForViolation(ctx, cfg, rc, cs, state, components, labels)
 }
 

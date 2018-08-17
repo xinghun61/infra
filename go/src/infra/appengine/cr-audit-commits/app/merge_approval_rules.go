@@ -74,6 +74,7 @@ func OnlyMergeApprovedChange(ctx context.Context, ap *AuditParams, rc *RelevantC
 			}
 			continue
 		}
+		result.MetaData, _ = SetToken(ctx, "BugNumber", strconv.Itoa(int(vIssue.Id)), result.MetaData)
 		// Check if the issue has a merge approval label in the comment history
 		comments, _ := listCommentsFromIssueID(ctx, ap.RepoCfg, vIssue.Id, cs)
 		for _, comment := range comments {
