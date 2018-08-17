@@ -39,3 +39,9 @@ handlers:
 - url: /.*
   script: _go_app
   secure: always
+
+#TODO(tikuta): move these files outside this directory.
+nobuild_files:
+- ninjalog/
+- compilerproxylog/
+- logstore/
