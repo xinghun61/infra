@@ -19,10 +19,10 @@ import (
 	"os"
 	"strings"
 
-	"ninjalog"
+	"infra/appengine/chromium_build_stats/ninjalog"
 )
 
-// TOOD(ukai): use html/template as template.
+// TODO(ukai): use html/template as template.
 // it won't work, even if we use delims such as "{{||" and "||}}".
 
 // Template is a trace-viewer template.

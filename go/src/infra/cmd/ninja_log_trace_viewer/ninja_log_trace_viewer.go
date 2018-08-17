@@ -27,8 +27,8 @@ import (
 	"runtime/pprof"
 	"time"
 
-	"ninjalog"
-	"ninjalog/traceviewer"
+	"infra/appengine/chromium_build_stats/ninjalog"
+	"infra/appengine/chromium_build_stats/ninjalog/traceviewer"
 )
 
 var (

@@ -20,14 +20,17 @@ import (
 	"strings"
 	"time"
 
-	"appengine"
-	"appengine/user"
+	"google.golang.org/appengine"
+	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/urlfetch"
+	"google.golang.org/appengine/user"
 
-	"github.com/golang/oauth2/google"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 
-	"logstore"
-	"ninjalog"
-	"ninjalog/traceviewer"
+	"infra/appengine/chromium_build_stats/logstore"
+	"infra/appengine/chromium_build_stats/ninjalog"
+	"infra/appengine/chromium_build_stats/ninjalog/traceviewer"
 )
 
 type outputFunc func(http.ResponseWriter, string, *ninjalog.NinjaLog) error
@@ -165,27 +168,31 @@ func ninjaLogHandler(w http.ResponseWriter, req *http.Request) {
 
 	err := req.ParseForm()
 	if err != nil {
-		ctx.Errorf("failed to parse form: %v", err)
+		log.Errorf(ctx, "failed to parse form: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	// should we set access control like /file?
 
-	config := google.NewAppEngineConfig(ctx, []string{
-		"https://www.googleapis.com/auth/devstorage.read_only",
-	})
-	client := &http.Client{Transport: config.NewTransport()}
+	client := &http.Client{
+		Transport: &oauth2.Transport{
+			Source: google.AppEngineTokenSource(ctx, "https://www.googleapis.com/auth/devstorage.read_only"),
+			Base: &urlfetch.Transport{
+				Context: ctx,
+			},
+		},
+	}
 
 	logPath, outFunc, err := ninjalogPath(req.URL.Path)
 	if err != nil {
-		ctx.Errorf("failed to parse request path: %s: %v", req.URL.Path, err)
+		log.Errorf(ctx, "failed to parse request path: %s: %v", req.URL.Path, err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	njl, _, err := ninjalogFetch(client, logPath)
 	if err != nil {
-		ctx.Errorf("failed to fetch %s: %v", logPath, err)
+		log.Errorf(ctx, "failed to fetch %s: %v", logPath, err)
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
@@ -195,7 +202,7 @@ func ninjaLogHandler(w http.ResponseWriter, req *http.Request) {
 
 	err = outFunc(w, logPath, njl)
 	if err != nil {
-		ctx.Errorf("failed to output %v", err)
+		log.Errorf(ctx, "failed to output %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -219,7 +226,7 @@ func ninjalogUpload(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	// TODO(ukai): allow only @google.com and @chromium.org?
-	ctx.Infof("upload by %s", u.Email)
+	log.Infof(ctx, "upload by %s", u.Email)
 	f, _, err := req.FormFile("file")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -228,29 +235,32 @@ func ninjalogUpload(w http.ResponseWriter, req *http.Request) {
 	defer f.Close()
 	njl, err := ninjalog.Parse("ninja_log", f)
 	if err != nil {
-		ctx.Errorf("bad format: %v", err)
+		log.Errorf(ctx, "bad format: %v", err)
 		http.Error(w, fmt.Sprintf("malformed ninja_log file %v", err), http.StatusBadRequest)
 		return
 	}
 	var data bytes.Buffer
 	err = ninjalog.Dump(&data, njl.Steps)
 	if err != nil {
-		ctx.Errorf("dump error: %v", err)
+		log.Errorf(ctx, "dump error: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	config := google.NewAppEngineConfig(ctx, []string{
-		"https://www.googleapis.com/auth/devstorage.read_write",
-	})
-	client := &http.Client{Transport: config.NewTransport()}
-
+	client := &http.Client{
+		Transport: &oauth2.Transport{
+			Source: google.AppEngineTokenSource(ctx, "https://www.googleapis.com/auth/devstorage.read_only"),
+			Base: &urlfetch.Transport{
+				Context: ctx,
+			},
+		},
+	}
 	logPath, err := logstore.Upload(client, "ninja_log", data.Bytes())
 	if err != nil {
-		ctx.Errorf("upload error: %v", err)
+		log.Errorf(ctx, "upload error: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	ctx.Infof("%s upload to %s", u.Email, logPath)
+	log.Infof(ctx, "%s upload to %s", u.Email, logPath)
 
 	if req.FormValue("trace") != "" {
 		http.Redirect(w, req, "/ninja_log/"+logPath+"/trace.html", http.StatusSeeOther)

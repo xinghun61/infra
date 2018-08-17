@@ -21,7 +21,7 @@ import (
 	"sort"
 	"time"
 
-	"compilerproxylog"
+	"infra/appengine/chromium_build_stats/compilerproxylog"
 )
 
 var (

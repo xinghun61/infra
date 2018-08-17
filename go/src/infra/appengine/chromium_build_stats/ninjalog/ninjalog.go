@@ -20,7 +20,7 @@ import (
 type Step struct {
 	Start time.Duration
 	End   time.Duration
-	// modification time, but not convertable to absolute real time.
+	// modification time, but not convertible to absolute real time.
 	// on POSIX, time_t is used, but on Windows different type is used.
 	// htts://github.com/martine/ninja/blob/master/src/timestamp.h
 	Restat  int

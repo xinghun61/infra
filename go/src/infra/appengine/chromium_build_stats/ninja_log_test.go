@@ -5,8 +5,9 @@
 package chromiumbuildstats
 
 import (
-	"ninjalog"
 	"testing"
+
+	"infra/appengine/chromium_build_stats/ninjalog"
 )
 
 func TestNinjalogPath(t *testing.T) {

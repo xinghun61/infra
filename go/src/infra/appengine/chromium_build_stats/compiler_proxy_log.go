@@ -17,13 +17,15 @@ import (
 	"strings"
 	"time"
 
-	"appengine"
-	"appengine/user"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/appengine"
+	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/urlfetch"
+	"google.golang.org/appengine/user"
 
-	"github.com/golang/oauth2/google"
-
-	"compilerproxylog"
-	"logstore"
+	"infra/appengine/chromium_build_stats/compilerproxylog"
+	"infra/appengine/chromium_build_stats/logstore"
 )
 
 var (
@@ -122,14 +124,18 @@ func compilerProxyLogHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	config := google.NewAppEngineConfig(ctx, []string{
-		"https://www.googleapis.com/auth/devstorage.read_only",
-	})
-	client := &http.Client{Transport: config.NewTransport()}
+	client := &http.Client{
+		Transport: &oauth2.Transport{
+			Source: google.AppEngineTokenSource(ctx, "https://www.googleapis.com/auth/devstorage.read_only"),
+			Base: &urlfetch.Transport{
+				Context: ctx,
+			},
+		},
+	}
 
 	basename := path.Base(req.URL.Path)
 	if !strings.HasPrefix(basename, "compiler_proxy.") {
-		ctx.Errorf("wrong path is requested: %q", req.URL.Path)
+		log.Errorf(ctx, "wrong path is requested: %q", req.URL.Path)
 		http.Error(w, "unexpected filename", http.StatusBadRequest)
 		return
 	}
@@ -137,13 +143,13 @@ func compilerProxyLogHandler(w http.ResponseWriter, req *http.Request) {
 
 	cpl, err := compilerProxyLogFetch(client, logPath)
 	if err != nil {
-		ctx.Errorf("failed to fetch %s: %v", logPath, err)
+		log.Errorf(ctx, "failed to fetch %s: %v", logPath, err)
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 	err = compilerProxyLogSummary(w, logPath, cpl)
 	if err != nil {
-		ctx.Errorf("failed to output %v", err)
+		log.Errorf(ctx, "failed to output %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -4,8 +4,9 @@ import (
 	"html/template"
 	"net/http"
 
-	"appengine"
-	"appengine/user"
+	"google.golang.org/appengine"
+	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/user"
 )
 
 func authPage(w http.ResponseWriter, req *http.Request, status int, tmpl *template.Template, u *user.User, reqpath string) {
@@ -33,6 +34,6 @@ func authPage(w http.ResponseWriter, req *http.Request, status int, tmpl *templa
 	}
 	err = tmpl.Execute(w, data)
 	if err != nil {
-		ctx.Errorf("tmpl: %v", err)
+		log.Errorf(ctx, "tmpl: %v", err)
 	}
 }

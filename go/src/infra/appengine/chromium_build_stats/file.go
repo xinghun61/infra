@@ -11,12 +11,14 @@ import (
 	"net/http"
 	"strings"
 
-	"appengine"
-	"appengine/user"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/appengine"
+	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/urlfetch"
+	"google.golang.org/appengine/user"
 
-	"github.com/golang/oauth2/google"
-
-	"logstore"
+	"infra/appengine/chromium_build_stats/logstore"
 )
 
 func init() {
@@ -35,14 +37,19 @@ func fileHandler(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Unauthorized to access", http.StatusUnauthorized)
 		return
 	}
-	config := google.NewAppEngineConfig(ctx, []string{
-		"https://www.googleapis.com/auth/devstorage.read_only",
-	})
-	client := &http.Client{Transport: config.NewTransport()}
+
+	client := &http.Client{
+		Transport: &oauth2.Transport{
+			Source: google.AppEngineTokenSource(ctx, "https://www.googleapis.com/auth/devstorage.read_only"),
+			Base: &urlfetch.Transport{
+				Context: ctx,
+			},
+		},
+	}
 	path := req.URL.Path
 	resp, err := logstore.Fetch(client, path)
 	if err != nil {
-		ctx.Errorf("failed to fetch %s: %v", path, err)
+		log.Errorf(ctx, "failed to fetch %s: %v", path, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -51,7 +58,7 @@ func fileHandler(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(resp.StatusCode)
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
-		ctx.Errorf("failed to copy %s: %v", path, err)
+		log.Errorf(ctx, "failed to copy %s: %v", path, err)
 	}
 }
 

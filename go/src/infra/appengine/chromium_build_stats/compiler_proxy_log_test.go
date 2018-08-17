@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"compilerproxylog"
+	"infra/appengine/chromium_build_stats/compilerproxylog"
 )
 
 func TestCompilerProxyLogSummary(t *testing.T) {
