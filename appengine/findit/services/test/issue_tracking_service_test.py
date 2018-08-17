@@ -560,6 +560,17 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(('summary:test is:open label:Test-Flaky',), args)
     mock_api.reset_mock()
 
+  @mock.patch.object(issue_tracking_service, '_GetOpenIssues')
+  def testGetExistingOpenBugIdForTestReturnsEarliestBug(self,
+                                                        mock_get_open_issues):
+    issue1 = mock.Mock()
+    issue1.id = 456
+    issue2 = mock.Mock()
+    issue2.id = 123
+    mock_get_open_issues.return_value = [issue1, issue2]
+    self.assertEqual(123,
+                     issue_tracking_service.GetExistingOpenBugIdForTest('t'))
+
   @mock.patch('services.issue_tracking_service.IssueTrackerAPI')
   def testCreateBug(self, mock_api):
     summary = 'test summary'

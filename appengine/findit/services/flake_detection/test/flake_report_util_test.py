@@ -354,16 +354,15 @@ class FlakeReportUtilTest(WaterfallTestCase):
 
   # This test tests that the util first searches for open bugs on Monorail and
   # if it is found, then avoid searching for customized field.
-  @mock.patch.object(issue_tracking_service, 'GetExistingBugForCustomizedField')
-  @mock.patch.object(issue_tracking_service, 'GetExistingOpenBugForTest')
+  @mock.patch.object(
+      issue_tracking_service,
+      'GetExistingBugIdForCustomizedField',
+      return_value=None)
+  @mock.patch.object(
+      issue_tracking_service, 'GetExistingOpenBugIdForTest', return_value=12345)
   def testSearchAndFoundOpenBug(self, mock_open_bug_for_test,
                                 mock_bug_for_customized_field):
     flake = Flake.query().fetch()[0]
-
-    # An open bug for this flaky test is found.
-    mock_open_bug_for_test.return_value.id = 12345
-    mock_bug_for_customized_field.return_value = None
-
     normalized_test_name = flake.normalized_test_name
     monorail_project = FlakeIssue.GetMonorailProjectFromLuciProject(
         flake.luci_project)
@@ -376,16 +375,15 @@ class FlakeReportUtilTest(WaterfallTestCase):
 
   # This test tests that the util first searches for open bugs on Monorail and
   # if it is not found, then searches for customized field.
-  @mock.patch.object(issue_tracking_service, 'GetExistingBugForCustomizedField')
-  @mock.patch.object(issue_tracking_service, 'GetExistingOpenBugForTest')
+  @mock.patch.object(
+      issue_tracking_service,
+      'GetExistingBugIdForCustomizedField',
+      return_value=56789)
+  @mock.patch.object(
+      issue_tracking_service, 'GetExistingOpenBugIdForTest', return_value=None)
   def testSearchAndFoundCustomizedFieldBug(self, mock_open_bug_for_test,
                                            mock_bug_for_customized_field):
     flake = Flake.query().fetch()[0]
-
-    # An open bug for this flaky test is found.
-    mock_open_bug_for_test.return_value = None
-    mock_bug_for_customized_field.return_value.id = 56789
-
     normalized_test_name = flake.normalized_test_name
     monorail_project = FlakeIssue.GetMonorailProjectFromLuciProject(
         flake.luci_project)
@@ -399,16 +397,15 @@ class FlakeReportUtilTest(WaterfallTestCase):
   # This test tests that the util first searches for open bugs on Monorail and
   # if it is not found, then searches for customized field, and if still not
   # found, returns None.
-  @mock.patch.object(issue_tracking_service, 'GetExistingBugForCustomizedField')
-  @mock.patch.object(issue_tracking_service, 'GetExistingOpenBugForTest')
+  @mock.patch.object(
+      issue_tracking_service,
+      'GetExistingBugIdForCustomizedField',
+      return_value=None)
+  @mock.patch.object(
+      issue_tracking_service, 'GetExistingOpenBugIdForTest', return_value=None)
   def testSearchAndFoundNothing(self, mock_open_bug_for_test,
                                 mock_bug_for_customized_field):
     flake = Flake.query().fetch()[0]
-
-    # An open bug for this flaky test is found.
-    mock_open_bug_for_test.return_value = None
-    mock_bug_for_customized_field.return_value = None
-
     normalized_test_name = flake.normalized_test_name
     monorail_project = FlakeIssue.GetMonorailProjectFromLuciProject(
         flake.luci_project)

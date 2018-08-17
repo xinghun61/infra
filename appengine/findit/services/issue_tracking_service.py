@@ -342,21 +342,21 @@ def UnderDailyLimit(analysis):
   return bugs_filed_today < daily_bug_limit
 
 
-def GetExistingBugForCustomizedField(field, project_id='chromium'):
-  """Returns the existing bug for this test if any, None otherwise."""
-  assert field
-  query = _BUG_CUSTOM_FIELD_SEARCH_QUERY_TEMPLATE.format(field)
-  open_issues = _GetOpenIssues(query, project_id)
-  if open_issues:
-    return open_issues[0]
+def GetExistingBugIdForCustomizedField(field_value,
+                                       monorail_project='chromium'):
+  """Returns the bug id of an existing bug for this test.
 
-  return None
+  Args:
+    field_value: The value of the customized field to search for.
+    monorail_project: The Monorail project to search for.
 
-
-def GetExistingBugIdForCustomizedField(test_name, project_id='chromium'):
-  """Returns the bug id of an existing bug for this test."""
-  bug = GetExistingBugForCustomizedField(test_name, project_id)
-  return bug.id if bug else None
+  Returns:
+    Id of the bug if it exists, otherwise None.
+  """
+  assert field_value, 'Value for customized field cannot be None or empty.'
+  query = _BUG_CUSTOM_FIELD_SEARCH_QUERY_TEMPLATE.format(field_value)
+  open_issues = _GetOpenIssues(query, monorail_project)
+  return open_issues[0].id if open_issues else None
 
 
 def BugAlreadyExistsForCustomField(test_name):
@@ -364,37 +364,26 @@ def BugAlreadyExistsForCustomField(test_name):
   return GetExistingBugIdForCustomizedField(test_name) is not None
 
 
-def GetExistingOpenBugForTest(test_name, project_id='chromium'):
-  """Search for test_name issues that are about flakiness
-
-  Args:
-    test_name: The test name to search for.
-    project_id: The Monorail project to search for.
-
-  Returns:
-    Bug if exists, otherwise None.
-  """
-  assert test_name
-  query = _BUG_SUMMARY_SEARCH_QUERY_TEMPLATE.format(test_name)
-  open_issues = _GetOpenIssues(query, project_id)
-  if open_issues:
-    return open_issues[0]
-
-  return None
-
-
-def GetExistingOpenBugIdForTest(test_name, project_id='chromium'):
+def GetExistingOpenBugIdForTest(test_name, monorail_project='chromium'):
   """Search for test_name issues that are about flakiness, and return id.
 
   Args:
     test_name: The test name to search for.
-    project_id: The Monorail project to search for.
+    monorail_project: The Monorail project to search for.
 
   Returns:
-    Bug id if exists, otherwise None.
+    Bug minimum id if exists, otherwise None.
   """
-  issue = GetExistingOpenBugForTest(test_name, project_id)
-  return issue.id if issue else None
+  assert test_name, 'Test name to search summary for cannot be None or empty.'
+  query = _BUG_SUMMARY_SEARCH_QUERY_TEMPLATE.format(test_name)
+  open_issues = _GetOpenIssues(query, monorail_project)
+
+  if not open_issues:
+    return None
+
+  # Returns the one that was filed ealierst if there are multiple issues filed
+  # by developers.
+  return min([issue.id for issue in open_issues])
 
 
 def OpenBugAlreadyExistsForTest(test_name):
@@ -406,7 +395,7 @@ def OpenBugAlreadyExistsForTest(test_name):
   Returns:
     True is there is already a bug about this test being flaky, False otherwise.
   """
-  return GetExistingOpenBugForTest(test_name) is not None
+  return GetExistingOpenBugIdForTest(test_name) is not None
 
 
 def GetPriorityLabelForConfidence(confidence):

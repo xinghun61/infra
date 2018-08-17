@@ -211,17 +211,10 @@ def SearchExistingOpenIssuesForFlakyTest(normalized_test_name,
   """
   # Check for open bug without customized field first because a bug that was
   # created manually is more likely to gain attentions, so it is preferred.
-  issue = issue_tracking_service.GetExistingOpenBugForTest(
-      normalized_test_name, monorail_project)
-  if issue:
-    return issue.id
-
-  issue = issue_tracking_service.GetExistingBugForCustomizedField(
-      normalized_test_name, monorail_project)
-  if issue:
-    return issue.id
-
-  return None
+  return (issue_tracking_service.GetExistingOpenBugIdForTest(
+      normalized_test_name, monorail_project) or
+          issue_tracking_service.GetExistingBugIdForCustomizedField(
+              normalized_test_name, monorail_project))
 
 
 def _GetLinkForFlake(flake):

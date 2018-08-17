@@ -279,7 +279,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertTrue(test_enabled_fn.called)
 
   @mock.patch.object(
-      issue_tracking_service, 'GetExistingOpenBugForTest', return_value=None)
+      issue_tracking_service, 'GetExistingOpenBugIdForTest', return_value=None)
   @mock.patch.object(
       issue_tracking_service,
       'GetExistingBugIdForCustomizedField',
@@ -320,7 +320,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
   @mock.patch.object(
       issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=False)
   @mock.patch.object(
-      issue_tracking_service, 'GetExistingOpenBugForTest', return_value=None)
+      issue_tracking_service, 'GetExistingOpenBugIdForTest', return_value=None)
   @mock.patch.object(
       issue_tracking_service,
       'GetExistingBugIdForCustomizedField',
@@ -359,17 +359,14 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
 
   @mock.patch.object(
       issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=False)
-  @mock.patch.object(issue_tracking_service, 'GetExistingOpenBugForTest')
+  @mock.patch.object(
+      issue_tracking_service, 'GetExistingOpenBugIdForTest', return_value=1234)
   @mock.patch.object(
       issue_tracking_service,
       'GetExistingBugIdForCustomizedField',
       return_value=None)
   def testShouldFileReturnsFalseWithOpenBugForTest(
       self, mock_bug_for_custom_field, mock_bug_for_test, should_file_fn):
-    mock_issue = mock.Mock()
-    mock_issue.id = 1234
-    mock_bug_for_test.return_value = mock_issue
-
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
