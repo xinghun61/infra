@@ -274,10 +274,25 @@ func TestUpdateIncremental(t *testing.T) {
 				Builder:     "Linux Swarm",
 				BuildNumber: -1,
 			}
+
+			corruptedTf := model.TestFile{
+				Name:        "results.json",
+				Master:      "chromium.swarm",
+				TestType:    "corrupted_unittests",
+				Builder:     "Linux Swarm",
+				BuildNumber: -1,
+			}
+
 			So(resultsTf.PutData(ctx, func(w io.Writer) error {
 				_, err := w.Write(data)
 				return err
 			}), ShouldBeNil)
+
+			So(corruptedTf.PutData(ctx, func(w io.Writer) error {
+				_, err := w.Write([]byte("corrupted"))
+				return err
+			}), ShouldBeNil)
+
 			So(datastore.Put(ctx, &resultsTf), ShouldBeNil)
 
 			incr := model.AggregateResult{
@@ -341,6 +356,28 @@ func TestUpdateIncremental(t *testing.T) {
 				var updated model.AggregateResult
 				So(json.NewDecoder(reader).Decode(&updated), ShouldBeNil)
 				So(updated, ShouldResemble, incr)
+			})
+
+			Convey("corrupted aggregate entity: corrupted json", func() {
+				So(datastore.Put(ctx, &corruptedTf), ShouldBeNil)
+
+				datastore.GetTestable(ctx).CatchupIndexes()
+				So(updateIncremental(SetUploadParams(ctx, &UploadParams{
+					Master:   "chromium.swarm",
+					TestType: "corrupted_unittests",
+					Builder:  "Linux Swarm",
+				}), &incr), ShouldNotBeNil)
+
+				datastore.GetTestable(ctx).CatchupIndexes()
+				q := datastore.NewQuery("TestFile")
+				q = q.Eq("master", "chromium.swarm")
+				q = q.Eq("test_type", "corrupted_unittests")
+				q = q.Eq("builder", "Linux Swarm")
+				q = q.Eq("name", "result.json")
+				_, err := getFirstTestFile(ctx, q)
+
+				// Corrupted json should be removed from datastore.
+				So(err, ShouldHaveSameTypeAs, ErrNoMatches(""))
 			})
 		})
 	})

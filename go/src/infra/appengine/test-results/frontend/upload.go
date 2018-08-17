@@ -435,15 +435,14 @@ func updateIncremental(c context.Context, incr *model.AggregateResult) error {
 			continue
 		}
 		var a model.AggregateResult
-		if err := json.NewDecoder(reader).Decode(&a); err != nil {
-			logging.WithError(err).Warningf(c, "updateIncremental: unmarshal TestFile data")
-			files[i].err = statusError{err, http.StatusBadRequest}
-			continue
-		}
-
-		if tf.Builder != a.Builder {
-			logging.Warningf(c, "Builder in TestFile entity for aggregated file "+
-				"does not match data in linked JSON file. Deleting corrupted entity.")
+		if err := json.NewDecoder(reader).Decode(&a); err != nil || tf.Builder != a.Builder {
+			if err != nil {
+				logging.WithError(err).Warningf(c, "updateIncremental: unmarshal TestFile data. Deleting corrupted entity.")
+				files[i].err = statusError{err, http.StatusBadRequest}
+			} else {
+				logging.Warningf(c, "Builder in TestFile entity for aggregated file "+
+					"does not match data in linked JSON file. Deleting corrupted entity.")
+			}
 
 			// Try to delete data entities linked to the corrupted aggregate file.
 			if err = datastore.Delete(c, tf.DataKeys); err != nil {
