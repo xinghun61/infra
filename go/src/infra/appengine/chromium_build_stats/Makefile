@@ -3,16 +3,16 @@
 # found in the LICENSE file.
 
 build:
-	cd default; ../goenv.sh goapp build
+	go build ./...
 
-generate: gopath/src/ninjalog/ninjalog.proto
+generate: ninjalog/ninjalog.proto
 	go generate ./...
 
 deploy-staging:
-	./goenv.sh goapp deploy --application chromium-build-stats-staging --version $(shell git log -1 --pretty=format:git-%H) default
+	gae.py upload --app-id chromium-build-stats-staging
 
 deploy-prod:
-	./goenv.sh goapp deploy --application chromium-build-stats --version $(shell git log -1 --pretty=format:git-%H) default
+	gae.py upload --app-id chromium-build-stats
 
 test:
-	cd default; ../goenv.sh goapp test
+	go test ./...
