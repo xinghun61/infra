@@ -19,6 +19,8 @@
       .anchor {
         width: 100%;
         height: 100%;
+        border: none;
+        background: none;
       }
       .menu {
         position: absolute;
@@ -51,10 +53,10 @@
         background: hsl(0, 0%, 90%);
       }
     </style>
-    <div class="anchor" on-click="toggle">
+    <button class="anchor" on-click="toggle">
       <iron-icon class="expand-icon" icon="expand-more"></iron-icon>
       [[text]]
-    </div>
+    </button>
     <div class="menu">
       <template is="dom-repeat" items="[[items]]">
         <hr hidden$="[[!item.separator]]" />
