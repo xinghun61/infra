@@ -107,6 +107,11 @@ class MrMetadata extends ReduxMixin(Polymer.Element) {
     });
   }
 
+  _fieldIsHidden(fieldValueMap, fieldDef) {
+    return fieldDef.isNiche && !this._valuesForDef(
+      fieldDef.fieldRef.fieldName, fieldValueMap).length;
+  }
+
   _valuesForDef(name, fieldValueMap) {
     if (!(name in fieldValueMap)) return [];
     return fieldValueMap[name];
