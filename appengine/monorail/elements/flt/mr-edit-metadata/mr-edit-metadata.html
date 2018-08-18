@@ -39,6 +39,18 @@
       textarea:focus {
         height: 8em;
       }
+      button.toggle {
+        background: none;
+        color: hsl(240, 100%, 40%);
+        border: 0;
+        width: 100%;
+        padding: 0.25em 0;
+        text-align: left;
+      }
+      button.toggle:hover {
+        cursor: pointer;
+        text-decoration: underline;
+      }
       .input-grid {
         padding: 0.5em 0;
         display: grid;
@@ -108,6 +120,7 @@
 
         <template is="dom-repeat" items="[[fieldDefs]]" as="field">
           <label
+            hidden$="[[_fieldIsHidden(showNicheFields, field.isNiche)]]"
             for$="[[_idForField(field.fieldRef.fieldName)]]"
             on-click="_clickLabelForCustomInput"
             title$="[[field.docstring]]"
@@ -115,6 +128,7 @@
             [[field.fieldRef.fieldName]]:
           </label>
           <mr-edit-field
+            hidden$="[[_fieldIsHidden(showNicheFields, field.isNiche)]]"
             id$="[[_idForField(field.fieldRef.fieldName)]]"
             name="[[field.fieldRef.fieldName]]"
             type="[[field.fieldRef.type]]"
@@ -146,6 +160,16 @@
             multi
           ></mr-edit-field>
         </template>
+
+        <span></span>
+        <button type="button" class="toggle" on-click="toggleNicheFields" hidden$="[[!_nicheFieldCount]]">
+          <span hidden$="[[showNicheFields]]">
+            Show all fields ([[_nicheFieldCount]] currently hidden)
+          </span>
+          <span hidden$="[[!showNicheFields]]">
+            Hide niche fields ([[_nicheFieldCount]] currently shown)
+          </span>
+        </button>
       </div>
       <textarea id="commentText" placeholder="Comment to explain this change"></textarea>
     </form>

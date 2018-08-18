@@ -72,6 +72,14 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
         type: Boolean,
         value: false,
       },
+      showNicheFields: {
+        type: Boolean,
+        value: false,
+      },
+      _nicheFieldCount: {
+        type: Boolean,
+        computed: '_computeNicheFieldCount(fieldDefs)',
+      },
       _fieldValueMap: {
         type: Object,
         computed: '_computeFieldValueMap(fieldValues)',
@@ -188,6 +196,14 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
     return result;
   }
 
+  toggleNicheFields() {
+    this.showNicheFields = !this.showNicheFields;
+  }
+
+  _computeNicheFieldCount(fieldDefs) {
+    return fieldDefs.reduce((acc, fd) => acc + (fd.isNiche | 0), 0);
+  }
+
   _computeIsSelected(a, b) {
     return a === b;
   }
@@ -243,6 +259,10 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
   _valuesForField(fieldValueMap, name) {
     if (!(name in fieldValueMap)) return [];
     return fieldValueMap[name];
+  }
+
+  _fieldIsHidden(showNicheFields, isNiche) {
+    return !showNicheFields && isNiche;
   }
 
   _wrapList(item) {
