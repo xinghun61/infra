@@ -31,8 +31,11 @@ func (*trackerServer) WorkerLaunched(c context.Context, req *admin.WorkerLaunche
 	if req.IsolatedInputHash == "" {
 		return nil, errors.New("missing isolated input hash", grpcutil.InvalidArgumentTag)
 	}
-	if req.SwarmingTaskId == "" {
-		return nil, errors.New("missing swarming task ID", grpcutil.InvalidArgumentTag)
+	if req.SwarmingTaskId == "" && req.BuildbucketBuildId == 0 {
+		return nil, errors.New("missing swarming task and buildbucket ID, one must be present", grpcutil.InvalidArgumentTag)
+	}
+	if req.SwarmingTaskId != "" && req.BuildbucketBuildId != 0 {
+		return nil, errors.New("have both swarming and buildbucket IDs, only one can be present", grpcutil.InvalidArgumentTag)
 	}
 	if err := workerLaunched(c, req); err != nil {
 		return nil, errors.Annotate(err, "failed to track worker launched").

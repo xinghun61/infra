@@ -61,5 +61,61 @@ func TestWorkerLaunchedRequest(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(fr.State, ShouldEqual, tricium.State_RUNNING)
 		})
+
+		Convey("Validates request", func() {
+			// Validate run id.
+			s := &trackerServer{}
+			_, err = s.WorkerLaunched(ctx, &admin.WorkerLaunchedRequest{})
+			So(err.Error(), ShouldEqual, "rpc error: code = InvalidArgument desc = missing run ID")
+
+			// Validate worker.
+			_, err = s.WorkerLaunched(ctx, &admin.WorkerLaunchedRequest{
+				RunId: request.ID,
+			})
+			So(err.Error(), ShouldEqual, "rpc error: code = InvalidArgument desc = missing worker")
+
+			// Validate input hash.
+			_, err = s.WorkerLaunched(ctx, &admin.WorkerLaunchedRequest{
+				RunId:  request.ID,
+				Worker: fileIsolator,
+			})
+			So(err.Error(), ShouldEqual, "rpc error: code = InvalidArgument desc = missing isolated input hash")
+
+			// Validate swarming and buildbucket missing.
+			_, err = s.WorkerLaunched(ctx, &admin.WorkerLaunchedRequest{
+				RunId:             request.ID,
+				Worker:            fileIsolator,
+				IsolatedInputHash: "hash",
+			})
+			So(err.Error(), ShouldEqual, "rpc error: code = InvalidArgument desc = missing swarming task and buildbucket ID, one must be present")
+
+			// Validate both swarming and buildbucket present.
+			_, err = s.WorkerLaunched(ctx, &admin.WorkerLaunchedRequest{
+				RunId:              request.ID,
+				Worker:             fileIsolator,
+				IsolatedInputHash:  "hash",
+				SwarmingTaskId:     "id",
+				BuildbucketBuildId: 12,
+			})
+			So(err.Error(), ShouldEqual, "rpc error: code = InvalidArgument desc = have both swarming and buildbucket IDs, only one can be present")
+
+			// Validate swarming.
+			_, err = s.WorkerLaunched(ctx, &admin.WorkerLaunchedRequest{
+				RunId:             request.ID,
+				Worker:            fileIsolator,
+				IsolatedInputHash: "hash",
+				SwarmingTaskId:    "id",
+			})
+			So(err, ShouldBeNil)
+
+			// Validate buildbucket.
+			_, err = s.WorkerLaunched(ctx, &admin.WorkerLaunchedRequest{
+				RunId:              request.ID,
+				Worker:             fileIsolator,
+				IsolatedInputHash:  "hash",
+				BuildbucketBuildId: 12,
+			})
+			So(err, ShouldBeNil)
+		})
 	})
 }
