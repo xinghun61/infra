@@ -60,6 +60,8 @@ MAX_SAMPLE_CHUNK_SIZE = int(math.sqrt(settings.search_limit_per_shard))
 PREFERRED_NUM_CHUNKS = 50
 
 
+# TODO(jojwang): monorail:4127: combine some url parameters info or
+# query info into dicts or tuples to make argument manager easier.
 class FrontendSearchPipeline(object):
   """Manage the process of issue search, including backends and caching.
 
@@ -72,6 +74,23 @@ class FrontendSearchPipeline(object):
     self.mr = mr
     self.url_params = [(name, self.mr.GetParam(name)) for name in
                        framework_helpers.RECOGNIZED_PARAMS]
+    self.cnxn = mr.cnxn
+    self.project_name = mr.project_name
+    self.me_user_id = mr.me_user_id
+    self.logged_in_user_id = mr.auth.user_id or 0
+    self.can = mr.can
+    self.items_per_page = mr.GetPositiveIntParam(
+        'num', default_results_per_page)
+    self.paginate_start = mr.start
+    self.subqueries = mr.query.split(' OR ')
+    self.url_params = [(name, self.mr.GetParam(name)) for name in
+                       framework_helpers.RECOGNIZED_PARAMS]
+    self.group_by_spec = mr.group_by_spec
+    self.sort_spec = mr.sort_spec
+    self.warnings = mr.warnings
+    self.use_cached_searches = mr.use_cached_searches
+    self.profiler = mr.profiler
+
     self.services = services
     self.default_results_per_page = default_results_per_page
     self.grid_mode = (mr.mode == 'grid')
@@ -127,16 +146,17 @@ class FrontendSearchPipeline(object):
 
   def SearchForIIDs(self):
     """Use backends to search each shard and store their results."""
-    with self.mr.profiler.Phase('Checking cache and calling Backends'):
+    with self.profiler.Phase('Checking cache and calling Backends'):
       rpc_tuples = _StartBackendSearch(
-          self.mr, self.query_project_names, self.query_project_ids,
+          self.cnxn, self.query_project_names, self.query_project_ids,
           self.harmonized_config, self.unfiltered_iids,
           self.search_limit_reached, self.nonviewable_iids,
-          self.error_responses, self.services, self.mr.me_user_id,
-          self.mr.auth.user_id or 0, self.mr.num + self.mr.start,
-          self.url_params)
+          self.error_responses, self.services, self.me_user_id,
+          self.logged_in_user_id, self.items_per_page + self.paginate_start,
+          self.url_params, self.subqueries, self.can, self.group_by_spec,
+          self.sort_spec, self.warnings, self.use_cached_searches)
 
-    with self.mr.profiler.Phase('Waiting for Backends'):
+    with self.profiler.Phase('Waiting for Backends'):
       try:
         _FinishBackendSearch(rpc_tuples)
       except Exception as e:
@@ -147,7 +167,7 @@ class FrontendSearchPipeline(object):
       logging.error('%r error responses. Incomplete search results.',
                     self.error_responses)
 
-    with self.mr.profiler.Phase('Filtering cached results'):
+    with self.profiler.Phase('Filtering cached results'):
       for shard_key in self.unfiltered_iids:
         shard_id, _subquery = shard_key
         if shard_id not in self.nonviewable_iids:
@@ -164,7 +184,7 @@ class FrontendSearchPipeline(object):
         self.filtered_iids[shard_key] = filtered_shard_iids
 
     seen_iids_by_shard_id = collections.defaultdict(set)
-    with self.mr.profiler.Phase('Dedupping result IIDs across shards'):
+    with self.profiler.Phase('Dedupping result IIDs across shards'):
       for shard_key in self.filtered_iids:
         shard_id, _subquery = shard_key
         deduped = [iid for iid in self.filtered_iids[shard_key]
@@ -172,19 +192,19 @@ class FrontendSearchPipeline(object):
         self.filtered_iids[shard_key] = deduped
         seen_iids_by_shard_id[shard_id].update(deduped)
 
-    with self.mr.profiler.Phase('Counting all filtered results'):
+    with self.profiler.Phase('Counting all filtered results'):
       for shard_key in self.filtered_iids:
         self.total_count += len(self.filtered_iids[shard_key])
 
     if not self.grid_mode:
-      with self.mr.profiler.Phase('Trimming results beyond pagination page'):
+      with self.profiler.Phase('Trimming results beyond pagination page'):
         for shard_key in self.filtered_iids:
           self.filtered_iids[shard_key] = self.filtered_iids[shard_key][
-              :self.mr.start + self.mr.num]
+              :self.paginate_start + self.items_per_page]
 
   def MergeAndSortIssues(self):
     """Merge and sort results from all shards into one combined list."""
-    with self.mr.profiler.Phase('selecting issues to merge and sort'):
+    with self.profiler.Phase('selecting issues to merge and sort'):
       if not self.grid_mode:
         self._NarrowFilteredIIDs()
       self.allowed_iids = []
@@ -198,17 +218,17 @@ class FrontendSearchPipeline(object):
       self.grid_limited = True
       self.allowed_iids = self.allowed_iids[:limit]
 
-    with self.mr.profiler.Phase('getting allowed results'):
+    with self.profiler.Phase('getting allowed results'):
       self.allowed_results = self.services.issue.GetIssues(
-          self.mr.cnxn, self.allowed_iids)
+          self.cnxn, self.allowed_iids)
 
     # Note: At this point, we have results that are only sorted within
     # each backend's shard.  We still need to sort the merged result.
     self._LookupNeededUsers(self.allowed_results)
-    with self.mr.profiler.Phase('merging and sorting issues'):
+    with self.profiler.Phase('merging and sorting issues'):
       self.allowed_results = _SortIssues(
           self.allowed_results, self.harmonized_config, self.users_by_id,
-          self.mr.group_by_spec, self.mr.sort_spec)
+          self.group_by_spec, self.sort_spec)
 
   def _NarrowFilteredIIDs(self):
     """Combine filtered shards into a range of IIDs for issues to sort.
@@ -227,11 +247,11 @@ class FrontendSearchPipeline(object):
 
     # If the result set is small, don't bother optimizing it.
     orig_length = _TotalLength(self.filtered_iids)
-    if orig_length < self.mr.num * 4:
+    if orig_length < self.items_per_page * 4:
       return
 
     # 1. Get sample issues in each shard and sort them all together.
-    last = self.mr.start + self.mr.num
+    last = self.paginate_start + self.items_per_page
 
     samples_by_shard, sample_iids_to_shard = self._FetchAllSamples(
         self.filtered_iids)
@@ -242,7 +262,7 @@ class FrontendSearchPipeline(object):
     self._LookupNeededUsers(sample_issues)
     sample_issues = _SortIssues(
         sample_issues, self.harmonized_config, self.users_by_id,
-        self.mr.group_by_spec, self.mr.sort_spec)
+        self.group_by_spec, self.sort_spec)
     sample_iid_tuples = [
         (issue.issue_id, sample_iids_to_shard[issue.issue_id])
         for issue in sample_issues]
@@ -253,7 +273,7 @@ class FrontendSearchPipeline(object):
     logging.info('Trimmed %r issues from the end of shards', num_trimmed_end)
 
     # 3. Trim off some IIDs that are sure to be posiitoned before start.
-    keep = _TotalLength(self.filtered_iids) - self.mr.start
+    keep = _TotalLength(self.filtered_iids) - self.paginate_start
     # Reverse the sharded lists.
     _ReverseShards(self.filtered_iids)
     sample_iid_tuples.reverse()
@@ -302,11 +322,11 @@ class FrontendSearchPipeline(object):
     index = sum(preceeding_counts.itervalues())
     prev_candidates = _SortIssues(
         prev_candidates, self.harmonized_config, self.users_by_id,
-        self.mr.group_by_spec, self.mr.sort_spec)
+        self.group_by_spec, self.sort_spec)
     prev_iid = prev_candidates[-1].issue_id if prev_candidates else None
     next_candidates = _SortIssues(
         next_candidates, self.harmonized_config, self.users_by_id,
-        self.mr.group_by_spec, self.mr.sort_spec)
+        self.group_by_spec, self.sort_spec)
     next_iid = next_candidates[0].issue_id if next_candidates else None
 
     return prev_iid, index, next_iid
@@ -327,7 +347,7 @@ class FrontendSearchPipeline(object):
     self._LookupNeededUsers(issues_on_hand)
     sorted_on_hand = _SortIssues(
         issues_on_hand, self.harmonized_config, self.users_by_id,
-        self.mr.group_by_spec, self.mr.sort_spec)
+        self.group_by_spec, self.sort_spec)
     sorted_on_hand_iids = [soh.issue_id for soh in sorted_on_hand]
     index_in_on_hand = sorted_on_hand_iids.index(issue.issue_id)
 
@@ -346,13 +366,13 @@ class FrontendSearchPipeline(object):
 
     # 3. Retrieve all the issues in that gap to get an exact answer.
     fetched_issues = self.services.issue.GetIssues(
-        self.mr.cnxn, filtered_shard_iids[fetch_start:fetch_end])
+        self.cnxn, filtered_shard_iids[fetch_start:fetch_end])
     if issue.issue_id not in filtered_shard_iids[fetch_start:fetch_end]:
       fetched_issues.append(issue)
     self._LookupNeededUsers(fetched_issues)
     sorted_fetched = _SortIssues(
         fetched_issues, self.harmonized_config, self.users_by_id,
-        self.mr.group_by_spec, self.mr.sort_spec)
+        self.group_by_spec, self.sort_spec)
     sorted_fetched_iids = [sf.issue_id for sf in sorted_fetched]
     index_in_fetched = sorted_fetched_iids.index(issue.issue_id)
 
@@ -391,7 +411,7 @@ class FrontendSearchPipeline(object):
       all_needed_iids.extend(shard_needed_iids)
 
     retrieved_samples = self.services.issue.GetIssuesDict(
-        self.mr.cnxn, all_needed_iids)
+        self.cnxn, all_needed_iids)
     for retrieved_iid, retrieved_issue in retrieved_samples.iteritems():
       retr_shard_key = sample_iids_to_shard[retrieved_iid]
       samples_by_shard[retr_shard_key][retrieved_iid] = retrieved_issue
@@ -425,10 +445,10 @@ class FrontendSearchPipeline(object):
 
   def _LookupNeededUsers(self, issues):
     """Look up user info needed to sort issues, if any."""
-    with self.mr.profiler.Phase('lookup of owner, reporter, and cc'):
+    with self.profiler.Phase('lookup of owner, reporter, and cc'):
       additional_user_views_by_id = (
           tracker_helpers.MakeViewsForUsersInIssues(
-              self.mr.cnxn, issues, self.services.user,
+              self.cnxn, issues, self.services.user,
               omit_ids=self.users_by_id.keys()))
       self.users_by_id.update(additional_user_views_by_id)
 
@@ -442,9 +462,8 @@ class FrontendSearchPipeline(object):
       # We don't paginate the grid view.  But, pagination object shows counts.
       self.pagination = paginate.ArtifactPagination(
           self.allowed_results,
-          self.mr.GetPositiveIntParam('num', self.default_results_per_page),
-          self.mr.GetPositiveIntParam('start'),
-          self.mr.project_name, urls.ISSUE_LIST,
+          self.items_per_page, self.paginate_start,
+          self.project_name, urls.ISSUE_LIST,
           total_count=self.total_count, url_params=self.url_params)
       # We limited the results, but still show the original total count.
       self.visible_results = self.allowed_results
@@ -456,8 +475,7 @@ class FrontendSearchPipeline(object):
         limit_reached |= shard_limit_reached
       self.pagination = paginate.ArtifactPagination(
           self.allowed_results,
-          self.mr.GetPositiveIntParam('num', self.default_results_per_page),
-          self.mr.GetPositiveIntParam('start'), self.mr.project_name,
+          self.items_per_page, self.paginate_start, self.project_name,
           urls.ISSUE_LIST, total_count=self.total_count,
           limit_reached=limit_reached, skipped=self.num_skipped_at_start,
           url_params=self.url_params)
@@ -513,15 +531,15 @@ def _MakeBackendCallback(func, *args):
 
 
 def _StartBackendSearch(
-    mr, query_project_names, query_project_ids, harmonized_config,
+    cnxn, query_project_names, query_project_ids, harmonized_config,
     unfiltered_iids_dict, search_limit_reached_dict,
     nonviewable_iids, error_responses, services, me_user_id,
-    logged_in_user_id, new_url_num, url_params):
+    logged_in_user_id, new_url_num, url_params, subqueries, can, group_by_spec,
+    sort_spec, warnings, use_cached_searches):
   """Request that our backends search and return a list of matching issue IDs.
 
   Args:
-    mr: commonly used info parsed from the request, including query and
-        sort spec.
+    cnxn: monorail connection to the database.
     query_project_names: set of project names to search.
     query_project_ids: list of project IDs to search.
     harmonized_config: combined ProjectIssueConfig for all projects being
@@ -543,6 +561,12 @@ def _StartBackendSearch(
     new_url_num: the new value of the 'num' parameter
     url_params: list of (param_name, param_value) we want to keep
         in any new urls.
+    subqueries:
+    can: "canned query" number to scope the user's search.
+    group_by_spec: string that lists the grouping order.
+    sort_spec: string that lists the sort order.
+    warnings: list to accumulate warning messages.
+    use_cached_searches: Bool for whether to use cached searches.
 
   Returns:
     A list of rpc_tuples that can be passed to _FinishBackendSearch to wait
@@ -552,14 +576,16 @@ def _StartBackendSearch(
     Any data found in memcache is immediately put into unfiltered_iids_dict.
     As the backends finish their work, _HandleBackendSearchResponse will update
     unfiltered_iids_dict for those shards.
+
+    Any warnings produced throughout this process will be added to the list
+    warnings.
   """
   rpc_tuples = []
-  subqueries = mr.query.split(' OR ')
   needed_shard_keys = set()
   for subquery in subqueries:
     subquery, warnings = searchpipeline.ReplaceKeywordsWithUserID(
-        mr.me_user_id, subquery)
-    mr.warnings.extend(warnings)
+        me_user_id, subquery)
+    warnings.extend(warnings)
     for shard_id in range(settings.num_logical_shards):
       needed_shard_keys.add((shard_id, subquery))
 
@@ -568,11 +594,12 @@ def _StartBackendSearch(
   project_shard_timestamps = _GetProjectTimestamps(
       query_project_ids, needed_shard_keys)
 
-  if mr.use_cached_searches:
+  if use_cached_searches:
     cached_unfiltered_iids_dict, cached_search_limit_reached_dict = (
         _GetCachedSearchResults(
-            mr, query_project_ids, needed_shard_keys,
-            harmonized_config, project_shard_timestamps, services))
+            cnxn, query_project_ids, needed_shard_keys,
+            harmonized_config, project_shard_timestamps, services, me_user_id,
+            can, group_by_spec, sort_spec, warnings))
     unfiltered_iids_dict.update(cached_unfiltered_iids_dict)
     search_limit_reached_dict.update(cached_search_limit_reached_dict)
   for cache_hit_shard_key in unfiltered_iids_dict:
@@ -581,10 +608,11 @@ def _StartBackendSearch(
   # 2. Each kept cache hit will have unfiltered IIDs, so we filter them by
   # removing non-viewable IDs.
   _GetNonviewableIIDs(
-    query_project_ids, mr.auth.user_id, set(range(settings.num_logical_shards)),
+    query_project_ids, logged_in_user_id,
+    set(range(settings.num_logical_shards)),
     rpc_tuples, nonviewable_iids, project_shard_timestamps,
     services.cache_manager.processed_invalidations_up_to,
-    mr.use_cached_searches)
+    use_cached_searches)
 
   # 3. Hit backends for any shards that are still needed.  When these results
   # come back, they are also put into unfiltered_iids_dict.
@@ -732,8 +760,9 @@ def _AccumulateNonviewableIIDs(
 
 
 def _GetCachedSearchResults(
-    mr, query_project_ids, needed_shard_keys, harmonized_config,
-    project_shard_timestamps, services):
+    cnxn, query_project_ids, needed_shard_keys, harmonized_config,
+    project_shard_timestamps, services, me_user_id, can, group_by_spec,
+    sort_spec, warnings):
   """Return a dict of cached search results that are not already stale.
 
   If it were not for cross-project search, we would simply cache when we do a
@@ -748,7 +777,7 @@ def _GetCachedSearchResults(
   after its search result cache timestamp, because it is stale.
 
   Args:
-    mr: common information parsed from the request.
+    cnxn: monorail connection to the database.
     query_project_ids: list of project ID numbers for all projects being
         searched.
     needed_shard_keys: set of shard keys that need to be checked.
@@ -757,6 +786,15 @@ def _GetCachedSearchResults(
     project_shard_timestamps: a dict {(project_id, shard_id): timestamp, ...}
         that tells when each shard was last invalidated.
     services: connections to backends.
+    me_user_id: None when no user is logged in, or user ID of the logged in
+        user when doing an interactive search, or the viewed user ID when
+        viewing someone else's dashboard, or the subscribing user's ID when
+        evaluating subscriptions.
+    can: "canned query" number to scope the user's search.
+    group_by_spec: string that lists the grouping order.
+    sort_spec: string that lists the sort order.
+    warnings: list to accumulate warning messages.
+
 
   Returns:
     Tuple consisting of:
@@ -770,13 +808,13 @@ def _GetCachedSearchResults(
   projects_str = ','.join(str(pid) for pid in sorted(query_project_ids))
   projects_str = projects_str or 'all'
   canned_query = savedqueries_helpers.SavedQueryIDToCond(
-      mr.cnxn, services.features, mr.can)
+      cnxn, services.features, can)
   canned_query, warnings = searchpipeline.ReplaceKeywordsWithUserID(
-      mr.me_user_id, canned_query)
-  mr.warnings.extend(warnings)
+      me_user_id, canned_query)
+  warnings.extend(warnings)
 
   sd = sorting.ComputeSortDirectives(
-      harmonized_config, mr.group_by_spec, mr.sort_spec)
+      harmonized_config, group_by_spec, sort_spec)
   sd_str = ' '.join(sd)
   memcache_key_prefix = '%s;%s' % (projects_str, canned_query)
   limit_reached_key_prefix = '%s;%s' % (projects_str, canned_query)

@@ -35,7 +35,6 @@ NOW = 2444950132
 class FrontendSearchPipelineTest(unittest.TestCase):
 
   def setUp(self):
-    self.cnxn = 'fake cnxn'
     self.config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     self.services = service_manager.Services(
         user=fake.UserService(),
@@ -62,6 +61,17 @@ class FrontendSearchPipelineTest(unittest.TestCase):
     self.services.issue.TestAddIssue(self.issue_3)
     self.mr.sort_spec = 'Priority'
 
+    self.cnxn = self.mr.cnxn
+    self.me_user_id = self.mr.me_user_id
+    self.logged_in_user_id = self.mr.auth.user_id or 0
+    self.paginate_end = 100
+    self.subqueries = self.mr.query.split(' OR ')
+    self.can = self.mr.can
+    self.group_by_spec = self.mr.group_by_spec
+    self.sort_spec = self.mr.sort_spec
+    self.warnings = self.mr.warnings
+    self.use_cached_searches = self.mr.use_cached_searches
+
     self.mox = mox.Mox()
     self.testbed = testbed.Testbed()
     self.testbed.activate()
@@ -79,10 +89,11 @@ class FrontendSearchPipelineTest(unittest.TestCase):
     nonviewable_iids = {1: set()}
     self.mox.StubOutWithMock(frontendsearchpipeline, '_StartBackendSearch')
     frontendsearchpipeline._StartBackendSearch(
-      self.mr, ['proj'], [789], mox.IsA(tracker_pb2.ProjectIssueConfig),
-      unfiltered_iids, {}, nonviewable_iids, set(), self.services,
-      self.mr.me_user_id,
-      self.mr.auth.user_id or 0, 100, self.url_params).AndReturn([])
+        self.cnxn, ['proj'], [789], mox.IsA(tracker_pb2.ProjectIssueConfig),
+        unfiltered_iids, {}, nonviewable_iids, set(), self.services,
+        self.me_user_id, self.logged_in_user_id, self.paginate_end,
+        self.url_params, self.subqueries, self.can, self.group_by_spec,
+        self.sort_spec, self.warnings, self.use_cached_searches).AndReturn([])
     self.mox.StubOutWithMock(frontendsearchpipeline, '_FinishBackendSearch')
     frontendsearchpipeline._FinishBackendSearch([])
     self.mox.ReplayAll()
@@ -103,10 +114,12 @@ class FrontendSearchPipelineTest(unittest.TestCase):
     self.mr.query_project_names = ['other']
     self.mox.StubOutWithMock(frontendsearchpipeline, '_StartBackendSearch')
     frontendsearchpipeline._StartBackendSearch(
-      self.mr, ['other', 'proj'], [789, 790],
+      self.cnxn, ['other', 'proj'], [789, 790],
       mox.IsA(tracker_pb2.ProjectIssueConfig), unfiltered_iids, {},
-      nonviewable_iids, set(), self.services, self.mr.me_user_id,
-      self.mr.auth.user_id or 0, 100, self.url_params).AndReturn([])
+      nonviewable_iids, set(), self.services, self.me_user_id,
+      self.logged_in_user_id, self.paginate_end, self.url_params,
+      self.subqueries, self.can, self.group_by_spec, self.sort_spec,
+      self.warnings, self.use_cached_searches).AndReturn([])
     self.mox.StubOutWithMock(frontendsearchpipeline, '_FinishBackendSearch')
     frontendsearchpipeline._FinishBackendSearch([])
     self.mox.ReplayAll()
@@ -129,11 +142,12 @@ class FrontendSearchPipelineTest(unittest.TestCase):
     self.mr.query_project_names = ['other']
     self.mox.StubOutWithMock(frontendsearchpipeline, '_StartBackendSearch')
     frontendsearchpipeline._StartBackendSearch(
-      self.mr, ['proj'], [789],
+      self.cnxn, ['proj'], [789],
       mox.IsA(tracker_pb2.ProjectIssueConfig),
       unfiltered_iids, {}, nonviewable_iids, set(), self.services,
-      self.mr.me_user_id,
-      self.mr.auth.user_id, 100, self.url_params).AndReturn([])
+      self.me_user_id, self.logged_in_user_id, self.paginate_end,
+      self.url_params, self.subqueries, self.can, self.group_by_spec,
+      self.sort_spec, self.warnings, self.use_cached_searches).AndReturn([])
     self.mox.StubOutWithMock(frontendsearchpipeline, '_FinishBackendSearch')
     frontendsearchpipeline._FinishBackendSearch([])
     self.mox.ReplayAll()
