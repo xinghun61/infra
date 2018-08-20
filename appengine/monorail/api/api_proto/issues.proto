@@ -245,7 +245,6 @@ message PresubmitIssueRequest {
   RequestTrace trace = 1;
   IssueRef issue_ref = 2;
   IssueDelta issue_delta = 3;
-  RequestTrace trace = 1;
 }
 
 
