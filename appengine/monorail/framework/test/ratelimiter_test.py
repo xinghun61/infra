@@ -344,6 +344,7 @@ class ApiRateLimiterTest(unittest.TestCase):
     self.ratelimiter.CheckStart(self.client_id, self.client_email, now)
     self.ratelimiter.CheckStart(self.client_id, None, now)
     self.ratelimiter.CheckStart(None, None, now)
+    self.ratelimiter.CheckStart('anonymous', None, now)
 
   def testCheckStart_fail(self):
     now = 0.0

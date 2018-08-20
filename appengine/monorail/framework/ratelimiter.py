@@ -93,7 +93,7 @@ def _CreateApiCacheKeys(client_id, client_email, now_sec):
                  for minute_bucket in minute_buckets]
   keys = []
 
-  if client_id:
+  if client_id and client_id != 'anonymous':
     keys.append(['apiratelimit-%s-%s' % (client_id, minute_str)
                  for minute_str in minute_strs])
   if client_email:
