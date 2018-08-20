@@ -36,6 +36,9 @@ handlers:
 - url: /compiler_proxy_log.*
   script: _go_app
   secure: always
+- url: /pubsub
+  script: _go_app
+  secure: always
 - url: /.*
   script: _go_app
   secure: always
