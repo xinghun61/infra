@@ -15,6 +15,7 @@ from pipelines.flake_failure.update_monorail_bug_pipeline import (
 from pipelines.flake_failure.update_monorail_bug_pipeline import (
     UpdateMonorailBugPipeline)
 from services import issue_tracking_service
+from services.flake_failure import flake_report_util
 from waterfall.test.wf_testcase import WaterfallTestCase
 
 
@@ -22,7 +23,7 @@ class UpdateMonorailPipelineTestShouldNotUpdate(WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
   @mock.patch.object(
-      issue_tracking_service, 'ShouldUpdateBugForAnalysis', return_value=False)
+      flake_report_util, 'ShouldUpdateBugForAnalysis', return_value=False)
   def testUpdateMonorailBugPipelineShouldNotUpdateBug(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
@@ -38,7 +39,7 @@ class UpdateMonorailPipelineTestShouldNotUpdate(WaterfallTestCase):
     self.assertFalse(pipeline_job.outputs.default.value)
 
   @mock.patch.object(
-      issue_tracking_service, 'ShouldUpdateBugForAnalysis', return_value=True)
+      flake_report_util, 'ShouldUpdateBugForAnalysis', return_value=True)
   @mock.patch.object(
       issue_tracking_service, 'TraverseMergedIssues', return_value=None)
   @mock.patch(
@@ -60,7 +61,7 @@ class UpdateMonorailPipelineTestShouldNotUpdate(WaterfallTestCase):
     mocked_api.assert_called_once()
 
   @mock.patch.object(
-      issue_tracking_service, 'ShouldUpdateBugForAnalysis', return_value=True)
+      flake_report_util, 'ShouldUpdateBugForAnalysis', return_value=True)
   @mock.patch.object(
       issue_tracking_service, 'TraverseMergedIssues', return_value=None)
   @mock.patch(
@@ -83,9 +84,9 @@ class UpdateMonorailPipelineTestShouldNotUpdate(WaterfallTestCase):
 
   @mock.patch.object(appengine_util, 'IsStaging', return_value=False)
   @mock.patch.object(
-      issue_tracking_service, 'ShouldUpdateBugForAnalysis', return_value=True)
+      flake_report_util, 'ShouldUpdateBugForAnalysis', return_value=True)
   @mock.patch.object(
-      issue_tracking_service, 'GenerateBugComment', return_value='comment')
+      flake_report_util, 'GenerateBugComment', return_value='comment')
   @mock.patch(
       'pipelines.flake_failure.update_monorail_bug_pipeline.IssueTrackerAPI')
   @mock.patch.object(issue_tracking_service, 'TraverseMergedIssues')
@@ -116,7 +117,7 @@ class UpdateMonorailPipelineTestShouldNotUpdate(WaterfallTestCase):
 
   @mock.patch.object(appengine_util, 'IsStaging', return_value=False)
   @mock.patch.object(
-      issue_tracking_service, 'ShouldUpdateBugForAnalysis', return_value=True)
+      flake_report_util, 'ShouldUpdateBugForAnalysis', return_value=True)
   @mock.patch(
       'pipelines.flake_failure.update_monorail_bug_pipeline.IssueTrackerAPI')
   @mock.patch.object(issue_tracking_service, 'TraverseMergedIssues')

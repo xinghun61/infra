@@ -12,6 +12,7 @@ from libs.structured_object import StructuredObject
 from monorail_api import IssueTrackerAPI
 from services import issue_tracking_service
 from services.flake_failure import flake_constants
+from services.flake_failure import flake_report_util
 
 
 class UpdateMonorailBugInput(StructuredObject):
@@ -33,7 +34,7 @@ class UpdateMonorailBugPipeline(SynchronousPipeline):
     analysis = ndb.Key(urlsafe=parameters.analysis_urlsafe_key).get()
     assert analysis
 
-    if not issue_tracking_service.ShouldUpdateBugForAnalysis(analysis):
+    if not flake_report_util.ShouldUpdateBugForAnalysis(analysis):
       return False
 
     project_name = flake_constants.CHROMIUM_PROJECT_NAME
@@ -56,7 +57,7 @@ class UpdateMonorailBugPipeline(SynchronousPipeline):
 
       return False
 
-    comment = issue_tracking_service.GenerateBugComment(analysis)
+    comment = flake_report_util.GenerateBugComment(analysis)
     issue_tracking_service.AddFinditLabelToIssue(issue)
 
     monitoring.issues.increment({'operation': 'update', 'category': 'flake'})

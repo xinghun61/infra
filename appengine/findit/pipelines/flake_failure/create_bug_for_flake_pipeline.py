@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TODO(crbug.com/810912): Refacor into services.
+# TODO(crbug.com/810912): Refactor into services.
 
 from google.appengine.ext import ndb
 
@@ -27,6 +27,7 @@ from pipelines.flake_failure.get_isolate_sha_pipeline import (
 from services import issue_tracking_service
 from services import swarmed_test_util
 from services import swarming
+from services.flake_failure import flake_report_util
 from services.flake_failure import pass_rate_util
 from waterfall import build_util
 
@@ -72,7 +73,7 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
     analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
     assert analysis
 
-    if not issue_tracking_service.ShouldFileBugForAnalysis(analysis):
+    if not flake_report_util.ShouldFileBugForAnalysis(analysis):
       if not analysis.bug_id:
         bug_id = (
             issue_tracking_service.GetExistingBugIdForCustomizedField(
@@ -163,8 +164,8 @@ def _GenerateSubjectAndBodyForBug(analysis):
         analysis.confidence_in_culprit * 100)
 
   subject = _SUBJECT_TEMPLATE.format(analysis.test_name)
-  analysis_link = issue_tracking_service.GenerateAnalysisLink(analysis)
-  wrong_result_link = issue_tracking_service.GenerateWrongResultLink(analysis)
+  analysis_link = flake_report_util.GenerateAnalysisLink(analysis)
+  wrong_result_link = flake_report_util.GenerateWrongResultLink(analysis)
   body = _BODY_TEMPLATE.format(analysis.test_name, culprit_confidence,
                                culprit_url, analysis_link, wrong_result_link)
   return subject, body
@@ -192,7 +193,7 @@ class _CreateBugIfStillFlaky(pipelines.GeneratorPipeline):
       return
 
     subject, body = _GenerateSubjectAndBodyForBug(analysis)
-    priority_label = issue_tracking_service.GetPriorityLabelForConfidence(
+    priority_label = flake_report_util.GetPriorityLabelForConfidence(
         analysis.confidence_in_culprit)
 
     # Log our attempt in analysis so we don't retry perpetually.
