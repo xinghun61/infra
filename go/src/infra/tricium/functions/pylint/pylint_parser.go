@@ -35,6 +35,8 @@ const (
 func main() {
 	inputDir := flag.String("input", "", "Path to root of Tricium input")
 	outputDir := flag.String("output", "", "Path to root of Tricium output")
+	enable := flag.String("enable", "", "Comma-separated list of checks to enable")
+	disable := flag.String("disable", "", "Comma-separated list of checks to disable")
 	// TODO(qyearsley): Add flags for disabling/enabling warnings; this
 	// would enable specifying warnings in project configs.
 	flag.Parse()
@@ -71,6 +73,8 @@ func main() {
 		filepath.Join(exPath, pylintPath),
 		"--rcfile", filepath.Join(exPath, "pylintrc"),
 		"--msg-template", msgTemplate,
+		"--enable", *enable,
+		"--disable", *disable,
 	}
 	for _, file := range files {
 		cmdArgs = append(cmdArgs, filepath.Join(*inputDir, file.Path))
