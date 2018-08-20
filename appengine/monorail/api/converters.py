@@ -781,3 +781,13 @@ def ConvertHotlist(hotlist, users_by_id):
       summary=hotlist.summary,
       description=hotlist.description)
   return result
+
+
+def ConvertValueAndWhy(value_and_why):
+  return common_pb2.ValueAndWhy(
+      value=value_and_why.get('value'),
+      why=value_and_why.get('why'))
+
+
+def ConvertValueAndWhyList(value_and_why_list):
+  return [ConvertValueAndWhy(vnw) for vnw in value_and_why_list]

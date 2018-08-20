@@ -95,3 +95,10 @@ message HotlistRef {
   string name = 2;
   UserRef owner = 3;
 }
+
+
+// Next available tag: 3
+message ValueAndWhy {
+  string value = 1;
+  string why = 2;
+}

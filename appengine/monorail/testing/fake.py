@@ -468,6 +468,8 @@ class UserService(object):
     for user_id in user_ids:
       if user_id and self.test_users.get(user_id):
         user_dict[user_id] = self.test_users[user_id]
+      else:
+        user_dict[user_id] = user_pb2.MakeUser(user_id)
     return user_dict
 
   def LookupExistingUserIDs(self, cnxn, emails):

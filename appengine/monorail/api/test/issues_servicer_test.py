@@ -21,6 +21,7 @@ from api.api_proto import issues_pb2
 from api.api_proto import issue_objects_pb2
 from api.api_proto import common_pb2
 from businesslogic import work_env
+from features import filterrules_helpers
 from features import send_notifications
 from framework import authdata
 from framework import exceptions
@@ -756,3 +757,175 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertEqual('rutabaga', response.unsupported_field[0])
     mockSnapshotCountsQuery.assert_called_once_with(self.project, 1531334109,
         'component', '', 'rutabaga:rutabaga', 'is:open')
+
+  def AddField(self, name, **kwargs):
+    if kwargs.get('needs_perm'):
+      kwargs['needs_member'] = True
+    kwargs.setdefault('cnxn', self.cnxn)
+    kwargs.setdefault('project_id', self.project.project_id)
+    kwargs.setdefault('field_name', name)
+    kwargs.setdefault('field_type_str', 'USER_TYPE')
+    for arg in ('applic_type', 'applic_pred', 'is_required', 'is_niche',
+                'is_multivalued', 'min_value', 'max_value', 'regex',
+                'needs_member', 'needs_perm', 'grants_perm', 'notify_on',
+                'date_action_str', 'docstring', 'admin_ids'):
+      kwargs.setdefault(arg, None)
+
+    return self.services.config.CreateFieldDef(**kwargs)
+
+  @patch('testing.fake.FeaturesService.GetFilterRules')
+  def testPresubmitIssue_NoDerivedFields(self, mockGetFilterRules):
+    """When no rules match, we respond with just owner availability."""
+    issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
+    issue_delta = issues_pb2.IssueDelta(
+        owner_ref=common_pb2.UserRef(user_id=111L),
+        label_refs_add=[common_pb2.LabelRef(label='foo')])
+
+    mockGetFilterRules.return_value = [
+        filterrules_helpers.MakeRule('label:bar', add_labels=['baz'])]
+
+    request = issues_pb2.PresubmitIssueRequest(
+        issue_ref=issue_ref, issue_delta=issue_delta)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.issues_svcr.PresubmitIssue, mc, request)
+
+    self.assertEqual(
+        issues_pb2.PresubmitIssueResponse(
+            owner_availability="User never visited",
+            owner_availability_state="never"),
+        response)
+
+  @patch('testing.fake.FeaturesService.GetFilterRules')
+  def testPresubmitIssue_DerivedLabels(self, mockGetFilterRules):
+    """Test that we can match label rules and return derived labels."""
+    issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
+    issue_delta = issues_pb2.IssueDelta(
+        owner_ref=common_pb2.UserRef(user_id=111L),
+        label_refs_add=[common_pb2.LabelRef(label='foo')])
+
+    mockGetFilterRules.return_value = [
+        filterrules_helpers.MakeRule('label:foo', add_labels=['bar', 'baz'])]
+
+    request = issues_pb2.PresubmitIssueRequest(
+        issue_ref=issue_ref, issue_delta=issue_delta)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.issues_svcr.PresubmitIssue, mc, request)
+
+    self.assertEqual(
+        [common_pb2.ValueAndWhy(
+            value='bar',
+            why='Added by rule: IF label:foo THEN ADD LABEL'),
+         common_pb2.ValueAndWhy(
+            value='baz',
+            why='Added by rule: IF label:foo THEN ADD LABEL')],
+        [vnw for vnw in response.derived_labels])
+
+  @patch('testing.fake.FeaturesService.GetFilterRules')
+  def testPresubmitIssue_DerivedOwner(self, mockGetFilterRules):
+    """Test that we can match component rules and return derived owners."""
+    self.services.config.CreateComponentDef(
+        self.cnxn, self.project.project_id, 'Foo', 'Foo Docstring', False,
+        [], [], 0, 111L, [])
+    issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
+    issue_delta = issues_pb2.IssueDelta(
+        comp_refs_add=[common_pb2.ComponentRef(path='Foo')])
+
+    mockGetFilterRules.return_value = [
+        filterrules_helpers.MakeRule('component:Foo', default_owner_id=222L)]
+
+    request = issues_pb2.PresubmitIssueRequest(
+        issue_ref=issue_ref, issue_delta=issue_delta)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.issues_svcr.PresubmitIssue, mc, request)
+
+    self.assertEqual(
+        [common_pb2.ValueAndWhy(
+            value='approver2@example.com',
+            why='Added by rule: IF component:Foo THEN SET DEFAULT OWNER')],
+        [vnw for vnw in response.derived_owners])
+
+  @patch('testing.fake.FeaturesService.GetFilterRules')
+  def testPresubmitIssue_DerivedCCs(self, mockGetFilterRules):
+    """Test that we can match field rules and return derived cc emails."""
+    field_id = self.AddField('Foo', field_type_str='ENUM_TYPE')
+    issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
+    issue_delta = issues_pb2.IssueDelta(
+        owner_ref=common_pb2.UserRef(user_id=111L),
+        field_vals_add=[issue_objects_pb2.FieldValue(
+            value='Bar', field_ref=common_pb2.FieldRef(field_id=field_id))])
+
+    mockGetFilterRules.return_value = [
+        filterrules_helpers.MakeRule('Foo=Bar', add_cc_ids=[222L, 333L])]
+
+    request = issues_pb2.PresubmitIssueRequest(
+        issue_ref=issue_ref, issue_delta=issue_delta)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.issues_svcr.PresubmitIssue, mc, request)
+
+    self.assertEqual(
+        [common_pb2.ValueAndWhy(
+            value='approver2@example.com',
+            why='Added by rule: IF Foo=Bar THEN ADD CC'),
+         common_pb2.ValueAndWhy(
+            value='approver3@example.com',
+            why='Added by rule: IF Foo=Bar THEN ADD CC')],
+        [vnw for vnw in response.derived_ccs])
+
+  @patch('testing.fake.FeaturesService.GetFilterRules')
+  def testPresubmitIssue_Warnings(self, mockGetFilterRules):
+    """Test that we can match owner rules and return warnings."""
+    issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
+    issue_delta = issues_pb2.IssueDelta(
+        owner_ref=common_pb2.UserRef(user_id=111L))
+
+    mockGetFilterRules.return_value = [
+        filterrules_helpers.MakeRule(
+            'owner:owner@example.com', warning='Owner is too busy')]
+
+    request = issues_pb2.PresubmitIssueRequest(
+        issue_ref=issue_ref, issue_delta=issue_delta)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.issues_svcr.PresubmitIssue, mc, request)
+
+    self.assertEqual(
+        [common_pb2.ValueAndWhy(
+            value='Owner is too busy',
+            why='Added by rule: IF owner:owner@example.com THEN ADD WARNING')],
+        [vnw for vnw in response.warnings])
+
+  @patch('testing.fake.FeaturesService.GetFilterRules')
+  def testPresubmitIssue_Errors(self, mockGetFilterRules):
+    """Test that we can match owner rules and return errors."""
+    issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
+    issue_delta = issues_pb2.IssueDelta(
+        owner_ref=common_pb2.UserRef(user_id=111L),
+        cc_refs_add=[
+            common_pb2.UserRef(user_id=222L),
+            common_pb2.UserRef(user_id=333L)])
+
+    mockGetFilterRules.return_value = [
+        filterrules_helpers.MakeRule(
+            'owner:owner@example.com', error='Owner is not to be disturbed')]
+
+    request = issues_pb2.PresubmitIssueRequest(
+        issue_ref=issue_ref, issue_delta=issue_delta)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.issues_svcr.PresubmitIssue, mc, request)
+
+    self.assertEqual(
+        [common_pb2.ValueAndWhy(
+            value='Owner is not to be disturbed',
+            why='Added by rule: IF owner:owner@example.com THEN ADD ERROR')],
+        [vnw for vnw in response.errors])

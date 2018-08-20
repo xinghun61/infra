@@ -837,6 +837,67 @@ class HelpersTest(unittest.TestCase):
   # AddIssueStarrers is tested in IssueMergeTest.testMergeIssueStars().
   # IsMergeAllowed is tested in IssueMergeTest.
 
+  def testPairDerivedValuesWithRuleExplanations_Nothing(self):
+    """Test we return nothing for an issue with no derived values."""
+    proposed_issue = tracker_pb2.Issue()  # No derived values.
+    traces = {}
+    derived_users_by_id = {}
+    actual = tracker_helpers.PairDerivedValuesWithRuleExplanations(
+        proposed_issue, traces, derived_users_by_id)
+    (derived_labels_and_why, derived_owner_and_why,
+     derived_cc_and_why, warnings_and_why, errors_and_why) = actual
+    self.assertEqual([], derived_labels_and_why)
+    self.assertEqual([], derived_owner_and_why)
+    self.assertEqual([], derived_cc_and_why)
+    self.assertEqual([], warnings_and_why)
+    self.assertEqual([], errors_and_why)
+
+  def testPairDerivedValuesWithRuleExplanations_SomeValues(self):
+    """Test we return derived values and explanations for an issue."""
+    proposed_issue = tracker_pb2.Issue(
+        derived_owner_id=111L, derived_cc_ids=[222L, 333L],
+        derived_labels=['aaa', 'zzz'],
+        derived_warnings=['Watch out'],
+        derived_errors=['Status Assigned requires an owner'])
+    traces = {
+        (tracker_pb2.FieldID.OWNER, 111L): 'explain 1',
+        (tracker_pb2.FieldID.CC, 222L): 'explain 2',
+        (tracker_pb2.FieldID.CC, 333L): 'explain 3',
+        (tracker_pb2.FieldID.LABELS, 'aaa'): 'explain 4',
+        (tracker_pb2.FieldID.WARNING, 'Watch out'): 'explain 6',
+        (tracker_pb2.FieldID.ERROR,
+         'Status Assigned requires an owner'): 'explain 7',
+        # There can be extra traces that are not used.
+        (tracker_pb2.FieldID.LABELS, 'bbb'): 'explain 5',
+        # If there is no trace for some derived value, why is None.
+        }
+    derived_users_by_id = {
+      111L: testing_helpers.Blank(email='one@example.com'),
+      222L: testing_helpers.Blank(email='two@example.com'),
+      333L: testing_helpers.Blank(email='three@example.com'),
+      }
+    actual = tracker_helpers.PairDerivedValuesWithRuleExplanations(
+        proposed_issue, traces, derived_users_by_id)
+    (derived_labels_and_why, derived_owner_and_why,
+     derived_cc_and_why, warnings_and_why, errors_and_why) = actual
+    self.assertEqual([
+        {'value': 'aaa', 'why': 'explain 4'},
+        {'value': 'zzz', 'why': None},
+        ], derived_labels_and_why)
+    self.assertEqual([
+        {'value': 'one@example.com', 'why': 'explain 1'},
+        ], derived_owner_and_why)
+    self.assertEqual([
+        {'value': 'two@example.com', 'why': 'explain 2'},
+        {'value': 'three@example.com', 'why': 'explain 3'},
+        ], derived_cc_and_why)
+    self.assertEqual([
+        {'value': 'Watch out', 'why': 'explain 6'},
+        ], warnings_and_why)
+    self.assertEqual([
+        {'value': 'Status Assigned requires an owner', 'why': 'explain 7'},
+        ], errors_and_why)
+
 
 class MakeViewsForUsersInIssuesTest(unittest.TestCase):
 
@@ -863,7 +924,7 @@ class MakeViewsForUsersInIssuesTest(unittest.TestCase):
     issue_list = [self.issue1, self.issue2, self.issue3]
     users_by_id = tracker_helpers.MakeViewsForUsersInIssues(
         'fake cnxn', issue_list, self.user)
-    self.assertItemsEqual([1, 1001, 1002, 1003, 2001, 2002, 3002],
+    self.assertItemsEqual([0, 1, 1001, 1002, 1003, 2001, 2002, 3002],
                           users_by_id.keys())
     for user_id in [1001, 1002, 1003, 2001]:
       self.assertEqual(users_by_id[user_id].user_id, user_id)
@@ -872,7 +933,7 @@ class MakeViewsForUsersInIssuesTest(unittest.TestCase):
     issue_list = [self.issue1, self.issue2, self.issue3]
     users_by_id = tracker_helpers.MakeViewsForUsersInIssues(
         'fake cnxn', issue_list, self.user, omit_ids=[1001, 1003])
-    self.assertItemsEqual([1, 1002, 2001, 2002, 3002], users_by_id.keys())
+    self.assertItemsEqual([0, 1, 1002, 2001, 2002, 3002], users_by_id.keys())
     for user_id in [1002, 2001, 2002, 3002]:
       self.assertEqual(users_by_id[user_id].user_id, user_id)
 
@@ -881,6 +942,8 @@ class MakeViewsForUsersInIssuesTest(unittest.TestCase):
     users_by_id = tracker_helpers.MakeViewsForUsersInIssues(
         'fake cnxn', issue_list, self.user)
     self.assertItemsEqual([], users_by_id.keys())
+
+  # TODO(ehmaldonado): Write tests for MakeProposedIssue
 
 
 class GetAllIssueProjectsTest(unittest.TestCase):

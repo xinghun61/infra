@@ -27,9 +27,11 @@ from framework import permissions
 from framework import sorting
 from framework import template_helpers
 from framework import urls
+from proto import tracker_pb2
+from services import client_config_svc
+from tracker import field_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_constants
-from services import client_config_svc
 
 
 # HTML input field names for blocked on and blocking issue refs.
@@ -402,6 +404,97 @@ def _ParseBlockers(cnxn, post_data, services, errors, default_project_name,
   blocker_iids.sort()
   dangling_ref_tuples.sort()
   return ParsedBlockers(entered_str, blocker_iids, dangling_ref_tuples)
+
+
+def PairDerivedValuesWithRuleExplanations(
+    proposed_issue, traces, derived_users_by_id):
+  """Pair up values and explanations into JSON objects."""
+  derived_labels_and_why = [
+      {'value': lab,
+       'why': traces.get((tracker_pb2.FieldID.LABELS, lab))}
+      for lab in proposed_issue.derived_labels]
+  derived_owner_and_why = []
+  if proposed_issue.derived_owner_id:
+    derived_owner_and_why = [{
+        'value': derived_users_by_id[proposed_issue.derived_owner_id].email,
+        'why': traces.get(
+            (tracker_pb2.FieldID.OWNER, proposed_issue.derived_owner_id))}]
+  derived_cc_and_why = [
+      {'value': derived_users_by_id[cc_id].email,
+       'why': traces.get((tracker_pb2.FieldID.CC, cc_id))}
+      for cc_id in proposed_issue.derived_cc_ids
+      if cc_id in derived_users_by_id and derived_users_by_id[cc_id].email]
+
+  warnings_and_why = [
+      {'value': warning,
+       'why': traces.get((tracker_pb2.FieldID.WARNING, warning))}
+      for warning in proposed_issue.derived_warnings]
+
+  errors_and_why = [
+      {'value': error,
+       'why': traces.get((tracker_pb2.FieldID.ERROR, error))}
+      for error in proposed_issue.derived_errors]
+
+  return (derived_labels_and_why, derived_owner_and_why, derived_cc_and_why,
+          warnings_and_why, errors_and_why)
+
+
+def MakeProposedIssue(cnxn, config, project, local_id, issue_delta,
+                      existing_issue, errors, user_service):
+  """Convert an IssueDelta object to an Issue PB.
+
+  Create an Issue PB with the summary, status, owner, labels, components and
+  fields added by the IssueDelta object.
+
+  Args:
+    cnxn: connection to SQL database.
+    config: the config of the issue's project.
+    project: the issue's Project PB.
+    local_id: the local ID of the current issue, if any.
+    issue_delta: an IssueDelta object to be converted.
+    existing_issue: the existing Issue PB corresponding to the IssueDelta, if
+        any. Used to get the attachment and star count.
+    errors: object to accumulate validation error info.
+    user_service: Connection to User backend storage.
+  Returns:
+    An Issue PB initialized from the fields in the IssueDelta object.
+  """
+  component_ids = LookupComponentIDs(
+      [component.path for component in issue_delta.comp_refs_add], config,
+      errors)
+
+  labels = [label.label for label in issue_delta.label_refs_add]
+  labels_remove = [label.label for label in issue_delta.label_refs_remove]
+
+  field_vals = {}
+  for field_val in issue_delta.field_vals_add:
+    field_vals.setdefault(field_val.field_ref.field_id, []).append(
+        field_val.value)
+
+  field_vals_remove = {}
+  for field_val in issue_delta.field_vals_remove:
+    field_vals_remove.setdefault(field_val.field_ref.field_id, []).append(
+        field_val.value)
+
+  field_helpers.ShiftEnumFieldsIntoLabels(
+      labels, labels_remove, field_vals, field_vals_remove, config)
+  field_values = field_helpers.ParseFieldValues(
+      cnxn, user_service, field_vals, config)
+  proposed_issue = tracker_pb2.Issue(
+      project_id=project.project_id,
+      local_id=local_id,
+      summary=issue_delta.summary.value,
+      status=issue_delta.status.value,
+      owner_id=issue_delta.owner_ref.user_id,
+      labels=labels,
+      component_ids=component_ids,
+      project_name=project.project_name,
+      field_values=field_values)
+  if existing_issue:
+    proposed_issue.attachment_count = existing_issue.attachment_count
+    proposed_issue.star_count = existing_issue.star_count
+
+  return proposed_issue
 
 
 def IsValidIssueOwner(cnxn, project, owner_id, services):

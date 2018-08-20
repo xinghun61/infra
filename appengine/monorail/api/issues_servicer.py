@@ -13,6 +13,7 @@ from api.api_proto import issue_objects_pb2
 from api.api_proto import issues_pb2
 from api.api_proto import issues_prpc_pb2
 from businesslogic import work_env
+from features import filterrules_helpers
 from features import savedqueries_helpers
 from framework import exceptions
 from framework import framework_views
@@ -32,15 +33,18 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
 
   DESCRIPTION = issues_prpc_pb2.IssuesServiceDescription
 
-  def _GetProjectIssueAndConfig(self, mc, request, use_cache=True):
+  def _GetProjectIssueAndConfig(self, mc, request, use_cache=True,
+                                issue_required=True):
     """Get three objects that we need for most requests with an issue_ref."""
+    issue = None
     with work_env.WorkEnv(mc, self.services, phase='getting P, I, C') as we:
       project = we.GetProjectByName(
           request.issue_ref.project_name, use_cache=use_cache)
       mc.LookupLoggedInUserPerms(project)
       config = we.GetProjectConfig(project.project_id, use_cache=use_cache)
-      issue = we.GetIssueByLocalID(
-        project.project_id, request.issue_ref.local_id, use_cache=use_cache)
+      if issue_required or request.issue_ref.local_id:
+        issue = we.GetIssueByLocalID(
+          project.project_id, request.issue_ref.local_id, use_cache=use_cache)
     return project, issue, config
 
   @monorail_servicer.PRPCMethod
@@ -309,3 +313,45 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     response.unsupported_field.extend(unsupported_fields)
     response.unsupported_field.extend(warnings)
     return response
+
+  @monorail_servicer.PRPCMethod
+  def PresubmitIssue(self, mc, request):
+    """Provide the UI with warnings and suggestions."""
+    project, existing_issue, config = self._GetProjectIssueAndConfig(
+        mc, request, issue_required=False)
+
+    with mc.profiler.Phase('making user views'):
+      users_by_id = framework_views.MakeAllUserViews(
+          mc.cnxn, self.services.user, [request.issue_delta.owner_ref.user_id])
+      proposed_owner_view = users_by_id[request.issue_delta.owner_ref.user_id]
+
+    with mc.profiler.Phase('initializing proposed_issue'):
+      proposed_issue = tracker_helpers.MakeProposedIssue(
+          mc.cnxn, config, project, request.issue_ref.local_id,
+          request.issue_delta, existing_issue, mc.errors, self.services.user)
+
+    with mc.profiler.Phase('applying rules'):
+      _, traces = filterrules_helpers.ApplyFilterRules(
+          mc.cnxn, self.services, proposed_issue, config)
+      logging.info('proposed_issue is now: %r', proposed_issue)
+      logging.info('traces are: %r', traces)
+
+    with mc.profiler.Phase('making derived user views'):
+      derived_users_by_id = framework_views.MakeAllUserViews(
+          mc.cnxn, self.services.user, [proposed_issue.derived_owner_id],
+          proposed_issue.derived_cc_ids)
+
+    with mc.profiler.Phase('pair derived values with rule explanations'):
+      (derived_labels, derived_owners, derived_ccs, warnings, errors) = (
+          tracker_helpers.PairDerivedValuesWithRuleExplanations(
+              proposed_issue, traces, derived_users_by_id))
+
+    result = issues_pb2.PresubmitIssueResponse(
+        owner_availability=proposed_owner_view.avail_message_short,
+        owner_availability_state=proposed_owner_view.avail_state,
+        derived_labels=converters.ConvertValueAndWhyList(derived_labels),
+        derived_owners=converters.ConvertValueAndWhyList(derived_owners),
+        derived_ccs=converters.ConvertValueAndWhyList(derived_ccs),
+        warnings=converters.ConvertValueAndWhyList(warnings),
+        errors=converters.ConvertValueAndWhyList(errors))
+    return result

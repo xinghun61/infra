@@ -91,7 +91,7 @@ class IssuePresubmitJSON(jsonfeed.JsonFeed):
     with mr.profiler.Phase('pair derived values with rule explanations'):
       (derived_labels_and_why, derived_owner_and_why,
        derived_cc_and_why, warnings_and_why, errors_and_why
-       ) = PairDerivedValuesWithRuleExplanations(
+       ) = tracker_helpers.PairDerivedValuesWithRuleExplanations(
           proposed_issue, traces, derived_users_by_id)
 
     return {
@@ -122,37 +122,3 @@ class IssuePresubmitJSON(jsonfeed.JsonFeed):
       proposed_issue.attachment_count = existing_issue.attachment_count
       proposed_issue.star_count = existing_issue.star_count
     return proposed_issue
-
-
-def PairDerivedValuesWithRuleExplanations(
-    proposed_issue, traces, derived_users_by_id):
-  """Pair up values and explanations into JSON objects."""
-  derived_labels_and_why = [
-      {'value': lab,
-       'why': traces.get((tracker_pb2.FieldID.LABELS, lab))}
-      for lab in proposed_issue.derived_labels]
-  derived_owner_and_why = []
-  if proposed_issue.derived_owner_id:
-    derived_owner_and_why = [{
-        'value': derived_users_by_id[proposed_issue.derived_owner_id].email,
-        'why': traces.get(
-            (tracker_pb2.FieldID.OWNER, proposed_issue.derived_owner_id)),
-        }]
-  derived_cc_and_why = [
-      {'value': derived_users_by_id[cc_id].email,
-       'why': traces.get((tracker_pb2.FieldID.CC, cc_id))}
-      for cc_id in proposed_issue.derived_cc_ids
-      if cc_id in derived_users_by_id and derived_users_by_id[cc_id].email]
-
-  warnings_and_why = [
-      {'value': warning,
-       'why': traces.get((tracker_pb2.FieldID.WARNING, warning))}
-      for warning in proposed_issue.derived_warnings]
-
-  errors_and_why = [
-      {'value': error,
-       'why': traces.get((tracker_pb2.FieldID.ERROR, error))}
-      for error in proposed_issue.derived_errors]
-
-  return (derived_labels_and_why, derived_owner_and_why, derived_cc_and_why,
-          warnings_and_why, errors_and_why)

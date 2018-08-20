@@ -1210,3 +1210,24 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual('A fake hotlist.', actual.summary)
     self.assertEqual(
         'Detailed description of the fake hotlist.', actual.description)
+
+  def testConvertValueAndWhy(self):
+    """We can covert a dict wth 'why' and 'value' fields to a ValueAndWhy PB."""
+    actual = converters.ConvertValueAndWhy({'value': 'Foo', 'why': 'Because'})
+    self.assertEqual(
+        common_pb2.ValueAndWhy(value='Foo', why='Because'),
+        actual)
+
+  def testConvertValueAndWhyList(self):
+    """We can convert a list of value and why dicts."""
+    actual = converters.ConvertValueAndWhyList([
+        {'value': 'A', 'why': 'Because A'},
+        {'value': 'B'},
+        {'why': 'Why what?'},
+        {}])
+    self.assertEqual(
+        [common_pb2.ValueAndWhy(value='A', why='Because A'),
+         common_pb2.ValueAndWhy(value='B'),
+         common_pb2.ValueAndWhy(why='Why what?'),
+         common_pb2.ValueAndWhy()],
+        actual)

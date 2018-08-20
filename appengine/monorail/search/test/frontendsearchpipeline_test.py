@@ -190,7 +190,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
     self.assertEqual(
       [self.issue_1, self.issue_3, self.issue_2],  # high, medium, low.
       pipeline.allowed_results)
-    self.assertEqual([111L], pipeline.users_by_id.keys())
+    self.assertEqual([0, 111L], pipeline.users_by_id.keys())
 
   def testDetermineIssuePosition_Normal(self):
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
@@ -372,7 +372,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
     self.assertEqual([], pipeline.users_by_id.keys())
 
     pipeline._LookupNeededUsers([self.issue_1, self.issue_2, self.issue_3])
-    self.assertEqual([111L], pipeline.users_by_id.keys())
+    self.assertEqual([0, 111L], pipeline.users_by_id.keys())
 
   def testPaginate_Grid(self):
     self.mr.mode = 'grid'
