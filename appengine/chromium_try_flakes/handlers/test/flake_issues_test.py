@@ -1421,8 +1421,7 @@ class TestOverrideIssueID(testing.AppengineTestCase):
     self.assertTrue(mock_api.getIssues.called)
     args, _ = mock_api.getIssues.call_args
     self.assertEqual(
-      ('summary:test reporter:findit-for-me@appspot.gserviceaccount.com '
-       'is:open',), args)
+      ('Flaky-Test=test is:open',), args)
     mock_api.reset_mock()
 
     mock_issue = mock.MagicMock()
@@ -1435,8 +1434,7 @@ class TestOverrideIssueID(testing.AppengineTestCase):
     self.assertTrue(mock_api.getIssues.called)
     args, _ = mock_api.getIssues.call_args
     self.assertEqual(
-      ('summary:test reporter:findit-for-me@appspot.gserviceaccount.com '
-       'is:open',), args)
+      ('Flaky-Test=test is:open',), args)
     mock_api.reset_mock()
 
     mock_issue = mock.MagicMock()
@@ -1449,6 +1447,5 @@ class TestOverrideIssueID(testing.AppengineTestCase):
     self.assertTrue(mock_api.getIssues.called)
     args, _ = mock_api.getIssues.call_args
     self.assertEqual(
-      ('summary:test reporter:findit-for-me@appspot.gserviceaccount.com '
-       'is:open',), args)
+      ('Flaky-Test=test is:open',), args)
     mock_api.reset_mock()

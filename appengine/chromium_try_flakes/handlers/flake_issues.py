@@ -153,12 +153,10 @@ def get_existing_issue(api, test_name):
   Returns:
     (int) issue if one exists, None otherwise.
   """
-  # TODO(crbug.com/790545): Use customized fields when they're available.
   assert test_name
 
-  query = ('summary:{} reporter:findit-for-me@appspot.gserviceaccount.com'
-           ' is:open'.format(test_name))
-
+  # FindIt always files flaky test bugs using Flaky-Test customized field.
+  query = 'Flaky-Test={} is:open'.format(test_name)
   current_issues = api.getIssues(query)
   if current_issues is None:
     return None
@@ -507,7 +505,8 @@ class ProcessIssue(webapp2.RequestHandler):
 
     flake.num_reported_flaky_runs_to_findit = len(flake.occurrences)
 
-  @ndb.transactional(xg=True)
+
+  @ndb.transactional(xg=True) # pylint: disable=no-value-for-parameter
   def post(self, urlsafe_key):
     flake = ndb.Key(urlsafe=urlsafe_key).get()
     if not flake: # pragma: no cover

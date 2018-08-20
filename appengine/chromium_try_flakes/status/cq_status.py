@@ -213,7 +213,7 @@ def delete_old_flake_occurrences():
 
 def get_int_value(properties, key):
   value = properties[key]
-  if type(value) == type(list()):
+  if isinstance(value, list):
     value = value[0]
   return int(value)
 
