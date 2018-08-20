@@ -46,20 +46,20 @@ func TestBasicPrioritization(t *testing.T) {
 			types.State{
 				Balances: map[string]*vector.Vector{"a1": vector.New(1, 0, 0)},
 				Requests: map[string]*task.Request{
-					"t1": &task.Request{Id: "t1", AccountId: "a1"},
+					"t1": &task.Request{AccountId: "a1"},
 				},
 			},
 			*types.NewConfig(),
-			[]Request{{Priority: 0, Request: &task.Request{Id: "t1", AccountId: "a1"}}},
+			[]Request{{RequestId: "t1", Priority: 0, Request: &task.Request{AccountId: "a1"}}},
 		},
 
 		// One request without quota, should be in the FreeBucket.
 		{
 			types.State{
-				Requests: map[string]*task.Request{"t1": &task.Request{Id: "t1"}},
+				Requests: map[string]*task.Request{"t1": &task.Request{}},
 			},
 			*types.NewConfig(),
-			[]Request{{Priority: account.FreeBucket, Request: &task.Request{Id: "t1"}}},
+			[]Request{{RequestId: "t1", Priority: account.FreeBucket, Request: &task.Request{}}},
 		},
 	}
 
@@ -81,8 +81,8 @@ func TestPrioritizeWithEnqueueTimeTieBreaker(t *testing.T) {
 	eT := toStamp(e)
 	lT := toStamp(l)
 
-	eR := task.Request{AccountId: "a1", Id: "t1", EnqueueTime: eT}
-	lR := task.Request{AccountId: "a1", Id: "t2", EnqueueTime: lT}
+	eR := task.Request{AccountId: "a1", EnqueueTime: eT}
+	lR := task.Request{AccountId: "a1", EnqueueTime: lT}
 
 	state := types.State{
 		Balances: map[string]*vector.Vector{"a1": vector.New(1, 0, 0)},
@@ -93,8 +93,8 @@ func TestPrioritizeWithEnqueueTimeTieBreaker(t *testing.T) {
 	}
 	actual := PrioritizeRequests(&state, types.NewConfig())
 	expected := OrderedRequests([]Request{
-		{Priority: 0, Request: &eR},
-		{Priority: 0, Request: &lR},
+		{RequestId: "t1", Priority: 0, Request: &eR},
+		{RequestId: "t2", Priority: 0, Request: &lR},
 	})
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Got %+v, want %+v", actual, expected)
@@ -113,17 +113,17 @@ func TestDemoteBeyondFanout(t *testing.T) {
 		},
 	}
 	running := []*task.Run{
-		{Priority: 0, Request: &task.Request{AccountId: "a1", Id: "1"}},
-		{Priority: 0, Request: &task.Request{AccountId: "a1", Id: "2"}},
-		{Priority: 0, Request: &task.Request{AccountId: "a2", Id: "3"}},
-		{Priority: account.FreeBucket, Request: &task.Request{AccountId: "a3", Id: "4"}},
+		{RequestId: "1", Priority: 0, Request: &task.Request{AccountId: "a1"}},
+		{RequestId: "2", Priority: 0, Request: &task.Request{AccountId: "a1"}},
+		{RequestId: "3", Priority: 0, Request: &task.Request{AccountId: "a2"}},
+		{RequestId: "4", Priority: account.FreeBucket, Request: &task.Request{AccountId: "a3"}},
 	}
 	workers := getWorkers(running)
 
-	r1 := task.Request{AccountId: "a1", Id: "5"}
-	r2 := task.Request{AccountId: "a1", Id: "6"}
-	r3 := task.Request{AccountId: "a2", Id: "7"}
-	r4 := task.Request{AccountId: "a3", Id: "8"}
+	r1 := task.Request{AccountId: "a1"}
+	r2 := task.Request{AccountId: "a1"}
+	r3 := task.Request{AccountId: "a2"}
+	r4 := task.Request{AccountId: "a3"}
 	reqs := map[string]*task.Request{
 		"5": &r1,
 		"6": &r2,
@@ -140,19 +140,19 @@ func TestDemoteBeyondFanout(t *testing.T) {
 	}
 
 	priList := []Request{
-		{Priority: 0, Request: &r1},
-		{Priority: 0, Request: &r2},
-		{Priority: 0, Request: &r3},
-		{Priority: account.FreeBucket, Request: &r4},
+		{RequestId: "5", Priority: 0, Request: &r1},
+		{RequestId: "6", Priority: 0, Request: &r2},
+		{RequestId: "7", Priority: 0, Request: &r3},
+		{RequestId: "8", Priority: account.FreeBucket, Request: &r4},
 	}
 
 	expected := []Request{
-		{Priority: 0, Request: &r1},
+		{RequestId: "5", Priority: 0, Request: &r1},
 		// This request got demoted from P0 to FreeBucket because it
 		// exceeded the account's max fanout.
-		{Priority: account.FreeBucket, Request: &r2},
-		{Priority: 0, Request: &r3},
-		{Priority: account.FreeBucket, Request: &r4},
+		{RequestId: "6", Priority: account.FreeBucket, Request: &r2},
+		{RequestId: "7", Priority: 0, Request: &r3},
+		{RequestId: "8", Priority: account.FreeBucket, Request: &r4},
 	}
 
 	demoteTasksBeyondFanout(priList, state, config)
@@ -206,13 +206,13 @@ func TestPrioritize(t *testing.T) {
 
 	// 6 Jobs are requested. 3 for A1, 1 for each of the remaining
 	// A3's requests are the earliest, and 1 second apart.
-	req1 := task.Request{AccountId: a1, EnqueueTime: atTime(0), Id: "1"}
-	req2 := task.Request{AccountId: a1, EnqueueTime: atTime(1), Id: "2"}
-	req3 := task.Request{AccountId: a1, EnqueueTime: atTime(2), Id: "3"}
+	req1 := task.Request{AccountId: a1, EnqueueTime: atTime(0)}
+	req2 := task.Request{AccountId: a1, EnqueueTime: atTime(1)}
+	req3 := task.Request{AccountId: a1, EnqueueTime: atTime(2)}
 	// The remaining requests are later by 1 second each.
-	req4 := task.Request{AccountId: a2, EnqueueTime: atTime(3), Id: "4"}
-	req5 := task.Request{AccountId: a3, EnqueueTime: atTime(4), Id: "5"}
-	req6 := task.Request{AccountId: a4, EnqueueTime: atTime(5), Id: "6"}
+	req4 := task.Request{AccountId: a2, EnqueueTime: atTime(3)}
+	req5 := task.Request{AccountId: a3, EnqueueTime: atTime(4)}
+	req6 := task.Request{AccountId: a4, EnqueueTime: atTime(5)}
 
 	reqs := map[string]*task.Request{
 		"1": &req1,
@@ -231,14 +231,14 @@ func TestPrioritize(t *testing.T) {
 
 	expected := OrderedRequests([]Request{
 		// A1 gets one additional request at P0, prior to overflowing fanout.
-		{Priority: 0, Request: &req1},
+		{RequestId: "1", Priority: 0, Request: &req1},
 		// A2 gets a P1 request.
-		{Priority: 1, Request: &req4},
+		{RequestId: "4", Priority: 1, Request: &req4},
 		// Remaining requests are all in the free bucket, ordered by enqueue time.
-		{Priority: account.FreeBucket, Request: &req2},
-		{Priority: account.FreeBucket, Request: &req3},
-		{Priority: account.FreeBucket, Request: &req5},
-		{Priority: account.FreeBucket, Request: &req6},
+		{RequestId: "2", Priority: account.FreeBucket, Request: &req2},
+		{RequestId: "3", Priority: account.FreeBucket, Request: &req3},
+		{RequestId: "5", Priority: account.FreeBucket, Request: &req5},
+		{RequestId: "6", Priority: account.FreeBucket, Request: &req6},
 	})
 
 	actual := PrioritizeRequests(state, config)
@@ -308,7 +308,7 @@ func getWorkers(running []*task.Run) map[string]*types.Worker {
 	workers := make(map[string]*types.Worker)
 	for i, r := range running {
 		wid := fmt.Sprintf("w%d", i)
-		workers[wid] = &types.Worker{Id: wid, Labels: []string{}, RunningTask: r}
+		workers[wid] = &types.Worker{Labels: []string{}, RunningTask: r}
 	}
 	return workers
 }

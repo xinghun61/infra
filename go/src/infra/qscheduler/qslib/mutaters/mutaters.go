@@ -38,12 +38,13 @@ type Mutater interface {
 func (m *AssignIdleWorker) Mutate(state *types.State) {
 	w := state.Workers[m.WorkerId]
 	if !w.IsIdle() {
-		panic(fmt.Sprintf("Worker %s is not idle, it is running task %s.", m.WorkerId, w.RunningTask.Request.Id))
+		panic(fmt.Sprintf("Worker %s is not idle, it is running task %s.", m.WorkerId, w.RunningTask.RequestId))
 	}
 	rt := &task.Run{
-		Priority: m.Priority,
-		Request:  state.Requests[m.RequestId],
-		Cost:     vector.New(),
+		Priority:  m.Priority,
+		Request:   state.Requests[m.RequestId],
+		Cost:      vector.New(),
+		RequestId: m.RequestId,
 	}
 	delete(state.Requests, m.RequestId)
 	state.Workers[m.WorkerId].RunningTask = rt
@@ -61,20 +62,29 @@ func (m *ChangePriority) Mutate(state *types.State) {
 // Interrupt the current task on a worker with a new task. Reimburse the
 // interrupted account with funds from the interrupting account.
 func (m *PreemptTask) Mutate(state *types.State) {
-	w := state.Workers[m.WorkerId]
-	cost := w.RunningTask.Cost
-	oT := w.RunningTask
-	nT := state.Requests[m.RequestId]
-	oAcc := w.RunningTask.Request.AccountId
-	nAcc := nT.AccountId
+	worker, ok := state.Workers[m.WorkerId]
+	if !ok {
+		panic(fmt.Sprintf("No worker with id %s", m.WorkerId))
+	}
 
-	oBal := state.Balances[oAcc].Plus(*cost)
-	state.Balances[oAcc] = &oBal
+	cost := worker.RunningTask.Cost
+	oldTask := worker.RunningTask
 
-	nBal := state.Balances[nAcc].Minus(*cost)
-	state.Balances[nAcc] = &nBal
+	newTask, ok := state.Requests[m.RequestId]
+	if !ok {
+		panic(fmt.Sprintf("No task with id %s", m.RequestId))
+	}
+
+	oldAcc := worker.RunningTask.Request.AccountId
+	newAcc := newTask.AccountId
+
+	oldBal := state.Balances[oldAcc].Plus(*cost)
+	state.Balances[oldAcc] = &oldBal
+
+	newBal := state.Balances[newAcc].Minus(*cost)
+	state.Balances[newAcc] = &newBal
 
 	delete(state.Requests, m.RequestId)
-	state.Requests[oT.Request.Id] = oT.Request
-	w.RunningTask = &task.Run{Cost: cost, Priority: m.Priority, Request: nT}
+	state.Requests[oldTask.RequestId] = oldTask.Request
+	worker.RunningTask = &task.Run{Cost: cost, Priority: m.Priority, Request: newTask, RequestId: m.RequestId}
 }

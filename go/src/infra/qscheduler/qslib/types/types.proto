@@ -25,9 +25,13 @@ import "infra/qscheduler/qslib/types/account/account.proto";
 // because the quota scheduler algorithm is expected to run against a pool of
 // otherwise homogenous workers.
 message Worker {
-  string id = 1;
-  repeated string labels = 2;
-  task.Run running_task = 3;
+  // Labels represents the set of provisionable labels that this worker
+  // possesses.
+  repeated string labels = 1;
+
+  // RunningTask is, if non-nil, the task that is currently running on the
+  // worker.
+  task.Run running_task = 2;
 }
 
 // State represents the overall state of a quota scheduler worker pool,

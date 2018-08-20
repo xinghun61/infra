@@ -35,8 +35,9 @@ import (
 // for it (based on quota account balance, max fanout for that account, and
 // FIFO ordering).
 type Request struct {
-	Priority int32
-	Request  *task.Request
+	RequestId string
+	Priority  int32
+	Request   *task.Request
 	// Flag used within scheduler to indicate that a request is already handled.
 	// TODO: This doesn't quite fit the abstraction of this package, consider
 	// moving this tracking to scheduler package, where it is actually used.
@@ -63,12 +64,13 @@ func PrioritizeRequests(state *types.State, config *types.Config) OrderedRequest
 	// Initial pass: compute priority for each task based purely on account
 	// balance.
 	requests := make(OrderedRequests, 0, len(state.Requests))
-	for _, req := range state.Requests {
+	for id, req := range state.Requests {
 		accoutBalance := state.Balances[req.AccountId]
 		p := account.BestPriorityFor(accoutBalance)
 		requests = append(requests, Request{
-			Priority: p,
-			Request:  req,
+			Priority:  p,
+			Request:   req,
+			RequestId: id,
 		})
 	}
 

@@ -42,12 +42,12 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 	t.Parallel()
 	state := types.State{
 		Workers: map[string]*types.Worker{
-			"w0": &types.Worker{Id: "w0"},
-			"w1": &types.Worker{Id: "w1", Labels: []string{"label1"}},
+			"w0": types.NewWorker(),
+			"w1": &types.Worker{Labels: []string{"label1"}},
 		},
 		Requests: map[string]*task.Request{
-			"t1": &task.Request{Id: "t1", AccountId: "a1", Labels: []string{"label1"}},
-			"t2": &task.Request{Id: "t2", AccountId: "a1", Labels: []string{"label2"}},
+			"t1": &task.Request{AccountId: "a1", Labels: []string{"label1"}},
+			"t2": &task.Request{AccountId: "a1", Labels: []string{"label2"}},
 		},
 		Balances: map[string]*vector.Vector{
 			"a1": vector.New(2, 0, 0),
@@ -83,34 +83,31 @@ func TestReprioritize(t *testing.T) {
 			"a1": vector.New(2*account.DemoteThreshold, 2*account.PromoteThreshold, 0),
 		},
 		Workers: map[string]*types.Worker{
-			"w1": &types.Worker{Id: "w1",
+			"w1": &types.Worker{
 				RunningTask: &task.Run{
 					Cost:     vector.New(1),
 					Priority: 0,
-					Request:  &task.Request{Id: "t1", AccountId: "a1"},
+					Request:  &task.Request{AccountId: "a1"},
 				},
 			},
 			"w2": &types.Worker{
-				Id: "w2",
 				RunningTask: &task.Run{
 					Priority: 0,
-					Request:  &task.Request{Id: "t2", AccountId: "a1"},
+					Request:  &task.Request{AccountId: "a1"},
 					Cost:     vector.New(),
 				},
 			},
 			"w3": &types.Worker{
-				Id: "w3",
 				RunningTask: &task.Run{
 					Cost:     vector.New(1),
 					Priority: 2,
-					Request:  &task.Request{Id: "t3", AccountId: "a1"},
+					Request:  &task.Request{AccountId: "a1"},
 				},
 			},
 			"w4": &types.Worker{
-				Id: "w4",
 				RunningTask: &task.Run{
 					Priority: 2,
-					Request:  &task.Request{Id: "t4", AccountId: "a1"},
+					Request:  &task.Request{AccountId: "a1"},
 					Cost:     vector.New(),
 				},
 			},
@@ -140,15 +137,15 @@ func TestPreempt(t *testing.T) {
 			"a2": vector.New(1),
 		},
 		Requests: map[string]*task.Request{
-			"t1": &task.Request{AccountId: "a2", Id: "t1"},
+			"t1": &task.Request{AccountId: "a2"},
 		},
 		Workers: map[string]*types.Worker{
 			"w1": &types.Worker{
-				Id: "w1",
 				RunningTask: &task.Run{
-					Cost:     vector.New(.5, .5, .5),
-					Priority: 1,
-					Request:  &task.Request{Id: "t2", AccountId: "a1"},
+					Cost:      vector.New(.5, .5, .5),
+					Priority:  1,
+					Request:   &task.Request{AccountId: "a1"},
+					RequestId: "t2",
 				},
 			},
 		},

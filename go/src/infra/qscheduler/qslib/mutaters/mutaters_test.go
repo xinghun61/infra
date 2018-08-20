@@ -29,18 +29,18 @@ func stateForMutTest() *types.State {
 			"a2": vector.New(1),
 		},
 		Requests: map[string]*task.Request{
-			"t1": &task.Request{AccountId: "a2", Id: "t1"},
+			"t1": &task.Request{AccountId: "a2"},
 		},
 		Workers: map[string]*types.Worker{
 			"w1": &types.Worker{
-				Id: "w1",
 				RunningTask: &task.Run{
-					Cost:     vector.New(.5, .5, .5),
-					Priority: 1,
-					Request:  &task.Request{Id: "t2", AccountId: "a1"},
+					Cost:      vector.New(.5, .5, .5),
+					Priority:  1,
+					Request:   &task.Request{AccountId: "a1"},
+					RequestId: "t2",
 				},
 			},
-			"w2": &types.Worker{Id: "w2"},
+			"w2": &types.Worker{},
 		},
 	}
 }
@@ -52,10 +52,10 @@ func TestMutMatch(t *testing.T) {
 	mut.Mutate(state)
 	w2 := state.Workers["w2"]
 	if w2.RunningTask.Priority != 1 {
-		t.Errorf("incorrect priority")
+		t.Errorf("Got priority %d, want %d", w2.RunningTask.Priority, 1)
 	}
-	if w2.RunningTask.Request.Id != "t1" {
-		t.Errorf("incorect task")
+	if w2.RunningTask.RequestId != "t1" {
+		t.Errorf("Got task id %s, want %s", w2.RunningTask.RequestId, "t1")
 	}
 	_, ok := state.Requests["t1"]
 	if ok {
@@ -78,19 +78,29 @@ func TestMutPreempt(t *testing.T) {
 	state := stateForMutTest()
 	mut := PreemptTask{Priority: 0, RequestId: "t1", WorkerId: "w1"}
 	mut.Mutate(state)
-	if state.Workers["w1"].RunningTask.Request.Id != "t1" {
-		t.Errorf("incorrect task on worker")
+
+	gotId, wantId := state.Workers["w1"].RunningTask.RequestId, "t1"
+	if gotId != wantId {
+		t.Errorf("Got task id %s, want %s", gotId, wantId)
 	}
-	if state.Workers["w1"].RunningTask.Priority != 0 {
-		t.Errorf("wrong priority")
+
+	gotP, wantP := state.Workers["w1"].RunningTask.Priority, int32(0)
+	if gotP != wantP {
+		t.Errorf("Got priority %d, want %d", gotP, wantP)
 	}
-	if !state.Workers["w1"].RunningTask.Cost.Equal(*vector.New(.5, .5, .5)) {
-		t.Errorf("task has wrong cost")
+
+	gotC, wantC := state.Workers["w1"].RunningTask.Cost, *vector.New(.5, .5, .5)
+	if !gotC.Equal(wantC) {
+		t.Errorf("Got cost %+v, want %+v", gotC, wantC)
 	}
-	if !state.Balances["a2"].Equal(*vector.New(.5, -.5, -.5)) {
-		t.Errorf("paying account balance incorrect %+v", state.Balances["a2"])
+
+	gotBal, wantBal := state.Balances["a2"], *vector.New(.5, -.5, -.5)
+	if !gotBal.Equal(wantBal) {
+		t.Errorf("Got paying account balance %+v, want %+v", gotBal, wantBal)
 	}
-	if !state.Balances["a1"].Equal(*vector.New(.5, .5, .5)) {
-		t.Errorf("receiving account balance incorrect %+v", state.Balances["a1"])
+
+	gotBal, wantBal = state.Balances["a1"], *vector.New(.5, .5, .5)
+	if !gotBal.Equal(wantBal) {
+		t.Errorf("Got receiving account balance %+v, want %+v", gotBal, wantBal)
 	}
 }
