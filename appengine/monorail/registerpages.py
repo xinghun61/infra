@@ -96,7 +96,6 @@ from tracker import issueexport
 from tracker import issueimport
 from tracker import issuelist
 from tracker import issuelistcsv
-from tracker import issueoptions
 from tracker import issueoriginal
 from tracker import issuepresubmit
 from tracker import issuereindex
@@ -245,8 +244,6 @@ class ServletRegistry(object):
         urls.ISSUE_PRESUBMIT_JSON: issuepresubmit.IssuePresubmitJSON,
         urls.ISSUE_ENTRY: issueentry.IssueEntry,
         urls.ISSUE_ENTRY_AFTER_LOGIN: issueentryafterlogin.IssueEntryAfterLogin,
-        urls.ISSUE_OPTIONS_JSON: issueoptions.IssueStatusLabelOptionsJSON,
-        urls.ISSUE_OPTIONS_MEMBERS_JSON: issueoptions.IssueMembersOptionsJSON,
         urls.ISSUE_TIPS: issuetips.IssueSearchTips,
         urls.ISSUE_ATTACHMENT: issueattachment.AttachmentPage,
         urls.ISSUE_ATTACHMENT_TEXT: issueattachmenttext.AttachmentText,
