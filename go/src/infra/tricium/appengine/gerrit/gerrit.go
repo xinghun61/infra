@@ -77,7 +77,7 @@ type reviewInput struct {
 
 type robotCommentInput struct {
 	RobotID        string            `json:"robot_id"`
-	RobotRunID     string            `json:"robot_run_id"`
+	RobotRunID     string            `json:"robot_run_id,omitempty"`
 	URL            string            `json:"url,omitempty"`
 	Properties     map[string]string `json:"properties"`
 	FixSuggestions []*suggestion     `json:"fix_suggestions"`
@@ -203,8 +203,6 @@ func createRobotComment(c context.Context, runID int64, comment tricium.Data_Com
 	roco := &robotCommentInput{
 		Message:        comment.Message,
 		RobotID:        comment.Category,
-		RobotRunID:     strconv.FormatInt(runID, 10),
-		URL:            composeRunURL(c, runID),
 		Path:           comment.Path,
 		Properties:     map[string]string{"tricium_comment_uuid": comment.Id},
 		FixSuggestions: createFillSuggestions(comment.Suggestions),

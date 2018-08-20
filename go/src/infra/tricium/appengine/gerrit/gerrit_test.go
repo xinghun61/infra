@@ -49,11 +49,9 @@ func TestCreateRobotComment(t *testing.T) {
 				Category: "Hello",
 			})
 			So(roco, ShouldResemble, &robotCommentInput{
-				Message:    "Message",
-				RobotID:    "Hello",
-				RobotRunID: "1234567",
-				URL:        "https://app.example.com/run/1234567",
-				Path:       "README.md",
+				Message: "Message",
+				RobotID: "Hello",
+				Path:    "README.md",
 				Properties: map[string]string{
 					"tricium_comment_uuid": "7ae6f43d-22e9-4350-ace4-1fee9014509a",
 				},
@@ -142,8 +140,6 @@ func TestCreateRobotComment(t *testing.T) {
 			marshaledRoco, _ := json.MarshalIndent(roco, "", "  ")
 			So(string(marshaledRoco), ShouldEqual, `{
   "robot_id": "Hello",
-  "robot_run_id": "1234567",
-  "url": "https://app.example.com/run/1234567",
   "properties": {
     "tricium_comment_uuid": "7ae6f43d-22e9-4350-ace4-1fee9014509a"
   },
