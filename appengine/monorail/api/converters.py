@@ -56,7 +56,8 @@ def ConvertApproval(approval_value, users_by_id, config, phase=None):
   field_ref = ConvertFieldRef(
       approval_value.approval_id, approval_name,
       tracker_pb2.FieldTypes.APPROVAL_TYPE, None)
-  approver_refs = ConvertUserRefs(approval_value.approver_ids, [], users_by_id)
+  approver_refs = ConvertUserRefs(approval_value.approver_ids, [], users_by_id,
+                                  False)
   setter_ref = ConvertUserRef(approval_value.setter_id, None, users_by_id)
 
   status = ConvertApprovalStatus(approval_value.status)
@@ -106,19 +107,26 @@ def ConvertUserRef(explicit_user_id, derived_user_id, users_by_id):
       display_name=users_by_id[user_id].display_name)
 
 
-def ConvertUserRefs(explicit_user_ids, derived_user_ids, users_by_id):
+def ConvertUserRefs(explicit_user_ids, derived_user_ids, users_by_id,
+                    use_email):
   """Use the given user ID lists to create a list of UserRef."""
   result = []
   for user_id in explicit_user_ids:
     result.append(common_pb2.UserRef(
       user_id=user_id,
       is_derived=False,
-      display_name=users_by_id[user_id].display_name))
+      display_name=(
+          users_by_id[user_id].email
+          if use_email
+          else users_by_id[user_id].display_name)))
   for user_id in derived_user_ids:
     result.append(common_pb2.UserRef(
       user_id=user_id,
       is_derived=True,
-      display_name=users_by_id[user_id].display_name))
+      display_name=(
+          users_by_id[user_id].email
+          if use_email
+          else users_by_id[user_id].display_name)))
   return result
 
 
@@ -260,7 +268,7 @@ def ConvertIssue(issue, users_by_id, related_refs, config):
   owner_ref = ConvertUserRef(
       issue.owner_id, issue.derived_owner_id, users_by_id)
   cc_refs = ConvertUserRefs(
-      issue.cc_ids, issue.derived_cc_ids, users_by_id)
+      issue.cc_ids, issue.derived_cc_ids, users_by_id, False)
   labels, derived_labels = tracker_bizobj.ExplicitAndDerivedNonMaskedLabels(
       issue, config)
   label_refs = ConvertLabels(labels, derived_labels)
@@ -646,8 +654,8 @@ def ConvertComponentDef(
         docstring=component_def.docstring,
         deprecated=component_def.deprecated)
 
-  admin_refs = ConvertUserRefs(component_def.admin_ids, [], users_by_id)
-  cc_refs = ConvertUserRefs(component_def.cc_ids, [], users_by_id)
+  admin_refs = ConvertUserRefs(component_def.admin_ids, [], users_by_id, False)
+  cc_refs = ConvertUserRefs(component_def.cc_ids, [], users_by_id, False)
   labels = [labels_by_id[lid] for lid in component_def.label_ids]
   label_refs = ConvertLabels(labels, [])
   creator_ref = ConvertUserRef(component_def.creator_id, None, users_by_id)
@@ -692,10 +700,11 @@ def ConvertFieldDef(field_def, user_choices, users_by_id, config,
     return project_objects_pb2.FieldDef(
         field_ref=field_ref,
         docstring=field_def.docstring,
-        user_choices=ConvertUserRefs(user_choices, [], users_by_id),
+        # Display full email address for user choices.
+        user_choices=ConvertUserRefs(user_choices, [], users_by_id, True),
         enum_choices=enum_choices)
 
-  admin_refs = ConvertUserRefs(field_def.admin_ids, [], users_by_id)
+  admin_refs = ConvertUserRefs(field_def.admin_ids, [], users_by_id, False)
   # TODO(jrobbins): validation, permission granting, and notification options.
 
   return project_objects_pb2.FieldDef(
@@ -718,7 +727,8 @@ def ConvertApprovalDef(approval_def, users_by_id, config, include_admin_info):
   if not include_admin_info:
     return project_objects_pb2.ApprovalDef(field_ref=field_ref)
 
-  approver_refs = ConvertUserRefs(approval_def.approver_ids, [], users_by_id)
+  approver_refs = ConvertUserRefs(approval_def.approver_ids, [], users_by_id,
+                                  False)
   return project_objects_pb2.ApprovalDef(
       field_ref=field_ref,
       approver_refs=approver_refs,

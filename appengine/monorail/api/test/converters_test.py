@@ -30,11 +30,14 @@ class ConverterFunctionsTest(unittest.TestCase):
   def setUp(self):
     self.users_by_id = {
         111L: testing_helpers.Blank(
-            display_name='one@example.com', banned=False),
+            display_name='one@example.com', email='one@example.com',
+            banned=False),
         222L: testing_helpers.Blank(
-            display_name='two@example.com', banned=False),
+            display_name='two@example.com', email='two@example.com',
+            banned=False),
         333L: testing_helpers.Blank(
-            display_name='banned@example.com', banned=True),
+            display_name='ban...@example.com', email='banned@example.com',
+            banned=True),
         }
 
     self.services = service_manager.Services(
@@ -204,13 +207,13 @@ class ConverterFunctionsTest(unittest.TestCase):
     """We can convert lists of user_ids into UserRefs."""
     # No specified users
     actual = converters.ConvertUserRefs(
-        [], [], self.users_by_id)
+        [], [], self.users_by_id, False)
     expected = []
     self.assertEqual(expected, actual)
 
     # A mix of explicit and derived users
     actual = converters.ConvertUserRefs(
-        [111L], [222L], self.users_by_id)
+        [111L], [222L], self.users_by_id, False)
     expected = [
       common_pb2.UserRef(
           user_id=111L, is_derived=False, display_name='one@example.com'),
@@ -218,6 +221,20 @@ class ConverterFunctionsTest(unittest.TestCase):
           user_id=222L, is_derived=True, display_name='two@example.com'),
       ]
     self.assertEqual(expected, actual)
+
+    # Use display name
+    actual = converters.ConvertUserRefs([333L], [], self.users_by_id, False)
+    self.assertEqual(
+      [common_pb2.UserRef(
+           user_id=333L, is_derived=False, display_name='ban...@example.com')],
+      actual)
+
+    # Use email
+    actual = converters.ConvertUserRefs([333L], [], self.users_by_id, True)
+    self.assertEqual(
+      [common_pb2.UserRef(
+           user_id=333L, is_derived=False, display_name='banned@example.com')],
+      actual)
 
   def testConvertUser(self):
     """We can convert lists of protorpc Users to protoc Users."""

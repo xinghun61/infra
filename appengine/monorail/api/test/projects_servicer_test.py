@@ -211,9 +211,19 @@ class ProjectsServicerTest(unittest.TestCase):
     self.assertEqual(
         expected_user_ids,
         [user_ref.user_id for user_ref in response.user_refs])
+    # Assert that we get the full email address.
+    self.assertEqual(
+        [self.services.user.LookupUserEmail(self.cnxn, user_id)
+         for user_id in expected_user_ids],
+        [user_ref.display_name for user_ref in response.user_refs])
     self.assertEqual(
         expected_group_ids,
         [group_ref.user_id for group_ref in response.group_refs])
+    # Assert that we get the full email address.
+    self.assertEqual(
+        [self.services.user.LookupUserEmail(self.cnxn, user_id)
+         for user_id in expected_group_ids],
+        [group_ref.display_name for group_ref in response.group_refs])
     return response
 
   def testGetVisibleMembers_Normal(self):
@@ -399,6 +409,9 @@ class ProjectsServicerTest(unittest.TestCase):
     self.assertEqual(
         [111L, 222L],
         sorted([user_ref.user_id for user_ref in field.user_choices]))
+    self.assertEqual(
+        ['owner@example.com', 'user_222@example.com'],
+        sorted([user_ref.display_name for user_ref in field.user_choices]))
 
   def testListFields_DontIncludeUserChoices(self):
     self.AddField('Foo Field', needs_perm=permissions.EDIT_ISSUE)
@@ -466,6 +479,9 @@ class ProjectsServicerTest(unittest.TestCase):
     self.assertEqual(
         [222L],
         sorted([user_ref.user_id for user_ref in field.user_choices]))
+    self.assertEqual(
+        ['user_222@example.com'],
+        sorted([user_ref.display_name for user_ref in field.user_choices]))
 
   def testListFields_NoPermissionsNeeded(self):
     self.AddField('Foo Field')
@@ -502,6 +518,11 @@ class ProjectsServicerTest(unittest.TestCase):
         [[111L, 222L, 333L],
          [111L, 222L]],
         [sorted(user_ref.user_id for user_ref in field.user_choices)
+         for field in field_defs])
+    self.assertEqual(
+        [['owner@example.com', 'user_222@example.com', 'user_333@example.com'],
+         ['owner@example.com', 'user_222@example.com']],
+        [sorted(user_ref.display_name for user_ref in field.user_choices)
          for field in field_defs])
 
   def testListFields_NoFields(self):
