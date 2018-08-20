@@ -39,7 +39,13 @@ func NewFair() *Fair {
 	return &Fair{}
 }
 
-// Generate generates a rotation for the specified shift.
+// Generate generates a rotation using the Fair generator.
+// Fair for this Genarator means for a member to not be scheduled for a shift before a member who has not been on shift.
+// For members that have all been on shift the Generator uses weights where both how recent a member was on shift and
+// number of shifts done by a member is considered. This information is fethed from the provided 'previous' slice.
+// If no previous shifts are provided members are selected randomly.
+//
+// See the tests for further examples of how members are selected.
 func (f *Fair) Generate(sc *rotang.Configuration, start time.Time, previous []rotang.ShiftEntry, members []rotang.Member, shiftsToSchedule int) ([]rotang.ShiftEntry, error) {
 	if len(previous) < 1 {
 		Random(members)

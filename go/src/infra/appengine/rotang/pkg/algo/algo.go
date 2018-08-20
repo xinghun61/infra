@@ -92,7 +92,12 @@ func PersonalOutage(shiftStart time.Time, shiftDays int, shiftDuration time.Dura
 	return false
 }
 
-// MakeShifts creates ShiftEntries.
+// MakeShifts takes a rota configuration and a slice of members. It generates the specified number of
+// ShiftEntries using the provided members in order. If the number of shifts to generate is larger than the
+// provided list of members the members assigned repeat. The function handles PersonalOutages, skip shifts
+// and split shifts.
+//
+// Eg. Members ["A", "B", "C", "D"] with shiftsToSchedule == 8 -> []rotang.ShiftEntry{"A", "B", "C", "D"}
 func MakeShifts(sc *rotang.Configuration, start time.Time, cm []rotang.Member, shiftsToSchedule int) []rotang.ShiftEntry {
 	var res []rotang.ShiftEntry
 	for i, j := 0, 0; i < shiftsToSchedule; i++ {
