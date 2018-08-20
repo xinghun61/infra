@@ -71,6 +71,9 @@ func matchIdleBotsWithLabels(state *types.State, requestsAtP priority.OrderedReq
 	output := make([]mutaters.Mutater, 0)
 	for i, request := range requestsAtP {
 		if request.Scheduled {
+			// This should not be possible, because matching by label is the first
+			// pass at a given priority label, so no requests should be already scheduled.
+			// Nevertheless, handle it.
 			continue
 		}
 		for wid, worker := range state.Workers {
