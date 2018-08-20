@@ -1192,6 +1192,13 @@ function TKR_convertHotlists(hotlistsResponse) {
  * @param {string} projectName The name of the current project.
  */
 function TKR_fetchOptions(projectName) {
+  let logger = null;
+  // TODO(jeffcarp): Replace this dependency reliance with ES modules.
+  if (typeof(ClientLogger) === 'function' && typeof(ga) === 'function') {
+    logger = new ClientLogger('autocomplete');
+    logger.logStart('populate-options', 'user-time');
+  }
+
   const prpcClient = new window.chops.rpc.PrpcClient({
     insecure: Boolean(location.hostname === 'localhost'),
     fetchImpl: (url, options) => {
@@ -1326,4 +1333,8 @@ function TKR_fetchOptions(projectName) {
        jsonData.labels, jsonData.memberEmails, jsonData.open, jsonData.closed,
        jsonData.components, jsonData.fields, jsonData.nonGroupEmails);
   });
+
+  if (logger) {
+    logger.logEnd('populate-options', 'user-time');
+  }
 }

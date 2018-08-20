@@ -67,14 +67,16 @@ runOnLoad(function() {
   })(window,document,'script','https://storage.googleapis.com/crdx-feedback.appspot.com/feedback.js','crdx');
 
   crdx('setFeedbackButtonLink', 'https://bugs.chromium.org/p/monorail/issues/entry?template=Online%20Feedback');
+});
 
-  // Google Analytics
-  (function(i,s,o,g,r,a,m){i[[]'GoogleAnalyticsObject']=r;i[[]r]=i[[]r]||function(){
-  (i[[]r].q=i[[]r].q||[[]]).push(arguments)},i[[]r].l=1*new Date();a=s.createElement(o),
-  m=s.getElementsByTagName(o)[[]0];a.async=1;a.setAttribute('nonce','[nonce]');
-  a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+// Google Analytics
+(function(i,s,o,g,r,a,m){i[[]'GoogleAnalyticsObject']=r;i[[]r]=i[[]r]||function(){
+(i[[]r].q=i[[]r].q||[[]]).push(arguments)},i[[]r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[[]0];a.async=1;a.setAttribute('nonce','[nonce]');
+a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
+(function setupGoogleAnalytics() {
   ga('create', '[analytics_id]', {'siteSpeedSampleRate': 100});
   [if-any viewing_user_page]
     [# Keep anything that looks like an email address out of GA.]
@@ -101,7 +103,7 @@ runOnLoad(function() {
   }
 
   ga('send', 'pageview');
-});
+})();
 </script>
 
 <script type="text/javascript" defer src="/static/js/framework/ga.js?version=[app_version]" nonce="[nonce]"></script>

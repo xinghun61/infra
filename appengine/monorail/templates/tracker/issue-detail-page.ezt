@@ -304,6 +304,7 @@ runOnLoad(function() {
      });
   }
 
+  // TODO(jeffcarp): Attach this handler specifically to the issue update form.
   window.onsubmit = function() {
     if (typeof(ClientLogger) === "function") {
       let l = new ClientLogger("issues");
