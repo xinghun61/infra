@@ -82,7 +82,7 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
       },
       _fieldValueMap: {
         type: Object,
-        computed: '_computeFieldValueMap(fieldValues)',
+        statePath: selectors.issueFieldValueMap,
         value: () => {},
       },
     };
@@ -218,10 +218,6 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
     });
   }
 
-  _computeFieldValueMap(fields) {
-    return computeFunction.computeFieldValueMap(fields);
-  }
-
   // For simulating && in templating.
   _and(a, b) {
     return a && b;
@@ -252,13 +248,23 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
     return components.map((c) => c.path);
   }
 
-  _optionsForField(labelDefs, name) {
-    return computeFunction.computeOptionsForField(labelDefs, name);
+  _optionsForField(labelDefs, fieldName) {
+    const options = [];
+    for (const label of labelDefs) {
+      const labelName = label.label;
+      if (labelName.toLowerCase().startsWith(fieldName.toLowerCase())) {
+        options.push({
+          ...label,
+          optionName: labelName.substring(fieldName.length + 1),
+        });
+      }
+    }
+    return options;
   }
 
   _valuesForField(fieldValueMap, name) {
-    if (!(name in fieldValueMap)) return [];
-    return fieldValueMap[name];
+    if (!fieldValueMap) return [];
+    return fieldValueMap.get(name) || [];
   }
 
   _fieldIsHidden(showNicheFields, isNiche) {

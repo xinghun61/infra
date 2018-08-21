@@ -22,27 +22,27 @@ class MrFieldValues extends Polymer.Element {
   }
 
   _fieldIsDate(type) {
-    return type === 'DATE_TYPE';
+    return type === fieldTypes.DATE_TYPE;
   }
 
   _fieldIsEnum(type) {
-    return type === 'ENUM_TYPE';
+    return type === fieldTypes.ENUM_TYPE;
   }
 
   _fieldIsInt(type) {
-    return type === 'INT_TYPE';
+    return type === fieldTypes.INT_TYPE;
   }
 
   _fieldIsStr(type) {
-    return type === 'STR_TYPE';
+    return type === fieldTypes.STR_TYPE;
   }
 
   _fieldIsUser(type) {
-    return type === 'USER_TYPE';
+    return type === fieldTypes.USER_TYPE;
   }
 
   _fieldIsUrl(type) {
-    return type === 'URL_TYPE';
+    return type === fieldTypes.URL_TYPE;
   }
 
   _fieldIsRemainingTypes(type) {

@@ -65,7 +65,11 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
       fieldDefs: {
         type: Array,
         computed:
-          '_computeApprovalFieldDefs(projectConfig.fieldDefs, fieldName)',
+          '_computeApprovalFieldDefs(fieldDefsByApprovalName, fieldName)',
+      },
+      fieldDefsByApprovalName: {
+        type: Object,
+        statePath: selectors.fieldDefsByApprovalName,
       },
       token: {
         type: String,
@@ -215,7 +219,7 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
     };
     const message = Object.assign({}, baseMessage, {
       fieldRef: {
-        type: 'APPROVAL_TYPE',
+        type: fieldTypes.APPROVAL_TYPE,
         fieldName: this.fieldName,
       },
       commentContent: commentData || '',
@@ -282,8 +286,9 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
     )).splice(1);
   }
 
-  _computeApprovalFieldDefs(fields, approvalName) {
-    return computeFunction.computeFieldDefs(fields, null, approvalName);
+  _computeApprovalFieldDefs(fdMap, approvalName) {
+    if (!fdMap) return [];
+    return fdMap.get(approvalName) || [];
   }
 
   // TODO(zhangtiff): Change data flow here so that this is only computed

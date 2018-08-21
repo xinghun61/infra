@@ -48,7 +48,7 @@ class MrMetadata extends ReduxMixin(Polymer.Element) {
       },
       _fieldValueMap: {
         type: Object,
-        computed: '_computeFieldValueMap(fieldValues)',
+        statePath: selectors.issueFieldValueMap,
         value: () => {},
       },
       _fieldGroupMap: {
@@ -65,10 +65,6 @@ class MrMetadata extends ReduxMixin(Polymer.Element) {
         computed: '_computeFieldDefsWithoutGroup(fieldDefs, _fieldGroupMap)',
       },
     };
-  }
-
-  _computeFieldValueMap(fields) {
-    return computeFunction.computeFieldValueMap(fields);
   }
 
   _computeFieldGroupMap(fieldGroups) {
@@ -108,13 +104,13 @@ class MrMetadata extends ReduxMixin(Polymer.Element) {
   }
 
   _fieldIsHidden(fieldValueMap, fieldDef) {
-    return fieldDef.isNiche && !this._valuesForDef(
-      fieldDef.fieldRef.fieldName, fieldValueMap).length;
+    return fieldDef.isNiche && !this._valuesForField(fieldValueMap,
+      fieldDef.fieldRef.fieldName).length;
   }
 
-  _valuesForDef(name, fieldValueMap) {
-    if (!(name in fieldValueMap)) return [];
-    return fieldValueMap[name];
+  _valuesForField(fieldValueMap, name) {
+    if (!fieldValueMap) return [];
+    return fieldValueMap.get(name) || [];
   }
 }
 

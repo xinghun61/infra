@@ -50,11 +50,7 @@ class MrEditIssueDialog extends ReduxMixin(Polymer.Element) {
       },
       _fieldDefs: {
         type: Array,
-        computed: '_computeIssueFieldDefs(projectConfig.fieldDefs, _type)',
-      },
-      _type: {
-        type: String,
-        computed: '_computeIssueType(issue.fieldValues)',
+        statePath: selectors.fieldDefsForIssue,
       },
       _opened: {
         type: Boolean,
@@ -213,14 +209,6 @@ class MrEditIssueDialog extends ReduxMixin(Polymer.Element) {
   _computeLabelNames(labels) {
     if (!labels) return [];
     return labels.map((l) => l.label);
-  }
-
-  _computeIssueType(fieldValues) {
-    return computeFunction.computeIssueType(fieldValues);
-  }
-
-  _computeIssueFieldDefs(fields, applicableType) {
-    return computeFunction.computeFieldDefs(fields, applicableType, null);
   }
 
   _computeOpened(openedDialog) {

@@ -1,0 +1,103 @@
+<script src="../../node_modules/reselect/dist/reselect.js"></script>
+<link rel="import" href="../shared/field-types.html">
+
+<script>
+  (function(window) {
+    const createSelector = Reselect.createSelector;
+
+    // TODO(zhangtiff): Eventually Monorail's Redux state will store
+    // multiple issues, and this selector will have to find the viewed
+    // issue based on a viewed issue ref.
+    const viewedIssue = state => state.issue;
+    const fieldDefs = state => state.projectConfig && state.projectConfig.fieldDefs;
+    const issueFieldValues = createSelector(
+      viewedIssue,
+      issue => issue && issue.fieldValues
+    );
+    const issueType = createSelector(
+      issueFieldValues,
+      fieldValues => {
+        if (!fieldValues) return;
+        const typeFieldValue = fieldValues.find(
+          (f) => (f.fieldRef && f.fieldRef.fieldName === 'Type')
+        );
+        if (typeFieldValue) {
+          return typeFieldValue.value;
+        }
+        return;
+      }
+    );
+    // values (from issue.fieldValues) is an array with one entry per value.
+    // We want to turn this into a map of fieldNames -> values.
+    const issueFieldValueMap = createSelector(
+      issueFieldValues,
+      (fieldValues) => {
+        if (!fieldValues) return new Map();
+        const acc = new Map();
+        for (const v of fieldValues) {
+          const fieldName = v.fieldRef.fieldName;
+          if (acc.has(fieldName)) {
+            acc.get(fieldName).push(v.value);
+          } else {
+            acc.set(fieldName, [v.value]);
+          }
+        }
+        return acc;
+      }
+    );
+    const fieldDefsForIssue = createSelector(
+      fieldDefs,
+      issueType,
+      (fieldDefs, issueType) => {
+        if (!fieldDefs) return [];
+        issueType = issueType || '';
+        return fieldDefs.filter((f) => {
+          // Skip approval type and phase fields here.
+          if (f.fieldRef.approvalName
+              || f.fieldRef.type === fieldTypes.APPROVAL_TYPE
+              || f.isPhaseField) {
+            return false;
+          }
+
+          // If this fieldDef belongs to only one type, filter out the field if
+          // that type isn't the specified issueType.
+          if (f.applicableType && issueType.toLowerCase()
+              !== f.applicableType.toLowerCase()) {
+            return false;
+          }
+
+          return true;
+        });
+      }
+    );
+    const fieldDefsByApprovalName = createSelector(
+      fieldDefs,
+      (fieldDefs) => {
+        if (!fieldDefs) return new Map();
+        const acc = new Map();
+        for (fd of fieldDefs) {
+          if(fd.fieldRef && fd.fieldRef.approvalName) {
+            if (acc.has(fd.fieldRef.approvalName)) {
+              acc.get(fd.fieldRef.approvalName).push(fd);
+            } else {
+              acc.set(fd.fieldRef.approvalName, [fd]);
+            }
+          }
+        }
+        return acc;
+      }
+    );
+
+    const selectors = Object.freeze({
+      viewedIssue,
+      fieldDefs,
+      issueFieldValues,
+      issueType,
+      issueFieldValueMap,
+      fieldDefsForIssue,
+      fieldDefsByApprovalName,
+    });
+
+    window.selectors = selectors || {};
+  })(window);
+</script>

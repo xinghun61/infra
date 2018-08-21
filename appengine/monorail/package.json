@@ -7,12 +7,13 @@
     "crisper": "~2.0.2",
     "eslint": "^4.19.1",
     "eslint-config-google": "^0.9.1",
-    "vulcanize": "~1.14.8"
+    "vulcanize": "^1.14.12"
   },
   "scripts": {},
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "redux": "^4.0.0"
+    "redux": "^4.0.0",
+    "reselect": "^3.0.1"
   }
 }

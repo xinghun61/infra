@@ -7,7 +7,7 @@
 
 <link rel="import" href="../../mr-user-link/mr-user-link.html">
 <link rel="import" href="../../redux/redux-mixin.html">
-<link rel="import" href="../../redux/compute-functions.html">
+<link rel="import" href="../../redux/selectors.html">
 <link rel="import" href="../mr-metadata/mr-field-values.html">
 
 <dom-module id="mr-metadata">
@@ -139,7 +139,7 @@
             <mr-field-values
               name="[[field.fieldRef.fieldName]]"
               type="[[field.fieldRef.type]]"
-              values="[[_valuesForDef(field.fieldRef.fieldName, _fieldValueMap)]]"
+              values="[[_valuesForField(_fieldValueMap, field.fieldRef.fieldName)]]"
               project-name="[[projectName]]"
             ></mr-field-values>
           </td>
@@ -157,7 +157,7 @@
           <mr-field-values
             name="[[field.fieldRef.fieldName]]"
             type="[[field.fieldRef.type]]"
-            values="[[_valuesForDef(field.fieldRef.fieldName, _fieldValueMap)]]"
+            values="[[_valuesForField(_fieldValueMap, field.fieldRef.fieldName)]]"
             project-name="[[projectName]]"
           ></mr-field-values>
         </td>
