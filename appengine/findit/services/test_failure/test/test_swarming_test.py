@@ -22,6 +22,7 @@ from infra_api_clients.swarming import swarming_util
 from libs import analysis_status
 from libs.test_results.gtest_test_results import GtestTestResults
 from libs.test_results import test_results_util
+from model import analysis_approach_type
 from model.wf_swarming_task import WfSwarmingTask
 from services import ci_failure
 from services import constants
@@ -249,7 +250,9 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
       return_value=({
           'state': constants.STATE_COMPLETED
       }, 'content', None))
-  def testOnSwarmingTaskTimeoutGotResult(self, *_):
+  @mock.patch.object(test_failure_analysis,
+                     'RecordTestFailureAnalysisStateChange')
+  def testOnSwarmingTaskTimeoutGotResult(self, mock_mon, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 15
@@ -275,12 +278,17 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
         'code': swarming_task_error.RUNNER_TIMEOUT,
         'message': 'Runner to run swarming task timed out'
     }, swarming_task.error)
+    mock_mon.assert_called_once_with(master_name, builder_name, build_number,
+                                     step_name, analysis_status.COMPLETED,
+                                     analysis_approach_type.SWARMING)
 
   @mock.patch.object(
       swarmed_test_util,
       'GetSwarmingTaskDataAndResult',
       return_value=(None, None, 'error'))
-  def testOnSwarmingTaskTimeout(self, _):
+  @mock.patch.object(test_failure_analysis,
+                     'RecordTestFailureAnalysisStateChange')
+  def testOnSwarmingTaskTimeout(self, mock_mon, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 16
@@ -304,12 +312,17 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
         'code': swarming_task_error.RUNNER_TIMEOUT,
         'message': 'Runner to run swarming task timed out'
     }, swarming_task.error)
+    mock_mon.assert_called_once_with(master_name, builder_name, build_number,
+                                     step_name, analysis_status.ERROR,
+                                     analysis_approach_type.SWARMING)
 
   @mock.patch.object(
       _GTEST_RESULTS, 'GetClassifiedTestResults', return_value={})
   @mock.patch.object(
       test_results_util, 'GetTestResultObject', return_value=_GTEST_RESULTS)
-  def testOnSwarmingTaskCompleted(self, *_):
+  @mock.patch.object(test_failure_analysis,
+                     'RecordTestFailureAnalysisStateChange')
+  def testOnSwarmingTaskCompleted(self, mock_mon, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 13
@@ -340,6 +353,9 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         datetime.datetime(2015, 7, 30, 18, 15, 16, 743220),
         swarming_task.completed_time)
+    mock_mon.assert_called_once_with(master_name, builder_name, build_number,
+                                     step_name, analysis_status.COMPLETED,
+                                     analysis_approach_type.SWARMING)
 
   @mock.patch.object(test_results_util, 'IsTestResultsValid', return_value=True)
   @mock.patch.object(
@@ -404,6 +420,8 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
         step_name,
         status=analysis_status.RUNNING)
 
+  @mock.patch.object(test_failure_analysis,
+                     'RecordTestFailureAnalysisStateChange')
   @mock.patch.object(
       swarmed_test_util,
       'GetSwarmingTaskDataAndResult',
@@ -414,7 +432,7 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
                         'code': 1,
                         'message': 'message'
                     })))
-  def testOnSwarmingTaskStateChangedError(self, _):
+  def testOnSwarmingTaskStateChangedError(self, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 10
@@ -458,7 +476,9 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
     mock_error.assert_called_once_with(master_name, builder_name, build_number,
                                        step_name, 'error', False)
 
-  def testOnSwarmingTaskErrorShouldCompletePipeline(self):
+  @mock.patch.object(test_failure_analysis,
+                     'RecordTestFailureAnalysisStateChange')
+  def testOnSwarmingTaskErrorShouldCompletePipeline(self, mock_mon):
     master_name = 'm'
     builder_name = 'b'
     build_number = 11
@@ -475,8 +495,13 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
                                        step_name)
     self.assertEqual(error, swarming_task.error)
     self.assertEqual(analysis_status.ERROR, swarming_task.status)
+    mock_mon.assert_called_once_with(master_name, builder_name, build_number,
+                                     step_name, analysis_status.ERROR,
+                                     analysis_approach_type.SWARMING)
 
-  def testOnSwarmingTaskErrorShouldNotCompletePipeline(self):
+  @mock.patch.object(test_failure_analysis,
+                     'RecordTestFailureAnalysisStateChange')
+  def testOnSwarmingTaskErrorShouldNotCompletePipeline(self, mock_mon):
     master_name = 'm'
     builder_name = 'b'
     build_number = 12
@@ -492,6 +517,7 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
                                        step_name)
     self.assertEqual(error, swarming_task.error)
     self.assertEqual(analysis_status.PENDING, swarming_task.status)
+    self.assertFalse(mock_mon.called)
 
   @mock.patch.object(
       test_failure_analysis, 'GetFirstTimeFailedSteps', return_value=['step'])
