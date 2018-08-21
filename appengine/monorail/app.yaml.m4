@@ -69,9 +69,14 @@ handlers:
   secure: always
 
 inbound_services:
-- warmup
 - mail
 - mail_bounce
+ifdef(`PROD', `
+- warmup
+')
+ifdef(`STAGING', `
+- warmup
+')
 
 libraries:
 - name: endpoints

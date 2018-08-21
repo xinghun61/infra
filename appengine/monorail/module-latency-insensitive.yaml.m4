@@ -53,7 +53,12 @@ handlers:
 inbound_services:
 - mail
 - mail_bounce
+ifdef(`PROD', `
 - warmup
+')
+ifdef(`STAGING', `
+- warmup
+')
 
 libraries:
 - name: endpoints

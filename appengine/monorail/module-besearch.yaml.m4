@@ -44,8 +44,14 @@ handlers:
   script: monorailapp.app
   login: admin
 
+ifdef(`PROD', `
 inbound_services:
 - warmup
+')
+ifdef(`STAGING', `
+inbound_services:
+- warmup
+')
 
 libraries:
 - name: endpoints
