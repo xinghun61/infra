@@ -63,6 +63,20 @@ def OnFlakeCulprit(result, action_taken, reason):
   })
 
 
+def OnWaterfallAnalysisStateChange(master_name, builder_name, failure_type,
+                                   canonical_step_name, isolate_target_name,
+                                   status, analysis_type):
+  monitoring.waterfall_analysis_statuses.increment({
+      'master_name': master_name,
+      'builder_name': builder_name,
+      'failure_type': failure_type,
+      'canonical_step_name': canonical_step_name,
+      'isolate_target_name': isolate_target_name,
+      'status': status,
+      'analysis_type': analysis_type,
+  })
+
+
 def OnFlakeAnalysisTriggered(source, operation, trigger, canonical_step_name,
                              isolate_target_name):
   monitoring.flakes.increment({
@@ -74,13 +88,13 @@ def OnFlakeAnalysisTriggered(source, operation, trigger, canonical_step_name,
   })
 
 
-def OnFlakeIdentified(canonical_step_name, isolated_target_name, operation,
+def OnFlakeIdentified(canonical_step_name, isolate_target_name, operation,
                       count):
   monitoring.flakes_identified_by_waterfall_analyses.increment_by(
       count,
       {
           'canonical_step_name': canonical_step_name,
-          'isolated_target_name': isolated_target_name,
+          'isolate_target_name': isolate_target_name,
           # analyzed, throttled or error.
           'operation': operation
       })

@@ -70,6 +70,21 @@ class MonitoringTest(wf_testcase.WaterfallTestCase):
     }
     mock_common_monitoring.assert_called_once_with(parameters)
 
+  @mock.patch.object(common_monitoring.waterfall_analysis_statuses, 'increment')
+  def testOnWaterfallAnalysisStateChange(self, mock_common_monitoring):
+    monitoring.OnWaterfallAnalysisStateChange('m', 'b', 'compile', 'compile',
+                                              'N/A', 'Completed', 'Heuristic')
+    parameters = {
+        'master_name': 'm',
+        'builder_name': 'b',
+        'failure_type': 'compile',
+        'canonical_step_name': 'compile',
+        'isolate_target_name': 'N/A',
+        'status': 'Completed',
+        'analysis_type': 'Heuristic',
+    }
+    mock_common_monitoring.assert_called_once_with(parameters)
+
   @mock.patch.object(common_monitoring.flakes, 'increment')
   def testOnFlakeAnalysisTriggered(self, mock_common_monitoring):
     monitoring.OnFlakeAnalysisTriggered('source', 'operation', 'trigger',
@@ -87,11 +102,11 @@ class MonitoringTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(common_monitoring.flakes_identified_by_waterfall_analyses,
                      'increment_by')
   def testOnFlakeIdentified(self, mock_common_monitoring):
-    monitoring.OnFlakeIdentified('canonical_step_name', 'isolated_target_name',
+    monitoring.OnFlakeIdentified('canonical_step_name', 'isolate_target_name',
                                  'analyzed', 10)
     parameters = {
         'canonical_step_name': 'canonical_step_name',
-        'isolated_target_name': 'isolated_target_name',
+        'isolate_target_name': 'isolate_target_name',
         'operation': 'analyzed',
     }
     mock_common_monitoring.assert_called_once_with(10, parameters)

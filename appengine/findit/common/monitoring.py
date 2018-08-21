@@ -97,10 +97,27 @@ pipeline_times = gae_ts_mon.CounterMetric('findit/pipeline-times',
                                               gae_ts_mon.StringField('type'),
                                           ])
 
+waterfall_analysis_statuses = gae_ts_mon.CounterMetric(
+    'findit/waterfall-analysis-statuses',
+    'Current number of waterfall analyses in each status',
+    [
+        gae_ts_mon.StringField('master_name'),
+        gae_ts_mon.StringField('builder_name'),
+        # compile, test
+        gae_ts_mon.StringField('failure_type'),
+        gae_ts_mon.StringField('canonical_step_name'),
+        gae_ts_mon.StringField('isolate_target_name'),
+        # error, complete.
+        # TODO(crbug/869684): Use a gauge metric to record intermittent statuses
+        gae_ts_mon.StringField('status'),
+        # Pre-Analysis, Heuristic, Swarming, Try_job
+        gae_ts_mon.StringField('analysis_type'),
+    ])
+
 flakes_identified_by_waterfall_analyses = gae_ts_mon.CounterMetric(
     'findit/flakes-identified-by-waterfall-analyses',
     'Number of flakes identified by waterfall analyses', [
         gae_ts_mon.StringField('canonical_step_name'),
-        gae_ts_mon.StringField('isolated_target_name'),
+        gae_ts_mon.StringField('isolate_target_name'),
         gae_ts_mon.StringField('operation'),
     ])
