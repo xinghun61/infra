@@ -20,9 +20,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
 
+	"infra/qscheduler/qslib/tutils"
 	"infra/qscheduler/qslib/types"
 	"infra/qscheduler/qslib/types/account"
 	"infra/qscheduler/qslib/types/task"
@@ -78,8 +78,8 @@ func TestPrioritizeWithEnqueueTimeTieBreaker(t *testing.T) {
 	e := time.Unix(100, 100)
 	l := e.Add(10 * time.Second)
 
-	eT := toStamp(e)
-	lT := toStamp(l)
+	eT := tutils.TimestampProto(e)
+	lT := tutils.TimestampProto(l)
 
 	eR := task.Request{AccountId: "a1", EnqueueTime: eT}
 	lR := task.Request{AccountId: "a1", EnqueueTime: lT}
@@ -288,18 +288,8 @@ func TestForPriority(t *testing.T) {
 // atTime is a helper method to create proto.Timestamp objects at various
 // times relative to a fixed "0" time.
 func atTime(seconds time.Duration) *timestamp.Timestamp {
-	// Totally arbitrary but predictable "0" time.
 	timeAfter := epoch.Add(seconds * time.Second)
-	ans, _ := ptypes.TimestampProto(timeAfter)
-	return ans
-}
-
-func toStamp(t time.Time) *timestamp.Timestamp {
-	ts, err := ptypes.TimestampProto(t)
-	if err != nil {
-		panic(err)
-	}
-	return ts
+	return tutils.TimestampProto(timeAfter)
 }
 
 // getWorkers is a helper function to turn a slice of running tasks

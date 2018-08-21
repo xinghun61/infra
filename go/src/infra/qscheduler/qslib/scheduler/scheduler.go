@@ -23,6 +23,7 @@ import (
 
 	"infra/qscheduler/qslib/mutaters"
 	"infra/qscheduler/qslib/priority"
+	"infra/qscheduler/qslib/tutils"
 	"infra/qscheduler/qslib/types"
 	"infra/qscheduler/qslib/types/account"
 	"infra/qscheduler/qslib/types/task"
@@ -45,6 +46,7 @@ func UpdateAccounts(state *types.State, config *types.Config, t time.Time) error
 	if err != nil {
 		return err
 	}
+
 	if t0.After(t) {
 		return &UpdateOrderError{Previous: t0, Next: t}
 	}
@@ -95,15 +97,7 @@ func UpdateAccounts(state *types.State, config *types.Config, t time.Time) error
 	}
 	state.Balances = newBalances
 
-	newT, err := ptypes.TimestampProto(t)
-	if err != nil {
-		// Panic here instead of returning error, because balances would
-		// otherwise be inconsistent with update time, which would be
-		// a corrupt state.
-		panic(err)
-	}
-
-	state.LastAccountUpdate = newT
+	state.LastAccountUpdate = tutils.TimestampProto(t)
 
 	return nil
 }

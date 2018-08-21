@@ -21,12 +21,11 @@ import (
 	"time"
 
 	"infra/qscheduler/qslib/mutaters"
+	"infra/qscheduler/qslib/tutils"
 	"infra/qscheduler/qslib/types"
 	"infra/qscheduler/qslib/types/account"
 	"infra/qscheduler/qslib/types/task"
 	"infra/qscheduler/qslib/types/vector"
-
-	"github.com/golang/protobuf/ptypes"
 )
 
 // epoch is an arbitrary time for testing purposes, corresponds to
@@ -268,9 +267,9 @@ func TestUpdateErrors(t *testing.T) {
 }
 
 func TestUpdateBalance(t *testing.T) {
-	t0, _ := ptypes.TimestampProto(epoch)
-	t1, _ := ptypes.TimestampProto(epoch.Add(1 * time.Second))
-	t2, _ := ptypes.TimestampProto(epoch.Add(2 * time.Second))
+	t0 := tutils.TimestampProto(epoch)
+	t1 := tutils.TimestampProto(epoch.Add(1 * time.Second))
+	t2 := tutils.TimestampProto(epoch.Add(2 * time.Second))
 
 	cases := []struct {
 		State  *types.State
@@ -378,10 +377,6 @@ func TestUpdateBalance(t *testing.T) {
 
 func stateAtTime(t time.Time) *types.State {
 	s := types.NewState()
-	ts, err := ptypes.TimestampProto(t)
-	if err != nil {
-		panic(err)
-	}
-	s.LastAccountUpdate = ts
+	s.LastAccountUpdate = tutils.TimestampProto(t)
 	return s
 }
