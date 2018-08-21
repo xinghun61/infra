@@ -18,3 +18,4 @@ elements/mock-data/*\.json
 !elements/mock-data/gates-mock.json
 app.yaml
 module-besearch.yaml
+module-latency-insensitive.yaml

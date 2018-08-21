@@ -105,18 +105,22 @@ pylint:
 config_prod:
 	m4 -DPROD < app.yaml.m4 > app.yaml
 	m4 -DPROD < module-besearch.yaml.m4 > module-besearch.yaml
+	m4 -DPROD < module-latency-insensitive.yaml.m4 > module-latency-insensitive.yaml
 
 config_staging:
 	m4 -DSTAGING < app.yaml.m4 > app.yaml
 	m4 -DSTAGING < module-besearch.yaml.m4 > module-besearch.yaml
+	m4 -DSTAGING < module-latency-insensitive.yaml.m4 > module-latency-insensitive.yaml
 
 config_demo:
 	m4 -DDEMO < app.yaml.m4 > app.yaml
 	m4 -DDEMO < module-besearch.yaml.m4 > module-besearch.yaml
+	m4 -DDEMO < module-latency-insensitive.yaml.m4 > module-latency-insensitive.yaml
 
 config_local:
 	m4 app.yaml.m4 > app.yaml
 	m4 module-besearch.yaml.m4 > module-besearch.yaml
+	m4 module-latency-insensitive.yaml.m4 > module-latency-insensitive.yaml
 
 # For deploying demo versions, e.g. context for a code review.
 deploy_demo: deps vulcanize config_demo
