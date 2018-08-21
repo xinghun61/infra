@@ -20,12 +20,24 @@ import "infra/qscheduler/qslib/types/vector/vector.proto";
 // as the recharge parameters. This does not represent anything about the
 // current state of an account.
 message Config {
-  // The rates (per second) at which per-priority accounts grow.
+  // ChargeRate is the rates (per second) at which per-priority accounts grow.
+  //
+  // Conceptually this is the time-averaged number of workers that this account
+  // may use, at each priority level.
   vector.Vector charge_rate = 1;
 
-  // The maximum value that per-priority accounts grow to.
-  vector.Vector max_balance = 2;
+  // MaxChargeSeconds is the maximum amount of time over which this account can
+  // accumulate quota before hitting its cap.
+  //
+  // Conceptually this sets the time window over which the time averaged
+  // utilization by this account is measured. Very bursty clients will need to
+  // use a wider window, whereas very consistent clients will use a narrow one.
+  double max_charge_seconds = 2;
 
-  // The maximum number of concurrent paid jobs that this account will pay for (0 = no limit).
+  // MaxFanout is the maximum number of concurrent paid jobs that this account
+  // will pay for (0 = no limit).
+  //
+  // Additional jobs beyond this may run if there is idle capacity, but they
+  // will run in the FreeBucket priority level.
   int32 max_fanout = 3;
 }

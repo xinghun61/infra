@@ -15,6 +15,7 @@
 package scheduler
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 	"time"
@@ -24,6 +25,8 @@ import (
 	"infra/qscheduler/qslib/types/account"
 	"infra/qscheduler/qslib/types/task"
 	"infra/qscheduler/qslib/types/vector"
+
+	"github.com/golang/protobuf/ptypes"
 )
 
 // epoch is an arbitrary time for testing purposes, corresponds to
@@ -227,4 +230,158 @@ func TestPreempt(t *testing.T) {
 		actual := QuotaSchedule(test.State, test.Config)
 		assertMutations(t, test.Expect, actual, i)
 	}
+}
+
+func TestUpdateErrors(t *testing.T) {
+	cases := []struct {
+		State  *types.State
+		Config *types.Config
+		T      time.Time
+		Expect error
+	}{
+		{
+			types.NewState(),
+			types.NewConfig(),
+			time.Unix(0, 0),
+			errors.New("timestamp: nil Timestamp"),
+		},
+		{
+			stateAtTime(time.Unix(100, 0).UTC()),
+			types.NewConfig(),
+			time.Unix(0, 0).UTC(),
+			&UpdateOrderError{Next: time.Unix(0, 0).UTC(), Previous: time.Unix(100, 0).UTC()},
+		},
+		{
+			stateAtTime(time.Unix(0, 0)),
+			types.NewConfig(),
+			time.Unix(1, 0),
+			nil,
+		},
+	}
+
+	for i, test := range cases {
+		e := UpdateAccounts(test.State, test.Config, test.T)
+		if !reflect.DeepEqual(e, test.Expect) {
+			t.Errorf("In case %d, got error: %+v, want error: %+v", i, e, test.Expect)
+		}
+	}
+}
+
+func TestUpdateBalance(t *testing.T) {
+	t0, _ := ptypes.TimestampProto(epoch)
+	t1, _ := ptypes.TimestampProto(epoch.Add(1 * time.Second))
+	t2, _ := ptypes.TimestampProto(epoch.Add(2 * time.Second))
+
+	cases := []struct {
+		State  *types.State
+		Config *types.Config
+		T      time.Time
+		Expect *types.State
+	}{
+		// Case 0:
+		// Balances with no account config should be removed ("a1"). New balances
+		// should be created if necessary and incremented appropriately ("a2").
+		{
+			&types.State{
+				Balances:          map[string]*vector.Vector{"a1": vector.New()},
+				LastAccountUpdate: t0,
+			},
+			&types.Config{
+				AccountConfigs: map[string]*account.Config{
+					"a2": &account.Config{ChargeRate: vector.New(1), MaxChargeSeconds: 2},
+				},
+			},
+			epoch.Add(1 * time.Second),
+			&types.State{
+				Balances:          map[string]*vector.Vector{"a2": vector.New(1)},
+				LastAccountUpdate: t1,
+			},
+		},
+		// Case 1:
+		// Running jobs should count against the account. Cost of a running job
+		// should be initialized if necessary, and incremented.
+		//
+		// Charges should be proportional to time advanced (2 seconds in this case).
+		{
+			&types.State{
+				Balances: map[string]*vector.Vector{"a1": vector.New()},
+				Workers: map[string]*types.Worker{
+					// Worker running a task.
+					"w1": &types.Worker{
+						RunningTask: &task.Run{
+							Cost:     vector.New(1),
+							Priority: 1,
+							Request:  &task.Request{AccountId: "a1"},
+						},
+					},
+					// Worker running a task with uninitialized Cost.
+					"w2": &types.Worker{
+						RunningTask: &task.Run{
+							Priority: 2,
+							Request:  &task.Request{AccountId: "a1"},
+						},
+					},
+					// Worker running a task with invalid account.
+					"w3": &types.Worker{
+						RunningTask: &task.Run{
+							Priority: account.FreeBucket,
+							Request:  &task.Request{AccountId: "a2"},
+						},
+					},
+				},
+				LastAccountUpdate: t0,
+			},
+			&types.Config{
+				AccountConfigs: map[string]*account.Config{
+					"a1": &account.Config{ChargeRate: vector.New(1), MaxChargeSeconds: 1},
+				},
+			},
+			epoch.Add(2 * time.Second),
+			&types.State{
+				Balances:          map[string]*vector.Vector{"a1": vector.New(1, -2, -2)},
+				LastAccountUpdate: t2,
+				Workers: map[string]*types.Worker{
+					"w1": &types.Worker{
+						RunningTask: &task.Run{
+							Cost:     vector.New(1, 2),
+							Priority: 1,
+							Request:  &task.Request{AccountId: "a1"},
+						},
+					},
+					"w2": &types.Worker{
+						RunningTask: &task.Run{
+							Cost:     vector.New(0, 0, 2),
+							Priority: 2,
+							Request:  &task.Request{AccountId: "a1"},
+						},
+					},
+					"w3": &types.Worker{
+						RunningTask: &task.Run{
+							Cost:     vector.New(),
+							Priority: account.FreeBucket,
+							Request:  &task.Request{AccountId: "a2"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for i, test := range cases {
+		actual := test.State
+		UpdateAccounts(actual, test.Config, test.T)
+		if !reflect.DeepEqual(actual, test.Expect) {
+			t.Errorf("In case %d got state\n%+v\nwant\n%+v", i, actual, test.Expect)
+		}
+	}
+}
+
+func stateAtTime(t time.Time) *types.State {
+	s := types.NewState()
+	ts, err := ptypes.TimestampProto(t)
+	if err != nil {
+		panic(err)
+	}
+	s.LastAccountUpdate = ts
+	return s
 }

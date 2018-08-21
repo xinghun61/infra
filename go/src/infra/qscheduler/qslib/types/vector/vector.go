@@ -30,6 +30,9 @@ const NumPriorities = 3
 // IntVector is the integer equivalent of Vector, to store things
 // like per-bucket counts. It doesn't have an underlying Proto, because it
 // is only used internally within qslib, never persisted.
+//
+// TODO: Consider renaming this to something that makes it more obvious
+// what it is.
 type IntVector [NumPriorities]int
 
 // New creates an new 0-initialized Vector with the correct

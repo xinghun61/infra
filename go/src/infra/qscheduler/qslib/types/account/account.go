@@ -51,30 +51,33 @@ func BestPriorityFor(balance *vector.Vector) int32 {
 	return FreeBucket
 }
 
-// UpdateBalance updates the state of a quota account by recharging the account
-// for the elapsed time and draining the account for currently running jobs.
-// TODO: Use time.Duration instead of float64 to represent elapsed time.
-func UpdateBalance(balance *vector.Vector, c Config, elapsedSecs float64, runningJobs *vector.IntVector) {
-	// TODO: rewrite me using vector math primitives. This also will allow
-	// the vector package to internally call fix() on anything necessary. This
-	// would requre more than just the existing Plus and Minus primitives though,
-	// because of the threshold behavior.
-	for priority, value := range balance.Values {
-		value -= elapsedSecs * float64(runningJobs[priority])
-		// Check for value overflow prior to applying credits or capping, because
+// NextBalance calculates and returns the new balance of a quota account.
+//
+// The new balance calculation is based on the account's recharge rate,
+// maximum balance, and the number of currently running jobs per priority
+// bucket for that account.
+func NextBalance(balance *vector.Vector, c *Config, elapsedSecs float64, runningJobs *vector.IntVector) *vector.Vector {
+	v := vector.New()
+	for priority := int32(0); priority < vector.NumPriorities; priority++ {
+		val := balance.At(priority)
+		val -= elapsedSecs * float64(runningJobs[priority])
+		maxBalance := c.ChargeRate.At(priority) * c.MaxChargeSeconds
+		// Check for value overflow prior to recharging or capping, because
 		// if the account value is already above cap we want to leave it there.
 		// It likley got over cap due to preemption reimbursement.
-		if value < c.MaxBalance.Values[priority] {
-			value += elapsedSecs * c.ChargeRate.Values[priority]
-			if value > c.MaxBalance.Values[priority] {
-				value = c.MaxBalance.Values[priority]
+		if val < maxBalance {
+			val += elapsedSecs * c.ChargeRate.At(priority)
+			if val > maxBalance {
+				val = maxBalance
 			}
 		}
-		balance.Values[priority] = value
+		v.Values[priority] = val
 	}
+
+	return v
 }
 
 // NewConfig creates a new Config instance with initialized member Vectors.
 func NewConfig() *Config {
-	return &Config{ChargeRate: vector.New(), MaxBalance: vector.New()}
+	return &Config{ChargeRate: vector.New()}
 }

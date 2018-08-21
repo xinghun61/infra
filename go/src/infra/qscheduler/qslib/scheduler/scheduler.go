@@ -17,6 +17,9 @@ package scheduler
 import (
 	"fmt"
 	"math"
+	"time"
+
+	"github.com/golang/protobuf/ptypes"
 
 	"infra/qscheduler/qslib/mutaters"
 	"infra/qscheduler/qslib/priority"
@@ -25,6 +28,85 @@ import (
 	"infra/qscheduler/qslib/types/task"
 	"infra/qscheduler/qslib/types/vector"
 )
+
+type UpdateOrderError struct {
+	Previous time.Time
+	Next     time.Time
+}
+
+func (e *UpdateOrderError) Error() string {
+	return fmt.Sprintf("Update time %v was older than existing state's time %v.", e.Next, e.Previous)
+}
+
+// UpdateAccounts updates |state|'s quota account balances, based on running
+// jobs, account policies, and the time elapsed since the last update.
+func UpdateAccounts(state *types.State, config *types.Config, t time.Time) error {
+	t0, err := ptypes.Timestamp(state.LastAccountUpdate)
+	if err != nil {
+		return err
+	}
+	if t0.After(t) {
+		return &UpdateOrderError{Previous: t0, Next: t}
+	}
+
+	elapsedSecs := t.Sub(t0).Seconds()
+
+	// Count the number of running tasks per priority bucket for each account.
+	//
+	// Since we are iterating over all running tasks, also use this
+	// opportunity to update the accumulate cost of running tasks.
+	jobsPerAcct := make(map[string]*vector.IntVector)
+	if state.Workers != nil {
+		for _, w := range state.Workers {
+			if !w.IsIdle() {
+				id := w.RunningTask.Request.AccountId
+				c := jobsPerAcct[id]
+				if c == nil {
+					c = &vector.IntVector{}
+					jobsPerAcct[id] = c
+				}
+				rt := w.RunningTask
+				if rt.Cost == nil {
+					rt.Cost = vector.New()
+				}
+				p := rt.Priority
+				// Count running tasks unless they are in the FreeBucket (p = NumPriorities).
+				if p < vector.NumPriorities {
+					c[w.RunningTask.Priority]++
+					rt.Cost.Values[p] += elapsedSecs
+				}
+			}
+		}
+	}
+
+	// Determine the new account balance for each account.
+	newBalances := make(map[string]*vector.Vector)
+	for id, acct := range config.AccountConfigs {
+		before := state.Balances[id]
+		if before == nil {
+			before = vector.New()
+		}
+		runningJobs := jobsPerAcct[id]
+		if runningJobs == nil {
+			runningJobs = &vector.IntVector{}
+		}
+		after := account.NextBalance(before, acct, elapsedSecs, runningJobs)
+		newBalances[id] = after
+	}
+	state.Balances = newBalances
+
+	newT, err := ptypes.TimestampProto(t)
+	if err != nil {
+		// Panic here instead of returning error, because balances would
+		// otherwise be inconsistent with update time, which would be
+		// a corrupt state.
+		panic(err)
+	}
+
+	state.LastAccountUpdate = newT
+
+	return nil
+}
 
 // QuotaSchedule performs a single round of the quota scheduler algorithm
 // on a given state and config, and returns a slice of state mutations.

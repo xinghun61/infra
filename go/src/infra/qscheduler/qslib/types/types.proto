@@ -14,6 +14,7 @@
 syntax = "proto3";
 package types;
 
+import "google/protobuf/timestamp.proto";
 import "infra/qscheduler/qslib/types/task/task.proto";
 import "infra/qscheduler/qslib/types/vector/vector.proto";
 import "infra/qscheduler/qslib/types/account/account.proto";
@@ -48,6 +49,10 @@ message State {
 
   // Workers that may run tasks, and their states, keyed by worker id.
   map<string, Worker> workers = 3;
+
+  // LastAccountUpdate is the last time at which quota account balances
+  // were updated.
+  google.protobuf.Timestamp last_account_update = 4;
 }
 
 // Config represents configuration information about the behavior of accounts

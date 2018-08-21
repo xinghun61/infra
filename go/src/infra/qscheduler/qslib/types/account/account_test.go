@@ -45,12 +45,12 @@ func TestAccountAdvanceWithNoOverflow(t *testing.T) {
 	t.Parallel()
 	expect := *vector.New(0, 2, 4)
 
-	config := Config{
-		ChargeRate: vector.New(1, 2, 3),
-		MaxBalance: vector.New(10, 10, 10),
+	config := &Config{
+		ChargeRate:       vector.New(1, 2, 3),
+		MaxChargeSeconds: 10,
 	}
-	actual := vector.New()
-	UpdateBalance(actual, config, 2, &vector.IntVector{1, 1, 1})
+	before := vector.New()
+	actual := NextBalance(before, config, 2, &vector.IntVector{1, 1, 1})
 
 	if !actual.Equal(expect) {
 		t.Errorf("Balance = %+v, want %+v", actual, expect)
@@ -59,21 +59,21 @@ func TestAccountAdvanceWithNoOverflow(t *testing.T) {
 
 func TestAccountAdvanceWithOverflow(t *testing.T) {
 	t.Parallel()
-	expect := *vector.New(10, 11, 10)
+	expect := vector.New(10, 11, 10)
 	// P0 bucket will start below max and reach max.
 	// P1 bucket will have started above max already, but have spend that causes
 	//    it to be pulled to a lower value still above max.
 	// P2 bucket will have started above max, but have spend that causes it to be
 	//    pulled below max, and then will recharge to reach max again.
-	config := Config{
-		ChargeRate: vector.New(1, 1, 1),
-		MaxBalance: vector.New(10, 10, 10),
+	config := &Config{
+		ChargeRate:       vector.New(1, 1, 1),
+		MaxChargeSeconds: 10,
 	}
 
-	actual := *vector.New(9.5, 12, 10.5)
-	UpdateBalance(&actual, config, 1, &vector.IntVector{0, 1, 1})
+	before := vector.New(9.5, 12, 10.5)
+	actual := NextBalance(before, config, 1, &vector.IntVector{0, 1, 1})
 
-	if !actual.Equal(expect) {
+	if !actual.Equal(*expect) {
 		t.Errorf("Balance = %+v, want %+v", actual, expect)
 	}
 }
