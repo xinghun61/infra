@@ -16,11 +16,11 @@ package priority
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/kylelemons/godebug/pretty"
 
 	"infra/qscheduler/qslib/tutils"
 	"infra/qscheduler/qslib/types"
@@ -63,10 +63,11 @@ func TestBasicPrioritization(t *testing.T) {
 		},
 	}
 
-	for _, test := range cases {
+	for i, test := range cases {
 		actual := PrioritizeRequests(&test.state, &test.config)
-		if !reflect.DeepEqual(actual, test.expected) {
-			t.Errorf("With state %+v got priority slice %+v, want %+v", test.state, actual, test.expected)
+
+		if diff := pretty.Compare(actual, test.expected); diff != "" {
+			t.Errorf(fmt.Sprintf("Case %d got unexpected slice diff (-got +want): %s", i, diff))
 		}
 	}
 }
@@ -96,8 +97,9 @@ func TestPrioritizeWithEnqueueTimeTieBreaker(t *testing.T) {
 		{RequestId: "t1", Priority: 0, Request: &eR},
 		{RequestId: "t2", Priority: 0, Request: &lR},
 	})
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Got %+v, want %+v", actual, expected)
+
+	if diff := pretty.Compare(actual, expected); diff != "" {
+		t.Errorf(fmt.Sprintf("Got unexpected diff (-got +want): %s", diff))
 	}
 }
 
@@ -158,8 +160,8 @@ func TestDemoteBeyondFanout(t *testing.T) {
 	demoteTasksBeyondFanout(priList, state, config)
 
 	actual := priList
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Got %+v, want %+v", actual, expected)
+	if diff := pretty.Compare(actual, expected); diff != "" {
+		t.Errorf(fmt.Sprintf("Got unexpected diff (-got +want): %s", diff))
 	}
 }
 
@@ -243,15 +245,8 @@ func TestPrioritize(t *testing.T) {
 
 	actual := PrioritizeRequests(state, config)
 
-	if len(actual) != len(expected) {
-		t.Errorf("len(actual) != len(expected)")
-	}
-
-	for i, exp := range expected {
-		act := actual[i]
-		if !reflect.DeepEqual(act, exp) {
-			t.Errorf("%dth element of slices differ, got %+v, want %+v", i, act, exp)
-		}
+	if diff := pretty.Compare(actual, expected); diff != "" {
+		t.Errorf(fmt.Sprintf("Got unexpected diff (-got +want): %s", diff))
 	}
 }
 
@@ -278,9 +273,8 @@ func TestForPriority(t *testing.T) {
 	for p := int32(0); p < 6; p++ {
 		actual := pRequests.ForPriority(p)
 		expected := expecteds[p]
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("P%d slice of: %+v \nwas %+v, \nwant %+v",
-				p, pRequests, actual, expected)
+		if diff := pretty.Compare(actual, expected); diff != "" {
+			t.Errorf(fmt.Sprintf("P%d slice got unexpected diff (-got +want): %s", p, diff))
 		}
 	}
 }

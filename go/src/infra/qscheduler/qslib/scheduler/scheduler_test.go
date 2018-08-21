@@ -16,6 +16,7 @@ package scheduler
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -26,29 +27,16 @@ import (
 	"infra/qscheduler/qslib/types/account"
 	"infra/qscheduler/qslib/types/task"
 	"infra/qscheduler/qslib/types/vector"
+
+	"github.com/kylelemons/godebug/pretty"
 )
 
 // epoch is an arbitrary time for testing purposes, corresponds to
 // 01/01/2018 @ 1:00 am UTC
 var epoch = time.Unix(1514768400, 0)
 
-// assertMutations is a testing helper that does a itemwise comparison of two
-// slices of mutaters.Mutater, and fails if they are unequal.
-func assertMutations(t *testing.T, expects []mutaters.Mutater, actual []mutaters.Mutater, caseNum int) {
-	if len(actual) != len(expects) {
-		t.Errorf("Case %d got %d muts \n%+v\n, want %d muts \n%+v", caseNum, len(actual), actual, len(expects), expects)
-		return
-	}
-
-	for i, mut := range actual {
-		expect := expects[0]
-		expects = expects[1:]
-		if !reflect.DeepEqual(mut, expect) {
-			t.Errorf("Case %d at element %d got: %+v, want: %+v", caseNum, i, mut, expect)
-		}
-	}
-}
-
+// TestMatchWithIdleWorkers tests that the scheduler correctly matches
+// requests with idle workers, if they are available.
 func TestMatchWithIdleWorkers(t *testing.T) {
 	t.Parallel()
 	state := types.State{
@@ -77,7 +65,10 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 	}
 
 	muts := QuotaSchedule(&state, &config)
-	assertMutations(t, expects, muts, 0)
+
+	if diff := pretty.Compare(muts, expects); diff != "" {
+		t.Errorf(fmt.Sprintf("Unexpected mutations diff (-got +want): %s", diff))
+	}
 }
 
 func TestReprioritize(t *testing.T) {
@@ -131,7 +122,10 @@ func TestReprioritize(t *testing.T) {
 	}
 
 	muts := QuotaSchedule(&state, &config)
-	assertMutations(t, expects, muts, 0)
+
+	if diff := pretty.Compare(muts, expects); diff != "" {
+		t.Errorf(fmt.Sprintf("Unexpected mutations diff (-got +want): %s", diff))
+	}
 }
 
 func TestPreempt(t *testing.T) {
@@ -227,7 +221,9 @@ func TestPreempt(t *testing.T) {
 
 	for i, test := range cases {
 		actual := QuotaSchedule(test.State, test.Config)
-		assertMutations(t, test.Expect, actual, i)
+		if diff := pretty.Compare(actual, test.Expect); diff != "" {
+			t.Errorf(fmt.Sprintf("Case %d, unexpected mutations diff (-got +want): %s", i, diff))
+		}
 	}
 }
 
@@ -369,8 +365,8 @@ func TestUpdateBalance(t *testing.T) {
 	for i, test := range cases {
 		actual := test.State
 		UpdateAccounts(actual, test.Config, test.T)
-		if !reflect.DeepEqual(actual, test.Expect) {
-			t.Errorf("In case %d got state\n%+v\nwant\n%+v", i, actual, test.Expect)
+		if diff := pretty.Compare(actual, test.Expect); diff != "" {
+			t.Errorf(fmt.Sprintf("Case %d unexpected mutations diff (-got +want): %s", i, diff))
 		}
 	}
 }

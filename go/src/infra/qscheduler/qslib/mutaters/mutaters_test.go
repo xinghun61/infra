@@ -15,92 +15,104 @@
 package mutaters
 
 import (
+	"fmt"
 	"testing"
+
+	"github.com/kylelemons/godebug/pretty"
 
 	"infra/qscheduler/qslib/types"
 	"infra/qscheduler/qslib/types/task"
 	"infra/qscheduler/qslib/types/vector"
 )
 
-func stateForMutTest() *types.State {
-	return &types.State{
+// TestAssign tests that the AssignIdleWorker Mutate method behaves correctly.
+func TestAssign(t *testing.T) {
+	t.Parallel()
+	state := &types.State{
+		Requests: map[string]*task.Request{"t1": &task.Request{}},
+		Workers:  map[string]*types.Worker{"w1": &types.Worker{}},
+	}
+
+	expect := &types.State{
+		Requests: map[string]*task.Request{},
+		Workers: map[string]*types.Worker{
+			"w1": &types.Worker{RunningTask: &task.Run{
+				RequestId: "t1",
+				Priority:  1,
+				Request:   &task.Request{},
+				Cost:      vector.New()}},
+		},
+	}
+
+	mut := AssignIdleWorker{Priority: 1, RequestId: "t1", WorkerId: "w1"}
+	mut.Mutate(state)
+
+	if diff := pretty.Compare(state, expect); diff != "" {
+		t.Errorf(fmt.Sprintf("Unexpected state diff (-got +want): %s", diff))
+	}
+}
+
+// TestReprioritize tests that the ChangePriority Mutate method behaves correctly.
+func TestReprioritize(t *testing.T) {
+	t.Parallel()
+	state := &types.State{
+		Workers: map[string]*types.Worker{"w1": &types.Worker{RunningTask: &task.Run{Priority: 2}}},
+	}
+
+	expect := &types.State{
+		Workers: map[string]*types.Worker{"w1": &types.Worker{RunningTask: &task.Run{Priority: 1}}},
+	}
+	mut := ChangePriority{NewPriority: 1, WorkerId: "w1"}
+	mut.Mutate(state)
+
+	if diff := pretty.Compare(state, expect); diff != "" {
+		t.Errorf(fmt.Sprintf("Unexpected state diff (-got +want): %s", diff))
+	}
+}
+
+// TestPreempt tests that the PreemptTask Mutate method behaves correctly.
+func TestPreempt(t *testing.T) {
+	t.Parallel()
+	state := &types.State{
 		Balances: map[string]*vector.Vector{
 			"a1": vector.New(),
+			"a2": vector.New(2),
+		},
+		Requests: map[string]*task.Request{
+			"t2": &task.Request{AccountId: "a2"},
+		},
+		Workers: map[string]*types.Worker{
+			"w1": &types.Worker{RunningTask: &task.Run{
+				Cost:      vector.New(1),
+				Priority:  2,
+				Request:   &task.Request{AccountId: "a1"},
+				RequestId: "t1",
+			}},
+		},
+	}
+
+	expect := &types.State{
+		Balances: map[string]*vector.Vector{
+			"a1": vector.New(1),
 			"a2": vector.New(1),
 		},
 		Requests: map[string]*task.Request{
-			"t1": &task.Request{AccountId: "a2"},
+			"t1": &task.Request{AccountId: "a1"},
 		},
 		Workers: map[string]*types.Worker{
-			"w1": &types.Worker{
-				RunningTask: &task.Run{
-					Cost:      vector.New(.5, .5, .5),
-					Priority:  1,
-					Request:   &task.Request{AccountId: "a1"},
-					RequestId: "t2",
-				},
+			"w1": &types.Worker{RunningTask: &task.Run{
+				Cost:      vector.New(1),
+				Priority:  1,
+				Request:   &task.Request{AccountId: "a2"},
+				RequestId: "t2",
 			},
-			"w2": &types.Worker{},
-		},
+			}},
 	}
-}
 
-func TestMutMatch(t *testing.T) {
-	t.Parallel()
-	state := stateForMutTest()
-	mut := AssignIdleWorker{Priority: 1, RequestId: "t1", WorkerId: "w2"}
-	mut.Mutate(state)
-	w2 := state.Workers["w2"]
-	if w2.RunningTask.Priority != 1 {
-		t.Errorf("Got priority %d, want %d", w2.RunningTask.Priority, 1)
-	}
-	if w2.RunningTask.RequestId != "t1" {
-		t.Errorf("Got task id %s, want %s", w2.RunningTask.RequestId, "t1")
-	}
-	_, ok := state.Requests["t1"]
-	if ok {
-		t.Errorf("task remains in queue")
-	}
-}
-
-func TestMutReprioritize(t *testing.T) {
-	t.Parallel()
-	state := stateForMutTest()
-	mut := ChangePriority{NewPriority: 2, WorkerId: "w1"}
-	mut.Mutate(state)
-	if state.Workers["w1"].RunningTask.Priority != 2 {
-		t.Errorf("incorrect priority")
-	}
-}
-
-func TestMutPreempt(t *testing.T) {
-	t.Parallel()
-	state := stateForMutTest()
-	mut := PreemptTask{Priority: 0, RequestId: "t1", WorkerId: "w1"}
+	mut := PreemptTask{Priority: 1, RequestId: "t2", WorkerId: "w1"}
 	mut.Mutate(state)
 
-	gotId, wantId := state.Workers["w1"].RunningTask.RequestId, "t1"
-	if gotId != wantId {
-		t.Errorf("Got task id %s, want %s", gotId, wantId)
-	}
-
-	gotP, wantP := state.Workers["w1"].RunningTask.Priority, int32(0)
-	if gotP != wantP {
-		t.Errorf("Got priority %d, want %d", gotP, wantP)
-	}
-
-	gotC, wantC := state.Workers["w1"].RunningTask.Cost, *vector.New(.5, .5, .5)
-	if !gotC.Equal(wantC) {
-		t.Errorf("Got cost %+v, want %+v", gotC, wantC)
-	}
-
-	gotBal, wantBal := state.Balances["a2"], *vector.New(.5, -.5, -.5)
-	if !gotBal.Equal(wantBal) {
-		t.Errorf("Got paying account balance %+v, want %+v", gotBal, wantBal)
-	}
-
-	gotBal, wantBal = state.Balances["a1"], *vector.New(.5, .5, .5)
-	if !gotBal.Equal(wantBal) {
-		t.Errorf("Got receiving account balance %+v, want %+v", gotBal, wantBal)
+	if diff := pretty.Compare(state, expect); diff != "" {
+		t.Errorf(fmt.Sprintf("Unexpected state diff (-got +want): %s", diff))
 	}
 }

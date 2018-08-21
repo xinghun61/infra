@@ -15,9 +15,11 @@
 package simulation
 
 import (
-	"reflect"
+	"fmt"
 	"testing"
 	"time"
+
+	"github.com/kylelemons/godebug/pretty"
 
 	"infra/qscheduler/qslib/tutils"
 	"infra/qscheduler/qslib/types/task"
@@ -106,13 +108,7 @@ func TestGenerator(t *testing.T) {
 		},
 	}
 
-	if len(expects) != len(gens) {
-		t.Errorf("Got %d reqs, want %d", len(gens), len(expects))
-	}
-
-	for i, e := range expects {
-		if !(reflect.DeepEqual(e, gens[i])) {
-			t.Errorf("Got %dth generated task %+v, want %+v", i, gens[i], e)
-		}
+	if diff := pretty.Compare(gens, expects); diff != "" {
+		t.Errorf(fmt.Sprintf("Unexpected generation diff (-got +want): %s", diff))
 	}
 }
