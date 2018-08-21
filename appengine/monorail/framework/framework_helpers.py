@@ -264,6 +264,8 @@ def FormatURL(recognized_params, servlet_path, **kwargs):
   all_params = []
   if kwargs.get('id'):
     all_params.append(('id', kwargs['id']))
+  # TODO(jojwang): update all calls to FormatURL to only include non-None
+  # recognized_params
   if recognized_params:
     all_params.extend(
         param for param in recognized_params if param[0] not in kwargs)

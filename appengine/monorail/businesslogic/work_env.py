@@ -447,24 +447,20 @@ class WorkEnv(object):
 
     return new_issue, comment
 
-  # TODO(jrobbins): This method requires self.mc to be a MonorailRequest.
-  # Instead, it should accept the projects, search query and pagination
-  # parameters as separate objects.
-  def ListIssues(self):
-    """Do an issue search using info in mr and return a pipeline object."""
+  def ListIssues(self, query_string, query_project_names, me_user_id,
+                 items_per_page, paginate_start, url_params, can,
+                 group_by_spec, sort_spec, use_cached_searches, mode):
+    """Do an issue search w/ mc + passed in args to return a pipeline object."""
     # Permission to view a project is checked in Frontendsearchpipeline().
     # Individual results are filtered by permissions in SearchForIIDs().
 
     with self.mc.profiler.Phase('searching issues'):
-      url_params = [(name, self.mc.GetParam(name)) for name in
-                    framework_helpers.RECOGNIZED_PARAMS]
       pipeline = frontendsearchpipeline.FrontendSearchPipeline(
           self.mc.cnxn, self.services, self.mc.project, self.mc.auth,
-          self.mc.me_user_id, self.mc.query, self.mc.query_project_names,
-          self.mc.num, self.mc.start, url_params, self.mc.can,
-          self.mc.group_by_spec, self.mc.sort_spec, self.mc.warnings,
-          self.mc.errors, self.mc.use_cached_searches, self.mc.profiler,
-          self.mc.mode)
+          me_user_id, query_string, query_project_names,
+          items_per_page, paginate_start, url_params, can, group_by_spec,
+          sort_spec, self.mc.warnings, self.mc.errors, use_cached_searches,
+          self.mc.profiler, mode)
       if not self.mc.errors.AnyErrors():
         pipeline.SearchForIIDs()
         pipeline.MergeAndSortIssues()

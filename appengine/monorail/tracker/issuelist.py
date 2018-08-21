@@ -77,7 +77,12 @@ class IssueList(servlet.Servlet):
         else:
           config = tracker_bizobj.MakeDefaultProjectIssueConfig(None)
 
-      pipeline = we.ListIssues()
+      url_params = [(name, mr.GetParam(name)) for name in
+                    framework_helpers.RECOGNIZED_PARAMS]
+      pipeline = we.ListIssues(
+          mr.query, mr.query_project_names, mr.me_user_id, mr.num, mr.start,
+          url_params, mr.can, mr.group_by_spec, mr.sort_spec,
+          mr.use_cached_searches, mr.mode)
       starred_iid_set = set(we.ListStarredIssueIDs())
 
     with mr.profiler.Phase('computing col_spec'):

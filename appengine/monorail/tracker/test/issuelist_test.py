@@ -5,13 +5,19 @@
 
 """Unit tests for issuelist module."""
 
+import mock
 import unittest
 
+from google.appengine.ext import testbed
+from third_party import ezt
+
 import settings
+from framework import framework_helpers
 from framework import permissions
 from framework import table_view_helpers
 from proto import tracker_pb2
 from proto import user_pb2
+from search import frontendsearchpipeline
 from services import service_manager
 from testing import fake
 from testing import testing_helpers
@@ -22,10 +28,49 @@ from tracker import tracker_constants
 
 
 class IssueListUnitTest(unittest.TestCase):
+  def setUp(self):
+    self.services = service_manager.Services(project=fake.ProjectService(),
+                                             config=fake.ConfigService(),
+                                             usergroup=fake.UserGroupService(),
+                                             issue=fake.IssueService(),
+                                             issue_star=fake.IssueStarService(),
+                                             cache_manager=fake.CacheManager(),
+                                             features=fake.FeaturesService(),
+                                             user=fake.UserService())
+    self.servlet = issuelist.IssueList(
+        'req', 'res', services=self.services)
+    self.project = self.services.project.TestAddProject('proj')
+    self.issue1 = fake.MakeTestIssue(
+        001, 1, 'issue_summary', 'New', 111L, project_name='proj')
+    self.services.issue.TestAddIssue(self.issue1)
+    self.mr = testing_helpers.MakeMonorailRequest(project=self.project)
+    self.mr.project_name = self.project.project_name
+    self.mr.auth.effective_ids = {111L}
+    self.mr.me_user_id = 111L
 
-  def testGatherPageData(self):
-    # TODO(jrobbins): write tests for this method.
-    pass
+    self.testbed = testbed.Testbed()
+    self.testbed.activate()
+    self.testbed.init_memcache_stub()
+    self.testbed.init_datastore_v3_stub()
+
+  def tearDown(self):
+    self.testbed.deactivate()
+
+  @mock.patch('search.frontendsearchpipeline._StartBackendSearch')
+  @mock.patch('search.frontendsearchpipeline._FinishBackendSearch')
+  def testGatherPageData(self, mockFinishBackendSearch, mockStartBackendSearch):
+    url_params = [(name, self.mr.GetParam(name)) for name in
+                  framework_helpers.RECOGNIZED_PARAMS]
+    mockStartBackendSearch.return_value = []
+    page_data = self.servlet.GatherPageData(self.mr)
+    mockStartBackendSearch.assert_called_with(
+        self.mr.cnxn, ['proj'], [self.project.project_id],
+        mock.ANY, {}, {}, {}, set(),
+        self.services, self.mr.me_user_id, 0, self.mr.num, url_params,
+        [''], self.mr.can, self.mr.group_by_spec, self.mr.sort_spec,
+        self.mr.warnings, self.mr.use_cached_searches)
+    mockFinishBackendSearch.assert_called_with([])
+    self.assertEqual(page_data['list_mode'], ezt.boolean(True))
 
   def testGetTableViewData(self):
     # TODO(jrobbins): write tests for this method.
