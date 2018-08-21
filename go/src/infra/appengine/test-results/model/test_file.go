@@ -35,6 +35,12 @@ type BuildNum int64
 
 var _ datastore.PropertyConverter = (*BuildNum)(nil)
 
+// 1 megabyte is the maximum allowed length for a datastore
+// entity. But use a smaller value because App Engine errors
+// when we get close to the limit.
+// See https://code.googlesource.com/gocloud/+/master/datastore/prop.go#29.
+var datastoreBlobLimit = (1 << 20) - 2048
+
 // IsNil returns whether b had null value in datastore.
 func (b *BuildNum) IsNil() bool { return *b == -1 }
 
@@ -203,11 +209,6 @@ func (tf *TestFile) putDataEntries(c context.Context, dataFunc func(io.Writer) e
 }
 
 func writeDataEntries(c context.Context, r io.Reader) ([]*datastore.Key, error) {
-	// 1 megabyte is the maximum allowed length for a datastore
-	// entity. But use a smaller value because App Engine errors
-	// when we get close to the limit.
-	// See https://code.googlesource.com/gocloud/+/master/datastore/prop.go#29.
-	const maxBlobLen = (1 << 20) - 2048
 
 	// This may write a lot of entries, and so we do NOT want a transactional
 	// datastore handle here. This is fine, since each DataEntry will be a new
@@ -215,9 +216,12 @@ func writeDataEntries(c context.Context, r io.Reader) ([]*datastore.Key, error) 
 	c = datastore.WithoutTransaction(c)
 
 	// Read data from "r" one blob at a time.
-	buf := make([]byte, maxBlobLen)
-	var keys []*datastore.Key
+	buf := make([]byte, datastoreBlobLimit)
+
 	finished := false
+
+	var dataEntries []*DataEntry
+
 	for !finished {
 		// Read as much as possible into "buf". If we read any data, add another
 		// DataEntry and keep reading.
@@ -232,29 +236,47 @@ func writeDataEntries(c context.Context, r io.Reader) ([]*datastore.Key, error) 
 		default:
 			// Actual Reader error.
 			logging.WithError(err).Errorf(c, "Failed to read from Reader.")
-			return keys, err
+			return nil, err
 		}
 
 		if count > 0 {
-			dataEntry := &DataEntry{
-				Data:    buf[:count],
-				Created: clock.Get(c).Now().UTC(),
-			}
-			if err := datastore.Put(c, dataEntry); err != nil {
-				logging.WithError(err).Errorf(c, "Failed to put DataEntry #%d.", len(keys))
-				return keys, err
-			}
-
-			logging.Fields{
-				"index": len(keys),
-				"size":  len(dataEntry.Data),
-				"id":    dataEntry.ID,
-			}.Debugf(c, "Added data entry.")
-			keys = append(keys, datastore.KeyForObj(c, dataEntry))
+			copied := make([]byte, count)
+			copy(copied, buf[:count])
+			dataEntries = append(dataEntries,
+				&DataEntry{
+					Data:    copied,
+					Created: clock.Get(c).Now().UTC(),
+				})
 		}
 	}
 
-	return keys, nil
+	keys := make([]*datastore.Key, len(dataEntries))
+
+	const datastorePutWokers = 16
+
+	err := parallel.WorkPool(datastorePutWokers, func(workC chan<- func() error) {
+		for i, dataEntry := range dataEntries {
+			dataEntry := dataEntry
+			i := i
+			workC <- func() error {
+				err := datastore.Put(c, dataEntry)
+				if err != nil {
+					logging.WithError(err).Errorf(c, "Failed to put DataEntry #%d.", i)
+					return err
+				}
+
+				logging.Fields{
+					"index": i,
+					"size":  len(dataEntry.Data),
+					"id":    dataEntry.ID,
+				}.Debugf(c, "Added data entry.")
+				keys[i] = datastore.KeyForObj(c, dataEntry)
+				return nil
+			}
+		}
+	})
+
+	return keys, err
 }
 
 // updatedBlobKeys fetches the updated blob keys for the old keys from their blobstore migration
