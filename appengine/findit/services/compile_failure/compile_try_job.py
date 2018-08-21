@@ -377,18 +377,26 @@ def ScheduleCompileTryJob(parameters, runner_id):
   return build_id
 
 
-def OnTryJobStateChanged(try_job_id, build_json):
+def OnTryJobStateChanged(try_job_id, build_json, run_try_job_params):
   """Updates TryJobData entity with new build state.
 
   Args:
     try_job_id (str): The build id of the try job.
     build_json (dict): The up-to-date build info.
+    run_try_job_params (RunCompileTryJobParameters): Parameters to run try job.
 
   Returns:
     CompileTryJobResult if the try job has completed; otherwise None.
   """
-  result = try_job_service.OnTryJobStateChanged(
+  result, state = try_job_service.OnTryJobStateChanged(
       try_job_id, failure_type.COMPILE, build_json)
+
+  if state in [analysis_status.COMPLETED, analysis_status.ERROR]:
+    # TODO(crbug/869684): Use a gauge metric to track intermittent statuses.
+    master_name, builder_name, _ = run_try_job_params.build_key.GetParts()
+    compile_failure_analysis.RecordCompileFailureAnalysisStateChange(
+        master_name, builder_name, state, analysis_approach_type.TRY_JOB)
+
   if result is not None:
     result = CompileTryJobResult.FromSerializable(result)
   return result
@@ -444,3 +452,11 @@ def IdentifyCompileTryJobCulprit(parameters):
   UpdateSuspectedCLs(master_name, builder_name, build_number, culprits)
 
   return culprits, heuristic_cls
+
+
+def OnTryJobTimeout(try_job_id, run_try_job_params):
+  try_job_service.OnTryJobTimeout(try_job_id, failure_type.COMPILE)
+  master_name, builder_name, _ = (run_try_job_params.build_key.GetParts())
+  compile_failure_analysis.RecordCompileFailureAnalysisStateChange(
+      master_name, builder_name, analysis_status.ERROR,
+      analysis_approach_type.TRY_JOB)

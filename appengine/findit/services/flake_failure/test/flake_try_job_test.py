@@ -477,7 +477,7 @@ class FlakeTryJobServiceTest(TestCase):
     try_job_id = 'try_job_id'
     build_json = {}
 
-    mocked_changed.return_value = None
+    mocked_changed.return_value = None, False
 
     result = flake_try_job.OnTryJobStateChanged(try_job_id, build_json)
 
@@ -495,7 +495,7 @@ class FlakeTryJobServiceTest(TestCase):
         'report': {},
         'url': 'url',
         'try_job_id': try_job_id,
-    }
+    }, True
 
     expected_result = FlakeTryJobResult(
         report=FlakeTryJobReport(

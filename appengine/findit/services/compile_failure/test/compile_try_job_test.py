@@ -20,6 +20,7 @@ from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from services import build_failure_analysis
 from services import try_job as try_job_service
+from services.compile_failure import compile_failure_analysis
 from services.compile_failure import compile_try_job
 from services.parameters import BaseFailedSteps
 from services.parameters import BuildKey
@@ -1542,14 +1543,63 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
     culprits, _ = compile_try_job.IdentifyCompileTryJobCulprit(parameters)
     self.assertIsNone(culprits)
 
-  @mock.patch.object(try_job_service, 'OnTryJobStateChanged', return_value=None)
-  def testOnTryJobStateChangedNoResult(self, mock_fn):
-    self.assertIsNone(compile_try_job.OnTryJobStateChanged('try_job_id', {}))
-    mock_fn.assert_called_once_with('try_job_id', failure_type.COMPILE, {})
+  @mock.patch.object(try_job_service, 'OnTryJobTimeout')
+  @mock.patch.object(compile_failure_analysis,
+                     'RecordCompileFailureAnalysisStateChange')
+  def testOnTryJobTimeout(self, mock_mon, _):
+    parameter = RunCompileTryJobParameters(
+        build_key=BuildKey(master_name='m', builder_name='b', build_number=1),
+        good_revision='rev1',
+        bad_revision='rev2',
+        suspected_revisions=[],
+        cache_name=None,
+        dimensions=[],
+        compile_targets=[],
+        urlsafe_try_job_key='urlsafe_try_job_key')
+    compile_try_job.OnTryJobTimeout('id', parameter)
+    mock_mon.assert_called_once_with('m', 'b', analysis_status.ERROR,
+                                     analysis_approach_type.TRY_JOB)
 
-  @mock.patch.object(try_job_service, 'OnTryJobStateChanged', return_value={})
-  def testOnTryJobStateChanged(self, mock_fn):
+  @mock.patch.object(compile_failure_analysis,
+                     'RecordCompileFailureAnalysisStateChange')
+  @mock.patch.object(
+      try_job_service,
+      'OnTryJobStateChanged',
+      return_value=(None, analysis_status.PENDING))
+  def testOnTryJobStateChangedNoResult(self, mock_fn, mock_mon):
+    parameter = RunCompileTryJobParameters(
+        build_key=BuildKey(master_name='m', builder_name='b', build_number=1),
+        good_revision='rev1',
+        bad_revision='rev2',
+        suspected_revisions=[],
+        cache_name=None,
+        dimensions=[],
+        compile_targets=[],
+        urlsafe_try_job_key='urlsafe_try_job_key')
+    self.assertIsNone(
+        compile_try_job.OnTryJobStateChanged('try_job_id', {}, parameter))
+    mock_fn.assert_called_once_with('try_job_id', failure_type.COMPILE, {})
+    self.assertFalse(mock_mon.called)
+
+  @mock.patch.object(compile_failure_analysis,
+                     'RecordCompileFailureAnalysisStateChange')
+  @mock.patch.object(
+      try_job_service,
+      'OnTryJobStateChanged',
+      return_value=({}, analysis_status.COMPLETED))
+  def testOnTryJobStateChanged(self, mock_fn, mock_mon):
+    parameter = RunCompileTryJobParameters(
+        build_key=BuildKey(master_name='m', builder_name='b', build_number=1),
+        good_revision='rev1',
+        bad_revision='rev2',
+        suspected_revisions=[],
+        cache_name=None,
+        dimensions=[],
+        compile_targets=[],
+        urlsafe_try_job_key='urlsafe_try_job_key')
     self.assertEqual(
         CompileTryJobResult.FromSerializable({}),
-        compile_try_job.OnTryJobStateChanged('try_job_id', {}))
+        compile_try_job.OnTryJobStateChanged('try_job_id', {}, parameter))
     mock_fn.assert_called_once_with('try_job_id', failure_type.COMPILE, {})
+    mock_mon.assert_called_once_with('m', 'b', analysis_status.COMPLETED,
+                                     analysis_approach_type.TRY_JOB)

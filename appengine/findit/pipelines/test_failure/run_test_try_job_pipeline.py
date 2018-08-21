@@ -9,7 +9,6 @@ from common import exceptions
 from common.waterfall import failure_type
 from gae_libs.pipelines import AsynchronousPipeline
 from gae_libs.pipelines import pipeline
-from services import try_job
 from services.parameters import TestTryJobResult
 from services.parameters import RunTestTryJobParameters
 from services.test_failure import test_try_job
@@ -30,7 +29,7 @@ class RunTestTryJobPipeline(AsynchronousPipeline):
     # TODO(crbug.com/835066): Capture metrics for pipeline timeouts.
     super(RunTestTryJobPipeline, self).OnTimeout(arg, parameters)
     try_job_id = parameters.get('try_job_id')
-    try_job.OnTryJobTimeout(try_job_id, failure_type.TEST)
+    test_try_job.OnTryJobTimeout(try_job_id, arg)
 
   def RunImpl(self, run_try_job_params):
     if self.GetCallbackParameters().get('try_job_id'):
@@ -47,7 +46,7 @@ class RunTestTryJobPipeline(AsynchronousPipeline):
 
     self.SaveCallbackParameters({'try_job_id': try_job_id})
 
-  def CallbackImpl(self, _run_try_job_params, parameters):
+  def CallbackImpl(self, run_try_job_params, parameters):
     """Updates the TryJobData entity with status from Buildbucket."""
     if not parameters.get('try_job_id'):
       # Try_job_id is not saved in callback parameters yet,
@@ -57,7 +56,8 @@ class RunTestTryJobPipeline(AsynchronousPipeline):
     try_job_id = parameters['try_job_id']
     build_json = json.loads(parameters['build_json'])
     try:
-      result = test_try_job.OnTryJobStateChanged(try_job_id, build_json)
+      result = test_try_job.OnTryJobStateChanged(try_job_id, build_json,
+                                                 run_try_job_params)
       if result is None:
         return None
       return None, result

@@ -167,7 +167,7 @@ def OnTryJobStateChanged(try_job_id, build_json):
   Returns:
     FlakeTryJobResult if the try job has completed; otherwise None.
   """
-  result = try_job_service.OnTryJobStateChanged(
+  result, _ = try_job_service.OnTryJobStateChanged(
       try_job_id, failure_type.FLAKY_TEST, build_json)
 
   if result is not None:

@@ -565,18 +565,39 @@ def ScheduleTestTryJob(parameters, notification_id):
   return build_id
 
 
-def OnTryJobStateChanged(try_job_id, build_json):
+def OnTryJobStateChanged(try_job_id, build_json, run_try_job_params):
   """Updates TryJobData entity with new build state.
 
   Args:
     try_job_id (str): The build id of the try job.
     build_json (dict): The up-to-date build info.
+    run_try_job_params(RunTestTryJobParameters): Parameters to run the try job.
 
   Returns:
     TestTryJobResult if the try job has completed; otherwise None.
   """
-  result = try_job_service.OnTryJobStateChanged(try_job_id, failure_type.TEST,
-                                                build_json)
+  result, state = try_job_service.OnTryJobStateChanged(
+      try_job_id, failure_type.TEST, build_json)
+
+  if state in [analysis_status.COMPLETED, analysis_status.ERROR]:
+    # TODO(crbug/869684): Use a gauge metric to track intermittent statuses.
+    master_name, builder_name, build_number = (
+        run_try_job_params.build_key.GetParts())
+    for step_name in run_try_job_params.targeted_tests or {}:
+      test_failure_analysis.RecordTestFailureAnalysisStateChange(
+          master_name, builder_name, build_number, step_name, state,
+          analysis_approach_type.TRY_JOB)
+
   if result is not None:
     result = TestTryJobResult.FromSerializable(result)
   return result
+
+
+def OnTryJobTimeout(try_job_id, run_try_job_params):
+  try_job_service.OnTryJobTimeout(try_job_id, failure_type.TEST)
+  master_name, builder_name, build_number = (
+      run_try_job_params.build_key.GetParts())
+  for step_name in run_try_job_params.targeted_tests or {}:
+    test_failure_analysis.RecordTestFailureAnalysisStateChange(
+        master_name, builder_name, build_number, step_name,
+        analysis_status.ERROR, analysis_approach_type.TRY_JOB)

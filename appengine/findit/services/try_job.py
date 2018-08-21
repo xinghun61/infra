@@ -663,13 +663,6 @@ def InitializeParams(try_job_id, try_job_type, urlsafe_try_job_key):
   }
 
 
-def _GetUpdatedParams(params, **kwargs):
-  new_params = copy.deepcopy(params)
-  for key, value in kwargs.iteritems():
-    new_params[key] = value
-  return new_params
-
-
 def _GetTryJobData(try_job_type, try_job_id):
   if try_job_type == failure_type.FLAKY_TEST:
     return FlakeTryJobData.Get(try_job_id)
@@ -701,7 +694,7 @@ def OnTryJobStateChanged(try_job_id, job_type, build_json):
   if build.status == BuildbucketBuild.COMPLETED:
     return OnTryJobCompleted(parameters, try_job_data, build, error=None)
   elif build.status == BuildbucketBuild.STARTED:
-    OnTryJobRunning(parameters, try_job_data, build, error=None)
+    return OnTryJobRunning(parameters, try_job_data, build, error=None)
   else:
     error_dict, error_code = _GetError(buildbucket_build=build)
     UpdateTryJobMetadata(
@@ -709,6 +702,8 @@ def OnTryJobStateChanged(try_job_id, job_type, build_json):
         buildbucket_build=build,
         error_dict=error_dict,
         error_code=error_code)
+    return (None, analysis_status.ERROR
+            if error_dict else analysis_status.PENDING)
 
 
 def OnTryJobTimeout(try_job_id, job_type):
@@ -754,7 +749,8 @@ def OnTryJobCompleted(params, try_job_data, build, error):
   result_to_update = _UpdateTryJobEntity(params['urlsafe_try_job_key'],
                                          try_job_type, try_job_id, build.url,
                                          BuildbucketBuild.COMPLETED, report)
-  return result_to_update[-1]
+  return (result_to_update[-1], analysis_status.ERROR
+          if error_dict else analysis_status.COMPLETED)
 
 
 def OnTryJobRunning(params, try_job_data, build, error):
@@ -778,10 +774,8 @@ def OnTryJobRunning(params, try_job_data, build, error):
       error_code=error_code,
       report=None)
 
-  return _GetUpdatedParams(
-      params,
-      error_count=0,
-      backoff_time=params.get('default_pipeline_wait_seconds'))
+  return (None, analysis_status.ERROR
+          if error_dict else analysis_status.RUNNING)
 
 
 def GetCurrentTryJobID(urlsafe_try_job_key, runner_id):

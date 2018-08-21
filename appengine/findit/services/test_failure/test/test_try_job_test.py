@@ -2060,18 +2060,69 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
   def testNeedANewTestTryJobNoConsistentFailure(self, *_):
     self.assertTrue(test_try_job._NeedANewTestTryJob(self.start_try_job_params))
 
-  @mock.patch.object(try_job_service, 'OnTryJobStateChanged', return_value={})
-  def testOnTryJobStateChanged(self, mock_fn):
+  @mock.patch.object(test_failure_analysis,
+                     'RecordTestFailureAnalysisStateChange')
+  @mock.patch.object(
+      try_job_service,
+      'OnTryJobStateChanged',
+      return_value=({}, analysis_status.COMPLETED))
+  def testOnTryJobStateChanged(self, mock_fn, mock_mon):
     try_job_id = '1'
     build_json = {}
+    parameters = RunTestTryJobParameters(
+        build_key=BuildKey(master_name='m', builder_name='b', build_number=1),
+        good_revision='rev1',
+        bad_revision='rev2',
+        suspected_revisions=[],
+        dimensions=['os:Mac-10.9', 'cpu:x86-64', 'pool:luci.chromium.findit'],
+        cache_name='cache',
+        targeted_tests={'a': ['test1']},
+        urlsafe_try_job_key='urlsafe_try_job_key')
+
     self.assertEqual(
         TestTryJobResult.FromSerializable({}),
-        test_try_job.OnTryJobStateChanged(try_job_id, build_json))
+        test_try_job.OnTryJobStateChanged(try_job_id, build_json, parameters))
     mock_fn.assert_called_once_with(try_job_id, failure_type.TEST, build_json)
+    mock_mon.assert_called_once_with('m', 'b', 1, 'a',
+                                     analysis_status.COMPLETED,
+                                     analysis_approach_type.TRY_JOB)
 
-  @mock.patch.object(try_job_service, 'OnTryJobStateChanged', return_value=None)
-  def testOnTryJobStateChangedNoneResult(self, mock_fn):
+  @mock.patch.object(test_failure_analysis,
+                     'RecordTestFailureAnalysisStateChange')
+  @mock.patch.object(
+      try_job_service,
+      'OnTryJobStateChanged',
+      return_value=(None, analysis_status.RUNNING))
+  def testOnTryJobStateChangedNoneResult(self, mock_fn, mock_mon):
     try_job_id = '1'
     build_json = {}
-    self.assertIsNone(test_try_job.OnTryJobStateChanged(try_job_id, build_json))
+    parameters = RunTestTryJobParameters(
+        build_key=BuildKey(master_name='m', builder_name='b', build_number=1),
+        good_revision='rev1',
+        bad_revision='rev2',
+        suspected_revisions=[],
+        dimensions=['os:Mac-10.9', 'cpu:x86-64', 'pool:luci.chromium.findit'],
+        cache_name='cache',
+        targeted_tests={'a': ['test1']},
+        urlsafe_try_job_key='urlsafe_try_job_key')
+    self.assertIsNone(
+        test_try_job.OnTryJobStateChanged(try_job_id, build_json, parameters))
     mock_fn.assert_called_once_with(try_job_id, failure_type.TEST, build_json)
+    self.assertFalse(mock_mon.called)
+
+  @mock.patch.object(try_job_service, 'OnTryJobTimeout')
+  @mock.patch.object(test_failure_analysis,
+                     'RecordTestFailureAnalysisStateChange')
+  def testOnTryJobTimeout(self, mock_mon, _):
+    parameters = RunTestTryJobParameters(
+        build_key=BuildKey(master_name='m', builder_name='b', build_number=1),
+        good_revision='rev1',
+        bad_revision='rev2',
+        suspected_revisions=[],
+        dimensions=['os:Mac-10.9', 'cpu:x86-64', 'pool:luci.chromium.findit'],
+        cache_name='cache',
+        targeted_tests={'a': ['test1']},
+        urlsafe_try_job_key='urlsafe_try_job_key')
+    test_try_job.OnTryJobTimeout('id', parameters)
+    mock_mon.assert_called_once_with('m', 'b', 1, 'a', analysis_status.ERROR,
+                                     analysis_approach_type.TRY_JOB)

@@ -5,14 +5,12 @@
 import mock
 
 from common import exceptions
-from common.waterfall import failure_type
 from gae_libs.pipelines import pipeline
 from libs import analysis_status
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from pipelines.compile_failure.run_compile_try_job_pipeline import (
     RunCompileTryJobPipeline)
-from services import try_job
 from services.compile_failure import compile_try_job
 from services.parameters import BuildKey
 from services.parameters import RunCompileTryJobParameters
@@ -54,12 +52,12 @@ class RunCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         compile_targets=[],
         urlsafe_try_job_key=job.key.urlsafe())
 
-  @mock.patch.object(try_job, 'OnTryJobTimeout')
+  @mock.patch.object(compile_try_job, 'OnTryJobTimeout')
   def testOnTimeout(self, mocked_OnTryJobTimeout):
     pipeline_input = self._CreateRunCompileTryJobParameters()
     p = RunCompileTryJobPipeline(pipeline_input)
     p.OnTimeout(pipeline_input, {'try_job_id': 'id'})
-    mocked_OnTryJobTimeout.assert_called_once_with('id', failure_type.COMPILE)
+    mocked_OnTryJobTimeout.assert_called_once_with('id', pipeline_input)
 
   @mock.patch.object(
       RunCompileTryJobPipeline, 'GetCallbackParameters', return_value={})
@@ -83,9 +81,7 @@ class RunCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       RunCompileTryJobPipeline,
       'GetCallbackParameters',
-      return_value={
-          'try_job_id': 'job_id'
-      })
+      return_value={'try_job_id': 'job_id'})
   @mock.patch.object(compile_try_job, 'ScheduleCompileTryJob')
   def testRunImplNotTriggerSameJobTwice(self, mocked_ScheduleCompileTryJob, _):
     pipeline_input = self._CreateRunCompileTryJobParameters()
@@ -133,7 +129,8 @@ class RunCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'build_json': '{"k":"v"}'
     })
     self.assertEqual((None, 'dummy'), returned_value)
-    mocked_OnTryJobStateChanged.assert_called_once_with('job-id', {'k': 'v'})
+    mocked_OnTryJobStateChanged.assert_called_once_with('job-id', {'k': 'v'},
+                                                        pipeline_input)
 
   @mock.patch.object(compile_try_job, 'OnTryJobStateChanged', return_value=None)
   def testCallbackImplNotCompletedRun(self, mocked_OnTryJobStateChanged):
@@ -144,7 +141,8 @@ class RunCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'build_json': '{"k":"v"}'
     })
     self.assertIsNone(returned_value)
-    mocked_OnTryJobStateChanged.assert_called_once_with('job-id', {'k': 'v'})
+    mocked_OnTryJobStateChanged.assert_called_once_with('job-id', {'k': 'v'},
+                                                        pipeline_input)
 
   @mock.patch.object(
       compile_try_job,
@@ -159,7 +157,8 @@ class RunCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     })
     self.assertEqual(('Error on updating try-job result: m', None),
                      returned_value)
-    mocked_OnTryJobStateChanged.assert_called_once_with('job-id', {'k': 'v'})
+    mocked_OnTryJobStateChanged.assert_called_once_with('job-id', {'k': 'v'},
+                                                        pipeline_input)
 
   def testTimeoutSeconds(self):
     pipeline_input = self._CreateRunCompileTryJobParameters()

@@ -1133,13 +1133,6 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         try_job_service.InitializeParams(try_job_id, try_job_type,
                                          urlsafe_try_job_key))
 
-  def testGetUpdatedParams(self):
-    parames = {
-        'error_count': 0,
-    }
-    new_params = try_job_service._GetUpdatedParams(parames, error_count=1)
-    self.assertEqual(1, new_params['error_count'])
-
   def testGetTryJobDataFlake(self):
     try_job_id = 'try_job_id'
     try_job = FlakeTryJob.Create('m', 'b', 's', 't', 'r1000')
@@ -1174,10 +1167,12 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         'status': 'SCHEDULED',
         'created_ts': '1454367570000000',
     }
-    try_job_service.OnTryJobStateChanged('job-id', failure_type.COMPILE,
-                                         build_json)
+    result, state = try_job_service.OnTryJobStateChanged(
+        'job-id', failure_type.COMPILE, build_json)
     try_job_data = WfTryJobData.Get('job-id')
     self.assertIsInstance(try_job_data.request_time, datetime)
+    self.assertIsNone(result)
+    self.assertEqual(analysis_status.PENDING, state)
 
   def testOnTryJobStateChangedWhenStarted(self):
     try_job = WfTryJob.Create('m', 'b', 1)
@@ -1194,8 +1189,10 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         'created_ts': '1454367570000000',
         'started_ts': '1454367571000000',
     }
-    try_job_service.OnTryJobStateChanged('job-id', failure_type.COMPILE,
-                                         build_json)
+    result, state = try_job_service.OnTryJobStateChanged(
+        'job-id', failure_type.COMPILE, build_json)
+    self.assertIsNone(result)
+    self.assertEqual(analysis_status.RUNNING, state)
     try_job_data = WfTryJobData.Get('job-id')
     self.assertIsInstance(try_job_data.start_time, datetime)
     try_job = WfTryJob.Get('m', 'b', 1)
@@ -1294,18 +1291,9 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         'updated_ts': '1454367571000000'
     }
     build = buildbucket_client.BuildbucketBuild(build_data)
-    new_params = try_job_service.OnTryJobRunning(params, None, build, None)
-
-    expected_params = {
-        'try_job_type': failure_type.COMPILE,
-        'try_job_id': try_job_id,
-        'error_count': 0,
-        'backoff_time': 5,
-        'default_pipeline_wait_seconds': 5,
-        'urlsafe_try_job_key': 'urlsafe_try_job_key'
-    }
-
-    self.assertEqual(new_params, expected_params)
+    result, state = try_job_service.OnTryJobRunning(params, None, build, None)
+    self.assertIsNone(result)
+    self.assertEqual(analysis_status.RUNNING, state)
 
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
   @mock.patch.object(
@@ -1345,9 +1333,9 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         }
     }
     mock_report.return_value = report
-    self.assertEqual(
-        'result',
-        try_job_service.OnTryJobCompleted(params, try_job_data, build, None))
+    self.assertEqual(('result', analysis_status.COMPLETED),
+                     try_job_service.OnTryJobCompleted(params, try_job_data,
+                                                       build, None))
 
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
   @mock.patch.object(
@@ -1378,9 +1366,9 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     }
     build = buildbucket_client.BuildbucketBuild(build_data)
 
-    self.assertEqual(
-        'result',
-        try_job_service.OnTryJobCompleted(params, try_job_data, build, None))
+    self.assertEqual(('result', analysis_status.ERROR),
+                     try_job_service.OnTryJobCompleted(params, try_job_data,
+                                                       build, None))
     mock_log.assert_called_once_with(
         'Failed to load result report for tryjob/%s due to exception %s.' %
         (try_job_id, TypeError().message))
@@ -1425,9 +1413,9 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         }
     }
     mock_report.return_value = report
-    self.assertEqual(
-        'result',
-        try_job_service.OnTryJobCompleted(params, try_job_data, build, None))
+    self.assertEqual(('result', analysis_status.COMPLETED),
+                     try_job_service.OnTryJobCompleted(params, try_job_data,
+                                                       build, None))
 
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
   @mock.patch.object(
@@ -1459,9 +1447,9 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     }
     build = buildbucket_client.BuildbucketBuild(build_data)
 
-    self.assertEqual(
-        'result',
-        try_job_service.OnTryJobCompleted(params, try_job_data, build, None))
+    self.assertEqual(('result', analysis_status.COMPLETED),
+                     try_job_service.OnTryJobCompleted(params, try_job_data,
+                                                       build, None))
     self.assertFalse(mock_fn.called)
 
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
@@ -1494,9 +1482,9 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     }
     build = buildbucket_client.BuildbucketBuild(build_data)
 
-    self.assertEqual(
-        'result',
-        try_job_service.OnTryJobCompleted(params, try_job_data, build, None))
+    self.assertEqual(('result', analysis_status.ERROR),
+                     try_job_service.OnTryJobCompleted(params, try_job_data,
+                                                       build, None))
     mock_log.assert_called_once_with(
         'Failed to load result report for tryjob/%s due to exception %s.' %
         (try_job_id, TypeError().message))
