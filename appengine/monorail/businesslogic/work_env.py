@@ -456,9 +456,15 @@ class WorkEnv(object):
     # Individual results are filtered by permissions in SearchForIIDs().
 
     with self.mc.profiler.Phase('searching issues'):
-      mr = self.mc  # TODO(jrobbins): change FrontendSearchPipeline.
+      url_params = [(name, self.mc.GetParam(name)) for name in
+                    framework_helpers.RECOGNIZED_PARAMS]
       pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-          mr, self.services, mr.num)
+          self.mc.cnxn, self.services, self.mc.project, self.mc.auth,
+          self.mc.me_user_id, self.mc.query, self.mc.query_project_names,
+          self.mc.num, self.mc.start, url_params, self.mc.can,
+          self.mc.group_by_spec, self.mc.sort_spec, self.mc.warnings,
+          self.mc.errors, self.mc.use_cached_searches, self.mc.profiler,
+          self.mc.mode)
       if not self.mc.errors.AnyErrors():
         pipeline.SearchForIIDs()
         pipeline.MergeAndSortIssues()
@@ -479,9 +485,15 @@ class WorkEnv(object):
     # Individual results are filtered by permissions in SearchForIIDs().
 
     with self.mc.profiler.Phase('finding issue position in search'):
-      mr = self.mc  # TODO(jrobbins): change FrontendSearchPipeline.
+      url_params = [(name, self.mc.GetParam(name)) for name in
+                    framework_helpers.RECOGNIZED_PARAMS]
       pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-          mr, self.services, None)
+           self.mc.cnxn, self.services, self.mc.project, self.mc.auth,
+          self.mc.me_user_id, self.mc.query, self.mc.query_project_names,
+          self.mc.num, self.mc.start, url_params, self.mc.can,
+          self.mc.group_by_spec, self.mc.sort_spec, self.mc.warnings,
+          self.mc.errors, self.mc.use_cached_searches, self.mc.profiler,
+          self.mc.mode)
       if not self.mc.errors.AnyErrors():
         # Only do the search if the user's query parsed OK.
         pipeline.SearchForIIDs()

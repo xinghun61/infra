@@ -751,8 +751,13 @@ class MonorailApi(remote.Service):
           raise permissions.PermissionException(
               'The user %s has no permission for project %s' %
               (mar.auth.email, project_name))
+    url_params = [(name, mar.GetParam(name)) for name in
+                  framework_helpers.RECOGNIZED_PARAMS]
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-        mar, self._services, mar.num)
+        mar.cnxn, self._services, mar.project, mar.auth, mar.me_user_id,
+        mar.query, mar.query_project_names, mar.num, mar.start, url_params,
+        mar.can, mar.group_by_spec, mar.sort_spec, mar.warnings, mar.errors,
+        mar.use_cached_searches, mar.profiler, mar.mode)
     if not mar.errors.AnyErrors():
       pipeline.SearchForIIDs()
       pipeline.MergeAndSortIssues()

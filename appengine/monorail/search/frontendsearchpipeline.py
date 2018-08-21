@@ -70,49 +70,50 @@ class FrontendSearchPipeline(object):
   is pretty much in the order of the source code lines here.
   """
 
-  def __init__(self, mr, services, default_results_per_page):
-    self.mr = mr
-    self.url_params = [(name, self.mr.GetParam(name)) for name in
-                       framework_helpers.RECOGNIZED_PARAMS]
-    self.cnxn = mr.cnxn
-    self.project_name = mr.project_name
-    self.me_user_id = mr.me_user_id
-    self.logged_in_user_id = mr.auth.user_id or 0
-    self.can = mr.can
-    self.items_per_page = mr.GetPositiveIntParam(
-        'num', default_results_per_page)
-    self.paginate_start = mr.start
-    self.subqueries = mr.query.split(' OR ')
-    self.url_params = [(name, self.mr.GetParam(name)) for name in
-                       framework_helpers.RECOGNIZED_PARAMS]
-    self.group_by_spec = mr.group_by_spec
-    self.sort_spec = mr.sort_spec
-    self.warnings = mr.warnings
-    self.use_cached_searches = mr.use_cached_searches
-    self.profiler = mr.profiler
+  def __init__(self, cnxn, services, project, auth, me_user_id,
+               query, query_project_names, items_per_page, paginate_start,
+               url_params, can, group_by_spec, sort_spec, warnings,
+               errors, use_cached_searches, profiler, display_mode):
+    self.cnxn = cnxn
+    self.url_params = url_params
+    self.project = project
+    self.project_name = project.project_name if project else ''
+    self.me_user_id = me_user_id
+    self.auth = auth
+    self.logged_in_user_id = auth.user_id or 0
+    self.can = can
+    self.items_per_page = items_per_page
+    self.paginate_start = paginate_start
+    self.subqueries = query.split(' OR ')
+    self.url_params = url_params
+    self.group_by_spec = group_by_spec
+    self.sort_spec = sort_spec
+    self.warnings = warnings
+    self.use_cached_searches = use_cached_searches
+    self.profiler = profiler
 
     self.services = services
-    self.default_results_per_page = default_results_per_page
-    self.grid_mode = (mr.mode == 'grid')
-    self.list_mode = (mr.mode == 'list')
-    self.chart_mode = (mr.mode == 'chart')
+    self.grid_mode = (display_mode == 'grid')
+    self.list_mode = (display_mode == 'list')
+    self.chart_mode = (display_mode == 'chart')
     self.grid_limited = False
     self.pagination = None
     self.num_skipped_at_start = 0
     self.total_count = 0
+    self.errors = errors
 
     self.query_projects = []
-    if mr.query_project_names:
+    if query_project_names:
       consider_projects = services.project.GetProjectsByName(
-        mr.cnxn, mr.query_project_names).values()
+        self.cnxn, query_project_names).values()
       self.query_projects = [
           p for p in consider_projects
           if permissions.UserCanViewProject(
-              mr.auth.user_pb, mr.auth.effective_ids, p)]
-    if mr.project_name:
-      self.query_projects.append(mr.project)
-    member_of_all_projects = mr.auth.user_pb.is_site_admin or all(
-        framework_bizobj.UserIsInProject(p, mr.auth.effective_ids)
+              self.auth.user_pb, self.auth.effective_ids, p)]
+    if project:
+      self.query_projects.append(project)
+    member_of_all_projects = self.auth.user_pb.is_site_admin or all(
+        framework_bizobj.UserIsInProject(p, self.auth.effective_ids)
         for p in self.query_projects)
     self.query_project_ids = sorted([
         p.project_id for p in self.query_projects])
@@ -120,7 +121,7 @@ class FrontendSearchPipeline(object):
         p.project_name for p in self.query_projects])
 
     config_dict = self.services.config.GetProjectConfigs(
-        mr.cnxn, self.query_project_ids)
+        self.cnxn, self.query_project_ids)
     self.harmonized_config = tracker_bizobj.HarmonizeConfigs(
         config_dict.values())
 
@@ -138,11 +139,11 @@ class FrontendSearchPipeline(object):
     self.error_responses = set()
 
     error_msg = _CheckQuery(
-        self.mr.cnxn, self.services, self.mr.query, self.harmonized_config,
+        self.cnxn, self.services, query, self.harmonized_config,
         self.query_project_ids, member_of_all_projects,
-        warnings=self.mr.warnings)
+        warnings=self.warnings)
     if error_msg:
-      self.mr.errors.query = error_msg
+      self.errors.query = error_msg
 
   def SearchForIIDs(self):
     """Use backends to search each shard and store their results."""

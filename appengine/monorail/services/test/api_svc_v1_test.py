@@ -100,6 +100,7 @@ class FakeMonorailApiRequest(object):
     self.can = self.GetParam('can')
     self.start = self.GetParam('start')
     self.num = self.GetParam('num')
+    self.warnings = []
 
   def CleanUp(self):
     self.cnxn = None
@@ -403,7 +404,10 @@ class MonorailApiTest(testing.EndpointsTestCase):
     """Find issues of one project."""
 
     self.mock(frontendsearchpipeline, 'FrontendSearchPipeline',
-              lambda x, y, z: FakeFrontendSearchPipeline())
+              lambda cnxn, serv, p, auth, me, q, q_proj_names,
+              num, start, url_params, can, group_spec, sort_spec,
+              warnings, errors, use_cache, profiler, display:
+              FakeFrontendSearchPipeline())
 
     self.services.project.TestAddProject(
         'test-project', owner_ids=[1],  # requester
