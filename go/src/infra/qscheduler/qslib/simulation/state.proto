@@ -1,0 +1,36 @@
+// Copyright 2018 The LUCI Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+package simulation;
+
+import "google/protobuf/timestamp.proto";
+
+// Generator represents the state of a workload generator.
+//
+// The configuration for a generator is a Workload object.
+message Generator {
+	// NextCycle is the next time at which this generator will emit
+	// requests.
+	google.protobuf.Timestamp next_cycle = 1;
+
+	// LabelSetRemaining is the number of cycles remaining for the current LabelSet.
+	int32 label_set_remaining = 2;
+
+	// LabelSetId is will be combined with and on the Workload Tag to create a
+	// unique LabelSet.
+	int32 label_set_id = 3;
+
+	// ReqCount is the integer id of the current request.
+	int32 req_count = 4;
+}

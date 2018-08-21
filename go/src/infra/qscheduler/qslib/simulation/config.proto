@@ -1,0 +1,46 @@
+// Copyright 2018 The LUCI Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+package simulation;
+
+import "google/protobuf/duration.proto";
+
+// Workload represents a stream of new tasks being enqueued, in the quota
+// scheduler simulation.
+//
+// Workload is the configuration class for a Generator.
+message Workload {
+	// Period of the workload generation cycle
+	google.protobuf.Duration period = 1;
+
+	// Num of task requests to create per cycle.
+	int32 num = 2;
+
+	// CyclesPerLabelSet is the number of cycles in which to use a given
+	// LabelSet (for convenience, 0 is equivalent to 1, and indicates that
+	// a LabelSet will be used for a single cycle).
+	int32 cycles_per_label_set = 3;
+
+	// AccountId of the account that will own generated jobs.
+	string account_id = 4;
+
+	// Duration is the running duration of the tasks that will be generated.
+	google.protobuf.Duration duration = 5;
+
+	// Tag is a string that will be included in the LabelSet and request
+	// ids for task requests from this this workload. This should be
+	// unique within a simulation.
+	string tag = 6;
+}
+
