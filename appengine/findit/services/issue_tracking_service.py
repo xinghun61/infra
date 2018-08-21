@@ -17,16 +17,25 @@ _SHERIFF_CHROMIUM_LABEL = 'Sheriff-Chromium'
 # Label for Type-Bug.
 _TYPE_BUG_LABEL = 'Type-Bug'
 
-# Label for flaky tests.
-_TEST_FLAKY_Label = 'Test-Flaky'
+# Label used to identify issues related to flaky tests.
+_FLAKY_TEST_LABEL = 'Test-Flaky'
+
+# Component used to identify issues related to flaky tests.
+_FLAKY_TEST_COMPONENT = 'Tests>Flaky'
 
 # Customized field for flaky test.
 _FLAKY_TEST_CUSTOMIZED_FIELD = 'Flaky-Test'
 
-_BUG_CUSTOM_FIELD_SEARCH_QUERY_TEMPLATE = 'Flaky-Test={} is:open'
+# Query used to search for flaky test in customized field.
+_FLAKY_TEST_CUSTOMIZED_FIELD_QUERY_TEMPLATE = (
+    '%s={} is:open' % _FLAKY_TEST_CUSTOMIZED_FIELD)
 
-_BUG_SUMMARY_SEARCH_QUERY_TEMPLATE = (
-    'summary:{} is:open label:%s' % _TEST_FLAKY_Label)
+# Query used to search for flaky test in summary.
+_FLAKY_TEST_SUMMARY_QUERY_TEMPLATE = 'summary:{} is:open'
+
+# A list of keywords in issue summary to identify issues that are related to
+# flaky tests.
+_FLAKY_TEST_SUMMARY_KEYWORDS = ['flake', 'flaky', 'flakiness']
 
 _FINDIT_ANALYZED_LABEL_TEXT = 'Test-Findit-Analyzed'
 
@@ -152,60 +161,90 @@ def GetBugForId(bug_id, project_id='chromium'):
   return issue
 
 
-def GetExistingBugIdForCustomizedField(field_value,
-                                       monorail_project='chromium'):
-  """Returns the bug id of an existing bug for this test.
+def _GetOpenIssueIdForFlakyTestByCustomizedField(test_name,
+                                                 monorail_project='chromium'):
+  """Returns flaky tests related issue by searching customized field.
 
   Args:
-    field_value: The value of the customized field to search for.
+    test_name: The name of the test to search for.
     monorail_project: The Monorail project to search for.
 
   Returns:
-    Id of the bug if it exists, otherwise None.
+    Id of the issue if it exists, otherwise None.
   """
-  assert field_value, 'Value for customized field cannot be None or empty.'
-  query = _BUG_CUSTOM_FIELD_SEARCH_QUERY_TEMPLATE.format(field_value)
+  query = _FLAKY_TEST_CUSTOMIZED_FIELD_QUERY_TEMPLATE.format(test_name)
   open_issues = _GetOpenIssues(query, monorail_project)
   return open_issues[0].id if open_issues else None
 
 
-def BugAlreadyExistsForCustomField(test_name):
-  """Returns True if the bug with the given custom field exists on monorail."""
-  return GetExistingBugIdForCustomizedField(test_name) is not None
+def _GetOpenIssueIdForFlakyTestBySummary(test_name,
+                                         monorail_project='chromium'):
+  """Returns flaky tests related issue by searching summary.
+
+  Note that searching for |test_name| in the summary alone is not enough, for
+  example: 'suite.test needs to be rewritten', so at least one of the following
+  additional identifiers is also required:
+  1. The issue has label: Test-Flaky.
+  2. The issue has component: Tests>Flaky.
+  3. The issue has one of the _FLAKY_TEST_SUMMARY_KEYWORDS in the summary.
+
+  Args:
+    test_name: The name of the test to search for.
+    monorail_project: The Monorail project to search for.
+
+  Returns:
+    Minimum id among the matched issues if exists, otherwise None.
+  """
+
+  def _is_issue_related_to_flake(issue):
+    if _FLAKY_TEST_LABEL in issue.labels:
+      return True
+
+    if _FLAKY_TEST_COMPONENT in issue.components:
+      return True
+
+    return any(keyword in issue.summary.lower()
+               for keyword in _FLAKY_TEST_SUMMARY_KEYWORDS)
+
+  query = _FLAKY_TEST_SUMMARY_QUERY_TEMPLATE.format(test_name)
+  open_issues = _GetOpenIssues(query, monorail_project)
+  flaky_test_open_issues = [
+      issue for issue in open_issues if _is_issue_related_to_flake(issue)
+  ]
+  if not flaky_test_open_issues:
+    return None
+
+  return min([issue.id for issue in flaky_test_open_issues])
 
 
-def GetExistingOpenBugIdForTest(test_name, monorail_project='chromium'):
-  """Search for test_name issues that are about flakiness, and return id.
+def SearchOpenIssueIdForFlakyTest(test_name, monorail_project='chromium'):
+  """Searches for existing open issue for a flaky test on Monorail.
 
   Args:
     test_name: The test name to search for.
     monorail_project: The Monorail project to search for.
 
   Returns:
-    Bug minimum id if exists, otherwise None.
+    Id of the issue if it exists, otherwise None.
   """
-  assert test_name, 'Test name to search summary for cannot be None or empty.'
-  query = _BUG_SUMMARY_SEARCH_QUERY_TEMPLATE.format(test_name)
-  open_issues = _GetOpenIssues(query, monorail_project)
-
-  if not open_issues:
-    return None
-
-  # Returns the one that was filed ealierst if there are multiple issues filed
-  # by developers.
-  return min([issue.id for issue in open_issues])
+  # Prefer issues without customized field because it means that the bugs were
+  # created manually by develoepers, so it is more likely to gain attentions.
+  return (_GetOpenIssueIdForFlakyTestBySummary(test_name, monorail_project) or
+          _GetOpenIssueIdForFlakyTestByCustomizedField(test_name,
+                                                       monorail_project))
 
 
-def OpenBugAlreadyExistsForTest(test_name):
-  """Returns True if a bug about test_name being flaky exists on Monorail.
+def OpenIssueAlreadyExistsForFlakyTest(test_name, monorail_project='chromium'):
+  """Returns True if a related flaky test bug already exists on Monorail.
 
   Args:
     test_name: The test name to search for.
+    monorail_project: The Monorail project to search for.
 
   Returns:
     True is there is already a bug about this test being flaky, False otherwise.
   """
-  return GetExistingOpenBugIdForTest(test_name) is not None
+  return SearchOpenIssueIdForFlakyTest(test_name, monorail_project) is not None
 
 
 def CreateBugForFlakeAnalyzer(test_name, subject, description,
@@ -235,7 +274,7 @@ def CreateBugForFlakeAnalyzer(test_name, subject, description,
           'chromium',
       'labels': [
           _FINDIT_ANALYZED_LABEL_TEXT, _SHERIFF_CHROMIUM_LABEL, priority,
-          _TYPE_BUG_LABEL, _TEST_FLAKY_Label
+          _TYPE_BUG_LABEL, _FLAKY_TEST_LABEL
       ],
       'fieldValues': [CustomizedField(_FLAKY_TEST_CUSTOMIZED_FIELD, test_name)]
   })
@@ -320,7 +359,7 @@ def CreateBugForFlakeDetection(normalized_step_name,
           monorail_project,
       'labels': [
           _FLAKE_DETECTION_LABEL_TEXT, _SHERIFF_CHROMIUM_LABEL, priority,
-          _TYPE_BUG_LABEL, _TEST_FLAKY_Label
+          _TYPE_BUG_LABEL, _FLAKY_TEST_LABEL
       ],
       'fieldValues': [
           CustomizedField(_FLAKY_TEST_CUSTOMIZED_FIELD, normalized_test_name)
@@ -362,8 +401,8 @@ def UpdateBugForFlakeDetection(bug_id,
   if _SHERIFF_CHROMIUM_LABEL not in issue.labels:
     issue.labels.append(_SHERIFF_CHROMIUM_LABEL)
 
-  if _TEST_FLAKY_Label not in issue.labels:
-    issue.labels.append(_TEST_FLAKY_Label)
+  if _FLAKY_TEST_LABEL not in issue.labels:
+    issue.labels.append(_FLAKY_TEST_LABEL)
 
   # Set Flaky-Test field. If it's already there, it's a no-op.
   flaky_field = CustomizedField(_FLAKY_TEST_CUSTOMIZED_FIELD,

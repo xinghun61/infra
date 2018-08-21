@@ -198,25 +198,6 @@ def GetFlakesNeedToReportToMonorail():
   return flake_tuples_to_report
 
 
-def SearchExistingOpenIssuesForFlakyTest(normalized_test_name,
-                                         monorail_project):
-  """Searches for an existing open issue for this flaky test.
-
-  Args:
-    normalized_test_name: The normalized test name to search for.
-    monorail_project: The Monorail project to search for.
-
-  Returns:
-    id of the issue if it exists, otherwise None.
-  """
-  # Check for open bug without customized field first because a bug that was
-  # created manually is more likely to gain attentions, so it is preferred.
-  return (issue_tracking_service.GetExistingOpenBugIdForTest(
-      normalized_test_name, monorail_project) or
-          issue_tracking_service.GetExistingBugIdForCustomizedField(
-              normalized_test_name, monorail_project))
-
-
 def _GetLinkForFlake(flake):
   """Given a flake, gets a link to the flake on flake detection UI.
 
@@ -340,8 +321,8 @@ def _ReportFlakeToMonorail(flake, occurrences):
   logging.info('This flake has no issue attached.')
 
   # Re-use an existing open bug if possible.
-  issue_id = SearchExistingOpenIssuesForFlakyTest(flake.normalized_test_name,
-                                                  monorail_project)
+  issue_id = issue_tracking_service.SearchOpenIssueIdForFlakyTest(
+      flake.normalized_test_name, monorail_project)
   if issue_id:
     logging.info(
         'An existing issue %s was found, attach it to this flake and update it '

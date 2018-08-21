@@ -75,11 +75,8 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
 
     if not flake_report_util.ShouldFileBugForAnalysis(analysis):
       if not analysis.bug_id:
-        bug_id = (
-            issue_tracking_service.GetExistingBugIdForCustomizedField(
-                analysis.test_name) or
-            issue_tracking_service.GetExistingOpenBugIdForTest(
-                analysis.test_name))
+        bug_id = issue_tracking_service.SearchOpenIssueIdForFlakyTest(
+            analysis.test_name)
         analysis.Update(bug_id=bug_id)
       return
 

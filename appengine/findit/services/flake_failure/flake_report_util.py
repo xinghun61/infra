@@ -78,13 +78,10 @@ def ShouldFileBugForAnalysis(analysis):
     analysis.LogInfo('Bug with id {} already exists.'.format(analysis.bug_id))
     return False
 
-  if issue_tracking_service.BugAlreadyExistsForCustomField(analysis.test_name):
-    analysis.LogInfo('Bug already exists for custom field {}'.format(
+  if issue_tracking_service.OpenIssueAlreadyExistsForFlakyTest(
+      analysis.test_name):
+    analysis.LogInfo('Bug already exists for flaky test: {}'.format(
         analysis.test_name))
-    return False
-
-  if issue_tracking_service.OpenBugAlreadyExistsForTest(analysis.test_name):
-    analysis.LogInfo('Bug about flakiness already exists')
     return False
 
   return True

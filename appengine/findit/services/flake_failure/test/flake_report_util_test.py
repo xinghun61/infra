@@ -84,14 +84,11 @@ class FlakeReportUtilTest(WaterfallTestCase):
       issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
       issue_tracking_service,
-      'BugAlreadyExistsForCustomField',
+      'OpenIssueAlreadyExistsForFlakyTest',
       return_value=False)
-  @mock.patch.object(
-      issue_tracking_service, 'OpenBugAlreadyExistsForTest', return_value=False)
-  def testShouldFileBugForAnalysis(self, test_exists_fn, field_exists_fn,
-                                   id_exists_fn, sufficient_confidence_fn,
-                                   previous_attempt_fn, feature_enabled_fn,
-                                   under_limit_fn):
+  def testShouldFileBugForAnalysis(
+      self, test_exists_fn, id_exists_fn, sufficient_confidence_fn,
+      previous_attempt_fn, feature_enabled_fn, under_limit_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -108,11 +105,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
     previous_attempt_fn.assert_called()
     feature_enabled_fn.assert_called()
     under_limit_fn.assert_called()
-    field_exists_fn.assert_called()
     test_exists_fn.assert_called()
 
-  @mock.patch.object(
-      issue_tracking_service, 'OpenBugAlreadyExistsForTest', return_value=False)
   @mock.patch.object(flake_report_util, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(
       flake_report_util, 'HasPreviousAttempt', return_value=False)
@@ -138,8 +132,6 @@ class FlakeReportUtilTest(WaterfallTestCase):
     self.assertFalse(flake_report_util.ShouldFileBugForAnalysis(analysis))
     self.assertTrue(feature_enabled_fn.called)
 
-  @mock.patch.object(
-      issue_tracking_service, 'OpenBugAlreadyExistsForTest', return_value=False)
   @mock.patch.object(flake_report_util, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(flake_report_util, 'IsBugFilingEnabled', return_value=True)
   @mock.patch.object(
@@ -163,8 +155,6 @@ class FlakeReportUtilTest(WaterfallTestCase):
     self.assertFalse(flake_report_util.ShouldFileBugForAnalysis(analysis))
     self.assertTrue(id_exists_fn.called)
 
-  @mock.patch.object(
-      issue_tracking_service, 'OpenBugAlreadyExistsForTest', return_value=False)
   @mock.patch.object(flake_report_util, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(flake_report_util, 'IsBugFilingEnabled', return_value=True)
   @mock.patch.object(
@@ -189,8 +179,6 @@ class FlakeReportUtilTest(WaterfallTestCase):
     self.assertFalse(flake_report_util.ShouldFileBugForAnalysis(analysis))
     self.assertTrue(confidence_fn.called)
 
-  @mock.patch.object(
-      issue_tracking_service, 'OpenBugAlreadyExistsForTest', return_value=False)
   @mock.patch.object(flake_report_util, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(flake_report_util, 'IsBugFilingEnabled', return_value=True)
   @mock.patch.object(
@@ -213,8 +201,6 @@ class FlakeReportUtilTest(WaterfallTestCase):
     self.assertFalse(flake_report_util.ShouldFileBugForAnalysis(analysis))
     self.assertTrue(attempt_fn.called)
 
-  @mock.patch.object(
-      issue_tracking_service, 'OpenBugAlreadyExistsForTest', return_value=False)
   @mock.patch.object(flake_report_util, 'IsBugFilingEnabled', return_value=True)
   @mock.patch.object(
       issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
@@ -247,41 +233,9 @@ class FlakeReportUtilTest(WaterfallTestCase):
       flake_report_util, 'HasPreviousAttempt', return_value=False)
   @mock.patch.object(flake_report_util, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(
-      issue_tracking_service, 'OpenBugAlreadyExistsForTest', return_value=False)
-  @mock.patch.object(
       issue_tracking_service,
-      'BugAlreadyExistsForCustomField',
+      'OpenIssueAlreadyExistsForFlakyTest',
       return_value=True)
-  def testShouldFileBugForAnalysisWhenBugExistsForCustomField(
-      self, custom_field_exists, *_):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-
-    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
-                                          build_number, step_name, test_name)
-    analysis.confidence_in_culprit = 0.5
-    analysis.Save()
-
-    self.assertFalse(flake_report_util.ShouldFileBugForAnalysis(analysis))
-    self.assertTrue(custom_field_exists.called)
-
-  @mock.patch.object(flake_report_util, 'IsBugFilingEnabled', return_value=True)
-  @mock.patch.object(
-      issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
-  @mock.patch.object(
-      flake_report_util, 'HasSufficientConfidenceInCulprit', return_value=True)
-  @mock.patch.object(
-      flake_report_util, 'HasPreviousAttempt', return_value=False)
-  @mock.patch.object(flake_report_util, 'UnderDailyLimit', return_value=True)
-  @mock.patch.object(
-      issue_tracking_service,
-      'BugAlreadyExistsForCustomField',
-      return_value=False)
-  @mock.patch.object(
-      issue_tracking_service, 'OpenBugAlreadyExistsForTest', return_value=True)
   def testShouldFileBugForAnalysisWhenBugExistsForTest(self, test_exists_Fn,
                                                        *_):
     master_name = 'm'

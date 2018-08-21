@@ -317,13 +317,14 @@ class FlakeReportUtilTest(WaterfallTestCase):
   # This test tests that if a flake has no flake issue attached, but find an
   # existing bug about this flaky test on this Monorail, then should attach that
   # bug to this flake and update it with new occurrences.
-  @mock.patch.object(flake_report_util, 'SearchExistingOpenIssuesForFlakyTest')
+  @mock.patch.object(
+      issue_tracking_service,
+      'SearchOpenIssueIdForFlakyTest',
+      return_value=56789)
   @mock.patch.object(flake_report_util, 'UpdateIssueForFlake')
   @mock.patch.object(flake_report_util, 'CreateIssueForFlake')
   def testReportFlakeHasNoFlakeIssueAndFindAnExistingOpenBug(
       self, mock_create_bug_fn, mock_update_bug_fn, mock_search_issue):
-    mock_search_issue.return_value = 56789
-
     flake = Flake.query().fetch()[0]
     occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()
     flake_tuples_to_report = [(flake, occurrences)]
@@ -333,17 +334,20 @@ class FlakeReportUtilTest(WaterfallTestCase):
     self.assertEqual(56789, flake.flake_issue_key.get().issue_id)
     mock_create_bug_fn.assert_not_called()
     mock_update_bug_fn.assert_called_once_with(flake, occurrences, None)
+    mock_search_issue.assert_called_once_with(flake.normalized_test_name,
+                                              'chromium')
 
   # This test tests that if a flake has no flake issue attached, and couldn't
   # find an existing bug about this flaky test on this Monorail, then should
   # attach that bug to this flake and update it with new occurrences.
-  @mock.patch.object(flake_report_util, 'SearchExistingOpenIssuesForFlakyTest')
+  @mock.patch.object(
+      issue_tracking_service,
+      'SearchOpenIssueIdForFlakyTest',
+      return_value=None)
   @mock.patch.object(flake_report_util, 'UpdateIssueForFlake')
   @mock.patch.object(flake_report_util, 'CreateIssueForFlake')
   def testReportFlakeHasNoFlakeIssueAndCantFindAnExistingOpenBug(
       self, mock_create_bug_fn, mock_update_bug_fn, mock_search_issue):
-    mock_search_issue.return_value = None
-
     flake = Flake.query().fetch()[0]
     occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()
     flake_tuples_to_report = [(flake, occurrences)]
@@ -351,67 +355,5 @@ class FlakeReportUtilTest(WaterfallTestCase):
 
     mock_create_bug_fn.assert_called_once_with(flake, occurrences, None)
     mock_update_bug_fn.assert_not_called()
-
-  # This test tests that the util first searches for open bugs on Monorail and
-  # if it is found, then avoid searching for customized field.
-  @mock.patch.object(
-      issue_tracking_service,
-      'GetExistingBugIdForCustomizedField',
-      return_value=None)
-  @mock.patch.object(
-      issue_tracking_service, 'GetExistingOpenBugIdForTest', return_value=12345)
-  def testSearchAndFoundOpenBug(self, mock_open_bug_for_test,
-                                mock_bug_for_customized_field):
-    flake = Flake.query().fetch()[0]
-    normalized_test_name = flake.normalized_test_name
-    monorail_project = FlakeIssue.GetMonorailProjectFromLuciProject(
-        flake.luci_project)
-    issue_id = flake_report_util.SearchExistingOpenIssuesForFlakyTest(
-        normalized_test_name, monorail_project)
-
-    self.assertEqual(12345, issue_id)
-    mock_open_bug_for_test.assert_called_once_with('test', 'chromium')
-    mock_bug_for_customized_field.assert_not_called()
-
-  # This test tests that the util first searches for open bugs on Monorail and
-  # if it is not found, then searches for customized field.
-  @mock.patch.object(
-      issue_tracking_service,
-      'GetExistingBugIdForCustomizedField',
-      return_value=56789)
-  @mock.patch.object(
-      issue_tracking_service, 'GetExistingOpenBugIdForTest', return_value=None)
-  def testSearchAndFoundCustomizedFieldBug(self, mock_open_bug_for_test,
-                                           mock_bug_for_customized_field):
-    flake = Flake.query().fetch()[0]
-    normalized_test_name = flake.normalized_test_name
-    monorail_project = FlakeIssue.GetMonorailProjectFromLuciProject(
-        flake.luci_project)
-    issue_id = flake_report_util.SearchExistingOpenIssuesForFlakyTest(
-        normalized_test_name, monorail_project)
-
-    self.assertEqual(56789, issue_id)
-    mock_open_bug_for_test.assert_called_once_with('test', 'chromium')
-    mock_bug_for_customized_field.assert_called_once_with('test', 'chromium')
-
-  # This test tests that the util first searches for open bugs on Monorail and
-  # if it is not found, then searches for customized field, and if still not
-  # found, returns None.
-  @mock.patch.object(
-      issue_tracking_service,
-      'GetExistingBugIdForCustomizedField',
-      return_value=None)
-  @mock.patch.object(
-      issue_tracking_service, 'GetExistingOpenBugIdForTest', return_value=None)
-  def testSearchAndFoundNothing(self, mock_open_bug_for_test,
-                                mock_bug_for_customized_field):
-    flake = Flake.query().fetch()[0]
-    normalized_test_name = flake.normalized_test_name
-    monorail_project = FlakeIssue.GetMonorailProjectFromLuciProject(
-        flake.luci_project)
-    issue_id = flake_report_util.SearchExistingOpenIssuesForFlakyTest(
-        normalized_test_name, monorail_project)
-
-    self.assertEqual(None, issue_id)
-    mock_open_bug_for_test.assert_called_once_with('test', 'chromium')
-    mock_bug_for_customized_field.assert_called_once_with('test', 'chromium')
+    mock_search_issue.assert_called_once_with(flake.normalized_test_name,
+                                              'chromium')
