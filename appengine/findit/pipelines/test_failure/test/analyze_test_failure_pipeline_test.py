@@ -88,7 +88,8 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
         build_completed=True,
         force=False,
         heuristic_result=heuristic_output,
-        consistent_failures=consistent_failures)
+        consistent_failures=consistent_failures,
+    )
     self.MockGeneratorPipeline(
         analyze_test_failure_pipeline.StartTestTryJobPipeline,
         start_waterfall_try_job_inputs, None)

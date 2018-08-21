@@ -4,6 +4,7 @@
 
 import mock
 
+from common.monitoring import aborted_pipelines
 from common.waterfall import failure_type
 from dto.collect_swarming_task_results_outputs import (
     CollectSwarmingTaskResultsOutputs)
@@ -191,7 +192,7 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job = WfTryJob.Create('m', 'b', 1)
     try_job.put()
     mock_fn.return_value = (False, None)
-    heuristic_result = {'failure_info': failure_info, 'heuristic_result': {}}
+    heuristic_result = {'failure_info': failure_info, 'heuristic_result': None}
     params = StartTestTryJobInputs(
         build_key=BuildKey(master_name='m', builder_name='b', build_number=1),
         build_completed=True,
@@ -201,6 +202,34 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         consistent_failures=CollectSwarmingTaskResultsOutputs.FromSerializable(
             {}))
     pipeline = StartTestTryJobPipeline(params)
-    result = pipeline.run(params)
+    result = pipeline.RunImpl(params)
     self.assertEqual(list(result), [])
     self.assertFalse(mock_pipeline.called)
+
+  @mock.patch.object(aborted_pipelines, 'increment')
+  def testOnAbortResumedTryJob(self, mock_mon):
+    heuristic_result = {'failure_info': {}, 'heuristic_result': None}
+    params = StartTestTryJobInputs(
+        build_key=BuildKey(master_name='m', builder_name='b', build_number=1),
+        build_completed=True,
+        force=False,
+        heuristic_result=TestHeuristicAnalysisOutput.FromSerializable(
+            heuristic_result),
+        consistent_failures=None)
+    pipeline = StartTestTryJobPipeline(params)
+    pipeline.OnAbort(params)
+    mock_mon.assert_called_once_with({'type': 'test'})
+
+  @mock.patch.object(aborted_pipelines, 'increment')
+  def testOnAbort(self, mock_mon):
+    heuristic_result = {'failure_info': {}, 'heuristic_result': {}}
+    params = StartTestTryJobInputs(
+        build_key=BuildKey(master_name='m', builder_name='b', build_number=1),
+        build_completed=True,
+        force=False,
+        heuristic_result=TestHeuristicAnalysisOutput.FromSerializable(
+            heuristic_result),
+        consistent_failures=None)
+    pipeline = StartTestTryJobPipeline(params)
+    pipeline.OnAbort(params)
+    self.assertFalse(mock_mon.called)

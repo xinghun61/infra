@@ -4,6 +4,7 @@
 
 import mock
 
+from common.monitoring import aborted_pipelines
 from common.waterfall import failure_type
 from dto.start_waterfall_try_job_inputs import StartCompileTryJobInput
 from gae_libs.pipelines import pipeline_handlers
@@ -266,3 +267,39 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     result = pipeline.RunImpl(start_try_job_params)
     self.assertEqual(list(result), [])
     self.assertFalse(mock_pipeline.called)
+
+  @mock.patch.object(aborted_pipelines, 'increment')
+  def testOnAbortResumedTryJob(self, mock_mon):
+    failure_info = {'failure_type': failure_type.COMPILE}
+    heuristic_result = {
+        'failure_info': failure_info,
+        'signals': {},
+        'heuristic_result': None
+    }
+    start_try_job_params = StartCompileTryJobInput(
+        build_key=BuildKey(master_name='m', builder_name='b', build_number=1),
+        heuristic_result=CompileHeuristicAnalysisOutput.FromSerializable(
+            heuristic_result),
+        build_completed=True,
+        force=False)
+    pipeline = StartCompileTryJobPipeline(start_try_job_params)
+    pipeline.OnAbort(start_try_job_params)
+    mock_mon.assert_called_once_with({'type': 'compile'})
+
+  @mock.patch.object(aborted_pipelines, 'increment')
+  def testOnAbort(self, mock_mon):
+    failure_info = {'failure_type': failure_type.COMPILE}
+    heuristic_result = {
+        'failure_info': failure_info,
+        'signals': {},
+        'heuristic_result': {}
+    }
+    start_try_job_params = StartCompileTryJobInput(
+        build_key=BuildKey(master_name='m', builder_name='b', build_number=1),
+        heuristic_result=CompileHeuristicAnalysisOutput.FromSerializable(
+            heuristic_result),
+        build_completed=True,
+        force=False)
+    pipeline = StartCompileTryJobPipeline(start_try_job_params)
+    pipeline.OnAbort(start_try_job_params)
+    self.assertFalse(mock_mon.called)

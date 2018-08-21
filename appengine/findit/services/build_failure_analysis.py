@@ -52,10 +52,10 @@ def _GetChangedLinesForChromiumRepo(repo_info, touched_file, line_numbers,
     if blame:
       for line_number in line_numbers:
         for region in blame:
-          if region.revision == suspected_revision:
-            if (line_number >= region.start and
-                line_number <= region.start + region.count - 1):
-              changed_line_numbers.append(line_number)
+          if (region.revision == suspected_revision and
+              (line_number >= region.start and
+               line_number <= region.start + region.count - 1)):
+            changed_line_numbers.append(line_number)
 
   return changed_line_numbers
 
@@ -457,8 +457,7 @@ def CheckFiles(failure_signal, change_log, deps_info, check_dependencies=False):
         _CheckFileInDependencyRolls(dependency, rolls, justification, [])
   if not justification.score:
     return None
-  else:
-    return justification.ToDict()
+  return justification.ToDict()
 
 
 class CLInfo(object):

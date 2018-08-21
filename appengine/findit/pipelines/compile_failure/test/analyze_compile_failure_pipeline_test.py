@@ -55,7 +55,7 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
     heuristic_output = CompileHeuristicAnalysisOutput.FromSerializable({
         'failure_info': None,
         'signals': None,
-        'heuristic_result': None
+        'heuristic_result': {}
     })
     self.MockSynchronousPipeline(
         analyze_compile_failure_pipeline.HeuristicAnalysisForCompilePipeline,
@@ -112,7 +112,7 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
     heuristic_output = CompileHeuristicAnalysisOutput.FromSerializable({
         'failure_info': None,
         'signals': None,
-        'heuristic_result': None
+        'heuristic_result': {}
     })
     self.MockSynchronousPipeline(
         analyze_compile_failure_pipeline.HeuristicAnalysisForCompilePipeline,
