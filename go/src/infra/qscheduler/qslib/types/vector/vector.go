@@ -81,6 +81,8 @@ func (a Vector) Less(b Vector) bool {
 	return false
 }
 
+// TODO: Rename Plus->Add, Minus->Sub, for better consistenct with go libraries.
+
 // Plus returns the sum of two vectors.
 func (a Vector) Plus(b Vector) Vector {
 	// Why a copy a and then add b, instead of a single loop? This works

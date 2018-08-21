@@ -18,6 +18,7 @@ import (
 	"testing"
 )
 
+// TestVectorCompare tests that vector Less method behaves correctly.
 func TestVectorCompare(t *testing.T) {
 	t.Parallel()
 
@@ -45,6 +46,7 @@ func TestVectorCompare(t *testing.T) {
 	}
 }
 
+// TestEqual tests that vector Equal method behaves correctly.
 func TestEqual(t *testing.T) {
 	t.Parallel()
 
@@ -68,6 +70,7 @@ func TestEqual(t *testing.T) {
 	}
 }
 
+// TestArithmetic tests that vector Plus and Minus methods behave correctly.
 func TestArithmetic(t *testing.T) {
 	cases := []struct {
 		A           Vector

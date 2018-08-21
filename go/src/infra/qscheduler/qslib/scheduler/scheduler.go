@@ -30,11 +30,14 @@ import (
 	"infra/qscheduler/qslib/types/vector"
 )
 
+// UpdateOrderError is an error that indicates that UpdateAccounts attempted to update a state
+// backwards in time.
 type UpdateOrderError struct {
 	Previous time.Time
 	Next     time.Time
 }
 
+// Error() implements the error interface.
 func (e *UpdateOrderError) Error() string {
 	return fmt.Sprintf("Update time %v was older than existing state's time %v.", e.Next, e.Previous)
 }
@@ -170,7 +173,6 @@ func matchIdleBotsWithLabels(state *types.State, requestsAtP priority.OrderedReq
 }
 
 // matchIdleBots matches requests with any idle workers.
-// Returns true if any job was matched.
 func matchIdleBots(state *types.State, requestsAtP []priority.Request) []mutaters.Mutater {
 	output := make([]mutaters.Mutater, 0)
 
@@ -371,6 +373,7 @@ func preemptRunningTasks(state *types.State, jobsAtP []priority.Request, priorit
 	return output
 }
 
+// minInt returns the lesser of two integers.
 func minInt(a, b int) int {
 	if a < b {
 		return a

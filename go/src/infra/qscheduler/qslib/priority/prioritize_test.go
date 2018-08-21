@@ -33,6 +33,8 @@ import (
 // 01/01/2018 @ 1:00 am UTC
 var epoch = time.Unix(1514768400, 0)
 
+// TestBasicPrioritization tests that PrioritizeRequests behaves correctly
+// for simple cases.
 func TestBasicPrioritization(t *testing.T) {
 	t.Parallel()
 
@@ -72,8 +74,9 @@ func TestBasicPrioritization(t *testing.T) {
 	}
 }
 
-// Given two requests with otherwise equal account-based priority,
-// the earlier one should be given priority.
+// TestPrioritizeWithEnqueueTimeTieBreaker tests that PrioritizeRequests
+// behaves correctly in circumstances where the enqueue time of a request
+// is used as tiebreaker.
 func TestPrioritizeWithEnqueueTimeTieBreaker(t *testing.T) {
 	t.Parallel()
 	e := time.Unix(100, 100)
@@ -103,9 +106,9 @@ func TestPrioritizeWithEnqueueTimeTieBreaker(t *testing.T) {
 	}
 }
 
-// For a given account, once the number of running or requested tasks
-// exceeds that account's MaxFanout, further requests should be assigned
-// to the FreeBucket.
+// TestDemoteBeyondFanout tests that for a given account, once the number
+// of running or requested tasks exceeds that account's MaxFanout, further
+// requests are assigned to the FreeBucket.
 func TestDemoteBeyondFanout(t *testing.T) {
 	t.Parallel()
 	config := &types.Config{
@@ -165,7 +168,7 @@ func TestDemoteBeyondFanout(t *testing.T) {
 	}
 }
 
-// Run a thorough test of the full set of prioritization behaviors.
+// TestPrioritize tests the full behavior set of PrioritizeRequests.
 func TestPrioritize(t *testing.T) {
 	t.Parallel()
 	// Setup common variables.
@@ -250,6 +253,8 @@ func TestPrioritize(t *testing.T) {
 	}
 }
 
+// TestForPriority tests that ForPriority method returns the correct
+// sub-slices of a prioritized list.
 func TestForPriority(t *testing.T) {
 	t.Parallel()
 	pRequests := OrderedRequests([]Request{

@@ -20,6 +20,7 @@ import (
 	"infra/qscheduler/qslib/types/vector"
 )
 
+// TestBestPriority tests that BestPriorityFor behaves correctly.
 func TestBestPriority(t *testing.T) {
 	t.Parallel()
 	expects := []int32{
@@ -41,6 +42,8 @@ func TestBestPriority(t *testing.T) {
 	}
 }
 
+// TestAccountAdvanceWithNoOverflow tests that NextBalance behaves correctly
+// when an account is not overflowing its MaxBalance.
 func TestAccountAdvanceWithNoOverflow(t *testing.T) {
 	t.Parallel()
 	expect := *vector.New(0, 2, 4)
@@ -57,6 +60,9 @@ func TestAccountAdvanceWithNoOverflow(t *testing.T) {
 	}
 }
 
+// TestAccountAdvanceWithOverflow tests that NextBalance behaves correctly
+// when an account is overflowing its MaxBalance (in particular, that the
+// account balance is capped if it is supposed to be).
 func TestAccountAdvanceWithOverflow(t *testing.T) {
 	t.Parallel()
 	expect := vector.New(10, 11, 10)
@@ -78,6 +84,7 @@ func TestAccountAdvanceWithOverflow(t *testing.T) {
 	}
 }
 
+// TestVectorCompare tests that vector Less method behaves correctly.
 func TestVectorCompare(t *testing.T) {
 	t.Parallel()
 

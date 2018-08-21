@@ -71,6 +71,9 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 	}
 }
 
+// TestReprioritize tests that the scheduler correctly changes the priority
+// of running jobs (promote or demote) if the account balance makes that
+// necessary.
 func TestReprioritize(t *testing.T) {
 	t.Parallel()
 	// Prepare a situation in which one P0 job (out of 2 running) will be
@@ -128,6 +131,8 @@ func TestReprioritize(t *testing.T) {
 	}
 }
 
+// TestPreempt tests that the scheduler correctly preempts lower priority jobs
+// running on a worker, when a higher priority job appears to take its place.
 func TestPreempt(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -227,6 +232,8 @@ func TestPreempt(t *testing.T) {
 	}
 }
 
+// TestUpdateErrors test that UpdateBalance returns the correct errors
+// under error conditions.
 func TestUpdateErrors(t *testing.T) {
 	cases := []struct {
 		State  *types.State
@@ -262,6 +269,8 @@ func TestUpdateErrors(t *testing.T) {
 	}
 }
 
+// TestUpdateBalance tests that UpdateBalance makes the correct modifications
+// to account balances and task run costs.
 func TestUpdateBalance(t *testing.T) {
 	t0 := tutils.TimestampProto(epoch)
 	t1 := tutils.TimestampProto(epoch.Add(1 * time.Second))
@@ -371,6 +380,8 @@ func TestUpdateBalance(t *testing.T) {
 	}
 }
 
+// stateAtTime is a testing helper that creates an initialized but empty
+// types.State instance with the given time as its LastAccountUpdate time.
 func stateAtTime(t time.Time) *types.State {
 	s := types.NewState()
 	s.LastAccountUpdate = tutils.TimestampProto(t)

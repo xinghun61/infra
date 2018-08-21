@@ -75,12 +75,16 @@ func (m *PreemptTask) Mutate(state *types.State) {
 		panic(fmt.Sprintf("No task with id %s", m.RequestId))
 	}
 
+	// Refund the cost of the preempted task, unless the old task's account no
+	// longer exists.
 	oldAcc := worker.RunningTask.Request.AccountId
+	if _, ok := state.Balances[oldAcc]; ok {
+		oldBal := state.Balances[oldAcc].Plus(*cost)
+		state.Balances[oldAcc] = &oldBal
+	}
+
+	// Charge the preempting account for the cost of the preempted task.
 	newAcc := newTask.AccountId
-
-	oldBal := state.Balances[oldAcc].Plus(*cost)
-	state.Balances[oldAcc] = &oldBal
-
 	newBal := state.Balances[newAcc].Minus(*cost)
 	state.Balances[newAcc] = &newBal
 

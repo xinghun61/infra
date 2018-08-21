@@ -20,6 +20,7 @@ import (
 	"infra/qscheduler/qslib/types"
 )
 
+// workerWithId is a (Worker, Id) tuple.
 type workerWithId struct {
 	Worker *types.Worker
 	Id     string

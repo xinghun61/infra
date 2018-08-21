@@ -16,6 +16,7 @@ package task
 
 import "testing"
 
+// TestLabelSetEquals tests that LabelSet Equal behaves correctly (setwise equality).
 func TestLabelSetEquals(t *testing.T) {
 	cases := []struct {
 		a      LabelSet
