@@ -943,8 +943,6 @@ class MakeViewsForUsersInIssuesTest(unittest.TestCase):
         'fake cnxn', issue_list, self.user)
     self.assertItemsEqual([], users_by_id.keys())
 
-  # TODO(ehmaldonado): Write tests for MakeProposedIssue
-
 
 class GetAllIssueProjectsTest(unittest.TestCase):
   issue_x_1 = tracker_pb2.Issue()

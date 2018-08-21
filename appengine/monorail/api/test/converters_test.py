@@ -771,6 +771,27 @@ class ConverterFunctionsTest(unittest.TestCase):
       converters.IngestIssueDelta(
           self.cnxn, self.services, delta, self.config, [])
 
+  def testIngestIssueDelta_ShiftFieldsIntoLabels(self):
+    """Test that enum fields are shifted into labels."""
+    self.config.field_defs = [self.fd_5]
+    delta = issues_pb2.IssueDelta(
+        field_vals_add=[
+            issue_objects_pb2.FieldValue(
+                value='Foo',
+                field_ref=common_pb2.FieldRef(field_name='Pre', field_id=5)
+            )],
+        field_vals_remove=[
+            issue_objects_pb2.FieldValue(
+                value='Bar',
+                field_ref=common_pb2.FieldRef(field_name='Pre', field_id=5),
+            )])
+    actual = converters.IngestIssueDelta(
+        self.cnxn, self.services, delta, self.config, [])
+    self.assertEqual(actual.field_vals_add, [])
+    self.assertEqual(actual.field_vals_remove, [])
+    self.assertEqual(actual.labels_add, ['Pre-Foo'])
+    self.assertEqual(actual.labels_remove, ['Pre-Bar'])
+
   def testIngestIssueDelta_RelatedIssues(self):
     """We can create a protorpc IssueDelta that references related issues."""
     issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L)

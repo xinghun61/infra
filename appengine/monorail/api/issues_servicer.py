@@ -326,9 +326,21 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
       proposed_owner_view = users_by_id[request.issue_delta.owner_ref.user_id]
 
     with mc.profiler.Phase('initializing proposed_issue'):
-      proposed_issue = tracker_helpers.MakeProposedIssue(
-          mc.cnxn, config, project, request.issue_ref.local_id,
-          request.issue_delta, existing_issue, mc.errors, self.services.user)
+      issue_delta = converters.IngestIssueDelta(
+          mc.cnxn, self.services, request.issue_delta, config, None)
+      proposed_issue = tracker_pb2.Issue(
+          project_id=project.project_id,
+          local_id=request.issue_ref.local_id,
+          summary=issue_delta.summary,
+          status=issue_delta.status,
+          owner_id=issue_delta.owner_id,
+          labels=issue_delta.labels_add,
+          component_ids=issue_delta.comp_ids_add,
+          project_name=project.project_name,
+          field_values=issue_delta.field_vals_add)
+      if existing_issue:
+        proposed_issue.attachment_count = existing_issue.attachment_count
+        proposed_issue.star_count = existing_issue.star_count
 
     with mc.profiler.Phase('applying rules'):
       _, traces = filterrules_helpers.ApplyFilterRules(

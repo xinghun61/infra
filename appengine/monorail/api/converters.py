@@ -485,10 +485,34 @@ def IngestIssueDelta(cnxn, services, delta, config, phases):
   labels_add = [lab_ref.label for lab_ref in delta.label_refs_add]
   labels_remove = [lab_ref.label for lab_ref in delta.label_refs_remove]
 
+  field_val_strs_add = {}
+  for field_val in delta.field_vals_add:
+    field_val_strs_add.setdefault(field_val.field_ref.field_id, []).append(
+        field_val.value)
+
+  field_val_strs_remove = {}
+  for field_val in delta.field_vals_remove:
+    field_val_strs_remove.setdefault(field_val.field_ref.field_id, []).append(
+        field_val.value)
+
+  field_helpers.ShiftEnumFieldsIntoLabels(
+      labels_add, labels_remove, field_val_strs_add, field_val_strs_remove,
+      config)
+
+  # Filter out the fields that were shifted into labels
+  field_vals_add = [
+      fv
+      for fv in delta.field_vals_add
+      if fv.field_ref.field_id in field_val_strs_add]
+  field_vals_remove = [
+      fv
+      for fv in delta.field_vals_remove
+      if fv.field_ref.field_id in field_val_strs_remove]
+
   field_vals_add = IngestFieldValues(
-      cnxn, services.user, delta.field_vals_add, config, phases=phases)
+      cnxn, services.user, field_vals_add, config, phases=phases)
   field_vals_remove = IngestFieldValues(
-      cnxn, services.user, delta.field_vals_remove, config, phases=phases)
+      cnxn, services.user, field_vals_remove, config, phases=phases)
   fields_clear = IngestFieldRefs(delta.fields_clear, config)
 
   blocked_on_add = IngestIssueRefs(
