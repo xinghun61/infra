@@ -11,12 +11,14 @@ from gae_libs import appengine_util
 from gae_libs import pipelines
 from gae_libs.pipelines import GeneratorPipeline
 from libs.structured_object import StructuredObject
+from model import analysis_approach_type
 from model.wf_analysis import WfAnalysis
 from pipelines import report_event_pipeline
 from pipelines.compile_failure.heuristic_analysis_for_compile_pipeline import (
     HeuristicAnalysisForCompilePipeline)
 from pipelines.compile_failure.start_compile_try_job_pipeline import (
     StartCompileTryJobPipeline)
+from services.compile_failure import compile_failure_analysis
 from services import build_failure_analysis
 from services.parameters import BuildKey
 from services.parameters import CompileFailureInfo
@@ -44,9 +46,15 @@ class AnalyzeCompileFailurePipeline(GeneratorPipeline):
     If one of heuristic pipelines caused the abort, continue try job analysis
     by starting a new pipeline.
     """
-    analysis, run_try_job = build_failure_analysis.UpdateAbortedAnalysis(
-        pipeline_input)
+    analysis, run_try_job, heuristic_aborted = (
+        build_failure_analysis.UpdateAbortedAnalysis(pipeline_input))
 
+    # Records that heuristic analysis ends in error.
+    if heuristic_aborted:
+      master_name, builder_name, _ = pipeline_input.build_key.GetParts()
+      compile_failure_analysis.RecordCompileFailureAnalysisStateChange(
+          master_name, builder_name, analysis.status,
+          analysis_approach_type.HEURISTIC)
     monitoring.aborted_pipelines.increment({'type': 'compile'})
 
     if not run_try_job:
@@ -86,6 +94,8 @@ class AnalyzeCompileFailurePipeline(GeneratorPipeline):
     build_failure_analysis.ResetAnalysisForANewAnalysis(
         master_name, builder_name, build_number, self.pipeline_status_path,
         appengine_util.GetCurrentVersion())
+
+    # TODO(crbug/869684): Use a gauge metric to track intermittent statuses.
 
     # The yield statements below return PipelineFutures, which allow subsequent
     # pipelines to refer to previous output values.

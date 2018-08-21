@@ -242,6 +242,11 @@ def HeuristicAnalysisForCompile(heuristic_params):
                                           builder_name, build_number,
                                           failure_info.failure_type)
 
+  # Monitors analysis status change.
+  RecordCompileFailureAnalysisStateChange(master_name, builder_name,
+                                          analysis_status.COMPLETED,
+                                          analysis_approach_type.HEURISTIC)
+
   return CompileHeuristicAnalysisOutput(
       failure_info=failure_info,
       signals=CompileFailureSignals.FromSerializable(signals),

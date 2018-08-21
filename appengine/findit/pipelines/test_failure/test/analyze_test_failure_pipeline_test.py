@@ -14,11 +14,13 @@ from dto.run_swarming_tasks_input import RunSwarmingTasksInput
 from dto.start_waterfall_try_job_inputs import StartTestTryJobInputs
 from gae_libs.pipelines import pipeline_handlers
 from libs import analysis_status
+from model import analysis_approach_type
 from model.wf_analysis import WfAnalysis
 from services.parameters import BuildKey
 from services.parameters import TestFailureInfo
 from services.parameters import TestHeuristicAnalysisOutput
 from services.parameters import TestHeuristicAnalysisParameters
+from services.test_failure import test_failure_analysis
 from pipelines import report_event_pipeline
 from pipelines.test_failure import analyze_test_failure_pipeline
 from pipelines.test_failure.analyze_test_failure_pipeline import (
@@ -52,7 +54,7 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
-    current_failure_info = {}
+    current_failure_info = {'failed_steps': {'a_test': {'first_failure': 124}}}
 
     self._SetupAnalysis(master_name, builder_name, build_number)
 
@@ -189,13 +191,28 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(analysis_status.RUNNING, analysis.status)
     mock_reporting.assert_not_called()
 
-  def testAnalyzeTestFailurePipelineAbortedIfWithError(self):
+  @mock.patch.object(test_failure_analysis,
+                     'RecordTestFailureAnalysisStateChange')
+  def testAnalyzeTestFailurePipelineAbortedIfWithError(self, mock_mon):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
 
+    failure_info = {
+        'failed_steps': {
+            'test': {
+                'last_pass': 122,
+                'current_failure': 123,
+                'first_failure': 123
+            }
+        }
+    }
     self._SetupAnalysis(
-        master_name, builder_name, build_number, status=analysis_status.RUNNING)
+        master_name,
+        builder_name,
+        build_number,
+        status=analysis_status.RUNNING,
+        failure_info=failure_info)
 
     pipeline_input = AnalyzeTestFailureInput(
         build_key=BuildKey(
@@ -213,8 +230,13 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(analysis_status.ERROR, analysis.status)
     self.assertIsNone(analysis.result_status)
     self.assertTrue(analysis.aborted)
+    mock_mon.assert_called_once_with(master_name, builder_name, build_number,
+                                     'test', analysis_status.ERROR,
+                                     analysis_approach_type.HEURISTIC)
 
-  def testAnalyzeTestFailurePipelineNotAbortedIfWithoutError(self):
+  @mock.patch.object(test_failure_analysis,
+                     'RecordTestFailureAnalysisStateChange')
+  def testAnalyzeTestFailurePipelineNotAbortedIfWithoutError(self, mock_mon):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
@@ -239,9 +261,12 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNotNone(analysis)
     self.assertNotEqual(analysis_status.ERROR, analysis.status)
+    self.assertFalse(mock_mon.called)
 
+  @mock.patch.object(test_failure_analysis,
+                     'RecordTestFailureAnalysisStateChange')
   @mock.patch.object(analyze_test_failure_pipeline, 'StartTestTryJobPipeline')
-  def testAnalyzeTestFailurePipelineStartTryJob(self, mocked_pipeline):
+  def testAnalyzeTestFailurePipelineStartTryJob(self, mocked_pipeline, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
@@ -290,6 +315,10 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
     mocked_pipeline.assert_called_once_with(expected_pipeline_input)
     mocked_pipeline.assert_has_calls(
         [mock.call().start(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)])
+
+    mock_fn.assert_called_once_with(master_name, builder_name, build_number,
+                                    'test', analysis_status.ERROR,
+                                    analysis_approach_type.HEURISTIC)
 
   @mock.patch.object(monitoring.completed_pipelines, 'increment')
   def testOnFinalized(self, mock_mon):

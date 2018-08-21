@@ -12,6 +12,7 @@ from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
 from services import ci_failure
+from services import monitoring
 from services.parameters import BaseFailedSteps
 from services.parameters import CompileFailureInfo
 from services.parameters import FailureInfoBuilds
@@ -416,7 +417,8 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(should_proceed)
 
   @mock.patch.object(build_util, 'GetBuildInfo', return_value=(500, None))
-  def testGetBuildFailureInfoFailedGetBuildInfo(self, _):
+  @mock.patch.object(monitoring, 'OnWaterfallAnalysisStateChange')
+  def testGetBuildFailureInfoFailedGetBuildInfo(self, mock_monitoring, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -429,9 +431,18 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual({}, failure_info)
     self.assertFalse(should_proceed)
+    mock_monitoring.assert_called_once_with(
+        master_name='m',
+        builder_name='b',
+        failure_type='unknown',
+        canonical_step_name='unknown',
+        isolate_target_name='unknown',
+        status='Error',
+        analysis_type='Pre-Analysis')
 
   @mock.patch.object(build_util, 'GetBuildInfo', return_value=(404, None))
-  def testGetBuildFailureInfo404(self, _):
+  @mock.patch.object(monitoring, 'OnWaterfallAnalysisStateChange')
+  def testGetBuildFailureInfo404(self, mock_monitoring, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -444,9 +455,18 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual({}, failure_info)
     self.assertFalse(should_proceed)
+    mock_monitoring.assert_called_once_with(
+        master_name='m',
+        builder_name='b',
+        failure_type='unknown',
+        canonical_step_name='unknown',
+        isolate_target_name='unknown',
+        status='Skipped',
+        analysis_type='Pre-Analysis')
 
   @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
-  def testGetBuildFailureInfoBuildSuccess(self, mock_fn):
+  @mock.patch.object(monitoring, 'OnWaterfallAnalysisStateChange')
+  def testGetBuildFailureInfoBuildSuccess(self, mock_monitoring, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 121
@@ -479,6 +499,14 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_failure_info, failure_info)
     self.assertFalse(should_proceed)
+    mock_monitoring.assert_called_once_with(
+        master_name='m',
+        builder_name='b',
+        failure_type='unknown',
+        canonical_step_name='unknown',
+        isolate_target_name='unknown',
+        status='Completed',
+        analysis_type='Pre-Analysis')
 
   @mock.patch.object(
       buildbot, 'GetBuildDataFromMilo', return_value=(200, '{"data": "data"}'))

@@ -380,11 +380,13 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(build_failure_analysis,
                      'SaveAnalysisAfterHeuristicAnalysisCompletes')
   @mock.patch.object(build_failure_analysis, 'SaveSuspectedCLs')
+  @mock.patch.object(compile_failure_analysis,
+                     'RecordCompileFailureAnalysisStateChange')
   @mock.patch.object(ci_failure, 'CheckForFirstKnownFailure')
   @mock.patch.object(extract_compile_signal, 'ExtractSignalsForCompileFailure')
   @mock.patch.object(compile_failure_analysis, 'AnalyzeCompileFailure')
   def testHeuristicAnalysisForCompile(self, mock_result, mock_signals,
-                                      mock_failure_info, *_):
+                                      mock_failure_info, mock_mon, *_):
     failure_info = {
         'build_number': 213,
         'master_name': 'chromium.win',
@@ -495,6 +497,22 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         result,
         CompileHeuristicAnalysisOutput.FromSerializable(expected_result))
+    mock_mon.assert_called_once_with('chromium.win', 'WinMSVC64 (dbg)',
+                                     analysis_status.COMPLETED,
+                                     analysis_approach_type.HEURISTIC)
+
+  @mock.patch.object(monitoring, 'OnWaterfallAnalysisStateChange')
+  def testRecordCompileFailureAnalysisStateChange(self, mock_mon):
+    compile_failure_analysis.RecordCompileFailureAnalysisStateChange(
+        'm', 'b', analysis_status.COMPLETED, analysis_approach_type.HEURISTIC)
+    mock_mon.assert_called_once_with(
+        master_name='m',
+        builder_name='b',
+        failure_type='compile',
+        canonical_step_name='compile',
+        isolate_target_name='N/A',
+        status='Completed',
+        analysis_type='Heuristic')
 
   @mock.patch.object(monitoring, 'OnWaterfallAnalysisStateChange')
   def testRecordCompileFailureAnalysisStateChange(self, mock_mon):

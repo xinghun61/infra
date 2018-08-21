@@ -683,10 +683,12 @@ def UpdateAbortedAnalysis(parameters):
   # Heuristic analysis could have already completed, while triggering the
   # try job kept failing and lead to the abort.
   run_try_job = False
+  heuristic_aborted = False
   if not analysis.completed:
     # Heuristic analysis is aborted.
     analysis.status = analysis_status.ERROR
     analysis.result_status = None
+    heuristic_aborted = True
 
     if analysis.failure_info:
       # We need failure_info to run try jobs,
@@ -694,4 +696,4 @@ def UpdateAbortedAnalysis(parameters):
       run_try_job = True
   analysis.aborted = True
   analysis.put()
-  return analysis, run_try_job
+  return analysis, run_try_job, heuristic_aborted

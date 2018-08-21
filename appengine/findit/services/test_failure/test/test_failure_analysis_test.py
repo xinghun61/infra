@@ -432,8 +432,10 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                      'SaveAnalysisAfterHeuristicAnalysisCompletes')
   @mock.patch.object(build_failure_analysis, 'SaveSuspectedCLs')
   @mock.patch.object(ci_test_failure, 'CheckFirstKnownFailureForSwarmingTests')
+  @mock.patch.object(test_failure_analysis,
+                     'RecordTestFailureAnalysisStateChange')
   @mock.patch.object(ci_failure, 'CheckForFirstKnownFailure')
-  def testHeuristicAnalysisForTest(self, mock_failure_info, *_):
+  def testHeuristicAnalysisForTest(self, mock_failure_info, mock_mon, *_):
     failure_info = {
         'master_name': 'm',
         'builder_name': 'b',
@@ -471,6 +473,9 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
     self.assertEqual(
         TestHeuristicAnalysisOutput.FromSerializable(expected_result), result)
+    mock_mon.assert_called_once_with('m', 'b', 99, 'test',
+                                     analysis_status.COMPLETED,
+                                     analysis_approach_type.HEURISTIC)
 
   def testUpdateAnalysisResult(self):
     analysis_result = {

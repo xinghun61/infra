@@ -120,6 +120,7 @@ def ScheduleAnalysisIfNeeded(master_name,
 
     if failure_info['failure_type'] == failure_type.COMPILE:
       # Use new compile pipelines.
+      # TODO(crbug/869684): Use a gauge metric to track intermittent statuses.
       compile_pipeline_input = AnalyzeCompileFailureInput(
           build_key=build_key,
           current_failure_info=CompileFailureInfo.FromSerializable(
@@ -128,12 +129,14 @@ def ScheduleAnalysisIfNeeded(master_name,
           force=force)
       pipeline_job = AnalyzeCompileFailurePipeline(compile_pipeline_input)
     else:
+      # TODO(crbug/869684): Use a gauge metric to track intermittent statuses.
       test_pipeline_input = AnalyzeTestFailureInput(
           build_key=build_key,
           current_failure_info=TestFailureInfo.FromSerializable(failure_info),
           build_completed=build_completed,
           force=force)
       pipeline_job = AnalyzeTestFailurePipeline(test_pipeline_input)
+
     # Explicitly run analysis in the backend module "waterfall-backend".
     # Note: Just setting the target in queue.yaml does NOT work for pipeline
     # when deployed to App Engine, but it does work in dev-server locally.

@@ -16,6 +16,7 @@ from gae_libs import appengine_util
 from gae_libs.pipelines import GeneratorPipeline
 from gae_libs.pipelines import pipeline
 from libs.structured_object import StructuredObject
+from model import analysis_approach_type
 from model.wf_analysis import WfAnalysis
 from pipelines import report_event_pipeline
 from pipelines.test_failure.collect_swarming_task_results_pipeline import (
@@ -33,6 +34,7 @@ from services.parameters import BuildKey
 from services.parameters import TestFailureInfo
 from services.parameters import TestHeuristicAnalysisOutput
 from services.parameters import TestHeuristicAnalysisParameters
+from services.test_failure import test_failure_analysis
 
 
 class AnalyzeTestFailureInput(StructuredObject):
@@ -58,10 +60,19 @@ class AnalyzeTestFailurePipeline(GeneratorPipeline):
     If one of heuristic pipelines caused the abort, continue try job analysis
     by starting a new pipeline.
     """
-    analysis, run_try_job = build_failure_analysis.UpdateAbortedAnalysis(
-        pipeline_input)
+    analysis, run_try_job, heuristic_aborted = (
+        build_failure_analysis.UpdateAbortedAnalysis(pipeline_input))
 
+    if heuristic_aborted and analysis.failure_info:
+      # Records that heuristic analysis ends in error.
+      master_name, builder_name, build_number = (
+          pipeline_input.build_key.GetParts())
+      for step_name in (analysis.failure_info.get('failed_steps') or {}):
+        test_failure_analysis.RecordTestFailureAnalysisStateChange(
+            master_name, builder_name, build_number, step_name, analysis.status,
+            analysis_approach_type.HEURISTIC)
     monitoring.aborted_pipelines.increment({'type': 'test'})
+
     if not run_try_job:
       return
 
@@ -102,6 +113,8 @@ class AnalyzeTestFailurePipeline(GeneratorPipeline):
     build_failure_analysis.ResetAnalysisForANewAnalysis(
         master_name, builder_name, build_number, self.pipeline_status_path,
         appengine_util.GetCurrentVersion())
+
+    # TODO(crbug/869684): Use a gauge metric to track intermittent statuses.
 
     # The yield statements below return PipelineFutures, which allow subsequent
     # pipelines to refer to previous output values.

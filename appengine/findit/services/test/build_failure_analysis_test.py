@@ -1110,11 +1110,12 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         build_completed=False,
         force=True)
     WfAnalysis.Create(master_name, builder_name, build_number).put()
-    analysis, run_try_job = build_failure_analysis.UpdateAbortedAnalysis(
-        parameter)
+    analysis, run_try_job, heuristic_aborted = (
+        build_failure_analysis.UpdateAbortedAnalysis(parameter))
     self.assertEqual(analysis_status.ERROR, analysis.status)
     self.assertTrue(analysis.aborted)
     self.assertFalse(run_try_job)
+    self.assertTrue(heuristic_aborted)
 
   def testUpdateAbortedAnalysisTryJob(self):
     master_name = 'm'
@@ -1131,11 +1132,12 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.failure_info = {'failed_steps': {}}
     analysis.put()
-    analysis, run_try_job = build_failure_analysis.UpdateAbortedAnalysis(
-        parameter)
+    analysis, run_try_job, heuristic_aborted = (
+        build_failure_analysis.UpdateAbortedAnalysis(parameter))
     self.assertEqual(analysis_status.ERROR, analysis.status)
     self.assertTrue(analysis.aborted)
     self.assertTrue(run_try_job)
+    self.assertTrue(heuristic_aborted)
 
   def testUpdateAbortedAnalysisErrorAfterHeuristic(self):
     master_name = 'm'
@@ -1152,8 +1154,9 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.status = analysis_status.COMPLETED
     analysis.put()
-    analysis, run_try_job = build_failure_analysis.UpdateAbortedAnalysis(
-        parameter)
+    analysis, run_try_job, heuristic_aborted = (
+        build_failure_analysis.UpdateAbortedAnalysis(parameter))
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
     self.assertTrue(analysis.aborted)
     self.assertFalse(run_try_job)
+    self.assertFalse(heuristic_aborted)

@@ -187,8 +187,15 @@ class BuildFailureAnalysisPipelinesTest(wf_testcase.WaterfallTestCase):
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNotNone(analysis)
 
+  @mock.patch.object(
+      ci_failure,
+      'GetStepMetadata',
+      return_value={
+          'canonical_step_name': 'a',
+          'isolate_target_name': 'a'
+      })
   @mock.patch.object(ci_failure, 'GetBuildFailureInfo')
-  def testStartTestPipelineForNewAnalysis(self, mock_info):
+  def testStartTestPipelineForNewAnalysis(self, mock_info, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124

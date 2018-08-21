@@ -12,8 +12,10 @@ from common.waterfall import failure_type
 from gae_libs.caches import PickledMemCache
 from libs import analysis_status
 from libs.cache_decorator import Cached
+from model import analysis_approach_type
 from model import result_status
 from model.wf_analysis import WfAnalysis
+from services import monitoring
 from services.parameters import FailureInfoBuild
 from services.parameters import FailureInfoBuilds
 from waterfall import build_util
@@ -229,6 +231,19 @@ def GetBuildFailureInfo(master_name, builder_name, build_number):
     analysis.status = analysis_status.SKIPPED
     analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
     analysis.put()
+
+    # Findit analysis doesn't start. At this point it doesn't matter which
+    # step failed, so use 'unknown' for all the step related information.
+    monitoring.OnWaterfallAnalysisStateChange(
+        master_name=master_name,
+        builder_name=builder_name,
+        failure_type='unknown',
+        canonical_step_name='unknown',
+        isolate_target_name='unknown',
+        status=analysis_status.STATUS_TO_DESCRIPTION[analysis_status.SKIPPED],
+        analysis_type=analysis_approach_type.STATUS_TO_DESCRIPTION[
+            analysis_approach_type.PRE_ANALYSIS])
+
     return {}, False
 
   if not build_info:
@@ -237,6 +252,17 @@ def GetBuildFailureInfo(master_name, builder_name, build_number):
     analysis.status = analysis_status.ERROR
     analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
     analysis.put()
+
+    monitoring.OnWaterfallAnalysisStateChange(
+        master_name=master_name,
+        builder_name=builder_name,
+        failure_type='unknown',
+        canonical_step_name='unknown',
+        isolate_target_name='unknown',
+        status=analysis_status.STATUS_TO_DESCRIPTION[analysis_status.ERROR],
+        analysis_type=analysis_approach_type.STATUS_TO_DESCRIPTION[
+            analysis_approach_type.PRE_ANALYSIS])
+
     return {}, False
 
   build_failure_type = build_util.GetFailureType(build_info)
@@ -266,6 +292,17 @@ def GetBuildFailureInfo(master_name, builder_name, build_number):
     analysis.status = analysis_status.COMPLETED
     analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
     analysis.put()
+
+    monitoring.OnWaterfallAnalysisStateChange(
+        master_name=master_name,
+        builder_name=builder_name,
+        failure_type='unknown',
+        canonical_step_name='unknown',
+        isolate_target_name='unknown',
+        status=analysis_status.STATUS_TO_DESCRIPTION[analysis_status.COMPLETED],
+        analysis_type=analysis_approach_type.STATUS_TO_DESCRIPTION[
+            analysis_approach_type.PRE_ANALYSIS])
+
     return failure_info, False
 
   failure_info['builds'][build_info.build_number] = (

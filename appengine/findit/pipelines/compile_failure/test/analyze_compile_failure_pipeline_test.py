@@ -10,6 +10,7 @@ from common import monitoring
 from dto.start_waterfall_try_job_inputs import StartCompileTryJobInput
 from gae_libs.pipelines import pipeline_handlers
 from libs import analysis_status
+from model import analysis_approach_type
 from model.wf_analysis import WfAnalysis
 from pipelines import report_event_pipeline
 from pipelines.compile_failure import analyze_compile_failure_pipeline
@@ -17,6 +18,7 @@ from pipelines.compile_failure.analyze_compile_failure_pipeline import (
     AnalyzeCompileFailureInput)
 from pipelines.compile_failure.analyze_compile_failure_pipeline import (
     AnalyzeCompileFailurePipeline)
+from services.compile_failure import compile_failure_analysis
 from services.parameters import BuildKey
 from services.parameters import CompileFailureInfo
 from services.parameters import CompileHeuristicAnalysisOutput
@@ -146,7 +148,9 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(analysis_status.RUNNING, analysis.status)
     mock_reporting.assert_not_called()
 
-  def testAnalyzeCompileFailurePipelineAbortedIfWithError(self):
+  @mock.patch.object(compile_failure_analysis,
+                     'RecordCompileFailureAnalysisStateChange')
+  def testAnalyzeCompileFailurePipelineAbortedIfWithError(self, mock_mon):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
@@ -170,8 +174,13 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(analysis_status.ERROR, analysis.status)
     self.assertIsNone(analysis.result_status)
     self.assertTrue(analysis.aborted)
+    mock_mon.assert_called_once_with(master_name, builder_name,
+                                     analysis_status.ERROR,
+                                     analysis_approach_type.HEURISTIC)
 
-  def testAnalyzeCompileFailurePipelineNotAbortedIfWithoutError(self):
+  @mock.patch.object(compile_failure_analysis,
+                     'RecordCompileFailureAnalysisStateChange')
+  def testAnalyzeCompileFailurePipelineNotAbortedIfWithoutError(self, mock_mon):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
@@ -196,12 +205,15 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNotNone(analysis)
     self.assertNotEqual(analysis_status.ERROR, analysis.status)
+    self.assertFalse(mock_mon.called)
 
+  @mock.patch.object(compile_failure_analysis,
+                     'RecordCompileFailureAnalysisStateChange')
   @mock.patch.object(logging, 'info')
   @mock.patch.object(analyze_compile_failure_pipeline,
                      'StartCompileTryJobPipeline')
   def testAnalyzeCompileFailurePipelineStartTryJob(self, mocked_pipeline,
-                                                   mock_log):
+                                                   mock_log, mock_mon):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
@@ -254,6 +266,9 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
         'A try job pipeline for build %s, %s, %s starts after heuristic '
         'analysis was aborted. Check pipeline at: %s.', master_name,
         builder_name, build_number, root_pipeline.pipeline_status_path)
+    mock_mon.assert_called_once_with(master_name, builder_name,
+                                     analysis_status.ERROR,
+                                     analysis_approach_type.HEURISTIC)
 
   @mock.patch.object(monitoring.completed_pipelines, 'increment')
   def testOnFinalized(self, mock_mon):

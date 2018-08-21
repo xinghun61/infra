@@ -247,6 +247,12 @@ def HeuristicAnalysisForTest(heuristic_params):
       suspected_cls, failure_info.master_name, failure_info.builder_name,
       failure_info.build_number, failure_info.failure_type)
 
+  # Monitors analysis status change.
+  for step_name in failure_info.failed_steps:
+    RecordTestFailureAnalysisStateChange(
+        master_name, builder_name, build_number, step_name,
+        analysis_status.COMPLETED, analysis_approach_type.HEURISTIC)
+
   return TestHeuristicAnalysisOutput(
       failure_info=failure_info,
       heuristic_result=TestHeuristicResult.FromSerializable(heuristic_result))
