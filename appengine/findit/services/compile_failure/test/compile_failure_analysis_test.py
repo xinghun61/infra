@@ -6,12 +6,15 @@ import logging
 import mock
 
 from common.waterfall import failure_type
+from libs import analysis_status
 from libs.gitiles.diff import ChangeType
+from model import analysis_approach_type
 from model.wf_analysis import WfAnalysis
 from services import build_failure_analysis
 from services import ci_failure
 from services import deps
 from services import git
+from services import monitoring
 from services.compile_failure import compile_failure_analysis
 from services.compile_failure import extract_compile_signal
 from services.parameters import CompileFailureInfo
@@ -492,6 +495,19 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         result,
         CompileHeuristicAnalysisOutput.FromSerializable(expected_result))
+
+  @mock.patch.object(monitoring, 'OnWaterfallAnalysisStateChange')
+  def testRecordCompileFailureAnalysisStateChange(self, mock_mon):
+    compile_failure_analysis.RecordCompileFailureAnalysisStateChange(
+        'm', 'b', analysis_status.COMPLETED, analysis_approach_type.HEURISTIC)
+    mock_mon.assert_called_once_with(
+        master_name='m',
+        builder_name='b',
+        failure_type='compile',
+        canonical_step_name='compile',
+        isolate_target_name='N/A',
+        status='Completed',
+        analysis_type='Heuristic')
 
   def testGetSuspectedCLsWithCompileFailuresNoHeuristicResult(self):
     expected_suspected_revisions = []

@@ -8,12 +8,15 @@ import logging
 
 from common import constants
 from common.findit_http_client import FinditHttpClient
+from common.waterfall import failure_type
 from libs import analysis_status
+from model import analysis_approach_type
 from model.wf_analysis import WfAnalysis
 from services import build_failure_analysis
 from services import ci_failure
 from services import deps
 from services import git
+from services import monitoring
 from services.compile_failure import extract_compile_signal
 from services.parameters import CompileFailureSignals
 from services.parameters import CompileHeuristicAnalysisOutput
@@ -244,6 +247,20 @@ def HeuristicAnalysisForCompile(heuristic_params):
       signals=CompileFailureSignals.FromSerializable(signals),
       heuristic_result=CompileHeuristicResult.FromSerializable(
           heuristic_result))
+
+
+def RecordCompileFailureAnalysisStateChange(master_name, builder_name, status,
+                                            analysis_type):
+  """Records state changes for compile failure anlaysis."""
+  monitoring.OnWaterfallAnalysisStateChange(
+      master_name=master_name,
+      builder_name=builder_name,
+      failure_type=failure_type.GetDescriptionForFailureType(
+          failure_type.COMPILE),
+      canonical_step_name='compile',
+      isolate_target_name='N/A',
+      status=analysis_status.STATUS_TO_DESCRIPTION[status],
+      analysis_type=analysis_approach_type.STATUS_TO_DESCRIPTION[analysis_type])
 
 
 def GetSuspectedCLsWithCompileFailures(heuristic_result):

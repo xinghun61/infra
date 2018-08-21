@@ -5,19 +5,22 @@
 import mock
 
 from common.waterfall import failure_type
+from libs import analysis_status
 from libs.gitiles.diff import ChangeType
+from model import analysis_approach_type
 from model.base_build_model import BaseBuildModel
 from model.wf_analysis import WfAnalysis
 from services import build_failure_analysis
 from services import ci_failure
 from services import deps
 from services import git
-from services.test_failure import ci_test_failure
+from services import monitoring
 from services.parameters import TestFailureInfo
 from services.parameters import TestHeuristicAnalysisOutput
 from services.parameters import TestHeuristicAnalysisParameters
 from services.parameters import TestHeuristicResult
 from services.test.build_failure_analysis_test import ChangeLogFromDict
+from services.test_failure import ci_test_failure
 from services.test_failure import extract_test_signal
 from services.test_failure import test_failure_analysis
 from waterfall.test import wf_testcase
@@ -957,6 +960,41 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertEqual(expected_result, analysis.result)
     self.assertEqual(flaky_tests, analysis.flaky_tests)
+
+  @mock.patch.object(monitoring, 'OnWaterfallAnalysisStateChange')
+  def testRecordTestFailureAnalysisStateChangeNoStepName(self, mock_mon):
+    test_failure_analysis.RecordTestFailureAnalysisStateChange(
+        'm', 'b', 1, None, analysis_status.COMPLETED,
+        analysis_approach_type.HEURISTIC)
+    mock_mon.assert_called_once_with(
+        master_name='m',
+        builder_name='b',
+        failure_type='test',
+        canonical_step_name='Unknown',
+        isolate_target_name='Unknown',
+        status='Completed',
+        analysis_type='Heuristic')
+
+  @mock.patch.object(monitoring, 'OnWaterfallAnalysisStateChange')
+  @mock.patch.object(ci_failure, 'GetStepMetadata')
+  def testRecordTestFailureAnalysisStateChange(self, mock_step_metadata,
+                                               mock_mon):
+    mock_step_metadata.return_value = {
+        'canonical_step_name': 's1',
+        'isolate_target_name': 's1'
+    }
+    test_failure_analysis.RecordTestFailureAnalysisStateChange(
+        'm', 'b', 1, 's1', analysis_status.COMPLETED,
+        analysis_approach_type.HEURISTIC)
+
+    mock_mon.assert_called_once_with(
+        master_name='m',
+        builder_name='b',
+        failure_type='test',
+        canonical_step_name='s1',
+        isolate_target_name='s1',
+        status='Completed',
+        analysis_type='Heuristic')
 
   @mock.patch.object(ci_failure, 'GetCanonicalStepName', return_value='step3')
   def testGetSuspectedCLsWithFailures(self, _):
