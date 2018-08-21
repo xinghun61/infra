@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package='buildbucket.v2',
     syntax='proto3',
     serialized_pb=_b(
-        '\n\x0c\x63ommon.proto\x12\x0e\x62uildbucket.v2\x1a\x1fgoogle/protobuf/timestamp.proto\"O\n\x0cGerritChange\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x0f\n\x07project\x18\x02 \x01(\t\x12\x0e\n\x06\x63hange\x18\x03 \x01(\x03\x12\x10\n\x08patchset\x18\x04 \x01(\x03\"G\n\rGitilesCommit\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x0f\n\x07project\x18\x02 \x01(\t\x12\n\n\x02id\x18\x03 \x01(\t\x12\x0b\n\x03ref\x18\x04 \x01(\t\"(\n\nStringPair\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"i\n\tTimeRange\x12.\n\nstart_time\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12,\n\x08\x65nd_time\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp*\x87\x01\n\x06Status\x12\x16\n\x12STATUS_UNSPECIFIED\x10\x00\x12\r\n\tSCHEDULED\x10\x01\x12\x0b\n\x07STARTED\x10\x02\x12\x0e\n\nENDED_MASK\x10\x04\x12\x0b\n\x07SUCCESS\x10\x0c\x12\x0b\n\x07\x46\x41ILURE\x10\x14\x12\x11\n\rINFRA_FAILURE\x10$\x12\x0c\n\x08\x43\x41NCELED\x10\x44\x42\x36Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3'
+        '\n\x0c\x63ommon.proto\x12\x0e\x62uildbucket.v2\x1a\x1fgoogle/protobuf/timestamp.proto\"O\n\x0cGerritChange\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x0f\n\x07project\x18\x02 \x01(\t\x12\x0e\n\x06\x63hange\x18\x03 \x01(\x03\x12\x10\n\x08patchset\x18\x04 \x01(\x03\"G\n\rGitilesCommit\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x0f\n\x07project\x18\x02 \x01(\t\x12\n\n\x02id\x18\x03 \x01(\t\x12\x0b\n\x03ref\x18\x04 \x01(\t\"(\n\nStringPair\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"i\n\tTimeRange\x12.\n\nstart_time\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12,\n\x08\x65nd_time\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp*\x87\x01\n\x06Status\x12\x16\n\x12STATUS_UNSPECIFIED\x10\x00\x12\r\n\tSCHEDULED\x10\x01\x12\x0b\n\x07STARTED\x10\x02\x12\x0e\n\nENDED_MASK\x10\x04\x12\x0b\n\x07SUCCESS\x10\x0c\x12\x0b\n\x07\x46\x41ILURE\x10\x14\x12\x11\n\rINFRA_FAILURE\x10$\x12\x0c\n\x08\x43\x41NCELED\x10\x44*%\n\x07Trinary\x12\t\n\x05UNSET\x10\x00\x12\x07\n\x03YES\x10\x01\x12\x06\n\x02NO\x10\x02\x42\x36Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3'
     ),
     dependencies=[
         google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,
@@ -71,6 +71,30 @@ _STATUS = _descriptor.EnumDescriptor(
 _sym_db.RegisterEnumDescriptor(_STATUS)
 
 Status = enum_type_wrapper.EnumTypeWrapper(_STATUS)
+_TRINARY = _descriptor.EnumDescriptor(
+    name='Trinary',
+    full_name='buildbucket.v2.Trinary',
+    filename=None,
+    file=DESCRIPTOR,
+    values=[
+        _descriptor.EnumValueDescriptor(
+            name='UNSET', index=0, number=0, options=None, type=None
+        ),
+        _descriptor.EnumValueDescriptor(
+            name='YES', index=1, number=1, options=None, type=None
+        ),
+        _descriptor.EnumValueDescriptor(
+            name='NO', index=2, number=2, options=None, type=None
+        ),
+    ],
+    containing_type=None,
+    options=None,
+    serialized_start=506,
+    serialized_end=543,
+)
+_sym_db.RegisterEnumDescriptor(_TRINARY)
+
+Trinary = enum_type_wrapper.EnumTypeWrapper(_TRINARY)
 STATUS_UNSPECIFIED = 0
 SCHEDULED = 1
 STARTED = 2
@@ -79,6 +103,9 @@ SUCCESS = 12
 FAILURE = 20
 INFRA_FAILURE = 36
 CANCELED = 68
+UNSET = 0
+YES = 1
+NO = 2
 
 _GERRITCHANGE = _descriptor.Descriptor(
     name='GerritChange',
@@ -375,6 +402,7 @@ DESCRIPTOR.message_types_by_name['GitilesCommit'] = _GITILESCOMMIT
 DESCRIPTOR.message_types_by_name['StringPair'] = _STRINGPAIR
 DESCRIPTOR.message_types_by_name['TimeRange'] = _TIMERANGE
 DESCRIPTOR.enum_types_by_name['Status'] = _STATUS
+DESCRIPTOR.enum_types_by_name['Trinary'] = _TRINARY
 
 GerritChange = _reflection.GeneratedProtocolMessageType(
     'GerritChange',

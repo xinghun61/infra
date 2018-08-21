@@ -13,22 +13,26 @@ from google.protobuf import descriptor_pb2
 _sym_db = _symbol_database.Default()
 
 from google.protobuf import field_mask_pb2 as google_dot_protobuf_dot_field__mask__pb2
+from google.protobuf import struct_pb2 as google_dot_protobuf_dot_struct__pb2
 from google.rpc import status_pb2 as google_dot_rpc_dot_status__pb2
 import common_pb2 as common__pb2
 import build_pb2 as build__pb2
+import notification_pb2 as notification__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name='rpc.proto',
     package='buildbucket.v2',
     syntax='proto3',
     serialized_pb=_b(
-        '\n\trpc.proto\x12\x0e\x62uildbucket.v2\x1a google/protobuf/field_mask.proto\x1a\x17google/rpc/status.proto\x1a\x0c\x63ommon.proto\x1a\x0b\x62uild.proto\"\x8b\x01\n\x0fGetBuildRequest\x12\n\n\x02id\x18\x01 \x01(\x03\x12*\n\x07\x62uilder\x18\x02 \x01(\x0b\x32\x19.buildbucket.v2.BuilderID\x12\x14\n\x0c\x62uild_number\x18\x03 \x01(\x05\x12*\n\x06\x66ields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\"\x9b\x01\n\x13SearchBuildsRequest\x12\x31\n\tpredicate\x18\x01 \x01(\x0b\x32\x1e.buildbucket.v2.BuildPredicate\x12*\n\x06\x66ields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\x12\x11\n\tpage_size\x18\x65 \x01(\x05\x12\x12\n\npage_token\x18\x66 \x01(\t\"V\n\x14SearchBuildsResponse\x12%\n\x06\x62uilds\x18\x01 \x03(\x0b\x32\x15.buildbucket.v2.Build\x12\x17\n\x0fnext_page_token\x18\x64 \x01(\t\"\xd1\x01\n\x0c\x42\x61tchRequest\x12\x36\n\x08requests\x18\x01 \x03(\x0b\x32$.buildbucket.v2.BatchRequest.Request\x1a\x88\x01\n\x07Request\x12\x34\n\tget_build\x18\x01 \x01(\x0b\x32\x1f.buildbucket.v2.GetBuildRequestH\x00\x12<\n\rsearch_builds\x18\x02 \x01(\x0b\x32#.buildbucket.v2.SearchBuildsRequestH\x00\x42\t\n\x07request\"\xf3\x01\n\rBatchResponse\x12\x39\n\tresponses\x18\x01 \x03(\x0b\x32&.buildbucket.v2.BatchResponse.Response\x1a\xa6\x01\n\x08Response\x12*\n\tget_build\x18\x01 \x01(\x0b\x32\x15.buildbucket.v2.BuildH\x00\x12=\n\rsearch_builds\x18\x02 \x01(\x0b\x32$.buildbucket.v2.SearchBuildsResponseH\x00\x12#\n\x05\x65rror\x18\x64 \x01(\x0b\x32\x12.google.rpc.StatusH\x00\x42\n\n\x08response\"\x97\x01\n\x12UpdateBuildRequest\x12$\n\x05\x62uild\x18\x01 \x01(\x0b\x32\x15.buildbucket.v2.Build\x12/\n\x0bupdate_mask\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\x12*\n\x06\x66ields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\"\x8f\x03\n\x0e\x42uildPredicate\x12*\n\x07\x62uilder\x18\x01 \x01(\x0b\x32\x19.buildbucket.v2.BuilderID\x12&\n\x06status\x18\x02 \x01(\x0e\x32\x16.buildbucket.v2.Status\x12\x34\n\x0egerrit_changes\x18\x03 \x03(\x0b\x32\x1c.buildbucket.v2.GerritChange\x12<\n\x15output_gitiles_commit\x18\x04 \x01(\x0b\x32\x1d.buildbucket.v2.GitilesCommit\x12\x12\n\ncreated_by\x18\x05 \x01(\t\x12(\n\x04tags\x18\x06 \x03(\x0b\x32\x1a.buildbucket.v2.StringPair\x12.\n\x0b\x63reate_time\x18\x07 \x01(\x0b\x32\x19.buildbucket.v2.TimeRange\x12\x1c\n\x14include_experimental\x18\x08 \x01(\x08\x12)\n\x05\x62uild\x18\t \x01(\x0b\x32\x1a.buildbucket.v2.BuildRange\":\n\nBuildRange\x12\x16\n\x0estart_build_id\x18\x01 \x01(\x03\x12\x14\n\x0c\x65nd_build_id\x18\x02 \x01(\x03\x32\xbf\x02\n\x06\x42uilds\x12\x44\n\x08GetBuild\x12\x1f.buildbucket.v2.GetBuildRequest\x1a\x15.buildbucket.v2.Build\"\x00\x12[\n\x0cSearchBuilds\x12#.buildbucket.v2.SearchBuildsRequest\x1a$.buildbucket.v2.SearchBuildsResponse\"\x00\x12\x46\n\x05\x42\x61tch\x12\x1c.buildbucket.v2.BatchRequest\x1a\x1d.buildbucket.v2.BatchResponse\"\x00\x12J\n\x0bUpdateBuild\x12\".buildbucket.v2.UpdateBuildRequest\x1a\x15.buildbucket.v2.Build\"\x00\x42\x36Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3'
+        '\n\trpc.proto\x12\x0e\x62uildbucket.v2\x1a google/protobuf/field_mask.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x17google/rpc/status.proto\x1a\x0c\x63ommon.proto\x1a\x0b\x62uild.proto\x1a\x12notification.proto\"\x8b\x01\n\x0fGetBuildRequest\x12\n\n\x02id\x18\x01 \x01(\x03\x12*\n\x07\x62uilder\x18\x02 \x01(\x0b\x32\x19.buildbucket.v2.BuilderID\x12\x14\n\x0c\x62uild_number\x18\x03 \x01(\x05\x12*\n\x06\x66ields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\"\x9b\x01\n\x13SearchBuildsRequest\x12\x31\n\tpredicate\x18\x01 \x01(\x0b\x32\x1e.buildbucket.v2.BuildPredicate\x12*\n\x06\x66ields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\x12\x11\n\tpage_size\x18\x65 \x01(\x05\x12\x12\n\npage_token\x18\x66 \x01(\t\"V\n\x14SearchBuildsResponse\x12%\n\x06\x62uilds\x18\x01 \x03(\x0b\x32\x15.buildbucket.v2.Build\x12\x17\n\x0fnext_page_token\x18\x64 \x01(\t\"\xd1\x01\n\x0c\x42\x61tchRequest\x12\x36\n\x08requests\x18\x01 \x03(\x0b\x32$.buildbucket.v2.BatchRequest.Request\x1a\x88\x01\n\x07Request\x12\x34\n\tget_build\x18\x01 \x01(\x0b\x32\x1f.buildbucket.v2.GetBuildRequestH\x00\x12<\n\rsearch_builds\x18\x02 \x01(\x0b\x32#.buildbucket.v2.SearchBuildsRequestH\x00\x42\t\n\x07request\"\xf3\x01\n\rBatchResponse\x12\x39\n\tresponses\x18\x01 \x03(\x0b\x32&.buildbucket.v2.BatchResponse.Response\x1a\xa6\x01\n\x08Response\x12*\n\tget_build\x18\x01 \x01(\x0b\x32\x15.buildbucket.v2.BuildH\x00\x12=\n\rsearch_builds\x18\x02 \x01(\x0b\x32$.buildbucket.v2.SearchBuildsResponseH\x00\x12#\n\x05\x65rror\x18\x64 \x01(\x0b\x32\x12.google.rpc.StatusH\x00\x42\n\n\x08response\"\x97\x01\n\x12UpdateBuildRequest\x12$\n\x05\x62uild\x18\x01 \x01(\x0b\x32\x15.buildbucket.v2.Build\x12/\n\x0bupdate_mask\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\x12*\n\x06\x66ields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\"\xaf\x04\n\x14ScheduleBuildRequest\x12\x12\n\nrequest_id\x18\x01 \x01(\t\x12*\n\x07\x62uilder\x18\x02 \x01(\x0b\x32\x19.buildbucket.v2.BuilderID\x12\x19\n\x11template_build_id\x18\x03 \x01(\x03\x12\'\n\x06\x63\x61nary\x18\x04 \x01(\x0e\x32\x17.buildbucket.v2.Trinary\x12-\n\x0c\x65xperimental\x18\x05 \x01(\x0e\x32\x17.buildbucket.v2.Trinary\x12+\n\nproperties\x18\x06 \x01(\x0b\x32\x17.google.protobuf.Struct\x12\x35\n\x0egitiles_commit\x18\x07 \x01(\x0b\x32\x1d.buildbucket.v2.GitilesCommit\x12\x34\n\x0egerrit_changes\x18\x08 \x03(\x0b\x32\x1c.buildbucket.v2.GerritChange\x12(\n\x04tags\x18\t \x03(\x0b\x32\x1a.buildbucket.v2.StringPair\x12.\n\ndimensions\x18\n \x03(\x0b\x32\x1a.buildbucket.v2.StringPair\x12\x10\n\x08priority\x18\x0b \x01(\x05\x12\x32\n\x06notify\x18\x0c \x01(\x0b\x32\".buildbucket.v2.NotificationConfig\x12*\n\x06\x66ields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\"\x8f\x03\n\x0e\x42uildPredicate\x12*\n\x07\x62uilder\x18\x01 \x01(\x0b\x32\x19.buildbucket.v2.BuilderID\x12&\n\x06status\x18\x02 \x01(\x0e\x32\x16.buildbucket.v2.Status\x12\x34\n\x0egerrit_changes\x18\x03 \x03(\x0b\x32\x1c.buildbucket.v2.GerritChange\x12<\n\x15output_gitiles_commit\x18\x04 \x01(\x0b\x32\x1d.buildbucket.v2.GitilesCommit\x12\x12\n\ncreated_by\x18\x05 \x01(\t\x12(\n\x04tags\x18\x06 \x03(\x0b\x32\x1a.buildbucket.v2.StringPair\x12.\n\x0b\x63reate_time\x18\x07 \x01(\x0b\x32\x19.buildbucket.v2.TimeRange\x12\x1c\n\x14include_experimental\x18\x08 \x01(\x08\x12)\n\x05\x62uild\x18\t \x01(\x0b\x32\x1a.buildbucket.v2.BuildRange\":\n\nBuildRange\x12\x16\n\x0estart_build_id\x18\x01 \x01(\x03\x12\x14\n\x0c\x65nd_build_id\x18\x02 \x01(\x03\x32\x8f\x03\n\x06\x42uilds\x12\x44\n\x08GetBuild\x12\x1f.buildbucket.v2.GetBuildRequest\x1a\x15.buildbucket.v2.Build\"\x00\x12[\n\x0cSearchBuilds\x12#.buildbucket.v2.SearchBuildsRequest\x1a$.buildbucket.v2.SearchBuildsResponse\"\x00\x12\x46\n\x05\x42\x61tch\x12\x1c.buildbucket.v2.BatchRequest\x1a\x1d.buildbucket.v2.BatchResponse\"\x00\x12J\n\x0bUpdateBuild\x12\".buildbucket.v2.UpdateBuildRequest\x1a\x15.buildbucket.v2.Build\"\x00\x12N\n\rScheduleBuild\x12$.buildbucket.v2.ScheduleBuildRequest\x1a\x15.buildbucket.v2.Build\"\x00\x42\x36Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3'
     ),
     dependencies=[
         google_dot_protobuf_dot_field__mask__pb2.DESCRIPTOR,
+        google_dot_protobuf_dot_struct__pb2.DESCRIPTOR,
         google_dot_rpc_dot_status__pb2.DESCRIPTOR,
         common__pb2.DESCRIPTOR,
         build__pb2.DESCRIPTOR,
+        notification__pb2.DESCRIPTOR,
     ]
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -117,8 +121,8 @@ _GETBUILDREQUEST = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=116,
-    serialized_end=255,
+    serialized_start=166,
+    serialized_end=305,
 )
 
 _SEARCHBUILDSREQUEST = _descriptor.Descriptor(
@@ -205,8 +209,8 @@ _SEARCHBUILDSREQUEST = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=258,
-    serialized_end=413,
+    serialized_start=308,
+    serialized_end=463,
 )
 
 _SEARCHBUILDSRESPONSE = _descriptor.Descriptor(
@@ -259,8 +263,8 @@ _SEARCHBUILDSRESPONSE = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=415,
-    serialized_end=501,
+    serialized_start=465,
+    serialized_end=551,
 )
 
 _BATCHREQUEST_REQUEST = _descriptor.Descriptor(
@@ -321,8 +325,8 @@ _BATCHREQUEST_REQUEST = _descriptor.Descriptor(
             fields=[]
         ),
     ],
-    serialized_start=577,
-    serialized_end=713,
+    serialized_start=627,
+    serialized_end=763,
 )
 
 _BATCHREQUEST = _descriptor.Descriptor(
@@ -360,8 +364,8 @@ _BATCHREQUEST = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=504,
-    serialized_end=713,
+    serialized_start=554,
+    serialized_end=763,
 )
 
 _BATCHRESPONSE_RESPONSE = _descriptor.Descriptor(
@@ -439,8 +443,8 @@ _BATCHRESPONSE_RESPONSE = _descriptor.Descriptor(
             fields=[]
         ),
     ],
-    serialized_start=793,
-    serialized_end=959,
+    serialized_start=843,
+    serialized_end=1009,
 )
 
 _BATCHRESPONSE = _descriptor.Descriptor(
@@ -478,8 +482,8 @@ _BATCHRESPONSE = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=716,
-    serialized_end=959,
+    serialized_start=766,
+    serialized_end=1009,
 )
 
 _UPDATEBUILDREQUEST = _descriptor.Descriptor(
@@ -549,8 +553,249 @@ _UPDATEBUILDREQUEST = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=962,
-    serialized_end=1113,
+    serialized_start=1012,
+    serialized_end=1163,
+)
+
+_SCHEDULEBUILDREQUEST = _descriptor.Descriptor(
+    name='ScheduleBuildRequest',
+    full_name='buildbucket.v2.ScheduleBuildRequest',
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name='request_id',
+            full_name='buildbucket.v2.ScheduleBuildRequest.request_id',
+            index=0,
+            number=1,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=_b("").decode('utf-8'),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None
+        ),
+        _descriptor.FieldDescriptor(
+            name='builder',
+            full_name='buildbucket.v2.ScheduleBuildRequest.builder',
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None
+        ),
+        _descriptor.FieldDescriptor(
+            name='template_build_id',
+            full_name='buildbucket.v2.ScheduleBuildRequest.template_build_id',
+            index=2,
+            number=3,
+            type=3,
+            cpp_type=2,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None
+        ),
+        _descriptor.FieldDescriptor(
+            name='canary',
+            full_name='buildbucket.v2.ScheduleBuildRequest.canary',
+            index=3,
+            number=4,
+            type=14,
+            cpp_type=8,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None
+        ),
+        _descriptor.FieldDescriptor(
+            name='experimental',
+            full_name='buildbucket.v2.ScheduleBuildRequest.experimental',
+            index=4,
+            number=5,
+            type=14,
+            cpp_type=8,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None
+        ),
+        _descriptor.FieldDescriptor(
+            name='properties',
+            full_name='buildbucket.v2.ScheduleBuildRequest.properties',
+            index=5,
+            number=6,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None
+        ),
+        _descriptor.FieldDescriptor(
+            name='gitiles_commit',
+            full_name='buildbucket.v2.ScheduleBuildRequest.gitiles_commit',
+            index=6,
+            number=7,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None
+        ),
+        _descriptor.FieldDescriptor(
+            name='gerrit_changes',
+            full_name='buildbucket.v2.ScheduleBuildRequest.gerrit_changes',
+            index=7,
+            number=8,
+            type=11,
+            cpp_type=10,
+            label=3,
+            has_default_value=False,
+            default_value=[],
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None
+        ),
+        _descriptor.FieldDescriptor(
+            name='tags',
+            full_name='buildbucket.v2.ScheduleBuildRequest.tags',
+            index=8,
+            number=9,
+            type=11,
+            cpp_type=10,
+            label=3,
+            has_default_value=False,
+            default_value=[],
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None
+        ),
+        _descriptor.FieldDescriptor(
+            name='dimensions',
+            full_name='buildbucket.v2.ScheduleBuildRequest.dimensions',
+            index=9,
+            number=10,
+            type=11,
+            cpp_type=10,
+            label=3,
+            has_default_value=False,
+            default_value=[],
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None
+        ),
+        _descriptor.FieldDescriptor(
+            name='priority',
+            full_name='buildbucket.v2.ScheduleBuildRequest.priority',
+            index=10,
+            number=11,
+            type=5,
+            cpp_type=1,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None
+        ),
+        _descriptor.FieldDescriptor(
+            name='notify',
+            full_name='buildbucket.v2.ScheduleBuildRequest.notify',
+            index=11,
+            number=12,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None
+        ),
+        _descriptor.FieldDescriptor(
+            name='fields',
+            full_name='buildbucket.v2.ScheduleBuildRequest.fields',
+            index=12,
+            number=100,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    options=None,
+    is_extendable=False,
+    syntax='proto3',
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=1166,
+    serialized_end=1725,
 )
 
 _BUILDPREDICATE = _descriptor.Descriptor(
@@ -722,8 +967,8 @@ _BUILDPREDICATE = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1116,
-    serialized_end=1515,
+    serialized_start=1728,
+    serialized_end=2127,
 )
 
 _BUILDRANGE = _descriptor.Descriptor(
@@ -776,8 +1021,8 @@ _BUILDRANGE = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1517,
-    serialized_end=1575,
+    serialized_start=2129,
+    serialized_end=2187,
 )
 
 _GETBUILDREQUEST.fields_by_name['builder'].message_type = build__pb2._BUILDERID
@@ -842,6 +1087,28 @@ _UPDATEBUILDREQUEST.fields_by_name[
 _UPDATEBUILDREQUEST.fields_by_name[
     'fields'
 ].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
+_SCHEDULEBUILDREQUEST.fields_by_name['builder'
+                                    ].message_type = build__pb2._BUILDERID
+_SCHEDULEBUILDREQUEST.fields_by_name['canary'].enum_type = common__pb2._TRINARY
+_SCHEDULEBUILDREQUEST.fields_by_name['experimental'
+                                    ].enum_type = common__pb2._TRINARY
+_SCHEDULEBUILDREQUEST.fields_by_name[
+    'properties'
+].message_type = google_dot_protobuf_dot_struct__pb2._STRUCT
+_SCHEDULEBUILDREQUEST.fields_by_name['gitiles_commit'
+                                    ].message_type = common__pb2._GITILESCOMMIT
+_SCHEDULEBUILDREQUEST.fields_by_name['gerrit_changes'
+                                    ].message_type = common__pb2._GERRITCHANGE
+_SCHEDULEBUILDREQUEST.fields_by_name['tags'
+                                    ].message_type = common__pb2._STRINGPAIR
+_SCHEDULEBUILDREQUEST.fields_by_name['dimensions'
+                                    ].message_type = common__pb2._STRINGPAIR
+_SCHEDULEBUILDREQUEST.fields_by_name[
+    'notify'
+].message_type = notification__pb2._NOTIFICATIONCONFIG
+_SCHEDULEBUILDREQUEST.fields_by_name[
+    'fields'
+].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
 _BUILDPREDICATE.fields_by_name['builder'].message_type = build__pb2._BUILDERID
 _BUILDPREDICATE.fields_by_name['status'].enum_type = common__pb2._STATUS
 _BUILDPREDICATE.fields_by_name['gerrit_changes'
@@ -858,6 +1125,7 @@ DESCRIPTOR.message_types_by_name['SearchBuildsResponse'] = _SEARCHBUILDSRESPONSE
 DESCRIPTOR.message_types_by_name['BatchRequest'] = _BATCHREQUEST
 DESCRIPTOR.message_types_by_name['BatchResponse'] = _BATCHRESPONSE
 DESCRIPTOR.message_types_by_name['UpdateBuildRequest'] = _UPDATEBUILDREQUEST
+DESCRIPTOR.message_types_by_name['ScheduleBuildRequest'] = _SCHEDULEBUILDREQUEST
 DESCRIPTOR.message_types_by_name['BuildPredicate'] = _BUILDPREDICATE
 DESCRIPTOR.message_types_by_name['BuildRange'] = _BUILDRANGE
 
@@ -946,6 +1214,17 @@ UpdateBuildRequest = _reflection.GeneratedProtocolMessageType(
     )
 )
 _sym_db.RegisterMessage(UpdateBuildRequest)
+
+ScheduleBuildRequest = _reflection.GeneratedProtocolMessageType(
+    'ScheduleBuildRequest',
+    (_message.Message,),
+    dict(
+        DESCRIPTOR=_SCHEDULEBUILDREQUEST,
+        __module__='rpc_pb2'
+        # @@protoc_insertion_point(class_scope:buildbucket.v2.ScheduleBuildRequest)
+    )
+)
+_sym_db.RegisterMessage(ScheduleBuildRequest)
 
 BuildPredicate = _reflection.GeneratedProtocolMessageType(
     'BuildPredicate',
