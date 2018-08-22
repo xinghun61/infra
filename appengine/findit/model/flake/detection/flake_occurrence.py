@@ -63,10 +63,6 @@ class CQFalseRejectionFlakeOccurrence(ndb.Model):
   # The id of the gerrit cl this occurrence is associated with.
   gerrit_cl_id = ndb.IntegerProperty(required=True)
 
-  # Indicates whether this flake occurrence has been reported to any issue on
-  # Monorail.
-  has_been_reported_to_monorail = ndb.BooleanProperty(default=False)
-
   @staticmethod
   def GetId(build_id, step_name, test_name):
     return '%s@%s@%s' % (build_id, step_name, test_name)
