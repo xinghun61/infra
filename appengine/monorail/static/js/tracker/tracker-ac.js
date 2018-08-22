@@ -1332,9 +1332,9 @@ function TKR_fetchOptions(projectName) {
     TKR_setUpSearchStore(
        jsonData.labels, jsonData.memberEmails, jsonData.open, jsonData.closed,
        jsonData.components, jsonData.fields, jsonData.nonGroupEmails);
-  });
 
-  if (logger) {
-    logger.logEnd('populate-options', 'user-time');
-  }
+    if (logger) {
+      logger.logEnd('populate-options', 'user-time');
+    }
+  });
 }
