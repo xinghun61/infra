@@ -1,0 +1,68 @@
+[
+  [
+    "before",
+    {
+      "refs/heads/master": [
+        [
+          "ed1f33a9c343dfe0b0b38d1633cac298efec0915",
+          [
+            "initial commit"
+          ]
+        ]
+      ]
+    },
+    {}
+  ],
+  {
+    "log output": [
+      "INFO: Running ('git', 'fetch')",
+      "INFO: at commit ed1f33a9c343dfe0b0b38d1633cac298efec0915",
+      "INFO: Running ('git', 'push', 'origin', 'f6d129734fbb767b0f3113f30fc749c4ee86dd3e:refs/heads/master')"
+    ]
+  },
+  [
+    "after",
+    {
+      "refs/heads/master": [
+        [
+          "ed1f33a9c343dfe0b0b38d1633cac298efec0915",
+          [
+            "initial commit"
+          ]
+        ]
+      ]
+    },
+    {
+      "refs/heads/master": [
+        [
+          "f6d129734fbb767b0f3113f30fc749c4ee86dd3e",
+          [
+            "initial commit",
+            "",
+            "Cr-Mirrored-Commit: ed1f33a9c343dfe0b0b38d1633cac298efec0915"
+          ]
+        ]
+      ]
+    },
+    "[submodule \"abc/def\"]\n\tpath = abc/def\n\turl = https://chromium.googlesource.com/foo\n[submodule \"abc/pqr/wow\"]\n\tpath = abc/pqr/wow\n\turl = http://chromium.googlesource.com/bar\n[submodule \"abc/trl\"]\n\tpath = abc/trl\n\turl = https://chromium.googlesource.com/foo\n[submodule \"ghi/aaa\"]\n\tpath = ghi/aaa\n\turl = https://chromium.googlesource.com/yin\n[submodule \"ghi/zyx/deep\"]\n\tpath = ghi/zyx/deep\n\turl = https://chromium.googlesource.com/yin\n",
+    [
+      "abc",
+      {
+        "def": "GitLink(74bb638f337e6a79756595fae31737a8411a494b)",
+        "pqr": {
+          "wow": "GitLink(4ebc8aea50e0a67e000ba29a30809d0a7b9b2666)"
+        },
+        "trl": "GitLink(d020324450627468418945e0c7e53c0a141a3ab9)"
+      }
+    ],
+    [
+      "ghi",
+      {
+        "aaa": "GitLink(6ec0d686a7cd65baf620184617df1ed0f2828af3)",
+        "zyx": {
+          "deep": "GitLink(da98e07bfc76bb53b8414656295e9b7ce9c00096)"
+        }
+      }
+    ]
+  ]
+]

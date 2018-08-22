@@ -20,6 +20,7 @@ import os
 import re
 
 from infra.libs.deps2submodules.deps_utils import EvalDepsContent, ExtractUrl
+from infra.libs.deps2submodules.gitlinks import Gitlinks
 from infra.libs.git2 import CalledProcessError
 
 # TODO: move to git2/data and import here
@@ -212,7 +213,12 @@ class Deps2Submodules(object):
   def Evaluate(self):
     """Analyzes dependencies, resolving refs and eliminating conflicts.
 
-    The result of the analysis is retained in member variable _gitmodules.
+    The result of the analysis is retained in member variable _gitmodules, in
+    the form of a 2-tuple consisting of the .gitmodules file content (a string),
+    and some submodule definitions.  The submodule definitions are in the form
+    of a dict of path => SubmodData.  (Reminder: the dict is actually an
+    OrderedDict; but remember that the "order" refers to order of insertion, not
+    lexicographical order!)
     """
     # Collect deps info from content of original DEPS file
     submods = self._CollateCurrentDeps(EvalDepsContent(self._deps_contents))
@@ -231,10 +237,13 @@ class Deps2Submodules(object):
     gitmodules_file_content = self._RenderConfig(submodules)
     self._gitmodules = (gitmodules_file_content, submodules)
 
-  def UpdateSubmodules(self, repo):
+  def UpdateSubmodules(self, repo, origin_commit):
     """Writes a current version of .gitmodules file, and updates gitlinks.
 
     Relies on previously evaluated DEPS file content.
+
+    Returns the hash of a Git tree object for the root of the tree rebuilt
+    with the added .gitmodules file and all the gitlinks defined in it.
     """
     assert self._gitmodules, ('Attempted UpdateSubmodules '
                              'without having called Evaluate()')
@@ -243,9 +252,7 @@ class Deps2Submodules(object):
     repo.run('update-index',
              '--add', '--cacheinfo', '100644', hsh, '.gitmodules')
 
-    for path, data in submodule_data.iteritems():
-      repo.run('update-index',
-               '--add', '--cacheinfo', '160000', data.revision, path)
+    return Gitlinks(repo, hsh, submodule_data, origin_commit).BuildRootTree()
 
 
 class GitRefResolver(object):

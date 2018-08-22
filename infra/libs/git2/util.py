@@ -4,6 +4,9 @@
 from cStringIO import StringIO
 
 
+# Can be reproduced with `git mktree --batch <<<''`
+EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
+
 class _Invalid(object):
   def __call__(self, *_args, **_kwargs):
     return self
@@ -59,4 +62,3 @@ class CalledProcessError(Exception):
     if r[-1] != '\n':
       r += '\n'
     return r
-

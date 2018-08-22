@@ -109,17 +109,12 @@ def reify_submodules(origin_repo, target,
         submods.Evaluate()
         known_hash = deps_hash
 
-      # Whether or not DEPS has changed, we always need to write a new
-      # tree, so as to include its effect.  Start with the origin commit's
-      # tree, then add the current gitlines and the .gitmodules file.
-      shadow.run('read-tree', original_tree)
       try:
-        submods.UpdateSubmodules(shadow)
+        new_tree = submods.UpdateSubmodules(shadow, commit.hsh)
       except Exception as e:  # pragma: no cover
         # TODO: build a wrapping exception the proper way
         LOGGER.error("exception happened on %s: %s" % (commit.hsh, str(e)))
         raise
-      new_tree = shadow.run('write-tree').rstrip('\n')
 
     else:
       # DEPS file does not even exist.  This should only happen in the

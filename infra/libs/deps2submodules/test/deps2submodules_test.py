@@ -4,9 +4,9 @@
 
 import textwrap
 import unittest
-import sys
 
 from infra.libs.deps2submodules import deps2submodules
+from infra.libs.git2 import EMPTY_TREE
 from infra.libs.git2.testing_support import TestClock
 from infra.libs.git2.testing_support import TestRepo
 
@@ -155,8 +155,7 @@ class Deps2SubmodulesTest(unittest.TestCase):
 
     repo = TestRepo('repo', TestClock())
 
-    cut.UpdateSubmodules(repo)
-    hsh = repo.run('write-tree').strip()
+    hsh = cut.UpdateSubmodules(repo, EMPTY_TREE)
     tree_dump = repo.run('ls-tree', '-r', hsh)
     file_dump = repo.run('cat-file', '-p', '%s:.gitmodules' % hsh)
     return (file_dump, tree_dump)

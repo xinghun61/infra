@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from infra.libs.git2.util import EMPTY_TREE
 from infra.libs.git2.util import INVALID
 from infra.libs.git2.util import CalledProcessError
 

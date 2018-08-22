@@ -1,0 +1,11 @@
+[
+  "100644 blob de05a197b754abccbb3d272903cce833c45acff8\t.gitmodules",
+  "160000 commit 8510665149157c2bc901848c3e0b746954e9cbd9\tabc/def",
+  "100644 blob 8c01d89ae06311834ee4b1fab2f0414d35f01102\tabc/file1",
+  "160000 commit f719efd430d52bcfc8566a43b2eb655688d38871\tabc/pqr/wow",
+  "160000 commit 2bdf67abb163a4ffb2d7f3f0880c9fe5068ce782\tabc/trl",
+  "160000 commit fe7900bcbd294970da3296db5cf2020b4391a639\tabc/xyz",
+  "160000 commit f719efd430d52bcfc8566a43b2eb655688d38871\tghi/aaa",
+  "160000 commit 54f9d6da5c91d556e6b54340b1327573073030af\tghi/zyx/deep",
+  "100644 blob f7190e6a42d0242ea0619604126d42675b51fec3\tghi/zyx/file2"
+]

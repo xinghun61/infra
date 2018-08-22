@@ -9,6 +9,7 @@ import sys
 import threading
 
 from infra.libs.git2 import CalledProcessError
+from infra.libs.git2 import EMPTY_TREE
 from infra.libs.git2 import INVALID
 from infra.libs.git2 import config_ref
 from infra.libs.git2 import repo
@@ -21,9 +22,6 @@ LOGGER = logging.getLogger(__name__)
 
 MIRRORED_FROM = FOOTER_PREFIX + 'Mirrored-From'
 MIRRORED_COMMIT = FOOTER_PREFIX + 'Mirrored-Commit'
-
-# Can be reproduced with `git mktree --batch <<< ''`
-EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 
 ################################################################################
 # ConfigRef

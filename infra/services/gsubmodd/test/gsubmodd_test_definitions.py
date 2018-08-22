@@ -52,6 +52,31 @@ def primitive_deps_file(f):
 
 
 @test
+def gitlink_in_subdir(f):
+  deps_file_content = textwrap.dedent("""\
+    deps = {
+      "fount/abc/pqr/wow": "http://chromium.googlesource.com/bar@4ebc8aea50e0a67e000ba29a30809d0a7b9b2666",
+      "fount/ghi/aaa": "https://chromium.googlesource.com/yin@6ec0d686a7cd65baf620184617df1ed0f2828af3",
+      "fount/abc/trl": "https://chromium.googlesource.com/foo@d020324450627468418945e0c7e53c0a141a3ab9",
+      "fount/abc/def": "https://chromium.googlesource.com/foo@74bb638f337e6a79756595fae31737a8411a494b",
+      "fount/ghi/zyx/deep": "https://chromium.googlesource.com/yin@da98e07bfc76bb53b8414656295e9b7ce9c00096",
+    }
+    """)
+  f.make_commit('initial commit',
+     {
+         'DEPS': deps_file_content,
+         'in': {
+             'bar': 'Hello, world'}})
+  f.checkpoint('before')
+  f.run()
+
+  tree = GitEntry.spec_for(f.target, MASTER)
+  gitmodules_file = tree.get('.gitmodules')[0]
+  subdir1 = tree.get('abc')
+  subdir2 = tree.get('ghi')
+  f.checkpoint('after', gitmodules_file, ('abc', subdir1), ('ghi', subdir2))
+
+@test
 def evolving_deps(f):
   """Dependencies which evolve over time, across separate calls."""
 
