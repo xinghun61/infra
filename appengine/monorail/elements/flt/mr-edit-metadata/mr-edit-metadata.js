@@ -253,10 +253,10 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
     for (const label of labelDefs) {
       const labelName = label.label;
       if (labelName.toLowerCase().startsWith(fieldName.toLowerCase())) {
-        options.push({
-          ...label,
+        const opt = Object.assign({}, label, {
           optionName: labelName.substring(fieldName.length + 1),
         });
+        options.push(opt);
       }
     }
     return options;
