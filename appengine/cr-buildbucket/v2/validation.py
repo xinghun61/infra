@@ -111,7 +111,7 @@ def _check_fields_truth(msg, field_names):
   """Validates that the field values are truish."""
   for f in field_names:
     if not getattr(msg, f):
-      _enter_err(f, 'not specified')
+      _enter_err(f, 'required')
 
 
 def _check_repeated(msg, field_name, validator):

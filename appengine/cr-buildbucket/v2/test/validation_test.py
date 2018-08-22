@@ -42,7 +42,7 @@ class GerritChangeTests(BaseTestCase):
 
   def test_no_host(self):
     msg = common_pb2.GerritChange(host='', change=1, patchset=1)
-    self.assert_invalid(msg, r'host: not specified')
+    self.assert_invalid(msg, r'host: required')
 
 
 class TagsTests(BaseTestCase):
@@ -82,7 +82,7 @@ class BuilderIDTests(BaseTestCase):
 
   def test_no_project(self):
     msg = build_pb2.BuilderID(project='', bucket='try', builder='linux-rel')
-    self.assert_invalid(msg, r'project: not specified')
+    self.assert_invalid(msg, r'project: required')
 
 
 ################################################################################
@@ -163,11 +163,11 @@ class BuildPredicateTests(BaseTestCase):
 
   def test_invalid_builder_id(self):
     msg = rpc_pb2.BuildPredicate(builder=build_pb2.BuilderID())
-    self.assert_invalid(msg, r'builder\.project: not specified')
+    self.assert_invalid(msg, r'builder\.project: required')
 
   def test_gerrit_changes(self):
     msg = rpc_pb2.BuildPredicate(gerrit_changes=[common_pb2.GerritChange()])
-    self.assert_invalid(msg, r'gerrit_changes\[0\].host: not specified')
+    self.assert_invalid(msg, r'gerrit_changes\[0\].host: required')
 
   def test_invalid_tags(self):
     msg = rpc_pb2.BuildPredicate(
