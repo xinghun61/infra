@@ -204,9 +204,8 @@ function TKR_selectArtifactAtCursor(cbCellIndex) {
  * the kibbles cursor.
  * @param {number} cbCellIndex row child that is expected to hold a checkbox
  *     and star widget.
- * @param {string} set_star_token The security token.
  */
-function TKR_toggleStarArtifactAtCursor(cbCellIndex, set_star_token) {
+function TKR_toggleStarArtifactAtCursor(cbCellIndex) {
   if (TKR_selected >= 0 && TKR_selected < TKR_cursorStops.length) {
     var cell = TKR_cursorStops[TKR_selected].children[cbCellIndex];
     var starIcon = cell.firstChild;
@@ -216,7 +215,7 @@ function TKR_toggleStarArtifactAtCursor(cbCellIndex, set_star_token) {
     if (starIcon) {
       _TKR_toggleStar(
           starIcon, issueRefs[TKR_selected]['project_name'],
-          issueRefs[TKR_selected]['id'], null, null, set_star_token);
+          issueRefs[TKR_selected]['id'], null, null);
     }
   }
 }
@@ -325,11 +324,10 @@ function TKR_setupKibblesOnEntryPage(listUrl, entryUrl) {
  *   link to individual artifacts.
  * @param {number} opt_checkboxCellIndex table column that is expected
  *   to contain a selection checkbox.
- * @param {string} set_star_token The security token.
  */
 function TKR_setupKibblesOnListPage(
     listUrl, entryUrl, projectName, linkCellIndex,
-    opt_checkboxCellIndex, set_star_token) {
+    opt_checkboxCellIndex) {
   TKR_setupKibblesCursorStops(true);
 
   kibbles.skipper.addFwdKey('j');
@@ -342,7 +340,7 @@ function TKR_setupKibblesOnListPage(
     kibbles.keys.addKeyPressListener(
         's',
          function() {
-           TKR_toggleStarArtifactAtCursor(cbCellIndex, set_star_token);
+           TKR_toggleStarArtifactAtCursor(cbCellIndex);
          });
   }
   kibbles.keys.addKeyPressListener(
@@ -365,11 +363,10 @@ function TKR_setupKibblesOnListPage(
  * @param {string} projectName name of the current project.
  * @param {boolean} userCanComment True if the user may add a comment.
  * @param {boolean} userCanStar True if the user may add a star.
- * @param {string} set_star_token The security token.
  */
 function TKR_setupKibblesOnDetailPage(
     listUrl, entryUrl, prevUrl, nextUrl, projectName, localId,
-    userCanComment, userCanStar, set_star_token) {
+    userCanComment, userCanStar) {
   TKR_setupKibblesCursorStops(false);
   kibbles.skipper.addFwdKey('n');
   kibbles.skipper.addRevKey('p');
@@ -393,7 +390,7 @@ function TKR_setupKibblesOnDetailPage(
         's',
          function() {
            var star = document.getElementById('star');
-           TKR_toggleStar(star, projectName, localId, null, null, set_star_token);
+           TKR_toggleStar(star, projectName, localId, null, null);
            TKR_syncStarIcons(star, 'star2');
          });
   }

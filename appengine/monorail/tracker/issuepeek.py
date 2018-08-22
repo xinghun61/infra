@@ -140,9 +140,6 @@ class IssuePeek(servlet.Servlet):
         'starred': ezt.boolean(starred),
 
         'pagegen': str(long(time.time() * 1000000)),
-        'set_star_token': xsrf.GenerateToken(
-            mr.auth.user_id, '/p/%s%s' % (  # Note: no .do suffix.
-                mr.project_name, urls.ISSUE_SETSTAR_JSON)),
 
         'restrict_to_known': ezt.boolean(restrict_to_known),
         'prevent_restriction_removal': ezt.boolean(

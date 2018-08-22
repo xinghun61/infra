@@ -263,7 +263,7 @@ runOnLoad(function() {
 
   if ($("star"))
     $("star").addEventListener("click", function (event) {
-       _TKR_toggleStar($("star"), "[projectname]", [issue.local_id], null, null, "[set_star_token]");
+       _TKR_toggleStar($("star"), "[projectname]", [issue.local_id], null, null);
        _TKR_syncStarIcons($("star"), "star2");
     });
 
@@ -333,7 +333,7 @@ runOnLoad(function() {
    `[project_home_url]/issues/detail/previous${location.search}`,
    `[project_home_url]/issues/detail/next${location.search}`,
    '[projectname]', [issue.local_id],
-   [user_can_comment], [user_can_star], '[set_star_token]');
+   [user_can_comment], [user_can_star]);
 });
 </script>
 

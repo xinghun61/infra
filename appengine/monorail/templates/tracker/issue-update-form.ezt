@@ -404,7 +404,7 @@ runOnLoad(function() {
 
   if ($("star2"))
     $("star2").addEventListener("click", function (event) {
-       _TKR_toggleStar($("star2"), "[projectname]", [issue.local_id], null, null, "[set_star_token]");
+       _TKR_toggleStar($("star2"), "[projectname]", [issue.local_id], null, null);
        _TKR_syncStarIcons($("star2"), "star");
   });
 

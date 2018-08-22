@@ -111,7 +111,6 @@ class HotlistIssues(servlet.Servlet):
                       'is_hotlist': ezt.boolean(True),
                       'col_spec': mr.col_spec.lower(),
                       'viewing_user_page': ezt.boolean(True),
-                      'set_star_token': '', # needed for shared ezt templates.
                       # for update-issues-hotlists-dialog in
                       # issue-list-controls-top.
                       'user_issue_hotlists': [],

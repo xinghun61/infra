@@ -164,9 +164,6 @@ class IssueList(servlet.Servlet):
         'list_mode': ezt.boolean(pipeline.list_mode),
         'chart_mode': ezt.boolean(pipeline.chart_mode),
         'panel_id': mr.panel_id,
-        'set_star_token': xsrf.GenerateToken(
-            mr.auth.user_id, '/p/%s%s.do' % (
-                mr.project_name, urls.ISSUE_SETSTAR_JSON)),
         'search_error_message': search_error_message,
         'is_hotlist': ezt.boolean(False),
         # for update-issues-hotlists-dialog, user_remininag_hotlists

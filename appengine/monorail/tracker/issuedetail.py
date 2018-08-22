@@ -8,7 +8,6 @@
 Summary of classes:
   IssueDetail: Show one issue in detail w/ all metadata and comments, and
                process additional comments or metadata changes on it.
-  SetStarForm: Record the user's desire to star or unstar an issue.
   FlagSpamForm: Record the user's desire to report the issue as spam.
 """
 
@@ -360,9 +359,6 @@ class IssueDetail(issuepeek.IssuePeek):
         'flag_spam_token': xsrf.GenerateToken(
             mr.auth.user_id, '/p/%s%s.do' % (
                 mr.project_name, urls.ISSUE_FLAGSPAM_JSON)),
-        'set_star_token': xsrf.GenerateToken(
-            mr.auth.user_id, '/p/%s%s.do' % (
-                mr.project_name, urls.ISSUE_SETSTAR_JSON)),
 
         # For deep linking and input correction after a failed submit.
         'initial_summary': issue_view.summary,
@@ -1091,46 +1087,6 @@ def _ChooseNextPage(
           mr, urls.ISSUE_DETAIL, project_name=next_project, **issue_kwargs)
 
   return url
-
-
-class SetStarForm(jsonfeed.JsonFeed):
-  """Star or unstar the specified issue for the logged in user."""
-
-  def AssertBasePermission(self, mr):
-    super(SetStarForm, self).AssertBasePermission(mr)
-    issue = self.services.issue.GetIssueByLocalID(
-        mr.cnxn, mr.project_id, mr.local_id)
-    if not self.CheckPerm(mr, permissions.SET_STAR, art=issue):
-      raise permissions.PermissionException(
-          'You are not allowed to star issues')
-    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
-    granted_perms = tracker_bizobj.GetGrantedPerms(
-        issue, mr.auth.effective_ids, config)
-    permit_view = permissions.CanViewIssue(
-        mr.auth.effective_ids, mr.perms, mr.project, issue,
-        granted_perms=granted_perms)
-    if not permit_view:
-      logging.warning('Issue is %r', issue)
-      raise permissions.PermissionException(
-          'User is not allowed to view this issue, so cannot star it')
-
-  def HandleRequest(self, mr):
-    """Build up a dictionary of data values to use when rendering the page.
-
-    Args:
-      mr: commonly used info parsed from the request.
-
-    Returns:
-      Dict of values used by EZT for rendering the page.
-    """
-    with work_env.WorkEnv(mr, self.services) as we:
-      # Because we will modify issues, load from DB rather than cache.
-      issue = we.GetIssueByLocalID(mr.project_id, mr.local_id, use_cache=False)
-      we.StarIssue(issue, mr.starred)
-
-    return {
-        'starred': bool(mr.starred),
-        }
 
 
 class IssueCommentDeletion(servlet.Servlet):

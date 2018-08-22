@@ -30,7 +30,6 @@ from features import savedqueries
 from features import spammodel
 from features import spamtraining
 from features import componentexport
-from features import stars
 from features import componentpredict
 from features import componentlog
 
@@ -239,7 +238,6 @@ class ServletRegistry(object):
         urls.ISSUE_ATTACHMENT_DELETION_JSON:
             issueattachment.IssueAttachmentDeletion,
         urls.ISSUE_FLAGSPAM_JSON: spam.FlagSpamForm,
-        urls.ISSUE_SETSTAR_JSON: issuedetail.SetStarForm,
         urls.ISSUE_DELETE_JSON: issuedetail.IssueDeleteForm,
         urls.ISSUE_PRESUBMIT_JSON: issuepresubmit.IssuePresubmitJSON,
         urls.ISSUE_ENTRY: issueentry.IssueEntry,
@@ -347,7 +345,6 @@ class ServletRegistry(object):
         urls.USER_PROJECTS_JSON: userprojects.ProjectsJsonFeed,
         urls.USER_HOTLISTS_JSON: userhotlistsmenu.HotlistsJsonFeed,
         urls.HOSTING_HOME: hostinghome.HostingHome,
-        urls.STARS_JSON: stars.SetStarsFeed,
         urls.CUES_JSON: cues.SetCuesFeed,
         urls.GROUP_CREATE: groupcreate.GroupCreate,
         urls.GROUP_LIST: grouplist.GroupList,

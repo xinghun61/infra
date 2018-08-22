@@ -25,9 +25,6 @@ PEOPLE_DETAIL_PREFS_JSON = '/people/detailPrefs'
 ADMIN_META = '/admin'
 ADMIN_ADVANCED = '/adminAdvanced'
 
-# URLs for stars
-STARS_JSON = '/hosting/stars'
-
 # URLs for cue cards (dismissible on-page help)
 CUES_JSON = '/hosting/cues'
 
@@ -111,7 +108,6 @@ ISSUE_PEEK = '/issues/peek'  # not served, only used in issuepeek.py
 ISSUE_COMMENT_DELETION_JSON = '/issues/delComment'
 ISSUE_ATTACHMENT_DELETION_JSON = '/issues/delAttachment'
 ISSUE_FLAGSPAM_JSON = '/issues/flagspam'
-ISSUE_SETSTAR_JSON = '/issues/setstar'
 ISSUE_DELETE_JSON = '/issues/delete'
 ISSUE_PRESUBMIT_JSON = '/issues/presubmit'
 ISSUE_ENTRY = '/issues/entry'

@@ -32,9 +32,8 @@ var TKR_STAR_OFF = '\u2606';
  *                 the project containing the issue to be starred.
  * @param {Integer} localId number of the issue to be starred.
  * @param {String} projectName number of the user to be starred.
- * @param {string} token The security token.
  */
-function TKR_toggleStar(el, projectName, localId, userId, hotlistId, token) {
+function TKR_toggleStar(el, projectName, localId, userId, hotlistId) {
   var starred = (el.textContent.trim() == TKR_STAR_OFF) ? 1 : 0;
   TKR_toggleStarLocal(el);
 
