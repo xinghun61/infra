@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/golang/protobuf/ptypes"
 )
 
 var (
@@ -462,6 +464,88 @@ func TestWeightedTime(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("WeightedTime(%v)=%v; want=%v", steps, got, want)
+	}
+}
+
+func TestConvertToNinjaTask(t *testing.T) {
+	info := NinjaLog{
+		Filename: ".ninja_log",
+		Start:    1,
+		Steps:    stepsTestCase,
+		Metadata: metadataTestCase,
+	}
+
+	got := ConvertToNinjaTask(info)
+	wantWeightedTime := map[string]time.Duration{
+		"resources/inspector/devtools_extension_api.js":                     2*time.Millisecond + 1*time.Millisecond/2 + 1*time.Millisecond/3 + 61*time.Millisecond/4 + 1*time.Millisecond/5 + 45*time.Millisecond/6,
+		"gen/angle/commit_id.py":                                            1*time.Millisecond/2 + 1*time.Millisecond/3 + 61*time.Millisecond/4 + 1*time.Millisecond/5 + 45*time.Millisecond/6 + 97*time.Millisecond/5 + 2*time.Millisecond/4,
+		"gen/angle/copy_compiler_dll.bat":                                   1*time.Millisecond/3 + 61*time.Millisecond/4 + 1*time.Millisecond/5 + 45*time.Millisecond/6 + 97*time.Millisecond/5 + 2*time.Millisecond/4 + 1*time.Millisecond/3,
+		"gen/autofill_regex_constants.cc":                                   61*time.Millisecond/4 + 1*time.Millisecond/5 + 45*time.Millisecond/6 + 97*time.Millisecond/5,
+		"PepperFlash/manifest.json":                                         1*time.Millisecond/5 + 45*time.Millisecond/6 + 97*time.Millisecond/5 + 2*time.Millisecond/4 + 1*time.Millisecond/3,
+		"PepperFlash/libpepflashplayer.so":                                  45*time.Millisecond/6 + 97*time.Millisecond/5 + 2*time.Millisecond/4 + 1*time.Millisecond/3 + 1*time.Millisecond/2,
+		"obj/third_party/angle/src/copy_scripts.actions_rules_copies.stamp": 1*time.Millisecond/2 + 2*time.Millisecond,
+	}
+	want := []*NinjaTask{
+		{
+			LogEntry: &NinjaTask_LogEntry{
+				CommandHash:   "75430546595be7c2",
+				StartDuration: ptypes.DurationProto(76 * time.Millisecond),
+				EndDuration:   ptypes.DurationProto(187 * time.Millisecond),
+			},
+			WeightedDuration: ptypes.DurationProto(wantWeightedTime["resources/inspector/devtools_extension_api.js"]),
+		},
+		{
+			LogEntry: &NinjaTask_LogEntry{
+				CommandHash:   "4ede38e2c1617d8c",
+				StartDuration: ptypes.DurationProto(78 * time.Millisecond),
+				EndDuration:   ptypes.DurationProto(286 * time.Millisecond),
+			},
+			WeightedDuration: ptypes.DurationProto(wantWeightedTime["gen/angle/commit_id.py"]),
+		},
+		{
+			LogEntry: &NinjaTask_LogEntry{
+				CommandHash:   "9fb635ad5d2c1109",
+				StartDuration: ptypes.DurationProto(79 * time.Millisecond),
+				EndDuration:   ptypes.DurationProto(287 * time.Millisecond),
+			},
+			WeightedDuration: ptypes.DurationProto(wantWeightedTime["gen/angle/copy_compiler_dll.bat"]),
+		},
+		{
+			LogEntry: &NinjaTask_LogEntry{
+				CommandHash:   "fa33c8d7ce1d8791",
+				StartDuration: ptypes.DurationProto(80 * time.Millisecond),
+				EndDuration:   ptypes.DurationProto(284 * time.Millisecond),
+			},
+			WeightedDuration: ptypes.DurationProto(wantWeightedTime["gen/autofill_regex_constants.cc"]),
+		},
+		{
+			LogEntry: &NinjaTask_LogEntry{
+				CommandHash:   "324f0a0b77c37ef",
+				StartDuration: ptypes.DurationProto(141 * time.Millisecond),
+				EndDuration:   ptypes.DurationProto(287 * time.Millisecond),
+			},
+			WeightedDuration: ptypes.DurationProto(wantWeightedTime["PepperFlash/manifest.json"]),
+		},
+		{
+			LogEntry: &NinjaTask_LogEntry{
+				CommandHash:   "1e2c2b7845a4d4fe",
+				StartDuration: ptypes.DurationProto(142 * time.Millisecond),
+				EndDuration:   ptypes.DurationProto(288 * time.Millisecond),
+			},
+			WeightedDuration: ptypes.DurationProto(wantWeightedTime["PepperFlash/libpepflashplayer.so"]),
+		},
+		{
+			LogEntry: &NinjaTask_LogEntry{
+				CommandHash:   "b211d373de72f455",
+				StartDuration: ptypes.DurationProto(287 * time.Millisecond),
+				EndDuration:   ptypes.DurationProto(290 * time.Millisecond),
+			},
+			WeightedDuration: ptypes.DurationProto(wantWeightedTime["obj/third_party/angle/src/copy_scripts.actions_rules_copies.stamp"]),
+		},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("ConvertToNinjaTask(%v)=%v; want=%v", info, got, want)
+
 	}
 }
 
