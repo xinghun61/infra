@@ -402,8 +402,9 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
   @mock.patch.object(step_util, 'GetValidBoundingBuildsForStep')
   @mock.patch.object(step_util, 'GetBoundingIsolatedTargets')
   @mock.patch.object(MasterFlakeAnalysis, 'CanRunHeuristicAnalysis')
+  @mock.patch.object(MasterFlakeAnalysis, 'UpdateSuspectedBuildUsingBuildInfo')
   def testNextCommitPositionPipelineContinueAnalysisFallbackToBuildInfo(
-      self, mock_heuristic, mock_targets, mock_bounding_builds,
+      self, mock_update, mock_heuristic, mock_targets, mock_bounding_builds,
       mock_next_commit, mock_reference_build):
     master_name = 'm'
     builder_name = 'b'
@@ -459,6 +460,7 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     pipeline_job.start()
     self.execute_queued_tasks()
 
+    mock_update.assert_called_once_with(lower_bound_build, upper_bound_build)
     pipeline_job = pipelines.pipeline.Pipeline.from_id(pipeline_job.pipeline_id)
     next_commit_position_output = pipeline_job.outputs.default.value
 

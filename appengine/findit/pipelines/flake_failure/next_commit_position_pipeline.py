@@ -134,7 +134,8 @@ class NextCommitPositionPipeline(SynchronousPipeline):
               analysis.build_number, calculated_next_commit_position))
 
       # Update the analysis' suspected build cycle if identified.
-      analysis.UpdateSuspectedBuild(lower_bound_build, upper_bound_build)
+      analysis.UpdateSuspectedBuildUsingBuildInfo(lower_bound_build,
+                                                  upper_bound_build)
       lower_bound_commit_position = lower_bound_build.commit_position
       upper_bound_commit_position = upper_bound_build.commit_position
 
