@@ -24,6 +24,10 @@ from pipelines.flake_failure.get_isolate_sha_pipeline import (
     GetIsolateShaForCommitPositionParameters)
 from pipelines.flake_failure.get_isolate_sha_pipeline import (
     GetIsolateShaForCommitPositionPipeline)
+from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
+    UpdateFlakeAnalysisDataPointsInput)
+from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
+    UpdateFlakeAnalysisDataPointsPipeline)
 from services import issue_tracking_service
 from services import swarmed_test_util
 from services import swarming
@@ -136,14 +140,27 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
                 upper_bound_build_number=most_recent_build_number))
 
         # Determine approximate pass rate at the commit position/isolate sha.
-        yield DetermineApproximatePassRatePipeline(
+        recent_flakiness = yield DetermineApproximatePassRatePipeline(
             self.CreateInputObjectInstance(
                 DetermineApproximatePassRateInput,
-                analysis_urlsafe_key=analysis_urlsafe_key,
+                builder_name=analysis.builder_name,
                 commit_position=most_recent_commit_position,
+                flakiness_thus_far=None,
                 get_isolate_sha_output=get_sha_output,
                 previous_swarming_task_output=None,
-                revision=most_recent_build_info.chromium_revision))
+                master_name=analysis.master_name,
+                reference_build_number=analysis.build_number,
+                revision=most_recent_build_info.chromium_revision,
+                step_name=analysis.step_name,
+                test_name=analysis.test_name))
+
+        # TODO(crbug.com/876147): Save newly-measured Flakiness to the analysis
+        # itself instead of the analysis.data_points list.
+        yield UpdateFlakeAnalysisDataPointsPipeline(
+            self.CreateInputObjectInstance(
+                UpdateFlakeAnalysisDataPointsInput,
+                analysis_urlsafe_key=analysis_urlsafe_key,
+                flakiness=recent_flakiness))
 
         # Create the bug.
         yield _CreateBugIfStillFlaky(create_bug_input)

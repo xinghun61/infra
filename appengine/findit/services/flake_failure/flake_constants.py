@@ -104,7 +104,7 @@ MAX_TIMEOUT_SECONDS = 3 * 60 * 60
 MINIMUM_ITERATIONS_REQUIRED_FOR_CONVERGENCE = 400
 
 # Value to indicate a test does not exist at a build number or commit position.
-PASS_RATE_TEST_NOT_FOUND = -1
+PASS_RATE_TEST_NOT_FOUND = -1.0
 
 # The minimum required number of fully-stable points before a culprit in order
 # to send a notification to the code review. Statistically, 2 should be high

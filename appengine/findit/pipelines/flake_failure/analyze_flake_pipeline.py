@@ -43,6 +43,10 @@ from pipelines.flake_failure.next_commit_position_pipeline import (
 from pipelines.flake_failure.notify_culprit_pipeline import NotifyCulpritInput
 from pipelines.flake_failure.notify_culprit_pipeline import (
     NotifyCulpritPipeline)
+from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
+    UpdateFlakeAnalysisDataPointsInput)
+from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
+    UpdateFlakeAnalysisDataPointsPipeline)
 from pipelines.flake_failure.update_monorail_bug_pipeline import (
     UpdateMonorailBugInput)
 from pipelines.flake_failure.update_monorail_bug_pipeline import (
@@ -235,14 +239,25 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
                 upper_bound_build_number=analysis.build_number))
 
         # Determine approximate pass rate at the commit position/isolate sha.
-        yield DetermineApproximatePassRatePipeline(
+        flakiness = yield DetermineApproximatePassRatePipeline(
             self.CreateInputObjectInstance(
                 DetermineApproximatePassRateInput,
-                analysis_urlsafe_key=analysis_urlsafe_key,
+                builder_name=analysis.builder_name,
                 commit_position=commit_position_to_analyze,
+                flakiness_thus_far=None,
                 get_isolate_sha_output=get_sha_output,
+                master_name=analysis.master_name,
                 previous_swarming_task_output=None,
-                revision=revision_to_analyze))
+                reference_build_number=analysis.build_number,
+                revision=revision_to_analyze,
+                step_name=analysis.step_name,
+                test_name=analysis.test_name))
+
+        yield UpdateFlakeAnalysisDataPointsPipeline(
+            self.CreateInputObjectInstance(
+                UpdateFlakeAnalysisDataPointsInput,
+                analysis_urlsafe_key=analysis_urlsafe_key,
+                flakiness=flakiness))
 
         # Determine the next commit position to analyze.
         next_commit_position_output = yield NextCommitPositionPipeline(

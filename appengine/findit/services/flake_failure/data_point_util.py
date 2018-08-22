@@ -6,22 +6,33 @@
 from google.appengine.ext import ndb
 
 from model.flake.master_flake_analysis import DataPoint
-from services.flake_failure import flake_analysis_util
-from services.flake_failure import flake_constants
 from services.flake_failure import pass_rate_util
-from waterfall import waterfall_config
 
 
-def GetMaximumIterationsToRunPerDataPoint():
-  return waterfall_config.GetCheckFlakeSettings().get(
-      'max_iterations_to_rerun',
-      flake_constants.DEFAULT_MAX_ITERATIONS_TO_RERUN)
+def ConvertFlakinessAndAppendToAnalysis(analysis_urlsafe_key, flakiness):
+  """Converts Flakiness to DataPoint and appends it to a MasterFlakeAnalysis.
 
+  Args:
+    analysis_urlsafe_key (str): The url-safe key to a MasterFlakeAnalysis.
+    flakiness (Flakiness): The Flakiness instance to be converted to a DataPoint
+        object and appended to the analysis.
+  """
+  analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
+  assert analysis, 'Analysis unexpectedly missing'
 
-def GetMaximumSwarmingTaskRetriesPerDataPoint():
-  return waterfall_config.GetCheckFlakeSettings().get(
-      'maximum_swarming_task_retries_per_data_point',
-      flake_constants.DEFAULT_MAX_SWARMING_TASK_RETRIES_PER_DATA_POINT)
+  data_point = DataPoint.Create(
+      build_url=flakiness.build_url,
+      commit_position=flakiness.commit_position,
+      elapsed_seconds=flakiness.total_test_run_seconds,
+      failed_swarming_task_attempts=flakiness.failed_swarming_task_attempts,
+      git_hash=flakiness.revision,
+      iterations=flakiness.iterations,
+      pass_rate=flakiness.pass_rate,
+      task_ids=flakiness.task_ids.ToSerializable(),
+      try_job_url=flakiness.try_job_url)
+
+  analysis.data_points.append(data_point)
+  analysis.put()
 
 
 def HasSeriesOfFullyStablePointsPrecedingCommitPosition(
@@ -70,120 +81,3 @@ def HasSeriesOfFullyStablePointsPrecedingCommitPosition(
     previous_data_point = data_point
 
   return fully_stable_data_points_in_a_row >= required_number_of_stable_points
-
-
-def MaximumSwarmingTaskRetriesReached(data_point):
-  """Determines whether a data point has too many failed swarming task attempts.
-
-  Args:
-    data_point (DataPoint): The data point to check.
-
-  Returns:
-    True if the data point has had too many failed attempts at a swarming task.
-  """
-  max_swarming_retries = GetMaximumSwarmingTaskRetriesPerDataPoint()
-  return data_point.failed_swarming_task_attempts > max_swarming_retries
-
-
-def MaximumIterationsPerDataPointReached(iterations):
-  max_iterations_to_run = GetMaximumIterationsToRunPerDataPoint()
-  return iterations >= max_iterations_to_run
-
-
-def UpdateFailedSwarmingTaskAttempts(data_point):
-  assert data_point
-  data_point.failed_swarming_task_attempts += 1
-  data_point.put()
-
-
-def UpdateAnalysisDataPoints(parameters):
-  """Updates an analysis' data points with the output of a swarming taks.
-
-  Args:
-    parameters (UpdateFlakeDataPointsInput): Contains information to update
-        the data point with.
-  """
-  analysis_urlsafe_key = parameters.analysis_urlsafe_key
-  build_url = parameters.build_url
-  commit_position = parameters.commit_position
-  swarming_task_output = parameters.swarming_task_output
-  revision = parameters.revision
-  try_job_url = parameters.try_job_url
-
-  analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
-  assert analysis
-
-  data_point = analysis.FindMatchingDataPointWithCommitPosition(commit_position)
-  error = swarming_task_output.error
-  if data_point:
-    # A data point has already been created. Data should be combined.
-    if error and not flake_analysis_util.CanFailedSwarmingTaskBeSalvaged(
-        swarming_task_output):
-      # The latest swarming task ran into an error.
-      # TODO(crbug.com/808947): A failed swarming task's partial data can
-      # sometimes still be salvaged.
-      data_point.failed_swarming_task_attempts += 1
-      if swarming_task_output.task_id:
-        # Capture the task ID if available for diagnostic information.
-        data_point.task_ids.append(swarming_task_output.task_id)
-      analysis.put()
-      return
-
-    # Ensure no undetected error.
-    assert swarming_task_output.iterations is not None
-    assert swarming_task_output.pass_count is not None
-    assert swarming_task_output.task_id
-    # The latest swarming task completed successfully. Incorporate the incoming
-    # data with the existing data point.
-    old_pass_rate = data_point.pass_rate
-    old_iterations = data_point.iterations
-    incoming_iterations = swarming_task_output.iterations
-    old_pass_rate = data_point.pass_rate
-    incoming_pass_rate = pass_rate_util.GetPassRate(swarming_task_output)
-
-    # Ensure the are no discrepancies between old and new pass rates about the
-    # test existing or not at the same commit position.
-    assert not (pass_rate_util.TestDoesNotExist(incoming_pass_rate) and
-                not pass_rate_util.TestDoesNotExist(old_pass_rate))
-
-    incoming_elapsed_seconds = swarming_task_output.GetElapsedSeconds()
-    assert incoming_elapsed_seconds is not None
-
-    data_point.task_ids.append(swarming_task_output.task_id)
-    data_point.pass_rate = pass_rate_util.CalculateNewPassRate(
-        old_pass_rate, old_iterations, incoming_pass_rate, incoming_iterations)
-    data_point.iterations += incoming_iterations
-    data_point.elapsed_seconds += incoming_elapsed_seconds
-  else:
-    # A new data point should always be created and appended, especially for
-    # diagnostics in case of failures. Note if no pass rate is ultimately able
-    # to be determined due to too many failed attempts, the UI should be
-    # responsible not to display a data point with a pass_rate of None.
-    if error and not flake_analysis_util.CanFailedSwarmingTaskBeSalvaged(
-        swarming_task_output):
-      # TODO(crbug.com/808947): A failed swarming task's partial data can
-      # sometimes still be salvaged.
-      elapsed_seconds = None
-      failed_swarming_task_attempts = 1
-      iterations = None
-      pass_rate = None
-    else:
-      elapsed_seconds = swarming_task_output.GetElapsedSeconds()
-      failed_swarming_task_attempts = 0
-      iterations = swarming_task_output.iterations
-      pass_rate = pass_rate_util.GetPassRate(swarming_task_output)
-
-    data_point = DataPoint.Create(
-        build_url=build_url,
-        commit_position=commit_position,
-        elapsed_seconds=elapsed_seconds,
-        failed_swarming_task_attempts=failed_swarming_task_attempts,
-        git_hash=revision,
-        iterations=iterations,
-        pass_rate=pass_rate,
-        task_ids=[swarming_task_output.task_id],
-        try_job_url=try_job_url)
-
-    analysis.data_points.append(data_point)
-
-  analysis.put()

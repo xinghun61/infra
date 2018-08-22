@@ -117,7 +117,7 @@ def HasSufficientInformation(overall_pass_rate, total_iterations,
       'minimum_iterations_required_for_confergence',
       flake_constants.MINIMUM_ITERATIONS_REQUIRED_FOR_CONVERGENCE)
 
-  if overall_pass_rate is None or total_iterations == 0:
+  if overall_pass_rate is None or not total_iterations:
     return False
 
   if MinimumIterationsReached(total_iterations):

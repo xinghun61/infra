@@ -5,8 +5,8 @@
 from datetime import datetime
 
 from dto import swarming_task_error
+from dto.flakiness import Flakiness
 from dto.swarming_task_error import SwarmingTaskError
-from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from services.flake_failure import run_swarming_util
 from waterfall.test import wf_testcase
@@ -19,44 +19,34 @@ class RunSwarmingUtilTest(wf_testcase.WaterfallTestCase):
         30,
         run_swarming_util._CalculateNumberOfIterationsToRunWithinTimeout(120))
 
-  def testEstimateSwarmingIterationTimeoutWithDataPoints(self):
-    commit_position = 1000
+  def testEstimateSwarmingIterationTimeout(self):
+    flakiness = Flakiness(
+        build_url=None,
+        commit_position=1000,
+        total_test_run_seconds=120,
+        error=None,
+        failed_swarming_task_attempts=0,
+        iterations=30,
+        pass_rate=0.3,
+        revision='r1000',
+        try_job_url='url')
 
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.data_points = [
-        DataPoint.Create(
-            commit_position=1000,
-            elapsed_seconds=120,
-            iterations=30,
-            pass_rate=0.3)
-    ]
-    analysis.Save()
     self.assertEqual(
-        8,
-        run_swarming_util._EstimateSwarmingIterationTimeout(
-            analysis, commit_position))
+        8, run_swarming_util._EstimateSwarmingIterationTimeout(flakiness))
 
-  def testEstimateSwarmingIterationTimeoutNoDataPoints(self):
-    commit_position = 1000
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.Save()
+  def testEstimateSwarmingIterationTimeoutWithDefaultValues(self):
+    flakiness = Flakiness(
+        build_url=None,
+        commit_position=1000,
+        total_test_run_seconds=0,
+        error=None,
+        failed_swarming_task_attempts=0,
+        iterations=0,
+        pass_rate=None,
+        revision='r1000',
+        try_job_url='url')
     self.assertEqual(
-        120,
-        run_swarming_util._EstimateSwarmingIterationTimeout(
-            analysis, commit_position))
-
-  def testEstimateSwarmingIterationTimeoutWithDataPointsError(self):
-    commit_position = 1000
-
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.data_points = [
-        DataPoint.Create(commit_position=1000, elapsed_seconds=0, iterations=0)
-    ]
-    analysis.Save()
-    self.assertEqual(
-        120,
-        run_swarming_util._EstimateSwarmingIterationTimeout(
-            analysis, commit_position))
+        120, run_swarming_util._EstimateSwarmingIterationTimeout(flakiness))
 
   def testEstimateTimeoutForTask(self):
     self.assertEqual(3600, run_swarming_util._EstimateTimeoutForTask(1, 1))
@@ -69,48 +59,44 @@ class RunSwarmingUtilTest(wf_testcase.WaterfallTestCase):
         200, run_swarming_util._GetMaximumIterationsPerSwarmingTask(300))
 
   def testCalculateRunParametersForSwarmingTaskDefault(self):
-    commit_position = 1000
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.Save()
-
+    flakiness = Flakiness(
+        build_url=None,
+        commit_position=1000,
+        total_test_run_seconds=None,
+        error=None,
+        failed_swarming_task_attempts=0,
+        iterations=None,
+        pass_rate=None,
+        revision='r1000',
+        try_job_url='url')
     self.assertEqual((30, 3600),
                      run_swarming_util.CalculateRunParametersForSwarmingTask(
-                         analysis, commit_position, None))
+                         flakiness, None))
 
   def testCalculateRunParametersForSwarmingTaskWithError(self):
     expected_iterations_to_run_after_timeout = 10
-    commit_position = 1000
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.data_points = [
-        DataPoint.Create(
-            commit_position=1000,
-            pass_rate=1,
-            iterations=1,
-            elapsed_seconds=400)
-    ]
-    analysis.Save()
+    flakiness = Flakiness(
+        commit_position=1000,
+        pass_rate=1.0,
+        iterations=1,
+        total_test_run_seconds=400)
 
     self.assertEqual((expected_iterations_to_run_after_timeout, 3600),
                      run_swarming_util.CalculateRunParametersForSwarmingTask(
-                         analysis, commit_position,
+                         flakiness,
                          SwarmingTaskError(
                              code=swarming_task_error.TIMED_OUT, message='m')))
 
   def testCalculateRunParametersForSwarmingTaskExceedsMaxTasks(self):
-    commit_position = 1000
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.data_points = [
-        DataPoint.Create(
-            commit_position=commit_position,
-            iterations=100,
-            elapsed_seconds=100,
-            pass_rate=1)
-    ]
-    analysis.Save()
+    flakiness = Flakiness(
+        commit_position=1000,
+        iterations=100,
+        total_test_run_seconds=100,
+        pass_rate=1.0)
 
     self.assertEqual((200, 3600),
                      run_swarming_util.CalculateRunParametersForSwarmingTask(
-                         analysis, commit_position, None))
+                         flakiness, None))
 
   def testReportSwarmingTaskErrorNoError(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')

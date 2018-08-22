@@ -109,11 +109,16 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
         isolate_sha='sha1', build_url='url', try_job_url=None)
 
     expected_pass_rate_input = DetermineApproximatePassRateInput(
-        analysis_urlsafe_key=analysis.key.urlsafe(),
+        builder_name=builder_name,
         commit_position=recent_commit_position,
+        flakiness_thus_far=None,
         get_isolate_sha_output=get_sha_output,
         previous_swarming_task_output=None,
-        revision=recent_revision)
+        master_name=master_name,
+        reference_build_number=build_number,
+        revision=recent_revision,
+        step_name=step_name,
+        test_name=test_name)
 
     self.MockGeneratorPipeline(GetIsolateShaForCommitPositionPipeline,
                                expected_isolate_sha_input, get_sha_output)

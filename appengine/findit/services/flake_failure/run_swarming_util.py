@@ -37,41 +37,31 @@ def _CalculateNumberOfIterationsToRunWithinTimeout(estimated_timeout_per_test):
   return max(1, iterations)
 
 
-def _EstimateSwarmingIterationTimeout(analysis, commit_position):
+def _EstimateSwarmingIterationTimeout(flakiness):
   """Estimates a timeout per iteration based on previous data points.
 
   Uses the amount of time previous data points at this build number took to
   estimate a timeout for an iteration.
 
   Args:
-    analysis (MasterFlakeAnalysis): The analysis being run.
-    build_number (int): The commit position being run.
+    flakiness (Flakiness): Information representing the flakiness and other
+        metadata at a commit position.
 
   Return:
     (int) Timeout for one iteration in seconds.
   """
-  data_point = analysis.FindMatchingDataPointWithCommitPosition(commit_position)
   check_flake_settings = waterfall_config.GetCheckFlakeSettings()
 
-  if (not data_point or data_point.elapsed_seconds == 0 or
-      data_point.iterations == 0):
-    # There is insufficient data to calculate a timeout, either there is no
-    # data point or the existing one had an error.
+  if not flakiness.total_test_run_seconds or not flakiness.iterations:
+    # There is insufficient data to calculate a timeout, possibly due to error.
+    # Fallback to safe values.
     return check_flake_settings.get(
         'timeout_per_test_seconds',
         flake_constants.DEFAULT_TIMEOUT_PER_TEST_SECONDS)
 
-  assert data_point.pass_rate >= 0, (
-      'Rerunning swarming task on data point with nonexistent test!')
-
   # Set lower threshold for timeout per iteration.
   time_per_iteration = (
-      float(data_point.elapsed_seconds) / float(data_point.iterations))
-
-  analysis.LogInfo(('Estimated %d seconds timeout per iterations based on '
-                    '%d elapsed seconds and %d iterations.' %
-                    (int(time_per_iteration), data_point.elapsed_seconds,
-                     data_point.iterations)))
+      float(flakiness.total_test_run_seconds) / float(flakiness.iterations))
 
   return int(
       check_flake_settings.get('swarming_task_cushion',
@@ -110,12 +100,11 @@ def _GetMaximumIterationsPerSwarmingTask(requested_iterations_for_task):
   return min(max_iterations_per_task, requested_iterations_for_task)
 
 
-def CalculateRunParametersForSwarmingTask(analysis, commit_position, error):
+def CalculateRunParametersForSwarmingTask(flakiness, error):
   """Calculates and returns the iterations and timeout for swarming tasks
 
   Args:
-    analysis (MasterFlakeAnalysis): An analysis in progress.
-    commit_position (int): The current commit position being analyzed.
+    flakiness (Flakiness): A structure representing flakiness thus far.
     error (SwarmingError): The error of the previously-run swarming
         task at commit_position. Should be None if no error was encountered.
 
@@ -123,8 +112,9 @@ def CalculateRunParametersForSwarmingTask(analysis, commit_position, error):
       ((int) iterations, (int) timeout) Tuple containing the iterations to run
           for this swarming task, and the timeout for that task.
   """
-  timeout_per_test = _EstimateSwarmingIterationTimeout(analysis,
-                                                       commit_position)
+  assert flakiness, 'Cannot calculate parameters for nonexistent Flakiness'
+
+  timeout_per_test = _EstimateSwarmingIterationTimeout(flakiness)
   iterations_for_task = _CalculateNumberOfIterationsToRunWithinTimeout(
       timeout_per_test)
   time_for_task_seconds = _EstimateTimeoutForTask(timeout_per_test,

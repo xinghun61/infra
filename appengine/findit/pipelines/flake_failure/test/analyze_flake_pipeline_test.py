@@ -5,6 +5,7 @@
 import datetime
 import mock
 
+from dto.flakiness import Flakiness
 from dto.int_range import IntRange
 from dto.step_metadata import StepMetadata
 from dto.test_location import TestLocation
@@ -49,6 +50,10 @@ from pipelines.flake_failure.next_commit_position_pipeline import (
 from pipelines.flake_failure.notify_culprit_pipeline import NotifyCulpritInput
 from pipelines.flake_failure.notify_culprit_pipeline import (
     NotifyCulpritPipeline)
+from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
+    UpdateFlakeAnalysisDataPointsPipeline)
+from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
+    UpdateFlakeAnalysisDataPointsInput)
 from pipelines.flake_failure.update_monorail_bug_pipeline import (
     UpdateMonorailBugInput)
 from pipelines.flake_failure.update_monorail_bug_pipeline import (
@@ -250,6 +255,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     start_revision = 'r1000'
     isolate_sha = 'sha1'
     next_commit_position = 999
+    pass_rate = 0.5
     build_url = 'url'
     try_job_url = None
 
@@ -267,6 +273,12 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         isolate_target_name='s')
 
     mocked_revision.return_value = {'git_sha': start_revision}
+
+    expected_flakiness = Flakiness(
+        build_url=build_url,
+        commit_position=start_commit_position,
+        revision=start_revision,
+        pass_rate=pass_rate)
 
     analyze_flake_input = AnalyzeFlakeInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
@@ -289,11 +301,20 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         upper_bound_build_number=analysis.build_number)
 
     expected_pass_rate_input = DetermineApproximatePassRateInput(
-        analysis_urlsafe_key=analysis.key.urlsafe(),
+        builder_name=analysis.builder_name,
         commit_position=start_commit_position,
+        flakiness_thus_far=None,
         get_isolate_sha_output=get_sha_output,
+        master_name=analysis.master_name,
         previous_swarming_task_output=None,
-        revision=start_revision)
+        reference_build_number=analysis.build_number,
+        revision=start_revision,
+        step_name=analysis.step_name,
+        test_name=analysis.test_name)
+
+    expected_update_data_points_input = UpdateFlakeAnalysisDataPointsInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        flakiness=expected_flakiness)
 
     expected_next_commit_position_input = NextCommitPositionInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
@@ -317,7 +338,10 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
                                expected_isolate_sha_input, get_sha_output)
 
     self.MockGeneratorPipeline(DetermineApproximatePassRatePipeline,
-                               expected_pass_rate_input, None)
+                               expected_pass_rate_input, expected_flakiness)
+
+    self.MockSynchronousPipeline(UpdateFlakeAnalysisDataPointsPipeline,
+                                 expected_update_data_points_input, None)
 
     self.MockSynchronousPipeline(NextCommitPositionPipeline,
                                  expected_next_commit_position_input,
@@ -329,7 +353,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     pipeline_job = AnalyzeFlakePipeline(analyze_flake_input)
     pipeline_job.start()
     self.execute_queued_tasks()
-    mocked_revision.assert_called_once_with(mock.ANY, 1000)
+    mocked_revision.assert_called_once_with(mock.ANY, start_commit_position)
 
   @mock.patch.object(
       flake_analysis_util, 'CanStartAnalysisImmediately', return_value=False)

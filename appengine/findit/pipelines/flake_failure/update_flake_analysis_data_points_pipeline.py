@@ -3,33 +3,23 @@
 # found in the LICENSE file.
 """Updates a flake analysis' data points with incoming pass rate information."""
 
-from dto.flake_swarming_task_output import FlakeSwarmingTaskOutput
+from google.appengine.ext import ndb
+
+from dto.flakiness import Flakiness
 from gae_libs.pipelines import GeneratorPipeline
+from gae_libs.pipelines import pipeline
 from libs.structured_object import StructuredObject
 from services.flake_failure import data_point_util
+from services.flake_failure import flakiness_util
+from services.flake_failure import run_swarming_util
 
 
 class UpdateFlakeAnalysisDataPointsInput(StructuredObject):
   # The urlsafe-key to the analysis to update.
   analysis_urlsafe_key = basestring
 
-  # The url to the build whose artifacts were used to create the data point.
-  # Can be None if existing build artifacts were not used (compile was needed).
-  build_url = basestring
-
-  # The data point with matching commit position to update.
-  commit_position = int
-
-  # The revision corresponding to the data point.
-  revision = basestring
-
-  # The url to the try job that generated the build artifacts to generate the
-  # data point. Can be None if existing build artifacts were used (commit
-  # position mapped to a nearby valid build).
-  try_job_url = basestring
-
-  # The results of the flake swarming task to update data points with.
-  swarming_task_output = FlakeSwarmingTaskOutput
+  # The flakiness rate with which to create a data point with.
+  flakiness = Flakiness
 
 
 class UpdateFlakeAnalysisDataPointsPipeline(GeneratorPipeline):
@@ -38,5 +28,19 @@ class UpdateFlakeAnalysisDataPointsPipeline(GeneratorPipeline):
   input_type = UpdateFlakeAnalysisDataPointsInput
 
   def RunImpl(self, parameters):
-    """Creates or updates existing data points with swarming task results."""
-    data_point_util.UpdateAnalysisDataPoints(parameters)
+    """Appends a DataPoint to a MasterFlakeAnalysis."""
+    analysis_urlsafe_key = parameters.analysis_urlsafe_key
+    analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
+    assert analysis, 'Analysis unexpectedly missing'
+
+    flakiness = parameters.flakiness
+
+    if flakiness_util.MaximumSwarmingTaskRetriesReached(flakiness):
+      run_swarming_util.ReportSwarmingTaskError(analysis, flakiness.error)
+      analysis.LogError(
+          'Swarming task ended in error after {} failed attempts. Giving '
+          'up'.format(flakiness.failed_swarming_task_attempts))
+      raise pipeline.Abort()
+
+    data_point_util.ConvertFlakinessAndAppendToAnalysis(analysis_urlsafe_key,
+                                                        flakiness)
