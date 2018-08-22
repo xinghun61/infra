@@ -205,16 +205,19 @@ class PermissionSet(object):
 
     if not effective_ids:
       effective_ids = {framework_constants.NO_USER_SPECIFIED}
+
+    # TODO(ehmaldonado): Consider accumulating perms (using set.add) instead of
+    # constructing and merging sets.
+    # Get all extra perms for all effective ids.
     # Id X might have perm A and Y might have B, if both A and B are needed
     # True should be returned.
-    for perm in needed_perms:
-      if not any(
-          self.HasPerm(perm, user_id, project) for user_id in effective_ids):
-        return False
+    extra_perms = set().union(*(
+        (p.lower() for p in GetExtraPerms(project, user_id))
+        for user_id in effective_ids))
+    return all(self.HasPerm(perm, None, None, extra_perms)
+               for perm in needed_perms)
 
-    return True
-
-  def HasPerm(self, perm_name, user_id, project):
+  def HasPerm(self, perm_name, user_id, project, extra_perms=None):
     """Return True if the user has the given permission (ignoring user groups).
 
     Args:
@@ -222,16 +225,27 @@ class PermissionSet(object):
       user_id: int user id of the user, or None if user is not signed in.
       project: Project PB for the project being accessed, or None if not
           in a project.
+      extra_perms: list of extra perms. If not given, GetExtraPerms will be
+          called to get them.
 
     Returns:
       True if the user has the given perm.
     """
-    # TODO(jrobbins): room for performance improvement: pre-compute
-    # extra perms (maybe merge them into the perms object), avoid
-    # redundant call to lower().
-    extra_perms = [p.lower() for p in GetExtraPerms(project, user_id)]
     perm_name = perm_name.lower()
-    return perm_name in self.perm_names or perm_name in extra_perms
+
+    # Return early if possible.
+    if perm_name in self.perm_names:
+      return True
+
+    if extra_perms is None:
+      # TODO(jrobbins): room for performance improvement: pre-compute
+      # extra perms (maybe merge them into the perms object), avoid
+      # redundant call to lower().
+      return any(
+          p.lower() == perm_name
+          for p in GetExtraPerms(project, user_id))
+
+    return perm_name in extra_perms
 
   def DebugString(self):
     """Return a useful string to show when debugging."""

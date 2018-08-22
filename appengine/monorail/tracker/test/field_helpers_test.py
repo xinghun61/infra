@@ -456,63 +456,6 @@ class FieldHelpersTest(unittest.TestCase):
         self.mr, self.mr.project, self.services, fd, user)
     self.assertEqual('User must be a member of the project', msg)
 
-  def test_FilterUserType(self):
-    fd = tracker_bizobj.MakeFieldDef(
-        123, 789, 'Fake Field', tracker_pb2.FieldTypes.USER_TYPE, None,
-        '', False, False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
-
-    owner = testing_helpers.Blank(
-        user_id=111,
-        user=self.services.user.TestAddUser('owner@example.com', 111L))
-    self.mr.project.owner_ids.extend([111L])
-
-    committer = testing_helpers.Blank(
-        user_id=222L,
-        user=self.services.user.TestAddUser('committer@example.com', 222L))
-    self.mr.project.committer_ids.extend([222L])
-    self.mr.project.extra_perms = [
-        project_pb2.Project.ExtraPerms(
-            member_id=222L,
-            perms=['FooPerm'])]
-
-    user = testing_helpers.Blank(
-        user_id=333L,
-        user=self.services.user.TestAddUser('user@example.com', 333L))
-    tracker_bizobj.MakeFieldValue(
-        fd.field_id, None, None, 333L, None, None, False)
-
-    # Normal
-    self.assertEqual(
-        [owner, committer, user],
-        field_helpers.FilterValidUserFieldValues(
-            self.mr, self.mr.project, self.services, fd,
-            [owner, committer, user]))
-
-    # Needs member
-    fd.needs_member = True
-    self.assertEqual(
-        [owner, committer],
-        field_helpers.FilterValidUserFieldValues(
-            self.mr, self.mr.project, self.services, fd,
-            [owner, committer, user]))
-
-    # Needs "DeleteAny" permission (only owner has it)
-    fd.needs_perm = 'DeleteAny'
-    self.assertEqual(
-        [owner],
-        field_helpers.FilterValidUserFieldValues(
-            self.mr, self.mr.project, self.services, fd,
-            [owner, committer, user]))
-
-    # Needs custom permission (only committer has it)
-    fd.needs_perm = 'FooPerm'
-    self.assertEqual(
-        [committer],
-        field_helpers.FilterValidUserFieldValues(
-            self.mr, self.mr.project, self.services, fd,
-            [owner, committer, user]))
-
   def test_DateType(self):
     pass  # TODO(jrobbins): write this test. @@@
 

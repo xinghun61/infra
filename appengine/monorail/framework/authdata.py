@@ -80,8 +80,7 @@ class AuthData(object):
       auth.user_id = services.user.LookupUserID(
           cnxn, email, autocreate=autocreate)
       assert auth.user_id
-      cls._FinishInitialization(
-          cnxn, auth, services, user_pb=None, effective_ids=None)
+      cls._FinishInitialization(cnxn, auth, services, user_pb=None)
 
     return auth
 
@@ -101,13 +100,12 @@ class AuthData(object):
     auth.user_id = user_id
     if auth.user_id:
       auth.email = services.user.LookupUserEmail(cnxn, user_id)
-      cls._FinishInitialization(
-          cnxn, auth, services, user_pb=None, effective_ids=None)
+      cls._FinishInitialization(cnxn, auth, services, user_pb=None)
 
     return auth
 
   @classmethod
-  def FromUser(cls, cnxn, user, services, effective_ids=None):
+  def FromUser(cls, cnxn, user, services):
     """Determine auth information for the given user.
 
     Args:
@@ -122,16 +120,15 @@ class AuthData(object):
     auth.user_id = user.user_id
     if auth.user_id:
       auth.email = user.email
-      cls._FinishInitialization(cnxn, auth, services, user, effective_ids)
+      cls._FinishInitialization(cnxn, auth, services, user)
 
     return auth
 
   @classmethod
-  def _FinishInitialization(cls, cnxn, auth, services, user_pb=None,
-                            effective_ids=None):
+  def _FinishInitialization(cls, cnxn, auth, services, user_pb=None):
     """Fill in the test of the fields based on the user_id."""
     # TODO(jrobbins): re-implement same_org
-    auth.effective_ids = effective_ids or services.usergroup.LookupMemberships(
+    auth.effective_ids = services.usergroup.LookupMemberships(
         cnxn, auth.user_id)
     auth.effective_ids.add(auth.user_id)
     auth.user_pb = user_pb or services.user.GetUser(cnxn, auth.user_id)

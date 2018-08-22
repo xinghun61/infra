@@ -59,6 +59,12 @@ class ProjectsServicerTest(unittest.TestCase):
         999L, 'group999@googlegroups.com')
     self.services.usergroup.TestAddMembers(999L, [111L, 444L])
 
+    # User group 777 has members: user_666 and group 999.
+    self.services.user.TestAddUser('group777@googlegroups.com', 777L)
+    self.services.usergroup.TestAddGroupSettings(
+        777L, 'group777@googlegroups.com')
+    self.services.usergroup.TestAddMembers(777L, [666L, 999L])
+
     self.project = self.services.project.TestAddProject(
         'proj', project_id=789)
     self.project.owner_ids.extend([111L])
@@ -463,6 +469,9 @@ class ProjectsServicerTest(unittest.TestCase):
     self.AddField('Foo Field', needs_perm='FooPerm')
     self.project.extra_perms = [
         project_pb2.Project.ExtraPerms(
+            member_id=111L,
+            perms=['UnrelatedPerm']),
+        project_pb2.Project.ExtraPerms(
             member_id=222L,
             perms=['FooPerm'])]
 
@@ -482,6 +491,65 @@ class ProjectsServicerTest(unittest.TestCase):
     self.assertEqual(
         ['user_222@example.com'],
         sorted([user_ref.display_name for user_ref in field.user_choices]))
+
+  def testListFields_IndirectPermission(self):
+    """Test that the permissions of effective ids are also considered."""
+    self.AddField('Foo Field', needs_perm='FooPerm')
+    self.project.contributor_ids.extend([999L])
+    self.project.extra_perms = [
+        project_pb2.Project.ExtraPerms(
+            member_id=999L,
+            perms=['FooPerm', 'BarPerm'])]
+
+    request = projects_pb2.ListFieldsRequest(
+        project_name='proj', include_user_choices=True)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(
+        self.projects_svcr.ListFields, mc, request)
+
+    self.assertEqual(1, len(response.field_defs))
+    field = response.field_defs[0]
+    self.assertEqual('Foo Field', field.field_ref.field_name)
+    # Users 111L and 444L are members of group 999L, which has the needed
+    # permission.
+    self.assertEqual(
+        [111L, 444L, 999L],
+        sorted([user_ref.user_id for user_ref in field.user_choices]))
+    self.assertEqual(
+        ['group999@googlegroups.com', 'owner@example.com',
+         'user_444@example.com'],
+        sorted([user_ref.display_name for user_ref in field.user_choices]))
+
+  def testListFields_TwiceIndirectPermission(self):
+     """Test that only direct memberships are considered."""
+     self.AddField('Foo Field', needs_perm='FooPerm')
+     self.project.contributor_ids.extend([777L])
+     self.project.contributor_ids.extend([999L])
+     self.project.extra_perms = [
+         project_pb2.Project.ExtraPerms(
+             member_id=777L,
+             perms=['FooPerm', 'BarPerm'])]
+
+     request = projects_pb2.ListFieldsRequest(
+         project_name='proj', include_user_choices=True)
+     mc = monorailcontext.MonorailContext(
+         self.services, cnxn=self.cnxn, requester='owner@example.com')
+     mc.LookupLoggedInUserPerms(self.project)
+     response = self.CallWrapped(
+         self.projects_svcr.ListFields, mc, request)
+
+     self.assertEqual(1, len(response.field_defs))
+     field = response.field_defs[0]
+     self.assertEqual('Foo Field', field.field_ref.field_name)
+     self.assertEqual(
+         [666L, 777L, 999L],
+         sorted([user_ref.user_id for user_ref in field.user_choices]))
+     self.assertEqual(
+         ['group777@googlegroups.com', 'group999@googlegroups.com',
+          'user_666@example.com'],
+         sorted([user_ref.display_name for user_ref in field.user_choices]))
 
   def testListFields_NoPermissionsNeeded(self):
     self.AddField('Foo Field')

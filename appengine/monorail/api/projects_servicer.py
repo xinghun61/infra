@@ -13,7 +13,7 @@ from api.api_proto import projects_prpc_pb2
 from businesslogic import work_env
 from framework import framework_views
 from framework import permissions
-from tracker import field_helpers
+from project import project_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
 
@@ -179,21 +179,29 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
     with work_env.WorkEnv(mc, self.services) as we:
       config = we.GetProjectConfig(project.project_id)
 
-    users_by_id = tracker_helpers.GetVisibleMembers(mc, project, self.services)
+    users_by_id = {}
+    users_for_perm = {}
+    # Only look for members if user choices are requested and there are user
+    # fields that need permissions.
+    if request.include_user_choices:
+      perms_needed = {
+          fd.needs_perm
+          for fd in config.field_defs
+          if fd.needs_perm and not fd.is_deleted}
+      if perms_needed:
+        users_by_id = tracker_helpers.GetVisibleMembers(
+            mc, project, self.services)
+        effective_ids_by_user = self.services.usergroup.LookupAllMemberships(
+            mc.cnxn, users_by_id)
+        users_for_perm = project_helpers.UsersWithPermsInProject(
+            project, perms_needed, users_by_id, effective_ids_by_user)
 
-    field_defs = []
-    for fd in config.field_defs:
-      if fd.is_deleted:
-        continue
-
-      user_choices = []
-      if fd.needs_perm and request.include_user_choices:
-        qualified_users = field_helpers.FilterValidUserFieldValues(
-            mc, project, self.services, fd, users_by_id.values())
-        user_choices = [uv.user_id for uv in qualified_users]
-
-      field_defs.append(converters.ConvertFieldDef(
-          fd, user_choices, users_by_id, config, request.include_admin_info))
+    field_defs = [
+        converters.ConvertFieldDef(
+            fd, users_for_perm.get(fd.needs_perm, []), users_by_id, config,
+            request.include_admin_info)
+        for fd in config.field_defs
+        if not fd.is_deleted]
 
     result = projects_pb2.ListFieldsResponse(field_defs=field_defs)
     return result

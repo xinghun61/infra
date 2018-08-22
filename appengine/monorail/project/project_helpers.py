@@ -11,6 +11,7 @@ import re
 import settings
 from framework import framework_bizobj
 from framework import framework_views
+from framework import permissions
 from project import project_views
 from proto import project_pb2
 
@@ -172,3 +173,36 @@ def UsersInvolvedInProject(project):
   result.update(project.contributor_ids)
   result.update([perm.member_id for perm in project.extra_perms])
   return result
+
+
+def UsersWithPermsInProject(project, perms_needed, users_by_id,
+                            effective_ids_by_user):
+  # Users that have the given permission are stored in direct_users_for_perm,
+  # users whose effective ids have the given permission are stored in
+  # indirect_users_for_perm.
+  direct_users_for_perm = {perm: set() for perm in perms_needed}
+  indirect_users_for_perm = {perm: set() for perm in perms_needed}
+
+  # Iterate only over users that have extra permissions, so we don't
+  # have to search the extra perms more than once for each user.
+  for extra_perm_pb in project.extra_perms:
+    extra_perms = set(perm.lower() for perm in extra_perm_pb.perms)
+    for perm, users in direct_users_for_perm.iteritems():
+      if perm.lower() in extra_perms:
+        users.add(extra_perm_pb.member_id)
+
+  # Then, iterate over all users, but don't compute extra permissions.
+  for user_id, user_view in users_by_id.iteritems():
+    effective_ids = effective_ids_by_user[user_id].union([user_id])
+    user_perms = permissions.GetPermissions(
+        user_view.user, effective_ids, project)
+    for perm, users in direct_users_for_perm.iteritems():
+      if not effective_ids.isdisjoint(users):
+        indirect_users_for_perm[perm].add(user_id)
+      if user_perms.HasPerm(perm, None, None, []):
+        users.add(user_id)
+
+  for perm, users in direct_users_for_perm.iteritems():
+    users.update(indirect_users_for_perm[perm])
+
+  return direct_users_for_perm

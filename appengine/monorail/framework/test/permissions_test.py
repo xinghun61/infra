@@ -117,6 +117,21 @@ class PermissionSetTest(unittest.TestCase):
     # TODO(jrobbins): also test consider_restrictions=False and
     # restriction labels directly in this class.
 
+  def testHasPerm_OverrideExtraPerms(self):
+    # D is an extra perm for 111L...
+    self.assertTrue(self.perms.HasPerm('d', 111L, self.proj))
+    self.assertTrue(self.perms.HasPerm('D', 111L, self.proj))
+    # ...unless we tell HasPerm it isn't.
+    self.assertFalse(self.perms.HasPerm('d', 111L, self.proj, []))
+    self.assertFalse(self.perms.HasPerm('D', 111L, self.proj, []))
+    # Perms in self.perms are still considered
+    self.assertTrue(self.perms.HasPerm('Cc', 111L, self.proj, []))
+    self.assertTrue(self.perms.HasPerm('CC', 111L, self.proj, []))
+    # Z is not an extra perm...
+    self.assertFalse(self.perms.HasPerm('Z', 111L, self.proj))
+    # ...unless we tell HasPerm it is.
+    self.assertTrue(self.perms.HasPerm('Z', 111L, self.proj, ['z']))
+
   def testHasPerm_GrantedPerms(self):
     self.assertTrue(self.perms.CanUsePerm(
         'A', {111L}, self.proj, [], granted_perms=['z']))
