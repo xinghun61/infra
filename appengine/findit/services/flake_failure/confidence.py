@@ -31,7 +31,7 @@ def _Steppiness(data_points, index_picker, split_index_value):
     split_index += len(padding)
 
   if len(values) < 5:  # Without enough data, the result is unreliable.
-    return 0
+    return 0.0
 
   return find_step.Steppiness(values, split_index)
 

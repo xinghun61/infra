@@ -2,6 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 """Constants used for flake analysis."""
+
+# Alpha for statistical analysis. A 95% confidence interval would have alpha
+# value 0.05. An alpha value of 0.001 means 99.9% confidence.
+ALPHA = 0.001
+
 # Used to calculate the time between retries when we try the analysis
 # during off-peak hours.
 BASE_COUNT_DOWN_SECONDS = 2 * 60

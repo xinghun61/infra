@@ -62,7 +62,7 @@ class PassRateUtilTest(WaterfallTestCase):
   def testHasSufficientInformationFlaky(self):
     self.assertTrue(pass_rate_util.HasSufficientInformation(0.5, 100, 0.5, 30))
 
-  def testHasSufficientInformationStable(self):
+  def testHasSufficientInformationFullyStable(self):
     self.assertTrue(pass_rate_util.HasSufficientInformation(1.0, 400, 1.0, 30))
 
   def testHasSufficientInformationEarlyStable(self):
