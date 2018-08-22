@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -18,6 +19,8 @@ import (
 	"go.chromium.org/luci/appengine/gaetesting"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
+	"google.golang.org/appengine/aetest"
+	"google.golang.org/appengine/user"
 )
 
 const templatesLocation = "templates"
@@ -108,11 +111,17 @@ func newTestContext() context.Context {
 	return ctx
 }
 
-func getRequest(url string) *http.Request {
+func getRequest(url, email string) *http.Request {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		panic(err)
 	}
+	if email != "" {
+		aetest.Login(&user.User{
+			Email: email,
+		}, req)
+	}
+	fmt.Println("Headers:", req.Header)
 	return req
 }
 
@@ -160,17 +169,19 @@ func TestUploadGet(t *testing.T) {
 		ctx: &router.Context{
 			Context: ctxCancel,
 			Writer:  httptest.NewRecorder(),
-			Request: getRequest("/upload"),
+			Request: getRequest("/upload", ""),
 		},
 	}, {
 		name: "Success Get upload",
 		ctx: &router.Context{
 			Context: ctx,
 			Writer:  httptest.NewRecorder(),
-			Request: getRequest("/upload"),
+			Request: getRequest("/upload", ""),
 		},
 	},
 	}
+
+	h := New("http://localhost:8080", "", "")
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
@@ -179,7 +190,7 @@ func TestUploadGet(t *testing.T) {
 			}, nil)
 		})
 
-		HandleUpload(tst.ctx)
+		h.HandleUpload(tst.ctx)
 
 		recorder := tst.ctx.Writer.(*httptest.ResponseRecorder)
 		if got, want := (recorder.Code != http.StatusOK), tst.fail; got != want {
@@ -516,9 +527,11 @@ func TestHandleUpload(t *testing.T) {
 		t.Fatalf("datastore.New(_) failed: %v", err)
 	}
 
+	h := New("http://localhost:8080", "", "")
+
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
-			HandleUpload(tst.ctx)
+			h.HandleUpload(tst.ctx)
 			recorder := tst.ctx.Writer.(*httptest.ResponseRecorder)
 			if got, want := (recorder.Code != http.StatusOK), tst.fail; got != want {
 				t.Errorf("%s: HandleUpload(ctx) = %t want: %t, status: %v, body: %v", tst.name, got, want, recorder.Code, recorder.Body)

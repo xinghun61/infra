@@ -21,7 +21,7 @@ const (
 )
 
 // HandleUpload handles legacy JSON configurations.
-func HandleUpload(ctx *router.Context) {
+func (h *State) HandleUpload(ctx *router.Context) {
 	if err := ctx.Context.Err(); err != nil {
 		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 		return

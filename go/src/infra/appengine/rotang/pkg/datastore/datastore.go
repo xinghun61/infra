@@ -191,6 +191,11 @@ func (s *Store) CreateRotaConfig(ctx context.Context, rotation *rotang.Configura
 	if err := ctx.Err(); err != nil {
 		return err
 	}
+
+	if rotation == nil {
+		return status.Errorf(codes.InvalidArgument, "rotation can not be nil")
+	}
+
 	rotation.Config.Shifts.StartTime = rotation.Config.Shifts.StartTime.UTC()
 
 	cfg := DsRotaConfig{
@@ -327,7 +332,7 @@ func (s *Store) DeleteRotaConfig(ctx context.Context, name string) error {
 }
 
 // AddRotaMember adds a members to the specified rota.
-func (s *Store) AddRotaMember(ctx context.Context, rota string, member rotang.ShiftMember) error {
+func (s *Store) AddRotaMember(ctx context.Context, rota string, member *rotang.ShiftMember) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -350,7 +355,7 @@ func (s *Store) AddRotaMember(ctx context.Context, rota string, member rotang.Sh
 				return status.Errorf(codes.AlreadyExists, "member already exists")
 			}
 		}
-		cfg.Members = append(cfg.Members, member)
+		cfg.Members = append(cfg.Members, *member)
 
 		return datastore.Put(ctx, &cfg)
 	}, nil)

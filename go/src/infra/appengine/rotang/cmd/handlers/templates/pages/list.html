@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+<head>
+  <title>List rotations</title>
+</head>
+<body>
+
+<h1>Configurations in store</h1>
+
+{{with .Rotas}}
+<h2>Rota table</h2>
+<table class="table" border=1>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Description</th>
+     </tr>
+  </thead>
+  <tbody>
+  {{range $c := .}}
+     <tr>
+       <td>{{$c.Config.Name}}</td>
+       <td>{{$c.Config.Description}}</td>
+     </tr>
+   {{end}}
+  </tbody>
+</table>
+
+</body>
+</html>
+{{end}}

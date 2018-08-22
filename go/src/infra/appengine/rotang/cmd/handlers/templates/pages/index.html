@@ -4,7 +4,7 @@
 <h1> rota-ng </h1>
 <a href="https://docs.google.com/document/d/1WdvMckyfzfx9anU1hLHJ16EuvXv4Keo8aUmSTQRuNp4/edit"> Design </a>
 <br/>
-<p> Rota-NG is used to generate oncall rotas for primarily Chrome related teams. </p>
+<p> Rota-NG is used to genereate oncall rotas for primarily Chrome related teams. </p>
 
 
 <p> The code can be found at
@@ -12,4 +12,24 @@
 Rota NG Source
 </a>
 </p>
-<a href="upload">Upload Legacy JSON rota configuration</a><br>
+<a href="upload">Upload Legacy JSON rota configuraton</a><br>
+<a href="list">List configurations in backend store</a><br>
+
+{{if .Rotas}} 
+<h2>Rotations you are a member of</h2>
+<table class="table">
+  <thead>
+    <tr>
+      <th>Name</th>
+    </tr>
+  </thead>
+  <tbody>
+  {{range $r := .Rotas}}
+    <tr>
+      <td><a href="oncall/{{$r.Rota}}">{{$r.Rota}}</a></td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+{{end}}
+</body>

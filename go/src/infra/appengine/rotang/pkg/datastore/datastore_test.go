@@ -797,11 +797,10 @@ func TestCreateMember(t *testing.T) {
 	}
 }
 
-func TestStoreConfiguration(t *testing.T) {
+func TestCreateRotaConfiguration(t *testing.T) {
 	ctx := newTestContext()
 	ctxCancel, cancel := context.WithCancel(ctx)
 	cancel()
-
 	tests := []struct {
 		name       string
 		ctx        context.Context
@@ -863,43 +862,39 @@ func TestStoreConfiguration(t *testing.T) {
 			fail: true,
 		},
 	}
-
 	store, err := New(ctx)
 	if err != nil {
 		t.Fatalf("New(_) failed: %v", err)
 	}
-
-L1:
 	for _, tst := range tests {
-		for _, m := range tst.memberPool {
-			if err := store.CreateMember(ctx, &m); err != nil {
-				t.Errorf("%s: store.CreateMember(_, _) failed: %v", tst.name, err)
-				continue L1
+		t.Run(tst.name, func(t *testing.T) {
+			for _, m := range tst.memberPool {
+				if err := store.CreateMember(ctx, &m); err != nil {
+					t.Fatalf("%s: store.CreateMember(_, _) failed: %v", tst.name, err)
+				}
+				defer store.DeleteMember(ctx, m.Email)
 			}
-			// TODO(olakar): Fix this.
-			defer store.DeleteMember(ctx, m.Email)
-		}
-		err := store.CreateRotaConfig(tst.ctx, &tst.in)
-		if got, want := (err != nil), tst.fail; got != want {
-			t.Errorf("%s: datastore.StoreRota() = %t want: %t, err: %v", tst.name, got, want, err)
-			continue
-		}
-		if err != nil {
-			continue
-		}
-		got, err := store.RotaConfig(ctx, tst.in.Config.Name)
-		if err != nil {
-			t.Fatalf("%s: FetchRota(ctx, %q) failed: %v", tst.name, tst.in.Config.Name, err)
-		}
-		sort.Slice(tst.in.Members, func(i, j int) bool {
-			return tst.in.Members[i].Email < tst.in.Members[j].Email
+			err := store.CreateRotaConfig(tst.ctx, &tst.in)
+			if got, want := (err != nil), tst.fail; got != want {
+				t.Fatalf("%s: datastore.CreateRotaConfig() = %t want: %t, err: %v", tst.name, got, want, err)
+			}
+			if err != nil {
+				return
+			}
+			got, err := store.RotaConfig(ctx, tst.in.Config.Name)
+			if err != nil {
+				t.Fatalf("%s: store.RotaConfig(ctx, %q) failed: %v", tst.name, tst.in.Config.Name, err)
+			}
+			sort.Slice(tst.in.Members, func(i, j int) bool {
+				return tst.in.Members[i].Email < tst.in.Members[j].Email
+			})
+			sort.Slice(got[0].Members, func(i, j int) bool {
+				return got[0].Members[i].Email < got[0].Members[j].Email
+			})
+			if diff := pretty.Compare(tst.in, got[0]); diff != "" {
+				t.Errorf("%s: store.RotaConfig(ctx, \"Chrome OS Build Sheriff\") differs -want +got: %v", tst.name, diff)
+			}
 		})
-		sort.Slice(got[0].Members, func(i, j int) bool {
-			return got[0].Members[i].Email < got[0].Members[j].Email
-		})
-		if diff := pretty.Compare(tst.in, got[0]); diff != "" {
-			t.Errorf("%s: FetchRota(ctx, \"Chrome OS Build Sheriff\") differs -want +got: %v", tst.name, diff)
-		}
 	}
 }
 
@@ -1520,7 +1515,7 @@ func TestAddMember(t *testing.T) {
 			}
 			defer s.DeleteRotaConfig(ctx, tst.put.Config.Name)
 
-			err := s.AddRotaMember(tst.ctx, tst.rota, tst.in)
+			err := s.AddRotaMember(tst.ctx, tst.rota, &tst.in)
 			if got, want := (err != nil), tst.fail; got != want {
 				t.Fatalf("%s: s.AddRotaMember(ctx, %q, _) = %t want: %t, err: %v", tst.name, tst.rota, got, want, err)
 			}

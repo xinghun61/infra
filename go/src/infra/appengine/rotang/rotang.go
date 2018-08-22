@@ -136,7 +136,7 @@ type ConfigStorer interface {
 	// DeleteRotaConfig removes the specified rota from backend storage.
 	DeleteRotaConfig(ctx context.Context, name string) error
 	// AddRotaMember add a member to the backend store.
-	AddRotaMember(ctx context.Context, rota string, member ShiftMember) error
+	AddRotaMember(ctx context.Context, rota string, member *ShiftMember) error
 	// DeleteRotaMember deletes the specified member from backend storage.
 	DeleteRotaMember(ctx context.Context, rota, email string) error
 	// MemberOf returns the rotations the specified email is a member of.
@@ -161,8 +161,11 @@ type TokenStorer interface {
 // ShiftStorer is used to store Shift entries.
 type ShiftStorer interface {
 	AddShifts(ctx context.Context, rota string, entries []ShiftEntry) error
-	FetchShifts(cxt context.Context, rota string) ([]ShiftEntry, error)
-	DeleteShifts(ctx context.Context, rota string) error
+	AllShifts(cxt context.Context, rota string) ([]ShiftEntry, error)
+	Shift(cxt context.Context, start time.Time) (*ShiftEntry, error)
+	DeleteAllShifts(ctx context.Context, rota string) error
+	DeleteShift(ctx context.Context, rota string, start time.Time) error
+	UpdateShift(ctx context.Context, rota string, shift *ShiftEntry) error
 }
 
 // RotaGenerator is used to generate oncall rotations.
