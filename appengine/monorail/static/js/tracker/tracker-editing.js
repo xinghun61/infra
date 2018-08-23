@@ -1752,63 +1752,97 @@ function renderFilterRulesListSection(section_id, heading, value_why_list) {
  * as the user edits an issue.
  */
 function TKR_presubmit() {
-  var issue_form = document.forms.create_issue_form || document.forms.issue_update_form;
+  const issue_form = (
+      document.forms.create_issue_form || document.forms.issue_update_form);
   if (!issue_form) {
     return;
   }
 
-  var inputs = issue_form.querySelectorAll('input:not([type="file"]), textarea, select');
+  const inputs = issue_form.querySelectorAll(
+      'input:not([type="file"]), textarea, select');
   if (!inputs) {
     return;
   }
 
-  var args = [];
-  for (var key in inputs) {
+  let valuesByName = new Map();
+  for (const key in inputs) {
     if (!inputs.hasOwnProperty(key)) {
       continue;
     }
-    var input = inputs[key];
+    const input = inputs[key];
     if (input.type === 'checkbox' && !input.checked) {
       continue;
     }
-    args.push([input.name, input.value]);
+    if (!valuesByName.has(input.name)) {
+      valuesByName.set(input.name, [])
+    }
+    valuesByName.get(input.name).push(input.value);
   }
 
-  CS_doPost('presubmit.do', onPresubmitResponse, args);
-}
-
-function onPresubmitResponse(event) {
-  var xhr = event.target;
-  if (xhr.readyState != 4) {
-    return;
+  const issueDelta = TKR_buildIssueDelta(valuesByName);
+  let issueRef = {project_name: window.CS_env.projectName};
+  if (valuesByName.has('id')) {
+    issueRef.local_id = valuesByName.get('id')[0];
   }
-  if (xhr.status != 200) {
-    console.error('presubmit check had an error');
-    // TODO(jrobbins): fill this in more
-    return;
-  }
-  var response = CS_parseJSON(xhr);
-  $('owner_avail_state').style.display = response.owner_avail_state ? '' : 'none';
-  $('owner_avail_state').className = 'availability_' + response.owner_avail_state;
-  $('owner_availability').textContent = response.owner_availability;
 
-  var derived_labels = renderFilterRulesSection(
-      'preview_filterrules_labels', 'Labels', response.derived_labels);
-  var derived_owner_email = renderFilterRulesSection(
-      'preview_filterrules_owner', 'Owner', response.derived_owner_email);
-  var derived_cc_emails = renderFilterRulesSection(
-      'preview_filterrules_ccs', 'Cc', response.derived_cc_emails);
-  var warnings = renderFilterRulesListSection(
-      'preview_filterrules_warnings', 'Warnings', response.warnings);
-  var errors = renderFilterRulesListSection(
-      'preview_filterrules_errors', 'Errors', response.errors);
+  const prpcClient = new window.chops.rpc.PrpcClient({
+    insecure: Boolean(location.hostname === 'localhost'),
+    fetchImpl: (url, options) => {
+      options.credentials = 'same-origin';
+      return fetch(url, options);
+    },
+  });
 
-  if (derived_labels || derived_owner_email || derived_cc_emails ||
-      warnings || errors) {
-      $('preview_filterrules_area').style.display = '';
-  } else {
-      $('preview_filterrules_area').style.display = 'none';
-  }
+  const presubmitMessage = {
+    trace: {
+      token: window.CS_env.token,
+    },
+    issue_ref: issueRef,
+    issue_delta: issueDelta,
+  };
+  const presubmitPromise = prpcClient.call(
+      'monorail.Issues', 'PresubmitIssue', presubmitMessage);
+
+  presubmitPromise.then(response => {
+    $('owner_avail_state').style.display = (
+        response.ownerAvailabilityState ? '' : 'none');
+    $('owner_avail_state').className = (
+        'availability_' + response.ownerAvailabilityState);
+    $('owner_availability').textContent = response.ownerAvailability;
+
+    let derived_labels;
+    if (response.derivedLabels) {
+      derived_labels = renderFilterRulesSection(
+          'preview_filterrules_labels', 'Labels', response.derivedLabels);
+    }
+    let derived_owner_email;
+    if (response.derivedOwners) {
+      derived_owner_email = renderFilterRulesSection(
+          'preview_filterrules_owner', 'Owner', response.derivedOwners[0]);
+    }
+    let derived_cc_emails;
+    if (response.derivedCcs) {
+      derived_cc_emails = renderFilterRulesSection(
+          'preview_filterrules_ccs', 'Cc', response.derivedCcs);
+    }
+    let warnings;
+    if (response.warnings) {
+      warnings = renderFilterRulesListSection(
+          'preview_filterrules_warnings', 'Warnings', response.warnings);
+    }
+    let errors;
+    if (response.errors) {
+      errors = renderFilterRulesListSection(
+          'preview_filterrules_errors', 'Errors', response.errors);
+    }
+
+    if (derived_labels || derived_owner_email || derived_cc_emails ||
+        warnings || errors) {
+        $('preview_filterrules_area').style.display = '';
+    } else {
+        $('preview_filterrules_area').style.display = 'none';
+    }
+  });
 }
 
 function HTL_deleteHotlist(form) {
