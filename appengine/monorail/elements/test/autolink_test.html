@@ -215,6 +215,19 @@
            {content: ').'}]
       );
     });
+      test('Replace URL existing http', function() {
+      const match = refRegs[3].exec('link here: (https://website.net/other="here").');
+      refRegs[2].lastIndex = 0;
+      const actualTextRuns = replacer(match);
+      assert.deepEqual(
+          actualTextRuns,
+          [{tag: 'a',
+            href: 'https://website.net/other="here"',
+            content: 'https://website.net/other="here"',
+           },
+           {content: ').'}]
+      );
+    });
   });
 
   suite('versioncontrol component functions.', function() {

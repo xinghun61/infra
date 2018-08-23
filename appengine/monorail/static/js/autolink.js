@@ -208,7 +208,7 @@
     });
     let href = content;
     let lowerHref = href.toLowerCase();
-    if (!lowerHref.startsWith('http') || !lowerHref.startsWith('ftp') ||
+    if (!lowerHref.startsWith('http') && !lowerHref.startsWith('ftp') &&
         !lowerHref.startsWith('mailto')) {
       href = 'https://' + href;
     }
