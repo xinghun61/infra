@@ -421,7 +421,7 @@ class IssueEntryTest(unittest.TestCase):
     mr.perms = permissions.USER_PERMISSIONSET
     mr.template_name = 'rutabaga'
     post_data = fake.PostData(
-        template_name='rutabaga',
+        template_name=['rutabaga'],
         summary=['fake summary'],
         comment=['fake comment'],
         status=['New'])
@@ -441,7 +441,7 @@ class IssueEntryTest(unittest.TestCase):
     mr.perms = permissions.USER_PERMISSIONSET
     mr.template_name = 'rutabaga'
     post_data = fake.PostData(
-        template_name='rutabaga',
+        template_name=['rutabaga'],
         summary=[issueentry.PLACEHOLDER_SUMMARY],
         comment=['fake comment'],
         status=['New'])
@@ -452,7 +452,7 @@ class IssueEntryTest(unittest.TestCase):
         initial_blocking='', initial_cc='', initial_comment='fake comment',
         initial_components='', initial_owner='', initial_status='New',
         initial_summary='Enter one-line summary', initial_hotlists='',
-        labels=[])
+        labels=[], template_name='rutabaga')
     self.mox.ReplayAll()
 
     url = self.servlet.ProcessFormData(mr, post_data)
@@ -466,7 +466,7 @@ class IssueEntryTest(unittest.TestCase):
     mr.perms = permissions.USER_PERMISSIONSET
     mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
     post_data = fake.PostData(
-        template_name='rutabaga',
+        template_name=['rutabaga'],
         summary=['Nya nya I modified the summary'],
         comment=[self.template.content],
         status=['New'])
@@ -478,7 +478,7 @@ class IssueEntryTest(unittest.TestCase):
         initial_comment=self.template.content, initial_components='',
         initial_owner='', initial_status='New',
         initial_summary='Nya nya I modified the summary', initial_hotlists='',
-        labels=[])
+        labels=[], template_name='rutabaga')
     self.mox.ReplayAll()
 
     url = self.servlet.ProcessFormData(mr, post_data)
@@ -491,13 +491,14 @@ class IssueEntryTest(unittest.TestCase):
         path='/p/proj/issues/entry', user_info={'user_id': 111L})
     entered_hotlists = 'H3'
     post_data = fake.PostData(hotlists=[entered_hotlists],
-        template_name='rutabaga')
+        template_name=['rutabaga'])
     self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
     self.servlet.PleaseCorrect(
         mr, component_required=None, fields=[], initial_blocked_on='',
         initial_blocking='', initial_cc='', initial_comment='',
         initial_components='', initial_owner='', initial_status='',
-        initial_summary='', initial_hotlists=entered_hotlists, labels=[])
+        initial_summary='', initial_hotlists=entered_hotlists, labels=[],
+        template_name='rutabaga')
     self.mox.ReplayAll()
     url = self.servlet.ProcessFormData(mr, post_data)
     self.mox.VerifyAll()
@@ -509,13 +510,14 @@ class IssueEntryTest(unittest.TestCase):
         path='/p/proj/issues/entry', user_info={'user_id': 111L})
     entered_hotlists = 'abc:H1'
     post_data = fake.PostData(hotlists=[entered_hotlists],
-        template_name='rutabaga')
+                              template_name=['rutabaga'])
     self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
     self.servlet.PleaseCorrect(
         mr, component_required=None, fields=[], initial_blocked_on='',
         initial_blocking='', initial_cc='', initial_comment='',
         initial_components='', initial_owner='', initial_status='',
-        initial_summary='', initial_hotlists=entered_hotlists, labels=[])
+        initial_summary='', initial_hotlists=entered_hotlists, labels=[],
+        template_name='rutabaga')
     self.mox.ReplayAll()
     url = self.servlet.ProcessFormData(mr, post_data)
     self.mox.VerifyAll()
@@ -527,13 +529,14 @@ class IssueEntryTest(unittest.TestCase):
         path='/p/proj/issues/entry', user_info={'user_id': 111L})
     entered_hotlists = 'U1:H2'
     post_data = fake.PostData(hotlists=[entered_hotlists],
-        template_name='rutabaga')
+                              template_name=['rutabaga'])
     self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
     self.servlet.PleaseCorrect(
         mr, component_required=None, fields=[], initial_blocked_on='',
         initial_blocking='', initial_cc='', initial_comment='',
         initial_components='', initial_owner='', initial_status='',
-        initial_summary='', initial_hotlists=entered_hotlists, labels=[])
+        initial_summary='', initial_hotlists=entered_hotlists, labels=[],
+        template_name='rutabaga')
     self.mox.ReplayAll()
     url = self.servlet.ProcessFormData(mr, post_data)
     self.mox.VerifyAll()

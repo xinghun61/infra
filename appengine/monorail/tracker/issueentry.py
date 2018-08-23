@@ -355,7 +355,7 @@ class IssueEntry(servlet.Servlet):
           initial_cc=', '.join(parsed.users.cc_usernames),
           initial_components=', '.join(parsed.components.paths),
           initial_comment=parsed.comment, labels=bounce_labels,
-          fields=bounce_fields,
+          fields=bounce_fields, template_name=parsed.template_name,
           initial_blocked_on=parsed.blocked_on.entered_str,
           initial_blocking=parsed.blocking.entered_str,
           initial_hotlists=parsed.hotlists.entered_str,
