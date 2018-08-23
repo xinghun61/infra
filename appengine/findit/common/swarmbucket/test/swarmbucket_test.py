@@ -50,6 +50,8 @@ class SwarmbucketTest(testing.AppengineTestCase):
     dimensions = swarmbucket.GetDimensionsForBuilder('luci.chromium.ci',
                                                      'Linux x64')
     self.assertEqual(['cpu:x86-64', 'os:Ubuntu-14.04'], dimensions)
+    _args, kwargs = mock_fetch.call_args
+    self.assertEqual(http_client_appengine.urlfetch.POST, kwargs.get('method'))
 
   @mock.patch.object(http_client_appengine.urlfetch, 'fetch')
   def testGetDimensionsFailed(self, mock_fetch):
@@ -78,3 +80,5 @@ class SwarmbucketTest(testing.AppengineTestCase):
             status_code=200, content=mock_builders_response, headers={})
     builders = swarmbucket.GetBuilders('luci.chromium.findit')
     self.assertIn('findit_variable', builders)
+    _args, kwargs = mock_fetch.call_args
+    self.assertEqual(http_client_appengine.urlfetch.GET, kwargs.get('method'))

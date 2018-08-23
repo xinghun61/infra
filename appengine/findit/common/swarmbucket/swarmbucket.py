@@ -16,12 +16,17 @@ _DEFAULT_SWARMBUCKET_SERVICE_URL = ('https://cr-buildbucket.appspot.com'
 _DIMENSIONS_TO_MATCH_FOR_TRYBOT = frozenset(['os', 'cpu'])
 
 
-def _CallSwarmbucketAPI(base_url, api_name, request_data):
+def _CallSwarmbucketAPI(base_url, api_name, request_data, method='POST'):
+  assert method in ['POST', 'GET'], 'Only POST and GET requests are supported'
   endpoint = '%s/%s' % (base_url, api_name)
-  data = json.dumps(request_data)
   headers = {'Content-Type': 'application/json; charset=UTF-8'}
-  status_code, content, _response_headers = FinditHttpClient().Post(
-      endpoint, data, headers=headers)
+  if method == 'POST':
+    data = json.dumps(request_data)
+    status_code, content, _response_headers = FinditHttpClient().Post(
+        endpoint, data, headers=headers)
+  elif method == 'GET':
+    status_code, content, _response_headers = FinditHttpClient().Get(
+        endpoint, request_data, headers=headers)
   if status_code == 200:
     return json.loads(content)
   return {}
@@ -93,6 +98,6 @@ def GetBuilders(bucket, service_url=_DEFAULT_SWARMBUCKET_SERVICE_URL):
     A list of str where each value is the name of a builder in the given bucket.
   """
   request = {'bucket': bucket}
-  response = _CallSwarmbucketAPI(service_url, 'get_builders', request)
+  response = _CallSwarmbucketAPI(service_url, 'builders', request, method='GET')
   assert response, 'Could not retrieve builders for %s via swarmbucket' % bucket
-  return [b.get('name') for b in response['buckets'][0]['builders']]
+  return {b.get('name'):b for b in response['buckets'][0]['builders']}
