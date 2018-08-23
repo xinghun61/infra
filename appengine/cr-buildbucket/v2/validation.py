@@ -10,6 +10,7 @@ value.
 """
 
 import contextlib
+import re
 import threading
 
 import buildtags
@@ -29,6 +30,21 @@ def validate_gerrit_change(change):
   """Validates common_pb2.GerritChange."""
   # project is not required.
   _check_truth(change, 'host', 'change', 'patchset')
+
+
+def validate_gitiles_commit(commit):
+  """Validates common_pb2.GitilesCommit."""
+  _check_truth(commit, 'host', 'project')
+  if not commit.id and not commit.ref:
+    _err('id or ref is required')
+  if commit.id:
+    with _enter('id'):
+      _validate_hex_sha1(commit.id)
+  if commit.ref:
+    if not commit.ref.startswith('refs/'):
+      _enter_err('ref', 'must start with "refs/"')
+  if commit.position and not commit.ref:
+    _err('position requires ref')
 
 
 def validate_tags(string_pairs, mode):
@@ -85,20 +101,58 @@ def validate_build_predicate(predicate):
   if predicate.HasField('builder'):
     with _enter('builder'):
       validate_builder_id(predicate.builder)
+
   _check_repeated(predicate, 'gerrit_changes', validate_gerrit_change)
+
+  if predicate.HasField('output_gitiles_commit'):
+    with _enter('output_gitiles_commit'):
+      _validate_predicate_output_gitiles_commit(predicate.output_gitiles_commit)
 
   if predicate.HasField('create_time') and predicate.HasField('build'):
     _err('create_time and build are mutually exclusive')
-
-  if not predicate.HasField('builder') and not predicate.gerrit_changes:
-    _err('builder or gerrit_changes is required')
 
   with _enter('tags'):
     validate_tags(predicate.tags, 'search')
 
 
+# List of supported BuildPredicate.output_gitiles_commit field sets.
+# It is more restrictied than the generic validate_gitiles_commit because the
+# field sets by which builds are indexed are more restricted.
+SUPPORTED_PREDICATE_OUTPUT_GITILES_COMMIT_FIELD_SET = {
+    tuple(sorted(s)) for s in [
+        ('host', 'project', 'id'),
+        ('host', 'project', 'ref'),
+        ('host', 'project', 'ref', 'position'),
+    ]
+}
+
+
+def _validate_predicate_output_gitiles_commit(commit):
+  """Validates BuildsPredicate.output_gitiles_commit.
+
+  From rpc_pb2.SearchBuildsRequest.output_gitiles_commit comment:
+    One of the following subfield sets must specified:
+    - host, project, id
+    - host, project, ref
+    - host, project, ref, position
+  """
+  field_set = tuple(sorted(f.name for f, _ in commit.ListFields()))
+  if field_set not in SUPPORTED_PREDICATE_OUTPUT_GITILES_COMMIT_FIELD_SET:
+    _err(
+        'unsupported set of fields %r. Supported field sets: %r', field_set,
+        SUPPORTED_PREDICATE_OUTPUT_GITILES_COMMIT_FIELD_SET
+    )
+  validate_gitiles_commit(commit)
+
+
 ################################################################################
 # Internals.
+
+
+def _validate_hex_sha1(sha1):
+  pattern = r'[a-z0-9]{40}'
+  if not re.match(pattern, sha1):
+    _err('does not match r"%s"', pattern)
 
 
 def _validate_paged_request(req):

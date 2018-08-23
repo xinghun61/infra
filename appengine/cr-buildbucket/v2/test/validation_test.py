@@ -45,6 +45,53 @@ class GerritChangeTests(BaseTestCase):
     self.assert_invalid(msg, r'host: required')
 
 
+class GitilesCommitTests(BaseTestCase):
+  func_name = 'validate_gitiles_commit'
+
+  def test_valid(self):
+    msg = common_pb2.GitilesCommit(
+        host='gerrit.example.com',
+        project='project',
+        id='a' * 40,
+        ref='refs/heads/master',
+        position=1,
+    )
+    self.assert_valid(msg)
+
+  def test_empty(self):
+    msg = common_pb2.GitilesCommit()
+    self.assert_invalid(msg, 'host: required')
+
+  def test_host_and_project(self):
+    msg = common_pb2.GitilesCommit(host='gerrit.example.com', project='project')
+    self.assert_invalid(msg, 'id or ref is required')
+
+  def test_invalid_ref(self):
+    msg = common_pb2.GitilesCommit(
+        host='gerrit.example.com',
+        project='project',
+        ref='master',
+    )
+    self.assert_invalid(msg, r'ref: must start with "refs/"')
+
+  def test_invalid_id(self):
+    msg = common_pb2.GitilesCommit(
+        host='gerrit.example.com',
+        project='project',
+        id='deadbeef',
+    )
+    self.assert_invalid(msg, r'id: does not match r"')
+
+  def test_position_without_ref(self):
+    msg = common_pb2.GitilesCommit(
+        host='gerrit.example.com',
+        project='project',
+        id='a' * 40,
+        position=1,
+    )
+    self.assert_invalid(msg, r'position requires ref')
+
+
 class TagsTests(BaseTestCase):
 
   def validate(self, data):
@@ -131,9 +178,7 @@ class SearchBuildsRequestTests(BaseTestCase):
 
   def test_empty(self):
     msg = rpc_pb2.SearchBuildsRequest()
-    self.assert_invalid(
-        msg, r'predicate: builder or gerrit_changes is required'
-    )
+    self.assert_valid(msg)
 
   def test_bad_page_size(self):
     msg = rpc_pb2.SearchBuildsRequest(
@@ -159,7 +204,7 @@ class BuildPredicateTests(BaseTestCase):
 
   def test_empty(self):
     msg = rpc_pb2.BuildPredicate()
-    self.assert_invalid(msg, r'builder or gerrit_changes is required')
+    self.assert_valid(msg)
 
   def test_invalid_builder_id(self):
     msg = rpc_pb2.BuildPredicate(builder=build_pb2.BuilderID())
@@ -184,3 +229,53 @@ class BuildPredicateTests(BaseTestCase):
         build=rpc_pb2.BuildRange(),
     )
     self.assert_invalid(msg, r'create_time and build are mutually exclusive')
+
+  def test_output_gitiles_commit(self):
+    msg = rpc_pb2.BuildPredicate(
+        output_gitiles_commit=common_pb2.GitilesCommit(
+            host='gerrit.example.com',
+            project='project',
+            id=('a' * 40),
+        ),
+    )
+    self.assert_valid(msg)
+
+
+class PredicateOutputGitilesCommitTests(BaseTestCase):
+  func_name = '_validate_predicate_output_gitiles_commit'
+
+  def test_valid_id(self):
+    msg = common_pb2.GitilesCommit(
+        host='gerrit.example.com',
+        project='project',
+        id=('a' * 40),
+    )
+    self.assert_valid(msg)
+
+  def test_valid_ref(self):
+    msg = common_pb2.GitilesCommit(
+        host='gerrit.example.com',
+        project='project',
+        ref='refs/heads/master',
+    )
+    self.assert_valid(msg)
+
+  def test_valid_ref_position(self):
+    msg = common_pb2.GitilesCommit(
+        host='gerrit.example.com',
+        project='project',
+        ref='refs/heads/master',
+        position=1,
+    )
+    self.assert_valid(msg)
+
+  def test_unsupported_set_of_fields(self):
+    variants = [
+        common_pb2.GitilesCommit(),
+        common_pb2.GitilesCommit(host='gerrit.example.com'),
+        common_pb2.GitilesCommit(host='gerrit.example.com', project='project'),
+        common_pb2.GitilesCommit(host='gerrit.example.com', id='a', ref='x'),
+        common_pb2.GitilesCommit(host='gerrit.example.com', id='a', position=1),
+    ]
+    for msg in variants:
+      self.assert_invalid(msg, r'unsupported set of fields')
