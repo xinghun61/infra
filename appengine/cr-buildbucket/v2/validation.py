@@ -28,7 +28,7 @@ class Error(Exception):
 def validate_gerrit_change(change):
   """Validates common_pb2.GerritChange."""
   # project is not required.
-  _check_fields_truth(change, ('host', 'change', 'patchset'))
+  _check_truth(change, 'host', 'change', 'patchset')
 
 
 def validate_tags(string_pairs, mode):
@@ -54,7 +54,7 @@ def validate_tags(string_pairs, mode):
 
 def validate_builder_id(builder_id):
   """Validates build_pb2.BuilderID."""
-  _check_fields_truth(builder_id, ('project', 'bucket', 'builder'))
+  _check_truth(builder_id, 'project', 'bucket', 'builder')
 
 
 ################################################################################
@@ -107,7 +107,7 @@ def _validate_paged_request(req):
     _enter_err('page_size', 'must be not be negative')
 
 
-def _check_fields_truth(msg, field_names):
+def _check_truth(msg, *field_names):
   """Validates that the field values are truish."""
   for f in field_names:
     if not getattr(msg, f):
