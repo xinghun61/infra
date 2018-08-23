@@ -7,7 +7,7 @@
 
 import logging
 import unittest
-from mock import Mock, patch
+from mock import ANY, Mock, patch
 
 from google.protobuf import empty_pb2
 
@@ -576,6 +576,9 @@ class IssuesServicerTest(unittest.TestCase):
     )
     request.issue_ref.project_name = 'proj'
     request.issue_ref.local_id = 1
+    request.uploads.extend([
+          issues_pb2.AttachmentUpload(filename='a.txt', content='aaaaa')])
+
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='approver3@example.com',
         auth=self.auth)
@@ -610,7 +613,11 @@ class IssuesServicerTest(unittest.TestCase):
       )
       )
 
-    work_env.WorkEnv(mc, self.services).UpdateIssueApproval.assert_called_once()
+    work_env.WorkEnv(mc, self.services).UpdateIssueApproval.\
+    assert_called_once_with(
+        self.issue_1.issue_id, 3, ANY, u'Well, actually', False,
+        attachments=[(u'a.txt', 'aaaaa', 'text/plain')]
+    )
     self.assertEqual(expected, actual)
 
   @patch('businesslogic.work_env.WorkEnv.UpdateIssueApproval')
@@ -662,7 +669,7 @@ class IssuesServicerTest(unittest.TestCase):
     ).UpdateIssueApproval.assert_called_once_with(
         self.issue_1.issue_id, 3,
         tracker_pb2.ApprovalDelta(),
-        u'Better response.', True)
+        u'Better response.', True, attachments=[])
     self.assertEqual(expected, actual)
 
 

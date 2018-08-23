@@ -1745,7 +1745,7 @@ class IssueServiceTest(unittest.TestCase):
 
     self.services.issue.DeltaUpdateIssueApproval(
         self.cnxn, 111L, config, issue, av, approval_delta, 'some comment',
-        commit=False)
+        attachments=[], commit=False)
 
     self.assertEqual(av, final_av)
 
@@ -1769,7 +1769,7 @@ class IssueServiceTest(unittest.TestCase):
             fv_rows, commit=False)
     self.services.issue.CreateIssueComment.assert_called_once_with(
         self.cnxn, issue, 111L, 'some comment', amendments=amendments,
-        approval_id=23, is_description=False, commit=False)
+        approval_id=23, is_description=False, attachments=[], commit=False)
 
   def testUpdateIssueApproval_IsDescription(self):
     config = self.services.config.GetProjectConfig(
@@ -1788,7 +1788,7 @@ class IssueServiceTest(unittest.TestCase):
 
     self.services.issue.CreateIssueComment.assert_called_once_with(
         self.cnxn, issue, 111L, 'better response', amendments=[],
-        approval_id=23, is_description=True, commit=False)
+        approval_id=23, is_description=True, attachments=None, commit=False)
 
   def testUpdateIssueApprovalStatus(self):
     av = tracker_pb2.ApprovalValue(approval_id=23, setter_id=111L, set_on=1234)

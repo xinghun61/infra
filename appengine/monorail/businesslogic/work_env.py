@@ -577,14 +577,22 @@ class WorkEnv(object):
       return self.services.issue.LookupIssueRefs(self.mc.cnxn, related_iids)
 
   def UpdateIssueApproval(self, issue_id, approval_id, approval_delta,
-                          comment_content, is_description):
+                          comment_content, is_description, attachments=None):
     """Update an issue's approval."""
 
     issue, approval_value = self.services.issue.GetIssueApproval(
         self.mc.cnxn, issue_id, approval_id)
 
     self._AssertPermInIssue(issue, permissions.EDIT_ISSUE)
+    project = self.GetProject(issue.project_id)
     config = self.GetProjectConfig(issue.project_id)
+
+    if attachments:
+      with self.mc.profiler.Phase('Accounting for quota'):
+        new_bytes_used = tracker_helpers.ComputeNewQuotaBytesUsed(
+          project, attachments)
+        self.services.project.UpdateProject(
+          self.mc.cnxn, issue.project_id, attachment_bytes_used=new_bytes_used)
 
     if approval_delta.status:
       if not permissions.CanUpdateApprovalStatus(
@@ -605,7 +613,7 @@ class WorkEnv(object):
       comment_pb = self.services.issue.DeltaUpdateIssueApproval(
           self.mc.cnxn, self.mc.auth.user_id, config, issue, approval_value,
           approval_delta, comment_content=comment_content,
-          is_description=is_description)
+          is_description=is_description, attachments=attachments)
       send_notifications.PrepareAndSendApprovalChangeNotification(
           issue_id, approval_id, framework_helpers.GetHostPort(), comment_pb.id)
 

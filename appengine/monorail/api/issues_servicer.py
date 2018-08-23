@@ -257,14 +257,19 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
           request.field_ref.field_name, config)
       if not approval_fd:
         raise exceptions.NoSuchFieldDefException()
-      approval_delta = converters.IngestApprovalDelta(
-          mc.cnxn, self.services.user, request.approval_delta,
-          mc.auth.user_id, config)
+      if request.HasField('approval_delta'):
+        approval_delta = converters.IngestApprovalDelta(
+            mc.cnxn, self.services.user, request.approval_delta,
+            mc.auth.user_id, config)
+      else:
+        approval_delta = tracker_pb2.IssueApprovalDelta()
+      attachments = converters.IngestAttachmentUploads(request.uploads)
 
     with mc.profiler.Phase('updating approval'):
       av, _comment = we.UpdateIssueApproval(
           issue.issue_id, approval_fd.field_id, approval_delta,
-          request.comment_content, request.is_description)
+          request.comment_content, request.is_description,
+          attachments=attachments)
 
     with mc.profiler.Phase('converting to response objects'):
       users_by_id = framework_views.MakeAllUserViews(

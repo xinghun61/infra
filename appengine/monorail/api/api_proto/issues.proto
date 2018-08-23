@@ -184,7 +184,7 @@ message IssueDelta {
 }
 
 
-// Next available tag: 8
+// Next available tag: 9
 message UpdateApprovalRequest {
   RequestTrace trace = 1;
   IssueRef issue_ref = 2;
@@ -193,6 +193,7 @@ message UpdateApprovalRequest {
   string comment_content = 5;
   bool send_email = 6;
   bool is_description = 7;
+  repeated AttachmentUpload uploads = 8;
 }
 
 
