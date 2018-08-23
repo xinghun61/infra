@@ -6,6 +6,8 @@
 import json
 
 from common.findit_http_client import FinditHttpClient
+from gae_libs.caches import CompressedMemCache
+from libs.cache_decorator import Cached
 
 _DEFAULT_SWARMBUCKET_SERVICE_URL = ('https://cr-buildbucket.appspot.com'
                                     '/_ah/api/swarmbucket/v1')
@@ -74,3 +76,23 @@ def GetDimensionsForBuilder(
         for d in dimensions
         if d.get('key') in dimensions_whitelist
     ]
+
+
+# Cache responses for 10 minutes.
+@Cached(
+    CompressedMemCache(), namespace='swarmbucket-get-builders', expire_time=600)
+def GetBuilders(bucket, service_url=_DEFAULT_SWARMBUCKET_SERVICE_URL):
+  """Get the list of builder names for a given bucket.
+
+  Args:
+    bucket(str): The name of the bucket where the builders are configured.
+    service_url(str): The url for the swarmbucket service, defaults to the
+        production service url.
+
+  Returns:
+    A list of str where each value is the name of a builder in the given bucket.
+  """
+  request = {'bucket': bucket}
+  response = _CallSwarmbucketAPI(service_url, 'get_builders', request)
+  assert response, 'Could not retrieve builders for %s via swarmbucket' % bucket
+  return [b.get('name') for b in response['buckets'][0]['builders']]

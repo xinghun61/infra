@@ -274,9 +274,10 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(waterfall_config, 'GetStepsForMastersRules')
   @mock.patch.object(bot_db, '_GetBotDB')
+  @mock.patch.object(swarmbucket, 'GetBuilders')
   @mock.patch.object(random, 'uniform')
-  def testPickRandomBuilder(self, mock_random, mock_builders,
-                            mock_supported_masters):
+  def testPickRandomBuilder(self, mock_random, mock_bucket_builders,
+                            mock_builders, mock_supported_masters):
     mock_supported_masters.return_value = {'supported_masters': {'dummy': {}}}
     mock_builders.return_value = {
         'dummy': {
@@ -293,6 +294,12 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
                         'platform': 'linux'
                     }
                 },
+                'Virtual Builder': {
+                    'bot_type': 'builder',
+                    'testing': {
+                        'platform': 'linux'
+                    }
+                },
                 'Android Builder': {
                     'bot_type': 'builder',
                     'testing': {
@@ -302,6 +309,15 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
             }
         }
     }
+    mock_bucket_builders.return_value = [
+        'Linux Builder',
+        'Android Builder',
+        'Chrome Builder',
+    ]
+
+    # Virtual Builder should be excluded from the result of
+    # _GetSupportedCompileCaches(), hence make sure there's only 3.
+    self.assertEqual(3, len(build_ahead._GetSupportedCompileCaches('linux')))
 
     linux_cache_name = swarmbot_util.GetCacheName('dummy', 'Linux Builder')
     # Save linux_cache missing a column to test the code that back-fills it.

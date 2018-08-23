@@ -11,6 +11,7 @@ import logging
 import random
 
 from common.findit_http_client import FinditHttpClient
+from common.swarmbucket import swarmbucket
 from common.waterfall import buildbucket_client
 from model.build_ahead_try_job import BuildAheadTryJob
 from model.wf_try_bot_cache import WfTryBotCache
@@ -126,7 +127,12 @@ def _GetSupportedCompileCaches(platform):
       platform_filter=[platform])
 
   result = []
+  waterfall_builders = swarmbucket.GetBuilders('luci.chromium.ci')
   for master_name, builder_name in builder_pairs:
+    if builder_name not in waterfall_builders:
+      logging.info('Skipping %s, exists in bot_db, but not in buildbucket',
+                   builder_name)
+      continue
     builder = {'master': master_name, 'builder': builder_name}
     builder['cache_name'] = swarmbot_util.GetCacheName(master_name,
                                                        builder_name)
