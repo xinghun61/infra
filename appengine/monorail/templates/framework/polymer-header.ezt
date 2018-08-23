@@ -4,6 +4,7 @@
 <link rel="icon" type="image/vnd.microsoft.icon" href="/static/images/monorail.ico">
 
 <script type="text/javascript" src="/bower_components/chopsui/prpc-client.js" nonce="[nonce]"></script>
+<script type="text/javascript" src="/bower_components/webcomponentsjs/webcomponents-loader.js" nonce="[nonce]"></script>
 
 <script type="text/javascript"  nonce="[nonce]">
   window.prpcClient = new window.chops.rpc.PrpcClient({

@@ -1,4 +1,5 @@
-<script type="text/javascript" src="/bower_components/chopsui/prpc-client.js?version=[app_version]" nonce="[nonce]"></script>
+  <script type="text/javascript" src="/bower_components/chopsui/prpc-client.js?version=[app_version]" nonce="[nonce]"></script>
+  <script type="text/javascript" src="/bower_components/webcomponentsjs/webcomponents-loader.js" nonce="[nonce]"></script>
   <script type="text/javascript" defer src="/static/js/framework/externs.js?version=[app_version]" nonce="[nonce]"></script>
   <script type="text/javascript" defer src="/static/js/framework/env.js?version=[app_version]" nonce="[nonce]"></script>
   <script type="text/javascript" defer src="/static/js/framework/framework-ajax.js?version=[app_version]" nonce="[nonce]"></script>
