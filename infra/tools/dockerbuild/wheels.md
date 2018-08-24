@@ -1793,6 +1793,18 @@ wheel: <
 
 ## **selenium**
 
+### 3.14.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/selenium-py2_py3"
+  version: "version:3.14.0"
+>
+```
+
+
+* *universal*
+
 ### 3.4.1
 
 ```protobuf

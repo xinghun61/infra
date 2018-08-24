@@ -449,6 +449,7 @@ SPECS = {s.spec.tag: s for s in (
   UniversalSource('requests-unixsocket', '0.1.5'),
   Universal('rsa', '3.4.2'),
   Universal('selenium', '3.4.1'),
+  Universal('selenium', '3.14.0'),
   Universal('setuptools', '34.3.2'),
   Universal('singledispatch', '3.4.0.3'),
   Universal('six', '1.10.0'),
