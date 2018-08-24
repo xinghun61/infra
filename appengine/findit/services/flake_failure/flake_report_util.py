@@ -27,7 +27,7 @@ based on the flakiness trend:
 
 https://findit-for-me.appspot.com/waterfall/flake?key=%s
 
-If the culprit above is wrong, please file a bug using this link and hit submit:
+If the culprit above is wrong, please file a bug using this link:
 %s
 
 Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).""")

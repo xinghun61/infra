@@ -47,6 +47,7 @@ Analysis: {}
 
 Please revert the culprit, or disable the test and find the appropriate owner.
 
+If the culprit above is wrong, please file a bug using this link and hit submit:
 {}""")
 
 # TODO(crbug.com/783335): Allow these values to be configurable.
