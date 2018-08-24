@@ -181,16 +181,14 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
         });
       });
 
-      if (field.isMultiValued) {
-        valuesRemoved.forEach((v) => {
-          result['fieldValuesRemoved'].push({
-            fieldRef: {
-              fieldName: field.fieldRef.fieldName,
-            },
-            value: v,
-          });
+      valuesRemoved.forEach((v) => {
+        result['fieldValuesRemoved'].push({
+          fieldRef: {
+            fieldName: field.fieldRef.fieldName,
+          },
+          value: v,
         });
-      }
+      });
     });
 
     return result;

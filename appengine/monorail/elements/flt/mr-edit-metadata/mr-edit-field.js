@@ -77,30 +77,24 @@ class MrEditField extends Polymer.Element {
   }
 
   getValuesAdded() {
+    if (!this.multi && !this.getValue().length) return [];
     return fltHelpers.arrayDifference(this.getValues(), this.initialValues,
       this._equalsIgnoreCase);
   }
 
   getValuesRemoved() {
+    if (!this.multi && this.getValue().length > 0) return [];
     return fltHelpers.arrayDifference(this.initialValues, this.getValues(),
       this._equalsIgnoreCase);
   }
 
   getValues() {
-    const value = this.getValue();
-    if (Array.isArray(value)) {
-      return value;
-    }
-    return value ? [value] : [];
-  }
-
-  getValue() {
     const val = this._getInput().value;
     if (this.multi) {
       if (this._fieldIsEnum(this.type)) {
         const checkboxes = Array.from(Polymer.dom(this.root).querySelectorAll(
           '.enum-input'));
-        return checkboxes.filter((c) => c.checked).map((c) => c.value);
+        return checkboxes.filter((c) => c.checked).map((c) => c.value.trim());
       } else {
         let valueList = val.split(this.delimiter);
         valueList = valueList.map((s) => (s.trim()));
@@ -108,7 +102,11 @@ class MrEditField extends Polymer.Element {
         return valueList;
       }
     }
-    return val;
+    return [val.trim()];
+  }
+
+  getValue() {
+    return this._getInput().value.trim();
   }
 
   _equalsIgnoreCase(a, b) {

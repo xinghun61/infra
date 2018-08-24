@@ -94,11 +94,11 @@ class MrEditIssueDialog extends ReduxMixin(Polymer.Element) {
       message['commentContent'] = data.comment;
     }
 
-    if (data.owner) {
+    if (data.owner !== undefined) {
       delta['ownerRef'] = this._displayNameToUserRef(data.owner);
     }
 
-    if (data.status) {
+    if (data.status !== undefined) {
       delta['status'] = data.status;
     }
 
