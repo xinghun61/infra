@@ -12,30 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package mutaters contains proto definitions and implementations of Mutaters,
-// represent scheduler-induced state changes.
-package mutaters
+package types
 
 import (
 	"fmt"
 
-	"infra/qscheduler/qslib/types"
 	"infra/qscheduler/qslib/types/task"
 	"infra/qscheduler/qslib/types/vector"
 )
 
-// Mutater is an interface that describes operations that mutate a types.State
+// Mutator is an interface that describes operations that mutate a State
 // TODO: Consider moving this interface definition to scheduler package.
-type Mutater interface {
+type Mutator interface {
 	// Mutate modifies the given state, according to the behavior of the
-	// Mutater.
-	Mutate(state *types.State)
+	// Mutator.
+	Mutate(state *State)
 }
 
-// Mutate implements Mutater.
+// Mutate implements Mutator.
 //
 // Assign a request to an idle worker. Panic if the worker wasn't previously idle.
-func (m *AssignIdleWorker) Mutate(state *types.State) {
+func (m *AssignIdleWorker) Mutate(state *State) {
 	w := state.Workers[m.WorkerId]
 	if !w.IsIdle() {
 		panic(fmt.Sprintf("Worker %s is not idle, it is running task %s.", m.WorkerId, w.RunningTask.RequestId))
@@ -50,18 +47,18 @@ func (m *AssignIdleWorker) Mutate(state *types.State) {
 	state.Workers[m.WorkerId].RunningTask = rt
 }
 
-// Mutate implements Mutater.
+// Mutate implements Mutator.
 //
 // Change the priority of a running task.
-func (m *ChangePriority) Mutate(state *types.State) {
+func (m *ChangePriority) Mutate(state *State) {
 	state.Workers[m.WorkerId].RunningTask.Priority = m.NewPriority
 }
 
-// Mutate implements Mutater.
+// Mutate implements Mutator.
 //
 // Interrupt the current task on a worker with a new task. Reimburse the
 // interrupted account with funds from the interrupting account.
-func (m *PreemptTask) Mutate(state *types.State) {
+func (m *PreemptTask) Mutate(state *State) {
 	worker, ok := state.Workers[m.WorkerId]
 	if !ok {
 		panic(fmt.Sprintf("No worker with id %s", m.WorkerId))

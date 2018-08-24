@@ -21,7 +21,6 @@ import (
 	"testing"
 	"time"
 
-	"infra/qscheduler/qslib/mutaters"
 	"infra/qscheduler/qslib/tutils"
 	"infra/qscheduler/qslib/types"
 	"infra/qscheduler/qslib/types/account"
@@ -59,9 +58,9 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 		},
 	}
 
-	expects := []mutaters.Mutater{
-		&mutaters.AssignIdleWorker{Priority: 0, RequestId: "t1", WorkerId: "w1"},
-		&mutaters.AssignIdleWorker{Priority: 0, RequestId: "t2", WorkerId: "w0"},
+	expects := []types.Mutator{
+		&types.AssignIdleWorker{Priority: 0, RequestId: "t1", WorkerId: "w1"},
+		&types.AssignIdleWorker{Priority: 0, RequestId: "t2", WorkerId: "w0"},
 	}
 
 	muts := QuotaSchedule(&state, &config)
@@ -119,9 +118,9 @@ func TestReprioritize(t *testing.T) {
 		},
 	}
 
-	expects := []mutaters.Mutater{
-		&mutaters.ChangePriority{NewPriority: 1, WorkerId: "w2"},
-		&mutaters.ChangePriority{NewPriority: 1, WorkerId: "w3"},
+	expects := []types.Mutator{
+		&types.ChangePriority{NewPriority: 1, WorkerId: "w2"},
+		&types.ChangePriority{NewPriority: 1, WorkerId: "w3"},
 	}
 
 	muts := QuotaSchedule(&state, &config)
@@ -138,7 +137,7 @@ func TestPreempt(t *testing.T) {
 	cases := []struct {
 		State  *types.State
 		Config *types.Config
-		Expect []mutaters.Mutater
+		Expect []types.Mutator
 	}{
 		// Case 0
 		//
@@ -169,7 +168,7 @@ func TestPreempt(t *testing.T) {
 					"a2": account.NewConfig(),
 				},
 			},
-			[]mutaters.Mutater{&mutaters.PreemptTask{Priority: 0, WorkerId: "w1", RequestId: "t1"}},
+			[]types.Mutator{&types.PreemptTask{Priority: 0, WorkerId: "w1", RequestId: "t1"}},
 		},
 		// Case 1
 		//
@@ -220,7 +219,7 @@ func TestPreempt(t *testing.T) {
 				},
 			},
 			// No preemptions or other mutations should result.
-			[]mutaters.Mutater{},
+			[]types.Mutator{},
 		},
 	}
 

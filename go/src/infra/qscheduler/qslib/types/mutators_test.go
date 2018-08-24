@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mutaters
+package types
 
 import (
 	"fmt"
@@ -20,7 +20,6 @@ import (
 
 	"github.com/kylelemons/godebug/pretty"
 
-	"infra/qscheduler/qslib/types"
 	"infra/qscheduler/qslib/types/task"
 	"infra/qscheduler/qslib/types/vector"
 )
@@ -28,15 +27,15 @@ import (
 // TestAssign tests that the AssignIdleWorker Mutate method behaves correctly.
 func TestAssign(t *testing.T) {
 	t.Parallel()
-	state := &types.State{
+	state := &State{
 		Requests: map[string]*task.Request{"t1": &task.Request{}},
-		Workers:  map[string]*types.Worker{"w1": &types.Worker{}},
+		Workers:  map[string]*Worker{"w1": &Worker{}},
 	}
 
-	expect := &types.State{
+	expect := &State{
 		Requests: map[string]*task.Request{},
-		Workers: map[string]*types.Worker{
-			"w1": &types.Worker{RunningTask: &task.Run{
+		Workers: map[string]*Worker{
+			"w1": &Worker{RunningTask: &task.Run{
 				RequestId: "t1",
 				Priority:  1,
 				Request:   &task.Request{},
@@ -55,12 +54,12 @@ func TestAssign(t *testing.T) {
 // TestReprioritize tests that the ChangePriority Mutate method behaves correctly.
 func TestReprioritize(t *testing.T) {
 	t.Parallel()
-	state := &types.State{
-		Workers: map[string]*types.Worker{"w1": &types.Worker{RunningTask: &task.Run{Priority: 2}}},
+	state := &State{
+		Workers: map[string]*Worker{"w1": &Worker{RunningTask: &task.Run{Priority: 2}}},
 	}
 
-	expect := &types.State{
-		Workers: map[string]*types.Worker{"w1": &types.Worker{RunningTask: &task.Run{Priority: 1}}},
+	expect := &State{
+		Workers: map[string]*Worker{"w1": &Worker{RunningTask: &task.Run{Priority: 1}}},
 	}
 	mut := ChangePriority{NewPriority: 1, WorkerId: "w1"}
 	mut.Mutate(state)
@@ -73,7 +72,7 @@ func TestReprioritize(t *testing.T) {
 // TestPreempt tests that the PreemptTask Mutate method behaves correctly.
 func TestPreempt(t *testing.T) {
 	t.Parallel()
-	state := &types.State{
+	state := &State{
 		Balances: map[string]*vector.Vector{
 			"a1": vector.New(),
 			"a2": vector.New(2),
@@ -81,8 +80,8 @@ func TestPreempt(t *testing.T) {
 		Requests: map[string]*task.Request{
 			"t2": &task.Request{AccountId: "a2"},
 		},
-		Workers: map[string]*types.Worker{
-			"w1": &types.Worker{RunningTask: &task.Run{
+		Workers: map[string]*Worker{
+			"w1": &Worker{RunningTask: &task.Run{
 				Cost:      vector.New(1),
 				Priority:  2,
 				Request:   &task.Request{AccountId: "a1"},
@@ -91,7 +90,7 @@ func TestPreempt(t *testing.T) {
 		},
 	}
 
-	expect := &types.State{
+	expect := &State{
 		Balances: map[string]*vector.Vector{
 			"a1": vector.New(1),
 			"a2": vector.New(1),
@@ -99,8 +98,8 @@ func TestPreempt(t *testing.T) {
 		Requests: map[string]*task.Request{
 			"t1": &task.Request{AccountId: "a1"},
 		},
-		Workers: map[string]*types.Worker{
-			"w1": &types.Worker{RunningTask: &task.Run{
+		Workers: map[string]*Worker{
+			"w1": &Worker{RunningTask: &task.Run{
 				Cost:      vector.New(1),
 				Priority:  1,
 				Request:   &task.Request{AccountId: "a2"},
