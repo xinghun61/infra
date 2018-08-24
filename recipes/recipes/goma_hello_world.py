@@ -56,7 +56,7 @@ def RunSteps(api):
   for name, data in sorted(source_code.items()):
     api.file.write_text('write %s' % name, root_dir.join(name), data)
 
-  api.goma.ensure_goma(canary=True)
+  api.goma.ensure_goma(client_type='candidate')
   api.goma.start()
 
   gomacc = api.goma.goma_dir.join('gomacc')

@@ -31,7 +31,7 @@
     "cmd": [],
     "name": "ensure_goma",
     "~followup_annotations": [
-      "@@@STEP_TEXT@canary goma client is selected@@@",
+      "@@@STEP_TEXT@candidate goma client is selected@@@",
       "@@@STEP_WARNINGS@@@"
     ]
   },
