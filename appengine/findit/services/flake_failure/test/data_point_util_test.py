@@ -5,17 +5,13 @@
 from dto.flakiness import Flakiness
 from libs.list_of_basestring import ListOfBasestring
 from model.flake.master_flake_analysis import DataPoint
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from services.flake_failure import data_point_util
 from waterfall.test import wf_testcase
 
 
 class DataPointUtilTest(wf_testcase.WaterfallTestCase):
 
-  def testConvertFlakinessAndAppendToAnalysis(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.Save()
-
+  def testConvertFlakinessToDataPoint(self):
     build_url = 'url'
     commit_position = 1000
     total_test_run_seconds = 60
@@ -49,11 +45,7 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
         try_job_url=try_job_url,
         task_ids=[task_id])
 
-    data_point_util.ConvertFlakinessAndAppendToAnalysis(analysis.key.urlsafe(),
-                                                        flakiness)
-
-    data_point = analysis.data_points[0]
-    self.assertEqual(1, len(analysis.data_points))
+    data_point = data_point_util.ConvertFlakinessToDataPoint(flakiness)
     self.assertEqual(expected_data_point, data_point)
 
   def testHasSeriesOfFullyStablePointsPrecedingCommitPosition(self):

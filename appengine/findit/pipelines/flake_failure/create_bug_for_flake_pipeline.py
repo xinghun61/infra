@@ -11,7 +11,7 @@ import textwrap
 from common.findit_http_client import FinditHttpClient
 from dto.step_metadata import StepMetadata
 from dto.test_location import TestLocation
-from gae_libs import pipelines
+from gae_libs.pipelines import GeneratorPipeline
 from gae_libs.pipelines import pipeline
 from libs.structured_object import StructuredObject
 from model.flake import triggering_sources
@@ -24,10 +24,10 @@ from pipelines.flake_failure.get_isolate_sha_pipeline import (
     GetIsolateShaForCommitPositionParameters)
 from pipelines.flake_failure.get_isolate_sha_pipeline import (
     GetIsolateShaForCommitPositionPipeline)
-from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
-    UpdateFlakeAnalysisDataPointsInput)
-from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
-    UpdateFlakeAnalysisDataPointsPipeline)
+from pipelines.flake_failure.save_flakiness_verification_pipeline import (
+    SaveFlakinessVerificationInput)
+from pipelines.flake_failure.save_flakiness_verification_pipeline import (
+    SaveFlakinessVerificationPipeline)
 from services import issue_tracking_service
 from services import swarmed_test_util
 from services import swarming
@@ -55,16 +55,47 @@ _ITERATIONS_TO_CONFIRM_FLAKE = 30  # 30 iterations.
 _ITERATIONS_TO_CONFIRM_FLAKE_TIMEOUT = 60 * 60  # One hour.
 
 
-class CreateBugForFlakePipelineInputObject(StructuredObject):
-  analysis_urlsafe_key = unicode
+def _GenerateSubjectAndBodyForBug(analysis):
+  """Generates a subject (str) and body (str) for a bug given an analysis."""
+  culprit_url = 'None'
+  culprit_confidence = 'None'
+  if analysis.culprit_urlsafe_key:
+    culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
+    assert culprit
+
+    culprit_url = culprit.url
+    culprit_confidence = "{0:0.1f}%".format(
+        analysis.confidence_in_culprit * 100)
+
+  subject = _SUBJECT_TEMPLATE.format(analysis.test_name)
+  analysis_link = flake_report_util.GenerateAnalysisLink(analysis)
+  wrong_result_link = flake_report_util.GenerateWrongResultLink(analysis)
+  body = _BODY_TEMPLATE.format(analysis.test_name, culprit_confidence,
+                               culprit_url, analysis_link, wrong_result_link)
+  return subject, body
+
+
+class CreateBugForFlakeInput(StructuredObject):
+  """Input object for creating bugs for a flake analysis."""
+  # The url-safe key to a MasterFlakeAnalysis.
+  analysis_urlsafe_key = basestring
+
+  # The location of the flaky test.
   test_location = TestLocation
+
+  # Step metadata about the step containing the flaky test.
   step_metadata = StepMetadata
 
 
-class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
-  input_type = CreateBugForFlakePipelineInputObject
+class CreateBugInput(StructuredObject):
+  """Input object for creating bugs directly."""
+  analysis_urlsafe_key = basestring
 
-  def RunImpl(self, input_object):
+
+class CreateBugForFlakePipeline(GeneratorPipeline):
+  input_type = CreateBugForFlakeInput
+
+  def RunImpl(self, parameters):
     """Creates a bug for a flake analysis.
 
     Creates a bug if certain conditions are satisfied. These conditions are
@@ -74,12 +105,12 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
     in MasterFlakeAnalysis before a filing is attempted `has_attemped_filing`
     in the event in a retry this pipeline will be abandoned entirely.
     """
-    analysis_urlsafe_key = input_object.analysis_urlsafe_key
+    analysis_urlsafe_key = parameters.analysis_urlsafe_key
     analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
     assert analysis
 
     if not flake_report_util.ShouldFileBugForAnalysis(analysis):
-      if not analysis.bug_id:
+      if not analysis.bug_id:  # pragma: no branch
         bug_id = issue_tracking_service.SearchOpenIssueIdForFlakyTest(
             analysis.test_name)
         analysis.Update(bug_id=bug_id)
@@ -114,11 +145,6 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
 
     most_recent_commit_position = most_recent_build_info.commit_position
 
-    create_bug_input = self.CreateInputObjectInstance(
-        _CreateBugIfStillFlakyInputObject,
-        analysis_urlsafe_key=input_object.analysis_urlsafe_key,
-        commit_position=most_recent_commit_position)
-
     if analysis.FindMatchingDataPointWithCommitPosition(
         most_recent_commit_position):
       # In some corner cases, an analysis is triggered immediately after a
@@ -126,7 +152,9 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
       # available. The commit position of the most recent build would thus be
       # that of the very first data point, which has already been analyzed to
       # be flaky and nothing has landed since, so a bug can be created directly.
-      yield _CreateBugIfStillFlaky(create_bug_input)
+      yield CreateBugPipeline(
+          self.CreateInputObjectInstance(
+              CreateBugInput, analysis_urlsafe_key=analysis_urlsafe_key))
     else:
       with pipeline.InOrder():
         # Get the isolate sha of the recent build.
@@ -137,7 +165,7 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
                 commit_position=most_recent_commit_position,
                 dimensions=None,  # Not used.
                 revision=most_recent_build_info.chromium_revision,
-                step_metadata=input_object.step_metadata,
+                step_metadata=parameters.step_metadata,
                 upper_bound_build_number=most_recent_build_number))
 
         # Determine approximate pass rate at the commit position/isolate sha.
@@ -155,57 +183,25 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
                 step_name=analysis.step_name,
                 test_name=analysis.test_name))
 
-        # TODO(crbug.com/876147): Save newly-measured Flakiness to the analysis
-        # itself instead of the analysis.data_points list.
-        yield UpdateFlakeAnalysisDataPointsPipeline(
+        yield SaveFlakinessVerificationPipeline(
             self.CreateInputObjectInstance(
-                UpdateFlakeAnalysisDataPointsInput,
+                SaveFlakinessVerificationInput,
                 analysis_urlsafe_key=analysis_urlsafe_key,
                 flakiness=recent_flakiness))
 
-        # Create the bug.
-        yield _CreateBugIfStillFlaky(create_bug_input)
+        # Check for flakiness and file a bug accordingly.
+        yield CreateBugIfStillFlakyPipeline(
+            self.CreateInputObjectInstance(
+                CreateBugInput, analysis_urlsafe_key=analysis_urlsafe_key))
 
 
-def _GenerateSubjectAndBodyForBug(analysis):
-  culprit_url = 'None'
-  culprit_confidence = 'None'
-  if analysis.culprit_urlsafe_key:
-    culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
-    assert culprit
+class CreateBugPipeline(GeneratorPipeline):
+  input_type = CreateBugInput
 
-    culprit_url = culprit.url
-    culprit_confidence = "{0:0.1f}%".format(
-        analysis.confidence_in_culprit * 100)
-
-  subject = _SUBJECT_TEMPLATE.format(analysis.test_name)
-  analysis_link = flake_report_util.GenerateAnalysisLink(analysis)
-  wrong_result_link = flake_report_util.GenerateWrongResultLink(analysis)
-  body = _BODY_TEMPLATE.format(analysis.test_name, culprit_confidence,
-                               culprit_url, analysis_link, wrong_result_link)
-  return subject, body
-
-
-class _CreateBugIfStillFlakyInputObject(StructuredObject):
-  analysis_urlsafe_key = unicode
-  commit_position = int
-
-
-class _CreateBugIfStillFlaky(pipelines.GeneratorPipeline):
-  input_type = _CreateBugIfStillFlakyInputObject
-
-  def RunImpl(self, input_object):
-    analysis = ndb.Key(urlsafe=input_object.analysis_urlsafe_key).get()
-    assert analysis
-
-    data_point = analysis.FindMatchingDataPointWithCommitPosition(
-        input_object.commit_position)
-
-    # If we're out of bounds of the lower or upper flake threshold, this test
-    # is stable (either passing or failing consistently).
-    if not data_point or pass_rate_util.IsFullyStable(data_point.pass_rate):
-      analysis.LogInfo('Bug not filed because test is stable in latest build.')
-      return
+  def RunImpl(self, parameters):
+    """Files a bug pointing out a flaky test."""
+    analysis = ndb.Key(urlsafe=parameters.analysis_urlsafe_key).get()
+    assert analysis, 'Analysis unexpectedly missing!'
 
     subject, body = _GenerateSubjectAndBodyForBug(analysis)
     priority_label = flake_report_util.GetPriorityLabelForConfidence(
@@ -224,6 +220,31 @@ class _CreateBugIfStillFlaky(pipelines.GeneratorPipeline):
 
     flake_analysis_request = FlakeAnalysisRequest.GetVersion(
         key=analysis.test_name)
-    assert flake_analysis_request
+    assert flake_analysis_request, (
+        'Flake analysis request unexpectedly missing!')
     flake_analysis_request.Update(
         bug_reported_by=triggering_sources.FINDIT_PIPELINE, bug_id=bug_id)
+
+
+class CreateBugIfStillFlakyPipeline(GeneratorPipeline):
+  input_type = CreateBugInput
+
+  def RunImpl(self, parameters):
+    """Files a bug if the recent check for flakiness is still flaky."""
+    analysis = ndb.Key(urlsafe=parameters.analysis_urlsafe_key).get()
+    assert analysis, 'Analysis unexpectedly missing!'
+
+    post_analysis_data_points = analysis.post_analysis_data_points
+    assert post_analysis_data_points, (
+        'Data point for recent flakiness unexpectedly missing!')
+
+    recent_data_point = sorted(
+        post_analysis_data_points,
+        key=lambda x: x.commit_position,
+        reverse=True)[0]
+
+    if pass_rate_util.IsFullyStable(recent_data_point.pass_rate):
+      analysis.LogInfo('Bug not filed because test is stable in latest commit.')
+      return
+
+    yield CreateBugPipeline(parameters)

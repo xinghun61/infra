@@ -28,9 +28,9 @@ from pipelines.flake_failure.create_and_submit_revert_pipeline import (
 from pipelines.flake_failure.create_and_submit_revert_pipeline import (
     CreateAndSubmitRevertPipeline)
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
-    CreateBugForFlakePipeline)
+    CreateBugForFlakeInput)
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
-    CreateBugForFlakePipelineInputObject)
+    CreateBugForFlakePipeline)
 from pipelines.flake_failure.determine_approximate_pass_rate_pipeline import (
     DetermineApproximatePassRateInput)
 from pipelines.flake_failure.determine_approximate_pass_rate_pipeline import (
@@ -51,9 +51,9 @@ from pipelines.flake_failure.notify_culprit_pipeline import NotifyCulpritInput
 from pipelines.flake_failure.notify_culprit_pipeline import (
     NotifyCulpritPipeline)
 from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
-    UpdateFlakeAnalysisDataPointsPipeline)
-from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
     UpdateFlakeAnalysisDataPointsInput)
+from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
+    UpdateFlakeAnalysisDataPointsPipeline)
 from pipelines.flake_failure.update_monorail_bug_pipeline import (
     UpdateMonorailBugInput)
 from pipelines.flake_failure.update_monorail_bug_pipeline import (
@@ -148,7 +148,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         retries=0,
         step_metadata=None)
 
-    expected_create_bug_input = CreateBugForFlakePipelineInputObject(
+    expected_create_bug_input = CreateBugForFlakeInput(
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
         step_metadata=None,
         test_location=test_location)

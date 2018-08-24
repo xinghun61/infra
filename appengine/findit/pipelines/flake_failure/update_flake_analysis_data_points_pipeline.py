@@ -42,5 +42,6 @@ class UpdateFlakeAnalysisDataPointsPipeline(GeneratorPipeline):
           'up'.format(flakiness.failed_swarming_task_attempts))
       raise pipeline.Abort()
 
-    data_point_util.ConvertFlakinessAndAppendToAnalysis(analysis_urlsafe_key,
-                                                        flakiness)
+    data_point = data_point_util.ConvertFlakinessToDataPoint(flakiness)
+    analysis.data_points.append(data_point)
+    analysis.put()

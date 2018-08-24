@@ -3,36 +3,23 @@
 # found in the LICENSE file.
 """Functions to assist in operations on DataPoint objects."""
 
-from google.appengine.ext import ndb
-
 from model.flake.master_flake_analysis import DataPoint
 from services.flake_failure import pass_rate_util
 
 
-def ConvertFlakinessAndAppendToAnalysis(analysis_urlsafe_key, flakiness):
-  """Converts Flakiness to DataPoint and appends it to a MasterFlakeAnalysis.
-
-  Args:
-    analysis_urlsafe_key (str): The url-safe key to a MasterFlakeAnalysis.
-    flakiness (Flakiness): The Flakiness instance to be converted to a DataPoint
-        object and appended to the analysis.
-  """
-  analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
-  assert analysis, 'Analysis unexpectedly missing'
-
-  data_point = DataPoint.Create(
+def ConvertFlakinessToDataPoint(flakiness):
+  """Converts Flakiness to DataPoint."""
+  return DataPoint.Create(
       build_url=flakiness.build_url,
       commit_position=flakiness.commit_position,
       elapsed_seconds=flakiness.total_test_run_seconds,
+      error=flakiness.error,
       failed_swarming_task_attempts=flakiness.failed_swarming_task_attempts,
       git_hash=flakiness.revision,
       iterations=flakiness.iterations,
       pass_rate=flakiness.pass_rate,
       task_ids=flakiness.task_ids.ToSerializable(),
       try_job_url=flakiness.try_job_url)
-
-  analysis.data_points.append(data_point)
-  analysis.put()
 
 
 def HasSeriesOfFullyStablePointsPrecedingCommitPosition(

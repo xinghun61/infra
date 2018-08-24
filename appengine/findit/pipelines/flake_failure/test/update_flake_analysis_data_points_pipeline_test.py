@@ -7,12 +7,12 @@ import mock
 from dto.flakiness import Flakiness
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs.list_of_basestring import ListOfBasestring
+from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
     UpdateFlakeAnalysisDataPointsInput)
 from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
     UpdateFlakeAnalysisDataPointsPipeline)
-from services.flake_failure import data_point_util
 from services.flake_failure import flakiness_util
 from services.flake_failure import run_swarming_util
 from waterfall.test.wf_testcase import WaterfallTestCase
@@ -21,22 +21,36 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 class UpdateFlakeAnalysisDataPointsPipelineTest(WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  @mock.patch.object(data_point_util, 'ConvertFlakinessAndAppendToAnalysis')
-  def testUpdateFlakeAnalysisDataPointsPipeline(self, mocked_update):
+  def testUpdateFlakeAnalysisDataPointsPipeline(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
 
+    commit_position = 1000
+    pass_rate = 0.5
+
     flakiness = Flakiness(
         build_url='url',
-        commit_position=1000,
+        commit_position=commit_position,
         total_test_run_seconds=100,
         error=None,
         failed_swarming_task_attempts=0,
         iterations=50,
-        pass_rate=0.5,
+        pass_rate=pass_rate,
         revision='r1000',
         try_job_url=None,
         task_ids=ListOfBasestring.FromSerializable(['task_id']))
+
+    expected_data_point = DataPoint.Create(
+        build_url='url',
+        commit_position=commit_position,
+        elapsed_seconds=100,
+        error=None,
+        failed_swarming_task_attempts=0,
+        iterations=50,
+        pass_rate=pass_rate,
+        git_hash='r1000',
+        try_job_url=None,
+        task_ids=['task_id'])
 
     update_data_points_input = UpdateFlakeAnalysisDataPointsInput(
         analysis_urlsafe_key=analysis.key.urlsafe(), flakiness=flakiness)
@@ -46,7 +60,8 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(WaterfallTestCase):
     pipeline_job.start()
     self.execute_queued_tasks()
 
-    mocked_update.assert_called_once_with(analysis.key.urlsafe(), flakiness)
+    self.assertEqual(1, len(analysis.data_points))
+    self.assertEqual(expected_data_point, analysis.data_points[0])
 
   @mock.patch.object(
       flakiness_util, 'MaximumSwarmingTaskRetriesReached', return_value=True)

@@ -23,9 +23,9 @@ from pipelines.flake_failure.create_and_submit_revert_pipeline import (
 from pipelines.flake_failure.create_and_submit_revert_pipeline import (
     CreateAndSubmitRevertPipeline)
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
-    CreateBugForFlakePipeline)
+    CreateBugForFlakeInput)
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
-    CreateBugForFlakePipelineInputObject)
+    CreateBugForFlakePipeline)
 from pipelines.flake_failure.determine_approximate_pass_rate_pipeline import (
     DetermineApproximatePassRateInput)
 from pipelines.flake_failure.determine_approximate_pass_rate_pipeline import (
@@ -180,7 +180,7 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
         # Log Monorail bug.
         yield CreateBugForFlakePipeline(
             self.CreateInputObjectInstance(
-                CreateBugForFlakePipelineInputObject,
+                CreateBugForFlakeInput,
                 analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
                 step_metadata=parameters.step_metadata,
                 test_location=test_location))

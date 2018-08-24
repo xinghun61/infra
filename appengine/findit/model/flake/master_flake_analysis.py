@@ -45,6 +45,9 @@ class DataPoint(ndb.Model):
   # The git hash of this data point.
   git_hash = ndb.StringProperty(indexed=False)
 
+  # Any errors associated with generating this data point.
+  error = ndb.JsonProperty(indexed=False)
+
   # TODO(crbug.com/839620): Deprecate previous_build_commit_position,
   # previous_build_git_hash, and blame_list.
 
@@ -92,6 +95,7 @@ class DataPoint(ndb.Model):
              has_valid_artifact=True,
              iterations=None,
              elapsed_seconds=0,
+             error=None,
              failed_swarming_task_attempts=0):
     data_point = DataPoint()
     data_point.build_url = build_url
@@ -108,6 +112,7 @@ class DataPoint(ndb.Model):
     data_point.has_valid_artifact = has_valid_artifact
     data_point.iterations = iterations
     data_point.elapsed_seconds = elapsed_seconds
+    data_point.error = error
     data_point.failed_swarming_task_attempts = failed_swarming_task_attempts
     return data_point
 
@@ -675,8 +680,16 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
   # ERROR if any try job ends with error.
   try_job_status = ndb.IntegerProperty(indexed=False)
 
-  # The data points used to plot the flakiness graph build over build.
+  # The data points used to plot the flakiness graph over a commit history as
+  # prescribed by the analysis' lookback algorithm.
   data_points = ndb.LocalStructuredProperty(
+      DataPoint, repeated=True, compressed=True)
+
+  # The data points corresponding to specific commit positions independnt of
+  # the analysis' lookback algorithm. For example, Findit may want to check if
+  # a test is still flaky before filing a bug or a developer may want to check
+  # if a flaky test has been fixed.
+  flakiness_verification_data_points = ndb.LocalStructuredProperty(
       DataPoint, repeated=True, compressed=True)
 
   # Whether the analysis was triggered by a manual request through check flake,
