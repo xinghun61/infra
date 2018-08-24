@@ -77,12 +77,10 @@ serve_remote_email: config_local
 run: serve
 
 deps:
-	rm -rf bower_components
-
 	bower install
 	npm install --no-save
 
-	ln -s ../../../crdx/chopsui bower_components/chopsui
+	ln -sf ../../../crdx/chopsui bower_components/chopsui
 
 vulcanize: clean_vulcanized
 	$(call VULCANIZE, elements/flt/mr-approval-page/mr-approval-page)
@@ -91,6 +89,7 @@ vulcanize: clean_vulcanized
 	$(call VULCANIZE, elements/mr-flipper/mr-flipper)
 
 clean_vulcanized:
+	rm -rf bower_components
 	find . -name "*.vulcanized.*" -delete
 
 wct: deps
