@@ -1,8 +1,4 @@
 // This is a lightweight WCT runner that only cares about chrome.
-// It does require chromedriver to be installed on the build machine.
-// Install from https://sites.google.com/a/chromium.org/chromedriver/downloads
-// To run wct tests using this app (from ../):
-// xvfb-run go run wct/wct.go -chromedriver=/usr/local/google/home/$USER/Downloads/chromedriver -base=frontend
 
 //go:generate go run gen/gen.go
 package main
