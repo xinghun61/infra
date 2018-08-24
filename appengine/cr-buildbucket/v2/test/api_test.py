@@ -109,7 +109,7 @@ class RpcImplTests(BaseTestCase):
 
   def test_status_code_error_handling(self):
     self.error_handling_test(
-        api.InvalidArgument('bad'), prpc.StatusCode.INVALID_ARGUMENT, 'bad'
+        api.invalid_argument('bad'), prpc.StatusCode.INVALID_ARGUMENT, 'bad'
     )
 
   def test_invalid_field_mask(self):

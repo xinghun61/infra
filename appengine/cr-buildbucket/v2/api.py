@@ -33,28 +33,23 @@ import v2
 BUILD_TOKEN_HEADER = 'x-build-token'
 
 
-class StatusCodeError(Exception):
+class StatusError(Exception):
 
-  def __init__(self, code, details):
-    super(StatusCodeError, self).__init__('%s: %s' % (code, details))
+  def __init__(self, code, *details_and_args):
+    if details_and_args:
+      details = details_and_args[0] % details_and_args[1:]
+    else:
+      details = code[1]
+
+    super(StatusError, self).__init__('%s: %s' % (code, details))
     self.code = code
     self.details = details
 
 
-def status_code_error_class(code):
-  code_name = code[1]
-
-  class Error(StatusCodeError):
-
-    def __init__(self, details=code_name):
-      super(Error, self).__init__(code, details)
-
-  return Error
-
-
-NotFound = status_code_error_class(prpc.StatusCode.NOT_FOUND)
-InvalidArgument = status_code_error_class(prpc.StatusCode.INVALID_ARGUMENT)
-Unauthenticated = status_code_error_class(prpc.StatusCode.UNAUTHENTICATED)
+not_found = lambda *args: StatusError(prpc.StatusCode.NOT_FOUND, *args)
+invalid_argument = (
+    lambda *args: StatusError(prpc.StatusCode.INVALID_ARGUMENT, *args)
+)
 
 METHODS_BY_NAME = {
     m.name: m
@@ -65,7 +60,7 @@ METHODS_BY_NAME = {
 def rpc_impl_async(rpc_name):
   """Returns a decorator for an async Builds RPC implementation.
 
-  Handles auth.AuthorizationError and StatusCodeError.
+  Handles auth.AuthorizationError and StatusError.
 
   Adds fourth method argument to the method, a protoutil.Mask.
   If request has "fields" field, treats it as a FieldMask, parses it to a
@@ -93,7 +88,7 @@ def rpc_impl_async(rpc_name):
                 req.fields, res_class.DESCRIPTOR
             )
           except ValueError as ex:
-            raise InvalidArgument('invalid fields: %s' % ex)
+            raise invalid_argument('invalid fields: %s', ex)
 
         try:
           res = yield fn_async(req, ctx, mask)
@@ -101,11 +96,11 @@ def rpc_impl_async(rpc_name):
             mask.trim(res)
           raise ndb.Return(res)
         except auth.AuthorizationError:
-          raise NotFound()
+          raise not_found()
         except validation.Error as ex:
-          raise InvalidArgument(ex.message)
+          raise invalid_argument('%s', ex.message)
 
-      except StatusCodeError as ex:
+      except StatusError as ex:
         ctx.set_code(ex.code)
         ctx.set_details(ex.details)
         raise ndb.Return(None)
@@ -198,7 +193,7 @@ def get_build_async(req, _ctx, mask):
     build_v1 = found[0] if found else None
 
   if not build_v1:
-    raise NotFound()
+    raise not_found()
   raise ndb.Return((yield builds_to_v2_async([build_v1], mask))[0])
 
 
@@ -227,12 +222,15 @@ def validate_build_token(req, ctx):
   metadata = dict(ctx.invocation_metadata())
   token = metadata.get(BUILD_TOKEN_HEADER)
   if not token:
-    raise Unauthenticated('missing token in build update request')
+    raise StatusError(
+        prpc.StatusCode.UNAUTHENTICATED,
+        'missing token in build update request',
+    )
 
   try:
     tokens.validate_build_token(token, req.build.id)
   except auth.tokens.InvalidTokenError as e:
-    raise Unauthenticated(e.message)
+    raise StatusError(prpc.StatusCode.UNAUTHENTICATED, '%s', e.message)
 
 
 @rpc_impl_async('UpdateBuild')
