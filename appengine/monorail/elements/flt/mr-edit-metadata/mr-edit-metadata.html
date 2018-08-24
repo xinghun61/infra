@@ -21,6 +21,7 @@
       label {
         font-weight: bold;
         word-wrap: break-word;
+        text-align: right;
       }
       textarea {
         width: 100%;
@@ -56,8 +57,18 @@
         display: grid;
         max-width: 100%;
         grid-gap: 8px;
-        grid-template-columns: 25% auto;
+        grid-template-columns: 120px auto;
         align-items: flex-start;
+      }
+      @media (max-width: 600px) {
+        label {
+          margin-top: 8px;
+          text-align: left;
+        }
+        .input-grid {
+          grid-gap: 4px;
+          grid-template-columns: 100%;
+        }
       }
     </style>
     <form id="editForm">
