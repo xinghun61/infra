@@ -5,14 +5,14 @@
 build:
 	go build ./...
 
-generate: ninjalog/ninjalog.proto
+generate: ninjaproto/ninjalog.proto
 	go generate ./...
 
 deploy-staging:
-	gae.py upload --app-id chromium-build-stats-staging
+	gae.py upload --app-id chromium-build-stats-staging --app-dir=app/
 
 deploy-prod:
-	gae.py upload --app-id chromium-build-stats
+	gae.py upload --app-id chromium-build-stats --app-dir=app/
 
 test:
 	go test ./...

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package chromiumbuildstats
+package app
 
 import (
 	"context"
@@ -21,7 +21,8 @@ const (
 	bqResultTable = "staging"
 )
 
-func sendToBigquery(ctx context.Context, info ninjalog.NinjaLog) error {
+// SendToBigquery sends ninjalog converted to protocol buffer to BigQuery.
+func SendToBigquery(ctx context.Context, info *ninjalog.NinjaLog) error {
 	projectID := appengine.AppID(ctx)
 	client, err := bigquery.NewClient(ctx, projectID)
 	if err != nil {
@@ -35,7 +36,7 @@ func sendToBigquery(ctx context.Context, info ninjalog.NinjaLog) error {
 	}()
 
 	up := bq.NewUploader(ctx, client, bqDataset, bqResultTable)
-	ninjaTasks := ninjalog.ConvertToNinjaTask(info)
+	ninjaTasks := ninjalog.ToProto(info)
 	m := make([]proto.Message, len(ninjaTasks))
 	for i, t := range ninjaTasks {
 		m[i] = t

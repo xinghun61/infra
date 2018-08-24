@@ -2,6 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package ninjalog
+package ninjaproto
 
 //go:generate protoc --go_out=./ ninjalog.proto

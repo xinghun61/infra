@@ -1,4 +1,4 @@
-package chromiumbuildstats
+package app
 
 import (
 	"html/template"

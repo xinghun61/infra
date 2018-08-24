@@ -13,7 +13,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/google/go-cmp/cmp"
+
+	npb "infra/appengine/chromium_build_stats/ninjaproto"
 )
 
 var (
@@ -467,7 +471,7 @@ func TestWeightedTime(t *testing.T) {
 	}
 }
 
-func TestConvertToNinjaTask(t *testing.T) {
+func TestToProto(t *testing.T) {
 	info := NinjaLog{
 		Filename: ".ninja_log",
 		Start:    1,
@@ -475,7 +479,7 @@ func TestConvertToNinjaTask(t *testing.T) {
 		Metadata: metadataTestCase,
 	}
 
-	got := ConvertToNinjaTask(info)
+	got := ToProto(&info)
 	wantWeightedTime := map[string]time.Duration{
 		"resources/inspector/devtools_extension_api.js":                     2*time.Millisecond + 1*time.Millisecond/2 + 1*time.Millisecond/3 + 61*time.Millisecond/4 + 1*time.Millisecond/5 + 45*time.Millisecond/6,
 		"gen/angle/commit_id.py":                                            1*time.Millisecond/2 + 1*time.Millisecond/3 + 61*time.Millisecond/4 + 1*time.Millisecond/5 + 45*time.Millisecond/6 + 97*time.Millisecond/5 + 2*time.Millisecond/4,
@@ -485,9 +489,9 @@ func TestConvertToNinjaTask(t *testing.T) {
 		"PepperFlash/libpepflashplayer.so":                                  45*time.Millisecond/6 + 97*time.Millisecond/5 + 2*time.Millisecond/4 + 1*time.Millisecond/3 + 1*time.Millisecond/2,
 		"obj/third_party/angle/src/copy_scripts.actions_rules_copies.stamp": 1*time.Millisecond/2 + 2*time.Millisecond,
 	}
-	want := []*NinjaTask{
+	want := []*npb.NinjaTask{
 		{
-			LogEntry: &NinjaTask_LogEntry{
+			LogEntry: &npb.NinjaTask_LogEntry{
 				CommandHash:   "75430546595be7c2",
 				StartDuration: ptypes.DurationProto(76 * time.Millisecond),
 				EndDuration:   ptypes.DurationProto(187 * time.Millisecond),
@@ -495,7 +499,7 @@ func TestConvertToNinjaTask(t *testing.T) {
 			WeightedDuration: ptypes.DurationProto(wantWeightedTime["resources/inspector/devtools_extension_api.js"]),
 		},
 		{
-			LogEntry: &NinjaTask_LogEntry{
+			LogEntry: &npb.NinjaTask_LogEntry{
 				CommandHash:   "4ede38e2c1617d8c",
 				StartDuration: ptypes.DurationProto(78 * time.Millisecond),
 				EndDuration:   ptypes.DurationProto(286 * time.Millisecond),
@@ -503,7 +507,7 @@ func TestConvertToNinjaTask(t *testing.T) {
 			WeightedDuration: ptypes.DurationProto(wantWeightedTime["gen/angle/commit_id.py"]),
 		},
 		{
-			LogEntry: &NinjaTask_LogEntry{
+			LogEntry: &npb.NinjaTask_LogEntry{
 				CommandHash:   "9fb635ad5d2c1109",
 				StartDuration: ptypes.DurationProto(79 * time.Millisecond),
 				EndDuration:   ptypes.DurationProto(287 * time.Millisecond),
@@ -511,7 +515,7 @@ func TestConvertToNinjaTask(t *testing.T) {
 			WeightedDuration: ptypes.DurationProto(wantWeightedTime["gen/angle/copy_compiler_dll.bat"]),
 		},
 		{
-			LogEntry: &NinjaTask_LogEntry{
+			LogEntry: &npb.NinjaTask_LogEntry{
 				CommandHash:   "fa33c8d7ce1d8791",
 				StartDuration: ptypes.DurationProto(80 * time.Millisecond),
 				EndDuration:   ptypes.DurationProto(284 * time.Millisecond),
@@ -519,7 +523,7 @@ func TestConvertToNinjaTask(t *testing.T) {
 			WeightedDuration: ptypes.DurationProto(wantWeightedTime["gen/autofill_regex_constants.cc"]),
 		},
 		{
-			LogEntry: &NinjaTask_LogEntry{
+			LogEntry: &npb.NinjaTask_LogEntry{
 				CommandHash:   "324f0a0b77c37ef",
 				StartDuration: ptypes.DurationProto(141 * time.Millisecond),
 				EndDuration:   ptypes.DurationProto(287 * time.Millisecond),
@@ -527,7 +531,7 @@ func TestConvertToNinjaTask(t *testing.T) {
 			WeightedDuration: ptypes.DurationProto(wantWeightedTime["PepperFlash/manifest.json"]),
 		},
 		{
-			LogEntry: &NinjaTask_LogEntry{
+			LogEntry: &npb.NinjaTask_LogEntry{
 				CommandHash:   "1e2c2b7845a4d4fe",
 				StartDuration: ptypes.DurationProto(142 * time.Millisecond),
 				EndDuration:   ptypes.DurationProto(288 * time.Millisecond),
@@ -535,7 +539,7 @@ func TestConvertToNinjaTask(t *testing.T) {
 			WeightedDuration: ptypes.DurationProto(wantWeightedTime["PepperFlash/libpepflashplayer.so"]),
 		},
 		{
-			LogEntry: &NinjaTask_LogEntry{
+			LogEntry: &npb.NinjaTask_LogEntry{
 				CommandHash:   "b211d373de72f455",
 				StartDuration: ptypes.DurationProto(287 * time.Millisecond),
 				EndDuration:   ptypes.DurationProto(290 * time.Millisecond),
@@ -543,9 +547,8 @@ func TestConvertToNinjaTask(t *testing.T) {
 			WeightedDuration: ptypes.DurationProto(wantWeightedTime["obj/third_party/angle/src/copy_scripts.actions_rules_copies.stamp"]),
 		},
 	}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("ConvertToNinjaTask(%v)=%v; want=%v", info, got, want)
-
+	if diff := cmp.Diff(want, got, cmp.Comparer(proto.Equal)); diff != "" {
+		t.Errorf("ToProto(%v)\n differs: (-want +got)\n%s", info, diff)
 	}
 }
 

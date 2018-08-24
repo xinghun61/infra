@@ -4,10 +4,10 @@
 #
 # To check locally (couldn't fetch from cloud storage because
 # dev_appserver doesn't support service account)
-#  $ ../goenv.sh goapp serve
+#  $ gae.py depserver
 #
 # To deploy
-#  $ ../goenv.sh goapp deploy
+#  $ gae.py upload
 #
 application: chromium-build-stats
 runtime: go
@@ -43,8 +43,3 @@ handlers:
   script: _go_app
   secure: always
 
-#TODO(tikuta): move these files outside this directory.
-nobuild_files:
-- ninjalog/
-- compilerproxylog/
-- logstore/

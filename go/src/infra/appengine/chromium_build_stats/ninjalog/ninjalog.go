@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
+
+	npb "infra/appengine/chromium_build_stats/ninjaproto"
 )
 
 // Step is one step in ninja_log file.
@@ -453,13 +455,13 @@ func StatsByType(steps []Step, weighted map[string]time.Duration, typeOf func(St
 	return stats
 }
 
-// ConvertToNinjaTask converts ninjalog to structs of protocol buffer
-func ConvertToNinjaTask(info NinjaLog) []*NinjaTask {
-	var ninjaTasks []*NinjaTask
+// ToProto converts ninjalog to structs of protocol buffer.
+func ToProto(info *NinjaLog) []*npb.NinjaTask {
+	var ninjaTasks []*npb.NinjaTask
 	weightedTime := WeightedTime(info.Steps)
 	for _, s := range info.Steps {
-		ninjalog := &NinjaTask{
-			LogEntry: &NinjaTask_LogEntry{
+		ninjalog := &npb.NinjaTask{
+			LogEntry: &npb.NinjaTask_LogEntry{
 				Outputs:       s.Outs,
 				CommandHash:   s.CmdHash,
 				StartDuration: ptypes.DurationProto(s.Start),

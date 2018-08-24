@@ -321,32 +321,34 @@ import:
 - package: golang.org/x/lint
   version: master
   repo: https://go.googlesource.com/lint.git
-- package: golang.org/x/crypto/ssh/terminal
+- package: golang.org/x/crypto
   version: master
   repo: https://go.googlesource.com/crypto.git
-- package: github.com/chromedp/cdproto
-  repo: https://chromium.googlesource.com/external/github.com/chromedp/cdproto.git
-  version: master
   subpackages:
-  - ...
+  - ssh/terminal
+- package: github.com/chromedp/cdproto
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/chromedp/cdproto.git
+  subpackages:
+  - '...'
 - package: github.com/chromedp/chromedp
+  version: master
   repo: https://chromium.googlesource.com/external/github.com/chromedp/chromedp.git
-  version: master
 - package: github.com/disintegration/imaging
+  version: master
   repo: https://chromium.googlesource.com/external/github.com/disintegration/imaging.git
-  version: master
 - package: github.com/gorilla/websocket
+  version: master
   repo: https://chromium.googlesource.com/external/github.com/gorilla/websocket.git
-  version: master
 - package: github.com/knq/sysutil
+  version: master
   repo: https://chromium.googlesource.com/external/github.com/knq/sysutil.git
-  version: master
 - package: github.com/mailru/easyjson
+  version: master
   repo: https://chromium.googlesource.com/external/github.com/mailru/easyjson.git
-  version: master
 - package: golang.org/x/image
-  repo: https://chromium.googlesource.com/external/github.com/golang/image.git
   version: master
+  repo: https://chromium.googlesource.com/external/github.com/golang/image.git
   subpackages:
   - bmp
   - tiff
@@ -354,20 +356,27 @@ import:
   version: master
   repo: https://chromium.googlesource.com/external/github.com/google/skylark.git
 - package: github.com/waigani/diffparser
+  version: master
   repo: https://chromium.googlesource.com/external/github.com/waigani/diffparser.git
-  version: master
 - package: github.com/xeipuuv/gojsonpointer
+  version: master
   repo: https://chromium.googlesource.com/external/github.com/xeipuuv/gojsonpointer.git
-  version: master
 - package: github.com/xeipuuv/gojsonreference
-  repo: https://chromium.googlesource.com/external/github.com/xeipuuv/gojsonreference.git
   version: master
+  repo: https://chromium.googlesource.com/external/github.com/xeipuuv/gojsonreference.git
 - package: github.com/xeipuuv/gojsonschema
   version: master
   repo: https://chromium.googlesource.com/external/github.com/xeipuuv/gojsonschema.git
 - package: github.com/juju/errors
+  version: master
   repo: https://chromium.googlesource.com/external/github.com/juju/errors.git
-  version: master
 - package: github.com/kylelemons/godebug
-  repo: https://chromium.googlesource.com/external/github.com/kylelemons/godebug.git
   version: master
+  repo: https://chromium.googlesource.com/external/github.com/kylelemons/godebug.git
+- package: github.com/google/go-cmp
+  version: ^0.2.0
+  repo: https://chromium.googlesource.com/external/github.com/google/go-cmp.git
+- package: contrib.go.opencensus.io/exporter/stackdriver
+  version: ^0.6.0
+  subpackages:
+  - propagation

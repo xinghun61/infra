@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package chromiumbuildstats
+package app
 
 import (
 	"context"
@@ -64,7 +64,7 @@ func pubsubHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err := sendToBigquery(ctx, *info); err != nil {
+	if err := SendToBigquery(ctx, info); err != nil {
 		http.Error(w, "failed to send BigQuery", http.StatusInternalServerError)
 		log.Errorf(ctx, "failed to send BigQuery: %v", err)
 		return
@@ -72,7 +72,7 @@ func pubsubHandler(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintln(w, "OK")
 }
 
-/* fetch gcs upload file */
+// getFile fetches GCS upload file.
 func getFile(ctx context.Context, filename string, bucketID string) (*ninjalog.NinjaLog, error) {
 	// Creates a client.
 	client, err := storage.NewClient(ctx)
