@@ -21,6 +21,36 @@ class Error(Exception):
   """Raised on validation errors."""
 
 
+PUBSUB_USER_DATA_MAX_LENGTH = 4096
+
+# swarming/swarming.py and v2/api.py reserve these properties.
+# swarming/swarming.py does a redundant check, see validate_build_parameters().
+RESERVED_PROPERTY_PATHS = [
+    # Reserved for buildbucket internals.
+    ['buildbucket'],
+
+    # Deprecated in favor of api.buildbucket.builder.builder,
+    # https://chromium.googlesource.com/infra/luci/recipes-py/+/master/recipe_modules/buildbucket/api.py
+    # Prohibited.
+    ['buildername'],
+
+    # Deperecated, prohibited.
+    ['blamelist'],
+
+    # Deprecated in favor of api.buildbucket.build_input.gitiles_commit,
+    # https://chromium.googlesource.com/infra/luci/recipes-py/+/master/recipe_modules/buildbucket/api.py
+    # Prohibited.
+    ['revision'],
+    ['branch'],
+    ['repository'],
+
+    # Set to const true.
+    ['$recipe_engine/runtime', 'is_luci'],
+
+    # Populated from Build.input.experimental.
+    ['$recipe_engine/runtime', 'is_experimental'],
+]
+
 ################################################################################
 # Validation of common.proto messages.
 # The order of functions must match the order of messages in common.proto.
@@ -96,6 +126,44 @@ def validate_search_builds_request(req):
   _validate_paged_request(req)
 
 
+def validate_schedule_build_request(req):
+  _check_truth(req, 'request_id')
+
+  if not req.HasField('builder') and not req.template_build_id:
+    _err('builder or template_build_id is required')
+
+  if req.HasField('builder'):
+    with _enter('builder'):
+      validate_builder_id(req.builder)
+
+  with _enter('properties'):
+    for path in RESERVED_PROPERTY_PATHS:
+      if _struct_has_path(req.properties, path):
+        _err('property path %r is reserved', path)
+
+  if req.HasField('gitiles_commit'):
+    with _enter('gitiles_commit'):
+      validate_gitiles_commit(req.gitiles_commit)
+
+  _check_repeated(req, 'gerrit_changes', validate_gerrit_change)
+
+  with _enter('tags'):
+    validate_tags(req.tags, 'new')
+
+  _check_repeated(req, 'dimensions', lambda d: _check_truth(d, 'key'))
+
+  if req.priority < 0 or req.priority > 255:
+    _enter_err('priority', 'must be in [0, 255]')
+
+  if req.HasField('notify'):  # pragma: no branch
+    with _enter('notify'):
+      _check_truth(req.notify, 'pubsub_topic')
+      if len(req.notify.user_data) > PUBSUB_USER_DATA_MAX_LENGTH:
+        _enter_err(
+            'user_data', 'must be <= %d bytes', PUBSUB_USER_DATA_MAX_LENGTH
+        )
+
+
 def validate_build_predicate(predicate):
   """Validates rpc_pb2.BuildPredicate."""
   if predicate.HasField('builder'):
@@ -147,6 +215,16 @@ def _validate_predicate_output_gitiles_commit(commit):
 
 ################################################################################
 # Internals.
+
+
+def _struct_has_path(struct, path):
+  """Returns True if struct has a value at field path."""
+  for p in path:
+    f = struct.fields.get(p)
+    if f is None:
+      return False
+    struct = f.struct_value
+  return True
 
 
 def _validate_hex_sha1(sha1):
