@@ -239,19 +239,19 @@ class FlakeReportUtilTest(WaterfallTestCase):
   # This test tests that if a flake has a flake issue attached and the bug is
   # open (not merged) on Monorail, then should directly update that bug with
   # new occurrences.
-  @mock.patch.object(issue_tracking_service, 'GetBugForId')
+  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
   @mock.patch.object(flake_report_util, 'UpdateIssueForFlake')
   @mock.patch.object(flake_report_util, 'CreateIssueForFlake')
   def testReportFlakeHasFlakeIssueAndBugIsOpen(
-      self, mock_create_bug_fn, mock_update_bug_fn, mock_get_bug_for_id):
+      self, mock_create_bug_fn, mock_update_bug_fn, mock_get_merged_issue):
     flake = Flake.query().fetch()[0]
     flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
     flake_issue.put()
     flake.flake_issue_key = flake_issue.key
     flake.put()
 
-    mock_get_bug_for_id.return_value.id = 12345
-    mock_get_bug_for_id.return_value.open = True
+    mock_get_merged_issue.return_value.id = 12345
+    mock_get_merged_issue.return_value.open = True
 
     occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()
     flake_tuples_to_report = [(flake, occurrences)]
@@ -263,11 +263,11 @@ class FlakeReportUtilTest(WaterfallTestCase):
   # This test tests that if a flake has a flake issue attached, but the bug was
   # merged to another bug, and that destination bug is open on Monorail, then
   # should update the destination bug with new occurrences.
-  @mock.patch.object(issue_tracking_service, 'GetBugForId')
+  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
   @mock.patch.object(flake_report_util, 'UpdateIssueForFlake')
   @mock.patch.object(flake_report_util, 'CreateIssueForFlake')
   def testReportFlakeHasFlakeIssueAndBugWasMergedToAnOpenBug(
-      self, mock_create_bug_fn, mock_update_bug_fn, mock_get_bug_for_id):
+      self, mock_create_bug_fn, mock_update_bug_fn, mock_get_merged_issue):
     flake = Flake.query().fetch()[0]
     flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
     flake_issue.put()
@@ -275,7 +275,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
     flake.put()
 
     mock_issue = mock.Mock()
-    mock_get_bug_for_id.return_value = mock_issue
+    mock_get_merged_issue.return_value = mock_issue
     mock_issue.id = 66666
     mock_issue.open = True
 
@@ -290,11 +290,11 @@ class FlakeReportUtilTest(WaterfallTestCase):
   # This test tests that if a flake has a flake issue attached, but the bug was
   # merged to another bug, and that destination bug is closed on Monorail, then
   # should create a new bug with new occurrences.
-  @mock.patch.object(issue_tracking_service, 'GetBugForId')
+  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
   @mock.patch.object(flake_report_util, 'UpdateIssueForFlake')
   @mock.patch.object(flake_report_util, 'CreateIssueForFlake')
   def testReportFlakeHasFlakeIssueAndBugWasMergedToAClosedBug(
-      self, mock_create_bug_fn, mock_update_bug_fn, mock_get_bug_for_id):
+      self, mock_create_bug_fn, mock_update_bug_fn, mock_get_merged_issue):
     flake = Flake.query().fetch()[0]
     flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
     flake_issue.put()
@@ -302,7 +302,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
     flake.put()
 
     mock_issue = mock.Mock()
-    mock_get_bug_for_id.return_value = mock_issue
+    mock_get_merged_issue.return_value = mock_issue
     mock_issue.id = 66666
     mock_issue.open = False
 

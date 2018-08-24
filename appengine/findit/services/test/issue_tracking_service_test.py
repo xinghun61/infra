@@ -7,6 +7,7 @@ import textwrap
 
 from libs import time_util
 from monorail_api import Issue
+from monorail_api import IssueTrackerAPI
 from services import issue_tracking_service
 from waterfall.test import wf_testcase
 
@@ -109,68 +110,51 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     issue_tracking_service.CreateBugForFlakeAnalyzer('test', 'subject', 'body')
     self.assertTrue(mock_create_bug_fn.called)
 
-  def testTraverseMergedIssuesWithoutMergeInto(self):
-    issue_tracker = mock.Mock()
-    expected_issue = Issue({'id': 123})
-    issue_tracker.getIssue.return_value = expected_issue
+  @mock.patch.object(IssueTrackerAPI, 'getIssue')
+  def testGetMergedDestinationIssueWithoutMergeInto(self, mock_get_issue):
+    issue = Issue({'id': 12345})
+    mock_get_issue.return_value = issue
+    self.assertEqual(
+        issue, issue_tracking_service.GetMergedDestinationIssueForId(12345))
 
-    issue = issue_tracking_service.TraverseMergedIssues(123, issue_tracker)
-    self.assertEqual(expected_issue, issue)
-    issue_tracker.assert_has_calls([mock.call.getIssue(123)])
+  @mock.patch.object(IssueTrackerAPI, 'getIssue')
+  def testGetMergedDestinationIssueWithMergeInto(self, mock_get_issue):
+    issue = Issue({'id': 12345, 'mergedInto': {'issueId': 56789}})
 
-  def testTraverseMergedIssuesWithMergeInto(self):
-    issue_tracker = mock.Mock()
-    expected_issue = Issue({'id': 345})
-    issue_tracker.getIssue.side_effect = [
-        Issue({
-            'id': 123,
-            'mergedInto': {
-                'issueId': 234
-            }
-        }),
-        Issue({
-            'id': 234,
-            'mergedInto': {
-                'issueId': 345
-            }
-        }),
-        expected_issue,
-    ]
+    another_issue = Issue({'id': 56789})
 
-    issue = issue_tracking_service.TraverseMergedIssues(123, issue_tracker)
-    self.assertEqual(expected_issue, issue)
-    issue_tracker.assert_has_calls([
-        mock.call.getIssue(123),
-        mock.call.getIssue(234),
-        mock.call.getIssue(345)
-    ])
+    def _return_issue(issue_id):
+      if issue_id == 12345:
+        return issue
 
-  def testTraverseMergedIssuesWithMergeInACircle(self):
-    issue_tracker = mock.Mock()
-    expected_issue = Issue({'id': 123})
-    issue_tracker.getIssue.side_effect = [
-        Issue({
-            'id': 123,
-            'mergedInto': {
-                'issueId': 234
-            }
-        }),
-        Issue({
-            'id': 234,
-            'mergedInto': {
-                'issueId': 123
-            }
-        }),
-        expected_issue,
-    ]
+      if issue_id == 56789:
+        return another_issue
 
-    issue = issue_tracking_service.TraverseMergedIssues(123, issue_tracker)
-    self.assertEqual(expected_issue, issue)
-    issue_tracker.assert_has_calls([
-        mock.call.getIssue(123),
-        mock.call.getIssue(234),
-        mock.call.getIssue(123)
-    ])
+      return None
+
+    mock_get_issue.side_effect = _return_issue
+    self.assertEqual(
+        another_issue,
+        issue_tracking_service.GetMergedDestinationIssueForId(12345))
+
+  @mock.patch.object(IssueTrackerAPI, 'getIssue')
+  def testGetMergedDestinationIssueWithMergeInCircle(self, mock_get_issue):
+    issue = Issue({'id': 12345, 'mergedInto': {'issueId': 56789}})
+
+    another_issue = Issue({'id': 56789, 'mergedInto': {'issueId': 12345}})
+
+    def _return_issue(issue_id):
+      if issue_id == 12345:
+        return issue
+
+      if issue_id == 56789:
+        return another_issue
+
+      return None
+
+    mock_get_issue.side_effect = _return_issue
+    self.assertEqual(
+        issue, issue_tracking_service.GetMergedDestinationIssueForId(12345))
 
   @mock.patch.object(issue_tracking_service, 'CreateBug')
   def testCreateBugForFlakeDetection(self, mock_create_bug_fn):
@@ -252,10 +236,10 @@ as untriaged.""")
     issue = mock_create_bug_fn.call_args_list[0][0][0]
     self.assertIn(expected_previous_bug_description, issue.description)
 
-  @mock.patch.object(issue_tracking_service, 'GetBugForId')
+  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
   @mock.patch.object(issue_tracking_service, 'UpdateBug')
   def testUpdateBugForFlakeDetection(self, mock_update_bug_fn,
-                                     mock_get_bug_for_id):
+                                     mock_get_merged_issue):
     normalized_test_name = 'suite.test'
     num_occurrences = 5
     monorail_project = 'chromium'
@@ -271,7 +255,7 @@ as untriaged.""")
         'state': 'open',
     })
 
-    mock_get_bug_for_id.return_value = issue
+    mock_get_merged_issue.return_value = issue
     issue_tracking_service.UpdateBugForFlakeDetection(
         bug_id=issue_id,
         normalized_test_name=normalized_test_name,
@@ -301,10 +285,10 @@ Feedback is welcome! Please use component Tools>Test>FindIt>Flakiness.""")
     comment = mock_update_bug_fn.call_args_list[0][0][1]
     self.assertEqual(expected_comment, comment)
 
-  @mock.patch.object(issue_tracking_service, 'GetBugForId')
+  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
   @mock.patch.object(issue_tracking_service, 'UpdateBug')
   def testUpdateBugForFlakeDetectionWithPreviousBugId(self, mock_update_bug_fn,
-                                                      mock_get_bug_for_id):
+                                                      mock_get_merged_issue):
     normalized_test_name = 'suite.test'
     num_occurrences = 5
     monorail_project = 'chromium'
@@ -321,7 +305,7 @@ Feedback is welcome! Please use component Tools>Test>FindIt>Flakiness.""")
         'state': 'open',
     })
 
-    mock_get_bug_for_id.return_value = issue
+    mock_get_merged_issue.return_value = issue
     issue_tracking_service.UpdateBugForFlakeDetection(
         bug_id=issue_id,
         normalized_test_name=normalized_test_name,

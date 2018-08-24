@@ -41,7 +41,9 @@ class UpdateMonorailPipelineTestShouldNotUpdate(WaterfallTestCase):
   @mock.patch.object(
       flake_report_util, 'ShouldUpdateBugForAnalysis', return_value=True)
   @mock.patch.object(
-      issue_tracking_service, 'TraverseMergedIssues', return_value=None)
+      issue_tracking_service,
+      'GetMergedDestinationIssueForId',
+      return_value=None)
   @mock.patch(
       'pipelines.flake_failure.update_monorail_bug_pipeline.IssueTrackerAPI')
   def testUpdateMonorailBugPipelineWithCulpritBugNotFound(self, mocked_api, *_):
@@ -63,7 +65,9 @@ class UpdateMonorailPipelineTestShouldNotUpdate(WaterfallTestCase):
   @mock.patch.object(
       flake_report_util, 'ShouldUpdateBugForAnalysis', return_value=True)
   @mock.patch.object(
-      issue_tracking_service, 'TraverseMergedIssues', return_value=None)
+      issue_tracking_service,
+      'GetMergedDestinationIssueForId',
+      return_value=None)
   @mock.patch(
       'pipelines.flake_failure.update_monorail_bug_pipeline.IssueTrackerAPI')
   def testUpdateMonorailBugPipelineWithoutCulpritBugNotFound(
@@ -89,8 +93,8 @@ class UpdateMonorailPipelineTestShouldNotUpdate(WaterfallTestCase):
       flake_report_util, 'GenerateBugComment', return_value='comment')
   @mock.patch(
       'pipelines.flake_failure.update_monorail_bug_pipeline.IssueTrackerAPI')
-  @mock.patch.object(issue_tracking_service, 'TraverseMergedIssues')
-  def testUpdateMonorailBugPipelineWithCulprit(self, mocked_traverse,
+  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
+  def testUpdateMonorailBugPipelineWithCulprit(self, mock_get_merged_issue,
                                                issue_tracker, *_):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
     analysis.bug_id = 123
@@ -103,7 +107,7 @@ class UpdateMonorailPipelineTestShouldNotUpdate(WaterfallTestCase):
     mocked_instance.getIssue.return_value = mock_issue
     issue_tracker.return_value = mocked_instance
 
-    mocked_traverse.return_value = mock_issue
+    mock_get_merged_issue.return_value = mock_issue
 
     update_monorail_bug_input = UpdateMonorailBugInput(
         analysis_urlsafe_key=analysis.key.urlsafe())
@@ -120,8 +124,8 @@ class UpdateMonorailPipelineTestShouldNotUpdate(WaterfallTestCase):
       flake_report_util, 'ShouldUpdateBugForAnalysis', return_value=True)
   @mock.patch(
       'pipelines.flake_failure.update_monorail_bug_pipeline.IssueTrackerAPI')
-  @mock.patch.object(issue_tracking_service, 'TraverseMergedIssues')
-  def testUpdateMonorailBugPipelineNoCulprit(self, mocked_traverse,
+  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
+  def testUpdateMonorailBugPipelineNoCulprit(self, mock_get_merged_issue,
                                              issue_tracker, *_):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
     analysis.bug_id = 123
@@ -133,7 +137,7 @@ class UpdateMonorailPipelineTestShouldNotUpdate(WaterfallTestCase):
     mocked_instance.getIssue.return_value = mock_issue
     issue_tracker.return_value = mocked_instance
 
-    mocked_traverse.return_value = mock_issue
+    mock_get_merged_issue.return_value = mock_issue
 
     update_monorail_bug_input = UpdateMonorailBugInput(
         analysis_urlsafe_key=analysis.key.urlsafe())

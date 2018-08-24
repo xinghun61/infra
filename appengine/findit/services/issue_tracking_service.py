@@ -114,49 +114,40 @@ def _GetOpenIssues(query, monorail_project):
 
 def OpenBugAlreadyExistsForId(bug_id, project_id='chromium'):
   """Returns True if the bug exists and is open on monorail."""
-  existing_bug = GetBugForId(bug_id, project_id)
+  existing_bug = GetMergedDestinationIssueForId(bug_id, project_id)
   return existing_bug and existing_bug.open
 
 
-def TraverseMergedIssues(bug_id, issue_tracker):
-  """Finds an issue with the given id.
-
-  Traverse if the bug was merged into another.
+def GetMergedDestinationIssueForId(issue_id, monorail_project='chromium'):
+  """Given an id, traverse the merge chain to get the destination issue.
 
   Args:
-    bug_id (int): Bug id of the issue.
-    issue_tracker (IssueTrackerAPI): Api wrapper to talk to monorail.
+    issue_id: The id to get merged destination issue for.
+    monorail_project: The Monorail project the issue is on.
 
   Returns:
-    (Issue) Last issue in the chain of merges.
+    The destination issue if the orignal issue was merged, otherwise itself, and
+    returns None if there is an exception while communicating with Monorail.
+
+    NOTE: If there is a cycle in the merge chain, the first visited issue in the
+    circle will be returned.
   """
-  issue = issue_tracker.getIssue(bug_id)
-  checked_issues = {}
-  while issue and issue.merged_into:
-    logging.info('%s was merged into %s', issue.id, issue.merged_into)
-    checked_issues[issue.id] = issue
-    issue = issue_tracker.getIssue(issue.merged_into)
-    if issue.id in checked_issues:
-      break  # There's a cycle, return the last issue looked at.
-  return issue
-
-
-def GetBugForId(bug_id, project_id='chromium'):
-  """Gets a bug by bug id.
-
-  If the bug was marked as Duplicate, then this method traverses the chain to
-  find the last merged one.
-
-  Args:
-    bug_id: Id of the bug.
-    project_id: The project that bug was filed for.
-   """
-  if bug_id is None:
+  if issue_id is None:
     return None
 
   issue_tracker_api = IssueTrackerAPI(
-      project_id, use_staging=appengine_util.IsStaging())
-  issue = TraverseMergedIssues(bug_id, issue_tracker_api)
+      monorail_project, use_staging=appengine_util.IsStaging())
+  issue = issue_tracker_api.getIssue(issue_id)
+  visited_issues = set()
+
+  while issue and issue.merged_into:
+    logging.info('Issue %s was merged into %s on project: %s.', issue.id,
+                 issue.merged_into, monorail_project)
+    visited_issues.add(issue)
+    issue = issue_tracker_api.getIssue(issue.merged_into)
+    if issue in visited_issues:
+      # There is a cycle, bails out.
+      break
 
   return issue
 
@@ -394,7 +385,7 @@ def UpdateBugForFlakeDetection(bug_id,
       flake_url=flake_url,
       previous_tracking_bug_text=previous_tracking_bug_text)
 
-  issue = GetBugForId(bug_id)
+  issue = GetMergedDestinationIssueForId(bug_id, monorail_project)
   if _FLAKE_DETECTION_LABEL_TEXT not in issue.labels:
     issue.labels.append(_FLAKE_DETECTION_LABEL_TEXT)
 

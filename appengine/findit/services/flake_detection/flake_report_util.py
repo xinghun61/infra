@@ -288,7 +288,8 @@ def _ReportFlakeToMonorail(flake, occurrences):
       flake.luci_project)
   flake_issue = _GetFlakeIssue(flake)
   if flake_issue:
-    merged_issue = issue_tracking_service.GetBugForId(flake_issue.issue_id)
+    merged_issue = issue_tracking_service.GetMergedDestinationIssueForId(
+        flake_issue.issue_id, monorail_project)
     previous_tracking_bug_id = None
     if flake_issue.issue_id != merged_issue.id:
       logging.info(

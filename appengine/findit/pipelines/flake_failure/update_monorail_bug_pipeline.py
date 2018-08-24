@@ -40,8 +40,8 @@ class UpdateMonorailBugPipeline(SynchronousPipeline):
     project_name = flake_constants.CHROMIUM_PROJECT_NAME
     issue_tracker = IssueTrackerAPI(
         project_name, use_staging=appengine_util.IsStaging())
-    issue = issue_tracking_service.TraverseMergedIssues(analysis.bug_id,
-                                                        issue_tracker)
+    issue = issue_tracking_service.GetMergedDestinationIssueForId(
+        analysis.bug_id, issue_tracker)
     if not issue:
       analysis.LogWarning(
           'Bug %s/%s or the merged-into one may have been deleted!' %
