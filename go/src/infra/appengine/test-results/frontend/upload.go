@@ -225,6 +225,7 @@ func doFileUpload(c context.Context, fh *multipart.FileHeader) error {
 	defer file.Close()
 
 	logging.Infof(c, "handling upload for %q", fh.Filename)
+	defer logging.Infof(c, "done doFileUpload")
 
 	var r io.Reader = file
 
@@ -435,6 +436,8 @@ func updateIncremental(c context.Context, incr *model.AggregateResult) error {
 			continue
 		}
 		var a model.AggregateResult
+
+		logging.Debugf(c, "start json decode %s", name)
 		if err := json.NewDecoder(reader).Decode(&a); err != nil || tf.Builder != a.Builder {
 			if err != nil {
 				logging.WithError(err).Warningf(c, "updateIncremental: unmarshal TestFile data. Deleting corrupted entity.")
@@ -462,6 +465,7 @@ func updateIncremental(c context.Context, incr *model.AggregateResult) error {
 			files[i].tf = createEmptyAggregateTestFileEntity(p)
 			continue
 		}
+		logging.Debugf(c, "end json decode %s", name)
 
 		files[i].tf = tf
 		files[i].aggr = &a
@@ -478,6 +482,9 @@ func updateIncremental(c context.Context, incr *model.AggregateResult) error {
 	}
 
 	return datastore.RunInTransaction(c, func(c context.Context) error {
+		logging.Debugf(c, "start RunInTransaction")
+		defer logging.Debugf(c, "done RunInTransaction")
+
 		errs := make([]error, len(files))
 
 		for i, file := range files {

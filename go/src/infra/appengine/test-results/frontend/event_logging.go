@@ -25,6 +25,9 @@ const (
 )
 
 func sendEventsToBigQuery(c context.Context, tres []*gen.TestResultEvent) error {
+	logging.Debugf(c, "start sendEventsToBigQuery")
+	defer logging.Debugf(c, "end sendEventsToBigQuery")
+
 	for _, tre := range tres {
 		if tre.TestType == "" {
 			return errors.Reason("TestResultEvent is missing required field").Err()
@@ -145,6 +148,9 @@ func testResultTypes(ts []string) ([]gen.ResultType, error) {
 }
 
 func logTestResultEvents(c context.Context, f *model.FullResult, p *UploadParams) {
+	logging.Debugf(c, "start logTestResultEvents")
+	defer logging.Debugf(c, "end logTestResultEvents")
+
 	tres, err := createTestResultEvents(c, f, p)
 	if err != nil {
 		logging.WithError(err).Errorf(c, "could not create TestResultEvents")
