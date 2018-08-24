@@ -31,7 +31,8 @@ from waterfall.test import wf_testcase
 
 class CulpritActionTest(wf_testcase.WaterfallTestCase):
 
-  @mock.patch.object(ci_failure, 'AnyNewBuildSucceeded', return_value=True)
+  @mock.patch.object(
+      ci_failure, 'GetLaterBuildsWithAnySameStepFailure', return_value={})
   def testShouldNotTakeActionsOnCulpritIfBuildGreen(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -47,7 +48,10 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
         heuristic_cls=ListOfBasestring())
     self.assertFalse(culprit_action.ShouldTakeActionsOnCulprit(parameters))
 
-  @mock.patch.object(ci_failure, 'AnyNewBuildSucceeded', return_value=False)
+  @mock.patch.object(
+      ci_failure,
+      'GetLaterBuildsWithAnySameStepFailure',
+      return_value={125: ['a']})
   def testShouldTakeActionsOnCulprit(self, _):
     master_name = 'm'
     builder_name = 'b'

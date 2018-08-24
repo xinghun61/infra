@@ -16,7 +16,6 @@ from pipelines.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
 from pipelines.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 from services import constants as services_constants
-from services import culprit_action
 from services.compile_failure import compile_culprit_action
 from services.parameters import BuildKey
 from services.parameters import CreateRevertCLParameters
@@ -33,7 +32,7 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
   @mock.patch.object(
-      culprit_action, 'ShouldTakeActionsOnCulprit', return_value=True)
+      compile_culprit_action, 'ShouldTakeActionsOnCulprit', return_value=True)
   @mock.patch.object(
       compile_culprit_action, 'CanAutoCreateRevert', return_value=True)
   @mock.patch.object(
@@ -89,7 +88,7 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     self.execute_queued_tasks()
 
   @mock.patch.object(
-      culprit_action, 'ShouldTakeActionsOnCulprit', return_value=True)
+      compile_culprit_action, 'ShouldTakeActionsOnCulprit', return_value=True)
   @mock.patch.object(
       compile_culprit_action, 'CanAutoCreateRevert', return_value=True)
   @mock.patch.object(
@@ -141,7 +140,7 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     self.execute_queued_tasks()
 
   @mock.patch.object(
-      culprit_action, 'ShouldTakeActionsOnCulprit', return_value=True)
+      compile_culprit_action, 'ShouldTakeActionsOnCulprit', return_value=True)
   @mock.patch.object(
       compile_culprit_action, 'CanAutoCreateRevert', return_value=False)
   def testNotAutoRevert(self, *_):
@@ -182,7 +181,7 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     self.execute_queued_tasks()
 
   @mock.patch.object(
-      culprit_action, 'ShouldTakeActionsOnCulprit', return_value=False)
+      compile_culprit_action, 'ShouldTakeActionsOnCulprit', return_value=False)
   @mock.patch.object(wrapper_pipeline, 'SendNotificationForCulpritPipeline')
   def testSendNotificationLatestBuildPassed(self, mocked_pipeline, _):
     master_name = 'm'

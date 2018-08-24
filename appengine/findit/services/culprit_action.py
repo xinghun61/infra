@@ -62,7 +62,8 @@ def ShouldTakeActionsOnCulprit(parameters):
 
   assert parameters.culprits
 
-  if ci_failure.AnyNewBuildSucceeded(master_name, builder_name, build_number):
+  if not ci_failure.GetLaterBuildsWithAnySameStepFailure(
+      master_name, builder_name, build_number):
     # The builder has turned green, don't need to revert or send notification.
     logging.info(
         'No revert or notification needed for culprit(s) for '

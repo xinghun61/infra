@@ -21,6 +21,13 @@ from waterfall import build_util
 from waterfall.test import wf_testcase
 
 
+class MockBuildInfo(object):
+
+  def __init__(self, result, failed_steps):
+    self.result = result
+    self.failed_steps = failed_steps
+
+
 class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
 
   def setUp(self):
@@ -513,23 +520,43 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       buildbot, 'GetRecentCompletedBuilds', return_value=[125, 124])
   @mock.patch.object(buildbot, 'GetBuildResult')
-  def testAnyNewBuildSucceededPassedThenFailed(self, mock_fn, *_):
+  def testGetLaterBuildsWithAnySameStepFailurePassedThenFailed(
+      self, mock_fn, *_):
     mock_fn.side_effect = [buildbot.SUCCESS, buildbot.FAILURE]
-    self.assertTrue(ci_failure.AnyNewBuildSucceeded('m', 'b', 123))
+    self.assertEquals({},
+                      ci_failure.GetLaterBuildsWithAnySameStepFailure(
+                          'm', 'b', 123))
 
   @mock.patch.object(
-      buildbot, 'GetBuildDataFromMilo', return_value=(200, '{"data": "data"}'))
+      buildbot, 'GetRecentCompletedBuilds', return_value=[125, 124])
+  @mock.patch.object(build_util, 'GetBuildInfo')
+  def testGetLaterBuildsWithAnySameStepFailureNotStepLevel(self, mock_fn, *_):
+    build_info_1 = MockBuildInfo(result=buildbot.FAILURE, failed_steps=['b'])
+    mock_fn.side_effect = [(200, build_info_1), (200, build_info_1)]
+    self.assertEqual({},
+                     ci_failure.GetLaterBuildsWithAnySameStepFailure(
+                         'm', 'b', 123, failed_steps=['a']))
+
   @mock.patch.object(
       buildbot, 'GetRecentCompletedBuilds', return_value=[125, 124])
-  @mock.patch.object(buildbot, 'GetBuildResult')
-  def testAnyNewBuildSucceeded(self, mock_fn, *_):
-    mock_fn.side_effect = [buildbot.FAILURE, buildbot.FAILURE]
-    self.assertFalse(ci_failure.AnyNewBuildSucceeded('m', 'b', 123))
+  @mock.patch.object(build_util, 'GetBuildInfo')
+  def testGetLaterBuildsWithAnySameStepFailure(self, mock_fn, *_):
+    build_info_1 = MockBuildInfo(result=buildbot.FAILURE, failed_steps=['a'])
+    mock_fn.side_effect = [(200, build_info_1), (200, build_info_1)]
+    self.assertEqual({
+        124: ['a'],
+        125: ['a']
+    },
+                     ci_failure.GetLaterBuildsWithAnySameStepFailure(
+                         'm', 'b', 123, failed_steps=['a']))
 
   @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[])
   @mock.patch.object(logging, 'error')
-  def testAnyNewBuildSucceededNoNewerBuild(self, mock_logging, _):
-    self.assertTrue(ci_failure.AnyNewBuildSucceeded('m', 'b', 123))
+  def testGetLaterBuildsWithAnySameStepFailureNoNewerBuild(
+      self, mock_logging, _):
+    self.assertEqual({},
+                     ci_failure.GetLaterBuildsWithAnySameStepFailure(
+                         'm', 'b', 123))
     mock_logging.assert_called_once_with(
         'Failed to get latest build numbers for builder %s/%s since %d.', 'm',
         'b', 123)

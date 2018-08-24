@@ -20,8 +20,8 @@ from common.waterfall import failure_type
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from libs import time_util
-from libs.list_of_basestring import ListOfBasestring
 from libs.gitiles.diff import ChangeType
+from libs.list_of_basestring import ListOfBasestring
 from model import analysis_approach_type
 from model import result_status
 from model.wf_analysis import WfAnalysis

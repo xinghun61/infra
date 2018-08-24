@@ -15,6 +15,7 @@ from google.appengine.ext import ndb
 from common.waterfall import failure_type
 from libs import time_util
 from model.wf_suspected_cl import WfSuspectedCL
+from services import ci_failure
 from waterfall import waterfall_config
 
 _DEFAULT_AUTO_CREATE_REVERT_DAILY_THRESHOLD_COMPILE = 10
@@ -86,6 +87,25 @@ def CanAutoCommitRevertByFindit():
                              ) >= auto_commit_revert_daily_threshold_compile:
     logging.info('Auto commits on %s has met daily limit.',
                  time_util.FormatDatetime(time_util.GetUTCNow()))
+    return False
+
+  return True
+
+
+def ShouldTakeActionsOnCulprit(parameters):
+  """Checks if the compile failure continues in later builds to determine
+   should take actions on the culprit or not."""
+  master_name, builder_name, build_number = parameters.build_key.GetParts()
+
+  assert parameters.culprits
+
+  if not ci_failure.GetLaterBuildsWithAnySameStepFailure(
+      master_name, builder_name, build_number, ['compile']):
+    # The compile failure stops, don't need to revert or send notification.
+    logging.info(
+        'No revert or notification needed for culprit(s) for '
+        '%s/%s/%s since the compile failure has stopped.', master_name,
+        builder_name, build_number)
     return False
 
   return True

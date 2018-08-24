@@ -10,7 +10,6 @@ from dto.dict_of_basestring import DictOfBasestring
 from libs import time_util
 from libs.list_of_basestring import ListOfBasestring
 from model.wf_suspected_cl import WfSuspectedCL
-from services import git
 from services.parameters import CulpritActionParameters
 from services.test_failure import test_culprit_action
 from waterfall import waterfall_config

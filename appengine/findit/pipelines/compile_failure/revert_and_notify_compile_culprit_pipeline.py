@@ -27,7 +27,7 @@ class RevertAndNotifyCompileCulpritPipeline(GeneratorPipeline):
   output_type = bool
 
   def RunImpl(self, pipeline_input):
-    if not culprit_action.ShouldTakeActionsOnCulprit(pipeline_input):
+    if not compile_culprit_action.ShouldTakeActionsOnCulprit(pipeline_input):
       return
 
     master_name, builder_name, build_number = (

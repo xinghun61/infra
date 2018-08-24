@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 """Logic related to examine builds and determine regression range."""
 
+from collections import defaultdict
 import hashlib
 import inspect
 import logging
@@ -319,30 +320,53 @@ def GetBuildFailureInfo(master_name, builder_name, build_number):
   return failure_info, True
 
 
-def AnyNewBuildSucceeded(master_name, builder_name, build_number):
+def GetLaterBuildsWithAnySameStepFailure(master_name,
+                                         builder_name,
+                                         build_number,
+                                         failed_steps=None):
+  """Gets successive failed builds with the same failure as the referred build.
+
+    If failed_steps is provided, this function can drill down to step_level
+    as well.
+
+    The function will stop looking further and abandon all its findings if:
+      - find a non-failed build (build ends in success or warning) or
+      - find a build with non-overlapping failures.
+  """
   latest_build_numbers = buildbot.GetRecentCompletedBuilds(
       master_name, builder_name, FinditHttpClient())
+  builds_with_same_failed_steps = defaultdict(list)
 
   if not latest_build_numbers:
-    # Failed to get later builds, cannot check their failures. Returns True to
-    # skip actions on the culprit.
+    # Failed to get later builds, cannot check their failures. Returns an empty
+    # dict to skip actions on the culprit.
     # This should be rare, possible cause is builder rename.
     logging.error(
         'Failed to get latest build numbers for builder %s/%s since %d.',
         master_name, builder_name, build_number)
-    return True
+    return {}
 
-  for newer_build_number in xrange(build_number + 1,
-                                   latest_build_numbers[0] + 1):
+  for newer_build_number in latest_build_numbers:
+    if newer_build_number <= build_number:
+      break
+
     # Checks all builds after current build.
     _, newer_build_info = build_util.GetBuildInfo(master_name, builder_name,
                                                   newer_build_number)
     if newer_build_info and newer_build_info.result in [
         buildbot.SUCCESS, buildbot.WARNINGS
     ]:
-      return True
+      return {}
 
-  return False
+    for failed_step in failed_steps or []:
+      if failed_step in newer_build_info.failed_steps:
+        builds_with_same_failed_steps[newer_build_number].append(failed_step)
+
+    if not builds_with_same_failed_steps[newer_build_number]:
+      # No same failed steps.
+      return {}
+
+  return builds_with_same_failed_steps
 
 
 def GetGoodRevision(failure_info):
