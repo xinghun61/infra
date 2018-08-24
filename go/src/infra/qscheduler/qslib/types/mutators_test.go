@@ -29,7 +29,7 @@ func TestAssign(t *testing.T) {
 	t.Parallel()
 	state := &State{
 		Requests: map[string]*task.Request{"t1": &task.Request{}},
-		Workers:  map[string]*Worker{"w1": &Worker{}},
+		Workers:  map[string]*Worker{"w1": NewWorker()},
 	}
 
 	expect := &State{
