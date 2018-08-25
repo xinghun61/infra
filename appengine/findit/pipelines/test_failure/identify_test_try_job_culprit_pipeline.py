@@ -22,8 +22,8 @@ class IdentifyTestTryJobCulpritPipeline(GeneratorPipeline):
 
     Please refer to try_job_result_format.md for format check.
     """
-    culprits, heuristic_cls = test_try_job.IdentifyTestTryJobCulprits(
-        pipeline_input)
+    culprits, heuristic_cls, failure_to_culprit_map = (
+        test_try_job.IdentifyTestTryJobCulprits(pipeline_input))
     if not culprits:
       return
 
@@ -37,4 +37,5 @@ class IdentifyTestTryJobCulpritPipeline(GeneratorPipeline):
                 build_number=build_number),
             culprits=consistent_failure_culprits.GetWfSuspectedClKeysFromCLInfo(
                 culprits),
-            heuristic_cls=heuristic_cls))
+            heuristic_cls=heuristic_cls,
+            failure_to_culprit_map=failure_to_culprit_map))

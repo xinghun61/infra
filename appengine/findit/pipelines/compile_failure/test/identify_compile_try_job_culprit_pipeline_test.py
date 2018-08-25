@@ -91,7 +91,8 @@ class IdentifyCompileTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                 builder_name=builder_name,
                 build_number=build_number),
             culprits=culprits,
-            heuristic_cls=ListOfBasestring()),
+            heuristic_cls=ListOfBasestring(),
+            failure_to_culprit_map=None),
         mocked_output=False)
 
     pipeline_input = IdentifyCompileTryJobCulpritParameters(

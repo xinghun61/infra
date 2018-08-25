@@ -83,7 +83,8 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                 builder_name=builder_name,
                 build_number=build_number),
             culprits=culprits,
-            heuristic_cls=heuristic_cls))
+            heuristic_cls=heuristic_cls,
+            failure_to_culprit_map=None))
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -135,7 +136,8 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                 builder_name=builder_name,
                 build_number=build_number),
             culprits=culprits,
-            heuristic_cls=heuristic_cls))
+            heuristic_cls=heuristic_cls,
+            failure_to_culprit_map=None))
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -176,7 +178,8 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                 builder_name=builder_name,
                 build_number=build_number),
             culprits=culprits,
-            heuristic_cls=heuristic_cls))
+            heuristic_cls=heuristic_cls,
+            failure_to_culprit_map=None))
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -201,7 +204,8 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                 builder_name=builder_name,
                 build_number=build_number),
             culprits=culprits,
-            heuristic_cls=heuristic_cls))
+            heuristic_cls=heuristic_cls,
+            failure_to_culprit_map=None))
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
     self.assertFalse(mocked_pipeline.called)

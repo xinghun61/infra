@@ -17,6 +17,7 @@ from model.wf_suspected_cl import WfSuspectedCL
 from services import consistent_failure_culprits
 from services.parameters import BuildKey
 from services.parameters import CulpritActionParameters
+from services.parameters import FailureToCulpritMap
 from services.parameters import IdentifyTestTryJobCulpritParameters
 from services.parameters import TestTryJobResult
 from services.test_failure import test_try_job
@@ -54,8 +55,10 @@ class IdentifyTestTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
             'repo_name': repo_name
         }
     }
+
+    culprit_map = {'step': {'test1': 'rev1', 'test2': 'rev2'}}
     mock_fn.return_value = culprits_result, ListOfBasestring.FromSerializable(
-        [])
+        []), FailureToCulpritMap.FromSerializable(culprit_map)
 
     culprits = DictOfBasestring()
     culprits['rev2'] = culprit.key.urlsafe()
@@ -69,7 +72,9 @@ class IdentifyTestTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                 builder_name=builder_name,
                 build_number=build_number),
             culprits=culprits,
-            heuristic_cls=ListOfBasestring()),
+            heuristic_cls=ListOfBasestring(),
+            failure_to_culprit_map=FailureToCulpritMap.FromSerializable(
+                culprit_map)),
         mocked_output=False)
 
     parameters = IdentifyTestTryJobCulpritParameters(
@@ -98,7 +103,8 @@ class IdentifyTestTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                 builder_name=builder_name,
                 build_number=build_number),
             culprits=DictOfBasestring(),
-            heuristic_cls=ListOfBasestring()),
+            heuristic_cls=ListOfBasestring(),
+            failure_to_culprit_map=None),
         mocked_output=False)
     parameters = IdentifyTestTryJobCulpritParameters(
         build_key=BuildKey(

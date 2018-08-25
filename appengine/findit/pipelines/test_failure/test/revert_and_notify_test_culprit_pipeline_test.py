@@ -18,10 +18,10 @@ from pipelines.test_failure.revert_and_notify_test_culprit_pipeline import (
     RevertAndNotifyTestCulpritPipeline)
 from services import ci_failure
 from services import constants as services_constants
-from services import culprit_action
 from services.parameters import BuildKey
 from services.parameters import CreateRevertCLParameters
 from services.parameters import CulpritActionParameters
+from services.parameters import FailureToCulpritMap
 from services.parameters import SendNotificationForCulpritParameters
 from services.parameters import SubmitRevertCLParameters
 from services.test_failure import test_culprit_action
@@ -36,7 +36,9 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       test_culprit_action, 'CanAutoCommitRevertByFindit', return_value=False)
   @mock.patch.object(
-      ci_failure, 'GetLaterBuildsWithAnySameStepFailure', return_value=['a'])
+      ci_failure,
+      'GetLaterBuildsWithAnySameStepFailure',
+      return_value={125: ['a']})
   def testSendNotificationForTestCulpritNoRevert(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -47,6 +49,12 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     culprits['r1'] = cl_key
     heuristic_cls = ListOfBasestring()
     heuristic_cls.append(cl_key)
+
+    failure_to_culprit_map = FailureToCulpritMap.FromSerializable({
+        'step1': {
+            't1': 'r1'
+        }
+    })
 
     input_object = SendNotificationForCulpritParameters(
         cl_key=cl_key,
@@ -63,7 +71,8 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                 builder_name=builder_name,
                 build_number=build_number),
             culprits=culprits,
-            heuristic_cls=heuristic_cls))
+            heuristic_cls=heuristic_cls,
+            failure_to_culprit_map=failure_to_culprit_map))
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -81,6 +90,11 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     culprits['r1'] = cl_key
     heuristic_cls = ListOfBasestring()
     heuristic_cls.append(cl_key)
+    failure_to_culprit_map = FailureToCulpritMap.FromSerializable({
+        'step1': {
+            't1': 'r1'
+        }
+    })
 
     pipeline = RevertAndNotifyTestCulpritPipeline(
         CulpritActionParameters(
@@ -89,13 +103,14 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                 builder_name=builder_name,
                 build_number=build_number),
             culprits=culprits,
-            heuristic_cls=heuristic_cls))
+            heuristic_cls=heuristic_cls,
+            failure_to_culprit_map=failure_to_culprit_map))
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
     self.assertFalse(mocked_pipeline.called)
 
   @mock.patch.object(
-      culprit_action, 'ShouldTakeActionsOnCulprit', return_value=True)
+      test_culprit_action, 'GetCulpritsShouldTakeActions', return_value=['r1'])
   @mock.patch.object(
       test_culprit_action, 'CanAutoCreateRevert', return_value=True)
   @mock.patch.object(
@@ -111,6 +126,11 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     culprits['r1'] = cl_key
     heuristic_cls = ListOfBasestring()
     heuristic_cls.append(cl_key)
+    failure_to_culprit_map = FailureToCulpritMap.FromSerializable({
+        'step1': {
+            't1': 'r1'
+        }
+    })
 
     self.MockSynchronousPipeline(
         CreateRevertCLPipeline,
@@ -138,12 +158,13 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                 builder_name=builder_name,
                 build_number=build_number),
             culprits=culprits,
-            heuristic_cls=heuristic_cls))
+            heuristic_cls=heuristic_cls,
+            failure_to_culprit_map=failure_to_culprit_map))
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
   @mock.patch.object(
-      culprit_action, 'ShouldTakeActionsOnCulprit', return_value=True)
+      test_culprit_action, 'GetCulpritsShouldTakeActions', return_value=['r1'])
   @mock.patch.object(
       test_culprit_action, 'CanAutoCreateRevert', return_value=True)
   @mock.patch.object(
@@ -159,6 +180,11 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     culprits['r1'] = cl_key
     heuristic_cls = ListOfBasestring()
     heuristic_cls.append(cl_key)
+    failure_to_culprit_map = FailureToCulpritMap.FromSerializable({
+        'step1': {
+            't1': 'r1'
+        }
+    })
 
     self.MockSynchronousPipeline(
         CreateRevertCLPipeline,
@@ -180,6 +206,7 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                 builder_name=builder_name,
                 build_number=build_number),
             culprits=culprits,
-            heuristic_cls=heuristic_cls))
+            heuristic_cls=heuristic_cls,
+            failure_to_culprit_map=failure_to_culprit_map))
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()

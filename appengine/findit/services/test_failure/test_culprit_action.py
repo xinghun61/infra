@@ -15,7 +15,7 @@ from google.appengine.ext import ndb
 from common.waterfall import failure_type
 from libs import time_util
 from model.wf_suspected_cl import WfSuspectedCL
-from services import git
+from services import ci_failure
 from waterfall import waterfall_config
 
 _DEFAULT_AUTO_CREATE_REVERT_DAILY_THRESHOLD_TEST = 10
@@ -100,3 +100,43 @@ def CanAutoCommitRevertByFindit():
                  time_util.FormatDatetime(time_util.GetUTCNow()))
     return False
   return True
+
+
+def GetCulpritsShouldTakeActions(parameters):
+  """Checks if the step failure continues in later builds to determine
+   should take actions on the culprit or not.
+
+  Returns:
+     A set of culprit keys Findit should take action on because the failed steps
+     they are responsible for are still failing.
+  """
+  assert parameters.culprits
+
+  master_name, builder_name, build_number = parameters.build_key.GetParts()
+  failure_to_culprit_map = parameters.failure_to_culprit_map
+  builds_with_same_steps = ci_failure.GetLaterBuildsWithAnySameStepFailure(
+      master_name, builder_name, build_number,
+      failure_to_culprit_map.failed_steps)
+  if not builds_with_same_steps:
+    # Some steps stop to fail, don't need to revert or send notification.
+    logging.info(
+        'No revert or notification needed for culprit(s) for '
+        '%s/%s/%s since the failure has stopped.', master_name, builder_name,
+        build_number)
+    return []
+
+  culprits_should_take_actions = set(parameters.culprits.keys())
+
+  for step_name, test_culprit_map in failure_to_culprit_map.iteritems():
+    step_culprits = set(test_culprit_map.values())
+    for build_number, steps in builds_with_same_steps.iteritems():
+      if step_name not in steps:
+        # Step stops failing, should not take actions on all culprits that are
+        # thought to be responsible for failures in this step.
+        culprits_should_take_actions = (
+            culprits_should_take_actions - step_culprits)
+        break
+    if not culprits_should_take_actions:
+      return []
+
+  return culprits_should_take_actions

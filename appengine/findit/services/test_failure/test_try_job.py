@@ -28,6 +28,7 @@ from model.wf_try_job_data import WfTryJobData
 from services import build_failure_analysis
 from services import git
 from services import try_job as try_job_service
+from services.parameters import FailureToCulpritMap
 from services.parameters import RunTestTryJobParameters
 from services.parameters import TestTryJobResult
 from services.test_failure import ci_test_failure
@@ -499,6 +500,7 @@ def IdentifyTestTryJobCulprits(parameters):
   master_name, builder_name, build_number = parameters.build_key.GetParts()
   result = parameters.result
   try_job_id = result.try_job_id if result else None
+  failure_to_culprit_map = None
   if try_job_id and result and result.report:
     culprit_map, failed_revisions = FindCulpritForEachTestFailure(result)
     culprits = try_job_service.GetCulpritsWithoutNoBlameAccountsCLS(
@@ -509,7 +511,8 @@ def IdentifyTestTryJobCulprits(parameters):
     if culprits:
       try_job_data = WfTryJobData.Get(try_job_id)
       UpdateCulpritMapWithCulpritInfo(culprit_map, culprits)
-      try_job_data.culprits = GetCulpritDataForTest(culprit_map)
+      failure_to_culprit_map = GetCulpritDataForTest(culprit_map)
+      try_job_data.culprits = failure_to_culprit_map
       try_job_data.put()
       result.culprit = culprit_map
 
@@ -530,7 +533,8 @@ def IdentifyTestTryJobCulprits(parameters):
   # Updates suspected_cl.
   UpdateSuspectedCLs(master_name, builder_name, build_number, culprits, result)
 
-  return culprits, heuristic_cls
+  return culprits, heuristic_cls, FailureToCulpritMap.FromSerializable(
+      failure_to_culprit_map)
 
 
 def ScheduleTestTryJob(parameters, notification_id):

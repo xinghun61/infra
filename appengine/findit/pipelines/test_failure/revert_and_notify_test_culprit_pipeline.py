@@ -25,7 +25,9 @@ class RevertAndNotifyTestCulpritPipeline(GeneratorPipeline):
 
   def RunImpl(self, pipeline_input):
 
-    if not culprit_action.ShouldTakeActionsOnCulprit(pipeline_input):
+    culprits_should_take_actions = (
+        test_culprit_action.GetCulpritsShouldTakeActions(pipeline_input))
+    if not culprits_should_take_actions:
       return
 
     master_name, builder_name, build_number = (
@@ -35,9 +37,16 @@ class RevertAndNotifyTestCulpritPipeline(GeneratorPipeline):
     culprits = pipeline_input.culprits
     build_failure_type = failure_type.TEST
 
-    for culprit_key in culprits.itervalues():
+    for culprit_revision in culprits_should_take_actions:
+      culprit_key = culprits.get(culprit_revision)
+      assert culprit_key, (
+          'Failed to get culprit_key for culprit {} when analyzing failures'
+          ' at build {}/{}/{}'.format(culprit_revision, master_name,
+                                      builder_name, build_number))
+
       revert_status = constants.SKIPPED
-      if test_culprit_action.CanAutoCreateRevert(culprit_key, pipeline_input):
+      if test_culprit_action.CanAutoCreateRevert(
+          culprit_key, pipeline_input):  # pragma: no branch.
         revert_status = yield CreateRevertCLPipeline(
             CreateRevertCLParameters(
                 cl_key=culprit_key,

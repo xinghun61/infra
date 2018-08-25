@@ -1757,25 +1757,30 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
             builder_name=builder_name,
             build_number=build_number),
         result=TestTryJobResult.FromSerializable(test_result))
-    culprits, _ = test_try_job.IdentifyTestTryJobCulprits(parameters)
+    culprits, _heuristic_cls, failure_to_culprit_map = (
+        test_try_job.IdentifyTestTryJobCulprits(parameters))
 
     expected_culprits = {
         'rev1': expected_culprit_info_1,
         'rev2': expected_culprit_info_2
     }
-    self.assertEqual(culprits, expected_culprits)
 
-    try_job = WfTryJob.Get(master_name, builder_name, build_number)
-    self.assertEqual(expected_test_result, try_job.test_results[-1])
-    self.assertEqual(analysis_status.COMPLETED, try_job.status)
-    try_job_data = WfTryJobData.Get(try_job_id)
-    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     expected_culprit_data = {
         'a_test': {
             'a_test1': 'rev1',
             'a_test2': 'rev2',
         }
     }
+
+    self.assertEqual(culprits, expected_culprits)
+    self.assertEqual(expected_culprit_data,
+                     failure_to_culprit_map.ToSerializable())
+
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    self.assertEqual(expected_test_result, try_job.test_results[-1])
+    self.assertEqual(analysis_status.COMPLETED, try_job.status)
+    try_job_data = WfTryJobData.Get(try_job_id)
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     expected_cls = [{
         'revision': 'rev1',
         'commit_position': 1,
@@ -1886,7 +1891,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
             builder_name=builder_name,
             build_number=build_number),
         result=TestTryJobResult.FromSerializable(test_result))
-    culprits, _ = test_try_job.IdentifyTestTryJobCulprits(parameters)
+    culprits, _, _ = test_try_job.IdentifyTestTryJobCulprits(parameters)
     self.assertEqual({}, culprits)
 
   def testIdentifyTestTryJobCulpritsNoResult(self):
@@ -1913,7 +1918,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
             builder_name=builder_name,
             build_number=build_number),
         result=None)
-    culprits, _ = test_try_job.IdentifyTestTryJobCulprits(parameters)
+    culprits, _, _ = test_try_job.IdentifyTestTryJobCulprits(parameters)
     self.assertIsNone(culprits)
 
   @mock.patch.object(test_try_job, 'GetBuildProperties', return_value={})

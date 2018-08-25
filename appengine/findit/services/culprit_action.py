@@ -57,23 +57,6 @@ def MonitoringCulpritNotification(build_failure_type, action_type, sent,
                                '%s_notified_skip' % action_type)
 
 
-def ShouldTakeActionsOnCulprit(parameters):
-  master_name, builder_name, build_number = parameters.build_key.GetParts()
-
-  assert parameters.culprits
-
-  if not ci_failure.GetLaterBuildsWithAnySameStepFailure(
-      master_name, builder_name, build_number):
-    # The builder has turned green, don't need to revert or send notification.
-    logging.info(
-        'No revert or notification needed for culprit(s) for '
-        '%s/%s/%s since the builder has turned green.', master_name,
-        builder_name, build_number)
-    return False
-
-  return True
-
-
 @ndb.transactional
 def _UpdateCulprit(culprit_urlsafe_key,
                    revert_status=None,

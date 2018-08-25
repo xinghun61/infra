@@ -38,4 +38,5 @@ class IdentifyCompileTryJobCulpritPipeline(GeneratorPipeline):
                 build_number=build_number),
             culprits=consistent_failure_culprits.GetWfSuspectedClKeysFromCLInfo(
                 culprits),
-            heuristic_cls=heuristic_cls))
+            heuristic_cls=heuristic_cls,
+            failure_to_culprit_map=None))

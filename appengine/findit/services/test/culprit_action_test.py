@@ -14,13 +14,11 @@ from libs import analysis_status
 from libs.list_of_basestring import ListOfBasestring
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
-from services import ci_failure
 from services import constants
 from services import culprit_action
 from services import gerrit
 from services import git
 from services import irc
-from services.parameters import BuildKey
 from services.parameters import CreateRevertCLParameters
 from services.parameters import CulpritActionParameters
 from services.parameters import SendNotificationForCulpritParameters
@@ -30,42 +28,6 @@ from waterfall.test import wf_testcase
 
 
 class CulpritActionTest(wf_testcase.WaterfallTestCase):
-
-  @mock.patch.object(
-      ci_failure, 'GetLaterBuildsWithAnySameStepFailure', return_value={})
-  def testShouldNotTakeActionsOnCulpritIfBuildGreen(self, _):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 124
-    culprits = DictOfBasestring()
-    culprits['r1'] = 'mockurlsafekey'
-    parameters = CulpritActionParameters(
-        build_key=BuildKey(
-            master_name=master_name,
-            builder_name=builder_name,
-            build_number=build_number),
-        culprits=culprits,
-        heuristic_cls=ListOfBasestring())
-    self.assertFalse(culprit_action.ShouldTakeActionsOnCulprit(parameters))
-
-  @mock.patch.object(
-      ci_failure,
-      'GetLaterBuildsWithAnySameStepFailure',
-      return_value={125: ['a']})
-  def testShouldTakeActionsOnCulprit(self, _):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 124
-    culprits = DictOfBasestring()
-    culprits['r1'] = 'mockurlsafekey'
-    parameters = CulpritActionParameters(
-        build_key=BuildKey(
-            master_name=master_name,
-            builder_name=builder_name,
-            build_number=build_number),
-        culprits=culprits,
-        heuristic_cls=ListOfBasestring())
-    self.assertTrue(culprit_action.ShouldTakeActionsOnCulprit(parameters))
 
   def testShouldForceNotify(self):
     cl_key = 'mockurlsafekey'
