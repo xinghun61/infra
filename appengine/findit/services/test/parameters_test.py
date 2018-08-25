@@ -29,3 +29,6 @@ class ParametersTest(wf_testcase.WaterfallTestCase):
         's1': ['s1_t1', 's1_t2'],
         's2': ['s2_t1']
     }, failure_to_culprit_map.failed_steps_and_tests)
+
+    self.assertItemsEqual(['s1_t1', 's1_t2'],
+                          failure_to_culprit_map.FailedTestsOfAStep('s1'))

@@ -76,6 +76,9 @@ class FailureToCulpritMap(TypedDict):
       failures[step] = test_culprit_map.keys()
     return failures
 
+  def FailedTestsOfAStep(self, step):
+    return (self.get(step) or {}).keys()
+
 
 class CulpritActionParameters(StructuredObject):
   """Input for RevertAndNotifyCompileCulpritPipeline and

@@ -15,7 +15,7 @@ from google.appengine.ext import ndb
 from common.waterfall import failure_type
 from libs import time_util
 from model.wf_suspected_cl import WfSuspectedCL
-from services import ci_failure
+from services.test_failure import ci_test_failure
 from waterfall import waterfall_config
 
 _DEFAULT_AUTO_CREATE_REVERT_DAILY_THRESHOLD_TEST = 10
@@ -103,40 +103,50 @@ def CanAutoCommitRevertByFindit():
 
 
 def GetCulpritsShouldTakeActions(parameters):
-  """Checks if the step failure continues in later builds to determine
-   should take actions on the culprit or not.
+  """Gets culprits that Findit should take actions.
+
+  Checks following builds and finds out if the step/test failures caused by
+  each culprit are still failing. Takes actions on the culprit if yes, otherwise
+  skip actions.
+
+  Args:
+    parameters(CulpritActionParameters): parameters for culprit action.
 
   Returns:
-     A set of culprit keys Findit should take action on because the failed steps
-     they are responsible for are still failing.
+   A set of culprit keys Findit should take action on because the failures
+   they are responsible for are still failing.
   """
   assert parameters.culprits
 
   master_name, builder_name, build_number = parameters.build_key.GetParts()
   failure_to_culprit_map = parameters.failure_to_culprit_map
-  builds_with_same_steps = ci_failure.GetLaterBuildsWithAnySameStepFailure(
-      master_name, builder_name, build_number,
-      failure_to_culprit_map.failed_steps)
-  if not builds_with_same_steps:
-    # Some steps stop to fail, don't need to revert or send notification.
+
+  tests_failing_continuously = (
+      ci_test_failure.GetContinuouslyFailedTestsInLaterBuilds(
+          master_name, builder_name, build_number, failure_to_culprit_map))
+
+  if not tests_failing_continuously:
+    # All tests has passed in following builds, don't need to revert or send
+    # notification.
     logging.info(
-        'No revert or notification needed for culprit(s) for '
-        '%s/%s/%s since the failure has stopped.', master_name, builder_name,
-        build_number)
-    return []
+        'No revert or notification needed for culprit(s) for %s/%s/%s since the'
+        ' failure has stopped.', master_name, builder_name, build_number)
+    return set([])
 
   culprits_should_take_actions = set(parameters.culprits.keys())
 
   for step_name, test_culprit_map in failure_to_culprit_map.iteritems():
-    step_culprits = set(test_culprit_map.values())
-    for build_number, steps in builds_with_same_steps.iteritems():
-      if step_name not in steps:
-        # Step stops failing, should not take actions on all culprits that are
-        # thought to be responsible for failures in this step.
-        culprits_should_take_actions = (
-            culprits_should_take_actions - step_culprits)
-        break
-    if not culprits_should_take_actions:
-      return []
+    if not tests_failing_continuously.get(step_name):
+      # All failed tests in the step have passed in following builds.
+      culprits_should_take_actions -= set(test_culprit_map.values())
+      continue
+
+    originally_failed_tests = set(test_culprit_map.keys())
+    passed_in_later_builds_tests = (
+        originally_failed_tests - tests_failing_continuously[step_name])
+
+    no_actions_culprits = set(
+        [test_culprit_map[t] for t in passed_in_later_builds_tests])
+    culprits_should_take_actions -= no_actions_culprits
 
   return culprits_should_take_actions

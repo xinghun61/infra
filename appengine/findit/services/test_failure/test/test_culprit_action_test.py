@@ -10,10 +10,10 @@ from dto.dict_of_basestring import DictOfBasestring
 from libs import time_util
 from libs.list_of_basestring import ListOfBasestring
 from model.wf_suspected_cl import WfSuspectedCL
-from services import ci_failure
 from services.parameters import BuildKey
 from services.parameters import CulpritActionParameters
 from services.parameters import FailureToCulpritMap
+from services.test_failure import ci_test_failure
 from services.test_failure import test_culprit_action
 from waterfall import waterfall_config
 from waterfall.test import wf_testcase
@@ -146,7 +146,9 @@ class TestCulpritActionTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(test_culprit_action.CanAutoCommitRevertByFindit())
 
   @mock.patch.object(
-      ci_failure, 'GetLaterBuildsWithAnySameStepFailure', return_value={})
+      ci_test_failure,
+      'GetContinuouslyFailedTestsInLaterBuilds',
+      return_value={})
   def testShouldNotTakeActionsOnCulpritIfBuildGreen(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -171,56 +173,26 @@ class TestCulpritActionTest(wf_testcase.WaterfallTestCase):
         heuristic_cls=ListOfBasestring(),
         failure_to_culprit_map=failure_to_culprit_map)
     self.assertEqual(
-        [], test_culprit_action.GetCulpritsShouldTakeActions(parameters))
+        set([]), test_culprit_action.GetCulpritsShouldTakeActions(parameters))
 
   @mock.patch.object(
-      ci_failure,
-      'GetLaterBuildsWithAnySameStepFailure',
-      return_value={125: ['step3']})
-  def testGetCulpritsShouldTakeActionsNoSameStepFailure(self, _):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 124
-    culprits = DictOfBasestring()
-    culprits['r1'] = 'mockurlsafekey'
-    failure_to_culprit_map = FailureToCulpritMap.FromSerializable({
-        'step1': {
-            'test1': 'r1',
-            'test2': 'r1'
-        },
-        'step2': {
-            'test1': 'r1'
-        }
-    })
-
-    parameters = CulpritActionParameters(
-        build_key=BuildKey(
-            master_name=master_name,
-            builder_name=builder_name,
-            build_number=build_number),
-        culprits=culprits,
-        heuristic_cls=ListOfBasestring(),
-        failure_to_culprit_map=failure_to_culprit_map)
-    self.assertEquals(
-        [], test_culprit_action.GetCulpritsShouldTakeActions(parameters))
-
-  @mock.patch.object(
-      ci_failure,
-      'GetLaterBuildsWithAnySameStepFailure',
-      return_value={125: ['step1', 'step2']})
+      ci_test_failure,
+      'GetContinuouslyFailedTestsInLaterBuilds',
+      return_value={'step1': set(['test1', 'test2'])})
   def testGetCulpritsShouldTakeActions(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
     culprits = DictOfBasestring()
     culprits['r1'] = 'mockurlsafekey'
+    culprits['r2'] = 'mockurlsafekey2'
     failure_to_culprit_map = FailureToCulpritMap.FromSerializable({
         'step1': {
             'test1': 'r1',
-            'test2': 'r1'
+            'test2': 'r2'
         },
         'step2': {
-            'test1': 'r1'
+            'test1': 'r2'
         }
     })
 
@@ -232,5 +204,6 @@ class TestCulpritActionTest(wf_testcase.WaterfallTestCase):
         culprits=culprits,
         heuristic_cls=ListOfBasestring(),
         failure_to_culprit_map=failure_to_culprit_map)
-    self.assertTrue(
-        ['r1'], test_culprit_action.GetCulpritsShouldTakeActions(parameters))
+    self.assertEqual(
+        set(['r1']),
+        test_culprit_action.GetCulpritsShouldTakeActions(parameters))
