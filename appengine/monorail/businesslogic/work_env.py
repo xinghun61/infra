@@ -449,18 +449,19 @@ class WorkEnv(object):
 
   def ListIssues(self, query_string, query_project_names, me_user_id,
                  items_per_page, paginate_start, url_params, can,
-                 group_by_spec, sort_spec, use_cached_searches, mode):
+                 group_by_spec, sort_spec, use_cached_searches,
+                 display_mode=None, project=None):
     """Do an issue search w/ mc + passed in args to return a pipeline object."""
     # Permission to view a project is checked in Frontendsearchpipeline().
     # Individual results are filtered by permissions in SearchForIIDs().
 
     with self.mc.profiler.Phase('searching issues'):
       pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-          self.mc.cnxn, self.services, self.mc.project, self.mc.auth,
-          me_user_id, query_string, query_project_names,
-          items_per_page, paginate_start, url_params, can, group_by_spec,
-          sort_spec, self.mc.warnings, self.mc.errors, use_cached_searches,
-          self.mc.profiler, mode)
+          self.mc.cnxn, self.services, self.mc.auth, me_user_id,
+          query_string, query_project_names, items_per_page, paginate_start,
+          url_params, can, group_by_spec, sort_spec, self.mc.warnings,
+          self.mc.errors, use_cached_searches, self.mc.profiler,
+          display_mode=display_mode, project=project)
       if not self.mc.errors.AnyErrors():
         pipeline.SearchForIIDs()
         pipeline.MergeAndSortIssues()
@@ -484,12 +485,12 @@ class WorkEnv(object):
       url_params = [(name, self.mc.GetParam(name)) for name in
                     framework_helpers.RECOGNIZED_PARAMS]
       pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-           self.mc.cnxn, self.services, self.mc.project, self.mc.auth,
-          self.mc.me_user_id, self.mc.query, self.mc.query_project_names,
-          self.mc.num, self.mc.start, url_params, self.mc.can,
-          self.mc.group_by_spec, self.mc.sort_spec, self.mc.warnings,
-          self.mc.errors, self.mc.use_cached_searches, self.mc.profiler,
-          self.mc.mode)
+           self.mc.cnxn, self.services, self.mc.auth, self.mc.me_user_id,
+           self.mc.query, self.mc.query_project_names, self.mc.num,
+           self.mc.start, url_params, self.mc.can, self.mc.group_by_spec,
+           self.mc.sort_spec, self.mc.warnings, self.mc.errors,
+           self.mc.use_cached_searches, self.mc.profiler,
+           display_mode=self.mc.mode, project=self.mc.project)
       if not self.mc.errors.AnyErrors():
         # Only do the search if the user's query parsed OK.
         pipeline.SearchForIIDs()

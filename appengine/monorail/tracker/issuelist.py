@@ -82,7 +82,7 @@ class IssueList(servlet.Servlet):
       pipeline = we.ListIssues(
           mr.query, mr.query_project_names, mr.me_user_id, mr.num, mr.start,
           url_params, mr.can, mr.group_by_spec, mr.sort_spec,
-          mr.use_cached_searches, mr.mode)
+          mr.use_cached_searches, display_mode=mr.mode, project=mr.project)
       starred_iid_set = set(we.ListStarredIssueIDs())
 
     with mr.profiler.Phase('computing col_spec'):

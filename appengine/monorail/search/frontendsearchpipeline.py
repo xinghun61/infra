@@ -70,14 +70,13 @@ class FrontendSearchPipeline(object):
   is pretty much in the order of the source code lines here.
   """
 
-  def __init__(self, cnxn, services, project, auth, me_user_id,
+  def __init__(self, cnxn, services, auth, me_user_id,
                query, query_project_names, items_per_page, paginate_start,
                url_params, can, group_by_spec, sort_spec, warnings,
-               errors, use_cached_searches, profiler, display_mode):
+               errors, use_cached_searches, profiler, display_mode='list',
+               project=None):
     self.cnxn = cnxn
     self.url_params = url_params
-    self.project = project
-    self.project_name = project.project_name if project else ''
     self.me_user_id = me_user_id
     self.auth = auth
     self.logged_in_user_id = auth.user_id or 0
@@ -102,6 +101,10 @@ class FrontendSearchPipeline(object):
     self.total_count = 0
     self.errors = errors
 
+    self.project_name = ''
+    self.project = project
+    if project:
+      self.project_name = project.project_name
     self.query_projects = []
     if query_project_names:
       consider_projects = services.project.GetProjectsByName(
