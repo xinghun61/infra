@@ -601,17 +601,17 @@ def IngestFieldValues(cnxn, user_service, field_values, config, phases=None):
   fds_by_name = {fd.field_name.lower(): fd for fd in config.field_defs}
   phases_by_name = {phase.name: phase.phase_id for phase in phases or []}
 
-  ejected_fvs = []
+  ingested_fvs = []
   for fv in field_values:
     fd = fds_by_name.get(fv.field_ref.field_name.lower())
     if fd:
-      ejected_fv = field_helpers.ParseOneFieldValue(
+      ingested_fv = field_helpers.ParseOneFieldValue(
           cnxn, user_service, fd, str(fv.value))
       if fd.is_phase_field:
-        ejected_fv.phase_id = phases_by_name.get(fv.phase_ref.phase_name)
-      ejected_fvs.append(ejected_fv)
+        ingested_fv.phase_id = phases_by_name.get(fv.phase_ref.phase_name)
+      ingested_fvs.append(ingested_fv)
 
-  return ejected_fvs
+  return ingested_fvs
 
 
 def IngestHotlistRef(cnxn, user_service, features_service, hotlist_ref):

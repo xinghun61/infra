@@ -177,7 +177,7 @@ def ParseOneFieldValue(cnxn, user_service, fd, val_str):
     else:
       return None
 
-  if fd.field_type == tracker_pb2.FieldTypes.DATE_TYPE:
+  elif fd.field_type == tracker_pb2.FieldTypes.DATE_TYPE:
     try:
       timestamp = timestr.DateWidgetStrToTimestamp(val_str)
       return tracker_bizobj.MakeFieldValue(
@@ -185,7 +185,7 @@ def ParseOneFieldValue(cnxn, user_service, fd, val_str):
     except ValueError:
       return None  # TODO(jrobbins): should bounce
 
-  if fd.field_type == tracker_pb2.FieldTypes.URL_TYPE:
+  elif fd.field_type == tracker_pb2.FieldTypes.URL_TYPE:
     val_str = FormatUrlFieldValue(val_str)
     try:
       return tracker_bizobj.MakeFieldValue(
