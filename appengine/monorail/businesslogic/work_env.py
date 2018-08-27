@@ -466,6 +466,7 @@ class WorkEnv(object):
         pipeline.SearchForIIDs()
         pipeline.MergeAndSortIssues()
         pipeline.Paginate()
+      # TODO(jojwang): raise InvalidQueryException.
       return pipeline
 
   # TODO(jrobbins): This method also requires self.mc to be a MonorailRequest.

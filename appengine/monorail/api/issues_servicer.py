@@ -7,6 +7,7 @@ import logging
 
 from google.protobuf import empty_pb2
 
+import settings
 from api import monorail_servicer
 from api import converters
 from api.api_proto import issue_objects_pb2
@@ -72,6 +73,35 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
           issue, users_by_id, related_refs, config))
 
     return response
+
+  @monorail_servicer.PRPCMethod
+  def ListIssues(self, mc, request):
+    """Return the list of issues for projects that satisfy the given query."""
+    use_cached_searches = not settings.dev_mode
+    with work_env.WorkEnv(mc, self.services) as we:
+      max_items = (
+          request.max_items or settings.max_project_search_results_per_page)
+      pipeline = we.ListIssues(
+          request.query, request.project_names, mc.auth.user_id,
+          max_items, request.paginate_start, [], request.canned_query or 1,
+          request.group_by_spec, request.sort_spec, use_cached_searches)
+    with mc.profiler.Phase('reveal emails to members'):
+      projects = self.services.project.GetProjectsByName(
+          mc.cnxn, request.project_names)
+      for _, p in projects.iteritems():
+        framework_views.RevealAllEmailsToMembers(
+            mc.auth, p, pipeline.users_by_id)
+
+    converted_results = []
+    with work_env.WorkEnv(mc, self.services) as we:
+      for issue in pipeline.visible_results:
+        related_refs = we.GetRelatedIssueRefs(issue)
+        converted_results.append(
+            converters.ConvertIssue(issue, pipeline.users_by_id, related_refs,
+                                    pipeline.harmonized_config))
+    return issues_pb2.ListIssuesResponse(
+        issues=converted_results, total_results=len(converted_results))
+
 
   @monorail_servicer.PRPCMethod
   def ListReferencedIssues(self, mc, request):

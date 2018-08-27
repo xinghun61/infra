@@ -16,6 +16,7 @@ import "api/api_proto/issue_objects.proto";
 service Issues {
   rpc CreateIssue (CreateIssueRequest) returns (IssueResponse) {}
   rpc GetIssue (GetIssueRequest) returns (IssueResponse) {}
+  rpc ListIssues (ListIssuesRequest) returns (ListIssuesResponse) {}
   rpc ListReferencedIssues(ListReferencedIssuesRequest) returns (ListReferencedIssuesResponse) {}
   rpc UpdateIssue (UpdateIssueRequest) returns (IssueResponse) {}
   rpc StarIssue (StarIssueRequest) returns (StarIssueResponse) {}
@@ -58,6 +59,26 @@ message GetIssueRequest {
 // Next available tag: 2
 message IssueResponse {
   Issue issue = 1;
+}
+
+
+// Next available tag: 9
+message ListIssuesRequest {
+  RequestTrace trace = 1;
+  string query = 2;
+  uint32 canned_query = 3;
+  repeated string project_names = 4;
+  uint32 max_items = 5;
+  uint32 paginate_start = 6;
+  string group_by_spec = 7;
+  string sort_spec = 8;
+}
+
+
+// Next available tag: 3
+message ListIssuesResponse {
+  repeated Issue issues = 1;
+  uint32 total_results = 2;
 }
 
 

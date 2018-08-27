@@ -25,8 +25,10 @@ from features import filterrules_helpers
 from features import send_notifications
 from framework import authdata
 from framework import exceptions
+from framework import framework_views
 from framework import monorailcontext
 from framework import permissions
+from search import frontendsearchpipeline
 from proto import tracker_pb2
 from testing import fake
 from services import service_manager
@@ -116,6 +118,41 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertEqual(1, len(actual.blocked_on_issue_refs))
     self.assertEqual('proj', actual.blocked_on_issue_refs[0].project_name)
     self.assertEqual(2, actual.blocked_on_issue_refs[0].local_id)
+
+  def testListIssues(self):
+    """We can get a list of issues from a search."""
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='approver3@example.com',
+        auth=self.auth)
+    users_by_id = framework_views.MakeAllUserViews(
+        mc.cnxn, self.services.user, [111L])
+    config = self.services.config.GetProjectConfig(self.cnxn, 789)
+
+    patcher = patch(
+        'search.frontendsearchpipeline.FrontendSearchPipeline',
+        spec=True, visible_results=[self.issue_1, self.issue_2],
+        users_by_id=users_by_id, harmonized_config=config)
+    mock_pipeline = patcher.start()
+    mock_pipeline.SearchForIIDs = Mock()
+    mock_pipeline.MergeAndSortIssues = Mock()
+    mock_pipeline.Paginate = Mock()
+
+    request = issues_pb2.ListIssuesRequest(
+        query='', project_names=['proj'])
+    response = self.CallWrapped(self.issues_svcr.ListIssues, mc, request)
+
+    actual_issue_1 = response.issues[0]
+    self.assertEqual(actual_issue_1.owner_ref.user_id, 111)
+    self.assertEqual('owner@example.com', actual_issue_1.owner_ref.display_name)
+    self.assertEqual(actual_issue_1.local_id, 1)
+
+    actual_issue_2 = response.issues[1]
+    self.assertEqual(actual_issue_2.owner_ref.user_id, 111)
+    self.assertEqual('owner@example.com', actual_issue_2.owner_ref.display_name)
+    self.assertEqual(actual_issue_2.local_id, 2)
+    self.assertEqual(2, response.total_results)
+
+    patcher.stop()
 
   def testListReferencedIssues(self):
     """We can get the referenced issues that exist."""

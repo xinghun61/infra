@@ -123,21 +123,33 @@ message Issue {
   repeated PhaseDef phases = 22;
 }
 
-// Next available tag:
+// Next available tag: 4
 message IssueSummary {
   string project_name = 1;
   uint32 local_id = 2;
   string summary = 3;
 }
 
-// Next available tag:3
+// Next available tag: 3
 message PhaseDef {
   PhaseRef phase_ref = 1;
   uint32 rank = 2;
 }
 
 
-// Next available tag:2
+// Next available tag: 2
 message PhaseRef {
   string phase_name = 1;
+}
+
+
+// Next available tag: 7
+enum CannedQuery{
+  ALL = 0;
+  NEW = 1;
+  OPEN = 2;
+  OWNED = 3;
+  REPORTED = 4;
+  STARRED = 5;
+  TO_VERIFY = 6;
 }
