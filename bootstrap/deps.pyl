@@ -98,9 +98,9 @@
     'implicit': True,  # Required by apache_beam
   },
   'docker': {
-    'version': '2.0.1',
     'build': '0',
-    'gs': '08f6444eaa8f51682e8cc6430a08e7fcc764f82a.tar.gz',
+    'gs': 'ebec1d6828777b23df320822b477857dc43d18fe.tar.gz',
+    'version': '2.7.0'
   },
   'docker_pycreds': {
     'build': '0',
