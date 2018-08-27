@@ -5,6 +5,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"go.chromium.org/luci/common/data/stringset"
 	"go.chromium.org/luci/common/logging"
 
 	"infra/monitoring/messages"
@@ -17,13 +18,80 @@ type GatekeeperRules struct {
 	treeCfgs map[string][]messages.TreeMasterConfig
 }
 
+type categoryAggregator struct {
+	excludedSteps     stringset.Set
+	forgivingSteps    stringset.Set
+	forgivingOptional stringset.Set
+	sheriffClasses    stringset.Set
+	closingSteps      stringset.Set
+	closingOptional   stringset.Set
+}
+
+func aggregatorFromBuilderConfig(b messages.BuilderConfig) categoryAggregator {
+	return categoryAggregator{
+		excludedSteps:     stringset.NewFromSlice(b.ExcludedSteps...),
+		forgivingSteps:    stringset.NewFromSlice(b.ForgivingSteps...),
+		forgivingOptional: stringset.NewFromSlice(b.ForgivingOptional...),
+		sheriffClasses:    stringset.NewFromSlice(b.SheriffClasses...),
+		closingSteps:      stringset.NewFromSlice(b.ClosingSteps...),
+		closingOptional:   stringset.NewFromSlice(b.ClosingOptional...),
+	}
+}
+
+func (c *categoryAggregator) addCategoryConfig(categoryCfg messages.CategoryConfig) {
+	c.excludedSteps = c.excludedSteps.Union(stringset.NewFromSlice(categoryCfg.ExcludedSteps...))
+	c.forgivingSteps = c.forgivingSteps.Union(stringset.NewFromSlice(categoryCfg.ForgivingSteps...))
+	c.forgivingOptional = c.forgivingOptional.Union(stringset.NewFromSlice(categoryCfg.ForgivingOptional...))
+	c.sheriffClasses = c.sheriffClasses.Union(stringset.NewFromSlice(categoryCfg.SheriffClasses...))
+	c.closingSteps = c.closingSteps.Union(stringset.NewFromSlice(categoryCfg.ClosingSteps...))
+	c.closingOptional = c.closingOptional.Union(stringset.NewFromSlice(categoryCfg.ClosingOptional...))
+}
+
+func (c categoryAggregator) toBuilderConfig() messages.BuilderConfig {
+	return messages.BuilderConfig{
+		ExcludedSteps:     c.excludedSteps.ToSlice(),
+		ForgivingSteps:    c.forgivingSteps.ToSlice(),
+		ForgivingOptional: c.forgivingOptional.ToSlice(),
+		SheriffClasses:    c.sheriffClasses.ToSlice(),
+		ClosingSteps:      c.closingSteps.ToSlice(),
+		ClosingOptional:   c.closingOptional.ToSlice(),
+	}
+}
+
 // NewGatekeeperRules returns a new instance of GatekeeperRules initialized
 // with cfg.
 func NewGatekeeperRules(ctx context.Context, cfgs []*messages.GatekeeperConfig, treeCfgs map[string][]messages.TreeMasterConfig) *GatekeeperRules {
-	for _, cfg := range cfgs {
-		for master, masterCfgs := range cfg.Masters {
+	for i := range cfgs {
+		cfg := cfgs[i]
+		for master := range cfg.Masters {
+			masterCfgs := cfg.Masters[master]
 			if len(masterCfgs) != 1 {
 				logging.Errorf(ctx, "Multiple configs for master: %s", master)
+			}
+
+			masterCfg := masterCfgs[0]
+			for builder, builderCfg := range masterCfg.Builders {
+				aggregator := aggregatorFromBuilderConfig(builderCfg)
+
+				for _, category := range builderCfg.Categories {
+					categoryCfg, ok := cfg.Categories[category]
+					if !ok {
+						logging.Errorf(ctx, "Category %s referenced but not defined for %s:%s", category, master, builder)
+						continue
+					}
+					aggregator.addCategoryConfig(categoryCfg)
+				}
+
+				for _, category := range masterCfg.Categories {
+					categoryCfg, ok := cfg.Categories[category]
+					if !ok {
+						logging.Errorf(ctx, "Category %s referenced but not defined for %s:%s", category, master, builder)
+						continue
+					}
+					aggregator.addCategoryConfig(categoryCfg)
+				}
+
+				masterCfg.Builders[builder] = aggregator.toBuilderConfig()
 			}
 		}
 	}

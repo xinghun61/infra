@@ -1896,6 +1896,61 @@ func TestExcludeFailure(t *testing.T) {
 			},
 			want: true,
 		},
+		{
+			name:    "partial glob step excluded by builder category",
+			tree:    "test_tree10",
+			master:  "fake.master",
+			builder: "fake.builder",
+			step:    "fake_step (experimental)",
+			gk: messages.GatekeeperConfig{
+				Masters: map[string][]messages.MasterConfig{
+					"https://ci.chromium.org/p/fake.master": {{
+						Builders: map[string]messages.BuilderConfig{
+							"fake.builder": {
+								Categories: []string{
+									"experimental_tests",
+								},
+							},
+						},
+					}},
+				},
+				Categories: map[string]messages.CategoryConfig{
+					"experimental_tests": {
+						ExcludedSteps: []string{
+							"* (experimental)",
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name:    "partial glob step excluded by master category",
+			tree:    "test_tree11",
+			master:  "fake.master",
+			builder: "fake.builder",
+			step:    "fake_step (experimental)",
+			gk: messages.GatekeeperConfig{
+				Masters: map[string][]messages.MasterConfig{
+					"https://ci.chromium.org/p/fake.master": {{
+						Builders: map[string]messages.BuilderConfig{
+							"*": {},
+						},
+						Categories: []string{
+							"experimental_tests",
+						},
+					}},
+				},
+				Categories: map[string]messages.CategoryConfig{
+					"experimental_tests": {
+						ExcludedSteps: []string{
+							"* (experimental)",
+						},
+					},
+				},
+			},
+			want: true,
+		},
 	}
 
 	ctx := context.Background()

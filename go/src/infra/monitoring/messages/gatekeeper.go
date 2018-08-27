@@ -26,6 +26,18 @@ type MasterConfig struct {
 // BuilderConfig represents filtering configuration for alerts
 // generated about a buildbot builder.
 type BuilderConfig struct {
+	Categories        []string `json:"categories"`
+	ExcludedSteps     []string `json:"excluded_steps"`
+	ForgivingSteps    []string `json:"forgiving_steps"`
+	ForgivingOptional []string `json:"forgiving_optional"`
+	SheriffClasses    []string `json:"sheriff_classes"`
+	ClosingSteps      []string `json:"closing_steps"`
+	ClosingOptional   []string `json:"closing_optional"`
+}
+
+// CategoryConfig represents a reusable filtering configuration
+// that can be included by masters or builders.
+type CategoryConfig struct {
 	ExcludedSteps     []string `json:"excluded_steps"`
 	ForgivingSteps    []string `json:"forgiving_steps"`
 	ForgivingOptional []string `json:"forgiving_optional"`
@@ -36,7 +48,7 @@ type BuilderConfig struct {
 
 // GatekeeperConfig is the main gatekeeper.json config.
 type GatekeeperConfig struct {
-	Categories map[string]BuilderConfig  `json:"categories"`
+	Categories map[string]CategoryConfig `json:"categories"`
 	Masters    map[string][]MasterConfig `json:"masters"`
 }
 
