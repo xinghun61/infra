@@ -2,10 +2,15 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 """Functions for interfacing with Mororail bugs."""
+import abc
 import logging
 import textwrap
 
+from google.appengine.ext import ndb
+
 from gae_libs import appengine_util
+from model.flake.detection.flake import Flake
+from model.flake.detection.flake_issue import FlakeIssue
 from monorail_api import CustomizedField
 from monorail_api import Issue
 from monorail_api import IssueTrackerAPI
@@ -47,38 +52,113 @@ https://findit-for-me.appspot.com/waterfall/flake?key=%s
 
 Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).""")
 
-# Flake detection bug templates.
-_FLAKE_DETECTION_BUG_SUMMARY = '{test_name} is flaky'
 
-_FLAKE_DETECTION_BUG_DESCRIPTION = textwrap.dedent("""
-{test_target}: {test_name} is flaky.
+class FlakyTestIssueGenerator(object):
+  """Encapsulates details needed to create or update a Monorail issue."""
+  __metaclass__ = abc.ABCMeta
 
-Findit detected {num_occurrences} flake occurrences of this test within the past
-24 hours. List of all flake occurrences can be found at:
-{flake_url}.
+  @abc.abstractmethod
+  def GetStepName(self):
+    """Gets the name of the step to create or update issue for.
 
-Flaky tests should be disabled within 30 minutes unless culprit CL is found and
-reverted, please disable it first and then find an appropriate owner.
-{previous_tracking_bug_text}
-Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N). If this
-result was incorrect, please apply the label Test-Findit-Wrong and mark the bug
-as untriaged.""")
+    Returns:
+      A String representing the step name.
+    """
+    return
 
-_FLAKE_DETECTION_PREVIOUS_TRACKING_BUG = (
-    '\nThis flaky test was previously tracked in bug {}.\n')
+  @abc.abstractmethod
+  def GetTestName(self):
+    """Gets the name of the test to create or update issue for.
 
-_FLAKE_DETECTION_BUG_COMMENT = textwrap.dedent("""
-Findit detected {num_occurrences} new flake occurrences of this test. To see the
-list of flake occurrences, please visit:
-{flake_url}.
+    Returns:
+      A string representing the test name.
+    """
+    return
 
-Since flakiness is ongoing, the issue was moved back into the Sheriff Bug Queue
-(unless already there).
-{previous_tracking_bug_text}
-Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).
-Feedback is welcome! Please use component Tools>Test>FindIt>Flakiness.""")
+  @abc.abstractmethod
+  def GetDescription(self, previous_tracking_bug_id=None):
+    """Gets description for the issue to be created
 
-_FLAKE_DETECTION_LABEL_TEXT = 'Test-Findit-Detected'
+    Args:
+      previous_tracking_bug_id: id of the previous bug that was used to track
+                                this flaky test.
+
+    Returns:
+      A string representing the description.
+    """
+    return
+
+  @abc.abstractmethod
+  def GetComment(self, previous_tracking_bug_id=None):
+    """Gets a comment to post an update to the issue.
+
+    Args:
+      previous_tracking_bug_id: id of the previous bug that was used to track
+                                this flaky test.
+
+    Returns:
+      A string representing the comment.
+    """
+    return
+
+  @abc.abstractmethod
+  def GetLabels(self):
+    """Gets labels for the issue to be created.
+
+    Returns:
+      A list of string representing the labels.
+    """
+    return
+
+  def _GetCommonFlakyTestLabel(self):
+    """Returns a list of comment labels used for flaky tests related issues.
+
+    Args:
+      A list of string representing the labels.
+    """
+    return [_SHERIFF_CHROMIUM_LABEL, _TYPE_BUG_LABEL, _FLAKY_TEST_LABEL]
+
+  def GetStatus(self):
+    """Gets status for the issue to be created.
+
+    Returns:
+      A string representing the status, for example: Untriaged.
+    """
+    return 'Untriaged'
+
+  def GetSummary(self):
+    """Gets summary for the issue to be created.
+
+    Returns:
+      A string representing the summary.
+    """
+    return '%s is flaky' % self.GetTestName()
+
+  def GetPriority(self):
+    """Gets priority for the issue to be created.
+
+    Defaults to P1.
+
+    Returns:
+      A string representing the priority of the issue. (e.g Pri-1, Pri-2)
+    """
+    return 'Pri-1'
+
+  def GetFlakyTestCustomizedField(self):
+    """Gets Flaky-Test customized fields for the issue to be created.
+
+    Returns:
+      A CustomizedField field whose value is the test name.
+    """
+    return CustomizedField(_FLAKY_TEST_CUSTOMIZED_FIELD, self.GetTestName())
+
+  def GetMonorailProject(self):
+    """Gets the name of the Monorail project the issue is for.
+
+    Returns:
+      A string representing the Monorail project.
+    """
+    return 'chromium'
 
 
 def AddFinditLabelToIssue(issue):
@@ -303,101 +383,161 @@ def UpdateBug(issue, comment, project_id='chromium'):
   return issue.id
 
 
-def CreateBugForFlakeDetection(normalized_step_name,
-                               normalized_test_name,
-                               num_occurrences,
-                               monorail_project,
-                               flake_url,
-                               previous_tracking_bug_id=None,
-                               priority='Pri-1'):
-  """Creates a bug for a detected flaky test.
+def CreateIssueWithIssueGenerator(issue_generator,
+                                  previous_tracking_bug_id=None):
+  """Creates a new issue with a given issue generator.
 
   Args:
-    normalized_step_name: Normalized name of the flaky step, please see Flake
-                          Model for the definitions.
-    normalized_test_name: Normalized name of the flaky test, please see Flake
-                          Model for the definitions.
-    num_occurrences: Number of new occurrences to report.
-    monorail_project: The project the bug is created for.
-    flake_url: The URL that points to this flake on the flake detection UI.
+    issue_generator: A FlakyTestIssueGenerator object.
     previous_tracking_bug_id: id of the previous bug that was used to track this
                               flaky test.
-    priority: Priority of the bug.
 
   Returns:
-    id of the newly created bug.
+    The id of the newly created issue.
   """
-  summary = _FLAKE_DETECTION_BUG_SUMMARY.format(test_name=normalized_test_name)
-
-  previous_tracking_bug_text = _FLAKE_DETECTION_PREVIOUS_TRACKING_BUG.format(
-      previous_tracking_bug_id) if previous_tracking_bug_id else ''
-
-  description = _FLAKE_DETECTION_BUG_DESCRIPTION.format(
-      test_target=normalized_step_name,
-      test_name=normalized_test_name,
-      num_occurrences=num_occurrences,
-      flake_url=flake_url,
-      previous_tracking_bug_text=previous_tracking_bug_text)
-
+  labels = issue_generator.GetLabels()
+  labels.append(issue_generator.GetPriority())
   issue = Issue({
-      'status':
-          'Untriaged',
-      'summary':
-          summary,
-      'description':
-          description,
-      'projectId':
-          monorail_project,
-      'labels': [
-          _FLAKE_DETECTION_LABEL_TEXT, _SHERIFF_CHROMIUM_LABEL, priority,
-          _TYPE_BUG_LABEL, _FLAKY_TEST_LABEL
-      ],
-      'fieldValues': [
-          CustomizedField(_FLAKY_TEST_CUSTOMIZED_FIELD, normalized_test_name)
-      ]
+      'status': issue_generator.GetStatus(),
+      'summary': issue_generator.GetSummary(),
+      'description': issue_generator.GetDescription(previous_tracking_bug_id),
+      'projectId': issue_generator.GetMonorailProject(),
+      'labels': labels,
+      'fieldValues': [issue_generator.GetFlakyTestCustomizedField()]
   })
 
-  return CreateBug(issue, monorail_project)
+  return CreateBug(issue, issue_generator.GetMonorailProject())
 
 
-def UpdateBugForFlakeDetection(bug_id,
-                               normalized_test_name,
-                               num_occurrences,
-                               monorail_project,
-                               flake_url,
-                               previous_tracking_bug_id=None):
-  """Updates the bug with newly detected flake occurrences.
-
+def UpdateIssueWithIssueGenerator(issue_id,
+                                  issue_generator,
+                                  previous_tracking_bug_id=None):
+  """Updates an existing issue with a given issue generator.
+  
   Args:
-    bug_id: id of the bug to update.
-    normalized_test_name: Normalized name of the flaky test, please see Flake
-                          Model for the definitions.
-    num_occurrences: Number of new occurrences to report.
-    monorail_project: The project the bug is created for.
-    flake_url: The URL that points to this flake on the flake detection UI.
+    issue_id: Id of the issue to be updated.
+    issue_generator: A FlakyTestIssueGenerator object.
     previous_tracking_bug_id: id of the previous bug that was used to track this
                               flaky test.
   """
-  previous_tracking_bug_text = _FLAKE_DETECTION_PREVIOUS_TRACKING_BUG.format(
-      previous_tracking_bug_id) if previous_tracking_bug_id else ''
-  comment = _FLAKE_DETECTION_BUG_COMMENT.format(
-      num_occurrences=num_occurrences,
-      flake_url=flake_url,
-      previous_tracking_bug_text=previous_tracking_bug_text)
+  issue = GetMergedDestinationIssueForId(issue_id,
+                                         issue_generator.GetMonorailProject())
+  for label in issue_generator.GetLabels():
+    if label not in issue.labels:
+      issue.labels.append(label)
 
-  issue = GetMergedDestinationIssueForId(bug_id, monorail_project)
-  if _FLAKE_DETECTION_LABEL_TEXT not in issue.labels:
-    issue.labels.append(_FLAKE_DETECTION_LABEL_TEXT)
+  issue.field_values.append(issue_generator.GetFlakyTestCustomizedField())
+  UpdateBug(issue, issue_generator.GetComment(previous_tracking_bug_id),
+            issue_generator.GetMonorailProject())
 
-  if _SHERIFF_CHROMIUM_LABEL not in issue.labels:
-    issue.labels.append(_SHERIFF_CHROMIUM_LABEL)
 
-  if _FLAKY_TEST_LABEL not in issue.labels:
-    issue.labels.append(_FLAKY_TEST_LABEL)
+def UpdateIssueIfExistsOrCreate(issue_generator, luci_project='chromium'):
+  """Updates an exsiting issue if it exists, otherwise creates a new one.
 
-  # Set Flaky-Test field. If it's already there, it's a no-op.
-  flaky_field = CustomizedField(_FLAKY_TEST_CUSTOMIZED_FIELD,
-                                normalized_test_name)
-  issue.field_values.append(flaky_field)
+  This method uses the best-effort to search the existing FlakeIssue entities
+  and open issues on Monorail that are related to the flaky tests and reuse them
+  if found, otherwise, creates a new issue and attach it to a Flake Model entity
+  so that the newly created issue can be reused in the future.
 
-  UpdateBug(issue, comment, monorail_project)
+  Args:
+    issue_generator: A FlakyTestIssueGenerator object.
+    luci_project: Name of the LUCI project that the flaky test is in, it is
+                  used for searching existing Flake and FlakeIssue entities.
+  
+  Returns:
+    Id of the issue that was eventually created or updated.
+  """
+  step_name = issue_generator.GetStepName()
+  test_name = issue_generator.GetTestName()
+  flake_key = ndb.Key(Flake, Flake.GetId(luci_project, step_name, test_name))
+  target_flake = flake_key.get()
+  if not target_flake:
+    target_flake = Flake.Create(luci_project, step_name, test_name)
+    target_flake.put()
+
+  monorail_project = issue_generator.GetMonorailProject()
+  flake_issue = target_flake.flake_issue_key.get(
+  ) if target_flake.flake_issue_key else None
+  previous_tracking_bug_id = None
+
+  if flake_issue:
+    merged_issue = GetMergedDestinationIssueForId(flake_issue.issue_id,
+                                                  monorail_project)
+    if flake_issue.issue_id != merged_issue.id:
+      logging.info(
+          'Currently attached issue %s was merged to %s, attach the new issue '
+          'id to this flake.',
+          FlakeIssue.GetLinkForIssue(monorail_project, flake_issue.issue_id),
+          FlakeIssue.GetLinkForIssue(monorail_project, merged_issue.id))
+      previous_tracking_bug_id = flake_issue.issue_id
+      flake_issue.issue_id = merged_issue.id
+      flake_issue.put()
+
+    if merged_issue.open:
+      logging.info(
+          'Currently attached issue %s is open, update flake: %s with new '
+          'occurrences.',
+          FlakeIssue.GetLinkForIssue(monorail_project, merged_issue.id),
+          target_flake.key)
+      UpdateIssueWithIssueGenerator(
+          issue_id=flake_issue.issue_id,
+          issue_generator=issue_generator,
+          previous_tracking_bug_id=previous_tracking_bug_id)
+      return flake_issue.issue_id
+
+    logging.info(
+        'flake %s has no issue attached or the attached issue was closed.' %
+        target_flake.key)
+    previous_tracking_bug_id = merged_issue.id
+
+  # Re-use an existing open bug if possible.
+  issue_id = SearchOpenIssueIdForFlakyTest(target_flake.normalized_test_name,
+                                           monorail_project)
+  if issue_id:
+    logging.info(
+        'An existing issue %s was found, attach it flake: %s and update it '
+        'with new occurrences.',
+        FlakeIssue.GetLinkForIssue(monorail_project, issue_id),
+        target_flake.key)
+    _AssignIssueIdToFlake(issue_id, target_flake)
+    UpdateIssueWithIssueGenerator(
+        issue_id=issue_id,
+        issue_generator=issue_generator,
+        previous_tracking_bug_id=previous_tracking_bug_id)
+    return issue_id
+
+  logging.info('No existing open issue was found, create a new one.')
+  issue_id = CreateIssueWithIssueGenerator(
+      issue_generator=issue_generator,
+      previous_tracking_bug_id=previous_tracking_bug_id)
+  logging.info('%s was created for flake: %s.',
+               FlakeIssue.GetLinkForIssue(monorail_project, issue_id),
+               target_flake.key)
+  _AssignIssueIdToFlake(issue_id, target_flake)
+  return issue_id
+
+
+def _AssignIssueIdToFlake(issue_id, flake):
+  """Assigns an issue id to a flake, and created a FlakeIssue if necessary.
+  
+  Args:
+    issue_id: Id of a Monorail issue.
+    flake: A Flake Model entity.
+  """
+  assert flake, 'The flake entity cannot be None.'
+
+  flake_issue = flake.flake_issue_key.get() if flake.flake_issue_key else None
+  if flake_issue and flake_issue.issue_id == issue_id:
+    return
+
+  if flake_issue:
+    flake_issue.issue_id = issue_id
+    flake_issue.put()
+    return
+
+  monorail_project = FlakeIssue.GetMonorailProjectFromLuciProject(
+      flake.luci_project)
+  flake_issue = FlakeIssue.Create(monorail_project, issue_id)
+  flake_issue.put()
+  flake.flake_issue_key = flake_issue.key
+  flake.put()

@@ -4,6 +4,7 @@
 from collections import defaultdict
 import datetime
 import logging
+import textwrap
 
 from google.appengine.ext import ndb
 
@@ -29,6 +30,101 @@ _MIN_REQUIRED_FALSELY_REJECTED_CLS_24H = 3
 # Length of window to tell if a flake is still active. The main use cause is to
 # filter out flakes that were fixed and is no longer active anymore.
 _ACTIVE_FLAKE_WINDOW_HOURS = 6
+
+# Flake detection bug templates.
+_FLAKE_DETECTION_BUG_DESCRIPTION = textwrap.dedent("""
+{test_target}: {test_name} is flaky.
+
+Findit has detected {num_occurrences} flake occurrences of this test within the
+past 24 hours. List of all flake occurrences can be found at:
+{flake_url}.
+
+Unless the culprit CL is found and reverted, please disable this test first
+within 30 minutes then find an appropriate owner.
+{previous_tracking_bug_text}
+Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N). If this
+result is incorrect, please apply the label Test-Findit-Wrong and mark the bug
+as untriaged.""")
+
+_FLAKE_DETECTION_PREVIOUS_TRACKING_BUG = (
+    '\nThis flaky test was previously tracked in bug {}.\n')
+
+_FLAKE_DETECTION_BUG_COMMENT = textwrap.dedent("""
+Findit has detected {num_occurrences} new flake occurrences of this test. To see
+the list of flake occurrences, please visit:
+{flake_url}.
+
+Since this test is still flaky, this issue has been moved back onto the Sheriff
+Bug Queue if it's not already there.
+{previous_tracking_bug_text}
+Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).
+Feedback is welcome! Please use component Tools>Test>FindIt>Flakiness.""")
+
+_FLAKE_DETECTION_LABEL_TEXT = 'Test-Findit-Detected'
+
+
+class FlakeDetectionIssueGenerator(
+    issue_tracking_service.FlakyTestIssueGenerator):
+  """Encapsulates the details of issues filed by Flake Detection."""
+
+  def __init__(self, flake, num_occurrences):
+    self._flake = flake
+    self._num_occurrences = num_occurrences
+
+  def GetStepName(self):
+    return self._flake.normalized_step_name
+
+  def GetTestName(self):
+    return self._flake.normalized_test_name
+
+  def GetMonorailProject(self):
+    return FlakeIssue.GetMonorailProjectFromLuciProject(
+        self._flake.luci_project)
+
+  def GetDescription(self, previous_tracking_bug_id=None):
+    previous_tracking_bug_text = _FLAKE_DETECTION_PREVIOUS_TRACKING_BUG.format(
+        previous_tracking_bug_id) if previous_tracking_bug_id else ''
+
+    description = _FLAKE_DETECTION_BUG_DESCRIPTION.format(
+        test_target=self._flake.normalized_step_name,
+        test_name=self._flake.normalized_test_name,
+        num_occurrences=self._num_occurrences,
+        flake_url=self._GetLinkForFlake(self._flake),
+        previous_tracking_bug_text=previous_tracking_bug_text)
+
+    return description
+
+  def GetComment(self, previous_tracking_bug_id=None):
+    previous_tracking_bug_text = _FLAKE_DETECTION_PREVIOUS_TRACKING_BUG.format(
+        previous_tracking_bug_id) if previous_tracking_bug_id else ''
+
+    comment = _FLAKE_DETECTION_BUG_COMMENT.format(
+        num_occurrences=self._num_occurrences,
+        flake_url=self._GetLinkForFlake(self._flake),
+        previous_tracking_bug_text=previous_tracking_bug_text)
+
+    return comment
+
+  def GetLabels(self):
+    flaky_test_labels = self._GetCommonFlakyTestLabel()
+    flaky_test_labels.append(_FLAKE_DETECTION_LABEL_TEXT)
+    return flaky_test_labels
+
+  def _GetLinkForFlake(self, flake):
+    """Given a flake, gets a link to the flake on flake detection UI.
+
+    Args:
+      flake: A Flake Model entity.
+
+    Returns:
+      A link to the flake on flake detection UI.
+    """
+    assert flake, 'The given flake is None.'
+
+    url_template = ('https://findit-for-me%s.appspot.com/flake/detection/'
+                    'show-flake?key=%s')
+    suffix = '-staging' if IsStaging() else ''
+    return url_template % (suffix, flake.key.urlsafe())
 
 
 def _FlakeIssueWasCreatedOrUpdatedWithinPast24h(flake):
@@ -198,147 +294,6 @@ def GetFlakesNeedToReportToMonorail():
   return flake_tuples_to_report
 
 
-def _GetLinkForFlake(flake):
-  """Given a flake, gets a link to the flake on flake detection UI.
-
-  Args:
-    flake: A Flake Model entity.
-
-  Returns:
-    A link to the flake on flake detection UI.
-  """
-  assert flake, 'The given flake is None.'
-
-  url_template = "https://findit-for-me%s.appspot.com/flake/detection/show-flake?key=%s"  # pylint: disable=line-too-long
-  suffix = '-staging' if IsStaging() else ''
-  return url_template % (suffix, flake.key.urlsafe())
-
-
-def CreateIssueForFlake(flake, occurrences, previous_tracking_bug_id):
-  """Creates an issue for a flaky test.
-
-  This method is a wrapper around issue_tracking_service, plus taking care of
-  model updates.
-
-  Args:
-    flake: A Flake Model entity.
-    occurrences: The newly detected flake occurrences to report.
-    previous_tracking_bug_id: id of the previous bug that was used to track this
-                              flaky test.
-  """
-  monorail_project = FlakeIssue.GetMonorailProjectFromLuciProject(
-      flake.luci_project)
-  issue_id = issue_tracking_service.CreateBugForFlakeDetection(
-      normalized_step_name=flake.normalized_step_name,
-      normalized_test_name=flake.normalized_test_name,
-      num_occurrences=len(occurrences),
-      monorail_project=monorail_project,
-      flake_url=_GetLinkForFlake(flake),
-      previous_tracking_bug_id=previous_tracking_bug_id)
-
-  logging.info('%s was created for flake: %s.',
-               FlakeIssue.GetLinkForIssue(monorail_project, issue_id),
-               flake.key)
-  flake_issue = FlakeIssue.Create(monorail_project, issue_id)
-  flake_issue.put()
-  flake.flake_issue_key = flake_issue.key
-  flake.put()
-
-
-def UpdateIssueForFlake(flake, occurrences, previous_tracking_bug_id):
-  """Updates the issue for a flaky test with new occurrences.
-
-  This method is a wrapper around issue_tracking_service, plus taking care of
-  model updates.
-
-  Args:
-    flake: A Flake Model entity.
-    occurrences: The newly detected flake occurrences to report.
-    previous_tracking_bug_id: id of the previous bug that was used to track this
-                              flaky test.
-  """
-  flake_issue = flake.flake_issue_key.get()
-  monorail_project = flake_issue.monorail_project
-  issue_tracking_service.UpdateBugForFlakeDetection(
-      bug_id=flake_issue.issue_id,
-      normalized_test_name=flake.normalized_test_name,
-      num_occurrences=len(occurrences),
-      monorail_project=monorail_project,
-      flake_url=_GetLinkForFlake(flake),
-      previous_tracking_bug_id=previous_tracking_bug_id)
-
-  logging.info(
-      '%s was updated for flake: %s.',
-      FlakeIssue.GetLinkForIssue(monorail_project, flake_issue.issue_id),
-      flake.key)
-  flake_issue.last_updated_time = time_util.GetUTCNow()
-  flake_issue.put()
-
-
-def _ReportFlakeToMonorail(flake, occurrences):
-  """Reports a flake and its new occurrences to Monorail.
-
-  Args:
-    flake: A Flake Model entity.
-    occurrences: A list of new occurrences.
-  """
-  logging.info('Reporting Flake: %s to Monorail.', flake.key)
-
-  monorail_project = FlakeIssue.GetMonorailProjectFromLuciProject(
-      flake.luci_project)
-  flake_issue = _GetFlakeIssue(flake)
-  if flake_issue:
-    merged_issue = issue_tracking_service.GetMergedDestinationIssueForId(
-        flake_issue.issue_id, monorail_project)
-    previous_tracking_bug_id = None
-    if flake_issue.issue_id != merged_issue.id:
-      logging.info(
-          'Currently attached issue %s was merged to %s, attach the new issue '
-          'id to this flake.',
-          FlakeIssue.GetLinkForIssue(monorail_project, flake_issue.issue_id),
-          FlakeIssue.GetLinkForIssue(monorail_project, merged_issue.id))
-      previous_tracking_bug_id = flake_issue.issue_id
-      flake_issue.issue_id = merged_issue.id
-      flake_issue.put()
-
-    if merged_issue.open:
-      logging.info(
-          'Currently attached issue %s is open, update it with new '
-          'occurrences.',
-          FlakeIssue.GetLinkForIssue(monorail_project, merged_issue.id))
-      UpdateIssueForFlake(flake, occurrences, previous_tracking_bug_id)
-      return
-
-    previous_tracking_bug_id = merged_issue.id
-
-    # TODO(crbug.com/856652): Implement logic to decide if it's better to
-    # re-open a closed bug than create a new one.
-    logging.info(
-        'Currently attached %s was closed or deleted, create a new one.',
-        FlakeIssue.GetLinkForIssue(monorail_project, previous_tracking_bug_id))
-    CreateIssueForFlake(flake, occurrences, previous_tracking_bug_id)
-    return
-
-  logging.info('This flake has no issue attached.')
-
-  # Re-use an existing open bug if possible.
-  issue_id = issue_tracking_service.SearchOpenIssueIdForFlakyTest(
-      flake.normalized_test_name, monorail_project)
-  if issue_id:
-    logging.info(
-        'An existing issue %s was found, attach it to this flake and update it '
-        'with new occurrences.',
-        FlakeIssue.GetLinkForIssue(monorail_project, issue_id))
-    flake_issue = FlakeIssue.Create(monorail_project, issue_id)
-    flake_issue.put()
-    flake.flake_issue_key = flake_issue.key
-    flake.put()
-    UpdateIssueForFlake(flake, occurrences, None)
-  else:
-    logging.info('No existing open issue was found, create a new one.')
-    CreateIssueForFlake(flake, occurrences, None)
-
-
 def ReportFlakesToMonorail(flake_tuples_to_report):
   """Reports newly detected flakes and occurrences to Monorail.
 
@@ -348,4 +303,13 @@ def ReportFlakesToMonorail(flake_tuples_to_report):
                             occurrences to report.
   """
   for flake, occurrences in flake_tuples_to_report:
-    _ReportFlakeToMonorail(flake, occurrences)
+    issue_generator = FlakeDetectionIssueGenerator(flake, len(occurrences))
+    issue_tracking_service.UpdateIssueIfExistsOrCreate(issue_generator,
+                                                       flake.luci_project)
+
+    # Update FlakeIssue's last_updated_time property. This property is only
+    # applicable to Flake Detection because Flake Detection can update an issue
+    # at most once every 24 hours.
+    flake_issue = flake.flake_issue_key.get()
+    flake_issue.last_updated_time = time_util.GetUTCNow()
+    flake_issue.put()

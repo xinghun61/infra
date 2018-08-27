@@ -30,7 +30,7 @@ class FlakeIssueTest(TestCase):
     fetched_flake_issues = FlakeIssue.query().fetch()
     self.assertEqual(1, len(fetched_flake_issues))
     self.assertEqual(flake_issue, fetched_flake_issues[0])
-    self.assertIsNotNone(fetched_flake_issues[0].last_updated_time)
+    self.assertIsNone(fetched_flake_issues[0].last_updated_time)
 
   def testLuciProjectToMonorailProject(self):
     self.assertEqual('chromium',

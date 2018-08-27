@@ -6,10 +6,39 @@ import mock
 import textwrap
 
 from libs import time_util
+from model.flake.detection.flake import Flake
+from model.flake.detection.flake_issue import FlakeIssue
 from monorail_api import Issue
 from monorail_api import IssueTrackerAPI
 from services import issue_tracking_service
 from waterfall.test import wf_testcase
+
+
+class TestIssueGenerator(issue_tracking_service.FlakyTestIssueGenerator):
+  """A FlakyTestIssueGenerator used for testing."""
+
+  def GetStepName(self):
+    return 'step'
+
+  def GetTestName(self):
+    return 'test'
+
+  def GetDescription(self, previous_tracking_bug_id=None):
+    if previous_tracking_bug_id:
+      return ('description with previous tracking bug id: %s.' %
+              previous_tracking_bug_id)
+
+    return 'description without previous tracking bug id.'
+
+  def GetComment(self, previous_tracking_bug_id=None):
+    if previous_tracking_bug_id:
+      return ('comment with previous tracking bug id: %s.' %
+              previous_tracking_bug_id)
+
+    return 'comment without previous tracking bug id.'
+
+  def GetLabels(self):
+    return ['label1', 'label2']
 
 
 class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
@@ -155,169 +184,6 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     mock_get_issue.side_effect = _return_issue
     self.assertEqual(
         issue, issue_tracking_service.GetMergedDestinationIssueForId(12345))
-
-  @mock.patch.object(issue_tracking_service, 'CreateBug')
-  def testCreateBugForFlakeDetection(self, mock_create_bug_fn):
-
-    def assign_issue_id(issue, _):
-      issue.id = 12345
-      return issue.id
-
-    mock_create_bug_fn.side_effect = assign_issue_id
-
-    normalized_step_name = 'target'
-    normalized_test_name = 'suite.test'
-    num_occurrences = 5
-    monorail_project = 'chromium'
-    flake_url = 'https://findit-for-me-staging.com/flake/detection/show-flake?key=1212'  # pylint: disable=line-too-long
-    previous_tracking_bug_id = None
-
-    issue_id = issue_tracking_service.CreateBugForFlakeDetection(
-        normalized_step_name=normalized_step_name,
-        normalized_test_name=normalized_test_name,
-        num_occurrences=num_occurrences,
-        monorail_project=monorail_project,
-        flake_url=flake_url,
-        previous_tracking_bug_id=previous_tracking_bug_id)
-    mock_create_bug_fn.assert_called_once()
-    self.assertEqual(12345, issue_id)
-
-    expected_status = 'Untriaged'
-    expected_summary = 'suite.test is flaky'
-
-    expected_description = textwrap.dedent("""
-target: suite.test is flaky.
-
-Findit detected 5 flake occurrences of this test within the past
-24 hours. List of all flake occurrences can be found at:
-https://findit-for-me-staging.com/flake/detection/show-flake?key=1212.
-
-Flaky tests should be disabled within 30 minutes unless culprit CL is found and
-reverted, please disable it first and then find an appropriate owner.
-
-Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N). If this
-result was incorrect, please apply the label Test-Findit-Wrong and mark the bug
-as untriaged.""")
-
-    expected_labels = [
-        'Test-Findit-Detected', 'Sheriff-Chromium', 'Pri-1', 'Type-Bug',
-        'Test-Flaky'
-    ]
-
-    issue = mock_create_bug_fn.call_args_list[0][0][0]
-    self.assertEqual(expected_status, issue.status)
-    self.assertEqual(expected_summary, issue.summary)
-    self.assertEqual(expected_description, issue.description)
-    self.assertEqual(expected_labels, issue.labels)
-    self.assertEqual(1, len(issue.field_values))
-    self.assertEqual('Flaky-Test', issue.field_values[0].to_dict()['fieldName'])
-    self.assertEqual('suite.test',
-                     issue.field_values[0].to_dict()['fieldValue'])
-
-  @mock.patch.object(issue_tracking_service, 'CreateBug')
-  def testCreateBugForFlakeDetectionWithPreviousBugId(self, mock_create_bug_fn):
-    normalized_step_name = 'target'
-    normalized_test_name = 'suite.test'
-    num_occurrences = 5
-    monorail_project = 'chromium'
-    previous_tracking_bug_id = 56789
-    flake_url = 'https://findit-for-me-staging.com/flake/detection/show-flake?key=1212'  # pylint: disable=line-too-long
-
-    issue_tracking_service.CreateBugForFlakeDetection(
-        normalized_step_name=normalized_step_name,
-        normalized_test_name=normalized_test_name,
-        num_occurrences=num_occurrences,
-        monorail_project=monorail_project,
-        flake_url=flake_url,
-        previous_tracking_bug_id=previous_tracking_bug_id)
-
-    expected_previous_bug_description = (
-        '\n\nThis flaky test was previously tracked in bug 56789.\n\n')
-    issue = mock_create_bug_fn.call_args_list[0][0][0]
-    self.assertIn(expected_previous_bug_description, issue.description)
-
-  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
-  @mock.patch.object(issue_tracking_service, 'UpdateBug')
-  def testUpdateBugForFlakeDetection(self, mock_update_bug_fn,
-                                     mock_get_merged_issue):
-    normalized_test_name = 'suite.test'
-    num_occurrences = 5
-    monorail_project = 'chromium'
-    flake_url = 'https://findit-for-me-staging.com/flake/detection/show-flake?key=1212'  # pylint: disable=line-too-long
-    issue_id = 12345
-    issue = Issue({
-        'status': 'Available',
-        'summary': 'summary',
-        'description': 'description',
-        'projectId': monorail_project,
-        'labels': [],
-        'fieldValues': [],
-        'state': 'open',
-    })
-
-    mock_get_merged_issue.return_value = issue
-    issue_tracking_service.UpdateBugForFlakeDetection(
-        bug_id=issue_id,
-        normalized_test_name=normalized_test_name,
-        num_occurrences=num_occurrences,
-        monorail_project=monorail_project,
-        flake_url=flake_url)
-
-    expected_labels = ['Test-Findit-Detected', 'Sheriff-Chromium', 'Test-Flaky']
-    issue = mock_update_bug_fn.call_args_list[0][0][0]
-    self.assertEqual(expected_labels, issue.labels)
-    self.assertEqual(1, len(issue.field_values))
-    self.assertEqual('Flaky-Test', issue.field_values[0].to_dict()['fieldName'])
-    self.assertEqual('suite.test',
-                     issue.field_values[0].to_dict()['fieldValue'])
-
-    expected_comment = textwrap.dedent("""
-Findit detected 5 new flake occurrences of this test. To see the
-list of flake occurrences, please visit:
-https://findit-for-me-staging.com/flake/detection/show-flake?key=1212.
-
-Since flakiness is ongoing, the issue was moved back into the Sheriff Bug Queue
-(unless already there).
-
-Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).
-Feedback is welcome! Please use component Tools>Test>FindIt>Flakiness.""")
-
-    comment = mock_update_bug_fn.call_args_list[0][0][1]
-    self.assertEqual(expected_comment, comment)
-
-  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
-  @mock.patch.object(issue_tracking_service, 'UpdateBug')
-  def testUpdateBugForFlakeDetectionWithPreviousBugId(self, mock_update_bug_fn,
-                                                      mock_get_merged_issue):
-    normalized_test_name = 'suite.test'
-    num_occurrences = 5
-    monorail_project = 'chromium'
-    flake_url = 'https://findit-for-me-staging.com/flake/detection/show-flake?key=1212'  # pylint: disable=line-too-long
-    issue_id = 12345
-    previous_tracking_bug_id = 56789
-    issue = Issue({
-        'status': 'Available',
-        'summary': 'summary',
-        'description': 'description',
-        'projectId': monorail_project,
-        'labels': [],
-        'fieldValues': [],
-        'state': 'open',
-    })
-
-    mock_get_merged_issue.return_value = issue
-    issue_tracking_service.UpdateBugForFlakeDetection(
-        bug_id=issue_id,
-        normalized_test_name=normalized_test_name,
-        num_occurrences=num_occurrences,
-        monorail_project=monorail_project,
-        flake_url=flake_url,
-        previous_tracking_bug_id=previous_tracking_bug_id)
-
-    expected_previous_bug_description = (
-        '\n\nThis flaky test was previously tracked in bug 56789.\n\n')
-    comment = mock_update_bug_fn.call_args_list[0][0][1]
-    self.assertIn(expected_previous_bug_description, comment)
 
   # This test tests that an open issue related to flaky tests will NOT be found
   # if it ONLY has the test name inside the summary.
@@ -559,3 +425,409 @@ Feedback is welcome! Please use component Tools>Test>FindIt>Flakiness.""")
         123,
         issue_tracking_service.SearchOpenIssueIdForFlakyTest(
             'suite.test', 'chromium'))
+
+  # This test tests that creating issue via issue generator without previous
+  # tracking bug id works properly.
+  @mock.patch.object(issue_tracking_service, 'UpdateBug')
+  @mock.patch.object(issue_tracking_service, 'CreateBug', return_value=12345)
+  def testCreateIssueWithIssueGenerator(self, mock_create_bug_fn,
+                                        mock_update_bug_fn):
+    test_issue_generator = TestIssueGenerator()
+    issue_id = issue_tracking_service.CreateIssueWithIssueGenerator(
+        issue_generator=test_issue_generator, previous_tracking_bug_id=None)
+
+    self.assertTrue(mock_create_bug_fn.called)
+    self.assertFalse(mock_update_bug_fn.called)
+    self.assertEqual(12345, issue_id)
+    issue = mock_create_bug_fn.call_args_list[0][0][0]
+    self.assertEqual('Untriaged', issue.status)
+    self.assertEqual('test is flaky', issue.summary)
+    self.assertEqual('description without previous tracking bug id.',
+                     issue.description)
+    self.assertEqual(['label1', 'label2', 'Pri-1'], issue.labels)
+    self.assertEqual(1, len(issue.field_values))
+    self.assertEqual('Flaky-Test', issue.field_values[0].to_dict()['fieldName'])
+    self.assertEqual('test', issue.field_values[0].to_dict()['fieldValue'])
+
+  # This test tests that creating issue via issue generator with previous
+  # tracking bug id works properly.
+  @mock.patch.object(issue_tracking_service, 'UpdateBug')
+  @mock.patch.object(issue_tracking_service, 'CreateBug', return_value=12345)
+  def testCreateIssueWithIssueGeneratorWithPreviousTrackingBugId(
+      self, mock_create_bug_fn, mock_update_bug_fn):
+    test_issue_generator = TestIssueGenerator()
+    issue_id = issue_tracking_service.CreateIssueWithIssueGenerator(
+        issue_generator=test_issue_generator, previous_tracking_bug_id=56789)
+
+    self.assertTrue(mock_create_bug_fn.called)
+    self.assertFalse(mock_update_bug_fn.called)
+    self.assertEqual(12345, issue_id)
+    issue = mock_create_bug_fn.call_args_list[0][0][0]
+    self.assertEqual('Untriaged', issue.status)
+    self.assertEqual('test is flaky', issue.summary)
+    self.assertEqual('description with previous tracking bug id: 56789.',
+                     issue.description)
+    self.assertEqual(['label1', 'label2', 'Pri-1'], issue.labels)
+    self.assertEqual(1, len(issue.field_values))
+    self.assertEqual('Flaky-Test', issue.field_values[0].to_dict()['fieldName'])
+    self.assertEqual('test', issue.field_values[0].to_dict()['fieldValue'])
+
+  # This test tests that updating issue via issue generator without previous
+  # tracking bug id works properly.
+  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
+  @mock.patch.object(issue_tracking_service, 'UpdateBug')
+  @mock.patch.object(issue_tracking_service, 'CreateBug')
+  def testUpdateIssueWithIssueGenerator(
+      self, mock_create_bug_fn, mock_update_bug_fn, mock_get_merged_issue):
+    issue_id = 12345
+    issue = Issue({
+        'status': 'Available',
+        'summary': 'summary',
+        'description': 'description',
+        'projectId': 'chromium',
+        'labels': [],
+        'fieldValues': [],
+        'state': 'open',
+    })
+    mock_get_merged_issue.return_value = issue
+
+    test_issue_generator = TestIssueGenerator()
+    issue_tracking_service.UpdateIssueWithIssueGenerator(
+        issue_id=issue_id,
+        issue_generator=test_issue_generator,
+        previous_tracking_bug_id=None)
+
+    self.assertFalse(mock_create_bug_fn.called)
+    mock_update_bug_fn.assert_called_once_with(
+        issue, 'comment without previous tracking bug id.', 'chromium')
+    issue = mock_update_bug_fn.call_args_list[0][0][0]
+    self.assertEqual(['label1', 'label2'], issue.labels)
+    self.assertEqual(1, len(issue.field_values))
+    self.assertEqual('Flaky-Test', issue.field_values[0].to_dict()['fieldName'])
+    self.assertEqual('test', issue.field_values[0].to_dict()['fieldValue'])
+
+  # This test tests that updating issue via issue generator with previous
+  # tracking id works properly.
+  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
+  @mock.patch.object(issue_tracking_service, 'UpdateBug')
+  @mock.patch.object(issue_tracking_service, 'CreateBug')
+  def testUpdateIssueWithIssueGeneratorWithPreviousTrackingId(
+      self, mock_create_bug_fn, mock_update_bug_fn, mock_get_merged_issue):
+    issue_id = 12345
+    issue = Issue({
+        'status': 'Available',
+        'summary': 'summary',
+        'description': 'description',
+        'projectId': 'chromium',
+        'labels': [],
+        'fieldValues': [],
+        'state': 'open',
+    })
+    mock_get_merged_issue.return_value = issue
+
+    test_issue_generator = TestIssueGenerator()
+    issue_tracking_service.UpdateIssueWithIssueGenerator(
+        issue_id=issue_id,
+        issue_generator=test_issue_generator,
+        previous_tracking_bug_id=56789)
+
+    self.assertFalse(mock_create_bug_fn.called)
+    mock_update_bug_fn.assert_called_once_with(
+        issue, 'comment with previous tracking bug id: 56789.', 'chromium')
+
+  # This test tests that if a flake has a flake issue attached and the bug is
+  # open (not merged) on Monorail, then should directly update that bug.
+  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
+  @mock.patch.object(issue_tracking_service, 'UpdateIssueWithIssueGenerator')
+  @mock.patch.object(issue_tracking_service, 'CreateIssueWithIssueGenerator')
+  def testHasFlakeAndFlakeIssueAndBugIsOpen(
+      self, mock_create_with_issue_generator_fn,
+      mock_update_with_issue_generator_fn, mock_get_merged_issue):
+    flake = Flake.Create(
+        luci_project='chromium',
+        normalized_step_name='step',
+        normalized_test_name='test')
+    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
+    flake_issue.put()
+    flake.flake_issue_key = flake_issue.key
+    flake.put()
+
+    mock_get_merged_issue.return_value.id = 12345
+    mock_get_merged_issue.return_value.open = True
+
+    test_issue_generator = TestIssueGenerator()
+    issue_tracking_service.UpdateIssueIfExistsOrCreate(test_issue_generator)
+
+    self.assertFalse(mock_create_with_issue_generator_fn.called)
+    mock_update_with_issue_generator_fn.assert_called_once_with(
+        issue_id=12345,
+        issue_generator=test_issue_generator,
+        previous_tracking_bug_id=None)
+    fetched_flakes = Flake.query().fetch()
+    fetched_flake_issues = FlakeIssue.query().fetch()
+    self.assertEqual(1, len(fetched_flakes))
+    self.assertEqual(1, len(fetched_flake_issues))
+    self.assertEqual(12345, fetched_flake_issues[0].issue_id)
+    self.assertEqual(fetched_flakes[0].flake_issue_key,
+                     fetched_flake_issues[0].key)
+
+  # This test tests that if a flake has a flake issue attached and the bug is
+  # closed (not merged) on Monorail, then should create a new one if an existing
+  # open bug is not found on Monorail.
+  @mock.patch.object(
+      issue_tracking_service,
+      'SearchOpenIssueIdForFlakyTest',
+      return_value=None)
+  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
+  @mock.patch.object(issue_tracking_service, 'UpdateIssueWithIssueGenerator')
+  @mock.patch.object(
+      issue_tracking_service,
+      'CreateIssueWithIssueGenerator',
+      return_value=66666)
+  def testHasFlakeAndFlakeIssueAndBugIsClosed(
+      self, mock_create_with_issue_generator_fn,
+      mock_update_with_issue_generator_fn, mock_get_merged_issue, _):
+    flake = Flake.Create(
+        luci_project='chromium',
+        normalized_step_name='step',
+        normalized_test_name='test')
+    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
+    flake_issue.put()
+    flake.flake_issue_key = flake_issue.key
+    flake.put()
+
+    mock_get_merged_issue.return_value.id = 12345
+    mock_get_merged_issue.return_value.open = False
+
+    test_issue_generator = TestIssueGenerator()
+    issue_tracking_service.UpdateIssueIfExistsOrCreate(test_issue_generator)
+
+    mock_create_with_issue_generator_fn.assert_called_once_with(
+        issue_generator=test_issue_generator, previous_tracking_bug_id=12345)
+    self.assertFalse(mock_update_with_issue_generator_fn.called)
+    fetched_flakes = Flake.query().fetch()
+    fetched_flake_issues = FlakeIssue.query().fetch()
+    self.assertEqual(1, len(fetched_flakes))
+    self.assertEqual(1, len(fetched_flake_issues))
+    self.assertEqual(66666, fetched_flake_issues[0].issue_id)
+    self.assertEqual(fetched_flakes[0].flake_issue_key,
+                     fetched_flake_issues[0].key)
+
+  # This test tests that if a flake has a flake issue attached and the bug was
+  # merged to another bug on Monorail, and that destination bug is open, then
+  # should update the destination bug.
+  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
+  @mock.patch.object(issue_tracking_service, 'UpdateIssueWithIssueGenerator')
+  @mock.patch.object(issue_tracking_service, 'CreateIssueWithIssueGenerator')
+  def testHasFlakeAndFlakeIssueAndBugWasMergedToAnOpenBug(
+      self, mock_create_with_issue_generator_fn,
+      mock_update_with_issue_generator_fn, mock_get_merged_issue):
+    flake = Flake.Create(
+        luci_project='chromium',
+        normalized_step_name='step',
+        normalized_test_name='test')
+    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
+    flake_issue.put()
+    flake.flake_issue_key = flake_issue.key
+    flake.put()
+
+    mock_get_merged_issue.return_value.id = 45678
+    mock_get_merged_issue.return_value.open = True
+
+    test_issue_generator = TestIssueGenerator()
+    issue_tracking_service.UpdateIssueIfExistsOrCreate(test_issue_generator)
+
+    self.assertFalse(mock_create_with_issue_generator_fn.called)
+    mock_update_with_issue_generator_fn.assert_called_once_with(
+        issue_id=45678,
+        issue_generator=test_issue_generator,
+        previous_tracking_bug_id=12345)
+    fetched_flakes = Flake.query().fetch()
+    fetched_flake_issues = FlakeIssue.query().fetch()
+    self.assertEqual(1, len(fetched_flakes))
+    self.assertEqual(1, len(fetched_flake_issues))
+    self.assertEqual(45678, fetched_flake_issues[0].issue_id)
+    self.assertEqual(fetched_flakes[0].flake_issue_key,
+                     fetched_flake_issues[0].key)
+
+  # This test tests that if a flake has a flake issue attached and the bug was
+  # merged to another bug on Monorail, but that destination bug was closed, then
+  # should create a new one if an existing open bug is not found on Monorail.
+  @mock.patch.object(
+      issue_tracking_service,
+      'SearchOpenIssueIdForFlakyTest',
+      return_value=None)
+  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
+  @mock.patch.object(issue_tracking_service, 'UpdateIssueWithIssueGenerator')
+  @mock.patch.object(
+      issue_tracking_service,
+      'CreateIssueWithIssueGenerator',
+      return_value=66666)
+  def testHasFlakeAndFlakeIssueAndBugWasMergedToAClosedBug(
+      self, mock_create_with_issue_generator_fn,
+      mock_update_with_issue_generator_fn, mock_get_merged_issue, _):
+    flake = Flake.Create(
+        luci_project='chromium',
+        normalized_step_name='step',
+        normalized_test_name='test')
+    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
+    flake_issue.put()
+    flake.flake_issue_key = flake_issue.key
+    flake.put()
+
+    mock_get_merged_issue.return_value.id = 56789
+    mock_get_merged_issue.return_value.open = False
+
+    test_issue_generator = TestIssueGenerator()
+    issue_tracking_service.UpdateIssueIfExistsOrCreate(test_issue_generator)
+
+    mock_create_with_issue_generator_fn.assert_called_once_with(
+        issue_generator=test_issue_generator, previous_tracking_bug_id=56789)
+    self.assertFalse(mock_update_with_issue_generator_fn.called)
+    fetched_flakes = Flake.query().fetch()
+    fetched_flake_issues = FlakeIssue.query().fetch()
+    self.assertEqual(1, len(fetched_flakes))
+    self.assertEqual(1, len(fetched_flake_issues))
+    self.assertEqual(66666, fetched_flake_issues[0].issue_id)
+    self.assertEqual(fetched_flakes[0].flake_issue_key,
+                     fetched_flake_issues[0].key)
+
+  # This test tests that if there is no existing flake for a test, and couldn't
+  # find an existing issue about this flaky test on Monorail, then should create
+  # a new flake and a new issue and attach the issue to the flake.
+  @mock.patch.object(
+      issue_tracking_service,
+      'SearchOpenIssueIdForFlakyTest',
+      return_value=None)
+  @mock.patch.object(issue_tracking_service, 'UpdateIssueWithIssueGenerator')
+  @mock.patch.object(
+      issue_tracking_service,
+      'CreateIssueWithIssueGenerator',
+      return_value=66666)
+  def testHasNoFlakeAndNoExistingOpenIssue(
+      self, mock_create_with_issue_generator_fn,
+      mock_update_with_issue_generator_fn, _):
+    test_issue_generator = TestIssueGenerator()
+    issue_tracking_service.UpdateIssueIfExistsOrCreate(test_issue_generator)
+
+    mock_create_with_issue_generator_fn.assert_called_once_with(
+        issue_generator=test_issue_generator, previous_tracking_bug_id=None)
+    self.assertFalse(mock_update_with_issue_generator_fn.called)
+    fetched_flakes = Flake.query().fetch()
+    fetched_flake_issues = FlakeIssue.query().fetch()
+    self.assertEqual(1, len(fetched_flakes))
+    self.assertEqual('step', fetched_flakes[0].normalized_step_name)
+    self.assertEqual('test', fetched_flakes[0].normalized_test_name)
+    self.assertEqual(1, len(fetched_flake_issues))
+    self.assertEqual(66666, fetched_flake_issues[0].issue_id)
+    self.assertEqual(fetched_flakes[0].flake_issue_key,
+                     fetched_flake_issues[0].key)
+
+  # This test tests that if there is a flake for a test, but no flake issue
+  # attached and couldn't find an existing issue about this flaky test on
+  # Monorail, then should create a new issue and attach the issue to the flake.
+  @mock.patch.object(
+      issue_tracking_service,
+      'SearchOpenIssueIdForFlakyTest',
+      return_value=None)
+  @mock.patch.object(issue_tracking_service, 'UpdateIssueWithIssueGenerator')
+  @mock.patch.object(
+      issue_tracking_service,
+      'CreateIssueWithIssueGenerator',
+      return_value=66666)
+  def testHasFlakeButNoFlakeIssueAndNoExistingOpenIssue(
+      self, mock_create_with_issue_generator_fn,
+      mock_update_with_issue_generator_fn, _):
+    flake = Flake.Create(
+        luci_project='chromium',
+        normalized_step_name='step',
+        normalized_test_name='test')
+    flake.put()
+    test_issue_generator = TestIssueGenerator()
+    issue_tracking_service.UpdateIssueIfExistsOrCreate(test_issue_generator)
+
+    mock_create_with_issue_generator_fn.assert_called_once_with(
+        issue_generator=test_issue_generator, previous_tracking_bug_id=None)
+    self.assertFalse(mock_update_with_issue_generator_fn.called)
+    fetched_flakes = Flake.query().fetch()
+    fetched_flake_issues = FlakeIssue.query().fetch()
+    self.assertEqual(1, len(fetched_flakes))
+    self.assertEqual('step', fetched_flakes[0].normalized_step_name)
+    self.assertEqual('test', fetched_flakes[0].normalized_test_name)
+    self.assertEqual(1, len(fetched_flake_issues))
+    self.assertEqual(66666, fetched_flake_issues[0].issue_id)
+    self.assertEqual(fetched_flakes[0].flake_issue_key,
+                     fetched_flake_issues[0].key)
+
+  # This test tests that if there is no flake for a test, and found an existing
+  # issue about this flaky test on Monorail, then should create a new flake,
+  # update the issue and attach the issue to the flake.
+  @mock.patch.object(
+      issue_tracking_service,
+      'SearchOpenIssueIdForFlakyTest',
+      return_value=99999)
+  @mock.patch.object(issue_tracking_service, 'UpdateIssueWithIssueGenerator')
+  @mock.patch.object(issue_tracking_service, 'CreateIssueWithIssueGenerator')
+  def testHasNoFlakeAndFoundAnExistingOpenIssue(
+      self, mock_create_with_issue_generator_fn,
+      mock_update_with_issue_generator_fn, _):
+    test_issue_generator = TestIssueGenerator()
+    issue_tracking_service.UpdateIssueIfExistsOrCreate(test_issue_generator)
+
+    self.assertFalse(mock_create_with_issue_generator_fn.called)
+    mock_update_with_issue_generator_fn.assert_called_once_with(
+        issue_id=99999,
+        issue_generator=test_issue_generator,
+        previous_tracking_bug_id=None)
+    fetched_flakes = Flake.query().fetch()
+    fetched_flake_issues = FlakeIssue.query().fetch()
+    self.assertEqual(1, len(fetched_flakes))
+    self.assertEqual('step', fetched_flakes[0].normalized_step_name)
+    self.assertEqual('test', fetched_flakes[0].normalized_test_name)
+    self.assertEqual(1, len(fetched_flake_issues))
+    self.assertEqual(99999, fetched_flake_issues[0].issue_id)
+    self.assertEqual(fetched_flakes[0].flake_issue_key,
+                     fetched_flake_issues[0].key)
+
+  # This test tests that if a flake has a flake issue attached and the bug is
+  # closed (not merged) on Monorail, but found an existing open issue on
+  # Monorail, then should update the issue and attach it to the flake.
+  @mock.patch.object(
+      issue_tracking_service,
+      'SearchOpenIssueIdForFlakyTest',
+      return_value=99999)
+  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
+  @mock.patch.object(issue_tracking_service, 'UpdateIssueWithIssueGenerator')
+  @mock.patch.object(issue_tracking_service, 'CreateIssueWithIssueGenerator')
+  def testHasFlakeAndFlakeAndBugIsClosedButFoundAnExistingOpenIssue(
+      self, mock_create_with_issue_generator_fn,
+      mock_update_with_issue_generator_fn, mock_get_merged_issue, _):
+    flake = Flake.Create(
+        luci_project='chromium',
+        normalized_step_name='step',
+        normalized_test_name='test')
+    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
+    flake_issue.put()
+    flake.flake_issue_key = flake_issue.key
+    flake.put()
+
+    mock_get_merged_issue.return_value.id = 12345
+    mock_get_merged_issue.return_value.open = False
+
+    test_issue_generator = TestIssueGenerator()
+    issue_tracking_service.UpdateIssueIfExistsOrCreate(test_issue_generator)
+
+    self.assertFalse(mock_create_with_issue_generator_fn.called)
+    mock_update_with_issue_generator_fn.assert_called_once_with(
+        issue_id=99999,
+        issue_generator=test_issue_generator,
+        previous_tracking_bug_id=12345)
+    fetched_flakes = Flake.query().fetch()
+    fetched_flake_issues = FlakeIssue.query().fetch()
+    self.assertEqual(1, len(fetched_flakes))
+    self.assertEqual('step', fetched_flakes[0].normalized_step_name)
+    self.assertEqual('test', fetched_flakes[0].normalized_test_name)
+    self.assertEqual(1, len(fetched_flake_issues))
+    self.assertEqual(99999, fetched_flake_issues[0].issue_id)
+    self.assertEqual(fetched_flakes[0].flake_issue_key,
+                     fetched_flake_issues[0].key)

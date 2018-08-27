@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 import datetime
 import mock
+import textwrap
 
 from libs import time_util
 from model.flake.detection.flake import Flake
@@ -184,176 +185,159 @@ class FlakeReportUtilTest(WaterfallTestCase):
     flake_tuples_to_report = GetFlakesNeedToReportToMonorail()
     self.assertEqual(0, len(flake_tuples_to_report))
 
-  @mock.patch.object(issue_tracking_service, 'CreateBugForFlakeDetection')
-  def testCreateIssueForFlake(self, mock_create_bug_fn):
-    mock_create_bug_fn.return_value = 12345
-
-    flake = Flake.query().fetch()[0]
-    occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()
-    flake_report_util.CreateIssueForFlake(
-        flake=flake, occurrences=occurrences, previous_tracking_bug_id=56789)
-
-    expected_flake_url = (
-        'https://findit-for-me.appspot.com/flake/detection/show-flake?key=%s'
-    ) % flake.key.urlsafe()
-    mock_create_bug_fn.assert_called_once_with(
-        normalized_step_name='step',
-        normalized_test_name='test',
-        num_occurrences=3,
-        monorail_project='chromium',
-        flake_url=expected_flake_url,
-        previous_tracking_bug_id=56789)
-
-    flake_issue = flake.flake_issue_key.get()
-    self.assertEqual(12345, flake_issue.issue_id)
-    self.assertEqual('chromium', flake_issue.monorail_project)
-    self.assertIsNotNone(flake_issue.last_updated_time)
-
-  @mock.patch.object(issue_tracking_service, 'UpdateBugForFlakeDetection')
-  def testUpdateIssueForFlake(self, mock_update_bug_fn):
-    flake = Flake.query().fetch()[0]
-    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
-    flake_issue.put()
-    flake.flake_issue_key = flake_issue.key
-    flake.put()
-
-    occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()
-    flake_report_util.UpdateIssueForFlake(
-        flake=flake, occurrences=occurrences, previous_tracking_bug_id=56789)
-
-    expected_flake_url = (
-        'https://findit-for-me.appspot.com/flake/detection/show-flake?key=%s'
-    ) % flake.key.urlsafe()
-    mock_update_bug_fn.assert_called_once_with(
-        bug_id=12345,
-        normalized_test_name='test',
-        num_occurrences=3,
-        monorail_project='chromium',
-        flake_url=expected_flake_url,
-        previous_tracking_bug_id=56789)
-
-    flake_issue = flake.flake_issue_key.get()
-    self.assertEqual(
-        datetime.datetime(2018, 1, 2), flake_issue.last_updated_time)
-
-  # This test tests that if a flake has a flake issue attached and the bug is
-  # open (not merged) on Monorail, then should directly update that bug with
-  # new occurrences.
-  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
-  @mock.patch.object(flake_report_util, 'UpdateIssueForFlake')
-  @mock.patch.object(flake_report_util, 'CreateIssueForFlake')
-  def testReportFlakeHasFlakeIssueAndBugIsOpen(
-      self, mock_create_bug_fn, mock_update_bug_fn, mock_get_merged_issue):
-    flake = Flake.query().fetch()[0]
-    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
-    flake_issue.put()
-    flake.flake_issue_key = flake_issue.key
-    flake.put()
-
-    mock_get_merged_issue.return_value.id = 12345
-    mock_get_merged_issue.return_value.open = True
-
-    occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()
-    flake_tuples_to_report = [(flake, occurrences)]
-    flake_report_util.ReportFlakesToMonorail(flake_tuples_to_report)
-
-    mock_create_bug_fn.assert_not_called()
-    mock_update_bug_fn.assert_called_once_with(flake, occurrences, None)
-
-  # This test tests that if a flake has a flake issue attached, but the bug was
-  # merged to another bug, and that destination bug is open on Monorail, then
-  # should update the destination bug with new occurrences.
-  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
-  @mock.patch.object(flake_report_util, 'UpdateIssueForFlake')
-  @mock.patch.object(flake_report_util, 'CreateIssueForFlake')
-  def testReportFlakeHasFlakeIssueAndBugWasMergedToAnOpenBug(
-      self, mock_create_bug_fn, mock_update_bug_fn, mock_get_merged_issue):
-    flake = Flake.query().fetch()[0]
-    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
-    flake_issue.put()
-    flake.flake_issue_key = flake_issue.key
-    flake.put()
-
-    mock_issue = mock.Mock()
-    mock_get_merged_issue.return_value = mock_issue
-    mock_issue.id = 66666
-    mock_issue.open = True
-
-    occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()
-    flake_tuples_to_report = [(flake, occurrences)]
-    flake_report_util.ReportFlakesToMonorail(flake_tuples_to_report)
-
-    self.assertEqual(66666, flake.flake_issue_key.get().issue_id)
-    mock_create_bug_fn.assert_not_called()
-    mock_update_bug_fn.assert_called_once_with(flake, occurrences, 12345)
-
-  # This test tests that if a flake has a flake issue attached, but the bug was
-  # merged to another bug, and that destination bug is closed on Monorail, then
-  # should create a new bug with new occurrences.
-  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
-  @mock.patch.object(flake_report_util, 'UpdateIssueForFlake')
-  @mock.patch.object(flake_report_util, 'CreateIssueForFlake')
-  def testReportFlakeHasFlakeIssueAndBugWasMergedToAClosedBug(
-      self, mock_create_bug_fn, mock_update_bug_fn, mock_get_merged_issue):
-    flake = Flake.query().fetch()[0]
-    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
-    flake_issue.put()
-    flake.flake_issue_key = flake_issue.key
-    flake.put()
-
-    mock_issue = mock.Mock()
-    mock_get_merged_issue.return_value = mock_issue
-    mock_issue.id = 66666
-    mock_issue.open = False
-
-    occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()
-    flake_tuples_to_report = [(flake, occurrences)]
-    flake_report_util.ReportFlakesToMonorail(flake_tuples_to_report)
-
-    self.assertEqual(66666, flake.flake_issue_key.get().issue_id)
-    mock_create_bug_fn.assert_called_once_with(flake, occurrences, 66666)
-    mock_update_bug_fn.assert_not_called()
-
-  # This test tests that if a flake has no flake issue attached, but find an
-  # existing bug about this flaky test on this Monorail, then should attach that
-  # bug to this flake and update it with new occurrences.
-  @mock.patch.object(
-      issue_tracking_service,
-      'SearchOpenIssueIdForFlakyTest',
-      return_value=56789)
-  @mock.patch.object(flake_report_util, 'UpdateIssueForFlake')
-  @mock.patch.object(flake_report_util, 'CreateIssueForFlake')
-  def testReportFlakeHasNoFlakeIssueAndFindAnExistingOpenBug(
-      self, mock_create_bug_fn, mock_update_bug_fn, mock_search_issue):
-    flake = Flake.query().fetch()[0]
-    occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()
-    flake_tuples_to_report = [(flake, occurrences)]
-    flake_report_util.ReportFlakesToMonorail(flake_tuples_to_report)
-
-    self.assertTrue(flake.flake_issue_key)
-    self.assertEqual(56789, flake.flake_issue_key.get().issue_id)
-    mock_create_bug_fn.assert_not_called()
-    mock_update_bug_fn.assert_called_once_with(flake, occurrences, None)
-    mock_search_issue.assert_called_once_with(flake.normalized_test_name,
-                                              'chromium')
-
-  # This test tests that if a flake has no flake issue attached, and couldn't
-  # find an existing bug about this flaky test on this Monorail, then should
-  # attach that bug to this flake and update it with new occurrences.
+  # This test tests that when a flake has no flake issue attached, it creates
+  # a new issue and attach it to the flake.
   @mock.patch.object(
       issue_tracking_service,
       'SearchOpenIssueIdForFlakyTest',
       return_value=None)
-  @mock.patch.object(flake_report_util, 'UpdateIssueForFlake')
-  @mock.patch.object(flake_report_util, 'CreateIssueForFlake')
-  def testReportFlakeHasNoFlakeIssueAndCantFindAnExistingOpenBug(
-      self, mock_create_bug_fn, mock_update_bug_fn, mock_search_issue):
+  @mock.patch.object(issue_tracking_service, 'UpdateBug')
+  @mock.patch.object(issue_tracking_service, 'CreateBug', return_value=66666)
+  def testReportFlakeToMonorailCreateIssue(self, mock_create_bug_fn,
+                                           mock_update_bug_fn, _):
     flake = Flake.query().fetch()[0]
     occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()
-    flake_tuples_to_report = [(flake, occurrences)]
-    flake_report_util.ReportFlakesToMonorail(flake_tuples_to_report)
+    flake_report_util.ReportFlakesToMonorail([(flake, occurrences)])
 
-    mock_create_bug_fn.assert_called_once_with(flake, occurrences, None)
-    mock_update_bug_fn.assert_not_called()
-    mock_search_issue.assert_called_once_with(flake.normalized_test_name,
-                                              'chromium')
+    expected_status = 'Untriaged'
+    expected_summary = 'test is flaky'
+
+    expected_description = textwrap.dedent("""
+step: test is flaky.
+
+Findit has detected 3 flake occurrences of this test within the
+past 24 hours. List of all flake occurrences can be found at:
+https://findit-for-me.appspot.com/flake/detection/show-flake?key={}.
+
+Unless the culprit CL is found and reverted, please disable this test first
+within 30 minutes then find an appropriate owner.
+
+Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N). If this
+result is incorrect, please apply the label Test-Findit-Wrong and mark the bug
+as untriaged.""").format(flake.key.urlsafe())
+
+    expected_labels = [
+        'Sheriff-Chromium', 'Type-Bug', 'Test-Flaky', 'Test-Findit-Detected',
+        'Pri-1'
+    ]
+
+    self.assertTrue(mock_create_bug_fn.called)
+    self.assertFalse(mock_update_bug_fn.called)
+    issue = mock_create_bug_fn.call_args_list[0][0][0]
+    self.assertEqual(expected_status, issue.status)
+    self.assertEqual(expected_summary, issue.summary)
+    self.assertEqual(expected_description, issue.description)
+    self.assertEqual(expected_labels, issue.labels)
+    self.assertEqual(1, len(issue.field_values))
+    self.assertEqual('Flaky-Test', issue.field_values[0].to_dict()['fieldName'])
+    self.assertEqual('test', issue.field_values[0].to_dict()['fieldValue'])
+
+    fetched_flakes = Flake.query().fetch()
+    fetched_flake_issues = FlakeIssue.query().fetch()
+    self.assertEqual(1, len(fetched_flakes))
+    self.assertEqual(1, len(fetched_flake_issues))
+    self.assertEqual(66666, fetched_flake_issues[0].issue_id)
+    self.assertEqual(
+        datetime.datetime(2018, 1, 2),
+        fetched_flake_issues[0].last_updated_time)
+    self.assertEqual(fetched_flakes[0].flake_issue_key,
+                     fetched_flake_issues[0].key)
+
+  # This test tests that when a flake has a flake issue attached but the issue
+  # was closed, it creates a new issue with a previous tracking issue id and
+  # attach it to the flake.
+  @mock.patch.object(
+      issue_tracking_service,
+      'SearchOpenIssueIdForFlakyTest',
+      return_value=None)
+  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
+  @mock.patch.object(issue_tracking_service, 'UpdateBug')
+  @mock.patch.object(issue_tracking_service, 'CreateBug', return_value=66666)
+  def testReportFlakeToMonorailCreateIssueWithPreviousTrackingBugId(
+      self, mock_create_bug_fn, mock_update_bug_fn, mock_get_merged_issue, _):
+    flake = Flake.query().fetch()[0]
+    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
+    flake_issue.put()
+    flake.flake_issue_key = flake_issue.key
+    flake.put()
+    occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()
+    mock_get_merged_issue.return_value.id = 12345
+    mock_get_merged_issue.return_value.open = False
+
+    flake_report_util.ReportFlakesToMonorail([(flake, occurrences)])
+
+    expected_previous_bug_description = (
+        '\n\nThis flaky test was previously tracked in bug 12345.\n\n')
+    issue = mock_create_bug_fn.call_args_list[0][0][0]
+    self.assertIn(expected_previous_bug_description, issue.description)
+    self.assertFalse(mock_update_bug_fn.called)
+
+  # This test tests that when a flake has a flake issue attached and the issue
+  # is still open, it directly updates the issue.
+  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
+  @mock.patch.object(issue_tracking_service, 'UpdateBug')
+  @mock.patch.object(issue_tracking_service, 'CreateBug')
+  def testReportFlakeToMonorailUpdateIssue(
+      self, mock_create_bug_fn, mock_update_bug_fn, mock_get_merged_issue):
+    flake = Flake.query().fetch()[0]
+    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
+    flake_issue.put()
+    flake.flake_issue_key = flake_issue.key
+    flake.put()
+    occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()
+    mock_get_merged_issue.return_value.id = 12345
+    mock_get_merged_issue.return_value.open = True
+    flake_report_util.ReportFlakesToMonorail([(flake, occurrences)])
+
+    expected_comment = textwrap.dedent("""
+Findit has detected 3 new flake occurrences of this test. To see
+the list of flake occurrences, please visit:
+https://findit-for-me.appspot.com/flake/detection/show-flake?key={}.
+
+Since this test is still flaky, this issue has been moved back onto the Sheriff
+Bug Queue if it's not already there.
+
+Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).
+Feedback is welcome! Please use component Tools>Test>FindIt>Flakiness."""
+                                      ).format(flake.key.urlsafe())
+
+    self.assertFalse(mock_create_bug_fn.called)
+    self.assertTrue(mock_update_bug_fn)
+    comment = mock_update_bug_fn.call_args_list[0][0][1]
+    self.assertEqual(expected_comment, comment)
+
+    fetched_flakes = Flake.query().fetch()
+    fetched_flake_issues = FlakeIssue.query().fetch()
+    self.assertEqual(1, len(fetched_flakes))
+    self.assertEqual(1, len(fetched_flake_issues))
+    self.assertEqual(12345, fetched_flake_issues[0].issue_id)
+    self.assertEqual(
+        datetime.datetime(2018, 1, 2),
+        fetched_flake_issues[0].last_updated_time)
+    self.assertEqual(fetched_flakes[0].flake_issue_key,
+                     fetched_flake_issues[0].key)
+
+  # This test tests that when a flake has a flake issue attached and the issue
+  # was merged to another open bug, it updates the destination bug with
+  # a previous tracking bug id.
+  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
+  @mock.patch.object(issue_tracking_service, 'UpdateBug')
+  @mock.patch.object(issue_tracking_service, 'CreateBug')
+  def testReportFlakeToMonorailUpdateIssueWithPreviousTrackingBugId(
+      self, mock_create_bug_fn, mock_update_bug_fn, mock_get_merged_issue):
+    flake = Flake.query().fetch()[0]
+    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
+    flake_issue.put()
+    flake.flake_issue_key = flake_issue.key
+    flake.put()
+    occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()
+    mock_get_merged_issue.return_value.id = 56789
+    mock_get_merged_issue.return_value.open = True
+    flake_report_util.ReportFlakesToMonorail([(flake, occurrences)])
+
+    expected_previous_bug_description = (
+        '\n\nThis flaky test was previously tracked in bug 12345.\n\n')
+    comment = mock_update_bug_fn.call_args_list[0][0][1]
+    self.assertIn(expected_previous_bug_description, comment)
+    self.assertFalse(mock_create_bug_fn.called)
+    self.assertTrue(mock_update_bug_fn.called)
