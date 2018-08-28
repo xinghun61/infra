@@ -46,7 +46,7 @@ EXE_SFX = '.exe' if sys.platform == 'win32' else ''
 GIT_EXE = 'git.bat' if sys.platform == 'win32' else 'git'
 
 # Version of Go toolset CIPD package (infra/go/${platform}) to install.
-TOOLSET_VERSION = '1.10.3'
+TOOLSET_VERSION = '1.11'
 
 # Describes how to fetch 'glide'.
 GLIDE_SOURCE = {

@@ -48,7 +48,7 @@ func mainImpl(c context.Context) error {
 
 	pkg, err := build.Default.ImportDir(*dest, 0)
 	if err != nil {
-		return errors.Annotate(err, "failed to import destination package from: %q", dest).Err()
+		return errors.Annotate(err, "failed to import destination package from: %q", *dest).Err()
 	}
 
 	td, err := LoadTableDef(*path)

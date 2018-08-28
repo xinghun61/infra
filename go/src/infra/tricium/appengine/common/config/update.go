@@ -164,11 +164,11 @@ func fetchServiceConfig(c context.Context) (*tricium.ServiceConfig, string, erro
 	set := luciConfig.ServiceSet(serviceName(c))
 	cfg, err := fetchConfig(c, set, "service.cfg", false)
 	if err != nil {
-		return nil, "", errors.Annotate(err, "fetching config; set %q").Err()
+		return nil, "", errors.Annotate(err, "fetching config; set %q", set).Err()
 	}
 	sc := &tricium.ServiceConfig{}
 	if err := proto.UnmarshalText(cfg.Content, sc); err != nil {
-		return nil, "", errors.Annotate(err, "unmarshaling config; set %q").Err()
+		return nil, "", errors.Annotate(err, "unmarshaling config; set %q", set).Err()
 	}
 	return sc, cfg.Revision, nil
 }
