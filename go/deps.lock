@@ -1,8 +1,8 @@
-hash: 6dcfa1fd8ccb992296b52bfeda428036787e6f735fd502ae2cdfe1b88efbbf3a
-updated: 2018-08-28T01:26:57.759643327-07:00
+hash: bb4f1ebacb40f6cdbc8d3d6f2c81f5d33fa8e456a02bd473210cdc138d283d97
+updated: 2018-08-28T11:20:49.598818966-07:00
 imports:
 - name: cloud.google.com/go
-  version: f47691a5dd864fce3c20fd2c82a483f8ef0e083b
+  version: ff71a47e2aa32ab1bd0cf623bbbe531374d69629
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -21,6 +21,9 @@ imports:
 - name: github.com/aryann/difflib
   version: e206f873d14a916d3d26c40ab667bca123f365a3
   repo: https://chromium.googlesource.com/external/github.com/aryann/difflib.git
+- name: github.com/aws/aws-sdk-go
+  version: 29a1971386925052e4dbdd34cfc8c367f95119cc
+  repo: https://chromium.googlesource.com/external/github.com/aws/aws-sdk-go.git
 - name: github.com/bradfitz/gomemcache
   version: f867c99a8ddb43e1703e8da9cb015b4c09699336
   repo: https://chromium.googlesource.com/external/github.com/bradfitz/gomemcache.git
@@ -93,7 +96,7 @@ imports:
   version: 4956ce9eeded4014824fb376f36e655ee53809b0
   repo: https://chromium.googlesource.com/external/github.com/google/skylark.git
 - name: github.com/google/uuid
-  version: d460ce9f8df2e77fb1ba55ca87fafed96c607494
+  version: e704694aed0ea004bb7eb1fc2e911d048a54606a
   repo: https://chromium.googlesource.com/external/github.com/google/uuid.git
 - name: github.com/googleapis/gax-go
   version: 1ef592c90f479e3ab30c6c2312e20e13881b7ea6
@@ -205,6 +208,9 @@ imports:
 - name: github.com/op/go-logging
   version: 970db520ece77730c7e4724c61121037378659d9
   repo: https://chromium.googlesource.com/external/github.com/op/go-logging.git
+- name: github.com/pkg/errors
+  version: 816c9085562cd7ee03e7f8188a1cfd942858cded
+  repo: https://chromium.googlesource.com/external/github.com/pkg/errors.git
 - name: github.com/pmezard/go-difflib
   version: 792786c7400a136282c1664665ae0a8db921c6c2
   repo: https://chromium.googlesource.com/external/github.com/pmezard/go-difflib.git
@@ -264,7 +270,7 @@ imports:
   subpackages:
   - encoding/json5
 - name: go.opencensus.io
-  version: 91168ff30a428d6a67d5f5ad2526514ae93c1615
+  version: c437049becfaaa55b8584ef3064db4cf4712b362
   repo: https://chromium.googlesource.com/external/github.com/census-instrumentation/opencensus-go.git
   subpackages:
   - plugin/grpc
@@ -366,7 +372,7 @@ imports:
   - googleapis/...
   - protobuf/...
 - name: google.golang.org/grpc
-  version: 59dd9b3f19973f0bfd0ba07f9b3dcad41038751f
+  version: a91fb537b19866e5d1791fa1c6fb0530df26aadc
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes
