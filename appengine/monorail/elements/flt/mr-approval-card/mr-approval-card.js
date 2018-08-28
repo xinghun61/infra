@@ -190,6 +190,17 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
         approversRemoved);
     }
 
+    const fieldValuesAdded = data.fieldValuesAdded || [];
+    const fieldValuesRemoved = data.fieldValuesRemoved || [];
+
+    if (fieldValuesAdded.length) {
+      delta['fieldValsAdd'] = data.fieldValuesAdded;
+    }
+
+    if (fieldValuesRemoved.length) {
+      delta['fieldValsRemove'] = data.fieldValuesRemoved;
+    }
+
     if (data.comment || Object.keys(delta).length > 0) {
       this._updateApproval(data.comment, delta);
     }
@@ -225,9 +236,7 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
       commentContent: commentData || '',
     });
 
-    if (delta) {
-      message.approvalDelta = delta;
-    }
+    message.approvalDelta = delta || {};
 
     if (isDescription) {
       message.isDescription = true;
@@ -242,6 +251,7 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
         type: actionType.UPDATE_APPROVAL_SUCCESS,
         approval: resp.approval,
       });
+      actionCreator.fetchIssue(this.dispatch.bind(this), baseMessage);
       actionCreator.fetchComments(this.dispatch.bind(this), baseMessage);
     }, (error) => {
       this.dispatch({

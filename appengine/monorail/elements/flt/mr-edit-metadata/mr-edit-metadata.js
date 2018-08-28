@@ -176,6 +176,7 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
         result['fieldValuesAdded'].push({
           fieldRef: {
             fieldName: field.fieldRef.fieldName,
+            fieldId: field.fieldRef.fieldId,
           },
           value: v,
         });
@@ -185,6 +186,7 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
         result['fieldValuesRemoved'].push({
           fieldRef: {
             fieldName: field.fieldRef.fieldName,
+            fieldId: field.fieldRef.fieldId,
           },
           value: v,
         });
@@ -248,6 +250,9 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
 
   _optionsForField(labelDefs, fieldName) {
     const options = [];
+
+    // TODO(zhangtiff): Find a way to avoid traversing through every label on
+    // every enum field.
     for (const label of labelDefs) {
       const labelName = label.label;
       if (labelName.toLowerCase().startsWith(fieldName.toLowerCase())) {

@@ -105,7 +105,7 @@
     >
       <span slot="subheader">&gt; Feature Launch Issue</span>
     </mr-header>
-    <template is="dom-if" if="[[fetchingIssue]]">
+    <template is="dom-if" if="[[!issueLoaded]]">
       <div class="container-outside">
         Loading...
       </div>

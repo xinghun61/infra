@@ -76,6 +76,25 @@
           });
         });
       },
+      fetchIssue: (dispatch, message) => {
+        dispatch({type: actionType.FETCH_ISSUE_START});
+
+        const getIssue = window.prpcClient.call(
+          'monorail.Issues', 'GetIssue', message
+        );
+
+        getIssue.then((resp) => {
+          dispatch({
+            type: actionType.FETCH_ISSUE_SUCCESS,
+            issue: resp.issue,
+          });
+        }, (error) => {
+          dispatch({
+            type: actionType.FETCH_ISSUE_FAILURE,
+            error,
+          });
+        });
+      },
       fetchComments: (dispatch, message) => {
         dispatch({type: actionType.FETCH_COMMENTS_START});
 
@@ -240,9 +259,6 @@
         // Request for getting an issue.
         case actionType.FETCH_ISSUE_START:
           return Object.assign({}, state, {
-            issue: {},
-            comments: [],
-            issueLoaded: false,
             fetchIssueError: null,
             fetchingIssue: true,
           });

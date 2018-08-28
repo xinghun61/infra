@@ -105,8 +105,6 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
     if (!id || !projectName || this.fetchingIssue) return;
     // Reload the issue data when the id changes.
 
-    this.dispatch({type: actionType.FETCH_ISSUE_START});
-
     const message = {
       trace: {token: this.token},
       issue_ref: {
@@ -115,24 +113,9 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
       },
     };
 
+    actionCreator.fetchIssue(this.dispatch.bind(this), message);
     actionCreator.fetchComments(this.dispatch.bind(this), message);
     actionCreator.fetchIsStarred(this.dispatch.bind(this), message);
-
-    const getIssue = window.prpcClient.call(
-      'monorail.Issues', 'GetIssue', message
-    );
-
-    getIssue.then((resp) => {
-      this.dispatch({
-        type: actionType.FETCH_ISSUE_SUCCESS,
-        issue: resp.issue,
-      });
-    }, (error) => {
-      this.dispatch({
-        type: actionType.FETCH_ISSUE_FAILURE,
-        error,
-      });
-    });
   }
 
   _routeChanged(routeData, queryParams) {
