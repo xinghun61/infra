@@ -100,6 +100,10 @@ class GroupDetail(servlet.Servlet):
     offer_membership_editing = permissions.CanEditGroup(
         mr.perms, mr.auth.effective_ids, owner_ids) and not is_imported_group
 
+    group_type = 'Monorail user group'
+    if group_settings.ext_group_type:
+      group_type = str(group_settings.ext_group_type).capitalize()
+
     return {
         'admin_tab_mode': self.ADMIN_TAB_META,
         'offer_membership_editing': ezt.boolean(offer_membership_editing),
@@ -108,6 +112,7 @@ class GroupDetail(servlet.Servlet):
         'groupid': group_id,
         'groupname': mr.viewed_username,
         'settings': group_settings,
+        'group_type': group_type,
         'pagination': pagination,
         }
 

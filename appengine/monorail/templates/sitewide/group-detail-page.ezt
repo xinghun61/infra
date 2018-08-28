@@ -4,6 +4,7 @@
 [include "../framework/js-placeholders.ezt"]
 
 <form method="POST" action="edit.do">
+<input type="hidden" name="token" value="[form_token]">
 <div id="colcontrol">
    <div class="list">
      [if-any pagination.visible]
@@ -22,6 +23,8 @@
      [# TODO(jrobbins): extra confirmation when removing yourself as group owner.]
      [end]
    </div>
+
+  <p>Group type: [group_type]</p>
 
   <table cellspacing="0" cellpadding="2" border="0" class="results striped vt" id="resultstable" width="100%">
   <tbody>

@@ -201,7 +201,8 @@ CREATE TABLE UserGroupSettings (
 
   who_can_view_members ENUM ('owners', 'members', 'anyone'),
 
-  external_group_type ENUM ('chrome_infra_auth', 'mdb', 'baggins'),
+  external_group_type ENUM (
+      'chrome_infra_auth', 'mdb', 'baggins', 'computed'),
   -- timestamps in seconds since the epoch.
   last_sync_time INT,
 

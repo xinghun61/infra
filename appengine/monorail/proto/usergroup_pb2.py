@@ -20,6 +20,7 @@ class GroupType(messages.Enum):
   CHROME_INFRA_AUTH = 0
   MDB = 1
   BAGGINS = 3
+  COMPUTED = 4
 
 
 class UserGroupSettings(messages.Message):

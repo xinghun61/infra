@@ -204,14 +204,11 @@ def _ShouldRevealEmail(auth, project, viewed_email):
   if auth.user_pb.is_site_admin:
     return True
 
-  # Case 3: Domain users in same-org-only projects always see unobscured addrs.
-  # TODO(jrobbins): re-implement same_org
-
-  # Case 4: Project members see the unobscured email of everyone in a project.
+  # Case 3: Project members see the unobscured email of everyone in a project.
   if project and framework_bizobj.UserIsInProject(project, auth.effective_ids):
     return True
 
-  # Case 5: Do not obscure your own email.
+  # Case 4: Do not obscure your own email.
   if viewed_email and auth.user_pb.email == viewed_email:
     return True
 

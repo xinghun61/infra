@@ -45,4 +45,4 @@ class GroupHelpersTest(unittest.TestCase):
 
   def testBuildUserGroupTypeOptions(self):
     group_types = group_helpers.BuildUserGroupTypeOptions()
-    self.assertEqual(3, len(group_types))
+    self.assertEqual(4, len(group_types))

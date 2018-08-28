@@ -69,6 +69,11 @@ class GroupCreate(servlet.Servlet):
       else:
         ext_group_type = str(
             usergroup_pb2.GroupType(int(ext_group_type))).lower()
+
+      if (ext_group_type == 'computed' and
+          not group_name.startswith('everyone@')):
+        mr.errors.groupimport = 'Computed groups must be named everyone@'
+
     else:
       vis = usergroup_pb2.MemberVisibility(int(post_data['visibility']))
       ext_group_type = None

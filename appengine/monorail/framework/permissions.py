@@ -445,8 +445,6 @@ def _GetPermissionKey(user_id, project, expired_before=None):
   else:
     role = USER_ROLE
 
-  # TODO(jrobbins): re-implement same_org
-
   if project is None:
     status = UNDEFINED_STATUS
   else:

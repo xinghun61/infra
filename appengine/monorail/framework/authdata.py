@@ -127,7 +127,6 @@ class AuthData(object):
   @classmethod
   def _FinishInitialization(cls, cnxn, auth, services, user_pb=None):
     """Fill in the test of the fields based on the user_id."""
-    # TODO(jrobbins): re-implement same_org
     auth.effective_ids = services.usergroup.LookupMemberships(
         cnxn, auth.user_id)
     auth.effective_ids.add(auth.user_id)

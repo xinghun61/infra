@@ -28,7 +28,9 @@ class GroupTypeView(object):
   TYPE_NAMES = {
       usergroup_pb2.GroupType.CHROME_INFRA_AUTH: 'Chrome-infra-auth',
       usergroup_pb2.GroupType.MDB: 'MDB',
-      usergroup_pb2.GroupType.BAGGINS: 'Baggins'}
+      usergroup_pb2.GroupType.BAGGINS: 'Baggins',
+      usergroup_pb2.GroupType.COMPUTED: 'Computed',
+      }
 
   def __init__(self, group_type_enum):
     self.key = int(group_type_enum)
@@ -66,7 +68,8 @@ def BuildUserGroupTypeOptions():
   """
   group_types = [usergroup_pb2.GroupType.CHROME_INFRA_AUTH,
                  usergroup_pb2.GroupType.MDB,
-                 usergroup_pb2.GroupType.BAGGINS]
+                 usergroup_pb2.GroupType.BAGGINS,
+                 usergroup_pb2.GroupType.COMPUTED]
 
   return sorted([GroupTypeView(gt) for gt in group_types],
                 key=lambda gtv: gtv.name)

@@ -34,6 +34,9 @@ USERGROUPSETTINGS_COLS = ['group_id', 'who_can_view_members',
                           'external_group_type', 'last_sync_time']
 USERGROUPPROJECTS_COLS = ['group_id', 'project_id']
 
+GROUP_TYPE_ENUM = (
+    'chrome_infra_auth', 'mdb', 'baggins', 'computed')
+
 
 class MembershipTwoLevelCache(caches.AbstractTwoLevelCache):
   """Class to manage RAM and memcache for each user's memberships."""
@@ -116,9 +119,7 @@ class UserGroupService(object):
     assert who_can_view_members in ('owners', 'members', 'anyone')
     if ext_group_type:
       ext_group_type = str(ext_group_type).lower()
-      assert ext_group_type in (
-          'chrome_infra_auth', 'mdb', 'baggins'), (
-           ext_group_type)
+      assert ext_group_type in GROUP_TYPE_ENUM, ext_group_type
       assert who_can_view_members == 'owners'
     group_id = services.user.LookupUserID(
         cnxn, group_name.lower(), autocreate=True, allowgroups=True)
@@ -403,9 +404,7 @@ class UserGroupService(object):
     assert who_can_view_members in ('owners', 'members', 'anyone')
     if ext_group_type:
       ext_group_type = str(group_settings.ext_group_type).lower()
-      assert ext_group_type in (
-          'chrome_infra_auth', 'mdb', 'baggins'), (
-           ext_group_type)
+      assert ext_group_type in GROUP_TYPE_ENUM, ext_group_type
       assert who_can_view_members == 'owners'
     self.usergroupsettings_tbl.InsertRow(
         cnxn, group_id=group_id, who_can_view_members=who_can_view_members,
