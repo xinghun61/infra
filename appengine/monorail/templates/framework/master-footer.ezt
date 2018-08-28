@@ -1,5 +1,5 @@
   <script type="text/javascript" src="/bower_components/chopsui/prpc-client.js?version=[app_version]" nonce="[nonce]"></script>
-  <script type="text/javascript" src="/bower_components/webcomponentsjs/webcomponents-loader.js" nonce="[nonce]"></script>
+  <script type="text/javascript" src="/bower_components/webcomponentsjs/webcomponents-loader.js?version=[app_version]" nonce="[nonce]"></script>
   <script type="text/javascript" defer src="/static/js/framework/externs.js?version=[app_version]" nonce="[nonce]"></script>
   <script type="text/javascript" defer src="/static/js/framework/env.js?version=[app_version]" nonce="[nonce]"></script>
   <script type="text/javascript" defer src="/static/js/framework/framework-ajax.js?version=[app_version]" nonce="[nonce]"></script>
@@ -108,6 +108,45 @@ a.src=g;m.parentNode.insertBefore(a,m)
 </script>
 
 <script type="text/javascript" defer src="/static/js/framework/ga.js?version=[app_version]" nonce="[nonce]"></script>
+
+// Polymer elements and polyfills loader.
+<script type="module" nonce="[nonce]">
+const devMode = ('[format "js"][dev_mode][end]' === 'yes');
+const nonce = '[format "js"][nonce][end]';
+
+function insertLinkTag(href) {
+  const link = document.createElement('link');
+  link.rel = 'import';
+  link.nonce = nonce;
+  link.href = href;
+  document.head.appendChild(link);
+}
+
+function insertScriptTag(src) {
+  const script = document.createElement('script');
+  script.src = src;
+  script.type = 'application/javascript';
+  script.nonce = nonce;
+  document.body.appendChild(script);
+}
+
+function loadComponents() {
+  if (document.querySelector('mr-flipper')) {
+    if (devMode) {
+      insertLinkTag('/elements/mr-flipper/mr-flipper.html?version=[app_version]')
+    } else {
+      insertLinkTag('/elements/mr-flipper/mr-flipper.vulcanized.html?version=[app_version]')
+      insertScriptTag('/elements/mr-flipper/mr-flipper.vulcanized.js?version=[app_version]');
+    }
+  }
+}
+
+if (window.hasOwnProperty('WebComponents')) {
+  loadComponents();
+} else {
+  document.addEventListener('WebComponentsReady', loadComponents);
+}
+</script>
 
  </body>
 </html>

@@ -337,14 +337,6 @@ runOnLoad(function() {
 });
 </script>
 
-[if-any dev_mode]
-  <link rel="import" href="/elements/mr-flipper/mr-flipper.html?version=[app_version]" nonce="[nonce]">
-[else]
-  <link rel="import" href="/elements/mr-flipper/mr-flipper.vulcanized.html?version=[app_version]" nonce="[nonce]">
-  <script src="/elements/mr-flipper/mr-flipper.vulcanized.js?version=[app_version]" nonce="[nonce]"></script>
-[end]
-
-
 [include "../framework/master-footer.ezt"]
 
 <script type="text/javascript" nonce="[nonce]">
