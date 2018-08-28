@@ -89,8 +89,10 @@ vulcanize: clean_vulcanized
 	$(call VULCANIZE, elements/mr-flipper/mr-flipper)
 
 clean_vulcanized:
-	rm -rf bower_components
 	find . -name "*.vulcanized.*" -delete
+
+clean_deps:
+	rm -rf bower_components
 
 wct: deps
 	xvfb-run go run ../../go/src/infra/tools/wct/wct.go  ../../go/src/infra/tools/wct/monkeypatch.go -base=. -prefix=elements/test/ -chrome=google-chrome
@@ -122,7 +124,7 @@ config_local:
 	m4 module-latency-insensitive.yaml.m4 > module-latency-insensitive.yaml
 
 # For deploying demo versions, e.g. context for a code review.
-deploy_demo: deps vulcanize config_demo
+deploy_demo: clean_deps deps vulcanize config_demo
 	@echo "---[Demo $(STAGEID)]---"
 	$(GAE_PY) upload -A $(STAGEID) $(FRONTEND_MODULES) $(BACKEND_MODULES)
 	make clean_vulcanized
@@ -131,13 +133,13 @@ deploy_demo: deps vulcanize config_demo
 # the main app-id, but it is still sometimes useful to have a completely
 # separate app-id.  E.g., for testing inbound email, load testing, or using
 # throwaway databases.
-deploy_staging: deps vulcanize config_staging
+deploy_staging: clean_deps deps vulcanize config_staging
 	@echo "---[Staging $(STAGEID)]---"
 	$(GAE_PY) upload -A $(STAGEID) $(FRONTEND_MODULES) $(BACKEND_MODULES)
 	make clean_vulcanized
 
 # This is our production server that users actually use.
-deploy_prod: deps vulcanize config_prod
+deploy_prod: clean_deps deps vulcanize config_prod
 	@echo "---[Deploying prod instance $(PRODID)]---"
 	$(GAE_PY) upload -A $(PRODID) $(FRONTEND_MODULES) $(BACKEND_MODULES)
 	make clean_vulcanized
