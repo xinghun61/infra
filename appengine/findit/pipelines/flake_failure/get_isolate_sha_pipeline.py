@@ -75,6 +75,11 @@ class GetIsolateShaOutput(StructuredObject):
   # The isolate sha of the build artifacts.
   isolate_sha = basestring
 
+  # The build number corresponding to the build whose artifacts were used,
+  # if any. Used to assist in finding nearby builds. TODO (crbug.com/872992):
+  # Remove build_number once LUCI migration is complete.
+  build_number = int
+
   # The url to the build whose existing artifacts were used, if any. Should be
   # mutually exclusive with try_job_url.
   build_url = basestring
@@ -98,7 +103,10 @@ class GetIsolateShaForBuildPipeline(SynchronousPipeline):
         parameters.master_name, parameters.builder_name,
         parameters.build_number, parameters.step_name, FinditHttpClient())
     return GetIsolateShaOutput(
-        isolate_sha=isolate_sha, build_url=parameters.url, try_job_url=None)
+        isolate_sha=isolate_sha,
+        build_number=parameters.build_number,
+        build_url=parameters.url,
+        try_job_url=None)
 
 
 class GetIsolateShaForTargetPipeline(SynchronousPipeline):
@@ -112,6 +120,7 @@ class GetIsolateShaForTargetPipeline(SynchronousPipeline):
 
     return GetIsolateShaOutput(
         isolate_sha=isolated_target.isolated_hash,
+        build_number=None,
         build_url=isolated_target.build_url,
         try_job_url=None)
 
@@ -127,6 +136,7 @@ class GetIsolateShaForTryJobPipeline(SynchronousPipeline):
             len(isolated_tests)))
     return GetIsolateShaOutput(
         isolate_sha=isolated_tests.values()[0],
+        build_number=None,
         build_url=None,
         try_job_url=parameters.try_job_result.url)
 

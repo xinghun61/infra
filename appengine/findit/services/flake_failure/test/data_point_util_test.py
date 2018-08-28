@@ -23,6 +23,7 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     task_id = 'task_id'
 
     flakiness = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=total_test_run_seconds,

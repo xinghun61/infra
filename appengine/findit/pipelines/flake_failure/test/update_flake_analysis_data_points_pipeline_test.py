@@ -29,6 +29,7 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(WaterfallTestCase):
     pass_rate = 0.5
 
     flakiness = Flakiness(
+        build_number=123,
         build_url='url',
         commit_position=commit_position,
         total_test_run_seconds=100,
@@ -41,6 +42,7 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(WaterfallTestCase):
         task_ids=ListOfBasestring.FromSerializable(['task_id']))
 
     expected_data_point = DataPoint.Create(
+        build_number=123,
         build_url='url',
         commit_position=commit_position,
         elapsed_seconds=100,
@@ -72,6 +74,7 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(WaterfallTestCase):
     analysis.Save()
 
     flakiness = Flakiness(
+        build_number=None,
         build_url='url',
         commit_position=1000,
         total_test_run_seconds=100,

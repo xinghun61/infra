@@ -10,6 +10,7 @@ from services.flake_failure import pass_rate_util
 def ConvertFlakinessToDataPoint(flakiness):
   """Converts Flakiness to DataPoint."""
   return DataPoint.Create(
+      build_number=flakiness.build_number,
       build_url=flakiness.build_url,
       commit_position=flakiness.commit_position,
       elapsed_seconds=flakiness.total_test_run_seconds,

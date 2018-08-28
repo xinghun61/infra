@@ -11,6 +11,11 @@ class Flakiness(StructuredObject):
   """Represents the flakiness with other metadata at a commit position."""
   # The url to the build page of the build whose artifacts were used to generate
   # this structure, if any.
+
+  # Used for fallback logic to searching buildbot only.
+  # TODO(crbug.com/872992): Remove build_number once LUCI migration is complete.
+  build_number = int
+
   # TODO (crbug.com/876557): Consolidate build_url and try_job_url using
   # build_id once all builds are on LUCI.
   build_url = basestring

@@ -623,3 +623,15 @@ class MasterFlakeAnalysisTest(TestCase):
     analysis.heuristic_analysis_status = analysis_status.PENDING
 
     self.assertFalse(analysis.CanRunHeuristicAnalysis())
+
+  def testGetLowestUpperBoundBuildNumberNoBuildNumbers(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    self.assertEqual(123, analysis.GetLowestUpperBoundBuildNumber(1000))
+
+  def testGetLowestUpperBoundBuildNumber(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(build_number=123, commit_position=1000),
+        DataPoint.Create(build_number=122, commit_position=990)
+    ]
+    self.assertEqual(122, analysis.GetLowestUpperBoundBuildNumber(900))

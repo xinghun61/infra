@@ -40,6 +40,7 @@ class FlakinessUtilTest(wf_testcase.WaterfallTestCase):
 
   def testUpdateFlakiness(self):
     flakiness = Flakiness(
+        build_number=None,
         build_url='url',
         commit_position=1000,
         total_test_run_seconds=0,
@@ -78,6 +79,7 @@ class FlakinessUtilTest(wf_testcase.WaterfallTestCase):
         task_id=task_id)
 
     flakiness_to_update = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=0,
@@ -90,6 +92,7 @@ class FlakinessUtilTest(wf_testcase.WaterfallTestCase):
         task_ids=ListOfBasestring.FromSerializable([]))
 
     expected_flakiness = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=0,
@@ -127,6 +130,7 @@ class FlakinessUtilTest(wf_testcase.WaterfallTestCase):
         task_id=task_id)
 
     initial_flakiness = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=None,
@@ -139,6 +143,7 @@ class FlakinessUtilTest(wf_testcase.WaterfallTestCase):
         task_ids=ListOfBasestring.FromSerializable([]))
 
     expected_flakiness = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=60,
@@ -176,6 +181,7 @@ class FlakinessUtilTest(wf_testcase.WaterfallTestCase):
         task_id=task_id)
 
     initial_flakiness = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=None,
@@ -188,6 +194,7 @@ class FlakinessUtilTest(wf_testcase.WaterfallTestCase):
         task_ids=ListOfBasestring.FromSerializable([]))
 
     expected_flakiness = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=60,
@@ -230,6 +237,7 @@ class FlakinessUtilTest(wf_testcase.WaterfallTestCase):
         task_id=task_id_2)
 
     initial_flakiness = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=60,
@@ -242,6 +250,7 @@ class FlakinessUtilTest(wf_testcase.WaterfallTestCase):
         task_ids=ListOfBasestring.FromSerializable([task_id_1]))
 
     expected_flakiness = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=60,  # No change due to unrecoverable error.
@@ -282,6 +291,7 @@ class FlakinessUtilTest(wf_testcase.WaterfallTestCase):
         task_id=task_id_2)
 
     initial_flakiness = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=60,
@@ -294,6 +304,7 @@ class FlakinessUtilTest(wf_testcase.WaterfallTestCase):
         task_ids=ListOfBasestring.FromSerializable([task_id_1]))
 
     expected_flakiness = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=120,
@@ -324,6 +335,7 @@ class FlakinessUtilTest(wf_testcase.WaterfallTestCase):
     try_job_url = 'url'
 
     initial_flakiness = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=1800,
@@ -347,6 +359,7 @@ class FlakinessUtilTest(wf_testcase.WaterfallTestCase):
         initial_flakiness, swarming_task_output)
 
     expected_flakiness = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=5400,

@@ -112,6 +112,7 @@ class DetermineApproximatePassRatePipeline(GeneratorPipeline):
 
       # Create a fresh Flakiness instance to aggregate swarming rerun data.
       flakiness_thus_far = Flakiness(
+          build_number=get_isolate_sha_output.build_number,
           build_url=build_url,
           commit_position=commit_position,
           total_test_run_seconds=0,

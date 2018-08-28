@@ -228,6 +228,8 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
 
       with pipeline.InOrder():
         # Determine isolate sha to run swarming tasks on.
+        upper_bound_build_number = analysis.GetLowestUpperBoundBuildNumber(
+            commit_position_to_analyze)
         get_sha_output = yield GetIsolateShaForCommitPositionPipeline(
             self.CreateInputObjectInstance(
                 GetIsolateShaForCommitPositionParameters,
@@ -236,7 +238,7 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
                 dimensions=parameters.dimensions,
                 step_metadata=parameters.step_metadata,
                 revision=revision_to_analyze,
-                upper_bound_build_number=analysis.build_number))
+                upper_bound_build_number=upper_bound_build_number))
 
         # Determine approximate pass rate at the commit position/isolate sha.
         flakiness = yield DetermineApproximatePassRatePipeline(

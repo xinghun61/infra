@@ -109,7 +109,9 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     url = ('https://ci.chromium.org/p/chromium/builders/luci.chromium.findit/'
            'findit_variable/1391')
     expected_output = GetIsolateShaOutput(
-        isolate_sha=expected_sha, build_url=None,
+        isolate_sha=expected_sha,
+        build_number=None,
+        build_url=None,
         try_job_url=url).ToSerializable()
 
     try_job_result = FlakeTryJobResult.FromSerializable({
@@ -176,7 +178,10 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     isolated_hash = 'isolated_hash'
 
     expected_output = GetIsolateShaOutput(
-        isolate_sha=expected_sha, build_url=build_url, try_job_url=None)
+        isolate_sha=expected_sha,
+        build_number=None,
+        build_url=build_url,
+        try_job_url=None)
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
@@ -360,7 +365,10 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     mocked_url.return_value = build_url
 
     expected_output = GetIsolateShaOutput(
-        isolate_sha=expected_sha, build_url=build_url, try_job_url=None)
+        isolate_sha=expected_sha,
+        build_number=build_number,
+        build_url=build_url,
+        try_job_url=None)
 
     build = BuildInfo(master_name, builder_name, build_number)
     build.commit_position = requested_commit_position

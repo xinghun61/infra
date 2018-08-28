@@ -298,6 +298,21 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
 
     return None
 
+  # TODO(crbug.com/872992): This function is used only for falling back to
+  # searching buildbot when builds aren't on LUCI. Remove once LUCI migration is
+  # complete.
+  def GetLowestUpperBoundBuildNumber(self, requested_commit_position):
+    """Gets an upper bound build number to search nearby builds with."""
+    lowest_build_number = self.build_number
+
+    for data_point in self.data_points:
+      if (data_point.build_number is not None and
+          data_point.build_number < lowest_build_number and
+          requested_commit_position <= data_point.commit_position):
+        lowest_build_number = data_point.build_number
+
+    return lowest_build_number
+
   def GetLatestRegressionRange(self):
     """Gets the latest stable -> flaky commit positions in data_points.
 

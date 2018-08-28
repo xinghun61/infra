@@ -63,7 +63,9 @@ class NextCommitPositionPipeline(SynchronousPipeline):
     # A suspected build id is available when there is a regression range that
     # spans a single build cycle. During this time, bisect is preferred to
     # exponential search.
-    use_bisect = analysis.suspected_flake_build_number is not None
+    use_bisect = (
+        analysis.suspected_flake_build_number is not None or
+        analysis.suspected_build_id is not None)
     latest_regression_range = analysis.GetLatestRegressionRange()
 
     calculated_next_commit_position, culprit_commit_position = (
@@ -127,11 +129,12 @@ class NextCommitPositionPipeline(SynchronousPipeline):
       analysis.LogWarning(
           ('Failed to determine isolated targets surrounding {}. Falling back '
            'to searching buildbot').format(calculated_next_commit_position))
-
+      upper_bound_build_number = analysis.GetLowestUpperBoundBuildNumber(
+          calculated_next_commit_position)
       lower_bound_build, upper_bound_build = (
           step_util.GetValidBoundingBuildsForStep(
               master_name, builder_name, analysis.step_name, None,
-              analysis.build_number, calculated_next_commit_position))
+              upper_bound_build_number, calculated_next_commit_position))
 
       # Update the analysis' suspected build cycle if identified.
       analysis.UpdateSuspectedBuildUsingBuildInfo(lower_bound_build,

@@ -55,7 +55,10 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     try_job_url = None
 
     isolate_sha_output = GetIsolateShaOutput(
-        build_url=build_url, isolate_sha=isolate_sha, try_job_url=try_job_url)
+        build_number=None,
+        build_url=build_url,
+        isolate_sha=isolate_sha,
+        try_job_url=try_job_url)
 
     determine_approximate_pass_rate_input = DetermineApproximatePassRateInput(
         builder_name=builder_name,
@@ -89,6 +92,7 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
         task_id=task_id)
 
     initial_flakiness = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=0,
@@ -105,6 +109,7 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
         incoming_swarming_task_output=flake_swarming_task_output)
 
     expected_flakiness_output = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=3600,
@@ -165,9 +170,13 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     swarming_task_error = SwarmingTaskError(code=1, message='error')
 
     isolate_sha_output = GetIsolateShaOutput(
-        build_url=build_url, isolate_sha=isolate_sha, try_job_url=try_job_url)
+        build_number=None,
+        build_url=build_url,
+        isolate_sha=isolate_sha,
+        try_job_url=try_job_url)
 
     flakiness_thus_far = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=3600,
@@ -180,6 +189,7 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
         task_ids=ListOfBasestring.FromSerializable(['task_id_1']))
 
     expected_flakiness_thus_far = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=3600,
@@ -241,9 +251,13 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     try_job_url = 'url'
 
     isolate_sha_output = GetIsolateShaOutput(
-        build_url=build_url, isolate_sha=isolate_sha, try_job_url=try_job_url)
+        build_number=None,
+        build_url=build_url,
+        isolate_sha=isolate_sha,
+        try_job_url=try_job_url)
 
     flakiness_thus_far = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=3600,
@@ -302,6 +316,7 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     try_job_url = None
 
     flakiness_thus_far = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=3600,
@@ -314,7 +329,10 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
         task_ids=ListOfBasestring.FromSerializable(['task_id_1']))
 
     isolate_sha_output = GetIsolateShaOutput(
-        build_url=build_url, isolate_sha=isolate_sha, try_job_url=try_job_url)
+        build_number=None,
+        build_url=build_url,
+        isolate_sha=isolate_sha,
+        try_job_url=try_job_url)
 
     flake_swarming_task_output = FlakeSwarmingTaskOutput(
         error=None,
@@ -368,7 +386,10 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     try_job_url = None
 
     isolate_sha_output = GetIsolateShaOutput(
-        build_url=None, isolate_sha=isolate_sha, try_job_url='url')
+        build_number=None,
+        build_url=None,
+        isolate_sha=isolate_sha,
+        try_job_url='url')
 
     flake_swarming_task_output = FlakeSwarmingTaskOutput(
         error=None,
@@ -379,6 +400,7 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
         task_id='task_id')
 
     flakiness_thus_far = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=3600,
@@ -432,9 +454,13 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     try_job_url = 'url'
 
     isolate_sha_output = GetIsolateShaOutput(
-        build_url=build_url, isolate_sha=isolate_sha, try_job_url=try_job_url)
+        build_number=None,
+        build_url=build_url,
+        isolate_sha=isolate_sha,
+        try_job_url=try_job_url)
 
     flakiness_thus_far = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=timeout_seconds,
@@ -459,6 +485,7 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
         incoming_swarming_task_output=incoming_flake_swarming_task_output)
 
     expected_aggregate_flakiness_output = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=timeout_seconds,
@@ -533,9 +560,13 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     try_job_url = 'url'
 
     isolate_sha_output = GetIsolateShaOutput(
-        build_url=build_url, isolate_sha=isolate_sha, try_job_url=try_job_url)
+        build_number=None,
+        build_url=build_url,
+        isolate_sha=isolate_sha,
+        try_job_url=try_job_url)
 
     flakiness_thus_far = Flakiness(
+        build_number=None,
         build_url=build_url,
         commit_position=commit_position,
         total_test_run_seconds=60,
