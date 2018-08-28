@@ -31,7 +31,7 @@ const NumPriorities = 3
 // like per-bucket counts. It doesn't have an underlying Proto, because it
 // is only used internally within qslib, never persisted.
 //
-// TODO: Consider renaming this to something that makes it more obvious
+// TODO(akeshet): Consider renaming this to something that makes it more obvious
 // what it is.
 type IntVector [NumPriorities]int
 
@@ -81,7 +81,7 @@ func (a Vector) Less(b Vector) bool {
 	return false
 }
 
-// TODO: Rename Plus->Add, Minus->Sub, for better consistenct with go libraries.
+// TODO(akeshet): Rename Plus->Add, Minus->Sub, for better consistenct with go libraries.
 
 // Plus returns the sum of two vectors.
 func (a Vector) Plus(b Vector) Vector {

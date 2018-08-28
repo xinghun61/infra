@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package types
+package scheduler
 
-// IsIdle returns whether the given worker is currently idle.
-func (w *Worker) IsIdle() bool {
+// isIdle returns whether the given worker is currently idle.
+func (w *Worker) isIdle() bool {
 	return w.RunningTask == nil
 }
 

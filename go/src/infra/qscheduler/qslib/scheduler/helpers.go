@@ -16,20 +16,18 @@ package scheduler
 
 import (
 	"sort"
-
-	"infra/qscheduler/qslib/types"
 )
 
 // workerWithId is a (Worker, Id) tuple.
 type workerWithId struct {
-	Worker *types.Worker
-	Id     string
+	worker *Worker
+	id     string
 }
 
 // sortAscendingCost sorts a slice in-place by ascending cost.
 func sortAscendingCost(ws []workerWithId) {
 	less := func(i, j int) bool {
-		return ws[i].Worker.RunningTask.Cost.Less(*ws[j].Worker.RunningTask.Cost)
+		return ws[i].worker.RunningTask.Cost.Less(*ws[j].worker.RunningTask.Cost)
 	}
 	sort.SliceStable(ws, less)
 }
@@ -37,7 +35,7 @@ func sortAscendingCost(ws []workerWithId) {
 // sortDescendingCost sorts a slice in-place by descending cost.
 func sortDescendingCost(ws []workerWithId) {
 	less := func(i, j int) bool {
-		return ws[j].Worker.RunningTask.Cost.Less(*ws[i].Worker.RunningTask.Cost)
+		return ws[j].worker.RunningTask.Cost.Less(*ws[i].worker.RunningTask.Cost)
 	}
 	sort.SliceStable(ws, less)
 }

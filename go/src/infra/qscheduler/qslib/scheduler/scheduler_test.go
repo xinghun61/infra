@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"infra/qscheduler/qslib/tutils"
-	"infra/qscheduler/qslib/types"
 	"infra/qscheduler/qslib/types/account"
 	"infra/qscheduler/qslib/types/task"
 	"infra/qscheduler/qslib/types/vector"
@@ -30,40 +29,37 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 )
 
-// epoch is an arbitrary time for testing purposes, corresponds to
-// 01/01/2018 @ 1:00 am UTC
-var epoch = time.Unix(1514768400, 0)
-
 // TestMatchWithIdleWorkers tests that the scheduler correctly matches
 // requests with idle workers, if they are available.
 func TestMatchWithIdleWorkers(t *testing.T) {
 	t.Parallel()
-	state := types.State{
-		Workers: map[string]*types.Worker{
-			"w0": types.NewWorker(),
-			"w1": &types.Worker{Labels: []string{"label1"}},
+	s := &Scheduler{
+		&State{
+			Workers: map[string]*Worker{
+				"w0": NewWorker(),
+				"w1": &Worker{Labels: []string{"label1"}},
+			},
+			Requests: map[string]*task.Request{
+				"t1": &task.Request{AccountId: "a1", Labels: []string{"label1"}},
+				"t2": &task.Request{AccountId: "a1", Labels: []string{"label2"}},
+			},
+			Balances: map[string]*vector.Vector{
+				"a1": vector.New(2, 0, 0),
+			},
 		},
-		Requests: map[string]*task.Request{
-			"t1": &task.Request{AccountId: "a1", Labels: []string{"label1"}},
-			"t2": &task.Request{AccountId: "a1", Labels: []string{"label2"}},
-		},
-		Balances: map[string]*vector.Vector{
-			"a1": vector.New(2, 0, 0),
+		&Config{
+			AccountConfigs: map[string]*account.Config{
+				"a1": account.NewConfig(),
+			},
 		},
 	}
 
-	config := types.Config{
-		AccountConfigs: map[string]*account.Config{
-			"a1": account.NewConfig(),
-		},
+	expects := []Mutator{
+		&AssignIdleWorker{Priority: 0, RequestId: "t1", WorkerId: "w1"},
+		&AssignIdleWorker{Priority: 0, RequestId: "t2", WorkerId: "w0"},
 	}
 
-	expects := []types.Mutator{
-		&types.AssignIdleWorker{Priority: 0, RequestId: "t1", WorkerId: "w1"},
-		&types.AssignIdleWorker{Priority: 0, RequestId: "t2", WorkerId: "w0"},
-	}
-
-	muts := QuotaSchedule(&state, &config)
+	muts := s.RunOnce()
 
 	if diff := pretty.Compare(muts, expects); diff != "" {
 		t.Errorf(fmt.Sprintf("Unexpected mutations diff (-got +want): %s", diff))
@@ -73,57 +69,59 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 // TestReprioritize tests that the scheduler correctly changes the priority
 // of running jobs (promote or demote) if the account balance makes that
 // necessary.
-func TestReprioritize(t *testing.T) {
+func TestSchedulerReprioritize(t *testing.T) {
 	t.Parallel()
 	// Prepare a situation in which one P0 job (out of 2 running) will be
 	// demoted, and a separate P2 job will be promoted to P1.
-	config := types.Config{
-		AccountConfigs: map[string]*account.Config{
-			"a1": &account.Config{ChargeRate: vector.New(1.5, 1.5)},
+	s := &Scheduler{
+		&State{
+			Balances: map[string]*vector.Vector{
+				"a1": vector.New(2*account.DemoteThreshold, 2*account.PromoteThreshold, 0),
+			},
+			Workers: map[string]*Worker{
+				"w1": &Worker{
+					RunningTask: &task.Run{
+						Cost:     vector.New(1),
+						Priority: 0,
+						Request:  &task.Request{AccountId: "a1"},
+					},
+				},
+				"w2": &Worker{
+					RunningTask: &task.Run{
+						Priority: 0,
+						Request:  &task.Request{AccountId: "a1"},
+						Cost:     vector.New(),
+					},
+				},
+				"w3": &Worker{
+					RunningTask: &task.Run{
+						Cost:     vector.New(1),
+						Priority: 2,
+						Request:  &task.Request{AccountId: "a1"},
+					},
+				},
+				"w4": &Worker{
+					RunningTask: &task.Run{
+						Priority: 2,
+						Request:  &task.Request{AccountId: "a1"},
+						Cost:     vector.New(),
+					},
+				},
+			},
 		},
-	}
-	state := types.State{
-		Balances: map[string]*vector.Vector{
-			"a1": vector.New(2*account.DemoteThreshold, 2*account.PromoteThreshold, 0),
-		},
-		Workers: map[string]*types.Worker{
-			"w1": &types.Worker{
-				RunningTask: &task.Run{
-					Cost:     vector.New(1),
-					Priority: 0,
-					Request:  &task.Request{AccountId: "a1"},
-				},
-			},
-			"w2": &types.Worker{
-				RunningTask: &task.Run{
-					Priority: 0,
-					Request:  &task.Request{AccountId: "a1"},
-					Cost:     vector.New(),
-				},
-			},
-			"w3": &types.Worker{
-				RunningTask: &task.Run{
-					Cost:     vector.New(1),
-					Priority: 2,
-					Request:  &task.Request{AccountId: "a1"},
-				},
-			},
-			"w4": &types.Worker{
-				RunningTask: &task.Run{
-					Priority: 2,
-					Request:  &task.Request{AccountId: "a1"},
-					Cost:     vector.New(),
-				},
+		&Config{
+			AccountConfigs: map[string]*account.Config{
+				"a1": &account.Config{ChargeRate: vector.New(1.5, 1.5)},
 			},
 		},
 	}
 
-	expects := []types.Mutator{
-		&types.ChangePriority{NewPriority: 1, WorkerId: "w2"},
-		&types.ChangePriority{NewPriority: 1, WorkerId: "w3"},
+	expects := []Mutator{
+		&ChangePriority{NewPriority: 1, WorkerId: "w2"},
+		&ChangePriority{NewPriority: 1, WorkerId: "w3"},
 	}
 
-	muts := QuotaSchedule(&state, &config)
+	muts := s.RunOnce()
 
 	if diff := pretty.Compare(muts, expects); diff != "" {
 		t.Errorf(fmt.Sprintf("Unexpected mutations diff (-got +want): %s", diff))
@@ -132,43 +130,44 @@ func TestReprioritize(t *testing.T) {
 
 // TestPreempt tests that the scheduler correctly preempts lower priority jobs
 // running on a worker, when a higher priority job appears to take its place.
-func TestPreempt(t *testing.T) {
+func TestSchedulerPreempt(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
-		State  *types.State
-		Config *types.Config
-		Expect []types.Mutator
+		S      *Scheduler
+		Expect []Mutator
 	}{
 		// Case 0
 		//
 		// Basic preemption of a job by a higher priority job.
 		{
-			&types.State{
-				Balances: map[string]*vector.Vector{
-					"a1": vector.New(),
-					"a2": vector.New(1),
-				},
-				Requests: map[string]*task.Request{
-					"t1": &task.Request{AccountId: "a2"},
-				},
-				Workers: map[string]*types.Worker{
-					"w1": &types.Worker{
-						RunningTask: &task.Run{
-							Cost:      vector.New(.5, .5, .5),
-							Priority:  1,
-							Request:   &task.Request{AccountId: "a1"},
-							RequestId: "t2",
+			&Scheduler{
+				&State{
+					Balances: map[string]*vector.Vector{
+						"a1": vector.New(),
+						"a2": vector.New(1),
+					},
+					Requests: map[string]*task.Request{
+						"t1": &task.Request{AccountId: "a2"},
+					},
+					Workers: map[string]*Worker{
+						"w1": &Worker{
+							RunningTask: &task.Run{
+								Cost:      vector.New(.5, .5, .5),
+								Priority:  1,
+								Request:   &task.Request{AccountId: "a1"},
+								RequestId: "t2",
+							},
 						},
 					},
 				},
-			},
-			&types.Config{
-				AccountConfigs: map[string]*account.Config{
-					"a1": account.NewConfig(),
-					"a2": account.NewConfig(),
+				&Config{
+					AccountConfigs: map[string]*account.Config{
+						"a1": account.NewConfig(),
+						"a2": account.NewConfig(),
+					},
 				},
 			},
-			[]types.Mutator{&types.PreemptTask{Priority: 0, WorkerId: "w1", RequestId: "t1"}},
+			[]Mutator{&PreemptTask{Priority: 0, WorkerId: "w1", RequestId: "t1"}},
 		},
 		// Case 1
 		//
@@ -176,55 +175,57 @@ func TestPreempt(t *testing.T) {
 		// - the preempting account has insufficient funds.
 		// - the preempting account already has lower priority jobs.
 		{
-			&types.State{
-				// Both accounts a1 and a2 have P0 quota.
-				Balances: map[string]*vector.Vector{
-					// a1 has insufficient balance to preempt jobs.
-					"a1": vector.New(0.1 * account.PromoteThreshold),
-					// a2 would have sufficient balance to preempt jobs, but has
-					// insufficient balance to promote its already running job, and
-					// thus is banned from preempting jobs.
-					"a2": vector.New(0.9 * account.PromoteThreshold),
-				},
-				Requests: map[string]*task.Request{
-					"t1": &task.Request{AccountId: "a1"},
-					"t2": &task.Request{AccountId: "a2"},
-				},
-				Workers: map[string]*types.Worker{
-					// A job is running, but it is too costly for a1 to preempt.
-					"w1": &types.Worker{
-						RunningTask: &task.Run{
-							Cost:      vector.New(0.5*account.PromoteThreshold, 0, 0),
-							Priority:  1,
-							Request:   &task.Request{},
-							RequestId: "other_req",
+			&Scheduler{
+				&State{
+					// Both accounts a1 and a2 have P0 quota.
+					Balances: map[string]*vector.Vector{
+						// a1 has insufficient balance to preempt jobs.
+						"a1": vector.New(0.1 * account.PromoteThreshold),
+						// a2 would have sufficient balance to preempt jobs, but has
+						// insufficient balance to promote its already running job, and
+						// thus is banned from preempting jobs.
+						"a2": vector.New(0.9 * account.PromoteThreshold),
+					},
+					Requests: map[string]*task.Request{
+						"t1": &task.Request{AccountId: "a1"},
+						"t2": &task.Request{AccountId: "a2"},
+					},
+					Workers: map[string]*Worker{
+						// A job is running, but it is too costly for a1 to preempt.
+						"w1": &Worker{
+							RunningTask: &task.Run{
+								Cost:      vector.New(0.5*account.PromoteThreshold, 0, 0),
+								Priority:  1,
+								Request:   &task.Request{},
+								RequestId: "other_req",
+							},
+						},
+						// A job is running for a2 at a lower priority, so a2 is banned
+						// from preempting jobs.
+						"w2": &Worker{
+							RunningTask: &task.Run{
+								Cost:      vector.New(0.5 * account.PromoteThreshold),
+								Priority:  1,
+								Request:   &task.Request{AccountId: "a2"},
+								RequestId: "t3",
+							},
 						},
 					},
-					// A job is running for a2 at a lower priority, so a2 is banned
-					// from preempting jobs.
-					"w2": &types.Worker{
-						RunningTask: &task.Run{
-							Cost:      vector.New(0.5 * account.PromoteThreshold),
-							Priority:  1,
-							Request:   &task.Request{AccountId: "a2"},
-							RequestId: "t3",
-						},
-					},
 				},
-			},
-			&types.Config{
-				AccountConfigs: map[string]*account.Config{
-					"a1": &account.Config{ChargeRate: vector.New(1)},
-					"a2": &account.Config{ChargeRate: vector.New(1)},
+				&Config{
+					AccountConfigs: map[string]*account.Config{
+						"a1": &account.Config{ChargeRate: vector.New(1)},
+						"a2": &account.Config{ChargeRate: vector.New(1)},
+					},
 				},
 			},
 			// No preemptions or other mutations should result.
-			[]types.Mutator{},
+			[]Mutator{},
 		},
 	}
 
 	for i, test := range cases {
-		actual := QuotaSchedule(test.State, test.Config)
+		actual := test.S.RunOnce()
 		if diff := pretty.Compare(actual, test.Expect); diff != "" {
 			t.Errorf(fmt.Sprintf("Case %d, unexpected mutations diff (-got +want): %s", i, diff))
 		}
@@ -235,33 +236,38 @@ func TestPreempt(t *testing.T) {
 // under error conditions.
 func TestUpdateErrors(t *testing.T) {
 	cases := []struct {
-		State  *types.State
-		Config *types.Config
+		S      *Scheduler
 		T      time.Time
 		Expect error
 	}{
 		{
-			types.NewState(),
-			types.NewConfig(),
+			&Scheduler{
+				NewState(),
+				NewConfig(),
+			},
 			time.Unix(0, 0),
 			errors.New("timestamp: nil Timestamp"),
 		},
 		{
-			stateAtTime(time.Unix(100, 0).UTC()),
-			types.NewConfig(),
+			&Scheduler{
+				stateAtTime(time.Unix(100, 0).UTC()),
+				NewConfig(),
+			},
 			time.Unix(0, 0).UTC(),
 			&UpdateOrderError{Next: time.Unix(0, 0).UTC(), Previous: time.Unix(100, 0).UTC()},
 		},
 		{
-			stateAtTime(time.Unix(0, 0)),
-			types.NewConfig(),
+			&Scheduler{
+				stateAtTime(time.Unix(0, 0)),
+				NewConfig(),
+			},
 			time.Unix(1, 0),
 			nil,
 		},
 	}
 
 	for i, test := range cases {
-		e := UpdateAccounts(test.State, test.Config, test.T)
+		e := test.S.UpdateTime(test.T)
 		if !reflect.DeepEqual(e, test.Expect) {
 			t.Errorf("In case %d, got error: %+v, want error: %+v", i, e, test.Expect)
 		}
@@ -276,28 +282,28 @@ func TestUpdateBalance(t *testing.T) {
 	t2 := tutils.TimestampProto(epoch.Add(2 * time.Second))
 
 	cases := []struct {
-		State  *types.State
-		Config *types.Config
+		State  *State
+		Config *Config
 		T      time.Time
-		Expect *types.State
+		Expect *State
 	}{
 		// Case 0:
 		// Balances with no account config should be removed ("a1"). New balances
 		// should be created if necessary and incremented appropriately ("a2").
 		{
-			&types.State{
-				Balances:          map[string]*vector.Vector{"a1": vector.New()},
-				LastAccountUpdate: t0,
+			&State{
+				Balances:       map[string]*vector.Vector{"a1": vector.New()},
+				LastUpdateTime: t0,
 			},
-			&types.Config{
+			&Config{
 				AccountConfigs: map[string]*account.Config{
 					"a2": &account.Config{ChargeRate: vector.New(1), MaxChargeSeconds: 2},
 				},
 			},
 			epoch.Add(1 * time.Second),
-			&types.State{
-				Balances:          map[string]*vector.Vector{"a2": vector.New(1)},
-				LastAccountUpdate: t1,
+			&State{
+				Balances:       map[string]*vector.Vector{"a2": vector.New(1)},
+				LastUpdateTime: t1,
 			},
 		},
 		// Case 1:
@@ -306,11 +312,11 @@ func TestUpdateBalance(t *testing.T) {
 		//
 		// Charges should be proportional to time advanced (2 seconds in this case).
 		{
-			&types.State{
+			&State{
 				Balances: map[string]*vector.Vector{"a1": vector.New()},
-				Workers: map[string]*types.Worker{
+				Workers: map[string]*Worker{
 					// Worker running a task.
-					"w1": &types.Worker{
+					"w1": &Worker{
 						RunningTask: &task.Run{
 							Cost:     vector.New(1),
 							Priority: 1,
@@ -318,47 +324,47 @@ func TestUpdateBalance(t *testing.T) {
 						},
 					},
 					// Worker running a task with uninitialized Cost.
-					"w2": &types.Worker{
+					"w2": &Worker{
 						RunningTask: &task.Run{
 							Priority: 2,
 							Request:  &task.Request{AccountId: "a1"},
 						},
 					},
 					// Worker running a task with invalid account.
-					"w3": &types.Worker{
+					"w3": &Worker{
 						RunningTask: &task.Run{
 							Priority: account.FreeBucket,
 							Request:  &task.Request{AccountId: "a2"},
 						},
 					},
 				},
-				LastAccountUpdate: t0,
+				LastUpdateTime: t0,
 			},
-			&types.Config{
+			&Config{
 				AccountConfigs: map[string]*account.Config{
 					"a1": &account.Config{ChargeRate: vector.New(1), MaxChargeSeconds: 1},
 				},
 			},
 			epoch.Add(2 * time.Second),
-			&types.State{
-				Balances:          map[string]*vector.Vector{"a1": vector.New(1, -2, -2)},
-				LastAccountUpdate: t2,
-				Workers: map[string]*types.Worker{
-					"w1": &types.Worker{
+			&State{
+				Balances:       map[string]*vector.Vector{"a1": vector.New(1, -2, -2)},
+				LastUpdateTime: t2,
+				Workers: map[string]*Worker{
+					"w1": &Worker{
 						RunningTask: &task.Run{
 							Cost:     vector.New(1, 2),
 							Priority: 1,
 							Request:  &task.Request{AccountId: "a1"},
 						},
 					},
-					"w2": &types.Worker{
+					"w2": &Worker{
 						RunningTask: &task.Run{
 							Cost:     vector.New(0, 0, 2),
 							Priority: 2,
 							Request:  &task.Request{AccountId: "a1"},
 						},
 					},
-					"w3": &types.Worker{
+					"w3": &Worker{
 						RunningTask: &task.Run{
 							Cost:     vector.New(),
 							Priority: account.FreeBucket,
@@ -372,7 +378,7 @@ func TestUpdateBalance(t *testing.T) {
 
 	for i, test := range cases {
 		actual := test.State
-		UpdateAccounts(actual, test.Config, test.T)
+		(&Scheduler{test.State, test.Config}).UpdateTime(test.T)
 		if diff := pretty.Compare(actual, test.Expect); diff != "" {
 			t.Errorf(fmt.Sprintf("Case %d unexpected mutations diff (-got +want): %s", i, diff))
 		}
@@ -380,9 +386,9 @@ func TestUpdateBalance(t *testing.T) {
 }
 
 // stateAtTime is a testing helper that creates an initialized but empty
-// types.State instance with the given time as its LastAccountUpdate time.
-func stateAtTime(t time.Time) *types.State {
-	s := types.NewState()
-	s.LastAccountUpdate = tutils.TimestampProto(t)
+//  State instance with the given time as its LastAccountUpdate time.
+func stateAtTime(t time.Time) *State {
+	s := NewState()
+	s.LastUpdateTime = tutils.TimestampProto(t)
 	return s
 }

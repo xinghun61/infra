@@ -12,42 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package priority sorts incoming requests for the quotascheduler by priority.
-//
-// The prioritization takes into account:
-//   - Current account balance of the account that owns the request.
-//   - Maximum fanout for the account, and the number of other already running
-//     (or older queued) requests for the account.
-//   - Enqueue time of the request (as a tiebreaker).
-package priority
+package scheduler
 
 import (
 	"sort"
 
 	"github.com/golang/protobuf/ptypes"
 
-	"infra/qscheduler/qslib/types"
 	"infra/qscheduler/qslib/types/account"
 	"infra/qscheduler/qslib/types/task"
 )
 
-// Request represents a request along with the computed priority
+// prioritizedRequest represents a request along with the computed priority
 // for it (based on quota account balance, max fanout for that account, and
 // FIFO ordering).
-type Request struct {
+type prioritizedRequest struct {
 	RequestId string
 	Priority  int32
 	Request   *task.Request
 	// Flag used within scheduler to indicate that a request is already handled.
-	// TODO: This doesn't quite fit the abstraction of this package, consider
+	// TODO(akeshet): This doesn't quite fit the abstraction of this package, consider
 	// moving this tracking to scheduler package, where it is actually used.
 	Scheduled bool
 }
 
-// OrderedRequests represents a priority-sorted slice of requests.
-type OrderedRequests []Request
+// orderedRequests represents a priority-sorted slice of requests.
+type orderedRequests []prioritizedRequest
 
-// PrioritizeRequests computes the priority of requests from state.Requests.
+// prioritizeRequests computes the priority of requests from state.Requests.
 //
 // The computed priority is based on:
 //   - Quota account balances: requests are assigned a priority based on what
@@ -58,16 +50,18 @@ type OrderedRequests []Request
 //   - FIFO ordering as a tiebreaker.
 //
 // This function does not modify state or config.
-func PrioritizeRequests(state *types.State, config *types.Config) OrderedRequests {
+func (s *Scheduler) prioritizeRequests() orderedRequests {
+	state := s.state
+	config := s.config
 	// TODO Use container/heap rather than slices to make this faster.
 
 	// Initial pass: compute priority for each task based purely on account
 	// balance.
-	requests := make(OrderedRequests, 0, len(state.Requests))
+	requests := make(orderedRequests, 0, len(state.Requests))
 	for id, req := range state.Requests {
 		accoutBalance := state.Balances[req.AccountId]
 		p := account.BestPriorityFor(accoutBalance)
-		requests = append(requests, Request{
+		requests = append(requests, prioritizedRequest{
 			Priority:  p,
 			Request:   req,
 			RequestId: id,
@@ -79,7 +73,7 @@ func PrioritizeRequests(state *types.State, config *types.Config) OrderedRequest
 	// Sort requests by priority, then demote in priority those that are beyond
 	// an account's MaxFanout (because we want to demote the lowest priority jobs
 	// that we can), and sort again.
-	// TODO: Use a heap instead of a slice here, then use heap fix when demoting
+	// TODO(akeshet): Use a heap instead of a slice here, then use heap fix when demoting
 	// a job to avoid needing to re sort the full list.
 	sort.SliceStable(requests, less)
 	demoteTasksBeyondFanout(requests, state, config)
@@ -91,7 +85,7 @@ func PrioritizeRequests(state *types.State, config *types.Config) OrderedRequest
 //
 // It compares items at index i and j, using first their priority, then
 // their enqueue time as tiebreaker.
-func requestsLess(a, b Request) bool {
+func requestsLess(a, b prioritizedRequest) bool {
 	if a.Priority == b.Priority {
 		// Tiebreaker: enqueue time.
 		// Ignore unlikely timestamp parsing error.
@@ -102,11 +96,11 @@ func requestsLess(a, b Request) bool {
 	return a.Priority < b.Priority
 }
 
-// ForPriority takes an already sorted prioritizedRequests slice, and
+// forPriority takes an already sorted prioritizedRequests slice, and
 // returns the sub slice of it for the given priority
-// TODO: Consider turning this into a generator, so that it can iterate only
+// TODO(akeshet): Consider turning this into a generator, so that it can iterate only
 // once through the list rather than once per priority level.
-func (s OrderedRequests) ForPriority(priority int32) OrderedRequests {
+func (s orderedRequests) forPriority(priority int32) orderedRequests {
 	start := sort.Search(len(s), func(i int) bool { return s[i].Priority >= priority })
 	end := sort.Search(len(s), func(i int) bool { return s[i].Priority > priority })
 	return s[start:end]
@@ -116,15 +110,15 @@ func (s OrderedRequests) ForPriority(priority int32) OrderedRequests {
 // account's MaxFanout tasks running concurrently (aside from in the
 // FreeBucket).
 //
-// TODO: Possible optimizations:
+// TODO(akeshet): Possible optimizations:
 //   - Pass in a heap instead of a sorted slice, and when demoting a job, demote
 //     it and heap fix it. Rather than modify the slice and re-sort. This should
 //     be a bit faster, because this function is likely to only demote a
 //     fraction of jobs in the slice.
-func demoteTasksBeyondFanout(prioritizedRequests OrderedRequests, state *types.State, config *types.Config) {
+func demoteTasksBeyondFanout(prioritizedRequests orderedRequests, state *State, config *Config) {
 	tasksPerAccount := make(map[string]int32)
 	for _, w := range state.Workers {
-		if !w.IsIdle() {
+		if !w.isIdle() {
 			tasksPerAccount[w.RunningTask.Request.AccountId]++
 		}
 	}

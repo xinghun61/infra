@@ -12,6 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package scheduler provides Scheduler, which is an implementation of
+// the quotascheduler algorithm.
+//
+// TODO(akeshet): Describe a story around the main calls that scheduler exposes,
+// and implement a few remaining ones. They will be things like:
+//  - Get/Set Config
+//  - InsertTask
+//  - UpdateTime
+//  - ReapFor
 package scheduler
 
 import (
@@ -21,13 +30,22 @@ import (
 
 	"github.com/golang/protobuf/ptypes"
 
-	"infra/qscheduler/qslib/priority"
 	"infra/qscheduler/qslib/tutils"
-	"infra/qscheduler/qslib/types"
 	"infra/qscheduler/qslib/types/account"
 	"infra/qscheduler/qslib/types/task"
 	"infra/qscheduler/qslib/types/vector"
 )
+
+// TODO(akeshet): Move all public API calls for scheduler to their own
+// file.
+// TODO(akeshet): Add unit test around the public API calls.
+
+// Scheduler encapsulates the state of a running quotascheduler, and its method
+// provide an implementation of the quotascheduler algorithm.
+type Scheduler struct {
+	state  *State
+	config *Config
+}
 
 // UpdateOrderError is an error that indicates that UpdateAccounts attempted to update a state
 // backwards in time.
@@ -41,10 +59,13 @@ func (e *UpdateOrderError) Error() string {
 	return fmt.Sprintf("Update time %v was older than existing state's time %v.", e.Next, e.Previous)
 }
 
-// UpdateAccounts updates |state|'s quota account balances, based on running
-// jobs, account policies, and the time elapsed since the last update.
-func UpdateAccounts(state *types.State, config *types.Config, t time.Time) error {
-	t0, err := ptypes.Timestamp(state.LastAccountUpdate)
+// UpdateTime updates the current time for a quotascheduler, and
+// updates quota account balances accordingly, based on running jobs,
+// account policies, and the time elapsed since the last update.
+func (s *Scheduler) UpdateTime(t time.Time) error {
+	state := s.state
+	config := s.config
+	t0, err := ptypes.Timestamp(state.LastUpdateTime)
 	if err != nil {
 		return err
 	}
@@ -62,7 +83,7 @@ func UpdateAccounts(state *types.State, config *types.Config, t time.Time) error
 	jobsPerAcct := make(map[string]*vector.IntVector)
 	if state.Workers != nil {
 		for _, w := range state.Workers {
-			if !w.IsIdle() {
+			if !w.isIdle() {
 				id := w.RunningTask.Request.AccountId
 				c := jobsPerAcct[id]
 				if c == nil {
@@ -99,28 +120,45 @@ func UpdateAccounts(state *types.State, config *types.Config, t time.Time) error
 	}
 	state.Balances = newBalances
 
-	state.LastAccountUpdate = tutils.TimestampProto(t)
+	state.LastUpdateTime = tutils.TimestampProto(t)
 
 	return nil
 }
 
-// QuotaSchedule performs a single round of the quota scheduler algorithm
+// IdleWorker describes a worker that is idle, along with
+// the provisionable labels that it possesses.
+type IdleWorker struct {
+	WorkerId string
+	Labels   task.LabelSet
+}
+
+// MarkIdle marks the set of supplied workers as idle, and with
+// the given provisionable labels.
+func (s *Scheduler) MarkIdle(workers []*IdleWorker) {
+	for _, i := range workers {
+		s.state.Workers[i.WorkerId] = &Worker{Labels: i.Labels}
+	}
+}
+
+// RunOnce performs a single round of the quota scheduler algorithm
 // on a given state and config, and returns a slice of state mutations.
 //
-// TODO: Revisit how to make this function an interruptable goroutine-based
+// TODO(akeshet): Revisit how to make this function an interruptable goroutine-based
 // calculation.
-func QuotaSchedule(state *types.State, config *types.Config) []types.Mutator {
-	var output []types.Mutator
-	requests := priority.PrioritizeRequests(state, config)
+func (s *Scheduler) RunOnce() []Mutator {
+	state := s.state
+	config := s.config
+	var output []Mutator
+	requests := s.prioritizeRequests()
 
 	// Proceed through multiple passes of the scheduling algorithm, from highest
 	// to lowest priority requests (high priority = low p).
 	for p := int32(0); p < vector.NumPriorities; p++ {
-		// TODO: There are a number of ways to optimize this loop eventually.
+		// TODO(akeshet): There are a number of ways to optimize this loop eventually.
 		// For instance:
 		// - Bail out if there are no more idle workers and no more
-		//   running jobs beyond a given priority.
-		jobsAtP := requests.ForPriority(p)
+		//   running jobs beyond a given
+		jobsAtP := requests.forPriority(p)
 		// Step 1: Match any requests to idle workers that have matching
 		// provisionable labels.
 		output = append(output, matchIdleBotsWithLabels(state, jobsAtP)...)
@@ -136,7 +174,7 @@ func QuotaSchedule(state *types.State, config *types.Config) []types.Mutator {
 
 	// A final pass matches free jobs (in the FreeBucket) to any remaining
 	// idle workers. The reprioritize and preempt stages do not apply here.
-	freeJobs := requests.ForPriority(account.FreeBucket)
+	freeJobs := requests.forPriority(account.FreeBucket)
 	output = append(output, matchIdleBotsWithLabels(state, freeJobs)...)
 	output = append(output, matchIdleBots(state, freeJobs)...)
 
@@ -145,8 +183,8 @@ func QuotaSchedule(state *types.State, config *types.Config) []types.Mutator {
 
 // matchIdleBotsWithLabels matches requests with idle workers that already
 // share all of that request's provisionable labels.
-func matchIdleBotsWithLabels(state *types.State, requestsAtP priority.OrderedRequests) []types.Mutator {
-	output := make([]types.Mutator, 0)
+func matchIdleBotsWithLabels(state *State, requestsAtP orderedRequests) []Mutator {
+	output := make([]Mutator, 0)
 	for i, request := range requestsAtP {
 		if request.Scheduled {
 			// This should not be possible, because matching by label is the first
@@ -155,15 +193,15 @@ func matchIdleBotsWithLabels(state *types.State, requestsAtP priority.OrderedReq
 			continue
 		}
 		for wid, worker := range state.Workers {
-			if worker.IsIdle() && task.LabelSet(worker.Labels).Equal(request.Request.Labels) {
-				m := types.AssignIdleWorker{
+			if worker.isIdle() && task.LabelSet(worker.Labels).Equal(request.Request.Labels) {
+				m := AssignIdleWorker{
 					WorkerId:  wid,
 					RequestId: request.RequestId,
 					Priority:  request.Priority,
 				}
 				output = append(output, &m)
 				m.Mutate(state)
-				requestsAtP[i] = priority.Request{Scheduled: true}
+				requestsAtP[i] = prioritizedRequest{Scheduled: true}
 				break
 			}
 		}
@@ -172,10 +210,10 @@ func matchIdleBotsWithLabels(state *types.State, requestsAtP priority.OrderedReq
 }
 
 // matchIdleBots matches requests with any idle workers.
-func matchIdleBots(state *types.State, requestsAtP []priority.Request) []types.Mutator {
-	output := make([]types.Mutator, 0)
+func matchIdleBots(state *State, requestsAtP []prioritizedRequest) []Mutator {
+	output := make([]Mutator, 0)
 
-	// TODO: Use maybeIdle to communicate back to caller that there is no need
+	// TODO(akeshet): Use maybeIdle to communicate back to caller that there is no need
 	// to call matchIdleBots again, or to attempt FreeBucket scheduling.
 	// Even though maybeIdle is unused, the logic to compute it is non-trivial
 	// so leaving it in place and suppressing unused variable message.
@@ -184,7 +222,7 @@ func matchIdleBots(state *types.State, requestsAtP []priority.Request) []types.M
 
 	idleWorkersIds := make([]string, 0, len(state.Workers))
 	for wid, worker := range state.Workers {
-		if worker.IsIdle() {
+		if worker.isIdle() {
 			idleWorkersIds = append(idleWorkersIds, wid)
 			maybeIdle = true
 		}
@@ -197,14 +235,14 @@ func matchIdleBots(state *types.State, requestsAtP []priority.Request) []types.M
 			// Skip this entry, it is already scheduled.
 			continue
 		}
-		m := types.AssignIdleWorker{
+		m := AssignIdleWorker{
 			WorkerId:  wid,
 			RequestId: request.RequestId,
 			Priority:  request.Priority,
 		}
 		output = append(output, &m)
 		m.Mutate(state)
-		requestsAtP[r] = priority.Request{Scheduled: true}
+		requestsAtP[r] = prioritizedRequest{Scheduled: true}
 		w++
 		if w == len(idleWorkersIds) {
 			maybeIdle = false
@@ -224,13 +262,13 @@ func matchIdleBots(state *types.State, requestsAtP []priority.Request) []types.M
 //
 // Running tasks are promoted if their quota account has a sufficiently positive
 // balance and a recharge rate that can sustain them at this level.
-func reprioritizeRunningTasks(state *types.State, config *types.Config, priority int32) []types.Mutator {
-	output := make([]types.Mutator, 0)
-	// TODO: jobs that are currently running, but have no corresponding account,
+func reprioritizeRunningTasks(state *State, config *Config, priority int32) []Mutator {
+	output := make([]Mutator, 0)
+	// TODO(akeshet): jobs that are currently running, but have no corresponding account,
 	// should be demoted immediately to the FreeBucket (probably their account)
 	// was deleted while running.
 	for accountID, fullBalance := range state.Balances {
-		// TODO: move the body of this loop to own function.
+		// TODO(akeshet): move the body of this loop to own function.
 		accountConfig, ok := config.AccountConfigs[accountID]
 		if !ok {
 			panic(fmt.Sprintf("There was a balance for unknown account %s", accountID))
@@ -257,20 +295,20 @@ func reprioritizeRunningTasks(state *types.State, config *types.Config, priority
 	return output
 }
 
-// TODO: Consider unifying doDemote and doPromote somewhat
+// TODO(akeshet): Consider unifying doDemote and doPromote somewhat
 // to reuse more code.
 
 // doDemote is a helper function used by reprioritizeRunningTasks
 // which demotes some jobs (selected from candidates) from priority to priority + 1.
-func doDemote(state *types.State, candidates []workerWithId, chargeRate float64, priority int32) []types.Mutator {
-	output := make([]types.Mutator, 0)
+func doDemote(state *State, candidates []workerWithId, chargeRate float64, priority int32) []Mutator {
+	output := make([]Mutator, 0)
 	sortAscendingCost(candidates)
 
 	numberToDemote := minInt(len(candidates), int(math.Ceil(-chargeRate)))
 	for _, toDemote := range candidates[:numberToDemote] {
-		mut := &types.ChangePriority{
+		mut := &ChangePriority{
 			NewPriority: priority + 1,
-			WorkerId:    toDemote.Id,
+			WorkerId:    toDemote.id,
 		}
 		output = append(output, mut)
 		mut.Mutate(state)
@@ -280,18 +318,18 @@ func doDemote(state *types.State, candidates []workerWithId, chargeRate float64,
 
 // doPromote is a helper function use by reprioritizeRunningTasks
 // which promotes some jobs (selected from candidates) from any level
-// > priority to priority.
-func doPromote(state *types.State, candidates []workerWithId, chargeRate float64, priority int32) []types.Mutator {
-	output := make([]types.Mutator, 0)
+// > priority to
+func doPromote(state *State, candidates []workerWithId, chargeRate float64, priority int32) []Mutator {
+	output := make([]Mutator, 0)
 	// We sort here in decreasing cost order.
 	sortDescendingCost(candidates)
 
 	numberToPromote := minInt(len(candidates), int(math.Ceil(chargeRate)))
 
 	for _, toPromote := range candidates[:numberToPromote] {
-		mut := &types.ChangePriority{
+		mut := &ChangePriority{
 			NewPriority: priority,
-			WorkerId:    toPromote.Id,
+			WorkerId:    toPromote.id,
 		}
 		output = append(output, mut)
 		mut.Mutate(state)
@@ -300,28 +338,28 @@ func doPromote(state *types.State, candidates []workerWithId, chargeRate float64
 }
 
 // workersAt is a helper function that returns the workers with a given
-// account id and running priority.
-func workersAt(ws map[string]*types.Worker, priority int32, accountID string) []workerWithId {
+// account id and running
+func workersAt(ws map[string]*Worker, priority int32, accountID string) []workerWithId {
 	ans := make([]workerWithId, 0, len(ws))
 	for wid, worker := range ws {
-		if !worker.IsIdle() &&
+		if !worker.isIdle() &&
 			worker.RunningTask.Request.AccountId == accountID &&
 			worker.RunningTask.Priority == priority {
-			ans = append(ans, workerWithId{Worker: worker, Id: wid})
+			ans = append(ans, workerWithId{worker, wid})
 		}
 	}
 	return ans
 }
 
 // workersBelow is a helper function that returns the workers with a given
-// account id and below a given running priority.
-func workersBelow(ws map[string]*types.Worker, priority int32, accountID string) []workerWithId {
+// account id and below a given running
+func workersBelow(ws map[string]*Worker, priority int32, accountID string) []workerWithId {
 	ans := make([]workerWithId, 0, len(ws))
 	for wid, worker := range ws {
-		if !worker.IsIdle() &&
+		if !worker.isIdle() &&
 			worker.RunningTask.Request.AccountId == accountID &&
 			worker.RunningTask.Priority > priority {
-			ans = append(ans, workerWithId{Worker: worker, Id: wid})
+			ans = append(ans, workerWithId{worker, wid})
 		}
 	}
 	return ans
@@ -330,18 +368,18 @@ func workersBelow(ws map[string]*types.Worker, priority int32, accountID string)
 // preemptRunningTasks interrupts lower priority already-running tasks, and
 // replaces them with higher priority tasks. When doing so, it also reimburses
 // the account that had been charged for the task.
-func preemptRunningTasks(state *types.State, jobsAtP []priority.Request, priority int32) []types.Mutator {
-	output := make([]types.Mutator, 0)
+func preemptRunningTasks(state *State, jobsAtP []prioritizedRequest, priority int32) []Mutator {
+	output := make([]Mutator, 0)
 	candidates := make([]workerWithId, 0, len(state.Workers))
 	// Accounts that are already running a lower priority job are not
-	// permitted to preempt jobs at this priority. This is to prevent a type
+	// permitted to preempt jobs at this   This is to prevent a type
 	// of thrashing that may occur if an account is unable to promote jobs to
 	// this priority (because that would push it over its charge rate)
-	// but still has positive quota at this priority.
+	// but still has positive quota at this
 	bannedAccounts := make(map[string]bool)
 	for wid, worker := range state.Workers {
-		if !worker.IsIdle() && worker.RunningTask.Priority > priority {
-			candidates = append(candidates, workerWithId{Worker: worker, Id: wid})
+		if !worker.isIdle() && worker.RunningTask.Priority > priority {
+			candidates = append(candidates, workerWithId{worker, wid})
 			bannedAccounts[worker.RunningTask.Request.AccountId] = true
 		}
 	}
@@ -358,12 +396,12 @@ func preemptRunningTasks(state *types.State, jobsAtP []priority.Request, priorit
 		if _, ok := bannedAccounts[requestAccountID]; ok {
 			continue
 		}
-		cost := candidate.Worker.RunningTask.Cost
+		cost := candidate.worker.RunningTask.Cost
 		requestAccountBalance, ok := state.Balances[requestAccountID]
 		if !ok || requestAccountBalance.Less(*cost) {
 			continue
 		}
-		mut := types.PreemptTask{Priority: priority, RequestId: request.RequestId, WorkerId: candidate.Id}
+		mut := PreemptTask{Priority: priority, RequestId: request.RequestId, WorkerId: candidate.id}
 		output = append(output, &mut)
 		mut.Mutate(state)
 		request.Scheduled = true

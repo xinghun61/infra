@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package priority
+package scheduler
 
 import (
 	"fmt"
@@ -23,7 +23,6 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 
 	"infra/qscheduler/qslib/tutils"
-	"infra/qscheduler/qslib/types"
 	"infra/qscheduler/qslib/types/account"
 	"infra/qscheduler/qslib/types/task"
 	"infra/qscheduler/qslib/types/vector"
@@ -39,34 +38,37 @@ func TestBasicPrioritization(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
-		state    types.State
-		config   types.Config
-		expected OrderedRequests
+		s        *Scheduler
+		expected orderedRequests
 	}{
 		// One request with quota, should be given appropriate priority.
 		{
-			types.State{
-				Balances: map[string]*vector.Vector{"a1": vector.New(1, 0, 0)},
-				Requests: map[string]*task.Request{
-					"t1": &task.Request{AccountId: "a1"},
+			&Scheduler{
+				&State{
+					Balances: map[string]*vector.Vector{"a1": vector.New(1, 0, 0)},
+					Requests: map[string]*task.Request{
+						"t1": &task.Request{AccountId: "a1"},
+					},
 				},
+				NewConfig(),
 			},
-			*types.NewConfig(),
-			[]Request{{RequestId: "t1", Priority: 0, Request: &task.Request{AccountId: "a1"}}},
+			[]prioritizedRequest{{RequestId: "t1", Priority: 0, Request: &task.Request{AccountId: "a1"}}},
 		},
 
 		// One request without quota, should be in the FreeBucket.
 		{
-			types.State{
-				Requests: map[string]*task.Request{"t1": &task.Request{}},
+			&Scheduler{
+				&State{
+					Requests: map[string]*task.Request{"t1": &task.Request{}},
+				},
+				NewConfig(),
 			},
-			*types.NewConfig(),
-			[]Request{{RequestId: "t1", Priority: account.FreeBucket, Request: &task.Request{}}},
+			[]prioritizedRequest{{RequestId: "t1", Priority: account.FreeBucket, Request: &task.Request{}}},
 		},
 	}
 
 	for i, test := range cases {
-		actual := PrioritizeRequests(&test.state, &test.config)
+		actual := test.s.prioritizeRequests()
 
 		if diff := pretty.Compare(actual, test.expected); diff != "" {
 			t.Errorf(fmt.Sprintf("Case %d got unexpected slice diff (-got +want): %s", i, diff))
@@ -88,15 +90,15 @@ func TestPrioritizeWithEnqueueTimeTieBreaker(t *testing.T) {
 	eR := task.Request{AccountId: "a1", EnqueueTime: eT}
 	lR := task.Request{AccountId: "a1", EnqueueTime: lT}
 
-	state := types.State{
+	state := &State{
 		Balances: map[string]*vector.Vector{"a1": vector.New(1, 0, 0)},
 		Requests: map[string]*task.Request{
 			"t2": &lR,
 			"t1": &eR,
 		},
 	}
-	actual := PrioritizeRequests(&state, types.NewConfig())
-	expected := OrderedRequests([]Request{
+	actual := (&Scheduler{state, NewConfig()}).prioritizeRequests()
+	expected := orderedRequests([]prioritizedRequest{
 		{RequestId: "t1", Priority: 0, Request: &eR},
 		{RequestId: "t2", Priority: 0, Request: &lR},
 	})
@@ -111,7 +113,7 @@ func TestPrioritizeWithEnqueueTimeTieBreaker(t *testing.T) {
 // requests are assigned to the FreeBucket.
 func TestDemoteBeyondFanout(t *testing.T) {
 	t.Parallel()
-	config := &types.Config{
+	config := &Config{
 		AccountConfigs: map[string]*account.Config{
 			"a1": {MaxFanout: 3},
 			"a2": {},
@@ -135,7 +137,7 @@ func TestDemoteBeyondFanout(t *testing.T) {
 		"7": &r3,
 		"8": &r4,
 	}
-	state := &types.State{
+	state := &State{
 		Balances: map[string]*vector.Vector{
 			"a1": {},
 			"a2": {},
@@ -144,14 +146,14 @@ func TestDemoteBeyondFanout(t *testing.T) {
 		Workers:  workers,
 	}
 
-	priList := []Request{
+	priList := []prioritizedRequest{
 		{RequestId: "5", Priority: 0, Request: &r1},
 		{RequestId: "6", Priority: 0, Request: &r2},
 		{RequestId: "7", Priority: 0, Request: &r3},
 		{RequestId: "8", Priority: account.FreeBucket, Request: &r4},
 	}
 
-	expected := []Request{
+	expected := []prioritizedRequest{
 		{RequestId: "5", Priority: 0, Request: &r1},
 		// This request got demoted from P0 to FreeBucket because it
 		// exceeded the account's max fanout.
@@ -185,7 +187,7 @@ func TestPrioritize(t *testing.T) {
 		a2: vector.New(0, 1, 0),
 		a3: vector.New(),
 	}
-	config := &types.Config{
+	config := &Config{
 		AccountConfigs: map[string]*account.Config{
 			a1: &account.Config{MaxFanout: 3},
 			a2: &account.Config{},
@@ -228,13 +230,13 @@ func TestPrioritize(t *testing.T) {
 		"6": &req6,
 	}
 
-	state := &types.State{
+	state := &State{
 		Balances: balances,
 		Requests: reqs,
 		Workers:  getWorkers(running),
 	}
 
-	expected := OrderedRequests([]Request{
+	expected := orderedRequests([]prioritizedRequest{
 		// A1 gets one additional request at P0, prior to overflowing fanout.
 		{RequestId: "1", Priority: 0, Request: &req1},
 		// A2 gets a P1 request.
@@ -246,7 +248,7 @@ func TestPrioritize(t *testing.T) {
 		{RequestId: "6", Priority: account.FreeBucket, Request: &req6},
 	})
 
-	actual := PrioritizeRequests(state, config)
+	actual := (&Scheduler{state, config}).prioritizeRequests()
 
 	if diff := pretty.Compare(actual, expected); diff != "" {
 		t.Errorf(fmt.Sprintf("Got unexpected diff (-got +want): %s", diff))
@@ -257,16 +259,16 @@ func TestPrioritize(t *testing.T) {
 // sub-slices of a prioritized list.
 func TestForPriority(t *testing.T) {
 	t.Parallel()
-	pRequests := OrderedRequests([]Request{
-		Request{Priority: 0},
-		Request{Priority: 0},
-		Request{Priority: 1},
-		Request{Priority: 3},
-		Request{Priority: 3},
-		Request{Priority: 4},
+	pRequests := orderedRequests([]prioritizedRequest{
+		prioritizedRequest{Priority: 0},
+		prioritizedRequest{Priority: 0},
+		prioritizedRequest{Priority: 1},
+		prioritizedRequest{Priority: 3},
+		prioritizedRequest{Priority: 3},
+		prioritizedRequest{Priority: 4},
 	})
 
-	expecteds := []OrderedRequests{
+	expecteds := []orderedRequests{
 		pRequests[0:2],
 		pRequests[2:3],
 		pRequests[3:3],
@@ -276,7 +278,7 @@ func TestForPriority(t *testing.T) {
 	}
 
 	for p := int32(0); p < 6; p++ {
-		actual := pRequests.ForPriority(p)
+		actual := pRequests.forPriority(p)
 		expected := expecteds[p]
 		if diff := pretty.Compare(actual, expected); diff != "" {
 			t.Errorf(fmt.Sprintf("P%d slice got unexpected diff (-got +want): %s", p, diff))
@@ -293,11 +295,11 @@ func atTime(seconds time.Duration) *timestamp.Timestamp {
 
 // getWorkers is a helper function to turn a slice of running tasks
 // into a workers map.
-func getWorkers(running []*task.Run) map[string]*types.Worker {
-	workers := make(map[string]*types.Worker)
+func getWorkers(running []*task.Run) map[string]*Worker {
+	workers := make(map[string]*Worker)
 	for i, r := range running {
 		wid := fmt.Sprintf("w%d", i)
-		workers[wid] = &types.Worker{Labels: []string{}, RunningTask: r}
+		workers[wid] = &Worker{Labels: []string{}, RunningTask: r}
 	}
 	return workers
 }

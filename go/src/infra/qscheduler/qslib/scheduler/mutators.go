@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package types
+package scheduler
 
 import (
 	"fmt"
@@ -22,7 +22,7 @@ import (
 )
 
 // Mutator is an interface that describes operations that mutate a State
-// TODO: Consider moving this interface definition to scheduler package.
+// TODO(akeshet): Consider moving this interface definition to scheduler package.
 type Mutator interface {
 	// Mutate modifies the given state, according to the behavior of the
 	// Mutator.
@@ -34,7 +34,7 @@ type Mutator interface {
 // Assign a request to an idle worker. Panic if the worker wasn't previously idle.
 func (m *AssignIdleWorker) Mutate(state *State) {
 	w := state.Workers[m.WorkerId]
-	if !w.IsIdle() {
+	if !w.isIdle() {
 		panic(fmt.Sprintf("Worker %s is not idle, it is running task %s.", m.WorkerId, w.RunningTask.RequestId))
 	}
 	rt := &task.Run{
