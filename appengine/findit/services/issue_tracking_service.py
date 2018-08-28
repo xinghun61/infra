@@ -57,6 +57,12 @@ class FlakyTestIssueGenerator(object):
   """Encapsulates details needed to create or update a Monorail issue."""
   __metaclass__ = abc.ABCMeta
 
+  def __init__(self):
+    """Initiates a FlakyTestIssueGenerator object."""
+
+    # Id of the previous issue that was tracking this flaky test.
+    self._previous_tracking_bug_id = None
+
   @abc.abstractmethod
   def GetStepName(self):
     """Gets the name of the step to create or update issue for.
@@ -76,12 +82,8 @@ class FlakyTestIssueGenerator(object):
     return
 
   @abc.abstractmethod
-  def GetDescription(self, previous_tracking_bug_id=None):
-    """Gets description for the issue to be created
-
-    Args:
-      previous_tracking_bug_id: id of the previous bug that was used to track
-                                this flaky test.
+  def GetDescription(self):
+    """Gets description for the issue to be created.
 
     Returns:
       A string representing the description.
@@ -89,12 +91,8 @@ class FlakyTestIssueGenerator(object):
     return
 
   @abc.abstractmethod
-  def GetComment(self, previous_tracking_bug_id=None):
+  def GetComment(self):
     """Gets a comment to post an update to the issue.
-
-    Args:
-      previous_tracking_bug_id: id of the previous bug that was used to track
-                                this flaky test.
 
     Returns:
       A string representing the comment.
@@ -159,6 +157,22 @@ class FlakyTestIssueGenerator(object):
       A string representing the Monorail project.
     """
     return 'chromium'
+
+  def GetPreviousTrackingBugId(self):
+    """Gets the id of the previous issue that was tracking this flaky test.
+
+    Returns:
+      A string representing the Id of the issue.
+    """
+    return self._previous_tracking_bug_id
+
+  def SetPreviousTrackingBugId(self, previous_tracking_bug_id):
+    """Sets the id of the previous issue that was tracking this flaky test.
+
+    Args:
+      previous_tracking_bug_id: Id of the issue that was tracking this test.
+    """
+    self._previous_tracking_bug_id = previous_tracking_bug_id
 
 
 def AddFinditLabelToIssue(issue):
@@ -383,14 +397,11 @@ def UpdateBug(issue, comment, project_id='chromium'):
   return issue.id
 
 
-def CreateIssueWithIssueGenerator(issue_generator,
-                                  previous_tracking_bug_id=None):
+def CreateIssueWithIssueGenerator(issue_generator):
   """Creates a new issue with a given issue generator.
 
   Args:
     issue_generator: A FlakyTestIssueGenerator object.
-    previous_tracking_bug_id: id of the previous bug that was used to track this
-                              flaky test.
 
   Returns:
     The id of the newly created issue.
@@ -400,7 +411,7 @@ def CreateIssueWithIssueGenerator(issue_generator,
   issue = Issue({
       'status': issue_generator.GetStatus(),
       'summary': issue_generator.GetSummary(),
-      'description': issue_generator.GetDescription(previous_tracking_bug_id),
+      'description': issue_generator.GetDescription(),
       'projectId': issue_generator.GetMonorailProject(),
       'labels': labels,
       'fieldValues': [issue_generator.GetFlakyTestCustomizedField()]
@@ -409,16 +420,12 @@ def CreateIssueWithIssueGenerator(issue_generator,
   return CreateBug(issue, issue_generator.GetMonorailProject())
 
 
-def UpdateIssueWithIssueGenerator(issue_id,
-                                  issue_generator,
-                                  previous_tracking_bug_id=None):
+def UpdateIssueWithIssueGenerator(issue_id, issue_generator):
   """Updates an existing issue with a given issue generator.
-  
+
   Args:
     issue_id: Id of the issue to be updated.
     issue_generator: A FlakyTestIssueGenerator object.
-    previous_tracking_bug_id: id of the previous bug that was used to track this
-                              flaky test.
   """
   issue = GetMergedDestinationIssueForId(issue_id,
                                          issue_generator.GetMonorailProject())
@@ -427,7 +434,7 @@ def UpdateIssueWithIssueGenerator(issue_id,
       issue.labels.append(label)
 
   issue.field_values.append(issue_generator.GetFlakyTestCustomizedField())
-  UpdateBug(issue, issue_generator.GetComment(previous_tracking_bug_id),
+  UpdateBug(issue, issue_generator.GetComment(),
             issue_generator.GetMonorailProject())
 
 
@@ -443,7 +450,7 @@ def UpdateIssueIfExistsOrCreate(issue_generator, luci_project='chromium'):
     issue_generator: A FlakyTestIssueGenerator object.
     luci_project: Name of the LUCI project that the flaky test is in, it is
                   used for searching existing Flake and FlakeIssue entities.
-  
+
   Returns:
     Id of the issue that was eventually created or updated.
   """
@@ -479,10 +486,9 @@ def UpdateIssueIfExistsOrCreate(issue_generator, luci_project='chromium'):
           'occurrences.',
           FlakeIssue.GetLinkForIssue(monorail_project, merged_issue.id),
           target_flake.key)
+      issue_generator.SetPreviousTrackingBugId(previous_tracking_bug_id)
       UpdateIssueWithIssueGenerator(
-          issue_id=flake_issue.issue_id,
-          issue_generator=issue_generator,
-          previous_tracking_bug_id=previous_tracking_bug_id)
+          issue_id=flake_issue.issue_id, issue_generator=issue_generator)
       return flake_issue.issue_id
 
     logging.info(
@@ -500,16 +506,14 @@ def UpdateIssueIfExistsOrCreate(issue_generator, luci_project='chromium'):
         FlakeIssue.GetLinkForIssue(monorail_project, issue_id),
         target_flake.key)
     _AssignIssueIdToFlake(issue_id, target_flake)
+    issue_generator.SetPreviousTrackingBugId(previous_tracking_bug_id)
     UpdateIssueWithIssueGenerator(
-        issue_id=issue_id,
-        issue_generator=issue_generator,
-        previous_tracking_bug_id=previous_tracking_bug_id)
+        issue_id=issue_id, issue_generator=issue_generator)
     return issue_id
 
   logging.info('No existing open issue was found, create a new one.')
-  issue_id = CreateIssueWithIssueGenerator(
-      issue_generator=issue_generator,
-      previous_tracking_bug_id=previous_tracking_bug_id)
+  issue_generator.SetPreviousTrackingBugId(previous_tracking_bug_id)
+  issue_id = CreateIssueWithIssueGenerator(issue_generator=issue_generator)
   logging.info('%s was created for flake: %s.',
                FlakeIssue.GetLinkForIssue(monorail_project, issue_id),
                target_flake.key)
@@ -519,7 +523,7 @@ def UpdateIssueIfExistsOrCreate(issue_generator, luci_project='chromium'):
 
 def _AssignIssueIdToFlake(issue_id, flake):
   """Assigns an issue id to a flake, and created a FlakeIssue if necessary.
-  
+
   Args:
     issue_id: Id of a Monorail issue.
     flake: A Flake Model entity.

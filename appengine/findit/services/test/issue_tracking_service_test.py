@@ -23,14 +23,16 @@ class TestIssueGenerator(issue_tracking_service.FlakyTestIssueGenerator):
   def GetTestName(self):
     return 'test'
 
-  def GetDescription(self, previous_tracking_bug_id=None):
+  def GetDescription(self):
+    previous_tracking_bug_id = self.GetPreviousTrackingBugId()
     if previous_tracking_bug_id:
       return ('description with previous tracking bug id: %s.' %
               previous_tracking_bug_id)
 
     return 'description without previous tracking bug id.'
 
-  def GetComment(self, previous_tracking_bug_id=None):
+  def GetComment(self):
+    previous_tracking_bug_id = self.GetPreviousTrackingBugId()
     if previous_tracking_bug_id:
       return ('comment with previous tracking bug id: %s.' %
               previous_tracking_bug_id)
@@ -434,7 +436,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
                                         mock_update_bug_fn):
     test_issue_generator = TestIssueGenerator()
     issue_id = issue_tracking_service.CreateIssueWithIssueGenerator(
-        issue_generator=test_issue_generator, previous_tracking_bug_id=None)
+        issue_generator=test_issue_generator)
 
     self.assertTrue(mock_create_bug_fn.called)
     self.assertFalse(mock_update_bug_fn.called)
@@ -456,8 +458,9 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
   def testCreateIssueWithIssueGeneratorWithPreviousTrackingBugId(
       self, mock_create_bug_fn, mock_update_bug_fn):
     test_issue_generator = TestIssueGenerator()
+    test_issue_generator.SetPreviousTrackingBugId(56789)
     issue_id = issue_tracking_service.CreateIssueWithIssueGenerator(
-        issue_generator=test_issue_generator, previous_tracking_bug_id=56789)
+        issue_generator=test_issue_generator)
 
     self.assertTrue(mock_create_bug_fn.called)
     self.assertFalse(mock_update_bug_fn.called)
@@ -493,9 +496,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
 
     test_issue_generator = TestIssueGenerator()
     issue_tracking_service.UpdateIssueWithIssueGenerator(
-        issue_id=issue_id,
-        issue_generator=test_issue_generator,
-        previous_tracking_bug_id=None)
+        issue_id=issue_id, issue_generator=test_issue_generator)
 
     self.assertFalse(mock_create_bug_fn.called)
     mock_update_bug_fn.assert_called_once_with(
@@ -526,10 +527,9 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     mock_get_merged_issue.return_value = issue
 
     test_issue_generator = TestIssueGenerator()
+    test_issue_generator.SetPreviousTrackingBugId(56789)
     issue_tracking_service.UpdateIssueWithIssueGenerator(
-        issue_id=issue_id,
-        issue_generator=test_issue_generator,
-        previous_tracking_bug_id=56789)
+        issue_id=issue_id, issue_generator=test_issue_generator)
 
     self.assertFalse(mock_create_bug_fn.called)
     mock_update_bug_fn.assert_called_once_with(
@@ -560,9 +560,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
 
     self.assertFalse(mock_create_with_issue_generator_fn.called)
     mock_update_with_issue_generator_fn.assert_called_once_with(
-        issue_id=12345,
-        issue_generator=test_issue_generator,
-        previous_tracking_bug_id=None)
+        issue_id=12345, issue_generator=test_issue_generator)
     fetched_flakes = Flake.query().fetch()
     fetched_flake_issues = FlakeIssue.query().fetch()
     self.assertEqual(1, len(fetched_flakes))
@@ -603,7 +601,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     issue_tracking_service.UpdateIssueIfExistsOrCreate(test_issue_generator)
 
     mock_create_with_issue_generator_fn.assert_called_once_with(
-        issue_generator=test_issue_generator, previous_tracking_bug_id=12345)
+        issue_generator=test_issue_generator)
     self.assertFalse(mock_update_with_issue_generator_fn.called)
     fetched_flakes = Flake.query().fetch()
     fetched_flake_issues = FlakeIssue.query().fetch()
@@ -639,9 +637,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
 
     self.assertFalse(mock_create_with_issue_generator_fn.called)
     mock_update_with_issue_generator_fn.assert_called_once_with(
-        issue_id=45678,
-        issue_generator=test_issue_generator,
-        previous_tracking_bug_id=12345)
+        issue_id=45678, issue_generator=test_issue_generator)
     fetched_flakes = Flake.query().fetch()
     fetched_flake_issues = FlakeIssue.query().fetch()
     self.assertEqual(1, len(fetched_flakes))
@@ -682,7 +678,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     issue_tracking_service.UpdateIssueIfExistsOrCreate(test_issue_generator)
 
     mock_create_with_issue_generator_fn.assert_called_once_with(
-        issue_generator=test_issue_generator, previous_tracking_bug_id=56789)
+        issue_generator=test_issue_generator)
     self.assertFalse(mock_update_with_issue_generator_fn.called)
     fetched_flakes = Flake.query().fetch()
     fetched_flake_issues = FlakeIssue.query().fetch()
@@ -711,7 +707,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     issue_tracking_service.UpdateIssueIfExistsOrCreate(test_issue_generator)
 
     mock_create_with_issue_generator_fn.assert_called_once_with(
-        issue_generator=test_issue_generator, previous_tracking_bug_id=None)
+        issue_generator=test_issue_generator)
     self.assertFalse(mock_update_with_issue_generator_fn.called)
     fetched_flakes = Flake.query().fetch()
     fetched_flake_issues = FlakeIssue.query().fetch()
@@ -747,7 +743,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     issue_tracking_service.UpdateIssueIfExistsOrCreate(test_issue_generator)
 
     mock_create_with_issue_generator_fn.assert_called_once_with(
-        issue_generator=test_issue_generator, previous_tracking_bug_id=None)
+        issue_generator=test_issue_generator)
     self.assertFalse(mock_update_with_issue_generator_fn.called)
     fetched_flakes = Flake.query().fetch()
     fetched_flake_issues = FlakeIssue.query().fetch()
@@ -776,9 +772,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
 
     self.assertFalse(mock_create_with_issue_generator_fn.called)
     mock_update_with_issue_generator_fn.assert_called_once_with(
-        issue_id=99999,
-        issue_generator=test_issue_generator,
-        previous_tracking_bug_id=None)
+        issue_id=99999, issue_generator=test_issue_generator)
     fetched_flakes = Flake.query().fetch()
     fetched_flake_issues = FlakeIssue.query().fetch()
     self.assertEqual(1, len(fetched_flakes))
@@ -819,9 +813,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
 
     self.assertFalse(mock_create_with_issue_generator_fn.called)
     mock_update_with_issue_generator_fn.assert_called_once_with(
-        issue_id=99999,
-        issue_generator=test_issue_generator,
-        previous_tracking_bug_id=12345)
+        issue_id=99999, issue_generator=test_issue_generator)
     fetched_flakes = Flake.query().fetch()
     fetched_flake_issues = FlakeIssue.query().fetch()
     self.assertEqual(1, len(fetched_flakes))

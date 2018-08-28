@@ -68,6 +68,7 @@ class FlakeDetectionIssueGenerator(
   """Encapsulates the details of issues filed by Flake Detection."""
 
   def __init__(self, flake, num_occurrences):
+    super(FlakeDetectionIssueGenerator, self).__init__()
     self._flake = flake
     self._num_occurrences = num_occurrences
 
@@ -81,7 +82,8 @@ class FlakeDetectionIssueGenerator(
     return FlakeIssue.GetMonorailProjectFromLuciProject(
         self._flake.luci_project)
 
-  def GetDescription(self, previous_tracking_bug_id=None):
+  def GetDescription(self):
+    previous_tracking_bug_id = self.GetPreviousTrackingBugId()
     previous_tracking_bug_text = _FLAKE_DETECTION_PREVIOUS_TRACKING_BUG.format(
         previous_tracking_bug_id) if previous_tracking_bug_id else ''
 
@@ -94,7 +96,8 @@ class FlakeDetectionIssueGenerator(
 
     return description
 
-  def GetComment(self, previous_tracking_bug_id=None):
+  def GetComment(self):
+    previous_tracking_bug_id = self.GetPreviousTrackingBugId()
     previous_tracking_bug_text = _FLAKE_DETECTION_PREVIOUS_TRACKING_BUG.format(
         previous_tracking_bug_id) if previous_tracking_bug_id else ''
 
