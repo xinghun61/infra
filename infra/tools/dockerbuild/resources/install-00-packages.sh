@@ -4,7 +4,7 @@
 # found in the LICENSE file.
 
 # Load our installation utility functions.
-. ${SETUP_ROOT}/install-util.sh
+. /install-util.sh
 
 # Install missing packages for system Python modules.
 #
@@ -20,4 +20,11 @@ elif [ -x /usr/bin/yum ]; then
 else
   echo "UKNOWN package platform."
   exit 1
+fi
+
+# The CentOS images also don't have `nproc`, so add it.
+if ! which nproc; then
+  echo '#!/bin/bash' > /usr/bin/nproc
+  echo 'grep processor < /proc/cpuinfo | wc -l' >> /usr/bin/nproc
+  chmod +x /usr/bin/nproc
 fi

@@ -10,7 +10,7 @@
 # - XPYTHONPATH is the path to the cross-compile Python's site packages.
 
 # Load our installation utility functions.
-. ${SETUP_ROOT}/install-util.sh
+. /install-util.sh
 
 if \
   [ -z "${ARCHIVE_PATH}" ] || \

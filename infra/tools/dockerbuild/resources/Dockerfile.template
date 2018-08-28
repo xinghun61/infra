@@ -39,10 +39,13 @@ RUN \
 ENV LOCAL_PREFIX="/usr/host"
 ENV PATH=$${LOCAL_PREFIX}/bin:$${PATH}
 
-# Configure our setup script root.
+# Configure our setup script root. We copy install-util to / in order to allow
+# other users of the final container to use it (specifially for
+# toggle_host+toggle_cross functionality when using this container for cross
+# compiling other tools).
+COPY ${resources_relpath}/install-util.sh /
 ENV SETUP_ROOT=/opt/setup
 WORKDIR $${SETUP_ROOT}
-COPY ${resources_relpath}/install-util.sh .
 
 # install-00-packages.sh
 COPY ${resources_relpath}/install-00-packages.sh .
@@ -150,6 +153,9 @@ RUN rm -rf "${SETUP_ROOT}"
 
 # Install auxiliary "pip" wheels into default Python environment.
 RUN pip install virtualenv cffi distutilscross auditwheel numpy
+
+### Add helper script
+COPY ${resources_relpath}/start.sh /
 
 # Enter our "/work" (Dockcross script expectation).
 WORKDIR /work

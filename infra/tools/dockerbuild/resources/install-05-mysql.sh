@@ -12,7 +12,7 @@
 # - ARCHIVE_PATH is the path to the MySQL archive file.
 
 # Load our installation utility functions.
-. ${SETUP_ROOT}/install-util.sh
+. /install-util.sh
 
 if echo ${CROSS_TRIPLE} | grep mipsel; then
   # mipsel has trouble compiling MySQL, so skip it

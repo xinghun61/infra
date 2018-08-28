@@ -19,7 +19,7 @@
 # properly.
 
 # Load our installation utility functions.
-. ${SETUP_ROOT}/install-util.sh
+. /install-util.sh
 
 if \
   [ -z "${ARCHIVE_PATH}" ] || \

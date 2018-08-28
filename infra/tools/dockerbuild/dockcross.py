@@ -39,7 +39,7 @@ def _docker_image_exists(system, identifier):
 class Builder(object):
 
   # Tag used for pushed Docker images.
-  DOCKER_IMAGE_TAG = 'v1.3.0'
+  DOCKER_IMAGE_TAG = 'v1.4.0'
 
   # The Docker repository to use.
   DOCKER_REPOSITORY = 'https://gcr.io'
@@ -322,7 +322,9 @@ class Image(collections.namedtuple('_Image', (
         run_args.append('-w=%s' % (self.workrel(work_dir, cwd),))
 
       for k, v in env.iteritems():
-        run_args.extend(['-e', '%s=%r' % (k, v)])
+        v = v.replace(work_dir, '/work/')
+        assert ' ' not in v, 'BUG: spaces in envvars not supported correctly'
+        run_args.extend(['-e', '%s=%s' % (k, v)])
 
       # Run the process within the working directory.
       cwd = work_dir
@@ -330,6 +332,9 @@ class Image(collections.namedtuple('_Image', (
       args += [self.bin]
       if run_args:
         args += ['-a', ' '.join(run_args)]
+
+      args.append('/start.sh')
+
     else:
       # Build arguments to run natively.
       if cmd[0] == 'python':

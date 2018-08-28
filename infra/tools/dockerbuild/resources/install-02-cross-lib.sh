@@ -13,7 +13,7 @@
 # - NO_HOST, if set, omits the "--host" argument from the configure script.
 
 # Load our installation utility functions.
-. ${SETUP_ROOT}/install-util.sh
+. /install-util.sh
 
 if [ -z "${ARCHIVE_PATH}" ]; then
   echo "ERROR: Missing required environment."

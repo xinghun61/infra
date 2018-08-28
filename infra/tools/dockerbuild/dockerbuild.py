@@ -151,8 +151,27 @@ def _main_run(args, system):
   if dx_args and dx_args[0] == '--':
     dx_args = dx_args[1:]
 
-  util.LOGGER.info('Running command (cwd=%s): %s', args.workdir, args.args)
-  return dx.run(args.workdir, dx_args, stdout=sys.stdout, stderr=sys.stderr)
+  # abs and ends with slash
+  args.workdir = os.path.sep.join([os.path.abspath(args.workdir), ''])
+  args.cwd = os.path.sep.join([os.path.abspath(args.cwd), ''])
+  assert args.cwd.startswith(args.workdir), (
+    'workdir %r does not contain cwd %r' % (args.workdir, args.cwd))
+
+  # Pass through envvars.
+  env = {}
+  for var, value in args.env:
+    env['DOCKERBUILD_SET_'+var] = (
+      value.replace(args.workdir, '/work/').encode('base64').strip())
+  for var, value in args.env_prefix:
+    env['DOCKERBUILD_PREPEND_'+var] = (
+      value.replace(args.workdir, '/work/').encode('base64').strip())
+  for var, value in args.env_suffix:
+    env['DOCKERBUILD_APPEND_'+var] = (
+      value.replace(args.workdir, '/work/').encode('base64').strip())
+
+  retcode, _ = dx.run(args.workdir, dx_args, stdout=sys.stdout,
+                      stderr=sys.stderr, cwd=args.cwd, env=env)
+  sys.exit(retcode)
 
 
 def add_argparse_options(parser):
@@ -235,11 +254,26 @@ def add_argparse_options(parser):
       choices=platform.NAMES,
       help='Run in the container for the specified platform.')
   subparser.add_argument('--workdir', default=cwd,
-      help='Use this as the working directory. Default is current working '
-           'directory.')
+      help=('Mount this directory as "/work". Must be equal to, or a parent '
+            'of, $PWD. The command will be run from the translated $PWD under '
+            '"/work". So if $PWD is "/some/path/to/dir", and --workdir is '
+            '"/some/path", then "/some/path" will be mounted as "/work", and '
+            'the command will run from "/work/to/dir".'))
+  subparser.add_argument('--env', nargs=2, action='append', default=[],
+      help=('Set this envvar in the container. '
+            'If the value contains the workdir, it will be replaced with '
+            '"/work".'))
+  subparser.add_argument('--env-prefix', nargs=2, action='append', default=[],
+      help=('Add path envvar at the beginning of the container\'s value. '
+            'If the value contains the workdir, it will be replaced with '
+            '"/work".'))
+  subparser.add_argument('--env-suffix', nargs=2, action='append', default=[],
+      help=('Add path envvar at the end of the container\'s value. '
+            'If the value contains the workdir, it will be replaced with '
+            '"/work".'))
   subparser.add_argument('args', nargs=argparse.REMAINDER,
       help='Command-line arguments to pass.')
-  subparser.set_defaults(func=_main_run)
+  subparser.set_defaults(func=_main_run, cwd=cwd)
 
 
 def run(args):

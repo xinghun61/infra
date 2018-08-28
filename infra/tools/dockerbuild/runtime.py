@@ -148,8 +148,10 @@ class System(object):
         util.LOGGER.debug('Removing temporary subdirectory: %s', tdir)
         util.removeall(tdir)
 
-  def run(self, args, cwd=None, env=None, stdout=None, stderr=None,
-          retcodes=None):
+  _devnull = open(os.devnull, 'w')
+
+  def run(self, args, cwd=None, env=None, stdout=subprocess.PIPE,
+          stderr=subprocess.STDOUT, stdin=_devnull, retcodes=None):
     # Fold enviornment augmentations into the default system environment.
     cwd = cwd or os.getcwd()
     util.LOGGER.debug('Running command: %s (env=%s; cwd=%s)', args, env, cwd)
@@ -157,24 +159,23 @@ class System(object):
     kwargs = {
         'cwd': cwd,
         'env': os.environ.copy(),
-        'stdout': stdout or subprocess.PIPE,
-        'stderr': stderr or subprocess.STDOUT,
+        'stdin':  stdin,
+        'stdout': stdout,
+        'stderr': stderr,
     }
     if env is not None:
       kwargs['env'].update(env)
 
     stdout_lines = []
-    with open(os.devnull, 'w') as fd:
-      kwargs['stdin'] = fd
-      proc = subprocess.Popen(args, **kwargs)
+    proc = subprocess.Popen(args, **kwargs)
 
-      if kwargs['stdout'] is subprocess.PIPE:
-        for stdout_line in iter(proc.stdout.readline, ""):
-          stdout_line = stdout_line.rstrip()
-          util.LOGGER.debug('STDOUT: "%s"', stdout_line)
-          stdout_lines.append(stdout_line)
+    if kwargs['stdout'] is subprocess.PIPE:
+      for stdout_line in iter(proc.stdout.readline, ""):
+        stdout_line = stdout_line.rstrip()
+        util.LOGGER.debug('STDOUT: "%s"', stdout_line)
+        stdout_lines.append(stdout_line)
 
-      returncode = proc.wait()
+    returncode = proc.wait()
 
     stdout = '\n'.join(stdout_lines)
 
