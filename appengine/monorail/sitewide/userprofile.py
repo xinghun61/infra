@@ -44,6 +44,24 @@ class UserProfile(servlet.Servlet):
       (visible_ownership, visible_archived, visible_membership,
        visible_contrib) = project_lists
 
+    with mr.profiler.Phase('Getting user groups'):
+      group_settings = self.services.usergroup.GetAllGroupSettings(
+          mr.cnxn, mr.viewed_user_auth.effective_ids)
+      member_ids, owner_ids = self.services.usergroup.LookupAllMembers(
+          mr.cnxn, group_settings.keys())
+      friend_project_ids = [] # TODO(issue 4202): implement this.
+      visible_group_ids = []
+      for group_id, settings in group_settings.items():
+        if permissions.CanViewGroup(
+            mr.perms, mr.auth.effective_ids, group_settings[group_id],
+            member_ids[group_id], owner_ids[group_id], friend_project_ids):
+          visible_group_ids.append(group_id)
+
+      user_group_views = framework_views.MakeAllUserViews(
+          mr.cnxn, self.services.user, visible_group_ids)
+      user_group_views = sorted(
+          user_group_views.values(), key=lambda ugv: ugv.email)
+
     viewed_user_display_name = framework_views.GetViewedUserDisplayName(mr)
 
     with work_env.WorkEnv(mr, self.services) as we:
@@ -131,7 +149,8 @@ class UserProfile(servlet.Servlet):
         'vacation_message': viewed_user.vacation_message,
         'can_ban': ezt.boolean(can_ban),
         'ban_token': ban_token,
-        'ban_spammer_token': ban_spammer_token
+        'ban_spammer_token': ban_spammer_token,
+        'user_groups': user_group_views,
         }
 
     settings = framework_helpers.UserSettings.GatherUnifiedSettingsPageData(

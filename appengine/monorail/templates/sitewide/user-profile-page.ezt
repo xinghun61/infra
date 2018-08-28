@@ -242,6 +242,32 @@
 </table>
 [end]
 
+[if-any user_groups]
+<br>
+<div class="list">
+  <table style="width: 100%;" cellspacing="0" cellpadding="0">
+  <tbody><tr>
+     <th style="text-align: left;">User groups
+     </th>
+  </tr></tbody>
+  </table>
+</div>
+<table cellspacing="0" cellpadding="2" border="0" class="results striped" id="usergrouptable" width="100%">
+ <tbody>
+  <tr id="headingrow">
+   <th style="white-space:nowrap; width:25%;">Name</th>
+  </tr>
+  [for user_groups]
+   <tr data-url="[user_groups.profile_url]">
+    <td class="id">
+     <a href="[user_groups.profile_url]">[user_groups.email]</a>
+    </td>
+   </tr>
+  [end]
+ </tbody>
+</table>
+[end]
+
 [if-any can_ban]
  <form action="ban.do" method="POST">
   <input type="hidden" name="token" value="[ban_token]">
