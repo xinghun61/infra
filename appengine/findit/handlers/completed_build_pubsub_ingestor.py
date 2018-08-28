@@ -31,7 +31,7 @@ class CompletedBuildPubsubIngestor(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE  # Protected with login:admin.
 
   def HandlePost(self):
-    logging.debug('Post body: %s', self.request.body)
+    build_id = None
     try:
       envelope = json.loads(self.request.body)
       build_id = envelope['message']['attributes']['build_id']
@@ -42,7 +42,9 @@ class CompletedBuildPubsubIngestor(BaseHandler):
       build = json.loads(base64.b64decode(envelope['message']['data']))['build']
     except (ValueError, KeyError) as e:
       # Ignore requests with invalid message.
-      logging.warning('Unexpected PubSub message format: %s', e.message)
+      logging.debug('build_id: %r', build_id)
+      logging.error('Unexpected PubSub message format: %s', e.message)
+      logging.debug('Post body: %s', self.request.body)
       return
 
     if build['status'] == 'COMPLETED' and build['project'] == 'chromium':
