@@ -100,6 +100,22 @@ class FlakyTestIssueGenerator(object):
     return
 
   @abc.abstractmethod
+  def ShouldRestoreChromiumSheriffLabel(self):
+    """Returns True if the Sheriff label should be restored when updating bugs.
+
+    This value should be set based on whether the results of the service are
+    actionable. For example, for Flake Detection, once it detects new
+    occurrences of a flaky test, it is immediately actionable that Sheriffs
+    should disable the test ASAP. However, for Flake Analyzer, when the
+    confidence is low, the analysis results mostly only serve as FYI
+    information, so it would be too noisy to notify Sheriffs on every bug.
+
+    Returns:
+      A boolean indicates whether the Sheriff label should be restored.
+    """
+    return
+
+  @abc.abstractmethod
   def GetLabels(self):
     """Gets labels for the issue to be created.
 
@@ -430,6 +446,15 @@ def UpdateIssueWithIssueGenerator(issue_id, issue_generator):
   issue = GetMergedDestinationIssueForId(issue_id,
                                          issue_generator.GetMonorailProject())
   for label in issue_generator.GetLabels():
+    # It is most likely that existing issues already have their priorities set
+    # by developers, so it would be annoy if FindIt tries to overwrite it.
+    if label.startswith('Pri-'):
+      continue
+
+    if (label == _SHERIFF_CHROMIUM_LABEL and
+        not issue_generator.ShouldRestoreChromiumSheriffLabel()):
+      continue
+
     if label not in issue.labels:
       issue.labels.append(label)
 

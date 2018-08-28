@@ -39,8 +39,13 @@ class TestIssueGenerator(issue_tracking_service.FlakyTestIssueGenerator):
 
     return 'comment without previous tracking bug id.'
 
+  def ShouldRestoreChromiumSheriffLabel(self):
+    # Sets to False as default value, if need to test this control flow, please
+    # mock this method.
+    return False
+
   def GetLabels(self):
-    return ['label1', 'label2']
+    return ['label1', 'Sheriff-Chromium']
 
 
 class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
@@ -446,7 +451,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('test is flaky', issue.summary)
     self.assertEqual('description without previous tracking bug id.',
                      issue.description)
-    self.assertEqual(['label1', 'label2', 'Pri-1'], issue.labels)
+    self.assertEqual(['label1', 'Sheriff-Chromium', 'Pri-1'], issue.labels)
     self.assertEqual(1, len(issue.field_values))
     self.assertEqual('Flaky-Test', issue.field_values[0].to_dict()['fieldName'])
     self.assertEqual('test', issue.field_values[0].to_dict()['fieldValue'])
@@ -470,7 +475,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('test is flaky', issue.summary)
     self.assertEqual('description with previous tracking bug id: 56789.',
                      issue.description)
-    self.assertEqual(['label1', 'label2', 'Pri-1'], issue.labels)
+    self.assertEqual(['label1', 'Sheriff-Chromium', 'Pri-1'], issue.labels)
     self.assertEqual(1, len(issue.field_values))
     self.assertEqual('Flaky-Test', issue.field_values[0].to_dict()['fieldName'])
     self.assertEqual('test', issue.field_values[0].to_dict()['fieldValue'])
@@ -502,10 +507,41 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     mock_update_bug_fn.assert_called_once_with(
         issue, 'comment without previous tracking bug id.', 'chromium')
     issue = mock_update_bug_fn.call_args_list[0][0][0]
-    self.assertEqual(['label1', 'label2'], issue.labels)
+    self.assertEqual(['label1'], issue.labels)
     self.assertEqual(1, len(issue.field_values))
     self.assertEqual('Flaky-Test', issue.field_values[0].to_dict()['fieldName'])
     self.assertEqual('test', issue.field_values[0].to_dict()['fieldValue'])
+
+  # This test tests that updating issue via issue generator works properly if
+  # the switch to turn on to restore Chromium Sheriffs label when udpate bugs.
+  @mock.patch.object(
+      TestIssueGenerator,
+      'ShouldRestoreChromiumSheriffLabel',
+      return_value=True)
+  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
+  @mock.patch.object(issue_tracking_service, 'UpdateBug')
+  @mock.patch.object(issue_tracking_service, 'CreateBug')
+  def testUpdateIssueWithIssueGeneratorAndRestoreSheriffLabel(
+      self, mock_create_bug_fn, mock_update_bug_fn, mock_get_merged_issue, _):
+    issue_id = 12345
+    issue = Issue({
+        'status': 'Available',
+        'summary': 'summary',
+        'description': 'description',
+        'projectId': 'chromium',
+        'labels': [],
+        'fieldValues': [],
+        'state': 'open',
+    })
+    mock_get_merged_issue.return_value = issue
+
+    test_issue_generator = TestIssueGenerator()
+    issue_tracking_service.UpdateIssueWithIssueGenerator(
+        issue_id=issue_id, issue_generator=test_issue_generator)
+
+    self.assertFalse(mock_create_bug_fn.called)
+    self.assertTrue(mock_update_bug_fn.called)
+    self.assertEqual(['label1', 'Sheriff-Chromium'], issue.labels)
 
   # This test tests that updating issue via issue generator with previous
   # tracking id works properly.

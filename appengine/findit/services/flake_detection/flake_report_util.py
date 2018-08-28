@@ -108,6 +108,11 @@ class FlakeDetectionIssueGenerator(
 
     return comment
 
+  def ShouldRestoreChromiumSheriffLabel(self):
+    # Flake Detection always requires Chromium Sheriff's attentions to disable
+    # flaky tests when new occurrences are detected.
+    return True
+
   def GetLabels(self):
     flaky_test_labels = self._GetCommonFlakyTestLabel()
     flaky_test_labels.append(_FLAKE_DETECTION_LABEL_TEXT)
