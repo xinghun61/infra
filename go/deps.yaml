@@ -378,5 +378,6 @@ import:
   repo: https://chromium.googlesource.com/external/github.com/google/go-cmp.git
 - package: contrib.go.opencensus.io/exporter/stackdriver
   version: ^0.6.0
+  repo: https://chromium.googlesource.com/external/github.com/census-ecosystem/opencensus-go-exporter-stackdriver.git
   subpackages:
   - propagation

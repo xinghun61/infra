@@ -77,6 +77,15 @@ PACKAGES_TO_VENDOR_COMPLETELY = [
 ]
 
 
+# Paths (relative to src/) to avoid including in the bundle because they contain
+# very nested directory trees that break MAX_PATH limit on Windows. When adding
+# a path here, verify that all code still builds without it.
+BLACKLISTED_PATHS = [
+  'github.com/docker/docker/' +
+    'vendor/github.com/google/certificate-transparency/cpp',
+]
+
+
 # infra/
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -512,11 +521,16 @@ def is_source_or_license(path):
   """
   pkg = os.path.dirname(path).replace('\\', '/')
   name = os.path.basename(path)
+
+  def in_list(l):
+    return any(pkg == p or pkg.startswith(p+'/') for p in l)
+
+  if in_list(PACKAGES_TO_VENDOR_COMPLETELY):
+    return True
+  if in_list(BLACKLISTED_PATHS):
+    return False
+
   return (
-      any(
-          pkg == p or pkg.startswith(p+'/')
-          for p in PACKAGES_TO_VENDOR_COMPLETELY
-      ) or
       name.startswith('LICENSE') or
       name.endswith(('.c', '.h', '.go', '.s')) and
       not name.endswith('_test.go'))
@@ -548,6 +562,11 @@ def get_bundle_ver(lock_file_body):
   glide_lock.pop('updated', None)
   sha1 = hashlib.sha1(json.dumps(glide_lock, sort_keys=True)).hexdigest()
   return '%s:%s' % (BUNDLE_FORMAT_TAG, sha1)
+
+
+def get_cipd_pkg_url(name, ver):
+  """Returns URL to a package in CIPD web UI."""
+  return 'https://chrome-infra-packages.appspot.com/p/%s/+/%s' % (name, ver)
 
 
 def is_existing_bundle(workspace, pkg, ver):
@@ -603,10 +622,7 @@ def install(workspace, force=False, update_out=None, skip_bundle=False):
   ver = get_bundle_ver(required)
   if not skip_bundle:
     print 'Searching for a bundle with dependencies in CIPD...'
-    print '-'*80
-    print 'CIPD package name:    %s' % pkg
-    print 'CIPD package version: %s' % ver
-    print '-'*80
+    print 'CIPD package: %s' % get_cipd_pkg_url(pkg, ver)
     use_bundle = is_existing_bundle(workspace, pkg, ver)
     if not use_bundle:
       print 'Not found, falling back to using "glide install".'
@@ -737,10 +753,7 @@ def bundle(workspace, out_file=None):
 
   pkg = workspace.deps_cipd_pkg
   ver = get_bundle_ver(lock_file)
-  print '-'*80
-  print 'CIPD package name:    %s' % workspace.deps_cipd_pkg
-  print 'CIPD package version: %s' % ver
-  print '-'*80
+  print 'CIPD package: %s' % get_cipd_pkg_url(workspace.deps_cipd_pkg, ver)
 
   if not out_file:
     print 'Checking whether the bundle is already uploaded...'
