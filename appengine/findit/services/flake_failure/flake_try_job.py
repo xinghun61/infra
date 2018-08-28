@@ -13,6 +13,7 @@ from libs.test_results import test_results_util
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
+from services import constants
 from services import swarmed_test_util
 from services import try_job as try_job_service
 from services.flake_failure import flake_constants
@@ -250,6 +251,7 @@ def GetBuildProperties(master_name,
       'tests': {
           canonical_step_name: [test_name]
       },
+      'repository': constants.CHROMIUM_GIT_REPOSITORY_URL,
   }
 
 

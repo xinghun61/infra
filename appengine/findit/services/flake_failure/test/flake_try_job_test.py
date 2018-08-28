@@ -341,6 +341,7 @@ class FlakeTryJobServiceTest(TestCase):
         'tests': {
             step_name: [test_name]
         },
+        'repository': 'https://chromium.googlesource.com/chromium/src.git',
     }
 
     properties = flake_try_job.GetBuildProperties(
