@@ -76,10 +76,14 @@ class WorkEnv(object):
       self.mc.profiler.EndPhase()
     return False  # Re-raise any exception in the with-block.
 
+  def _UserCanViewProject(self, project):
+    """Test if the user may view the given project."""
+    return permissions.UserCanViewProject(
+        self.mc.auth.user_pb, self.mc.auth.effective_ids, project)
+
   def _AssertUserCanViewProject(self, project):
     """Make sure the user may view the given project."""
-    if not permissions.UserCanViewProject(
-        self.mc.auth.user_pb, self.mc.auth.effective_ids, project):
+    if not self._UserCanViewProject(project):
       raise permissions.PermissionException(
           'User is not allowed to view this project')
 
@@ -378,6 +382,27 @@ class WorkEnv(object):
           self.mc.auth.effective_ids, self.mc.auth.user_pb)
     return viewable_projects
 
+  def GetProjectConfigs(self, project_ids, use_cache=True):
+    """Return the specifed configs.
+
+    Args:
+      project_ids: int IDs of the projects to retrieve.
+      use_cache: set to false when doing read-modify-write.
+
+    Returns:
+      The specified configs.
+    """
+    with self.mc.profiler.Phase('getting configs for %r' % project_ids):
+      configs = self.services.config.GetProjectConfigs(
+          self.mc.cnxn, project_ids, use_cache=use_cache)
+
+    configs = {
+        project_id: project_config
+        for project_id, project_config in configs.iteritems()
+        if self._UserCanViewProject(self.GetProject(project_id))}
+
+    return configs
+
   def GetProjectConfig(self, project_id, use_cache=True):
     """Return the specifed config.
 
@@ -391,15 +416,10 @@ class WorkEnv(object):
     Raises:
       NoSuchProjectException: There is no matching config.
     """
-    # Use the same permission check as GetProject().
-    _project = self.GetProject(project_id)
-
-    with self.mc.profiler.Phase('getting config for %r' % project_id):
-      config = self.services.config.GetProjectConfig(
-          self.mc.cnxn, project_id, use_cache=use_cache)
-    if not config:
+    configs = self.GetProjectConfigs([project_id], use_cache)
+    if not configs:
       raise exceptions.NoSuchProjectException()
-    return config
+    return configs[project_id]
 
   # FUTURE: labels, statuses, fields, components, rules, templates, and views.
   # FUTURE: project saved queries.

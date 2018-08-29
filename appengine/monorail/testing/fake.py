@@ -946,7 +946,7 @@ class ConfigService(object):
     for project_id in project_ids:
       if project_id in self.project_configs:
         config_dict[project_id] = self.project_configs[project_id]
-      else:
+      elif not self.strict:
         config_dict[project_id] = tracker_bizobj.MakeDefaultProjectIssueConfig(
             project_id)
     return config_dict
