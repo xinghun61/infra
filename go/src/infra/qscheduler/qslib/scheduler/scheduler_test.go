@@ -54,9 +54,9 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 		},
 	}
 
-	expects := []Mutator{
-		&AssignIdleWorker{Priority: 0, RequestId: "t1", WorkerId: "w1"},
-		&AssignIdleWorker{Priority: 0, RequestId: "t2", WorkerId: "w0"},
+	expects := []*Assignment{
+		&Assignment{Type: Assignment_IDLE_WORKER, Priority: 0, RequestId: "t1", WorkerId: "w1"},
+		&Assignment{Type: Assignment_IDLE_WORKER, Priority: 0, RequestId: "t2", WorkerId: "w0"},
 	}
 
 	muts := s.RunOnce()
@@ -116,15 +116,18 @@ func TestSchedulerReprioritize(t *testing.T) {
 		},
 	}
 
-	expects := []Mutator{
-		&ChangePriority{NewPriority: 1, WorkerId: "w2"},
-		&ChangePriority{NewPriority: 1, WorkerId: "w3"},
-	}
+	expects := s.state.Clone()
+	expects.Workers["w2"].RunningTask.Priority = 1
+	expects.Workers["w3"].RunningTask.Priority = 1
 
 	muts := s.RunOnce()
 
-	if diff := pretty.Compare(muts, expects); diff != "" {
-		t.Errorf(fmt.Sprintf("Unexpected mutations diff (-got +want): %s", diff))
+	if len(muts) != 0 {
+		t.Errorf("Unexpected muts, got %s want {}", muts)
+	}
+
+	if diff := pretty.Compare(s.state, expects); diff != "" {
+		t.Errorf(fmt.Sprintf("Unexpected state diff (-got +want): %s", diff))
 	}
 }
 
@@ -134,7 +137,7 @@ func TestSchedulerPreempt(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		S      *Scheduler
-		Expect []Mutator
+		Expect []*Assignment
 	}{
 		// Case 0
 		//
@@ -167,7 +170,9 @@ func TestSchedulerPreempt(t *testing.T) {
 					},
 				},
 			},
-			[]Mutator{&PreemptTask{Priority: 0, WorkerId: "w1", RequestId: "t1"}},
+			[]*Assignment{
+				&Assignment{Type: Assignment_PREEMPT_WORKER, Priority: 0, WorkerId: "w1", RequestId: "t1"},
+			},
 		},
 		// Case 1
 		//
@@ -220,7 +225,7 @@ func TestSchedulerPreempt(t *testing.T) {
 				},
 			},
 			// No preemptions or other mutations should result.
-			[]Mutator{},
+			[]*Assignment{},
 		},
 	}
 

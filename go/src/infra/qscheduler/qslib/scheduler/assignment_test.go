@@ -24,8 +24,8 @@ import (
 	"infra/qscheduler/qslib/types/vector"
 )
 
-// TestAssign tests that the AssignIdleWorker Mutate method behaves correctly.
-func TestAssign(t *testing.T) {
+// TestIdle tests that Apply for IDLE_WORKER behaves correctly.
+func TestIdle(t *testing.T) {
 	t.Parallel()
 	state := &State{
 		Requests: map[string]*task.Request{"t1": &task.Request{}},
@@ -43,33 +43,15 @@ func TestAssign(t *testing.T) {
 		},
 	}
 
-	mut := AssignIdleWorker{Priority: 1, RequestId: "t1", WorkerId: "w1"}
-	mut.Mutate(state)
+	mut := &Assignment{Type: Assignment_IDLE_WORKER, Priority: 1, RequestId: "t1", WorkerId: "w1"}
+	mut.apply(state)
 
 	if diff := pretty.Compare(state, expect); diff != "" {
 		t.Errorf(fmt.Sprintf("Unexpected state diff (-got +want): %s", diff))
 	}
 }
 
-// TestReprioritize tests that the ChangePriority Mutate method behaves correctly.
-func TestReprioritize(t *testing.T) {
-	t.Parallel()
-	state := &State{
-		Workers: map[string]*Worker{"w1": &Worker{RunningTask: &task.Run{Priority: 2}}},
-	}
-
-	expect := &State{
-		Workers: map[string]*Worker{"w1": &Worker{RunningTask: &task.Run{Priority: 1}}},
-	}
-	mut := ChangePriority{NewPriority: 1, WorkerId: "w1"}
-	mut.Mutate(state)
-
-	if diff := pretty.Compare(state, expect); diff != "" {
-		t.Errorf(fmt.Sprintf("Unexpected state diff (-got +want): %s", diff))
-	}
-}
-
-// TestPreempt tests that the PreemptTask Mutate method behaves correctly.
+// TestPreempt tests that Apply for PREEMPT_WORKER behaves correctly.
 func TestPreempt(t *testing.T) {
 	t.Parallel()
 	state := &State{
@@ -108,8 +90,8 @@ func TestPreempt(t *testing.T) {
 			}},
 	}
 
-	mut := PreemptTask{Priority: 1, RequestId: "t2", WorkerId: "w1"}
-	mut.Mutate(state)
+	mut := &Assignment{Type: Assignment_PREEMPT_WORKER, Priority: 1, RequestId: "t2", WorkerId: "w1"}
+	mut.apply(state)
 
 	if diff := pretty.Compare(state, expect); diff != "" {
 		t.Errorf(fmt.Sprintf("Unexpected state diff (-got +want): %s", diff))

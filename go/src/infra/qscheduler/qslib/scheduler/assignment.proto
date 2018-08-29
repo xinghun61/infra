@@ -1,0 +1,41 @@
+// Copyright 2018 The LUCI Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+package scheduler;
+
+// An Assignment represents a scheduler decision to assign a task
+// to a worker.
+message Assignment {
+
+	enum Type {
+		// Assign a task to a currently idle worker.
+		IDLE_WORKER = 0;
+
+		// Preempt a running task on a worker with a new task.
+		PREEMPT_WORKER = 1;
+	}
+
+	// Type describes which kind of assignment this represents.
+	Type type = 1;
+
+	// WorkerId of the worker to assign a new task to (and to preempt the previous
+	// task of, if this is a PREEMPT_WORKER mutator).
+	string worker_id = 2;
+
+	// RequestId of the task to assign to that worker.
+	string request_id = 3;
+
+	// Priority at which the task will run.
+	int32 priority = 4;
+}

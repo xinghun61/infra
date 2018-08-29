@@ -15,6 +15,8 @@
 package scheduler
 
 import (
+	"github.com/golang/protobuf/proto"
+
 	"infra/qscheduler/qslib/types/account"
 	"infra/qscheduler/qslib/types/task"
 	"infra/qscheduler/qslib/types/vector"
@@ -34,4 +36,14 @@ func NewState() *State {
 		Requests: map[string]*task.Request{},
 		Workers:  map[string]*Worker{},
 	}
+}
+
+// Clone returns a deep copy of the given state.
+func (s *State) Clone() *State {
+	// Merge clone into intiated state, to ensure that any empty maps are preserved
+	// as empty maps rather than turned into nil maps as proto.Clone would do
+	// on its own.
+	ns := NewState()
+	proto.Merge(ns, proto.Clone(s))
+	return ns
 }
