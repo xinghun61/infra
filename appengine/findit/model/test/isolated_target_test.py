@@ -23,29 +23,35 @@ class IsolatedTargetTest(TestCase):
     before = IsolatedTarget.FindIsolateBeforeCommitPositionByBucket(
         'chromium', 'ci', 'Linux Builder', 'chromium.googlesource.com',
         'chromium/src', 'refs/heads/master', 'browser_tests', 55650)
-    self.assertEqual(before[0], IsolatedTarget.Get('abcdef49abcdef'))
+    self.assertEqual(before[0],
+                     IsolatedTarget.get_by_id('843400990909049/browser_tests'))
     at = IsolatedTarget.FindIsolateAtOrAfterCommitPositionByBucket(
         'chromium', 'ci', 'Linux Builder', 'chromium.googlesource.com',
         'chromium/src', 'refs/heads/master', 'browser_tests', 55650)
-    self.assertEqual(at[0], IsolatedTarget.Get('abcdef50abcdef'))
+    self.assertEqual(at[0],
+                     IsolatedTarget.get_by_id('843400990909050/browser_tests'))
     after = IsolatedTarget.FindIsolateAtOrAfterCommitPositionByBucket(
         'chromium', 'ci', 'Linux Builder', 'chromium.googlesource.com',
         'chromium/src', 'refs/heads/master', 'browser_tests', 55655)
-    self.assertEqual(after[0], IsolatedTarget.Get('abcdef51abcdef'))
+    self.assertEqual(after[0],
+                     IsolatedTarget.get_by_id('843400990909051/browser_tests'))
 
   def testFindIsolateByMaster(self):
     before = IsolatedTarget.FindIsolateBeforeCommitPositionByMaster(
         'chromium.linux', 'Linux Builder', 'chromium.googlesource.com',
         'chromium/src', 'refs/heads/master', 'browser_tests', 55650)
-    self.assertEqual(before[0], IsolatedTarget.Get('abcdef49abcdef'))
+    self.assertEqual(before[0],
+                     IsolatedTarget.get_by_id('843400990909049/browser_tests'))
     at = IsolatedTarget.FindIsolateAtOrAfterCommitPositionByMaster(
         'chromium.linux', 'Linux Builder', 'chromium.googlesource.com',
         'chromium/src', 'refs/heads/master', 'browser_tests', 55650)
-    self.assertEqual(at[0], IsolatedTarget.Get('abcdef50abcdef'))
+    self.assertEqual(at[0],
+                     IsolatedTarget.get_by_id('843400990909050/browser_tests'))
     after = IsolatedTarget.FindIsolateAtOrAfterCommitPositionByMaster(
         'chromium.linux', 'Linux Builder', 'chromium.googlesource.com',
         'chromium/src', 'refs/heads/master', 'browser_tests', 55655)
-    self.assertEqual(after[0], IsolatedTarget.Get('abcdef51abcdef'))
+    self.assertEqual(after[0],
+                     IsolatedTarget.get_by_id('843400990909051/browser_tests'))
 
   def testIsolatedHash(self):
     isolated_hash = 'isolated_hash'
@@ -53,7 +59,7 @@ class IsolatedTargetTest(TestCase):
                                    'Linux Builder', 'chromium.googlesource.com',
                                    'chromium/src', 'refs/heads/master', '',
                                    'browser_tests', isolated_hash, 55000)
-    self.assertEqual(isolated_hash, target.isolated_hash)
+    self.assertEqual(isolated_hash, target.GetIsolatedHash())
 
   def testBuildUrl(self):
     build_id = 10000
@@ -61,5 +67,4 @@ class IsolatedTargetTest(TestCase):
                                    'Linux Builder', 'chromium.googlesource.com',
                                    'chromium/src', 'refs/heads/master', '',
                                    'browser_tests', 'a1b2c3d4', 55000)
-    self.assertEqual('https://ci.chromium.org/p/chromium/builds/10000',
-                     target.build_url)
+    self.assertEqual('https://ci.chromium.org/b/10000', target.build_url)

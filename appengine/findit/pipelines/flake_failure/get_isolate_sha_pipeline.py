@@ -119,7 +119,7 @@ class GetIsolateShaForTargetPipeline(SynchronousPipeline):
     assert isolated_target, 'IsolatedTarget is missing unexpectedly!'
 
     return GetIsolateShaOutput(
-        isolate_sha=isolated_target.isolated_hash,
+        isolate_sha=isolated_target.GetIsolatedHash(),
         build_number=None,
         build_url=isolated_target.build_url,
         try_job_url=None)

@@ -8,8 +8,13 @@ from google.appengine.ext import ndb
 class IsolatedTarget(ndb.Model):
   """Represents a test target that has been isolated by a builder.
 
-  The isolated hash of a given target is used as the key for this model because
-  of its likely uniqueness.
+  The isolated hash of a given target can't be used as the key for this model
+  because different builds may produce the same isolated target, e.g. if no
+  changes happen to the files that produce the target happen between such builds
+  and due to incremental compilation even the timestamps do not change.
+
+  A combination of the build id and the target is used as the key since there is
+  no duplicate target in the same build.
   """
 
   # Luci project, such as 'chromium'.
@@ -38,7 +43,7 @@ class IsolatedTarget(ndb.Model):
   gitiles_ref = ndb.StringProperty(required=True)
 
   # The buildbucket id of the build, if available.
-  build_id = ndb.IntegerProperty()
+  build_id = ndb.IntegerProperty(indexed=False)
 
   # The compile target as named in the output of the
   # isolating step. e.g. 'browser_tests'
@@ -51,7 +56,10 @@ class IsolatedTarget(ndb.Model):
   # The gerrit patch in host/issue/patchset format
   # e.g. 'chromium-review.googlesource.com/1065898/2'.
   # For builds without patch this is expected to be empty.
-  gerrit_patch = ndb.StringProperty()
+  gerrit_patch = ndb.StringProperty(indexed=False)
+
+  # The hash of the isolated target.
+  isolated_hash = ndb.StringProperty(required=True)
 
   @ndb.ComputedProperty
   def has_patch(self):
@@ -61,28 +69,25 @@ class IsolatedTarget(ndb.Model):
     """
     return bool(self.gerrit_patch)
 
-  @property
-  def isolated_hash(self):
-    return self.key.pairs()[0][1]
+  def GetIsolatedHash(self):
+    # This fallback is to be able to retrieve old entries (pre Sept. 2018) that
+    # were wrongly keyed with the isolated hash alone.
+    return self.isolated_hash or self.key.pairs()[0][1]
 
   @property
   def build_url(self):
-    return 'https://ci.chromium.org/p/chromium/builds/{}'.format(self.build_id)
+    return 'https://ci.chromium.org/b/{}'.format(self.build_id)
 
   @classmethod
-  def _CreateKey(cls, isolated_hash):
-    return ndb.Key(cls, isolated_hash)
-
-  @classmethod
-  def Get(cls, isolated_hash):
-    return cls._CreateKey(isolated_hash).get()
+  def _CreateKey(cls, build_id, target_name):
+    return ndb.Key(cls, '/'.join([str(build_id), target_name]))
 
   @classmethod
   def Create(cls, build_id, luci_project, bucket, master_name, builder_name,
              gitiles_host, gitiles_project, gitiles_ref, gerrit_patch,
              target_name, isolated_hash, commit_position):
     return cls(
-        key=cls._CreateKey(isolated_hash),
+        key=cls._CreateKey(build_id, target_name),
         build_id=build_id,
         luci_project=luci_project,
         bucket=bucket,
@@ -93,7 +98,9 @@ class IsolatedTarget(ndb.Model):
         gitiles_ref=gitiles_ref,
         gerrit_patch=gerrit_patch,
         target_name=target_name,
-        commit_position=commit_position)
+        commit_position=commit_position,
+        isolated_hash=isolated_hash,
+    )
 
   @classmethod
   def FindIsolateBeforeCommitPositionByBucket(cls,

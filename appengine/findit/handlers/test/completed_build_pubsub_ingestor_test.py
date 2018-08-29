@@ -67,9 +67,13 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     response = self.test_app.post(
         '/index-isolated-builds?format=json', params=request_body)
     self.assertEqual(200, response.status_int)
-    self.assertEqual(123, IsolatedTarget.Get('mock_hash').commit_position)
-    self.assertEqual(8945610992972640896,
-                     IsolatedTarget.Get('mock_hash').build_id)
+    self.assertEqual(
+        123,
+        IsolatedTarget.get_by_id('8945610992972640896/mock_target')
+        .commit_position)
+    self.assertEqual(
+        8945610992972640896,
+        IsolatedTarget.get_by_id('8945610992972640896/mock_target').build_id)
     self.assertEqual(1, len(json.loads(response.body)['created_rows']))
 
   @mock.patch.object(FinditHttpClient, 'Post')
@@ -255,11 +259,14 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     response = self.test_app.post(
         '/index-isolated-builds?format=json', params=request_body)
     self.assertEqual(200, response.status_int)
-    self.assertEqual(123, IsolatedTarget.Get('mock_hash').commit_position)
+    self.assertEqual(
+        123,
+        IsolatedTarget.get_by_id('8945610992972640896/mock_target')
+        .commit_position)
     self.assertEqual(2, len(json.loads(response.body)['created_rows']))
 
     # Ensure target values were used.
-    entry = IsolatedTarget.Get('mock_hash')
+    entry = IsolatedTarget.get_by_id('8945610992972640896/mock_target')
     self.assertEqual('chromium.linux', entry.master_name)
     self.assertEqual('linux_chromium_compile_dbg_ng', entry.builder_name)
 
