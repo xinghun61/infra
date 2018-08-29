@@ -31,8 +31,6 @@ type prioritizedRequest struct {
 	Priority  int32
 	Request   *task.Request
 	// Flag used within scheduler to indicate that a request is already handled.
-	// TODO(akeshet): This doesn't quite fit the abstraction of this package, consider
-	// moving this tracking to scheduler package, where it is actually used.
 	Scheduled bool
 }
 

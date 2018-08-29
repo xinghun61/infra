@@ -266,8 +266,8 @@ func matchIdleBots(state *State, requestsAtP []prioritizedRequest) []*Assignment
 // balance and a recharge rate that can sustain them at this level.
 func reprioritizeRunningTasks(state *State, config *Config, priority int32) {
 	// TODO(akeshet): jobs that are currently running, but have no corresponding account,
-	// should be demoted immediately to the FreeBucket (probably their account)
-	// was deleted while running.
+	// should be demoted immediately to the FreeBucket (probably their account
+	// was deleted while running).
 	for accountID, fullBalance := range state.Balances {
 		// TODO(akeshet): move the body of this loop to own function.
 		accountConfig, ok := config.AccountConfigs[accountID]
