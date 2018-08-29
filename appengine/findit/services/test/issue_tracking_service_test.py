@@ -17,11 +17,17 @@ from waterfall.test import wf_testcase
 class TestIssueGenerator(issue_tracking_service.FlakyTestIssueGenerator):
   """A FlakyTestIssueGenerator used for testing."""
 
+  def __init__(self, step_name='step', test_name='test'):
+    super(TestIssueGenerator, self).__init__()
+    self.step_name = step_name
+    self.test_name = test_name
+    #self._previous_tracking_bug_id = None
+
   def GetStepName(self):
-    return 'step'
+    return self.step_name
 
   def GetTestName(self):
-    return 'test'
+    return self.test_name
 
   def GetDescription(self):
     previous_tracking_bug_id = self.GetPreviousTrackingBugId()
@@ -739,7 +745,10 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
   def testHasNoFlakeAndNoExistingOpenIssue(
       self, mock_create_with_issue_generator_fn,
       mock_update_with_issue_generator_fn, _):
-    test_issue_generator = TestIssueGenerator()
+    step_name = 'step_1'
+    test_name = 'test_1'
+    test_issue_generator = TestIssueGenerator(
+        step_name=step_name, test_name=test_name)
     issue_tracking_service.UpdateIssueIfExistsOrCreate(test_issue_generator)
 
     mock_create_with_issue_generator_fn.assert_called_once_with(
@@ -748,8 +757,8 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     fetched_flakes = Flake.query().fetch()
     fetched_flake_issues = FlakeIssue.query().fetch()
     self.assertEqual(1, len(fetched_flakes))
-    self.assertEqual('step', fetched_flakes[0].normalized_step_name)
-    self.assertEqual('test', fetched_flakes[0].normalized_test_name)
+    self.assertEqual(step_name, fetched_flakes[0].normalized_step_name)
+    self.assertEqual(test_name, fetched_flakes[0].normalized_test_name)
     self.assertEqual(1, len(fetched_flake_issues))
     self.assertEqual(66666, fetched_flake_issues[0].issue_id)
     self.assertEqual(fetched_flakes[0].flake_issue_key,
@@ -803,7 +812,10 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
   def testHasNoFlakeAndFoundAnExistingOpenIssue(
       self, mock_create_with_issue_generator_fn,
       mock_update_with_issue_generator_fn, _):
-    test_issue_generator = TestIssueGenerator()
+    step_name = 'step_2'
+    test_name = 'test_2'
+    test_issue_generator = TestIssueGenerator(
+        step_name=step_name, test_name=test_name)
     issue_tracking_service.UpdateIssueIfExistsOrCreate(test_issue_generator)
 
     self.assertFalse(mock_create_with_issue_generator_fn.called)
@@ -812,8 +824,8 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     fetched_flakes = Flake.query().fetch()
     fetched_flake_issues = FlakeIssue.query().fetch()
     self.assertEqual(1, len(fetched_flakes))
-    self.assertEqual('step', fetched_flakes[0].normalized_step_name)
-    self.assertEqual('test', fetched_flakes[0].normalized_test_name)
+    self.assertEqual(step_name, fetched_flakes[0].normalized_step_name)
+    self.assertEqual(test_name, fetched_flakes[0].normalized_test_name)
     self.assertEqual(1, len(fetched_flake_issues))
     self.assertEqual(99999, fetched_flake_issues[0].issue_id)
     self.assertEqual(fetched_flakes[0].flake_issue_key,
