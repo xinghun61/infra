@@ -103,9 +103,9 @@ class Context(object):
     root_logger.addHandler(shandler)
     shandler.setLevel(logging.INFO)
 
+    fd, filename = tempfile.mkstemp(text=True)
     try:
-      fd, _ = tempfile.mkstemp(text=True)
-      with os.fdopen(fd) as fh:
+      with os.fdopen(fd, 'w+') as fh:
         sys.stderr = sys.stdout = fh
         try:
           self.local.reify()
@@ -124,6 +124,7 @@ class Context(object):
       sys.stderr = stderr
       root_logger.removeHandler(shandler)
       self.record({'log output': logout.getvalue().splitlines()})
+      os.remove(filename)
 
   def checkpoint(self, message, *args):
     self._ensure_init()
