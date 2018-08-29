@@ -46,12 +46,6 @@ class MrDropdown extends Polymer.Element {
     this.opened = !this.opened;
   }
 
-  handleAnchorKeypress(e) {
-    if (e.key === 'Enter' || e.key === ' ') {
-      this.toggle();
-    }
-  }
-
   open() {
     this.opened = true;
   }
