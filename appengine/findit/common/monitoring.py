@@ -121,3 +121,21 @@ flakes_identified_by_waterfall_analyses = gae_ts_mon.CounterMetric(
         gae_ts_mon.StringField('isolate_target_name'),
         gae_ts_mon.StringField('operation'),
     ])
+
+flake_detection_query_failures = gae_ts_mon.CounterMetric(
+    'findit/flake-detection-query-failures',
+    'Number of failed Flake Detection query executions', [
+        gae_ts_mon.StringField('flake_type'),
+    ])
+
+flake_detection_flake_occurrences = gae_ts_mon.CounterMetric(
+    'findit/flake-detection-flake-occurrences',
+    'Number of flake occurrences detected by Flake Detection', [
+        gae_ts_mon.StringField('flake_type'),
+    ])
+
+flake_detection_issues = gae_ts_mon.CounterMetric(
+    'findit/flake-detection-issues',
+    'Number of issues created or updated by Flake Detection', [
+        gae_ts_mon.StringField('operation'),
+    ])

@@ -110,3 +110,29 @@ class MonitoringTest(wf_testcase.WaterfallTestCase):
         'operation': 'analyzed',
     }
     mock_common_monitoring.assert_called_once_with(10, parameters)
+
+  @mock.patch.object(common_monitoring.flake_detection_query_failures,
+                     'increment')
+  def testOnFlakeDetectionQueryFailed(self, mock_common_monitoring):
+    monitoring.OnFlakeDetectionQueryFailed('cq false rejection')
+    parameters = {
+        'flake_type': 'cq false rejection',
+    }
+    mock_common_monitoring.assert_called_once_with(parameters)
+
+  @mock.patch.object(common_monitoring.flake_detection_flake_occurrences,
+                     'increment_by')
+  def testOnFlakeDetectionDetectNewOccurrences(self, mock_common_monitoring):
+    monitoring.OnFlakeDetectionDetectNewOccurrences('cq false rejection', 10)
+    parameters = {
+        'flake_type': 'cq false rejection',
+    }
+    mock_common_monitoring.assert_called_once_with(10, parameters)
+
+  @mock.patch.object(common_monitoring.flake_detection_issues, 'increment')
+  def testOnFlakeDetectionCreateOrUpdateIssues(self, mock_common_monitoring):
+    monitoring.OnFlakeDetectionCreateOrUpdateIssues('create')
+    parameters = {
+        'operation': 'create',
+    }
+    mock_common_monitoring.assert_called_once_with(parameters)

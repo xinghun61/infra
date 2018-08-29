@@ -11,6 +11,7 @@ from model.flake.detection.flake import Flake
 from model.flake.detection.flake_occurrence import (
     CQFalseRejectionFlakeOccurrence)
 from services import bigquery_helper
+from services import monitoring
 
 # Path to the query used to detect flaky tests that caused cq false rejections.
 PATH_TO_FLAKY_TESTS_QUERY = os.path.realpath(
@@ -87,12 +88,15 @@ def _CreateFlakeOccurrenceFromRow(row):
 def _StoreMultipleLocalEntities(local_entities):
   """Stores multiple ndb Model entities.
 
+  NOTE: This method doesn't overwrite existing entities.
+
   Args:
     local_entities: A list of Model entities in local memory. It is OK for
                     local_entities to have duplicates, this method will
                     automatically de-duplicate them.
 
-  NOTE: This method doesn't overwrite existing entities.
+  Returns:
+    Number of distinct new entities that were written to the ndb.
   """
   key_to_local_entities = {}
   for entity in local_entities:
@@ -112,6 +116,7 @@ def _StoreMultipleLocalEntities(local_entities):
       key_to_local_entities[key] for key in non_existent_entity_keys
   ]
   ndb.put_multi(non_existent_local_entities)
+  return len(non_existent_local_entities)
 
 
 def QueryAndStoreFlakes():
@@ -125,6 +130,7 @@ def QueryAndStoreFlakes():
   if not success:
     logging.error(
         'Failed executing the query to detect cq false rejection flakes.')
+    monitoring.OnFlakeDetectionQueryFailed(flake_type='cq false rejection')
     return
 
   logging.info('Fetched %d cq false rejection flake occurrences from BigQuery.',
@@ -134,4 +140,6 @@ def QueryAndStoreFlakes():
   _StoreMultipleLocalEntities(local_flakes)
 
   local_flake_occurrences = [_CreateFlakeOccurrenceFromRow(row) for row in rows]
-  _StoreMultipleLocalEntities(local_flake_occurrences)
+  num_new_occurrences = _StoreMultipleLocalEntities(local_flake_occurrences)
+  monitoring.OnFlakeDetectionDetectNewOccurrences(
+      flake_type='cq false rejection', num_occurrences=num_new_occurrences)

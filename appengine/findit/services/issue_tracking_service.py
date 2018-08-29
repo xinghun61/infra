@@ -190,6 +190,14 @@ class FlakyTestIssueGenerator(object):
     """
     self._previous_tracking_bug_id = previous_tracking_bug_id
 
+  def OnIssueCreated(self):
+    """Called when an issue was created successfully."""
+    return
+
+  def OnIssueUpdated(self):
+    """Called when an issue was updated successfully."""
+    return
+
 
 def AddFinditLabelToIssue(issue):
   """Ensures an issue's label has been marked as analyzed by Findit."""
@@ -433,7 +441,11 @@ def CreateIssueWithIssueGenerator(issue_generator):
       'fieldValues': [issue_generator.GetFlakyTestCustomizedField()]
   })
 
-  return CreateBug(issue, issue_generator.GetMonorailProject())
+  issue_id = CreateBug(issue, issue_generator.GetMonorailProject())
+  if issue_id:
+    issue_generator.OnIssueCreated()
+
+  return issue_id
 
 
 def UpdateIssueWithIssueGenerator(issue_id, issue_generator):
@@ -461,6 +473,7 @@ def UpdateIssueWithIssueGenerator(issue_id, issue_generator):
   issue.field_values.append(issue_generator.GetFlakyTestCustomizedField())
   UpdateBug(issue, issue_generator.GetComment(),
             issue_generator.GetMonorailProject())
+  issue_generator.OnIssueUpdated()
 
 
 def UpdateIssueIfExistsOrCreate(issue_generator, luci_project='chromium'):

@@ -15,6 +15,7 @@ from model.flake.detection.flake_occurrence import (
     CQFalseRejectionFlakeOccurrence)
 from model.flake.detection.flake_issue import FlakeIssue
 from services import issue_tracking_service
+from services import monitoring
 
 # Maximum number of Monorail issues allowed to be created or updated in any 24h
 # window.
@@ -117,6 +118,12 @@ class FlakeDetectionIssueGenerator(
     flaky_test_labels = self._GetCommonFlakyTestLabel()
     flaky_test_labels.append(_FLAKE_DETECTION_LABEL_TEXT)
     return flaky_test_labels
+
+  def OnIssueCreated(self):
+    monitoring.OnFlakeDetectionCreateOrUpdateIssues('create')
+
+  def OnIssueUpdated(self):
+    monitoring.OnFlakeDetectionCreateOrUpdateIssues('updated')
 
   def _GetLinkForFlake(self, flake):
     """Given a flake, gets a link to the flake on flake detection UI.

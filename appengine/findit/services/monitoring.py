@@ -98,3 +98,36 @@ def OnFlakeIdentified(canonical_step_name, isolate_target_name, operation,
           # analyzed, throttled or error.
           'operation': operation
       })
+
+
+def OnFlakeDetectionQueryFailed(flake_type):
+  """Used to monitor failed Flake Detection query execution.
+
+  Args:
+    flake_type: Type of the flake, such as 'cq false rejection' and
+                'cq hidden flake'.
+  """
+  monitoring.flake_detection_query_failures.increment({
+      'flake_type': flake_type
+  })
+
+
+def OnFlakeDetectionDetectNewOccurrences(flake_type, num_occurrences):
+  """Used to monitor new occurrences detected by Flake Detection.
+
+  Args:
+    flake_type: Type of the flake, such as 'cq false rejection' and
+                'cq hidden flake'.
+    num_occurrences: Number of newly detected flake occurrences.
+  """
+  monitoring.flake_detection_flake_occurrences.increment_by(
+      num_occurrences, {'flake_type': flake_type})
+
+
+def OnFlakeDetectionCreateOrUpdateIssues(operation):
+  """Used to monitor issues created or updated by Flake Detection.
+
+  Args:
+    operation: Type of the operation: create and update.
+  """
+  monitoring.flake_detection_issues.increment({'operation': operation})
