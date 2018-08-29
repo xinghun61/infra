@@ -5,6 +5,7 @@
 
 import re
 
+from libs import test_name_util
 from libs.test_results.base_test_results import BaseTestResults
 from libs.test_results.classified_test_results import ClassifiedTestResults
 
@@ -173,9 +174,9 @@ class WebkitLayoutTestResults(BaseTestResults):
     if not self.DoesTestExist(test_name):
       return None, 'test_location not found for %s.' % test_name
 
-    match = _VIRTUAL_TEST_NAME_PATTERN.match(test_name)
-    if match:
-      test_name = match.group(1)
+    test_name = test_name_util.RemoveSuffixFromWebkitLayoutTestName(
+        test_name_util.RemoveVirtualLayersFromWebkitLayoutTestName(test_name))
+
     return {
         'line': None,
         'file': '%s/%s' % (_BASE_FILE_PATH, test_name),

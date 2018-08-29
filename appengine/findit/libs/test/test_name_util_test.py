@@ -41,4 +41,15 @@ class TestNameUtilTest(wf_testcase.WaterfallTestCase):
     test_name = 'external/wpt/editing/run/inserttext.html?2001-last'
     self.assertEqual(
         'external/wpt/editing/run/inserttext.html',
-        test_name_util.RemoveQueriesFromWebkitLayoutTestName(test_name))
+        test_name_util.RemoveSuffixFromWebkitLayoutTestName(test_name))
+
+  def testRemoveVirtualLayersFromWebkitLayoutTestName(self):
+    virtual_test_name = 'virtual/wpt/editing/run/inserttext.html'
+    test_name = 'editing/run/inserttext.html'
+    self.assertEqual(
+        test_name,
+        test_name_util.RemoveVirtualLayersFromWebkitLayoutTestName(
+            virtual_test_name))
+    self.assertEqual(
+        test_name,
+        test_name_util.RemoveVirtualLayersFromWebkitLayoutTestName(test_name))

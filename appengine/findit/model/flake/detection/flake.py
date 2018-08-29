@@ -144,6 +144,6 @@ class Flake(ndb.Model):
     """
     normalized_test_name = test_name_util.RemoveAllPrefixesFromGTestName(
         test_name_util.RemoveParametersFromGTestName(test_name))
-    normalized_test_name = test_name_util.RemoveQueriesFromWebkitLayoutTestName(
+    normalized_test_name = test_name_util.RemoveSuffixFromWebkitLayoutTestName(
         normalized_test_name)
     return normalized_test_name

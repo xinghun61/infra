@@ -23,7 +23,7 @@ _SAMPLE_TEST_RESULTS = {
                         'has_stderr': True,
                         'is_unexpected': True
                     },
-                    'unknown-status-test.html': {
+                    'unknown-status-test.html?5000-6000': {
                         'expected': 'PASS',
                         'time': 1.1,
                         'actual': 'UNKNOWN',
@@ -129,7 +129,7 @@ _SAMPLE_FLATTEN_TEST_RESULTS = {
             'has_stderr': True,
             'is_unexpected': True
         },
-        'bluetooth/requestDevice/chooser/unknown-status-test.html': {
+        'bluetooth/requestDevice/chooser/unknown-status-test.html?5000-6000': {
             'expected': 'PASS',
             'time': 1.1,
             'actual': 'UNKNOWN',
@@ -321,7 +321,8 @@ class WebkitLayoutTestResultsTest(wf_testcase.WaterfallTestCase):
                 'has_stderr': True,
                 'is_unexpected': True
             },
-            'bluetooth/requestDevice/chooser/unknown-status-test.html': {
+            'bluetooth/requestDevice/chooser/unknown-status-test.html'
+            '?5000-6000': {
                 'expected': 'PASS',
                 'time': 1.1,
                 'actual': 'UNKNOWN',
@@ -479,7 +480,7 @@ class WebkitLayoutTestResultsTest(wf_testcase.WaterfallTestCase):
                 'unknowns': {},
             }
         },
-        'bluetooth/requestDevice/chooser/unknown-status-test.html': {
+        'bluetooth/requestDevice/chooser/unknown-status-test.html?5000-6000': {
             'total_run': 1,
             'num_expected_results': 0,
             'num_unexpected_results': 1,
@@ -533,6 +534,18 @@ class WebkitLayoutTestResultsTest(wf_testcase.WaterfallTestCase):
         'line': None,
         'file': 'third_party/WebKit/LayoutTests/fast/css/'
                 'error-in-last-decl.html',
+    }
+    result, error = self.test_result.GetTestLocation(test_name)
+    self.assertEqual(expected_test_location, result)
+    self.assertIsNone(error)
+
+  def testGetTestLocationToRemoveInfoAfterFileExtension(self):
+    test_name = (
+        'bluetooth/requestDevice/chooser/unknown-status-test.html?5000-6000')
+    expected_test_location = {
+        'line': None,
+        'file': 'third_party/WebKit/LayoutTests/bluetooth/requestDevice/'
+                'chooser/unknown-status-test.html',
     }
     result, error = self.test_result.GetTestLocation(test_name)
     self.assertEqual(expected_test_location, result)
