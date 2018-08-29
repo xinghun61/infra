@@ -322,6 +322,29 @@ class WorkEnvTest(unittest.TestCase):
     """Errors are safely reported."""
     pass  # TODO(jrobbins): add unit test
 
+  def testGetIssuesDict_Normal(self):
+    """We can get an existing issue by issue_id."""
+    issue_1 = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue_1)
+    issue_2 = fake.MakeTestIssue(789, 2, 'sum', 'New', 111L, issue_id=78902)
+    issue_2.labels = ['Restrict-View-CoreTeam']
+    self.services.issue.TestAddIssue(issue_2)
+    issue_3 = fake.MakeTestIssue(789, 3, 'sum', 'New', 111L, issue_id=78903)
+    self.services.issue.TestAddIssue(issue_3)
+
+    with self.work_env as we:
+      actual = we.GetIssuesDict([78901, 78902, 78903])
+
+    # We don't have permission to view issue 2, so it should be filtered out.
+    self.assertEqual({78901: issue_1, 78903: issue_3}, actual)
+
+  def testGetIssuesDict_NoSuchIssue(self):
+    """We reject attempts to get a non-existent issue."""
+    with self.assertRaises(exceptions.NoSuchIssueException):
+      with self.work_env as we:
+        _actual = we.GetIssuesDict([78901])
+
+
   def testGetIssue_Normal(self):
     """We can get an existing issue by issue_id."""
     issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
@@ -330,6 +353,29 @@ class WorkEnvTest(unittest.TestCase):
       actual = we.GetIssue(78901)
 
     self.assertEqual(issue, actual)
+
+  def testGetIssue_NoPermission(self):
+    """We reject attempts to get an issue we don't have permission for."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue.labels = ['Restrict-View-CoreTeam']
+    self.services.issue.TestAddIssue(issue)
+
+    # We should get a permission exception
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        _actual = we.GetIssue(78901)
+
+    # ...unless we have permission to see the issue
+    self.SignIn(self.admin_user.user_id)
+    with self.work_env as we:
+      actual = we.GetIssue(78901)
+    self.assertEqual(issue, actual)
+
+  def testGetIssue_NoneIssue(self):
+    """We reject attempts to get a none issue."""
+    with self.assertRaises(exceptions.InputException):
+      with self.work_env as we:
+        _actual = we.GetIssue(None)
 
   def testGetIssue_NoSuchIssue(self):
     """We reject attempts to get a non-existent issue."""

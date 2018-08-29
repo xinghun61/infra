@@ -91,8 +91,8 @@ class WorkEnv(object):
       raise permissions.PermissionException(
         'User lacks permission %r in project %s' % (perm, project.project_name))
 
-  def _AssertUserCanViewIssue(self, issue, allow_viewing_deleted=False):
-    """Make sure the user may view the issue."""
+  def _UserCanViewIssue(self, issue, allow_viewing_deleted=False):
+    """Test if the user may view the issue."""
     project = self.GetProject(issue.project_id)
     config = self.GetProjectConfig(issue.project_id)
     granted_perms = tracker_bizobj.GetGrantedPerms(
@@ -101,6 +101,12 @@ class WorkEnv(object):
         self.mc.auth.effective_ids, self.mc.perms, project, issue,
         allow_viewing_deleted=allow_viewing_deleted,
         granted_perms=granted_perms)
+    return project, granted_perms, permit_view
+
+  def _AssertUserCanViewIssue(self, issue, allow_viewing_deleted=False):
+    """Make sure the user may view the issue."""
+    project, granted_perms, permit_view = self._UserCanViewIssue(
+        issue, allow_viewing_deleted)
     if not permit_view:
       raise permissions.PermissionException(
           'User is not allowed to view this issue')
@@ -501,6 +507,31 @@ class WorkEnv(object):
       # current issue.
       prev_iid, cur_index, next_iid = pipeline.DetermineIssuePosition(issue)
       return prev_iid, cur_index, next_iid, pipeline.total_count
+
+  def GetIssuesDict(self, issue_ids, use_cache=True,
+                    allow_viewing_deleted=False):
+    """Return the specified issue.
+
+    Args:
+      issue_ids: int global issue IDs.
+      use_cache: set to false to ensure fresh issues.
+      allow_viewing_deleted: set to true to allow user to view deleted issues.
+
+    Returns:
+      The requested Issue PBs.
+    """
+    with self.mc.profiler.Phase('getting issues %r' % issue_ids):
+      issues = self.services.issue.GetIssuesDict(
+          self.mc.cnxn, issue_ids, use_cache=use_cache)
+
+    if len(issues) != len(set(issue_ids)):
+      raise exceptions.NoSuchIssueException()
+
+    issues = {
+        issue_id: issue
+        for issue_id, issue in issues.iteritems()
+        if self._UserCanViewIssue(issue, allow_viewing_deleted)[-1]}
+    return issues
 
   def GetIssue(self, issue_id, use_cache=True, allow_viewing_deleted=False):
     """Return the specified issue.

@@ -1652,7 +1652,10 @@ class IssueService(object):
 
   def GetIssuesDict(
       self, _cnxn, issue_ids, use_cache=True, shard_id=None):
-    return {iid: self.issues_by_iid[iid] for iid in issue_ids}
+    return {
+        iid: self.issues_by_iid[iid]
+        for iid in issue_ids
+        if iid in self.issues_by_iid}
 
   def GetIssues(self, _cnxn, issue_ids, use_cache=True, shard_id=None):
     results = [self.issues_by_iid[issue_id] for issue_id in issue_ids
