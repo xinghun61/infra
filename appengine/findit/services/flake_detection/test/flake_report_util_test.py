@@ -5,6 +5,7 @@ import datetime
 import mock
 import textwrap
 
+from googleapiclient.errors import HttpError
 from libs import time_util
 from model.flake.detection.flake import Flake
 from model.flake.detection.flake_issue import FlakeIssue
@@ -341,3 +342,28 @@ Feedback is welcome! Please use component Tools>Test>FindIt>Flakiness."""
     self.assertIn(expected_previous_bug_description, comment)
     self.assertFalse(mock_create_bug_fn.called)
     self.assertTrue(mock_update_bug_fn.called)
+
+  # This test tests that when Flake Detection tries to create or update multiple
+  # bugs, if it encounters failures such as no permissions to update a specific
+  # bug, it shouldn't crash, instead, it should move on to next ones.
+  @mock.patch.object(issue_tracking_service, 'IssueTrackerAPI')
+  def testReportFlakeToMonorailRecoversFromFailures(self,
+                                                    mock_issue_tracker_api):
+    mock_issue_tracker_api.side_effect = HttpError(
+        mock.Mock(status=403), 'Error happened')
+
+    flake1 = Flake.query().fetch()[0]
+    occurrences1 = CQFalseRejectionFlakeOccurrence.query(
+        ancestor=flake1.key).fetch()
+    flake2 = self._CreateFlake('step_other', 'test_other')
+    self._CreateFlakeOccurrence(777, 'step1_other', 'test1_other', 54321,
+                                flake2.key)
+    self._CreateFlakeOccurrence(888, 'step2_other', 'test2_other', 54322,
+                                flake2.key)
+    self._CreateFlakeOccurrence(999, 'step3_other', 'test3_other', 54323,
+                                flake2.key)
+    occurrences2 = CQFalseRejectionFlakeOccurrence.query(
+        ancestor=flake2.key).fetch()
+
+    flake_report_util.ReportFlakesToMonorail([(flake1, occurrences1),
+                                              (flake2, occurrences2)])

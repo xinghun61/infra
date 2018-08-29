@@ -9,6 +9,7 @@ import textwrap
 from google.appengine.ext import ndb
 
 from gae_libs.appengine_util import IsStaging
+from googleapiclient.errors import HttpError
 from libs import time_util
 from model.flake.detection.flake import Flake
 from model.flake.detection.flake_occurrence import (
@@ -319,12 +320,19 @@ def ReportFlakesToMonorail(flake_tuples_to_report):
   """
   for flake, occurrences in flake_tuples_to_report:
     issue_generator = FlakeDetectionIssueGenerator(flake, len(occurrences))
-    issue_tracking_service.UpdateIssueIfExistsOrCreate(issue_generator,
-                                                       flake.luci_project)
+    try:
+      issue_tracking_service.UpdateIssueIfExistsOrCreate(
+          issue_generator, flake.luci_project)
 
-    # Update FlakeIssue's last_updated_time property. This property is only
-    # applicable to Flake Detection because Flake Detection can update an issue
-    # at most once every 24 hours.
-    flake_issue = flake.flake_issue_key.get()
-    flake_issue.last_updated_time = time_util.GetUTCNow()
-    flake_issue.put()
+      # Update FlakeIssue's last_updated_time property. This property is only
+      # applicable to Flake Detection because Flake Detection can update an
+      # issue at most once every 24 hours.
+      flake_issue = flake.flake_issue_key.get()
+      flake_issue.last_updated_time = time_util.GetUTCNow()
+      flake_issue.put()
+    except HttpError as error:
+      # benign exceptions (HttpError 403) may happen when FindIt tries to
+      # update an issue that it doesn't have permission to. Do not raise
+      # exception so that the for loop can move on to create or update next
+      # issues.
+      logging.error('Failed to create or update issue due to error: %s', error)
