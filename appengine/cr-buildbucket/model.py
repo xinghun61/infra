@@ -112,6 +112,13 @@ class Build(ndb.Model):
     https://code.google.com/p/swarming/source/browse/appengine/swarming/server/task_request.py#329
   """
 
+  # ndb library sometimes silently ignores memcache errors
+  # => memcache is not synchronized with datastore
+  # => a build never finishes from the app code perspective
+  # => builder is stuck for days.
+  # We workaround this problem by setting a timeout.
+  _memcache_timeout = 600  # 10m
+
   status = msgprop.EnumProperty(BuildStatus, default=BuildStatus.SCHEDULED)
 
   # A proto.common_pb2.Status corresponding to self.status.
