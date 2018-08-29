@@ -78,10 +78,11 @@
     <app-location query-params="{{queryParams}}" url-space-regex="^/u/(.*)/polymer$"></app-location>
 
     <mr-header
-      user="[[user]]"
+      email="[[email]]"
       login-url="[[loginUrl]]"
       logout-url="[[logoutUrl]]"
     >
+
       <span slot="subheader">
         &gt; Viewing Profile: [[viewedUser]]
       </span>

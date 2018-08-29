@@ -1,0 +1,24 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../mr-header/mr-dropdown.html">
+
+<dom-module id="mr-account-dropdown">
+  <template>
+    <style>
+      :host {
+        margin: 0 4px;
+        color: #0000cc;
+      }
+    </style>
+
+    <template is="dom-if" if="[[email]]">
+      <mr-dropdown text="[[email]]"
+        items="[[_menuItems]]">
+      </mr-dropdown>
+    </template>
+    <template is="dom-if" if="[[!email]]">
+      <a href="[[loginUrl]]" style="font-weight: bold;">Sign in</a>
+    </template>
+
+  </template>
+  <script src="./mr-account-dropdown.js"></script>
+</dom-module>
