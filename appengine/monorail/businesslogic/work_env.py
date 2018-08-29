@@ -643,12 +643,15 @@ class WorkEnv(object):
         issue, allow_viewing_deleted=allow_viewing_deleted)
     return issue
 
-  def GetRelatedIssueRefs(self, issue):
+  def GetRelatedIssueRefs(self, issues):
     """Return a dict {iid: (project_name, local_id)} for all related issues."""
+    related_iids = set()
     with self.mc.profiler.Phase('getting related issue refs'):
-      related_iids = list(issue.blocked_on_iids) + list(issue.blocking_iids)
-      if issue.merged_into:
-        related_iids.append(issue.merged_into)
+      for issue in issues:
+        related_iids.update(issue.blocked_on_iids)
+        related_iids.update(issue.blocking_iids)
+        if issue.merged_into:
+          related_iids.add(issue.merged_into)
       logging.info('related_iids is %r', related_iids)
       return self.services.issue.LookupIssueRefs(self.mc.cnxn, related_iids)
 

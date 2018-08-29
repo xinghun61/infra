@@ -59,7 +59,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     """Return the specified issue in a response proto."""
     project, issue, config = self._GetProjectIssueAndConfig(mc, request)
     with work_env.WorkEnv(mc, self.services) as we:
-      related_refs = we.GetRelatedIssueRefs(issue)
+      related_refs = we.GetRelatedIssueRefs([issue])
 
     with mc.profiler.Phase('making user views'):
       users_involved_in_issue = tracker_bizobj.UsersInvolvedInIssues([issue])
@@ -95,7 +95,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     converted_results = []
     with work_env.WorkEnv(mc, self.services) as we:
       for issue in pipeline.visible_results:
-        related_refs = we.GetRelatedIssueRefs(issue)
+        related_refs = we.GetRelatedIssueRefs([issue])
         converted_results.append(
             converters.ConvertIssue(issue, pipeline.users_by_id, related_refs,
                                     pipeline.harmonized_config))
@@ -150,7 +150,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
       we.UpdateIssue(
           issue, delta, request.comment_content, send_email=request.send_email,
           attachments=attachments, is_description=request.is_description)
-      related_refs = we.GetRelatedIssueRefs(issue)
+      related_refs = we.GetRelatedIssueRefs([issue])
 
     with mc.profiler.Phase('making user views'):
       users_involved_in_issue = tracker_bizobj.UsersInvolvedInIssues([issue])

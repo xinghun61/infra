@@ -452,7 +452,7 @@ class WorkEnvTest(unittest.TestCase):
     self.services.issue.TestAddIssue(issue)
 
     with self.work_env as we:
-      actual = we.GetRelatedIssueRefs(issue)
+      actual = we.GetRelatedIssueRefs([issue])
 
     self.assertEqual({}, actual)
 
@@ -471,12 +471,43 @@ class WorkEnvTest(unittest.TestCase):
     self.services.issue.TestAddIssue(better)
 
     with self.work_env as we:
-      actual = we.GetRelatedIssueRefs(issue)
+      actual = we.GetRelatedIssueRefs([issue])
 
     self.assertEqual(
         {sooner.issue_id: ('proj', 2),
          later.issue_id: ('proj', 3),
          better.issue_id: ('proj', 4)},
+        actual)
+
+  def testGetRelatedIssueRefs_MultipleIssues(self):
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L)
+    blocking = fake.MakeTestIssue(
+        789, 2, 'sum', 'New', 111L, project_name='proj')
+    issue2 = fake.MakeTestIssue(789, 3, 'sum', 'New', 111L, project_name='proj')
+    blocked_on = fake.MakeTestIssue(
+        789, 4, 'sum', 'New', 111L, project_name='proj')
+    issue3 = fake.MakeTestIssue(789, 5, 'sum', 'New', 111L, project_name='proj')
+    merged_into = fake.MakeTestIssue(
+        789, 6, 'sum', 'New', 111L, project_name='proj')
+
+    issue.blocked_on_iids.append(blocked_on.issue_id)
+    issue2.blocking_iids.append(blocking.issue_id)
+    issue3.merged_into = merged_into.issue_id
+
+    self.services.issue.TestAddIssue(issue)
+    self.services.issue.TestAddIssue(issue2)
+    self.services.issue.TestAddIssue(issue3)
+    self.services.issue.TestAddIssue(blocked_on)
+    self.services.issue.TestAddIssue(blocking)
+    self.services.issue.TestAddIssue(merged_into)
+
+    with self.work_env as we:
+      actual = we.GetRelatedIssueRefs([issue, issue2, issue3])
+
+    self.assertEqual(
+        {blocking.issue_id: ('proj', 2),
+         blocked_on.issue_id: ('proj', 4),
+         merged_into.issue_id: ('proj', 6)},
         actual)
 
   @patch('features.send_notifications.PrepareAndSendApprovalChangeNotification')
