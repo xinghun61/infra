@@ -102,3 +102,10 @@ message ValueAndWhy {
   string value = 1;
   string why = 2;
 }
+
+
+// Next available tag: 3
+message Pagination {
+  uint32 max_items = 1;
+  uint32 start = 2;
+}

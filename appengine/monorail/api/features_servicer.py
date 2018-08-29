@@ -12,6 +12,8 @@ from api.api_proto import features_prpc_pb2
 from businesslogic import work_env
 from features import features_bizobj
 from framework import framework_views
+from framework import paginate
+from tracker import tracker_bizobj
 
 
 class FeaturesServicer(monorail_servicer.MonorailServicer):
@@ -74,4 +76,48 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
       star_count = we.GetHotlistStarCount(hotlist_id)
 
     result = features_pb2.StarHotlistResponse(star_count=star_count)
+    return result
+
+  @monorail_servicer.PRPCMethod
+  def ListHotlistIssues(self, mc, request):
+    """Get the issues on the specified hotlist."""
+    hotlist_id = converters.IngestHotlistRef(
+        mc.cnxn, self.services.user, self.services.features,
+        request.hotlist_ref)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      hotlist_items = we.GetHotlist(hotlist_id).items
+      issue_ids = [item.issue_id for item in hotlist_items]
+      issues = we.GetIssuesDict(issue_ids)
+
+      projects = we.GetProjectsByName([
+          issue.project_name for issue in issues.itervalues()])
+      configs = we.GetProjectConfigs([
+          project.project_id for project in projects.itervalues()])
+      configs = {
+          project.project_name: configs[project.project_id]
+          for project in projects.itervalues()}
+      related_refs = we.GetRelatedIssueRefs(issues.itervalues())
+
+    with mc.profiler.Phase('making user views'):
+      users_involved = set(item.adder_id for item in hotlist_items)
+      users_involved.update(
+          tracker_bizobj.UsersInvolvedInIssues(issues.itervalues()))
+      users_by_id = framework_views.MakeAllUserViews(
+          mc.cnxn, self.services.user, users_involved)
+      framework_views.RevealAllEmailsToMembers(mc.auth, None, users_by_id)
+
+    hotlist_items = [
+        hotlist_item for hotlist_item in hotlist_items
+        if hotlist_item.issue_id in issues]
+
+    start, max_items = converters.IngestPagination(request.pagination)
+    pagination = paginate.ArtifactPagination(
+        hotlist_items, max_items, start, None, None)
+
+    result = features_pb2.ListHotlistIssuesResponse(
+        items=[
+            converters.ConvertHotlistItem(
+                hotlist_item, issues,  users_by_id, related_refs, configs)
+            for hotlist_item in pagination.visible_results])
     return result

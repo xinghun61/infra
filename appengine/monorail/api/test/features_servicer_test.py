@@ -12,14 +12,17 @@ from components.prpc import codes
 from components.prpc import context
 from components.prpc import server
 
+from api import converters
 from api import features_servicer
 from api.api_proto import common_pb2
 from api.api_proto import features_pb2
+from api.api_proto import features_objects_pb2
 from framework import authdata
 from framework import exceptions
 from framework import monorailcontext
 from framework import permissions
 from testing import fake
+from tracker import tracker_bizobj
 from services import service_manager
 
 
@@ -36,6 +39,9 @@ class FeaturesServicerTest(unittest.TestCase):
         project=fake.ProjectService(),
         features=fake.FeaturesService(),
         hotlist_star=fake.HotlistStarService())
+    self.project = self.services.project.TestAddProject(
+        'proj', project_id=789, owner_ids=[111L], contrib_ids=[222L, 333L])
+    self.config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     self.user = self.services.user.TestAddUser('owner@example.com', 111L)
     self.user = self.services.user.TestAddUser('editor@example.com', 222L)
     self.user = self.services.user.TestAddUser('foo@example.com', 333L)
@@ -44,6 +50,12 @@ class FeaturesServicerTest(unittest.TestCase):
         self.services, make_rate_limiter=False)
     self.prpc_context = context.ServicerContext()
     self.prpc_context.set_code(codes.StatusCode.OK)
+    self.issue_1 = fake.MakeTestIssue(
+        789, 1, 'sum', 'New', 111L, project_name='proj')
+    self.issue_2 = fake.MakeTestIssue(
+        789, 2, 'sum', 'New', 111L, project_name='proj')
+    self.services.issue.TestAddIssue(self.issue_1)
+    self.services.issue.TestAddIssue(self.issue_2)
 
   def tearDown(self):
     self.mox.UnsetStubs()
@@ -323,3 +335,37 @@ class FeaturesServicerTest(unittest.TestCase):
     self.assertEqual(
         0, self.CallStar(requester='user_222@example.com', starred=False))
     self.assertEqual(0, self.CallGetStarCount())
+
+  def testListHotlistIssues(self):
+    hotlist_id = self.services.features.CreateHotlist(
+        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[]).hotlist_id
+    self.services.features.UpdateHotlistItems(
+        self.cnxn, hotlist_id, [],
+        [(self.issue_1.issue_id, 222L, 12345, 'Note'),
+         (self.issue_2.issue_id, 111L, 12346, 'Note')])
+    self.issue_2.labels = ['Restrict-View-CoreTeam']
+
+    owner_ref = common_pb2.UserRef(user_id=111L)
+    hotlist_ref = common_pb2.HotlistRef(name='Fake Hotlist', owner=owner_ref)
+    request = features_pb2.ListHotlistIssuesRequest(hotlist_ref=hotlist_ref)
+
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='foo@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(
+        self.features_svcr.ListHotlistIssues, mc, request)
+
+    self.assertEqual(1, len(response.items))
+    self.assertEqual(10, response.items[0].rank)
+    self.assertEqual(12345, response.items[0].added_timestamp)
+    self.assertEqual('Note', response.items[0].note)
+    self.assertEqual(
+        common_pb2.UserRef(
+            user_id=222L,
+            display_name='edi...@example.com'),
+        response.items[0].adder_ref)
+    self.assertEqual(1, response.items[0].issue.local_id)
+    self.assertEqual('proj', response.items[0].issue.project_name)
+    self.assertEqual('sum', response.items[0].issue.summary)
+    self.assertEqual('New', response.items[0].issue.status_ref.status)

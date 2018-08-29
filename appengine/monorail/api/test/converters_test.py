@@ -10,8 +10,10 @@ import unittest
 
 from google.protobuf import wrappers_pb2
 
+import settings
 from api import converters
 from api.api_proto import common_pb2
+from api.api_proto import features_objects_pb2
 from api.api_proto import issue_objects_pb2
 from api.api_proto import issues_pb2
 from api.api_proto import users_pb2
@@ -74,6 +76,15 @@ class ConverterFunctionsTest(unittest.TestCase):
         field_name='PhaseField', field_id=6,
         field_type=tracker_pb2.FieldTypes.INT_TYPE,
         applicable_type='', is_phase_field=True)
+
+    self.services.user.TestAddUser('owner@example.com', 111L)
+    self.services.user.TestAddUser('editor@example.com', 222L)
+    self.issue_1 = fake.MakeTestIssue(
+        789, 1, 'sum', 'New', 111L, project_name='proj')
+    self.issue_2 = fake.MakeTestIssue(
+        789, 2, 'sum', 'New', 111L, project_name='proj')
+    self.services.issue.TestAddIssue(self.issue_1)
+    self.services.issue.TestAddIssue(self.issue_2)
 
   def testConvertApprovalValues_Empty(self):
     """We handle the case where an issue has no approval values."""
@@ -982,6 +993,24 @@ class ConverterFunctionsTest(unittest.TestCase):
       converters.IngestHotlistRef(
           self.cnxn, self.services.user, self.services.features, hotlist_ref)
 
+  def testIngestPagination(self):
+    # Use settings.max_project_search_results_per_page if max_items is not
+    # present.
+    pagination = common_pb2.Pagination(start=1234)
+    self.assertEqual(
+        (1234, settings.max_artifact_search_results_per_page),
+        converters.IngestPagination(pagination))
+    # Otherwise, use the minimum between what was requested and
+    # settings.max_project_search_results_per_page
+    pagination = common_pb2.Pagination(start=1234, max_items=56)
+    self.assertEqual(
+        (1234, 56),
+        converters.IngestPagination(pagination))
+    pagination = common_pb2.Pagination(start=1234, max_items=5678)
+    self.assertEqual(
+        (1234, settings.max_artifact_search_results_per_page),
+        converters.IngestPagination(pagination))
+
   def testConvertStatusDef(self):
     """We can convert a status definition to protoc."""
     status_def = tracker_pb2.StatusDef(status='Started')
@@ -1231,6 +1260,34 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual('A fake hotlist.', actual.summary)
     self.assertEqual(
         'Detailed description of the fake hotlist.', actual.description)
+
+  def testConvertHotlistItem(self):
+    """We can convert a HotlistItem to protoc."""
+    hotlist = self.services.features.CreateHotlist(
+        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[])
+    self.services.features.UpdateHotlistItems(
+        self.cnxn, hotlist.hotlist_id, [],
+        [(self.issue_1.issue_id, 222L, 12345, 'Note')])
+    issues_by_id = {self.issue_1.issue_id: self.issue_1}
+    related_refs = {}
+    configs = {'proj': self.config}
+
+    actual = converters.ConvertHotlistItem(
+        hotlist.items[0], issues_by_id, self.users_by_id, related_refs, configs)
+
+    expected_issue = converters.ConvertIssue(
+        self.issue_1, self.users_by_id, related_refs, self.config)
+    self.assertEqual(
+        features_objects_pb2.HotlistItem(
+            issue=expected_issue,
+            rank=10,
+            adder_ref=common_pb2.UserRef(
+                user_id=222L,
+                display_name='two@example.com'),
+            added_timestamp=12345,
+            note='Note'),
+        actual)
 
   def testConvertValueAndWhy(self):
     """We can covert a dict wth 'why' and 'value' fields to a ValueAndWhy PB."""

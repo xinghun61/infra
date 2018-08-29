@@ -8,10 +8,23 @@ syntax = "proto3";
 package monorail;
 
 import "api/api_proto/common.proto";
+import "api/api_proto/issue_objects.proto";
 
+
+// Next available tag: 5
 message Hotlist {
   UserRef owner_ref = 1;
   string name = 2;
   string summary = 3;
   string description = 4;
+}
+
+
+// Next available tag: 6
+message HotlistItem {
+  Issue issue = 1;
+  uint32 rank = 2;
+  UserRef adder_ref = 3;
+  uint32 added_timestamp = 4;
+  string note = 5;
 }

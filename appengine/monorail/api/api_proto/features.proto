@@ -14,6 +14,7 @@ service Features {
   rpc ListHotlistsByUser (ListHotlistsByUserRequest) returns (ListHotlistsByUserResponse) {}
   rpc GetHotlistStarCount (GetHotlistStarCountRequest) returns (GetHotlistStarCountResponse) {}
   rpc StarHotlist (StarHotlistRequest) returns (StarHotlistResponse) {}
+  rpc ListHotlistIssues (ListHotlistIssuesRequest) returns (ListHotlistIssuesResponse) {}
 }
 
 
@@ -54,4 +55,18 @@ message StarHotlistRequest {
 // Next available tag: 2
 message StarHotlistResponse {
   uint32 star_count = 1;
+}
+
+
+// Next available tag: 4
+message ListHotlistIssuesRequest {
+  RequestTrace trace = 1;
+  HotlistRef hotlist_ref = 2;
+  Pagination pagination = 3;
+}
+
+
+// Next available tag: 2
+message ListHotlistIssuesResponse {
+  repeated HotlistItem items = 1;
 }

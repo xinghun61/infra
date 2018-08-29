@@ -62,16 +62,15 @@ message IssueResponse {
 }
 
 
-// Next available tag: 9
+// Next available tag: 8
 message ListIssuesRequest {
   RequestTrace trace = 1;
   string query = 2;
   uint32 canned_query = 3;
   repeated string project_names = 4;
-  uint32 max_items = 5;
-  uint32 paginate_start = 6;
-  string group_by_spec = 7;
-  string sort_spec = 8;
+  Pagination pagination = 5;
+  string group_by_spec = 6;
+  string sort_spec = 7;
 }
 
 

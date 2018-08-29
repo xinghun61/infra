@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='api/api_proto/common.proto',
   package='monorail',
   syntax='proto3',
-  serialized_pb=_b('\n\x1a\x61pi/api_proto/common.proto\x12\x08monorail\"W\n\x0cRequestTrace\x12\r\n\x05token\x18\x01 \x01(\t\x12\x0e\n\x06reason\x18\x02 \x01(\t\x12\x12\n\nrequest_id\x18\x03 \x01(\t\x12\x14\n\x0ctest_account\x18\x04 \x01(\t\"0\n\x0c\x43omponentRef\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x12\n\nis_derived\x18\x02 \x01(\x08\"j\n\x08\x46ieldRef\x12\x10\n\x08\x66ield_id\x18\x01 \x01(\x04\x12\x12\n\nfield_name\x18\x02 \x01(\t\x12!\n\x04type\x18\x03 \x01(\x0e\x32\x13.monorail.FieldType\x12\x15\n\rapproval_name\x18\x04 \x01(\t\"-\n\x08LabelRef\x12\r\n\x05label\x18\x01 \x01(\t\x12\x12\n\nis_derived\x18\x02 \x01(\x08\"C\n\tStatusRef\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x12\n\nmeans_open\x18\x02 \x01(\x08\x12\x12\n\nis_derived\x18\x03 \x01(\x08\"2\n\x08IssueRef\x12\x14\n\x0cproject_name\x18\x01 \x01(\t\x12\x10\n\x08local_id\x18\x02 \x01(\r\"D\n\x07UserRef\x12\x0f\n\x07user_id\x18\x01 \x01(\x04\x12\x14\n\x0c\x64isplay_name\x18\x02 \x01(\t\x12\x12\n\nis_derived\x18\x03 \x01(\x08\"P\n\nHotlistRef\x12\x12\n\nhotlist_id\x18\x01 \x01(\x04\x12\x0c\n\x04name\x18\x02 \x01(\t\x12 \n\x05owner\x18\x03 \x01(\x0b\x32\x11.monorail.UserRef\")\n\x0bValueAndWhy\x12\r\n\x05value\x18\x01 \x01(\t\x12\x0b\n\x03why\x18\x02 \x01(\t*\x91\x01\n\tFieldType\x12\x0b\n\x07NO_TYPE\x10\x00\x12\r\n\tENUM_TYPE\x10\x01\x12\x0c\n\x08INT_TYPE\x10\x02\x12\x0c\n\x08STR_TYPE\x10\x03\x12\r\n\tUSER_TYPE\x10\x04\x12\r\n\tDATE_TYPE\x10\x05\x12\r\n\tBOOL_TYPE\x10\x06\x12\x0c\n\x08URL_TYPE\x10\x07\x12\x11\n\rAPPROVAL_TYPE\x10\x08\x62\x06proto3')
+  serialized_pb=_b('\n\x1a\x61pi/api_proto/common.proto\x12\x08monorail\"W\n\x0cRequestTrace\x12\r\n\x05token\x18\x01 \x01(\t\x12\x0e\n\x06reason\x18\x02 \x01(\t\x12\x12\n\nrequest_id\x18\x03 \x01(\t\x12\x14\n\x0ctest_account\x18\x04 \x01(\t\"0\n\x0c\x43omponentRef\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x12\n\nis_derived\x18\x02 \x01(\x08\"j\n\x08\x46ieldRef\x12\x10\n\x08\x66ield_id\x18\x01 \x01(\x04\x12\x12\n\nfield_name\x18\x02 \x01(\t\x12!\n\x04type\x18\x03 \x01(\x0e\x32\x13.monorail.FieldType\x12\x15\n\rapproval_name\x18\x04 \x01(\t\"-\n\x08LabelRef\x12\r\n\x05label\x18\x01 \x01(\t\x12\x12\n\nis_derived\x18\x02 \x01(\x08\"C\n\tStatusRef\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x12\n\nmeans_open\x18\x02 \x01(\x08\x12\x12\n\nis_derived\x18\x03 \x01(\x08\"2\n\x08IssueRef\x12\x14\n\x0cproject_name\x18\x01 \x01(\t\x12\x10\n\x08local_id\x18\x02 \x01(\r\"D\n\x07UserRef\x12\x0f\n\x07user_id\x18\x01 \x01(\x04\x12\x14\n\x0c\x64isplay_name\x18\x02 \x01(\t\x12\x12\n\nis_derived\x18\x03 \x01(\x08\"P\n\nHotlistRef\x12\x12\n\nhotlist_id\x18\x01 \x01(\x04\x12\x0c\n\x04name\x18\x02 \x01(\t\x12 \n\x05owner\x18\x03 \x01(\x0b\x32\x11.monorail.UserRef\")\n\x0bValueAndWhy\x12\r\n\x05value\x18\x01 \x01(\t\x12\x0b\n\x03why\x18\x02 \x01(\t\".\n\nPagination\x12\x11\n\tmax_items\x18\x01 \x01(\r\x12\r\n\x05start\x18\x02 \x01(\r*\x91\x01\n\tFieldType\x12\x0b\n\x07NO_TYPE\x10\x00\x12\r\n\tENUM_TYPE\x10\x01\x12\x0c\n\x08INT_TYPE\x10\x02\x12\x0c\n\x08STR_TYPE\x10\x03\x12\r\n\tUSER_TYPE\x10\x04\x12\r\n\tDATE_TYPE\x10\x05\x12\r\n\tBOOL_TYPE\x10\x06\x12\x0c\n\x08URL_TYPE\x10\x07\x12\x11\n\rAPPROVAL_TYPE\x10\x08\x62\x06proto3')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -69,8 +69,8 @@ _FIELDTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=651,
-  serialized_end=796,
+  serialized_start=699,
+  serialized_end=844,
 )
 _sym_db.RegisterEnumDescriptor(_FIELDTYPE)
 
@@ -477,6 +477,44 @@ _VALUEANDWHY = _descriptor.Descriptor(
   serialized_end=648,
 )
 
+
+_PAGINATION = _descriptor.Descriptor(
+  name='Pagination',
+  full_name='monorail.Pagination',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='max_items', full_name='monorail.Pagination.max_items', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='start', full_name='monorail.Pagination.start', index=1,
+      number=2, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=650,
+  serialized_end=696,
+)
+
 _FIELDREF.fields_by_name['type'].enum_type = _FIELDTYPE
 _HOTLISTREF.fields_by_name['owner'].message_type = _USERREF
 DESCRIPTOR.message_types_by_name['RequestTrace'] = _REQUESTTRACE
@@ -488,6 +526,7 @@ DESCRIPTOR.message_types_by_name['IssueRef'] = _ISSUEREF
 DESCRIPTOR.message_types_by_name['UserRef'] = _USERREF
 DESCRIPTOR.message_types_by_name['HotlistRef'] = _HOTLISTREF
 DESCRIPTOR.message_types_by_name['ValueAndWhy'] = _VALUEANDWHY
+DESCRIPTOR.message_types_by_name['Pagination'] = _PAGINATION
 DESCRIPTOR.enum_types_by_name['FieldType'] = _FIELDTYPE
 
 RequestTrace = _reflection.GeneratedProtocolMessageType('RequestTrace', (_message.Message,), dict(
@@ -552,6 +591,13 @@ ValueAndWhy = _reflection.GeneratedProtocolMessageType('ValueAndWhy', (_message.
   # @@protoc_insertion_point(class_scope:monorail.ValueAndWhy)
   ))
 _sym_db.RegisterMessage(ValueAndWhy)
+
+Pagination = _reflection.GeneratedProtocolMessageType('Pagination', (_message.Message,), dict(
+  DESCRIPTOR = _PAGINATION,
+  __module__ = 'api.api_proto.common_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.Pagination)
+  ))
+_sym_db.RegisterMessage(Pagination)
 
 
 # @@protoc_insertion_point(module_scope)

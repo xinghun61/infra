@@ -14,6 +14,7 @@ may be different than how we want to expose them.
 
 import logging
 
+import settings
 from api.api_proto import common_pb2
 from api.api_proto import features_objects_pb2
 from api.api_proto import issue_objects_pb2
@@ -628,6 +629,13 @@ def IngestHotlistRef(cnxn, user_service, features_service, hotlist_ref):
   return hotlists[(name, owner_id)]
 
 
+def IngestPagination(pagination):
+  max_items = settings.max_artifact_search_results_per_page
+  if pagination.max_items:
+    max_items = min(max_items, pagination.max_items)
+  return pagination.start, max_items
+
+
 def ConvertCommit(
     commit_sha, author_id, commit_time, commit_message, commit_repo_url):
   """Convert a protorpc UserCommit to a protoc Commit."""
@@ -804,6 +812,21 @@ def ConvertHotlist(hotlist, users_by_id):
       name=hotlist.name,
       summary=hotlist.summary,
       description=hotlist.description)
+  return result
+
+
+def ConvertHotlistItem(hotlist_item, issues_by_id, users_by_id, related_refs,
+                       configs):
+  issue_pb = issues_by_id[hotlist_item.issue_id]
+  issue = ConvertIssue(
+      issue_pb, users_by_id, related_refs, configs[issue_pb.project_name])
+  adder_ref = ConvertUserRef(hotlist_item.adder_id, None, users_by_id)
+  result = features_objects_pb2.HotlistItem(
+      issue=issue,
+      rank=hotlist_item.rank,
+      adder_ref=adder_ref,
+      added_timestamp=hotlist_item.date_added,
+      note=hotlist_item.note)
   return result
 
 
