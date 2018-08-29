@@ -398,7 +398,9 @@ After the package is built it can be optionally tested. The recipe will run your
 test script in an empty directory with the path to the
 packaged-but-not-yet-uploaded cipd package file and it can do whatever testing
 it needs to it (exiting non-zero if something is wrong). You can use
-the `cipd pkg-deploy` command to deploy it (or whatever cipd commands you like).
+the `cipd pkg-deploy` command to deploy it (or whatever cipd commands you like,
+though I wouldn't recommend uploading it to CIPD, as the 3pp recipe will do that
+after the test exits 0).
 
 ##### Upload
 
@@ -459,9 +461,9 @@ If the recipe is run in experimental mode (according to the
 "recipe_engine/runtime" module), then this recipe will skip the final CIPD
 upload.
 
-#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#203)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#205)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
-&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#232)(self, packages, platform=None):**
+&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#234)(self, packages, platform=None):**
 
 Executes entire {fetch,build,package,verify,upload} pipeline for all the
 packages listed, targeting the given platform.
@@ -475,7 +477,7 @@ Args:
 
 Returns list[(cipd_pkg, cipd_version)]
 
-&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#204)(self, path, on_duplicate='raise'):**
+&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#206)(self, path):**
 
 Loads all package definitions from the given path.
 
@@ -493,12 +495,13 @@ Args:
   * path (Path) - A path to a directory full of package definitions. Each
     package definition is a directory containing at least a 3pp.pb file,
     whose behavior is defined by 3pp.proto.
-  * on_duplicate ('raise'|'ignore') - Defines what this function should do
-    in the event that it's instructed to load a duplicate package name. If
-    this is 'raise' (the default), it will raise a DuplicatePackage
-    exception.
 
 Returns a set(str) containing the names of the packages which were loaded.
+
+Raises a DuplicatePackage exception if this function encounters a package
+whose name is already registered. This could occur if you call
+load_packages_from_path multiple times, and one of the later calls tries to
+load a pacakge which was registered under one of the earlier calls.
 ### *recipe_modules* / [wct](/recipes/recipe_modules/wct)
 
 [DEPS](/recipes/recipe_modules/wct/__init__.py#1): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/step][recipe_engine/recipe_modules/step]
@@ -945,15 +948,15 @@ See: //docs/testing/web_platform_tests.md (https://goo.gl/rSRGmZ)
 
 Runs a step which adds a link to the current CL if there is one.
 
-[build/recipe_modules/chromium]: https://chromium.googlesource.com/chromium/tools/build.git/+/9663b430bdf92cca9888a549f38b862cca285ef8/scripts/slave/README.recipes.md#recipe_modules-chromium
-[build/recipe_modules/chromium_checkout]: https://chromium.googlesource.com/chromium/tools/build.git/+/9663b430bdf92cca9888a549f38b862cca285ef8/scripts/slave/README.recipes.md#recipe_modules-chromium_checkout
-[build/recipe_modules/docker]: https://chromium.googlesource.com/chromium/tools/build.git/+/9663b430bdf92cca9888a549f38b862cca285ef8/scripts/slave/README.recipes.md#recipe_modules-docker
-[build/recipe_modules/gae_sdk]: https://chromium.googlesource.com/chromium/tools/build.git/+/9663b430bdf92cca9888a549f38b862cca285ef8/scripts/slave/README.recipes.md#recipe_modules-gae_sdk
-[build/recipe_modules/goma]: https://chromium.googlesource.com/chromium/tools/build.git/+/9663b430bdf92cca9888a549f38b862cca285ef8/scripts/slave/README.recipes.md#recipe_modules-goma
-[build/recipe_modules/luci_config]: https://chromium.googlesource.com/chromium/tools/build.git/+/9663b430bdf92cca9888a549f38b862cca285ef8/scripts/slave/README.recipes.md#recipe_modules-luci_config
-[build/recipe_modules/puppet_service_account]: https://chromium.googlesource.com/chromium/tools/build.git/+/9663b430bdf92cca9888a549f38b862cca285ef8/scripts/slave/README.recipes.md#recipe_modules-puppet_service_account
-[build/recipe_modules/trigger]: https://chromium.googlesource.com/chromium/tools/build.git/+/9663b430bdf92cca9888a549f38b862cca285ef8/scripts/slave/README.recipes.md#recipe_modules-trigger
-[build/recipe_modules/zip]: https://chromium.googlesource.com/chromium/tools/build.git/+/9663b430bdf92cca9888a549f38b862cca285ef8/scripts/slave/README.recipes.md#recipe_modules-zip
+[build/recipe_modules/chromium]: https://chromium.googlesource.com/chromium/tools/build.git/+/d7c832183e251ee67ba12d72eb5559a6e61dfd7f/scripts/slave/README.recipes.md#recipe_modules-chromium
+[build/recipe_modules/chromium_checkout]: https://chromium.googlesource.com/chromium/tools/build.git/+/d7c832183e251ee67ba12d72eb5559a6e61dfd7f/scripts/slave/README.recipes.md#recipe_modules-chromium_checkout
+[build/recipe_modules/docker]: https://chromium.googlesource.com/chromium/tools/build.git/+/d7c832183e251ee67ba12d72eb5559a6e61dfd7f/scripts/slave/README.recipes.md#recipe_modules-docker
+[build/recipe_modules/gae_sdk]: https://chromium.googlesource.com/chromium/tools/build.git/+/d7c832183e251ee67ba12d72eb5559a6e61dfd7f/scripts/slave/README.recipes.md#recipe_modules-gae_sdk
+[build/recipe_modules/goma]: https://chromium.googlesource.com/chromium/tools/build.git/+/d7c832183e251ee67ba12d72eb5559a6e61dfd7f/scripts/slave/README.recipes.md#recipe_modules-goma
+[build/recipe_modules/luci_config]: https://chromium.googlesource.com/chromium/tools/build.git/+/d7c832183e251ee67ba12d72eb5559a6e61dfd7f/scripts/slave/README.recipes.md#recipe_modules-luci_config
+[build/recipe_modules/puppet_service_account]: https://chromium.googlesource.com/chromium/tools/build.git/+/d7c832183e251ee67ba12d72eb5559a6e61dfd7f/scripts/slave/README.recipes.md#recipe_modules-puppet_service_account
+[build/recipe_modules/trigger]: https://chromium.googlesource.com/chromium/tools/build.git/+/d7c832183e251ee67ba12d72eb5559a6e61dfd7f/scripts/slave/README.recipes.md#recipe_modules-trigger
+[build/recipe_modules/zip]: https://chromium.googlesource.com/chromium/tools/build.git/+/d7c832183e251ee67ba12d72eb5559a6e61dfd7f/scripts/slave/README.recipes.md#recipe_modules-zip
 [depot_tools/recipe_modules/bot_update]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/cb32668137d08ec52ee893a872df3a61903215a2/recipes/README.recipes.md#recipe_modules-bot_update
 [depot_tools/recipe_modules/cipd]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/cb32668137d08ec52ee893a872df3a61903215a2/recipes/README.recipes.md#recipe_modules-cipd
 [depot_tools/recipe_modules/depot_tools]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/cb32668137d08ec52ee893a872df3a61903215a2/recipes/README.recipes.md#recipe_modules-depot_tools
