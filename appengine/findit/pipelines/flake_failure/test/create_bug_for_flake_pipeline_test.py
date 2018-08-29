@@ -474,7 +474,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     # Create a flake analysis with no bug.
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
-    analysis.post_analysis_data_points = [
+    analysis.flakiness_verification_data_points = [
         DataPoint.Create(commit_position=1000, pass_rate=.5)
     ]
     analysis.confidence_in_culprit = 1.0
@@ -506,7 +506,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     # Create a flake analysis with no bug.
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
-    analysis.post_analysis_data_points = [
+    analysis.flakiness_verification_data_points = [
         DataPoint.Create(commit_position=1000, pass_rate=1.0)
     ]
     analysis.Save()

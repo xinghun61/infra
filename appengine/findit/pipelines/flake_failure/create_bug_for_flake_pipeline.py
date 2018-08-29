@@ -234,12 +234,11 @@ class CreateBugIfStillFlakyPipeline(GeneratorPipeline):
     analysis = ndb.Key(urlsafe=parameters.analysis_urlsafe_key).get()
     assert analysis, 'Analysis unexpectedly missing!'
 
-    post_analysis_data_points = analysis.post_analysis_data_points
-    assert post_analysis_data_points, (
-        'Data point for recent flakiness unexpectedly missing!')
+    assert analysis.flakiness_verification_data_points, (
+        'Data points for recent flakiness unexpectedly missing!')
 
     recent_data_point = sorted(
-        post_analysis_data_points,
+        analysis.flakiness_verification_data_points,
         key=lambda x: x.commit_position,
         reverse=True)[0]
 
