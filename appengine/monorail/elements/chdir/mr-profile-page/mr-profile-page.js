@@ -13,7 +13,7 @@ class MrProfilePage extends Polymer.Element {
 
   static get properties() {
     return {
-      user: {
+      email: {
         type: String,
         observer: '_getUserData',
       },
