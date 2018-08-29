@@ -7,6 +7,7 @@ package driver
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -93,6 +94,9 @@ func collectHandler(ctx *router.Context) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// TODO(crbug/877303): We should set up a separate endpoint for swarming and buildbucket
+// pubsub handlers, as they are similar but subtly different enough to merit separating
+// the two rather than handling them in the same function.
 func pubsubPushHandler(ctx *router.Context) {
 	c, r, w := ctx.Context, ctx.Request, ctx.Writer
 	logging.Infof(c, "[driver] Received PubSub push message.")
@@ -151,14 +155,9 @@ func pubsubPullHandler(ctx *router.Context) {
 	w.WriteHeader(http.StatusOK)
 }
 
-type payload struct {
-	TaskID   string `json:"task_id"`
-	Userdata string `json:"userdata"`
-}
-
 // ReceivedPubSubMessage guards against duplicate processing of pubsub messages.
 //
-// LUCI datastore ID (=swarming task ID) field.
+// LUCI datastore ID (=<swarming task ID/buildbucket build ID>:run ID) field.
 type ReceivedPubSubMessage struct {
 	ID     string `gae:"$id"`
 	RunID  int64
@@ -170,16 +169,22 @@ func handlePubSubMessage(c context.Context, msg *pubsub.PubsubMessage) error {
 		"message ID":   msg.MessageId,
 		"publish time": msg.PublishTime,
 	}.Infof(c, "[driver] PubSub message received.")
-	tr, taskID, err := decodePubsubMessage(c, msg)
+	tr, taskID, buildID, err := decodePubsubMessage(c, msg)
 	if err != nil {
 		return errors.Annotate(err, "failed to decode PubSub message").Err()
 	}
 	logging.Fields{
+		"build ID":       buildID,
 		"task ID":        taskID,
 		"TriggerRequest": tr,
 	}.Infof(c, "[driver] Unwrapped PubSub message.")
 	// Check if message was already received.
-	received := &ReceivedPubSubMessage{ID: taskID}
+	received := &ReceivedPubSubMessage{}
+	if taskID != "" {
+		received.ID = fmt.Sprintf("%s:%d", taskID, tr.RunId)
+	} else {
+		received.ID = fmt.Sprintf("%d:%d", buildID, tr.RunId)
+	}
 	err = ds.Get(c, received)
 	if err != nil && err != ds.ErrNoSuchEntity {
 		return errors.Annotate(err, "failed to get receivedPubSubMessage").Err()
@@ -193,7 +198,8 @@ func handlePubSubMessage(c context.Context, msg *pubsub.PubsubMessage) error {
 		}
 	} else {
 		logging.Fields{
-			"task ID": taskID,
+			"build ID": buildID,
+			"task ID":  taskID,
 		}.Infof(c, "[driver] Skipping processing of PubSub message.")
 		// Message has already been processed, return and ack the
 		// PubSub message with no further action.
@@ -205,6 +211,7 @@ func handlePubSubMessage(c context.Context, msg *pubsub.PubsubMessage) error {
 		IsolatedInputHash: tr.IsolatedInputHash,
 		Worker:            tr.Worker,
 		TaskId:            taskID,
+		BuildId:           buildID,
 	})
 	if err != nil {
 		return err
@@ -230,28 +237,43 @@ func enqueueCollectRequest(c context.Context, request *admin.CollectRequest) err
 }
 
 // decodePubsubMessage decodes the provided PubSub message to a TriggerRequest
-// and a task ID.
+// and a task ID or build ID.
 //
 // The pubsub message published to the worker completion topic from Swarming
 // should include a serialized proto TriggerRequest that has been base64
 // encoded and included as userdata in the Swarming trigger request. In
-// addition, Swarming adds the task ID of the completed task.
-func decodePubsubMessage(c context.Context, msg *pubsub.PubsubMessage) (*admin.TriggerRequest, string, error) {
+// addition, Swarming adds the task ID of the completed task or Buildbucket
+// adds the build ID of the completed build.
+func decodePubsubMessage(c context.Context, msg *pubsub.PubsubMessage) (*admin.TriggerRequest, string, int64, error) {
 	data, err := base64.StdEncoding.DecodeString(msg.Data)
 	if err != nil {
-		return nil, "", errors.Annotate(err, "failed to base64 decode pubsub message").Err()
+		return nil, "", 0, errors.Annotate(err, "failed to base64 decode pubsub message").Err()
 	}
-	p := payload{}
+
+	p := struct {
+		Build struct { 
+			ID int64 `json:"id,string"`
+		} `json:"build"`
+		TaskID              string `json:"task_id"`
+		Userdata            string `json:"userdata"`
+		BuildbucketUserdata string `json:"user_data"`
+	}{}
 	if err := json.Unmarshal(data, &p); err != nil {
-		return nil, "", errors.Annotate(err, "failed to unmarshal pubsub JSON payload").Err()
+		return nil, "", 0, errors.Annotate(err, "failed to unmarshal pubsub JSON payload").Err()
 	}
-	userdata, err := base64.StdEncoding.DecodeString(p.Userdata)
+	var rawUserdata string
+	if p.Userdata == "" {
+		rawUserdata = p.BuildbucketUserdata
+	} else {
+		rawUserdata = p.Userdata
+	}
+	userdata, err := base64.StdEncoding.DecodeString(rawUserdata)
 	if err != nil {
-		return nil, "", errors.Annotate(err, "failed to base64 decode pubsub userdata").Err()
+		return nil, "", 0, errors.Annotate(err, "failed to base64 decode pubsub userdata").Err()
 	}
 	tr := &admin.TriggerRequest{}
 	if err := proto.Unmarshal([]byte(userdata), tr); err != nil {
-		return nil, "", errors.Annotate(err, "failed to unmarshal pubsub proto userdata").Err()
+		return nil, "", 0, errors.Annotate(err, "failed to unmarshal pubsub proto userdata").Err()
 	}
-	return tr, p.TaskID, nil
+	return tr, p.TaskID, p.Build.ID, nil
 }

@@ -5,6 +5,7 @@
 package driver
 
 import (
+	"fmt"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -24,13 +25,20 @@ var (
 		Data:        "eyJ0YXNrX2lkIjoiMzQ5ZjBkODQ5MjI3Y2QxMCIsInVzZXJkYXRhIjoiQ0lDQWdJQ0E2TjBLRWdkaFltTmxaR1puR2hoSVpXeHNiMTlWWW5WdWRIVXhOQzR3TkY5NE9EWXROalE9In0=",
 	}
 	taskID = "349f0d849227cd10" // matches the above pubsub message
+	msg_bb = &pubsub.PubsubMessage{
+		MessageId:   "58708071417623",
+		PublishTime: "2017-02-28T19:39:28.104Z",
+		Data:        "eyJidWlsZCI6eyJpZCI6IjEyMzQifSwidXNlcmRhdGEiOiJDSUNBZ0lDQTZOMEtFZ2RoWW1ObFpHWm5HaGhJWld4c2IxOVZZblZ1ZEhVeE5DNHdORjk0T0RZdE5qUT0ifQ==",
+	}
+	buildID = 1234 // matches the above pubsub message
+	runID = 6042091272536064 // matches the above pubsub messages
 )
 
 func TestDecodePubsubMessage(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		ctx := triciumtest.Context()
 		Convey("Decodes pubsub message without error", func() {
-			_, _, err := decodePubsubMessage(ctx, msg)
+			_, _, _, err := decodePubsubMessage(ctx, msg)
 			So(err, ShouldBeNil)
 		})
 	})
@@ -41,9 +49,18 @@ func TestHandlePubSubMessage(t *testing.T) {
 		ctx := triciumtest.Context()
 		Convey("Enqueues collect task", func() {
 			So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.DriverQueue]), ShouldEqual, 0)
-			received := &ReceivedPubSubMessage{ID: taskID}
+			received := &ReceivedPubSubMessage{ID: fmt.Sprintf("%s:%d", taskID, runID)}
 			So(ds.Get(ctx, received), ShouldEqual, ds.ErrNoSuchEntity)
 			err := handlePubSubMessage(ctx, msg)
+			So(err, ShouldBeNil)
+			So(ds.Get(ctx, received), ShouldBeNil)
+			So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.DriverQueue]), ShouldEqual, 1)
+		})
+		Convey("Enqueues buildbucket collect task", func() {
+			So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.DriverQueue]), ShouldEqual, 0)
+			received := &ReceivedPubSubMessage{ID: fmt.Sprintf("%d:%d", buildID, runID)}
+			So(ds.Get(ctx, received), ShouldEqual, ds.ErrNoSuchEntity)
+			err := handlePubSubMessage(ctx, msg_bb)
 			So(err, ShouldBeNil)
 			So(ds.Get(ctx, received), ShouldBeNil)
 			So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.DriverQueue]), ShouldEqual, 1)
