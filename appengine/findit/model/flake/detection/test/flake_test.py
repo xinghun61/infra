@@ -108,6 +108,8 @@ class FlakeTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('suite.test',
                      Flake.NormalizeTestName('a/suite.PRE_PRE_test/0'))
 
+    self.assertEqual('a/b.html', Flake.NormalizeTestName('a/b.html?1000-2000'))
+
   def testGetId(self):
     luci_project = 'chromium'
     normalized_step_name = 'normalized_step'

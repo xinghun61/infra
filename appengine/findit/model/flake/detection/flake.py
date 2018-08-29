@@ -6,7 +6,7 @@ import logging
 
 from google.appengine.ext import ndb
 
-from libs import gtest_name_util
+from libs import test_name_util
 from model.flake.detection.flake_issue import FlakeIssue
 from services import ci_failure
 
@@ -88,7 +88,7 @@ class Flake(ndb.Model):
       master_name: Master name of the build of the step.
       builder_name: Builder name of the build of the step.
       build_number: Build number of the build of the step.
-      
+
     Returns:
       Normalized version of the given step name.
     """
@@ -125,19 +125,25 @@ class Flake(ndb.Model):
 
   @staticmethod
   def NormalizeTestName(test_name):
-    """Removes prefixes and parameters from test names if they are gtests.
+    """Normalizes test names by removing parameters and queries.
 
-    For example, 'A/ColorSpaceTest.PRE_PRE_testNullTransform/137' maps to
+    Removes prefixes and parameters from test names if they are gtests. For
+    example, 'A/ColorSpaceTest.PRE_PRE_testNullTransform/137' maps to
     'ColorSpaceTest.testNullTransform'.
 
-    Note that this method is a no-op for non-gtests.
+    Removes queries from test names if they are webkit_layout_tests. For
+    example, 'external/wpt/editing/run/inserttext.html?2001-last' maps to
+    'external/wpt/editing/run/inserttext.html'
 
     Args:
       test_name: The original test name, and it may contain parameters and
-                 prefixes for gtests.
+                 prefixes for gtests and queries for webkit_layout_tests.
 
     Returns:
       Normalized version of the given test name.
     """
-    return gtest_name_util.RemoveAllPrefixesFromTestName(
-        gtest_name_util.RemoveParametersFromTestName(test_name))
+    normalized_test_name = test_name_util.RemoveAllPrefixesFromGTestName(
+        test_name_util.RemoveParametersFromGTestName(test_name))
+    normalized_test_name = test_name_util.RemoveQueriesFromWebkitLayoutTestName(
+        normalized_test_name)
+    return normalized_test_name

@@ -12,7 +12,7 @@ It provides functions to:
 import base64
 from collections import defaultdict
 
-from libs.gtest_name_util import RemoveAllPrefixesFromTestName
+from libs.test_name_util import RemoveAllPrefixesFromGTestName
 from libs.test_results.base_test_results import BaseTestResults
 from libs.test_results.classified_test_results import ClassifiedTestResults
 
@@ -83,7 +83,7 @@ class GtestTestResults(BaseTestResults):
         for test in test_results:
           failed_test_log[test_name][test['status']] = test.get(
               'output_snippet')
-        reliable_failed_tests[test_name] = RemoveAllPrefixesFromTestName(
+        reliable_failed_tests[test_name] = RemoveAllPrefixesFromGTestName(
             test_name)
 
     for test_name in failed_test_log:
@@ -157,7 +157,7 @@ class GtestTestResults(BaseTestResults):
     test_results = ClassifiedTestResults()
     for iteration in self.test_results_json['per_iteration_data']:
       for test_name, runs in iteration.iteritems():
-        base_test_name = RemoveAllPrefixesFromTestName(test_name)
+        base_test_name = RemoveAllPrefixesFromGTestName(test_name)
         expected_status = SUCCESS if self.IsTestEnabled(
             base_test_name) else SKIPPED
 
