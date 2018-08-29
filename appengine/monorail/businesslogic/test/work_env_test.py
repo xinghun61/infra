@@ -113,6 +113,13 @@ class WorkEnvTest(unittest.TestCase):
       with self.work_env as we:
         _actual = we.GetProject(999)
 
+  def testGetProject_NoSuchProject(self):
+    """We reject attempts to get a project we don't have permission to."""
+    self.project.access = project_pb2.ProjectAccess.MEMBERS_ONLY
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        _actual = we.GetProject(789)
+
   def testGetProjectByName_Normal(self):
     """We can get an existing project by project_name."""
     with self.work_env as we:
@@ -125,6 +132,13 @@ class WorkEnvTest(unittest.TestCase):
     with self.assertRaises(exceptions.NoSuchProjectException):
       with self.work_env as we:
         _actual = we.GetProjectByName('huh-what')
+
+  def testGetProjectByName_NoPermission(self):
+    """We reject attempts to get a project we don't have permissions to."""
+    self.project.access = project_pb2.ProjectAccess.MEMBERS_ONLY
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        _actual = we.GetProjectByName('proj')
 
   def testUpdateProject_Normal(self):
     """We can update an existing project."""

@@ -220,6 +220,31 @@ class WorkEnv(object):
     self._AssertUserCanViewProject(project)
     return project
 
+  def GetProjectsByName(self, project_names, use_cache=True):
+    """Return the named project.
+
+    Args:
+      project_names: string names of the projects to retrieve.
+      use_cache: set to false when doing read-modify-write.
+
+    Returns:
+      The specified projects.
+    """
+    with self.mc.profiler.Phase('getting projects %r' % project_names):
+      projects = self.services.project.GetProjectsByName(
+          self.mc.cnxn, project_names, use_cache=use_cache)
+
+    for pn in project_names:
+      if pn not in projects:
+        raise exceptions.NoSuchProjectException('Project %r not found.' % pn)
+
+    projects = {
+        project_name: project
+        for project_name, project in projects.iteritems()
+        if self._UserCanViewProject(project)}
+
+    return projects
+
   def GetProjectByName(self, project_name, use_cache=True):
     """Return the named project.
 
@@ -233,14 +258,12 @@ class WorkEnv(object):
     Raises:
       NoSuchProjectException: There is no project with that name.
     """
-    with self.mc.profiler.Phase('getting project %r' % project_name):
-      project = self.services.project.GetProjectByName(
-          self.mc.cnxn, project_name, use_cache=use_cache)
-    if not project:
-      raise exceptions.NoSuchProjectException()
+    projects = self.GetProjectsByName([project_name], use_cache)
+    if not projects:
+      raise permissions.PermissionException(
+          'User is not allowed to view this project')
 
-    self._AssertUserCanViewProject(project)
-    return project
+    return projects[project_name]
 
   def UpdateProject(
       self, project_id, summary=None, description=None,
