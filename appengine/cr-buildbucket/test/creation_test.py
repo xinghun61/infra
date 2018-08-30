@@ -142,6 +142,29 @@ class CreationTest(testing.AppengineTestCase):
     self.assertEqual(build.created_by, auth.get_current_identity())
     self.assertEqual(build.canary_preference, model.CanaryPreference.CANARY)
 
+  def test_add_with_gitiles_commit(self):
+    gitiles_commit = common_pb2.GitilesCommit(
+        host='chromium.googlesource.com',
+        project='infra/luci/luci-go',
+        ref='refs/heads/master',
+        id='b7a757f457487cd5cfe2dae83f65c5bc10e288b7',
+        position=1,
+    )
+
+    build = self.add(
+        bucket='chromium',
+        parameters={model.BUILDER_PARAMETER: 'linux_rel'},
+        gitiles_commit=gitiles_commit,
+    )
+    self.assertEqual(build.input_gitiles_commit, gitiles_commit)
+
+    with self.assertRaises(errors.InvalidInputError):
+      self.add(
+          bucket='chromium',
+          parameters={model.BUILDER_PARAMETER: 'linux_rel'},
+          gitiles_commit=1,
+      )
+
   def test_add_update_builders(self):
     recently = self.now - datetime.timedelta(minutes=1)
     while_ago = self.now - datetime.timedelta(minutes=61)

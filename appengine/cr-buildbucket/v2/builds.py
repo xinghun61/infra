@@ -51,6 +51,7 @@ def build_to_v2(build, build_steps=None):
       input=build_pb2.Build.Input(
           properties=_dict_to_struct(params.get('properties')),
           experimental=build.experimental,
+          gitiles_commit=build.input_gitiles_commit,
       ),
       output=build_pb2.Build.Output(
           properties=_dict_to_struct(result_details.get('properties')),

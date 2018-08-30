@@ -15,6 +15,7 @@ from components import auth
 from components import net
 from components import utils
 
+from proto import common_pb2
 from proto.config import project_config_pb2
 import buildtags
 import config
@@ -38,6 +39,7 @@ _BuildRequestBase = collections.namedtuple(
         'retry_of',
         'canary_preference',
         'experimental',
+        'gitiles_commit',
     ]
 )
 
@@ -56,7 +58,8 @@ class BuildRequest(_BuildRequestBase):
       pubsub_callback=None,
       retry_of=None,
       canary_preference=model.CanaryPreference.AUTO,
-      experimental=None
+      experimental=None,
+      gitiles_commit=None,
   ):
     """Creates an BuildRequest. Does not perform validation.
 
@@ -77,11 +80,13 @@ class BuildRequest(_BuildRequestBase):
       canary_preference (model.CanaryPreference): specifies whether canary of
         the build infrastructure should be used.
       experimental (bool): whether this build is experimental.
+      gitiles_commit (common_pb2.GitilesCommit): value of
+        build_pb2.Build.input.gitiles_commit.
     """
     self = super(BuildRequest, cls).__new__(
         cls, project, bucket, tags, parameters, lease_expiration_date,
         client_operation_id, pubsub_callback, retry_of, canary_preference,
-        experimental
+        experimental, gitiles_commit
     )
     return self
 
@@ -111,6 +116,11 @@ class BuildRequest(_BuildRequestBase):
         raise errors.InvalidInputError('client_operation_id must be string')
       if '/' in self.client_operation_id:  # pragma: no cover
         raise errors.InvalidInputError('client_operation_id must not contain /')
+    if (self.gitiles_commit is not None and
+        not isinstance(self.gitiles_commit, common_pb2.GitilesCommit)):
+      raise errors.InvalidInputError(
+          'gitiles_commit is not a common_pb2.GitilesCommit'
+      )
 
     # Normalize.
     normalized_tags = sorted(set(self.tags or []))
@@ -118,7 +128,7 @@ class BuildRequest(_BuildRequestBase):
         self.project, self.bucket, normalized_tags, self.parameters,
         self.lease_expiration_date, self.client_operation_id,
         self.pubsub_callback, self.retry_of, self.canary_preference,
-        self.experimental
+        self.experimental, self.gitiles_commit
     )
 
   def _client_op_memcache_key(self, identity=None):
@@ -147,6 +157,7 @@ class BuildRequest(_BuildRequestBase):
         retry_of=self.retry_of,
         canary_preference=self.canary_preference,
         experimental=self.experimental,
+        input_gitiles_commit=self.gitiles_commit,
     )
     if self.lease_expiration_date is not None:
       build.lease_expiration_date = self.lease_expiration_date

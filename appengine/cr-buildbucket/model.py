@@ -13,6 +13,7 @@ from google.appengine.ext.ndb import msgprop
 from protorpc import messages
 
 from proto import build_pb2
+from proto import common_pb2
 import buildtags
 
 BEGINING_OF_THE_WORLD = datetime.datetime(2010, 1, 1, 0, 0, 0, 0)
@@ -165,6 +166,10 @@ class Build(ndb.Model):
   # If True, the build won't affect monitoring and won't be surfaced in
   # search results unless explicitly requested.
   experimental = ndb.BooleanProperty()
+  # Stores build_pb2.Build.input.gitiles_commit.
+  input_gitiles_commit = datastore_utils.ProtobufProperty(
+      common_pb2.GitilesCommit
+  )
 
   # Lease-time attributes.
 
