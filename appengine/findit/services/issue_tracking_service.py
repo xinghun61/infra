@@ -25,6 +25,9 @@ _TYPE_BUG_LABEL = 'Type-Bug'
 # Label used to identify issues related to flaky tests.
 _FLAKY_TEST_LABEL = 'Test-Flaky'
 
+# Label used to identify issues filed against Findit due to wrong results.
+_TEST_FINDIT_WRONG_LABEL = 'Test-Findit-Wrong'
+
 # Component used to identify issues related to flaky tests.
 _FLAKY_TEST_COMPONENT = 'Tests>Flaky'
 
@@ -315,10 +318,14 @@ def _GetOpenIssueIdForFlakyTestBySummary(test_name,
     return any(keyword in issue.summary.lower()
                for keyword in _FLAKY_TEST_SUMMARY_KEYWORDS)
 
+  def _is_not_test_findit_wrong_issue(issue):
+    return _TEST_FINDIT_WRONG_LABEL not in issue.labels
+
   query = _FLAKY_TEST_SUMMARY_QUERY_TEMPLATE.format(test_name)
   open_issues = _GetOpenIssues(query, monorail_project)
   flaky_test_open_issues = [
-      issue for issue in open_issues if _is_issue_related_to_flake(issue)
+      issue for issue in open_issues if (_is_issue_related_to_flake(issue) and
+                                         _is_not_test_findit_wrong_issue(issue))
   ]
   if not flaky_test_open_issues:
     return None

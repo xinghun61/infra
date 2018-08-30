@@ -331,6 +331,29 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
                                                  'chromium')
     mock_get_issue_id_by_customized_field.assert_not_called()
 
+  # This test tests that an open issue related to flaky tests will not be found
+  # if has the Test-FIndit-Wrong label.
+  @mock.patch.object(
+      issue_tracking_service,
+      '_GetOpenIssueIdForFlakyTestByCustomizedField',
+      return_value=None)
+  @mock.patch.object(issue_tracking_service, '_GetOpenIssues')
+  def testSearchOpenIssueFlakyTestInSummaryWithTestFinditWrongLabel(
+      self, mock_get_open_issues, mock_get_issue_id_by_customized_field):
+    issue = mock.Mock()
+    issue.summary = 'suite.test is causing flakiness'
+    issue.labels = ['Test-Findit-Wrong']
+    issue.components = []
+    issue.id = 123
+
+    mock_get_open_issues.return_value = [issue]
+    self.assertEqual(
+        None,
+        issue_tracking_service.SearchOpenIssueIdForFlakyTest('suite.test'))
+    mock_get_open_issues.assert_called_once_with('summary:suite.test is:open',
+                                                 'chromium')
+    mock_get_issue_id_by_customized_field.assert_not_called()
+
   # This test tests that an open issue related to flaky tests will be found if
   # it has the test name inside the Flaky-Test customized field.
   @mock.patch.object(
