@@ -50,6 +50,7 @@ import webapp2
 
 from third_party import annotations_pb2
 
+from . import flatten_swarmingcfg
 from . import isolate
 from . import swarmingcfg as swarmingcfg_module
 from proto import build_pb2
@@ -286,7 +287,7 @@ def _prepare_builder_config(builder_cfg, swarming_param):
         exc_type=errors.InvalidInputError,
         prefix='swarming.override_builder_cfg parameter: '
     )
-    swarmingcfg_module.merge_builder(result, override_builder_cfg)
+    flatten_swarmingcfg.merge_builder(result, override_builder_cfg)
     swarmingcfg_module.validate_builder_cfg(result, [], True, ctx)
   return result
 
@@ -370,7 +371,7 @@ def _is_migrating_builder_prod_async(builder_cfg, build):
   master = (build.parameters.get(PARAM_PROPERTIES) or {}).get(MASTER_PROPERTY)
   if master is None:
     # TODO(nodir): undup with logic, it is also in _create_task_def_async
-    props = swarmingcfg_module.read_properties(builder_cfg.recipe)
+    props = flatten_swarmingcfg.read_properties(builder_cfg.recipe)
     master = props.get(MASTER_PROPERTY)
 
   host = swarmingcfg_module.clear_dash(builder_cfg.luci_migration_host)
@@ -482,7 +483,7 @@ def _create_task_def_async(
   if builder_cfg.HasField('recipe'):  # pragma: no branch
     # Properties specified in build parameters must override those in builder
     # config.
-    build_properties = swarmingcfg_module.read_properties(builder_cfg.recipe)
+    build_properties = flatten_swarmingcfg.read_properties(builder_cfg.recipe)
     build_properties.update(params.get(PARAM_PROPERTIES) or {})
     params[PARAM_PROPERTIES] = build_properties
     # build_properties is an alias for params[PARAM_PROPERTIES]

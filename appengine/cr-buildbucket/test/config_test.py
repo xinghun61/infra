@@ -18,6 +18,7 @@ import mock
 
 from proto.config import project_config_pb2
 from proto.config import service_config_pb2
+from swarming import flatten_swarmingcfg
 from swarming import swarmingcfg
 import config
 
@@ -670,7 +671,7 @@ class ConfigTest(testing.AppengineTestCase):
 
   def test_validate_buildbucket_cfg_swarming(self):
     flatten_builder_mock_with_cloned_args = mock.Mock()
-    orig_flatten_builder = swarmingcfg.flatten_builder
+    orig_flatten_builder = flatten_swarmingcfg.flatten_builder
 
     def flatten_builder(builder, defaults, mixin):
       flatten_builder_mock_with_cloned_args(
@@ -681,7 +682,7 @@ class ConfigTest(testing.AppengineTestCase):
       orig_flatten_builder(builder, defaults, mixin)
 
     self.patch(
-        'swarming.swarmingcfg.flatten_builder',
+        'swarming.flatten_swarmingcfg.flatten_builder',
         autospec=True,
         side_effect=flatten_builder
     )

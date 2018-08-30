@@ -14,6 +14,7 @@ from components import auth
 from components import utils
 import gae_ts_mon
 
+from . import flatten_swarmingcfg
 from . import swarming
 from . import swarmingcfg
 import api
@@ -132,7 +133,7 @@ class SwarmbucketApi(remote.Service):
                       name=builder.name,
                       category=builder.category,
                       properties_json=json.dumps(
-                          swarmingcfg.read_properties(builder.recipe)
+                          flatten_swarmingcfg.read_properties(builder.recipe)
                       ),
                       swarming_dimensions=[
                           '%s:%s' % (k, v)

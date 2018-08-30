@@ -12,6 +12,7 @@ import string
 from components.config import validation
 
 from proto.config import project_config_pb2
+from . import flatten_swarmingcfg
 
 DIMENSION_KEY_RGX = re.compile(r'^[a-zA-Z\_\-]+$')
 # Copied from
@@ -40,90 +41,20 @@ def validate_service_account(service_account, ctx):
     )
 
 
-def read_properties(recipe):
-  """Parses build properties from the recipe message.
-
-  Expects the message to be valid.
-
-  Uses NO_PROPERTY for empty values.
-  """
-  result = dict(p.split(':', 1) for p in recipe.properties)
-  for p in recipe.properties_j:
-    k, v = p.split(':', 1)
-    parsed = json.loads(v)
-    result[k] = parsed
-  return result
-
-
 # The below is covered by swarming_test.py and swarmbucket_api_test.py
 def read_dimensions(builder_cfg):  # pragma: no cover
   """Read the dimensions for a builder config.
 
   dimensions is returned as sorted list of (k, v) pairs.
-  This different from parse_dimensions in that this:
+  This different from flatten_swarmingcfg.parse_dimensions in that this:
   * Factors in the auto_builder_dimensions field.
   * Removes empty value fields.
   """
-  dimensions = parse_dimensions(builder_cfg.dimensions)
+  dimensions = flatten_swarmingcfg.parse_dimensions(builder_cfg.dimensions)
   if (builder_cfg.auto_builder_dimension == project_config_pb2.YES and
       'builder' not in dimensions):
     dimensions['builder'] = builder_cfg.name
   return [(k, v) for k, v in sorted(dimensions.iteritems()) if v]
-
-
-def parse_dimensions(strings):
-  """Parses dimension strings to a map."""
-  return dict(s.split(':', 1) for s in strings)
-
-
-def format_dimensions(dictionary):
-  """Formats a dictionary of dimensions to a list of strings.
-
-  Opposite of parse_dimensions.
-  """
-  return sorted(['%s:%s' % (k, v) for k, v in dictionary.iteritems()])
-
-
-def merge_recipe(r1, r2):
-  """Merges Recipe message r2 into r1.
-
-  Expects messages to be valid.
-
-  All properties are converted to properties_j.
-  """
-  props = read_properties(r1)
-  props.update(read_properties(r2))
-
-  r1.MergeFrom(r2)
-  r1.properties[:] = []
-  r1.properties_j[:] = [
-      '%s:%s' % (k, json.dumps(v))
-      for k, v in sorted(props.iteritems())
-      if v is not None
-  ]
-
-
-def merge_builder(b1, b2):
-  """Merges Builder message b2 into b1. Expects messages to be valid."""
-  assert not b2.mixins, 'do not merge unflattened builders'
-
-  dims = parse_dimensions(b1.dimensions)
-  dims.update(parse_dimensions(b2.dimensions))
-  recipe = None
-  if b1.HasField('recipe') or b2.HasField('recipe'):  # pragma: no branch
-    recipe = copy.deepcopy(b1.recipe)
-    merge_recipe(recipe, b2.recipe)
-
-  b1.MergeFrom(b2)
-  b1.dimensions[:] = format_dimensions(dims)
-  b1.swarming_tags[:] = sorted(set(b1.swarming_tags))
-
-  caches = [t[1] for t in sorted({c.name: c for c in b1.caches}.iteritems())]
-  del b1.caches[:]
-  b1.caches.extend(caches)
-
-  if recipe:  # pragma: no branch
-    b1.recipe.CopyFrom(recipe)
 
 
 def validate_tag(tag, ctx):
@@ -419,42 +350,14 @@ def validate_project_cfg(swarming, mixins, mixins_are_valid, ctx):
         continue
 
       merged = copy.deepcopy(b)
-      flatten_builder(merged, swarming.builder_defaults, mixins)
+      flatten_swarmingcfg.flatten_builder(
+          merged, swarming.builder_defaults, mixins
+      )
       if merged.name in seen:
         ctx.error('duplicate builder name')
       else:
         seen.add(merged.name)
       validate_builder_cfg(merged, mixins, True, ctx)
-
-
-def flatten_builder(builder, defaults, mixins):
-  """Inlines defaults and mixins into the builder.
-
-  Applies defaults, then mixins and then reapplies values defined in |builder|.
-  Flattenes defaults and referenced mixins recursively.
-
-  This operation is NOT idempotent if defaults!=None.
-
-  Args:
-    builder (project_config_pb2.Builder): the builder to flatten.
-    defaults (project_config_pb2.Builder): builder defaults.
-      May use mixins.
-    mixins ({str: project_config_pb2.Builder} dict): a map of mixin names
-      that can be inlined. All referenced mixins must be in this dict.
-      Applied after defaults.
-  """
-  if not defaults and not builder.mixins:
-    return
-  orig_mixins = builder.mixins
-  builder.ClearField('mixins')
-  orig_without_mixins = copy.deepcopy(builder)
-  if defaults:
-    flatten_builder(defaults, None, mixins)
-    merge_builder(builder, defaults)
-  for m in orig_mixins:
-    flatten_builder(mixins[m], None, mixins)
-    merge_builder(builder, mixins[m])
-  merge_builder(builder, orig_without_mixins)
 
 
 def validate_service_cfg(swarming, ctx):

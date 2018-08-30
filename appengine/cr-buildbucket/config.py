@@ -260,6 +260,7 @@ def cron_update_buckets():
   the acl_sets message field. Also inlines swarmbucket builder defaults and
   mixins and clears Builder.mixins field.
   """
+  from swarming import flatten_swarmingcfg
   from swarming import swarmingcfg
 
   config_map = config.get_project_configs(
@@ -322,7 +323,9 @@ def cron_update_buckets():
         if not any(d.startswith('pool:') for d in defaults.dimensions):
           defaults.dimensions.append('pool:' + bucket_cfg.name)
         for b in bucket_cfg.swarming.builders:
-          swarmingcfg.flatten_builder(b, defaults, builder_mixins_by_name)
+          flatten_swarmingcfg.flatten_builder(
+              b, defaults, builder_mixins_by_name
+          )
 
       @ndb.transactional
       def update_bucket():
