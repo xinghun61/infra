@@ -96,7 +96,6 @@ from tracker import issueimport
 from tracker import issuelist
 from tracker import issuelistcsv
 from tracker import issueoriginal
-from tracker import issuepresubmit
 from tracker import issuereindex
 from tracker import issuererank
 from tracker import issuetips
@@ -239,7 +238,6 @@ class ServletRegistry(object):
             issueattachment.IssueAttachmentDeletion,
         urls.ISSUE_FLAGSPAM_JSON: spam.FlagSpamForm,
         urls.ISSUE_DELETE_JSON: issuedetail.IssueDeleteForm,
-        urls.ISSUE_PRESUBMIT_JSON: issuepresubmit.IssuePresubmitJSON,
         urls.ISSUE_ENTRY: issueentry.IssueEntry,
         urls.ISSUE_ENTRY_AFTER_LOGIN: issueentryafterlogin.IssueEntryAfterLogin,
         urls.ISSUE_TIPS: issuetips.IssueSearchTips,
