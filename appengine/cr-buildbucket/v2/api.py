@@ -125,7 +125,7 @@ def builds_to_v2_async(builds, build_mask):
     ])
     for b, build_steps in zip(builds_msgs, build_steps_list):
       if build_steps:  # pragma: no branch
-        b.steps.extend(build_steps.parse_steps())
+        b.steps.extend(build_steps.step_container.steps)
 
   raise ndb.Return(builds_msgs)
 

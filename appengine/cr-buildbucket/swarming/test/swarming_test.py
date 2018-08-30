@@ -1712,7 +1712,7 @@ class SwarmingTest(BaseTest):
       )
       step_container = build_pb2.Build()
       if actual_build_steps:
-        step_container.MergeFromString(actual_build_steps.steps)
+        step_container = actual_build_steps.step_container
       self.assertEqual(list(step_container.steps), expected_steps)
 
   @mock.patch('swarming.isolate.fetch_async')

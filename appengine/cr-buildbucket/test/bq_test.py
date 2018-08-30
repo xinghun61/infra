@@ -85,14 +85,13 @@ class BigQueryExportTest(testing.AppengineTestCase):
     ]
     ndb.put_multi(builds)
 
-    step_container = build_pb2.Build(
-        steps=[
-            step_pb2.Step(name='bot_update', status=common_pb2.SUCCESS),
-        ],
-    )
     model.BuildSteps(
         key=model.BuildSteps.key_for(builds[0].key),
-        steps=step_container.SerializeToString(),
+        step_container=build_pb2.Build(
+            steps=[
+                step_pb2.Step(name='bot_update', status=common_pb2.SUCCESS),
+            ],
+        ),
     ).put()
     self.queue.add([
         taskqueue.Task(method='PULL', payload=json.dumps({'id': b.key.id()}))

@@ -154,15 +154,13 @@ class ToBuildMessagesTests(BaseTestCase):
 
   def test_steps(self):
     build_v1 = self.new_build_v1()
-    step_container = build_pb2.Build(
-        steps=[
-            step_pb2.Step(name='a', status=common_pb2.SUCCESS),
-            step_pb2.Step(name='b', status=common_pb2.STARTED),
-        ],
-    )
+    steps = [
+        step_pb2.Step(name='a', status=common_pb2.SUCCESS),
+        step_pb2.Step(name='b', status=common_pb2.STARTED),
+    ]
     model.BuildSteps(
         key=model.BuildSteps.key_for(build_v1.key),
-        steps=step_container.SerializeToString(),
+        step_container=build_pb2.Build(steps=steps),
     ).put()
 
     mask = protoutil.Mask.from_field_mask(
@@ -172,7 +170,7 @@ class ToBuildMessagesTests(BaseTestCase):
     actual = api.builds_to_v2_async([build_v1], mask).get_result()
 
     self.assertEqual(len(actual), 1)
-    self.assertEqual(list(actual[0].steps), list(step_container.steps))
+    self.assertEqual(list(actual[0].steps), steps)
 
 
 class GetBuildTests(BaseTestCase):

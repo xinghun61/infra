@@ -1214,25 +1214,28 @@ def _sync_build_async(build_id, task_result, bucket, builder):
 
   build_key = ndb.Key(model.Build, build_id)
   # TODO(nodir): accept build steps via a separate RPC.
-  step_container = build_pb2.Build(steps=_extract_build_steps(build_run_result))
   build_steps = model.BuildSteps(
       key=model.BuildSteps.key_for(build_key),
-      steps=step_container.SerializeToString(),
+      step_container=build_pb2.Build(
+          steps=_extract_build_steps(build_run_result)
+      ),
   )
+  step_byte_size = build_steps.step_container.ByteSize()
+
   BUILD_STEPS_SIZE_METRIC.add(
-      len(build_steps.steps) / 1000,  # convert to Kb
+      step_byte_size / 1000,  # convert to Kb
       {
           'bucket': bucket,
           'builder': builder,
       },
   )
-  too_large = len(build_steps.steps) > model.BuildSteps.MAX_STEPS_LEN
+  too_large = step_byte_size > model.BuildSteps.MAX_STEPS_LEN
   if too_large:  # pragma: no cover
     # piggy back on the existing error handling mechanism
     build_run_result = None
     build_run_result_error = (
         'build steps are %d bytes which is more than %d' %
-        (len(build_steps.steps), model.BuildSteps.MAX_STEPS_LEN)
+        (step_byte_size, model.BuildSteps.MAX_STEPS_LEN)
     )
     build_run_result_error = BUILD_RUN_RESULT_TOO_LARGE
     build_steps.steps = ''

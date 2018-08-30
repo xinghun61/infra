@@ -88,7 +88,7 @@ def build_to_v2(build, build_steps=None):
   _parse_tags(ret, build.tags)
 
   if build_steps:
-    ret.steps.extend(build_steps.parse_steps())
+    ret.steps.extend(build_steps.step_container.steps)
   return ret
 
 

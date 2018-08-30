@@ -110,7 +110,7 @@ class V2BuildsTest(unittest.TestCase):
     ]
     build_steps = model.BuildSteps(
         key=model.BuildSteps.key_for(build.key),
-        steps=build_pb2.Build(steps=steps,).SerializeToString(),
+        step_container=build_pb2.Build(steps=steps),
     )
 
     expected = build_pb2.Build(

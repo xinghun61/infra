@@ -284,18 +284,11 @@ class BuildSteps(BuildDetailEntity):
   MAX_STEPS_LEN = 512 * 1024
 
   # buildbucket.v2.Build binary protobuf message with only "steps" field set.
-  steps = ndb.BlobProperty()
-
-  def _pre_put_hook(self):  # pragma: no cover
-    """Checks BuildSteps invariants before putting."""
-    assert isinstance(self.steps, str)
-    assert len(self.steps) <= self.MAX_STEPS_LEN
-
-  def parse_steps(self):  # pragma: no cover
-    """Returns a list of step_pb2.Step messages."""
-    step_container = build_pb2.Build()
-    step_container.ParseFromString(self.steps or '')
-    return step_container.steps
+  step_container = datastore_utils.ProtobufProperty(
+      build_pb2.Build,
+      name='steps',
+      max_length=MAX_STEPS_LEN,
+  )
 
 
 class Builder(ndb.Model):
