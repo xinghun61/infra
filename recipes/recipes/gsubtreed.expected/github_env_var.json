@@ -125,7 +125,7 @@
       "--max_errors",
       "5",
       "--repo_dir",
-      "[START_DIR]/gsubtreed-work-dir",
+      "[CACHE]/builder/gsubtreed-work-dir",
       "--json_output",
       "/path/to/tmp/json",
       "https://github.com/sweet/repo"
