@@ -261,7 +261,18 @@ func setNextSafe(c context.Context, builder *storage.Builder) error {
 		NextNumber: nextNum,
 	}
 	logging.Infof(c, "Setting next build number to %d", nextNum)
-	return client.SetNextBuildNumber(&req).Do()
+	switch err := client.SetNextBuildNumber(&req).Do().(type) {
+	case *googleapi.Error:
+		// This could happen if the actual build number > our build number.
+		// Just ignore the error
+		if err.Code == http.StatusBadRequest {
+			logging.WithError(err).Warningf(c, "Got 400 from buildbucket, ignoring.")
+			return nil
+		}
+		return err
+	default:
+		return err
+	}
 }
 
 func updateBuilder(c *router.Context, builder *storage.Builder) error {
