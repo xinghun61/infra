@@ -9,6 +9,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -16,7 +17,6 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	"infra/cmd/skylab_swarming_worker/internal/abortsock"
 	"infra/cmd/skylab_swarming_worker/internal/annotee"
 	"infra/cmd/skylab_swarming_worker/internal/event"
 	"infra/cmd/skylab_swarming_worker/internal/log"
@@ -55,10 +55,22 @@ func runLuciferAdminTask(b *swarming.Bot, w io.Writer, r lucifer.AdminTaskArgs) 
 // closed.
 func listenAndAbort(c <-chan os.Signal, path string) {
 	for range c {
-		if err := abortsock.Abort(path); err != nil {
+		if err := abort(path); err != nil {
 			log.Printf("Error sending abort for signal: %s", err)
 		}
 	}
+}
+
+// abort sends an abort datagram to the socket at the given path.
+func abort(path string) error {
+	c, err := net.Dial("unixgram", path)
+	if err != nil {
+		return err
+	}
+	// The value sent does not matter.
+	b := []byte("abort")
+	_, err = c.Write(b)
+	return err
 }
 
 // runLuciferCommand runs a Lucifer exec.Cmd and processes Lucifer events.
