@@ -147,7 +147,7 @@
       "[CACHE]/builder/gsubtreed-work-dir",
       "--json_output",
       "/path/to/tmp/json",
-      "https://chromium.googlesource.com/chromium/src"
+      "https://host.googlesource.com/my/repo"
     ],
     "name": "gsubtreed",
     "~followup_annotations": [

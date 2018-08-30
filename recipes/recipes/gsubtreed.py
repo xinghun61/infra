@@ -11,6 +11,9 @@ code.
 
 import urlparse
 
+from recipe_engine.recipe_api import Property
+
+
 DEPS = [
   'depot_tools/gclient',
   'recipe_engine/context',
@@ -22,18 +25,25 @@ DEPS = [
   'recipe_engine/step',
 ]
 
+PROPERTIES = {
+  'target_repo': Property(
+      kind=str,
+      help='Which repo to work with. Required.'),
+  'cycle_time_sec': Property(
+      default=10*60, kind=int,
+      help='How long to run gsubtreed for.'),
+  'max_error_count': Property(
+      default=5, kind=int,
+      help='How many consecutive errors are tolerated before gsubtreed '
+           'quits with error'),
+}
 
-# Repository to operate upon.
-MAIN_REPO = 'https://chromium.googlesource.com/chromium/src'
 
-# How long to run gsubtreed. Should be in sync with buildbot scheduler period.
-CYCLE_TIME_SEC = 10 * 60
+def RunSteps(api, target_repo, cycle_time_sec, max_error_count):
+  assert target_repo
+  cycle_time_sec = max(0, cycle_time_sec)
+  max_error_count = max(0, max_error_count)
 
-# How many consecutive errors are tolerated before gsubtreed quits with error.
-MAX_ERROR_COUNT = 5
-
-
-def RunSteps(api):
   # Checkout infra/infra solution.
   solution_path = api.path['cache'].join('builder', 'solution')
   api.file.ensure_directory('init cache if not exists', solution_path)
@@ -44,9 +54,8 @@ def RunSteps(api):
     api.gclient.runhooks()
 
   env = {}
-  repo = api.properties.get('target_repo', MAIN_REPO)
   # github.com apparently has a hard time with our user agents.
-  if urlparse.urlparse(repo).hostname.endswith('github.com'):
+  if urlparse.urlparse(target_repo).hostname.endswith('github.com'):
     env['GIT_USER_AGENT'] = None
 
   # Run the daemon for CYCLE_TIME_SEC seconds.
@@ -59,12 +68,12 @@ def RunSteps(api):
           [
             'infra.services.gsubtreed',
             '--verbose',
-            '--duration', str(CYCLE_TIME_SEC),
-            '--max_errors', str(MAX_ERROR_COUNT),
+            '--duration', str(cycle_time_sec),
+            '--max_errors', str(max_error_count),
             '--repo_dir',
             api.path['cache'].join('builder', 'gsubtreed-work-dir'),
             '--json_output', api.json.output(add_json_log=False),
-            repo,
+            target_repo,
           ])
   finally:
     step_result = api.step.active_result
@@ -89,28 +98,25 @@ def GenTests(api):
     }
   }
 
-  props = lambda: api.properties(mastername='fake', buildername='fake',
-                                 bot_id='fake')
-
   yield (
     api.test('success') +
-    api.step_data('gsubtreed', api.json.output(json_output), retcode=0) +
-    props()
+    api.properties(target_repo='https://host.googlesource.com/my/repo') +
+    api.step_data('gsubtreed', api.json.output(json_output), retcode=0)
   )
   yield (
     api.test('failure') +
-    api.step_data('gsubtreed', api.json.output(json_output), retcode=1) +
-    props()
+    api.properties(target_repo='https://host.googlesource.com/my/repo') +
+    api.step_data('gsubtreed', api.json.output(json_output), retcode=1)
   )
   yield (
     api.test('alt') +
-    api.properties(target_repo='https://host.googlesource.com/my/repo') +
-    api.step_data('gsubtreed', api.json.output(json_output), retcode=0) +
-    props()
+    api.properties(target_repo='https://host.googlesource.com/my/repo',
+                   cycle_time_sec=3600,
+                   max_error_count=60) +
+    api.step_data('gsubtreed', api.json.output(json_output), retcode=0)
   )
   yield (
     api.test('github_env_var') +
     api.properties(target_repo='https://github.com/sweet/repo') +
-    api.step_data('gsubtreed', api.json.output(json_output), retcode=0) +
-    props()
+    api.step_data('gsubtreed', api.json.output(json_output), retcode=0)
   )
