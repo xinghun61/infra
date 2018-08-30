@@ -5,12 +5,14 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"math/rand"
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"golang.org/x/net/context"
@@ -22,13 +24,29 @@ import (
 	"go.chromium.org/luci/common/logging/gologger"
 )
 
+type arrayFlags []string
+
+func (i *arrayFlags) String() string {
+	return strings.Join(*i, ", ")
+}
+
+func (i *arrayFlags) Set(value string) error {
+	if value == "" {
+		return errors.New("dependency directory required")
+	}
+	*i = append(*i, value)
+	return nil
+}
+
+var depDirsFlags arrayFlags
+
 var (
 	chromeBin  = flag.String("chrome", "", "location of chrome binary")
 	userDir    = flag.String("dir", "/tmp/", "user directory")
 	debugPort  = flag.String("debug-port", "9222", "chrome debugger port")
 	baseDir    = flag.String("base", "./", "location of elements to test")
 	pathPrefix = flag.String("prefix", "/test/", "path prefix for test runner URL")
-	bowerDir   = flag.String("bower", "bower_components/", "location of bower compoenents")
+	bowerDir   = flag.String("bower", "bower_components/", "location of bower components")
 	persist    = flag.Bool("persist", false, "keep server running")
 	timeoutSec = flag.Int("timeout", 60, "timeout seconds")
 )
@@ -59,20 +77,22 @@ type DoneRequest struct {
 	Failures int `json:"failures"`
 }
 
-// bowerSiblingFS serves files from base, and for files not in base, tries to serve them from bower instead.
-type bowerSiblingFS struct {
-	base, bower http.Dir
+type dependencyFS struct {
+	deps []http.Dir
 }
 
-func (bs bowerSiblingFS) Open(name string) (http.File, error) {
-	f, err := bs.base.Open(name)
-	if err != nil {
-		return bs.bower.Open(name)
+func (fs dependencyFS) Open(name string) (f http.File, err error) {
+	for i := 0; i < len(fs.deps); i++ {
+		f, err = fs.deps[i].Open(name)
+		if err == nil {
+			return f, err
+		}
 	}
 	return f, err
 }
 
 func main() {
+	flag.Var(&depDirsFlags, "dep", "dependency directories")
 	flag.Parse()
 	ctx := context.Background()
 	ctx = gologger.StdConfig.Use(ctx)
@@ -128,10 +148,14 @@ func main() {
 		}
 	})
 
-	http.Handle("/", http.FileServer(bowerSiblingFS{
-		base:  http.Dir(*baseDir),
-		bower: http.Dir(*bowerDir),
-	}))
+	var depHTTPDirs []http.Dir
+	depHTTPDirs = append(depHTTPDirs, http.Dir(*baseDir))
+	depHTTPDirs = append(depHTTPDirs, http.Dir(*bowerDir))
+	for i := 0; i < len(depDirsFlags); i++ {
+		depHTTPDirs = append(depHTTPDirs, http.Dir(depDirsFlags[i]))
+	}
+
+	http.Handle("/", http.FileServer(dependencyFS{deps: depHTTPDirs}))
 
 	addrCh := make(chan string)
 
