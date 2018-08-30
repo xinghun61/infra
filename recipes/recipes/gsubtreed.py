@@ -34,10 +34,11 @@ MAX_ERROR_COUNT = 5
 
 def RunSteps(api):
   # Checkout infra/infra solution.
-  api.gclient.set_config('infra')
-  api.gclient.c.solutions[0].revision = 'origin/deployed'
-  api.gclient.checkout(timeout=10*60)
-  api.gclient.runhooks()
+  with api.context(cwd=api.path['cache'].join('builder', 'solution')):
+    api.gclient.set_config('infra')
+    api.gclient.c.solutions[0].revision = 'origin/deployed'
+    api.gclient.checkout(timeout=10*60)
+    api.gclient.runhooks()
 
   env = {}
   repo = api.properties.get('target_repo', MAIN_REPO)

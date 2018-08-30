@@ -8,6 +8,7 @@
       "--spec",
       "cache_dir = '[CACHE]/git'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]"
     ],
+    "cwd": "[CACHE]/builder/solution",
     "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
@@ -38,6 +39,7 @@
       "--output-json",
       "/path/to/tmp/json"
     ],
+    "cwd": "[CACHE]/builder/solution",
     "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
@@ -69,6 +71,7 @@
       "user.name",
       "local_bot"
     ],
+    "cwd": "[CACHE]/builder/solution",
     "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
@@ -89,6 +92,7 @@
       "user.email",
       "local_bot@example.com"
     ],
+    "cwd": "[CACHE]/builder/solution",
     "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
@@ -105,7 +109,7 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
-    "cwd": "[START_DIR]/infra",
+    "cwd": "[CACHE]/builder/solution",
     "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
@@ -117,7 +121,7 @@
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/infra/run.py",
+      "[CACHE]/builder/solution/infra/run.py",
       "infra.services.gsubtreed",
       "--verbose",
       "--duration",
