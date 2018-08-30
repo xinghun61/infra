@@ -22,6 +22,7 @@ from framework import framework_constants
 from framework import monorailcontext
 from framework import ratelimiter
 from framework import permissions
+from framework import sql
 from framework import xsrf
 from services import client_config_svc
 
@@ -77,6 +78,10 @@ class MonorailServicer(object):
       raised in the Do* method are converted into pRPC status codes.
     """
     start_time = start_time or time.time()
+    cnxn = cnxn or sql.MonorailConnection()
+    if self.services.cache_manager:
+      self.services.cache_manager.DoDistributedInvalidation(cnxn)
+
     response = None
     client_id = None  # TODO(jrobbins): consider using client ID.
     requester = None

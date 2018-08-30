@@ -1061,6 +1061,7 @@ class ConfigService(object):
         commit=False)
     cnxn.Commit()
     self.config_2lc.InvalidateKeys(cnxn, [project_id])
+    self.field_row_2lc.InvalidateKeys(cnxn, [project_id])
     self.InvalidateMemcacheForEntireProject(project_id)
     return field_id
 

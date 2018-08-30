@@ -23,6 +23,7 @@ from framework import monorailcontext
 from framework import permissions
 from framework import ratelimiter
 from framework import xsrf
+from services import cachemanager_svc
 from services import config_svc
 from services import service_manager
 from testing import fake
@@ -110,7 +111,8 @@ class MonorailServicerTest(unittest.TestCase):
     self.services = service_manager.Services(
         user=fake.UserService(),
         usergroup=fake.UserGroupService(),
-        project=fake.ProjectService())
+        project=fake.ProjectService(),
+        cache_manager=fake.CacheManager())
     self.project = self.services.project.TestAddProject(
         'proj', project_id=789, owner_ids=[111L])
     self.user = self.services.user.TestAddUser('nonmember@example.com', 222L)
@@ -164,6 +166,14 @@ class MonorailServicerTest(unittest.TestCase):
     self.assertFalse(self.svcr.was_called)
     self.assertEqual(
         codes.StatusCode.PERMISSION_DENIED, self.prpc_context._code)
+
+  def testRun_DistributedInvalidation(self):
+    """The Run method must call DoDistributedInvalidation()."""
+    self.SetUpRecordMonitoringStats()
+    # pylint: disable=unexpected-keyword-arg
+    self.svcr.CalcSomething(
+        self.request, self.prpc_context, cnxn=self.cnxn, auth=self.auth)
+    self.assertIsNotNone(self.services.cache_manager.last_call)
 
   def testRun_HandlerErrorResponse(self):
     """An expected exception in the method causes an error status."""
