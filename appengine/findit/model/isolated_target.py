@@ -59,7 +59,7 @@ class IsolatedTarget(ndb.Model):
   gerrit_patch = ndb.StringProperty(indexed=False)
 
   # The hash of the isolated target.
-  isolated_hash = ndb.StringProperty(required=True)
+  isolated_hash = ndb.StringProperty()
 
   @ndb.ComputedProperty
   def has_patch(self):
