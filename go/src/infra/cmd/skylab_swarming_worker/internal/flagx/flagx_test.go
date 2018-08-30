@@ -9,8 +9,6 @@ import (
 	"io/ioutil"
 	"reflect"
 	"testing"
-
-	"infra/cmd/skylab_swarming_worker/internal/autotest/atutil"
 )
 
 // Check that not passing the flag keeps the default nil value, which
@@ -57,55 +55,6 @@ func TestCommaListParseWithManyItems(t *testing.T) {
 	exp := []string{"foo", "bar", "spam"}
 	if !reflect.DeepEqual(s, exp) {
 		t.Errorf("Unexpected Comma list value: got %#v, expected %#v", s, exp)
-	}
-}
-
-// Check that task strings get parsed to the correct AdminTaskType.
-func TestTaskTypeParse(t *testing.T) {
-	t.Parallel()
-	cases := []struct {
-		arg      string
-		expected atutil.AdminTaskType
-	}{
-		{"", atutil.NoTask},
-		{"cleanup", atutil.Cleanup},
-		{"repair", atutil.Repair},
-		{"reset", atutil.Reset},
-		{"verify", atutil.Verify},
-	}
-	for _, c := range cases {
-		var tt atutil.AdminTaskType
-		fs := testFlagSet()
-		fs.Var(TaskType(&tt, 0), "task", "Task name")
-		if err := fs.Parse([]string{"-task", c.arg}); err != nil {
-			t.Errorf("Parse returned an error for %s: %s", c.arg, err)
-			continue
-		}
-		if tt != c.expected {
-			t.Errorf("Parsing %s, got %s, expected %s", c.arg, tt, c.expected)
-		}
-	}
-}
-
-// Check that passing an invalid TaskType string causes an error.
-func TestTaskTypeParseError(t *testing.T) {
-	t.Parallel()
-	cases := []struct {
-		arg string
-		c   TaskTypeConfig
-	}{
-		{"blah", 0},
-		{"spam", 0},
-		{"", RejectNoTask},
-		{"repair", RejectRepair},
-	}
-	for _, c := range cases {
-		var tt atutil.AdminTaskType
-		fs := testFlagSet()
-		fs.Var(TaskType(&tt, c.c), "task", "Task name")
-		if err := fs.Parse([]string{"-task", c.arg}); err == nil {
-			t.Errorf("Parse did not return error for %s with config %d", c.arg, c.c)
-		}
 	}
 }
 

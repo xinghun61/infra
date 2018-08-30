@@ -13,8 +13,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-
-	"infra/cmd/skylab_swarming_worker/internal/autotest/atutil"
 )
 
 type commaList struct {
@@ -77,58 +75,4 @@ func (m *jsonMap) Set(s string) error {
 	}
 	d := []byte(s)
 	return json.Unmarshal(d, m)
-}
-
-type taskType struct {
-	task   *atutil.AdminTaskType
-	config TaskTypeConfig
-}
-
-// TaskType returns a flag.Value that can be passed to flag.Var for
-// parsing an atutil.AdminTaskType.
-func TaskType(t *atutil.AdminTaskType, c TaskTypeConfig) flag.Value {
-	return taskType{task: t, config: c}
-}
-
-// TaskTypeConfig is passed to TaskTypeValue to configure parsing.
-type TaskTypeConfig int8
-
-// Bit flags for TaskTypeConfig.
-const (
-	RejectNoTask TaskTypeConfig = 1 << iota
-	RejectRepair
-)
-
-func (t taskType) String() string {
-	if t.task == nil {
-		return ""
-	}
-	return string(*t.task)
-}
-
-func (t taskType) Set(s string) error {
-	if t.task == nil {
-		return errors.New("TaskType pointer is nil")
-	}
-	switch s {
-	case "":
-		if t.config&RejectNoTask != 0 {
-			return errors.Errorf("invalid task type %s", s)
-		}
-		*t.task = atutil.NoTask
-	case "cleanup":
-		*t.task = atutil.Cleanup
-	case "repair":
-		if t.config&RejectRepair != 0 {
-			return errors.Errorf("invalid task type %s", s)
-		}
-		*t.task = atutil.Repair
-	case "reset":
-		*t.task = atutil.Reset
-	case "verify":
-		*t.task = atutil.Verify
-	default:
-		return errors.Errorf("invalid task type %s", s)
-	}
-	return nil
 }
