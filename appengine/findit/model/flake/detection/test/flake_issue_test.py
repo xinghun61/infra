@@ -12,13 +12,6 @@ from model.flake.detection.flake_issue import FlakeIssue
 
 class FlakeIssueTest(TestCase):
 
-  def testGetId(self):
-    monorail_project = 'chromium'
-    issue_id = 123
-    self.assertEqual(
-        'chromium@123',
-        FlakeIssue.GetId(monorail_project=monorail_project, issue_id=issue_id))
-
   def testCreate(self):
     monorail_project = 'chromium'
     issue_id = 123

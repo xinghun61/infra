@@ -26,16 +26,10 @@ class FlakeIssue(ndb.Model):
   # TODO(crbug.com/876797): Rename to last_updated_time_by_flake_detection.
   last_updated_time = ndb.DateTimeProperty()
 
-  @staticmethod
-  def GetId(monorail_project, issue_id):
-    return '%s@%s' % (monorail_project, issue_id)
-
   @classmethod
   def Create(cls, monorail_project, issue_id):
     """Creates a FlakeIssue entity for a Monorail issue."""
-    flake_issue_id = cls.GetId(monorail_project, issue_id)
-    return cls(
-        monorail_project=monorail_project, issue_id=issue_id, id=flake_issue_id)
+    return cls(monorail_project=monorail_project, issue_id=issue_id)
 
   @staticmethod
   def GetMonorailProjectFromLuciProject(luci_project):
