@@ -566,6 +566,7 @@ function TKR_setUpQuickEditStore(
  * @param {Array} customPermissions An array of custom permission names.
  */
 function TKR_setUpCustomPermissionsStore(customPermissions) {
+  customPermissions = customPermissions || [];
   var permWords = ['View', 'EditIssue', 'AddIssueComment', 'DeleteIssue'];
   var docdict = {
     'View': '', 'EditIssue': '', 'AddIssueComment': '', 'DeleteIssue': ''};
@@ -1044,12 +1045,13 @@ function TKR_setUpProjectStore(projects, multiValue) {
  * @param {object} statusesResponse A pRPC ListStatusesResponse object.
  */
 function TKR_convertStatuses(statusesResponse) {
+  let statusDefs = statusesResponse.statusDefs || [];
   const jsonData = {};
 
   // Split statusDefs into open and closed name-doc objects.
   jsonData.open = [];
   jsonData.closed = [];
-  for (const s of statusesResponse.statusDefs) {
+  for (const s of statusDefs) {
     const item = {
       name: s.status,
       doc: s.docstring,
@@ -1073,11 +1075,12 @@ function TKR_convertStatuses(statusesResponse) {
  * @param {object} componentsResponse A pRPC ListComponentsResponse object.
  */
 function TKR_convertComponents(componentsResponse) {
+  let componentDefs = (componentsResponse.componentDefs || []);
   const jsonData = {};
 
   // Filter out deprecated components and normalize to name-doc object.
   jsonData.components = [];
-  for (const c of componentsResponse.componentDefs) {
+  for (const c of componentDefs) {
     if (!c.deprecated) {
       jsonData.components.push({
           name: c.path,
@@ -1096,12 +1099,14 @@ function TKR_convertComponents(componentsResponse) {
  * @param {object} labelsResponse A pRPC GetLabelOptionsResponse.
  */
 function TKR_convertLabels(labelsResponse) {
+  let labelOptions = (labelsResponse.labelOptions || []);
+  let exclusiveLabelPrefixes = (labelsResponse.exclusiveLabelPrefixes || []);
   const jsonData = {};
 
-  jsonData.labels = labelsResponse.labelOptions.map(
+  jsonData.labels = labelOptions.map(
       label => ({name: label.label, doc: label.docstring}));
 
-  jsonData.excl_prefixes = labelsResponse.exclusiveLabelPrefixes.map(
+  jsonData.excl_prefixes = exclusiveLabelPrefixes.map(
       prefix => prefix.toLowerCase());
 
   return jsonData;
@@ -1114,12 +1119,14 @@ function TKR_convertLabels(labelsResponse) {
  * @param {object} visibleMembersResponse A pRPC GetVisibleMembersResponse.
  */
 function TKR_convertVisibleMembers(visibleMembersResponse) {
+  let groupRefs = (visibleMembersResponse.groupRefs || []);
+  let userRefs = (visibleMembersResponse.userRefs || []);
   const jsonData = {};
 
-  const groupEmails = new Set((visibleMembersResponse.groupRefs || []).map(
+  const groupEmails = new Set(groupRefs.map(
       groupRef => groupRef.displayName));
 
-  jsonData.memberEmails = visibleMembersResponse.userRefs.map(
+  jsonData.memberEmails = userRefs.map(
       userRef => ({name: userRef.displayName}));
   jsonData.nonGroupEmails = jsonData.memberEmails.filter(
       memberEmail => !groupEmails.has(memberEmail));
@@ -1134,9 +1141,10 @@ function TKR_convertVisibleMembers(visibleMembersResponse) {
  * @param {object} fieldsResponse A pRPC ListFieldsResponse object.
  */
 function TKR_convertFields(fieldsResponse) {
+  let fieldDefs = (fieldsResponse.fieldDefs || []);
   const jsonData = {};
 
-  jsonData.fields = fieldsResponse.fieldDefs.map(field =>
+  jsonData.fields = fieldDefs.map(field =>
       ({
         field_id: field.fieldRef.fieldId,
         field_name: field.fieldRef.fieldName,
@@ -1289,9 +1297,6 @@ function TKR_fetchOptions(projectName) {
 
   allPromises.push(
       fieldsPromise.then(fieldsResponse => {
-        if (Object.keys(fieldsResponse).length === 0) {
-          return {};
-        }
         const jsonData = TKR_convertFields(fieldsResponse);
 
         TKR_setUpUserAutocompleteStores(jsonData.fields);
@@ -1302,9 +1307,6 @@ function TKR_fetchOptions(projectName) {
   // We won't need custom permissions or hotlists later, so there's no need to
   // add them to allPromises.
   customPermissionsPromise.then(customPermissionsResponse => {
-    if (Object.keys(customPermissionsResponse).length === 0) {
-      return {};
-    }
     TKR_setUpCustomPermissionsStore(customPermissionsResponse.permissions);
   });
 
