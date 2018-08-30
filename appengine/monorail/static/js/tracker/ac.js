@@ -492,13 +492,11 @@ function _AC_CreateSpanWithMatchHighlighted(match) {
  *     use this.firstCharMap_ using the prefix's first character.
  * @return {List.<_AC_Completion>} The computed list of completions.
  */
-_AC_SimpleStore.prototype.completions = function(prefix, toFilter) {
+_AC_SimpleStore.prototype.completions = function(prefix) {
   if (!prefix) {
     return [];
   }
-  if ((toFilter == null) || (toFilter.length == 0)) {
-    toFilter = this.firstCharMap_[prefix.charAt(0).toLowerCase()];
-  }
+  toFilter = this.firstCharMap_[prefix.charAt(0).toLowerCase()];
 
   // Since we use prefix to build a regular expression, we need to escape RE
   // characters. We match '-', '{', '$' and others in the prefix and convert
@@ -778,21 +776,14 @@ function ac_checkCompletions() {
 
     // If we already have completed, then our work here is done.
     if (completable == ac_lastCompletable) { return; }
-    var tofilter;
-    if (ac_lastCompletable &&
-        ac_lastCompletable.length < completable.length &&
-        completable.substring(0, ac_lastCompletable.length) ==
-        ac_lastCompletable) {
-      tofilter = ac_completions;
-    } else {
-      ac_completions = null;
-      ac_selected = -1;
-    }
+
+    ac_completions = null;
+    ac_selected = -1;
 
     var oldSelected =
       ((ac_selected >= 0 && ac_selected < ac_completions.length) ?
        ac_completions[ac_selected].value : null);
-    ac_completions = ac_store.completions(completable, tofilter);
+    ac_completions = ac_store.completions(completable);
     ac_selected = oldSelected ? 0 : -1;
     ac_lastCompletable = completable;
     return;
