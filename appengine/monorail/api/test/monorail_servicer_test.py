@@ -388,6 +388,32 @@ class MonorailServicerTest(unittest.TestCase):
     with self.assertRaises(xsrf.TokenIncorrect):
       self.svcr.AssertWhitelistedOrXSRF(mc, self.request)
 
+  @mock.patch('google.appengine.api.oauth.get_client_id')
+  @mock.patch('framework.xsrf.GetRoundedTime')
+  def testAssertWhitelistedOrXSRF_CustomTimeout(
+      self, mockGetRoundedTime, mock_get_client_id):
+    """Our API is limited to our client by checking an XSRF token."""
+    # Disable special whitelisting of the default client_id while testing.
+    mock_get_client_id.return_value = None
+
+    # pylint: disable=attribute-defined-outside-init
+    self.request.project_name = 'proj'
+    self.project.committer_ids.append(222L)
+    mc = monorailcontext.MonorailContext(self.services, auth=self.auth)
+
+    # Set the token to an token created at time 1
+    self.request.trace.token = xsrf.GenerateToken(
+        222L, xsrf.XHR_SERVLET_PATH, 1)
+
+    # The token is too old and we fail to authenticate.
+    mockGetRoundedTime.side_effect = lambda: 2 + xsrf.TOKEN_TIMEOUT_SEC
+    with self.assertRaises(xsrf.TokenIncorrect):
+      self.svcr.AssertWhitelistedOrXSRF(mc, self.request)
+
+    # We can specify a custom xsrf timeout.
+    self.svcr.xsrf_timeout = 1 + xsrf.TOKEN_TIMEOUT_SEC
+    self.svcr.AssertWhitelistedOrXSRF(mc, self.request)
+
   def testGetRequestProject(self):
     """We get a project specified by request field project_name."""
     # No project specified.

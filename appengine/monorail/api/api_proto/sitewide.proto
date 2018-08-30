@@ -1,0 +1,29 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is govered by a BSD-style
+// license that can be found in the LICENSE file or at
+// https://developers.google.com/open-source/licenses/bsd
+
+syntax = "proto3";
+
+package monorail;
+
+import "api/api_proto/common.proto";
+
+service Sitewide {
+  rpc RefreshToken (RefreshTokenRequest) returns (RefreshTokenResponse) {}
+}
+
+
+// Next available tag: 4
+message RefreshTokenRequest {
+  RequestTrace trace = 1;
+  string token = 2;
+  string token_path = 3;
+}
+
+
+// Next available tag: 3
+message RefreshTokenResponse {
+  string token = 1;
+  uint32 token_expires_sec = 2;
+}

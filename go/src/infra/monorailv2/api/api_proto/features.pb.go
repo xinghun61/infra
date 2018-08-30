@@ -38,7 +38,7 @@ func (m *ListHotlistsByUserRequest) Reset()         { *m = ListHotlistsByUserReq
 func (m *ListHotlistsByUserRequest) String() string { return proto.CompactTextString(m) }
 func (*ListHotlistsByUserRequest) ProtoMessage()    {}
 func (*ListHotlistsByUserRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_2d7e7f4f5a0bb710, []int{0}
+	return fileDescriptor_features_846d28d5e92e0e28, []int{0}
 }
 func (m *ListHotlistsByUserRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListHotlistsByUserRequest.Unmarshal(m, b)
@@ -84,7 +84,7 @@ func (m *ListHotlistsByUserResponse) Reset()         { *m = ListHotlistsByUserRe
 func (m *ListHotlistsByUserResponse) String() string { return proto.CompactTextString(m) }
 func (*ListHotlistsByUserResponse) ProtoMessage()    {}
 func (*ListHotlistsByUserResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_2d7e7f4f5a0bb710, []int{1}
+	return fileDescriptor_features_846d28d5e92e0e28, []int{1}
 }
 func (m *ListHotlistsByUserResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListHotlistsByUserResponse.Unmarshal(m, b)
@@ -124,7 +124,7 @@ func (m *GetHotlistStarCountRequest) Reset()         { *m = GetHotlistStarCountR
 func (m *GetHotlistStarCountRequest) String() string { return proto.CompactTextString(m) }
 func (*GetHotlistStarCountRequest) ProtoMessage()    {}
 func (*GetHotlistStarCountRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_2d7e7f4f5a0bb710, []int{2}
+	return fileDescriptor_features_846d28d5e92e0e28, []int{2}
 }
 func (m *GetHotlistStarCountRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetHotlistStarCountRequest.Unmarshal(m, b)
@@ -170,7 +170,7 @@ func (m *GetHotlistStarCountResponse) Reset()         { *m = GetHotlistStarCount
 func (m *GetHotlistStarCountResponse) String() string { return proto.CompactTextString(m) }
 func (*GetHotlistStarCountResponse) ProtoMessage()    {}
 func (*GetHotlistStarCountResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_2d7e7f4f5a0bb710, []int{3}
+	return fileDescriptor_features_846d28d5e92e0e28, []int{3}
 }
 func (m *GetHotlistStarCountResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetHotlistStarCountResponse.Unmarshal(m, b)
@@ -211,7 +211,7 @@ func (m *StarHotlistRequest) Reset()         { *m = StarHotlistRequest{} }
 func (m *StarHotlistRequest) String() string { return proto.CompactTextString(m) }
 func (*StarHotlistRequest) ProtoMessage()    {}
 func (*StarHotlistRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_2d7e7f4f5a0bb710, []int{4}
+	return fileDescriptor_features_846d28d5e92e0e28, []int{4}
 }
 func (m *StarHotlistRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StarHotlistRequest.Unmarshal(m, b)
@@ -264,7 +264,7 @@ func (m *StarHotlistResponse) Reset()         { *m = StarHotlistResponse{} }
 func (m *StarHotlistResponse) String() string { return proto.CompactTextString(m) }
 func (*StarHotlistResponse) ProtoMessage()    {}
 func (*StarHotlistResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_2d7e7f4f5a0bb710, []int{5}
+	return fileDescriptor_features_846d28d5e92e0e28, []int{5}
 }
 func (m *StarHotlistResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StarHotlistResponse.Unmarshal(m, b)
@@ -291,7 +291,7 @@ func (m *StarHotlistResponse) GetStarCount() uint32 {
 	return 0
 }
 
-// Next available tag: 3
+// Next available tag: 4
 type ListHotlistIssuesRequest struct {
 	Trace                *RequestTrace `protobuf:"bytes,1,opt,name=trace,proto3" json:"trace,omitempty"`
 	HotlistRef           *HotlistRef   `protobuf:"bytes,2,opt,name=hotlist_ref,json=hotlistRef,proto3" json:"hotlist_ref,omitempty"`
@@ -305,7 +305,7 @@ func (m *ListHotlistIssuesRequest) Reset()         { *m = ListHotlistIssuesReque
 func (m *ListHotlistIssuesRequest) String() string { return proto.CompactTextString(m) }
 func (*ListHotlistIssuesRequest) ProtoMessage()    {}
 func (*ListHotlistIssuesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_2d7e7f4f5a0bb710, []int{6}
+	return fileDescriptor_features_846d28d5e92e0e28, []int{6}
 }
 func (m *ListHotlistIssuesRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListHotlistIssuesRequest.Unmarshal(m, b)
@@ -358,7 +358,7 @@ func (m *ListHotlistIssuesResponse) Reset()         { *m = ListHotlistIssuesResp
 func (m *ListHotlistIssuesResponse) String() string { return proto.CompactTextString(m) }
 func (*ListHotlistIssuesResponse) ProtoMessage()    {}
 func (*ListHotlistIssuesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_2d7e7f4f5a0bb710, []int{7}
+	return fileDescriptor_features_846d28d5e92e0e28, []int{7}
 }
 func (m *ListHotlistIssuesResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListHotlistIssuesResponse.Unmarshal(m, b)
@@ -611,10 +611,10 @@ var _Features_serviceDesc = grpc.ServiceDesc{
 }
 
 func init() {
-	proto.RegisterFile("api/api_proto/features.proto", fileDescriptor_features_2d7e7f4f5a0bb710)
+	proto.RegisterFile("api/api_proto/features.proto", fileDescriptor_features_846d28d5e92e0e28)
 }
 
-var fileDescriptor_features_2d7e7f4f5a0bb710 = []byte{
+var fileDescriptor_features_846d28d5e92e0e28 = []byte{
 	// 442 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x94, 0xc1, 0x6e, 0xd3, 0x40,
 	0x10, 0x86, 0x31, 0xa1, 0x60, 0x26, 0xe2, 0xd0, 0x2d, 0x20, 0xb3, 0xb4, 0x52, 0xb4, 0x6d, 0xa5,
