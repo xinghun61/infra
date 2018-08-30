@@ -11,9 +11,10 @@ import sys
 
 _REMOTE_API_DIR = os.path.join(
     os.path.dirname(__file__), os.path.pardir, os.path.pardir)
-
 sys.path.insert(1, _REMOTE_API_DIR)
+# Active script for Findit production.
 from local_libs import remote_api
+remote_api.EnableFinditRemoteApi()
 
 from common.waterfall import failure_type
 from libs import analysis_status
@@ -36,9 +37,6 @@ def _DisplayResults(groups_with_different_results, groups):
 
 
 def main():
-  # Set up the Remote API to use services on the live App Engine.
-  remote_api.EnableRemoteApi(app_id='findit-for-me')
-
   start = datetime(2017, 12, 1, 0, 0, 0)
   cursor = None
   more = True

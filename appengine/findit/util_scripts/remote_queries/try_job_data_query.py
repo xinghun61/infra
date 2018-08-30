@@ -11,7 +11,9 @@ import sys
 _FINDIT_DIR = os.path.join(
     os.path.dirname(__file__), os.path.pardir, os.path.pardir)
 sys.path.insert(1, _FINDIT_DIR)
+# Active script for Findit production.
 from local_libs import remote_api
+remote_api.EnableFinditRemoteApi()
 
 from model.wf_config import FinditConfig
 from model.wf_try_job_data import WfTryJobData
@@ -126,8 +128,8 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
   number_of_try_jobs = len(try_job_data_list) if try_job_data_list else 0
 
   if try_job_data_list:
-    try_jobs_per_day = (len(try_job_data_list) / float(
-        (end_date - start_date).days))
+    try_jobs_per_day = (
+        len(try_job_data_list) / float((end_date - start_date).days))
     regression_range_sizes = []
     execution_times_seconds = []
     in_queue_times = []
@@ -166,8 +168,9 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
     average_execution_time = (
         _GetAverageOfNumbersInList(execution_times_seconds)
         if execution_times_seconds else NOT_AVAILABLE)
-    average_time_in_queue = (_GetAverageOfNumbersInList(in_queue_times)
-                             if in_queue_times else NOT_AVAILABLE)
+    average_time_in_queue = (
+        _GetAverageOfNumbersInList(in_queue_times)
+        if in_queue_times else NOT_AVAILABLE)
     average_commits_analyzed = _GetAverageOfNumbersInList(commits_analyzed)
     longest_execution_time = (
         str(datetime.timedelta(seconds=max(execution_times_seconds)))
@@ -251,10 +254,10 @@ def _GetReportListForMastersAndBuilders(
     supported['test'][master] = {}
 
     for builder in builders:
-      compile_try_job_data_list = (categorized_data_dict.get('compile').get(
-          master, {}).get(builder))
-      test_try_job_data_list = (categorized_data_dict.get('test').get(
-          master, {}).get(builder))
+      compile_try_job_data_list = (
+          categorized_data_dict.get('compile').get(master, {}).get(builder))
+      test_try_job_data_list = (
+          categorized_data_dict.get('test').get(master, {}).get(builder))
       supported['compile'][master][builder] = _GetReportInformation(
           compile_try_job_data_list, start_date, end_date)
       supported['test'][master][builder] = _GetReportInformation(
@@ -363,9 +366,6 @@ def CreateHtmlPage(report_list, start_date, end_date):
 
 
 if __name__ == '__main__':
-  # Set up the Remote API to use services on the live App Engine.
-  remote_api.EnableRemoteApi(app_id='findit-for-me')
-
   START_DATE = datetime.datetime(2016, 3, 1)
   END_DATE = datetime.datetime(2016, 4, 14)
 

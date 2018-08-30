@@ -15,7 +15,9 @@ import sys
 _FINDIT_DIR = os.path.join(
     os.path.dirname(__file__), os.path.pardir, os.path.pardir)
 sys.path.insert(1, _FINDIT_DIR)
+# Active script for Findit production.
 from local_libs import remote_api
+remote_api.EnableFinditRemoteApi()
 
 from common.waterfall import failure_type
 from lib import time_util
@@ -92,8 +94,8 @@ def _GetCLDataForHeuristic(failure_args, date_start, date_end):
 
   suspected_cls_query = WfSuspectedCL.query(
       remote_api.ndb.AND(
-          WfSuspectedCL.status.IN(TRIAGED_STATUS), WfSuspectedCL.approaches ==
-          analysis_approach_type.HEURISTIC))
+          WfSuspectedCL.status.IN(TRIAGED_STATUS),
+          WfSuspectedCL.approaches == analysis_approach_type.HEURISTIC))
 
   suspected_cls_query = _AddMoreConstrainsToQuery(
       suspected_cls_query, failure_args, date_start, date_end)
@@ -131,8 +133,8 @@ def _GetCLDataForHeuristic(failure_args, date_start, date_end):
 def _GetCLDataForTryJob(failure_args, date_start, date_end):
   suspected_cls_query = WfSuspectedCL.query(
       remote_api.ndb.AND(
-          WfSuspectedCL.status.IN(TRIAGED_STATUS), WfSuspectedCL.approaches ==
-          analysis_approach_type.TRY_JOB))
+          WfSuspectedCL.status.IN(TRIAGED_STATUS),
+          WfSuspectedCL.approaches == analysis_approach_type.TRY_JOB))
 
   suspected_cls_query = _AddMoreConstrainsToQuery(
       suspected_cls_query, failure_args, date_start, date_end)
@@ -277,9 +279,6 @@ def _GetArguments():
 
 
 if __name__ == '__main__':
-  # Set up the Remote API to use services on the live App Engine.
-  remote_api.EnableRemoteApi(app_id='findit-for-me')
-
   args = _GetArguments()
 
   default_end_date = time_util.GetUTCNow().replace(

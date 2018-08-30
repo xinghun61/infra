@@ -19,7 +19,9 @@ except ImportError:
 _FINDIT_DIR = os.path.join(
     os.path.dirname(__file__), os.path.pardir, os.path.pardir)
 sys.path.insert(1, _FINDIT_DIR)
+# Active script for Findit production.
 from local_libs import remote_api
+remote_api.EnableFinditRemoteApi()
 
 from model.wf_try_job_data import WfTryJobData
 
@@ -215,8 +217,8 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
   maximum_spike_size = NOT_AVAILABLE
 
   if try_job_data_list:
-    try_jobs_per_day = (len(try_job_data_list) / float(
-        (end_date - start_date).days))
+    try_jobs_per_day = (
+        len(try_job_data_list) / float((end_date - start_date).days))
     regression_range_sizes = []
     execution_times_seconds = []
     request_times = []
@@ -280,36 +282,44 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
 
     average_regression_range_size = _GetAverageOfNumbersInList(
         regression_range_sizes)
-    median_regression_range_size = (numpy.median(regression_range_sizes) if
-                                    regression_range_sizes else NOT_AVAILABLE)
+    median_regression_range_size = (
+        numpy.median(regression_range_sizes)
+        if regression_range_sizes else NOT_AVAILABLE)
     average_execution_time = (
         _GetAverageOfNumbersInList(execution_times_seconds)
         if execution_times_seconds else NOT_AVAILABLE)
-    median_execution_time = (numpy.median(execution_times_seconds)
-                             if execution_times_seconds else NOT_AVAILABLE)
-    average_end_to_end_time = (_GetAverageOfNumbersInList(end_to_end_times)
-                               if end_to_end_times else NOT_AVAILABLE)
-    median_end_to_end_time = (numpy.median(end_to_end_times)
-                              if end_to_end_times else NOT_AVAILABLE)
-    average_time_in_queue = (_GetAverageOfNumbersInList(in_queue_times)
-                             if in_queue_times else NOT_AVAILABLE)
-    median_time_in_queue = (numpy.median(in_queue_times)
-                            if in_queue_times else NOT_AVAILABLE)
+    median_execution_time = (
+        numpy.median(execution_times_seconds)
+        if execution_times_seconds else NOT_AVAILABLE)
+    average_end_to_end_time = (
+        _GetAverageOfNumbersInList(end_to_end_times)
+        if end_to_end_times else NOT_AVAILABLE)
+    median_end_to_end_time = (
+        numpy.median(end_to_end_times) if end_to_end_times else NOT_AVAILABLE)
+    average_time_in_queue = (
+        _GetAverageOfNumbersInList(in_queue_times)
+        if in_queue_times else NOT_AVAILABLE)
+    median_time_in_queue = (
+        numpy.median(in_queue_times) if in_queue_times else NOT_AVAILABLE)
     average_commits_analyzed = _GetAverageOfNumbersInList(commits_analyzed)
-    median_commits_analyzed = (numpy.median(commits_analyzed)
-                               if commits_analyzed else NOT_AVAILABLE)
-    longest_execution_time = (str(
-        datetime.timedelta(seconds=int(round(max(execution_times_seconds)))))
-                              if execution_times_seconds else NOT_AVAILABLE)
-    shortest_execution_time = (str(
-        datetime.timedelta(seconds=int(round(min(execution_times_seconds)))))
-                               if execution_times_seconds else NOT_AVAILABLE)
+    median_commits_analyzed = (
+        numpy.median(commits_analyzed) if commits_analyzed else NOT_AVAILABLE)
+    longest_execution_time = (
+        str(
+            datetime.timedelta(
+                seconds=int(round(max(execution_times_seconds)))))
+        if execution_times_seconds else NOT_AVAILABLE)
+    shortest_execution_time = (
+        str(
+            datetime.timedelta(
+                seconds=int(round(min(execution_times_seconds)))))
+        if execution_times_seconds else NOT_AVAILABLE)
     detection_rate = float(culprits_detected) / total_number_of_try_jobs
     error_rate = float(errors_detected) / total_number_of_try_jobs
-    time_per_revision = (average_execution_time / average_commits_analyzed
-                         if (average_execution_time != NOT_AVAILABLE and
-                             average_commits_analyzed != NOT_AVAILABLE) else
-                         NOT_AVAILABLE)
+    time_per_revision = (
+        average_execution_time / average_commits_analyzed
+        if (average_execution_time != NOT_AVAILABLE and
+            average_commits_analyzed != NOT_AVAILABLE) else NOT_AVAILABLE)
 
     under_five_minutes_rate = (
         float(number_under_five_minutes) / total_number_of_try_jobs)
@@ -603,9 +613,6 @@ def GetArgsInOrder():
 
 
 if __name__ == '__main__':
-  # Set up the Remote API to use services on the live App Engine.
-  remote_api.EnableRemoteApi(app_id='findit-for-me')
-
   START_DATE = datetime.datetime(2016, 4, 17)
   END_DATE = datetime.datetime(2016, 7, 15)
 

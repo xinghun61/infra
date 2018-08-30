@@ -12,16 +12,14 @@ import sys
 import time
 from threading import Thread
 
-_APPENGINE_SDK_DIR = os.path.join(
-    os.path.dirname(__file__), os.path.pardir, os.path.pardir, os.path.pardir,
-    os.path.pardir, os.path.pardir, 'google_appengine')
-sys.path.insert(1, _APPENGINE_SDK_DIR)
-from google.appengine.ext import ndb
-
 _FINDIT_DIR = os.path.join(
     os.path.dirname(__file__), os.path.pardir, os.path.pardir)
 sys.path.insert(1, _FINDIT_DIR)
+# Active script for Findit production.
 from local_libs import remote_api
+remote_api.EnableFinditRemoteApi()
+
+from google.appengine.ext import ndb
 
 from common.findit_http_client import FinditHttpClient
 from libs import time_util
@@ -71,8 +69,8 @@ def _FetchAnalyses(start_date, end_date):
 
 def _GetPickleFilePath():
   findit_tmp_dir = os.environ.get('TMP_DIR', os.getcwd())
-  return (os.path.join(findit_tmp_dir, 'analyses.pickle'), os.path.join(
-      findit_tmp_dir, 'records.pickle'))
+  return (os.path.join(findit_tmp_dir, 'analyses.pickle'),
+          os.path.join(findit_tmp_dir, 'records.pickle'))
 
 
 def _SaveAnalyses(analyses, records):
@@ -115,8 +113,8 @@ def _GetTimesFromPipeline(pid):
         suffixes[cls] = '.' + str(old_index + 1)
       result['pl.' + cls + '.start' + suffixes.get(cls, '')] = (
           _UnknownToDatetime(start))
-      result['pl.'
-             + cls + '.end' + suffixes.get(cls, '')] = (_UnknownToDatetime(end))
+      result['pl.' + cls + '.end' + suffixes.get(cls, '')] = (
+          _UnknownToDatetime(end))
   return result
 
 
@@ -259,7 +257,7 @@ def main():
   # TODO: add options to limit the date range to fetch
   # TODO: add options to display summary of fetched info.
 
-  remote_api.EnableRemoteApi(app_id='findit-for-me')
+  remote_api.EnableFinditRemoteApi()
 
   try:
     all_analyses, stored_start, stored_end, time_records = _LoadAnalyses()

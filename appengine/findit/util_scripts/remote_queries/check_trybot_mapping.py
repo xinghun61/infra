@@ -15,7 +15,10 @@ import urllib2
 _FINDIT_DIR = os.path.join(
     os.path.dirname(__file__), os.path.pardir, os.path.pardir)
 sys.path.insert(1, _FINDIT_DIR)
+# Active script for Findit production.
 from local_libs import remote_api
+remote_api.EnableFinditRemoteApi()
+
 from model.wf_config import FinditConfig
 
 NOT_AVAILABLE = 'N/A'
@@ -69,8 +72,6 @@ def _GetBuilderList(master_name):
 
 
 if __name__ == '__main__':
-  remote_api.EnableRemoteApi(app_id='findit-for-me')
-
   trybots = FinditConfig.Get().builders_to_trybots
   steps_for_masters_rules = FinditConfig.Get().steps_for_masters_rules
   main_waterfall_cache = {}

@@ -22,8 +22,9 @@ import sys
 
 _REMOTE_API_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir)
 sys.path.insert(1, _REMOTE_API_DIR)
-
-import remote_api
+# Active script for Findit production.
+from local_libs import remote_api
+remote_api.EnableFinditRemoteApi()
 
 from google.appengine.ext import ndb
 
@@ -180,9 +181,6 @@ def _CalculateDetectionRate(results):
 
 
 if __name__ == '__main__':
-  # Set up the Remote API to use services on the live App Engine.
-  remote_api.EnableRemoteApi(app_id='findit-for-me')
-
   start = datetime.datetime(2017, 4, 25, 0, 0, 0)
   end = datetime.datetime(2017, 4, 27, 0, 0, 0)
   cursor = None

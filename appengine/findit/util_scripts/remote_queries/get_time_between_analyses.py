@@ -12,17 +12,14 @@ import os
 import pickle
 import sys
 
-_APPENGINE_SDK_DIR = os.path.join(
-    os.path.dirname(__file__), os.path.pardir, os.path.pardir, os.path.pardir,
-    os.path.pardir, os.path.pardir, 'google_appengine')
-sys.path.insert(1, _APPENGINE_SDK_DIR)
-
-from google.appengine.ext import ndb
-
 _FINDIT_DIR = os.path.join(
     os.path.dirname(__file__), os.path.pardir, os.path.pardir)
 sys.path.insert(1, _FINDIT_DIR)
+# Active script for Findit production.
 from local_libs import remote_api
+remote_api.EnableFinditRemoteApi()
+
+from google.appengine.ext import ndb
 
 from common.waterfall import failure_type
 from model.wf_analysis import WfAnalysis
@@ -169,9 +166,6 @@ def _GetSecondsBetweenAllTimesInGroupList(groups):
 
 
 def GetAndShowResults():
-  # Set up the Remote API to use services on the live App Engine.
-  remote_api.EnableRemoteApi(app_id='findit-for-me')
-
   # Try to load analyses from cache file on disk. If analyses can't be loaded
   # from disk, retrieve analyses from remote API, and save to disk.
 

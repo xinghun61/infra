@@ -14,7 +14,7 @@ sys.path.insert(0, _FIRST_PARTY_DIR)
 
 # Activate script as findit prod.
 from local_libs import remote_api
-remote_api.EnableRemoteApi(app_id='findit-for-me')
+remote_api.EnableFinditRemoteApi()
 
 # Add imports below.
 import datetime

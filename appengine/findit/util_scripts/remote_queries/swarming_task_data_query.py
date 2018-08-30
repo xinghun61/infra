@@ -12,7 +12,9 @@ import sys
 _FINDIT_DIR = os.path.join(
     os.path.dirname(__file__), os.path.pardir, os.path.pardir)
 sys.path.insert(1, _FINDIT_DIR)
+# Active script for Findit production.
 from local_libs import remote_api
+remote_api.EnableFinditRemoteApi()
 
 from libs import analysis_status
 from model.wf_swarming_task import WfSwarmingTask
@@ -169,8 +171,9 @@ def _GetReportInformation(swarming_task_list, start_date, end_date):
     average_execution_time = (
         _GetAverageOfNumbersInList(execution_times_seconds)
         if execution_times_seconds else NOT_AVAILABLE)
-    average_time_in_queue = (_GetAverageOfNumbersInList(in_queue_times)
-                             if in_queue_times else NOT_AVAILABLE)
+    average_time_in_queue = (
+        _GetAverageOfNumbersInList(in_queue_times)
+        if in_queue_times else NOT_AVAILABLE)
     longest_execution_time = (
         str(datetime.timedelta(seconds=max(execution_times_seconds)))
         if execution_times_seconds else NOT_AVAILABLE)
@@ -325,8 +328,6 @@ def CreateHtmlPage(report, start_date, end_date):
 
 if __name__ == '__main__':
   # Set up the Remote API to use services on the live App Engine.
-  remote_api.EnableRemoteApi(app_id='findit-for-me')
-
   START_DATE = datetime.datetime(2016, 2, 1)
   END_DATE = datetime.datetime(2016, 3, 7)
 

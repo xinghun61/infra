@@ -3,12 +3,20 @@
 # found in the LICENSE file.
 """An example of using Remote API to query datastore on live App Engine."""
 
-# During importing, sys.path will be setup appropriately.
-import remote_api  # pylint: disable=W
-from model.wf_step import WfStep
+import os
+import sys
 
+# Append path of Findit root directory to import remote_api.
+_FINDIT_DIR = os.path.join(
+    os.path.dirname(__file__), os.path.pardir, os.path.pardir)
+sys.path.insert(0, _FINDIT_DIR)
+
+# During importing, sys.path will be setup appropriately.
+from local_libs import remote_api  # pylint: disable=W
 # Set up the Remote API to use services on the live App Engine.
-remote_api.EnableRemoteApi(app_id='findit-for-me')
+remote_api.EnableFinditRemoteApi()
+
+from model.wf_step import WfStep
 
 step = WfStep.Get('chromium.memory', 'Linux ASan Tests (sandboxed)', 11413,
                   'browser_tests')

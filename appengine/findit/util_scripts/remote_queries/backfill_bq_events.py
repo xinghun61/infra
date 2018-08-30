@@ -12,22 +12,13 @@ import sys
 
 _FINDIT_DIR = os.path.join(
     os.path.dirname(__file__), os.path.pardir, os.path.pardir)
-_THIRD_PARTY_DIR = os.path.join(
-    os.path.dirname(__file__), os.path.pardir, os.path.pardir, 'third_party')
-_FIRST_PARTY_DIR = os.path.join(
-    os.path.dirname(__file__), os.path.pardir, os.path.pardir, 'first_party')
 sys.path.insert(0, _FINDIT_DIR)
-sys.path.insert(0, _THIRD_PARTY_DIR)
-sys.path.insert(0, _FIRST_PARTY_DIR)
+# Active script for Findit production.
+from local_libs import remote_api
+remote_api.EnableFinditRemoteApi()
 
-import google
-google.__path__.insert(0,
-                       os.path.join(
-                           os.path.dirname(os.path.realpath(__file__)),
-                           'third_party', 'google'))
 import pickle
 from common.waterfall import failure_type
-from local_libs import remote_api
 from libs import analysis_status
 from model import suspected_cl_status
 from model.flake.flake_culprit import FlakeCulprit
@@ -41,9 +32,6 @@ from services.event_reporting import ReportCompileFailureAnalysisCompletionEvent
 from services.event_reporting import ReportTestFailureAnalysisCompletionEvent
 from services.event_reporting import ReportTestFlakeAnalysisCompletionEvent
 from waterfall.flake import triggering_sources
-
-# Active script for Findit production.
-remote_api.EnableRemoteApi(app_id='findit-for-me')
 
 
 def CanReportAnalysis(analysis):

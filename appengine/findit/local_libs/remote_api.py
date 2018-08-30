@@ -12,6 +12,7 @@ For detail on usage of Remote API, please refer to:
 """
 import os
 import socket
+import subprocess
 import sys
 
 # This relative import is because We don't want ``remote_api`` to insert any
@@ -51,6 +52,17 @@ def EnableRemoteApi(app_id='findit-for-me'):  # pragma: no cover
       save_cookies=True)
   setattr(EnableRemoteApi, app_id, True)
 
+
 def EnableFinditRemoteApi():  # pragma: no cover
+  # Use infra/ENV/bin/python if not.
+  infra_ENV_bin_python = os.path.abspath(
+      os.path.join(
+          os.path.dirname(__file__), os.path.pardir, os.path.pardir,
+          os.path.pardir, 'ENV', 'bin', 'python'))
+  current_python = os.path.abspath(sys.executable)
+  if infra_ENV_bin_python != current_python:
+    sys.exit(subprocess.call([infra_ENV_bin_python] + sys.argv))
+
+  # Set up sys.path properly.
   script_util.SetUpSystemPaths()
   EnableRemoteApi(app_id='findit-for-me')

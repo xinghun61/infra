@@ -24,17 +24,9 @@ import matplotlib.pyplot as plt
 import numpy
 import optparse
 
-_APPENGINE_SDK_DIR = os.path.join(
-    os.path.dirname(__file__), os.path.pardir, os.path.pardir, os.path.pardir,
-    os.path.pardir, os.path.pardir, 'google_appengine')
-sys.path.insert(1, _APPENGINE_SDK_DIR)
-from google.appengine.ext import ndb
-
 _FINDIT_DIR = os.path.join(
     os.path.dirname(__file__), os.path.pardir, os.path.pardir)
 sys.path.insert(1, _FINDIT_DIR)
-from local_libs import remote_api
-from model.wf_analysis import WfAnalysis
 
 # Global stats
 all_labels = set()
@@ -117,14 +109,14 @@ def _LoadFilterAndSortRecords(options):
 
     # Filter by date
     if options.before_date:
-      cutoff = datetime.datetime(*time.strptime(options.before_date,
-                                                '%Y-%m-%d')[:6])
+      cutoff = datetime.datetime(
+          *time.strptime(options.before_date, '%Y-%m-%d')[:6])
       if v['wfa.request_time'] > cutoff:
 
         continue
     if options.after_date:
-      cutoff = datetime.datetime(*time.strptime(options.after_date,
-                                                '%Y-%m-%d')[:6])
+      cutoff = datetime.datetime(
+          *time.strptime(options.after_date, '%Y-%m-%d')[:6])
       if v['wfa.request_time'] < cutoff:
         continue
     sorted_record = []
@@ -188,8 +180,8 @@ def _SummarizeRecordPaired(loaded_records, coalesce, record, k, transitions,
       adjacent[transition] += 1
       transitions[transition].append(interval)
       # Record the example that takes the longest.
-      if transition not in examples.keys(
-      ) or interval > max(transitions[transition]):
+      if transition not in examples.keys() or interval > max(
+          transitions[transition]):
         examples[transition] = k, record
       totals[transition] += interval
 
@@ -418,11 +410,12 @@ and the summarized data is output as text, json or csv.
   parser.add_option_group(pre_aggregation)
 
   # Coalescing options
-  coalesce_opts = optparse.OptionGroup(parser, 'Coalescing options', 'By '
-                                       'default hashes are converted to <hash> '
-                                       'and test steps are converted to <tests>'
-                                       ' e.g brower_tests and net_unittests are'
-                                       ' both replaced by <tests>.')
+  coalesce_opts = optparse.OptionGroup(
+      parser, 'Coalescing options', 'By '
+      'default hashes are converted to <hash> '
+      'and test steps are converted to <tests>'
+      ' e.g brower_tests and net_unittests are'
+      ' both replaced by <tests>.')
 
   coalesce_opts.add_option(
       '--no_coalesce_tests',
@@ -509,8 +502,9 @@ and the summarized data is output as text, json or csv.
   parser.add_option_group(post_aggregation)
 
   # Display options
-  display_opts = optparse.OptionGroup(parser, 'Output format options', 'Choose'
-                                      ' one of json/csv/text(default)/none.')
+  display_opts = optparse.OptionGroup(
+      parser, 'Output format options', 'Choose'
+      ' one of json/csv/text(default)/none.')
 
   display_opts.add_option(
       '--json',

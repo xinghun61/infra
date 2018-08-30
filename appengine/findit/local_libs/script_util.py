@@ -134,8 +134,8 @@ def RunTasks(tasks):  # pragma: no cover
   result_semaphore = threading.Semaphore(0)
   # Push task to task queue for execution.
   for task in tasks:
-    TASK_QUEUE.put((task['function'], task.get('args', []), task.get(
-        'kwargs', {}), result_semaphore))
+    TASK_QUEUE.put((task['function'], task.get('args', []),
+                    task.get('kwargs', {}), result_semaphore))
 
   # Wait until all tasks to be executed.
   for _ in tasks:
