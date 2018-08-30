@@ -6,6 +6,7 @@
 """Tests for the issues servicer."""
 
 import logging
+import time
 import unittest
 from mock import ANY, Mock, patch
 
@@ -839,6 +840,54 @@ class IssuesServicerTest(unittest.TestCase):
         issues_pb2.PresubmitIssueResponse(
             owner_availability="User never visited",
             owner_availability_state="never"),
+        response)
+
+  @patch('testing.fake.FeaturesService.GetFilterRules')
+  def testPresubmitIssue_OwnerVacation(self, mockGetFilterRules):
+    """Proposed owner has a vacation message set."""
+    self.user_1.vacation_message = 'In Galapagos Islands'
+    issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
+    issue_delta = issues_pb2.IssueDelta(
+        owner_ref=common_pb2.UserRef(user_id=111L),
+        label_refs_add=[common_pb2.LabelRef(label='foo')])
+
+    mockGetFilterRules.return_value = []
+
+    request = issues_pb2.PresubmitIssueRequest(
+        issue_ref=issue_ref, issue_delta=issue_delta)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.issues_svcr.PresubmitIssue, mc, request)
+
+    self.assertEqual(
+        issues_pb2.PresubmitIssueResponse(
+            owner_availability='In Galapagos Islands',
+            owner_availability_state='none'),
+        response)
+
+  @patch('testing.fake.FeaturesService.GetFilterRules')
+  def testPresubmitIssue_OwnerIsAvailable(self, mockGetFilterRules):
+    """Proposed owner not on vacation and has visited recently."""
+    self.user_1.last_visit_timestamp = int(time.time())
+    issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
+    issue_delta = issues_pb2.IssueDelta(
+        owner_ref=common_pb2.UserRef(user_id=111L),
+        label_refs_add=[common_pb2.LabelRef(label='foo')])
+
+    mockGetFilterRules.return_value = []
+
+    request = issues_pb2.PresubmitIssueRequest(
+        issue_ref=issue_ref, issue_delta=issue_delta)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.issues_svcr.PresubmitIssue, mc, request)
+
+    self.assertEqual(
+        issues_pb2.PresubmitIssueResponse(
+            owner_availability='',
+            owner_availability_state=''),
         response)
 
   @patch('testing.fake.FeaturesService.GetFilterRules')

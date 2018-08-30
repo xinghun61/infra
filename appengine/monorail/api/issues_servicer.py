@@ -355,9 +355,15 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
         mc, request, issue_required=False)
 
     with mc.profiler.Phase('making user views'):
+      try:
+        proposed_owner_id = converters.IngestUserRefs(
+            mc.cnxn, [request.issue_delta.owner_ref], self.services.user)[0]
+      except exceptions.NoSuchUserException:
+        proposed_owner_id = 0
+
       users_by_id = framework_views.MakeAllUserViews(
-          mc.cnxn, self.services.user, [request.issue_delta.owner_ref.user_id])
-      proposed_owner_view = users_by_id[request.issue_delta.owner_ref.user_id]
+          mc.cnxn, self.services.user, [proposed_owner_id])
+      proposed_owner_view = users_by_id[proposed_owner_id]
 
     with mc.profiler.Phase('initializing proposed_issue'):
       issue_delta = converters.IngestIssueDelta(
