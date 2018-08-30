@@ -33,11 +33,11 @@ import (
 )
 
 const (
-	// luciferToolsDeploymentPath is the well known path to infra tools deployed on the drone.
-	luciferToolsDeploymentPath = "/opt/infra-tools/usr/bin"
+	// infraToolsDir is the well known path to infra tools deployed on the drone.
+	infraToolsDir = "/opt/infra-tools"
 	// skylabSwarmingWrokerPath is the path to the binary on the drone
 	// that is the entry point of all tasks.
-	skylabSwarmingWorkerPath = luciferToolsDeploymentPath + "/skylab_swarming_worker"
+	skylabSwarmingWorkerPath = infraToolsDir + "/skylab_swarming_worker"
 )
 
 // TaskerServerImpl implements the fleet.TaskerServer interface.
