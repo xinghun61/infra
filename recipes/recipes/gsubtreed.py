@@ -14,6 +14,7 @@ import urlparse
 DEPS = [
   'depot_tools/gclient',
   'recipe_engine/context',
+  'recipe_engine/file',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/properties',
@@ -34,7 +35,9 @@ MAX_ERROR_COUNT = 5
 
 def RunSteps(api):
   # Checkout infra/infra solution.
-  with api.context(cwd=api.path['cache'].join('builder', 'solution')):
+  solution_path = api.path['cache'].join('builder', 'solution')
+  api.file.ensure_directory('init cache if not exists', solution_path)
+  with api.context(cwd=solution_path):
     api.gclient.set_config('infra')
     api.gclient.c.solutions[0].revision = 'origin/deployed'
     api.gclient.checkout(timeout=10*60)
@@ -52,7 +55,7 @@ def RunSteps(api):
     with api.context(env=env):
       api.python(
           'gsubtreed',
-          api.path['checkout'].join('run.py'),
+          solution_path.join('infra', 'run.py'),
           [
             'infra.services.gsubtreed',
             '--verbose',
