@@ -44,23 +44,33 @@ past 24 hours. List of all flake occurrences can be found at:
 Unless the culprit CL is found and reverted, please disable this test first
 within 30 minutes then find an appropriate owner.
 {previous_tracking_bug_text}
-Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N). If this
-result is incorrect, please apply the label Test-Findit-Wrong and mark the bug
-as untriaged.""")
-
-_FLAKE_DETECTION_PREVIOUS_TRACKING_BUG = (
-    '\nThis flaky test was previously tracked in bug {}.\n')
+{footer}""")
 
 _FLAKE_DETECTION_BUG_COMMENT = textwrap.dedent("""
-Findit has detected {num_occurrences} new flake occurrences of this test. To see
-the list of flake occurrences, please visit:
+Findit has detected {num_occurrences} new flake occurrences of this test. List
+of all flake occurrences can be found at:
 {flake_url}.
 
 Since this test is still flaky, this issue has been moved back onto the Sheriff
 Bug Queue if it's not already there.
 {previous_tracking_bug_text}
-Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).
-Feedback is welcome! Please use component Tools>Test>FindIt>Flakiness.""")
+{footer}""")
+
+_FLAKE_DETECTION_PREVIOUS_TRACKING_BUG = (
+    '\nThis flaky test was previously tracked in bug {}.\n')
+
+_FLAKE_DETECTION_FOOTER_TEMPLATE = textwrap.dedent(
+    """If the result above is wrong, please file a bug using this link:
+{wrong_results_bug_link}
+
+Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).""")
+
+_FLAKE_DETECTION_WRONG_RESULTS_BUG_LINK = (
+    'https://bugs.chromium.org/p/chromium/issues/entry?'
+    'status=Unconfirmed&labels=Pri-1,Test-Findit-Wrong&'
+    'components=Tools%3ETest%3EFindit%3EFlakiness&'
+    'summary=%5BFindit%5D%20Flake%20Detection%20-%20Wrong%20result%20for%20{}&'
+    'comment=Link%20to%20flake%20occurrences%3A%20{}')
 
 _FLAKE_DETECTION_LABEL_TEXT = 'Test-Findit-Detected'
 
@@ -88,13 +98,13 @@ class FlakeDetectionIssueGenerator(
     previous_tracking_bug_id = self.GetPreviousTrackingBugId()
     previous_tracking_bug_text = _FLAKE_DETECTION_PREVIOUS_TRACKING_BUG.format(
         previous_tracking_bug_id) if previous_tracking_bug_id else ''
-
     description = _FLAKE_DETECTION_BUG_DESCRIPTION.format(
         test_target=self._flake.normalized_step_name,
         test_name=self._flake.normalized_test_name,
         num_occurrences=self._num_occurrences,
-        flake_url=self._GetLinkForFlake(self._flake),
-        previous_tracking_bug_text=previous_tracking_bug_text)
+        flake_url=self._GetLinkForFlake(),
+        previous_tracking_bug_text=previous_tracking_bug_text,
+        footer=self._GetFooter())
 
     return description
 
@@ -105,8 +115,9 @@ class FlakeDetectionIssueGenerator(
 
     comment = _FLAKE_DETECTION_BUG_COMMENT.format(
         num_occurrences=self._num_occurrences,
-        flake_url=self._GetLinkForFlake(self._flake),
-        previous_tracking_bug_text=previous_tracking_bug_text)
+        flake_url=self._GetLinkForFlake(),
+        previous_tracking_bug_text=previous_tracking_bug_text,
+        footer=self._GetFooter())
 
     return comment
 
@@ -126,21 +137,27 @@ class FlakeDetectionIssueGenerator(
   def OnIssueUpdated(self):
     monitoring.OnFlakeDetectionCreateOrUpdateIssues('updated')
 
-  def _GetLinkForFlake(self, flake):
+  def _GetLinkForFlake(self):
     """Given a flake, gets a link to the flake on flake detection UI.
-
-    Args:
-      flake: A Flake Model entity.
 
     Returns:
       A link to the flake on flake detection UI.
     """
-    assert flake, 'The given flake is None.'
-
     url_template = ('https://findit-for-me%s.appspot.com/flake/detection/'
                     'show-flake?key=%s')
     suffix = '-staging' if IsStaging() else ''
-    return url_template % (suffix, flake.key.urlsafe())
+    return url_template % (suffix, self._flake.key.urlsafe())
+
+  def _GetFooter(self):
+    """Gets the footer for the bug description of comment.
+
+    Returns:
+      A string representing footer.
+    """
+    wrong_results_bug_link = _FLAKE_DETECTION_WRONG_RESULTS_BUG_LINK.format(
+        self._flake.normalized_test_name, self._GetLinkForFlake())
+    return _FLAKE_DETECTION_FOOTER_TEMPLATE.format(
+        wrong_results_bug_link=wrong_results_bug_link)
 
 
 def _FlakeIssueWasCreatedOrUpdatedWithinPast24h(flake):

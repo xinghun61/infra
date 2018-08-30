@@ -203,6 +203,14 @@ class FlakeReportUtilTest(WaterfallTestCase):
     expected_status = 'Untriaged'
     expected_summary = 'test is flaky'
 
+    expected_wrong_result_link = (
+        'https://bugs.chromium.org/p/chromium/issues/entry?status=Unconfirmed&'
+        'labels=Pri-1,Test-Findit-Wrong&components=Tools%3ETest%3EFindit%3E'
+        'Flakiness&summary=%5BFindit%5D%20Flake%20Detection%20-%20Wrong%20'
+        'result%20for%20test&comment=Link%20to%20flake%20occurrences%3A%20'
+        'https://findit-for-me.appspot.com/flake/detection/show-flake?key={}'
+    ).format(flake.key.urlsafe())
+
     expected_description = textwrap.dedent("""
 step: test is flaky.
 
@@ -213,9 +221,12 @@ https://findit-for-me.appspot.com/flake/detection/show-flake?key={}.
 Unless the culprit CL is found and reverted, please disable this test first
 within 30 minutes then find an appropriate owner.
 
-Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N). If this
-result is incorrect, please apply the label Test-Findit-Wrong and mark the bug
-as untriaged.""").format(flake.key.urlsafe())
+If the result above is wrong, please file a bug using this link:
+{}
+
+Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
+                                          ).format(flake.key.urlsafe(),
+                                                   expected_wrong_result_link)
 
     expected_labels = [
         'Sheriff-Chromium', 'Type-Bug', 'Test-Flaky', 'Test-Findit-Detected',
@@ -290,17 +301,28 @@ as untriaged.""").format(flake.key.urlsafe())
     mock_get_merged_issue.return_value.open = True
     flake_report_util.ReportFlakesToMonorail([(flake, occurrences)])
 
+    expected_wrong_result_link = (
+        'https://bugs.chromium.org/p/chromium/issues/entry?status=Unconfirmed&'
+        'labels=Pri-1,Test-Findit-Wrong&components=Tools%3ETest%3EFindit%3E'
+        'Flakiness&summary=%5BFindit%5D%20Flake%20Detection%20-%20Wrong%20'
+        'result%20for%20test&comment=Link%20to%20flake%20occurrences%3A%20'
+        'https://findit-for-me.appspot.com/flake/detection/show-flake?key={}'
+    ).format(flake.key.urlsafe())
+
     expected_comment = textwrap.dedent("""
-Findit has detected 3 new flake occurrences of this test. To see
-the list of flake occurrences, please visit:
+Findit has detected 3 new flake occurrences of this test. List
+of all flake occurrences can be found at:
 https://findit-for-me.appspot.com/flake/detection/show-flake?key={}.
 
 Since this test is still flaky, this issue has been moved back onto the Sheriff
 Bug Queue if it's not already there.
 
-Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).
-Feedback is welcome! Please use component Tools>Test>FindIt>Flakiness."""
-                                      ).format(flake.key.urlsafe())
+If the result above is wrong, please file a bug using this link:
+{}
+
+Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
+                                      ).format(flake.key.urlsafe(),
+                                               expected_wrong_result_link)
 
     self.assertFalse(mock_create_bug_fn.called)
     self.assertTrue(mock_update_bug_fn)
