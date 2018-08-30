@@ -1149,8 +1149,9 @@ function TKR_convertFields(fieldsResponse) {
         field_id: field.fieldRef.fieldId,
         field_name: field.fieldRef.fieldName,
         field_type: field.fieldRef.type,
-        choices: (field.enumChoices || []),
         docstring: field.docstring,
+        choices: (field.enumChoices || []).map(
+            choice => ({name: choice.label, doc: choice.docstring})),
         qualifiedMembers: (field.userChoices || []).map(
             userRef => ({name: userRef.displayName})),
       })
