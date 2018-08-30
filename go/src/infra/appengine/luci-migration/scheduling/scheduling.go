@@ -85,7 +85,7 @@ func ParseBuild(msg *bbapi.ApiCommonBuildMessage) (*Build, error) {
 	}
 
 	for _, bss := range tags[bbapi.TagBuildSet] {
-		build.Change = buildbucketpb.ParseBuildSet(bss).(*buildbucketpb.GerritChange)
+		build.Change, _ = buildbucketpb.ParseBuildSet(bss).(*buildbucketpb.GerritChange)
 		if build.Change != nil {
 			break
 		}

@@ -45,6 +45,7 @@ func TestScheduling(t *testing.T) {
 			Bucket: "luci.chromium.ci",
 			Tags: []string{
 				"builder:linux",
+				"buildset:not a CL",
 				"buildset:patch/gerrit/example.com/1/2",
 				"luci_migration_attempt:1",
 				"luci_migration_buildbot_build_id:54",
