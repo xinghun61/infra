@@ -34,38 +34,25 @@ var TKR_STAR_OFF = '\u2606';
  * @param {String} projectName number of the user to be starred.
  */
 function TKR_toggleStar(el, projectName, localId, userId, hotlistId) {
-  var starred = (el.textContent.trim() == TKR_STAR_OFF) ? 1 : 0;
+  const starred = (el.textContent.trim() == TKR_STAR_OFF);
   TKR_toggleStarLocal(el);
 
-  const prpcClient = new window.chops.rpc.PrpcClient({
-    insecure: Boolean(location.hostname === 'localhost'),
-    fetchImpl: (url, options) => {
-      options.credentials = 'same-origin';
-      return fetch(url, options);
-    },
-  });
-
-  const starRequestMessage = {
-    trace: {
-      token: window.CS_env.token,
-    },
-    starred: Boolean(starred),
-  };
+  const starRequestMessage = {starred: Boolean(starred)};
   if (userId) {
     starRequestMessage.user_ref = {user_id: userId};
-    prpcClient.call('monorail.Users', 'StarUser', starRequestMessage);
+    prpcCall('monorail.Users', 'StarUser', starRequestMessage);
   } else if (projectName && localId) {
     starRequestMessage.issue_ref = {
       project_name: projectName,
       local_id: localId
     };
-    prpcClient.call('monorail.Issues', 'StarIssue', starRequestMessage);
+    prpcCall('monorail.Issues', 'StarIssue', starRequestMessage);
   } else if (projectName) {
     starRequestMessage.project_name = projectName;
-    prpcClient.call('monorail.Projects', 'StarProject', starRequestMessage);
+    prpcCall('monorail.Projects', 'StarProject', starRequestMessage);
   } else if (hotlistId) {
     starRequestMessage.hotlist_ref = {hotlist_id: hotlistId};
-    prpcClient.call('monorail.Features', 'StarHotlist', starRequestMessage);
+    prpcCall('monorail.Features', 'StarHotlist', starRequestMessage);
   }
 }
 

@@ -1785,22 +1785,11 @@ function TKR_presubmit() {
     issueRef.local_id = valuesByName.get('id')[0];
   }
 
-  const prpcClient = new window.chops.rpc.PrpcClient({
-    insecure: Boolean(location.hostname === 'localhost'),
-    fetchImpl: (url, options) => {
-      options.credentials = 'same-origin';
-      return fetch(url, options);
-    },
-  });
-
   const presubmitMessage = {
-    trace: {
-      token: window.CS_env.token,
-    },
     issue_ref: issueRef,
     issue_delta: issueDelta,
   };
-  const presubmitPromise = prpcClient.call(
+  const presubmitPromise = prpcCall(
       'monorail.Issues', 'PresubmitIssue', presubmitMessage);
 
   presubmitPromise.then(response => {

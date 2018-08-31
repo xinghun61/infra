@@ -1208,51 +1208,31 @@ function TKR_fetchOptions(projectName) {
     logger.logStart('populate-options', 'user-time');
   }
 
-  const prpcClient = new window.chops.rpc.PrpcClient({
-    insecure: Boolean(location.hostname === 'localhost'),
-    fetchImpl: (url, options) => {
-      options.credentials = 'same-origin';
-      return fetch(url, options);
-    },
-  });
-
   const projectRequestMessage = {
-    trace: {
-      token: window.CS_env.token,
-    },
-    project_name: projectName,
-  };
+    project_name: projectName};
 
   const fieldsRequestMessage = {
-    trace: {
-      token: window.CS_env.token,
-    },
     project_name: projectName,
-    include_user_choices: true,
-  };
+    include_user_choices: true};
 
   const userRequestMessage = {
-    trace: {
-      token: window.CS_env.token,
-    },
     user: {
       display_name: window.CS_env.loggedInUserEmail,
-    },
-  };
+    }};
 
-  const statusesPromise = prpcClient.call(
+  const statusesPromise = prpcCall(
       'monorail.Projects', 'ListStatuses', projectRequestMessage);
-  const componentsPromise = prpcClient.call(
+  const componentsPromise = prpcCall(
       'monorail.Projects', 'ListComponents', projectRequestMessage);
-  const labelsPromise = prpcClient.call(
+  const labelsPromise = prpcCall(
       'monorail.Projects', 'GetLabelOptions', projectRequestMessage);
-  const visibleMembersPromise = prpcClient.call(
+  const visibleMembersPromise = prpcCall(
       'monorail.Projects', 'GetVisibleMembers', projectRequestMessage);
-  const fieldsPromise = prpcClient.call(
+  const fieldsPromise = prpcCall(
       'monorail.Projects', 'ListFields', fieldsRequestMessage);
-  const customPermissionsPromise = prpcClient.call(
+  const customPermissionsPromise = prpcCall(
       'monorail.Projects', 'GetCustomPermissions', projectRequestMessage);
-  const hotlistsPromise = prpcClient.call(
+  const hotlistsPromise = prpcCall(
       'monorail.Features', 'ListHotlistsByUser', userRequestMessage);
 
   const allPromises = [];
