@@ -17,7 +17,7 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	"infra/cmd/skylab_swarming_worker/internal/annotee"
+	"infra/cmd/skylab_swarming_worker/internal/annotations"
 	"infra/cmd/skylab_swarming_worker/internal/event"
 	"infra/cmd/skylab_swarming_worker/internal/log"
 	"infra/cmd/skylab_swarming_worker/internal/lucifer"
@@ -82,12 +82,12 @@ func runLuciferCommand(b *swarming.Bot, w io.Writer, cmd *exec.Cmd) (*luciferRes
 	if w == nil {
 		w = os.Stdout
 	}
-	c := annotee.NewClient(w)
-	defer c.Close()
+	s := annotations.NewState(w)
+	defer s.Close()
 	f := func(e event.Event, m string) {
 		switch {
 		case isTaskStatus(e):
-			c.OpenStep(string(e))
+			s.OpenStep(string(e))
 			if e == event.TestFailed && m != "autoserv" {
 				r.TestsFailed++
 			}
@@ -100,7 +100,7 @@ func runLuciferCommand(b *swarming.Bot, w io.Writer, cmd *exec.Cmd) (*luciferRes
 		}
 	}
 	err := event.RunCommand(cmd, f)
-	c.AddLink("results", resultsURL(b))
+	s.AddLink("results", resultsURL(b))
 	return r, err
 }
 

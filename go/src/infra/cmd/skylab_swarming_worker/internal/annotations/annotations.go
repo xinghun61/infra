@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Package basic implements a low level API for writing annotation
-// lines that annotee can parse and turn into LogDog annotations.
+// Package annotations provides an API for writing annotation lines that
+// annotee can parse and turn into LogDog annotations.
 //
 // See https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/master/chromium_step.py
 // and https://chromium.googlesource.com/infra/luci/luci-go/+/master/logdog/client/annotee/annotation/annotation.go
-package basic
+package annotations
 
 import (
 	"fmt"
