@@ -14,7 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"infra/cmd/skylab_swarming_worker/internal/autotest/atutil"
+	"infra/cmd/skylab_swarming_worker/internal/autotest"
 	"infra/cmd/skylab_swarming_worker/internal/flagx"
 )
 
@@ -58,7 +58,7 @@ type RunJobArgs struct {
 	XKeyvals           map[string]string
 	XLevel             XLevel
 	XLocalOnlyHostInfo bool
-	XPrejobTask        atutil.AdminTaskType
+	XPrejobTask        autotest.AdminTaskType
 	XProvisionLabels   []string
 }
 
@@ -87,7 +87,7 @@ func RunJobCommand(c Config, r RunJobArgs) *exec.Cmd {
 	if r.XLocalOnlyHostInfo {
 		args = append(args, "-x-local-only-host-info")
 	}
-	if r.XPrejobTask != atutil.NoTask {
+	if r.XPrejobTask != autotest.NoTask {
 		args = append(args, "-x-prejob-task", strings.ToLower(r.XPrejobTask.String()))
 	}
 	if len(r.XProvisionLabels) > 0 {

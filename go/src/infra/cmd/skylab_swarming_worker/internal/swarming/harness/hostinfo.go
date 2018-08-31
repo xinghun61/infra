@@ -15,7 +15,6 @@ import (
 	"github.com/pkg/errors"
 
 	"infra/cmd/skylab_swarming_worker/internal/autotest"
-	"infra/cmd/skylab_swarming_worker/internal/autotest/atutil"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
 	"infra/cmd/skylab_swarming_worker/internal/swarming/botcache"
 )
@@ -37,6 +36,9 @@ func prepareHostInfo(b *swarming.Bot, resultsDir string) (string, error) {
 	return dumpHostInfo(b.DUTName(), resultsDir, hi)
 }
 
+// hostInfoSubDir is the filename of the directory for storing host info.
+const hostInfoSubDir = "host_info_store"
+
 // dumpHostInfo dumps the given HostInfo object to a file expected by autoserv.
 // It returns the path to the created file.
 func dumpHostInfo(dutName string, resultsDir string, hi *autotest.HostInfo) (string, error) {
@@ -45,7 +47,7 @@ func dumpHostInfo(dutName string, resultsDir string, hi *autotest.HostInfo) (str
 		msg := fmt.Sprintf("failed to marshal HostInfo for %s", dutName)
 		return "", errors.Wrap(err, msg)
 	}
-	storeDir := filepath.Join(resultsDir, atutil.HostInfoSubDir)
+	storeDir := filepath.Join(resultsDir, hostInfoSubDir)
 	if err := os.Mkdir(storeDir, 0755); err != nil {
 		return "", err
 	}
