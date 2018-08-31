@@ -1,3 +1,7 @@
+// Copyright 2018 The Chromium OS Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 package main
 
 import (
@@ -5,7 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/pkg/errors"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/logdog/common/types"
 
 	"infra/cmd/skylab_swarming_worker/internal/log"
@@ -30,12 +34,12 @@ func copyToLogDog(ctx context.Context, sa *types.StreamAddr, r io.Reader) (err e
 	log.Printf("Setting up LogDog stream")
 	lc, err := logdog.New(ctx, &o)
 	if err != nil {
-		return errors.Wrap(err, "error configuring LogDog")
+		return errors.Annotate(err, "error configuring LogDog").Err()
 	}
 	defer lc.Close()
 	log.Printf("Copying LogDog stream")
 	if _, err = io.Copy(lc.Stdout(), r); err != nil {
-		return errors.Wrap(err, "copying LogDog buffer")
+		return errors.Annotate(err, "copying LogDog buffer").Err()
 	}
 	return nil
 }
