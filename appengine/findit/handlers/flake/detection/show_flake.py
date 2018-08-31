@@ -8,8 +8,8 @@ from google.appengine.ext import ndb
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 from model import entity_util
-from model.flake.detection.flake import Flake
-from model.flake.detection.flake_issue import FlakeIssue
+from model.flake.flake import Flake
+from model.flake.flake_issue import FlakeIssue
 from model.flake.detection.flake_occurrence import (
     CQFalseRejectionFlakeOccurrence)
 

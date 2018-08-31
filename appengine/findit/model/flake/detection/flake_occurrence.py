@@ -4,7 +4,7 @@
 
 from google.appengine.ext import ndb
 
-from model.flake.detection.flake import Flake
+from model.flake.flake import Flake
 
 
 class BuildConfiguration(ndb.Model):

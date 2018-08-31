@@ -9,8 +9,8 @@ import textwrap
 from google.appengine.ext import ndb
 
 from gae_libs import appengine_util
-from model.flake.detection.flake import Flake
-from model.flake.detection.flake_issue import FlakeIssue
+from model.flake.flake import Flake
+from model.flake.flake_issue import FlakeIssue
 from monorail_api import CustomizedField
 from monorail_api import Issue
 from monorail_api import IssueTrackerAPI

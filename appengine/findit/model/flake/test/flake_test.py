@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 import mock
 
-from model.flake.detection.flake import Flake
+from model.flake.flake import Flake
 from services import ci_failure
 from waterfall.test import wf_testcase
 

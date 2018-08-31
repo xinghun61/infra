@@ -7,7 +7,7 @@ import textwrap
 from google.appengine.ext import ndb
 from libs import time_util
 from model.flake import master_flake_analysis
-from model.flake.detection.flake import Flake
+from model.flake.flake import Flake
 from services import issue_tracking_service
 from services import monitoring
 from services.flake_failure import flake_constants

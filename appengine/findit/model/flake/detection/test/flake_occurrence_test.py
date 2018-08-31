@@ -5,7 +5,7 @@
 import datetime
 
 from gae_libs.testcase import TestCase
-from model.flake.detection.flake import Flake
+from model.flake.flake import Flake
 from model.flake.detection.flake_occurrence import BuildConfiguration
 from model.flake.detection.flake_occurrence import (
     CQFalseRejectionFlakeOccurrence)

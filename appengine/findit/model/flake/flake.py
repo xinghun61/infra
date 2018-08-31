@@ -7,7 +7,7 @@ import logging
 from google.appengine.ext import ndb
 
 from libs import test_name_util
-from model.flake.detection.flake_issue import FlakeIssue
+from model.flake.flake_issue import FlakeIssue
 from services import ci_failure
 
 

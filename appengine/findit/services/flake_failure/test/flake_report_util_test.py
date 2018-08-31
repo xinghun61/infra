@@ -7,8 +7,8 @@ import mock
 
 from libs import analysis_status
 from libs import time_util
-from model.flake.detection.flake import Flake
-from model.flake.detection.flake_issue import FlakeIssue
+from model.flake.flake import Flake
+from model.flake.flake_issue import FlakeIssue
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis

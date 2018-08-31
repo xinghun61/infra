@@ -7,7 +7,7 @@ import mock
 from google.appengine.api import app_identity
 
 from gae_libs.testcase import TestCase
-from model.flake.detection.flake_issue import FlakeIssue
+from model.flake.flake_issue import FlakeIssue
 
 
 class FlakeIssueTest(TestCase):

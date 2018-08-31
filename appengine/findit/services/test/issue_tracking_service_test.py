@@ -6,8 +6,8 @@ import mock
 import textwrap
 
 from libs import time_util
-from model.flake.detection.flake import Flake
-from model.flake.detection.flake_issue import FlakeIssue
+from model.flake.flake import Flake
+from model.flake.flake_issue import FlakeIssue
 from monorail_api import Issue
 from monorail_api import IssueTrackerAPI
 from services import issue_tracking_service

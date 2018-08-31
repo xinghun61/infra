@@ -7,8 +7,8 @@ import json
 import webapp2
 
 from handlers.flake.detection import show_flake
-from model.flake.detection.flake import Flake
-from model.flake.detection.flake_issue import FlakeIssue
+from model.flake.flake import Flake
+from model.flake.flake_issue import FlakeIssue
 from model.flake.detection.flake_occurrence import (
     CQFalseRejectionFlakeOccurrence)
 from waterfall.test.wf_testcase import WaterfallTestCase

@@ -7,7 +7,7 @@ import os
 from google.appengine.ext import ndb
 
 from gae_libs import appengine_util
-from model.flake.detection.flake import Flake
+from model.flake.flake import Flake
 from model.flake.detection.flake_occurrence import (
     CQFalseRejectionFlakeOccurrence)
 from services import bigquery_helper

@@ -7,8 +7,8 @@ import textwrap
 
 from googleapiclient.errors import HttpError
 from libs import time_util
-from model.flake.detection.flake import Flake
-from model.flake.detection.flake_issue import FlakeIssue
+from model.flake.flake import Flake
+from model.flake.flake_issue import FlakeIssue
 from model.flake.detection.flake_occurrence import (
     CQFalseRejectionFlakeOccurrence)
 from services import issue_tracking_service
