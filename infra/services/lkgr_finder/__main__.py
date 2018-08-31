@@ -171,13 +171,6 @@ def main(argv):
       config['source_url'],
       os.path.join(args.workdir, args.project))
 
-  # TODO(machenbach): This hack fetches revisions omitted by a force push. See
-  # https://crbug.com/872853. It should be removed again after ~2018-8-23 when
-  # the missing revisions are not reported anymore in the builds fetched from
-  # milo.
-  if args.project == 'chromium':
-    repo._git('fetch', 'origin', '1f081f411a2ad4849194297b8f12d4dc46e1ad39')
-
   monkeypatch_rev_map = config.get('monkeypatch_rev_map')
   if monkeypatch_rev_map:
     repo._position_cache.update(monkeypatch_rev_map)
