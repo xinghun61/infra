@@ -599,7 +599,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     mock_get_merged_issue.return_value.open = True
 
     test_issue_generator = TestIssueGenerator()
-    issue_tracking_service.UpdateIssueIfExistsOrCreate(test_issue_generator)
+    issue_tracking_service.CreateOrUpdateIssue(test_issue_generator)
 
     self.assertFalse(mock_create_with_issue_generator_fn.called)
     mock_update_with_issue_generator_fn.assert_called_once_with(
@@ -641,7 +641,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     mock_get_merged_issue.return_value.open = False
 
     test_issue_generator = TestIssueGenerator()
-    issue_tracking_service.UpdateIssueIfExistsOrCreate(test_issue_generator)
+    issue_tracking_service.CreateOrUpdateIssue(test_issue_generator)
 
     mock_create_with_issue_generator_fn.assert_called_once_with(
         issue_generator=test_issue_generator)
@@ -676,7 +676,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     mock_get_merged_issue.return_value.open = True
 
     test_issue_generator = TestIssueGenerator()
-    issue_tracking_service.UpdateIssueIfExistsOrCreate(test_issue_generator)
+    issue_tracking_service.CreateOrUpdateIssue(test_issue_generator)
 
     self.assertFalse(mock_create_with_issue_generator_fn.called)
     mock_update_with_issue_generator_fn.assert_called_once_with(
@@ -718,7 +718,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     mock_get_merged_issue.return_value.open = False
 
     test_issue_generator = TestIssueGenerator()
-    issue_tracking_service.UpdateIssueIfExistsOrCreate(test_issue_generator)
+    issue_tracking_service.CreateOrUpdateIssue(test_issue_generator)
 
     mock_create_with_issue_generator_fn.assert_called_once_with(
         issue_generator=test_issue_generator)
@@ -750,7 +750,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     test_name = 'test_1'
     test_issue_generator = TestIssueGenerator(
         step_name=step_name, test_name=test_name)
-    issue_tracking_service.UpdateIssueIfExistsOrCreate(test_issue_generator)
+    issue_tracking_service.CreateOrUpdateIssue(test_issue_generator)
 
     mock_create_with_issue_generator_fn.assert_called_once_with(
         issue_generator=test_issue_generator)
@@ -786,7 +786,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
         normalized_test_name='test')
     flake.put()
     test_issue_generator = TestIssueGenerator()
-    issue_tracking_service.UpdateIssueIfExistsOrCreate(test_issue_generator)
+    issue_tracking_service.CreateOrUpdateIssue(test_issue_generator)
 
     mock_create_with_issue_generator_fn.assert_called_once_with(
         issue_generator=test_issue_generator)
@@ -817,7 +817,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     test_name = 'test_2'
     test_issue_generator = TestIssueGenerator(
         step_name=step_name, test_name=test_name)
-    issue_tracking_service.UpdateIssueIfExistsOrCreate(test_issue_generator)
+    issue_tracking_service.CreateOrUpdateIssue(test_issue_generator)
 
     self.assertFalse(mock_create_with_issue_generator_fn.called)
     mock_update_with_issue_generator_fn.assert_called_once_with(
@@ -858,7 +858,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     mock_get_merged_issue.return_value.open = False
 
     test_issue_generator = TestIssueGenerator()
-    issue_tracking_service.UpdateIssueIfExistsOrCreate(test_issue_generator)
+    issue_tracking_service.CreateOrUpdateIssue(test_issue_generator)
 
     self.assertFalse(mock_create_with_issue_generator_fn.called)
     mock_update_with_issue_generator_fn.assert_called_once_with(

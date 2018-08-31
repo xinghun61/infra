@@ -345,8 +345,8 @@ def ReportFlakesToMonorail(flake_tuples_to_report):
   for flake, occurrences in flake_tuples_to_report:
     issue_generator = FlakeDetectionIssueGenerator(flake, len(occurrences))
     try:
-      issue_tracking_service.UpdateIssueIfExistsOrCreate(
-          issue_generator, flake.luci_project)
+      issue_tracking_service.CreateOrUpdateIssue(issue_generator,
+                                                 flake.luci_project)
 
       # Update FlakeIssue's last_updated_time property. This property is only
       # applicable to Flake Detection because Flake Detection can update an

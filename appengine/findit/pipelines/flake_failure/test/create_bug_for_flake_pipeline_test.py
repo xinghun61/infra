@@ -425,7 +425,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertFalse(analysis.has_attempted_filing)
 
   @mock.patch.object(
-      issue_tracking_service, 'UpdateIssueIfExistsOrCreate', return_value=None)
+      issue_tracking_service, 'CreateOrUpdateIssue', return_value=None)
   def testCreateBugPipelineFailedToCreateBug(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
@@ -440,7 +440,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertIsNone(analysis.bug_id)
 
   @mock.patch.object(
-      issue_tracking_service, 'UpdateIssueIfExistsOrCreate', return_value=55)
+      issue_tracking_service, 'CreateOrUpdateIssue', return_value=55)
   def testCreateBugPipeline(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
@@ -458,7 +458,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertEqual(55, analysis.bug_id)
 
   @mock.patch.object(
-      issue_tracking_service, 'UpdateIssueIfExistsOrCreate',
+      issue_tracking_service, 'CreateOrUpdateIssue',
       return_value=123)  # 123 is the bug_number.
   def testCreateBugPipelineStillFlakyInRecentCommit(self, _):
     master_name = 'm'
@@ -490,7 +490,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.execute_queued_tasks()
 
   @mock.patch.object(
-      issue_tracking_service, 'UpdateIssueIfExistsOrCreate',
+      issue_tracking_service, 'CreateOrUpdateIssue',
       return_value=123)  # 123 is the bug number.
   def testCreateBugIfStillFlakyStable(self, update_or_create_bug_fn):
     master_name = 'm'

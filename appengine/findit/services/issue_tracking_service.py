@@ -426,7 +426,7 @@ def UpdateIssueWithIssueGenerator(issue_id, issue_generator):
   issue_generator.OnIssueUpdated()
 
 
-def UpdateIssueIfExistsOrCreate(issue_generator, luci_project='chromium'):
+def CreateOrUpdateIssue(issue_generator, luci_project='chromium'):
   """Updates an exsiting issue if it exists, otherwise creates a new one.
 
   This method uses the best-effort to search the existing FlakeIssue entities

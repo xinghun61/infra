@@ -174,8 +174,7 @@ class CreateBugPipeline(GeneratorPipeline):
     analysis.Update(has_attempted_filing=True)
 
     issue_generator = flake_report_util.FlakeAnalysisIssueGenerator(analysis)
-    issue_id = issue_tracking_service.UpdateIssueIfExistsOrCreate(
-        issue_generator)
+    issue_id = issue_tracking_service.CreateOrUpdateIssue(issue_generator)
     if not issue_id:
       analysis.LogError('Couldn\'t create bug!')
       return

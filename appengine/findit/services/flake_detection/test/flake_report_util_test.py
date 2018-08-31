@@ -114,7 +114,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
   # This test tests that if the number of issues created or updated within the
   # past 24 hours has already reached a limit, then no issues can be created or
   # updated.
-  @mock.patch.object(issue_tracking_service, 'UpdateIssueIfExistsOrCreate')
+  @mock.patch.object(issue_tracking_service, 'CreateOrUpdateIssue')
   def testCreateOrUpdateIssuesPerDayLimit(self, mock_update_or_create_bug):
     flakes_with_occurrences = flake_report_util.GetFlakesWithEnoughOccurrences()
     self.assertEqual(1, len(flakes_with_occurrences))
@@ -127,7 +127,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
 
   # This test tests that any issue can be created or updated at most once in any
   # 24 hours window.
-  @mock.patch.object(issue_tracking_service, 'UpdateIssueIfExistsOrCreate')
+  @mock.patch.object(issue_tracking_service, 'CreateOrUpdateIssue')
   def testIssuesCanBeCreatedOrUpdatedAtMostOncePerDay(
       self, mock_update_or_create_bug):
     flake = Flake.query().fetch()[0]

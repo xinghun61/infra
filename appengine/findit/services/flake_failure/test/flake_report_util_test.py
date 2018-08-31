@@ -516,8 +516,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
 
     issue_generator = flake_report_util.FlakeAnalysisIssueGenerator(analysis)
     self.assertEqual(
-        66666,
-        issue_tracking_service.UpdateIssueIfExistsOrCreate(issue_generator))
+        66666, issue_tracking_service.CreateOrUpdateIssue(issue_generator))
     self.assertTrue(mock_create_bug_fn.called)
     self.assertFalse(mock_update_bug_fn.called)
     self.assertIn('(50.0% confidence)', issue_generator.GetDescription())
@@ -564,7 +563,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
     mock_get_merged_issue.return_value.open = True
 
     issue_generator = flake_report_util.FlakeAnalysisIssueGenerator(analysis)
-    issue_tracking_service.UpdateIssueIfExistsOrCreate(issue_generator)
+    issue_tracking_service.CreateOrUpdateIssue(issue_generator)
     self.assertFalse(mock_create_bug_fn.called)
     self.assertTrue(mock_update_bug_fn.called)
 
