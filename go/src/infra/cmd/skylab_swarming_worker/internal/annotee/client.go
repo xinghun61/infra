@@ -29,6 +29,7 @@ func NewClient(w io.Writer) *Client {
 
 // OpenStep starts a new step.
 func (c *Client) OpenStep(name string) {
+	c.Close()
 	basic.SeedStep(c.w, name)
 	basic.StepCursor(c.w, name)
 	basic.StepStarted(c.w)
