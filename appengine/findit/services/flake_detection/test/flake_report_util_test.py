@@ -51,6 +51,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
 
   def setUp(self):
     super(FlakeReportUtilTest, self).setUp()
+    self.UpdateUnitTestConfigSettings('flake_detection_settings',
+                                      {'create_and_update_bug': True})
     patcher = mock.patch.object(
         time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 1, 2))
     self.addCleanup(patcher.stop)
@@ -185,6 +187,21 @@ class FlakeReportUtilTest(WaterfallTestCase):
     flake_issue.last_updated_time = self._GetDatetimeHoursAgo(1)
     flake_tuples_to_report = GetFlakesNeedToReportToMonorail()
     self.assertEqual(0, len(flake_tuples_to_report))
+
+  # This test tests that if the feature to create and update bugs is disabled,
+  # flakes will NOT be reported to Monorail.
+  @mock.patch.object(issue_tracking_service, 'UpdateBug')
+  @mock.patch.object(issue_tracking_service, 'CreateBug')
+  def testDisableCreateAndUpdateBugs(self, mock_create_bug_fn,
+                                     mock_update_bug_fn):
+    self.UpdateUnitTestConfigSettings('flake_detection_settings',
+                                      {'create_and_update_bug': False})
+
+    flake = Flake.query().fetch()[0]
+    occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()
+    flake_report_util.ReportFlakesToMonorail([(flake, occurrences)])
+    self.assertFalse(mock_create_bug_fn.called)
+    self.assertFalse(mock_update_bug_fn.called)
 
   # This test tests that when a flake has no flake issue attached, it creates
   # a new issue and attach it to the flake.

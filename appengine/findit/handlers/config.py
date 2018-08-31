@@ -343,6 +343,9 @@ _CONFIG_SPEC = {  # yapf: disable
         'update_monorail_bug': bool,
         'upper_flake_threshold': float,
     }),
+    'flake_detection_settings': (dict, True, {
+        'create_and_update_bug': bool,
+    }),
     'code_review_settings': (dict, True, {
         'commit_bot_emails': list,
         'gerrit_hosts': list,
@@ -417,6 +420,7 @@ class Configuration(BaseHandler):
         'download_build_data_settings': settings.download_build_data_settings,
         'action_settings': settings.action_settings,
         'check_flake_settings': settings.check_flake_settings,
+        'flake_detection_settings': settings.flake_detection_settings,
         'code_review_settings': settings.code_review_settings,
         'version': settings.version_number,
         'latest_version': latest_version,

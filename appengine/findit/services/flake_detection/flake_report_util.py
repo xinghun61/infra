@@ -17,6 +17,7 @@ from model.flake.detection.flake_occurrence import (
 from model.flake.detection.flake_issue import FlakeIssue
 from services import issue_tracking_service
 from services import monitoring
+from waterfall import waterfall_config
 
 # Maximum number of Monorail issues allowed to be created or updated in any 24h
 # window.
@@ -292,6 +293,17 @@ def _GetFlakesWithEnoughOccurrences():
   return flake_and_occurrences_tuples
 
 
+def _IsCreateAndUpdateBugEnabled():
+  """Returns True if the feature to create or update bugs is enabled.
+
+  Returns:
+    Returns True if it is enabled, otherwise False.
+  """
+  # Unless the flag is explicitly set, assumes disabled by default.
+  return waterfall_config.GetFlakeDetectionSettings().get(
+      'create_and_update_bug', False)
+
+
 def GetFlakesNeedToReportToMonorail():
   """Creates or updates bugs for detected flakes.
 
@@ -335,6 +347,11 @@ def ReportFlakesToMonorail(flake_tuples_to_report):
                             entity and second element is a list of corresponding
                             occurrences to report.
   """
+  if not _IsCreateAndUpdateBugEnabled():
+    logging.info('Skip reporting flakes to Monorail because the feature is '
+                 'disabled.')
+    return
+
   for flake, occurrences in flake_tuples_to_report:
     issue_generator = FlakeDetectionIssueGenerator(flake, len(occurrences))
     try:

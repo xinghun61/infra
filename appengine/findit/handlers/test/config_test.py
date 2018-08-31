@@ -138,6 +138,10 @@ _MOCK_CHECK_FLAKE_SETTINGS = {
     'update_monorail_bug': True,
 }
 
+_MOCK_FLAKE_DETECTION_SETTINGS = {
+    'create_and_update_bug': True,
+}
+
 _MOCK_CODE_REVIEW_SETTINGS = {
     'rietveld_hosts': ['rietveld.org'],
     'gerrit_hosts': ['gerrit.org'],
@@ -162,6 +166,7 @@ class ConfigTest(testing.AppengineTestCase):
         'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
         'action_settings': _MOCK_ACTION_SETTINGS,
         'check_flake_settings': _MOCK_CHECK_FLAKE_SETTINGS,
+        'flake_detection_settings': _MOCK_FLAKE_DETECTION_SETTINGS,
         'code_review_settings': _MOCK_CODE_REVIEW_SETTINGS,
     }
 
@@ -181,6 +186,7 @@ class ConfigTest(testing.AppengineTestCase):
         'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
         'action_settings': _MOCK_ACTION_SETTINGS,
         'check_flake_settings': _MOCK_CHECK_FLAKE_SETTINGS,
+        'flake_detection_settings': _MOCK_FLAKE_DETECTION_SETTINGS,
         'code_review_settings': _MOCK_CODE_REVIEW_SETTINGS,
         'version': 1,
         'latest_version': 1,
@@ -203,6 +209,7 @@ class ConfigTest(testing.AppengineTestCase):
         'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
         'action_settings': _MOCK_ACTION_SETTINGS,
         'check_flake_settings': _MOCK_CHECK_FLAKE_SETTINGS,
+        'flake_detection_settings': _MOCK_FLAKE_DETECTION_SETTINGS,
         'code_review_settings': _MOCK_CODE_REVIEW_SETTINGS,
     }
     wf_config.FinditConfig.Get().Update(
@@ -223,6 +230,7 @@ class ConfigTest(testing.AppengineTestCase):
         'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
         'action_settings': _MOCK_ACTION_SETTINGS,
         'check_flake_settings': _MOCK_CHECK_FLAKE_SETTINGS,
+        'flake_detection_settings': _MOCK_FLAKE_DETECTION_SETTINGS,
         'code_review_settings': _MOCK_CODE_REVIEW_SETTINGS,
         'version': 1,
         'latest_version': 1,
@@ -700,6 +708,8 @@ class ConfigTest(testing.AppengineTestCase):
             json.dumps(_MOCK_ACTION_SETTINGS),
         'check_flake_settings':
             json.dumps(_MOCK_CHECK_FLAKE_SETTINGS),
+        'flake_detection_settings':
+            json.dumps(_MOCK_FLAKE_DETECTION_SETTINGS),
         'code_review_settings':
             json.dumps(_MOCK_CODE_REVIEW_SETTINGS),
         'message':
@@ -731,6 +741,7 @@ class ConfigTest(testing.AppengineTestCase):
         'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
         'action_settings': _MOCK_ACTION_SETTINGS,
         'check_flake_settings': _MOCK_CHECK_FLAKE_SETTINGS,
+        'flake_detection_settings': _MOCK_FLAKE_DETECTION_SETTINGS,
         'code_review_settings': _MOCK_CODE_REVIEW_SETTINGS,
         'version': 1,
         'latest_version': 1,

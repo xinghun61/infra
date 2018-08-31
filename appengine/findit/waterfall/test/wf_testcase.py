@@ -199,6 +199,8 @@ _DEFAULT_CHECK_FLAKE_SETTINGS = {
     'minimum_confidence_to_create_bug': .9
 }
 
+_DEFAULT_FLAKE_DETECTION_SETTINGS = {'create_and_update_bug': True}
+
 _DEFAULT_CODE_REVIEW_SETTINGS = {
     'rietveld_hosts': ['codereview.chromium.org'],
     'gerrit_hosts': ['chromium-review.googlesource.com'],
@@ -213,6 +215,7 @@ DEFAULT_CONFIG_DATA = {
     'download_build_data_settings': _DEFAULT_DOWNLOAD_BUILD_DATA_SETTINGS,
     'action_settings': _DEFAULT_ACTION_SETTINGS,
     'check_flake_settings': _DEFAULT_CHECK_FLAKE_SETTINGS,
+    'flake_detection_settings': _DEFAULT_FLAKE_DETECTION_SETTINGS,
     'code_review_settings': _DEFAULT_CODE_REVIEW_SETTINGS,
 }
 
