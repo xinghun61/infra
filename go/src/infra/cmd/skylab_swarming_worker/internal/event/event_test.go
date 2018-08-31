@@ -101,17 +101,3 @@ func TestRunCommand(t *testing.T) {
 		t.Errorf("RunCommand returned an error: %s", err)
 	}
 }
-
-func ExampleSend() {
-	Send(Starting)
-	Send(Completed)
-	// Output:
-	// starting
-	// completed
-}
-
-func ExampleSendWithMsg() {
-	SendWithMsg(Starting, "some message")
-	// Output:
-	// starting some message
-}

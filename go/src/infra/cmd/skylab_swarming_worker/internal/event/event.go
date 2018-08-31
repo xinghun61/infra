@@ -2,23 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-/*
-Package event standardizes communication of events from Lucifer commands.
-
-Events are sent by printing to stdout.
-
-Changes must be backward compatible with handlers.  Currently, there
-is a handler for Skylab (skylab_swarming_worker) and one for Autotest
-(job_reporter).  The Autotest handler is implemented with the Python
-eventlib module.
-*/
+// Package event defines Lucifer events and a function for running
+// Lucifer with an event handler.
 package event
 
 import (
 	"bufio"
-	"fmt"
 	"io"
-	"log"
 	"os/exec"
 	"strings"
 )
@@ -75,24 +65,6 @@ const (
 	// tracking host dirtiness.
 	HostRunning Event = "host_running"
 )
-
-// SendWithMsg sends an event with a message by printing to stdout.
-// The message should not contain newlines, non-ASCII characters,
-// non-printable characters, or trailing whitespace.
-func SendWithMsg(e Event, m string) {
-	log.Printf("Sending event %s with message %s", e, m)
-	if _, err := fmt.Printf("%s %s\n", e, m); err != nil {
-		log.Panicf("Sending event %s failed: %s", e, err)
-	}
-}
-
-// Send sends an event by printing to stdout.
-func Send(e Event) {
-	log.Printf("Sending event %s", e)
-	if _, err := fmt.Println(e); err != nil {
-		log.Panicf("Sending event %s failed: %s", e, err)
-	}
-}
 
 // Handler is the type for valid functions to pass to Handle.
 type Handler func(e Event, m string)
