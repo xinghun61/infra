@@ -90,12 +90,15 @@ class UpdateMonorailPipelineTestShouldNotUpdate(WaterfallTestCase):
   @mock.patch.object(
       flake_report_util, 'ShouldUpdateBugForAnalysis', return_value=True)
   @mock.patch.object(
-      flake_report_util, 'GenerateBugComment', return_value='comment')
+      flake_report_util.FlakeAnalysisIssueGenerator,
+      'GetComment',
+      return_value='comment')
+  @mock.patch.object(issue_tracking_service, 'UpdateBug')
   @mock.patch(
       'pipelines.flake_failure.update_monorail_bug_pipeline.IssueTrackerAPI')
   @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
-  def testUpdateMonorailBugPipelineWithCulprit(self, mock_get_merged_issue,
-                                               issue_tracker, *_):
+  def testUpdateMonorailBugPipelineWithCulprit(
+      self, mock_get_merged_issue, issue_tracker, mock_update_bug, *_):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
     analysis.bug_id = 123
     analysis.culprit_urlsafe_key = 'c'
@@ -118,15 +121,17 @@ class UpdateMonorailPipelineTestShouldNotUpdate(WaterfallTestCase):
     pipeline_job = pipelines.pipeline.Pipeline.from_id(pipeline_job.pipeline_id)
     self.assertTrue(pipeline_job.outputs.default.value)
     self.assertTrue(analysis.has_commented_on_bug)
+    self.assertTrue(mock_update_bug.called)
 
   @mock.patch.object(appengine_util, 'IsStaging', return_value=False)
   @mock.patch.object(
       flake_report_util, 'ShouldUpdateBugForAnalysis', return_value=True)
+  @mock.patch.object(issue_tracking_service, 'UpdateBug')
   @mock.patch(
       'pipelines.flake_failure.update_monorail_bug_pipeline.IssueTrackerAPI')
   @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
-  def testUpdateMonorailBugPipelineNoCulprit(self, mock_get_merged_issue,
-                                             issue_tracker, *_):
+  def testUpdateMonorailBugPipelineNoCulprit(
+      self, mock_get_merged_issue, issue_tracker, mock_update_bug, *_):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
     analysis.bug_id = 123
     analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
@@ -147,3 +152,4 @@ class UpdateMonorailPipelineTestShouldNotUpdate(WaterfallTestCase):
 
     pipeline_job = pipelines.pipeline.Pipeline.from_id(pipeline_job.pipeline_id)
     self.assertTrue(pipeline_job.outputs.default.value)
+    self.assertTrue(mock_update_bug.called)

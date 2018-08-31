@@ -57,10 +57,6 @@ class UpdateMonorailBugPipeline(SynchronousPipeline):
 
       return False
 
-    comment = flake_report_util.GenerateBugComment(analysis)
-    issue_tracking_service.AddFinditLabelToIssue(issue)
-
-    monitoring.issues.increment({'operation': 'update', 'category': 'flake'})
     if analysis.culprit_urlsafe_key:
       monitoring.flake_analyses.increment({
           'result': 'culprit-identified',
@@ -68,7 +64,9 @@ class UpdateMonorailBugPipeline(SynchronousPipeline):
           'reason': ''
       })
 
-    issue_tracker.update(issue, comment, send_email=True)
+    issue_generator = flake_report_util.FlakeAnalysisIssueGenerator(analysis)
+    issue_tracking_service.UpdateIssueWithIssueGenerator(
+        issue.id, issue_generator)
     analysis.Update(has_commented_on_bug=True)
     analysis.LogInfo('Bug %s/%s was updated.' % (project_name, analysis.bug_id))
     return True

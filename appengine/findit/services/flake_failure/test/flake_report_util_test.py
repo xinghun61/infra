@@ -7,6 +7,8 @@ import mock
 
 from libs import analysis_status
 from libs import time_util
+from model.flake.detection.flake import Flake
+from model.flake.detection.flake_issue import FlakeIssue
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
@@ -22,23 +24,6 @@ class FlakeReportUtilTest(WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
     self.assertIn(analysis.key.urlsafe(),
                   flake_report_util.GenerateAnalysisLink(analysis))
-
-  def testGenerateCommentWithCulprit(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
-    analysis.status = analysis_status.COMPLETED
-    culprit = FlakeCulprit.Create('c', 'r', 123, 'http://')
-    culprit.flake_analysis_urlsafe_keys.append(analysis.key.urlsafe())
-    culprit.put()
-    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
-    analysis.confidence_in_culprit = 0.6713
-    comment = flake_report_util.GenerateBugComment(analysis)
-    self.assertTrue('culprit r123 with confidence 67.1%' in comment, comment)
-
-  def testGenerateCommentForLongstandingFlake(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
-    analysis.status = analysis_status.COMPLETED
-    comment = flake_report_util.GenerateBugComment(analysis)
-    self.assertTrue('longstanding' in comment, comment)
 
   def testGenerateWrongResultLink(self):
     test_name = 'test_name'
@@ -487,12 +472,107 @@ class FlakeReportUtilTest(WaterfallTestCase):
 
     self.assertFalse(flake_report_util.UnderDailyLimit(analysis))
 
-  def testGetPriorityLabelForConfidence(self):
-    self.assertEqual('Pri-1',
-                     flake_report_util.GetPriorityLabelForConfidence(1.0))
-    self.assertEqual('Pri-1',
-                     flake_report_util.GetPriorityLabelForConfidence(.98))
-    self.assertEqual('Pri-1',
-                     flake_report_util.GetPriorityLabelForConfidence(.9))
-    self.assertEqual('Pri-1',
-                     flake_report_util.GetPriorityLabelForConfidence(.85))
+  def testGenerateCommentWithCulprit(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    culprit = FlakeCulprit.Create('c', 'r', 123, 'http://')
+    culprit.flake_analysis_urlsafe_keys.append(analysis.key.urlsafe())
+    culprit.put()
+    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
+    analysis.confidence_in_culprit = 0.6713
+    comment = flake_report_util.GenerateBugComment(analysis)
+    self.assertTrue('culprit r123 with confidence 67.1%' in comment, comment)
+
+  def testGenerateCommentForLongstandingFlake(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    comment = flake_report_util.GenerateBugComment(analysis)
+    self.assertTrue('longstanding' in comment, comment)
+
+  @mock.patch.object(Flake, 'NormalizeStepName', return_value='normalized_step')
+  @mock.patch.object(
+      issue_tracking_service,
+      'SearchOpenIssueIdForFlakyTest',
+      return_value=None)
+  @mock.patch.object(issue_tracking_service, 'UpdateBug')
+  @mock.patch.object(issue_tracking_service, 'CreateBug', return_value=66666)
+  def testCreateIssueWhenFlakeAndIssueDoesNotExist(self, mock_create_bug_fn,
+                                                   mock_update_bug_fn, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    culprit = FlakeCulprit.Create('git', 'rev', 1)
+    culprit.put()
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.data_points = [
+        DataPoint.Create(commit_position=200, pass_rate=.5, git_hash='hash')
+    ]
+    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
+    analysis.confidence_in_culprit = .5
+    analysis.Save()
+
+    issue_generator = flake_report_util.FlakeAnalysisIssueGenerator(analysis)
+    self.assertEqual(
+        66666,
+        issue_tracking_service.UpdateIssueIfExistsOrCreate(issue_generator))
+    self.assertTrue(mock_create_bug_fn.called)
+    self.assertFalse(mock_update_bug_fn.called)
+    self.assertIn('(50.0% confidence)', issue_generator.GetDescription())
+    self.assertIn('Test-Findit-Wrong', issue_generator.GetDescription())
+
+    fetched_flakes = Flake.query().fetch()
+    fetched_flake_issues = FlakeIssue.query().fetch()
+    self.assertEqual(1, len(fetched_flakes))
+    self.assertEqual(1, len(fetched_flake_issues))
+    self.assertEqual(66666, fetched_flake_issues[0].issue_id)
+    self.assertEqual(None, fetched_flake_issues[0].last_updated_time)
+    self.assertEqual(fetched_flakes[0].flake_issue_key,
+                     fetched_flake_issues[0].key)
+
+  @mock.patch.object(Flake, 'NormalizeTestName', return_value='normalized_test')
+  @mock.patch.object(Flake, 'NormalizeStepName', return_value='normalized_step')
+  @mock.patch.object(
+      issue_tracking_service,
+      'SearchOpenIssueIdForFlakyTest',
+      return_value=None)
+  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
+  @mock.patch.object(issue_tracking_service, 'UpdateBug')
+  @mock.patch.object(issue_tracking_service, 'CreateBug')
+  def testUpdateIssueWhenFlakeAndIssueExists(
+      self, mock_create_bug_fn, mock_update_bug_fn, mock_get_merged_issue, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.Save()
+
+    flake = Flake.Create(
+        luci_project='chromium',
+        normalized_step_name='normalized_step',
+        normalized_test_name='normalized_test')
+    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
+    flake_issue.put()
+    flake.flake_issue_key = flake_issue.key
+    flake.put()
+    mock_get_merged_issue.return_value.id = 12345
+    mock_get_merged_issue.return_value.open = True
+
+    issue_generator = flake_report_util.FlakeAnalysisIssueGenerator(analysis)
+    issue_tracking_service.UpdateIssueIfExistsOrCreate(issue_generator)
+    self.assertFalse(mock_create_bug_fn.called)
+    self.assertTrue(mock_update_bug_fn.called)
+
+    fetched_flakes = Flake.query().fetch()
+    fetched_flake_issues = FlakeIssue.query().fetch()
+    self.assertEqual(1, len(fetched_flakes))
+    self.assertEqual(1, len(fetched_flake_issues))
+    self.assertEqual(12345, fetched_flake_issues[0].issue_id)
+    self.assertEqual(None, fetched_flake_issues[0].last_updated_time)
+    self.assertEqual(fetched_flakes[0].flake_issue_key,
+                     fetched_flake_issues[0].key)

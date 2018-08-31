@@ -425,10 +425,8 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertFalse(analysis.has_attempted_filing)
 
   @mock.patch.object(
-      issue_tracking_service, 'CreateBugForFlakeAnalyzer', return_value=None)
-  @mock.patch.object(
-      flake_report_util, 'GetPriorityLabelForConfidence', return_value=1)
-  def testCreateBugPipelineFailedToCreateBug(self, *_):
+      issue_tracking_service, 'UpdateIssueIfExistsOrCreate', return_value=None)
+  def testCreateBugPipelineFailedToCreateBug(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
 
@@ -442,10 +440,8 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertIsNone(analysis.bug_id)
 
   @mock.patch.object(
-      issue_tracking_service, 'CreateBugForFlakeAnalyzer', return_value=55)
-  @mock.patch.object(
-      flake_report_util, 'GetPriorityLabelForConfidence', return_value=1)
-  def testCreateBugPipeline(self, *_):
+      issue_tracking_service, 'UpdateIssueIfExistsOrCreate', return_value=55)
+  def testCreateBugPipeline(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
 
@@ -462,7 +458,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertEqual(55, analysis.bug_id)
 
   @mock.patch.object(
-      issue_tracking_service, 'CreateBugForFlakeAnalyzer',
+      issue_tracking_service, 'UpdateIssueIfExistsOrCreate',
       return_value=123)  # 123 is the bug_number.
   def testCreateBugPipelineStillFlakyInRecentCommit(self, _):
     master_name = 'm'
@@ -494,9 +490,9 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.execute_queued_tasks()
 
   @mock.patch.object(
-      issue_tracking_service, 'CreateBugForFlakeAnalyzer',
-      return_value=123)  # 123 is the bug_number.
-  def testCreateBugIfStillFlakyStable(self, create_bug_fn):
+      issue_tracking_service, 'UpdateIssueIfExistsOrCreate',
+      return_value=123)  # 123 is the bug number.
+  def testCreateBugIfStillFlakyStable(self, update_or_create_bug_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -521,29 +517,5 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     pipeline_job.start()
     self.execute_queued_tasks()
 
-    self.assertFalse(create_bug_fn.called)
+    self.assertFalse(update_or_create_bug_fn.called)
     self.assertFalse(analysis.has_attempted_filing)
-
-  def testGenerateSubjectAndBodyForBug(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-
-    culprit = FlakeCulprit.Create('git', 'rev', 1)
-    culprit.put()
-    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
-                                          build_number, step_name, test_name)
-    analysis.data_points = [
-        DataPoint.Create(commit_position=200, pass_rate=.5, git_hash='hash')
-    ]
-    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
-    analysis.confidence_in_culprit = .5
-    analysis.put()
-
-    subject, body = create_bug_for_flake_pipeline._GenerateSubjectAndBodyForBug(
-        analysis)
-    self.assertEqual('t is Flaky', subject)
-    self.assertTrue('(50.0% confidence)' in body)
-    self.assertTrue('Test-Findit-Wrong' in body)

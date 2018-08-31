@@ -56,14 +56,6 @@ class TestIssueGenerator(issue_tracking_service.FlakyTestIssueGenerator):
 
 class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
 
-  def testAddFinditLabelToIssue(self):
-    issue = mock.MagicMock()
-    issue.labels = []
-    issue_tracking_service.AddFinditLabelToIssue(issue)
-    self.assertEqual(['Test-Findit-Analyzed'], issue.labels)
-    issue_tracking_service.AddFinditLabelToIssue(issue)
-    self.assertEqual(['Test-Findit-Analyzed'], issue.labels)
-
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 3))
   @mock.patch('services.issue_tracking_service.IssueTrackerAPI')
@@ -137,20 +129,6 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     mock_api.assert_has_calls(mock.call(project_id, use_staging=False))
     mock_api.return_value.update.assert_has_calls(
         mock.call(issue, comment, send_email=True))
-
-  @mock.patch.object(issue_tracking_service, 'CreateBug')
-  def testCreateBugForFlakeAnalyzer(self, mock_create_bug_fn):
-    with self.assertRaises(AssertionError):
-      issue_tracking_service.CreateBugForFlakeAnalyzer(None, None, None)
-    with self.assertRaises(AssertionError):
-      issue_tracking_service.CreateBugForFlakeAnalyzer('test', None, None)
-    with self.assertRaises(AssertionError):
-      issue_tracking_service.CreateBugForFlakeAnalyzer(None, 'subject', None)
-    with self.assertRaises(AssertionError):
-      issue_tracking_service.CreateBugForFlakeAnalyzer(None, None, 'body')
-
-    issue_tracking_service.CreateBugForFlakeAnalyzer('test', 'subject', 'body')
-    self.assertTrue(mock_create_bug_fn.called)
 
   @mock.patch.object(IssueTrackerAPI, 'getIssue')
   def testGetMergedDestinationIssueWithoutMergeInto(self, mock_get_issue):

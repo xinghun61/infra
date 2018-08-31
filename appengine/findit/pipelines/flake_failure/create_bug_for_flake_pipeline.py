@@ -6,8 +6,6 @@
 
 from google.appengine.ext import ndb
 
-import textwrap
-
 from common.findit_http_client import FinditHttpClient
 from dto.step_metadata import StepMetadata
 from dto.test_location import TestLocation
@@ -30,6 +28,7 @@ from pipelines.flake_failure.save_flakiness_verification_pipeline import (
     SaveFlakinessVerificationPipeline)
 from services import issue_tracking_service
 from services import swarmed_test_util
+from services import monitoring
 from services import swarming
 from services.flake_failure import flake_report_util
 from services.flake_failure import pass_rate_util
@@ -38,41 +37,9 @@ from waterfall import build_util
 # TODO(crbug.com/850661): Merge CreateBugForFlakePipeline and
 # UpdateMonorailBugPipeline into a single bug handling piepline.
 
-_SUBJECT_TEMPLATE = '{} is Flaky'
-
-_BODY_TEMPLATE = textwrap.dedent("""
-Findit has detected flake occurrences for the test {}
-Culprit ({} confidence): {}
-Analysis: {}
-
-Please revert the culprit, or disable the test and find the appropriate owner.
-
-If the culprit above is wrong, please file a bug using this link and hit submit:
-{}""")
-
 # TODO(crbug.com/783335): Allow these values to be configurable.
 _ITERATIONS_TO_CONFIRM_FLAKE = 30  # 30 iterations.
 _ITERATIONS_TO_CONFIRM_FLAKE_TIMEOUT = 60 * 60  # One hour.
-
-
-def _GenerateSubjectAndBodyForBug(analysis):
-  """Generates a subject (str) and body (str) for a bug given an analysis."""
-  culprit_url = 'None'
-  culprit_confidence = 'None'
-  if analysis.culprit_urlsafe_key:
-    culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
-    assert culprit
-
-    culprit_url = culprit.url
-    culprit_confidence = "{0:0.1f}%".format(
-        analysis.confidence_in_culprit * 100)
-
-  subject = _SUBJECT_TEMPLATE.format(analysis.test_name)
-  analysis_link = flake_report_util.GenerateAnalysisLink(analysis)
-  wrong_result_link = flake_report_util.GenerateWrongResultLink(analysis)
-  body = _BODY_TEMPLATE.format(analysis.test_name, culprit_confidence,
-                               culprit_url, analysis_link, wrong_result_link)
-  return subject, body
 
 
 class CreateBugForFlakeInput(StructuredObject):
@@ -203,27 +170,24 @@ class CreateBugPipeline(GeneratorPipeline):
     analysis = ndb.Key(urlsafe=parameters.analysis_urlsafe_key).get()
     assert analysis, 'Analysis unexpectedly missing!'
 
-    subject, body = _GenerateSubjectAndBodyForBug(analysis)
-    priority_label = flake_report_util.GetPriorityLabelForConfidence(
-        analysis.confidence_in_culprit)
-
     # Log our attempt in analysis so we don't retry perpetually.
     analysis.Update(has_attempted_filing=True)
-    bug_id = issue_tracking_service.CreateBugForFlakeAnalyzer(
-        analysis.test_name, subject, body, priority_label)
-    if not bug_id:
+
+    issue_generator = flake_report_util.FlakeAnalysisIssueGenerator(analysis)
+    issue_id = issue_tracking_service.UpdateIssueIfExistsOrCreate(
+        issue_generator)
+    if not issue_id:
       analysis.LogError('Couldn\'t create bug!')
       return
 
-    analysis.Update(bug_id=bug_id, has_filed_bug=True)
-    analysis.LogInfo('Filed bug with id %d' % bug_id)
+    analysis.Update(bug_id=issue_id, has_filed_bug=True)
 
     flake_analysis_request = FlakeAnalysisRequest.GetVersion(
         key=analysis.test_name)
     assert flake_analysis_request, (
         'Flake analysis request unexpectedly missing!')
     flake_analysis_request.Update(
-        bug_reported_by=triggering_sources.FINDIT_PIPELINE, bug_id=bug_id)
+        bug_reported_by=triggering_sources.FINDIT_PIPELINE, bug_id=issue_id)
 
 
 class CreateBugIfStillFlakyPipeline(GeneratorPipeline):

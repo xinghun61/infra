@@ -14,7 +14,6 @@ from model.flake.detection.flake_issue import FlakeIssue
 from monorail_api import CustomizedField
 from monorail_api import Issue
 from monorail_api import IssueTrackerAPI
-from services import monitoring
 
 # Label for Chromium Sheriff bug queue.
 _SHERIFF_CHROMIUM_LABEL = 'Sheriff-Chromium'
@@ -44,16 +43,6 @@ _FLAKY_TEST_SUMMARY_QUERY_TEMPLATE = 'summary:{} is:open'
 # A list of keywords in issue summary to identify issues that are related to
 # flaky tests.
 _FLAKY_TEST_SUMMARY_KEYWORDS = ['flake', 'flaky', 'flakiness']
-
-_FINDIT_ANALYZED_LABEL_TEXT = 'Test-Findit-Analyzed'
-
-_LOW_FLAKINESS_COMMENT_TEMPLATE = textwrap.dedent("""
-This flake is either a longstanding, has low flakiness, or not reproducible
-based on the flakiness trend in the config "%s / %s":
-
-https://findit-for-me.appspot.com/waterfall/flake?key=%s
-
-Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).""")
 
 
 class FlakyTestIssueGenerator(object):
@@ -154,7 +143,7 @@ class FlakyTestIssueGenerator(object):
   def GetPriority(self):
     """Gets priority for the issue to be created.
 
-    Defaults to P1.
+    Defaults to P1 for all flaky tests related bugs.
 
     Returns:
       A string representing the priority of the issue. (e.g Pri-1, Pri-2)
@@ -200,13 +189,6 @@ class FlakyTestIssueGenerator(object):
   def OnIssueUpdated(self):
     """Called when an issue was updated successfully."""
     return
-
-
-def AddFinditLabelToIssue(issue):
-  """Ensures an issue's label has been marked as analyzed by Findit."""
-  assert issue
-  if _FINDIT_ANALYZED_LABEL_TEXT not in issue.labels:
-    issue.labels.append(_FINDIT_ANALYZED_LABEL_TEXT)
 
 
 def _GetOpenIssues(query, monorail_project):
@@ -363,45 +345,6 @@ def OpenIssueAlreadyExistsForFlakyTest(test_name, monorail_project='chromium'):
   return SearchOpenIssueIdForFlakyTest(test_name, monorail_project) is not None
 
 
-def CreateBugForFlakeAnalyzer(test_name, subject, description,
-                              priority='Pri-2'):
-  """Creates a bug for Flake Analyzer with the given information.
-
-  Args:
-    test_name (str): Name of the test.
-    subject (str): Subject for the issue.
-    description (str): Description for the issue.
-    priority (str, optional): Priority for the issue (Pri-0/1/2/3/4).
-  Returns:
-    (int) id of the bug that was filed.
-  """
-  assert test_name
-  assert subject
-  assert description
-
-  issue = Issue({
-      'status':
-          'Available',
-      'summary':
-          subject,
-      'description':
-          description,
-      'projectId':
-          'chromium',
-      'labels': [
-          _FINDIT_ANALYZED_LABEL_TEXT, _SHERIFF_CHROMIUM_LABEL, priority,
-          _TYPE_BUG_LABEL, _FLAKY_TEST_LABEL
-      ],
-      'fieldValues': [CustomizedField(_FLAKY_TEST_CUSTOMIZED_FIELD, test_name)]
-  })
-  issue_id = CreateBug(issue)
-
-  if issue_id > 0:
-    monitoring.OnIssueChange('created', 'flake')
-
-  return issue_id
-
-
 def CreateBug(issue, project_id='chromium'):
   """Creates a bug with the given information.
 
@@ -501,6 +444,7 @@ def UpdateIssueIfExistsOrCreate(issue_generator, luci_project='chromium'):
   """
   step_name = issue_generator.GetStepName()
   test_name = issue_generator.GetTestName()
+
   flake_key = ndb.Key(Flake, Flake.GetId(luci_project, step_name, test_name))
   target_flake = flake_key.get()
   if not target_flake:
