@@ -101,45 +101,62 @@ func runSwarmingTask(a *args) (err error) {
 	}()
 	return harness.Run(b,
 		func(b *swarming.Bot, resultsDir string) error {
-			var wg sync.WaitGroup
-			var err2 error
-			var w *os.File
-			if a.logdogAnnotationURL != "" {
-				streamAddr, err := types.ParseURL(a.logdogAnnotationURL)
-				if err != nil {
-					return errors.Errorf("invalid LogDog annotation URL %s: %s",
-						a.logdogAnnotationURL, err)
-				}
-				var r *os.File
-				r, w, err = os.Pipe()
-				if err != nil {
-					return errors.Wrap(err, "make LogDog pipe")
-				}
-				defer r.Close()
-				defer w.Close()
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					if err := copyToLogDog(ctx, streamAddr, r); err != nil {
-						err2 = errors.Wrapf(err, "output to LogDog")
-					}
-				}()
-			}
 			ta := lucifer.TaskArgs{
 				AbortSock:  filepath.Join(resultsDir, "abort_sock"),
 				GCPProject: gcpProject,
 				ResultsDir: resultsDir,
-				LogDogPipe: w,
 			}
-			if err := runLuciferTask(b, a, w, ta, b.DUTName()); err != nil {
+			var annotWriter io.Writer
+			annotWriter = os.Stdout
+
+			var fifoDone chan<- struct{}
+			var wg sync.WaitGroup
+			if a.logdogAnnotationURL != "" {
+				// Set up FIFO, pipe, and goroutines like so:
+				//
+				//        worker -> LogDog pipe
+				//                      ^
+				// lucifer -> FIFO -go-/
+				//
+				// Both the worker and Lucifer need to write to LogDog.
+				log.Printf("Setting up LogDog stream")
+				streamAddr, err := types.ParseURL(a.logdogAnnotationURL)
+				if err != nil {
+					return errors.Wrapf(err, "invalid LogDog annotation URL %s",
+						a.logdogAnnotationURL)
+				}
+				lc, err := openLogDog(ctx, streamAddr)
+				if err != nil {
+					return err
+				}
+				defer lc.Close()
+				annotWriter = lc.Stdout()
+
+				fifoPath := filepath.Join(resultsDir, "logdog.fifo")
+				if err := makeFIFO(fifoPath); err != nil {
+					return err
+				}
+				r, c, err := openFIFO(fifoPath)
+				if err != nil {
+					return err
+				}
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					io.Copy(lc.Stdout(), r)
+				}()
+				ta.LogDogFile = fifoPath
+				fifoDone = c
+			}
+			err := runLuciferTask(b, a, annotWriter, ta, b.DUTName())
+			if fifoDone != nil {
+				close(fifoDone)
+			}
+			wg.Wait()
+			if err != nil {
 				return errors.Wrap(err, "run lucifer task")
 			}
-			if w != nil {
-				w.Close()
-			}
-			log.Printf("Waiting for LogDog copy")
-			wg.Wait()
-			return err2
+			return nil
 		},
 	)
 }

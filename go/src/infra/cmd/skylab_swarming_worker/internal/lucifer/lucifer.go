@@ -9,7 +9,6 @@ lucifer_run_job command.
 package lucifer
 
 import (
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -42,7 +41,7 @@ type TaskArgs struct {
 	AbortSock  string
 	GCPProject string
 	ResultsDir string
-	LogDogPipe *os.File
+	LogDogFile string
 }
 
 // RunJobArgs contains the arguments for creating a lucifer_run_job
@@ -95,7 +94,6 @@ func RunJobCommand(c Config, r RunJobArgs) *exec.Cmd {
 	}
 
 	cmd := exec.Command(p, args...)
-	commonSetup(cmd, r.TaskArgs)
 	return cmd
 }
 
@@ -123,7 +121,6 @@ func AdminTaskCommand(c Config, a AdminTaskArgs) *exec.Cmd {
 	}
 
 	cmd := exec.Command(p, args...)
-	commonSetup(cmd, a.TaskArgs)
 	return cmd
 }
 
@@ -131,11 +128,8 @@ func appendCommonArgs(args []string, a TaskArgs) []string {
 	args = append(args, "-abortsock", a.AbortSock)
 	args = append(args, "-gcp-project", a.GCPProject)
 	args = append(args, "-resultsdir", a.ResultsDir)
-	return args
-}
-
-func commonSetup(c *exec.Cmd, a TaskArgs) {
-	if a.LogDogPipe != nil {
-		c.ExtraFiles = []*os.File{a.LogDogPipe}
+	if a.LogDogFile != "" {
+		args = append(args, "-logdog-file", a.LogDogFile)
 	}
+	return args
 }
