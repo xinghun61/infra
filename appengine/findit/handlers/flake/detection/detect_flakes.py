@@ -40,6 +40,6 @@ class DetectCQFalseRejectionFlakes(BaseHandler):
       return {'return_code': 200}
 
     detect_cq_false_rejection_flakes.QueryAndStoreFlakes()
-    flake_tuples_to_report = flake_report_util.GetFlakesNeedToReportToMonorail()
+    flake_tuples_to_report = flake_report_util.GetFlakesWithEnoughOccurrences()
     flake_report_util.ReportFlakesToMonorail(flake_tuples_to_report)
     return {'return_code': 200}

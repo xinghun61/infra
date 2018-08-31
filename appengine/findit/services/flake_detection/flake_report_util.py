@@ -176,7 +176,8 @@ def _FlakeIssueWasCreatedOrUpdatedWithinPast24h(flake):
     return False
 
   utc_one_day_ago = time_util.GetUTCNow() - datetime.timedelta(days=1)
-  return flake_issue.last_updated_time > utc_one_day_ago
+  return (flake_issue.last_updated_time and
+          flake_issue.last_updated_time > utc_one_day_ago)
 
 
 def _GetFlakeIssue(flake):
@@ -228,7 +229,7 @@ def _FlakeHasEnoughOccurrences(unreported_occurrences):
   return False
 
 
-def _GetFlakesWithEnoughOccurrences():
+def GetFlakesWithEnoughOccurrences():
   """Queries Datastore and returns flakes that has enough occurrences.
 
   The most intuitive algorithm is to fetch all flakes first, and then for each
@@ -304,43 +305,12 @@ def _IsCreateAndUpdateBugEnabled():
       'create_and_update_bug', False)
 
 
-def GetFlakesNeedToReportToMonorail():
-  """Creates or updates bugs for detected flakes.
+def ReportFlakesToMonorail(flake_tuples_to_report):
+  """Reports newly detected flakes and occurrences to Monorail.
 
   ONLY create or update a bug if:
     rule 1. Has NOT reached _CREATE_OR_UPDATE_ISSUES_LIMIT_24H.
     rule 2. The bug wasn't created or updated within the past 24h.
-
-  Returns:
-    A list of tuples whose first element is a flake entity and second element is
-    a list of corresponding recent and unreported occurrences.
-  """
-  utc_one_day_ago = time_util.GetUTCNow() - datetime.timedelta(days=1)
-  num_updated_issues_24h = FlakeIssue.query(
-      FlakeIssue.last_updated_time > utc_one_day_ago).count()
-  if num_updated_issues_24h >= _CREATE_OR_UPDATE_ISSUES_LIMIT_24H:
-    logging.info('Issues created or updated during the past 24 hours has '
-                 'reached the limit.')
-
-  flake_tuples = _GetFlakesWithEnoughOccurrences()
-
-  # An issue can be updated at most once in any 24h window avoid noises.
-  flake_tuples_to_report = [
-      flake_tuple for flake_tuple in flake_tuples
-      if not _FlakeIssueWasCreatedOrUpdatedWithinPast24h(flake_tuple[0])
-  ]
-
-  flake_tuples_to_report = flake_tuples_to_report[:min(
-      len(flake_tuples), _CREATE_OR_UPDATE_ISSUES_LIMIT_24H -
-      num_updated_issues_24h)]
-  logging.info('There are %d flakes whose issues will be created or updated.' %
-               len(flake_tuples_to_report))
-
-  return flake_tuples_to_report
-
-
-def ReportFlakesToMonorail(flake_tuples_to_report):
-  """Reports newly detected flakes and occurrences to Monorail.
 
   Args:
     flake_tuples_to_report: A list of tuples whose first element is a Flake
@@ -351,6 +321,26 @@ def ReportFlakesToMonorail(flake_tuples_to_report):
     logging.info('Skip reporting flakes to Monorail because the feature is '
                  'disabled.')
     return
+
+  utc_one_day_ago = time_util.GetUTCNow() - datetime.timedelta(days=1)
+  num_updated_issues_24h = FlakeIssue.query(
+      FlakeIssue.last_updated_time > utc_one_day_ago).count()
+  if num_updated_issues_24h >= _CREATE_OR_UPDATE_ISSUES_LIMIT_24H:
+    logging.info('Issues created or updated during the past 24 hours has '
+                 'reached the limit.')
+
+  # An issue can be updated at most once in any 24h window avoid noises.
+  flake_tuples_to_report = [
+      flake_tuple for flake_tuple in flake_tuples_to_report
+      if not _FlakeIssueWasCreatedOrUpdatedWithinPast24h(flake_tuple[0])
+  ]
+
+  num_of_flakes_to_report = min(
+      len(flake_tuples_to_report),
+      _CREATE_OR_UPDATE_ISSUES_LIMIT_24H - num_updated_issues_24h)
+  flake_tuples_to_report = flake_tuples_to_report[:num_of_flakes_to_report]
+  logging.info('There are %d flakes whose issues will be created or updated.' %
+               num_of_flakes_to_report)
 
   for flake, occurrences in flake_tuples_to_report:
     issue_generator = FlakeDetectionIssueGenerator(flake, len(occurrences))
