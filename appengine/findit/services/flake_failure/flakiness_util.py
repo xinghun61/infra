@@ -93,10 +93,9 @@ def UpdateFlakiness(flakiness, incoming_swarming_task_output):
 
   # The latest swarming task completed successfully. Incorporate the incoming
   # data with the existing data point.
-  old_pass_rate = flakiness.pass_rate
+  old_pass_rate = flakiness.pass_rate or 0
   old_iterations = flakiness.iterations
   incoming_iterations = incoming_swarming_task_output.iterations
-  old_pass_rate = flakiness.pass_rate
   incoming_pass_rate = pass_rate_util.GetPassRate(incoming_swarming_task_output)
 
   # Ensure the are no discrepancies between old and new pass rates about the

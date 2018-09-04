@@ -269,6 +269,60 @@ class FlakinessUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       flake_analysis_util, 'CanFailedSwarmingTaskBeSalvaged', return_value=True)
+  def testUpdateExistingFlakinessWithErrorWithSuccessfulRun(self, _):
+    commit_position = 1000
+    revision = 'r1000'
+    iterations = 10
+    pass_count = 5
+    completed_time = datetime(2018, 1, 1, 0, 1, 0)
+    started_time = datetime(2018, 1, 1, 0, 0, 0)
+    task_id_1 = 'task_1'
+    task_id_2 = 'task_2'
+    build_url = 'url'
+    try_job_url = None
+
+    swarming_task_output = FlakeSwarmingTaskOutput(
+        completed_time=completed_time,
+        error=None,
+        iterations=iterations,
+        pass_count=pass_count,
+        started_time=started_time,
+        task_id=task_id_2)
+
+    # Simulate first run failing.
+    initial_flakiness = Flakiness(
+        build_number=None,
+        build_url=build_url,
+        commit_position=commit_position,
+        total_test_run_seconds=60,
+        error=None,
+        failed_swarming_task_attempts=1,
+        iterations=0,
+        pass_rate=None,
+        revision=revision,
+        try_job_url=try_job_url,
+        task_ids=ListOfBasestring.FromSerializable([task_id_1]))
+
+    expected_flakiness = Flakiness(
+        build_number=None,
+        build_url=build_url,
+        commit_position=commit_position,
+        total_test_run_seconds=120,  # No change due to unrecoverable error.
+        error=None,
+        failed_swarming_task_attempts=1,
+        iterations=10,
+        pass_rate=0.5,
+        revision=revision,
+        try_job_url=try_job_url,
+        task_ids=ListOfBasestring.FromSerializable([task_id_1, task_id_2]))
+
+    resulting_flakiness = flakiness_util.UpdateFlakiness(
+        initial_flakiness, swarming_task_output)
+
+    self.assertEqual(expected_flakiness, resulting_flakiness)
+
+  @mock.patch.object(
+      flake_analysis_util, 'CanFailedSwarmingTaskBeSalvaged', return_value=True)
   def testUpdateAnalysisDataPointsExistingDataPointWithErrorSalvagable(self, _):
     commit_position = 1000
     revision = 'r1000'
