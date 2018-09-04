@@ -459,6 +459,67 @@ func TestSpellCheckerAnalyzeFiles(t *testing.T) {
 		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.html", results)
 		So(results, ShouldResemble, expected)
 	})
+
+	Convey("Same misspelling multiple times in one line", t, func() {
+		fileContent := "//twpo twpo"
+
+		expected := &tricium.Data_Results{
+			Comments: []*tricium.Data_Comment{
+				{
+					Path:      "test.c",
+					Message:   `"twpo" is a possible misspelling of "two".`,
+					Category:  "SpellChecker",
+					StartLine: 1,
+					EndLine:   1,
+					StartChar: 2,
+					EndChar:   6,
+					Suggestions: []*tricium.Data_Suggestion{
+						{
+							Description: "Misspelling fix suggestion",
+							Replacements: []*tricium.Data_Replacement{
+								{
+									Path:        "test.c",
+									Replacement: "two",
+									StartLine:   1,
+									EndLine:     1,
+									StartChar:   2,
+									EndChar:     5,
+								},
+							},
+						},
+					},
+				},
+				{
+					Path:      "test.c",
+					Message:   `"twpo" is a possible misspelling of "two".`,
+					Category:  "SpellChecker",
+					StartLine: 1,
+					EndLine:   1,
+					StartChar: 7,
+					EndChar:   11,
+					Suggestions: []*tricium.Data_Suggestion{
+						{
+							Description: "Misspelling fix suggestion",
+							Replacements: []*tricium.Data_Replacement{
+								{
+									Path:        "test.c",
+									Replacement: "two",
+									StartLine:   1,
+									EndLine:     1,
+									StartChar:   7,
+									EndChar:     10,
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		results := &tricium.Data_Results{}
+		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.c", results)
+		So(results, ShouldResemble, expected)
+	})
 }
 
 func TestGettingCommentFormat(t *testing.T) {

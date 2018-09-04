@@ -49,12 +49,15 @@ var (
 	textFileExts = []string{".txt", ".md"}
 	dict         map[string][]string
 
-	// What counts as non-word characters for the purpose of splitting.
-	nonWord = regexp.MustCompile(`[^a-zA-Z0-9'-]`)
+	// Selects words i.e. consecutive letters and numbers
+	justWord = regexp.MustCompile(`[a-zA-Z0-9'-]+`)
 
 	// Patterns within which we don't want to flag misspellings.
 	emailAddr = regexp.MustCompile(`\w+@\w+\.\w+`)
 	todoNote  = regexp.MustCompile(`TODO\(\w+\)`)
+
+	// selects everything except whitespace.
+	whitespaceBreak = regexp.MustCompile(`[^\s]+`)
 )
 
 func main() {
@@ -119,13 +122,16 @@ func analyzeFile(scanner *bufio.Scanner, filePath string, results *tricium.Data_
 
 		// Note: Because we split the file lines by whitespace (to analyze each word), we don't
 		// handle multi-word misspellings, although they do exist in the CodeSpell dictionary.
-		for _, commentWord := range strings.Fields(line) {
+		for _, commentWordRange := range whitespaceBreak.FindAllStringIndex(line, -1) {
+			var comments []*tricium.Data_Comment
+			commentWord := line[commentWordRange[0]:commentWordRange[1]]
+			startChar := commentWordRange[0]
+
 			if checkEveryWord {
-				var comments []*tricium.Data_Comment
-				analyzeWords(line, commentWord, "", lineno, filePath, &comments)
+				analyzeWords(commentWord, "", lineno, startChar, filePath, &comments)
 				results.Comments = append(results.Comments, comments...)
 			} else {
-				comments := s.processCommentWord(line, commentWord, commentPatterns, lineno, filePath)
+				s.processCommentWord(commentWord, commentPatterns, lineno, startChar, filePath, &comments)
 				results.Comments = append(results.Comments, comments...)
 			}
 		}
@@ -144,16 +150,14 @@ func analyzeFile(scanner *bufio.Scanner, filePath string, results *tricium.Data_
 
 // Process the given commentWord and change state appropriately depending on which
 // comment characters are found in the given word. Returns the generated Tricium comments.
-func (s *state) processCommentWord(line, commentWord string, commentPatterns *commentFormat,
-	lineno int, filePath string) []*tricium.Data_Comment {
-	var comments []*tricium.Data_Comment
-
+func (s *state) processCommentWord(commentWord string, commentPatterns *commentFormat,
+	lineno, startChar int, filePath string, comments *[]*tricium.Data_Comment) {
 	for i := 0; i < len(commentWord); {
 		switch {
 		case *s == lineComment:
 			// Still in single-comment started in a previous word.
-			i += analyzeWords(line, string(commentWord[i:]), "",
-				lineno, filePath, &comments)
+			i += analyzeWords(string(commentWord[i:]), "",
+				lineno, startChar+i, filePath, comments)
 		case *s == blockComment && i+len(commentPatterns.BlockEnd) <= len(commentWord) &&
 			string(commentWord[i:i+len(commentPatterns.BlockEnd)]) == commentPatterns.BlockEnd:
 			// Currently in block comment and found end of block comment character.
@@ -161,29 +165,27 @@ func (s *state) processCommentWord(line, commentWord string, commentPatterns *co
 			i += len(commentPatterns.BlockEnd)
 		case *s == blockComment:
 			// Still in block comment started in a previous line or word.
-			i += analyzeWords(line, string(commentWord[i:]), commentPatterns.BlockEnd,
-				lineno, filePath, &comments)
+			i += analyzeWords(string(commentWord[i:]), commentPatterns.BlockEnd,
+				lineno, startChar+i, filePath, comments)
 		case len(commentPatterns.LineStart) > 0 && i+len(commentPatterns.LineStart) <= len(commentWord) &&
 			string(commentWord[i:i+len(commentPatterns.LineStart)]) == commentPatterns.LineStart:
 			// Found single-line comment character.
 			*s = lineComment
-			stopIdx := analyzeWords(line, string(commentWord[i+len(commentPatterns.LineStart):]),
-				"", lineno, filePath, &comments)
+			stopIdx := analyzeWords(string(commentWord[i+len(commentPatterns.LineStart):]),
+				"", lineno, startChar+i+len(commentPatterns.LineStart), filePath, comments)
 			i += len(commentPatterns.LineStart) + stopIdx
 		case i+len(commentPatterns.BlockStart) <= len(commentWord) &&
 			string(commentWord[i:i+len(commentPatterns.BlockStart)]) == commentPatterns.BlockStart:
 			// Found block comment character.
 			*s = blockComment
-			stopIdx := analyzeWords(line, string(commentWord[i+len(commentPatterns.BlockStart):]),
-				commentPatterns.BlockEnd, lineno, filePath, &comments)
+			stopIdx := analyzeWords(string(commentWord[i+len(commentPatterns.BlockStart):]),
+				commentPatterns.BlockEnd, lineno, startChar+i+len(commentPatterns.BlockStart), filePath, comments)
 			i += len(commentPatterns.BlockStart) + stopIdx
 		default:
 			// Don't start analyzing words until a comment character is found.
 			i++
 		}
 	}
-
-	return comments
 }
 
 // Checks words in a string which could contain multiple words separated by
@@ -192,9 +194,8 @@ func (s *state) processCommentWord(line, commentWord string, commentPatterns *co
 // Checks words until the state changes (e.g. we exit a comment). Returns the
 // index after the word that caused the state to change so that calling
 // function can continue from there.
-func analyzeWords(line, commentWord, stopPattern string,
-	lineno int, filePath string, comments *[]*tricium.Data_Comment) int {
-
+func analyzeWords(commentWord, stopPattern string,
+	lineno, startChar int, filePath string, comments *[]*tricium.Data_Comment) int {
 	// If the current word does not contain the end of state pattern or if no end of state
 	// pattern was specified, check the entire word/s for misspellings.
 	stopIdx := strings.Index(commentWord, stopPattern)
@@ -214,10 +215,11 @@ func analyzeWords(line, commentWord, stopPattern string,
 
 	// A single word (delimited by whitespace) could have multiple words delimited by
 	// comment characters, so we split it by said characters and check the words individually.
-	for _, wordToCheck := range strings.Fields(nonWord.ReplaceAllString(commentWord, " ")) {
-		startChar, endChar := findWordInLine(wordToCheck, line)
+	for _, wordToCheckRange := range justWord.FindAllStringIndex(commentWord, -1) {
+		wordToCheck := commentWord[wordToCheckRange[0]:wordToCheckRange[1]]
+
 		if fixes, ok := dict[strings.ToLower(wordToCheck)]; ok && !inSlice(wordToCheck, whitelistWords) {
-			if c := buildMisspellingComment(wordToCheck, fixes, startChar, endChar,
+			if c := buildMisspellingComment(wordToCheck, fixes, startChar+wordToCheckRange[0],
 				lineno, filePath); c != nil {
 				*comments = append(*comments, c)
 			}
@@ -227,18 +229,8 @@ func analyzeWords(line, commentWord, stopPattern string,
 	return stopIdx
 }
 
-// Finds the character range of a word in a given line.
-func findWordInLine(word string, line string) (int, int) {
-	startChar := strings.Index(line, word)
-	if startChar == -1 {
-		return 0, 0
-	}
-	return startChar, startChar + len(word)
-}
-
 // Helper function to convert misspelling information into a tricium comment.
-func buildMisspellingComment(misspelling string, fixes []string, startChar int,
-	endChar int, lineno int, path string) *tricium.Data_Comment {
+func buildMisspellingComment(misspelling string, fixes []string, startChar, lineno int, path string) *tricium.Data_Comment {
 	// If there is more than one fix and the last character of the last element of fixes
 	// doesn't have a comma, the word has a reason to be disabled.
 	if len(fixes) > 1 && !strings.HasSuffix(fixes[len(fixes)-1], ",") {
@@ -280,7 +272,7 @@ func buildMisspellingComment(misspelling string, fixes []string, startChar int,
 		StartLine:   int32(lineno),
 		EndLine:     int32(lineno),
 		StartChar:   int32(startChar),
-		EndChar:     int32(endChar),
+		EndChar:     int32(startChar + len(misspelling)),
 		Suggestions: suggestions,
 	}
 }

@@ -4,6 +4,7 @@ a normal line
 the acadamy shouldn't fail because it's not a comment
 an /*exmaple*/
 an  exmaple
+//twpo twpo
 /* another
 extremly
 bad example */
