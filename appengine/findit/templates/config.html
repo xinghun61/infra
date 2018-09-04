@@ -96,6 +96,11 @@
     </div>
     <br>
     <div>
+      Flake Detection Settings:<br>
+      <textarea id="flake-detection-settings" name="flake_detection_settings" rows="10" cols="80" format="json" required>{{ flake_detection_settings | tojson }}</textarea>
+    </div>
+    <br>
+    <div>
       CodeReview Settings:<br>
       <textarea id="code-review-settings" name="code_review_settings" rows="10" cols="80" format="json" required>{{ code_review_settings | tojson }}</textarea>
     </div>
