@@ -38,7 +38,7 @@ def GenTests(api):
     api.runtime(is_luci=True, is_experimental=False) +
     api.buildbucket.ci_build(
         'infra', 'ci', 'luci-gae-linux64',
-        git_repo="https://chromium.googlesource.com/infra/luci/gae",
+        git_repo="https://chromium.googlesource.com/infra/infra",
         revision='1'*40) +
     # Sadly, hacks in gclient required to patch non-main git repo in a solution
     # requires revsion as a property :(
