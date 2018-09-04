@@ -10,6 +10,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/kylelemons/godebug/pretty"
+
+	"infra/cmd/skylab_swarming_worker/internal/lucifer"
 	"infra/cmd/skylab_swarming_worker/internal/swarming/botcache"
 )
 
@@ -116,5 +119,21 @@ func TestLoadInitializesBotInfo(t *testing.T) {
 	}
 	if !reflect.DeepEqual(*b.BotInfo, bi) {
 		t.Errorf("Got %v, expected %v", *b.BotInfo, bi)
+	}
+}
+
+func TestBot_LuciferConfig(t *testing.T) {
+	t.Parallel()
+	b := &Bot{
+		AutotestPath:  "/usr/local/autotest",
+		LuciferBinDir: "/opt/lucifer",
+	}
+	got := b.LuciferConfig()
+	want := lucifer.Config{
+		AutotestPath: "/usr/local/autotest",
+		BinDir:       "/opt/lucifer",
+	}
+	if diff := pretty.Compare(want, got); diff != "" {
+		t.Errorf("LuciferConfig() differs -want +got:\n %s", diff)
 	}
 }
