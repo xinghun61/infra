@@ -12,9 +12,9 @@ from gae_libs.testcase import TestCase
 from libs import analysis_status
 from model import result_status
 from model import triage_status
-from model.flake.flake_culprit import FlakeCulprit
-from model.flake.master_flake_analysis import DataPoint
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.flake_culprit import FlakeCulprit
+from model.flake.analysis.master_flake_analysis import DataPoint
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from model.isolated_target import IsolatedTarget
 from waterfall.build_info import BuildInfo
 

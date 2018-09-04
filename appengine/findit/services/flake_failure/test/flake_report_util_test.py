@@ -9,9 +9,9 @@ from libs import analysis_status
 from libs import time_util
 from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
-from model.flake.flake_culprit import FlakeCulprit
-from model.flake.master_flake_analysis import DataPoint
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.flake_culprit import FlakeCulprit
+from model.flake.analysis.master_flake_analysis import DataPoint
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from services import issue_tracking_service
 from services.flake_failure import flake_report_util
 from waterfall.test.wf_testcase import WaterfallTestCase

@@ -9,9 +9,9 @@ from common.waterfall import failure_type
 from gae_libs.pipelines import pipeline
 from libs import analysis_status
 from libs.list_of_basestring import ListOfBasestring
-from model.flake.flake_try_job import FlakeTryJob
-from model.flake.flake_try_job_data import FlakeTryJobData
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.flake_try_job import FlakeTryJob
+from model.flake.analysis.flake_try_job_data import FlakeTryJobData
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobParameters)
 from pipelines.flake_failure.run_flake_try_job_pipeline import (

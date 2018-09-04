@@ -7,7 +7,7 @@ from datetime import datetime
 from dto import swarming_task_error
 from dto.flakiness import Flakiness
 from dto.swarming_task_error import SwarmingTaskError
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from services.flake_failure import run_swarming_util
 from waterfall.test import wf_testcase
 

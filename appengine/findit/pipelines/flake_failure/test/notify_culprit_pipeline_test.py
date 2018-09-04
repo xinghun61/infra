@@ -6,8 +6,8 @@ import mock
 
 from gae_libs import pipelines
 from gae_libs.pipeline_wrapper import pipeline_handlers
-from model.flake.flake_culprit import FlakeCulprit
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.flake_culprit import FlakeCulprit
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.notify_culprit_pipeline import (NotifyCulpritInput)
 from pipelines.flake_failure.notify_culprit_pipeline import (
     NotifyCulpritPipeline)

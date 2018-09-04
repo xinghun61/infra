@@ -11,8 +11,8 @@ from dto.step_metadata import StepMetadata
 from gae_libs import pipelines
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs.list_of_basestring import ListOfBasestring
-from model.flake.flake_try_job import FlakeTryJob
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.flake_try_job import FlakeTryJob
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from model.isolated_target import IsolatedTarget
 from pipelines.flake_failure.get_isolate_sha_pipeline import (
     GetIsolateShaForBuildParameters)

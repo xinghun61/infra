@@ -9,7 +9,7 @@ from google.appengine.ext import ndb
 from common.findit_http_client import FinditHttpClient
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
-from model.flake.flake_culprit import FlakeCulprit
+from model.flake.analysis.flake_culprit import FlakeCulprit
 from services import constants
 from services import git
 from services import swarmed_test_util

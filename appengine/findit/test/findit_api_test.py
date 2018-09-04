@@ -21,8 +21,8 @@ from libs import time_util
 from model import analysis_approach_type
 from model.base_build_model import BaseBuildModel
 from model.base_suspected_cl import RevertCL
-from model.flake import triggering_sources
-from model.flake.flake_swarming_task import FlakeSwarmingTask
+from model.flake.analysis import triggering_sources
+from model.flake.analysis.flake_swarming_task import FlakeSwarmingTask
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_swarming_task import WfSwarmingTask

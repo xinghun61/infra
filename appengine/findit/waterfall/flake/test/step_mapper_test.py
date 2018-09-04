@@ -9,7 +9,7 @@ from infra_api_clients.swarming.swarming_task_data import SwarmingTaskData
 from libs.test_results import test_results_util
 from libs.test_results.gtest_test_results import GtestTestResults
 from libs.test_results.webkit_layout_test_results import WebkitLayoutTestResults
-from model.flake.flake_analysis_request import BuildStep
+from model.flake.analysis.flake_analysis_request import BuildStep
 from services import ci_failure
 from services import step_util
 from services import swarmed_test_util

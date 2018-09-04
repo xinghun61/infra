@@ -12,7 +12,7 @@ from common.findit_http_client import FinditHttpClient
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from infra_api_clients.swarming import swarming_util
 from libs import time_util
-from model.flake.flake_culprit import FlakeCulprit
+from model.flake.analysis.flake_culprit import FlakeCulprit
 from services import constants
 from services import swarming
 from services.flake_failure import flake_constants

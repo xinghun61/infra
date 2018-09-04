@@ -26,7 +26,7 @@ from libs import analysis_status as status
 from libs import time_util
 from model import entity_util
 from model.base_suspected_cl import RevertCL
-from model.flake.flake_culprit import FlakeCulprit
+from model.flake.analysis.flake_culprit import FlakeCulprit
 from services import constants as services_constants
 from waterfall import buildbot
 from waterfall import suspected_cl_util

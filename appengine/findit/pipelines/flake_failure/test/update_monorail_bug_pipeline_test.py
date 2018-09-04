@@ -7,8 +7,8 @@ import mock
 from gae_libs import appengine_util
 from gae_libs import pipelines
 from gae_libs.pipeline_wrapper import pipeline_handlers
-from model.flake.master_flake_analysis import DataPoint
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.master_flake_analysis import DataPoint
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from monorail_api import Issue
 from pipelines.flake_failure.update_monorail_bug_pipeline import (
     UpdateMonorailBugInput)

@@ -12,7 +12,7 @@ from handlers.flake.list_flakes import _GetFlakeAnalysisFilterQuery
 from libs import analysis_status
 from libs import time_util
 from model import result_status
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from waterfall.test import wf_testcase
 
 

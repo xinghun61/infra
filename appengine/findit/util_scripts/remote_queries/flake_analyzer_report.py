@@ -21,7 +21,7 @@ import datetime
 import textwrap
 
 from libs import analysis_status
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from services import bigquery_helper
 
 

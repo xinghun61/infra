@@ -4,7 +4,7 @@
 
 from gae_libs.testcase import TestCase
 
-from model.flake.flake_culprit import FlakeCulprit
+from model.flake.analysis.flake_culprit import FlakeCulprit
 
 
 class FlakeculpritTest(TestCase):

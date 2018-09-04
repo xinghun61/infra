@@ -7,7 +7,7 @@ from datetime import datetime
 import unittest
 
 from libs import analysis_status
-from model.flake.flake_swarming_task import FlakeSwarmingTask
+from model.flake.analysis.flake_swarming_task import FlakeSwarmingTask
 
 
 class FlakeSwarmingTaskTest(unittest.TestCase):

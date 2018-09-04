@@ -7,8 +7,8 @@ import mock
 from dto.flakiness import Flakiness
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs.list_of_basestring import ListOfBasestring
-from model.flake.master_flake_analysis import DataPoint
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.master_flake_analysis import DataPoint
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.save_flakiness_verification_pipeline import (
     SaveFlakinessVerificationInput)
 from pipelines.flake_failure.save_flakiness_verification_pipeline import (

@@ -11,8 +11,8 @@ import webapp2
 from google.appengine.ext import ndb
 
 from handlers import try_job_dashboard
-from model.flake.flake_try_job import FlakeTryJob
-from model.flake.flake_try_job_data import FlakeTryJobData
+from model.flake.analysis.flake_try_job import FlakeTryJob
+from model.flake.analysis.flake_try_job_data import FlakeTryJobData
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 

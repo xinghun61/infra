@@ -8,9 +8,9 @@ from dto.int_range import IntRange
 from dto.step_metadata import StepMetadata
 from gae_libs import pipelines
 from gae_libs.pipeline_wrapper import pipeline_handlers
-from model.flake.flake_culprit import FlakeCulprit
-from model.flake.master_flake_analysis import DataPoint
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.flake_culprit import FlakeCulprit
+from model.flake.analysis.master_flake_analysis import DataPoint
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from model.isolated_target import IsolatedTarget
 from pipelines.flake_failure.next_commit_position_pipeline import (
     NextCommitPositionInput)

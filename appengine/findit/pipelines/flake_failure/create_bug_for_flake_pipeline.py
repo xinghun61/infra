@@ -12,8 +12,8 @@ from dto.test_location import TestLocation
 from gae_libs.pipelines import GeneratorPipeline
 from gae_libs.pipelines import pipeline
 from libs.structured_object import StructuredObject
-from model.flake import triggering_sources
-from model.flake.flake_analysis_request import FlakeAnalysisRequest
+from model.flake.analysis import triggering_sources
+from model.flake.analysis.flake_analysis_request import FlakeAnalysisRequest
 from pipelines.flake_failure.determine_approximate_pass_rate_pipeline import (
     DetermineApproximatePassRateInput)
 from pipelines.flake_failure.determine_approximate_pass_rate_pipeline import (

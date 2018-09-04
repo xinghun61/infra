@@ -4,7 +4,7 @@
 
 from dto.flakiness import Flakiness
 from libs.list_of_basestring import ListOfBasestring
-from model.flake.master_flake_analysis import DataPoint
+from model.flake.analysis.master_flake_analysis import DataPoint
 from services.flake_failure import data_point_util
 from waterfall.test import wf_testcase
 

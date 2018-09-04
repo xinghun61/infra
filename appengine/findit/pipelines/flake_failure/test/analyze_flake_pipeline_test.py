@@ -14,9 +14,9 @@ from infra_api_clients import crrev
 from libs import analysis_status
 from libs.list_of_basestring import ListOfBasestring
 from model import result_status
-from model.flake.flake_culprit import FlakeCulprit
-from model.flake.master_flake_analysis import DataPoint
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.flake_culprit import FlakeCulprit
+from model.flake.analysis.master_flake_analysis import DataPoint
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.delay_pipeline import DelayPipeline
 from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakeInput
 from pipelines.flake_failure.analyze_flake_pipeline import (

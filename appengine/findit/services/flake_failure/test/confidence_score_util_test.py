@@ -4,8 +4,8 @@
 
 import mock
 
-from model.flake.master_flake_analysis import DataPoint
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.master_flake_analysis import DataPoint
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from services.flake_failure import confidence_score_util
 from services.flake_failure import confidence
 from services.flake_failure import flake_constants

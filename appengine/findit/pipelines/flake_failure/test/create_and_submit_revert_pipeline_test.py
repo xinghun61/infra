@@ -8,8 +8,8 @@ from dto.create_and_submit_revert_input import CreateAndSubmitRevertInput
 from gae_libs.pipelines import pipeline_handlers
 from pipelines.flake_failure.create_and_submit_revert_pipeline import (
     CreateAndSubmitRevertPipeline)
-from model.flake.flake_culprit import FlakeCulprit
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.flake_culprit import FlakeCulprit
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from services.flake_failure import culprit_util
 from waterfall.test.wf_testcase import WaterfallTestCase
 

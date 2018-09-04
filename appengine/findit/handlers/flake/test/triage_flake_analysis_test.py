@@ -9,8 +9,8 @@ from handlers.flake import triage_flake_analysis
 from handlers.flake.triage_flake_analysis import TriageFlakeAnalysis
 from libs import analysis_status
 from model import triage_status
-from model.flake.flake_culprit import FlakeCulprit
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.flake_culprit import FlakeCulprit
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from waterfall.test import wf_testcase
 
 

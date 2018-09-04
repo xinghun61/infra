@@ -7,8 +7,8 @@ import logging
 
 from gae_libs.pipelines import GeneratorPipeline
 from libs import time_util
-from model.flake import triggering_sources
-from model.flake.flake_analysis_request import FlakeAnalysisRequest
+from model.flake.analysis import triggering_sources
+from model.flake.analysis.flake_analysis_request import FlakeAnalysisRequest
 from model.wf_analysis import WfAnalysis
 from services import ci_failure
 from services import monitoring

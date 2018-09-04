@@ -4,8 +4,8 @@
 
 from gae_libs.testcase import TestCase
 
-from model.flake.flake_try_job import FlakeTryJob
-from model.flake.flake_try_job_data import FlakeTryJobData
+from model.flake.analysis.flake_try_job import FlakeTryJob
+from model.flake.analysis.flake_try_job_data import FlakeTryJobData
 
 
 class FlakeTryJobDataTest(TestCase):

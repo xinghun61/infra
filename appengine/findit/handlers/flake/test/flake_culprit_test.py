@@ -10,8 +10,8 @@ from testing_utils import testing
 
 from handlers.flake import flake_culprit
 from libs import analysis_status
-from model.flake.flake_culprit import FlakeCulprit
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.flake_culprit import FlakeCulprit
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 
 
 class FlakeCulpritTest(testing.AppengineTestCase):

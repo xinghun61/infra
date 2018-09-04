@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 """Functions to assist in operations on DataPoint objects."""
 
-from model.flake.master_flake_analysis import DataPoint
+from model.flake.analysis.master_flake_analysis import DataPoint
 from services.flake_failure import pass_rate_util
 
 

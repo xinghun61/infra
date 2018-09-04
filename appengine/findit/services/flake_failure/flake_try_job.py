@@ -10,9 +10,9 @@ from common.waterfall import failure_type
 from dto.flake_try_job_result import FlakeTryJobResult
 from libs import time_util
 from libs.test_results import test_results_util
-from model.flake.flake_try_job import FlakeTryJob
-from model.flake.flake_try_job_data import FlakeTryJobData
-from model.flake.master_flake_analysis import DataPoint
+from model.flake.analysis.flake_try_job import FlakeTryJob
+from model.flake.analysis.flake_try_job_data import FlakeTryJobData
+from model.flake.analysis.master_flake_analysis import DataPoint
 from services import constants
 from services import swarmed_test_util
 from services import try_job as try_job_service

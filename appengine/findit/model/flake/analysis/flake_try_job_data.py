@@ -4,7 +4,7 @@
 
 from google.appengine.ext import ndb
 
-from model.flake.flake_try_job import FlakeTryJob
+from model.flake.analysis.flake_try_job import FlakeTryJob
 from model.base_try_job_data import BaseTryJobData
 
 

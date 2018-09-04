@@ -10,8 +10,8 @@ import webtest
 from handlers import obscure_emails
 from libs import time_util
 from model.base_triaged_model import TriageResult
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
-from model.flake.flake_analysis_request import FlakeAnalysisRequest
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.flake_analysis_request import FlakeAnalysisRequest
 from model.wf_analysis import WfAnalysis
 from waterfall.test import wf_testcase
 

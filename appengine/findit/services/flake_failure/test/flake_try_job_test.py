@@ -12,10 +12,10 @@ from gae_libs.testcase import TestCase
 from libs.list_of_basestring import ListOfBasestring
 from libs.test_results import test_results_util
 from libs.test_results.gtest_test_results import GtestTestResults
-from model.flake.flake_try_job import FlakeTryJob
-from model.flake.flake_try_job_data import FlakeTryJobData
-from model.flake.master_flake_analysis import DataPoint
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.flake_try_job import FlakeTryJob
+from model.flake.analysis.flake_try_job_data import FlakeTryJobData
+from model.flake.analysis.master_flake_analysis import DataPoint
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobParameters)
 from services import swarmed_test_util

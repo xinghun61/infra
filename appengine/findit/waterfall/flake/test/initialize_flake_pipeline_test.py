@@ -11,8 +11,8 @@ from dto.int_range import IntRange
 from dto.step_metadata import StepMetadata
 from libs import analysis_status
 from libs.list_of_basestring import ListOfBasestring
-from model.flake.master_flake_analysis import DataPoint
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.master_flake_analysis import DataPoint
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakeInput
 from pipelines.flake_failure.next_commit_position_pipeline import (
     NextCommitPositionOutput)

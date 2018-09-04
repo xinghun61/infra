@@ -4,7 +4,7 @@
 
 import unittest
 
-from model.flake import triggering_sources
+from model.flake.analysis import triggering_sources
 
 
 class FlakeAnalysisServiceTest(unittest.TestCase):

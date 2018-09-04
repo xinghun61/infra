@@ -10,7 +10,7 @@ from common.waterfall import failure_type
 from gae_libs import pipelines
 from libs import structured_object
 from model.wf_analysis import WfAnalysis
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from pipelines import report_event_pipeline
 from services import event_reporting
 

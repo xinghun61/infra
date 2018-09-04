@@ -25,7 +25,7 @@ from google.appengine.ext import ndb
 
 from libs import analysis_status
 from libs import time_util
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from pipeline.models import _PipelineRecord
 from pipeline import pipeline
 

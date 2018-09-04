@@ -19,8 +19,8 @@ from infra_api_clients.codereview.gerrit import Gerrit
 from libs import analysis_status as status
 from libs import time_util
 from model.base_suspected_cl import RevertCL
-from model.flake.flake_culprit import FlakeCulprit
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.flake_culprit import FlakeCulprit
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
 from services import constants as services_constants
 from services import gerrit

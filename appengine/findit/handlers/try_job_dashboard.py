@@ -10,7 +10,7 @@ import json
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 from libs import time_util
-from model.flake.flake_try_job_data import FlakeTryJobData
+from model.flake.analysis.flake_try_job_data import FlakeTryJobData
 from model.wf_try_job_data import WfTryJobData
 
 NOT_AVAILABLE = 'N/A'

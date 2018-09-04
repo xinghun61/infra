@@ -8,7 +8,7 @@ from google.appengine.ext import ndb
 from common.waterfall import failure_type
 from gae_libs import pipelines
 from libs import structured_object
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_analysis import WfAnalysis
 from services import event_reporting
 

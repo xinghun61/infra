@@ -7,7 +7,7 @@ import logging
 from common import constants
 from libs import email_util
 from libs import time_util
-from model.flake.flake_analysis_request import FlakeAnalysisRequest
+from model.flake.analysis.flake_analysis_request import FlakeAnalysisRequest
 from services import monitoring
 from waterfall.flake import initialize_flake_pipeline
 from waterfall.flake import step_mapper

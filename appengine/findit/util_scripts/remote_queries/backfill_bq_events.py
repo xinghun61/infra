@@ -21,8 +21,8 @@ import pickle
 from common.waterfall import failure_type
 from libs import analysis_status
 from model import suspected_cl_status
-from model.flake.flake_culprit import FlakeCulprit
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.flake_culprit import FlakeCulprit
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from model.proto.gen import findit_pb2
 from model.wf_try_job import WfTryJob
 from model.wf_suspected_cl import WfSuspectedCL

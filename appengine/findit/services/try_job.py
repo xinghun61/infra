@@ -39,7 +39,7 @@ from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from libs import time_util
 from model import result_status
-from model.flake.flake_try_job_data import FlakeTryJobData
+from model.flake.analysis.flake_try_job_data import FlakeTryJobData
 from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
 from model.wf_failure_group import WfFailureGroup

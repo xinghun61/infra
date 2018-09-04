@@ -5,7 +5,7 @@
 from google.appengine.ext import ndb
 
 from gae_libs.model.versioned_model import VersionedModel
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 
 
 class BuildStep(ndb.Model):

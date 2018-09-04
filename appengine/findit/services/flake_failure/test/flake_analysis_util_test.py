@@ -16,9 +16,9 @@ from infra_api_clients.swarming import swarming_util
 from infra_api_clients.swarming.swarming_bot_counts import SwarmingBotCounts
 from libs import time_util
 from libs.gitiles.change_log import ChangeLog
-from model.flake.flake_culprit import FlakeCulprit
-from model.flake.master_flake_analysis import DataPoint
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.flake_culprit import FlakeCulprit
+from model.flake.analysis.master_flake_analysis import DataPoint
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from services.flake_failure import flake_analysis_util
 from services.flake_failure import flake_constants
 from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA

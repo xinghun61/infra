@@ -13,11 +13,11 @@ from gae_libs.http import auth_util
 from libs import analysis_status
 from libs import time_util
 from model import triage_status
-from model.flake import triggering_sources
-from model.flake.flake_analysis_request import FlakeAnalysisRequest
-from model.flake.flake_try_job import FlakeTryJob
-from model.flake.flake_try_job_data import FlakeTryJobData
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis import triggering_sources
+from model.flake.analysis.flake_analysis_request import FlakeAnalysisRequest
+from model.flake.analysis.flake_try_job import FlakeTryJob
+from model.flake.analysis.flake_try_job_data import FlakeTryJobData
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakePipeline
 from waterfall import buildbot
 from waterfall.flake import flake_analysis_service

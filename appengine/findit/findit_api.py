@@ -34,10 +34,10 @@ from libs import time_util
 from libs.cache_decorator import Cached
 from model import analysis_approach_type
 from model.base_build_model import BaseBuildModel
-from model.flake import triggering_sources
-from model.flake.flake_analysis_request import BuildStep
-from model.flake.flake_analysis_request import FlakeAnalysisRequest
-from model.flake.flake_swarming_task import FlakeSwarmingTask
+from model.flake.analysis import triggering_sources
+from model.flake.analysis.flake_analysis_request import BuildStep
+from model.flake.analysis.flake_analysis_request import FlakeAnalysisRequest
+from model.flake.analysis.flake_swarming_task import FlakeSwarmingTask
 from model.suspected_cl_confidence import SuspectedCLConfidence
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL

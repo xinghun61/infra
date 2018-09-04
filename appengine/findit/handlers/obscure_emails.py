@@ -10,8 +10,8 @@ from google.appengine.ext import ndb
 from gae_libs.handlers.base_handler import BaseHandler, Permission
 from libs import email_util
 from libs import time_util
-from model.flake.flake_analysis_request import FlakeAnalysisRequest
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.analysis.flake_analysis_request import FlakeAnalysisRequest
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_analysis import WfAnalysis
 
 _TRIAGE_RECORD_RENTENSION_DAYS = 30  # 1 month.

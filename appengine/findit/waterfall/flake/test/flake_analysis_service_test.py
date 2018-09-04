@@ -6,9 +6,9 @@ from datetime import datetime
 import mock
 
 from common import constants
-from model.flake import triggering_sources
-from model.flake.flake_analysis_request import BuildStep
-from model.flake.flake_analysis_request import FlakeAnalysisRequest
+from model.flake.analysis import triggering_sources
+from model.flake.analysis.flake_analysis_request import BuildStep
+from model.flake.analysis.flake_analysis_request import FlakeAnalysisRequest
 from services import monitoring
 from waterfall.flake import flake_analysis_service
 from waterfall.test import wf_testcase
