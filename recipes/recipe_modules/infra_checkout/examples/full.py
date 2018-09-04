@@ -43,7 +43,11 @@ def GenTests(api):
         api.test(plat) +
         api.platform(plat, 64) +
         api.runtime(is_luci=True, is_experimental=False) +
-        api.buildbucket.ci_build('infra', 'ci')
+        api.buildbucket.ci_build(
+            project='infra',
+            bucket='ci',
+            git_repo='https://chromium.googlesource.com/infra/infra',
+        )
     )
 
   yield (
