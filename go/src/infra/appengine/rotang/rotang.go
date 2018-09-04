@@ -170,6 +170,7 @@ type ShiftStorer interface {
 	DeleteAllShifts(ctx context.Context, rota string) error
 	DeleteShift(ctx context.Context, rota string, start time.Time) error
 	UpdateShift(ctx context.Context, rota string, shift *ShiftEntry) error
+	Oncall(ctx context.Context, at time.Time, rota string) ([]ShiftMember, error)
 }
 
 // RotaGenerator is used to generate oncall rotations.

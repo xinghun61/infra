@@ -7,7 +7,6 @@ package handlers
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -17,6 +16,7 @@ import (
 	"time"
 
 	"infra/appengine/rotang"
+	"infra/appengine/rotang/pkg/algo"
 	"infra/appengine/rotang/pkg/datastore"
 
 	"github.com/kylelemons/godebug/pretty"
@@ -125,7 +125,6 @@ func getRequest(url, email string) *http.Request {
 			Email: email,
 		}, req)
 	}
-	fmt.Println("Headers:", req.Header)
 	return req
 }
 
@@ -185,7 +184,15 @@ func TestUploadGet(t *testing.T) {
 	},
 	}
 
-	h := New("http://localhost:8080", "", "")
+	opts := Options{
+		URL:        "http://localhost:8080",
+		Generators: &algo.Generators{},
+	}
+	setupStoreHandlers(&opts, datastore.New)
+	h, err := New(&opts)
+	if err != nil {
+		t.Fatalf("New failed: %v", err)
+	}
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
@@ -526,12 +533,15 @@ func TestHandleUpload(t *testing.T) {
 		},
 	}
 
-	s, err := datastore.New(ctx)
-	if err != nil {
-		t.Fatalf("datastore.New(_) failed: %v", err)
+	opts := Options{
+		URL:        "http://localhost:8080",
+		Generators: &algo.Generators{},
 	}
-
-	h := New("http://localhost:8080", "", "")
+	setupStoreHandlers(&opts, datastore.New)
+	h, err := New(&opts)
+	if err != nil {
+		t.Fatalf("New failed: %v", err)
+	}
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
@@ -545,7 +555,7 @@ func TestHandleUpload(t *testing.T) {
 				return
 			}
 
-			gotRotas, err := s.RotaConfig(ctx, "")
+			gotRotas, err := h.configStore(ctx).RotaConfig(ctx, "")
 			if err != nil {
 				t.Fatalf("%s: s.FetchRota(ctx,\"\") failed: %v", tst.name, err)
 			}
@@ -560,7 +570,7 @@ func TestHandleUpload(t *testing.T) {
 				sort.Slice(r.Members, func(i, j int) bool {
 					return r.Members[i].Email < r.Members[j].Email
 				})
-				defer s.DeleteRotaConfig(ctx, r.Config.Name)
+				defer h.configStore(ctx).DeleteRotaConfig(ctx, r.Config.Name)
 			}
 			for _, r := range tst.want {
 				sort.Slice(r.Members, func(i, j int) bool {

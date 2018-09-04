@@ -6,9 +6,14 @@
 package app
 
 import (
+	"context"
+	"log"
 	"net/http"
 
+	"infra/appengine/rotang"
 	"infra/appengine/rotang/cmd/handlers"
+	"infra/appengine/rotang/pkg/algo"
+	"infra/appengine/rotang/pkg/datastore"
 
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/server/router"
@@ -20,6 +25,15 @@ const (
 	oauthCallbackURL = "http://localhost:8080/oauth2callback"
 )
 
+func setupStoreHandlers(o *handlers.Options, sf func(context.Context) *datastore.Store) {
+	o.MemberStore = func(ctx context.Context) rotang.MemberStorer {
+		return sf(ctx)
+	}
+	o.ConfigStore = func(ctx context.Context) rotang.ConfigStorer {
+		return sf(ctx)
+	}
+}
+
 func init() {
 	r := router.New()
 	standard.InstallHandlers(r)
@@ -29,7 +43,21 @@ func init() {
 		Loader: templates.FileSystemLoader("../handlers/templates"),
 	}))
 
-	h := handlers.New(selfURL, "", oauthCallbackURL)
+	// Sort out the generators.
+	gs := algo.New()
+	gs.Register(algo.NewLegacy())
+	gs.Register(algo.NewFair())
+	gs.Register(algo.NewRandomGen())
+
+	opts := handlers.Options{
+		URL:        selfURL,
+		Generators: gs,
+	}
+	setupStoreHandlers(&opts, datastore.New)
+	h, err := handlers.New(&opts)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	r.GET("/", tmw, h.HandleIndex)
 	r.GET("/upload", tmw, h.HandleUpload)

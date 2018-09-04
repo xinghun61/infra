@@ -6,7 +6,6 @@ package handlers
 
 import (
 	"infra/appengine/rotang"
-	"infra/appengine/rotang/pkg/datastore"
 	"net/http"
 
 	"go.chromium.org/gae/service/user"
@@ -23,32 +22,21 @@ func (h *State) HandleIndex(ctx *router.Context) {
 		return
 	}
 
-	rds, err := datastore.New(ctx.Context)
-	if err != nil {
-		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	var ds rotang.ConfigStorer = rds
-
 	res := []struct {
-		Rota string
+		Rota      string
+		Oncallers []rotang.ShiftMember
 	}{}
 
 	usr := user.Current(ctx.Context)
-	if usr != nil {
-		rotas, err := ds.MemberOf(ctx.Context, usr.Email)
-		if err != nil && status.Code(err) != codes.NotFound {
-			http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		for _, rota := range rotas {
-			res = append(res, struct {
-				Rota string
-			}{
-				Rota: rota,
-			})
-		}
+	if usr == nil {
+		templates.MustRender(ctx.Context, ctx.Writer, "pages/index.html", templates.Args{"Rotas": res})
+		return
 	}
-	templates.MustRender(ctx.Context, ctx.Writer, "pages/index.html", templates.Args{"Rotas": res, "User": usr})
+	rotas, err := h.configStore(ctx.Context).MemberOf(ctx.Context, usr.Email)
+	if err != nil && status.Code(err) != codes.NotFound {
+		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	templates.MustRender(ctx.Context, ctx.Writer, "pages/index.html", templates.Args{"Rotas": rotas, "User": usr})
 }

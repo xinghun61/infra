@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"strings"
 
-	"infra/appengine/rotang/pkg/datastore"
 	"infra/appengine/rotang/pkg/jsoncfg"
 
 	"go.chromium.org/luci/common/logging"
@@ -41,12 +40,6 @@ func (h *State) HandleUpload(ctx *router.Context) {
 		return
 	}
 
-	ds, err := datastore.New(ctx.Context)
-	if err != nil {
-		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	for {
 		part, err := mr.NextPart()
 		if err != nil {
@@ -72,12 +65,12 @@ func (h *State) HandleUpload(ctx *router.Context) {
 			return
 		}
 		for _, m := range members {
-			if err := ds.CreateMember(ctx.Context, &m); err != nil && status.Code(err) != codes.AlreadyExists {
+			if err := h.memberStore(ctx.Context).CreateMember(ctx.Context, &m); err != nil && status.Code(err) != codes.AlreadyExists {
 				http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 				return
 			}
 		}
-		if err := ds.CreateRotaConfig(ctx.Context, rotaCfg); err != nil {
+		if err := h.configStore(ctx.Context).CreateRotaConfig(ctx.Context, rotaCfg); err != nil {
 			logging.Errorf(ctx.Context, "File: %q failed to store: %v", part.FileName(), err)
 			continue
 		}

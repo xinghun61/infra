@@ -6,6 +6,7 @@
 package datastore
 
 import (
+	"sync"
 	"time"
 
 	"infra/appengine/rotang"
@@ -59,23 +60,27 @@ func rootKey(ctx context.Context) *datastore.Key {
 	return datastore.NewKey(ctx, rootKind, root, 0, datastore.KeyForObj(ctx, &DsRoot{ID: root}))
 }
 
+var once sync.Once
+
 // New creates a new Datastore backed store.
-func New(ctx context.Context) (*Store, error) {
-	root := &DsRoot{
-		ID: root,
-	}
-	if err := datastore.RunInTransaction(ctx, func(ctx context.Context) error {
-		if err := datastore.Get(ctx, root); err != nil {
-			if err == datastore.ErrNoSuchEntity {
-				return datastore.Put(ctx, root)
-			}
-			return err
+func New(ctx context.Context) *Store {
+	once.Do(func() {
+		root := &DsRoot{
+			ID: root,
 		}
-		return nil
-	}, nil); err != nil {
-		return nil, err
-	}
-	return &Store{}, nil
+		if err := datastore.RunInTransaction(ctx, func(ctx context.Context) error {
+			if err := datastore.Get(ctx, root); err != nil {
+				if err == datastore.ErrNoSuchEntity {
+					return datastore.Put(ctx, root)
+				}
+				return err
+			}
+			return nil
+		}, nil); err != nil {
+			panic(err)
+		}
+	})
+	return &Store{}
 }
 
 // Member fetches the matching Member from datastore.

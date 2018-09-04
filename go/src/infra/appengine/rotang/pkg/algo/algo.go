@@ -14,14 +14,14 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// Algos contain the currently registered rotation Generators.
-type Algos struct {
+// Generators contain the currently registered rotation Generators.
+type Generators struct {
 	registred map[string]rotang.RotaGenerator
 }
 
 // New creates a new Algo collection.
-func New() *Algos {
-	return &Algos{
+func New() *Generators {
+	return &Generators{
 		registred: make(map[string]rotang.RotaGenerator),
 	}
 }
@@ -43,12 +43,12 @@ func (b ByStart) Swap(i, j int) {
 
 // Register registers a new rota generator algorithm.
 // If another algorithm already exist with the same Name it's overwritten.
-func (a *Algos) Register(algo rotang.RotaGenerator) {
+func (a *Generators) Register(algo rotang.RotaGenerator) {
 	a.registred[algo.Name()] = algo
 }
 
 // Fetch fetches the specified generator.
-func (a *Algos) Fetch(name string) (rotang.RotaGenerator, error) {
+func (a *Generators) Fetch(name string) (rotang.RotaGenerator, error) {
 	gen, ok := a.registred[name]
 	if !ok {
 		return nil, status.Errorf(codes.NotFound, "algorithm: %q not found", name)
@@ -57,7 +57,7 @@ func (a *Algos) Fetch(name string) (rotang.RotaGenerator, error) {
 }
 
 // List returns a list of all registered Generators.
-func (a *Algos) List() []string {
+func (a *Generators) List() []string {
 	var res []string
 	for k := range a.registred {
 		res = append(res, k)

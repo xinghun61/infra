@@ -7,6 +7,7 @@ package handlers
 import (
 	"context"
 	"infra/appengine/rotang"
+	"infra/appengine/rotang/pkg/algo"
 	"infra/appengine/rotang/pkg/datastore"
 	"net/http"
 	"net/http/httptest"
@@ -17,6 +18,15 @@ import (
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
 )
+
+func setupStoreHandlers(o *Options, sf func(context.Context) *datastore.Store) {
+	o.MemberStore = func(ctx context.Context) rotang.MemberStorer {
+		return sf(ctx)
+	}
+	o.ConfigStore = func(ctx context.Context) rotang.ConfigStorer {
+		return sf(ctx)
+	}
+}
 
 func TestHandleIndex(t *testing.T) {
 	ctx := newTestContext()
@@ -95,25 +105,29 @@ func TestHandleIndex(t *testing.T) {
 		},
 	}
 
-	h := New("http://localhost:8080", "", "")
-	ds, err := datastore.New(ctx)
+	opts := Options{
+		URL:        "http://localhost:8080",
+		Generators: &algo.Generators{},
+	}
+	setupStoreHandlers(&opts, datastore.New)
+	h, err := New(&opts)
 	if err != nil {
-		t.Fatalf("datstore.New(ctx) failed: %v", err)
+		t.Fatalf("New failed: %v", err)
 	}
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
 			for _, m := range tst.memberPool {
-				if err := ds.CreateMember(ctx, &m); err != nil {
+				if err := h.memberStore(ctx).CreateMember(ctx, &m); err != nil {
 					t.Fatalf("%s: s.CreateMember(_, _) failed: %v", tst.name, err)
 				}
-				defer ds.DeleteMember(ctx, m.Email)
+				defer h.memberStore(ctx).DeleteMember(ctx, m.Email)
 			}
 			for _, cfg := range tst.rotas {
-				if err := ds.CreateRotaConfig(ctx, &cfg); err != nil {
+				if err := h.configStore(ctx).CreateRotaConfig(ctx, &cfg); err != nil {
 					t.Fatalf("%s: s.CreateRotaConfig(_, _) failed: %v", tst.name, err)
 				}
-				defer ds.DeleteRotaConfig(ctx, cfg.Config.Name)
+				defer h.configStore(ctx).DeleteRotaConfig(ctx, cfg.Config.Name)
 			}
 			tst.ctx.Context = templates.Use(tst.ctx.Context, &templates.Bundle{
 				Loader: templates.FileSystemLoader(templatesLocation),

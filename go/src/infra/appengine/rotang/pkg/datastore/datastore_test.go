@@ -376,10 +376,7 @@ func TestMemberOf(t *testing.T) {
 	},
 	}
 
-	s, err := New(ctx)
-	if err != nil {
-		t.Fatalf("New(_) failed: %v", err)
-	}
+	s := New(ctx)
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
@@ -485,10 +482,7 @@ func TestMember(t *testing.T) {
 	},
 	}
 
-	store, err := New(ctx)
-	if err != nil {
-		t.Fatalf("New(_) failed: %v", err)
-	}
+	store := New(ctx)
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
@@ -496,11 +490,11 @@ func TestMember(t *testing.T) {
 				if err := store.CreateMember(ctx, &sm); err != nil {
 					t.Fatalf("%s: store.CreateMember(_, _) failed: %v", tst.name, err)
 				}
-				defer func() {
-					if err := store.DeleteMember(ctx, sm.Email); err != nil {
-						t.Logf("%s: store.DeleteMember(ctx, sm.Email) failed: %v", tst.name, err)
+				defer func(email string) {
+					if err := store.DeleteMember(ctx, email); err != nil {
+						t.Logf("%s: store.DeleteMember(ctx, %q) failed: %v", tst.name, email, err)
 					}
-				}()
+				}(sm.Email)
 			}
 			m, err := store.Member(tst.ctx, tst.email)
 			if got, want := (err != nil), tst.fail; got != want {
@@ -585,10 +579,7 @@ func TestUpdateMember(t *testing.T) {
 		},
 	}}
 
-	store, err := New(ctx)
-	if err != nil {
-		t.Fatalf("New(_) failed: %v", err)
-	}
+	store := New(ctx)
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
@@ -596,11 +587,11 @@ func TestUpdateMember(t *testing.T) {
 				if err := store.CreateMember(ctx, &sm); err != nil {
 					t.Fatalf("%s: store.CreateMember(_, _) failed: %v", tst.name, err)
 				}
-				defer func() {
-					if err := store.DeleteMember(ctx, sm.Email); err != nil {
-						t.Logf("%s: store.DeleteMember(ctx, sm.Email) failed: %v", tst.name, err)
+				defer func(email string) {
+					if err := store.DeleteMember(ctx, email); err != nil {
+						t.Logf("%s: store.DeleteMember(ctx, %q) failed: %v", tst.name, email, err)
 					}
-				}()
+				}(sm.Email)
 			}
 			err := store.UpdateMember(tst.ctx, tst.update)
 			if got, want := (err != nil), tst.fail; got != want {
@@ -671,10 +662,7 @@ func TestDeleteMember(t *testing.T) {
 	},
 	}
 
-	store, err := New(ctx)
-	if err != nil {
-		t.Fatalf("New(_) failed: %v", err)
-	}
+	store := New(ctx)
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
@@ -682,11 +670,11 @@ func TestDeleteMember(t *testing.T) {
 				if err := store.CreateMember(ctx, &sm); err != nil {
 					t.Fatalf("%s: store.CreateMember(_, _) failed: %v", tst.name, err)
 				}
-				defer func() {
-					if err := store.DeleteMember(ctx, sm.Email); err != nil {
-						t.Logf("%s: store.DeleteMember(ctx, sm.Email) failed: %v", tst.name, err)
+				defer func(email string) {
+					if err := store.DeleteMember(ctx, email); err != nil {
+						t.Logf("%s: store.DeleteMember(ctx, %q) failed: %v", tst.name, email, err)
 					}
-				}()
+				}(sm.Email)
 			}
 			err := store.DeleteMember(tst.ctx, tst.email)
 			if got, want := (err != nil), tst.fail; got != want {
@@ -757,10 +745,7 @@ func TestCreateMember(t *testing.T) {
 	},
 	}
 
-	store, err := New(ctx)
-	if err != nil {
-		t.Fatalf("New(_) failed: %v", err)
-	}
+	store := New(ctx)
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
@@ -768,11 +753,11 @@ func TestCreateMember(t *testing.T) {
 				if err := store.CreateMember(ctx, &sm); err != nil {
 					t.Fatalf("%s: store.CreateMember(_, _) failed: %v", tst.name, err)
 				}
-				defer func() {
-					if err := store.DeleteMember(ctx, sm.Email); err != nil {
-						t.Logf("%s: store.DeleteMember(ctx, sm.Email) failed: %v", tst.name, err)
+				defer func(email string) {
+					if err := store.DeleteMember(ctx, email); err != nil {
+						t.Logf("%s: store.DeleteMember(ctx, %q) failed: %v", tst.name, email, err)
 					}
-				}()
+				}(sm.Email)
 			}
 			err := store.CreateMember(tst.ctx, tst.create)
 			if got, want := (err != nil), tst.fail; got != want {
@@ -866,10 +851,8 @@ func TestCreateRotaConfiguration(t *testing.T) {
 			fail: true,
 		},
 	}
-	store, err := New(ctx)
-	if err != nil {
-		t.Fatalf("New(_) failed: %v", err)
-	}
+	store := New(ctx)
+
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
 			for _, m := range tst.memberPool {
@@ -988,10 +971,7 @@ func TestUpdateRotaConfig(t *testing.T) {
 		},
 	}
 
-	s, err := New(ctx)
-	if err != nil {
-		t.Fatalf("New(_) failed: %v", err)
-	}
+	s := New(ctx)
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
@@ -1220,10 +1200,7 @@ func TestFetchConfiguration(t *testing.T) {
 		},
 	}
 
-	s, err := New(ctx)
-	if err != nil {
-		t.Fatalf("New(_) failed: %v", err)
-	}
+	s := New(ctx)
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
@@ -1342,10 +1319,7 @@ func TestDeleteConfiguration(t *testing.T) {
 		},
 	}
 
-	s, err := New(ctx)
-	if err != nil {
-		t.Fatalf("New(_) failed: %v", err)
-	}
+	s := New(ctx)
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
@@ -1500,10 +1474,7 @@ func TestAddMember(t *testing.T) {
 		},
 	}
 
-	s, err := New(ctx)
-	if err != nil {
-		t.Fatalf("New(_) failed: %v", err)
-	}
+	s := New(ctx)
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
@@ -1674,10 +1645,7 @@ func TestDeleteRotaMember(t *testing.T) {
 		},
 	}
 
-	s, err := New(ctx)
-	if err != nil {
-		t.Fatalf("New(_) failed: %v", err)
-	}
+	s := New(ctx)
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
