@@ -27,7 +27,7 @@ THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 LUCI_GO_DIR = os.path.normpath(
     os.path.join(
         THIS_DIR,
-        *('../../../go/src/go.chromium.org/luci').split('/')
+        *('../../../../go/src/go.chromium.org/luci').split('/')
     )
 )
 RPC_PROTO_DIR = os.path.join(LUCI_GO_DIR, 'grpc', 'proto')

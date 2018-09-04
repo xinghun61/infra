@@ -8,8 +8,8 @@ import unittest
 
 from google import protobuf
 
-from proto.config import project_config_pb2
-from swarming import flatten_swarmingcfg
+from infra.libs.buildbucket.proto.config import project_config_pb2
+from infra.libs.buildbucket.swarming import flatten_swarmingcfg
 
 
 class ProjectCfgTest(unittest.TestCase):

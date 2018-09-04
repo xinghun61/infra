@@ -1,1 +1,1 @@
-../../../packages/cr-buildbucket/swarming/flatten_swarmingcfg.py
+../../../infra/libs/buildbucket/swarming/flatten_swarmingcfg.py
