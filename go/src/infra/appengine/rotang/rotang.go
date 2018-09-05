@@ -166,11 +166,11 @@ type TokenStorer interface {
 type ShiftStorer interface {
 	AddShifts(ctx context.Context, rota string, entries []ShiftEntry) error
 	AllShifts(cxt context.Context, rota string) ([]ShiftEntry, error)
-	Shift(cxt context.Context, start time.Time) (*ShiftEntry, error)
+	Shift(cxt context.Context, rota string, start time.Time) (*ShiftEntry, error)
 	DeleteAllShifts(ctx context.Context, rota string) error
 	DeleteShift(ctx context.Context, rota string, start time.Time) error
 	UpdateShift(ctx context.Context, rota string, shift *ShiftEntry) error
-	Oncall(ctx context.Context, at time.Time, rota string) ([]ShiftMember, error)
+	Oncall(ctx context.Context, at time.Time, rota string) (*ShiftEntry, error)
 }
 
 // RotaGenerator is used to generate oncall rotations.
