@@ -50,7 +50,7 @@ function isTokenExpired(opt_tokenExpiresSec) {
  */
 function ensureTokenIsValid(opt_token, opt_tokenPath, opt_tokenExpiresSec) {
   const token = opt_token || window.CS_env.token;
-  const tokenPath = opt_tokenPath || 'token';
+  const tokenPath = opt_tokenPath || 'xhr';
   const tokenExpiresSec = CS_env.tokenExpiresSec;
   if (isTokenExpired(tokenExpiresSec)) {
     const message = {
