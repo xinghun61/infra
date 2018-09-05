@@ -83,18 +83,23 @@ poll+process cycle for the repo that it's mirroring.
     `extra_footers`), you should be able to run: `run.py
     infra.services.gsubtreed <repo url>` and it should Just Work.
 
-1.  At this point you should set up a new bot on the [infra cron waterfall][2]
-    to run this on a regular interval.
+1.  At this point you should set up a new bot on the [luci.infra.cron
+    bucket/pool][2] to run this on a regular interval.
 
-    * Request a new VM for the bot -
+    * Request a new GCE Linux bot -
       [sample ticket](http://crbug.com/626818) (internal)
 
-    * Use existing gsubtreed configs as templates in `master.cfg` and
-      `slaves.cfg` to set it up; remember to add the new bot to the
-      `Periodic` scheduler together with the other gsubtreed bots
+    * Create [new task service account (internal)](
+      http://go/luci-new-task-account).
 
-    * Push the appropriate credentials to the VM -
-      [see an example CL](http://go/chromerev/469017013) (internal).
+    * Add relevant new entries `cr-buildbucket.cfg`, `luci-scheduler.cfg` and
+      `luci-milo.cfg`, using existing gsubtreed builders as a template.
+      Make sure to use the task service account from above.
+
+    * Register your new service account with Gerrit Gerrit quota usage and
+      rejections monitoring ([example internal CL](http://cl/209480289)).
+      It may take some time for the changes to take effect.
+
 
 ## Usage:
 
@@ -137,4 +142,4 @@ poll+process cycle for the repo that it's mirroring.
     full_git_repo_urls.
 
 [1]: ./gsubtreed.py#32
-[2]: http://build.chromium.org/p/chromium.infra.cron
+[2]: https://ci.chromium.org/p/infra/g/cron/builders
