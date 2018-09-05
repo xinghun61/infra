@@ -22,7 +22,10 @@ from model import analysis_approach_type
 from model.base_build_model import BaseBuildModel
 from model.base_suspected_cl import RevertCL
 from model.flake.analysis import triggering_sources
+from model.flake.analysis.flake_analysis_request import FlakeAnalysisRequest
 from model.flake.analysis.flake_swarming_task import FlakeSwarmingTask
+from model.flake.detection.flake_occurrence import (
+    CQFalseRejectionFlakeOccurrence)
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_swarming_task import WfSwarmingTask
@@ -1342,3 +1345,20 @@ class FinditApiTest(testing.EndpointsTestCase):
         'AnalyzeBuildFailures',
         body=builds)
     self.assertFalse(mocked_func.called)
+
+  def testAnalyzeDetectedFlakeOccurrence(self):
+    occurrence = CQFalseRejectionFlakeOccurrence.Create(
+        build_id=111,
+        step_name='step1',
+        test_name='test1',
+        luci_project='chromium',
+        luci_bucket='try',
+        luci_builder='tryserver.chromium.linux',
+        legacy_master_name='linux_chromium_rel_ng',
+        legacy_build_number=999,
+        reference_succeeded_build_id=456,
+        time_happened=None,
+        gerrit_cl_id=98765,
+        parent_flake_key=None)
+    findit_api.AnalyzeDetectedFlakeOccurrence(occurrence, 12345)
+    self.assertEqual(1, len(self.taskqueue_requests))

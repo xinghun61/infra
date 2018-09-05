@@ -148,6 +148,7 @@ class FinditConfig(VersionedConfig):
   # A dict containing settings for Flake Detection. For example,
   # {
   #     'create_and_update_bug': True,
+  #     'report_flakes_to_flake_analyzer': True,
   # }
   flake_detection_settings = ndb.JsonProperty(indexed=False, default={})
 

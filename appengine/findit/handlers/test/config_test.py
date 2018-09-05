@@ -140,6 +140,7 @@ _MOCK_CHECK_FLAKE_SETTINGS = {
 
 _MOCK_FLAKE_DETECTION_SETTINGS = {
     'create_and_update_bug': True,
+    'report_flakes_to_flake_analyzer': True,
 }
 
 _MOCK_CODE_REVIEW_SETTINGS = {

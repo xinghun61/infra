@@ -185,7 +185,10 @@ _DEFAULT_CHECK_FLAKE_SETTINGS = {
     'upper_flake_threshold': 0.9999999
 }
 
-_DEFAULT_FLAKE_DETECTION_SETTINGS = {'create_and_update_bug': True}
+_DEFAULT_FLAKE_DETECTION_SETTINGS = {
+    'create_and_update_bug': True,
+    'report_flakes_to_flake_analyzer': True,
+}
 
 _DEFAULT_CODE_REVIEW_SETTINGS = {
     'rietveld_hosts': ['codereview.chromium.org'],

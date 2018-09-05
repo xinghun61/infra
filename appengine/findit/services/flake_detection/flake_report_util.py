@@ -8,6 +8,7 @@ import textwrap
 
 from google.appengine.ext import ndb
 
+from findit_api import AnalyzeDetectedFlakeOccurrence
 from gae_libs.appengine_util import IsStaging
 from googleapiclient.errors import HttpError
 from libs import time_util
@@ -359,4 +360,36 @@ def ReportFlakesToMonorail(flake_tuples_to_report):
       # update an issue that it doesn't have permission to. Do not raise
       # exception so that the for loop can move on to create or update next
       # issues.
-      logging.error('Failed to create or update issue due to error: %s', error)
+      logging.warning('Failed to create or update issue due to error: %s',
+                      error)
+
+
+def _IsReportFlakesToFlakeAnalyzerEnabled():
+  """Returns True if the feature to report flakes to Flake Analyzer is enabled.
+
+  Returns:
+    Returns True if it is enabled, otherwise False.
+  """
+  # Unless the flag is explicitly set, assumes disabled by default.
+  return waterfall_config.GetFlakeDetectionSettings().get(
+      'report_flakes_to_flake_analyzer', False)
+
+
+def ReportFlakesToFlakeAnalyzer(flake_tuples_to_report):
+  """Reports newly detected flakes and occurrences to Flake Analyzer.
+
+  Args:
+    flake_tuples_to_report: A list of tuples whose first element is a Flake
+                            entity and second element is a list of corresponding
+                            occurrences to report.
+  """
+  if not _IsReportFlakesToFlakeAnalyzerEnabled():
+    logging.info('Skip reporting flakes to Flake Analyzer because the feature '
+                 'is disabled.')
+    return
+
+  for flake, occurrences in flake_tuples_to_report:
+    flake_issue = _GetFlakeIssue(flake)
+    issue_id = flake_issue.issue_id if flake_issue else None
+    for occurrence in occurrences:
+      AnalyzeDetectedFlakeOccurrence(occurrence, issue_id)

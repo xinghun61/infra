@@ -5,6 +5,7 @@ import datetime
 import mock
 import textwrap
 
+import findit_api
 from googleapiclient.errors import HttpError
 from libs import time_util
 from model.flake.flake import Flake
@@ -51,6 +52,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
     super(FlakeReportUtilTest, self).setUp()
     self.UpdateUnitTestConfigSettings('flake_detection_settings',
                                       {'create_and_update_bug': True})
+    self.UpdateUnitTestConfigSettings('flake_detection_settings',
+                                      {'report_flakes_to_flake_analyzer': True})
     patcher = mock.patch.object(
         time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 1, 2))
     self.addCleanup(patcher.stop)
@@ -395,3 +398,34 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
 
     flake_report_util.ReportFlakesToMonorail([(flake1, occurrences1),
                                               (flake2, occurrences2)])
+
+  # This test tests that if the feature to report flakes to Flake Analyzer is
+  # disabled, flakes will NOT be reported.
+  @mock.patch.object(flake_report_util, 'AnalyzeDetectedFlakeOccurrence')
+  def testDisableReportFlakesToFlakeAnalyzer(self,
+                                             mock_analyze_flake_occurrence):
+    self.UpdateUnitTestConfigSettings(
+        'flake_detection_settings', {'report_flakes_to_flake_analyzer': False})
+
+    flake = Flake.query().fetch()[0]
+    occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()
+    flake_report_util.ReportFlakesToFlakeAnalyzer([(flake, occurrences)])
+    self.assertFalse(mock_analyze_flake_occurrence.called)
+
+  @mock.patch.object(flake_report_util, 'AnalyzeDetectedFlakeOccurrence')
+  def testReportFlakesToFlakeAnalyzer(self, mock_analyze_flake_occurrence):
+    flake = Flake.query().fetch()[0]
+    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
+    flake_issue.put()
+    flake.flake_issue_key = flake_issue.key
+    flake.put()
+    occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()
+
+    flake_report_util.ReportFlakesToFlakeAnalyzer([(flake, occurrences)])
+    self.assertEqual(3, mock_analyze_flake_occurrence.call_count)
+    expected_call_args = []
+    for occurrence in occurrences:
+      expected_call_args.append(((occurrence, 12345),))
+
+    self.assertEqual(expected_call_args,
+                     mock_analyze_flake_occurrence.call_args_list)

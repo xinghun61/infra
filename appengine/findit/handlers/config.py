@@ -345,6 +345,7 @@ _CONFIG_SPEC = {  # yapf: disable
     }),
     'flake_detection_settings': (dict, True, {
         'create_and_update_bug': bool,
+        'report_flakes_to_flake_analyzer': bool,
     }),
     'code_review_settings': (dict, True, {
         'commit_bot_emails': list,
