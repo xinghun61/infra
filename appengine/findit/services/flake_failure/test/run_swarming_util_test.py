@@ -34,6 +34,21 @@ class RunSwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         8, run_swarming_util._EstimateSwarmingIterationTimeout(flakiness))
 
+  def testEstimateSwarmingIterationTimeout(self):
+    flakiness = Flakiness(
+        build_url=None,
+        commit_position=1000,
+        total_test_run_seconds=1000,
+        error=None,
+        failed_swarming_task_attempts=0,
+        iterations=20,
+        pass_rate=0.3,
+        revision='r1000',
+        try_job_url='url')
+
+    self.assertEqual(
+        100, run_swarming_util._EstimateSwarmingIterationTimeout(flakiness))
+
   def testEstimateSwarmingIterationTimeoutWithDefaultValues(self):
     flakiness = Flakiness(
         build_url=None,
@@ -46,7 +61,7 @@ class RunSwarmingUtilTest(wf_testcase.WaterfallTestCase):
         revision='r1000',
         try_job_url='url')
     self.assertEqual(
-        120, run_swarming_util._EstimateSwarmingIterationTimeout(flakiness))
+        180, run_swarming_util._EstimateSwarmingIterationTimeout(flakiness))
 
   def testEstimateTimeoutForTask(self):
     self.assertEqual(3600, run_swarming_util._EstimateTimeoutForTask(1, 1))
@@ -69,7 +84,7 @@ class RunSwarmingUtilTest(wf_testcase.WaterfallTestCase):
         pass_rate=None,
         revision='r1000',
         try_job_url='url')
-    self.assertEqual((30, 3600),
+    self.assertEqual((20, 3600),
                      run_swarming_util.CalculateRunParametersForSwarmingTask(
                          flakiness, None))
 

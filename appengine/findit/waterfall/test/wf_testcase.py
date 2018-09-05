@@ -165,38 +165,24 @@ _DEFAULT_ACTION_SETTINGS = {
 }
 
 _DEFAULT_CHECK_FLAKE_SETTINGS = {
-    'swarming_rerun': {
-        'lower_flake_threshold': 0.02,
-        'upper_flake_threshold': 0.98,
-        'max_flake_in_a_row': 4,
-        'max_stable_in_a_row': 4,
-        'iterations_to_rerun': 100,
-        'max_build_numbers_to_look_back': 1000,
-        'use_nearby_neighbor': True,
-        'max_dive_in_a_row': 4,
-        'dive_rate_threshold': 0.4,
-        'max_iterations_to_rerun': 800,
-        'timeout_per_test_seconds': 120,
-        'timeout_per_swarming_task_seconds': 3600,
-        'swarming_task_cushion': 2.0,
-        'swarming_task_retries_per_build': 2,
-        'iterations_to_run_after_timeout': 10,
-        'max_iterations_per_task': 200,
-        'use_new_pipeline_for_rerun': True
-    },
-    'try_job_rerun': {
-        'iterations_to_rerun': 100,
-        'lower_flake_threshold': 0.02,
-        'upper_flake_threshold': 0.98,
-        'max_flake_in_a_row': 1,
-        'max_stable_in_a_row': 0,
-    },
-    'minimum_confidence_score_to_run_tryjobs': 0.6,
+    'autorevert_enabled': True,
     'create_monorail_bug': True,
-    'new_flake_bugs_per_day': 2,
-    'update_monorail_bug': False,
+    'iterations_to_run_after_timeout': 10,
+    'lower_flake_threshold': 1e-7,
+    'max_commit_positions_to_look_back': 5000,
+    'max_iterations_per_task': 200,
+    'max_iterations_to_rerun': 400,
+    'minimum_confidence_to_create_bug': 0.7,
+    'minimum_confidence_to_update_cr': 0.7,
+    'new_flake_bugs_per_day': 3,
+    'per_iteration_timeout_seconds': 60,
+    'swarming_task_cushion': 2,
+    'swarming_task_retries_per_build': 3,
     'throttle_flake_analyses': False,
-    'minimum_confidence_to_create_bug': .9
+    'timeout_per_swarming_task_seconds': 3600,
+    'timeout_per_test_seconds': 180,
+    'update_monorail_bug': False,
+    'upper_flake_threshold': 0.9999999
 }
 
 _DEFAULT_FLAKE_DETECTION_SETTINGS = {'create_and_update_bug': True}

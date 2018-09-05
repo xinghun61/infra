@@ -44,7 +44,7 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     test_name = 't'
     commit_position = 1000
     incoming_pass_count = 15
-    iterations = 30
+    iterations = 20
     isolate_sha = 'sha1'
     timeout_seconds = 3600
     revision = 'r1000'

@@ -254,8 +254,9 @@ def GenerateWrongResultLink(analysis):
                                             GenerateAnalysisLink(analysis))
 
 
-def UnderDailyLimit(analysis):
-  daily_bug_limit = analysis.algorithm_parameters.get(
+def UnderDailyLimit():
+  check_flake_settings = waterfall_config.GetCheckFlakeSettings()
+  daily_bug_limit = check_flake_settings.get(
       'new_flake_bugs_per_day', flake_constants.DEFAULT_NEW_FLAKE_BUGS_PER_DAY)
   query = master_flake_analysis.MasterFlakeAnalysis.query(
       master_flake_analysis.MasterFlakeAnalysis.request_time >=

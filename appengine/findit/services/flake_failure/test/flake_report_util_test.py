@@ -32,8 +32,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
                   flake_report_util.GenerateWrongResultLink(analysis))
 
   def testGetMinimumConfidenceToFileBugs(self):
-    self.UpdateUnitTestConfigSettings(
-        'check_flake_settings', {'minimum_confidence_to_create_bugs': 0.9})
+    self.UpdateUnitTestConfigSettings('check_flake_settings',
+                                      {'minimum_confidence_to_create_bug': 0.9})
     self.assertEqual(0.9, flake_report_util.GetMinimumConfidenceToFileBugs())
 
   def testGetMinimumConfidenceToUpdateBugs(self):
@@ -431,7 +431,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
         DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.Save()
 
-    self.assertTrue(flake_report_util.UnderDailyLimit(analysis))
+    self.assertTrue(flake_report_util.UnderDailyLimit())
 
   @mock.patch.object(
       time_util,
@@ -466,11 +466,9 @@ class FlakeReportUtilTest(WaterfallTestCase):
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
-    analysis.algorithm_parameters = copy.deepcopy(
-        DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.put()
 
-    self.assertFalse(flake_report_util.UnderDailyLimit(analysis))
+    self.assertFalse(flake_report_util.UnderDailyLimit())
 
   def testGenerateCommentWithCulprit(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')

@@ -63,10 +63,16 @@ def _EstimateSwarmingIterationTimeout(flakiness):
   time_per_iteration = (
       float(flakiness.total_test_run_seconds) / float(flakiness.iterations))
 
-  return int(
-      check_flake_settings.get('swarming_task_cushion',
-                               (flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER
-                                * time_per_iteration)))
+  # Add padding to for a more pessimistic per-test estimated time. For example,
+  # if 60 iterations were measured to have ran in 60 seconds, theoretically 1
+  # should take 1 second. However there can be some variance in the run time, so
+  # to be safe, we multiply that theoretical time by a constant factor (e.g. 2)
+  # to give an adjusted time of 2 seconds per test to trigger tasks with more a
+  # conservative number of iterations.
+  cushion_multiplier = check_flake_settings.get(
+      'swarming_task_cushion', flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER)
+
+  return int(round(cushion_multiplier * time_per_iteration))
 
 
 def _EstimateTimeoutForTask(estimated_timeout_per_test,

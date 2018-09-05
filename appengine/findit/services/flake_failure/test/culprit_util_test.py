@@ -31,14 +31,15 @@ from waterfall.test import wf_testcase
 
 class CulpritUtilTest(wf_testcase.WaterfallTestCase):
 
-  def testIsAutorevertEnabled(self):
-    self.assertFalse(culprit_util.IsAutorevertEnabled())
+  @mock.patch.object(waterfall_config, 'GetCheckFlakeSettings')
+  def testIsAutorevertEnabled(self, mocked_flake_settings):
+    mocked_flake_settings.return_value = {'autorevert_enabled': True}
+    self.assertTrue(culprit_util.IsAutorevertEnabled())
 
-    with mock.patch.object(
-        waterfall_config,
-        'GetCheckFlakeSettings',
-        return_value={'autorevert_enabled': True}):
-      self.assertTrue(culprit_util.IsAutorevertEnabled())
+  @mock.patch.object(waterfall_config, 'GetCheckFlakeSettings')
+  def testIsAutorevertEnabledNotEnabled(self, mocked_flake_settings):
+    mocked_flake_settings.return_value = {'autorevert_enabled': False}
+    self.assertFalse(culprit_util.IsAutorevertEnabled())
 
   def testAbortCreateAndSubmitRevertNothingMatchesNothingChanged(self):
     pipeline_id = 'foobar'

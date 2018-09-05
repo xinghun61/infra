@@ -29,9 +29,6 @@ from waterfall import waterfall_config
 # TODO(crbug.com/828464): Make this configurable.
 _AUTO_REVERT_LIMIT = 4
 
-# TODO(crbug.com/828480): make this configurable.
-_IS_AUTO_REVERT_ENABLED = False
-
 _NOTIFICATION_MESSAGE_TEMPLATE = textwrap.dedent("""
 Findit (https://goo.gl/kROfz5) identified this CL at revision {} as the culprit
 for introducing flakiness in the tests as shown on:
@@ -70,7 +67,7 @@ def AbortCreateAndSubmitRevert(parameters, runner_id):
 
 def IsAutorevertEnabled():
   check_flake_settings = waterfall_config.GetCheckFlakeSettings()
-  return check_flake_settings.get('autorevert_enabled', _IS_AUTO_REVERT_ENABLED)
+  return check_flake_settings.get('autorevert_enabled', False)
 
 
 def CreateAndSubmitRevert(parameters, runner_id):
