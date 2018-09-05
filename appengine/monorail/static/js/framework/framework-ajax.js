@@ -14,82 +14,6 @@
 var DEBOUNCE_THRESH_MS = 2000;
 
 
-const prpcClient = new window.chops.rpc.PrpcClient({
-  insecure: Boolean(location.hostname === 'localhost'),
-  fetchImpl: (url, options) => {
-    options.credentials = 'same-origin';
-    return fetch(url, options);
-  },
-});
-
-
-/**
- * Check if the token is expired.
- * @param {number} opt_tokenExpiresSec: the optional expiration time of the
- * token. If not supplied, CS_env.tokenExpiresSec will be used.
- */
-function isTokenExpired(opt_tokenExpiresSec) {
-  const expiresSec = opt_tokenExpiresSec || CS_env.tokenExpiresSec;
-  // Leave some buffer to account for the time it might take to fire the
-  // request.
-  const tokenExpiresDate = new Date(expiresSec * 1000 - 50);
-  return tokenExpiresDate < new Date();
-}
-
-
-/**
- * Refresh the XSRF token if necessary.
- * TODO(ehmaldonado): Display a message to the user asking them to refresh the
- * page if we fail to refresh the token.
- * @param {string} opt_token: an optional XSRF token. If not supplied, defaults
- * to CS_env.token.
- * @param {string} opt_tokenPath: the optional path for the XSRF token. If not
- * supplied, defaults to 'token'.
- * @param {number} opt_tokenExpiresSec: the expiration time of the token. If not
- * supplied, defaults to CS_env.tokenExpiresSec.
- */
-function ensureTokenIsValid(opt_token, opt_tokenPath, opt_tokenExpiresSec) {
-  const token = opt_token || window.CS_env.token;
-  const tokenPath = opt_tokenPath || 'xhr';
-  const tokenExpiresSec = CS_env.tokenExpiresSec;
-  if (isTokenExpired(tokenExpiresSec)) {
-    const message = {
-      trace: {
-        token: window.CS_env.token
-      },
-      token: token,
-      tokenPath: tokenPath
-    };
-    const refreshTokenPromise = prpcClient.call(
-        'monorail.Sitewide', 'RefreshToken', message);
-    return refreshTokenPromise;
-  } else {
-    return new Promise(resolve => {
-      resolve({
-        token: token,
-        tokenExpiresSec: tokenExpiresSec
-      });
-    });
-  }
-}
-
-
-/**
- * Sends a pRPC request. Adds CS_env.token to the request message after making
- * sure it is fresh.
- * @async
- * @param service {string} Full service name, including package name.
- * @param method {string} Service method name.
- * @param message {Object} The protobuf message to send.
- */
-function prpcCall(service, method, message) {
-  return ensureTokenIsValid().then(() => {
-    message.trace = {token: window.CS_env.token};
-    return prpcClient.call(service, method, message);
-  });
-}
-
-
 /**
  * Simple debouncer to handle text input.  Don't try to hit the server
  * until the user has stopped typing for a few seconds.  E.g.,
@@ -155,15 +79,16 @@ function CS_postData(args, opt_token) {
  * @param {Object} args parameters to encode as POST data.
  */
 function CS_doPost(url, callback, args, opt_token, opt_tokenPath) {
-  ensureTokenIsValid(opt_token, opt_tokenPath).then(freshToken => {
-    CS_env[opt_tokenPath || 'token'] = freshToken.token;
-    CS_env.tokenExpiresSec = Number(freshToken.tokenExpiresSec);
-    var xh = XH_XmlHttpCreate();
-    XH_XmlHttpPOST(
-        xh, url,
-        CS_postData(args, CS_env[freshToken.tokenPath] || freshToken.token),
-        callback);
-  });
+  window.__prpc.ensureTokenIsValid(opt_token, opt_tokenPath).then(
+    freshToken => {
+      CS_env[opt_tokenPath || 'token'] = freshToken.token;
+      CS_env.tokenExpiresSec = Number(freshToken.tokenExpiresSec);
+      var xh = XH_XmlHttpCreate();
+      XH_XmlHttpPOST(
+          xh, url,
+          CS_postData(args, CS_env[freshToken.tokenPath] || freshToken.token),
+          callback);
+    });
 }
 
 
@@ -219,7 +144,7 @@ function refreshTokens(event, formToken, formTokenPath, tokenExpiresSec) {
 
   formToSubmit = event.target;
   event.preventDefault();
-  const refreshTokenPromise = ensureTokenIsValid(
+  const refreshTokenPromise = window.__prpc.ensureTokenIsValid(
       formToken, formTokenPath, tokenExpiresSec);
 
   refreshTokenPromise.then(freshToken => {

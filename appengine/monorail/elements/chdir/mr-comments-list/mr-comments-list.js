@@ -29,6 +29,7 @@ class MrCommentList extends Polymer.Element {
         value: [],
       },
       token: String,
+      tokenExpiresSec: Number,
       selectedDate: {
         type: Number,
         notify: true,

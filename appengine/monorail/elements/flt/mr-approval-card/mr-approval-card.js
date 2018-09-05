@@ -75,6 +75,10 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
         type: String,
         statePath: 'token',
       },
+      tokenExpiresSec: {
+        type: Number,
+        statePath: 'tokenExpiresSec',
+      },
       user: {
         type: String,
         statePath: 'user',
@@ -222,7 +226,6 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
 
   _updateApproval(commentData, delta, isDescription) {
     const baseMessage = {
-      trace: {token: this.token},
       issueRef: {
         projectName: this.projectName,
         localId: this.issueId,
@@ -244,15 +247,20 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
 
     this.dispatch({type: actionType.UPDATE_APPROVAL_START});
 
-    window.prpcClient.call(
-      'monorail.Issues', 'UpdateApproval', message
+    window.__prpc.call(
+      'monorail.Issues', 'UpdateApproval', message, this.token,
+      this.tokenExpiresSec
     ).then((resp) => {
       this.dispatch({
         type: actionType.UPDATE_APPROVAL_SUCCESS,
         approval: resp.approval,
       });
-      actionCreator.fetchIssue(this.dispatch.bind(this), baseMessage);
-      actionCreator.fetchComments(this.dispatch.bind(this), baseMessage);
+      actionCreator.fetchIssue(
+          this.dispatch.bind(this), baseMessage, this.token,
+          this.tokenExpiresSec);
+      actionCreator.fetchComments(
+          this.dispatch.bind(this), baseMessage, this.token,
+          this.tokenExpiresSec);
     }, (error) => {
       this.dispatch({
         type: actionType.UPDATE_APPROVAL_FAILURE,

@@ -135,15 +135,12 @@
               document.location.search.substring(1));
           const query = params.get('q');
           const message = {
-            trace: {
-              token: window.CS_env.token,
-            },
             timestamp: timestamp,
             projectName: this.projectName,
             query: query,
           };
-          const callPromise = window.prpcClient.call('monorail.Issues',
-              'IssueSnapshot', message);
+          const callPromise = window.__prpc.call('monorail.Issues',
+              'IssueSnapshot', message, CS_env.token, CS_env.tokenExpiresSec);
           return callPromise.then(response => {
             resolve({
               date: timestamp * 1000,

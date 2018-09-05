@@ -75,14 +75,14 @@
   );
 
   // Lookup referenced artifacts functions.
-  function LookupReferencedIssues(issueRefs, trace, componentName) {
+  function LookupReferencedIssues(issueRefs, componentName, token, tokenExpiresSec) {
     return new Promise((resolve, reject) => {
       const message = {
-        trace: trace,
         issueRefs: issueRefs,
       };
-      const listReferencedIssues =  window.prpcClient.call(
-          'monorail.Issues', 'ListReferencedIssues', message
+      const listReferencedIssues =  window.__prpc.call(
+          'monorail.Issues', 'ListReferencedIssues', message, token,
+          tokenExpiresSec
       );
       return listReferencedIssues.then(response => {
         resolve({'componentName': componentName, 'existingRefs': response});
@@ -90,14 +90,14 @@
     });
   }
 
-  function LookupReferencedUsers(emails, trace, componentName) {
+  function LookupReferencedUsers(emails, componentName, token, tokenExpiresSec) {
     return new Promise((resolve, reject) => {
       const message = {
-        trace: trace,
         emails: emails,
       };
-      const listReferencedUsers = window.prpcClient.call(
-          'monorail.Users', 'ListReferencedUsers', message
+      const listReferencedUsers = window.__prpc.call(
+          'monorail.Users', 'ListReferencedUsers', message, token,
+          tokenExpiresSec
       );
       return listReferencedUsers.then(response => {
         resolve({'componentName': componentName, 'existingRefs': response});
@@ -236,7 +236,7 @@
     };
   }
 
-  function getReferencedArtifacts(comments, trace) {
+  function getReferencedArtifacts(comments, token, tokenExpiresSec) {
     return new Promise((resolve, reject) => {
       let artifactsByComponents = new Map();
       let fetchPromises = [];
@@ -252,7 +252,7 @@
             });
           });
           if (refs.length) {
-            fetchPromises.push(lookup(refs, trace, componentName));
+            fetchPromises.push(lookup(refs, componentName, token, tokenExpiresSec));
           }
         }
       });

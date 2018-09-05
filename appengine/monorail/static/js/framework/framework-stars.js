@@ -40,19 +40,19 @@ function TKR_toggleStar(el, projectName, localId, userId, hotlistId) {
   const starRequestMessage = {starred: Boolean(starred)};
   if (userId) {
     starRequestMessage.user_ref = {user_id: userId};
-    prpcCall('monorail.Users', 'StarUser', starRequestMessage);
+    window.__prpc.call('monorail.Users', 'StarUser', starRequestMessage);
   } else if (projectName && localId) {
     starRequestMessage.issue_ref = {
       project_name: projectName,
       local_id: localId
     };
-    prpcCall('monorail.Issues', 'StarIssue', starRequestMessage);
+    window.__prpc.call('monorail.Issues', 'StarIssue', starRequestMessage);
   } else if (projectName) {
     starRequestMessage.project_name = projectName;
-    prpcCall('monorail.Projects', 'StarProject', starRequestMessage);
+    window.__prpc.call('monorail.Projects', 'StarProject', starRequestMessage);
   } else if (hotlistId) {
     starRequestMessage.hotlist_ref = {hotlist_id: hotlistId};
-    prpcCall('monorail.Features', 'StarHotlist', starRequestMessage);
+    window.__prpc.call('monorail.Features', 'StarHotlist', starRequestMessage);
   }
 }
 

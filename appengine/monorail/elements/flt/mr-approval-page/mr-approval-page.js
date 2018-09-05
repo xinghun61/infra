@@ -51,6 +51,14 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
         type: String,
         observer: '_tokenChanged',
       },
+      token: {
+        type: String,
+        observer: '_tokenChanged',
+      },
+      tokenExpiresSec: {
+        type: Number,
+        observer: '_tokenExpiresSecChanged',
+      },
       user: {
         type: String,
         observer: '_userChanged',
@@ -80,12 +88,12 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
     this.dispatch({type: actionType.FETCH_PROJECT_CONFIG_START});
 
     const message = {
-      trace: {token: this.token},
       projectName,
     };
 
-    const getConfig = window.prpcClient.call(
-      'monorail.Projects', 'GetConfig', message
+    const getConfig = window.__prpc.call(
+      'monorail.Projects', 'GetConfig', message, this.token,
+      this.tokenExpiresSec
     );
 
     getConfig.then((resp) => {
@@ -106,16 +114,18 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
     // Reload the issue data when the id changes.
 
     const message = {
-      trace: {token: this.token},
       issue_ref: {
         project_name: projectName,
         local_id: id,
       },
     };
 
-    actionCreator.fetchIssue(this.dispatch.bind(this), message);
-    actionCreator.fetchComments(this.dispatch.bind(this), message);
-    actionCreator.fetchIsStarred(this.dispatch.bind(this), message);
+    actionCreator.fetchIssue(
+        this.dispatch.bind(this), message, this.token, this.tokenExpiresSec);
+    actionCreator.fetchComments(
+        this.dispatch.bind(this), message, this.token, this.tokenExpiresSec);
+    actionCreator.fetchIsStarred(
+        this.dispatch.bind(this), message, this.token, this.tokenExpiresSec);
   }
 
   _routeChanged(routeData, queryParams) {
@@ -130,6 +140,13 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
     this.dispatch({
       type: actionType.UPDATE_TOKEN,
       token,
+    });
+  }
+
+  _tokenExpiresSecChanged(tokenExpiresSec) {
+    this.dispatch({
+      type: actionType.UPDATE_TOKEN_EXPIRES_SEC,
+      tokenExpiresSec,
     });
   }
 

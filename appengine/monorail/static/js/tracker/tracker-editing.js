@@ -1789,7 +1789,7 @@ function TKR_presubmit() {
     issue_ref: issueRef,
     issue_delta: issueDelta,
   };
-  const presubmitPromise = prpcCall(
+  const presubmitPromise = window.__prpc.call(
       'monorail.Issues', 'PresubmitIssue', presubmitMessage);
 
   presubmitPromise.then(response => {

@@ -46,6 +46,10 @@ class MrIssueMetadata extends ReduxMixin(Polymer.Element) {
         type: String,
         statePath: 'token',
       },
+      tokenExpiresSec: {
+        type: Number,
+        statePath: 'tokenExpiresSec',
+      },
       _fieldDefs: {
         type: Array,
         statePath: selectors.fieldDefsForIssue,
@@ -74,7 +78,6 @@ class MrIssueMetadata extends ReduxMixin(Polymer.Element) {
 
     const newIsStarred = !this.isStarred;
     const message = {
-      trace: {token: this.token},
       issueRef: {
         projectName: this.projectName,
         localId: this.issueId,
@@ -82,8 +85,8 @@ class MrIssueMetadata extends ReduxMixin(Polymer.Element) {
       starred: newIsStarred,
     };
 
-    const starIssue = window.prpcClient.call(
-      'monorail.Issues', 'StarIssue', message
+    const starIssue = window.__prpc.call(
+      'monorail.Issues', 'StarIssue', message, this.token, this.tokenExpiresSec
     );
 
     starIssue.then((resp) => {

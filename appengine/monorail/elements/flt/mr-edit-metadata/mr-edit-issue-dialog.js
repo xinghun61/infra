@@ -44,6 +44,10 @@ class MrEditIssueDialog extends ReduxMixin(Polymer.Element) {
         type: String,
         statePath: 'token',
       },
+      tokenExpiresSec: {
+        type: Number,
+        statePath: 'tokenExpiresSec',
+      },
       _labelNames: {
         type: Array,
         computed: '_computeLabelNames(issue.labelRefs)',
@@ -81,7 +85,6 @@ class MrEditIssueDialog extends ReduxMixin(Polymer.Element) {
       '#metadataForm').getDelta();
 
     const message = {
-      trace: {token: this.token},
       issueRef: {
         projectName: this.projectName,
         localId: this.issueId,
@@ -181,7 +184,8 @@ class MrEditIssueDialog extends ReduxMixin(Polymer.Element) {
     }
 
     if (message.commentContent || message.delta) {
-      actionCreator.updateIssue(this.dispatch.bind(this), message);
+      actionCreator.updateIssue(
+          this.dispatch.bind(this), message, this.token, this.tokenExpiresSec);
     }
 
     this.cancel();

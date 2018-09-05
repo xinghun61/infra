@@ -16,6 +16,7 @@
       // Misc global state.
       UPDATE_ISSUE_REF: 'UPDATE_ISSUE_REF',
       UPDATE_TOKEN: 'UPDATE_TOKEN',
+      UPDATE_TOKEN_EXPIRES_SEC: 'UPDATE_TOKEN_EXPIRES_SEC',
       UPDATE_USER: 'UPDATE_USER',
 
       // UI state.
@@ -57,10 +58,11 @@
     };
 
     const actionCreator = {
-      fetchReferences: (dispatch, comments, trace) => {
+      fetchReferences: (dispatch, comments, token, tokenExpiresSec) => {
         dispatch({type: actionType.FETCH_REFERENCES_START});
 
-        window.__autolink.getReferencedArtifacts(comments, trace).then((refs) => {
+        window.__autolink.getReferencedArtifacts(
+            comments, token, tokenExpiresSec).then((refs) => {
           commentRefs = new Map();
           refs.forEach(({componentName, existingRefs}) => {
             commentRefs.set(componentName, existingRefs);
@@ -76,11 +78,11 @@
           });
         });
       },
-      fetchIssue: (dispatch, message) => {
+      fetchIssue: (dispatch, message, token, tokenExpiresSec) => {
         dispatch({type: actionType.FETCH_ISSUE_START});
 
-        const getIssue = window.prpcClient.call(
-          'monorail.Issues', 'GetIssue', message
+        const getIssue = window.__prpc.call(
+          'monorail.Issues', 'GetIssue', message, token, tokenExpiresSec
         );
 
         getIssue.then((resp) => {
@@ -95,11 +97,11 @@
           });
         });
       },
-      fetchComments: (dispatch, message) => {
+      fetchComments: (dispatch, message, token, tokenExpiresSec) => {
         dispatch({type: actionType.FETCH_COMMENTS_START});
 
-        const getComments = window.prpcClient.call(
-          'monorail.Issues', 'ListComments', message
+        const getComments = window.__prpc.call(
+          'monorail.Issues', 'ListComments', message, token, tokenExpiresSec
         );
 
         getComments.then((resp) => {
@@ -107,7 +109,8 @@
             type: actionType.FETCH_COMMENTS_SUCCESS,
             comments: resp.comments,
           });
-            actionCreator.fetchReferences(dispatch, resp.comments, message.trace);
+            actionCreator.fetchReferences(
+              dispatch, resp.comments, token, tokenExpiresSec);
         }, (error) => {
           dispatch({
             type: actionType.FETCH_COMMENTS_FAILURE,
@@ -115,11 +118,11 @@
           });
         });
       },
-      fetchIsStarred: (dispatch, message) => {
+      fetchIsStarred: (dispatch, message, token, tokenExpiresSec) => {
         dispatch({type: actionType.FETCH_IS_STARRED_START});
 
-        const getIsStarred = window.prpcClient.call(
-          'monorail.Issues', 'IsIssueStarred', message
+        const getIsStarred = window.__prpc.call(
+          'monorail.Issues', 'IsIssueStarred', message, token, tokenExpiresSec
         );
 
         getIsStarred.then((resp) => {
@@ -134,18 +137,17 @@
           });
         });
       },
-      updateIssue: (dispatch, message) => {
+      updateIssue: (dispatch, message, token, tokenExpiresSec) => {
         dispatch({type: actionType.UPDATE_ISSUE_START});
 
-        window.prpcClient.call(
-          'monorail.Issues', 'UpdateIssue', message
+        window.__prpc.call(
+          'monorail.Issues', 'UpdateIssue', message, token, tokenExpiresSec
         ).then((resp) => {
           dispatch({
             type: actionType.UPDATE_ISSUE_SUCCESS,
             issue: resp.issue,
           });
           const fetchCommentsMessage = {
-            trace: message.trace,
             issueRef: message.issueRef,
           };
           actionCreator.fetchComments(dispatch, fetchCommentsMessage);
@@ -167,6 +169,7 @@
       commentReferences: new Map(),
       isStarred: false,
       token: null,
+      tokenExpiresSec: 0,
 
       openedDialog: DialogState.NONE,
 
@@ -223,6 +226,10 @@
         case actionType.UPDATE_TOKEN:
           return Object.assign({}, state, {
             token: action.token,
+          });
+        case actionType.UPDATE_TOKEN_EXPIRES_SEC:
+          return Object.assign({}, state, {
+            tokenExpiresSec: action.tokenExpiresSec,
           });
         case actionType.UPDATE_USER:
           return Object.assign({}, state, {

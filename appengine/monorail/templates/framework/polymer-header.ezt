@@ -5,16 +5,7 @@
 
 <script type="text/javascript" src="/bower_components/chopsui/prpc-client.js" nonce="[nonce]"></script>
 <script type="text/javascript" src="/bower_components/webcomponentsjs/webcomponents-loader.js" nonce="[nonce]"></script>
-
-<script type="text/javascript"  nonce="[nonce]">
-  window.prpcClient = new window.chops.rpc.PrpcClient({
-      insecure: Boolean(location.hostname === 'localhost'),
-      fetchImpl: (url, options) => {
-          options.credentials = 'same-origin';
-          return fetch(url, options);
-      },
-  });
-</script>
+<script type="text/javascript" src="/static/js/prpc.js" nonce="[nonce]"></script>
 
 <script src="/static/js/autolink.js" nonce="[nonce]"></script>
 
