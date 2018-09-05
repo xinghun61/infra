@@ -27,7 +27,9 @@ import oauth2client.client
 DIRBASE = os.path.splitext(os.path.basename(__file__))[0]
 DATADIR = os.path.join(os.environ.get('HOME', ''), 'appdata', DIRBASE)
 
-DATA_URL = 'https://bugdroid-data.appspot.com/_ah/api/bugdroid/v1/data'
+BASE_URL = 'https://bugdroid-data.appspot.com/_ah/api/bugdroid/v1'
+DATA_URL = '/'.join([BASE_URL, 'data'])
+DATAFILE_URL = '/'.join([BASE_URL, 'datafile'])
 
 
 def get_data(http):
@@ -45,22 +47,20 @@ def get_data(http):
 
 
 def update_data(http):
+  # TODO(crbug/880103): This will currently do about 60 separate uploads on
+  # every run. Maybe try to determine which data files actually changed and only
+  # upload those?
   logging.info('Updating data files to gcs...')
-  result = []
   for data_file in os.listdir(DATADIR):
     if os.path.isdir(data_file):
       continue
     file_path = os.path.join(DATADIR, data_file)
     with open(file_path) as fh:
-      result.append({
-          'file_name': data_file,
-          'file_content': base64.b64encode(fh.read()),
-      })
-
-  data_files = json.dumps(result)
-  http.request(
-      DATA_URL, 'POST', body=json.dumps({'data_files': data_files}),
-      headers={'Content-Type': 'application/json'})
+      http.request(
+          '/'.join([DATAFILE_URL, data_file]),
+          'POST',
+          body=json.dumps({'file_content': base64.b64encode(fh.read())}),
+          headers={'Content-Type': 'application/json'})
 
 
 def parse_args(args):  # pragma: no cover
@@ -123,8 +123,10 @@ def main(args):  # pragma: no cover
     creds_data = json.load(data_file)
 
   # Use local json file
-  if not opts.configfile:
-    get_data(_create_http(creds_data))
+  # TODO(crbug/880103): Temporarily disable refreshing data from the server to
+  # allow the host to upload the local modifications from the last failed run.
+  #if not opts.configfile:
+    #get_data(_create_http(creds_data))
 
   def outer_loop_iteration():
     return bugdroid.inner_loop(opts)
