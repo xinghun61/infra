@@ -18,10 +18,14 @@ const (
 	mergeApprovedLabel  = "Merge-Approved-%s"
 )
 
-var chromeTPMs = []string{"cmasso@chromium.org", "govind@chromium.org", "amineer@chromium.org", "abdulsyed@chromium.org",
-	"bhthompson@chromium.org", "josafat@chromium.org", "gkihumba@chromium.org", "kbleicher@chromium.org",
-	"mmoss@chromium.org", "benmason@chromium.org", "sheriffbot@chromium.org", "ketakid@chromium.org",
-	"cindyb@chromium.org", "geohsu@chromium.org", "shawnku@chromium.org", "kariahda@chromium.org"}
+var chromeTPMs = []string{"cmasso@chromium.org", "cmasso@google.com", "govind@chromium.org", "govind@google.com",
+	"amineer@chromium.org", "amineer@google.com", "abdulsyed@chromium.org", "abdulsyed@google.com",
+	"bhthompson@chromium.org", "bhthompson@google.com", "josafat@chromium.org", "josafat@chromium.org",
+	"gkihumba@chromium.org", "gkihumba@google.com", "kbleicher@chromium.org", "kbleicher@google.com",
+	"mmoss@chromium.org", "mmoss@google.com", "benmason@chromium.org", "benmason@google.com",
+	"sheriffbot@chromium.org", "ketakid@chromium.org", "ketakid@google.com",
+	"cindyb@chromium.org", "cindyb@google.com", "geohsu@chromium.org", "geohsu@google.com",
+	"shawnku@chromium.org", "shawnku@google.com", "kariahda@chromium.org", "kariahda@google.com"}
 
 // OnlyMergeApprovedChange is a RuleFunc that verifies that only approved changes are merged into a release branch.
 func OnlyMergeApprovedChange(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
