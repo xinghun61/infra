@@ -369,3 +369,14 @@ class FeaturesServicerTest(unittest.TestCase):
     self.assertEqual('proj', response.items[0].issue.project_name)
     self.assertEqual('sum', response.items[0].issue.summary)
     self.assertEqual('New', response.items[0].issue.status_ref.status)
+
+  def testDismissCue(self):
+    user = self.services.user.test_users[111L]
+    self.assertEqual(0, len(user.dismissed_cues))
+
+    request = features_pb2.DismissCueRequest(cue_id='12')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    self.CallWrapped(self.features_svcr.DismissCue, mc, request)
+
+    self.assertEqual(['12'], user.dismissed_cues)

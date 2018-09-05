@@ -1104,3 +1104,18 @@ class WorkEnv(object):
   # FUTURE: CreateHotlist()
   # FUTURE: UpdateHotlist()
   # FUTURE: DeleteHotlist()
+
+  def DismissCue(self, cue_id):
+    """Dismiss the given cue and don't show it again to the logged in user."""
+    if cue_id is None:
+      raise exceptions.InputException('No cue specified')
+
+    if not self.mc.auth.user_id:
+      raise exceptions.InputException('No current user specified')
+
+    with self.mc.profiler.Phase('Handling user set cue request: %r' % cue_id):
+      new_dismissed_cues = self.mc.auth.user_pb.dismissed_cues
+      new_dismissed_cues.append(cue_id)
+      self.services.user.UpdateUserSettings(
+          self.mc.cnxn, self.mc.auth.user_id, self.mc.auth.user_pb,
+          dismissed_cues=new_dismissed_cues)

@@ -1085,3 +1085,32 @@ class WorkEnvTest(unittest.TestCase):
   # FUTURE: CreateHotlist()
   # FUTURE: UpdateHotlist()
   # FUTURE: DeleteHotlist()
+
+  def testDismissCue(self):
+    user = self.services.user.test_users[111L]
+    self.assertEqual(0, len(user.dismissed_cues))
+
+    self.SignIn()
+    with self.work_env as we:
+      we.DismissCue('12')
+
+    self.assertEqual(['12'], user.dismissed_cues)
+
+  def testDismissCue_NoCueId(self):
+    user = self.services.user.test_users[111L]
+
+    self.SignIn()
+    with self.assertRaises(exceptions.InputException):
+      with self.work_env as we:
+        we.DismissCue(None)
+
+    self.assertEqual([], user.dismissed_cues)
+
+  def testDismissCue_NotSignedIn(self):
+    user = self.services.user.test_users[111L]
+
+    with self.assertRaises(exceptions.InputException):
+      with self.work_env as we:
+        we.DismissCue(None)
+
+    self.assertEqual([], user.dismissed_cues)

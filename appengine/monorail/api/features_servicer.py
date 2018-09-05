@@ -121,3 +121,14 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
                 hotlist_item, issues,  users_by_id, related_refs, configs)
             for hotlist_item in pagination.visible_results])
     return result
+
+  @monorail_servicer.PRPCMethod
+  def DismissCue(self, mc, request):
+    """Don't show the given cue to the logged in user anymore."""
+    cue_id = request.cue_id
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      we.DismissCue(cue_id)
+
+    result = features_pb2.DismissCueResponse()
+    return result
