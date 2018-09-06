@@ -152,6 +152,41 @@ def convert_issueref_pbs(issueref_pbs, mar, services):
     return None
 
 
+def convert_approvals(cnxn, approval_values, services, config, phases):
+  """Convert an Issue's Monorail ApprovalValue PBs to API Approval"""
+  fds_by_id = {fd.field_id: fd for fd in config.field_defs}
+  phases_by_id = {phase.phase_id: phase for phase in phases}
+  approvals = []
+  for av in approval_values:
+    approval_fd = fds_by_id.get(av.approval_id)
+    if approval_fd is None:
+      logging.warning(
+          'Approval (%d) does not exist' % av.approval_id)
+      continue
+    if approval_fd.field_type is not tracker_pb2.FieldTypes.APPROVAL_TYPE:
+      logging.warning(
+          'field %s has unexpected field_type: %s' % (
+              approval_fd.field_name, approval_fd.field_type.name))
+      continue
+
+    approval = api_pb2_v1.Approval()
+    approval.approvalName = approval_fd.field_name
+    approval.approvers = [convert_person(approver_id, cnxn, services)
+                         for approver_id in av.approver_ids]
+    approval.status = api_pb2_v1.ApprovalStatus(av.status.number)
+    if av.setter_id:
+      approval.setter = convert_person(av.setter_id, cnxn, services)
+    if av.set_on:
+      approval.setOn = datetime.datetime.fromtimestamp(av.set_on)
+    if av.phase_id:
+      try:
+        approval.phaseName = phases_by_id[av.phase_id].name
+      except KeyError:
+        logging.warning('phase %d not found in given phases list' % av.phase_id)
+    approvals.append(approval)
+  return approvals
+
+
 def convert_issue(cls, issue, mar, services):
   """Convert Monorail Issue PB to API IssuesGetInsertResponse."""
 

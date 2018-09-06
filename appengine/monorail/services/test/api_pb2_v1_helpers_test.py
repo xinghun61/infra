@@ -87,6 +87,7 @@ class ApiV1HelpersTest(unittest.TestCase):
         config=fake.ConfigService(),
         issue_star=fake.IssueStarService())
     self.services.user.TestAddUser('user@example.com', 1)
+    self.person_1 = api_pb2_v1_helpers.convert_person(1, None, self.services)
 
   def testConvertTemplate(self):
     """Test convert_template."""
@@ -525,3 +526,94 @@ class ApiV1HelpersTest(unittest.TestCase):
     self.assertEquals([], fv_list_clear)
     self.assertEquals([], label_list_add)
     self.assertEquals([], label_list_remove)
+
+  def testConvertApprovals(self):
+    """Test we can convert ApprovalValues."""
+    cnxn = None
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    config.field_defs = [
+      tracker_bizobj.MakeFieldDef(
+            1, 789, 'DesignReview', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
+            None, False, False, False, None, None, None, False, None, None,
+            None, None, 'doc', False),
+        tracker_bizobj.MakeFieldDef(
+            2, 789, 'PrivacyReview', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
+            None, False, False, False, 0, 99, None, False, None, None, None,
+            None, 'doc', False),
+        tracker_bizobj.MakeFieldDef(
+            5, 789, 'UXReview', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
+            None, False, False, False, None, None, None, False, None, None,
+            None, None, 'doc', False),
+        tracker_bizobj.MakeFieldDef(
+            6, 789, 'Homepage', tracker_pb2.FieldTypes.URL_TYPE, None, None,
+            False, False, False, None, None, None, False, None, None, None,
+            None, 'doc', False),
+        ]
+    phases = [
+        tracker_pb2.Phase(phase_id=1),
+        tracker_pb2.Phase(phase_id=2, name="JustAPhase", rank=3),
+    ]
+    ts = 1536260059
+    expected = [
+        api_pb2_v1.Approval(
+            approvalName="DesignReview",
+            approvers=[self.person_1],
+            setter=self.person_1,
+            status=api_pb2_v1.ApprovalStatus.needsReview,
+            setOn=datetime.datetime.fromtimestamp(ts),
+        ),
+        api_pb2_v1.Approval(
+            approvalName="UXReview",
+            approvers=[self.person_1],
+            status=api_pb2_v1.ApprovalStatus.notSet,
+            phaseName="JustAPhase",
+        ),
+    ]
+    avs = [
+        tracker_pb2.ApprovalValue(
+            approval_id=1, approver_ids=[1], setter_id=1,
+            status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW, set_on=ts),
+        tracker_pb2.ApprovalValue(
+            approval_id=5, approver_ids=[1], phase_id=2)
+    ]
+    actual = api_pb2_v1_helpers.convert_approvals(
+        cnxn, avs, self.services, config, phases)
+
+    self.assertEqual(actual, expected)
+
+  def testConvertApprovals_errors(self):
+    """we dont crash on bad requests."""
+    cnxn = None
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    config.field_defs = [
+        tracker_bizobj.MakeFieldDef(
+            1, 789, 'DesignReview', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
+            None, False, False, False, None, None, None, False, None, None,
+            None, None, 'doc', False),
+        tracker_bizobj.MakeFieldDef(
+            5, 789, 'UXReview', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
+            None, False, False, False, None, None, None, False, None, None,
+            None, None, 'doc', False),
+        tracker_bizobj.MakeFieldDef(
+            3, 789, 'DesignDoc', tracker_pb2.FieldTypes.URL_TYPE, None, None,
+            False, False, False, 0, 99, None, False, None, None, None,
+            None, 'doc', False),
+    ]
+    phases = []
+    avs = [
+        tracker_pb2.ApprovalValue(approval_id=1, approver_ids=[1]),
+        # phase does not exist
+        tracker_pb2.ApprovalValue(approval_id=2, phase_id=2),
+        tracker_pb2.ApprovalValue(approval_id=3),  # field 3 is not an approval
+        tracker_pb2.ApprovalValue(approval_id=4),  # field 4 does not exist
+    ]
+    expected = [
+        api_pb2_v1.Approval(
+            approvalName="DesignReview",
+            approvers=[self.person_1],
+            status=api_pb2_v1.ApprovalStatus.notSet)
+    ]
+
+    actual = api_pb2_v1_helpers.convert_approvals(
+        cnxn, avs, self.services, config, phases)
+    self.assertEqual(actual, expected)

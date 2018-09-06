@@ -164,6 +164,28 @@ class IssueCommentWrapper(messages.Message):
   is_description = messages.BooleanField(10)
 
 
+class ApprovalStatus(messages.Enum):
+  """Allowed Approval Statuses."""
+  needsReview = 1
+  nA = 2
+  reviewRequested = 3
+  reviewStarted = 4
+  needInfo = 5
+  approved = 6
+  notApproved = 7
+  notSet = 8
+
+
+class Approval(messages.Message):
+  """Approval Value details"""
+  approvalName = messages.StringField(1)
+  approvers = messages.MessageField(AtomPerson, 2, repeated=True)
+  status = messages.EnumField(ApprovalStatus, 3)
+  setter = messages.MessageField(AtomPerson, 4)
+  setOn = message_types.DateTimeField(5)
+  phaseName = messages.StringField(6)
+
+
 class IssueWrapper(messages.Message):
   """Issue details."""
   author = messages.MessageField(AtomPerson, 1)
