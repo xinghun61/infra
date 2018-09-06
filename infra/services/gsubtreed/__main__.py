@@ -73,6 +73,19 @@ def parse_args(args):  # pragma: no cover
 
 def main(args):  # pragma: no cover
   opts = parse_args(args)
+  try:
+    return run(opts)
+  finally:
+    # Always flush metrics before exit.
+    failure_message = 'Failed to flush ts_mon data, potentially losing data'
+    try:
+      if not ts_mon.flush():
+        logging.error(failure_message)
+    except Exception:
+      logging.exception(failure_message)
+
+
+def run(opts):
   cref = gsubtreed.GsubtreedConfigRef(opts.repo)
   opts.repo.reify()
 
