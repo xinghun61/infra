@@ -39,18 +39,18 @@ type TrackerServerImpl struct {
 }
 
 // RefreshBots implements the fleet.Tracker.RefreshBots() method.
-func (tsi *TrackerServerImpl) RefreshBots(c context.Context, req *fleet.RefreshBotsRequest) (res *fleet.RefreshBotsResponse, err error) {
+func (tsi *TrackerServerImpl) RefreshBots(ctx context.Context, req *fleet.RefreshBotsRequest) (res *fleet.RefreshBotsResponse, err error) {
 	defer func() {
-		err = grpcutil.GRPCifyAndLogErr(c, err)
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	cfg := config.Get(c)
-	sc, err := tsi.SwarmingClient(c, cfg.Swarming.Host)
+	cfg := config.Get(ctx)
+	sc, err := tsi.SwarmingClient(ctx, cfg.Swarming.Host)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to obtain Swarming client").Err()
 	}
 
-	bots, err := getBotsFromSwarming(c, sc, cfg.Swarming.BotPool, req.Selectors)
+	bots, err := getBotsFromSwarming(ctx, sc, cfg.Swarming.BotPool, req.Selectors)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to get bots from Swarming").Err()
 	}
@@ -58,10 +58,10 @@ func (tsi *TrackerServerImpl) RefreshBots(c context.Context, req *fleet.RefreshB
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to extract bot summary from bot info").Err()
 	}
-	if err := setIdleDuration(c, sc, bsm); err != nil {
+	if err := setIdleDuration(ctx, sc, bsm); err != nil {
 		return nil, errors.Annotate(err, "failed to set idle time for bots").Err()
 	}
-	updated, err := insertBotSummary(c, bsm)
+	updated, err := insertBotSummary(ctx, bsm)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to insert bots").Err()
 	}
@@ -71,12 +71,12 @@ func (tsi *TrackerServerImpl) RefreshBots(c context.Context, req *fleet.RefreshB
 }
 
 // SummarizeBots implements the fleet.Tracker.SummarizeBots() method.
-func (tsi *TrackerServerImpl) SummarizeBots(c context.Context, req *fleet.SummarizeBotsRequest) (res *fleet.SummarizeBotsResponse, err error) {
+func (tsi *TrackerServerImpl) SummarizeBots(ctx context.Context, req *fleet.SummarizeBotsRequest) (res *fleet.SummarizeBotsResponse, err error) {
 	defer func() {
-		err = grpcutil.GRPCifyAndLogErr(c, err)
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	bses, err := getBotSummariesFromDatastore(c, req.Selectors)
+	bses, err := getBotSummariesFromDatastore(ctx, req.Selectors)
 	if err != nil {
 		return nil, err
 	}
@@ -94,10 +94,10 @@ func (tsi *TrackerServerImpl) SummarizeBots(c context.Context, req *fleet.Summar
 }
 
 // getBotsFromSwarming lists bots by calling the Swarming service.
-func getBotsFromSwarming(c context.Context, sc clients.SwarmingClient, pool string, sels []*fleet.BotSelector) ([]*swarming.SwarmingRpcsBotInfo, error) {
+func getBotsFromSwarming(ctx context.Context, sc clients.SwarmingClient, pool string, sels []*fleet.BotSelector) ([]*swarming.SwarmingRpcsBotInfo, error) {
 	// No filters implies get all bots.
 	if len(sels) == 0 {
-		bots, err := sc.ListAliveBotsInPool(c, pool, strpair.Map{})
+		bots, err := sc.ListAliveBotsInPool(ctx, pool, strpair.Map{})
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to get bots in pool %s", pool).Err()
 		}
@@ -115,7 +115,7 @@ func getBotsFromSwarming(c context.Context, sc clients.SwarmingClient, pool stri
 			// In-scope variable for goroutine closure.
 			sel := sels[i]
 			workC <- func() error {
-				bs, ierr := getFilteredBotsFromSwarming(c, sc, pool, sel)
+				bs, ierr := getFilteredBotsFromSwarming(ctx, sc, pool, sel)
 				if ierr != nil {
 					return ierr
 				}
@@ -131,11 +131,11 @@ func getBotsFromSwarming(c context.Context, sc clients.SwarmingClient, pool stri
 
 // getFilteredBotsFromSwarming lists bots for a single selector by calling the Swarming service.
 // This function is intended to be used in a parallel.WorkPool().
-func getFilteredBotsFromSwarming(c context.Context, sc clients.SwarmingClient, pool string, sel *fleet.BotSelector) ([]*swarming.SwarmingRpcsBotInfo, error) {
+func getFilteredBotsFromSwarming(ctx context.Context, sc clients.SwarmingClient, pool string, sel *fleet.BotSelector) ([]*swarming.SwarmingRpcsBotInfo, error) {
 	dims := strpair.Map{
 		clients.DutIDDimensionKey: []string{sel.DutId},
 	}
-	bs, err := sc.ListAliveBotsInPool(c, pool, dims)
+	bs, err := sc.ListAliveBotsInPool(ctx, pool, dims)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to get bots in pool %s with dimensions %s", pool, dims).Err()
 	}
@@ -177,14 +177,14 @@ func botInfoToSummary(bots []*swarming.SwarmingRpcsBotInfo) (map[string]*fleet.B
 }
 
 // setIdleDuration updates the bot summaries with the duration each bot has been idle.
-func setIdleDuration(c context.Context, sc clients.SwarmingClient, bsm map[string]*fleet.BotSummary) error {
+func setIdleDuration(ctx context.Context, sc clients.SwarmingClient, bsm map[string]*fleet.BotSummary) error {
 	return parallel.WorkPool(clients.MaxConcurrentSwarmingCalls, func(workC chan<- func() error) {
 		for bid := range bsm {
 			// In-scope variable for goroutine closure.
 			bid := bid
 			bs := bsm[bid]
 			workC <- func() error {
-				idle, err := getIdleDuration(c, sc, bid)
+				idle, err := getIdleDuration(ctx, sc, bid)
 				if err != nil {
 					return err
 				}
@@ -196,8 +196,8 @@ func setIdleDuration(c context.Context, sc clients.SwarmingClient, bsm map[strin
 }
 
 // getIdleDuration queries swarming for the duration since last task on the bot.
-func getIdleDuration(c context.Context, sc clients.SwarmingClient, botID string) (*duration.Duration, error) {
-	trs, err := sc.ListSortedRecentTasksForBot(c, botID, 1)
+func getIdleDuration(ctx context.Context, sc clients.SwarmingClient, botID string) (*duration.Duration, error) {
+	trs, err := sc.ListSortedRecentTasksForBot(ctx, botID, 1)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to list recent tasks for bot %s", botID).Err()
 	}
@@ -213,7 +213,7 @@ func getIdleDuration(c context.Context, sc clients.SwarmingClient, botID string)
 }
 
 // insertBotSummary returns the dut_ids of bots inserted.
-func insertBotSummary(c context.Context, bsm map[string]*fleet.BotSummary) ([]string, error) {
+func insertBotSummary(ctx context.Context, bsm map[string]*fleet.BotSummary) ([]string, error) {
 	updated := make([]string, 0, len(bsm))
 	bses := make([]*fleetBotSummaryEntity, 0, len(bsm))
 	for bid, bs := range bsm {
@@ -228,7 +228,7 @@ func insertBotSummary(c context.Context, bsm map[string]*fleet.BotSummary) ([]st
 		})
 		updated = append(updated, bs.DutId)
 	}
-	if err := datastore.Put(c, bses); err != nil {
+	if err := datastore.Put(ctx, bses); err != nil {
 		return nil, errors.Annotate(err, "failed to put BotSummaries").Err()
 	}
 	return updated, nil
@@ -250,12 +250,12 @@ func extractSingleValuedDimension(bi *swarming.SwarmingRpcsBotInfo, key string) 
 	return "", fmt.Errorf("failed to find dimension %s", key)
 }
 
-func getBotSummariesFromDatastore(c context.Context, sels []*fleet.BotSelector) ([]*fleetBotSummaryEntity, error) {
+func getBotSummariesFromDatastore(ctx context.Context, sels []*fleet.BotSelector) ([]*fleetBotSummaryEntity, error) {
 	// No selectors implies summarize all bots.
 	if len(sels) == 0 {
 		bses := []*fleetBotSummaryEntity{}
 		q := datastore.NewQuery(botSummaryKind)
-		err := datastore.GetAll(c, q, &bses)
+		err := datastore.GetAll(ctx, q, &bses)
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to get all bots from datastore").Err()
 		}
@@ -276,7 +276,7 @@ func getBotSummariesFromDatastore(c context.Context, sels []*fleet.BotSelector) 
 		})
 	}
 
-	if err := datastore.Get(c, bses); err != nil {
+	if err := datastore.Get(ctx, bses); err != nil {
 		switch err := err.(type) {
 		case errors.MultiError:
 			return filterNotFoundEntities(bses, err)
