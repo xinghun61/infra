@@ -27,23 +27,9 @@ function CS_dismissCue(cueId) {
   }
 
   if (CS_env.token) {
-    CS_setCue(cueId);
+    window.__prpc.call('monorail.Features', 'DismissCue', {'cue_id': cueID});
   }
   return false;
-}
-
-/**
- * Function to communicate with the server to record the fact that the
- * user has dismissed a cue.  This just passes an object through to the
- * cues servlet as key-value pairs.
- *
- * @param {string} cueId The identifier of the cue to hide.
- */
-function CS_setCue(cueId) {
-  var setCueUrl = '/hosting/cues.do';
-
-  // Ignore the response, since we can't do anything about failures.
-  CS_doPost(setCueUrl, null, {'cue_id': cueId});
 }
 
 // Exports
