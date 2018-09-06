@@ -137,7 +137,10 @@ class StepParser(object):
         logs.append(
             step_pb2.Step.Log(
                 name=link.label,
-                view_url=self._logdog_stream_view_url(link.logdog_stream)
+                url=self._logdog_stream_url(link.logdog_stream, view_url=False),
+                view_url=self._logdog_stream_url(
+                    link.logdog_stream, view_url=True
+                ),
             )
         )
       elif link.url:
@@ -148,8 +151,10 @@ class StepParser(object):
         pass
     return lines, logs
 
-  def _logdog_stream_view_url(self, logdog_stream):
+  def _logdog_stream_url(self, logdog_stream, view_url):
     host = logdog_stream.server or self.default_logdog_host
     prefix = logdog_stream.prefix or self.default_logdog_prefix
     path = '%s/+/%s' % (prefix, logdog_stream.name)
-    return 'https://%s/v/?s=%s' % (host, urllib.quote(path, safe=''))
+    if view_url:
+      return 'https://%s/v/?s=%s' % (host, urllib.quote(path, safe=''))
+    return 'logdog://%s/%s' % (host, path)
