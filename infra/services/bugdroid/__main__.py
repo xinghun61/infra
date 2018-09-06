@@ -144,6 +144,10 @@ def main(args):  # pragma: no cover
     logging.info('Outer loop finished with result %r', loop_results.success)
     return 0 if loop_results.success else 1
   else:
+    # In case local json file is used, do not upload
+    if not opts.configfile:
+      update_data(_create_http(creds_data))
+
     logging.info('Outer loop finished with result 0')
     return 0
 
