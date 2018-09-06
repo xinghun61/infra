@@ -122,34 +122,24 @@ def main(args):  # pragma: no cover
   with open(opts.credentials_db) as data_file:
     creds_data = json.load(data_file)
 
-  # TODO(crbug/880103): Temporarily disable processing new commits and uploading
-  # data files, until we verify that the new remote files look OK when fetched.
-  if False:
-    # Use local json file
-    if not opts.configfile:
-      get_data(_create_http(creds_data))
+  # Use local json file
+  if not opts.configfile:
+    get_data(_create_http(creds_data))
 
-    def outer_loop_iteration():
-      return bugdroid.inner_loop(opts)
+  def outer_loop_iteration():
+    return bugdroid.inner_loop(opts)
 
-    loop_results = outer_loop.loop(
-        task=outer_loop_iteration,
-        sleep_timeout=lambda: 60.0,
-        **loop_opts)
+  loop_results = outer_loop.loop(
+      task=outer_loop_iteration,
+      sleep_timeout=lambda: 60.0,
+      **loop_opts)
 
-    # In case local json file is used, do not upload
-    if not opts.configfile:
-      update_data(_create_http(creds_data))
+  # In case local json file is used, do not upload
+  if not opts.configfile:
+    update_data(_create_http(creds_data))
 
-    logging.info('Outer loop finished with result %r', loop_results.success)
-    return 0 if loop_results.success else 1
-  else:
-    # In case local json file is used, do not upload
-    if not opts.configfile:
-      update_data(_create_http(creds_data))
-
-    logging.info('Outer loop finished with result 0')
-    return 0
+  logging.info('Outer loop finished with result %r', loop_results.success)
+  return 0 if loop_results.success else 1
 
 
 if __name__ == '__main__':  # pragma: no cover
