@@ -117,9 +117,11 @@ class HTMLStatusGenerator(StatusGeneratorStub):  # pragma: no cover
     builder_headers.append('<th>chromium revision</th>\n')
     for master, builders in self.masters:
       master_config = self.config['masters'][master]
-      if 'luci_project' in master_config and 'luci_group' in master_config:
+      if ('luci_project' in master_config and
+          'luci_builder_ui_group' in master_config):
         master_url = 'ci.chromium.org/p/%s/g/%s' % (
-            master_config['luci_project'], master_config['luci_group'])
+            master_config['luci_project'],
+            master_config['luci_builder_ui_group'])
       else:
         master_url = 'build.chromium.org/p/%s' % master
       hdr = '  <th colspan="%d" class="header">' % len(builders)

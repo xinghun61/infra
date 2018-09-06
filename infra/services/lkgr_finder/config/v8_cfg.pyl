@@ -22,7 +22,7 @@
     'client.v8': {
       'base_url': 'https://build.chromium.org/p/client.v8',
       'luci_project': 'v8',
-      'luci_group': 'main',
+      'luci_builder_ui_group': 'main',
       'luci_bucket': 'luci.v8.ci',
       'builders': [
         'V8 Fuchsia',
@@ -68,7 +68,7 @@
     'client.v8.ports': {
       'base_url': 'https://build.chromium.org/p/client.v8.ports',
       'luci_project': 'v8',
-      'luci_group': 'main',
+      'luci_builder_ui_group': 'ports',
       'luci_bucket': 'luci.v8.ci',
       'builders': [
         'V8 Arm - builder',
@@ -85,7 +85,7 @@
     'client.v8.fyi': {
       'base_url': 'https://build.chromium.org/p/client.v8.fyi',
       'luci_project': 'v8',
-      'luci_group': 'main',
+      'luci_builder_ui_group': 'fyi',
       'luci_bucket': 'luci.v8.ci',
       'builders': [
         'V8-Blink Linux 64',
