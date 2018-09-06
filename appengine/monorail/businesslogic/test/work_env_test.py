@@ -1092,9 +1092,10 @@ class WorkEnvTest(unittest.TestCase):
 
     self.SignIn()
     with self.work_env as we:
-      we.DismissCue('12')
+      we.DismissCue('code_of_conduct')
 
-    self.assertEqual(['12'], user.dismissed_cues)
+    self.assertEqual(['code_of_conduct'],
+                     user.dismissed_cues)
 
   def testDismissCue_NoCueId(self):
     user = self.services.user.test_users[111L]
@@ -1114,3 +1115,24 @@ class WorkEnvTest(unittest.TestCase):
         we.DismissCue(None)
 
     self.assertEqual([], user.dismissed_cues)
+
+  def testDismissCue_CueAlreadyDismissed(self):
+    user = self.services.user.test_users[111L]
+    user.dismissed_cues = ['code_of_conduct']
+
+    self.SignIn()
+    with self.work_env as we:
+      we.DismissCue('code_of_conduct')
+
+    self.assertEqual(['code_of_conduct'],
+                     user.dismissed_cues)
+
+  def testDismissCue_UnrecognizedCueId(self):
+    user = self.services.user.test_users[111L]
+
+    with self.assertRaises(exceptions.InputException):
+      with self.work_env as we:
+        we.DismissCue('foo')
+
+    self.assertEqual([], user.dismissed_cues)
+

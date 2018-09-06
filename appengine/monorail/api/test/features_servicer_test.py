@@ -374,9 +374,9 @@ class FeaturesServicerTest(unittest.TestCase):
     user = self.services.user.test_users[111L]
     self.assertEqual(0, len(user.dismissed_cues))
 
-    request = features_pb2.DismissCueRequest(cue_id='12')
+    request = features_pb2.DismissCueRequest(cue_id='code_of_conduct')
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
     self.CallWrapped(self.features_svcr.DismissCue, mc, request)
 
-    self.assertEqual(['12'], user.dismissed_cues)
+    self.assertEqual(['code_of_conduct'], user.dismissed_cues)

@@ -41,6 +41,7 @@ Responsibilities of the Services layer:
 
 import logging
 
+from features import features_constants
 from features import send_notifications
 from features import features_bizobj
 from features import hotlist_helpers
@@ -1113,8 +1114,13 @@ class WorkEnv(object):
     if not self.mc.auth.user_id:
       raise exceptions.InputException('No current user specified')
 
+    if cue_id not in features_constants.KNOWN_CUES:
+      raise exceptions.InputException('%s is not a known cue ID.')
+
     with self.mc.profiler.Phase('Handling user set cue request: %r' % cue_id):
       new_dismissed_cues = self.mc.auth.user_pb.dismissed_cues
+      if cue_id in new_dismissed_cues:
+        return
       new_dismissed_cues.append(cue_id)
       self.services.user.UpdateUserSettings(
           self.mc.cnxn, self.mc.auth.user_id, self.mc.auth.user_pb,
