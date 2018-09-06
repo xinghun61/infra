@@ -49,9 +49,10 @@ class DebugStatusGenerator(StatusGeneratorStub):  # pragma: no cover
 
 class HTMLStatusGenerator(StatusGeneratorStub):  # pragma: no cover
 
-  def __init__(self, viewvc):
+  def __init__(self, viewvc, config):
     self.masters = []
     self.rows = []
+    self.config = config
     self.viewvc = viewvc
 
   def master_cb(self, master):
@@ -71,8 +72,14 @@ class HTMLStatusGenerator(StatusGeneratorStub):  # pragma: no cover
     stat_txt = STATUS.tostr(status)
     cell = '  <td class="%s">' % stat_txt
     if build_num is not None:
-      build_url = 'build.chromium.org/p/%s/builders/%s/builds/%s' % (
-          master, builder, build_num)
+      master_config = self.config['masters'][master]
+      if 'luci_project' in master_config and 'luci_bucket' in master_config:
+        build_url = 'ci.chromium.org/p/%s/builders/%s/%s/%s' % (
+            master_config['luci_project'], master_config['luci_bucket'],
+            builder, build_num)
+      else:
+        build_url = 'build.chromium.org/p/%s/builders/%s/builds/%s' % (
+            master, builder, build_num)
       cell += '<a href="http://%s" target="_blank">X</a>' % (
           urllib.quote(build_url))
     cell += '</td>\n'
@@ -109,14 +116,24 @@ class HTMLStatusGenerator(StatusGeneratorStub):  # pragma: no cover
     builder_headers = ['<tr class="header">']
     builder_headers.append('<th>chromium revision</th>\n')
     for master, builders in self.masters:
-      master_url = 'build.chromium.org/p/%s' % master
+      master_config = self.config['masters'][master]
+      if 'luci_project' in master_config and 'luci_group' in master_config:
+        master_url = 'ci.chromium.org/p/%s/g/%s' % (
+            master_config['luci_project'], master_config['luci_group'])
+      else:
+        master_url = 'build.chromium.org/p/%s' % master
       hdr = '  <th colspan="%d" class="header">' % len(builders)
       hdr += '<a href="%s" target="_blank">%s</a></th>\n' % (
           'http://%s' % urllib.quote(master_url), master)
       master_headers.append(hdr)
       for builder in builders:
-        builder_url = 'build.chromium.org/p/%s/builders/%s' % (
-            master, builder)
+        if 'luci_project' in master_config and 'luci_bucket' in master_config:
+          builder_url = 'ci.chromium.org/p/%s/builders/%s/%s' % (
+              master_config['luci_project'], master_config['luci_bucket'],
+              builder)
+        else:
+          builder_url = 'build.chromium.org/p/%s/builders/%s' % (
+              master, builder)
         hdr = '  <th><a href="%s" target="_blank">%s</a></th>\n' % (
             'http://%s' % urllib.quote(builder_url), builder)
         builder_headers.append(hdr)

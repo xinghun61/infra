@@ -350,7 +350,7 @@ def CollateRevisionHistory(build_data, lkgr_builders, repo):  # pragma: no cover
             #   because otherwise it wouldn't be specified.
             this_build_properties.get('got_src_revision')
             # * If we're in Git and there's a got_revision_git, might as well
-            #   use that since it is guaranteed to be the righ type.
+            #   use that since it is guaranteed to be the right type.
             or this_build_properties.get('got_revision_git')
             # * Finally, just use the default got_revision.
             or this_build_properties.get('got_revision')
