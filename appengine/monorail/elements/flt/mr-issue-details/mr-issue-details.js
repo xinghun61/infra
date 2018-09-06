@@ -25,14 +25,6 @@ class MrIssueDetails extends ReduxMixin(Polymer.Element) {
         type: String,
         statePath: 'projectName',
       },
-      token: {
-        type: String,
-        statePath: 'token',
-      },
-      tokenExpiresSec: {
-        type: Number,
-        statePath: 'tokenExpiresSec',
-      },
       _description: {
         type: String,
         computed: '_computeDescription(comments)',
@@ -81,8 +73,7 @@ class MrIssueDetails extends ReduxMixin(Polymer.Element) {
       message.isDescription = true;
     }
 
-    actionCreator.updateIssue(
-        this.dispatch.bind(this), message, this.token, this.tokenExpiresSec);
+    actionCreator.updateIssue(this.dispatch.bind(this), message);
   }
 
   _filterComments(comments) {

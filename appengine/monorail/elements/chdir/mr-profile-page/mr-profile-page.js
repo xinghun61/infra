@@ -21,8 +21,6 @@ class MrProfilePage extends Polymer.Element {
       loginUrl: String,
       viewedUser: String,
       viewedUserId: Number,
-      token: String,
-      tokenExpiresSec: Number,
       lastVisitStr: String,
       starredUsers: Array,
       commits: {
@@ -62,9 +60,8 @@ class MrProfilePage extends Polymer.Element {
       untilTimestamp: currentTime,
     };
 
-    const getCommits = window.__prpc.call(
-      'monorail.Users', 'GetUserCommits', commitMessage, this.token,
-      this.tokenExpiresSec
+    const getCommits = window.prpcClient.call(
+      'monorail.Users', 'GetUserCommits', commitMessage
     );
 
     getCommits.then((resp) => {
@@ -78,9 +75,8 @@ class MrProfilePage extends Polymer.Element {
       },
     };
 
-    const listActivities = window.__prpc.call(
-      'monorail.Issues', 'ListActivities', commentMessage, this.token,
-      this.tokenExpiresSec
+    const listActivities = window.prpcClient.call(
+      'monorail.Issues', 'ListActivities', commentMessage
     );
 
     listActivities.then(

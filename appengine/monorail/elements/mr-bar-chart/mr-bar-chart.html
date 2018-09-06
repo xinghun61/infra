@@ -139,8 +139,8 @@
             projectName: this.projectName,
             query: query,
           };
-          const callPromise = window.__prpc.call('monorail.Issues',
-              'IssueSnapshot', message, CS_env.token, CS_env.tokenExpiresSec);
+          const callPromise = window.prpcClient.call('monorail.Issues',
+              'IssueSnapshot', message);
           return callPromise.then(response => {
             resolve({
               date: timestamp * 1000,

@@ -7,6 +7,12 @@
 <script type="text/javascript" src="/bower_components/webcomponentsjs/webcomponents-loader.js" nonce="[nonce]"></script>
 <script type="text/javascript" src="/static/js/prpc.js" nonce="[nonce]"></script>
 
+<script type="text/javascript" nonce="[nonce]">
+  window.prpcClient = new window.__prpc.AutoRefreshPrpcClient(
+      '[format "js"][xhr_token][end]',
+      '[format "js"][token_expires_sec][end]');
+</script>
+
 <script src="/static/js/autolink.js" nonce="[nonce]"></script>
 
 <style>

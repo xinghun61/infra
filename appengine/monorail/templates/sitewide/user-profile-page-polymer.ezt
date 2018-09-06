@@ -16,7 +16,6 @@
   user="[logged_in_user.email]"[end]
   login-url="[login_url]"
   logout-url="[logout_url]"
-  token="[xhr_token]"
   last-visit-str="[last_visit_str]"
   starred-users="[starred_users_json]"
 ></mr-profile-page>

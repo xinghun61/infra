@@ -19,12 +19,6 @@ class MrActivityTable extends Polymer.Element {
       comments: {
         type: Array,
       },
-      token: {
-        type: String,
-      },
-      tokenExpiresSec: {
-        type: Number,
-      },
       startWeekday: {
         type: Array,
       },

@@ -40,14 +40,6 @@ class MrEditIssueDialog extends ReduxMixin(Polymer.Element) {
         type: Array,
         statePath: 'projectConfig.statusDefs',
       },
-      token: {
-        type: String,
-        statePath: 'token',
-      },
-      tokenExpiresSec: {
-        type: Number,
-        statePath: 'tokenExpiresSec',
-      },
       _labelNames: {
         type: Array,
         computed: '_computeLabelNames(issue.labelRefs)',
@@ -184,8 +176,7 @@ class MrEditIssueDialog extends ReduxMixin(Polymer.Element) {
     }
 
     if (message.commentContent || message.delta) {
-      actionCreator.updateIssue(
-          this.dispatch.bind(this), message, this.token, this.tokenExpiresSec);
+      actionCreator.updateIssue(this.dispatch.bind(this), message);
     }
 
     this.cancel();

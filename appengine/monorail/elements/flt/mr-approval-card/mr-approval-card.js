@@ -71,14 +71,6 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
         type: Object,
         statePath: selectors.fieldDefsByApprovalName,
       },
-      token: {
-        type: String,
-        statePath: 'token',
-      },
-      tokenExpiresSec: {
-        type: Number,
-        statePath: 'tokenExpiresSec',
-      },
       user: {
         type: String,
         statePath: 'user',
@@ -247,20 +239,15 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
 
     this.dispatch({type: actionType.UPDATE_APPROVAL_START});
 
-    window.__prpc.call(
-      'monorail.Issues', 'UpdateApproval', message, this.token,
-      this.tokenExpiresSec
+    window.prpcClient.call(
+      'monorail.Issues', 'UpdateApproval', message
     ).then((resp) => {
       this.dispatch({
         type: actionType.UPDATE_APPROVAL_SUCCESS,
         approval: resp.approval,
       });
-      actionCreator.fetchIssue(
-          this.dispatch.bind(this), baseMessage, this.token,
-          this.tokenExpiresSec);
-      actionCreator.fetchComments(
-          this.dispatch.bind(this), baseMessage, this.token,
-          this.tokenExpiresSec);
+      actionCreator.fetchIssue(this.dispatch.bind(this), baseMessage);
+      actionCreator.fetchComments(this.dispatch.bind(this), baseMessage);
     }, (error) => {
       this.dispatch({
         type: actionType.UPDATE_APPROVAL_FAILURE,

@@ -1220,19 +1220,19 @@ function TKR_fetchOptions(projectName) {
       display_name: window.CS_env.loggedInUserEmail,
     }};
 
-  const statusesPromise = window.__prpc.call(
+  const statusesPromise = window.prpcClient.call(
       'monorail.Projects', 'ListStatuses', projectRequestMessage);
-  const componentsPromise = window.__prpc.call(
+  const componentsPromise = window.prpcClient.call(
       'monorail.Projects', 'ListComponents', projectRequestMessage);
-  const labelsPromise = window.__prpc.call(
+  const labelsPromise = window.prpcClient.call(
       'monorail.Projects', 'GetLabelOptions', projectRequestMessage);
-  const visibleMembersPromise = window.__prpc.call(
+  const visibleMembersPromise = window.prpcClient.call(
       'monorail.Projects', 'GetVisibleMembers', projectRequestMessage);
-  const fieldsPromise = window.__prpc.call(
+  const fieldsPromise = window.prpcClient.call(
       'monorail.Projects', 'ListFields', fieldsRequestMessage);
-  const customPermissionsPromise = window.__prpc.call(
+  const customPermissionsPromise = window.prpcClient.call(
       'monorail.Projects', 'GetCustomPermissions', projectRequestMessage);
-  const hotlistsPromise = window.__prpc.call(
+  const hotlistsPromise = window.prpcClient.call(
       'monorail.Features', 'ListHotlistsByUser', userRequestMessage);
 
   const allPromises = [];

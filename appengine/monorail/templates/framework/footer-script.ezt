@@ -1,5 +1,10 @@
 <script type="text/javascript" defer src="/bower_components/chopsui/prpc-client.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="/static/js/prpc.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" defer nonce="[nonce]">
+   [# Global client for pRPC requests]
+   var prpcClient = new window.__prpc.AutoRefreshPrpcClient(
+      CS_env.token, CS_env.tokenExpiresSec);
+</script>
 <script type="text/javascript" defer src="/static/js/graveyard/common.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="/static/js/graveyard/listen.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="/static/js/graveyard/xmlhttp.js?version=[app_version]" nonce="[nonce]"></script>

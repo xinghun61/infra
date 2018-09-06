@@ -75,30 +75,26 @@
   );
 
   // Lookup referenced artifacts functions.
-  function LookupReferencedIssues(issueRefs, componentName, token, tokenExpiresSec) {
+  function LookupReferencedIssues(issueRefs, componentName) {
     return new Promise((resolve, reject) => {
       const message = {
         issueRefs: issueRefs,
       };
-      const listReferencedIssues =  window.__prpc.call(
-          'monorail.Issues', 'ListReferencedIssues', message, token,
-          tokenExpiresSec
-      );
+      const listReferencedIssues =  window.prpcClient.call(
+          'monorail.Issues', 'ListReferencedIssues', message);
       return listReferencedIssues.then(response => {
         resolve({'componentName': componentName, 'existingRefs': response});
       });
     });
   }
 
-  function LookupReferencedUsers(emails, componentName, token, tokenExpiresSec) {
+  function LookupReferencedUsers(emails, componentName) {
     return new Promise((resolve, reject) => {
       const message = {
         emails: emails,
       };
-      const listReferencedUsers = window.__prpc.call(
-          'monorail.Users', 'ListReferencedUsers', message, token,
-          tokenExpiresSec
-      );
+      const listReferencedUsers = window.prpcClient.call(
+          'monorail.Users', 'ListReferencedUsers', message);
       return listReferencedUsers.then(response => {
         resolve({'componentName': componentName, 'existingRefs': response});
       });

@@ -29,12 +29,6 @@ class MrCommitTable extends Polymer.Element {
       fetchingCommits: {
         type: Boolean,
       },
-      token: {
-        type: String,
-      },
-      tokenExpiresSec: {
-        type: Number,
-      },
       user: {
         type: String,
       },

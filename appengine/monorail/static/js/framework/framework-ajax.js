@@ -38,11 +38,9 @@ function debounce(func, opt_threshold_ms) {
  * Builds a POST string from a parameter dictionary.
  * @param {Array|Object} args: parameters to encode. Either an object
  *   mapping names to values or an Array of doubles containing [key, value].
- * @param {string} opt_token: an optional XSRF token. If not supplied,
- *   defaults to CS_env.token.
  * @return {string} encoded POST data.
  */
-function CS_postData(args, opt_token) {
+function CS_postData(args) {
   var params = [];
 
   if (args instanceof Array) {
@@ -60,11 +58,8 @@ function CS_postData(args, opt_token) {
     }
   }
 
-  if (opt_token) {
-    params.push('token=' + encodeURIComponent(opt_token));
-  } else if (opt_token !== false) {
-    params.push('token=' + encodeURIComponent(CS_env.token));
-  }
+  params.push('token=' + encodeURIComponent(window.prpcClient.token));
+
   return params.join('&');
 }
 
@@ -78,17 +73,11 @@ function CS_postData(args, opt_token) {
  *   upon successful completion of the request.
  * @param {Object} args parameters to encode as POST data.
  */
-function CS_doPost(url, callback, args, opt_token, opt_tokenPath) {
-  window.__prpc.ensureTokenIsValid(opt_token, opt_tokenPath).then(
-    freshToken => {
-      CS_env[opt_tokenPath || 'token'] = freshToken.token;
-      CS_env.tokenExpiresSec = Number(freshToken.tokenExpiresSec);
-      var xh = XH_XmlHttpCreate();
-      XH_XmlHttpPOST(
-          xh, url,
-          CS_postData(args, CS_env[freshToken.tokenPath] || freshToken.token),
-          callback);
-    });
+function CS_doPost(url, callback, args) {
+  window.prpcClient.ensureTokenIsValid().then(() => {
+    var xh = XH_XmlHttpCreate();
+    XH_XmlHttpPOST(xh, url, CS_postData(args), callback);
+  });
 }
 
 
@@ -139,13 +128,18 @@ var formToSubmit = null;
  * don't submit the form until after it arrives.
  */
 function refreshTokens(event, formToken, formTokenPath, tokenExpiresSec) {
-  if (!isTokenExpired(tokenExpiresSec))
+  if (!isTokenExpired(tokenExpiresSec)) {
     return;
+  }
 
   formToSubmit = event.target;
   event.preventDefault();
-  const refreshTokenPromise = window.__prpc.ensureTokenIsValid(
-      formToken, formTokenPath, tokenExpiresSec);
+  const message = {
+    token: formToken,
+    tokenPath: formTokenPath
+  };
+  const refreshTokenPromise = window.prpcClient.call(
+      'monorail.Sitewide', 'RefreshToken', message);
 
   refreshTokenPromise.then(freshToken => {
     var tokenFields = document.querySelectorAll("input[name=token]");

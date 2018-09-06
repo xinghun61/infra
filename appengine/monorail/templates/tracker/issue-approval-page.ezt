@@ -14,6 +14,4 @@
   user="[logged_in_user.email]"[end]
   login-url="[login_url]"
   logout-url="[logout_url]"
-  token="[xhr_token]"
-  token-expires-sec="[token_expires_sec]"
 ></mr-approval-page>

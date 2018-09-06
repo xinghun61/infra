@@ -98,8 +98,6 @@
         <template is="dom-if" if="[[!_hideActivityTracker]]">
           <mr-activity-table
             class="activityGraph"
-            token="[[token]]"
-            token-expires-sec="[[tokenExpiresSec]]"
             user="[[viewedUser]]"
             viewed-user-id="[[viewedUserId]]"
             commits="[[commits]]"
@@ -109,8 +107,6 @@
         </template>
         <div class="dataTable">
           <mr-commit-table
-            token="[[token]]"
-            token-expires-sec="[[tokenExpiresSec]]"
             user="[[viewedUser]]"
             commits="[[commits]]"
             selected-date="{{selectedDate}}">
@@ -118,8 +114,6 @@
         </div>
         <div class="dataTable">
           <mr-comments-list
-            token="[[token]]"
-            token-expires-sec="[[tokenExpiresSec]]"
             user="[[viewedUser]]"
             viewed-user-id="[[viewedUserId]]"
             comments="[[comments]]"

@@ -47,18 +47,6 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
       queryParams: Object,
       route: String,
       routeData: Object,
-      token: {
-        type: String,
-        observer: '_tokenChanged',
-      },
-      token: {
-        type: String,
-        observer: '_tokenChanged',
-      },
-      tokenExpiresSec: {
-        type: Number,
-        observer: '_tokenExpiresSecChanged',
-      },
       user: {
         type: String,
         observer: '_userChanged',
@@ -91,9 +79,8 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
       projectName,
     };
 
-    const getConfig = window.__prpc.call(
-      'monorail.Projects', 'GetConfig', message, this.token,
-      this.tokenExpiresSec
+    const getConfig = window.prpcClient.call(
+      'monorail.Projects', 'GetConfig', message
     );
 
     getConfig.then((resp) => {
@@ -120,12 +107,9 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
       },
     };
 
-    actionCreator.fetchIssue(
-        this.dispatch.bind(this), message, this.token, this.tokenExpiresSec);
-    actionCreator.fetchComments(
-        this.dispatch.bind(this), message, this.token, this.tokenExpiresSec);
-    actionCreator.fetchIsStarred(
-        this.dispatch.bind(this), message, this.token, this.tokenExpiresSec);
+    actionCreator.fetchIssue(this.dispatch.bind(this), message);
+    actionCreator.fetchComments(this.dispatch.bind(this), message);
+    actionCreator.fetchIsStarred(this.dispatch.bind(this), message);
   }
 
   _routeChanged(routeData, queryParams) {
@@ -133,20 +117,6 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
       type: actionType.UPDATE_ISSUE_REF,
       issueId: Number.parseInt(queryParams.id),
       projectName: routeData.project,
-    });
-  }
-
-  _tokenChanged(token) {
-    this.dispatch({
-      type: actionType.UPDATE_TOKEN,
-      token,
-    });
-  }
-
-  _tokenExpiresSecChanged(tokenExpiresSec) {
-    this.dispatch({
-      type: actionType.UPDATE_TOKEN_EXPIRES_SEC,
-      tokenExpiresSec,
     });
   }
 
