@@ -122,13 +122,13 @@ def main(args):  # pragma: no cover
   with open(opts.credentials_db) as data_file:
     creds_data = json.load(data_file)
 
-  # Use local json file
-  if not opts.configfile:
-    get_data(_create_http(creds_data))
-
   # TODO(crbug/880103): Temporarily disable processing new commits and uploading
   # data files, until we verify that the new remote files look OK when fetched.
   if False:
+    # Use local json file
+    if not opts.configfile:
+      get_data(_create_http(creds_data))
+
     def outer_loop_iteration():
       return bugdroid.inner_loop(opts)
 
