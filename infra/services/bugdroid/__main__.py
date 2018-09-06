@@ -123,26 +123,29 @@ def main(args):  # pragma: no cover
     creds_data = json.load(data_file)
 
   # Use local json file
-  # TODO(crbug/880103): Temporarily disable refreshing data from the server to
-  # allow the host to upload the local modifications from the last failed run.
-  #if not opts.configfile:
-    #get_data(_create_http(creds_data))
-
-  def outer_loop_iteration():
-    return bugdroid.inner_loop(opts)
-
-  loop_results = outer_loop.loop(
-      task=outer_loop_iteration,
-      sleep_timeout=lambda: 60.0,
-      **loop_opts)
-
-  # In case local json file is used, do not upload
   if not opts.configfile:
-    update_data(_create_http(creds_data))
+    get_data(_create_http(creds_data))
 
-  logging.info('Outer loop finished with result %r', loop_results.success)
+  # TODO(crbug/880103): Temporarily disable processing new commits and uploading
+  # data files, until we verify that the new remote files look OK when fetched.
+  if False:
+    def outer_loop_iteration():
+      return bugdroid.inner_loop(opts)
 
-  return 0 if loop_results.success else 1
+    loop_results = outer_loop.loop(
+        task=outer_loop_iteration,
+        sleep_timeout=lambda: 60.0,
+        **loop_opts)
+
+    # In case local json file is used, do not upload
+    if not opts.configfile:
+      update_data(_create_http(creds_data))
+
+    logging.info('Outer loop finished with result %r', loop_results.success)
+    return 0 if loop_results.success else 1
+  else:
+    logging.info('Outer loop finished with result 0')
+    return 0
 
 
 if __name__ == '__main__':  # pragma: no cover
