@@ -22,13 +22,16 @@ def Humanish(url):
 
 
 class SyncSubmodulesApi(recipe_api.RecipeApi):
-  def __call__(self, source, dest, source_ref='refs/heads/master',
+  def __call__(self, source, source_repo_checkout_name,
+               dest, source_ref='refs/heads/master',
                dest_ref='refs/heads/master', extra_submodules=None,
                deps_path_prefix=None,
                disable_path_prefix=False):
     """
     Args:
       source: URL of the git repository to mirror.
+      source_repo_checkout_name: Name of the directory that the source repo
+          should be checked out into.
       dest: URL of the git repository to push to.
       source_ref: git ref in the source repository to checkout.
       dest_ref: git ref in the destination repository to push to.
@@ -42,7 +45,11 @@ class SyncSubmodulesApi(recipe_api.RecipeApi):
     if extra_submodules is None:  # pragma: nocover
       extra_submodules = []
 
-    solution_name = Humanish(source)
+    if source_repo_checkout_name is None:
+      solution_name = Humanish(source)
+    else:
+      solution_name = source_repo_checkout_name
+
     if deps_path_prefix is None:
       deps_path_prefix = '%s/' % solution_name
 

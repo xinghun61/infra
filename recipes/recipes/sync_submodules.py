@@ -19,11 +19,14 @@ PROPERTIES = {
 
 def RunSteps(api, disable_path_prefix):
   source_repo = api.properties.get('source_repo', DEFAULT_SOURCE_REPO)
+  source_repo_checkout_name = api.properties.get('source_repo_checkout_name',
+                                                 None)
   dest_repo = api.properties.get('dest_repo', source_repo + '/codesearch')
   extra_submodules = [
       x for x in api.properties.get('extra_submodules', '').split(',') if x]
   deps_path_prefix = api.properties.get('deps_path_prefix', None)
-  api.sync_submodules(source_repo, dest_repo, extra_submodules=extra_submodules,
+  api.sync_submodules(source_repo, source_repo_checkout_name,
+                      dest_repo, extra_submodules=extra_submodules,
                       deps_path_prefix=deps_path_prefix,
                       disable_path_prefix=disable_path_prefix)
 
@@ -72,4 +75,11 @@ def GenTests(api):
           buildername='foo_builder',
           deps_path_prefix='src/',
           disable_path_prefix=True) +
+      api.runtime(is_luci=True, is_experimental=False))
+  yield (
+      api.test('with_source_repo_checkout_name') +
+      api.properties(
+          source_repo='https://chromium.googlesource.com/foo_remote_name',
+          source_repo_checkout_name='foo_local_name',
+          buildername='foo_builder') +
       api.runtime(is_luci=True, is_experimental=False))

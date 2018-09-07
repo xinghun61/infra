@@ -204,10 +204,12 @@ projects are not affected.
 
 #### **class [SyncSubmodulesApi](/recipes/recipe_modules/sync_submodules/api.py#24)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
-&mdash; **def [\_\_call\_\_](/recipes/recipe_modules/sync_submodules/api.py#25)(self, source, dest, source_ref='refs/heads/master', dest_ref='refs/heads/master', extra_submodules=None, deps_path_prefix=None, disable_path_prefix=False):**
+&mdash; **def [\_\_call\_\_](/recipes/recipe_modules/sync_submodules/api.py#25)(self, source, source_repo_checkout_name, dest, source_ref='refs/heads/master', dest_ref='refs/heads/master', extra_submodules=None, deps_path_prefix=None, disable_path_prefix=False):**
 
 Args:
   source: URL of the git repository to mirror.
+  source_repo_checkout_name: Name of the directory that the source repo
+      should be checked out into.
   dest: URL of the git repository to push to.
   source_ref: git ref in the source repository to checkout.
   dest_ref: git ref in the destination repository to push to.
