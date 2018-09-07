@@ -39,7 +39,37 @@ var (
 
 // Oncall returns the shift entry for the specific time.
 func (s *Store) Oncall(ctx context.Context, at time.Time, rota string) (*rotang.ShiftEntry, error) {
-	return nil, status.Error(codes.Unimplemented, "not implemented")
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	dsShifts := DsShifts{
+		Key:  rootKey(ctx),
+		Name: rota,
+	}
+	if err := datastore.Get(ctx, &dsShifts); err != nil {
+		if err == datastore.ErrNoSuchEntity {
+			return nil, status.Errorf(codes.NotFound, "rota not found")
+		}
+		return nil, err
+	}
+	queryShifts := datastore.NewQuery(shiftEntryKind).Ancestor(datastore.KeyForObj(ctx, &dsShifts)).Gte("EndTime", at.UTC())
+	var dsEntries []DsShiftEntry
+	if err := datastore.GetAll(ctx, queryShifts, &dsEntries); err != nil {
+		return nil, err
+	}
+	for _, shift := range dsEntries {
+		if at.After(shift.StartTime) && at.Before(shift.EndTime) {
+			return &rotang.ShiftEntry{
+				Name:      shift.Name,
+				OnCall:    shift.OnCall,
+				StartTime: shift.StartTime,
+				EndTime:   shift.EndTime,
+				Comment:   shift.Comment,
+			}, nil
+		}
+	}
+	return nil, status.Errorf(codes.NotFound, "no matching shift found for rota: %q", rota)
 }
 
 // AddShifts adds shift entries.
@@ -106,12 +136,51 @@ func (s *Store) AddShifts(ctx context.Context, rota string, entries []rotang.Shi
 
 // DeleteShift deletes the identified shift.
 func (s *Store) DeleteShift(ctx context.Context, rota string, start time.Time) error {
-	return status.Error(codes.Unimplemented, "not implemented")
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return datastore.Delete(ctx, &DsShiftEntry{
+		Key: datastore.NewKey(ctx, shiftKind, rota, 0, datastore.KeyForObj(ctx, &DsShifts{
+			Key:  rootKey(ctx),
+			Name: rota,
+		})),
+		ID: start.Unix(),
+	})
 }
 
 // UpdateShift updates the information in the identified shift.
 func (s *Store) UpdateShift(ctx context.Context, rota string, shift *rotang.ShiftEntry) error {
-	return status.Error(codes.Unimplemented, "not implemented")
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if shift == nil || rota == "" {
+		return status.Errorf(codes.InvalidArgument, "shift and rota must be set")
+	}
+
+	return datastore.RunInTransaction(ctx, func(ctx context.Context) error {
+		key := datastore.NewKey(ctx, shiftKind, rota, 0, datastore.KeyForObj(ctx, &DsShifts{
+			Key:  rootKey(ctx),
+			Name: rota,
+		}))
+		if err := datastore.Get(ctx, &DsShiftEntry{
+			Key: key,
+			ID:  shift.StartTime.Unix(),
+		}); err != nil {
+			if err == datastore.ErrNoSuchEntity {
+				return status.Errorf(codes.NotFound, "shift not found")
+			}
+			return err
+		}
+		return datastore.Put(ctx, &DsShiftEntry{
+			Key:       key,
+			Name:      shift.Name,
+			ID:        shift.StartTime.Unix(),
+			StartTime: shift.StartTime.UTC(),
+			EndTime:   shift.EndTime.UTC(),
+			Comment:   shift.Comment,
+			OnCall:    shift.OnCall,
+		})
+	}, nil)
 }
 
 type byStartTime []rotang.ShiftEntry
@@ -172,7 +241,26 @@ func (s *Store) AllShifts(ctx context.Context, rota string) ([]rotang.ShiftEntry
 
 // Shift returns the requested shift.
 func (s *Store) Shift(ctx context.Context, rota string, start time.Time) (*rotang.ShiftEntry, error) {
-	return nil, status.Error(codes.Unimplemented, "not implemented")
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	entry := DsShiftEntry{
+		Key: datastore.NewKey(ctx, shiftKind, rota, 0, datastore.KeyForObj(ctx, &DsShifts{
+			Key:  rootKey(ctx),
+			Name: rota,
+		})),
+		ID: start.Unix(),
+	}
+	if err := datastore.Get(ctx, &entry); err != nil {
+		return nil, err
+	}
+	return &rotang.ShiftEntry{
+		Name:      entry.Name,
+		StartTime: entry.StartTime,
+		EndTime:   entry.EndTime,
+		Comment:   entry.Comment,
+		OnCall:    entry.OnCall,
+	}, nil
 }
 
 // DeleteAllShifts deletes all shifts from the specified rota.
