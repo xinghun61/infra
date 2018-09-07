@@ -5,7 +5,6 @@ import datetime
 import mock
 import textwrap
 
-import findit_api
 from googleapiclient.errors import HttpError
 from libs import time_util
 from model.flake.flake import Flake

@@ -8,7 +8,6 @@ import textwrap
 
 from google.appengine.ext import ndb
 
-from findit_api import AnalyzeDetectedFlakeOccurrence
 from gae_libs.appengine_util import IsStaging
 from googleapiclient.errors import HttpError
 from libs import time_util
@@ -18,6 +17,7 @@ from model.flake.detection.flake_occurrence import (
 from model.flake.flake_issue import FlakeIssue
 from services import issue_tracking_service
 from services import monitoring
+from services.apis import AnalyzeDetectedFlakeOccurrence
 from waterfall import waterfall_config
 
 # Maximum number of Monorail issues allowed to be created or updated in any 24h

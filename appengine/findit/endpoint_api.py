@@ -43,6 +43,7 @@ from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
+from services.apis import AsyncProcessFlakeReport
 from waterfall import buildbot
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
@@ -152,29 +153,6 @@ class _FlakeAnalysis(messages.Message):
   queued = messages.BooleanField(1, required=True)
 
 
-def AnalyzeDetectedFlakeOccurrence(flake_occurrence, bug_id):
-  """Analyze detected flake occurrence by Flake Detection.
-
-  Args:
-    flake_occurrece (FlakeOccurrence): A FlakeOccurrence model entity.
-    bug_id (str): Id of the bug to update after the analysis finishes.
-  """
-  test_name = flake_occurrence.test_name
-  analysis_request = FlakeAnalysisRequest.Create(test_name, False, bug_id)
-
-  master_name = flake_occurrence.build_configuration.legacy_master_name
-  builder_name = flake_occurrence.build_configuration.luci_builder
-  build_number = flake_occurrence.build_configuration.legacy_build_number
-  step_name = flake_occurrence.step_name
-  analysis_request.AddBuildStep(master_name, builder_name, build_number,
-                                step_name, time_util.GetUTCNow())
-
-  logging.info('flake report for detected flake occurrence: %s',
-               analysis_request)
-  _AsyncProcessFlakeReport(analysis_request, constants.DEFAULT_SERVICE_ACCOUNT,
-                           False)
-
-
 @Cached(
     PickledMemCache(),  # Since the return values are < 1MB.
     expire_time=ANALYSIS_CACHE_TIME)
@@ -189,17 +167,6 @@ def _AsyncProcessFailureAnalysisRequests(builds):
       queue_name=constants.WATERFALL_FAILURE_ANALYSIS_REQUEST_QUEUE)
   # Needed for @Cached to work, but ignored by caller.
   return 'Only semantically None.'
-
-
-def _AsyncProcessFlakeReport(flake_analysis_request, user_email, is_admin):
-  """Pushes a task on the backend to process the flake report."""
-  target = appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND)
-  payload = pickle.dumps((flake_analysis_request, user_email, is_admin))
-  taskqueue.add(
-      url=constants.WATERFALL_PROCESS_FLAKE_ANALYSIS_REQUEST_URL,
-      payload=payload,
-      target=target,
-      queue_name=constants.WATERFALL_FLAKE_ANALYSIS_REQUEST_QUEUE)
 
 
 def _ValidateOauthUser():
@@ -709,7 +676,7 @@ class FindItApi(remote.Service):
     logging.info('Flake report: %s', flake_analysis_request)
 
     try:
-      _AsyncProcessFlakeReport(flake_analysis_request, user_email, is_admin)
+      AsyncProcessFlakeReport(flake_analysis_request, user_email, is_admin)
       queued = True
     except Exception:
       # Ignore the report when fail to queue it for async processing.

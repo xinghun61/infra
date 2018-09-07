@@ -6,7 +6,7 @@ import webapp2
 
 import gae_ts_mon
 
-from findit_api import FindItApi
+from endpoint_api import FindItApi
 from gae_libs import appengine_util
 from gae_libs.pipelines import pipeline_handlers
 from gae_libs.pipelines import pipeline_status_ui
