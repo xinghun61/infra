@@ -51,7 +51,7 @@ def generate_async(seq_name, count):
   number = yield txn()
   ellapsed_ms = (utils.utcnow() - started).total_seconds() * 1000
   if ellapsed_ms > 1000:  # pragma: no cover
-    logging.error(
+    logging.warning(
         'sequence number generation took > 1s\n'
         'it took %dms\n'
         'sequence: %s', ellapsed_ms, seq_name
