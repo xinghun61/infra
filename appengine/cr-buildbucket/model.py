@@ -285,14 +285,15 @@ class BuildDetailEntity(ndb.Model):
 class BuildSteps(BuildDetailEntity):
   """Stores buildbucket.v2.Steps of a build, if available."""
 
-  # max length of steps attribute.
-  MAX_STEPS_LEN = 512 * 1024
+  # max length of steps attribute, uncompressed.
+  MAX_STEPS_LEN = 1024 * 1024
 
   # buildbucket.v2.Build binary protobuf message with only "steps" field set.
   step_container = datastore_utils.ProtobufProperty(
       build_pb2.Build,
       name='steps',
       max_length=MAX_STEPS_LEN,
+      compressed=True,
   )
 
 
