@@ -304,14 +304,14 @@ runOnLoad(function() {
      });
   }
 
-  // TODO(jeffcarp): Attach this handler specifically to the issue update form.
-  window.onsubmit = function() {
+  const updateForm = document.getElementById('issue_update_form');
+  updateForm.addEventListener('submit', function () {
     if (typeof(ClientLogger) === "function") {
       let l = new ClientLogger("issues");
       l.logStart("issue-update", "computer-time");
     }
     TKR_initialFormValues = TKR_currentFormValues();
-  };
+  });
 
   window.onbeforeunload = function() {
     if (TKR_isDirty()) {
