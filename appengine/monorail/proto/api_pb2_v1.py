@@ -152,6 +152,12 @@ class ProjectIssueConfig(messages.Message):
   usersCanSetLabels = messages.BooleanField(10)
 
 
+class Phase(messages.Message):
+  """Issue phase details."""
+  phaseName = messages.StringField(1)
+  rank = messages.IntegerField(2)
+
+
 class IssueCommentWrapper(messages.Message):
   """Issue comment details."""
   attachments = messages.MessageField(Attachment, 1, repeated=True)

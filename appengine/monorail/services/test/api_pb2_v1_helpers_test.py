@@ -654,3 +654,20 @@ class ApiV1HelpersTest(unittest.TestCase):
     actual = api_pb2_v1_helpers.convert_approvals(
         cnxn, avs, self.services, config, phases)
     self.assertEqual(actual, expected)
+
+  def testConvertPhases(self):
+    """We can convert Phases."""
+    phases = [
+        tracker_pb2.Phase(name="JustAPhase", rank=1),
+        tracker_pb2.Phase(name="Can'tPhaseMe", rank=4),
+        tracker_pb2.Phase(phase_id=11L, rank=5),
+        tracker_pb2.Phase(rank=3),
+        tracker_pb2.Phase(name="Phase"),
+    ]
+    expected = [
+        api_pb2_v1.Phase(phaseName="JustAPhase", rank=1),
+        api_pb2_v1.Phase(phaseName="Can'tPhaseMe", rank=4),
+        api_pb2_v1.Phase(phaseName="Phase"),
+    ]
+    actual = api_pb2_v1_helpers.convert_phases(phases)
+    self.assertEqual(actual, expected)

@@ -187,6 +187,24 @@ def convert_approvals(cnxn, approval_values, services, config, phases):
   return approvals
 
 
+def convert_phases(phases):
+  """Convert an Issue's Monorail Phase PBs to API Phase."""
+  converted_phases = []
+  for idx, phase in enumerate(phases):
+    if not phase.name:
+      try:
+        logging.warning(
+            'Phase %d has no name, skipping conversion.' % phase.phase_id)
+      except TypeError:
+        logging.warning(
+            'Phase #%d (%s) has no name or id, skipping conversion.' % (
+                idx, phase))
+      continue
+    converted = api_pb2_v1.Phase(phaseName=phase.name, rank=phase.rank)
+    converted_phases.append(converted)
+  return converted_phases
+
+
 def convert_issue(cls, issue, mar, services):
   """Convert Monorail Issue PB to API IssuesGetInsertResponse."""
 
