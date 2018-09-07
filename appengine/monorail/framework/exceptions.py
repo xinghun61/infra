@@ -11,6 +11,11 @@ class Error(Exception):
   pass
 
 
+class ActionNotSupported(Error):
+  """The user is trying to do something we do not support yet."""
+  pass
+
+
 class InputException(Error):
   """Error in user input processing."""
   pass

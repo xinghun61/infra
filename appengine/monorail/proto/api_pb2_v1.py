@@ -115,6 +115,8 @@ class FieldValue(messages.Message):
   fieldValue = messages.StringField(2)
   derived = messages.BooleanField(3, default=False)
   operator = messages.EnumField(FieldValueOperator, 4, default='add')
+  phaseName = messages.StringField(5)
+  approvalName = messages.StringField(6)
 
 
 class Update(messages.Message):

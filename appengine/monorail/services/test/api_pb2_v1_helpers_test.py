@@ -215,11 +215,39 @@ class ApiV1HelpersTest(unittest.TestCase):
     mar.auth.effective_ids = {111L}
     mar.perms = permissions.READ_ONLY_PERMISSIONSET
     mar.profiler = profiler.Profiler()
+    mar.config = tracker_bizobj.MakeDefaultProjectIssueConfig(12345)
+    mar.config.field_defs = [
+        tracker_bizobj.MakeFieldDef(
+            1, 12345, 'EstDays', tracker_pb2.FieldTypes.INT_TYPE, None, None,
+            False, False, False, None, None, None, False, None, None, None,
+            None, 'doc', False, approval_id=2),
+        tracker_bizobj.MakeFieldDef(
+            2, 12345, 'DesignReview', tracker_pb2.FieldTypes.APPROVAL_TYPE,
+            None, None, False, False, False, None, None, None, False, None,
+            None, None, None, 'doc', False),
+        tracker_bizobj.MakeFieldDef(
+            3, 12345, 'StringField', tracker_pb2.FieldTypes.STR_TYPE, None,
+            None, False, False, False, None, None, None, False, None, None,
+            None, None, 'doc', False),
+        ]
+    self.services.config.StoreConfig(mar.cnxn, mar.config)
 
     now = 1472067725
     now_dt = datetime.datetime.fromtimestamp(now)
 
-    issue = fake.MakeTestIssue(12345, 1, 'one', 'New', 111L)
+    fvs = [
+      tracker_bizobj.MakeFieldValue(
+          1, 4, None, None, None, None, False, phase_id=4),
+      tracker_bizobj.MakeFieldValue(
+          3, None, 'string', None, None, None, False, phase_id=4),
+    ]
+    phases = [
+        tracker_pb2.Phase(phase_id=3, name="JustAPhase"),
+        tracker_pb2.Phase(phase_id=4, name="NotAPhase")
+        ]
+
+    issue = fake.MakeTestIssue(
+        12345, 1, 'one', 'New', 111L, field_values=fvs, phases=phases)
     issue.opened_timestamp = now
     issue.owner_modified_timestamp = now
     issue.status_modified_timestamp = now
@@ -235,6 +263,15 @@ class ApiV1HelpersTest(unittest.TestCase):
       self.assertEquals(now_dt, result.owner_modified)
       self.assertEquals(now_dt, result.status_modified)
       self.assertEquals(now_dt, result.component_modified)
+      self.assertEquals(
+          result.fieldValues,
+          [api_pb2_v1.FieldValue(
+              fieldName='EstDays', fieldValue='4', approvalName='DesignReview',
+              derived=False),
+           api_pb2_v1.FieldValue(fieldName='StringField', fieldValue='string',
+                                 phaseName="NotAPhase", derived=False)
+          ]
+      )
       # TODO(jrobbins): check a lot more fields.
 
   def testConvertAttachment(self):

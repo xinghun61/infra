@@ -394,6 +394,18 @@ class MonorailApi(remote.Service):
           'User is not allowed to comment this issue (%s, %d)' %
           (request.projectId, request.issueId))
 
+    # Temporary block on updating approval subfields.
+    if request.updates and request.updates.fieldValues:
+      fds_by_name = {fd.field_name.lower():fd for fd in mar.config.field_defs}
+      for fv in request.updates.fieldValues:
+        # Checking for fv.approvalName is unreliable since it can be removed.
+        fd = fds_by_name.get(fv.fieldName.lower())
+        if fd and fd.approval_id:
+          raise exceptions.ActionNotSupported(
+              'No API support for approval field changes: (approval %s owns %s)'
+              % (fd.approval_id, fd.field_name))
+        # if fd was None, that gets dealt with later.
+
     updates_dict = {}
     move_to_project = None
     if request.updates:

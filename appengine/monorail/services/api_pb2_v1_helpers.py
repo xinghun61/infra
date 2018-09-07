@@ -202,11 +202,12 @@ def convert_issue(cls, issue, mar, services):
   cc_list = [convert_person(p, mar.cnxn, services) for p in issue.cc_ids]
   cc_list = [p for p in cc_list if p is not None]
   field_values_list = []
-  field_id_dict = {
-      fd.field_id: fd.field_name for fd in config.field_defs}
+  fds_by_id = {
+      fd.field_id: fd for fd in config.field_defs}
+  phases_by_id = {phase.phase_id: phase for phase in issue.phases}
   for fv in issue.field_values:
-    field_name = field_id_dict.get(fv.field_id)
-    if not field_name:
+    fd = fds_by_id.get(fv.field_id)
+    if not fd:
       logging.warning('Custom field %d of project %s does not exist',
                       fv.field_id, issue_project.project_name)
       continue
@@ -217,9 +218,23 @@ def convert_issue(cls, issue, mar, services):
     else:
       val = str(tracker_bizobj.GetFieldValue(fv, {}))
     new_fv = api_pb2_v1.FieldValue(
-        fieldName=field_name,
+        fieldName=fd.field_name,
         fieldValue=val,
         derived=fv.derived)
+    if fd.approval_id:  # Attach parent approval name
+      approval_fd = fds_by_id.get(fd.approval_id)
+      if not approval_fd:
+        logging.warning('Parent approval field %d of field %s does not exist',
+                        fd.approval_id, fd.field_name)
+      else:
+        new_fv.approvalName = approval_fd.field_name
+    elif fv.phase_id:  # Attach phase name
+      phase = phases_by_id.get(fv.phase_id)
+      if not phase:
+        logging.warning('Phase %d for field %s does not exist',
+                        fd.phase_id, fd.field_name)
+      else:
+        new_fv.phaseName = phase.name
     field_values_list.append(new_fv)
   with work_env.WorkEnv(mar, services) as we:
     starred = we.IsIssueStarred(issue)

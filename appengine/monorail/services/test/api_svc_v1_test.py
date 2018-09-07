@@ -214,7 +214,8 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
   def SetUpFieldDefs(
       self, field_id, project_id, field_name, field_type_int,
-      min_value=0, max_value=100, needs_member=False, docstring='doc'):
+      min_value=0, max_value=100, needs_member=False, docstring='doc',
+      approval_id=None, is_phase_field=False):
     self.config = self.services.config.GetProjectConfig(
         'fake cnxn', project_id)
     self.services.config.StoreConfig('fake cnxn', self.config)
@@ -222,7 +223,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
         field_id, project_id, field_name, field_type_int, '',
         '', False, False, False, min_value, max_value, None, needs_member,
         None, '', tracker_pb2.NotifyTriggers.NEVER, 'no_action', docstring,
-        False)
+        False, approval_id=approval_id, is_phase_field=is_phase_field)
     self.config.field_defs.append(fd)
 
   def testUsersGet_NoProject(self):
@@ -446,6 +447,30 @@ class MonorailApiTest(testing.EndpointsTestCase):
     self.assertEqual('test summary', comment1['content'])
     self.assertEqual('user@example.com', comment2['author']['name'])
     self.assertEqual('this is a comment', comment2['content'])
+
+  def testIssuesCommentsInsert_ApprovalFields(self):
+    """Attempts to update approval field values are blocked."""
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[2],
+        access=project_pb2.ProjectAccess.MEMBERS_ONLY,
+        project_id=12345)
+
+    issue1 = fake.MakeTestIssue(
+        12345, 1, 'Issue 1', 'New', 2)
+    self.services.issue.TestAddIssue(issue1)
+
+    self.SetUpFieldDefs(
+        1, 12345, 'Field_int', tracker_pb2.FieldTypes.INT_TYPE)
+    self.SetUpFieldDefs(
+        2, 12345, 'ApprovalChild', tracker_pb2.FieldTypes.STR_TYPE,
+        approval_id=1)
+
+    self.request['updates'] = {
+        'fieldValues':  [{'fieldName': 'Field_int', 'fieldValue': '11'},
+                        {'fieldName': 'ApprovalChild', 'fieldValue': 'str'}]}
+
+    with self.call_should_fail(403):
+      self.call_api('issues_comments_insert', self.request)
 
   def testIssuesCommentsInsert_NoCommentPermission(self):
     """No permission to comment an issue."""
