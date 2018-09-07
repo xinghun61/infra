@@ -51,10 +51,9 @@ class HostingHome(servlet.Servlet):
     # A dict of project id to the user's membership status.
     project_memberships = {}
     if mr.auth.user_id:
-      owned, _archive_owned, member_of, contrib_of = (
-          sitewide_helpers.GetUserProjects(
-              mr.cnxn, self.services, mr.auth.user_pb, mr.auth.effective_ids,
-              mr.auth.effective_ids))
+      with work_env.WorkEnv(mr, self.services) as we:
+        owned, _archive_owned, member_of, contrib_of = (
+            we.GetUserProjects(mr.auth.effective_ids))
       project_memberships.update({proj.project_id: 'Owner' for proj in owned})
       project_memberships.update(
           {proj.project_id: 'Member' for proj in member_of})

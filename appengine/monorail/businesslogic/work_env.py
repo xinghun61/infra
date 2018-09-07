@@ -82,11 +82,12 @@ class WorkEnv(object):
     return permissions.UserCanViewProject(
         self.mc.auth.user_pb, self.mc.auth.effective_ids, project)
 
-  def _AssertUserCanViewProject(self, project):
-    """Make sure the user may view the given project."""
-    if not self._UserCanViewProject(project):
-      raise permissions.PermissionException(
-          'User is not allowed to view this project')
+  def _FilterVisibleProjectsDict(self, projects):
+    """Filter out projects the user doesn't have permission to view."""
+    return {
+        key: proj
+        for key, proj in projects.iteritems()
+        if self._UserCanViewProject(proj)}
 
   def _AssertPermInProject(self, perm, project):
     """Make sure the user may use perm in the given project."""
@@ -202,6 +203,26 @@ class WorkEnv(object):
     project_ids = sorted(project_ids)
     return project_ids
 
+  def GetProjects(self, project_ids, use_cache=True):
+    """Return the specified projects.
+
+    Args:
+      project_ids: int project_ids of the projects to retrieve.
+      use_cache: set to false when doing read-modify-write.
+
+    Returns:
+      The specified projects.
+
+    Raises:
+      NoSuchProjectException: There is no project with that ID.
+    """
+    with self.mc.profiler.Phase('getting projects %r' % project_ids):
+      projects = self.services.project.GetProjects(
+          self.mc.cnxn, project_ids, use_cache=use_cache)
+
+    projects = self._FilterVisibleProjectsDict(projects)
+    return projects
+
   def GetProject(self, project_id, use_cache=True):
     """Return the specified project.
 
@@ -215,11 +236,11 @@ class WorkEnv(object):
     Raises:
       NoSuchProjectException: There is no project with that ID.
     """
-    with self.mc.profiler.Phase('getting project %r' % project_id):
-      project = self.services.project.GetProject(
-          self.mc.cnxn, project_id, use_cache=use_cache)
-    self._AssertUserCanViewProject(project)
-    return project
+    projects = self.GetProjects([project_id], use_cache=use_cache)
+    if project_id not in projects:
+      raise permissions.PermissionException(
+          'User is not allowed to view this project')
+    return projects[project_id]
 
   def GetProjectsByName(self, project_names, use_cache=True):
     """Return the named project.
@@ -239,11 +260,7 @@ class WorkEnv(object):
       if pn not in projects:
         raise exceptions.NoSuchProjectException('Project %r not found.' % pn)
 
-    projects = {
-        project_name: project
-        for project_name, project in projects.iteritems()
-        if self._UserCanViewProject(project)}
-
+    projects = self._FilterVisibleProjectsDict(projects)
     return projects
 
   def GetProjectByName(self, project_name, use_cache=True):
@@ -265,6 +282,86 @@ class WorkEnv(object):
           'User is not allowed to view this project')
 
     return projects[project_name]
+
+  def GetUserRolesInAllProjects(self, viewed_user_effective_ids):
+    """Return the projects where the user has a role.
+
+    Args:
+      viewed_user_effective_ids: list of IDs of the user whose projects we want
+          to see.
+
+    Returns:
+      A triple with projects where the user is an owner, a member or a
+      contributor.
+    """
+    with self.mc.profiler.Phase(
+        'Finding roles in all projects for %r' % viewed_user_effective_ids):
+      project_ids = self.services.project.GetUserRolesInAllProjects(
+          self.mc.cnxn, viewed_user_effective_ids)
+
+    owner_projects = self.GetProjects(project_ids[0])
+    member_projects = self.GetProjects(project_ids[1])
+    contrib_projects = self.GetProjects(project_ids[2])
+
+    return owner_projects, member_projects, contrib_projects
+
+  def GetUserProjects(self, viewed_user_effective_ids):
+    """Get the projects to display in the user's profile.
+
+    Args:
+      viewed_user_effective_ids: set of int user IDs of the user being viewed.
+
+    Returns:
+      A 4-tuple of lists of PBs:
+        - live projects the viewed user owns
+        - archived projects the viewed user owns
+        - live projects the viewed user is a member of
+        - live projects the viewed user is a contributor to
+
+      Any projects the viewing user should not be able to see are filtered out.
+      Admins can see everything, while other users can see all non-locked
+      projects they own or are a member of, as well as all live projects.
+    """
+    # Permissions are checked in we.GetUserRolesInAllProjects()
+    owner_projects, member_projects, contrib_projects = (
+        self.GetUserRolesInAllProjects(viewed_user_effective_ids))
+
+    # We filter out DELETABLE projects, and keep a project where the user has a
+    # highest role, e.g. if the user is both an owner and a member, the project
+    # is listed under owner projects, not under member_projects.
+    archived_projects = [
+        project
+        for project in owner_projects.itervalues()
+        if project.state == project_pb2.ProjectState.ARCHIVED]
+
+    contrib_projects = [
+        project
+        for pid, project in contrib_projects.iteritems()
+        if pid not in owner_projects
+        and pid not in member_projects
+        and project.state != project_pb2.ProjectState.DELETABLE
+        and project.state != project_pb2.ProjectState.ARCHIVED]
+
+    member_projects = [
+        project
+        for pid, project in member_projects.iteritems()
+        if pid not in owner_projects
+        and project.state != project_pb2.ProjectState.DELETABLE
+        and project.state != project_pb2.ProjectState.ARCHIVED]
+
+    owner_projects = [
+        project
+        for pid, project in owner_projects.iteritems()
+        if project.state != project_pb2.ProjectState.DELETABLE
+        and project.state != project_pb2.ProjectState.ARCHIVED]
+
+    by_name = lambda project: project.project_name
+    owner_projects = sorted(owner_projects, key=by_name)
+    archived_projects = sorted(archived_projects, key=by_name)
+    member_projects = sorted(member_projects, key=by_name)
+    contrib_projects = sorted(contrib_projects, key=by_name)
+
+    return owner_projects, archived_projects, member_projects, contrib_projects
 
   def UpdateProject(
       self, project_id, summary=None, description=None,
@@ -420,10 +517,8 @@ class WorkEnv(object):
       configs = self.services.config.GetProjectConfigs(
           self.mc.cnxn, project_ids, use_cache=use_cache)
 
-    configs = {
-        project_id: project_config
-        for project_id, project_config in configs.iteritems()
-        if self._UserCanViewProject(self.GetProject(project_id))}
+    projects = self._FilterVisibleProjectsDict(self.GetProjects(configs))
+    configs = {project_id: configs[project_id] for project_id in projects}
 
     return configs
 

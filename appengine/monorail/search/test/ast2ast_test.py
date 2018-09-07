@@ -46,6 +46,8 @@ class AST2ASTTest(unittest.TestCase):
         config=fake.ConfigService(),
         features=fake.FeaturesService())
     self.services.user.TestAddUser('a@example.com', 111L)
+    self.project = self.services.project.TestAddProject(
+        'proj', project_id=100)
 
   def testPreprocessAST_EmptyAST(self):
     ast = ast_pb2.QueryAST()  # No conjunctions in it.

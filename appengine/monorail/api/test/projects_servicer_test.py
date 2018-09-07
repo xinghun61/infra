@@ -241,7 +241,7 @@ class ProjectsServicerTest(unittest.TestCase):
     # Logged in as owner
     self.assertVisibleMembers([111L, 222L, 333L], [],
                               requester='owner@example.com')
-    # Logged in as comitter
+    # Logged in as committer
     self.assertVisibleMembers([111L, 222L, 333L], [],
                               requester='user_222@example.com')
     # Logged in as contributor
@@ -258,7 +258,7 @@ class ProjectsServicerTest(unittest.TestCase):
     # Logged in as owner
     self.assertVisibleMembers([111L, 222L, 333L], [],
                               requester='owner@example.com')
-    # Logged in as comitter
+    # Logged in as committer
     self.assertVisibleMembers([111L, 222L, 333L], [],
                               requester='user_222@example.com')
     # Logged in as contributor
@@ -713,3 +713,42 @@ class ProjectsServicerTest(unittest.TestCase):
     self.assertEqual(
         0, self.CallStar(requester='user_222@example.com', starred=False))
     self.assertEqual(0, self.CallGetStarCount())
+
+  def AddUserProjects(self):
+    project_states = {
+        'live': project_pb2.ProjectState.LIVE,
+        'archived': project_pb2.ProjectState.ARCHIVED,
+        'deletable': project_pb2.ProjectState.DELETABLE}
+
+    for name, state in project_states.iteritems():
+      self.services.project.TestAddProject(
+          'owner-' + name, state=state, owner_ids=[222L])
+      self.services.project.TestAddProject(
+          'committer-' + name, state=state, committer_ids=[222L])
+      contributor = self.services.project.TestAddProject(
+          'contributor-' + name, state=state)
+      contributor.contributor_ids = [222L]
+
+    members_only = self.services.project.TestAddProject(
+        'members-only', owner_ids=[222L])
+    members_only.access = project_pb2.ProjectAccess.MEMBERS_ONLY
+
+  def testGetUserProjects(self):
+    self.AddUserProjects()
+    self.services.project_star.SetStar(
+        self.cnxn, self.project.project_id, 222L, True)
+
+    request = projects_pb2.GetUserProjectsRequest()
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='user_222@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(
+        self.projects_svcr.GetUserProjects, mc, request)
+
+    self.assertEqual(
+        projects_pb2.GetUserProjectsResponse(
+            owner_of=['members-only', 'owner-live'],
+            member_of=['committer-live', 'proj'],
+            contributor_to=['contributor-live'],
+            starred_projects=['proj']),
+        response)

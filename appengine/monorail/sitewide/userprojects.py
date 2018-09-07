@@ -34,15 +34,12 @@ class ProjectsJsonFeed(jsonfeed.JsonFeed):
 
   def _GatherProjects(self, mr):
     """Return a dict of project names the current user is involved in."""
-    with mr.profiler.Phase('GetUserProjects'):
-      project_lists = sitewide_helpers.GetUserProjects(
-          mr.cnxn, self.services, mr.auth.user_pb, mr.auth.effective_ids,
-          mr.auth.effective_ids)
-      (visible_ownership, _visible_deleted, visible_membership,
-       visible_contrib) = project_lists
-
     with work_env.WorkEnv(mr, self.services) as we:
       starred_projects = we.ListStarredProjects()
+      project_lists = we.GetUserProjects(mr.auth.effective_ids)
+
+    (visible_ownership, _visible_deleted, visible_membership,
+     visible_contrib) = project_lists
 
     projects_dict = {
         'memberof': [p.project_name for p in visible_membership],

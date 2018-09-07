@@ -769,6 +769,8 @@ class ProjectService(object):
       project = self.projects_by_id.get(project_id)
       if project:
         result[project_id] = project
+      else:
+        raise exceptions.NoSuchProjectException(project_id)
     return result
 
   def GetAllProjects(self, _cnxn, use_cache=True):

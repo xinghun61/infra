@@ -140,6 +140,128 @@ class WorkEnvTest(unittest.TestCase):
       with self.work_env as we:
         _actual = we.GetProjectByName('proj')
 
+  def AddUserProjects(self):
+    project_states = {
+        'live': project_pb2.ProjectState.LIVE,
+        'archived': project_pb2.ProjectState.ARCHIVED,
+        'deletable': project_pb2.ProjectState.DELETABLE}
+
+    projects = {}
+    for name, state in project_states.iteritems():
+      projects['owner-'+name] = self.services.project.TestAddProject(
+          'owner-' + name, state=state, owner_ids=[222L])
+      projects['committer-'+name] = self.services.project.TestAddProject(
+          'committer-' + name, state=state, committer_ids=[222L])
+      projects['contributor-'+name] = self.services.project.TestAddProject(
+          'contributor-' + name, state=state)
+      projects['contributor-'+name].contributor_ids = [222L]
+
+    projects['members-only'] = self.services.project.TestAddProject(
+        'members-only', owner_ids=[222L])
+    projects['members-only'].access = (
+        project_pb2.ProjectAccess.MEMBERS_ONLY)
+
+    return projects
+
+  def testGetUserRolesInAllProjects_OtherUsers(self):
+    """We can get the projects in which the user has a role."""
+    projects = self.AddUserProjects()
+
+    with self.work_env as we:
+      owner, member, contrib = we.GetUserRolesInAllProjects({222L})
+
+    by_name = lambda project: project.project_name
+    self.assertEqual(
+        [projects['owner-live']],
+        sorted(owner.values(), key=by_name))
+    self.assertEqual(
+        [projects['committer-live']],
+        sorted(member.values(), key=by_name))
+    self.assertEqual(
+        [projects['contributor-live']],
+        sorted(contrib.values(), key=by_name))
+
+  def testGetUserRolesInAllProjects_OwnUser(self):
+    """We can get the projects in which the user has a role."""
+    projects = self.AddUserProjects()
+
+    self.SignIn(222L)
+    with self.work_env as we:
+      owner, member, contrib = we.GetUserRolesInAllProjects({222L})
+
+    by_name = lambda project: project.project_name
+    self.assertEqual(
+        [projects['members-only'], projects['owner-archived'],
+         projects['owner-live']],
+        sorted(owner.values(), key=by_name))
+    self.assertEqual(
+        [projects['committer-archived'], projects['committer-live']],
+        sorted(member.values(), key=by_name))
+    self.assertEqual(
+        [projects['contributor-archived'], projects['contributor-live']],
+        sorted(contrib.values(), key=by_name))
+
+  def testGetUserRolesInAllProjects_Admin(self):
+    """We can get the projects in which the user has a role."""
+    projects = self.AddUserProjects()
+
+    self.SignIn(444L)
+    with self.work_env as we:
+      owner, member, contrib = we.GetUserRolesInAllProjects({222L})
+
+    by_name = lambda project: project.project_name
+    self.assertEqual(
+        [projects['members-only'], projects['owner-archived'],
+         projects['owner-deletable'], projects['owner-live']],
+        sorted(owner.values(), key=by_name))
+    self.assertEqual(
+        [projects['committer-archived'], projects['committer-deletable'],
+         projects['committer-live']],
+        sorted(member.values(), key=by_name))
+    self.assertEqual(
+        [projects['contributor-archived'], projects['contributor-deletable'],
+         projects['contributor-live']],
+        sorted(contrib.values(), key=by_name))
+
+  def testGetUserProjects_OnlyLiveOfOtherUsers(self):
+    """Regular users should only see live projects of other users."""
+    projects = self.AddUserProjects()
+
+    self.SignIn()
+    with self.work_env as we:
+      owner, archived, member, contrib = we.GetUserProjects({222L})
+
+    self.assertEqual([projects['owner-live']], owner)
+    self.assertEqual([], archived)
+    self.assertEqual([projects['committer-live']], member)
+    self.assertEqual([projects['contributor-live']], contrib)
+
+  def testGetUserProjects_AdminSeesAll(self):
+    """Admins should see all projects from other users."""
+    projects = self.AddUserProjects()
+
+    self.SignIn(444L)
+    with self.work_env as we:
+      owner, archived, member, contrib = we.GetUserProjects({222L})
+
+    self.assertEqual([projects['members-only'], projects['owner-live']], owner)
+    self.assertEqual([projects['owner-archived']], archived)
+    self.assertEqual([projects['committer-live']], member)
+    self.assertEqual([projects['contributor-live']], contrib)
+
+  def testGetUserProjects_UserSeesOwnProjects(self):
+    """Users should see all own projects."""
+    projects = self.AddUserProjects()
+
+    self.SignIn(222L)
+    with self.work_env as we:
+      owner, archived, member, contrib = we.GetUserProjects({222L})
+
+    self.assertEqual([projects['members-only'], projects['owner-live']], owner)
+    self.assertEqual([projects['owner-archived']], archived)
+    self.assertEqual([projects['committer-live']], member)
+    self.assertEqual([projects['contributor-live']], contrib)
+
   def testUpdateProject_Normal(self):
     """We can update an existing project."""
     self.SignIn(user_id=self.admin_user.user_id)

@@ -228,3 +228,18 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
 
     result = projects_pb2.StarProjectResponse(star_count=star_count)
     return result
+
+  @monorail_servicer.PRPCMethod
+  def GetUserProjects(self, mc, _request):
+    """Get the projects the user is involved in."""
+    with work_env.WorkEnv(mc, self.services) as we:
+      starred = we.ListStarredProjects()
+      owner, _archived, member, contrib = we.GetUserProjects(
+          mc.auth.effective_ids)
+
+    result = projects_pb2.GetUserProjectsResponse(
+        owner_of=[p.project_name for p in owner],
+        member_of=[p.project_name for p in member],
+        contributor_to=[p.project_name for p in contrib],
+        starred_projects=[p.project_name for p in starred])
+    return result

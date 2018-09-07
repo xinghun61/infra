@@ -36,10 +36,8 @@ class UserProfile(servlet.Servlet):
           mr, '/g/%s/' % viewed_user.email, include_project=False)
       self.redirect(url, abort=True)  # Show group page instead.
 
-    with mr.profiler.Phase('GetUserProjects'):
-      project_lists = sitewide_helpers.GetUserProjects(
-          mr.cnxn, self.services, mr.auth.user_pb, mr.auth.effective_ids,
-          mr.viewed_user_auth.effective_ids)
+    with work_env.WorkEnv(mr, self.services) as we:
+      project_lists = we.GetUserProjects(mr.viewed_user_auth.effective_ids)
 
       (visible_ownership, visible_archived, visible_membership,
        visible_contrib) = project_lists

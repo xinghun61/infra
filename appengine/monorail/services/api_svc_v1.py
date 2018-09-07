@@ -636,10 +636,10 @@ class MonorailApi(remote.Service):
   def users_get(self, mar, request):
     """Get a user."""
     owner_project_only = request.ownerProjectsOnly
-    (visible_ownership, visible_deleted, visible_membership,
-     visible_contrib) = sitewide_helpers.GetUserProjects(
-        mar.cnxn, self._services, mar.auth.user_pb, mar.auth.effective_ids,
-        mar.viewed_user_auth.effective_ids)
+    with work_env.WorkEnv(mar, self._services) as we:
+      (visible_ownership, visible_deleted, visible_membership,
+       visible_contrib) = we.GetUserProjects(
+           mar.viewed_user_auth.effective_ids)
 
     project_list = []
     for proj in (visible_ownership + visible_deleted):
