@@ -5,6 +5,7 @@
 DEPS = [
   'depot_tools/bot_update',
   'depot_tools/gclient',
+  'recipe_engine/buildbucket',
   'recipe_engine/properties',
 ]
 
@@ -17,11 +18,18 @@ def RunSteps(api):
 
 def GenTests(api):
   yield (
-    api.test('luci_py') +
-    api.properties.git_scheduled(
-        buildername='luci-py-linux64',
-        buildnumber=123,
-        mastername='chromium.infra',
-        repository='https://chromium.googlesource.com/infra/luci/luci-py',
-    )
+      api.test('ci') +
+      api.buildbucket.ci_build(
+          'infra', 'ci', 'Luci-py linux-64',
+          git_repo='https://chromium.googlesource.com/infra/luci/luci-py',
+      ) +
+      api.properties(revision='1'*40)
+  )
+
+  yield (
+      api.test('try') +
+      api.buildbucket.try_build(
+          'infra', 'try', 'Luci-py Presubmit',
+          git_repo='https://chromium.googlesource.com/infra/luci/luci-py',
+      )
   )

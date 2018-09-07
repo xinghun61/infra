@@ -72,6 +72,9 @@ def GenTests(api):
     api.platform('linux', 64) +
     api.runtime(is_luci=True, is_experimental=False) +
     api.buildbucket.try_build(
-        'infra', 'try', 'luci-go-trusty-64', change_number=607472, patch_set=2,
+        'infra', 'try', 'luci-go-trusty-64',
+        git_repo='https://chromium.googlesource.com/infra/luci/luci-go',
+        change_number=607472,
+        patch_set=2,
     ) + api.properties(GOARCH='386')
   )

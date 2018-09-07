@@ -48,6 +48,9 @@ def GenTests(api):
     api.test('presubmit_try_job') +
     api.runtime(is_luci=True, is_experimental=False) +
     api.buildbucket.try_build(
-        'infra', 'try', 'Luci-GAE Presubmit', change_number=607472, patch_set=2,
+        'infra', 'try', 'Luci-GAE Presubmit',
+        git_repo='https://chromium.googlesource.com/infra/luci/gae',
+        change_number=607472,
+        patch_set=2,
     ) + api.step_data('presubmit', api.json.output([[]]))
   )
