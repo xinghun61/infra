@@ -25,7 +25,7 @@ type Req struct {
 }
 
 func init() {
-	http.Handle("/pubsub", http.StripPrefix("/pubsub", http.HandlerFunc(pubsubHandler)))
+	http.Handle("/_ah/push-handlers/pubsub", http.HandlerFunc(pubsubHandler))
 }
 
 func pubsubHandler(w http.ResponseWriter, req *http.Request) {
