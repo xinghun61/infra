@@ -267,6 +267,8 @@ Ensures that the specified CIPD package exists.
 &emsp; **@property**<br>&mdash; **def [swig](/recipes/recipe_modules/third_party_packages/api.py#101)(self):**
 ### *recipe_modules* / [third\_party\_packages\_ng](/recipes/recipe_modules/third_party_packages_ng)
 
+[DEPS](/recipes/recipe_modules/third_party_packages_ng/__init__.py#5): [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/osx\_sdk][depot_tools/recipe_modules/osx_sdk], [recipe\_engine/archive][recipe_engine/recipe_modules/archive], [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+
 Allows uniform cross-compiliation, version tracking and archival for
 third-party software packages (libs+tools) for distribution via CIPD.
 
@@ -463,23 +465,25 @@ If the recipe is run in experimental mode (according to the
 "recipe_engine/runtime" module), then this recipe will skip the final CIPD
 upload.
 
-#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#205)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#270)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
-&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#234)(self, packages, platform=None):**
+&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#385)(self, packages=None, platform=None):**
 
 Executes entire {fetch,build,package,verify,upload} pipeline for all the
 packages listed, targeting the given platform.
 
 Args:
-  * packages (list[(name, version)]) - A list of packages to ensure are
-    uploaded.
+  * packages (list[str]|None) - A list of packages to ensure are
+    uploaded. Packages must be listed as either 'pkgname' or
+    'pkgname@version'.
   * platform (str|None) - If specified, the CPID ${platform} to build for.
     If unspecified, this will be the appropriate CIPD ${platform} for the
     current host machine.
 
-Returns list[(cipd_pkg, cipd_version)]
+Returns (list[(cipd_pkg, cipd_version)], set[str]) of built CIPD packages
+and their tagged versions, as well as a list of unsupported packages.
 
-&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#206)(self, path):**
+&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#335)(self, path):**
 
 Loads all package definitions from the given path.
 
@@ -898,9 +902,9 @@ This recipe builds and packages third party software, such as Git.
 &mdash; **def [RunSteps](/recipes/recipes/third_party_packages_ng.py#51)(api, package_locations, to_build, platform):**
 ### *recipes* / [third\_party\_packages\_ng:tests/full](/recipes/recipe_modules/third_party_packages_ng/tests/full.py)
 
-[DEPS](/recipes/recipe_modules/third_party_packages_ng/tests/full.py#5): [third\_party\_packages\_ng](#recipe_modules-third_party_packages_ng), [recipe\_engine/path][recipe_engine/recipe_modules/path]
+[DEPS](/recipes/recipe_modules/third_party_packages_ng/tests/full.py#7): [third\_party\_packages\_ng](#recipe_modules-third_party_packages_ng), [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties]
 
-&mdash; **def [RunSteps](/recipes/recipe_modules/third_party_packages_ng/tests/full.py#11)(api):**
+&mdash; **def [RunSteps](/recipes/recipe_modules/third_party_packages_ng/tests/full.py#22)(api, GOOS, GOARCH, load_dupe):**
 ### *recipes* / [tricium\_noop](/recipes/recipes/tricium_noop.py)
 
 [DEPS](/recipes/recipes/tricium_noop.py#12): [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/tricium][recipe_engine/recipe_modules/tricium]
@@ -968,8 +972,10 @@ Runs a step which adds a link to the current CL if there is one.
 [depot_tools/recipe_modules/gitiles]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/515e7fe037902d6434c5d5ff2c077b747c56b0b7/recipes/README.recipes.md#recipe_modules-gitiles
 [depot_tools/recipe_modules/gsutil]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/515e7fe037902d6434c5d5ff2c077b747c56b0b7/recipes/README.recipes.md#recipe_modules-gsutil
 [depot_tools/recipe_modules/infra_paths]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/515e7fe037902d6434c5d5ff2c077b747c56b0b7/recipes/README.recipes.md#recipe_modules-infra_paths
+[depot_tools/recipe_modules/osx_sdk]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/515e7fe037902d6434c5d5ff2c077b747c56b0b7/recipes/README.recipes.md#recipe_modules-osx_sdk
 [depot_tools/recipe_modules/presubmit]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/515e7fe037902d6434c5d5ff2c077b747c56b0b7/recipes/README.recipes.md#recipe_modules-presubmit
 [depot_tools/recipe_modules/tryserver]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/515e7fe037902d6434c5d5ff2c077b747c56b0b7/recipes/README.recipes.md#recipe_modules-tryserver
+[recipe_engine/recipe_modules/archive]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/6116e44efc754249e8d5f1d9cdbf21f766ca781a/README.recipes.md#recipe_modules-archive
 [recipe_engine/recipe_modules/buildbucket]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/6116e44efc754249e8d5f1d9cdbf21f766ca781a/README.recipes.md#recipe_modules-buildbucket
 [recipe_engine/recipe_modules/cipd]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/6116e44efc754249e8d5f1d9cdbf21f766ca781a/README.recipes.md#recipe_modules-cipd
 [recipe_engine/recipe_modules/context]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/6116e44efc754249e8d5f1d9cdbf21f766ca781a/README.recipes.md#recipe_modules-context

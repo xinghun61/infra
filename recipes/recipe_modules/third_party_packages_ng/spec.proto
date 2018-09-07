@@ -56,7 +56,6 @@ message Spec {
       // Used to differentiate from the stock symver during compilation and in
       // the generated CIPD package tags.
       string patch_version = 7;
-
     }
 
     message Build {

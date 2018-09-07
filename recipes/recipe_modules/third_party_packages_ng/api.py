@@ -199,10 +199,139 @@ If the recipe is run in experimental mode (according to the
 upload.
 """
 
+import re
+
+from google.protobuf import json_format as jsonpb
+from google.protobuf import text_format as textpb
+
 from recipe_engine import recipe_api
+
+from . import spec_pb2
+from .resolved_spec import ResolvedSpec, parse_name_version, tool_platform
+from .resolved_spec import platform_for_host
+from .exceptions import BadParse, DuplicatePackage, UnsupportedPackagePlatform
+
+
+def _flatten_spec_pb_for_platform(orig_spec, platform):
+  """Transforms a copy of `orig_spec` so that it contains exactly one 'create'
+  message.
+
+  Every `create` message in the original spec will be removed if its
+  `platform_re` field doesn't match `platform`. The matching messages will be
+  applied, in their original order, to a single `create` message by doing
+  a `dict.update` operation for each submessage.
+
+  Args:
+    * orig_spec (spec_pb2.Spec) - The message to flatten.
+    * platform (str) - The CIPD platform value we're targetting (e.g.
+    'linux-amd64')
+
+  Returns a new `spec_pb2.Spec` with exactly one `create` message, or None if
+  the original spec is not supported on the given platform.
+  """
+  spec = spec_pb2.Spec()
+  spec.CopyFrom(orig_spec)
+
+  resolved_create = {}
+
+  applied_any = False
+  for create_msg in spec.create:
+    plat_re = "^(%s)$" % (create_msg.platform_re or '.*')
+    if re.match(plat_re, platform):
+      if create_msg.unsupported:
+        return
+
+      # To get the effect of the documented dict.update behavior, round trip
+      # through JSONPB. It's a bit dirty, but it works.
+      dictified = jsonpb.MessageToDict(
+        create_msg, preserving_proto_field_name=True)
+      for k, v in dictified.iteritems():
+        if isinstance(v, dict):
+          resolved_create.setdefault(k, {}).update(v)
+        else:
+          resolved_create[k] = v
+
+      applied_any = True
+  if not applied_any:
+    return
+
+  # To make this create rule self-consistent instead of just having the last
+  # platform_re to be applied.
+  resolved_create.pop('platform_re', None)
+
+  # Clear list of create messages, and parse the resolved one into the sole
+  # member of the list.
+  del spec.create[:]
+  jsonpb.ParseDict(resolved_create, spec.create.add())
+
+  return spec
 
 
 class ThirdPartyPackagesNGApi(recipe_api.RecipeApi):
+  def __init__(self, **kwargs):
+    super(ThirdPartyPackagesNGApi, self).__init__(**kwargs)
+    # map of name -> (base_path, spec_pb2.Spec)
+    self._loaded_specs = {}
+    # map of (name, platform) -> ResolvedSpec
+    self._resolved_packages = {}
+    # map of (name, version, platform) -> CIPDSpec
+    self._built_packages = {}
+
+  BadParse = BadParse
+  DuplicatePackage = DuplicatePackage
+  UnsupportedPackagePlatform = UnsupportedPackagePlatform
+
+  def _resolve_for(self, pkgname, platform):
+    """Resolves the build instructions for a package for the given platform.
+
+    This will recursively resolve any 'deps' or 'tools' that the package needs.
+    The resolution process is entirely 'offline' and doesn't run any steps, just
+    transforms the loaded 3pp.pb specs into usable ResolvedSpec objects.
+
+    The results of this method are cached.
+
+    Args:
+      * pkgname (str) - The name of the package to resolve. Must be a package
+      registered via `load_packages_from_path`.
+      * platform (str) - A CIPD `${platform}` value to resolve this package for.
+      Always in the form of `GOOS-GOARCH`, e.g. `windows-amd64`.
+
+    Returns a ResolvedSpec.
+
+    Raises `UnsupportedPackagePlatform` if the package cannot be built for this
+    platform.
+    """
+    key = (pkgname, platform)
+    ret = self._resolved_packages.get(key)
+    if ret:
+      return ret
+
+    base_path, orig_spec = self._loaded_specs[pkgname]
+
+    spec = _flatten_spec_pb_for_platform(orig_spec, platform)
+    if not spec:
+      raise UnsupportedPackagePlatform(
+        "%s not supported for %s" % (pkgname, platform))
+
+    # Recursively resolve all deps
+    deps = []
+    for dep in spec.create[0].build.dep:
+      deps.append(self._resolve_for(dep, platform))
+
+    # Recursively resolve all unpinned tools. Pinned tools are always
+    # installed from CIPD.
+    unpinned_tools = []
+    for tool in spec.create[0].build.tool:
+      tool_name, tool_version = parse_name_version(tool)
+      if tool_version == 'latest':
+        unpinned_tools.append(self._resolve_for(
+          tool_name, tool_platform(self.m, platform, spec)))
+
+    ret = ResolvedSpec(
+      self.m, pkgname, platform, base_path, spec, deps, unpinned_tools)
+    self._resolved_packages[key] = ret
+    return ret
+
   def load_packages_from_path(self, path):
     """Loads all package definitions from the given path.
 
@@ -228,22 +357,60 @@ class ThirdPartyPackagesNGApi(recipe_api.RecipeApi):
     load_packages_from_path multiple times, and one of the later calls tries to
     load a pacakge which was registered under one of the earlier calls.
     """
-    _ = path
-    return set()
+    known_package_specs = self.m.file.glob_paths(
+      'find package specs', path,
+      self.m.path.join('*', '3pp.pb'))
 
-  def ensure_uploaded(self, packages, platform=None):
+    discovered = set()
+
+    with self.m.step.nest('load package specs'):
+      for spec in known_package_specs:
+        pkg = spec.pieces[-2]  # ../../<name>/3pp.pb
+        if pkg in self._loaded_specs:
+          raise DuplicatePackage(pkg)
+
+        data = self.m.file.read_text('read %r' % pkg, spec)
+        if not data:
+          self.m.step.active_result.presentation.status = self.m.step.FAILURE
+          raise self.m.step.StepFailure('Bad spec PB for %r' % pkg)
+
+        try:
+          self._loaded_specs[pkg] = (path, textpb.Merge(data, spec_pb2.Spec()))
+        except Exception as ex:
+          raise BadParse('While adding %r: %r' % (pkg, str(ex)))
+        discovered.add(pkg)
+
+    return discovered
+
+  def ensure_uploaded(self, packages=None, platform=None):
     """Executes entire {fetch,build,package,verify,upload} pipeline for all the
     packages listed, targeting the given platform.
 
     Args:
-      * packages (list[(name, version)]) - A list of packages to ensure are
-        uploaded.
+      * packages (list[str]|None) - A list of packages to ensure are
+        uploaded. Packages must be listed as either 'pkgname' or
+        'pkgname@version'.
       * platform (str|None) - If specified, the CPID ${platform} to build for.
         If unspecified, this will be the appropriate CIPD ${platform} for the
         current host machine.
 
-    Returns list[(cipd_pkg, cipd_version)]
+    Returns (list[(cipd_pkg, cipd_version)], set[str]) of built CIPD packages
+    and their tagged versions, as well as a list of unsupported packages.
     """
-    _ = packages
-    _ = platform
-    return []
+    unsupported = set()
+
+    build_plan = []
+    if not packages:
+      packages = self._loaded_specs.keys()
+    platform = platform or platform_for_host(self.m)
+    for pkg in packages:
+      name, version = parse_name_version(pkg)
+      try:
+        resolved = self._resolve_for(unicode(name), platform)
+      except UnsupportedPackagePlatform:
+        unsupported.add(pkg)
+      build_plan.append((resolved, unicode(version)))
+    build_plan.sort()
+
+    # TODO(iannucci): Actually build stuff
+    return [], unsupported
