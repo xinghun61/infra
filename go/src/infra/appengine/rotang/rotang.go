@@ -150,6 +150,7 @@ type ConfigStorer interface {
 // MemberStorer defines the member store interface.
 type MemberStorer interface {
 	Member(ctx context.Context, email string) (*Member, error)
+	AllMembers(ctx context.Context) ([]Member, error)
 	CreateMember(ctx context.Context, member *Member) error
 	UpdateMember(cxt context.Context, in *Member) error
 	DeleteMember(ctx context.Context, email string) error

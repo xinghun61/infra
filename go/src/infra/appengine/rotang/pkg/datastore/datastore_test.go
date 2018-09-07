@@ -611,6 +611,80 @@ func TestUpdateMember(t *testing.T) {
 	}
 }
 
+func TestAllMembers(t *testing.T) {
+	ctx := newTestContext()
+	ctxCancel, cancel := context.WithCancel(ctx)
+	cancel()
+
+	tests := []struct {
+		name       string
+		fail       bool
+		ctx        context.Context
+		memberPool []rotang.Member
+	}{{
+		name: "Canceled context",
+		fail: true,
+		ctx:  ctxCancel,
+		memberPool: []rotang.Member{
+			{
+				Name:      "Primary Oncaller",
+				Email:     "oncall@dot.com",
+				ShiftName: "MTV shift",
+				TZ:        *locationUTC,
+			},
+		},
+	}, {
+		name: "AllMembers Success",
+		ctx:  ctx,
+		memberPool: []rotang.Member{
+			{
+				Name:      "Primary Oncaller",
+				Email:     "oncall@dot.com",
+				ShiftName: "MTV shift",
+				TZ:        *locationUTC,
+			}, {
+				Name:      "Secondary Oncaller",
+				Email:     "secondary@dot.com",
+				ShiftName: "MTV shift",
+				TZ:        *locationUTC,
+			},
+		},
+	}, {
+		name: "AllMembers No Members in the pool",
+		ctx:  ctx,
+		fail: true,
+	},
+	}
+
+	store := New(ctx)
+
+	for _, tst := range tests {
+		t.Run(tst.name, func(t *testing.T) {
+			for _, m := range tst.memberPool {
+				if err := store.CreateMember(ctx, &m); err != nil {
+					t.Fatalf("%s: store.CreateMember(_, _) failed: %v", tst.name, err)
+				}
+				defer func(email string) {
+					if err := store.DeleteMember(ctx, email); err != nil {
+						t.Logf("%s: store.DeleteMember(ctx, %q) failed: %v", tst.name, email, err)
+					}
+				}(m.Email)
+			}
+			ms, err := store.AllMembers(tst.ctx)
+			t.Logf("%s: Members: %v", tst.name, ms)
+			if got, want := (err != nil), tst.fail; got != want {
+				t.Fatalf("%s: store.AllMembers(ctx) = %t want: %t, err: %v", tst.name, got, want, err)
+			}
+			if err != nil {
+				return
+			}
+			if diff := pretty.Compare(tst.memberPool, ms); diff != "" {
+				t.Fatalf("%s: store.AllMembers(ctx) differ -want +got: %s", tst.name, diff)
+			}
+		})
+	}
+}
+
 func TestDeleteMember(t *testing.T) {
 	ctx := newTestContext()
 	ctxCancel, cancel := context.WithCancel(ctx)

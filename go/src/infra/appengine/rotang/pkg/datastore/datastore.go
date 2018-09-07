@@ -115,6 +115,22 @@ func (s *Store) Member(ctx context.Context, email string) (*rotang.Member, error
 	return &member, nil
 }
 
+// AllMembers fetches all members from datastore.
+func (s *Store) AllMembers(ctx context.Context) ([]rotang.Member, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	memberQuery := datastore.NewQuery(memberKind).Ancestor(rootKey(ctx))
+	var dsMembers []DsMember
+	if err := datastore.GetAll(ctx, memberQuery, &dsMembers); err != nil {
+		return nil, err
+	}
+	if len(dsMembers) == 0 {
+		return nil, status.Error(codes.NotFound, "no members in the pool")
+	}
+	return convertMembers(dsMembers)
+}
+
 // CreateMember stores a new member in datastore.
 func (s *Store) CreateMember(ctx context.Context, member *rotang.Member) error {
 	if err := ctx.Err(); err != nil {
