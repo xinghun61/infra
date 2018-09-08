@@ -42,9 +42,6 @@ USER_UPDATES_MINE = '/updates'
 GROUP_DETAIL = '/'
 GROUP_ADMIN = '/groupadmin'
 
-# URL of JSON feed for the "My projects" menu
-USER_PROJECTS_JSON = '/hosting/projects'
-
 # URLs of issue tracker backend request handlers.  Called from the frontends.
 BACKEND_SEARCH = '/_backend/search'
 BACKEND_NONVIEWABLE = '/_backend/nonviewable'

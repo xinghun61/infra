@@ -70,7 +70,6 @@ from sitewide import moved
 from sitewide import projectcreate
 from sitewide import userhotlistsmenu
 from sitewide import userprofile
-from sitewide import userprojects
 from sitewide import usersettings
 from sitewide import userclearbouncing
 from sitewide import userupdates
@@ -339,7 +338,6 @@ class ServletRegistry(object):
         urls.CHECK_PROJECT_NAME_JSON: projectcreate.CheckProjectNameJSON,
         # The user settings page is a site-wide servlet, not under /u/.
         urls.USER_SETTINGS: usersettings.UserSettings,
-        urls.USER_PROJECTS_JSON: userprojects.ProjectsJsonFeed,
         urls.USER_HOTLISTS_JSON: userhotlistsmenu.HotlistsJsonFeed,
         urls.HOSTING_HOME: hostinghome.HostingHome,
         urls.GROUP_CREATE: groupcreate.GroupCreate,
