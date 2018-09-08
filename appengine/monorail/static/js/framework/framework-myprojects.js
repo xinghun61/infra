@@ -35,89 +35,51 @@ var myprojects;
  */
 function CS_updateProjects() {
   if (!myprojects) return;
-  // Set a request token to prevent XSRF leaking of user project lists.
-  if (CS_env.token) {
-    var postUrl = '/hosting/projects.do';
-    CS_doPost(postUrl, CS_updateProjectsCallback, {});
-  } else {
-    CS_updateProjectsCallback(null);
-  }
-}
+  const userProjectsPromise = window.prpcClient.call(
+      'monorail.Projects', 'GetUserProjects', {});
+  userProjectsPromise.then(userProjects => {
+    // Grab and show projects if user is signed in.
+    if (userProjects) {
+      const starredProjects = userProjects.starredProjects || [];
+      const projects = (userProjects.ownerOf || [])
+          .concat(userProjects.memberOf || [])
+          .concat(userProjects.contributorTo || []);
 
-/**
- * Updates the drop down menu based on the json data received.
- * @param {event} event with xhr Response with JSON data of list of projects.
- */
-function CS_updateProjectsCallback(event) {
-  var xhr = event ? event.target : null;
-  // Grab and show projects if user is signed in
-  if (xhr) {
-    if (xhr.readyState != 4 || xhr.status != 200)
-      return;
-    var projects = [];
-    var starredProjects = [];
+      myprojects.clear();
 
-    var json = CS_parseJSON(xhr);
-    for (var category in json) {
-      switch (category) {
-        case 'contributorto':
-        case 'memberof':
-        case 'ownerof':
-          for (var i = 0; i < json[category].length; i++) {
-            projects.push(json[category][i]);
-          }
-          break;
+      projects.sort();
+      projects.forEach(project => {
+        myprojects.addItem(project, `/p/${project}/`, 'projects', 'Projects');
+      });
 
-        case 'starred_projects':
-          for (var i = 0; i < json[category].length; i++) {
-            starredProjects.push(json[category][i]);
-          }
-          break;
+      starredProjects.sort();
+      starredProjects.forEach(project => {
+        myprojects.addItem(
+            project, `/p/${project}/`, 'starred_projects', 'Starred Projects');
+      });
 
-        case 'error':
-          return;
-
-        default:
-          break;
+      if (projects.length === 0 && starredProjects.length === 0) {
+        // If user has no project memberships then add default control.
+        CS_addDefaultControl();
+      } else {
+        // If there is atleast one project membership then add a 'All projects'
+        // link that goes to hosting/
+        myprojects.addCategory('---', '---');
+        myprojects.addItem('All projects', '/hosting/', '---');
       }
-    }
 
-    myprojects.clear();
-
-    projects.sort();
-    for (var i = 0; i < projects.length; i++) {
-      var url = '/p/' + projects[i] + '/';
-      myprojects.addItem(projects[i], url, 'projects', 'Projects');
-    }
-
-    starredProjects.sort();
-    for (var i = 0; i < starredProjects.length; i++) {
-      var url = '/p/' + starredProjects[i] + '/';
-      myprojects.addItem(
-          starredProjects[i], url, 'starred_projects', 'Starred projects');
-    }
-
-    if (projects.length == 0 && starredProjects.length == 0) {
-      // If user has no project memberships then add default control.
-      CS_addDefaultControl();
+    // Otherwise, ask the user to sign in
     } else {
-      // If there is atleast one project membership then add a 'All projects'
-      // link that goes to hosting/
-      myprojects.addCategory('---', '---');
-      myprojects.addItem('All projects', '/hosting/', '---');
+      myprojects.clear();
+
+      myprojects.addItem(
+          'Sign in to see your favorites',
+          CS_env['login_url'],
+          'controls');
+
+      CS_addDefaultControl();
     }
-
-  // Otherwise, ask the user to sign in
-  } else {
-    myprojects.clear();
-
-    myprojects.addItem(
-        'Sign in to see your favorites',
-        CS_env['login_url'],
-        'controls');
-
-    CS_addDefaultControl();
-  }
+  });
 }
 
 /**

@@ -926,71 +926,23 @@ var TKR_optionsXmlHttp = undefined;
 /**
  * Contact the server to fetch the set of autocomplete options for the
  * projects the user is contributor/member/owner of.
- * If multiValue is set to true then the projectStore is configured to
+ * @param {multiValue} boolean If set to true, the projectStore is configured to
  * have support for multi-values (useful for example for saved queries where
  * a query can apply to multiple projects).
  */
 function TKR_fetchUserProjects(multiValue) {
   // Set a request token to prevent XSRF leaking of user project lists.
-  if (CS_env.token) {
-    var postURL = '/hosting/projects.do';
-    var xh = XH_XmlHttpCreate()
-    var data = 'token=' + CS_env.token;
-    var callback = multiValue ? TKR_fetchMultiValProjectsCallback
-                              : TKR_fetchProjectsCallback;
-    XH_XmlHttpPOST(xh, postURL, data, callback);
-  }
-}
-
-/**
- * Sets up the projectStore based on the json data received.
- * The projectStore is setup with support for multiple values.
- * @param {event} event with xhr Response with JSON data of projects.
- */
-function TKR_fetchMultiValProjectsCallback(event) {
-  var projects = TKR_getMemberProjects(event)
-  if (projects) {
-    TKR_setUpProjectStore(projects, true);
-  }
-}
-
-/**
- * Sets up the projectStore based on the json data received.
- * @param {event} event with xhr Response with JSON data of projects.
- */
-function TKR_fetchProjectsCallback(event) {
-  var projects = TKR_getMemberProjects(event)
-  if (projects) {
-    TKR_setUpProjectStore(projects, false);
-  }
-}
-
-function TKR_getMemberProjects(event) {
-  var xhr = event.target;
-  if (xhr) {
-    if (xhr.readyState != 4 || xhr.status != 200)
-      return;
-
-    var projects = [];
-    var json = CS_parseJSON(xhr);
-    for (var category in json) {
-      switch (category) {
-        case 'contributorto':
-        case 'memberof':
-        case 'ownerof':
-          for (var i = 0; i < json[category].length; i++) {
-            projects.push(json[category][i]);
-          }
-          break;
-        case 'error':
-          return;
-        default:
-          break;
-      }
-    }
+  const userProjectsPromise = window.prpcClient.call(
+      'monorail.Projects', 'GetUserProjects', {});
+  userProjectsPromise.then(userProjects => {
+    const projects = (userProjects.ownerOf || [])
+        .concat(userProjects.memberOf || [])
+        .concat(userProjects.contributorTo || []);
     projects.sort();
-    return projects;
-  }
+    if (projects) {
+      TKR_setUpProjectStore(projects, multiValue);
+    }
+  });
 }
 
 
