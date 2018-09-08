@@ -19,7 +19,6 @@ from features import hotlistdetails
 from features import hotlistissues
 from features import hotlistissuescsv
 from features import hotlistpeople
-from features import cues
 from features import filterrules
 from features import userhotlists
 from features import inboundemail
@@ -343,7 +342,6 @@ class ServletRegistry(object):
         urls.USER_PROJECTS_JSON: userprojects.ProjectsJsonFeed,
         urls.USER_HOTLISTS_JSON: userhotlistsmenu.HotlistsJsonFeed,
         urls.HOSTING_HOME: hostinghome.HostingHome,
-        urls.CUES_JSON: cues.SetCuesFeed,
         urls.GROUP_CREATE: groupcreate.GroupCreate,
         urls.GROUP_LIST: grouplist.GroupList,
         urls.GROUP_DELETE: grouplist.GroupList,

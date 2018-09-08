@@ -27,7 +27,8 @@ function CS_dismissCue(cueId) {
   }
 
   if (CS_env.token) {
-    window.__prpc.call('monorail.Features', 'DismissCue', {'cue_id': cueID});
+    window.prpcClient.call(
+        'monorail.Features', 'DismissCue', {'cue_id': cueId});
   }
   return false;
 }

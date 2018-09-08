@@ -25,9 +25,6 @@ PEOPLE_DETAIL_PREFS_JSON = '/people/detailPrefs'
 ADMIN_META = '/admin'
 ADMIN_ADVANCED = '/adminAdvanced'
 
-# URLs for cue cards (dismissible on-page help)
-CUES_JSON = '/hosting/cues'
-
 # URLs of user pages, relative to either /u/userid or /u/username
 # TODO(jrobbins): Add /u/userid as the canonical URL in metadata.
 USER_PROFILE = '/'
