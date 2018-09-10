@@ -149,12 +149,15 @@ func collect(c context.Context, req *admin.CollectRequest,
 		return nil
 	}
 
-	// Create layered isolated input, include the input in the collect request and
-	// massage the isolated output into new isolated input.
-	isolatedInput, err := isolator.LayerIsolates(
-		c, wf.IsolateServer, req.IsolatedInputHash, result.IsolatedOutputHash)
-	if err != nil {
-		return errors.Annotate(err, "failed layer isolates").Err()
+	// If we have isolated output, create layered isolated input, include the input
+	// in the collect request and massage the isolated output into new isolated input.
+	isolatedInput := req.IsolatedInputHash
+	if result.IsolatedOutputHash != "" {
+		isolatedInput, err = isolator.LayerIsolates(
+			c, wf.IsolateServer, req.IsolatedInputHash, result.IsolatedOutputHash)
+		if err != nil {
+			return errors.Annotate(err, "failed layer isolates").Err()
+		}
 	}
 
 	// Enqueue trigger requests for successors.
