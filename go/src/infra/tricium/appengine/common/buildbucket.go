@@ -90,7 +90,7 @@ func (s buildbucketServer) Collect(c context.Context, params *CollectParameters)
 	// Collect result
 	build, err := buildbucketService.GetBuild(c, &buildbucketpb.GetBuildRequest{
 		Id:     params.BuildID,
-		Fields: &fm.FieldMask{Paths: []string{"output.properties.comments", "status"}},
+		Fields: &fm.FieldMask{Paths: []string{"output.properties.tricium", "status"}},
 	})
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to collect results for buildbucket task").Err()
@@ -105,7 +105,7 @@ func (s buildbucketServer) Collect(c context.Context, params *CollectParameters)
 	default:
 		result.State = Failure
 	}
-	result.BuildbucketOutput = build.GetOutput().GetProperties().GetFields()["comments"].GetStringValue()
+	result.BuildbucketOutput = build.GetOutput().GetProperties().GetFields()["tricium"].GetStringValue()
 	return result, nil
 }
 
