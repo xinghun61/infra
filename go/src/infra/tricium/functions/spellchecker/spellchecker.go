@@ -41,6 +41,7 @@ const (
 var (
 	// Words that might be in the dictionary but shouldn't be flagged.
 	whitelistWords = []string{
+		"als",    // "ambient light sensor"
 		"backed", // "backed by"
 		"ect",    // effective connection type
 		"gae",    // Google App Engine
