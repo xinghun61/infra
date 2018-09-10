@@ -186,7 +186,7 @@ WITH
         # "net_unittests (iPhone 6s iOS 11.2)". Thus, it is wrong to use the
         # test target/type name "net_unittests" for grouping.
         REGEXP_REPLACE(
-          step.name, ' [(](with(out)? patch|retry summary)[)]', ''
+          step.name, ' [(](with(out)? patch|retry summary)[)].*', ''
         ) AS normalized_step_name,
         ANY_VALUE(CASE
             WHEN step.name LIKE '%(with patch)%' THEN step.name
@@ -228,6 +228,9 @@ WITH
     # Convert build_id to integer for better performance in joining.
     CAST(build_id AS INT64) AS build_id,
     step_name,
+    REGEXP_REPLACE(
+      step_name, ' [(](with(out)? patch|retry summary)[)].*', ''
+    ) AS normalized_step_name,
     # path is the full test name.
     path AS test_name,
     buildbot_info,
@@ -305,10 +308,11 @@ WITH
     # times, thus we use ANY_VALUE to dedup here. https://crbug.com/806422
     ANY_VALUE( CASE
         # Only keep the failing test runs in the step (with patch).
-        WHEN step_pair.step_name_with_patch = failed_test.step_name THEN
+        WHEN step_pair.normalized_step_name = failed_test.normalized_step_name THEN
           failed_test
         ELSE NULL  # NULL is ignored by ANY_VALUE.
-      END) AS test_run
+      END) AS test_run,
+    step_pair.step_name_with_patch AS original_step_name
   FROM
     flaky_test_step_pairs AS build
   CROSS JOIN
@@ -316,12 +320,10 @@ WITH
   INNER JOIN failed_tests AS failed_test
   ON
     build.build_id = failed_test.build_id
-    AND failed_test.step_name IN (
-      step_pair.step_name_with_patch,
-      step_pair.step_name_without_patch)
+    AND step_pair.normalized_step_name = failed_test.normalized_step_name
   GROUP BY
     build.build_id,
-    step_pair.normalized_step_name,
+    step_pair.step_name_with_patch,
     failed_test.test_name
   HAVING
     # Flaky tests are those that failed in (with patch) but passed in (without
@@ -353,7 +355,7 @@ SELECT
   test_run.buildbot_info.master_name AS legacy_master_name,
   test_run.buildbot_info.build_number AS legacy_build_number,
   # Info about the test.
-  test_run.step_name,
+  original_step_name,
   test_run.test_name,
   test_run.start_time AS test_start_msec,
   test_run.actual AS test_actual,
