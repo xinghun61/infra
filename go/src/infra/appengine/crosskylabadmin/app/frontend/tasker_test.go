@@ -39,10 +39,8 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
 		}
 		tasker := TaskerServerImpl{
-			clients.SwarmingFactory{
-				SwarmingClientHook: func(context.Context, string) (clients.SwarmingClient, error) {
-					return fakeSwarming, nil
-				},
+			ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
+				return fakeSwarming, nil
 			},
 		}
 
@@ -200,13 +198,11 @@ func TestTriggerRepairOnIdle(t *testing.T) {
 			pool:    config.Get(c).Swarming.BotPool,
 			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
 		}
-		sf := clients.SwarmingFactory{
-			SwarmingClientHook: func(context.Context, string) (clients.SwarmingClient, error) {
-				return fakeSwarming, nil
-			},
+		f := func(context.Context, string) (clients.SwarmingClient, error) {
+			return fakeSwarming, nil
 		}
-		tasker := TaskerServerImpl{sf}
-		tracker := TrackerServerImpl{sf}
+		tasker := TaskerServerImpl{f}
+		tracker := TrackerServerImpl{f}
 
 		Convey("with one known bot", func() {
 			setKnownBots(c, fakeSwarming, []string{"dut_1"})
@@ -324,13 +320,11 @@ func TestTriggerRepairOnRepairFailed(t *testing.T) {
 			pool:    config.Get(c).Swarming.BotPool,
 			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
 		}
-		sf := clients.SwarmingFactory{
-			SwarmingClientHook: func(context.Context, string) (clients.SwarmingClient, error) {
-				return fakeSwarming, nil
-			},
+		f := func(context.Context, string) (clients.SwarmingClient, error) {
+			return fakeSwarming, nil
 		}
-		tracker := TrackerServerImpl{sf}
-		tasker := TaskerServerImpl{sf}
+		tracker := TrackerServerImpl{f}
+		tasker := TaskerServerImpl{f}
 
 		Convey("with one known bot in state ready", func() {
 			setKnownBots(c, fakeSwarming, []string{"dut_1"})
@@ -405,10 +399,8 @@ func TestTriggerRepairOnRepairFailed(t *testing.T) {
 func setKnownBots(c context.Context, fsc *fakeSwarmingClient, duts []string) {
 	fsc.setAvailableDutIDs(duts)
 	server := TrackerServerImpl{
-		clients.SwarmingFactory{
-			SwarmingClientHook: func(context.Context, string) (clients.SwarmingClient, error) {
-				return fsc, nil
-			},
+		ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
+			return fsc, nil
 		},
 	}
 	resp, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{})

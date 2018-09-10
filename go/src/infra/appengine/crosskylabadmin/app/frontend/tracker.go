@@ -35,7 +35,7 @@ import (
 
 // TrackerServerImpl implements the fleet.TrackerServer interface.
 type TrackerServerImpl struct {
-	clients.SwarmingFactory
+	ClientFactory SwarmingFactory
 }
 
 // RefreshBots implements the fleet.Tracker.RefreshBots() method.
@@ -45,7 +45,7 @@ func (tsi *TrackerServerImpl) RefreshBots(ctx context.Context, req *fleet.Refres
 	}()
 
 	cfg := config.Get(ctx)
-	sc, err := tsi.SwarmingClient(ctx, cfg.Swarming.Host)
+	sc, err := tsi.ClientFactory(ctx, cfg.Swarming.Host)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to obtain Swarming client").Err()
 	}

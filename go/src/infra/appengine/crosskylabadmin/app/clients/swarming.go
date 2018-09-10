@@ -86,25 +86,6 @@ type SwarmingCreateTaskArgs struct {
 	Tags                 []string
 }
 
-// SwarmingFactory implements a single method to obtain a SwarmingClient instance.
-type SwarmingFactory struct {
-	// SwarmingClientHook provides a way to override the swarming client bindings.
-	//
-	// Tests should override SwarmingClientHook to return a fake SwarmingClient.
-	// If nil, a real SwarmingClient will be used.
-	SwarmingClientHook func(c context.Context, host string) (SwarmingClient, error)
-}
-
-// SwarmingClient returns a SwarmingClient.
-//
-// All Swarming users should use SwarmingClient to obtain a SwarmingClient.
-func (sf *SwarmingFactory) SwarmingClient(c context.Context, host string) (SwarmingClient, error) {
-	if sf.SwarmingClientHook != nil {
-		return sf.SwarmingClientHook(c, host)
-	}
-	return NewSwarmingClient(c, host)
-}
-
 type swarmingClientImpl swarming.Service
 
 // NewSwarmingClient returns a SwarmingClient for interaction with the Swarming service.

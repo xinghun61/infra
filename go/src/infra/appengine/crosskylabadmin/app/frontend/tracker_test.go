@@ -22,7 +22,7 @@ import (
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"golang.org/x/net/context"
 
-	"infra/appengine/crosskylabadmin/api/fleet/v1"
+	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
 	"infra/appengine/crosskylabadmin/app/config"
 )
@@ -39,10 +39,8 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
 		}
 		tracker := TrackerServerImpl{
-			clients.SwarmingFactory{
-				SwarmingClientHook: func(context.Context, string) (clients.SwarmingClient, error) {
-					return fakeSwarming, nil
-				},
+			ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
+				return fakeSwarming, nil
 			},
 		}
 
@@ -303,10 +301,8 @@ func TestRefreshAndSummarizeBotsFields(t *testing.T) {
 			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
 		}
 		tracker := TrackerServerImpl{
-			clients.SwarmingFactory{
-				SwarmingClientHook: func(context.Context, string) (clients.SwarmingClient, error) {
-					return fakeSwarming, nil
-				},
+			ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
+				return fakeSwarming, nil
 			},
 		}
 

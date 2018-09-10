@@ -40,9 +40,12 @@ const (
 	skylabSwarmingWorkerPath = infraToolsDir + "/skylab_swarming_worker"
 )
 
+// SwarmingFactory is a constructor for a SwarmingClient.
+type SwarmingFactory func(c context.Context, host string) (clients.SwarmingClient, error)
+
 // TaskerServerImpl implements the fleet.TaskerServer interface.
 type TaskerServerImpl struct {
-	clients.SwarmingFactory
+	ClientFactory SwarmingFactory
 }
 
 // TriggerRepairOnIdle implements the fleet.TaskerService method.
@@ -54,7 +57,7 @@ func (tsi *TaskerServerImpl) TriggerRepairOnIdle(ctx context.Context, req *fleet
 	if err := req.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	sc, err := tsi.SwarmingClient(ctx, config.Get(ctx).Swarming.Host)
+	sc, err := tsi.ClientFactory(ctx, config.Get(ctx).Swarming.Host)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to obtain Swarming client").Err()
 	}
@@ -115,7 +118,7 @@ func (tsi *TaskerServerImpl) TriggerRepairOnRepairFailed(ctx context.Context, re
 	if err := req.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	sc, err := tsi.SwarmingClient(ctx, config.Get(ctx).Swarming.Host)
+	sc, err := tsi.ClientFactory(ctx, config.Get(ctx).Swarming.Host)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to obtain Swarming client").Err()
 	}
@@ -190,7 +193,7 @@ func (tsi *TaskerServerImpl) EnsureBackgroundTasks(ctx context.Context, req *fle
 		return nil, errors.Annotate(err, "failed to obtain requested bots from datastore").Err()
 	}
 
-	sc, err := tsi.SwarmingClient(ctx, config.Get(ctx).Swarming.Host)
+	sc, err := tsi.ClientFactory(ctx, config.Get(ctx).Swarming.Host)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to obtain Swarming client").Err()
 	}
