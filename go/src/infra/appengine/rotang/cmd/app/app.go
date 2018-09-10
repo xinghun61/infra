@@ -6,7 +6,6 @@
 package app
 
 import (
-	"context"
 	"log"
 	"net/http"
 
@@ -15,18 +14,22 @@ import (
 	"infra/appengine/rotang/pkg/algo"
 	"infra/appengine/rotang/pkg/datastore"
 
+	"golang.org/x/net/context"
+
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
 )
 
 const (
-	selfURL          = "http://nop2.c.googlers.com:8080"
-	oauthCallbackURL = "http://localhost:8080/oauth2callback"
+	selfURL = "scratch.syd.corp.google.com:8080"
 )
 
 func setupStoreHandlers(o *handlers.Options, sf func(context.Context) *datastore.Store) {
 	o.MemberStore = func(ctx context.Context) rotang.MemberStorer {
+		return sf(ctx)
+	}
+	o.ShiftStore = func(ctx context.Context) rotang.ShiftStorer {
 		return sf(ctx)
 	}
 	o.ConfigStore = func(ctx context.Context) rotang.ConfigStorer {
@@ -62,6 +65,9 @@ func init() {
 	r.GET("/", tmw, h.HandleIndex)
 	r.GET("/upload", tmw, h.HandleUpload)
 	r.GET("/list", tmw, h.HandleList)
+	r.GET("/createrota", tmw, h.HandleCreateRota)
+
+	r.POST("/createrota", tmw, h.HandleCreateRota)
 	r.POST("/upload", tmw, h.HandleUpload)
 
 	http.DefaultServeMux.Handle("/", r)

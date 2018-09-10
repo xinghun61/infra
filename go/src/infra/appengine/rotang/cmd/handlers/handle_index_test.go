@@ -23,6 +23,9 @@ func setupStoreHandlers(o *Options, sf func(context.Context) *datastore.Store) {
 	o.MemberStore = func(ctx context.Context) rotang.MemberStorer {
 		return sf(ctx)
 	}
+	o.ShiftStore = func(ctx context.Context) rotang.ShiftStorer {
+		return sf(ctx)
+	}
 	o.ConfigStore = func(ctx context.Context) rotang.ConfigStorer {
 		return sf(ctx)
 	}

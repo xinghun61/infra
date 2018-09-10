@@ -27,6 +27,9 @@ func TestNew(t *testing.T) {
 			MemberStore: func(ctx context.Context) rotang.MemberStorer {
 				return datastore.New(ctx)
 			},
+			ShiftStore: func(ctx context.Context) rotang.ShiftStorer {
+				return datastore.New(ctx)
+			},
 			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {
 				return datastore.New(ctx)
 			},
@@ -42,6 +45,9 @@ func TestNew(t *testing.T) {
 			MemberStore: func(ctx context.Context) rotang.MemberStorer {
 				return datastore.New(ctx)
 			},
+			ShiftStore: func(ctx context.Context) rotang.ShiftStorer {
+				return datastore.New(ctx)
+			},
 			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {
 				return datastore.New(ctx)
 			},
@@ -52,6 +58,9 @@ func TestNew(t *testing.T) {
 		opts: &Options{
 			URL: "http://localhost:8080",
 			MemberStore: func(ctx context.Context) rotang.MemberStorer {
+				return datastore.New(ctx)
+			},
+			ShiftStore: func(ctx context.Context) rotang.ShiftStorer {
 				return datastore.New(ctx)
 			},
 			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {

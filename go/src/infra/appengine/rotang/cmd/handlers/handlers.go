@@ -18,6 +18,7 @@ type State struct {
 	selfURL     string
 	generators  *algo.Generators
 	memberStore func(context.Context) rotang.MemberStorer
+	shiftStore  func(context.Context) rotang.ShiftStorer
 	configStore func(context.Context) rotang.ConfigStorer
 }
 
@@ -28,6 +29,7 @@ type Options struct {
 
 	MemberStore func(context.Context) rotang.MemberStorer
 	ConfigStore func(context.Context) rotang.ConfigStorer
+	ShiftStore  func(context.Context) rotang.ShiftStorer
 }
 
 // New creates a new handlers State container.
@@ -39,12 +41,13 @@ func New(opt *Options) (*State, error) {
 		return nil, status.Errorf(codes.InvalidArgument, "URL must be set")
 	case opt.Generators == nil:
 		return nil, status.Errorf(codes.InvalidArgument, "Genarators can not be nil")
-	case opt.MemberStore == nil, opt.ConfigStore == nil:
+	case opt.MemberStore == nil, opt.ShiftStore == nil, opt.ConfigStore == nil:
 		return nil, status.Errorf(codes.InvalidArgument, "Store functions can not be nil")
 	}
 	return &State{
 		selfURL:     opt.URL,
 		memberStore: opt.MemberStore,
+		shiftStore:  opt.ShiftStore,
 		configStore: opt.ConfigStore,
 	}, nil
 }

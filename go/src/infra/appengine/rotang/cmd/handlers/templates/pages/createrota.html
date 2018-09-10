@@ -1,0 +1,204 @@
+<!doctype html>
+<html>
+<head>
+  <script type="text/javascript">
+    const timeZones = [
+      {name: "America/Los_Angeles", description: "(GMT-08:00) Pacific Time (US & Canada)"},
+      {name: "America/New_York", description: "(GMT-05:00) Eastern Time (US & Canada)"},
+      {name: "Asia/Tokyo", description: "(GMT+09:00) Osaka, Sapporo, Tokyo"},
+      {name: "Australia/Sydney", description: "GMT+10:00) Canberra, Melbourne, Sydney"},
+    ];
+    (function() {
+
+      function addShift(baseId, container, entries) {
+          container.appendChild(document.createTextNode("Name:"));
+          let input = document.createElement("input");
+          input.type = "text";
+          input.name = "addShiftName";
+          input.id = "addShiftName" + baseId;
+          input.required = true;
+          input.value = entries[0];
+          container.appendChild(input);
+          container.appendChild(document.createTextNode("Duration:"));
+          input = document.createElement("input")
+          input.type = "number";
+          input.name = "addShiftDuration";
+          input.id = "addShiftDuration" + baseId;
+          input.required = true;
+          input.value = entries[1];
+          container.appendChild(input);
+          container.appendChild(document.createElement("br"));
+      }
+
+      function addMember(baseId , container, entries) {
+          container.appendChild(document.createTextNode("Name:"));
+          let input = document.createElement("input");
+          input.type = "text";
+          input.name = "addName";
+          input.id = "addName" + baseId;
+          input.required = true;
+          input.value = entries[0];
+          container.appendChild(input);
+          container.appendChild(document.createTextNode("Email:"));
+          input = document.createElement("input");
+          input.type = "email";
+          input.name = "addEmail";
+          input.id = "addEmail" + baseId;
+          input.required = true;
+          input.value = entries[1];
+          container.appendChild(input);
+          container.appendChild(document.createTextNode("TZ:"));
+          input = document.createElement("select");
+          input.name = "addTZ";
+          input.id = "addTZ" + baseId;
+          timeZones.forEach(zone => {
+            const option = document.createElement("option");
+            option.value = zone.name;
+            option.text = zone.description;
+            input.appendChild(option);
+          })
+          input.value = entries[2];
+          container.appendChild(input);
+          container.appendChild(document.createElement("br"));
+      }
+
+      function addMemberFields() {
+        const container = document.getElementById("memberContainer");
+        const members = []; while (container.hasChildNodes()) {
+          if (container.lastChild.nodeType != Node.ELEMENT_NODE || container.lastChild.tagName === "BR" ) {
+            container.removeChild(container.lastChild);
+            continue;
+          }
+          members.push(container.lastChild.value);
+          container.removeChild(container.lastChild);
+        }
+        members.reverse();
+        const recordLength = 3;
+        // The member records contain the 3 fields `name` , `email` and `timezone`.
+        // This for loop slices the list of entries up into records for the `addMember`
+        // function.
+        let i = 0;
+        for (; i < members.length; i += recordLength) {
+          addMember(i, container, members.slice(i, i+recordLength));
+        }
+        addMember(i, container, ["", "", ""]);
+      }
+
+      function addShiftFields() {
+        var container = document.getElementById("shiftContainer");
+        const shifts = [];
+        while (container.hasChildNodes()) {
+          if (container.lastChild.nodeType != Node.ELEMENT_NODE || container.lastChild.tagName === "BR") {
+            container.removeChild(container.lastChild);
+            continue;
+          }
+          shifts.push(container.lastChild.value)
+          container.removeChild(container.lastChild);
+        }
+        shifts.reverse();
+        var i = 0;
+        for (; i < shifts.length; i += 2) {
+          addShift(i, container, shifts.slice(i, i+2));
+        }
+        addShift(i, container, ["", ""]);
+      }
+      window.addShiftFields = addShiftFields
+      window.addMemberFields = addMemberFields
+    })();
+  </script>
+  <title>Create rotation</title>
+</head>
+<body>
+<form action="createrota" method="POST" id="rotaForm">
+  <fieldset>
+    <legend>Create new rotation</legend>
+    <fieldset>
+    <legend>Rotation configuration</legend>
+    <table class="table">
+      <tbody>
+        <tr><td>Rotation Name:</td><td><input type="text" id="Name" name="Name" required></td></tr>
+        <tr><td>Description:</td><td><input type="text" id="Description" name="Description" required></td></tr>
+        <tr><td>Calendar:</td><td><input type="text" id="Calendar" name="Calendar"></td></tr>
+        <tr><td>Owners:</td><td><input type="text" id="Owners" name="Owners" value="{{.User.Email}}" required></td></tr>
+        <tr><td>Expiration:</td><td><input type="number" id="Expiration" name="Expiration" value=7 required></td></tr>
+        <tr><td>Shifts To Schedule:</td><td><input type="number" id="ShiftsToSchedule" name="ShiftsToSchedule" value=8 required></td></tr>
+        <tr><td>Email Subject Template:</td><td><textarea id="EmailSubjectTemplate" class="text" cols="40" rows ="2" name="EmailSubjectTemplate" required></textarea></td></tr>
+        <tr><td>Email Body Template:</td><td><textarea id="EmailBodyTemplate" class="text" cols="40" rows ="10" name="EmailBodyTemplate" required></textarea></td></tr>
+        <tr><td>Email Days Before Notify:</td><td><input id="EmailNotify" type="number"  name="EmailNotify" required value=7></td></tr>
+      </tbody>
+    </table>
+    </fieldset>
+    <fieldset>
+      <legend>Rotation members</legend>
+      <table class="table">
+        <tbody>
+          <tr>
+            <td>Members:</td>
+            <td>
+              <select multiple name="members" size="20">
+                {{range $m := .Members}}
+                <option value="{{$m.Email}}" title="{{$m.Email}}">{{$m.Name }} ({{$m.Email}})</option>
+                {{end}}
+              </select>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <h4>Add new member:</h4>
+      <div id="memberContainer">
+          Name: <input type="text" name="addName" value="">
+          Email: <input type="text" name="addEmail" value="">
+          TimeZone:
+          <div id="tzContainer"></div>
+      </div>
+      <br>
+      <button type="button" onclick="addMemberFields()">Add member</button>
+    </fieldset>
+    <fieldset>
+      <legend>Shift configuration</legend>
+      <table class="table">
+        <tbody>
+          <tr><td>StartTime:</td><td><input type="time" value="00:00" name="shiftStart" required></td></tr>
+          <tr><td>Length:</td><td><input type="number" value=5 name="shiftLength" required></td></tr>
+          <tr><td>Skip:</td><td><input type="number" value=2 name="shiftSkip" required></td></tr>
+          <tr><td>ShiftMembers:</td><td><input type="number" value=2 name="shiftMembers" required></td></tr>
+          <tr><td>Generator:</td>
+            <td>
+              <select name="generator">
+                <option value="Legacy" title="Legacy">Legacy</option>
+                <option value="Fair" title="Fair">Fair</option>
+                <option value="Random" title="Random">Random</option>
+              </select>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <h4>Add shift:</h4>
+      <div id="shiftContainer">
+        Name: <input type="text"  name="addShiftName" value="MTV Shift">
+        Duration: <input type="number"  name="addShiftDuration" value="24">
+      </div>
+      <br>
+      <button type="button" onclick="addShiftFields()">Add Shift</button>
+    </fieldset>
+    <br>
+    <button type="submit" form="rotaForm" value="Submit">Create Rota Config</button>
+  </fieldset>
+</form>
+
+  <script>
+      (function() {
+        const container = document.getElementById("tzContainer");
+        let select = document.createElement("select");
+        select.name = "addTZ";
+        timeZones.forEach(zone => {
+          const option = document.createElement("option");
+          option.value = zone.name;
+          option.text = zone.description;
+          select.appendChild(option);
+        });
+        container.appendChild(select);
+      })();
+  </script>
+</body>
+</html>
