@@ -630,6 +630,8 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
     if any_changes:
       self.put()
 
+  # TODO(crbug.com/881920): Capture and store build_id to replace build_number.
+
   # The original build/step/test in which a flake actually occurred.
   # A CQ trybot step has to be mapped to a Waterfall buildbot step.
   # A gtest suite.PRE_PRE_test has to be normalized to suite.test.

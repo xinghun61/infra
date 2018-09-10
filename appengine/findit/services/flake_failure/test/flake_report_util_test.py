@@ -259,7 +259,17 @@ class FlakeReportUtilTest(WaterfallTestCase):
     self.assertFalse(flake_report_util.ShouldUpdateBugForAnalysis(analysis))
 
   def testShouldUpdateBugForAnalysisNoBugIdWithCulprit(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    step_name = 's'
+    test_name = 't'
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.original_master_name = master_name
+    analysis.original_builder_name = builder_name
+    analysis.original_build_number = build_number
     analysis.status = analysis_status.COMPLETED
     analysis.culprit_urlsafe_key = 'c'
     analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
@@ -302,7 +312,16 @@ class FlakeReportUtilTest(WaterfallTestCase):
     self.assertFalse(flake_report_util.ShouldUpdateBugForAnalysis(analysis))
 
   def testShouldUpdateBugForAnalysisConfiguredFalseWithCulprit(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    step_name = 's'
+    test_name = 't'
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.original_master_name = master_name
+    analysis.original_builder_name = builder_name
+    analysis.original_build_number = build_number
     analysis.status = analysis_status.COMPLETED
     analysis.bug_id = 123
     analysis.culprit_urlsafe_key = 'c'
@@ -471,7 +490,16 @@ class FlakeReportUtilTest(WaterfallTestCase):
     self.assertFalse(flake_report_util.UnderDailyLimit())
 
   def testGenerateCommentWithCulprit(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.original_master_name = master_name
+    analysis.original_builder_name = builder_name
+    analysis.original_build_number = build_number
     analysis.status = analysis_status.COMPLETED
     culprit = FlakeCulprit.Create('c', 'r', 123, 'http://')
     culprit.flake_analysis_urlsafe_keys.append(analysis.key.urlsafe())
@@ -482,7 +510,16 @@ class FlakeReportUtilTest(WaterfallTestCase):
     self.assertTrue('culprit r123 with confidence 67.1%' in comment, comment)
 
   def testGenerateCommentForLongstandingFlake(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.original_master_name = master_name
+    analysis.original_builder_name = builder_name
+    analysis.original_build_number = build_number
     analysis.status = analysis_status.COMPLETED
     comment = flake_report_util.GenerateBugComment(analysis)
     self.assertTrue('longstanding' in comment, comment)
@@ -505,6 +542,9 @@ class FlakeReportUtilTest(WaterfallTestCase):
     culprit.put()
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
+    analysis.original_master_name = master_name
+    analysis.original_builder_name = builder_name
+    analysis.original_build_number = build_number
     analysis.data_points = [
         DataPoint.Create(commit_position=200, pass_rate=.5, git_hash='hash')
     ]
@@ -547,6 +587,9 @@ class FlakeReportUtilTest(WaterfallTestCase):
     test_name = 't'
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
+    analysis.original_master_name = master_name
+    analysis.original_builder_name = builder_name
+    analysis.original_build_number = build_number
     analysis.Save()
 
     flake = Flake.Create(

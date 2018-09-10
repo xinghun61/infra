@@ -132,7 +132,16 @@ class UpdateMonorailPipelineTestShouldNotUpdate(WaterfallTestCase):
   @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
   def testUpdateMonorailBugPipelineNoCulprit(
       self, mock_get_merged_issue, issue_tracker, mock_update_bug, *_):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.original_master_name = master_name
+    analysis.original_builder_name = builder_name
+    analysis.original_build_number = build_number
     analysis.bug_id = 123
     analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
     analysis.Save()
