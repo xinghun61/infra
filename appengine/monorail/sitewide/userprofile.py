@@ -73,7 +73,8 @@ class UserProfile(servlet.Servlet):
     starred_user_dict = framework_views.MakeAllUserViews(
         mr.cnxn, self.services.user, starred_user_ids)
     starred_users = starred_user_dict.values()
-    starred_users_json = json.dumps(starred_users)
+    starred_users_json = json.dumps(
+      [uv.display_name for uv in starred_users])
 
     is_user_starred = self._IsUserStarred(
         mr.cnxn, mr.auth.user_id, mr.viewed_user_auth.user_id)

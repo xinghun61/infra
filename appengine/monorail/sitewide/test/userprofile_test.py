@@ -5,10 +5,9 @@
 
 """Tests for the user profile page."""
 
+import mock
 import unittest
 import webapp2
-
-import mox
 
 from framework import framework_helpers
 from framework import framework_views
@@ -52,9 +51,10 @@ def MakeReqInfo(
 class UserProfileTest(unittest.TestCase):
 
   def setUp(self):
-    self.mox = mox.Mox()
-    self.mox.StubOutWithMock(
-        framework_helpers.UserSettings, 'GatherUnifiedSettingsPageData')
+    self.patcher_1 = mock.patch(
+      'framework.framework_helpers.UserSettings.GatherUnifiedSettingsPageData')
+    self.mock_guspd = self.patcher_1.start()
+    self.mock_guspd.return_value = {'unified': None}
 
     services = service_manager.Services(
         project=fake.ProjectService(),
@@ -101,15 +101,12 @@ class UserProfileTest(unittest.TestCase):
 
   def tearDown(self):
     self.testbed.deactivate()
-    self.mox.UnsetStubs()
+    mock.patch.stopall()
 
   def assertProjectsAnyOrder(self, value_to_test, *expected_project_names):
     actual_project_names = [project_view.project_name
                             for project_view in value_to_test]
     self.assertItemsEqual(expected_project_names, actual_project_names)
-
-    # TODO(jrobbins): re-implement captchas to reveal full
-    # email address and add tests for that.
 
   def testGatherPageData_RegularUserViewingOtherUserProjects(self):
     """A user can see the other users' live projects, but not archived ones."""
@@ -117,20 +114,16 @@ class UserProfileTest(unittest.TestCase):
         self.regular_user, REGULAR_USER_ID, self.other_user,
         OTHER_USER_ID, 'other@xyz.com')
 
-    framework_helpers.UserSettings.GatherUnifiedSettingsPageData(
-        111L, mr.viewed_user_auth.user_view,
-        mr.viewed_user_auth.user_pb).AndReturn({'unified': None})
-    self.mox.ReplayAll()
-
     page_data = self.servlet.GatherPageData(mr)
+
     self.assertProjectsAnyOrder(page_data['owner_of_projects'],
                                 'other-owner-live')
     self.assertProjectsAnyOrder(page_data['committer_of_projects'],
                                 'other-member-live')
     self.assertFalse(page_data['owner_of_archived_projects'])
     self.assertEquals('ot...@xyz.com', page_data['viewed_user_display_name'])
-
-    self.mox.VerifyAll()
+    self.mock_guspd.assert_called_once_with(
+        111L, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb)
 
   def testGatherPageData_RegularUserViewingOwnProjects(self):
     """A user can see all their own projects: live or archived."""
@@ -138,12 +131,8 @@ class UserProfileTest(unittest.TestCase):
         self.regular_user, REGULAR_USER_ID, self.regular_user,
         REGULAR_USER_ID, 'self@xyz.com')
 
-    framework_helpers.UserSettings.GatherUnifiedSettingsPageData(
-        111L, mr.viewed_user_auth.user_view,
-        mr.viewed_user_auth.user_pb).AndReturn({'unified': None})
-    self.mox.ReplayAll()
-
     page_data = self.servlet.GatherPageData(mr)
+
     self.assertEquals('self@xyz.com', page_data['viewed_user_display_name'])
     self.assertProjectsAnyOrder(page_data['owner_of_projects'],
                                 'regular-owner-live')
@@ -152,8 +141,25 @@ class UserProfileTest(unittest.TestCase):
     self.assertProjectsAnyOrder(
         page_data['owner_of_archived_projects'],
         'regular-owner-archived')
+    self.mock_guspd.assert_called_once_with(
+        111L, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb)
 
-    self.mox.VerifyAll()
+  def testGatherPageData_RegularUserViewingStarredUsers(self):
+    """A user can see display names of other users that they starred."""
+    mr = MakeReqInfo(
+        self.regular_user, REGULAR_USER_ID, self.regular_user,
+        REGULAR_USER_ID, 'self@xyz.com')
+    self.servlet.services.user_star.SetStar(
+        'cnxn', OTHER_USER_ID, REGULAR_USER_ID, True)
+
+    page_data = self.servlet.GatherPageData(mr)
+
+    starred_users = page_data['starred_users']
+    self.assertEquals(1, len(starred_users))
+    self.assertEquals('333@gmail.com', starred_users[0].email)
+    self.assertEquals('["3...@gmail.com"]', page_data['starred_users_json'])
+    self.mock_guspd.assert_called_once_with(
+        111L, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb)
 
   def testGatherPageData_AdminViewingOtherUserAddress(self):
     """Site admins always see full email addresses of other users."""
@@ -161,36 +167,35 @@ class UserProfileTest(unittest.TestCase):
         self.admin_user, ADMIN_USER_ID, self.other_user,
         OTHER_USER_ID, 'other@xyz.com')
 
-    framework_helpers.UserSettings.GatherUnifiedSettingsPageData(
-        222L, mr.viewed_user_auth.user_view,
-        mr.viewed_user_auth.user_pb).AndReturn({'unified': None})
-    self.mox.ReplayAll()
-
     page_data = self.servlet.GatherPageData(mr)
+
     self.assertEquals('other@xyz.com', page_data['viewed_user_display_name'])
+    self.mock_guspd.assert_called_once_with(
+        222L, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb)
 
-    self.mox.VerifyAll()
-
-  def testGatherPageData_RegularUserViewingOtherUserAddress(self):
+  def testGatherPageData_RegularUserViewingOtherUserAddressUnobscured(self):
     """Email should be revealed to others depending on obscure_email."""
     mr = MakeReqInfo(
         self.regular_user, REGULAR_USER_ID, self.other_user,
         OTHER_USER_ID, 'other@xyz.com')
-
-    framework_helpers.UserSettings.GatherUnifiedSettingsPageData(
-        111L, mr.viewed_user_auth.user_view,
-        mr.viewed_user_auth.user_pb).AndReturn({'unified': None})
-    framework_helpers.UserSettings.GatherUnifiedSettingsPageData(
-        111L, mr.viewed_user_auth.user_view,
-        mr.viewed_user_auth.user_pb).AndReturn({'unified': None})
-    self.mox.ReplayAll()
-
     mr.viewed_user_auth.user_view.obscure_email = False
+
     page_data = self.servlet.GatherPageData(mr)
+
     self.assertEquals('other@xyz.com', page_data['viewed_user_display_name'])
+    self.mock_guspd.assert_called_once_with(
+        111L, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb)
 
+  def testGatherPageData_RegularUserViewingOtherUserAddressObscured(self):
+    """Email should be revealed to others depending on obscure_email."""
+    mr = MakeReqInfo(
+        self.regular_user, REGULAR_USER_ID, self.other_user,
+        OTHER_USER_ID, 'other@xyz.com')
     mr.viewed_user_auth.user_view.obscure_email = True
-    page_data = self.servlet.GatherPageData(mr)
-    self.assertEquals('ot...@xyz.com', page_data['viewed_user_display_name'])
 
-    self.mox.VerifyAll()
+    page_data = self.servlet.GatherPageData(mr)
+
+    self.assertEquals('ot...@xyz.com', page_data['viewed_user_display_name'])
+    self.mock_guspd.assert_called_once_with(
+        111L, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb)
+
