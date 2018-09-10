@@ -5,11 +5,15 @@
 package app
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"path"
+	"strings"
 
 	"cloud.google.com/go/storage"
 	pubsub "google.golang.org/api/pubsub/v1"
@@ -57,6 +61,13 @@ func pubsubHandler(w http.ResponseWriter, req *http.Request) {
 	bucketID := request.PubsubMessage.Attributes["bucketId"]
 	log.Debugf(ctx, "objectId: %v, bucketId: %v", filename, bucketID)
 
+	basename := path.Base(filename)
+	if !strings.HasPrefix(basename, "ninja_log") {
+		log.Debugf(ctx, "not ninjalog file: %v", filename)
+		fmt.Fprintln(w, "This is not ninjalog file!")
+		return
+	}
+
 	info, err := getFile(ctx, filename, bucketID)
 	if err != nil {
 		http.Error(w, "failed to get file", http.StatusInternalServerError)
@@ -86,19 +97,28 @@ func getFile(ctx context.Context, filename string, bucketID string) (*ninjalog.N
 		}
 	}()
 
+	var reader io.ReadCloser
 	// Creates a Bucket instance.
-	r, err := client.Bucket(bucketID).Object(filename).NewReader(ctx)
+	reader, err = client.Bucket(bucketID).Object(filename).NewReader(ctx)
 	if err != nil {
 		log.Errorf(ctx, "failed to get reader: %v", err)
 		return nil, err
 	}
-	defer func() {
-		if err := r.Close(); err != nil {
+	closer := func(reader io.ReadCloser) {
+		if err := reader.Close(); err != nil {
 			log.Warningf(ctx, "failed to close client: %v", err)
 		}
-	}()
+	}
+	defer closer(reader)
 
-	info, err := ninjalog.Parse(filename, r)
+	reader, err = gzip.NewReader(reader)
+	if err != nil {
+		log.Errorf(ctx, "failed to ungzip file: %v", err)
+		return nil, err
+	}
+	defer closer(reader)
+
+	info, err := ninjalog.Parse(filename, reader)
 	if err != nil {
 		log.Errorf(ctx, "failed to parse ninjalog: %v", err)
 		return nil, err
