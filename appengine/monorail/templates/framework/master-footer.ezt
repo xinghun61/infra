@@ -115,8 +115,9 @@ a.src=g;m.parentNode.insertBefore(a,m)
 
 <script type="text/javascript" defer src="/static/js/framework/ga.js?version=[app_version]" nonce="[nonce]"></script>
 
-// Polymer elements and polyfills loader.
 <script type="module" nonce="[nonce]">
+// Polymer elements and polyfills loader.
+
 const devMode = ('[format "js"][dev_mode][end]' === 'yes');
 const nonce = '[format "js"][nonce][end]';
 
