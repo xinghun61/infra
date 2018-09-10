@@ -235,7 +235,7 @@ class Servlet(webapp2.RequestHandler):
 
     except exceptions.NoSuchProjectException as e:
       logging.info('Rejecting invalid request: %r', e)
-      self.response.status = httplib.BAD_REQUEST
+      self.response.status = httplib.NOT_FOUND
 
     except xsrf.TokenIncorrect as e:
       logging.info('Bad XSRF token: %r', e.message)

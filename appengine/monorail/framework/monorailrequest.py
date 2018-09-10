@@ -445,6 +445,8 @@ class MonorailRequest(MonorailRequestBase):
     if self.project_name:
       self.project = services.project.GetProjectByName(
           self.cnxn, self.project_name)
+      if not self.project:
+        raise exceptions.NoSuchProjectException()
 
   def _LookupHotlist(self, services):
     """Get information about the current hotlist (if any) from the request."""

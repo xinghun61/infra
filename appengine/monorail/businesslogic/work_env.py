@@ -393,7 +393,6 @@ class WorkEnv(object):
           docs_url=docs_url, source_url=source_url,
           logo_gcs_id=logo_gcs_id, logo_file_name=logo_file_name)
 
-
   def DeleteProject(self, project_id):
     """Mark the project as deletable.  It will be reaped by a cron job.
 
@@ -1075,7 +1074,6 @@ class WorkEnv(object):
           self.mc.cnxn, author_id, from_timestamp, to_timestamp)
 
     return commits
-
 
   ### Group methods
 

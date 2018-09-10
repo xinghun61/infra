@@ -54,20 +54,15 @@ class IssueList(servlet.Servlet):
       Dict of values used by EZT for rendering the page.
     """
     search_error_message = ''
-    # if project doesn't exist dont do
     with work_env.WorkEnv(mr, self.services) as we:
       # Check if the user's query is just the ID of an existing issue.
       # TODO(jrobbins): consider implementing this for cross-project search.
-      try:
-        we.GetProjectByName(mr.project_name, True)
-      except exceptions.NoSuchProjectException:
-        raise permissions.PermissionException()
       if mr.project and tracker_constants.JUMP_RE.match(mr.query):
         local_id = int(mr.query)
         try:
           we.GetIssueByLocalID(mr.project_id, local_id)  # does it exist?
           url = framework_helpers.FormatAbsoluteURL(
-            mr, urls.ISSUE_DETAIL, id=local_id)
+              mr, urls.ISSUE_DETAIL, id=local_id)
           self.redirect(url, abort=True)  # Jump to specified issue.
         except exceptions.NoSuchIssueException:
           pass  # The user is searching for a number that is not an issue ID.
@@ -90,7 +85,7 @@ class IssueList(servlet.Servlet):
 
     with mr.profiler.Phase('publishing emails'):
       framework_views.RevealAllEmailsToMembers(
-        mr.auth, mr.project, pipeline.users_by_id)
+          mr.auth, mr.project, pipeline.users_by_id)
 
     with mr.profiler.Phase('getting related issues'):
       related_iids = set()

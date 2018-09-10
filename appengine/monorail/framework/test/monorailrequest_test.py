@@ -230,6 +230,14 @@ class MonorailRequestUnitTest(unittest.TestCase):
     self.assertEquals('example.com', mr.request.host)
     self.assertEquals('http://example.com/p/proj/', mr.current_page_url)
 
+  def testParseRequest_ProjectFound(self):
+    mr = self._MRWithMockRequest('/p/proj/')
+    self.assertEquals(mr.project, self.project)
+
+  def testParseRequest_ProjectNotFound(self):
+    with self.assertRaises(exceptions.NoSuchProjectException):
+      self._MRWithMockRequest('/p/no-such-proj/')
+
   def testViewedUser_WithEmail(self):
     mr = self._MRWithMockRequest('/u/jrobbins@example.com/')
     self.assertEquals('jrobbins@example.com', mr.viewed_username)

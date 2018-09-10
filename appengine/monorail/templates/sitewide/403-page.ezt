@@ -1,10 +1,12 @@
 [define category_css]css/ph_detail.css[end]
 [include "../framework/master-header.ezt" "hidetabs"]
 
-<h3>Project Not Found</h3>
+<h3>Permission denied</h3>
 
 <h4>What happened?</h4>
 
-<p> No permission to view the requested project or
-  the requested project does not exist.<p/>
+<p>You do not have permission to view the requested page.</p>
+
+[if-any reason]<p>Reason: [reason].</p>[end]
+
 [include "../framework/master-footer.ezt"]
