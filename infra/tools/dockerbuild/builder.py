@@ -38,6 +38,9 @@ class Builder(object):
     version_fn (callable or None): If not None, and spec.version is None, this
         function will be used to set the spec version at runtime.
     """
+    if arch_map:
+      assert not any(isinstance(v, basestring) for v in arch_map.values()), (
+        'arch_map must map str->seq[str]')
 
     self._spec = spec
     self._build_fn = build_fn

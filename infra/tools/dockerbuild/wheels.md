@@ -1280,6 +1280,24 @@ wheel: <
 
 * *universal*
 
+## **pandas**
+
+### 0.23.4
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/pandas/${vpython_platform}"
+  version: "version:0.23.4"
+>
+```
+
+
+* *mac-x64*
+* *manylinux-x64*
+* *manylinux-x86*
+* *windows-x64*
+* *windows-x86*
+
 ## **paramiko**
 
 ### 2.4.1

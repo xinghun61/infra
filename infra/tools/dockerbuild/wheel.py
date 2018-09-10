@@ -73,6 +73,16 @@ from .wheel_infra import InfraBuilder as Infra
 
 from .wheel_mysql import MySQLPythonBuilder as MySQLPython
 
+# This is the NumPy-ecosystem list of platforms that their mac-x64 wheel
+# supports.
+_NUMPY_MAC_x64 = [
+  'macosx_10_6_intel',
+  'macosx_10_9_intel',
+  'macosx_10_9_x86_64',
+  'macosx_10_10_intel',
+  'macosx_10_10_x86_64',
+]
+
 
 SPECS = {s.spec.tag: s for s in (
   SourceOrPrebuilt('bcrypt', '3.1.4',
@@ -90,7 +100,7 @@ SPECS = {s.spec.tag: s for s in (
   ),
   SourceOrPrebuilt('cffi', '1.10.0',
     arch_map={
-      'mac-x64': 'macosx_10_6_intel',
+      'mac-x64': ['macosx_10_6_intel'],
     },
   ),
   SourceOrPrebuilt('numpy', '1.11.3',
@@ -98,30 +108,14 @@ SPECS = {s.spec.tag: s for s in (
         'windows-x86': 'none',
         'windows-x64': 'none',
       },
-      arch_map={
-        'mac-x64': '.'.join([
-          'macosx_10_6_intel',
-          'macosx_10_9_intel',
-          'macosx_10_9_x86_64',
-          'macosx_10_10_intel',
-          'macosx_10_10_x86_64',
-        ]),
-      },
+      arch_map={'mac-x64': _NUMPY_MAC_x64},
   ),
   SourceOrPrebuilt('numpy', '1.12.1',
       abi_map={
         'windows-x86': 'none',
         'windows-x64': 'none',
       },
-      arch_map={
-        'mac-x64': '.'.join([
-          'macosx_10_6_intel',
-          'macosx_10_9_intel',
-          'macosx_10_9_x86_64',
-          'macosx_10_10_intel',
-          'macosx_10_10_x86_64',
-        ]),
-      },
+      arch_map={'mac-x64': _NUMPY_MAC_x64},
       skip_plat=('linux-arm64',),
   ),
 
@@ -135,15 +129,7 @@ SPECS = {s.spec.tag: s for s in (
         'windows-x86': 'none',
         'windows-x64': 'none',
       },
-      arch_map={
-        'mac-x64': '.'.join([
-          'macosx_10_6_intel',
-          'macosx_10_9_intel',
-          'macosx_10_9_x86_64',
-          'macosx_10_10_intel',
-          'macosx_10_10_x86_64',
-        ]),
-      },
+      arch_map={'mac-x64': _NUMPY_MAC_x64},
       packaged=['windows-x86', 'windows-x64'],
   ),
 
@@ -153,20 +139,19 @@ SPECS = {s.spec.tag: s for s in (
 
   Prebuilt('scipy', '0.19.0',
       ['mac-x64', 'manylinux-x86', 'manylinux-x64'],
-      arch_map={
-        'mac-x64': '.'.join([
-          'macosx_10_6_intel',
-          'macosx_10_9_intel',
-          'macosx_10_9_x86_64',
-          'macosx_10_10_intel',
-          'macosx_10_10_x86_64',
-        ]),
-      },
+      arch_map={'mac-x64': _NUMPY_MAC_x64},
   ),
 
   SourceOrPrebuilt('pyasn', '1.6.0b1', packaged=(),
       only_plat=['manylinux-x64']),
   Prebuilt('pynacl', '1.2.1', ['manylinux-x64', 'mac-x64']),
+
+  Prebuilt('pandas', '0.23.4',
+      ['manylinux-x86', 'manylinux-x64',
+       'mac-x64',
+       'windows-x86', 'windows-x64'],
+      arch_map={'mac-x64': _NUMPY_MAC_x64},
+  ),
 
   OpenCV('opencv_python', '2.4.13.2', '1.11.3',
       only_plat=['manylinux-x86', 'manylinux-x64']),
@@ -179,15 +164,7 @@ SPECS = {s.spec.tag: s for s in (
         'windows-x86',
         'windows-x64',
       ],
-      arch_map={
-        'mac-x64': '.'.join([
-          'macosx_10_6_intel',
-          'macosx_10_9_intel',
-          'macosx_10_9_x86_64',
-          'macosx_10_10_intel',
-          'macosx_10_10_x86_64',
-        ]),
-      },
+      arch_map={'mac-x64': _NUMPY_MAC_x64},
       only_plat=[
         'mac-64', 'manylinux-x86', 'manylinux-x64', 'windows-x86',
         'windows-x64'],
@@ -201,7 +178,7 @@ SPECS = {s.spec.tag: s for s in (
           url='https://www.openssl.org/source/openssl-1.1.0f.tar.gz',
       ),
       arch_map={
-        'mac-x64': 'macosx_10_6_intel',
+        'mac-x64': ['macosx_10_6_intel'],
       },
       packaged=[
         'manylinux-x86',
