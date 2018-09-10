@@ -254,6 +254,9 @@ def convert_issue(cls, issue, mar, services):
       else:
         new_fv.phaseName = phase.name
     field_values_list.append(new_fv)
+  approval_values_list = convert_approvals(
+      mar.cnxn, issue.approval_values, services, config, issue.phases)
+  phases_list = convert_phases(issue.phases)
   with work_env.WorkEnv(mar, services) as we:
     starred = we.IsIssueStarred(issue)
   resp = cls(
@@ -284,7 +287,10 @@ def convert_issue(cls, issue, mar, services):
       canEdit=permissions.CanEditIssue(
           mar.auth.effective_ids, mar.perms, issue_project, issue,
           granted_perms=granted_perms),
-      fieldValues=field_values_list)
+      fieldValues=field_values_list,
+      approvalValues=approval_values_list,
+      phases=phases_list
+  )
   if issue.closed_timestamp > 0:
     resp.closed = datetime.datetime.fromtimestamp(issue.closed_timestamp)
   if issue.merged_into:

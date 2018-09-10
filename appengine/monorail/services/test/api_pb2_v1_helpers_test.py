@@ -229,6 +229,10 @@ class ApiV1HelpersTest(unittest.TestCase):
             3, 12345, 'StringField', tracker_pb2.FieldTypes.STR_TYPE, None,
             None, False, False, False, None, None, None, False, None, None,
             None, None, 'doc', False),
+        tracker_bizobj.MakeFieldDef(
+            4, 12345, 'DressReview', tracker_pb2.FieldTypes.APPROVAL_TYPE,
+            None, None, False, False, False, None, None, None, False, None,
+            None, None, None, 'doc', False),
         ]
     self.services.config.StoreConfig(mar.cnxn, mar.config)
 
@@ -239,15 +243,20 @@ class ApiV1HelpersTest(unittest.TestCase):
       tracker_bizobj.MakeFieldValue(
           1, 4, None, None, None, None, False, phase_id=4),
       tracker_bizobj.MakeFieldValue(
-          3, None, 'string', None, None, None, False, phase_id=4),
+          3, None, 'string', None, None, None, False, phase_id=4)
     ]
     phases = [
-        tracker_pb2.Phase(phase_id=3, name="JustAPhase"),
-        tracker_pb2.Phase(phase_id=4, name="NotAPhase")
+        tracker_pb2.Phase(phase_id=3, name="JustAPhase", rank=4),
+        tracker_pb2.Phase(phase_id=4, name="NotAPhase", rank=9)
         ]
-
+    approval_values = [
+        tracker_pb2.ApprovalValue(
+            approval_id=2, phase_id=3, approver_ids=[1]),
+        tracker_pb2.ApprovalValue(approval_id=4, approver_ids=[1])
+    ]
     issue = fake.MakeTestIssue(
-        12345, 1, 'one', 'New', 111L, field_values=fvs, phases=phases)
+        12345, 1, 'one', 'New', 111L, field_values=fvs,
+        approval_values=approval_values, phases=phases)
     issue.opened_timestamp = now
     issue.owner_modified_timestamp = now
     issue.status_modified_timestamp = now
@@ -272,6 +281,26 @@ class ApiV1HelpersTest(unittest.TestCase):
                                  phaseName="NotAPhase", derived=False)
           ]
       )
+      self.assertEqual(
+          result.approvalValues,
+          [api_pb2_v1.Approval(
+            approvalName="DesignReview",
+            approvers=[self.person_1],
+            status=api_pb2_v1.ApprovalStatus.notSet,
+            phaseName="JustAPhase",
+          ),
+           api_pb2_v1.Approval(
+               approvalName="DressReview",
+               approvers=[self.person_1],
+               status=api_pb2_v1.ApprovalStatus.notSet,
+           )]
+      )
+      self.assertEqual(
+          result.phases,
+          [api_pb2_v1.Phase(phaseName="JustAPhase", rank=4),
+           api_pb2_v1.Phase(phaseName="NotAPhase", rank=9)
+          ])
+
       # TODO(jrobbins): check a lot more fields.
 
   def testConvertAttachment(self):

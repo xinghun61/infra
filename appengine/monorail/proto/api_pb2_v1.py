@@ -223,6 +223,8 @@ class IssueWrapper(messages.Message):
   owner_modified = message_types.DateTimeField(25)
   status_modified = message_types.DateTimeField(26)
   component_modified = message_types.DateTimeField(27)
+  approvalValues = messages.MessageField(Approval, 28, repeated=True)
+  phases = messages.MessageField(Phase, 29, repeated=True)
 
 
 class ProjectWrapper(messages.Message):
@@ -386,6 +388,8 @@ class IssuesGetInsertResponse(messages.Message):
   owner_modified = message_types.DateTimeField(25)
   status_modified = message_types.DateTimeField(26)
   component_modified = message_types.DateTimeField(27)
+  approvalValues = messages.MessageField(Approval, 28, repeated=True)
+  phases = messages.MessageField(Phase, 29, repeated=True)
 
 
 """Request to list issues."""
