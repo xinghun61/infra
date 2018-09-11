@@ -54,7 +54,7 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
                 'mode': 'NULLABLE'
             }, {
                 'type': 'STRING',
-                'name': 'step_name',
+                'name': 'step_ui_name',
                 'mode': 'NULLABLE'
             }, {
                 'type': 'STRING',
@@ -80,7 +80,7 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
                              legacy_master_name='tryserver.chromium.linux',
                              legacy_build_number='999',
                              build_id='123',
-                             step_name='fake_step',
+                             step_ui_name='fake_step',
                              test_name='fake_test',
                              test_start_msec='0',
                              gerrit_cl_id='98765'):
@@ -112,7 +112,7 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
                 'v': build_id
             },
             {
-                'v': step_name
+                'v': step_ui_name
             },
             {
                 'v': test_name
@@ -180,12 +180,12 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
     self._AddRowToQueryResponse(
         query_response=query_response,
         build_id='123',
-        step_name='step_name1',
+        step_ui_name='step_ui_name1',
         test_name='suite1.test1')
     self._AddRowToQueryResponse(
         query_response=query_response,
         build_id='678',
-        step_name='step_name2',
+        step_ui_name='step_ui_name2',
         test_name='suite2.test2')
 
     mocked_client = mock.Mock()
@@ -210,11 +210,11 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
     query_response = self._GetEmptyQueryResponse()
     self._AddRowToQueryResponse(
         query_response=query_response,
-        step_name='step_name',
+        step_ui_name='step_ui_name',
         test_name='instance1/suite.test/0')
     self._AddRowToQueryResponse(
         query_response=query_response,
-        step_name='step_name',
+        step_ui_name='step_ui_name',
         test_name='instance2/suite.test/1')
 
     mocked_client = mock.Mock()
@@ -236,11 +236,11 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
     query_response = self._GetEmptyQueryResponse()
     self._AddRowToQueryResponse(
         query_response=query_response,
-        step_name='step_name',
+        step_ui_name='step_ui_name',
         test_name='suite.test')
     self._AddRowToQueryResponse(
         query_response=query_response,
-        step_name='step_name',
+        step_ui_name='step_ui_name',
         test_name='suite.PRE_PRE_test')
 
     mocked_client = mock.Mock()

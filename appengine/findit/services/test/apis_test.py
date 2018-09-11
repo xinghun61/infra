@@ -26,7 +26,7 @@ class ApisTest(WaterfallTestCase):
   def testAnalyzeDetectedFlakeOccurrence(self):
     occurrence = CQFalseRejectionFlakeOccurrence.Create(
         build_id=111,
-        step_name='step1',
+        step_ui_name='step1',
         test_name='test1',
         luci_project='chromium',
         luci_bucket='try',

@@ -33,10 +33,10 @@ class CQFalseRejectionFlakeOccurrence(ndb.Model):
   # Used to identify the flaky build.
   build_id = ndb.IntegerProperty(indexed=False, required=True)
 
-  # Used to identify the original name of a step in a given build. step_name may
-  # include hardware information, 'with patch' and 'without patch' postfix.
-  # For example: 'angle_unittests (with patch) on Android'.
-  step_name = ndb.StringProperty(required=True)
+  # Used to identify the original name of a step displayed in a given build.
+  # step_ui_name may include hardware information, 'with patch' and
+  # 'without patch' postfix. For example: 'unit_tests (with patch) on Android'.
+  step_ui_name = ndb.StringProperty(required=True)
 
   # Used to identify the original name of a test in a given test binary.
   # test_name may include 'PRE_' prefixes and parameters if it's a gtest.
@@ -58,24 +58,24 @@ class CQFalseRejectionFlakeOccurrence(ndb.Model):
   gerrit_cl_id = ndb.IntegerProperty(required=True)
 
   @staticmethod
-  def GetId(build_id, step_name, test_name):
-    return '%s@%s@%s' % (build_id, step_name, test_name)
+  def GetId(build_id, step_ui_name, test_name):
+    return '%s@%s@%s' % (build_id, step_ui_name, test_name)
 
   @classmethod
-  def Create(cls, build_id, step_name, test_name, luci_project, luci_bucket,
+  def Create(cls, build_id, step_ui_name, test_name, luci_project, luci_bucket,
              luci_builder, legacy_master_name, legacy_build_number,
              time_happened, gerrit_cl_id, parent_flake_key):
     """Creates a cq false rejection flake occurrence.
 
     Args:
-      step_name: The original name of a step in a given build.
+      step_ui_name: The original displayed name of a step in a given build.
       test_name: The original name of a test in a give test binary.
       parent_flake_key: parent Flake model this occurrence is grouped under.
                         This method assumes that the parent Flake entity exists.
 
     For other args, please see model properties.
     """
-    flake_occurrence_id = cls.GetId(build_id, step_name, test_name)
+    flake_occurrence_id = cls.GetId(build_id, step_ui_name, test_name)
     build_configuration = BuildConfiguration(
         luci_project=luci_project,
         luci_bucket=luci_bucket,
@@ -85,7 +85,7 @@ class CQFalseRejectionFlakeOccurrence(ndb.Model):
 
     return cls(
         build_id=build_id,
-        step_name=step_name,
+        step_ui_name=step_ui_name,
         test_name=test_name,
         build_configuration=build_configuration,
         time_happened=time_happened,

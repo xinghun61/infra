@@ -48,7 +48,7 @@ class ShowFlakeTest(WaterfallTestCase):
     flake_issue.put()
 
     luci_project = 'chromium'
-    step_name = 'step'
+    step_ui_name = 'step'
     test_name = 'test'
     normalized_step_name = 'normalized_step_name'
     normalized_test_name = 'normalized_test_name'
@@ -69,7 +69,7 @@ class ShowFlakeTest(WaterfallTestCase):
     gerrit_cl_id = 98765
     occurrence = CQFalseRejectionFlakeOccurrence.Create(
         build_id=build_id,
-        step_name=step_name,
+        step_ui_name=step_ui_name,
         test_name=test_name,
         luci_project=luci_project,
         luci_bucket=luci_bucket,

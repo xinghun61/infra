@@ -14,17 +14,17 @@ from model.flake.detection.flake_occurrence import (
 class CQFalseRejectionFlakeOccurrenceTest(TestCase):
 
   def testGetId(self):
-    step_name = 'step'
+    step_ui_name = 'step'
     test_name = 'test'
     build_id = 123
     self.assertEqual(
         '123@step@test',
         CQFalseRejectionFlakeOccurrence.GetId(
-            build_id=build_id, step_name=step_name, test_name=test_name))
+            build_id=build_id, step_ui_name=step_ui_name, test_name=test_name))
 
   def testCreate(self):
     luci_project = 'chromium'
-    step_name = 'step'
+    step_ui_name = 'step'
     test_name = 'test'
 
     normalized_step_name = 'normalized_step_name'
@@ -45,7 +45,7 @@ class CQFalseRejectionFlakeOccurrenceTest(TestCase):
 
     flake_occurrence = CQFalseRejectionFlakeOccurrence.Create(
         build_id=build_id,
-        step_name=step_name,
+        step_ui_name=step_ui_name,
         test_name=test_name,
         luci_project=luci_project,
         luci_bucket=luci_bucket,

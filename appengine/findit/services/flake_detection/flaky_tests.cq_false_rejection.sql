@@ -305,7 +305,7 @@ WITH
           failed_test
         ELSE NULL  # NULL is ignored by ANY_VALUE.
       END) AS test_run,
-    step_pair.step_name_with_patch AS original_step_name
+    step_pair.step_name_with_patch AS step_ui_name
   FROM
     flaky_test_step_pairs AS build
   CROSS JOIN
@@ -347,7 +347,7 @@ SELECT
   test_run.buildbot_info.master_name AS legacy_master_name,
   test_run.buildbot_info.build_number AS legacy_build_number,
   # Info about the test.
-  original_step_name,
+  step_ui_name,
   test_run.test_name,
   test_run.start_time AS test_start_msec,
   test_run.actual AS test_actual,

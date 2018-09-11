@@ -22,14 +22,14 @@ PATH_TO_FLAKY_TESTS_QUERY = os.path.realpath(
 def _CreateFlakeFromRow(row):
   """Creates a Flake entity from a row fetched from BigQuery."""
   luci_project = row['luci_project']
-  step_name = row['step_name']
+  step_ui_name = row['step_ui_name']
   test_name = row['test_name']
   luci_builder = row['luci_builder']
   legacy_master_name = row['legacy_master_name']
   legacy_build_number = row['legacy_build_number']
 
   normalized_step_name = Flake.NormalizeStepName(
-      step_name=step_name,
+      step_name=step_ui_name,
       master_name=legacy_master_name,
       builder_name=luci_builder,
       build_number=legacy_build_number)
@@ -44,14 +44,14 @@ def _CreateFlakeFromRow(row):
 def _CreateFlakeOccurrenceFromRow(row):
   """Creates a FlakeOccurrence from a row fetched from BigQuery."""
   luci_project = row['luci_project']
-  step_name = row['step_name']
+  step_ui_name = row['step_ui_name']
   test_name = row['test_name']
   luci_builder = row['luci_builder']
   legacy_master_name = row['legacy_master_name']
   legacy_build_number = row['legacy_build_number']
 
   normalized_step_name = Flake.NormalizeStepName(
-      step_name=step_name,
+      step_name=step_ui_name,
       master_name=legacy_master_name,
       builder_name=luci_builder,
       build_number=legacy_build_number)
@@ -69,7 +69,7 @@ def _CreateFlakeOccurrenceFromRow(row):
   gerrit_cl_id = row['gerrit_cl_id']
   flake_occurrence = CQFalseRejectionFlakeOccurrence.Create(
       build_id=build_id,
-      step_name=step_name,
+      step_ui_name=step_ui_name,
       test_name=test_name,
       luci_project=luci_project,
       luci_bucket=luci_bucket,

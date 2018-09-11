@@ -27,9 +27,9 @@ def AnalyzeDetectedFlakeOccurrence(flake_occurrence, bug_id):
   master_name = flake_occurrence.build_configuration.legacy_master_name
   builder_name = flake_occurrence.build_configuration.luci_builder
   build_number = flake_occurrence.build_configuration.legacy_build_number
-  step_name = flake_occurrence.step_name
+  step_ui_name = flake_occurrence.step_ui_name
   analysis_request.AddBuildStep(master_name, builder_name, build_number,
-                                step_name, time_util.GetUTCNow())
+                                step_ui_name, time_util.GetUTCNow())
 
   logging.info('flake report for detected flake occurrence: %r',
                analysis_request)

@@ -26,11 +26,11 @@ class FlakeReportUtilTest(WaterfallTestCase):
     flake.put()
     return flake
 
-  def _CreateFlakeOccurrence(self, build_id, step_name, test_name, gerrit_cl_id,
-                             parent_flake_key):
+  def _CreateFlakeOccurrence(self, build_id, step_ui_name, test_name,
+                             gerrit_cl_id, parent_flake_key):
     flake_occurrence = CQFalseRejectionFlakeOccurrence.Create(
         build_id=build_id,
-        step_name=step_name,
+        step_ui_name=step_ui_name,
         test_name=test_name,
         gerrit_cl_id=gerrit_cl_id,
         parent_flake_key=parent_flake_key,
