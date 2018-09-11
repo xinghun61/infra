@@ -63,6 +63,8 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             'normalized_test_name',
         'flake_issue_key':
             flake_issue.key,
+        'last_occurred_time':
+            None,
         'flake_issue': {
             'monorail_project':
                 'chromium',
@@ -149,6 +151,8 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
         'normalized_test_name':
             normalized_test_name,
         'flake_issue_key':
+            None,
+        'last_occurred_time':
             None,
         'occurrences': [{
             'build_id': '123',

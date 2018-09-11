@@ -26,7 +26,7 @@ class BuildConfiguration(ndb.Model):
 class CQFalseRejectionFlakeOccurrence(ndb.Model):
   """Tracks a flake occurrence that caused CQ false rejections.
 
-  For how this type of flake occurence is detected, please refer to:
+  For how this type of flake occurrence is detected, please refer to:
   services/flake_detection/flaky_tests.cq_false_rejection.sql
   """
 
@@ -47,7 +47,7 @@ class CQFalseRejectionFlakeOccurrence(ndb.Model):
   build_configuration = ndb.StructuredProperty(
       BuildConfiguration, required=True)
 
-  # The time the flake occurence happened (test start time).
+  # The time the flake occurrence happened (test start time).
   time_happened = ndb.DateTimeProperty(required=True)
 
   # The time the flake occurrence was detected, used to track the delay of flake

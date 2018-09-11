@@ -47,6 +47,9 @@ class Flake(ndb.Model):
   # The FlakeIssue entity that this flake is associated with.
   flake_issue_key = ndb.KeyProperty(FlakeIssue)
 
+  # Timestamp of the most recent flake occurrence.
+  last_occurred_time = ndb.DateTimeProperty(indexed=True)
+
   @staticmethod
   def GetId(luci_project, normalized_step_name, normalized_test_name):
     return '%s@%s@%s' % (luci_project, normalized_step_name,

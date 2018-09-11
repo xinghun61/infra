@@ -1,6 +1,7 @@
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
 import logging
 import os
 
@@ -61,7 +62,7 @@ def _CreateFlakeOccurrenceFromRow(row):
       luci_project=luci_project,
       normalized_step_name=normalized_step_name,
       normalized_test_name=normalized_test_name)
-  flakey_key = ndb.Key(Flake, flake_id)
+  flake_key = ndb.Key(Flake, flake_id)
 
   build_id = row['build_id']
   luci_bucket = row['luci_bucket']
@@ -78,7 +79,7 @@ def _CreateFlakeOccurrenceFromRow(row):
       legacy_build_number=legacy_build_number,
       time_happened=time_happened,
       gerrit_cl_id=gerrit_cl_id,
-      parent_flake_key=flakey_key)
+      parent_flake_key=flake_key)
 
   return flake_occurrence
 
@@ -94,7 +95,7 @@ def _StoreMultipleLocalEntities(local_entities):
                     automatically de-duplicate them.
 
   Returns:
-    Number of distinct new entities that were written to the ndb.
+    Distinct new entities that were written to the ndb.
   """
   key_to_local_entities = {}
   for entity in local_entities:
@@ -114,7 +115,30 @@ def _StoreMultipleLocalEntities(local_entities):
       key_to_local_entities[key] for key in non_existent_entity_keys
   ]
   ndb.put_multi(non_existent_local_entities)
-  return len(non_existent_local_entities)
+  return non_existent_local_entities
+
+
+def _UpdateLastFlakeHappenedTimeForFlakes(occurrences):
+  """Updates flakes' last_occurred_time.
+
+  Args:
+    occurrences(list): A list of CQFalseRejectionFlakeOccurrence entities.
+  """
+
+  flake_key_to_latest_false_rejection_time = {}
+  for occurrence in occurrences:
+    flake_key = occurrence.key.parent()
+    if (not flake_key_to_latest_false_rejection_time.get(flake_key) or
+        flake_key_to_latest_false_rejection_time[flake_key] <
+        occurrence.time_happened):
+      flake_key_to_latest_false_rejection_time[
+          flake_key] = occurrence.time_happened
+
+  for flake_key, latest in flake_key_to_latest_false_rejection_time.iteritems():
+    flake = flake_key.get()
+    if (not flake.last_occurred_time or flake.last_occurred_time < latest):
+      flake.last_occurred_time = latest
+    flake.put()
 
 
 def QueryAndStoreFlakes():
@@ -138,6 +162,7 @@ def QueryAndStoreFlakes():
   _StoreMultipleLocalEntities(local_flakes)
 
   local_flake_occurrences = [_CreateFlakeOccurrenceFromRow(row) for row in rows]
-  num_new_occurrences = _StoreMultipleLocalEntities(local_flake_occurrences)
+  new_occurrences = _StoreMultipleLocalEntities(local_flake_occurrences)
+  _UpdateLastFlakeHappenedTimeForFlakes(new_occurrences)
   monitoring.OnFlakeDetectionDetectNewOccurrences(
-      flake_type='cq false rejection', num_occurrences=num_new_occurrences)
+      flake_type='cq false rejection', num_occurrences=len(new_occurrences))
