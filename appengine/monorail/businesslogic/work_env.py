@@ -517,7 +517,7 @@ class WorkEnv(object):
       configs = self.services.config.GetProjectConfigs(
           self.mc.cnxn, project_ids, use_cache=use_cache)
 
-    projects = self._FilterVisibleProjectsDict(self.GetProjects(configs))
+    projects = self._FilterVisibleProjectsDict(self.GetProjects(configs.keys()))
     configs = {project_id: configs[project_id] for project_id in projects}
 
     return configs

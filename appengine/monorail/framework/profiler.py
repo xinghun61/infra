@@ -35,6 +35,9 @@ PHASE_TIME = ts_mon.CumulativeDistributionMetric(
     'Time spent in profiler phases, in ms',
     [ts_mon.StringField('phase')])
 
+# trace_service does not like very long names.
+MAX_PHASE_NAME_LENGTH = 200
+
 
 class Profiler(object):
   """Object to record and help display request processing profiling info.
@@ -122,7 +125,7 @@ class _Phase(object):
   def __init__(self, name, color, parent):
     """Initialize a (sub)phase with the given name and current system clock."""
     self.start = time.time()
-    self.name = name
+    self.name = name[:MAX_PHASE_NAME_LENGTH]
     self.color = color
     self.subphases = []
     self.elapsed_seconds = None

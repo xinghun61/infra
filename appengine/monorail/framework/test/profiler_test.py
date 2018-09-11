@@ -53,6 +53,14 @@ class ProfilerTest(unittest.TestCase):
     self.assertEquals(prof.current_phase.name, 'overall profile')
     self.assertEquals(prof.next_color, 1)
 
+  def testSinglePhase_SuperLongName(self):
+    prof = profiler.Profiler()
+    self.assertEquals(prof.current_phase.name, 'overall profile')
+    long_name = 'x' * 1000
+    with prof.Phase(long_name):
+      self.assertEquals(
+          'x' * profiler.MAX_PHASE_NAME_LENGTH, prof.current_phase.name)
+
   def testSubphaseExecption(self):
     prof = profiler.Profiler()
     try:
