@@ -17,6 +17,7 @@ from api.api_proto import common_pb2
 from api.api_proto import users_pb2
 from api.api_proto import user_objects_pb2
 from framework import authdata
+from framework import exceptions
 from framework import monorailcontext
 from testing import fake
 from services import service_manager
@@ -38,6 +39,14 @@ class UsersServicerTest(unittest.TestCase):
     self.project = self.services.project.TestAddProject('proj', project_id=987)
     self.user = self.services.user.TestAddUser('owner@example.com', 111L)
     self.user_2 = self.services.user.TestAddUser('test2@example.com', 222L)
+    self.group1_id = self.services.usergroup.CreateGroup(
+        self.cnxn, self.services, 'group1@test.com', 'anyone')
+    self.group2_id = self.services.usergroup.CreateGroup(
+        self.cnxn, self.services, 'group2@test.com', 'anyone')
+    self.services.usergroup.UpdateMembers(
+        self.cnxn, self.group1_id, [111L], 'member')
+    self.services.usergroup.UpdateMembers(
+        self.cnxn, self.group2_id, [222L, 111L], 'owner')
     self.users_svcr = users_servicer.UsersServicer(
         self.services, make_rate_limiter=False)
     self.prpc_context = context.ServicerContext()
@@ -49,6 +58,35 @@ class UsersServicerTest(unittest.TestCase):
 
   def CallWrapped(self, wrapped_handler, *args, **kwargs):
     return wrapped_handler.wrapped(self.users_svcr, *args, **kwargs)
+
+  def testGetMemberships(self):
+    request = users_pb2.GetMembershipsRequest(
+        user_ref=common_pb2.UserRef(
+            display_name='owner@example.com', user_id=111L))
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+
+    response = self.CallWrapped(self.users_svcr.GetMemberships, mc, request)
+    expected_group_refs = [
+        common_pb2.UserRef(
+            display_name='group1@test.com', user_id=self.group1_id),
+        common_pb2.UserRef(
+            display_name='group2@test.com', user_id=self.group2_id)
+    ]
+
+    self.assertItemsEqual(expected_group_refs, response.group_refs)
+
+  def testGetMemberships_NonExistentUser(self):
+    request = users_pb2.GetMembershipsRequest(
+        user_ref=common_pb2.UserRef(
+            display_name='ghost@example.com', user_id=888L)
+    )
+
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='')
+
+    with self.assertRaises(exceptions.NoSuchUserException):
+      self.CallWrapped(self.users_svcr.GetMemberships, mc, request)
 
   def testGetUser_Normal(self):
     """We can get a user by email address."""

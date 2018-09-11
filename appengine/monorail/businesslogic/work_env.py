@@ -972,6 +972,34 @@ class WorkEnv(object):
 
   ### User methods
 
+  def GetMemberships(self, user_id):
+    """Return the user group ids for the given user visible to the requester."""
+    group_ids = self.services.usergroup.LookupMemberships(self.mc.cnxn, user_id)
+    if user_id == self.mc.auth.user_id:
+      return group_ids
+    (member_ids_by_ids, owner_ids_by_ids
+    ) = self.services.usergroup.LookupAllMembers(
+        self.mc.cnxn, group_ids)
+    settings_by_id = self.services.usergroup.GetAllGroupSettings(
+        self.mc.cnxn, group_ids)
+
+    (owned_project_ids, membered_project_ids,
+     contrib_project_ids) = self.services.project.GetUserRolesInAllProjects(
+         self.mc.cnxn, self.mc.auth.effective_ids)
+    project_ids = owned_project_ids.union(
+        membered_project_ids).union(contrib_project_ids)
+
+    visible_group_ids = []
+    for group_id, settings in settings_by_id.items():
+      member_ids = member_ids_by_ids.get(group_id)
+      owner_ids = owner_ids_by_ids.get(group_id)
+      if permissions.CanViewGroup(
+          self.mc.perms, self.mc.auth.effective_ids, settings, member_ids,
+          owner_ids, project_ids):
+        visible_group_ids.append(group_id)
+
+    return visible_group_ids
+
   def ListReferencedUsers(self, emails):
     """Return a of the given emails' User PBs."""
     with self.mc.profiler.Phase('getting existing users'):

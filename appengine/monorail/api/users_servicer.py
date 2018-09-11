@@ -10,6 +10,7 @@ from api.api_proto import users_pb2
 from api.api_proto import users_prpc_pb2
 from api.api_proto import user_objects_pb2
 from businesslogic import work_env
+from framework import framework_views
 
 
 class UsersServicer(monorail_servicer.MonorailServicer):
@@ -48,6 +49,23 @@ class UsersServicer(monorail_servicer.MonorailServicer):
       response = users_pb2.ListReferencedUsersResponse(users=response_users)
 
     return response
+
+  @monorail_servicer.PRPCMethod
+  def GetMemberships(self, mc, request):
+    """Return the user groups for the given user visible to the requester."""
+    user_id = converters.IngestUserRefs(
+        mc.cnxn, [request.user_ref], self.services.user)[0]
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      group_ids = we.GetMemberships(user_id)
+
+    with mc.profiler.Phase('converting to response objects'):
+      groups_by_id = framework_views.MakeAllUserViews(
+          mc.cnxn, self.services.user, group_ids)
+      group_refs = converters.ConvertUserRefs(
+          group_ids, [], groups_by_id, True)
+
+      return users_pb2.GetMembershipsResponse(group_refs=group_refs)
 
   @monorail_servicer.PRPCMethod
   def GetUserCommits(self, mc, request):

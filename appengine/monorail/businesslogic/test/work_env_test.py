@@ -19,6 +19,7 @@ from features import send_notifications
 from proto import project_pb2
 from proto import tracker_pb2
 from services import features_svc
+from services import usergroup_svc
 from services import service_manager
 from services import template_svc
 from testing import fake
@@ -39,6 +40,7 @@ class WorkEnvTest(unittest.TestCase):
         project_star=fake.ProjectStarService(),
         user_star=fake.UserStarService(),
         features=fake.FeaturesService(),
+        usergroup=fake.UserGroupService(),
         template=Mock(spec=template_svc.TemplateService),
         spam=fake.SpamService())
     self.project = self.services.project.TestAddProject(
@@ -979,6 +981,46 @@ class WorkEnvTest(unittest.TestCase):
       we.StarIssue(issue1, True)
       self.assertEqual([issue1.issue_id], we.ListStarredIssueIDs())
 
+  def setUpUserGroups(self):
+    self.services.user.TestAddUser('test5@example.com', 555L)
+    self.services.user.TestAddUser('test6@example.com', 666L)
+    public_group_id = self.services.usergroup.CreateGroup(
+        self.cnxn, self.services, 'group1@test.com', 'anyone')
+    private_group_id = self.services.usergroup.CreateGroup(
+        self.cnxn, self.services, 'group2@test.com', 'owners')
+    self.services.usergroup.UpdateMembers(
+        self.cnxn, public_group_id, [111L], 'member')
+    self.services.usergroup.UpdateMembers(
+        self.cnxn, private_group_id, [555L, 111L], 'owner')
+    return public_group_id, private_group_id
+
+  def testGetMemberships_Anon(self):
+    """We return groups the user is in and that are visible to the requester."""
+    public_group_id, _ = self.setUpUserGroups()
+    with self.work_env as we:
+      self.assertEqual(we.GetMemberships(111L), [public_group_id])
+
+  def testGetMemberships_UserHasPerm(self):
+    public_group_id, private_group_id = self.setUpUserGroups()
+    self.SignIn(user_id=555L)
+    with self.work_env as we:
+      self.assertItemsEqual(
+          we.GetMemberships(111L), [public_group_id, private_group_id])
+
+  def testGetMemeberships_UserHasNoPerm(self):
+    public_group_id, _ = self.setUpUserGroups()
+    self.SignIn(user_id=666L)
+    with self.work_env as we:
+      self.assertItemsEqual(
+          we.GetMemberships(111L), [public_group_id])
+
+  def testGetMemeberships_GetOwnMembership(self):
+    public_group_id, private_group_id = self.setUpUserGroups()
+    self.SignIn(user_id=111L)
+    with self.work_env as we:
+      self.assertItemsEqual(
+          we.GetMemberships(111L), [public_group_id, private_group_id])
+
   def testListReferencedUsers(self):
     """We return the list of User PBs for the given existing user emails."""
     user5 = self.services.user.TestAddUser('test5@example.com', 555L)
@@ -1299,4 +1341,3 @@ class WorkEnvTest(unittest.TestCase):
         we.DismissCue('foo')
 
     self.assertEqual([], user.dismissed_cues)
-

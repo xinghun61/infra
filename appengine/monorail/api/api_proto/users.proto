@@ -13,6 +13,7 @@ import "api/api_proto/common.proto";
 service Users {
   rpc GetUser (UserRef) returns (User) {}
   rpc ListReferencedUsers (ListReferencedUsersRequest) returns (ListReferencedUsersResponse) {}
+  rpc GetMemberships (GetMembershipsRequest) returns (GetMembershipsResponse) {}
   rpc GetUserCommits (GetUserCommitsRequest) returns (GetUserCommitsResponse) {}
   rpc GetUserStarCount (GetUserStarCountRequest) returns (GetUserStarCountResponse) {}
   rpc StarUser (StarUserRequest) returns (StarUserResponse) {}
@@ -36,6 +37,19 @@ message ListReferencedUsersRequest {
 
 message ListReferencedUsersResponse {
   repeated User users = 1;
+}
+
+
+// Next available tag: 3
+message GetMembershipsRequest {
+  RequestTrace trace = 1;
+  UserRef user_ref = 2;
+}
+
+
+// Next available tag: 2
+message GetMembershipsResponse {
+  repeated UserRef group_refs = 1;
 }
 
 
