@@ -15,6 +15,8 @@ import (
 )
 
 func TestSpellCheckerAnalyzeFiles(t *testing.T) {
+	cp := loadCommentsJSONFile()
+
 	// These tests depend on both dictionary.txt and comment_formats.json.
 	Convey("Analyzing simple file with one misspelling generates one comment", t, func() {
 		fileContent := "/* coment */"
@@ -47,7 +49,7 @@ func TestSpellCheckerAnalyzeFiles(t *testing.T) {
 			},
 		}
 		results := &tricium.Data_Results{}
-		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.c", results)
+		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.c", false, cp[".c"], results)
 		So(results, ShouldResemble, expected)
 	})
 
@@ -137,7 +139,7 @@ func TestSpellCheckerAnalyzeFiles(t *testing.T) {
 		}
 
 		results := &tricium.Data_Results{}
-		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.c", results)
+		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.c", false, cp[".c"], results)
 		So(results, ShouldResemble, expected)
 	})
 
@@ -198,7 +200,7 @@ func TestSpellCheckerAnalyzeFiles(t *testing.T) {
 		}
 
 		results := &tricium.Data_Results{}
-		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.c", results)
+		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.c", false, cp[".c"], results)
 		So(results, ShouldResemble, expected)
 	})
 
@@ -259,7 +261,7 @@ func TestSpellCheckerAnalyzeFiles(t *testing.T) {
 		}
 
 		results := &tricium.Data_Results{}
-		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.c", results)
+		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.c", false, cp[".c"], results)
 		So(results, ShouldResemble, expected)
 	})
 
@@ -344,7 +346,7 @@ func TestSpellCheckerAnalyzeFiles(t *testing.T) {
 		}
 
 		results := &tricium.Data_Results{}
-		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.c", results)
+		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.c", false, cp[".c"], results)
 		So(results, ShouldResemble, expected)
 	})
 
@@ -405,21 +407,23 @@ func TestSpellCheckerAnalyzeFiles(t *testing.T) {
 		}
 
 		results := &tricium.Data_Results{}
-		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.txt", results)
+		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.txt", true, cp[".txt"], results)
 		So(results, ShouldResemble, expected)
 	})
 
-	Convey("Analyzing file with unknown extension generates no comments", t, func() {
-		fileContent := "familes\n"
-		results := &tricium.Data_Results{}
-		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.asdf", results)
-		So(results.Comments, ShouldBeEmpty)
-	})
+	/*
+		Convey("Analyzing file with unknown extension generates no comments", t, func() {
+			fileContent := "familes\n"
+			results := &tricium.Data_Results{}
+			analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.asdf", true, cp[".asdf"], results)
+			So(results.Comments, ShouldBeEmpty)
+		})
+	*/
 
 	Convey("Usernames are not flagged as misspellings.", t, func() {
 		fileContent := "TODO(faund): Contact govement@chromium.org/coment"
 		results := &tricium.Data_Results{}
-		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.txt", results)
+		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.txt", true, cp[".txt"], results)
 		So(results.Comments, ShouldBeEmpty)
 	})
 
@@ -456,7 +460,7 @@ func TestSpellCheckerAnalyzeFiles(t *testing.T) {
 		}
 
 		results := &tricium.Data_Results{}
-		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.html", results)
+		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.html", false, cp[".html"], results)
 		So(results, ShouldResemble, expected)
 	})
 
@@ -517,27 +521,29 @@ func TestSpellCheckerAnalyzeFiles(t *testing.T) {
 		}
 
 		results := &tricium.Data_Results{}
-		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.c", results)
+		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.c", false, cp[".c"], results)
 		So(results, ShouldResemble, expected)
 	})
 }
 
 func TestGettingCommentFormat(t *testing.T) {
+	cp := loadCommentsJSONFile()
+
 	// This test depends on reading the comment-format file in this
 	Convey("The appropriate comment formats are determined from the file extensions", t, func() {
-		So(getLangCommentPattern(".py"), ShouldResemble, &commentFormat{
+		So(cp[".py"], ShouldResemble, &commentFormat{
 			LineStart:  "#",
 			BlockStart: `"""`,
 			BlockEnd:   `"""`,
 		})
 
-		So(getLangCommentPattern(".c"), ShouldResemble, &commentFormat{
+		So(cp[".c"], ShouldResemble, &commentFormat{
 			LineStart:  "//",
 			BlockStart: `/*`,
 			BlockEnd:   `*/`,
 		})
 
-		So(getLangCommentPattern(".html"), ShouldResemble, &commentFormat{
+		So(cp[".html"], ShouldResemble, &commentFormat{
 			BlockStart: `<!--`,
 			BlockEnd:   `-->`,
 		})

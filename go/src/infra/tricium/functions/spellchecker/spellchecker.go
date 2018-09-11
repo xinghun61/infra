@@ -19,6 +19,7 @@ import (
 	"infra/tricium/api/v1"
 )
 
+// commentFormat is the expected format for the commentsJSONPath file.
 type commentFormat struct {
 	LineStart  string `json:"line_start"`
 	BlockStart string `json:"block_start"`
@@ -30,6 +31,7 @@ const (
 	dictPath         = "dictionary.txt"
 )
 
+// state is the comment processing state machine.
 type state int
 
 const (
@@ -39,8 +41,9 @@ const (
 )
 
 var (
-	// Words that might be in the dictionary but shouldn't be flagged.
-	whitelistWords = []string{
+	// ignoredWords are words that might be in the dictionary but shouldn't be
+	// flagged.
+	ignoredWords = []string{
 		"als",    // "ambient light sensor"
 		"backed", // "backed by"
 		"ect",    // effective connection type
@@ -68,6 +71,7 @@ func main() {
 	if flag.NArg() != 0 {
 		log.Fatalf("Unexpected argument")
 	}
+	cp := loadCommentsJSONFile()
 
 	// Read Tricium input FILES data.
 	input := &tricium.Data_Files{}
@@ -80,12 +84,20 @@ func main() {
 
 	for _, file := range input.Files {
 		if !file.IsBinary {
+			fileExt := filepath.Ext(file.Path)
+			// The analyzer should check every word if the file is a text document.
+			checkEveryWord := inSlice(fileExt, textFileExts)
+			commentPatterns := cp[fileExt]
+			if commentPatterns == nil && !checkEveryWord {
+				// If the file type is unknown, skip the file, since there may be
+				// unknown source types that potentially have false positives.
+				continue
+			}
+
 			p := filepath.Join(*inputDir, file.Path)
-
 			f := openFileOrDie(p)
-			defer closeFileOrDie(f)
-
-			analyzeFile(bufio.NewScanner(f), p, results)
+			analyzeFile(bufio.NewScanner(f), p, checkEveryWord, commentPatterns, results)
+			closeFileOrDie(f)
 		}
 	}
 
@@ -99,24 +111,11 @@ func main() {
 
 // Analyzes file line by line to find misspellings within comments.
 // TODO(diegomtzg): Add support for string literals.
-func analyzeFile(scanner *bufio.Scanner, filePath string, results *tricium.Data_Results) {
+func analyzeFile(scanner *bufio.Scanner, filePath string, checkEveryWord bool, commentPatterns *commentFormat, results *tricium.Data_Results) {
 	lineno := 1
 	s := noComment
-	fileExt := filepath.Ext(filePath)
 
-	// TODO(qyearsley): Read dictionary and comment patterns once for all files,
-	// and pass them in to this functionary (performance optimization).
 	dict = buildDict()
-	commentPatterns := getLangCommentPattern(fileExt)
-
-	// The analyzer should check every word if the file is a text document.
-	checkEveryWord := inSlice(fileExt, textFileExts)
-
-	if commentPatterns == nil && !checkEveryWord {
-		// If the file type is unknown, skip the file, since there may be
-		// unknown source types that potentially have false positives.
-		return
-	}
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -219,7 +218,7 @@ func analyzeWords(commentWord, stopPattern string,
 	for _, wordToCheckRange := range justWord.FindAllStringIndex(commentWord, -1) {
 		wordToCheck := commentWord[wordToCheckRange[0]:wordToCheckRange[1]]
 
-		if fixes, ok := dict[strings.ToLower(wordToCheck)]; ok && !inSlice(wordToCheck, whitelistWords) {
+		if fixes, ok := dict[strings.ToLower(wordToCheck)]; ok && !inSlice(wordToCheck, ignoredWords) {
 			if c := buildMisspellingComment(wordToCheck, fixes, startChar+wordToCheckRange[0],
 				lineno, filePath); c != nil {
 				*comments = append(*comments, c)
@@ -323,13 +322,6 @@ func fixesMessage(fixes []string) string {
 	}
 }
 
-// Gets the appropriate comment pattern for the programming language determined by the given
-// file extension.
-func getLangCommentPattern(fileExt string) *commentFormat {
-	commentFmtMap := loadCommentsJSONFile()
-	return commentFmtMap[fileExt]
-}
-
 // buildDict constructs a map of misspellings to slices of proposed fixes.
 //
 // All keys in the dictionary are lower-case.
@@ -356,15 +348,18 @@ func buildDict() map[string][]string {
 	return dictMap
 }
 
-// Helper function to load the JSON file containing the currently supported file extensions
-// and their respective comment formats.
+// loadCommentsJSONFile loads the JSON file containing the currently supported
+// file extensions and their respective comment formats.
 func loadCommentsJSONFile() map[string]*commentFormat {
 	var commentsMap map[string]*commentFormat
 
 	f := openFileOrDie(commentsJSONPath)
 	defer closeFileOrDie(f)
 
-	jsonBytes, _ := ioutil.ReadAll(f)
+	jsonBytes, err := ioutil.ReadAll(f)
+	if err != nil {
+		log.Fatalf("Failed to read JSON file: %v", err)
+	}
 	if err := json.Unmarshal(jsonBytes, &commentsMap); err != nil {
 		log.Fatalf("Failed to read JSON file: %v", err)
 	}
@@ -380,8 +375,8 @@ func openFileOrDie(path string) *os.File {
 	return f
 }
 
-func closeFileOrDie(file *os.File) {
-	if err := file.Close(); err != nil {
+func closeFileOrDie(f *os.File) {
+	if err := f.Close(); err != nil {
 		log.Fatalf("Failed to close file: %v", err)
 	}
 }
