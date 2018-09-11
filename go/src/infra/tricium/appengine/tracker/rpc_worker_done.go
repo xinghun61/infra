@@ -94,7 +94,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	// Process output and collect comments.
 	// This should only be done for successful analyzers with results.
 	var comments []*track.Comment
-	hasOutput := req.IsolatedOutputHash != "" || req.BuildbucketOutput == ""
+	hasOutput := req.IsolatedOutputHash != "" || req.BuildbucketOutput != ""
 	isAnalyzer := req.Provides == tricium.Data_RESULTS
 	if req.State == tricium.State_SUCCESS && isAnalyzer && hasOutput {
 		comments, err = collectComments(c, isolator, run.IsolateServerURL,
@@ -334,17 +334,18 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 func collectComments(c context.Context, isolator common.IsolateAPI, isolateServerURL, isolatedOutputHash, buildbucketOutput, analyzerName string, workerKey *ds.Key) ([]*track.Comment, error) {
 	var comments []*track.Comment
 	results := tricium.Data_Results{}
-	if buildbucketOutput != "" {
-		if err := json.Unmarshal([]byte(buildbucketOutput), &results); err != nil {
-			return comments, errors.Annotate(err, "failed to unmarshal results data").Err()
-		}
-	} else {
+	// If isolate is present, fetch the data. Otherwise, unmarshal the buildbucket output.
+	if isolatedOutputHash != "" {
 		resultsStr, err := isolator.FetchIsolatedResults(c, isolateServerURL, isolatedOutputHash)
 		if err != nil {
 			return comments, errors.Annotate(err, "failed to fetch isolated worker result").Err()
 		}
 		logging.Infof(c, "Fetched isolated result (%q): %q", isolatedOutputHash, resultsStr)
 		if err := jsonpb.UnmarshalString(resultsStr, &results); err != nil {
+			return comments, errors.Annotate(err, "failed to unmarshal results data").Err()
+		}
+	} else {
+		if err := json.Unmarshal([]byte(buildbucketOutput), &results); err != nil {
 			return comments, errors.Annotate(err, "failed to unmarshal results data").Err()
 		}
 	}

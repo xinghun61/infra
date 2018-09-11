@@ -135,6 +135,57 @@ func TestWorkerDoneRequest(t *testing.T) {
 	})
 }
 
+func TestRecipeWorkerDoneRequest(t *testing.T) {
+	Convey("Worker done request with successful worker", t, func() {
+		ctx := triciumtest.Context()
+
+		fileIsolatorUbuntu := "GitFileIsolator_Ubuntu"
+		fileIsolator := "GitFileIsolator"
+
+		// Add pending workflow run.
+		request := &track.AnalyzeRequest{}
+		So(ds.Put(ctx, request), ShouldBeNil)
+		requestKey := ds.KeyForObj(ctx, request)
+		run := &track.WorkflowRun{ID: 1, Parent: requestKey}
+		So(ds.Put(ctx, run), ShouldBeNil)
+		runKey := ds.KeyForObj(ctx, run)
+		So(ds.Put(ctx, &track.WorkflowRunResult{
+			ID:     1,
+			Parent: runKey,
+			State:  tricium.State_PENDING,
+		}), ShouldBeNil)
+
+		// Mark workflow as launched.
+		So(workflowLaunched(ctx, &admin.WorkflowLaunchedRequest{
+			RunId: request.ID,
+		}, mockWorkflowProvider{}), ShouldBeNil)
+
+		// Mark worker as launched.
+		So(workerLaunched(ctx, &admin.WorkerLaunchedRequest{
+			RunId:  request.ID,
+			Worker: fileIsolatorUbuntu,
+		}), ShouldBeNil)
+
+		// Mark worker as done.
+		So(workerDone(ctx, &admin.WorkerDoneRequest{
+			RunId:             request.ID,
+			Worker:            fileIsolatorUbuntu,
+			Provides:          tricium.Data_FILES,
+			State:             tricium.State_SUCCESS,
+			BuildbucketOutput: `{"comments": []}`,
+		}, &mockIsolator{}), ShouldBeNil)
+
+		functionKey := ds.NewKey(ctx, "FunctionRun", fileIsolator, 0, runKey)
+
+		Convey("Marks worker as done", func() {
+			workerKey := ds.NewKey(ctx, "WorkerRun", fileIsolatorUbuntu, 0, functionKey)
+			wr := &track.WorkerRunResult{ID: 1, Parent: workerKey}
+			So(ds.Get(ctx, wr), ShouldBeNil)
+			So(wr.State, ShouldEqual, tricium.State_SUCCESS)
+		})
+	})
+}
+
 func TestAbortedWorkerDoneRequest(t *testing.T) {
 	Convey("Worker done request with an aborted worker", t, func() {
 		// This test is similar to the case above, except that one of
