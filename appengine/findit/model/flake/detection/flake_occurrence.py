@@ -47,12 +47,6 @@ class CQFalseRejectionFlakeOccurrence(ndb.Model):
   build_configuration = ndb.StructuredProperty(
       BuildConfiguration, required=True)
 
-  # Id of a build that succeeded and has no code change (exclude rebase)
-  # comparing to this build. This reference build is used as evidence on why the
-  # flaky build is deemed as flaky.
-  reference_succeeded_build_id = ndb.IntegerProperty(
-      indexed=False, required=True)
-
   # The time the flake occurence happened (test start time).
   time_happened = ndb.DateTimeProperty(required=True)
 
@@ -70,8 +64,7 @@ class CQFalseRejectionFlakeOccurrence(ndb.Model):
   @classmethod
   def Create(cls, build_id, step_name, test_name, luci_project, luci_bucket,
              luci_builder, legacy_master_name, legacy_build_number,
-             reference_succeeded_build_id, time_happened, gerrit_cl_id,
-             parent_flake_key):
+             time_happened, gerrit_cl_id, parent_flake_key):
     """Creates a cq false rejection flake occurrence.
 
     Args:
@@ -95,7 +88,6 @@ class CQFalseRejectionFlakeOccurrence(ndb.Model):
         step_name=step_name,
         test_name=test_name,
         build_configuration=build_configuration,
-        reference_succeeded_build_id=reference_succeeded_build_id,
         time_happened=time_happened,
         gerrit_cl_id=gerrit_cl_id,
         id=flake_occurrence_id,

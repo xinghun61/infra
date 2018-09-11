@@ -39,7 +39,6 @@ class FlakeReportUtilTest(WaterfallTestCase):
         luci_builder='linux_chromium_rel_ng',
         legacy_master_name='tryserver.chromium.linux',
         legacy_build_number=999,
-        reference_succeeded_build_id=456,
         time_happened=datetime.datetime.utcnow())
     flake_occurrence.put()
 

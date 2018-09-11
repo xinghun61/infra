@@ -53,10 +53,6 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
                 'name': 'build_id',
                 'mode': 'NULLABLE'
             }, {
-                'type': 'INTEGER',
-                'name': 'reference_succeeded_build_id',
-                'mode': 'NULLABLE'
-            }, {
                 'type': 'STRING',
                 'name': 'step_name',
                 'mode': 'NULLABLE'
@@ -84,7 +80,6 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
                              legacy_master_name='tryserver.chromium.linux',
                              legacy_build_number='999',
                              build_id='123',
-                             reference_succeeded_build_id='456',
                              step_name='fake_step',
                              test_name='fake_test',
                              test_start_msec='0',
@@ -115,9 +110,6 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
             },
             {
                 'v': build_id
-            },
-            {
-                'v': reference_succeeded_build_id
             },
             {
                 'v': step_name

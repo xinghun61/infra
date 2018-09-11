@@ -33,7 +33,6 @@ class ApisTest(WaterfallTestCase):
         luci_builder='tryserver.chromium.linux',
         legacy_master_name='linux_chromium_rel_ng',
         legacy_build_number=999,
-        reference_succeeded_build_id=456,
         time_happened=None,
         gerrit_cl_id=98765,
         parent_flake_key=None)

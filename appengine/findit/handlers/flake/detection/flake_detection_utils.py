@@ -47,8 +47,6 @@ def GetFlakeInformation(flake, max_occurrence_count, with_occurrences=True):
   # convert them to string before rendering HTML pages.
   for occurrence in flake_dict['occurrences']:
     occurrence['build_id'] = str(occurrence['build_id'])
-    occurrence['reference_succeeded_build_id'] = str(
-        occurrence['reference_succeeded_build_id'])
 
   if flake.flake_issue_key:
     flake_issue = flake.flake_issue_key.get()

@@ -104,13 +104,7 @@ WITH
             build.gitiles_revision_cp,
             build.steps)
         ELSE NULL
-      END IGNORE NULLS ) AS failed_builds,
-    # Record any matching successful build to serve as evidence showing why a
-    # specific build is deemed as a flaky build.
-    ANY_VALUE( CASE
-        WHEN build.status = 'SUCCESS' THEN
-          build.build_id
-        ELSE NULL END) AS reference_succeeded_build_id
+      END IGNORE NULLS ) AS failed_builds
   FROM
     patchset_groups AS pg
   CROSS JOIN
@@ -175,7 +169,6 @@ WITH
     # Info about the build.
     failed_build.build_id,
     fbg.builder,
-    fbg.reference_succeeded_build_id,
     (ARRAY(
       SELECT
         AS STRUCT
@@ -351,7 +344,6 @@ SELECT
   entire_build.builder.bucket AS luci_bucket,
   entire_build.builder.builder AS luci_builder,
   entire_build.build_id,
-  entire_build.reference_succeeded_build_id,
   test_run.buildbot_info.master_name AS legacy_master_name,
   test_run.buildbot_info.build_number AS legacy_build_number,
   # Info about the test.

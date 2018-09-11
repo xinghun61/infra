@@ -40,7 +40,6 @@ class CQFalseRejectionFlakeOccurrenceTest(TestCase):
     luci_builder = 'luci builder'
     legacy_master_name = 'buildbot master'
     legacy_build_number = 999
-    reference_succeeded_build_id = 456
     time_happened = datetime.datetime(2018, 1, 1)
     gerrit_cl_id = 98765
 
@@ -53,7 +52,6 @@ class CQFalseRejectionFlakeOccurrenceTest(TestCase):
         luci_builder=luci_builder,
         legacy_master_name=legacy_master_name,
         legacy_build_number=legacy_build_number,
-        reference_succeeded_build_id=reference_succeeded_build_id,
         time_happened=time_happened,
         gerrit_cl_id=gerrit_cl_id,
         parent_flake_key=flake.key)

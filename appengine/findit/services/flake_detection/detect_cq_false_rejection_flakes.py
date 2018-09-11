@@ -65,7 +65,6 @@ def _CreateFlakeOccurrenceFromRow(row):
 
   build_id = row['build_id']
   luci_bucket = row['luci_bucket']
-  reference_succeeded_build_id = row['reference_succeeded_build_id']
   time_happened = row['test_start_msec']
   gerrit_cl_id = row['gerrit_cl_id']
   flake_occurrence = CQFalseRejectionFlakeOccurrence.Create(
@@ -77,7 +76,6 @@ def _CreateFlakeOccurrenceFromRow(row):
       luci_builder=luci_builder,
       legacy_master_name=legacy_master_name,
       legacy_build_number=legacy_build_number,
-      reference_succeeded_build_id=reference_succeeded_build_id,
       time_happened=time_happened,
       gerrit_cl_id=gerrit_cl_id,
       parent_flake_key=flakey_key)
