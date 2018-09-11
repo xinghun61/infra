@@ -244,7 +244,7 @@ class MonorailServicer(object):
       prpc_context.set_details('The user group already exists.')
     elif exc_type == features_svc.HotlistAlreadyExists:
       prpc_context.set_code(codes.StatusCode.INVALID_ARGUMENT)
-      prpc_context.set_details('The hotlist already exists.')
+      prpc_context.set_details('A hotlist with that name already exists.')
     elif exc_type == exceptions.InvalidComponentNameException:
       prpc_context.set_code(codes.StatusCode.INVALID_ARGUMENT)
       prpc_context.set_details('That component name is invalid.')

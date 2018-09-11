@@ -1843,6 +1843,13 @@ class FeaturesService(object):
         except KeyError:
           self.hotlists_id_by_user[user_id] = [hotlist_pb.hotlist_id]
 
+  def CheckHotlistName(self, cnxn, name, owner_ids):
+    if not framework_bizobj.IsValidHotlistName(name):
+      raise exceptions.InputException(
+          '%s is not a valid name for a Hotlist' % name)
+    if self.LookupHotlistIDs(cnxn, [name], owner_ids):
+      raise features_svc.HotlistAlreadyExists()
+
   def CreateHotlist(
       self, _cnxn, hotlist_name, summary, description, owner_ids, editor_ids,
       issue_ids=None, is_private=None, default_col_spec=None, ts=None):

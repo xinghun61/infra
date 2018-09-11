@@ -23,6 +23,7 @@ from framework import monorailcontext
 from framework import permissions
 from testing import fake
 from tracker import tracker_bizobj
+from services import features_svc
 from services import service_manager
 
 
@@ -429,3 +430,36 @@ class FeaturesServicerTest(unittest.TestCase):
     self.assertEqual([], hotlist.editor_ids)
     self.assertEqual(0, len(hotlist.items))
     self.assertFalse(hotlist.is_private)
+
+  def testCheckHotlistName_OK(self):
+    request = features_pb2.CheckHotlistNameRequest(name='Fake-Hotlist')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    self.CallWrapped(self.features_svcr.CheckHotlistName, mc, request)
+
+  def testCheckHotlistName_Anon(self):
+    request = features_pb2.CheckHotlistNameRequest(name='Fake-Hotlist')
+    mc = monorailcontext.MonorailContext(self.services, cnxn=self.cnxn)
+
+    with self.assertRaises(exceptions.InputException):
+      self.CallWrapped(self.features_svcr.CheckHotlistName, mc, request)
+
+  def testCheckHotlistName_InvalidName(self):
+    request = features_pb2.CheckHotlistNameRequest(name='**Invalid**')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+
+    with self.assertRaises(exceptions.InputException):
+      self.CallWrapped(self.features_svcr.CheckHotlistName, mc, request)
+
+  def testCheckHotlistName_AlreadyExists(self):
+    self.services.features.CreateHotlist(
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[])
+
+    request = features_pb2.CheckHotlistNameRequest(name='Fake-Hotlist')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+
+    with self.assertRaises(features_svc.HotlistAlreadyExists):
+      self.CallWrapped(self.features_svcr.CheckHotlistName, mc, request)

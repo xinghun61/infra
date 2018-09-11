@@ -17,6 +17,7 @@ service Features {
   rpc ListHotlistIssues (ListHotlistIssuesRequest) returns (ListHotlistIssuesResponse) {}
   rpc DismissCue (DismissCueRequest) returns (DismissCueResponse) {}
   rpc CreateHotlist (CreateHotlistRequest) returns (CreateHotlistResponse) {}
+  rpc CheckHotlistName (CheckHotlistNameRequest) returns (CheckHotlistNameResponse) {}
 }
 
 
@@ -100,4 +101,16 @@ message CreateHotlistRequest {
 
 // Next available tag: 1
 message CreateHotlistResponse {
+}
+
+
+// Next available tag: 3
+message CheckHotlistNameRequest {
+  RequestTrace trace = 1;
+  string name = 2;
+}
+
+
+// Next available tag: 1
+message CheckHotlistNameResponse {
 }

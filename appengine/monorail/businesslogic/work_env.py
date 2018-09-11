@@ -1253,6 +1253,23 @@ class WorkEnv(object):
       self.GetHotlist(hotlist_id)
       return self.services.hotlist_star.CountItemStars(self.mc.cnxn, hotlist_id)
 
+  def CheckHotlistName(self, name):
+    """Check that a hotlist name is valid and not already in use.
+
+    Args:
+      name: str the hotlist name to check.
+
+    Raises:
+      InputException: The hotlist name is not valid or user is not signed in.
+      HotlistAlreadyExists: The hotlist name is already in use.
+    """
+    if not self.mc.auth.user_id:
+      raise exceptions.InputException('No current user specified')
+
+    with self.mc.profiler.Phase('checking hotlist name: %r' % name):
+      self.services.features.CheckHotlistName(
+          self.mc.cnxn, name, [self.mc.auth.user_id])
+
   # FUTURE: UpdateHotlist()
   # FUTURE: DeleteHotlist()
 

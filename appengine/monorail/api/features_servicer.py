@@ -12,8 +12,11 @@ from api.api_proto import features_pb2
 from api.api_proto import features_prpc_pb2
 from businesslogic import work_env
 from features import features_bizobj
+from framework import exceptions
+from framework import framework_bizobj
 from framework import framework_views
 from framework import paginate
+from services import features_svc
 from tracker import tracker_bizobj
 
 
@@ -149,3 +152,10 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
 
     result = features_pb2.CreateHotlistResponse()
     return result
+
+  @monorail_servicer.PRPCMethod
+  def CheckHotlistName(self, mc, request):
+    """Check that a hotlist name is valid and not already in use."""
+    with work_env.WorkEnv(mc, self.services) as we:
+      we.CheckHotlistName(request.name)
+    return features_pb2.CheckHotlistNameResponse()
