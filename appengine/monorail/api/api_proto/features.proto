@@ -16,6 +16,7 @@ service Features {
   rpc StarHotlist (StarHotlistRequest) returns (StarHotlistResponse) {}
   rpc ListHotlistIssues (ListHotlistIssuesRequest) returns (ListHotlistIssuesResponse) {}
   rpc DismissCue (DismissCueRequest) returns (DismissCueResponse) {}
+  rpc CreateHotlist (CreateHotlistRequest) returns (CreateHotlistResponse) {}
 }
 
 
@@ -82,4 +83,21 @@ message DismissCueRequest {
 
 // Next available tag: 1
 message DismissCueResponse {
+}
+
+
+// Next available tag: 7
+message CreateHotlistRequest {
+  RequestTrace trace = 1;
+  string name = 2;
+  string summary = 3;
+  string description = 4;
+  repeated UserRef editor_refs = 5;
+  repeated IssueRef issue_refs = 6;
+  bool is_private = 7;
+}
+
+
+// Next available tag: 1
+message CreateHotlistResponse {
 }

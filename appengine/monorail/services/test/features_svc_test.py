@@ -17,6 +17,7 @@ import settings
 
 from features import filterrules_helpers
 from features import features_constants
+from framework import exceptions
 from framework import sql
 from proto import tracker_pb2
 from services import chart_svc
@@ -484,6 +485,11 @@ class FeaturesServiceTest(unittest.TestCase):
     self.features_service.CreateHotlist(
         self.cnxn, 'hot1', 'hot 1', 'test hotlist', [567], [678])
     self.mox.VerifyAll()
+
+  def testCreateHotlist_InvalidName(self):
+    with self.assertRaises(exceptions.InputException):
+      self.features_service.CreateHotlist(self.cnxn, '***Invalid name***',
+          'Misnamed Hotlist', 'A Hotlist with an invalid name', [567], [678])
 
   def testCreateHotlist_NoOwner(self):
     with self.assertRaises(features_svc.UnownedHotlistException):

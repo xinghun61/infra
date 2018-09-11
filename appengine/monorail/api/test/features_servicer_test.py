@@ -68,7 +68,7 @@ class FeaturesServicerTest(unittest.TestCase):
     """We can get a list of hotlists for a given email."""
     # Public hostlist owned by 'owner@example.com'
     self.services.features.CreateHotlist(
-        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
         owner_ids=[111L], editor_ids=[222L])
 
     # Query for issues for 'owner@example.com'
@@ -84,7 +84,7 @@ class FeaturesServicerTest(unittest.TestCase):
     hotlist = response.hotlists[0]
     self.assertEqual(111L, hotlist.owner_ref.user_id)
     self.assertEqual('ow...@example.com', hotlist.owner_ref.display_name)
-    self.assertEqual('Fake Hotlist', hotlist.name)
+    self.assertEqual('Fake-Hotlist', hotlist.name)
     self.assertEqual('Summary', hotlist.summary)
     self.assertEqual('Description', hotlist.description)
 
@@ -92,7 +92,7 @@ class FeaturesServicerTest(unittest.TestCase):
     """We can get a list of hotlists for a given user."""
     # Public hostlist owned by 'owner@example.com'
     self.services.features.CreateHotlist(
-        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
         owner_ids=[111L], editor_ids=[222L])
 
     # Query for issues for 'owner@example.com'
@@ -109,7 +109,7 @@ class FeaturesServicerTest(unittest.TestCase):
     hotlist = response.hotlists[0]
     self.assertEqual(111L, hotlist.owner_ref.user_id)
     self.assertEqual('ow...@example.com', hotlist.owner_ref.display_name)
-    self.assertEqual('Fake Hotlist', hotlist.name)
+    self.assertEqual('Fake-Hotlist', hotlist.name)
     self.assertEqual('Summary', hotlist.summary)
     self.assertEqual('Description', hotlist.description)
 
@@ -117,7 +117,7 @@ class FeaturesServicerTest(unittest.TestCase):
     """We can get a list of hotlists for a given user."""
     # Public hostlist owned by 'owner@example.com'
     self.services.features.CreateHotlist(
-        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
         owner_ids=[111L], editor_ids=[222L])
 
     # Query for issues for 'editor@example.com'
@@ -134,14 +134,14 @@ class FeaturesServicerTest(unittest.TestCase):
     hotlist = response.hotlists[0]
     self.assertEqual(111L, hotlist.owner_ref.user_id)
     self.assertEqual('ow...@example.com', hotlist.owner_ref.display_name)
-    self.assertEqual('Fake Hotlist', hotlist.name)
+    self.assertEqual('Fake-Hotlist', hotlist.name)
     self.assertEqual('Summary', hotlist.summary)
     self.assertEqual('Description', hotlist.description)
 
   def testListHotlistsByUser_NotSignedIn(self):
     # Public hostlist owned by 'owner@example.com'
     self.services.features.CreateHotlist(
-        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
         owner_ids=[111L], editor_ids=[222L])
 
     # Query for issues for 'owner@example.com'
@@ -161,7 +161,7 @@ class FeaturesServicerTest(unittest.TestCase):
     """There are no hotlists for the given user."""
     # Public hostlist owned by 'owner@example.com'
     self.services.features.CreateHotlist(
-        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
         owner_ids=[111L], editor_ids=[222L])
 
     # Query for issues for 'bar@example.com'
@@ -193,7 +193,7 @@ class FeaturesServicerTest(unittest.TestCase):
   def testListHotlistsByUser_PrivateIssueAsOwner(self):
     # Private hostlist owned by 'owner@example.com'
     self.services.features.CreateHotlist(
-        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
         owner_ids=[111L], editor_ids=[222L], is_private=True)
 
     # Query for issues for 'owner@example.com'
@@ -213,7 +213,7 @@ class FeaturesServicerTest(unittest.TestCase):
   def testListHotlistsByUser_PrivateIssueAsEditor(self):
     # Private hostlist owned by 'owner@example.com'
     self.services.features.CreateHotlist(
-        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
         owner_ids=[111L], editor_ids=[222L], is_private=True)
 
     # Query for issues for 'owner@example.com'
@@ -233,7 +233,7 @@ class FeaturesServicerTest(unittest.TestCase):
   def testListHotlistsByUser_PrivateIssueNoAccess(self):
     # Private hostlist owned by 'owner@example.com'
     self.services.features.CreateHotlist(
-        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
         owner_ids=[111L], editor_ids=[222L], is_private=True)
 
     # Query for issues for 'owner@example.com'
@@ -251,7 +251,7 @@ class FeaturesServicerTest(unittest.TestCase):
   def testListHotlistsByUser_PrivateIssueNotSignedIn(self):
     # Private hostlist owned by 'owner@example.com'
     self.services.features.CreateHotlist(
-        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
         owner_ids=[111L], editor_ids=[222L], is_private=True)
 
     # Query for issues for 'owner@example.com'
@@ -268,7 +268,7 @@ class FeaturesServicerTest(unittest.TestCase):
   def CallGetStarCount(self):
     # Query for hotlists for 'owner@example.com'
     owner_ref = common_pb2.UserRef(user_id=111L)
-    hotlist_ref = common_pb2.HotlistRef(name='Fake Hotlist', owner=owner_ref)
+    hotlist_ref = common_pb2.HotlistRef(name='Fake-Hotlist', owner=owner_ref)
     request = features_pb2.GetHotlistStarCountRequest(hotlist_ref=hotlist_ref)
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
@@ -279,7 +279,7 @@ class FeaturesServicerTest(unittest.TestCase):
   def CallStar(self, requester='owner@example.com', starred=True):
     # Query for hotlists for 'owner@example.com'
     owner_ref = common_pb2.UserRef(user_id=111L)
-    hotlist_ref = common_pb2.HotlistRef(name='Fake Hotlist', owner=owner_ref)
+    hotlist_ref = common_pb2.HotlistRef(name='Fake-Hotlist', owner=owner_ref)
     request = features_pb2.StarHotlistRequest(
         hotlist_ref=hotlist_ref, starred=starred)
     mc = monorailcontext.MonorailContext(
@@ -290,7 +290,7 @@ class FeaturesServicerTest(unittest.TestCase):
 
   def testStarCount_Normal(self):
     self.services.features.CreateHotlist(
-        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
         owner_ids=[111L], editor_ids=[222L])
     self.assertEqual(0, self.CallGetStarCount())
     self.assertEqual(1, self.CallStar())
@@ -298,7 +298,7 @@ class FeaturesServicerTest(unittest.TestCase):
 
   def testStarCount_StarTwiceSameUser(self):
     self.services.features.CreateHotlist(
-        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
         owner_ids=[111L], editor_ids=[222L])
     self.assertEqual(1, self.CallStar())
     self.assertEqual(1, self.CallStar())
@@ -306,7 +306,7 @@ class FeaturesServicerTest(unittest.TestCase):
 
   def testStarCount_StarTwiceDifferentUser(self):
     self.services.features.CreateHotlist(
-        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
         owner_ids=[111L], editor_ids=[222L])
     self.assertEqual(1, self.CallStar())
     self.assertEqual(2, self.CallStar(requester='user_222@example.com'))
@@ -314,7 +314,7 @@ class FeaturesServicerTest(unittest.TestCase):
 
   def testStarCount_RemoveStarTwiceSameUser(self):
     self.services.features.CreateHotlist(
-        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
         owner_ids=[111L], editor_ids=[222L])
     self.assertEqual(1, self.CallStar())
     self.assertEqual(1, self.CallGetStarCount())
@@ -325,7 +325,7 @@ class FeaturesServicerTest(unittest.TestCase):
 
   def testStarCount_RemoveStarTwiceDifferentUser(self):
     self.services.features.CreateHotlist(
-        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
         owner_ids=[111L], editor_ids=[222L])
     self.assertEqual(1, self.CallStar())
     self.assertEqual(2, self.CallStar(requester='user_222@example.com'))
@@ -338,7 +338,7 @@ class FeaturesServicerTest(unittest.TestCase):
 
   def testListHotlistIssues(self):
     hotlist_id = self.services.features.CreateHotlist(
-        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
         owner_ids=[111L], editor_ids=[]).hotlist_id
     self.services.features.UpdateHotlistItems(
         self.cnxn, hotlist_id, [],
@@ -347,7 +347,7 @@ class FeaturesServicerTest(unittest.TestCase):
     self.issue_2.labels = ['Restrict-View-CoreTeam']
 
     owner_ref = common_pb2.UserRef(user_id=111L)
-    hotlist_ref = common_pb2.HotlistRef(name='Fake Hotlist', owner=owner_ref)
+    hotlist_ref = common_pb2.HotlistRef(name='Fake-Hotlist', owner=owner_ref)
     request = features_pb2.ListHotlistIssuesRequest(hotlist_ref=hotlist_ref)
 
     mc = monorailcontext.MonorailContext(
@@ -380,3 +380,52 @@ class FeaturesServicerTest(unittest.TestCase):
     self.CallWrapped(self.features_svcr.DismissCue, mc, request)
 
     self.assertEqual(['code_of_conduct'], user.dismissed_cues)
+
+  def testCreateHotlist_Normal(self):
+    request = features_pb2.CreateHotlistRequest(
+        name='Fake-Hotlist',
+        summary='Summary',
+        description='Description',
+        editor_refs=[
+            common_pb2.UserRef(user_id=222L),
+            common_pb2.UserRef(display_name='foo@example.com')],
+        issue_refs=[
+            common_pb2.IssueRef(project_name='proj', local_id=1),
+            common_pb2.IssueRef(project_name='proj', local_id=2)],
+        is_private=True)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    self.CallWrapped(self.features_svcr.CreateHotlist, mc, request)
+
+    # Check that the hotlist was successfuly added.
+    hotlist_id = self.services.features.LookupHotlistIDs(
+        self.cnxn, ['Fake-Hotlist'], [111L]).get(('Fake-Hotlist', 111L))
+    hotlist = self.services.features.GetHotlist(self.cnxn, hotlist_id)
+    self.assertEqual('Summary', hotlist.summary)
+    self.assertEqual('Description', hotlist.description)
+    self.assertEqual([111L], hotlist.owner_ids)
+    self.assertEqual([222L, 333L], hotlist.editor_ids)
+    self.assertEqual(
+        [self.issue_1.issue_id, self.issue_2.issue_id],
+        [item.issue_id for item in hotlist.items])
+    self.assertTrue(hotlist.is_private)
+
+  def testCreateHotlist_Simple(self):
+    request = features_pb2.CreateHotlistRequest(
+        name='Fake-Hotlist',
+        summary='Summary',
+        description='Description')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    self.CallWrapped(self.features_svcr.CreateHotlist, mc, request)
+
+    # Check that the hotlist was successfuly added.
+    hotlist_id = self.services.features.LookupHotlistIDs(
+        self.cnxn, ['Fake-Hotlist'], [111L]).get(('Fake-Hotlist', 111L))
+    hotlist = self.services.features.GetHotlist(self.cnxn, hotlist_id)
+    self.assertEqual('Summary', hotlist.summary)
+    self.assertEqual('Description', hotlist.description)
+    self.assertEqual([111L], hotlist.owner_ids)
+    self.assertEqual([], hotlist.editor_ids)
+    self.assertEqual(0, len(hotlist.items))
+    self.assertFalse(hotlist.is_private)

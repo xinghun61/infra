@@ -25,6 +25,7 @@ from framework import permissions
 from framework import sql
 from framework import xsrf
 from services import client_config_svc
+from services import features_svc
 
 
 def ConvertPRPCStatusToHTTPStatus(context):
@@ -241,6 +242,9 @@ class MonorailServicer(object):
     elif exc_type == exceptions.GroupExistsException:
       prpc_context.set_code(codes.StatusCode.INVALID_ARGUMENT)
       prpc_context.set_details('The user group already exists.')
+    elif exc_type == features_svc.HotlistAlreadyExists:
+      prpc_context.set_code(codes.StatusCode.INVALID_ARGUMENT)
+      prpc_context.set_details('The hotlist already exists.')
     elif exc_type == exceptions.InvalidComponentNameException:
       prpc_context.set_code(codes.StatusCode.INVALID_ARGUMENT)
       prpc_context.set_details('That component name is invalid.')

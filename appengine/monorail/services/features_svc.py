@@ -18,6 +18,7 @@ import settings
 
 from features import features_constants
 from features import filterrules_helpers
+from framework import exceptions
 from framework import framework_bizobj
 from framework import sql
 from proto import features_pb2
@@ -539,11 +540,14 @@ class FeaturesService(object):
       The int id of the new hotlist.
 
     Raises:
+      InputException: if the hotlist name is invalid.
       HotlistAlreadyExists: if any of the owners already own a hotlist with
         the same name.
       UnownedHotlistException: if owner_ids is empty.
     """
-    assert framework_bizobj.IsValidHotlistName(name)
+    if not framework_bizobj.IsValidHotlistName(name):
+      raise exceptions.InputException(
+          'There is already a Hotlist with name %r', name)
     if self.LookupHotlistIDs(cnxn, [name], owner_ids):
       raise HotlistAlreadyExists()
 

@@ -7,6 +7,7 @@ import logging
 
 from api import monorail_servicer
 from api import converters
+from api.api_proto import common_pb2
 from api.api_proto import features_pb2
 from api.api_proto import features_prpc_pb2
 from businesslogic import work_env
@@ -131,4 +132,20 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
       we.DismissCue(cue_id)
 
     result = features_pb2.DismissCueResponse()
+    return result
+
+  @monorail_servicer.PRPCMethod
+  def CreateHotlist(self, mc, request):
+    """Create a new hotlist."""
+    editor_ids = converters.IngestUserRefs(
+        mc.cnxn, request.editor_refs, self.services.user)
+    issue_ids = converters.IngestIssueRefs(
+        mc.cnxn, request.issue_refs, self.services)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      we.CreateHotlist(
+          request.name, request.summary, request.description, editor_ids,
+          issue_ids, request.is_private)
+
+    result = features_pb2.CreateHotlistResponse()
     return result

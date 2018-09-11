@@ -955,11 +955,11 @@ class ConverterFunctionsTest(unittest.TestCase):
   def testIngestHotlistRef(self):
     self.services.user.TestAddUser('user1@example.com', 111L)
     hotlist = self.services.features.CreateHotlist(
-        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
         owner_ids=[111L], editor_ids=[222L])
 
     owner_ref = common_pb2.UserRef(user_id=111L)
-    hotlist_ref = common_pb2.HotlistRef(name='Fake Hotlist', owner=owner_ref)
+    hotlist_ref = common_pb2.HotlistRef(name='Fake-Hotlist', owner=owner_ref)
 
     actual_hotlist_id = converters.IngestHotlistRef(
         self.cnxn, self.services.user, self.services.features, hotlist_ref)
@@ -968,7 +968,7 @@ class ConverterFunctionsTest(unittest.TestCase):
   def testIngestHotlistRef_HotlistID(self):
     self.services.user.TestAddUser('user1@example.com', 111L)
     hotlist = self.services.features.CreateHotlist(
-        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
         owner_ids=[111L], editor_ids=[222L])
 
     hotlist_ref = common_pb2.HotlistRef(hotlist_id=hotlist.hotlist_id)
@@ -987,7 +987,7 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.services.user.TestAddUser('user1@example.com', 111L)
 
     owner_ref = common_pb2.UserRef(user_id=111L)
-    hotlist_ref = common_pb2.HotlistRef(name='Fake Hotlist', owner=owner_ref)
+    hotlist_ref = common_pb2.HotlistRef(name='Fake-Hotlist', owner=owner_ref)
 
     with self.assertRaises(features_svc.NoSuchHotlistException):
       converters.IngestHotlistRef(
@@ -1250,13 +1250,13 @@ class ConverterFunctionsTest(unittest.TestCase):
     """We can convert a hotlist to protoc."""
     hotlist = testing_helpers.Blank(
         owner_ids=[111L],
-        name='Fake Hotlist',
+        name='Fake-Hotlist',
         summary='A fake hotlist.',
         description='Detailed description of the fake hotlist.')
     actual = converters.ConvertHotlist(hotlist, self.users_by_id)
     self.assertEqual(111L, actual.owner_ref.user_id)
     self.assertEqual('one@example.com', actual.owner_ref.display_name)
-    self.assertEqual('Fake Hotlist', actual.name)
+    self.assertEqual('Fake-Hotlist', actual.name)
     self.assertEqual('A fake hotlist.', actual.summary)
     self.assertEqual(
         'Detailed description of the fake hotlist.', actual.description)
@@ -1264,7 +1264,7 @@ class ConverterFunctionsTest(unittest.TestCase):
   def testConvertHotlistItem(self):
     """We can convert a HotlistItem to protoc."""
     hotlist = self.services.features.CreateHotlist(
-        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
         owner_ids=[111L], editor_ids=[])
     self.services.features.UpdateHotlistItems(
         self.cnxn, hotlist.hotlist_id, [],

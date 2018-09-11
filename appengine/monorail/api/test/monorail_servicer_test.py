@@ -26,6 +26,7 @@ from framework import xsrf
 from services import cachemanager_svc
 from services import config_svc
 from services import service_manager
+from services import features_svc
 from testing import fake
 from testing import testing_helpers
 
@@ -465,6 +466,8 @@ class MonorailServicerTest(unittest.TestCase):
     self.CheckExceptionStatus(
         ratelimiter.ApiRateLimitExceeded('client_id', 'email'),
         codes.StatusCode.PERMISSION_DENIED)
+    self.CheckExceptionStatus(
+        features_svc.HotlistAlreadyExists(), codes.StatusCode.INVALID_ARGUMENT)
     self.CheckExceptionStatus(NotImplementedError(), None)
 
   def testRecordMonitoringStats_RequestClassDoesNotEndInRequest(self):

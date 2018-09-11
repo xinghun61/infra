@@ -40,6 +40,7 @@ Responsibilities of the Services layer:
 """
 
 import logging
+import time
 
 from features import features_constants
 from features import send_notifications
@@ -1084,6 +1085,35 @@ class WorkEnv(object):
 
   ### Hotlist methods
 
+  def CreateHotlist(
+      self, name, summary, description, editor_ids, issue_ids, is_private):
+    """Create a hotlist.
+
+    Args:
+      name: a valid hotlist name.
+      summary: one-line explanation of the hotlist.
+      description: one-page explanation of the hotlist.
+      editor_ids: a list of user IDs for the hotlist editors.
+      issue_ids: a list of issue IDs for the hotlist issues.
+      is_private: True if the hotlist can only be viewed by owners and editors.
+
+    Returns:
+      The newly created hotlist.
+
+    Raises:
+      HotlistAlreadyExists: A hotlist with the given name already exists.
+      InputException: No user is signed in or the proposed name is invalid.
+    """
+    if not self.mc.auth.user_id:
+      raise exceptions.InputException('Anon cannot create hotlists.')
+
+    with self.mc.profiler.Phase('creating hotlist %s' % name):
+      hotlist = self.services.features.CreateHotlist(
+          self.mc.cnxn, name, summary, description, [self.mc.auth.user_id],
+          editor_ids, issue_ids, is_private, ts=int(time.time()))
+
+    return hotlist
+
   def GetHotlist(self, hotlist_id, use_cache=True):
     """Return the specified hotlist.
 
@@ -1195,7 +1225,6 @@ class WorkEnv(object):
       self.GetHotlist(hotlist_id)
       return self.services.hotlist_star.CountItemStars(self.mc.cnxn, hotlist_id)
 
-  # FUTURE: CreateHotlist()
   # FUTURE: UpdateHotlist()
   # FUTURE: DeleteHotlist()
 

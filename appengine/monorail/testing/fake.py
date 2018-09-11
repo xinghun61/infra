@@ -12,6 +12,7 @@ import time
 
 import settings
 from framework import exceptions
+from framework import framework_bizobj
 from framework import framework_helpers
 from framework import monorailrequest
 from framework import permissions
@@ -1846,6 +1847,8 @@ class FeaturesService(object):
       self, _cnxn, hotlist_name, summary, description, owner_ids, editor_ids,
       issue_ids=None, is_private=None, default_col_spec=None, ts=None):
     """Create and store a Hotlist with the given attributes."""
+    if not framework_bizobj.IsValidHotlistName(hotlist_name):
+      raise exceptions.InputException()
     if hotlist_name in self.test_hotlists:
       raise features_svc.HotlistAlreadyExists()
     if not owner_ids:  # Should never happen.
