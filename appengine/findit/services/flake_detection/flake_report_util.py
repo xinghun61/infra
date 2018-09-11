@@ -177,8 +177,8 @@ def _FlakeIssueWasCreatedOrUpdatedWithinPast24h(flake):
     return False
 
   utc_one_day_ago = time_util.GetUTCNow() - datetime.timedelta(days=1)
-  return (flake_issue.last_updated_time and
-          flake_issue.last_updated_time > utc_one_day_ago)
+  return (flake_issue.last_updated_time_by_flake_detection and
+          flake_issue.last_updated_time_by_flake_detection > utc_one_day_ago)
 
 
 def _GetFlakeIssue(flake):
@@ -268,11 +268,14 @@ def GetFlakesWithEnoughOccurrences():
   flake_key_to_unreported_occurrences = {}
   for flake_key, occurrences in flake_key_to_occurrences.iteritems():
     flake_issue = _GetFlakeIssue(flake_key.get())
-    last_updated_time = flake_issue.last_updated_time if flake_issue else None
+    last_updated_time_by_flake_detection = (
+        flake_issue.last_updated_time_by_flake_detection
+        if flake_issue else None)
 
     new_occurrences = [
         occurrence for occurrence in occurrences
-        if not last_updated_time or occurrence.time_detected > last_updated_time
+        if (not last_updated_time_by_flake_detection or
+            occurrence.time_detected > last_updated_time_by_flake_detection)
     ]
     if new_occurrences:
       flake_key_to_unreported_occurrences[flake_key] = new_occurrences
@@ -324,8 +327,9 @@ def ReportFlakesToMonorail(flake_tuples_to_report):
     return
 
   utc_one_day_ago = time_util.GetUTCNow() - datetime.timedelta(days=1)
-  num_updated_issues_24h = FlakeIssue.query(
-      FlakeIssue.last_updated_time > utc_one_day_ago).count()
+  num_updated_issues_24h = (
+      FlakeIssue.query(FlakeIssue.last_updated_time_by_flake_detection >
+                       utc_one_day_ago).count())
   if num_updated_issues_24h >= _CREATE_OR_UPDATE_ISSUES_LIMIT_24H:
     logging.info('Issues created or updated during the past 24 hours has '
                  'reached the limit.')
@@ -349,11 +353,11 @@ def ReportFlakesToMonorail(flake_tuples_to_report):
       issue_tracking_service.CreateOrUpdateIssue(issue_generator,
                                                  flake.luci_project)
 
-      # Update FlakeIssue's last_updated_time property. This property is only
-      # applicable to Flake Detection because Flake Detection can update an
-      # issue at most once every 24 hours.
+      # Update FlakeIssue's last_updated_time_by_flake_detection property. This
+      # property is only applicable to Flake Detection because Flake Detection
+      # can update an issue at most once every 24 hours.
       flake_issue = flake.flake_issue_key.get()
-      flake_issue.last_updated_time = time_util.GetUTCNow()
+      flake_issue.last_updated_time_by_flake_detection = time_util.GetUTCNow()
       flake_issue.put()
     except HttpError as error:
       # benign exceptions (HttpError 403) may happen when FindIt tries to

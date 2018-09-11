@@ -565,7 +565,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
     self.assertEqual(1, len(fetched_flakes))
     self.assertEqual(1, len(fetched_flake_issues))
     self.assertEqual(66666, fetched_flake_issues[0].issue_id)
-    self.assertEqual(None, fetched_flake_issues[0].last_updated_time)
+    self.assertEqual(
+        None, fetched_flake_issues[0].last_updated_time_by_flake_detection)
     self.assertEqual(fetched_flakes[0].flake_issue_key,
                      fetched_flake_issues[0].key)
 
@@ -613,6 +614,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
     self.assertEqual(1, len(fetched_flakes))
     self.assertEqual(1, len(fetched_flake_issues))
     self.assertEqual(12345, fetched_flake_issues[0].issue_id)
-    self.assertEqual(None, fetched_flake_issues[0].last_updated_time)
+    self.assertEqual(
+        None, fetched_flake_issues[0].last_updated_time_by_flake_detection)
     self.assertEqual(fetched_flakes[0].flake_issue_key,
                      fetched_flake_issues[0].key)

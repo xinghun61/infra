@@ -16,7 +16,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
 
   def testGetFlakeInformation(self):
     flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=900)
-    flake_issue.last_updated_time = datetime(2018, 1, 1)
+    flake_issue.last_updated_time_by_flake_detection = datetime(2018, 1, 1)
     flake_issue.put()
 
     luci_project = 'chromium'
@@ -68,7 +68,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
                 'chromium',
             'issue_id':
                 900,
-            'last_updated_time':
+            'last_updated_time_by_flake_detection':
                 datetime(2018, 1, 1),
             'issue_link': ('https://monorail-prod.appspot.com/p/chromium/'
                            'issues/detail?id=900')

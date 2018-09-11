@@ -43,7 +43,8 @@ class ShowFlakeTest(WaterfallTestCase):
 
   def testShowFlake(self):
     flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=900)
-    flake_issue.last_updated_time = datetime.datetime(2018, 1, 1)
+    flake_issue.last_updated_time_by_flake_detection = (
+        datetime.datetime(2018, 1, 1))
     flake_issue.put()
 
     luci_project = 'chromium'

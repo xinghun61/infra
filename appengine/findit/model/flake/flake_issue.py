@@ -21,10 +21,9 @@ class FlakeIssue(ndb.Model):
   issue_id = ndb.IntegerProperty(required=True)
 
   # Track the last time this issue was created or updated by Flake Detection.
-  # This is only applicable to Flake Detection (not Flake Analyzer) because
-  # Flake Detection can only create/update an issue at most once every 24 hours.
-  # TODO(crbug.com/876797): Rename to last_updated_time_by_flake_detection.
-  last_updated_time = ndb.DateTimeProperty()
+  # This field is needed because Flake Detection can only create/update an issue
+  # at most once every 24 hours.
+  last_updated_time_by_flake_detection = ndb.DateTimeProperty()
 
   @classmethod
   def Create(cls, monorail_project, issue_id):

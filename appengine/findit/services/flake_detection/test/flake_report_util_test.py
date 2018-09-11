@@ -141,7 +141,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
     self.assertEqual(1, len(flakes_with_occurrences))
     self.assertEqual(3, len(flakes_with_occurrences[0][1]))
 
-    flake_issue.last_updated_time = self._GetDatetimeHoursAgo(1)
+    flake_issue.last_updated_time_by_flake_detection = (
+        self._GetDatetimeHoursAgo(1))
     flake_report_util.ReportFlakesToMonorail(flakes_with_occurrences)
     self.assertFalse(mock_update_or_create_bug.called)
 
@@ -149,7 +150,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
   def testIgnoreAlreadyReportedOccurrencesToMonorail(self):
     flake = Flake.query().fetch()[0]
     flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=900)
-    flake_issue.last_updated_time = self._GetDatetimeHoursAgo(5)
+    flake_issue.last_updated_time_by_flake_detection = (
+        self._GetDatetimeHoursAgo(5))
     flake_issue.put()
     flake.flake_issue_key = flake_issue.key
     flake.put()
@@ -166,7 +168,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
   def testFlakeHasNoUnreportedOccurrences(self):
     flake = Flake.query().fetch()[0]
     flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=900)
-    flake_issue.last_updated_time = self._GetDatetimeHoursAgo(5)
+    flake_issue.last_updated_time_by_flake_detection = (
+        self._GetDatetimeHoursAgo(5))
     flake_issue.put()
     flake.flake_issue_key = flake_issue.key
     flake.put()
@@ -258,7 +261,7 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     self.assertEqual(66666, fetched_flake_issues[0].issue_id)
     self.assertEqual(
         datetime.datetime(2018, 1, 2),
-        fetched_flake_issues[0].last_updated_time)
+        fetched_flake_issues[0].last_updated_time_by_flake_detection)
     self.assertEqual(fetched_flakes[0].flake_issue_key,
                      fetched_flake_issues[0].key)
 
@@ -343,7 +346,7 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     self.assertEqual(12345, fetched_flake_issues[0].issue_id)
     self.assertEqual(
         datetime.datetime(2018, 1, 2),
-        fetched_flake_issues[0].last_updated_time)
+        fetched_flake_issues[0].last_updated_time_by_flake_detection)
     self.assertEqual(fetched_flakes[0].flake_issue_key,
                      fetched_flake_issues[0].key)
 
