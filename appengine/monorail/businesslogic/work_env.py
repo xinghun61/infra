@@ -1295,6 +1295,32 @@ class WorkEnv(object):
           self.mc.cnxn, hotlist_ids, issue_ids, self.services.issue,
           self.services.chart)
 
+  def AddIssuesToHotlists(self, hotlist_ids, issue_ids, note):
+    """Add the issues given in issue_ids to the given hotlists.
+
+    Args:
+      hotlist_ids: a list of hotlist ids to add the issues to.
+      issue_ids: a list of issue_ids to be added.
+      note: a string with a message to record along with the issues.
+
+    Raises:
+      PermissionException: The user has no permission to edit the hotlist.
+      NoSuchHotlistException: One of the hotlist ids was not found.
+    """
+    for hotlist_id in hotlist_ids:
+      self._AssertUserCanEditHotlist(self.GetHotlist(hotlist_id))
+
+    issues_to_add = [
+        (issue_id, self.mc.auth.user_id, int(time.time()), note)
+        for issue_id in issue_ids]
+
+    with self.mc.profiler.Phase(
+        'Removing issues %r from hotlists %r' % (issue_ids, hotlist_ids)):
+      self.services.features.AddIssuesToHotlists(
+          self.mc.cnxn, hotlist_ids, issues_to_add, self.services.issue,
+          self.services.chart)
+
+
   # FUTURE: UpdateHotlist()
   # FUTURE: DeleteHotlist()
 

@@ -174,3 +174,18 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
 
     result = features_pb2.RemoveIssuesFromHotlistsResponse()
     return result
+
+  @monorail_servicer.PRPCMethod
+  def AddIssuesToHotlists(self, mc, request):
+    """Add the given issues to the given hotlists."""
+    hotlist_ids = converters.IngestHotlistRefs(
+        mc.cnxn, self.services.user, self.services.features,
+        request.hotlist_refs)
+    issue_ids = converters.IngestIssueRefs(
+        mc.cnxn, request.issue_refs, self.services)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      we.AddIssuesToHotlists(hotlist_ids, issue_ids, request.note)
+
+    result = features_pb2.AddIssuesToHotlistsResponse()
+    return result

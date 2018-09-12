@@ -19,6 +19,7 @@ service Features {
   rpc CreateHotlist (CreateHotlistRequest) returns (CreateHotlistResponse) {}
   rpc CheckHotlistName (CheckHotlistNameRequest) returns (CheckHotlistNameResponse) {}
   rpc RemoveIssuesFromHotlists (RemoveIssuesFromHotlistsRequest) returns (RemoveIssuesFromHotlistsResponse) {}
+  rpc AddIssuesToHotlists (AddIssuesToHotlistsRequest) returns (AddIssuesToHotlistsResponse) {}
 }
 
 
@@ -127,4 +128,18 @@ message RemoveIssuesFromHotlistsRequest {
 
 // Next available tag: 1
 message RemoveIssuesFromHotlistsResponse {
+}
+
+
+// Next available tag: 5
+message AddIssuesToHotlistsRequest {
+  RequestTrace trace = 1;
+  repeated HotlistRef hotlist_refs = 2;
+  repeated IssueRef issue_refs = 3;
+  string note = 4;
+}
+
+
+// Next available tag: 1
+message AddIssuesToHotlistsResponse {
 }
