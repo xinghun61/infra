@@ -352,7 +352,11 @@ runOnLoad(function() {
       cl.logEnd("issue-search");
     }
     if (cl.started("issue-update")) {
-      cl.logEnd("issue-update");
+      // Throw out values above 120 seconds. Since the GAE timeout is 60 seconds
+      // and this encompasses 2 requests, the maximum possible value is 120
+      // seconds. This guards against stale stored timing information from
+      // being picked up and skewing the distribution.
+      cl.logEnd("issue-update", 120 * 1000);
     }
   }
 });

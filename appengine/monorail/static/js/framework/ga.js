@@ -128,7 +128,7 @@ class ClientLogger {
         JSON.stringify(this.startedEvents);
   }
 
-  logEnd(eventName, eventLabel) {
+  logEnd(eventName, eventLabel, maxThresholdMs=null) {
     const startEvent = this.startedEvents[eventName];
 
     if (!startEvent) {
@@ -145,6 +145,11 @@ class ClientLogger {
     if (eventLabel) {
       if (startEvent.labels[eventLabel]) {
         elapsed = new Date().getTime() - startEvent.labels[eventLabel];
+
+        if (maxThresholdMs !== null && elapsed > maxThresholdMs) {
+          return;
+        }
+
         ga('send', 'timing', {
           'timingCategory': this.category,
           'timingVar': eventName,
