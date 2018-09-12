@@ -39,6 +39,7 @@ class WorkEnvTest(unittest.TestCase):
         issue_star=fake.IssueStarService(),
         project_star=fake.ProjectStarService(),
         user_star=fake.UserStarService(),
+        hotlist_star=fake.HotlistStarService(),
         features=fake.FeaturesService(),
         usergroup=fake.UserGroupService(),
         template=Mock(spec=template_svc.TemplateService),
@@ -1288,6 +1289,82 @@ class WorkEnvTest(unittest.TestCase):
 
     self.assertEqual(0, len(hotlists))
 
+  def testStarHotlist_Normal(self):
+    """We can star and unstar a hotlist."""
+    hotlist_id = self.work_env.services.features.CreateHotlist(
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[]).hotlist_id
+
+    self.SignIn()
+    with self.work_env as we:
+      self.assertFalse(we.IsHotlistStarred(hotlist_id))
+      we.StarHotlist(hotlist_id, True)
+      self.assertTrue(we.IsHotlistStarred(hotlist_id))
+      we.StarHotlist(hotlist_id, False)
+      self.assertFalse(we.IsHotlistStarred(hotlist_id))
+
+  def testStarHotlist_NoHotlistSpecified(self):
+    """A hotlist must be specified."""
+    self.SignIn()
+    with self.assertRaises(exceptions.InputException):
+      with self.work_env as we:
+        we.StarHotlist(None, True)
+
+  def testStarHotlist_NoSuchHotlist(self):
+    """We can't star a nonexistent hotlist."""
+    self.SignIn()
+    with self.assertRaises(features_svc.NoSuchHotlistException):
+      with self.work_env as we:
+        we.StarHotlist(999, True)
+
+  def testStarHotlist_Anon(self):
+    """Anon user can't star a hotlist."""
+    with self.assertRaises(exceptions.InputException):
+      with self.work_env as we:
+        we.StarHotlist(999, True)
+
+  # testIsHotlistStarred_Normal is Tested by method testStarHotlist_Normal().
+
+  def testIsHotlistStarred_Anon(self):
+    """Anon user can't star a hotlist."""
+    with self.work_env as we:
+      self.assertFalse(we.IsHotlistStarred(999))
+
+  def testIsHotlistStarred_NoHotlistSpecified(self):
+    """A Hotlist ID must be specified."""
+    with self.work_env as we:
+      with self.assertRaises(exceptions.InputException):
+        we.IsHotlistStarred(None)
+
+  def testIsHotlistStarred_NoSuchHotlist(self):
+    """We can't check for stars on a nonexistent hotlist."""
+    self.SignIn()
+    with self.assertRaises(features_svc.NoSuchHotlistException):
+      with self.work_env as we:
+        we.IsHotlistStarred(999)
+
+  def testGetHotlistStarCount(self):
+    hotlist = self.work_env.services.features.CreateHotlist(
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[])
+    self.services.hotlist_star.SetStar(
+        self.cnxn, hotlist.hotlist_id, 111L, True)
+    self.services.hotlist_star.SetStar(
+        self.cnxn, hotlist.hotlist_id, 222L, True)
+
+    with self.work_env as we:
+      self.assertEqual(2, we.GetHotlistStarCount(hotlist.hotlist_id))
+
+  def testGetHotlistStarCount_NoneHotlist(self):
+    with self.assertRaises(exceptions.InputException):
+      with self.work_env as we:
+        we.GetHotlistStarCount(None)
+
+  def testGetHotlistStarCount_NoSuchHotlist(self):
+    with self.assertRaises(features_svc.NoSuchHotlistException):
+      with self.work_env as we:
+        we.GetHotlistStarCount(123)
+
   def testCheckHotlistName_OK(self):
     self.SignIn()
     with self.work_env as we:
@@ -1433,6 +1510,7 @@ class WorkEnvTest(unittest.TestCase):
   def testDismissCue_UnrecognizedCueId(self):
     user = self.services.user.test_users[111L]
 
+    self.SignIn()
     with self.assertRaises(exceptions.InputException):
       with self.work_env as we:
         we.DismissCue('foo')
