@@ -615,6 +615,11 @@ def IngestFieldValues(cnxn, user_service, field_values, config, phases=None):
   return ingested_fvs
 
 
+def IngestHotlistRefs(cnxn, user_service, features_service, hotlist_refs):
+  return [IngestHotlistRef(cnxn, user_service, features_service, hotlist_ref)
+          for hotlist_ref in hotlist_refs]
+
+
 def IngestHotlistRef(cnxn, user_service, features_service, hotlist_ref):
   # If a hotlist ID was specified, verify it actually match existing hotlists.
   if hotlist_ref.hotlist_id:

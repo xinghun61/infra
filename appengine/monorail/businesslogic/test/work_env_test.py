@@ -1314,7 +1314,78 @@ class WorkEnvTest(unittest.TestCase):
       with self.work_env as we:
         we.CheckHotlistName('Fake-Hotlist')
 
-  # FUTURE: CreateHotlist()
+  def setUpRemoveIssuesFromHotlists(self):
+    issue1 = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue1)
+    issue2 = fake.MakeTestIssue(789, 2, 'sum2', 'New', 111L, issue_id=78902)
+    self.services.issue.TestAddIssue(issue2)
+
+    hotlist1 = self.work_env.services.features.CreateHotlist(
+            self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+            owner_ids=[111L], editor_ids=[])
+    hotlist2 = self.work_env.services.features.CreateHotlist(
+            self.cnxn, 'Fake-Hotlist-2', 'Summary', 'Description',
+            owner_ids=[111L], editor_ids=[])
+
+    # Fake-Hotlist and Fake-Hotlist-2 have Issue 1
+    self.services.features.AddIssuesToHotlists(
+        self.cnxn, [hotlist1.hotlist_id, hotlist2.hotlist_id],
+        [(issue1.issue_id, 111L, 0, '')],
+        None, None, None)
+
+    # Fake-Hotlist also has Issue 2
+    self.services.features.AddIssuesToHotlists(
+        self.cnxn, [hotlist1.hotlist_id],
+        [(issue2.issue_id, 111L, 0, '')],
+        None, None, None)
+
+    return issue1, issue2, hotlist1, hotlist2
+
+  def testRemoveIssuesFromHotlists(self):
+    """We can remove issues from hotlists."""
+    issue1, issue2, hotlist1, hotlist2 = self.setUpRemoveIssuesFromHotlists()
+
+    self.SignIn()
+    with self.work_env as we:
+      we.RemoveIssuesFromHotlists(
+          [hotlist1.hotlist_id, hotlist2.hotlist_id], [issue1.issue_id])
+
+    self.assertEqual(
+        [issue2.issue_id], [item.issue_id for item in hotlist1.items])
+    self.assertEqual(0, len(hotlist2.items))
+
+  def testRemoveIssuesFromHotlists_RemoveIssueNotInHotlist(self):
+    """Removing an issue from a hotlist that doesn't have it has no effect."""
+    issue1, issue2, hotlist1, hotlist2 = self.setUpRemoveIssuesFromHotlists()
+
+    self.SignIn()
+    with self.work_env as we:
+      # Issue 2 is not in Fake-Hotlist-2
+      we.RemoveIssuesFromHotlists([hotlist2.hotlist_id], [issue2.issue_id])
+
+    self.assertEqual(
+        [issue1.issue_id, issue2.issue_id],
+        [item.issue_id for item in hotlist1.items])
+    self.assertEqual(
+        [issue1.issue_id],
+        [item.issue_id for item in hotlist2.items])
+
+  def testRemoveIssuesFromHotlists_NotAllowed(self):
+    """Only owners and editors can remove issues."""
+    _issue1, issue2, _hotlist1, hotlist2 = self.setUpRemoveIssuesFromHotlists()
+
+    # 333L is not an owner or editor.
+    self.SignIn(333L)
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        we.RemoveIssuesFromHotlists([hotlist2.hotlist_id], [issue2.issue_id])
+
+  def testRemoveIssuesFromHotlists_NoSuchHotlist(self):
+    """We can't remove issues from non existent hotlists."""
+    with self.assertRaises(features_svc.NoSuchHotlistException):
+      with self.work_env as we:
+        we.RemoveIssuesFromHotlists([1, 2, 3], [4, 5, 6])
+
   # FUTURE: UpdateHotlist()
   # FUTURE: DeleteHotlist()
 

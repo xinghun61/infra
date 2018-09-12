@@ -71,9 +71,9 @@ class UpdateHotlists(jsonfeed.JsonFeed):
           self.services.chart)
 
     # Remove issues from hotlists.
-    for hotlist_id in hotlist_ids_remove:
-      self.services.features.RemoveIssuesFromHotlist(mr.cnxn, hotlist_id,
-          selected_iids, self.services.issue, self.services.chart)
+    self.services.features.RemoveIssuesFromHotlists(
+        mr.cnxn, hotlist_ids_remove, selected_iids, self.services.issue,
+        self.services.chart)
 
     # Organize response data.
     missed = []

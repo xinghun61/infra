@@ -654,33 +654,20 @@ class FeaturesService(object):
         [added_tuple[0] for added_tuple in added_tuples])
     chart_svc.StoreIssueSnapshots(cnxn, issues, commit=commit)
 
-  def RemoveIssueFromHotlist(self, cnxn, hotlist_id, issue_id, issue_svc,
-                             chart_svc, commit=True):
-    """Remove a single issue from a hotlist.
+  def RemoveIssuesFromHotlists(self, cnxn, hotlist_ids, issue_ids, issue_svc,
+                               chart_svc, commit=True):
+    """Remove the issues given in issue_ids from the given hotlists.
 
     Args:
       cnxn: connection to SQL database.
-      hotlist_id: hotlist's id.
-      issue_id: issue_id of the issue to be removed.
-      issue_svc: an instance of IssueService.
-      chart_svc: an instance of ChartService.
-    """
-    self.UpdateHotlistItems(cnxn, hotlist_id, [issue_id], [], commit=commit)
-    issues = issue_svc.GetIssues(cnxn, [issue_id])
-    chart_svc.StoreIssueSnapshots(cnxn, issues, commit=commit)
-
-  def RemoveIssuesFromHotlist(self, cnxn, hotlist_id, issue_ids, issue_svc,
-                              chart_svc, commit=True):
-    """Remove the issues given in issue_ids from a hotlist.
-
-    Args:
-      cnxn: connection to SQL database.
-      hotlist_id: hotlist's id.
+      hotlist_ids: a list of hotlist ids to remove the issues from.
       issue_ids: a list of issue_ids to be removed.
       issue_svc: an instance of IssueService.
       chart_svc: an instance of ChartService.
     """
-    self.UpdateHotlistItems(cnxn, hotlist_id, issue_ids, [], commit=commit)
+    for hotlist_id in hotlist_ids:
+      self.UpdateHotlistItems(cnxn, hotlist_id, issue_ids, [], commit=commit)
+
     issues = issue_svc.GetIssues(cnxn, issue_ids)
     chart_svc.StoreIssueSnapshots(cnxn, issues, commit=commit)
 

@@ -159,3 +159,18 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
     with work_env.WorkEnv(mc, self.services) as we:
       we.CheckHotlistName(request.name)
     return features_pb2.CheckHotlistNameResponse()
+
+  @monorail_servicer.PRPCMethod
+  def RemoveIssuesFromHotlists(self, mc, request):
+    """Remove the given issues from the given hotlists."""
+    hotlist_ids = converters.IngestHotlistRefs(
+        mc.cnxn, self.services.user, self.services.features,
+        request.hotlist_refs)
+    issue_ids = converters.IngestIssueRefs(
+        mc.cnxn, request.issue_refs, self.services)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      we.RemoveIssuesFromHotlists(hotlist_ids, issue_ids)
+
+    result = features_pb2.RemoveIssuesFromHotlistsResponse()
+    return result

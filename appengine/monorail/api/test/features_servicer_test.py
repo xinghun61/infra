@@ -463,3 +463,42 @@ class FeaturesServicerTest(unittest.TestCase):
 
     with self.assertRaises(features_svc.HotlistAlreadyExists):
       self.CallWrapped(self.features_svcr.CheckHotlistName, mc, request)
+
+  def testRemoveIssuesFromHotlists(self):
+    # Create two hotlists with issues 1 and 2.
+    hotlist_1 = self.services.features.CreateHotlist(
+        self.cnxn, 'Hotlist-1', 'Summary', 'Description', owner_ids=[111L],
+        editor_ids=[])
+    hotlist_2 = self.services.features.CreateHotlist(
+        self.cnxn, 'Hotlist-2', 'Summary', 'Description', owner_ids=[111L],
+        editor_ids=[])
+    self.services.features.AddIssuesToHotlists(
+        self.cnxn,
+        [hotlist_1.hotlist_id, hotlist_2.hotlist_id],
+        [(self.issue_1.issue_id, 111L, 0, ''),
+         (self.issue_2.issue_id, 111L, 0, '')],
+        None, None, None)
+
+    # Remove Issue 1 from both hotlists.
+    request = features_pb2.RemoveIssuesFromHotlistsRequest(
+        hotlist_refs=[
+            common_pb2.HotlistRef(
+                name='Hotlist-1',
+                owner=common_pb2.UserRef(user_id=111L)),
+            common_pb2.HotlistRef(
+                name='Hotlist-2',
+                owner=common_pb2.UserRef(user_id=111L))],
+        issue_refs=[
+            common_pb2.IssueRef(project_name='proj', local_id=1)])
+
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    self.CallWrapped(self.features_svcr.RemoveIssuesFromHotlists, mc, request)
+
+    # Only Issue 2 should remain in both lists.
+    self.assertEqual(
+        [self.issue_2.issue_id],
+        [item.issue_id for item in hotlist_1.items])
+    self.assertEqual(
+        [self.issue_2.issue_id],
+        [item.issue_id for item in hotlist_2.items])

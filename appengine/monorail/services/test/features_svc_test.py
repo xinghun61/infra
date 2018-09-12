@@ -748,7 +748,7 @@ class FeaturesServiceTest(unittest.TestCase):
         self.chart_service, commit=False)
     self.mox.VerifyAll()
 
-  def testRemoveIssuesFromHotlist(self):
+  def testRemoveIssuesFromHotlists(self):
     issue_rows = [
       (456, 555L, 1L, None, None, ''),
       (456, 666L, 11L, None, None, ''),
@@ -757,32 +757,20 @@ class FeaturesServiceTest(unittest.TestCase):
     self.SetUpGetHotlists(456, issue_rows=issue_rows)
     self.SetUpUpdateHotlistItems(
         self. cnxn, 456, [555L], [])
-    self.mox.StubOutWithMock(self.issue_service, 'GetIssues')
-    self.issue_service.GetIssues(self.cnxn,
-        [555L]).AndReturn(issues)
-    self.chart_service.StoreIssueSnapshots(self.cnxn, issues, commit=False)
-    self.mox.ReplayAll()
-    self.features_service.RemoveIssuesFromHotlist(
-        self.cnxn, 456, [555L], self.issue_service, self.chart_service,
-        commit=False)
-    self.mox.VerifyAll()
-
-  def testRemoveIssueFromHotlist(self):
     issue_rows = [
-      (456, 555L, 1L, None, None, ''),
-      (456, 666L, 11L, None, None, ''),
+      (789, 555L, 1L, None, None, ''),
+      (789, 666L, 11L, None, None, ''),
     ]
-    issues = [tracker_pb2.Issue(issue_id=issue_rows[0][1])]
-    self.SetUpGetHotlists(456, issue_rows=issue_rows)
+    self.SetUpGetHotlists(789, issue_rows=issue_rows)
     self.SetUpUpdateHotlistItems(
-        self. cnxn, 456, [555L], [])
+        self. cnxn, 789, [555L], [])
     self.mox.StubOutWithMock(self.issue_service, 'GetIssues')
     self.issue_service.GetIssues(self.cnxn,
         [555L]).AndReturn(issues)
     self.chart_service.StoreIssueSnapshots(self.cnxn, issues, commit=False)
     self.mox.ReplayAll()
-    self.features_service.RemoveIssueFromHotlist(
-        self.cnxn, 456, 555L, self.issue_service, self.chart_service,
+    self.features_service.RemoveIssuesFromHotlists(
+        self.cnxn, [456, 789], [555L], self.issue_service, self.chart_service,
         commit=False)
     self.mox.VerifyAll()
 

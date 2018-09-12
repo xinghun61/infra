@@ -228,8 +228,8 @@ class HotlistIssues(servlet.Servlet):
 
     else:
       if post_data.get('remove') == 'true':
-        self.services.features.RemoveIssuesFromHotlist(
-            mr.cnxn, mr.hotlist_id, selected_iids, self.services.issue,
+        self.services.features.RemoveIssuesFromHotlists(
+            mr.cnxn, [mr.hotlist_id], selected_iids, self.services.issue,
             self.services.chart)
       else:
         added_tuples =  [(issue_id, mr.auth.user_id,

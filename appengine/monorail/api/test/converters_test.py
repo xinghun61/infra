@@ -993,6 +993,25 @@ class ConverterFunctionsTest(unittest.TestCase):
       converters.IngestHotlistRef(
           self.cnxn, self.services.user, self.services.features, hotlist_ref)
 
+  def testIngestHotlistRefs(self):
+    self.services.user.TestAddUser('user1@example.com', 111L)
+    hotlist_1 = self.services.features.CreateHotlist(
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[222L])
+    hotlist_2 = self.services.features.CreateHotlist(
+        self.cnxn, 'Fake-Hotlist-2', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[222L])
+
+    owner_ref = common_pb2.UserRef(user_id=111L)
+    hotlist_refs = [
+        common_pb2.HotlistRef(name='Fake-Hotlist', owner=owner_ref),
+        common_pb2.HotlistRef(hotlist_id=hotlist_2.hotlist_id)]
+
+    actual_hotlist_ids = converters.IngestHotlistRefs(
+        self.cnxn, self.services.user, self.services.features, hotlist_refs)
+    self.assertEqual(
+        actual_hotlist_ids, [hotlist_1.hotlist_id, hotlist_2.hotlist_id])
+
   def testIngestPagination(self):
     # Use settings.max_project_search_results_per_page if max_items is not
     # present.

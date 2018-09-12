@@ -136,6 +136,11 @@ class WorkEnv(object):
       raise permissions.PermissionException(
           'User is not allowed to view this hotlist')
 
+  def _AssertUserCanEditHotlist(self, hotlist):
+    if not permissions.CanEditHotlist(self.mc.auth.effective_ids, hotlist):
+      raise permissions.PermissionException(
+          'User is not allowed to edit this hotlist')
+
   ### Site methods
 
   # FUTURE: GetSiteReadOnlyState()
@@ -1269,6 +1274,26 @@ class WorkEnv(object):
     with self.mc.profiler.Phase('checking hotlist name: %r' % name):
       self.services.features.CheckHotlistName(
           self.mc.cnxn, name, [self.mc.auth.user_id])
+
+  def RemoveIssuesFromHotlists(self, hotlist_ids, issue_ids):
+    """Remove the issues given in issue_ids from the given hotlists.
+
+    Args:
+      hotlist_ids: a list of hotlist ids to remove the issues from.
+      issue_ids: a list of issue_ids to be removed.
+
+    Raises:
+      PermissionException: The user has no permission to edit the hotlist.
+      NoSuchHotlistException: One of the hotlist ids was not found.
+    """
+    for hotlist_id in hotlist_ids:
+      self._AssertUserCanEditHotlist(self.GetHotlist(hotlist_id))
+
+    with self.mc.profiler.Phase(
+        'Removing issues %r from hotlists %r' % (issue_ids, hotlist_ids)):
+      self.services.features.RemoveIssuesFromHotlists(
+          self.mc.cnxn, hotlist_ids, issue_ids, self.services.issue,
+          self.services.chart)
 
   # FUTURE: UpdateHotlist()
   # FUTURE: DeleteHotlist()
