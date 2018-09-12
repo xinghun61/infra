@@ -20,7 +20,7 @@ from recipe_engine.recipe_api import Property
 
 def RunSteps(api):
   # Write empty results.
-  api.tricium.write_comments()
+  api.tricium.write_comments(dump=True)
 
 
 def GenTests(api):
