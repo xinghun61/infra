@@ -305,13 +305,15 @@ runOnLoad(function() {
   }
 
   const updateForm = document.getElementById('issue_update_form');
-  updateForm.addEventListener('submit', function () {
-    if (typeof(ClientLogger) === "function") {
-      let l = new ClientLogger("issues");
-      l.logStart("issue-update", "computer-time");
-    }
-    TKR_initialFormValues = TKR_currentFormValues();
-  });
+  if (updateForm) {
+    updateForm.addEventListener('submit', function () {
+      if (typeof(ClientLogger) === "function") {
+        let l = new ClientLogger("issues");
+        l.logStart("issue-update", "computer-time");
+      }
+      TKR_initialFormValues = TKR_currentFormValues();
+    });
+  }
 
   window.onbeforeunload = function() {
     if (TKR_isDirty()) {
