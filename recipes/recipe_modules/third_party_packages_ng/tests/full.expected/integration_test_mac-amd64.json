@@ -14,6 +14,8 @@
     "name": "find package specs",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
+      "@@@STEP_LOG_LINE@glob@[CACHE]/builder/package_repo/[CACHE]/builder/package_repo/already_uploaded/3pp.pb@@@",
+      "@@@STEP_LOG_LINE@glob@[CACHE]/builder/package_repo/[CACHE]/builder/package_repo/bottom_dep/3pp.pb@@@",
       "@@@STEP_LOG_LINE@glob@[CACHE]/builder/package_repo/[CACHE]/builder/package_repo/dep/3pp.pb@@@",
       "@@@STEP_LOG_LINE@glob@[CACHE]/builder/package_repo/[CACHE]/builder/package_repo/pkg/3pp.pb@@@",
       "@@@STEP_LOG_LINE@glob@[CACHE]/builder/package_repo/[CACHE]/builder/package_repo/posix_tool/3pp.pb@@@",
@@ -25,6 +27,40 @@
   {
     "cmd": [],
     "name": "load package specs"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "[CACHE]/builder/package_repo/[CACHE]/builder/package_repo/already_uploaded/3pp.pb",
+      "/path/to/tmp/"
+    ],
+    "infra_step": true,
+    "name": "load package specs.read 'already_uploaded'",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "[CACHE]/builder/package_repo/[CACHE]/builder/package_repo/bottom_dep/3pp.pb",
+      "/path/to/tmp/"
+    ],
+    "infra_step": true,
+    "name": "load package specs.read 'bottom_dep'",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
   },
   {
     "cmd": [
@@ -109,6 +145,1585 @@
     "name": "load package specs.read 'unsupported'",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "name": "building already_uploaded"
+  },
+  {
+    "cmd": [
+      "cipd",
+      "describe",
+      "tools/already_uploaded/mac-amd64",
+      "-version",
+      "version:1.4.1",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "already_uploaded",
+      "_3PP_PLATFORM": "mac-amd64"
+    },
+    "name": "building already_uploaded.cipd describe tools/already_uploaded/mac-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_TEXT@found 'resolved-instance_id-of-version:1.4.1---'@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"pin\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.4.1---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"tools/already_uploaded/mac-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"refs\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@      {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"instance_id\": \"resolved-instance_id-of-latest----------\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"modified_by\": \"user:44-blablbla@developer.gserviceaccount.com\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"modified_ts\": 1446574210, @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"ref\": \"latest\"@@@",
+      "@@@STEP_LOG_LINE@json.output@      }@@@",
+      "@@@STEP_LOG_LINE@json.output@    ], @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"registered_by\": \"user:44-blablbla@developer.gserviceaccount.com\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"registered_ts\": 1446574210, @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"tags\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@      {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"registered_by\": \"user:44-blablbla@developer.gserviceaccount.com\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"registered_ts\": 1446574210, @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"tag\": \"version:1.4.1\"@@@",
+      "@@@STEP_LOG_LINE@json.output@      }@@@",
+      "@@@STEP_LOG_LINE@json.output@    ]@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "name": "building bottom_dep"
+  },
+  {
+    "cmd": [
+      "cipd",
+      "describe",
+      "prefix/deps/bottom_dep/mac-amd64",
+      "-version",
+      "version:1.0",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "bottom_dep",
+      "_3PP_PLATFORM": "mac-amd64"
+    },
+    "name": "building bottom_dep.cipd describe prefix/deps/bottom_dep/mac-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "step returned non-zero exit code: 1",
+      "@@@STEP_TEXT@tag 'version:1.0' not found@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"error\": \"no such tag\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/3pp/wd/bottom_dep/mac-amd64/1.0"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "bottom_dep",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.0"
+    },
+    "infra_step": true,
+    "name": "building bottom_dep.mkdir -p [workdir]",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "env": {
+      "_3PP_PACKAGE_NAME": "bottom_dep",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.0"
+    },
+    "name": "building bottom_dep.fetch sources",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/3pp/wd/bottom_dep/mac-amd64/1.0/checkout"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "bottom_dep",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.0"
+    },
+    "infra_step": true,
+    "name": "building bottom_dep.fetch sources.mkdir -p [workdir]/checkout/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "ensure",
+      "-root",
+      "[START_DIR]/3pp/wd/bottom_dep/mac-amd64/1.0/checkout",
+      "-ensure-file",
+      "source/bottom_dep version:1.0",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "bottom_dep",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.0"
+    },
+    "name": "building bottom_dep.fetch sources.ensure_installed",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@      {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"instance_id\": \"resolved-instance_id-of-version:1.0-----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"package\": \"source/bottom_dep\"@@@",
+      "@@@STEP_LOG_LINE@json.output@      }@@@",
+      "@@@STEP_LOG_LINE@json.output@    ]@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copytree",
+      "[CACHE]/builder/package_repo",
+      "[START_DIR]/3pp/wd/bottom_dep/mac-amd64/1.0/checkout/.3pp"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "bottom_dep",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.0"
+    },
+    "infra_step": true,
+    "name": "building bottom_dep.fetch sources.copy package definition",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "name": "building pkg"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[CACHE]/builder/package_repo/pkg/fetch.py",
+      "latest"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "mac-amd64"
+    },
+    "name": "building pkg.fetch.py latest",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_TEXT@resolved version: 2.0.0@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "describe",
+      "prefix/tools/pkg/mac-amd64",
+      "-version",
+      "version:2.0.0",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "mac-amd64"
+    },
+    "name": "building pkg.cipd describe prefix/tools/pkg/mac-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "step returned non-zero exit code: 1",
+      "@@@STEP_TEXT@tag 'version:2.0.0' not found@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"error\": \"no such tag\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/3pp/wd/pkg/mac-amd64/2.0.0"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "infra_step": true,
+    "name": "building pkg.mkdir -p [workdir]",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "env": {
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "name": "building pkg.fetch sources",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "env": {
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "name": "building pkg.fetch sources.installing tools",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "env": {
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "name": "building pkg.fetch sources.installing tools.building tool",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@3@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "ls-remote",
+      "-t",
+      "https://go.repo/tool"
+    ],
+    "cwd": "None",
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing tools.building tool.git ls-remote",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@4@@@",
+      "@@@STEP_TEXT@resolved version: 1.4.1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "describe",
+      "prefix/build_tools/tool/mac-amd64",
+      "-version",
+      "version:1.4.1.chops.1",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "name": "building pkg.fetch sources.installing tools.building tool.cipd describe prefix/build_tools/tool/mac-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@4@@@",
+      "step returned non-zero exit code: 1",
+      "@@@STEP_TEXT@tag 'version:1.4.1.chops.1' not found@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"error\": \"no such tag\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing tools.building tool.mkdir -p [workdir]",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@4@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "name": "building pkg.fetch sources.installing tools.building tool.fetch sources",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@4@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing tools",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-fetch",
+      "prefix/build_tools/tool/mac-amd64",
+      "-version",
+      "0.9.0.chops.1",
+      "-out",
+      "[TMP_BASE]/tmp_tmp_1",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing tools.cipd pkg-fetch prefix/build_tools/tool/mac-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@6@@@",
+      "@@@STEP_TEXT@prefix/build_tools/tool/mac-amd64 resolved-instance_id-of-0.9.0.chops.1---@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"resolved-instance_id-of-0.9.0.chops.1---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"prefix/build_tools/tool/mac-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[CACHE]/3pp_cipd/prefix/build_tools/tool/mac-amd64"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing tools.ensure cipd package cache exists",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@6@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "move",
+      "[TMP_BASE]/tmp_tmp_1",
+      "[CACHE]/3pp_cipd/prefix/build_tools/tool/mac-amd64/resolved-instance_id-of-0.9.0.chops.1---"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing tools.move fetched cipd package to cache",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@6@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-deploy ",
+      "[CACHE]/3pp_cipd/prefix/build_tools/tool/mac-amd64/resolved-instance_id-of-0.9.0.chops.1---",
+      "-root",
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/tools_prefix",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing tools.cipd pkg-deploy [CACHE]/3pp_cipd/prefix/build_tools/tool/mac-amd64/resolved-instance_id-of-0.9.0.chops.1---",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@6@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"resolved-instance_id-of-version/of/resol\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"pkg/name/of/resolved-instance_id-of-0.9.0.chops.1---\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing deps",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-fetch",
+      "prefix/deps/bottom_dep/mac-amd64",
+      "-version",
+      "1.0",
+      "-out",
+      "[TMP_BASE]/tmp_tmp_2",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing deps.cipd pkg-fetch prefix/deps/bottom_dep/mac-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@6@@@",
+      "@@@STEP_TEXT@prefix/deps/bottom_dep/mac-amd64 resolved-instance_id-of-1.0-------------@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"resolved-instance_id-of-1.0-------------\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"prefix/deps/bottom_dep/mac-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[CACHE]/3pp_cipd/prefix/deps/bottom_dep/mac-amd64"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing deps.ensure cipd package cache exists",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@6@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "move",
+      "[TMP_BASE]/tmp_tmp_2",
+      "[CACHE]/3pp_cipd/prefix/deps/bottom_dep/mac-amd64/resolved-instance_id-of-1.0-------------"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing deps.move fetched cipd package to cache",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@6@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-deploy ",
+      "[CACHE]/3pp_cipd/prefix/deps/bottom_dep/mac-amd64/resolved-instance_id-of-1.0-------------",
+      "-root",
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/deps_prefix",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing deps.cipd pkg-deploy [CACHE]/3pp_cipd/prefix/deps/bottom_dep/mac-amd64/resolved-instance_id-of-1.0-------------",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@6@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"resolved-instance_id-of-version/of/resol\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"pkg/name/of/resolved-instance_id-of-1.0-------------\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/src/go.repo/tool"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.mkdir -p [workdir]/checkout/src/go.repo/tool",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
+      "--path",
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/src/go.repo/tool",
+      "--url",
+      "https://go.repo/tool"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.git setup",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "retry",
+      "fetch",
+      "origin",
+      "refs/tags/v0-9-0",
+      "--progress"
+    ],
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/src/go.repo/tool",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>",
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.git fetch",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "checkout",
+      "-f",
+      "FETCH_HEAD"
+    ],
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/src/go.repo/tool",
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.git checkout",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/src/go.repo/tool",
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.read revision",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@",
+      "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "clean",
+      "-f",
+      "-d",
+      "-x"
+    ],
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/src/go.repo/tool",
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.git clean",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "submodule",
+      "sync"
+    ],
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/src/go.repo/tool",
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.submodule sync",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "submodule",
+      "update",
+      "--init",
+      "--recursive"
+    ],
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/src/go.repo/tool",
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.submodule update",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "-C",
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/src/go.repo/tool",
+      "am",
+      "[CACHE]/builder/package_repo/tool/patches"
+    ],
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/src/go.repo/tool",
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.git -C",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copytree",
+      "[CACHE]/builder/package_repo",
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/.3pp"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.copy package definition",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-fetch",
+      "prefix/build_tools/tool/mac-amd64",
+      "-version",
+      "1.4.1.chops.1",
+      "-out",
+      "[TMP_BASE]/tmp_tmp_3",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "name": "building pkg.fetch sources.installing tools.cipd pkg-fetch prefix/build_tools/tool/mac-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@3@@@",
+      "@@@STEP_TEXT@prefix/build_tools/tool/mac-amd64 resolved-instance_id-of-1.4.1.chops.1---@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"resolved-instance_id-of-1.4.1.chops.1---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"prefix/build_tools/tool/mac-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[CACHE]/3pp_cipd/prefix/build_tools/tool/mac-amd64"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing tools.ensure cipd package cache exists",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@3@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "move",
+      "[TMP_BASE]/tmp_tmp_3",
+      "[CACHE]/3pp_cipd/prefix/build_tools/tool/mac-amd64/resolved-instance_id-of-1.4.1.chops.1---"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing tools.move fetched cipd package to cache",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@3@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-deploy ",
+      "[CACHE]/3pp_cipd/prefix/build_tools/tool/mac-amd64/resolved-instance_id-of-1.4.1.chops.1---",
+      "-root",
+      "[START_DIR]/3pp/wd/pkg/mac-amd64/2.0.0/tools_prefix",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "name": "building pkg.fetch sources.installing tools.cipd pkg-deploy [CACHE]/3pp_cipd/prefix/build_tools/tool/mac-amd64/resolved-instance_id-of-1.4.1.chops.1---",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@3@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"resolved-instance_id-of-version/of/resol\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"pkg/name/of/resolved-instance_id-of-1.4.1.chops.1---\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "env": {
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "name": "building pkg.fetch sources.installing deps",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "env": {
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "name": "building pkg.fetch sources.installing deps.building dep",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@3@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "describe",
+      "prefix/deps/dep/mac-amd64",
+      "-version",
+      "version:1.0.0",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "dep",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "name": "building pkg.fetch sources.installing deps.building dep.cipd describe prefix/deps/dep/mac-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@4@@@",
+      "step returned non-zero exit code: 1",
+      "@@@STEP_TEXT@tag 'version:1.0.0' not found@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"error\": \"no such tag\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/3pp/wd/dep/mac-amd64/1.0.0"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "dep",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.0.0"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing deps.building dep.mkdir -p [workdir]",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@4@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "env": {
+      "_3PP_PACKAGE_NAME": "dep",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.0.0"
+    },
+    "name": "building pkg.fetch sources.installing deps.building dep.fetch sources",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@4@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "env": {
+      "_3PP_PACKAGE_NAME": "dep",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.0.0"
+    },
+    "name": "building pkg.fetch sources.installing deps.building dep.fetch sources.installing tools",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-deploy ",
+      "[CACHE]/3pp_cipd/prefix/build_tools/tool/mac-amd64/resolved-instance_id-of-1.4.1.chops.1---",
+      "-root",
+      "[START_DIR]/3pp/wd/dep/mac-amd64/1.0.0/tools_prefix",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "dep",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.0.0"
+    },
+    "name": "building pkg.fetch sources.installing deps.building dep.fetch sources.installing tools.cipd pkg-deploy [CACHE]/3pp_cipd/prefix/build_tools/tool/mac-amd64/resolved-instance_id-of-1.4.1.chops.1---",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@6@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"resolved-instance_id-of-version/of/resol\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"pkg/name/of/resolved-instance_id-of-1.4.1.chops.1---\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/3pp/wd/dep/mac-amd64/1.0.0/checkout"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "dep",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.0.0"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing deps.building dep.fetch sources.mkdir -p [workdir]/checkout/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "ensure",
+      "-root",
+      "[START_DIR]/3pp/wd/dep/mac-amd64/1.0.0/checkout",
+      "-ensure-file",
+      "source/dep version:1.0.0",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "dep",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.0.0"
+    },
+    "name": "building pkg.fetch sources.installing deps.building dep.fetch sources.ensure_installed",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@      {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"instance_id\": \"resolved-instance_id-of-version:1.0.0---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"package\": \"source/dep\"@@@",
+      "@@@STEP_LOG_LINE@json.output@      }@@@",
+      "@@@STEP_LOG_LINE@json.output@    ]@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copytree",
+      "[CACHE]/builder/package_repo",
+      "[START_DIR]/3pp/wd/dep/mac-amd64/1.0.0/checkout/.3pp"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "dep",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.0.0"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing deps.building dep.fetch sources.copy package definition",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-fetch",
+      "prefix/deps/dep/mac-amd64",
+      "-version",
+      "1.0.0",
+      "-out",
+      "[TMP_BASE]/tmp_tmp_4",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "name": "building pkg.fetch sources.installing deps.cipd pkg-fetch prefix/deps/dep/mac-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@3@@@",
+      "@@@STEP_TEXT@prefix/deps/dep/mac-amd64 resolved-instance_id-of-1.0.0-----------@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"resolved-instance_id-of-1.0.0-----------\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"prefix/deps/dep/mac-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[CACHE]/3pp_cipd/prefix/deps/dep/mac-amd64"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing deps.ensure cipd package cache exists",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@3@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "move",
+      "[TMP_BASE]/tmp_tmp_4",
+      "[CACHE]/3pp_cipd/prefix/deps/dep/mac-amd64/resolved-instance_id-of-1.0.0-----------"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing deps.move fetched cipd package to cache",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@3@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-deploy ",
+      "[CACHE]/3pp_cipd/prefix/deps/dep/mac-amd64/resolved-instance_id-of-1.0.0-----------",
+      "-root",
+      "[START_DIR]/3pp/wd/pkg/mac-amd64/2.0.0/deps_prefix",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "name": "building pkg.fetch sources.installing deps.cipd pkg-deploy [CACHE]/3pp_cipd/prefix/deps/dep/mac-amd64/resolved-instance_id-of-1.0.0-----------",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@3@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"resolved-instance_id-of-version/of/resol\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"pkg/name/of/resolved-instance_id-of-1.0.0-----------\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/3pp/wd/pkg/mac-amd64/2.0.0/checkout"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.mkdir -p [workdir]/checkout/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[CACHE]/builder/package_repo/pkg/fetch.py",
+      "checkout",
+      "[START_DIR]/3pp/wd/pkg/mac-amd64/2.0.0/checkout"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "name": "building pkg.fetch sources.fetch.py checkout [START_DIR]/3pp/wd/pkg/mac-amd64/2.0.0/checkout",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copytree",
+      "[CACHE]/builder/package_repo",
+      "[START_DIR]/3pp/wd/pkg/mac-amd64/2.0.0/checkout/.3pp"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.copy package definition",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "name": "building posix_tool"
+  },
+  {
+    "cmd": [
+      "cipd",
+      "describe",
+      "tools/posix_tool/mac-amd64",
+      "-version",
+      "version:1.2.0",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "posix_tool",
+      "_3PP_PLATFORM": "mac-amd64"
+    },
+    "name": "building posix_tool.cipd describe tools/posix_tool/mac-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "step returned non-zero exit code: 1",
+      "@@@STEP_TEXT@tag 'version:1.2.0' not found@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"error\": \"no such tag\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/3pp/wd/posix_tool/mac-amd64/1.2.0"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "posix_tool",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.2.0"
+    },
+    "infra_step": true,
+    "name": "building posix_tool.mkdir -p [workdir]",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "env": {
+      "_3PP_PACKAGE_NAME": "posix_tool",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.2.0"
+    },
+    "name": "building posix_tool.fetch sources",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/3pp/wd/posix_tool/mac-amd64/1.2.0/checkout"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "posix_tool",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.2.0"
+    },
+    "infra_step": true,
+    "name": "building posix_tool.fetch sources.mkdir -p [workdir]/checkout/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "ensure",
+      "-root",
+      "[START_DIR]/3pp/wd/posix_tool/mac-amd64/1.2.0/checkout",
+      "-ensure-file",
+      "source/posix_tool version:1.2.0",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "posix_tool",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.2.0"
+    },
+    "name": "building posix_tool.fetch sources.ensure_installed",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@      {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"instance_id\": \"resolved-instance_id-of-version:1.2.0---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"package\": \"source/posix_tool\"@@@",
+      "@@@STEP_LOG_LINE@json.output@      }@@@",
+      "@@@STEP_LOG_LINE@json.output@    ]@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "env": {
+      "_3PP_PACKAGE_NAME": "posix_tool",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.2.0"
+    },
+    "name": "building posix_tool.fetch sources.unpack_archive",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "glob",
+      "[START_DIR]/3pp/wd/posix_tool/mac-amd64/1.2.0/checkout",
+      "*.*"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "posix_tool",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.2.0"
+    },
+    "infra_step": true,
+    "name": "building posix_tool.fetch sources.unpack_archive.find archive to unpack",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@3@@@",
+      "@@@STEP_TEXT@found 'archive.tgz'@@@",
+      "@@@STEP_LOG_LINE@glob@[START_DIR]/3pp/wd/posix_tool/mac-amd64/1.2.0/checkout/archive.tgz@@@",
+      "@@@STEP_LOG_END@glob@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "[START_DIR]/3pp/wd/posix_tool/mac-amd64/1.2.0/checkout/archive.tgz",
+      "[TMP_BASE]/tmp_tmp_5/archive.tgz"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "posix_tool",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.2.0"
+    },
+    "infra_step": true,
+    "name": "building posix_tool.fetch sources.unpack_archive.cp 'archive.tgz' [tmpdir]",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@3@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[START_DIR]/3pp/wd/posix_tool/mac-amd64/1.2.0/checkout"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "posix_tool",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.2.0"
+    },
+    "infra_step": true,
+    "name": "building posix_tool.fetch sources.unpack_archive.rm -rf [checkout_dir]",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@3@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::archive]/resources/extract.py",
+      "--json-input",
+      "{\"archive_file\": \"[TMP_BASE]/tmp_tmp_5/archive.tgz\", \"output\": \"[START_DIR]/3pp/wd/posix_tool/mac-amd64/1.2.0/checkout\", \"safe_mode\": true}",
+      "--json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "posix_tool",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.2.0"
+    },
+    "name": "building posix_tool.fetch sources.unpack_archive.extracting [tmpdir]/archive.tgz",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@3@@@",
+      "@@@STEP_TEXT@<br/>extracted 1337 files - 50159.75 MB@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"extracted\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"bytes\": 50159747054, @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"filecount\": 1337@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "flatten_single_directories",
+      "[START_DIR]/3pp/wd/posix_tool/mac-amd64/1.2.0/checkout"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "posix_tool",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.2.0"
+    },
+    "infra_step": true,
+    "name": "building posix_tool.fetch sources.unpack_archive.prune archive subdirs",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@3@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copytree",
+      "[CACHE]/builder/package_repo",
+      "[START_DIR]/3pp/wd/posix_tool/mac-amd64/1.2.0/checkout/.3pp"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "posix_tool",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.2.0"
+    },
+    "infra_step": true,
+    "name": "building posix_tool.fetch sources.copy package definition",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
     ]
   },
   {

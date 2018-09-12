@@ -465,25 +465,25 @@ If the recipe is run in experimental mode (according to the
 "recipe_engine/runtime" module), then this recipe will skip the final CIPD
 upload.
 
-#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#270)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#272)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
-&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#385)(self, packages=None, platform=None):**
+&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#404)(self, packages=(), platform=''):**
 
 Executes entire {fetch,build,package,verify,upload} pipeline for all the
 packages listed, targeting the given platform.
 
 Args:
-  * packages (list[str]|None) - A list of packages to ensure are
+  * packages (seq[str]) - A sequence of packages to ensure are
     uploaded. Packages must be listed as either 'pkgname' or
-    'pkgname@version'.
-  * platform (str|None) - If specified, the CPID ${platform} to build for.
+    'pkgname@version'. If empty, builds all loaded packages.
+  * platform (str) - If specified, the CIPD ${platform} to build for.
     If unspecified, this will be the appropriate CIPD ${platform} for the
     current host machine.
 
 Returns (list[(cipd_pkg, cipd_version)], set[str]) of built CIPD packages
 and their tagged versions, as well as a list of unsupported packages.
 
-&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#335)(self, path):**
+&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#354)(self, path):**
 
 Loads all package definitions from the given path.
 
@@ -902,9 +902,9 @@ This recipe builds and packages third party software, such as Git.
 &mdash; **def [RunSteps](/recipes/recipes/third_party_packages_ng.py#51)(api, package_locations, to_build, platform):**
 ### *recipes* / [third\_party\_packages\_ng:tests/full](/recipes/recipe_modules/third_party_packages_ng/tests/full.py)
 
-[DEPS](/recipes/recipe_modules/third_party_packages_ng/tests/full.py#7): [third\_party\_packages\_ng](#recipe_modules-third_party_packages_ng), [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties]
+[DEPS](/recipes/recipe_modules/third_party_packages_ng/tests/full.py#7): [third\_party\_packages\_ng](#recipe_modules-third_party_packages_ng), [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io]
 
-&mdash; **def [RunSteps](/recipes/recipe_modules/third_party_packages_ng/tests/full.py#22)(api, GOOS, GOARCH, load_dupe):**
+&mdash; **def [RunSteps](/recipes/recipe_modules/third_party_packages_ng/tests/full.py#24)(api, GOOS, GOARCH, load_dupe):**
 ### *recipes* / [tricium\_noop](/recipes/recipes/tricium_noop.py)
 
 [DEPS](/recipes/recipes/tricium_noop.py#12): [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/tricium][recipe_engine/recipe_modules/tricium]

@@ -5,10 +5,12 @@
 from recipe_engine.recipe_api import Property
 
 DEPS = [
+  "recipe_engine/cipd",
   "recipe_engine/file",
   "recipe_engine/path",
   "recipe_engine/platform",
   "recipe_engine/properties",
+  "recipe_engine/raw_io",
 
   "third_party_packages_ng",
 ]
@@ -23,8 +25,12 @@ def RunSteps(api, GOOS, GOARCH, load_dupe):
   builder = api.path['cache'].join('builder')
 
   # do a checkout in `builder`
-  api.third_party_packages_ng.load_packages_from_path(
+  pkgs = api.third_party_packages_ng.load_packages_from_path(
     builder.join('package_repo'))
+
+  # For the test, also explicitly build 'tool@1.4.1', which should de-dup with
+  # the default tool@latest.
+  pkgs.add('tool@1.4.1')
 
   # doing it twice should raise a DuplicatePackage exception
   if load_dupe:
@@ -32,7 +38,7 @@ def RunSteps(api, GOOS, GOARCH, load_dupe):
       builder.join('dup_repo'))
 
   _, unsupported = api.third_party_packages_ng.ensure_uploaded(
-    platform='%s-%s' % (GOOS, GOARCH))
+    pkgs, '%s-%s' % (GOOS, GOARCH))
 
   excluded = {'unsupported'}
   if api.platform.is_win:
@@ -40,8 +46,15 @@ def RunSteps(api, GOOS, GOARCH, load_dupe):
   assert unsupported == excluded, "unexpected: %r" % (unsupported,)
 
 def GenTests(api):
-  pkgs = sorted({
-    'tool': '''
+  pkgs = sorted(dict(
+    bottom_dep='''
+    create {
+      source { cipd { pkg: "source/bottom_dep" default_version: "1.0" } }
+      build {}
+    }
+    upload { pkg_prefix: "prefix/deps" }
+    ''',
+    tool='''
     create {
       source {
         git {
@@ -56,6 +69,7 @@ def GenTests(api):
       build {
         # We use an older version of the tool to bootstrap new versions.
         tool: "tool@0.9.0"
+        dep: "bottom_dep"
       }
       package {
         version_file: ".versions/tool.cipd_version"
@@ -69,7 +83,7 @@ def GenTests(api):
     create {
       platform_re: "mac-.*"
       build {
-        install: "install-mac.h"
+        install: "install-mac.sh"
       }
       package {
         install_mode: symlink
@@ -107,7 +121,7 @@ def GenTests(api):
     upload { pkg_prefix: "prefix/build_tools" }
     ''',
 
-    'dep': '''
+    dep='''
     create {
       source { cipd {pkg: "source/dep" default_version: "1.0.0"} }
       build {
@@ -117,7 +131,7 @@ def GenTests(api):
     upload { pkg_prefix: "prefix/deps" }
     ''',
 
-    'pkg': '''
+    pkg='''
     create {
       source { script { name: "fetch.py" } }
       build {
@@ -128,11 +142,11 @@ def GenTests(api):
     upload { pkg_prefix: "prefix/tools" }
     ''',
 
-    'unsupported': '''
+    unsupported='''
     create { unsupported: true }
     ''',
 
-    'posix_tool': '''
+    posix_tool='''
     create {
       platform_re: "linux-.*|mac-.*"
       source {
@@ -143,8 +157,17 @@ def GenTests(api):
     }
     upload { pkg_prefix: "tools" }
     ''',
-  }.items())
 
+    already_uploaded='''
+    create {
+      source { cipd { pkg: "source/already_uploaded" default_version: "1.4.1" } }
+    }
+    upload { pkg_prefix: "tools" }
+    ''',
+  ).items())
+
+  def mk_name(*parts):
+    return '.'.join(parts)
 
   for goos, goarch in (('linux', 'amd64'),
                        ('linux', 'armv6l'),
@@ -155,6 +178,7 @@ def GenTests(api):
     sep = '\\' if goos == 'windows' else '/'
     pkg_repo_path = sep.join(
       ['[CACHE]', 'builder', 'package_repo', '%s', '3pp.pb'])
+    plat = '%s-%s' % (goos, goarch)
 
     test = (api.test('integration_test_%s-%s' % (goos, goarch))
       + api.platform(plat_name, 64)  # assume all hosts are 64 bits.
@@ -162,7 +186,21 @@ def GenTests(api):
       + api.step_data('find package specs',
                       api.file.glob_paths([
                         pkg_repo_path % name for name, _ in pkgs]))
+      + api.override_step_data(mk_name(
+        'building already_uploaded',
+        'cipd describe tools/already_uploaded/%s' % plat
+      ), api.cipd.example_describe(
+        'tools/already_uploaded/%s' % plat,
+        version='version:1.4.1', test_data_tags=['version:1.4.1']))
     )
+
+    if plat_name != 'win':
+      # posix_tool says it needs an archive unpacking.
+      test += api.step_data(mk_name(
+        'building posix_tool', 'fetch sources', 'unpack_archive',
+        'find archive to unpack',
+      ), api.file.glob_paths(['archive.tgz']))
+
     for pkg, spec in pkgs:
       test += api.step_data("load package specs.read '%s'" % pkg,
                             api.file.read_text(spec))

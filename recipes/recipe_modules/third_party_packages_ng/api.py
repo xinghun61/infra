@@ -211,6 +211,8 @@ from .resolved_spec import ResolvedSpec, parse_name_version, tool_platform
 from .resolved_spec import platform_for_host
 from .exceptions import BadParse, DuplicatePackage, UnsupportedPackagePlatform
 
+from . import create
+
 
 def _flatten_spec_pb_for_platform(orig_spec, platform):
   """Transforms a copy of `orig_spec` so that it contains exactly one 'create'
@@ -313,15 +315,23 @@ class ThirdPartyPackagesNGApi(recipe_api.RecipeApi):
       raise UnsupportedPackagePlatform(
         "%s not supported for %s" % (pkgname, platform))
 
+    create_pb = spec.create[0]
+    source_pb = create_pb.source
+    assert source_pb.patch_version == source_pb.patch_version.strip('.'), (
+      'source.patch_version has starting/trailing dots')
+
+    assert spec.upload.pkg_prefix == spec.upload.pkg_prefix.strip('/'), (
+      'upload.pkg_prefix has starting/trailing slashes')
+
     # Recursively resolve all deps
     deps = []
-    for dep in spec.create[0].build.dep:
+    for dep in create_pb.build.dep:
       deps.append(self._resolve_for(dep, platform))
 
     # Recursively resolve all unpinned tools. Pinned tools are always
     # installed from CIPD.
     unpinned_tools = []
-    for tool in spec.create[0].build.tool:
+    for tool in create_pb.build.tool:
       tool_name, tool_version = parse_name_version(tool)
       if tool_version == 'latest':
         unpinned_tools.append(self._resolve_for(
@@ -331,6 +341,15 @@ class ThirdPartyPackagesNGApi(recipe_api.RecipeApi):
       self.m, pkgname, platform, base_path, spec, deps, unpinned_tools)
     self._resolved_packages[key] = ret
     return ret
+
+  def _build_resolved_spec(self, spec, version):
+    """Builds the resolved spec. All dependencies for this spec must already be
+    built.
+
+    Returns CIPDSpec for the built package.
+    """
+    return create.build_resolved_spec(
+      self.m, spec, version, self._resolve_for, self._built_packages)
 
   def load_packages_from_path(self, path):
     """Loads all package definitions from the given path.
@@ -382,15 +401,15 @@ class ThirdPartyPackagesNGApi(recipe_api.RecipeApi):
 
     return discovered
 
-  def ensure_uploaded(self, packages=None, platform=None):
+  def ensure_uploaded(self, packages=(), platform=''):
     """Executes entire {fetch,build,package,verify,upload} pipeline for all the
     packages listed, targeting the given platform.
 
     Args:
-      * packages (list[str]|None) - A list of packages to ensure are
+      * packages (seq[str]) - A sequence of packages to ensure are
         uploaded. Packages must be listed as either 'pkgname' or
-        'pkgname@version'.
-      * platform (str|None) - If specified, the CPID ${platform} to build for.
+        'pkgname@version'. If empty, builds all loaded packages.
+      * platform (str) - If specified, the CIPD ${platform} to build for.
         If unspecified, this will be the appropriate CIPD ${platform} for the
         current host machine.
 
@@ -400,8 +419,7 @@ class ThirdPartyPackagesNGApi(recipe_api.RecipeApi):
     unsupported = set()
 
     build_plan = []
-    if not packages:
-      packages = self._loaded_specs.keys()
+    packages = packages or self._loaded_specs.keys()
     platform = platform or platform_for_host(self.m)
     for pkg in packages:
       name, version = parse_name_version(pkg)
@@ -412,5 +430,7 @@ class ThirdPartyPackagesNGApi(recipe_api.RecipeApi):
       build_plan.append((resolved, unicode(version)))
     build_plan.sort()
 
-    # TODO(iannucci): Actually build stuff
-    return [], unsupported
+    ret = []
+    for spec, version in build_plan:
+      ret.append(self._build_resolved_spec(spec, version))
+    return ret, unsupported
