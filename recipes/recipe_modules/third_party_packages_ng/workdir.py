@@ -54,8 +54,13 @@ class Workdir(object):
 
   @property
   def script_dir_base(self):
-    """The directory where all of the package's scripts are copied."""
+    """The directory where ALL of the package scripts are copied."""
     return self.checkout.join('.3pp')
+
+  def script_dir(self, package_name):
+    """The directory where `package_name`'s particular scripts are copied.'"""
+    return self.script_dir_base.join(package_name)
+
 
   @property
   def tools_prefix(self):
@@ -66,3 +71,8 @@ class Workdir(object):
   def deps_prefix(self):
     """The $PREFIX where all of the packages's deps will be installed."""
     return self._base.join('deps_prefix')
+
+  @property
+  def output_prefix(self):
+    """The $PREFIX which contains the contents of the built package."""
+    return self._base.join('out')

@@ -11,6 +11,7 @@ and uploading a ResolvedSpec.
 from . import spec_pb2
 
 from . import source
+from . import build
 
 from .workdir import Workdir
 
@@ -64,12 +65,12 @@ def build_resolved_spec(api, spec, version, spec_lookup, cache):
       # See if the specific version is uploaded
       if not cipd_spec.check():
         # Otherwise, build it
-        _build_impl(api, spec, version, spec_lookup, cache)
+        _build_impl(api, spec, version, cipd_spec, spec_lookup, cache)
 
       return set_cache(cipd_spec)
 
 
-def _build_impl(api, spec, version, spec_lookup, cache):
+def _build_impl(api, spec, version, cipd_spec, spec_lookup, cache):
   workdir = Workdir(api, spec, version)
   with api.context(env={'_3PP_VERSION': version}):
     api.file.ensure_directory('mkdir -p [workdir]', workdir.base)
@@ -80,9 +81,18 @@ def _build_impl(api, spec, version, spec_lookup, cache):
         lambda spec, version: build_resolved_spec(
           api, spec, version, spec_lookup, cache))
 
-    # TODO(iannucci): build
+    if spec.create_pb.HasField("build"):
+      with api.step.nest('run installation'):
+        build.run_installation(api, workdir, spec)
+      installed_prefix = workdir.output_prefix
+    else:
+      installed_prefix = workdir.checkout
 
-    # TODO(iannucci): package
+    # Package stage
+    cipd_spec.build(installed_prefix,
+                    spec_pb2.Spec.Create.Package.InstallMode.Name(
+                      spec.create_pb.package.install_mode),
+                    spec.create_pb.package.version_file)
 
     # TODO(iannucci): verify
 

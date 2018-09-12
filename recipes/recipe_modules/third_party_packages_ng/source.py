@@ -129,11 +129,16 @@ def fetch_source(api, workdir, spec, version, spec_lookup, ensure_built):
 
   _do_checkout(api, workdir, spec, version)
 
-  # Copy all package definition stuff into the checkout
-  api.file.copytree(
-    'copy package definition',
-    spec.base_path,
-    workdir.script_dir_base)
+  # Iff we are going to do the 'build' operation, copy all the package
+  # definition scripts into the checkout. If no build message is provided, then
+  # we're planning to directly package the result of the checkout, and we don't
+  # want to include these scripts.
+  if spec.create_pb.HasField("build"):
+    # Copy all package definition stuff into the checkout
+    api.file.copytree(
+      'copy package definition',
+      spec.base_path,
+      workdir.script_dir_base)
 
 
 #### Private stuff

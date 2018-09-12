@@ -164,6 +164,13 @@ def GenTests(api):
     }
     upload { pkg_prefix: "tools" }
     ''',
+
+    # This doesn't have a 'build' step. It just fetches something (e.g. gcloud
+    # SDK), and then re-uploads it.
+    fetch_and_package='''
+    create { source { script {name: "fetch.py"} } }
+    upload { pkg_prefix: "tools" }
+    ''',
   ).items())
 
   def mk_name(*parts):

@@ -29,6 +29,10 @@ class CIPDSpec(object):
   def tag(self):
     return 'version:'+self._symver
 
+  @property
+  def _cache_key(self):
+    return (self._pkg, self._symver)
+
   def check(self):
     """Returns True if the package is available locally or on the server."""
     try:
@@ -53,15 +57,14 @@ class CIPDSpec(object):
     Raises StepFailure if we haven't built this CIPDSpec locally and the CIPD
     server doesn't have this version.
     """
-    key = (self._pkg, self._symver)
-    if key not in self._VERSION_CACHE:
+    if self._cache_key not in self._VERSION_CACHE:
       # by default, make this return no tags in test mode.
       desc = self._api.cipd.describe(
         self._pkg, self.tag, test_data_tags=(), test_data_refs=())
       self._api.step.active_result.presentation.step_text = (
         'found %r' % desc.pin.instance_id)
-      self._VERSION_CACHE[key] = desc.pin.instance_id
-    return self._VERSION_CACHE[key]
+      self._VERSION_CACHE[self._cache_key] = desc.pin.instance_id
+    return self._VERSION_CACHE[self._cache_key]
 
   def deploy(self, root):
     """Deploys the CIPD package to disk (at the given root).
@@ -77,8 +80,7 @@ class CIPDSpec(object):
 
     If `resolve` hasn't been called and if the package hasn't been built locally
     this returns None."""
-    ver_key = (self._pkg, self._symver)
-    return self._VERSION_CACHE.get(ver_key)
+    return self._VERSION_CACHE.get(self._cache_key)
 
   @property
   def _local_pkg_path_dir(self):
@@ -93,7 +95,7 @@ class CIPDSpec(object):
     ret = self._api.path['cache'].join('3pp_cipd')
     return ret.join(*self._pkg.split('/'))
 
-  def _local_pkg_path(self):
+  def local_pkg_path(self):
     """The path to the local package if it's available on disk. If it's not on
     disk, this returns None.
     """
@@ -110,7 +112,7 @@ class CIPDSpec(object):
     Raises StepFailure if the package isn't available on the server and isn't
     already fetched locally.
     """
-    ret = self._local_pkg_path()
+    ret = self.local_pkg_path()
     if ret:
       return ret
 
@@ -132,7 +134,44 @@ class CIPDSpec(object):
       self._api.file.move(
         'move fetched cipd package to cache', fetch_path, ret)
 
-      self._VERSION_CACHE[(self._pkg, self._symver)] = pin.instance_id
+      self._VERSION_CACHE[self._cache_key] = pin.instance_id
     else:
       self._api.path.mock_add_paths(fetch_path)
     return ret
+
+  def build(self, root, install_mode, version_file):
+    """Builds the CIPD package from local files.
+
+    This will populate the local CIPD package cache, and will allow uploading
+    this package to the server later.
+
+    Args:
+      * root (Path) - A path on the local filesystem to the root of the CIPD
+        package which is to be created. All files in this directory will be
+        included in the CIPD package.
+      * install_mode ('symlink'|'copy') - Passed through to the `cipd` recipe
+        module. Describes the method that the CIPD client will prefer to deploy
+        this package (note that on Windows it will deploy in copy mode
+        regardless of this setting).
+      * version_file (str) - If provided, will be a forward-slash delimited
+        relative path to the root of where the CIPD client should generate
+        a version JSON file when it deploys this package. This version file can
+        be used by the application to inspect/display its own CIPD instance ID
+        and package name.
+    """
+    pkg_def = self._api.cipd.PackageDefinition(self._pkg, root, install_mode)
+    pkg_def.add_dir(root)
+    if version_file:
+      pkg_def.add_version_file(str(version_file))
+
+    tmpfile = self._api.path.mkstemp()
+    pin = self._api.cipd.build_from_pkg(pkg_def, tmpfile)
+    self._VERSION_CACHE[self._cache_key] = pin.instance_id
+
+    local_pkg_dir = self._local_pkg_path_dir
+    self._api.file.ensure_directory(
+      'ensure cipd pkg cache exists', local_pkg_dir)
+
+    local_path = local_pkg_dir.join(pin.instance_id)
+    self._api.file.move(
+      'mv built cipd pkg to cache', tmpfile, local_path)

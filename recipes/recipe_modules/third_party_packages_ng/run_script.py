@@ -16,9 +16,20 @@ def run_script(api, *args, **kwargs):
   script_name = args[0].pieces[-1]
   step_name = str(' '.join([script_name]+map(str, args[1:])))
 
-  if script_name.endswith('.sh'):  # pragma: no cover
-    # TODO(iannucci): Implement when we add .sh build scripts.
-    raise NotImplementedError()
+  if script_name.endswith('.sh'):
+    cmd = ['bash'] + list(args)
+
+    # On windows, we use the bash.exe that ships with git-for-windows,
+    # cheating a bit by injecting a `git-bash` script into $PATH, and then
+    # running the desired script with `git bash` instead of `bash`.
+    env_prefixes={}
+    if api.platform.is_win:
+      env_prefixes['PATH'] = [
+        api.third_party_packages_ng.resource('win_support')]
+      cmd = ['git'] + cmd
+
+    with api.context(env_prefixes=env_prefixes):
+      return api.step(step_name, cmd, **kwargs)
 
   elif script_name.endswith('.py'):
     return api.python(step_name, args[0], args[1:], **kwargs)

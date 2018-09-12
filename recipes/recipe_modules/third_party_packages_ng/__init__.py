@@ -17,4 +17,5 @@ DEPS = [
 
   'depot_tools/git',
   'depot_tools/osx_sdk',
+  'depot_tools/windows_sdk',
 ]
