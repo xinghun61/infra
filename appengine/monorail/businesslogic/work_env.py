@@ -993,7 +993,7 @@ class WorkEnv(object):
     for group_id, settings in settings_by_id.items():
       member_ids = member_ids_by_ids.get(group_id)
       owner_ids = owner_ids_by_ids.get(group_id)
-      if permissions.CanViewGroup(
+      if permissions.CanViewGroupMembers(
           self.mc.perms, self.mc.auth.effective_ids, settings, member_ids,
           owner_ids, project_ids):
         visible_group_ids.append(group_id)

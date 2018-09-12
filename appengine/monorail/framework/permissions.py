@@ -682,9 +682,9 @@ def CanEditGroup(perms, effective_ids, group_owner_ids):
           not effective_ids.isdisjoint(group_owner_ids))
 
 
-def CanViewGroup(perms, effective_ids, group_settings, member_ids, owner_ids,
-                 user_project_ids):
-  """Return True if the given user may view a user group.
+def CanViewGroupMembers(perms, effective_ids, group_settings, member_ids,
+                        owner_ids, user_project_ids):
+  """Return True if the given user may view a user group's members.
 
   Args:
     perms: Permissionset for the current user.
@@ -695,7 +695,7 @@ def CanViewGroup(perms, effective_ids, group_settings, member_ids, owner_ids,
     user_project_ids: A list of project ids which the user has a role.
 
   Returns:
-    True if the user should be allowed to view the group.
+    True if the user should be allowed to view the group's members.
   """
   if perms.HasPerm(VIEW_GROUP, None, None):
     return True

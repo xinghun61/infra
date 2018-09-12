@@ -50,7 +50,7 @@ class UserProfile(servlet.Servlet):
       friend_project_ids = [] # TODO(issue 4202): implement this.
       visible_group_ids = []
       for group_id, settings in group_settings.items():
-        if permissions.CanViewGroup(
+        if permissions.CanViewGroupMembers(
             mr.perms, mr.auth.effective_ids, group_settings[group_id],
             member_ids[group_id], owner_ids[group_id], friend_project_ids):
           visible_group_ids.append(group_id)

@@ -342,8 +342,9 @@ class UserGroupService(object):
       member_ids = all_member_ids_dict[gid]
       owner_ids = all_owner_ids_dict[gid]
 
-      if permissions.CanViewGroup(perms, effective_ids, settings_dict[gid],
-                                  member_ids, owner_ids, project_ids):
+      if permissions.CanViewGroupMembers(
+          perms, effective_ids, settings_dict[gid], member_ids, owner_ids,
+          project_ids):
         visible_member_ids[gid] = direct_member_ids_dict[gid]
         visible_owner_ids[gid] = direct_owner_ids_dict[gid]
 

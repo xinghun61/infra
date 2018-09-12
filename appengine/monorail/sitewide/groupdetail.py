@@ -46,7 +46,7 @@ class GroupDetail(servlet.Servlet):
          mr.cnxn, mr.auth.effective_ids)
     project_ids = owned_project_ids.union(
         membered_project_ids).union(contrib_project_ids)
-    if not permissions.CanViewGroup(
+    if not permissions.CanViewGroupMembers(
         mr.perms, mr.auth.effective_ids, group_settings, member_ids[group_id],
         owner_ids[group_id], project_ids):
       raise permissions.PermissionException(

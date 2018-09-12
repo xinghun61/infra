@@ -527,47 +527,47 @@ class PermissionsTest(unittest.TestCase):
     self.assertFalse(permissions.CanEditGroup(
         permissions.PermissionSet([]), {111L}, {222L}))
 
-  def testCanViewGroup_HasPerm(self):
-    self.assertTrue(permissions.CanViewGroup(
+  def testCanViewGroupMembers_HasPerm(self):
+    self.assertTrue(permissions.CanViewGroupMembers(
         permissions.PermissionSet([permissions.VIEW_GROUP]),
         None, None, None, None, None))
 
-  def testCanViewGroup_IsMemberOfFriendProject(self):
+  def testCanViewGroupMembers_IsMemberOfFriendProject(self):
     group_settings = usergroup_pb2.MakeSettings('owners', friend_projects=[890])
-    self.assertFalse(permissions.CanViewGroup(
+    self.assertFalse(permissions.CanViewGroupMembers(
         permissions.PermissionSet([]),
         {111L}, group_settings, {222L}, {333L}, {789}))
-    self.assertTrue(permissions.CanViewGroup(
+    self.assertTrue(permissions.CanViewGroupMembers(
         permissions.PermissionSet([]),
         {111L}, group_settings, {222L}, {333L}, {789, 890}))
 
-  def testCanViewGroup_VisibleToOwner(self):
+  def testCanViewGroupMembers_VisibleToOwner(self):
     group_settings = usergroup_pb2.MakeSettings('owners')
-    self.assertFalse(permissions.CanViewGroup(
+    self.assertFalse(permissions.CanViewGroupMembers(
         permissions.PermissionSet([]),
         {111L}, group_settings, {222L}, {333L}, {789}))
-    self.assertFalse(permissions.CanViewGroup(
+    self.assertFalse(permissions.CanViewGroupMembers(
         permissions.PermissionSet([]),
         {222L}, group_settings, {222L}, {333L}, {789}))
-    self.assertTrue(permissions.CanViewGroup(
+    self.assertTrue(permissions.CanViewGroupMembers(
         permissions.PermissionSet([]),
         {333L}, group_settings, {222L}, {333L}, {789}))
 
-  def testCanViewGroup_IsVisibleToMember(self):
+  def testCanViewGroupMembers_IsVisibleToMember(self):
     group_settings = usergroup_pb2.MakeSettings('members')
-    self.assertFalse(permissions.CanViewGroup(
+    self.assertFalse(permissions.CanViewGroupMembers(
         permissions.PermissionSet([]),
         {111L}, group_settings, {222L}, {333L}, {789}))
-    self.assertTrue(permissions.CanViewGroup(
+    self.assertTrue(permissions.CanViewGroupMembers(
         permissions.PermissionSet([]),
         {222L}, group_settings, {222L}, {333L}, {789}))
-    self.assertTrue(permissions.CanViewGroup(
+    self.assertTrue(permissions.CanViewGroupMembers(
         permissions.PermissionSet([]),
         {333L}, group_settings, {222L}, {333L}, {789}))
 
-  def testCanViewGroup_AnyoneCanView(self):
+  def testCanViewGroupMembers_AnyoneCanView(self):
     group_settings = usergroup_pb2.MakeSettings('anyone')
-    self.assertTrue(permissions.CanViewGroup(
+    self.assertTrue(permissions.CanViewGroupMembers(
         permissions.PermissionSet([]),
         {111L}, group_settings, {222L}, {333L}, {789}))
 
