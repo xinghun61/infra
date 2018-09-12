@@ -895,11 +895,11 @@ running this recipe module directly.
 &mdash; **def [RunSteps](/recipes/recipe_modules/third_party_packages/examples/swig.py#43)(api, dry_run):**
 ### *recipes* / [third\_party\_packages\_ng](/recipes/recipes/third_party_packages_ng.py)
 
-[DEPS](/recipes/recipes/third_party_packages_ng.py#13): [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime]
+[DEPS](/recipes/recipes/third_party_packages_ng.py#13): [depot\_tools/git][depot_tools/recipe_modules/git], [third\_party\_packages\_ng](#recipe_modules-third_party_packages_ng), [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
 This recipe builds and packages third party software, such as Git.
 
-&mdash; **def [RunSteps](/recipes/recipes/third_party_packages_ng.py#51)(api, package_locations, to_build, platform):**
+&mdash; **def [RunSteps](/recipes/recipes/third_party_packages_ng.py#55)(api, package_locations, to_build, platform):**
 ### *recipes* / [third\_party\_packages\_ng:tests/full](/recipes/recipe_modules/third_party_packages_ng/tests/full.py)
 
 [DEPS](/recipes/recipe_modules/third_party_packages_ng/tests/full.py#7): [third\_party\_packages\_ng](#recipe_modules-third_party_packages_ng), [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io]
