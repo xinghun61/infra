@@ -128,7 +128,7 @@ var formToSubmit = null;
  * don't submit the form until after it arrives.
  */
 function refreshTokens(event, formToken, formTokenPath, tokenExpiresSec) {
-  if (!isTokenExpired(tokenExpiresSec)) {
+  if (!window.__prpc.isTokenExpired(tokenExpiresSec)) {
     return;
   }
 

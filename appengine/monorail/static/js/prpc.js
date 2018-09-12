@@ -76,5 +76,5 @@
   }
 
   window.__prpc = window.__prpc || {};
-  Object.assign(window.__prpc, {AutoRefreshPrpcClient});
+  Object.assign(window.__prpc, {isTokenExpired, AutoRefreshPrpcClient});
 })(window);
