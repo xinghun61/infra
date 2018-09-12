@@ -459,16 +459,18 @@ func StatsByType(steps []Step, weighted map[string]time.Duration, typeOf func(St
 func ToProto(info *NinjaLog) []*npb.NinjaTask {
 	var ninjaTasks []*npb.NinjaTask
 	weightedTime := WeightedTime(info.Steps)
-	for _, s := range info.Steps {
+	steps := Dedup(info.Steps)
+	for _, s := range steps {
 		ninjalog := &npb.NinjaTask{
 			LogEntry: &npb.NinjaTask_LogEntry{
-				Outputs:       s.Outs,
+				Outputs:       append(s.Outs, s.Out),
 				CommandHash:   s.CmdHash,
 				StartDuration: ptypes.DurationProto(s.Start),
 				EndDuration:   ptypes.DurationProto(s.End),
 			},
 			WeightedDuration: ptypes.DurationProto(weightedTime[s.Out]),
 		}
+		sort.Strings(ninjalog.LogEntry.Outputs)
 		ninjaTasks = append(ninjaTasks, ninjalog)
 	}
 	return ninjaTasks

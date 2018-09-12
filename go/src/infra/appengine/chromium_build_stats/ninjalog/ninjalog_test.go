@@ -472,10 +472,30 @@ func TestWeightedTime(t *testing.T) {
 }
 
 func TestToProto(t *testing.T) {
+	outputTestCase := append([]Step{
+		{
+			Start:   76 * time.Millisecond,
+			End:     187 * time.Millisecond,
+			Out:     "resources/inspector/devtools_api.js",
+			CmdHash: "75430546595be7c2",
+		},
+		{
+			Start:   78 * time.Millisecond,
+			End:     286 * time.Millisecond,
+			Out:     "gen/angle/commit_id_2.py",
+			CmdHash: "4ede38e2c1617d8c",
+		},
+		{
+			Start:   78 * time.Millisecond,
+			End:     286 * time.Millisecond,
+			Out:     "gen/angle/commit_id_3.py",
+			CmdHash: "4ede38e2c1617d8c",
+		}}, stepsTestCase...)
+
 	info := NinjaLog{
 		Filename: ".ninja_log",
 		Start:    1,
-		Steps:    stepsTestCase,
+		Steps:    outputTestCase,
 		Metadata: metadataTestCase,
 	}
 
@@ -492,6 +512,7 @@ func TestToProto(t *testing.T) {
 	want := []*npb.NinjaTask{
 		{
 			LogEntry: &npb.NinjaTask_LogEntry{
+				Outputs:       []string{"resources/inspector/devtools_api.js", "resources/inspector/devtools_extension_api.js"},
 				CommandHash:   "75430546595be7c2",
 				StartDuration: ptypes.DurationProto(76 * time.Millisecond),
 				EndDuration:   ptypes.DurationProto(187 * time.Millisecond),
@@ -500,6 +521,7 @@ func TestToProto(t *testing.T) {
 		},
 		{
 			LogEntry: &npb.NinjaTask_LogEntry{
+				Outputs:       []string{"gen/angle/commit_id.py", "gen/angle/commit_id_2.py", "gen/angle/commit_id_3.py"},
 				CommandHash:   "4ede38e2c1617d8c",
 				StartDuration: ptypes.DurationProto(78 * time.Millisecond),
 				EndDuration:   ptypes.DurationProto(286 * time.Millisecond),
@@ -508,6 +530,7 @@ func TestToProto(t *testing.T) {
 		},
 		{
 			LogEntry: &npb.NinjaTask_LogEntry{
+				Outputs:       []string{"gen/angle/copy_compiler_dll.bat"},
 				CommandHash:   "9fb635ad5d2c1109",
 				StartDuration: ptypes.DurationProto(79 * time.Millisecond),
 				EndDuration:   ptypes.DurationProto(287 * time.Millisecond),
@@ -516,6 +539,7 @@ func TestToProto(t *testing.T) {
 		},
 		{
 			LogEntry: &npb.NinjaTask_LogEntry{
+				Outputs:       []string{"gen/autofill_regex_constants.cc"},
 				CommandHash:   "fa33c8d7ce1d8791",
 				StartDuration: ptypes.DurationProto(80 * time.Millisecond),
 				EndDuration:   ptypes.DurationProto(284 * time.Millisecond),
@@ -524,6 +548,7 @@ func TestToProto(t *testing.T) {
 		},
 		{
 			LogEntry: &npb.NinjaTask_LogEntry{
+				Outputs:       []string{"PepperFlash/manifest.json"},
 				CommandHash:   "324f0a0b77c37ef",
 				StartDuration: ptypes.DurationProto(141 * time.Millisecond),
 				EndDuration:   ptypes.DurationProto(287 * time.Millisecond),
@@ -532,6 +557,7 @@ func TestToProto(t *testing.T) {
 		},
 		{
 			LogEntry: &npb.NinjaTask_LogEntry{
+				Outputs:       []string{"PepperFlash/libpepflashplayer.so"},
 				CommandHash:   "1e2c2b7845a4d4fe",
 				StartDuration: ptypes.DurationProto(142 * time.Millisecond),
 				EndDuration:   ptypes.DurationProto(288 * time.Millisecond),
@@ -540,6 +566,7 @@ func TestToProto(t *testing.T) {
 		},
 		{
 			LogEntry: &npb.NinjaTask_LogEntry{
+				Outputs:       []string{"obj/third_party/angle/src/copy_scripts.actions_rules_copies.stamp"},
 				CommandHash:   "b211d373de72f455",
 				StartDuration: ptypes.DurationProto(287 * time.Millisecond),
 				EndDuration:   ptypes.DurationProto(290 * time.Millisecond),
