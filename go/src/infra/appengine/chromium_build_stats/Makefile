@@ -8,6 +8,13 @@ build:
 generate: ninjaproto/ninjalog.proto
 	go generate ./...
 
+update-staging: ninjaproto/ninjalog.proto
+	bqschemaupdater -message-dir ninjaproto -message ninjaproto.NinjaTask -table chromium-build-stats-staging.ninjalog.staging
+
+# namiko(TODO): change table name later
+update-prod: ninjaproto/ninjalog.proto
+	bqschemaupdater -message-dir ninjaproto -message ninjaproto.NinjaTask -table chromium-build-stats.ninjalog.staging
+
 deploy-staging:
 	gae.py upload --app-id chromium-build-stats-staging --app-dir=app/
 
