@@ -175,3 +175,17 @@ class CIPDSpec(object):
     local_path = local_pkg_dir.join(pin.instance_id)
     self._api.file.move(
       'mv built cipd pkg to cache', tmpfile, local_path)
+
+  def ensure_uploaded(self, latest=False):
+    """Uploads, registers and tags the copy of this package we have on the
+    local machine to the CIPD server.
+
+    Args:
+      * latest (bool) - If True, will also set the `latest` ref for the package
+        we upload.
+    """
+    pkg_path = self.local_pkg_path()
+    assert pkg_path
+    tags = {'version': self._symver}
+    refs = ['latest'] if latest else []
+    self._api.cipd.register(self._pkg, pkg_path, tags=tags, refs=refs)

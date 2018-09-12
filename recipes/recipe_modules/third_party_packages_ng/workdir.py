@@ -61,7 +61,6 @@ class Workdir(object):
     """The directory where `package_name`'s particular scripts are copied.'"""
     return self.script_dir_base.join(package_name)
 
-
   @property
   def tools_prefix(self):
     """The $PREFIX where all of the packages's tools will be installed."""

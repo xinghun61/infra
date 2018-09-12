@@ -580,6 +580,47 @@
   },
   {
     "cmd": [],
+    "env": {
+      "_3PP_PACKAGE_NAME": "bottom_dep",
+      "_3PP_PLATFORM": "windows-amd64",
+      "_3PP_VERSION": "1.0"
+    },
+    "name": "building bottom_dep.do upload",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd.bat",
+      "pkg-register",
+      "[CACHE]\\3pp_cipd\\prefix\\deps\\bottom_dep\\windows-amd64\\40-chars-fake-of-the-package-instance_id",
+      "-ref",
+      "latest",
+      "-tag",
+      "version:1.0",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "bottom_dep",
+      "_3PP_PLATFORM": "windows-amd64",
+      "_3PP_VERSION": "1.0"
+    },
+    "name": "building bottom_dep.do upload.register prefix/deps/bottom_dep/windows-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"prefix/deps/bottom_dep/windows-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [],
     "name": "building fetch_and_package"
   },
   {
@@ -775,6 +816,47 @@
     "name": "building fetch_and_package.mv built cipd pkg to cache",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "env": {
+      "_3PP_PACKAGE_NAME": "fetch_and_package",
+      "_3PP_PLATFORM": "windows-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "name": "building fetch_and_package.do upload",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd.bat",
+      "pkg-register",
+      "[CACHE]\\3pp_cipd\\tools\\fetch_and_package\\windows-amd64\\40-chars-fake-of-the-package-instance_id",
+      "-ref",
+      "latest",
+      "-tag",
+      "version:2.0.0",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "fetch_and_package",
+      "_3PP_PLATFORM": "windows-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "name": "building fetch_and_package.do upload.register tools/fetch_and_package/windows-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"tools/fetch_and_package/windows-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
     ]
   },
   {
@@ -1451,6 +1533,79 @@
   },
   {
     "cmd": [],
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "windows-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "name": "building tool.run test",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]\\3pp\\wd\\tool\\windows-amd64\\1.4.1\\checkout\\.3pp\\tool\\test.py",
+      "windows",
+      "[CACHE]\\3pp_cipd\\prefix\\build_tools\\tool\\windows-amd64\\40-chars-fake-of-the-package-instance_id"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "windows-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "name": "building tool.run test.test.py windows [CACHE]\\3pp_cipd\\prefix\\build_tools\\tool\\windows-amd64\\40-chars-fake-of-the-package-instance_id",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "windows-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "name": "building tool.do upload",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd.bat",
+      "pkg-register",
+      "[CACHE]\\3pp_cipd\\prefix\\build_tools\\tool\\windows-amd64\\40-chars-fake-of-the-package-instance_id",
+      "-tag",
+      "version:1.4.1.chops.1",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "windows-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "name": "building tool.do upload.register prefix/build_tools/tool/windows-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"prefix/build_tools/tool/windows-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [],
     "name": "building tool (2)"
   },
   {
@@ -1874,6 +2029,47 @@
     "name": "building dep.mv built cipd pkg to cache",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "env": {
+      "_3PP_PACKAGE_NAME": "dep",
+      "_3PP_PLATFORM": "windows-amd64",
+      "_3PP_VERSION": "1.0.0"
+    },
+    "name": "building dep.do upload",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd.bat",
+      "pkg-register",
+      "[CACHE]\\3pp_cipd\\prefix\\deps\\dep\\windows-amd64\\40-chars-fake-of-the-package-instance_id",
+      "-ref",
+      "latest",
+      "-tag",
+      "version:1.0.0",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "dep",
+      "_3PP_PLATFORM": "windows-amd64",
+      "_3PP_VERSION": "1.0.0"
+    },
+    "name": "building dep.do upload.register prefix/deps/dep/windows-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"prefix/deps/dep/windows-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
     ]
   },
   {
@@ -2319,6 +2515,47 @@
     "name": "building pkg.mv built cipd pkg to cache",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "env": {
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "windows-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "name": "building pkg.do upload",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd.bat",
+      "pkg-register",
+      "[CACHE]\\3pp_cipd\\prefix\\tools\\pkg\\windows-amd64\\40-chars-fake-of-the-package-instance_id",
+      "-ref",
+      "latest",
+      "-tag",
+      "version:2.0.0",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "windows-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "name": "building pkg.do upload.register prefix/tools/pkg/windows-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"prefix/tools/pkg/windows-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
     ]
   },
   {
