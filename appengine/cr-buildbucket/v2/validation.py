@@ -13,6 +13,8 @@ import contextlib
 import re
 import threading
 
+from proto import common_pb2
+
 import buildtags
 import errors
 
@@ -162,6 +164,58 @@ def validate_schedule_build_request(req):
         _enter_err(
             'user_data', 'must be <= %d bytes', PUBSUB_USER_DATA_MAX_LENGTH
         )
+
+
+def validate_update_build_request(req):
+  """Validates rpc_pb2.UpdateBuildRequest."""
+  if not req.HasField('build'):
+    _enter_err('build', 'required')
+
+  with _enter('update_mask'):
+    if req.update_mask.paths != ['build.steps']:
+      _err('update only supports build.steps path currently')
+
+  with _enter('build'):
+    step_names = set()
+    _check_repeated(
+        req.build, 'steps', lambda step: validate_step(step, step_names)
+    )
+
+
+def validate_step(step, names):
+  """Validates a step within a build; checks uniqueness against names param.
+  """
+  _check_truth(step, 'name')
+  if step.name in names:
+    _enter_err('name', 'duplicate: %r', step.name)
+  names.add(step.name)
+
+  if (step.status not in common_pb2.Status.values() or
+      step.status == common_pb2.STATUS_UNSPECIFIED):
+    _err('must have buildbucket.v2.Status that is not STATUS_UNSPECIFIED')
+
+  if (step.status >= common_pb2.STARTED) ^ step.HasField('start_time'):
+    _err('must have both or neither start_time and an at least started status')
+
+  if bool(step.status & common_pb2.ENDED_MASK) ^ step.HasField('end_time'):
+    _err('must have both or neither end_time and a terminal status')
+
+  if (step.HasField('end_time') and
+      step.start_time.ToDatetime() > step.end_time.ToDatetime()):
+    _err('start_time after end_time')
+
+  log_names = set()
+  _check_repeated(step, 'logs', lambda log: validate_log(log, log_names))
+
+
+def validate_log(log, names):
+  """Validates a log within a build step; checks uniqueness against names param.
+  """
+  _check_truth(log, 'name', 'url', 'view_url')
+
+  if log.name in names:
+    _enter_err('name', 'duplicate: %r', log.name)
+  names.add(log.name)
 
 
 def validate_build_predicate(predicate):

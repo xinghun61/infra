@@ -2,12 +2,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
 import unittest
+
+from google.protobuf import field_mask_pb2
 
 from proto import common_pb2
 from proto import build_pb2
 from proto import notification_pb2
 from proto import rpc_pb2
+from proto import step_pb2
 
 from v2 import validation
 
@@ -353,6 +357,215 @@ class ScheduleBuildRequestTests(BaseTestCase):
         ),
     )
     self.assert_invalid(msg, r'notify.user_data: must be <= 4096 bytes')
+
+
+class UpdateBuildRequestTests(BaseTestCase):
+  func_name = 'validate_update_build_request'
+
+  def test_valid(self):
+    msg = rpc_pb2.UpdateBuildRequest(
+        build=build_pb2.Build(
+            steps=[
+                step_pb2.Step(
+                    name='foo',
+                    status=common_pb2.SUCCESS,
+                    logs=[
+                        step_pb2.Step.Log(
+                            name='tree',
+                            url='logdog://0',
+                            view_url='logdog.example.com/0'
+                        ),
+                        step_pb2.Step.Log(
+                            name='branch',
+                            url='logdog://1',
+                            view_url='logdog.example.com/1'
+                        )
+                    ],
+                ),
+                step_pb2.Step(
+                    name='bar',
+                    status=common_pb2.STARTED,
+                    logs=[
+                        step_pb2.Step.Log(
+                            name='tree',
+                            url='logdog://2',
+                            view_url='logdog.example.com/2'
+                        ),
+                        step_pb2.Step.Log(
+                            name='wood',
+                            url='logdog://3',
+                            view_url='logdog.example.com/3'
+                        )
+                    ],
+                ),
+                step_pb2.Step(
+                    name='baz',
+                    status=common_pb2.SCHEDULED,
+                ),
+            ]
+        ),
+        update_mask=field_mask_pb2.FieldMask(paths=['build.steps']),
+    )
+    msg.build.steps[0].start_time.FromDatetime(datetime.datetime(2017, 1, 1))
+    msg.build.steps[0].end_time.FromDatetime(datetime.datetime(2018, 1, 1))
+    msg.build.steps[1].start_time.FromDatetime(datetime.datetime(2017, 2, 1))
+    self.assert_valid(msg)
+
+  def test_missing_build(self):
+    msg = rpc_pb2.UpdateBuildRequest(
+        update_mask=field_mask_pb2.FieldMask(paths=['build.steps']),
+    )
+    self.assert_invalid(msg, 'required')
+
+  def test_missing_update_mask(self):
+    msg = rpc_pb2.UpdateBuildRequest(build=build_pb2.Build())
+    self.assert_invalid(msg, 'update only supports build.steps path currently')
+
+  def test_duplicate_step_names(self):
+    msg = rpc_pb2.UpdateBuildRequest(
+        build=build_pb2.Build(
+            steps=[
+                step_pb2.Step(name='foo', status=common_pb2.SCHEDULED),
+                step_pb2.Step(name='bar', status=common_pb2.SCHEDULED),
+                step_pb2.Step(name='foo', status=common_pb2.SCHEDULED),
+            ]
+        ),
+        update_mask=field_mask_pb2.FieldMask(paths=['build.steps']),
+    )
+    self.assert_invalid(msg, 'duplicate: u\'foo\'')
+
+  def test_bad_step_status(self):
+    msg_unspecified = rpc_pb2.UpdateBuildRequest(
+        build=build_pb2.Build(
+            steps=[
+                step_pb2.Step(name='foo', status=common_pb2.SCHEDULED),
+                step_pb2.Step(name='bar'),
+            ]
+        ),
+        update_mask=field_mask_pb2.FieldMask(paths=['build.steps']),
+    )
+
+    msg_invalid = rpc_pb2.UpdateBuildRequest(
+        build=build_pb2.Build(steps=[
+            step_pb2.Step(name='foo', status=3),
+        ]),
+        update_mask=field_mask_pb2.FieldMask(paths=['build.steps']),
+    )
+
+    for msg in [msg_unspecified, msg_invalid]:
+      self.assert_invalid(
+          msg, 'must have buildbucket.v2.Status that is not STATUS_UNSPECIFIED'
+      )
+
+  def test_inconsistent_end_time_terminal_status(self):
+    msg_status = rpc_pb2.UpdateBuildRequest(
+        build=build_pb2.Build(
+            steps=[
+                step_pb2.Step(name='foo', status=common_pb2.STARTED),
+            ]
+        ),
+        update_mask=field_mask_pb2.FieldMask(paths=['build.steps']),
+    )
+    msg_status.build.steps[0].start_time.FromDatetime(
+        datetime.datetime(2018, 1, 1)
+    )
+    msg_status.build.steps[0].end_time.FromDatetime(
+        datetime.datetime(2019, 1, 1)
+    )
+
+    msg_time = rpc_pb2.UpdateBuildRequest(
+        build=build_pb2.Build(
+            steps=[
+                step_pb2.Step(name='foo', status=common_pb2.SUCCESS),
+            ]
+        ),
+        update_mask=field_mask_pb2.FieldMask(paths=['build.steps']),
+    )
+    msg_time.build.steps[0].start_time.FromDatetime(
+        datetime.datetime(2018, 1, 1)
+    )
+
+    for msg in [msg_status, msg_time]:
+      self.assert_invalid(
+          msg, 'must have both or neither end_time and a terminal status'
+      )
+
+  def test_inconsistent_start_time_started_status(self):
+    msg_status = rpc_pb2.UpdateBuildRequest(
+        build=build_pb2.Build(
+            steps=[
+                step_pb2.Step(name='foo', status=common_pb2.SCHEDULED),
+            ]
+        ),
+        update_mask=field_mask_pb2.FieldMask(paths=['build.steps']),
+    )
+    msg_status.build.steps[0].start_time.FromDatetime(
+        datetime.datetime(2018, 1, 1)
+    )
+
+    msg_time = rpc_pb2.UpdateBuildRequest(
+        build=build_pb2.Build(
+            steps=[
+                step_pb2.Step(name='foo', status=common_pb2.STARTED),
+            ]
+        ),
+        update_mask=field_mask_pb2.FieldMask(paths=['build.steps']),
+    )
+
+    for msg in [msg_status, msg_time]:
+      self.assert_invalid(
+          msg,
+          'must have both or neither start_time and an at least started status'
+      )
+
+  def test_bad_step_start_end_times(self):
+    msg = rpc_pb2.UpdateBuildRequest(
+        build=build_pb2.Build(
+            steps=[
+                step_pb2.Step(name='foo', status=common_pb2.SUCCESS),
+                step_pb2.Step(name='bar', status=common_pb2.SCHEDULED),
+            ]
+        ),
+        update_mask=field_mask_pb2.FieldMask(paths=['build.steps']),
+    )
+    msg.build.steps[0].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
+    msg.build.steps[0].end_time.FromDatetime(datetime.datetime(2017, 1, 1))
+    self.assert_invalid(msg, 'start_time after end_time')
+
+  def test_duplicate_log_names(self):
+    msg = rpc_pb2.UpdateBuildRequest(
+        build=build_pb2.Build(
+            steps=[
+                step_pb2.Step(
+                    name='foo',
+                    status=common_pb2.SCHEDULED,
+                    logs=[
+                        step_pb2.Step.Log(
+                            name='tree',
+                            url='logdog://0',
+                            view_url='logdog.example.com/0'
+                        ),
+                        step_pb2.Step.Log(
+                            name='branch',
+                            url='logdog://1',
+                            view_url='logdog.example.com/1'
+                        ),
+                        step_pb2.Step.Log(
+                            name='tree',
+                            url='logdog://2',
+                            view_url='logdog.example.com/2'
+                        )
+                    ],
+                ),
+                step_pb2.Step(
+                    name='bar',
+                    status=common_pb2.SCHEDULED,
+                ),
+            ]
+        ),
+        update_mask=field_mask_pb2.FieldMask(paths=['build.steps']),
+    )
+    self.assert_invalid(msg, 'duplicate: u\'tree\'')
 
 
 class BuildPredicateTests(BaseTestCase):
