@@ -30,8 +30,8 @@ var (
 		PublishTime: "2017-02-28T19:39:28.104Z",
 		Data:        "eyJidWlsZCI6eyJpZCI6IjEyMzQifSwidXNlcmRhdGEiOiJDSUNBZ0lDQTZOMEtFZ2RoWW1ObFpHWm5HaGhJWld4c2IxOVZZblZ1ZEhVeE5DNHdORjk0T0RZdE5qUT0ifQ==",
 	}
-	buildID = 1234 // matches the above pubsub message
-	runID = 6042091272536064 // matches the above pubsub messages
+	buildID       = 1234             // matches the above pubsub message
+	runID   int64 = 6042091272536064 // matches the above pubsub messages
 )
 
 func TestDecodePubsubMessage(t *testing.T) {
