@@ -89,8 +89,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
     sufficient_confidence_fn.assert_called()
     previous_attempt_fn.assert_called()
     feature_enabled_fn.assert_called()
-    under_limit_fn.assert_called()
     test_exists_fn.assert_called()
+    under_limit_fn.assert_called_with()
 
   @mock.patch.object(flake_report_util, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(
@@ -207,7 +207,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
     analysis.Save()
 
     self.assertFalse(flake_report_util.ShouldFileBugForAnalysis(analysis))
-    self.assertTrue(daily_limit_fn.called)
+    daily_limit_fn.assert_called_with()
 
   @mock.patch.object(flake_report_util, 'IsBugFilingEnabled', return_value=True)
   @mock.patch.object(

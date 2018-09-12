@@ -166,7 +166,7 @@ def ShouldFileBugForAnalysis(analysis):
                      .format(analysis.confidence_in_culprit))
     return False
 
-  if not UnderDailyLimit(analysis):
+  if not UnderDailyLimit():
     analysis.LogInfo('Reached bug filing limit for the day.')
     return False
 
