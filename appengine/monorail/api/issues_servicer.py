@@ -220,8 +220,8 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
   @monorail_servicer.PRPCMethod
   def ListActivities(self, mc, request):
     """Return issue activities by a specified user in a response proto."""
-    converted_user = converters.IngestUserRefs(mc.cnxn,[request.user_ref],
-        self.services.user)[0]
+    converted_user = converters.IngestUserRef(mc.cnxn, request.user_ref,
+        self.services.user)
     user = self.services.user.GetUser(mc.cnxn, converted_user)
     comments = self.services.issue.GetIssueActivity(
         mc.cnxn, user_ids={request.user_ref.user_id})
@@ -356,8 +356,8 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
 
     with mc.profiler.Phase('making user views'):
       try:
-        proposed_owner_id = converters.IngestUserRefs(
-            mc.cnxn, [request.issue_delta.owner_ref], self.services.user)[0]
+        proposed_owner_id = converters.IngestUserRef(
+            mc.cnxn, request.issue_delta.owner_ref, self.services.user)
       except exceptions.NoSuchUserException:
         proposed_owner_id = 0
 

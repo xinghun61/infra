@@ -53,8 +53,8 @@ class UsersServicer(monorail_servicer.MonorailServicer):
   @monorail_servicer.PRPCMethod
   def GetMemberships(self, mc, request):
     """Return the user groups for the given user visible to the requester."""
-    user_id = converters.IngestUserRefs(
-        mc.cnxn, [request.user_ref], self.services.user)[0]
+    user_id = converters.IngestUserRef(
+        mc.cnxn, request.user_ref, self.services.user)
 
     with work_env.WorkEnv(mc, self.services) as we:
       group_ids = we.GetMemberships(user_id)
@@ -84,8 +84,8 @@ class UsersServicer(monorail_servicer.MonorailServicer):
   @monorail_servicer.PRPCMethod
   def GetUserStarCount(self, mc, request):
     """Return the star count for a given user."""
-    user_id = converters.IngestUserRefs(
-        mc.cnxn, [request.user_ref], self.services.user)[0]
+    user_id = converters.IngestUserRef(
+        mc.cnxn, request.user_ref, self.services.user)
 
     with work_env.WorkEnv(mc, self.services) as we:
       star_count = we.GetUserStarCount(user_id)
@@ -96,8 +96,8 @@ class UsersServicer(monorail_servicer.MonorailServicer):
   @monorail_servicer.PRPCMethod
   def StarUser(self, mc, request):
     """Star a given user."""
-    user_id = converters.IngestUserRefs(
-        mc.cnxn, [request.user_ref], self.services.user)[0]
+    user_id = converters.IngestUserRef(
+        mc.cnxn, request.user_ref, self.services.user)
 
     with work_env.WorkEnv(mc, self.services) as we:
       we.StarUser(user_id, request.starred)

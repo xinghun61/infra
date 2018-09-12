@@ -628,6 +628,19 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual(expected_2, actual[2])
     self.assertEqual(expected_3, actual[3])
 
+  def testIngestUserRef(self):
+    """We can look up a single user ID for a protoc UserRef."""
+    self.services.user.TestAddUser('user1@example.com', 111L)
+    ref = common_pb2.UserRef(display_name='user1@example.com')
+    actual = converters.IngestUserRef(self.cnxn, ref, self.services.user)
+    self.assertEqual(111L, actual)
+
+  def testIngestUserRef_NoSuchUser(self):
+    """We reject a malformed UserRef.display_name."""
+    ref = common_pb2.UserRef(display_name='Bob')
+    with self.assertRaises(exceptions.NoSuchUserException):
+      converters.IngestUserRef(self.cnxn, ref, self.services.user)
+
   def testIngestUserRefs_ClearTheOwnerField(self):
     """We can look up user IDs for protoc UserRefs."""
     ref = common_pb2.UserRef(user_id=0)

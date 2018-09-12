@@ -398,6 +398,12 @@ def ConvertCommentList(issue, comments, users_by_id, config, logged_in_user_id):
   return result
 
 
+def IngestUserRef(cnxn, user_ref, user_service, autocreate=False):
+  """Return ID of specified user or raise NoSuchUserException."""
+  return IngestUserRefs(
+      cnxn, [user_ref], user_service, autocreate=autocreate)[0]
+
+
 def IngestUserRefs(cnxn, user_refs, user_service, autocreate=False):
   """Return IDs of specified users or raise NoSuchUserException."""
   # 1. Verify that all specified user IDs actually match existing users.
@@ -471,7 +477,7 @@ def IngestIssueDelta(cnxn, services, delta, config, phases):
     status = delta.status.value
   owner_id = None
   if delta.HasField('owner_ref'):
-    owner_id = IngestUserRefs(cnxn, [delta.owner_ref], services.user)[0]
+    owner_id = IngestUserRef(cnxn, delta.owner_ref, services.user)
   summary = None
   if delta.HasField('summary'):
     summary = delta.summary.value
@@ -627,7 +633,7 @@ def IngestHotlistRef(cnxn, user_service, features_service, hotlist_ref):
     return hotlist_ref.hotlist_id
 
   name = hotlist_ref.name
-  owner_id = IngestUserRefs(cnxn, [hotlist_ref.owner], user_service)[0]
+  owner_id = IngestUserRef(cnxn, hotlist_ref.owner, user_service)
   hotlists = features_service.LookupHotlistIDs(cnxn, [name], [owner_id])
   if (name, owner_id) not in hotlists:
     raise features_svc.NoSuchHotlistException()
