@@ -1,52 +1,26 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
-<link rel="import" href="/ui/elements/components/expandable-card.html">
+<link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
 
 
 <dom-module id="flake-occurrence">
   <template>
     <style>
       td {
+        max-width: 0;
         padding: 2px;
         padding-right: 10px;
-      }
-
-      td:last-child {
-        padding-right: 0px;
+        height: 25px;
+        vertical-align: top;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
     </style>
-    <!-- Expanded by default. -->
-    <expandable-card show-more>
-      <div slot="expandable-card-header" class="header">
-        CQ false rejection flake occurrence on luci.[[occurrence_json.build_configuration.luci_project]].[[occurrence_json.build_configuration.luci_bucket]]/[[occurrence_json.build_configuration.luci_builder]]
-      </div>
-      <div slot="expandable-card-content">
-        <table>
-          <tr>
-              <td>Step Name:</td>
-              <td>[[occurrence_json.step_ui_name]]</td>
-          </tr>
-
-          <tr>
-              <td>Test Name:</td>
-              <td>[[occurrence_json.test_name]]</td>
-          </tr>
-
-          <tr>
-            <td>Build Id:</td>
-            <td>
-              <a href="http://ci.chromium.org/b/[[occurrence_json.build_id]]">[[occurrence_json.build_id]]</a>
-            </td>
-          </tr>
-
-          <tr>
-            <!-- TODO(crbug.com/831708) display local times. -->
-            <td>Time Occurred:</td>
-            <td>[[occurrence_json.time_happened]]</td>
-          </tr>
-
-          </table>
-        </div>
-    </expandable-card>
+      <td width="15%"><a href="http://ci.chromium.org/b/[[occurrence_json.build_id]]">[[occurrence_json.time_happened]]</a></td>
+      <td width="30%">[[occurrence_json.step_ui_name]]</td>
+      <td width="55%">
+          [[occurrence_json.test_name]]
+          <paper-tooltip position="left" fit-to-visible-bounds="true">[[occurrence_json.test_name]]</paper-tooltip>
+      </td>
   </template>
   <script>
     (function () {

@@ -3,8 +3,10 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+import mock
 
 from handlers.flake.detection import flake_detection_utils
+from libs import time_util
 from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
 from model.flake.detection.flake_occurrence import (
@@ -14,7 +16,8 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 
 class FlakeDetectionUtilsTest(WaterfallTestCase):
 
-  def testGetFlakeInformation(self):
+  @mock.patch.object(time_util, 'GetUTCNow', return_value=datetime(2018, 1, 3))
+  def testGetFlakeInformation(self, _):
     flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=900)
     flake_issue.last_updated_time_by_flake_detection = datetime(2018, 1, 1)
     flake_issue.put()
@@ -54,6 +57,36 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
     occurrence.time_detected = datetime(2018, 1, 1)
     occurrence.put()
 
+    occurrence2 = CQFalseRejectionFlakeOccurrence.Create(
+        build_id=124,
+        step_ui_name=step_ui_name,
+        test_name=test_name,
+        luci_project=luci_project,
+        luci_bucket=luci_bucket,
+        luci_builder='luci builder 2',
+        legacy_master_name=legacy_master_name,
+        legacy_build_number=legacy_build_number,
+        time_happened=datetime(2018, 1, 2),
+        gerrit_cl_id=gerrit_cl_id,
+        parent_flake_key=flake.key)
+    occurrence2.time_detected = datetime(2018, 1, 2)
+    occurrence2.put()
+
+    occurrence3 = CQFalseRejectionFlakeOccurrence.Create(
+        build_id=125,
+        step_ui_name=step_ui_name,
+        test_name=test_name,
+        luci_project=luci_project,
+        luci_bucket=luci_bucket,
+        luci_builder='luci builder 2',
+        legacy_master_name=legacy_master_name,
+        legacy_build_number=legacy_build_number,
+        time_happened=datetime(2018, 1, 2, 2),
+        gerrit_cl_id=gerrit_cl_id,
+        parent_flake_key=flake.key)
+    occurrence3.time_detected = datetime(2018, 1, 2, 2)
+    occurrence3.put()
+
     expected_flake_dict = {
         'luci_project':
             'chromium',
@@ -76,24 +109,59 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
                            'issues/detail?id=900')
         },
         'occurrences': [{
-            'build_id': '123',
-            'step_ui_name': step_ui_name,
-            'test_name': test_name,
-            'build_configuration': {
-                'luci_project': 'chromium',
-                'luci_bucket': 'try',
-                'luci_builder': 'luci builder',
-                'legacy_master_name': 'buildbot master',
-                'legacy_build_number': 999
-            },
-            'time_happened': datetime(2018, 1, 1),
-            'time_detected': datetime(2018, 1, 1),
-            'gerrit_cl_id': gerrit_cl_id
+            'group_by_field':
+                'luci builder 2',
+            'occurrences': [{
+                'build_id': '125',
+                'step_ui_name': step_ui_name,
+                'test_name': test_name,
+                'build_configuration': {
+                    'luci_project': 'chromium',
+                    'luci_bucket': 'try',
+                    'luci_builder': 'luci builder 2',
+                    'legacy_master_name': 'buildbot master',
+                    'legacy_build_number': 999
+                },
+                'time_happened': '2018-01-02 02:00:00 UTC',
+                'time_detected': '2018-01-02 02:00:00 UTC',
+                'gerrit_cl_id': gerrit_cl_id
+            }, {
+                'build_id': '124',
+                'step_ui_name': step_ui_name,
+                'test_name': test_name,
+                'build_configuration': {
+                    'luci_project': 'chromium',
+                    'luci_bucket': 'try',
+                    'luci_builder': 'luci builder 2',
+                    'legacy_master_name': 'buildbot master',
+                    'legacy_build_number': 999
+                },
+                'time_happened': '2018-01-02 00:00:00 UTC',
+                'time_detected': '2018-01-02 00:00:00 UTC',
+                'gerrit_cl_id': gerrit_cl_id
+            }]
+        }, {
+            'group_by_field':
+                'luci builder',
+            'occurrences': [{
+                'build_id': '123',
+                'step_ui_name': step_ui_name,
+                'test_name': test_name,
+                'build_configuration': {
+                    'luci_project': 'chromium',
+                    'luci_bucket': 'try',
+                    'luci_builder': 'luci builder',
+                    'legacy_master_name': 'buildbot master',
+                    'legacy_build_number': 999
+                },
+                'time_happened': '2018-01-01 00:00:00 UTC',
+                'time_detected': '2018-01-01 00:00:00 UTC',
+                'gerrit_cl_id': gerrit_cl_id
+            }]
         }],
     }
-
     self.assertEqual(expected_flake_dict,
-                     flake_detection_utils.GetFlakeInformation(flake, 2))
+                     flake_detection_utils.GetFlakeInformation(flake, 5))
 
   def testGetFlakeInformationNoOccurrences(self):
 
@@ -108,7 +176,8 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
 
     self.assertIsNone(flake_detection_utils.GetFlakeInformation(flake, 2))
 
-  def testGetFlakeInformationNoIssue(self):
+  @mock.patch.object(time_util, 'GetUTCNow', return_value=datetime(2018, 1, 3))
+  def testGetFlakeInformationNoIssue(self, _):
 
     luci_project = 'chromium'
     step_ui_name = 'step'
@@ -155,19 +224,23 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
         'last_occurred_time':
             None,
         'occurrences': [{
-            'build_id': '123',
-            'step_ui_name': step_ui_name,
-            'test_name': test_name,
-            'build_configuration': {
-                'luci_project': 'chromium',
-                'luci_bucket': 'try',
-                'luci_builder': 'luci builder',
-                'legacy_master_name': 'buildbot master',
-                'legacy_build_number': 999
-            },
-            'time_happened': datetime(2018, 1, 1),
-            'time_detected': datetime(2018, 1, 1),
-            'gerrit_cl_id': gerrit_cl_id
+            'group_by_field':
+                'luci builder',
+            'occurrences': [{
+                'build_id': '123',
+                'step_ui_name': step_ui_name,
+                'test_name': test_name,
+                'build_configuration': {
+                    'luci_project': 'chromium',
+                    'luci_bucket': 'try',
+                    'luci_builder': 'luci builder',
+                    'legacy_master_name': 'buildbot master',
+                    'legacy_build_number': 999
+                },
+                'time_happened': '2018-01-01 00:00:00 UTC',
+                'time_detected': '2018-01-01 00:00:00 UTC',
+                'gerrit_cl_id': gerrit_cl_id
+            }]
         }],
     }
 

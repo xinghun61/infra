@@ -1,5 +1,5 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
-<link rel="import" href="/ui/elements/flake_detection/flake-occurrence.html">
+<link rel="import" href="/ui/elements/flake_detection/grouped-occurrences.html">
 
 
 <dom-module id="flaky-test">
@@ -16,7 +16,7 @@
     </style>
     <table>
         <tr>
-            <td>Test Target:</td>
+            <td>Step Name:</td>
             <td>[[flake_json.normalized_step_name]]</td>
         </tr>
 
@@ -36,7 +36,10 @@
     </table>
 
     <template is="dom-repeat" items="{{flake_json.occurrences}}">
-      <flake-occurrence occurrence_json={{item}}></flake-occurrence>
+      <grouped-occurrences
+          group_by_field = {{item.group_by_field}}
+          grouped_occurrences={{item.occurrences}}>
+      </grouped-occurrences>
     </template>
   </template>
   <script>

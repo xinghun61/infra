@@ -1,0 +1,69 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/ui/elements/components/expandable-card.html">
+<link rel="import" href="/ui/elements/flake_detection/flake-occurrence.html">
+
+
+<dom-module id="grouped-occurrences">
+  <template>
+    <style>
+     flake-occurrence {
+        display: table-row;
+      }
+
+      table {
+        border-collapse: collapse;
+      }
+
+      table th {
+        padding: 2px;
+        padding-right: 10px;
+        text-align: left;
+        height: 30px;
+      }
+
+      .table-scroll {
+        max-height: 150px;
+        overflow-y: auto;
+      }
+    </style>
+      <!-- Expanded by default. -->
+        <expandable-card show-more>
+          <div slot="expandable-card-header" class="header">
+            [[group_by_field]] ([[grouped_occurrences.length]] occurrences)
+          </div>
+          <div slot="expandable-card-content">
+            <div class="table-scroll" >
+                <table width="100%">
+                  <tr>
+                    <th width="15%">Occurred at</th>
+                    <th width="35%">Original Step Name</th>
+                    <th width="50%">Original Test Name</th>
+                  </tr>
+                    <template is="dom-repeat" items="[[grouped_occurrences]]" as="occurrence">
+                      <flake-occurrence occurrence_json=[[occurrence]]></flake-occurrence>
+                    </template>
+                </table>
+            </div>
+          </div>
+        </expandable-card>
+  </template>
+  <script>
+    (function () {
+      "use strict";
+
+      Polymer({
+        is: "grouped-occurrences",
+        properties: {
+          // Occurrences in one group.
+          group_by_field:{
+            type: String
+          },
+          grouped_occurrences: {
+            type: Array
+          },
+        },
+
+      });
+    })();
+  </script>
+</dom-module>

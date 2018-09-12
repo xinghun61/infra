@@ -7,32 +7,21 @@ import webapp2
 import gae_ts_mon
 
 from gae_libs import appengine_util
-from gae_libs.pipelines import pipeline_handlers
 from gae_libs.pipelines import pipeline_status_ui
 from handlers import auto_revert_metrics
-from handlers import build_ahead
 from handlers import build_failure
-from handlers import calculate_confidence_scores
 from handlers import change_auto_revert_setting
 from handlers import check_duplicate_failures
-from handlers import check_reverted_cls
 from handlers import check_trybot_mapping
-from handlers import collect_tree_closures
-from handlers import completed_build_pubsub_ingestor
 from handlers import config
 from handlers import culprit
 from handlers import failure_log
 from handlers import help_triage
 from handlers import home
 from handlers import list_analyses
-from handlers import obscure_emails
 from handlers import pipeline_errors_dashboard
-from handlers import process_failure_analysis_requests
-from handlers import process_flake_analysis_request
-from handlers import swarming_pubsub_pipeline_callback
 from handlers import triage_suspected_cl
 from handlers import try_job_dashboard
-from handlers import try_job_pubsub_pipeline_callback
 from handlers.flake import check_flake
 from handlers.flake import flake_culprit
 from handlers.flake import list_flakes
