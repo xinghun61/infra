@@ -296,6 +296,11 @@ class BuildSteps(BuildDetailEntity):
       compressed=True,
   )
 
+  def _pre_put_hook(self):
+    """Checks BuildSteps invariants before putting."""
+    super(BuildSteps, self)._pre_put_hook()
+    assert self.step_container is not None
+
 
 class Builder(ndb.Model):
   """A builder in a bucket.

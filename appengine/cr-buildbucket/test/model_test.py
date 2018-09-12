@@ -56,3 +56,10 @@ class BuildTest(testing.AppengineTestCase):
       self.assertTrue(in_range(time_high - unit))
       self.assertFalse(in_range(time_high))
       self.assertFalse(in_range(time_high + unit))
+
+  def test_build_steps_without_step_container(self):
+    build_steps = model.BuildSteps(
+        key=model.BuildSteps.key_for(ndb.Key(model.Build, 1)),
+    )
+    with self.assertRaises(AssertionError):
+      build_steps.put()

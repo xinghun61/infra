@@ -11,7 +11,7 @@ from google.appengine.ext import ndb
 
 from components import utils
 
-from test.test_util import future_exception
+from proto import build_pb2
 from testing_utils import testing
 import bulkproc
 import main
@@ -251,8 +251,10 @@ class SegmentTest(TestBase):
   @mock.patch('bulkproc.enqueue_tasks', autospec=True)
   def test_build_steps_keys_only(self, enqueue_tasks):
     build_steps = [
-        model.BuildSteps(parent=ndb.Key(model.Build, i))
-        for i in xrange(50, 60)
+        model.BuildSteps(
+            parent=ndb.Key(model.Build, i),
+            step_container=build_pb2.Build(),
+        ) for i in xrange(50, 60)
     ]
     ndb.put_multi(build_steps)
 

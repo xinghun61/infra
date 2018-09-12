@@ -1226,7 +1226,7 @@ def _sync_build_async(build_id, task_result, bucket, builder):
       },
   )
   too_large = step_byte_size > model.BuildSteps.MAX_STEPS_LEN
-  build_steps = model.BuildSteps(key=model.BuildSteps.key_for(build_key))
+  build_steps = None
   if too_large:  # pragma: no cover
     # piggy back on the existing error handling mechanism
     build_run_result = None
@@ -1238,7 +1238,10 @@ def _sync_build_async(build_id, task_result, bucket, builder):
   else:
     # Do not set build_steps.step_container unless we are sure it is under the
     # size limit.
-    build_steps.step_container = step_container
+    build_steps = model.BuildSteps(
+        key=model.BuildSteps.key_for(build_key),
+        step_container=step_container,
+    )
 
   @ndb.transactional_tasklet
   def txn_async():
@@ -1255,11 +1258,11 @@ def _sync_build_async(build_id, task_result, bucket, builder):
 
     if build.status == model.BuildStatus.STARTED:
       futures.append(events.on_build_starting_async(build))
-    elif build.status == model.BuildStatus.COMPLETED:  # pragma: no branch
-      futures += [
-          build_steps.put_async(),
-          events.on_build_completing_async(build),
-      ]
+    elif build.status == model.BuildStatus.COMPLETED:  # pragma: no cover
+      # This code is coverd by tests, but pycover reports coverage incorrectly!
+      futures.append(events.on_build_completing_async(build))
+      if build_steps:
+        futures.append(build_steps.put_async())
 
     yield futures
     raise ndb.Return(build)
