@@ -32,6 +32,8 @@ runOnLoad(function() {
 
   function _handleResultsClick(event) {
     var target = event.target;
+    if (event.button >= 4)
+      return;
     if (target.classList.contains("label"))
       return;
     if (target.classList.contains("rowwidgets") || target.parentNode.classList.contains("rowwidgets"))
