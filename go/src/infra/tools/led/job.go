@@ -24,16 +24,8 @@ import (
 const generateLogdogToken = "TRY_RECIPE_GENERATE_LOGDOG_TOKEN"
 const ledJobNamePrefix = "led: "
 
-// JobDefinitionFromNewTaskRequest generates a new JobDefinition by parsing the
-// given SwarmingRpcsNewTaskRequest. It expects that the
-// SwarmingRpcsNewTaskRequest is for a swarmbucket-originating job (or at least
-// looks like one :)).
-func JobDefinitionFromNewTaskRequest(r *swarming.SwarmingRpcsNewTaskRequest) (*JobDefinition, error) {
-	ret := &JobDefinition{
-		S: &Systemland{SwarmingTask: r, KitchenArgs: &cookflags.CookFlags{}},
-		U: &Userland{},
-	}
-
+// JobSliceFromTaskSlice returns a JobSlice parsed from a SwarmingRpcsTaskSlice.
+func JobSliceFromTaskSlice(ts *swarming.SwarmingRpcsTaskSlice) (*JobSlice, error) {
 	ingestMap := func(pairs *[]*swarming.SwarmingRpcsStringPair) map[string]string {
 		ret := make(map[string]string, len(*pairs))
 		for _, p := range *pairs {
@@ -43,20 +35,9 @@ func JobDefinitionFromNewTaskRequest(r *swarming.SwarmingRpcsNewTaskRequest) (*J
 		return ret
 	}
 
-	// TODO(iannucci): handle multiple task slices better.
-	if len(r.TaskSlices) > 0 {
-		// just keep the first task slice for led purposes.
-		ret.S.SwarmingTask.TaskSlices = ret.S.SwarmingTask.TaskSlices[:1]
-	} else {
-		// upgrade to singular task slice
-		ret.S.SwarmingTask.TaskSlices = []*swarming.SwarmingRpcsTaskSlice{{
-			ExpirationSecs: r.ExpirationSecs,
-			Properties:     r.Properties,
-		}}
-	}
-	ret.S.SwarmingTask.ExpirationSecs = 0
-	ret.S.SwarmingTask.Properties = nil
-	props := ret.S.SwarmingTask.TaskSlices[0].Properties
+	ret := &JobSlice{}
+	ret.S.TaskSlice = ts
+	props := ts.Properties
 
 	ret.S.Env = ingestMap(&props.Env)
 	ret.S.CipdPkgs = map[string]map[string]string{}
@@ -75,6 +56,8 @@ func JobDefinitionFromNewTaskRequest(r *swarming.SwarmingRpcsNewTaskRequest) (*J
 
 	if len(props.Command) > 2 {
 		if props.Command[0] == "kitchen${EXECUTABLE_SUFFIX}" && props.Command[1] == "cook" {
+			ret.S.KitchenArgs = &cookflags.CookFlags{}
+
 			fs := flag.NewFlagSet("kitchen_cook", flag.ContinueOnError)
 			ret.S.KitchenArgs.Register(fs)
 			if err := fs.Parse(props.Command[2:]); err != nil {
@@ -89,10 +72,6 @@ func JobDefinitionFromNewTaskRequest(r *swarming.SwarmingRpcsNewTaskRequest) (*J
 				prefix, path := ret.S.KitchenArgs.LogDogFlags.AnnotationURL.Path.Split()
 				prefix = generateLogdogToken
 				ret.S.KitchenArgs.LogDogFlags.AnnotationURL.Path = prefix.AsPathPrefix(path)
-
-				ret.S.SwarmingTask.Tags = trimTags(ret.S.SwarmingTask.Tags, []string{
-					"luci_project:",
-				})
 
 				if ret.S.KitchenArgs.RepositoryURL != "" && ret.S.KitchenArgs.Revision != "" {
 					ret.U.RecipeGitSource = &RecipeGitSource{
@@ -124,35 +103,99 @@ func JobDefinitionFromNewTaskRequest(r *swarming.SwarmingRpcsNewTaskRequest) (*J
 		}
 	}
 
-	// prepend the name by default. This can be removed by manually editing the
-	// job definition before launching it.
-	if !strings.HasPrefix(ret.S.SwarmingTask.Name, ledJobNamePrefix) {
-		ret.S.SwarmingTask.Name = ledJobNamePrefix + ret.S.SwarmingTask.Name
+	return ret, nil
+}
+
+// JobDefinitionFromNewTaskRequest generates a new JobDefinition by parsing the
+// given SwarmingRpcsNewTaskRequest. It expects that the
+// SwarmingRpcsNewTaskRequest is for a swarmbucket-originating job (or at least
+// looks like one :)).
+func JobDefinitionFromNewTaskRequest(r *swarming.SwarmingRpcsNewTaskRequest) (*JobDefinition, error) {
+	numSlices := len(r.TaskSlices)
+	if numSlices == 0 {
+		numSlices = 1
+	}
+	ret := &JobDefinition{
+		TopLevel: &ToplevelFields{
+			r.Name,
+			r.Priority,
+			r.ServiceAccount,
+			r.Tags,
+			r.User,
+		},
+		Slices: make([]*JobSlice, numSlices),
+	}
+	me := errors.NewLazyMultiError(numSlices)
+	var err error
+	if len(r.TaskSlices) > 0 {
+		for i := range ret.Slices {
+			ret.Slices[i], err = JobSliceFromTaskSlice(r.TaskSlices[i])
+			me.Assign(i, err)
+		}
+	} else {
+		ret.Slices[0], err = JobSliceFromTaskSlice(&swarming.SwarmingRpcsTaskSlice{
+			ExpirationSecs: r.ExpirationSecs,
+			Properties:     r.Properties,
+		})
 	}
 
-	return ret, nil
+	ret.TopLevel.Tags = trimTags(ret.TopLevel.Tags, []string{
+		"luci_project:",
+	})
+
+	// prepend the name by default. This can be removed by manually editing the
+	// job definition before launching it.
+	if !strings.HasPrefix(ret.TopLevel.Name, ledJobNamePrefix) {
+		ret.TopLevel.Name = ledJobNamePrefix + ret.TopLevel.Name
+	}
+
+	return ret, me.Get()
+}
+
+func (tl *ToplevelFields) apply(st *swarming.SwarmingRpcsNewTaskRequest) {
+	st.Name = tl.Name
+	st.Priority = tl.Priority
+	st.ServiceAccount = tl.ServiceAccount
+	st.Tags = append([]string{}, tl.Tags...)
+	st.User = tl.User
+}
+
+func (js *JobSlice) gen(ctx context.Context, uid string, arc *archiver.Archiver) (ret *swarming.SwarmingRpcsTaskSlice, extraTags []string, err error) {
+	ret = &swarming.SwarmingRpcsTaskSlice{
+		Properties: &swarming.SwarmingRpcsTaskProperties{},
+	}
+	var userTags, systemTags []string
+	args, systemTags, err := js.S.apply(ctx, uid, ret)
+	if err == nil {
+		userTags, err = js.U.apply(ctx, arc, args, ret)
+	}
+	if err == nil && args != nil {
+		ret.Properties.Command = append([]string{"kitchen${EXECUTABLE_SUFFIX}", "cook"},
+			args.Dump()...)
+		extraTags = append(systemTags, userTags...)
+	}
+	return
 }
 
 // GetSwarmingNewTask builds a usable SwarmingRpcsNewTaskRequest from the
 // JobDefinition, incorporating all of the extra bits of the JobDefinition.
 func (jd *JobDefinition) GetSwarmingNewTask(ctx context.Context, uid string, arc *archiver.Archiver) (*swarming.SwarmingRpcsNewTaskRequest, error) {
-	// apply systemland stuff
-	st, args, err := jd.S.genSwarmingTask(ctx, uid)
-	if err != nil {
-		return nil, errors.Annotate(err, "applying Systemland").Err()
+	st := &swarming.SwarmingRpcsNewTaskRequest{}
+	jd.TopLevel.apply(st)
+	for i, s := range jd.Slices {
+		slc, extraTags, err := s.gen(ctx, uid, arc)
+		if err != nil {
+			return nil, errors.Annotate(err, "generating TaskSlice %d", i).Err()
+		}
+		// HACK(iannucci): Technically the swarming task could define task slice
+		// fallbacks which had e.g. different logdog URLs or different recipe
+		// versions. In practice, with buildbucket/kitchen, we don't do this, so the
+		// `firstSliceTags` thing should be fine.
+		if i == 0 {
+			st.Tags = append(st.Tags, extraTags...)
+		}
+		st.TaskSlices = append(st.TaskSlices, slc)
 	}
-
-	// apply anything from userland
-	if err := jd.U.apply(ctx, arc, args, st); err != nil {
-		return nil, errors.Annotate(err, "applying Userland").Err()
-	}
-
-	if args != nil {
-		// Regenerate the command line
-		st.TaskSlices[0].Properties.Command = append([]string{"kitchen${EXECUTABLE_SUFFIX}", "cook"},
-			args.Dump()...)
-	}
-
 	return st, nil
 }
 

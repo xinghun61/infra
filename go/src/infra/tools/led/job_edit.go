@@ -45,30 +45,33 @@ func (ejd *EditJobDefinition) tweak(fn func(jd *JobDefinition) error) {
 
 func (ejd *EditJobDefinition) tweakUserland(fn func(*Userland) error) {
 	if ejd.err == nil {
-		if ejd.jd.U == nil {
-			ejd.jd.U = &Userland{}
+		for _, slice := range ejd.jd.Slices {
+			ejd.err = fn(&slice.U)
+			if ejd.err != nil {
+				return
+			}
 		}
-		ejd.err = fn(ejd.jd.U)
 	}
 }
 
 func (ejd *EditJobDefinition) tweakSystemland(fn func(*Systemland) error) {
 	if ejd.err == nil {
-		if ejd.jd.S == nil {
-			ejd.jd.S = &Systemland{}
+		for _, slice := range ejd.jd.Slices {
+			ejd.err = fn(&slice.S)
+			if ejd.err != nil {
+				return
+			}
 		}
-		ejd.err = fn(ejd.jd.S)
 	}
 }
 
 func (ejd *EditJobDefinition) tweakKitchenArgs(fn func(*cookflags.CookFlags) error) {
-	if ejd.err == nil {
-		if ejd.jd.S.KitchenArgs == nil {
-			ejd.err = errors.New("command not compatible with non-kitchen jobs")
-		} else {
-			ejd.err = fn(ejd.jd.S.KitchenArgs)
+	ejd.tweakSystemland(func(s *Systemland) error {
+		if s.KitchenArgs == nil {
+			return errors.New("command not compatible with non-kitchen jobs")
 		}
-	}
+		return fn(s.KitchenArgs)
+	})
 }
 
 // Recipe modifies the recipe to run. This must be resolvable in the current
@@ -156,10 +159,7 @@ func (ejd *EditJobDefinition) Priority(priority int64) {
 	if priority < 0 {
 		return
 	}
-	ejd.tweakSystemland(func(s *Systemland) error {
-		s.SwarmingTask.Priority = priority
-		return nil
-	})
+	ejd.jd.TopLevel.Priority = priority
 }
 
 // Properties edits the recipe properties.
@@ -240,7 +240,7 @@ func (ejd *EditJobDefinition) PrefixPathEnv(values []string) {
 	}
 	ejd.tweakSystemland(func(s *Systemland) error {
 		var newPath []string
-		for _, pair := range s.SwarmingTask.TaskSlices[0].Properties.EnvPrefixes {
+		for _, pair := range s.TaskSlice.Properties.EnvPrefixes {
 			if pair.Key == "PATH" {
 				newPath = pair.Value
 				break
@@ -263,15 +263,15 @@ func (ejd *EditJobDefinition) PrefixPathEnv(values []string) {
 			}
 		}
 
-		for _, pair := range s.SwarmingTask.TaskSlices[0].Properties.EnvPrefixes {
+		for _, pair := range s.TaskSlice.Properties.EnvPrefixes {
 			if pair.Key == "PATH" {
 				pair.Value = newPath
 				return nil
 			}
 		}
 
-		s.SwarmingTask.TaskSlices[0].Properties.EnvPrefixes = append(
-			s.SwarmingTask.TaskSlices[0].Properties.EnvPrefixes,
+		s.TaskSlice.Properties.EnvPrefixes = append(
+			s.TaskSlice.Properties.EnvPrefixes,
 			&swarming.SwarmingRpcsStringListPair{Key: "PATH", Value: newPath})
 
 		return nil

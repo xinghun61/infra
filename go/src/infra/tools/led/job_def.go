@@ -5,13 +5,14 @@
 package main
 
 import (
-	"infra/tools/kitchen/cookflags"
-
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
+
+	"infra/tools/kitchen/cookflags"
 )
 
-// JobDefinition defines a 'led' job. It's like a normal Swarming
-// NewTaskRequest, but broken into two halves: Userland and Systemland.
+// JobSlice corresponds to a swarming TaskSlice. It's like a normal Swarming
+// TaskSlice, but broken into two halves, Userland and Systemland, which more
+// closely align with the way we use Swarming in LUCI.
 //
 // Userland
 //
@@ -38,6 +39,33 @@ import (
 //     * CIPD packages to install (including the version of kitchen).
 //     * Environment variables for swarming to set when invoking kitchen.
 //   * All other aspects of the kitchen cook command invocation.
+type JobSlice struct {
+	// Userland describes the sorts of things that are controlled by users of
+	// LUCI.
+	U Userland `json:"userland"`
+
+	// Systemland describes the sorts of things that are controlled by the folks
+	// building and maintaining LUCI systems themselves.
+	S Systemland `json:"systemland"`
+}
+
+// ToplevelFields are the task-wide fields from
+// SwarmingRpcsNewTaskRequest that affect the task. They apply regardless of
+// which slice is selected.
+type ToplevelFields struct {
+	Name string `json:"name"`
+
+	Priority int64 `json:"priority,string"`
+
+	ServiceAccount string `json:"service_account,omitempty"`
+
+	Tags []string `json:"tags"`
+
+	User string `json:"user"`
+}
+
+// JobDefinition defines a 'led' job. It's like a normal Swarming
+// NewTaskRequest, but broken into two halves: Userland and Systemland.
 type JobDefinition struct {
 	// SwarmingHostname captures the swarming host to use for this job. It's set
 	// on the initial `led get` command. This swarming host is also queried to
@@ -46,15 +74,11 @@ type JobDefinition struct {
 	// rest of the led pipeline uses).
 	SwarmingHostname string `json:"swarming_hostname"`
 
+	TopLevel *ToplevelFields `json:"top_level"`
+
 	// TODO(iannucci): maybe support other job invocations?
 
-	// Userland describes the sorts of things that are controlled by users of
-	// LUCI.
-	U *Userland `json:"userland"`
-
-	// Systemland describes the sorts of things that are controlled by the folks
-	// building and maintaining LUCI systems themselves.
-	S *Systemland `json:"systemland"`
+	Slices []*JobSlice `json:"job_slices"`
 }
 
 // Userland is the data in a swarmbucket task which is controlled by the
@@ -119,5 +143,5 @@ type Systemland struct {
 	// or Userland attributes are applied on-top of this. Env and CipdPkgs in
 	// Systemland will replace the relevant fields here entirely (there's no
 	// reason to use the versions in the SwarmingRpcsNewTaskRequest).
-	SwarmingTask *swarming.SwarmingRpcsNewTaskRequest `json:"swarming_task"`
+	TaskSlice *swarming.SwarmingRpcsTaskSlice `json:"task_slice"`
 }

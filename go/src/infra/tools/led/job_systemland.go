@@ -14,10 +14,8 @@ import (
 	logdog_types "go.chromium.org/luci/logdog/common/types"
 )
 
-func (s *Systemland) genSwarmingTask(ctx context.Context, uid string) (st *swarming.SwarmingRpcsNewTaskRequest, args *cookflags.CookFlags, err error) {
-	st = &(*s.SwarmingTask)
-	st.TaskSlices[0] = &(*st.TaskSlices[0])
-	st.TaskSlices[0].Properties.Env = exfiltrateMap(s.Env)
+func (s *Systemland) apply(ctx context.Context, uid string, ts *swarming.SwarmingRpcsTaskSlice) (args *cookflags.CookFlags, extraTags []string, err error) {
+	ts.Properties.Env = exfiltrateMap(s.Env)
 
 	if s.KitchenArgs != nil {
 		args = &(*s.KitchenArgs)
@@ -35,7 +33,7 @@ func (s *Systemland) genSwarmingTask(ctx context.Context, uid string) (st *swarm
 				string(prefix), -1))
 		}
 		if !args.LogDogFlags.AnnotationURL.IsZero() {
-			st.Tags = append(st.Tags,
+			extraTags = append(extraTags,
 				"allow_milo:1",
 				"log_location:"+args.LogDogFlags.AnnotationURL.String(),
 			)
@@ -43,14 +41,14 @@ func (s *Systemland) genSwarmingTask(ctx context.Context, uid string) (st *swarm
 	}
 
 	if len(s.CipdPkgs) > 0 {
-		if st.TaskSlices[0].Properties.CipdInput == nil {
-			st.TaskSlices[0].Properties.CipdInput = &swarming.SwarmingRpcsCipdInput{}
+		if ts.Properties.CipdInput == nil {
+			ts.Properties.CipdInput = &swarming.SwarmingRpcsCipdInput{}
 		}
 
 		for subdir, pkgsVers := range s.CipdPkgs {
 			for pkg, ver := range pkgsVers {
-				st.TaskSlices[0].Properties.CipdInput.Packages = append(
-					st.TaskSlices[0].Properties.CipdInput.Packages,
+				ts.Properties.CipdInput.Packages = append(
+					ts.Properties.CipdInput.Packages,
 					&swarming.SwarmingRpcsCipdPackage{
 						Path:        subdir,
 						PackageName: pkg,

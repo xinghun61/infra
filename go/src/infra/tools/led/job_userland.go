@@ -16,11 +16,8 @@ import (
 
 const recipeCheckoutDir = "recipe-checkout-dir"
 
-func (u *Userland) apply(ctx context.Context, arc *archiver.Archiver, args *cookflags.CookFlags, st *swarming.SwarmingRpcsNewTaskRequest) error {
-	if st.TaskSlices[0].Properties == nil {
-		st.TaskSlices[0].Properties = &swarming.SwarmingRpcsTaskProperties{}
-	}
-	props := st.TaskSlices[0].Properties
+func (u *Userland) apply(ctx context.Context, arc *archiver.Archiver, args *cookflags.CookFlags, ts *swarming.SwarmingRpcsTaskSlice) (extraTags []string, err error) {
+	props := ts.Properties
 	props.Dimensions = exfiltrateMap(u.Dimensions)
 
 	if args != nil {
@@ -40,7 +37,7 @@ func (u *Userland) apply(ctx context.Context, arc *archiver.Archiver, args *cook
 				}
 				newHash, err := combineIsolates(ctx, arc, toCombine...)
 				if err != nil {
-					return errors.Annotate(err, "combining isolateds").Err()
+					return nil, errors.Annotate(err, "combining isolateds").Err()
 				}
 				isoHash = string(newHash)
 			}
@@ -56,7 +53,7 @@ func (u *Userland) apply(ctx context.Context, arc *archiver.Archiver, args *cook
 			if tagRevision == "" {
 				tagRevision = "HEAD"
 			}
-			st.Tags = append(st.Tags,
+			extraTags = append(extraTags,
 				"recipe_repository:"+u.RecipeGitSource.RepositoryURL,
 				"recipe_revision:"+u.RecipeGitSource.Revision,
 			)
@@ -74,7 +71,7 @@ func (u *Userland) apply(ctx context.Context, arc *archiver.Archiver, args *cook
 
 		if u.RecipeName != "" {
 			args.RecipeName = u.RecipeName
-			st.Tags = append(st.Tags, "recipe_name:"+u.RecipeName)
+			extraTags = append(extraTags, "recipe_name:"+u.RecipeName)
 		}
 
 		if u.RecipeProperties != nil {
@@ -83,5 +80,5 @@ func (u *Userland) apply(ctx context.Context, arc *archiver.Archiver, args *cook
 		}
 	}
 
-	return nil
+	return extraTags, nil
 }

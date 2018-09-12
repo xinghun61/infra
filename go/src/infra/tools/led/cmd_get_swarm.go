@@ -120,12 +120,12 @@ func GetFromSwarmingTask(ctx context.Context, authOpts auth.Options, host, taskI
 		didIt := false
 		for _, d := range rslt.BotDimensions {
 			if d.Key == "id" {
-				pool, hadPool := jd.U.Dimensions["pool"]
-				jd.U.Dimensions = map[string]string{
-					"id": d.Value[0],
-				}
-				if hadPool {
-					jd.U.Dimensions["pool"] = pool
+				for _, slice := range jd.Slices {
+					pool, hadPool := slice.U.Dimensions["pool"]
+					slice.U.Dimensions = map[string]string{"id": d.Value[0]}
+					if hadPool {
+						slice.U.Dimensions["pool"] = pool
+					}
 				}
 				logging.Infof(ctx, "pinning swarming bot: done: %q", d.Value[0])
 				didIt = true
