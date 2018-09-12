@@ -106,7 +106,7 @@ func (s buildbucketServer) Collect(c context.Context, params *CollectParameters)
 		result.State = Failure
 	}
 
-	result.BuildbucketOutput = build.GetOutput().GetProperties().GetFields()["tricium"].String()
+	result.BuildbucketOutput = build.GetOutput().GetProperties().GetFields()["tricium"].GetStringValue()
 	if result.BuildbucketOutput == "" {
 		logging.Fields{
 			"build ID":    params.BuildID,
