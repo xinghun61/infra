@@ -17,7 +17,7 @@ from . import verify
 from .workdir import Workdir
 
 
-def build_resolved_spec(api, spec_lookup, cache, spec, version):
+def build_resolved_spec(api, spec_lookup, cache, force_build, spec, version):
   """Builds a resolved spec at a specific version, then uploads it.
 
   Args:
@@ -28,6 +28,9 @@ def build_resolved_spec(api, spec_lookup, cache, spec, version):
     * cache (dict) - A map of (package_name, version, platform) -> CIPDSpec.
       The `build_resolved_spec` function fully manages the content of this
       dictionary.
+    * force_build (bool) - If True, don't consult CIPD server to see if the
+      package is already built. This also disables uploading the results, to
+      avoid attempting to upload a duplicately-tagged package.
     * spec (ResolvedSpec) - The resolved spec to build.
     * version (str) - The symver (or 'latest') version of the package to build.
 
@@ -64,18 +67,18 @@ def build_resolved_spec(api, spec_lookup, cache, spec, version):
 
       cipd_spec = spec.cipd_spec(version)
       # See if the specific version is uploaded
-      if not cipd_spec.check():
+      if force_build or not cipd_spec.check():
         # Otherwise, build it
         _build_impl(
-          api, cipd_spec, is_latest, spec_lookup,
+          api, cipd_spec, is_latest, spec_lookup, force_build,
           (lambda spec, version: build_resolved_spec(
-            api, spec_lookup, cache, spec, version)),
+            api, spec_lookup, cache, force_build, spec, version)),
           spec, version)
 
       return set_cache(cipd_spec)
 
 
-def _build_impl(api, cipd_spec, is_latest, spec_lookup, recurse_fn,
+def _build_impl(api, cipd_spec, is_latest, spec_lookup, force_build, recurse_fn,
                 spec, version):
   workdir = Workdir(api, spec, version)
   with api.context(env={'_3PP_VERSION': version}):
@@ -102,6 +105,6 @@ def _build_impl(api, cipd_spec, is_latest, spec_lookup, recurse_fn,
       with api.step.nest('run test'):
         verify.run_test(api, workdir, spec, cipd_spec)
 
-    if not api.runtime.is_experimental:
+    if not force_build and not api.runtime.is_experimental:
       with api.step.nest('do upload'):
         cipd_spec.ensure_uploaded(is_latest)

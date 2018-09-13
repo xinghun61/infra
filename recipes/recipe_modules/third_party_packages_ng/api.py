@@ -383,14 +383,20 @@ class ThirdPartyPackagesNGApi(recipe_api.RecipeApi):
     self._resolved_packages[key] = ret
     return ret
 
-  def _build_resolved_spec(self, spec, version):
+  def _build_resolved_spec(self, spec, version, force_build):
     """Builds the resolved spec. All dependencies for this spec must already be
     built.
+
+    Args:
+      * spec (ResolvedSpec) - The spec to build.
+      * version (str) - The symver of the package that we want to build.
+      * force_build (bool) - If True, ignore remote server checks.
 
     Returns CIPDSpec for the built package.
     """
     return create.build_resolved_spec(
-      self.m, self._resolve_for, self._built_packages, spec, version)
+      self.m, self._resolve_for, self._built_packages, force_build,
+      spec, version)
 
   def load_packages_from_path(self, path):
     """Loads all package definitions from the given path.
@@ -442,7 +448,7 @@ class ThirdPartyPackagesNGApi(recipe_api.RecipeApi):
 
     return discovered
 
-  def ensure_uploaded(self, packages=(), platform=''):
+  def ensure_uploaded(self, packages=(), platform='', force_build=False):
     """Executes entire {fetch,build,package,verify,upload} pipeline for all the
     packages listed, targeting the given platform.
 
@@ -473,5 +479,5 @@ class ThirdPartyPackagesNGApi(recipe_api.RecipeApi):
 
     ret = []
     for spec, version in build_plan:
-      ret.append(self._build_resolved_spec(spec, version))
+      ret.append(self._build_resolved_spec(spec, version, force_build))
     return ret, unsupported

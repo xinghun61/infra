@@ -49,10 +49,15 @@ PROPERTIES = {
       help=(
         'Target platform. Must be a valid CIPD ${platform}. Cross-compiling '
         'requires docker on $PATH.')),
+  'force_build': Property(
+      kind=bool, default=False,
+      help=(
+        'Forces building packages, even if they\'re available on the CIPD '
+        'server already. Doing this disables uploads.')),
 }
 
 
-def RunSteps(api, package_locations, to_build, platform):
+def RunSteps(api, package_locations, to_build, platform, force_build):
   package_repos = api.path['cache'].join('builder')
   current_repos = set()
   try:
@@ -91,7 +96,7 @@ def RunSteps(api, package_locations, to_build, platform):
       api.file.rmtree('rm %s' % (hash_name,),
                       package_repos.join(hash_name))
 
-  api.third_party_packages_ng.ensure_uploaded(to_build, platform)
+  api.third_party_packages_ng.ensure_uploaded(to_build, platform, force_build)
 
 
 def GenTests(api):
