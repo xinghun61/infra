@@ -556,7 +556,7 @@
     "cmd": [
       "cipd",
       "describe",
-      "tools/fetch_and_package/linux-armv6l",
+      "tools/fetch_and_package",
       "-version",
       "version:2.0.0",
       "-json-output",
@@ -566,7 +566,7 @@
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "linux-armv6l"
     },
-    "name": "building fetch_and_package.cipd describe tools/fetch_and_package/linux-armv6l",
+    "name": "building fetch_and_package.cipd describe tools/fetch_and_package",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "step returned non-zero exit code: 1",
@@ -659,7 +659,7 @@
       "cipd",
       "pkg-build",
       "-pkg-def",
-      "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"tools/fetch_and_package/linux-armv6l\", \"root\": \"[START_DIR]/3pp/wd/fetch_and_package/linux-armv6l/2.0.0/checkout\"}",
+      "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"tools/fetch_and_package\", \"root\": \"[START_DIR]/3pp/wd/fetch_and_package/linux-armv6l/2.0.0/checkout\"}",
       "-out",
       "[TMP_BASE]/tmp_tmp_2",
       "-hash-algo",
@@ -672,13 +672,13 @@
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_VERSION": "2.0.0"
     },
-    "name": "building fetch_and_package.build tools/fetch_and_package/linux-armv6l",
+    "name": "building fetch_and_package.build tools/fetch_and_package",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"tools/fetch_and_package/linux-armv6l\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"tools/fetch_and_package\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -694,7 +694,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[CACHE]/3pp_cipd/tools/fetch_and_package/linux-armv6l"
+      "[CACHE]/3pp_cipd/tools/fetch_and_package"
     ],
     "env": {
       "_3PP_PACKAGE_NAME": "fetch_and_package",
@@ -716,7 +716,7 @@
       "/path/to/tmp/json",
       "move",
       "[TMP_BASE]/tmp_tmp_2",
-      "[CACHE]/3pp_cipd/tools/fetch_and_package/linux-armv6l/40-chars-fake-of-the-package-instance_id"
+      "[CACHE]/3pp_cipd/tools/fetch_and_package/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
       "_3PP_PACKAGE_NAME": "fetch_and_package",
@@ -745,7 +745,7 @@
     "cmd": [
       "cipd",
       "pkg-register",
-      "[CACHE]/3pp_cipd/tools/fetch_and_package/linux-armv6l/40-chars-fake-of-the-package-instance_id",
+      "[CACHE]/3pp_cipd/tools/fetch_and_package/40-chars-fake-of-the-package-instance_id",
       "-ref",
       "latest",
       "-tag",
@@ -758,13 +758,13 @@
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_VERSION": "2.0.0"
     },
-    "name": "building fetch_and_package.do upload.register tools/fetch_and_package/linux-armv6l",
+    "name": "building fetch_and_package.do upload.register tools/fetch_and_package",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"tools/fetch_and_package/linux-armv6l\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"tools/fetch_and_package\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"

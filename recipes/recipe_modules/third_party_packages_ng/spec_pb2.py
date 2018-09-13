@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='third_party_packages_ng/spec.proto',
   package='',
   syntax='proto3',
-  serialized_pb=_b('\n\"third_party_packages_ng/spec.proto\"\xbc\x05\n\x04Spec\x12\x1c\n\x06\x63reate\x18\x01 \x03(\x0b\x32\x0c.Spec.Create\x12\x1c\n\x06upload\x18\x02 \x01(\x0b\x32\x0c.Spec.Upload\x1a\xd9\x04\n\x06\x43reate\x12\x13\n\x0bplatform_re\x18\x01 \x01(\t\x12#\n\x06source\x18\x02 \x01(\x0b\x32\x13.Spec.Create.Source\x12!\n\x05\x62uild\x18\x03 \x01(\x0b\x32\x12.Spec.Create.Build\x12%\n\x07package\x18\x04 \x01(\x0b\x32\x14.Spec.Create.Package\x12#\n\x06verify\x18\x05 \x01(\x0b\x32\x13.Spec.Create.Verify\x12\x13\n\x0bunsupported\x18\x06 \x01(\x08\x1a\xc4\x01\n\x06Source\x12\x19\n\x03git\x18\x01 \x01(\x0b\x32\n.GitSourceH\x00\x12\x1b\n\x04\x63ipd\x18\x02 \x01(\x0b\x32\x0b.CipdSourceH\x00\x12\x1f\n\x06script\x18\x03 \x01(\x0b\x32\r.ScriptSourceH\x00\x12\x0e\n\x06subdir\x18\x04 \x01(\t\x12\x16\n\x0eunpack_archive\x18\x05 \x01(\x08\x12\x18\n\x10no_archive_prune\x18\x06 \x01(\x08\x12\x15\n\rpatch_version\x18\x07 \x01(\tB\x08\n\x06method\x1a\x33\n\x05\x42uild\x12\x0f\n\x07install\x18\x01 \x03(\t\x12\x0c\n\x04tool\x18\x02 \x03(\t\x12\x0b\n\x03\x64\x65p\x18\x03 \x03(\t\x1a}\n\x07Package\x12\x36\n\x0cinstall_mode\x18\x01 \x01(\x0e\x32 .Spec.Create.Package.InstallMode\x12\x14\n\x0cversion_file\x18\x02 \x01(\t\"$\n\x0bInstallMode\x12\x08\n\x04\x63opy\x10\x00\x12\x0b\n\x07symlink\x10\x01\x1a\x16\n\x06Verify\x12\x0c\n\x04test\x18\x01 \x03(\t\x1a\x1c\n\x06Upload\x12\x12\n\npkg_prefix\x18\x01 \x01(\t\"W\n\tGitSource\x12\x0c\n\x04repo\x18\x01 \x01(\t\x12\x13\n\x0btag_pattern\x18\x02 \x01(\t\x12\x14\n\x0cversion_join\x18\x03 \x01(\t\x12\x11\n\tpatch_dir\x18\x04 \x03(\t\"2\n\nCipdSource\x12\x0b\n\x03pkg\x18\x01 \x01(\t\x12\x17\n\x0f\x64\x65\x66\x61ult_version\x18\x02 \x01(\t\"\x1c\n\x0cScriptSource\x12\x0c\n\x04name\x18\x01 \x01(\tb\x06proto3')
+  serialized_pb=_b('\n\"third_party_packages_ng/spec.proto\"\xcf\x05\n\x04Spec\x12\x1c\n\x06\x63reate\x18\x01 \x03(\x0b\x32\x0c.Spec.Create\x12\x1c\n\x06upload\x18\x02 \x01(\x0b\x32\x0c.Spec.Upload\x1a\xd9\x04\n\x06\x43reate\x12\x13\n\x0bplatform_re\x18\x01 \x01(\t\x12#\n\x06source\x18\x02 \x01(\x0b\x32\x13.Spec.Create.Source\x12!\n\x05\x62uild\x18\x03 \x01(\x0b\x32\x12.Spec.Create.Build\x12%\n\x07package\x18\x04 \x01(\x0b\x32\x14.Spec.Create.Package\x12#\n\x06verify\x18\x05 \x01(\x0b\x32\x13.Spec.Create.Verify\x12\x13\n\x0bunsupported\x18\x06 \x01(\x08\x1a\xc4\x01\n\x06Source\x12\x19\n\x03git\x18\x01 \x01(\x0b\x32\n.GitSourceH\x00\x12\x1b\n\x04\x63ipd\x18\x02 \x01(\x0b\x32\x0b.CipdSourceH\x00\x12\x1f\n\x06script\x18\x03 \x01(\x0b\x32\r.ScriptSourceH\x00\x12\x0e\n\x06subdir\x18\x04 \x01(\t\x12\x16\n\x0eunpack_archive\x18\x05 \x01(\x08\x12\x18\n\x10no_archive_prune\x18\x06 \x01(\x08\x12\x15\n\rpatch_version\x18\x07 \x01(\tB\x08\n\x06method\x1a\x33\n\x05\x42uild\x12\x0f\n\x07install\x18\x01 \x03(\t\x12\x0c\n\x04tool\x18\x02 \x03(\t\x12\x0b\n\x03\x64\x65p\x18\x03 \x03(\t\x1a}\n\x07Package\x12\x36\n\x0cinstall_mode\x18\x01 \x01(\x0e\x32 .Spec.Create.Package.InstallMode\x12\x14\n\x0cversion_file\x18\x02 \x01(\t\"$\n\x0bInstallMode\x12\x08\n\x04\x63opy\x10\x00\x12\x0b\n\x07symlink\x10\x01\x1a\x16\n\x06Verify\x12\x0c\n\x04test\x18\x01 \x03(\t\x1a/\n\x06Upload\x12\x12\n\npkg_prefix\x18\x01 \x01(\t\x12\x11\n\tuniversal\x18\x02 \x01(\x08\"W\n\tGitSource\x12\x0c\n\x04repo\x18\x01 \x01(\t\x12\x13\n\x0btag_pattern\x18\x02 \x01(\t\x12\x14\n\x0cversion_join\x18\x03 \x01(\t\x12\x11\n\tpatch_dir\x18\x04 \x03(\t\"2\n\nCipdSource\x12\x0b\n\x03pkg\x18\x01 \x01(\t\x12\x17\n\x0f\x64\x65\x66\x61ult_version\x18\x02 \x01(\t\"\x1c\n\x0cScriptSource\x12\x0c\n\x04name\x18\x01 \x01(\tb\x06proto3')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -314,6 +314,13 @@ _SPEC_UPLOAD = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='universal', full_name='Spec.Upload.universal', index=1,
+      number=2, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -327,7 +334,7 @@ _SPEC_UPLOAD = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=711,
-  serialized_end=739,
+  serialized_end=758,
 )
 
 _SPEC = _descriptor.Descriptor(
@@ -364,7 +371,7 @@ _SPEC = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=39,
-  serialized_end=739,
+  serialized_end=758,
 )
 
 
@@ -415,8 +422,8 @@ _GITSOURCE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=741,
-  serialized_end=828,
+  serialized_start=760,
+  serialized_end=847,
 )
 
 
@@ -453,8 +460,8 @@ _CIPDSOURCE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=830,
-  serialized_end=880,
+  serialized_start=849,
+  serialized_end=899,
 )
 
 
@@ -484,8 +491,8 @@ _SCRIPTSOURCE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=882,
-  serialized_end=910,
+  serialized_start=901,
+  serialized_end=929,
 )
 
 _SPEC_CREATE_SOURCE.fields_by_name['git'].message_type = _GITSOURCE

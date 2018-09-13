@@ -217,6 +217,11 @@ message Spec {
     //
     //   pkg/prefix/cool_thing/${platform}
     string pkg_prefix = 1;
+
+    // (optional) If set, then the output of the build is intended to be used by
+    // all platforms, and so the package we upload to will exclude the normal
+    // `${platform}` suffix.
+    bool universal = 2;
   }
   // (required) Upload describes how the built package should be uploaded to
   // CIPD.
