@@ -43,7 +43,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
 
   def testAbortCreateAndSubmitRevertNothingMatchesNothingChanged(self):
     pipeline_id = 'foobar'
-    build_id = 'buildid'
+    build_key = 'buildid'
     repo = 'chromium'
     rev = 'rev1'
     commit_position = 100
@@ -59,14 +59,14 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     pipeline_input = CreateAndSubmitRevertInput(
-        analysis_urlsafe_key=analysis.key.urlsafe(), build_id=build_id)
+        analysis_urlsafe_key=analysis.key.urlsafe(), build_key=build_key)
 
     culprit_util.AbortCreateAndSubmitRevert(pipeline_input, pipeline_id)
     culprit.put.assert_not_called()
 
   def testAbortCreateAndSubmitRevertRevertCreationFails(self):
     pipeline_id = 'foobar'
-    build_id = 'buildid'
+    build_key = 'buildid'
     repo = 'chromium'
     rev = 'rev1'
     commit_position = 100
@@ -82,7 +82,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     pipeline_input = CreateAndSubmitRevertInput(
-        analysis_urlsafe_key=analysis.key.urlsafe(), build_id=build_id)
+        analysis_urlsafe_key=analysis.key.urlsafe(), build_key=build_key)
 
     culprit_util.AbortCreateAndSubmitRevert(pipeline_input, pipeline_id)
     self.assertIsNone(culprit.revert_pipeline_id)
@@ -90,7 +90,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
 
   def testAbortCreateAndSubmitRevertRevertSubmissionFails(self):
     pipeline_id = 'foobar'
-    build_id = 'buildid'
+    build_key = 'buildid'
     repo = 'chromium'
     rev = 'rev1'
     commit_position = 100
@@ -106,7 +106,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     pipeline_input = CreateAndSubmitRevertInput(
-        analysis_urlsafe_key=analysis.key.urlsafe(), build_id=build_id)
+        analysis_urlsafe_key=analysis.key.urlsafe(), build_key=build_key)
 
     culprit_util.AbortCreateAndSubmitRevert(pipeline_input, pipeline_id)
     self.assertIsNone(culprit.submit_revert_pipeline_id)
@@ -121,7 +121,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(culprit_util, 'UnderLimitForAutorevert', return_value=True)
   def testCreateAndSubmitRevert(self, under_limit, can_revert, revert_fn,
                                 commit_fn, enabled_fn):
-    build_id = 'mock_build_id'
+    build_key = 'mock_build_key'
     repo = 'chromium'
     rev = 'rev1'
     commit_position = 100
@@ -136,7 +136,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
 
     revert_expected = CreateRevertCLParameters(
         cl_key=culprit.key.urlsafe(),
-        build_id=build_id,
+        build_key=build_key,
         failure_type=failure_type.FLAKY_TEST)
     submit_expected = SubmitRevertCLParameters(
         cl_key=culprit.key.urlsafe(),
@@ -144,7 +144,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
         failure_type=failure_type.FLAKY_TEST)
 
     pipeline_input = CreateAndSubmitRevertInput(
-        analysis_urlsafe_key=analysis.key.urlsafe(), build_id=build_id)
+        analysis_urlsafe_key=analysis.key.urlsafe(), build_key=build_key)
     culprit_util.CreateAndSubmitRevert(pipeline_input, pipeline_id)
 
     enabled_fn.assert_called_once()
@@ -165,7 +165,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(culprit_util, 'UnderLimitForAutorevert', return_value=True)
   def testCreateAndSubmitRevertNotEnabled(self, under_limit, can_revert,
                                           revert_fn, commit_fn, enabled_fn):
-    build_id = 'mock_build_id'
+    build_key = 'mock_build_key'
     repo = 'chromium'
     rev = 'rev1'
     commit_position = 100
@@ -179,7 +179,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     pipeline_input = CreateAndSubmitRevertInput(
-        analysis_urlsafe_key=analysis.key.urlsafe(), build_id=build_id)
+        analysis_urlsafe_key=analysis.key.urlsafe(), build_key=build_key)
     culprit_util.CreateAndSubmitRevert(pipeline_input, pipeline_id)
 
     enabled_fn.assert_called_once()
@@ -201,7 +201,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
       culprit_util, 'UnderLimitForAutorevert', return_value=False)
   def testCreateAndSubmitRevertOverLimit(self, under_limit, can_revert,
                                          revert_fn, commit_fn, enabled_fn):
-    build_id = 'mock_build_id'
+    build_key = 'mock_build_key'
     repo = 'chromium'
     rev = 'rev1'
     commit_position = 100
@@ -215,7 +215,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     pipeline_input = CreateAndSubmitRevertInput(
-        analysis_urlsafe_key=analysis.key.urlsafe(), build_id=build_id)
+        analysis_urlsafe_key=analysis.key.urlsafe(), build_key=build_key)
     culprit_util.CreateAndSubmitRevert(pipeline_input, pipeline_id)
 
     enabled_fn.assert_called_once()
@@ -236,7 +236,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(culprit_util, 'UnderLimitForAutorevert', return_value=True)
   def testCreateAndSubmitRevertCannotRevert(self, under_limit, can_revert,
                                             revert_fn, commit_fn, enabled_fn):
-    build_id = 'mock_build_id'
+    build_key = 'mock_build_key'
     repo = 'chromium'
     rev = 'rev1'
     commit_position = 100
@@ -250,7 +250,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     pipeline_input = CreateAndSubmitRevertInput(
-        analysis_urlsafe_key=analysis.key.urlsafe(), build_id=build_id)
+        analysis_urlsafe_key=analysis.key.urlsafe(), build_key=build_key)
     culprit_util.CreateAndSubmitRevert(pipeline_input, pipeline_id)
 
     enabled_fn.assert_called_once()
@@ -273,7 +273,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(culprit_util, 'UnderLimitForAutorevert', return_value=True)
   def testCreateAndSubmitRevertCreateFailed(self, under_limit, can_revert,
                                             revert_fn, commit_fn, enabled_fn):
-    build_id = 'mock_build_id'
+    build_key = 'mock_build_key'
     repo = 'chromium'
     rev = 'rev1'
     commit_position = 100
@@ -288,11 +288,11 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
 
     revert_expected = CreateRevertCLParameters(
         cl_key=culprit.key.urlsafe(),
-        build_id=build_id,
+        build_key=build_key,
         failure_type=failure_type.FLAKY_TEST)
 
     pipeline_input = CreateAndSubmitRevertInput(
-        analysis_urlsafe_key=analysis.key.urlsafe(), build_id=build_id)
+        analysis_urlsafe_key=analysis.key.urlsafe(), build_key=build_key)
     culprit_util.CreateAndSubmitRevert(pipeline_input, pipeline_id)
 
     enabled_fn.assert_called_once()
@@ -313,7 +313,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(culprit_util, 'UnderLimitForAutorevert', return_value=True)
   def testCreateAndSubmitRevertSubmitFailed(self, under_limit, can_revert,
                                             revert_fn, commit_fn, enabled_fn):
-    build_id = 'mock_build_id'
+    build_key = 'mock_build_key'
     repo = 'chromium'
     rev = 'rev1'
     commit_position = 100
@@ -328,7 +328,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
 
     revert_expected = CreateRevertCLParameters(
         cl_key=culprit.key.urlsafe(),
-        build_id=build_id,
+        build_key=build_key,
         failure_type=failure_type.FLAKY_TEST)
     submit_expected = SubmitRevertCLParameters(
         cl_key=culprit.key.urlsafe(),
@@ -336,7 +336,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
         failure_type=failure_type.FLAKY_TEST)
 
     pipeline_input = CreateAndSubmitRevertInput(
-        analysis_urlsafe_key=analysis.key.urlsafe(), build_id=build_id)
+        analysis_urlsafe_key=analysis.key.urlsafe(), build_key=build_key)
     culprit_util.CreateAndSubmitRevert(pipeline_input, pipeline_id)
 
     enabled_fn.assert_called_once()

@@ -32,8 +32,8 @@ class RevertAndNotifyTestCulpritPipeline(GeneratorPipeline):
 
     master_name, builder_name, build_number = (
         pipeline_input.build_key.GetParts())
-    build_id = BaseBuildModel.CreateBuildId(master_name, builder_name,
-                                            build_number)
+    build_key = BaseBuildModel.CreateBuildKey(master_name, builder_name,
+                                              build_number)
     culprits = pipeline_input.culprits
     build_failure_type = failure_type.TEST
 
@@ -50,7 +50,7 @@ class RevertAndNotifyTestCulpritPipeline(GeneratorPipeline):
         revert_status = yield CreateRevertCLPipeline(
             CreateRevertCLParameters(
                 cl_key=culprit_key,
-                build_id=build_id,
+                build_key=build_key,
                 failure_type=build_failure_type))
 
         if test_culprit_action.CanAutoCommitRevertByFindit():

@@ -146,13 +146,14 @@ def RevertCulprit(parameters, analysis_id):
 
   repo_name = culprit.repo_name
   revision = culprit.revision
-  build_id = parameters.build_id
+  build_key = parameters.build_key
 
   if _CanCreateRevertForCulprit(parameters, analysis_id):
     codereview_info = GetCodeReviewDataForACulprit(parameters.cl_key)
     revert_status, revert_cl, skip_reason = gerrit.RevertCulprit(
-        parameters.cl_key, build_id, parameters.failure_type,
-        GetSampleFailedStepName(repo_name, revision, build_id), codereview_info)
+        parameters.cl_key, build_key, parameters.failure_type,
+        GetSampleFailedStepName(repo_name, revision, build_key),
+        codereview_info)
     _UpdateCulprit(
         parameters.cl_key,
         revert_status=constants.AUTO_REVERT_STATUS_TO_ANALYSIS_STATUS[

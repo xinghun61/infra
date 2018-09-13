@@ -44,8 +44,8 @@ def UpdateSuspectedCL(repo_name, revision, commit_position, approach,
   if cl_failure_type not in suspected_cl.failure_type:
     suspected_cl.failure_type.append(cl_failure_type)
 
-  build_key = BaseBuildModel.CreateBuildId(master_name, builder_name,
-                                           build_number)
+  build_key = BaseBuildModel.CreateBuildKey(master_name, builder_name,
+                                            build_number)
   if build_key not in suspected_cl.builds:
     suspected_cl.builds[build_key] = {
         'approaches': [approach],

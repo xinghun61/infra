@@ -714,10 +714,10 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     expected_failure_result_map = {
         'abc_test': {
             'Unittest2.Subtest1':
-                BaseBuildModel.CreateBuildId(master_name, builder_name,
-                                             build_number),
+                BaseBuildModel.CreateBuildKey(master_name, builder_name,
+                                              build_number),
             'Unittest3.Subtest2':
-                BaseBuildModel.CreateBuildId(master_name, builder_name, 1)
+                BaseBuildModel.CreateBuildKey(master_name, builder_name, 1)
         }
     }
 

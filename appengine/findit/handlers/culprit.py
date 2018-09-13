@@ -23,11 +23,11 @@ def _GetBuildInfoAsDict(culprit):
 
   def GetListOfTryJobBuilds(builds):
     displayed_builds = {}
-    for build_id, build in builds.iteritems():
+    for build_key, build in builds.iteritems():
       if analysis_approach_type.TRY_JOB not in build.get('approaches', []):
         continue
 
-      build_info = BaseBuildModel.GetBuildInfoFromId(build_id)
+      build_info = BaseBuildModel.GetBuildInfoFromBuildKey(build_key)
       master_name = build_info[0]
       builder_name = build_info[1]
       build_number = build_info[2]

@@ -13,14 +13,14 @@ class WfFailureGroup(BaseBuildModel):
 
   @staticmethod
   def _CreateKey(master_name, builder_name, build_number):  # pragma: no cover
-    return ndb.Key('WfFailureGroup',
-                   BaseBuildModel.CreateBuildId(master_name, builder_name,
-                                                build_number))
+    return ndb.Key(
+        'WfFailureGroup',
+        BaseBuildModel.CreateBuildKey(master_name, builder_name, build_number))
 
   @staticmethod
   def Create(master_name, builder_name, build_number):  # pragma: no cover
-    return WfFailureGroup(key=WfFailureGroup._CreateKey(
-        master_name, builder_name, build_number))
+    return WfFailureGroup(
+        key=WfFailureGroup._CreateKey(master_name, builder_name, build_number))
 
   @staticmethod
   def Get(master_name, builder_name, build_number):  # pragma: no cover

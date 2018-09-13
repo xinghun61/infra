@@ -315,17 +315,17 @@ def UpdateAnalysisWithFlakesFoundBySwarmingReruns(master_name, builder_name,
 
 def GetFirstTimeFailedSteps(master_name, builder_name, build_number):
   """Gets steps that have tests failed first time in the build."""
-  current_build_id = BaseBuildModel.CreateBuildId(master_name, builder_name,
-                                                  build_number)
+  current_build_key = BaseBuildModel.CreateBuildKey(master_name, builder_name,
+                                                    build_number)
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-  assert analysis, "Cannot get WfAnalysis entity for %s" % current_build_id
+  assert analysis, "Cannot get WfAnalysis entity for %s" % current_build_key
 
   first_failed_steps = []
   for step, tests in (analysis.failure_result_map or {}).iteritems():
     if isinstance(tests, basestring):  # Non-swarming.
       continue
 
-    if current_build_id in tests.values():
+    if current_build_key in tests.values():
       first_failed_steps.append(step)
   return first_failed_steps
 

@@ -140,8 +140,8 @@ def _HasBuildKeyForBuildInfoInFailureResultMap(master_name, builder_name,
   """Checks if there is any first failed test."""
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
   failure_result_map = analysis.failure_result_map
-  current_build_key = BaseBuildModel.CreateBuildId(master_name, builder_name,
-                                                   build_number)
+  current_build_key = BaseBuildModel.CreateBuildKey(master_name, builder_name,
+                                                    build_number)
   for step_keys in failure_result_map.itervalues():
     for test_key in step_keys.itervalues():
       if test_key == current_build_key:

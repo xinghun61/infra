@@ -60,7 +60,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'rev1'
     commit_position = 123
-    build_id = 'm/b/123'
+    build_key = 'm/b/123'
 
     cl_info = ClInfo(self.review_server_host, self.review_change_id)
     cl_info.commits.append(
@@ -71,7 +71,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
 
     culprit = WfSuspectedCL.Create(repo_name, revision, commit_position)
     culprit.builds = {
-        build_id: {
+        build_key: {
             'status': None,
             'failures': {
                 'step': ['test1']
@@ -82,7 +82,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
 
     pipeline_input = CreateRevertCLParameters(
         cl_key=culprit.key.urlsafe(),
-        build_id=build_id,
+        build_key=build_key,
         failure_type=failure_type.COMPILE)
     pipeline = CreateRevertCLPipeline(pipeline_input)
     revert_status = pipeline.run(pipeline_input)
@@ -109,7 +109,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
   def testRevertSkipped(self, _):
     repo_name = 'chromium'
     revision = 'rev1'
-    build_id = 'm/b/123'
+    build_key = 'm/b/123'
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.revert_status = status.SKIPPED
@@ -117,7 +117,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
 
     pipeline_input = CreateRevertCLParameters(
         cl_key=culprit.key.urlsafe(),
-        build_id=build_id,
+        build_key=build_key,
         failure_type=failure_type.COMPILE)
     pipeline = CreateRevertCLPipeline(pipeline_input)
     revert_status = pipeline.run(pipeline_input)
@@ -127,7 +127,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
   def testLogUnexpectedAborting(self):
     repo_name = 'chromium'
     revision = 'rev1'
-    build_id = 'm/b/123'
+    build_key = 'm/b/123'
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.revert_status = status.RUNNING
@@ -135,7 +135,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
 
     pipeline_input = CreateRevertCLParameters(
         cl_key=culprit.key.urlsafe(),
-        build_id=build_id,
+        build_key=build_key,
         failure_type=failure_type.COMPILE)
     CreateRevertCLPipeline(pipeline_input).OnAbort(pipeline_input)
     culprit = WfSuspectedCL.Get(repo_name, revision)
@@ -144,13 +144,13 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
   def testLogUnexpectedAbortingNoChange(self):
     repo_name = 'chromium'
     revision = 'rev1'
-    build_id = 'm/b/123'
+    build_key = 'm/b/123'
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
     pipeline_input = CreateRevertCLParameters(
         cl_key=culprit.key.urlsafe(),
-        build_id=build_id,
+        build_key=build_key,
         failure_type=failure_type.COMPILE)
     CreateRevertCLPipeline(pipeline_input).OnAbort(pipeline_input)
     culprit = WfSuspectedCL.Get(repo_name, revision)
@@ -159,7 +159,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
   def testLogUnexpectedAbortingPipelineIdNotMatch(self):
     repo_name = 'chromium'
     revision = 'rev1'
-    build_id = 'm/b/123'
+    build_key = 'm/b/123'
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.revert_pipeline_id = 'pipeline_id'
@@ -167,7 +167,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
 
     pipeline_input = CreateRevertCLParameters(
         cl_key=culprit.key.urlsafe(),
-        build_id=build_id,
+        build_key=build_key,
         failure_type=failure_type.COMPILE)
     pipeline = CreateRevertCLPipeline(pipeline_input)
     pipeline.start()

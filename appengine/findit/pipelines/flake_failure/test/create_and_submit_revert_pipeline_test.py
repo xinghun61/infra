@@ -20,7 +20,7 @@ class CreateAndSubmitRevertPipelineTest(WaterfallTestCase):
 
   @mock.patch.object(culprit_util, 'CreateAndSubmitRevert')
   def testRunImpl(self, revert_fn):
-    build_id = 'mock_build_id'
+    build_key = 'mock_build_key'
     repo = 'chromium'
     rev = 'rev1'
     commit_position = 100
@@ -33,7 +33,7 @@ class CreateAndSubmitRevertPipelineTest(WaterfallTestCase):
     analysis.put()
 
     pipeline_input = CreateAndSubmitRevertInput(
-        analysis_urlsafe_key=analysis.key.urlsafe(), build_id=build_id)
+        analysis_urlsafe_key=analysis.key.urlsafe(), build_key=build_key)
     pipeline_job = CreateAndSubmitRevertPipeline(pipeline_input)
     pipeline_job.start()
     self.execute_queued_tasks()
@@ -42,7 +42,7 @@ class CreateAndSubmitRevertPipelineTest(WaterfallTestCase):
 
   @mock.patch.object(culprit_util, 'AbortCreateAndSubmitRevert')
   def testAbort(self, abort_fn):
-    build_id = 'mock_build_id'
+    build_key = 'mock_build_key'
     repo = 'chromium'
     rev = 'rev1'
     commit_position = 100
@@ -55,7 +55,7 @@ class CreateAndSubmitRevertPipelineTest(WaterfallTestCase):
     analysis.put()
 
     pipeline_input = CreateAndSubmitRevertInput(
-        analysis_urlsafe_key=analysis.key.urlsafe(), build_id=build_id)
+        analysis_urlsafe_key=analysis.key.urlsafe(), build_key=build_key)
     pipeline_job = CreateAndSubmitRevertPipeline(pipeline_input)
     pipeline_job.OnAbort(pipeline_input)
 

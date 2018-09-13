@@ -36,7 +36,7 @@ class BaseCL(StructuredObject):
 class CreateRevertCLParameters(StructuredObject):
   """Input for CreateRevertCLPipeline."""
   cl_key = basestring
-  build_id = basestring
+  build_key = basestring
   failure_type = int
 
 

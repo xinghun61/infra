@@ -7,4 +7,4 @@ from libs.structured_object import StructuredObject
 
 class CreateAndSubmitRevertInput(StructuredObject):
   analysis_urlsafe_key = basestring
-  build_id = basestring
+  build_key = basestring

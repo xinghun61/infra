@@ -13,10 +13,10 @@ class _DummyModel(BaseBuildModel):
 
   @staticmethod
   def Create(master_name, builder_name, build_number):
-    key = ndb.Key('M',
-                  BaseBuildModel.CreateBuildId(master_name, builder_name,
-                                               build_number), '_DummyModel',
-                  build_number)
+    key = ndb.Key(
+        'M',
+        BaseBuildModel.CreateBuildKey(master_name, builder_name, build_number),
+        '_DummyModel', build_number)
     return _DummyModel(key=key)
 
 

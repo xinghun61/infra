@@ -194,9 +194,9 @@ class WfSwarmingTask(BaseBuildModel, BaseSwarmingTask):
   @staticmethod
   def _CreateKey(master_name, builder_name, build_number,
                  step_name):  # pragma: no cover
-    build_id = BaseBuildModel.CreateBuildId(master_name, builder_name,
-                                            build_number)
-    return ndb.Key('WfBuild', build_id, 'WfSwarmingTask', step_name)
+    build_key = BaseBuildModel.CreateBuildKey(master_name, builder_name,
+                                              build_number)
+    return ndb.Key('WfBuild', build_key, 'WfSwarmingTask', step_name)
 
   @staticmethod
   def Create(master_name, builder_name, build_number,

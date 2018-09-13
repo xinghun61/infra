@@ -94,7 +94,7 @@ def CreateAndSubmitRevert(parameters, runner_id):
   # continue on and submit it.
   revert_culprit_parameters = CreateRevertCLParameters(
       cl_key=culprit.key.urlsafe(),
-      build_id=parameters.build_id,
+      build_key=parameters.build_key,
       failure_type=failure_type.FLAKY_TEST)
   revert_status = culprit_action.RevertCulprit(revert_culprit_parameters,
                                                runner_id)

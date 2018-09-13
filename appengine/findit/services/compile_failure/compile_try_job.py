@@ -82,7 +82,7 @@ def _NeedANewCompileTryJob(master_name, builder_name, build_number,
   compile_failure = failure_info.failed_steps.get('compile') or None
   if compile_failure:
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-    analysis.failure_result_map['compile'] = BaseBuildModel.CreateBuildId(
+    analysis.failure_result_map['compile'] = BaseBuildModel.CreateBuildKey(
         master_name, builder_name, compile_failure.first_failure)
     analysis.put()
 

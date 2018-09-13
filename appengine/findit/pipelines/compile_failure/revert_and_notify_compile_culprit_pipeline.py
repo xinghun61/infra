@@ -35,8 +35,8 @@ class RevertAndNotifyCompileCulpritPipeline(GeneratorPipeline):
     culprits = pipeline_input.culprits
     culprit = culprits.values()[0]
     force_notify = culprit_action.ShouldForceNotify(culprit, pipeline_input)
-    build_id = BaseBuildModel.CreateBuildId(master_name, builder_name,
-                                            build_number)
+    build_key = BaseBuildModel.CreateBuildKey(master_name, builder_name,
+                                              build_number)
 
     build_failure_type = failure_type.COMPILE
     revert_status = constants.SKIPPED
@@ -45,7 +45,7 @@ class RevertAndNotifyCompileCulpritPipeline(GeneratorPipeline):
       revert_status = yield CreateRevertCLPipeline(
           CreateRevertCLParameters(
               cl_key=culprit,
-              build_id=build_id,
+              build_key=build_key,
               failure_type=build_failure_type))
 
       if compile_culprit_action.CanAutoCommitRevertByFindit():

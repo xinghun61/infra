@@ -130,8 +130,8 @@ def _AppendTriageHistoryRecord(master_name, builder_name, build_number, cl_info,
 def _UpdateSuspectedCLAndAnalysis(master_name, builder_name, build_number,
                                   cl_info, cl_status, user_name):
   repo_name, revision = GetCLInfo(cl_info)
-  build_key = BaseBuildModel.CreateBuildId(master_name, builder_name,
-                                           build_number)
+  build_key = BaseBuildModel.CreateBuildKey(master_name, builder_name,
+                                            build_number)
 
   success = (
       _UpdateSuspectedCL(repo_name, revision, build_key, cl_status) and

@@ -174,9 +174,9 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
             culprit_data_point.GetSwarmingTaskId(), analysis.test_name)
 
         # Data needed for reverts.
-        build_id = BaseBuildModel.CreateBuildId(analysis.original_master_name,
-                                                analysis.original_builder_name,
-                                                analysis.original_build_number)
+        build_key = BaseBuildModel.CreateBuildKey(
+            analysis.original_master_name, analysis.original_builder_name,
+            analysis.original_build_number)
         # Log Monorail bug.
         yield CreateBugForFlakePipeline(
             self.CreateInputObjectInstance(
@@ -190,7 +190,7 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
             self.CreateInputObjectInstance(
                 CreateAndSubmitRevertInput,
                 analysis_urlsafe_key=analysis.key.urlsafe(),
-                build_id=build_id))
+                build_key=build_key))
 
         # Update bug with result.
         yield UpdateMonorailBugPipeline(

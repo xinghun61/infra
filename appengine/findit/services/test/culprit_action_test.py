@@ -63,7 +63,7 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     parameters = CreateRevertCLParameters(
-        cl_key=culprit.key.urlsafe(), build_id='build_id')
+        cl_key=culprit.key.urlsafe(), build_key='build_key')
     pipeline_id = 'pipeline_id'
 
     self.assertFalse(
@@ -79,7 +79,7 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     parameters = CreateRevertCLParameters(
-        cl_key=culprit.key.urlsafe(), build_id='build_id')
+        cl_key=culprit.key.urlsafe(), build_key='build_key')
     pipeline_id = 'another_pipeline'
 
     self.assertFalse(
@@ -94,7 +94,7 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     parameters = CreateRevertCLParameters(
-        cl_key=culprit.key.urlsafe(), build_id='build_id')
+        cl_key=culprit.key.urlsafe(), build_key='build_key')
     pipeline_id = 'pipeline_id'
 
     self.assertTrue(
@@ -363,14 +363,14 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
   def testRevertCulpritSkipped(self, _):
     repo_name = 'chromium'
     revision = 'rev1'
-    build_id = 'm/b/123'
+    build_key = 'm/b/123'
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 1)
     culprit.put()
 
     pipeline_input = CreateRevertCLParameters(
         cl_key=culprit.key.urlsafe(),
-        build_id=build_id,
+        build_key=build_key,
         failure_type=failure_type.COMPILE)
     self.assertEqual(
         constants.SKIPPED,
@@ -384,7 +384,7 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
   def testRevertCulprit(self, mock_revert, *_):
     repo_name = 'chromium'
     revision = 'rev1'
-    build_id = 'm/b/123'
+    build_key = 'm/b/123'
 
     revert_cl = RevertCL()
     revert_cl.revert_cl_url = 'url'
@@ -397,7 +397,7 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
 
     pipeline_input = CreateRevertCLParameters(
         cl_key=culprit.key.urlsafe(),
-        build_id=build_id,
+        build_key=build_key,
         failure_type=failure_type.COMPILE)
     self.assertEqual(
         constants.CREATED_BY_FINDIT,
@@ -448,27 +448,27 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'rev1'
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
-    build_id = 'm/b/123'
-    culprit.builds = {build_id: {'failures': {'step': ['test1', 'test2']}}}
+    build_key = 'm/b/123'
+    culprit.builds = {build_key: {'failures': {'step': ['test1', 'test2']}}}
     culprit.put()
     self.assertEqual(
         'step',
-        culprit_action.GetSampleFailedStepName(repo_name, revision, build_id))
+        culprit_action.GetSampleFailedStepName(repo_name, revision, build_key))
 
   @mock.patch.object(logging, 'warning')
   def testGetSampleFailedStepNameUseAnotherBuild(self, mock_log):
     repo_name = 'chromium'
     revision = 'rev1'
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
-    build_id = 'm/b/123'
+    build_key = 'm/b/123'
     culprit.builds = {'m/b/124': {'failures': {'step': ['test1', 'test2']}}}
     culprit.put()
     self.assertEqual(
         'step',
-        culprit_action.GetSampleFailedStepName(repo_name, revision, build_id))
+        culprit_action.GetSampleFailedStepName(repo_name, revision, build_key))
     mock_log.assert_called_once_with(
         '%s is not found in culprit %s/%s\'s build,'
-        ' using another build to get a sample failed step.', build_id,
+        ' using another build to get a sample failed step.', build_key,
         repo_name, revision)
 
   @mock.patch.object(logging, 'error')
@@ -476,12 +476,12 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'rev1'
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
-    build_id = 'm/b/123'
+    build_key = 'm/b/123'
     culprit.builds = None
     culprit.put()
     self.assertEqual(
-        '', culprit_action.GetSampleFailedStepName(repo_name, revision,
-                                                   build_id))
+        '',
+        culprit_action.GetSampleFailedStepName(repo_name, revision, build_key))
     mock_log.assert_called_once_with(
         'Cannot get a sample failed step for culprit %s/%s.', repo_name,
         revision)

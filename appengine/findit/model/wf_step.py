@@ -22,9 +22,9 @@ class WfStep(BaseBuildModel):
   @staticmethod
   def _CreateKey(master_name, builder_name, build_number,
                  step_name):  # pragma: no cover
-    build_id = BaseBuildModel.CreateBuildId(master_name, builder_name,
-                                            build_number)
-    return ndb.Key('WfBuild', build_id, 'WfStep', step_name)
+    build_key = BaseBuildModel.CreateBuildKey(master_name, builder_name,
+                                              build_number)
+    return ndb.Key('WfBuild', build_key, 'WfStep', step_name)
 
   @classmethod
   def Create(cls, master_name, builder_name, build_number,

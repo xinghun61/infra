@@ -158,8 +158,8 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
       self.taskqueue_stub.FlushQueue(queue['name'])
 
     def MockedGetAllTryJobResults(master_name, builder_name, build_number, _):
-      build_key = BaseBuildModel.CreateBuildId(master_name, builder_name,
-                                               build_number)
+      build_key = BaseBuildModel.CreateBuildKey(master_name, builder_name,
+                                                build_number)
       return SAMPLE_TRY_JOB_INFO.get(build_key, None)
 
     self.mock(handlers_util, 'GetAllTryJobResults', MockedGetAllTryJobResults)

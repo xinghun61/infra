@@ -215,7 +215,7 @@ class FindItApi(remote.Service):
     # So we might need to go to the first failure to get CL information.
     build_info = cl.GetBuildInfo(master_name, builder_name, current_build)
     first_build_info = None if not reference_build_key else cl.GetBuildInfo(
-        *BaseBuildModel.GetBuildInfoFromId(reference_build_key))
+        *BaseBuildModel.GetBuildInfoFromBuildKey(reference_build_key))
     additional_info['confidence'], additional_info['cl_approach'] = (
         suspected_cl_util.GetSuspectedCLConfidenceScoreAndApproach(
             confidences, build_info, first_build_info))
@@ -441,14 +441,14 @@ class FindItApi(remote.Service):
       if isinstance(step_map, basestring):
         swarming_tasks[step_name][step_map] = (
             WfSwarmingTask.Get(
-                *BaseBuildModel.GetBuildInfoFromId(step_map),
+                *BaseBuildModel.GetBuildInfoFromBuildKey(step_map),
                 step_name=step_name))
       else:
         for task_key in step_map.values():
           if not swarming_tasks[step_name].get(task_key):
             swarming_tasks[step_name][task_key] = (
                 WfSwarmingTask.Get(
-                    *BaseBuildModel.GetBuildInfoFromId(task_key),
+                    *BaseBuildModel.GetBuildInfoFromBuildKey(task_key),
                     step_name=step_name))
 
     return swarming_tasks

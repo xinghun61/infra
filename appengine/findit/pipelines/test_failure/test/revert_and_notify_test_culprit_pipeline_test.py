@@ -119,7 +119,7 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
-    build_id = 'm/b/124'
+    build_key = 'm/b/124'
 
     cl_key = 'mockurlsafekey'
     culprits = DictOfBasestring()
@@ -135,7 +135,7 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     self.MockSynchronousPipeline(
         CreateRevertCLPipeline,
         CreateRevertCLParameters(
-            cl_key=cl_key, build_id=build_id, failure_type=failure_type.TEST),
+            cl_key=cl_key, build_key=build_key, failure_type=failure_type.TEST),
         services_constants.CREATED_BY_FINDIT)
     self.MockSynchronousPipeline(
         SubmitRevertCLPipeline,
@@ -173,7 +173,7 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
-    build_id = 'm/b/124'
+    build_key = 'm/b/124'
 
     cl_key = 'mockurlsafekey'
     culprits = DictOfBasestring()
@@ -189,7 +189,7 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     self.MockSynchronousPipeline(
         CreateRevertCLPipeline,
         CreateRevertCLParameters(
-            cl_key=cl_key, build_id=build_id, failure_type=failure_type.TEST),
+            cl_key=cl_key, build_key=build_key, failure_type=failure_type.TEST),
         services_constants.CREATED_BY_FINDIT)
     self.MockSynchronousPipeline(
         SendNotificationForCulpritPipeline,

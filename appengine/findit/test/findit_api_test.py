@@ -900,7 +900,7 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     suspected_cl_42 = WfSuspectedCL.Create('chromium', 'r4_2', 42)
     suspected_cl_42.builds = {
-        BaseBuildModel.CreateBuildId(master_name, builder_name, 5): {
+        BaseBuildModel.CreateBuildKey(master_name, builder_name, 5): {
             'approaches': [analysis_approach_type.TRY_JOB]
         }
     }
@@ -908,15 +908,16 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     suspected_cl_21 = WfSuspectedCL.Create('chromium', 'r2_1', None)
     suspected_cl_21.builds = {
-        BaseBuildModel.CreateBuildId(master_name, builder_name, 3): {
+        BaseBuildModel.CreateBuildKey(master_name, builder_name, 3): {
             'approaches': [analysis_approach_type.HEURISTIC],
             'top_score': 5
         },
-        BaseBuildModel.CreateBuildId(master_name, builder_name, 4): {
+        BaseBuildModel.CreateBuildKey(master_name, builder_name, 4): {
             'approaches': [analysis_approach_type.HEURISTIC],
             'top_score': 5
         },
-        BaseBuildModel.CreateBuildId(master_name, builder_name, build_number): {
+        BaseBuildModel.CreateBuildKey(master_name, builder_name,
+                                      build_number): {
             'approaches': [analysis_approach_type.HEURISTIC],
             'top_score': 5
         }
@@ -925,14 +926,15 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     suspected_cl_410 = WfSuspectedCL.Create('chromium', 'r4_10', None)
     suspected_cl_410.builds = {
-        BaseBuildModel.CreateBuildId(master_name, builder_name, 4): {
+        BaseBuildModel.CreateBuildKey(master_name, builder_name, 4): {
             'approaches': [
                 analysis_approach_type.HEURISTIC, analysis_approach_type.TRY_JOB
             ],
             'top_score':
                 5
         },
-        BaseBuildModel.CreateBuildId(master_name, builder_name, build_number): {
+        BaseBuildModel.CreateBuildKey(master_name, builder_name,
+                                      build_number): {
             'approaches': [analysis_approach_type.HEURISTIC],
             'top_score': 5
         }

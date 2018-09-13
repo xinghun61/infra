@@ -200,8 +200,8 @@ if __name__ == '__main__':
         continue
 
       build_key = analysis.key.pairs()[0][1]
-      master, builder_name, build_number = BaseBuildModel.GetBuildInfoFromId(
-          build_key)
+      master, builder_name, build_number = (
+          BaseBuildModel.GetBuildInfoFromBuildKey(build_key))
       build_number = int(build_number)
 
       try_job = WfTryJob.Get(master, builder_name, build_number)

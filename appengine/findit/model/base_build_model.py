@@ -10,18 +10,18 @@ class BaseBuildModel(ndb.Model):  # pragma: no cover
 
   The computed properties are master name, builder name, and build number.
   Subclasses should set its key as:
-    build_id = BaseBuildModel.CreateBuildId(
+    build_key = BaseBuildModel.CreateBuildKey(
         master_name, builder_name, build_number)
-    ndb.Key('KindName', build_id, 'Optional_KindName', optional_id, ...)
+    ndb.Key('KindName', build_key, 'Optional_KindName', optional_id, ...)
   """
 
   @staticmethod
-  def CreateBuildId(master_name, builder_name, build_number):
+  def CreateBuildKey(master_name, builder_name, build_number):
     return '%s/%s/%s' % (master_name, builder_name, build_number)
 
   @staticmethod
-  def GetBuildInfoFromId(build_id):
-    return build_id.split('/')
+  def GetBuildInfoFromBuildKey(build_key):
+    return build_key.split('/')
 
   @ndb.ComputedProperty
   def master_name(self):

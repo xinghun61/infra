@@ -45,14 +45,14 @@ class WfTryJob(BaseTryJob, BaseBuildModel):
   # Arguments number differs from overridden method - pylint: disable=W0221
   @staticmethod
   def _CreateKey(master_name, builder_name, build_number):
-    return ndb.Key('WfTryJob',
-                   BaseBuildModel.CreateBuildId(master_name, builder_name,
-                                                build_number))
+    return ndb.Key(
+        'WfTryJob',
+        BaseBuildModel.CreateBuildKey(master_name, builder_name, build_number))
 
   @staticmethod
   def Create(master_name, builder_name, build_number):
-    try_job = WfTryJob(key=WfTryJob._CreateKey(master_name, builder_name,
-                                               build_number))
+    try_job = WfTryJob(
+        key=WfTryJob._CreateKey(master_name, builder_name, build_number))
     try_job.compile_results = try_job.compile_results or []
     try_job.test_results = try_job.test_results or []
     try_job.try_job_ids = try_job.try_job_ids or []

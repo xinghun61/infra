@@ -97,7 +97,7 @@ def _GenerateSwarmingTasksData(failure_result_map):
 
       for key in swarming_task_keys:
         task_dict = step_tasks_info[key]
-        referred_build_keys = BaseBuildModel.GetBuildInfoFromId(key)
+        referred_build_keys = BaseBuildModel.GetBuildInfoFromBuildKey(key)
         task = WfSwarmingTask.Get(*referred_build_keys, step_name=step_name)
         all_tests = _GetAllTestsForASwarmingTask(key, failure)
         task_dict['all_tests'] = all_tests
@@ -208,7 +208,7 @@ def _OrganizeTryJobResultByCulprits(try_job_culprits):
 
 
 def _GetCulpritInfoForTryJobResultForTest(try_job_key, culprits_info):
-  referred_build_keys = BaseBuildModel.GetBuildInfoFromId(try_job_key)
+  referred_build_keys = BaseBuildModel.GetBuildInfoFromBuildKey(try_job_key)
   try_job = WfTryJob.Get(*referred_build_keys)
 
   if not try_job or try_job.compile_results:
@@ -414,7 +414,7 @@ def _GetAllTryJobResultsForTest(failure_result_map,
 
 def _GetTryJobResultForCompile(failure_result_map):
   try_job_key = failure_result_map['compile']
-  referred_build_keys = BaseBuildModel.GetBuildInfoFromId(try_job_key)
+  referred_build_keys = BaseBuildModel.GetBuildInfoFromBuildKey(try_job_key)
   culprit_info = defaultdict(lambda: defaultdict(list))
 
   try_job = WfTryJob.Get(*referred_build_keys)

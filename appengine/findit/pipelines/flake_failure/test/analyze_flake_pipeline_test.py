@@ -107,7 +107,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
-    build_id = 'm/b/123'
+    build_key = 'm/b/123'
     step_name = 's'
     test_name = 't'
     culprit_commit_position = 999
@@ -153,7 +153,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         step_metadata=None,
         test_location=test_location)
     expected_create_and_submit_revert_input = CreateAndSubmitRevertInput(
-        analysis_urlsafe_key=analysis.key.urlsafe(), build_id=build_id)
+        analysis_urlsafe_key=analysis.key.urlsafe(), build_key=build_key)
     expected_update_bug_input = UpdateMonorailBugInput(
         analysis_urlsafe_key=analysis.key.urlsafe())
     expected_notify_culprit_input = NotifyCulpritInput(

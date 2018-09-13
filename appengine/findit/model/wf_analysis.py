@@ -21,7 +21,7 @@ class WfAnalysis(BaseBuildModel):
   def _CreateKey(master_name, builder_name, build_number):  # pragma: no cover
     return ndb.Key(
         'WfAnalysis',
-        BaseBuildModel.CreateBuildId(master_name, builder_name, build_number))
+        BaseBuildModel.CreateBuildKey(master_name, builder_name, build_number))
 
   @staticmethod
   def Create(master_name, builder_name, build_number):  # pragma: no cover

@@ -310,7 +310,7 @@ def _PrepareTryJobDataForCompileFailure(analysis):
           constants.COMPILE_STEP_NAME in analysis.failure_result_map):
     return try_job_data  # pragma: no cover.
 
-  referred_build_keys = BaseBuildModel.GetBuildInfoFromId(
+  referred_build_keys = BaseBuildModel.GetBuildInfoFromBuildKey(
       analysis.failure_result_map[constants.COMPILE_STEP_NAME])
   try_job = WfTryJob.Get(*referred_build_keys)
   if not try_job or not try_job.compile_results:
@@ -344,8 +344,8 @@ def _GetAllSuspectedCLsAndCheckStatus(master_name, builder_name, build_number,
                                       analysis):
   if not analysis or not analysis.suspected_cls:
     return []
-  build_key = BaseBuildModel.CreateBuildId(master_name, builder_name,
-                                           build_number)
+  build_key = BaseBuildModel.CreateBuildKey(master_name, builder_name,
+                                            build_number)
   suspected_cls = copy.deepcopy(analysis.suspected_cls)
 
   confidences = SuspectedCLConfidence.Get()
