@@ -1,0 +1,34 @@
+{
+  "name": "monorail",
+  "version": "1.0.0",
+  "moduleType": [
+    "es6"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "bower_components",
+    "test"
+  ],
+  "dependencies": {
+    "polymer": "Polymer/polymer#^2.0.0",
+    "paper-dialog": "PolymerElements/paper-dialog#^2.0.1",
+    "iron-collapse": "PolymerElements/iron-collapse#^2.0.0",
+    "iron-icons": "PolymerElements/iron-icons#^2.0.0",
+    "webcomponentsjs": "webcomponents/webcomponentsjs#^1.0.1",
+    "web-animations-js": "web-animations/web-animations-js",
+    "moment": "^2.22.1",
+    "moment-timezone": "^0.5.16",
+    "iron-ajax": "^2.1.3",
+    "app-route": "PolymerElements/app-route#^2.1.0",
+    "paper-tooltip": "PolymerElements/paper-tooltip#^2.1.1",
+    "polymer-redux": "^1.0.5"
+  },
+  "devDependencies": {
+    "web-component-tester": "Polymer/web-component-tester#6.0.0"
+  },
+  "resolutions": {
+    "webcomponentsjs": "^v1.1.0",
+    "polymer": "^2.0.0",
+    "paper-tooltip": "~2.0"
+  }
+}
