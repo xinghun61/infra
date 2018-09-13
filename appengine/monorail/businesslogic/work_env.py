@@ -46,6 +46,7 @@ from features import features_constants
 from features import send_notifications
 from features import features_bizobj
 from features import hotlist_helpers
+from framework import framework_bizobj
 from framework import exceptions
 from framework import framework_helpers
 from framework import permissions
@@ -1264,16 +1265,24 @@ class WorkEnv(object):
     Args:
       name: str the hotlist name to check.
 
+    Returns:
+      None if the user can create a hotlist with that name, or a string with the
+      reason the name can't be used.
+
     Raises:
-      InputException: The hotlist name is not valid or user is not signed in.
-      HotlistAlreadyExists: The hotlist name is already in use.
+      InputException: The user is not signed in.
     """
     if not self.mc.auth.user_id:
       raise exceptions.InputException('No current user specified')
 
     with self.mc.profiler.Phase('checking hotlist name: %r' % name):
-      self.services.features.CheckHotlistName(
-          self.mc.cnxn, name, [self.mc.auth.user_id])
+      if not framework_bizobj.IsValidHotlistName(name):
+        return '%s is not a valid hotlist name.' % name
+      if self.services.features.LookupHotlistIDs(
+          self.mc.cnxn, [name], [self.mc.auth.user_id]):
+        return 'There is already a hotlist with that name.'
+
+    return None
 
   def RemoveIssuesFromHotlists(self, hotlist_ids, issue_ids):
     """Remove the issues given in issue_ids from the given hotlists.

@@ -1368,7 +1368,8 @@ class WorkEnvTest(unittest.TestCase):
   def testCheckHotlistName_OK(self):
     self.SignIn()
     with self.work_env as we:
-      we.CheckHotlistName('Fake-Hotlist')
+      error = we.CheckHotlistName('Fake-Hotlist')
+    self.assertIsNone(error)
 
   def testCheckHotlistName_Anon(self):
     with self.assertRaises(exceptions.InputException):
@@ -1377,9 +1378,9 @@ class WorkEnvTest(unittest.TestCase):
 
   def testCheckHotlistName_InvalidName(self):
     self.SignIn()
-    with self.assertRaises(exceptions.InputException):
-      with self.work_env as we:
-        we.CheckHotlistName('**Invalid**')
+    with self.work_env as we:
+      error = we.CheckHotlistName('**Invalid**')
+    self.assertIsNotNone(error)
 
   def testCheckHotlistName_AlreadyExists(self):
     self.work_env.services.features.CreateHotlist(
@@ -1387,9 +1388,9 @@ class WorkEnvTest(unittest.TestCase):
         owner_ids=[111L], editor_ids=[])
 
     self.SignIn()
-    with self.assertRaises(features_svc.HotlistAlreadyExists):
-      with self.work_env as we:
-        we.CheckHotlistName('Fake-Hotlist')
+    with self.work_env as we:
+      error = we.CheckHotlistName('Fake-Hotlist')
+    self.assertIsNotNone(error)
 
   def setUpHotlists(self):
     issue1 = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)

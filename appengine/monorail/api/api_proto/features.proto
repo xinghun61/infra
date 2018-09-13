@@ -115,6 +115,7 @@ message CheckHotlistNameRequest {
 
 // Next available tag: 1
 message CheckHotlistNameResponse {
+  string error = 1;
 }
 
 

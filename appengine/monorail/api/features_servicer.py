@@ -157,8 +157,9 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
   def CheckHotlistName(self, mc, request):
     """Check that a hotlist name is valid and not already in use."""
     with work_env.WorkEnv(mc, self.services) as we:
-      we.CheckHotlistName(request.name)
-    return features_pb2.CheckHotlistNameResponse()
+      error = we.CheckHotlistName(request.name)
+    result = features_pb2.CheckHotlistNameResponse(error=error)
+    return result
 
   @monorail_servicer.PRPCMethod
   def RemoveIssuesFromHotlists(self, mc, request):

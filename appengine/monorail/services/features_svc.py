@@ -519,22 +519,6 @@ class FeaturesService(object):
 
   ### Creating hotlists
 
-  def CheckHotlistName(self, cnxn, name, owner_ids):
-    """Check that a hotlist name is valid and not already in use.
-
-    Args:
-      name: str the hotlist name to check.
-
-    Raises:
-      InputException: The hotlist name is not valid.
-      HotlistAlreadyExists: The hotlist name is already in use.
-    """
-    if not framework_bizobj.IsValidHotlistName(name):
-      raise exceptions.InputException(
-          '%s is not a valid name for a Hotlist' % name)
-    if self.LookupHotlistIDs(cnxn, [name], owner_ids):
-      raise HotlistAlreadyExists()
-
   def CreateHotlist(
       self, cnxn, name, summary, description, owner_ids, editor_ids,
       issue_ids=None, is_private=None, default_col_spec=None, ts=None):
@@ -564,7 +548,11 @@ class FeaturesService(object):
     if not owner_ids:  # Should never happen.
       logging.error('Attempt to create unowned Hotlist: name:%r', name)
       raise UnownedHotlistException()
-    self.CheckHotlistName(cnxn, name, owner_ids)
+    if not framework_bizobj.IsValidHotlistName(name):
+      raise exceptions.InputException(
+          '%s is not a valid name for a Hotlist' % name)
+    if self.LookupHotlistIDs(cnxn, [name], owner_ids):
+      raise HotlistAlreadyExists()
     hotlist_item_fields = [
         (issue_id, rank*100, owner_ids[0], ts, '') for
         rank, issue_id in enumerate(issue_ids or [])]

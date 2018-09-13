@@ -435,7 +435,8 @@ class FeaturesServicerTest(unittest.TestCase):
     request = features_pb2.CheckHotlistNameRequest(name='Fake-Hotlist')
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
-    self.CallWrapped(self.features_svcr.CheckHotlistName, mc, request)
+    result = self.CallWrapped(self.features_svcr.CheckHotlistName, mc, request)
+    self.assertEqual('', result.error)
 
   def testCheckHotlistName_Anon(self):
     request = features_pb2.CheckHotlistNameRequest(name='Fake-Hotlist')
@@ -449,8 +450,8 @@ class FeaturesServicerTest(unittest.TestCase):
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
 
-    with self.assertRaises(exceptions.InputException):
-      self.CallWrapped(self.features_svcr.CheckHotlistName, mc, request)
+    result = self.CallWrapped(self.features_svcr.CheckHotlistName, mc, request)
+    self.assertNotEqual('', result.error)
 
   def testCheckHotlistName_AlreadyExists(self):
     self.services.features.CreateHotlist(
@@ -461,8 +462,8 @@ class FeaturesServicerTest(unittest.TestCase):
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
 
-    with self.assertRaises(features_svc.HotlistAlreadyExists):
-      self.CallWrapped(self.features_svcr.CheckHotlistName, mc, request)
+    result = self.CallWrapped(self.features_svcr.CheckHotlistName, mc, request)
+    self.assertNotEqual('', result.error)
 
   def testRemoveIssuesFromHotlists(self):
     # Create two hotlists with issues 1 and 2.
