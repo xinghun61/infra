@@ -161,9 +161,7 @@ func (tl *ToplevelFields) apply(st *swarming.SwarmingRpcsNewTaskRequest) {
 }
 
 func (js *JobSlice) gen(ctx context.Context, uid string, arc *archiver.Archiver) (ret *swarming.SwarmingRpcsTaskSlice, extraTags []string, err error) {
-	ret = &swarming.SwarmingRpcsTaskSlice{
-		Properties: &swarming.SwarmingRpcsTaskProperties{},
-	}
+	ret = &(*js.S.TaskSlice)
 	var userTags, systemTags []string
 	args, systemTags, err := js.S.apply(ctx, uid, ret)
 	if err == nil {
