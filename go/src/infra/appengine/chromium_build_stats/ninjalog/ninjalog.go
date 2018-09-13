@@ -14,8 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/ptypes"
-
 	npb "infra/appengine/chromium_build_stats/ninjaproto"
 )
 
@@ -483,12 +481,12 @@ func ToProto(info *NinjaLog) []*npb.NinjaTask {
 			StepName: info.Metadata.StepName,
 			Jobs:     int64(info.Metadata.Jobs),
 			LogEntry: &npb.NinjaTask_LogEntry{
-				Outputs:       append(s.Outs, s.Out),
-				CommandHash:   s.CmdHash,
-				StartDuration: ptypes.DurationProto(s.Start),
-				EndDuration:   ptypes.DurationProto(s.End),
+				Outputs:          append(s.Outs, s.Out),
+				CommandHash:      s.CmdHash,
+				StartDurationSec: s.Start.Seconds(),
+				EndDurationSec:   s.End.Seconds(),
 			},
-			WeightedDuration: ptypes.DurationProto(weightedTime[s.Out]),
+			WeightedDurationSec: weightedTime[s.Out].Seconds(),
 		}
 		sort.Strings(ninjalog.LogEntry.Outputs)
 		ninjaTasks = append(ninjaTasks, ninjalog)
