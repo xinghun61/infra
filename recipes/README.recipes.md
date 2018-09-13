@@ -286,6 +286,27 @@ us.
 
 The 3pp module loads package definitions from a folder containing subfolders.
 Each subfolder defines a single software package to fetch, build and upload.
+For example, you might have a folder in your repo like this:
+
+    my_repo.git/
+      third_party_packages/  # "root folder"
+        .vpython             # common vpython file for all package scripts
+        zlib/                # zlib "package folder"
+          3pp.pb             # REQUIRED: the Spec.proto definition for zlib
+          install.sh         # a script to build zlib from source
+          extra_resource_file
+        other_package/
+          3pp.pb             # REQUIRED
+          fetch.py           # a script to fetch `other_package` in a custom way
+          install.sh
+          install-win.sh     # windows-specific build script
+        ...
+
+This defines two packages (`zlib`, and `other_package`). The 3pp.pb files have
+references to the fetch/build scripts, and describe what dependencies the
+packages have (if any).
+
+NOTE: Only one layer of package folders is supported currently.
 
 Packages are named by the folder that contains their definition file (3pp.pb)
 and build scripts. It's preferable to have package named after software that it
@@ -293,12 +314,12 @@ contains. However, sometimes you want multiple major versions of the software to
 exist side-by-side (e.g. pcre and pcre2, python and python3, etc.). In this
 case, have two separate package definition folders.
 
-Each folder contains an instruction manifest (3pp.pb), as well as scripts,
+Each package folder contains a package spec (3pp.pb), as well as scripts,
 patches and/or utility tools to build the software from source.
 
 The spec is a Text Proto document specified by the [spec.proto] schema.
 
-The manifest is broken up into two main sections, "create" and "upload". The
+The spec is broken up into two main sections, "create" and "upload". The
 create section allows you to specify how the package software gets created, and
 allows specifying differences in how it's fetched/built/tested on a per-target
 basis, and the upload section has some details on how the final result gets
@@ -387,6 +408,13 @@ If the 'install' script is omitted, it is assumed to be 'install.sh'.
 If the ENTIRE build message is omitted, no build takes place. Instead the
 result of the 'source' stage will be packaged.
 
+During the execution of the build phase, the entire 'root folder' is copied into
+the source checkout in the .3pp directory, and the script will be invoked as
+`/path/to/checkout/.3pp/$package_name/$script_name`. Because the entire root
+folder is copied, you can have shared resources (like `.vpython` files or helper
+scripts) which are common to all package definitions and located relative to the
+install script.
+
 ##### Package
 
 Once the build stage is complete, all files in the $PREFIX folder passed to the
@@ -465,9 +493,14 @@ If the recipe is run in experimental mode (according to the
 "recipe_engine/runtime" module), then this recipe will skip the final CIPD
 upload.
 
-#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#272)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+#### Examples
 
-&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#404)(self, packages=(), platform=''):**
+As an example of the package definition layout in action, take a look at the
+[third_party_packages](/third_party_packages) folder in this infra.git repo.
+
+#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#306)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+
+&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#445)(self, packages=(), platform=''):**
 
 Executes entire {fetch,build,package,verify,upload} pipeline for all the
 packages listed, targeting the given platform.
@@ -483,7 +516,9 @@ Args:
 Returns (list[(cipd_pkg, cipd_version)], set[str]) of built CIPD packages
 and their tagged versions, as well as a list of unsupported packages.
 
-&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#354)(self, path):**
+&mdash; **def [initialize](/recipes/recipe_modules/third_party_packages_ng/api.py#319)(self):**
+
+&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#395)(self, path):**
 
 Loads all package definitions from the given path.
 

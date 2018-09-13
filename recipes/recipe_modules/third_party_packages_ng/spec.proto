@@ -23,20 +23,28 @@ message Spec {
   //   * $_3PP_VERSION - the version we're building, e.g. 1.2.3
   message Create {
     message Source {
+      // (required) Source messages must have one of these methods.
       oneof method {
         GitSource git = 1;
         CipdSource cipd = 2;
         ScriptSource script = 3;
       }
 
-      // Run checkout in this subdirectory of the install script's $CWD.
+      // (optional) Run checkout in this subdirectory of the install script's
+      // $CWD.
+      //
       // Useful for e.g. Go packages, where you want the install script to run
       // in a parent directory of the go checkout.
+      //
+      // For example if this is `go/src/repo.com`, and you're using a `git`
+      // source method then the files in the git repo will be checked out to
+      // `/path/to/checkout/go/src/repo.com`, but the install script will still
+      // run in `/path/to/checkout`.
       string subdir = 4;
 
-      // If set to true, the source checkout will produce a single archive (zip
-      // or tar) file in the checkout directory, and the recipe will find and
-      // unpack it.
+      // (optional) If set to true, the source checkout will produce a single
+      // archive (zip or tar) file in the checkout directory, and the recipe
+      // will find and unpack it.
       //   * The recipe will expect exactly one archive file, conforming to the
       //   `*.*` glob, in the checkout/subdir directory after the source phase
       //   is complete.
@@ -53,13 +61,46 @@ message Spec {
       bool unpack_archive = 5;
       bool no_archive_prune = 6;
 
-      // Used to differentiate from the stock symver during compilation and in
-      // the generated CIPD package tags.
+      // (optional) Used to differentiate from the stock symver during
+      // compilation and in the generated CIPD package tags.
+      //
+      // For example, if this is `my_org1`, and we were building `1.2.3` of the
+      // source, then this would upload with the CIPD tag of
+      // `version:1.2.3.my_org1`
       string patch_version = 7;
     }
 
     message Build {
-      // List of other 3pp packages built for the host and put in $PATH.
+      // (optional) Name (and args) of a script adjacent to 3pp.pb which knows
+      // how to transform the source into the built product.
+      //
+      // If omitted, this defaults to `["install.sh"]`.
+      //
+      // Subsequent install args are passed to the script verbatim, followed by
+      // a target `prefix` path to install the compiled package to, followed by
+      // a path to a prefix containing all deps. The current directory is set to
+      // the base directory of the source checkout (excluding subdir). Any
+      // specified tools will be in $PATH.
+      //
+      // Scripts ending with .py will be invoked with python (on all platforms)
+      // Scripts ending with .sh will be invoked with bash (on all platforms).
+      //   For Windows this uses the git-for-windows copy of bash, which is
+      //   mingw bash (in case you run into path issues, but since everything is
+      //   relative paths it should be pretty transparent).
+      // Other script suffixes are currently not supported.
+      //
+      // For example, if this is `["do_build.sh", "quickly"]`, then the recipe
+      // will do:
+      //
+      //   $ cd /path/to/checkout
+      //   $ export PATH=/path/to/tools_prefix:$PATH
+      //   $ /path/to/checkout/.3pp/package_name/do_build.sh quickly \
+      //      /path/to/output_prefix
+      //      /path/to/deps_prefix
+      repeated string install = 1;
+
+      // (optional) List of other 3pp packages built for the host and put in
+      // $PATH.
       //
       // You may specify specific versions with the notation (useful if the
       // current tool you're building is self-bootstrapping, like cmake):
@@ -75,132 +116,163 @@ message Spec {
       // If no cipd_version is specified, the recipe will use the cipd version
       // "latest".
       //
-      // If tools have a specified version other than 'latest', they are
-      // required to be already built and present in CIPD. If they're 'latest'
+      // If tools have a specified version other than "latest", they are
+      // required to be already built and present in CIPD. If they're "latest"
       // or unspecified, they may be built if they're not already in CIPD.
-      repeated string tool = 1;
+      repeated string tool = 2;
 
-      // List of other 3pp packages built for the target and passed to the
-      // install command. Unlike `tools`, these may not specify versions. The
-      // reason for this is that the dependency graph gets too complicated for
-      // this simple 3pp recipe to resolve. Instead, the versions used will be
-      // the version of the `source` of the indicated deps. If you want to
-      // update the deps, update their source entry to pull a different version.
-      repeated string dep = 2;
-
-      // Name (and args) of a script adjacent to 3pp.pb. Subsequent install args
-      // are passed to the script verbatim, followed by a target `prefix` path
-      // to install the compiled package to, followed by a path to a prefix
-      // containing all deps. The current directory is set to the base directory
-      // of the source checkout (excluding subdir). Any specified tools will be
-      // in $PATH.
+      // (optional) List of other 3pp packages built for the target and passed
+      // to the install command.
       //
-      // Scripts ending with .py will be invoked with python (on all platforms)
-      // Scripts ending with .sh will be invoked with bash (on all platforms).
-      //   For Windows this uses the git-for-windows copy of bash, which is
-      //   mingw bash (in case you run into path issues, but since everything is
-      //   relative paths it should be pretty transparent).
-      // Other script suffixes are currently not supported.
-      //
-      // By default, if omitted, this is "install.sh".
-      repeated string install = 3;
+      // Unlike `tools`, these may not specify versions.  The reason for this is
+      // that the dependency graph gets too complicated for this simple 3pp
+      // recipe to resolve. Instead, the versions used will be the version of
+      // the `source` of the indicated deps. If you want to update the deps,
+      // update their source entry to pull a different version.
+      repeated string dep = 3;
 
       // TODO: options for controlling toolchain
     }
 
+    // See CIPD documentation for specifics about these options.
     message Package {
       enum InstallMode {
         copy    = 0;
         symlink = 1;
       }
+      // (optional) How the CIPD package should be installed on client machines.
+      //
+      // If omitted, this defaults to `copy`.
       InstallMode install_mode = 1;
 
-      // The CIPD-installation-relative path to a version file.
+      // (optional) The CIPD-installation-relative path to a version file.
+      //
+      // If omitted, no version file will be added to the package.
       string version_file = 2;
     }
 
     message Verify {
-      // Name (and args) of a script adjacent to 3pp.pb. Invoked after
-      // package with the built cipd package file as the first additional
-      // arg.
+      // (required) Name (and args) of a script adjacent to 3pp.pb.
+      //
+      // Invoked after package with the built cipd package file as the first
+      // additional arg.
+      //
+      // For example if this is `["test.py", "extra_arg"]`, then the recipe will
+      // do:
+      //
+      //   $ cd /nowhere/in/particular
+      //   $ python /path/to/repo/subdir/package_name/test.py extra_arg \
+      //      /path/to/built/cipd/package
       repeated string test = 1;
     }
 
-    // The platform_re field in each Create message is applied as a regex to
-    // ${platform}. Each matching Create message is applied in order using
-    // dict.update for each member message (i.e. ['source'].update,
+    // (optional) The platform_re field in each Create message is applied as
+    // a regex to ${platform}. Each matching Create message is applied in order
+    // using dict.update for each member message (i.e. ['source'].update,
     // ['build'].update, etc.) to build a singular Create message for the
     // current platform.
     string platform_re = 1;
 
-    // How to obtain the source for this pkg.
+    // (required) How to obtain the source for this pkg.
     Source source = 2;
 
-    // How to transform the source into the output pkg. If this message is
-    // entirely omitted, then the output of the source stage will be used as the
-    // built result (useful for source packages, or python packages which don't
-    // need massaging).
+    // (optional) How to transform the source into the output pkg.
+    //
+    // If this message is entirely omitted, then the output of the source stage
+    // will be used as the built result (useful for source packages, or python
+    // packages which don't need massaging).
+    //
+    // If this message is present, the package will be built according to the
+    // Build message.
     Build build = 3;
 
-    // Options for creating a CIPD package from the built source.
+    // (optional) Options for creating a CIPD package from the built source.
     Package package = 4;
 
-    // How to verify that the output pkg is useful.
+    // (optional) How to verify that the output pkg is useful.
     Verify verify = 5;
 
-    // If true, all other fields are ignored and the recipe will return
-    // an error indicating that this package isn't configured for the current
-    // ${platform}.
+    // (optional) If true, all other fields are ignored and the recipe will
+    // return an error indicating that this package isn't configured for the
+    // current ${platform}.
     bool unsupported = 6;
   }
+  // (required) How the package should be created.
+  //
+  // Multiple create messages can be specified, and they'll be combined together
+  // into a single Create message via the rules described in Create.platform_re.
+  // Required fields are checked on this combined Create message, so you can
+  // have multiple partial messages which combine into a complete message.
   repeated Create create = 1;
 
-  // Upload describes how the built package should be uploaded to CIPD.
   message Upload {
-    // The CIPD package name prefix to use when uploading. This is used as:
+    // (required) The CIPD package name prefix to use when uploading.
+    //
+    // This is used as:
     //
     //   <pkg_prefix>/<pkg_name>/${platform}
     //
-    // e.g. with the prefix "pkg/prefix" for the package "cool_thing", you'd
+    // e.g. with the prefix `pkg/prefix` for the package `cool_thing`, you'd
     // get:
     //
     //   pkg/prefix/cool_thing/${platform}
     string pkg_prefix = 1;
   }
+  // (required) Upload describes how the built package should be uploaded to
+  // CIPD.
   Upload upload = 2;
 }
 
-
+// Pulls package sources from a git repo.
 message GitSource {
+  // (required) The URL to the repo, e.g.
+  //
+  //   https://some.host.example.com/path/to/repo.git
   string repo = 1;
 
-  // tag_expand is a substitution pattern where '%s' is replaced with the
-  // version_join'd version. So if this is `v%s`, then the version 1.2.3
-  // with a version_join value of '-' would look for the git tag 'v1-2-3'.
-  // By defualt this is '%s'.
+  // (optional) A substitution pattern where "%s" represents the location of the
+  // symver in a tag name.
+  //
+  // This is used for filter git repo tags for symantic version numbers. Some
+  // repos e.g. prefix their versions with `v`, or use other formats (e.g.
+  // "release/1.2.3").
+  //
+  // If omitted, this defaults to `%s` which would work for repos whose tags
+  // look like `refs/tags/1.2.3`.
+  //
+  // For example, if this was `v%s`, then this would look for the version 1.2.3
+  // as `refs/tags/v1.2.3`
   string tag_pattern = 2;
 
-  // version_join is a string used to join the portions of a version
-  // number together. E.g. if this is "-", then the recipe would transform
-  // version 1.2.3 into "1-2-3" before expanding it into tag_expand to
-  // find the matching git tag. By default this is '.'
+  // (optional) version_join is a string used to join the portions of a version
+  // number together for repos which don't use "." as the joiner.
+  //
+  // If omitted, this defaults to ".", which would work for repos whose tags
+  // look like `refs/tags/1.2.3`.
+  //
+  // For example, if this is "-", then the recipe would transform the symantic
+  // version `1.2.3` into `1-2-3` before expanding it into tag_expand to find
+  // the matching git tag.
   string version_join = 3;
 
-  // Relative directories holding patches to apply with 'git am'. All
-  // patches in the directories will be applied, in order. This is
-  // provided as a list option so that different sets of patches can be
-  // applied for different values of ${platform}, possibly with some
-  // overlapping base patches.
+  // (optional) Directories relative to the project folder holding patches to
+  // apply with "git am".
+  //
+  // All patches in the directories will be applied, in order.
+  //
+  // This is provided as a list option so that different sets of patches can be
+  // applied for different values of ${platform}, possibly with some overlapping
+  // base patches.
   repeated string patch_dir = 4;
 }
 
-// Pulls a cipd package containing a single tarball.
+// Pulls sources from a CIPD package.
 message CipdSource {
-  // The full CIPD package name of the source.
+  // (required) The full CIPD package name of the source.
   string pkg = 1;
-  // A symver to use when this package is built without specifying
+  // (required) A symver to use when this package is built without specifying
   // a version (e.g. as a dep for some other package). This will translate
-  // to the CIPD tag of `version:$version`.
+  // to the CIPD tag of `version:$default_version`.
   string default_version = 2;
 }
 
@@ -208,13 +280,24 @@ message CipdSource {
 // obtain the latest sources.
 //
 // This will be invoked as `script latest` and is expected to
-// print to stdout the latest symver available (e.g. "1.2.3"). The
+// print to stdout the latest symver available (e.g. `1.2.3`). The
 // $3PP_VERSION environment variable is not present.
 //
 // If this version needs to be fetched, the script will be invoked as
 // `script checkout </abs/path/to/checkout>`. The checkout directory will
 // exist and be empty.
 message ScriptSource {
+  // (required) Name (and args) of a script adjacent to 3pp.pb.
+  //
+  // For example if this is `["fetch.py", "url"]`, then the recipe will
+  // do:
+  //
+  //   $ cd /nowhere/in/particular
+  //   $ python /path/to/repo/subdir/package_name/fetch.py url latest
+  //   1.2.3
+  //   $ _3PP_VERSION=1.2.3 python \
+  //     /path/to/repo/subdir/package_name/fetch.py url checkout \
+  //     /path/to/checkout
   string name = 1;
 }
 

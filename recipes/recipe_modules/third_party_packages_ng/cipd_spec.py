@@ -2,6 +2,28 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+
+class CIPDSpecPool(object):
+  """A convenience structure which holds cached CIPDSpec's and their resolved
+  instance_id information.
+
+  Used instead of class-level cache structures for compatibility with recipe
+  tests (which would end up re-using the class-level caches between tests).
+  """
+  def __init__(self, api):
+    self._spec_cache = {}
+    self._version_cache = {}
+    self._api = api
+
+  def get(self, pkg, symver):
+    """Returns a CIPDSpec from this pool for the given (pkg, symver)."""
+    key = (pkg, symver)
+    if key not in self._spec_cache:
+      self._spec_cache[key] = CIPDSpec(
+        self._api, self._version_cache, pkg, symver)
+    return self._spec_cache[key]
+
+
 class CIPDSpec(object):
   """CIPDSpec represents a single CIPD package.
 
@@ -12,14 +34,12 @@ class CIPDSpec(object):
     * Uploading the locally cached package to the server
     * Deploying the locally cached package to disk
   """
-
-  # (pkg, symver) -> instance_id
-  _VERSION_CACHE = {}
-
-  def __init__(self, api, pkg, symver):
+  def __init__(self, api, version_cache, pkg, symver):
     self._api = api
     self._pkg = str(pkg)
     self._symver = str(symver)
+    # (pkg, symver) -> instance_id
+    self._version_cache = version_cache
     assert self._pkg != 'None'
     assert self._symver, 'what: %r %r' % (pkg, symver)
     assert 'None' not in self._symver
@@ -57,14 +77,14 @@ class CIPDSpec(object):
     Raises StepFailure if we haven't built this CIPDSpec locally and the CIPD
     server doesn't have this version.
     """
-    if self._cache_key not in self._VERSION_CACHE:
+    if self._cache_key not in self._version_cache:
       # by default, make this return no tags in test mode.
       desc = self._api.cipd.describe(
         self._pkg, self.tag, test_data_tags=(), test_data_refs=())
       self._api.step.active_result.presentation.step_text = (
         'found %r' % desc.pin.instance_id)
-      self._VERSION_CACHE[self._cache_key] = desc.pin.instance_id
-    return self._VERSION_CACHE[self._cache_key]
+      self._version_cache[self._cache_key] = desc.pin.instance_id
+    return self._version_cache[self._cache_key]
 
   def deploy(self, root):
     """Deploys the CIPD package to disk (at the given root).
@@ -80,7 +100,7 @@ class CIPDSpec(object):
 
     If `resolve` hasn't been called and if the package hasn't been built locally
     this returns None."""
-    return self._VERSION_CACHE.get(self._cache_key)
+    return self._version_cache.get(self._cache_key)
 
   @property
   def _local_pkg_path_dir(self):
@@ -116,27 +136,19 @@ class CIPDSpec(object):
     if ret:
       return ret
 
-    iid = self._resolved_instance_id
-    if iid:
-      fetch_path = self._local_pkg_path_dir.join(iid)
-      ret = fetch_path
-    else:
-      fetch_path = self._api.path.mkstemp()
+    fetch_path = self._api.path.mkstemp()
 
-    vers = iid if iid else self._symver
-    pin = self._api.cipd.pkg_fetch(fetch_path, self._pkg, vers)
-    if not iid:
-      local_pkg_dir = self._local_pkg_path_dir
-      self._api.file.ensure_directory(
-        'ensure cipd package cache exists', local_pkg_dir)
+    pin = self._api.cipd.pkg_fetch(fetch_path, self._pkg, self.tag)
+    local_pkg_dir = self._local_pkg_path_dir
+    self._api.file.ensure_directory(
+      'ensure cipd package cache exists', local_pkg_dir)
 
-      ret = local_pkg_dir.join(pin.instance_id)
-      self._api.file.move(
-        'move fetched cipd package to cache', fetch_path, ret)
+    ret = local_pkg_dir.join(pin.instance_id)
+    self._api.file.move(
+      'move fetched cipd package to cache', fetch_path, ret)
 
-      self._VERSION_CACHE[self._cache_key] = pin.instance_id
-    else:
-      self._api.path.mock_add_paths(fetch_path)
+    self._version_cache[self._cache_key] = pin.instance_id
+
     return ret
 
   def build(self, root, install_mode, version_file):
@@ -166,7 +178,7 @@ class CIPDSpec(object):
 
     tmpfile = self._api.path.mkstemp()
     pin = self._api.cipd.build_from_pkg(pkg_def, tmpfile)
-    self._VERSION_CACHE[self._cache_key] = pin.instance_id
+    self._version_cache[self._cache_key] = pin.instance_id
 
     local_pkg_dir = self._local_pkg_path_dir
     self._api.file.ensure_directory(

@@ -17,19 +17,19 @@ from . import verify
 from .workdir import Workdir
 
 
-def build_resolved_spec(api, spec, version, spec_lookup, cache):
+def build_resolved_spec(api, spec_lookup, cache, spec, version):
   """Builds a resolved spec at a specific version, then uploads it.
 
   Args:
     * api - The ThirdPartyPackagesNGApi's `self.m` module collection.
-    * spec (ResolvedSpec) - The resolved spec to build.
-    * version (str) - The symver (or 'latest') version of the package to build.
     * spec_lookup ((package_name, platform) -> ResolvedSpec) - A function to
       lookup (possibly cached) ResolvedSpec's for things like dependencies and
       tools.
     * cache (dict) - A map of (package_name, version, platform) -> CIPDSpec.
       The `build_resolved_spec` function fully manages the content of this
       dictionary.
+    * spec (ResolvedSpec) - The resolved spec to build.
+    * version (str) - The symver (or 'latest') version of the package to build.
 
   Returns the CIPDSpec of the built package; If the package already existed on
   the remote server, it will return the CIPDSpec immediately (without attempting
@@ -66,22 +66,24 @@ def build_resolved_spec(api, spec, version, spec_lookup, cache):
       # See if the specific version is uploaded
       if not cipd_spec.check():
         # Otherwise, build it
-        _build_impl(api, spec, version, cipd_spec, is_latest, spec_lookup,
-                    cache)
+        _build_impl(
+          api, cipd_spec, is_latest, spec_lookup,
+          (lambda spec, version: build_resolved_spec(
+            api, spec_lookup, cache, spec, version)),
+          spec, version)
 
       return set_cache(cipd_spec)
 
 
-def _build_impl(api, spec, version, cipd_spec, is_latest, spec_lookup, cache):
+def _build_impl(api, cipd_spec, is_latest, spec_lookup, recurse_fn,
+                spec, version):
   workdir = Workdir(api, spec, version)
   with api.context(env={'_3PP_VERSION': version}):
     api.file.ensure_directory('mkdir -p [workdir]', workdir.base)
 
     with api.step.nest('fetch sources'):
       source.fetch_source(
-        api, workdir, spec, version, spec_lookup,
-        lambda spec, version: build_resolved_spec(
-          api, spec, version, spec_lookup, cache))
+        api, workdir, spec, version, spec_lookup, recurse_fn)
 
     if spec.create_pb.HasField("build"):
       with api.step.nest('run installation'):

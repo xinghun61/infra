@@ -45,6 +45,10 @@ def RunSteps(api, GOOS, GOARCH, load_dupe):
     excluded.add('posix_tool')
   assert unsupported == excluded, "unexpected: %r" % (unsupported,)
 
+  # doing it again should hit caches
+  api.third_party_packages_ng.ensure_uploaded(pkgs, '%s-%s' % (GOOS, GOARCH))
+
+
 def GenTests(api):
   pkgs = sorted(dict(
     bottom_dep='''

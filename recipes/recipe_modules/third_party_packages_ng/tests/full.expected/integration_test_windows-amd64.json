@@ -946,7 +946,7 @@
       "pkg-fetch",
       "prefix/build_tools/tool/windows-amd64",
       "-version",
-      "0.9.0.chops.1",
+      "version:0.9.0.chops.1",
       "-out",
       "[TMP_BASE]\\tmp_tmp_3",
       "-json-output",
@@ -961,10 +961,10 @@
     "name": "building tool.fetch sources.installing tools.cipd pkg-fetch prefix/build_tools/tool/windows-amd64",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@3@@@",
-      "@@@STEP_TEXT@prefix/build_tools/tool/windows-amd64 resolved-instance_id-of-0.9.0.chops.1---@@@",
+      "@@@STEP_TEXT@prefix/build_tools/tool/windows-amd64 resolved-instance_id-of-version:0.9.0.ch@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"resolved-instance_id-of-0.9.0.chops.1---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"resolved-instance_id-of-version:0.9.0.ch\", @@@",
       "@@@STEP_LOG_LINE@json.output@    \"package\": \"prefix/build_tools/tool/windows-amd64\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
@@ -1004,7 +1004,7 @@
       "/path/to/tmp/json",
       "move",
       "[TMP_BASE]\\tmp_tmp_3",
-      "[CACHE]\\3pp_cipd\\prefix\\build_tools\\tool\\windows-amd64\\resolved-instance_id-of-0.9.0.chops.1---"
+      "[CACHE]\\3pp_cipd\\prefix\\build_tools\\tool\\windows-amd64\\resolved-instance_id-of-version:0.9.0.ch"
     ],
     "env": {
       "_3PP_PACKAGE_NAME": "tool",
@@ -1022,7 +1022,7 @@
     "cmd": [
       "cipd.bat",
       "pkg-deploy ",
-      "[CACHE]\\3pp_cipd\\prefix\\build_tools\\tool\\windows-amd64\\resolved-instance_id-of-0.9.0.chops.1---",
+      "[CACHE]\\3pp_cipd\\prefix\\build_tools\\tool\\windows-amd64\\resolved-instance_id-of-version:0.9.0.ch",
       "-root",
       "[START_DIR]\\3pp\\wd\\tool\\windows-amd64\\1.4.1\\tools_prefix",
       "-json-output",
@@ -1034,13 +1034,13 @@
       "_3PP_PLATFORM": "windows-amd64",
       "_3PP_VERSION": "1.4.1"
     },
-    "name": "building tool.fetch sources.installing tools.cipd pkg-deploy [CACHE]\\3pp_cipd\\prefix\\build_tools\\tool\\windows-amd64\\resolved-instance_id-of-0.9.0.chops.1---",
+    "name": "building tool.fetch sources.installing tools.cipd pkg-deploy [CACHE]\\3pp_cipd\\prefix\\build_tools\\tool\\windows-amd64\\resolved-instance_id-of-version:0.9.0.ch",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@3@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"resolved-instance_id-of-version/of/resol\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"pkg/name/of/resolved-instance_id-of-0.9.0.chops.1---\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"pkg/name/of/resolved-instance_id-of-version:0.9.0.ch\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"

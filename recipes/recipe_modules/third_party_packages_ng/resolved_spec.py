@@ -58,9 +58,10 @@ class ResolvedSpec(object):
 
   It has helper methods and properties to read the resolved data.
   """
-  def __init__(self, api, name, platform, base_path, spec, deps,
+  def __init__(self, api, cipd_spec_pool, name, platform, base_path, spec, deps,
                unpinned_tools):
     self._api = api
+    self._cipd_spec_pool = cipd_spec_pool
 
     self._name = name                     # Name of the package
     self._platform = platform             # Platform resolved for
@@ -187,7 +188,7 @@ class ResolvedSpec(object):
                              self.name, self.platform)
     patch_ver = self.create_pb.source.patch_version
     symver = '%s%s' % (version, '.'+patch_ver if patch_ver else '')
-    return CIPDSpec(self._api, pkg_name, symver)
+    return self._cipd_spec_pool.get(pkg_name, symver)
 
   def __cmp__(self, other):
     """This allows ResolvedSpec's to be sorted.
