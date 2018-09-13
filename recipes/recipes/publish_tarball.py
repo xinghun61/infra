@@ -244,10 +244,16 @@ def RunSteps(api):
           'chrome', 'test', 'data', 'webui', 'i18n_process_css_test.html')])
 
   if int(version.split('.')[0]) >= 65:
+    update_args = ['--force-local-build', '--without-android',
+                   '--use-system-cmake', '--gcc-toolchain=/usr',
+                   '--skip-build']
+
+    if [int(x) for x in version.split('.')] >= [71, 0, 3551, 0]:
+      update_args.append('--without-fuchsia')
+
     api.step('download clang sources', [
-        api.path['checkout'].join('tools', 'clang', 'scripts', 'update.py'),
-        '--force-local-build', '--without-android', '--use-system-cmake',
-        '--gcc-toolchain=/usr', '--skip-build'])
+        api.path['checkout'].join('tools', 'clang', 'scripts', 'update.py')
+        ] + update_args)
 
   api.python('fetch android AFDO profile', api.path['checkout'].join(
       'chrome', 'android', 'profiles', 'update_afdo_profile.py'), [])
@@ -348,6 +354,15 @@ def GenTests(api):
         'gs://chromium-browser-official/chromium-69.0.3493.0-testdata.tar.xz\n'
         'gs://chromium-browser-official/chromium-69.0.3493.0-nacl.tar.xz\n'
     ))
+  )
+
+  yield (
+    api.test('clang-no-fuchsia') +
+    api.properties.generic(version='71.0.3551.0') +
+    api.platform('linux', 64) +
+    api.step_data('gsutil ls', stdout=api.raw_io.output('')) +
+    api.path.exists(api.path['checkout'].join(
+        'third_party', 'node', 'node_modules.tar.gz.sha1'))
   )
 
   yield (
