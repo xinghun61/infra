@@ -424,7 +424,7 @@ def IngestUserRefs(cnxn, user_refs, user_service, autocreate=False):
   return result
 
 
-def IngestComponentRefs(comp_refs, config):
+def IngestComponentRefs(comp_refs, config, ignore_missing_objects=False):
   """Return IDs of specified components or raise NoSuchComponentException."""
   cids_by_path = {cd.path.lower(): cd.component_id
                   for cd in config.component_defs}
@@ -434,7 +434,8 @@ def IngestComponentRefs(comp_refs, config):
     if cid:
       result.append(cid)
     else:
-      raise exceptions.NoSuchComponentException()
+      if not ignore_missing_objects:
+        raise exceptions.NoSuchComponentException()
   return result
 
 
@@ -470,14 +471,19 @@ def IngestIssueRefs(cnxn, issue_refs, services):
   return issue_ids
 
 
-def IngestIssueDelta(cnxn, services, delta, config, phases):
+def IngestIssueDelta(
+    cnxn, services, delta, config, phases, ignore_missing_objects=False):
   """Ingest a protoc IssueDelta and create a protorpc IssueDelta."""
   status = None
   if delta.HasField('status'):
     status = delta.status.value
   owner_id = None
   if delta.HasField('owner_ref'):
-    owner_id = IngestUserRef(cnxn, delta.owner_ref, services.user)
+    try:
+      owner_id = IngestUserRef(cnxn, delta.owner_ref, services.user)
+    except exceptions.NoSuchUserException as e:
+      if not ignore_missing_objects:
+        raise e
   summary = None
   if delta.HasField('summary'):
     summary = delta.summary.value
@@ -486,8 +492,12 @@ def IngestIssueDelta(cnxn, services, delta, config, phases):
       cnxn, delta.cc_refs_add, services.user, autocreate=True)
   cc_ids_remove = IngestUserRefs(cnxn, delta.cc_refs_remove, services.user)
 
-  comp_ids_add = IngestComponentRefs(delta.comp_refs_add, config)
-  comp_ids_remove = IngestComponentRefs(delta.comp_refs_remove, config)
+  comp_ids_add = IngestComponentRefs(
+      delta.comp_refs_add, config,
+      ignore_missing_objects=ignore_missing_objects)
+  comp_ids_remove = IngestComponentRefs(
+      delta.comp_refs_remove, config,
+      ignore_missing_objects=ignore_missing_objects)
 
   labels_add = [lab_ref.label for lab_ref in delta.label_refs_add]
   labels_remove = [lab_ref.label for lab_ref in delta.label_refs_remove]

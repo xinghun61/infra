@@ -843,6 +843,25 @@ class IssuesServicerTest(unittest.TestCase):
         response)
 
   @patch('testing.fake.FeaturesService.GetFilterRules')
+  def testPresubmitIssue_IncompleteOwnerEmail(self, mockGetFilterRules):
+    """User is in the process of typing in the proposed owner."""
+    issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
+    issue_delta = issues_pb2.IssueDelta(
+        owner_ref=common_pb2.UserRef(display_name='owner@examp'))
+
+    mockGetFilterRules.return_value = []
+    request = issues_pb2.PresubmitIssueRequest(
+        issue_ref=issue_ref, issue_delta=issue_delta)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    actual = self.CallWrapped(self.issues_svcr.PresubmitIssue, mc, request)
+
+    self.assertEqual(
+        issues_pb2.PresubmitIssueResponse(),
+        actual)
+
+  @patch('testing.fake.FeaturesService.GetFilterRules')
   def testPresubmitIssue_OwnerVacation(self, mockGetFilterRules):
     """Proposed owner has a vacation message set."""
     self.user_1.vacation_message = 'In Galapagos Islands'

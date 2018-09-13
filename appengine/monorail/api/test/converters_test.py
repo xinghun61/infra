@@ -743,6 +743,24 @@ class ConverterFunctionsTest(unittest.TestCase):
         labels_add=['Hot'])
     self.assertEqual(expected, actual)
 
+  def testIngestIssueDelta_BadOwner(self):
+    """We reject a specified owner that does not exist."""
+    delta = issues_pb2.IssueDelta(
+        owner_ref=common_pb2.UserRef(display_name='user@exa'))
+    with self.assertRaises(exceptions.NoSuchUserException):
+      converters.IngestIssueDelta(
+          self.cnxn, self.services, delta, self.config, [])
+
+  def testIngestIssueDelta_BadOwnerIgnored(self):
+    """We can ignore an incomplete owner email for presubmit."""
+    delta = issues_pb2.IssueDelta(
+        owner_ref=common_pb2.UserRef(display_name='user@exa'))
+    actual = converters.IngestIssueDelta(
+        self.cnxn, self.services, delta, self.config, [],
+        ignore_missing_objects=True)
+    expected = tracker_pb2.IssueDelta()
+    self.assertEqual(expected, actual)
+
   def testIngestIssueDelta_InvalidComponent(self):
     """We reject a protorpc IssueDelta that has an invalid component."""
     self.config.component_defs = [
@@ -752,6 +770,18 @@ class ConverterFunctionsTest(unittest.TestCase):
     with self.assertRaises(exceptions.NoSuchComponentException):
       converters.IngestIssueDelta(
           self.cnxn, self.services, delta, self.config, [])
+
+  def testIngestIssueDelta_InvalidComponentIgnored(self):
+    """We can ignore invalid components for presubmits."""
+    self.config.component_defs = [
+      tracker_pb2.ComponentDef(component_id=1, path='UI')]
+    delta = issues_pb2.IssueDelta(
+        comp_refs_add=[common_pb2.ComponentRef(path='UI'),
+                       common_pb2.ComponentRef(path='XYZ')])
+    actual = converters.IngestIssueDelta(
+        self.cnxn, self.services, delta, self.config, [],
+        ignore_missing_objects=True)
+    self.assertEqual([1], actual.comp_ids_add)
 
   def testIngestIssueDelta_CustomFields(self):
     """We can create a protorpc IssueDelta from a protoc IssueDelta."""

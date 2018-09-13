@@ -367,7 +367,8 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
 
     with mc.profiler.Phase('initializing proposed_issue'):
       issue_delta = converters.IngestIssueDelta(
-          mc.cnxn, self.services, request.issue_delta, config, None)
+          mc.cnxn, self.services, request.issue_delta, config, None,
+          ignore_missing_objects=True)
       proposed_issue = tracker_pb2.Issue(
           project_id=project.project_id,
           local_id=request.issue_ref.local_id,
