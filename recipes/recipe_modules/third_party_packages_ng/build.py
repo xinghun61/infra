@@ -42,7 +42,7 @@ def run_installation(api, workdir, spec):
       # dockerbuild platform names are different from CIPD's name for them.
       dockerbuild_platform = {
         'linux-armv6l': 'linux-armv6',
-        'linux-armv64': 'linux-armv64',
+        'linux-arm64': 'linux-arm64',
         'linux-mips32': 'linux-mipsel',
         'linux-mips64': 'linux-mips64',
         'linux-amd64': 'manylinux-x64',
