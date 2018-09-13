@@ -279,8 +279,8 @@ via depot_tools).
 
 Target os and architecture uses the CIPD "${os}-${arch}" (a.k.a. "${platform}")
 nomenclature, which is currently defined in terms of Go's GOOS and GOARCH
-runtime variables. This is somewhat arbitrary, but has worked well so far for
-us.
+runtime variables (with the unfortunate exception that CIPD uses 'mac' instead
+of 'darwin'). This is somewhat arbitrary, but has worked well so far for us.
 
 #### Package Definitions
 
@@ -350,6 +350,21 @@ The creation process is broken up into 4 different stages:
   * Package
   * Verify
 
+##### Envvars
+
+All scripts described below are invoked with the following environment variables
+set:
+  * $_3PP_PACKAGE_NAME - the name of the package currently building
+  * $_3PP_PATCH_VERSION - the `patch_version` set for the version we're building
+    (if any patch version was set).
+  * $_3PP_PLATFORM - the platform we're targeting
+  * $_3PP_VERSION - the version we're building, e.g. 1.2.3
+  * $GOOS - The golang OS name we're targeting
+  * $GOARCH - The golang architecture we're targeting
+
+Additionally, on cross-compile environments, the $CROSS_TRIPLE environment
+variable is set to a GCC cross compile target triplet of cpu-vendor-os.
+
 ##### Source
 
 The source is used to fetch the raw sources for assembling the package. In some
@@ -385,7 +400,10 @@ linking your package.
 
 Tools are binaries built for the host; they're things like `automake` or `sed`
 that are used during the configure/make phase of your build, but aren't linked
-into the built product. These tools will be available on $PATH.
+into the built product. These tools will be available on $PATH (both '$tools'
+and '$tools/bin' are added to $PATH, because many packages are set up with their
+binaries at the base of the package, and some are set up with them in a /bin
+folder)
 
 Installation occurs by invoking the script indicated by the 'install' field
 (with the appropriate interpreter, depending on the file extension) like:
@@ -419,6 +437,12 @@ install script.
 
 Once the build stage is complete, all files in the $PREFIX folder passed to the
 install script will be zipped into a CIPD package.
+
+It is strongly recommended that if your package is a library or tool with many
+files that it be packaged in the standard POSIXey PREFIX format (e.g. bin, lib,
+include, etc.). If your package is a collection of one or more standalone
+binaries, it's permissible to just have the binaries in the root of the output
+$PREFIX.
 
 If the build stage is skipped (i.e. the build message is omitted) then the
 output of the source stage will be packaged instead (this is mostly useful when
@@ -498,9 +522,9 @@ upload.
 As an example of the package definition layout in action, take a look at the
 [third_party_packages](/third_party_packages) folder in this infra.git repo.
 
-#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#306)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#330)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
-&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#451)(self, packages=(), platform='', force_build=False):**
+&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#475)(self, packages=(), platform='', force_build=False):**
 
 Executes entire {fetch,build,package,verify,upload} pipeline for all the
 packages listed, targeting the given platform.
@@ -516,9 +540,9 @@ Args:
 Returns (list[(cipd_pkg, cipd_version)], set[str]) of built CIPD packages
 and their tagged versions, as well as a list of unsupported packages.
 
-&mdash; **def [initialize](/recipes/recipe_modules/third_party_packages_ng/api.py#319)(self):**
+&mdash; **def [initialize](/recipes/recipe_modules/third_party_packages_ng/api.py#343)(self):**
 
-&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#401)(self, path):**
+&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#425)(self, path):**
 
 Loads all package definitions from the given path.
 

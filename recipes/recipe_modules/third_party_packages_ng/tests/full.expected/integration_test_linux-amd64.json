@@ -180,6 +180,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "already_uploaded",
       "_3PP_PLATFORM": "linux-amd64"
     },
@@ -230,6 +232,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-amd64"
     },
@@ -258,6 +262,8 @@
       "[START_DIR]/3pp/wd/bottom_dep/linux-amd64/1.0"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
@@ -271,6 +277,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
@@ -293,6 +301,8 @@
       "[START_DIR]/3pp/wd/bottom_dep/linux-amd64/1.0/checkout"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
@@ -315,6 +325,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
@@ -347,6 +359,8 @@
       "[START_DIR]/3pp/wd/bottom_dep/linux-amd64/1.0/checkout/.3pp"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
@@ -360,6 +374,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
@@ -367,6 +383,31 @@
     "name": "building bottom_dep.run installation",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/3pp/wd/bottom_dep/linux-amd64/1.0/out"
+    ],
+    "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
+      "_3PP_PACKAGE_NAME": "bottom_dep",
+      "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_VERSION": "1.0"
+    },
+    "infra_step": true,
+    "name": "building bottom_dep.run installation.make output dir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
     ]
   },
   {
@@ -383,6 +424,15 @@
       "--env-prefix",
       "PATH",
       "[START_DIR]/3pp/wd/bottom_dep/linux-amd64/1.0/tools_prefix",
+      "--env-prefix",
+      "PATH",
+      "[START_DIR]/3pp/wd/bottom_dep/linux-amd64/1.0/tools_prefix/bin",
+      "--env",
+      "GOOS",
+      "linux",
+      "--env",
+      "GOARCH",
+      "amd64",
       "--env",
       "_3PP_PLATFORM",
       "linux-amd64",
@@ -400,13 +450,16 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/bottom_dep/linux-amd64/1.0/checkout",
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/3pp/wd/bottom_dep/linux-amd64/1.0/tools_prefix"
+        "[START_DIR]/3pp/wd/bottom_dep/linux-amd64/1.0/tools_prefix",
+        "[START_DIR]/3pp/wd/bottom_dep/linux-amd64/1.0/tools_prefix/bin"
       ]
     },
     "name": "building bottom_dep.run installation.do install",
@@ -428,6 +481,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
@@ -457,6 +512,8 @@
       "[CACHE]/3pp_cipd/prefix/deps/bottom_dep/linux-amd64"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
@@ -479,6 +536,8 @@
       "[CACHE]/3pp_cipd/prefix/deps/bottom_dep/linux-amd64/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
@@ -492,6 +551,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
@@ -514,6 +575,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
@@ -542,6 +605,8 @@
       "latest"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "linux-amd64"
     },
@@ -563,6 +628,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "linux-amd64"
     },
@@ -591,6 +658,8 @@
       "[START_DIR]/3pp/wd/fetch_and_package/linux-amd64/2.0.0"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -604,6 +673,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -626,6 +697,8 @@
       "[START_DIR]/3pp/wd/fetch_and_package/linux-amd64/2.0.0/checkout"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -645,6 +718,8 @@
       "[START_DIR]/3pp/wd/fetch_and_package/linux-amd64/2.0.0/checkout"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -668,6 +743,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -697,6 +774,8 @@
       "[CACHE]/3pp_cipd/tools/fetch_and_package"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -719,6 +798,8 @@
       "[CACHE]/3pp_cipd/tools/fetch_and_package/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -732,6 +813,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -754,6 +837,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -782,6 +867,8 @@
       "latest"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-amd64"
     },
@@ -803,6 +890,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-amd64"
     },
@@ -831,6 +920,8 @@
       "[START_DIR]/3pp/wd/pkg/linux-amd64/2.0.0"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -844,6 +935,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -856,6 +949,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -868,6 +963,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -886,6 +983,8 @@
     ],
     "cwd": "None",
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -910,6 +1009,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -940,6 +1041,8 @@
       "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -954,6 +1057,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -967,6 +1072,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -990,6 +1097,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1021,6 +1130,8 @@
       "[CACHE]/3pp_cipd/prefix/build_tools/tool/linux-amd64"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1044,6 +1155,8 @@
       "[CACHE]/3pp_cipd/prefix/build_tools/tool/linux-amd64/resolved-instance_id-of-version:0.9.0.ch"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1066,6 +1179,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1086,6 +1201,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1107,6 +1224,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1137,6 +1256,8 @@
       "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/src/go.repo/tool"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1159,6 +1280,8 @@
       "https://go.repo/tool"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1180,6 +1303,8 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/src/go.repo/tool",
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -1201,6 +1326,8 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/src/go.repo/tool",
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1220,6 +1347,8 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/src/go.repo/tool",
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1243,6 +1372,8 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/src/go.repo/tool",
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1262,6 +1393,8 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/src/go.repo/tool",
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1283,6 +1416,8 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/src/go.repo/tool",
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1304,6 +1439,8 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/src/go.repo/tool",
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1327,6 +1464,8 @@
       "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/.3pp"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1341,6 +1480,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1349,6 +1490,32 @@
     "name": "building pkg.fetch sources.installing tools.building tool.run installation",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@4@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/out"
+    ],
+    "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing tools.building tool.run installation.make output dir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@"
     ]
   },
   {
@@ -1365,6 +1532,18 @@
       "--env-prefix",
       "PATH",
       "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/tools_prefix",
+      "--env-prefix",
+      "PATH",
+      "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/tools_prefix/bin",
+      "--env",
+      "GOOS",
+      "linux",
+      "--env",
+      "_3PP_VERSION",
+      "1.4.1",
+      "--env",
+      "GOARCH",
+      "amd64",
       "--env",
       "_3PP_PATCH_VERSION",
       "chops.1",
@@ -1374,9 +1553,6 @@
       "--env",
       "_3PP_PACKAGE_NAME",
       "tool",
-      "--env",
-      "_3PP_VERSION",
-      "1.4.1",
       "--",
       "bash",
       "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/.3pp/tool/install.sh",
@@ -1386,6 +1562,8 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout",
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1393,7 +1571,8 @@
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/tools_prefix"
+        "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/tools_prefix",
+        "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/tools_prefix/bin"
       ]
     },
     "name": "building pkg.fetch sources.installing tools.building tool.run installation.do install",
@@ -1415,6 +1594,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1445,6 +1626,8 @@
       "[CACHE]/3pp_cipd/prefix/build_tools/tool/linux-amd64"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1468,6 +1651,8 @@
       "[CACHE]/3pp_cipd/prefix/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1482,6 +1667,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1501,6 +1688,8 @@
       "[CACHE]/3pp_cipd/prefix/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1514,6 +1703,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1537,6 +1728,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1565,6 +1758,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -1584,6 +1779,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -1596,6 +1793,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -1616,6 +1815,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -1645,6 +1846,8 @@
       "[START_DIR]/3pp/wd/dep/linux-amd64/1.0.0"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
@@ -1658,6 +1861,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
@@ -1670,6 +1875,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
@@ -1690,6 +1897,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
@@ -1719,6 +1928,8 @@
       "[START_DIR]/3pp/wd/dep/linux-amd64/1.0.0/checkout"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
@@ -1741,6 +1952,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
@@ -1773,6 +1986,8 @@
       "[START_DIR]/3pp/wd/dep/linux-amd64/1.0.0/checkout/.3pp"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
@@ -1786,6 +2001,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
@@ -1793,6 +2010,31 @@
     "name": "building pkg.fetch sources.installing deps.building dep.run installation",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@4@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/3pp/wd/dep/linux-amd64/1.0.0/out"
+    ],
+    "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
+      "_3PP_PACKAGE_NAME": "dep",
+      "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_VERSION": "1.0.0"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing deps.building dep.run installation.make output dir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@"
     ]
   },
   {
@@ -1809,6 +2051,15 @@
       "--env-prefix",
       "PATH",
       "[START_DIR]/3pp/wd/dep/linux-amd64/1.0.0/tools_prefix",
+      "--env-prefix",
+      "PATH",
+      "[START_DIR]/3pp/wd/dep/linux-amd64/1.0.0/tools_prefix/bin",
+      "--env",
+      "GOOS",
+      "linux",
+      "--env",
+      "GOARCH",
+      "amd64",
       "--env",
       "_3PP_PLATFORM",
       "linux-amd64",
@@ -1826,13 +2077,16 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/dep/linux-amd64/1.0.0/checkout",
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/3pp/wd/dep/linux-amd64/1.0.0/tools_prefix"
+        "[START_DIR]/3pp/wd/dep/linux-amd64/1.0.0/tools_prefix",
+        "[START_DIR]/3pp/wd/dep/linux-amd64/1.0.0/tools_prefix/bin"
       ]
     },
     "name": "building pkg.fetch sources.installing deps.building dep.run installation.do install",
@@ -1854,6 +2108,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
@@ -1883,6 +2139,8 @@
       "[CACHE]/3pp_cipd/prefix/deps/dep/linux-amd64"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
@@ -1905,6 +2163,8 @@
       "[CACHE]/3pp_cipd/prefix/deps/dep/linux-amd64/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
@@ -1918,6 +2178,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
@@ -1940,6 +2202,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
@@ -1967,6 +2231,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -1996,6 +2262,8 @@
       "[START_DIR]/3pp/wd/pkg/linux-amd64/2.0.0/checkout"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -2015,6 +2283,8 @@
       "[START_DIR]/3pp/wd/pkg/linux-amd64/2.0.0/checkout"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -2036,6 +2306,8 @@
       "[START_DIR]/3pp/wd/pkg/linux-amd64/2.0.0/checkout/.3pp"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -2049,6 +2321,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -2056,6 +2330,31 @@
     "name": "building pkg.run installation",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/3pp/wd/pkg/linux-amd64/2.0.0/out"
+    ],
+    "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "infra_step": true,
+    "name": "building pkg.run installation.make output dir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
     ]
   },
   {
@@ -2072,6 +2371,15 @@
       "--env-prefix",
       "PATH",
       "[START_DIR]/3pp/wd/pkg/linux-amd64/2.0.0/tools_prefix",
+      "--env-prefix",
+      "PATH",
+      "[START_DIR]/3pp/wd/pkg/linux-amd64/2.0.0/tools_prefix/bin",
+      "--env",
+      "GOOS",
+      "linux",
+      "--env",
+      "GOARCH",
+      "amd64",
       "--env",
       "_3PP_PLATFORM",
       "linux-amd64",
@@ -2089,13 +2397,16 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/pkg/linux-amd64/2.0.0/checkout",
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/3pp/wd/pkg/linux-amd64/2.0.0/tools_prefix"
+        "[START_DIR]/3pp/wd/pkg/linux-amd64/2.0.0/tools_prefix",
+        "[START_DIR]/3pp/wd/pkg/linux-amd64/2.0.0/tools_prefix/bin"
       ]
     },
     "name": "building pkg.run installation.do install",
@@ -2117,6 +2428,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -2146,6 +2459,8 @@
       "[CACHE]/3pp_cipd/prefix/tools/pkg/linux-amd64"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -2168,6 +2483,8 @@
       "[CACHE]/3pp_cipd/prefix/tools/pkg/linux-amd64/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -2181,6 +2498,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -2203,6 +2522,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
@@ -2234,6 +2555,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-amd64"
     },
@@ -2262,6 +2585,8 @@
       "[START_DIR]/3pp/wd/posix_tool/linux-amd64/1.2.0"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
@@ -2275,6 +2600,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
@@ -2297,6 +2624,8 @@
       "[START_DIR]/3pp/wd/posix_tool/linux-amd64/1.2.0/checkout"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
@@ -2319,6 +2648,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
@@ -2342,6 +2673,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
@@ -2363,6 +2696,8 @@
       "*.*"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
@@ -2389,6 +2724,8 @@
       "[TMP_BASE]/tmp_tmp_7/archive.tgz"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
@@ -2410,6 +2747,8 @@
       "[START_DIR]/3pp/wd/posix_tool/linux-amd64/1.2.0/checkout"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
@@ -2431,6 +2770,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
@@ -2459,6 +2800,8 @@
       "[START_DIR]/3pp/wd/posix_tool/linux-amd64/1.2.0/checkout"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
@@ -2481,6 +2824,8 @@
       "[START_DIR]/3pp/wd/posix_tool/linux-amd64/1.2.0/checkout/.3pp"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
@@ -2494,6 +2839,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
@@ -2501,6 +2848,31 @@
     "name": "building posix_tool.run installation",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/3pp/wd/posix_tool/linux-amd64/1.2.0/out"
+    ],
+    "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
+      "_3PP_PACKAGE_NAME": "posix_tool",
+      "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_VERSION": "1.2.0"
+    },
+    "infra_step": true,
+    "name": "building posix_tool.run installation.make output dir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
     ]
   },
   {
@@ -2517,6 +2889,15 @@
       "--env-prefix",
       "PATH",
       "[START_DIR]/3pp/wd/posix_tool/linux-amd64/1.2.0/tools_prefix",
+      "--env-prefix",
+      "PATH",
+      "[START_DIR]/3pp/wd/posix_tool/linux-amd64/1.2.0/tools_prefix/bin",
+      "--env",
+      "GOOS",
+      "linux",
+      "--env",
+      "GOARCH",
+      "amd64",
       "--env",
       "_3PP_PLATFORM",
       "linux-amd64",
@@ -2534,13 +2915,16 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/posix_tool/linux-amd64/1.2.0/checkout",
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/3pp/wd/posix_tool/linux-amd64/1.2.0/tools_prefix"
+        "[START_DIR]/3pp/wd/posix_tool/linux-amd64/1.2.0/tools_prefix",
+        "[START_DIR]/3pp/wd/posix_tool/linux-amd64/1.2.0/tools_prefix/bin"
       ]
     },
     "name": "building posix_tool.run installation.do install",
@@ -2562,6 +2946,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
@@ -2591,6 +2977,8 @@
       "[CACHE]/3pp_cipd/tools/posix_tool/linux-amd64"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
@@ -2613,6 +3001,8 @@
       "[CACHE]/3pp_cipd/tools/posix_tool/linux-amd64/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
@@ -2626,6 +3016,8 @@
   {
     "cmd": [],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
@@ -2648,6 +3040,8 @@
       "/path/to/tmp/json"
     ],
     "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"

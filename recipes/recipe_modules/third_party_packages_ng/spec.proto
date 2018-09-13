@@ -18,9 +18,15 @@ message Spec {
   // noted otherwise):
   //
   //   * $_3PP_PACKAGE_NAME - the name of the package currently building
+  //     (if any patch version was set).
   //   * $_3PP_PATCH_VERSION - the `patch_version` set for this create block
-  //   * $_3PP_PLATFORM - the platform we're targetting
+  //   * $_3PP_PLATFORM - the platform we're targeting
   //   * $_3PP_VERSION - the version we're building, e.g. 1.2.3
+  //   * $GOOS - The golang OS name we're targeting
+  //   * $GOARCH - The golang architecture we're targeting
+  //
+  // Additionally, on cross-compile environments, the $CROSS_TRIPLE environment
+  // variable is set to a GCC cross compile target triplet of cpu-vendor-os.
   message Create {
     message Source {
       // (required) Source messages must have one of these methods.
@@ -80,7 +86,10 @@ message Spec {
       // a target `prefix` path to install the compiled package to, followed by
       // a path to a prefix containing all deps. The current directory is set to
       // the base directory of the source checkout (excluding subdir). Any
-      // specified tools will be in $PATH.
+      // specified tools will be in $PATH (both '$tools' and '$tools/bin' are
+      // added to $PATH, because many packages are set up with their binaries at
+      // the base of the package, and some are set up with them in a /bin
+      // folder).
       //
       // Scripts ending with .py will be invoked with python (on all platforms)
       // Scripts ending with .sh will be invoked with bash (on all platforms).
@@ -93,7 +102,7 @@ message Spec {
       // will do:
       //
       //   $ cd /path/to/checkout
-      //   $ export PATH=/path/to/tools_prefix:$PATH
+      //   $ export PATH=/path/to/tools_prefix:/path/to/tools_prefix/bin:$PATH
       //   $ /path/to/checkout/.3pp/package_name/do_build.sh quickly \
       //      /path/to/output_prefix
       //      /path/to/deps_prefix

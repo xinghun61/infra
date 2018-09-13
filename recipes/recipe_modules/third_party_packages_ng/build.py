@@ -17,6 +17,7 @@ def run_installation(api, workdir, spec):
       spec in. This function will create the output in `workdir.output_prefix`.
     * spec (ResolvedSpec) - The spec to build.
   """
+  api.file.ensure_directory('make output dir', workdir.output_prefix)
   my_args = [workdir.output_prefix, workdir.deps_prefix]
   if spec.create_pb.build.install:
     script = spec.create_pb.build.install[0]
@@ -27,7 +28,9 @@ def run_installation(api, workdir, spec):
 
   script_path = workdir.script_dir(spec.name).join(script)
 
-  env_prefixes = {'PATH': [workdir.tools_prefix]}
+  env_prefixes = {
+    'PATH': [workdir.tools_prefix, workdir.tools_prefix.join('bin')]
+  }
   with api.context(cwd=workdir.checkout, env_prefixes=env_prefixes):
     # TODO(iannucci): Actually just build toolchains (in 3pp) to run natively
     # on all the different platforms, instead of relying on dockcross.

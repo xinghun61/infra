@@ -51,6 +51,8 @@ def build_resolved_spec(api, spec_lookup, cache, force_build, spec, version):
     env = {
       '_3PP_PLATFORM': spec.platform,
       '_3PP_PACKAGE_NAME': spec.name,
+      'GOOS': spec.platform.split('-')[0].replace('mac', 'darwin'),
+      'GOARCH': spec.platform.split('-')[1],
     }
     if spec.create_pb.source.patch_version:
       env['_3PP_PATCH_VERSION'] = spec.create_pb.source.patch_version
