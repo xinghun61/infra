@@ -50,6 +50,13 @@ class Flake(ndb.Model):
   # Timestamp of the most recent flake occurrence.
   last_occurred_time = ndb.DateTimeProperty(indexed=True)
 
+  # Statistical fields.
+  # Number of false rejection occurrences in the past week.
+  false_rejection_count_last_week = ndb.IntegerProperty(default=0, indexed=True)
+
+  # Number of distinct impacted CLs in the past week.
+  impacted_cl_count_last_week = ndb.IntegerProperty(default=0, indexed=True)
+
   @staticmethod
   def GetId(luci_project, normalized_step_name, normalized_test_name):
     return '%s@%s@%s' % (luci_project, normalized_step_name,

@@ -29,3 +29,7 @@ cron:
   schedule: every 1 hours
   retry_parameters:
     job_retry_limit: 0
+
+- description: Count false rejection occurrences and impacted CLs for each flake
+  url: /flake/detection/cron/update-flake-counts
+  schedule: every 1 hours

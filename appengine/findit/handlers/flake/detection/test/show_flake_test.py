@@ -113,6 +113,10 @@ class ShowFlakeTest(WaterfallTestCase):
             'normalized_step_name',
         'normalized_test_name':
             'normalized_test_name',
+        'false_rejection_count_last_week':
+            0,
+        'impacted_cl_count_last_week':
+            0,
         'occurrences': [{
             'group_by_field':
                 'luci builder',

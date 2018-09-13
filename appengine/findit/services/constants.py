@@ -53,3 +53,5 @@ REVERTED_BY_SHERIFF = 'Culprit has been reverted by a sheriff or the CL owner.'
 # zlib. With the minimum compress level, the log data will usually be reduced
 # to less than 20%. So for uncompressed data, a safe limit could be 4000 KB.
 LOG_DATA_BYTE_LIMIT = 4000 * 1024
+
+DAYS_IN_A_WEEK = 7

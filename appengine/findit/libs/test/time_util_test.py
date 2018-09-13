@@ -13,9 +13,9 @@ from libs import time_util
 class TimeUtilTest(unittest.TestCase):
 
   def testConvertToTimestamp(self):
-    self.assertEqual(1490918400,
-                     time_util.ConvertToTimestamp(
-                         datetime(2017, 03, 31, 0, 0, 0)))
+    self.assertEqual(
+        1490918400, time_util.ConvertToTimestamp(
+            datetime(2017, 03, 31, 0, 0, 0)))
 
   def testRemoveMicrosecondsFromDelta(self):
     date1 = datetime(2016, 5, 1, 1, 1, 1, 1)
@@ -135,3 +135,9 @@ class TimeUtilTest(unittest.TestCase):
     self.assertEqual(
         datetime(2017, 4, 27, 8, 0, 0),
         time_util.ConvertPSTToUTC(datetime(2017, 4, 27, 0, 0, 0)))
+
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime(2017, 4, 27, 8, 0, 0))
+  def testGetDateDaysFromNowBefore(self, _):
+    self.assertEqual(
+        datetime(2017, 4, 26, 8, 0, 0), time_util.GetDateDaysBeforeNow(days=1))

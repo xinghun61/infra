@@ -182,6 +182,23 @@ indexes:
   - name: time_happened
     direction: desc
 
+- kind: Flake
+  properties:
+  - name: last_occurred_time
+  - name: false_rejection_count_last_week
+
+- kind: Flake
+  properties:
+  - name: luci_project
+  - name: false_rejection_count_last_week
+    direction: desc
+
+- kind: Flake
+  properties:
+  - name: luci_project
+  - name: impacted_cl_count_last_week
+    direction: desc
+
 # For query on tree closures.
 - kind: TreeClosure
   properties:

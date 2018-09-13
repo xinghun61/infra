@@ -133,6 +133,15 @@ def GetStartEndDates(start, end, default_start=None, default_end=None):
   return (DatetimeFromString(start), DatetimeFromString(end))
 
 
+def GetDateDaysBeforeNow(days):
+  """Get the date days before now.
+
+  Args:
+    days(int): Number of days before now. It should be a positive integer.
+  """
+  return GetUTCNow() - timedelta(days=days)
+
+
 class TimeZoneInfo(object):
   """Gets time zone info from string like: +0800.
 

@@ -98,6 +98,10 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             flake_issue.key,
         'last_occurred_time':
             None,
+        'false_rejection_count_last_week':
+            0,
+        'impacted_cl_count_last_week':
+            0,
         'flake_issue': {
             'monorail_project':
                 'chromium',
@@ -223,6 +227,10 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             None,
         'last_occurred_time':
             None,
+        'false_rejection_count_last_week':
+            0,
+        'impacted_cl_count_last_week':
+            0,
         'occurrences': [{
             'group_by_field':
                 'luci builder',
