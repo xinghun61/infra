@@ -54,10 +54,21 @@ class StepParser(object):
         name=name or ann_step.name,
         status=self._parse_status(ann_step, bb_substeps),
     )
-    if ann_step.HasField('started'):
-      ret.start_time.CopyFrom(ann_step.started)
-    if ann_step.HasField('ended'):
-      ret.end_time.CopyFrom(ann_step.ended)
+
+    # Compute start/end time.
+    start_time_list = [ann_step.started] if ann_step.HasField('started') else []
+    start_time_list += [
+        s.start_time for s in bb_substeps if s.HasField('start_time')
+    ]
+    if start_time_list:
+      ret.start_time.CopyFrom(
+          min(start_time_list, key=lambda t: t.ToDatetime())
+      )
+
+    end_time_list = [ann_step.ended] if ann_step.HasField('ended') else []
+    end_time_list += [s.end_time for s in bb_substeps if s.HasField('end_time')]
+    if end_time_list:
+      ret.end_time.CopyFrom(max(end_time_list, key=lambda t: t.ToDatetime()))
 
     # list of summary paragraphs.
     # each element is a list of paragraph lines
