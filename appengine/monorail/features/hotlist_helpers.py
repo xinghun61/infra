@@ -77,9 +77,15 @@ def GetSortedHotlistIssues(
     sortable_postproc.update(
         {'adder': lambda user_view: user_view.email,
         })
+    # With no sort_spec specified, a hotlist should default to be sorted by
+    # 'rank'. mr.sort_spec needs to be modified because hotlistissues.py:89
+    # checks for 'rank' in mr.sort_spec to determine if drag and drop reranking
+    # should be enabled.
+    if not mr.sort_spec:
+      mr.sort_spec = 'rank'
     sorted_issues = sorting.SortArtifacts(
         allowed_issues, harmonized_config, sortable_fields,
-        sortable_postproc, mr.group_by_spec, mr.sort_spec or 'rank',
+        sortable_postproc, mr.group_by_spec, mr.sort_spec,
         users_by_id=issues_users_by_id, tie_breakers=['rank', 'id'])
     return sorted_issues, hotlist_issues_context, issues_users_by_id
 
