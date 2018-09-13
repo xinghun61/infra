@@ -938,8 +938,7 @@ def ApplyIssueDelta(cnxn, issue_service, issue, delta, config):
 
   (labels, update_labels_add,
    update_labels_remove) = framework_bizobj.MergeLabels(
-       issue.labels, labels_add, labels_remove,
-       config.exclusive_label_prefixes)
+       issue.labels, labels_add, labels_remove, config)
 
   if update_labels_add or update_labels_remove:
     issue.labels = labels

@@ -50,8 +50,7 @@ def ParseQuickEditCommand(
                 if cc not in parser.cc_remove]
   (new_labels, _update_add,
    _update_remove) = framework_bizobj.MergeLabels(
-       issue.labels, parser.labels_add, parser.labels_remove,
-       config.exclusive_label_prefixes)
+       issue.labels, parser.labels_add, parser.labels_remove, config)
 
   return new_summary, new_status, new_owner_id, new_cc_ids, new_labels
 
@@ -229,8 +228,7 @@ class AssignmentParser(object):
                             for lab in self.labels_remove]
       (self.labels_list, _update_add,
        _update_remove) = framework_bizobj.MergeLabels(
-           self.labels_list, self.labels_add, self.labels_remove,
-           config.exclusive_label_prefixes)
+           self.labels_list, self.labels_add, self.labels_remove, config)
 
     elif (self.easier_kv_labels and
           key not in tracker_constants.RESERVED_PREFIXES and

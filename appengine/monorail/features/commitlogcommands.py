@@ -138,11 +138,9 @@ class UpdateIssueAction(IssueAction):
 
     new_cc_ids = [cc for cc in list(issue.cc_ids) + list(self.parser.cc_add)
                   if cc not in self.parser.cc_remove]
-    (new_labels, _update_add,
-     _update_remove) = framework_bizobj.MergeLabels(
+    (new_labels, _update_add, _update_remove) = framework_bizobj.MergeLabels(
          issue.labels, self.parser.labels_add,
-         self.parser.labels_remove,
-         self.config.exclusive_label_prefixes)
+         self.parser.labels_remove, self.config)
 
     new_field_values = issue.field_values  # TODO(jrobbins): edit custom ones
 

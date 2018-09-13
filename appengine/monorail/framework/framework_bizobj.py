@@ -16,6 +16,7 @@ import string
 
 import settings
 from framework import framework_constants
+from proto import tracker_pb2
 
 
 # Pattern to match a valid project name.  Users of this pattern MUST use
@@ -110,19 +111,20 @@ def CanonicalizeLabel(user_input):
   return canon_str
 
 
-def MergeLabels(labels_list, labels_add, labels_remove, excl_prefixes):
+def MergeLabels(labels_list, labels_add, labels_remove, config):
   """Update a list of labels with the given add and remove label lists.
 
   Args:
     labels_list: list of current labels.
     labels_add: labels that the user wants to add.
     labels_remove: labels that the user wants to remove.
-    excl_prefixes: prefixes that can have only one value, e.g., Priority.
+    config: ProjectIssueConfig with info about exclusive prefixes and
+        enum fields.
 
   Returns:
     (merged_labels, update_labels_add, update_labels_remove):
     A new list of labels with the given labels added and removed, and
-    any exclusive label prefixes taken into account. Then two
+    any exclusive label prefixes taken into account.  Then two
     lists of update strings to explain the changes that were actually
     made.
   """
@@ -132,28 +134,45 @@ def MergeLabels(labels_list, labels_add, labels_remove, excl_prefixes):
   labels_remove = [lab for lab in labels_remove
                    if lab.lower() in old_lower_labels]
   labels_remove_lower = [lab.lower() for lab in labels_remove]
-  config_excl = [lab.lower() for lab in excl_prefixes]
+  exclusive_prefixes = [
+      lab.lower() + '-' for lab in config.exclusive_label_prefixes]
+  for fd in config.field_defs:
+    if (fd.field_type == tracker_pb2.FieldTypes.ENUM_TYPE and
+        not fd.is_multivalued):
+      exclusive_prefixes.append(fd.field_name.lower() + '-')
+
+  # We match prefix strings rather than splitting on dash because
+  # an exclusive-prefix or field name may contain dashes.
+  def MatchPrefix(lab, prefixes):
+    for prefix_dash in prefixes:
+      if lab.lower().startswith(prefix_dash):
+        return prefix_dash
+    return False
+
+  # Dedup any added labels.  E.g., ignore attempts to add Priority twice.
+  excl_add = []
+  dedupped_labels_add = []
+  for lab in labels_add:
+    matched_prefix_dash = MatchPrefix(lab, exclusive_prefixes)
+    if matched_prefix_dash:
+      if matched_prefix_dash not in excl_add:
+        excl_add.append(matched_prefix_dash)
+        dedupped_labels_add.append(lab)
+    else:
+      dedupped_labels_add.append(lab)
 
   # "Old minus exclusive" is the set of old label values minus any
-  # that are implictly removed by newly set exclusive labels.
-  excl_add = []  # E.g., there can be only one "Priority-*" label
-  for lab in labels_add:
-    prefix = lab.split('-')[0].lower()
-    if prefix in config_excl:
-      excl_add.append('%s-' % prefix)
+  # that should be overwritten by newly set exclusive labels.
   old_minus_excl = []
   for lab in labels_list:
-    for prefix_dash in excl_add:
-      if lab.lower().startswith(prefix_dash):
-        # Note: don't add -lab to update_labels_remove, it is implicit.
-        break
-    else:
+    matched_prefix_dash = MatchPrefix(lab, excl_add)
+    if not matched_prefix_dash:
       old_minus_excl.append(lab)
 
-  merged_labels = [lab for lab in old_minus_excl + labels_add
+  merged_labels = [lab for lab in old_minus_excl + dedupped_labels_add
                    if lab.lower() not in labels_remove_lower]
 
-  return merged_labels, labels_add, labels_remove
+  return merged_labels, dedupped_labels_add, labels_remove
 
 
 # Pattern to match a valid hotlist name.
