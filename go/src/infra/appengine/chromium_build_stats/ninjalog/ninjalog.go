@@ -89,6 +89,9 @@ func (s ByWeightedTime) Less(i, j int) bool {
 
 // Metadata is data added by compile.py.
 type Metadata struct {
+	// BuildID is identifier of build used in buildbucket api v2 (go/buildbucket-api-v2)
+	BuildID int64 `json:"build_id"`
+
 	// Platform is platform of buildbot.
 	Platform string `json:"platform"`
 
@@ -107,11 +110,17 @@ type Metadata struct {
 	// Exit is exit status of ninja.
 	Exit int `json:"exit"`
 
+	// StepName is stepname to distinguish multiple compile steps in a build.
+	StepName string `json:"step_name"`
+
 	// Env is environment variables.
 	Env map[string]string `json:"env"`
 
 	// CompilerProxyInfo is a path name of associated compiler_proxy.INFO log.
 	CompilerProxyInfo string `json:"compiler_proxy_info"`
+
+	// Jobs is number of parallel process in a build.
+	Jobs int
 
 	// Raw is raw string for metadata.
 	Raw string
@@ -241,7 +250,15 @@ func stepToLine(s Step) string {
 }
 
 func parseMetadata(buf []byte, metadata *Metadata) error {
-	return json.Unmarshal(buf, metadata)
+	if err := json.Unmarshal(buf, metadata); err != nil {
+		return err
+	}
+	jobs, err := getJobs(metadata.Cmdline)
+	if err != nil {
+		return fmt.Errorf("failed to get jobs: %v", err)
+	}
+	metadata.Jobs = jobs
+	return nil
 }
 
 // Dump dumps steps as ninja log v5 format in w.
@@ -462,6 +479,9 @@ func ToProto(info *NinjaLog) []*npb.NinjaTask {
 	steps := Dedup(info.Steps)
 	for _, s := range steps {
 		ninjalog := &npb.NinjaTask{
+			BuildId:  info.Metadata.BuildID,
+			StepName: info.Metadata.StepName,
+			Jobs:     int64(info.Metadata.Jobs),
 			LogEntry: &npb.NinjaTask_LogEntry{
 				Outputs:       append(s.Outs, s.Out),
 				CommandHash:   s.CmdHash,
@@ -474,4 +494,33 @@ func ToProto(info *NinjaLog) []*npb.NinjaTask {
 		ninjaTasks = append(ninjaTasks, ninjalog)
 	}
 	return ninjaTasks
+}
+
+func getJobs(cmdLine []string) (int, error) {
+	strJobs := ""
+	for i, c := range cmdLine {
+		if !strings.HasPrefix(c, "-j") {
+			continue
+		}
+		if c == "-j" { // the case ... []string{ ..., "-j", "50"}
+			if i+1 < len(cmdLine) {
+				strJobs = cmdLine[i+1]
+			} else { // the error case ... []string{ ..., "-j"}
+				return 0, fmt.Errorf("trailing -j: %v", cmdLine)
+			}
+		} else { // the case ... []string{ ..., "-j50"}
+			strJobs = strings.TrimLeft(c, "-j")
+		}
+		break
+	}
+	// -j isn't found
+	if strJobs == "" {
+		return 0, nil
+	}
+
+	jobs, err := strconv.Atoi(strJobs)
+	if err != nil { // the error case ... []string{ ..., "-j", "abc"}
+		return 0, fmt.Errorf("failed to parse %v: %v", strJobs, err)
+	}
+	return jobs, nil
 }

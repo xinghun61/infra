@@ -122,12 +122,14 @@ var (
 	}
 
 	metadataTestCase = Metadata{
+		BuildID:  12345,
 		Platform: "linux",
 		Argv:     []string{"../../../scripts/slave/compile.py", "--target", "Release", "--clobber", "--compiler=goma", "--", "all"},
 		Cwd:      "/b/build/slave/Linux_x64/build/src",
 		Compiler: "goma",
 		Cmdline:  []string{"ninja", "-C", "/b/build/slave/Linux_x64/build/src/out/Release", "all", "-j50"},
 		Exit:     0,
+		StepName: "compile",
 		Env: map[string]string{
 			"LANG":    "en_US.UTF-8",
 			"SHELL":   "/bin/bash",
@@ -138,6 +140,7 @@ var (
 			"PATH":    "/home/chrome-bot/slavebin:/b/depot_tools:/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin",
 		},
 		CompilerProxyInfo: "/tmp/compiler_proxy.build48-m1.chrome-bot.log.INFO.20140907-203827.14676",
+		Jobs:              50,
 	}
 )
 
@@ -249,7 +252,7 @@ func TestParseMetadata(t *testing.T) {
 287	290	0	obj/third_party/angle/src/copy_scripts.actions_rules_copies.stamp	b211d373de72f455
 
 # end of ninja log
-{"platform": "linux", "argv": ["../../../scripts/slave/compile.py", "--target", "Release", "--clobber", "--compiler=goma", "--", "all"], "cmdline": ["ninja", "-C", "/b/build/slave/Linux_x64/build/src/out/Release", "all", "-j50"], "exit": 0, "env": {"LANG": "en_US.UTF-8", "SHELL": "/bin/bash", "HOME": "/home/chrome-bot", "PWD": "/b/build/slave/Linux_x64/build", "LOGNAME": "chrome-bot", "USER": "chrome-bot", "PATH": "/home/chrome-bot/slavebin:/b/depot_tools:/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin" }, "compiler_proxy_info": "/tmp/compiler_proxy.build48-m1.chrome-bot.log.INFO.20140907-203827.14676", "cwd": "/b/build/slave/Linux_x64/build/src", "compiler": "goma"}
+{"build_id": 12345, "platform": "linux", "argv": ["../../../scripts/slave/compile.py", "--target", "Release", "--clobber", "--compiler=goma", "--", "all"], "cmdline": ["ninja", "-C", "/b/build/slave/Linux_x64/build/src/out/Release", "all", "-j50"], "exit": 0, "step_name": "compile", "env": {"LANG": "en_US.UTF-8", "SHELL": "/bin/bash", "HOME": "/home/chrome-bot", "PWD": "/b/build/slave/Linux_x64/build", "LOGNAME": "chrome-bot", "USER": "chrome-bot", "PATH": "/home/chrome-bot/slavebin:/b/depot_tools:/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin" }, "compiler_proxy_info": "/tmp/compiler_proxy.build48-m1.chrome-bot.log.INFO.20140907-203827.14676", "cwd": "/b/build/slave/Linux_x64/build/src", "compiler": "goma"}
 `))
 	if err != nil {
 		t.Errorf(`Parse()=_, %#v; want=_, <nil>`, err)
@@ -500,6 +503,7 @@ func TestToProto(t *testing.T) {
 	}
 
 	got := ToProto(&info)
+
 	wantWeightedTime := map[string]time.Duration{
 		"resources/inspector/devtools_extension_api.js":                     2*time.Millisecond + 1*time.Millisecond/2 + 1*time.Millisecond/3 + 61*time.Millisecond/4 + 1*time.Millisecond/5 + 45*time.Millisecond/6,
 		"gen/angle/commit_id.py":                                            1*time.Millisecond/2 + 1*time.Millisecond/3 + 61*time.Millisecond/4 + 1*time.Millisecond/5 + 45*time.Millisecond/6 + 97*time.Millisecond/5 + 2*time.Millisecond/4,
@@ -511,6 +515,9 @@ func TestToProto(t *testing.T) {
 	}
 	want := []*npb.NinjaTask{
 		{
+			BuildId:  12345,
+			StepName: "compile",
+			Jobs:     50,
 			LogEntry: &npb.NinjaTask_LogEntry{
 				Outputs:       []string{"resources/inspector/devtools_api.js", "resources/inspector/devtools_extension_api.js"},
 				CommandHash:   "75430546595be7c2",
@@ -520,6 +527,9 @@ func TestToProto(t *testing.T) {
 			WeightedDuration: ptypes.DurationProto(wantWeightedTime["resources/inspector/devtools_extension_api.js"]),
 		},
 		{
+			BuildId:  12345,
+			StepName: "compile",
+			Jobs:     50,
 			LogEntry: &npb.NinjaTask_LogEntry{
 				Outputs:       []string{"gen/angle/commit_id.py", "gen/angle/commit_id_2.py", "gen/angle/commit_id_3.py"},
 				CommandHash:   "4ede38e2c1617d8c",
@@ -529,6 +539,9 @@ func TestToProto(t *testing.T) {
 			WeightedDuration: ptypes.DurationProto(wantWeightedTime["gen/angle/commit_id.py"]),
 		},
 		{
+			BuildId:  12345,
+			StepName: "compile",
+			Jobs:     50,
 			LogEntry: &npb.NinjaTask_LogEntry{
 				Outputs:       []string{"gen/angle/copy_compiler_dll.bat"},
 				CommandHash:   "9fb635ad5d2c1109",
@@ -538,6 +551,9 @@ func TestToProto(t *testing.T) {
 			WeightedDuration: ptypes.DurationProto(wantWeightedTime["gen/angle/copy_compiler_dll.bat"]),
 		},
 		{
+			BuildId:  12345,
+			StepName: "compile",
+			Jobs:     50,
 			LogEntry: &npb.NinjaTask_LogEntry{
 				Outputs:       []string{"gen/autofill_regex_constants.cc"},
 				CommandHash:   "fa33c8d7ce1d8791",
@@ -547,6 +563,9 @@ func TestToProto(t *testing.T) {
 			WeightedDuration: ptypes.DurationProto(wantWeightedTime["gen/autofill_regex_constants.cc"]),
 		},
 		{
+			BuildId:  12345,
+			StepName: "compile",
+			Jobs:     50,
 			LogEntry: &npb.NinjaTask_LogEntry{
 				Outputs:       []string{"PepperFlash/manifest.json"},
 				CommandHash:   "324f0a0b77c37ef",
@@ -556,6 +575,9 @@ func TestToProto(t *testing.T) {
 			WeightedDuration: ptypes.DurationProto(wantWeightedTime["PepperFlash/manifest.json"]),
 		},
 		{
+			BuildId:  12345,
+			StepName: "compile",
+			Jobs:     50,
 			LogEntry: &npb.NinjaTask_LogEntry{
 				Outputs:       []string{"PepperFlash/libpepflashplayer.so"},
 				CommandHash:   "1e2c2b7845a4d4fe",
@@ -565,6 +587,9 @@ func TestToProto(t *testing.T) {
 			WeightedDuration: ptypes.DurationProto(wantWeightedTime["PepperFlash/libpepflashplayer.so"]),
 		},
 		{
+			BuildId:  12345,
+			StepName: "compile",
+			Jobs:     50,
 			LogEntry: &npb.NinjaTask_LogEntry{
 				Outputs:       []string{"obj/third_party/angle/src/copy_scripts.actions_rules_copies.stamp"},
 				CommandHash:   "b211d373de72f455",
@@ -576,6 +601,48 @@ func TestToProto(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, got, cmp.Comparer(proto.Equal)); diff != "" {
 		t.Errorf("ToProto(%v)\n differs: (-want +got)\n%s", info, diff)
+	}
+}
+
+func TestGetJobs(t *testing.T) {
+	var getjobsTests = []struct {
+		in        []string
+		wantJobs  int
+		wantError bool
+	}{
+		{
+			in:       []string{"ninja", "-C", "/b/build/slave/Linux_x64/build/src/out/Release", "all", "-j50"},
+			wantJobs: 50,
+		},
+		{
+			in:       []string{"ninja", "-C", "/b/build/slave/Linux_x64/build/src/out/Release", "all", "-j", "100"},
+			wantJobs: 100,
+		},
+		{
+			in:       []string{"ninja", "-C", "/b/build/slave/Linux_x64-j/build/src/out/Release", "all", "200-j"},
+			wantJobs: 0,
+		},
+		{
+			in:       []string{"ninja", "-C", "/b/build/slave/Linux_x64/build/src/out/Release", "all", "50"},
+			wantJobs: 0,
+		},
+		{
+			in:        []string{"ninja", "-C", "/b/build/slave/Linux_x64/build/src/out/Release", "all", "-j"},
+			wantError: true,
+		},
+		{
+			in:        []string{"ninja", "-C", "/b/build/slave/Linux_x64/build/src/out/Release", "all", "-j", "abc"},
+			wantError: true,
+		},
+	}
+	for _, cmdline := range getjobsTests {
+		got, err := getJobs(cmdline.in)
+		if err != nil && !cmdline.wantError {
+			t.Errorf("getjobs()=%v; want=<nil>", err)
+		}
+		if got != cmdline.wantJobs {
+			t.Errorf("getJobs(%v)=%v; want=%v", cmdline, got, cmdline.wantJobs)
+		}
 	}
 }
 

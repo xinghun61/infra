@@ -40,7 +40,7 @@ func pubsubHandler(w http.ResponseWriter, req *http.Request) {
 		log.Errorf(ctx, "failed to read body request: %v", err)
 		return
 	}
-	log.Debugf(ctx, "request : %v", string(body))
+	log.Debugf(ctx, "request: %v", string(body))
 
 	request := Req{}
 	if err := json.Unmarshal(body, &request); err != nil {
