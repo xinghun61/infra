@@ -80,6 +80,7 @@ deps:
 	bower install
 	npm install --no-save
 
+	rm -f bower_components/chopsui
 	ln -sf ../../../crdx/chopsui bower_components/chopsui
 
 vulcanize: clean_vulcanized
