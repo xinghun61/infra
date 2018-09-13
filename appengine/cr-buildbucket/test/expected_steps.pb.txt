@@ -19,6 +19,11 @@ steps: <
 >
 
 steps: <
+  name: "cancelled step"
+  status: CANCELED
+>
+
+steps: <
   name: "with time"
   start_time: < seconds: 1500000000 >
   end_time: < seconds: 1500001000 >
@@ -87,13 +92,13 @@ steps: <
 >
 steps: <
   name: "substeps|child"
-  status: STARTED
+  status: INFRA_FAILURE
 >
 steps: <
   name: "substeps|child|descendant0"
-  status: STARTED
+  status: FAILURE
 >
 steps: <
   name: "substeps|child|descendant1"
-  status: STARTED
+  status: INFRA_FAILURE
 >

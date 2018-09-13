@@ -27,6 +27,13 @@ substep: <
   >
 >
 
+substep: <
+  step: <
+    name: "cancelled step"
+    status: FAILURE
+    failure_details: < type: CANCELLED >
+  >
+>
 
 substep: <
   step: <
@@ -107,12 +114,20 @@ substep: <
     substep: <
       step: <
         name: "child"
+        status: SUCCESS
 
         substep: <
-          step: < name: "descendant0" >
+          step: <
+            name: "descendant0"
+            status: FAILURE
+          >
         >
         substep: <
-          step: < name: "descendant1" >
+          step: <
+            name: "descendant1"
+            status: FAILURE
+            failure_details: < type: EXCEPTION >
+          >
         >
       >
     >

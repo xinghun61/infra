@@ -18,6 +18,15 @@ import logdog
 # The character used to separate parent-child steps.
 STEP_SEP = '|'
 
+# Order for determining status of the parent step based on child steps. The
+# status with smallest precedence is used for the parent step.
+STATUS_PRECEDENCE = {
+    common_pb2.CANCELED: 0,
+    common_pb2.INFRA_FAILURE: 1,
+    common_pb2.FAILURE: 2,
+    common_pb2.SUCCESS: 3,
+}
+
 
 class StepParser(object):
   """Converts annotation_pb2.Step to step_pb2.Step.
@@ -30,14 +39,20 @@ class StepParser(object):
     self.default_logdog_host = default_logdog_host
     self.default_logdog_prefix = default_logdog_prefix
 
-  def parse_step(self, ann_step):
+  def parse_step(self, ann_step, bb_substeps, name=None):
     """Converts an annotation_pb2.Step to a step_pb2.Step.
 
-    Ignores substeps.
+    Args:
+      ann_step: Annotation step.
+      bb_substeps: Buildbucket substeps of the current step.
+      name: Overrides name specified in the ann_step.
+
+    Returns:
+      Parsed buildbucket step.
     """
     ret = step_pb2.Step(
-        name=ann_step.name,
-        status=self._parse_status(ann_step),
+        name=name or ann_step.name,
+        status=self._parse_status(ann_step, bb_substeps),
     )
     if ann_step.HasField('started'):
       ret.start_time.CopyFrom(ann_step.started)
@@ -78,39 +93,68 @@ class StepParser(object):
     )
     return ret
 
-  def parse_substeps(self, ann_substeps, name_prefix=''):
+  def parse_substeps(
+      self, ann_substeps, name_prefix='', ret_direct_substeps=None
+  ):
     """Parses a list of annotation substeps to a list of v2 steps.
 
-    Returned list includes substeps, recursively.
+    Args:
+      ann_substeps: List of annotations_pb2.Step entries.
+      name_prefix: Prefix to be added to parsed step names.
+      ret_direct_substeps: List, which will be populated with direct substeps.
+
+    Returns:
+      List of recursively parsed substeps (step_pb2.Step).
     """
     ret = []
     for substep in ann_substeps:
       if substep.HasField('step'):  # pragma: no branch
-        v2_step = self.parse_step(substep.step)
-        v2_step.name = name_prefix + v2_step.name
-        ret.append(v2_step)
-        ret.extend(
-            self.parse_substeps(
-                substep.step.substep, name_prefix=v2_step.name + STEP_SEP
-            )
+        # Process descendants first to collect direct substeps.
+        direct_substeps = []
+        prefixed_name = name_prefix + substep.step.name
+        recursive_substeps = self.parse_substeps(
+            substep.step.substep,
+            name_prefix=prefixed_name + STEP_SEP,
+            ret_direct_substeps=direct_substeps,
         )
+
+        # Convert current step and update returned values.
+        v2_step = self.parse_step(substep.step, direct_substeps, prefixed_name)
+        ret.append(v2_step)
+        ret.extend(recursive_substeps)
+        if ret_direct_substeps is not None:
+          ret_direct_substeps.append(v2_step)
     return ret
 
-  def _parse_status(self, ann_step):
+  def _parse_status(self, ann_step, bb_substeps):
     if ann_step.status == annotations_pb2.RUNNING:
       return common_pb2.STARTED
 
     if ann_step.status == annotations_pb2.SUCCESS:
-      return common_pb2.SUCCESS
-
-    if ann_step.status == annotations_pb2.FAILURE:
+      bb_status = common_pb2.SUCCESS
+    elif ann_step.status == annotations_pb2.FAILURE:
       if ann_step.HasField('failure_details'):
-        fd = ann_step.failure_details
-        if fd.type != annotations_pb2.FailureDetails.GENERAL:
-          return common_pb2.INFRA_FAILURE
-      return common_pb2.FAILURE
+        fail_type = ann_step.failure_details.type
+        if fail_type == annotations_pb2.FailureDetails.GENERAL:
+          bb_status = common_pb2.FAILURE
+        elif fail_type == annotations_pb2.FailureDetails.CANCELLED:
+          bb_status = common_pb2.CANCELED
+        else:
+          bb_status = common_pb2.INFRA_FAILURE
+      else:
+        bb_status = common_pb2.FAILURE
+    else:  # pragma: no cover
+      return common_pb2.STATUS_UNSPECIFIED
 
-    return common_pb2.STATUS_UNSPECIFIED  # pragma: no cover
+    # When parent step finishes running, compute its final status as worst
+    # status, as determined by STATUS_PRECEDENCE dict above, among direct
+    # children and its own status.
+    for bb_substep in bb_substeps:
+      if (bb_substep.status in STATUS_PRECEDENCE and  # pragma: no branch
+          STATUS_PRECEDENCE[bb_substep.status] < STATUS_PRECEDENCE[bb_status]):
+        bb_status = bb_substep.status
+
+    return bb_status
 
   def _parse_links(self, ann_step):
     # Note: annotee never initializes annotations_pb2.Step.link
