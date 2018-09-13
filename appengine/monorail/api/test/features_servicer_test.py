@@ -400,7 +400,7 @@ class FeaturesServicerTest(unittest.TestCase):
 
     # Check that the hotlist was successfuly added.
     hotlist_id = self.services.features.LookupHotlistIDs(
-        self.cnxn, ['Fake-Hotlist'], [111L]).get(('Fake-Hotlist', 111L))
+        self.cnxn, ['Fake-Hotlist'], [111L]).get(('fake-hotlist', 111L))
     hotlist = self.services.features.GetHotlist(self.cnxn, hotlist_id)
     self.assertEqual('Summary', hotlist.summary)
     self.assertEqual('Description', hotlist.description)
@@ -422,7 +422,7 @@ class FeaturesServicerTest(unittest.TestCase):
 
     # Check that the hotlist was successfuly added.
     hotlist_id = self.services.features.LookupHotlistIDs(
-        self.cnxn, ['Fake-Hotlist'], [111L]).get(('Fake-Hotlist', 111L))
+        self.cnxn, ['Fake-Hotlist'], [111L]).get(('fake-hotlist', 111L))
     hotlist = self.services.features.GetHotlist(self.cnxn, hotlist_id)
     self.assertEqual('Summary', hotlist.summary)
     self.assertEqual('Description', hotlist.description)

@@ -1020,6 +1020,29 @@ class ConverterFunctionsTest(unittest.TestCase):
         self.cnxn, self.services.user, self.services.features, hotlist_ref)
     self.assertEqual(actual_hotlist_id, hotlist.hotlist_id)
 
+  def testIngestHotlistRef_NotEnoughInformation(self):
+    hotlist_ref = common_pb2.HotlistRef(name='Some-Hotlist')
+    with self.assertRaises(features_svc.NoSuchHotlistException):
+      converters.IngestHotlistRef(
+          self.cnxn, self.services.user, self.services.features, hotlist_ref)
+
+  def testIngestHotlistRef_InconsistentRequest(self):
+    self.services.user.TestAddUser('user1@example.com', 111L)
+    hotlist1 = self.services.features.CreateHotlist(
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[222L])
+    self.services.features.CreateHotlist(
+        self.cnxn, 'Fake-Hotlist-2', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[222L])
+
+    hotlist_ref = common_pb2.HotlistRef(
+        hotlist_id=hotlist1.hotlist_id,
+        name='Fake-Hotlist-2',
+        owner=common_pb2.UserRef(user_id=111L))
+    with self.assertRaises(features_svc.NoSuchHotlistException):
+      converters.IngestHotlistRef(
+          self.cnxn, self.services.user, self.services.features, hotlist_ref)
+
   def testIngestHotlistRef_NonExistentHotlistID(self):
     hotlist_ref = common_pb2.HotlistRef(hotlist_id=1234L)
     with self.assertRaises(features_svc.NoSuchHotlistException):

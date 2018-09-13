@@ -103,8 +103,8 @@ class HotlistCreateTest(unittest.TestCase):
     self.assertTrue('/u/222/hotlists/Hotlist-owner-editor' in url)
     hotlists_by_id = self.servlet.services.features.LookupHotlistIDs(
         self.mr.cnxn, ['Hotlist-owner-editor'], [222L])
-    self.assertTrue(('Hotlist-owner-editor', 222L) in hotlists_by_id)
-    hotlist_id = hotlists_by_id[('Hotlist-owner-editor', 222L)]
+    self.assertTrue(('hotlist-owner-editor', 222L) in hotlists_by_id)
+    hotlist_id = hotlists_by_id[('hotlist-owner-editor', 222L)]
     hotlist = self.servlet.services.features.GetHotlist(
         self.mr.cnxn, hotlist_id, use_cache=False)
     self.assertEquals(hotlist.owner_ids, [222L])

@@ -633,21 +633,36 @@ def IngestFieldValues(cnxn, user_service, field_values, config, phases=None):
 
 def IngestHotlistRefs(cnxn, user_service, features_service, hotlist_refs):
   return [IngestHotlistRef(cnxn, user_service, features_service, hotlist_ref)
-          for hotlist_ref in hotlist_refs]
+        for hotlist_ref in hotlist_refs]
 
 
 def IngestHotlistRef(cnxn, user_service, features_service, hotlist_ref):
-  # If a hotlist ID was specified, verify it actually match existing hotlists.
-  if hotlist_ref.hotlist_id:
-    features_service.GetHotlist(cnxn, hotlist_ref.hotlist_id)
-    return hotlist_ref.hotlist_id
+  hotlist_id = None
 
-  name = hotlist_ref.name
-  owner_id = IngestUserRef(cnxn, hotlist_ref.owner, user_service)
-  hotlists = features_service.LookupHotlistIDs(cnxn, [name], [owner_id])
-  if (name, owner_id) not in hotlists:
+  if hotlist_ref.hotlist_id:
+    # If a hotlist ID was specified, verify it actually match existing hotlists.
+    features_service.GetHotlist(cnxn, hotlist_ref.hotlist_id)
+    hotlist_id = hotlist_ref.hotlist_id
+
+  if hotlist_ref.name and hotlist_ref.owner:
+    name = hotlist_ref.name
+    owner_id = IngestUserRef(cnxn, hotlist_ref.owner, user_service)
+    hotlists = features_service.LookupHotlistIDs(cnxn, [name], [owner_id])
+    # Verify there is a hotlist with that name and owner.
+    if (name.lower(), owner_id) not in hotlists:
+      raise features_svc.NoSuchHotlistException()
+    found_id = hotlists[name.lower(), owner_id]
+    # If a hotlist_id was also given, verify it correspond to the name and
+    # owner.
+    if hotlist_id is not None and found_id != hotlist_id:
+      raise features_svc.NoSuchHotlistException()
+    hotlist_id = found_id
+
+  # Neither an ID, nor a name-owner ref were given.
+  if hotlist_id is None:
     raise features_svc.NoSuchHotlistException()
-  return hotlists[(name, owner_id)]
+
+  return hotlist_id
 
 
 def IngestPagination(pagination):
