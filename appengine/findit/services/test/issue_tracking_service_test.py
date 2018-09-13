@@ -17,10 +17,14 @@ from waterfall.test import wf_testcase
 class TestIssueGenerator(issue_tracking_service.FlakyTestIssueGenerator):
   """A FlakyTestIssueGenerator used for testing."""
 
-  def __init__(self, step_name='step', test_name='test'):
+  def __init__(self,
+               step_name='step',
+               test_name='suite.test',
+               test_label_name='*/suite.test/*'):
     super(TestIssueGenerator, self).__init__()
     self.step_name = step_name
     self.test_name = test_name
+    self.test_label_name = test_label_name
     #self._previous_tracking_bug_id = None
 
   def GetStepName(self):
@@ -28,6 +32,9 @@ class TestIssueGenerator(issue_tracking_service.FlakyTestIssueGenerator):
 
   def GetTestName(self):
     return self.test_name
+
+  def GetTestLabelName(self):
+    return self.test_label_name
 
   def GetDescription(self):
     previous_tracking_bug_id = self.GetPreviousTrackingBugId()
@@ -455,13 +462,14 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(12345, issue_id)
     issue = mock_create_bug_fn.call_args_list[0][0][0]
     self.assertEqual('Untriaged', issue.status)
-    self.assertEqual('test is flaky', issue.summary)
+    self.assertEqual('*/suite.test/* is flaky', issue.summary)
     self.assertEqual('description without previous tracking bug id.',
                      issue.description)
     self.assertEqual(['label1', 'Sheriff-Chromium', 'Pri-1'], issue.labels)
     self.assertEqual(1, len(issue.field_values))
     self.assertEqual('Flaky-Test', issue.field_values[0].to_dict()['fieldName'])
-    self.assertEqual('test', issue.field_values[0].to_dict()['fieldValue'])
+    self.assertEqual('suite.test',
+                     issue.field_values[0].to_dict()['fieldValue'])
 
   # This test tests that creating issue via issue generator with previous
   # tracking bug id works properly.
@@ -479,13 +487,14 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(12345, issue_id)
     issue = mock_create_bug_fn.call_args_list[0][0][0]
     self.assertEqual('Untriaged', issue.status)
-    self.assertEqual('test is flaky', issue.summary)
+    self.assertEqual('*/suite.test/* is flaky', issue.summary)
     self.assertEqual('description with previous tracking bug id: 56789.',
                      issue.description)
     self.assertEqual(['label1', 'Sheriff-Chromium', 'Pri-1'], issue.labels)
     self.assertEqual(1, len(issue.field_values))
     self.assertEqual('Flaky-Test', issue.field_values[0].to_dict()['fieldName'])
-    self.assertEqual('test', issue.field_values[0].to_dict()['fieldValue'])
+    self.assertEqual('suite.test',
+                     issue.field_values[0].to_dict()['fieldValue'])
 
   # This test tests that updating issue via issue generator without previous
   # tracking bug id works properly.
@@ -517,7 +526,8 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(['label1'], issue.labels)
     self.assertEqual(1, len(issue.field_values))
     self.assertEqual('Flaky-Test', issue.field_values[0].to_dict()['fieldName'])
-    self.assertEqual('test', issue.field_values[0].to_dict()['fieldValue'])
+    self.assertEqual('suite.test',
+                     issue.field_values[0].to_dict()['fieldValue'])
 
   # This test tests that updating issue via issue generator works properly if
   # the switch to turn on to restore Chromium Sheriffs label when udpate bugs.
@@ -589,7 +599,8 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     flake = Flake.Create(
         luci_project='chromium',
         normalized_step_name='step',
-        normalized_test_name='test')
+        normalized_test_name='suite.test',
+        test_label_name='*/suite.test/*')
     flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
     flake_issue.put()
     flake.flake_issue_key = flake_issue.key
@@ -631,7 +642,8 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     flake = Flake.Create(
         luci_project='chromium',
         normalized_step_name='step',
-        normalized_test_name='test')
+        normalized_test_name='suite.test',
+        test_label_name='*/suite.test/*')
     flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
     flake_issue.put()
     flake.flake_issue_key = flake_issue.key
@@ -666,7 +678,8 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     flake = Flake.Create(
         luci_project='chromium',
         normalized_step_name='step',
-        normalized_test_name='test')
+        normalized_test_name='suite.test',
+        test_label_name='*/suite.test/*')
     flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
     flake_issue.put()
     flake.flake_issue_key = flake_issue.key
@@ -708,7 +721,8 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     flake = Flake.Create(
         luci_project='chromium',
         normalized_step_name='step',
-        normalized_test_name='test')
+        normalized_test_name='suite.test',
+        test_label_name='*/suite.test/*')
     flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
     flake_issue.put()
     flake.flake_issue_key = flake_issue.key
@@ -783,7 +797,8 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     flake = Flake.Create(
         luci_project='chromium',
         normalized_step_name='step',
-        normalized_test_name='test')
+        normalized_test_name='suite.test',
+        test_label_name='*/suite.test/*')
     flake.put()
     test_issue_generator = TestIssueGenerator()
     issue_tracking_service.CreateOrUpdateIssue(test_issue_generator)
@@ -795,7 +810,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     fetched_flake_issues = FlakeIssue.query().fetch()
     self.assertEqual(1, len(fetched_flakes))
     self.assertEqual('step', fetched_flakes[0].normalized_step_name)
-    self.assertEqual('test', fetched_flakes[0].normalized_test_name)
+    self.assertEqual('suite.test', fetched_flakes[0].normalized_test_name)
     self.assertEqual(1, len(fetched_flake_issues))
     self.assertEqual(66666, fetched_flake_issues[0].issue_id)
     self.assertEqual(fetched_flakes[0].flake_issue_key,
@@ -848,7 +863,8 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     flake = Flake.Create(
         luci_project='chromium',
         normalized_step_name='step',
-        normalized_test_name='test')
+        normalized_test_name='suite.test',
+        test_label_name='*/suite.test/*')
     flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
     flake_issue.put()
     flake.flake_issue_key = flake_issue.key
@@ -867,7 +883,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     fetched_flake_issues = FlakeIssue.query().fetch()
     self.assertEqual(1, len(fetched_flakes))
     self.assertEqual('step', fetched_flakes[0].normalized_step_name)
-    self.assertEqual('test', fetched_flakes[0].normalized_test_name)
+    self.assertEqual('suite.test', fetched_flakes[0].normalized_test_name)
     self.assertEqual(1, len(fetched_flake_issues))
     self.assertEqual(99999, fetched_flake_issues[0].issue_id)
     self.assertEqual(fetched_flakes[0].flake_issue_key,

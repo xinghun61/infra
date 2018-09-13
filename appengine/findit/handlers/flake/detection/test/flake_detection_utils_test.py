@@ -27,10 +27,12 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
     test_name = 'test'
     normalized_step_name = 'normalized_step_name'
     normalized_test_name = 'normalized_test_name'
+    test_label_name = 'test_label'
     flake = Flake.Create(
         luci_project=luci_project,
         normalized_step_name=normalized_step_name,
-        normalized_test_name=normalized_test_name)
+        normalized_test_name=normalized_test_name,
+        test_label_name=test_label_name)
 
     flake.flake_issue_key = flake_issue.key
     flake.put()
@@ -94,6 +96,8 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             'normalized_step_name',
         'normalized_test_name':
             'normalized_test_name',
+        'test_label_name':
+            'test_label',
         'flake_issue_key':
             flake_issue.key,
         'last_occurred_time':
@@ -172,10 +176,12 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
     luci_project = 'chromium'
     normalized_step_name = 'normalized_step_name'
     normalized_test_name = 'normalized_test_name_2'
+    test_label_name = 'test_label'
     flake = Flake.Create(
         luci_project=luci_project,
         normalized_step_name=normalized_step_name,
-        normalized_test_name=normalized_test_name)
+        normalized_test_name=normalized_test_name,
+        test_label_name=test_label_name)
     flake.put()
 
     self.assertIsNone(flake_detection_utils.GetFlakeInformation(flake, 2))
@@ -188,10 +194,12 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
     test_name = 'test'
     normalized_step_name = 'normalized_step_name'
     normalized_test_name = 'normalized_test_name_3'
+    test_label_name = 'test_label'
     flake = Flake.Create(
         luci_project=luci_project,
         normalized_step_name=normalized_step_name,
-        normalized_test_name=normalized_test_name)
+        normalized_test_name=normalized_test_name,
+        test_label_name=test_label_name)
     flake.put()
 
     build_id = 123
@@ -223,6 +231,8 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             normalized_step_name,
         'normalized_test_name':
             normalized_test_name,
+        'test_label_name':
+            test_label_name,
         'flake_issue_key':
             None,
         'last_occurred_time':

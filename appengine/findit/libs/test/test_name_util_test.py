@@ -12,36 +12,77 @@ class TestNameUtilTest(wf_testcase.WaterfallTestCase):
     test = 'abc_test'
     self.assertEqual(test, test_name_util.RemoveAllPrefixesFromGTestName(test))
 
+  def testReplaceAllPrefixesFromGTestNameWithMaskNoPrefix(self):
+    test = 'abc_test'
+    self.assertEqual(
+        test, test_name_util.ReplaceAllPrefixesFromGtestNameWithMask(test))
+
   def testRemoveAllPrefixesFromGTestName(self):
     test = 'abc_test.PRE_PRE_test1'
     self.assertEqual('abc_test.test1',
                      test_name_util.RemoveAllPrefixesFromGTestName(test))
+
+  def testReplaceAllPrefixesFromGTestNameWithMask(self):
+    test = 'abc_test.PRE_PRE_test1'
+    self.assertEqual(
+        'abc_test.*test1',
+        test_name_util.ReplaceAllPrefixesFromGtestNameWithMask(test))
 
   def testRemoveValueParametersFromGTestName(self):
     test_name = 'A/ColorSpaceTest.testNullTransform/1'
     self.assertEqual('ColorSpaceTest.testNullTransform',
                      test_name_util.RemoveParametersFromGTestName(test_name))
 
-  def testValueParametersWithoutInstantiationName(self):
+  def testReplaceValueParametersFromGTestNameWithMask(self):
+    test_name = 'A/ColorSpaceTest.testNullTransform/1'
+    self.assertEqual(
+        '*/ColorSpaceTest.testNullTransform/*',
+        test_name_util.ReplaceParametersFromGtestNameWithMask(test_name))
+
+  def testRemoveValueParametersWithoutInstantiationName(self):
     test_name = 'ColorSpaceTest.testNullTransform/1'
     self.assertEqual('ColorSpaceTest.testNullTransform',
                      test_name_util.RemoveParametersFromGTestName(test_name))
 
+  def testReplaceValueParametersWithMaskWithoutInstantiationName(self):
+    test_name = 'ColorSpaceTest.testNullTransform/1'
+    self.assertEqual(
+        'ColorSpaceTest.testNullTransform/*',
+        test_name_util.ReplaceParametersFromGtestNameWithMask(test_name))
+
   def testRemoveTypeParametersFromGTestName(self):
-    test_name = '1/GLES2DecoderPassthroughFixedCommandTest/4.InvalidCommand'
-    self.assertEqual('GLES2DecoderPassthroughFixedCommandTest.InvalidCommand',
+    test_name = '1/FixedCommandTest/4.InvalidCommand'
+    self.assertEqual('FixedCommandTest.InvalidCommand',
                      test_name_util.RemoveParametersFromGTestName(test_name))
 
-  def testTypeParametersWithoutInstantiationName(self):
-    test_name = 'GLES2DecoderPassthroughFixedCommandTest/4.InvalidCommand'
-    self.assertEqual('GLES2DecoderPassthroughFixedCommandTest.InvalidCommand',
+  def testReplaceTypeParametersFromGTestNameWithMask(self):
+    test_name = '1/FixedCommandTest/4.InvalidCommand'
+    self.assertEqual(
+        '*/FixedCommandTest/*.InvalidCommand',
+        test_name_util.ReplaceParametersFromGtestNameWithMask(test_name))
+
+  def testRemoveTypeParametersWithoutInstantiationName(self):
+    test_name = 'FixedCommandTest/4.InvalidCommand'
+    self.assertEqual('FixedCommandTest.InvalidCommand',
                      test_name_util.RemoveParametersFromGTestName(test_name))
+
+  def testReplaceTypeParametersWithMaskWithoutInstantiationName(self):
+    test_name = 'FixedCommandTest/4.InvalidCommand'
+    self.assertEqual(
+        'FixedCommandTest/*.InvalidCommand',
+        test_name_util.ReplaceParametersFromGtestNameWithMask(test_name))
 
   def testRemoveQueriesFromWebkitLayoutTests(self):
     test_name = 'external/wpt/editing/run/inserttext.html?2001-last'
     self.assertEqual(
         'external/wpt/editing/run/inserttext.html',
         test_name_util.RemoveSuffixFromWebkitLayoutTestName(test_name))
+
+  def testReplaceQueriesFromWebkitLayoutTestsWithMask(self):
+    test_name = 'external/wpt/editing/run/inserttext.html?2001-last'
+    self.assertEqual(
+        'external/wpt/editing/run/inserttext.html?*',
+        test_name_util.ReplaceSuffixFromWebkitLayoutTestNameWithMask(test_name))
 
   def testRemoveVirtualLayersFromWebkitLayoutTestName(self):
     virtual_test_name = 'virtual/wpt/editing/run/inserttext.html'

@@ -18,11 +18,13 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 
 class FlakeReportUtilTest(WaterfallTestCase):
 
-  def _CreateFlake(self, normalized_step_name, normalized_test_name):
+  def _CreateFlake(self, normalized_step_name, normalized_test_name,
+                   test_label_name):
     flake = Flake.Create(
         luci_project='chromium',
         normalized_step_name=normalized_step_name,
-        normalized_test_name=normalized_test_name)
+        normalized_test_name=normalized_test_name,
+        test_label_name=test_label_name)
     flake.put()
     return flake
 
@@ -57,7 +59,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
     self.addCleanup(patcher.stop)
     patcher.start()
 
-    flake = self._CreateFlake('step', 'test')
+    flake = self._CreateFlake('step', 'test', 'test_label')
     self._CreateFlakeOccurrence(111, 'step1', 'test1', 98765, flake.key)
     self._CreateFlakeOccurrence(222, 'step2', 'test2', 98764, flake.key)
     self._CreateFlakeOccurrence(333, 'step3', 'test3', 98763, flake.key)
@@ -211,7 +213,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
     flake_report_util.ReportFlakesToMonorail([(flake, occurrences)])
 
     expected_status = 'Untriaged'
-    expected_summary = 'test is flaky'
+    expected_summary = 'test_label is flaky'
 
     expected_wrong_result_link = (
         'https://bugs.chromium.org/p/chromium/issues/entry?status=Unconfirmed&'
@@ -222,7 +224,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
     ).format(flake.key.urlsafe())
 
     expected_description = textwrap.dedent("""
-step: test is flaky.
+step: test_label is flaky.
 
 Findit has detected 3 flake occurrences of this test within the
 past 24 hours. List of all flake occurrences can be found at:
@@ -320,6 +322,8 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     ).format(flake.key.urlsafe())
 
     expected_comment = textwrap.dedent("""
+step: test_label is flaky.
+
 Findit has detected 3 new flake occurrences of this test. List
 of all flake occurrences can be found at:
 https://findit-for-me.appspot.com/flake/detection/show-flake?key={}.
@@ -387,7 +391,7 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     flake1 = Flake.query().fetch()[0]
     occurrences1 = CQFalseRejectionFlakeOccurrence.query(
         ancestor=flake1.key).fetch()
-    flake2 = self._CreateFlake('step_other', 'test_other')
+    flake2 = self._CreateFlake('step_other', 'test_other', 'test_label_other')
     self._CreateFlakeOccurrence(777, 'step1_other', 'test1_other', 54321,
                                 flake2.key)
     self._CreateFlakeOccurrence(888, 'step2_other', 'test2_other', 54322,

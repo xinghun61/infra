@@ -47,6 +47,35 @@ def RemoveParametersFromGTestName(test_name):
   return test_name
 
 
+def ReplaceParametersFromGtestNameWithMask(test_name):
+  """Replaces the parameters parts of gtest names with mask: '*'.
+
+  This method works the same way as |RemoveParametersFromGTestName| except that
+  the parameters parts are replaced with '*' instead of being removed. For
+  example, 'A/suite.test/8' -> '*/suite.test/*'.
+
+  Args:
+    test_name: Original test names, may contain parameters.
+
+  Returns:
+    A test name with parameters being replaced with '*'.
+  """
+  value_match = _VALUE_PARAMETEREZED_GTESTS_REGEX.match(test_name)
+  if value_match:
+    suite_test = value_match.group(2)
+    prefix_mask = '*/' if value_match.group(1) else ''
+    return '%s%s/*' % (prefix_mask, suite_test)
+
+  type_match = _TYPE_PARAMETERIZED_GTESTS_REGEX.match(test_name)
+  if type_match:
+    suite = type_match.group(2)
+    test = type_match.group(3)
+    prefix_mask = '*/' if type_match.group(1) else ''
+    return '%s%s/*.%s' % (prefix_mask, suite, test)
+
+  return test_name
+
+
 def RemoveAllPrefixesFromGTestName(test):
   """Removes prefixes from test names.
 
@@ -68,6 +97,28 @@ def RemoveAllPrefixesFromGTestName(test):
   return base_test
 
 
+def ReplaceAllPrefixesFromGtestNameWithMask(test_name):
+  """Replaces the prefixes parts of gtest names with mask: '*'.
+
+  This method works the same way as |RemoveAllPrefixesFromGTestName| except that
+  the prefixes parts are replaced with '*' instead of being removed. For
+  example, 'suite.PRE_PRE_test' -> 'suite.*test'.
+
+  Args:
+    test_name: Original test names, may contain parameters.
+
+  Returns:
+    A test name with prefixes being replaced with '*'.
+  """
+  test_name_without_prefixes = RemoveAllPrefixesFromGTestName(test_name)
+  if test_name_without_prefixes == test_name:
+    return test_name
+
+  suite = test_name_without_prefixes.split('.')[0]
+  test = test_name_without_prefixes.split('.')[1]
+  return '%s.*%s' % (suite, test)
+
+
 def RemoveSuffixFromWebkitLayoutTestName(test_name):
   """Removes suffix part from webkit_layout_test names if applicable.
 
@@ -85,6 +136,26 @@ def RemoveSuffixFromWebkitLayoutTestName(test_name):
     return match.group(1)
 
   return test_name
+
+
+def ReplaceSuffixFromWebkitLayoutTestNameWithMask(test_name):
+  """Replaces the suffix parts of webkit_layout_test names with mask: '*'.
+
+  This method works the same way as |RemoveSuffixFromWebkitLayoutTestName|
+  except that the suffix parts are replaced with '*' instead of being removed.
+  For example, 'external/delete.html?1001-2000' -> 'external/delete.html?*'.
+
+  Args:
+    test_name: Original test names, may contain suffixes.
+
+  Returns:
+    A test name with suffixes being replaced with '*'.
+  """
+  test_name_without_suffixes = RemoveSuffixFromWebkitLayoutTestName(test_name)
+  if test_name_without_suffixes == test_name:
+    return test_name
+
+  return '%s?*' % test_name_without_suffixes
 
 
 def RemoveVirtualLayersFromWebkitLayoutTestName(test_name):

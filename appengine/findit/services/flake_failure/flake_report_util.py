@@ -16,6 +16,7 @@ from waterfall import waterfall_config
 
 # TODO(crbug.com/881635): Include a link to the stdio of the flaky test as well.
 _BODY_TEMPLATE = textwrap.dedent("""
+  Flaky test: {}
   Sample failed build due to flakiness: {}
   Culprit ({} confidence): {}
   Analysis: {}
@@ -35,6 +36,8 @@ _WRONG_RESULT_LINK_TEMPLATE = (
 
 # Comment for culprit template.
 _CULPRIT_COMMENT_TEMPLATE = textwrap.dedent("""
+Flaky test: %s
+
 Findit identified the culprit r%s with confidence %.1f%% for the example failed
 build %s based on the flakiness trend:
 
@@ -46,6 +49,8 @@ If the culprit above is wrong, please file a bug using this link:
 Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).""")
 
 _LOW_FLAKINESS_COMMENT_TEMPLATE = textwrap.dedent("""
+Flaky test: %s
+
 This flake is either longstanding, has low flakiness, or is not reproducible for
 the example failed build %s based on the flakiness trend:
 
@@ -72,8 +77,11 @@ class FlakeAnalysisIssueGenerator(
         build_number=self._analysis.build_number)
 
   def GetTestName(self):
-    # Issues are filed with normalized test name.
     return Flake.NormalizeTestName(self._analysis.test_name)
+
+  def GetTestLabelName(self):
+    # Issues are filed with the test label name.
+    return Flake.GetTestLabelName(self._analysis.test_name)
 
   def GetMonorailProject(self):
     # Currently, flake analysis only works on Chromium project.
@@ -95,8 +103,9 @@ class FlakeAnalysisIssueGenerator(
     build_link = build_url.CreateBuildUrl(self._analysis.original_master_name,
                                           self._analysis.original_builder_name,
                                           self._analysis.original_build_number)
-    body = _BODY_TEMPLATE.format(build_link, culprit_confidence, culprit_url,
-                                 analysis_link, wrong_result_link)
+    body = _BODY_TEMPLATE.format(self._analysis.test_name, build_link,
+                                 culprit_confidence, culprit_url, analysis_link,
+                                 wrong_result_link)
     return body
 
   def GetComment(self):
@@ -114,11 +123,12 @@ class FlakeAnalysisIssueGenerator(
 
       wrong_result_link = GenerateWrongResultLink(self._analysis)
       return _CULPRIT_COMMENT_TEMPLATE % (
-          culprit.commit_position, self._analysis.confidence_in_culprit * 100,
-          build_link, self._analysis.key.urlsafe(), wrong_result_link)
+          self._analysis.test_name, culprit.commit_position,
+          self._analysis.confidence_in_culprit * 100, build_link,
+          self._analysis.key.urlsafe(), wrong_result_link)
 
-    return _LOW_FLAKINESS_COMMENT_TEMPLATE % (build_link,
-                                              self._analysis.key.urlsafe())
+    return _LOW_FLAKINESS_COMMENT_TEMPLATE % (
+        self._analysis.test_name, build_link, self._analysis.key.urlsafe())
 
   def ShouldRestoreChromiumSheriffLabel(self):
     # Analysis results are not always immediately actionable, so don't restore
@@ -248,10 +258,12 @@ def GenerateBugComment(analysis):
     assert analysis.confidence_in_culprit is not None
     wrong_result_link = GenerateWrongResultLink(analysis)
     return _CULPRIT_COMMENT_TEMPLATE % (
-        culprit.commit_position, analysis.confidence_in_culprit * 100,
-        build_link, analysis.key.urlsafe(), wrong_result_link)
+        analysis.test_name, culprit.commit_position,
+        analysis.confidence_in_culprit * 100, build_link,
+        analysis.key.urlsafe(), wrong_result_link)
 
-  return _LOW_FLAKINESS_COMMENT_TEMPLATE % (build_link, analysis.key.urlsafe())
+  return _LOW_FLAKINESS_COMMENT_TEMPLATE % (analysis.test_name, build_link,
+                                            analysis.key.urlsafe())
 
 
 def GenerateWrongResultLink(analysis):

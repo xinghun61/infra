@@ -44,6 +44,12 @@ class Flake(ndb.Model):
   # 'ColorSpaceTest.testNullTransform'.
   normalized_test_name = ndb.StringProperty(required=True)
 
+  # test_label_name is the same as a normalized_test_name except that the
+  # variable parts are replaced with '*', it is only for display purpose and the
+  # intention is to clarify that this name may refer to a group of tests instead
+  # of always a spcific one.
+  test_label_name = ndb.StringProperty(required=True)
+
   # The FlakeIssue entity that this flake is associated with.
   flake_issue_key = ndb.KeyProperty(FlakeIssue)
 
@@ -63,7 +69,8 @@ class Flake(ndb.Model):
                          normalized_test_name)
 
   @classmethod
-  def Create(cls, luci_project, normalized_step_name, normalized_test_name):
+  def Create(cls, luci_project, normalized_step_name, normalized_test_name,
+             test_label_name):
     """Creates a Flake entity for a flaky test."""
     flake_id = cls.GetId(
         luci_project=luci_project,
@@ -74,6 +81,7 @@ class Flake(ndb.Model):
         luci_project=luci_project,
         normalized_step_name=normalized_step_name,
         normalized_test_name=normalized_test_name,
+        test_label_name=test_label_name,
         id=flake_id)
 
   # TODO(crbug.com/873256): Switch to use base_test_target and refactor this out
@@ -157,3 +165,26 @@ class Flake(ndb.Model):
     normalized_test_name = test_name_util.RemoveSuffixFromWebkitLayoutTestName(
         normalized_test_name)
     return normalized_test_name
+
+  @staticmethod
+  def GetTestLabelName(test_name):
+    """Gets a label name for the normalized step name for display purpose.
+
+    This method works the same way as |NormalizeTestName| except that the
+    variable parts are replaced with mask '*' instead of being removed.
+
+    Args:
+      test_name: The original test name, and it may contain parameters and
+                 prefixes for gtests and queries for webkit_layout_tests.
+
+    Returns:
+      A test name with the variable parts being replaced with mask '*'.
+    """
+    test_label_name = test_name_util.ReplaceAllPrefixesFromGtestNameWithMask(
+        test_name_util.ReplaceParametersFromGtestNameWithMask(test_name))
+    if test_label_name != test_name:
+      return test_label_name
+
+    test_label_name = (
+        test_name_util.ReplaceSuffixFromWebkitLayoutTestNameWithMask(test_name))
+    return test_label_name

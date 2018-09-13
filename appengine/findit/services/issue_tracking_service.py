@@ -66,10 +66,19 @@ class FlakyTestIssueGenerator(object):
 
   @abc.abstractmethod
   def GetTestName(self):
-    """Gets the name of the test to create or update issue for.
+    """Gets a name that can be used to identify a flaky test.
 
     Returns:
       A string representing the test name.
+    """
+    return
+
+  @abc.abstractmethod
+  def GetTestLabelName(self):
+    """Gets a label of the test that is used for display purpose.
+
+    Returns:
+      A label for the flaky test.
     """
     return
 
@@ -138,7 +147,7 @@ class FlakyTestIssueGenerator(object):
     Returns:
       A string representing the summary.
     """
-    return '%s is flaky' % self.GetTestName()
+    return '%s is flaky' % self.GetTestLabelName()
 
   def GetPriority(self):
     """Gets priority for the issue to be created.
@@ -444,11 +453,13 @@ def CreateOrUpdateIssue(issue_generator, luci_project='chromium'):
   """
   step_name = issue_generator.GetStepName()
   test_name = issue_generator.GetTestName()
+  test_label_name = issue_generator.GetTestLabelName()
 
   flake_key = ndb.Key(Flake, Flake.GetId(luci_project, step_name, test_name))
   target_flake = flake_key.get()
   if not target_flake:
-    target_flake = Flake.Create(luci_project, step_name, test_name)
+    target_flake = Flake.Create(luci_project, step_name, test_name,
+                                test_label_name)
     target_flake.put()
 
   monorail_project = issue_generator.GetMonorailProject()

@@ -596,7 +596,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
     flake = Flake.Create(
         luci_project='chromium',
         normalized_step_name='normalized_step',
-        normalized_test_name='normalized_test')
+        normalized_test_name='normalized_test',
+        test_label_name='test_label')
     flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
     flake_issue.put()
     flake.flake_issue_key = flake_issue.key

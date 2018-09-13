@@ -25,7 +25,8 @@ class UpdateFlakeCountsTest(WaterfallTestCase):
     flake1 = Flake.Create(
         luci_project=luci_project,
         normalized_step_name=normalized_step_name,
-        normalized_test_name='normalized_test_name_1')
+        normalized_test_name='normalized_test_name_1',
+        test_label_name='test_label1')
     flake1.last_occurred_time = datetime(2018, 9, 1)
     flake1.put()
     flake1_key = flake1.key
@@ -33,7 +34,8 @@ class UpdateFlakeCountsTest(WaterfallTestCase):
     flake2 = Flake.Create(
         luci_project=luci_project,
         normalized_step_name=normalized_step_name,
-        normalized_test_name='normalized_test_name_2')
+        normalized_test_name='normalized_test_name_2',
+        test_label_name='test_label2')
     flake2.last_occurred_time = datetime(2017, 9, 1)
     flake2.false_rejection_count_last_week = 5
     flake2.impacted_cl_count_last_week = 3
@@ -43,7 +45,8 @@ class UpdateFlakeCountsTest(WaterfallTestCase):
     flake3 = Flake.Create(
         luci_project=luci_project,
         normalized_step_name=normalized_step_name,
-        normalized_test_name='normalized_test_name_3')
+        normalized_test_name='normalized_test_name_3',
+        test_label_name='test_label3')
     flake3.last_occurred_time = datetime(2018, 9, 1)
     flake3.false_rejection_count_last_week = 5
     flake3.impacted_cl_count_last_week = 3

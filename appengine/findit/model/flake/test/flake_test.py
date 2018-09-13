@@ -102,13 +102,34 @@ class FlakeTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual('suite.test', Flake.NormalizeTestName('a/suite.test/0'))
 
+    self.assertEqual('suite.test', Flake.NormalizeTestName('suite.test/1'))
+
     self.assertEqual('suite.test',
                      Flake.NormalizeTestName('suite.PRE_PRE_test'))
 
     self.assertEqual('suite.test',
                      Flake.NormalizeTestName('a/suite.PRE_PRE_test/0'))
 
+    self.assertEqual('a/b.html', Flake.NormalizeTestName('a/b.html'))
+
     self.assertEqual('a/b.html', Flake.NormalizeTestName('a/b.html?1000-2000'))
+
+  def testGetTestLabelName(self):
+    self.assertEqual('suite.test', Flake.GetTestLabelName('suite.test'))
+
+    self.assertEqual('suite.test/*', Flake.GetTestLabelName('suite.test/1'))
+
+    self.assertEqual('*/suite.test/*', Flake.GetTestLabelName('a/suite.test/0'))
+
+    self.assertEqual('suite.*test',
+                     Flake.GetTestLabelName('suite.PRE_PRE_test'))
+
+    self.assertEqual('*/suite.*test/*',
+                     Flake.GetTestLabelName('a/suite.PRE_PRE_test/0'))
+
+    self.assertEqual('a/b.html', Flake.NormalizeTestName('a/b.html'))
+
+    self.assertEqual('a/b.html?*', Flake.GetTestLabelName('a/b.html?1000-2000'))
 
   def testGetId(self):
     luci_project = 'chromium'
@@ -125,11 +146,14 @@ class FlakeTest(wf_testcase.WaterfallTestCase):
     luci_project = 'chromium'
     normalized_step_name = 'normalized_step'
     normalized_test_name = 'normalized_test'
+    test_label_name = 'test_label'
 
     flake = Flake.Create(
         luci_project=luci_project,
         normalized_step_name=normalized_step_name,
-        normalized_test_name=normalized_test_name)
+        normalized_test_name=normalized_test_name,
+        test_label_name=test_label_name)
+
     flake.put()
 
     fetched_flakes = Flake.query().fetch()

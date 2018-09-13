@@ -266,10 +266,12 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
     luci_project = 'chromium'
     normalized_step_name = 'normalized_step_name'
     normalized_test_name = 'normalized_test_name'
+    test_label_name = 'test_label'
     flake = Flake.Create(
         luci_project=luci_project,
         normalized_step_name=normalized_step_name,
-        normalized_test_name=normalized_test_name)
+        normalized_test_name=normalized_test_name,
+        test_label_name=test_label_name)
     flake.put()
     flake_key = flake.key
 

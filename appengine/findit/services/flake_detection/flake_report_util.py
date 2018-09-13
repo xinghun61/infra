@@ -49,6 +49,8 @@ within 30 minutes then find an appropriate owner.
 {footer}""")
 
 _FLAKE_DETECTION_BUG_COMMENT = textwrap.dedent("""
+{test_target}: {test_name} is flaky.
+
 Findit has detected {num_occurrences} new flake occurrences of this test. List
 of all flake occurrences can be found at:
 {flake_url}.
@@ -92,6 +94,9 @@ class FlakeDetectionIssueGenerator(
   def GetTestName(self):
     return self._flake.normalized_test_name
 
+  def GetTestLabelName(self):
+    return self._flake.test_label_name
+
   def GetMonorailProject(self):
     return FlakeIssue.GetMonorailProjectFromLuciProject(
         self._flake.luci_project)
@@ -102,7 +107,7 @@ class FlakeDetectionIssueGenerator(
         previous_tracking_bug_id) if previous_tracking_bug_id else ''
     description = _FLAKE_DETECTION_BUG_DESCRIPTION.format(
         test_target=self._flake.normalized_step_name,
-        test_name=self._flake.normalized_test_name,
+        test_name=self._flake.test_label_name,
         num_occurrences=self._num_occurrences,
         flake_url=self._GetLinkForFlake(),
         previous_tracking_bug_text=previous_tracking_bug_text,
@@ -116,6 +121,8 @@ class FlakeDetectionIssueGenerator(
         previous_tracking_bug_id) if previous_tracking_bug_id else ''
 
     comment = _FLAKE_DETECTION_BUG_COMMENT.format(
+        test_target=self._flake.normalized_step_name,
+        test_name=self._flake.test_label_name,
         num_occurrences=self._num_occurrences,
         flake_url=self._GetLinkForFlake(),
         previous_tracking_bug_text=previous_tracking_bug_text,

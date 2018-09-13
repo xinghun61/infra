@@ -35,11 +35,13 @@ def _CreateFlakeFromRow(row):
       builder_name=luci_builder,
       build_number=legacy_build_number)
   normalized_test_name = Flake.NormalizeTestName(test_name)
+  test_label_name = Flake.GetTestLabelName(test_name)
 
   return Flake.Create(
       luci_project=luci_project,
       normalized_step_name=normalized_step_name,
-      normalized_test_name=normalized_test_name)
+      normalized_test_name=normalized_test_name,
+      test_label_name=test_label_name)
 
 
 def _CreateFlakeOccurrenceFromRow(row):

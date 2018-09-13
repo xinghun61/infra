@@ -54,10 +54,12 @@ class ShowFlakeTest(WaterfallTestCase):
     test_name = 'test'
     normalized_step_name = 'normalized_step_name'
     normalized_test_name = 'normalized_test_name'
+    test_label_name = 'test_label'
     flake = Flake.Create(
         luci_project=luci_project,
         normalized_step_name=normalized_step_name,
-        normalized_test_name=normalized_test_name)
+        normalized_test_name=normalized_test_name,
+        test_label_name=test_label_name)
 
     flake.flake_issue_key = flake_issue.key
     flake.put()
@@ -113,6 +115,8 @@ class ShowFlakeTest(WaterfallTestCase):
             'normalized_step_name',
         'normalized_test_name':
             'normalized_test_name',
+        'test_label_name':
+            'test_label',
         'false_rejection_count_last_week':
             0,
         'impacted_cl_count_last_week':
