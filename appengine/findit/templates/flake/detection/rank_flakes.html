@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<head>
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <title>Ranked Flaky Tests</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/common.css">
+  <script src="/ui/js/common.js"></script>
+  <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="/ui/elements/findit-app.html">
+  <link rel="import" href="/ui/elements/flake_detection/rank_flakes.html">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <style>
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <findit-app
+      id="app"
+      page-header="Ranked Flaky Tests"
+      userInfo="{{ (user_info or {}) | tojson | safe }}">
+    <form method="get" action="/flake/detection/rank-flakes">
+      <input type="text" name="luci_project" id="luci_project" class="hidden" value="'{{luci_project}}'">
+    </form>
+    <rank-flakes flakes='{{flakes_data | tojson}}'></rank-flakes>
+  </findit-app>
+</body>

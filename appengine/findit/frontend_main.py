@@ -26,6 +26,7 @@ from handlers.flake import check_flake
 from handlers.flake import flake_culprit
 from handlers.flake import list_flakes
 from handlers.flake import triage_flake_analysis
+from handlers.flake.detection import rank_flakes
 from handlers.flake.detection import show_flake
 
 # App Engine pipeline status pages.
@@ -76,6 +77,7 @@ if appengine_util.IsInProductionApp():
 # flake detection frontend.
 flake_detection_frontend_web_pages_handler_mappings = [
     ('/flake/detection/show-flake', show_flake.ShowFlake),
+    ('/flake/detection/rank-flakes', rank_flakes.RankFlakes)
 ]
 flake_detection_frontend_web_application = webapp2.WSGIApplication(
     flake_detection_frontend_web_pages_handler_mappings, debug=False)

@@ -1,0 +1,75 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
+
+
+<dom-module id="rank-flakes">
+  <template>
+    <style>
+      table {
+        border-collapse: collapse;
+        border: 1px solid gray;
+      }
+
+      table th {
+        padding: 5px;
+        border: 1px solid gray;
+      }
+      td {
+        max-width: 0;
+        border: 1px solid gray;
+        padding: 2px;
+        padding-right: 10px;
+        height: 30px;
+        vertical-align: top;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    </style>
+
+    <table width="80%">
+      <tr>
+        <th>Step Name</th>
+        <th>Test Name</th>
+        <th>Occurrences</th>
+        <th>Impacted CLs</th>
+        <th>Bug</th>
+      </tr>
+      <template is="dom-repeat" items="[[flakes]]" as="flake">
+        <tr>
+          <td width="25%">[[flake.normalized_step_name]]</td>
+          <td width="40%">
+            <a target="_blank" href="/flake/detection/show-flake?key=[[flake.flake_urlsafe_key]]">[[flake.normalized_test_name]]</a>
+            <paper-tooltip position="bottom" offset="0" fit-to-visible-bounds="true">[[flake.normalized_test_name]]</paper-tooltip>
+          </td>
+          <td width="5%">[[flake.false_rejection_count_last_week]]</td>
+          <td width="5%">[[flake.impacted_cl_count_last_week]]</td>
+          <td width="5%">
+            <template is="dom-if" if="[[hasBug(flake)]]">
+                <a href="[[flake.flake_issue.issue_link]]">[[flake.flake_issue.issue_id]]</a>
+            </template>
+          </td>
+        </tr>
+      </template>
+    </table>
+  </template>
+  <script>
+    (function () {
+      "use strict";
+
+      Polymer({
+        is: "rank-flakes",
+        properties: {
+          // A list of Flake objects to be ranked and displayed.
+          flakes: {
+            type: Array
+          },
+        },
+
+        hasBug: function(flake) {
+          return (flake.flake_issue != null &&
+          flake.flake_issue.issue_id != null);
+        }
+      });
+    })();
+  </script>
+</dom-module>
