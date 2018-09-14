@@ -161,8 +161,9 @@ func TestCook(t *testing.T) {
 
 				// Check parsed kitchen own properties.
 				So(cook.kitchenProps, ShouldResemble, &kitchenProperties{
-					GitAuth:  true,
-					DevShell: true,
+					GitAuth:      true,
+					DevShell:     true,
+					FirebaseAuth: false,
 				})
 
 				// Check recipes.py input.

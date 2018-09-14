@@ -72,8 +72,9 @@ type cookRun struct {
 // It is consumed exclusively by Kitchen and not even passed along to the recipe
 // engine.
 type kitchenProperties struct {
-	GitAuth  bool `json:"git_auth"`
-	DevShell bool `json:"devshell"`
+	GitAuth      bool `json:"git_auth"`
+	DevShell     bool `json:"devshell"`
+	FirebaseAuth bool `json:"firebase_auth"`
 }
 
 // normalizeFlags validates and normalizes flags.
@@ -323,8 +324,9 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, *k
 
 	// Extract "$kitchen" properties into more usable struct.
 	kitchenProps := &kitchenProperties{
-		GitAuth:  true,
-		DevShell: true,
+		GitAuth:      true,
+		DevShell:     true,
+		FirebaseAuth: false,
 	}
 	if val, _ := props["$kitchen"]; val != nil {
 		blob, err := json.Marshal(val)
@@ -465,7 +467,7 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 
 	// Create systemAuth and recipeAuth authentication contexts, since we are
 	// about to start making authenticated requests now.
-	if err := c.setupAuth(ctx, c.kitchenProps.GitAuth, c.kitchenProps.DevShell); err != nil {
+	if err := c.setupAuth(ctx, c.kitchenProps.GitAuth, c.kitchenProps.DevShell, c.kitchenProps.FirebaseAuth); err != nil {
 		return fail(errors.Annotate(err, "failed to setup auth").Err())
 	}
 	defer c.recipeAuth.Close()
@@ -538,7 +540,7 @@ func (c *cookRun) reportProperties(ctx context.Context, realm string, props inte
 
 // setupAuth prepares systemAuth and recipeAuth contexts based on incoming
 // environment and command line flags.
-func (c *cookRun) setupAuth(ctx context.Context, enableGitAuth bool, enableDevShell bool) error {
+func (c *cookRun) setupAuth(ctx context.Context, enableGitAuth bool, enableDevShell bool, enableFirebaseAuth bool) error {
 	// Don't mess with git authentication in Buildbot mode, it won't work without
 	// proper LUCI_CONTEXT environment.
 	if enableGitAuth && !c.mode.allowCustomGitAuth() {
@@ -552,6 +554,12 @@ func (c *cookRun) setupAuth(ctx context.Context, enableGitAuth bool, enableDevSh
 		enableDevShell = false
 	}
 
+	// The same for Firebase, don't use it in Buildbot mode.
+	if enableFirebaseAuth && !c.mode.allowFirebaseAuth() {
+		log.Warningf(ctx, "Firebase authentication is not supported in the current mode")
+		enableFirebaseAuth = false
+	}
+
 	// If we are explicitly given a system account JSON key, use it for Kitchen.
 	// This happens when Kitchen is used from BuildBot ("LUCI Emulation Mode").
 	//
@@ -563,10 +571,11 @@ func (c *cookRun) setupAuth(ctx context.Context, enableGitAuth bool, enableDevSh
 	// (don't switch to a system one). Happens when running Kitchen manually
 	// locally. It picks up the developer account.
 	systemAuth := &AuthContext{
-		ID:               "system",
-		EnableGitAuth:    enableGitAuth,
-		EnableDevShell:   enableDevShell,
-		KnownGerritHosts: c.KnownGerritHost,
+		ID:                 "system",
+		EnableGitAuth:      enableGitAuth,
+		EnableDevShell:     enableDevShell,
+		EnableFirebaseAuth: enableFirebaseAuth,
+		KnownGerritHosts:   c.KnownGerritHost,
 	}
 	switch {
 	case c.SystemAccountJSON != "":
@@ -597,11 +606,12 @@ func (c *cookRun) setupAuth(ctx context.Context, enableGitAuth bool, enableDevSh
 	// (it is a task-associated account on Swarming). So just grab the current
 	// LUCI_CONTEXT["local_auth"] and retain it for recipes.
 	recipeAuth := &AuthContext{
-		ID:               "task",
-		LocalAuth:        lucictx.GetLocalAuth(ctx),
-		EnableGitAuth:    enableGitAuth,
-		EnableDevShell:   enableDevShell,
-		KnownGerritHosts: c.KnownGerritHost,
+		ID:                 "task",
+		LocalAuth:          lucictx.GetLocalAuth(ctx),
+		EnableGitAuth:      enableGitAuth,
+		EnableDevShell:     enableDevShell,
+		EnableFirebaseAuth: enableFirebaseAuth,
+		KnownGerritHosts:   c.KnownGerritHost,
 	}
 
 	// Launching the auth context may create files or start background goroutines.

@@ -17,6 +17,7 @@ import (
 	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/auth/integration/devshell"
 	"go.chromium.org/luci/auth/integration/gsutil"
+	"go.chromium.org/luci/auth/integration/firebase"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/system/environ"
@@ -106,6 +107,11 @@ type AuthContext struct {
 	// triggers bugs in gsutil. See https://crbug.com/788058#c14.
 	EnableDevShell bool
 
+	// EnableFirebaseAuth enables Firebase auth shim.
+	//
+	// It is used to make Firebase use LUCI authentication.
+	EnableFirebaseAuth bool
+
 	// KnownGerritHosts is list of Gerrit hosts to force git authentication for.
 	//
 	// By default public hosts are accessed anonymously, and the anonymous access
@@ -122,6 +128,9 @@ type AuthContext struct {
 	gsutilSrv   *gsutil.Server // gsutil auth shim server
 	gsutilState string         // path to a kitchen-managed state directory
 	gsutilBoto  string         // path to a generated .boto file
+
+	firebaseSrv      *firebase.Server // firebase auth shim server
+	firebaseTokenURL string           // URL to get firebase auth token from
 
 	devShellSrv  *devshell.Server // DevShell server instance
 	devShellAddr *net.TCPAddr     // address local DevShell instance is listening on
@@ -171,6 +180,20 @@ func (ac *AuthContext) Launch(ctx context.Context, tempDir string) (err error) {
 		}
 		if err := ac.writeGitConfig(); err != nil {
 			return errors.Annotate(err, "failed to setup .gitconfig for %q account", ac.ID).Err()
+		}
+	}
+
+	if ac.EnableFirebaseAuth && !ac.anonymous {
+		source, err := ac.authenticator.TokenSource()
+		if err != nil {
+			return errors.Annotate(err, "failed to get token source for %q account", ac.ID).Err()
+		}
+		// Launch firebase auth shim server. It will provide a URL from which we'll fetch an auth token.
+		ac.firebaseSrv = &firebase.Server{
+			Source:   source,
+		}
+		if ac.firebaseTokenURL, err = ac.firebaseSrv.Start(ctx); err != nil {
+			return errors.Annotate(err, "failed to start firebase auth shim server for %q account", ac.ID).Err()
 		}
 	}
 
@@ -237,6 +260,12 @@ func (ac *AuthContext) Close() {
 		}
 	}
 
+	if ac.firebaseSrv != nil {
+		if err := ac.firebaseSrv.Stop(ac.ctx); err != nil {
+			logging.Errorf(ac.ctx, "Failed to stop firebase shim server for %q account: %s", ac.ID, err)
+		}
+	}
+
 	if ac.devShellSrv != nil {
 		if err := ac.devShellSrv.Stop(ac.ctx); err != nil {
 			logging.Errorf(ac.ctx, "Failed to stop DevShell server for %q account: %s", ac.ID, err)
@@ -257,6 +286,8 @@ func (ac *AuthContext) Close() {
 	ac.gsutilSrv = nil
 	ac.gsutilState = ""
 	ac.gsutilBoto = ""
+	ac.firebaseSrv = nil
+	ac.firebaseTokenURL = ""
 	ac.devShellSrv = nil
 	ac.devShellAddr = nil
 	ac.gitHome = ""
@@ -281,6 +312,11 @@ func (ac *AuthContext) ExportIntoEnv(env environ.Env) environ.Env {
 		env.Set("GIT_TERMINAL_PROMPT", "0")           // no interactive prompts
 		env.Set("GIT_CONFIG_NOSYSTEM", "1")           // no $(prefix)/etc/gitconfig
 		env.Set("INFRA_GIT_WRAPPER_HOME", ac.gitHome) // tell gitwrapper about the new HOME
+	}
+
+	if ac.EnableFirebaseAuth && !ac.anonymous {
+		// Point firebase to the generated token.
+		env.Set("FIREBASE_TOKEN_URL", ac.firebaseTokenURL)
 	}
 
 	if ac.EnableDevShell {
@@ -311,8 +347,8 @@ func (ac *AuthContext) ReportServiceAccount() {
 	if ac.anonymous {
 		account = "anonymous"
 	}
-	logging.Infof(ac.ctx, "%q account is %s (git_auth: %v, devshell: %v)",
-		ac.ID, account, ac.EnableGitAuth, ac.EnableDevShell)
+	logging.Infof(ac.ctx, "%q account is %s (git_auth: %v, devshell: %v, firebase: %v)",
+		ac.ID, account, ac.EnableGitAuth, ac.EnableDevShell, ac.EnableFirebaseAuth)
 }
 
 ////
