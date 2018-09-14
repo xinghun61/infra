@@ -59,14 +59,14 @@ class UserTest(testing.AppengineTestCase):
             Acl(role=Acl.WRITER, group='c-writers'),
         ]
     )
-    all_buckets = [bucket_a, bucket_b, bucket_c]
+    all_buckets = [('p1', bucket_a), ('p2', bucket_b), ('p3', bucket_c)]
     self.patch(
         'config.get_buckets_async',
         autospec=True,
         return_value=future(all_buckets)
     )
 
-    bucket_map = {b.name: b for b in all_buckets}
+    bucket_map = {b.name: b for _, b in all_buckets}
     self.patch(
         'config.get_bucket_async',
         autospec=True,
@@ -97,29 +97,41 @@ class UserTest(testing.AppengineTestCase):
     is_group_member.side_effect = lambda g, _=None: g in ('xxx', 'yyy')
 
     config.get_buckets_async.return_value = future([
-        Bucket(
-            name='available_bucket1',
-            acls=[
-                Acl(role=Acl.READER, group='xxx'),
-                Acl(role=Acl.WRITER, group='yyy')
-            ],
+        (
+            'p1',
+            Bucket(
+                name='available_bucket1',
+                acls=[
+                    Acl(role=Acl.READER, group='xxx'),
+                    Acl(role=Acl.WRITER, group='yyy')
+                ],
+            ),
         ),
-        Bucket(
-            name='available_bucket2',
-            acls=[
-                Acl(role=Acl.READER, group='xxx'),
-                Acl(role=Acl.WRITER, group='zzz')
-            ],
+        (
+            'p2',
+            Bucket(
+                name='available_bucket2',
+                acls=[
+                    Acl(role=Acl.READER, group='xxx'),
+                    Acl(role=Acl.WRITER, group='zzz')
+                ],
+            ),
         ),
-        Bucket(
-            name='available_bucket3',
-            acls=[
-                Acl(role=Acl.READER, identity='user:a@example.com'),
-            ],
+        (
+            'p3',
+            Bucket(
+                name='available_bucket3',
+                acls=[
+                    Acl(role=Acl.READER, identity='user:a@example.com'),
+                ],
+            ),
         ),
-        Bucket(
-            name='not_available_bucket',
-            acls=[Acl(role=Acl.WRITER, group='zzz')],
+        (
+            'p4',
+            Bucket(
+                name='not_available_bucket',
+                acls=[Acl(role=Acl.WRITER, group='zzz')],
+            ),
         ),
     ])
 
@@ -144,29 +156,15 @@ class UserTest(testing.AppengineTestCase):
     is_admin.return_value = True
 
     config.get_buckets_async.return_value = future([
-        Bucket(
-            name='available_bucket1',
-            acls=[
-                Acl(role=Acl.READER, group='xxx'),
-                Acl(role=Acl.WRITER, group='yyy')
-            ],
-        ),
-        Bucket(
-            name='available_bucket2',
-            acls=[
-                Acl(role=Acl.READER, group='xxx'),
-                Acl(role=Acl.WRITER, group='zzz')
-            ],
-        ),
-        Bucket(
-            name='available_bucket3',
-            acls=[
-                Acl(role=Acl.READER, identity='user:a@example.com'),
-            ],
-        ),
-        Bucket(
-            name='not_available_bucket',
-            acls=[Acl(role=Acl.WRITER, group='zzz')],
+        (
+            'p1',
+            Bucket(
+                name='available_bucket1',
+                acls=[
+                    Acl(role=Acl.READER, group='xxx'),
+                    Acl(role=Acl.WRITER, group='yyy')
+                ],
+            )
         ),
     ])
 

@@ -211,29 +211,35 @@ class ConfigTest(testing.AppengineTestCase):
     ).put()
     actual = config.get_buckets_async().get_result()
     expected = [
-        project_config_pb2.Bucket(
-            name='master.tryserver.chromium.linux',
-            acls=[
-                project_config_pb2.Acl(
-                    role=project_config_pb2.Acl.READER, group='all'
-                ),
-                project_config_pb2.Acl(
-                    role=project_config_pb2.Acl.SCHEDULER,
-                    group='tryjob-access'
-                ),
-            ]
+        (
+            'chromium',
+            project_config_pb2.Bucket(
+                name='master.tryserver.chromium.linux',
+                acls=[
+                    project_config_pb2.Acl(
+                        role=project_config_pb2.Acl.READER, group='all'
+                    ),
+                    project_config_pb2.Acl(
+                        role=project_config_pb2.Acl.SCHEDULER,
+                        group='tryjob-access'
+                    ),
+                ]
+            ),
         ),
-        project_config_pb2.Bucket(
-            name='master.tryserver.chromium.win',
-            acls=[
-                project_config_pb2.Acl(
-                    role=project_config_pb2.Acl.READER, group='all'
-                ),
-                project_config_pb2.Acl(
-                    role=project_config_pb2.Acl.SCHEDULER,
-                    group='tryjob-access'
-                ),
-            ]
+        (
+            'chromium',
+            project_config_pb2.Bucket(
+                name='master.tryserver.chromium.win',
+                acls=[
+                    project_config_pb2.Acl(
+                        role=project_config_pb2.Acl.READER, group='all'
+                    ),
+                    project_config_pb2.Acl(
+                        role=project_config_pb2.Acl.SCHEDULER,
+                        group='tryjob-access'
+                    ),
+                ]
+            ),
         ),
     ]
     self.assertEqual(actual, expected)
@@ -260,17 +266,20 @@ class ConfigTest(testing.AppengineTestCase):
     actual = config.get_buckets_async(['master.tryserver.chromium.linux']
                                      ).get_result()
     expected = [
-        project_config_pb2.Bucket(
-            name='master.tryserver.chromium.linux',
-            acls=[
-                project_config_pb2.Acl(
-                    role=project_config_pb2.Acl.READER, group='all'
-                ),
-                project_config_pb2.Acl(
-                    role=project_config_pb2.Acl.SCHEDULER,
-                    group='tryjob-access'
-                ),
-            ]
+        (
+            'chromium',
+            project_config_pb2.Bucket(
+                name='master.tryserver.chromium.linux',
+                acls=[
+                    project_config_pb2.Acl(
+                        role=project_config_pb2.Acl.READER, group='all'
+                    ),
+                    project_config_pb2.Acl(
+                        role=project_config_pb2.Acl.SCHEDULER,
+                        group='tryjob-access'
+                    ),
+                ]
+            ),
         ),
     ]
     self.assertEqual(actual, expected)

@@ -122,7 +122,7 @@ class SwarmbucketApi(remote.Service):
       # bucket_names is None => all buckets are available.
 
     res = GetBuildersResponseMessage()
-    for bucket in config.get_buckets_async(bucket_names).get_result():
+    for _, bucket in config.get_buckets_async(bucket_names).get_result():
       if not bucket or not bucket.swarming.builders:
         continue
       res.buckets.append(

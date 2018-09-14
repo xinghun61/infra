@@ -62,7 +62,7 @@ class SearchTest(testing.AppengineTestCase):
     self.chromium_project_id = 'test'
     self.patch(
         'config.get_bucket_async',
-        return_value=future(('project', self.chromium_bucket))
+        return_value=future((self.chromium_project_id, self.chromium_bucket))
     )
 
     self.test_build = model.Build(

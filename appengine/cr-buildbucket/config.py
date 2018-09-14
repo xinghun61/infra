@@ -177,6 +177,7 @@ class Bucket(ndb.Model):
   # the entity forcefully.
   entity_schema_version = ndb.IntegerProperty()
   # Project id in luci-config.
+  # TODO(crbug.com/851036): move project_id to the entity key.
   project_id = ndb.StringProperty(required=True)
   # Bucket revision matches its config revision.
   revision = ndb.StringProperty(required=True)
@@ -203,21 +204,28 @@ def is_swarming_config(cfg):
 @ndb.non_transactional
 @ndb.tasklet
 def get_buckets_async(names=None):
-  """Returns a list of project_config_pb2.Bucket objects.
+  """Returns a list of configured buckets.
 
   If names is None, returns all buckets.
   Otherwise returns only specified buckets, in the same order as names.
   If a bucket doesn't exist, the corresponding element of the returned list
   will be None.
+
+  Returns:
+    List of (project_id, project_config_pb2.Bucket) tuples.
   """
   if names is None:
     buckets = yield Bucket.query().fetch_async()
   else:
     buckets = yield ndb.get_multi_async([ndb.Key(Bucket, n) for n in names])
-  raise ndb.Return([
-      parse_binary_bucket_config(b.config_content_binary) if b else None
-      for b in buckets
-  ])
+
+  ret = []
+  for b in buckets:
+    ret.append((
+        b.project_id,
+        parse_binary_bucket_config(b.config_content_binary) if b else None,
+    ))
+  raise ndb.Return(ret)
 
 
 @ndb.non_transactional

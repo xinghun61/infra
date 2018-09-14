@@ -215,7 +215,7 @@ def get_acessible_buckets_async():
     group_buckets_map = collections.defaultdict(set)
     available_buckets = set()
     all_buckets = yield config.get_buckets_async()
-    for bucket in all_buckets:
+    for _, bucket in all_buckets:
       for rule in bucket.acls:
         if rule.identity == identity:
           available_buckets.add(bucket.name)

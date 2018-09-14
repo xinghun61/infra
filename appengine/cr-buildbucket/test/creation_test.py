@@ -68,7 +68,7 @@ class CreationTest(testing.AppengineTestCase):
     )
     self.patch(
         'config.get_bucket_async',
-        return_value=future(('project', self.chromium_bucket))
+        return_value=future((self.chromium_project_id, self.chromium_bucket))
     )
     self.patch('swarming.create_task_async', return_value=future(None))
     self.patch('swarming.cancel_task_async', return_value=future(None))
