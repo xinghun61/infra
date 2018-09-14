@@ -19,7 +19,8 @@ import logdog
 STEP_SEP = '|'
 
 # Order for determining status of the parent step based on child steps. The
-# status with smallest precedence is used for the parent step.
+# status with smallest precedence is used for the parent step. See spec here:
+# https://chromium.googlesource.com/infra/luci/luci-go/+/c7ef2b0/buildbucket/proto/step.proto#62
 STATUS_PRECEDENCE = {
     common_pb2.CANCELED: 0,
     common_pb2.INFRA_FAILURE: 1,
