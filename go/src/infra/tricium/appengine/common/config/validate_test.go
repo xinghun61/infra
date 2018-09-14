@@ -101,8 +101,8 @@ func TestValidate(t *testing.T) {
 						Platform: platform,
 						Configs: []*tricium.Config{
 							{
-								Name:  config,
-								Value: "all",
+								Name:      config,
+								ValueType: &tricium.Config_Value{"all"},
 							},
 						},
 					},
@@ -121,8 +121,8 @@ func TestValidate(t *testing.T) {
 						Platform: platform,
 						Configs: []*tricium.Config{
 							{
-								Name:  "blabla",
-								Value: "all",
+								Name:      "blabla",
+								ValueType: &tricium.Config_Value{"all"},
 							},
 						},
 					},

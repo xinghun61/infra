@@ -304,6 +304,8 @@ func TestCreateWorker(t *testing.T) {
 		analyzer := "PyLint"
 		config := "enable"
 		configValue := "all"
+		configJSON := "json"
+		configValueJSON := "[\"one\",\"two\"]"
 		gitRef := "refs/1234/2"
 		gitURL := "https://chromium-review.googlesource.com/infra"
 		selection := &tricium.Selection{
@@ -311,8 +313,12 @@ func TestCreateWorker(t *testing.T) {
 			Platform: platform,
 			Configs: []*tricium.Config{
 				{
-					Name:  config,
-					Value: configValue,
+					Name:      config,
+					ValueType: &tricium.Config_Value{configValue},
+				},
+				{
+					Name:      configJSON,
+					ValueType: &tricium.Config_ValueJ{configValueJSON},
 				},
 			},
 		}
@@ -331,7 +337,7 @@ func TestCreateWorker(t *testing.T) {
 				Name:       analyzer,
 				Needs:      tricium.Data_FILES,
 				Provides:   tricium.Data_RESULTS,
-				ConfigDefs: []*tricium.ConfigDef{{Name: config}},
+				ConfigDefs: []*tricium.ConfigDef{{Name: config}, {Name: configJSON}},
 				Impls: []*tricium.Impl{
 					{
 						ProvidesForPlatform: platform,
@@ -366,9 +372,11 @@ func TestCreateWorker(t *testing.T) {
 			if wi == nil {
 				fail("Incorrect worker type")
 			}
-			So(len(wi.Cmd.Args), ShouldEqual, 2)
+			So(len(wi.Cmd.Args), ShouldEqual, 4)
 			So(wi.Cmd.Args[0], ShouldEqual, fmt.Sprintf("--%s", config))
 			So(wi.Cmd.Args[1], ShouldEqual, configValue)
+			So(wi.Cmd.Args[2], ShouldEqual, fmt.Sprintf("--%s", configJSON))
+			So(wi.Cmd.Args[3], ShouldEqual, configValueJSON)
 		})
 
 		Convey("Correctly creates recipe-based worker", func() {
@@ -376,7 +384,7 @@ func TestCreateWorker(t *testing.T) {
 				Name:       analyzer,
 				Needs:      tricium.Data_FILES,
 				Provides:   tricium.Data_RESULTS,
-				ConfigDefs: []*tricium.ConfigDef{{Name: config}},
+				ConfigDefs: []*tricium.ConfigDef{{Name: config}, {Name: configJSON}},
 				Impls: []*tricium.Impl{
 					{
 						ProvidesForPlatform: platform,
@@ -424,6 +432,7 @@ func TestCreateWorker(t *testing.T) {
 			}
 			expectedProperties := map[string]interface{}{
 				"prop":       "infra",
+				"json":       []interface{}{"one", "two"},
 				"enable":     "all",
 				"ref":        "refs/1234/2",
 				"repository": "https://chromium-review.googlesource.com/infra",
@@ -436,7 +445,7 @@ func TestCreateWorker(t *testing.T) {
 				Name:       analyzer,
 				Needs:      tricium.Data_FILES,
 				Provides:   tricium.Data_RESULTS,
-				ConfigDefs: []*tricium.ConfigDef{{Name: config}},
+				ConfigDefs: []*tricium.ConfigDef{{Name: config}, {Name: configJSON}},
 				Impls: []*tricium.Impl{
 					{
 						ProvidesForPlatform: platform,
@@ -483,6 +492,7 @@ func TestCreateWorker(t *testing.T) {
 			}
 			expectedProperties := map[string]interface{}{
 				"enable":     "all",
+				"json":       []interface{}{"one", "two"},
 				"ref":        "refs/1234/2",
 				"repository": "https://chromium-review.googlesource.com/infra",
 			}

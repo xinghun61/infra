@@ -205,7 +205,19 @@ func createWorker(s *tricium.Selection, sc *tricium.ServiceConfig, f *tricium.Fu
 			}
 		}
 		for _, c := range s.Configs {
-			properties[c.Name] = c.Value
+			switch v := c.ValueType.(type) {
+			case *tricium.Config_Value:
+				properties[c.Name] = v.Value
+			case *tricium.Config_ValueJ:
+				var value interface{}
+				err := json.Unmarshal([]byte(v.ValueJ), &value)
+				if err != nil {
+					return nil, errors.Annotate(err, "failed to unmarshal value_j").Err()
+				}
+				properties[c.Name] = value
+			default:
+				return nil, errors.Reason("please specify value or value_j").Err()
+			}
 		}
 		properties["ref"] = gitRef
 		properties["repository"] = gitURL
@@ -218,7 +230,14 @@ func createWorker(s *tricium.Selection, sc *tricium.ServiceConfig, f *tricium.Fu
 	case *tricium.Impl_Cmd:
 		cmd := ii.Cmd
 		for _, c := range s.Configs {
-			cmd.Args = append(cmd.Args, "--"+c.Name, c.Value)
+			switch v := c.ValueType.(type) {
+			case *tricium.Config_Value:
+				cmd.Args = append(cmd.Args, "--"+c.Name, v.Value)
+			case *tricium.Config_ValueJ:
+				cmd.Args = append(cmd.Args, "--"+c.Name, v.ValueJ)
+			default:
+				return nil, errors.Reason("please specify value or value_j").Err()
+			}
 		}
 		w.Impl = &admin.Worker_Cmd{Cmd: ii.Cmd}
 	case nil:

@@ -163,5 +163,12 @@ message Config {
   string name = 1;
 
   // Value of the configuration.
-  string value = 2;
+  oneof value_type {
+    // A base value, directly passed to a command or recipe as-is.
+    string value = 2;
+
+    // A JSON value, directly passed as a string to a command or unmarshaled
+    // for a recipe.
+    string value_j = 3;
+  }
 }
