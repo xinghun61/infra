@@ -222,7 +222,9 @@ def validate_build_predicate(predicate):
   """Validates rpc_pb2.BuildPredicate."""
   if predicate.HasField('builder'):
     with _enter('builder'):
-      validate_builder_id(predicate.builder)
+      _check_truth(predicate.builder, 'project')
+      if predicate.builder.builder and not predicate.builder.bucket:
+        _enter_err('bucket', 'required by .builder field')
 
   _check_repeated(predicate, 'gerrit_changes', validate_gerrit_change)
 

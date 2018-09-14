@@ -582,9 +582,27 @@ class BuildPredicateTests(BaseTestCase):
     msg = rpc_pb2.BuildPredicate()
     self.assert_valid(msg)
 
-  def test_invalid_builder_id(self):
+  def test_builder_empty(self):
     msg = rpc_pb2.BuildPredicate(builder=build_pb2.BuilderID())
     self.assert_invalid(msg, r'builder\.project: required')
+
+  def test_builder_project(self):
+    msg = rpc_pb2.BuildPredicate(
+        builder=build_pb2.BuilderID(project='chromium')
+    )
+    self.assert_valid(msg)
+
+  def test_builder_project_bucket(self):
+    msg = rpc_pb2.BuildPredicate(
+        builder=build_pb2.BuilderID(project='chromium', bucket='try')
+    )
+    self.assert_valid(msg)
+
+  def test_builder_project_builder(self):
+    msg = rpc_pb2.BuildPredicate(
+        builder=build_pb2.BuilderID(project='chromium', builder='linux-rel')
+    )
+    self.assert_invalid(msg, 'builder.bucket: required by .builder field')
 
   def test_gerrit_changes(self):
     msg = rpc_pb2.BuildPredicate(gerrit_changes=[common_pb2.GerritChange()])

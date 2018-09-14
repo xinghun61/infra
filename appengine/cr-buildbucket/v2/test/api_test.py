@@ -414,6 +414,35 @@ class BatchTests(BaseTestCase):
 
 class BuildPredicateToSearchQueryTests(BaseTestCase):
 
+  def test_project(self):
+    predicate = rpc_pb2.BuildPredicate(
+        builder=build_pb2.BuilderID(project='chromium'),
+    )
+    q = api.build_predicate_to_search_query(predicate)
+    self.assertEqual(q.project, 'chromium')
+    self.assertFalse(q.buckets)
+    self.assertFalse(q.tags)
+
+  def test_project_bucket(self):
+    predicate = rpc_pb2.BuildPredicate(
+        builder=build_pb2.BuilderID(project='chromium', bucket='try'),
+    )
+    q = api.build_predicate_to_search_query(predicate)
+    self.assertFalse(q.project)
+    self.assertEqual(q.buckets, ['luci.chromium.try'])
+    self.assertFalse(q.tags)
+
+  def test_project_bucket_builder(self):
+    predicate = rpc_pb2.BuildPredicate(
+        builder=build_pb2.BuilderID(
+            project='chromium', bucket='try', builder='linux-rel'
+        ),
+    )
+    q = api.build_predicate_to_search_query(predicate)
+    self.assertFalse(q.project)
+    self.assertEqual(q.buckets, ['luci.chromium.try'])
+    self.assertEqual(q.tags, ['builder:linux-rel'])
+
   def test_create_time(self):
     predicate = rpc_pb2.BuildPredicate()
     predicate.create_time.start_time.FromDatetime(datetime.datetime(2018, 1, 1))

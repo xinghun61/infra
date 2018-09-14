@@ -147,10 +147,14 @@ def build_predicate_to_search_query(predicate):
 
   # Filter by builder.
   if predicate.HasField('builder'):
-    q.buckets = [v1_bucket(predicate.builder)]
-    q.tags.append(
-        buildtags.unparse(buildtags.BUILDER_KEY, predicate.builder.builder)
-    )
+    if predicate.builder.bucket:
+      q.buckets = [v1_bucket(predicate.builder)]
+    else:
+      q.project = predicate.builder.project
+    if predicate.builder.builder:
+      q.tags.append(
+          buildtags.unparse(buildtags.BUILDER_KEY, predicate.builder.builder)
+      )
 
   # Filter by gerrit changes.
   buildsets = [
