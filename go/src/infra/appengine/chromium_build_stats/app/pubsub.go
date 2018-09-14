@@ -99,7 +99,7 @@ func getFile(ctx context.Context, filename string, bucketID string) (*ninjalog.N
 
 	var reader io.ReadCloser
 	// Creates a Bucket instance.
-	reader, err = client.Bucket(bucketID).Object(filename).NewReader(ctx)
+	reader, err = client.Bucket(bucketID).Object(filename).ReadCompressed(true).NewReader(ctx)
 	if err != nil {
 		log.Errorf(ctx, "failed to get reader: %v", err)
 		return nil, err
