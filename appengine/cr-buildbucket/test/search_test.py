@@ -69,8 +69,8 @@ class SearchTest(testing.AppengineTestCase):
 
     self.test_build = model.Build(
         id=model.create_build_ids(self.now, 1)[0],
-        bucket='chromium',
         project=self.chromium_project_id,
+        bucket='chromium',
         create_time=self.now,
         tags=[self.INDEXED_TAG],
         parameters={
@@ -212,11 +212,38 @@ class SearchTest(testing.AppengineTestCase):
 
   def test_search_bucket(self):
     self.put_build(self.test_build)
-    build2 = model.Build(bucket='other bucket',)
+    build2 = model.Build(bucket='other bucket')
     self.put_build(build2)
 
     builds, _ = self.search(buckets=[self.test_build.bucket])
     self.assertEqual(builds, [self.test_build])
+
+  def test_search_project(self):
+    self.put_build(self.test_build)
+    build2 = model.Build(project='v8', bucket='other bucket')
+    self.put_build(build2)
+
+    builds, _ = self.search(project=self.chromium_project_id)
+    self.assertEqual(builds, [self.test_build])
+
+  def test_search_project_indexed(self):
+    self.put_build(self.test_build)
+    build2 = model.Build(project='v8', bucket='other bucket')
+    self.put_build(build2)
+
+    builds, _ = self.search(
+        project=self.chromium_project_id,
+        tags=[self.INDEXED_TAG],
+    )
+    self.assertEqual(builds, [self.test_build])
+
+  def test_search_project_and_bucket(self):
+    self.put_build(self.test_build)
+    with self.assertRaises(errors.InvalidInputError):
+      self.search(
+          project=self.chromium_project_id,
+          buckets=[self.test_build.bucket],
+      )
 
   def test_search_by_status(self):
     self.put_build(self.test_build)

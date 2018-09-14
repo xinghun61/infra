@@ -120,6 +120,7 @@ class Query(object):
 
   def __init__(
       self,
+      project=None,
       buckets=None,
       tags=None,
       status=None,
@@ -140,8 +141,12 @@ class Query(object):
     """Initializes Query.
 
     Args:
+      project (str): project id to search in.
+        Mutually exclusive with buckets.
       buckets (list of str): a list of buckets to search in.
         A build must be in one of the buckets.
+        Mutually exclusive with project.
+        TODO(nodir): change buckets to project-scoped bucket names, not global.
       tags (list of str): a list of tags that a build must have.
         All of the |tags| must be present in a build.
       status (StatusFilter or common_pb2.Status): build status.
@@ -164,6 +169,7 @@ class Query(object):
       include_experimental (bool): if true, search results will include
         experimental builds. Otherwise, experimental builds will be excluded.
     """
+    self.project = project
     self.buckets = buckets
     self.tags = tags
     self.status = status
@@ -210,6 +216,10 @@ class Query(object):
       )
     if self.buckets is not None and not isinstance(self.buckets, list):
       raise errors.InvalidInputError('Buckets must be a list or None')
+    if self.buckets and self.project:
+      raise errors.InvalidInputError(
+          'project is mutually exclusive with buckets'
+      )
     buildtags.validate_tags(self.tags, 'search')
 
     create_time_range = (
@@ -332,7 +342,9 @@ def _query_search_async(q):
   if not q.buckets:
     accessible = yield user.get_accessible_buckets_async()
     if accessible is not None:
-      q.buckets = [b for _, b in accessible]
+      q.buckets = [
+          b for pid, b in accessible if not q.project or pid == q.project
+      ]
       if not q.buckets:
         raise ndb.Return([], None)
   # (buckets is None) means the requester has access to all buckets.
@@ -466,6 +478,7 @@ def _tag_index_search_async(q):
       ('created_by', q.created_by),
       ('retry_of', q.retry_of),
       ('canary', q.canary),
+      ('project', q.project),
   ]
   scalar_filters = [(a, v) for a, v in scalar_filters if v is not None]
   if q.status_is_v2:
@@ -497,6 +510,10 @@ def _tag_index_search_async(q):
       # This is not a security check.
       if q.buckets and e.bucket not in q.buckets:
         continue
+      # TODO(nodir): add project to TagIndexEntry so that we don't fetch
+      # the build if it belongs to a different project.
+      # However, in practice, all builds in a TagIndexEntry belong to the same
+      # project, so we wouldn't gain much from this optimization.
       if check_permissions:
         has = has_access_cache.get(e.bucket)
         if has is None:
