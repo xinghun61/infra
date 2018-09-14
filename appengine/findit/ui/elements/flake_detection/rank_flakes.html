@@ -12,11 +12,11 @@
 
       table th {
         padding: 5px;
-        border: 1px solid gray;
+        color: #efefef;
+        background-color: #4286f4;
       }
       td {
         max-width: 0;
-        border: 1px solid gray;
         padding: 2px;
         padding-right: 10px;
         height: 30px;
@@ -24,26 +24,34 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
+
+      tr:nth-child(even) {
+        background-color: #d9d9d9;
+      }
+
+      tr:nth-child(odd) {
+        background-color: #f3f3f3;
+      }
     </style>
 
     <table width="80%">
       <tr>
-        <th>Step Name</th>
-        <th>Test Name</th>
-        <th>Occurrences</th>
-        <th>Impacted CLs</th>
-        <th>Bug</th>
+        <th width="15%">Step Name</th>
+        <th width="45%">Test Name</th>
+        <th width="5%"># Occurrences</th>
+        <th width="10%"># Impacted CLs</th>
+        <th width="5%">Bug</th>
       </tr>
       <template is="dom-repeat" items="[[flakes]]" as="flake">
         <tr>
-          <td width="25%">[[flake.normalized_step_name]]</td>
-          <td width="40%">
-            <a target="_blank" href="/flake/detection/show-flake?key=[[flake.flake_urlsafe_key]]">[[flake.normalized_test_name]]</a>
-            <paper-tooltip position="bottom" offset="0" fit-to-visible-bounds="true">[[flake.normalized_test_name]]</paper-tooltip>
+          <td>[[flake.normalized_step_name]]</td>
+          <td>
+            <a target="_blank" href="/flake/detection/show-flake?key=[[flake.flake_urlsafe_key]]">[[flake.test_label_name]]</a>
+            <paper-tooltip position="bottom" offset="0" fit-to-visible-bounds="true">[[flake.test_label_name]]</paper-tooltip>
           </td>
-          <td width="5%">[[flake.false_rejection_count_last_week]]</td>
-          <td width="5%">[[flake.impacted_cl_count_last_week]]</td>
-          <td width="5%">
+          <td align="right">[[flake.false_rejection_count_last_week]]</td>
+          <td align="right">[[flake.impacted_cl_count_last_week]]</td>
+          <td align="right">
             <template is="dom-if" if="[[hasBug(flake)]]">
                 <a href="[[flake.flake_issue.issue_link]]">[[flake.flake_issue.issue_id]]</a>
             </template>

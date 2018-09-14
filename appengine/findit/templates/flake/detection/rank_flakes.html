@@ -10,6 +10,10 @@
   <link rel="import" href="/ui/elements/flake_detection/rank_flakes.html">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
   <style type="text/css">
+    table, tr, td {
+      border: 0px;
+    }
+
     .previous, .next {
       color: #0645AD;
       background: none;
@@ -36,7 +40,13 @@
   </style>
   <script>
 
-    function submitForm(obj) {
+    function submitForm() {
+      // Removes the empty parameters from the url.
+      $('form').find(":input").filter(function(){ return !this.value; }).attr("disabled", "disabled");
+      $('form').submit();
+    }
+
+    function submitFormWithCursor(obj) {
       if (obj.attr('class') == 'previous') {
         $('#cursor').val('{{ prev_cursor }}');
         $('#direction').val('previous');
@@ -47,18 +57,25 @@
         return;
       }
 
-      // Removes the empty parameters from the url.
-      $('form').find(":input").filter(function(){ return !this.value; }).attr("disabled", "disabled");
-
-      $('form').submit();
+      $('#test_name').val('');
+      submitForm();
     }
+
+    function requestFilteredResults(e) {
+      var key = e.which;
+      if (key == 13) {
+        submitForm();
+      }
+    };
 
     $(function() {
       $('form').find( ":input" ).prop( "disabled", false );
 
       $(document).on('click', '.previous, .next', function() {
-        submitForm($(this));
+        submitFormWithCursor($(this));
       });
+
+      $('#test_name').keypress(requestFilteredResults);
 
       if ('{{ cursor }}' == '') {
         $('.next').prop('disabled', true);
@@ -73,6 +90,7 @@
       } else {
         $('.previous').prop('disabled', false);
       }
+
       document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
     });
   </script>
@@ -84,7 +102,9 @@
       <input type="text" name="n" id="n" class="hidden" value="{{n}}">
       <input type="text" name="cursor" id="cursor" class="hidden">
       <input type="text" name="direction" id="direction" class="hidden">
+      <input type="text" name="test_name" id="test_name" size="100" placeholder="try searching for test name" value="{{ test_name_filter }}"/>
     </form>
+    <br>
     <div>
       <button class="previous">Previous</button>
       <button class="next">Next</button>

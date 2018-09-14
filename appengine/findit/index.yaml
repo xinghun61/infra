@@ -184,8 +184,8 @@ indexes:
 
 - kind: Flake
   properties:
-  - name: last_occurred_time
   - name: false_rejection_count_last_week
+  - name: last_occurred_time
 
 - kind: Flake
   properties:

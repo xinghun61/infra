@@ -12,23 +12,48 @@ _DEFAULT_PAGE_SIZE = 100
 _DEFAULT_LUCI_PROJECT = 'chromium'
 
 
+def _GetFlakesByTestName(test_name, luci_project):
+  """Gets flakes by test name, then sorts them by occurrences."""
+  flakes = Flake.query(Flake.normalized_test_name == Flake.NormalizeTestName(
+      test_name)).filter(Flake.luci_project == luci_project).fetch()
+  flakes.sort(
+      key=lambda flake: flake.false_rejection_count_last_week, reverse=True)
+  return flakes
+
+
 class RankFlakes(BaseHandler):
+  """Queries flakes and ranks them by number of occurrences in descending order.
+  """
   PERMISSION_LEVEL = Permission.ANYONE
 
   def HandleGet(self):
-    page_size = int(self.request.get('n').strip()) if self.request.get(
-        'n') else _DEFAULT_PAGE_SIZE
     luci_project = self.request.get(
         'luci_project').strip() or _DEFAULT_LUCI_PROJECT
+    test_name = self.request.get('test_name').strip()
+    page_size = int(self.request.get('n').strip()) if self.request.get(
+      'n') else _DEFAULT_PAGE_SIZE
 
-    flake_query = Flake.query(Flake.luci_project == luci_project).filter(
-        Flake.false_rejection_count_last_week > 0)
-    flakes, prev_cursor, cursor = dashboard_util.GetPagedResults(
-        flake_query,
-        order_property=Flake.false_rejection_count_last_week,
-        cursor=self.request.get('cursor'),
-        direction=self.request.get('direction').strip(),
-        page_size=page_size)
+    if test_name:
+      # No paging if search for a test name.
+      flakes = _GetFlakesByTestName(test_name, luci_project)
+      prev_cursor = ''
+      cursor = ''
+
+      if len(flakes) == 1:
+        # Only one flake is retrieved, redirects to the flake's page.
+        flake = flakes[0]
+        return self.CreateRedirect(
+            '/flake/detection/show-flake?key=%s' % flake.key.urlsafe())
+
+    else:
+      flake_query = Flake.query(Flake.luci_project == luci_project).filter(
+          Flake.false_rejection_count_last_week > 0)
+      flakes, prev_cursor, cursor = dashboard_util.GetPagedResults(
+          flake_query,
+          order_property=Flake.false_rejection_count_last_week,
+          cursor=self.request.get('cursor'),
+          direction=self.request.get('direction').strip(),
+          page_size=page_size)
 
     flakes_data = []
     for flake in flakes:
@@ -53,6 +78,8 @@ class RankFlakes(BaseHandler):
         'n':
             page_size if page_size != _DEFAULT_PAGE_SIZE else '',
         'luci_project': (luci_project
-                         if luci_project != _DEFAULT_LUCI_PROJECT else '')
+                         if luci_project != _DEFAULT_LUCI_PROJECT else ''),
+        'test_name_filter':
+            test_name
     }
     return {'template': 'flake/detection/rank_flakes.html', 'data': data}

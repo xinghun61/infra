@@ -6,8 +6,16 @@
 <dom-module id="grouped-occurrences">
   <template>
     <style>
-     flake-occurrence {
+      flake-occurrence {
         display: table-row;
+      }
+
+      flake-occurrence:nth-child(even) {
+        background-color: #d9d9d9;
+      }
+
+      flake-occurrence:nth-child(odd) {
+        background-color: #f5f5f5;
       }
 
       table {
@@ -19,12 +27,15 @@
         padding-right: 10px;
         text-align: left;
         height: 30px;
+        background-color: #4286f4;
+        color: #efefef;
       }
 
       .table-scroll {
         max-height: 150px;
         overflow-y: auto;
       }
+
     </style>
       <!-- Expanded by default. -->
         <expandable-card show-more>
