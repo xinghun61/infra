@@ -27,10 +27,12 @@ def GetStartAndEndDates(start_date=None, end_date=None):
   midnight_yesterday = midnight_today - timedelta(days=1)
   midnight_tomorrow = midnight_today + timedelta(days=1)
 
-  start_date = (datetime.strptime(start_date, DATE_FORMAT)
-                if start_date else midnight_yesterday)
-  end_date = (datetime.strptime(end_date, DATE_FORMAT)
-              if end_date else midnight_tomorrow)
+  start_date = (
+      datetime.strptime(start_date, DATE_FORMAT)
+      if start_date else midnight_yesterday)
+  end_date = (
+      datetime.strptime(end_date, DATE_FORMAT)
+      if end_date else midnight_tomorrow)
 
   return start_date, end_date
 
@@ -44,8 +46,7 @@ def GetPagedResults(query,
 
   Args:
     query(ndb.Query): The ndb query to query entities.
-    order_property (DateTimeProperty of ndb.Model): A class attribute of
-      entity class to order the entities.
+    order_property: A class attribute of entity class to order the entities.
     cursor (Cursor): The cursor provides a cursor in the current query
       results, allowing you to retrieve the next set based on the offset.
     direction (str): Either previous or next.

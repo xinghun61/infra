@@ -191,7 +191,19 @@ indexes:
   properties:
   - name: luci_project
   - name: false_rejection_count_last_week
+    direction: asc
+
+- kind: Flake
+  properties:
+  - name: luci_project
+  - name: false_rejection_count_last_week
     direction: desc
+
+- kind: Flake
+  properties:
+  - name: luci_project
+  - name: impacted_cl_count_last_week
+    direction: asc
 
 - kind: Flake
   properties:

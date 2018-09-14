@@ -9,20 +9,92 @@
   <link rel="import" href="/ui/elements/findit-app.html">
   <link rel="import" href="/ui/elements/flake_detection/rank_flakes.html">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-  <style>
+  <style type="text/css">
+    .previous, .next {
+      color: #0645AD;
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      border-bottom:1px solid #0645AD;
+      cursor: pointer;
+    }
+
+    .disabled {
+      color: #d3d3d3;
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      border-bottom:1px solid #d3d3d3;
+      cursor: pointer;
+    }
+
     .hidden {
       display: none;
     }
   </style>
+  <script>
+
+    function submitForm(obj) {
+      if (obj.attr('class') == 'previous') {
+        $('#cursor').val('{{ prev_cursor }}');
+        $('#direction').val('previous');
+      } else if (obj.attr('class') == 'next') {
+        $('#cursor').val('{{ cursor }}');
+        $('#direction').val('next');
+      } else {
+        return;
+      }
+
+      // Removes the empty parameters from the url.
+      $('form').find(":input").filter(function(){ return !this.value; }).attr("disabled", "disabled");
+
+      $('form').submit();
+    }
+
+    $(function() {
+      $('form').find( ":input" ).prop( "disabled", false );
+
+      $(document).on('click', '.previous, .next', function() {
+        submitForm($(this));
+      });
+
+      if ('{{ cursor }}' == '') {
+        $('.next').prop('disabled', true);
+        $('.next').addClass('disabled');
+      } else {
+        $('.next').prop('disabled', false);
+      }
+
+      if ('{{ prev_cursor }}' == '') {
+        $('.previous').prop('disabled', true);
+        $('.previous').addClass('disabled');
+      } else {
+        $('.previous').prop('disabled', false);
+      }
+      document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
+    });
+  </script>
 </head>
 <body>
-  <findit-app
-      id="app"
-      page-header="Ranked Flaky Tests"
-      userInfo="{{ (user_info or {}) | tojson | safe }}">
+  <findit-app id="app" page-header="Ranked Flaky Tests">
     <form method="get" action="/flake/detection/rank-flakes">
-      <input type="text" name="luci_project" id="luci_project" class="hidden" value="'{{luci_project}}'">
+      <input type="text" name="luci_project" id="luci_project" class="hidden" value="{{luci_project}}">
+      <input type="text" name="n" id="n" class="hidden" value="{{n}}">
+      <input type="text" name="cursor" id="cursor" class="hidden">
+      <input type="text" name="direction" id="direction" class="hidden">
     </form>
+    <div>
+      <button class="previous">Previous</button>
+      <button class="next">Next</button>
+    </div>
+    <br>
     <rank-flakes flakes='{{flakes_data | tojson}}'></rank-flakes>
+    <div>
+      <button class="previous">Previous</button>
+      <button class="next">Next</button>
+    </div>
+    <br>
   </findit-app>
 </body>

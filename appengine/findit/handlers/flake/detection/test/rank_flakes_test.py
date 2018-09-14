@@ -71,7 +71,12 @@ class RankFlakesTest(WaterfallTestCase):
     flake3_dict['flake_urlsafe_key'] = flake3.key.urlsafe()
 
     self.assertEqual(
-        json.dumps({
-            'flakes_data': [flake3_dict, flake1_dict],
-            'luci_project': ''
-        }, default=str), response.body)
+        json.dumps(
+            {
+                'flakes_data': [flake3_dict, flake1_dict],
+                'prev_cursor': '',
+                'cursor': '',
+                'n': '',
+                'luci_project': ''
+            },
+            default=str), response.body)
