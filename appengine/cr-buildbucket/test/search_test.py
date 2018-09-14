@@ -50,19 +50,21 @@ class SearchTest(testing.AppengineTestCase):
         side_effect=lambda: self.current_identity
     )
     self.patch('user.can_async', return_value=future(True))
-    self.patch(
-        'user.get_acessible_buckets_async',
-        autospec=True,
-        return_value=future(['chromium']),
-    )
     self.now = datetime.datetime(2015, 1, 1)
     self.patch('components.utils.utcnow', side_effect=lambda: self.now)
 
-    self.chromium_bucket = project_config_pb2.Bucket(name='chromium')
     self.chromium_project_id = 'test'
+    self.chromium_bucket = project_config_pb2.Bucket(name='chromium')
     self.patch(
         'config.get_bucket_async',
         return_value=future((self.chromium_project_id, self.chromium_bucket))
+    )
+    self.patch(
+        'user.get_accessible_buckets_async',
+        autospec=True,
+        return_value=future([
+            (self.chromium_project_id, self.chromium_bucket.name),
+        ]),
     )
 
     self.test_build = model.Build(
@@ -153,7 +155,7 @@ class SearchTest(testing.AppengineTestCase):
     self.assertEqual(builds, [self.test_build])
 
     # All buckets are available.
-    user.get_acessible_buckets_async.return_value = future(None)
+    user.get_accessible_buckets_async.return_value = future(None)
     user.can_async.side_effect = None
     builds, _ = self.search()
     self.assertEqual(builds, [build2, self.test_build])
@@ -161,7 +163,7 @@ class SearchTest(testing.AppengineTestCase):
     self.assertEqual(builds, [build2, self.test_build])
 
     # No buckets are available.
-    user.get_acessible_buckets_async.return_value = future([])
+    user.get_accessible_buckets_async.return_value = future([])
     self.mock_cannot(user.Action.SEARCH_BUILDS)
     builds, _ = self.search()
     self.assertEqual(builds, [])
@@ -202,8 +204,8 @@ class SearchTest(testing.AppengineTestCase):
     self.test_build.tags = [build_address]
     self.put_build(self.test_build)
 
-    user.get_acessible_buckets_async.return_value = future([
-        self.test_build.bucket
+    user.get_accessible_buckets_async.return_value = future([
+        (self.test_build.project, self.test_build.bucket),
     ])
     builds, _ = self.search(tags=[build_address])
     self.assertEqual(builds, [self.test_build])

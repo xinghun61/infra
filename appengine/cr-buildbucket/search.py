@@ -330,9 +330,11 @@ def _query_search_async(q):
   - if bool(buckets), permissions are checked.
   """
   if not q.buckets:
-    q.buckets = yield user.get_acessible_buckets_async()
-    if q.buckets is not None and len(q.buckets) == 0:
-      raise ndb.Return([], None)
+    accessible = yield user.get_accessible_buckets_async()
+    if accessible is not None:
+      q.buckets = [b for _, b in accessible]
+      if not q.buckets:
+        raise ndb.Return([], None)
   # (buckets is None) means the requester has access to all buckets.
   assert q.buckets is None or q.buckets
 

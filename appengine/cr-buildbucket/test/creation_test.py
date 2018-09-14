@@ -42,16 +42,11 @@ class CreationTest(testing.AppengineTestCase):
         side_effect=lambda: self.current_identity
     )
     self.patch('user.can_async', return_value=future(True))
-    self.patch(
-        'user.get_acessible_buckets_async',
-        autospec=True,
-        return_value=future(['chromium']),
-    )
     self.now = datetime.datetime(2015, 1, 1)
     self.patch('components.utils.utcnow', side_effect=lambda: self.now)
 
-    self.chromium_bucket = project_config_pb2.Bucket(name='chromium')
     self.chromium_project_id = 'test'
+    self.chromium_bucket = project_config_pb2.Bucket(name='chromium')
     self.chromium_swarming = project_config_pb2.Swarming(
         hostname='chromium-swarm.appspot.com',
         builders=[
@@ -69,6 +64,13 @@ class CreationTest(testing.AppengineTestCase):
     self.patch(
         'config.get_bucket_async',
         return_value=future((self.chromium_project_id, self.chromium_bucket))
+    )
+    self.patch(
+        'user.get_accessible_buckets_async',
+        autospec=True,
+        return_value=future([
+            (self.chromium_project_id, self.chromium_bucket.name),
+        ]),
     )
     self.patch('swarming.create_task_async', return_value=future(None))
     self.patch('swarming.cancel_task_async', return_value=future(None))

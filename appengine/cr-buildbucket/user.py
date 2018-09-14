@@ -189,7 +189,7 @@ def can_async(bucket, action):
   raise ndb.Return(role is not None and role >= ACTION_TO_MIN_ROLE[action])
 
 
-def get_acessible_buckets_async():
+def get_accessible_buckets_async():
   """Returns buckets accessible to the current identity.
 
   A bucket is accessible if the requester has ACCESS_BUCKET permission.
@@ -197,7 +197,9 @@ def get_acessible_buckets_async():
   Results are memcached for 10 minutes per identity.
 
   Returns:
-    A future of a set of bucket names or None if all buckets are available.
+    A future of
+      a set of (project_id, bucket name) tuples
+      or None if all buckets are available.
   """
 
   @ndb.tasklet
@@ -206,7 +208,7 @@ def get_acessible_buckets_async():
       raise ndb.Return(None)
 
     identity = auth.get_current_identity().to_bytes()
-    cache_key = 'available_buckets/%s' % identity
+    cache_key = 'accessible_buckets/%s' % identity
     ctx = ndb.get_context()
     available_buckets = yield ctx.memcache_get(cache_key)
     if available_buckets is not None:
@@ -215,12 +217,12 @@ def get_acessible_buckets_async():
     group_buckets_map = collections.defaultdict(set)
     available_buckets = set()
     all_buckets = yield config.get_buckets_async()
-    for _, bucket in all_buckets:
+    for pid, bucket in all_buckets:
       for rule in bucket.acls:
         if rule.identity == identity:
-          available_buckets.add(bucket.name)
+          available_buckets.add((pid, bucket.name))
         if rule.group:
-          group_buckets_map[rule.group].add(bucket.name)
+          group_buckets_map[rule.group].add((pid, bucket.name))
     for group, buckets in group_buckets_map.iteritems():
       if available_buckets.issuperset(buckets):
         continue

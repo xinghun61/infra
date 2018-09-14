@@ -118,7 +118,9 @@ class SwarmbucketApi(remote.Service):
     else:
       # Buckets were not specified explicitly.
       # Use the available ones.
-      bucket_names = user.get_acessible_buckets_async().get_result()
+      bucket_names = [
+          b for _, b in user.get_accessible_buckets_async().get_result()
+      ]
       # bucket_names is None => all buckets are available.
 
     res = GetBuildersResponseMessage()

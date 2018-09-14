@@ -93,7 +93,7 @@ class UserTest(testing.AppengineTestCase):
     self.assertEqual(user.get_role_async('non.existing').get_result(), None)
 
   @mock.patch('components.auth.is_group_member', autospec=True)
-  def test_get_acessible_buckets_async(self, is_group_member):
+  def test_get_accessible_buckets_async(self, is_group_member):
     is_group_member.side_effect = lambda g, _=None: g in ('xxx', 'yyy')
 
     config.get_buckets_async.return_value = future([
@@ -136,23 +136,22 @@ class UserTest(testing.AppengineTestCase):
     ])
 
     # call twice for per-request caching of futures.
-    user.get_acessible_buckets_async()
-    availble_buckets = user.get_acessible_buckets_async().get_result()
-    self.assertEqual(
-        availble_buckets,
-        {'available_bucket1', 'available_bucket2', 'available_bucket3'},
-    )
+    user.get_accessible_buckets_async()
+    availble_buckets = user.get_accessible_buckets_async().get_result()
+    expected = {
+        ('p1', 'available_bucket1'),
+        ('p2', 'available_bucket2'),
+        ('p3', 'available_bucket3'),
+    }
+    self.assertEqual(availble_buckets, expected)
 
     # call again for memcache coverage.
     user.clear_request_cache()
-    availble_buckets = user.get_acessible_buckets_async().get_result()
-    self.assertEqual(
-        availble_buckets,
-        {'available_bucket1', 'available_bucket2', 'available_bucket3'},
-    )
+    availble_buckets = user.get_accessible_buckets_async().get_result()
+    self.assertEqual(availble_buckets, expected)
 
   @mock.patch('components.auth.is_admin', autospec=True)
-  def test_get_acessible_buckets_async_admin(self, is_admin):
+  def test_get_accessible_buckets_async_admin(self, is_admin):
     is_admin.return_value = True
 
     config.get_buckets_async.return_value = future([
@@ -168,7 +167,7 @@ class UserTest(testing.AppengineTestCase):
         ),
     ])
 
-    self.assertIsNone(user.get_acessible_buckets_async().get_result())
+    self.assertIsNone(user.get_accessible_buckets_async().get_result())
 
   def mock_role(self, role):
     self.patch('user.get_role_async', return_value=future(role))
