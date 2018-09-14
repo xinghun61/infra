@@ -52,9 +52,9 @@ class FeaturesServicerTest(unittest.TestCase):
     self.prpc_context = context.ServicerContext()
     self.prpc_context.set_code(codes.StatusCode.OK)
     self.issue_1 = fake.MakeTestIssue(
-        789, 1, 'sum', 'New', 111L, project_name='proj')
+        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=78901)
     self.issue_2 = fake.MakeTestIssue(
-        789, 2, 'sum', 'New', 111L, project_name='proj')
+        789, 2, 'sum', 'New', 111L, project_name='proj', issue_id=78902)
     self.services.issue.TestAddIssue(self.issue_1)
     self.services.issue.TestAddIssue(self.issue_2)
 
@@ -178,7 +178,7 @@ class FeaturesServicerTest(unittest.TestCase):
     self.assertEqual(0, len(response.hotlists))
 
   def testListHotlistsByUser_NoHotlists(self):
-    """We can get a list of all projects on the site."""
+    """There are no hotlists."""
     # No hotlists
     # Query for issues for 'owner@example.com'
     user_ref = common_pb2.UserRef(user_id=111L)
@@ -262,6 +262,122 @@ class FeaturesServicerTest(unittest.TestCase):
     # We're not authenticated
     mc = monorailcontext.MonorailContext(self.services, cnxn=self.cnxn)
     response = self.CallWrapped(self.features_svcr.ListHotlistsByUser, mc,
+                                request)
+
+    self.assertEqual(0, len(response.hotlists))
+
+  def AddIssueToHotlist(self, hotlist_id, issue_id=78901, adder_id=111L):
+    self.services.features.AddIssuesToHotlists(
+        self.cnxn, [hotlist_id], [(issue_id, adder_id, 0, '')],
+        None, None, None)
+
+  def testListHotlistsByIssue_Normal(self):
+    hotlist = self.services.features.CreateHotlist(
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[222L])
+    self.AddIssueToHotlist(hotlist.hotlist_id)
+
+    issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
+    request = features_pb2.ListHotlistsByIssueRequest(issue=issue_ref)
+
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='foo@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.features_svcr.ListHotlistsByIssue, mc,
+                                request)
+
+    self.assertEqual(1, len(response.hotlists))
+    hotlist = response.hotlists[0]
+    self.assertEqual('Fake-Hotlist', hotlist.name)
+
+  def testListHotlistsByIssue_NotSignedIn(self):
+    # Public hostlist owned by 'owner@example.com'
+    hotlist = self.services.features.CreateHotlist(
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[222L])
+    self.AddIssueToHotlist(hotlist.hotlist_id)
+
+    issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
+    request = features_pb2.ListHotlistsByIssueRequest(issue=issue_ref)
+
+    # We're not authenticated
+    mc = monorailcontext.MonorailContext(self.services, cnxn=self.cnxn)
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.features_svcr.ListHotlistsByIssue, mc,
+                                request)
+
+    self.assertEqual(1, len(response.hotlists))
+    hotlist = response.hotlists[0]
+    self.assertEqual('Fake-Hotlist', hotlist.name)
+
+  def testListHotlistsByIssue_Empty(self):
+    """There are no hotlists with the given issue."""
+    # Public hostlist owned by 'owner@example.com'
+    self.services.features.CreateHotlist(
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[222L])
+
+    issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
+    request = features_pb2.ListHotlistsByIssueRequest(issue=issue_ref)
+
+    # We're authenticated as 'foo@example.com'
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='foo@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.features_svcr.ListHotlistsByIssue, mc,
+                                request)
+
+    self.assertEqual(0, len(response.hotlists))
+
+  def testListHotlistsByIssue_NoHotlists(self):
+    issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
+    request = features_pb2.ListHotlistsByIssueRequest(issue=issue_ref)
+
+    # We're authenticated as 'foo@example.com'
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='foo@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.features_svcr.ListHotlistsByIssue, mc,
+                                request)
+    self.assertEqual(0, len(response.hotlists))
+
+  def testListHotlistsByIssue_PrivateHotlistAsOwner(self):
+    """An owner can view their private issues."""
+    # Private hostlist owned by 'owner@example.com'
+    hotlist = self.services.features.CreateHotlist(
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[222L], is_private=True)
+    self.AddIssueToHotlist(hotlist.hotlist_id)
+
+    issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
+    request = features_pb2.ListHotlistsByIssueRequest(issue=issue_ref)
+
+    # We're authenticated as 'owner@example.com'
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.features_svcr.ListHotlistsByIssue, mc,
+                                request)
+
+    self.assertEqual(1, len(response.hotlists))
+    hotlist = response.hotlists[0]
+    self.assertEqual('Fake-Hotlist', hotlist.name)
+
+  def testListHotlistsByIssue_PrivateHotlistNoAccess(self):
+    # Private hostlist owned by 'owner@example.com'
+    hotlist = self.services.features.CreateHotlist(
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[222L], is_private=True)
+    self.AddIssueToHotlist(hotlist.hotlist_id)
+
+    issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
+    request = features_pb2.ListHotlistsByIssueRequest(issue=issue_ref)
+
+    # We're authenticated as 'foo@example.com'
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='foo@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.features_svcr.ListHotlistsByIssue, mc,
                                 request)
 
     self.assertEqual(0, len(response.hotlists))

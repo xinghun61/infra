@@ -32,12 +32,11 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
 
   @monorail_servicer.PRPCMethod
   def ListHotlistsByUser(self, mc, request):
-    """Return the specified project config."""
+    """Return the hotlists for the given user."""
     user_id = converters.IngestUserRef(
         mc.cnxn, request.user, self.services.user)
 
     with work_env.WorkEnv(mc, self.services) as we:
-      # List hotlists for the currently authenticated user.
       hotlists = we.ListHotlistsByUser(user_id)
 
     with mc.profiler.Phase('making user views'):
@@ -51,6 +50,30 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
         for hotlist in hotlists]
 
     result = features_pb2.ListHotlistsByUserResponse(
+        hotlists=converted_hotlists)
+
+    return result
+
+  @monorail_servicer.PRPCMethod
+  def ListHotlistsByIssue(self, mc, request):
+    """Return the hotlists the given issue is part of."""
+    issue_id = converters.IngestIssueRefs(
+        mc.cnxn, [request.issue], self.services)[0]
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      hotlists = we.ListHotlistsByIssue(issue_id)
+
+    with mc.profiler.Phase('making user views'):
+      users_involved = features_bizobj.UsersOwnersOfHotlists(hotlists)
+      users_by_id = framework_views.MakeAllUserViews(
+          mc.cnxn, self.services.user, users_involved)
+      framework_views.RevealAllEmailsToMembers(mc.auth, None, users_by_id)
+
+    converted_hotlists = [
+        converters.ConvertHotlist(hotlist, users_by_id)
+        for hotlist in hotlists]
+
+    result = features_pb2.ListHotlistsByIssueResponse(
         hotlists=converted_hotlists)
 
     return result

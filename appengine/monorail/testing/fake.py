@@ -1960,7 +1960,9 @@ class FeaturesService(object):
   def LookupIssueHotlists(self, cnxn, issue_ids):
     """Return dict of {issue_id: [hotlist_id, hotlist_id...]}."""
     issues_hotlists_dict = {
-        issue_id: self.hotlists_id_by_issue[issue_id] for issue_id in issue_ids}
+        issue_id: self.hotlists_id_by_issue[issue_id]
+        for issue_id in issue_ids
+        if issue_id in self.hotlists_id_by_issue}
     return issues_hotlists_dict
 
   def LookupHotlistIDs(self, cnxn, hotlist_names, owner_ids):

@@ -1111,6 +1111,11 @@ class WorkEnvTest(unittest.TestCase):
   # FUTURE: UpdateGroup()
   # FUTURE: DeleteGroup()
 
+  def AddIssueToHotlist(self, hotlist_id, issue_id=78901, adder_id=111L):
+    self.services.features.AddIssuesToHotlists(
+        self.cnxn, [hotlist_id], [(issue_id, adder_id, 0, '')],
+        None, None, None)
+
   def testCreateHotlist_Normal(self):
     """We can create a hotlist."""
     issue_1 = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
@@ -1244,7 +1249,7 @@ class WorkEnvTest(unittest.TestCase):
 
     self.assertEqual(0, len(hotlists))
 
-  def testListHotlistsByUser_PrivateIssueAsOwner(self):
+  def testListHotlistsByUser_PrivateHotlistAsOwner(self):
     self.work_env.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
         owner_ids=[111L], editor_ids=[333L], is_private=True)
@@ -1261,7 +1266,7 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual('Summary', hotlist.summary)
     self.assertEqual('Description', hotlist.description)
 
-  def testListHotlistsByUser_PrivateIssueAsEditor(self):
+  def testListHotlistsByUser_PrivateHotlistAsEditor(self):
     self.work_env.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
         owner_ids=[333L], editor_ids=[111L], is_private=True)
@@ -1278,7 +1283,7 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual('Summary', hotlist.summary)
     self.assertEqual('Description', hotlist.description)
 
-  def testListHotlistsByUser_PrivateIssueNoAcess(self):
+  def testListHotlistsByUser_PrivateHotlistNoAcess(self):
     self.work_env.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
         owner_ids=[333L], editor_ids=[], is_private=True)
@@ -1286,6 +1291,130 @@ class WorkEnvTest(unittest.TestCase):
     self.SignIn()
     with self.work_env as we:
       hotlists = we.ListHotlistsByUser(333L)
+
+    self.assertEqual(0, len(hotlists))
+
+  def testListHotlistsByIssue_Normal(self):
+    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    hotlist = self.work_env.services.features.CreateHotlist(
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[])
+    self.AddIssueToHotlist(hotlist.hotlist_id)
+
+    self.SignIn()
+    with self.work_env as we:
+      hotlists = we.ListHotlistsByIssue(78901)
+
+    self.assertEqual(1, len(hotlists))
+    hotlist = hotlists[0]
+    self.assertEqual([111L], hotlist.owner_ids)
+    self.assertEqual([], hotlist.editor_ids)
+    self.assertEqual('Fake-Hotlist', hotlist.name)
+    self.assertEqual('Summary', hotlist.summary)
+    self.assertEqual('Description', hotlist.description)
+
+  def testListHotlistsByIssue_NotSignedIn(self):
+    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    hotlist = self.work_env.services.features.CreateHotlist(
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[])
+    self.AddIssueToHotlist(hotlist.hotlist_id)
+
+    with self.work_env as we:
+      hotlists = we.ListHotlistsByIssue(78901)
+
+    self.assertEqual(1, len(hotlists))
+    hotlist = hotlists[0]
+    self.assertEqual([111L], hotlist.owner_ids)
+    self.assertEqual([], hotlist.editor_ids)
+    self.assertEqual('Fake-Hotlist', hotlist.name)
+    self.assertEqual('Summary', hotlist.summary)
+    self.assertEqual('Description', hotlist.description)
+
+  def testListHotlistsByIssue_NotAllowedToSeeIssue(self):
+    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    issue.labels = ['Restrict-View-CoreTeam']
+    self.services.issue.TestAddIssue(issue)
+    hotlist = self.work_env.services.features.CreateHotlist(
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[])
+    self.AddIssueToHotlist(hotlist.hotlist_id)
+
+    # We should get a permission exception
+    self.SignIn(333L)
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        we.ListHotlistsByIssue(78901)
+
+  def testListHotlistsByIssue_NoSuchIssue(self):
+    self.SignIn()
+    with self.assertRaises(exceptions.NoSuchIssueException):
+      with self.work_env as we:
+        we.ListHotlistsByIssue(78901)
+
+  def testListHotlistsByIssue_NoHotlists(self):
+    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+
+    self.SignIn()
+    with self.work_env as we:
+      hotlists = we.ListHotlistsByIssue(78901)
+
+    self.assertEqual(0, len(hotlists))
+
+  def testListHotlistsByIssue_PrivateHotlistAsOwner(self):
+    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    hotlist = self.work_env.services.features.CreateHotlist(
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[333L], is_private=True)
+    self.AddIssueToHotlist(hotlist.hotlist_id)
+
+    self.SignIn()
+    with self.work_env as we:
+      hotlists = we.ListHotlistsByIssue(78901)
+
+    self.assertEqual(1, len(hotlists))
+    hotlist = hotlists[0]
+    self.assertEqual([111L], hotlist.owner_ids)
+    self.assertEqual([333L], hotlist.editor_ids)
+    self.assertEqual('Fake-Hotlist', hotlist.name)
+    self.assertEqual('Summary', hotlist.summary)
+    self.assertEqual('Description', hotlist.description)
+
+  def testListHotlistsByIssue_PrivateHotlistAsEditor(self):
+    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    hotlist = self.work_env.services.features.CreateHotlist(
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+        owner_ids=[333L], editor_ids=[111L], is_private=True)
+    self.AddIssueToHotlist(hotlist.hotlist_id)
+
+    self.SignIn()
+    with self.work_env as we:
+      hotlists = we.ListHotlistsByIssue(78901)
+
+    self.assertEqual(1, len(hotlists))
+    hotlist = hotlists[0]
+    self.assertEqual([333L], hotlist.owner_ids)
+    self.assertEqual([111L], hotlist.editor_ids)
+    self.assertEqual('Fake-Hotlist', hotlist.name)
+    self.assertEqual('Summary', hotlist.summary)
+    self.assertEqual('Description', hotlist.description)
+
+  def testListHotlistsByIssue_PrivateHotlistNoAcess(self):
+    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    hotlist = self.work_env.services.features.CreateHotlist(
+        self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+        owner_ids=[444L], editor_ids=[333L], is_private=True)
+    self.AddIssueToHotlist(hotlist.hotlist_id)
+
+    self.SignIn()
+    with self.work_env as we:
+      hotlists = we.ListHotlistsByIssue(78901)
 
     self.assertEqual(0, len(hotlists))
 
@@ -1392,7 +1521,8 @@ class WorkEnvTest(unittest.TestCase):
       error = we.CheckHotlistName('Fake-Hotlist')
     self.assertIsNotNone(error)
 
-  def setUpHotlists(self):
+  def testRemoveIssuesFromHotlists(self):
+    """We can remove issues from hotlists."""
     issue1 = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
     self.services.issue.TestAddIssue(issue1)
     issue2 = fake.MakeTestIssue(789, 2, 'sum2', 'New', 111L, issue_id=78902)
@@ -1401,27 +1531,13 @@ class WorkEnvTest(unittest.TestCase):
     hotlist1 = self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
             owner_ids=[111L], editor_ids=[])
+    self.AddIssueToHotlist(hotlist1.hotlist_id, issue1.issue_id)
+    self.AddIssueToHotlist(hotlist1.hotlist_id, issue2.issue_id)
+
     hotlist2 = self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Fake-Hotlist-2', 'Summary', 'Description',
             owner_ids=[111L], editor_ids=[])
-
-    # Fake-Hotlist and Fake-Hotlist-2 have Issue 1
-    self.services.features.AddIssuesToHotlists(
-        self.cnxn, [hotlist1.hotlist_id, hotlist2.hotlist_id],
-        [(issue1.issue_id, 111L, 0, '')],
-        None, None, None)
-
-    # Fake-Hotlist also has Issue 2
-    self.services.features.AddIssuesToHotlists(
-        self.cnxn, [hotlist1.hotlist_id],
-        [(issue2.issue_id, 111L, 0, '')],
-        None, None, None)
-
-    return issue1, issue2, hotlist1, hotlist2
-
-  def testRemoveIssuesFromHotlists(self):
-    """We can remove issues from hotlists."""
-    issue1, issue2, hotlist1, hotlist2 = self.setUpHotlists()
+    self.AddIssueToHotlist(hotlist2.hotlist_id, issue1.issue_id)
 
     self.SignIn()
     with self.work_env as we:
@@ -1434,7 +1550,21 @@ class WorkEnvTest(unittest.TestCase):
 
   def testRemoveIssuesFromHotlists_RemoveIssueNotInHotlist(self):
     """Removing an issue from a hotlist that doesn't have it has no effect."""
-    issue1, issue2, hotlist1, hotlist2 = self.setUpHotlists()
+    issue1 = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue1)
+    issue2 = fake.MakeTestIssue(789, 2, 'sum2', 'New', 111L, issue_id=78902)
+    self.services.issue.TestAddIssue(issue2)
+
+    hotlist1 = self.work_env.services.features.CreateHotlist(
+            self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+            owner_ids=[111L], editor_ids=[])
+    self.AddIssueToHotlist(hotlist1.hotlist_id, issue1.issue_id)
+    self.AddIssueToHotlist(hotlist1.hotlist_id, issue2.issue_id)
+
+    hotlist2 = self.work_env.services.features.CreateHotlist(
+            self.cnxn, 'Fake-Hotlist-2', 'Summary', 'Description',
+            owner_ids=[111L], editor_ids=[])
+    self.AddIssueToHotlist(hotlist2.hotlist_id, issue1.issue_id)
 
     self.SignIn()
     with self.work_env as we:
@@ -1499,7 +1629,21 @@ class WorkEnvTest(unittest.TestCase):
 
   def testAddIssuesToHotlists_IssuesAlreadyInHotlist(self):
     """Adding an issue to a hotlist that already has it has no effect."""
-    issue1, issue2, hotlist1, hotlist2 = self.setUpHotlists()
+    issue1 = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue1)
+    issue2 = fake.MakeTestIssue(789, 2, 'sum2', 'New', 111L, issue_id=78902)
+    self.services.issue.TestAddIssue(issue2)
+
+    hotlist1 = self.work_env.services.features.CreateHotlist(
+            self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+            owner_ids=[111L], editor_ids=[])
+    self.AddIssueToHotlist(hotlist1.hotlist_id, issue1.issue_id)
+    self.AddIssueToHotlist(hotlist1.hotlist_id, issue2.issue_id)
+
+    hotlist2 = self.work_env.services.features.CreateHotlist(
+            self.cnxn, 'Fake-Hotlist-2', 'Summary', 'Description',
+            owner_ids=[111L], editor_ids=[])
+    self.AddIssueToHotlist(hotlist2.hotlist_id, issue1.issue_id)
 
     self.SignIn()
     with self.work_env as we:

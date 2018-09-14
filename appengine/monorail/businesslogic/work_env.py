@@ -1179,9 +1179,32 @@ class WorkEnv(object):
     Returns:
       The hotlists for the given user.
     """
-    with self.mc.profiler.Phase('querying hotlists for user'):
+    with self.mc.profiler.Phase('querying hotlists for user %r' % user_id):
       hotlists = self.services.features.GetHotlistsByUserID(
           self.mc.cnxn, user_id)
+
+    # Filter the hotlists that the currently authenticated user cannot see.
+    result = [
+        hotlist
+        for hotlist in hotlists
+        if permissions.CanViewHotlist(self.mc.auth.effective_ids, hotlist)]
+    return result
+
+  def ListHotlistsByIssue(self, issue_id):
+    """Return the hotlists the given issue is part of.
+
+    Args:
+      issue_id (int): The id of the issue to query.
+
+    Returns:
+      The hotlists the given issue is part of.
+    """
+    # Check that the issue exists and the user has permission to see it.
+    self.GetIssue(issue_id)
+
+    with self.mc.profiler.Phase('querying hotlists for issue %r' % issue_id):
+      hotlists = self.services.features.GetHotlistsByIssueID(
+          self.mc.cnxn, issue_id)
 
     # Filter the hotlists that the currently authenticated user cannot see.
     result = [
