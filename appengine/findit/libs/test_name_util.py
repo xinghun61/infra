@@ -6,12 +6,12 @@
 import re
 
 # Used to identify the prefix in gtests.
-_PRE_TEST_PREFIX = 'PRE_'
+_GTEST_PREFIXES = ['PRE_', '*']
 
 # Regular expressions to identify parameterized gtests. Note that instantiation
 # names can be empty. For example: ColorSpaceTest.testNullTransform/1.
-_VALUE_PARAMETEREZED_GTESTS_REGEX = re.compile(r'(.+/)?(.+\..+)/\d+')
-_TYPE_PARAMETERIZED_GTESTS_REGEX = re.compile(r'(.+/)?(.+)/\d+\.(.+)')
+_VALUE_PARAMETEREZED_GTESTS_REGEX = re.compile(r'^(.+/)?(.+\..+)/[\d+\*]$')
+_TYPE_PARAMETERIZED_GTESTS_REGEX = re.compile(r'^(.+/)?(.+)/[\d+\*]\.(.+)$')
 
 # Regular expression for a webkit_layout_test name.
 _LAYOUT_TEST_NAME_PATTERN = re.compile(r'^(([^/]+/)+[^/]+\.[a-zA-Z]+).*$')
@@ -91,8 +91,11 @@ def RemoveAllPrefixesFromGTestName(test):
 
   test_suite = test[:test_name_start]
   test_name = test[test_name_start + 1:]
-  while test_name.startswith(_PRE_TEST_PREFIX):
-    test_name = test_name[len(_PRE_TEST_PREFIX):]
+
+  for prefix in _GTEST_PREFIXES:
+    while test_name.startswith(prefix):
+      test_name = test_name[len(prefix):]
+
   base_test = '%s.%s' % (test_suite, test_name)
   return base_test
 

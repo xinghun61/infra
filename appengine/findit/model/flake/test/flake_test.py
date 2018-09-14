@@ -102,7 +102,11 @@ class FlakeTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual('suite.test', Flake.NormalizeTestName('a/suite.test/0'))
 
+    self.assertEqual('suite.test', Flake.NormalizeTestName('*/suite.test/*'))
+
     self.assertEqual('suite.test', Flake.NormalizeTestName('suite.test/1'))
+
+    self.assertEqual('suite.test', Flake.NormalizeTestName('suite.test/*'))
 
     self.assertEqual('suite.test',
                      Flake.NormalizeTestName('suite.PRE_PRE_test'))
@@ -113,6 +117,8 @@ class FlakeTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('a/b.html', Flake.NormalizeTestName('a/b.html'))
 
     self.assertEqual('a/b.html', Flake.NormalizeTestName('a/b.html?1000-2000'))
+
+    self.assertEqual('a/b.html', Flake.NormalizeTestName('a/b.html?*'))
 
   def testGetTestLabelName(self):
     self.assertEqual('suite.test', Flake.GetTestLabelName('suite.test'))
