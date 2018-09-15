@@ -94,7 +94,7 @@ class DashBoard(BaseHandler):
       page_size = _PAGE_SIZE
 
     crash_analyses, top_cusor, bottom_cursor = dashboard_util.GetPagedResults(
-        query, self.crash_analysis_cls.requested_time,
+        query, [self.crash_analysis_cls.requested_time],
         cursor=self.request.get('cursor'),
         direction=self.request.get('direction', 'next'), page_size=page_size)
 

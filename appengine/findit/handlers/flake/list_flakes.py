@@ -73,8 +73,7 @@ class ListFlakes(BaseHandler):
       cursor = ''
     else:
       analyses, prev_cursor, cursor = dashboard_util.GetPagedResults(
-          master_flake_analysis_query,
-          MasterFlakeAnalysis.request_time,
+          master_flake_analysis_query, [MasterFlakeAnalysis.request_time],
           self.request.get('cursor'),
           self.request.get('direction').strip(),
           page_size=PAGE_SIZE)

@@ -182,15 +182,19 @@ indexes:
   - name: time_happened
     direction: desc
 
+# For cron to update Flake counts.
 - kind: Flake
   properties:
   - name: false_rejection_count_last_week
   - name: last_occurred_time
 
+# For ranked flakes pages.
 - kind: Flake
   properties:
   - name: luci_project
   - name: false_rejection_count_last_week
+    direction: asc
+  - name: last_occurred_time
     direction: asc
 
 - kind: Flake
@@ -198,17 +202,23 @@ indexes:
   - name: luci_project
   - name: false_rejection_count_last_week
     direction: desc
+  - name: last_occurred_time
+    direction: desc
 
 - kind: Flake
   properties:
   - name: luci_project
   - name: impacted_cl_count_last_week
     direction: asc
+  - name: last_occurred_time
+    direction: asc
 
 - kind: Flake
   properties:
   - name: luci_project
   - name: impacted_cl_count_last_week
+    direction: desc
+  - name: last_occurred_time
     direction: desc
 
 # For query on tree closures.

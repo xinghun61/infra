@@ -123,11 +123,10 @@ def GetDeltaForCrashes(crashes, git_hash1, git_hash2, client_id, app_id,
   head_branch_name = subprocess.check_output(
       ['git', 'rev-parse', '--abbrev-ref', 'HEAD']).replace('\n', '')
   try:
-    results = []
-    for git_hash in [git_hash1, git_hash2]:
-      # Get the culprit results of this batch of crashes.
-      results.append(GetCulpritsOnRevision(crashes, git_hash, client_id,
-                                           app_id, verbose=verbose))
+    result1 = GetCulpritsOnRevision(crashes, git_hash1, client_id,
+                                    app_id, verbose=verbose)
+    result2 = GetCulpritsOnRevision(crashes, git_hash2, client_id,
+                                    app_id, verbose=verbose)
   finally:
     # Switch back to the original revision.
     with open(os.devnull, 'w') as null_handle:
@@ -135,7 +134,7 @@ def GetDeltaForCrashes(crashes, git_hash1, git_hash2, client_id, app_id,
                             stdout=null_handle, stderr=null_handle)
 
   # Compute delta between 2 versions of culprit results for this batch.
-  return GetDeltaForTwoSetsOfResults(*results)
+  return GetDeltaForTwoSetsOfResults(result1, result2)
 
 
 def GetTriageResultsFromCrashes(crashes):  # pragma: no cover.

@@ -38,7 +38,7 @@ def GetStartAndEndDates(start_date=None, end_date=None):
 
 
 def GetPagedResults(query,
-                    order_property,
+                    order_properties,
                     cursor=None,
                     direction=_NEXT,
                     page_size=PAGE_SIZE):
@@ -46,7 +46,8 @@ def GetPagedResults(query,
 
   Args:
     query(ndb.Query): The ndb query to query entities.
-    order_property: A class attribute of entity class to order the entities.
+    order_properties: A list of class attribute of entity class to order the
+      entities.
     cursor (Cursor): The cursor provides a cursor in the current query
       results, allowing you to retrieve the next set based on the offset.
     direction (str): Either previous or next.
@@ -63,12 +64,14 @@ def GetPagedResults(query,
   cursor = Cursor(urlsafe=cursor) if cursor else None
 
   if direction.lower() == _PREVIOUS:
-    query = query.order(order_property)
+    for order_property in order_properties:
+      query = query.order(order_property)
     entities, next_cursor, more = query.fetch_page(
         page_size, start_cursor=cursor.reversed())
     entities.reverse()
   else:
-    query = query.order(-order_property)
+    for order_property in order_properties:
+      query = query.order(-order_property)
     entities, next_cursor, more = query.fetch_page(
         page_size, start_cursor=cursor)
 

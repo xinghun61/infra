@@ -39,23 +39,21 @@ class DashBoardUtilTest(testcase.TestCase):
   def testGetPagedResultsForDirectionNext(self):
     """Tests getting next page."""
     entities, _, _ = dashboard_util.GetPagedResults(
-        Entity.query(), Entity.time, direction='next', page_size=1)
+        Entity.query(), [Entity.time], direction='next', page_size=1)
     self.assertEqual(len(entities), 1)
     self.assertEqual(entities, [self.entities[2]])
 
   def testGetPagedResultsForDirectionPrevious(self):
     """Tests getting previous page."""
     entities_on_page1, _, bottom_cursor1 = dashboard_util.GetPagedResults(
-        Entity.query(), Entity.time, direction='next', page_size=1)
+        Entity.query(), [Entity.time], direction='next', page_size=1)
     _, top_cursor2, _ = dashboard_util.GetPagedResults(
-        Entity.query(),
-        Entity.time,
+        Entity.query(), [Entity.time],
         cursor=bottom_cursor1,
         direction='next',
         page_size=1)
     back_to_page1_entities, _, _ = dashboard_util.GetPagedResults(
-        Entity.query(),
-        Entity.time,
+        Entity.query(), [Entity.time],
         cursor=top_cursor2,
         direction='previous',
         page_size=1)
