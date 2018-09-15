@@ -13,7 +13,7 @@
       table th {
         padding: 5px;
         color: #efefef;
-        background-color: #4286f4;
+        background-color: #4285F4;
       }
       td {
         max-width: 0;
@@ -26,39 +26,45 @@
       }
 
       tr:nth-child(even) {
-        background-color: #d9d9d9;
+        background-color: #E5EBFF;
       }
 
       tr:nth-child(odd) {
-        background-color: #f3f3f3;
+        background-color: #F5F7FF;
+      }
+
+      .table-scroll {
+        max-height: 72vh;
+        overflow-y: auto;
       }
     </style>
-
-    <table width="80%">
-      <tr>
-        <th width="15%">Step Name</th>
-        <th width="45%">Test Name</th>
-        <th width="5%"># Occurrences</th>
-        <th width="10%"># Impacted CLs</th>
-        <th width="5%">Bug</th>
-      </tr>
-      <template is="dom-repeat" items="[[flakes]]" as="flake">
+    <div class="table-scroll">
+      <table width="80%">
         <tr>
-          <td>[[flake.normalized_step_name]]</td>
-          <td>
-            <a target="_blank" href="/flake/occurrences?key=[[flake.flake_urlsafe_key]]">[[flake.test_label_name]]</a>
-            <paper-tooltip position="bottom" offset="0" fit-to-visible-bounds="true">[[flake.test_label_name]]</paper-tooltip>
-          </td>
-          <td align="right">[[flake.false_rejection_count_last_week]]</td>
-          <td align="right">[[flake.impacted_cl_count_last_week]]</td>
-          <td align="right">
-            <template is="dom-if" if="[[hasBug(flake)]]">
-                <a href="[[flake.flake_issue.issue_link]]">[[flake.flake_issue.issue_id]]</a>
-            </template>
-          </td>
+          <th width="15%">Step Name</th>
+          <th width="45%">Test Name</th>
+          <th width="5%"># Occurrences</th>
+          <th width="10%"># Impacted CLs</th>
+          <th width="5%">Bug</th>
         </tr>
-      </template>
-    </table>
+        <template is="dom-repeat" items="[[flakes]]" as="flake">
+          <tr>
+            <td>[[flake.normalized_step_name]]</td>
+            <td>
+              <a target="_blank" href="/flake/occurrences?key=[[flake.flake_urlsafe_key]]">[[flake.test_label_name]]</a>
+              <paper-tooltip position="bottom" offset="0" fit-to-visible-bounds="true">[[flake.test_label_name]]</paper-tooltip>
+            </td>
+            <td align="right">[[flake.false_rejection_count_last_week]]</td>
+            <td align="right">[[flake.impacted_cl_count_last_week]]</td>
+            <td align="right">
+              <template is="dom-if" if="[[hasBug(flake)]]">
+                  <a href="[[flake.flake_issue.issue_link]]">[[flake.flake_issue.issue_id]]</a>
+              </template>
+            </td>
+          </tr>
+        </template>
+      </table>
+    </div>
   </template>
   <script>
     (function () {

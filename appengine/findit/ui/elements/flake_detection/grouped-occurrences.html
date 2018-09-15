@@ -11,50 +11,29 @@
       }
 
       flake-occurrence:nth-child(even) {
-        background-color: #d9d9d9;
+        background-color: #F5F7FF;
       }
 
       flake-occurrence:nth-child(odd) {
-        background-color: #f5f5f5;
+        background-color: #E5EBFF;
       }
 
       table {
         border-collapse: collapse;
       }
 
-      table th {
-        padding: 2px;
-        padding-right: 10px;
-        text-align: left;
-        height: 30px;
-        background-color: #4286f4;
-        color: #efefef;
-      }
-
-      .table-scroll {
-        max-height: 150px;
-        overflow-y: auto;
-      }
-
     </style>
       <!-- Expanded by default. -->
         <expandable-card show-more>
           <div slot="expandable-card-header" class="header">
-            [[group_by_field]] ([[grouped_occurrences.length]] occurrences)
+            <b><font size="4">[[group_by_field]] ([[grouped_occurrences.length]] occurrences)</font></b>
           </div>
           <div slot="expandable-card-content">
-            <div class="table-scroll" >
-                <table width="100%">
-                  <tr>
-                    <th width="15%">Occurred at</th>
-                    <th width="35%">Original Step Name</th>
-                    <th width="50%">Original Test Name</th>
-                  </tr>
-                    <template is="dom-repeat" items="[[grouped_occurrences]]" as="occurrence">
-                      <flake-occurrence occurrence_json=[[occurrence]]></flake-occurrence>
-                    </template>
-                </table>
-            </div>
+              <table width="100%">
+                <template is="dom-repeat" items="[[grouped_occurrences]]" as="occurrence">
+                  <flake-occurrence occurrence_json=[[occurrence]]></flake-occurrence>
+                </template>
+              </table>
           </div>
         </expandable-card>
   </template>
@@ -72,6 +51,10 @@
           grouped_occurrences: {
             type: Array
           },
+          show_more: {
+            type: Boolean,
+            value: true
+          }
         },
 
       });

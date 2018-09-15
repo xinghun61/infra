@@ -38,9 +38,10 @@
       }
 
       #header {
-        background-color: #f1f1f1;
+        background-color: #d9d9d9;
         margin: auto;
         text-align: left;
+        border-color: 2px solid #000;
       }
 
       #header::slotted(*) {
@@ -48,15 +49,15 @@
       }
 
       .header-content {
-        width: 80%;
+        width: 98%;
       }
 
       .header-button {
-        width: 20%;
+        width: 2%;
       }
 
       #header paper-icon-button {
-        float: right;
+        float: left;
       }
 
       #content {
@@ -65,11 +66,6 @@
     </style>
     <paper-card id="card">
       <paper-button noink id="header" on-tap="toggleShowMore">
-        <!-- Header content will be displayed always. -->
-        <div class="header-content">
-          <slot name="expandable-card-header"></slot>
-        </div>
-
         <div class="header-button">
           <!-- Button to expand and show more. -->
           <template is="dom-if" if="[[!showMore]]">
@@ -80,6 +76,10 @@
           <template is="dom-if" if="[[showMore]]">
             <paper-icon-button icon="remove"></paper-icon-button>
           </template>
+        </div>
+        <!-- Header content will be displayed always. -->
+        <div class="header-content">
+          <slot name="expandable-card-header"></slot>
         </div>
       </paper-button>
 

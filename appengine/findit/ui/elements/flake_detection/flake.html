@@ -13,6 +13,15 @@
       td:last-child {
         padding-right: 0px;
       }
+
+      table th {
+        padding: 2px;
+        padding-right: 10px;
+        text-align: left;
+        height: 30px;
+        background-color: #4285F4;
+        color: #efefef;
+      }
     </style>
     <table>
         <tr>
@@ -34,7 +43,14 @@
           </tr>
         </template>
     </table>
-
+    <br>
+    <table width="100%">
+      <tr>
+        <th width="15%">Occurred at</th>
+        <th width="30%">Original Step Name</th>
+        <th width="55%">Original Test Name</th>
+      </tr>
+    </table>
     <template is="dom-repeat" items="{{flake_json.occurrences}}">
       <grouped-occurrences
           group_by_field = {{item.group_by_field}}
