@@ -31,7 +31,7 @@ class RankFlakes(BaseHandler):
         'luci_project').strip() or _DEFAULT_LUCI_PROJECT
     test_name = self.request.get('test_name').strip()
     page_size = int(self.request.get('n').strip()) if self.request.get(
-      'n') else _DEFAULT_PAGE_SIZE
+        'n') else _DEFAULT_PAGE_SIZE
 
     if test_name:
       # No paging if search for a test name.
@@ -43,7 +43,7 @@ class RankFlakes(BaseHandler):
         # Only one flake is retrieved, redirects to the flake's page.
         flake = flakes[0]
         return self.CreateRedirect(
-            '/flake/detection/show-flake?key=%s' % flake.key.urlsafe())
+            '/flake/occurrences?key=%s' % flake.key.urlsafe())
 
     else:
       flake_query = Flake.query(Flake.luci_project == luci_project).filter(

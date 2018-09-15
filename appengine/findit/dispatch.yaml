@@ -11,6 +11,12 @@ dispatch:
   - url: "*/flake/detection/*"
     module: frontend
 
+  - url: "*/flake/occurrences"
+    module: frontend
+
+  - url: "*/ranked-flakes"
+    module: frontend
+
   - url: "*/waterfall/cron/*"
     module: waterfall-backend
 

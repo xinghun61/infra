@@ -16,9 +16,8 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 class RankFlakesTest(WaterfallTestCase):
   app_module = webapp2.WSGIApplication(
       [
-          ('/flake/detection/ui/rank-flakes', rank_flakes.RankFlakes),
-      ],
-      debug=True)
+          ('/ranked-flakes', rank_flakes.RankFlakes),
+      ], debug=True)
 
   def setUp(self):
     super(RankFlakesTest, self).setUp()
@@ -68,11 +67,9 @@ class RankFlakesTest(WaterfallTestCase):
 
   def testRankFlakes(self):
     response = self.test_app.get(
-        '/flake/detection/ui/rank-flakes',
-        params={
+        '/ranked-flakes', params={
             'format': 'json',
-        },
-        status=200)
+        }, status=200)
 
     self.assertEqual(
         json.dumps(
@@ -90,14 +87,14 @@ class RankFlakesTest(WaterfallTestCase):
       Flake, 'NormalizeTestName', return_value='normalized_test_name')
   def testSearchRedirect(self, _):
     response = self.test_app.get(
-        '/flake/detection/ui/rank-flakes?test_name=test_name',
+        '/ranked-flakes?test_name=test_name',
         params={
             'format': 'json',
         },
         status=302)
 
     expected_url_suffix = (
-        '/flake/detection/show-flake?key=%s' % self.flake1.key.urlsafe())
+        '/flake/occurrences?key=%s' % self.flake1.key.urlsafe())
 
     self.assertTrue(
         response.headers.get('Location', '').endswith(expected_url_suffix))

@@ -51,7 +51,11 @@ handlers:
   secure: always
 
 # Web UI pages.
-- url: /flake/detection/.*
+- url: /flake/occurrences
+  script: frontend_main.flake_detection_frontend_web_application
+  secure: always
+
+- url: /ranked-flakes
   script: frontend_main.flake_detection_frontend_web_application
   secure: always
 

@@ -152,8 +152,8 @@ class FlakeDetectionIssueGenerator(
     Returns:
       A link to the flake on flake detection UI.
     """
-    url_template = ('https://findit-for-me%s.appspot.com/flake/detection/'
-                    'show-flake?key=%s')
+    url_template = (
+        'https://findit-for-me%s.appspot.com/flake/occurrences?key=%s')
     suffix = '-staging' if IsStaging() else ''
     return url_template % (suffix, self._flake.key.urlsafe())
 

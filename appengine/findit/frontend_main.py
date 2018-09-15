@@ -75,10 +75,10 @@ if appengine_util.IsInProductionApp():
   gae_ts_mon.initialize(waterfall_frontend_web_application)
 
 # flake detection frontend.
-flake_detection_frontend_web_pages_handler_mappings = [
-    ('/flake/detection/show-flake', show_flake.ShowFlake),
-    ('/flake/detection/rank-flakes', rank_flakes.RankFlakes)
-]
+flake_detection_frontend_web_pages_handler_mappings = [('/flake/occurrences',
+                                                        show_flake.ShowFlake),
+                                                       ('/ranked-flakes',
+                                                        rank_flakes.RankFlakes)]
 flake_detection_frontend_web_application = webapp2.WSGIApplication(
     flake_detection_frontend_web_pages_handler_mappings, debug=False)
 if appengine_util.IsInProductionApp():

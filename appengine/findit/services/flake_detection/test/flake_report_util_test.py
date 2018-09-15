@@ -220,15 +220,15 @@ class FlakeReportUtilTest(WaterfallTestCase):
         'labels=Pri-1,Test-Findit-Wrong&components=Tools%3ETest%3EFindit%3E'
         'Flakiness&summary=%5BFindit%5D%20Flake%20Detection%20-%20Wrong%20'
         'result%20for%20test&comment=Link%20to%20flake%20occurrences%3A%20'
-        'https://findit-for-me.appspot.com/flake/detection/show-flake?key={}'
-    ).format(flake.key.urlsafe())
+        'https://findit-for-me.appspot.com/flake/occurrences?key={}').format(
+            flake.key.urlsafe())
 
     expected_description = textwrap.dedent("""
 step: test_label is flaky.
 
 Findit has detected 3 flake occurrences of this test within the
 past 24 hours. List of all flake occurrences can be found at:
-https://findit-for-me.appspot.com/flake/detection/show-flake?key={}.
+https://findit-for-me.appspot.com/flake/occurrences?key={}.
 
 Unless the culprit CL is found and reverted, please disable this test first
 within 30 minutes then find an appropriate owner.
@@ -318,15 +318,15 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
         'labels=Pri-1,Test-Findit-Wrong&components=Tools%3ETest%3EFindit%3E'
         'Flakiness&summary=%5BFindit%5D%20Flake%20Detection%20-%20Wrong%20'
         'result%20for%20test&comment=Link%20to%20flake%20occurrences%3A%20'
-        'https://findit-for-me.appspot.com/flake/detection/show-flake?key={}'
-    ).format(flake.key.urlsafe())
+        'https://findit-for-me.appspot.com/flake/occurrences?key={}').format(
+            flake.key.urlsafe())
 
     expected_comment = textwrap.dedent("""
 step: test_label is flaky.
 
 Findit has detected 3 new flake occurrences of this test. List
 of all flake occurrences can be found at:
-https://findit-for-me.appspot.com/flake/detection/show-flake?key={}.
+https://findit-for-me.appspot.com/flake/occurrences?key={}.
 
 Since this test is still flaky, this issue has been moved back onto the Sheriff
 Bug Queue if it's not already there.
