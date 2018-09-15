@@ -34,36 +34,3 @@ class DetectCQFalseRejectionFlakesCronJobTest(WaterfallTestCase):
         queue_names='flake-detection-queue')
     self.assertEqual(2, len(tasks))
     self.assertTrue(mocked_is_request_from_appself.called)
-
-
-class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
-  app_module = webapp2.WSGIApplication(
-      [
-          ('/flake/detection/detect-cq-false-rejection-flakes',
-           detect_flakes.DetectCQFalseRejectionFlakes),
-      ],
-      debug=True)
-
-  @mock.patch.object(
-      app_identity, 'get_application_id', return_value='findit-for-me-staging')
-  @mock.patch.object(BaseHandler, 'IsRequestFromAppSelf', return_value=True)
-  @mock.patch.object(detect_cq_false_rejection_flakes, 'QueryAndStoreFlakes')
-  def testDetectionIsTriggeredOnStaging(self, mocked_query_and_store_flakes,
-                                        mocked_is_request_from_appself, _):
-    response = self.test_app.get(
-        '/flake/detection/detect-cq-false-rejection-flakes')
-    self.assertEqual(200, response.status_int)
-    self.assertTrue(mocked_query_and_store_flakes.called)
-    self.assertTrue(mocked_is_request_from_appself.called)
-
-  @mock.patch.object(
-      app_identity, 'get_application_id', return_value='findit-for-me')
-  @mock.patch.object(BaseHandler, 'IsRequestFromAppSelf', return_value=True)
-  @mock.patch.object(detect_cq_false_rejection_flakes, 'QueryAndStoreFlakes')
-  def testDetectionIsNotTriggeredOnProduction(
-      self, mocked_query_and_store_flakes, mocked_is_request_from_appself, _):
-    response = self.test_app.get(
-        '/flake/detection/detect-cq-false-rejection-flakes')
-    self.assertEqual(200, response.status_int)
-    self.assertFalse(mocked_query_and_store_flakes.called)
-    self.assertTrue(mocked_is_request_from_appself.called)

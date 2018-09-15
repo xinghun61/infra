@@ -5,7 +5,6 @@
 from google.appengine.api import taskqueue
 
 from common import constants
-from gae_libs.appengine_util import IsStaging
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 from services.flake_detection import detect_cq_false_rejection_flakes
@@ -34,11 +33,6 @@ class DetectCQFalseRejectionFlakes(BaseHandler):
   PERMISSION_LEVEL = Permission.APP_SELF
 
   def HandleGet(self):
-    # Only triggers flake detections on staging for experimental and debugging
-    # purposes.
-    if not IsStaging():
-      return {'return_code': 200}
-
     detect_cq_false_rejection_flakes.QueryAndStoreFlakes()
     flake_tuples_to_report = flake_report_util.GetFlakesWithEnoughOccurrences()
     flake_report_util.ReportFlakesToMonorail(flake_tuples_to_report)
