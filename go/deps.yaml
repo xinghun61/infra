@@ -104,6 +104,7 @@ import:
   subpackages:
   - bigquery/v2
   - cloudkms/v1
+  - compute/v1
   - gensupport
   - google-api-go-generator
   - googleapi
