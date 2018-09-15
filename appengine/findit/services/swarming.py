@@ -24,6 +24,10 @@ def SwarmingHost():
   return waterfall_config.GetSwarmingSettings().get('server_host')
 
 
+def GetSwarmingTaskUrl(task_id):
+  return 'https://{}/task?id={}'.format(SwarmingHost(), task_id)
+
+
 def GetReferredSwarmingTaskRequestInfo(master_name, builder_name, build_number,
                                        step_name, http_client):
   """Gets referred swarming task request.

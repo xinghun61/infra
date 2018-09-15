@@ -117,11 +117,16 @@ class DataPoint(ndb.Model):
     return data_point
 
   def GetSwarmingTaskId(self):
-    """Returns the last element in the list.
+    """Returns the last swarming task in the list.
 
-    Guaranteed to be within flake_constants.CONVERGENCE_PERCENT of the true pass
-    rate if the pass rate converged.
+      Designed to be used to surface a representative swarming task of
+      flakiness. Because Flake Analyzer always moves on as soon as a data point
+      is measured to be flaky, as long as the flakiness is reproducible the
+      last swarming task is guaranteed to be representative of an instance of
+      flakiness.
     """
+    # TODO(crbug.com/884375): Find the task id that best represents flakiness
+    # in case the last one doesn't have any failures (expected to be rare).
     return self.task_ids[-1] if self.task_ids else None
 
   def GetCommitPosition(self, revision):
@@ -629,6 +634,14 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
 
     if any_changes:
       self.put()
+
+  def GetRepresentativeSwarmingTaskId(self):
+    """Gets a representative swarming task for logs of flakiness if any."""
+    if self.data_points:
+      # The first data point triggered always that of the occurrence that
+      # triggered the analysis and is thus the most reliable.
+      return self.data_points[0].GetSwarmingTaskId()
+    return None
 
   # TODO(crbug.com/881920): Capture and store build_id to replace build_number.
 

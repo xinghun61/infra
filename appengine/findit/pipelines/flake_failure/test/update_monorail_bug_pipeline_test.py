@@ -143,7 +143,10 @@ class UpdateMonorailPipelineTestShouldNotUpdate(WaterfallTestCase):
     analysis.original_builder_name = builder_name
     analysis.original_build_number = build_number
     analysis.bug_id = 123
-    analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
+    analysis.data_points = [
+        DataPoint(task_ids=['task_id']),
+        DataPoint(), DataPoint()
+    ]
     analysis.Save()
 
     mock_issue = Issue({})

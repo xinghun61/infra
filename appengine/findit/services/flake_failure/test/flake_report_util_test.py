@@ -495,21 +495,28 @@ class FlakeReportUtilTest(WaterfallTestCase):
     build_number = 100
     step_name = 's'
     test_name = 't'
+    task_id = 'task_id'
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.original_master_name = master_name
     analysis.original_builder_name = builder_name
     analysis.original_build_number = build_number
     analysis.status = analysis_status.COMPLETED
+    analysis.data_points = [DataPoint.Create(task_ids=[task_id])]
     culprit = FlakeCulprit.Create('c', 'r', 123, 'http://')
     culprit.flake_analysis_urlsafe_keys.append(analysis.key.urlsafe())
     culprit.put()
     analysis.culprit_urlsafe_key = culprit.key.urlsafe()
     analysis.confidence_in_culprit = 0.6713
     comment = flake_report_util.GenerateBugComment(analysis)
-    self.assertTrue('culprit r123 with confidence 67.1%' in comment, comment)
+    self.assertIn('culprit r123 with confidence 67.1%', comment)
+    self.assertIn(task_id, comment)
 
-  def testGenerateCommentForLongstandingFlake(self):
+  @mock.patch.object(
+      MasterFlakeAnalysis,
+      'GetRepresentativeSwarmingTaskId',
+      return_value='task_id')
+  def testGenerateCommentForLongstandingFlake(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -524,6 +531,10 @@ class FlakeReportUtilTest(WaterfallTestCase):
     comment = flake_report_util.GenerateBugComment(analysis)
     self.assertTrue('longstanding' in comment, comment)
 
+  @mock.patch.object(
+      MasterFlakeAnalysis,
+      'GetRepresentativeSwarmingTaskId',
+      return_value='task_id')
   @mock.patch.object(Flake, 'NormalizeStepName', return_value='normalized_step')
   @mock.patch.object(
       issue_tracking_service,
@@ -553,12 +564,14 @@ class FlakeReportUtilTest(WaterfallTestCase):
     analysis.Save()
 
     issue_generator = flake_report_util.FlakeAnalysisIssueGenerator(analysis)
+    description = issue_generator.GetDescription()
     self.assertEqual(
         66666, issue_tracking_service.CreateOrUpdateIssue(issue_generator))
     self.assertTrue(mock_create_bug_fn.called)
     self.assertFalse(mock_update_bug_fn.called)
-    self.assertIn('(50.0% confidence)', issue_generator.GetDescription())
-    self.assertIn('Test-Findit-Wrong', issue_generator.GetDescription())
+    self.assertIn('(50.0% confidence)', description)
+    self.assertIn('Test-Findit-Wrong', description)
+    self.assertIn('task_id', description)
 
     fetched_flakes = Flake.query().fetch()
     fetched_flake_issues = FlakeIssue.query().fetch()
@@ -570,6 +583,10 @@ class FlakeReportUtilTest(WaterfallTestCase):
     self.assertEqual(fetched_flakes[0].flake_issue_key,
                      fetched_flake_issues[0].key)
 
+  @mock.patch.object(
+      MasterFlakeAnalysis,
+      'GetRepresentativeSwarmingTaskId',
+      return_value='task_id')
   @mock.patch.object(Flake, 'NormalizeTestName', return_value='normalized_test')
   @mock.patch.object(Flake, 'NormalizeStepName', return_value='normalized_step')
   @mock.patch.object(

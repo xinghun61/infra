@@ -212,10 +212,10 @@ class SwarmingTest(wf_testcase.WaterfallTestCase):
         })
     ]
 
-    self.assertEqual(isolated_sha,
-                     swarming.GetIsolatedShaForStep(master_name, builder_name,
-                                                    build_number, step_name,
-                                                    None))
+    self.assertEqual(
+        isolated_sha,
+        swarming.GetIsolatedShaForStep(master_name, builder_name, build_number,
+                                       step_name, None))
 
   @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags', return_value=None)
   def testGetIsolatedShaForStepNoData(self, _):
@@ -548,3 +548,7 @@ class SwarmingTest(wf_testcase.WaterfallTestCase):
   def testCanFindSwarmingTaskFromBuildForAStep(self, _):
     self.assertFalse(
         swarming.CanFindSwarmingTaskFromBuildForAStep(None, 'm', 'b', 1, 's'))
+
+  def testGetSwarmingTaskUrl(self):
+    task_id = 'task_id'
+    self.assertIn(task_id, swarming.GetSwarmingTaskUrl(task_id))

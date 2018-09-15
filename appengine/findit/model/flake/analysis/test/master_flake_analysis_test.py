@@ -635,3 +635,13 @@ class MasterFlakeAnalysisTest(TestCase):
         DataPoint.Create(build_number=122, commit_position=990)
     ]
     self.assertEqual(122, analysis.GetLowestUpperBoundBuildNumber(900))
+
+  def testGetRepresentativeSwarmingTaskIdNoDataPoints(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    self.assertIsNone(analysis.GetRepresentativeSwarmingTaskId())
+
+  def testGetRepresentativeSwarmingTaskId(self):
+    task_id = 'task_id'
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [DataPoint.Create(task_ids=[task_id])]
+    self.assertEqual(task_id, analysis.GetRepresentativeSwarmingTaskId())
