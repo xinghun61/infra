@@ -113,7 +113,12 @@ a.src=g;m.parentNode.insertBefore(a,m)
 })();
 </script>
 
-<script type="text/javascript" defer src="/static/js/framework/ga.js?version=[app_version]" nonce="[nonce]"></script>
+<script
+  type="module"
+  defer
+  src="/static/jsm/client-logger.jsm?version=[app_version]"
+  nonce="[nonce]">
+</script>
 
 <script type="module" nonce="[nonce]">
 // Polymer elements and polyfills loader.

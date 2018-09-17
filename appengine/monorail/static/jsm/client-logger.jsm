@@ -36,7 +36,7 @@ This would record the following metrics:
   }
 */
 
-class ClientLogger {
+export class ClientLogger {
   constructor(category) {
     this.category = category;
     const startedEvtsStr = sessionStorage[`ClientLogger.${category}.started`];
@@ -189,4 +189,5 @@ class ClientLogger {
   }
 }
 
-
+// Until the rest of the app is in modules, this must be exposed on window.
+window.ClientLogger = ClientLogger;

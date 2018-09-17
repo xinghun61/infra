@@ -53,6 +53,10 @@ handlers:
   static_dir: elements
   secure: always
 
+- url: /static/jsm
+  static_dir: static/jsm
+  mime_type: application/javascript
+
 - url: /static
   static_dir: static
 
