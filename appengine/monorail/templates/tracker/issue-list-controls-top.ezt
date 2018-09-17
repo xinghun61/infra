@@ -112,11 +112,7 @@ runOnLoad(function() {
       _showID('addissuesspec');
     }
   }
-  $('save-issues-hotlists').addEventListener('click', function () {
-    UpdateIssuesInHotlists(onAddIssuesResponse);
-  });
-  $('create-new-hotlist').addEventListener('click', function () {
-    CreateNewHotlistWithIssues(onAddIssuesResponse);
-  });
+  window.__hotlists_dialog.onResponse = onAddIssuesResponse;
+  window.__hotlists_dialog.onFailure = onAddIssuesFailure;
 });
 </script>

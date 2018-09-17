@@ -1124,9 +1124,9 @@ function TKR_flagSpam(isSpam) {
 }
 
 function TKR_addToHotlist() {
-  var selectedIssueRefs = GetSelectedIssues();
+  const selectedIssueRefs = GetSelectedIssuesRefs();
   if (selectedIssueRefs.length > 0) {
-    ShowUpdateHotlistDialog();
+    window.__hotlists_dialog.ShowUpdateHotlistDialog();
   } else {
     alert('Please select some issues to add to a hotlist')
   }
@@ -1148,172 +1148,35 @@ function GetSelectedIssuesRefs() {
   return selectedIssueRefs;
 }
 
-function GetSelectedIssues() {
-  var selectedIssuesRefs = GetSelectedIssuesRefs();
-  var selectedIssues = [];
-  for (var i = 0; i < selectedIssuesRefs.length; i++) {
-    selectedIssues.push(selectedIssuesRefs[i]['project_name'] + ':' +
-      selectedIssuesRefs[i]['id']);
-  }
-  return selectedIssues;
-}
-
-function GetSelectedHotlists() {
-  var selectedHotlistIDs = [];
-  usersHotlists.forEach((hotlistId) => {
-    let checkbox = document.getElementById('cb_remaining_hotlist_' + hotlistId);
-    if (checkbox && checkbox.checked) {
-      selectedHotlistIDs.push(hotlistId);
-    }
-  });
-  return selectedHotlistIDs;
-}
-
-function GetUnselectedHotlists() {
-  let unselectedHotlistIds = [];
-  usersIssueHotlists.forEach((hotlistId) => {
-    let checkbox = document.getElementById('cb_issue_hotlist_' + hotlistId);
-    if(checkbox && !checkbox.checked) {
-      unselectedHotlistIds.push(hotlistId);
-    }
-  });
-  return unselectedHotlistIds;
-}
-
-function ShowUpdateHotlistDialog() {
-  $('update-issues-hotlists').style.display = 'block';
-}
-
-function CreateNewHotlistWithIssues(onResponse, opt_SelectedIssueRefs) {
-  var selectedIssueRefs = opt_SelectedIssueRefs || GetSelectedIssues();
-  var data = {'issue_refs': selectedIssueRefs.join(',')}
-  CS_doPost('/hosting/updateHotlists.do', onResponse, data);
-}
-
-function UpdateIssuesInHotlists(onResponse, opt_SelectedIssueRefs) {
-  let selectedIssueRefs = opt_SelectedIssueRefs || GetSelectedIssues();
-  let hotlistIdsAdd = GetSelectedHotlists();
-  let hotlistIdsRemove = GetUnselectedHotlists();
-  if (hotlistIdsAdd.length > 0 || hotlistIdsRemove.length > 0) {
-    let data = {
-      hotlist_ids_add: hotlistIdsAdd.join(','),
-      hotlist_ids_remove: hotlistIdsRemove.join(','),
-      issue_refs: selectedIssueRefs.join(','),
-    }
-    CS_doPost('/hosting/updateHotlists.do', onResponse, data);
-  } else {
-    alert('Please select/un-select some hotlists');
-  }
-}
-
-function createResponseMessage(response) {
-  let message;
-  if (response['missed'] && response['missed'].length > 0) {
-    message =
-        `The following issues could not be updated: ${response['missed'].join(', ')}`;
-  } else {
-    message = `Successfully updated ${response['updatedHotlistNames'].join(', ')}`;
-  }
-  return message;
-}
-
-function updateHotlistsDialog(response) {
-  let table = $('js-hotlists-table');
-  while(table.firstChild) {
-    table.removeChild(table.firstChild);
-  }
-  updateHotlistRows(
-      table,
-      'cb_issue_hotlist_',
-      response['issueHotlistIds'],
-      response['issueHotlistNames'],
-      true);
-   updateHotlistRows(
-      table,
-      'cb_remaining_hotlist_',
-      response['remainingHotlistIds'],
-      response['remainingHotlistNames'],
-      false);
-  usersHotlists = response['remainingHotlistIds'];
-  usersIssueHotlists = response['issueHotlistIds'];
-}
-
-function updateHotlistRows(table, idPrefix, hotlistIds, hotlistNames, checked) {
-  for (let i = 0; i< hotlistNames.length; i++) {
-    let name = hotlistNames[i];
-    let id = hotlistIds[i];
-    let tr = document.createElement('tr');
-    tr.classList.add('hotlist_rows');
-
-    let cbCell = document.createElement('td');
-    let cb = document.createElement('input');
-    cb.classList.add('checkRangeSelect');
-    cb.setAttribute('id', idPrefix + id);
-    cb.setAttribute('type', 'checkbox');
-    cb.checked = checked;
-    cbCell.appendChild(cb);
-
-    let nameCell = document.createElement('td');
-    let label = document.createElement('label');
-    label.htmlFor = cb.id;
-    label.textContent = name;
-    nameCell.appendChild(label);
-
-    tr.appendChild(cbCell);
-    tr.appendChild(nameCell);
-    table.appendChild(tr);
-  }
-}
-
-function onResponseUpdateUI(event) {
-  var xhr = event.target;
-  if (xhr.readyState != 4) {
-    return;
-  }
-  if (xhr.status != 200) {
-    console.error('200 page error');
-    // TODO(jojwang): fill this in more
-    console.log(xhr.status)
-    return;
-  }
-  var response = CS_parseJSON(xhr);
-  var list = $('user-hotlists-list');
+function onResponseUpdateUI(modifiedHotlists, remainingHotlists) {
+  const list = $('user-hotlists-list');
   while (list.firstChild) {
     list.removeChild(list.firstChild);
   }
-  for (var i = 0; i < response['issueHotlistNames'].length; i++) {
-    var url = response['issueHotlistUrls'][i];
-    var name = response['issueHotlistNames'][i];
-    var hotlistLink = document.createElement('a');
+  remainingHotlists.forEach(hotlist => {
+    const name = hotlist[0];
+    const userId = hotlist[1];
+    const url = `/u/${userId}/hotlists/${name}`;
+    const hotlistLink = document.createElement('a');
     hotlistLink.setAttribute('href', url);
     hotlistLink.textContent = name;
     list.appendChild(hotlistLink);
     list.appendChild(document.createElement('br'));
-  }
-  updateHotlistsDialog(response);
-  message = createResponseMessage(response);
+  });
   $('user-hotlists').style.display = 'block';
+  onAddIssuesResponse(modifiedHotlists);
+}
+
+function onAddIssuesResponse(modifiedHotlists) {
+  const hotlistNames = modifiedHotlists.map(hotlist => hotlist[0]).join(', ');
+  $('notice').textContent = 'Successfully updated ' + hotlistNames;
   $('update-issues-hotlists').style.display = 'none';
-  noticeText = $('notice');
-  $('notice').textContent = message;
   $('alert-table').style.display = 'table';
 }
 
-function onAddIssuesResponse(event) {
-  var xhr = event.target;
-  if (xhr.readyState != 4) {
-    return;
-  }
-  if (xhr.status != 200) {
-    console.error('200 page error');
-    // TODO(jojwang): fill this in more
-    console.log(xhr.status);
-    return;
-  }
-  var response = CS_parseJSON(xhr);
-  message = createResponseMessage(response);
-  noticeText = $('notice');
-  noticeText.textContent = message;
+function onAddIssuesFailure(reason) {
+  $('notice').textContent =
+      'Some hotlists were not updated: ' + reason.description;
   $('update-issues-hotlists').style.display = 'none';
   $('alert-table').style.display = 'table';
 }

@@ -26,6 +26,7 @@
 <script type="text/javascript" defer src="/static/js/tracker/tracker-fields.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="/static/js/tracker/tracker-keystrokes.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="/static/js/tracker/tracker-nav.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="/static/js/tracker/tracker-update-issues-hotlists.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="/static/js/tracker/tracker-util.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="/static/js/tracker/tracker-onload.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="/static/js/tracker/predict.js?version=[app_version]" nonce="[nonce]"></script>

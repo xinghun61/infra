@@ -2,60 +2,10 @@
 <div id="update-issues-hotlists" style="display: none">
   <div id="update-issues-hotlists-dialog">
     <table id="js-hotlists-table">
-    [for user_issue_hotlists]
-      <tr class="hotlist_rows">
-        <td>
-          <input type="checkbox" id="cb_issue_hotlist_[user_issue_hotlists.hotlist_id]" class="checkRangeSelect" checked>
-        </td>
-        <td class="hotlistname">
-          <label for="cb_issue_hotlist_[user_issue_hotlists.hotlist_id]">[user_issue_hotlists.name]</label>
-        </td>
-    [end]
-    [for user_remaining_hotlists]
-      <tr class="hotlist_rows">
-        <td>
-          <input type="checkbox" id="cb_remaining_hotlist_[user_remaining_hotlists.hotlist_id]" class="checkRangeSelect">
-        </td>
-        <td class="hotlistname">
-          <label for="cb_remaining_hotlist_[user_remaining_hotlists.hotlist_id]">[user_remaining_hotlists.name]</label>
-        </td>
-      </tr>
-    [end]
     </table>
     <menu>
       <button id="cancel-update-hotlists" type="reset">Cancel</button>
       <button id="save-issues-hotlists">Save</button>
-      <button id="create-new-hotlist">New hotlist</button>
     </menu>
   </div>
 </div>
-
-<script type="text/javascript" nonce="[nonce]">
-
-  [if-any user_remaining_hotlists]
-  window.usersHotlists = [[]
-    [for user_remaining_hotlists]
-    [user_remaining_hotlists.hotlist_id]
-    [if-index user_remaining_hotlists last][else],[end]
-    [end]
-  ];
-  [else]
-  window.usersHotlists = [[]]
-  [end]
-
-  [if-any user_issue_hotlists]
-  window.usersIssueHotlists = [[]
-    [for user_issue_hotlists]
-    [user_issue_hotlists.hotlist_id]
-    [if-index user_issue_hotlists last][else],[end]
-    [end]
-  ];
-  [else]
-  window.usersIssueHotlists = [[]]
-  [end]
-
-  $('cancel-update-hotlists').addEventListener('click', function() {
-    $('update-issues-hotlists').style.display = 'none';
-  });
-
-</script>

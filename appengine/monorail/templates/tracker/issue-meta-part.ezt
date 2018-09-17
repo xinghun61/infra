@@ -329,23 +329,22 @@
 
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
-  if ($("addacomment")) {
-    $("addacomment").addEventListener("click", function(event) {
+  if ($('addacomment')) {
+    $('addacomment').addEventListener('click', function(event) {
       _openIssueUpdateForm();
       event.preventDefault();
     });
   }
-  window.issueRef = "[issue.project_name]:[issue.local_id]";
   [if-any logged_in_user]
-  $("add-issue-to-hotlist").addEventListener("click", function(event) {
-    ShowUpdateHotlistDialog();
+  window.__hotlists_dialog.issueRef = {
+    project_name: '[issue.project_name]',
+    local_id: '[issue.local_id]',
+  };
+  $('add-issue-to-hotlist').addEventListener('click', function() {
+    window.__hotlists_dialog.ShowUpdateHotlistDialog();
   });
-  $('save-issues-hotlists').addEventListener('click', function () {
-    UpdateIssuesInHotlists(onResponseUpdateUI, [[]"[issue.project_name]:[issue.local_id]"]);
-  });
-  $('create-new-hotlist').addEventListener('click', function () {
-    CreateNewHotlistWithIssues(onResponseUpdateUI, [[]"[issue.project_name]:[issue.local_id]"])
-  });
+  window.__hotlists_dialog.onResponse = onResponseUpdateUI;
+  window.__hotlists_dialog.onFailure = onAddIssuesFailure;
   [end]
 
 });
