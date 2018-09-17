@@ -1,0 +1,227 @@
+diff --git a/bin/autoconf.as b/bin/autoconf.as
+index aa85394..44f02cc 100644
+--- a/bin/autoconf.as
++++ b/bin/autoconf.as
+@@ -84,7 +84,7 @@ exit_missing_arg='
+ # restore font-lock: '
+ 
+ # Variables.
+-: ${AUTOM4TE='@bindir@/@autom4te-name@'}
++: ${AUTOM4TE='@autom4te-name@'}
+ autom4te_options=
+ outfile=
+ verbose=false
+diff --git a/bin/autoheader.in b/bin/autoheader.in
+index d81a313..5b17c63 100644
+--- a/bin/autoheader.in
++++ b/bin/autoheader.in
+@@ -28,7 +28,9 @@ eval 'case $# in 0) exec @PERL@ -S "$0";; *) exec @PERL@ -S "$0" "$@";; esac'
+ 
+ BEGIN
+ {
+-  my $pkgdatadir = $ENV{'autom4te_perllibdir'} || '@pkgdatadir@';
++  use File::Basename;
++  my $PREFIX = dirname(dirname(__FILE__));
++  my $pkgdatadir = $ENV{'autom4te_perllibdir'} || "$PREFIX/share/autoconf";
+   unshift @INC, "$pkgdatadir";
+ 
+   # Override SHELL.  On DJGPP SHELL may not be set to a shell
+@@ -50,7 +52,7 @@ use strict;
+ use vars qw ($config_h %verbatim %symbol);
+ 
+ # Lib files.
+-my $autom4te = $ENV{'AUTOM4TE'} || '@bindir@/@autom4te-name@';
++my $autom4te = $ENV{'AUTOM4TE'} || '@autom4te-name@';
+ local $config_h;
+ my $config_h_in;
+ my @prepend_include;
+diff --git a/bin/autom4te.in b/bin/autom4te.in
+index 11773c9..9180608 100644
+--- a/bin/autom4te.in
++++ b/bin/autom4te.in
+@@ -24,7 +24,9 @@ eval 'case $# in 0) exec @PERL@ -S "$0";; *) exec @PERL@ -S "$0" "$@";; esac'
+ 
+ BEGIN
+ {
+-  my $pkgdatadir = $ENV{'autom4te_perllibdir'} || '@pkgdatadir@';
++  use File::Basename;
++  my $PREFIX = dirname(dirname(__FILE__));
++  my $pkgdatadir = $ENV{'autom4te_perllibdir'} || "$PREFIX/share/autoconf";
+   unshift @INC, $pkgdatadir;
+ 
+   # Override SHELL.  On DJGPP SHELL may not be set to a shell
+@@ -43,8 +45,11 @@ use Autom4te::XFile;
+ use File::Basename;
+ use strict;
+ 
++my $PREFIX = dirname(dirname(__FILE__));
++my $SHARE_DIR = "$PREFIX/share/autoconf";
++
+ # Data directory.
+-my $pkgdatadir = $ENV{'AC_MACRODIR'} || '@pkgdatadir@';
++my $pkgdatadir = $ENV{'AC_MACRODIR'} || $SHARE_DIR;
+ 
+ # $LANGUAGE{LANGUAGE} -- Automatic options for LANGUAGE.
+ my %language;
+@@ -332,7 +337,7 @@ sub parse_args ()
+ 
+   # Process the arguments for real this time.
+   my @trace;
+-  my @prepend_include;
++  my @prepend_include = ($SHARE_DIR);
+   parse_WARNINGS;
+   getopt
+     (
+diff --git a/bin/autoreconf.in b/bin/autoreconf.in
+index acf25d4..503dced 100644
+--- a/bin/autoreconf.in
++++ b/bin/autoreconf.in
+@@ -26,7 +26,9 @@ eval 'case $# in 0) exec @PERL@ -S "$0";; *) exec @PERL@ -S "$0" "$@";; esac'
+ 
+ BEGIN
+ {
+-  my $pkgdatadir = $ENV{'autom4te_perllibdir'} || '@pkgdatadir@';
++  use File::Basename;
++  my $PREFIX = dirname(dirname(__FILE__));
++  my $pkgdatadir = $ENV{'autom4te_perllibdir'} || "$PREFIX/share/autoconf";
+   unshift @INC, $pkgdatadir;
+ 
+   # Override SHELL.  On DJGPP SHELL may not be set to a shell
+@@ -106,9 +108,9 @@ Written by David J. MacKenzie and Akim Demaille.
+ ";
+ 
+ # Lib files.
+-my $autoconf   = $ENV{'AUTOCONF'}   || '@bindir@/@autoconf-name@';
+-my $autoheader = $ENV{'AUTOHEADER'} || '@bindir@/@autoheader-name@';
+-my $autom4te   = $ENV{'AUTOM4TE'}   || '@bindir@/@autom4te-name@';
++my $autoconf   = $ENV{'AUTOCONF'}   || '@autoconf-name@';
++my $autoheader = $ENV{'AUTOHEADER'} || '@autoheader-name@';
++my $autom4te   = $ENV{'AUTOM4TE'}   || '@autom4te-name@';
+ my $automake   = $ENV{'AUTOMAKE'}   || 'automake';
+ my $aclocal    = $ENV{'ACLOCAL'}    || 'aclocal';
+ my $libtoolize = $ENV{'LIBTOOLIZE'} || 'libtoolize';
+diff --git a/bin/autoscan.in b/bin/autoscan.in
+index a67c48d..88d5907 100644
+--- a/bin/autoscan.in
++++ b/bin/autoscan.in
+@@ -25,7 +25,9 @@ eval 'case $# in 0) exec @PERL@ -S "$0";; *) exec @PERL@ -S "$0" "$@";; esac'
+ 
+ BEGIN
+ {
+-  my $pkgdatadir = $ENV{'autom4te_perllibdir'} || '@pkgdatadir@';
++  use File::Basename;
++  my $PREFIX = dirname(dirname(__FILE__));
++  my $pkgdatadir = $ENV{'autom4te_perllibdir'} || "$PREFIX/share/autoconf";
+   unshift @INC, $pkgdatadir;
+ 
+   # Override SHELL.  On DJGPP SHELL may not be set to a shell
+@@ -44,6 +46,9 @@ use File::Basename;
+ use File::Find;
+ use strict;
+ 
++my $PREFIX = dirname(dirname(__FILE__));
++my $SHARE_DIR = "$PREFIX/share/autoconf"
++
+ use vars qw(@cfiles @makefiles @shfiles @subdirs %printed);
+ 
+ # The kind of the words we are looking for.
+@@ -91,10 +96,10 @@ my $configure_scan = 'configure.scan';
+ my $log;
+ 
+ # Autoconf and lib files.
+-my $autom4te = $ENV{'AUTOM4TE'} || '@bindir@/@autom4te-name@';
++my $autom4te = $ENV{'AUTOM4TE'} || '@autom4te-name@';
+ my $autoconf = "$autom4te --language=autoconf";
+ my @prepend_include;
+-my @include = ('@pkgdatadir@');
++my @include = ("$SHARE_DIR");
+ 
+ # $help
+ # -----
+diff --git a/bin/autoupdate.in b/bin/autoupdate.in
+index 9737d49..5038bb6 100644
+--- a/bin/autoupdate.in
++++ b/bin/autoupdate.in
+@@ -24,9 +24,12 @@
+ eval 'case $# in 0) exec @PERL@ -S "$0";; *) exec @PERL@ -S "$0" "$@";; esac'
+     if 0;
+ 
++
+ BEGIN
+ {
+-  my $pkgdatadir = $ENV{'autom4te_perllibdir'} || '@pkgdatadir@';
++  use File::Basename;
++  my $PREFIX = dirname(dirname(__FILE__));
++  my $pkgdatadir = $ENV{'autom4te_perllibdir'} || "$PREFIX/share/autoconf";
+   unshift @INC, $pkgdatadir;
+ 
+   # Override SHELL.  On DJGPP SHELL may not be set to a shell
+@@ -45,12 +48,15 @@ use Autom4te::XFile;
+ use File::Basename;
+ use strict;
+ 
++my $PREFIX = dirname(dirname(__FILE__));
++my $SHARE_DIR = "$PREFIX/share/autoconf";
++
+ # Lib files.
+-my $autom4te = $ENV{'AUTOM4TE'} || '@bindir@/@autom4te-name@';
++my $autom4te = $ENV{'AUTOM4TE'} || '@autom4te-name@';
+ my $autoconf = "$autom4te --language=autoconf";
+ # We need to find m4sugar.
+ my @prepend_include;
+-my @include = ('@pkgdatadir@');
++my @include = ("$SHARE_DIR");
+ my $force = 0;
+ # m4.
+ my $m4 = $ENV{"M4"} || '@M4@';
+diff --git a/bin/ifnames.in b/bin/ifnames.in
+index ba2cd05..6098807 100644
+--- a/bin/ifnames.in
++++ b/bin/ifnames.in
+@@ -31,7 +31,9 @@ eval 'case $# in 0) exec @PERL@ -S "$0";; *) exec @PERL@ -S "$0" "$@";; esac'
+ 
+ BEGIN
+ {
+-  my $pkgdatadir = $ENV{'autom4te_perllibdir'} || '@pkgdatadir@';
++  use File::Basename;
++  my $PREFIX = dirname(dirname(__FILE__));
++  my $pkgdatadir = $ENV{'autom4te_perllibdir'} || "$PREFIX/share/autoconf";
+   unshift @INC, $pkgdatadir;
+ 
+   # Override SHELL.  On DJGPP SHELL may not be set to a shell
+diff --git a/lib/autom4te.in b/lib/autom4te.in
+index a560501..8fa65b4 100644
+--- a/lib/autom4te.in
++++ b/lib/autom4te.in
+@@ -106,7 +106,6 @@ end-language: "Autoreconf-preselections"
+ # This intermediate language is used by aclocal to build aclocal.m4.
+ 
+ begin-language: "Autoconf-without-aclocal-m4"
+-args: --prepend-include '@pkgdatadir@'
+ args: --cache=autom4te.cache
+ args: autoconf/autoconf.m4f
+ args: acsite.m4?
+@@ -133,7 +132,6 @@ end-language: "Autoconf"
+ ## -------- ##
+ 
+ begin-language: "Autotest"
+-args: --prepend-include '@pkgdatadir@'
+ args: autotest/autotest.m4f
+ args: package.m4?
+ args: local.at?
+@@ -147,7 +145,6 @@ end-language: "Autotest"
+ ## ---- ##
+ 
+ begin-language: "M4sh"
+-args: --prepend-include '@pkgdatadir@'
+ args: m4sugar/m4sh.m4f
+ args: --mode 777
+ args: --language M4sugar
+@@ -159,7 +156,6 @@ end-language: "M4sh"
+ ## ------- ##
+ 
+ begin-language: "M4sugar"
+-args: --prepend-include '@pkgdatadir@'
+ args: m4sugar/m4sugar.m4f
+ args: --warnings syntax
+ end-language: "M4sugar"
