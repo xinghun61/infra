@@ -72,10 +72,16 @@ def RunSteps(api):
           'Download sysroot.',
           api.path.join(src_dir, 'build', 'linux', 'sysroot_scripts',
                         'install-sysroot.py'), ['--arch=amd64'])
+
+      clang_update_args = ['--force-local-build', '--without-android',
+                           '--skip-checkout']
+      if [int(x) for x in version.split('.')] >= [71, 0, 3551, 0]:
+        clang_update_args.append('--without-fuchsia')
       api.python(
           'Build clang.',
-          api.path.join(src_dir, 'tools', 'clang', 'scripts', 'update.py'), [
-              '--force-local-build', '--without-android', '--skip-checkout'])
+          api.path.join(src_dir, 'tools', 'clang', 'scripts', 'update.py'),
+          clang_update_args)
+
       gn_bootstrap_args = ['--gn-gen-args=%s' % ' '.join(gn_args)]
       if [int(x) for x in version.split('.')] >= [69, 0, 3491, 0]:
         # TODO(thomasanderson): Add libc++ sources to gn so this flag is not
@@ -108,4 +114,7 @@ def RunSteps(api):
 
 def GenTests(api):
   yield (api.test('basic') + api.properties.generic(version='69.0.3491.0') +
+         api.platform('linux', 64))
+  yield (api.test('clang-no-fuchsia') +
+         api.properties.generic(version='71.0.3551.0') +
          api.platform('linux', 64))

@@ -1,0 +1,130 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
+      "--",
+      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "----",
+      "cp",
+      "gs://chromium-browser-official/chromium-71.0.3551.0.tar.xz",
+      "[START_DIR]/build_dir/chromium-71.0.3551.0.tar.xz"
+    ],
+    "infra_step": true,
+    "name": "gsutil download_url"
+  },
+  {
+    "cmd": [
+      "tar",
+      "-xJf",
+      "[START_DIR]/build_dir/chromium-71.0.3551.0.tar.xz",
+      "-C",
+      "[START_DIR]/build_dir"
+    ],
+    "name": "Extract tarball."
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/build_dir/chromium-71.0.3551.0/build/linux/sysroot_scripts/install-sysroot.py",
+      "--arch=amd64"
+    ],
+    "cwd": "[START_DIR]/build_dir/chromium-71.0.3551.0",
+    "name": "Download sysroot."
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/build_dir/chromium-71.0.3551.0/tools/clang/scripts/update.py",
+      "--force-local-build",
+      "--without-android",
+      "--skip-checkout",
+      "--without-fuchsia"
+    ],
+    "cwd": "[START_DIR]/build_dir/chromium-71.0.3551.0",
+    "name": "Build clang."
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/build_dir/chromium-71.0.3551.0/tools/gn/bootstrap/bootstrap.py",
+      "--gn-gen-args=is_debug=false enable_nacl=false is_official_build=true enable_distro_version_check=false use_system_libjpeg=true use_v8_context_snapshot=false",
+      "--with-sysroot"
+    ],
+    "cwd": "[START_DIR]/build_dir/chromium-71.0.3551.0",
+    "env": {
+      "AR": "[START_DIR]/build_dir/chromium-71.0.3551.0/third_party/llvm-build/Release+Asserts/bin/llvm-ar",
+      "CC": "[START_DIR]/build_dir/chromium-71.0.3551.0/third_party/llvm-build/Release+Asserts/bin/clang",
+      "CXX": "[START_DIR]/build_dir/chromium-71.0.3551.0/third_party/llvm-build/Release+Asserts/bin/clang++",
+      "LD": "[START_DIR]/build_dir/chromium-71.0.3551.0/third_party/llvm-build/Release+Asserts/bin/lld",
+      "LDFLAGS": "-fuse-ld=lld"
+    },
+    "name": "Bootstrap gn."
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/build_dir/chromium-71.0.3551.0/third_party/depot_tools/download_from_google_storage.py",
+      "--no_resume",
+      "--extract",
+      "--no_auth",
+      "--bucket",
+      "chromium-nodejs/8.9.1",
+      "-s",
+      "third_party/node/linux/node-linux-x64.tar.gz.sha1"
+    ],
+    "cwd": "[START_DIR]/build_dir/chromium-71.0.3551.0",
+    "name": "Download nodejs."
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/build_dir/chromium-71.0.3551.0/build/linux/unbundle/replace_gn_files.py",
+      "--system-libraries",
+      "fontconfig",
+      "freetype",
+      "libdrm",
+      "libjpeg",
+      "libwebp",
+      "opus",
+      "snappy",
+      "yasm"
+    ],
+    "cwd": "[START_DIR]/build_dir/chromium-71.0.3551.0",
+    "name": "Unbundle libraries."
+  },
+  {
+    "cmd": [
+      "ninja",
+      "-C",
+      "out/Release",
+      "chrome/installer/linux"
+    ],
+    "cwd": "[START_DIR]/build_dir/chromium-71.0.3551.0",
+    "name": "Build chrome."
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[START_DIR]/build_dir"
+    ],
+    "infra_step": true,
+    "name": "Cleaning build dir."
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]
