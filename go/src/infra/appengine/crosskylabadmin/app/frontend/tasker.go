@@ -20,6 +20,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/google/uuid"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/grpc/grpcutil"
@@ -93,8 +94,12 @@ func triggerRepairOnIdleForBot(ctx context.Context, sc clients.SwarmingClient, r
 		return repairTasksWithIDs(cfg.Swarming.Host, bse.DutID, []string{}), nil
 	}
 
+	logdogURL := generateLogDogURL(cfg)
+	if logdogURL != "" {
+		tags = append(tags, fmt.Sprintf("log_location:%s", logdogURL))
+	}
 	tid, err := sc.CreateTask(ctx, &clients.SwarmingCreateTaskArgs{
-		Cmd:                  luciferAdminTaskCmd(fleet.TaskType_Repair),
+		Cmd:                  luciferAdminTaskCmd(fleet.TaskType_Repair, logdogURL),
 		DutID:                bse.DutID,
 		ExecutionTimeoutSecs: cfg.Tasker.BackgroundTaskExecutionTimeoutSecs,
 		ExpirationSecs:       cfg.Tasker.BackgroundTaskExpirationSecs,
@@ -165,8 +170,12 @@ func triggerRepairOnRepairFailedForBot(ctx context.Context, sc clients.SwarmingC
 		}
 	}
 
+	logdogURL := generateLogDogURL(cfg)
+	if logdogURL != "" {
+		tags = append(tags, fmt.Sprintf("log_location:%s", logdogURL))
+	}
 	tid, err := sc.CreateTask(ctx, &clients.SwarmingCreateTaskArgs{
-		Cmd:                  luciferAdminTaskCmd(fleet.TaskType_Repair),
+		Cmd:                  luciferAdminTaskCmd(fleet.TaskType_Repair, logdogURL),
 		DutID:                bse.DutID,
 		DutState:             "repair_failed",
 		ExecutionTimeoutSecs: cfg.Tasker.BackgroundTaskExecutionTimeoutSecs,
@@ -212,8 +221,8 @@ var dutStateForTask = map[fleet.TaskType]string{
 func ensureBackgroundTasksForBot(ctx context.Context, sc clients.SwarmingClient, req *fleet.EnsureBackgroundTasksRequest, bse *fleetBotSummaryEntity) (*fleet.TaskerBotTasks, error) {
 	cfg := config.Get(ctx)
 	ts := make([]*fleet.TaskerTask, 0, req.TaskCount)
-	tags := withCommonTags(cfg, fmt.Sprintf("background_task:%s_%s", req.Type.String(), bse.DutID))
-	oldTasks, err := sc.ListRecentTasks(ctx, tags, "PENDING", int(req.TaskCount))
+	commonTags := withCommonTags(cfg, fmt.Sprintf("background_task:%s_%s", req.Type.String(), bse.DutID))
+	oldTasks, err := sc.ListRecentTasks(ctx, commonTags, "PENDING", int(req.TaskCount))
 	if err != nil {
 		return nil, errors.Annotate(err, "Failed to list existing tasks of type %s for dut %s",
 			req.Type.String(), bse.DutID).Err()
@@ -227,8 +236,13 @@ func ensureBackgroundTasksForBot(ctx context.Context, sc clients.SwarmingClient,
 
 	newTaskCount := int(req.TaskCount) - len(ts)
 	for i := 0; i < newTaskCount; i++ {
+		tags := append([]string{}, commonTags...)
+		logdogURL := generateLogDogURL(cfg)
+		if logdogURL != "" {
+			tags = append(tags, fmt.Sprintf("log_location:%s", logdogURL))
+		}
 		tid, err := sc.CreateTask(ctx, &clients.SwarmingCreateTaskArgs{
-			Cmd:                  luciferAdminTaskCmd(req.Type),
+			Cmd:                  luciferAdminTaskCmd(req.Type, logdogURL),
 			DutID:                bse.DutID,
 			DutState:             dutStateForTask[req.Type],
 			ExecutionTimeoutSecs: cfg.Tasker.BackgroundTaskExecutionTimeoutSecs,
@@ -295,11 +309,40 @@ func repairTasksWithIDs(host string, dutID string, taskIDs []string) *fleet.Task
 	}
 }
 
-func luciferAdminTaskCmd(ttype fleet.TaskType) []string {
-	return []string{
+// luciferAdminTaskCmd returns a slice of strings for a lucifer admin
+// task command.  logdogURL, if non-empty, is used as the LogDog
+// annotation URL.
+func luciferAdminTaskCmd(ttype fleet.TaskType, logdogURL string) []string {
+	s := []string{
 		skylabSwarmingWorkerPath,
 		"-task-name", fmt.Sprintf("admin_%s", strings.ToLower(ttype.String())),
 	}
+	if logdogURL != "" {
+		s = append(s, "-logdog-annotation-url", logdogURL)
+	}
+	return s
+}
+
+var logdogServers = map[string]string{
+	"chrome-swarming.appspot.com":    "luci-logdog.appspot.com",
+	"chromium-swarm-dev.appspot.com": "luci-logdog-dev.appspot.com",
+}
+
+// generateLogDogURL generates a LogDog annotation URL for the LogDog
+// server corresponding to the configured Swarming server.  If the
+// LogDog server can't be determined, an empty string is returned.
+func generateLogDogURL(cfg *config.Config) string {
+	if s, ok := logdogServers[cfg.Swarming.Host]; ok {
+		return logdogAnnotationURL(s, uuid.New().String())
+	}
+	return ""
+}
+
+// logdogAnnotationURL generates a LogDog annotation URL for the
+// LogDog server.
+func logdogAnnotationURL(server, id string) string {
+	return fmt.Sprintf("logdog://%s/chromeos/skylab/%s/+/annotations",
+		server, id)
 }
 
 func withCommonTags(cfg *config.Config, ts ...string) []string {
