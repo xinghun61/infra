@@ -53,12 +53,17 @@ func NewFair() *Fair {
 func (f *Fair) Generate(sc *rotang.Configuration, start time.Time, previous []rotang.ShiftEntry, members []rotang.Member, shiftsToSchedule int) ([]rotang.ShiftEntry, error) {
 	if len(previous) < 1 {
 		Random(members)
-		return MakeShifts(sc, start, members, shiftsToSchedule), nil
+		return MakeShifts(sc, start, HandleShiftMembers(sc, members), shiftsToSchedule), nil
 	}
 
 	start = previous[len(previous)-1].EndTime
+	membersByShift := HandleShiftMembers(sc, members)
+	entriesByShift := HandleShiftEntries(sc, previous)
+	for i := range sc.Config.Shifts.Shifts {
+		membersByShift[i] = makeFair(membersByShift[i], entriesByShift[i])
+	}
 
-	return MakeShifts(sc, start, makeFair(members, previous), shiftsToSchedule), nil
+	return MakeShifts(sc, start, membersByShift, shiftsToSchedule), nil
 }
 
 // Name returns the name of the Generator.

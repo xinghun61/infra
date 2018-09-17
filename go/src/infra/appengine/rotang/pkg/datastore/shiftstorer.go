@@ -53,13 +53,24 @@ func (s *Store) Oncall(ctx context.Context, at time.Time, rota string) (*rotang.
 		}
 		return nil, err
 	}
-	queryShifts := datastore.NewQuery(shiftEntryKind).Ancestor(datastore.KeyForObj(ctx, &dsShifts)).Gte("EndTime", at.UTC())
+	at = at.UTC()
+	queryShifts := datastore.NewQuery(shiftEntryKind).Ancestor(datastore.KeyForObj(ctx, &dsShifts)).Gte("EndTime", at)
 	var dsEntries []DsShiftEntry
 	if err := datastore.GetAll(ctx, queryShifts, &dsEntries); err != nil {
 		return nil, err
 	}
 	for _, shift := range dsEntries {
-		if at.After(shift.StartTime) && at.Before(shift.EndTime) {
+		insideShift := (at.After(shift.StartTime) || at.Equal(shift.StartTime)) && at.Before(shift.EndTime)
+		splitStart := time.Date(at.Year(), at.Month(), at.Day(),
+			shift.StartTime.Hour(), shift.StartTime.Minute(), shift.StartTime.Second(), shift.StartTime.Nanosecond(), time.UTC)
+		splitEnd := splitStart.Add(shift.EndTime.Sub(shift.StartTime) % (24 * time.Hour))
+		// If the shift is 24 hours we'll end up with a full extra day.
+		if splitStart.Equal(splitEnd) {
+			splitEnd = splitEnd.Add(24 * time.Hour)
+		}
+		insideSplit := (at.After(splitStart) || at.Equal(splitStart)) && at.Before(splitEnd)
+
+		if insideShift && insideSplit {
 			return &rotang.ShiftEntry{
 				Name:      shift.Name,
 				OnCall:    shift.OnCall,

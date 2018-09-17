@@ -16,17 +16,18 @@ import (
 
 var midnight = time.Date(2006, 1, 2, 0, 0, 0, 0, time.UTC)
 
-func stringToShifts(in string) []rotang.ShiftEntry {
+func stringToShifts(in, shiftName string) []rotang.ShiftEntry {
 	var res []rotang.ShiftEntry
 	for tm, c := range in {
 		baseTime := midnight.Add(time.Duration(len(in)-tm) * time.Hour * 24)
 		res = append(res, rotang.ShiftEntry{
+			Name:      shiftName,
 			StartTime: baseTime,
 			EndTime:   baseTime.Add(time.Hour * 24),
 			OnCall: []rotang.ShiftMember{
 				{
 					Email:     fmt.Sprintf("%c@%c.com", c, c),
-					ShiftName: "MTV all day",
+					ShiftName: shiftName,
 				},
 			},
 			Comment: "stringToShifts",
@@ -41,6 +42,17 @@ func stringToMembers(in string) []rotang.Member {
 	for _, c := range in {
 		res = append(res, rotang.Member{
 			Email: fmt.Sprintf("%c@%c.com", c, c),
+		})
+	}
+	return res
+}
+
+func stringToShiftMembers(in, shift string) []rotang.ShiftMember {
+	var res []rotang.ShiftMember
+	for _, c := range in {
+		res = append(res, rotang.ShiftMember{
+			Email:     fmt.Sprintf("%c@%c.com", c, c),
+			ShiftName: shift,
 		})
 	}
 	return res
@@ -94,7 +106,7 @@ func TestMakeFair(t *testing.T) {
 	}}
 
 	for _, tst := range tests {
-		res := makeFair(stringToMembers(tst.members), stringToShifts(tst.shifts))
+		res := makeFair(stringToMembers(tst.members), stringToShifts(tst.shifts, "MTV all day"))
 		if got, want := membersToString(res), tst.want; got != want {
 			t.Errorf("%s: makeFair(_, _ ) = %q want: %q", tst.name, got, want)
 		}
@@ -143,8 +155,8 @@ func TestGenerateFair(t *testing.T) {
 							ShiftName: "Test Shift",
 						},
 					},
-					StartTime: midnight.Add(2 * fullDay),           // Shift skips two days.
-					EndTime:   midnight.Add(2*fullDay + 5*fullDay), // Length of the shift is 5 days.
+					StartTime: midnight.Add(2 * fullDay),                         // Shift skips two days.
+					EndTime:   midnight.Add(2*fullDay + 5*fullDay + time.Hour*8), // Length of the shift is 5 days.
 					Comment:   "",
 				}, {
 					Name: "Test Shift",
@@ -155,7 +167,7 @@ func TestGenerateFair(t *testing.T) {
 						},
 					},
 					StartTime: midnight.Add(9 * fullDay),
-					EndTime:   midnight.Add(9*fullDay + 5*fullDay),
+					EndTime:   midnight.Add(9*fullDay + 5*fullDay + time.Hour*8),
 					Comment:   "",
 				}, {
 					Name: "Test Shift",
@@ -166,7 +178,7 @@ func TestGenerateFair(t *testing.T) {
 						},
 					},
 					StartTime: midnight.Add(16 * fullDay),
-					EndTime:   midnight.Add(16*fullDay + 5*fullDay),
+					EndTime:   midnight.Add(16*fullDay + 5*fullDay + time.Hour*8),
 					Comment:   "",
 				}, {
 					Name: "Test Shift",
@@ -177,7 +189,7 @@ func TestGenerateFair(t *testing.T) {
 						},
 					},
 					StartTime: midnight.Add(23 * fullDay),
-					EndTime:   midnight.Add(23*fullDay + 5*fullDay),
+					EndTime:   midnight.Add(23*fullDay + 5*fullDay + time.Hour*8),
 					Comment:   "",
 				}, {
 					Name: "Test Shift",
@@ -188,7 +200,7 @@ func TestGenerateFair(t *testing.T) {
 						},
 					},
 					StartTime: midnight.Add(30 * fullDay),
-					EndTime:   midnight.Add(30*fullDay + 5*fullDay),
+					EndTime:   midnight.Add(30*fullDay + 5*fullDay + time.Hour*8),
 					Comment:   "",
 				}, {
 					Name: "Test Shift",
@@ -199,7 +211,7 @@ func TestGenerateFair(t *testing.T) {
 						},
 					},
 					StartTime: midnight.Add(37 * fullDay),
-					EndTime:   midnight.Add(37*fullDay + 5*fullDay),
+					EndTime:   midnight.Add(37*fullDay + 5*fullDay + time.Hour*8),
 					Comment:   "",
 				}, {
 					Name: "Test Shift",
@@ -210,7 +222,7 @@ func TestGenerateFair(t *testing.T) {
 						},
 					},
 					StartTime: midnight.Add(44 * fullDay),
-					EndTime:   midnight.Add(44*fullDay + 5*fullDay),
+					EndTime:   midnight.Add(44*fullDay + 5*fullDay + time.Hour*8),
 					Comment:   "",
 				}, {
 					Name: "Test Shift",
@@ -221,7 +233,7 @@ func TestGenerateFair(t *testing.T) {
 						},
 					},
 					StartTime: midnight.Add(51 * fullDay),
-					EndTime:   midnight.Add(51*fullDay + 5*fullDay),
+					EndTime:   midnight.Add(51*fullDay + 5*fullDay + time.Hour*8),
 					Comment:   "",
 				}, {
 					Name: "Test Shift",
@@ -232,7 +244,7 @@ func TestGenerateFair(t *testing.T) {
 						},
 					},
 					StartTime: midnight.Add(58 * fullDay),
-					EndTime:   midnight.Add(58*fullDay + 5*fullDay),
+					EndTime:   midnight.Add(58*fullDay + 5*fullDay + time.Hour*8),
 					Comment:   "",
 				}, {
 					Name: "Test Shift",
@@ -243,7 +255,7 @@ func TestGenerateFair(t *testing.T) {
 						},
 					},
 					StartTime: midnight.Add(65 * fullDay),
-					EndTime:   midnight.Add(65*fullDay + 5*fullDay),
+					EndTime:   midnight.Add(65*fullDay + 5*fullDay + time.Hour*8),
 					Comment:   "",
 				},
 			},
@@ -261,7 +273,8 @@ func TestGenerateFair(t *testing.T) {
 	}
 
 	for _, tst := range tests {
-		shifts, err := generator.Generate(tst.cfg, tst.start, stringToShifts(tst.previous), stringToMembers(tst.members), tst.numShifts)
+		tst.cfg.Members = stringToShiftMembers(tst.members, tst.cfg.Config.Shifts.Shifts[0].Name)
+		shifts, err := generator.Generate(tst.cfg, tst.start, stringToShifts(tst.previous, tst.cfg.Config.Shifts.Shifts[0].Name), stringToMembers(tst.members), tst.numShifts)
 		if got, want := (err != nil), tst.fail; got != want {
 			t.Errorf("%s: Generate(_) = %t want: %t, err: %v", tst.name, got, want, err)
 			continue

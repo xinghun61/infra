@@ -436,17 +436,15 @@ func TestMember(t *testing.T) {
 		email: "oncall@dot.com",
 		store: []rotang.Member{
 			{
-				Name:      "Primary Oncaller",
-				Email:     "oncall@dot.com",
-				ShiftName: "MTV shift",
-				TZ:        *locationUTC,
+				Name:  "Primary Oncaller",
+				Email: "oncall@dot.com",
+				TZ:    *locationUTC,
 			},
 		},
 		want: rotang.Member{
-			Name:      "Primary Oncaller",
-			Email:     "oncall@dot.com",
-			ShiftName: "MTV shift",
-			TZ:        *locationUTC,
+			Name:  "Primary Oncaller",
+			Email: "oncall@dot.com",
+			TZ:    *locationUTC,
 		},
 	}, {
 		name:  "Member not found",
@@ -455,17 +453,15 @@ func TestMember(t *testing.T) {
 		email: "notfound@dot.com",
 		store: []rotang.Member{
 			{
-				Name:      "Primary Oncaller",
-				Email:     "oncall@dot.com",
-				ShiftName: "MTV shift",
-				TZ:        *locationUTC,
+				Name:  "Primary Oncaller",
+				Email: "oncall@dot.com",
+				TZ:    *locationUTC,
 			},
 		},
 		want: rotang.Member{
-			Name:      "Primary Oncaller",
-			Email:     "oncall@dot.com",
-			ShiftName: "MTV shift",
-			TZ:        *locationUTC,
+			Name:  "Primary Oncaller",
+			Email: "oncall@dot.com",
+			TZ:    *locationUTC,
 		},
 	}, {
 		name: "Empty eMail",
@@ -473,10 +469,9 @@ func TestMember(t *testing.T) {
 		ctx:  ctx,
 		store: []rotang.Member{
 			{
-				Name:      "Primary Oncaller",
-				Email:     "oncall@dot.com",
-				ShiftName: "MTV shift",
-				TZ:        *locationUTC,
+				Name:  "Primary Oncaller",
+				Email: "oncall@dot.com",
+				TZ:    *locationUTC,
 			},
 		},
 	},
@@ -530,17 +525,15 @@ func TestUpdateMember(t *testing.T) {
 		ctx:  ctx,
 		store: []rotang.Member{
 			{
-				Name:      "Before update",
-				Email:     "oncall@dot.com",
-				ShiftName: "MTV shift",
-				TZ:        *locationUTC,
+				Name:  "Before update",
+				Email: "oncall@dot.com",
+				TZ:    *locationUTC,
 			},
 		},
 		update: &rotang.Member{
-			Name:      "After update",
-			Email:     "oncall@dot.com",
-			ShiftName: "MTV shift",
-			TZ:        *locationUTC,
+			Name:  "After update",
+			Email: "oncall@dot.com",
+			TZ:    *locationUTC,
 		},
 	}, {
 		name: "No email",
@@ -548,16 +541,14 @@ func TestUpdateMember(t *testing.T) {
 		ctx:  ctx,
 		store: []rotang.Member{
 			{
-				Name:      "Before update",
-				Email:     "oncall@dot.com",
-				ShiftName: "MTV shift",
-				TZ:        *locationUTC,
+				Name:  "Before update",
+				Email: "oncall@dot.com",
+				TZ:    *locationUTC,
 			},
 		},
 		update: &rotang.Member{
-			Name:      "After update",
-			ShiftName: "MTV shift",
-			TZ:        *locationUTC,
+			Name: "After update",
+			TZ:   *locationUTC,
 		},
 	}, {
 		name: "Member not exist",
@@ -565,17 +556,15 @@ func TestUpdateMember(t *testing.T) {
 		ctx:  ctx,
 		store: []rotang.Member{
 			{
-				Name:      "Before update",
-				Email:     "oncall@dot.com",
-				ShiftName: "MTV shift",
-				TZ:        *locationUTC,
+				Name:  "Before update",
+				Email: "oncall@dot.com",
+				TZ:    *locationUTC,
 			},
 		},
 		update: &rotang.Member{
-			Name:      "After update",
-			Email:     "not-exist@dot.com",
-			ShiftName: "MTV shift",
-			TZ:        *locationUTC,
+			Name:  "After update",
+			Email: "not-exist@dot.com",
+			TZ:    *locationUTC,
 		},
 	}}
 
@@ -627,10 +616,9 @@ func TestAllMembers(t *testing.T) {
 		ctx:  ctxCancel,
 		memberPool: []rotang.Member{
 			{
-				Name:      "Primary Oncaller",
-				Email:     "oncall@dot.com",
-				ShiftName: "MTV shift",
-				TZ:        *locationUTC,
+				Name:  "Primary Oncaller",
+				Email: "oncall@dot.com",
+				TZ:    *locationUTC,
 			},
 		},
 	}, {
@@ -638,15 +626,13 @@ func TestAllMembers(t *testing.T) {
 		ctx:  ctx,
 		memberPool: []rotang.Member{
 			{
-				Name:      "Primary Oncaller",
-				Email:     "oncall@dot.com",
-				ShiftName: "MTV shift",
-				TZ:        *locationUTC,
+				Name:  "Primary Oncaller",
+				Email: "oncall@dot.com",
+				TZ:    *locationUTC,
 			}, {
-				Name:      "Secondary Oncaller",
-				Email:     "secondary@dot.com",
-				ShiftName: "MTV shift",
-				TZ:        *locationUTC,
+				Name:  "Secondary Oncaller",
+				Email: "secondary@dot.com",
+				TZ:    *locationUTC,
 			},
 		},
 	}, {
@@ -703,10 +689,9 @@ func TestDeleteMember(t *testing.T) {
 		ctx:   ctxCancel,
 		store: []rotang.Member{
 			{
-				Name:      "Primary Oncaller",
-				Email:     "oncall@dot.com",
-				ShiftName: "MTV shift",
-				TZ:        *locationUTC,
+				Name:  "Primary Oncaller",
+				Email: "oncall@dot.com",
+				TZ:    *locationUTC,
 			},
 		},
 	}, {
@@ -715,10 +700,9 @@ func TestDeleteMember(t *testing.T) {
 		ctx:   ctx,
 		store: []rotang.Member{
 			{
-				Name:      "Primary Oncaller",
-				Email:     "oncall@dot.com",
-				ShiftName: "MTV shift",
-				TZ:        *locationUTC,
+				Name:  "Primary Oncaller",
+				Email: "oncall@dot.com",
+				TZ:    *locationUTC,
 			},
 		},
 	}, {
@@ -727,10 +711,9 @@ func TestDeleteMember(t *testing.T) {
 		ctx:   ctx,
 		store: []rotang.Member{
 			{
-				Name:      "Primary Oncaller",
-				Email:     "oncall@dot.com",
-				ShiftName: "MTV shift",
-				TZ:        *locationUTC,
+				Name:  "Primary Oncaller",
+				Email: "oncall@dot.com",
+				TZ:    *locationUTC,
 			},
 		},
 	},
@@ -783,19 +766,17 @@ func TestCreateMember(t *testing.T) {
 		ctx:   ctx,
 		email: "oncall@dot.com",
 		create: &rotang.Member{
-			Name:      "Primary Oncaller",
-			Email:     "oncall@dot.com",
-			ShiftName: "MTV shift",
-			TZ:        *locationUTC,
+			Name:  "Primary Oncaller",
+			Email: "oncall@dot.com",
+			TZ:    *locationUTC,
 		},
 	}, {
 		name: "Empty eMail",
 		fail: true,
 		ctx:  ctx,
 		create: &rotang.Member{
-			Name:      "Primary Oncaller",
-			ShiftName: "MTV shift",
-			TZ:        *locationUTC,
+			Name: "Primary Oncaller",
+			TZ:   *locationUTC,
 		},
 	}, {
 		name:  "Already existing member",
@@ -804,17 +785,15 @@ func TestCreateMember(t *testing.T) {
 		email: "oncall@dot.com",
 		store: []rotang.Member{
 			{
-				Name:      "Primary Oncaller",
-				Email:     "oncall@dot.com",
-				ShiftName: "MTV shift",
-				TZ:        *locationUTC,
+				Name:  "Primary Oncaller",
+				Email: "oncall@dot.com",
+				TZ:    *locationUTC,
 			},
 		},
 		create: &rotang.Member{
-			Name:      "Primary Oncaller",
-			Email:     "oncall@dot.com",
-			ShiftName: "MTV shift",
-			TZ:        *locationUTC,
+			Name:  "Primary Oncaller",
+			Email: "oncall@dot.com",
+			TZ:    *locationUTC,
 		},
 	},
 	}

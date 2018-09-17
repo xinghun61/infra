@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"infra/appengine/rotang"
+	"infra/appengine/rotang/pkg/algo"
 	"testing"
 	"time"
 
@@ -592,6 +593,45 @@ func TestAddShifts(t *testing.T) {
 			},
 		},
 	}, {
+		name: "Shift with no member",
+		fail: true,
+		rota: "test rota",
+		ctx:  ctx,
+		rotaCfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Description: "Test",
+				Name:        "test rota",
+				Shifts: rotang.ShiftConfig{
+					ShiftMembers: 0,
+				},
+			},
+			Members: []rotang.ShiftMember{
+				{
+					Email: "oncaller@oncall.com",
+				},
+			},
+		},
+		memberPool: []rotang.Member{
+			{
+				Email: "oncaller@oncall.com",
+			},
+			{
+				Email: "notinshift@oncall.com",
+			},
+		},
+		add: []rotang.ShiftEntry{
+			{
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email: "notinshift@oncall.com",
+					},
+				},
+				StartTime: midnight,
+				EndTime:   midnight.Add(8 * time.Hour),
+			},
+		},
+	}, {
 		name: "Add first shift",
 		rota: "test rota",
 		ctx:  ctx,
@@ -815,10 +855,10 @@ func TestOncall(t *testing.T) {
 		fail       bool
 		ctx        context.Context
 		rota       string
+		nrShifts   int
 		rotaCfg    *rotang.Configuration
 		memberPool []rotang.Member
 		time       time.Time
-		entries    []rotang.ShiftEntry
 		want       []rotang.ShiftMember
 	}{{
 		name: "Canceled context",
@@ -857,96 +897,94 @@ func TestOncall(t *testing.T) {
 		},
 		time: time.Now(),
 	}, {
-		name: "Someone oncall",
-		rota: "test rota",
-		ctx:  ctx,
-		time: midnight.Add(4 * time.Hour),
+		name:     "Someone oncall",
+		rota:     "test rota",
+		ctx:      ctx,
+		nrShifts: 1,
+		time:     midnight.Add(4 * time.Hour),
 		rotaCfg: &rotang.Configuration{
 			Config: rotang.Config{
 				Description: "Test",
 				Name:        "test rota",
 				Shifts: rotang.ShiftConfig{
 					ShiftMembers: 1,
+					StartTime:    midnight,
+					Shifts: []rotang.Shift{
+						{
+							Name:     "MTV All Day",
+							Duration: 24 * time.Hour,
+						},
+					},
 				},
 			},
 			Members: []rotang.ShiftMember{
 				{
-					Email: "oncaller@oncall.com",
+					Email:     "oncaller@oncall.com",
+					ShiftName: "MTV All Day",
 				},
 			},
 		},
 		memberPool: []rotang.Member{
 			{
 				Email: "oncaller@oncall.com",
-			},
-		},
-		entries: []rotang.ShiftEntry{
-			{
-				Name: "MTV All Day",
-				OnCall: []rotang.ShiftMember{
-					{
-						Email: "oncaller@oncall.com",
-					},
-				},
-				StartTime: midnight,
-				EndTime:   midnight.Add(8 * time.Hour),
 			},
 		},
 		want: []rotang.ShiftMember{
 			{
-				Email: "oncaller@oncall.com",
+				ShiftName: "MTV All Day",
+				Email:     "oncaller@oncall.com",
 			},
 		},
 	}, {
-		name: "Nobody oncall",
-		rota: "test rota",
-		ctx:  ctx,
-		time: midnight.Add(4 * time.Hour),
+		name:     "Nobody oncall",
+		rota:     "test rota",
+		ctx:      ctx,
+		time:     midnight.Add(4 * time.Hour),
+		nrShifts: 2,
 		rotaCfg: &rotang.Configuration{
 			Config: rotang.Config{
 				Description: "Test",
 				Name:        "test rota",
 				Shifts: rotang.ShiftConfig{
-					ShiftMembers: 1,
+					ShiftMembers: 0,
+					Shifts: []rotang.Shift{
+						{
+							Name:     "MTV All Day",
+							Duration: 24 * time.Hour,
+						},
+					},
 				},
-			},
-			Members: []rotang.ShiftMember{
-				{
-					Email: "oncaller@oncall.com",
-				},
-			},
-		},
-		memberPool: []rotang.Member{
-			{
-				Email: "oncaller@oncall.com",
-			},
-		},
-		entries: []rotang.ShiftEntry{
-			{
-				Name:      "MTV All Day",
-				StartTime: midnight,
-				EndTime:   midnight.Add(8 * time.Hour),
 			},
 		},
 	}, {
-		name: "Multiple oncallers",
-		rota: "test rota",
-		ctx:  ctx,
-		time: midnight.Add(4 * time.Hour),
+		name:     "Multiple oncallers",
+		rota:     "test rota",
+		ctx:      ctx,
+		nrShifts: 2,
+		time:     midnight.Add(4 * time.Hour),
 		rotaCfg: &rotang.Configuration{
 			Config: rotang.Config{
 				Description: "Test",
 				Name:        "test rota",
 				Shifts: rotang.ShiftConfig{
 					ShiftMembers: 2,
+					StartTime:    midnight,
+					Shifts: []rotang.Shift{
+						{
+							Name:     "MTV All day",
+							Duration: 24 * time.Hour,
+						},
+					},
 				},
 			},
 			Members: []rotang.ShiftMember{
 				{
-					Email: "oncaller@oncall.com",
+					Email:     "oncaller@oncall.com",
+					ShiftName: "MTV All day",
 				},
 				{
-					Email: "secondary@oncall.com",
+					Email:     "secondary@oncall.com",
+					ShiftName: "MTV All day",
 				},
 			},
 		},
@@ -958,48 +996,58 @@ func TestOncall(t *testing.T) {
 				Email: "secondary@oncall.com",
 			},
 		},
-		entries: []rotang.ShiftEntry{
-			{
-				Name: "MTV All Day",
-				OnCall: []rotang.ShiftMember{
-					{
-						Email: "oncaller@oncall.com",
-					},
-					{
-						Email: "secondary@oncall.com",
-					},
-				},
-				StartTime: midnight,
-				EndTime:   midnight.Add(8 * time.Hour),
-			},
-		},
 		want: []rotang.ShiftMember{
 			{
-				Email: "oncaller@oncall.com",
+				ShiftName: "MTV All day",
+				Email:     "oncaller@oncall.com",
 			},
 			{
-				Email: "secondary@oncall.com",
+				ShiftName: "MTV All day",
+				Email:     "secondary@oncall.com",
 			},
 		},
 	}, {
-		name: "Multiple shifts",
-		rota: "test rota",
-		ctx:  ctx,
-		time: midnight.Add(12 * time.Hour),
+		name:     "Multiple shifts",
+		rota:     "test rota",
+		ctx:      ctx,
+		time:     midnight.Add(12 * time.Hour),
+		nrShifts: 4,
 		rotaCfg: &rotang.Configuration{
 			Config: rotang.Config{
 				Description: "Test",
 				Name:        "test rota",
 				Shifts: rotang.ShiftConfig{
+					StartTime:    midnight,
 					ShiftMembers: 1,
+					Length:       2,
+					Shifts: []rotang.Shift{
+						{
+							Name:     "MTV Shift",
+							Duration: 8 * time.Hour,
+						},
+						{
+							Name:     "SYD Shift",
+							Duration: 8 * time.Hour,
+						},
+						{
+							Name:     "EU Shift",
+							Duration: 8 * time.Hour,
+						},
+					},
 				},
 			},
 			Members: []rotang.ShiftMember{
 				{
-					Email: "mtv@oncall.com",
+					Email:     "mtv@oncall.com",
+					ShiftName: "MTV Shift",
 				},
 				{
-					Email: "eu@oncall.com",
+					Email:     "syd@oncall.com",
+					ShiftName: "SYD Shift",
+				},
+				{
+					Email:     "eu@oncall.com",
+					ShiftName: "EU Shift",
 				},
 			},
 		},
@@ -1008,34 +1056,16 @@ func TestOncall(t *testing.T) {
 				Email: "mtv@oncall.com",
 			},
 			{
+				Email: "syd@oncall.com",
+			},
+			{
 				Email: "eu@oncall.com",
-			},
-		},
-		entries: []rotang.ShiftEntry{
-			{
-				Name: "MTV Shift",
-				OnCall: []rotang.ShiftMember{
-					{
-						Email: "mtv@oncall.com",
-					},
-				},
-				StartTime: midnight,
-				EndTime:   midnight.Add(8 * time.Hour),
-			},
-			{
-				Name: "Eu Shift",
-				OnCall: []rotang.ShiftMember{
-					{
-						Email: "eu@oncall.com",
-					},
-				},
-				StartTime: midnight.Add(8 * time.Hour),
-				EndTime:   midnight.Add(16 * time.Hour),
 			},
 		},
 		want: []rotang.ShiftMember{
 			{
-				Email: "eu@oncall.com",
+				Email:     "syd@oncall.com",
+				ShiftName: "SYD Shift",
 			},
 		},
 	},
@@ -1055,7 +1085,7 @@ func TestOncall(t *testing.T) {
 				t.Fatalf("%s: store.CreateRotaConfig(ctx, _) failed: %v", tst.name, err)
 			}
 			defer store.DeleteRotaConfig(ctx, tst.rotaCfg.Config.Name)
-			if err := store.AddShifts(ctx, tst.rotaCfg.Config.Name, tst.entries); err != nil {
+			if err := store.AddShifts(ctx, tst.rotaCfg.Config.Name, algo.MakeShifts(tst.rotaCfg, midnight, algo.HandleShiftMembers(tst.rotaCfg, tst.memberPool), tst.nrShifts)); err != nil {
 				t.Fatalf("%s: store.AddShifts(_, _) failed: %v", tst.name, err)
 			}
 			defer store.DeleteAllShifts(ctx, tst.rota)

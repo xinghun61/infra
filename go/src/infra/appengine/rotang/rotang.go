@@ -53,7 +53,8 @@ type ShiftConfig struct {
 	Shifts []Shift
 	// ShiftMembers specifides number of members per shift.
 	ShiftMembers int
-	Generator    string
+	// Generator used to schedule new shifts.
+	Generator string
 }
 
 // Shift represents a shift in a 24h rotation.
@@ -64,7 +65,7 @@ type Shift struct {
 	Duration time.Duration
 }
 
-// ShiftEntry represents one shift.
+// ShiftEntry represents one scheduled shift.
 type ShiftEntry struct {
 	// Name of the Shift this entry belongs to.
 	Name string
@@ -101,7 +102,6 @@ type Member struct {
 	TZ          time.Location
 	OOO         []OOO
 	Preferences []Preference
-	ShiftName   string
 }
 
 // OOO contains one Out-of-Office event.

@@ -26,7 +26,7 @@ func (r *RandomGen) Generate(sc *rotang.Configuration, start time.Time, previous
 	if len(previous) > 0 {
 		start = previous[len(previous)-1].EndTime
 	}
-	return MakeShifts(sc, start, members, shiftsToSchedule), nil
+	return MakeShifts(sc, start, HandleShiftMembers(sc, members), shiftsToSchedule), nil
 }
 
 // Name returns the name of this Generator.
