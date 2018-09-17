@@ -8,6 +8,7 @@ package rotang
 import (
 	"time"
 
+	"go.chromium.org/gae/service/mail"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 )
@@ -178,4 +179,18 @@ type ShiftStorer interface {
 type RotaGenerator interface {
 	Name() string
 	Generate(sc *Configuration, start time.Time, previous []ShiftEntry, members []Member, shiftsToSchedule int) ([]ShiftEntry, error)
+}
+
+// MailSender is used to send E-mails.
+type MailSender interface {
+	Send(context.Context, *mail.Message) error
+}
+
+// MailInfo contains the information usable by the Email subject/body templates.
+type MailInfo struct {
+	RotaName    string
+	ShiftConfig ShiftConfig
+	ShiftEntry  ShiftEntry
+	Member      Member
+	MemberURL   string
 }

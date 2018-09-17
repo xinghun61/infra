@@ -20,12 +20,16 @@ type State struct {
 	memberStore func(context.Context) rotang.MemberStorer
 	shiftStore  func(context.Context) rotang.ShiftStorer
 	configStore func(context.Context) rotang.ConfigStorer
+	mailAddress string
+	mailSender  rotang.MailSender
 }
 
 // Options contains the options used by the handlers.
 type Options struct {
-	URL        string
-	Generators *algo.Generators
+	URL         string
+	Generators  *algo.Generators
+	MailSender  rotang.MailSender
+	MailAddress string
 
 	MemberStore func(context.Context) rotang.MemberStorer
 	ConfigStore func(context.Context) rotang.ConfigStorer
@@ -49,5 +53,7 @@ func New(opt *Options) (*State, error) {
 		memberStore: opt.MemberStore,
 		shiftStore:  opt.ShiftStore,
 		configStore: opt.ConfigStore,
+		mailSender:  opt.MailSender,
+		mailAddress: opt.MailAddress,
 	}, nil
 }

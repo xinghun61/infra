@@ -16,6 +16,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"go.chromium.org/gae/service/mail"
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
@@ -24,6 +25,12 @@ import (
 const (
 	selfURL = "scratch.syd.corp.google.com:8080"
 )
+
+type appengineMailer struct{}
+
+func (a *appengineMailer) Send(ctx context.Context, msg *mail.Message) error {
+	return mail.Send(ctx, msg)
+}
 
 func setupStoreHandlers(o *handlers.Options, sf func(context.Context) *datastore.Store) {
 	o.MemberStore = func(ctx context.Context) rotang.MemberStorer {
@@ -55,6 +62,7 @@ func init() {
 	opts := handlers.Options{
 		URL:        selfURL,
 		Generators: gs,
+		MailSender: &appengineMailer{},
 	}
 	setupStoreHandlers(&opts, datastore.New)
 	h, err := handlers.New(&opts)
