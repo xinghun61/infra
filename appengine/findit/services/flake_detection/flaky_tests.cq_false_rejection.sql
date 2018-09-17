@@ -66,8 +66,8 @@ WITH
     # cq_attempts table is not partitioned.
     ca.attempt_start_msec >= UNIX_MILLIS(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 day))
     AND ca.cq_name in (
-      'chromium/angle/angle',
       'chromium/chromium/src' # iOS does not support (without patch) yet.
+      #, 'chromium/angle/angle' # Projects other than Chromium are not supported for now.
       #, 'webrtc/src'  # WebRTC does not retry (without patch) for failed tests.
       #, 'chromium/v8/v8'  # V8 does not retry (without patch) for failed tests.
     )
