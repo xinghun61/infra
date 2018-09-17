@@ -224,7 +224,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
             flake.key.urlsafe())
 
     expected_description = textwrap.dedent("""
-step: test_label is flaky.
+test_label is flaky.
 
 Findit has detected 3 flake occurrences of this test within the
 past 24 hours. List of all flake occurrences can be found at:
@@ -322,7 +322,7 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
             flake.key.urlsafe())
 
     expected_comment = textwrap.dedent("""
-step: test_label is flaky.
+test_label is flaky.
 
 Findit has detected 3 new flake occurrences of this test. List
 of all flake occurrences can be found at:
