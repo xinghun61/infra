@@ -85,6 +85,7 @@ def ensure_depot_tools():
   if sys.platform.startswith('linux'):
     os.chmod(os.path.join(TEMP_DEPOT_TOOLS, GCLIENT_BIN), 0755)
     os.chmod(os.path.join(TEMP_DEPOT_TOOLS, 'update_depot_tools'), 0755)
+    os.chmod(os.path.join(TEMP_DEPOT_TOOLS, 'cipd'), 0755)
   return TEMP_DEPOT_TOOLS
 
 
