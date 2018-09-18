@@ -96,6 +96,8 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             'normalized_step_name',
         'normalized_test_name':
             'normalized_test_name',
+        'test_suite_name':
+            None,
         'test_label_name':
             'test_label',
         'flake_issue_key':
@@ -231,6 +233,8 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             normalized_step_name,
         'normalized_test_name':
             normalized_test_name,
+        'test_suite_name':
+            None,
         'test_label_name':
             test_label_name,
         'flake_issue_key':

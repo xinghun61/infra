@@ -11,6 +11,25 @@ from model.flake.flake_issue import FlakeIssue
 from services import ci_failure
 
 
+def _GetTestSuiteName(normalized_test_name):
+  """Returns the test suite name of a given test name.
+
+  Assumption: all gtests are in suite.test format, while other tests are not.
+  Currently, only supports gtests, for other type of tests, returns None.
+
+  Args:
+    normalized_test_name: A normalized test name.
+
+  Returns:
+    The test suite name if it's gtest, otherwise None.
+  """
+  test_name_split = normalized_test_name.split('.')
+  if len(test_name_split) == 2:
+    return test_name_split[0]
+
+  return None
+
+
 class Flake(ndb.Model):
   """Parent flake model which different flake occurrences are grouped under."""
 
@@ -49,6 +68,12 @@ class Flake(ndb.Model):
   # intention is to clarify that this name may refer to a group of tests instead
   # of always a spcific one.
   test_label_name = ndb.StringProperty(required=True)
+
+  # test_suite_name is used to identify a suite of tests, and it has different
+  # meanings for different type of tests. For gtest such as 'A/suite.test/0',
+  # test_suite_name is 'suite'.
+  test_suite_name = ndb.ComputedProperty(
+      lambda self: _GetTestSuiteName(self.normalized_test_name))
 
   # The FlakeIssue entity that this flake is associated with.
   flake_issue_key = ndb.KeyProperty(FlakeIssue)

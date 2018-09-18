@@ -115,6 +115,8 @@ class ShowFlakeTest(WaterfallTestCase):
             'normalized_step_name',
         'normalized_test_name':
             'normalized_test_name',
+        'test_suite_name':
+            None,
         'test_label_name':
             'test_label',
         'false_rejection_count_last_week':
