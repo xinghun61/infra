@@ -133,7 +133,9 @@ func swarmingParametersJSON(worker *admin.Worker, recipe *admin.Worker_Recipe, g
 			"override_builder_cfg": map[string]interface{}{
 				"dimensions": worker.Dimensions,
 				"recipe": map[string]interface{}{
-					"name": recipe.Recipe.Name,
+					"name":         recipe.Recipe.Name,
+					"cipd_package": recipe.Recipe.CipdPackage,
+					"cipd_version": recipe.Recipe.CipdVersion,
 				},
 			},
 		},

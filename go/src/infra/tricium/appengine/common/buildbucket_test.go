@@ -22,8 +22,10 @@ func TestParametersJSON(t *testing.T) {
 			Dimensions: []string{"pool:Chrome", "os:Ubuntu13.04"},
 		}
 		recipe := &admin.Worker_Recipe{&tricium.Recipe{
-			Name:       "recipe",
-			Properties: "{\"enable\":\"all\"}",
+			Name:        "recipe",
+			CipdPackage: "infra/recipe_bundle",
+			CipdVersion: "live",
+			Properties:  "{\"enable\":\"all\"}",
 		}}
 		gerrit := map[string]string{
 			"gerrit_project":   "infra",
@@ -50,7 +52,11 @@ func TestParametersJSON(t *testing.T) {
 			"swarming": map[string]interface{}{
 				"override_builder_cfg": map[string]interface{}{
 					"dimensions": []interface{}{"pool:Chrome", "os:Ubuntu13.04"},
-					"recipe":     map[string]interface{}{"name": "recipe"},
+					"recipe": map[string]interface{}{
+						"name":         "recipe",
+						"cipd_package": "infra/recipe_bundle",
+						"cipd_version": "live",
+					},
 				},
 			},
 		}
