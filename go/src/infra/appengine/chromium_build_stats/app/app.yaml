@@ -15,6 +15,9 @@ api_version: go1
 
 instance_class: F4
 
+automatic_scaling:
+  max_instances: 10
+
 handlers:
 - url: /(.+\.ico)
   static_files: static/\1
