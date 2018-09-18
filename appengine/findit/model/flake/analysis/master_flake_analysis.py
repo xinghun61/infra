@@ -643,8 +643,6 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
       return self.data_points[0].GetSwarmingTaskId()
     return None
 
-  # TODO(crbug.com/881920): Capture and store build_id to replace build_number.
-
   # The original build/step/test in which a flake actually occurred.
   # A CQ trybot step has to be mapped to a Waterfall buildbot step.
   # A gtest suite.PRE_PRE_test has to be normalized to suite.test.
@@ -653,6 +651,7 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
   original_build_number = ndb.IntegerProperty(indexed=True)
   original_step_name = ndb.StringProperty(indexed=True)
   original_test_name = ndb.StringProperty(indexed=True)
+  original_build_id = ndb.StringProperty(indexed=False)
 
   # The bug id in which this flake is reported.
   bug_id = ndb.IntegerProperty(indexed=True)

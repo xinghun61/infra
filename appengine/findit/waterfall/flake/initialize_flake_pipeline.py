@@ -169,14 +169,13 @@ def ScheduleAnalysisIfNeeded(
     logging.info('Initializing flake analysis pipeline for key: %s',
                  analysis.key)
 
-    # Initially, only support running the new commit-based flake analysis
-    # pipelines on forced reruns by admins.
-    # TODO(crbug.com/786518): Remove old pipeline and unused config.
-    use_new_pipeline = flake_settings.get('use_new_pipeline_for_rerun', True)
-    assert use_new_pipeline, 'Old flake pipelines are deprecated.'
     _, starting_build_info = build_util.GetBuildInfo(
         normalized_test.master_name, normalized_test.builder_name,
         normalized_test.build_number)
+
+    _, original_build_info = build_util.GetBuildInfo(original_test.master_name,
+                                                     original_test.builder_name,
+                                                     original_test.build_number)
 
     assert starting_build_info, (
         'Failed to get starting build for flake analysis')
@@ -184,6 +183,8 @@ def ScheduleAnalysisIfNeeded(
 
     assert starting_commit_position is not None, (
         'Cannot analyze flake without a starting commit position')
+
+    assert original_build_info, 'Failed to get original build info'
 
     # Get the dimensions of the bot for when try jobs are needed to compile.
     dimensions = try_job_service.GetDimensionsFromBuildInfo(starting_build_info)
@@ -208,6 +209,8 @@ def ScheduleAnalysisIfNeeded(
     pipeline_job.start(queue_name=queue_name)
     analysis.pipeline_status_path = pipeline_job.pipeline_status_path
     analysis.root_pipeline_id = pipeline_job.root_pipeline_id
+    analysis.build_id = starting_build_info.buildbucket_id
+    analysis.original_build_id = original_build_info.buildbucket_id
     analysis.put()
     analysis.LogInfo(
         ('A flake analysis was scheduled using commit-based pipelines with '

@@ -162,11 +162,12 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
   def testRerunAnalysisWithAnalyzeFlakePipeline(
       self, mocked_analysis, mocked_pipeline, mocked_need_analysis,
       mocked_build_info, mock_dimensions, *_):
-
+    buildbucket_id = 'id'
     mock_dimensions.return_value = ['os:Mac', 'cpu:x86']
     start_commit_position = 1000
     start_build_info = BuildInfo('m', 'b 1', 123)
     start_build_info.commit_position = start_commit_position
+    start_build_info.buildbucket_id = buildbucket_id
     mocked_build_info.return_value = (200, start_build_info)
     mocked_analysis.pipeline_status_path.return_value = 'status'
     mocked_analysis.key.urlsafe.return_value = 'urlsafe_key'
@@ -184,6 +185,8 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
         queue_name=constants.DEFAULT_QUEUE)
 
     self.assertIsNotNone(analysis)
+    self.assertEqual(buildbucket_id, analysis.build_id)
+    self.assertEqual(buildbucket_id, analysis.original_build_id)
 
     analyze_flake_input = AnalyzeFlakeInput(
         analysis_urlsafe_key='urlsafe_key',

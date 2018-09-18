@@ -15,6 +15,9 @@ class BaseBuildModel(ndb.Model):  # pragma: no cover
     ndb.Key('KindName', build_key, 'Optional_KindName', optional_id, ...)
   """
 
+  # The ID of the buildbucket build this base build represents.
+  build_id = ndb.StringProperty(indexed=False)
+
   @staticmethod
   def CreateBuildKey(master_name, builder_name, build_number):
     return '%s/%s/%s' % (master_name, builder_name, build_number)
