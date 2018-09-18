@@ -498,6 +498,7 @@ class ThirdPartyPackagesNGApi(recipe_api.RecipeApi):
         resolved = self._resolve_for(unicode(name), platform)
       except UnsupportedPackagePlatform:
         unsupported.add(pkg)
+        continue
       build_plan.append((resolved, unicode(version)))
     build_plan.sort()
 
