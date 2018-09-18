@@ -141,10 +141,17 @@ type NinjaLog struct {
 	Metadata Metadata
 }
 
+const (
+	initialBufSize = 4096
+	maxBufSize     = 128 * 1024
+)
+
 // Parse parses .ninja_log file, with chromium's compile.py metadata.
 func Parse(fname string, r io.Reader) (*NinjaLog, error) {
 	b := bufio.NewReader(r)
 	scanner := bufio.NewScanner(b)
+	buf := make([]byte, initialBufSize)
+	scanner.Buffer(buf, maxBufSize)
 	nlog := &NinjaLog{Filename: fname}
 	lineno := 0
 	if !scanner.Scan() {
@@ -190,6 +197,7 @@ func Parse(fname string, r io.Reader) (*NinjaLog, error) {
 		// missing metadata?
 		return nlog, nil
 	}
+
 	lineno++
 	nlog.Metadata.Raw = scanner.Text()
 	if err := parseMetadata([]byte(nlog.Metadata.Raw), &nlog.Metadata); err != nil {
