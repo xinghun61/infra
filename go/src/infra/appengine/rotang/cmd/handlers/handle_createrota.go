@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"go.chromium.org/gae/service/user"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
 	"google.golang.org/grpc/codes"
@@ -130,7 +130,7 @@ func (h *State) HandleCreateRota(ctx *router.Context) {
 			http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		usr := user.Current(ctx.Context)
+		usr := auth.CurrentUser(ctx.Context)
 		if usr == nil {
 			http.Error(ctx.Writer, "login required", http.StatusForbidden)
 			return
@@ -162,7 +162,7 @@ func (h *State) HandleCreateRota(ctx *router.Context) {
 		return
 	}
 
-	usr := user.Current(ctx.Context)
+	usr := auth.CurrentUser(ctx.Context)
 	if usr == nil {
 		http.Error(ctx.Writer, "Login required", http.StatusForbidden)
 		return

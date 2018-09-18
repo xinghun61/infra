@@ -17,7 +17,9 @@ import (
 	"golang.org/x/net/context"
 
 	"go.chromium.org/gae/service/mail"
+	"go.chromium.org/luci/appengine/gaeauth/server"
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
+	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
 )
@@ -51,7 +53,7 @@ func init() {
 
 	tmw := middleware.Extend(templates.WithTemplates(&templates.Bundle{
 		Loader: templates.FileSystemLoader("../handlers/templates"),
-	}))
+	}), auth.Authenticate(server.UsersAPIAuthMethod{}))
 
 	// Sort out the generators.
 	gs := algo.New()
@@ -74,8 +76,10 @@ func init() {
 	r.GET("/upload", tmw, h.HandleUpload)
 	r.GET("/list", tmw, h.HandleList)
 	r.GET("/createrota", tmw, h.HandleCreateRota)
+	r.GET("/managerota", tmw, h.HandleManageRota)
 
 	r.POST("/createrota", tmw, h.HandleCreateRota)
+	r.POST("/deleterota", tmw, h.HandleDeleteRota)
 	r.POST("/upload", tmw, h.HandleUpload)
 
 	http.DefaultServeMux.Handle("/", r)

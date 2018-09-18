@@ -33,7 +33,7 @@ type Config struct {
 	Description    string
 	Calendar       string
 	TokenID        string
-	Owners         []string
+	Owners         []string // TODO(olakar): Change from email to groups.
 	Email          Email
 	DaysToSchedule int
 	Shifts         ShiftConfig

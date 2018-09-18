@@ -8,7 +8,7 @@ import (
 	"infra/appengine/rotang"
 	"net/http"
 
-	"go.chromium.org/gae/service/user"
+	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
 	"google.golang.org/grpc/codes"
@@ -27,7 +27,7 @@ func (h *State) HandleIndex(ctx *router.Context) {
 		Oncallers []rotang.ShiftMember
 	}{}
 
-	usr := user.Current(ctx.Context)
+	usr := auth.CurrentUser(ctx.Context)
 	if usr == nil {
 		templates.MustRender(ctx.Context, ctx.Writer, "pages/index.html", templates.Args{"Rotas": res})
 		return

@@ -11,7 +11,9 @@ import (
 	"time"
 
 	"github.com/kylelemons/godebug/pretty"
-	"go.chromium.org/gae/service/user"
+	"go.chromium.org/luci/auth/identity"
+	"go.chromium.org/luci/server/auth"
+	"go.chromium.org/luci/server/auth/authtest"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
 	"golang.org/x/net/context"
@@ -380,21 +382,21 @@ func TestGETHandlerCreateRota(t *testing.T) {
 		t.Fatalf("New failed: %v", err)
 	}
 
-	tu := user.GetTestable(ctx)
-
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
 			for _, m := range tst.memberPool {
 				if err := h.memberStore(ctx).CreateMember(ctx, &m); err != nil {
 					t.Fatalf("%s: CreateMember(ctx, _) failed: %v", tst.name, err)
 				}
+				defer h.memberStore(ctx).DeleteMember(ctx, m.Email)
 			}
 			tst.ctx.Context = templates.Use(tst.ctx.Context, &templates.Bundle{
 				Loader: templates.FileSystemLoader(templatesLocation),
 			}, nil)
 			if tst.user != "" {
-				tu.Login(tst.user, "", false)
-				defer tu.Logout()
+				tst.ctx.Context = auth.WithState(tst.ctx.Context, &authtest.FakeState{
+					Identity: identity.Identity("user:" + tst.user),
+				})
 			}
 			h.HandleCreateRota(tst.ctx)
 
@@ -410,8 +412,6 @@ func TestHandleCreateRota(t *testing.T) {
 	ctx := newTestContext()
 	ctxCancel, cancel := context.WithCancel(ctx)
 	cancel()
-
-	tu := user.GetTestable(ctx)
 
 	testTime, err := time.Parse("15:04", "13:37")
 	if err != nil {
@@ -573,8 +573,9 @@ func TestHandleCreateRota(t *testing.T) {
 				Loader: templates.FileSystemLoader(templatesLocation),
 			}, nil)
 			if tst.user != "" {
-				tu.Login(tst.user, "", false)
-				defer tu.Logout()
+				tst.ctx.Context = auth.WithState(tst.ctx.Context, &authtest.FakeState{
+					Identity: identity.Identity("user:" + tst.user),
+				})
 			}
 			tst.ctx.Request = httptest.NewRequest("POST", "/createrota", nil)
 			tst.ctx.Request.Form = tst.values

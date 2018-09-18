@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+<head>
+  <title>Modify Rotation</title>
+</head>
+<body>
+
+<h2>Rotations you manage </h2>
+
+{{if not .Rotas}}
+<i>No rotas managed</i>
+{{end}}
+
+{{with .Rotas}}
+<h3>Rota table</h3>
+<table class="table">
+  <thead>
+    <tr>
+      <th>Name</th>
+     </tr>
+  </thead>
+  <tbody>
+  {{range $c := .}}
+     <tr>
+       <td>{{$c.Config.Name}}</td>
+       <td>
+         <form action="modifyrota" method="post">
+            <button type="submit" name="name" value="{{$c.Config.Name}}">Modify</button>
+         </form>
+       </td>
+       <td>
+         <form action="deleterota" method="post">
+            <button type="submit" name="name" value="{{$c.Config.Name}}">Delete</button>
+         </form>
+       </td>
+     </tr>
+   {{end}}
+  </tbody>
+</table>
+{{end}}
+
+<br>
+<br>
+
+<a href="createrota">Create new rotation</a><br>
+
+</body>
+</html>

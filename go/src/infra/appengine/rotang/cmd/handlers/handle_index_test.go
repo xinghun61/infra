@@ -13,8 +13,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"go.chromium.org/gae/service/user"
-
+	"go.chromium.org/luci/auth/identity"
+	"go.chromium.org/luci/server/auth"
+	"go.chromium.org/luci/server/auth/authtest"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
 )
@@ -35,8 +36,6 @@ func TestHandleIndex(t *testing.T) {
 	ctx := newTestContext()
 	ctxCancel, cancel := context.WithCancel(ctx)
 	cancel()
-
-	tt := user.GetTestable(ctx)
 
 	tests := []struct {
 		name       string
@@ -136,8 +135,9 @@ func TestHandleIndex(t *testing.T) {
 				Loader: templates.FileSystemLoader(templatesLocation),
 			}, nil)
 			if tst.email != "" {
-				tt.Login(tst.email, "", false)
-				defer tt.Logout()
+				tst.ctx.Context = auth.WithState(tst.ctx.Context, &authtest.FakeState{
+					Identity: identity.Identity("user:" + tst.email),
+				})
 			}
 			h.HandleIndex(tst.ctx)
 
