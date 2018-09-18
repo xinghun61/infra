@@ -19,6 +19,7 @@ recipes-py
 *.recipe_deps
 !/cipd/README.md
 reasons.sqlite
-
+# sublime text
+*.sublime-*
 # Used by "infra/tools/dockerbuild".
 .dockerbuild
