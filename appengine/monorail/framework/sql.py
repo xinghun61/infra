@@ -16,6 +16,7 @@ import settings
 if not settings.unit_test_mode:
   import MySQLdb
 
+from framework import exceptions
 from framework import framework_helpers
 
 from infra_libs import ts_mon
@@ -597,7 +598,13 @@ class Statement(object):
     self.main_clause = main_clause  # E.g., SELECT or DELETE
     self.or_where_conds = or_where_conds
     self.insert_args = insert_args or []  # For INSERT statements
+    for row_value in self.insert_args:
+      if not all(_IsValidDBValue(val) for val in row_value):
+        raise exceptions.InputException('Invalid DB value %r' % (row_value,))
     self.update_args = update_args or []  # For UPDATEs
+    for val in self.update_args:
+      if not _IsValidDBValue(val):
+        raise exceptions.InputException('Invalid DB value %r' % val)
     self.duplicate_update_cols = duplicate_update_cols or []  # For REPLACE-ish
 
     self.use_clauses = []
@@ -906,6 +913,12 @@ WHERE_COND_RE_LIST = [
 STMT_STR_RE = re.compile(
     r'\A(SELECT|UPDATE|DELETE|INSERT|REPLACE) [\'-+=!<>%*.,()\w\s]+\Z',
     re.MULTILINE)
+
+
+def _IsValidDBValue(val):
+  if isinstance(val, basestring):
+    return '\x00' not in val
+  return True
 
 
 def _IsValidTableName(table_name):

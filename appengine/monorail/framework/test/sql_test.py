@@ -8,6 +8,7 @@
 import unittest
 
 import settings
+from framework import exceptions
 from framework import sql
 
 
@@ -359,6 +360,11 @@ class StatementTest(unittest.TestCase):
         stmt_str)
     self.assertEqual([[111, 0]], args)
 
+  def testMakeInsert_InvalidString(self):
+    with self.assertRaises(exceptions.InputException):
+      sql.Statement.MakeInsert(
+          'Employee', ['emp_id', 'name'], [(111, 'First \x00 Last')])
+
   def testMakeUpdate(self):
     stmt = sql.Statement.MakeUpdate('Employee', {'fulltime': True})
     stmt_str, args = stmt.Generate()
@@ -366,6 +372,10 @@ class StatementTest(unittest.TestCase):
         'UPDATE Employee SET fulltime=%s',
         stmt_str)
     self.assertEqual([1], args)
+
+  def testMakeUpdate_InvalidString(self):
+    with self.assertRaises(exceptions.InputException):
+      sql.Statement.MakeUpdate('Employee', {'name': 'First \x00 Last'})
 
   def testMakeIncrement(self):
     stmt = sql.Statement.MakeIncrement('Employee', 'years_worked')
@@ -552,6 +562,18 @@ class StatementTest(unittest.TestCase):
 
 
 class FunctionsTest(unittest.TestCase):
+
+  def testIsValidDBValue_NonString(self):
+    self.assertTrue(sql._IsValidDBValue(12))
+    self.assertTrue(sql._IsValidDBValue(True))
+    self.assertTrue(sql._IsValidDBValue(False))
+    self.assertTrue(sql._IsValidDBValue(None))
+
+  def testIsValidDBValue_String(self):
+    self.assertTrue(sql._IsValidDBValue(''))
+    self.assertTrue(sql._IsValidDBValue('hello'))
+    self.assertTrue(sql._IsValidDBValue(u'hello'))
+    self.assertFalse(sql._IsValidDBValue('null \x00 byte'))
 
   def testBoolsToInts_NoChanges(self):
     self.assertEqual(['hello'], sql._BoolsToInts(['hello']))
