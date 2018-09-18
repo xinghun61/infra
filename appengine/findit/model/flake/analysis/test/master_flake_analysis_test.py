@@ -132,7 +132,6 @@ class MasterFlakeAnalysisTest(TestCase):
     analysis.suspect_urlsafe_keys = ['some_key']
     analysis.culprit_urlsafe_key = FlakeCulprit.Create('r', 'a1b2c3d4', 12345,
                                                        'url').key.urlsafe()
-    analysis.try_job_status = analysis_status.COMPLETED
     analysis.Reset()
 
     self.assertEqual(analysis_status.PENDING, analysis.status)
@@ -142,7 +141,6 @@ class MasterFlakeAnalysisTest(TestCase):
     self.assertEqual([], analysis.suspect_urlsafe_keys)
     self.assertEqual([], analysis.data_points)
     self.assertIsNone(analysis.culprit_urlsafe_key)
-    self.assertIsNone(analysis.try_job_status)
 
   def testGetErrorMessage(self):
     cases = [
@@ -156,19 +154,6 @@ class MasterFlakeAnalysisTest(TestCase):
       analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
       analysis.error = error
       self.assertEqual(expected_error_message, analysis.error_message)
-
-  def testGetIterationsToRerun(self):
-    cases = [
-        (-1, {}),
-        (5, {
-            'key': 'value',
-            'iterations_to_rerun': 5
-        }),
-    ]
-    for expected_rerun, algorithm_parameters in cases:
-      analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-      analysis.algorithm_parameters = algorithm_parameters
-      self.assertEqual(expected_rerun, analysis.iterations_to_rerun)
 
   def testGetBuildConfigurationFromKey(self):
     master_name = 'm'
@@ -545,9 +530,9 @@ class MasterFlakeAnalysisTest(TestCase):
 
   def testUpdateSameValue(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.try_job_status = analysis_status.COMPLETED
-    analysis.Update(try_job_status=analysis_status.COMPLETED)
-    self.assertEqual(analysis_status.COMPLETED, analysis.try_job_status)
+    analysis.status = analysis_status.COMPLETED
+    analysis.Update(status=analysis_status.COMPLETED)
+    self.assertEqual(analysis_status.COMPLETED, analysis.status)
 
   def testFindMatchingDataPoint(self):
     old_data_point = DataPoint.Create(

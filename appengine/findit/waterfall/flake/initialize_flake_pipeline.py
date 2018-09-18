@@ -25,7 +25,6 @@ from waterfall import waterfall_config
 
 def _NeedANewAnalysis(normalized_test,
                       original_test,
-                      flake_settings,
                       bug_id=None,
                       allow_new_analysis=False,
                       force=False,
@@ -42,7 +41,6 @@ def _NeedANewAnalysis(normalized_test,
        a CQ trybot step to a Waterfall buildbot step, striping prefix "PRE_"
        from a gtest, etc.
     original_test (TestInfo): Info of the original flaky test.
-    flake_settings (dict): The flake settings run on this analysis.
     bug_id (int): The monorail bug id to update when analysis is done.
     allow_new_analysis (bool): Indicate whether a new analysis is allowed.
     force (bool): Indicate whether to force a rerun of current analysis.
@@ -63,7 +61,6 @@ def _NeedANewAnalysis(normalized_test,
     analysis.Reset()
     analysis.request_time = time_util.GetUTCNow()
     analysis.status = analysis_status.PENDING
-    analysis.algorithm_parameters = flake_settings
     analysis.version = appengine_util.GetCurrentVersion()
     analysis.triggering_user_email = user_email
     analysis.triggering_user_email_obscured = False
@@ -141,12 +138,9 @@ def ScheduleAnalysisIfNeeded(
     A MasterFlakeAnalysis instance.
     None if no analysis was scheduled and the user has no permission to.
   """
-  flake_settings = waterfall_config.GetCheckFlakeSettings()
-
   need_new_analysis, analysis = _NeedANewAnalysis(
       normalized_test,
       original_test,
-      flake_settings,
       bug_id=bug_id,
       allow_new_analysis=allow_new_analysis,
       force=force,

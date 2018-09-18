@@ -243,7 +243,6 @@ class FlakeReportUtilTest(WaterfallTestCase):
     analysis.bug_id = 123
     analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
     analysis.suspected_flake_build_number = 1
-    analysis.algorithm_parameters = {'update_monorail_bug': False}
     self.assertFalse(flake_report_util.ShouldUpdateBugForAnalysis(analysis))
 
   def testShouldUpdateBugForAnalysisNoBugId(self):
@@ -446,8 +445,6 @@ class FlakeReportUtilTest(WaterfallTestCase):
 
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, build_number + 6, step_name, test_name)
-    analysis.algorithm_parameters = copy.deepcopy(
-        DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.Save()
 
     self.assertTrue(flake_report_util.UnderDailyLimit())

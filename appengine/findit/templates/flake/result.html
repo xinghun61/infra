@@ -535,10 +535,6 @@
                 <td>
                   <input type="text" name="upper_bound_commit_position" placeholder="Upper bound" size="10"> </td>
                 <td>
-                  # Iterations:
-                  <input type="text" name="iterations_to_rerun" placeholder="{{ iterations_to_rerun }}" value={{ iterations_to_rerun }} size="1">
-                </td>
-                <td>
                   <input type="submit" value="Analyze">
                 </td>
               </tr>
@@ -551,7 +547,6 @@
       <br>
       <div>
         <b>Metadata:</b>
-        <br> Test rerun: {{ iterations_to_rerun }} times
         <br> {% if request_time %} Request time: {{ request_time }}
         <br> {% endif %} {% if pending_time %} Pending time: {{ pending_time }}
         <br> {% endif %} {% if show_debug_info and duration %} Duration: {{ duration }}

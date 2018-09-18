@@ -104,8 +104,7 @@ class ListFlakes(BaseHandler):
                           culprit_key.pairs()[0][1]).get()
 
       status = analysis.status
-      if (analysis.try_job_status == analysis_status.ERROR or
-          analysis.heuristic_analysis_status == analysis_status.ERROR):
+      if analysis.heuristic_analysis_status == analysis_status.ERROR:
         status = analysis_status.ERROR
 
       timestamp = (

@@ -193,14 +193,6 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
       return None
     return self.error.get('message')
 
-  @property
-  def iterations_to_rerun(self):
-    if not self.algorithm_parameters:
-      return -1
-    return (self.algorithm_parameters.get('swarming_rerun',
-                                          {}).get('iterations_to_rerun') or
-            self.algorithm_parameters.get('iterations_to_rerun'))
-
   @staticmethod
   def _CreateAnalysisId(master_name, builder_name, build_number, step_name,
                         test_name):
@@ -389,12 +381,10 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
     self.error = None
     self.correct_regression_range = None
     self.correct_culprit = None
-    self.algorithm_parameters = None
     self.suspected_build_id = None
     self.suspected_flake_build_number = None
     self.suspect_urlsafe_keys = []
     self.culprit_urlsafe_key = None
-    self.try_job_status = None
     self.data_points = []
     self.result_status = None
     self.last_attempted_build_number = None
@@ -607,7 +597,6 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
       present in kwargs will be untouched.
 
     Args:
-      algorithm_parameters (dict): The analysis' algorithm parameters.
       confidence_in_culprit (float): Confidence score for the suspected culprit
           CL, if any.
       culprit_urlsafe_key (str): The urlsafe-key coresponding to a FlakeCulprit
@@ -622,7 +611,6 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
       status (int): The status of the regression-range identification analysis.
       start_time (datetime): The timestamp that the overall analysis started.
       suspected_build (int): The suspected build number.
-      try_job_status (int): The status of try job/culprit analysis.
     """
     any_changes = False
 
@@ -669,18 +657,6 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
   # is correct.
   correct_culprit = ndb.BooleanProperty(indexed=True)
 
-  # The look back algorithm parameters that were used, as specified in Findit's
-  # configuration. For example,
-  # {
-  #     'iterations_to_rerun': 100,
-  #     'lower_flake_threshold': 0.02,
-  #     'max_build_numbers_to_look_back': 500,
-  #     'max_flake_in_a_row': 4,
-  #     'max_stable_in_a_row': 4,
-  #     'upper_flake_threshold': 0.98
-  # }
-  algorithm_parameters = ndb.JsonProperty(indexed=False)
-
   # The suspected build number to have introduced the flakiness.
   # TODO(crbug.com/799324): Remove once build numbers are deprecated in LUCI.
   suspected_flake_build_number = ndb.IntegerProperty()
@@ -702,12 +678,6 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
   # Heuristic anlysis status. Can be PENDING if not yet ran, SKIPPED if wil not
   # be run, COMPLETED or ERROR if already ran.
   heuristic_analysis_status = ndb.IntegerProperty(indexed=False)
-
-  # The status of try jobs, if any. None if analysis is still performing
-  # swarming reruns, SKIPPED if try jobs will not be triggered, RUNNING when
-  # the first try job is triggered, COMPLETED when the last one finishes, and
-  # ERROR if any try job ends with error.
-  try_job_status = ndb.IntegerProperty(indexed=False)
 
   # The data points used to plot the flakiness graph over a commit history as
   # prescribed by the analysis' lookback algorithm.

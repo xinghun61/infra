@@ -80,32 +80,6 @@ def _CanStartAnalysis(step_metadata, retries, force):
   return _BotsAvailableForTask(step_metadata)
 
 
-def CalculateNumberOfIterationsToRunWithinTimeout(analysis, timeout_per_test):
-  """Calculates the number of iterations that will run in one swarming task.
-
-  Uses the total iterations, target timeout, and the timeout per test to
-  calculate the appropriate amount of test iterations to run.
-
-  Args:
-    analysis (MasterFlakeAnalysis): The analysis being run.
-    timeout_per_test (int): Time, in seconds, that each test will take.
-
-  Returns:
-    (int) Number of iterations to perform in one swarming task.
-  """
-  timeout_per_test = (
-      timeout_per_test
-      if timeout_per_test else flake_constants.DEFAULT_TIMEOUT_PER_TEST_SECONDS)
-  timeout_per_swarming_task = analysis.algorithm_parameters.get(
-      'swarming_rerun', {}).get(
-          'timeout_per_swarming_task_seconds',
-          flake_constants.DEFAULT_TIMEOUT_PER_SWARMING_TASK_SECONDS)
-  iterations = timeout_per_swarming_task / timeout_per_test
-
-  # We should never be running 0 iterations.
-  return max(1, iterations)
-
-
 def CanStartAnalysisImmediately(step_metadata, retries, manually_triggered):
   """Determines whether an analysis can start immediately."""
   return (not ShouldThrottleAnalysis() or
@@ -180,30 +154,6 @@ def GetETAToStartAnalysis(manually_triggered):
 
   # Convert back to UTC.
   return time_util.ConvertPSTToUTC(eta)
-
-
-def GetIterationsToRerun(user_specified_iterations,
-                         analysis,
-                         source='swarming_rerun'):
-  """Retrieves the iterations to rerun from the analysis' settings.
-
-  Uses the analysis, and given source to determine the iterations to rerun
-  for this specific task.
-
-  Args:
-    user_specified_iterations (int): The user specified iterations, will use
-        this instead of analysis info if given.
-    analysis (MasterFlakeAnalysis): Analysis to get the settings from.
-    source (string): Source within the algorithm_parameters of the analysis
-      to get the iterations_to_rerun. These values can only be 'swarming_rerun'
-      or 'try_job_rerun'.
-
-  Returns:
-    (int) Iterations to rerun.
-  """
-  return user_specified_iterations or analysis.algorithm_parameters.get(
-      source, {}).get('iterations_to_rerun',
-                      flake_constants.DEFAULT_SWARMING_TASK_ITERATIONS_TO_RERUN)
 
 
 def ShouldThrottleAnalysis():

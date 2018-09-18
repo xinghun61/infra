@@ -541,7 +541,6 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     commit_position = 1000
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.algorithm_parameters = {'minimum_confidence_to_update_cr': 0.5}
     analysis.confidence_in_culprit = 0.4
 
     culprit = FlakeCulprit.Create(repo_name, revision, commit_position, url)
@@ -597,7 +596,6 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     commit_position = 1000
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.algorithm_parameters = {'minimum_confidence_to_update_cr': 0.5}
     analysis.confidence_in_culprit = 0.6
 
     culprit = FlakeCulprit.Create(repo_name, revision, commit_position, url)

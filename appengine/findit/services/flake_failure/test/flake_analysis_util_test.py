@@ -179,41 +179,6 @@ class FlakeAnalysisUtilTest(WaterfallTestCase):
     self.assertIsNone(culprit.url)
     self.assertEqual(repo_name, culprit.repo_name)
 
-  def testGetIterationsToRerun(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
-    analysis.algorithm_parameters = {
-        'swarming_rerun': {
-            'iterations_to_rerun': 1
-        }
-    }
-    self.assertEqual(1, flake_analysis_util.GetIterationsToRerun(
-        None, analysis))
-    self.assertEqual(2, flake_analysis_util.GetIterationsToRerun(2, analysis))
-
-  def testCalculateNumberOfIterationsToRunWithinTimeout(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.algorithm_parameters = copy.deepcopy(
-        DEFAULT_CONFIG_DATA['check_flake_settings'])
-    analysis.data_points = []
-    analysis.put()
-
-    timeout_per_test = 60
-    self.assertEqual(
-        flake_analysis_util.CalculateNumberOfIterationsToRunWithinTimeout(
-            analysis, timeout_per_test), 60)
-
-  def testCalculateNumberOfIterationsToRunWithinTimeoutWithZero(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.algorithm_parameters = copy.deepcopy(
-        DEFAULT_CONFIG_DATA['check_flake_settings'])
-    analysis.data_points = []
-    analysis.put()
-
-    timeout_per_test = 10000
-    self.assertEqual(
-        flake_analysis_util.CalculateNumberOfIterationsToRunWithinTimeout(
-            analysis, timeout_per_test), 1)
-
   def testGetETAToStartAnalysisWhenManuallyTriggered(self):
     mocked_utcnow = datetime.utcnow()
     self.MockUTCNow(mocked_utcnow)

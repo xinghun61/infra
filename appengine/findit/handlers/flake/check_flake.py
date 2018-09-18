@@ -222,8 +222,7 @@ class CheckFlake(BaseHandler):
     # manual input for a regression range is implemented.
     return (auth_util.IsCurrentUserAdmin() and
             self.request.get('debug') == '1' and
-            analysis.status != analysis_status.RUNNING and
-            analysis.try_job_status != analysis_status.RUNNING)
+            analysis.status != analysis_status.RUNNING)
 
   def _ValidateInput(self, step_name, test_name, bug_id):
     """Ensures the input is valid and generates an error otherwise.
@@ -297,9 +296,7 @@ class CheckFlake(BaseHandler):
   @staticmethod
   def _CanRerunAnalysis(analysis):
     return not (analysis.status == analysis_status.RUNNING or
-                analysis.status == analysis_status.PENDING or
-                analysis.try_job_status == analysis_status.RUNNING or
-                analysis.try_job_status == analysis_status.PENDING)
+                analysis.status == analysis_status.PENDING)
 
   def _HandleRerunAnalysis(self):
     """Rerun an analysis as a response to a user request."""
@@ -352,8 +349,7 @@ class CheckFlake(BaseHandler):
     if not analysis:
       return self.CreateError('Analysis of flake is not found.', 404)
 
-    if (analysis.status != analysis_status.RUNNING and
-        analysis.try_job_status != analysis_status.RUNNING):
+    if analysis.status != analysis_status.RUNNING:
       return self.CreateError('Can\'t cancel an analysis that\'s complete', 400)
 
     if not analysis.root_pipeline_id:
@@ -370,18 +366,8 @@ class CheckFlake(BaseHandler):
         'message': 'The pipeline was aborted manually.'
     }
 
-    # If culprit analysis is running, set the status to error.
-    if analysis.try_job_status == analysis_status.RUNNING:
-      try_job_status = analysis_status.ERROR
-    # if culprit analysis is pending, set it to skipped.
-    elif analysis.try_job_status == analysis_status.PENDING:
-      try_job_status = analysis_status.SKIPPED
-    else:
-      try_job_status = analysis.try_job_status
-
     analysis.Update(
         status=analysis_status.ERROR,
-        try_job_status=try_job_status,
         error=error,
         end_time=time_util.GetUTCNow())
 
@@ -496,8 +482,7 @@ class CheckFlake(BaseHandler):
     culprit_confidence = AsPercentString(culprit_confidence)
 
     status = analysis.status
-    if (analysis.try_job_status == analysis_status.ERROR or
-        analysis.heuristic_analysis_status == analysis_status.ERROR):
+    if analysis.heuristic_analysis_status == analysis_status.ERROR:
       status = analysis_status.ERROR
 
     # Just use utc now when request_time is missing, but don't save it.
@@ -508,9 +493,7 @@ class CheckFlake(BaseHandler):
     if not analysis.end_time:
       analysis.end_time = time_util.GetUTCNow()
 
-    analysis_complete = (
-        analysis.status != analysis_status.RUNNING and
-        analysis.try_job_status != analysis_status.RUNNING)
+    analysis_complete = analysis.status != analysis_status.RUNNING
 
     data = {
         'key':
@@ -544,8 +527,6 @@ class CheckFlake(BaseHandler):
             revision_level_number,
         'error':
             analysis.error_message,
-        'iterations_to_rerun':
-            analysis.iterations_to_rerun,
         'show_admin_options':
             self._ShowCustomRunOptions(analysis),
         'show_debug_options':
