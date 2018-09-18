@@ -20,6 +20,6 @@
   [end]
  [end]
  <th data-col-index="dot" style="width:3ex"><a href="#columnprefs"
-     class="dotdotdot">...</a></th>
+     class="dotdotdot" aria-label="Column list">...</a></th>
 </tr>
 </thead>
