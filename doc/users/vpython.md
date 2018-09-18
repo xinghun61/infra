@@ -460,7 +460,7 @@ option with `vpython`.
 vpython /path/to/script.py
 ```
 
-An explicit specification can be referenced using the `-spec` flag.  Run
+An explicit specification can be referenced using the `-vpython-spec` flag.  Run
 `vpython -help` for more information.
 
 If you don't provide an explicit specification (recommended),
@@ -523,7 +523,7 @@ if this is problematic or a pain point.
 
 `vpython` wheels are stored in CIPD. A list of wheel packages in the
 `infra/python/wheels` space can be viewed
-[here](https://chrome-infra-packages.appspot.com/#/?path=infra/python/wheels).
+[here](https://chrome-infra-packages.appspot.com/p/infra/python/wheels).
 
 A list of wheels that Chrome Operations produces using a wheel production
 script, `dockerbuild`, can be found
