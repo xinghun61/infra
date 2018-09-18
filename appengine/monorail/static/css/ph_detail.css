@@ -52,6 +52,9 @@ pre.prettyprint {
     border-bottom: 2px solid white;
     height: 0;
   }
+  #meta-float {
+    z-index: 1;
+  }
 }
 #meta-float th { white-space: nowrap; }
 .labelediting input { margin: 0 3px 4px 0; }
