@@ -61,7 +61,7 @@
         return;
       }
 
-      $('#test_name').val('');
+      $('#test_filter').val('');
       submitForm();
     }
 
@@ -79,7 +79,7 @@
         submitFormWithCursor($(this));
       });
 
-      $('#test_name').keypress(requestFilteredResults);
+      $('#test_filter').keypress(requestFilteredResults);
 
       if ('{{ cursor }}' == '') {
         $('.next').prop('disabled', true);
@@ -106,7 +106,7 @@
       <input type="text" name="n" id="n" class="hidden" value="{{n}}">
       <input type="text" name="cursor" id="cursor" class="hidden">
       <input type="text" name="direction" id="direction" class="hidden">
-      <input type="text" name="test_name" id="test_name" size="100" placeholder="try searching for test name" value="{{ test_name_filter }}"/>
+      <input type="text" name="test_filter" id="test_filter" size="100" placeholder="Try searching by test name (E.g. CrElementsInputTest.All) or just suite name (E.g. CrElementsInputTest)." value="{{ test_filter }}"/>
     </form>
     <br>
     <div class="paging">

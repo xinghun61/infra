@@ -26,14 +26,13 @@ class RankFlakesTest(WaterfallTestCase):
     self.flake_issue.last_updated_time = datetime.datetime(2018, 1, 1)
     self.flake_issue.put()
 
-    luci_project = 'chromium'
-    normalized_step_name = 'normalized_step_name'
-    normalized_test_name = 'normalized_test_name'
+    self.luci_project = 'chromium'
+    self.normalized_step_name = 'normalized_step_name'
     self.flake1 = Flake.Create(
-        luci_project=luci_project,
-        normalized_step_name=normalized_step_name,
-        normalized_test_name=normalized_test_name,
-        test_label_name=normalized_test_name)
+        luci_project=self.luci_project,
+        normalized_step_name=self.normalized_step_name,
+        normalized_test_name='normalized_test_name',
+        test_label_name='normalized_test_name')
 
     self.flake1.flake_issue_key = self.flake_issue.key
     self.flake1.false_rejection_count_last_week = 2
@@ -41,17 +40,17 @@ class RankFlakesTest(WaterfallTestCase):
     self.flake1.put()
 
     self.flake2 = Flake.Create(
-        luci_project=luci_project,
-        normalized_step_name=normalized_step_name,
-        normalized_test_name='another_test',
-        test_label_name='another_test')
+        luci_project=self.luci_project,
+        normalized_step_name=self.normalized_step_name,
+        normalized_test_name='suite.test',
+        test_label_name='suite.test')
     self.flake2.put()
 
     self.flake3 = Flake.Create(
-        luci_project=luci_project,
-        normalized_step_name=normalized_step_name,
-        normalized_test_name='another_test',
-        test_label_name='another_test')
+        luci_project=self.luci_project,
+        normalized_step_name=self.normalized_step_name,
+        normalized_test_name='suite.test',
+        test_label_name='suite.test')
     self.flake3.false_rejection_count_last_week = 5
     self.flake3.impacted_cl_count_last_week = 2
     self.flake3.put()
@@ -79,7 +78,7 @@ class RankFlakesTest(WaterfallTestCase):
                 'cursor': '',
                 'n': '',
                 'luci_project': '',
-                'test_name_filter': ''
+                'test_filter': ''
             },
             default=str), response.body)
 
@@ -87,7 +86,7 @@ class RankFlakesTest(WaterfallTestCase):
       Flake, 'NormalizeTestName', return_value='normalized_test_name')
   def testSearchRedirect(self, _):
     response = self.test_app.get(
-        '/ranked-flakes?test_name=test_name',
+        '/ranked-flakes?test_filter=test_name',
         params={
             'format': 'json',
         },
@@ -98,3 +97,23 @@ class RankFlakesTest(WaterfallTestCase):
 
     self.assertTrue(
         response.headers.get('Location', '').endswith(expected_url_suffix))
+
+  def testGetFlakesByTestSuiteName(self):
+    response = self.test_app.get(
+        '/ranked-flakes?test_filter=suite',
+        params={
+            'format': 'json',
+        },
+        status=200)
+
+    self.assertEqual(
+        json.dumps(
+            {
+                'flakes_data': [self.flake3_dict],
+                'prev_cursor': '',
+                'cursor': '',
+                'n': '',
+                'luci_project': '',
+                'test_filter': 'suite'
+            },
+            default=str), response.body)

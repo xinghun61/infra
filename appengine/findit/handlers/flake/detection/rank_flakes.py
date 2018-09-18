@@ -12,13 +12,22 @@ _DEFAULT_PAGE_SIZE = 100
 _DEFAULT_LUCI_PROJECT = 'chromium'
 
 
-def _GetFlakesByTestName(test_name, luci_project):
+def _GetFlakesByTestFilter(test_name, luci_project):
   """Gets flakes by test name, then sorts them by occurrences."""
+  test_suite_search = False
   flakes = Flake.query(Flake.normalized_test_name == Flake.NormalizeTestName(
       test_name)).filter(Flake.luci_project == luci_project).fetch()
+
+  if not flakes:
+    # It's possible that the test_name is actually test suite.
+    flakes = Flake.query(Flake.test_suite_name == test_name).filter(
+        Flake.luci_project == luci_project).fetch()
+    test_suite_search = True
+
+  flakes = [f for f in flakes if f.false_rejection_count_last_week > 0]
   flakes.sort(
       key=lambda flake: flake.false_rejection_count_last_week, reverse=True)
-  return flakes
+  return flakes, test_suite_search
 
 
 class RankFlakes(BaseHandler):
@@ -29,18 +38,22 @@ class RankFlakes(BaseHandler):
   def HandleGet(self):
     luci_project = self.request.get(
         'luci_project').strip() or _DEFAULT_LUCI_PROJECT
-    test_name = self.request.get('test_name').strip()
+    test_filter = self.request.get('test_filter').strip()
     page_size = int(self.request.get('n').strip()) if self.request.get(
         'n') else _DEFAULT_PAGE_SIZE
 
-    if test_name:
+    if test_filter:
       # No paging if search for a test name.
-      flakes = _GetFlakesByTestName(test_name, luci_project)
+      flakes, test_suite_search = _GetFlakesByTestFilter(
+          test_filter, luci_project)
       prev_cursor = ''
       cursor = ''
 
-      if len(flakes) == 1:
-        # Only one flake is retrieved, redirects to the flake's page.
+      if len(flakes) == 1 and not test_suite_search:
+        # Only one flake is retrieved when searching a test by full name,
+        # redirects to the flake's page.
+        # In the case when searching by test suite name, should not redirect
+        # even if only one flake is retrieved.
         flake = flakes[0]
         return self.CreateRedirect(
             '/flake/occurrences?key=%s' % flake.key.urlsafe())
@@ -81,7 +94,7 @@ class RankFlakes(BaseHandler):
             page_size if page_size != _DEFAULT_PAGE_SIZE else '',
         'luci_project': (luci_project
                          if luci_project != _DEFAULT_LUCI_PROJECT else ''),
-        'test_name_filter':
-            test_name
+        'test_filter':
+            test_filter
     }
     return {'template': 'flake/detection/rank_flakes.html', 'data': data}
