@@ -52,19 +52,16 @@ WITH
           # ca.patchset
         ELSE ca.patchset  # String type.
       END) AS patchset_group_id,
-    # If the latest patchset is committed, other patchsets in the same group are
-    # considered as effectively committed.
-    LOGICAL_OR(ca.committed) AS committed,
     # As CQ will reuse successful builds within the last 24 hours from an early
     # equivalent patchset (including the patchset itself), dedup is needed.
     ARRAY_AGG(DISTINCT build_id) AS build_ids
   FROM
-      `chrome-infra-events.aggregated.cq_attempts` AS ca
+      `chrome-infra-events.raw_events.cq` AS ca
     CROSS JOIN
-      UNNEST(ca.contributing_bbucket_ids) AS build_id
+      UNNEST(ca.contributing_buildbucket_ids) AS build_id
   WHERE
-    # cq_attempts table is not partitioned.
-    ca.attempt_start_msec >= UNIX_MILLIS(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 day))
+    # cq_events table is not partitioned.
+    ca.attempt_start_usec >= UNIX_MICROS(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 day))
     AND ca.cq_name in (
       'chromium/chromium/src' # iOS does not support (without patch) yet.
       #, 'chromium/angle/angle' # Projects other than Chromium are not supported for now.
@@ -90,7 +87,6 @@ WITH
     pg.cq_name,
     pg.issue,
     pg.patchset_group_id,
-    ANY_VALUE(pg.committed) AS committed,
     STRUCT(
       build.builder.project,
       build.builder.bucket,
@@ -162,7 +158,6 @@ WITH
     # Info about the patch.
     failed_build.gerrit_change,
     fbg.patchset_group_id AS patchset_group_id,
-    fbg.committed,
     # Info about the code checkouted in the build.
     failed_build.gitiles_repository,
     failed_build.gitiles_revision_cp,
@@ -334,7 +329,6 @@ SELECT
   entire_build.gerrit_change.change AS gerrit_cl_id,
   entire_build.gerrit_change.patchset AS gerrit_cl_patchset_number,
   entire_build.patchset_group_id AS gerrit_cl_patchset_group_number,
-  entire_build.committed,
   # Info about the code checkout.
   entire_build.gitiles_repository,
   entire_build.gitiles_revision_cp,
