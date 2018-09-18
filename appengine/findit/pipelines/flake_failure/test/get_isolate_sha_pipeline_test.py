@@ -83,13 +83,13 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     gitiles_project = 'chromium/src'
     gitiles_ref = 'refs/heads/master'
     gerrit_patch = ''
-    target_name = 'browser_tests'
+    isolate_target_name = 'browser_tests'
     isolated_hash = 'isolated_hash'
 
     isolated_target = IsolatedTarget.Create(
         build_id, luci_name, bucket_name, master_name, builder_name,
-        gitiles_host, gitiles_project, gitiles_ref, gerrit_patch, target_name,
-        isolated_hash, commit_position)
+        gitiles_host, gitiles_project, gitiles_ref, gerrit_patch,
+        isolate_target_name, isolated_hash, commit_position)
     isolated_target.put()
 
     get_sha_input = GetIsolateShaForTargetInput(
@@ -120,14 +120,6 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
                 'f5dc74a384d48f1a0929dc056cadae2a0019f8b5',
             'previously_cached_revision':
                 '17b7ff2ff8e107b0e9cebcd9d6894072acc98639',
-            'result': {
-                'f5dc74a384d48f1a0929dc056cadae2a0019f8b5': {
-                    'interactive_ui_tests': {
-                        'status': 'skipped',
-                        'valid': True
-                    }
-                }
-            },
             'isolated_tests': {
                 'interactive_ui_tests':
                     'ddd3e494ed97366f99453e5a8321b77449f26a58'
@@ -173,7 +165,7 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     gitiles_project = 'chromium/src'
     gitiles_ref = 'refs/heads/master'
     gerrit_patch = ''
-    target_name = 'browser_tests'
+    isolate_target_name = 'browser_tests'
     step_name = 's'
     isolated_hash = 'isolated_hash'
 
@@ -195,15 +187,15 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
 
     isolated_target = IsolatedTarget.Create(
         build_id, luci_name, bucket_name, parent_mastername, parent_buildername,
-        gitiles_host, gitiles_project, gitiles_ref, gerrit_patch, target_name,
-        isolated_hash, requested_commit_position)
+        gitiles_host, gitiles_project, gitiles_ref, gerrit_patch,
+        isolate_target_name, isolated_hash, requested_commit_position)
     isolated_target.put()
 
     step_metadata = StepMetadata(
         canonical_step_name=None,
         dimensions=None,
         full_step_name=None,
-        isolate_target_name=target_name,
+        isolate_target_name=isolate_target_name,
         patched=True,
         swarm_task_ids=None,
         waterfall_buildername=None,
@@ -250,12 +242,12 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     cache_name = 'cache'
     try_job_id = 'try_job_id'
     url = 'url'
-    target_name = 'browser_tests'
+    isolate_target_name = 'browser_tests'
     step_metadata = StepMetadata(
         canonical_step_name=None,
         dimensions=None,
         full_step_name=None,
-        isolate_target_name=target_name,
+        isolate_target_name=isolate_target_name,
         patched=True,
         swarm_task_ids=None,
         waterfall_buildername=None,
@@ -271,14 +263,14 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
 
     isolated_target = IsolatedTarget.Create(
         build_id, luci_name, bucket_name, master_name, builder_name,
-        gitiles_host, gitiles_project, gitiles_ref, gerrit_patch, target_name,
-        isolated_hash, containing_build_commit_position)
+        gitiles_host, gitiles_project, gitiles_ref, gerrit_patch,
+        isolate_target_name, isolated_hash, containing_build_commit_position)
     isolated_target.put()
 
     mocked_cache.return_value = cache_name
     mocked_dimensions.return_value = dimensions
     expected_isolated_tests = IsolatedTests()
-    expected_isolated_tests[test_name] = expected_sha
+    expected_isolated_tests[isolate_target_name] = expected_sha
 
     build = BuildInfo(master_name, builder_name, build_number)
     build.commit_position = containing_build_commit_position
@@ -296,6 +288,7 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
         analysis_urlsafe_key=analysis.key.urlsafe(),
         revision=requested_revision,
         flake_cache_name=cache_name,
+        isolate_target_name=isolate_target_name,
         dimensions=ListOfBasestring.FromSerializable(dimensions),
         urlsafe_try_job_key=try_job.key.urlsafe())
 
@@ -308,7 +301,6 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
         upper_bound_build_number=analysis.build_number)
 
     expected_try_job_report = FlakeTryJobReport(
-        result={},
         isolated_tests=expected_isolated_tests,
         last_checked_out_revision=None,
         previously_cached_revision=None,
@@ -351,12 +343,12 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     requested_revision = 'r1000'
     expected_sha = 'sha1'
     build_url = 'url'
-    target_name = 'browser_tests'
+    isolate_target_name = 'browser_tests'
     step_metadata = StepMetadata(
         canonical_step_name=None,
         dimensions=None,
         full_step_name=None,
-        isolate_target_name=target_name,
+        isolate_target_name=isolate_target_name,
         patched=True,
         swarm_task_ids=None,
         waterfall_buildername=None,

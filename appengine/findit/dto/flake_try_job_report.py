@@ -10,7 +10,3 @@ class FlakeTryJobReport(TryJobReport):
   """Represents output of a flake try job."""
   # Maps the step to the isolate sha of the compiled binaries.
   isolated_tests = IsolatedTests
-
-  # Legacy field returned in try job results.
-  # TODO(crbug.com/786518): Remove after switching to merged pipeline.
-  result = dict

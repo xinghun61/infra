@@ -159,7 +159,7 @@ class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
     builder_name = analysis.builder_name
     commit_position = parameters.commit_position
     step_name = analysis.step_name
-    target_name = parameters.step_metadata.isolate_target_name
+    isolate_target_name = parameters.step_metadata.isolate_target_name
 
     _, reference_build_info = build_util.GetBuildInfo(master_name, builder_name,
                                                       analysis.build_number)
@@ -170,8 +170,8 @@ class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
     targets = (
         IsolatedTarget.FindIsolateAtOrAfterCommitPositionByMaster(
             parent_mastername, parent_buildername, constants.GITILES_HOST,
-            constants.GITILES_PROJECT, constants.GITILES_REF, target_name,
-            commit_position))
+            constants.GITILES_PROJECT, constants.GITILES_REF,
+            isolate_target_name, commit_position))
 
     # TODO(crbug.com/872992): Remove this entire branch's fallback logic once
     # LUCI migration is complete.
@@ -229,6 +229,7 @@ class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
         revision=parameters.revision,
         flake_cache_name=cache_name,
         dimensions=parameters.dimensions,
+        isolate_target_name=isolate_target_name,
         urlsafe_try_job_key=try_job.key.urlsafe())
 
     with pipeline.InOrder():

@@ -29,6 +29,9 @@ class RunFlakeTryJobParameters(StructuredObject):
   # The dimensions of the bot.
   dimensions = ListOfBasestring
 
+  # The isolate target name containing the test.
+  isolate_target_name = basestring
+
   # The key to the try job entity this pipeline is responsible for.
   urlsafe_try_job_key = basestring
 

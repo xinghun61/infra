@@ -231,26 +231,26 @@ def UpdateAnalysisDataPointsWithTryJobResult(analysis, try_job, commit_position,
   analysis.put()
 
 
-def GetBuildProperties(master_name,
-                       builder_name,
-                       canonical_step_name,
-                       test_name,
-                       git_hash,
-                       iterations_to_rerun,
-                       skip_tests=False):
-  # TODO(crbug.com/786518): Remove iterations_to_rerun and skip_tests.
-  iterations = iterations_to_rerun or _DEFAULT_ITERATIONS_TO_RERUN
+def GetBuildProperties(target_master_name, target_builder_name,
+                       isolate_target_name, revision):
+  """Generates build properties to be passed to the recipe.
 
+  Args:
+    target_master_name (str): The name of the target master name to build for.
+    target_builder_name (str): The name of the target builder name to build for.
+    isolate_target_name (str): The name of the isolate target to compile.
+    revision (str): The specific revision to compile.
+
+  Returns:
+    properties (dict): A dict representation of the parameters to be passed to
+        the recipe.
+  """
   return {
-      'recipe': 'findit/chromium/flake',
-      'skip_tests': skip_tests,
-      'target_mastername': master_name,
-      'target_testername': builder_name,
-      'test_revision': git_hash,
-      'test_repeat_count': iterations,
-      'tests': {
-          canonical_step_name: [test_name]
-      },
+      'recipe': 'findit/chromium/compile_isolate',
+      'target_mastername': target_master_name,
+      'target_testername': target_builder_name,
+      'revision': revision,
+      'isolated_targets': [isolate_target_name],
       'repository': constants.CHROMIUM_GIT_REPOSITORY_URL,
   }
 
@@ -312,16 +312,10 @@ def ScheduleFlakeTryJob(parameters, runner_id):
   builder_name = analysis.builder_name
   step_name = analysis.canonical_step_name
   test_name = analysis.test_name
+  isolate_target_name = parameters.isolate_target_name
 
-  # TODO(crbug.com/786518): Remove iterations_to_rerun and skip_tests.
-  properties = GetBuildProperties(
-      master_name,
-      builder_name,
-      step_name,
-      test_name,
-      parameters.revision,
-      0,
-      skip_tests=True)
+  properties = GetBuildProperties(master_name, builder_name,
+                                  isolate_target_name, parameters.revision)
 
   tryserver_mastername, tryserver_buildername = try_job_service.GetTrybot()
 

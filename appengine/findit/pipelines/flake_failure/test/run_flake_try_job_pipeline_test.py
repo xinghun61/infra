@@ -56,6 +56,7 @@ class RunFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         flake_cache_name=None,
         dimensions=ListOfBasestring(),
         revision=revision,
+        isolate_target_name='target',
         urlsafe_try_job_key=try_job.key.urlsafe())
     p = RunFlakeTryJobPipeline(pipeline_input)
     p.OnTimeout(pipeline_input, {'try_job_id': try_job_id})
@@ -76,6 +77,7 @@ class RunFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     revision = 'r1000'
+    isolate_target_name = 'target'
     try_job_id = 'try_job_id'
 
     mocked_pipeline_id.__get__ = mock.Mock(return_value='pipeline-id')
@@ -94,6 +96,7 @@ class RunFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         flake_cache_name=None,
         dimensions=ListOfBasestring(),
         revision=revision,
+        isolate_target_name=isolate_target_name,
         urlsafe_try_job_key=try_job.key.urlsafe())
 
     try_job_pipeline = RunFlakeTryJobPipeline(pipeline_input)
@@ -105,9 +108,7 @@ class RunFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       RunFlakeTryJobPipeline,
       'GetCallbackParameters',
-      return_value={
-          'try_job_id': 'try_job_id'
-      })
+      return_value={'try_job_id': 'try_job_id'})
   @mock.patch.object(flake_try_job, 'ScheduleFlakeTryJob')
   def testRunImplTriggerSameJobTwice(self, mocked_schedule, _):
     master_name = 'm'
@@ -130,6 +131,7 @@ class RunFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         flake_cache_name=None,
         dimensions=ListOfBasestring(),
         revision=revision,
+        isolate_target_name='target',
         urlsafe_try_job_key=try_job.key.urlsafe())
 
     try_job_pipeline = RunFlakeTryJobPipeline(pipeline_input)
@@ -149,6 +151,7 @@ class RunFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 1
     step_name = 's'
     test_name = 't'
+    isolate_target_name = 'target'
     revision = 'r1000'
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
@@ -164,6 +167,7 @@ class RunFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         flake_cache_name=None,
         dimensions=ListOfBasestring(),
         revision=revision,
+        isolate_target_name=isolate_target_name,
         urlsafe_try_job_key=try_job.key.urlsafe())
 
     mocked_pipeline_id.__get__ = mock.Mock(return_value='pipeline-id')
@@ -186,6 +190,7 @@ class RunFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 1
     step_name = 's'
     test_name = 't'
+    isolate_target_name = 'target'
     revision = 'r1000'
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
@@ -201,12 +206,12 @@ class RunFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         flake_cache_name=None,
         dimensions=ListOfBasestring(),
         revision=revision,
+        isolate_target_name=isolate_target_name,
         urlsafe_try_job_key=try_job.key.urlsafe())
 
     pipeline_job = RunFlakeTryJobPipeline(pipeline_input)
-    returned_value = pipeline_job.CallbackImpl(pipeline_input, {
-        'build_json': '{"k":"v"}'
-    })
+    returned_value = pipeline_job.CallbackImpl(pipeline_input,
+                                               {'build_json': '{"k":"v"}'})
     self.assertEqual(('Try_job_id not found for pipeline pipeline-id', None),
                      returned_value)
     self.assertFalse(mocked_state_changed.called)
@@ -219,6 +224,7 @@ class RunFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 1
     step_name = 's'
     test_name = 't'
+    isolate_target_name = 'target'
     revision = 'r1000'
     try_job_id = 'try_job_id'
 
@@ -235,6 +241,7 @@ class RunFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         flake_cache_name=None,
         dimensions=ListOfBasestring(),
         revision=revision,
+        isolate_target_name=isolate_target_name,
         urlsafe_try_job_key=try_job.key.urlsafe())
 
     pipeline_job = RunFlakeTryJobPipeline(pipeline_input)
@@ -253,6 +260,7 @@ class RunFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     revision = 'r1000'
+    isolate_target_name = 'target'
     try_job_id = 'try_job_id'
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
@@ -268,6 +276,7 @@ class RunFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         flake_cache_name=None,
         dimensions=ListOfBasestring(),
         revision=revision,
+        isolate_target_name=isolate_target_name,
         urlsafe_try_job_key=try_job.key.urlsafe())
 
     pipeline_job = RunFlakeTryJobPipeline(pipeline_input)
@@ -289,6 +298,7 @@ class RunFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     revision = 'r1000'
+    isolate_target_name = 'target'
     try_job_id = 'try_job_id'
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
@@ -304,6 +314,7 @@ class RunFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         flake_cache_name=None,
         dimensions=ListOfBasestring(),
         revision=revision,
+        isolate_target_name=isolate_target_name,
         urlsafe_try_job_key=try_job.key.urlsafe())
 
     pipeline_job = RunFlakeTryJobPipeline(pipeline_input)

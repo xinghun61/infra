@@ -326,26 +326,20 @@ class FlakeTryJobServiceTest(TestCase):
   def testGetBuildProperties(self):
     master_name = 'm'
     builder_name = 'b'
-    step_name = 's'
-    test_name = 't'
-    git_hash = 'a1b2c3d4'
-    iterations = 200
+    revision = 'a1b2c3d4'
+    isolate_target_name = 'target'
 
     expected_properties = {
-        'recipe': 'findit/chromium/flake',
-        'skip_tests': False,
+        'recipe': 'findit/chromium/compile_isolate',
         'target_mastername': master_name,
         'target_testername': builder_name,
-        'test_revision': git_hash,
-        'test_repeat_count': 200,
-        'tests': {
-            step_name: [test_name]
-        },
+        'revision': revision,
+        'isolated_targets': [isolate_target_name],
         'repository': 'https://chromium.googlesource.com/chromium/src.git',
     }
 
-    properties = flake_try_job.GetBuildProperties(
-        master_name, builder_name, step_name, test_name, git_hash, iterations)
+    properties = flake_try_job.GetBuildProperties(master_name, builder_name,
+                                                  isolate_target_name, revision)
 
     self.assertEqual(properties, expected_properties)
 
@@ -393,6 +387,7 @@ class FlakeTryJobServiceTest(TestCase):
         revision=revision,
         flake_cache_name=None,
         dimensions=ListOfBasestring(),
+        isolate_target_name='target',
         urlsafe_try_job_key=try_job.key.urlsafe())
 
     try_job_id = flake_try_job.ScheduleFlakeTryJob(parameters, 'pipeline')
@@ -442,6 +437,7 @@ class FlakeTryJobServiceTest(TestCase):
         analysis_urlsafe_key=analysis.key.urlsafe(),
         revision=revision,
         flake_cache_name=None,
+        isolate_target_name='target',
         dimensions=ListOfBasestring())
 
     with self.assertRaises(exceptions.RetryException):
@@ -502,7 +498,6 @@ class FlakeTryJobServiceTest(TestCase):
         report=FlakeTryJobReport(
             previously_checked_out_revision=None,
             previously_cached_revision=None,
-            result=None,
             isolated_tests=None,
             last_checked_out_revision=None,
             metadata=None),
