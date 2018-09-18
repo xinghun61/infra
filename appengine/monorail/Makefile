@@ -88,6 +88,8 @@ vulcanize: clean_vulcanized
 	$(call VULCANIZE, elements/chdir/mr-profile-page/mr-profile-page)
 	$(call VULCANIZE, elements/mr-bar-chart/mr-bar-chart)
 	$(call VULCANIZE, elements/mr-flipper/mr-flipper)
+	$(call VULCANIZE, elements/mr-header/mr-header)
+	$(call VULCANIZE, elements/mr-header/mr-account-dropdown)
 
 clean_vulcanized:
 	find . -name "*.vulcanized.*" -delete

@@ -10,6 +10,8 @@
         display: inline-block;
         cursor: pointer;
         height: 100%;
+        text-align: left;
+        padding: 0 8px;
         --iron-icon-fill-color: hsl(0, 0%, 66%);
       }
       :host(:not([opened])) .menu {
@@ -19,6 +21,7 @@
       .anchor {
         width: 100%;
         height: 100%;
+        font-weight: bold;
       }
       .menu {
         position: absolute;
@@ -34,26 +37,34 @@
       }
       .menu hr {
         width: 96%;
-        margin: 0.25em 2%;
+        margin: 0 2%;
         border: 0;
         height: 1px;
         background: hsl(0, 0%, 80%);
+      }
+      .menu hr[hidden] {
+        display: none;
       }
       .menu a {
         box-sizing: border-box;
         text-decoration: none;
         display: block;
         width: 100%;
-        padding: 0.25em 8px;
+        padding: 0.4em 8px;
         transition: 0.2s background ease-in-out;
+      }
+      .menu a[hidden] {
+        display: none;
       }
       .menu a:hover {
         background: hsl(0, 0%, 90%);
       }
     </style>
-    <div class="anchor" on-click="toggle">
-      <iron-icon class="expand-icon" icon="expand-more"></iron-icon>
+    <div tabindex="0" class="anchor"
+      on-click="toggle"
+      on-keypress="handleAnchorKeypress">
       [[text]]
+      <iron-icon class="expand-icon" icon="expand-more"></iron-icon>
     </div>
     <div class="menu">
       <template is="dom-repeat" items="[[items]]">

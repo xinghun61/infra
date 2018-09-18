@@ -122,6 +122,16 @@ a.src=g;m.parentNode.insertBefore(a,m)
 
 <script type="module" nonce="[nonce]">
 // Polymer elements and polyfills loader.
+const components = [
+  {
+    loadIfTagPresent: 'mr-flipper',
+    path: 'mr-flipper/mr-flipper',
+  },
+  {
+    loadIfTagPresent: 'mr-account-dropdown',
+    path: 'mr-header/mr-account-dropdown',
+  },
+];
 
 const devMode = ('[format "js"][dev_mode][end]' === 'yes');
 const nonce = '[format "js"][nonce][end]';
@@ -143,14 +153,16 @@ function insertScriptTag(src) {
 }
 
 function loadComponents() {
-  if (document.querySelector('mr-flipper')) {
-    if (devMode) {
-      insertLinkTag('/elements/mr-flipper/mr-flipper.html?version=[app_version]')
+  components.forEach((component) => {
+    if (!document.querySelector(component.loadIfTagPresent)) {
+      return;
+    } else if (devMode) {
+      insertLinkTag(`/elements/${component.path}.html?version=[app_version]`)
     } else {
-      insertLinkTag('/elements/mr-flipper/mr-flipper.vulcanized.html?version=[app_version]')
-      insertScriptTag('/elements/mr-flipper/mr-flipper.vulcanized.js?version=[app_version]');
+      insertLinkTag(`/elements/${component.path}.vulcanized.html?version=[app_version]`)
+      insertScriptTag(`/elements/${component.path}.vulcanized.js?version=[app_version]`);
     }
-  }
+  });
 }
 
 if (window.hasOwnProperty('WebComponents')) {

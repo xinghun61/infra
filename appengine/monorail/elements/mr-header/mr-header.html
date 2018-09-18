@@ -2,7 +2,7 @@
 
 <link rel="import" href="../../bower_components/chopsui/chops-header.html">
 
-<link rel="import" href="./mr-dropdown.html">
+<link rel="import" href="./mr-account-dropdown.html">
 
 <dom-module id="mr-header">
   <template>
@@ -20,7 +20,11 @@
     <chops-header app-title="Monorail" logo-src="/static/images/monorail.ico">
       <span slot="subheader"><slot name="subheader"></slot></span>
       <template is="dom-if" if="[[user]]">
-        <mr-dropdown text="[[user]]" items="[[_userMenuItems]]"></mr-dropdown>
+        <mr-account-dropdown
+          email="[[user]]"
+          login-url="[[loginUrl]]"
+          logout-url="[[logoutUrl]]">
+        </mr-account-dropdown>
       </template>
       <a href$="[[loginUrl]]" hidden$="[[user]]">Sign in</a>
     </chops-header>
