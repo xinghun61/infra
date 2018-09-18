@@ -8,6 +8,7 @@ DEPS = [
   'depot_tools/git',
   'infra_checkout',
   'infra_system',
+  'recipe_engine/buildbucket',
   'recipe_engine/context',
   'recipe_engine/path',
   'recipe_engine/platform',
@@ -19,7 +20,8 @@ DEPS = [
 
 
 def RunSteps(api):
-  project = api.properties['patch_project']
+  cl = api.buildbucket.build.input.gerrit_changes[0]
+  project = cl.project
   assert project in ('infra/infra', 'infra/infra_internal'), (
       'unknown project: "%s"' % project)
   patch_root = project.split('/')[-1]
