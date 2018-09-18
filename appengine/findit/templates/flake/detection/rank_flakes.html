@@ -15,27 +15,31 @@
     }
 
     .previous, .next {
-      color: #0645AD;
+      color: #1A73EB;
       background: none;
       border: none;
       padding: 0;
       font: inherit;
-      border-bottom:1px solid #0645AD;
+      border-bottom:1px solid #1A73EB;
       cursor: pointer;
     }
 
     .disabled {
-      color: #d3d3d3;
+      color: #9AA0A6;
       background: none;
       border: none;
       padding: 0;
       font: inherit;
-      border-bottom:1px solid #d3d3d3;
+      border-bottom:1px solid #9AA0A6;
       cursor: pointer;
     }
 
     .hidden {
       display: none;
+    }
+
+    .paging {
+      padding: 5px;
     }
   </style>
   <script>
@@ -105,12 +109,12 @@
       <input type="text" name="test_name" id="test_name" size="100" placeholder="try searching for test name" value="{{ test_name_filter }}"/>
     </form>
     <br>
-    <div>
+    <div class="paging">
       <button class="previous">Previous</button>
       <button class="next">Next</button>
     </div>
     <rank-flakes flakes='{{flakes_data | tojson}}'></rank-flakes>
-    <div>
+    <div class="paging">
       <button class="previous">Previous</button>
       <button class="next">Next</button>
     </div>

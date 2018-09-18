@@ -35,22 +35,22 @@
     }
 
     .previous, .next {
-      color: #0645AD;
+      color: #1A73EB;
       background: none;
       border: none;
       padding: 0;
       font: inherit;
-      border-bottom:1px solid #0645AD;
+      border-bottom:1px solid #1A73EB;
       cursor: pointer;
     }
 
     .disabled {
-      color: #d3d3d3;
+      color: #9AA0A6;
       background: none;
       border: none;
       padding: 0;
       font: inherit;
-      border-bottom:1px solid #d3d3d3;
+      border-bottom:1px solid #9AA0A6;
       cursor: pointer;
     }
 
@@ -69,6 +69,10 @@
       color: #666666;
       background-color: #fffc6c;
       border-color: #c5c56d;
+    }
+
+    .paging {
+      padding: 5px;
     }
   </style>
   <script type="text/javascript">
@@ -223,11 +227,10 @@
       <br>
     </form>
     <br>
-    <div>
+    <div class="paging">
       <button class="previous">Previous</button>
       <button class="next">Next</button>
     </div>
-    <br>
     <!-- TODO(https://crbug.com/833679): make this a polymer element. -->
     <table>
       <thead>
@@ -309,7 +312,7 @@
         {% endfor %}
       </tbody>
     </table>
-    <div>
+    <div class="paging">
       <button class="previous">Previous</button>
       <button class="next">Next</button>
     </div>
