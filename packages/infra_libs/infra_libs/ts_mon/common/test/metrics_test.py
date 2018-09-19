@@ -591,3 +591,17 @@ class DistributionMetricTest(TestBase):
     ncd = metrics.NonCumulativeDistributionMetric('test2', 'test', None)
     self.assertTrue(cd.is_cumulative())
     self.assertFalse(ncd.is_cumulative())
+
+  def test_dangerously_enable_cumulative_set(self):
+    cd = metrics.CumulativeDistributionMetric('test', 'test', None)
+    value = distribution.Distribution(bucketer=cd.bucketer)
+    with self.assertRaises(TypeError):
+      cd.set(value)
+    cd.dangerously_enable_cumulative_set()
+    cd.set(value)
+
+  def test_dangerously_set_start_time(self):
+    m = metrics.CounterMetric('test', 'test', None)
+    self.assertEqual(None, m.start_time)
+    m.dangerously_set_start_time(102.5)
+    self.assertEqual(102.5, m.start_time)

@@ -396,6 +396,7 @@ class MemoClassMethodTestCase(MemoTestCase):
       return 7
 
     def __eq__(self, other):
+      # pylint: disable=unidiomatic-typecheck
       return type(other) == type(self)
 
 
