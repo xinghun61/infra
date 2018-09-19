@@ -116,8 +116,8 @@ def fetch_source(api, workdir, spec, version, spec_lookup, ensure_built):
         ensure_built(tool, 'latest')
         for tool in spec.unpinned_tools
       ] + [
-        spec_lookup(tool, spec.tool_platform).cipd_spec(version)
-        for tool, version in spec.pinned_tool_info
+        spec_lookup(tool, spec.tool_platform).cipd_spec(tool_version)
+        for tool, tool_version in spec.pinned_tool_info
       ])
 
   if spec.create_pb.build.dep:
@@ -163,10 +163,13 @@ def _do_checkout(api, workdir, spec, version):
     api.git.checkout(source_method_pb.repo, tag, checkout_dir)
 
     if source_method_pb.patch_dir:
-      api.git('-C', checkout_dir, 'am', *[
-        spec.host_dir.join(*(patch_dir.split('/')))
-        for patch_dir in source_method_pb.patch_dir
-      ])
+      patches = []
+      for patch_dir in source_method_pb.patch_dir:
+        patch_dir = str(patch_dir)
+        patches.extend(api.file.glob_paths(
+          'find patches in %s' % patch_dir,
+          spec.host_dir.join(*(patch_dir.split('/'))), '*'))
+      api.git('-C', checkout_dir, 'am', *patches)
 
   elif method_name == 'cipd':
     api.cipd.ensure(

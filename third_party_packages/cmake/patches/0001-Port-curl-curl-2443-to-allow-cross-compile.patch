@@ -1,0 +1,87 @@
+From 3d68bc39ef6c81dfa7f0ba0dddc6ee3d8fee443c Mon Sep 17 00:00:00 2001
+From: Robert Iannucci <iannucci@chromium.org>
+Date: Tue, 18 Sep 2018 14:13:41 -0700
+Subject: [PATCH] Port curl/curl#2443 to allow cross-compile
+
+This ports https://github.com/curl/curl/pull/2443 to CMake to allow it
+to cross-compile correctly inside of a dockcross container.
+
+---
+ Utilities/cmcurl/CMake/CurlTests.c | 29 ++++++++++++++---------------
+ Utilities/cmcurl/CMakeLists.txt    |  4 ++--
+ 2 files changed, 16 insertions(+), 17 deletions(-)
+
+diff --git a/Utilities/cmcurl/CMake/CurlTests.c b/Utilities/cmcurl/CMake/CurlTests.c
+index bc36c8ef7..f4ca9ba81 100644
+--- a/Utilities/cmcurl/CMake/CurlTests.c
++++ b/Utilities/cmcurl/CMake/CurlTests.c
+@@ -507,30 +507,29 @@ main ()
+ #ifdef HAVE_GLIBC_STRERROR_R
+ #include <string.h>
+ #include <errno.h>
++
++void check(char c) {}
++
+ int
+ main () {
+-  char buffer[1024]; /* big enough to play with */
+-  char *string =
+-    strerror_r(EACCES, buffer, sizeof(buffer));
+-    /* this should've returned a string */
+-    if(!string || !string[0])
+-      return 99;
+-    return 0;
++  char buffer[1024];
++  // This will not compile if strerror_r does not return a char*
++  check(strerror_r(EACCES, buffer, sizeof(buffer))[0]);
++  return 0;
+ }
+ #endif
+ #ifdef HAVE_POSIX_STRERROR_R
+ #include <string.h>
+ #include <errno.h>
++
++void check(float f) {}
++
+ int
+ main () {
+-  char buffer[1024]; /* big enough to play with */
+-  int error =
+-    strerror_r(EACCES, buffer, sizeof(buffer));
+-    /* This should've returned zero, and written an error string in the
+-       buffer.*/
+-    if(!buffer[0] || error)
+-      return 99;
+-    return 0;
++  char buffer[1024];
++  // This will not compile if strerror_r does not return an int
++  check(strerror_r(EACCES, buffer, sizeof(buffer)));
++  return 0;
+ }
+ #endif
+ #ifdef HAVE_FSETXATTR_6
+diff --git a/Utilities/cmcurl/CMakeLists.txt b/Utilities/cmcurl/CMakeLists.txt
+index 012821415..162d18be8 100644
+--- a/Utilities/cmcurl/CMakeLists.txt
++++ b/Utilities/cmcurl/CMakeLists.txt
+@@ -1022,7 +1022,7 @@ endif()
+ check_symbol_exists(fsetxattr "${CURL_INCLUDES}" HAVE_FSETXATTR)
+ if(HAVE_FSETXATTR)
+   foreach(CURL_TEST HAVE_FSETXATTR_5 HAVE_FSETXATTR_6)
+-    curl_internal_test_run(${CURL_TEST})
++    curl_internal_test(${CURL_TEST})
+   endforeach(CURL_TEST)
+ endif(HAVE_FSETXATTR)
+
+@@ -1102,7 +1102,7 @@ foreach(CURL_TEST
+     HAVE_GLIBC_STRERROR_R
+     HAVE_POSIX_STRERROR_R
+     )
+-  curl_internal_test_run(${CURL_TEST})
++  curl_internal_test(${CURL_TEST})
+ endforeach(CURL_TEST)
+
+ # Check for reentrant
+--
+2.18.0
+

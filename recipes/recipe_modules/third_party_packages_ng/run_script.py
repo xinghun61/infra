@@ -27,6 +27,9 @@ def run_script(api, *args, **kwargs):
       env_prefixes['PATH'] = [
         api.third_party_packages_ng.resource('win_support')]
       cmd = ['git'] + cmd
+    elif api.platform.is_mac:
+      env_prefixes['PATH'] = [
+        api.third_party_packages_ng.resource('mac_support')]
 
     with api.context(env_prefixes=env_prefixes):
       return api.step(step_name, cmd, **kwargs)

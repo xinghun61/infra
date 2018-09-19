@@ -1703,7 +1703,7 @@
       "retry",
       "fetch",
       "origin",
-      "refs/tags/v0-9-0",
+      "refs/tags/v1-4-1",
       "--progress"
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/src/go.repo/tool",
@@ -1836,11 +1836,37 @@
   },
   {
     "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "glob",
+      "[CACHE]/builder/package_repo/tool/patches",
+      "*"
+    ],
+    "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "infra_step": true,
+    "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.find patches in patches",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@",
+      "@@@STEP_LOG_END@glob@@@"
+    ]
+  },
+  {
+    "cmd": [
       "git",
       "-C",
       "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/src/go.repo/tool",
-      "am",
-      "[CACHE]/builder/package_repo/tool/patches"
+      "am"
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/src/go.repo/tool",
     "env": {
@@ -3682,7 +3708,7 @@
       "retry",
       "fetch",
       "origin",
-      "refs/tags/v0-9-0",
+      "refs/tags/v1-4-1",
       "--progress"
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/checkout/src/go.repo/tool",
@@ -3815,11 +3841,37 @@
   },
   {
     "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "glob",
+      "[CACHE]/builder/package_repo/tool/patches",
+      "*"
+    ],
+    "env": {
+      "GOARCH": "armv6l",
+      "GOOS": "linux",
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "infra_step": true,
+    "name": "building tool.fetch sources.find patches in patches",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@",
+      "@@@STEP_LOG_END@glob@@@"
+    ]
+  },
+  {
+    "cmd": [
       "git",
       "-C",
       "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/checkout/src/go.repo/tool",
-      "am",
-      "[CACHE]/builder/package_repo/tool/patches"
+      "am"
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/src/go.repo/tool",
     "env": {
