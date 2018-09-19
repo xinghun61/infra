@@ -58,10 +58,11 @@ consistent test failures caused by bugs on tip of tree.
 When Flake Detector presents flaky tests to end-users, similar flaky tests are
 grouped together to avoid duplications, and it uses the following criteria:
 * gtests with different parameters.
+
   ![Example of gtests with different parameters]
 * webkit_layout_tests with different queries.
-  ![Example of webkit layout tests with different queries]
 
+  ![Example of webkit layout tests with different queries]
 
 ## Bug Filing Criteria
 To avoid being noisy, a flaky test is only reported to Monorail if all the
