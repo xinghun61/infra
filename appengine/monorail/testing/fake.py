@@ -529,19 +529,18 @@ class UserService(object):
 
   def GetRecentlyVisitedHotlists(self, _cnxn, user_id):
     try:
-      return self.visited_hotlists[user_id][0]
+      return self.visited_hotlists[user_id]
     except KeyError:
       return []
 
   def AddVisitedHotlist(self, _cnxn, user_id, hotlist_id, commit=True):
     try:
       user_visited_tuples = self.visited_hotlists[user_id]
-      self.visited_hotlists[user_id] = [(hid, ts) for (hid, ts) in
-                                        user_visited_tuples if
-                                        hid != hotlist_id]
+      self.visited_hotlists[user_id] = [
+          hid for hid in user_visited_tuples if hid != hotlist_id]
     except KeyError:
       self.visited_hotlists[user_id] = []
-    self.visited_hotlists[user_id].append((hotlist_id, int(time.time())))
+    self.visited_hotlists[user_id].append(hotlist_id)
 
   def GetUserCommits(self, _cnxn, user_email, from_timestamp, to_timestamp):
       return self.user_commits

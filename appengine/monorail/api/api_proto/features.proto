@@ -13,6 +13,7 @@ import "api/api_proto/features_objects.proto";
 service Features {
   rpc ListHotlistsByUser (ListHotlistsByUserRequest) returns (ListHotlistsByUserResponse) {}
   rpc ListHotlistsByIssue (ListHotlistsByIssueRequest) returns (ListHotlistsByIssueResponse) {}
+  rpc ListRecentlyVisitedHotlists (ListRecentlyVisitedHotlistsRequest) returns (ListRecentlyVisitedHotlistsResponse) {}
   rpc GetHotlistStarCount (GetHotlistStarCountRequest) returns (GetHotlistStarCountResponse) {}
   rpc StarHotlist (StarHotlistRequest) returns (StarHotlistResponse) {}
   rpc ListHotlistIssues (ListHotlistIssuesRequest) returns (ListHotlistIssuesResponse) {}
@@ -46,6 +47,18 @@ message ListHotlistsByIssueRequest {
 
 // Next available tag: 2
 message ListHotlistsByIssueResponse {
+  repeated Hotlist hotlists = 1;
+}
+
+
+// Next available tag: 2
+message ListRecentlyVisitedHotlistsRequest {
+  RequestTrace trace = 1;
+}
+
+
+// Next available tag: 2
+message ListRecentlyVisitedHotlistsResponse {
   repeated Hotlist hotlists = 1;
 }
 

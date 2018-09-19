@@ -3,9 +3,11 @@
 
 package monorail
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -34,7 +36,7 @@ func (m *Commit) Reset()         { *m = Commit{} }
 func (m *Commit) String() string { return proto.CompactTextString(m) }
 func (*Commit) ProtoMessage()    {}
 func (*Commit) Descriptor() ([]byte, []int) {
-	return fileDescriptor_user_objects_fd81da0c4a95efbd, []int{0}
+	return fileDescriptor_e651956a3fdc871c, []int{0}
 }
 func (m *Commit) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Commit.Unmarshal(m, b)
@@ -42,8 +44,8 @@ func (m *Commit) XXX_Unmarshal(b []byte) error {
 func (m *Commit) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Commit.Marshal(b, m, deterministic)
 }
-func (dst *Commit) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Commit.Merge(dst, src)
+func (m *Commit) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Commit.Merge(m, src)
 }
 func (m *Commit) XXX_Size() int {
 	return xxx_messageInfo_Commit.Size(m)
@@ -93,11 +95,9 @@ func init() {
 	proto.RegisterType((*Commit)(nil), "monorail.Commit")
 }
 
-func init() {
-	proto.RegisterFile("api/api_proto/user_objects.proto", fileDescriptor_user_objects_fd81da0c4a95efbd)
-}
+func init() { proto.RegisterFile("api/api_proto/user_objects.proto", fileDescriptor_e651956a3fdc871c) }
 
-var fileDescriptor_user_objects_fd81da0c4a95efbd = []byte{
+var fileDescriptor_e651956a3fdc871c = []byte{
 	// 197 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0xcf, 0x31, 0x4b, 0xc5, 0x30,
 	0x10, 0xc0, 0x71, 0x62, 0xb5, 0xb6, 0x27, 0x2a, 0x64, 0x0a, 0x88, 0x18, 0x04, 0xa5, 0x93, 0x1d,

@@ -3,9 +3,11 @@
 
 package monorail
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -32,7 +34,7 @@ func (m *Project) Reset()         { *m = Project{} }
 func (m *Project) String() string { return proto.CompactTextString(m) }
 func (*Project) ProtoMessage()    {}
 func (*Project) Descriptor() ([]byte, []int) {
-	return fileDescriptor_project_objects_1cbffa457807c65d, []int{0}
+	return fileDescriptor_4f680a8ed8804f88, []int{0}
 }
 func (m *Project) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Project.Unmarshal(m, b)
@@ -40,8 +42,8 @@ func (m *Project) XXX_Unmarshal(b []byte) error {
 func (m *Project) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Project.Marshal(b, m, deterministic)
 }
-func (dst *Project) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Project.Merge(dst, src)
+func (m *Project) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Project.Merge(m, src)
 }
 func (m *Project) XXX_Size() int {
 	return xxx_messageInfo_Project.Size(m)
@@ -89,7 +91,7 @@ func (m *StatusDef) Reset()         { *m = StatusDef{} }
 func (m *StatusDef) String() string { return proto.CompactTextString(m) }
 func (*StatusDef) ProtoMessage()    {}
 func (*StatusDef) Descriptor() ([]byte, []int) {
-	return fileDescriptor_project_objects_1cbffa457807c65d, []int{1}
+	return fileDescriptor_4f680a8ed8804f88, []int{1}
 }
 func (m *StatusDef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StatusDef.Unmarshal(m, b)
@@ -97,8 +99,8 @@ func (m *StatusDef) XXX_Unmarshal(b []byte) error {
 func (m *StatusDef) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_StatusDef.Marshal(b, m, deterministic)
 }
-func (dst *StatusDef) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_StatusDef.Merge(dst, src)
+func (m *StatusDef) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StatusDef.Merge(m, src)
 }
 func (m *StatusDef) XXX_Size() int {
 	return xxx_messageInfo_StatusDef.Size(m)
@@ -158,7 +160,7 @@ func (m *LabelDef) Reset()         { *m = LabelDef{} }
 func (m *LabelDef) String() string { return proto.CompactTextString(m) }
 func (*LabelDef) ProtoMessage()    {}
 func (*LabelDef) Descriptor() ([]byte, []int) {
-	return fileDescriptor_project_objects_1cbffa457807c65d, []int{2}
+	return fileDescriptor_4f680a8ed8804f88, []int{2}
 }
 func (m *LabelDef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_LabelDef.Unmarshal(m, b)
@@ -166,8 +168,8 @@ func (m *LabelDef) XXX_Unmarshal(b []byte) error {
 func (m *LabelDef) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_LabelDef.Marshal(b, m, deterministic)
 }
-func (dst *LabelDef) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LabelDef.Merge(dst, src)
+func (m *LabelDef) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LabelDef.Merge(m, src)
 }
 func (m *LabelDef) XXX_Size() int {
 	return xxx_messageInfo_LabelDef.Size(m)
@@ -220,7 +222,7 @@ func (m *ComponentDef) Reset()         { *m = ComponentDef{} }
 func (m *ComponentDef) String() string { return proto.CompactTextString(m) }
 func (*ComponentDef) ProtoMessage()    {}
 func (*ComponentDef) Descriptor() ([]byte, []int) {
-	return fileDescriptor_project_objects_1cbffa457807c65d, []int{3}
+	return fileDescriptor_4f680a8ed8804f88, []int{3}
 }
 func (m *ComponentDef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ComponentDef.Unmarshal(m, b)
@@ -228,8 +230,8 @@ func (m *ComponentDef) XXX_Unmarshal(b []byte) error {
 func (m *ComponentDef) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ComponentDef.Marshal(b, m, deterministic)
 }
-func (dst *ComponentDef) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ComponentDef.Merge(dst, src)
+func (m *ComponentDef) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ComponentDef.Merge(m, src)
 }
 func (m *ComponentDef) XXX_Size() int {
 	return xxx_messageInfo_ComponentDef.Size(m)
@@ -333,7 +335,7 @@ func (m *FieldDef) Reset()         { *m = FieldDef{} }
 func (m *FieldDef) String() string { return proto.CompactTextString(m) }
 func (*FieldDef) ProtoMessage()    {}
 func (*FieldDef) Descriptor() ([]byte, []int) {
-	return fileDescriptor_project_objects_1cbffa457807c65d, []int{4}
+	return fileDescriptor_4f680a8ed8804f88, []int{4}
 }
 func (m *FieldDef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FieldDef.Unmarshal(m, b)
@@ -341,8 +343,8 @@ func (m *FieldDef) XXX_Unmarshal(b []byte) error {
 func (m *FieldDef) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_FieldDef.Marshal(b, m, deterministic)
 }
-func (dst *FieldDef) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_FieldDef.Merge(dst, src)
+func (m *FieldDef) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FieldDef.Merge(m, src)
 }
 func (m *FieldDef) XXX_Size() int {
 	return xxx_messageInfo_FieldDef.Size(m)
@@ -436,7 +438,7 @@ func (m *FieldOptions) Reset()         { *m = FieldOptions{} }
 func (m *FieldOptions) String() string { return proto.CompactTextString(m) }
 func (*FieldOptions) ProtoMessage()    {}
 func (*FieldOptions) Descriptor() ([]byte, []int) {
-	return fileDescriptor_project_objects_1cbffa457807c65d, []int{5}
+	return fileDescriptor_4f680a8ed8804f88, []int{5}
 }
 func (m *FieldOptions) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FieldOptions.Unmarshal(m, b)
@@ -444,8 +446,8 @@ func (m *FieldOptions) XXX_Unmarshal(b []byte) error {
 func (m *FieldOptions) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_FieldOptions.Marshal(b, m, deterministic)
 }
-func (dst *FieldOptions) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_FieldOptions.Merge(dst, src)
+func (m *FieldOptions) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FieldOptions.Merge(m, src)
 }
 func (m *FieldOptions) XXX_Size() int {
 	return xxx_messageInfo_FieldOptions.Size(m)
@@ -484,7 +486,7 @@ func (m *ApprovalDef) Reset()         { *m = ApprovalDef{} }
 func (m *ApprovalDef) String() string { return proto.CompactTextString(m) }
 func (*ApprovalDef) ProtoMessage()    {}
 func (*ApprovalDef) Descriptor() ([]byte, []int) {
-	return fileDescriptor_project_objects_1cbffa457807c65d, []int{6}
+	return fileDescriptor_4f680a8ed8804f88, []int{6}
 }
 func (m *ApprovalDef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ApprovalDef.Unmarshal(m, b)
@@ -492,8 +494,8 @@ func (m *ApprovalDef) XXX_Unmarshal(b []byte) error {
 func (m *ApprovalDef) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ApprovalDef.Marshal(b, m, deterministic)
 }
-func (dst *ApprovalDef) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ApprovalDef.Merge(dst, src)
+func (m *ApprovalDef) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ApprovalDef.Merge(m, src)
 }
 func (m *ApprovalDef) XXX_Size() int {
 	return xxx_messageInfo_ApprovalDef.Size(m)
@@ -545,7 +547,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_project_objects_1cbffa457807c65d, []int{7}
+	return fileDescriptor_4f680a8ed8804f88, []int{7}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -553,8 +555,8 @@ func (m *Config) XXX_Unmarshal(b []byte) error {
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -640,10 +642,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("api/api_proto/project_objects.proto", fileDescriptor_project_objects_1cbffa457807c65d)
+	proto.RegisterFile("api/api_proto/project_objects.proto", fileDescriptor_4f680a8ed8804f88)
 }
 
-var fileDescriptor_project_objects_1cbffa457807c65d = []byte{
+var fileDescriptor_4f680a8ed8804f88 = []byte{
 	// 851 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x55, 0x5f, 0x6f, 0xdc, 0x44,
 	0x10, 0xd7, 0xe5, 0x2e, 0x77, 0xf6, 0xf8, 0x92, 0xaa, 0x4b, 0x89, 0x4c, 0xc4, 0x9f, 0xe3, 0x00,

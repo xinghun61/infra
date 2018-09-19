@@ -382,6 +382,57 @@ class FeaturesServicerTest(unittest.TestCase):
 
     self.assertEqual(0, len(response.hotlists))
 
+  def testListRecentlyVisitedHotlists(self):
+    hotlists = [
+        self.services.features.CreateHotlist(
+            self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+            owner_ids=[222L], editor_ids=[111L]),
+        self.services.features.CreateHotlist(
+            self.cnxn, 'Fake-Hotlist-2', 'Summary', 'Description',
+            owner_ids=[111L], editor_ids=[222L]),
+        self.services.features.CreateHotlist(
+            self.cnxn, 'Private-Hotlist', 'Summary', 'Description',
+            owner_ids=[333L], editor_ids=[222L], is_private=True)]
+
+    for hotlist in hotlists:
+      self.services.user.AddVisitedHotlist(
+          self.cnxn, 111L, hotlist.hotlist_id)
+
+    request = features_pb2.ListRecentlyVisitedHotlistsRequest()
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(
+        self.features_svcr.ListRecentlyVisitedHotlists, mc, request)
+
+    expected_hotlists = [
+        features_objects_pb2.Hotlist(
+            owner_ref=common_pb2.UserRef(
+                user_id=222L,
+                display_name='edi...@example.com'),
+            name='Fake-Hotlist',
+            summary='Summary',
+            description='Description'),
+        features_objects_pb2.Hotlist(
+            owner_ref=common_pb2.UserRef(
+                user_id=111L,
+                display_name='owner@example.com'),
+            name='Fake-Hotlist-2',
+            summary='Summary',
+            description='Description')]
+
+    # We don't have permission to see the last issue, because it is marked as
+    # private and we're not owners or editors.
+    self.assertEqual(expected_hotlists, list(response.hotlists))
+
+  def testListRecentlyVisitedHotlists_Anon(self):
+    request = features_pb2.ListRecentlyVisitedHotlistsRequest()
+    mc = monorailcontext.MonorailContext(self.services, cnxn=self.cnxn)
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(
+        self.features_svcr.ListRecentlyVisitedHotlists, mc, request)
+    self.assertEqual(0, len(response.hotlists))
+
   def CallGetStarCount(self):
     # Query for hotlists for 'owner@example.com'
     owner_ref = common_pb2.UserRef(user_id=111L)

@@ -3,9 +3,11 @@
 
 package monorail
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -42,6 +44,7 @@ var ApprovalStatus_name = map[int32]string{
 	6: "APPROVED",
 	7: "NOT_APPROVED",
 }
+
 var ApprovalStatus_value = map[string]int32{
 	"NOT_SET":          0,
 	"NEEDS_REVIEW":     1,
@@ -56,8 +59,9 @@ var ApprovalStatus_value = map[string]int32{
 func (x ApprovalStatus) String() string {
 	return proto.EnumName(ApprovalStatus_name, int32(x))
 }
+
 func (ApprovalStatus) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_issue_objects_3574ef109bf05b6e, []int{0}
+	return fileDescriptor_8ab61f0576fd6c44, []int{0}
 }
 
 // Next available tag: 7
@@ -82,6 +86,7 @@ var CannedQuery_name = map[int32]string{
 	5: "STARRED",
 	6: "TO_VERIFY",
 }
+
 var CannedQuery_value = map[string]int32{
 	"ALL":       0,
 	"NEW":       1,
@@ -95,8 +100,9 @@ var CannedQuery_value = map[string]int32{
 func (x CannedQuery) String() string {
 	return proto.EnumName(CannedQuery_name, int32(x))
 }
+
 func (CannedQuery) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_issue_objects_3574ef109bf05b6e, []int{1}
+	return fileDescriptor_8ab61f0576fd6c44, []int{1}
 }
 
 // Next available tag: 8
@@ -116,7 +122,7 @@ func (m *Approval) Reset()         { *m = Approval{} }
 func (m *Approval) String() string { return proto.CompactTextString(m) }
 func (*Approval) ProtoMessage()    {}
 func (*Approval) Descriptor() ([]byte, []int) {
-	return fileDescriptor_issue_objects_3574ef109bf05b6e, []int{0}
+	return fileDescriptor_8ab61f0576fd6c44, []int{0}
 }
 func (m *Approval) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Approval.Unmarshal(m, b)
@@ -124,8 +130,8 @@ func (m *Approval) XXX_Unmarshal(b []byte) error {
 func (m *Approval) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Approval.Marshal(b, m, deterministic)
 }
-func (dst *Approval) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Approval.Merge(dst, src)
+func (m *Approval) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Approval.Merge(m, src)
 }
 func (m *Approval) XXX_Size() int {
 	return xxx_messageInfo_Approval.Size(m)
@@ -201,7 +207,7 @@ func (m *Amendment) Reset()         { *m = Amendment{} }
 func (m *Amendment) String() string { return proto.CompactTextString(m) }
 func (*Amendment) ProtoMessage()    {}
 func (*Amendment) Descriptor() ([]byte, []int) {
-	return fileDescriptor_issue_objects_3574ef109bf05b6e, []int{1}
+	return fileDescriptor_8ab61f0576fd6c44, []int{1}
 }
 func (m *Amendment) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Amendment.Unmarshal(m, b)
@@ -209,8 +215,8 @@ func (m *Amendment) XXX_Unmarshal(b []byte) error {
 func (m *Amendment) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Amendment.Marshal(b, m, deterministic)
 }
-func (dst *Amendment) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Amendment.Merge(dst, src)
+func (m *Amendment) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Amendment.Merge(m, src)
 }
 func (m *Amendment) XXX_Size() int {
 	return xxx_messageInfo_Amendment.Size(m)
@@ -261,7 +267,7 @@ func (m *Attachment) Reset()         { *m = Attachment{} }
 func (m *Attachment) String() string { return proto.CompactTextString(m) }
 func (*Attachment) ProtoMessage()    {}
 func (*Attachment) Descriptor() ([]byte, []int) {
-	return fileDescriptor_issue_objects_3574ef109bf05b6e, []int{2}
+	return fileDescriptor_8ab61f0576fd6c44, []int{2}
 }
 func (m *Attachment) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Attachment.Unmarshal(m, b)
@@ -269,8 +275,8 @@ func (m *Attachment) XXX_Unmarshal(b []byte) error {
 func (m *Attachment) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Attachment.Marshal(b, m, deterministic)
 }
-func (dst *Attachment) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Attachment.Merge(dst, src)
+func (m *Attachment) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Attachment.Merge(m, src)
 }
 func (m *Attachment) XXX_Size() int {
 	return xxx_messageInfo_Attachment.Size(m)
@@ -362,7 +368,7 @@ func (m *Comment) Reset()         { *m = Comment{} }
 func (m *Comment) String() string { return proto.CompactTextString(m) }
 func (*Comment) ProtoMessage()    {}
 func (*Comment) Descriptor() ([]byte, []int) {
-	return fileDescriptor_issue_objects_3574ef109bf05b6e, []int{3}
+	return fileDescriptor_8ab61f0576fd6c44, []int{3}
 }
 func (m *Comment) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Comment.Unmarshal(m, b)
@@ -370,8 +376,8 @@ func (m *Comment) XXX_Unmarshal(b []byte) error {
 func (m *Comment) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Comment.Marshal(b, m, deterministic)
 }
-func (dst *Comment) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Comment.Merge(dst, src)
+func (m *Comment) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Comment.Merge(m, src)
 }
 func (m *Comment) XXX_Size() int {
 	return xxx_messageInfo_Comment.Size(m)
@@ -488,7 +494,7 @@ func (m *FieldValue) Reset()         { *m = FieldValue{} }
 func (m *FieldValue) String() string { return proto.CompactTextString(m) }
 func (*FieldValue) ProtoMessage()    {}
 func (*FieldValue) Descriptor() ([]byte, []int) {
-	return fileDescriptor_issue_objects_3574ef109bf05b6e, []int{4}
+	return fileDescriptor_8ab61f0576fd6c44, []int{4}
 }
 func (m *FieldValue) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FieldValue.Unmarshal(m, b)
@@ -496,8 +502,8 @@ func (m *FieldValue) XXX_Unmarshal(b []byte) error {
 func (m *FieldValue) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_FieldValue.Marshal(b, m, deterministic)
 }
-func (dst *FieldValue) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_FieldValue.Merge(dst, src)
+func (m *FieldValue) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FieldValue.Merge(m, src)
 }
 func (m *FieldValue) XXX_Size() int {
 	return xxx_messageInfo_FieldValue.Size(m)
@@ -569,7 +575,7 @@ func (m *Issue) Reset()         { *m = Issue{} }
 func (m *Issue) String() string { return proto.CompactTextString(m) }
 func (*Issue) ProtoMessage()    {}
 func (*Issue) Descriptor() ([]byte, []int) {
-	return fileDescriptor_issue_objects_3574ef109bf05b6e, []int{5}
+	return fileDescriptor_8ab61f0576fd6c44, []int{5}
 }
 func (m *Issue) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Issue.Unmarshal(m, b)
@@ -577,8 +583,8 @@ func (m *Issue) XXX_Unmarshal(b []byte) error {
 func (m *Issue) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Issue.Marshal(b, m, deterministic)
 }
-func (dst *Issue) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Issue.Merge(dst, src)
+func (m *Issue) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Issue.Merge(m, src)
 }
 func (m *Issue) XXX_Size() int {
 	return xxx_messageInfo_Issue.Size(m)
@@ -757,7 +763,7 @@ func (m *IssueSummary) Reset()         { *m = IssueSummary{} }
 func (m *IssueSummary) String() string { return proto.CompactTextString(m) }
 func (*IssueSummary) ProtoMessage()    {}
 func (*IssueSummary) Descriptor() ([]byte, []int) {
-	return fileDescriptor_issue_objects_3574ef109bf05b6e, []int{6}
+	return fileDescriptor_8ab61f0576fd6c44, []int{6}
 }
 func (m *IssueSummary) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_IssueSummary.Unmarshal(m, b)
@@ -765,8 +771,8 @@ func (m *IssueSummary) XXX_Unmarshal(b []byte) error {
 func (m *IssueSummary) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_IssueSummary.Marshal(b, m, deterministic)
 }
-func (dst *IssueSummary) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_IssueSummary.Merge(dst, src)
+func (m *IssueSummary) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_IssueSummary.Merge(m, src)
 }
 func (m *IssueSummary) XXX_Size() int {
 	return xxx_messageInfo_IssueSummary.Size(m)
@@ -811,7 +817,7 @@ func (m *PhaseDef) Reset()         { *m = PhaseDef{} }
 func (m *PhaseDef) String() string { return proto.CompactTextString(m) }
 func (*PhaseDef) ProtoMessage()    {}
 func (*PhaseDef) Descriptor() ([]byte, []int) {
-	return fileDescriptor_issue_objects_3574ef109bf05b6e, []int{7}
+	return fileDescriptor_8ab61f0576fd6c44, []int{7}
 }
 func (m *PhaseDef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PhaseDef.Unmarshal(m, b)
@@ -819,8 +825,8 @@ func (m *PhaseDef) XXX_Unmarshal(b []byte) error {
 func (m *PhaseDef) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_PhaseDef.Marshal(b, m, deterministic)
 }
-func (dst *PhaseDef) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_PhaseDef.Merge(dst, src)
+func (m *PhaseDef) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PhaseDef.Merge(m, src)
 }
 func (m *PhaseDef) XXX_Size() int {
 	return xxx_messageInfo_PhaseDef.Size(m)
@@ -857,7 +863,7 @@ func (m *PhaseRef) Reset()         { *m = PhaseRef{} }
 func (m *PhaseRef) String() string { return proto.CompactTextString(m) }
 func (*PhaseRef) ProtoMessage()    {}
 func (*PhaseRef) Descriptor() ([]byte, []int) {
-	return fileDescriptor_issue_objects_3574ef109bf05b6e, []int{8}
+	return fileDescriptor_8ab61f0576fd6c44, []int{8}
 }
 func (m *PhaseRef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PhaseRef.Unmarshal(m, b)
@@ -865,8 +871,8 @@ func (m *PhaseRef) XXX_Unmarshal(b []byte) error {
 func (m *PhaseRef) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_PhaseRef.Marshal(b, m, deterministic)
 }
-func (dst *PhaseRef) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_PhaseRef.Merge(dst, src)
+func (m *PhaseRef) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PhaseRef.Merge(m, src)
 }
 func (m *PhaseRef) XXX_Size() int {
 	return xxx_messageInfo_PhaseRef.Size(m)
@@ -898,11 +904,9 @@ func init() {
 	proto.RegisterEnum("monorail.CannedQuery", CannedQuery_name, CannedQuery_value)
 }
 
-func init() {
-	proto.RegisterFile("api/api_proto/issue_objects.proto", fileDescriptor_issue_objects_3574ef109bf05b6e)
-}
+func init() { proto.RegisterFile("api/api_proto/issue_objects.proto", fileDescriptor_8ab61f0576fd6c44) }
 
-var fileDescriptor_issue_objects_3574ef109bf05b6e = []byte{
+var fileDescriptor_8ab61f0576fd6c44 = []byte{
 	// 1270 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x56, 0xcf, 0x6f, 0xdb, 0x46,
 	0x16, 0x8e, 0x64, 0x49, 0x24, 0x9f, 0x28, 0x89, 0x9e, 0xd8, 0x59, 0x26, 0xbb, 0x01, 0x6c, 0xed,

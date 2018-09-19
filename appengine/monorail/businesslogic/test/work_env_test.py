@@ -1231,6 +1231,12 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual('Summary', hotlist.summary)
     self.assertEqual('Description', hotlist.description)
 
+  def testListHotlistsByUser_NoUserId(self):
+    with self.assertRaises(exceptions.InputException):
+      with self.work_env as we:
+        we.ListHotlistsByUser(None)
+
+
   def testListHotlistsByUser_Empty(self):
     self.work_env.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
@@ -1417,6 +1423,37 @@ class WorkEnvTest(unittest.TestCase):
       hotlists = we.ListHotlistsByIssue(78901)
 
     self.assertEqual(0, len(hotlists))
+
+  def testListRecentlyVisitedHotlists(self):
+    hotlists = [
+        self.work_env.services.features.CreateHotlist(
+            self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+            owner_ids=[444L], editor_ids=[111L]),
+        self.work_env.services.features.CreateHotlist(
+            self.cnxn, 'Fake-Hotlist-2', 'Summary', 'Description',
+            owner_ids=[111L], editor_ids=[333L]),
+        self.work_env.services.features.CreateHotlist(
+            self.cnxn, 'Private-Hotlist', 'Summary', 'Description',
+            owner_ids=[111L], editor_ids=[333L], is_private=True),
+        self.work_env.services.features.CreateHotlist(
+            self.cnxn, 'Private-Hotlist-2', 'Summary', 'Description',
+            owner_ids=[222L], editor_ids=[333L], is_private=True)]
+
+    for hotlist in hotlists:
+      self.work_env.services.user.AddVisitedHotlist(
+          self.cnxn, 111L, hotlist.hotlist_id)
+
+    self.SignIn()
+    with self.work_env as we:
+      visited_hotlists = we.ListRecentlyVisitedHotlists()
+
+    # We don't have permission to see the last hotlist, because it is marked as
+    # private and we're not owners or editors of it.
+    self.assertEqual(hotlists[:-1], visited_hotlists)
+
+  def testListRecentlyVisitedHotlists_Anon(self):
+    with self.work_env as we:
+      self.assertEqual([], we.ListRecentlyVisitedHotlists())
 
   def testStarHotlist_Normal(self):
     """We can star and unstar a hotlist."""

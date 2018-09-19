@@ -5,9 +5,11 @@ package monorail
 
 import prpc "go.chromium.org/luci/grpc/prpc"
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 import (
 	context "golang.org/x/net/context"
@@ -39,7 +41,7 @@ func (m *RefreshTokenRequest) Reset()         { *m = RefreshTokenRequest{} }
 func (m *RefreshTokenRequest) String() string { return proto.CompactTextString(m) }
 func (*RefreshTokenRequest) ProtoMessage()    {}
 func (*RefreshTokenRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_sitewide_ff6a1e8115eea6d1, []int{0}
+	return fileDescriptor_03599899b30de215, []int{0}
 }
 func (m *RefreshTokenRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RefreshTokenRequest.Unmarshal(m, b)
@@ -47,8 +49,8 @@ func (m *RefreshTokenRequest) XXX_Unmarshal(b []byte) error {
 func (m *RefreshTokenRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_RefreshTokenRequest.Marshal(b, m, deterministic)
 }
-func (dst *RefreshTokenRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RefreshTokenRequest.Merge(dst, src)
+func (m *RefreshTokenRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RefreshTokenRequest.Merge(m, src)
 }
 func (m *RefreshTokenRequest) XXX_Size() int {
 	return xxx_messageInfo_RefreshTokenRequest.Size(m)
@@ -93,7 +95,7 @@ func (m *RefreshTokenResponse) Reset()         { *m = RefreshTokenResponse{} }
 func (m *RefreshTokenResponse) String() string { return proto.CompactTextString(m) }
 func (*RefreshTokenResponse) ProtoMessage()    {}
 func (*RefreshTokenResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_sitewide_ff6a1e8115eea6d1, []int{1}
+	return fileDescriptor_03599899b30de215, []int{1}
 }
 func (m *RefreshTokenResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RefreshTokenResponse.Unmarshal(m, b)
@@ -101,8 +103,8 @@ func (m *RefreshTokenResponse) XXX_Unmarshal(b []byte) error {
 func (m *RefreshTokenResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_RefreshTokenResponse.Marshal(b, m, deterministic)
 }
-func (dst *RefreshTokenResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RefreshTokenResponse.Merge(dst, src)
+func (m *RefreshTokenResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RefreshTokenResponse.Merge(m, src)
 }
 func (m *RefreshTokenResponse) XXX_Size() int {
 	return xxx_messageInfo_RefreshTokenResponse.Size(m)
@@ -220,11 +222,9 @@ var _Sitewide_serviceDesc = grpc.ServiceDesc{
 	Metadata: "api/api_proto/sitewide.proto",
 }
 
-func init() {
-	proto.RegisterFile("api/api_proto/sitewide.proto", fileDescriptor_sitewide_ff6a1e8115eea6d1)
-}
+func init() { proto.RegisterFile("api/api_proto/sitewide.proto", fileDescriptor_03599899b30de215) }
 
-var fileDescriptor_sitewide_ff6a1e8115eea6d1 = []byte{
+var fileDescriptor_03599899b30de215 = []byte{
 	// 239 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x90, 0x41, 0x4b, 0x03, 0x31,
 	0x10, 0x85, 0x8d, 0x52, 0x69, 0x47, 0x45, 0x8c, 0x45, 0x96, 0xc5, 0x4a, 0xd9, 0x53, 0x11, 0xd9,

@@ -79,6 +79,27 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
     return result
 
   @monorail_servicer.PRPCMethod
+  def ListRecentlyVisitedHotlists(self, mc, _request):
+    """Return the recently visited hotlists for the logged in user."""
+    with work_env.WorkEnv(mc, self.services) as we:
+      hotlists = we.ListRecentlyVisitedHotlists()
+
+    with mc.profiler.Phase('making user views'):
+      users_involved = features_bizobj.UsersOwnersOfHotlists(hotlists)
+      users_by_id = framework_views.MakeAllUserViews(
+          mc.cnxn, self.services.user, users_involved)
+      framework_views.RevealAllEmailsToMembers(mc.auth, None, users_by_id)
+
+    converted_hotlists = [
+        converters.ConvertHotlist(hotlist, users_by_id)
+        for hotlist in hotlists]
+
+    result = features_pb2.ListRecentlyVisitedHotlistsResponse(
+        hotlists=converted_hotlists)
+
+    return result
+
+  @monorail_servicer.PRPCMethod
   def GetHotlistStarCount(self, mc, request):
     """Get the star count for the specified hotlist."""
     hotlist_id = converters.IngestHotlistRef(

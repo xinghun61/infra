@@ -3,9 +3,11 @@
 
 package monorail
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -33,7 +35,7 @@ func (m *Hotlist) Reset()         { *m = Hotlist{} }
 func (m *Hotlist) String() string { return proto.CompactTextString(m) }
 func (*Hotlist) ProtoMessage()    {}
 func (*Hotlist) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_objects_739ffee28bdfb718, []int{0}
+	return fileDescriptor_806b6b78af767289, []int{0}
 }
 func (m *Hotlist) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Hotlist.Unmarshal(m, b)
@@ -41,8 +43,8 @@ func (m *Hotlist) XXX_Unmarshal(b []byte) error {
 func (m *Hotlist) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Hotlist.Marshal(b, m, deterministic)
 }
-func (dst *Hotlist) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Hotlist.Merge(dst, src)
+func (m *Hotlist) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Hotlist.Merge(m, src)
 }
 func (m *Hotlist) XXX_Size() int {
 	return xxx_messageInfo_Hotlist.Size(m)
@@ -97,7 +99,7 @@ func (m *HotlistItem) Reset()         { *m = HotlistItem{} }
 func (m *HotlistItem) String() string { return proto.CompactTextString(m) }
 func (*HotlistItem) ProtoMessage()    {}
 func (*HotlistItem) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_objects_739ffee28bdfb718, []int{1}
+	return fileDescriptor_806b6b78af767289, []int{1}
 }
 func (m *HotlistItem) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_HotlistItem.Unmarshal(m, b)
@@ -105,8 +107,8 @@ func (m *HotlistItem) XXX_Unmarshal(b []byte) error {
 func (m *HotlistItem) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_HotlistItem.Marshal(b, m, deterministic)
 }
-func (dst *HotlistItem) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_HotlistItem.Merge(dst, src)
+func (m *HotlistItem) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HotlistItem.Merge(m, src)
 }
 func (m *HotlistItem) XXX_Size() int {
 	return xxx_messageInfo_HotlistItem.Size(m)
@@ -158,10 +160,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("api/api_proto/features_objects.proto", fileDescriptor_features_objects_739ffee28bdfb718)
+	proto.RegisterFile("api/api_proto/features_objects.proto", fileDescriptor_806b6b78af767289)
 }
 
-var fileDescriptor_features_objects_739ffee28bdfb718 = []byte{
+var fileDescriptor_806b6b78af767289 = []byte{
 	// 276 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x90, 0x41, 0x4e, 0xeb, 0x30,
 	0x10, 0x86, 0x95, 0xd7, 0xf6, 0xb5, 0x75, 0x54, 0x2a, 0xbc, 0xb2, 0xb2, 0x0a, 0x15, 0x88, 0xae,

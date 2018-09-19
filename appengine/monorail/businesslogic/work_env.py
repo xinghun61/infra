@@ -1179,6 +1179,9 @@ class WorkEnv(object):
     Returns:
       The hotlists for the given user.
     """
+    if user_id is None:
+      raise exceptions.InputException('No user specified')
+
     with self.mc.profiler.Phase('querying hotlists for user %r' % user_id):
       hotlists = self.services.features.GetHotlistsByUserID(
           self.mc.cnxn, user_id)
@@ -1207,6 +1210,33 @@ class WorkEnv(object):
           self.mc.cnxn, issue_id)
 
     # Filter the hotlists that the currently authenticated user cannot see.
+    result = [
+        hotlist
+        for hotlist in hotlists
+        if permissions.CanViewHotlist(self.mc.auth.effective_ids, hotlist)]
+    return result
+
+  def ListRecentlyVisitedHotlists(self):
+    """Return the recently visited hotlists for the logged in user.
+
+    Returns:
+      The recently visited hotlists for the given user, or an empty list if no
+      user is logged in.
+    """
+    if not self.mc.auth.user_id:
+      return []
+
+    with self.mc.profiler.Phase(
+        'get recently visited hotlists for user %r' % self.mc.auth.user_id):
+      hotlist_ids = self.services.user.GetRecentlyVisitedHotlists(
+          self.mc.cnxn, self.mc.auth.user_id)
+      hotlists_by_id = self.services.features.GetHotlists(
+          self.mc.cnxn, hotlist_ids)
+      hotlists = [hotlists_by_id[hotlist_id] for hotlist_id in hotlist_ids]
+
+    # Filter the hotlists that the currently authenticated user cannot see.
+    # It might be that some of the hotlists have become private since the user
+    # last visited them, or the user has lost access for other reasons.
     result = [
         hotlist
         for hotlist in hotlists

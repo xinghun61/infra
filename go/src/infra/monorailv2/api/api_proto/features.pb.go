@@ -5,9 +5,11 @@ package monorail
 
 import prpc "go.chromium.org/luci/grpc/prpc"
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 import (
 	context "golang.org/x/net/context"
@@ -38,7 +40,7 @@ func (m *ListHotlistsByUserRequest) Reset()         { *m = ListHotlistsByUserReq
 func (m *ListHotlistsByUserRequest) String() string { return proto.CompactTextString(m) }
 func (*ListHotlistsByUserRequest) ProtoMessage()    {}
 func (*ListHotlistsByUserRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_ad5c6fd587fb9176, []int{0}
+	return fileDescriptor_25454cf49fe83cc0, []int{0}
 }
 func (m *ListHotlistsByUserRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListHotlistsByUserRequest.Unmarshal(m, b)
@@ -46,8 +48,8 @@ func (m *ListHotlistsByUserRequest) XXX_Unmarshal(b []byte) error {
 func (m *ListHotlistsByUserRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ListHotlistsByUserRequest.Marshal(b, m, deterministic)
 }
-func (dst *ListHotlistsByUserRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ListHotlistsByUserRequest.Merge(dst, src)
+func (m *ListHotlistsByUserRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListHotlistsByUserRequest.Merge(m, src)
 }
 func (m *ListHotlistsByUserRequest) XXX_Size() int {
 	return xxx_messageInfo_ListHotlistsByUserRequest.Size(m)
@@ -84,7 +86,7 @@ func (m *ListHotlistsByUserResponse) Reset()         { *m = ListHotlistsByUserRe
 func (m *ListHotlistsByUserResponse) String() string { return proto.CompactTextString(m) }
 func (*ListHotlistsByUserResponse) ProtoMessage()    {}
 func (*ListHotlistsByUserResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_ad5c6fd587fb9176, []int{1}
+	return fileDescriptor_25454cf49fe83cc0, []int{1}
 }
 func (m *ListHotlistsByUserResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListHotlistsByUserResponse.Unmarshal(m, b)
@@ -92,8 +94,8 @@ func (m *ListHotlistsByUserResponse) XXX_Unmarshal(b []byte) error {
 func (m *ListHotlistsByUserResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ListHotlistsByUserResponse.Marshal(b, m, deterministic)
 }
-func (dst *ListHotlistsByUserResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ListHotlistsByUserResponse.Merge(dst, src)
+func (m *ListHotlistsByUserResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListHotlistsByUserResponse.Merge(m, src)
 }
 func (m *ListHotlistsByUserResponse) XXX_Size() int {
 	return xxx_messageInfo_ListHotlistsByUserResponse.Size(m)
@@ -124,7 +126,7 @@ func (m *ListHotlistsByIssueRequest) Reset()         { *m = ListHotlistsByIssueR
 func (m *ListHotlistsByIssueRequest) String() string { return proto.CompactTextString(m) }
 func (*ListHotlistsByIssueRequest) ProtoMessage()    {}
 func (*ListHotlistsByIssueRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_ad5c6fd587fb9176, []int{2}
+	return fileDescriptor_25454cf49fe83cc0, []int{2}
 }
 func (m *ListHotlistsByIssueRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListHotlistsByIssueRequest.Unmarshal(m, b)
@@ -132,8 +134,8 @@ func (m *ListHotlistsByIssueRequest) XXX_Unmarshal(b []byte) error {
 func (m *ListHotlistsByIssueRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ListHotlistsByIssueRequest.Marshal(b, m, deterministic)
 }
-func (dst *ListHotlistsByIssueRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ListHotlistsByIssueRequest.Merge(dst, src)
+func (m *ListHotlistsByIssueRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListHotlistsByIssueRequest.Merge(m, src)
 }
 func (m *ListHotlistsByIssueRequest) XXX_Size() int {
 	return xxx_messageInfo_ListHotlistsByIssueRequest.Size(m)
@@ -170,7 +172,7 @@ func (m *ListHotlistsByIssueResponse) Reset()         { *m = ListHotlistsByIssue
 func (m *ListHotlistsByIssueResponse) String() string { return proto.CompactTextString(m) }
 func (*ListHotlistsByIssueResponse) ProtoMessage()    {}
 func (*ListHotlistsByIssueResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_ad5c6fd587fb9176, []int{3}
+	return fileDescriptor_25454cf49fe83cc0, []int{3}
 }
 func (m *ListHotlistsByIssueResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListHotlistsByIssueResponse.Unmarshal(m, b)
@@ -178,8 +180,8 @@ func (m *ListHotlistsByIssueResponse) XXX_Unmarshal(b []byte) error {
 func (m *ListHotlistsByIssueResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ListHotlistsByIssueResponse.Marshal(b, m, deterministic)
 }
-func (dst *ListHotlistsByIssueResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ListHotlistsByIssueResponse.Merge(dst, src)
+func (m *ListHotlistsByIssueResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListHotlistsByIssueResponse.Merge(m, src)
 }
 func (m *ListHotlistsByIssueResponse) XXX_Size() int {
 	return xxx_messageInfo_ListHotlistsByIssueResponse.Size(m)
@@ -191,6 +193,84 @@ func (m *ListHotlistsByIssueResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_ListHotlistsByIssueResponse proto.InternalMessageInfo
 
 func (m *ListHotlistsByIssueResponse) GetHotlists() []*Hotlist {
+	if m != nil {
+		return m.Hotlists
+	}
+	return nil
+}
+
+// Next available tag: 2
+type ListRecentlyVisitedHotlistsRequest struct {
+	Trace                *RequestTrace `protobuf:"bytes,1,opt,name=trace,proto3" json:"trace,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
+	XXX_unrecognized     []byte        `json:"-"`
+	XXX_sizecache        int32         `json:"-"`
+}
+
+func (m *ListRecentlyVisitedHotlistsRequest) Reset()         { *m = ListRecentlyVisitedHotlistsRequest{} }
+func (m *ListRecentlyVisitedHotlistsRequest) String() string { return proto.CompactTextString(m) }
+func (*ListRecentlyVisitedHotlistsRequest) ProtoMessage()    {}
+func (*ListRecentlyVisitedHotlistsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_25454cf49fe83cc0, []int{4}
+}
+func (m *ListRecentlyVisitedHotlistsRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ListRecentlyVisitedHotlistsRequest.Unmarshal(m, b)
+}
+func (m *ListRecentlyVisitedHotlistsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ListRecentlyVisitedHotlistsRequest.Marshal(b, m, deterministic)
+}
+func (m *ListRecentlyVisitedHotlistsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListRecentlyVisitedHotlistsRequest.Merge(m, src)
+}
+func (m *ListRecentlyVisitedHotlistsRequest) XXX_Size() int {
+	return xxx_messageInfo_ListRecentlyVisitedHotlistsRequest.Size(m)
+}
+func (m *ListRecentlyVisitedHotlistsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListRecentlyVisitedHotlistsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListRecentlyVisitedHotlistsRequest proto.InternalMessageInfo
+
+func (m *ListRecentlyVisitedHotlistsRequest) GetTrace() *RequestTrace {
+	if m != nil {
+		return m.Trace
+	}
+	return nil
+}
+
+// Next available tag: 2
+type ListRecentlyVisitedHotlistsResponse struct {
+	Hotlists             []*Hotlist `protobuf:"bytes,1,rep,name=hotlists,proto3" json:"hotlists,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
+	XXX_unrecognized     []byte     `json:"-"`
+	XXX_sizecache        int32      `json:"-"`
+}
+
+func (m *ListRecentlyVisitedHotlistsResponse) Reset()         { *m = ListRecentlyVisitedHotlistsResponse{} }
+func (m *ListRecentlyVisitedHotlistsResponse) String() string { return proto.CompactTextString(m) }
+func (*ListRecentlyVisitedHotlistsResponse) ProtoMessage()    {}
+func (*ListRecentlyVisitedHotlistsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_25454cf49fe83cc0, []int{5}
+}
+func (m *ListRecentlyVisitedHotlistsResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ListRecentlyVisitedHotlistsResponse.Unmarshal(m, b)
+}
+func (m *ListRecentlyVisitedHotlistsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ListRecentlyVisitedHotlistsResponse.Marshal(b, m, deterministic)
+}
+func (m *ListRecentlyVisitedHotlistsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListRecentlyVisitedHotlistsResponse.Merge(m, src)
+}
+func (m *ListRecentlyVisitedHotlistsResponse) XXX_Size() int {
+	return xxx_messageInfo_ListRecentlyVisitedHotlistsResponse.Size(m)
+}
+func (m *ListRecentlyVisitedHotlistsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListRecentlyVisitedHotlistsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListRecentlyVisitedHotlistsResponse proto.InternalMessageInfo
+
+func (m *ListRecentlyVisitedHotlistsResponse) GetHotlists() []*Hotlist {
 	if m != nil {
 		return m.Hotlists
 	}
@@ -210,7 +290,7 @@ func (m *GetHotlistStarCountRequest) Reset()         { *m = GetHotlistStarCountR
 func (m *GetHotlistStarCountRequest) String() string { return proto.CompactTextString(m) }
 func (*GetHotlistStarCountRequest) ProtoMessage()    {}
 func (*GetHotlistStarCountRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_ad5c6fd587fb9176, []int{4}
+	return fileDescriptor_25454cf49fe83cc0, []int{6}
 }
 func (m *GetHotlistStarCountRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetHotlistStarCountRequest.Unmarshal(m, b)
@@ -218,8 +298,8 @@ func (m *GetHotlistStarCountRequest) XXX_Unmarshal(b []byte) error {
 func (m *GetHotlistStarCountRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_GetHotlistStarCountRequest.Marshal(b, m, deterministic)
 }
-func (dst *GetHotlistStarCountRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GetHotlistStarCountRequest.Merge(dst, src)
+func (m *GetHotlistStarCountRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetHotlistStarCountRequest.Merge(m, src)
 }
 func (m *GetHotlistStarCountRequest) XXX_Size() int {
 	return xxx_messageInfo_GetHotlistStarCountRequest.Size(m)
@@ -256,7 +336,7 @@ func (m *GetHotlistStarCountResponse) Reset()         { *m = GetHotlistStarCount
 func (m *GetHotlistStarCountResponse) String() string { return proto.CompactTextString(m) }
 func (*GetHotlistStarCountResponse) ProtoMessage()    {}
 func (*GetHotlistStarCountResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_ad5c6fd587fb9176, []int{5}
+	return fileDescriptor_25454cf49fe83cc0, []int{7}
 }
 func (m *GetHotlistStarCountResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetHotlistStarCountResponse.Unmarshal(m, b)
@@ -264,8 +344,8 @@ func (m *GetHotlistStarCountResponse) XXX_Unmarshal(b []byte) error {
 func (m *GetHotlistStarCountResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_GetHotlistStarCountResponse.Marshal(b, m, deterministic)
 }
-func (dst *GetHotlistStarCountResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GetHotlistStarCountResponse.Merge(dst, src)
+func (m *GetHotlistStarCountResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetHotlistStarCountResponse.Merge(m, src)
 }
 func (m *GetHotlistStarCountResponse) XXX_Size() int {
 	return xxx_messageInfo_GetHotlistStarCountResponse.Size(m)
@@ -297,7 +377,7 @@ func (m *StarHotlistRequest) Reset()         { *m = StarHotlistRequest{} }
 func (m *StarHotlistRequest) String() string { return proto.CompactTextString(m) }
 func (*StarHotlistRequest) ProtoMessage()    {}
 func (*StarHotlistRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_ad5c6fd587fb9176, []int{6}
+	return fileDescriptor_25454cf49fe83cc0, []int{8}
 }
 func (m *StarHotlistRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StarHotlistRequest.Unmarshal(m, b)
@@ -305,8 +385,8 @@ func (m *StarHotlistRequest) XXX_Unmarshal(b []byte) error {
 func (m *StarHotlistRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_StarHotlistRequest.Marshal(b, m, deterministic)
 }
-func (dst *StarHotlistRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_StarHotlistRequest.Merge(dst, src)
+func (m *StarHotlistRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StarHotlistRequest.Merge(m, src)
 }
 func (m *StarHotlistRequest) XXX_Size() int {
 	return xxx_messageInfo_StarHotlistRequest.Size(m)
@@ -350,7 +430,7 @@ func (m *StarHotlistResponse) Reset()         { *m = StarHotlistResponse{} }
 func (m *StarHotlistResponse) String() string { return proto.CompactTextString(m) }
 func (*StarHotlistResponse) ProtoMessage()    {}
 func (*StarHotlistResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_ad5c6fd587fb9176, []int{7}
+	return fileDescriptor_25454cf49fe83cc0, []int{9}
 }
 func (m *StarHotlistResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StarHotlistResponse.Unmarshal(m, b)
@@ -358,8 +438,8 @@ func (m *StarHotlistResponse) XXX_Unmarshal(b []byte) error {
 func (m *StarHotlistResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_StarHotlistResponse.Marshal(b, m, deterministic)
 }
-func (dst *StarHotlistResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_StarHotlistResponse.Merge(dst, src)
+func (m *StarHotlistResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StarHotlistResponse.Merge(m, src)
 }
 func (m *StarHotlistResponse) XXX_Size() int {
 	return xxx_messageInfo_StarHotlistResponse.Size(m)
@@ -391,7 +471,7 @@ func (m *ListHotlistIssuesRequest) Reset()         { *m = ListHotlistIssuesReque
 func (m *ListHotlistIssuesRequest) String() string { return proto.CompactTextString(m) }
 func (*ListHotlistIssuesRequest) ProtoMessage()    {}
 func (*ListHotlistIssuesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_ad5c6fd587fb9176, []int{8}
+	return fileDescriptor_25454cf49fe83cc0, []int{10}
 }
 func (m *ListHotlistIssuesRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListHotlistIssuesRequest.Unmarshal(m, b)
@@ -399,8 +479,8 @@ func (m *ListHotlistIssuesRequest) XXX_Unmarshal(b []byte) error {
 func (m *ListHotlistIssuesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ListHotlistIssuesRequest.Marshal(b, m, deterministic)
 }
-func (dst *ListHotlistIssuesRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ListHotlistIssuesRequest.Merge(dst, src)
+func (m *ListHotlistIssuesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListHotlistIssuesRequest.Merge(m, src)
 }
 func (m *ListHotlistIssuesRequest) XXX_Size() int {
 	return xxx_messageInfo_ListHotlistIssuesRequest.Size(m)
@@ -444,7 +524,7 @@ func (m *ListHotlistIssuesResponse) Reset()         { *m = ListHotlistIssuesResp
 func (m *ListHotlistIssuesResponse) String() string { return proto.CompactTextString(m) }
 func (*ListHotlistIssuesResponse) ProtoMessage()    {}
 func (*ListHotlistIssuesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_ad5c6fd587fb9176, []int{9}
+	return fileDescriptor_25454cf49fe83cc0, []int{11}
 }
 func (m *ListHotlistIssuesResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListHotlistIssuesResponse.Unmarshal(m, b)
@@ -452,8 +532,8 @@ func (m *ListHotlistIssuesResponse) XXX_Unmarshal(b []byte) error {
 func (m *ListHotlistIssuesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ListHotlistIssuesResponse.Marshal(b, m, deterministic)
 }
-func (dst *ListHotlistIssuesResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ListHotlistIssuesResponse.Merge(dst, src)
+func (m *ListHotlistIssuesResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListHotlistIssuesResponse.Merge(m, src)
 }
 func (m *ListHotlistIssuesResponse) XXX_Size() int {
 	return xxx_messageInfo_ListHotlistIssuesResponse.Size(m)
@@ -484,7 +564,7 @@ func (m *DismissCueRequest) Reset()         { *m = DismissCueRequest{} }
 func (m *DismissCueRequest) String() string { return proto.CompactTextString(m) }
 func (*DismissCueRequest) ProtoMessage()    {}
 func (*DismissCueRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_ad5c6fd587fb9176, []int{10}
+	return fileDescriptor_25454cf49fe83cc0, []int{12}
 }
 func (m *DismissCueRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DismissCueRequest.Unmarshal(m, b)
@@ -492,8 +572,8 @@ func (m *DismissCueRequest) XXX_Unmarshal(b []byte) error {
 func (m *DismissCueRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DismissCueRequest.Marshal(b, m, deterministic)
 }
-func (dst *DismissCueRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DismissCueRequest.Merge(dst, src)
+func (m *DismissCueRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DismissCueRequest.Merge(m, src)
 }
 func (m *DismissCueRequest) XXX_Size() int {
 	return xxx_messageInfo_DismissCueRequest.Size(m)
@@ -529,7 +609,7 @@ func (m *DismissCueResponse) Reset()         { *m = DismissCueResponse{} }
 func (m *DismissCueResponse) String() string { return proto.CompactTextString(m) }
 func (*DismissCueResponse) ProtoMessage()    {}
 func (*DismissCueResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_ad5c6fd587fb9176, []int{11}
+	return fileDescriptor_25454cf49fe83cc0, []int{13}
 }
 func (m *DismissCueResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DismissCueResponse.Unmarshal(m, b)
@@ -537,8 +617,8 @@ func (m *DismissCueResponse) XXX_Unmarshal(b []byte) error {
 func (m *DismissCueResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DismissCueResponse.Marshal(b, m, deterministic)
 }
-func (dst *DismissCueResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DismissCueResponse.Merge(dst, src)
+func (m *DismissCueResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DismissCueResponse.Merge(m, src)
 }
 func (m *DismissCueResponse) XXX_Size() int {
 	return xxx_messageInfo_DismissCueResponse.Size(m)
@@ -567,7 +647,7 @@ func (m *CreateHotlistRequest) Reset()         { *m = CreateHotlistRequest{} }
 func (m *CreateHotlistRequest) String() string { return proto.CompactTextString(m) }
 func (*CreateHotlistRequest) ProtoMessage()    {}
 func (*CreateHotlistRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_ad5c6fd587fb9176, []int{12}
+	return fileDescriptor_25454cf49fe83cc0, []int{14}
 }
 func (m *CreateHotlistRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CreateHotlistRequest.Unmarshal(m, b)
@@ -575,8 +655,8 @@ func (m *CreateHotlistRequest) XXX_Unmarshal(b []byte) error {
 func (m *CreateHotlistRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CreateHotlistRequest.Marshal(b, m, deterministic)
 }
-func (dst *CreateHotlistRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CreateHotlistRequest.Merge(dst, src)
+func (m *CreateHotlistRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateHotlistRequest.Merge(m, src)
 }
 func (m *CreateHotlistRequest) XXX_Size() int {
 	return xxx_messageInfo_CreateHotlistRequest.Size(m)
@@ -647,7 +727,7 @@ func (m *CreateHotlistResponse) Reset()         { *m = CreateHotlistResponse{} }
 func (m *CreateHotlistResponse) String() string { return proto.CompactTextString(m) }
 func (*CreateHotlistResponse) ProtoMessage()    {}
 func (*CreateHotlistResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_ad5c6fd587fb9176, []int{13}
+	return fileDescriptor_25454cf49fe83cc0, []int{15}
 }
 func (m *CreateHotlistResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CreateHotlistResponse.Unmarshal(m, b)
@@ -655,8 +735,8 @@ func (m *CreateHotlistResponse) XXX_Unmarshal(b []byte) error {
 func (m *CreateHotlistResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CreateHotlistResponse.Marshal(b, m, deterministic)
 }
-func (dst *CreateHotlistResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CreateHotlistResponse.Merge(dst, src)
+func (m *CreateHotlistResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateHotlistResponse.Merge(m, src)
 }
 func (m *CreateHotlistResponse) XXX_Size() int {
 	return xxx_messageInfo_CreateHotlistResponse.Size(m)
@@ -680,7 +760,7 @@ func (m *CheckHotlistNameRequest) Reset()         { *m = CheckHotlistNameRequest
 func (m *CheckHotlistNameRequest) String() string { return proto.CompactTextString(m) }
 func (*CheckHotlistNameRequest) ProtoMessage()    {}
 func (*CheckHotlistNameRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_ad5c6fd587fb9176, []int{14}
+	return fileDescriptor_25454cf49fe83cc0, []int{16}
 }
 func (m *CheckHotlistNameRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CheckHotlistNameRequest.Unmarshal(m, b)
@@ -688,8 +768,8 @@ func (m *CheckHotlistNameRequest) XXX_Unmarshal(b []byte) error {
 func (m *CheckHotlistNameRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CheckHotlistNameRequest.Marshal(b, m, deterministic)
 }
-func (dst *CheckHotlistNameRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CheckHotlistNameRequest.Merge(dst, src)
+func (m *CheckHotlistNameRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CheckHotlistNameRequest.Merge(m, src)
 }
 func (m *CheckHotlistNameRequest) XXX_Size() int {
 	return xxx_messageInfo_CheckHotlistNameRequest.Size(m)
@@ -726,7 +806,7 @@ func (m *CheckHotlistNameResponse) Reset()         { *m = CheckHotlistNameRespon
 func (m *CheckHotlistNameResponse) String() string { return proto.CompactTextString(m) }
 func (*CheckHotlistNameResponse) ProtoMessage()    {}
 func (*CheckHotlistNameResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_ad5c6fd587fb9176, []int{15}
+	return fileDescriptor_25454cf49fe83cc0, []int{17}
 }
 func (m *CheckHotlistNameResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CheckHotlistNameResponse.Unmarshal(m, b)
@@ -734,8 +814,8 @@ func (m *CheckHotlistNameResponse) XXX_Unmarshal(b []byte) error {
 func (m *CheckHotlistNameResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CheckHotlistNameResponse.Marshal(b, m, deterministic)
 }
-func (dst *CheckHotlistNameResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CheckHotlistNameResponse.Merge(dst, src)
+func (m *CheckHotlistNameResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CheckHotlistNameResponse.Merge(m, src)
 }
 func (m *CheckHotlistNameResponse) XXX_Size() int {
 	return xxx_messageInfo_CheckHotlistNameResponse.Size(m)
@@ -767,7 +847,7 @@ func (m *RemoveIssuesFromHotlistsRequest) Reset()         { *m = RemoveIssuesFro
 func (m *RemoveIssuesFromHotlistsRequest) String() string { return proto.CompactTextString(m) }
 func (*RemoveIssuesFromHotlistsRequest) ProtoMessage()    {}
 func (*RemoveIssuesFromHotlistsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_ad5c6fd587fb9176, []int{16}
+	return fileDescriptor_25454cf49fe83cc0, []int{18}
 }
 func (m *RemoveIssuesFromHotlistsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RemoveIssuesFromHotlistsRequest.Unmarshal(m, b)
@@ -775,8 +855,8 @@ func (m *RemoveIssuesFromHotlistsRequest) XXX_Unmarshal(b []byte) error {
 func (m *RemoveIssuesFromHotlistsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_RemoveIssuesFromHotlistsRequest.Marshal(b, m, deterministic)
 }
-func (dst *RemoveIssuesFromHotlistsRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RemoveIssuesFromHotlistsRequest.Merge(dst, src)
+func (m *RemoveIssuesFromHotlistsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RemoveIssuesFromHotlistsRequest.Merge(m, src)
 }
 func (m *RemoveIssuesFromHotlistsRequest) XXX_Size() int {
 	return xxx_messageInfo_RemoveIssuesFromHotlistsRequest.Size(m)
@@ -819,7 +899,7 @@ func (m *RemoveIssuesFromHotlistsResponse) Reset()         { *m = RemoveIssuesFr
 func (m *RemoveIssuesFromHotlistsResponse) String() string { return proto.CompactTextString(m) }
 func (*RemoveIssuesFromHotlistsResponse) ProtoMessage()    {}
 func (*RemoveIssuesFromHotlistsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_ad5c6fd587fb9176, []int{17}
+	return fileDescriptor_25454cf49fe83cc0, []int{19}
 }
 func (m *RemoveIssuesFromHotlistsResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RemoveIssuesFromHotlistsResponse.Unmarshal(m, b)
@@ -827,8 +907,8 @@ func (m *RemoveIssuesFromHotlistsResponse) XXX_Unmarshal(b []byte) error {
 func (m *RemoveIssuesFromHotlistsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_RemoveIssuesFromHotlistsResponse.Marshal(b, m, deterministic)
 }
-func (dst *RemoveIssuesFromHotlistsResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RemoveIssuesFromHotlistsResponse.Merge(dst, src)
+func (m *RemoveIssuesFromHotlistsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RemoveIssuesFromHotlistsResponse.Merge(m, src)
 }
 func (m *RemoveIssuesFromHotlistsResponse) XXX_Size() int {
 	return xxx_messageInfo_RemoveIssuesFromHotlistsResponse.Size(m)
@@ -854,7 +934,7 @@ func (m *AddIssuesToHotlistsRequest) Reset()         { *m = AddIssuesToHotlistsR
 func (m *AddIssuesToHotlistsRequest) String() string { return proto.CompactTextString(m) }
 func (*AddIssuesToHotlistsRequest) ProtoMessage()    {}
 func (*AddIssuesToHotlistsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_ad5c6fd587fb9176, []int{18}
+	return fileDescriptor_25454cf49fe83cc0, []int{20}
 }
 func (m *AddIssuesToHotlistsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AddIssuesToHotlistsRequest.Unmarshal(m, b)
@@ -862,8 +942,8 @@ func (m *AddIssuesToHotlistsRequest) XXX_Unmarshal(b []byte) error {
 func (m *AddIssuesToHotlistsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_AddIssuesToHotlistsRequest.Marshal(b, m, deterministic)
 }
-func (dst *AddIssuesToHotlistsRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AddIssuesToHotlistsRequest.Merge(dst, src)
+func (m *AddIssuesToHotlistsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AddIssuesToHotlistsRequest.Merge(m, src)
 }
 func (m *AddIssuesToHotlistsRequest) XXX_Size() int {
 	return xxx_messageInfo_AddIssuesToHotlistsRequest.Size(m)
@@ -913,7 +993,7 @@ func (m *AddIssuesToHotlistsResponse) Reset()         { *m = AddIssuesToHotlists
 func (m *AddIssuesToHotlistsResponse) String() string { return proto.CompactTextString(m) }
 func (*AddIssuesToHotlistsResponse) ProtoMessage()    {}
 func (*AddIssuesToHotlistsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_features_ad5c6fd587fb9176, []int{19}
+	return fileDescriptor_25454cf49fe83cc0, []int{21}
 }
 func (m *AddIssuesToHotlistsResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AddIssuesToHotlistsResponse.Unmarshal(m, b)
@@ -921,8 +1001,8 @@ func (m *AddIssuesToHotlistsResponse) XXX_Unmarshal(b []byte) error {
 func (m *AddIssuesToHotlistsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_AddIssuesToHotlistsResponse.Marshal(b, m, deterministic)
 }
-func (dst *AddIssuesToHotlistsResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AddIssuesToHotlistsResponse.Merge(dst, src)
+func (m *AddIssuesToHotlistsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AddIssuesToHotlistsResponse.Merge(m, src)
 }
 func (m *AddIssuesToHotlistsResponse) XXX_Size() int {
 	return xxx_messageInfo_AddIssuesToHotlistsResponse.Size(m)
@@ -938,6 +1018,8 @@ func init() {
 	proto.RegisterType((*ListHotlistsByUserResponse)(nil), "monorail.ListHotlistsByUserResponse")
 	proto.RegisterType((*ListHotlistsByIssueRequest)(nil), "monorail.ListHotlistsByIssueRequest")
 	proto.RegisterType((*ListHotlistsByIssueResponse)(nil), "monorail.ListHotlistsByIssueResponse")
+	proto.RegisterType((*ListRecentlyVisitedHotlistsRequest)(nil), "monorail.ListRecentlyVisitedHotlistsRequest")
+	proto.RegisterType((*ListRecentlyVisitedHotlistsResponse)(nil), "monorail.ListRecentlyVisitedHotlistsResponse")
 	proto.RegisterType((*GetHotlistStarCountRequest)(nil), "monorail.GetHotlistStarCountRequest")
 	proto.RegisterType((*GetHotlistStarCountResponse)(nil), "monorail.GetHotlistStarCountResponse")
 	proto.RegisterType((*StarHotlistRequest)(nil), "monorail.StarHotlistRequest")
@@ -970,6 +1052,7 @@ const _ = grpc.SupportPackageIsVersion4
 type FeaturesClient interface {
 	ListHotlistsByUser(ctx context.Context, in *ListHotlistsByUserRequest, opts ...grpc.CallOption) (*ListHotlistsByUserResponse, error)
 	ListHotlistsByIssue(ctx context.Context, in *ListHotlistsByIssueRequest, opts ...grpc.CallOption) (*ListHotlistsByIssueResponse, error)
+	ListRecentlyVisitedHotlists(ctx context.Context, in *ListRecentlyVisitedHotlistsRequest, opts ...grpc.CallOption) (*ListRecentlyVisitedHotlistsResponse, error)
 	GetHotlistStarCount(ctx context.Context, in *GetHotlistStarCountRequest, opts ...grpc.CallOption) (*GetHotlistStarCountResponse, error)
 	StarHotlist(ctx context.Context, in *StarHotlistRequest, opts ...grpc.CallOption) (*StarHotlistResponse, error)
 	ListHotlistIssues(ctx context.Context, in *ListHotlistIssuesRequest, opts ...grpc.CallOption) (*ListHotlistIssuesResponse, error)
@@ -999,6 +1082,15 @@ func (c *featuresPRPCClient) ListHotlistsByUser(ctx context.Context, in *ListHot
 func (c *featuresPRPCClient) ListHotlistsByIssue(ctx context.Context, in *ListHotlistsByIssueRequest, opts ...grpc.CallOption) (*ListHotlistsByIssueResponse, error) {
 	out := new(ListHotlistsByIssueResponse)
 	err := c.client.Call(ctx, "monorail.Features", "ListHotlistsByIssue", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *featuresPRPCClient) ListRecentlyVisitedHotlists(ctx context.Context, in *ListRecentlyVisitedHotlistsRequest, opts ...grpc.CallOption) (*ListRecentlyVisitedHotlistsResponse, error) {
+	out := new(ListRecentlyVisitedHotlistsResponse)
+	err := c.client.Call(ctx, "monorail.Features", "ListRecentlyVisitedHotlists", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1103,6 +1195,15 @@ func (c *featuresClient) ListHotlistsByIssue(ctx context.Context, in *ListHotlis
 	return out, nil
 }
 
+func (c *featuresClient) ListRecentlyVisitedHotlists(ctx context.Context, in *ListRecentlyVisitedHotlistsRequest, opts ...grpc.CallOption) (*ListRecentlyVisitedHotlistsResponse, error) {
+	out := new(ListRecentlyVisitedHotlistsResponse)
+	err := c.cc.Invoke(ctx, "/monorail.Features/ListRecentlyVisitedHotlists", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *featuresClient) GetHotlistStarCount(ctx context.Context, in *GetHotlistStarCountRequest, opts ...grpc.CallOption) (*GetHotlistStarCountResponse, error) {
 	out := new(GetHotlistStarCountResponse)
 	err := c.cc.Invoke(ctx, "/monorail.Features/GetHotlistStarCount", in, out, opts...)
@@ -1179,6 +1280,7 @@ func (c *featuresClient) AddIssuesToHotlists(ctx context.Context, in *AddIssuesT
 type FeaturesServer interface {
 	ListHotlistsByUser(context.Context, *ListHotlistsByUserRequest) (*ListHotlistsByUserResponse, error)
 	ListHotlistsByIssue(context.Context, *ListHotlistsByIssueRequest) (*ListHotlistsByIssueResponse, error)
+	ListRecentlyVisitedHotlists(context.Context, *ListRecentlyVisitedHotlistsRequest) (*ListRecentlyVisitedHotlistsResponse, error)
 	GetHotlistStarCount(context.Context, *GetHotlistStarCountRequest) (*GetHotlistStarCountResponse, error)
 	StarHotlist(context.Context, *StarHotlistRequest) (*StarHotlistResponse, error)
 	ListHotlistIssues(context.Context, *ListHotlistIssuesRequest) (*ListHotlistIssuesResponse, error)
@@ -1225,6 +1327,24 @@ func _Features_ListHotlistsByIssue_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(FeaturesServer).ListHotlistsByIssue(ctx, req.(*ListHotlistsByIssueRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Features_ListRecentlyVisitedHotlists_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListRecentlyVisitedHotlistsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FeaturesServer).ListRecentlyVisitedHotlists(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/monorail.Features/ListRecentlyVisitedHotlists",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FeaturesServer).ListRecentlyVisitedHotlists(ctx, req.(*ListRecentlyVisitedHotlistsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1386,6 +1506,10 @@ var _Features_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Features_ListHotlistsByIssue_Handler,
 		},
 		{
+			MethodName: "ListRecentlyVisitedHotlists",
+			Handler:    _Features_ListRecentlyVisitedHotlists_Handler,
+		},
+		{
 			MethodName: "GetHotlistStarCount",
 			Handler:    _Features_GetHotlistStarCount_Handler,
 		},
@@ -1422,63 +1546,64 @@ var _Features_serviceDesc = grpc.ServiceDesc{
 	Metadata: "api/api_proto/features.proto",
 }
 
-func init() {
-	proto.RegisterFile("api/api_proto/features.proto", fileDescriptor_features_ad5c6fd587fb9176)
-}
+func init() { proto.RegisterFile("api/api_proto/features.proto", fileDescriptor_25454cf49fe83cc0) }
 
-var fileDescriptor_features_ad5c6fd587fb9176 = []byte{
-	// 838 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x56, 0xdd, 0x4e, 0xdb, 0x48,
-	0x14, 0xc6, 0x40, 0x20, 0x39, 0x59, 0xa4, 0x65, 0x08, 0x8b, 0xd7, 0x81, 0x25, 0x3b, 0x80, 0xc4,
-	0xfe, 0xc1, 0x2e, 0xcb, 0x6a, 0x6f, 0xf6, 0x66, 0x9b, 0x8a, 0x12, 0x15, 0x55, 0x68, 0x4a, 0xa5,
-	0x4a, 0x48, 0x8d, 0x8c, 0x3d, 0x29, 0xd3, 0xe2, 0x8c, 0x3b, 0x33, 0x46, 0xe2, 0xb2, 0xcf, 0xd0,
-	0xbb, 0xbe, 0x47, 0xaf, 0x2a, 0xf5, 0x01, 0xfa, 0x54, 0x55, 0xc6, 0xe3, 0x9f, 0x24, 0x76, 0x8a,
-	0xd2, 0x0a, 0xa9, 0x77, 0x9e, 0x39, 0xdf, 0xf9, 0xce, 0xcf, 0x9c, 0x1f, 0xc3, 0xba, 0x1b, 0xb2,
-	0x7d, 0x37, 0x64, 0xdd, 0x50, 0x70, 0xc5, 0xf7, 0x7b, 0xd4, 0x55, 0x91, 0xa0, 0x72, 0x4f, 0x1f,
-	0x51, 0x35, 0xe0, 0x7d, 0x2e, 0x5c, 0x76, 0xe5, 0x38, 0xc3, 0x38, 0x8f, 0x07, 0x01, 0xef, 0xc7,
-	0x28, 0x67, 0xbb, 0x98, 0xa3, 0xcb, 0x2f, 0x5e, 0x50, 0x4f, 0x19, 0x2e, 0x1c, 0xc2, 0x8f, 0x27,
-	0x4c, 0xaa, 0x63, 0xae, 0xae, 0x98, 0x54, 0xf2, 0xde, 0xcd, 0x13, 0x49, 0x05, 0xa1, 0xaf, 0x22,
-	0x2a, 0x15, 0xfa, 0x1d, 0x2a, 0x4a, 0xb8, 0x1e, 0xb5, 0xad, 0x96, 0xb5, 0x5b, 0x3f, 0xf8, 0x61,
-	0x2f, 0x31, 0xbc, 0x67, 0x10, 0x67, 0x03, 0x29, 0x89, 0x41, 0x68, 0x07, 0xe6, 0x23, 0x49, 0x85,
-	0x3d, 0xab, 0xc1, 0xcb, 0x19, 0x38, 0xa6, 0xec, 0x11, 0x2d, 0xc6, 0x0f, 0xc1, 0x29, 0xb2, 0x28,
-	0x43, 0xde, 0x97, 0x14, 0xfd, 0x01, 0xd5, 0x4b, 0x23, 0xb1, 0xad, 0xd6, 0xdc, 0x30, 0x91, 0xd1,
-	0x21, 0x29, 0x04, 0xab, 0x51, 0xb2, 0x8e, 0x94, 0x11, 0x9d, 0xce, 0xff, 0x5d, 0xa8, 0xb0, 0x81,
-	0xb6, 0x09, 0x00, 0x65, 0x68, 0x43, 0xda, 0x23, 0x31, 0x00, 0x9f, 0x40, 0xb3, 0xd0, 0xea, 0x74,
-	0x31, 0xbc, 0xb6, 0xc0, 0x79, 0x40, 0x13, 0xb6, 0xc7, 0xca, 0x15, 0x6d, 0x1e, 0xf5, 0xd5, 0x74,
-	0x41, 0xfc, 0x03, 0x75, 0x43, 0xdc, 0x15, 0xb4, 0x67, 0x42, 0x69, 0x8c, 0x9b, 0xa7, 0x3d, 0x02,
-	0x97, 0xe9, 0x37, 0xfe, 0x0f, 0x9a, 0x85, 0x2e, 0x98, 0x88, 0x36, 0x00, 0xa4, 0x72, 0x45, 0xd7,
-	0x1b, 0xdc, 0x6a, 0x47, 0x96, 0x48, 0x4d, 0x26, 0x30, 0xfc, 0xc6, 0x02, 0x34, 0x50, 0x4a, 0xc9,
-	0xef, 0xce, 0x73, 0x64, 0xc3, 0xe2, 0xc0, 0x11, 0x41, 0x7d, 0x7b, 0xae, 0x65, 0xed, 0x56, 0x49,
-	0x72, 0xc4, 0x87, 0xb0, 0x32, 0xe4, 0xd4, 0xed, 0x62, 0x79, 0x67, 0x81, 0x9d, 0x7b, 0x5c, 0xfd,
-	0xb2, 0xf2, 0x4e, 0x23, 0x3a, 0x04, 0x08, 0xdd, 0xe7, 0xac, 0xef, 0x2a, 0xc6, 0xfb, 0x3a, 0xa8,
-	0x21, 0xad, 0xd3, 0x54, 0x46, 0x72, 0x38, 0x7c, 0x3c, 0xd4, 0xc8, 0x89, 0xdb, 0x26, 0xe6, 0xdf,
-	0xa0, 0xc2, 0x14, 0x0d, 0x92, 0x72, 0x5c, 0x1d, 0xf3, 0xa1, 0xa3, 0x68, 0x40, 0x62, 0x0c, 0x7e,
-	0x0a, 0xcb, 0xf7, 0x99, 0x0c, 0x98, 0x94, 0xed, 0x69, 0x5b, 0x69, 0x15, 0x16, 0xbc, 0x88, 0x76,
-	0x99, 0xaf, 0x83, 0xae, 0x91, 0x8a, 0x17, 0xd1, 0x8e, 0x8f, 0x1b, 0x80, 0xf2, 0xcc, 0xb1, 0x73,
-	0xf8, 0xed, 0x2c, 0x34, 0xda, 0x82, 0xba, 0x8a, 0x7e, 0x51, 0xfd, 0x20, 0x98, 0xef, 0xbb, 0x01,
-	0x35, 0x16, 0xf5, 0xb7, 0x2e, 0x8e, 0x28, 0x08, 0x5c, 0x71, 0xa3, 0xf3, 0x58, 0x23, 0xc9, 0x11,
-	0xb5, 0xa0, 0xee, 0x53, 0xe9, 0x09, 0x16, 0xea, 0x2c, 0xcf, 0x6b, 0x69, 0xfe, 0x0a, 0x1d, 0x40,
-	0x9d, 0xfa, 0x4c, 0x71, 0x31, 0x78, 0x3c, 0x69, 0x57, 0x46, 0x1b, 0x39, 0x99, 0x6a, 0x10, 0xa3,
-	0x08, 0xed, 0x49, 0xf4, 0x17, 0x80, 0x9e, 0x10, 0xb1, 0xca, 0x82, 0x56, 0x29, 0x9a, 0x23, 0x35,
-	0x66, 0xbe, 0xe4, 0xa0, 0x1c, 0x99, 0xec, 0x86, 0x82, 0x5d, 0xbb, 0x8a, 0xda, 0x8b, 0xba, 0x84,
-	0x6b, 0x4c, 0x9e, 0xc6, 0x17, 0x78, 0x0d, 0x56, 0x47, 0x72, 0x63, 0xb2, 0x76, 0x0e, 0x6b, 0xed,
-	0x4b, 0xea, 0xbd, 0x34, 0xf7, 0x8f, 0xdc, 0x80, 0x7e, 0xb5, 0xbc, 0xe1, 0x3f, 0xc1, 0x1e, 0x27,
-	0x37, 0xb5, 0xd4, 0x80, 0x0a, 0x15, 0x82, 0x0b, 0xcd, 0x5e, 0x23, 0xf1, 0x01, 0xbf, 0xb7, 0x60,
-	0x93, 0xd0, 0x80, 0x5f, 0xd3, 0xb8, 0xf4, 0x8e, 0x04, 0x0f, 0x92, 0xf9, 0x38, 0x9d, 0x5f, 0xff,
-	0xc2, 0x77, 0xb9, 0xee, 0x91, 0xf6, 0xac, 0xce, 0x66, 0x71, 0xfb, 0xd4, 0xb3, 0xf6, 0x19, 0x7d,
-	0x84, 0xb9, 0x5b, 0x3c, 0x02, 0xc6, 0xd0, 0x2a, 0x77, 0xde, 0x24, 0xfc, 0xa3, 0x05, 0xce, 0xff,
-	0xbe, 0x1f, 0x23, 0xce, 0xf8, 0x37, 0x13, 0x9c, 0x7e, 0x60, 0xae, 0xa8, 0xa9, 0x71, 0xfd, 0x8d,
-	0x37, 0xa0, 0x59, 0x18, 0x4b, 0x1c, 0xeb, 0xc1, 0x87, 0x45, 0xa8, 0x1e, 0x99, 0x1f, 0x06, 0xe4,
-	0x02, 0x1a, 0x5f, 0xd8, 0x68, 0x2b, 0x33, 0x5a, 0xfa, 0x03, 0xe1, 0x6c, 0x4f, 0x06, 0x99, 0xcc,
-	0xce, 0x20, 0x1f, 0x56, 0x0a, 0x16, 0x2a, 0x2a, 0x55, 0xcf, 0x6f, 0x79, 0x67, 0xe7, 0x33, 0xa8,
-	0xbc, 0x95, 0x82, 0x25, 0x97, 0xb7, 0x52, 0xbe, 0x86, 0xf3, 0x56, 0x26, 0x6c, 0x4a, 0x3c, 0x83,
-	0x4e, 0xa0, 0x9e, 0x5b, 0x3b, 0x68, 0x3d, 0xd3, 0x1b, 0x5f, 0x91, 0xce, 0x46, 0x89, 0x34, 0x65,
-	0x7b, 0x06, 0xcb, 0x63, 0x63, 0x1d, 0xe1, 0xc2, 0x88, 0x87, 0x56, 0x95, 0xb3, 0x35, 0x11, 0x93,
-	0xf2, 0x77, 0x00, 0xb2, 0x91, 0x8c, 0x9a, 0x99, 0xd2, 0xd8, 0x0a, 0x70, 0xd6, 0x8b, 0x85, 0x29,
-	0x15, 0x81, 0xa5, 0xa1, 0x51, 0x85, 0x7e, 0xca, 0x14, 0x8a, 0xe6, 0xbb, 0xb3, 0x59, 0x2a, 0x4f,
-	0x39, 0xcf, 0xe1, 0xfb, 0xd1, 0x41, 0x84, 0x7e, 0xce, 0xa9, 0x15, 0x4f, 0x40, 0x07, 0x4f, 0x82,
-	0xa4, 0xe4, 0x12, 0xec, 0xb2, 0xae, 0x47, 0xbf, 0xe4, 0xfb, 0x77, 0xe2, 0x58, 0x73, 0x7e, 0xbd,
-	0x0d, 0x34, 0x5f, 0x84, 0x05, 0x9d, 0x97, 0x2f, 0xc2, 0xf2, 0x21, 0x93, 0x2f, 0xc2, 0x09, 0xed,
-	0x8b, 0x67, 0x2e, 0x16, 0xf4, 0xdf, 0xfd, 0xdf, 0x9f, 0x02, 0x00, 0x00, 0xff, 0xff, 0x94, 0x17,
-	0x3b, 0x40, 0x49, 0x0c, 0x00, 0x00,
+var fileDescriptor_25454cf49fe83cc0 = []byte{
+	// 887 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x57, 0x5f, 0x6f, 0xdc, 0x44,
+	0x10, 0x8f, 0x93, 0x5c, 0x7a, 0x37, 0x47, 0x25, 0xb2, 0x4d, 0xa8, 0x71, 0x12, 0x7a, 0x6c, 0x5a,
+	0x29, 0x40, 0x9b, 0x42, 0x28, 0xe2, 0x85, 0x17, 0x08, 0x2a, 0x8d, 0x88, 0x50, 0xb5, 0x04, 0x84,
+	0x54, 0x89, 0x93, 0x6b, 0xcf, 0x91, 0x85, 0xd8, 0x6b, 0x76, 0xd7, 0x95, 0x22, 0xf1, 0xc2, 0x67,
+	0xe0, 0x8d, 0xef, 0xc1, 0x13, 0x7c, 0x02, 0x3e, 0x15, 0xf2, 0x7a, 0xfd, 0xef, 0xce, 0x36, 0xa7,
+	0x2b, 0xaa, 0xc4, 0x9b, 0xed, 0xf9, 0xcd, 0x6f, 0xe7, 0x37, 0x3b, 0x3b, 0xb3, 0x86, 0x7d, 0x3f,
+	0xe1, 0x0f, 0xfd, 0x84, 0x4f, 0x13, 0x29, 0xb4, 0x78, 0x38, 0x43, 0x5f, 0xa7, 0x12, 0xd5, 0xb1,
+	0x79, 0x25, 0xc3, 0x48, 0xc4, 0x42, 0xfa, 0xfc, 0xca, 0xf3, 0x9a, 0xb8, 0x40, 0x44, 0x91, 0x88,
+	0x73, 0x94, 0x77, 0xb7, 0x9d, 0x63, 0x2a, 0x9e, 0xff, 0x88, 0x81, 0xb6, 0x5c, 0x34, 0x81, 0x37,
+	0xcf, 0xb9, 0xd2, 0x4f, 0x84, 0xbe, 0xe2, 0x4a, 0xab, 0xcf, 0xae, 0xbf, 0x51, 0x28, 0x19, 0xfe,
+	0x9c, 0xa2, 0xd2, 0xe4, 0x3e, 0x0c, 0xb4, 0xf4, 0x03, 0x74, 0x9d, 0x89, 0x73, 0x34, 0x3e, 0x79,
+	0xe3, 0xb8, 0x58, 0xf8, 0xd8, 0x22, 0x2e, 0x32, 0x2b, 0xcb, 0x41, 0xe4, 0x1e, 0x6c, 0xa6, 0x0a,
+	0xa5, 0xbb, 0x6e, 0xc0, 0xdb, 0x15, 0x38, 0xa7, 0x9c, 0x31, 0x63, 0xa6, 0x5f, 0x82, 0xd7, 0xb6,
+	0xa2, 0x4a, 0x44, 0xac, 0x90, 0x3c, 0x80, 0xe1, 0xa5, 0xb5, 0xb8, 0xce, 0x64, 0xa3, 0x49, 0x64,
+	0x7d, 0x58, 0x09, 0xa1, 0x7a, 0x9e, 0xec, 0x4c, 0xa9, 0x14, 0x57, 0x8b, 0xff, 0x08, 0x06, 0x3c,
+	0xf3, 0xb6, 0x02, 0x48, 0x85, 0xb6, 0xa4, 0x33, 0x96, 0x03, 0xe8, 0x39, 0xec, 0xb5, 0xae, 0xba,
+	0x9a, 0x06, 0x06, 0x34, 0x63, 0x63, 0x18, 0x60, 0xac, 0xaf, 0xae, 0xbf, 0xe5, 0x8a, 0x6b, 0x0c,
+	0x0b, 0xf2, 0x95, 0xb4, 0xd0, 0x0b, 0x38, 0xec, 0xe5, 0x5c, 0x2d, 0xd2, 0x5f, 0x1d, 0xf0, 0xbe,
+	0xc0, 0x42, 0xf7, 0xd7, 0xda, 0x97, 0xa7, 0x22, 0x8d, 0xf5, 0x6a, 0xe9, 0xfe, 0x08, 0xc6, 0x96,
+	0x78, 0x2a, 0x71, 0x66, 0x93, 0xbe, 0xb3, 0xb8, 0x3c, 0xce, 0x18, 0x5c, 0x96, 0xcf, 0xf4, 0x13,
+	0xd8, 0x6b, 0x0d, 0xc1, 0x2a, 0x3a, 0x00, 0x50, 0xda, 0x97, 0xd3, 0x20, 0xfb, 0x6a, 0x02, 0xb9,
+	0xc9, 0x46, 0xaa, 0x80, 0xd1, 0xdf, 0x1c, 0x20, 0x99, 0x53, 0x49, 0xfe, 0xea, 0x22, 0x27, 0x2e,
+	0xdc, 0xc8, 0x02, 0x91, 0x18, 0xba, 0x1b, 0x13, 0xe7, 0x68, 0xc8, 0x8a, 0x57, 0xfa, 0x08, 0x6e,
+	0x35, 0x82, 0x5a, 0x4e, 0xcb, 0x1f, 0x0e, 0xb8, 0xb5, 0x32, 0x34, 0x35, 0xa8, 0x5e, 0xa9, 0xa2,
+	0x47, 0x00, 0x89, 0xff, 0x03, 0x8f, 0x7d, 0xcd, 0x45, 0x6c, 0x44, 0x35, 0xbc, 0x9e, 0x96, 0x36,
+	0x56, 0xc3, 0xd1, 0x27, 0x8d, 0x96, 0x53, 0x84, 0x6d, 0x35, 0xbf, 0x07, 0x03, 0xae, 0x31, 0x2a,
+	0xca, 0x71, 0x77, 0x21, 0x86, 0x33, 0x8d, 0x11, 0xcb, 0x31, 0xf4, 0x3b, 0xd8, 0xfe, 0x9c, 0xab,
+	0x88, 0x2b, 0x75, 0xba, 0xea, 0xa1, 0xdf, 0x85, 0xad, 0x20, 0xc5, 0x29, 0x0f, 0x8d, 0xe8, 0x11,
+	0x1b, 0x04, 0x29, 0x9e, 0x85, 0x74, 0x07, 0x48, 0x9d, 0x39, 0x0f, 0x8e, 0xfe, 0xbe, 0x0e, 0x3b,
+	0xa7, 0x12, 0x7d, 0x8d, 0x2f, 0x55, 0x3f, 0x04, 0x36, 0x63, 0x3f, 0x42, 0xbb, 0xa2, 0x79, 0x36,
+	0xc5, 0x91, 0x46, 0x91, 0x2f, 0xaf, 0x4d, 0x1e, 0x47, 0xac, 0x78, 0x25, 0x13, 0x18, 0x87, 0xa8,
+	0x02, 0xc9, 0x13, 0x93, 0xe5, 0x4d, 0x63, 0xad, 0x7f, 0x22, 0x27, 0x30, 0xc6, 0x90, 0x6b, 0x21,
+	0xb3, 0xcd, 0x53, 0xee, 0x60, 0xfe, 0x20, 0x17, 0xfd, 0x17, 0x72, 0x14, 0xc3, 0x99, 0x22, 0x1f,
+	0x00, 0x98, 0x5e, 0x96, 0xbb, 0x6c, 0x19, 0x97, 0xb6, 0x8e, 0x37, 0xe2, 0xf6, 0x49, 0x65, 0xe5,
+	0xc8, 0xd5, 0x34, 0x91, 0xfc, 0x85, 0xaf, 0xd1, 0xbd, 0x61, 0x4a, 0x78, 0xc4, 0xd5, 0xd3, 0xfc,
+	0x03, 0xbd, 0x0d, 0xbb, 0x73, 0xb9, 0xb1, 0x59, 0x7b, 0x06, 0xb7, 0x4f, 0x2f, 0x31, 0xf8, 0xc9,
+	0x7e, 0xff, 0xca, 0x8f, 0xf0, 0x3f, 0xcb, 0x1b, 0x7d, 0x1f, 0xdc, 0x45, 0x72, 0x5b, 0x4b, 0x3b,
+	0x30, 0x40, 0x29, 0x85, 0x34, 0xec, 0x23, 0x96, 0xbf, 0xd0, 0x3f, 0x1d, 0xb8, 0xc3, 0x30, 0x12,
+	0x2f, 0x30, 0x2f, 0xbd, 0xc7, 0x52, 0x44, 0x2f, 0xd5, 0x6c, 0xc9, 0xc7, 0xf0, 0x5a, 0xed, 0xf4,
+	0x28, 0x77, 0xdd, 0x64, 0xb3, 0xfd, 0xf8, 0x8c, 0xab, 0xe3, 0x33, 0xbf, 0x09, 0x1b, 0x4b, 0x6c,
+	0x02, 0xa5, 0x30, 0xe9, 0x0e, 0xde, 0x26, 0xfc, 0x6f, 0x07, 0xbc, 0x4f, 0xc3, 0x30, 0x47, 0x5c,
+	0x88, 0xff, 0x8d, 0x38, 0xb3, 0xc1, 0x42, 0xa3, 0xad, 0x71, 0xf3, 0x4c, 0x0f, 0x60, 0xaf, 0x55,
+	0x4b, 0xae, 0xf5, 0xe4, 0xaf, 0x21, 0x0c, 0x1f, 0xdb, 0xab, 0x0d, 0xf1, 0x81, 0x2c, 0x5e, 0x2d,
+	0xc8, 0x61, 0xb5, 0x68, 0xe7, 0x55, 0xc7, 0xbb, 0xdb, 0x0f, 0xb2, 0x99, 0x5d, 0x23, 0x21, 0xdc,
+	0x6a, 0x19, 0xfd, 0xa4, 0xd3, 0xbd, 0x7e, 0x1f, 0xf1, 0xee, 0xfd, 0x0b, 0xaa, 0x5c, 0xe5, 0x97,
+	0xfc, 0x82, 0xd1, 0x31, 0xbe, 0xc9, 0xfd, 0x26, 0x4f, 0xff, 0xcd, 0xc1, 0x7b, 0xb0, 0x24, 0xba,
+	0xae, 0xb1, 0x65, 0xc4, 0xd6, 0x35, 0x76, 0x5f, 0x02, 0xea, 0x1a, 0x7b, 0xe6, 0x34, 0x5d, 0x23,
+	0xe7, 0x30, 0xae, 0x0d, 0x3d, 0xb2, 0x5f, 0xf9, 0x2d, 0x0e, 0x68, 0xef, 0xa0, 0xc3, 0x5a, 0xb2,
+	0x7d, 0x0f, 0xdb, 0x0b, 0x43, 0x85, 0xd0, 0xd6, 0x7c, 0x37, 0x06, 0xa5, 0x77, 0xd8, 0x8b, 0x29,
+	0xf9, 0xcf, 0x00, 0xaa, 0x81, 0x40, 0xf6, 0x2a, 0xa7, 0x85, 0x01, 0xe4, 0xed, 0xb7, 0x1b, 0x4b,
+	0x2a, 0x06, 0x37, 0x1b, 0x8d, 0x92, 0xbc, 0x55, 0x39, 0xb4, 0x4d, 0x17, 0xef, 0x4e, 0xa7, 0xbd,
+	0xe4, 0x7c, 0x06, 0xaf, 0xcf, 0xb7, 0x41, 0xf2, 0x76, 0xcd, 0xad, 0xbd, 0xff, 0x7a, 0xb4, 0x0f,
+	0x52, 0x92, 0x2b, 0x70, 0xbb, 0x7a, 0x0e, 0x79, 0xa7, 0xde, 0x3d, 0x7a, 0x9b, 0xaa, 0xf7, 0xee,
+	0x32, 0xd0, 0x7a, 0x11, 0xb6, 0x9c, 0xfb, 0x7a, 0x11, 0x76, 0xb7, 0xb8, 0x7a, 0x11, 0xf6, 0x34,
+	0x0f, 0xba, 0xf6, 0x7c, 0xcb, 0xfc, 0x05, 0x7d, 0xf8, 0x4f, 0x00, 0x00, 0x00, 0xff, 0xff, 0xba,
+	0xc7, 0xfa, 0x7a, 0x71, 0x0d, 0x00, 0x00,
 }
