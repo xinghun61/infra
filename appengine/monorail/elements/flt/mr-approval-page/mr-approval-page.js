@@ -55,6 +55,10 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
         type: String,
         statePath: 'user',
       },
+      _userMenuItems: {
+        type: Array,
+        computed: '_computeUserMenuItems(_user, loginUrl, logoutUrl)',
+      },
     };
   }
 
@@ -121,6 +125,20 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
       type: actionType.UPDATE_USER,
       user,
     });
+  }
+
+  _computeUserMenuItems(user, loginUrl, logoutUrl) {
+    return [
+      {text: 'Switch accounts', url: loginUrl},
+      {separator: true},
+      {text: 'Profile', url: `/u/${user}`},
+      {text: 'Updates', url: `/u/${user}/updates`},
+      {text: 'Settings', url: '/hosting/settings'},
+      {text: 'Saved queries', url: `/u/${user}/queries`},
+      {text: 'Hotlists', url: `/u/${user}/hotlists`},
+      {separator: true},
+      {text: 'Sign out', url: logoutUrl},
+    ];
   }
 }
 

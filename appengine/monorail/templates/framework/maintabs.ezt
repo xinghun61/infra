@@ -49,11 +49,7 @@
     [end]
 
     <td width="100%" id="userbar">
-      <mr-account-dropdown
-        email="[if-any logged_in_user][logged_in_user.email][end]"
-        login-url="[if-any login_url][login_url][end]"
-        logout-url="[if-any logout_url][logout_url][end]">
-      </mr-account-dropdown>
+      [include "user-bar.ezt"]
     </td>
   </tr>
 </table>
