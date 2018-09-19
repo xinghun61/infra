@@ -87,6 +87,7 @@ _fetchUserProjects = TKR_fetchUserProjects;
 _setACOptions = TKR_setUpAutoCompleteStore;
 _openIssueUpdateForm = TKR_openIssueUpdateForm;
 _addAttachmentFields = TKR_addAttachmentFields;
+_ignoreWidgetIfOpIsClear = TKR_ignoreWidgetIfOpIsClear;
 
 _acstore = _AC_SimpleStore;
 _accomp = _AC_Completion;

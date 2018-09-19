@@ -368,12 +368,6 @@ function _checkAutoClear(inputEl, selectID) {
 }
 
 
-function _ignoreWidgetIfOpIsClear(selectEl, inputID) {
-  if (selectEl.value == 'clear') {
-    document.getElementById(inputID).value = '';
-  }
-}
-
 $("bulk_form").addEventListener("submit", bulkOnSubmit);
 
 if ($("statusenter")) {

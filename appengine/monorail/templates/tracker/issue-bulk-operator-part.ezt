@@ -17,10 +17,11 @@
 
 [is arg1 "multi"][else]
 <script type="text/javascript" nonce="[nonce]">
+
 runOnLoad(function() {
   if ($("op_[arg0]")) {
     $("op_[arg0]").addEventListener("change", function(event) {
-      _ignoreWidgetIfOpIsClear(event.target, '[arg0]');
+      TKR_ignoreWidgetIfOpIsClear(event.target, '[arg0]');
     });
   }
 });

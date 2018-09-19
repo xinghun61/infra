@@ -1201,6 +1201,14 @@ function TKR_HandleBulkEdit() {
   }
 }
 
+/**
+ * Clears the selected status value when the 'clear' operator is chosen.
+ */
+function TKR_ignoreWidgetIfOpIsClear(selectEl, inputID) {
+  if (selectEl.value == 'clear') {
+    document.getElementById(inputID).value = '';
+  }
+}
 
 /**
  * Array of original labels on the served page, so that we can notice

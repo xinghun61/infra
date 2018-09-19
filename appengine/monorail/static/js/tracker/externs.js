@@ -34,6 +34,7 @@ var _fetchOptions;
 var _setACOptions;
 var _openIssueUpdateForm;
 var _addAttachmentFields;
+var _ignoreWidgetIfOpIsClear;
 
 var _formatContextQueryArgs;
 var _ctxArgs;
