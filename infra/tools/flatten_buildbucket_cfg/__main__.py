@@ -1,9 +1,12 @@
+#!/usr/bin/env vpython
+
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 """Flattens a buildbucket config proto."""
 
 import sys
+
 from google.protobuf import text_format
 from infra.libs.buildbucket.proto.config import project_config_pb2
 from infra.libs.buildbucket.swarming import flatten_swarmingcfg

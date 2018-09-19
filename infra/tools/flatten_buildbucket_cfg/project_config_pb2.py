@@ -1,1 +1,0 @@
-../../../appengine/cr-buildbucket/proto/config/project_config_pb2.py

@@ -1,0 +1,16 @@
+# This is a vpython "spec" file.
+#
+# Read more about `vpython` and how to modify this file here:
+#   https://chromium.googlesource.com/infra/infra/+/master/doc/users/vpython.md
+
+python_version: "2.7"
+
+wheel: <
+  name: "infra/python/wheels/protobuf-py2_py3"
+  version: "version:3.2.0"
+>
+
+wheel: <
+  name: "infra/python/wheels/six-py2_py3"
+  version: "version:1.11.0"
+>

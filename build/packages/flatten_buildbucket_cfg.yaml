@@ -1,0 +1,39 @@
+package: infra/tools/flatten_buildbucket_cfg
+description: flatten_buildbucket_cfg tool
+
+# Platform agnostic really, but need to pick one platform to build on.
+platforms:
+  - linux-amd64
+
+root: ../..
+
+data:
+  - dir: infra/tools/flatten_buildbucket_cfg
+    exclude:
+      - .*\.pyc
+      - \.git/.*
+
+  - dir: infra/libs/buildbucket
+    exclude:
+      - .*\.pyc
+      - \.git/.*
+
+  - dir: infra/libs/protoutil
+    exclude:
+      - .*\.pyc
+      - \.git/.*
+
+  - file: infra/__init__.py
+  - file: infra/libs/__init__.py
+  - file: infra/tools/__init__.py
+
+  - version_file: CIPD_VERSION.json
+
+copies:
+  # Copy this to the root of the package so that imports will work and so that
+  # it's easier to execute the tool without having to go digging in directories.
+  - src: infra/tools/flatten_buildbucket_cfg/__main__.py
+    dst: flatten_buildbucket_cfg
+  # This needs to be along-side the main file.
+  - src: infra/tools/flatten_buildbucket_cfg/.vpython
+    dst: .vpython
