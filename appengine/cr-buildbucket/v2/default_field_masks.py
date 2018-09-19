@@ -14,18 +14,19 @@ from proto import rpc_pb2
 
 def _build_default_field_paths(prefix=''):  # pragma: no cover
   paths = [
-      'id',
       'builder',
-      'number',
-      'created_by',
+      'cancel_reason',
       'create_time',
-      'start_time',
+      'created_by',
       'end_time',
-      'update_time',
-      'status',
-      'input.gitiles_commit',
-      'input.gerrit_changes',
+      'id',
       'input.experimental',
+      'input.gerrit_changes',
+      'input.gitiles_commit',
+      'number',
+      'start_time',
+      'status',
+      'update_time',
       # TODO(nodir): add the following fields when they are defined in the
       # proto:
       # 'user_duration',

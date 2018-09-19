@@ -19,6 +19,7 @@ from components import net
 from components import utils
 import gae_ts_mon
 
+from proto import build_pb2
 from proto.config import project_config_pb2
 import buildtags
 import config
@@ -477,7 +478,7 @@ def fail(
   )
 
 
-def cancel(build_id, result_details=None):
+def cancel(build_id, human_reason=None, result_details=None):
   """Cancels build. Does not require a lease key.
 
   The current user has to have a permission to cancel a build in the
@@ -485,6 +486,7 @@ def cancel(build_id, result_details=None):
 
   Args:
     build_id: id of the build to cancel.
+    human_reason (basestring): explanation of cancelation for a human.
     result_details (dict): build result description.
 
   Returns:
@@ -508,6 +510,10 @@ def cancel(build_id, result_details=None):
     build.result = model.BuildResult.CANCELED
     build.result_details = result_details
     build.cancelation_reason = model.CancelationReason.CANCELED_EXPLICITLY
+    build.cancel_reason_v2 = build_pb2.CancelReason(
+        message=human_reason,
+        canceled_by=auth.get_current_identity().to_bytes(),
+    )
     build.complete_time = now
     build.clear_lease()
     futs = [build.put_async(), events.on_build_completing_async(build)]

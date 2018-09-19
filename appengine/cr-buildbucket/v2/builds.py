@@ -48,6 +48,7 @@ def build_to_v2(build, build_steps=None):
       start_time=_dt2ts(build.start_time),
       end_time=_dt2ts(build.complete_time),
       update_time=_dt2ts(build.update_time),
+      cancel_reason=build.cancel_reason_v2,
       input=build_pb2.Build.Input(
           properties=_dict_to_struct(params.get('properties')),
           experimental=build.experimental,

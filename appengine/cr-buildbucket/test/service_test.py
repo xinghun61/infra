@@ -7,24 +7,20 @@ import datetime
 import json
 
 from components import auth
-from components import net
 from components import utils
 from google.appengine.ext import ndb
 from testing_utils import testing
 import mock
 
-from proto import common_pb2
+from proto import build_pb2
 from proto.config import project_config_pb2
 from proto.config import service_config_pb2
-from test.test_util import future, future_exception
-import api_common
+from test.test_util import future
 import config
 import errors
 import model
 import notifications
-import search
 import service
-import swarming
 import user
 import v2
 
@@ -162,13 +158,20 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_cancel(self):
     self.test_build.put()
-    build = service.cancel(self.test_build.key.id())
+    build = service.cancel(self.test_build.key.id(), human_reason='nope')
     self.assertEqual(build.status, model.BuildStatus.COMPLETED)
     self.assertEqual(build.status_changed_time, utils.utcnow())
     self.assertEqual(build.complete_time, utils.utcnow())
     self.assertEqual(build.result, model.BuildResult.CANCELED)
     self.assertEqual(
         build.cancelation_reason, model.CancelationReason.CANCELED_EXPLICITLY
+    )
+    self.assertEqual(
+        build.cancel_reason_v2,
+        build_pb2.CancelReason(
+            message='nope',
+            canceled_by=self.current_identity.to_bytes(),
+        ),
     )
 
   def test_cancel_is_idempotent(self):

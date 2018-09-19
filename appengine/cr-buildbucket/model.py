@@ -204,6 +204,7 @@ class Build(ndb.Model):
   result = msgprop.EnumProperty(BuildResult)
   result_details = datastore_utils.DeterministicJsonProperty(json_type=dict)
   cancelation_reason = msgprop.EnumProperty(CancelationReason)
+  cancel_reason_v2 = datastore_utils.ProtobufProperty(build_pb2.CancelReason)
   failure_reason = msgprop.EnumProperty(FailureReason)
 
   # Swarming integration
