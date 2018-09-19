@@ -44,10 +44,10 @@ func TestCook(t *testing.T) {
 			env := environ.New(nil)
 			So(cook.updateEnv(&env), ShouldBeNil)
 			So(env.Map(), ShouldResemble, map[string]string{
-				"TEMPDIR": expected,
-				"TMPDIR":  expected,
-				"TEMP":    expected,
-				"TMP":     expected,
+				"TEMPDIR":             expected,
+				"TMPDIR":              expected,
+				"TEMP":                expected,
+				"TMP":                 expected,
 				"MAC_CHROMIUM_TMPDIR": expected,
 			})
 		})
@@ -163,6 +163,7 @@ func TestCook(t *testing.T) {
 				So(cook.kitchenProps, ShouldResemble, &kitchenProperties{
 					GitAuth:      true,
 					DevShell:     true,
+					DockerAuth:   true,
 					FirebaseAuth: false,
 				})
 

@@ -5,6 +5,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -16,8 +17,8 @@ import (
 
 	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/auth/integration/devshell"
-	"go.chromium.org/luci/auth/integration/gsutil"
 	"go.chromium.org/luci/auth/integration/firebase"
+	"go.chromium.org/luci/auth/integration/gsutil"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/system/environ"
@@ -107,6 +108,11 @@ type AuthContext struct {
 	// triggers bugs in gsutil. See https://crbug.com/788058#c14.
 	EnableDevShell bool
 
+	// EnableDockerAuth enables authentication for Docker.
+	//
+	// Assumes 'docker-credential-luci' is in PATH.
+	EnableDockerAuth bool
+
 	// EnableFirebaseAuth enables Firebase auth shim.
 	//
 	// It is used to make Firebase use LUCI authentication.
@@ -136,6 +142,9 @@ type AuthContext struct {
 	devShellAddr *net.TCPAddr     // address local DevShell instance is listening on
 
 	gitHome string // custom HOME for git or "" if not using git auth
+
+	dockerConfig string // location for Docker configuration files
+	dockerTmpDir string // location for Docker temporary files
 }
 
 // Launch launches this auth context. It must be called before any other method.
@@ -183,6 +192,21 @@ func (ac *AuthContext) Launch(ctx context.Context, tempDir string) (err error) {
 		}
 	}
 
+	if ac.EnableDockerAuth {
+		// Create directory for Docker configuration files and write config.json there.
+		ac.dockerConfig = filepath.Join(tempDir, "docker_cfg_"+ac.ID)
+		if err := os.Mkdir(ac.dockerConfig, 0700); err != nil {
+			return errors.Annotate(err, "failed to create Docker configuration directory for %q account at %s", ac.ID, ac.dockerConfig).Err()
+		}
+		if err := ac.writeDockerConfig(); err != nil {
+			return errors.Annotate(err, "failed to create config.json for %q account", ac.ID).Err()
+		}
+		ac.dockerTmpDir = filepath.Join(tempDir, "docker_tmp_"+ac.ID)
+		if err := os.Mkdir(ac.dockerTmpDir, 0700); err != nil {
+			return errors.Annotate(err, "failed to create Docker temporary directory for %q account at %s", ac.ID, ac.dockerTmpDir).Err()
+		}
+	}
+
 	if ac.EnableFirebaseAuth && !ac.anonymous {
 		source, err := ac.authenticator.TokenSource()
 		if err != nil {
@@ -190,7 +214,7 @@ func (ac *AuthContext) Launch(ctx context.Context, tempDir string) (err error) {
 		}
 		// Launch firebase auth shim server. It will provide a URL from which we'll fetch an auth token.
 		ac.firebaseSrv = &firebase.Server{
-			Source:   source,
+			Source: source,
 		}
 		if ac.firebaseTokenURL, err = ac.firebaseSrv.Start(ctx); err != nil {
 			return errors.Annotate(err, "failed to start firebase auth shim server for %q account", ac.ID).Err()
@@ -272,6 +296,18 @@ func (ac *AuthContext) Close() {
 		}
 	}
 
+	if ac.dockerConfig != "" {
+		if err := os.RemoveAll(ac.dockerConfig); err != nil {
+			logging.Errorf(ac.ctx, "Failed to clean up Docker configuration directory for %q account at [%s]: %s", ac.ID, ac.dockerConfig, err)
+		}
+	}
+
+	if ac.dockerTmpDir != "" {
+		if err := os.RemoveAll(ac.dockerTmpDir); err != nil {
+			logging.Errorf(ac.ctx, "Failed to clean up Docker temporary directory for %q account at [%s]: %s", ac.ID, ac.dockerTmpDir, err)
+		}
+	}
+
 	if ac.exported != nil {
 		if err := ac.exported.Close(); err != nil {
 			logging.Errorf(ac.ctx, "Failed to delete exported LUCI_CONTEXT for %q account - %s", ac.ID, err)
@@ -291,6 +327,8 @@ func (ac *AuthContext) Close() {
 	ac.devShellSrv = nil
 	ac.devShellAddr = nil
 	ac.gitHome = ""
+	ac.dockerConfig = ""
+	ac.dockerTmpDir = ""
 }
 
 // Authenticator returns an authenticator that can be used by Kitchen itself.
@@ -312,6 +350,11 @@ func (ac *AuthContext) ExportIntoEnv(env environ.Env) environ.Env {
 		env.Set("GIT_TERMINAL_PROMPT", "0")           // no interactive prompts
 		env.Set("GIT_CONFIG_NOSYSTEM", "1")           // no $(prefix)/etc/gitconfig
 		env.Set("INFRA_GIT_WRAPPER_HOME", ac.gitHome) // tell gitwrapper about the new HOME
+	}
+
+	if ac.EnableDockerAuth {
+		env.Set("DOCKER_CONFIG", ac.dockerConfig)
+		env.Set("DOCKER_TMPDIR", ac.dockerTmpDir)
 	}
 
 	if ac.EnableFirebaseAuth && !ac.anonymous {
@@ -347,8 +390,8 @@ func (ac *AuthContext) ReportServiceAccount() {
 	if ac.anonymous {
 		account = "anonymous"
 	}
-	logging.Infof(ac.ctx, "%q account is %s (git_auth: %v, devshell: %v, firebase: %v)",
-		ac.ID, account, ac.EnableGitAuth, ac.EnableDevShell, ac.EnableFirebaseAuth)
+	logging.Infof(ac.ctx, "%q account is %s (git_auth: %v, devshell: %v, docker:%v, firebase: %v)",
+		ac.ID, account, ac.EnableGitAuth, ac.EnableDevShell, ac.EnableDockerAuth, ac.EnableFirebaseAuth)
 }
 
 ////
@@ -373,4 +416,19 @@ func (ac *AuthContext) writeGitConfig() error {
 		}
 	}
 	return cfg.Write(filepath.Join(ac.gitHome, ".gitconfig"))
+}
+
+func (ac *AuthContext) writeDockerConfig() error {
+	f, err := os.Create(filepath.Join(ac.dockerConfig, "config.json"))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	config := map[string]string{
+		"credsStore": "luci",
+	}
+	if err := json.NewEncoder(f).Encode(&config); err != nil {
+		return errors.Annotate(err, "cannot encode configuration").Err()
+	}
+	return f.Close()
 }
