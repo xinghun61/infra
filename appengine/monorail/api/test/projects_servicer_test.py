@@ -41,6 +41,8 @@ class ProjectsServicerTest(unittest.TestCase):
         project_star=fake.ProjectStarService(),
         features=fake.FeaturesService())
 
+    self.admin = self.services.user.TestAddUser('admin@example.com', 123L)
+    self.admin.is_site_admin = True
     self.services.user.TestAddUser('owner@example.com', 111L)
     self.services.user.TestAddUser('user_222@example.com', 222L)
     self.services.user.TestAddUser('user_333@example.com', 333L)
@@ -752,3 +754,34 @@ class ProjectsServicerTest(unittest.TestCase):
             contributor_to=['contributor-live'],
             starred_projects=['proj']),
         response)
+
+  def testCheckProjectName_OK(self):
+    """We can check a project name."""
+    request = projects_pb2.CheckProjectNameRequest(project_name='Foo')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='admin@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(
+        self.projects_svcr.CheckProjectName, mc, request)
+
+    self.assertEqual('', response.error)
+
+  def testCheckProjectName_NotAllowed(self):
+    """Users that can't create a project shouldn't get any information."""
+    request = projects_pb2.CheckProjectNameRequest(project_name='Foo')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.projects_svcr.CheckProjectName, mc, request)
+
+  def testCheckProjectName_ProjectAlreadyExists(self):
+    """There is already a project with that name."""
+    request = projects_pb2.CheckProjectNameRequest(project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='admin@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(
+        self.projects_svcr.CheckProjectName, mc, request)
+
+    self.assertNotEqual('', response.error)

@@ -243,3 +243,11 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
         contributor_to=[p.project_name for p in contrib],
         starred_projects=[p.project_name for p in starred])
     return result
+
+  @monorail_servicer.PRPCMethod
+  def CheckProjectName(self, mc, request):
+    """Check that a project name is valid and not already in use."""
+    with work_env.WorkEnv(mc, self.services) as we:
+      error = we.CheckProjectName(request.project_name)
+    result = projects_pb2.CheckProjectNameResponse(error=error)
+    return result

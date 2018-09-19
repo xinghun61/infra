@@ -24,6 +24,7 @@ service Projects {
   rpc GetProjectStarCount (GetProjectStarCountRequest) returns (GetProjectStarCountResponse) {}
   rpc StarProject (StarProjectRequest) returns (StarProjectResponse) {}
   rpc GetUserProjects (GetUserProjectsRequest) returns (GetUserProjectsResponse) {}
+  rpc CheckProjectName (CheckProjectNameRequest) returns (CheckProjectNameResponse) {}
 }
 
 
@@ -171,3 +172,17 @@ message GetUserProjectsResponse {
   repeated string contributor_to = 3;
   repeated string starred_projects = 4;
 }
+
+
+// Next available tag: 3
+message CheckProjectNameRequest {
+  RequestTrace trace = 1;
+  string project_name = 2;
+}
+
+
+// Next available tag: 1
+message CheckProjectNameResponse {
+  string error = 1;
+}
+

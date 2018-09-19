@@ -210,6 +210,30 @@ class WorkEnv(object):
     project_ids = sorted(project_ids)
     return project_ids
 
+  def CheckProjectName(self, project_name):
+    """Check that a project name is valid and not already in use.
+
+    Args:
+      project_name: str the project name to check.
+
+    Returns:
+      None if the user can create a project with that name, or a string with the
+      reason the name can't be used.
+
+    Raises:
+      PermissionException: The user is not allowed to create a project.
+    """
+    # We check that the user can create a project so we don't leak information
+    # about project names.
+    if not permissions.CanCreateProject(self.mc.perms):
+      raise permissions.PermissionException(
+          'User is not allowed to create a project')
+
+    with self.mc.profiler.Phase('checking project name %s' % project_name):
+      if self.services.project.LookupProjectIDs(self.mc.cnxn, [project_name]):
+        return 'That project name is not available.'
+    return None
+
   def GetProjects(self, project_ids, use_cache=True):
     """Return the specified projects.
 

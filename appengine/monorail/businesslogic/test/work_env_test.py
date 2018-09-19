@@ -92,6 +92,35 @@ class WorkEnvTest(unittest.TestCase):
     self.assertFalse(
         self.services.template.CreateDefaultProjectTemplates.called)
 
+  def testCreateProject_NotAllowed(self):
+    """A user without permissions cannon create a project."""
+    self.SignIn()
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        we.CreateProject('proj', [111L], [222L], [333L], 'summary', 'desc')
+
+    self.assertFalse(
+        self.services.template.CreateDefaultProjectTemplates.called)
+
+  def testCheckProjectName_OK(self):
+    """We can check a project name."""
+    self.SignIn(user_id=self.admin_user.user_id)
+    with self.work_env as we:
+      self.assertIsNone(we.CheckProjectName('Foo'))
+
+  def testCheckProjectName_AlreadyExists(self):
+    """There is already a project with that name."""
+    self.SignIn(user_id=self.admin_user.user_id)
+    with self.work_env as we:
+      self.assertIsNotNone(we.CheckProjectName('proj'))
+
+  def testCheckProjectName_NotAllowed(self):
+    """Users that can't create a project shouldn't get any information."""
+    self.SignIn()
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        we.CheckProjectName('Foo')
+
   def testListProjects(self):
     """We can get the project IDs of projects visible to the current user."""
     # Project 789 is created in setUp()
