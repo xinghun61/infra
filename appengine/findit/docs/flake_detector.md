@@ -36,9 +36,8 @@ are considered equivalent:
 success and one failure, then the failed one is a flaky build.
 
 **Flaky test steps**. Any failed test step in a flaky build is a flaky step only
-if it has NO matching succeeded “retry summary” step, this is because if a
-“retry summary” step is present, it means that the new test failures are
-consistent test failures caused by bugs on tip of tree.
+if it has NO successful retry, otherwise it means that the test failures are
+caused by bugs on tip of tree.
 
 **Flaky tests**. Any test that failed in a flaky step but passed in the matching
 “without patch” step is a flaky test.
