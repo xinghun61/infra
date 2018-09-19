@@ -110,7 +110,7 @@ func (c *epClient) InsertIssue(ctx context.Context, req *InsertIssueRequest, opt
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
-	url := fmt.Sprintf("/projects/%s/issues?sendEmail=%v", req.ProjectId, req.SendEmail)
+	url := fmt.Sprintf("/projects/%s/issues?sendEmail=%v", req.Issue.ProjectId, req.SendEmail)
 	res := &InsertIssueResponse{Issue: &Issue{}}
 	return res, c.call(ctx, "POST", url, &req.Issue, res.Issue)
 }

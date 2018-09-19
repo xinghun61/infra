@@ -157,7 +157,6 @@ func postIssue(ctx context.Context, cfg *RepoConfig, s, d string, cs *Clients, c
 	}
 
 	req := &monorail.InsertIssueRequest{
-		ProjectId: cfg.MonorailProject,
 		Issue:     iss,
 		SendEmail: true,
 	}

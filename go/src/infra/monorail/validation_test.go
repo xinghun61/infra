@@ -77,8 +77,8 @@ func TestValidation(t *testing.T) {
 		})
 		Convey("InsertIssueRequest", func() {
 			good(&InsertIssueRequest{
-				ProjectId: "chromium",
 				Issue: &Issue{
+					ProjectId:   "chromium",
 					Summary:     "Write tests for monorail client",
 					Author:      &AtomPerson{Name: "seanmccullough@chromium.org"},
 					Owner:       &AtomPerson{Name: "nodir@chromium.org"},
@@ -87,16 +87,15 @@ func TestValidation(t *testing.T) {
 					Description: "We should keep our code coverage high, so write tests",
 					Components:  []string{"Infra"},
 					Labels:      []string{"M-53"},
-					ProjectId:   "chromium",
 				},
 			})
 
 			bad(&InsertIssueRequest{})
 			bad(&InsertIssueRequest{
-				ProjectId: "chromium",
 				Issue: &Issue{
-					Status: StatusStarted,
-					Id:     1,
+					ProjectId: "chromium",
+					Status:    StatusStarted,
+					Id:        1,
 				},
 			})
 		})

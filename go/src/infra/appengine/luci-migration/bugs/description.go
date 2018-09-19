@@ -90,9 +90,9 @@ func CreateBuilderBug(c context.Context, client ClientFactory, builder *storage.
 	}
 
 	req := &monorail.InsertIssueRequest{
-		ProjectId: builder.IssueID.Project,
 		SendEmail: true,
 		Issue: &monorail.Issue{
+			ProjectId:   builder.IssueID.Project,
 			Status:      "Available",
 			Summary:     fmt.Sprintf("Migrate %q to LUCI", builder.ID.Builder),
 			Description: desc,
@@ -104,7 +104,6 @@ func CreateBuilderBug(c context.Context, client ClientFactory, builder *storage.
 				"Master-" + excludeInvalid(builder.ID.Master),
 				"Restrict-View-Google",
 			},
-			ProjectId: builder.IssueID.Project,
 		},
 	}
 	if builder.OS != config.OS_UNSET_OS {

@@ -27,7 +27,6 @@ func TestEndpointsInsertIssue(t *testing.T) {
 
 		Convey("Insert issue request succeeds", func(c C) {
 			req := &InsertIssueRequest{
-				ProjectId: "chromium",
 				Issue: &Issue{
 					Summary:     "Write tests for monorail client",
 					Author:      &AtomPerson{Name: "seanmccullough@chromium.org"},

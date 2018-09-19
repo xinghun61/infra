@@ -83,9 +83,6 @@ func (i *Issue) Validate() error {
 
 // Validate checks the message for errors.
 func (i *InsertIssueRequest) Validate() error {
-	if i.ProjectId == "" {
-		return fmt.Errorf("no projectId")
-	}
 	if err := i.Issue.Validate(); err != nil {
 		return fmt.Errorf("issue: %s", err)
 	}

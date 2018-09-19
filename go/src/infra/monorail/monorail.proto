@@ -78,8 +78,6 @@ message IssueRef {
 
 // Request for Monorail.InsertIssue().
 message InsertIssueRequest {
-    // Target project id.
-    string projectId = 1;
     // Definition of the issue.
     // issue.id must be empty.
     Issue issue = 2;

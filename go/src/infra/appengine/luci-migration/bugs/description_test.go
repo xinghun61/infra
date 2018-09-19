@@ -89,9 +89,9 @@ Migration app will close this bug when the builder is entirely migrated from Bui
 			So(builder.IssueID.ID, ShouldEqual, 55)
 
 			So(actualIssueReq, ShouldResemble, &monorail.InsertIssueRequest{
-				ProjectId: "chromium",
 				SendEmail: true,
 				Issue: &monorail.Issue{
+					ProjectId:   "chromium",
 					Status:      "Available",
 					Summary:     "Migrate \"linux_chromium_rel_ng\" to LUCI",
 					Description: expectedBugDescription,
@@ -104,7 +104,6 @@ Migration app will close this bug when the builder is entirely migrated from Bui
 						"Restrict-View-Google",
 						"OS-LINUX",
 					},
-					ProjectId: "chromium",
 				},
 			})
 		})
