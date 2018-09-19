@@ -5,6 +5,8 @@
 syntax = "proto3";
 package ninjaproto;
 
+import "google/protobuf/timestamp.proto";
+
 message NinjaTask {
   // Identifier of build used in buildbucket api v2 (go/buildbucket-api-v2)
   int64 build_id = 1;
@@ -43,4 +45,7 @@ message NinjaTask {
   // More details in https://chromium.googlesource.com/chromium/tools/depot_tools/+/5888d6f676722fdac3f65e673c0232667309296c/post_build_ninja_summary.py#52
   // We don't use "google.protobuf.Duration" here in order to make it a bit easier to write a query.
   double weighted_duration_sec = 6;
+
+  // created_at indicates the timestamp when the NinjaTask is uploaded to BigQuery.
+  google.protobuf.Timestamp created_at = 7;
 }

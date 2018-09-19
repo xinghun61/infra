@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
+	tspb "github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/google/go-cmp/cmp"
 
 	npb "infra/appengine/chromium_build_stats/ninjaproto"
@@ -501,6 +503,16 @@ func TestToProto(t *testing.T) {
 		Metadata: metadataTestCase,
 	}
 
+	createdTime, err := ptypes.TimestampProto(time.Unix(1514768400, 12345678))
+	if err != nil {
+		t.Errorf("time stamp error: %v", err)
+	}
+	originalTimestampNow := createdTimestamp
+	defer func() {
+		createdTimestamp = originalTimestampNow
+	}()
+	createdTimestamp = func() *tspb.Timestamp { return createdTime }
+
 	got := ToProto(&info)
 
 	wantWeightedTime := map[string]time.Duration{
@@ -524,6 +536,7 @@ func TestToProto(t *testing.T) {
 				EndDurationSec:   (187 * time.Millisecond).Seconds(),
 			},
 			WeightedDurationSec: (wantWeightedTime["resources/inspector/devtools_extension_api.js"].Seconds()),
+			CreatedAt:           createdTime,
 		},
 		{
 			BuildId:  12345,
@@ -536,6 +549,7 @@ func TestToProto(t *testing.T) {
 				EndDurationSec:   (286 * time.Millisecond).Seconds(),
 			},
 			WeightedDurationSec: (wantWeightedTime["gen/angle/commit_id.py"]).Seconds(),
+			CreatedAt:           createdTime,
 		},
 		{
 			BuildId:  12345,
@@ -548,6 +562,7 @@ func TestToProto(t *testing.T) {
 				EndDurationSec:   (287 * time.Millisecond).Seconds(),
 			},
 			WeightedDurationSec: (wantWeightedTime["gen/angle/copy_compiler_dll.bat"]).Seconds(),
+			CreatedAt:           createdTime,
 		},
 		{
 			BuildId:  12345,
@@ -560,6 +575,7 @@ func TestToProto(t *testing.T) {
 				EndDurationSec:   (284 * time.Millisecond).Seconds(),
 			},
 			WeightedDurationSec: (wantWeightedTime["gen/autofill_regex_constants.cc"]).Seconds(),
+			CreatedAt:           createdTime,
 		},
 		{
 			BuildId:  12345,
@@ -572,6 +588,7 @@ func TestToProto(t *testing.T) {
 				EndDurationSec:   (287 * time.Millisecond).Seconds(),
 			},
 			WeightedDurationSec: (wantWeightedTime["PepperFlash/manifest.json"]).Seconds(),
+			CreatedAt:           createdTime,
 		},
 		{
 			BuildId:  12345,
@@ -584,6 +601,7 @@ func TestToProto(t *testing.T) {
 				EndDurationSec:   (288 * time.Millisecond).Seconds(),
 			},
 			WeightedDurationSec: (wantWeightedTime["PepperFlash/libpepflashplayer.so"]).Seconds(),
+			CreatedAt:           createdTime,
 		},
 		{
 			BuildId:  12345,
@@ -596,6 +614,7 @@ func TestToProto(t *testing.T) {
 				EndDurationSec:   (290 * time.Millisecond).Seconds(),
 			},
 			WeightedDurationSec: (wantWeightedTime["obj/third_party/angle/src/copy_scripts.actions_rules_copies.stamp"]).Seconds(),
+			CreatedAt:           createdTime,
 		},
 	}
 	if diff := cmp.Diff(want, got, cmp.Comparer(proto.Equal)); diff != "" {
