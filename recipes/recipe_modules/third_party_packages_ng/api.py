@@ -91,6 +91,8 @@ set:
   * $_3PP_PATCH_VERSION - the `patch_version` set for the version we're building
     (if any patch version was set).
   * $_3PP_PLATFORM - the platform we're targeting
+  * $_3PP_TOOL_PLATFORM - the platform that we're building on (will be different
+    than _3PP_PLATFORM if we're cross-compiling)
   * $_3PP_VERSION - the version we're building, e.g. 1.2.3
   * $GOOS - The golang OS name we're targeting
   * $GOARCH - The golang architecture we're targeting

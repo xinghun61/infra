@@ -50,6 +50,7 @@ def build_resolved_spec(api, spec_lookup, cache, force_build, spec, version):
   with api.step.nest('building %s' % (spec.name.encode('utf-8'),)):
     env = {
       '_3PP_PLATFORM': spec.platform,
+      '_3PP_TOOL_PLATFORM': spec.tool_platform,
       '_3PP_PACKAGE_NAME': spec.name,
       'GOOS': spec.platform.split('-')[0].replace('mac', 'darwin'),
       'GOARCH': spec.platform.split('-')[1],

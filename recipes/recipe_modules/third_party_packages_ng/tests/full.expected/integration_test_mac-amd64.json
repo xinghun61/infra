@@ -183,7 +183,8 @@
       "GOARCH": "amd64",
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "already_uploaded",
-      "_3PP_PLATFORM": "mac-amd64"
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64"
     },
     "name": "building already_uploaded.cipd describe tools/already_uploaded/mac-amd64",
     "~followup_annotations": [
@@ -235,7 +236,8 @@
       "GOARCH": "amd64",
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "bottom_dep",
-      "_3PP_PLATFORM": "mac-amd64"
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64"
     },
     "name": "building bottom_dep.cipd describe prefix/deps/bottom_dep/mac-amd64",
     "~followup_annotations": [
@@ -266,6 +268,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0"
     },
     "infra_step": true,
@@ -281,6 +284,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0"
     },
     "name": "building bottom_dep.fetch sources",
@@ -305,6 +309,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0"
     },
     "infra_step": true,
@@ -329,6 +334,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0"
     },
     "name": "building bottom_dep.fetch sources.ensure_installed",
@@ -363,6 +369,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0"
     },
     "infra_step": true,
@@ -378,6 +385,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0"
     },
     "name": "building bottom_dep.run installation",
@@ -402,6 +410,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0"
     },
     "infra_step": true,
@@ -427,6 +436,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0"
     },
     "env_prefixes": {
@@ -469,6 +479,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0"
     },
     "env_prefixes": {
@@ -496,6 +507,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0"
     },
     "env_prefixes": {
@@ -523,6 +535,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0"
     },
     "env_prefixes": {
@@ -549,6 +562,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0"
     },
     "env_prefixes": {
@@ -581,6 +595,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0"
     },
     "name": "building bottom_dep.build prefix/deps/bottom_dep/mac-amd64",
@@ -612,6 +627,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0"
     },
     "infra_step": true,
@@ -636,6 +652,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0"
     },
     "infra_step": true,
@@ -651,6 +668,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0"
     },
     "name": "building bottom_dep.do upload",
@@ -675,6 +693,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0"
     },
     "name": "building bottom_dep.do upload.register prefix/deps/bottom_dep/mac-amd64",
@@ -704,7 +723,8 @@
       "GOARCH": "amd64",
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "mac-amd64"
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64"
     },
     "name": "building fetch_and_package.fetch.py latest",
     "stdout": "/path/to/tmp/",
@@ -727,7 +747,8 @@
       "GOARCH": "amd64",
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "mac-amd64"
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64"
     },
     "name": "building fetch_and_package.cipd describe tools/fetch_and_package",
     "~followup_annotations": [
@@ -758,6 +779,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -773,6 +795,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building fetch_and_package.fetch sources",
@@ -797,6 +820,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -818,6 +842,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building fetch_and_package.fetch sources.fetch.py checkout [START_DIR]/3pp/wd/fetch_and_package/mac-amd64/2.0.0/checkout",
@@ -843,6 +868,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building fetch_and_package.build tools/fetch_and_package",
@@ -874,6 +900,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -898,6 +925,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -913,6 +941,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building fetch_and_package.do upload",
@@ -937,6 +966,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building fetch_and_package.do upload.register tools/fetch_and_package",
@@ -966,7 +996,8 @@
       "GOARCH": "amd64",
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
-      "_3PP_PLATFORM": "mac-amd64"
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64"
     },
     "name": "building pkg.fetch.py latest",
     "stdout": "/path/to/tmp/",
@@ -989,7 +1020,8 @@
       "GOARCH": "amd64",
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
-      "_3PP_PLATFORM": "mac-amd64"
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64"
     },
     "name": "building pkg.cipd describe prefix/tools/pkg/mac-amd64",
     "~followup_annotations": [
@@ -1020,6 +1052,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -1035,6 +1068,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.fetch sources",
@@ -1049,6 +1083,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.fetch sources.installing tools",
@@ -1063,6 +1098,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.fetch sources.installing tools.building tool",
@@ -1084,6 +1120,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -1110,6 +1147,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.cipd describe prefix/build_tools/tool/mac-amd64",
@@ -1142,6 +1180,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1158,6 +1197,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.fetch sources",
@@ -1173,6 +1213,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing tools",
@@ -1198,6 +1239,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing tools.cipd pkg-fetch prefix/build_tools/tool/mac-amd64",
@@ -1231,6 +1273,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1256,6 +1299,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1280,6 +1324,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing tools.cipd pkg-deploy [CACHE]/3pp_cipd/prefix/build_tools/tool/mac-amd64/resolved-instance_id-of-version:0.9.0.ch",
@@ -1302,6 +1347,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing deps",
@@ -1325,6 +1371,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing deps.cipd pkg-deploy [CACHE]/3pp_cipd/prefix/deps/bottom_dep/mac-amd64/40-chars-fake-of-the-package-instance_id",
@@ -1357,6 +1404,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1381,6 +1429,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.git setup",
@@ -1405,6 +1454,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1427,6 +1477,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1448,6 +1499,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1473,6 +1525,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1494,6 +1547,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1517,6 +1571,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1542,6 +1597,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1566,6 +1622,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1591,6 +1648,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1607,6 +1665,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.run installation",
@@ -1632,6 +1691,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1658,6 +1718,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "env_prefixes": {
@@ -1701,6 +1762,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "env_prefixes": {
@@ -1729,6 +1791,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "env_prefixes": {
@@ -1757,6 +1820,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "env_prefixes": {
@@ -1784,6 +1848,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "env_prefixes": {
@@ -1817,6 +1882,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.build prefix/build_tools/tool/mac-amd64",
@@ -1849,6 +1915,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1874,6 +1941,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1890,6 +1958,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.run test",
@@ -1911,6 +1980,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.run test.test.py mac [CACHE]/3pp_cipd/prefix/build_tools/tool/mac-amd64/40-chars-fake-of-the-package-instance_id",
@@ -1926,6 +1996,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.do upload",
@@ -1951,6 +2022,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.do upload.register prefix/build_tools/tool/mac-amd64",
@@ -1980,6 +2052,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.fetch sources.installing tools.cipd pkg-deploy [CACHE]/3pp_cipd/prefix/build_tools/tool/mac-amd64/40-chars-fake-of-the-package-instance_id",
@@ -2001,6 +2074,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.fetch sources.installing deps",
@@ -2015,6 +2089,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.fetch sources.installing deps.building dep",
@@ -2037,6 +2112,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.fetch sources.installing deps.building dep.cipd describe prefix/deps/dep/mac-amd64",
@@ -2068,6 +2144,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "infra_step": true,
@@ -2083,6 +2160,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "name": "building pkg.fetch sources.installing deps.building dep.fetch sources",
@@ -2097,6 +2175,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "name": "building pkg.fetch sources.installing deps.building dep.fetch sources.installing tools",
@@ -2119,6 +2198,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "name": "building pkg.fetch sources.installing deps.building dep.fetch sources.installing tools.cipd pkg-deploy [CACHE]/3pp_cipd/prefix/build_tools/tool/mac-amd64/40-chars-fake-of-the-package-instance_id",
@@ -2150,6 +2230,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "infra_step": true,
@@ -2174,6 +2255,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "name": "building pkg.fetch sources.installing deps.building dep.fetch sources.ensure_installed",
@@ -2208,6 +2290,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "infra_step": true,
@@ -2223,6 +2306,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "name": "building pkg.fetch sources.installing deps.building dep.run installation",
@@ -2247,6 +2331,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "infra_step": true,
@@ -2272,6 +2357,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "env_prefixes": {
@@ -2314,6 +2400,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "env_prefixes": {
@@ -2341,6 +2428,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "env_prefixes": {
@@ -2368,6 +2456,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "env_prefixes": {
@@ -2394,6 +2483,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "env_prefixes": {
@@ -2426,6 +2516,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "name": "building pkg.fetch sources.installing deps.building dep.build prefix/deps/dep/mac-amd64",
@@ -2457,6 +2548,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "infra_step": true,
@@ -2481,6 +2573,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "infra_step": true,
@@ -2496,6 +2589,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "name": "building pkg.fetch sources.installing deps.building dep.do upload",
@@ -2520,6 +2614,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "name": "building pkg.fetch sources.installing deps.building dep.do upload.register prefix/deps/dep/mac-amd64",
@@ -2549,6 +2644,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.fetch sources.installing deps.cipd pkg-deploy [CACHE]/3pp_cipd/prefix/deps/dep/mac-amd64/40-chars-fake-of-the-package-instance_id",
@@ -2580,6 +2676,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -2601,6 +2698,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.fetch sources.fetch.py checkout [START_DIR]/3pp/wd/pkg/mac-amd64/2.0.0/checkout",
@@ -2624,6 +2722,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -2639,6 +2738,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.run installation",
@@ -2663,6 +2763,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -2688,6 +2789,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "env_prefixes": {
@@ -2730,6 +2832,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "env_prefixes": {
@@ -2757,6 +2860,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "env_prefixes": {
@@ -2784,6 +2888,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "env_prefixes": {
@@ -2810,6 +2915,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "env_prefixes": {
@@ -2842,6 +2948,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.build prefix/tools/pkg/mac-amd64",
@@ -2873,6 +2980,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -2897,6 +3005,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -2912,6 +3021,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.do upload",
@@ -2936,6 +3046,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.do upload.register prefix/tools/pkg/mac-amd64",
@@ -2968,7 +3079,8 @@
       "GOARCH": "amd64",
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
-      "_3PP_PLATFORM": "mac-amd64"
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64"
     },
     "name": "building posix_tool.cipd describe tools/posix_tool/mac-amd64",
     "~followup_annotations": [
@@ -2999,6 +3111,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "infra_step": true,
@@ -3014,6 +3127,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "name": "building posix_tool.fetch sources",
@@ -3038,6 +3152,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "infra_step": true,
@@ -3062,6 +3177,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "name": "building posix_tool.fetch sources.ensure_installed",
@@ -3087,6 +3203,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "name": "building posix_tool.fetch sources.unpack_archive",
@@ -3110,6 +3227,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "infra_step": true,
@@ -3138,6 +3256,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "infra_step": true,
@@ -3161,6 +3280,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "infra_step": true,
@@ -3184,6 +3304,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "name": "building posix_tool.fetch sources.unpack_archive.extracting [tmpdir]/archive.tgz",
@@ -3214,6 +3335,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "infra_step": true,
@@ -3238,6 +3360,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "infra_step": true,
@@ -3253,6 +3376,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "name": "building posix_tool.run installation",
@@ -3277,6 +3401,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "infra_step": true,
@@ -3302,6 +3427,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "env_prefixes": {
@@ -3344,6 +3470,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "env_prefixes": {
@@ -3371,6 +3498,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "env_prefixes": {
@@ -3398,6 +3526,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "env_prefixes": {
@@ -3424,6 +3553,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "env_prefixes": {
@@ -3456,6 +3586,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "name": "building posix_tool.build tools/posix_tool/mac-amd64",
@@ -3487,6 +3618,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "infra_step": true,
@@ -3511,6 +3643,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "infra_step": true,
@@ -3526,6 +3659,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "name": "building posix_tool.do upload",
@@ -3550,6 +3684,7 @@
       "GOOS": "darwin",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "name": "building posix_tool.do upload.register tools/posix_tool/mac-amd64",

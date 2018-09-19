@@ -183,7 +183,8 @@
       "GOARCH": "armv6l",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "already_uploaded",
-      "_3PP_PLATFORM": "linux-armv6l"
+      "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
     "name": "building already_uploaded.cipd describe tools/already_uploaded/linux-armv6l",
     "~followup_annotations": [
@@ -235,7 +236,8 @@
       "GOARCH": "armv6l",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
-      "_3PP_PLATFORM": "linux-armv6l"
+      "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
     "name": "building bottom_dep.cipd describe prefix/deps/bottom_dep/linux-armv6l",
     "~followup_annotations": [
@@ -266,6 +268,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "infra_step": true,
@@ -281,6 +284,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "name": "building bottom_dep.fetch sources",
@@ -305,6 +309,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "infra_step": true,
@@ -329,6 +334,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "name": "building bottom_dep.fetch sources.ensure_installed",
@@ -363,6 +369,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "infra_step": true,
@@ -378,6 +385,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "name": "building bottom_dep.run installation",
@@ -402,6 +410,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "infra_step": true,
@@ -428,20 +437,23 @@
       "PATH",
       "[START_DIR]/3pp/wd/bottom_dep/linux-armv6l/1.0/tools_prefix/bin",
       "--env",
-      "GOOS",
-      "linux",
+      "_3PP_TOOL_PLATFORM",
+      "linux-amd64",
       "--env",
       "GOARCH",
       "armv6l",
+      "--env",
+      "_3PP_VERSION",
+      "1.0",
+      "--env",
+      "GOOS",
+      "linux",
       "--env",
       "_3PP_PLATFORM",
       "linux-armv6l",
       "--env",
       "_3PP_PACKAGE_NAME",
       "bottom_dep",
-      "--env",
-      "_3PP_VERSION",
-      "1.0",
       "--",
       "bash",
       "[START_DIR]/3pp/wd/bottom_dep/linux-armv6l/1.0/checkout/.3pp/bottom_dep/install.sh",
@@ -454,6 +466,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "env_prefixes": {
@@ -485,6 +498,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "name": "building bottom_dep.build prefix/deps/bottom_dep/linux-armv6l",
@@ -516,6 +530,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "infra_step": true,
@@ -540,6 +555,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "infra_step": true,
@@ -555,6 +571,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "name": "building bottom_dep.do upload",
@@ -579,6 +596,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "name": "building bottom_dep.do upload.register prefix/deps/bottom_dep/linux-armv6l",
@@ -608,7 +626,8 @@
       "GOARCH": "armv6l",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "linux-armv6l"
+      "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
     "name": "building fetch_and_package.fetch.py latest",
     "stdout": "/path/to/tmp/",
@@ -631,7 +650,8 @@
       "GOARCH": "armv6l",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "linux-armv6l"
+      "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
     "name": "building fetch_and_package.cipd describe tools/fetch_and_package",
     "~followup_annotations": [
@@ -662,6 +682,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -677,6 +698,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building fetch_and_package.fetch sources",
@@ -701,6 +723,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -722,6 +745,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building fetch_and_package.fetch sources.fetch.py checkout [START_DIR]/3pp/wd/fetch_and_package/linux-armv6l/2.0.0/checkout",
@@ -747,6 +771,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building fetch_and_package.build tools/fetch_and_package",
@@ -778,6 +803,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -802,6 +828,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -817,6 +844,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building fetch_and_package.do upload",
@@ -841,6 +869,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building fetch_and_package.do upload.register tools/fetch_and_package",
@@ -870,7 +899,8 @@
       "GOARCH": "armv6l",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
-      "_3PP_PLATFORM": "linux-armv6l"
+      "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
     "name": "building pkg.fetch.py latest",
     "stdout": "/path/to/tmp/",
@@ -893,7 +923,8 @@
       "GOARCH": "armv6l",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
-      "_3PP_PLATFORM": "linux-armv6l"
+      "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
     "name": "building pkg.cipd describe prefix/tools/pkg/linux-armv6l",
     "~followup_annotations": [
@@ -924,6 +955,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -939,6 +971,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.fetch sources",
@@ -953,6 +986,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.fetch sources.installing tools",
@@ -967,6 +1001,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.fetch sources.installing tools.building tool",
@@ -988,6 +1023,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -1014,6 +1050,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.cipd describe prefix/build_tools/tool/linux-amd64",
@@ -1046,6 +1083,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1062,6 +1100,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.fetch sources",
@@ -1077,6 +1116,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing tools",
@@ -1102,6 +1142,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing tools.cipd pkg-fetch prefix/build_tools/tool/linux-amd64",
@@ -1135,6 +1176,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1160,6 +1202,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1184,6 +1227,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing tools.cipd pkg-deploy [CACHE]/3pp_cipd/prefix/build_tools/tool/linux-amd64/resolved-instance_id-of-version:0.9.0.ch",
@@ -1206,6 +1250,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing deps",
@@ -1221,6 +1266,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing deps.building bottom_dep",
@@ -1244,6 +1290,7 @@
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing deps.building bottom_dep.cipd describe prefix/deps/bottom_dep/linux-amd64",
@@ -1276,6 +1323,7 @@
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "infra_step": true,
@@ -1292,6 +1340,7 @@
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing deps.building bottom_dep.fetch sources",
@@ -1317,6 +1366,7 @@
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "infra_step": true,
@@ -1342,6 +1392,7 @@
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing deps.building bottom_dep.fetch sources.ensure_installed",
@@ -1377,6 +1428,7 @@
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "infra_step": true,
@@ -1393,6 +1445,7 @@
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing deps.building bottom_dep.run installation",
@@ -1418,6 +1471,7 @@
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "infra_step": true,
@@ -1444,14 +1498,17 @@
       "PATH",
       "[START_DIR]/3pp/wd/bottom_dep/linux-amd64/1.0/tools_prefix/bin",
       "--env",
-      "GOOS",
-      "linux",
+      "_3PP_TOOL_PLATFORM",
+      "linux-amd64",
+      "--env",
+      "GOARCH",
+      "amd64",
       "--env",
       "_3PP_VERSION",
       "1.0",
       "--env",
-      "GOARCH",
-      "amd64",
+      "GOOS",
+      "linux",
       "--env",
       "_3PP_PATCH_VERSION",
       "chops.1",
@@ -1474,6 +1531,7 @@
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "env_prefixes": {
@@ -1506,6 +1564,7 @@
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing deps.building bottom_dep.build prefix/deps/bottom_dep/linux-amd64",
@@ -1538,6 +1597,7 @@
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "infra_step": true,
@@ -1563,6 +1623,7 @@
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "infra_step": true,
@@ -1579,6 +1640,7 @@
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing deps.building bottom_dep.do upload",
@@ -1604,6 +1666,7 @@
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing deps.building bottom_dep.do upload.register prefix/deps/bottom_dep/linux-amd64",
@@ -1634,6 +1697,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.installing deps.cipd pkg-deploy [CACHE]/3pp_cipd/prefix/deps/bottom_dep/linux-amd64/40-chars-fake-of-the-package-instance_id",
@@ -1666,6 +1730,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1690,6 +1755,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.fetch sources.git setup",
@@ -1714,6 +1780,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1736,6 +1803,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1757,6 +1825,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1782,6 +1851,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1803,6 +1873,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1826,6 +1897,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1851,6 +1923,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1875,6 +1948,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1900,6 +1974,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1916,6 +1991,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.run installation",
@@ -1941,6 +2017,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -1967,14 +2044,17 @@
       "PATH",
       "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/tools_prefix/bin",
       "--env",
-      "GOOS",
-      "linux",
+      "_3PP_TOOL_PLATFORM",
+      "linux-amd64",
+      "--env",
+      "GOARCH",
+      "amd64",
       "--env",
       "_3PP_VERSION",
       "1.4.1",
       "--env",
-      "GOARCH",
-      "amd64",
+      "GOOS",
+      "linux",
       "--env",
       "_3PP_PATCH_VERSION",
       "chops.1",
@@ -1998,6 +2078,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "env_prefixes": {
@@ -2030,6 +2111,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.build prefix/build_tools/tool/linux-amd64",
@@ -2062,6 +2144,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -2087,6 +2170,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -2103,6 +2187,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.run test",
@@ -2124,6 +2209,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.run test.test.py linux [CACHE]/3pp_cipd/prefix/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id",
@@ -2139,6 +2225,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.do upload",
@@ -2164,6 +2251,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building pkg.fetch sources.installing tools.building tool.do upload.register prefix/build_tools/tool/linux-amd64",
@@ -2193,6 +2281,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.fetch sources.installing tools.cipd pkg-deploy [CACHE]/3pp_cipd/prefix/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id",
@@ -2214,6 +2303,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.fetch sources.installing deps",
@@ -2228,6 +2318,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.fetch sources.installing deps.building dep",
@@ -2250,6 +2341,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.fetch sources.installing deps.building dep.cipd describe prefix/deps/dep/linux-armv6l",
@@ -2281,6 +2373,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "infra_step": true,
@@ -2296,6 +2389,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "name": "building pkg.fetch sources.installing deps.building dep.fetch sources",
@@ -2310,6 +2404,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "name": "building pkg.fetch sources.installing deps.building dep.fetch sources.installing tools",
@@ -2332,6 +2427,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "name": "building pkg.fetch sources.installing deps.building dep.fetch sources.installing tools.cipd pkg-deploy [CACHE]/3pp_cipd/prefix/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id",
@@ -2363,6 +2459,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "infra_step": true,
@@ -2387,6 +2484,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "name": "building pkg.fetch sources.installing deps.building dep.fetch sources.ensure_installed",
@@ -2421,6 +2519,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "infra_step": true,
@@ -2436,6 +2535,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "name": "building pkg.fetch sources.installing deps.building dep.run installation",
@@ -2460,6 +2560,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "infra_step": true,
@@ -2486,20 +2587,23 @@
       "PATH",
       "[START_DIR]/3pp/wd/dep/linux-armv6l/1.0.0/tools_prefix/bin",
       "--env",
-      "GOOS",
-      "linux",
+      "_3PP_TOOL_PLATFORM",
+      "linux-amd64",
       "--env",
       "GOARCH",
       "armv6l",
+      "--env",
+      "_3PP_VERSION",
+      "1.0.0",
+      "--env",
+      "GOOS",
+      "linux",
       "--env",
       "_3PP_PLATFORM",
       "linux-armv6l",
       "--env",
       "_3PP_PACKAGE_NAME",
       "dep",
-      "--env",
-      "_3PP_VERSION",
-      "1.0.0",
       "--",
       "bash",
       "[START_DIR]/3pp/wd/dep/linux-armv6l/1.0.0/checkout/.3pp/dep/install.sh",
@@ -2512,6 +2616,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "env_prefixes": {
@@ -2543,6 +2648,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "name": "building pkg.fetch sources.installing deps.building dep.build prefix/deps/dep/linux-armv6l",
@@ -2574,6 +2680,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "infra_step": true,
@@ -2598,6 +2705,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "infra_step": true,
@@ -2613,6 +2721,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "name": "building pkg.fetch sources.installing deps.building dep.do upload",
@@ -2637,6 +2746,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
     },
     "name": "building pkg.fetch sources.installing deps.building dep.do upload.register prefix/deps/dep/linux-armv6l",
@@ -2666,6 +2776,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.fetch sources.installing deps.cipd pkg-deploy [CACHE]/3pp_cipd/prefix/deps/dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
@@ -2697,6 +2808,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -2718,6 +2830,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.fetch sources.fetch.py checkout [START_DIR]/3pp/wd/pkg/linux-armv6l/2.0.0/checkout",
@@ -2741,6 +2854,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -2756,6 +2870,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.run installation",
@@ -2780,6 +2895,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -2806,20 +2922,23 @@
       "PATH",
       "[START_DIR]/3pp/wd/pkg/linux-armv6l/2.0.0/tools_prefix/bin",
       "--env",
-      "GOOS",
-      "linux",
+      "_3PP_TOOL_PLATFORM",
+      "linux-amd64",
       "--env",
       "GOARCH",
       "armv6l",
+      "--env",
+      "_3PP_VERSION",
+      "2.0.0",
+      "--env",
+      "GOOS",
+      "linux",
       "--env",
       "_3PP_PLATFORM",
       "linux-armv6l",
       "--env",
       "_3PP_PACKAGE_NAME",
       "pkg",
-      "--env",
-      "_3PP_VERSION",
-      "2.0.0",
       "--",
       "bash",
       "[START_DIR]/3pp/wd/pkg/linux-armv6l/2.0.0/checkout/.3pp/pkg/install.sh",
@@ -2832,6 +2951,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "env_prefixes": {
@@ -2863,6 +2983,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.build prefix/tools/pkg/linux-armv6l",
@@ -2894,6 +3015,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -2918,6 +3040,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -2933,6 +3056,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.do upload",
@@ -2957,6 +3081,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building pkg.do upload.register prefix/tools/pkg/linux-armv6l",
@@ -2989,7 +3114,8 @@
       "GOARCH": "armv6l",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
-      "_3PP_PLATFORM": "linux-armv6l"
+      "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
     "name": "building posix_tool.cipd describe tools/posix_tool/linux-armv6l",
     "~followup_annotations": [
@@ -3020,6 +3146,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "infra_step": true,
@@ -3035,6 +3162,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "name": "building posix_tool.fetch sources",
@@ -3059,6 +3187,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "infra_step": true,
@@ -3083,6 +3212,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "name": "building posix_tool.fetch sources.ensure_installed",
@@ -3108,6 +3238,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "name": "building posix_tool.fetch sources.unpack_archive",
@@ -3131,6 +3262,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "infra_step": true,
@@ -3159,6 +3291,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "infra_step": true,
@@ -3182,6 +3315,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "infra_step": true,
@@ -3205,6 +3339,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "name": "building posix_tool.fetch sources.unpack_archive.extracting [tmpdir]/archive.tgz",
@@ -3235,6 +3370,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "infra_step": true,
@@ -3259,6 +3395,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "infra_step": true,
@@ -3274,6 +3411,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "name": "building posix_tool.run installation",
@@ -3298,6 +3436,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "infra_step": true,
@@ -3324,20 +3463,23 @@
       "PATH",
       "[START_DIR]/3pp/wd/posix_tool/linux-armv6l/1.2.0/tools_prefix/bin",
       "--env",
-      "GOOS",
-      "linux",
+      "_3PP_TOOL_PLATFORM",
+      "linux-amd64",
       "--env",
       "GOARCH",
       "armv6l",
+      "--env",
+      "_3PP_VERSION",
+      "1.2.0",
+      "--env",
+      "GOOS",
+      "linux",
       "--env",
       "_3PP_PLATFORM",
       "linux-armv6l",
       "--env",
       "_3PP_PACKAGE_NAME",
       "posix_tool",
-      "--env",
-      "_3PP_VERSION",
-      "1.2.0",
       "--",
       "bash",
       "[START_DIR]/3pp/wd/posix_tool/linux-armv6l/1.2.0/checkout/.3pp/posix_tool/install.sh",
@@ -3350,6 +3492,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "env_prefixes": {
@@ -3381,6 +3524,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "name": "building posix_tool.build tools/posix_tool/linux-armv6l",
@@ -3412,6 +3556,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "infra_step": true,
@@ -3436,6 +3581,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "infra_step": true,
@@ -3451,6 +3597,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "name": "building posix_tool.do upload",
@@ -3475,6 +3622,7 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
     },
     "name": "building posix_tool.do upload.register tools/posix_tool/linux-armv6l",
@@ -3508,7 +3656,8 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
-      "_3PP_PLATFORM": "linux-armv6l"
+      "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
     "name": "building tool.cipd describe prefix/build_tools/tool/linux-armv6l",
     "~followup_annotations": [
@@ -3540,6 +3689,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -3556,6 +3706,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building tool.fetch sources",
@@ -3571,6 +3722,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building tool.fetch sources.installing tools",
@@ -3594,6 +3746,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building tool.fetch sources.installing tools.cipd pkg-deploy [CACHE]/3pp_cipd/prefix/build_tools/tool/linux-amd64/resolved-instance_id-of-version:0.9.0.ch",
@@ -3616,6 +3769,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building tool.fetch sources.installing deps",
@@ -3639,6 +3793,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building tool.fetch sources.installing deps.cipd pkg-deploy [CACHE]/3pp_cipd/prefix/deps/bottom_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
@@ -3671,6 +3826,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -3695,6 +3851,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building tool.fetch sources.git setup",
@@ -3719,6 +3876,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -3741,6 +3899,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -3762,6 +3921,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -3787,6 +3947,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -3808,6 +3969,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -3831,6 +3993,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -3856,6 +4019,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -3880,6 +4044,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -3905,6 +4070,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -3921,6 +4087,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building tool.run installation",
@@ -3946,6 +4113,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -3972,14 +4140,17 @@
       "PATH",
       "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/tools_prefix/bin",
       "--env",
-      "GOARCH",
-      "armv6l",
+      "_3PP_TOOL_PLATFORM",
+      "linux-amd64",
+      "--env",
+      "GOOS",
+      "linux",
       "--env",
       "_3PP_VERSION",
       "1.4.1",
       "--env",
-      "GOOS",
-      "linux",
+      "GOARCH",
+      "armv6l",
       "--env",
       "_3PP_PATCH_VERSION",
       "chops.1",
@@ -4003,6 +4174,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "env_prefixes": {
@@ -4035,6 +4207,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building tool.build prefix/build_tools/tool/linux-armv6l",
@@ -4067,6 +4240,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -4092,6 +4266,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
@@ -4108,6 +4283,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building tool.run test",
@@ -4129,6 +4305,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building tool.run test.test.py linux [CACHE]/3pp_cipd/prefix/build_tools/tool/linux-armv6l/40-chars-fake-of-the-package-instance_id",
@@ -4144,6 +4321,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building tool.do upload",
@@ -4167,6 +4345,7 @@
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
     "name": "building tool.do upload.register prefix/build_tools/tool/linux-armv6l",
@@ -4198,7 +4377,8 @@
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
-      "_3PP_PLATFORM": "linux-armv6l"
+      "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
     "infra_step": true,
     "name": "building tool.git ls-remote",
