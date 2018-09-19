@@ -104,6 +104,7 @@ func CreateBuilderBug(c context.Context, client ClientFactory, builder *storage.
 				"Master-" + excludeInvalid(builder.ID.Master),
 				"Restrict-View-Google",
 			},
+			ProjectId: builder.IssueID.Project,
 		},
 	}
 	if builder.OS != config.OS_UNSET_OS {

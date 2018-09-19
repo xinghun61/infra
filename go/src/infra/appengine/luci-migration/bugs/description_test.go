@@ -104,6 +104,7 @@ Migration app will close this bug when the builder is entirely migrated from Bui
 						"Restrict-View-Google",
 						"OS-LINUX",
 					},
+					ProjectId: "chromium",
 				},
 			})
 		})
