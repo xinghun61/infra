@@ -3,12 +3,16 @@
 # found in the LICENSE file.
 
 import logging
+import re
 
 from google.appengine.ext import ndb
 
 from libs import test_name_util
 from model.flake.flake_issue import FlakeIssue
 from services import ci_failure
+
+# Regular expression used to match the noarmlized name of a gtest.
+_GTEST_REGEX = re.compile(r'^([a-zA-Z_]\w*)\.[a-zA-Z_]\w*$')
 
 
 def _GetTestSuiteName(normalized_test_name):
@@ -23,9 +27,9 @@ def _GetTestSuiteName(normalized_test_name):
   Returns:
     The test suite name if it's gtest, otherwise None.
   """
-  test_name_split = normalized_test_name.split('.')
-  if len(test_name_split) == 2:
-    return test_name_split[0]
+  gtest_match = _GTEST_REGEX.match(normalized_test_name)
+  if gtest_match:
+    return gtest_match.group(1)
 
   return None
 

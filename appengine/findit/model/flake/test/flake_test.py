@@ -183,3 +183,21 @@ class FlakeTest(wf_testcase.WaterfallTestCase):
     fetched_flakes = Flake.query(Flake.test_suite_name == 'suite').fetch()
     self.assertEqual(1, len(fetched_flakes))
     self.assertEqual('suite', fetched_flakes[0].test_suite_name)
+
+  def testTestSuiteNameIsNoneForWebkitLayoutTests(self):
+    luci_project = 'chromium'
+    normalized_step_name = 'normalized_step'
+    normalized_test_name = 'a/b.html'
+    test_label_name = 'test_label'
+
+    flake = Flake.Create(
+        luci_project=luci_project,
+        normalized_step_name=normalized_step_name,
+        normalized_test_name=normalized_test_name,
+        test_label_name=test_label_name)
+
+    flake.put()
+
+    fetched_flakes = Flake.query().fetch()
+    self.assertEqual(1, len(fetched_flakes))
+    self.assertEqual(None, fetched_flakes[0].test_suite_name)
