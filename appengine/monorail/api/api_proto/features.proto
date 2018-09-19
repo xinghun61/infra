@@ -14,6 +14,7 @@ service Features {
   rpc ListHotlistsByUser (ListHotlistsByUserRequest) returns (ListHotlistsByUserResponse) {}
   rpc ListHotlistsByIssue (ListHotlistsByIssueRequest) returns (ListHotlistsByIssueResponse) {}
   rpc ListRecentlyVisitedHotlists (ListRecentlyVisitedHotlistsRequest) returns (ListRecentlyVisitedHotlistsResponse) {}
+  rpc ListStarredHotlists (ListStarredHotlistsRequest) returns (ListStarredHotlistsResponse) {}
   rpc GetHotlistStarCount (GetHotlistStarCountRequest) returns (GetHotlistStarCountResponse) {}
   rpc StarHotlist (StarHotlistRequest) returns (StarHotlistResponse) {}
   rpc ListHotlistIssues (ListHotlistIssuesRequest) returns (ListHotlistIssuesResponse) {}
@@ -59,6 +60,18 @@ message ListRecentlyVisitedHotlistsRequest {
 
 // Next available tag: 2
 message ListRecentlyVisitedHotlistsResponse {
+  repeated Hotlist hotlists = 1;
+}
+
+
+// Next available tag: 2
+message ListStarredHotlistsRequest {
+  RequestTrace trace = 1;
+}
+
+
+// Next available tag: 2
+message ListStarredHotlistsResponse {
   repeated Hotlist hotlists = 1;
 }
 

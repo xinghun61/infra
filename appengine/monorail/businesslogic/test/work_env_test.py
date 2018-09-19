@@ -1484,6 +1484,37 @@ class WorkEnvTest(unittest.TestCase):
     with self.work_env as we:
       self.assertEqual([], we.ListRecentlyVisitedHotlists())
 
+  def testListStarredHotlists(self):
+    hotlists = [
+        self.work_env.services.features.CreateHotlist(
+            self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+            owner_ids=[444L], editor_ids=[111L]),
+        self.work_env.services.features.CreateHotlist(
+            self.cnxn, 'Fake-Hotlist-2', 'Summary', 'Description',
+            owner_ids=[111L], editor_ids=[333L]),
+        self.work_env.services.features.CreateHotlist(
+            self.cnxn, 'Private-Hotlist', 'Summary', 'Description',
+            owner_ids=[111L], editor_ids=[333L], is_private=True),
+        self.work_env.services.features.CreateHotlist(
+            self.cnxn, 'Private-Hotlist-2', 'Summary', 'Description',
+            owner_ids=[222L], editor_ids=[333L], is_private=True)]
+
+    for hotlist in hotlists:
+      self.work_env.services.hotlist_star.SetStar(
+          self.cnxn, hotlist.hotlist_id, 111L, True)
+
+    self.SignIn()
+    with self.work_env as we:
+      visited_hotlists = we.ListStarredHotlists()
+
+    # We don't have permission to see the last hotlist, because it is marked as
+    # private and we're not owners or editors of it.
+    self.assertEqual(hotlists[:-1], visited_hotlists)
+
+  def testListStarredHotlists_Anon(self):
+    with self.work_env as we:
+      self.assertEqual([], we.ListStarredHotlists())
+
   def testStarHotlist_Normal(self):
     """We can star and unstar a hotlist."""
     hotlist_id = self.work_env.services.features.CreateHotlist(

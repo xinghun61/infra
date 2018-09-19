@@ -1267,6 +1267,32 @@ class WorkEnv(object):
         if permissions.CanViewHotlist(self.mc.auth.effective_ids, hotlist)]
     return result
 
+  def ListStarredHotlists(self):
+    """Return the starred hotlists for the logged in user.
+
+    Returns:
+      The starred hotlists for the logged in user.
+    """
+    if not self.mc.auth.user_id:
+      return []
+
+    with self.mc.profiler.Phase(
+        'get starred hotlists for user %r' % self.mc.auth.user_id):
+      hotlist_ids = self.services.hotlist_star.LookupStarredItemIDs(
+          self.mc.cnxn, self.mc.auth.user_id)
+      hotlists_by_id, _ = self.services.features.GetHotlistsByID(
+          self.mc.cnxn, hotlist_ids)
+      hotlists = [hotlists_by_id[hotlist_id] for hotlist_id in hotlist_ids]
+
+    # Filter the hotlists that the currently authenticated user cannot see.
+    # It might be that some of the hotlists have become private since the user
+    # starred them, or the user has lost access for other reasons.
+    result = [
+        hotlist
+        for hotlist in hotlists
+        if permissions.CanViewHotlist(self.mc.auth.effective_ids, hotlist)]
+    return result
+
   def StarHotlist(self, hotlist_id, starred):
     """Star or unstar the specified hotlist.
 
