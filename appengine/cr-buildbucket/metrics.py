@@ -38,7 +38,7 @@ _METRIC_PREFIX_PROD = 'buildbucket/builds/'
 _METRIC_PREFIX_EXPERIMENTAL = 'buildbucket/builds-experimental/'
 
 # Maximum number of concurrent counting/latency queries.
-_CONCURRENT_QUERY_LIMIT = 250
+_CONCURRENT_QUERY_LIMIT = 100
 
 
 def _default_field_value(name):
