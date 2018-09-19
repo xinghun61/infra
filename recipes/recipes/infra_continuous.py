@@ -107,7 +107,7 @@ def RunSteps(api):
   if not api.runtime.is_luci:  # pragma: no cover
     raise ValueError('This recipe is not supported outside of LUCI.')
 
-  buildername = api.buildbucket.builder_id.builder
+  buildername = api.buildbucket.build.builder.builder
   if (buildername.startswith('infra-internal-continuous') or
       buildername.startswith('infra-internal-packager')):
     project_name = 'infra_internal'

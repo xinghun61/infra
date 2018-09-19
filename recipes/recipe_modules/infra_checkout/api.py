@@ -105,7 +105,7 @@ class InfraCheckoutApi(recipe_api.RecipeApi):
         assert self.m.runtime.is_luci
         revs = self.m.bot_update.get_project_revision_properties(patch_root)
         upstream = bot_update_step.json.output['properties'].get(revs[0])
-        gerrit_change = self.m.buildbucket.build_input.gerrit_changes[0]
+        gerrit_change = self.m.buildbucket.build.input.gerrit_changes[0]
         # The presubmit must be run with proper Go environment.
         presubmit_cmd = [
           'python',  # env.py will replace with this its sys.executable.

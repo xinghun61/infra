@@ -32,7 +32,7 @@ def RunSteps(api):
         print '\n'.join(os.listdir('./'))
     ''')
 
-  if 'presubmit' in api.buildbucket.builder_id.builder.lower():
+  if 'presubmit' in api.buildbucket.build.builder.builder.lower():
     with api.tryserver.set_failure_hash():
       co.run_presubmit_in_go_env()
 
