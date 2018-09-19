@@ -7,86 +7,86 @@
 ]
 
 <div id="[arg1]LF_row1" class="nowrap">
- <input type="text" class="labelinput" id="[arg1]label0" size="20" autocomplete="off"
+ <input aria-label="label 1" type="text" class="labelinput" id="[arg1]label0" size="20" autocomplete="off"
         name="label" value="[label0]">
- <input type="text" class="labelinput" id="[arg1]label1" size="20" autocomplete="off"
+ <input aria-label="label 2" type="text" class="labelinput" id="[arg1]label1" size="20" autocomplete="off"
         name="label" value="[label1]">
- <input type="text" class="labelinput" id="[arg1]label2" size="20" autocomplete="off"
+ <input aria-label="label 3" type="text" class="labelinput" id="[arg1]label2" size="20" autocomplete="off"
         name="label" value="[label2]">
 </div>
 
 <div id="[arg1]LF_row2" class="nowrap">
- <input type="text" class="labelinput" id="[arg1]label3" size="20" autocomplete="off"
+ <input aria-label="label 4" type="text" class="labelinput" id="[arg1]label3" size="20" autocomplete="off"
         name="label" value="[label3]">
- <input type="text" class="labelinput" id="[arg1]label4" size="20" autocomplete="off"
+ <input aria-label="label 5" type="text" class="labelinput" id="[arg1]label4" size="20" autocomplete="off"
         name="label" value="[label4]">
- <input type="text" class="labelinput" id="[arg1]label5" size="20" autocomplete="off"
+ <input aria-label="label 6" type="text" class="labelinput" id="[arg1]label5" size="20" autocomplete="off"
         [is arg0 "just-two"]data-show-id="LF_row3" data-hide-id="addrow2"[end]
         name="label" value="[label5]">
  [is arg0 "just-two"]<span id="addrow2" class="fakelink" data-instead="LF_row3">Add a row</span>[end]
 </div>
 
 <div id="[arg1]LF_row3" [is arg0 "just-two"]style="display:none"[end] class="nowrap">
- <input type="text" class="labelinput" id="[arg1]label6" size="20" autocomplete="off"
+ <input aria-label="label 7" type="text" class="labelinput" id="[arg1]label6" size="20" autocomplete="off"
         name="label" value="[label6]">
- <input type="text" class="labelinput" id="[arg1]label7" size="20" autocomplete="off"
+ <input aria-label="label 8" type="text" class="labelinput" id="[arg1]label7" size="20" autocomplete="off"
         name="label" value="[label7]">
- <input type="text" class="labelinput" id="[arg1]label8" size="20" autocomplete="off"
+ <input aria-label="label 9" type="text" class="labelinput" id="[arg1]label8" size="20" autocomplete="off"
         [is arg0 "just-two"]data-show-id="LF_row4" data-hide-id="addrow3"[end]
         name="label" value="[label8]">
  [is arg0 "just-two"]<span id="addrow3" class="fakelink" data-instead="LF_row4">Add a row</span>[end]
 </div>
 
 <div id="[arg1]LF_row4" [is arg0 "just-two"]style="display:none"[end] class="nowrap">
- <input type="text" class="labelinput" id="[arg1]label9" size="20" autocomplete="off"
+ <input aria-label="label 10" type="text" class="labelinput" id="[arg1]label9" size="20" autocomplete="off"
         name="label" value="[label9]">
- <input type="text" class="labelinput" id="[arg1]label10" size="20" autocomplete="off"
+ <input aria-label="label 11" type="text" class="labelinput" id="[arg1]label10" size="20" autocomplete="off"
         name="label" value="[label10]">
- <input type="text" class="labelinput" id="[arg1]label11" size="20" autocomplete="off"
+ <input aria-label="label 12" type="text" class="labelinput" id="[arg1]label11" size="20" autocomplete="off"
         [is arg0 "just-two"]data-show-id="LF_row5" data-hide-id="addrow4"[end]
         name="label" value="[label11]">
  [is arg0 "just-two"]<span id="addrow4" class="fakelink" data-instead="LF_row5">Add a row</span>[end]
 </div>
 
 <div id="[arg1]LF_row5" [is arg0 "just-two"]style="display:none"[end] class="nowrap">
- <input type="text" class="labelinput" id="[arg1]label12" size="20" autocomplete="off"
+ <input aria-label="label 13" type="text" class="labelinput" id="[arg1]label12" size="20" autocomplete="off"
         name="label" value="[label12]">
- <input type="text" class="labelinput" id="[arg1]label13" size="20" autocomplete="off"
+ <input aria-label="label 14" type="text" class="labelinput" id="[arg1]label13" size="20" autocomplete="off"
         name="label" value="[label13]">
- <input type="text" class="labelinput" id="[arg1]label14" size="20" autocomplete="off"
+ <input aria-label="label 15" type="text" class="labelinput" id="[arg1]label14" size="20" autocomplete="off"
         [is arg0 "just-two"]data-show-id="LF_row6" data-hide-id="addrow5"[end]
         name="label" value="[label14]">
  [is arg0 "just-two"]<span id="addrow5" class="fakelink" data-instead="LF_row6">Add a row</span>[end]
 </div>
 
 <div id="[arg1]LF_row6" [is arg0 "just-two"]style="display:none"[end] class="nowrap">
- <input type="text" class="labelinput" id="[arg1]label15" size="20" autocomplete="off"
+ <input aria-label="label 16" type="text" class="labelinput" id="[arg1]label15" size="20" autocomplete="off"
         name="label" value="[label15]">
- <input type="text" class="labelinput" id="[arg1]label16" size="20" autocomplete="off"
+ <input aria-label="label 17" type="text" class="labelinput" id="[arg1]label16" size="20" autocomplete="off"
         name="label" value="[label16]">
- <input type="text" class="labelinput" id="[arg1]label17" size="20" autocomplete="off"
+ <input aria-label="label 18" type="text" class="labelinput" id="[arg1]label17" size="20" autocomplete="off"
         [is arg0 "just-two"]data-show-id="LF_row7" data-hide-id="addrow6"[end]
         name="label" value="[label17]">
  [is arg0 "just-two"]<span id="addrow6" class="fakelink" data-instead="LF_row7">Add a row</span>[end]
 </div>
 
 <div id="[arg1]LF_row7" [is arg0 "just-two"]style="display:none"[end] class="nowrap">
- <input type="text" class="labelinput" id="[arg1]label18" size="20" autocomplete="off"
+ <input aria-label="label 19" type="text" class="labelinput" id="[arg1]label18" size="20" autocomplete="off"
         name="label" value="[label18]">
- <input type="text" class="labelinput" id="[arg1]label19" size="20" autocomplete="off"
+ <input aria-label="label 20" type="text" class="labelinput" id="[arg1]label19" size="20" autocomplete="off"
         name="label" value="[label19]">
- <input type="text" class="labelinput" id="[arg1]label20" size="20" autocomplete="off"
+ <input aria-label="label 21" type="text" class="labelinput" id="[arg1]label20" size="20" autocomplete="off"
         [is arg0 "just-two"]data-show-id="LF_row8" data-hide-id="addrow7"[end]
         name="label" value="[label20]">
  [is arg0 "just-two"]<span id="addrow7" class="fakelink" data-instead="LF_row8">Add a row</span>[end]
 </div>
 
 <div id="[arg1]LF_row8" [is arg0 "just-two"]style="display:none"[end] class="nowrap">
- <input type="text" class="labelinput" id="[arg1]label21" size="20" autocomplete="off"
+ <input aria-label="label 22" type="text" class="labelinput" id="[arg1]label21" size="20" autocomplete="off"
         name="label" value="[label21]">
- <input type="text" class="labelinput" id="[arg1]label22" size="20" autocomplete="off"
+ <input aria-label="label 23" type="text" class="labelinput" id="[arg1]label22" size="20" autocomplete="off"
         name="label" value="[label22]">
- <input type="text" class="labelinput" id="[arg1]label23" size="20" autocomplete="off"
+ <input aria-label="label 24" type="text" class="labelinput" id="[arg1]label23" size="20" autocomplete="off"
         name="label" value="[label23]">
 </div>
 

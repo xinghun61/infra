@@ -155,7 +155,7 @@
 
 
       [if-any page_perms.EditIssue][# Show label editing elements iff the user can edit.]
-       <tr><th class="vt"><label for="label0">Labels:</label></th>
+       <tr><th class="vt"><th>Labels</th>[# aria-labels added in label-fields.ezt]
            <td class="labelediting" colspan="2">
              [include "label-fields.ezt" "just-two" ""]
            </td>

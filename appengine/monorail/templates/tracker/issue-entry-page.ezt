@@ -140,7 +140,7 @@
        [end]
       </tbody>
 
-      <tr [if-any page_perms.EditIssue][else]style="display:none;"[end]><th><label for="label0">Labels:</label></th>
+      <tr [if-any page_perms.EditIssue][else]style="display:none;"[end]><th>Labels</th>[# aria-labels added in label-fields.ezt]
        <td colspan="2" class="labelediting">
         [include "label-fields.ezt" "just-two" ""]
        </td>
