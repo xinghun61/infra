@@ -46,6 +46,12 @@ class MrMetadata extends ReduxMixin(Polymer.Element) {
         type: String,
         statePath: 'projectName',
       },
+      role: {
+        type: String,
+        value: 'table',
+        reflectToAttribute: true,
+        readOnly: true,
+      },
       _fieldValueMap: {
         type: Object,
         statePath: selectors.issueFieldValueMap,

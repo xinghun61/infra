@@ -14,7 +14,7 @@
       :host {
         width: 100%;
         margin-top: 0;
-        font-size: 100%;
+        font-size: 18px;
         background-color: hsl(227, 100%, 95%);
         border-bottom: 1px solid hsl(227, 10%, 87%);
         font-weight: normal;
@@ -24,6 +24,13 @@
         align-items: center;
         justify-content: space-between;
         --iron-icon-fill-color: hsl(227, 15%, 66%);
+      }
+      h1 {
+        font-size: 100%;
+        line-height: 140%;
+        font-weight: normal;
+        padding: 0;
+        margin: 0;
       }
       mr-flt-flipper {
         font-size: 85%;
@@ -47,7 +54,7 @@
       }
     </style>
     <div class="main-text">
-      Issue [[issue.localId]]: [[issue.summary]]
+      <h1>Issue [[issue.localId]]: [[issue.summary]]</h1>
       <small class="byline">
         Created by
         <mr-user-link

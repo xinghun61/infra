@@ -60,6 +60,15 @@ class MrCompactComments extends Polymer.Element {
     return hiddenCount <= 0;
   }
 
+  _computeCommentToggleVerb(commentsHidden) {
+    return commentsHidden ? 'Show' : 'Hide';
+  }
+
+  _pluralize(count, baseWord, pluralWord) {
+    pluralWord = pluralWord || `${baseWord}s`;
+    return count == 1 ? baseWord : pluralWord;
+  }
+
   _submitComment() {
     if (this.onSubmitComment) {
       this.onSubmitComment(this._newCommentText);

@@ -28,6 +28,12 @@
       button.toggle[hidden], .card-comment[hidden] {
         display: none;
       }
+      h4 {
+        font-size: 100%;
+        font-weight: normal;
+        margin: 0;
+        padding: 0;
+      }
       textarea {
         width: 100%;
         margin: 0.5em 0;
@@ -63,15 +69,15 @@
       }
     </style>
     <button on-click="toggleComments" class="toggle" hidden$="[[_hideToggle]]">
-      Toggle [[_commentsHiddenCount]] older comments collapsed by default.
+      [[_computeCommentToggleVerb(_commentsHidden)]] [[_commentsHiddenCount]] older [[_pluralize(_commentsHiddenCount, 'comment')]].
     </button>
     <template is="dom-repeat" items="[[comments]]" as="comment">
       <div class="card-comment" hidden$=[[_computeCommentHidden(_commentsHidden,_commentsHiddenCount,index)]]>
-        <div class="comment-header">
+        <h4 class="comment-header">
           Comment [[comment.sequenceNum]] by
           <mr-user-link display-name="[[comment.commenter.displayName]]" user-id="[[comment.commenter.userId]]"></mr-user-link> on
           <chops-timestamp timestamp="[[comment.timestamp]]"></chops-timestamp>
-        </div>
+        </h4>
         <template is="dom-if" if="[[_showDiff(comment)]]">
           <div class="issue-diff">
             <template is="dom-repeat" items="[[comment.amendments]]" as="delta">
