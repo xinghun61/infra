@@ -46,7 +46,16 @@ type SwarmingFactory func(c context.Context, host string) (clients.SwarmingClien
 
 // TaskerServerImpl implements the fleet.TaskerServer interface.
 type TaskerServerImpl struct {
+	// ClientFactory is an optional factory function for creating
+	// clients.  If it is nil, clients.NewSwarmingClient is used.
 	ClientFactory SwarmingFactory
+}
+
+func (tsi *TaskerServerImpl) newClient(c context.Context, host string) (clients.SwarmingClient, error) {
+	if tsi.ClientFactory != nil {
+		return tsi.ClientFactory(c, host)
+	}
+	return clients.NewSwarmingClient(c, host)
 }
 
 // TriggerRepairOnIdle implements the fleet.TaskerService method.
@@ -58,7 +67,7 @@ func (tsi *TaskerServerImpl) TriggerRepairOnIdle(ctx context.Context, req *fleet
 	if err := req.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	sc, err := tsi.ClientFactory(ctx, config.Get(ctx).Swarming.Host)
+	sc, err := tsi.newClient(ctx, config.Get(ctx).Swarming.Host)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to obtain Swarming client").Err()
 	}
@@ -123,7 +132,7 @@ func (tsi *TaskerServerImpl) TriggerRepairOnRepairFailed(ctx context.Context, re
 	if err := req.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	sc, err := tsi.ClientFactory(ctx, config.Get(ctx).Swarming.Host)
+	sc, err := tsi.newClient(ctx, config.Get(ctx).Swarming.Host)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to obtain Swarming client").Err()
 	}
@@ -202,7 +211,7 @@ func (tsi *TaskerServerImpl) EnsureBackgroundTasks(ctx context.Context, req *fle
 		return nil, errors.Annotate(err, "failed to obtain requested bots from datastore").Err()
 	}
 
-	sc, err := tsi.ClientFactory(ctx, config.Get(ctx).Swarming.Host)
+	sc, err := tsi.newClient(ctx, config.Get(ctx).Swarming.Host)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to obtain Swarming client").Err()
 	}
