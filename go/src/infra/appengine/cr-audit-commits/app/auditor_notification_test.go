@@ -109,7 +109,7 @@ func TestNotifier(t *testing.T) {
 				rc := &RelevantCommit{
 					RepoStateKey:     rsk,
 					CommitHash:       "badc0de",
-					Status:           auditCompletedWithViolation,
+					Status:           auditCompletedWithActionRequired,
 					Result:           []RuleResult{{"DummyRule", ruleFailed, "This commit is bad", ""}},
 					CommitterAccount: "committer@test.com",
 					AuthorAccount:    "author@test.com",
@@ -166,6 +166,62 @@ func TestNotifier(t *testing.T) {
 				So(rc.NotifiedAll, ShouldBeTrue)
 			})
 		})
+		Convey("Notification required audits - comment only", func() {
+			testClients.monorail = mockMonorailClient{
+				gi: &monorail.Issue{
+					Id: 8675389,
+				},
+			}
+			cfg := &RepoConfig{
+				BaseRepoURL:     "https://old.googlesource.com/old-ack.git",
+				GerritURL:       "https://old-review.googlesource.com",
+				BranchName:      "master",
+				StartingCommit:  "000000",
+				MonorailAPIURL:  "https://monorail-fake.appspot.com/_ah/api/monorail/v1",
+				MonorailProject: "fakeproject",
+				NotifierEmail:   "notifier@cr-audit-commits-test.appspotmail.com",
+				Rules: map[string]RuleSet{"rulesAck": AccountRules{
+					Account: "author@test.com",
+					Funcs: []RuleFunc{func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+						return &RuleResult{"Dummy rule", notificationRequired, "", "BugNumbers:8675389"}
+					}},
+					notificationFunction: commentOnBugToAcknowledgeMerge,
+				}},
+				Metadata: "MilestoneNumber:70",
+			}
+			RuleMap["old-repo-ack"] = cfg
+			repoState := &RepoState{
+				RepoURL:            "https://old.googlesource.com/old-ack.git/+/master",
+				LastKnownCommit:    "123456",
+				LastRelevantCommit: "999999",
+			}
+			ds.Put(ctx, repoState)
+			rsk := ds.KeyForObj(ctx, repoState)
+			rc := &RelevantCommit{
+				RepoStateKey:     rsk,
+				CommitHash:       "badc0de",
+				Status:           auditCompletedWithActionRequired,
+				Result:           []RuleResult{{"DummyRule", notificationRequired, "This commit requires a notification", "BugNumbers:8675389"}},
+				CommitterAccount: "committer@test.com",
+				AuthorAccount:    "author@test.com",
+				CommitMessage:    "This commit requires a notification.",
+			}
+			err := ds.Put(ctx, rc)
+			So(err, ShouldBeNil)
+
+			err = notifyAboutViolations(ctx, cfg, repoState, testClients)
+			So(err, ShouldBeNil)
+
+			rc = &RelevantCommit{
+				RepoStateKey: rsk,
+				CommitHash:   "badc0de",
+			}
+			err = ds.Get(ctx, rc)
+			So(rc.GetNotificationState("rulesAck"), ShouldEqual, "Comment posted on BUG=8675389")
+			So(rc.NotifiedAll, ShouldBeTrue)
+			m := mail.GetTestable(ctx)
+			So(m.SentMessages(), ShouldBeEmpty)
+		})
 		Convey("Failed audits - email only", func() {
 			cfg := &RepoConfig{
 				BaseRepoURL:     "https://old.googlesource.com/old-email.git",
@@ -194,7 +250,7 @@ func TestNotifier(t *testing.T) {
 			rc := &RelevantCommit{
 				RepoStateKey:     rsk,
 				CommitHash:       "badc0de",
-				Status:           auditCompletedWithViolation,
+				Status:           auditCompletedWithActionRequired,
 				Result:           []RuleResult{{"DummyRule", ruleFailed, "This commit is bad", ""}},
 				CommitterAccount: "committer@test.com",
 				AuthorAccount:    "author@test.com",

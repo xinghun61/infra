@@ -13,6 +13,7 @@ import (
 
 	"go.chromium.org/gae/service/info"
 	"go.chromium.org/gae/service/mail"
+	"go.chromium.org/luci/common/logging"
 
 	"infra/monorail"
 )
@@ -61,17 +62,68 @@ func fileBugForMergeApprovalViolation(ctx context.Context, cfg *RepoConfig, rc *
 	}
 	labels := []string{"CommitLog-Audit-Violation", "Merge-Without-Approval", fmt.Sprintf("M-%s", milestone)}
 	for _, result := range rc.Result {
+		if result.RuleResultStatus != ruleFailed {
+			continue
+		}
 		bug, success := GetToken(ctx, "BugNumber", result.MetaData)
-		if success && state == "" {
-			bugID, _ := strconv.Atoi(bug)
-			err := postComment(ctx, cfg, int32(bugID), resultText(cfg, rc, true), cs, labels)
-			if err != nil {
-				return "", err
+		if state == "" {
+			// Comment on the bug if any. If not, file a new bug.
+			if success {
+				bugID, _ := strconv.Atoi(bug)
+				err := postComment(ctx, cfg, int32(bugID), resultText(cfg, rc, true), cs, labels)
+				if err != nil {
+					return "", err
+				}
+				return fmt.Sprintf("Comment posted on BUG=%d", int32(bugID)), nil
 			}
-			return fmt.Sprintf("Comment posted on BUG=%d", int32(bugID)), nil
+			return fileBugForViolation(ctx, cfg, rc, cs, state, components, labels)
 		}
 	}
-	return fileBugForViolation(ctx, cfg, rc, cs, state, components, labels)
+	return "No violation found", nil
+}
+
+func commentOnBugToAcknowledgeMerge(ctx context.Context, cfg *RepoConfig, rc *RelevantCommit, cs *Clients, state string) (string, error) {
+	milestone, ok := GetToken(ctx, "MilestoneNumber", cfg.Metadata)
+	if !ok {
+		return "", fmt.Errorf("MilestoneNumber not specified in repository configuration")
+	}
+
+	mergeAckLabel := fmt.Sprintf("Merge-Merged-%s-%s", milestone, cfg.BranchName)
+	mergeLabel := fmt.Sprintf("-Merge-Approved-%s", milestone)
+	labels := []string{mergeLabel, mergeAckLabel}
+	for _, result := range rc.Result {
+		if result.RuleResultStatus != notificationRequired {
+			continue
+		}
+		bugID, success := GetToken(ctx, "BugNumbers", result.MetaData)
+		if state == "" {
+			if success {
+				bugList := strings.Split(bugID, ",")
+				for _, bug := range bugList {
+					bugNumber, err := strconv.Atoi(bug)
+					if err != nil {
+						logging.WithError(err).Errorf(ctx, "Found an invalid bug %s on relevant commit %s", bug, rc.CommitHash)
+						continue
+					}
+					vIssue, err := issueFromID(ctx, cfg, int32(bugNumber), cs)
+					if err != nil {
+						logging.WithError(err).Errorf(ctx, "Found an invalid Monorail bug %s on relevant commit %s", bugNumber, rc.CommitHash)
+						continue
+					}
+					mergeAckComment := "The following revision refers to this bug: %s\nCommit: %s\nAuthor: %s\nCommiter: %s\nDate: %s\n%s"
+					comment := fmt.Sprintf(mergeAckComment, cfg.LinkToCommit(rc.CommitHash), rc.CommitHash, rc.AuthorAccount, rc.CommitterAccount, rc.CommitTime, rc.CommitMessage)
+					err = postComment(ctx, cfg, int32(vIssue.Id), comment, cs, labels)
+					if err != nil {
+						return "", err
+					}
+					return fmt.Sprintf("Comment posted on BUG=%d", bugNumber), nil
+				}
+			} else {
+				return "", fmt.Errorf("No bug found on revision %s", rc.CommitHash)
+			}
+		}
+	}
+	return "No notification required", nil
 }
 
 // sendEmailForViolation should be called by notification functions to send

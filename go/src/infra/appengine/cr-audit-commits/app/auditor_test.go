@@ -237,7 +237,7 @@ func TestAuditor(t *testing.T) {
 							}
 							err := ds.Get(ctx, rc)
 							So(err, ShouldBeNil)
-							So(rc.Status, ShouldEqual, auditCompletedWithViolation)
+							So(rc.Status, ShouldEqual, auditCompletedWithActionRequired)
 						}
 					})
 					Convey("Some panic", func() {

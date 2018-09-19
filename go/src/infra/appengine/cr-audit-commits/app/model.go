@@ -18,7 +18,7 @@ type AuditStatus int
 const (
 	auditScheduled AuditStatus = iota
 	auditCompleted
-	auditCompletedWithViolation
+	auditCompletedWithActionRequired
 	auditFailed
 )
 
@@ -29,8 +29,8 @@ func (as AuditStatus) ToString() string {
 		return "Audit Scheduled"
 	case auditCompleted:
 		return "Audited OK"
-	case auditCompletedWithViolation:
-		return "Violation Found"
+	case auditCompletedWithActionRequired:
+		return "Action Required"
 	case auditFailed:
 		return "Audit Failed"
 	default:
@@ -44,7 +44,7 @@ func (as AuditStatus) ColorCode() string {
 	switch as {
 	case auditCompleted:
 		return "green-status"
-	case auditCompletedWithViolation:
+	case auditCompletedWithActionRequired:
 		return "red-status"
 	case auditFailed:
 		return "red-status"
@@ -59,8 +59,8 @@ func (as AuditStatus) ToShortString() string {
 	switch as {
 	case auditCompleted:
 		return "passed"
-	case auditCompletedWithViolation:
-		return "violation"
+	case auditCompletedWithActionRequired:
+		return "action required"
 	case auditFailed:
 		return "failed"
 	case auditScheduled:
@@ -77,6 +77,7 @@ const (
 	ruleFailed RuleStatus = iota
 	rulePassed
 	ruleSkipped
+	notificationRequired
 )
 
 // ToString returns a human-readable version of this status.
@@ -88,6 +89,8 @@ func (rs RuleStatus) ToString() string {
 		return "Rule Passed"
 	case ruleSkipped:
 		return "Rule Skipped"
+	case notificationRequired:
+		return "Notification Required"
 	default:
 		return fmt.Sprintf("Unknown status: %d", int(rs))
 	}

@@ -268,12 +268,12 @@ func saveAuditedCommits(ctx context.Context, auditedCommits map[string]*Relevant
 
 // notifyAboutViolations is meant to notify about violations to audit
 // policies by calling the notification functions registered for each ruleSet
-// that matches a commit in the auditCompletedWithViolation status.
+// that matches a commit in the auditCompletedWithActionRequired status.
 func notifyAboutViolations(ctx context.Context, cfg *RepoConfig, repoState *RepoState, cs *Clients) error {
 
 	cfgk := ds.KeyForObj(ctx, repoState)
 
-	cq := ds.NewQuery("RelevantCommit").Ancestor(cfgk).Eq("Status", auditCompletedWithViolation).Eq("NotifiedAll", false)
+	cq := ds.NewQuery("RelevantCommit").Ancestor(cfgk).Eq("Status", auditCompletedWithActionRequired).Eq("NotifiedAll", false)
 	err := ds.Run(ctx, cq, func(rc *RelevantCommit) error {
 		errors := []error{}
 		var err error

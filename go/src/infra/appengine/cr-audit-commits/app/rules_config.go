@@ -146,6 +146,13 @@ var RuleMap = map[string]*RepoConfig{
 				},
 				notificationFunction: fileBugForMergeApprovalViolation,
 			},
+			"merge-ack-rules": AccountRules{
+				Account: "*",
+				Funcs: []RuleFunc{
+					AcknowledgeMerge,
+				},
+				notificationFunction: commentOnBugToAcknowledgeMerge,
+			},
 		},
 		DynamicRefFunction: ReleaseConfig,
 	},

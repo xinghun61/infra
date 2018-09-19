@@ -176,8 +176,8 @@ func runRules(ctx context.Context, rc *RelevantCommit, ap AuditParams, wp *worke
 				default:
 					currentRuleResult := *f(ctx, &ap, rc, wp.clients)
 					rc.Result = append(rc.Result, currentRuleResult)
-					if currentRuleResult.RuleResultStatus == ruleFailed {
-						rc.Status = auditCompletedWithViolation
+					if (currentRuleResult.RuleResultStatus == ruleFailed) || (currentRuleResult.RuleResultStatus == notificationRequired) {
+						rc.Status = auditCompletedWithActionRequired
 					}
 				}
 			}
