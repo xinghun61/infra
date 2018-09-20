@@ -421,6 +421,7 @@ SPECS = {s.spec.tag: s for s in (
   Universal('pyserial', '3.4'),
   Universal('pytest', '3.5.0'),
   Universal('pytest-cov', '2.5.1'),
+  Universal('python-dateutil', '2.7.3'),
   Universal('pytz', '2018.4'),
   Universal('requests', '2.13.0'),
   UniversalSource('requests-unixsocket', '0.1.5'),

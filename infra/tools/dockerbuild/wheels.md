@@ -1691,6 +1691,20 @@ wheel: <
 
 * *universal*
 
+## **python-dateutil**
+
+### 2.7.3
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/python-dateutil-py2_py3"
+  version: "version:2.7.3"
+>
+```
+
+
+* *universal*
+
 ## **pytz**
 
 ### 2018.4
