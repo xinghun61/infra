@@ -24,7 +24,7 @@
 
     </style>
       <!-- Expanded by default. -->
-        <expandable-card show-more>
+        <expandable-card collapsed=[[collapsed]]>
           <div slot="expandable-card-header" class="header">
             <b><font size="4">[[group_by_field]] ([[grouped_occurrences.length]] occurrences)</font></b>
           </div>
@@ -51,9 +51,9 @@
           grouped_occurrences: {
             type: Array
           },
-          show_more: {
+          collapsed: {
             type: Boolean,
-            value: true
+            value: false
           }
         },
 

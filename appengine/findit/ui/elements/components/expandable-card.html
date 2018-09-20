@@ -1,6 +1,6 @@
 <!--
   For usage and examples see ui/elements/components/expandable-card-demo.html.
-  If you want the card to start expanded, then set show-more on the element.
+  If you want the card to start collapsed, then set collapsed on the element.
 -->
 
 <link rel="import" href="/bower_components/polymer/polymer.html">
@@ -61,15 +61,15 @@
       }
     </style>
     <paper-card id="card">
-      <paper-button noink id="header" on-tap="toggleShowMore">
+      <paper-button noink id="header" on-tap="toggleCollapsed">
         <div class="header-button">
           <!-- Button to expand and show more. -->
-          <template is="dom-if" if="[[!showMore]]">
+          <template is="dom-if" if="[[collapsed]]">
             <paper-icon-button icon="add"></paper-icon-button>
           </template>
 
-          <!-- Button to collapse and show less. -->
-          <template is="dom-if" if="[[showMore]]">
+          <!-- Button to collapsed and show less. -->
+          <template is="dom-if" if="[[!collapsed]]">
             <paper-icon-button icon="remove"></paper-icon-button>
           </template>
         </div>
@@ -80,7 +80,7 @@
       </paper-button>
 
       <div id="content">
-        <iron-collapse id="collapse" on-touch="toggleShowMore" opened=[[showMore]]>
+        <iron-collapse id="collapse" on-touch="toggleCollapsed" opened=[[!collapsed]]>
           <!-- Content is the stuff that'll be hidden -->
           <slot name="expandable-card-content"></slot>
         </iron-collapse>
@@ -95,18 +95,18 @@
       Polymer({
         is: 'expandable-card',
         properties: {
-          showMore: {
+          collapsed: {
             type: Boolean,
             value: false
           },
         },
 
         // Event handlers.
-        toggleShowMore: function (e) {
+        toggleCollapsed: function (e) {
           if (e.srcElement.localName === "a")
             return; // Don't expand if a link inside is clicked.
-          this.showMore = !this.showMore;
-          this.$.collapse.opened = this.showMore;
+          this.collapsed = !this.collapsed;
+          this.$.collapse.opened = !this.collapsed;
         },
       });
     })();

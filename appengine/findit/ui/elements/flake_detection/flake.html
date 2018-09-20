@@ -1,4 +1,5 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-button/paper-button.html">
 <link rel="import" href="/ui/elements/flake_detection/grouped-occurrences.html">
 
 
@@ -22,6 +23,11 @@
         background-color: #4285F4;
         color: #FFF;
       }
+
+      #btn_toggle {
+        float: right;
+        color: #4285F4;
+      }
     </style>
     <table>
         <tr>
@@ -38,7 +44,10 @@
           </tr>
         </template>
     </table>
-    <br>
+    <paper-button noink id="btn_toggle" on-tap="togglecollapsed">
+        <template is="dom-if" if="[[!collapsed]]">COLLAPSE ALL</template>
+        <template is="dom-if" if="[[collapsed]]">EXPAND ALL</template>
+    </paper-button><br>
     <table width="100%">
       <tr>
         <th width="15%">Occurred at</th>
@@ -46,10 +55,11 @@
         <th width="55%">Original Test Name</th>
       </tr>
     </table>
-    <template is="dom-repeat" items="{{flake_json.occurrences}}">
+    <template id="groups" is="dom-repeat" items="{{flake_json.occurrences}}">
       <grouped-occurrences
           group_by_field = {{item.group_by_field}}
-          grouped_occurrences={{item.occurrences}}>
+          grouped_occurrences={{item.occurrences}}
+          collapsed=[[collapsed]]>
       </grouped-occurrences>
     </template>
   </template>
@@ -64,12 +74,22 @@
           flake_json: {
             type: Object
           },
+          collapsed: {
+            type: Boolean,
+            value: false
+          }
         },
 
         hasBug: function(flake) {
           return (flake.flake_issue != null &&
           flake.flake_issue.issue_id != null);
+        },
+
+        // Event handlers.
+        togglecollapsed: function (e) {
+          this.collapsed = !this.collapsed;
         }
+
       });
     })();
   </script>
