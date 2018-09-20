@@ -244,12 +244,12 @@ func TestHandleUpload(t *testing.T) {
 			want: []rotang.Configuration{
 				{
 					Config: rotang.Config{
-						Description:    "Test description",
-						Name:           "Upload test",
-						Calendar:       "testCalendarLink@testland.com",
-						TokenID:        "test@admin",
-						DaysToSchedule: 10,
-						Owners:         []string{"leowner@google.com"},
+						Description:      "Test description",
+						Name:             "Upload test",
+						Calendar:         "testCalendarLink@testland.com",
+						TokenID:          "test@admin",
+						ShiftsToSchedule: 4,
+						Owners:           []string{"leowner@google.com"},
 						Email: rotang.Email{
 							Subject:          "Chrome OS build sheriff reminder",
 							Body:             "Some reminder",
@@ -333,12 +333,12 @@ func TestHandleUpload(t *testing.T) {
 			want: []rotang.Configuration{
 				{
 					Config: rotang.Config{
-						Description:    "Test description",
-						Name:           "Upload test",
-						TokenID:        "test@admin",
-						Calendar:       "testCalendarLink@testland.com",
-						DaysToSchedule: 10,
-						Owners:         []string{"leowner@google.com"},
+						Description:      "Test description",
+						Name:             "Upload test",
+						TokenID:          "test@admin",
+						Calendar:         "testCalendarLink@testland.com",
+						ShiftsToSchedule: 4,
+						Owners:           []string{"leowner@google.com"},
 						Email: rotang.Email{
 							Subject:          "Chrome OS build sheriff reminder",
 							Body:             "Some reminder",
@@ -373,12 +373,12 @@ func TestHandleUpload(t *testing.T) {
 					},
 				}, {
 					Config: rotang.Config{
-						Description:    "Triage for Codesearch Issues.",
-						Name:           "ChOps DevX Codesearch Triage Rotation.",
-						Calendar:       "testCalendarLink@testland.com",
-						TokenID:        "test@admin",
-						DaysToSchedule: 10,
-						Owners:         []string{"test+one@google.com", "theboss@google.com"},
+						Description:      "Triage for Codesearch Issues.",
+						Name:             "ChOps DevX Codesearch Triage Rotation.",
+						Calendar:         "testCalendarLink@testland.com",
+						TokenID:          "test@admin",
+						ShiftsToSchedule: 4,
+						Owners:           []string{"test+one@google.com", "theboss@google.com"},
 						Email: rotang.Email{
 							Subject:          "ChOps DevX Codesearch Triage reminder",
 							Body:             "This is a friendly reminder that you are the Codesearch bug triager for %s. Please do daily bug triage of http://go/cr-cs-triage.",
@@ -439,12 +439,12 @@ func TestHandleUpload(t *testing.T) {
 			want: []rotang.Configuration{
 				{
 					Config: rotang.Config{
-						Description:    "Test description",
-						Name:           "Upload test",
-						Calendar:       "testCalendarLink@testland.com",
-						TokenID:        "test@admin",
-						DaysToSchedule: 10,
-						Owners:         []string{"leowner@google.com"},
+						Description:      "Test description",
+						Name:             "Upload test",
+						Calendar:         "testCalendarLink@testland.com",
+						TokenID:          "test@admin",
+						ShiftsToSchedule: 4,
+						Owners:           []string{"leowner@google.com"},
 						Email: rotang.Email{
 							Subject:          "Chrome OS build sheriff reminder",
 							Body:             "Some reminder",
@@ -479,12 +479,12 @@ func TestHandleUpload(t *testing.T) {
 					},
 				}, {
 					Config: rotang.Config{
-						Description:    "Triage for Codesearch Issues.",
-						Name:           "ChOps DevX Codesearch Triage Rotation.",
-						Calendar:       "testCalendarLink@testland.com",
-						TokenID:        "test@admin",
-						DaysToSchedule: 10,
-						Owners:         []string{"test+one@google.com", "theboss@google.com"},
+						Description:      "Triage for Codesearch Issues.",
+						Name:             "ChOps DevX Codesearch Triage Rotation.",
+						Calendar:         "testCalendarLink@testland.com",
+						TokenID:          "test@admin",
+						ShiftsToSchedule: 4,
+						Owners:           []string{"test+one@google.com", "theboss@google.com"},
 						Email: rotang.Email{
 							Subject:          "ChOps DevX Codesearch Triage reminder",
 							Body:             "This is a friendly reminder that you are the Codesearch bug triager for %s. Please do daily bug triage of http://go/cr-cs-triage.",

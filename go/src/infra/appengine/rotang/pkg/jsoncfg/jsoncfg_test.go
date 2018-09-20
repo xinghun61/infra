@@ -115,12 +115,12 @@ func TestReadJson(t *testing.T) {
 			jsonIn: jsonRotation,
 			wantConfig: rotang.Configuration{
 				Config: rotang.Config{
-					Description:    "Test description",
-					Name:           "Chrome OS Build Sheriff",
-					Calendar:       "testCalendarLink@testland.com",
-					TokenID:        defaultTokenID,
-					DaysToSchedule: 10,
-					Owners:         []string{"leowner@google.com"},
+					Description:      "Test description",
+					Name:             "Chrome OS Build Sheriff",
+					Calendar:         "testCalendarLink@testland.com",
+					TokenID:          defaultTokenID,
+					ShiftsToSchedule: 4,
+					Owners:           []string{"leowner@google.com"},
 					Email: rotang.Email{
 						Subject:          "Chrome OS build sheriff reminder",
 						Body:             "Some reminder",
@@ -180,12 +180,12 @@ func TestReadJson(t *testing.T) {
 			jsonIn: codesearchRotation,
 			wantConfig: rotang.Configuration{
 				Config: rotang.Config{
-					Description:    "Triage for Codesearch Issues.",
-					Name:           "ChOps DevX Codesearch Triage Rotation.",
-					Calendar:       "testCalendarLink@testland.com",
-					TokenID:        defaultTokenID,
-					DaysToSchedule: 10,
-					Owners:         []string{"test+one@google.com", "theboss@google.com"},
+					Description:      "Triage for Codesearch Issues.",
+					Name:             "ChOps DevX Codesearch Triage Rotation.",
+					Calendar:         "testCalendarLink@testland.com",
+					TokenID:          defaultTokenID,
+					ShiftsToSchedule: 4,
+					Owners:           []string{"test+one@google.com", "theboss@google.com"},
 					Email: rotang.Email{
 						Body:             "This is a friendly reminder that you are the Codesearch bug triager for %s. Please do daily bug triage of http://go/cr-cs-triage.",
 						Subject:          "ChOps DevX Codesearch Triage reminder",

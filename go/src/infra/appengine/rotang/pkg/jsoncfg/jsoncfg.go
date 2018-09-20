@@ -60,10 +60,10 @@ type JSONConfiguration struct {
 }
 
 const (
-	defaultDaysToSchedule = 10
-	pacificTZ             = "US/Pacific"
-	euTZ                  = "UTC"
-	defaultShiftName      = "MTV all day"
+	defaultShiftsToSchedule = 4
+	pacificTZ               = "US/Pacific"
+	euTZ                    = "UTC"
+	defaultShiftName        = "MTV all day"
 )
 
 func handleJSON(data []byte) (*JSONRota, error) {
@@ -144,7 +144,7 @@ func BuildConfigurationFromJSON(data []byte) (*rotang.Configuration, []rotang.Me
 				Body:             jsonRota.Configuration.EmailBody,
 				DaysBeforeNotify: jsonRota.Configuration.EmailDaysInAdvance,
 			},
-			DaysToSchedule: defaultDaysToSchedule,
+			ShiftsToSchedule: defaultShiftsToSchedule,
 			Shifts: rotang.ShiftConfig{
 				StartTime:    mtvMidnight,
 				ShiftMembers: jsonRota.Configuration.OncallersPerRotation,

@@ -83,8 +83,8 @@ func TestFillIntegers(t *testing.T) {
 			"shiftStart":       {"13:37"},
 		},
 		want: rotang.Config{
-			Expiration:     4,
-			DaysToSchedule: 5,
+			Expiration:       4,
+			ShiftsToSchedule: 5,
 			Email: rotang.Email{
 				DaysBeforeNotify: 7,
 			},
@@ -108,8 +108,8 @@ func TestFillIntegers(t *testing.T) {
 			"shiftStart":       {"13:37"},
 		},
 		want: rotang.Config{
-			Expiration:     4,
-			DaysToSchedule: 5,
+			Expiration:       4,
+			ShiftsToSchedule: 5,
 			Email: rotang.Email{
 				DaysBeforeNotify: 7,
 			},
@@ -477,12 +477,12 @@ func TestHandleCreateRota(t *testing.T) {
 		},
 		want: rotang.Configuration{
 			Config: rotang.Config{
-				Name:           "Test Rota",
-				Description:    "Test create rota",
-				Calendar:       "a@b.com",
-				Expiration:     4,
-				Owners:         []string{"test@user.com"},
-				DaysToSchedule: 5,
+				Name:             "Test Rota",
+				Description:      "Test create rota",
+				Calendar:         "a@b.com",
+				Expiration:       4,
+				Owners:           []string{"test@user.com"},
+				ShiftsToSchedule: 5,
 				Email: rotang.Email{
 					DaysBeforeNotify: 7,
 					Subject:          "{{Subject}}",

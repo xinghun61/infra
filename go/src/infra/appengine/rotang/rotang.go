@@ -29,15 +29,15 @@ type Configuration struct {
 
 // Config contains the rota configuration.
 type Config struct {
-	Name           string
-	Description    string
-	Calendar       string
-	TokenID        string
-	Owners         []string // TODO(olakar): Change from email to groups.
-	Email          Email
-	DaysToSchedule int
-	Shifts         ShiftConfig
-	Expiration     int
+	Name             string
+	Description      string
+	Calendar         string
+	TokenID          string
+	Owners           []string // TODO(olakar): Change from email to groups.
+	Email            Email
+	ShiftsToSchedule int
+	Shifts           ShiftConfig
+	Expiration       int
 }
 
 // ShiftConfig holds the Shift configuration.

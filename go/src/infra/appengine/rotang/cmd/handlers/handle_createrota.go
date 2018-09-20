@@ -43,7 +43,7 @@ func fillIntegers(ctx *router.Context, cfg *rotang.Config) error {
 	if cfg.Expiration, err = strconv.Atoi(ctx.Request.FormValue("Expiration")); err != nil {
 		return err
 	}
-	if cfg.DaysToSchedule, err = strconv.Atoi(ctx.Request.FormValue("ShiftsToSchedule")); err != nil {
+	if cfg.ShiftsToSchedule, err = strconv.Atoi(ctx.Request.FormValue("ShiftsToSchedule")); err != nil {
 		return err
 	}
 	if cfg.Shifts.Length, err = strconv.Atoi(ctx.Request.FormValue("shiftLength")); err != nil {

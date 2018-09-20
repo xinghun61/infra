@@ -85,10 +85,10 @@ func TestHandleIndex(t *testing.T) {
 			rotas: []rotang.Configuration{
 				{
 					Config: rotang.Config{
-						Description:    "Test description",
-						Name:           "Another rotation",
-						Calendar:       "testCalendarLink@testland.com",
-						DaysToSchedule: 10,
+						Description:      "Test description",
+						Name:             "Another rotation",
+						Calendar:         "testCalendarLink@testland.com",
+						ShiftsToSchedule: 10,
 						Email: rotang.Email{
 							Subject: "Chrome OS build sheriff reminder",
 							Body:    "Some reminder",

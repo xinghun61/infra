@@ -69,10 +69,10 @@ func TestMemberOf(t *testing.T) {
 		rotas: []rotang.Configuration{
 			{
 				Config: rotang.Config{
-					Description:    "Test description",
-					Name:           "Sheriff Oncall Rotation",
-					Calendar:       "testCalendarLink@testland.com",
-					DaysToSchedule: 10,
+					Description:      "Test description",
+					Name:             "Sheriff Oncall Rotation",
+					Calendar:         "testCalendarLink@testland.com",
+					ShiftsToSchedule: 4,
 					Email: rotang.Email{
 						Subject: "Chrome OS build sheriff reminder",
 						Body:    "Some reminder",
@@ -116,10 +116,10 @@ func TestMemberOf(t *testing.T) {
 		rotas: []rotang.Configuration{
 			{
 				Config: rotang.Config{
-					Description:    "Test description",
-					Name:           "Sheriff Oncall Rotation",
-					Calendar:       "testCalendarLink@testland.com",
-					DaysToSchedule: 10,
+					Description:      "Test description",
+					Name:             "Sheriff Oncall Rotation",
+					Calendar:         "testCalendarLink@testland.com",
+					ShiftsToSchedule: 4,
 					Email: rotang.Email{
 						Subject: "Chrome OS build sheriff reminder",
 						Body:    "Some reminder",
@@ -163,10 +163,10 @@ func TestMemberOf(t *testing.T) {
 		rotas: []rotang.Configuration{
 			{
 				Config: rotang.Config{
-					Description:    "Test description",
-					Name:           "Sheriff Oncall Rotation",
-					Calendar:       "testCalendarLink@testland.com",
-					DaysToSchedule: 10,
+					Description:      "Test description",
+					Name:             "Sheriff Oncall Rotation",
+					Calendar:         "testCalendarLink@testland.com",
+					ShiftsToSchedule: 4,
 					Email: rotang.Email{
 						Subject: "Chrome OS build sheriff reminder",
 						Body:    "Some reminder",
@@ -188,10 +188,10 @@ func TestMemberOf(t *testing.T) {
 				},
 			}, {
 				Config: rotang.Config{
-					Description:    "Test description",
-					Name:           "Test Rota",
-					Calendar:       "testCalendarLink@testland.com",
-					DaysToSchedule: 10,
+					Description:      "Test description",
+					Name:             "Test Rota",
+					Calendar:         "testCalendarLink@testland.com",
+					ShiftsToSchedule: 4,
 					Email: rotang.Email{
 						Subject: "Chrome OS build sheriff reminder",
 						Body:    "Some reminder",
@@ -235,10 +235,10 @@ func TestMemberOf(t *testing.T) {
 		rotas: []rotang.Configuration{
 			{
 				Config: rotang.Config{
-					Description:    "Test description",
-					Name:           "Sheriff Oncall Rotation",
-					Calendar:       "testCalendarLink@testland.com",
-					DaysToSchedule: 10,
+					Description:      "Test description",
+					Name:             "Sheriff Oncall Rotation",
+					Calendar:         "testCalendarLink@testland.com",
+					ShiftsToSchedule: 4,
 					Email: rotang.Email{
 						Subject: "Chrome OS build sheriff reminder",
 						Body:    "Some reminder",
@@ -257,10 +257,10 @@ func TestMemberOf(t *testing.T) {
 				},
 			}, {
 				Config: rotang.Config{
-					Description:    "Test description",
-					Name:           "Test Rota",
-					Calendar:       "testCalendarLink@testland.com",
-					DaysToSchedule: 10,
+					Description:      "Test description",
+					Name:             "Test Rota",
+					Calendar:         "testCalendarLink@testland.com",
+					ShiftsToSchedule: 4,
 					Email: rotang.Email{
 						Subject: "Chrome OS build sheriff reminder",
 						Body:    "Some reminder",
@@ -300,10 +300,10 @@ func TestMemberOf(t *testing.T) {
 		rotas: []rotang.Configuration{
 			{
 				Config: rotang.Config{
-					Description:    "Test description",
-					Name:           "Sheriff Oncall Rotation",
-					Calendar:       "testCalendarLink@testland.com",
-					DaysToSchedule: 10,
+					Description:      "Test description",
+					Name:             "Sheriff Oncall Rotation",
+					Calendar:         "testCalendarLink@testland.com",
+					ShiftsToSchedule: 4,
 					Email: rotang.Email{
 						Subject: "Chrome OS build sheriff reminder",
 						Body:    "Some reminder",
@@ -325,10 +325,10 @@ func TestMemberOf(t *testing.T) {
 				},
 			}, {
 				Config: rotang.Config{
-					Description:    "Test description",
-					Name:           "Test Rota",
-					Calendar:       "testCalendarLink@testland.com",
-					DaysToSchedule: 10,
+					Description:      "Test description",
+					Name:             "Test Rota",
+					Calendar:         "testCalendarLink@testland.com",
+					ShiftsToSchedule: 4,
 					Email: rotang.Email{
 						Subject: "Chrome OS build sheriff reminder",
 						Body:    "Some reminder",
@@ -347,10 +347,10 @@ func TestMemberOf(t *testing.T) {
 				},
 			}, {
 				Config: rotang.Config{
-					Description:    "Test description",
-					Name:           "Second Test Rota",
-					Calendar:       "testCalendarLink@testland.com",
-					DaysToSchedule: 10,
+					Description:      "Test description",
+					Name:             "Second Test Rota",
+					Calendar:         "testCalendarLink@testland.com",
+					ShiftsToSchedule: 4,
 					Email: rotang.Email{
 						Subject: "Chrome OS build sheriff reminder",
 						Body:    "Some reminder",
@@ -855,10 +855,10 @@ func TestCreateRotaConfiguration(t *testing.T) {
 			ctx:  ctx,
 			in: rotang.Configuration{
 				Config: rotang.Config{
-					Description:    "Test description",
-					Name:           "Sheriff Oncall Rotation",
-					Calendar:       "testCalendarLink@testland.com",
-					DaysToSchedule: 10,
+					Description:      "Test description",
+					Name:             "Sheriff Oncall Rotation",
+					Calendar:         "testCalendarLink@testland.com",
+					ShiftsToSchedule: 4,
 					Email: rotang.Email{
 						Subject: "Chrome OS build sheriff reminder",
 						Body:    "Some reminder",
