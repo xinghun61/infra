@@ -34,94 +34,76 @@ var myhotlists;
  * Grabs the list of logged in user's hotlists to populate the "My Hotlists"
  * drop down menu.
  */
-function CS_updateHotlists() {
+async function CS_updateHotlists() {
   if (!myhotlists) return;
 
-  if (CS_env.token) {
-    var postUrl = '/hosting/hotlists.do';
-    CS_doPost(postUrl, CS_updateHotlistsCallback, {});
-  } else {
-    CS_updateHotlistsCallback(null);
-  }
-}
-
-
-/**
- * Updates the drop down menu based on the json data received.
- * @param {event} event with xhr Response with JSON data of the list of hotlists.
- */
-function CS_updateHotlistsCallback(event) {
-  var xhr = event ? event.target : null;
-  if (xhr) {
-    if (xhr.readyState != 4 || xhr.status != 200){
-      return;
-    }
-    var hotlists = [];
-    var starredHotlists = [];
-    var visitedHotlists = [];
-
-    var json = CS_parseJSON(xhr);
-    for (var category in json) {
-      switch (category) {
-        case 'editorof':
-        case 'ownerof':
-          for (var i = 0; i < json[category].length; i++) {
-            hotlists.push(json[category][i]);
-          }
-          break;
-
-        case 'starred_hotlists':
-          for (var i = 0; i < json[category].length; i++) {
-            starredHotlists.push(json[category][i]);
-          }
-          break;
-        case 'visited_hotlists':
-          for (var i = 0; i < json[category].length; i++) {
-            visitedHotlists.push(json[category][i]);
-          }
-          break;
-        case 'user':
-          var user = json[category];
-          break;
-        case 'error':
-          return;
-        default:
-          break;
-      }
-    }
-
+  if (!window.CS_env.loggedInUserEmail) {
     myhotlists.clear();
-
-    hotlists.sort();
-    for (var i = 0; i < hotlists.length; i++) {
-      name = hotlists[i][0];
-      url = hotlists[i][1];
-      myhotlists.addItem(name, url, 'hotlists', 'Hotlists');
-    }
-
-    if (starredHotlists.length) myhotlists.addSeparator();
-    starredHotlists.sort();
-    for (var i = 0; i < starredHotlists.length; i++) {
-      name = starredHotlists[i][0];
-      url = starredHotlists[i][1];
-      myhotlists.addItem(name, url, 'starred_hotlists', 'Starred hotlists');
-    }
-
-    if (visitedHotlists.length) myhotlists.addSeparator();
-    for (var i = 0; i < visitedHotlists.length; i++) {
-      name = visitedHotlists[i][0];
-      url = visitedHotlists[i][1];
-      myhotlists.addItem(name, url, 'visited_hotlists', 'Recently Visited Hotlists');
-    }
-    if (user) {
-      myhotlists.addSeparator();
-      myhotlists.addItem('All hotlists', '/u/' + user + '/hotlists', 'controls');
-      myhotlists.addItem('Create hotlist', '/hosting/createHotlist', 'controls');
-    }
-  } else {
-    myhotlists.clear();
-    myhotlists.addItem('Sign in to see your hotlists',
-                       CS_env['login_url'],
+    myhotlists.addItem('sign in to see your hotlists',
+                       window.CS_env.login_url,
                        'controls');
+    return;
   }
+
+  const ownedHotlistsMessage = {
+    user: {
+      display_name: window.CS_env.loggedInUserEmail,
+    }};
+
+  const responses = await Promise.all([
+    window.prpcClient.call(
+      'monorail.Features', 'ListHotlistsByUser', ownedHotlistsMessage),
+    window.prpcClient.call(
+      'monorail.Features', 'ListStarredHotlists', {}),
+    window.prpcClient.call(
+      'monorail.Features', 'ListRecentlyVisitedHotlists', {}),
+  ]);
+  const ownedHotlists = responses[0];
+  const starredHotlists = responses[1];
+  const visitedHotlists = responses[2];
+
+  myhotlists.clear();
+
+  const sortByName = (hotlist1, hotlist2) => {
+    hotlist1.name.localeCompare(hotlist2.name);
+  };
+
+  if (ownedHotlists.hotlists) {
+    ownedHotlists.hotlists.sort(sortByName);
+    ownedHotlists.hotlists.forEach(hotlist => {
+      const name = hotlist.name;
+      const userId = hotlist.ownerRef.userId;
+      const url = `/u/${userId}/hotlists/${name}`;
+      myhotlists.addItem(name, url, 'hotlists', 'Hotlists');
+    });
+  }
+
+  if (starredHotlists.hotlists) {
+    myhotlists.addSeparator();
+    starredHotlists.hotlists.sort(sortByName);
+    starredHotlists.hotlists.forEach(hotlist => {
+      const name = hotlist.name;
+      const userId = hotlist.ownerRef.userId;
+      const url = `/u/${userId}/hotlists/${name}`;
+      myhotlists.addItem(name, url, 'starred_hotlists', 'Starred Hotlists');
+    });
+  }
+
+  if (visitedHotlists.hotlists) {
+    myhotlists.addSeparator();
+    visitedHotlists.hotlists.sort(sortByName);
+    visitedHotlists.hotlists.forEach(hotlist => {
+      const name = hotlist.name;
+      const userId = hotlist.ownerRef.userId;
+      const url = `/u/${userId}/hotlists/${name}`;
+      myhotlists.addItem(
+          name, url, 'visited_hotlists', 'Recently Visited Hotlists');
+    });
+  }
+
+  myhotlists.addSeparator();
+  myhotlists.addItem(
+      'All hotlists', `/u/${window.CS_env.loggedInUserEmail}/hotlists`,
+      'controls');
+  myhotlists.addItem('Create hotlist', '/hosting/createHotlist', 'controls');
 }
