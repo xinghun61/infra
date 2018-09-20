@@ -2,10 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
 import mock
 
 from dto.flakiness import Flakiness
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.pipeline_wrapper import pipeline_handlers
+from libs.gitiles.change_log import ChangeLog
+from libs.gitiles.change_log import Contributor
 from libs.list_of_basestring import ListOfBasestring
 from model.flake.analysis.master_flake_analysis import DataPoint
 from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
@@ -21,12 +25,19 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 class UpdateFlakeAnalysisDataPointsPipelineTest(WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  def testUpdateFlakeAnalysisDataPointsPipeline(self):
+  @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
+  def testUpdateFlakeAnalysisDataPointsPipeline(self, mocked_change_log):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
 
     commit_position = 1000
     pass_rate = 0.5
+    revision = 'r1000'
+    expected_time = datetime(2018, 9, 18, 0, 0, 0)
+    committer = Contributor(name='name', email='email', time=expected_time)
+    change_log = ChangeLog(None, committer, revision, None, None, None, None,
+                           None)
+    mocked_change_log.return_value = change_log
 
     flakiness = Flakiness(
         build_number=123,
@@ -37,7 +48,7 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(WaterfallTestCase):
         failed_swarming_task_attempts=0,
         iterations=50,
         pass_rate=pass_rate,
-        revision='r1000',
+        revision=revision,
         try_job_url=None,
         task_ids=ListOfBasestring.FromSerializable(['task_id']))
 
@@ -50,9 +61,10 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(WaterfallTestCase):
         failed_swarming_task_attempts=0,
         iterations=50,
         pass_rate=pass_rate,
-        git_hash='r1000',
+        git_hash=revision,
         try_job_url=None,
-        task_ids=['task_id'])
+        task_ids=['task_id'],
+        commit_position_landed_time=expected_time)
 
     update_data_points_input = UpdateFlakeAnalysisDataPointsInput(
         analysis_urlsafe_key=analysis.key.urlsafe(), flakiness=flakiness)

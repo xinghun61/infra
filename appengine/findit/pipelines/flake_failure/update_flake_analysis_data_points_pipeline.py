@@ -5,10 +5,13 @@
 
 from google.appengine.ext import ndb
 
+from common.findit_http_client import FinditHttpClient
 from dto.flakiness import Flakiness
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.pipelines import GeneratorPipeline
 from gae_libs.pipelines import pipeline
 from libs.structured_object import StructuredObject
+from services import constants
 from services.flake_failure import data_point_util
 from services.flake_failure import flakiness_util
 from services.flake_failure import run_swarming_util
@@ -42,6 +45,10 @@ class UpdateFlakeAnalysisDataPointsPipeline(GeneratorPipeline):
           'up'.format(flakiness.failed_swarming_task_attempts))
       raise pipeline.Abort()
 
+    git_repo = CachedGitilesRepository(FinditHttpClient(),
+                                       constants.CHROMIUM_GIT_REPOSITORY_URL)
+    change_log = git_repo.GetChangeLog(flakiness.revision)
     data_point = data_point_util.ConvertFlakinessToDataPoint(flakiness)
+    data_point.commit_position_landed_time = change_log.committer.time
     analysis.data_points.append(data_point)
     analysis.put()

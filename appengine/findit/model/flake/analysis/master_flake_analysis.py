@@ -42,6 +42,10 @@ class DataPoint(ndb.Model):
   # The commit position of this data point.
   commit_position = ndb.IntegerProperty(indexed=False)
 
+  # The timestamp the commit position was landed. Used for display purposes
+  # only.
+  commit_position_landed_time = ndb.DateTimeProperty(indexed=False)
+
   # The git hash of this data point.
   git_hash = ndb.StringProperty(indexed=False)
 
@@ -96,6 +100,7 @@ class DataPoint(ndb.Model):
              iterations=None,
              elapsed_seconds=0,
              error=None,
+             commit_position_landed_time=None,
              failed_swarming_task_attempts=0):
     data_point = DataPoint()
     data_point.build_url = build_url
@@ -114,6 +119,7 @@ class DataPoint(ndb.Model):
     data_point.elapsed_seconds = elapsed_seconds
     data_point.error = error
     data_point.failed_swarming_task_attempts = failed_swarming_task_attempts
+    data_point.commit_position_landed_time = commit_position_landed_time
     return data_point
 
   def GetSwarmingTaskId(self):
