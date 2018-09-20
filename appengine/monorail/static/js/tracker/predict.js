@@ -1,7 +1,6 @@
 (function(window) {
   // TODO: make this dynamic so it works on prod too.
    const PREDICT_ENDPOINT = '/p/chromium/suggest/component.do';
-   const LOG_ENDPOINT = '/p/chromium/suggest/componentlog.do';
 
   var componentsEl, commentEl, suggestionsEl, newIssueTextArea,
       addCommentTextArea, issueSummaryInput, existingComments, componentEdit;
@@ -39,10 +38,7 @@
       suggestionsEl.parentElement.removeChild(suggestionsEl);
     }
 
-    // Log the accept.
-    var log_data = {'Accepted suggestion': suggestion, 'Issue URL': window.location.href}
-
-    CS_doPost(LOG_ENDPOINT, null, log_data)
+    // TODO(crbug.com/monorail/4306) Log the accept.
   }
 
   // Update the list of suggested components.

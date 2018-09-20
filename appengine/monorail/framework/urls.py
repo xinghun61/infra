@@ -139,7 +139,6 @@ ISSUE_EXPORT_JSON = '/issues/export/json'
 ISSUE_IMPORT = '/issues/import'
 ISSUE_RERANK_BLOCKED_ON = '/issues/rerankBlockedOn'
 COMPONENT_SUGGESTION = '/suggest/component'
-COMPONENT_LOG = '/suggest/componentlog'
 
 # URLs for hotlist features
 HOTLIST_CREATE = '/hosting/createHotlist'
