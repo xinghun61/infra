@@ -27,7 +27,7 @@ LUCI_GO_PATH_IN_INFRA = 'infra/go/src/go.chromium.org/luci'
 
 def RunSteps(api, GOARCH):
   co = api.infra_checkout.checkout('luci_go', patch_root=LUCI_GO_PATH_IN_INFRA)
-  is_presubmit = 'presubmit' in api.buildbucket.build.builder.builder.lower()
+  is_presubmit = 'presubmit' in api.buildbucket.builder_name.lower()
   if is_presubmit:
     co.commit_change()
   co.gclient_runhooks()

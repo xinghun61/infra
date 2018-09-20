@@ -66,7 +66,7 @@ class InfraCIPDApi(recipe_api.RecipeApi):
     return self.m.python(
         'cipd - build packages',
         self._ctx_path_to_repo.join('build', 'build.py'),
-        ['--builder', self.m.buildbucket.build.builder.builder])
+        ['--builder', self.m.buildbucket.builder_name])
 
   def test(self, skip_if_cross_compiling=False):
     """Tests previously built packages integrity."""
@@ -82,7 +82,7 @@ class InfraCIPDApi(recipe_api.RecipeApi):
       '--no-rebuild',
       '--upload',
       '--json-output', self.m.json.output(),
-      '--builder', self.m.buildbucket.builder_id.builder,
+      '--builder', self.m.buildbucket.builder_name,
       '--tags',
     ]
     args.extend(tags)
