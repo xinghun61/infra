@@ -343,19 +343,20 @@ runOnLoad(function() {
 
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
+  // For issue create & update below, throw out values above 120 seconds.
+  // Since the GAE timeout is 60 seconds and this encompasses 2 requests,
+  // the maximum possible value is 120 seconds. This guards against stale
+  // stored timing information from being picked up and skewing the
+  // distribution.
   if (typeof(ClientLogger) === "function") {
     let cl = new ClientLogger("issues");
     if (cl.started("new-issue")) {
-      cl.logEnd("new-issue");
+      cl.logEnd("new-issue", null, 120 * 1000);
     }
     if (cl.started("issue-search")) {
       cl.logEnd("issue-search");
     }
     if (cl.started("issue-update")) {
-      // Throw out values above 120 seconds. Since the GAE timeout is 60 seconds
-      // and this encompasses 2 requests, the maximum possible value is 120
-      // seconds. This guards against stale stored timing information from
-      // being picked up and skewing the distribution.
       cl.logEnd("issue-update", null, 120 * 1000);
     }
   }
