@@ -30,10 +30,7 @@ STATES = {
 
 
 def MakeReqInfo(
-    user_pb, user_id, viewed_user_pb, viewed_user_id, viewed_user_name,
-    path=None, _reveal_email=False, _params=None):
-  if path is None:
-    path = "/u/%d" % viewed_user_id
+    user_pb, user_id, viewed_user_pb, viewed_user_id, viewed_user_name):
   mr = fake.MonorailRequest(None)
   mr.auth.user_pb = user_pb
   mr.auth.user_id = user_id

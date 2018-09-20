@@ -64,7 +64,8 @@ class FakeMonorailApiRequest(object):
       self.viewed_username = request['userId']
       self.viewed_user_auth = authdata.AuthData.FromEmail(
           self.cnxn, self.viewed_username, services)
-    elif 'groupName' in request:
+    else:
+      assert 'groupName' in request
       self.viewed_username = request['groupName']
       try:
         self.viewed_user_auth = authdata.AuthData.FromEmail(
@@ -112,11 +113,6 @@ class FakeMonorailApiRequest(object):
   def GetParam(self, query_param_name, default_value=None,
                _antitamper_re=None):
     return self.params.get(query_param_name, default_value)
-
-  def GetPositiveIntParam(self, query_param_name, default_value=None):
-    """Returns 0 if the user-provided value is less than 0."""
-    return max(self.GetParam(query_param_name, default_value=default_value),
-               0)
 
 
 class FakeFrontendSearchPipeline(object):

@@ -20,7 +20,7 @@ from testing import fake
 
 
 def assert_unreached():
-  raise Exception('This code should not have been called.')
+  raise Exception('This code should not have been called.')  # pragma: no cover
 
 
 class SpamServiceTest(unittest.TestCase):

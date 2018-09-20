@@ -349,10 +349,9 @@ class ChartServiceTest(unittest.TestCase):
         perms=perms, group_by='label', label_prefix='Foo')
     self.mox.VerifyAll()
 
-  def SetUpStoreIssueSnapshots(self, store_label, replace_now=None,
-                                      found_id=None, project_id=789,
-                                      owner_id=111L, component_ids=None,
-                                      cc_rows=None):
+  def SetUpStoreIssueSnapshots(self, replace_now=None, found_id=None,
+                               project_id=789, owner_id=111L,
+                               component_ids=None, cc_rows=None):
     """Set up all calls to mocks that StoreIssueSnapshots will call."""
     now = self.services.chart._currentTime().AndReturn(replace_now or 12345678)
 
@@ -379,27 +378,19 @@ class ChartServiceTest(unittest.TestCase):
         now, 4294967295, True)],
       replace=True, commit=False, return_generated_ids=True).AndReturn([5678])
 
-    if store_label:
-      label_rows = [(5678, 1)]
-    else:
-      label_rows = []
+    label_rows = [(5678, 1)]
 
     self.services.chart.issuesnapshot2label_tbl.InsertRows(self.cnxn,
         chart_svc.ISSUESNAPSHOT2LABEL_COLS,
         label_rows,
         replace=True, commit=False)
 
-    if not cc_rows:
-      cc_rows = []
     self.services.chart.issuesnapshot2cc_tbl.InsertRows(
         self.cnxn, chart_svc.ISSUESNAPSHOT2CC_COLS,
         [(5678, row[1]) for row in cc_rows],
         replace=True, commit=False)
 
-    if component_ids:
-      component_rows = [(5678, component_id) for component_id in component_ids]
-    else:
-      component_rows = []
+    component_rows = [(5678, component_id) for component_id in component_ids]
     self.services.chart.issuesnapshot2component_tbl.InsertRows(
         self.cnxn, chart_svc.ISSUESNAPSHOT2COMPONENT_COLS,
         component_rows,
@@ -430,11 +421,11 @@ class ChartServiceTest(unittest.TestCase):
 
     # Snapshot #1
     cc_rows = [(5678, 222L), (5678, 333L), (5678, 888L)]
-    self.SetUpStoreIssueSnapshots(store_label=True, replace_now=now_1,
+    self.SetUpStoreIssueSnapshots(replace_now=now_1,
       component_ids=[11], cc_rows=cc_rows)
 
     # Snapshot #2
-    self.SetUpStoreIssueSnapshots(store_label=True, replace_now=now_2,
+    self.SetUpStoreIssueSnapshots(replace_now=now_2,
       found_id=5678, component_ids=[11], cc_rows=cc_rows)
 
     self.mox.ReplayAll()
@@ -468,12 +459,12 @@ class ChartServiceTest(unittest.TestCase):
 
     # Snapshot #1
     cc_rows_1 = [(5678, 222L), (5678, 333L), (5678, 888L)]
-    self.SetUpStoreIssueSnapshots(store_label=True, replace_now=now_1,
+    self.SetUpStoreIssueSnapshots(replace_now=now_1,
       component_ids=[11, 12], cc_rows=cc_rows_1)
 
     # Snapshot #2
     cc_rows_2 = [(5678, 222L), (5678, 444L), (5678, 888L), (5678, 999L)]
-    self.SetUpStoreIssueSnapshots(store_label=True, replace_now=now_2,
+    self.SetUpStoreIssueSnapshots(replace_now=now_2,
       found_id=5678, project_id=123, owner_id=222L, component_ids=[13],
       cc_rows=cc_rows_2)
 

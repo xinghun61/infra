@@ -55,6 +55,10 @@ coverage:
 	@echo "Running tests + HTML coverage report in ~/monorail-coverage:"
 	../../test.py test appengine/monorail --html-report ~/monorail-coverage
 
+test_coverage:
+	@echo "Running tests + HTML coverage report (for tests) in ~/monorail-test-coverage:"
+	../../test.py test appengine/monorail --html-report ~/monorail-test-coverage --coveragerc appengine/monorail/.testcoveragerc
+
 # Commands for running locally using dev_appserver.
 serve: deps config_local
 	@echo "---[Starting SDK AppEngine Server]---"

@@ -62,8 +62,8 @@ class SitewideServicerTest(unittest.TestCase):
   @mock.patch('framework.xsrf.GetRoundedTime')
   def testRefreshToken_InvalidToken(self, mockGetRoundedTime, mockGetXSRFKey):
     """We reject attempts to refresh an invalid token."""
-    mockGetXSRFKey.side_effect = lambda: 'fakeXSRFKey'
-    mockGetRoundedTime.side_effect = lambda: 123
+    mockGetXSRFKey.side_effect = ['fakeXSRFKey']
+    mockGetRoundedTime.side_effect = [123]
 
     token_path = 'token_path'
     token = 'invalidToken'

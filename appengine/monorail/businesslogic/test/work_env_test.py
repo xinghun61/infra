@@ -145,7 +145,7 @@ class WorkEnvTest(unittest.TestCase):
       with self.work_env as we:
         _actual = we.GetProject(999)
 
-  def testGetProject_NoSuchProject(self):
+  def testGetProject_NotAllowed(self):
     """We reject attempts to get a project we don't have permission to."""
     self.project.access = project_pb2.ProjectAccess.MEMBERS_ONLY
     with self.assertRaises(permissions.PermissionException):

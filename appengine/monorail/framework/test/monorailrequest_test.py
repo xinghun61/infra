@@ -461,7 +461,7 @@ class TestMonorailRequestFunctions(unittest.TestCase):
     self.assertIsNone(hotlist_id)
     self.assertIsNone(hotlist_name)
 
-  def testExtractPathIdentifiers_HotlistIssuesURLSpace(self):
+  def testExtractPathIdentifiers_HotlistIssuesURLSpaceById(self):
     (username, project_name, hotlist_id,
      hotlist_name) = monorailrequest._ParsePathIdentifiers(
          '/u/jrobbins@example.com/hotlists/13124?q=stuff&ts=more')
@@ -470,7 +470,7 @@ class TestMonorailRequestFunctions(unittest.TestCase):
     self.assertEquals('jrobbins@example.com', username)
     self.assertEquals(13124, hotlist_id)
 
-  def testExtractPathIdentifiers_HotlistIssuesURLSpace(self):
+  def testExtractPathIdentifiers_HotlistIssuesURLSpaceByName(self):
     (username, project_name, hotlist_id,
      hotlist_name) = monorailrequest._ParsePathIdentifiers(
          '/u/jrobbins@example.com/hotlists/testname?q=stuff&ts=more')

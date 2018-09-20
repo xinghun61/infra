@@ -170,22 +170,6 @@ class ProjectsServicerTest(unittest.TestCase):
         self.projects_svcr.GetCustomPermissions, mc, request)
     self.assertEqual(['BarPerm', 'BazPerm', 'FooPerm'], response.permissions)
 
-  def testGetCustomPermissions_PermissionsAreDedupped(self):
-    self.project.extra_perms = [
-        project_pb2.Project.ExtraPerms(
-            member_id=111L,
-            perms=['FooPerm', 'FooPerm']),
-        project_pb2.Project.ExtraPerms(
-            member_id=222L,
-            perms=['FooPerm'])]
-
-    request = projects_pb2.GetConfigRequest(project_name='proj')
-    mc = monorailcontext.MonorailContext(
-        self.services, cnxn=self.cnxn, requester='foo@example.org')
-    response = self.CallWrapped(
-        self.projects_svcr.GetCustomPermissions, mc, request)
-    self.assertEqual(['FooPerm'], response.permissions)
-
   def testGetCustomPermissions_IgnoreStandardPermissions(self):
     self.project.extra_perms = [
         project_pb2.Project.ExtraPerms(

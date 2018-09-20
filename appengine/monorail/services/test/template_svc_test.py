@@ -41,7 +41,7 @@ class TemplateSetTwoLevelCacheTest(unittest.TestCase):
               False, False, False),
           (9, 1, 'template-9', 'content', 'summary', False, 111L, 'status',
               True, False, False)]
-      elif project_id == 2:
+      else:
         return [
           (7, 2, 'template-7', 'content', 'summary', False, 111L, 'status',
               False, False, False)]

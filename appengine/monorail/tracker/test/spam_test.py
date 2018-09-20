@@ -65,7 +65,7 @@ class FlagSpamFormTest(unittest.TestCase):
   def testProcessFormData_PermissionUser(self):
     self.checkVerdictPerms(permissions.USER_PERMISSIONSET, False)
 
-  def testProcessFormData_PermissionOwner(self):
+  def testProcessFormData_PermissionReadOnly(self):
     local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
         'summary_1', 'status', 111L, [], [], [], [], 111L, 'description_1')

@@ -152,26 +152,6 @@ class UserCommitsTest(unittest.TestCase):
   def SetUpDropRows_OverLimit(self):
     settings.usercommits_backfill_max = 2
     self.services.user.usercommits_tbl.SelectValue(self.cnxn,
-        'COUNT(*)').AndReturn(2)
-    self.services.user.usercommits_tbl.Select(self.cnxn,
-        cols=['commit_sha'],
-        order_by=[('commit_time DESC', [])],
-        offset=settings.max_rows_in_usercommits_table,
-        limit=18446744073709551615).AndReturn([('sha',)])
-    self.services.user.usercommits_tbl.Delete(self.cnxn,
-      commit_sha=['sha1'])
-
-  def testDropRows_OverLimit(self):
-    self.SetUpDropRows_OverLimit()
-    usercommitscron = usercommits.GetCommitsCron('req', 'resp',
-        services=self.services)
-    self.mox.ReplayAll()
-    usercommitscron.DropRows(self.cnxn)
-    self.mox.VerifyAll()
-
-  def SetUpDropRows_OverLimit(self):
-    settings.usercommits_backfill_max = 2
-    self.services.user.usercommits_tbl.SelectValue(self.cnxn,
         'COUNT(*)').AndReturn(1)
 
   def testDropRows_OverLimit(self):
@@ -388,8 +368,9 @@ class UserCommitsTest(unittest.TestCase):
         services=self.services)
     self.SetUpFetchGitilesData_UrlError()
     self.mox.ReplayAll()
-    self.assertRaises(Exception, usercommitscron,
+    self.assertRaises(Exception, usercommitscron.FetchGitilesData,
         "https://chromium.googlesource.com/infra/infra/")
+    self.mox.VerifyAll()
 
   def SetUpFetchGitilesData_JSONError(self):
     self.mox.StubOutWithMock(urlfetch, "fetch")
@@ -400,10 +381,11 @@ class UserCommitsTest(unittest.TestCase):
   def testFetchGitilesData_JSONError(self):
     usercommitscron = usercommits.GetCommitsCron('req', 'resp',
         services=self.services)
-    self.SetUpFetchGitilesData_UrlError()
+    self.SetUpFetchGitilesData_JSONError()
     self.mox.ReplayAll()
-    self.assertRaises(Exception, usercommitscron,
+    self.assertRaises(Exception, usercommitscron.FetchGitilesData,
         "https://chromium.googlesource.com/infra/infra/")
+    self.mox.VerifyAll()
 
   def SetUpFetchGitilesData(self):
     self.mox.StubOutWithMock(urlfetch, "fetch")

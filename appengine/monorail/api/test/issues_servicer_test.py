@@ -803,19 +803,18 @@ class IssuesServicerTest(unittest.TestCase):
     mockSnapshotCountsQuery.assert_called_once_with(self.project, 1531334109,
         'component', '', 'rutabaga:rutabaga', 'is:open')
 
-  def AddField(self, name, **kwargs):
-    if kwargs.get('needs_perm'):
-      kwargs['needs_member'] = True
-    kwargs.setdefault('cnxn', self.cnxn)
-    kwargs.setdefault('project_id', self.project.project_id)
-    kwargs.setdefault('field_name', name)
-    kwargs.setdefault('field_type_str', 'USER_TYPE')
-    for arg in ('applic_type', 'applic_pred', 'is_required', 'is_niche',
-                'is_multivalued', 'min_value', 'max_value', 'regex',
-                'needs_member', 'needs_perm', 'grants_perm', 'notify_on',
-                'date_action_str', 'docstring', 'admin_ids'):
-      kwargs.setdefault(arg, None)
-
+  def AddField(self, name, field_type_str):
+    kwargs = {
+        'cnxn': self.cnxn,
+        'project_id': self.project.project_id,
+        'field_name': name,
+        'field_type_str': field_type_str}
+    kwargs.update({
+        arg: None
+        for arg in ('applic_type', 'applic_pred', 'is_required', 'is_niche',
+                    'is_multivalued', 'min_value', 'max_value', 'regex',
+                    'needs_member', 'needs_perm', 'grants_perm', 'notify_on',
+                    'date_action_str', 'docstring', 'admin_ids')})
     return self.services.config.CreateFieldDef(**kwargs)
 
   @patch('testing.fake.FeaturesService.GetFilterRules')
@@ -965,7 +964,7 @@ class IssuesServicerTest(unittest.TestCase):
   @patch('testing.fake.FeaturesService.GetFilterRules')
   def testPresubmitIssue_DerivedCCs(self, mockGetFilterRules):
     """Test that we can match field rules and return derived cc emails."""
-    field_id = self.AddField('Foo', field_type_str='ENUM_TYPE')
+    field_id = self.AddField('Foo', 'ENUM_TYPE')
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
     issue_delta = issues_pb2.IssueDelta(
         owner_ref=common_pb2.UserRef(user_id=111L),
