@@ -78,9 +78,11 @@
       </tr>
 
       <tr [if-any page_perms.EditIssue page_perms.EditIssueStatus][else]style="display:none;"[end]><th width="10%"><label for="statusenter">Status:</label></th>
-       <td class="inplace">
-        <input type="text" id="statusenter" autocomplete="off" style="width:16em"
-               name="status" value="[initial_status]" aria-autocomplete="list" role="combobox">
+       <td colspan="2" class="inplace">
+       <select id="statusenter" name="status">
+         <option style="display: none" value="[initial_status]"></option>
+       </select>
+       </label>
        </td>
       </tr>
       <tr [if-any page_perms.EditIssue page_perms.EditIssueOwner][else]style="display:none;"[end]><th width="10%"><label for="ownerenter">Owner:</label></th>
@@ -293,11 +295,9 @@ runOnLoad(function() {
     });
   }
   if ($("statusenter")) {
+    _loadStatusSelect("[projectname]", "statusenter", "[initial_status]");
     $("statusenter").addEventListener("focus", function(event) {
-      _acof(event);
-    });
-    $("statusenter").addEventListener("keyup", function(event) {
-      return _confirmNovelStatus(event.target);
+      _acrob(null);
     });
   }
 
@@ -350,6 +350,7 @@ runOnLoad(function() {
     var id = _idsToAddDefaultListeners[[]i];
     if ($(id)) {
       $(id).addEventListener("focus", function(event) {
+        _acrob(null);
         _acof(event);
       });
     }

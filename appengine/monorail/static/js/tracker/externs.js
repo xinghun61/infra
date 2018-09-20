@@ -30,6 +30,7 @@ var _onload;
 var _handleListActions;
 var _handleDetailActions;
 
+var _loadStatusSelect;
 var _fetchOptions;
 var _setACOptions;
 var _openIssueUpdateForm;

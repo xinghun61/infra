@@ -78,8 +78,9 @@
 
       [if-any page_perms.EditIssue page_perms.EditIssueStatus]
        <tr><th><label for="statusedit">Status:</label></th><td class="inplace" colspan="2">
-            <input type="text" id="statusedit" style="width:16em" autocomplete="off"
-                   name="status" value="[initial_status]">
+            <select id="statusedit" name="status">
+              <option style="display: none" value="[initial_status]"></option>
+            </select>
             <span id="merge_area" style="margin-left:1em;">
                Merge into issue:
                <input type="text" id="merge_into" name="merge_into" style="width: 5em"
@@ -155,7 +156,7 @@
 
 
       [if-any page_perms.EditIssue][# Show label editing elements iff the user can edit.]
-       <tr><th class="vt"><th>Labels</th>[# aria-labels added in label-fields.ezt]
+       <tr><th class="vt">Labels</th>[# aria-labels added in label-fields.ezt]
            <td class="labelediting" colspan="2">
              [include "label-fields.ezt" "just-two" ""]
            </td>
@@ -339,11 +340,9 @@ runOnLoad(function() {
     });
   }
   if ($("statusedit")) {
+    _loadStatusSelect("[projectname]", "statusedit", "[initial_status]");
     $("statusedit").addEventListener("focus", function(event) {
-      _acof(event);
-    });
-    $("statusedit").addEventListener("keyup", function(event) {
-      return _confirmNovelStatus($("statusedit"));
+      _acrob(null);
     });
   }
 

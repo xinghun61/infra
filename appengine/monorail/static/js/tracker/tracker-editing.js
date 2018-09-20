@@ -1564,6 +1564,66 @@ function onUpdateNoteResponse(event) {
   $('itemnote-'+response['iid']).value = response['new_note'];
 }
 
+// TODO(jojwang): monorail:4291, integrate this into autocomplete process
+// to prevent calling ListStatuses twice.
+/**
+ * Load the status select element with possible project statuses.
+ */
+function TKR_loadStatusSelect(projectName, selectId, selected) {
+  const projectRequestMessage = {
+    project_name: projectName};
+  const statusesPromise = window.prpcClient.call(
+      'monorail.Projects', 'ListStatuses', projectRequestMessage);
+  statusesPromise.then(statusesResponse => {
+    const jsonData = TKR_convertStatuses(statusesResponse);
+    let statusSelect = document.getElementById(selectId);
+    // An initial option with value='selected' had to be added in HTML
+    // to prevent TKR_isDirty() from registering a change in the select input
+    // even when the user has not selected a different value.
+    // That option needs to be removed otherwise, screenreaders will announce
+    // its existence.
+    while (statusSelect.firstChild) {
+      statusSelect.removeChild(statusSelect.firstChild);
+    }
+    // Add unrecognized status (can be empty status) to open statuses.
+    let selectedFound = false;
+    jsonData.open.concat(jsonData.closed).forEach(status => {
+      if (status.name === selected) {
+	selectedFound = true;
+      }
+    });
+    if (!selectedFound) {
+      jsonData.open.unshift({name: selected});
+    }
+    // Add open statuses.
+    if (jsonData.open.length > 0) {
+      let openGroup =
+	  statusSelect.appendChild(createStatusGroup('Open', jsonData.open, selected));
+    }
+    if (jsonData.closed.length > 0) {
+      statusSelect.appendChild(createStatusGroup("Closed", jsonData.closed, selected));
+    }
+  })
+}
+
+function createStatusGroup(groupName, options, selected) {
+  let groupElement = document.createElement('optgroup')
+  groupElement.label = groupName;
+  options.forEach(option => {
+    let opt = document.createElement('option');
+    opt.value = option.name;
+    opt.selected = (selected === option.name) ? true : false;
+    // Special case for when opt represents an empty status.
+    if (opt.value === '') {
+      opt.textContent = '--- (empty status)'
+      opt.setAttribute('aria-label', 'empty status')
+    } else {
+      opt.textContent = option.doc ? `${option.name} = ${option.doc}` : option.name;
+    }
+    groupElement.appendChild(opt);
+  })
+  return groupElement;
+}
 
 /**
  * Generate DOM for a filter rules preview section.
