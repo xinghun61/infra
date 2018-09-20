@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='infra_libs',
-    version='1.4.0',
+    version='1.4.1',
     description='Chrome Infra Libraries',
     long_description='Chrome Infra Libraries',
     classifiers=[
