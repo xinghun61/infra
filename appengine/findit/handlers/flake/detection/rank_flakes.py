@@ -64,7 +64,10 @@ class RankFlakes(BaseHandler):
       flakes, prev_cursor, cursor = dashboard_util.GetPagedResults(
           flake_query,
           order_properties=[
-              Flake.false_rejection_count_last_week, Flake.last_occurred_time
+            (Flake.false_rejection_count_last_week, dashboard_util.DESC),
+            (Flake.last_occurred_time, dashboard_util.DESC),
+            (Flake.normalized_step_name, dashboard_util.ASC),
+            (Flake.test_label_name, dashboard_util.ASC),
           ],
           cursor=self.request.get('cursor'),
           direction=self.request.get('direction').strip(),

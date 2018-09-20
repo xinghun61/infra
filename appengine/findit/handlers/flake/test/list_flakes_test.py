@@ -24,7 +24,8 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
 
   def _MockCursor(self):
     results, prev_cursor, cursor = dashboard_util.GetPagedResults(
-        MasterFlakeAnalysis.query(), [MasterFlakeAnalysis.request_time],
+        MasterFlakeAnalysis.query(),
+        [(MasterFlakeAnalysis.request_time, dashboard_util.DESC)],
         page_size=1)
     return results, prev_cursor, cursor
 
@@ -249,7 +250,7 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
   def testFetchPreviousPages(self):
     query = _GetFlakeAnalysisFilterQuery(MasterFlakeAnalysis.query())
     result2, _, _ = dashboard_util.GetPagedResults(
-        query, [MasterFlakeAnalysis.request_time],
+        query, [(MasterFlakeAnalysis.request_time, dashboard_util.DESC)],
         cursor=self.cursor,
         direction='previous')
     self.assertEqual(len(result2), 1)

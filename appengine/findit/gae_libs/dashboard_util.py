@@ -16,6 +16,10 @@ PAGE_SIZE = 100
 _PREVIOUS = 'previous'
 _NEXT = 'next'
 
+# Order type of a property in forwarding paging.
+ASC = 'asc'
+DESC = 'desc'
+
 
 def GetStartAndEndDates(start_date=None, end_date=None):
   """Gets start_date and end_date datetime objects.
@@ -46,8 +50,8 @@ def GetPagedResults(query,
 
   Args:
     query(ndb.Query): The ndb query to query entities.
-    order_properties: A list of class attribute of entity class to order the
-      entities.
+    order_properties: A list of tuples containing class attribute of entity
+      class to order the entities and ordering of the field.
     cursor (Cursor): The cursor provides a cursor in the current query
       results, allowing you to retrieve the next set based on the offset.
     direction (str): Either previous or next.
@@ -64,14 +68,22 @@ def GetPagedResults(query,
   cursor = Cursor(urlsafe=cursor) if cursor else None
 
   if direction.lower() == _PREVIOUS:
-    for order_property in order_properties:
-      query = query.order(order_property)
+    for order_property, forward_order in order_properties:
+      if forward_order == DESC:
+        # Forward order is desc meaning backward order should be asc.
+        query = query.order(order_property)
+      if forward_order == ASC:
+        # Forward order is asc meaning backward order should be desc.
+        query = query.order(-order_property)
     entities, next_cursor, more = query.fetch_page(
         page_size, start_cursor=cursor.reversed())
     entities.reverse()
   else:
-    for order_property in order_properties:
-      query = query.order(-order_property)
+    for order_property, forward_order in order_properties:
+      if forward_order == DESC:
+        query = query.order(-order_property)
+      if forward_order == ASC:
+        query = query.order(order_property)
     entities, next_cursor, more = query.fetch_page(
         page_size, start_cursor=cursor)
 
