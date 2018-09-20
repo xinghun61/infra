@@ -99,11 +99,15 @@ clean_vulcanized:
 clean_deps:
 	rm -rf bower_components
 
+
+WCT_DIR = ../../go/src/infra/tools/wct
+WCT_GO = $(WCT_DIR)/wct.go $(WCT_DIR)/loader.go
+
 wct: deps
-	xvfb-run go run ../../go/src/infra/tools/wct/wct.go  ../../go/src/infra/tools/wct/monkeypatch.go -base=. -prefix=elements/test/ -chrome=google-chrome
+	xvfb-run go run $(WCT_GO) -prefix=elements -chrome=google-chrome
 
 wct_debug: deps
-	go run ../../go/src/infra/tools/wct/wct.go ../../go/src/infra/tools/wct/monkeypatch.go -base=. -prefix=elements/test/ -chrome=google-chrome -persist
+	go run $(WCT_GO) -prefix=elements -chrome=google-chrome -persist
 
 pylint:
 	pylint -f parseable *py {$(PY_DIRS)}{/,/test/}*py

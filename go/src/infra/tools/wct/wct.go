@@ -8,10 +8,13 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"html/template"
 	"math/rand"
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -45,7 +48,7 @@ var (
 	userDir    = flag.String("dir", "/tmp/", "user directory")
 	debugPort  = flag.String("debug-port", "9222", "chrome debugger port")
 	baseDir    = flag.String("base", "./", "location of elements to test")
-	pathPrefix = flag.String("prefix", "/test/", "path prefix for test runner URL")
+	pathPrefix = flag.String("prefix", "test", "path prefix for tests")
 	bowerDir   = flag.String("bower", "bower_components/", "location of bower components")
 	persist    = flag.Bool("persist", false, "keep server running")
 	timeoutSec = flag.Int("timeout", 60, "timeout seconds")
@@ -91,6 +94,20 @@ func (fs dependencyFS) Open(name string) (f http.File, err error) {
 	return f, err
 }
 
+func findFilesMatching(root string, filenameRegexp *regexp.Regexp) (results []string, err error) {
+	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if filenameRegexp.MatchString(path) {
+			results = append(results, path)
+		}
+		return err
+	})
+	return results, err
+}
+
+type loaderVariables struct {
+	Suites []string
+}
+
 func main() {
 	flag.Var(&depDirsFlags, "dep", "dependency directories")
 	flag.Parse()
@@ -110,8 +127,26 @@ func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
 	var err error
 
-	http.HandleFunc("/wct-monkeypatch.js", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(monkeypatchJS))
+	loaderTemplate, err := template.New("loader").Parse(loaderHTMLTemplate)
+	if err != nil {
+		logging.Errorf(ctx, "Error parsing loader template: %v", err)
+		os.Exit(1)
+	}
+
+	testRegexp := regexp.MustCompile("[-_]test\\.(js|html)$")
+	testDir := filepath.Join(*baseDir, *pathPrefix)
+	tests, err := findFilesMatching(testDir, testRegexp)
+	if err != nil {
+		logging.Errorf(ctx, "Error walking %v: %v", *baseDir, err)
+		// Tolerate filesystem errors and run the tests that can be found.
+	}
+
+	http.HandleFunc("/wct-loader", func(w http.ResponseWriter, r *http.Request) {
+		err := loaderTemplate.Execute(w, loaderVariables{tests})
+		if err != nil {
+			logging.Errorf(ctx, "Error executing loader template: %v", err)
+			os.Exit(1)
+		}
 	})
 
 	http.HandleFunc("/result", func(w http.ResponseWriter, r *http.Request) {
@@ -171,7 +206,7 @@ func main() {
 	}()
 
 	addr := <-addrCh
-	testURL := fmt.Sprintf("http://%s/%s?wct=go", addr, *pathPrefix)
+	testURL := fmt.Sprintf("http://%s/wct-loader?wct=go", addr)
 
 	ctxt, cancel := context.WithCancel(context.Background())
 	defer cancel()
