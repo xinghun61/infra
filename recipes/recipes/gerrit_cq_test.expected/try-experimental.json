@@ -44,7 +44,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec-path",
-      "cache_dir = '[CACHE]/git'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'gerrit-test-cq-normal', 'url': 'https://chromium.googlesource.com/playground/gerrit-cq/normal.git'}]",
+      "cache_dir = '[CACHE]/git'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'gerrit-test-cq-normal', 'url': 'https://chromium.googlesource.com/playground/gerrit-cq/normal'}]",
       "--patch_root",
       "gerrit-test-cq-normal",
       "--revision_mapping_file",
