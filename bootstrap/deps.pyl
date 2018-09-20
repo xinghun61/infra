@@ -257,6 +257,11 @@
     'repo': 'external/github.com/google/oauth2client',
     'rev': 'f46290a33418bd18308af27e519db95a51b0136c',
   },
+  'parameterized': {
+    'build': '0',
+    'gs': 'dc60b4b8c478d7859841bd3f6cafd65a3b0fc4a8.tar.gz',
+    'version': '0.6.1',
+  },
   'pyOpenSSL': {
     'version': '0.14',
     'build': '0',
