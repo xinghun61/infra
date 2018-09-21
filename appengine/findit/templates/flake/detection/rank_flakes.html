@@ -10,6 +10,12 @@
   <link rel="import" href="/ui/elements/flake_detection/rank_flakes.html">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
   <style type="text/css">
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+
     table, tr, td {
       border: 0px;
     }
@@ -40,6 +46,10 @@
 
     .paging {
       padding: 5px;
+    }
+
+    #footer {
+      margin-top: 10px;
     }
   </style>
   <script>
@@ -114,13 +124,9 @@
       <button class="next">Next</button>
     </div>
     <rank-flakes flakes='{{flakes_data | tojson}}'></rank-flakes>
-    <div class="paging">
-      <button class="previous">Previous</button>
-      <button class="next">Next</button>
+    <div id="footer">
+      * For more information on how flaky tests and flake occurrences are defined and detected, please refer to <a href='https://chromium.googlesource.com/infra/infra/+/master/appengine/findit/docs/flake_detector.md'>documentation</a>.
     </div>
-    <br>
-    <div>
-      For more information on how flaky tests and flake occurrences are defined and detected, please refer to <a href='https://chromium.googlesource.com/infra/infra/+/master/appengine/findit/docs/flake_detector.md'>documentation</a>.
     </div>
   </findit-app>
 </body>

@@ -34,21 +34,21 @@
       }
 
       .table-scroll {
-        max-height: 72vh;
+        max-height: calc(100vh - 270px);
         overflow-y: auto;
       }
     </style>
     <div class="table-scroll">
-      <table width="80%">
+      <table width="90%">
         <tr>
-          <th width="50%">Test Name</th>
+          <th width="55%">Test Name</th>
           <th width="10%"># Occurrences
           <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Number of a flake's occurrences that caused CLs to be incorrectly rejected.</paper-tooltip>
           </th>
           <th width="15%"># Impacted CLs
           <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Number of distinct CLs that are impacted by a flake.</paper-tooltip>
           </th>
-          <th width="5%">Bug</th>
+          <th width="10%">Bug</th>
         </tr>
         <template is="dom-repeat" items="[[flakes]]" as="flake">
           <tr>
