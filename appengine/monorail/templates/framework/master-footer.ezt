@@ -116,7 +116,7 @@ a.src=g;m.parentNode.insertBefore(a,m)
 <script
   type="module"
   defer
-  src="/static/jsm/client-logger.jsm?version=[app_version]"
+  src="/static/jsm/client-logger.mjs?version=[app_version]"
   nonce="[nonce]">
 </script>
 
