@@ -462,10 +462,10 @@ using a 'script' source).
 After the package is built it can be optionally tested. The recipe will run your
 test script in an empty directory with the path to the
 packaged-but-not-yet-uploaded cipd package file and it can do whatever testing
-it needs to it (exiting non-zero if something is wrong). You can use
-the `cipd pkg-deploy` command to deploy it (or whatever cipd commands you like,
-though I wouldn't recommend uploading it to CIPD, as the 3pp recipe will do that
-after the test exits 0).
+it needs to it (exiting non-zero if something is wrong). You can use the `cipd
+pkg-deploy` command to deploy it (or whatever cipd commands you like, though
+I wouldn't recommend uploading it to CIPD, as the 3pp recipe will do that after
+the test exits 0).
 
 ##### Upload
 

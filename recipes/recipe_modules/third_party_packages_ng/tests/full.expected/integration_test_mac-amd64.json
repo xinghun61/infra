@@ -2027,9 +2027,13 @@
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/.3pp/tool/test.py",
-      "mac",
-      "[CACHE]/3pp_cipd/prefix/build_tools/tool/mac-amd64/40-chars-fake-of-the-package-instance_id"
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/verify"
     ],
     "env": {
       "GOARCH": "amd64",
@@ -2041,7 +2045,173 @@
       "_3PP_TOOL_PLATFORM": "mac-amd64",
       "_3PP_VERSION": "1.4.1"
     },
-    "name": "building dep.fetch sources.installing tools.building tool.run test.test.py mac [CACHE]/3pp_cipd/prefix/build_tools/tool/mac-amd64/40-chars-fake-of-the-package-instance_id",
+    "infra_step": true,
+    "name": "building dep.fetch sources.installing tools.building tool.run test.mkdir [verify]",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "[CACHE]/3pp_cipd/prefix/build_tools/tool/mac-amd64/40-chars-fake-of-the-package-instance_id",
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/verify/cipd.pkg"
+    ],
+    "env": {
+      "GOARCH": "amd64",
+      "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "infra_step": true,
+    "name": "building dep.fetch sources.installing tools.building tool.run test.cp cipd.pkg [verify]/cipd.pkg",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "ensure",
+      "-root",
+      "[CACHE]/osx_sdk",
+      "-ensure-file",
+      "infra/tools/mac_toolchain/${platform} git_revision:796d2b92cff93fc2059623ce0a66284373ceea0a",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/verify",
+    "env": {
+      "GOARCH": "amd64",
+      "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "infra_step": true,
+    "name": "building dep.fetch sources.installing tools.building tool.run test.ensure_installed",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@      {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"instance_id\": \"resolved-instance_id-of-git_revision:796\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"package\": \"infra/tools/mac_toolchain/resolved-platform\"@@@",
+      "@@@STEP_LOG_LINE@json.output@      }@@@",
+      "@@@STEP_LOG_LINE@json.output@    ]@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[CACHE]/osx_sdk/mac_toolchain",
+      "install",
+      "-kind",
+      "mac",
+      "-xcode-version",
+      "9c40b",
+      "-output-dir",
+      "[CACHE]/osx_sdk/XCode.app"
+    ],
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/verify",
+    "env": {
+      "GOARCH": "amd64",
+      "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "infra_step": true,
+    "name": "building dep.fetch sources.installing tools.building tool.run test.install xcode",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "sudo",
+      "xcode-select",
+      "--switch",
+      "[CACHE]/osx_sdk/XCode.app"
+    ],
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/verify",
+    "env": {
+      "GOARCH": "amd64",
+      "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "infra_step": true,
+    "name": "building dep.fetch sources.installing tools.building tool.run test.select XCode",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/.3pp/tool/test.py",
+      "mac",
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/verify/cipd.pkg"
+    ],
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/verify",
+    "env": {
+      "GOARCH": "amd64",
+      "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "name": "building dep.fetch sources.installing tools.building tool.run test.test.py mac [START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/verify/cipd.pkg",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@5@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "sudo",
+      "xcode-select",
+      "--reset"
+    ],
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/verify",
+    "env": {
+      "GOARCH": "amd64",
+      "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.4.1"
+    },
+    "infra_step": true,
+    "name": "building dep.fetch sources.installing tools.building tool.run test.reset XCode",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@5@@@"
     ]

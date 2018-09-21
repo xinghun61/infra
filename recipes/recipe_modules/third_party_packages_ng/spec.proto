@@ -172,12 +172,13 @@ message Spec {
       // (required) Name (and args) of a script adjacent to 3pp.pb.
       //
       // Invoked after package with the built cipd package file as the first
-      // additional arg.
+      // additional arg. $CWD is set to an empty folder that the test can use
+      // for scratch space, if it likes.
       //
       // For example if this is `["test.py", "extra_arg"]`, then the recipe will
       // do:
       //
-      //   $ cd /nowhere/in/particular
+      //   $ cd /path/to/verify
       //   $ python /path/to/repo/subdir/package_name/test.py extra_arg \
       //      /path/to/built/cipd/package
       repeated string test = 1;

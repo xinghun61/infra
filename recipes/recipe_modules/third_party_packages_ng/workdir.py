@@ -53,6 +53,18 @@ class Workdir(object):
     return self._base.join('checkout')
 
   @property
+  def verify(self):
+    """The path where the verification of the package takes place. The test
+    script is invoked within this directory and can use it how it pleases."""
+    return self._base.join('verify')
+
+  @property
+  def bin_tools(self):
+    """The path where the recipe can install tools (like `cipd`) to put in $PATH
+    for the docker environment."""
+    return self._base.join('bin_tools')
+
+  @property
   def script_dir_base(self):
     """The directory where ALL of the package scripts are copied."""
     return self.checkout.join('.3pp')
