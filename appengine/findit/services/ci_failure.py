@@ -4,29 +4,23 @@
 """Logic related to examine builds and determine regression range."""
 
 from collections import defaultdict
-import hashlib
-import inspect
 import logging
 
 from common.findit_http_client import FinditHttpClient
 from common.waterfall import failure_type
-from gae_libs.caches import PickledMemCache
 from libs import analysis_status
-from libs.cache_decorator import Cached
 from model import analysis_approach_type
 from model import result_status
 from model.wf_analysis import WfAnalysis
 from services import monitoring
+from services import step_util
 from services.parameters import FailureInfoBuild
 from services.parameters import FailureInfoBuilds
 from waterfall import build_util
 from waterfall import buildbot
-from waterfall import waterfall_config
 
 _MAX_BUILDS_TO_CHECK = 20
 _SUPPORTED_FAILURE_TYPE = [failure_type.COMPILE, failure_type.TEST]
-# Caches canonical step name for a week.
-_CACHE_EXPIRE_TIME_SECONDS = 7 * 24 * 60 * 60
 
 
 # TODO(crbug/842980): Deprecate blame_list in builds.
@@ -41,77 +35,6 @@ def _GetBlameListAndRevisionForBuild(build_info):
       'chromium_revision': build_info.chromium_revision,
       'blame_list': build_info.blame_list
   }
-
-
-def _StepMetadataKeyGenerator(func, args, kwargs, namespace=None):
-  """Generates a key to a cached canonical step name.
-
-  Using the step_name as key, assuming it's practically not possible for 2 steps
-  with different canonical_step_names have exactly the same step_name.
-
-  Args:
-    func (function): An arbitrary function.
-    args (list): Positional arguments passed to ``func``.
-    kwargs (dict): Keyword arguments passed to ``func``.
-    namespace (str): A prefix to the key for the cache.
-
-  Returns:
-    A string to represent a call to the given function with the given arguments.
-  """
-  params = inspect.getcallargs(func, *args, **kwargs)
-  step_name = params.get('step_name')
-  assert step_name
-  encoded_params = hashlib.md5(step_name).hexdigest()
-  return '%s-%s' % (namespace, encoded_params)
-
-
-@Cached(
-    PickledMemCache(),
-    namespace='step_metadata',
-    expire_time=_CACHE_EXPIRE_TIME_SECONDS,
-    key_generator=_StepMetadataKeyGenerator)
-def GetStepMetadata(master_name, builder_name, build_number, step_name):
-  return build_util.GetWaterfallBuildStepLog(master_name, builder_name,
-                                             build_number, step_name,
-                                             FinditHttpClient(),
-                                             'step_metadata')
-
-
-def GetCanonicalStepName(master_name, builder_name, build_number, step_name):
-  step_metadata = GetStepMetadata(master_name, builder_name, build_number,
-                                  step_name)
-  return step_metadata.get(
-      'canonical_step_name') if step_metadata else step_name
-
-
-def GetIsolateTargetName(master_name, builder_name, build_number, step_name):
-  """ Returns the isolate_target_name in the step_metadata.
-
-  Args:
-    master_name: Master name of the build.
-    builder_name: Builder name of the build.
-    build_number: Build number of the build.
-    step_name: The original step name to get isolate_target_name for, and the
-               step name may contain hardware information and 'with(out) patch'
-               suffixes.
-
-  Returns:
-    The isolate_target_name if it exists, otherwise, None.
-  """
-  step_metadata = GetStepMetadata(master_name, builder_name, build_number,
-                                  step_name)
-  return step_metadata.get('isolate_target_name') if step_metadata else None
-
-
-def _StepIsSupportedForMaster(master_name, builder_name, build_number,
-                              step_name):
-  if step_name == 'compile':
-    canonical_step_name = step_name
-  else:
-    canonical_step_name = GetCanonicalStepName(master_name, builder_name,
-                                               build_number, step_name)
-  return waterfall_config.StepIsSupportedForMaster(canonical_step_name,
-                                                   master_name)
 
 
 def _CreateADictOfFailedSteps(build_info):
@@ -138,9 +61,9 @@ def _CreateADictOfFailedSteps(build_info):
         'first_failure':
             build_info.build_number,
         'supported':
-            _StepIsSupportedForMaster(build_info.master_name,
-                                      build_info.builder_name,
-                                      build_info.build_number, step_name)
+            step_util.StepIsSupportedForMaster(
+                build_info.master_name, build_info.builder_name,
+                build_info.build_number, step_name)
     }
 
   return failed_steps

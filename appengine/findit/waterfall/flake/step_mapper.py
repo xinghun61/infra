@@ -6,7 +6,6 @@ import logging
 
 from common.findit_http_client import FinditHttpClient
 from libs.test_results import test_results_util
-from services import ci_failure
 from services import step_util
 from services import swarmed_test_util
 from services import swarming
@@ -28,7 +27,7 @@ def _GetMatchingWaterfallBuildStep(cq_build_step, http_client):
   no_matching_result = (None, None, None, None, None)
 
   # 0. Get step_metadata.
-  step_metadata = cq_build_step.step_metadata or ci_failure.GetStepMetadata(
+  step_metadata = cq_build_step.step_metadata or step_util.GetStepMetadata(
       cq_build_step.master_name, cq_build_step.builder_name,
       cq_build_step.build_number, cq_build_step.step_name)
   if not step_metadata:
@@ -121,7 +120,7 @@ def FindMatchingWaterfallStep(build_step, test_name):
     build_step.wf_builder_name = build_step.builder_name
     build_step.wf_build_number = build_step.build_number
     build_step.wf_step_name = build_step.step_name
-    metadata = build_step.step_metadata or ci_failure.GetStepMetadata(
+    metadata = build_step.step_metadata or step_util.GetStepMetadata(
         build_step.master_name, build_step.builder_name,
         build_step.build_number, build_step.step_name)
     if not metadata:

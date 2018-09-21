@@ -15,7 +15,6 @@ It provides functions to:
   * Monitor a try job.
 """
 
-import copy
 from datetime import timedelta
 import json
 import logging
@@ -25,7 +24,6 @@ from google.appengine.api import app_identity
 from google.appengine.ext import ndb
 
 from common import constants
-from common import exceptions
 from common.findit_http_client import FinditHttpClient
 from common.findit_http_client import HttpClientMetricsInterceptor
 from common.swarmbucket import swarmbucket
@@ -48,8 +46,8 @@ from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from services import constants as services_constants
 from services import monitoring
+from services import step_util
 from services import swarmbot_util
-from waterfall import build_util
 from waterfall import buildbot
 from waterfall import waterfall_config
 
@@ -725,8 +723,8 @@ def OnTryJobCompleted(params, try_job_data, build, error):
           no_retry_codes=[200, 302, 401, 403, 409, 501]))
 
   try:
-    report = build_util.GetTryJobStepLog(try_job_id, 'report', http_client,
-                                         'report')
+    report = step_util.GetStepLogForLuciBuild(try_job_id, 'report', http_client,
+                                              'report')
     if report:
       _RecordCacheStats(build, report)
   except (ValueError, TypeError) as e:

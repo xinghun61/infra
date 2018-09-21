@@ -17,10 +17,9 @@ from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakeInput
 from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakePipeline
 from pipelines.flake_failure.next_commit_position_pipeline import (
     NextCommitPositionOutput)
-from services import ci_failure
+from services import step_util
 from services import try_job as try_job_service
 from waterfall import build_util
-from waterfall import waterfall_config
 
 
 def _NeedANewAnalysis(normalized_test,
@@ -156,7 +155,7 @@ def ScheduleAnalysisIfNeeded(
         'will be captured in version %s', repr(normalized_test),
         repr(original_test), analysis.version_number)
 
-    step_metadata = ci_failure.GetStepMetadata(
+    step_metadata = step_util.GetStepMetadata(
         normalized_test.master_name, normalized_test.builder_name,
         normalized_test.build_number, normalized_test.step_name)
 

@@ -16,7 +16,7 @@ from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakeInput
 from pipelines.flake_failure.next_commit_position_pipeline import (
     NextCommitPositionOutput)
-from services import ci_failure
+from services import step_util
 from waterfall import build_util
 from waterfall.build_info import BuildInfo
 from waterfall.flake import initialize_flake_pipeline
@@ -153,7 +153,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
       self.assertFalse(need_analysis)
       self.assertIsNotNone(analysis)
 
-  @mock.patch.object(ci_failure, 'GetStepMetadata', return_value={})
+  @mock.patch.object(step_util, 'GetStepMetadata', return_value={})
   @mock.patch.object(swarmbucket, 'GetDimensionsForBuilder')
   @mock.patch.object(build_util, 'GetBuildInfo')
   @mock.patch.object(initialize_flake_pipeline, '_NeedANewAnalysis')

@@ -13,6 +13,7 @@ from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
 from services import ci_failure
 from services import monitoring
+from services import step_util
 from services.parameters import BaseFailedSteps
 from services.parameters import CompileFailureInfo
 from services.parameters import FailureInfoBuilds
@@ -376,7 +377,7 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
                      failure_info.failed_steps.ToSerializable())
     self.assertEqual(expected_builds, failure_info.builds.ToSerializable())
 
-  @mock.patch.object(ci_failure, '_StepIsSupportedForMaster', return_value=True)
+  @mock.patch.object(step_util, 'StepIsSupportedForMaster', return_value=True)
   @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
   def testGetBuildFailureInfo(self, mock_fn, _):
     master_name = 'm'
@@ -560,71 +561,6 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     mock_logging.assert_called_once_with(
         'Failed to get latest build numbers for builder %s/%s since %d.', 'm',
         'b', 123)
-
-  @mock.patch.object(
-      build_util,
-      'GetWaterfallBuildStepLog',
-      return_value={'canonical_step_name': 'unsupported_step1'})
-  def testStepIsSupportedForMaster(self, _):
-    master_name = 'master1'
-    builder_name = 'b'
-    build_number = 123
-    step_name = 'unsupported_step1 on master1'
-    self.assertFalse(
-        ci_failure._StepIsSupportedForMaster(master_name, builder_name,
-                                             build_number, step_name))
-
-  def testStepIsSupportedForMasterCompile(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 123
-    step_name = 'compile'
-    self.assertTrue(
-        ci_failure._StepIsSupportedForMaster(master_name, builder_name,
-                                             build_number, step_name))
-
-  @mock.patch.object(
-      build_util,
-      'GetWaterfallBuildStepLog',
-      return_value={'canonical_step_name': 'step_name'})
-  def testGetStepMetadataCached(self, mock_fn):
-    ci_failure.GetStepMetadata('m', 'b', 200, 'step_name on a platform')
-    ci_failure.GetStepMetadata('m', 'b', 200, 'step_name on a platform')
-    self.assertTrue(mock_fn.call_count < 2)
-
-  @mock.patch.object(
-      ci_failure,
-      'GetStepMetadata',
-      return_value={'canonical_step_name': 'step_name'})
-  def testGetCanonicalStep(self, _):
-    self.assertEqual(
-        'step_name',
-        ci_failure.GetCanonicalStepName('m', 'b', 200,
-                                        'step_name on a platform'))
-
-  @mock.patch.object(
-      ci_failure,
-      'GetStepMetadata',
-      return_value={'isolate_target_name': 'browser_tests'})
-  def testGetIsolateTargetName(self, _):
-    self.assertEqual(
-        'browser_tests',
-        ci_failure.GetIsolateTargetName(
-            'm', 'b', 200, 'viz_browser_tests (with patch) on Android'))
-
-  @mock.patch.object(ci_failure, 'GetStepMetadata', return_value=None)
-  def testGetIsolateTargetNameStepMetadataIsNone(self, _):
-    self.assertEqual(
-        None,
-        ci_failure.GetIsolateTargetName(
-            'm', 'b', 200, 'viz_browser_tests (with patch) on Android'))
-
-  @mock.patch.object(ci_failure, 'GetStepMetadata', return_value={'a': 'b'})
-  def testGetIsolateTargetNameIsolateTargetNameIsMissing(self, _):
-    self.assertEqual(
-        None,
-        ci_failure.GetIsolateTargetName(
-            'm', 'b', 200, 'viz_browser_tests (with patch) on Android'))
 
   def testGetGoodRevision(self):
     failed_steps = {

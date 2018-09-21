@@ -4,16 +4,16 @@
 import mock
 
 from model.flake.flake import Flake
-from services import ci_failure
+from services import step_util
 from waterfall.test import wf_testcase
 
 
 class FlakeTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
-      ci_failure, 'GetCanonicalStepName', return_value='canonical_step_name')
+      step_util, 'GetCanonicalStepName', return_value='canonical_step_name')
   @mock.patch.object(
-      ci_failure, 'GetIsolateTargetName', return_value='isolate_target_name')
+      step_util, 'GetIsolateTargetName', return_value='isolate_target_name')
   def testNormalizeStepName(self, mocked_get_isolate_target_name,
                             mocked_get_canonical_step_name):
     self.assertEqual(
@@ -31,9 +31,9 @@ class FlakeTest(wf_testcase.WaterfallTestCase):
     mocked_get_canonical_step_name.assert_not_called()
 
   @mock.patch.object(
-      ci_failure, 'GetCanonicalStepName', return_value='canonical_step_name')
+      step_util, 'GetCanonicalStepName', return_value='canonical_step_name')
   @mock.patch.object(
-      ci_failure,
+      step_util,
       'GetIsolateTargetName',
       return_value='webkit_layout_tests_exparchive')
   def testNormalizeStepNameForWebkitLayoutTests(
@@ -53,8 +53,8 @@ class FlakeTest(wf_testcase.WaterfallTestCase):
     mocked_get_canonical_step_name.assert_not_called()
 
   @mock.patch.object(
-      ci_failure, 'GetCanonicalStepName', return_value='canonical_step_name')
-  @mock.patch.object(ci_failure, 'GetIsolateTargetName', return_value=None)
+      step_util, 'GetCanonicalStepName', return_value='canonical_step_name')
+  @mock.patch.object(step_util, 'GetIsolateTargetName', return_value=None)
   def testNormalizeStepNameIsolateTargetNameIsMissing(
       self, mocked_get_isolate_target_name, mocked_get_canonical_step_name):
     self.assertEqual(
@@ -75,8 +75,8 @@ class FlakeTest(wf_testcase.WaterfallTestCase):
         build_number=200,
         step_name='step_name (with patch) on Android')
 
-  @mock.patch.object(ci_failure, 'GetCanonicalStepName', return_value=None)
-  @mock.patch.object(ci_failure, 'GetIsolateTargetName', return_value=None)
+  @mock.patch.object(step_util, 'GetCanonicalStepName', return_value=None)
+  @mock.patch.object(step_util, 'GetIsolateTargetName', return_value=None)
   def testNormalizeStepNameCannonicalStepNameIsMissing(
       self, mocked_get_isolate_target_name, mocked_get_canonical_step_name):
     self.assertEqual(

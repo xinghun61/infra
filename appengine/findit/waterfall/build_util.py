@@ -198,60 +198,6 @@ def FindValidBuildNumberForStepNearby(master_name,
   return None
 
 
-def _ReturnStepLog(data, log_type):
-  if not data:
-    return None
-
-  if log_type.lower() == 'json.output[ninja_info]':
-    # Check if data is malformatted.
-    try:
-      json.loads(data)
-    except ValueError:
-      logging.error('json.output[ninja_info] is malformatted')
-      return None
-
-  if log_type.lower() not in ['stdout', 'json.output[ninja_info]']:
-    try:
-      return json.loads(data) if data else None
-    except ValueError:
-      logging.error(
-          'Failed to json load data for %s. Data is: %s.' % (log_type, data))
-
-  return data
-
-
-def GetTryJobStepLog(try_job_id, full_step_name, http_client,
-                     log_type='stdout'):
-  """Returns specific log of the specified step."""
-
-  error, build = buildbucket_client.GetTryJobs([try_job_id])[0]
-  if error:
-    logging.exception('Error retrieving buildbucket build id: %s' % try_job_id)
-    return None
-
-  # 1. Get log.
-  data = logdog_util.GetStepLogForBuild(build.response, full_step_name,
-                                        log_type, http_client)
-
-  return _ReturnStepLog(data, log_type)
-
-
-def GetWaterfallBuildStepLog(master_name,
-                             builder_name,
-                             build_number,
-                             full_step_name,
-                             http_client,
-                             log_type='stdout'):
-  """Returns sepcific log of the specified step."""
-
-  _, build = DownloadBuildData(master_name, builder_name, build_number)
-
-  data = logdog_util.GetStepLogLegacy(build.log_location, full_step_name,
-                                      log_type, http_client)
-
-  return _ReturnStepLog(data, log_type)
-
-
 # TODO(crbug/804617): Modify this function to use new LUCI API when it's ready.
 def IteratePreviousBuildsFrom(master_name, builder_name, build_number,
                               entry_limit):

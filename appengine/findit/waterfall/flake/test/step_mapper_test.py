@@ -94,7 +94,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(self.build_step.supported)
 
   @mock.patch.object(
-      ci_failure,
+      step_util,
       'GetStepMetadata',
       return_value=wf_testcase.SAMPLE_STEP_METADATA)
   @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[123])
@@ -116,20 +116,20 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(step_name, self.step_name)
     self.assertEqual(step_metadata, wf_testcase.SAMPLE_STEP_METADATA)
 
-  @mock.patch.object(ci_failure, 'GetStepMetadata', return_value=None)
+  @mock.patch.object(step_util, 'GetStepMetadata', return_value=None)
   def testGetMatchingWaterfallBuildStepNoMetadata(self, _):
     _, _, _, _, step_metadata = step_mapper._GetMatchingWaterfallBuildStep(
         self.build_step, self.http_client)
     self.assertIsNone(step_metadata)
 
-  @mock.patch.object(ci_failure, 'GetStepMetadata')
+  @mock.patch.object(step_util, 'GetStepMetadata')
   def testGetMatchingWaterfallBuildStepNoWfBuilderName(self, mock_fn):
     mock_fn.return_value = {'waterfall_mastername': self.wf_master_name}
     _, _, _, _, step_metadata = step_mapper._GetMatchingWaterfallBuildStep(
         self.build_step, self.http_client)
     self.assertIsNone(step_metadata)
 
-  @mock.patch.object(ci_failure, 'GetStepMetadata')
+  @mock.patch.object(step_util, 'GetStepMetadata')
   def testGetMatchingWaterfallBuildStepNoStep(self, mock_fn):
     mock_fn.return_value = {
         'waterfall_mastername': self.wf_master_name,
@@ -140,7 +140,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(step_metadata)
 
   @mock.patch.object(
-      ci_failure,
+      step_util,
       'GetStepMetadata',
       return_value=wf_testcase.SAMPLE_STEP_METADATA)
   @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=None)
@@ -150,7 +150,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(master_name)
 
   @mock.patch.object(
-      ci_failure,
+      step_util,
       'GetStepMetadata',
       return_value=wf_testcase.SAMPLE_STEP_METADATA)
   @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[123])
@@ -160,7 +160,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
         self.build_step, self.http_client)
     self.assertIsNone(master_name)
 
-  @mock.patch.object(ci_failure, 'GetStepMetadata', return_value={})
+  @mock.patch.object(step_util, 'GetStepMetadata', return_value={})
   def testFindMatchingWaterfallStepForWfStepNoStepMetadata(self, _):
     step_mapper.FindMatchingWaterfallStep(self.wf_build_step, 'test1')
     self.assertEqual(self.wf_build_step.wf_build_number,
@@ -173,7 +173,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
       'GetTestResultForSwarmingTask',
       return_value=_SAMPLE_OUTPUT)
   @mock.patch.object(
-      ci_failure,
+      step_util,
       'GetStepMetadata',
       return_value=wf_testcase.SAMPLE_STEP_METADATA)
   def testFindMatchingWaterfallStepForWfStep(self, *_):
@@ -186,7 +186,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
       'GetTestResultForSwarmingTask',
       return_value=_SAMPLE_OUTPUT)
   @mock.patch.object(
-      ci_failure,
+      step_util,
       'GetStepMetadata',
       return_value=wf_testcase.SAMPLE_STEP_METADATA)
   @mock.patch.object(test_results_util, 'GetTestResultObject')
@@ -202,7 +202,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
       'GetTestResultForSwarmingTask',
       return_value=_SAMPLE_OUTPUT)
   @mock.patch.object(
-      ci_failure,
+      step_util,
       'GetStepMetadata',
       return_value=wf_testcase.SAMPLE_STEP_METADATA)
   @mock.patch.object(step_util, 'IsStepSupportedByFindit', return_value=True)
@@ -224,7 +224,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
       'GetTestResultForSwarmingTask',
       return_value=_SAMPLE_OUTPUT)
   @mock.patch.object(
-      ci_failure,
+      step_util,
       'GetStepMetadata',
       return_value=wf_testcase.SAMPLE_STEP_METADATA)
   @mock.patch.object(

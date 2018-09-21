@@ -9,7 +9,7 @@ from google.appengine.ext import ndb
 
 from libs import test_name_util
 from model.flake.flake_issue import FlakeIssue
-from services import ci_failure
+from services import step_util
 
 # Regular expression used to match the noarmlized name of a gtest.
 _GTEST_REGEX = re.compile(r'^([a-zA-Z_]\w*)\.[a-zA-Z_]\w*$')
@@ -139,7 +139,7 @@ class Flake(ndb.Model):
     Returns:
       Normalized version of the given step name.
     """
-    isolate_target_name = ci_failure.GetIsolateTargetName(
+    isolate_target_name = step_util.GetIsolateTargetName(
         master_name=master_name,
         builder_name=builder_name,
         build_number=build_number,
@@ -156,7 +156,7 @@ class Flake(ndb.Model):
         'Failed to obtain isolate_target_name for step: %s in build: %s/%s/%s. '
         'Fall back to use canonical_step_name.') % (step_name, master_name,
                                                     builder_name, build_number))
-    canonical_step_name = ci_failure.GetCanonicalStepName(
+    canonical_step_name = step_util.GetCanonicalStepName(
         master_name=master_name,
         builder_name=builder_name,
         build_number=build_number,

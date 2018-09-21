@@ -2,8 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
+import logging
 import mock
 
+from common.waterfall import buildbucket_client
+from infra_api_clients import logdog_util
 from libs.test_results.gtest_test_results import GtestTestResults
 from libs.test_results.webkit_layout_test_results import WebkitLayoutTestResults
 from model.isolated_target import IsolatedTarget
@@ -14,6 +18,26 @@ from waterfall import buildbot
 from waterfall import waterfall_config
 from waterfall.build_info import BuildInfo
 from waterfall.test import wf_testcase
+
+
+class MockLuciBuild(object):
+
+  def __init__(self, response):
+    self.response = response
+
+
+MOCK_BUILDS = [(None,
+                MockLuciBuild({
+                    'tags': [
+                        'swarming_tag:log_location:logdog://host/project/path'
+                    ]
+                }))]
+
+
+class MockWaterfallBuild(object):
+
+  def __init__(self):
+    self.log_location = 'logdog://logs.chromium.org/chromium/buildbucket/path'
 
 
 def _MockedGetBuildInfo(master_name, builder_name, build_number):
@@ -224,3 +248,146 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(
         step_util.IsStepSupportedByFindit(
             GtestTestResults(None), 'browser_tests', 'm'))
+
+  @mock.patch.object(
+      logdog_util, '_GetAnnotationsProtoForPath', return_value='step')
+  @mock.patch.object(
+      logdog_util, '_GetStreamForStep', return_value='log_stream')
+  @mock.patch.object(
+      logdog_util,
+      'GetStepLogLegacy',
+      return_value=json.dumps(wf_testcase.SAMPLE_STEP_METADATA))
+  @mock.patch.object(
+      build_util, 'DownloadBuildData', return_value=(200, MockWaterfallBuild()))
+  def testGetStepMetadata(self, *_):
+    step_metadata = step_util.GetWaterfallBuildStepLog('m', 'b', 123, 's', None,
+                                                       'step_metadata')
+    self.assertEqual(step_metadata, wf_testcase.SAMPLE_STEP_METADATA)
+
+  @mock.patch.object(
+      build_util, 'DownloadBuildData', return_value=(200, MockWaterfallBuild()))
+  @mock.patch.object(logdog_util, 'GetStepLogLegacy', return_value=':')
+  def testMalformattedNinjaInfo(self, *_):
+    step_metadata = step_util.GetWaterfallBuildStepLog(
+        'm', 'b', 123, 's', None, 'json.output[ninja_info]')
+    self.assertIsNone(step_metadata)
+
+  @mock.patch.object(
+      build_util, 'DownloadBuildData', return_value=(200, MockWaterfallBuild()))
+  @mock.patch.object(
+      logdog_util, '_GetAnnotationsProtoForPath', return_value=None)
+  def testGetStepMetadataStepNone(self, *_):
+    step_metadata = step_util.GetWaterfallBuildStepLog('m', 'b', 123, 's', None,
+                                                       'step_metadata')
+    self.assertIsNone(step_metadata)
+
+  @mock.patch.object(
+      build_util, 'DownloadBuildData', return_value=(200, MockWaterfallBuild()))
+  @mock.patch.object(
+      logdog_util, '_GetAnnotationsProtoForPath', return_value='step')
+  @mock.patch.object(logdog_util, '_GetStreamForStep', return_value=None)
+  def testGetStepMetadataStreamNone(self, *_):
+    step_metadata = step_util.GetWaterfallBuildStepLog('m', 'b', 123, 's', None,
+                                                       'step_metadata')
+    self.assertIsNone(step_metadata)
+
+  @mock.patch.object(
+      build_util, 'DownloadBuildData', return_value=(200, MockWaterfallBuild()))
+  @mock.patch.object(
+      logdog_util, '_GetAnnotationsProtoForPath', return_value='step')
+  @mock.patch.object(logdog_util, '_GetStreamForStep', return_value='stream')
+  @mock.patch.object(logdog_util, 'GetStepLogLegacy', return_value='log1/nlog2')
+  def testGetStepLogStdio(self, *_):
+    self.assertEqual(
+        'log1/nlog2',
+        step_util.GetWaterfallBuildStepLog('m', 'b', 123, 's', None))
+
+  @mock.patch.object(
+      build_util, 'DownloadBuildData', return_value=(200, MockWaterfallBuild()))
+  @mock.patch.object(logdog_util, 'GetStepLogLegacy', return_value='log')
+  @mock.patch.object(logging, 'error')
+  def testGetStepLogNotJosonLoadable(self, mocked_log, *_):
+    self.assertEqual(
+        'log',
+        step_util.GetWaterfallBuildStepLog('m', 'b', 123, 's', None,
+                                           'step_metadata'))
+    mocked_log.assert_called_with(
+        'Failed to json load data for step_metadata. Data is: log.')
+
+  @mock.patch.object(
+      buildbucket_client, 'GetTryJobs', return_value=[(Exception(), None)])
+  def testGetStepLogForLuciBuildError(self, _):
+    self.assertIsNone(step_util.GetStepLogForLuciBuild(87654321, 's', None))
+
+  @mock.patch.object(buildbucket_client, 'GetTryJobs', return_value=MOCK_BUILDS)
+  @mock.patch.object(logdog_util, 'GetStepLogForBuild', return_value='log')
+  @mock.patch.object(step_util, '_ReturnStepLog', return_value='log')
+  def testGetStepLogForLuciBuild(self, *_):
+    self.assertEqual(
+        'log',
+        step_util.GetStepLogForLuciBuild(87654321, 's', None, 'step_metadata'))
+
+  @mock.patch.object(
+      step_util,
+      'GetWaterfallBuildStepLog',
+      return_value={'canonical_step_name': 'unsupported_step1'})
+  def testStepIsSupportedForMaster(self, _):
+    master_name = 'master1'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 'unsupported_step1 on master1'
+    self.assertFalse(
+        step_util.StepIsSupportedForMaster(master_name, builder_name,
+                                           build_number, step_name))
+
+  def testStepIsSupportedForMasterCompile(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 'compile'
+    self.assertTrue(
+        step_util.StepIsSupportedForMaster(master_name, builder_name,
+                                           build_number, step_name))
+
+  @mock.patch.object(
+      step_util,
+      'GetWaterfallBuildStepLog',
+      return_value={'canonical_step_name': 'step_name'})
+  def testGetStepMetadataCached(self, mock_fn):
+    step_util.GetStepMetadata('m', 'b', 200, 'step_name on a platform')
+    step_util.GetStepMetadata('m', 'b', 200, 'step_name on a platform')
+    self.assertTrue(mock_fn.call_count < 2)
+
+  @mock.patch.object(
+      step_util,
+      'GetStepMetadata',
+      return_value={'canonical_step_name': 'step_name'})
+  def testGetCanonicalStep(self, _):
+    self.assertEqual(
+        'step_name',
+        step_util.GetCanonicalStepName('m', 'b', 200,
+                                       'step_name on a platform'))
+
+  @mock.patch.object(
+      step_util,
+      'GetStepMetadata',
+      return_value={'isolate_target_name': 'browser_tests'})
+  def testGetIsolateTargetName(self, _):
+    self.assertEqual(
+        'browser_tests',
+        step_util.GetIsolateTargetName(
+            'm', 'b', 200, 'viz_browser_tests (with patch) on Android'))
+
+  @mock.patch.object(step_util, 'GetStepMetadata', return_value=None)
+  def testGetIsolateTargetNameStepMetadataIsNone(self, _):
+    self.assertEqual(
+        None,
+        step_util.GetIsolateTargetName(
+            'm', 'b', 200, 'viz_browser_tests (with patch) on Android'))
+
+  @mock.patch.object(step_util, 'GetStepMetadata', return_value={'a': 'b'})
+  def testGetIsolateTargetNameIsolateTargetNameIsMissing(self, _):
+    self.assertEqual(
+        None,
+        step_util.GetIsolateTargetName(
+            'm', 'b', 200, 'viz_browser_tests (with patch) on Android'))

@@ -11,7 +11,7 @@ import logging
 
 from model.wf_step import WfStep
 from services import extract_signal
-from waterfall import build_util
+from services import step_util
 from waterfall import extractors
 from waterfall import waterfall_config
 
@@ -51,7 +51,7 @@ def ExtractSignalsForCompileFailure(failure_info, http_client):
         waterfall_config.GetDownloadBuildDataSettings()
         .get('use_ninja_output_log'))
     if use_ninja_output_log:
-      failure_log = build_util.GetWaterfallBuildStepLog(
+      failure_log = step_util.GetWaterfallBuildStepLog(
           master_name, builder_name, build_number, step_name, http_client,
           'json.output[ninja_info]')
       from_ninja_output = True

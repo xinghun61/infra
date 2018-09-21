@@ -21,6 +21,7 @@ from services import ci_failure
 from services import deps
 from services import git
 from services import monitoring
+from services import step_util
 from services.parameters import TestHeuristicAnalysisOutput
 from services.parameters import TestHeuristicResult
 from services.test_failure import ci_test_failure
@@ -397,8 +398,8 @@ def RecordTestFailureAnalysisStateChange(
   """Records state changes for test failure anlaysis."""
   step_metadata = {}
   if step_name:
-    step_metadata = ci_failure.GetStepMetadata(master_name, builder_name,
-                                               build_number, step_name) or {}
+    step_metadata = step_util.GetStepMetadata(master_name, builder_name,
+                                              build_number, step_name) or {}
 
   monitoring.OnWaterfallAnalysisStateChange(
       master_name=master_name,
@@ -442,8 +443,8 @@ def GetSuspectedCLsWithFailures(master_name, builder_name, build_number,
       for test in failure.tests:
         for suspected_cl in test.suspected_cls or []:
           suspected_cls_with_failures.append([
-              ci_failure.GetCanonicalStepName(master_name, builder_name,
-                                              build_number, failure.step_name),
+              step_util.GetCanonicalStepName(master_name, builder_name,
+                                             build_number, failure.step_name),
               suspected_cl.revision, test.test_name
           ])
     else:

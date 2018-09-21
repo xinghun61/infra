@@ -18,9 +18,9 @@ from libs import time_util
 from libs.test_results import test_results_util
 from model import analysis_approach_type
 from model.wf_swarming_task import WfSwarmingTask
-from services import ci_failure
 from services import constants
 from services import monitoring
+from services import step_util
 from services import swarmed_test_util
 from services import swarming
 from services.test_failure import test_failure_analysis
@@ -378,8 +378,8 @@ def GetConsistentFailuresWhenAllTasksComplete(collect_consistent_failure_inputs,
       # For reproducible flakes, keeps a record for them in
       # trigger_flake_analyses_pipeline, depends on whether the analyses are
       # successfully triggered.
-      step_metadata = ci_failure.GetStepMetadata(master_name, builder_name,
-                                                 build_number, step_name)
+      step_metadata = step_util.GetStepMetadata(master_name, builder_name,
+                                                build_number, step_name)
       canonical_step_name = step_metadata.get(
           'canonical_step_name') or 'Unknown'
       isolate_target_name = step_metadata.get(

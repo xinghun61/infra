@@ -11,10 +11,10 @@ from libs.test_results import test_results_util
 from model.wf_analysis import WfAnalysis
 from model.wf_step import WfStep
 from services import extract_signal
+from services import step_util
 from services import swarmed_test_util
 from services.parameters import TestFailureInfo
 from services.test_failure import extract_test_signal
-from waterfall import build_util
 from waterfall.test import wf_testcase
 
 _ABC_TEST_FAILURE_LOG = """
@@ -67,9 +67,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
       'RetrieveShardedTestResultsFromIsolatedServer',
       return_value=None)
   @mock.patch.object(
-      build_util,
-      'GetWaterfallBuildStepLog',
-      return_value=_ABC_TEST_FAILURE_LOG)
+      step_util, 'GetWaterfallBuildStepLog', return_value=_ABC_TEST_FAILURE_LOG)
   def testBailOutForUnsupportedStep(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -146,9 +144,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
     }, signals['webkit_layout_tests']['files'])
 
   @mock.patch.object(
-      build_util,
-      'GetWaterfallBuildStepLog',
-      return_value=_ABC_TEST_FAILURE_LOG)
+      step_util, 'GetWaterfallBuildStepLog', return_value=_ABC_TEST_FAILURE_LOG)
   @mock.patch.object(swarmed_test_util,
                      'RetrieveShardedTestResultsFromIsolatedServer')
   def testGetSignalFromStepLog(self, mock_gtest, _):
@@ -174,9 +170,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_files, signals['abc_test']['files'])
 
   @mock.patch.object(
-      build_util,
-      'GetWaterfallBuildStepLog',
-      return_value=_ABC_TEST_FAILURE_LOG)
+      step_util, 'GetWaterfallBuildStepLog', return_value=_ABC_TEST_FAILURE_LOG)
   @mock.patch.object(swarmed_test_util,
                      'RetrieveShardedTestResultsFromIsolatedServer')
   def testGetSignalFromStepLogFlaky(self, mock_gtest, _):
@@ -215,7 +209,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
     self.assertEqual({}, signals['abc_test']['files'])
 
   @mock.patch.object(
-      build_util,
+      step_util,
       'GetWaterfallBuildStepLog',
       return_value='If used, test should fail!')
   def testWfStepStdioLogAlreadyDownloaded(self, _):
@@ -488,12 +482,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    expected_signals = {
-        'abc_test': {
-            'files': {},
-            'keywords': {}
-        }
-    }
+    expected_signals = {'abc_test': {'files': {}, 'keywords': {}}}
     self.assertEqual(
         expected_signals,
         extract_test_signal.ExtractSignalsForTestFailure(

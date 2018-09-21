@@ -3,10 +3,17 @@
 # found in the LICENSE file.
 """This module is for logic about build test steps."""
 
+import hashlib
+import inspect
+import json
 import logging
 
 from common.constants import SUPPORTED_ISOLATED_SCRIPT_TESTS
 from common.findit_http_client import FinditHttpClient
+from common.waterfall import buildbucket_client
+from gae_libs.caches import PickledMemCache
+from infra_api_clients import logdog_util
+from libs.cache_decorator import Cached
 from libs.test_results.webkit_layout_test_results import WebkitLayoutTestResults
 from model.isolated_target import IsolatedTarget
 from services import constants
@@ -16,6 +23,9 @@ from waterfall import buildbot
 from waterfall import waterfall_config
 
 _HTTP_CLIENT = FinditHttpClient()
+
+# Caches metadata of a step for a week.
+_CACHE_EXPIRE_TIME_SECONDS = 7 * 24 * 60 * 60
 
 
 # TODO(crbug/804617): Modify this function to use new LUCI API when ready.
@@ -300,3 +310,129 @@ def IsStepSupportedByFindit(test_result_object, step_name, master_name):
       step_name not in SUPPORTED_ISOLATED_SCRIPT_TESTS):
     return False
   return True
+
+
+def _ReturnStepLog(data, log_type):
+  if not data:
+    return None
+
+  if log_type.lower() == 'json.output[ninja_info]':
+    # Check if data is malformatted.
+    try:
+      json.loads(data)
+    except ValueError:
+      logging.error('json.output[ninja_info] is malformatted')
+      return None
+
+  if log_type.lower() not in ['stdout', 'json.output[ninja_info]']:
+    try:
+      return json.loads(data) if data else None
+    except ValueError:
+      logging.error(
+          'Failed to json load data for %s. Data is: %s.' % (log_type, data))
+
+  return data
+
+
+def GetStepLogForLuciBuild(build_id,
+                           full_step_name,
+                           http_client,
+                           log_type='stdout'):
+  """Returns specific log of the specified step."""
+
+  error, build = buildbucket_client.GetTryJobs([build_id])[0]
+  if error:
+    logging.exception('Error retrieving buildbucket build id: %s' % build_id)
+    return None
+
+  data = logdog_util.GetStepLogForBuild(build.response, full_step_name,
+                                        log_type, http_client)
+
+  return _ReturnStepLog(data, log_type)
+
+
+def _StepMetadataKeyGenerator(func, args, kwargs, namespace=None):
+  """Generates a key to a cached canonical step name.
+
+  Using the step_name as key, assuming it's practically not possible for 2 steps
+  with different canonical_step_names have exactly the same step_name.
+
+  Args:
+    func (function): An arbitrary function.
+    args (list): Positional arguments passed to ``func``.
+    kwargs (dict): Keyword arguments passed to ``func``.
+    namespace (str): A prefix to the key for the cache.
+
+  Returns:
+    A string to represent a call to the given function with the given arguments.
+  """
+  params = inspect.getcallargs(func, *args, **kwargs)
+  step_name = params.get('step_name')
+  assert step_name, 'No step name provided when requesting step_metadata.'
+  encoded_params = hashlib.md5(step_name).hexdigest()
+  return '%s-%s' % (namespace, encoded_params)
+
+
+def GetWaterfallBuildStepLog(master_name,
+                             builder_name,
+                             build_number,
+                             full_step_name,
+                             http_client,
+                             log_type='stdout'):
+  """Returns specific log of the specified step."""
+
+  _, build = build_util.DownloadBuildData(master_name, builder_name,
+                                          build_number)
+
+  data = logdog_util.GetStepLogLegacy(build.log_location, full_step_name,
+                                      log_type, http_client)
+
+  return _ReturnStepLog(data, log_type)
+
+
+@Cached(
+    PickledMemCache(),
+    namespace='step_metadata',
+    expire_time=_CACHE_EXPIRE_TIME_SECONDS,
+    key_generator=_StepMetadataKeyGenerator)
+def GetStepMetadata(master_name, builder_name, build_number, step_name):
+  return GetWaterfallBuildStepLog(master_name,
+                                  builder_name, build_number, step_name,
+                                  FinditHttpClient(), 'step_metadata')
+
+
+def GetCanonicalStepName(master_name, builder_name, build_number, step_name):
+  step_metadata = GetStepMetadata(master_name, builder_name, build_number,
+                                  step_name)
+  return step_metadata.get(
+      'canonical_step_name') if step_metadata else step_name
+
+
+def GetIsolateTargetName(master_name, builder_name, build_number, step_name):
+  """ Returns the isolate_target_name in the step_metadata.
+
+  Args:
+    master_name: Master name of the build.
+    builder_name: Builder name of the build.
+    build_number: Build number of the build.
+    step_name: The original step name to get isolate_target_name for, and the
+               step name may contain hardware information and 'with(out) patch'
+               suffixes.
+
+  Returns:
+    The isolate_target_name if it exists, otherwise, None.
+  """
+  step_metadata = GetStepMetadata(master_name, builder_name, build_number,
+                                  step_name)
+  return step_metadata.get('isolate_target_name') if step_metadata else None
+
+
+def StepIsSupportedForMaster(master_name, builder_name, build_number,
+                             step_name):
+  if step_name == 'compile':
+    canonical_step_name = step_name
+  else:
+    canonical_step_name = GetCanonicalStepName(master_name, builder_name,
+                                               build_number, step_name)
+  return waterfall_config.StepIsSupportedForMaster(canonical_step_name,
+                                                   master_name)

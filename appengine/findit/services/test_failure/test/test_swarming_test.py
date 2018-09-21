@@ -24,9 +24,9 @@ from libs.test_results.gtest_test_results import GtestTestResults
 from libs.test_results import test_results_util
 from model import analysis_approach_type
 from model.wf_swarming_task import WfSwarmingTask
-from services import ci_failure
 from services import constants
 from services import monitoring
+from services import step_util
 from services.parameters import BuildKey
 from services.parameters import TestFailureInfo
 from services.parameters import TestHeuristicAnalysisOutput
@@ -580,7 +580,7 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(test_failure_analysis,
                      'UpdateAnalysisWithFlakesFoundBySwarmingReruns')
   @mock.patch.object(
-      ci_failure,
+      step_util,
       'GetStepMetadata',
       return_value={
           'canonical_step_name': 'step2',
@@ -666,7 +666,7 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
         test_swarming.GetConsistentFailuresWhenAllTasksComplete(params, steps))
 
   @mock.patch.object(
-      ci_failure,
+      step_util,
       'GetStepMetadata',
       return_value={
           'canonical_step_name': 'step2',

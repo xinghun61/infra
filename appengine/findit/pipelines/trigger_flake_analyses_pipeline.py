@@ -10,8 +10,8 @@ from libs import time_util
 from model.flake.analysis import triggering_sources
 from model.flake.analysis.flake_analysis_request import FlakeAnalysisRequest
 from model.wf_analysis import WfAnalysis
-from services import ci_failure
 from services import monitoring
+from services import step_util
 from services.parameters import BuildKey
 from waterfall import waterfall_config
 from waterfall.flake import flake_analysis_service
@@ -59,8 +59,8 @@ class TriggerFlakeAnalysesPipeline(GeneratorPipeline):
 
     for step, step_counts in analysis_counts.iteritems():
       # Collects metrics.
-      step_metadata = ci_failure.GetStepMetadata(master_name, builder_name,
-                                                 build_number, step)
+      step_metadata = step_util.GetStepMetadata(master_name, builder_name,
+                                                build_number, step)
       canonical_step_name = step_metadata.get(
           'canonical_step_name') or 'Unknown'
       isolate_target_name = step_metadata.get(

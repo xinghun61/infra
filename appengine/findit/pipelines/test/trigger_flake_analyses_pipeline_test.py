@@ -5,7 +5,7 @@
 import mock
 
 from gae_libs.pipelines import pipeline_handlers
-from services import ci_failure
+from services import step_util
 from model.wf_analysis import WfAnalysis
 from pipelines.trigger_flake_analyses_pipeline import (
     TriggerFlakeAnalysesPipeline)
@@ -23,7 +23,7 @@ class TriggerFlakeAnalysesPipelineTest(wf_testcase.WaterfallTestCase):
       'GetCheckFlakeSettings',
       return_value={'throttle_flake_analyses': True})
   @mock.patch.object(
-      ci_failure,
+      step_util,
       'GetStepMetadata',
       return_value={
           'canonical_step_name': 'a_tests',
@@ -62,7 +62,7 @@ class TriggerFlakeAnalysesPipelineTest(wf_testcase.WaterfallTestCase):
       'GetCheckFlakeSettings',
       return_value={'throttle_flake_analyses': False})
   @mock.patch.object(
-      ci_failure,
+      step_util,
       'GetStepMetadata',
       return_value={
           'canonical_step_name': 'a_tests',

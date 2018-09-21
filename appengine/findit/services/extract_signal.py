@@ -12,7 +12,7 @@ from google.appengine.api.urlfetch import ResponseTooLargeError
 
 from model.wf_analysis import WfAnalysis
 from services.constants import LOG_DATA_BYTE_LIMIT
-from waterfall import build_util
+from services import step_util
 
 
 class FailedToGetFailureLogError(Exception):
@@ -42,7 +42,7 @@ def ExtractStorablePortionOfLog(log_data, json_format=False):
 def GetStdoutLog(master_name, builder_name, build_number, step_name,
                  http_client):
   try:
-    return build_util.GetWaterfallBuildStepLog(
+    return step_util.GetWaterfallBuildStepLog(
         master_name, builder_name, build_number, step_name, http_client)
 
   except ResponseTooLargeError:

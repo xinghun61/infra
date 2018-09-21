@@ -11,6 +11,7 @@ from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from gae_libs.pipelines import pipeline_handlers
 from services import ci_failure
+from services import step_util
 from services.parameters import BuildKey
 from services.parameters import CompileFailureInfo
 from services.parameters import TestFailureInfo
@@ -188,7 +189,7 @@ class BuildFailureAnalysisPipelinesTest(wf_testcase.WaterfallTestCase):
     self.assertIsNotNone(analysis)
 
   @mock.patch.object(
-      ci_failure,
+      step_util,
       'GetStepMetadata',
       return_value={
           'canonical_step_name': 'a',

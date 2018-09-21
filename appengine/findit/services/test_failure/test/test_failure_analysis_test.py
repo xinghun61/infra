@@ -15,6 +15,7 @@ from services import ci_failure
 from services import deps
 from services import git
 from services import monitoring
+from services import step_util
 from services.parameters import TestFailureInfo
 from services.parameters import TestHeuristicAnalysisOutput
 from services.parameters import TestHeuristicAnalysisParameters
@@ -981,7 +982,7 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         analysis_type='Heuristic')
 
   @mock.patch.object(monitoring, 'OnWaterfallAnalysisStateChange')
-  @mock.patch.object(ci_failure, 'GetStepMetadata')
+  @mock.patch.object(step_util, 'GetStepMetadata')
   def testRecordTestFailureAnalysisStateChange(self, mock_step_metadata,
                                                mock_mon):
     mock_step_metadata.return_value = {
@@ -1001,7 +1002,7 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         status='Completed',
         analysis_type='Heuristic')
 
-  @mock.patch.object(ci_failure, 'GetCanonicalStepName', return_value='step3')
+  @mock.patch.object(step_util, 'GetCanonicalStepName', return_value='step3')
   def testGetSuspectedCLsWithFailures(self, _):
     heuristic_result = {
         'failures': [{
