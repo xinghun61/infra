@@ -379,7 +379,7 @@ runOnLoad(function() {
  _lfidprefix = 'labeledit';
 
   window.allowSubmit = true;
-  $("issue_update_form").addEventListener("submit", function(event) {
+  document.forms.issue_update_form.addEventListener("submit", function(event) {
      if (!CS_env.is_member && !_checkPlusOne()) {
        event.preventDefault();
        return;
