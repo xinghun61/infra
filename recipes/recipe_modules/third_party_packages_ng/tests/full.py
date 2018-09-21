@@ -125,11 +125,19 @@ def GenTests(api):
     upload { pkg_prefix: "prefix/build_tools" }
     ''',
 
+    deep_dep='''
+    create {
+      source { cipd {pkg: "source/deep_dep" default_version: "1.0.0"} }
+    }
+    upload { pkg_prefix: "prefix/deps" }
+    ''',
+
     dep='''
     create {
       source { cipd {pkg: "source/dep" default_version: "1.0.0"} }
       build {
         tool: "tool"
+        dep: "deep_dep"
       }
     }
     upload { pkg_prefix: "prefix/deps" }

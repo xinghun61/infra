@@ -158,9 +158,22 @@ class ResolvedSpec(object):
         yield name, version
 
   @property
-  def _all_possible_deps(self):
-    """Yields all the package names that this ResolvedSpec depends on, which
-    includes both `deps` and `tools`.
+  def all_possible_deps(self):
+    """Yields all the packages (ResolvedSpecs) that this ResolvedSpec depends
+    on, which includes `deps` and their transitive dependencies.
+
+    Infinite recursion is prevented by the _resolve_for function (which
+    constructs all of the ResolvedSpec instances).
+    """
+    for dep in self._deps:
+      for subdep in dep.all_possible_deps:
+        yield subdep
+      yield dep
+
+  @property
+  def _all_possible_deps_and_tools(self):
+    """Yields all the packages (ResolvedSpecs) that this ResolvedSpec depends
+    on, which includes both `deps` and `tools`, transitively.
 
     Used internally by the __cmp__ function.
 
@@ -168,12 +181,12 @@ class ResolvedSpec(object):
     constructs all of the ResolvedSpec instances).
     """
     for dep in self._deps:
-      for subdep in dep._all_possible_deps:
+      for subdep in dep._all_possible_deps_and_tools:
         yield subdep
       yield dep
     # these are unpinned tools we may have to build.
     for tool in self._unpinned_tools:
-      for subdep in tool._all_possible_deps:
+      for subdep in tool._all_possible_deps_and_tools:
         yield subdep
       yield tool
 
@@ -201,12 +214,12 @@ class ResolvedSpec(object):
 
     # self < other if other depends on self, OR
     #              if other uses self as a tool
-    if self in other._all_possible_deps:
+    if self in other._all_possible_deps_and_tools:
       return -1
 
     # self > other if self depends on other, OR
     #              if self uses other as a tool
-    if other in self._all_possible_deps:
+    if other in self._all_possible_deps_and_tools:
       return 1
 
     # otherwise sort alphabetically

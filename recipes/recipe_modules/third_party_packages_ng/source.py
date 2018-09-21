@@ -123,8 +123,8 @@ def fetch_source(api, workdir, spec, version, spec_lookup, ensure_built):
   if spec.create_pb.build.dep:
     with api.step.nest('installing deps'):
       _ensure_installed(workdir.deps_prefix, [
-        ensure_built(spec_lookup(dep, spec.platform), 'latest')
-        for dep in spec.create_pb.build.dep
+        ensure_built(dep, 'latest')
+        for dep in spec.all_possible_deps
       ])
 
   _do_checkout(api, workdir, spec, version)
