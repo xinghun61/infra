@@ -106,6 +106,7 @@ runOnLoad(function() {
         return _vallab(event.target);
     });
     labelInput.addEventListener("blur", function (event) {
+        _acrob(null);
         return _vallab(event.target);
     });
     labelInput.addEventListener("focus", function (event) {
