@@ -66,7 +66,6 @@ from sitewide import grouplist
 from sitewide import hostinghome
 from sitewide import moved
 from sitewide import projectcreate
-from sitewide import userhotlistsmenu
 from sitewide import userprofile
 from sitewide import usersettings
 from sitewide import userclearbouncing
