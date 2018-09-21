@@ -106,7 +106,13 @@ class WorkEnvTest(unittest.TestCase):
     """We can check a project name."""
     self.SignIn(user_id=self.admin_user.user_id)
     with self.work_env as we:
-      self.assertIsNone(we.CheckProjectName('Foo'))
+      self.assertIsNone(we.CheckProjectName('foo'))
+
+  def testCheckProjectName_InvalidProjectName(self):
+    """We can check an invalid project name."""
+    self.SignIn(user_id=self.admin_user.user_id)
+    with self.work_env as we:
+      self.assertIsNotNone(we.CheckProjectName('Foo'))
 
   def testCheckProjectName_AlreadyExists(self):
     """There is already a project with that name."""

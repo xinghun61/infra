@@ -429,9 +429,7 @@ class MonorailServicerTest(unittest.TestCase):
     # Bad project specified.
     # pylint: disable=attribute-defined-outside-init
     self.request.project_name = 'not-a-proj'
-    self.assertRaises(
-        exceptions.NoSuchProjectException,
-        self.svcr.GetRequestProject, self.cnxn, self.request)
+    self.assertIsNone(self.svcr.GetRequestProject(self.cnxn, self.request))
 
   def CheckExceptionStatus(self, e, expected_code):
     mc = monorailcontext.MonorailContext(self.services, auth=self.auth)

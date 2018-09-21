@@ -741,7 +741,7 @@ class ProjectsServicerTest(unittest.TestCase):
 
   def testCheckProjectName_OK(self):
     """We can check a project name."""
-    request = projects_pb2.CheckProjectNameRequest(project_name='Foo')
+    request = projects_pb2.CheckProjectNameRequest(project_name='foo')
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='admin@example.com')
     mc.LookupLoggedInUserPerms(self.project)
@@ -749,6 +749,17 @@ class ProjectsServicerTest(unittest.TestCase):
         self.projects_svcr.CheckProjectName, mc, request)
 
     self.assertEqual('', response.error)
+
+  def testCheckProjectName_InvalidProjectName(self):
+    """We reject an invalid project name."""
+    request = projects_pb2.CheckProjectNameRequest(project_name='Foo')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='admin@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(
+        self.projects_svcr.CheckProjectName, mc, request)
+
+    self.assertNotEqual('', response.error)
 
   def testCheckProjectName_NotAllowed(self):
     """Users that can't create a project shouldn't get any information."""

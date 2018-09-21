@@ -230,8 +230,10 @@ class WorkEnv(object):
           'User is not allowed to create a project')
 
     with self.mc.profiler.Phase('checking project name %s' % project_name):
+      if not framework_bizobj.IsValidProjectName(project_name):
+        return '"%s" is not a valid project name.' % project_name
       if self.services.project.LookupProjectIDs(self.mc.cnxn, [project_name]):
-        return 'That project name is not available.'
+        return 'There is already a project with that name.'
     return None
 
   def GetProjects(self, project_ids, use_cache=True):
@@ -1380,7 +1382,7 @@ class WorkEnv(object):
 
     with self.mc.profiler.Phase('checking hotlist name: %r' % name):
       if not framework_bizobj.IsValidHotlistName(name):
-        return '%s is not a valid hotlist name.' % name
+        return '"%s" is not a valid hotlist name.' % name
       if self.services.features.LookupHotlistIDs(
           self.mc.cnxn, [name], [self.mc.auth.user_id]):
         return 'There is already a hotlist with that name.'

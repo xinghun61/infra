@@ -207,7 +207,9 @@ class MonorailServicer(object):
         project = self.services.project.GetProjectByName(
             cnxn, request.project_name)
         if not project:
-          raise exceptions.NoSuchProjectException()
+          logging.info('Request has project_name: %r but it does not exist.',
+                       request.project_name)
+          return None
         return project
     else:
       return None
