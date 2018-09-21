@@ -1455,8 +1455,15 @@ def MergeFields(field_values, fields_add, fields_remove, field_defs):
     else:
       # Drop any existing values for non-multi fields.
       if not is_multi.get(fv_consider.field_id):
-        merged_fvs = [fv for fv in merged_fvs
-                      if fv.field_id != fv_consider.field_id]
+        if fv_consider.phase_id:
+          # Drop existing phase fvs that belong to the same phase
+          merged_fvs = [fv for fv in merged_fvs if
+                        not (fv.field_id == fv_consider.field_id
+                             and fv.phase_id == fv_consider.phase_id)]
+        else:
+          # Drop existing non-phase fvs
+          merged_fvs = [fv for fv in merged_fvs if
+                        not fv.field_id == fv_consider.field_id]
       fvs_added.append(fv_consider)
       merged_fvs.append(fv_consider)
 
@@ -1465,7 +1472,8 @@ def MergeFields(field_values, fields_add, fields_remove, field_defs):
     consider_value = GetFieldValue(fv_consider, {})
     for old_fv in field_values:
       if (fv_consider.field_id == old_fv.field_id and
-          GetFieldValue(old_fv, {}) == consider_value):
+          GetFieldValue(old_fv, {}) == consider_value and
+          fv_consider.phase_id == old_fv.phase_id):
         fvs_removed.append(fv_consider)
         merged_fvs.remove(old_fv)
 
