@@ -78,6 +78,7 @@
     <link type="text/css" rel="stylesheet" href="/static/css/ph_core.css?version=[app_version]">
     <link type="text/css" rel="stylesheet" media="(max-width:425px)"
           href="/static/css/ph_mobile.css?version=[app_version]">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     [if-any category_css]
      <link type="text/css" rel="stylesheet" href="/static/[category_css]?version=[app_version]">
     [end]

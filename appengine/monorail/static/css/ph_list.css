@@ -176,8 +176,14 @@ div.projecttile:hover {
 .labels a:active { color: #f00; }
 .name { margin-top: 2ex; font-size: 120%; }
 
+.results tr td a.directlink { visibility: hidden; }
+.results tr:hover td a.directlink {
+  visibility: visible;
+  color: grey;
+}
+
 .results .id { text-align: right; }
-#resultstable .id { text-align: left; }
+#resultstable .id { text-align: right; }
 #projecttable .id { text-align: left; }
 #starredtable .id { text-align: left; }
 #archivedtable .id { text-align: left; }

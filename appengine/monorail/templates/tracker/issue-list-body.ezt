@@ -30,7 +30,7 @@
      [is table_data.cells.type "ID"]
       <td class="id col_[table_data.cells.col_index]"
           [# TODO(jrobbins): re-implement preview_on_hover in polymer.]
-          ><a href="[table_data.issue_url]">
+          ><a href="[table_data.issue_url]" class="computehref">
               [if-any is_cross_project][table_data.project_name]:[end][table_data.local_id]</a></td>
      [end]
 
@@ -65,7 +65,10 @@
      [end]
 
     [end]
-   <td>&nbsp;</td>
+   <td style="padding:0">
+     <a href="[table_data.issue_url]" class="directlink material-icons" title="direct link"
+	>link</a>
+   </td>
   </tr>
  [end]
 

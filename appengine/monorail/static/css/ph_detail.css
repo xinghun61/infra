@@ -160,6 +160,15 @@ td.issueheader { background: #e5ecf9; }
 
 .issuemetaheader {
     padding: 0 5px;
+    position: relative;
+}
+
+.issuemetaheader a.material-icons {
+    padding: 0 5px;
+    text-decoration: none;
+    color: grey;
+    position: absolute;
+    top: calc(50% - 12px);
 }
 
 #issuemeta {

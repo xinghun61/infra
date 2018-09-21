@@ -78,6 +78,7 @@ function createIDCell(td, tableRow, isCrossProject) {
   td.classList.add('id');
   var aLink = document.createElement('a');
   aLink.setAttribute('href', tableRow['issueCleanURL']);
+  aLink.setAttribute('class', 'computehref');
   var aLinkContent = (isCrossProject ? (tableRow['projectName'] + ':') : '' ) + tableRow['localID'];
   aLink.textContent = aLinkContent;
   td.appendChild(aLink);
@@ -240,9 +241,14 @@ function renderHotlistRow(tableRow, pageSettings) {
     }
     tr.appendChild(td);
   });
-  spacing = document.createElement('td');
-  spacing.textContent = '\xa0';
-  tr.appendChild(spacing);
+  let directLinkURL = tableRow['issueCleanURL'];
+  let directLink = document.createElement('a');
+  directLink.setAttribute('class', 'directlink material-icons');
+  directLink.setAttribute('href', directLinkURL);
+  directLink.textContent = 'link';  // Renders as a link icon.
+  let lastCol = document.createElement('td');
+  lastCol.appendChild(directLink)
+  tr.appendChild(lastCol);
   return tr;
 }
 

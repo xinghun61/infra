@@ -38,7 +38,10 @@
        </a>
       [end]
      [end]
-     <h1 class="not_styled_as_heading"><a href="detail?id=[issue.local_id]">Issue [issue.local_id]</a></h1>
+     <h1 class="not_styled_as_heading">
+       <a href="detail?id=[issue.local_id]">Issue [issue.local_id]</a>
+       <a href="detail?id=[issue.local_id]" class="material-icons" title="direct link">link</a>
+     </h1>
 
    </div> [# end issuemetaheader]
 

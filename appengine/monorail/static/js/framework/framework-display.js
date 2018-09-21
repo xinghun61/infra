@@ -140,6 +140,10 @@ var CS_lastX = 0, CS_lastY = 0;
 
 function CS_addClickListener(tableEl, handler) {
   tableEl.addEventListener('click', function(event) {
+    if (event.target.classList.contains('computehref') &&
+        (event.button == 0 || event.button == 1)) {
+	event.preventDefault();
+    }
     if (event.target.tagName == 'A') {
       return;
     }
@@ -148,7 +152,8 @@ function CS_addClickListener(tableEl, handler) {
     }
   });
   tableEl.addEventListener('mousedown', function(event) {
-    if (event.target.tagName == 'A') {
+    if (event.target.tagName == 'A' &&
+        !event.target.classList.contains('computehref')) {
       return;
     }
     CS_lastX = event.clientX;
@@ -158,7 +163,8 @@ function CS_addClickListener(tableEl, handler) {
     }
   });
   tableEl.addEventListener('mouseup', function(event) {
-    if (event.target.tagName == 'A') {
+    if (event.target.tagName == 'A' &&
+        !event.target.classList.contains('computehref')) {
       return;
     }
     if (CS_lastX - 2 < event.clientX && CS_lastX + 2 > event.clientX &&
