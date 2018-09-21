@@ -493,7 +493,7 @@
         "[START_DIR]/3pp/wd/bottom_dep/linux-armv6l/1.0/tools_prefix/bin"
       ]
     },
-    "name": "building bottom_dep.run installation.do install",
+    "name": "building bottom_dep.run installation.install.sh [START_DIR]/3pp/wd/bottom_dep/linux-armv6l/1.0/out [START_DIR]/3pp/wd/bottom_dep/linux-armv6l/1.0/deps_prefix",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
     ]
@@ -1530,7 +1530,7 @@
         "[START_DIR]/3pp/wd/bottom_dep/linux-amd64/1.0/tools_prefix/bin"
       ]
     },
-    "name": "building dep.fetch sources.installing tools.building tool.fetch sources.installing deps.building bottom_dep.run installation.do install",
+    "name": "building dep.fetch sources.installing tools.building tool.fetch sources.installing deps.building bottom_dep.run installation.install.sh [START_DIR]/3pp/wd/bottom_dep/linux-amd64/1.0/out [START_DIR]/3pp/wd/bottom_dep/linux-amd64/1.0/deps_prefix",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@8@@@"
     ]
@@ -2077,7 +2077,7 @@
         "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/tools_prefix/bin"
       ]
     },
-    "name": "building dep.fetch sources.installing tools.building tool.run installation.do install",
+    "name": "building dep.fetch sources.installing tools.building tool.run installation.install.sh intel [START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/out [START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/deps_prefix",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@5@@@"
     ]
@@ -2514,7 +2514,7 @@
         "[START_DIR]/3pp/wd/dep/linux-armv6l/1.0.0/tools_prefix/bin"
       ]
     },
-    "name": "building dep.run installation.do install",
+    "name": "building dep.run installation.install.sh [START_DIR]/3pp/wd/dep/linux-armv6l/1.0.0/out [START_DIR]/3pp/wd/dep/linux-armv6l/1.0.0/deps_prefix",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
     ]
@@ -3328,7 +3328,7 @@
         "[START_DIR]/3pp/wd/posix_tool/linux-armv6l/1.2.0/tools_prefix/bin"
       ]
     },
-    "name": "building posix_tool.run installation.do install",
+    "name": "building posix_tool.run installation.install.sh [START_DIR]/3pp/wd/posix_tool/linux-armv6l/1.2.0/out [START_DIR]/3pp/wd/posix_tool/linux-armv6l/1.2.0/deps_prefix",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
     ]
@@ -4010,7 +4010,7 @@
         "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/tools_prefix/bin"
       ]
     },
-    "name": "building tool.run installation.do install",
+    "name": "building tool.run installation.install.sh arm [START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/out [START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/deps_prefix",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
     ]
@@ -4599,7 +4599,7 @@
         "[START_DIR]/3pp/wd/pkg/linux-armv6l/2.0.0/tools_prefix/bin"
       ]
     },
-    "name": "building pkg.run installation.do install",
+    "name": "building pkg.run installation.install.sh [START_DIR]/3pp/wd/pkg/linux-armv6l/2.0.0/out [START_DIR]/3pp/wd/pkg/linux-armv6l/2.0.0/deps_prefix",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
     ]

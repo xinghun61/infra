@@ -26,67 +26,10 @@ def run_installation(api, workdir, spec):
     script = "install.sh"
     rest = my_args
 
-  script_path = workdir.script_dir(spec.name).join(script)
-
   env_prefixes = {
     'PATH': [workdir.tools_prefix, workdir.tools_prefix.join('bin')]
   }
   with api.context(cwd=workdir.checkout, env_prefixes=env_prefixes):
-    # TODO(iannucci): Actually just build toolchains (in 3pp) to run natively
-    # on all the different platforms, instead of relying on dockcross.
-    # TODO(iannucci): Add options to configure toolchain in 3pp.pb, e.g. to
-    # use clang instead of gcc, etc. Alternately, if we just build the cross
-    # compiler toolchains correctly as in the above TODO, we can just use the
-    # 'tool' mechanism.
-    if spec.platform.startswith('linux-'):
-      # dockerbuild platform names are different from CIPD's name for them.
-      dockerbuild_platform = {
-        'linux-armv6l': 'linux-armv6',
-        'linux-arm64': 'linux-arm64',
-        'linux-mips32': 'linux-mipsel',
-        'linux-mips64': 'linux-mips64',
-        'linux-amd64': 'manylinux-x64',
-        'linux-386': 'manylinux-x86',
-      }[spec.platform]
-
-      interpreter = {
-        'py': 'python',
-        'sh': 'bash',
-      }[script.rsplit('.', 1)[-1]]
-
-      cmd = [
-        'infra.tools.dockerbuild', 'run', '--platform', dockerbuild_platform,
-        '--workdir', workdir.base,
-      ]
-
-      env_args = [
-        ('--env-prefix', k, str(v))
-        for k, vs in api.context.env_prefixes.iteritems()
-        for v in vs
-      ] + [
-        ('--env-suffix', k, str(v))
-        for k, vs in api.context.env_suffixes.iteritems()
-        for v in vs
-      ] + [
-        ('--env', k, str(v))
-        for k, v in api.context.env.iteritems()
-      ]
-      for tup in env_args:
-        cmd.extend(tup)
-
-      cmd += ['--', interpreter, script_path] + rest
-
-      api.python('do install',
-        api.third_party_packages_ng.package_repo_resource('run.py'), cmd)
-      return
-
-    if spec.platform.startswith('mac-'):
-      ctx = api.osx_sdk('mac')
-    elif spec.platform.startswith('windows-'):
-      ctx = api.windows_sdk()
-    else:  # pragma: no cover
-      assert False, (
-        'Do not know which toolchain to use for %r' % (spec.platform,))
-
-    with ctx:
-      run_script.run_script(api, script_path, *rest)
+    run_script.run_script(api, workdir.script_dir(spec.name).join(script),
+                          *rest,
+                          compile_platform=spec.platform, workdir=workdir)
