@@ -7,6 +7,7 @@ DEPS = [
   'depot_tools/gclient',
   'depot_tools/infra_paths',
   'infra_checkout',
+  'recipe_engine/buildbucket',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/platform',
@@ -37,16 +38,17 @@ def RunSteps(api):
 def GenTests(api):
   yield (
       api.test('master_manager_config') +
-      api.properties.git_scheduled(
-          buildername='infradata_config',
-          buildnumber=123,
-          mastername='internal.infra',
-          repository='https://chrome-internal.googlesource.com/infradata'))
+      api.buildbucket.ci_build(
+          project='infra',
+          builder='infradata_config',
+          git_repo=(
+              'https://chrome-internal.googlesource.com/'
+              'infradata/master-manager')))
   yield (
       api.test('master_manager_config_patch') +
-      api.properties.git_scheduled(
-          buildername='infradata_config',
-          buildnumber=123,
-          mastername='internal.infra.try',
-          patch_project='infra-data-configs',
-          repository='https://chrome-internal.googlesource.com/infradata'))
+      api.buildbucket.try_build(
+          project='infra',
+          builder='infradata_config',
+          git_repo=(
+              'https://chrome-internal.googlesource.com/'
+              'infradata/master-manager')))

@@ -9,6 +9,7 @@ DEPS = [
   'depot_tools/bot_update',
   'depot_tools/gclient',
 
+  'recipe_engine/buildbucket',
   'recipe_engine/context',
   'recipe_engine/file',
   'recipe_engine/json',
@@ -72,10 +73,13 @@ def RunSteps(api, project_under_test, auth_with_account):
 def GenTests(api):
   yield (
       api.test('normal') +
-      api.properties.generic(
-          mastername='chromium.tools.build',
-          buildername='recipe simulation tester',
-          revision='deadbeaf',
+      api.buildbucket.ci_build(
+          project='infra',
+          builder='recipe simulation tester',
+          # This hardcodes test repo URL in luci_config/test_api.py
+          git_repo='https://repo.repo/build',
+      ) +
+      api.properties(
           project_under_test='build',
       ) +
       api.luci_config.get_projects(('build',)) +
@@ -87,10 +91,13 @@ def GenTests(api):
 
   yield (
       api.test('with_auth') +
-      api.properties.generic(
-          mastername='chromium.tools.build',
-          buildername='recipe simulation tester',
-          revision='deadbeaf',
+      api.buildbucket.ci_build(
+          project='infra',
+          builder='recipe simulation tester',
+          # This hardcodes test repo URL in luci_config/test_api.py
+          git_repo='https://repo.repo/build',
+      ) +
+      api.properties(
           project_under_test='build',
           auth_with_account='build_limited',
       ) +

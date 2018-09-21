@@ -138,8 +138,8 @@ def RunSteps(api):
     co.ensure_go_env()
 
     # Whatever is checked out by bot_update. It is usually equal to
-    # api.properties['revision'] except when the build was triggered manually
-    # ('revision' property is missing in that case).
+    # api.buildbucket.gitiles_commit.id except when the build was triggered
+    # manually (commit id is empty in that case).
     rev = co.bot_update_step.presentation.properties['got_revision']
     build_main(api, buildername, project_name, repo_url, rev)
 

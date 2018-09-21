@@ -17,7 +17,7 @@
       "--revision",
       "infra@origin/master",
       "--revision",
-      "infra/luci@1111111111111111111111111111111111111111"
+      "infra/luci@origin/master"
     ],
     "env_prefixes": {
       "PATH": [
@@ -32,7 +32,7 @@
       "@@@STEP_LOG_LINE@json.output@  \"did_run\": true, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"fixed_revisions\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"infra\": \"origin/master\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"infra/luci\": \"1111111111111111111111111111111111111111\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"infra/luci\": \"origin/master\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"manifest\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"infra/luci\": {@@@",

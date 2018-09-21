@@ -22,8 +22,7 @@ def GenTests(api):
       api.buildbucket.ci_build(
           'infra', 'ci', 'Luci-py linux-64',
           git_repo='https://chromium.googlesource.com/infra/luci/luci-py',
-      ) +
-      api.properties(revision='1'*40)
+      )
   )
 
   yield (

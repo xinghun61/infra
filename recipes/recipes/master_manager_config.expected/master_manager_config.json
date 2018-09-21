@@ -32,7 +32,9 @@
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
-      "infra_internal@c14d891d44f0afff64e56ed7c9702df1d807b1ee"
+      "infra-data-master-manager@2d72510e447ab60a9728aeea2362d8be2cbd7789",
+      "--revision",
+      "infra_internal@HEAD"
     ],
     "cwd": "[CACHE]/infra_internal_gclient_with_go",
     "env_prefixes": {
@@ -47,7 +49,8 @@
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"did_run\": true, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"fixed_revisions\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"infra_internal\": \"c14d891d44f0afff64e56ed7c9702df1d807b1ee\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"infra-data-master-manager\": \"2d72510e447ab60a9728aeea2362d8be2cbd7789\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"infra_internal\": \"HEAD\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"manifest\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"infra-data-master-manager\": {@@@",
