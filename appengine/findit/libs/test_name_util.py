@@ -10,8 +10,8 @@ _GTEST_PREFIXES = ['PRE_', '*']
 
 # Regular expressions to identify parameterized gtests. Note that instantiation
 # names can be empty. For example: ColorSpaceTest.testNullTransform/1.
-_VALUE_PARAMETEREZED_GTESTS_REGEX = re.compile(r'^(.+/)?(.+\..+)/[\d+\*]$')
-_TYPE_PARAMETERIZED_GTESTS_REGEX = re.compile(r'^(.+/)?(.+)/[\d+\*]\.(.+)$')
+_VALUE_PARAMETERIZED_GTESTS_REGEX = re.compile(r'^(.+/)?(.+\..+)/[\d\*]+$')
+_TYPE_PARAMETERIZED_GTESTS_REGEX = re.compile(r'^(.+/)?(.+)/[\d\*]+\.(.+)$')
 
 # Regular expression for a webkit_layout_test name.
 _LAYOUT_TEST_NAME_PATTERN = re.compile(r'^(([^/]+/)+[^/]+\.[a-zA-Z]+).*$')
@@ -36,7 +36,7 @@ def RemoveParametersFromGTestName(test_name):
   https://github.com/google/googletest/blob/master/googletest/docs/
   AdvancedGuide.md
   """
-  value_match = _VALUE_PARAMETEREZED_GTESTS_REGEX.match(test_name)
+  value_match = _VALUE_PARAMETERIZED_GTESTS_REGEX.match(test_name)
   if value_match:
     return value_match.group(2)
 
@@ -60,7 +60,7 @@ def ReplaceParametersFromGtestNameWithMask(test_name):
   Returns:
     A test name with parameters being replaced with '*'.
   """
-  value_match = _VALUE_PARAMETEREZED_GTESTS_REGEX.match(test_name)
+  value_match = _VALUE_PARAMETERIZED_GTESTS_REGEX.match(test_name)
   if value_match:
     suite_test = value_match.group(2)
     prefix_mask = '*/' if value_match.group(1) else ''

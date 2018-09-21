@@ -34,7 +34,7 @@ class TestNameUtilTest(wf_testcase.WaterfallTestCase):
         test_name_util.ReplaceAllPrefixesFromGtestNameWithMask(test))
 
   def testRemoveValueParametersFromGTestName(self):
-    test_name = 'A/ColorSpaceTest.testNullTransform/1'
+    test_name = 'A/ColorSpaceTest.testNullTransform/12'
     self.assertEqual('ColorSpaceTest.testNullTransform',
                      test_name_util.RemoveParametersFromGTestName(test_name))
 
@@ -44,13 +44,13 @@ class TestNameUtilTest(wf_testcase.WaterfallTestCase):
                      test_name_util.RemoveParametersFromGTestName(test_name))
 
   def testReplaceValueParametersFromGTestNameWithMask(self):
-    test_name = 'A/ColorSpaceTest.testNullTransform/1'
+    test_name = 'A/ColorSpaceTest.testNullTransform/12'
     self.assertEqual(
         '*/ColorSpaceTest.testNullTransform/*',
         test_name_util.ReplaceParametersFromGtestNameWithMask(test_name))
 
   def testRemoveValueParametersWithoutInstantiationName(self):
-    test_name = 'ColorSpaceTest.testNullTransform/1'
+    test_name = 'ColorSpaceTest.testNullTransform/12'
     self.assertEqual('ColorSpaceTest.testNullTransform',
                      test_name_util.RemoveParametersFromGTestName(test_name))
 
@@ -60,7 +60,7 @@ class TestNameUtilTest(wf_testcase.WaterfallTestCase):
                      test_name_util.RemoveParametersFromGTestName(test_name))
 
   def testReplaceValueParametersWithMaskWithoutInstantiationName(self):
-    test_name = 'ColorSpaceTest.testNullTransform/1'
+    test_name = 'ColorSpaceTest.testNullTransform/12'
     self.assertEqual(
         'ColorSpaceTest.testNullTransform/*',
         test_name_util.ReplaceParametersFromGtestNameWithMask(test_name))
