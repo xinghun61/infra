@@ -182,6 +182,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "already_uploaded",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64"
@@ -235,6 +236,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64"
@@ -266,6 +268,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -282,6 +285,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -307,6 +311,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -332,6 +337,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -367,6 +373,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -383,6 +390,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -408,6 +416,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -434,6 +443,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -477,6 +487,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -505,6 +516,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -533,6 +545,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -560,6 +573,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -593,6 +607,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -625,6 +640,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -650,6 +666,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -666,6 +683,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -691,6 +709,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -722,6 +741,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64"
@@ -746,6 +766,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64"
@@ -777,6 +798,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -793,6 +815,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -818,6 +841,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -840,6 +864,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -866,6 +891,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -898,6 +924,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -923,6 +950,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -939,6 +967,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -964,6 +993,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -995,6 +1025,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64"
@@ -1019,6 +1050,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64"
@@ -1050,6 +1082,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -1066,6 +1099,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -1081,6 +1115,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -1096,6 +1131,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -1117,6 +1153,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1144,6 +1181,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1177,6 +1215,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1194,6 +1233,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1210,6 +1250,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1236,6 +1277,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1270,6 +1312,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1296,6 +1339,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1321,6 +1365,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1344,6 +1389,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1368,6 +1414,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1401,6 +1448,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1426,6 +1474,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1450,6 +1499,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -1474,6 +1524,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1496,6 +1547,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1522,6 +1574,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1544,6 +1597,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1568,6 +1622,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1594,6 +1649,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1619,6 +1675,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1645,6 +1702,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1662,6 +1720,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1688,6 +1747,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1715,6 +1775,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1759,6 +1820,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1788,6 +1850,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1817,6 +1880,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1845,6 +1909,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1879,6 +1944,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1912,6 +1978,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1938,6 +2005,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1955,6 +2023,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1977,6 +2046,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -1993,6 +2063,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -2019,6 +2090,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
@@ -2050,6 +2122,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2072,6 +2145,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2087,6 +2161,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2110,6 +2185,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2142,6 +2218,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2158,6 +2235,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2173,6 +2251,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2196,6 +2275,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2228,6 +2308,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2253,6 +2334,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2288,6 +2370,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2304,6 +2387,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2329,6 +2413,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2355,6 +2440,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2398,6 +2484,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2426,6 +2513,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2454,6 +2542,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2481,6 +2570,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2514,6 +2604,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2546,6 +2637,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2571,6 +2663,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2587,6 +2680,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2612,6 +2706,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2642,6 +2737,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2674,6 +2770,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2696,6 +2793,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2720,6 +2818,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2736,6 +2835,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2761,6 +2861,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2787,6 +2888,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2830,6 +2932,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2858,6 +2961,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2886,6 +2990,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2913,6 +3018,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2946,6 +3052,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -2978,6 +3085,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3003,6 +3111,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3019,6 +3128,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3044,6 +3154,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3078,6 +3189,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64"
@@ -3109,6 +3221,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3125,6 +3238,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3150,6 +3264,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3175,6 +3290,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3201,6 +3317,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3225,6 +3342,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3254,6 +3372,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3278,6 +3397,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3302,6 +3422,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3333,6 +3454,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3358,6 +3480,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3374,6 +3497,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3399,6 +3523,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3425,6 +3550,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3468,6 +3594,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3496,6 +3623,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3524,6 +3652,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3551,6 +3680,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3584,6 +3714,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3616,6 +3747,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3641,6 +3773,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3657,6 +3790,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
@@ -3682,6 +3816,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",

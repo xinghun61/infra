@@ -26,6 +26,12 @@ message Spec {
   //   * $_3PP_VERSION - the version we're building, e.g. 1.2.3
   //   * $GOOS - The golang OS name we're targeting
   //   * $GOARCH - The golang architecture we're targeting
+  //   * $MACOSX_DEPLOYMENT_TARGET - On OS X, set to 10.10, for your
+  //     semi-up-to-date OS X building needs. This needs to be consistently
+  //     set for all packages or it will cause linker warnings/errors when
+  //     linking in static libs that were targeting a newer version (e.g.
+  //     if it was left unset). Binaries built with this set to 10.10 will not
+  //     run on 10.9 or older systems.
   //
   // Additionally, on cross-compile environments, the $CROSS_TRIPLE environment
   // variable is set to a GCC cross compile target triplet of cpu-vendor-os.

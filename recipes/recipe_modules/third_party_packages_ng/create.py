@@ -55,6 +55,8 @@ def build_resolved_spec(api, spec_lookup, cache, force_build, spec, version):
       'GOOS': spec.platform.split('-')[0].replace('mac', 'darwin'),
       'GOARCH': spec.platform.split('-')[1],
     }
+    if spec.platform.startswith('mac-'):
+      env['MACOSX_DEPLOYMENT_TARGET'] = '10.10'
     if spec.create_pb.source.patch_version:
       env['_3PP_PATCH_VERSION'] = spec.create_pb.source.patch_version
 

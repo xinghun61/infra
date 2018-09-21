@@ -364,6 +364,12 @@ set:
   * $_3PP_VERSION - the version we're building, e.g. 1.2.3
   * $GOOS - The golang OS name we're targeting
   * $GOARCH - The golang architecture we're targeting
+  * $MACOSX_DEPLOYMENT_TARGET - On OS X, set to 10.10, for your
+    semi-up-to-date OS X building needs. This needs to be consistently
+    set for all packages or it will cause linker warnings/errors when
+    linking in static libs that were targeting a newer version (e.g.
+    if it was left unset). Binaries built with this set to 10.10 will not
+    run on 10.9 or older systems.
 
 Additionally, on cross-compile environments, the $CROSS_TRIPLE environment
 variable is set to a GCC cross compile target triplet of cpu-vendor-os.
@@ -525,9 +531,9 @@ upload.
 As an example of the package definition layout in action, take a look at the
 [third_party_packages](/third_party_packages) folder in this infra.git repo.
 
-#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#332)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#338)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
-&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#477)(self, packages=(), platform='', force_build=False):**
+&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#483)(self, packages=(), platform='', force_build=False):**
 
 Executes entire {fetch,build,package,verify,upload} pipeline for all the
 packages listed, targeting the given platform.
@@ -543,9 +549,9 @@ Args:
 Returns (list[(cipd_pkg, cipd_version)], set[str]) of built CIPD packages
 and their tagged versions, as well as a list of unsupported packages.
 
-&mdash; **def [initialize](/recipes/recipe_modules/third_party_packages_ng/api.py#345)(self):**
+&mdash; **def [initialize](/recipes/recipe_modules/third_party_packages_ng/api.py#351)(self):**
 
-&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#427)(self, path):**
+&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#433)(self, path):**
 
 Loads all package definitions from the given path.
 
