@@ -14,27 +14,15 @@
  * Function that communicates with the server.
  * @param {string} projectName The proposed project name.
  */
-function checkProjectName(projectName) {
-  var createProjectUrl = '/hosting/createProject/checkProjectName.do';
-  var args = {
-    'project': projectName
+async function checkProjectName(projectName) {
+  const message = {
+    project_name: projectName
   };
-  CS_doPost(createProjectUrl, nameTaken, args);
-}
-
-/**
- * Function that evaluates the server response and sets the error message.
- * @param {event} event with xhr server's JSON response to the AJAX request.
- */
-function nameTaken(event) {
-  var xhr = event.target;
-  if (xhr.readyState != 4 || xhr.status != 200)
-    return;
-  var resp = CS_parseJSON(xhr);
-  var errorMessage = resp['error_message'];
-  document.getElementById('projectnamefeedback').textContent = errorMessage;
-  if (errorMessage != '') {
-    document.getElementById('submit_btn').disabled = 'disabled';
+  const response = await window.prpcClient.call(
+      'monorail.Projects', 'CheckProjectName', message);
+  if (response.error) {
+    $('projectnamefeedback').textContent = response.error;
+    $('submit_btn').disabled = 'disabled';
   }
 }
 

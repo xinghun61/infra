@@ -85,8 +85,8 @@ runOnLoad(function() {
         feedback.textContent = "Project name cannot end with a '-'";
       } else {
         feedback.textContent = '';
-        checkname()
-        checksubmit()
+        checkname();
+        checksubmit();
       }
     }
   }
