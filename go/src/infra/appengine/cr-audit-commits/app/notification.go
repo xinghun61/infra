@@ -87,8 +87,8 @@ func commentOnBugToAcknowledgeMerge(ctx context.Context, cfg *RepoConfig, rc *Re
 	if !ok {
 		return "", fmt.Errorf("MilestoneNumber not specified in repository configuration")
 	}
-
-	mergeAckLabel := fmt.Sprintf("Merge-Merged-%s-%s", milestone, cfg.BranchName)
+	branchName := strings.Replace(cfg.BranchName, "refs/branch-heads/", "", -1)
+	mergeAckLabel := fmt.Sprintf("Merge-Merged-%s-%s", milestone, branchName)
 	mergeLabel := fmt.Sprintf("-Merge-Approved-%s", milestone)
 	labels := []string{mergeLabel, mergeAckLabel}
 	for _, result := range rc.Result {
@@ -110,7 +110,7 @@ func commentOnBugToAcknowledgeMerge(ctx context.Context, cfg *RepoConfig, rc *Re
 						logging.WithError(err).Errorf(ctx, "Found an invalid Monorail bug %s on relevant commit %s", bugNumber, rc.CommitHash)
 						continue
 					}
-					mergeAckComment := "The following revision refers to this bug: %s\nCommit: %s\nAuthor: %s\nCommiter: %s\nDate: %s\n%s"
+					mergeAckComment := "The following revision refers to this bug: \n%s\n\nCommit: %s\nAuthor: %s\nCommiter: %s\nDate: %s\n\n%s"
 					comment := fmt.Sprintf(mergeAckComment, cfg.LinkToCommit(rc.CommitHash), rc.CommitHash, rc.AuthorAccount, rc.CommitterAccount, rc.CommitTime, rc.CommitMessage)
 					err = postComment(ctx, cfg, int32(vIssue.Id), comment, cs, labels)
 					if err != nil {
