@@ -747,3 +747,50 @@ class FeaturesServicerTest(unittest.TestCase):
 
     self.assertEqual('Foo', hotlist_1.items[0].note)
     self.assertEqual('Foo', hotlist_2.items[0].note)
+
+  def testUpdateHotlistIssueNote(self):
+    hotlist = self.services.features.CreateHotlist(
+        self.cnxn, 'Hotlist-1', 'Summary', 'Description', owner_ids=[111L],
+        editor_ids=[])
+    self.services.features.AddIssuesToHotlists(
+        self.cnxn,
+        [hotlist.hotlist_id], [(self.issue_1.issue_id, 111L, 0, '')],
+        None, None, None)
+
+    request = features_pb2.UpdateHotlistIssueNoteRequest(
+        hotlist_ref=common_pb2.HotlistRef(
+            name='Hotlist-1',
+            owner=common_pb2.UserRef(user_id=111L)),
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        note='Note')
+
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    self.CallWrapped(self.features_svcr.UpdateHotlistIssueNote, mc, request)
+
+    self.assertEqual('Note', hotlist.items[0].note)
+
+  def testUpdateHotlistIssueNote_NotAllowed(self):
+    hotlist = self.services.features.CreateHotlist(
+        self.cnxn, 'Hotlist-1', 'Summary', 'Description', owner_ids=[222L],
+        editor_ids=[])
+    self.services.features.AddIssuesToHotlists(
+        self.cnxn,
+        [hotlist.hotlist_id], [(self.issue_1.issue_id, 222L, 0, '')],
+        None, None, None)
+
+    request = features_pb2.UpdateHotlistIssueNoteRequest(
+        hotlist_ref=common_pb2.HotlistRef(
+            name='Hotlist-1',
+            owner=common_pb2.UserRef(user_id=222L)),
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        note='Note')
+
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.features_svcr.UpdateHotlistIssueNote, mc, request)

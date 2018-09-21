@@ -1773,6 +1773,60 @@ class WorkEnvTest(unittest.TestCase):
       with self.work_env as we:
         we.AddIssuesToHotlists([1, 2, 3], [4, 5, 6], None)
 
+  def testUpdateHotlistIssueNote(self):
+    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+
+    hotlist = self.work_env.services.features.CreateHotlist(
+            self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+            owner_ids=[111L], editor_ids=[])
+    self.AddIssueToHotlist(hotlist.hotlist_id, issue.issue_id)
+
+    self.SignIn()
+    with self.work_env as we:
+      we.UpdateHotlistIssueNote(hotlist.hotlist_id, 78901, 'Note')
+
+    self.assertEqual('Note', hotlist.items[0].note)
+
+  def testUpdateHotlistIssueNote_IssueNotInHotlist(self):
+    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+
+    hotlist = self.work_env.services.features.CreateHotlist(
+            self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+            owner_ids=[111L], editor_ids=[])
+
+    self.SignIn()
+    with self.assertRaises(exceptions.InputException):
+      with self.work_env as we:
+        we.UpdateHotlistIssueNote(hotlist.hotlist_id, 78901, 'Note')
+
+  def testUpdateHotlistIssueNote_NoSuchIssue(self):
+    hotlist = self.work_env.services.features.CreateHotlist(
+            self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+            owner_ids=[111L], editor_ids=[])
+
+    self.SignIn()
+    with self.assertRaises(exceptions.NoSuchIssueException):
+      with self.work_env as we:
+        we.UpdateHotlistIssueNote(hotlist.hotlist_id, 78901, 'Note')
+
+  def testUpdateHotlistIssueNote_CantEditHotlist(self):
+    hotlist = self.work_env.services.features.CreateHotlist(
+            self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+            owner_ids=[111L], editor_ids=[])
+
+    self.SignIn(333L)
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        we.UpdateHotlistIssueNote(hotlist.hotlist_id, 78901, 'Note')
+
+  def testUpdateHotlistIssueNote_NoSuchHotlist(self):
+    self.SignIn()
+    with self.assertRaises(features_svc.NoSuchHotlistException):
+      with self.work_env as we:
+        we.UpdateHotlistIssueNote(1234, 78901, 'Note')
+
   # FUTURE: UpdateHotlist()
   # FUTURE: DeleteHotlist()
 

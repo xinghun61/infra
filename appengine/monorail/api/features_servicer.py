@@ -260,3 +260,19 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
 
     result = features_pb2.AddIssuesToHotlistsResponse()
     return result
+
+  @monorail_servicer.PRPCMethod
+  def UpdateHotlistIssueNote(self, mc, request):
+    hotlist_id = converters.IngestHotlistRef(
+        mc.cnxn, self.services.user, self.services.features,
+        request.hotlist_ref)
+    issue_id = converters.IngestIssueRefs(
+        mc.cnxn, [request.issue_ref], self.services)[0]
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      project = we.GetProjectByName(request.issue_ref.project_name)
+      mc.LookupLoggedInUserPerms(project)
+      we.UpdateHotlistIssueNote(hotlist_id, issue_id, request.note)
+
+    result = features_pb2.UpdateHotlistIssueNoteResponse()
+    return result

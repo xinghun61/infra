@@ -1432,6 +1432,34 @@ class WorkEnv(object):
           self.mc.cnxn, hotlist_ids, issues_to_add, self.services.issue,
           self.services.chart)
 
+  def UpdateHotlistIssueNote(self, hotlist_id, issue_id, note):
+    """Update the given issue of the given hotlist with the given note.
+
+    Args:
+      hotlist_id: an int with the id of the hotlist.
+      issue_id: an int with the id of the issue.
+      note: a string with a message to record for the given issue.
+    Raises:
+      PermissionException: The user has no permission to edit the hotlist.
+      NoSuchHotlistException: The hotlist id was not found.
+      InputException: The issue is not part of the hotlist.
+    """
+    # Make sure the hotlist exists and we have permission to see and edit it.
+    hotlist = self.GetHotlist(hotlist_id)
+    self._AssertUserCanEditHotlist(hotlist)
+
+    # Make sure the issue exists and we have permission to see it.
+    self.GetIssue(issue_id)
+
+    # Make sure the issue belongs to the hotlist.
+    if not any(item.issue_id == issue_id for item in hotlist.items):
+      raise exceptions.InputException('The issue is not part of the hotlist.')
+
+    with self.mc.profiler.Phase(
+        'Editing note for issue %s in hotlist %s' % (issue_id, hotlist_id)):
+      new_notes = {issue_id: note}
+      self.services.features.UpdateHotlistItemsFields(
+          self.mc.cnxn, hotlist_id, new_notes=new_notes)
 
   # FUTURE: UpdateHotlist()
   # FUTURE: DeleteHotlist()

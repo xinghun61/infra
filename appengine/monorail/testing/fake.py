@@ -1942,11 +1942,11 @@ class FeaturesService(object):
       new_ranks = {}
     if new_notes is None:
       new_notes = {}
-    for hotlist_issue in hotlist.iid_rank_pairs:
-      if hotlist_issue.issue_id in new_ranks:
-        hotlist_issue.rank = new_ranks[hotlist_issue.issue_id]
-      if hotlist_issue.issue_id in new_notes:
-        hotlist_issue.note = new_notes[hotlist_issue.issue_id]
+    for hotlist_item in hotlist.items:
+      if hotlist_item.issue_id in new_ranks:
+        hotlist_item.rank = new_ranks[hotlist_item.issue_id]
+      if hotlist_item.issue_id in new_notes:
+        hotlist_item.note = new_notes[hotlist_item.issue_id]
 
   def LookupUserHotlists(self, cnxn, user_ids):
     """Return dict of {user_id: [hotlist_id, hotlist_id...]}."""
