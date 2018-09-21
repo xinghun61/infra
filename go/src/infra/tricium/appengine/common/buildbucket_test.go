@@ -27,13 +27,7 @@ func TestParametersJSON(t *testing.T) {
 			CipdVersion: "live",
 			Properties:  "{\"enable\":\"all\"}",
 		}}
-		gerrit := map[string]string{
-			"gerrit_project":   "infra",
-			"gerrit_change":    "ChangeId",
-			"gerrit_cl_number": "1234",
-			"gerrit_patch_set": "2",
-		}
-		actual_bytes, err := swarmingParametersJSON(w, recipe, gerrit)
+		actual_bytes, err := swarmingParametersJSON(w, recipe)
 		So(err, ShouldBeNil)
 		actual := make(map[string]interface{})
 		err = json.Unmarshal([]byte(actual_bytes), &actual)
@@ -42,12 +36,6 @@ func TestParametersJSON(t *testing.T) {
 			"builder_name": "tricium",
 			"properties": map[string]interface{}{
 				"enable": "all",
-				"gerrit_props": map[string]interface{}{
-					"gerrit_project":   "infra",
-					"gerrit_change":    "ChangeId",
-					"gerrit_cl_number": "1234",
-					"gerrit_patch_set": "2",
-				},
 			},
 			"swarming": map[string]interface{}{
 				"override_builder_cfg": map[string]interface{}{

@@ -49,7 +49,7 @@ func (s buildbucketServer) Trigger(c context.Context, params *TriggerParameters)
 		return nil, errors.Annotate(err, "buildbucket client function must be a recipe").Err()
 	}
 
-	parametersJSON, err := swarmingParametersJSON(params.Worker, recipe, params.GerritProps)
+	parametersJSON, err := swarmingParametersJSON(params.Worker, recipe)
 	if err != nil {
 		return nil, err
 	}
@@ -116,8 +116,8 @@ func (s buildbucketServer) Collect(c context.Context, params *CollectParameters)
 	return result, nil
 }
 
-func swarmingParametersJSON(worker *admin.Worker, recipe *admin.Worker_Recipe, gerritProps map[string]string) (string, error) {
-	// Prepare swarming overrides.
+func swarmingParametersJSON(worker *admin.Worker, recipe *admin.Worker_Recipe) (string, error) {
+	// Set up properties.
 	properties := make(map[string]interface{})
 	if recipe.Recipe.Properties != "" {
 		err := json.Unmarshal([]byte(recipe.Recipe.Properties), &properties)
@@ -125,7 +125,7 @@ func swarmingParametersJSON(worker *admin.Worker, recipe *admin.Worker_Recipe, g
 			return "", errors.Annotate(err, "failed to unmarshal").Err()
 		}
 	}
-	properties["gerrit_props"] = gerritProps
+
 	parameters := map[string]interface{}{
 		"builder_name": "tricium",
 		"properties":   properties,

@@ -76,6 +76,7 @@ func TestHelperFunctions(t *testing.T) {
 			GitURL:        "http://my-gerrit.com/my-project",
 			GitRef:        "refs/changes/97/597/2",
 			Paths:         []string{"README.md"},
+			GerritHost:    "http://my-gerrit-review.com/my-project",
 			GerritProject: "my-project",
 			GerritChange:  "my-project~master~I8473b95934b5732ac55d26311a706c9c2bde9940",
 		}), ShouldBeNil)
@@ -89,12 +90,15 @@ func TestHelperFunctions(t *testing.T) {
 		}), ShouldBeNil)
 
 		Convey("Swarming tags include Gerrit details for Gerrit requests", func() {
-			gerrit := fetchGerritDetails(ctx, 123)
-			So(gerrit.project, ShouldEqual, "my-project")
-			So(gerrit.change, ShouldEqual, "my-project~master~I8473b95934b5732ac55d26311a706c9c2bde9940")
-			So(gerrit.cl, ShouldEqual, "597")
-			So(gerrit.patch, ShouldEqual, "2")
-			So(swarmingTags(ctx, "Spacey_UBUNTU", 123, gerrit), ShouldResemble, []string{
+			patch := fetchPatchDetails(ctx, 123)
+			So(patch.GitilesHost, ShouldEqual, "http://my-gerrit.com/my-project")
+			So(patch.GitilesProject, ShouldEqual, "my-luci-config-project-id")
+			So(patch.GerritHost, ShouldEqual, "http://my-gerrit-review.com/my-project")
+			So(patch.GerritProject, ShouldEqual, "my-project")
+			So(patch.GerritChange, ShouldEqual, "my-project~master~I8473b95934b5732ac55d26311a706c9c2bde9940")
+			So(patch.GerritCl, ShouldEqual, "597")
+			So(patch.GerritPatch, ShouldEqual, "2")
+			So(getTags(ctx, "Spacey_UBUNTU", 123, patch), ShouldResemble, []string{
 				"function:Spacey",
 				"platform:UBUNTU",
 				"run_id:123",
@@ -103,28 +107,18 @@ func TestHelperFunctions(t *testing.T) {
 				"gerrit_change:my-project~master~I8473b95934b5732ac55d26311a706c9c2bde9940",
 				"gerrit_cl_number:597",
 				"gerrit_patch_set:2",
+				"buildset:patch/gerrit/http://my-gerrit-review.com/my-project/597/2",
 			})
 		})
 
-		Convey("Gerrit props populate Gerrit details for Gerrit requests", func() {
-			gerrit := fetchGerritDetails(ctx, 123)
-			So(gerrit.project, ShouldEqual, "my-project")
-			So(gerrit.change, ShouldEqual, "my-project~master~I8473b95934b5732ac55d26311a706c9c2bde9940")
-			So(gerrit.cl, ShouldEqual, "597")
-			So(gerrit.patch, ShouldEqual, "2")
-			gerritProps := gerritProperties(ctx, gerrit)
-			So(gerritProps["gerrit_project"], ShouldEqual, "my-project")
-			So(gerritProps["gerrit_change"], ShouldEqual, "my-project~master~I8473b95934b5732ac55d26311a706c9c2bde9940")
-			So(gerritProps["gerrit_cl_number"], ShouldEqual, "597")
-			So(gerritProps["gerrit_patch_set"], ShouldEqual, "2")
-		})
-
-		var gerritProps gerritDetails
-
 		Convey("Swarming tags omit Gerrit details for non-Gerrit requests", func() {
-			gerrit := fetchGerritDetails(ctx, 321)
-			So(gerrit, ShouldResemble, gerritProps)
-			So(swarmingTags(ctx, "Pylint_UBUNTU", 321, gerrit), ShouldResemble, []string{
+			patch := fetchPatchDetails(ctx, 321)
+			expected := common.PatchDetails{
+				GitilesHost:    "http://my-nongerrit.com/repo-url",
+				GitilesProject: "another-luci-config-project-id",
+			}
+			So(patch, ShouldResemble, expected)
+			So(getTags(ctx, "Pylint_UBUNTU", 321, patch), ShouldResemble, []string{
 				"function:Pylint",
 				"platform:UBUNTU",
 				"run_id:321",
@@ -133,9 +127,9 @@ func TestHelperFunctions(t *testing.T) {
 		})
 
 		Convey("Swarming tags omit Gerrit details if run not found", func() {
-			gerrit := fetchGerritDetails(ctx, 789)
-			So(gerrit, ShouldResemble, gerritProps)
-			So(swarmingTags(ctx, "Spacey_UBUNTU", 789, gerrit), ShouldResemble, []string{
+			patch := fetchPatchDetails(ctx, 789)
+			So(patch, ShouldResemble, common.PatchDetails{})
+			So(getTags(ctx, "Spacey_UBUNTU", 789, patch), ShouldResemble, []string{
 				"function:Spacey",
 				"platform:UBUNTU",
 				"run_id:789",
@@ -144,7 +138,7 @@ func TestHelperFunctions(t *testing.T) {
 		})
 
 		Convey("Swarming tags are nil for invalid worker names", func() {
-			So(swarmingTags(ctx, "invalidworker", 1, gerritProps), ShouldBeNil)
+			So(getTags(ctx, "invalidworker", 1, common.PatchDetails{}), ShouldBeNil)
 		})
 	})
 }

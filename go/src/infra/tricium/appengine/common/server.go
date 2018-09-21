@@ -23,6 +23,17 @@ const (
 	Failure
 )
 
+// PatchDetails contains information about the Gerrit and Gitiles patchset.
+type PatchDetails struct {
+	GitilesHost    string
+	GitilesProject string
+	GerritHost     string
+	GerritProject  string
+	GerritChange   string
+	GerritCl       string
+	GerritPatch    string
+}
+
 // TriggerParameters contains the parameters for a Trigger call to a TaskServerAPI.
 type TriggerParameters struct {
 	Server           string
@@ -31,7 +42,7 @@ type TriggerParameters struct {
 	WorkerIsolate    string
 	PubsubUserdata   string
 	Tags             []string
-	GerritProps      map[string]string
+	Patch            PatchDetails
 }
 
 // TriggerResult contains the return value of a Trigger call to a TaskServerAPI.
