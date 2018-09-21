@@ -14,7 +14,6 @@ CHECK_PROJECT_NAME_JSON = '/hosting/createProject/checkProjectName'
 GROUP_LIST = '/g/'
 GROUP_CREATE = '/hosting/createGroup'
 GROUP_DELETE = '/hosting/deleteGroup'
-UPDATE_ISSUES_IN_HOTLISTS = '/hosting/updateHotlists'
 
 # URLs of project pages
 SUMMARY = '/'  # Now just a redirect to /issues/list
@@ -88,9 +87,6 @@ HOTLIST_DETAIL = '/details'
 HOTLIST_RERANK_JSON = '/rerank'
 HOTLIST_NEW_NOTES_JSON = '/updatenote'
 
-# URL of JSON feed for the "My hotlists" menu
-USER_HOTLISTS_JSON = '/hosting/hotlists'
-
 # URLs of issue tracker project pages
 ISSUE_APPROVAL = '/issues/approval'
 ISSUE_LIST = '/issues/list'
@@ -153,6 +149,5 @@ ARTIFACT_COLLISION = '/collision'
 CLIENT_MON = '/_/clientmon'
 
 CSP_REPORT = '/csp'
-TOKEN_REFRESH = '/hosting/tokenRefresh'
 
 SPAM_MODERATION_QUEUE = '/spamqueue'

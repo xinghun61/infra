@@ -40,7 +40,6 @@ from framework import trimvisitedpages
 from framework import framework_bizobj
 from framework import reap
 from framework import registerpages_helpers
-from framework import tokenrefresh
 from framework import urls
 from framework import warmup
 
@@ -79,7 +78,6 @@ from tracker import componentdetail
 from tracker import fieldcreate
 from tracker import fielddetail
 from tracker import issueapproval
-from tracker import issueupdatehotlists
 from tracker import issueadmin
 from tracker import issueadvsearch
 from tracker import issueattachment
@@ -303,7 +301,6 @@ class ServletRegistry(object):
     """Register page and form handlers for framework functionality."""
     self._SetupServlets({
         urls.CSP_REPORT: csp_report.CSPReportPage,
-        urls.TOKEN_REFRESH: tokenrefresh.TokenRefresh,
 
         # These are only shown to users if specific conditions are met.
         urls.NONPROJECT_COLLISION: artifactcollision.ArtifactCollision,
@@ -336,13 +333,11 @@ class ServletRegistry(object):
         urls.CHECK_PROJECT_NAME_JSON: projectcreate.CheckProjectNameJSON,
         # The user settings page is a site-wide servlet, not under /u/.
         urls.USER_SETTINGS: usersettings.UserSettings,
-        urls.USER_HOTLISTS_JSON: userhotlistsmenu.HotlistsJsonFeed,
         urls.HOSTING_HOME: hostinghome.HostingHome,
         urls.GROUP_CREATE: groupcreate.GroupCreate,
         urls.GROUP_LIST: grouplist.GroupList,
         urls.GROUP_DELETE: grouplist.GroupList,
         urls.HOTLIST_CREATE: hotlistcreate.HotlistCreate,
-        urls.UPDATE_ISSUES_IN_HOTLISTS: issueupdatehotlists.UpdateHotlists,
         urls.BAN_SPAMMER_TASK: banspammer.BanSpammerTask,
         })
 
