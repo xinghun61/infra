@@ -1,0 +1,22 @@
+<script>
+  (function(window) {
+    const MetadataMixin = (superClass) => {
+      return class extends superClass {
+        _valuesForField(fieldValueMap, fieldName, phaseName) {
+          if (!fieldValueMap) return [];
+          return fieldValueMap.get(
+            this._makeFieldValueMapKey(fieldName, phaseName)) || [];
+        }
+        _makeFieldValueMapKey(fieldName, phaseName) {
+          let key = [fieldName];
+          if (phaseName) {
+            key.push(phaseName);
+          }
+          return key.join(' ');
+        }
+      }
+    };
+
+    window.MetadataMixin = MetadataMixin;
+  })(window);
+</script>

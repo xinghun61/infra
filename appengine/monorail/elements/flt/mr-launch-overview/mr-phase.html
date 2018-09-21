@@ -1,14 +1,28 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 
 <link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../../bower_components/chopsui/chops-dialog.html">
 
+<link rel="import" href="../../redux/selectors.html">
+<link rel="import" href="../../redux/redux-mixin.html">
 <link rel="import" href="../mr-approval-card/mr-approval-card.html">
+<link rel="import" href="../mr-edit-metadata/mr-edit-metadata.html">
+<link rel="import" href="../mr-metadata/mr-field-values.html">
+<link rel="import" href="../shared/metadata-mixin.html">
+<link rel="import" href="../shared/mr-flt-styles.html">
 
 <dom-module id="mr-phase">
   <template>
-    <style>
+    <style include="mr-flt-styles">
       :host {
         display: block;
+      }
+      chops-dialog {
+        font-size: 85%;
+        --chops-dialog-theme: {
+          width: 500px;
+          max-width: 100%;
+        };
       }
       h2 {
         margin: 0;
@@ -16,31 +30,56 @@
         font-weight: normal;
         padding: 0.5em 8px;
         box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        flex-direction: row;
+        justify-content: space-between;
       }
       h2 em {
         margin-left: 16px;
         font-size: 80%;
       }
+      .dialog-actions {
+        text-align: right;
+      }
+      .phase-edit {
+        padding: 0.1em 8px;
+      }
     </style>
-    <iron-ajax
-        auto
-        url="https://chromepmo.appspot.com/schedule/mstone/json?mstone=[[phase.target]]"
-        handle-as="json"
-        last-response="{{_milestoneData}}">
-    </iron-ajax>
+    <template is="dom-if" if="[[target]]">
+      <iron-ajax
+          auto
+          url="https://chromepmo.appspot.com/schedule/mstone/json?mstone=[[target]]"
+          handle-as="json"
+          last-response="{{_milestoneData}}">
+      </iron-ajax>
+    </template>
     <h2>
-      Approvals<span hidden$="[[!phaseName]]">:
-        [[phaseName]]
-      </span>
-      <template is="if" dom-if="[[status]]">
-        <span hidden>
-           - [[status]] [[target]]
+      <span>
+        Approvals<span hidden$="[[_isEmpty(phaseName)]]">:
+          [[phaseName]]
         </span>
-      </template>
-      <em hidden$="[[!_nextDate]]">
-        [[_dateDescriptor]]
-        <chops-timestamp date="[[_nextDate]]"></chops-timestamp>
-      </em>
+        <span hidden$="[[!_setPhaseFields.length]]">
+          -
+          <template is="dom-repeat" items="[[_setPhaseFields]]" as="field">
+            [[field.fieldRef.fieldName]]
+            <mr-field-values
+              name="[[field.fieldRef.fieldName]]"
+              type="[[field.fieldRef.type]]"
+              values="[[_valuesForField(fieldValueMap, field.fieldRef.fieldName, phaseName)]]"
+              project-name="[[projectName]]"
+            ></mr-field-values><span hidden$="[[_isLastItem(_setPhaseFields.length, index)]]">;
+          </template>
+          <em hidden$="[[!_nextDate]]">
+            [[_dateDescriptor]]
+            <chops-timestamp timestamp="[[_nextDate]]"></chops-timestamp>
+          </em>
+        </span>
+      </span>
+      <chops-button hidden$="[[_isEmpty(phaseName)]]" on-click="edit" class="de-emphasized phase-edit">
+        <iron-icon icon="create"></iron-icon>
+        Edit
+      </chops-button>
     </h2>
     <template is="dom-repeat" items="[[approvals]]">
       <mr-approval-card
@@ -59,6 +98,28 @@
     <template is="dom-if" if="[[!approvals.length]]">
       No tasks for this phase.
     </template>
+    <chops-dialog id="editPhase" aria-labelledby="phaseDialogTitle">
+      <h3 id="phaseDialogTitle">
+        Editing phase: [[phaseName]]
+      </h3>
+      <mr-edit-metadata
+        id="metadataForm"
+        field-defs="[[fieldDefs]]"
+        field-values="[[fieldValues]]"
+        phase-name="[[phaseName]]"
+        is-approval
+      ></mr-edit-metadata>
+      <div class="dialog-actions">
+        <chops-button on-click="cancel" class="de-emphasized">
+          <iron-icon icon="close"></iron-icon>
+          Cancel
+        </chops-button>
+        <chops-button on-click="save" class="emphasized">
+          <iron-icon icon="create"></iron-icon>
+          Save changes
+        </chops-button>
+      </div>
+    </chops-dialog>
   </template>
   <script src="./mr-phase.js"></script>
 <dom-module>

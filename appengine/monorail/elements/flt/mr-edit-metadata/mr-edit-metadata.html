@@ -1,6 +1,7 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../redux/redux-mixin.html">
 <link rel="import" href="../../redux/selectors.html">
+<link rel="import" href="../shared/metadata-mixin.html">
 <link rel="import" href="./mr-edit-field.html">
 
 <dom-module id="mr-edit-metadata">
@@ -78,21 +79,23 @@
           <label for="summaryInput">Summary:</label>
           <input id="summaryInput" value$="[[summary]]" />
         </template>
-        <label for="statusInput">Status:</label>
+        <template is="dom-if" if="[[statuses.length]]">
+          <label for="statusInput">Status:</label>
 
-        <select id="statusInput">
-          <template is="dom-repeat" items="[[statuses]]">
-            <option
-              value$="[[item.status]]"
-              selected$="[[_computeIsSelected(status, item.status)]]"
-            >
-              [[item.status]]
-              <template is="dom-if" if="[[item.docstring]]">
-                - [[item.docstring]]
-              </template>
-            </option>
-          </template>
-        </select>
+          <select id="statusInput">
+            <template is="dom-repeat" items="[[statuses]]">
+              <option
+                value$="[[item.status]]"
+                selected$="[[_computeIsSelected(status, item.status)]]"
+              >
+                [[item.status]]
+                <template is="dom-if" if="[[item.docstring]]">
+                  - [[item.docstring]]
+                </template>
+              </option>
+            </template>
+          </select>
+        </template>
 
 
         <template is="dom-if" if="[[!isApproval]]">
@@ -145,7 +148,7 @@
             name="[[field.fieldRef.fieldName]]"
             type="[[field.fieldRef.type]]"
             options="[[_optionsForField(projectConfig.labelDefs, field.fieldRef.fieldName)]]"
-            initial-values="[[_valuesForField(_fieldValueMap, field.fieldRef.fieldName)]]"
+            initial-values="[[_valuesForField(_fieldValueMap, field.fieldRef.fieldName, phaseName)]]"
             multi="[[field.isMultivalued]]"
           ></mr-edit-field>
         </template>

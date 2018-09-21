@@ -35,11 +35,15 @@
         if (!fieldValues) return new Map();
         const acc = new Map();
         for (const v of fieldValues) {
-          const fieldName = v.fieldRef.fieldName;
-          if (acc.has(fieldName)) {
-            acc.get(fieldName).push(v.value);
+          let key = [v.fieldRef.fieldName];
+          if (v.phaseRef && v.phaseRef.phaseName) {
+            key.push(v.phaseRef.phaseName);
+          }
+          key = key.join(' ');
+          if (acc.has(key)) {
+            acc.get(key).push(v.value);
           } else {
-            acc.set(fieldName, [v.value]);
+            acc.set(key, [v.value]);
           }
         }
         return acc;
@@ -70,6 +74,13 @@
         });
       }
     );
+    const fieldDefsForPhases = createSelector(
+      fieldDefs,
+      (fieldDefs) => {
+        if (!fieldDefs) return [];
+        return fieldDefs.filter(f => f.isPhaseField);
+      }
+    );
     const fieldDefsByApprovalName = createSelector(
       fieldDefs,
       (fieldDefs) => {
@@ -95,6 +106,7 @@
       issueType,
       issueFieldValueMap,
       fieldDefsForIssue,
+      fieldDefsForPhases,
       fieldDefsByApprovalName,
     });
 

@@ -6,7 +6,7 @@
  * Editing form for either an approval or the overall issue.
  *
  */
-class MrEditMetadata extends ReduxMixin(Polymer.Element) {
+class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
   static get is() {
     return 'mr-edit-metadata';
   }
@@ -34,10 +34,6 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
         type: Array,
         value: () => [],
       },
-      fieldValues: {
-        type: Array,
-        value: () => [],
-      },
       status: String,
       statuses: {
         type: Array,
@@ -56,6 +52,7 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
         type: Array,
         value: () => [],
       },
+      phaseName: String,
       projectConfig: {
         type: String,
         statePath: 'projectConfig',
@@ -99,20 +96,21 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
       if (this.isApprover) {
         Polymer.dom(this.root).querySelector('#approversInput').reset();
       }
-    } else {
-      Polymer.dom(this.root).querySelectorAll('mr-edit-field').forEach((el) => {
-        el.reset();
-      });
     }
+    Polymer.dom(this.root).querySelectorAll('mr-edit-field').forEach((el) => {
+      el.reset();
+    });
   }
 
   getDelta() {
     const result = {};
     const root = Polymer.dom(this.root);
 
-    const newStatus = this.$.statusInput.value;
-    if (newStatus !== this.status) {
-      result['status'] = newStatus;
+    if (this.$.statusInput) {
+      const newStatus = this.$.statusInput.value;
+      if (newStatus !== this.status) {
+        result['status'] = newStatus;
+      }
     }
 
     const commentContent = this.$.commentText.value;
@@ -263,11 +261,6 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
       }
     }
     return options;
-  }
-
-  _valuesForField(fieldValueMap, name) {
-    if (!fieldValueMap) return [];
-    return fieldValueMap.get(name) || [];
   }
 
   _fieldIsHidden(showNicheFields, isNiche) {

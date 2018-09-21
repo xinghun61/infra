@@ -17,7 +17,10 @@ class MrFieldValues extends Polymer.Element {
       name: String,
       type: Object,
       projectName: String,
-      values: Array,
+      values: {
+        type: Array,
+        value: () => [],
+      },
     };
   }
 

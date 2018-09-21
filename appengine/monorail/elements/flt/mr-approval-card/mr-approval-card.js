@@ -58,10 +58,6 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
       approvalComments: Array,
       phaseName: String,
       setter: Object,
-      fieldValues: {
-        type: Array,
-        statePath: 'issue.fieldValues',
-      },
       fieldDefs: {
         type: Array,
         computed:

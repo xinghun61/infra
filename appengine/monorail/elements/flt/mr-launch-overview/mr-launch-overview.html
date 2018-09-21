@@ -24,7 +24,7 @@
       <mr-phase phase-name="[[phase.phaseRef.phaseName]]" approvals="[[_approvalsForPhase(approvals, phase.phaseRef.phaseName)]]"></mr-phase>
     </template>
     <template is="dom-if" if="[[_phaselessApprovals.length]]">
-      <mr-phase phase-name="Reviews" approvals="[[_phaselessApprovals]]"></mr-phase>
+      <mr-phase approvals="[[_phaselessApprovals]]"></mr-phase>
     </template>
   </template>
   <script src="./mr-launch-overview.js"></script>

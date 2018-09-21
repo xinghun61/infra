@@ -17,6 +17,9 @@
         transition: filter 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
         font-family: Roboto, Noto, sans-serif;
       }
+      :host([hidden]) {
+        display: none;
+      }
       :host([raised]) {
         box-shadow: 0px 2px 8px -1px hsla(0, 0%, 0%, 0.5);
       }

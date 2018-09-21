@@ -6,7 +6,7 @@
  * Generalized metadata for either approvals or issues.
  *
  */
-class MrMetadata extends ReduxMixin(Polymer.Element) {
+class MrMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
   static get is() {
     return 'mr-metadata';
   }
@@ -19,7 +19,6 @@ class MrMetadata extends ReduxMixin(Polymer.Element) {
       cc: Array,
       components: Array,
       fieldDefs: Array,
-      fieldValues: Array,
       fieldGroups: {
         type: Array,
         // TODO(zhangtiff): Remove this hardcoded data once backend custom
@@ -42,6 +41,7 @@ class MrMetadata extends ReduxMixin(Polymer.Element) {
       blockedOn: Array,
       blocking: Array,
       owner: Object,
+      phaseName: String,
       projectName: {
         type: String,
         statePath: 'projectName',
@@ -112,11 +112,6 @@ class MrMetadata extends ReduxMixin(Polymer.Element) {
   _fieldIsHidden(fieldValueMap, fieldDef) {
     return fieldDef.isNiche && !this._valuesForField(fieldValueMap,
       fieldDef.fieldRef.fieldName).length;
-  }
-
-  _valuesForField(fieldValueMap, name) {
-    if (!fieldValueMap) return [];
-    return fieldValueMap.get(name) || [];
   }
 }
 
