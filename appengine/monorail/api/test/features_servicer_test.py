@@ -282,7 +282,6 @@ class FeaturesServicerTest(unittest.TestCase):
 
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='foo@example.com')
-    mc.LookupLoggedInUserPerms(self.project)
     response = self.CallWrapped(self.features_svcr.ListHotlistsByIssue, mc,
                                 request)
 
@@ -302,7 +301,6 @@ class FeaturesServicerTest(unittest.TestCase):
 
     # We're not authenticated
     mc = monorailcontext.MonorailContext(self.services, cnxn=self.cnxn)
-    mc.LookupLoggedInUserPerms(self.project)
     response = self.CallWrapped(self.features_svcr.ListHotlistsByIssue, mc,
                                 request)
 
@@ -323,7 +321,6 @@ class FeaturesServicerTest(unittest.TestCase):
     # We're authenticated as 'foo@example.com'
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='foo@example.com')
-    mc.LookupLoggedInUserPerms(self.project)
     response = self.CallWrapped(self.features_svcr.ListHotlistsByIssue, mc,
                                 request)
 
@@ -336,7 +333,6 @@ class FeaturesServicerTest(unittest.TestCase):
     # We're authenticated as 'foo@example.com'
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='foo@example.com')
-    mc.LookupLoggedInUserPerms(self.project)
     response = self.CallWrapped(self.features_svcr.ListHotlistsByIssue, mc,
                                 request)
     self.assertEqual(0, len(response.hotlists))
@@ -355,7 +351,6 @@ class FeaturesServicerTest(unittest.TestCase):
     # We're authenticated as 'owner@example.com'
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
-    mc.LookupLoggedInUserPerms(self.project)
     response = self.CallWrapped(self.features_svcr.ListHotlistsByIssue, mc,
                                 request)
 
@@ -376,7 +371,6 @@ class FeaturesServicerTest(unittest.TestCase):
     # We're authenticated as 'foo@example.com'
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='foo@example.com')
-    mc.LookupLoggedInUserPerms(self.project)
     response = self.CallWrapped(self.features_svcr.ListHotlistsByIssue, mc,
                                 request)
 
@@ -401,7 +395,6 @@ class FeaturesServicerTest(unittest.TestCase):
     request = features_pb2.ListRecentlyVisitedHotlistsRequest()
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
-    mc.LookupLoggedInUserPerms(self.project)
     response = self.CallWrapped(
         self.features_svcr.ListRecentlyVisitedHotlists, mc, request)
 
@@ -428,7 +421,6 @@ class FeaturesServicerTest(unittest.TestCase):
   def testListRecentlyVisitedHotlists_Anon(self):
     request = features_pb2.ListRecentlyVisitedHotlistsRequest()
     mc = monorailcontext.MonorailContext(self.services, cnxn=self.cnxn)
-    mc.LookupLoggedInUserPerms(self.project)
     response = self.CallWrapped(
         self.features_svcr.ListRecentlyVisitedHotlists, mc, request)
     self.assertEqual(0, len(response.hotlists))
@@ -452,7 +444,6 @@ class FeaturesServicerTest(unittest.TestCase):
     request = features_pb2.ListStarredHotlistsRequest()
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
-    mc.LookupLoggedInUserPerms(self.project)
     response = self.CallWrapped(
         self.features_svcr.ListStarredHotlists, mc, request)
 
@@ -479,7 +470,6 @@ class FeaturesServicerTest(unittest.TestCase):
   def testListStarredHotlists_Anon(self):
     request = features_pb2.ListStarredHotlistsRequest()
     mc = monorailcontext.MonorailContext(self.services, cnxn=self.cnxn)
-    mc.LookupLoggedInUserPerms(self.project)
     response = self.CallWrapped(
         self.features_svcr.ListStarredHotlists, mc, request)
     self.assertEqual(0, len(response.hotlists))

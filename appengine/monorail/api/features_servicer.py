@@ -61,6 +61,8 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
         mc.cnxn, [request.issue], self.services)[0]
 
     with work_env.WorkEnv(mc, self.services) as we:
+      project = we.GetProjectByName(request.issue.project_name)
+      mc.LookupLoggedInUserPerms(project)
       hotlists = we.ListHotlistsByIssue(issue_id)
 
     with mc.profiler.Phase('making user views'):
@@ -150,6 +152,9 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
   @monorail_servicer.PRPCMethod
   def ListHotlistIssues(self, mc, request):
     """Get the issues on the specified hotlist."""
+    # TODO(ehmaldonado): This probably doesn't work, since we need to check
+    # the permissions for each issue in their own project, and we're not doing
+    # that.
     hotlist_id = converters.IngestHotlistRef(
         mc.cnxn, self.services.user, self.services.features,
         request.hotlist_ref)
