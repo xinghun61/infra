@@ -33,7 +33,7 @@ deps = {
 
   "infra/go/src/go.chromium.org/gae":
      "{chromium_git}/infra/luci/gae@" +
-     "ff7332f27428f0bc5a85a14633176a16495e6c6c",
+     "2e2072ed4889f770e6e135554b716fd54a7d0646",
 
   # Appengine third_party DEPS
   "infra/appengine/third_party/bootstrap":
