@@ -11,9 +11,11 @@ import requests
 
 
 def do_latest():
-  print (
-    requests.get('https://raw.githubusercontent.com/'
-                 'GoogleCloudPlatform/gsutil/master/VERSION').content.strip())
+  r = requests.get(
+    'https://raw.githubusercontent.com/'
+    'GoogleCloudPlatform/gsutil/master/VERSION')
+  r.raise_for_status()
+  print r.content.strip()
 
 
 def do_checkout(version, checkout_path):
@@ -22,7 +24,9 @@ def do_checkout(version, checkout_path):
   print >>sys.stderr, 'fetching %r' % (download_url,)
   outfile = 'archive.tar.gz'
   with open(os.path.join(checkout_path, outfile), 'wb') as f:
-    for chunk in requests.get(download_url, stream=True).iter_content(1024**2):
+    r = requests.get(download_url, stream=True)
+    r.raise_for_status()
+    for chunk in r.iter_content(1024**2):
       f.write(chunk)
 
 
