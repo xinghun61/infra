@@ -75,7 +75,7 @@
       "-ref",
       "latest",
       "-tag",
-      "buildbot_build://-1",
+      "buildbucket_id:0",
       "-tag",
       "git_repository:https://chromium.googlesource.com/infra/luci/recipes-py",
       "-tag",

@@ -201,7 +201,7 @@ If rolling any of the projects leads to failures, other
 projects are not affected.
 ### *recipe_modules* / [sync\_submodules](/recipes/recipe_modules/sync_submodules)
 
-[DEPS](/recipes/recipe_modules/sync_submodules/__init__.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/infra\_paths][depot_tools/recipe_modules/infra_paths], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipe_modules/sync_submodules/__init__.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/infra\_paths][depot_tools/recipe_modules/infra_paths], [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
 #### **class [SyncSubmodulesApi](/recipes/recipe_modules/sync_submodules/api.py#24)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
@@ -612,7 +612,7 @@ Raises:
 
 ### *recipes* / [build\_conda\_cipd\_pkg](/recipes/recipes/build_conda_cipd_pkg.py)
 
-[DEPS](/recipes/recipes/build_conda_cipd_pkg.py#20): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [conda](#recipe_modules-conda), [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties]
+[DEPS](/recipes/recipes/build_conda_cipd_pkg.py#20): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [conda](#recipe_modules-conda), [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties]
 
 Recipe to build CIPD package with sealed Conda environment.
 
@@ -626,7 +626,7 @@ To build a new package for all platforms:
     ./cipd set-tag infra/conda_python/scientific/         -tag=release:<name>         -version=latest
 3. Update Puppet configs to use 'release:<name>' as a version.
 
-&mdash; **def [RunSteps](/recipes/recipes/build_conda_cipd_pkg.py#42)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/build_conda_cipd_pkg.py#43)(api):**
 ### *recipes* / [build\_from\_tarball](/recipes/recipes/build_from_tarball.py)
 
 [DEPS](/recipes/recipes/build_from_tarball.py#5): [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
@@ -656,9 +656,9 @@ Recipe to build windows depot_tools bootstrap zipfile.
 &mdash; **def [RunSteps](/recipes/recipes/gae_sdk_cipd_packager.py#21)(api):**
 ### *recipes* / [gerrit\_cq\_test](/recipes/recipes/gerrit_cq_test.py)
 
-[DEPS](/recipes/recipes/gerrit_cq_test.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipes/gerrit_cq_test.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipes/gerrit_cq_test.py#15)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/gerrit_cq_test.py#16)(api):**
 ### *recipes* / [gerrit\_hello\_world](/recipes/recipes/gerrit_hello_world.py)
 
 [DEPS](/recipes/recipes/gerrit_hello_world.py#8): [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]
@@ -749,9 +749,9 @@ staging and prod environments.
 &mdash; **def [RunSteps](/recipes/recipes/infra_wct_tester.py#14)(api):**
 ### *recipes* / [lkgr\_finder](/recipes/recipes/lkgr_finder.py)
 
-[DEPS](/recipes/recipes/lkgr_finder.py#8): [build/chromium\_checkout][build/recipe_modules/chromium_checkout], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipes/lkgr_finder.py#8): [build/chromium\_checkout][build/recipe_modules/chromium_checkout], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipes/lkgr_finder.py#59)(api, buildername):**
+&mdash; **def [RunSteps](/recipes/recipes/lkgr_finder.py#55)(api):**
 ### *recipes* / [luci\_check](/recipes/recipes/luci_check.py)
 
 [DEPS](/recipes/recipes/luci_check.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python]
@@ -828,9 +828,9 @@ A continuous builder which runs recipe tests.
 &mdash; **def [RunSteps](/recipes/recipes/recipe_simulation.py#34)(api, project_under_test, auth_with_account):**
 ### *recipes* / [recipes\_py\_continuous](/recipes/recipes/recipes_py_continuous.py)
 
-[DEPS](/recipes/recipes/recipes_py_continuous.py#7): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties]
+[DEPS](/recipes/recipes/recipes_py_continuous.py#7): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties]
 
-&mdash; **def [RunSteps](/recipes/recipes/recipes_py_continuous.py#22)(api, mastername, buildername, buildnumber):**
+&mdash; **def [RunSteps](/recipes/recipes/recipes_py_continuous.py#17)(api):**
 ### *recipes* / [remote\_execute\_dataflow\_workflow](/recipes/recipes/remote_execute_dataflow_workflow.py)
 
 [DEPS](/recipes/recipes/remote_execute_dataflow_workflow.py#22): [build/puppet\_service\_account][build/recipe_modules/puppet_service_account], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]

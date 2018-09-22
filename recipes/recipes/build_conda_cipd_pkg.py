@@ -20,6 +20,7 @@ To build a new package for all platforms:
 DEPS = [
   'conda',
   'depot_tools/cipd',
+  'recipe_engine/buildbucket',
   'recipe_engine/file',
   'recipe_engine/path',
   'recipe_engine/platform',
@@ -55,11 +56,12 @@ def RunSteps(api):
       conda.convert_to_cipd_package(cipd_pkg_name, cipd_pkg_file)
       api.cipd.set_service_account_credentials(
           api.cipd.default_bot_service_account_credentials)
+      build = api.buildbucket.build
       tags = {
         'buildbot_build': '%s/%s/%s' % (
             api.properties['mastername'],
-            api.properties['buildername'],
-            api.properties['buildnumber']),
+            build.builder.builder,
+            build.number),
         'conda': CONDA_VERSION.replace('.', '-'),
       }
       api.cipd.register(

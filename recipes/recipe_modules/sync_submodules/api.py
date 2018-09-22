@@ -54,7 +54,9 @@ class SyncSubmodulesApi(recipe_api.RecipeApi):
       deps_path_prefix = '%s/' % solution_name
 
     sanitized_buildername = ''.join(
-        c if c.isalnum() else '_' for c in self.m.properties['buildername'])
+        c if c.isalnum() else '_'
+        for c in self.m.buildbucket.builder_name
+    )
     checkout_dir = self.m.path['cache'].join(sanitized_buildername)
     self.m.file.ensure_directory('makedirs checkout', checkout_dir)
     self.m.path['checkout'] = checkout_dir

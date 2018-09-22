@@ -12,6 +12,7 @@ DEPS = [
   'depot_tools/git',
   'depot_tools/gitiles',
   'depot_tools/gsutil',
+  'recipe_engine/buildbucket',
   'recipe_engine/context',
   'recipe_engine/file',
   'recipe_engine/path',
@@ -21,11 +22,6 @@ DEPS = [
   'recipe_engine/runtime',
   'recipe_engine/step',
 ]
-
-
-PROPERTIES = {
-  'buildername': Property(kind=str),
-}
 
 
 BUILDERS = freeze({
@@ -56,8 +52,8 @@ BUILDERS = freeze({
 })
 
 
-def RunSteps(api, buildername):
-  botconfig = BUILDERS[buildername]
+def RunSteps(api):
+  botconfig = BUILDERS[api.buildbucket.builder_name]
   api.gclient.set_config('infra')
   api.gclient.c.revisions['infra'] = 'HEAD'
 
