@@ -77,7 +77,9 @@ func init() {
 	r.GET("/list", tmw, h.HandleList)
 	r.GET("/createrota", tmw, h.HandleCreateRota)
 	r.GET("/managerota", tmw, h.HandleManageRota)
+	r.GET("/modifyrota", tmw, h.HandleUpdateRota)
 
+	r.POST("/modifyrota", tmw, h.HandleUpdateRota)
 	r.POST("/createrota", tmw, h.HandleCreateRota)
 	r.POST("/deleterota", tmw, h.HandleDeleteRota)
 	r.POST("/upload", tmw, h.HandleUpload)

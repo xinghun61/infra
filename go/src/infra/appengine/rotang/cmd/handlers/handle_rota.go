@@ -5,7 +5,6 @@
 package handlers
 
 import (
-	"fmt"
 	"infra/appengine/rotang"
 	"net/http"
 	"strconv"
@@ -63,9 +62,12 @@ func fillIntegers(ctx *router.Context, cfg *rotang.Config) error {
 }
 
 func fillMembers(ctx *router.Context, memberStore rotang.MemberStorer) ([]rotang.ShiftMember, error) {
-	if len(ctx.Request.Form["addEmail"]) != len(ctx.Request.Form["addTZ"]) &&
-		len(ctx.Request.Form["addEmail"]) != len(ctx.Request.Form["addName"]) {
-		return nil, status.Errorf(codes.InvalidArgument, "Email, TimeZone and Name must all have a value")
+	if len(ctx.Request.Form["addEmail"]) != len(ctx.Request.Form["addTZ"]) ||
+		len(ctx.Request.Form["addEmail"]) != len(ctx.Request.Form["addName"]) ||
+		len(ctx.Request.Form["addEmail"]) != len(ctx.Request.Form["addMemberShiftName"]) ||
+		len(ctx.Request.Form["memberName"]) != len(ctx.Request.Form["memberShiftName"]) {
+		logging.Infof(ctx.Context, "addEmail: %v addTZ: %v addName: %v", ctx.Request.Form["addEmail"], ctx.Request.Form["addTZ"], ctx.Request.Form["addName"])
+		return nil, status.Errorf(codes.InvalidArgument, "Email, TimeZone, Name, memberName and shiftName  must all have a value")
 	}
 
 	var members []rotang.ShiftMember
@@ -87,9 +89,22 @@ func fillMembers(ctx *router.Context, memberStore rotang.MemberStorer) ([]rotang
 			return nil, err
 		}
 		members = append(members, rotang.ShiftMember{
-			Email: v,
+			Email:     v,
+			ShiftName: ctx.Request.Form["addMemberShiftName"][i],
 		})
 	}
+	// Update existing rota.
+	for i, v := range ctx.Request.Form["memberName"] {
+		m, err := memberStore.Member(ctx.Context, v)
+		if err != nil {
+			return nil, err
+		}
+		members = append(members, rotang.ShiftMember{
+			Email:     m.Email,
+			ShiftName: ctx.Request.Form["memberShiftName"][i],
+		})
+	}
+	// When creating a new rota.
 	for _, v := range ctx.Request.Form["members"] {
 		m, err := memberStore.Member(ctx.Context, v)
 		if err != nil {
@@ -104,15 +119,27 @@ func fillMembers(ctx *router.Context, memberStore rotang.MemberStorer) ([]rotang
 
 func fillShifts(ctx *router.Context) ([]rotang.Shift, error) {
 	var shifts []rotang.Shift
-	for i, v := range ctx.Request.Form["addShiftName"] {
-		h, err := strconv.Atoi(ctx.Request.Form["addShiftDuration"][i])
-		if err != nil {
-			return nil, err
+	addShifts := func(names, durations []string) error {
+		if len(names) != len(durations) {
+			return status.Errorf(codes.InvalidArgument, "shift names and duration must all have a value")
 		}
-		shifts = append(shifts, rotang.Shift{
-			Name:     v,
-			Duration: time.Duration(h) * time.Hour,
-		})
+		for i, v := range names {
+			h, err := strconv.Atoi(durations[i])
+			if err != nil {
+				return err
+			}
+			shifts = append(shifts, rotang.Shift{
+				Name:     v,
+				Duration: time.Duration(h) * time.Hour,
+			})
+		}
+		return nil
+	}
+	if err := addShifts(ctx.Request.Form["shiftName"], ctx.Request.Form["shiftDuration"]); err != nil {
+		return nil, err
+	}
+	if err := addShifts(ctx.Request.Form["addShiftName"], ctx.Request.Form["addShiftDuration"]); err != nil {
+		return nil, err
 	}
 	return shifts, nil
 }
@@ -126,16 +153,16 @@ func (h *State) HandleCreateRota(ctx *router.Context) {
 
 	if ctx.Request.Method == "GET" {
 		ms, err := h.memberStore(ctx.Context).AllMembers(ctx.Context)
-		if err != nil {
+		if err != nil && status.Code(err) != codes.NotFound {
 			http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		usr := auth.CurrentUser(ctx.Context)
-		if usr == nil {
+		if usr == nil || usr.Email == "" {
 			http.Error(ctx.Writer, "login required", http.StatusForbidden)
 			return
 		}
-		templates.MustRender(ctx.Context, ctx.Writer, "pages/createrota.html",
+		templates.MustRender(ctx.Context, ctx.Writer, "pages/modifyrota.html",
 			templates.Args{"Members": ms, "User": usr})
 		return
 	}
@@ -145,32 +172,44 @@ func (h *State) HandleCreateRota(ctx *router.Context) {
 		return
 	}
 
-	if err := ctx.Request.ParseForm(); err != nil {
+	cfg, err := h.handlePOST(ctx)
+	if err != nil {
+		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	logging.Infof(ctx.Context, "cfg: %v", cfg)
+
+	if err := h.configStore(ctx.Context).CreateRotaConfig(ctx.Context, cfg); err != nil {
 		http.Error(ctx.Writer, err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	http.Redirect(ctx.Writer, ctx.Request, "managerota", http.StatusFound)
+}
+
+func (h *State) handlePOST(ctx *router.Context) (*rotang.Configuration, error) {
+	if err := ctx.Request.ParseForm(); err != nil {
+		return nil, err
 	}
 
 	members, err := fillMembers(ctx, h.memberStore(ctx.Context))
 	if err != nil {
-		http.Error(ctx.Writer, err.Error(), http.StatusBadRequest)
-		return
+		return nil, err
 	}
 
 	shifts, err := fillShifts(ctx)
 	if err != nil {
-		http.Error(ctx.Writer, err.Error(), http.StatusBadRequest)
-		return
+		return nil, err
 	}
 
 	usr := auth.CurrentUser(ctx.Context)
 	if usr == nil {
-		http.Error(ctx.Writer, "Login required", http.StatusForbidden)
-		return
+		return nil, status.Errorf(codes.Unauthenticated, "login required")
 	}
 	owners, err := cleanOwners(usr.Email, ctx.Request.FormValue("Owners"))
 	if err != nil {
-		http.Error(ctx.Writer, err.Error(), http.StatusBadRequest)
-		return
+		return nil, err
 	}
 
 	cfg := rotang.Configuration{
@@ -192,14 +231,83 @@ func (h *State) HandleCreateRota(ctx *router.Context) {
 	}
 
 	if err := fillIntegers(ctx, &cfg.Config); err != nil {
+		return nil, err
+	}
+	return &cfg, nil
+
+}
+
+func (h *State) updateGET(ctx *router.Context) (*rotang.Configuration, *auth.User, error) {
+	if err := ctx.Request.ParseForm(); err != nil {
+		return nil, nil, err
+	}
+
+	rotaName := ctx.Request.FormValue("name")
+	if rotaName == "" {
+		return nil, nil, status.Errorf(codes.InvalidArgument, "`name` not set")
+	}
+	rotas, err := h.configStore(ctx.Context).RotaConfig(ctx.Context, rotaName)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if len(rotas) != 1 {
+		return nil, nil, status.Errorf(codes.OutOfRange, "unexpected number of rotations returned")
+	}
+	rota := rotas[0]
+
+	usr := auth.CurrentUser(ctx.Context)
+	if usr == nil {
+		return nil, nil, status.Errorf(codes.Unauthenticated, "login required")
+	}
+
+	isOwner := false
+	for _, o := range rota.Config.Owners {
+		if o == usr.Email {
+			isOwner = true
+			break
+		}
+	}
+
+	if !isOwner {
+		return nil, nil, status.Errorf(codes.Unauthenticated, "not in the rotation owners")
+	}
+
+	return rotas[0], usr, nil
+}
+
+// HandleUpdateRota handles rota configuration updates.
+func (h *State) HandleUpdateRota(ctx *router.Context) {
+	if err := ctx.Context.Err(); err != nil {
+		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if ctx.Request.Method == "GET" {
+		rota, usr, err := h.updateGET(ctx)
+		if err != nil {
+			http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		templates.MustRender(ctx.Context, ctx.Writer, "pages/modifyrota.html", templates.Args{"Rota": rota, "User": usr, "Owners": strings.Join(rota.Config.Owners, ",")})
+		return
+	}
+
+	if ctx.Request.Method != "POST" {
+		http.Error(ctx.Writer, "HandleModifyRota handle GET/POST requests only", http.StatusBadRequest)
+		return
+	}
+
+	cfg, err := h.handlePOST(ctx)
+	if err != nil {
+		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := h.configStore(ctx.Context).UpdateRotaConfig(ctx.Context, cfg); err != nil {
 		http.Error(ctx.Writer, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if err := h.configStore(ctx.Context).CreateRotaConfig(ctx.Context, &cfg); err != nil {
-		http.Error(ctx.Writer, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	fmt.Fprintf(ctx.Writer, "Rotation %q added!", cfg.Config.Name)
+	http.Redirect(ctx.Writer, ctx.Request, "managerota", http.StatusFound)
 }

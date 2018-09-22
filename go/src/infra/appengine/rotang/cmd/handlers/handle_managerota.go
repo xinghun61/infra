@@ -11,6 +11,8 @@ import (
 	"go.chromium.org/gae/service/user"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // HandleManageRota handles the rota management interface.
@@ -26,7 +28,7 @@ func (h *State) HandleManageRota(ctx *router.Context) {
 	}
 
 	rotas, err := h.configStore(ctx.Context).RotaConfig(ctx.Context, "")
-	if err != nil {
+	if err != nil && status.Code(err) != codes.NotFound {
 		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 		return
 	}

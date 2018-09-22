@@ -1,0 +1,340 @@
+<!doctype html>
+<html>
+<head>
+  <script type="text/javascript">
+    // TODO(olakar): Replace the the DOM messing JS with lit-elements.
+    const timeZones = [
+      {name: "America/Los_Angeles", description: "Mountain View"},
+      {name: "America/New_York", description: "New York"},
+      {name: "Asia/Tokyo", description: "Tokyo"},
+      {name: "Australia/Sydney", description: "Sydney"},
+    ];
+    const shifts = [
+      {{range $s := .Rota.Config.Shifts.Shifts}}
+        {name: {{$s.Name}}},
+      {{end}}
+    ];
+    (function() {
+
+      function addShift(baseId, container, entries) {
+          container.appendChild(document.createTextNode("Name:"));
+          let input = document.createElement("input");
+          input.type = "text";
+          input.name = "addShiftName";
+          input.id = "addShiftName" + baseId;
+          input.required = true;
+          input.value = entries[0];
+          container.appendChild(input);
+          container.appendChild(document.createTextNode("Duration:"));
+          input = document.createElement("input")
+          input.type = "number";
+          input.name = "addShiftDuration";
+          input.id = "addShiftDuration" + baseId;
+          input.required = true;
+          input.value = entries[1];
+          container.appendChild(input);
+          container.appendChild(document.createElement("br"));
+      }
+
+      function addMember(baseId , container, entries) {
+          container.appendChild(document.createTextNode("Name:"));
+          let input = document.createElement("input");
+          input.type = "text";
+          input.name = "addName";
+          input.id = "addName" + baseId;
+          input.required = true;
+          input.value = entries[0];
+          container.appendChild(input);
+
+          container.appendChild(document.createTextNode("Email:"));
+          input = document.createElement("input");
+          input.type = "email";
+          input.name = "addEmail";
+          input.id = "addEmail" + baseId;
+          input.required = true;
+          input.value = entries[1];
+          container.appendChild(input);
+
+          {{with .Rota}}
+            container.appendChild(document.createTextNode("Shift:"));
+            input = document.createElement("select");
+            input.name = "addMemberShiftName";
+            input.id = "addMemberShiftName" + baseId;
+            console.log(entries[2]);
+            input.value = entries[2];
+            shifts.forEach(shift => {
+              const option = document.createElement("option");
+              option.value = shift.name;
+              if (option.value == entries[2]) {
+                option.selected = true;
+              }
+              option.text = shift.name;
+              input.appendChild(option);
+            })
+            input.required = true;
+          {{else}}
+            input = document.createElement("input");
+            input.type = "hidden";
+            input.name = "addMemberShiftName";
+            input.id = "addMemberShiftName" + baseId;
+            input.value = "";
+          {{end}}
+          container.appendChild(input);
+
+          container.appendChild(document.createTextNode("TZ:"));
+          input = document.createElement("select");
+          input.name = "addTZ";
+          input.id = "addTZ" + baseId;
+          timeZones.forEach(zone => {
+            const option = document.createElement("option");
+            option.value = zone.name;
+            option.text = zone.description;
+            input.appendChild(option);
+          })
+          input.selectedIndex = 0;
+          input.value = entries[3];
+          container.appendChild(input);
+          container.appendChild(document.createElement("br"));
+      }
+
+      function addMemberFields() {
+        const container = document.getElementById("memberContainer");
+        const members = []; while (container.hasChildNodes()) {
+          if (container.lastChild.nodeType != Node.ELEMENT_NODE || container.lastChild.tagName === "BR" ) {
+            container.removeChild(container.lastChild);
+            continue;
+          }
+          members.push(container.lastChild.value);
+          container.removeChild(container.lastChild);
+        }
+        members.reverse();
+        const recordLength = 4;
+        // The member records contain the 4 fields `name` , `email`, `shift` and `timezone`.
+        // This for loop slices the list of entries up into records for the `addMember`
+        // function.
+        let i = 0;
+        for (; i < members.length; i += recordLength) {
+          addMember(i, container, members.slice(i, i+recordLength));
+        }
+        addMember(i, container, ["", "", "", ""]);
+      }
+
+      function deleteMember(idx) {
+        const member = document.getElementById("member" + idx);
+        member.parentNode.removeChild(member);
+      }
+
+      function deleteShift(idx) {
+        const shift = document.getElementById("shift" + idx);
+        shift.parentNode.removeChild(shift);
+      }
+
+      function addShiftFields() {
+        var container = document.getElementById("shiftContainer");
+        const shifts = [];
+        while (container.hasChildNodes()) {
+          if (container.lastChild.nodeType != Node.ELEMENT_NODE || container.lastChild.tagName === "BR") {
+            container.removeChild(container.lastChild);
+            continue;
+          }
+          shifts.push(container.lastChild.value);
+          container.removeChild(container.lastChild);
+        }
+        shifts.reverse();
+        var i = 0;
+        for (; i < shifts.length; i += 2) {
+          addShift(i, container, shifts.slice(i, i+2));
+        }
+        addShift(i, container, ["", ""]);
+      }
+
+      window.addShiftFields = addShiftFields;
+      window.addMemberFields = addMemberFields;
+      window.deleteMember = deleteMember;
+      window.deleteShift = deleteShift;
+    })();
+  </script>
+  <title>Create rotation</title>
+</head>
+<body>
+  <form action="{{with .Rota}}modifyrota{{else}}createrota{{end}}" method="POST" id="rotaForm">
+  <fieldset>
+    <legend>Modify rotation</legend>
+    <fieldset>
+    <legend>Rotation configuration</legend>
+    <table class="table">
+      <tbody>
+        <tr>
+          <td>
+            Rotation Name:
+          </td>
+          <td>
+            <input type="text" id="Name" name="Name" value="{{with .Rota}}{{.Config.Name}}" required readonly><small><i> can't be modified</i></small>{{else}}" required>{{end}}
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Description:
+          </td>
+          <td>
+            <input type="text" id="Description" name="Description" value="{{with .Rota}}{{.Config.Description}}{{end}}" required>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Calendar:
+          </td>
+          <td>
+            <input type="text" id="Calendar" name="Calendar" value="{{with .Rota}}{{.Config.Calendar}}{{end}}">
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Owners:</td><td><input type="text" id="Owners" name="Owners" value="{{with .Rota}}{{$.Owners}}{{else}}{{.User.Email}}{{end}}" required><small><i> comma separated</i></small>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Expiration:</td><td><input type="number" id="Expiration" name="Expiration" value="{{with .Rota}}{{.Config.Expiration}}{{else}}4{{end}}" required><small><i> Number of shifts remaining before generating new shifts</i></small>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Shifts To Schedule:
+          </td>
+          <td>
+            <input type="number" id="ShiftsToSchedule" name="ShiftsToSchedule" value="{{with .Rota}}{{.Config.ShiftsToSchedule}}{{else}}8{{end}}" required>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Email Subject Template:
+          </td><
+          <td>
+            <textarea id="EmailSubjectTemplate" class="text" cols="40" rows ="2" name="EmailSubjectTemplate" required>{{with .Rota}}{{.Config.Email.Subject}}{{end}}</textarea>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Email Body Template:
+          </td>
+          <td>
+            <textarea id="EmailBodyTemplate" class="text" cols="40" rows ="10" name="EmailBodyTemplate" required>{{with .Rota}}{{.Config.Email.Body}}{{end}}</textarea>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Email Days Before Notify:
+          </td>
+          <td>
+            <input id="EmailNotify" type="number"  name="EmailNotify" required value="{{with .Rota}}{{.Config.Email.DaysBeforeNotify}}{{else}}7{{end}}">
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    </fieldset>
+    <fieldset>
+      <legend>Rotation members</legend>
+      <table class="table">
+        <tbody>
+          <tr>
+            <td>Members:</td>
+            <td>
+              {{with .Rota}}
+                  {{range $i, $m := .Members}}
+                  <div id="member{{$i}}">
+                  Email: <input type="text" name="memberName" value="{{$m.Email}}" id="memberName{{$i}}">
+                  ShiftName: <select name="memberShiftName" id="memberShiftName{{$i}}">
+                      {{range $s := $.Rota.Config.Shifts.Shifts}}
+                      <option value="{{$s.Name}}" {{if eq $m.ShiftName $s.Name}}selected{{end}}>{{$s.Name}}</option>
+                      {{end}}
+                    </select>
+                    <button type="button" onclick="deleteMember({{$i}})">Delete</button>
+                    <br>
+                  </div>
+                {{end}}
+                {{else}}
+                <select multiple name="members" size=20>
+                  {{range $m := .Members}}
+                  <option value="{{$m.Email}}" title={{$m.Email}}>{{$m.Name}} ({{$m.Email}})</option>
+                  {{end}}
+                </select>
+              {{end}}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <h4>Add member:</h4>
+      <div id="memberContainer"></div>
+      <br>
+      <button type="button" onclick="addMemberFields()">Add member</button>
+    </fieldset>
+    <fieldset>
+      <legend>Shift configuration</legend>
+      <table class="table">
+        <tbody>
+          <tr>
+            <td>
+              StartTime:
+            </td>
+            <td>
+              <input type="time"  name="shiftStart" value='{{with .Rota}}{{.Config.Shifts.StartTime.Format "03:04"}}{{else}}00:00{{end}}' required><small><i> MTV time</i></small>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              Length:
+            </td>
+            <td>
+              <input type="number" name="shiftLength" value="{{with  .Rota}}{{.Config.Shifts.Length}}{{else}}5{{end}}" required><small><i> Shift lenght in days</i></small>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              Skip:
+            </td>
+            <td>
+              <input type="number" name="shiftSkip" value="{{with .Rota}}{{.Config.Shifts.Skip}}{{else}}2{{end}}" required><small><i> Days to skip between shifts</i></small>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              ShiftMembers:
+            </td>
+            <td>
+              <input type="number" name="shiftMembers" value="{{with .Rota}}{{.Config.Shifts.ShiftMembers}}{{else}}2{{end}}" required><small><i> nr of members to schedule</i></small>
+            </td>
+          </tr>
+          <tr><td>Generator:</td>
+            <td>
+              <select name="generator">
+                <option value="Legacy" title="Legacy" {{with .Rota}}{{if eq .Config.Shifts.Generator "Legacy"}}selected{{end}}{{end}}>Legacy</option>
+                <option value="Fair" title="Fair" {{with .Rota}}{{if eq .Config.Shifts.Generator "Fair"}}selected{{end}}{{end}}>Fair</option>
+                <option value="Random" title="Random" {{with .Rota}}{{if eq .Config.Shifts.Generator "Random"}}selected{{end}}{{end}}>Random</option>
+              </select>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      {{with .Rota}}
+      <h4>Shifts</h4>
+        {{range $i, $s := .Config.Shifts.Shifts}}
+        <div id="shift{{$i}}">
+          Name: <input type="text" name="shiftName" value="{{$s.Name}}">
+          Duration: <input type="number" name="shiftDuration" value="{{$s.Duration.Hours}}">
+          <button type=button onclick="deleteShift({{$i}})">Delete</button>
+          <br>
+        </div>
+        {{end}}
+      {{end}}
+      <h4>Add shift:</h4>
+      <div id="shiftContainer"></div>
+      <br>
+      <button type="button" onclick="addShiftFields()">Add Shift</button>
+    </fieldset>
+    <br>
+    <button type="submit" form="rotaForm" value="Submit">{{with .Rota}}Modify{{else}}Create{{end}} Rota Config</button>
+  </fieldset>
+</form>
+</body>
+</html>

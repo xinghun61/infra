@@ -90,7 +90,6 @@ func TestHandleManageRota(t *testing.T) {
 		},
 	}, {
 		name: "No rotations",
-		fail: true,
 		user: "test@user.com",
 		ctx: &router.Context{
 			Context: ctx,
