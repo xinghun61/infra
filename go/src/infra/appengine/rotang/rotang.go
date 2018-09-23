@@ -38,6 +38,7 @@ type Config struct {
 	ShiftsToSchedule int
 	Shifts           ShiftConfig
 	Expiration       int
+	Enabled          bool
 }
 
 // ShiftConfig holds the Shift configuration.
@@ -146,6 +147,12 @@ type ConfigStorer interface {
 	DeleteRotaMember(ctx context.Context, rota, email string) error
 	// MemberOf returns the rotations the specified email is a member of.
 	MemberOf(ctx context.Context, email string) ([]string, error)
+	// EnableRota enables jobs to consider rotation.
+	EnableRota(ctx context.Context, rota string) error
+	// DisableRota disables jobs for rotation.
+	DisableRota(ctx context.Context, rota string) error
+	// RotaEnabled returns the Enabled state of a rota.
+	RotaEnabled(ctx context.Context, rota string) (bool, error)
 }
 
 // MemberStorer defines the member store interface.

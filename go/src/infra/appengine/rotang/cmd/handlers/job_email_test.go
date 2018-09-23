@@ -59,6 +59,7 @@ func TestJobEmail(t *testing.T) {
 			Config: rotang.Config{
 				Description: "Test",
 				Name:        "Test Rota",
+				Enabled:     true,
 			},
 		},
 	}, {
@@ -79,10 +80,62 @@ func TestJobEmail(t *testing.T) {
 			Config: rotang.Config{
 				Description: "Test",
 				Name:        "Test Rota",
+				Enabled:     true,
 				Email: rotang.Email{
 					Subject:          "Some subject",
 					Body:             "Some Body",
 					DaysBeforeNotify: 0,
+				},
+				Shifts: rotang.ShiftConfig{
+					StartTime: midnight,
+					Length:    1,
+					Skip:      2,
+					Shifts: []rotang.Shift{
+						{
+							Name:     "MTV all day",
+							Duration: 8 * time.Hour,
+						},
+					},
+				},
+			},
+			Members: []rotang.ShiftMember{
+				{
+					Email: "oncaller@oncall.com",
+				},
+			},
+		},
+		memberPool: []rotang.Member{
+			{
+				Email: "oncaller@oncall.com",
+			},
+		},
+		shifts: []rotang.ShiftEntry{
+			{
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email: "oncaller@oncall.com",
+					},
+				},
+				StartTime: midnight.Add(4 * 24 * time.Hour),
+				EndTime:   midnight.Add(8*time.Hour + 4*24*time.Hour),
+			},
+		},
+	}, {
+		name: "No email if rota is not enabled",
+		time: midnight,
+		ctx: &router.Context{
+			Context: ctx,
+			Writer:  httptest.NewRecorder(),
+		},
+		cfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Description: "Test",
+				Name:        "Test Rota",
+				Email: rotang.Email{
+					Subject:          "Some subject",
+					Body:             "Some Body",
+					DaysBeforeNotify: 4,
 				},
 				Shifts: rotang.ShiftConfig{
 					StartTime: midnight,
@@ -129,6 +182,7 @@ func TestJobEmail(t *testing.T) {
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{
 				Description: "Test",
+				Enabled:     true,
 				Name:        "Test Rota",
 				Email: rotang.Email{
 					Subject: `Upcoming On-call shift for rotation: {{.RotaName}} {{.ShiftEntry.StartTime.In .Member.TZ}} to {{.ShiftEntry.EndTime.In .Member.TZ}}`,
@@ -195,6 +249,7 @@ This is  a friendly reminder that you're oncall for Test Rota from 2006-01-05 16
 			Config: rotang.Config{
 				Description: "Test",
 				Name:        "Test Rota",
+				Enabled:     true,
 				Email: rotang.Email{
 					Subject:          "Some subject",
 					Body:             "Some Body",
@@ -246,6 +301,7 @@ This is  a friendly reminder that you're oncall for Test Rota from 2006-01-05 16
 			Config: rotang.Config{
 				Description: "Test",
 				Name:        "Test Rota",
+				Enabled:     true,
 				Email: rotang.Email{
 					Subject:          "Some subject",
 					Body:             "Some Body",
@@ -320,6 +376,7 @@ This is  a friendly reminder that you're oncall for Test Rota from 2006-01-05 16
 			Config: rotang.Config{
 				Description: "Test",
 				Name:        "Test Rota",
+				Enabled:     true,
 				Email: rotang.Email{
 					Subject:          "Some subject",
 					Body:             "Some Body",
@@ -474,6 +531,7 @@ This is  a friendly reminder that you're oncall for Test Rota from 2006-01-05 16
 			Config: rotang.Config{
 				Description: "Test",
 				Name:        "Test Rota",
+				Enabled:     true,
 				Email: rotang.Email{
 					Subject:          "Some subject",
 					Body:             "Some Body",

@@ -408,6 +408,84 @@ func TestMemberOf(t *testing.T) {
 	}
 }
 
+func TestChangeRotaState(t *testing.T) {
+	ctx := newTestContext()
+	ctxCancel, cancel := context.WithCancel(ctx)
+	cancel()
+
+	s := New(ctx)
+
+	tests := []struct {
+		name     string
+		fail     bool
+		rota     string
+		ctx      context.Context
+		cfg      *rotang.Configuration
+		testFunc func(context.Context, string) error
+		want     bool
+	}{{
+		name:     "Enable Success",
+		ctx:      ctx,
+		testFunc: s.EnableRota,
+		rota:     "Test Rota",
+		cfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Name:    "Test Rota",
+				Enabled: false,
+			},
+		},
+		want: true,
+	}, {
+		name:     "Canceled Context",
+		fail:     true,
+		ctx:      ctxCancel,
+		testFunc: s.EnableRota,
+		cfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Name:    "Test Rota",
+				Enabled: false,
+			},
+		},
+	}, {
+		name:     "Disable success",
+		ctx:      ctx,
+		rota:     "Test Rota",
+		testFunc: s.DisableRota,
+		cfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Name: "Test Rota",
+			},
+		},
+	},
+	}
+
+	for _, tst := range tests {
+		t.Run(tst.name, func(t *testing.T) {
+			if err := s.CreateRotaConfig(ctx, tst.cfg); err != nil {
+				t.Fatalf("%s: CreateRotaConfig(ctx, _) failed: %v", tst.name, err)
+			}
+			defer s.DeleteRotaConfig(ctx, tst.cfg.Config.Name)
+			err := tst.testFunc(tst.ctx, tst.rota)
+			if got, want := (err != nil), tst.fail; got != want {
+				t.Fatalf("%s: tstFunc(ctx, %q) = %t, want: %t, err: %v", tst.name, tst.rota, got, want, err)
+			}
+			if err != nil {
+				return
+			}
+
+			got, err := s.RotaEnabled(ctx, tst.rota)
+			if err != nil {
+				t.Fatalf("%s: RotaEnabled(ctx, %q) failed: %v", tst.name, tst.rota, err)
+			}
+
+			if got != tst.want {
+				t.Fatalf("%s: RotaEnabled(ctx, %q) = %t want: %t", tst.name, tst.rota, got, tst.want)
+			}
+
+		})
+	}
+}
+
 func TestMember(t *testing.T) {
 	ctx := newTestContext()
 	ctxCancel, cancel := context.WithCancel(ctx)

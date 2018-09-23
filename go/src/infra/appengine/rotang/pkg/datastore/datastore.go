@@ -356,6 +356,50 @@ func (s *Store) DeleteRotaConfig(ctx context.Context, name string) error {
 	}, children)
 }
 
+// EnableRota enables jobs to consider the specified rotation.
+func (s *Store) EnableRota(ctx context.Context, name string) error {
+	return s.changeRotaState(ctx, name, true)
+}
+
+// DisableRota disables jobs for the specified rotation.
+func (s *Store) DisableRota(ctx context.Context, name string) error {
+	return s.changeRotaState(ctx, name, false)
+}
+
+// RotaEnabled returns the state of the specified rota.
+func (s *Store) RotaEnabled(ctx context.Context, name string) (bool, error) {
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+
+	cfg, err := s.RotaConfig(ctx, name)
+	if err != nil {
+		return false, err
+	}
+
+	if len(cfg) != 1 {
+		return false, status.Errorf(codes.Internal, "Unexpected number of configurations returned")
+	}
+	return cfg[0].Config.Enabled, nil
+
+}
+
+func (s *Store) changeRotaState(ctx context.Context, name string, state bool) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	cfg, err := s.RotaConfig(ctx, name)
+	if err != nil {
+		return err
+	}
+	if len(cfg) != 1 {
+		return status.Errorf(codes.Internal, "Unexpected number of configurations returned")
+	}
+	cfg[0].Config.Enabled = state
+	return s.UpdateRotaConfig(ctx, cfg[0])
+}
+
 // AddRotaMember adds a members to the specified rota.
 func (s *Store) AddRotaMember(ctx context.Context, rota string, member *rotang.ShiftMember) error {
 	if err := ctx.Err(); err != nil {

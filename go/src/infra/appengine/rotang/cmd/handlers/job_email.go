@@ -42,7 +42,7 @@ func (h *State) JobEmail(ctx *router.Context) {
 
 // notifyEmail figures out if a notification should be sent for the specified shift.
 func (h *State) notifyEmail(ctx context.Context, cfg *rotang.Configuration, t time.Time) error {
-	if cfg.Config.Email.DaysBeforeNotify == 0 {
+	if cfg.Config.Email.DaysBeforeNotify == 0 || !cfg.Config.Enabled {
 		return nil
 	}
 	t = t.UTC().Add(time.Duration(cfg.Config.Email.DaysBeforeNotify) * 24 * time.Hour)
