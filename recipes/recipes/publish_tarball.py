@@ -19,10 +19,12 @@ DEPS = [
   'recipe_engine/context',
   'recipe_engine/file',
   'recipe_engine/path',
+  'recipe_engine/scheduler',
   'recipe_engine/platform',
   'recipe_engine/properties',
   'recipe_engine/python',
   'recipe_engine/raw_io',
+  'recipe_engine/runtime',
   'recipe_engine/step',
   'omahaproxy',
 ]
@@ -217,7 +219,14 @@ def RunSteps(api):
         missing_releases.add(version)
     for version in missing_releases:
       if version not in BLACKLISTED_VERSIONS:
-        api.trigger({'buildername': 'publish_tarball', 'version': version})
+        if api.runtime.is_luci:
+          api.scheduler.emit_trigger(
+              api.scheduler.BuildbucketTrigger(properties={'version': version}),
+              project='infra',
+              jobs=['publish_tarball'])
+        else:
+          # TODO(tandrii, thomasanderson): remove post LUCI migration.
+          api.trigger({'buildername': 'publish_tarball', 'version': version})
     return
 
   version = api.properties['version']
@@ -309,10 +318,18 @@ def RunSteps(api):
           'chromium-%s.tar.xz' % version)
 
       # Trigger a tarball build now that the full tarball has been uploaded.
-      api.trigger({
-          'builder_name': 'Build From Tarball',
-          'properties': {'version': version},
-      })
+      if api.runtime.is_luci:
+        api.scheduler.emit_trigger(
+            api.scheduler.BuildbucketTrigger(properties={'version': version}),
+            project='infra',
+            jobs=['Build From Tarball'],
+        )
+      else:
+        # TODO(tandrii, thomasanderson): remove post LUCI migration.
+        api.trigger({
+            'builder_name': 'Build From Tarball',
+            'properties': {'version': version},
+        })
 
     if not published_test_tarball(version, ls_result):
       export_tarball(
@@ -335,8 +352,19 @@ def RunSteps(api):
 
 
 def GenTests(api):
+  # TODO(tandrii, thomasanderson): remove this test post LUCI migration.
+  yield (
+    api.test('basic.legacy') +
+    api.properties.generic(version='69.0.3493.0') +
+    api.platform('linux', 64) +
+    api.step_data('gsutil ls', stdout=api.raw_io.output('')) +
+    api.path.exists(api.path['checkout'].join(
+        'third_party', 'node', 'node_modules.tar.gz.sha1'))
+  )
+
   yield (
     api.test('basic') +
+    api.runtime(is_luci=True, is_experimental=False) +
     api.properties.generic(version='69.0.3493.0') +
     api.platform('linux', 64) +
     api.step_data('gsutil ls', stdout=api.raw_io.output('')) +
@@ -365,8 +393,17 @@ def GenTests(api):
         'third_party', 'node', 'node_modules.tar.gz.sha1'))
   )
 
+  # TODO(tandrii, thomasanderson): remove this test post LUCI migration.
+  yield (
+    api.test('trigger.legacy') +
+    api.properties.generic() +
+    api.platform('linux', 64) +
+    api.step_data('gsutil ls', stdout=api.raw_io.output(''))
+  )
+
   yield (
     api.test('trigger') +
+    api.runtime(is_luci=True, is_experimental=False) +
     api.properties.generic() +
     api.platform('linux', 64) +
     api.step_data('gsutil ls', stdout=api.raw_io.output(''))

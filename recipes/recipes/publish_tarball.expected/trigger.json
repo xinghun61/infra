@@ -29,33 +29,87 @@
     "name": "GET https://omahaproxy.appspot.com/history"
   },
   {
-    "cmd": [],
-    "name": "trigger",
-    "trigger_specs": [
-      {
-        "builder_name": "publish_tarball",
-        "properties": {
-          "version": "69.0.3493.0"
-        }
-      }
+    "cmd": [
+      "prpc",
+      "call",
+      "-format=json",
+      "luci-scheduler.appspot.com",
+      "scheduler.Scheduler.EmitTriggers"
     ],
+    "infra_step": true,
+    "name": "luci-scheduler.EmitTriggers",
+    "stdin": "{\"batches\": [{\"jobs\": [{\"job\": \"publish_tarball\", \"project\": \"infra\"}], \"trigger\": {\"buildbucket\": {\"properties\": {\"version\": \"69.0.3493.0\"}, \"tags\": [\"parent_buildername:TestBuilder\", \"parent_buildnumber:571\", \"user_agent:recipe\"]}, \"id\": \"6a0a73b0-070b-492b-9135-9f26a2a00001\", \"title\": \"TestBuilder/571\"}}], \"timestamp\": 1337000001500000}",
+    "stdout": "/path/to/tmp/json",
     "~followup_annotations": [
-      "@@@STEP_TEXT@publish_tarball@@@"
+      "@@@STEP_TEXT@input {",
+      "    \"batches\": [",
+      "        {",
+      "            \"jobs\": [",
+      "                {",
+      "                    \"job\": \"publish_tarball\", ",
+      "                    \"project\": \"infra\"",
+      "                }",
+      "            ], ",
+      "            \"trigger\": {",
+      "                \"buildbucket\": {",
+      "                    \"properties\": {",
+      "                        \"version\": \"69.0.3493.0\"",
+      "                    }, ",
+      "                    \"tags\": [",
+      "                        \"parent_buildername:TestBuilder\", ",
+      "                        \"parent_buildnumber:571\", ",
+      "                        \"user_agent:recipe\"",
+      "                    ]",
+      "                }, ",
+      "                \"id\": \"6a0a73b0-070b-492b-9135-9f26a2a00001\", ",
+      "                \"title\": \"TestBuilder/571\"",
+      "            }",
+      "        }",
+      "    ], ",
+      "    \"timestamp\": 1337000001500000",
+      "}@@@"
     ]
   },
   {
-    "cmd": [],
-    "name": "trigger (2)",
-    "trigger_specs": [
-      {
-        "builder_name": "publish_tarball",
-        "properties": {
-          "version": "69.0.3446.0"
-        }
-      }
+    "cmd": [
+      "prpc",
+      "call",
+      "-format=json",
+      "luci-scheduler.appspot.com",
+      "scheduler.Scheduler.EmitTriggers"
     ],
+    "infra_step": true,
+    "name": "luci-scheduler.EmitTriggers (2)",
+    "stdin": "{\"batches\": [{\"jobs\": [{\"job\": \"publish_tarball\", \"project\": \"infra\"}], \"trigger\": {\"buildbucket\": {\"properties\": {\"version\": \"69.0.3446.0\"}, \"tags\": [\"parent_buildername:TestBuilder\", \"parent_buildnumber:571\", \"user_agent:recipe\"]}, \"id\": \"6a0a73b0-070b-492b-9135-9f26a2a00002\", \"title\": \"TestBuilder/571\"}}], \"timestamp\": 1337000003000000}",
+    "stdout": "/path/to/tmp/json",
     "~followup_annotations": [
-      "@@@STEP_TEXT@publish_tarball@@@"
+      "@@@STEP_TEXT@input {",
+      "    \"batches\": [",
+      "        {",
+      "            \"jobs\": [",
+      "                {",
+      "                    \"job\": \"publish_tarball\", ",
+      "                    \"project\": \"infra\"",
+      "                }",
+      "            ], ",
+      "            \"trigger\": {",
+      "                \"buildbucket\": {",
+      "                    \"properties\": {",
+      "                        \"version\": \"69.0.3446.0\"",
+      "                    }, ",
+      "                    \"tags\": [",
+      "                        \"parent_buildername:TestBuilder\", ",
+      "                        \"parent_buildnumber:571\", ",
+      "                        \"user_agent:recipe\"",
+      "                    ]",
+      "                }, ",
+      "                \"id\": \"6a0a73b0-070b-492b-9135-9f26a2a00002\", ",
+      "                \"title\": \"TestBuilder/571\"",
+      "            }",
+      "        }",
+      "    ], ",
+      "    \"timestamp\": 1337000003000000",
+      "}@@@"
     ]
   },
   {

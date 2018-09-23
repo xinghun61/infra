@@ -36,7 +36,7 @@
       "--with_branch_heads",
       "--with_tags"
     ],
-    "env_suffixes": {
+    "env_prefixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
       ]
@@ -406,45 +406,18 @@
     "name": "rmtree temp dir (2)"
   },
   {
-    "cmd": [
-      "prpc",
-      "call",
-      "-format=json",
-      "luci-scheduler.appspot.com",
-      "scheduler.Scheduler.EmitTriggers"
+    "cmd": [],
+    "name": "trigger",
+    "trigger_specs": [
+      {
+        "builder_name": "Build From Tarball",
+        "properties": {
+          "version": "69.0.3493.0"
+        }
+      }
     ],
-    "infra_step": true,
-    "name": "luci-scheduler.EmitTriggers",
-    "stdin": "{\"batches\": [{\"jobs\": [{\"job\": \"Build From Tarball\", \"project\": \"infra\"}], \"trigger\": {\"buildbucket\": {\"properties\": {\"version\": \"69.0.3493.0\"}, \"tags\": [\"parent_buildername:TestBuilder\", \"parent_buildnumber:571\", \"user_agent:recipe\"]}, \"id\": \"6a0a73b0-070b-492b-9135-9f26a2a00001\", \"title\": \"TestBuilder/571\"}}], \"timestamp\": 1337000001500000}",
-    "stdout": "/path/to/tmp/json",
     "~followup_annotations": [
-      "@@@STEP_TEXT@input {",
-      "    \"batches\": [",
-      "        {",
-      "            \"jobs\": [",
-      "                {",
-      "                    \"job\": \"Build From Tarball\", ",
-      "                    \"project\": \"infra\"",
-      "                }",
-      "            ], ",
-      "            \"trigger\": {",
-      "                \"buildbucket\": {",
-      "                    \"properties\": {",
-      "                        \"version\": \"69.0.3493.0\"",
-      "                    }, ",
-      "                    \"tags\": [",
-      "                        \"parent_buildername:TestBuilder\", ",
-      "                        \"parent_buildnumber:571\", ",
-      "                        \"user_agent:recipe\"",
-      "                    ]",
-      "                }, ",
-      "                \"id\": \"6a0a73b0-070b-492b-9135-9f26a2a00001\", ",
-      "                \"title\": \"TestBuilder/571\"",
-      "            }",
-      "        }",
-      "    ], ",
-      "    \"timestamp\": 1337000001500000",
-      "}@@@"
+      "@@@STEP_TEXT@Build From Tarball@@@"
     ]
   },
   {

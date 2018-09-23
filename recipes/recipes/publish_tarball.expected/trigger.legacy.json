@@ -1,0 +1,66 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
+      "--",
+      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "----",
+      "ls",
+      "gs://chromium-browser-official/"
+    ],
+    "infra_step": true,
+    "name": "gsutil ls",
+    "stdout": "/path/to/tmp/"
+  },
+  {
+    "cmd": [
+      "vpython",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::url]/resources/pycurl.py",
+      "--url",
+      "https://omahaproxy.appspot.com/history",
+      "--status-json",
+      "/path/to/tmp/json",
+      "--outfile",
+      "/path/to/tmp/"
+    ],
+    "name": "GET https://omahaproxy.appspot.com/history"
+  },
+  {
+    "cmd": [],
+    "name": "trigger",
+    "trigger_specs": [
+      {
+        "builder_name": "publish_tarball",
+        "properties": {
+          "version": "69.0.3493.0"
+        }
+      }
+    ],
+    "~followup_annotations": [
+      "@@@STEP_TEXT@publish_tarball@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "name": "trigger (2)",
+    "trigger_specs": [
+      {
+        "builder_name": "publish_tarball",
+        "properties": {
+          "version": "69.0.3446.0"
+        }
+      }
+    ],
+    "~followup_annotations": [
+      "@@@STEP_TEXT@publish_tarball@@@"
+    ]
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]
