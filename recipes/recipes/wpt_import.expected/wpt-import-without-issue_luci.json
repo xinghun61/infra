@@ -17,7 +17,7 @@
       "--revision",
       "src@HEAD"
     ],
-    "env_prefixes": {
+    "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
       ]
@@ -204,63 +204,16 @@
   },
   {
     "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
-      "--json-output",
-      "/path/to/tmp/json",
-      "copy",
-      "[HOME]/.netrc",
-      "[TMP_BASE]/home_tmp_1/.netrc"
-    ],
-    "infra_step": true,
-    "name": "copy credentials to dummy HOME"
-  },
-  {
-    "cmd": [
-      "git",
-      "config",
-      "--global",
-      "http.cookiefile",
-      "[TMP_BASE]/home_tmp_1/.gitcookies"
-    ],
-    "cwd": "[TMP_BASE]/home_tmp_1",
-    "infra_step": true,
-    "name": "set git config http.cookiefile in dummy HOME"
-  },
-  {
-    "cmd": [
       "vpython",
       "-u",
       "[START_DIR]/src/third_party/blink/tools/wpt_import.py",
       "--credentials-json",
       "/creds/json/wpt-import.json",
       "--auto-update",
-      "--auto-file-bugs",
-      "--auth-refresh-token-json",
-      "/creds/refresh_tokens/blink-w3c-test-autoroller",
-      "--monorail-auth-json",
-      "/creds/service_accounts/service-account-wpt-monorail-api.json"
+      "--auto-file-bugs"
     ],
     "cwd": "[START_DIR]/src/third_party/blink",
-    "env": {
-      "HOME": "[TMP_BASE]/home_tmp_1",
-      "SKIP_GCE_AUTH_FOR_GIT": "1"
-    },
     "name": "Import changes from WPT to Chromium"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
-      "--json-output",
-      "/path/to/tmp/json",
-      "rmtree",
-      "[TMP_BASE]/home_tmp_1"
-    ],
-    "infra_step": true,
-    "name": "rmtree dummy HOME"
   },
   {
     "cmd": [
@@ -275,11 +228,10 @@
     "name": "git cl issue",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"issue\": 123456789, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"issue_url\": \"https://codereview.chromium.org/123456789\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"issue\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"issue_url\": null@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@",
-      "@@@STEP_LINK@issue 123456789@https://codereview.chromium.org/123456789@@@"
+      "@@@STEP_LOG_END@json.output@@@"
     ]
   },
   {

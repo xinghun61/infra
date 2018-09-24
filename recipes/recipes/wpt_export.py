@@ -23,6 +23,7 @@ DEPS = [
   'recipe_engine/path',
   'recipe_engine/properties',
   'recipe_engine/python',
+  'recipe_engine/runtime',
 ]
 
 
@@ -40,6 +41,10 @@ def RunSteps(api):
     '--credentials-json',
     '/creds/json/wpt-export.json',
   ]
+  # TODO(robertma): Remove this when the migration is completed.
+  if api.runtime.is_experimental:
+    # LUCI
+    args += ['--dry-run', '--verbose']
   api.python('Export Chromium commits and in-flight CLs to WPT', script, args)
 
 
@@ -50,4 +55,13 @@ def GenTests(api):
           mastername='chromium.infra.cron',
           buildername='wpt-export',
           slavename='fake-slave') +
+      api.step_data('create PR or merge in-flight PR'))
+
+  yield (
+      api.test('wpt-export_experimental') +
+      api.properties(
+          mastername='chromium.infra.cron',
+          buildername='wpt-export',
+          slavename='fake-slave') +
+      api.runtime(is_luci=True, is_experimental=True) +
       api.step_data('create PR or merge in-flight PR'))

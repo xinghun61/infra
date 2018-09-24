@@ -25,6 +25,7 @@ DEPS = [
   'recipe_engine/path',
   'recipe_engine/properties',
   'recipe_engine/python',
+  'recipe_engine/runtime',
   'recipe_engine/step',
 ]
 
@@ -73,22 +74,41 @@ def RunSteps(api):
   with new_branch('update_wpt'):
     script = blink_dir.join('tools', 'wpt_import.py')
     args = [
-      '--auto-update',
-      '--auto-file-bugs',
-      '--auth-refresh-token-json',
-      '/creds/refresh_tokens/blink-w3c-test-autoroller',
       '--credentials-json',
       '/creds/json/wpt-import.json',
-      '--monorail-auth-json',
-      '/creds/service_accounts/service-account-wpt-monorail-api.json',
     ]
+    # TODO(robertma): Drop the experimental branch when migration is completed.
+    if api.runtime.is_experimental:
+      args.append('--verbose')
+    else:
+      args += [
+        '--auto-update',
+        '--auto-file-bugs',
+      ]
+
+    # BuildBot only, as the service account on LUCI has the right permissions.
+    if not api.runtime.is_luci:
+      args += [
+        '--auth-refresh-token-json',
+        '/creds/refresh_tokens/blink-w3c-test-autoroller',
+        '--monorail-auth-json',
+        '/creds/service_accounts/service-account-wpt-monorail-api.json',
+      ]
+
     try:
-      with create_dummy_home() as temp_home:
-        with api.context(cwd=blink_dir,
-                         # Override GCE creds detection of git-cl.
-                         env={'SKIP_GCE_AUTH_FOR_GIT': '1', 'HOME': temp_home}):
+      if api.runtime.is_luci:
+        with api.context(cwd=blink_dir):
           api.python('Import changes from WPT to Chromium', script, args,
                      venv=True)
+      else:
+        # Prevent BuildBot from using the default GCE service account.
+        with create_dummy_home() as temp_home:
+          with api.context(cwd=blink_dir,
+                           # Override GCE creds detection of git-cl.
+                           env={'SKIP_GCE_AUTH_FOR_GIT': '1',
+                                'HOME': temp_home}):
+            api.python('Import changes from WPT to Chromium', script, args,
+                       venv=True)
     finally:
       git_cl_issue_link(api)
 
@@ -120,11 +140,23 @@ def GenTests(api):
           })))
 
   yield (
-      api.test('wpt-import-without-issue') +
+      api.test('wpt-import-without-issue_luci') +
       api.properties(
           mastername='chromium.infra.cron',
           buildername='wpt-importer',
           slavename='fake-slave') +
+      api.runtime(is_luci=True, is_experimental=False) +
+      api.step_data(
+          'git cl issue',
+          api.json.output({'issue': None, 'issue_url': None})))
+
+  yield (
+      api.test('wpt-import-without-issue_buildbot_experimental') +
+      api.properties(
+          mastername='chromium.infra.cron',
+          buildername='wpt-importer',
+          slavename='fake-slave') +
+      api.runtime(is_luci=False, is_experimental=True) +
       api.step_data(
           'git cl issue',
           api.json.output({'issue': None, 'issue_url': None})))
