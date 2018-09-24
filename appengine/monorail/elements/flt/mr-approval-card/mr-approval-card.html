@@ -108,7 +108,7 @@
         box-sizing: border-box;
       }
     </style>
-    <button class="header" on-click="toggleCard">
+    <button class="header" on-click="toggleCard" aria-expanded$="[[opened]]">
       <iron-icon class="expand-icon" icon="[[_expandIcon]]"></iron-icon>
       [[fieldName]]
       <span class="status">
