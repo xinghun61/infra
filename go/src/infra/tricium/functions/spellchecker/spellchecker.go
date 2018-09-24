@@ -49,6 +49,7 @@ var (
 		"ect",    // effective connection type
 		"gae",    // Google App Engine
 		"seeked", // JS event
+		"tast",   // Name of a ChromeOS test
 	}
 	textFileExts = []string{".txt", ".md"}
 	dict         map[string][]string
