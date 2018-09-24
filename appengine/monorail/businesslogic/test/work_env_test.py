@@ -171,6 +171,65 @@ class WorkEnvTest(unittest.TestCase):
         we.CheckComponentName(
             self.project.project_id, 'Component', 'SubComponent')
 
+  def testCheckFieldName_OK(self):
+    self.SignIn()
+    with self.work_env as we:
+      self.assertIsNone(we.CheckFieldName(
+          self.project.project_id, 'Field'))
+
+  def testCheckFieldName_InvalidFieldName(self):
+    self.SignIn()
+    with self.work_env as we:
+      self.assertIsNotNone(we.CheckFieldName(
+          self.project.project_id, '**Field**'))
+
+  def testCheckFieldName_FieldAlreadyExists(self):
+    self.services.config.CreateFieldDef(
+        self.cnxn, self.project.project_id, 'Field', 'STR_TYPE', None, None,
+        None, None, None, None, None, None, None, None, None, None, None, None,
+        None)
+    self.SignIn()
+    with self.work_env as we:
+      self.assertIsNotNone(we.CheckFieldName(
+          self.project.project_id, 'Field'))
+
+  def testCheckFieldName_FieldIsPrefixOfAnother(self):
+    self.services.config.CreateFieldDef(
+        self.cnxn, self.project.project_id, 'Foo', 'STR_TYPE', None, None,
+        None, None, None, None, None, None, None, None, None, None, None, None,
+        None)
+    self.services.config.CreateFieldDef(
+        self.cnxn, self.project.project_id, 'Field-Foo', 'STR_TYPE', None, None,
+        None, None, None, None, None, None, None, None, None, None, None, None,
+        None)
+    self.SignIn()
+    with self.work_env as we:
+      self.assertIsNotNone(we.CheckFieldName(
+          self.project.project_id, 'Field'))
+
+  def testCheckFieldName_AnotherFieldIsPrefix(self):
+    self.services.config.CreateFieldDef(
+        self.cnxn, self.project.project_id, 'Field', 'STR_TYPE', None, None,
+        None, None, None, None, None, None, None, None, None, None, None, None,
+        None)
+    self.SignIn()
+    with self.work_env as we:
+      self.assertIsNotNone(we.CheckFieldName(
+          self.project.project_id, 'Field-Foo'))
+
+  def testCheckFieldName_ReservedPrefix(self):
+    self.SignIn()
+    with self.work_env as we:
+      self.assertIsNotNone(we.CheckFieldName(
+          self.project.project_id, 'Summary'))
+
+  def testCheckFieldName_NotAllowedToViewProject(self):
+    self.project.access = project_pb2.ProjectAccess.MEMBERS_ONLY
+    self.SignIn(333L)
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        we.CheckFieldName(self.project.project_id, 'Field')
+
   def testListProjects(self):
     """We can get the project IDs of projects visible to the current user."""
     # Project 789 is created in setUp()

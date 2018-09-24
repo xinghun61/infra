@@ -261,3 +261,12 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
           project.project_id, request.parent_path, request.component_name)
     result = projects_pb2.CheckComponentNameResponse(error=error)
     return result
+
+  @monorail_servicer.PRPCMethod
+  def CheckFieldName(self, mc, request):
+    """Check that a field name is valid and not already in use."""
+    project = self._GetProject(mc, request)
+    with work_env.WorkEnv(mc, self.services) as we:
+      error = we.CheckFieldName(project.project_id, request.field_name)
+    result = projects_pb2.CheckFieldNameResponse(error=error)
+    return result

@@ -267,6 +267,39 @@ class WorkEnv(object):
         return 'There is already a component with that name.'
     return None
 
+  def CheckFieldName(self, project_id, field_name):
+    """Check that the field name is valid and not already in use.
+
+    Args:
+      project_id: int with the id of the project where we want to create the
+          field.
+      field_name: str with the name of the proposed field.
+
+    Return:
+      None if the user can create a field with that name, or a string with
+      the reason the name can't be used.
+    """
+    # Check that the project exists and the user can view it.
+    self.GetProject(project_id)
+    config = self.GetProjectConfig(project_id)
+
+    field_name = field_name.lower()
+    with self.mc.profiler.Phase('checking field name %r' % field_name):
+      if not tracker_constants.FIELD_NAME_RE.match(field_name):
+        return '"%s" is not a valid field name.' % field_name
+      if field_name in tracker_constants.RESERVED_PREFIXES:
+        return 'That name is reserved'
+      for fd in config.field_defs:
+        fn = fd.field_name.lower()
+        if field_name == fn:
+          return 'There is already a field with that name.'
+        if field_name.startswith(fn + '-'):
+          return 'An existing field is a prefix of that name.'
+        if fn.startswith(field_name + '-'):
+          return 'That name is a prefix of an existing field name.'
+
+    return None
+
   def GetProjects(self, project_ids, use_cache=True):
     """Return the specified projects.
 

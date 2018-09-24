@@ -858,3 +858,67 @@ class ProjectsServicerTest(unittest.TestCase):
     mc.LookupLoggedInUserPerms(self.project)
     with self.assertRaises(exceptions.NoSuchComponentException):
       self.CallWrapped(self.projects_svcr.CheckComponentName, mc, request)
+
+  def testCheckFieldName_OK(self):
+    request = projects_pb2.CheckFieldNameRequest(
+        project_name='proj',
+        field_name='Foo')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='admin@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.projects_svcr.CheckFieldName, mc, request)
+    self.assertEqual('', response.error)
+
+  def testCheckFieldName_InvalidFieldName(self):
+    request = projects_pb2.CheckFieldNameRequest(
+        project_name='proj',
+        field_name='**Foo**')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='admin@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.projects_svcr.CheckFieldName, mc, request)
+    self.assertNotEqual('', response.error)
+
+  def testCheckFieldName_FieldAlreadyExists(self):
+    self.AddField('Foo')
+    request = projects_pb2.CheckFieldNameRequest(
+        project_name='proj',
+        field_name='Foo')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='admin@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.projects_svcr.CheckFieldName, mc, request)
+    self.assertNotEqual('', response.error)
+
+  def testCheckFieldName_FieldIsPrefixOfAnother(self):
+    self.AddField('Foo-Bar')
+    request = projects_pb2.CheckFieldNameRequest(
+        project_name='proj',
+        field_name='Foo')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='admin@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.projects_svcr.CheckFieldName, mc, request)
+    self.assertNotEqual('', response.error)
+
+  def testCheckFieldName_AnotherFieldIsPrefix(self):
+    self.AddField('Foo')
+    request = projects_pb2.CheckFieldNameRequest(
+        project_name='proj',
+        field_name='Foo-Bar')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='admin@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.projects_svcr.CheckFieldName, mc, request)
+    self.assertNotEqual('', response.error)
+
+  def testCheckFieldName_NotAllowedToViewProject(self):
+    self.project.access = project_pb2.ProjectAccess.MEMBERS_ONLY
+    request = projects_pb2.CheckFieldNameRequest(
+        project_name='proj',
+        field_name='Foo')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='user_444@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.projects_svcr.CheckFieldName, mc, request)

@@ -26,15 +26,18 @@ service Projects {
   rpc GetUserProjects (GetUserProjectsRequest) returns (GetUserProjectsResponse) {}
   rpc CheckProjectName (CheckProjectNameRequest) returns (CheckProjectNameResponse) {}
   rpc CheckComponentName (CheckComponentNameRequest) returns (CheckComponentNameResponse) {}
+  rpc CheckFieldName (CheckFieldNameRequest) returns (CheckFieldNameResponse) {}
 }
 
 
+// Next available tag: 3
 message ListProjectsRequest {
   int32 page_size = 1;
   string page_token = 2;
 }
 
 
+// Next available tag: 3
 message ListProjectsResponse {
   repeated Project projects = 1;
   string next_page_token = 2;
@@ -188,7 +191,7 @@ message CheckProjectNameResponse {
 }
 
 
-// Next available tag: 4
+// Next available tag: 5
 message CheckComponentNameRequest {
   RequestTrace trace = 1;
   string project_name = 2;
@@ -197,7 +200,21 @@ message CheckComponentNameRequest {
 }
 
 
-// Next available tag: 1
+// Next available tag: 2
 message CheckComponentNameResponse {
+  string error = 1;
+}
+
+
+// Next available tag: 4
+message CheckFieldNameRequest {
+  RequestTrace trace = 1;
+  string project_name = 2;
+  string field_name = 3;
+}
+
+
+// Next available tag: 2
+message CheckFieldNameResponse {
   string error = 1;
 }
