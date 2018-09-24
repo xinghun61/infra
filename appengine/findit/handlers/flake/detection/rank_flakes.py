@@ -10,6 +10,7 @@ from model.flake.flake_issue import FlakeIssue
 
 _DEFAULT_PAGE_SIZE = 100
 _DEFAULT_LUCI_PROJECT = 'chromium'
+_MIN_IMPACTED_CLS_WEEKLY = 3
 
 
 def _GetFlakesByTestFilter(test_name, luci_project):
@@ -30,6 +31,50 @@ def _GetFlakesByTestFilter(test_name, luci_project):
   return flakes, test_suite_search
 
 
+def _GetFlakeQueryResults(luci_project, order_by, cursor, direction, page_size):
+  """Gets queried results of flakes.
+
+  Args:
+    luci_project (str): Luci project of the flakes.
+    order_by (str): Indicates the property to perform as the inequality filter
+      and the first sort property. Currently supports
+      impacted_cl_count_last_week (default) and false_rejection_count_last_week.
+    cursor (None or str): The cursor provides a cursor in the current query
+      results, allowing you to retrieve the next set based on the offset.
+    direction (str): Either previous or next.
+    page_size (int): Number of entities to show per page.
+
+  Returns:
+    A tuple of (flakes, prev_cursor, cursor).
+    flakes (list): List of flakes to be displayed at the current page.
+    prev_cursor (str): The urlsafe encoding of the cursor, which is at the
+      top position of entities of the current page.
+    cursor (str): The urlsafe encoding of the cursor, which is at the
+      bottom position of entities of the current page.
+  """
+  flake_query = Flake.query(Flake.luci_project == luci_project)
+  if order_by == 'occurrences':
+    flake_query = flake_query.filter(Flake.false_rejection_count_last_week > 0)
+    first_sort_property = Flake.false_rejection_count_last_week
+  else:
+    # Orders flakes by impacted_cl_count_last_week by default.
+    flake_query = flake_query.filter(
+        Flake.impacted_cl_count_last_week >= _MIN_IMPACTED_CLS_WEEKLY)
+    first_sort_property = Flake.impacted_cl_count_last_week
+
+  return dashboard_util.GetPagedResults(
+      flake_query,
+      order_properties=[
+          (first_sort_property, dashboard_util.DESC),
+          (Flake.last_occurred_time, dashboard_util.DESC),
+          (Flake.normalized_step_name, dashboard_util.ASC),
+          (Flake.test_label_name, dashboard_util.ASC),
+      ],
+      cursor=cursor,
+      direction=direction,
+      page_size=page_size)
+
+
 class RankFlakes(BaseHandler):
   """Queries flakes and ranks them by number of occurrences in descending order.
   """
@@ -41,6 +86,7 @@ class RankFlakes(BaseHandler):
     test_filter = self.request.get('test_filter').strip()
     page_size = int(self.request.get('n').strip()) if self.request.get(
         'n') else _DEFAULT_PAGE_SIZE
+    order_by = self.request.get('order_by').strip()
 
     if test_filter:
       # No paging if search for a test name.
@@ -59,19 +105,9 @@ class RankFlakes(BaseHandler):
             '/flake/occurrences?key=%s' % flake.key.urlsafe())
 
     else:
-      flake_query = Flake.query(Flake.luci_project == luci_project).filter(
-          Flake.false_rejection_count_last_week > 0)
-      flakes, prev_cursor, cursor = dashboard_util.GetPagedResults(
-          flake_query,
-          order_properties=[
-            (Flake.false_rejection_count_last_week, dashboard_util.DESC),
-            (Flake.last_occurred_time, dashboard_util.DESC),
-            (Flake.normalized_step_name, dashboard_util.ASC),
-            (Flake.test_label_name, dashboard_util.ASC),
-          ],
-          cursor=self.request.get('cursor'),
-          direction=self.request.get('direction').strip(),
-          page_size=page_size)
+      flakes, prev_cursor, cursor = _GetFlakeQueryResults(
+          luci_project, order_by, self.request.get('cursor'),
+          self.request.get('direction').strip(), page_size)
 
     flakes_data = []
     for flake in flakes:
@@ -98,6 +134,8 @@ class RankFlakes(BaseHandler):
         'luci_project': (luci_project
                          if luci_project != _DEFAULT_LUCI_PROJECT else ''),
         'test_filter':
-            test_filter
+            test_filter,
+        'order_by':
+            order_by
     }
     return {'template': 'flake/detection/rank_flakes.html', 'data': data}

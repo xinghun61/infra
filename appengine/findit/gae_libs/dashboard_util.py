@@ -55,7 +55,7 @@ def GetPagedResults(query,
     cursor (Cursor): The cursor provides a cursor in the current query
       results, allowing you to retrieve the next set based on the offset.
     direction (str): Either previous or next.
-    page_size (int): Number of entities  to show per page.
+    page_size (int): Number of entities to show per page.
 
   Returns:
     A tuple of (entities, top_cursor, next_cursor).

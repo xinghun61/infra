@@ -52,7 +52,7 @@ class RankFlakesTest(WaterfallTestCase):
         normalized_test_name='suite.test',
         test_label_name='suite.test')
     self.flake3.false_rejection_count_last_week = 5
-    self.flake3.impacted_cl_count_last_week = 2
+    self.flake3.impacted_cl_count_last_week = 3
     self.flake3.put()
 
     self.flake1_dict = self.flake1.to_dict()
@@ -73,12 +73,34 @@ class RankFlakesTest(WaterfallTestCase):
     self.assertEqual(
         json.dumps(
             {
+                'flakes_data': [self.flake3_dict],
+                'prev_cursor': '',
+                'cursor': '',
+                'n': '',
+                'luci_project': '',
+                'test_filter': '',
+                'order_by': ''
+            },
+            default=str), response.body)
+
+  def testRankFlakesByOccurrences(self):
+    response = self.test_app.get(
+        '/ranked-flakes?order_by=occurrences',
+        params={
+            'format': 'json',
+        },
+        status=200)
+
+    self.assertEqual(
+        json.dumps(
+            {
                 'flakes_data': [self.flake3_dict, self.flake1_dict],
                 'prev_cursor': '',
                 'cursor': '',
                 'n': '',
                 'luci_project': '',
-                'test_filter': ''
+                'test_filter': '',
+                'order_by': 'occurrences'
             },
             default=str), response.body)
 
@@ -114,6 +136,7 @@ class RankFlakesTest(WaterfallTestCase):
                 'cursor': '',
                 'n': '',
                 'luci_project': '',
-                'test_filter': 'suite'
+                'test_filter': 'suite',
+                'order_by': ''
             },
             default=str), response.body)
