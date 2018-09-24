@@ -74,13 +74,12 @@ def GenTests(api):
         # We use an older version of the tool to bootstrap new versions.
         tool: "tool@0.9.0"
         dep: "bottom_dep"
+
+        install: "install.sh"
+        install: "intel"
       }
       package {
         version_file: ".versions/tool.cipd_version"
-      }
-      build {
-        install: "install.sh"
-        install: "intel"
       }
     }
 
@@ -119,6 +118,15 @@ def GenTests(api):
       build {
         install: "install.sh"
         install: "arm"
+      }
+    }
+
+    create {
+      platform_re: "linux-amd64"
+      build {
+        # on linux-amd64 we self-bootstrap the tool
+        tool: ""  # clears tool@0.9.0
+        install: "install_bootstrap.sh"
       }
     }
 

@@ -68,7 +68,9 @@ a "platform_re" field which works as a regex on the ${platform} value. All
 matching patterns apply in order, and non-matching patterns are skipped. Each
 create message is applied with a dict.update for each member message (i.e.
 ['source'].update, ['build'].update, etc.) to build a singular create message
-for the current target platform.
+for the current target platform. For list values (e.g. 'tool', 'dep' in the
+Build message), you can clear them by providing a new empty value
+(e.g. `tool: ""`)
 
 Once all the create messages are merged (see schema for all keys that can be
 present), the actual creation takes place.
@@ -317,6 +319,12 @@ def _flatten_spec_pb_for_platform(orig_spec, platform):
       for k, v in dictified.iteritems():
         if isinstance(v, dict):
           resolved_create.setdefault(k, {}).update(v)
+          to_clear = set()
+          for sub_k, sub_v in resolved_create[k].iteritems():
+            if isinstance(sub_v, list) and not any(val for val in sub_v):
+              to_clear.add(sub_k)
+          for sub_k in to_clear:
+            resolved_create[k].pop(sub_k)
         else:
           resolved_create[k] = v
 
