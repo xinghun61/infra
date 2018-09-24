@@ -637,6 +637,20 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
       return self.data_points[0].GetSwarmingTaskId()
     return None
 
+  def GetLatestDataPoint(self):
+    """Gets the analysis' data point with the highest commit position."""
+    if self.flakiness_verification_data_points:
+      return sorted(
+          self.flakiness_verification_data_points,
+          key=lambda k: k.commit_position)[-1]
+
+    if self.data_points:
+      return sorted(
+          self.data_points, key=lambda k: k.commit_position, reverse=True)[0]
+
+    # No data points.
+    return None
+
   # The original build/step/test in which a flake actually occurred.
   # A CQ trybot step has to be mapped to a Waterfall buildbot step.
   # A gtest suite.PRE_PRE_test has to be normalized to suite.test.

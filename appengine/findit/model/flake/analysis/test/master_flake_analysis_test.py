@@ -630,3 +630,29 @@ class MasterFlakeAnalysisTest(TestCase):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [DataPoint.Create(task_ids=[task_id])]
     self.assertEqual(task_id, analysis.GetRepresentativeSwarmingTaskId())
+
+  def testGetLatestDataPointNoRecentFlakinessPoints(self):
+    expected_data_point = DataPoint.Create(commit_position=1000)
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        expected_data_point,
+        DataPoint.Create(commit_position=990)
+    ]
+    self.assertEqual(expected_data_point, analysis.GetLatestDataPoint())
+
+  def testGetLatestDataPointWithRecentFlakinessPoints(self):
+    expected_data_point = DataPoint.Create(commit_position=1000)
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(commit_position=990),
+        DataPoint.Create(commit_position=980)
+    ]
+    analysis.flakiness_verification_data_points = [
+        expected_data_point,
+        DataPoint.Create(commit_position=995)
+    ]
+    self.assertEqual(expected_data_point, analysis.GetLatestDataPoint())
+
+  def testGetLatestDataPointNoDataPoints(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    self.assertIsNone(analysis.GetLatestDataPoint())

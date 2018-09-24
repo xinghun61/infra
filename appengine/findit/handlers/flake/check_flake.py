@@ -214,6 +214,23 @@ def _GetDurationForAnalysis(analysis):
                                   time_util.GetUTCNow())
 
 
+def _GetDataPointInfo(data_point):
+  """Converts a DataPoint into a form consumable on the template side."""
+  data_point_dict = data_point.to_dict()
+  commit_position_landed_time = data_point_dict['commit_position_landed_time']
+  # Convert commit_position_landed_time from a datetime to string before passing
+  # to the template.
+  data_point_dict['commit_position_landed_time'] = (
+      str(commit_position_landed_time) if commit_position_landed_time else None)
+
+  # Include the age of the commit as a string.
+  data_point_dict['committed_days_ago'] = (
+      str(time_util.GetUTCNow() - commit_position_landed_time).split('.')[0]
+      if commit_position_landed_time else None)
+
+  return data_point_dict
+
+
 class CheckFlake(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
@@ -570,5 +587,12 @@ class CheckFlake(BaseHandler):
     data['duration'] = _GetDurationForAnalysis(analysis)
 
     data['pass_rates'] = _GetCoordinatesData(analysis)
+
+    if self._ShowCustomRunOptions(analysis):  # pragma: no branch.
+      # Show the most up-to-date flakiness.
+      latest_data_point = analysis.GetLatestDataPoint()
+      if latest_data_point:
+        recent_flakiness_dict = _GetDataPointInfo(latest_data_point)
+        data['most_recent_flakiness'] = recent_flakiness_dict
 
     return {'template': 'flake/result.html', 'data': data}
