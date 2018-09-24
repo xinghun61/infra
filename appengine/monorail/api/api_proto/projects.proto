@@ -25,6 +25,7 @@ service Projects {
   rpc StarProject (StarProjectRequest) returns (StarProjectResponse) {}
   rpc GetUserProjects (GetUserProjectsRequest) returns (GetUserProjectsResponse) {}
   rpc CheckProjectName (CheckProjectNameRequest) returns (CheckProjectNameResponse) {}
+  rpc CheckComponentName (CheckComponentNameRequest) returns (CheckComponentNameResponse) {}
 }
 
 
@@ -186,3 +187,17 @@ message CheckProjectNameResponse {
   string error = 1;
 }
 
+
+// Next available tag: 4
+message CheckComponentNameRequest {
+  RequestTrace trace = 1;
+  string project_name = 2;
+  string parent_path = 3;
+  string component_name = 4;
+}
+
+
+// Next available tag: 1
+message CheckComponentNameResponse {
+  string error = 1;
+}

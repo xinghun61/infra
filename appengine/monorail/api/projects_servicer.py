@@ -251,3 +251,13 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
       error = we.CheckProjectName(request.project_name)
     result = projects_pb2.CheckProjectNameResponse(error=error)
     return result
+
+  @monorail_servicer.PRPCMethod
+  def CheckComponentName(self, mc, request):
+    """Check that the component name is valid and not already in use."""
+    project = self._GetProject(mc, request)
+    with work_env.WorkEnv(mc, self.services) as we:
+      error = we.CheckComponentName(
+          project.project_id, request.parent_path, request.component_name)
+    result = projects_pb2.CheckComponentNameResponse(error=error)
+    return result

@@ -127,6 +127,50 @@ class WorkEnvTest(unittest.TestCase):
       with self.work_env as we:
         we.CheckProjectName('Foo')
 
+  def testCheckComponentName_OK(self):
+    self.SignIn()
+    with self.work_env as we:
+      self.assertIsNone(we.CheckComponentName(
+          self.project.project_id, None, 'Component'))
+
+  def testCheckComponentName_ParentComponentOK(self):
+    self.services.config.CreateComponentDef(
+        self.cnxn, self.project.project_id, 'Component', 'Docstring',
+        False, [], [], 0, 111L, [])
+    self.SignIn()
+    with self.work_env as we:
+      self.assertIsNone(we.CheckComponentName(
+          self.project.project_id, 'Component', 'SubComponent'))
+
+  def testCheckComponentName_InvalidComponentName(self):
+    self.SignIn()
+    with self.work_env as we:
+      self.assertIsNotNone(we.CheckComponentName(
+          self.project.project_id, None, 'Component>Foo'))
+
+  def testCheckComponentName_ComponentAlreadyExists(self):
+    self.services.config.CreateComponentDef(
+        self.cnxn, self.project.project_id, 'Component', 'Docstring',
+        False, [], [], 0, 111L, [])
+    self.SignIn()
+    with self.work_env as we:
+      self.assertIsNotNone(we.CheckComponentName(
+          self.project.project_id, None, 'Component'))
+
+  def testCheckComponentName_NotAllowedToViewProject(self):
+    self.project.access = project_pb2.ProjectAccess.MEMBERS_ONLY
+    self.SignIn(333L)
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        we.CheckComponentName(self.project.project_id, None, 'Component')
+
+  def testCheckComponentName_ParentComponentDoesntExist(self):
+    self.SignIn()
+    with self.assertRaises(exceptions.NoSuchComponentException):
+      with self.work_env as we:
+        we.CheckComponentName(
+            self.project.project_id, 'Component', 'SubComponent')
+
   def testListProjects(self):
     """We can get the project IDs of projects visible to the current user."""
     # Project 789 is created in setUp()

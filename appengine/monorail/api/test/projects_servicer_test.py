@@ -780,3 +780,81 @@ class ProjectsServicerTest(unittest.TestCase):
         self.projects_svcr.CheckProjectName, mc, request)
 
     self.assertNotEqual('', response.error)
+
+  def testCheckComponentName_OK(self):
+    request = projects_pb2.CheckComponentNameRequest(
+        project_name='proj',
+        component_name='Component')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='admin@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(
+        self.projects_svcr.CheckComponentName, mc, request)
+
+    self.assertEqual('', response.error)
+
+  def testCheckComponentName_ParentComponentOK(self):
+    self.services.config.CreateComponentDef(
+        self.cnxn, self.project.project_id, 'Component', 'Docstring',
+        False, [], [], 0, 111L, [])
+    request = projects_pb2.CheckComponentNameRequest(
+        project_name='proj',
+        parent_path='Component',
+        component_name='Path')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='admin@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(
+        self.projects_svcr.CheckComponentName, mc, request)
+
+    self.assertEqual('', response.error)
+
+  def testCheckComponentName_InvalidComponentName(self):
+    request = projects_pb2.CheckComponentNameRequest(
+        project_name='proj',
+        component_name='Component-')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='admin@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(
+        self.projects_svcr.CheckComponentName, mc, request)
+
+    self.assertNotEqual('', response.error)
+
+  def testCheckComponentName_ComponentAlreadyExists(self):
+    self.services.config.CreateComponentDef(
+        self.cnxn, self.project.project_id, 'Component', 'Docstring',
+        False, [], [], 0, 111L, [])
+    request = projects_pb2.CheckComponentNameRequest(
+        project_name='proj',
+        component_name='Component')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='admin@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(
+        self.projects_svcr.CheckComponentName, mc, request)
+
+    self.assertNotEqual('', response.error)
+
+  def testCheckComponentName_NotAllowedToViewProject(self):
+    self.project.access = project_pb2.ProjectAccess.MEMBERS_ONLY
+    request = projects_pb2.CheckComponentNameRequest(
+        project_name='proj',
+        parent_path='Component',
+        component_name='Path')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='user_444@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.projects_svcr.CheckComponentName, mc, request)
+
+  def testCheckComponentName_ParentComponentDoesntExist(self):
+    request = projects_pb2.CheckComponentNameRequest(
+        project_name='proj',
+        parent_path='Component',
+        component_name='Path')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='admin@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    with self.assertRaises(exceptions.NoSuchComponentException):
+      self.CallWrapped(self.projects_svcr.CheckComponentName, mc, request)

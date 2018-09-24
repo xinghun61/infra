@@ -54,6 +54,7 @@ from search import frontendsearchpipeline
 from services import project_svc
 from sitewide import sitewide_helpers
 from tracker import tracker_bizobj
+from tracker import tracker_constants
 from tracker import tracker_helpers
 from proto import project_pb2
 
@@ -234,6 +235,36 @@ class WorkEnv(object):
         return '"%s" is not a valid project name.' % project_name
       if self.services.project.LookupProjectIDs(self.mc.cnxn, [project_name]):
         return 'There is already a project with that name.'
+    return None
+
+  def CheckComponentName(self, project_id, parent_path, component_name):
+    """Check that the component name is valid and not already in use.
+
+    Args:
+      project_id: int with the id of the project where we want to create the
+          component.
+      parent_path: optional str with the path of the parent component.
+      component_name: str with the name of the proposed component.
+
+    Return:
+      None if the user can create a component with that name, or a string with
+      the reason the name can't be used.
+    """
+    # Check that the project exists and the user can view it.
+    self.GetProject(project_id)
+    # If a parent component is given, make sure it exists.
+    config = self.GetProjectConfig(project_id)
+    if parent_path and not tracker_bizobj.FindComponentDef(parent_path, config):
+      raise exceptions.NoSuchComponentException(
+          'Component %r not found' % parent_path)
+    with self.mc.profiler.Phase(
+        'checking component name %r %r' % (parent_path, component_name)):
+      if not tracker_constants.COMPONENT_NAME_RE.match(component_name):
+        return '"%s" is not a valid component name.' % component_name
+      if parent_path:
+        component_name = '%s>%s' % (parent_path, component_name)
+      if tracker_bizobj.FindComponentDef(component_name, config):
+        return 'There is already a component with that name.'
     return None
 
   def GetProjects(self, project_ids, use_cache=True):
