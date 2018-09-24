@@ -50,43 +50,15 @@ function TKR_checkLeafName(projectName, parentPath, originalName, token) {
  * @param {string} leafName The proposed leaf name.
  * @param {string} token security token.
  */
-function TKR_checkLeafNameOnServer(projectName, parentPath, leafName, token) {
-  var url = ('/p/' + projectName + '/components/checkName' +
-             '?parent_path=' + parentPath +
-             '&leaf_name=' + encodeURIComponent(leafName) +
-             '&token=' + token);
-  TKR_leafNameXmlHttp = XH_XmlHttpCreate();
-  XH_XmlHttpGET(TKR_leafNameXmlHttp, url, TKR_leafNameCallback);
+async function TKR_checkLeafNameOnServer(projectName, parentPath, leafName) {
+  const message = {
+    project_name: projectName,
+    parent_path: parentPath,
+    component_name: leafName
+  };
+  const response = await window.prpcClient.call(
+      'monorail.Projects', 'CheckComponentName', message);
 
-}
-
-/**
- * The communication with the server has made some progress.  If it is
- * done, then process the response.
- */
-function TKR_leafNameCallback() {
-  if (TKR_leafNameXmlHttp.readyState == 4) {
-    if (TKR_leafNameXmlHttp.status == 200) {
-      TKR_gotLeafNameFeed(TKR_leafNameXmlHttp);
-    }
-  }
-}
-
-
-/**
- * Function that evaluates the server response and sets the error message.
- * @param {object} xhr AJAX response object.
- */
-function TKR_gotLeafNameFeed(xhr) {
-  var json_data = null;
-  try {
-    json_data = CS_parseJSON(xhr);
-  }
-  catch (e) {
-    return;
-  }
-  var errorMessage = json_data['error_message'];
-  $('leafnamefeedback').textContent = errorMessage || '';
-
-  $('submit_btn').disabled = errorMessage ? 'disabled' : '';
+  $('leafnamefeedback').textContent = response.error || '';
+  $('submit_btn').disabled = response.error ? 'disabled' : '';
 }
