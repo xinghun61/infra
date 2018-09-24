@@ -1,3 +1,34 @@
+From b262ac668d8cc7933d37896e2072f646b24570d9 Mon Sep 17 00:00:00 2001
+From: Robert Iannucci <iannucci@chromium.org>
+Date: Fri, 21 Sep 2018 23:05:26 -0700
+Subject: [PATCH] Make autoconf relocatable.
+
+This is the package definition for the autoconf tools and includes a patch to
+make them relocatable (written against autoconf 2.69).
+
+By default autoconf hard-codes the --prefix value into the binaries it deploys,
+making them unsuitable for relocatable deployment (e.g. with CIPD). The patch
+here replaces all the hard-coded paths with either:
+  * The assumption that the tool is in $PATH, and so "/path/to/tool" is replaced
+    by "tool"
+  * The assumption that the data files are relative to the binary being run,
+    e.g. if we're running ".../bin/tool" that we can find the data files at
+    ".../share/extra_files".
+
+The patch was made by doing `make install` on the base package, looking for
+absolute paths and then changing the sources so the absolute paths no longer
+showed up in the output of `make install`.
+---
+ bin/autoconf.as   |  2 +-
+ bin/autoheader.in |  6 ++++--
+ bin/autom4te.in   | 11 ++++++++---
+ bin/autoreconf.in | 10 ++++++----
+ bin/autoscan.in   | 11 ++++++++---
+ bin/autoupdate.in | 12 +++++++++---
+ bin/ifnames.in    |  4 +++-
+ lib/autom4te.in   |  4 ----
+ 8 files changed, 39 insertions(+), 21 deletions(-)
+
 diff --git a/bin/autoconf.as b/bin/autoconf.as
 index aa85394..44f02cc 100644
 --- a/bin/autoconf.as
@@ -225,3 +256,6 @@ index a560501..8fa65b4 100644
  args: m4sugar/m4sugar.m4f
  args: --warnings syntax
  end-language: "M4sugar"
+-- 
+2.18.0
+

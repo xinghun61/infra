@@ -65,9 +65,9 @@ def GenTests(api):
           repo: "https://go.repo/tool"
           tag_pattern: "v%s"
           version_join: "-"
-          patch_dir: "patches"
         }
         subdir: "src/go.repo/tool"
+        patch_dir: "patches"
         patch_version: "chops.1"
       }
       build {

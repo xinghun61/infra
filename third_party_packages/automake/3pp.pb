@@ -7,6 +7,7 @@ create {
       default_version: "1.15"
     }
     unpack_archive: true
+    patch_dir: "patches"
     patch_version: "chromium1"
   }
 

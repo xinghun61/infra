@@ -162,15 +162,6 @@ def _do_checkout(api, workdir, spec, version):
     tag = 'refs/tags/%s' % (tag_name,)
     api.git.checkout(source_method_pb.repo, tag, checkout_dir)
 
-    if source_method_pb.patch_dir:
-      patches = []
-      for patch_dir in source_method_pb.patch_dir:
-        patch_dir = str(patch_dir)
-        patches.extend(api.file.glob_paths(
-          'find patches in %s' % patch_dir,
-          spec.host_dir.join(*(patch_dir.split('/'))), '*'))
-      api.git('-C', checkout_dir, 'am', *patches)
-
   elif method_name == 'cipd':
     api.cipd.ensure(
       checkout_dir,
@@ -216,3 +207,13 @@ def _do_checkout(api, workdir, spec, version):
       if not source_pb.no_archive_prune:
         api.file.flatten_single_directories(
           'prune archive subdirs', checkout_dir)
+
+  if source_pb.patch_dir:
+    patches = []
+    for patch_dir in source_pb.patch_dir:
+      patch_dir = str(patch_dir)
+      patches.extend(api.file.glob_paths(
+        'find patches in %s' % patch_dir,
+        spec.host_dir.join(*(patch_dir.split('/'))), '*'))
+    with api.context(cwd=checkout_dir):
+      api.git('apply', *patches)

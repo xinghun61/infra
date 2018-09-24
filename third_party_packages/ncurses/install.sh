@@ -8,13 +8,6 @@ set -x
 set -o pipefail
 
 PREFIX="$1"
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-
-# Fix docker (?) bug where MKfallback.sh invokes `rm -rf tmp_info` and hangs
-# forever. Not really sure if this is docker, my mac, the container, or what,
-# but it repeatably hangs for me, and we manage the cleanup of that directory
-# anyway externally.
-git apply $SCRIPT_DIR/0001-hanging-rm.patch
 
 if ! which realpath; then
   realpath() {

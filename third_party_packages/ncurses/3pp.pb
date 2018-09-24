@@ -6,6 +6,7 @@ create {
       default_version: "6.0"
     }
     unpack_archive: true
+    patch_dir: "patches"
   }
   build {}
 }

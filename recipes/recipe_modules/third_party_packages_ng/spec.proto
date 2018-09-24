@@ -75,13 +75,24 @@ message Spec {
       bool unpack_archive = 5;
       bool no_archive_prune = 6;
 
+      // (optional) Directories relative to the project folder holding patches
+      // to apply with "git apply".
+      //
+      // All patches in the directories will be applied, in alphanumeric order,
+      // after unpacking the archive (if any).
+      //
+      // This is provided as a list option so that different sets of patches can
+      // be applied for different values of ${platform}, possibly with some
+      // overlapping base patches.
+      repeated string patch_dir = 7;
+
       // (optional) Used to differentiate from the stock symver during
       // compilation and in the generated CIPD package tags.
       //
       // For example, if this is `my_org1`, and we were building `1.2.3` of the
       // source, then this would upload with the CIPD tag of
       // `version:1.2.3.my_org1`
-      string patch_version = 7;
+      string patch_version = 8;
     }
 
     message Build {
@@ -277,16 +288,6 @@ message GitSource {
   // version `1.2.3` into `1-2-3` before expanding it into tag_expand to find
   // the matching git tag.
   string version_join = 3;
-
-  // (optional) Directories relative to the project folder holding patches to
-  // apply with "git am".
-  //
-  // All patches in the directories will be applied, in order.
-  //
-  // This is provided as a list option so that different sets of patches can be
-  // applied for different values of ${platform}, possibly with some overlapping
-  // base patches.
-  repeated string patch_dir = 4;
 }
 
 // Pulls sources from a CIPD package.

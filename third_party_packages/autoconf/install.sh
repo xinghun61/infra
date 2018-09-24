@@ -8,10 +8,6 @@ set -x
 set -o pipefail
 
 PREFIX="$1"
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-
-# Make autoconf relocatable
-git apply $SCRIPT_DIR/0001-relocatable.patch
 
 ./configure --enable-static --disable-shared \
   --prefix "$PREFIX" \

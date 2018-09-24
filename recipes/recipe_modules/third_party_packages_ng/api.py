@@ -115,10 +115,11 @@ installers).
 The source is unpacked to a checkout directory, possibly in some specified
 subdirectory. Sources can either produce the actual source files, or they can
 produce a single archive file (e.g. zip or tarball), which can be unpacked with
-the 'unpack_archive' option.
+the 'unpack_archive' option. In addition, patches can be applied to the source
+with the 'patch_dir' option (the patches should be in `git format-patch` format,
+and will be applied with `git apply`).
 
-  * `git` - This checks out a semver tag in the repo. Allows application of
-    patch files (in the `git am` format).
+  * `git` - This checks out a semver tag in the repo.
   * `cipd` - This fetches data from a CIPD package.
   * `script` - Used for "weird" packages which are distributed via e.g.
     an HTML download page or an API. The script must be able to return the

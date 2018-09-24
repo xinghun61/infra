@@ -1740,9 +1740,7 @@
   {
     "cmd": [
       "git",
-      "-C",
-      "[START_DIR]\\3pp\\wd\\tool\\windows-amd64\\1.4.1\\checkout\\src\\go.repo\\tool",
-      "am"
+      "apply"
     ],
     "cwd": "[START_DIR]\\3pp\\wd\\tool\\windows-amd64\\1.4.1\\checkout\\src\\go.repo\\tool",
     "env": {
@@ -1755,7 +1753,7 @@
       "_3PP_VERSION": "1.4.1"
     },
     "infra_step": true,
-    "name": "building tool.fetch sources.git -C",
+    "name": "building tool.fetch sources.git apply",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
     ]

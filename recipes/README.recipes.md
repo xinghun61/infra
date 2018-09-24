@@ -383,10 +383,11 @@ installers).
 The source is unpacked to a checkout directory, possibly in some specified
 subdirectory. Sources can either produce the actual source files, or they can
 produce a single archive file (e.g. zip or tarball), which can be unpacked with
-the 'unpack_archive' option.
+the 'unpack_archive' option. In addition, patches can be applied to the source
+with the 'patch_dir' option (the patches should be in `git format-patch` format,
+and will be applied with `git apply`).
 
-  * `git` - This checks out a semver tag in the repo. Allows application of
-    patch files (in the `git am` format).
+  * `git` - This checks out a semver tag in the repo.
   * `cipd` - This fetches data from a CIPD package.
   * `script` - Used for "weird" packages which are distributed via e.g.
     an HTML download page or an API. The script must be able to return the
@@ -531,9 +532,9 @@ upload.
 As an example of the package definition layout in action, take a look at the
 [third_party_packages](/third_party_packages) folder in this infra.git repo.
 
-#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#338)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#339)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
-&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#483)(self, packages=(), platform='', force_build=False):**
+&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#484)(self, packages=(), platform='', force_build=False):**
 
 Executes entire {fetch,build,package,verify,upload} pipeline for all the
 packages listed, targeting the given platform.
@@ -549,9 +550,9 @@ Args:
 Returns (list[(cipd_pkg, cipd_version)], set[str]) of built CIPD packages
 and their tagged versions, as well as a list of unsupported packages.
 
-&mdash; **def [initialize](/recipes/recipe_modules/third_party_packages_ng/api.py#351)(self):**
+&mdash; **def [initialize](/recipes/recipe_modules/third_party_packages_ng/api.py#352)(self):**
 
-&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#433)(self, path):**
+&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#434)(self, path):**
 
 Loads all package definitions from the given path.
 

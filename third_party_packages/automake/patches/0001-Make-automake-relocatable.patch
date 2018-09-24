@@ -1,9 +1,35 @@
+From 7bdff13edf249ca634d0d9739f11846d2dc98c2d Mon Sep 17 00:00:00 2001
+From: Robert Iannucci <iannucci@chromium.org>
+Date: Fri, 21 Sep 2018 23:12:51 -0700
+Subject: [PATCH] Make automake relocatable
+
+This is the package definition for the automake tools and includes
+a patch to make them relocatable (written against automake 1.15).
+
+By default automake hard-codes the --prefix value into the binaries it
+deploys, making them unsuitable for relocatable deployment (e.g. with
+CIPD). The patch here replaces all the hard-coded paths with either:
+  * The assumption that the tool is in $PATH, and so "/path/to/tool" is
+    replaced by "tool"
+  * The assumption that the data files are relative to the binary being
+    run, e.g. if we're running ".../bin/tool" that we can find the data
+    files at ".../share/extra_files".
+
+The patch was made by doing `make install` on the base package, looking
+for absolute paths and then changing the sources so the absolute paths
+no longer showed up in the output of `make install`.
+---
+ bin/aclocal.in         | 11 ++++++++---
+ bin/automake.in        |  4 +++-
+ lib/Automake/Config.in |  3 ++-
+ 3 files changed, 13 insertions(+), 5 deletions(-)
+
 diff --git a/bin/aclocal.in b/bin/aclocal.in
-index 349f24a..6c2dd27 100644
+index 349f24a..e76fdc2 100644
 --- a/bin/aclocal.in
 +++ b/bin/aclocal.in
 @@ -27,7 +27,9 @@ eval 'case $# in 0) exec @PERL@ -S "$0";; *) exec @PERL@ -S "$0" "$@";; esac'
-
+ 
  BEGIN
  {
 -  @Aclocal::perl_libdirs = ('@datadir@/@PACKAGE@-@APIVERSION@')
@@ -16,12 +42,12 @@ index 349f24a..6c2dd27 100644
 @@ -44,6 +46,9 @@ use Automake::FileUtils;
  use File::Basename;
  use File::Path ();
-
+ 
 +my $PREFIX = dirname(dirname(__FILE__));
 +my $DATADIR = "$PREFIX/share";
 +
  # Some globals.
-
+ 
  # Support AC_CONFIG_MACRO_DIRS also with older autoconf.
 @@ -69,8 +74,8 @@ $perl_threads = 0;
  # ACLOCAL_PATH environment variable, and reset with the '--system-acdir'
@@ -31,7 +57,7 @@ index 349f24a..6c2dd27 100644
 -my @system_includes = ('@datadir@/aclocal');
 +my @automake_includes = ("$DATADIR/aclocal-$APIVERSION");
 +my @system_includes = ("$DATADIR/aclocal");
-
+ 
  # Whether we should copy M4 file in $user_includes[0].
  my $install = 0;
 diff --git a/bin/automake.in b/bin/automake.in
@@ -39,7 +65,7 @@ index eedc8bc..4270aa7 100644
 --- a/bin/automake.in
 +++ b/bin/automake.in
 @@ -31,7 +31,9 @@ use strict;
-
+ 
  BEGIN
  {
 -  @Automake::perl_libdirs = ('@datadir@/@PACKAGE@-@APIVERSION@')
@@ -48,18 +74,18 @@ index eedc8bc..4270aa7 100644
 +  @Automake::perl_libdirs = ("$PREFIX/share/@PACKAGE@-@APIVERSION@")
      unless @Automake::perl_libdirs;
    unshift @INC, @Automake::perl_libdirs;
-
+ 
 diff --git a/lib/Automake/Config.in b/lib/Automake/Config.in
 index eee9415..b621ad3 100644
 --- a/lib/Automake/Config.in
 +++ b/lib/Automake/Config.in
 @@ -16,6 +16,7 @@
  # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+ 
  package Automake::Config;
 +use File::Basename;
  use strict;
-
+ 
  use 5.006;
 @@ -32,7 +33,7 @@ our $PACKAGE = '@PACKAGE@';
  our $PACKAGE_BUGREPORT = '@PACKAGE_BUGREPORT@';
@@ -67,6 +93,9 @@ index eee9415..b621ad3 100644
  our $RELEASE_YEAR = '@RELEASE_YEAR@';
 -our $libdir = '@datadir@/@PACKAGE@-@APIVERSION@';
 +our $libdir = dirname(dirname(__FILE__));
-
+ 
  our $perl_threads = 0;
  # We need at least this version for CLONE support.
+-- 
+2.18.0
+

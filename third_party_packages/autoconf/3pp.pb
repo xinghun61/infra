@@ -6,6 +6,7 @@ create {
       default_version: "2.69"
     }
     unpack_archive: true
+    patch_dir: "patches"
     patch_version: "chromium1"
   }
   build {}
