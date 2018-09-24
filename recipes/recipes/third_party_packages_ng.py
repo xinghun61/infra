@@ -14,6 +14,7 @@ DEPS = [
   'recipe_engine/file',
   'recipe_engine/path',
   'recipe_engine/properties',
+  'recipe_engine/python',
   'recipe_engine/runtime',
   'recipe_engine/step',
 
@@ -96,12 +97,19 @@ def RunSteps(api, package_locations, to_build, platform, force_build):
       api.file.rmtree('rm %s' % (hash_name,),
                       package_repos.join(hash_name))
 
-  api.third_party_packages_ng.ensure_uploaded(to_build, platform, force_build)
+  _, unsupported = api.third_party_packages_ng.ensure_uploaded(
+    to_build, platform, force_build)
+
+  if unsupported:
+    api.python.succeeding_step(
+      '%d packges unsupported for %r' % (len(unsupported), platform),
+      '<br/>' + '<br/>'.join(sorted(unsupported))
+    )
 
 
 def GenTests(api):
-  yield (
-      api.test('basic') +
+  def defaults():
+    return (
       api.properties(package_locations=[
         {
           'repo': 'https://example.repo',
@@ -109,3 +117,28 @@ def GenTests(api):
         }
       ]) +
       api.runtime(is_luci=True, is_experimental=False))
+
+  yield api.test('basic') + defaults()
+
+  pkgs = sorted(dict(
+    pkg_a='''
+    create { unsupported: true }
+    upload { pkg_prefix: "prefix/deps" }
+    ''',
+
+    pkg_b='''
+    create { unsupported: true }
+    upload { pkg_prefix: "prefix/deps" }
+    ''',
+  ).items())
+
+  test = (
+    api.test('unsupported') + defaults() +
+    api.step_data('load packages from desired repos.find package specs',
+                  api.file.glob_paths([n+'/3pp.pb' for n, _ in pkgs]))
+  )
+  for pkg, spec in pkgs:
+    test += api.step_data(
+      "load packages from desired repos.load package specs.read '%s'" % pkg,
+      api.file.read_text(spec))
+  yield test

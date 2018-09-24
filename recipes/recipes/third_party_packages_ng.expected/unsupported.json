@@ -1,0 +1,218 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "glob",
+      "[CACHE]/builder",
+      "*"
+    ],
+    "infra_step": true,
+    "name": "read cached checkouts",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@glob@[CACHE]/builder/badc0ffe@@@",
+      "@@@STEP_LOG_LINE@glob@[CACHE]/builder/deadbeef@@@",
+      "@@@STEP_LOG_END@glob@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "name": "load packages from desired repos"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
+      "--path",
+      "[CACHE]/builder/63dc52509fb3f064956e6d7c3a3446c6fe74309a",
+      "--url",
+      "https://example.repo"
+    ],
+    "name": "load packages from desired repos.git setup",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "retry",
+      "fetch",
+      "origin",
+      "master",
+      "--progress"
+    ],
+    "cwd": "[CACHE]/builder/63dc52509fb3f064956e6d7c3a3446c6fe74309a",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+    },
+    "infra_step": true,
+    "name": "load packages from desired repos.git fetch",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "checkout",
+      "-f",
+      "FETCH_HEAD"
+    ],
+    "cwd": "[CACHE]/builder/63dc52509fb3f064956e6d7c3a3446c6fe74309a",
+    "infra_step": true,
+    "name": "load packages from desired repos.git checkout",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "cwd": "[CACHE]/builder/63dc52509fb3f064956e6d7c3a3446c6fe74309a",
+    "infra_step": true,
+    "name": "load packages from desired repos.read revision",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "clean",
+      "-f",
+      "-d",
+      "-x"
+    ],
+    "cwd": "[CACHE]/builder/63dc52509fb3f064956e6d7c3a3446c6fe74309a",
+    "infra_step": true,
+    "name": "load packages from desired repos.git clean",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "glob",
+      "[CACHE]/builder/63dc52509fb3f064956e6d7c3a3446c6fe74309a/third_party_packages",
+      "*/3pp.pb"
+    ],
+    "infra_step": true,
+    "name": "load packages from desired repos.find package specs",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@glob@[CACHE]/builder/63dc52509fb3f064956e6d7c3a3446c6fe74309a/third_party_packages/pkg_a/3pp.pb@@@",
+      "@@@STEP_LOG_LINE@glob@[CACHE]/builder/63dc52509fb3f064956e6d7c3a3446c6fe74309a/third_party_packages/pkg_b/3pp.pb@@@",
+      "@@@STEP_LOG_END@glob@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "name": "load packages from desired repos.load package specs",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "[CACHE]/builder/63dc52509fb3f064956e6d7c3a3446c6fe74309a/third_party_packages/pkg_a/3pp.pb",
+      "/path/to/tmp/"
+    ],
+    "infra_step": true,
+    "name": "load packages from desired repos.load package specs.read 'pkg_a'",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "[CACHE]/builder/63dc52509fb3f064956e6d7c3a3446c6fe74309a/third_party_packages/pkg_b/3pp.pb",
+      "/path/to/tmp/"
+    ],
+    "infra_step": true,
+    "name": "load packages from desired repos.load package specs.read 'pkg_b'",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "name": "remove unused repos"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[CACHE]/builder/badc0ffe"
+    ],
+    "infra_step": true,
+    "name": "remove unused repos.rm badc0ffe",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[CACHE]/builder/deadbeef"
+    ],
+    "infra_step": true,
+    "name": "remove unused repos.rm deadbeef",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "import sys; sys.exit(0)"
+    ],
+    "name": "2 packges unsupported for None",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@<br/>pkg_a<br/>pkg_b@@@"
+    ]
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]

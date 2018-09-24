@@ -336,7 +336,9 @@ a "platform_re" field which works as a regex on the ${platform} value. All
 matching patterns apply in order, and non-matching patterns are skipped. Each
 create message is applied with a dict.update for each member message (i.e.
 ['source'].update, ['build'].update, etc.) to build a singular create message
-for the current target platform.
+for the current target platform. For list values (e.g. 'tool', 'dep' in the
+Build message), you can clear them by providing a new empty value
+(e.g. `tool: ""`)
 
 Once all the create messages are merged (see schema for all keys that can be
 present), the actual creation takes place.
@@ -532,9 +534,9 @@ upload.
 As an example of the package definition layout in action, take a look at the
 [third_party_packages](/third_party_packages) folder in this infra.git repo.
 
-#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#339)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#347)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
-&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#484)(self, packages=(), platform='', force_build=False):**
+&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#492)(self, packages=(), platform='', force_build=False):**
 
 Executes entire {fetch,build,package,verify,upload} pipeline for all the
 packages listed, targeting the given platform.
@@ -550,9 +552,9 @@ Args:
 Returns (list[(cipd_pkg, cipd_version)], set[str]) of built CIPD packages
 and their tagged versions, as well as a list of unsupported packages.
 
-&mdash; **def [initialize](/recipes/recipe_modules/third_party_packages_ng/api.py#352)(self):**
+&mdash; **def [initialize](/recipes/recipe_modules/third_party_packages_ng/api.py#360)(self):**
 
-&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#434)(self, path):**
+&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#442)(self, path):**
 
 Loads all package definitions from the given path.
 
@@ -969,11 +971,11 @@ running this recipe module directly.
 &mdash; **def [RunSteps](/recipes/recipe_modules/third_party_packages/examples/swig.py#43)(api, dry_run):**
 ### *recipes* / [third\_party\_packages\_ng](/recipes/recipes/third_party_packages_ng.py)
 
-[DEPS](/recipes/recipes/third_party_packages_ng.py#13): [depot\_tools/git][depot_tools/recipe_modules/git], [third\_party\_packages\_ng](#recipe_modules-third_party_packages_ng), [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipes/third_party_packages_ng.py#13): [depot\_tools/git][depot_tools/recipe_modules/git], [third\_party\_packages\_ng](#recipe_modules-third_party_packages_ng), [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
 This recipe builds and packages third party software, such as Git.
 
-&mdash; **def [RunSteps](/recipes/recipes/third_party_packages_ng.py#60)(api, package_locations, to_build, platform, force_build):**
+&mdash; **def [RunSteps](/recipes/recipes/third_party_packages_ng.py#61)(api, package_locations, to_build, platform, force_build):**
 ### *recipes* / [third\_party\_packages\_ng:tests/full](/recipes/recipe_modules/third_party_packages_ng/tests/full.py)
 
 [DEPS](/recipes/recipe_modules/third_party_packages_ng/tests/full.py#7): [third\_party\_packages\_ng](#recipe_modules-third_party_packages_ng), [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io]

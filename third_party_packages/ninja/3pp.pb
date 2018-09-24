@@ -1,5 +1,5 @@
 create {
-  platform_re: "windows-386"
+  platform_re: ".*-386"
   unsupported: true
 }
 

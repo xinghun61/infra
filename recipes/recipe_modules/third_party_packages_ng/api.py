@@ -310,7 +310,7 @@ def _flatten_spec_pb_for_platform(orig_spec, platform):
     plat_re = "^(%s)$" % (create_msg.platform_re or '.*')
     if re.match(plat_re, platform):
       if create_msg.unsupported:
-        return
+        return None
 
       # To get the effect of the documented dict.update behavior, round trip
       # through JSONPB. It's a bit dirty, but it works.
@@ -330,7 +330,7 @@ def _flatten_spec_pb_for_platform(orig_spec, platform):
 
       applied_any = True
   if not applied_any:
-    return
+    return None
 
   # To make this create rule self-consistent instead of just having the last
   # platform_re to be applied.
