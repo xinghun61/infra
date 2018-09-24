@@ -171,8 +171,10 @@ def convert_approvals(cnxn, approval_values, services, config, phases):
 
     approval = api_pb2_v1.Approval()
     approval.approvalName = approval_fd.field_name
-    approval.approvers = [convert_person(approver_id, cnxn, services)
-                         for approver_id in av.approver_ids]
+    approvers = [convert_person(approver_id, cnxn, services)
+                 for approver_id in av.approver_ids]
+    approval.approvers = [approver for approver in approvers if approver]
+
     approval.status = api_pb2_v1.ApprovalStatus(av.status.number)
     if av.setter_id:
       approval.setter = convert_person(av.setter_id, cnxn, services)
