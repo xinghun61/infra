@@ -71,8 +71,9 @@
     <th>Status:</th>
     <td>
       [if-any allow_edit]
-         <input id="status" type="text" name="status" size="12" class="acob" value="[initial_status]"
-                autocomplete="off">
+        <select id="status" name="status">
+          <option style="display: none" value="[initial_status]"></option>
+        </select>
       [else]
         [initial_status]
       [end]
@@ -251,6 +252,14 @@ runOnLoad(function() {
            _acof(event);
        });
     }
+
+    if ($("status")) {
+      _loadStatusSelect("[projectname]", "status", "[initial_status]");
+      $("status").addEventListener("focus", function(event) {
+        _acrob(null);
+      });
+    }
+
   [else]
 
     let labelInputs = document.getElementsByClassName("labelinput");

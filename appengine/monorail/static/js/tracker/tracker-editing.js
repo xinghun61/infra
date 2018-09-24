@@ -1569,7 +1569,7 @@ function onUpdateNoteResponse(event) {
 /**
  * Load the status select element with possible project statuses.
  */
-function TKR_loadStatusSelect(projectName, selectId, selected) {
+function TKR_loadStatusSelect(projectName, selectId, selected, isBulkEdit=false) {
   const projectRequestMessage = {
     project_name: projectName};
   const statusesPromise = window.prpcClient.call(
@@ -1589,7 +1589,7 @@ function TKR_loadStatusSelect(projectName, selectId, selected) {
     let selectedFound = false;
     jsonData.open.concat(jsonData.closed).forEach(status => {
       if (status.name === selected) {
-	selectedFound = true;
+        selectedFound = true;
       }
     });
     if (!selectedFound) {
@@ -1598,7 +1598,7 @@ function TKR_loadStatusSelect(projectName, selectId, selected) {
     // Add open statuses.
     if (jsonData.open.length > 0) {
       let openGroup =
-	  statusSelect.appendChild(createStatusGroup('Open', jsonData.open, selected));
+          statusSelect.appendChild(createStatusGroup('Open', jsonData.open, selected, isBulkEdit));
     }
     if (jsonData.closed.length > 0) {
       statusSelect.appendChild(createStatusGroup("Closed", jsonData.closed, selected));
@@ -1606,7 +1606,7 @@ function TKR_loadStatusSelect(projectName, selectId, selected) {
   })
 }
 
-function createStatusGroup(groupName, options, selected) {
+function createStatusGroup(groupName, options, selected, isBulkEdit=false) {
   let groupElement = document.createElement('optgroup')
   groupElement.label = groupName;
   options.forEach(option => {
@@ -1614,9 +1614,14 @@ function createStatusGroup(groupName, options, selected) {
     opt.value = option.name;
     opt.selected = (selected === option.name) ? true : false;
     // Special case for when opt represents an empty status.
-    if (opt.value === '') {
-      opt.textContent = '--- (empty status)'
-      opt.setAttribute('aria-label', 'empty status')
+    if (opt.value === ''){
+      if (isBulkEdit) {
+        opt.textContent = '--- (no change)'
+        opt.setAttribute('aria-label', 'no change')
+      } else {
+        opt.textContent = '--- (empty status)'
+        opt.setAttribute('aria-label', 'empty status')
+      }
     } else {
       opt.textContent = option.doc ? `${option.name} = ${option.doc}` : option.name;
     }

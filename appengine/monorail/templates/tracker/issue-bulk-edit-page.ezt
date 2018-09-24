@@ -49,10 +49,10 @@
     </td>
    </tr>
 
-   <tr><th width="10%">Status:</th><td colspan="2">
-        [include "issue-bulk-operator-part.ezt" "statusenter" ""]
-        <input id="statusenter" autocomplete="off" style="width: 12em"
-               name="status" value="[initial_status]">
+   <tr><th width="10%"><label for="statusenter">Status:</label></th><td colspan="2">
+        <select id="statusenter" name="status">
+          <option style="display: none" value="[initial_status]"></option>
+        </select>
         <span id="merge_area" style="margin-left:2em;">
                Merge into issue:
                <input type="text" id="merge_into" name="merge_into" style="width: 5em"
@@ -371,8 +371,9 @@ function _checkAutoClear(inputEl, selectID) {
 $("bulk_form").addEventListener("submit", bulkOnSubmit);
 
 if ($("statusenter")) {
+  _loadStatusSelect("[projectname]", "statusenter", "[initial_status]", isBulkEdit=true);
   $("statusenter").addEventListener("focus", function(event) {
-    _acof(event);
+    _acrob(null);
   });
   $("statusenter").addEventListener("keyup", function(event) {
     _checkAutoClear(event.target, "op_statusenter");
