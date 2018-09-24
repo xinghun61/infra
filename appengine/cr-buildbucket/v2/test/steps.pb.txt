@@ -1,0 +1,236 @@
+steps: <
+  name: "scheduled"
+  status: SCHEDULED
+>
+
+steps: <
+  name: "started"
+  status: STARTED
+  start_time: < seconds: 1500000010 >
+  logs: <
+    name: "bough"
+    view_url: "https://logdog.example.com/bough"
+    url: "logdog://bough"
+  >
+  logs: <
+    name: "twig"
+    view_url: "https://logdog.example.com/twig"
+    url: "logdog://twig"
+  >
+>
+
+steps: <
+  name: "started|scheduled"
+  status: SCHEDULED
+>
+
+steps: <
+  name: "started|started"
+  status: STARTED
+  start_time: < seconds: 1500000100 >
+>
+
+steps: <
+  name: "started|success"
+  status: SUCCESS
+  start_time: < seconds: 1500000010 >
+  end_time: < seconds: 1500001000 >
+>
+
+steps: <
+  name: "started|infra-failure-unstarted"
+  status: INFRA_FAILURE
+  end_time: < seconds: 1500001000 >
+>
+
+steps: <
+  name: "started|success|success"
+  status: SUCCESS
+  start_time: < seconds: 1500000020 >
+  end_time: < seconds: 1500000500 >
+>
+
+steps: <
+  name: "success"
+  status: SUCCESS
+  start_time: < seconds: 1500000000 >
+  end_time: < seconds: 1500001000 >
+>
+
+steps: <
+  name: "success|success0"
+  status: SUCCESS
+  start_time: < seconds: 1500000500 >
+  end_time: < seconds: 1500000700 >
+>
+
+steps: <
+  name: "success|success1"
+  status: SUCCESS
+  start_time: < seconds: 1500000800 >
+  end_time: < seconds: 1500000900 >
+>
+
+steps: <
+  name: "failure"
+  status: FAILURE
+  start_time: < seconds: 1500000000 >
+  end_time: < seconds: 1500001000 >
+>
+
+steps: <
+  name: "failure|failure"
+  status: FAILURE
+  start_time: < seconds: 1500000000 >
+  end_time: < seconds: 1500000500 >
+>
+
+steps: <
+  name: "failure|failure|success0"
+  status: SUCCESS
+  start_time: < seconds: 1500000010 >
+  end_time: < seconds: 1500000400 >
+>
+
+steps: <
+  name: "failure|failure|success0|success0"
+  status: SUCCESS
+  start_time: < seconds: 1500000010 >
+  end_time: < seconds: 1500000400 >
+>
+
+steps: <
+  name: "failure|failure|success0|success1"
+  status: SUCCESS
+  start_time: < seconds: 1500000010 >
+  end_time: < seconds: 1500000400 >
+>
+
+steps: <
+  name: "failure|failure|failure"
+  status: FAILURE
+  start_time: < seconds: 1500000100 >
+  end_time: < seconds: 1500000300 >
+>
+
+steps: <
+  name: "failure|failure|failure|success"
+  status: SUCCESS
+  start_time: < seconds: 1500000100 >
+  end_time: < seconds: 1500000200 >
+>
+
+steps: <
+  name: "failure|failure|failure|failure"
+  status: FAILURE
+  start_time: < seconds: 1500000100 >
+  end_time: < seconds: 1500000300 >
+>
+
+steps: <
+  name: "failure|failure|failure|failure|failure"
+  status: FAILURE
+  start_time: < seconds: 1500000100 >
+  end_time: < seconds: 1500000250 >
+>
+
+steps: <
+  name: "failure|failure|success2"
+  status: SUCCESS
+  start_time: < seconds: 1500000000 >
+  end_time: < seconds: 1500000500 >
+>
+
+steps: <
+  name: "failure|success"
+  status: SUCCESS
+  start_time: < seconds: 1500000050 >
+  end_time: < seconds: 1500001000 >
+>
+
+steps: <
+  name: "infra-failure"
+  status: INFRA_FAILURE
+  start_time: < seconds: 1500000000 >
+  end_time: < seconds: 1500001000 >
+>
+
+steps: <
+  name: "infra-failure-unstarted"
+  status: INFRA_FAILURE
+  end_time: < seconds: 1500001000 >
+>
+
+steps: <
+  name: "infra-failure-unstarted|success"
+  status: INFRA_FAILURE
+  start_time: < seconds: 1500000010 >
+  end_time: < seconds: 1500000500 >
+>
+
+steps: <
+  name: "infra-failure-unstarted|infra-failure-unstarted"
+  status: INFRA_FAILURE
+  end_time: < seconds: 1500001000 >
+>
+
+steps: <
+  name: "canceled"
+  status: CANCELED
+  start_time: < seconds: 1500000000 >
+  end_time: < seconds: 1500001000 >
+>
+
+steps: <
+  name: "canceled-unstarted"
+  status: CANCELED
+  end_time: < seconds: 1500001000 >
+>
+
+steps: <
+  name: "canceled-unstarted|canceled"
+  status: CANCELED
+  start_time: < seconds: 1500000010 >
+  end_time: < seconds: 1500001000 >
+>
+
+steps: <
+  name: "canceled-unstarted|canceled|infra-failure-unstarted"
+  status: INFRA_FAILURE
+  end_time: < seconds: 1500000500 >
+>
+
+steps: <
+  name: "canceled-unstarted|canceled|infra-failure-unstarted|failure"
+  status: FAILURE
+  start_time: < seconds: 1500000100 >
+  end_time: < seconds: 1500000200 >
+>
+
+steps: <
+  name: "canceled-unstarted|canceled|infra-failure-unstarted|failure|success"
+  status: SUCCESS
+  start_time: < seconds: 1500000100 >
+  end_time: < seconds: 1500000150 >
+>
+
+steps: <
+  name: "canceled-unstarted|canceled|infra-failure-unstarted|failure|failure"
+  status: FAILURE
+  start_time: < seconds: 1500000160 >
+  end_time: < seconds: 1500000200 >
+>
+
+steps: <
+  name: "canceled-unstarted|canceled|infra-failure-unstarted|success"
+  status: SUCCESS
+  start_time: < seconds: 1500000100 >
+  end_time: < seconds: 1500000500 >
+>
+
+steps: <
+  name: "canceled-unstarted|canceled|failure"
+  status: FAILURE
+  start_time: < seconds: 1500000030 >
+  end_time: < seconds: 1500000040 >
+>

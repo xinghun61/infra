@@ -53,6 +53,25 @@ RESERVED_PROPERTY_PATHS = [
     ['$recipe_engine/runtime', 'is_experimental'],
 ]
 
+# Statuses with start time required.
+START_TIME_REQUIRED_STATUSES = (
+    common_pb2.STARTED,
+    common_pb2.SUCCESS,
+    common_pb2.FAILURE,
+)
+
+# Step statuses, listed from best to worst and if applicable. See
+# https://chromium.googlesource.com/infra/luci/luci-go/+/dffd1081b775979aa1c5a8046d9a65adead1cee8/buildbucket/proto/step.proto#75
+STATUS_PRECEDENCE = (
+    common_pb2.SUCCESS,  # best
+    common_pb2.FAILURE,
+    common_pb2.INFRA_FAILURE,
+    common_pb2.CANCELED,  # worst
+)
+
+# Character separating parent from children steps.
+STEP_SEP = '|'
+
 ################################################################################
 # Validation of common.proto messages.
 # The order of functions must match the order of messages in common.proto.
@@ -176,26 +195,53 @@ def validate_update_build_request(req):
       _err('update only supports build.steps path currently')
 
   with _enter('build'):
-    step_names = set()
-    _check_repeated(
-        req.build, 'steps', lambda step: validate_step(step, step_names)
-    )
+    steps = dict()
+    _check_repeated(req.build, 'steps', lambda step: validate_step(step, steps))
 
 
-def validate_step(step, names):
-  """Validates a step within a build; checks uniqueness against names param.
-  """
+def validate_step(step, steps):
+  """Validates build's step, internally and relative to (previous) steps."""
+
   _check_truth(step, 'name')
-  if step.name in names:
+  if step.name in steps:
     _enter_err('name', 'duplicate: %r', step.name)
-  names.add(step.name)
+
+  validate_internal_timing_consistency(step)
+
+  log_names = set()
+  _check_repeated(step, 'logs', lambda log: validate_log(log, log_names))
+
+  name_path = step.name.split(STEP_SEP)
+  parent_name = STEP_SEP.join(name_path[:-1])
+  if parent_name:
+    if parent_name not in steps:
+      _err('parent to %r must precede', step.name)
+    parent = steps[parent_name]
+
+    validate_status_consistency(step, parent)
+    validate_timing_consistency(step, parent)
+
+  steps[step.name] = step
+
+
+def validate_internal_timing_consistency(step):
+  """Validates internal timing consistency of a step."""
 
   if (step.status not in common_pb2.Status.values() or
       step.status == common_pb2.STATUS_UNSPECIFIED):
     _err('must have buildbucket.v2.Status that is not STATUS_UNSPECIFIED')
 
-  if (step.status >= common_pb2.STARTED) ^ step.HasField('start_time'):
-    _err('must have both or neither start_time and an at least started status')
+  if step.status in START_TIME_REQUIRED_STATUSES and not step.HasField(
+      'start_time'):
+    _enter_err(
+        'start_time', 'required by status %s',
+        common_pb2.Status.Name(step.status)
+    )
+  elif step.status < common_pb2.STARTED and step.HasField('start_time'):
+    _enter_err(
+        'start_time', 'invalid for status %s',
+        common_pb2.Status.Name(step.status)
+    )
 
   if bool(step.status & common_pb2.ENDED_MASK) ^ step.HasField('end_time'):
     _err('must have both or neither end_time and a terminal status')
@@ -204,8 +250,53 @@ def validate_step(step, names):
       step.start_time.ToDatetime() > step.end_time.ToDatetime()):
     _err('start_time after end_time')
 
-  log_names = set()
-  _check_repeated(step, 'logs', lambda log: validate_log(log, log_names))
+
+def validate_status_consistency(child, parent):
+  """Validates inter-step status consistency."""
+
+  c, p = child.status, parent.status
+  c_name, p_name = common_pb2.Status.Name(c), common_pb2.Status.Name(p)
+
+  if p == common_pb2.SCHEDULED:
+    _enter_err('status', 'parent %r must be at least STARTED', parent.name)
+
+  if not bool(c & common_pb2.ENDED_MASK) and p != common_pb2.STARTED:
+    _enter_err(
+        'status', 'non-terminal (%s) %r must have STARTED parent %r (%s)',
+        c_name, child.name, parent.name, p_name
+    )
+
+  if (p in STATUS_PRECEDENCE and c in STATUS_PRECEDENCE and
+      STATUS_PRECEDENCE.index(p) < STATUS_PRECEDENCE.index(c)):
+    _enter_err(
+        'status', '%r\'s status %s is worse than parent %r\'s status %s',
+        child.name, c_name, parent.name, p_name
+    )
+
+
+def validate_timing_consistency(child, parent):
+  """Validates inter-step timing consistency."""
+
+  parent_start = parent.start_time.ToDatetime(
+  ) if parent.HasField('start_time') else None
+  parent_end = parent.end_time.ToDatetime(
+  ) if parent.HasField('end_time') else None
+
+  if child.HasField('start_time'):
+    child_start = child.start_time.ToDatetime()
+    with _enter('start_time'):
+      if parent_start and parent_start > child_start:
+        _err('cannot precede parent %r\'s start time', parent.name)
+      if parent_end and parent_end < child_start:
+        _err('cannot follow parent %r\'s end time', parent.name)
+
+  if child.HasField('end_time'):
+    child_end = child.end_time.ToDatetime()
+    with _enter('end_time'):
+      if parent_start and parent_start > child_end:
+        _err('cannot precede parent %r\'s start time', parent.name)
+      if parent_end and parent_end < child_end:
+        _err('cannot follow parent %r\'s end time', parent.name)
 
 
 def validate_log(log, names):
