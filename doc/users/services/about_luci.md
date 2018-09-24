@@ -41,8 +41,9 @@ Builds on LUCI use a different URL path that
 starts with `/p/chromium/builders/…`
 If the build is still running on Buildbot,
 "buildbot" will still be part of the URL path. Also, in
-the Code Review UI, try-builders running on LUCI are
-shown with a LUCI tag as shown below.
+the Code Review UI, try-builders on Buildbot is shown
+with a "Buildbot" tag. The default with no tag represents
+a LUCI build.
 
 ![LUCI chip in Gerrit](../../images/luci_chip.png)
 
