@@ -1,6 +1,7 @@
 # Copyright 2015 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+# pylint: disable=wrong-import-position
 
 import google  # provided by GAE
 import imp
@@ -39,6 +40,7 @@ from config import instrument_endpoint
 from config import instrument_wsgi_application
 from config import reset_for_unittest
 from infra_libs.ts_mon.handlers import app
+from infra_libs.ts_mon.handlers import TSMonJSHandler
 
 # The remaining lines are copied from infra_libs/ts_mon/__init__.py.
 from infra_libs.ts_mon.common.distribution import Distribution
