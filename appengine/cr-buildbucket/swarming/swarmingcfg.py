@@ -240,6 +240,11 @@ def validate_builder_cfg(builder, mixin_names, final, ctx):
     elif m not in mixin_names:
       ctx.error('mixin "%s" is not defined', m)
 
+  # Limit (expiration+execution) to 47h. See max_grant_validity_duration in
+  # https://chrome-internal.googlesource.com/infradata/config/+/master/configs/luci-token-server/service_accounts.cfg
+  if builder.expiration_secs + builder.execution_timeout_secs > 47 * 60 * 60:
+    ctx.error('expiration_secs + execution_timeout_secs must be at most 47h')
+
 
 def validate_cache_entry(entry, ctx):
   if not entry.name:

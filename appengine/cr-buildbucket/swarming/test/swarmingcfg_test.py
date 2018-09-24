@@ -125,12 +125,14 @@ class ProjectCfgTest(testing.AppengineTestCase):
     self.cfg_test(
         '''
           builders {}
-        ''', '', [
+        ''',
+        '',
+        [
             'hostname: unspecified',
             'builder #1: name unspecified',
             'builder #1: recipe: name unspecified',
             'builder #1: recipe: specify either cipd_package or repository',
-        ]
+        ],
     )
 
     self.cfg_test(
@@ -148,9 +150,11 @@ class ProjectCfgTest(testing.AppengineTestCase):
           builders {
             name: "meep"
           }
-        ''', '', [
+        ''',
+        '',
+        [
             'builder meep: duplicate builder name',
-        ]
+        ],
     )
 
     self.cfg_test(
@@ -159,12 +163,14 @@ class ProjectCfgTest(testing.AppengineTestCase):
           builders {
             name: ":/:"
           }
-        ''', '', [
+        ''',
+        '',
+        [
             (
                 'builder :/:: name uses invalid char(s) u\'/:\'. '
                 'Alphabet: "%s"'
             ) % swarmingcfg.BUILDER_NAME_VALID_CHARS,
-        ]
+        ],
     )
 
     self.cfg_test(
@@ -179,9 +185,11 @@ class ProjectCfgTest(testing.AppengineTestCase):
               name: "foo"
             }
           }
-        ''', '', [
+        ''',
+        '',
+        [
             'builder_defaults: do not specify default name',
-        ]
+        ],
     )
 
     self.cfg_test(
@@ -210,7 +218,9 @@ class ProjectCfgTest(testing.AppengineTestCase):
             caches { name: "d" path: "/a" }
             priority: 300
           }
-        ''', '', [
+        ''',
+        '',
+        [
             'hostname: must not contain "://"',
             'task_template_canary_percentage.value must must be in [0, 100]',
             'builder_defaults: tag #1: does not have ":": wrong',
@@ -239,7 +249,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
             'builder b2: cache #4: path cannot contain ".."',
             'builder b2: cache #5: path cannot start with "/"',
             'builder b2: priority must be in [0, 200] range; got 300',
-        ]
+        ],
     )
 
     self.cfg_test(
@@ -250,10 +260,12 @@ class ProjectCfgTest(testing.AppengineTestCase):
             caches { path: "a" name: "a" }
             caches { path: "a" name: "a" }
           }
-        ''', '', [
+        ''',
+        '',
+        [
             'builder rel: cache #2: duplicate name',
             'builder rel: cache #2: duplicate path',
-        ]
+        ],
     )
 
     self.cfg_test(
@@ -263,10 +275,12 @@ class ProjectCfgTest(testing.AppengineTestCase):
             name: "rel"
             caches { path: "a" name: "a" wait_for_warm_cache_secs: 61 }
           }
-        ''', '', [
+        ''',
+        '',
+        [
             'builder rel: cache #1: wait_for_warm_cache_secs must be rounded '
             'on 60 seconds',
-        ]
+        ],
     )
 
     self.cfg_test(
@@ -276,10 +290,12 @@ class ProjectCfgTest(testing.AppengineTestCase):
             name: "rel"
             caches { path: "a" name: "a" wait_for_warm_cache_secs: 59 }
           }
-        ''', '', [
+        ''',
+        '',
+        [
             'builder rel: cache #1: wait_for_warm_cache_secs must be at least '
             '60 seconds'
-        ]
+        ],
     )
 
     self.cfg_test(
@@ -296,10 +312,12 @@ class ProjectCfgTest(testing.AppengineTestCase):
             caches { path: "g" name: "g" wait_for_warm_cache_secs: 420 }
             caches { path: "h" name: "h" wait_for_warm_cache_secs: 480 }
           }
-        ''', '', [
+        ''',
+        '',
+        [
             'builder rel: too many different (8) wait_for_warm_cache_secs '
             'values; max 7',
-        ]
+        ],
     )
 
     self.cfg_test(
@@ -309,10 +327,28 @@ class ProjectCfgTest(testing.AppengineTestCase):
             name: "b"
             service_account: "not an email"
           }
-        ''', '', [
+        ''',
+        '',
+        [
             'builder b: service_account: value "not an email" does not match '
             '^[0-9a-zA-Z_\\-\\.\\+\\%]+@[0-9a-zA-Z_\\-\\.]+$',
-        ]
+        ],
+    )
+
+    self.cfg_test(
+        '''
+          hostname: "example.com"
+          builders {
+            name: "b"
+            expiration_secs: 158400  # 44h
+            execution_timeout_secs: 14400  # 4h
+          }
+        ''',
+        '',
+        [
+            'builder b: expiration_secs + execution_timeout_secs '
+            'must be at most 47h'
+        ],
     )
 
   def test_default_recipe(self):
