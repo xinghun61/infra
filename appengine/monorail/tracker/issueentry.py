@@ -254,7 +254,7 @@ class IssueEntry(servlet.Servlet):
     is_member = framework_bizobj.UserIsInProject(
         mr.project, mr.auth.effective_ids)
     template = self._GetTemplate(
-        mr.cnxn, config, post_data.get('template_name'), is_member)
+        mr.cnxn, config, parsed.template_name, is_member)
 
     (approval_values,
      phases) = issue_tmpl_helpers.FilterApprovalsAndPhases(
