@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+<head>
+  <title>Import shifts</title>
+  <style>
+    #shifts {
+      font-size: small;
+      border-collapse: collapse;
+    }
+
+    #shifts td, #shifts th {
+      border: 1px, solid #ddd;
+      padding: 8px;
+    }
+
+    #shifts th {
+      text-align: left;
+    }
+
+    #shifts tr:nth-child(even){background-color: #f2f2f2;}
+    #oncallers tr {
+      all: initial !important;
+    };
+  </style>
+</head>
+<body>
+
+  <h2>{{with .Submitted}}Shifts imported to datastore{{else}}Shifts found in Calendar{{end}}</h2>
+  {{with .Submitted}}{{else}}
+  <button type=submit name="name" value="{{.Name}}" form="submitshifts">Submit Shifts</button>
+  {{end}}
+<table id="shifts">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Oncallers</th>
+      <th>Start</th>
+      <th>End</th>
+     </tr>
+  </thead>
+  <tbody>
+  {{range $c := .Shifts}}
+     <tr>
+       <td>{{$c.Name}}</td>
+       <td>
+         <table class="table" id="oncallers">
+          <thead>
+          </thead>
+          <tbody>
+           {{range $o := $c.OnCall}}
+           <tr>
+             <td>{{$o.Email}}</td>
+           </tr>
+           {{end}}
+         </tbody>
+         </table>
+       </td>
+       <td>{{$c.StartTime}}</td>
+       <td>{{$c.EndTime}}</td>
+     </tr>
+   {{end}}
+  </tbody>
+</table>
+<br>
+{{with .Submitted}}{{else}}
+<form id="submitshifts" action="importshifts">
+  <input type=hidden name="store" value=true>
+</form>
+{{end}}
+</body>
+</html>

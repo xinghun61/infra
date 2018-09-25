@@ -17,6 +17,7 @@ import (
 
 	"infra/appengine/rotang"
 	"infra/appengine/rotang/pkg/algo"
+	"infra/appengine/rotang/pkg/calendar"
 	"infra/appengine/rotang/pkg/datastore"
 
 	"github.com/kylelemons/godebug/pretty"
@@ -187,6 +188,7 @@ func TestUploadGet(t *testing.T) {
 	opts := Options{
 		URL:        "http://localhost:8080",
 		Generators: &algo.Generators{},
+		Calendar:   &calendar.Calendar{},
 	}
 	setupStoreHandlers(&opts, datastore.New)
 	h, err := New(&opts)
@@ -536,6 +538,7 @@ func TestHandleUpload(t *testing.T) {
 	opts := Options{
 		URL:        "http://localhost:8080",
 		Generators: &algo.Generators{},
+		Calendar:   &calendar.Calendar{},
 	}
 	setupStoreHandlers(&opts, datastore.New)
 	h, err := New(&opts)

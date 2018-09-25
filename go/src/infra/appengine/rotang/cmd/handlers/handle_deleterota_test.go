@@ -3,6 +3,7 @@ package handlers
 import (
 	"infra/appengine/rotang"
 	"infra/appengine/rotang/pkg/algo"
+	"infra/appengine/rotang/pkg/calendar"
 	"infra/appengine/rotang/pkg/datastore"
 	"net/http"
 	"net/http/httptest"
@@ -151,6 +152,7 @@ func TestHandleDeleteRota(t *testing.T) {
 	opts := Options{
 		URL:        "http://localhost:8080",
 		Generators: &algo.Generators{},
+		Calendar:   &calendar.Calendar{},
 	}
 	setupStoreHandlers(&opts, datastore.New)
 	h, err := New(&opts)

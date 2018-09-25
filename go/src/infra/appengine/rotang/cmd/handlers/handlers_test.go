@@ -7,6 +7,7 @@ package handlers
 import (
 	"infra/appengine/rotang"
 	"infra/appengine/rotang/pkg/algo"
+	"infra/appengine/rotang/pkg/calendar"
 	"infra/appengine/rotang/pkg/datastore"
 	"testing"
 
@@ -33,6 +34,7 @@ func TestNew(t *testing.T) {
 			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {
 				return datastore.New(ctx)
 			},
+			Calendar: &calendar.Calendar{},
 		},
 	}, {
 		name: "Options nil",
@@ -51,6 +53,7 @@ func TestNew(t *testing.T) {
 			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {
 				return datastore.New(ctx)
 			},
+			Calendar: &calendar.Calendar{},
 		},
 	}, {
 		name: "Generators Empty",
@@ -66,6 +69,7 @@ func TestNew(t *testing.T) {
 			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {
 				return datastore.New(ctx)
 			},
+			Calendar: &calendar.Calendar{},
 		},
 	}, {
 		name: "Store empty",
@@ -73,6 +77,23 @@ func TestNew(t *testing.T) {
 		opts: &Options{
 			URL:        "http://localhost:8080",
 			Generators: &algo.Generators{},
+			Calendar:   &calendar.Calendar{},
+			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {
+				return datastore.New(ctx)
+			},
+		},
+	}, {
+		name: "No Calendar",
+		fail: true,
+		opts: &Options{
+			URL:        "http://localhost:8080",
+			Generators: &algo.Generators{},
+			MemberStore: func(ctx context.Context) rotang.MemberStorer {
+				return datastore.New(ctx)
+			},
+			ShiftStore: func(ctx context.Context) rotang.ShiftStorer {
+				return datastore.New(ctx)
+			},
 			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {
 				return datastore.New(ctx)
 			},

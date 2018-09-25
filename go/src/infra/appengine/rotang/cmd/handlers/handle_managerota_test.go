@@ -3,12 +3,15 @@ package handlers
 import (
 	"infra/appengine/rotang"
 	"infra/appengine/rotang/pkg/algo"
+	"infra/appengine/rotang/pkg/calendar"
 	"infra/appengine/rotang/pkg/datastore"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"go.chromium.org/gae/service/user"
+	"go.chromium.org/luci/auth/identity"
+	"go.chromium.org/luci/server/auth"
+	"go.chromium.org/luci/server/auth/authtest"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
 	"golang.org/x/net/context"
@@ -33,6 +36,7 @@ func TestHandleManageRota(t *testing.T) {
 		ctx: &router.Context{
 			Context: ctxCancel,
 			Writer:  httptest.NewRecorder(),
+			Request: getRequest("/", ""),
 		},
 	}, {
 		name: "Rotation success",
@@ -40,6 +44,7 @@ func TestHandleManageRota(t *testing.T) {
 		ctx: &router.Context{
 			Context: ctx,
 			Writer:  httptest.NewRecorder(),
+			Request: getRequest("/", ""),
 		},
 		memberPool: []rotang.Member{
 			{
@@ -67,6 +72,7 @@ func TestHandleManageRota(t *testing.T) {
 		ctx: &router.Context{
 			Context: ctx,
 			Writer:  httptest.NewRecorder(),
+			Request: getRequest("/", ""),
 		},
 		memberPool: []rotang.Member{
 			{
@@ -94,6 +100,7 @@ func TestHandleManageRota(t *testing.T) {
 		ctx: &router.Context{
 			Context: ctx,
 			Writer:  httptest.NewRecorder(),
+			Request: getRequest("/", ""),
 		},
 		memberPool: []rotang.Member{
 			{
@@ -108,14 +115,13 @@ func TestHandleManageRota(t *testing.T) {
 	opts := Options{
 		URL:        "http://localhost:8080",
 		Generators: &algo.Generators{},
+		Calendar:   &calendar.Calendar{},
 	}
 	setupStoreHandlers(&opts, datastore.New)
 	h, err := New(&opts)
 	if err != nil {
 		t.Fatalf("New failed: %v", err)
 	}
-
-	tu := user.GetTestable(ctx)
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
@@ -135,9 +141,10 @@ func TestHandleManageRota(t *testing.T) {
 				Loader: templates.FileSystemLoader(templatesLocation),
 			}, nil)
 			if tst.user != "" {
-				tu.Login(tst.user, "", false)
+				tst.ctx.Context = auth.WithState(tst.ctx.Context, &authtest.FakeState{
+					Identity: identity.Identity("user:" + tst.user),
+				})
 			}
-			defer tu.Logout()
 
 			h.HandleManageRota(tst.ctx)
 

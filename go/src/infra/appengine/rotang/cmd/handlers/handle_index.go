@@ -28,7 +28,7 @@ func (h *State) HandleIndex(ctx *router.Context) {
 	}{}
 
 	usr := auth.CurrentUser(ctx.Context)
-	if usr == nil {
+	if usr == nil || usr.Email == "" {
 		templates.MustRender(ctx.Context, ctx.Writer, "pages/index.html", templates.Args{"Rotas": res})
 		return
 	}

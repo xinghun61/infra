@@ -6,15 +6,19 @@
 package app
 
 import (
+	"io/ioutil"
 	"log"
 	"net/http"
 
 	"infra/appengine/rotang"
 	"infra/appengine/rotang/cmd/handlers"
 	"infra/appengine/rotang/pkg/algo"
+	"infra/appengine/rotang/pkg/calendar"
 	"infra/appengine/rotang/pkg/datastore"
 
 	"golang.org/x/net/context"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 
 	"go.chromium.org/gae/service/mail"
 	"go.chromium.org/luci/appengine/gaeauth/server"
@@ -22,10 +26,14 @@ import (
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
+
+	gcal "google.golang.org/api/calendar/v3"
 )
 
 const (
-	selfURL = "scratch.syd.corp.google.com:8080"
+	selfURL       = "scratch.syd.corp.google.com:8080"
+	sheriffConfig = "token/sheriff_secret.json"
+	sheriffToken  = "token/sheriff_token.json"
 )
 
 type appengineMailer struct{}
@@ -55,6 +63,20 @@ func init() {
 		Loader: templates.FileSystemLoader("../handlers/templates"),
 	}), auth.Authenticate(server.UsersAPIAuthMethod{}))
 
+	b, err := ioutil.ReadFile(sheriffConfig)
+	if err != nil {
+		log.Fatal(err)
+	}
+	config, err := google.ConfigFromJSON(b, gcal.CalendarScope)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	t, err := ioutil.ReadFile(sheriffToken)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Sort out the generators.
 	gs := algo.New()
 	gs.Register(algo.NewLegacy())
@@ -62,7 +84,11 @@ func init() {
 	gs.Register(algo.NewRandomGen())
 
 	opts := handlers.Options{
-		URL:        selfURL,
+		URL: selfURL,
+		Calendar: calendar.New(config, &oauth2.Token{
+			RefreshToken: string(t),
+			TokenType:    "Bearer",
+		}),
 		Generators: gs,
 		MailSender: &appengineMailer{},
 	}
@@ -78,6 +104,7 @@ func init() {
 	r.GET("/createrota", tmw, h.HandleCreateRota)
 	r.GET("/managerota", tmw, h.HandleManageRota)
 	r.GET("/modifyrota", tmw, h.HandleUpdateRota)
+	r.GET("/importshifts", tmw, h.HandleShiftImport)
 
 	r.POST("/modifyrota", tmw, h.HandleUpdateRota)
 	r.POST("/createrota", tmw, h.HandleCreateRota)

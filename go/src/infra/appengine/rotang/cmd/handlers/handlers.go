@@ -9,6 +9,7 @@ import (
 	"infra/appengine/rotang/pkg/algo"
 
 	"golang.org/x/net/context"
+	"golang.org/x/oauth2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -16,8 +17,11 @@ import (
 // State holds shared state between handlers.
 type State struct {
 	selfURL     string
+	calendar    rotang.Calenderer
 	generators  *algo.Generators
 	memberStore func(context.Context) rotang.MemberStorer
+	oauthConfig *oauth2.Config
+	token       *oauth2.Token
 	shiftStore  func(context.Context) rotang.ShiftStorer
 	configStore func(context.Context) rotang.ConfigStorer
 	mailAddress string
@@ -27,6 +31,7 @@ type State struct {
 // Options contains the options used by the handlers.
 type Options struct {
 	URL         string
+	Calendar    rotang.Calenderer
 	Generators  *algo.Generators
 	MailSender  rotang.MailSender
 	MailAddress string
@@ -43,6 +48,8 @@ func New(opt *Options) (*State, error) {
 		return nil, status.Errorf(codes.InvalidArgument, "opt can not be nil")
 	case opt.URL == "":
 		return nil, status.Errorf(codes.InvalidArgument, "URL must be set")
+	case opt.Calendar == nil:
+		return nil, status.Errorf(codes.InvalidArgument, "Calendar can not be nil")
 	case opt.Generators == nil:
 		return nil, status.Errorf(codes.InvalidArgument, "Genarators can not be nil")
 	case opt.MemberStore == nil, opt.ShiftStore == nil, opt.ConfigStore == nil:
@@ -50,6 +57,7 @@ func New(opt *Options) (*State, error) {
 	}
 	return &State{
 		selfURL:     opt.URL,
+		calendar:    opt.Calendar,
 		generators:  opt.Generators,
 		memberStore: opt.MemberStore,
 		shiftStore:  opt.ShiftStore,
