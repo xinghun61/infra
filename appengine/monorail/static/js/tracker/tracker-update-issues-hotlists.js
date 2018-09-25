@@ -197,6 +197,9 @@
     const input = document.createElement('input');
     input.setAttribute('id', 'text_new_hotlist_name');
     input.setAttribute('placeholder', 'New hotlist name');
+    // Hotlist changes are automatic and should be ignored by
+    // TKR_currentFormValues() and TKR_isDirty()
+    input.setAttribute('ignore-dirty', true);
     input.addEventListener('input', _CheckNewHotlistName);
     inputCell.appendChild(input);
     inputTr.appendChild(inputCell);
@@ -248,6 +251,9 @@
       cb.classList.add('checkRangeSelect');
       cb.setAttribute('id', 'cb_hotlist_' + hotlist);
       cb.setAttribute('type', 'checkbox');
+      // Hotlist changes are automatic and should be ignored by
+      // TKR_currentFormValues() and TKR_isDirty()
+      cb.setAttribute('ignore-dirty', true);
       cbCell.appendChild(cb);
 
       const nameCell = document.createElement('td');
