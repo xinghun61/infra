@@ -31,6 +31,9 @@ type TriciumServer struct{}
 // Server instance to use within this module/package.
 var server = &TriciumServer{}
 
+// Regular expression describing a valid change ID (https://goo.gl/U49fRn).
+var changeIDPattern = regexp.MustCompile(".+~.+~I[0-9a-fA-F]{40}.*")
+
 // Analyze processes one Analyze request to Tricium.
 //
 // Launches a workflow customized to the project and listed paths. The run ID
@@ -85,7 +88,7 @@ func validateAnalyzeRequest(c context.Context, req *tricium.AnalyzeRequest) erro
 		if gr.Change == "" {
 			return errors.Reason("missing Gerrit change ID").Err()
 		}
-		if match, _ := regexp.MatchString(".+~.+~I[0-9a-fA-F]{40}.*", gr.Change); !match {
+		if !changeIDPattern.MatchString(gr.Change) {
 			return errors.Reason("invalid Gerrit change ID: " + gr.Change).Err()
 		}
 		if gr.GitUrl == "" {

@@ -65,8 +65,11 @@ func validateProgressRequest(c context.Context, req *tricium.ProgressRequest) (i
 				Tag(grpcutil.InvalidArgumentTag).Err()
 		}
 		if gr.Change == "" {
-			// TODO(qyearsley): Validate change ID here as in analyze request.
 			return 0, errors.Reason("missing Gerrit change ID").
+				Tag(grpcutil.InvalidArgumentTag).Err()
+		}
+		if !changeIDPattern.MatchString(gr.Change) {
+			return 0, errors.Reason("invalid Gerrit change ID: " + gr.Change).
 				Tag(grpcutil.InvalidArgumentTag).Err()
 		}
 		if gr.GitRef == "" {

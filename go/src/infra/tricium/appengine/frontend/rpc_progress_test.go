@@ -210,6 +210,21 @@ func TestProgress(t *testing.T) {
 			}
 			_, err := validateProgressRequest(ctx, request)
 			So(err, ShouldNotBeNil)
+
+		})
+		Convey("Validate request with invalid Gerrit change ID", func() {
+			request := &tricium.ProgressRequest{
+				Source: &tricium.ProgressRequest_GerritRevision{
+					GerritRevision: &tricium.GerritRevision{
+						Host:    host,
+						Project: project,
+						Change:  "not a change ID",
+						GitRef:  revision,
+					},
+				},
+			}
+			_, err := validateProgressRequest(ctx, request)
+			So(err, ShouldNotBeNil)
 		})
 
 		Convey("Validate request with both Gerrit details run ID", func() {
