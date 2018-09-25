@@ -18,4 +18,14 @@ create {
   }
 }
 
+create {
+  # Prebuild cmake@3.11.4 doesn't work on the dockerbuild container for
+  # linux-amd64, because of not-very-interesting reasons.
+  platform_re: "linux-amd64"
+  build {
+    tool: ""  # don't need any tools, is self bootstrapping
+    install: "install_native.sh"
+  }
+}
+
 upload { pkg_prefix: "infra" }
