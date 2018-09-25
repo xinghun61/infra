@@ -854,9 +854,24 @@ the permission to schedule a Dataflow job for your project.
 &mdash; **def [RunSteps](/recipes/recipes/remote_execute_dataflow_workflow.py#50)(api, workflow, job_name, gcp_project_id, num_workers, timeout):**
 ### *recipes* / [snapshot](/recipes/recipes/snapshot.py)
 
-[DEPS](/recipes/recipes/snapshot.py#5): [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties]
+[DEPS](/recipes/recipes/snapshot.py#5): [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipes/snapshot.py#13)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/snapshot.py#46)(api):**
+
+&mdash; **def [get\_value](/recipes/recipes/snapshot.py#26)(pairs, key):**
+
+Returns a the value for the given key in the given pairs.
+
+Args:
+  pairs: A list of {"key": key, "value": value} dicts.
+  key: A key whose value to get. If the key appears more than once, only
+    the first value is returned.
+
+Returns:
+  The value for the given key.
+
+Raises:
+  ValueError: If the key doesn't exist.
 ### *recipes* / [sync\_submodules](/recipes/recipes/sync_submodules.py)
 
 [DEPS](/recipes/recipes/sync_submodules.py#7): [sync\_submodules](#recipe_modules-sync_submodules), [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime]

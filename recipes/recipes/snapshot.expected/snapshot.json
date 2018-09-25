@@ -4,7 +4,7 @@
       "cipd",
       "ensure",
       "-root",
-      "[CACHE]/packages",
+      "[START_DIR]/packages",
       "-ensure-file",
       "infra/tools/luci/swarming/${platform} latest",
       "-json-output",
@@ -23,6 +23,70 @@
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "name": "chromium-swarm-dev"
+  },
+  {
+    "cmd": [
+      "[START_DIR]/packages/swarming",
+      "bots",
+      "-field",
+      "items/dimensions",
+      "-field",
+      "items/bot_id",
+      "-field",
+      "items/machine_type",
+      "-json",
+      "/path/to/tmp/json",
+      "-mp",
+      "-server",
+      "chromium-swarm-dev.appspot.com"
+    ],
+    "name": "chromium-swarm-dev.bots",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@[@@@",
+      "@@@STEP_LOG_LINE@json.output@  {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"bot_id\": \"snapshot-me\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"dimensions\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@      {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"key\": \"os\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"value\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@          \"Ubuntu\", @@@",
+      "@@@STEP_LOG_LINE@json.output@          \"Ubuntu-14.04\"@@@",
+      "@@@STEP_LOG_LINE@json.output@        ]@@@",
+      "@@@STEP_LOG_LINE@json.output@      }@@@",
+      "@@@STEP_LOG_LINE@json.output@    ], @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"machine_type\": \"mt\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"bot_id\": \"dont-snapshot-me\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"dimensions\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@      {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"key\": \"os\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"value\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@          \"Windows\", @@@",
+      "@@@STEP_LOG_LINE@json.output@          \"Windows-10\"@@@",
+      "@@@STEP_LOG_LINE@json.output@        ]@@@",
+      "@@@STEP_LOG_LINE@json.output@      }@@@",
+      "@@@STEP_LOG_LINE@json.output@    ], @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"machine_type\": \"mt\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@]@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "echo",
+      "snapshot-me"
+    ],
+    "name": "chromium-swarm-dev.machine type: mt",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
