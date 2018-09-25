@@ -1220,7 +1220,7 @@ class SwarmingTest(BaseTest):
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
 
-  @mock.patch('swarming.swarming.should_use_canary_template', autospec=True)
+  @mock.patch('swarming.swarming._should_use_canary_template', autospec=True)
   def test_create_task_async_no_canary_template_implicit(
       self, should_use_canary_template
   ):
@@ -1588,7 +1588,7 @@ class SwarmingTest(BaseTest):
                 'started_ts': '2018-01-29T21:15:02.649750',
                 'completed_ts': '2018-01-30T00:15:18.162860',
             },
-            'build_run_result_error': swarming.BUILD_RUN_RESULT_CORRUPTED,
+            'build_run_result_error': swarming._BUILD_RUN_RESULT_CORRUPTED,
             'status': model.BuildStatus.COMPLETED,
             'result': model.BuildResult.FAILURE,
             'failure_reason': model.FailureReason.INFRA_FAILURE,
@@ -1731,7 +1731,7 @@ class SwarmingTest(BaseTest):
         future(
             json.dumps({
                 'files': {
-                    swarming.BUILD_RUN_RESULT_FILENAME: {
+                    swarming._BUILD_RUN_RESULT_FILENAME: {
                         'h': 'deadbeef',
                         's': 2048,
                     },
@@ -1771,7 +1771,7 @@ class SwarmingTest(BaseTest):
     fetch_isolate_async.return_value = future(
         json.dumps({
             'files': {
-                swarming.BUILD_RUN_RESULT_FILENAME: {
+                swarming._BUILD_RUN_RESULT_FILENAME: {
                     'h': 'deadbeef',
                     's': 1 + (1 << 20),
                 },
@@ -1786,7 +1786,7 @@ class SwarmingTest(BaseTest):
             'isolated': 'badcoffee',
         },
     }, 'luci.chromium.ci', 'linux-rel').get_result()
-    self.assertEqual(error, swarming.BUILD_RUN_RESULT_TOO_LARGE)
+    self.assertEqual(error, swarming._BUILD_RUN_RESULT_TOO_LARGE)
     self.assertIsNone(actual)
 
   @mock.patch('swarming.isolate.fetch_async')
@@ -1820,7 +1820,7 @@ class SwarmingTest(BaseTest):
             'isolated': 'badcoffee',
         },
     }, 'luci.chromium.ci', 'linux-rel').get_result()
-    self.assertEqual(error, swarming.BUILD_RUN_RESULT_CORRUPTED)
+    self.assertEqual(error, swarming._BUILD_RUN_RESULT_CORRUPTED)
     self.assertIsNone(run_result)
 
   @mock.patch('swarming.isolate.fetch_async')
@@ -1834,7 +1834,7 @@ class SwarmingTest(BaseTest):
             'isolated': 'badcoffee',
         },
     }, 'luci.chromium.ci', 'linux-rel').get_result()
-    self.assertEqual(error, swarming.BUILD_RUN_RESULT_CORRUPTED)
+    self.assertEqual(error, swarming._BUILD_RUN_RESULT_CORRUPTED)
     self.assertIsNone(run_result)
 
   @mock.patch('swarming.isolate.fetch_async')
@@ -2289,7 +2289,7 @@ class TestApplyIfTags(BaseTest):
             'b': 'c',
         },
     }
-    self.assertEqual(swarming.apply_if_tags(obj), obj)
+    self.assertEqual(swarming._apply_if_tags(obj), obj)
 
   def test_drop_if_tag(self):
     obj = {
@@ -2307,7 +2307,7 @@ class TestApplyIfTags(BaseTest):
         },
     }
     self.assertEqual(
-        swarming.apply_if_tags(obj), {
+        swarming._apply_if_tags(obj), {
             'tags': [
                 'something',
                 'other_thing',
@@ -2339,7 +2339,7 @@ class TestApplyIfTags(BaseTest):
         },
     }
     self.assertEqual(
-        swarming.apply_if_tags(obj), {
+        swarming._apply_if_tags(obj), {
             'tags': [
                 'something',
                 'other_thing',

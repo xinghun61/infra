@@ -65,24 +65,24 @@ import logdog
 import model
 import user
 
-PUBSUB_TOPIC = 'swarming'
-PARAM_PROPERTIES = 'properties'
-PARAM_SWARMING = 'swarming'
-PARAM_CHANGES = 'changes'
+_PUBSUB_TOPIC = 'swarming'
+_PARAM_PROPERTIES = 'properties'
+_PARAM_SWARMING = 'swarming'
+_PARAM_CHANGES = 'changes'
 
-BUILD_RUN_RESULT_FILENAME = 'build-run-result.json'
-BUILD_RUN_RESULT_CORRUPTED = 'corrupted'
-BUILD_RUN_RESULT_MAX_SIZE_MB = 1
-BUILD_RUN_RESULT_MAX_SIZE = BUILD_RUN_RESULT_MAX_SIZE_MB * (1e6)
-BUILD_RUN_RESULT_TOO_LARGE = '>= %d MB' % BUILD_RUN_RESULT_MAX_SIZE_MB
-BUILD_RUN_RESULT_SIZE_METRIC = gae_ts_mon.CumulativeDistributionMetric(
+_BUILD_RUN_RESULT_FILENAME = 'build-run-result.json'
+_BUILD_RUN_RESULT_CORRUPTED = 'corrupted'
+_BUILD_RUN_RESULT_MAX_SIZE_MB = 1
+_BUILD_RUN_RESULT_MAX_SIZE = _BUILD_RUN_RESULT_MAX_SIZE_MB * (1e6)
+_BUILD_RUN_RESULT_TOO_LARGE = '>= %d MB' % _BUILD_RUN_RESULT_MAX_SIZE_MB
+_BUILD_RUN_RESULT_SIZE_METRIC = gae_ts_mon.CumulativeDistributionMetric(
     'buildbucket/build_run_result_size',
     'Size of the build result JSON file fetched from isolate',
     [gae_ts_mon.StringField('bucket'),
      gae_ts_mon.StringField('builder')],
     units=gae_ts_mon.MetricsDataUnits.KILOBYTES,
 )
-BUILD_STEPS_SIZE_METRIC = gae_ts_mon.CumulativeDistributionMetric(
+_BUILD_STEPS_SIZE_METRIC = gae_ts_mon.CumulativeDistributionMetric(
     'buildbucket/build_steps_size',
     'Size of the build steps',
     [gae_ts_mon.StringField('bucket'),
@@ -94,16 +94,16 @@ BUILD_STEPS_SIZE_METRIC = gae_ts_mon.CumulativeDistributionMetric(
 # This number is relatively high so we treat canary seriously and that we have
 # a strong signal if the canary is broken.
 # If it is, the template must be reverted to a stable version ASAP.
-DEFAULT_CANARY_TEMPLATE_PERCENTAGE = 10
+_DEFAULT_CANARY_TEMPLATE_PERCENTAGE = 10
 
 # This is the path, relative to the swarming run dir, to the directory that
 # contains the mounted swarming named caches. It will be prepended to paths of
 # caches defined in swarmbucket configs.
-CACHE_DIR = 'cache'
+_CACHE_DIR = 'cache'
 
 # This is the path, relative to the swarming run dir, which is where the recipes
 # are either checked out, or installed via CIPD package.
-KITCHEN_CHECKOUT = 'kitchen-checkout'
+_KITCHEN_CHECKOUT = 'kitchen-checkout'
 
 ################################################################################
 # Creation/cancellation of tasks.
@@ -122,13 +122,13 @@ class CanaryTemplateNotFound(TemplateNotFound):
 
 
 @ndb.tasklet
-def get_settings_async():  # pragma: no cover
+def _get_settings_async():  # pragma: no cover
   settings = yield config.get_settings_async()
   raise ndb.Return(settings.swarming)
 
 
 @ndb.tasklet
-def get_task_template_async(canary, canary_required=True):
+def _get_task_template_async(canary, canary_required=True):
   """Gets a tuple (template_revision, template_dict, canary_bool).
 
   Args:
@@ -188,7 +188,7 @@ def validate_build_parameters(builder_name, params):
     if not isinstance(value, dict):
       bad('%s parameter must be an object' % name)
 
-  changes = params.pop(PARAM_CHANGES, None)
+  changes = params.pop(_PARAM_CHANGES, None)
   if changes is not None:
     if not isinstance(changes, list):
       bad('changes param must be an array')
@@ -207,7 +207,7 @@ def validate_build_parameters(builder_name, params):
       if not email:
         bad('change author email not specified')
 
-  properties = params.pop(PARAM_PROPERTIES, None)
+  properties = params.pop(_PARAM_PROPERTIES, None)
   if properties is not None:
     assert_object('properties', properties)
     if properties.pop('buildername', builder_name) != builder_name:
@@ -224,7 +224,7 @@ def validate_build_parameters(builder_name, params):
       with ctx.prefix('property %r:', k):
         swarmingcfg_module.validate_recipe_property(k, v, ctx)
 
-  swarming = params.pop(PARAM_SWARMING, None)
+  swarming = params.pop(_PARAM_SWARMING, None)
   if swarming is not None:
     assert_object('swarming', swarming)
     swarming = copy.deepcopy(swarming)
@@ -262,7 +262,7 @@ def validate_build_parameters(builder_name, params):
 
 
 # Mocked in tests.
-def should_use_canary_template(percentage):  # pragma: no cover
+def _should_use_canary_template(percentage):  # pragma: no cover
   """Returns True if a canary template should be used.
 
   This function is non-determinstic.
@@ -321,7 +321,7 @@ def _buildbucket_property(build):
   }
 
 
-def apply_if_tags(task):
+def _apply_if_tags(task):
   """Filters a task based on '#if-tag's on JSON objects.
 
   JSON objects containing a property '#if-tag' will be checked to see if the
@@ -368,7 +368,7 @@ def _is_migrating_builder_prod_async(builder_cfg, build):
   ret = None
 
   MASTER_PROPERTY = 'mastername'
-  master = (build.parameters.get(PARAM_PROPERTIES) or {}).get(MASTER_PROPERTY)
+  master = (build.parameters.get(_PARAM_PROPERTIES) or {}).get(MASTER_PROPERTY)
   if master is None:
     # TODO(nodir): undup with logic, it is also in _create_task_def_async
     props = flatten_swarmingcfg.read_properties(builder_cfg.recipe)
@@ -423,16 +423,16 @@ def _create_task_def_async(
   build.parameters_actual = params
   # params is an alias for build.parameters_actual.
   validate_build_parameters(builder_cfg.name, params)
-  swarming_param = params.get(PARAM_SWARMING) or {}
+  swarming_param = params.get(_PARAM_SWARMING) or {}
 
   # Use canary template?
   assert isinstance(build.canary_preference, model.CanaryPreference)
   if build.canary_preference == model.CanaryPreference.AUTO:
-    canary_percentage = DEFAULT_CANARY_TEMPLATE_PERCENTAGE
+    canary_percentage = _DEFAULT_CANARY_TEMPLATE_PERCENTAGE
     if swarming_cfg.HasField(  # pragma: no branch
         'task_template_canary_percentage'):
       canary_percentage = swarming_cfg.task_template_canary_percentage.value
-    build.canary = should_use_canary_template(canary_percentage)
+    build.canary = _should_use_canary_template(canary_percentage)
   else:
     build.canary = build.canary_preference == model.CanaryPreference.CANARY
 
@@ -440,7 +440,7 @@ def _create_task_def_async(
 
   try:
     task_template_rev, task_template, build.canary = (
-        yield get_task_template_async(
+        yield _get_task_template_async(
             build.canary,
             build.canary_preference == model.CanaryPreference.CANARY
         )
@@ -462,13 +462,13 @@ def _create_task_def_async(
       'build_id':
           build.key.id(),
       'build_result_filename':
-          BUILD_RUN_RESULT_FILENAME,
+          _BUILD_RUN_RESULT_FILENAME,
       'build_url':
           build.url,
       'builder':
           builder_cfg.name,
       'cache_dir':
-          CACHE_DIR,
+          _CACHE_DIR,
       'hostname':
           app_identity.get_default_version_hostname(),
       'project':
@@ -484,9 +484,9 @@ def _create_task_def_async(
     # Properties specified in build parameters must override those in builder
     # config.
     build_properties = flatten_swarmingcfg.read_properties(builder_cfg.recipe)
-    build_properties.update(params.get(PARAM_PROPERTIES) or {})
-    params[PARAM_PROPERTIES] = build_properties
-    # build_properties is an alias for params[PARAM_PROPERTIES]
+    build_properties.update(params.get(_PARAM_PROPERTIES) or {})
+    params[_PARAM_PROPERTIES] = build_properties
+    # build_properties is an alias for params[_PARAM_PROPERTIES]
 
     # In order to allow some builders to behave like other builders, we allow
     # builders to explicitly set buildername.
@@ -503,7 +503,7 @@ def _create_task_def_async(
     if build_number is not None:  # pragma: no branch
       build_properties['buildnumber'] = build_number
 
-    changes = params.get(PARAM_CHANGES)
+    changes = params.get(_PARAM_CHANGES)
     if changes:  # pragma: no branch
       # Buildbucket-Buildbot integration passes repo_url of the first change in
       # build parameter "changes" as "repository" attribute of SourceStamp.
@@ -525,7 +525,7 @@ def _create_task_def_async(
     task_template_params.update({
         'recipe': builder_cfg.recipe.name,
         'properties_json': json.dumps(build_properties, sort_keys=True),
-        'checkout_dir': KITCHEN_CHECKOUT,
+        'checkout_dir': _KITCHEN_CHECKOUT,
     })
     extra_swarming_tags = [
         'recipe_name:%s' % builder_cfg.recipe.name,
@@ -540,7 +540,7 @@ def _create_task_def_async(
           'recipe_package:' + builder_cfg.recipe.cipd_package
       )
       extra_cipd_packages.append({
-          'path': KITCHEN_CHECKOUT,
+          'path': _KITCHEN_CHECKOUT,
           'package_name': builder_cfg.recipe.cipd_package,
           'version': builder_cfg.recipe.cipd_version or 'refs/heads/master',
       })
@@ -594,7 +594,7 @@ def _create_task_def_async(
   _extend_unique(swarming_tags, build.tags)
   swarming_tags.sort()
 
-  task = apply_if_tags(task)
+  task = _apply_if_tags(task)
   if len(task['task_slices']) != 1:
     raise errors.InvalidInputError(
         'base swarming task template can only have one task_slices'
@@ -636,7 +636,7 @@ def _create_task_def_async(
   if not fake_build:  # pragma: no branch | covered by swarmbucketapi_test.py
     task['pubsub_topic'] = (
         'projects/%s/topics/%s' %
-        (app_identity.get_application_id(), PUBSUB_TOPIC)
+        (app_identity.get_application_id(), _PUBSUB_TOPIC)
     )
     task['pubsub_userdata'] = json.dumps(
         {
@@ -704,7 +704,7 @@ def _add_named_caches(builder_cfg, task_properties):
       # their configs.
       cache_path = c.path
     else:
-      cache_path = posixpath.join(CACHE_DIR, c.path)
+      cache_path = posixpath.join(_CACHE_DIR, c.path)
     names.add(c.name)
     paths.add(cache_path)
     task_properties['caches'].append({
@@ -775,7 +775,7 @@ def _get_builder_async(build):
 
 @ndb.tasklet
 def prepare_task_def_async(build, build_number=None, fake_build=False):
-  settings = yield get_settings_async()
+  settings = yield _get_settings_async()
   bucket_cfg, builder_cfg = yield _get_builder_async(build)
   ret = yield _prepare_task_def_async(
       build, build_number, bucket_cfg, builder_cfg, settings, fake_build
@@ -833,7 +833,7 @@ def create_task_async(build, build_number=None):
   Raises:
     errors.InvalidInputError if build attribute values are invalid.
   """
-  settings = yield get_settings_async()
+  settings = yield _get_settings_async()
   bucket_cfg, builder_cfg = yield _get_builder_async(build)
 
   task_def = yield _prepare_task_def_async(
@@ -977,7 +977,7 @@ def _load_task_result_async(hostname, task_id):  # pragma: no cover
 
 @ndb.tasklet
 def _load_build_run_result_async(task_result, bucket, builder):
-  """Fetches BUILD_RUN_RESULT_FILENAME from swarming task output.
+  """Fetches _BUILD_RUN_RESULT_FILENAME from swarming task output.
 
   Logs errors.
 
@@ -994,7 +994,7 @@ def _load_build_run_result_async(task_result, bucket, builder):
         'Bad isolatedserver %r read from task %s',
         outputs_ref['isolatedserver'], task_result['id']
     )
-    raise ndb.Return(None, BUILD_RUN_RESULT_CORRUPTED)
+    raise ndb.Return(None, _BUILD_RUN_RESULT_CORRUPTED)
 
   hostname = outputs_ref['isolatedserver'][len(server_prefix):]
 
@@ -1012,17 +1012,17 @@ def _load_build_run_result_async(task_result, bucket, builder):
   )
   isolated = yield fetch_json_async(isolated_loc)
   if isolated is None:
-    raise ndb.Return(None, BUILD_RUN_RESULT_CORRUPTED)
+    raise ndb.Return(None, _BUILD_RUN_RESULT_CORRUPTED)
 
   # Assume the isolated file format
-  result_entry = isolated['files'].get(BUILD_RUN_RESULT_FILENAME)
+  result_entry = isolated['files'].get(_BUILD_RUN_RESULT_FILENAME)
   if not result_entry:
     raise ndb.Return(None, None)
 
   result_size = int(result_entry['s'])
-  if result_size >= BUILD_RUN_RESULT_MAX_SIZE:
-    raise ndb.Return(None, BUILD_RUN_RESULT_TOO_LARGE)
-  BUILD_RUN_RESULT_SIZE_METRIC.add(
+  if result_size >= _BUILD_RUN_RESULT_MAX_SIZE:
+    raise ndb.Return(None, _BUILD_RUN_RESULT_TOO_LARGE)
+  _BUILD_RUN_RESULT_SIZE_METRIC.add(
       result_size / 1000, {
           'bucket': bucket,
           'builder': builder,
@@ -1032,7 +1032,7 @@ def _load_build_run_result_async(task_result, bucket, builder):
   result_loc = isolated_loc._replace(digest=result_entry['h'])
   build_result = yield fetch_json_async(result_loc)
   raise ndb.Return(
-      build_result, None if build_result else BUILD_RUN_RESULT_CORRUPTED
+      build_result, None if build_result else _BUILD_RUN_RESULT_CORRUPTED
   )
 
 
@@ -1081,7 +1081,7 @@ def _sync_build_in_memory(
     build.result = model.BuildResult.FAILURE
     build.failure_reason = model.FailureReason.INFRA_FAILURE
     errmsg = '%s returned by the swarming task is bad: %s.' % (
-        BUILD_RUN_RESULT_FILENAME, build_run_result_error
+        _BUILD_RUN_RESULT_FILENAME, build_run_result_error
     )
   elif state is None:
     build.status = model.BuildStatus.COMPLETED
@@ -1218,7 +1218,7 @@ def _sync_build_async(build_id, task_result, bucket, builder):
   # TODO(nodir): accept build steps via a separate RPC.
   step_container = build_pb2.Build(steps=_extract_build_steps(build_run_result))
   step_byte_size = step_container.ByteSize()
-  BUILD_STEPS_SIZE_METRIC.add(
+  _BUILD_STEPS_SIZE_METRIC.add(
       step_byte_size / 1000,  # convert to Kb
       {
           'bucket': bucket,
@@ -1234,7 +1234,7 @@ def _sync_build_async(build_id, task_result, bucket, builder):
         'build steps are %d bytes which is more than %d' %
         (step_byte_size, model.BuildSteps.MAX_STEPS_LEN)
     )
-    build_run_result_error = BUILD_RUN_RESULT_TOO_LARGE
+    build_run_result_error = _BUILD_RUN_RESULT_TOO_LARGE
   else:
     # Do not set build_steps.step_container unless we are sure it is under the
     # size limit.

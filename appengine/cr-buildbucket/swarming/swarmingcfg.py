@@ -14,30 +14,31 @@ from components.config import validation
 from proto.config import project_config_pb2
 from . import flatten_swarmingcfg
 
-DIMENSION_KEY_RGX = re.compile(r'^[a-zA-Z\_\-]+$')
+_DIMENSION_KEY_RGX = re.compile(r'^[a-zA-Z\_\-]+$')
 # Copied from
 # https://github.com/luci/luci-py/blob/75de6021b50a73e140eacfb80760f8c25aa183ff/appengine/swarming/server/task_request.py#L101
 # Keep it synchronized.
-CACHE_NAME_RE = re.compile(ur'^[a-z0-9_]{1,4096}$')
+_CACHE_NAME_RE = re.compile(ur'^[a-z0-9_]{1,4096}$')
 # See https://chromium.googlesource.com/infra/luci/luci-py/+/master/appengine/swarming/server/service_accounts.py
-SERVICE_ACCOUNT_RE = re.compile(r'^[0-9a-zA-Z_\-\.\+\%]+@[0-9a-zA-Z_\-\.]+$')
+_SERVICE_ACCOUNT_RE = re.compile(r'^[0-9a-zA-Z_\-\.\+\%]+@[0-9a-zA-Z_\-\.]+$')
 
 BUILDER_NAME_VALID_CHARS = string.ascii_letters + string.digits + '()-_. '
-BUILDER_NAME_VALID_CHAR_SET = frozenset(BUILDER_NAME_VALID_CHARS)
+_BUILDER_NAME_VALID_CHAR_SET = frozenset(BUILDER_NAME_VALID_CHARS)
 
 
-def validate_hostname(hostname, ctx):
+def _validate_hostname(hostname, ctx):
   if not hostname:
     ctx.error('unspecified')
   if '://' in hostname:
     ctx.error('must not contain "://"')
 
 
-def validate_service_account(service_account, ctx):
-  if service_account != 'bot' and not SERVICE_ACCOUNT_RE.match(service_account):
+def _validate_service_account(service_account, ctx):
+  if (service_account != 'bot' and
+      not _SERVICE_ACCOUNT_RE.match(service_account)):
     ctx.error(
         'value "%s" does not match %s', service_account,
-        SERVICE_ACCOUNT_RE.pattern
+        _SERVICE_ACCOUNT_RE.pattern
     )
 
 
@@ -57,7 +58,7 @@ def read_dimensions(builder_cfg):  # pragma: no cover
   return [(k, v) for k, v in sorted(dimensions.iteritems()) if v]
 
 
-def validate_tag(tag, ctx):
+def _validate_tag(tag, ctx):
   # a valid swarming tag is a string that contains ":"
   if ':' not in tag:
     ctx.error('does not have ":": %s', tag)
@@ -69,7 +70,7 @@ def validate_tag(tag, ctx):
     )
 
 
-def validate_dimensions(field_name, dimensions, ctx):
+def _validate_dimensions(field_name, dimensions, ctx):
   known_keys = set()
   for i, dim in enumerate(dimensions):
     with ctx.prefix('%s #%d: ', field_name, i + 1):
@@ -81,10 +82,10 @@ def validate_dimensions(field_name, dimensions, ctx):
       if not key:
         ctx.error('no key')
       else:
-        if not DIMENSION_KEY_RGX.match(key):
+        if not _DIMENSION_KEY_RGX.match(key):
           ctx.error(
               'key "%s" does not match pattern "%s"', key,
-              DIMENSION_KEY_RGX.pattern
+              _DIMENSION_KEY_RGX.pattern
           )
         if key in known_keys:
           ctx.error('duplicate key %s', key)
@@ -92,7 +93,7 @@ def validate_dimensions(field_name, dimensions, ctx):
           known_keys.add(key)
 
 
-def validate_relative_path(path, ctx):
+def _validate_relative_path(path, ctx):
   if not path:
     ctx.error('path is required')
   if '\\' in path:
@@ -106,7 +107,7 @@ def validate_relative_path(path, ctx):
     ctx.error('path cannot start with "/"')
 
 
-def validate_recipe_cfg(recipe, ctx, final=True):
+def _validate_recipe_cfg(recipe, ctx, final=True):
   """Validates a Recipe message.
 
   If final is False, does not validate for completeness.
@@ -179,7 +180,7 @@ def validate_builder_cfg(builder, mixin_names, final, ctx):
     invalid_chars = ''.join(
         sorted(
             set(
-                c for c in builder.name if c not in BUILDER_NAME_VALID_CHAR_SET
+                c for c in builder.name if c not in _BUILDER_NAME_VALID_CHAR_SET
             )
         )
     )
@@ -191,16 +192,16 @@ def validate_builder_cfg(builder, mixin_names, final, ctx):
 
   for i, t in enumerate(builder.swarming_tags):
     with ctx.prefix('tag #%d: ', i + 1):
-      validate_tag(t, ctx)
+      _validate_tag(t, ctx)
 
-  validate_dimensions('dimension', builder.dimensions, ctx)
+  _validate_dimensions('dimension', builder.dimensions, ctx)
 
   cache_paths = set()
   cache_names = set()
   fallback_secs = set()
   for i, c in enumerate(builder.caches):
     with ctx.prefix('cache #%d: ', i + 1):
-      validate_cache_entry(c, ctx)
+      _validate_cache_entry(c, ctx)
       if c.name:
         if c.name in cache_names:
           ctx.error('duplicate name')
@@ -225,14 +226,14 @@ def validate_builder_cfg(builder, mixin_names, final, ctx):
     )
 
   with ctx.prefix('recipe: '):
-    validate_recipe_cfg(builder.recipe, ctx, final=final)
+    _validate_recipe_cfg(builder.recipe, ctx, final=final)
 
   if builder.priority > 200:
     ctx.error('priority must be in [0, 200] range; got %d', builder.priority)
 
   if builder.service_account:
     with ctx.prefix('service_account: '):
-      validate_service_account(builder.service_account, ctx)
+      _validate_service_account(builder.service_account, ctx)
 
   for m in builder.mixins:
     if not m:
@@ -246,13 +247,13 @@ def validate_builder_cfg(builder, mixin_names, final, ctx):
     ctx.error('expiration_secs + execution_timeout_secs must be at most 47h')
 
 
-def validate_cache_entry(entry, ctx):
+def _validate_cache_entry(entry, ctx):
   if not entry.name:
     ctx.error('name is required')
-  elif not CACHE_NAME_RE.match(entry.name):
-    ctx.error('name "%s" does not match %s', entry.name, CACHE_NAME_RE.pattern)
+  elif not _CACHE_NAME_RE.match(entry.name):
+    ctx.error('name "%s" does not match %s', entry.name, _CACHE_NAME_RE.pattern)
 
-  validate_relative_path(entry.path, ctx)
+  _validate_relative_path(entry.path, ctx)
 
 
 def validate_builder_mixins(mixins, ctx):
@@ -329,7 +330,7 @@ def validate_project_cfg(swarming, mixins, mixins_are_valid, ctx):
     )
 
   with ctx.prefix('hostname: '):
-    validate_hostname(swarming.hostname, ctx)
+    _validate_hostname(swarming.hostname, ctx)
 
   if swarming.task_template_canary_percentage.value > 100:
     ctx.error('task_template_canary_percentage.value must must be in [0, 100]')
@@ -368,7 +369,7 @@ def validate_project_cfg(swarming, mixins, mixins_are_valid, ctx):
 def validate_service_cfg(swarming, ctx):
   if swarming.milo_hostname:
     with ctx.prefix('milo_hostname: '):
-      validate_hostname(swarming.milo_hostname, ctx)
+      _validate_hostname(swarming.milo_hostname, ctx)
 
 
 def clear_dash(s):

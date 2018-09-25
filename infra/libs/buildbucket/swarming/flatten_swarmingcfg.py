@@ -17,6 +17,9 @@ import copy
 import json
 
 
+## Public API.
+
+
 def read_properties(recipe):
   """Parses build properties from the recipe message.
 
@@ -37,33 +40,6 @@ def parse_dimensions(strings):
   return dict(s.split(':', 1) for s in strings)
 
 
-def format_dimensions(dictionary):
-  """Formats a dictionary of dimensions to a list of strings.
-
-  Opposite of parse_dimensions.
-  """
-  return sorted(['%s:%s' % (k, v) for k, v in dictionary.iteritems()])
-
-
-def merge_recipe(r1, r2):
-  """Merges Recipe message r2 into r1.
-
-  Expects messages to be valid.
-
-  All properties are converted to properties_j.
-  """
-  props = read_properties(r1)
-  props.update(read_properties(r2))
-
-  r1.MergeFrom(r2)
-  r1.properties[:] = []
-  r1.properties_j[:] = [
-      '%s:%s' % (k, json.dumps(v))
-      for k, v in sorted(props.iteritems())
-      if v is not None
-  ]
-
-
 def merge_builder(b1, b2):
   """Merges Builder message b2 into b1. Expects messages to be valid."""
   assert not b2.mixins, 'do not merge unflattened builders'
@@ -73,10 +49,10 @@ def merge_builder(b1, b2):
   recipe = None
   if b1.HasField('recipe') or b2.HasField('recipe'):  # pragma: no branch
     recipe = copy.deepcopy(b1.recipe)
-    merge_recipe(recipe, b2.recipe)
+    _merge_recipe(recipe, b2.recipe)
 
   b1.MergeFrom(b2)
-  b1.dimensions[:] = format_dimensions(dims)
+  b1.dimensions[:] = _format_dimensions(dims)
   b1.swarming_tags[:] = sorted(set(b1.swarming_tags))
 
   caches = [t[1] for t in sorted({c.name: c for c in b1.caches}.iteritems())]
@@ -115,3 +91,33 @@ def flatten_builder(builder, defaults, mixins):
     flatten_builder(mixins[m], None, mixins)
     merge_builder(builder, mixins[m])
   merge_builder(builder, orig_without_mixins)
+
+
+## Private code.
+
+
+def _format_dimensions(dictionary):
+  """Formats a dictionary of dimensions to a list of strings.
+
+  Opposite of parse_dimensions.
+  """
+  return sorted(['%s:%s' % (k, v) for k, v in dictionary.iteritems()])
+
+
+def _merge_recipe(r1, r2):
+  """Merges Recipe message r2 into r1.
+
+  Expects messages to be valid.
+
+  All properties are converted to properties_j.
+  """
+  props = read_properties(r1)
+  props.update(read_properties(r2))
+
+  r1.MergeFrom(r2)
+  r1.properties[:] = []
+  r1.properties_j[:] = [
+      '%s:%s' % (k, json.dumps(v))
+      for k, v in sorted(props.iteritems())
+      if v is not None
+  ]

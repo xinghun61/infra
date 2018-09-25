@@ -142,7 +142,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     }
 
     self.patch(
-        'swarming.swarming.get_task_template_async',
+        'swarming.swarming._get_task_template_async',
         return_value=future(('rev', self.task_template, False))
     )
 
