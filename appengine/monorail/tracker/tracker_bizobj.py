@@ -840,27 +840,39 @@ def ApplyFieldValueChanges(issue, config, fvs_add, fvs_remove, fields_clear):
    update_fields_remove) = MergeFields(
        issue.field_values, fvs_add, fvs_remove,
        config.field_defs)
-
+  phase_names_dict = {phase.phase_id: phase.name for phase in issue.phases}
   amendments = []
   if update_fields_add or update_fields_remove:
     issue.field_values = field_vals
     for fd in config.field_defs:
-      added_values_this_field = [
-          fv for fv in update_fields_add if fv.field_id == fd.field_id]
-      if added_values_this_field:
+      fd_added_values_by_phase = collections.defaultdict(list)
+      # Split fd's added fvs by the phase they belong to.
+      # non-phase fds will result in {None: [added_fvs]}
+      for fv in update_fields_add:
+        if fv.field_id == fd.field_id:
+          fd_added_values_by_phase[fv.phase_id].append(fv)
+      for phase_id, fvs in fd_added_values_by_phase.iteritems():
         amendments.append(MakeFieldAmendment(
             fd.field_id, config,
             [GetFieldValue(fv, {})
-             for fv in added_values_this_field],
-            old_values=[]))
-      removed_values_this_field = [
-          fv for fv in update_fields_remove if fv.field_id == fd.field_id]
-      if removed_values_this_field:
+             for fv in fvs],
+            old_values=[],
+            phase_name=phase_names_dict.get(phase_id)))
+
+      # split fd's removed fvs by the phase they belong to.
+      fd_removed_values_by_phase = collections.defaultdict(list)
+      for fv in update_fields_remove:
+        if fv.field_id == fd.field_id:
+          fd_removed_values_by_phase[fv.phase_id].append(fv)
+      for phase_id, fvs in fd_removed_values_by_phase.iteritems():
         amendments.append(MakeFieldAmendment(
             fd.field_id, config, [],
             old_values=[GetFieldValue(fv, {})
-                        for fv in removed_values_this_field]))
+                        for fv in fvs],
+            phase_name=phase_names_dict.get(phase_id)))
 
+  # Note: Clearing fields is used with bulk-editing and phase fields do
+  # not appear there and cannot be bulk-edited.
   if fields_clear:
     field_clear_set = set(fields_clear)
     revised_fields = []
@@ -1136,7 +1148,8 @@ def DiffValueLists(new_list, old_list):
   return added, removed
 
 
-def MakeFieldAmendment(field_id, config, new_values, old_values=None):
+def MakeFieldAmendment(
+    field_id, config, new_values, old_values=None, phase_name=None):
   """Return an amendment showing how an issue's field changed.
 
   Args:
@@ -1144,6 +1157,7 @@ def MakeFieldAmendment(field_id, config, new_values, old_values=None):
     config: config info for the current project, including field_defs.
     new_values: list of strings representing new values of field.
     old_values: list of strings representing old values of field.
+    phase_name: name of the phase that owned the field that was changed.
 
   Returns:
     A new Amemdnent object.
@@ -1156,25 +1170,27 @@ def MakeFieldAmendment(field_id, config, new_values, old_values=None):
   if fd is None:
     raise ValueError('field %r vanished mid-request', field_id)
 
+  field_name = fd.field_name if not phase_name else '%s-%s' % (
+      phase_name, fd.field_name)
   if fd.is_multivalued:
     old_values = old_values or []
     added, removed = DiffValueLists(new_values, old_values)
     if fd.field_type == tracker_pb2.FieldTypes.USER_TYPE:
       return MakeAmendment(
           tracker_pb2.FieldID.CUSTOM, '', added, removed,
-          custom_field_name=fd.field_name)
+          custom_field_name=field_name)
     else:
       return _PlusMinusAmendment(
           tracker_pb2.FieldID.CUSTOM,
           ['%s' % item for item in added],
           ['%s' % item for item in removed],
-          custom_field_name=fd.field_name)
+          custom_field_name=field_name)
 
   else:
     if fd.field_type == tracker_pb2.FieldTypes.USER_TYPE:
       return MakeAmendment(
           tracker_pb2.FieldID.CUSTOM, '', new_values, [],
-          custom_field_name=fd.field_name)
+          custom_field_name=field_name)
 
     if new_values:
       new_str = ', '.join('%s' % item for item in new_values)
@@ -1183,7 +1199,7 @@ def MakeFieldAmendment(field_id, config, new_values, old_values=None):
 
     return MakeAmendment(
         tracker_pb2.FieldID.CUSTOM, new_str, [], [],
-        custom_field_name=fd.field_name)
+        custom_field_name=field_name)
 
 
 def MakeFieldClearedAmendment(field_id, config):
@@ -1450,7 +1466,8 @@ def MergeFields(field_values, fields_add, fields_remove, field_defs):
     consider_value = GetFieldValue(fv_consider, {})
     for old_fv in field_values:
       if (fv_consider.field_id == old_fv.field_id and
-          GetFieldValue(old_fv, {}) == consider_value):
+          GetFieldValue(old_fv, {}) == consider_value and
+          fv_consider.phase_id == old_fv.phase_id):
         break
     else:
       # Drop any existing values for non-multi fields.
@@ -1476,7 +1493,6 @@ def MergeFields(field_values, fields_add, fields_remove, field_defs):
           fv_consider.phase_id == old_fv.phase_id):
         fvs_removed.append(fv_consider)
         merged_fvs.remove(old_fv)
-
   return merged_fvs, fvs_added, fvs_removed
 
 

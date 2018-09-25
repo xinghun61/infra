@@ -1106,6 +1106,64 @@ class BizobjTest(unittest.TestCase):
       set([78902, 78903, 78905, 78906]),
       actual_impacted_iids)
 
+  def testApplyIssueDelta_CustomPhaseFields(self):
+    """A delta can add, remove, or clear custom phase fields."""
+    fd_a = tracker_pb2.FieldDef(
+        field_id=1, project_id=789, field_name='a',
+        field_type=tracker_pb2.FieldTypes.INT_TYPE,
+        is_multivalued=True, is_phase_field=True)
+    fd_b = tracker_pb2.FieldDef(
+        field_id=2, project_id=789, field_name='b',
+        field_type=tracker_pb2.FieldTypes.INT_TYPE,
+        is_phase_field=True)
+    fd_c = tracker_pb2.FieldDef(
+        field_id=3, project_id=789, field_name='c',
+        field_type=tracker_pb2.FieldTypes.INT_TYPE, is_phase_field=True)
+    self.config.field_defs = [fd_a, fd_b, fd_c]
+    fv_a1_p1 = tracker_pb2.FieldValue(
+        field_id=1, int_value=1, phase_id=1)  # fv
+    fv_a2_p1 = tracker_pb2.FieldValue(
+        field_id=1, int_value=2, phase_id=1)  # add
+    fv_a3_p1 = tracker_pb2.FieldValue(
+        field_id=1, int_value=3, phase_id=1)  # add
+    fv_b1_p1 = tracker_pb2.FieldValue(
+        field_id=2, int_value=1, phase_id=1)  # add
+    fv_c2_p1 = tracker_pb2.FieldValue(
+        field_id=3, int_value=2, phase_id=1)  # clear
+
+    fv_a2_p2 = tracker_pb2.FieldValue(
+        field_id=1, int_value=2, phase_id=2)  # add
+    fv_b1_p2 = tracker_pb2.FieldValue(
+        field_id=2, int_value=1, phase_id=2)  # fv remove
+    fv_c1_p2 = tracker_pb2.FieldValue(
+        field_id=3, int_value=1, phase_id=2)  # clear
+
+    issue = tracker_pb2.Issue(
+        status='New', owner_id=111L, summary='Sum',
+        field_values=[fv_a1_p1, fv_c2_p1, fv_b1_p2, fv_c1_p2])
+    issue.phases = [
+        tracker_pb2.Phase(phase_id=1, name='Phase-1'),
+        tracker_pb2.Phase(phase_id=2, name='Phase-2')]
+
+    delta = tracker_pb2.IssueDelta(
+        field_vals_add=[fv_a2_p1, fv_a3_p1, fv_b1_p1, fv_a2_p2],
+        field_vals_remove=[fv_b1_p2], fields_clear=[3])
+
+    actual_amendments, actual_impacted_iids = tracker_bizobj.ApplyIssueDelta(
+        self.cnxn, self.services.issue, issue, delta, self.config)
+    self.assertEqual(
+      [tracker_bizobj.MakeFieldAmendment(
+          1, self.config, ['2', '3'], [], phase_name='Phase-1'),
+       tracker_bizobj.MakeFieldAmendment(
+           1, self.config, ['2'], [], phase_name='Phase-2'),
+       tracker_bizobj.MakeFieldAmendment(
+           2, self.config, ['1'], [], phase_name='Phase-1'),
+       tracker_bizobj.MakeFieldAmendment(
+           2, self.config, [], ['1'], phase_name='Phase-2'),
+       tracker_bizobj.MakeFieldClearedAmendment(3, self.config)],
+      actual_amendments)
+    self.assertEqual(set(), actual_impacted_iids)
+
   def testApplyIssueDelta_CustomFields(self):
     """A delta can add, remove, or clear custom fields."""
     fd_a = tracker_pb2.FieldDef(
@@ -1319,6 +1377,23 @@ class BizobjTest(unittest.TestCase):
         tracker_bizobj.MakeAmendment(
             tracker_pb2.FieldID.CUSTOM, '', [], [], 'Friend'),
         tracker_bizobj.MakeFieldAmendment(1, config, [], [222L]))
+
+  def testMakeFieldAmendment_PhaseField(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    fd = tracker_pb2.FieldDef(
+        field_id=1, field_name='Friend',
+        field_type=tracker_pb2.FieldTypes.USER_TYPE, is_phase_field=True)
+    config.field_defs.append(fd)
+    self.assertEqual(
+        tracker_bizobj.MakeAmendment(
+            tracker_pb2.FieldID.CUSTOM, '', [111L], [], 'PhaseName-Friend'),
+        tracker_bizobj.MakeFieldAmendment(
+            1, config, [111L], [222L], phase_name='PhaseName'))
+    self.assertEqual(
+        tracker_bizobj.MakeAmendment(
+            tracker_pb2.FieldID.CUSTOM, '', [], [], 'PhaseName-3-Friend'),
+        tracker_bizobj.MakeFieldAmendment(
+            1, config, [], [222L], phase_name='PhaseName-3'))
 
   def testMakeFieldClearedAmendment_FieldNotFound(self):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)

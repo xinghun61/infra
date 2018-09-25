@@ -1534,6 +1534,7 @@ class IssueService(object):
         if (fv.field_id in old_field_values and
             old_field_values[fv.field_id] != new_field_values[fv.field_id])}
 
+    # TODO(jojwang): monorail:4310 split amendment creation up by phases.
     if field_ids_added or field_ids_removed or field_ids_changed:
       amendments.extend(
           tracker_bizobj.MakeFieldAmendment(fid, config, new_field_values[fid])
