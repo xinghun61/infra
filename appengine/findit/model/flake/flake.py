@@ -34,6 +34,12 @@ def _GetTestSuiteName(normalized_test_name):
   return None
 
 
+class TestLocation(ndb.Model):
+  """The location of a test in the source tree"""
+  file_path = ndb.StringProperty(required=True)
+  line_number = ndb.IntegerProperty(required=True)
+
+
 class Flake(ndb.Model):
   """Parent flake model which different flake occurrences are grouped under."""
 
@@ -91,6 +97,12 @@ class Flake(ndb.Model):
 
   # Number of distinct impacted CLs in the past week.
   impacted_cl_count_last_week = ndb.IntegerProperty(default=0, indexed=True)
+
+  # A string like 'Blink>NFC' based on the tags of the OWNERS file applicable to
+  # the test location.
+  component = ndb.StringProperty(indexed=True)
+
+  test_location = ndb.StructuredProperty(TestLocation)
 
   @staticmethod
   def GetId(luci_project, normalized_step_name, normalized_test_name):

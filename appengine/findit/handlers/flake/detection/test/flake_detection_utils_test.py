@@ -8,6 +8,7 @@ import mock
 from handlers.flake.detection import flake_detection_utils
 from libs import time_util
 from model.flake.flake import Flake
+from model.flake.flake import TestLocation
 from model.flake.flake_issue import FlakeIssue
 from model.flake.detection.flake_occurrence import (
     CQFalseRejectionFlakeOccurrence)
@@ -32,8 +33,13 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
         luci_project=luci_project,
         normalized_step_name=normalized_step_name,
         normalized_test_name=normalized_test_name,
-        test_label_name=test_label_name)
+        test_label_name=test_label_name,
+    )
 
+    flake.component = 'Mock>Component'
+    flake.test_location = TestLocation()
+    flake.test_location.file_path = '../../some/test/path/a.cc'
+    flake.test_location.line_number = 42
     flake.flake_issue_key = flake_issue.key
     flake.put()
 
@@ -117,6 +123,12 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
                 datetime(2018, 1, 1),
             'issue_link': ('https://monorail-prod.appspot.com/p/chromium/'
                            'issues/detail?id=900')
+        },
+        'component':
+            'Mock>Component',
+        'test_location': {
+            'file_path': '../../some/test/path/a.cc',
+            'line_number': 42,
         },
         'occurrences': [{
             'group_by_field':
@@ -245,6 +257,10 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             0,
         'impacted_cl_count_last_week':
             0,
+        'component':
+            None,
+        'test_location':
+            None,
         'occurrences': [{
             'group_by_field':
                 'luci builder',

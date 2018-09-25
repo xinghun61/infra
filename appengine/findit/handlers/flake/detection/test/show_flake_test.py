@@ -10,6 +10,7 @@ import webapp2
 from handlers.flake.detection import show_flake
 from libs import time_util
 from model.flake.flake import Flake
+from model.flake.flake import TestLocation
 from model.flake.flake_issue import FlakeIssue
 from model.flake.detection.flake_occurrence import (
     CQFalseRejectionFlakeOccurrence)
@@ -59,7 +60,12 @@ class ShowFlakeTest(WaterfallTestCase):
         luci_project=luci_project,
         normalized_step_name=normalized_step_name,
         normalized_test_name=normalized_test_name,
-        test_label_name=test_label_name)
+        test_label_name=test_label_name,
+    )
+    flake.component = 'Mock>Component'
+    flake.test_location = TestLocation()
+    flake.test_location.file_path = '../../some/test/path/a.cc'
+    flake.test_location.line_number = 42
 
     flake.flake_issue_key = flake_issue.key
     flake.put()
@@ -123,6 +129,12 @@ class ShowFlakeTest(WaterfallTestCase):
             0,
         'impacted_cl_count_last_week':
             0,
+        'component':
+            'Mock>Component',
+        'test_location': {
+            'file_path': '../../some/test/path/a.cc',
+            'line_number': 42,
+        },
         'occurrences': [{
             'group_by_field':
                 'luci builder',
