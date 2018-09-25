@@ -50,6 +50,7 @@ func New(opt *Options) (*State, error) {
 	}
 	return &State{
 		selfURL:     opt.URL,
+		generators:  opt.Generators,
 		memberStore: opt.MemberStore,
 		shiftStore:  opt.ShiftStore,
 		configStore: opt.ConfigStore,

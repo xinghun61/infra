@@ -57,6 +57,8 @@ func (f *Fair) Generate(sc *rotang.Configuration, start time.Time, previous []ro
 	}
 
 	start = previous[len(previous)-1].EndTime
+	// Need to add in the skip day(s) when taking in previous shifts.
+	start = start.Add(fullDay * time.Duration(sc.Config.Shifts.Skip))
 	membersByShift := HandleShiftMembers(sc, members)
 	entriesByShift := HandleShiftEntries(sc, previous)
 	for i := range sc.Config.Shifts.Shifts {

@@ -617,7 +617,7 @@ func TestMakeShifts(t *testing.T) {
 			{
 				Name:      "MTV Shift",
 				StartTime: midnight,
-				EndTime:   midnight.Add(2*fullDay + 8*time.Hour),
+				EndTime:   midnight.Add(fullDay + 8*time.Hour),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "mtv@oncall.com",
@@ -628,7 +628,7 @@ func TestMakeShifts(t *testing.T) {
 			{
 				Name:      "SYD Shift",
 				StartTime: midnight.Add(8 * time.Hour),
-				EndTime:   midnight.Add(2*fullDay + 16*time.Hour),
+				EndTime:   midnight.Add(fullDay + 16*time.Hour),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "syd@oncall.com",
@@ -639,7 +639,7 @@ func TestMakeShifts(t *testing.T) {
 			{
 				Name:      "EU Shift",
 				StartTime: midnight.Add(2 * 8 * time.Hour),
-				EndTime:   midnight.Add(2*fullDay + 24*time.Hour),
+				EndTime:   midnight.Add(fullDay + 24*time.Hour),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "eu@oncall.com",
@@ -650,7 +650,7 @@ func TestMakeShifts(t *testing.T) {
 			{
 				Name:      "MTV Shift",
 				StartTime: midnight.Add(2 * fullDay),
-				EndTime:   midnight.Add(4*fullDay + 8*time.Hour),
+				EndTime:   midnight.Add(3*fullDay + 8*time.Hour),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "mtv@oncall.com",
@@ -661,7 +661,7 @@ func TestMakeShifts(t *testing.T) {
 			{
 				Name:      "SYD Shift",
 				StartTime: midnight.Add(8*time.Hour + 2*fullDay),
-				EndTime:   midnight.Add(4*fullDay + 16*time.Hour),
+				EndTime:   midnight.Add(3*fullDay + 16*time.Hour),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "syd@oncall.com",
@@ -672,7 +672,7 @@ func TestMakeShifts(t *testing.T) {
 			{
 				Name:      "EU Shift",
 				StartTime: midnight.Add(16*time.Hour + 2*fullDay),
-				EndTime:   midnight.Add(4*fullDay + 24*time.Hour),
+				EndTime:   midnight.Add(3*fullDay + 24*time.Hour),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "eu@oncall.com",
@@ -739,7 +739,7 @@ func TestMakeShifts(t *testing.T) {
 			{
 				Name:      "MTV Shift",
 				StartTime: midnight,
-				EndTime:   midnight.Add(2*fullDay + 6*time.Hour),
+				EndTime:   midnight.Add(fullDay + 6*time.Hour),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "mtv@oncall.com",
@@ -750,7 +750,7 @@ func TestMakeShifts(t *testing.T) {
 			{
 				Name:      "SYD Shift",
 				StartTime: midnight.Add(6 * time.Hour),
-				EndTime:   midnight.Add(2*fullDay + 12*time.Hour),
+				EndTime:   midnight.Add(fullDay + 12*time.Hour),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "syd@oncall.com",
@@ -761,7 +761,7 @@ func TestMakeShifts(t *testing.T) {
 			{
 				Name:      "EU Shift",
 				StartTime: midnight.Add(12 * time.Hour),
-				EndTime:   midnight.Add(2*fullDay + 24*time.Hour),
+				EndTime:   midnight.Add(fullDay + 24*time.Hour),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "eu@oncall.com",
@@ -772,7 +772,7 @@ func TestMakeShifts(t *testing.T) {
 			{
 				Name:      "MTV Shift",
 				StartTime: midnight.Add(2 * fullDay),
-				EndTime:   midnight.Add(4*fullDay + 6*time.Hour),
+				EndTime:   midnight.Add(3*fullDay + 6*time.Hour),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "mtv@oncall.com",
@@ -783,7 +783,7 @@ func TestMakeShifts(t *testing.T) {
 			{
 				Name:      "SYD Shift",
 				StartTime: midnight.Add(6*time.Hour + 2*fullDay),
-				EndTime:   midnight.Add(4*fullDay + 12*time.Hour),
+				EndTime:   midnight.Add(3*fullDay + 12*time.Hour),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "syd@oncall.com",
@@ -794,7 +794,7 @@ func TestMakeShifts(t *testing.T) {
 			{
 				Name:      "EU Shift",
 				StartTime: midnight.Add(12*time.Hour + 2*fullDay),
-				EndTime:   midnight.Add(4*fullDay + 24*time.Hour),
+				EndTime:   midnight.Add(3*fullDay + 24*time.Hour),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "eu@oncall.com",
@@ -903,7 +903,7 @@ func TestMakeShifts(t *testing.T) {
 			{
 				Name:      "MTV Shift",
 				StartTime: midnight,
-				EndTime:   midnight.Add(2*fullDay + 8*time.Hour),
+				EndTime:   midnight.Add(fullDay + 8*time.Hour),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "mtv1@oncall.com",
@@ -918,7 +918,7 @@ func TestMakeShifts(t *testing.T) {
 			{
 				Name:      "SYD Shift",
 				StartTime: midnight.Add(8 * time.Hour),
-				EndTime:   midnight.Add(2*fullDay + 16*time.Hour),
+				EndTime:   midnight.Add(fullDay + 16*time.Hour),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "syd1@oncall.com",
@@ -933,7 +933,7 @@ func TestMakeShifts(t *testing.T) {
 			{
 				Name:      "EU Shift",
 				StartTime: midnight.Add(2 * 8 * time.Hour),
-				EndTime:   midnight.Add(2*fullDay + 24*time.Hour),
+				EndTime:   midnight.Add(fullDay + 24*time.Hour),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "eu1@oncall.com",
@@ -948,7 +948,7 @@ func TestMakeShifts(t *testing.T) {
 			{
 				Name:      "MTV Shift",
 				StartTime: midnight.Add(2 * fullDay),
-				EndTime:   midnight.Add(4*fullDay + 8*time.Hour),
+				EndTime:   midnight.Add(3*fullDay + 8*time.Hour),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "mtv3@oncall.com",
@@ -963,7 +963,7 @@ func TestMakeShifts(t *testing.T) {
 			{
 				Name:      "SYD Shift",
 				StartTime: midnight.Add(8*time.Hour + 2*fullDay),
-				EndTime:   midnight.Add(4*fullDay + 16*time.Hour),
+				EndTime:   midnight.Add(3*fullDay + 16*time.Hour),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "syd3@oncall.com",
@@ -978,7 +978,7 @@ func TestMakeShifts(t *testing.T) {
 			{
 				Name:      "EU Shift",
 				StartTime: midnight.Add(16*time.Hour + 2*fullDay),
-				EndTime:   midnight.Add(4*fullDay + 24*time.Hour),
+				EndTime:   midnight.Add(3*fullDay + 24*time.Hour),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "eu1@oncall.com",

@@ -77,7 +77,8 @@ func ShiftStartEnd(start time.Time, shiftNumber, shiftIdx int, sc *rotang.ShiftC
 	for i := 0; i < shiftIdx; i++ {
 		shiftStart = shiftStart.Add(sc.Shifts[i].Duration)
 	}
-	shiftEnd := shiftStart.Add(time.Duration(sc.Length)*fullDay + sc.Shifts[shiftIdx].Duration)
+	shiftEnd := shiftStart.Add(time.Duration(sc.Length) * fullDay)
+	shiftEnd = shiftEnd.Add(sc.Shifts[shiftIdx].Duration - fullDay)
 	return shiftStart.In(start.Location()), shiftEnd.In(start.Location())
 }
 

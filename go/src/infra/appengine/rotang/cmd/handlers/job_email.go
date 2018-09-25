@@ -9,6 +9,7 @@ import (
 
 	"go.chromium.org/gae/service/mail"
 	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/router"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
@@ -34,8 +35,7 @@ func (h *State) JobEmail(ctx *router.Context) {
 	}
 	for _, cfg := range configs {
 		if err := h.notifyEmail(ctx.Context, cfg, now); err != nil {
-			http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
-			return
+			logging.Warningf(ctx.Context, "notifyEmail(ctx, _,%v) for rota: %q failed: %v", now, cfg.Config.Name, err)
 		}
 	}
 }

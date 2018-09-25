@@ -909,6 +909,7 @@ func TestOncall(t *testing.T) {
 				Shifts: rotang.ShiftConfig{
 					ShiftMembers: 1,
 					StartTime:    midnight,
+					Length:       1,
 					Shifts: []rotang.Shift{
 						{
 							Name:     "MTV All Day",
@@ -947,6 +948,7 @@ func TestOncall(t *testing.T) {
 				Name:        "test rota",
 				Shifts: rotang.ShiftConfig{
 					ShiftMembers: 0,
+					Length:       2,
 					Shifts: []rotang.Shift{
 						{
 							Name:     "MTV All Day",
@@ -968,6 +970,7 @@ func TestOncall(t *testing.T) {
 				Name:        "test rota",
 				Shifts: rotang.ShiftConfig{
 					ShiftMembers: 2,
+					Length:       2,
 					StartTime:    midnight,
 					Shifts: []rotang.Shift{
 						{
