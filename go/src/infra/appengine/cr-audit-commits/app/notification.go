@@ -98,6 +98,7 @@ func commentOnBugToAcknowledgeMerge(ctx context.Context, cfg *RepoConfig, rc *Re
 		bugID, success := GetToken(ctx, "BugNumbers", result.MetaData)
 		if state == "" {
 			if success {
+				logging.Infof(ctx, "Found bug(s): '%s' on relevant commit %s", bugID, rc.CommitHash)
 				bugList := strings.Split(bugID, ",")
 				for _, bug := range bugList {
 					bugNumber, err := strconv.Atoi(bug)
