@@ -61,6 +61,7 @@ disable=
   too-many-statements,
   trailing-whitespace, # Overlap with Spacey analyzer.
   wrong-import-order,
+  wrong-import-position,
 
 
 [REPORTS]
