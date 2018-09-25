@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 DEPS = [
+    'depot_tools/depot_tools',
     'depot_tools/gsutil',
     'recipe_engine/context',
     'recipe_engine/file',
@@ -26,7 +27,10 @@ def RunSteps(api):
              ['tar', '-xJf', str(tar_file), '-C',
               str(build_dir)])
     src_dir = build_dir.join('chromium-' + version)
-    with api.context(cwd=src_dir):
+    # TODO(tandrii,thomasanderson): use ninja from CIPD package
+    # https://chrome-infra-packages.appspot.com/p/infra/ninja
+    with api.context(cwd=src_dir, env_suffixes={
+          'PATH': [api.path.dirname(api.depot_tools.ninja_path)]}):
       llvm_bin_dir = src_dir.join('third_party', 'llvm-build',
                                   'Release+Asserts', 'bin')
       gn_bootstrap_env = {

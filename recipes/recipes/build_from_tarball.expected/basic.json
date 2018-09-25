@@ -32,6 +32,11 @@
       "--arch=amd64"
     ],
     "cwd": "[START_DIR]/build_dir/chromium-69.0.3491.0",
+    "env_suffixes": {
+      "PATH": [
+        "RECIPE_PACKAGE_REPO[depot_tools]"
+      ]
+    },
     "name": "Download sysroot."
   },
   {
@@ -44,6 +49,11 @@
       "--skip-checkout"
     ],
     "cwd": "[START_DIR]/build_dir/chromium-69.0.3491.0",
+    "env_suffixes": {
+      "PATH": [
+        "RECIPE_PACKAGE_REPO[depot_tools]"
+      ]
+    },
     "name": "Build clang."
   },
   {
@@ -62,6 +72,11 @@
       "LD": "[START_DIR]/build_dir/chromium-69.0.3491.0/third_party/llvm-build/Release+Asserts/bin/lld",
       "LDFLAGS": "-fuse-ld=lld"
     },
+    "env_suffixes": {
+      "PATH": [
+        "RECIPE_PACKAGE_REPO[depot_tools]"
+      ]
+    },
     "name": "Bootstrap gn."
   },
   {
@@ -78,6 +93,11 @@
       "third_party/node/linux/node-linux-x64.tar.gz.sha1"
     ],
     "cwd": "[START_DIR]/build_dir/chromium-69.0.3491.0",
+    "env_suffixes": {
+      "PATH": [
+        "RECIPE_PACKAGE_REPO[depot_tools]"
+      ]
+    },
     "name": "Download nodejs."
   },
   {
@@ -96,6 +116,11 @@
       "yasm"
     ],
     "cwd": "[START_DIR]/build_dir/chromium-69.0.3491.0",
+    "env_suffixes": {
+      "PATH": [
+        "RECIPE_PACKAGE_REPO[depot_tools]"
+      ]
+    },
     "name": "Unbundle libraries."
   },
   {
@@ -106,6 +131,11 @@
       "chrome/installer/linux"
     ],
     "cwd": "[START_DIR]/build_dir/chromium-69.0.3491.0",
+    "env_suffixes": {
+      "PATH": [
+        "RECIPE_PACKAGE_REPO[depot_tools]"
+      ]
+    },
     "name": "Build chrome."
   },
   {
