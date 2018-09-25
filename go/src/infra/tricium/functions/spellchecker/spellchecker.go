@@ -86,9 +86,11 @@ func main() {
 	for _, file := range input.Files {
 		if !file.IsBinary {
 			fileExt := filepath.Ext(file.Path)
+			log.Printf("File ext: %q, path: %q\n", fileExt, file.Path)
 			// The analyzer should check every word if the file is a text document.
 			checkEveryWord := inSlice(fileExt, textFileExts)
 			commentPatterns := cp[fileExt]
+			log.Printf("Comment patterns: %+v\n", commentPatterns)
 			if commentPatterns == nil && !checkEveryWord {
 				// If the file type is unknown, skip the file, since there may be
 				// unknown source types that potentially have false positives.
@@ -175,7 +177,7 @@ func (s *state) processCommentWord(commentWord string, commentPatterns *commentF
 			stopIdx := analyzeWords(string(commentWord[i+len(commentPatterns.LineStart):]),
 				"", lineno, startChar+i+len(commentPatterns.LineStart), filePath, comments)
 			i += len(commentPatterns.LineStart) + stopIdx
-		case i+len(commentPatterns.BlockStart) <= len(commentWord) &&
+		case len(commentPatterns.BlockStart) > 0 && i+len(commentPatterns.BlockStart) <= len(commentWord) &&
 			string(commentWord[i:i+len(commentPatterns.BlockStart)]) == commentPatterns.BlockStart:
 			// Found block comment character.
 			*s = blockComment

@@ -1,6 +1,7 @@
 {
 	"files": [
-		{ "path": "example.c", "is_binary": false },
-		{ "path": "example.txt", "is_binary": false }
+		{ "path": "example.c" },
+		{ "path": "example.txt" },
+		{ "path": "BUILD.gn" }
 	]
 }

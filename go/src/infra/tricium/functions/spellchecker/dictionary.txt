@@ -389,6 +389,7 @@ adin->admin
 aditional->additional
 aditionally->additionally
 aditionaly->additionally
+aditionnal->additional
 adivce->advice, advise,
 adjacentsy->adjacency
 adjactend->adjacent
@@ -460,6 +461,7 @@ afect->affect, effect,
 afecting->affecting
 afer->after
 afetr->after
+affact->affect, effect,
 affekt->affect, effect,
 afficianados->aficionados
 afficionado->aficionado
@@ -1191,6 +1193,7 @@ assistence->assistance
 assistent->assistant
 assit->assist
 assitant->assistant
+assmptions->assumptions
 assocaited->associated
 assocate->associate
 assocated->associated
@@ -1914,6 +1917,8 @@ caleed->called
 calender->calendar
 calenders->calendars
 caler->caller
+calibrte->calibrate
+calibrtion->calibration
 caligraphy->calligraphy
 calilng->calling
 callbacl->callback
@@ -1949,6 +1954,7 @@ campaing->campaign
 campains->campaigns
 can;t->can't
 canadan->canadian
+canbe->can be
 cancelability->cancellability
 cancelles->cancels
 cancled->canceled
@@ -2139,6 +2145,7 @@ chacacter->character
 chacacters->characters
 chache->cache
 chached->cached
+chack->check, chalk,
 chaecking->checking
 chage->change, charge,
 chaged->changed, charged,
@@ -2426,6 +2433,7 @@ colaborations->collaborations
 colateral->collateral
 colelctive->collective
 colerscheme->colorscheme
+colision->collision
 collaberative->collaborative
 collaction->collection
 collaobrative->collaborative
@@ -2867,6 +2875,7 @@ conneciton->connection
 connecitons->connections
 connecotr->connector
 connecte->connected
+connectibity->connectivity
 connectino->connection
 connectinos->connections
 connectionas->connections
@@ -4328,6 +4337,7 @@ discourrage->discourage
 discourraged->discouraged
 discovereability->discoverability
 discovr->discover
+discreminates->discriminates
 discribe->describe
 discribed->described
 discribes->describes
@@ -4717,6 +4727,7 @@ electricty->electricity
 electrnoics->electronics
 eleent->element
 elegible->eligible
+elemantary->elementary
 elememt->element
 elemenet->element
 elemenets->elements
@@ -4767,6 +4778,7 @@ embarras->embarrass
 embarrased->embarrassed
 embarrasing->embarrassing
 embarrasment->embarrassment
+embbedded->embedded
 embbeded->embedded
 embdedded->embedded
 embebbed->embedded
@@ -5304,6 +5316,7 @@ existince->existence
 existng->existing
 existsing->existing
 existung->existing
+existy->exist
 exixst->exist
 exixt->exist
 exlcude->exclude
@@ -5369,7 +5382,7 @@ explenation->explanation
 explicat->explicate
 explicilt->explicit
 explicilty->explicitly
-explicite->explicit
+explicite->explicit, explicitly,
 explicited->explicitly
 explicitely->explicitly
 explicitily->explicitly
@@ -5813,7 +5826,7 @@ frequncies->frequencies
 frequncy->frequency
 frist->first
 frmat->format
-fro->for
+fro->for, from,
 froce->force
 fromat->format
 frome->from
@@ -7321,7 +7334,7 @@ intputs->inputs
 intrduced->introduced
 intreface->interface
 intregral->integral
-intrest->interest
+intrest->interest, insert,
 intresting->interesting
 intriduce->introduce
 intriduced->introduced
@@ -8040,11 +8053,13 @@ merrors->mirrors
 mesage->message
 mesages->messages
 mesaureed->measured
+meshe->mesh, meshed,
 messag->message
 messagin->messaging
 messags->messages
 messanger->messenger
 messangers->messengers
+messave->message
 messenging->messaging
 messge->message
 messges->messages
@@ -8529,9 +8544,11 @@ nned->need
 nodel->model
 nodels->models
 nodess->nodes
-noe->not, no, node, know,
+nodulated->modulated
+noe->not, no, node, know, now,
 nofified->notified
 nohypen->nohyphen
+noice->noise, nice, notice,
 nomimal->nominal
 non-assiged->non-assigned
 non-inreractive->non-interactive
@@ -8934,6 +8951,7 @@ origionally->originally
 orign->origin
 orignal->original
 orignally->originally
+orignial->original
 orignially->originally
 origninal->original
 orriginal->original
@@ -9055,7 +9073,9 @@ overwrittes->overwrites
 overwrittin->overwriting
 overwritting->overwriting
 ovrwrt->overwrite
+ovservable->observable
 ovservation->observation
+ovserve->observe
 ovveride->override
 ovverridden->overridden
 ovverride->override
@@ -9217,7 +9237,7 @@ partitial->partial
 partiton->partition
 partitoning->partitioning
 pary->party, parry,
-pase->pass, pace,
+pase->pass, pace, parse,
 pased->passed
 pasengers->passengers
 pash->hash
@@ -10218,6 +10238,7 @@ rapresentation->representation
 rapresented->represented
 rapresenting->representing
 rapresents->represents
+rarelly->rarely
 rarified->rarefied
 rasberry->raspberry
 rasterise->rasterize
@@ -10474,6 +10495,9 @@ referenece->reference
 refereneced->referenced
 refereneces->references
 referenes->references
+referense->reference
+referensed->referenced
+referenses->references
 referenz->reference
 referenzes->references
 refererd->referred
@@ -10778,6 +10802,8 @@ repostiories->repositories
 repostiory->repository
 repport->report
 repraesentation->representation
+reprensent->represent
+reprensentation->representation
 represantative->representative
 represenation->representation
 represend->represent
@@ -11348,7 +11374,7 @@ seldomly->seldom
 seleced->selected
 selecetd->selected
 selecing->selecting
-selecte->selected
+selecte->selected, select,
 selectes->selects
 selectin->selection, selecting,
 selecton->selection
@@ -11832,6 +11858,7 @@ spects->aspects, expects, specs,
 spectular->spectacular
 spectularly->spectacularly
 spectum->spectrum
+specturm->spectrum
 specufies->specifies
 specufy->specify
 spefic->specific
@@ -12434,6 +12461,10 @@ synchromized->synchronized
 synchroneous->synchronous
 synchroneously->synchronously
 synchronus->synchronous
+syncrhonise->sychronise
+syncrhonised->synchronised
+syncrhonize->sychronize
+syncrhonized->synchronized
 syncronise->synchronise
 syncronised->synchronised
 syncronises->synchronises
@@ -12822,6 +12853,8 @@ togling->toggling
 togther->together
 toke->took
 tolarable->tolerable
+tolen->token
+tolens->tokens
 toleranz->tolerance
 tolerence->tolerance
 tolernce->tolerance

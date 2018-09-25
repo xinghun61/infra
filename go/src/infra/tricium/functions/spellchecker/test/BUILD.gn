@@ -1,0 +1,12 @@
+fuzzer_test("v8_script_parser_fuzzer") {
+  sources = []
+  deps = [
+    "//v8:parser_fuzzer",
+  ]
+  dict = "dicts/generated/javascript.dict"
+  seed_corpus = "//v8/test/mjsunit/regress/"
+  libfuzzer_options = [ "only_ascii=1" ]
+  # The following line is not a comment so it should not
+  # get any spelling suggestions.
+  environment_variables = [ "AFL_DRIVER_DONT_DEFER=1" ]
+}
