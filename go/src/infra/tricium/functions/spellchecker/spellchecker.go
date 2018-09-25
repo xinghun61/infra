@@ -221,6 +221,12 @@ func analyzeWords(commentWord, stopPattern string,
 	for _, wordToCheckRange := range justWord.FindAllStringIndex(commentWord, -1) {
 		wordToCheck := commentWord[wordToCheckRange[0]:wordToCheckRange[1]]
 
+		// Words that are all upper-case are likely to be initialisms,
+		// which are more likely to be false positives because they usually
+		// aren't real words and may be all-caps constant identifiers.
+		if wordToCheck == strings.ToUpper(wordToCheck) {
+			continue
+		}
 		if fixes, ok := dict[strings.ToLower(wordToCheck)]; ok && !inSlice(wordToCheck, ignoredWords) {
 			if c := buildMisspellingComment(wordToCheck, fixes, startChar+wordToCheckRange[0],
 				lineno, filePath); c != nil {
@@ -294,9 +300,6 @@ func convertCaseOfFixes(misspelling string, fixes []string) []string {
 // proposed fix to match the misspelling in the original text. The input word
 // expected to always be all-lowercase.
 func matchCase(word string, target string) string {
-	if strings.ToUpper(target) == target {
-		return strings.ToUpper(word)
-	}
 	if strings.Title(target) == target {
 		return strings.Title(word)
 	}

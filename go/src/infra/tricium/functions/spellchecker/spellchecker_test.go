@@ -53,6 +53,13 @@ func TestSpellCheckerAnalyzeFiles(t *testing.T) {
 		So(results, ShouldResemble, expected)
 	})
 
+	Convey("Words in all caps are not checked", t, func() {
+		fileContent := "/* DONT COMENT */"
+		results := &tricium.Data_Results{}
+		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.c", false, cp[".c"], results)
+		So(results.Comments, ShouldBeEmpty)
+	})
+
 	Convey("Analyzing a .c file with several comments.", t, func() {
 		fileContent := "// The misspelling iminent is mapped to three possible fixes.\n" +
 			"This is not in a comment so aberation shouldn't be flagged.\n" +
@@ -411,15 +418,6 @@ func TestSpellCheckerAnalyzeFiles(t *testing.T) {
 		So(results, ShouldResemble, expected)
 	})
 
-	/*
-		Convey("Analyzing file with unknown extension generates no comments", t, func() {
-			fileContent := "familes\n"
-			results := &tricium.Data_Results{}
-			analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.asdf", true, cp[".asdf"], results)
-			So(results.Comments, ShouldBeEmpty)
-		})
-	*/
-
 	Convey("Usernames are not flagged as misspellings.", t, func() {
 		fileContent := "TODO(faund): Contact govement@chromium.org/coment"
 		results := &tricium.Data_Results{}
@@ -551,11 +549,6 @@ func TestGettingCommentFormat(t *testing.T) {
 }
 
 func TestCommentCaseMatching(t *testing.T) {
-	Convey("matchCase converts to upper-case if target appears to be upper-case", t, func() {
-		So(matchCase("myword", "TARGET"), ShouldEqual, "MYWORD")
-		So(matchCase("myword", "A"), ShouldEqual, "MYWORD")
-	})
-
 	Convey("matchCase converts to title-case if target appears to be title case", t, func() {
 		So(matchCase("myword", "Myword"), ShouldEqual, "Myword")
 		So(matchCase("myword", "TarGet"), ShouldEqual, "Myword")
