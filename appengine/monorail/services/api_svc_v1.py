@@ -56,6 +56,7 @@ from tracker import tracker_constants
 from tracker import tracker_helpers
 
 from infra_libs import ts_mon
+from infra_libs.ts_mon.common import http_metrics
 
 
 ENDPOINTS_API_NAME = 'monorail'
@@ -162,16 +163,16 @@ def monorail_api_method(
             'is_robot': False,
         }
 
-        ts_mon.common.http_metrics.server_durations.add(
+        http_metrics.server_durations.add(
             elapsed_ms, fields=fields)
-        ts_mon.common.http_metrics.server_response_status.increment(
+        http_metrics.server_response_status.increment(
             fields=fields)
-        ts_mon.common.http_metrics.server_request_bytes.add(
+        http_metrics.server_request_bytes.add(
             len(protojson.encode_message(request)), fields=fields)
         response_size = 0
         if ret:
           response_size = len(protojson.encode_message(ret))
-        ts_mon.common.http_metrics.server_response_bytes.add(
+        http_metrics.server_response_bytes.add(
             response_size, fields=fields)
 
       return ret

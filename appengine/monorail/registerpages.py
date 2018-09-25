@@ -40,6 +40,7 @@ from framework import trimvisitedpages
 from framework import framework_bizobj
 from framework import reap
 from framework import registerpages_helpers
+from framework import ts_mon_js
 from framework import urls
 from framework import warmup
 
@@ -315,6 +316,7 @@ class ServletRegistry(object):
             client_config_svc.LoadApiClientConfigs),
         urls.CLIENT_MON: clientmon.ClientMonitor,
         urls.TRIM_VISITED_PAGES_CRON: trimvisitedpages.TrimVisitedPages,
+        urls.TS_MON_JS: ts_mon_js.MonorailTSMonJSHandler,
         urls.WARMUP: warmup.Warmup,
         urls.START: warmup.Start,
         urls.STOP: warmup.Stop

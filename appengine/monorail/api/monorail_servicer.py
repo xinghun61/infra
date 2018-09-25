@@ -13,7 +13,8 @@ from google.appengine.api import users
 from google.protobuf import json_format
 from components.prpc import codes
 from components.prpc import server
-from infra_libs import ts_mon
+
+from infra_libs.ts_mon.common import http_metrics
 
 import settings
 from framework import exceptions
@@ -287,14 +288,11 @@ class MonorailServicer(object):
         'is_robot': False,
         }
 
-    ts_mon.common.http_metrics.server_durations.add(
-        elapsed_ms, fields=fields)
-    ts_mon.common.http_metrics.server_response_status.increment(
-        fields=fields)
-    ts_mon.common.http_metrics.server_request_bytes.add(
+    http_metrics.server_durations.add(elapsed_ms, fields=fields)
+    http_metrics.server_response_status.increment(fields=fields)
+    http_metrics.server_request_bytes.add(
         len(json_format.MessageToJson(request)), fields=fields)
     response_size = 0
     if response:
       response_size = len(json_format.MessageToJson(response))
-      ts_mon.common.http_metrics.server_response_bytes.add(
-          response_size, fields=fields)
+      http_metrics.server_response_bytes.add(response_size, fields=fields)

@@ -198,6 +198,7 @@ class TSMonJSHandler(webapp2.RequestHandler):
         metric.dangerously_set_start_time(measurement.get('start_time'))
 
     self.response.set_status(201)
+    self.response.write('Ok.')
 
   def xsrf_is_valid(self, _body):
     """Takes a request body and returns whether the included XSRF token
