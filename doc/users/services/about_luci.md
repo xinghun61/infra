@@ -22,10 +22,10 @@ main differences to expect are:
 * CQ try builders will show a LUCI tag in the Code Review UI. See
   [below](#How-do-I-know-a-build-was-run-on-LUCI) for details.
 * LUCI builder pages will have a different URL path. See [UI
-  tour](tour_of_luci_ui.md#builder-page)
+  tour](https://chromium.googlesource.com/chromium/src/+/master/docs/tour_of_luci_ui.md#builder-page)
   for details.
 * LUCI build pages will have a different URL path. See
-  [UI tour](tour_of_luci_ui.md#build-results-page)
+  [UI tour](https://chromium.googlesource.com/chromium/src/+/master/docs/tour_of_luci_ui.md#build-results-page)
   for details.
 * When the switch is made, build numbers will be incremented
   by approximately +10 to separate Buildbot and LUCI
