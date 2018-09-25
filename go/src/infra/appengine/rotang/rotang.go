@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"go.chromium.org/gae/service/mail"
+	"go.chromium.org/luci/server/router"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 )
@@ -191,6 +192,15 @@ type RotaGenerator interface {
 // MailSender is used to send E-mails.
 type MailSender interface {
 	Send(context.Context, *mail.Message) error
+}
+
+// Calenderer is used to handle the shared rota calendars.
+type Calenderer interface {
+	CreateEvent(ctx *router.Context, cfg *Configuration, shifts []ShiftEntry) error
+	Event(ctx *router.Context, cfg *Configuration, shift *ShiftEntry) (*ShiftEntry, error)
+	Events(ctx *router.Context, cfg *Configuration, from, to time.Time) ([]ShiftEntry, error)
+	UpdateEvent(ctx *router.Context, cfg *Configuration, updated *ShiftEntry) error
+	DeleteEvent(ctx *router.Context, cfg *Configuration, shift *ShiftEntry) error
 }
 
 // MailInfo contains the information usable by the Email subject/body templates.
