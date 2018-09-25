@@ -16,65 +16,54 @@ var TKR_fieldNameXmlHttp;
  * Function that communicates with the server.
  * @param {string} projectName Current project name.
  * @param {string} fieldName The proposed field name.
- * @param {string} token security token.
  */
-function TKR_checkFieldNameOnServer(projectName, fieldName, token) {
-  var url = ('/p/' + projectName + '/fields/checkName' +
-             '?field=' + encodeURIComponent(fieldName) +
-             '&token=' + token);
-  TKR_fieldNameXmlHttp = XH_XmlHttpCreate();
-  XH_XmlHttpGET(TKR_fieldNameXmlHttp, url, TKR_fieldNameCallback);
-}
+async function TKR_checkFieldNameOnServer(projectName, fieldName) {
+  fieldName = fieldName.toLowerCase();
 
-/**
- * The communication with the server has made some progress.  If it is
- * done, then process the response.
- */
-function TKR_fieldNameCallback() {
-  if (TKR_fieldNameXmlHttp.readyState == 4) {
-    if (TKR_fieldNameXmlHttp.status == 200) {
-      TKR_gotFieldNameFeed(TKR_fieldNameXmlHttp);
-    }
-  }
-}
+  const fieldNameMessage = {
+    project_name: projectName,
+    field_name: fieldName,
+  };
+  const labelOptionsMessage = {
+    project_name: projectName,
+  };
+  const responses = await Promise.all([
+      window.prpcClient.call(
+          'monorail.Projects', 'CheckFieldName', fieldNameMessage),
+      window.prpcClient.call(
+          'monorail.Projects', 'GetLabelOptions', labelOptionsMessage),
+  ]);
 
+  const fieldNameResponse = responses[0];
+  const labelsResponse = responses[1];
 
-/**
- * Function that evaluates the server response and sets the error message.
- * @param {object} xhr AJAX response with JSON text.
- */
-function TKR_gotFieldNameFeed(xhr) {
-  var json_data = null;
-  try {
-    json_data = CS_parseJSON(xhr);
-  }
-  catch (e) {
-    return;
-  }
-  var errorMessage = json_data['error_message'];
-  $('fieldnamefeedback').textContent = errorMessage;
+  $('fieldnamefeedback').textContent = fieldNameResponse.error || '';
+  $('submit_btn').disabled = fieldNameResponse.error ? 'disabled' : '';
 
-  var choicesLines = [];
-  if (json_data['choices'].length > 0) {
-    for (var i = 0; i < json_data['choices'].length; i++) {
-      choicesLines.push(
-          json_data['choices'][i]['name'] + ' = ' +
-          json_data['choices'][i]['doc']);
-    }
+  const maskedLabels = (labelsResponse.labelOptions || []).filter(
+      label_def => label_def.label.toLowerCase().startsWith(fieldName + '-'));
+
+  if (maskedLabels.length === 0) {
+    enableOtherTypeOptions(false);
+  } else {
+    const prefixLength = fieldName.length + 1;
+    const padLength = Math.max.apply(null, maskedLabels.map(
+        label_def => label_def.label.length - prefixLength));
+    const choicesLines = maskedLabels.map(label_def => {
+      // Strip the field name from the label.
+      const choice = label_def.label.substr(prefixLength);
+      return choice.padEnd(padLength) + ' = ' + label_def.docstring;
+    });
     $('choices').textContent = choicesLines.join('\n');
     $('field_type').value = 'enum_type';
     $('choices_row').style.display = '';
     enableOtherTypeOptions(true);
-  } else {
-    enableOtherTypeOptions(false);
   }
-
-  $('submit_btn').disabled = errorMessage ? 'disabled' : '';
 }
 
 
 function enableOtherTypeOptions(disabled) {
-  var type_option_el = $('field_type').firstChild;
+  let type_option_el = $('field_type').firstChild;
   while (type_option_el) {
     if (type_option_el.tagName == 'OPTION') {
       if (type_option_el.value != 'enum_type') {
