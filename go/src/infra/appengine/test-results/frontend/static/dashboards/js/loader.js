@@ -116,10 +116,12 @@ loader.Loader.prototype = {
         if (this._builders && this._builders.length) {
             this._builders.forEach(this._loadResultsFile.bind(this, this._testType));
             // TODO(sergiyb): Remove this when all layout tests are using swarming (crbug.com/524758).
-            if (this._testType == "webkit_layout_tests")
-              this._extraBuilders.forEach(this._loadResultsFile.bind(this, "webkit_tests"));
-            if (this._testType == "webkit_tests")
-              this._extraBuilders.forEach(this._loadResultsFile.bind(this, "webkit_layout_tests"));
+            if (this._extraBuilders != undefined) {
+              if (this._testType == "webkit_layout_tests")
+                this._extraBuilders.forEach(this._loadResultsFile.bind(this, "webkit_tests"));
+              if (this._testType == "webkit_tests")
+                this._extraBuilders.forEach(this._loadResultsFile.bind(this, "webkit_layout_tests"));
+            }
         } else {
             this._completeLoading();
         }
