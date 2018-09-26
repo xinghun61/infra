@@ -83,28 +83,6 @@ class FlakeReportUtilTest(WaterfallTestCase):
     flakes_with_occurrences = flake_report_util.GetFlakesWithEnoughOccurrences()
     self.assertEqual(0, len(flakes_with_occurrences))
 
-  # This test tests that in order for a flake to have enough occurrences, at
-  # least one occurrence needs to be within an active flake window.
-  @mock.patch.object(flake_report_util, '_ACTIVE_FLAKE_WINDOW_HOURS', 6)
-  def testAtLeastOneActiveOccurrence(self):
-    occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()
-    occurrences[0].time_happened = self._GetDatetimeHoursAgo(12)
-    occurrences[0].put()
-    occurrences[1].time_happened = self._GetDatetimeHoursAgo(12)
-    occurrences[1].put()
-    occurrences[2].time_happened = self._GetDatetimeHoursAgo(7)
-    occurrences[2].put()
-
-    flakes_with_occurrences = flake_report_util.GetFlakesWithEnoughOccurrences()
-    self.assertEqual(0, len(flakes_with_occurrences))
-
-    occurrences[2].time_happened = self._GetDatetimeHoursAgo(5)
-    occurrences[2].put()
-
-    flakes_with_occurrences = flake_report_util.GetFlakesWithEnoughOccurrences()
-    self.assertEqual(1, len(flakes_with_occurrences))
-    self.assertEqual(3, len(flakes_with_occurrences[0][1]))
-
   # This test tests that occurrences happened more than one day ago are ignored.
   def testIgnoreOutdatedOccurrences(self):
     occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()

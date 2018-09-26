@@ -31,10 +31,6 @@ _CREATE_OR_UPDATE_ISSUES_LIMIT_24H = 30
 # by a specific uncommitted CL.
 _MIN_REQUIRED_FALSELY_REJECTED_CLS_24H = 3
 
-# Length of window to tell if a flake is still active. The main use cause is to
-# filter out flakes that were fixed and is no longer active anymore.
-_ACTIVE_FLAKE_WINDOW_HOURS = 6
-
 # Flake detection bug templates.
 _FLAKE_DETECTION_BUG_DESCRIPTION = textwrap.dedent("""
 {test_name} is flaky.
@@ -212,9 +208,8 @@ def _GetFlakeIssue(flake):
 def _FlakeHasEnoughOccurrences(unreported_occurrences):
   """Returns True if there are enough occurrences to worth reporting the flake.
 
-  A flake has enough occurrences if:
-    rule 1. The occurrences cover at least 3 different CLs.
-    rule 2. At least 1 occurrence is still active.
+  A flake has enough occurrences if the occurrences cover at least 3 different
+  CLs.
 
   Args:
     unreported_occurrences: A list of occurrence that share the same parent
@@ -223,16 +218,7 @@ def _FlakeHasEnoughOccurrences(unreported_occurrences):
   """
   cl_ids = [occurrence.gerrit_cl_id for occurrence in unreported_occurrences]
   unique_cl_ids = set(cl_ids)
-  if len(unique_cl_ids) < _MIN_REQUIRED_FALSELY_REJECTED_CLS_24H:
-    return False
-
-  active_window_boundary = time_util.GetUTCNow() - datetime.timedelta(
-      hours=_ACTIVE_FLAKE_WINDOW_HOURS)
-  for occurrence in unreported_occurrences:
-    if occurrence.time_happened > active_window_boundary:
-      return True
-
-  return False
+  return len(unique_cl_ids) >= _MIN_REQUIRED_FALSELY_REJECTED_CLS_24H
 
 
 def GetFlakesWithEnoughOccurrences():
