@@ -141,8 +141,9 @@ var CS_lastX = 0, CS_lastY = 0;
 function CS_addClickListener(tableEl, handler) {
   tableEl.addEventListener('click', function(event) {
     if (event.target.classList.contains('computehref') &&
-        (event.button == 0 || event.button == 1)) {
-	event.preventDefault();
+        (event.button == 0 || event.button == 1) &&
+        (event.clientX != 0 || event.clientY != 0)) {
+      event.preventDefault();
     }
     if (event.target.tagName == 'A') {
       return;
