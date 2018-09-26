@@ -453,28 +453,18 @@ def _create_task_def_async(
   build.swarming_hostname = swarming_cfg.hostname
   if not build.swarming_hostname:  # pragma: no cover
     raise Error('swarming hostname is not configured')
+  h = hashlib.sha256('%s:%s' % (build.bucket, builder_cfg.name)).hexdigest()
   task_template_params = {
-      'bucket':
-          build.bucket,
-      'builder_hash': (
-          hashlib.sha256('%s:%s' % (build.bucket, builder_cfg.name)).hexdigest()
-      ),
-      'build_id':
-          build.key.id(),
-      'build_result_filename':
-          _BUILD_RUN_RESULT_FILENAME,
-      'build_url':
-          build.url,
-      'builder':
-          builder_cfg.name,
-      'cache_dir':
-          _CACHE_DIR,
-      'hostname':
-          app_identity.get_default_version_hostname(),
-      'project':
-          build.project,
-      'swarming_hostname':
-          build.swarming_hostname,
+      'bucket': build.bucket,
+      'builder_hash': h,
+      'build_id': build.key.id(),
+      'build_result_filename': _BUILD_RUN_RESULT_FILENAME,
+      'build_url': build.url,
+      'builder': builder_cfg.name,
+      'cache_dir': _CACHE_DIR,
+      'hostname': app_identity.get_default_version_hostname(),
+      'project': build.project,
+      'swarming_hostname': build.swarming_hostname,
   }
   extra_swarming_tags = []
   extra_cipd_packages = []
@@ -484,6 +474,8 @@ def _create_task_def_async(
     task_template_params.update(extra_task_template_params)
 
   # Render task template.
+  # Format is
+  # https://cs.chromium.org/chromium/infra/luci/appengine/swarming/swarming_rpcs.py?q=NewTaskRequest
   task_template_params = {
       k: v or '' for k, v in task_template_params.iteritems()
   }
@@ -496,88 +488,25 @@ def _create_task_def_async(
       'pool_task_template', 'CANARY_PREFER' if build.canary else 'CANARY_NEVER'
   )
 
-  priority = int(task.get('priority', 0))
-  if builder_cfg.priority > 0:  # pragma: no branch
-    priority = builder_cfg.priority
-  if build.experimental:
-    priority = min(255, priority * 2)
-  # Swarming accepts priority as a string
-  task['priority'] = str(priority)
+  task['priority'] = _calc_priority(build, builder_cfg, task.get('priority'))
 
   if builder_cfg.service_account:  # pragma: no branch
     # Don't pass it if not defined, for backward compatibility.
     task['service_account'] = builder_cfg.service_account
 
-  swarming_tags = task.setdefault('tags', [])
-  _extend_unique(
-      swarming_tags, [
-          'buildbucket_bucket:%s' % build.bucket,
-          'buildbucket_build_id:%s' % build.key.id(),
-          'buildbucket_hostname:%s' %
-          app_identity.get_default_version_hostname(),
-          'buildbucket_template_canary:%s' % ('1' if build.canary else '0'),
-          'buildbucket_template_revision:%s' % task_template_rev,
-      ]
+  task['tags'] = _calc_tags(
+      build, builder_cfg, extra_swarming_tags, task_template_rev,
+      task.get('tags')
   )
-  _extend_unique(swarming_tags, extra_swarming_tags)
-  _extend_unique(swarming_tags, builder_cfg.swarming_tags)
-  _extend_unique(swarming_tags, build.tags)
-  swarming_tags.sort()
-
   task = _apply_if_tags(task)
-  if len(task['task_slices']) != 1:
-    raise errors.InvalidInputError(
-        'base swarming task template can only have one task_slices'
-    )
 
-  if builder_cfg.expiration_secs > 0:
-    task['task_slices'][0]['expiration_secs'] = str(builder_cfg.expiration_secs)
-  # Now take a look to generate a fallback! This is done by inspecting the
-  # Builder named caches for the flag "wait_for_warm_cache_secs".
-  cache_fallbacks = _setup_props(
-      build,
-      builder_cfg,
-      extra_cipd_packages,
-      task['task_slices'][0]['properties'],
+  _setup_swarming_request_task_slices(
+      build, builder_cfg, extra_cipd_packages, task
   )
-
-  if cache_fallbacks:
-    # Create a fallback by copying the original task slice, each time adding a
-    # dimension for the requested caches and the corresponding expiration.
-    last_delay = 0
-    base_task_slice = task['task_slices'].pop()
-    for delay_secs, cache_names in cache_fallbacks:
-      t = {
-          'expiration_secs': str(delay_secs - last_delay),
-          'properties': copy.deepcopy(base_task_slice['properties']),
-          'wait_for_capacity': base_task_slice['wait_for_capacity'],
-      }
-      last_delay = delay_secs
-      t['properties']['dimensions'].extend({
-          'key': 'caches',
-          'value': cache_name,
-      } for cache_name in cache_names)
-      task['task_slices'].append(t)
-    # Tweak expiration on the base_task_slice.
-    exp = max(int(base_task_slice['expiration_secs']) - last_delay, 60)
-    base_task_slice['expiration_secs'] = str(exp)
-    task['task_slices'].append(base_task_slice)
 
   if not fake_build:  # pragma: no branch | covered by swarmbucketapi_test.py
-    task['pubsub_topic'] = (
-        'projects/%s/topics/%s' %
-        (app_identity.get_application_id(), _PUBSUB_TOPIC)
-    )
-    task['pubsub_userdata'] = json.dumps(
-        {
-            'build_id': build.key.id(),
-            'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
-            'swarming_hostname': build.swarming_hostname,
-        },
-        sort_keys=True,
-    )
-  # Format is
-  # https://cs.chromium.org/chromium/infra/luci/appengine/swarming/swarming_rpcs.py?q=NewTaskRequest
+    _setup_swarming_request_pubsub(task, build)
+
   raise ndb.Return(task)
 
 
@@ -664,6 +593,84 @@ def _setup_recipes(build, builder_cfg, build_number, params):
   return extra_swarming_tags, extra_cipd_packages, extra_task_template_params
 
 
+def _calc_priority(build, builder_cfg, priority):
+  """Calculates the Swarming task request priority to use."""
+  priority = int(priority or 0)
+  if builder_cfg.priority > 0:  # pragma: no branch
+    priority = builder_cfg.priority
+  if build.experimental:
+    priority = min(255, priority * 2)
+  # Swarming accepts priority as a string
+  return str(priority)
+
+
+def _calc_tags(
+    build, builder_cfg, extra_swarming_tags, task_template_rev, tags
+):
+  """Calculates the Swarming task request tags to use."""
+  tags = set(tags or [])
+  tags.add('buildbucket_bucket:%s' % build.bucket)
+  tags.add('buildbucket_build_id:%s' % build.key.id())
+  tags.add(
+      'buildbucket_hostname:%s' % app_identity.get_default_version_hostname()
+  )
+  tags.add('buildbucket_template_canary:%s' % ('1' if build.canary else '0'))
+  tags.add('buildbucket_template_revision:%s' % task_template_rev)
+  tags.update(extra_swarming_tags)
+  tags.update(builder_cfg.swarming_tags)
+  tags.update(build.tags)
+  return sorted(tags)
+
+
+def _setup_swarming_request_task_slices(
+    build, builder_cfg, extra_cipd_packages, task
+):
+  """Mutate the task request with named cache, CIPD packages and (soon) expiring
+  dimensions.
+  """
+  # For now, refuse a task template with more than one TaskSlice. Otherwise
+  # it would be much harder to rationalize what's happening while reading the
+  # Swarming task template.
+  if len(task['task_slices']) != 1:
+    raise errors.InvalidInputError(
+        'base swarming task template can only have one task_slices'
+    )
+
+  if builder_cfg.expiration_secs > 0:
+    task['task_slices'][0]['expiration_secs'] = str(builder_cfg.expiration_secs)
+
+  # Now take a look to generate a fallback! This is done by inspecting the
+  # Builder named caches for the flag "wait_for_warm_cache_secs".
+  cache_fallbacks = _setup_props(
+      build,
+      builder_cfg,
+      extra_cipd_packages,
+      task['task_slices'][0]['properties'],
+  )
+
+  if cache_fallbacks:
+    # Create a fallback by copying the original task slice, each time adding a
+    # dimension for the requested caches and the corresponding expiration.
+    last_delay = 0
+    base_task_slice = task['task_slices'].pop()
+    for delay_secs, cache_names in cache_fallbacks:
+      t = {
+          'expiration_secs': str(delay_secs - last_delay),
+          'properties': copy.deepcopy(base_task_slice['properties']),
+          'wait_for_capacity': base_task_slice['wait_for_capacity'],
+      }
+      last_delay = delay_secs
+      t['properties']['dimensions'].extend({
+          'key': 'caches',
+          'value': cache_name,
+      } for cache_name in cache_names)
+      task['task_slices'].append(t)
+    # Tweak expiration on the base_task_slice.
+    exp = max(int(base_task_slice['expiration_secs']) - last_delay, 60)
+    base_task_slice['expiration_secs'] = str(exp)
+    task['task_slices'].append(base_task_slice)
+
+
 def _setup_props(build, builder_cfg, extra_cipd_packages, task_properties):
   """Fills a TaskProperties.
 
@@ -692,13 +699,13 @@ def _setup_props(build, builder_cfg, extra_cipd_packages, task_properties):
         {'key': k, 'value': v} for k, v in sorted(kv.iteritems())
     ]
 
-  out = _add_named_caches(builder_cfg, task_properties)
+  cache_fallbacks = _add_named_caches(builder_cfg, task_properties)
 
   if builder_cfg.execution_timeout_secs > 0:
     task_properties['execution_timeout_secs'] = str(
         builder_cfg.execution_timeout_secs
     )
-  return out
+  return cache_fallbacks
 
 
 def _add_named_caches(builder_cfg, task_properties):
@@ -753,6 +760,21 @@ def _add_named_caches(builder_cfg, task_properties):
     entries.extend(items)
     out.insert(0, (delay, sorted(entries)))
   return out
+
+
+def _setup_swarming_request_pubsub(task, build):
+  """Mutates Swarming task request to add pubsub topic."""
+  task['pubsub_topic'] = 'projects/%s/topics/%s' % (
+      app_identity.get_application_id(), _PUBSUB_TOPIC
+  )
+  task['pubsub_userdata'] = json.dumps(
+      {
+          'build_id': build.key.id(),
+          'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
+          'swarming_hostname': build.swarming_hostname,
+      },
+      sort_keys=True,
+  )
 
 
 @ndb.tasklet
@@ -1506,12 +1528,6 @@ def format_obj(obj, params):
       return obj
 
   return transform(obj)
-
-
-def _extend_unique(target, items):
-  for x in items:
-    if x not in target:  # pragma: no branch
-      target.append(x)
 
 
 def _parse_ts(ts):
