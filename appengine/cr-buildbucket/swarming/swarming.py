@@ -476,82 +476,12 @@ def _create_task_def_async(
       'swarming_hostname':
           build.swarming_hostname,
   }
-
   extra_swarming_tags = []
   extra_cipd_packages = []
-
   if builder_cfg.HasField('recipe'):  # pragma: no branch
-    # Properties specified in build parameters must override those in builder
-    # config.
-    build_properties = flatten_swarmingcfg.read_properties(builder_cfg.recipe)
-    build_properties.update(params.get(_PARAM_PROPERTIES) or {})
-    params[_PARAM_PROPERTIES] = build_properties
-    # build_properties is an alias for params[_PARAM_PROPERTIES]
-
-    # In order to allow some builders to behave like other builders, we allow
-    # builders to explicitly set buildername.
-    if 'buildername' not in build_properties:
-      build_properties['buildername'] = builder_cfg.name
-
-    build_properties.update(buildbucket=_buildbucket_property(build),)
-    assert isinstance(build.experimental, bool)
-    build_properties.setdefault('$recipe_engine/runtime', {}).update(
-        is_luci=True,
-        is_experimental=build.experimental,
-    )
-
-    if build_number is not None:  # pragma: no branch
-      build_properties['buildnumber'] = build_number
-
-    changes = params.get(_PARAM_CHANGES)
-    if changes:  # pragma: no branch
-      # Buildbucket-Buildbot integration passes repo_url of the first change in
-      # build parameter "changes" as "repository" attribute of SourceStamp.
-      # https://chromium.googlesource.com/chromium/tools/build/+/2c6023d
-      # /scripts/master/buildbucket/changestore.py#140
-      # Buildbot passes repository of the build source stamp as "repository"
-      # build property. Recipes, in partiular bot_update recipe module, rely on
-      # "repository" property and it is an almost sane property to support in
-      # swarmbucket.
-      repo_url = changes[0].get('repo_url')
-      if repo_url:  # pragma: no branch
-        build_properties['repository'] = repo_url
-
-      # Buildbot-Buildbucket integration converts emails in changes to blamelist
-      # property.
-      emails = [c.get('author', {}).get('email') for c in changes]
-      build_properties['blamelist'] = filter(None, emails)
-
-    task_template_params.update({
-        'recipe': builder_cfg.recipe.name,
-        'properties_json': json.dumps(build_properties, sort_keys=True),
-        'checkout_dir': _KITCHEN_CHECKOUT,
-    })
-    extra_swarming_tags = [
-        'recipe_name:%s' % builder_cfg.recipe.name,
-    ]
-
-    if builder_cfg.recipe.cipd_package:
-      task_template_params.update({
-          'repository': '',
-          'revision': '',
-      })
-      extra_swarming_tags.append(
-          'recipe_package:' + builder_cfg.recipe.cipd_package
-      )
-      extra_cipd_packages.append({
-          'path': _KITCHEN_CHECKOUT,
-          'package_name': builder_cfg.recipe.cipd_package,
-          'version': builder_cfg.recipe.cipd_version or 'refs/heads/master',
-      })
-    else:
-      task_template_params.update({
-          'repository': builder_cfg.recipe.repository,
-          'revision': 'HEAD',
-      })
-      extra_swarming_tags.append(
-          'recipe_repository:' + builder_cfg.recipe.repository
-      )
+    (extra_swarming_tags, extra_cipd_packages, extra_task_template_params
+    ) = _setup_recipes(build, builder_cfg, build_number, params)
+    task_template_params.update(extra_task_template_params)
 
   # Render task template.
   task_template_params = {
@@ -649,6 +579,89 @@ def _create_task_def_async(
   # Format is
   # https://cs.chromium.org/chromium/infra/luci/appengine/swarming/swarming_rpcs.py?q=NewTaskRequest
   raise ndb.Return(task)
+
+
+def _setup_recipes(build, builder_cfg, build_number, params):
+  """Initializes a build request using recipes.
+
+  Mutates params.
+
+  Returns:
+    extra_swarming_tags, extra_cipd_packages, extra_task_template_params
+  """
+  # Properties specified in build parameters must override those in builder
+  # config.
+  build_properties = flatten_swarmingcfg.read_properties(builder_cfg.recipe)
+  build_properties.update(params.get(_PARAM_PROPERTIES) or {})
+  params[_PARAM_PROPERTIES] = build_properties
+  # build_properties is an alias for params[_PARAM_PROPERTIES]
+
+  # In order to allow some builders to behave like other builders, we allow
+  # builders to explicitly set buildername.
+  if 'buildername' not in build_properties:
+    build_properties['buildername'] = builder_cfg.name
+
+  build_properties.update(buildbucket=_buildbucket_property(build),)
+  assert isinstance(build.experimental, bool)
+  build_properties.setdefault('$recipe_engine/runtime', {}).update(
+      is_luci=True,
+      is_experimental=build.experimental,
+  )
+
+  if build_number is not None:  # pragma: no branch
+    build_properties['buildnumber'] = build_number
+
+  changes = params.get(_PARAM_CHANGES)
+  if changes:  # pragma: no branch
+    # Buildbucket-Buildbot integration passes repo_url of the first change in
+    # build parameter "changes" as "repository" attribute of SourceStamp.
+    # https://chromium.googlesource.com/chromium/tools/build/+/2c6023d
+    # /scripts/master/buildbucket/changestore.py#140
+    # Buildbot passes repository of the build source stamp as "repository"
+    # build property. Recipes, in partiular bot_update recipe module, rely on
+    # "repository" property and it is an almost sane property to support in
+    # swarmbucket.
+    repo_url = changes[0].get('repo_url')
+    if repo_url:  # pragma: no branch
+      build_properties['repository'] = repo_url
+
+    # Buildbot-Buildbucket integration converts emails in changes to blamelist
+    # property.
+    emails = [c.get('author', {}).get('email') for c in changes]
+    build_properties['blamelist'] = filter(None, emails)
+
+  extra_task_template_params = {
+      'recipe': builder_cfg.recipe.name,
+      'properties_json': json.dumps(build_properties, sort_keys=True),
+      'checkout_dir': _KITCHEN_CHECKOUT,
+  }
+  extra_swarming_tags = [
+      'recipe_name:%s' % builder_cfg.recipe.name,
+  ]
+  extra_cipd_packages = []
+
+  if builder_cfg.recipe.cipd_package:
+    extra_task_template_params.update({
+        'repository': '',
+        'revision': '',
+    })
+    extra_swarming_tags.append(
+        'recipe_package:' + builder_cfg.recipe.cipd_package
+    )
+    extra_cipd_packages.append({
+        'path': _KITCHEN_CHECKOUT,
+        'package_name': builder_cfg.recipe.cipd_package,
+        'version': builder_cfg.recipe.cipd_version or 'refs/heads/master',
+    })
+  else:
+    extra_task_template_params.update({
+        'repository': builder_cfg.recipe.repository,
+        'revision': 'HEAD',
+    })
+    extra_swarming_tags.append(
+        'recipe_repository:' + builder_cfg.recipe.repository
+    )
+  return extra_swarming_tags, extra_cipd_packages, extra_task_template_params
 
 
 def _setup_props(build, builder_cfg, extra_cipd_packages, task_properties):
