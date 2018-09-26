@@ -8,7 +8,6 @@ import (
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/router"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -27,21 +26,21 @@ func (h *State) JobSchedule(ctx *router.Context) {
 		return
 	}
 	for _, cfg := range configs {
-		if err := h.scheduleShifts(ctx.Context, cfg, now); err != nil {
+		if err := h.scheduleShifts(ctx, cfg, now); err != nil {
 			logging.Warningf(ctx.Context, "scheduleShifts(ctx, _, %v) for rota: %q failed: %v", now, cfg.Config.Name, err)
 		}
 	}
 }
 
-func (h *State) scheduleShifts(ctx context.Context, cfg *rotang.Configuration, t time.Time) error {
+func (h *State) scheduleShifts(ctx *router.Context, cfg *rotang.Configuration, t time.Time) error {
 	if cfg.Config.Expiration == 0 || !cfg.Config.Enabled {
-		logging.Infof(ctx, "scheduling of shifts for rota: %q disabled.", cfg.Config.Name)
+		logging.Infof(ctx.Context, "scheduling of shifts for rota: %q disabled.", cfg.Config.Name)
 		return nil
 	}
 	if len(cfg.Config.Shifts.Shifts) == 0 {
 		return status.Errorf(codes.InvalidArgument, "no shifts configured for rota: %q", cfg.Config.Name)
 	}
-	shifts, err := h.shiftStore(ctx).AllShifts(ctx, cfg.Config.Name)
+	shifts, err := h.shiftStore(ctx.Context).AllShifts(ctx.Context, cfg.Config.Name)
 	if err != nil {
 		return err
 	}
@@ -53,7 +52,7 @@ func (h *State) scheduleShifts(ctx context.Context, cfg *rotang.Configuration, t
 		nrShifts++
 	}
 	if nrShifts/len(cfg.Config.Shifts.Shifts) > cfg.Config.Expiration {
-		logging.Infof(ctx, "still enough shifts scheduled for rota: %q", cfg.Config.Name)
+		logging.Infof(ctx.Context, "still enough shifts scheduled for rota: %q", cfg.Config.Name)
 		return nil
 	}
 	g, err := h.generators.Fetch(cfg.Config.Shifts.Generator)
@@ -62,7 +61,7 @@ func (h *State) scheduleShifts(ctx context.Context, cfg *rotang.Configuration, t
 	}
 	var ms []rotang.Member
 	for _, m := range cfg.Members {
-		rm, err := h.memberStore(ctx).Member(ctx, m.Email)
+		rm, err := h.memberStore(ctx.Context).Member(ctx.Context, m.Email)
 		if err != nil {
 			return err
 		}
@@ -72,5 +71,19 @@ func (h *State) scheduleShifts(ctx context.Context, cfg *rotang.Configuration, t
 	if err != nil {
 		return err
 	}
-	return h.shiftStore(ctx).AddShifts(ctx, cfg.Config.Name, ss)
+	if err := h.shiftStore(ctx.Context).AddShifts(ctx.Context, cfg.Config.Name, ss); err != nil {
+		return err
+	}
+	resShifts, err := h.calendar.CreateEvent(ctx, cfg, ss)
+	if err != nil {
+		return err
+	}
+
+	shiftStore := h.shiftStore(ctx.Context)
+	for _, s := range resShifts {
+		if err := shiftStore.UpdateShift(ctx.Context, cfg.Config.Name, &s); err != nil {
+			return err
+		}
+	}
+	return nil
 }

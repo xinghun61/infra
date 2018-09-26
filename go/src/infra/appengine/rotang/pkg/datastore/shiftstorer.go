@@ -30,6 +30,7 @@ type DsShiftEntry struct {
 	StartTime time.Time
 	EndTime   time.Time
 	OnCall    []rotang.ShiftMember
+	EvtID     string
 	Comment   string
 }
 
@@ -77,6 +78,7 @@ func (s *Store) Oncall(ctx context.Context, at time.Time, rota string) (*rotang.
 				StartTime: shift.StartTime,
 				EndTime:   shift.EndTime,
 				Comment:   shift.Comment,
+				EvtID:     shift.EvtID,
 			}, nil
 		}
 	}
@@ -136,6 +138,7 @@ func (s *Store) AddShifts(ctx context.Context, rota string, entries []rotang.Shi
 				EndTime:   e.EndTime.UTC(),
 				Comment:   e.Comment,
 				OnCall:    e.OnCall,
+				EvtID:     e.EvtID,
 			}
 			if err := datastore.Put(ctx, shiftEntry); err != nil {
 				return err
@@ -190,6 +193,7 @@ func (s *Store) UpdateShift(ctx context.Context, rota string, shift *rotang.Shif
 			EndTime:   shift.EndTime.UTC(),
 			Comment:   shift.Comment,
 			OnCall:    shift.OnCall,
+			EvtID:     shift.EvtID,
 		})
 	}, nil)
 }
@@ -240,6 +244,7 @@ func (s *Store) AllShifts(ctx context.Context, rota string) ([]rotang.ShiftEntry
 			EndTime:   shift.EndTime,
 			Comment:   shift.Comment,
 			OnCall:    shift.OnCall,
+			EvtID:     shift.EvtID,
 		})
 	}
 
@@ -271,6 +276,7 @@ func (s *Store) Shift(ctx context.Context, rota string, start time.Time) (*rotan
 		EndTime:   entry.EndTime,
 		Comment:   entry.Comment,
 		OnCall:    entry.OnCall,
+		EvtID:     entry.EvtID,
 	}, nil
 }
 

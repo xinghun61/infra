@@ -141,9 +141,12 @@ func TestJobSchedule(t *testing.T) {
 }
 
 func TestScheduleShifts(t *testing.T) {
+	ctx := newTestContext()
+
 	tests := []struct {
 		name       string
 		fail       bool
+		ctx        *router.Context
 		cfg        *rotang.Configuration
 		time       time.Time
 		memberPool []rotang.Member
@@ -151,6 +154,10 @@ func TestScheduleShifts(t *testing.T) {
 		want       []rotang.ShiftEntry
 	}{{
 		name: "Config not enabled",
+		ctx: &router.Context{
+			Context: ctx,
+			Request: getRequest("/", ""),
+		},
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{
 				Name:       "Test Rota",
@@ -161,6 +168,10 @@ func TestScheduleShifts(t *testing.T) {
 	}, {
 		name: "Non existing generator",
 		fail: true,
+		ctx: &router.Context{
+			Context: ctx,
+			Request: getRequest("/", ""),
+		},
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{
 				Name:             "Test Rota",
@@ -202,6 +213,10 @@ func TestScheduleShifts(t *testing.T) {
 	}, {
 		name: "No shifts in config",
 		fail: true,
+		ctx: &router.Context{
+			Context: ctx,
+			Request: getRequest("/", ""),
+		},
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{
 				Name:             "Test Rota",
@@ -236,6 +251,10 @@ func TestScheduleShifts(t *testing.T) {
 		},
 	}, {
 		name: "Shifts not expired",
+		ctx: &router.Context{
+			Context: ctx,
+			Request: getRequest("/", ""),
+		},
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{
 				Name:             "Test Rota",
@@ -309,6 +328,10 @@ func TestScheduleShifts(t *testing.T) {
 		},
 	}, {
 		name: "Don't consider already ended shifts",
+		ctx: &router.Context{
+			Context: ctx,
+			Request: getRequest("/", ""),
+		},
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{
 				Name:             "Test Rota",
@@ -358,6 +381,7 @@ func TestScheduleShifts(t *testing.T) {
 				},
 				StartTime: midnight.Add(-weekDuration),
 				EndTime:   midnight.Add(-weekDuration + 5*fullDay),
+				EvtID:     "before 1",
 			}, {
 				Name: "MTV All Day",
 				OnCall: []rotang.ShiftMember{
@@ -368,6 +392,7 @@ func TestScheduleShifts(t *testing.T) {
 				},
 				StartTime: midnight,
 				EndTime:   midnight.Add(5 * fullDay),
+				EvtID:     "before 2",
 			},
 		},
 		want: []rotang.ShiftEntry{
@@ -381,6 +406,7 @@ func TestScheduleShifts(t *testing.T) {
 				},
 				StartTime: midnight.Add(7 * fullDay),
 				EndTime:   midnight.Add(12 * fullDay),
+				EvtID:     "0",
 			}, {
 				Name: "MTV All Day",
 				OnCall: []rotang.ShiftMember{
@@ -391,10 +417,15 @@ func TestScheduleShifts(t *testing.T) {
 				},
 				StartTime: midnight.Add(14 * fullDay),
 				EndTime:   midnight.Add(19 * fullDay),
+				EvtID:     "1",
 			},
 		},
 	}, {
 		name: "Success schedule shifts",
+		ctx: &router.Context{
+			Context: ctx,
+			Request: getRequest("/", ""),
+		},
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{
 				Name:             "Test Rota",
@@ -467,6 +498,7 @@ func TestScheduleShifts(t *testing.T) {
 				},
 				StartTime: midnight.Add(14 * fullDay),
 				EndTime:   midnight.Add(19 * fullDay),
+				EvtID:     "0",
 			}, {
 				Name: "MTV All Day",
 				OnCall: []rotang.ShiftMember{
@@ -477,10 +509,15 @@ func TestScheduleShifts(t *testing.T) {
 				},
 				StartTime: midnight.Add(21 * fullDay),
 				EndTime:   midnight.Add(26 * fullDay),
+				EvtID:     "1",
 			},
 		},
 	}, {
 		name: "Split shifts",
+		ctx: &router.Context{
+			Context: ctx,
+			Request: getRequest("/", ""),
+		},
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{
 				Name:             "Test Rota",
@@ -626,6 +663,7 @@ func TestScheduleShifts(t *testing.T) {
 				},
 				StartTime: midnight.Add(2 * weekDuration),
 				EndTime:   midnight.Add(4*fullDay + 8*time.Hour + 2*weekDuration),
+				EvtID:     "0",
 			}, {
 				Name: "SYD Shift",
 				OnCall: []rotang.ShiftMember{
@@ -636,6 +674,7 @@ func TestScheduleShifts(t *testing.T) {
 				},
 				StartTime: midnight.Add(8*time.Hour + 2*weekDuration),
 				EndTime:   midnight.Add(4*fullDay + 16*time.Hour + 2*weekDuration),
+				EvtID:     "1",
 			}, {
 				Name: "EU Shift",
 				OnCall: []rotang.ShiftMember{
@@ -646,6 +685,7 @@ func TestScheduleShifts(t *testing.T) {
 				},
 				StartTime: midnight.Add(16*time.Hour + 2*weekDuration),
 				EndTime:   midnight.Add(5*fullDay + 2*weekDuration),
+				EvtID:     "2",
 			},
 			{
 				Name: "MTV Shift",
@@ -657,6 +697,7 @@ func TestScheduleShifts(t *testing.T) {
 				},
 				StartTime: midnight.Add(3 * weekDuration),
 				EndTime:   midnight.Add(4*fullDay + 8*time.Hour + 3*weekDuration),
+				EvtID:     "3",
 			}, {
 				Name: "SYD Shift",
 				OnCall: []rotang.ShiftMember{
@@ -667,6 +708,7 @@ func TestScheduleShifts(t *testing.T) {
 				},
 				StartTime: midnight.Add(8*time.Hour + 3*weekDuration),
 				EndTime:   midnight.Add(4*fullDay + 16*time.Hour + 3*weekDuration),
+				EvtID:     "4",
 			}, {
 				Name: "EU Shift",
 				OnCall: []rotang.ShiftMember{
@@ -677,6 +719,7 @@ func TestScheduleShifts(t *testing.T) {
 				},
 				StartTime: midnight.Add(16*time.Hour + 3*weekDuration),
 				EndTime:   midnight.Add(5*fullDay + 3*weekDuration),
+				EvtID:     "5",
 			},
 		},
 	},
@@ -688,10 +731,12 @@ func TestScheduleShifts(t *testing.T) {
 	gs.Register(algo.NewFair())
 	gs.Register(algo.NewRandomGen())
 
+	fake := &fakeCal{}
+
 	opts := Options{
 		URL:         "http://localhost:8080",
 		Generators:  gs,
-		Calendar:    &calendar.Calendar{},
+		Calendar:    fake,
 		MailSender:  &testableMail{},
 		MailAddress: "admin@example.com",
 	}
@@ -700,8 +745,6 @@ func TestScheduleShifts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New failed: %v", err)
 	}
-
-	ctx := newTestContext()
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
@@ -721,7 +764,8 @@ func TestScheduleShifts(t *testing.T) {
 			}
 			defer h.shiftStore(ctx).DeleteAllShifts(ctx, tst.cfg.Config.Name)
 
-			err := h.scheduleShifts(ctx, tst.cfg, midnight)
+			fake.Set(nil, false, 0)
+			err := h.scheduleShifts(tst.ctx, tst.cfg, midnight)
 			if got, want := (err != nil), tst.fail; got != want {
 				t.Fatalf("%s: scheduleShifts(ctx, _, %v) = %t want: %t, err: %v", tst.name, midnight, got, want, err)
 			}
