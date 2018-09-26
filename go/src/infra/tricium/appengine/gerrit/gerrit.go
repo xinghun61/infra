@@ -204,6 +204,7 @@ func createRobotComment(c context.Context, runID int64, comment tricium.Data_Com
 		Message:        comment.Message,
 		RobotID:        comment.Category,
 		RobotRunID:     strconv.FormatInt(runID, 10),
+		URL:            composeRunURL(c, runID),
 		Path:           comment.Path,
 		Properties:     map[string]string{"tricium_comment_uuid": comment.Id},
 		FixSuggestions: createFillSuggestions(comment.Suggestions),
