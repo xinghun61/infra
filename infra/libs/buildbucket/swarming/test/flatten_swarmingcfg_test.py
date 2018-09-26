@@ -13,24 +13,38 @@ from infra.libs.buildbucket.swarming import flatten_swarmingcfg
 
 
 class ProjectCfgTest(unittest.TestCase):
-    def test_flatten_builder(self):
-        def test(cfg_text, expected_builder_text):
-            cfg = project_config_pb2.BuildbucketCfg()
-            protobuf.text_format.Merge(cfg_text, cfg)
-            builder = cfg.buckets[0].swarming.builders[0]
-            flatten_swarmingcfg.flatten_builder(
-                builder,
-                cfg.buckets[0].swarming.builder_defaults,
-                {m.name: m
-                 for m in cfg.builder_mixins},
-            )
 
-            expected = project_config_pb2.Builder()
-            protobuf.text_format.Merge(expected_builder_text, expected)
-            self.assertEqual(builder, expected)
+  def test_parse_dimensions(self):
+    dims = ['pool:default', '60:cpu:x86-64']
+    actual = flatten_swarmingcfg.parse_dimensions(dims)
+    self.assertEqual({0: {'pool': 'default'}, 60: {'cpu': 'x86-64'}}, actual)
 
-        test(
-            '''
+  def test_format_dimensions(self):
+    dims = {
+      0: {'pool': 'default'},
+      60: {'cpu': 'x86-64'},
+    }
+    actual = flatten_swarmingcfg.format_dimensions(dims)
+    self.assertEqual(['60:cpu:x86-64', 'pool:default'], actual)
+
+  def test_flatten_builder(self):
+
+    def test(cfg_text, expected_builder_text):
+      cfg = project_config_pb2.BuildbucketCfg()
+      protobuf.text_format.Merge(cfg_text, cfg)
+      builder = cfg.buckets[0].swarming.builders[0]
+      flatten_swarmingcfg.flatten_builder(
+          builder,
+          cfg.buckets[0].swarming.builder_defaults,
+          {m.name: m for m in cfg.builder_mixins},
+      )
+
+      expected = project_config_pb2.Builder()
+      protobuf.text_format.Merge(expected_builder_text, expected)
+      self.assertEqual(builder, expected)
+
+    test(
+        '''
         buckets {
           name: "bucket"
           swarming {
@@ -99,11 +113,12 @@ class ProjectCfgTest(unittest.TestCase):
           name: "git_chromium"
           path: "git_cache"
         }
-      ''')
+      '''
+    )
 
-        # Diamond merge.
-        test(
-            '''
+    # Diamond merge.
+    test(
+        '''
           builder_mixins {
             name: "base"
             dimensions: "d1:base"
@@ -219,11 +234,12 @@ class ProjectCfgTest(unittest.TestCase):
             properties_j: "pj2:\\\"first\\\""
             properties_j: "pj3:\\\"second\\\""
           }
-        ''')
+        '''
+    )
 
-        # builder_defaults, a builder_defaults mixin and a builder mixin.
-        test(
-            '''
+    # builder_defaults, a builder_defaults mixin and a builder mixin.
+    test(
+        '''
           builder_mixins {
             name: "default"
             dimensions: "pool:builder_default_mixin"
@@ -257,10 +273,11 @@ class ProjectCfgTest(unittest.TestCase):
             repository: "https://x.com"
             name: "foo"
           }
-        ''')
-        # with auto_builder_dimension and mixins and defaults.
-        test(
-            '''
+        '''
+    )
+    # with auto_builder_dimension and mixins and defaults.
+    test(
+        '''
           builder_mixins {
             name: "mixme"
             dimensions: "pool:mixed"
@@ -282,36 +299,37 @@ class ProjectCfgTest(unittest.TestCase):
           name: "ng-1000"
           dimensions: "pool:mixed"
           auto_builder_dimension: YES
-      ''')
+      '''
+    )
 
-    def test_merge_toggle(self):
-        unset = project_config_pb2.Builder()
-        yes = project_config_pb2.Builder(experimental=project_config_pb2.YES)
-        no = project_config_pb2.Builder(experimental=project_config_pb2.NO)
+  def test_merge_toggle(self):
+    unset = project_config_pb2.Builder()
+    yes = project_config_pb2.Builder(experimental=project_config_pb2.YES)
+    no = project_config_pb2.Builder(experimental=project_config_pb2.NO)
 
-        b = project_config_pb2.Builder()
-        flatten_swarmingcfg.merge_builder(b, unset)
-        flatten_swarmingcfg.merge_builder(b, yes)
-        self.assertEqual(b.experimental, project_config_pb2.YES)
+    b = project_config_pb2.Builder()
+    flatten_swarmingcfg.merge_builder(b, unset)
+    flatten_swarmingcfg.merge_builder(b, yes)
+    self.assertEqual(b.experimental, project_config_pb2.YES)
 
-        flatten_swarmingcfg.merge_builder(b, unset)
-        self.assertEqual(b.experimental, project_config_pb2.YES)
+    flatten_swarmingcfg.merge_builder(b, unset)
+    self.assertEqual(b.experimental, project_config_pb2.YES)
 
-        flatten_swarmingcfg.merge_builder(b, no)
-        self.assertEqual(b.experimental, project_config_pb2.NO)
+    flatten_swarmingcfg.merge_builder(b, no)
+    self.assertEqual(b.experimental, project_config_pb2.NO)
 
-    def test_merge_luci_migration_host(self):
-        unset = project_config_pb2.Builder()
-        yes = project_config_pb2.Builder(luci_migration_host='example.com')
-        no = project_config_pb2.Builder(luci_migration_host='-')
+  def test_merge_luci_migration_host(self):
+    unset = project_config_pb2.Builder()
+    yes = project_config_pb2.Builder(luci_migration_host='example.com')
+    no = project_config_pb2.Builder(luci_migration_host='-')
 
-        b = project_config_pb2.Builder()
-        flatten_swarmingcfg.merge_builder(b, unset)
-        flatten_swarmingcfg.merge_builder(b, yes)
-        self.assertEqual(b.luci_migration_host, 'example.com')
+    b = project_config_pb2.Builder()
+    flatten_swarmingcfg.merge_builder(b, unset)
+    flatten_swarmingcfg.merge_builder(b, yes)
+    self.assertEqual(b.luci_migration_host, 'example.com')
 
-        flatten_swarmingcfg.merge_builder(b, unset)
-        self.assertEqual(b.luci_migration_host, 'example.com')
+    flatten_swarmingcfg.merge_builder(b, unset)
+    self.assertEqual(b.luci_migration_host, 'example.com')
 
-        flatten_swarmingcfg.merge_builder(b, no)
-        self.assertEqual(b.luci_migration_host, '-')
+    flatten_swarmingcfg.merge_builder(b, no)
+    self.assertEqual(b.luci_migration_host, '-')

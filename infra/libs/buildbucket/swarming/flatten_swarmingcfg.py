@@ -16,7 +16,6 @@ This code exercises those features and produces a flattened config proto.
 import copy
 import json
 
-
 ## Public API.
 
 
@@ -36,8 +35,35 @@ def read_properties(recipe):
 
 
 def parse_dimensions(strings):
-  """Parses dimension strings to a map."""
-  return dict(s.split(':', 1) for s in strings)
+  """Parses dimension strings to a dict {expiration_sec: dict{key:value}}."""
+  out = {}
+  for s in strings:
+    key, value = s.split(':', 1)
+    expiration_secs = 0
+    try:
+      expiration_secs = int(key)
+    except ValueError:
+      pass
+    else:
+      key, value = value.split(':', 1)
+    out.setdefault(expiration_secs, {})[key] = value
+  return out
+
+
+def format_dimensions(dictionary):
+  """Formats a dictionary of dimensions to a list of strings.
+
+  Opposite of parse_dimensions.
+  """
+  out = []
+  for expiration_secs, kv in dictionary.iteritems():
+    for k, v in kv.iteritems():
+      if expiration_secs:
+        out.append('%d:%s:%s' % (expiration_secs, k, v))
+      else:
+        out.append('%s:%s' % (k, v))
+  out.sort()
+  return out
 
 
 def merge_builder(b1, b2):
@@ -45,14 +71,18 @@ def merge_builder(b1, b2):
   assert not b2.mixins, 'do not merge unflattened builders'
 
   dims = parse_dimensions(b1.dimensions)
-  dims.update(parse_dimensions(b2.dimensions))
+  for expiration_secs, kv in parse_dimensions(b2.dimensions).iteritems():
+    d = dims.setdefault(expiration_secs, {})
+    # TODO(maruel): keys in b2 may override expiration from b1.
+    for k, v in kv.iteritems():
+      d[k] = v
   recipe = None
   if b1.HasField('recipe') or b2.HasField('recipe'):  # pragma: no branch
     recipe = copy.deepcopy(b1.recipe)
     _merge_recipe(recipe, b2.recipe)
 
   b1.MergeFrom(b2)
-  b1.dimensions[:] = _format_dimensions(dims)
+  b1.dimensions[:] = format_dimensions(dims)
   b1.swarming_tags[:] = sorted(set(b1.swarming_tags))
 
   caches = [t[1] for t in sorted({c.name: c for c in b1.caches}.iteritems())]
@@ -94,14 +124,6 @@ def flatten_builder(builder, defaults, mixins):
 
 
 ## Private code.
-
-
-def _format_dimensions(dictionary):
-  """Formats a dictionary of dimensions to a list of strings.
-
-  Opposite of parse_dimensions.
-  """
-  return sorted(['%s:%s' % (k, v) for k, v in dictionary.iteritems()])
 
 
 def _merge_recipe(r1, r2):

@@ -126,6 +126,12 @@ class SwarmbucketApi(remote.Service):
     for _, bucket in config.get_buckets_async(bucket_names).get_result():
       if not bucket or not bucket.swarming.builders:
         continue
+
+      def to_dims(b):
+        return flatten_swarmingcfg.format_dimensions(
+            swarmingcfg.read_dimensions(b)
+        )
+
       res.buckets.append(
           BucketMessage(
               name=bucket.name,
@@ -136,12 +142,8 @@ class SwarmbucketApi(remote.Service):
                       properties_json=json.dumps(
                           flatten_swarmingcfg.read_properties(builder.recipe)
                       ),
-                      swarming_dimensions=[
-                          '%s:%s' % (k, v)
-                          for k, v in swarmingcfg.read_dimensions(builder)
-                      ]
-                  )
-                  for builder in bucket.swarming.builders
+                      swarming_dimensions=to_dims(builder)
+                  ) for builder in bucket.swarming.builders
               ],
               swarming_hostname=bucket.swarming.hostname,
           )

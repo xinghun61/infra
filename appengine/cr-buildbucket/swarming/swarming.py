@@ -670,9 +670,14 @@ def _setup_props(build, builder_cfg, extra_cipd_packages, task_properties):
   )
 
   # Add in all of the swarming dimensions to the task properties.
-  task_properties['dimensions'] = [{
-      'key': k, 'value': v
-  } for k, v in swarmingcfg_module.read_dimensions(builder_cfg)]
+  dims = swarmingcfg_module.read_dimensions(builder_cfg)
+  for expiration_secs, kv in sorted(dims.iteritems()):
+    assert expiration_secs == 0, (
+        'Non-zero expiration_secs(%r) is not yet supported' % expiration_secs
+    )
+    task_properties['dimensions'] = [
+        {'key': k, 'value': v} for k, v in sorted(kv.iteritems())
+    ]
 
   out = _add_named_caches(builder_cfg, task_properties)
 

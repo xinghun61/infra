@@ -46,16 +46,18 @@ def _validate_service_account(service_account, ctx):
 def read_dimensions(builder_cfg):  # pragma: no cover
   """Read the dimensions for a builder config.
 
-  dimensions is returned as sorted list of (k, v) pairs.
   This different from flatten_swarmingcfg.parse_dimensions in that this:
   * Factors in the auto_builder_dimensions field.
   * Removes empty value fields.
+
+  Returns:
+    dimensions is returned as dict {expiration_secs: list of (key, value)}.
   """
   dimensions = flatten_swarmingcfg.parse_dimensions(builder_cfg.dimensions)
   if (builder_cfg.auto_builder_dimension == project_config_pb2.YES and
-      'builder' not in dimensions):
-    dimensions['builder'] = builder_cfg.name
-  return [(k, v) for k, v in sorted(dimensions.iteritems()) if v]
+      'builder' not in dimensions[0]):
+    dimensions[0]['builder'] = builder_cfg.name
+  return dimensions
 
 
 def _validate_tag(tag, ctx):
@@ -70,27 +72,52 @@ def _validate_tag(tag, ctx):
     )
 
 
+def _validate_dimension_key(key, known_keys, ctx):
+  if not key:
+    ctx.error('no key')
+    return
+  if not _DIMENSION_KEY_RGX.match(key):
+    ctx.error(
+        'key "%s" does not match pattern "%s"', key, _DIMENSION_KEY_RGX.pattern
+    )
+    return
+  if key in known_keys:
+    ctx.error('duplicate key %s', key)
+    return
+  known_keys.add(key)
+
+
 def _validate_dimensions(field_name, dimensions, ctx):
   known_keys = set()
   for i, dim in enumerate(dimensions):
     with ctx.prefix('%s #%d: ', field_name, i + 1):
-      components = dim.split(':', 1)
-      if len(components) != 2:
+      parts = dim.split(':', 1)
+      if len(parts) != 2:
         ctx.error('does not have ":"')
         continue
-      key, _ = components
-      if not key:
-        ctx.error('no key')
+      key, value = parts
+      expiration_secs = 0
+      try:
+        expiration_secs = int(key)
+      except ValueError:
+        pass
       else:
-        if not _DIMENSION_KEY_RGX.match(key):
-          ctx.error(
-              'key "%s" does not match pattern "%s"', key,
-              _DIMENSION_KEY_RGX.pattern
-          )
-        if key in known_keys:
-          ctx.error('duplicate key %s', key)
-        else:
-          known_keys.add(key)
+        parts = value.split(':', 1)
+        if len(parts) != 2:
+          ctx.error('has expiration_secs but missing value')
+          continue
+        key, value = parts
+      if expiration_secs < 0 or expiration_secs > 21 * 24 * 60 * 60:
+        ctx.error('expiration_secs is outside valid range; up to 21 days')
+        continue
+      if expiration_secs % 60:
+        ctx.error('expiration_secs must be a multiple of 60 seconds')
+        continue
+      if expiration_secs != 0:
+        # TODO(maruel): crbug.com/880550 implement
+        ctx.error('expiration_secs is not supported yet')
+        continue
+      _validate_dimension_key(key, known_keys, ctx)
 
 
 def _validate_relative_path(path, ctx):
