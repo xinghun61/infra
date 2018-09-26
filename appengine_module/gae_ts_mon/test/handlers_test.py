@@ -119,11 +119,22 @@ class TSMonJSHandlerTest(test_case.TestCase):
           field_spec=[metrics.StringField('client_id')]),
     ])
     self.ts_mon_handler.xsrf_is_valid = mock.Mock(return_value=True)
+    self.mock_timestamp = 1537821859
+    def time_fn():
+      return self.mock_timestamp
+    self.ts_mon_handler.time_fn = time_fn
 
   def tearDown(self):
     mock.patch.stopall()
     config.reset_for_unittest()
     super(TSMonJSHandlerTest, self).tearDown()
+
+  def test_time_fn(self):
+    """Test self.time_fn."""
+    request = webapp2.Request.blank('/_/ts_mon_js')
+    response = webapp2.Response()
+    ts_mon_handler = handlers.TSMonJSHandler(request, response)
+    self.assertTrue(isinstance(ts_mon_handler.time_fn(), float))
 
   def test_post_metrics_no_metrics(self):
     """Test case when class is not set up properly by calling register_metrics.
@@ -232,7 +243,7 @@ class TSMonJSHandlerTest(test_case.TestCase):
           'fields': {
             'client_id': '789',
           },
-          'start_time': 16725225600,
+          'start_time': self.mock_timestamp + 1,
         },
       },
     })
@@ -241,6 +252,7 @@ class TSMonJSHandlerTest(test_case.TestCase):
           'frontend/cumulative_test', 'Cumulative metric test',
           field_spec=[metrics.StringField('client_id')]),
     ])
+
     self.ts_mon_handler.post()
 
     self.assertEqual(self.response.status_int, 400)
@@ -248,6 +260,7 @@ class TSMonJSHandlerTest(test_case.TestCase):
 
   def test_post_rejects_start_time_in_past(self):
     """Test rejects when start_time is >1 month in the past."""
+    one_month_seconds = 60*60*24*30
     self.request.body = json.dumps({
       'metrics': {
         'frontend/cumulative_test': {
@@ -255,7 +268,7 @@ class TSMonJSHandlerTest(test_case.TestCase):
           'fields': {
             'client_id': '789',
           },
-          'start_time': 1483228800,
+          'start_time': self.mock_timestamp - one_month_seconds * 2,
         },
       },
     })
@@ -264,16 +277,14 @@ class TSMonJSHandlerTest(test_case.TestCase):
           'frontend/cumulative_test', 'Cumulative metric test',
           field_spec=[metrics.StringField('client_id')]),
     ])
+
     self.ts_mon_handler.post()
 
     self.assertEqual(self.response.status_int, 400)
     self.assertIn('Invalid start_time', self.response.body)
 
-  @mock.patch('time.time')
-  def test_post_distribution_metrics_not_a_dict(self, mockTime):
+  def test_post_distribution_metrics_not_a_dict(self):
     """Test case when a distribution metric value is not a dict."""
-    mock_timestamp = 1537821859
-    mockTime.return_value = mock_timestamp
     self.request.body = json.dumps({
       'metrics': {
         'frontend/boolean_test': {
@@ -287,7 +298,7 @@ class TSMonJSHandlerTest(test_case.TestCase):
           'fields': {
             'client_id': '789',
           },
-          'start_time': mock_timestamp - 60,
+          'start_time': self.mock_timestamp - 60,
         },
       },
     })
@@ -302,11 +313,8 @@ class TSMonJSHandlerTest(test_case.TestCase):
     self.assertIn('Distribution metric values must be a dict',
         self.response.body)
 
-  @mock.patch('time.time')
-  def test_post_metrics_normal(self, mockTime):
+  def test_post_metrics_normal(self):
     """Test successful POST case."""
-    mock_timestamp = 1537821859
-    mockTime.return_value = mock_timestamp
     self.request.body = json.dumps({
       'metrics': {
         'frontend/boolean_test': {
@@ -328,7 +336,7 @@ class TSMonJSHandlerTest(test_case.TestCase):
           'fields': {
             'client_id': '789',
           },
-          'start_time': mock_timestamp - 60,
+          'start_time': self.mock_timestamp - 60,
         },
       },
     })

@@ -208,11 +208,15 @@ class TSMonJSHandler(webapp2.RequestHandler):
     """
     raise NotImplementedError('xsrf_is_valid must be implemented in a subclass.')
 
+  def time_fn(self):
+    """Defaults to time.time. Can be overridden for testing."""
+    return time.time()
+
   def _start_time_is_valid(self, start_time):
     """Validates that a start_time is not in the future and not
     more than a month in the past.
     """
-    now = time.time()
+    now = self.time_fn()
     if start_time > now:
       return False
 
