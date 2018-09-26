@@ -50,7 +50,7 @@ def RunSteps(api):
   api.cipd.ensure(packages_dir, ensure_file)
 
   swarming = packages_dir.join('swarming')
-  tdata = api.json.loads(api.properties.get('bots_test_data', {}))
+  tdata = api.json.loads(api.properties.get('bots_test_data', '{}'))
   for server in SERVERS:
     with api.step.nest(server):
       # Maps machine_type -> bot_id of bots to snapshot.
