@@ -74,7 +74,7 @@ func (h *State) sendMail(ctx context.Context, cfg *rotang.Configuration, shift *
 	if err != nil {
 		return err
 	}
-	info := rotang.MailInfo{
+	info := rotang.Info{
 		RotaName:    cfg.Config.Name,
 		ShiftConfig: cfg.Config.Shifts,
 		ShiftEntry:  *shift,

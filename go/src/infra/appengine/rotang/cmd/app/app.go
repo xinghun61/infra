@@ -6,7 +6,6 @@
 package app
 
 import (
-	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -31,7 +30,7 @@ import (
 )
 
 const (
-	selfURL       = "scratch.syd.corp.google.com:8080"
+	selfURL       = "rota-ng-staging.googleplex.com"
 	sheriffConfig = "token/sheriff_secret.json"
 	sheriffToken  = "token/sheriff_token.json"
 )
@@ -40,6 +39,18 @@ type appengineMailer struct{}
 
 func (a *appengineMailer) Send(ctx context.Context, msg *mail.Message) error {
 	return mail.Send(ctx, msg)
+}
+
+func legacyCred(cfg *oauth2.Config, token *oauth2.Token) func(context.Context) (*http.Client, error) {
+	return func(ctx context.Context) (*http.Client, error) {
+		return cfg.Client(ctx, token), nil
+	}
+}
+
+func serviceDefaultCred() func(context.Context) (*http.Client, error) {
+	return func(ctx context.Context) (*http.Client, error) {
+		return google.DefaultClient(ctx, gcal.CalendarScope)
+	}
 }
 
 func setupStoreHandlers(o *handlers.Options, sf func(context.Context) *datastore.Store) {
@@ -60,22 +71,8 @@ func init() {
 	middleware := standard.Base()
 
 	tmw := middleware.Extend(templates.WithTemplates(&templates.Bundle{
-		Loader: templates.FileSystemLoader("../handlers/templates"),
+		Loader: templates.FileSystemLoader("templates"),
 	}), auth.Authenticate(server.UsersAPIAuthMethod{}))
-
-	b, err := ioutil.ReadFile(sheriffConfig)
-	if err != nil {
-		log.Fatal(err)
-	}
-	config, err := google.ConfigFromJSON(b, gcal.CalendarScope)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	t, err := ioutil.ReadFile(sheriffToken)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	// Sort out the generators.
 	gs := algo.New()
@@ -84,11 +81,8 @@ func init() {
 	gs.Register(algo.NewRandomGen())
 
 	opts := handlers.Options{
-		URL: selfURL,
-		Calendar: calendar.New(config, &oauth2.Token{
-			RefreshToken: string(t),
-			TokenType:    "Bearer",
-		}),
+		URL:        selfURL,
+		Calendar:   calendar.New(serviceDefaultCred()),
 		Generators: gs,
 		MailSender: &appengineMailer{},
 	}

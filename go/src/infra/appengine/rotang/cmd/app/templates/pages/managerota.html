@@ -29,13 +29,13 @@
          </form>
        </td>
        <td>
-         <form action="deleterota" method="post">
-            <button type="submit" name="name" value="{{$c.Config.Name}}">Delete</button>
+         <form action="importshifts">
+            <button type="submit" name="name" value="{{$c.Config.Name}}">Import</button>
          </form>
        </td>
        <td>
-         <form action="importshifts">
-            <button type="submit" name="name" value="{{$c.Config.Name}}">Import</button>
+         <form action="deleterota" method="post" onclick="return confirm('Are you sure?')">
+            <button type="submit" name="name" value="{{$c.Config.Name}}">Delete</button>
          </form>
        </td>
      </tr>
