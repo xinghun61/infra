@@ -1,0 +1,11 @@
+package: infra/machine-provider/snapshot/gce/${platform}
+description: Machine Provider disk snapshot tool.
+platforms:
+  - linux-amd64
+install_mode: copy
+go_packages:
+  - go.chromium.org/luci/mp/cmd/snapshot
+root: ../../go/bin
+data:
+  - file: snapshot${exe_suffix}
+  - version_file: .versions/snapshot${exe_suffix}.cipd_version
