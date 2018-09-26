@@ -26,6 +26,7 @@ import buildtags
 import model
 import search
 import service
+import user
 import v2
 
 # Header for passing token to authenticate build messages, e.g. UpdateBuild RPC.
@@ -240,9 +241,43 @@ def validate_build_token(req, ctx):
 @rpc_impl_async('UpdateBuild')
 @ndb.tasklet
 def update_build_async(req, ctx, _mask):
-  # TODO(jchinlee): Implement.
+  """Update build as in given request.
+
+  For now, only update build steps.
+  """
   validate_build_token(req, ctx)
-  raise ndb.Return(req.build)
+  if not (yield user.can_update_build_async()):
+    raise StatusError(
+        prpc.StatusCode.PERMISSION_DENIED, 'user not permitted to update build'
+    )
+  validation.validate_update_build_request(req)
+
+  @ndb.transactional_tasklet
+  def txn_async():
+    build_proto = req.build
+
+    # Get existing build.
+    build = yield service.get_async(build_proto.id)
+    if not build:
+      raise not_found(
+          'Cannot update nonexisting build with id %s', build_proto.id
+      )
+
+    # Update build steps.
+    build_steps = model.BuildSteps(
+        key=model.BuildSteps.key_for(build.key),
+        step_container=build_pb2.Build(steps=build_proto.steps),
+    )
+
+    # Currently, only build steps are supported; later, update other fields
+    # specified in req.update_mask.
+
+    # Store and convert back to build_pb2.Build proto for return.
+    yield ndb.put_multi_async([build, build_steps])
+    raise ndb.Return(v2.build_to_v2(build, build_steps))
+
+  build = yield txn_async()
+  raise ndb.Return(build)
 
 
 # Maps an rpc_pb2.BatchRequest.Request field name to an async function

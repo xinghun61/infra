@@ -2,11 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import os
 import datetime
 
 from google.appengine.ext import ndb
 from google.protobuf import field_mask_pb2
 from google.protobuf import timestamp_pb2
+from google.protobuf import text_format
 from google.rpc import status_pb2
 
 from components import auth
@@ -25,6 +27,7 @@ from proto import step_pb2
 from test import test_util
 from v2 import api
 from v2 import tokens
+from v2 import validation
 import annotations
 import buildtags
 import model
@@ -32,6 +35,8 @@ import search
 import service
 
 future = test_util.future
+
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class BaseTestCase(testing.AppengineTestCase):
@@ -271,48 +276,83 @@ class SearchTests(BaseTestCase):
 
 class UpdateBuildTests(BaseTestCase):
 
-  def _mk_update_req(self, build_id, token):
-    build = build_pb2.Build(
-        id=build_id,
-        status=common_pb2.STARTED,
-    )
+  def _mk_update_req(self, build, token):
     build_req = rpc_pb2.UpdateBuildRequest(build=build)
+    build_req.update_mask.paths[:] = ['build.steps']
     ctx = prpc_context.ServicerContext()
     if token:
       metadata = ctx.invocation_metadata()
-      metadata.append((api.BUILD_TOKEN_HEADER.lower(), token))
+      metadata.append((api.BUILD_TOKEN_HEADER, token))
     return build_req, ctx
 
   @mock.patch('components.utils.time_time', autospec=True)
-  def test_valid(self, mock_time):
+  @mock.patch('service.get_async', autospec=True)
+  @mock.patch('user.can_update_build_async', autospec=True)
+  def test_valid(self, mock_can_update, mock_get_async, mock_time):
     mock_time.side_effect = iter([1, 2, 3, 4])
+    mock_can_update.return_value = future(True)
+    mock_get_async.return_value = future(
+        model.Build(
+            id=123,
+            status=model.BuildStatus.STARTED,
+            bucket='bucket',
+            created_by=auth.Identity('user', 'foo@google.com'),
+            create_time=timestamp_pb2.Timestamp(seconds=1500000000
+                                               ).ToDatetime(),
+            start_time=timestamp_pb2.Timestamp(seconds=1500000000).ToDatetime(),
+            parameters_actual=dict(),
+        )
+    )
+
     build_id = 123
+    build = build_pb2.Build(id=build_id)
+    with open(os.path.join(THIS_DIR, 'steps.pb.txt')) as f:
+      text = protoutil.parse_multiline(f.read())
+      text_format.Merge(text, build)
+
     token = tokens.generate_build_token(build_id)
-    req, ctx = self._mk_update_req(build_id, token)
+    req, ctx = self._mk_update_req(build, token)
+    req.fields.paths[:] = ['id', 'status', 'created_by', 'steps']
+
     actual = self.call(self.api.UpdateBuild, req, ctx=ctx)
-    expected = build_pb2.Build(id=build_id, status=common_pb2.STARTED)
+    expected = build_pb2.Build(
+        id=123,
+        status=common_pb2.STARTED,
+        created_by='user:foo@google.com',
+        steps=build.steps,
+    )
     self.assertEqual(actual, expected)
 
   def test_missing_token(self):
-    req, ctx = self._mk_update_req(123, None)
+    build = build_pb2.Build(
+        id=123,
+        status=common_pb2.STARTED,
+    )
+    req, ctx = self._mk_update_req(build, None)
     self.call(
         self.api.UpdateBuild,
         req,
         ctx=ctx,
         expected_code=prpc.StatusCode.UNAUTHENTICATED,
-        expected_details='missing token in build update request'
+        expected_details='missing token in build update request',
     )
 
   @mock.patch('components.utils.time_time', autospec=True)
   def test_bad_token(self, mock_time):
     mock_time.side_effect = iter([1, 2, 3, 4])
+
+    build = build_pb2.Build(
+        id=123,
+        status=common_pb2.STARTED,
+    )
+
     token = tokens.generate_build_token(456)
-    req, ctx = self._mk_update_req(123, token)
+    req, ctx = self._mk_update_req(build, token)
     self.call(
         self.api.UpdateBuild,
         req,
         ctx=ctx,
-        expected_code=prpc.StatusCode.UNAUTHENTICATED
+        expected_code=prpc.StatusCode.UNAUTHENTICATED,
     )
 
   @mock.patch('components.utils.time_time', autospec=True)
@@ -320,15 +360,88 @@ class UpdateBuildTests(BaseTestCase):
     mock_time.side_effect = iter([
         2 * i * model.BUILD_TIMEOUT.total_seconds() for i in range(4)
     ])
+
     build_id = 123
+    build = build_pb2.Build(
+        id=build_id,
+        status=common_pb2.STARTED,
+    )
+
     token = tokens.generate_build_token(build_id)
-    req, ctx = self._mk_update_req(build_id, token)
+    req, ctx = self._mk_update_req(build, token)
     self.call(
         self.api.UpdateBuild,
         req,
         ctx=ctx,
         expected_code=prpc.StatusCode.UNAUTHENTICATED,
-        expected_details='Bad token: expired'
+        expected_details='Bad token: expired',
+    )
+
+  @mock.patch('components.utils.time_time', autospec=True)
+  @mock.patch('user.can_update_build_async', autospec=True)
+  @mock.patch('v2.validation.validate_update_build_request', autospec=True)
+  def test_invalid_build_proto(
+      self, mock_validation, mock_can_update, mock_time
+  ):
+    mock_time.side_effect = iter([1, 2, 3, 4])
+    mock_can_update.return_value = future(True)
+    mock_validation.side_effect = validation.Error('invalid build proto')
+
+    build_id = 123
+    build = build_pb2.Build(id=build_id)
+
+    token = tokens.generate_build_token(build_id)
+    req, ctx = self._mk_update_req(build, token)
+    self.call(
+        self.api.UpdateBuild,
+        req,
+        ctx=ctx,
+        expected_code=prpc.StatusCode.INVALID_ARGUMENT,
+        expected_details='invalid build proto',
+    )
+
+  @mock.patch('components.utils.time_time', autospec=True)
+  @mock.patch('service.get_async', autospec=True)
+  @mock.patch('user.can_update_build_async', autospec=True)
+  def test_invalid_id(self, mock_can_update, mock_get_async, mock_time):
+    mock_time.side_effect = iter([1, 2, 3, 4])
+    mock_can_update.return_value = future(True)
+    mock_get_async.return_value = future(None)
+
+    build_id = 123
+    build = build_pb2.Build(
+        id=build_id,
+        status=common_pb2.STARTED,
+    )
+
+    token = tokens.generate_build_token(build_id)
+    req, ctx = self._mk_update_req(build, token)
+    self.call(
+        self.api.UpdateBuild,
+        req,
+        ctx=ctx,
+        expected_code=prpc.StatusCode.NOT_FOUND,
+        expected_details='Cannot update nonexisting build with id 123',
+    )
+
+  @mock.patch('components.auth.is_group_member', autospec=True)
+  def test_invalid_user(self, mock_is_group_member):
+    mock_is_group_member.return_value = False
+
+    build_id = 123
+    build = build_pb2.Build(
+        id=build_id,
+        status=common_pb2.STARTED,
+    )
+
+    token = tokens.generate_build_token(build_id)
+    req, ctx = self._mk_update_req(build, token)
+    self.call(
+        self.api.UpdateBuild,
+        req,
+        ctx=ctx,
+        expected_code=prpc.StatusCode.PERMISSION_DENIED,
+        expected_details='user not permitted to update build',
     )
 
 
