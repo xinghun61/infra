@@ -6,6 +6,7 @@
 """Tests for the WorkEnv class."""
 
 import logging
+import sys
 import unittest
 from mock import Mock, patch
 
@@ -968,6 +969,109 @@ class WorkEnvTest(unittest.TestCase):
     with self.work_env as we:
       _actual = we.DeleteIssue(issue, False)
     self.assertFalse(issue.deleted)
+
+  def testRerankBlockedOnIssues_SplitBelow(self):
+    parent_issue = fake.MakeTestIssue(
+        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
+    self.services.issue.TestAddIssue(parent_issue)
+
+    issues = []
+    for idx in range(2, 6):
+      issues.append(fake.MakeTestIssue(
+          789, idx, 'sum', 'New', 111L, project_name='proj', issue_id=1000+idx))
+      self.services.issue.TestAddIssue(issues[-1])
+      parent_issue.blocked_on_iids.append(issues[-1].issue_id)
+      next_rank = sys.maxint
+      if parent_issue.blocked_on_ranks:
+        next_rank = parent_issue.blocked_on_ranks[-1] - 1
+      parent_issue.blocked_on_ranks.append(next_rank)
+
+    self.SignIn()
+    with self.work_env as we:
+      we.RerankBlockedOnIssues(parent_issue, 1002, 1004, False)
+      new_parent_issue = we.GetIssue(1001)
+
+    self.assertEqual([1003, 1004, 1002, 1005], new_parent_issue.blocked_on_iids)
+
+  def testRerankBlockedOnIssues_SplitAbove(self):
+    parent_issue = fake.MakeTestIssue(
+        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
+    self.services.issue.TestAddIssue(parent_issue)
+
+    issues = []
+    for idx in range(2, 6):
+      issues.append(fake.MakeTestIssue(
+          789, idx, 'sum', 'New', 111L, project_name='proj', issue_id=1000+idx))
+      self.services.issue.TestAddIssue(issues[-1])
+      parent_issue.blocked_on_iids.append(issues[-1].issue_id)
+      next_rank = sys.maxint
+      if parent_issue.blocked_on_ranks:
+        next_rank = parent_issue.blocked_on_ranks[-1] - 1
+      parent_issue.blocked_on_ranks.append(next_rank)
+
+    self.SignIn()
+    with self.work_env as we:
+      we.RerankBlockedOnIssues(parent_issue, 1002, 1004, True)
+      new_parent_issue = we.GetIssue(1001)
+
+    self.assertEqual([1003, 1002, 1004, 1005], new_parent_issue.blocked_on_iids)
+
+  @patch('tracker.rerank_helpers.MAX_RANKING', 1)
+  def testRerankBlockedOnIssues_NoRoom(self):
+    parent_issue = fake.MakeTestIssue(
+        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
+    parent_issue.blocked_on_ranks = [1, 0, 0]
+    self.services.issue.TestAddIssue(parent_issue)
+
+    issues = []
+    for idx in range(2, 5):
+      issues.append(fake.MakeTestIssue(
+          789, idx, 'sum', 'New', 111L, project_name='proj', issue_id=1000+idx))
+      self.services.issue.TestAddIssue(issues[-1])
+      parent_issue.blocked_on_iids.append(issues[-1].issue_id)
+
+    self.SignIn()
+    with self.work_env as we:
+      we.RerankBlockedOnIssues(parent_issue, 1003, 1004, True)
+      new_parent_issue = we.GetIssue(1001)
+
+    self.assertEqual([1002, 1003, 1004], new_parent_issue.blocked_on_iids)
+
+  def testRerankBlockedOnIssues_CantEditIssue(self):
+    parent_issue = fake.MakeTestIssue(
+        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
+    parent_issue.labels = ['Restrict-EditIssue-Foo']
+    self.services.issue.TestAddIssue(parent_issue)
+
+    self.SignIn()
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        we.RerankBlockedOnIssues(parent_issue, 1003, 1002, True)
+
+  def testRerankBlockedOnIssues_MovedNotOnBlockedOn(self):
+    parent_issue = fake.MakeTestIssue(
+        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
+    self.services.issue.TestAddIssue(parent_issue)
+
+    self.SignIn()
+    with self.assertRaises(exceptions.InputException):
+      with self.work_env as we:
+        we.RerankBlockedOnIssues(parent_issue, 1003, 1002, True)
+
+  def testRerankBlockedOnIssues_TargetNotOnBlockedOn(self):
+    moved = fake.MakeTestIssue(
+        789, 2, 'sum', 'New', 111L, project_name='proj', issue_id=1002)
+    self.services.issue.TestAddIssue(moved)
+    parent_issue = fake.MakeTestIssue(
+        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
+    parent_issue.blocked_on_iids = [1002]
+    parent_issue.blocked_on_ranks = [1]
+    self.services.issue.TestAddIssue(parent_issue)
+
+    self.SignIn()
+    with self.assertRaises(exceptions.InputException):
+      with self.work_env as we:
+        we.RerankBlockedOnIssues(parent_issue, 1002, 1003, True)
 
   # FUTURE: GetIssuePermissionsForUser()
 

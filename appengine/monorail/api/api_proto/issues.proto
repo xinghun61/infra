@@ -31,6 +31,7 @@ service Issues {
       returns (UpdateApprovalResponse) {}
   rpc IssueSnapshot (IssueSnapshotRequest) returns (IssueSnapshotResponse) {}
   rpc PresubmitIssue (PresubmitIssueRequest) returns (PresubmitIssueResponse) {}
+  rpc RerankBlockedOnIssues (RerankBlockedOnIssuesRequest) returns (RerankBlockedOnIssuesResponse) {}
 }
 
 
@@ -278,4 +279,20 @@ message PresubmitIssueResponse {
   repeated ValueAndWhy derived_ccs = 5;
   repeated ValueAndWhy warnings = 6;
   repeated ValueAndWhy errors = 7;
+}
+
+
+// Next available tag: 6
+message RerankBlockedOnIssuesRequest {
+  RequestTrace trace = 1;
+  IssueRef issue_ref = 2;
+  IssueRef moved_ref = 3;
+  IssueRef target_ref = 4;
+  bool split_above = 5;
+}
+
+
+// Next available tag: 2
+message RerankBlockedOnIssuesResponse {
+  repeated IssueRef blocked_on_issue_refs = 1;
 }

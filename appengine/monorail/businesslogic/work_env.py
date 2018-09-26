@@ -53,6 +53,7 @@ from framework import permissions
 from search import frontendsearchpipeline
 from services import project_svc
 from sitewide import sitewide_helpers
+from tracker import rerank_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_constants
 from tracker import tracker_helpers
@@ -972,6 +973,37 @@ class WorkEnv(object):
          current_issue, [issue.issue_id for issue in sorted_issues])
     total_count = len(sorted_issues)
     return prev_iid, cur_index, next_iid, total_count
+
+  def RerankBlockedOnIssues(self, issue, moved_id, target_id, split_above):
+    """Rerank the blocked on issues for issue_id.
+
+    Args:
+      issue: The issue to modify.
+      moved_id: The id of the issue to move.
+      target_id: The id of the issue to move |moved_issue| to.
+      split_above: Whether to move |moved_issue| before or after |target_issue|.
+    """
+    # Make sure the user has permission to edit the issue.
+    self._AssertPermInIssue(issue, permissions.EDIT_ISSUE)
+    # Make sure the moved and target issues are in the blocked-on list.
+    if moved_id not in issue.blocked_on_iids:
+      raise exceptions.InputException(
+          'The issue to move is not in the blocked-on list.')
+    if target_id not in issue.blocked_on_iids:
+      raise exceptions.InputException(
+          'The target issue is not in the blocked-on list.')
+
+    phase_name = 'Moving issue %r %s issue %d.' % (
+        moved_id, 'above' if split_above else 'below', target_id)
+    with self.mc.profiler.Phase(phase_name):
+      lower, higher = tracker_bizobj.SplitBlockedOnRanks(
+          issue, target_id, split_above,
+          [iid for iid in issue.blocked_on_iids if iid != moved_id])
+      rank_changes = rerank_helpers.GetInsertRankings(
+          lower, higher, [moved_id])
+      if rank_changes:
+        self.services.issue.ApplyIssueRerank(
+            self.mc.cnxn, issue.issue_id, rank_changes)
 
   # FUTURE: GetIssuePermissionsForUser()
 

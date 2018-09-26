@@ -8,6 +8,7 @@
 import collections
 import logging
 import re
+import sys
 import time
 
 import settings
@@ -1383,6 +1384,8 @@ class IssueService(object):
 
     if blocked_on:
       issue.blocked_on_iids.extend(blocked_on)
+      issue.blocked_on_ranks.extend(
+          range(sys.maxint - 1, sys.maxint - len(blocked_on) - 1, -1))
     if blocking:
       issue.blocking.extend(blocking)
 
@@ -1474,6 +1477,12 @@ class IssueService(object):
     issue.component_ids = component_ids
 
     issue.blocked_on_iids.extend(blocked_on)
+    next_rank = sys.maxint
+    if issue.blocked_on_ranks:
+      next_rank = issue.blocked_on_ranks[-1] - 1
+    issue.blocked_on_ranks.extend(
+        range(next_rank, next_rank - len(blocked_on), -1))
+
     issue.blocking_iids.extend(blocking)
     issue.dangling_blocked_on_refs.extend(dangling_blocked_on_refs)
     issue.dangling_blocking_refs.extend(dangling_blocking_refs)
@@ -1531,6 +1540,7 @@ class IssueService(object):
 
       # Note that blocking and merge_into are not copied.
       new_issue.blocked_on_iids = target_issue.blocked_on_iids
+      new_issue.blocked_on_ranks = target_issue.blocked_on_ranks
 
       # Create the same summary comment as the target issue.
       comment = self._MakeIssueComment(
@@ -1702,7 +1712,12 @@ class IssueService(object):
 
   def ApplyIssueRerank(
       self, cnxn, parent_id, relations_to_change, commit=True, invalidate=True):
-    pass
+    issue = self.GetIssue(cnxn, parent_id)
+    relations_dict = dict(zip(issue.blocked_on_iids, issue.blocked_on_ranks))
+    relations_dict.update(relations_to_change)
+    issue.blocked_on_ranks = sorted(issue.blocked_on_ranks, reverse=True)
+    issue.blocked_on_iids = sorted(
+        issue.blocked_on_iids, key=relations_dict.get, reverse=True)
 
   def SplitRanks(self, cnxn, parent_id, target_id, open_ids, split_above=False):
     pass

@@ -6,6 +6,7 @@
 """Tests for the issues servicer."""
 
 import logging
+import sys
 import time
 import unittest
 from mock import ANY, Mock, patch
@@ -31,6 +32,7 @@ from framework import monorailcontext
 from framework import permissions
 from search import frontendsearchpipeline
 from proto import tracker_pb2
+from proto import project_pb2
 from testing import fake
 from services import service_manager
 from proto import tracker_pb2
@@ -57,10 +59,11 @@ class IssuesServicerTest(unittest.TestCase):
     self.user_3 = self.services.user.TestAddUser('approver3@example.com', 333L)
     self.issue_1 = fake.MakeTestIssue(
         789, 1, 'sum', 'New', 111L, project_name='proj',
-        opened_timestamp=self.NOW)
+        opened_timestamp=self.NOW, issue_id=1001)
     self.issue_2 = fake.MakeTestIssue(
-        789, 2, 'sum', 'New', 111L, project_name='proj')
+        789, 2, 'sum', 'New', 111L, project_name='proj', issue_id=1002)
     self.issue_1.blocked_on_iids.append(self.issue_2.issue_id)
+    self.issue_1.blocked_on_ranks.append(sys.maxint)
     self.services.issue.TestAddIssue(self.issue_1)
     self.services.issue.TestAddIssue(self.issue_2)
     self.issues_svcr = issues_servicer.IssuesServicer(
@@ -1040,3 +1043,138 @@ class IssuesServicerTest(unittest.TestCase):
             value='Owner is not to be disturbed',
             why='Added by rule: IF owner:owner@example.com THEN ADD ERROR')],
         [vnw for vnw in response.errors])
+
+  def testRerankBlockedOnIssues_SplitBelow(self):
+    issues = []
+    for idx in range(3, 6):
+      issues.append(fake.MakeTestIssue(
+          789, idx, 'sum', 'New', 111L, project_name='proj', issue_id=1000+idx))
+      self.services.issue.TestAddIssue(issues[-1])
+      self.issue_1.blocked_on_iids.append(issues[-1].issue_id)
+      self.issue_1.blocked_on_ranks.append(self.issue_1.blocked_on_ranks[-1]-1)
+
+    request = issues_pb2.RerankBlockedOnIssuesRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        moved_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=2),
+        target_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=4),
+        split_above=False)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.issues_svcr.RerankBlockedOnIssues, mc, request)
+
+    self.assertEqual(
+        [3, 4, 2, 5],
+        [blocked_on_ref.local_id
+         for blocked_on_ref in response.blocked_on_issue_refs])
+
+  def testRerankBlockedOnIssues_SplitAbove(self):
+    self.project.committer_ids.append(222L)
+    issues = []
+    for idx in range(3, 6):
+      issues.append(fake.MakeTestIssue(
+          789, idx, 'sum', 'New', 111L, project_name='proj', issue_id=1000+idx))
+      self.services.issue.TestAddIssue(issues[-1])
+      self.issue_1.blocked_on_iids.append(issues[-1].issue_id)
+      self.issue_1.blocked_on_ranks.append(self.issue_1.blocked_on_ranks[-1]-1)
+
+    request = issues_pb2.RerankBlockedOnIssuesRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        moved_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=2),
+        target_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=4),
+        split_above=True)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='approver2@example.com')
+    response = self.CallWrapped(
+        self.issues_svcr.RerankBlockedOnIssues, mc, request)
+
+    self.assertEqual(
+        [3, 2, 4, 5],
+        [blocked_on_ref.local_id
+         for blocked_on_ref in response.blocked_on_issue_refs])
+
+  def testRerankBlockedOnIssues_CantEditIssue(self):
+    self.project.committer_ids.append(222L)
+    issues = []
+    for idx in range(3, 6):
+      issues.append(fake.MakeTestIssue(
+          789, idx, 'sum', 'New', 111L, project_name='proj', issue_id=1000+idx))
+      self.services.issue.TestAddIssue(issues[-1])
+      self.issue_1.blocked_on_iids.append(issues[-1].issue_id)
+      self.issue_1.blocked_on_ranks.append(self.issue_1.blocked_on_ranks[-1]-1)
+
+    self.issue_1.labels = ['Restrict-EditIssue-Foo']
+
+    request = issues_pb2.RerankBlockedOnIssuesRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        moved_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=2),
+        target_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=4),
+        split_above=True)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='approver2@example.com')
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.issues_svcr.RerankBlockedOnIssues, mc, request)
+
+  def testRerankBlockedOnIssues_ComplexPermissions(self):
+    """We can rerank blocked on issues, regardless of perms on other issues.
+
+    If Issue 1 is blocked on Issue 3 and Issue 4, we should be able to reorder
+    them as long as we have permission to edit Issue 1, even if we don't have
+    permission to view or edit Issues 3 or 4.
+    """
+    # Issue 3 is in proj2, which we don't have access to.
+    project_2 = self.services.project.TestAddProject(
+        'proj2', project_id=790, owner_ids=[222L], contrib_ids=[333L])
+    project_2.access = project_pb2.ProjectAccess.MEMBERS_ONLY
+    issue_3 = fake.MakeTestIssue(
+        790, 3, 'sum', 'New', 111L, project_name='proj2', issue_id=1003)
+
+    # Issue 4 requires a permission we don't have in order to edit it.
+    issue_4 = fake.MakeTestIssue(
+        789, 4, 'sum', 'New', 111L, project_name='proj', issue_id=1004)
+    issue_4.labels = ['Restrict-EditIssue-Foo']
+
+    self.services.issue.TestAddIssue(issue_3)
+    self.services.issue.TestAddIssue(issue_4)
+
+    self.issue_1.blocked_on_iids = [1003, 1004]
+    self.issue_1.blocked_on_ranks = [2, 1]
+
+    request = issues_pb2.RerankBlockedOnIssuesRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        moved_ref=common_pb2.IssueRef(
+            project_name='proj2',
+            local_id=3),
+        target_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=4),
+        split_above=False)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.issues_svcr.RerankBlockedOnIssues, mc, request)
+
+    self.assertEqual(
+        [4, 3],
+        [blocked_on_ref.local_id
+         for blocked_on_ref in response.blocked_on_issue_refs])

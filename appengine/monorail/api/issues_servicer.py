@@ -34,18 +34,18 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
 
   DESCRIPTION = issues_prpc_pb2.IssuesServiceDescription
 
-  def _GetProjectIssueAndConfig(self, mc, request, use_cache=True,
+  def _GetProjectIssueAndConfig(self, mc, issue_ref, use_cache=True,
                                 issue_required=True):
     """Get three objects that we need for most requests with an issue_ref."""
     issue = None
     with work_env.WorkEnv(mc, self.services, phase='getting P, I, C') as we:
       project = we.GetProjectByName(
-          request.issue_ref.project_name, use_cache=use_cache)
+          issue_ref.project_name, use_cache=use_cache)
       mc.LookupLoggedInUserPerms(project)
       config = we.GetProjectConfig(project.project_id, use_cache=use_cache)
-      if issue_required or request.issue_ref.local_id:
+      if issue_required or issue_ref.local_id:
         issue = we.GetIssueByLocalID(
-          project.project_id, request.issue_ref.local_id, use_cache=use_cache)
+          project.project_id, issue_ref.local_id, use_cache=use_cache)
     return project, issue, config
 
   @monorail_servicer.PRPCMethod
@@ -57,7 +57,8 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
   @monorail_servicer.PRPCMethod
   def GetIssue(self, mc, request):
     """Return the specified issue in a response proto."""
-    project, issue, config = self._GetProjectIssueAndConfig(mc, request)
+    project, issue, config = self._GetProjectIssueAndConfig(
+        mc, request.issue_ref)
     with work_env.WorkEnv(mc, self.services) as we:
       related_refs = we.GetRelatedIssueRefs([issue])
 
@@ -137,7 +138,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
   def UpdateIssue(self, mc, request):
     """Apply a delta and comment to the specified issue, then return it."""
     project, issue, config = self._GetProjectIssueAndConfig(
-        mc, request, use_cache=False)
+        mc, request.issue_ref, use_cache=False)
 
     with work_env.WorkEnv(mc, self.services) as we:
       if request.HasField('delta'):
@@ -168,7 +169,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
   def StarIssue(self, mc, request):
     """Star (or unstar) the specified issue."""
     _project, issue, _config = self._GetProjectIssueAndConfig(
-        mc, request, use_cache=False)
+        mc, request.issue_ref, use_cache=False)
 
     with work_env.WorkEnv(mc, self.services) as we:
       we.StarIssue(issue, request.starred)
@@ -185,7 +186,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
   def IsIssueStarred(self, mc, request):
     """Respond true if the signed-in user has starred the specified issue."""
     _project, issue, _config = self._GetProjectIssueAndConfig(
-        mc, request, use_cache=False)
+        mc, request.issue_ref, use_cache=False)
 
     with work_env.WorkEnv(mc, self.services) as we:
       is_starred = we.IsIssueStarred(issue)
@@ -199,7 +200,8 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
   @monorail_servicer.PRPCMethod
   def ListComments(self, mc, request):
     """Return comments on the specified issue in a response proto."""
-    project, issue, config = self._GetProjectIssueAndConfig(mc, request)
+    project, issue, config = self._GetProjectIssueAndConfig(
+        mc, request.issue_ref)
     with work_env.WorkEnv(mc, self.services) as we:
       comments = we.ListIssueComments(issue)
 
@@ -264,7 +266,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
   @monorail_servicer.PRPCMethod
   def DeleteComment(self, mc, request):
     _project, issue, _config = self._GetProjectIssueAndConfig(
-        mc, request, use_cache=False)
+        mc, request.issue_ref, use_cache=False)
     with work_env.WorkEnv(mc, self.services) as we:
       all_comments = we.ListIssueComments(issue)
       try:
@@ -279,7 +281,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
   def UpdateApproval(self, mc, request):
     """Update an approval and return the updated approval in a reponse proto."""
     project, issue, config = self._GetProjectIssueAndConfig(
-        mc, request, use_cache=False)
+        mc, request.issue_ref, use_cache=False)
 
     with work_env.WorkEnv(mc, self.services) as we:
       approval_fd = tracker_bizobj.FindFieldDef(
@@ -352,7 +354,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
   def PresubmitIssue(self, mc, request):
     """Provide the UI with warnings and suggestions."""
     project, existing_issue, config = self._GetProjectIssueAndConfig(
-        mc, request, issue_required=False)
+        mc, request.issue_ref, issue_required=False)
 
     with mc.profiler.Phase('making user views'):
       try:
@@ -407,4 +409,28 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
         derived_ccs=converters.ConvertValueAndWhyList(derived_ccs),
         warnings=converters.ConvertValueAndWhyList(warnings),
         errors=converters.ConvertValueAndWhyList(errors))
+    return result
+
+  @monorail_servicer.PRPCMethod
+  def RerankBlockedOnIssues(self, mc, request):
+    """Rerank the blocked on issues for the given issue ref."""
+    moved_issue_id, target_issue_id = converters.IngestIssueRefs(
+        mc.cnxn, [request.moved_ref, request.target_ref], self.services)
+    _project, issue, _config = self._GetProjectIssueAndConfig(
+        mc, request.issue_ref)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      we.RerankBlockedOnIssues(
+          issue, moved_issue_id, target_issue_id, request.split_above)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      issue = we.GetIssue(issue.issue_id)
+      related_refs = we.GetRelatedIssueRefs([issue])
+
+    with mc.profiler.Phase('converting to response objects'):
+      converted_issue_refs = converters.ConvertIssueRefs(
+          issue.blocked_on_iids, related_refs)
+      result = issues_pb2.RerankBlockedOnIssuesResponse(
+          blocked_on_issue_refs=converted_issue_refs)
+
     return result
