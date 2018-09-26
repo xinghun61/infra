@@ -4,7 +4,6 @@
 
 import datetime
 import json
-import time
 import unittest
 
 import gae_ts_mon
@@ -270,8 +269,11 @@ class TSMonJSHandlerTest(test_case.TestCase):
     self.assertEqual(self.response.status_int, 400)
     self.assertIn('Invalid start_time', self.response.body)
 
-  def test_post_distribution_metrics_not_a_dict(self):
+  @mock.patch('time.time')
+  def test_post_distribution_metrics_not_a_dict(self, mockTime):
     """Test case when a distribution metric value is not a dict."""
+    mock_timestamp = 1537821859
+    mockTime.return_value = mock_timestamp
     self.request.body = json.dumps({
       'metrics': {
         'frontend/boolean_test': {
@@ -285,7 +287,7 @@ class TSMonJSHandlerTest(test_case.TestCase):
           'fields': {
             'client_id': '789',
           },
-          'start_time': time.time(),
+          'start_time': mock_timestamp - 60,
         },
       },
     })
@@ -300,8 +302,11 @@ class TSMonJSHandlerTest(test_case.TestCase):
     self.assertIn('Distribution metric values must be a dict',
         self.response.body)
 
-  def test_post_metrics_normal(self):
+  @mock.patch('time.time')
+  def test_post_metrics_normal(self, mockTime):
     """Test successful POST case."""
+    mock_timestamp = 1537821859
+    mockTime.return_value = mock_timestamp
     self.request.body = json.dumps({
       'metrics': {
         'frontend/boolean_test': {
@@ -323,7 +328,7 @@ class TSMonJSHandlerTest(test_case.TestCase):
           'fields': {
             'client_id': '789',
           },
-          'start_time': time.time(),
+          'start_time': mock_timestamp - 60,
         },
       },
     })
