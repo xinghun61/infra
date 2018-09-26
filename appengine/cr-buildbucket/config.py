@@ -8,6 +8,7 @@ Stores bucket list in datastore, synchronizes it with bucket configs in
 project repositories: `projects/<project_id>:<buildbucket-app-id>.cfg`.
 """
 
+import collections
 import hashlib
 import logging
 import re
@@ -121,11 +122,6 @@ def validate_buildbucket_cfg(cfg, ctx):
           ctx.error('duplicate bucket name')
         else:
           bucket_names.add(bucket.name)
-          if ctx.project_id:  # pragma: no branch
-            bucket_entity = Bucket.get_by_id(bucket.name)
-            if bucket_entity and bucket_entity.project_id != ctx.project_id:
-              ctx.error('this name is already reserved by another project')
-
           if i > 0 and bucket.name < cfg.buckets[i - 1].name:
             ctx.warning('out of order')
 
@@ -275,21 +271,17 @@ def cron_update_buckets():
       cfg_path(), project_config_pb2.BuildbucketCfg
   )
 
-  buckets_of_project = {}
-  for pid, (_, pcfg, _) in config_map.iteritems():
-    if pcfg is not None:
-      buckets_of_project[pid] = set(b.name for b in pcfg.buckets)
-    else:
-      logging.error('config of project %s is broken', pid)
-      # Find buckets that are currently reserved by the project.
-      # We don't expect many projects to be broken at the same time
-      # so fetching sequentially is fine.
-      bucket_keys = Bucket.query(Bucket.project_id == pid).fetch(keys_only=True)
-      # Make sure not to delete these buckets below.
-      buckets_of_project[pid] = set(k.id() for k in bucket_keys)
+  to_delete = collections.defaultdict(set)  # project_id -> set of bucket names
+  for bucket in Bucket.query().fetch():
+    # TODO(crbug.com/851036): use key only query when bucket id includes
+    # project id
+    to_delete[bucket.project_id].add(bucket.key.id())
 
   for project_id, (revision, project_cfg, _) in config_map.iteritems():
     if project_cfg is None:
+      logging.error('config of project %s is broken', project_id)
+      # Do not delete all buckets of a broken project.
+      to_delete.pop(project_id, None)
       continue
 
     # revision is None in file-system mode. Use SHA1 of the config as revision.
@@ -300,6 +292,7 @@ def cron_update_buckets():
     builder_mixins_by_name = {m.name: m for m in project_cfg.builder_mixins}
 
     for bucket_cfg in project_cfg.buckets:
+      to_delete[project_id].discard(bucket_cfg.name)
       bucket = Bucket.get_by_id(bucket_cfg.name)
       if (bucket and
           bucket.entity_schema_version == CURRENT_BUCKET_SCHEMA_VERSION and
@@ -329,6 +322,7 @@ def cron_update_buckets():
         defaults = bucket_cfg.swarming.builder_defaults
         bucket_cfg.swarming.ClearField('builder_defaults')
         if not any(d.startswith('pool:') for d in defaults.dimensions):
+          # TODO(crbug.com/851036): make it "luci.<project>.<bucket name>".
           defaults.dimensions.append('pool:' + bucket_cfg.name)
         for b in bucket_cfg.swarming.builders:
           flatten_swarmingcfg.flatten_builder(
@@ -338,22 +332,12 @@ def cron_update_buckets():
       @ndb.transactional
       def update_bucket():
         bucket = Bucket.get_by_id(bucket_cfg.name)
-        if bucket and bucket.project_id != project_id:
-          # Does bucket.project_id still claim this bucket?
-          if bucket_cfg.name in buckets_of_project.get(bucket.project_id, []):
-            logging.error(
-                'Failed to reserve bucket %s for project %s: '
-                'already reserved by %s', bucket_cfg.name, project_id,
-                bucket.project_id
-            )
-            return
         if (bucket and
             bucket.entity_schema_version == CURRENT_BUCKET_SCHEMA_VERSION and
             bucket.project_id == project_id and bucket.revision == revision and
             bucket.config_content_binary):  # pragma: no coverage
           return
 
-        report_reservation = bucket is None or bucket.project_id != project_id
         Bucket(
             id=bucket_cfg.name,
             entity_schema_version=CURRENT_BUCKET_SCHEMA_VERSION,
@@ -362,29 +346,17 @@ def cron_update_buckets():
             config_content=protobuf.text_format.MessageToString(bucket_cfg),
             config_content_binary=bucket_cfg.SerializeToString(),
         ).put()
-        if report_reservation:
-          logging.warning(
-              'Reserved bucket %s for project %s', bucket_cfg.name, project_id
-          )
         logging.info(
             'Updated bucket %s to revision %s', bucket_cfg.name, revision
         )
 
       update_bucket()
 
-  # Delete/unreserve non-existing buckets.
-  all_bucket_keys = Bucket.query().fetch(keys_only=True)
-  existing_bucket_keys = [
-      ndb.Key(Bucket, b)
-      for buckets in buckets_of_project.itervalues()
-      for b in buckets
-  ]
-  to_delete = set(all_bucket_keys).difference(existing_bucket_keys)
-  if to_delete:
-    logging.warning(
-        'Deleting buckets: %s', ', '.join(k.id() for k in to_delete)
-    )
-    ndb.delete_multi(to_delete)
+  # Delete non-existing buckets.
+  to_delete_flat = sum([list(n) for n in to_delete.itervalues()], [])
+  if to_delete_flat:
+    logging.warning('Deleting buckets: %s', ', '.join(to_delete_flat))
+    ndb.delete_multi(ndb.Key(Bucket, n) for n in to_delete_flat)
 
 
 def get_buildbucket_cfg_url(project_id):

@@ -11,15 +11,12 @@ utils.fix_protobuf_package()
 
 from components import config as config_component
 from components.config import validation_context
-from google import protobuf
 from google.protobuf import text_format
 from testing_utils import testing
 import mock
 
 from proto.config import project_config_pb2
-from proto.config import service_config_pb2
 from swarming import flatten_swarmingcfg
-from swarming import swarmingcfg
 import config
 
 LUCI_CHROMIUM_TRY_CONFIG_TEXT = (
@@ -608,36 +605,6 @@ class ConfigTest(testing.AppengineTestCase):
     actual = bucket.key.get()
     self.assertEqual(bucket, actual)
 
-  @mock.patch('components.config.get_project_configs', autospec=True)
-  def test_cron_update_buckets_change_reservation(self, get_project_configs):
-    buildbucket_cfg = parse_cfg('''buckets{ name: "bucket" }''')
-    get_project_configs.return_value = {
-        'bar': ('deadbeef', buildbucket_cfg, None),
-    }
-
-    config.Bucket(
-        id='bucket',
-        project_id='foo',
-        revision='deadbeef',
-        config_content='name: "bucket"',
-        config_content_binary=text_to_binary('name: "bucket"'),
-    ).put()
-
-    config.cron_update_buckets()
-
-    actual = config.Bucket.query().fetch()
-    expected = [
-        config.Bucket(
-            id='bucket',
-            entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-            project_id='bar',
-            revision='deadbeef',
-            config_content='name: "bucket"\n',
-            config_content_binary=text_to_binary('name: "bucket"\n'),
-        )
-    ]
-    self.assertEqual(actual, expected)
-
   def cfg_validation_test(self, cfg, expected_messages):
     ctx = config_component.validation.Context()
     ctx.config_set = 'projects/chromium'
@@ -764,7 +731,7 @@ class ConfigTest(testing.AppengineTestCase):
         }
       }
       buckets {
-        name: "b"
+        name: "a"
         acls {
           role: READER
           identity: "ldap"
@@ -794,8 +761,9 @@ class ConfigTest(testing.AppengineTestCase):
                 'Bucket a: undefined ACL set "does_not_exist". '
                 'It must be defined in the same file'
             ),
-            errmsg('Bucket b: acl #1: Identity has invalid format: ldap'),
-            errmsg('Bucket b: acl #2: invalid group: ;%:'),
+            errmsg('Bucket a: duplicate bucket name'),
+            errmsg('Bucket a: acl #1: Identity has invalid format: ldap'),
+            errmsg('Bucket a: acl #2: invalid group: ;%:'),
             errmsg('Bucket #3: invalid name: Bucket not specified'),
             errmsg(
                 'Bucket luci.x: invalid name: Bucket must start with '
@@ -819,32 +787,6 @@ class ConfigTest(testing.AppengineTestCase):
             ),
             validation_context.Message(
                 severity=logging.WARNING, text='Bucket a: out of order'
-            ),
-        ]
-    )
-
-  def test_validate_buildbucket_cfg_duplicate_names(self):
-    config.Bucket(
-        id='master.tryserver.v8',
-        project_id='v8',
-        revision='deadbeef',
-        config_content=MASTER_TRYSERVER_V8_CONFIG_TEXT,
-        config_content_binary=text_to_binary(MASTER_TRYSERVER_V8_CONFIG_TEXT),
-    ).put()
-
-    self.cfg_validation_test(
-        parse_cfg(
-            '''
-          buckets { name: "a" }
-          buckets { name: "a" }
-          buckets { name: "master.tryserver.chromium.linux" }
-          buckets { name: "master.tryserver.v8" }
-      '''
-        ), [
-            errmsg('Bucket a: duplicate bucket name'),
-            errmsg(
-                'Bucket master.tryserver.v8: '
-                'this name is already reserved by another project'
             ),
         ]
     )
