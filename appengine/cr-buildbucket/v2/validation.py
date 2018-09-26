@@ -13,10 +13,12 @@ import contextlib
 import re
 import threading
 
+from proto import build_pb2
 from proto import common_pb2
 
 import buildtags
 import errors
+import model
 
 
 class Error(Exception):
@@ -195,6 +197,14 @@ def validate_update_build_request(req):
       _err('update only supports build.steps path currently')
 
   with _enter('build'):
+    with _enter('steps'):
+      size = build_pb2.Build(steps=req.build.steps).ByteSize()
+      if size > model.BuildSteps.MAX_STEPS_LEN:
+        _err(
+            'too big to accept (%d > %d bytes)', size,
+            model.BuildSteps.MAX_STEPS_LEN
+        )
+
     steps = dict()
     _check_repeated(req.build, 'steps', lambda step: validate_step(step, steps))
 

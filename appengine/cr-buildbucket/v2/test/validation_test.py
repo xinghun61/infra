@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import datetime
+import mock
 import os
 import unittest
 
@@ -405,6 +406,15 @@ class UpdateBuildRequestTests(BaseTestCase):
   def test_missing_update_mask(self):
     msg = rpc_pb2.UpdateBuildRequest(build=build_pb2.Build())
     self.assert_invalid(msg, 'update only supports build.steps path currently')
+
+  @mock.patch('model.BuildSteps', autospec=True)
+  def test_steps_too_big(self, mock_steps_mod):
+    mock_steps_mod.MAX_STEPS_LEN = 13
+    msg = self._mk_rpc([
+        step_pb2.Step(name='foo', status=common_pb2.SCHEDULED),
+        step_pb2.Step(name='bar', status=common_pb2.SCHEDULED),
+    ])
+    self.assert_invalid(msg, r'too big to accept \(20 > 13 bytes\)')
 
   def test_duplicate_step_names(self):
     msg = self._mk_rpc([
