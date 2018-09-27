@@ -22,6 +22,20 @@ OSES = set([
     'Ubuntu',
 ])
 
+# Test data resembling JSON output from "swarming bots" call.
+BOTS_TEST_DATA = [
+    {
+        'bot_id': 'snapshot-me',
+        'dimensions': [{'key': 'os', 'value': ['Ubuntu', 'Ubuntu-14.04']}],
+        'machine_type': 'mt',
+    },
+    {
+        'bot_id': 'dont-snapshot-me',
+        'dimensions': [{'key': 'os', 'value': ['Windows', 'Windows-10']}],
+        'machine_type': 'mt',
+    },
+]
+
 
 def get_value(pairs, key):
   """Returns a the value for the given key in the given pairs.
@@ -50,7 +64,6 @@ def RunSteps(api):
   api.cipd.ensure(packages_dir, ensure_file)
 
   swarming = packages_dir.join('swarming')
-  tdata = api.json.loads(api.properties.get('bots_test_data', '{}'))
   for server in SERVERS:
     with api.step.nest(server):
       # Maps machine_type -> bot_id of bots to snapshot.
@@ -64,16 +77,15 @@ def RunSteps(api):
           '-json', api.json.output(),
           '-mp',
           '-server', '%s.appspot.com' % server,
-      ], step_test_data=lambda: api.json.test_api.output(tdata.get(server, {})))
+      ], step_test_data=lambda: api.json.test_api.output(BOTS_TEST_DATA))
       # For each machine_type, pick a bot to snapshot.
       # TODO(smut): Consider exposing machine_type as a dimension.
       # In that case, a specific bot wouldn't need to be chosen.
       for bot in res.json.output:
-        # Ignore this bot if it isn't running a supported OS.
-        if not set(get_value(bot['dimensions'], 'os')).intersection(OSES):
-          break
-        bots[bot['machine_type']] = bot['bot_id']
-      # TODO(smut): Trigger snapshotting tasks.
+        # Only consider this bot if it's running supported OS.
+        if set(get_value(bot['dimensions'], 'os')).intersection(OSES):
+          bots[bot['machine_type']] = bot['bot_id']
+
       for mt, bot in bots.iteritems():
         api.step('machine type: %s' % mt, ['echo', bot])
 
@@ -84,25 +96,5 @@ def GenTests(api):
     api.platform('linux', 64) +
     api.properties.git_scheduled(
         buildername='snapshot',
-    ) +
-    api.properties(
-        bots_test_data=api.json.dumps({
-            'chromium-swarm-dev': [
-                {
-                    'bot_id': 'snapshot-me',
-                    'dimensions': [
-                        {'key': 'os', 'value': ['Ubuntu', 'Ubuntu-14.04']},
-                    ],
-                    'machine_type': 'mt',
-                },
-                {
-                    'bot_id': 'dont-snapshot-me',
-                    'dimensions': [
-                        {'key': 'os', 'value': ['Windows', 'Windows-10']},
-                    ],
-                    'machine_type': 'mt',
-                },
-            ],
-        }),
     )
   )
