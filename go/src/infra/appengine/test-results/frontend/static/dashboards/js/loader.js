@@ -92,7 +92,7 @@ loader.Loader._flattenTrie = function(trie, prefix)
 loader.Loader.prototype = {
     load: function()
     {
-        this._testType = this._history.crossDashboardState.testType);
+        this._testType = this._history.crossDashboardState.testType;
         this._builders = builders.getBuilders(this._testType);
         this._loadResultsFiles();
     },
