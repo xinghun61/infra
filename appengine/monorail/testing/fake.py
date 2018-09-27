@@ -274,6 +274,20 @@ class UserGroupService(object):
       self.RemoveMembers(cnxn, g_id, citizen_ids)
       self.group_settings.pop(g_id, None)
 
+  def LookupComputedMemberships(self, cnxn, domain, use_cache=True):
+    group_email = 'everyone@%s' % domain
+    group_id = self.LookupUserGroupID(cnxn, group_email, use_cache=use_cache)
+    if group_id:
+      return [group_id]
+
+    return []
+
+  def LookupUserGroupID(self, cnxn, group_email, use_cache=True):
+    for group_id in self.group_settings:
+      if group_email == self.group_addrs.get(group_id):
+        return group_id
+    return None
+
   def LookupMembers(self, _cnxn, group_id_list):
     members_dict = {}
     owners_dict = {}

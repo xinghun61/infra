@@ -96,6 +96,9 @@ class UserGroupService(object):
     # Like a dictionary {user_id: {group_id}}
     self.memberships_2lc = MembershipTwoLevelCache(
         cache_manager, self, self.group_dag)
+    # Like a dictionary {group_email: [group_id]}
+    self.group_id_cache = caches.ValueCentricRamCache(
+        cache_manager, 'usergroup')
 
   ### Group creation
 
@@ -126,6 +129,7 @@ class UserGroupService(object):
     group_settings = usergroup_pb2.MakeSettings(
         who_can_view_members, ext_group_type, 0, friend_projects)
     self.UpdateSettings(cnxn, group_id, group_settings)
+    self.group_id_cache.InvalidateAll(cnxn)
     return group_id
 
   def DeleteGroups(self, cnxn, group_ids):
@@ -147,6 +151,7 @@ class UserGroupService(object):
       self.RemoveMembers(cnxn, g_id, citizen_ids)
       self.usergroupprojects_tbl.Delete(cnxn, group_id=g_id)
       self.usergroupsettings_tbl.Delete(cnxn, group_id=g_id)
+    self.group_id_cache.InvalidateAll(cnxn)
 
   def DetermineWhichUserIDsAreGroups(self, cnxn, user_ids):
     """From a list of user IDs, identify potential user groups.
@@ -166,6 +171,52 @@ class UserGroupService(object):
     return group_ids
 
   ### User memberships in groups
+
+  def LookupComputedMemberships(self, cnxn, domain, use_cache=True):
+    """Look up the computed group memberships of a list of users.
+
+    Args:
+      cnxn: connection to SQL database.
+      domain: string with domain part of user's email address.
+      use_cache: set to False to ignore cached values.
+
+    Returns:
+      A list [group_id] of computed user groups that match the user.
+      For now, the length of this list will always be zero or one.
+    """
+    group_email = 'everyone@%s' % domain
+    group_id = self.LookupUserGroupID(cnxn, group_email, use_cache=use_cache)
+    if group_id:
+      return [group_id]
+
+    return []
+
+  def LookupUserGroupID(self, cnxn, group_email, use_cache=True):
+    """Lookup the group ID for the given user group email address.
+
+    Args:
+      cnxn: connection to SQL database.
+      group_email: string that identies the user group.
+      use_cache: set to False to ignore cached values.
+
+    Returns:
+      Int group_id if found, otherwise None.
+    """
+    if use_cache and self.group_id_cache.HasItem(group_email):
+      return self.group_id_cache.GetItem(group_email)
+
+    rows = self.usergroupsettings_tbl.Select(
+        cnxn, cols=['email', 'group_id'],
+        left_joins=[('User ON UserGroupSettings.group_id = User.user_id', [])],
+        email=group_email,
+        where=[('group_id IS NOT NULL', [])])
+    retrieved_dict = dict(rows)
+    # Cache a "not found" value for emails that are not user groups.
+    if group_email not in retrieved_dict:
+      retrieved_dict[group_email] = None
+    self.group_id_cache.CacheAll(retrieved_dict)
+
+    return retrieved_dict.get(group_email)
 
   def LookupAllMemberships(self, cnxn, user_ids, use_cache=True):
     """Lookup all the group memberships of a list of users.

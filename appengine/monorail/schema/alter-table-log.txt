@@ -1575,3 +1575,11 @@ ALTER TABLE UserCommits CHANGE commit_repo commit_repo_url VARCHAR(255);
 ALTER TABLE UserGroupSettings
   MODIFY COLUMN
   external_group_type ENUM ('chrome_infra_auth', 'mdb', 'baggins', 'computed');
+
+
+================================================================
+2018-09-24: Add 'usergroup to Invalidate.kind enum
+
+ALTER TABLE Invalidate MODIFY COLUMN kind enum(
+    'user', 'usergroup', 'project', 'issue', 'issue_id',
+    'hotlist', 'comment', 'template') NOT NULL;

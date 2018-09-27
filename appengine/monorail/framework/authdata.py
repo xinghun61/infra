@@ -127,12 +127,16 @@ class AuthData(object):
   @classmethod
   def _FinishInitialization(cls, cnxn, auth, services, user_pb=None):
     """Fill in the test of the fields based on the user_id."""
-    auth.effective_ids = services.usergroup.LookupMemberships(
+    direct_memberships = services.usergroup.LookupMemberships(
         cnxn, auth.user_id)
+    auth.effective_ids = direct_memberships.copy()
     auth.effective_ids.add(auth.user_id)
     auth.user_pb = user_pb or services.user.GetUser(cnxn, auth.user_id)
     if auth.user_pb:
       auth.user_view = framework_views.UserView(auth.user_pb)
+      computed_memberships = services.usergroup.LookupComputedMemberships(
+          cnxn, auth.user_view.domain)
+      auth.effective_ids.update(computed_memberships)
 
   def __repr__(self):
     """Return a string more useful for debugging."""

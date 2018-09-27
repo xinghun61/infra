@@ -6,6 +6,7 @@
 """Tests for the usergroup service."""
 
 import collections
+import mock
 import unittest
 
 import mox
@@ -112,6 +113,36 @@ class UserGroupServiceTest(unittest.TestCase):
         self.cnxn, user_ids + group_ids)
     self.mox.VerifyAll()
     self.assertEqual(group_ids, actual_group_ids)
+
+  def testLookupUserGroupID_Found(self):
+    mock_select = mock.MagicMock()
+    self.services.usergroup.usergroupsettings_tbl.Select = mock_select
+    mock_select.return_value = [('group@example.com', 888L)]
+
+    actual = self.services.usergroup.LookupUserGroupID(
+        self.cnxn, 'group@example.com')
+
+    self.assertEqual(888L, actual)
+    mock_select.assert_called_once_with(
+      self.cnxn, cols=['email', 'group_id'],
+      left_joins=[('User ON UserGroupSettings.group_id = User.user_id', [])],
+      email='group@example.com',
+      where=[('group_id IS NOT NULL', [])])
+
+  def testLookupUserGroupID_NotFound(self):
+    mock_select = mock.MagicMock()
+    self.services.usergroup.usergroupsettings_tbl.Select = mock_select
+    mock_select.return_value = []
+
+    actual = self.services.usergroup.LookupUserGroupID(
+        self.cnxn, 'user@example.com')
+
+    self.assertIsNone(actual)
+    mock_select.assert_called_once_with(
+      self.cnxn, cols=['email', 'group_id'],
+      left_joins=[('User ON UserGroupSettings.group_id = User.user_id', [])],
+      email='user@example.com',
+      where=[('group_id IS NOT NULL', [])])
 
   def SetUpLookupAllMemberships(self, user_ids, mock_membership_rows):
     self.usergroup_service.usergroup_tbl.Select(
