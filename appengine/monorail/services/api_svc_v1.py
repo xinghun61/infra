@@ -31,6 +31,7 @@ from businesslogic import work_env
 from features import filterrules_helpers
 from features import send_notifications
 from framework import actionlimit
+from framework import authdata
 from framework import exceptions
 from framework import framework_constants
 from framework import framework_helpers
@@ -248,9 +249,8 @@ def api_base_checks(request, requester, services, cnxn,
     issue_local_id = request.issueId
   # This could raise exceptions.NoSuchUserException
   requester_id = services.user.LookupUserID(cnxn, requester.email())
-  requester_pb = services.user.GetUser(cnxn, requester_id)
-  requester_view = framework_views.UserView(requester_pb)
-  if permissions.IsBanned(requester_pb, requester_view):
+  auth = authdata.AuthData.FromUserID(cnxn, requester_id, services)
+  if permissions.IsBanned(auth.user_pb, auth.user_view):
     raise permissions.BannedUserException(
         'The user %s has been banned from using Monorail' %
         requester.email())
@@ -264,11 +264,8 @@ def api_base_checks(request, requester, services, cnxn,
       raise permissions.PermissionException(
           'API may not access project %s because it is not live'
           % project_name)
-    requester_effective_ids = services.usergroup.LookupMemberships(
-        cnxn, requester_id)
-    requester_effective_ids.add(requester_id)
     if not permissions.UserCanViewProject(
-        requester_pb, requester_effective_ids, project):
+        auth.user_pb, auth.effective_ids, project):
       raise permissions.PermissionException(
           'The user %s has no permission for project %s' %
           (requester.email(), project_name))
@@ -277,12 +274,12 @@ def api_base_checks(request, requester, services, cnxn,
       issue = services.issue.GetIssueByLocalID(
           cnxn, project.project_id, issue_local_id)
       perms = permissions.GetPermissions(
-          requester_pb, requester_effective_ids, project)
+          auth.user_pb, auth.effective_ids, project)
       config = services.config.GetProjectConfig(cnxn, project.project_id)
       granted_perms = tracker_bizobj.GetGrantedPerms(
-          issue, requester_effective_ids, config)
+          issue, auth.effective_ids, config)
       if not permissions.CanViewIssue(
-          requester_effective_ids, perms, project, issue,
+          auth.effective_ids, perms, project, issue,
           granted_perms=granted_perms):
         raise permissions.PermissionException(
             'User is not allowed to view this issue %s:%d' %

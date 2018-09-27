@@ -17,6 +17,7 @@ import logging
 from google.appengine.api import memcache
 
 import settings
+from framework import authdata
 from framework import framework_constants
 from framework import framework_helpers
 from framework import jsonfeed
@@ -50,17 +51,15 @@ class BackendNonviewable(jsonfeed.InternalTask):
     if mr.shard_id is None:
       return {'message': 'Cannot proceed without a valid shard_id.'}
     user_id = mr.specified_logged_in_user_id
-    user = self.services.user.GetUser(mr.cnxn, user_id)
-    effective_ids = self.services.usergroup.LookupMemberships(mr.cnxn, user_id)
-    if user_id:
-      effective_ids.add(user_id)
+    auth = authdata.AuthData.FromUserID(mr.cnxn, user_id, self.services)
     project_id = mr.specified_project_id
     project = self.services.project.GetProject(mr.cnxn, project_id)
 
-    perms = permissions.GetPermissions(user, effective_ids, project)
+    perms = permissions.GetPermissions(
+        auth.user_pb, auth.effective_ids, project)
 
     nonviewable_iids = self.GetNonviewableIIDs(
-      mr.cnxn, user, effective_ids, project, perms, mr.shard_id)
+      mr.cnxn, auth.user_pb, auth.effective_ids, project, perms, mr.shard_id)
 
     cached_ts = mr.invalidation_timestep
     if mr.specified_project_id:

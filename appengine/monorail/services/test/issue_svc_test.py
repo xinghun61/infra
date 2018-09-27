@@ -325,7 +325,7 @@ class IssueServiceTest(unittest.TestCase):
     self.reporter = self.services.user.TestAddUser('reporter@example.com', 111L)
     self.services.usergroup = fake.UserGroupService()
     self.services.project = fake.ProjectService()
-    self.services.project.TestAddProject('proj', project_id=789)
+    self.project = self.services.project.TestAddProject('proj', project_id=789)
     self.services.config = fake.ConfigService()
     self.services.features = fake.FeaturesService()
     self.cache_manager = fake.CacheManager()
@@ -389,7 +389,7 @@ class IssueServiceTest(unittest.TestCase):
 
   ### Issue objects
 
-  def testCreateIssue(self):
+  def CheckCreateIssue(self, is_project_member):
     settings.classifier_spam_thresh = 0.9
     av_23 = tracker_pb2.ApprovalValue(
         approval_id=23, phase_id=1, approver_ids=[111L, 222L],
@@ -417,7 +417,7 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpInsertComment(7890101, is_description=True, approval_id=24,
         content='<b>Question?</b>')
     self.services.spam.ClassifyIssue(mox.IgnoreArg(),
-        mox.IgnoreArg(), self.reporter, False).AndReturn(
+        mox.IgnoreArg(), self.reporter, is_project_member).AndReturn(
         self.classifierResult(0.0))
     self.services.spam.RecordClassifierIssueVerdict(self.cnxn,
        mox.IsA(tracker_pb2.Issue), False, 1.0, False)
@@ -431,6 +431,23 @@ class IssueServiceTest(unittest.TestCase):
         index_now=False, timestamp=self.now, approval_values=approval_values)
     self.mox.VerifyAll()
     self.assertEqual(1, actual_local_id)
+
+  def testCreateIssue_NonmemberSpamCheck(self):
+    """A non-member must pass a non-member spam check."""
+    self.CheckCreateIssue(False)
+
+  def testCreateIssue_DirectMemberSpamCheck(self):
+    """A direct member of a project gets a member spam check."""
+    self.project.committer_ids.append(self.reporter.user_id)
+    self.CheckCreateIssue(True)
+
+  def testCreateIssue_ComputedUsergroupSpamCheck(self):
+    """A member of a computed group in project gets a member spam check."""
+    group_id = self.services.usergroup.CreateGroup(
+        self.cnxn, self.services, 'everyone@example.com', 'ANYONE',
+        ext_group_type='COMPUTED')
+    self.project.committer_ids.append(group_id)
+    self.CheckCreateIssue(True)
 
   def testCreateIssue_EmptyStringLabels(self):
     settings.classifier_spam_thresh = 0.9

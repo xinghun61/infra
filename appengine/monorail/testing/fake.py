@@ -257,6 +257,7 @@ class UserGroupService(object):
     friend_projects = friend_projects or []
     group_id = services.user.LookupUserID(
         cnxn, email, autocreate=True, allowgroups=True)
+    self.group_addrs[group_id] = email
     group_settings = usergroup_pb2.MakeSettings(
         who_can_view_members, ext_group_type, 0, friend_projects)
     self.UpdateSettings(cnxn, group_id, group_settings)

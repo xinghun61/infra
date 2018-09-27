@@ -19,6 +19,7 @@ from google.appengine.api import memcache
 
 import settings
 from features import savedqueries_helpers
+from framework import authdata
 from framework import framework_constants
 from framework import framework_helpers
 from framework import sorting
@@ -64,11 +65,8 @@ class BackendSearchPipeline(object):
         p.project_id for p in self.query_project_list]
 
     self.me_user_id = me_user_id
-    self.mr.auth.user_id = logged_in_user_id
-    if self.mr.auth.user_id:
-      self.mr.auth.effective_ids = services.usergroup.LookupMemberships(
-          mr.cnxn, self.mr.auth.user_id)
-      self.mr.auth.effective_ids.add(self.mr.auth.user_id)
+    self.mr.auth = authdata.AuthData.FromUserID(
+        mr.cnxn, logged_in_user_id, services)
 
     # The following fields are filled in as the pipeline progresses.
     # The value None means that we still need to compute that value.

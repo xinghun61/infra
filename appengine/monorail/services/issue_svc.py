@@ -25,6 +25,7 @@ from third_party import cloudstorage
 
 import settings
 from features import filterrules_helpers
+from framework import authdata
 from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_constants
@@ -672,8 +673,9 @@ class IssueService(object):
 
     reporter = services.user.GetUser(cnxn, reporter_id)
     project = services.project.GetProject(cnxn, project_id)
-    effective_ids = services.usergroup.LookupMemberships(cnxn, reporter_id)
-    is_project_member = framework_bizobj.UserIsInProject(project, effective_ids)
+    reporter_auth = authdata.AuthData.FromUserID(cnxn, reporter_id, services)
+    is_project_member = framework_bizobj.UserIsInProject(
+        project, reporter_auth.effective_ids)
     classification = services.spam.ClassifyIssue(
         issue, comment, reporter, is_project_member)
 
