@@ -35,7 +35,7 @@ const (
 	failedBuildPrefix = "Sample Failed Build:"
 	failedStepPrefix  = "Sample Failed Step:"
 	flakyTestPrefix   = "Sample Flaky Test:"
-	bugIDRegex        = "^(?i)Bug(:|=)(.*)"
+	bugIDRegex        = "^(?i) *bug[:= ]*(chromium[:= ]*)?(.*) *"
 )
 
 type gerritClientInterface interface {

@@ -74,6 +74,33 @@ func TestMergeApprovalRules(t *testing.T) {
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 		})
+		Convey("Change to commit has a valid bug prefixed with chromium with merge approval label in comment history", func() {
+			testClients.monorail = mockMonorailClient{
+				gi: &monorail.Issue{
+					Id: 123456,
+				},
+				cl: &monorail.ListCommentsResponse{
+					Items: []*monorail.Comment{
+						{
+							Author: &monorail.AtomPerson{Name: "cmasso@chromium.org"},
+							Updates: &monorail.Update{
+								Status: "Fixed",
+								Labels: []string{
+									"-Hotlist-Merge-Review",
+									"-Merge-Review-65",
+									"Merge-Approved-65",
+								},
+							},
+						},
+					},
+				},
+			}
+			rc.CommitMessage = "This change has a valid bug ID with merge approval label in comment history \nBug: chromium:123456"
+			// Run rule
+			rr := OnlyMergeApprovedChange(ctx, ap, rc, testClients)
+			// Check result code
+			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
+		})
 		Convey("Change to commit has multiple bugs including an invalid one", func() {
 			testClients.monorail = mockMonorailClient{
 				gi: &monorail.Issue{
