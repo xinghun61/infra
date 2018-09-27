@@ -128,11 +128,6 @@ ui.html.testTypeSwitcher = function(opt_noBuilderMenu, opt_extraHtml, opt_includ
     if (!opt_noBuilderMenu) {
         var buildersForMenu = [];
         var currentBuilders = builders.getBuilders(g_history.crossDashboardState.testType);
-        // TODO(sergiyb): Remove this when all layout tests are using swarming (crbug.com/524758).
-        if (g_history.crossDashboardState.testType == "webkit_layout_tests")
-            currentBuilders = currentBuilders.concat(builders.getBuilders("webkit_tests"));
-        if (g_history.crossDashboardState.testType == "webkit_tests")
-            currentBuilders = currentBuilders.concat(builders.getBuilders("webkit_layout_tests"));
         currentBuilders.forEach(function(builder) {
             buildersForMenu.push(builder.key());
         });
