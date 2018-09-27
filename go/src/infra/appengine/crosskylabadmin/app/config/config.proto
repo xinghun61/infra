@@ -54,6 +54,9 @@ message Tasker {
     // BackgroundTaskExpirationSecs is the expiration time (in seconds) for
     // background tasks created by tasker.
     int64 background_task_expiration_secs = 2;
+
+    // LogdogHost is the Logdog host to use for logging from the created tasks.
+    string logdog_host = 3;
 }
 
 // Cron contains the configuration data specific to cron jobs on this app.
