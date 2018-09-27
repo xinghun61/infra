@@ -332,17 +332,12 @@ func luciferAdminTaskCmd(ttype fleet.TaskType, logdogURL string) []string {
 	return s
 }
 
-var logdogServers = map[string]string{
-	"chrome-swarming.appspot.com":    "luci-logdog.appspot.com",
-	"chromium-swarm-dev.appspot.com": "luci-logdog-dev.appspot.com",
-}
-
 // generateLogDogURL generates a LogDog annotation URL for the LogDog
 // server corresponding to the configured Swarming server.  If the
 // LogDog server can't be determined, an empty string is returned.
 func generateLogDogURL(cfg *config.Config) string {
-	if s, ok := logdogServers[cfg.Swarming.Host]; ok {
-		return logdogAnnotationURL(s, uuid.New().String())
+	if cfg.Tasker.LogdogHost != "" {
+		return logdogAnnotationURL(cfg.Tasker.LogdogHost, uuid.New().String())
 	}
 	return ""
 }
