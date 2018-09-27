@@ -91,8 +91,10 @@ message ListReferencedIssuesRequest {
 
 // Next available tag: 2
 message ListReferencedIssuesResponse {
-  repeated IssueRef open_refs = 1;
-  repeated IssueRef closed_refs = 2;
+  // TODO(ehmaldonado): monorail:4033 Rename these fields to issues rather than
+  // refs.
+  repeated Issue open_refs = 1;
+  repeated Issue closed_refs = 2;
 }
 
 

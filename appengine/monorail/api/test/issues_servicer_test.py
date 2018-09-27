@@ -182,10 +182,39 @@ class IssuesServicerTest(unittest.TestCase):
         self.issues_svcr.ListReferencedIssues, mc, request)
     self.assertEqual(len(response.closed_refs), 1)
     self.assertEqual(len(response.open_refs), 1)
-    self.assertEqual(response.closed_refs[0],
-                     common_pb2.IssueRef(project_name='other-proj', local_id=1))
-    self.assertEqual(response.open_refs[0],
-                     common_pb2.IssueRef(project_name='proj', local_id=1))
+    self.assertEqual(
+        issue_objects_pb2.Issue(
+            local_id=1,
+            project_name='other-proj',
+            summary='sum',
+            status_ref=common_pb2.StatusRef(
+                status='Fixed'),
+            owner_ref=common_pb2.UserRef(
+                user_id=111L,
+                display_name='owner@example.com'),
+            reporter_ref=common_pb2.UserRef(
+                user_id=111L,
+                display_name='owner@example.com')),
+        response.closed_refs[0])
+    self.assertEqual(
+        issue_objects_pb2.Issue(
+            local_id=1,
+            project_name='proj',
+            summary='sum',
+            status_ref=common_pb2.StatusRef(
+                status='New',
+                means_open=True),
+            owner_ref=common_pb2.UserRef(
+                user_id=111L,
+                display_name='owner@example.com'),
+            blocked_on_issue_refs=[common_pb2.IssueRef(
+                project_name='proj',
+                local_id=2)],
+            reporter_ref=common_pb2.UserRef(
+                user_id=111L,
+                display_name='owner@example.com'),
+            opened_timestamp=1234567890),
+        response.open_refs[0])
 
   def testListReferencedIssues_MissingInput(self):
     request = issues_pb2.ListReferencedIssuesRequest(

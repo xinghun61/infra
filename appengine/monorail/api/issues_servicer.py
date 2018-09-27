@@ -121,16 +121,28 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     with work_env.WorkEnv(mc, self.services) as we:
       open_issues, closed_issues = we.ListReferencedIssues(
           ref_tuples, default_project_name)
+      all_issues = open_issues + closed_issues
+      all_project_ids = [issue.project_id for issue in all_issues]
+      related_refs = we.GetRelatedIssueRefs(all_issues)
+      configs = we.GetProjectConfigs(all_project_ids)
 
-    # TODO(jojwang): monorail:4033, add issue summary, by replacing IssueRef
-    # protoc objects with Issue protoc objects.
+    with mc.profiler.Phase('making user views'):
+      users_involved = tracker_bizobj.UsersInvolvedInIssues(all_issues)
+      users_by_id = framework_views.MakeAllUserViews(
+          mc.cnxn, self.services.user, users_involved)
+      framework_views.RevealAllEmailsToMembers(mc.auth, None, users_by_id)
+
     with mc.profiler.Phase('converting to response objects'):
-      open_refs = [converters.ConvertIssueRef(
-          (issue.project_name, issue.local_id)) for issue in open_issues]
-      closed_refs = [converters.ConvertIssueRef(
-          (issue.project_name, issue.local_id)) for issue in closed_issues]
+      converted_open_issues = [
+          converters.ConvertIssue(
+              issue, users_by_id, related_refs, configs[issue.project_id])
+          for issue in open_issues]
+      converted_closed_issues = [
+          converters.ConvertIssue(
+              issue, users_by_id, related_refs, configs[issue.project_id])
+          for issue in closed_issues]
       response = issues_pb2.ListReferencedIssuesResponse(
-          open_refs=open_refs, closed_refs=closed_refs)
+          open_refs=converted_open_issues, closed_refs=converted_closed_issues)
 
     return response
 
