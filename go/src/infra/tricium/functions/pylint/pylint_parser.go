@@ -35,10 +35,11 @@ const (
 func main() {
 	inputDir := flag.String("input", "", "Path to root of Tricium input")
 	outputDir := flag.String("output", "", "Path to root of Tricium output")
-	enable := flag.String("enable", "", "Comma-separated list of checks to enable")
-	disable := flag.String("disable", "", "Comma-separated list of checks to disable")
-	// TODO(qyearsley): Add flags for disabling/enabling warnings; this
-	// would enable specifying warnings in project configs.
+	disable := flag.String("disable", "", "Comma-separated list of checks "+
+		"or categories of checks to disable.")
+	enable := flag.String("enable", "", "Comma-separated checks "+
+		"or categories of checks to enable. "+
+		"The enable list overrides the disable list.")
 	flag.Parse()
 	if flag.NArg() != 0 {
 		log.Fatalf("Unexpected argument")
@@ -65,17 +66,25 @@ func main() {
 		log.Fatalf("Failed to filter files: %v", err)
 	}
 
-	// Invoke Pylint on the given paths.
-	// In the output, we want relative paths from the repository root, which
-	// will be the same as relative paths from the input directory root.
+	// Construct the command args and invoke Pylint on the given paths.
 	cmdName := filepath.Join(exPath, pythonPath)
 	cmdArgs := []string{
 		filepath.Join(exPath, pylintPath),
 		"--rcfile", filepath.Join(exPath, "pylintrc"),
 		"--msg-template", msgTemplate,
-		"--enable", *enable,
-		"--disable", *disable,
 	}
+	// With Pylint, the order of the disable and enable command line flags is
+	// important; the later flags override previous flags. But for this
+	// executable, the order is unimportant, the "enable" flag is always put
+	// after "disable", so it always takes precedence.
+	if *disable != "" {
+		cmdArgs = append(cmdArgs, "--disable", *disable)
+	}
+	if *enable != "" {
+		cmdArgs = append(cmdArgs, "--enable", *enable)
+	}
+	// In the output, we want relative paths from the repository root, which
+	// will be the same as relative paths from the input directory root.
 	for _, file := range files {
 		cmdArgs = append(cmdArgs, filepath.Join(*inputDir, file.Path))
 	}
