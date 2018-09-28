@@ -47,7 +47,7 @@ tic_prefix=$(realpath ../tic_prefix)
   mkdir -p $tic_build
   cd $tic_build
 
-  $src/configure --prefix $tic_prefix
+  $src/configure --enable-termcap --prefix $tic_prefix
   make install -j $(nproc)
 )
 
@@ -67,15 +67,15 @@ tic_prefix=$(realpath ../tic_prefix)
 # just avoid processing them.
 fallback_exclusions=(
   9term
-  guru+
-  hp+
-  tvi912b+
+  guru\\+
+  hp\\+
+  tvi912b\\+
   tvi912b-vb
   tvi920b-vb
-  att4415+
-  nsterm+
-  xnuppc+
-  xterm+
+  att4415\\+
+  nsterm\\+
+  xnuppc\\+
+  xterm\\+
   wyse-vp
 )
 joined=$(IFS='|'; echo "${fallback_exclusions[*]}")
@@ -87,8 +87,7 @@ fallbacks=$(IFS=','; echo "${fallbacks_array[*]}")
 # Note that we only run "install.libs". Standard "install" expects the
 # full database to exist, and this will not be the case since we are
 # explicitly disabling it.
-export PATH=$tic_prefix/bin:$PATH
-./configure \
+PATH=$tic_prefix/bin:$PATH ./configure \
   --prefix=$PREFIX \
   --host=$CROSS_TRIPLE \
   --disable-database \
@@ -99,8 +98,16 @@ make clean
 
 # Build everything to get the timestamps warmed up. This will then fail to
 # generate comp_captab.c (or init_keytry.h, depending on the race).
-make install.libs -j $(nproc) || true
-# Then copy the good toolchain programs from $tic_build that we built earlier.
-cp $tic_build/ncurses/make_* ./ncurses
-# Huzzah, cross compiling C is terrible.
-make install.libs -j $(nproc)
+make install.libs -j $(nproc) || (
+  # Then copy the good toolchain programs from $tic_build that we built earlier.
+  cp $tic_build/ncurses/make_* ./ncurses
+  # Huzzah, cross compiling C is terrible.
+  make install.libs -j $(nproc)
+)
+
+# Some programs (like python) expect to be able to `#include <ncurses.h>`, so
+# create that symlink. Ncurses also installs the actual header as `curses.h`
+# (and creates a symlink for ncurses.h), so we link to the original file here.
+(cd $PREFIX/include && ln -s ./ncurses/curses.h ncurses.h)
+(cd $PREFIX/include && ln -s ./ncurses/panel.h panel.h)
+(cd $PREFIX/include && ln -s ./ncurses/term.h term.h)
