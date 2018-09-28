@@ -484,6 +484,12 @@ So for example with the prefix `infra`, the `bzip2` package on linux-amd64 would
 be uploaded to `infra/bzip2/linux-amd64` and tagged with the version that was
 built (e.g. `version:1.2.3.patch_version1`).
 
+You can also mark the upload as a `universal` package, which will:
+  * Omit the `${platform}` suffix from the upload name
+  * Set the target platform for the package to `linux-amd64`, regardless of
+    what platform you build the recipe on. This was chosen arbitrarially to
+    ensure that "universal" packages build consistently.
+
 #### Versions
 
 Every package will try to build the latest identifiable semver of its source, or
@@ -536,9 +542,9 @@ upload.
 As an example of the package definition layout in action, take a look at the
 [third_party_packages](/third_party_packages) folder in this infra.git repo.
 
-#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#349)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#355)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
-&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#494)(self, packages=(), platform='', force_build=False):**
+&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#500)(self, packages=(), platform='', force_build=False):**
 
 Executes entire {fetch,build,package,verify,upload} pipeline for all the
 packages listed, targeting the given platform.
@@ -554,9 +560,9 @@ Args:
 Returns (list[(cipd_pkg, cipd_version)], set[str]) of built CIPD packages
 and their tagged versions, as well as a list of unsupported packages.
 
-&mdash; **def [initialize](/recipes/recipe_modules/third_party_packages_ng/api.py#362)(self):**
+&mdash; **def [initialize](/recipes/recipe_modules/third_party_packages_ng/api.py#368)(self):**
 
-&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#444)(self, path):**
+&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#450)(self, path):**
 
 Loads all package definitions from the given path.
 

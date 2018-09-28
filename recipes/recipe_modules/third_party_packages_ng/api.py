@@ -216,6 +216,12 @@ So for example with the prefix `infra`, the `bzip2` package on linux-amd64 would
 be uploaded to `infra/bzip2/linux-amd64` and tagged with the version that was
 built (e.g. `version:1.2.3.patch_version1`).
 
+You can also mark the upload as a `universal` package, which will:
+  * Omit the `${platform}` suffix from the upload name
+  * Set the target platform for the package to `linux-amd64`, regardless of
+    what platform you build the recipe on. This was chosen arbitrarially to
+    ensure that "universal" packages build consistently.
+
 #### Versions
 
 Every package will try to build the latest identifiable semver of its source, or

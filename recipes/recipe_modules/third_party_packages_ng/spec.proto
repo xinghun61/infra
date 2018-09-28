@@ -249,7 +249,8 @@ message Spec {
 
     // (optional) If set, then the output of the build is intended to be used by
     // all platforms, and so the package we upload to will exclude the normal
-    // `${platform}` suffix.
+    // `${platform}` suffix. This will also cause the build for this package to
+    // ALWAYS run under the `linux-amd64` docker container (for consistency).
     bool universal = 2;
   }
   // (required) Upload describes how the built package should be uploaded to

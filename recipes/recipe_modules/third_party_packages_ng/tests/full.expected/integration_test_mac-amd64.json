@@ -2787,11 +2787,10 @@
     ],
     "env": {
       "GOARCH": "amd64",
-      "GOOS": "darwin",
-      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "mac-amd64",
-      "_3PP_TOOL_PLATFORM": "mac-amd64"
+      "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
     "name": "building fetch_and_package.fetch.py latest",
     "stdout": "/path/to/tmp/",
@@ -2812,11 +2811,10 @@
     ],
     "env": {
       "GOARCH": "amd64",
-      "GOOS": "darwin",
-      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "mac-amd64",
-      "_3PP_TOOL_PLATFORM": "mac-amd64"
+      "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
     "name": "building fetch_and_package.cipd describe tools/fetch_and_package",
     "~followup_annotations": [
@@ -2840,15 +2838,14 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[START_DIR]/3pp/wd/fetch_and_package/mac-amd64/2.0.0"
+      "[START_DIR]/3pp/wd/fetch_and_package/linux-amd64/2.0.0"
     ],
     "env": {
       "GOARCH": "amd64",
-      "GOOS": "darwin",
-      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "mac-amd64",
-      "_3PP_TOOL_PLATFORM": "mac-amd64",
+      "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -2861,11 +2858,10 @@
     "cmd": [],
     "env": {
       "GOARCH": "amd64",
-      "GOOS": "darwin",
-      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "mac-amd64",
-      "_3PP_TOOL_PLATFORM": "mac-amd64",
+      "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building fetch_and_package.fetch sources",
@@ -2883,15 +2879,14 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[START_DIR]/3pp/wd/fetch_and_package/mac-amd64/2.0.0/checkout"
+      "[START_DIR]/3pp/wd/fetch_and_package/linux-amd64/2.0.0/checkout"
     ],
     "env": {
       "GOARCH": "amd64",
-      "GOOS": "darwin",
-      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "mac-amd64",
-      "_3PP_TOOL_PLATFORM": "mac-amd64",
+      "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -2906,18 +2901,17 @@
       "-u",
       "[CACHE]/builder/package_repo/fetch_and_package/fetch.py",
       "checkout",
-      "[START_DIR]/3pp/wd/fetch_and_package/mac-amd64/2.0.0/checkout"
+      "[START_DIR]/3pp/wd/fetch_and_package/linux-amd64/2.0.0/checkout"
     ],
     "env": {
       "GOARCH": "amd64",
-      "GOOS": "darwin",
-      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "mac-amd64",
-      "_3PP_TOOL_PLATFORM": "mac-amd64",
+      "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
-    "name": "building fetch_and_package.fetch sources.fetch.py checkout [START_DIR]/3pp/wd/fetch_and_package/mac-amd64/2.0.0/checkout",
+    "name": "building fetch_and_package.fetch sources.fetch.py checkout [START_DIR]/3pp/wd/fetch_and_package/linux-amd64/2.0.0/checkout",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
     ]
@@ -2927,7 +2921,7 @@
       "cipd",
       "pkg-build",
       "-pkg-def",
-      "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"tools/fetch_and_package\", \"root\": \"[START_DIR]/3pp/wd/fetch_and_package/mac-amd64/2.0.0/checkout\"}",
+      "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"tools/fetch_and_package\", \"root\": \"[START_DIR]/3pp/wd/fetch_and_package/linux-amd64/2.0.0/checkout\"}",
       "-out",
       "[TMP_BASE]/tmp_tmp_6",
       "-hash-algo",
@@ -2937,11 +2931,10 @@
     ],
     "env": {
       "GOARCH": "amd64",
-      "GOOS": "darwin",
-      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "mac-amd64",
-      "_3PP_TOOL_PLATFORM": "mac-amd64",
+      "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building fetch_and_package.build tools/fetch_and_package",
@@ -2970,11 +2963,10 @@
     ],
     "env": {
       "GOARCH": "amd64",
-      "GOOS": "darwin",
-      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "mac-amd64",
-      "_3PP_TOOL_PLATFORM": "mac-amd64",
+      "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -2996,11 +2988,10 @@
     ],
     "env": {
       "GOARCH": "amd64",
-      "GOOS": "darwin",
-      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "mac-amd64",
-      "_3PP_TOOL_PLATFORM": "mac-amd64",
+      "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "infra_step": true,
@@ -3013,11 +3004,10 @@
     "cmd": [],
     "env": {
       "GOARCH": "amd64",
-      "GOOS": "darwin",
-      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "mac-amd64",
-      "_3PP_TOOL_PLATFORM": "mac-amd64",
+      "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building fetch_and_package.do upload",
@@ -3039,11 +3029,10 @@
     ],
     "env": {
       "GOARCH": "amd64",
-      "GOOS": "darwin",
-      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "mac-amd64",
-      "_3PP_TOOL_PLATFORM": "mac-amd64",
+      "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
     "name": "building fetch_and_package.do upload.register tools/fetch_and_package",

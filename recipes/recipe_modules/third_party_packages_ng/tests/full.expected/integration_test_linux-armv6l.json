@@ -2684,10 +2684,10 @@
       "latest"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "amd64",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
     "name": "building fetch_and_package.fetch.py latest",
@@ -2708,10 +2708,10 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "amd64",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
     "name": "building fetch_and_package.cipd describe tools/fetch_and_package",
@@ -2736,13 +2736,13 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[START_DIR]/3pp/wd/fetch_and_package/linux-armv6l/2.0.0"
+      "[START_DIR]/3pp/wd/fetch_and_package/linux-amd64/2.0.0"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "amd64",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
@@ -2755,10 +2755,10 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "amd64",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
@@ -2777,13 +2777,13 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[START_DIR]/3pp/wd/fetch_and_package/linux-armv6l/2.0.0/checkout"
+      "[START_DIR]/3pp/wd/fetch_and_package/linux-amd64/2.0.0/checkout"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "amd64",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
@@ -2799,17 +2799,17 @@
       "-u",
       "[CACHE]/builder/package_repo/fetch_and_package/fetch.py",
       "checkout",
-      "[START_DIR]/3pp/wd/fetch_and_package/linux-armv6l/2.0.0/checkout"
+      "[START_DIR]/3pp/wd/fetch_and_package/linux-amd64/2.0.0/checkout"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "amd64",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
-    "name": "building fetch_and_package.fetch sources.fetch.py checkout [START_DIR]/3pp/wd/fetch_and_package/linux-armv6l/2.0.0/checkout",
+    "name": "building fetch_and_package.fetch sources.fetch.py checkout [START_DIR]/3pp/wd/fetch_and_package/linux-amd64/2.0.0/checkout",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
     ]
@@ -2819,7 +2819,7 @@
       "cipd",
       "pkg-build",
       "-pkg-def",
-      "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"tools/fetch_and_package\", \"root\": \"[START_DIR]/3pp/wd/fetch_and_package/linux-armv6l/2.0.0/checkout\"}",
+      "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"tools/fetch_and_package\", \"root\": \"[START_DIR]/3pp/wd/fetch_and_package/linux-amd64/2.0.0/checkout\"}",
       "-out",
       "[TMP_BASE]/tmp_tmp_6",
       "-hash-algo",
@@ -2828,10 +2828,10 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "amd64",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
@@ -2860,10 +2860,10 @@
       "[CACHE]/3pp_cipd/tools/fetch_and_package"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "amd64",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
@@ -2885,10 +2885,10 @@
       "[CACHE]/3pp_cipd/tools/fetch_and_package/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "amd64",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
@@ -2901,10 +2901,10 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "amd64",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
@@ -2926,10 +2926,10 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "amd64",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "linux-armv6l",
+      "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },

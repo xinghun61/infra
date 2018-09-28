@@ -71,6 +71,11 @@ class ResolvedSpec(object):
     self._deps = deps                     # list[ResolvedSpec]
     self._unpinned_tools = unpinned_tools # list[ResolvedSpec]
 
+    # Universal specs always target linux-amd64, for consistency when running
+    # the recipe on different platforms.
+    if self._spec_pb.upload.universal:
+      self._platform = 'linux-amd64'
+
   @property
   def name(self):
     """The name of the package."""
