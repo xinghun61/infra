@@ -32,6 +32,7 @@ def do_checkout(version, platform, checkout_path):
     })
   print >>sys.stderr, "fetching", download_url
   r = requests.get(download_url, stream=True)
+  r.raise_for_status()
   outfile = 'archive.'+ext
   with open(os.path.join(checkout_path, outfile), 'wb') as f:
     for chunk in r.iter_content(1024**2):
