@@ -202,6 +202,8 @@ pkg-deploy` command to deploy it (or whatever cipd commands you like, though
 I wouldn't recommend uploading it to CIPD, as the 3pp recipe will do that after
 the test exits 0).
 
+Additionally, vpython for the tool platform will be guaranteed to be in $PATH.
+
 ##### Upload
 
 Once the test comes back positive, the CIPD package will be uploaded to the CIPD
