@@ -389,3 +389,5 @@ import:
   subpackages:
   - propagation
 - package: github.com/GoogleCloudPlatform/google-cloud-go-testing
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/GoogleCloudPlatform/google-cloud-go-testing.git
