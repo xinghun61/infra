@@ -7,7 +7,9 @@ create {
     }
     unpack_archive: true
   }
-  build {}
+  build {
+    dep: "ncurses"
+  }
 }
 
 upload { pkg_prefix: "infra/third_party/static_libs" }
