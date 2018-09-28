@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
+	"github.com/GoogleCloudPlatform/google-cloud-go-testing/storage/stiface"
 	pubsub "google.golang.org/api/pubsub/v1"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/log"
@@ -91,10 +92,13 @@ func pubsubHandler(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintln(w, "OK")
 }
 
+var createAdaptClient = stiface.AdaptClient
+var createClient = storage.NewClient
+
 // getFile fetches GCS upload file.
 func getFile(ctx context.Context, filename string, bucketID string) (*ninjalog.NinjaLog, error) {
 	// Creates a client.
-	client, err := storage.NewClient(ctx)
+	client, err := createClient(ctx)
 	if err != nil {
 		log.Errorf(ctx, "failed to create client: %v", err)
 		return nil, err
@@ -104,10 +108,11 @@ func getFile(ctx context.Context, filename string, bucketID string) (*ninjalog.N
 			log.Warningf(ctx, "failed to close client: %v", err)
 		}
 	}()
+	sclient := createAdaptClient(client)
 
 	var reader io.ReadCloser
 	// Creates a Bucket instance.
-	reader, err = client.Bucket(bucketID).Object(filename).ReadCompressed(true).NewReader(ctx)
+	reader, err = sclient.Bucket(bucketID).Object(filename).ReadCompressed(true).NewReader(ctx)
 	if err != nil {
 		log.Errorf(ctx, "failed to get reader: %v", err)
 		return nil, err

@@ -374,10 +374,9 @@ import:
 - package: github.com/juju/errors
   version: master
   repo: https://chromium.googlesource.com/external/github.com/juju/errors.git
-# TODO(ayatane): github.com/pkg/errors added to tide over skylab migration.
 - package: github.com/pkg/errors
-  repo: https://chromium.googlesource.com/external/github.com/pkg/errors.git
   version: master
+  repo: https://chromium.googlesource.com/external/github.com/pkg/errors.git
 - package: github.com/kylelemons/godebug
   version: master
   repo: https://chromium.googlesource.com/external/github.com/kylelemons/godebug.git
@@ -389,3 +388,4 @@ import:
   repo: https://chromium.googlesource.com/external/github.com/census-ecosystem/opencensus-go-exporter-stackdriver.git
   subpackages:
   - propagation
+- package: github.com/GoogleCloudPlatform/google-cloud-go-testing
