@@ -159,15 +159,18 @@ def _main_run(args, system):
 
   # Pass through envvars.
   env = {}
+  affixes = {}
   for var, value in args.env:
     env['DOCKERBUILD_SET_'+var] = (
       value.replace(args.workdir, '/work/').encode('base64').strip())
   for var, value in args.env_prefix:
-    env['DOCKERBUILD_PREPEND_'+var] = (
-      value.replace(args.workdir, '/work/').encode('base64').strip())
+    affixes.setdefault('DOCKERBUILD_PREPEND_'+var, []).append(
+      value.replace(args.workdir, '/work/'))
   for var, value in args.env_suffix:
-    env['DOCKERBUILD_APPEND_'+var] = (
-      value.replace(args.workdir, '/work/').encode('base64').strip())
+    affixes.setdefault('DOCKERBUILD_APPEND_'+var, []).append(
+      value.replace(args.workdir, '/work/'))
+  for k, vals in affixes.iteritems():
+    env[k] = ':'.join(vals).encode('base64').strip()
 
   retcode, _ = dx.run(args.workdir, dx_args, stdout=sys.stdout,
                       stderr=sys.stderr, cwd=args.cwd, env=env)
