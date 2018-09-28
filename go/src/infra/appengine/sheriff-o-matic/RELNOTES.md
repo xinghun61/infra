@@ -1,3 +1,26 @@
+
+# Release Notes sheriff-o-matic 2018-09-28
+
+- 3 commits, 2 bugs affected since 1c7d773 (2018-08-10T22:22:49Z)
+- 3 Authors:
+  - jbudorick@chromium.org
+  - benjhayden@chromium.org
+  - nodir@google.com
+
+## Changes in this release
+
+- [Simplify usage of wct.go](https://chromium-review.googlesource.com/1220591) (benjhayden@chromium.org)
+- [[monorail] Remove InsertIssueRequest.ProjectID](https://chromium-review.googlesource.com/1232510) (nodir@google.com)
+- [sheriff-o-matic: implement support for gatekeeper categories.](https://chromium-review.googlesource.com/1184235) (jbudorick@chromium.org)
+
+
+## Bugs updated, by author
+- jbudorick@chromium.org:
+  -  [https://crbug.com/815006](https://crbug.com/815006)
+
+- nodir@google.com:
+  -  [https://crbug.com/882074](https://crbug.com/882074)
+
 # Release Notes sheriff-o-matic 2018-08-10
 
 - 2 commits, 0 bugs affected since be4350e (2018-07-25T23:10:09Z)
