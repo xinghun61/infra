@@ -36,11 +36,12 @@ are considered equivalent:
 success and one failure, then the failed one is a flaky build.
 
 **Flaky test steps**. Any failed test step in a flaky build is a flaky step only
-if it has NO successful retry, otherwise it means that the test failures are
-caused by bugs on tip of tree.
+if it has a matching failed (retry with patch) step, otherwise it means that
+either the test failures are caused by bugs on tip of tree or they're not the
+culprits that caused the build to fail.
 
-**Flaky tests**. Any test that failed in a flaky step but passed in the matching
-“without patch” step is a flaky test.
+**Flaky tests**. Any test that failed in the (retry with patch) step is a flaky
+test.
 
 ## Workflow
 1. It leverages existing data sources for CQ ([cq_raw]), completed builds

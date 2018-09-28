@@ -22,14 +22,15 @@
 # A flaky test causing CQ false rejections is a test that:
 # 1. Failed in a flaky build. A flaky build is a failed build that has a
 #    matching passed build for the same CL/patchset/builder_id.
-# 2. Failed in the test step (with patch) but passed in the same test step
-#    (without patch) in the same flaky build as defined above.
+# 2. Failed in the (retry with patch) step in a flaky build as defined above,
+#    note that if a test failed in the (retry with patch) step, it implies that
+#    this test failed in the matching (with patch) step and succeeded in the
+#    matching (without patch) step.
 #
 # Caveat:
 # 1. This query does NOT support projects that have no (without patch) in CQ.
 # 2. This query only supports Luci builds, because cr-buildbucket.builds.completed_BETA
 #    has no steps for buildbot-based builds even they are through buildbucket.
-#    Luckily, CQ builders will be migrated to Luci by end of Q2 2018.
 
 WITH
   # patchset_groups is to build up:
@@ -147,12 +148,9 @@ WITH
     LOGICAL_OR(build.status = 'FAILURE')
     AND LOGICAL_OR(build.status = 'SUCCESS')),
 
-  # flaky_test_steps_pairs is to find the failed test step
-  # that have matching passing step in the SAME flaky build.
-  #
-  # A row here is a CL/patchset_group/patchset/builder/build and the pairs of
-  # flaky test steps within that build.
-  flaky_test_step_pairs AS (
+  # flaky_test_steps is to find the failed (retry with patch) test step.
+  # A row here is a CL/patchset_group/patchset/builder/build and the flaky test steps within that build.
+  flaky_test_steps AS (
   SELECT
     fbg.cq_name,
     # Info about the patch.
@@ -167,41 +165,36 @@ WITH
     (ARRAY(
       SELECT
         AS STRUCT
-        # Group (with patch), (without patch), and (retry summary) of the same
+        # Group (with patch), (retry with patch) of the same
         # test step by the normalized step name.
         # For ios-simulator, two normalized step names of the SAME build could
         # be "net_unittests (iPad Air 2 iOS 10.0)" and
         # "net_unittests (iPhone 6s iOS 11.2)". Thus, it is wrong to use the
         # test target/type name "net_unittests" for grouping.
         REGEXP_REPLACE(
-          step.name, ' [(](with(out)? patch|retry summary)[)].*', ''
+          step.name, ' [(](with patch|retry with patch)[)].*', ''
         ) AS normalized_step_name,
         ANY_VALUE(CASE
             WHEN step.name LIKE '%(with patch)%' THEN step.name
             ELSE NULL END) AS step_name_with_patch,
         ANY_VALUE(CASE
-            WHEN step.name LIKE '%(without patch)%' THEN step.name
-            ELSE NULL END) AS step_name_without_patch
+            WHEN step.name LIKE '%(retry with patch)%' THEN step.name
+            ELSE NULL END) AS step_name_retry_with_patch
       FROM
         UNNEST(failed_build.steps) AS step
       WHERE
         step.name LIKE '%(with patch)%'
-        OR step.name LIKE '%(without patch)%'
-        OR step.name LIKE '%(retry summary)%'
+        OR step.name LIKE '%(retry with patch)%'
       GROUP BY
         normalized_step_name
       HAVING
         # In a flaky build, a test step is flaky if some tests failed in
-        # (with patch) while they passed in (without patch). In that case, the
-        # (retry summary) step should fail as well.
-        # If there is a consistently failing test on ToT due to a bad commit, it
-        # would fail in both (with patch) and (without patch). When ALL failed
-        # tests in (with patch) are consistently failing ones, both (with patch)
-        # and (without patch) will fail while (retry summary) will succeed.
-        # Thus failed (retry summary) means that some new tests are broken, and
-        # checking it only is good enough to detect flaky tests.
-        # https://chromium.googlesource.com/chromium/tools/build/+/40f838c/scripts/slave/recipe_modules/test_utils/api.py#164
-        LOGICAL_OR(step.name LIKE '%(retry summary)%'
+        # both (with patch) and (retry with patch). There is no need to check
+        # (without patch) step because if a test is consistently failing on ToT
+        # due to a bad commit, it would fail in (without patch), and it won't
+        # run in the (retry with patch) step at all.
+        # https://cs.chromium.org/chromium/build/scripts/slave/recipe_modules/test_utils/api.py?l=31
+        LOGICAL_OR(step.name LIKE '%(retry with patch)%'
           AND step.status = 'FAILURE'))) AS step_pairs
   FROM
       flaky_build_groups AS fbg
@@ -217,7 +210,7 @@ WITH
     CAST(build_id AS INT64) AS build_id,
     step_name,
     REGEXP_REPLACE(
-      step_name, ' [(](with(out)? patch|retry summary)[)].*', ''
+      step_name, ' [(](with patch|retry with patch)[)].*', ''
     ) AS normalized_step_name,
     # path is the full test name.
     path AS test_name,
@@ -302,7 +295,7 @@ WITH
       END) AS test_run,
     step_pair.step_name_with_patch AS step_ui_name
   FROM
-    flaky_test_step_pairs AS build
+    flaky_test_steps AS build
   CROSS JOIN
     UNNEST(build.step_pairs) AS step_pair
   INNER JOIN failed_tests AS failed_test
@@ -314,11 +307,8 @@ WITH
     step_pair.step_name_with_patch,
     failed_test.test_name
   HAVING
-    # Flaky tests are those that failed in (with patch) but passed in (without
-    # patch). Those failing in both are likely consistent failures due to a bad
-    # commit landed on Waterfall.
-    LOGICAL_OR(failed_test.step_name LIKE '%(with patch)%')
-    AND NOT LOGICAL_OR(failed_test.step_name LIKE '%(without patch)%'))
+    # Flaky tests are those that failed in (retry with patch).
+    LOGICAL_OR(failed_test.step_name LIKE '%(retry with patch)%'))
 
 SELECT
   ## Refer to individual fields to avoid duplicate fields.
