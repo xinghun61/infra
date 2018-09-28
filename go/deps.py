@@ -579,6 +579,16 @@ def grab_doc(func):
   return func.__doc__.splitlines()[0].lower().strip('.')
 
 
+def obliterate_glide_cache(workspace):
+  """Deletes .glide cache directory.
+
+  For some mysterious reasons Glide sometimes skips fetching commits for
+  repos in its cache. Delete the cache. We are not really benefiting from
+  it, since it is used only when updating deps.lock, which is rare.
+  """
+  remove_directory(os.path.join(workspace.gobase, '.glide'))
+
+
 ################################################################################
 ## Subcommands.
 
@@ -699,12 +709,10 @@ def update(workspace):
   """
   lock_path = os.path.join(workspace.vendor_root, 'glide.lock')
   with unhack_vendor(workspace):
-    # For some mysterious reasons Glide sometimes skips fetching commits for
-    # repos in its cache. Delete the cache. We are not really benefiting from
-    # it, since 'update' is infrequent operation.
-    remove_directory(os.path.join(workspace.gobase, '.glide'))
-    # For another mysterious reason Glide doesn't update all dependencies on
-    # a first try. Run it until it reports there's nothing to update.
+    # Glide cache is buggy. We need no cache.
+    obliterate_glide_cache(workspace)
+    # For a mysterious reason Glide doesn't update all dependencies on a first
+    # try. Run it until it reports there's nothing to update.
     deps = parse_glide_lock(read_file(lock_path))
     while True:
       call(workspace, 'glide', ['update', '--force'])
@@ -724,6 +732,7 @@ def add(workspace, packages):
     packages: a list of go packages to add to deps.yaml.
   """
   with unhack_vendor(workspace):
+    obliterate_glide_cache(workspace)
     call(workspace, 'glide', ['get', '--force'] + packages)
   return 0
 
@@ -736,6 +745,7 @@ def remove(workspace, packages):
     packages: a list of go packages to remove from deps.yaml.
   """
   with unhack_vendor(workspace):
+    obliterate_glide_cache(workspace)
     call(workspace, 'glide', ['remove'] + packages)
   return 0
 
