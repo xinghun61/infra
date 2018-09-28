@@ -89,6 +89,7 @@ def _validate_dimension_key(key, known_keys, ctx):
 
 def _validate_dimensions(field_name, dimensions, ctx):
   known_keys = set()
+  expirations = set()
   for i, dim in enumerate(dimensions):
     with ctx.prefix('%s #%d: ', field_name, i + 1):
       parts = dim.split(':', 1)
@@ -113,11 +114,10 @@ def _validate_dimensions(field_name, dimensions, ctx):
       if expiration_secs % 60:
         ctx.error('expiration_secs must be a multiple of 60 seconds')
         continue
-      if expiration_secs != 0:
-        # TODO(maruel): crbug.com/880550 implement
-        ctx.error('expiration_secs is not supported yet')
-        continue
+      expirations.add(expiration_secs)
       _validate_dimension_key(key, known_keys, ctx)
+  if len(expirations) >= 6:
+    ctx.error('at most 6 different expiration_secs values can be used')
 
 
 def _validate_relative_path(path, ctx):

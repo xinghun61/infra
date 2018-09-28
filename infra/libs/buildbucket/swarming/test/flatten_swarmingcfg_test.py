@@ -121,6 +121,7 @@ class ProjectCfgTest(unittest.TestCase):
             dimensions: "d1:base"
             dimensions: "d2:base"
             dimensions: "d3:base"
+            dimensions: "60:d4:base"
             swarming_tags: "t1:base"
             swarming_tags: "t2:base"
             swarming_tags: "t3:base"
@@ -151,6 +152,7 @@ class ProjectCfgTest(unittest.TestCase):
             mixins: "base"
             dimensions: "d2:first"
             dimensions: "d3:first"
+            dimensions: "120:d4:first"
             swarming_tags: "t2:first"
             swarming_tags: "t3:first"
             caches {
@@ -200,6 +202,7 @@ class ProjectCfgTest(unittest.TestCase):
           }
         ''', '''
           name: "builder"
+          dimensions: "60:d4:base"
           dimensions: "d1:base"
           dimensions: "d2:"
           dimensions: "d3:second"

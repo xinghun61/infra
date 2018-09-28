@@ -210,6 +210,11 @@ class ProjectCfgTest(testing.AppengineTestCase):
             dimensions: "1814400:c:1"  # 21*24*60*60
             dimensions: "1814401:d:1"  # 21*24*60*60+1
             dimensions: "1:e:1"
+            dimensions: "60:f:1"
+            dimensions: "120:g:1"
+            dimensions: "180:h:1"
+            dimensions: "240:i:1"
+            dimensions: "300:j:1"
           }
           builders {
             name: "b2"
@@ -241,8 +246,6 @@ class ProjectCfgTest(testing.AppengineTestCase):
                 'builder #1: dimension #5: expiration_secs is outside valid '
                 'range; up to 21 days'
             ),
-            # crbug.com/880550
-            'builder #1: dimension #6: expiration_secs is not supported yet',
             (
                 'builder #1: dimension #7: expiration_secs is outside valid '
                 'range; up to 21 days'
@@ -250,6 +253,10 @@ class ProjectCfgTest(testing.AppengineTestCase):
             (
                 'builder #1: dimension #8: expiration_secs must be a multiple '
                 'of 60 seconds'
+            ),
+            (
+                'builder #1: at most 6 different expiration_secs values can '
+                'be used'
             ),
             (
                 'builder b2: tag #1: do not specify builder tag; '

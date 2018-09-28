@@ -305,8 +305,13 @@ class SwarmingTest(BaseTest):
         ]
     )
 
-  def test_cache_fallback(self):
-    # Creates 3 task_slices.
+  def test_dimensions_and_cache_fallback(self):
+    # Creates 4 task_slices by modifying the buildercfg in 2 ways:
+    # - Add two named caches, one expiring at 60 seconds, one at 360 seconds.
+    # - Add an optional builder dimension, expiring at 120 seconds.
+    #
+    # This ensures the combination of these features works correctly, and that
+    # multiple 'caches' dimensions can be injected.
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.caches.add(
         path='builder',
@@ -318,6 +323,7 @@ class SwarmingTest(BaseTest):
         name='second_cache',
         wait_for_warm_cache_secs=360,
     )
+    builder_cfg.dimensions.append("120:opt:ional")
 
     build = mkBuild(
         parameters={
@@ -328,7 +334,7 @@ class SwarmingTest(BaseTest):
 
     task_def = swarming.prepare_task_def_async(build).get_result()
 
-    self.assertEqual(3, len(task_def['task_slices']))
+    self.assertEqual(4, len(task_def['task_slices']))
     for t in task_def['task_slices']:
       # They all use the same cache definitions.
       self.assertEqual(
@@ -341,39 +347,54 @@ class SwarmingTest(BaseTest):
           ]
       )
 
-    # But the dimensions are different. 'caches' is injected.
+    # But the dimensions are different. 'opt' and 'caches' are injected.
     self.assertEqual(
         task_def['task_slices'][0]['properties']['dimensions'], [
             {u'key': u'caches', u'value': u'second_cache'},
             {u'key': u'caches', u'value': u'shared_builder_cache'},
             {u'key': u'cores', u'value': u'8'},
+            {u'key': u'opt', u'value': u'ional'},
             {u'key': u'os', u'value': u'Ubuntu'},
             {u'key': u'pool', u'value': u'Chrome'},
         ]
     )
     self.assertEqual(task_def['task_slices'][0]['expiration_secs'], '60')
 
+    # One 'caches' expired. 'opt' and one 'caches' are still injected.
     self.assertEqual(
         task_def['task_slices'][1]['properties']['dimensions'], [
+            {u'key': u'caches', u'value': u'second_cache'},
+            {u'key': u'cores', u'value': u'8'},
+            {u'key': u'opt', u'value': u'ional'},
+            {u'key': u'os', u'value': u'Ubuntu'},
+            {u'key': u'pool', u'value': u'Chrome'},
+        ]
+    )
+    # 120-60
+    self.assertEqual(task_def['task_slices'][1]['expiration_secs'], '60')
+
+    # 'opt' expired, one 'caches' remains.
+    self.assertEqual(
+        task_def['task_slices'][2]['properties']['dimensions'], [
             {u'key': u'caches', u'value': u'second_cache'},
             {u'key': u'cores', u'value': u'8'},
             {u'key': u'os', u'value': u'Ubuntu'},
             {u'key': u'pool', u'value': u'Chrome'},
         ]
     )
-    # 360-60
-    self.assertEqual(task_def['task_slices'][1]['expiration_secs'], '300')
+    # 360-120
+    self.assertEqual(task_def['task_slices'][2]['expiration_secs'], '240')
 
-    # The cold fallback.
+    # The cold fallback; the last 'caches' expired.
     self.assertEqual(
-        task_def['task_slices'][2]['properties']['dimensions'], [
+        task_def['task_slices'][3]['properties']['dimensions'], [
             {u'key': u'cores', u'value': u'8'},
             {u'key': u'os', u'value': u'Ubuntu'},
             {u'key': u'pool', u'value': u'Chrome'},
         ]
     )
     # 3600-360
-    self.assertEqual(task_def['task_slices'][2]['expiration_secs'], '3240')
+    self.assertEqual(task_def['task_slices'][3]['expiration_secs'], '3240')
 
   def test_cache_fallback_fail_multiple_task_slices(self):
     # Make it so the swarming task template has two task_slices, which is
@@ -1015,6 +1036,41 @@ class SwarmingTest(BaseTest):
 
     with self.assertRaises(errors.InvalidInputError):
       build.parameters[model.BUILDER_PARAMETER] = 2
+      swarming.create_task_async(build).get_result()
+
+  def test_create_task_async_max_dimensions(self):
+    build = mkBuild(
+        parameters={model.BUILDER_PARAMETER: 'linux_chromium_rel_ng'},
+    )
+    self.json_response = {
+        'task_id': 'deadbeef',
+    }
+    builder_cfg = self.bucket_cfg.swarming.builders[0]
+    builder_cfg.dimensions.append("60:opt1:ional")
+    builder_cfg.dimensions.append("120:opt2:ional")
+    builder_cfg.dimensions.append("240:opt3:ional")
+    builder_cfg.dimensions.append("300:opt4:ional")
+    builder_cfg.dimensions.append("360:opt5:ional")
+    builder_cfg.dimensions.append("420:opt6:ional")
+    swarming.create_task_async(build).get_result()
+
+  def test_create_task_async_bad_request_dimensions(self):
+    # One too much.
+    build = mkBuild(
+        parameters={model.BUILDER_PARAMETER: 'linux_chromium_rel_ng'},
+    )
+    self.json_response = {
+        'task_id': 'deadbeef',
+    }
+    builder_cfg = self.bucket_cfg.swarming.builders[0]
+    builder_cfg.dimensions.append("60:opt1:ional")
+    builder_cfg.dimensions.append("120:opt2:ional")
+    builder_cfg.dimensions.append("240:opt3:ional")
+    builder_cfg.dimensions.append("300:opt4:ional")
+    builder_cfg.dimensions.append("360:opt5:ional")
+    builder_cfg.dimensions.append("420:opt6:ional")
+    builder_cfg.dimensions.append("480:opt7:ional")
+    with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
 
   def test_create_task_async_canary_template(self):

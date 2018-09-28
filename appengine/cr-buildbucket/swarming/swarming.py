@@ -643,38 +643,49 @@ def _setup_swarming_request_task_slices(
 
   # Now take a look to generate a fallback! This is done by inspecting the
   # Builder named caches for the flag "wait_for_warm_cache_secs".
-  cache_fallbacks = _setup_swarming_props(
+  dims = _setup_swarming_props(
       build,
       builder_cfg,
       extra_cipd_packages,
       task[u'task_slices'][0][u'properties'],
   )
 
-  if cache_fallbacks:
-    # Create a fallback by copying the original task slice, each time adding a
-    # dimension for the requested caches and the corresponding expiration.
-    last_exp = 0
+  if dims:
+    if len(dims) > 6:
+      raise errors.InvalidInputError(
+          'Too many (%d > 6) TaskSlice fallbacks' % len(dims)
+      )
+    # Create a fallback by copying the original task slice, each time adding the
+    # corresponding expiration.
     base_task_slice = task[u'task_slices'].pop()
     base_task_slice.setdefault(u'wait_for_capacity', False)
-    for expiration_secs, cache_names in cache_fallbacks:
+    last_exp = 0
+    for expiration_secs in sorted(dims):
       t = {
           u'expiration_secs': str(expiration_secs - last_exp),
           u'properties': copy.deepcopy(base_task_slice[u'properties']),
           u'wait_for_capacity': base_task_slice[u'wait_for_capacity'],
       }
       last_exp = expiration_secs
-      t[u'properties'][u'dimensions'].extend({
-          u'key': u'caches',
-          u'value': cache_name,
-      } for cache_name in cache_names)
-      t[u'properties'][u'dimensions'].sort(
-          key=lambda x: (x[u'key'], x[u'value'])
-      )
       task[u'task_slices'].append(t)
     # Tweak expiration on the base_task_slice, which is the last slice.
     exp = max(int(base_task_slice[u'expiration_secs']) - last_exp, 60)
     base_task_slice[u'expiration_secs'] = str(exp)
     task[u'task_slices'].append(base_task_slice)
+
+    assert len(task[u'task_slices']) == len(dims) + 1
+
+    # Now add the actual fallback dimensions. They could be either from optional
+    # named caches or from buildercfg dimensions in the form
+    # "<expiration_secs>:<key>:<value>".
+    extra_dims = []
+    for i, (_expiration_secs, kv) in enumerate(sorted(dims.iteritems(),
+                                                      reverse=True)):
+      # Now mutate each TaskProperties to have the desired dimensions.
+      extra_dims.extend(kv)
+      props = task[u'task_slices'][-2 - i][u'properties']
+      props[u'dimensions'].extend(extra_dims)
+      props[u'dimensions'].sort(key=lambda x: (x[u'key'], x[u'value']))
 
 
 def _setup_swarming_props(build, builder_cfg, extra_cipd_packages, props):
@@ -683,42 +694,46 @@ def _setup_swarming_props(build, builder_cfg, extra_cipd_packages, props):
   Updates props; a python format of TaskProperties.
 
   Returns:
-    list of tuple (delay, list(caches)) for cache fallback.
+    dict {expiration_sec: {key: list(values)}} to support caches. This is
+    different than the format in flatten_swarmingcfg.parse_dimensions().
   """
   props.setdefault('env', []).append({
       'key': 'BUILDBUCKET_EXPERIMENTAL',
       'value': str(build.experimental).upper(),
   })
-
-  (
-      props.setdefault('cipd_input', {}).setdefault('packages', [])
-      .extend(extra_cipd_packages)
-  )
-
-  # Add in all of the swarming dimensions to the task properties.
-  dims = swarmingcfg_module.read_dimensions(builder_cfg)
-  for _value, expiration_secs in dims.itervalues():
-    assert expiration_secs == 0, (
-        'Non-zero expiration_secs(%r) is not yet supported' % expiration_secs
-    )
-  props['dimensions'] = [
-      {'key': k, 'value': v} for k, (v, _e) in sorted(dims.iteritems())
-  ]
-
-  cache_fallbacks = _add_named_caches(builder_cfg, props)
+  props.setdefault('cipd_input', {}).setdefault('packages',
+                                                []).extend(extra_cipd_packages)
 
   if builder_cfg.execution_timeout_secs > 0:
-    props[u'execution_timeout_secs'] = str(builder_cfg.execution_timeout_secs)
-  return cache_fallbacks
+    props['execution_timeout_secs'] = str(builder_cfg.execution_timeout_secs)
+
+  cache_fallbacks = _setup_named_caches(builder_cfg, props)
+
+  # Add in all of the non-fallback swarming dimensions to the task properties.
+  dims = swarmingcfg_module.read_dimensions(builder_cfg)
+
+  # Reconstruct dims as the actual list of dimensions needed. The challenge here
+  # is that repeated values are valid!
+  out = {}
+  for expirations_secs, items in cache_fallbacks.iteritems():
+    out.setdefault(expirations_secs, []).extend(
+        {u'key': u'caches', u'value': item} for item in items
+    )
+  for key, (value, expirations_secs) in dims.iteritems():
+    out.setdefault(expirations_secs, []).append({u'key': key, u'value': value})
+
+  props['dimensions'] = out.pop(0, [])
+  props[u'dimensions'].sort(key=lambda x: (x[u'key'], x[u'value']))
+  return out
 
 
-def _add_named_caches(builder_cfg, props):
-  """Adds/replaces named caches to/in the task properties.
+def _setup_named_caches(builder_cfg, props):
+  """Adds/replaces named caches to/in the Swarming TaskProperties.
 
-  Assumes builder_cfg is valid.
+  Mutates props.
 
   Returns:
-    list of tuple (delay, list(caches)) for cache fallback.
+    dict {expiration_secs: list(caches)}
   """
   template_caches = props.get(u'caches', [])
   props[u'caches'] = []
@@ -750,14 +765,7 @@ def _add_named_caches(builder_cfg, props):
         cache_fallbacks.setdefault(v, []).append(c[u'name'])
 
   props[u'caches'].sort(key=lambda p: p.get(u'path'))
-
-  # Now add all the cache entries to the previous ones.
-  out = []
-  entries = []
-  for delay, items in sorted(cache_fallbacks.iteritems(), reverse=True):
-    entries.extend(items)
-    out.insert(0, (delay, sorted(entries)))
-  return out
+  return cache_fallbacks
 
 
 def _setup_swarming_request_pubsub(task, build):
