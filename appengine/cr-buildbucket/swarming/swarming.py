@@ -631,84 +631,88 @@ def _setup_swarming_request_task_slices(
   # For now, refuse a task template with more than one TaskSlice. Otherwise
   # it would be much harder to rationalize what's happening while reading the
   # Swarming task template.
-  if len(task['task_slices']) != 1:
+  if len(task[u'task_slices']) != 1:
     raise errors.InvalidInputError(
         'base swarming task template can only have one task_slices'
     )
 
   if builder_cfg.expiration_secs > 0:
-    task['task_slices'][0]['expiration_secs'] = str(builder_cfg.expiration_secs)
+    task[u'task_slices'][0][u'expiration_secs'] = str(
+        builder_cfg.expiration_secs
+    )
 
   # Now take a look to generate a fallback! This is done by inspecting the
   # Builder named caches for the flag "wait_for_warm_cache_secs".
-  cache_fallbacks = _setup_props(
+  cache_fallbacks = _setup_swarming_props(
       build,
       builder_cfg,
       extra_cipd_packages,
-      task['task_slices'][0]['properties'],
+      task[u'task_slices'][0][u'properties'],
   )
 
   if cache_fallbacks:
     # Create a fallback by copying the original task slice, each time adding a
     # dimension for the requested caches and the corresponding expiration.
-    last_delay = 0
-    base_task_slice = task['task_slices'].pop()
-    for delay_secs, cache_names in cache_fallbacks:
+    last_exp = 0
+    base_task_slice = task[u'task_slices'].pop()
+    base_task_slice.setdefault(u'wait_for_capacity', False)
+    for expiration_secs, cache_names in cache_fallbacks:
       t = {
-          'expiration_secs': str(delay_secs - last_delay),
-          'properties': copy.deepcopy(base_task_slice['properties']),
-          'wait_for_capacity': base_task_slice['wait_for_capacity'],
+          u'expiration_secs': str(expiration_secs - last_exp),
+          u'properties': copy.deepcopy(base_task_slice[u'properties']),
+          u'wait_for_capacity': base_task_slice[u'wait_for_capacity'],
       }
-      last_delay = delay_secs
-      t['properties']['dimensions'].extend({
-          'key': 'caches',
-          'value': cache_name,
+      last_exp = expiration_secs
+      t[u'properties'][u'dimensions'].extend({
+          u'key': u'caches',
+          u'value': cache_name,
       } for cache_name in cache_names)
-      task['task_slices'].append(t)
-    # Tweak expiration on the base_task_slice.
-    exp = max(int(base_task_slice['expiration_secs']) - last_delay, 60)
-    base_task_slice['expiration_secs'] = str(exp)
-    task['task_slices'].append(base_task_slice)
+      t[u'properties'][u'dimensions'].sort(
+          key=lambda x: (x[u'key'], x[u'value'])
+      )
+      task[u'task_slices'].append(t)
+    # Tweak expiration on the base_task_slice, which is the last slice.
+    exp = max(int(base_task_slice[u'expiration_secs']) - last_exp, 60)
+    base_task_slice[u'expiration_secs'] = str(exp)
+    task[u'task_slices'].append(base_task_slice)
 
 
-def _setup_props(build, builder_cfg, extra_cipd_packages, task_properties):
+def _setup_swarming_props(build, builder_cfg, extra_cipd_packages, props):
   """Fills a TaskProperties.
 
-  Updates task_properties.
+  Updates props; a python format of TaskProperties.
 
   Returns:
     list of tuple (delay, list(caches)) for cache fallback.
   """
-  task_properties.setdefault('env', []).append({
+  props.setdefault('env', []).append({
       'key': 'BUILDBUCKET_EXPERIMENTAL',
       'value': str(build.experimental).upper(),
   })
 
   (
-      task_properties.setdefault('cipd_input', {}).setdefault('packages', [])
+      props.setdefault('cipd_input', {}).setdefault('packages', [])
       .extend(extra_cipd_packages)
   )
 
   # Add in all of the swarming dimensions to the task properties.
   dims = swarmingcfg_module.read_dimensions(builder_cfg)
-  for expiration_secs, kv in sorted(dims.iteritems()):
+  for _value, expiration_secs in dims.itervalues():
     assert expiration_secs == 0, (
         'Non-zero expiration_secs(%r) is not yet supported' % expiration_secs
     )
-    task_properties['dimensions'] = [
-        {'key': k, 'value': v} for k, v in sorted(kv.iteritems())
-    ]
+  props['dimensions'] = [
+      {'key': k, 'value': v} for k, (v, _e) in sorted(dims.iteritems())
+  ]
 
-  cache_fallbacks = _add_named_caches(builder_cfg, task_properties)
+  cache_fallbacks = _add_named_caches(builder_cfg, props)
 
   if builder_cfg.execution_timeout_secs > 0:
-    task_properties['execution_timeout_secs'] = str(
-        builder_cfg.execution_timeout_secs
-    )
+    props[u'execution_timeout_secs'] = str(builder_cfg.execution_timeout_secs)
   return cache_fallbacks
 
 
-def _add_named_caches(builder_cfg, task_properties):
+def _add_named_caches(builder_cfg, props):
   """Adds/replaces named caches to/in the task properties.
 
   Assumes builder_cfg is valid.
@@ -716,15 +720,15 @@ def _add_named_caches(builder_cfg, task_properties):
   Returns:
     list of tuple (delay, list(caches)) for cache fallback.
   """
-  template_caches = task_properties.get('caches', [])
-  task_properties['caches'] = []
+  template_caches = props.get(u'caches', [])
+  props[u'caches'] = []
 
   names = set()
   paths = set()
   cache_fallbacks = {}
   # Look for builder specific named caches.
   for c in builder_cfg.caches:
-    if c.path.startswith('cache/'):  # pragma: no cover
+    if c.path.startswith(u'cache/'):  # pragma: no cover
       # TODO(nodir): remove this code path onces clients remove "cache/" from
       # their configs.
       cache_path = c.path
@@ -732,26 +736,20 @@ def _add_named_caches(builder_cfg, task_properties):
       cache_path = posixpath.join(_CACHE_DIR, c.path)
     names.add(c.name)
     paths.add(cache_path)
-    task_properties['caches'].append({
-        'path': cache_path,
-        'name': c.name,
-    })
+    props[u'caches'].append({u'path': cache_path, u'name': c.name})
     if c.wait_for_warm_cache_secs:
       cache_fallbacks.setdefault(c.wait_for_warm_cache_secs, []).append(c.name)
 
   # Look for named cache fallback from the swarming task template itself.
   for c in template_caches:
     # Only process the caches that were not overridden.
-    if c.get('path') not in paths and c.get('name') not in names:
-      task_properties['caches'].append({
-          u'name': c['name'],
-          u'path': c['path'],
-      })
-      v = c.get('wait_for_warm_cache_secs')
+    if c.get(u'path') not in paths and c.get(u'name') not in names:
+      props[u'caches'].append({u'name': c[u'name'], u'path': c[u'path']})
+      v = c.get(u'wait_for_warm_cache_secs')
       if v:
-        cache_fallbacks.setdefault(v, []).append(c['name'])
+        cache_fallbacks.setdefault(v, []).append(c[u'name'])
 
-  task_properties['caches'].sort(key=lambda p: p.get('path'))
+  props[u'caches'].sort(key=lambda p: p.get(u'path'))
 
   # Now add all the cache entries to the previous ones.
   out = []

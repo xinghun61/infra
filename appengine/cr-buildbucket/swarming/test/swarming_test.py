@@ -344,21 +344,21 @@ class SwarmingTest(BaseTest):
     # But the dimensions are different. 'caches' is injected.
     self.assertEqual(
         task_def['task_slices'][0]['properties']['dimensions'], [
-            {'key': u'cores', 'value': u'8'},
-            {'key': u'os', 'value': u'Ubuntu'},
-            {'key': u'pool', 'value': u'Chrome'},
-            {'key': 'caches', 'value': u'second_cache'},
-            {'key': 'caches', 'value': u'shared_builder_cache'},
+            {u'key': u'caches', u'value': u'second_cache'},
+            {u'key': u'caches', u'value': u'shared_builder_cache'},
+            {u'key': u'cores', u'value': u'8'},
+            {u'key': u'os', u'value': u'Ubuntu'},
+            {u'key': u'pool', u'value': u'Chrome'},
         ]
     )
     self.assertEqual(task_def['task_slices'][0]['expiration_secs'], '60')
 
     self.assertEqual(
         task_def['task_slices'][1]['properties']['dimensions'], [
-            {'key': u'cores', 'value': u'8'},
-            {'key': u'os', 'value': u'Ubuntu'},
-            {'key': u'pool', 'value': u'Chrome'},
-            {'key': 'caches', 'value': u'second_cache'},
+            {u'key': u'caches', u'value': u'second_cache'},
+            {u'key': u'cores', u'value': u'8'},
+            {u'key': u'os', u'value': u'Ubuntu'},
+            {u'key': u'pool', u'value': u'Chrome'},
         ]
     )
     # 360-60
@@ -367,9 +367,9 @@ class SwarmingTest(BaseTest):
     # The cold fallback.
     self.assertEqual(
         task_def['task_slices'][2]['properties']['dimensions'], [
-            {'key': u'cores', 'value': u'8'},
-            {'key': u'os', 'value': u'Ubuntu'},
-            {'key': u'pool', 'value': u'Chrome'},
+            {u'key': u'cores', u'value': u'8'},
+            {u'key': u'os', u'value': u'Ubuntu'},
+            {u'key': u'pool', u'value': u'Chrome'},
         ]
     )
     # 3600-360
@@ -482,11 +482,11 @@ class SwarmingTest(BaseTest):
     task_def = swarming.prepare_task_def_async(build).get_result()
     self.assertEqual(
         task_def['task_slices'][0]['properties']['dimensions'], [
-            {'key': 'builder', 'value': u'linux_chromium_rel_ng'},
-            {'key': u'cores', 'value': u'8'},
-            {'key': u'os', 'value': u'Ubuntu'},
-            {'key': u'pool', 'value': u'Chrome'},
-            {'key': 'caches', 'value': LINUX_CHROMIUM_REL_NG_CACHE_NAME},
+            {u'key': u'builder', u'value': u'linux_chromium_rel_ng'},
+            {u'key': u'caches', u'value': LINUX_CHROMIUM_REL_NG_CACHE_NAME},
+            {u'key': u'cores', u'value': u'8'},
+            {u'key': u'os', u'value': u'Ubuntu'},
+            {u'key': u'pool', u'value': u'Chrome'},
         ]
     )
 
@@ -495,11 +495,11 @@ class SwarmingTest(BaseTest):
     task_def = swarming.prepare_task_def_async(build).get_result()
     self.assertEqual(
         task_def['task_slices'][0]['properties']['dimensions'], [
-            {'key': u'builder', 'value': u'custom'},
-            {'key': u'cores', 'value': u'8'},
-            {'key': u'os', 'value': u'Ubuntu'},
-            {'key': u'pool', 'value': u'Chrome'},
-            {'key': 'caches', 'value': LINUX_CHROMIUM_REL_NG_CACHE_NAME},
+            {u'key': u'builder', u'value': u'custom'},
+            {u'key': u'caches', u'value': LINUX_CHROMIUM_REL_NG_CACHE_NAME},
+            {u'key': u'cores', u'value': u'8'},
+            {u'key': u'os', u'value': u'Ubuntu'},
+            {u'key': u'pool', u'value': u'Chrome'},
         ]
     )
 
@@ -743,10 +743,11 @@ class SwarmingTest(BaseTest):
     }
     # The swarming template has fallback.
     props_def_first = copy.deepcopy(props_def)
-    props_def_first['dimensions'].append({
-        'key': 'caches',
-        'value': LINUX_CHROMIUM_REL_NG_CACHE_NAME,
+    props_def_first[u'dimensions'].append({
+        u'key': u'caches',
+        u'value': LINUX_CHROMIUM_REL_NG_CACHE_NAME,
     })
+    props_def_first[u'dimensions'].sort(key=lambda x: (x[u'key'], x[u'value']))
     expected_task_def = {
         'name':
             'buildbucket:luci.chromium.try:linux_chromium_rel_ng',
@@ -1134,10 +1135,11 @@ class SwarmingTest(BaseTest):
     }
     # The swarming template has fallback.
     props_def_first = copy.deepcopy(props_def)
-    props_def_first['dimensions'].append({
-        'key': 'caches',
-        'value': LINUX_CHROMIUM_REL_NG_CACHE_NAME,
+    props_def_first[u'dimensions'].append({
+        u'key': u'caches',
+        u'value': LINUX_CHROMIUM_REL_NG_CACHE_NAME,
     })
+    props_def_first[u'dimensions'].sort(key=lambda x: (x[u'key'], x[u'value']))
     expected_task_def = {
         'name':
             'buildbucket:luci.chromium.try:linux_chromium_rel_ng-canary',

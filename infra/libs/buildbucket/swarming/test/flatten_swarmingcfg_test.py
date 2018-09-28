@@ -17,13 +17,10 @@ class ProjectCfgTest(unittest.TestCase):
   def test_parse_dimensions(self):
     dims = ['pool:default', '60:cpu:x86-64']
     actual = flatten_swarmingcfg.parse_dimensions(dims)
-    self.assertEqual({0: {'pool': 'default'}, 60: {'cpu': 'x86-64'}}, actual)
+    self.assertEqual({'pool': ('default', 0), 'cpu': ('x86-64', 60)}, actual)
 
   def test_format_dimensions(self):
-    dims = {
-      0: {'pool': 'default'},
-      60: {'cpu': 'x86-64'},
-    }
+    dims = {'pool': ('default', 0), 'cpu': ('x86-64', 60)}
     actual = flatten_swarmingcfg.format_dimensions(dims)
     self.assertEqual(['60:cpu:x86-64', 'pool:default'], actual)
 

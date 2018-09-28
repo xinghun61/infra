@@ -51,12 +51,12 @@ def read_dimensions(builder_cfg):  # pragma: no cover
   * Removes empty value fields.
 
   Returns:
-    dimensions is returned as dict {expiration_secs: list of (key, value)}.
+    dimensions is returned as dict {key: (value, expiration_secs)}.
   """
   dimensions = flatten_swarmingcfg.parse_dimensions(builder_cfg.dimensions)
   if (builder_cfg.auto_builder_dimension == project_config_pb2.YES and
-      'builder' not in dimensions[0]):
-    dimensions[0]['builder'] = builder_cfg.name
+      u'builder' not in dimensions):
+    dimensions[u'builder'] = (builder_cfg.name, 0)
   return dimensions
 
 

@@ -35,7 +35,10 @@ def read_properties(recipe):
 
 
 def parse_dimensions(strings):
-  """Parses dimension strings to a dict {expiration_sec: dict{key:value}}."""
+  """Parses dimension strings to a dict {key: (value, expiration_sec)}.
+
+  Repeated dimension keys are not supported.
+  """
   out = {}
   for s in strings:
     key, value = s.split(':', 1)
@@ -46,7 +49,7 @@ def parse_dimensions(strings):
       pass
     else:
       key, value = value.split(':', 1)
-    out.setdefault(expiration_secs, {})[key] = value
+    out[key] = (value, expiration_secs)
   return out
 
 
@@ -56,26 +59,24 @@ def format_dimensions(dictionary):
   Opposite of parse_dimensions.
   """
   out = []
-  for expiration_secs, kv in dictionary.iteritems():
-    for k, v in kv.iteritems():
-      if expiration_secs:
-        out.append('%d:%s:%s' % (expiration_secs, k, v))
-      else:
-        out.append('%s:%s' % (k, v))
+  for key, (value, expiration_secs) in dictionary.iteritems():
+    if expiration_secs:
+      out.append('%d:%s:%s' % (expiration_secs, key, value))
+    else:
+      out.append('%s:%s' % (key, value))
   out.sort()
   return out
 
 
 def merge_builder(b1, b2):
-  """Merges Builder message b2 into b1. Expects messages to be valid."""
+  """Merges Builder message b2 into b1. Expects messages to be valid.
+
+  Repeated dimension keys are not supported.
+  """
   assert not b2.mixins, 'do not merge unflattened builders'
 
   dims = parse_dimensions(b1.dimensions)
-  for expiration_secs, kv in parse_dimensions(b2.dimensions).iteritems():
-    d = dims.setdefault(expiration_secs, {})
-    # TODO(maruel): keys in b2 may override expiration from b1.
-    for k, v in kv.iteritems():
-      d[k] = v
+  dims.update(parse_dimensions(b2.dimensions))
   recipe = None
   if b1.HasField('recipe') or b2.HasField('recipe'):  # pragma: no branch
     recipe = copy.deepcopy(b1.recipe)
