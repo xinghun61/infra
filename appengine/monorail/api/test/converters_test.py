@@ -419,37 +419,53 @@ class ConverterFunctionsTest(unittest.TestCase):
         tracker_pb2.Phase(phase_id=1, name='Dev', rank=1),
         tracker_pb2.Phase(phase_id=2, name='Beta', rank=2),
         ]
+    issue.dangling_blocked_on_refs = [
+        tracker_pb2.DanglingIssueRef(project='dangling_proj', issue_id=1234)]
 
     actual = converters.ConvertIssue(
         issue, self.users_by_id, related_refs_dict, self.config)
 
     expected = issue_objects_pb2.Issue(
-        project_name='proj', local_id=3, summary='sum',
+        project_name='proj',
+        local_id=3,
+        summary='sum',
         status_ref=common_pb2.StatusRef(
-            status='New', is_derived=False, means_open=True),
+            status='New',
+            is_derived=False,
+            means_open=True),
         owner_ref=common_pb2.UserRef(
-            user_id=111L, display_name='one@example.com', is_derived=False),
-        cc_refs=[common_pb2.UserRef(
-                     user_id=111L, display_name='one@example.com',
-                     is_derived=False),
-                 common_pb2.UserRef(
-                     user_id=222L, display_name='two@example.com',
-                     is_derived=True)],
-        label_refs=[common_pb2.LabelRef(label='Hot', is_derived=False),
-                    common_pb2.LabelRef(label='Scalability', is_derived=True)],
+            user_id=111L,
+            display_name='one@example.com',
+            is_derived=False),
+        cc_refs=[
+            common_pb2.UserRef(
+                user_id=111L,
+                display_name='one@example.com',
+                is_derived=False),
+            common_pb2.UserRef(
+                user_id=222L,
+                display_name='two@example.com',
+                is_derived=True)],
+        label_refs=[
+            common_pb2.LabelRef(label='Hot', is_derived=False),
+            common_pb2.LabelRef(label='Scalability', is_derived=True)],
         component_refs=[common_pb2.ComponentRef(path='UI', is_derived=False)],
         is_deleted=False,
         reporter_ref=common_pb2.UserRef(
             user_id=222L, display_name='two@example.com', is_derived=False),
-        opened_timestamp=now, star_count=12, is_spam=False, attachment_count=0,
+        opened_timestamp=now,
+        star_count=12,
+        is_spam=False,
+        attachment_count=0,
+        dangling_blocked_on_refs=[
+            common_pb2.IssueRef(project_name='dangling_proj', local_id=1234)],
         phases=[
             issue_objects_pb2.PhaseDef(
               phase_ref=issue_objects_pb2.PhaseRef(phase_name='Dev'),
               rank=1),
             issue_objects_pb2.PhaseDef(
               phase_ref=issue_objects_pb2.PhaseRef(phase_name='Beta'),
-              rank=2)],
-        )
+              rank=2)])
     self.assertEqual(expected, actual)
 
   def testConvertPhaseDef(self):
