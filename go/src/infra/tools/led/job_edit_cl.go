@@ -57,13 +57,13 @@ func (g *gerritCL) getProperties() map[string]interface{} {
 func (g *gerritCL) loadRemoteData(ctx context.Context, authClient *http.Client) error {
 	gc, err := gerrit.NewClient("https://"+g.host, authClient)
 	if err != nil {
-		return err
+		return errors.Annotate(err, "creating new gerrit client").Err()
 	}
 
 	ci, _, err := gc.Changes.GetChangeDetail(strconv.FormatUint(g.issue, 10), &gerrit.ChangeOptions{
 		AdditionalFields: []string{"ALL_REVISIONS", "DOWNLOAD_COMMANDS"}})
 	if err != nil {
-		return err
+		return errors.Annotate(err, "GetChangeDetail").Err()
 	}
 
 	g.patchProject = ci.Project
@@ -249,13 +249,13 @@ func (ejd *EditJobDefinition) ChromiumCL(ctx context.Context, authClient *http.C
 		// parse patchsetURL to see if we understand it
 		clImpl, err := parseCrChangeListURL(patchsetURL)
 		if err != nil {
-			return err
+			return errors.Annotate(err, "parsing changelist URL").Err()
 		}
 
 		// make some RPCs to the underlying service to extract the rest of the
 		// properties.
 		if err := clImpl.loadRemoteData(ctx, authClient); err != nil {
-			return err
+			return errors.Annotate(err, "loading remote data").Err()
 		}
 
 		// wipe out all the old properties

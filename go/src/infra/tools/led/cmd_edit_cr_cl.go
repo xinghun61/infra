@@ -94,7 +94,7 @@ func (c *cmdEditCl) Run(a subcommands.Application, args []string, env subcommand
 	authClient, err := authenticator.Client()
 	if err != nil {
 		errors.Log(ctx, err)
-		return 1
+		return 2
 	}
 
 	err = editMode(ctx, func(jd *JobDefinition) error {
@@ -104,7 +104,7 @@ func (c *cmdEditCl) Run(a subcommands.Application, args []string, env subcommand
 	})
 	if err != nil {
 		errors.Log(ctx, err)
-		return 1
+		return 3
 	}
 
 	return 0

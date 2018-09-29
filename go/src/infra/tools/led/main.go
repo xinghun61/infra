@@ -12,6 +12,7 @@ import (
 
 	"github.com/maruel/subcommands"
 
+	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/auth/client/authcli"
 	"go.chromium.org/luci/cipd/version"
 	"go.chromium.org/luci/common/cli"
@@ -42,6 +43,11 @@ func main() {
 	mathrand.SeedRandomly()
 
 	authDefaults := chromeinfra.DefaultAuthOptions()
+	// Need gerritcodereview scope to load gerrit changes.
+	authDefaults.Scopes = []string{
+		auth.OAuthScopeEmail,
+		"https://www.googleapis.com/auth/gerritcodereview",
+	}
 
 	var application = cli.Application{
 		Name: "led",
