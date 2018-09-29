@@ -6,6 +6,7 @@ DEPS = [
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/git',
+  'depot_tools/osx_sdk',
   'infra_checkout',
   'infra_system',
   'recipe_engine/buildbucket',
@@ -66,8 +67,18 @@ def RunSteps(api):
             co.path.join('infra', 'recipes', 'recipes.py'),
             ['lint'])
 
-    # Ensure go is bootstrapped as a separate step.
-    co.ensure_go_env()
+    if api.platform.is_linux and (is_deps_roll or
+        any(f.startswith('appengine/chromium_rietveld') for f in files)):
+      with api.context(cwd=co.path.join('infra')):
+        api.step('rietveld tests',
+                 ['make', '-C', 'appengine/chromium_rietveld', 'test'])
+
+  # Ensure go is bootstrapped as a separate step.
+  co.ensure_go_env()
+
+  # Some third_party go packages on OSX rely on cgo and thus a configured
+  # clang toolchain.
+  with api.osx_sdk('mac'):
     # Note: go/env.py knows how to expand 'python' into sys.executable.
     co.go_env_step(
         'python', str(co.path.join(patch_root, 'go', 'test.py')),
@@ -92,12 +103,6 @@ def RunSteps(api):
     else:
       api.step('skipping slow cipd packaging tests', cmd=None)
 
-    if api.platform.is_linux and (is_deps_roll or
-        any(f.startswith('appengine/chromium_rietveld') for f in files)):
-      with api.context(cwd=co.path.join('infra')):
-        api.step('rietveld tests',
-                 ['make', '-C', 'appengine/chromium_rietveld', 'test'])
-
 
 def GenTests(api):
   def diff(*files):
@@ -117,6 +122,16 @@ def GenTests(api):
     api.test('only_go') +
     api.properties.tryserver(
         mastername='tryserver.chromium.linux',
+        buildername='infra_tester',
+        gerrit_project='infra/infra') +
+    diff('go/src/infra/stuff.go')
+  )
+
+  yield (
+    api.test('only_go_osx') +
+    api.platform('mac', 64) +
+    api.properties.tryserver(
+        mastername='tryserver.chromium.mac',
         buildername='infra_tester',
         gerrit_project='infra/infra') +
     diff('go/src/infra/stuff.go')

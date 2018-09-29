@@ -5,6 +5,7 @@
 from recipe_engine.recipe_api import Property
 
 DEPS = [
+  'depot_tools/osx_sdk',
   'depot_tools/tryserver',
   'infra_checkout',
   'recipe_engine/buildbucket',
@@ -38,26 +39,29 @@ def RunSteps(api, GOARCH):
 
   with api.context(env=env):
     co.ensure_go_env()
-    if is_presubmit:
-      with api.tryserver.set_failure_hash():
-        co.run_presubmit_in_go_env()
-    else:
-      co.go_env_step('go', 'build', 'go.chromium.org/luci/...')
-      co.go_env_step('go', 'test', 'go.chromium.org/luci/...')
+    with api.osx_sdk('mac'):
+      if is_presubmit:
+        with api.tryserver.set_failure_hash():
+          co.run_presubmit_in_go_env()
+      else:
+        co.go_env_step('go', 'build', 'go.chromium.org/luci/...')
+        co.go_env_step('go', 'test', 'go.chromium.org/luci/...')
 
 
 def GenTests(api):
-  yield (
-    api.test('luci_go') +
-    api.runtime(is_luci=True, is_experimental=False) +
-    api.buildbucket.ci_build(
-        'infra', 'ci', 'luci-gae-trusty-64',
-        git_repo="https://chromium.googlesource.com/infra/infra",
-        revision='1'*40) +
-    # Sadly, hacks in gclient required to patch non-main git repo in a solution
-    # requires revsion as a property :(
-    api.properties(revision='1'*40)
-  )
+  for plat in ('linux', 'mac', 'win'):
+    yield (
+      api.test('luci_go_%s' % plat) +
+      api.platform(plat, 64) +
+      api.runtime(is_luci=True, is_experimental=False) +
+      api.buildbucket.ci_build(
+          'infra', 'ci', 'luci-gae-trusty-64',
+          git_repo="https://chromium.googlesource.com/infra/infra",
+          revision='1'*40) +
+      # Sadly, hacks in gclient required to patch non-main git repo in
+      # a solution requires revision as a property :(
+      api.properties(revision='1'*40)
+    )
 
   yield (
     api.test('presubmit_try_job') +

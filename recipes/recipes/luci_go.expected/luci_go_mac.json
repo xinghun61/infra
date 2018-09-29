@@ -9,7 +9,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[CACHE]/infra_internal_gclient_with_go"
+      "[CACHE]/infra_gclient_with_go"
     ],
     "infra_step": true,
     "name": "ensure builder dir"
@@ -20,19 +20,23 @@
       "-u",
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec-path",
-      "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra_internal', 'url': 'https://chrome-internal.googlesource.com/infra/infra_internal.git'}]",
+      "cache_dir = '[CACHE]/git'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
+      "--patch_root",
+      "infra/go/src/go.chromium.org/luci",
       "--revision_mapping_file",
-      "{\"got_revision\": \"infra_internal\"}",
+      "{\"got_revision\": \"infra/go/src/go.chromium.org/luci\"}",
       "--git-cache-dir",
-      "[GIT_CACHE]",
+      "[CACHE]/git",
       "--cleanup-dir",
       "[CLEANUP]/bot_update",
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
-      "infra_internal@2d72510e447ab60a9728aeea2362d8be2cbd7789"
+      "infra@origin/master",
+      "--revision",
+      "infra/go/src/go.chromium.org/luci@1111111111111111111111111111111111111111"
     ],
-    "cwd": "[CACHE]/infra_internal_gclient_with_go",
+    "cwd": "[CACHE]/infra_gclient_with_go",
     "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
@@ -45,27 +49,28 @@
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"did_run\": true, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"fixed_revisions\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"infra_internal\": \"2d72510e447ab60a9728aeea2362d8be2cbd7789\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"infra\": \"origin/master\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"infra/go/src/go.chromium.org/luci\": \"1111111111111111111111111111111111111111\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"manifest\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"infra_internal\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"repository\": \"https://fake.org/infra_internal.git\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"revision\": \"0a18b32e3a93913e1090d1ee6b8965c6dc3116d6\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"infra/go/src/go.chromium.org/luci\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"repository\": \"https://fake.org/infra/go/src/go.chromium.org/luci.git\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"revision\": \"20f528b465552566c6377b61e06c3f83a998811f\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }@@@",
       "@@@STEP_LOG_LINE@json.output@  }, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"patch_failure\": false, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"patch_root\": \"infra_internal\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"patch_root\": \"infra/go/src/go.chromium.org/luci\", @@@",
       "@@@STEP_LOG_LINE@json.output@  \"properties\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"got_revision\": \"0a18b32e3a93913e1090d1ee6b8965c6dc3116d6\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"got_revision_cp\": \"refs/heads/master@{#190894}\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"got_revision\": \"20f528b465552566c6377b61e06c3f83a998811f\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"got_revision_cp\": \"refs/heads/master@{#37652}\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"root\": \"infra_internal\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"root\": \"infra\", @@@",
       "@@@STEP_LOG_LINE@json.output@  \"source_manifest\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"directories\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"infra_internal\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"infra/go/src/go.chromium.org/luci\": {@@@",
       "@@@STEP_LOG_LINE@json.output@        \"git_checkout\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@          \"repo_url\": \"https://fake.org/infra_internal.git\", @@@",
-      "@@@STEP_LOG_LINE@json.output@          \"revision\": \"0a18b32e3a93913e1090d1ee6b8965c6dc3116d6\"@@@",
+      "@@@STEP_LOG_LINE@json.output@          \"repo_url\": \"https://fake.org/infra/go/src/go.chromium.org/luci.git\", @@@",
+      "@@@STEP_LOG_LINE@json.output@          \"revision\": \"20f528b465552566c6377b61e06c3f83a998811f\"@@@",
       "@@@STEP_LOG_LINE@json.output@        }@@@",
       "@@@STEP_LOG_LINE@json.output@      }@@@",
       "@@@STEP_LOG_LINE@json.output@    }, @@@",
@@ -74,8 +79,8 @@
       "@@@STEP_LOG_LINE@json.output@  \"step_text\": \"Some step text\"@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@",
-      "@@@SET_BUILD_PROPERTY@got_revision@\"0a18b32e3a93913e1090d1ee6b8965c6dc3116d6\"@@@",
-      "@@@SET_BUILD_PROPERTY@got_revision_cp@\"refs/heads/master@{#190894}\"@@@"
+      "@@@SET_BUILD_PROPERTY@got_revision@\"20f528b465552566c6377b61e06c3f83a998811f\"@@@",
+      "@@@SET_BUILD_PROPERTY@got_revision_cp@\"refs/heads/master@{#37652}\"@@@"
     ]
   },
   {
@@ -85,12 +90,7 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
-    "cwd": "[CACHE]/infra_internal_gclient_with_go",
-    "env_prefixes": {
-      "PATH": [
-        "/opt/infra-system/bin"
-      ]
-    },
+    "cwd": "[CACHE]/infra_gclient_with_go",
     "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
@@ -102,16 +102,11 @@
     "cmd": [
       "python",
       "-u",
-      "[CACHE]/infra_internal_gclient_with_go/infra_internal/go/env.py",
+      "[CACHE]/infra_gclient_with_go/infra/go/env.py",
       "go",
       "version"
     ],
-    "cwd": "[CACHE]/infra_internal_gclient_with_go",
-    "env_prefixes": {
-      "PATH": [
-        "/opt/infra-system/bin"
-      ]
-    },
+    "cwd": "[CACHE]/infra_gclient_with_go",
     "infra_step": true,
     "name": "init infra go env"
   },
@@ -126,11 +121,6 @@
       "-json-output",
       "/path/to/tmp/json"
     ],
-    "env_prefixes": {
-      "PATH": [
-        "/opt/infra-system/bin"
-      ]
-    },
     "infra_step": true,
     "name": "ensure_installed",
     "~followup_annotations": [
@@ -158,11 +148,6 @@
       "-output-dir",
       "[CACHE]/osx_sdk/XCode.app"
     ],
-    "env_prefixes": {
-      "PATH": [
-        "/opt/infra-system/bin"
-      ]
-    },
     "infra_step": true,
     "name": "install xcode"
   },
@@ -173,11 +158,6 @@
       "--switch",
       "[CACHE]/osx_sdk/XCode.app"
     ],
-    "env_prefixes": {
-      "PATH": [
-        "/opt/infra-system/bin"
-      ]
-    },
     "infra_step": true,
     "name": "select XCode"
   },
@@ -185,16 +165,25 @@
     "cmd": [
       "python",
       "-u",
-      "[CACHE]/infra_internal_gclient_with_go/infra_internal/go/env.py",
-      "python",
-      "[CACHE]/infra_internal_gclient_with_go/infra_internal/go/test.py"
+      "[CACHE]/infra_gclient_with_go/infra/go/env.py",
+      "go",
+      "build",
+      "go.chromium.org/luci/..."
     ],
-    "env_prefixes": {
-      "PATH": [
-        "/opt/infra-system/bin"
-      ]
-    },
-    "name": "infra go tests"
+    "cwd": "[CACHE]/infra_gclient_with_go",
+    "name": "go build"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[CACHE]/infra_gclient_with_go/infra/go/env.py",
+      "go",
+      "test",
+      "go.chromium.org/luci/..."
+    ],
+    "cwd": "[CACHE]/infra_gclient_with_go",
+    "name": "go test"
   },
   {
     "cmd": [
@@ -202,11 +191,6 @@
       "xcode-select",
       "--reset"
     ],
-    "env_prefixes": {
-      "PATH": [
-        "/opt/infra-system/bin"
-      ]
-    },
     "infra_step": true,
     "name": "reset XCode"
   },

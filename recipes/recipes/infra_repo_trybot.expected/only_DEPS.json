@@ -202,6 +202,16 @@
   },
   {
     "cmd": [
+      "make",
+      "-C",
+      "appengine/chromium_rietveld",
+      "test"
+    ],
+    "cwd": "[CACHE]/infra_gclient_with_go/infra",
+    "name": "rietveld tests"
+  },
+  {
+    "cmd": [
       "python",
       "-u",
       "[CACHE]/infra_gclient_with_go/infra/go/env.py",
@@ -248,16 +258,6 @@
       ]
     },
     "name": "cipd - test packages integrity"
-  },
-  {
-    "cmd": [
-      "make",
-      "-C",
-      "appengine/chromium_rietveld",
-      "test"
-    ],
-    "cwd": "[CACHE]/infra_gclient_with_go/infra",
-    "name": "rietveld tests"
   },
   {
     "name": "$result",

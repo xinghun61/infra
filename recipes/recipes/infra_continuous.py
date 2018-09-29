@@ -13,6 +13,7 @@ DEPS = [
   'depot_tools/depot_tools',
   'depot_tools/gclient',
   'depot_tools/infra_paths',
+  'depot_tools/osx_sdk',
   'recipe_engine/buildbucket',
   'recipe_engine/context',
   'recipe_engine/file',
@@ -175,51 +176,55 @@ def build_main(api, buildername, project_name, repo_url, rev):
             'bundle',
           ])
 
+  # Some third_party go packages on OSX rely on cgo and thus a configured
+  # clang toolchain.
+  with api.osx_sdk('mac'):
     api.python(
         'infra go tests',
         api.path['checkout'].join('go', 'env.py'),
         ['python', api.path['checkout'].join('go', 'test.py')])
 
-  for plat in CIPD_PACKAGE_BUILDERS.get(buildername, []):
-    if plat == 'native':
-      goos, goarch = None, None
-    else:
-      goos, goarch = plat.split('-', 1)
-    with api.infra_cipd.context(api.path['checkout'], goos, goarch):
-      api.infra_cipd.build()
-      api.infra_cipd.test(skip_if_cross_compiling=True)
-      if 'packager' in buildername:
-        if api.runtime.is_experimental:
-          api.step('no CIPD package upload in experimental mode', cmd=None)
-        else:
-          api.infra_cipd.upload(api.infra_cipd.tags(repo_url, rev))
+    for plat in CIPD_PACKAGE_BUILDERS.get(buildername, []):
+      if plat == 'native':
+        goos, goarch = None, None
+      else:
+        goos, goarch = plat.split('-', 1)
+      with api.infra_cipd.context(api.path['checkout'], goos, goarch):
+        api.infra_cipd.build()
+        api.infra_cipd.test(skip_if_cross_compiling=True)
+        if 'packager' in buildername:
+          if api.runtime.is_experimental:
+            api.step('no CIPD package upload in experimental mode', cmd=None)
+          else:
+            api.infra_cipd.upload(api.infra_cipd.tags(repo_url, rev))
 
 
 def GenTests(api):
 
-  def test(name, builder, repo, luci_project, bucket, is_experimental=False):
+  def test(name, builder, repo, project, bucket, plat, is_experimental=False):
     return (
         api.test(name) +
+        api.platform(plat, 64) +
         api.runtime(is_luci=True, is_experimental=is_experimental) +
         api.properties(path_config='generic', buildnumber=123) +
-        api.buildbucket.ci_build(luci_project, bucket, builder, git_repo=repo)
+        api.buildbucket.ci_build(project, bucket, builder, git_repo=repo)
     )
 
   yield test('public-ci-linux', 'infra-continuous-trusty-64',
-             PUBLIC_REPO, 'infra', 'ci')
+             PUBLIC_REPO, 'infra', 'ci', 'linux')
   yield test('public-ci-win', 'infra-continuous-win-32',
-             PUBLIC_REPO, 'infra', 'ci')
+             PUBLIC_REPO, 'infra', 'ci', 'win')
 
   yield test('internal-ci-linux', 'infra-internal-continuous-trusty-64',
-             INTERNAL_REPO, 'infra-internal', 'ci')
+             INTERNAL_REPO, 'infra-internal', 'ci', 'linux')
   yield test('internal-ci-mac', 'infra-internal-continuous-mac-64',
-             INTERNAL_REPO, 'infra-internal', 'ci')
+             INTERNAL_REPO, 'infra-internal', 'ci', 'mac')
 
   yield test('public-packager-mac', 'infra-packager-mac-64',
-             PUBLIC_REPO, 'infra-internal', 'prod')
+             PUBLIC_REPO, 'infra-internal', 'prod', 'mac')
   yield test('public-packager-mac_experimental', 'infra-packager-mac-64',
-             PUBLIC_REPO, 'infra-internal', 'prod',
+             PUBLIC_REPO, 'infra-internal', 'prod', 'mac',
              is_experimental=True)
 
   yield test('internal-packager-linux', 'infra-internal-packager-linux-64',
-             INTERNAL_REPO, 'infra-internal', 'prod')
+             INTERNAL_REPO, 'infra-internal', 'prod', 'linux')
