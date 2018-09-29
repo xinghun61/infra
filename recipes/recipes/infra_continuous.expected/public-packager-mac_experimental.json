@@ -102,23 +102,6 @@
     "cmd": [
       "python",
       "-u",
-      "[CACHE]/infra_gclient_with_go/infra/go/env.py",
-      "go",
-      "version"
-    ],
-    "cwd": "[CACHE]/infra_gclient_with_go",
-    "env_prefixes": {
-      "PATH": [
-        "/opt/infra-system/bin"
-      ]
-    },
-    "infra_step": true,
-    "name": "init infra go env"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
       "test.py",
       "test"
     ],
@@ -195,6 +178,23 @@
     },
     "infra_step": true,
     "name": "select XCode"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[CACHE]/infra_gclient_with_go/infra/go/env.py",
+      "go",
+      "version"
+    ],
+    "cwd": "[CACHE]/infra_gclient_with_go",
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
+    "infra_step": true,
+    "name": "init infra go env"
   },
   {
     "cmd": [

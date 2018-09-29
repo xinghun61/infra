@@ -37,15 +37,14 @@ def RunSteps(api, GOARCH):
   if GOARCH is not None:
     env['GOARCH'] = GOARCH
 
-  with api.context(env=env):
+  with api.context(env=env), api.osx_sdk('mac'):
     co.ensure_go_env()
-    with api.osx_sdk('mac'):
-      if is_presubmit:
-        with api.tryserver.set_failure_hash():
-          co.run_presubmit_in_go_env()
-      else:
-        co.go_env_step('go', 'build', 'go.chromium.org/luci/...')
-        co.go_env_step('go', 'test', 'go.chromium.org/luci/...')
+    if is_presubmit:
+      with api.tryserver.set_failure_hash():
+        co.run_presubmit_in_go_env()
+    else:
+      co.go_env_step('go', 'build', 'go.chromium.org/luci/...')
+      co.go_env_step('go', 'test', 'go.chromium.org/luci/...')
 
 
 def GenTests(api):

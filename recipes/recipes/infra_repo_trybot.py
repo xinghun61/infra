@@ -73,12 +73,12 @@ def RunSteps(api):
         api.step('rietveld tests',
                  ['make', '-C', 'appengine/chromium_rietveld', 'test'])
 
-  # Ensure go is bootstrapped as a separate step.
-  co.ensure_go_env()
-
   # Some third_party go packages on OSX rely on cgo and thus a configured
   # clang toolchain.
   with api.osx_sdk('mac'):
+    # Ensure go is bootstrapped as a separate step.
+    co.ensure_go_env()
+
     # Note: go/env.py knows how to expand 'python' into sys.executable.
     co.go_env_step(
         'python', str(co.path.join(patch_root, 'go', 'test.py')),

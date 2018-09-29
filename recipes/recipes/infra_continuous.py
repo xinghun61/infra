@@ -136,16 +136,15 @@ def RunSteps(api):
   # which resides at a fixed path.
   with api.infra_system.system_env():
     co.gclient_runhooks()
-    co.ensure_go_env()
 
     # Whatever is checked out by bot_update. It is usually equal to
     # api.buildbucket.gitiles_commit.id except when the build was triggered
     # manually (commit id is empty in that case).
     rev = co.bot_update_step.presentation.properties['got_revision']
-    build_main(api, buildername, project_name, repo_url, rev)
+    build_main(api, co, buildername, project_name, repo_url, rev)
 
 
-def build_main(api, buildername, project_name, repo_url, rev):
+def build_main(api, checkout, buildername, project_name, repo_url, rev):
   with api.step.defer_results():
     with api.context(cwd=api.path['checkout']):
       # Run Linux tests everywhere, Windows tests only on public CI.
@@ -157,6 +156,11 @@ def build_main(api, buildername, project_name, repo_url, rev):
         api.python(
             'ccompute config test',
             'ccompute/scripts/ccompute_config.py', ['test'])
+
+  # Some third_party go packages on OSX rely on cgo and thus a configured
+  # clang toolchain.
+  with api.osx_sdk('mac'):
+    checkout.ensure_go_env()
 
     # Call 'deps.py bundle' to package dependencies specified in deps.lock into
     # a CIPD package. This is not strictly necessary, but it significantly
@@ -176,9 +180,6 @@ def build_main(api, buildername, project_name, repo_url, rev):
             'bundle',
           ])
 
-  # Some third_party go packages on OSX rely on cgo and thus a configured
-  # clang toolchain.
-  with api.osx_sdk('mac'):
     api.python(
         'infra go tests',
         api.path['checkout'].join('go', 'env.py'),
