@@ -31,4 +31,5 @@
 <script type="text/javascript" defer src="/static/js/tracker/tracker-onload.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="/static/js/tracker/predict.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="/static/js/framework/clientmon.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="module" defer src="/static/jsm/track-copy.mjs?version=[app_version]" nonce="[nonce]"></script>
 
