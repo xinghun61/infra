@@ -230,6 +230,13 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
   def testIsStepSupportedByFinditObjectNone(self):
     self.assertFalse(step_util.IsStepSupportedByFindit(None, 'step', 'm'))
 
+  @mock.patch.object(
+      waterfall_config, 'StepIsSupportedForMaster', return_value=False)
+  def testStepNotSupportedByFindit(self, _):
+    self.assertFalse(
+        step_util.IsStepSupportedByFindit(
+            WebkitLayoutTestResults(None), 'step', 'm'))
+
   def testIsStepSupportedByFinditOtherIsolatedScriptTest(self):
     self.assertFalse(
         step_util.IsStepSupportedByFindit(
@@ -356,7 +363,9 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
   def testGetStepMetadataCached(self, mock_fn):
     step_util.GetStepMetadata('m', 'b', 200, 'step_name on a platform')
     step_util.GetStepMetadata('m', 'b', 200, 'step_name on a platform')
-    self.assertTrue(mock_fn.call_count < 2)
+    self.assertTrue(mock_fn.call_count == 1)
+    step_util.GetStepMetadata('m', 'b', 201, 'step_name on a platform')
+    self.assertTrue(mock_fn.call_count == 2)
 
   @mock.patch.object(
       step_util,

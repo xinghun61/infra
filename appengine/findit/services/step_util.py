@@ -24,8 +24,11 @@ from waterfall import waterfall_config
 
 _HTTP_CLIENT = FinditHttpClient()
 
-# Caches metadata of a step for a week.
-_CACHE_EXPIRE_TIME_SECONDS = 7 * 24 * 60 * 60
+# Caches canonical name of a step for a week.
+_CANONICAL_NAME_CACHE_EXPIRE_TIME_SECONDS = 7 * 24 * 60 * 60
+
+# Caches metadata of a step in a specific build for 2 days.
+_METADATA_CACHE_EXPIRE_TIME_SECONDS = 2 * 24 * 60 * 60
 
 
 # TODO(crbug/804617): Modify this function to use new LUCI API when ready.
@@ -352,6 +355,23 @@ def GetStepLogForLuciBuild(build_id,
 
 
 def _StepMetadataKeyGenerator(func, args, kwargs, namespace=None):
+  """Generates a key to a cached step_metadata for a step in a specific build.
+
+  Args:
+    func (function): An arbitrary function.
+    args (list): Positional arguments passed to ``func``.
+    kwargs (dict): Keyword arguments passed to ``func``.
+    namespace (str): A prefix to the key for the cache.
+
+  Returns:
+    A string to represent a call to the given function with the given arguments.
+  """
+  params = inspect.getcallargs(func, *args, **kwargs)
+  encoded_params = [hashlib.md5(str(params[p])).hexdigest() for p in params]
+  return '%s-%s' % (namespace, '-'.join(encoded_params))
+
+
+def _CanonicalStepNameKeyGenerator(func, args, kwargs, namespace=None):
   """Generates a key to a cached canonical step name.
 
   Using the step_name as key, assuming it's practically not possible for 2 steps
@@ -393,14 +413,18 @@ def GetWaterfallBuildStepLog(master_name,
 @Cached(
     PickledMemCache(),
     namespace='step_metadata',
-    expire_time=_CACHE_EXPIRE_TIME_SECONDS,
-    key_generator=_StepMetadataKeyGenerator)
+    expire_time=_METADATA_CACHE_EXPIRE_TIME_SECONDS)
 def GetStepMetadata(master_name, builder_name, build_number, step_name):
   return GetWaterfallBuildStepLog(master_name,
                                   builder_name, build_number, step_name,
                                   FinditHttpClient(), 'step_metadata')
 
 
+@Cached(
+    PickledMemCache(),
+    namespace='step_metadata',
+    expire_time=_CANONICAL_NAME_CACHE_EXPIRE_TIME_SECONDS,
+    key_generator=_CanonicalStepNameKeyGenerator)
 def GetCanonicalStepName(master_name, builder_name, build_number, step_name):
   step_metadata = GetStepMetadata(master_name, builder_name, build_number,
                                   step_name)
