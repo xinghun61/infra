@@ -252,21 +252,25 @@ func TimeSinceBotTask(tr *swarming.SwarmingRpcsTaskResult) (*duration.Duration, 
 	switch tr.State {
 	case "RUNNING":
 		return &duration.Duration{}, nil
-	case "COMPLETED":
-		fallthrough
-	case "TIMED_OUT":
+	case "COMPLETED", "TIMED_OUT":
 		// TIMED_OUT tasks are considered to have completed as opposed to
 		// EXPIRED tasks, which set tr.AbandonedTs
-		fallthrough
-	case "KILLED":
 		ts, err := time.Parse(SwarmingTimeLayout, tr.CompletedTs)
 		if err != nil {
 			return nil, errors.Annotate(err, "swarming returned corrupted completed timestamp %s", tr.CompletedTs).Err()
 		}
 		return google.NewDuration(time.Now().Sub(ts)), nil
+	case "KILLED":
+		ts, err := time.Parse(SwarmingTimeLayout, tr.AbandonedTs)
+		if err != nil {
+			return nil, errors.Annotate(err, "swarming returned corrupted abandoned timestamp %s", tr.AbandonedTs).Err()
+		}
+		return google.NewDuration(time.Now().Sub(ts)), nil
+	case "BOT_DIED", "CANCELED", "EXPIRED", "NO_RESOURCE", "PENDING":
+		// These states do not indicate any actual run of a task on the dut.
+		break
 	default:
-		// Other states - BOT_DIED, CANCELED, EXPIRED, NO_RESOURCE and PENDING - do not indicate
-		// any actual run of a task on the dut.
+		return nil, fmt.Errorf("unknown swarming task state %s", tr.State)
 	}
 	return nil, nil
 }

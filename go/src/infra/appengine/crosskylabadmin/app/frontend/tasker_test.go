@@ -391,6 +391,8 @@ func TestTriggerRepairOnRepairFailed(t *testing.T) {
 				// and no task should be returned.
 
 				// TODO(pprabhu) Add a case where the initial repair task times out instead of completing.
+
+				// TODO(pprabhu) Add a case where the initial repair task is killed instead of completing.
 			})
 		})
 	})
