@@ -1,7 +1,7 @@
 'use strict';
 
 class SomAlertItem extends Polymer.mixinBehaviors(
-    [LinkifyBehavior, AlertTypeBehavior, TimeBehavior, TreeBehavior],
+    [LinkifyBehavior, AlertTypeBehavior, TimeBehavior],
     Polymer.Element) {
 
   static get is() {
@@ -100,13 +100,14 @@ class SomAlertItem extends Polymer.mixinBehaviors(
         type: Boolean,
         computed: '_computeHasUngroup(alert)',
       },
+      // _hasResolve and _hasUnresolve disabled.
       _hasResolve: {
         type: Boolean,
-        computed: '_computeHasResolve(treeName, alert)',
+        value: false,
       },
       _hasUnresolve: {
         type: Boolean,
-        computed: '_computeHasUnresolve(treeName, alert)',
+        value: false,
       },
       _isCollapsed: {
         type: Boolean,
@@ -199,14 +200,6 @@ class SomAlertItem extends Polymer.mixinBehaviors(
 
   _computeHasUngroup(alert) {
     return alert && !!alert.grouped;
-  }
-
-  _computeHasResolve(treeName, alert) {
-    return this._isCrOSTree(treeName) && !alert.resolved;
-  }
-
-  _computeHasUnresolve(treeName, alert) {
-    return this._isCrOSTree(treeName) && alert.resolved;
   }
 
   _linkBug(evt) {

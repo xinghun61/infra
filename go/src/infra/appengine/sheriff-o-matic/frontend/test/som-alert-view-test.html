@@ -114,77 +114,48 @@
     });
 
     test('ignores requests sent from stale trees', function(done) {
-      let oldUnresolvedRes = new window.Response(
+      let oldRes = new window.Response(
         '{"alerts": [{"key": "oldtreealert"}]}', {
         status: 200,
         headers: {
           'Content-type': 'application/json',
         }
       });
-      let resolveOldUnresolvedPromise;
-      let oldUnresolvedPromise = new Promise((resolve, reject) => {
-        resolveOldUnresolvedPromise = resolve;
+      let resolveOldPromise;
+      let oldPromise = new Promise((resolve, reject) => {
+        resolveOldPromise = resolve;
       });
 
-      let oldResolvedRes = new window.Response(
-        '{"resolved": [{"key": "oldtreeresolved"}]}', {
-        status: 200,
-        headers: {
-          'Content-type': 'application/json',
-        }
-      });
-      let resolveOldResolvedPromise;
-      let oldResolvedPromise = new Promise((resolve, reject) => {
-        resolveOldResolvedPromise = resolve;
-      });
-
-      let newUnresolvedRes = new window.Response(
+      let newRes = new window.Response(
         '{"alerts": [{"key": "newtreealert"}]}', {
         status: 200,
         headers: {
           'Content-type': 'application/json',
         }
       });
-      let resolveNewUnresolvedPromise;
-      let newUnresolvedPromise = new Promise((resolve, reject) => {
-        resolveNewUnresolvedPromise = resolve;
+      let resolveNewPromise;
+      let newPromise = new Promise((resolve, reject) => {
+        resolveNewPromise = resolve;
       });
+      window.fetch.onCall(0).returns(oldPromise);
+      window.fetch.onCall(1).returns(newPromise);
 
-      let newResolvedRes = new window.Response(
-        '{"resolved": [{"key": "newtreeresolved"}]}', {
-        status: 200,
-        headers: {
-          'Content-type': 'application/json',
-        }
-      });
-      let resolveNewResolvedPromise;
-      let newResolvedPromise = new Promise((resolve, reject) => {
-        resolveNewResolvedPromise = resolve;
-      });
-
-      window.fetch.onCall(0).returns(oldUnresolvedPromise);
-      window.fetch.onCall(1).returns(oldResolvedPromise);
-      window.fetch.onCall(2).returns(newUnresolvedPromise);
-      window.fetch.onCall(3).returns(newResolvedPromise);
-
-      // Use chromeos to request both unresolved and resolved.
-      element.tree = {'name': 'chromeos'};
-      assert.deepEqual(element._alertStreams, ['chromeos']);
-      assert.equal(2, window.fetch.callCount);
+      element.tree = {'name': 'chrome'};
+      assert.deepEqual(element._alertStreams, ['chrome']);
+      assert.equal(1, window.fetch.callCount);
 
       element.tree = {'name': 'newtree'};
       assert.deepEqual(element._alertStreams, ['newtree']);
-      assert.equal(3, window.fetch.callCount);
+      assert.equal(2, window.fetch.callCount);
 
-      resolveNewUnresolvedPromise(newUnresolvedRes);
+      resolveNewPromise(newRes);
       let expectedAlerts = {
         'newtree': [{'key': 'newtreealert', 'resolved': false}]
       };
       flush(() => {
         assert.deepEqual(element._alertsData, expectedAlerts);
 
-        resolveOldUnresolvedPromise(oldUnresolvedRes);
-        resolveOldResolvedPromise(oldResolvedRes);
+        resolveOldPromise(oldRes);
         flush(() => {
           assert.deepEqual(element._alertsData, expectedAlerts);
           done();
@@ -336,37 +307,6 @@
       });
     });
 
-    let crosExtension = {
-      'notes': [
-        'cros note1',
-        'cros note2',
-      ],
-      stages: [
-        {
-          'name': 'stage1',
-          'status': 'passed',
-          'links': [
-            {
-              'title': 'alert link1',
-              'href': 'http://locat',
-            },
-            {
-              'title': 'alert link2',
-              'href': 'http://locat2',
-            },
-          ],
-          'notes': [
-            'stage note1',
-            'stage note2',
-          ],
-        },
-        {
-          'name': 'stage2',
-          'status': 'failed',
-        },
-      ],
-    };
-
     let basicAlert = {
       'key': 'a basic key',
       'title': 'this is a title',
@@ -381,8 +321,6 @@
           'href': 'http://locat2',
         },
       ],
-      'type': 'cros-failure',
-      'extension': crosExtension,
     };
 
     let buildExtension = {
@@ -454,16 +392,6 @@
       });
     });
 
-    test('_searchAlert cros-failure', function(done) {
-      let pattern = 'stage2 failed';
-      let match = element._searchAlert(basicAlert, pattern);
-
-      flush(function() {
-        assert.isTrue(match);
-        done();
-      });
-    });
-
     test('_searchNotes', function(done) {
       let pattern = 'star';
       let notes = [
@@ -472,56 +400,6 @@
         'rocketstar',
       ];
       let match = element._searchNotes(notes, pattern);
-
-      flush(function() {
-        assert.isTrue(match);
-        done();
-      });
-    });
-
-    test('_searchCrosExtension no match', function(done) {
-      let pattern = 'cros note3';
-      let match = element._searchCrosExtension(crosExtension, pattern);
-
-      flush(function() {
-        assert.isFalse(match);
-        done();
-      });
-    });
-
-    test('_searchCrosExtension notes', function(done) {
-      let pattern = 'cros note2';
-      let match = element._searchCrosExtension(crosExtension, pattern);
-
-      flush(function() {
-        assert.isTrue(match);
-        done();
-      });
-    });
-
-    test('_searchCrosExtension stage status', function(done) {
-      let pattern = 'stage2 fail';
-      let match = element._searchCrosExtension(crosExtension, pattern);
-
-      flush(function() {
-        assert.isTrue(match);
-        done();
-      });
-    });
-
-    test('_searchCrosExtension stage links', function(done) {
-      let pattern = 'alert link2';
-      let match = element._searchCrosExtension(crosExtension, pattern);
-
-      flush(function() {
-        assert.isTrue(match);
-        done();
-      });
-    });
-
-    test('_searchCrosExtension stage notes', function(done) {
-      let pattern = 'stage note2';
-      let match = element._searchCrosExtension(crosExtension, pattern);
 
       flush(function() {
         assert.isTrue(match);

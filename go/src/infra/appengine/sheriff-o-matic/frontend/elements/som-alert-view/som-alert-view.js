@@ -7,7 +7,7 @@ const refreshDelayMs = 60 * 1000;
 const recentUngroupedResolvedMs = 24 * 3600 * 1000;
 
 class SomAlertView extends Polymer.mixinBehaviors(
-    [AnnotationManagerBehavior, AlertTypeBehavior, PostBehavior, TimeBehavior, TreeBehavior],
+    [AnnotationManagerBehavior, AlertTypeBehavior, PostBehavior, TimeBehavior],
     Polymer.Element) {
 
   static get is() {
@@ -296,10 +296,6 @@ class SomAlertView extends Polymer.mixinBehaviors(
 
       alertStreams.forEach((stream) => {
         let apis = ['unresolved'];
-        if (this._hasResolved(stream)) {
-          apis.push('resolved');
-        }
-
         for (let api of apis) {
           this._activeRequests += 1;
           let base = '/api/v1/' + api + '/';
@@ -701,14 +697,8 @@ class SomAlertView extends Polymer.mixinBehaviors(
       return false;
     }
 
-    if (alert.type == 'cros-failure') {
-      if (this._searchCrosExtension(alert.extension, re)) {
-        return true;
-      }
-    } else {
-      if (this._searchBuildExtension(alert.extension, re)) {
-        return true;
-      }
+    if (this._searchBuildExtension(alert.extension, re)) {
+      return true;
     }
 
     return false;
@@ -733,27 +723,6 @@ class SomAlertView extends Polymer.mixinBehaviors(
         }
       }
     }
-    return false;
-  }
-
-  _searchCrosExtension(extension, re) {
-    if (extension) {
-      if (this._searchNotes(extension.notes, re)) {
-        return true;
-      }
-
-      if (extension.stages) {
-        for (let stage of extension.stages) {
-          let name_status = stage.name + ' ' + stage.status;
-          if (name_status.match(re) ||
-              this._searchLinks(stage.links, re) ||
-              this._searchNotes(stage.notes, re)) {
-            return true;
-          }
-        }
-      }
-    }
-
     return false;
   }
 
@@ -925,13 +894,6 @@ class SomAlertView extends Polymer.mixinBehaviors(
       5: 'New failures',
       6: 'Idle builders',
       7: 'Offline builders',
-      // Chrome OS alerts
-      1000: 'CQ failures',
-      1001: 'PFQ failures',
-      1002: 'Canary failures',
-      1003: 'Release branch failures',
-      1004: 'Chrome PFQ informational failures',
-      1005: 'Chromium PFQ informational failures',
       // Special categories
       10000: 'Recently resolved alerts',
     }[category];
@@ -1045,10 +1007,6 @@ class SomAlertView extends Polymer.mixinBehaviors(
       return alert && alert.grouped;
     });
     return groups.length > 0;
-  }
-
-  _hasResolved(treeName) {
-    return this._isCrOSTree(treeName);
   }
 
   _handleUngroup(evt) {

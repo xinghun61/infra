@@ -4,7 +4,7 @@ const codeSearchURL = 'https://cs.chromium.org/';
 const testResultsURL = 'https://test-results.appspot.com/';
 
 class SomExtensionBuildFailure extends Polymer.mixinBehaviors(
-    [LinkifyBehavior, TreeBehavior, LayoutTestBuilderConfigsBehavior],
+    [LinkifyBehavior, LayoutTestBuilderConfigsBehavior],
     Polymer.Element) {
 
   static get is() {

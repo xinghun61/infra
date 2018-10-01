@@ -8,7 +8,6 @@
 <link rel="import" href="../../elements/som-annotation-manager-behavior.html">
 <link rel="import" href="../../elements/som-post-behavior.html">
 <link rel="import" href="../../elements/som-time-behavior.html">
-<link rel="import" href="../../elements/som-tree-behavior.html">
 
 <link rel="import" href="../../elements/som-header-styles.html">
 <link rel="import" href="../../elements/som-input-styles.html">
@@ -103,7 +102,7 @@
           Ungroup All</button>
         <button on-tap="_handleGroupBulk" hidden$="[[!_hasGroupAll(_checkedAlerts)]]">
           Group All</button>
-        <button on-tap="_handleResolveBulk">Resolve All</button>
+        <button on-tap="_handleResolveBulk" hidden>Resolve All</button>
       </div>
     </template>
     <iron-pages attr-for-selected="id" selected="[[_currentAlertView]]">

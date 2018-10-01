@@ -22,7 +22,6 @@ class SomDrawer extends Polymer.Element {
         value: {
           'android': 'android',
           'chromium': 'chrome',
-          'chromiumos': 'chromeosgardener',
           'chromium.perf': 'perfbot',
         },
       },
