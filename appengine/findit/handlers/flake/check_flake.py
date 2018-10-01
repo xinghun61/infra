@@ -226,7 +226,10 @@ def _GetDataPointInfo(data_point):
   # Include the age of the commit as a string.
   data_point_dict['committed_days_ago'] = (
       str(time_util.GetUTCNow() - commit_position_landed_time).split('.')[0]
-      if commit_position_landed_time else None)
+      if commit_position_landed_time else '')
+
+  # Include the best representative swarming task for display purposes.
+  data_point_dict['swarm_task'] = data_point.GetSwarmingTaskId()
 
   return data_point_dict
 
@@ -391,16 +394,25 @@ class CheckFlake(BaseHandler):
     return self.CreateRedirect(
         '/waterfall/flake?redirect=1&key=%s' % analysis.key.urlsafe())
 
+  def _HandleAnalyzeRecentCommit(self):  # pragma: no cover.
+    # TODO(crbug.com/889638): Implement handler.
+    return self.CreateError(
+        'Analyzing a recent commit position is not yet implemented', 403)
+
   @token.VerifyXSRFToken()
   def HandlePost(self):
     # Information needed to execute this endpoint, will be populated
     # by the branches below.
     rerun = self.request.get('rerun', '0').strip() == '1'
     cancel = self.request.get('cancel', '0').strip() == '1'
+    analyze_recent_commit = (
+        self.request.get('analyze_recent_commit', '0').strip() == '1')
     if rerun:  # Rerun an analysis.
       return self._HandleRerunAnalysis()
     elif cancel:  # Force an analysis to be cancelled.
       return self._HandleCancelAnalysis()
+    elif analyze_recent_commit:
+      return self._HandleAnalyzeRecentCommit()
     else:  # Regular POST requests to start an analysis.
       # If the key hasn't been specified, then we get the information from
       # other URL parameters.
@@ -588,11 +600,10 @@ class CheckFlake(BaseHandler):
 
     data['pass_rates'] = _GetCoordinatesData(analysis)
 
-    if self._ShowCustomRunOptions(analysis):  # pragma: no branch.
-      # Show the most up-to-date flakiness.
-      latest_data_point = analysis.GetLatestDataPoint()
-      if latest_data_point:
-        recent_flakiness_dict = _GetDataPointInfo(latest_data_point)
-        data['most_recent_flakiness'] = recent_flakiness_dict
+    # Show the most up-to-date flakiness.
+    latest_data_point = analysis.GetLatestDataPoint()
+    if latest_data_point:
+      recent_flakiness_dict = _GetDataPointInfo(latest_data_point)
+      data['most_recent_flakiness'] = recent_flakiness_dict
 
     return {'template': 'flake/result.html', 'data': data}

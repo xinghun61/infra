@@ -79,29 +79,26 @@
     </style>
     <!-- End style. -->
     <expandable-card>
-      <div id="header" slot="expandable-card-header" inner-h-t-m-l="[[_header]]"></div>
+      <div id="header" slot="expandable-card-header" inner-h-t-m-l="[[_computeAnalysisResults]]"></div>
       <div slot="expandable-card-content">
         <table>
-          <template is="dom-if" if="[[! culpritRevision]]">
-            <!--Show regression range if no culprit is found yet.-->
-            <tr>
-              <td class="description">Regression Range</td>
-              <td class="data">
-                <span class$="[[status]]">&nbsp;&nbsp;&nbsp;</span>
-                <template is="dom-if" if="[[regressionRangeFound(regressionRangeLower, regressionRangeUpper)]]">
-                  <a href$="https://crrev.com/[[regressionRangeLower]]..[[regressionRangeUpper]]?pretty=fuller">[[regressionRangeLower]]..[[regressionRangeUpper]]</a>
-                </template>
-                <template is="dom-if" if="[[onlyUpperBoundFound(regressionRangeLower, regressionRangeUpper)]]">
-                  ?..[[regressionRangeUpper]]
-                </template>
-                <template is="dom-if" if="[[flakeIsNotReproducible(regressionRangeLower, regressionRangeUpper)]]">
-                  unreproducible
-                </template>
-              </td>
-            </tr>
-          </template>
+          <tr>
+            <td class="description">Occurrence</td>
+            <td>
+              <table>
+                <tr>
+                  <td class="description">Build</td>
+                  <td class="data selectable"><a href="https://ci.chromium.org/buildbot/[[masterName]]/[[builderName]]/[[buildNumber]]">[[masterName]]/[[builderName]]/[[buildNumber]]</a></td>
+                </tr>
+                <tr>
+                  <td class="description">Step</td>
+                  <td class="data selectable">[[stepName]]</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
 
-          <!-- Show heuristic analysis results. -->
+          <!-- Show heuristic analysis results if any. -->
           <template is="dom-if" if="[[hasHeuristicAnalysisResults(heuristicAnalysisResults)]]">
             <tr>
               <td class="description">Heuristic Analysis</td>
@@ -113,36 +110,14 @@
             </tr>
           </template>
 
-          <!-- Show culprit information. -->
-          <template is="dom-if" if="[[culpritUrl]]">
-            <tr>
-              <td class="description">Culprit</td>
-              <td class="data">
-                <a href$="[[culpritUrl]]">[[culpritRevision]]</a>
-                <template is="dom-if" if="[[culpritConfidence]]">
-                  (Confidence [[culpritConfidence]]%)
-                </template>
-              </td>
-            </tr>
-          </template>
-
-          <!-- Show bug information and link. -->
-          <template is="dom-if" if="[[bugId]]">
-            <tr>
-              <td class="description">Bug</td>
-              <td class="data">
-                <a href$="https://crbug.com/[[bugId]]">[[bugId]]</a>
-              </td>
-            </tr>
-          </template>
-
-          <!-- Show error description. -->
+          <!-- Show error description if any. -->
           <template is="dom-if" if="[[hasError(status)]]">
             <tr>
               <td class="description">Error</td>
               <td class="data">[[error]]</td>
             </tr>
           </template>
+
         </table>
       </div>
     </expandable-card>
@@ -155,34 +130,35 @@
         is: 'flake-analysis-info',
 
         properties: {
+          // Flake occurrence info.
+          masterName: String,
+          builderName: String,
+          buildNumber: Number,
+          stepName: String,
+          testName: String,
+
+          // Analysis info.
           status: String,
           regressionRangeUpper: String,
           regressionRangeLower: String,
-
           heuristicAnalysisResults: Array,
-
           culpritUrl: String,
           culpritRevision: String,
           culpritConfidence: String,
-
           bugId: String,
-
           error: String,
 
-          _header: {
+          _computeAnalysisResults: {
             type: String,
-            computed: 'computeHeader(status, culpritUrl, culpritRevision, bugId)'
+            computed: 'computeAnalysisResults(status, culpritConfidence, culpritUrl, culpritRevision, bugId)'
           },
-
         },
 
-        // Computed properties.
-        computeHeader: function (status, culpritUrl, culpritRevision, bugId) {
+        computeAnalysisResults: function (status, culpritConfidence, culpritUrl, culpritRevision, bugId) {
           var extraInfo = "";
           var result = "";
           status = status.toLowerCase();
 
-          // Regression is finished, but culprit isn't done.
           if (status === "completed") {
             result = "Analysis completed.";
           } else if (status === "pending") {
@@ -193,14 +169,22 @@
             result = "Analysis running.";
           }
 
-          // Add extra information
+          // Add extra information.
           if (culpritUrl) {
             extraInfo += (" Culprit: <a href='" + culpritUrl + "'>" +
-                          culpritRevision + "</a>. ");
+                          culpritRevision + "</a> ");
+            extraInfo += "(Confidence " + culpritConfidence + "%).";
+          } else if (this.regressionRangeFound(this.regressionRangeLower, this.regressionRangeUpper)) {
+            extraInfo += " Regression range: ";
+            extraInfo += ("<a href='https://crrev.com/" + this.regressionRangeLower + ".." + this.regressionRangeUpper + "?pretty=fuller'>" +
+                          this.regressionRangeLower + ".." + this.regressionRangeUpper + ".</a>");
+          } else if (this.onlyUpperBoundFound(this.regressionRangeLower, this.regressionRangeUpper)) {
+            extraInfo += " Regression range: ";
+            extraInfo += "?.." + this.regressionRangeUpper;
           }
 
           if (this.flakeIsNotReproducible(this.regressionRangeLower, this.regressionRangeUpper)) {
-            extraInfo += "Unreproducible."
+            extraInfo += "Unreproducible.";
           }
 
           if (bugId) {

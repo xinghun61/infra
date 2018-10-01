@@ -504,133 +504,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     data_point1.task_ids = ['task_id1']
     data_point1.commit_position = 12345
     data_point1.git_hash = 'hash1'
-    analysis.data_points.append(data_point1)
-    data_point2 = DataPoint()
-    data_point2.build_number = 100
-    data_point2.pass_rate = 1.0
-    data_point2.task_ids = ['task_id2']
-    data_point2.commit_position = 12340
-    data_point2.git_hash = 'hash2'
-    analysis.data_points.append(data_point2)
-    analysis.status = analysis_status.RUNNING
-    analysis.suspected_flake_build_number = 100
-    analysis.updated_time = datetime.datetime(2016, 1, 1)
-    analysis.request_time = datetime.datetime(2016, 10, 01, 12, 10, 00)
-    analysis.start_time = datetime.datetime(2016, 10, 01, 12, 10, 05)
-    analysis.end_time = datetime.datetime(2016, 10, 01, 13, 10, 00)
-    analysis.pipeline_status_path = 'pipelinestatus'
-    analysis.Save()
-
-    response = self.test_app.get(
-        '/waterfall/flake',
-        params={
-            'key': analysis.key.urlsafe(),
-            'format': 'json'
-        })
-
-    expected_check_flake_result = {
-        'key':
-            analysis.key.urlsafe(),
-        'pass_rates': [[
-            12345, 0.9, '1', 100, 'git_hash_2', 12344, 'git_hash_1'
-        ]],
-        'master_name':
-            master_name,
-        'builder_name':
-            builder_name,
-        'build_number':
-            build_number - 1,
-        'step_name':
-            step_name,
-        'test_name':
-            test_name,
-        'request_time':
-            '2016-10-01 12:10:00 UTC',
-        'ended_days_ago':
-            '91 days, 10:50:00',
-        'duration':
-            '00:59:55',
-        'analysis_complete':
-            False,
-        'build_level_number':
-            2,
-        'revision_level_number':
-            0,
-        'error':
-            None,
-        'pending_time':
-            '00:00:05',
-        'suspected_flake': {
-            'build_number': 100,
-            'commit_position': 12345,
-            'git_hash': 'a_git_hash',
-            'triage_result': 0
-        },
-        'suspected_culprits': [],
-        'version_number':
-            1,
-        'show_admin_options':
-            False,
-        'culprit': {},
-        'last_attempted_swarming_task': {
-            'task_id': None,
-            'build_number': None
-        },
-        'last_attempted_try_job': {},
-        'pipeline_status_path':
-            'pipelinestatus',
-        'show_debug_options':
-            False,
-        'bug_id':
-            '',
-        'culprit_confidence':
-            '',
-        'culprit_revision':
-            '',
-        'culprit_url':
-            '',
-        'regression_range_lower':
-            12340,
-        'regression_range_upper':
-            12345
-    }
-
-    self.assertEqual(200, response.status_int)
-    self.assertDictContainsSubset(expected_check_flake_result,
-                                  response.json_body)
-
-  @mock.patch.object(CheckFlake, '_ShowCustomRunOptions', return_value=True)
-  @mock.patch.object(
-      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 1))
-  @mock.patch.object(
-      check_flake,
-      '_GetSuspectedFlakeInfo',
-      return_value={
-          'build_number': 100,
-          'commit_position': 12345,
-          'git_hash': 'a_git_hash',
-          'triage_result': 0
-      })
-  @mock.patch.object(
-      check_flake,
-      '_GetCoordinatesData',
-      return_value=[[12345, 0.9, '1', 100, 'git_hash_2', 12344, 'git_hash_1']])
-  def testViewExistingAnalysisDebugInfo(self, *_):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 123
-    step_name = 's'
-    test_name = 't'
-    success_rate = 0.9
-
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, build_number - 1, step_name, test_name)
-    data_point1 = DataPoint()
-    data_point1.build_number = 101
-    data_point1.pass_rate = success_rate
-    data_point1.task_ids = ['task_id1']
-    data_point1.commit_position = 12345
-    data_point1.git_hash = 'hash1'
     data_point1.commit_position_landed_time = datetime.datetime(2016, 12, 31)
     analysis.data_points.append(data_point1)
     data_point2 = DataPoint()
@@ -698,7 +571,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'version_number':
             1,
         'show_admin_options':
-            True,
+            False,
         'culprit': {},
         'last_attempted_swarming_task': {
             'task_id': None,
@@ -735,6 +608,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'iterations': None,
             'commit_position_landed_time': '2016-12-31 00:00:00',
             'task_ids': ['task_id1'],
+            'swarm_task': 'task_id1',
             'build_number': 101,
             'git_hash': 'hash1',
             'failed_swarming_task_attempts': 0,

@@ -1,0 +1,108 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="./../../components/expandable-card.html">
+
+<dom-module id="check-recent-flakiness">
+  <template>
+    <style>
+      :host {
+        display: inline-block;
+        width: 100%;
+
+        white-space: nowrap;
+      }
+
+      #header {
+        display: inline-block;
+        padding-top: 10px;
+        padding-bottom: 10px;
+
+        font-size: 16px;
+        font-weight: bold;
+        text-align: center;
+
+        color: black;
+
+        width: 90%;
+        overflow:hidden;
+      }
+
+      td {
+        padding: 0 10px;
+      }
+
+      tr:nth-child(odd) {
+        background-color: #f2f2f2;
+      }
+
+      .description {
+        font-weight: 500;
+        text-align: right;
+      }
+
+      .data {
+        color: darkslategrey;
+      }
+
+    </style>
+    <expandable-card>
+      <div id="header" slot="expandable-card-header">
+        <form action="/waterfall/flake" method="post">
+          <input type="hidden" name="analyze_recent_commit" value="1" />
+          <input type="hidden" name="key" value="[[key]]" />
+          <input type="hidden" name="xsrf_token" value="[[xsrfToken]]" />
+          <input type="submit" value="Analyze tip of tree"/>
+        </form>
+      </div>
+      <div slot="expandable-card-content">
+        <table>
+          <template is="dom-if" if="[[lastAnalyzedCommitPosition]]">
+            <tr>
+              <td class="description">Last Analyzed</td>
+              <td class="data"><a href$="https://crrev.com/[[lastAnalyzedCommitPosition]]">[[lastAnalyzedCommitPosition]]</a>
+                <template is="dom-if" if="[[committedDaysAgo]]">
+                  (landed [[committedDaysAgo]] ago)
+                </template>
+                <template is="dom-if" if="[[!committedDaysAgo]]">
+                  (unknown age)
+                </template>
+              </td>
+            </tr>
+
+            <tr>
+              <td class="description">Pass Rate</td>
+              <td class="data">[[passRate]]</td>
+            </tr>
+
+            <tr>
+              <td class="description">Swarm Task</td>
+              <td class="data">
+               <a href$="https://chromium-swarm.appspot.com/task?id=[[swarmTask]]">[[swarmTask]]</a>
+               </td>
+            </tr>
+          </template>
+
+        </table>
+      </div>
+    </expandable-card>
+  </template>
+  <script>
+    (function () {
+      'use strict';
+
+      Polymer({
+        is: 'check-recent-flakiness',
+
+        properties: {
+          key: String,
+          lastAnalyzedCommitPosition: Number,
+          committedDaysAgo: String,
+          passRate: String,
+          passCount: Number,
+          iterations: Number,
+          swarmTask: String,
+          xsrfToken: String,
+        },
+      });
+    })();
+  </script>
+</dom-module>

@@ -8,7 +8,7 @@
   <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
   <link rel="import" href="/ui/elements/findit-app.html">
   <link rel="import" href="/ui/elements/analysis/flake/flake-analysis-info.html">
-  <link rel="import" href="/ui/elements/analysis/flake/flake-test-info.html">
+  <link rel="import" href="/ui/elements/analysis/flake/check-recent-flakiness.html">
   <style type="text/css">
     /*Analysis running statuses.*/
 
@@ -97,17 +97,18 @@
       margin-right: 5px;
     }
 
-    flake-test-info {
-      outline: 1px solid #4285f4;
-      width: 45%;
-      min-width: 350px;
-      float: left;
-    }
-
     flake-analysis-info {
       outline: 1px solid #4285f4;
       width: 45%;
+      min-width: 400px;
+      max-width: 600px;
+      float: left;
+    }
+
+    check-recent-flakiness {
+      outline: 1px solid #4285f4;
       min-width: 350px;
+      max-width: 450px;
       float: right;
     }
 
@@ -433,16 +434,15 @@
 </head>
 
 <body>
-  <findit-app id="app">
+  <findit-app id="app" page-header="{{test_name}}">
 
     <!-- Test and analysis info -->
-    <flake-test-info master-name="{{master_name}}"
-                     builder-name="{{builder_name}}"
-                     build-number="{{build_number}}"
-                     step-name="{{step_name}}"
-                     test-name="{{test_name}}">
-    </flake-test-info>
-    <flake-analysis-info status="{{status}}"
+    <flake-analysis-info master-name="{{master_name}}"
+                         builder-name="{{builder_name}}"
+                         build-number="{{build_number}}"
+                         step-name="{{step_name}}"
+                         test-name="{{test_name}}"
+                         status="{{status}}"
                          regression-range-upper="{{regression_range_upper or ''}}"
                          regression-range-lower="{{regression_range_lower or ''}}"
                          heuristic-analysis-results="{{suspected_culprits|tojson}}"
@@ -452,6 +452,25 @@
                          bug-id="{{bug_id}}"
                          error="{{error or ''}}">
     </flake-analysis-info>
+    {% if show_admin_options %}
+      {% if most_recent_flakiness %}
+        <check-recent-flakiness last-analyzed-commit-position="{{most_recent_flakiness.commit_position}}"
+                                committed-days-ago="{{most_recent_flakiness.committed_days_ago}}"
+                                pass-rate="{{ '%0.1f%%' % (most_recent_flakiness.pass_rate * 100) }}"
+                                swarm-task="{{most_recent_flakiness.swarm_task}}"
+                                xsrf-token="{{xsrf_token}}"
+                                key="{{key}}">
+        </check-recent-flakiness>
+      {% else %}
+        <check-recent-flakiness last-analyzed-commit-position=""
+                                committed-days-ago=""
+                                pass-rate=""
+                                swarm-task=""
+                                xsrf-token="{{xsrf_token}}"
+                                key="{{key}}">
+        </check-recent-flakiness>
+      {% endif %}
+    {% endif %}
 
     <!-- Graph -->
     <div id="graph">
