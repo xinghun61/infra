@@ -1,0 +1,36 @@
+From 9131067547a21c7370634442ad3dee5afc561dcc Mon Sep 17 00:00:00 2001
+From: Dan Jacques <dnj@chromium.org>
+Date: Sun, 3 Sep 2017 15:00:32 -0700
+Subject: [PATCH 1/2] Update Python to build static modules.
+
+This includes:
+
+- Update the Modules "makesetup" script to accept assembly (".S") files
+  as source input.
+---
+ Modules/makesetup | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/Modules/makesetup b/Modules/makesetup
+index db5c47ee04..b13c12e46b 100644
+--- a/Modules/makesetup
++++ b/Modules/makesetup
+@@ -176,6 +176,7 @@ sed -e 's/[ 	]*#.*//' -e '/^[ 	]*$/d' |
+ 			*.c++)		srcs="$srcs $arg";;
+ 			*.cxx)		srcs="$srcs $arg";;
+ 			*.cpp)		srcs="$srcs $arg";;
++			*.S)		srcs="$srcs $arg";;
+ 			\$*)		libs="$libs $arg"
+ 					cpps="$cpps $arg";;
+ 			*.*)		echo 1>&2 "bad word $arg in $line"
+@@ -206,6 +207,7 @@ sed -e 's/[ 	]*#.*//' -e '/^[ 	]*$/d' |
+ 			*.cxx) obj=`basename $src .cxx`.o; cc='$(CXX)';;
+ 			*.cpp) obj=`basename $src .cpp`.o; cc='$(CXX)';;
+ 			*.m)   obj=`basename $src .m`.o; cc='$(CC)';; # Obj-C
++			*.S)   obj=`basename $src .S`.o; cc='$(CC)';;
+ 			*)     continue;;
+ 			esac
+ 			obj="$srcdir/$obj"
+-- 
+2.14.1.chromium11
+
