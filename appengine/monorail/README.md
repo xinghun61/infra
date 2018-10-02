@@ -49,8 +49,7 @@ Here's how to run Monorail locally for development on any unix system (not under
     1.  Make sure you've run `gclient runhooks`, which will install the correct versions of `node` and `npm`.
     1.  Run `npm install -g bower` to install Bower.
 1.  Run the app:
-    1.  You can use 'make serve', or
-    1.  Run the app with AppEngine dev_appserver.py with the command: `../../../google_appengine/dev_appserver.py --mysql_user=root app.yaml module-besearch.yaml`
+    1.  Run 'make serve'
 1.  Browse the app at localhost:8080 your browser.
 1.  Optional: Create/modify your Monorail User row in the database and make that user a site admin.
     1.  `UPDATE User SET is_site_admin = TRUE WHERE email = 'YOUR@EMAIL';`
