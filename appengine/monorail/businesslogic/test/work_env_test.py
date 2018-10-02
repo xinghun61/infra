@@ -683,6 +683,24 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual([issue], actual_open)
     self.assertEqual([other_issue], actual_closed)
 
+  def testListReferencedIssues_PreservesOrder(self):
+    ref_tuples = [('proj', i) for i in range(1, 10)]
+    # Duplicate some ref_tuples. The result should have no duplicated issues,
+    # with only the first occurrence being preserved.
+    ref_tuples += [('proj', 1), ('proj', 5)]
+    expected_open = [
+        fake.MakeTestIssue(789, i, 'sum', 'New', 111L) for i in range(1, 5)]
+    expected_closed = [
+        fake.MakeTestIssue(789, i, 'sum', 'Fixed', 111L) for i in range(5, 10)]
+    for issue in expected_open + expected_closed:
+      self.services.issue.TestAddIssue(issue)
+
+    with self.work_env as we:
+      actual_open, actual_closed = we.ListReferencedIssues(ref_tuples, 'proj')
+
+    self.assertEqual(expected_open, actual_open)
+    self.assertEqual(expected_closed, actual_closed)
+
   def testGetIssueByLocalID_Normal(self):
     """We can get an existing issue by project_id and local_id."""
     issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)

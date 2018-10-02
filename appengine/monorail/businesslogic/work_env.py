@@ -39,6 +39,7 @@ Responsibilities of the Services layer:
   - E.g., GAE search, GCS, monorail-predict
 """
 
+import collections
 import logging
 import time
 
@@ -793,7 +794,8 @@ class WorkEnv(object):
 
   def ListReferencedIssues(self, ref_tuples, default_project_name):
     """Return the specified issues."""
-    ref_tuples = list(set(ref_tuples))
+    # Make sure ref_tuples are unique, preserving order.
+    ref_tuples = list(collections.OrderedDict(zip(ref_tuples, ref_tuples)))
     ref_projects = self.services.project.GetProjectsByName(
         self.mc.cnxn,
         [(ref_pn or default_project_name) for ref_pn, _ in ref_tuples])
