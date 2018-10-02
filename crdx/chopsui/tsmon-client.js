@@ -75,13 +75,17 @@
       this._metrics = new Map();
       this._metricValues = new Map();
       this._flushIntervalMs = FLUSH_THRESHOLD_MS;
-      this._flushTimer = setTimeout(this._onFlush, this._flushIntervalMs);
+      this._flushTimer = setTimeout(() => {
+        this._onFlush();
+      }, this._flushIntervalMs);
       this._initTimeMs = new Date().getTime();
     }
 
     _onFlush() {
       this.flush();
-      this._flushTimer = setTimeout(this._onFlush, this._flushIntervalMs);
+      this._flushTimer = setTimeout(() => {
+        this._onFlush();
+      }, this._flushIntervalMs);
     }
 
     /** Returns the current time in milliseconds. */
@@ -89,17 +93,8 @@
       return new Date().getTime();
     }
 
-    /** Returns an xsrf token for requests to send metrics back to the server.
-      This is SoM-specific in its current state. Passing in via constructor
-      would be fine, so would subclassing and overriding xsrfToken() to do
-      something app-specific (custom token refresh logic, e.g.).
-    */
-    xsrfToken() {
-      return window.xsrfToken;
-    }
-
     /** Sends buffered metric measurements back to the server.
-     * The json format should conform to the expectations documented in
+     * The JSON format should conform to the expectations documented in
      * handler here: https://cs.chromium.org/chromium/infra/appengine_module/gae_ts_mon/handlers.py?rcl=b3905d5ec3cb71fd91ed4fbf97e1e7671cb9090f&l=113
     */
     flush() {
@@ -161,20 +156,30 @@
         rawMetricValues.push(rawMetricValue);
       }
 
-      fetch(this._reportPath, {
-        method: "POST",
-        credentials: "same-origin",
-        body: JSON.stringify({
-          metrics: rawMetricValues,
-          xsrf_token: this.xsrfToken()
-        })
-      })
+      this.fetchImpl(rawMetricValues)
         .then(resp => {
           window.console.log("ts_mon response", resp);
         })
         .catch(error => {
           window.console.error("Failed to report ts_mon metrics.", error);
         });
+    }
+
+    /**
+     * Override this method in a subclass to pass application-specific data
+     * like user IDs or XSRF tokens.
+     *
+     * @param {Array<Object>} an Array of raw metric values, defined in flush().
+     * @returns {Promise} a Promise that resolves an HTTP Response.
+     */
+    fetchImpl(rawMetricValues) {
+      return fetch(this._reportPath, {
+        method: "POST",
+        credentials: "same-origin",
+        body: JSON.stringify({
+          metrics: rawMetricValues,
+        }),
+      });
     }
 
     /**
@@ -421,7 +426,7 @@
       this.metadata = metadata;
     }
 
-    defalultValue() {
+    defaultValue() {
       return 0;
     }
   }
