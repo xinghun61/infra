@@ -105,7 +105,13 @@
     "vaadin-usage-statistics": "10b3fb3c02d46f01e4f10727c145f0e164dd317f",
     "web-animations-js": "a2dddad1c210c8abe5bc1c5a5e126e9946d44252",
     "web-component-tester": "1ddc0535aa436849e9653df6d4f9d93a6dc6d398",
-    "webcomponentsjs": "e97a592f9662af69970039ecf425d031373b6f57"
+    "webcomponentsjs": "e97a592f9662af69970039ecf425d031373b6f57",
+    "iron-autogrow-textarea": "e5cdb402561bfcfea17a24aae478cbd5ea4bf943",
+    "iron-a11y-announcer": "7e2c529fcb96582cb8c13905896fcf8496763966",
+    "iron-input": "72a4a9e898a4b825602eacd78944e8e25ee41f5c",
+    "iron-validatable-behavior": "4b6c1c53e44a3bbb31fcfd14ede2234645518c96",
+    "iron-behaviors": "a27b45bebb2af58506af77c377dab301bf7406ce",
+    "iron-form-element-behavior": "5583d5a614527d457af858e1b0a3422ba0270364"
   },
   "bowerLocker": {
     "lastUpdated": "2018-09-13T19:51:53.209Z",
