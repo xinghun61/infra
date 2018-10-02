@@ -45,7 +45,6 @@ type Build struct {
 	Blame            []string        `json:"blame"`
 	BuilderName      string          `json:"builderName"`
 	CreatedTimestamp EpochTime       `json:"created_timestamp"`
-	CurrentStep      CurrentStep     `json:"currentStep"`
 	Eta              EpochTime       `json:"eta"`
 	Logs             [][]string      `json:"logs"`
 	Number           int64           `json:"number"`
