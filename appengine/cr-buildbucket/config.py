@@ -151,7 +151,7 @@ def validate_settings_cfg(cfg, ctx):  # pragma: no cover
       swarmingcfg.validate_service_cfg(cfg.swarming, ctx)
 
 
-class Bucket(ndb.Model):
+class LegacyBucket(ndb.Model):
   """Stores project a bucket belongs to, and its ACLs.
 
   For historical reasons, some bucket names must match Chromium Buildbot master
@@ -169,6 +169,11 @@ class Bucket(ndb.Model):
   Entity key:
     Root entity. Id is bucket name.
   """
+
+  @classmethod
+  def _get_kind(cls):
+    return 'Bucket'
+
   # Version of entity schema. If not current, cron_update_buckets will update
   # the entity forcefully.
   entity_schema_version = ndb.IntegerProperty()
@@ -211,9 +216,11 @@ def get_buckets_async(names=None):
     List of (project_id, project_config_pb2.Bucket) tuples.
   """
   if names is None:
-    buckets = yield Bucket.query().fetch_async()
+    buckets = yield LegacyBucket.query().fetch_async()
   else:
-    buckets = yield ndb.get_multi_async([ndb.Key(Bucket, n) for n in names])
+    buckets = yield ndb.get_multi_async([
+        ndb.Key(LegacyBucket, n) for n in names
+    ])
 
   ret = []
   for b in buckets:
@@ -228,7 +235,7 @@ def get_buckets_async(names=None):
 @ndb.tasklet
 def get_bucket_async(name):
   """Returns a (project, project_config_pb2.Bucket) tuple."""
-  bucket = yield Bucket.get_by_id_async(name)
+  bucket = yield LegacyBucket.get_by_id_async(name)
   if bucket is None:
     raise ndb.Return(None, None)
   raise ndb.Return(
@@ -258,7 +265,7 @@ def _normalize_acls(acls):
 
 
 def put_bucket(project_id, revision, bucket_cfg):
-  Bucket(
+  LegacyBucket(
       id=bucket_cfg.name,
       entity_schema_version=CURRENT_BUCKET_SCHEMA_VERSION,
       project_id=project_id,
@@ -269,7 +276,7 @@ def put_bucket(project_id, revision, bucket_cfg):
 
 
 def cron_update_buckets():
-  """Synchronizes Bucket entities with configs fetched from luci-config.
+  """Synchronizes bucket entities with configs fetched from luci-config.
 
   When storing in the datastore, inlines the referenced ACL sets and clears
   the acl_sets message field. Also inlines swarmbucket builder defaults and
@@ -283,7 +290,7 @@ def cron_update_buckets():
   )
 
   to_delete = collections.defaultdict(set)  # project_id -> set of bucket names
-  for bucket in Bucket.query().fetch():
+  for bucket in LegacyBucket.query().fetch():
     # TODO(crbug.com/851036): use key only query when bucket id includes
     # project id
     to_delete[bucket.project_id].add(bucket.key.id())
@@ -304,7 +311,7 @@ def cron_update_buckets():
 
     for bucket_cfg in project_cfg.buckets:
       to_delete[project_id].discard(bucket_cfg.name)
-      bucket = Bucket.get_by_id(bucket_cfg.name)
+      bucket = LegacyBucket.get_by_id(bucket_cfg.name)
       if (bucket and
           bucket.entity_schema_version == CURRENT_BUCKET_SCHEMA_VERSION and
           bucket.project_id == project_id and bucket.revision == revision and
@@ -342,7 +349,7 @@ def cron_update_buckets():
 
       @ndb.transactional
       def update_bucket():
-        bucket = Bucket.get_by_id(bucket_cfg.name)
+        bucket = LegacyBucket.get_by_id(bucket_cfg.name)
         if (bucket and
             bucket.entity_schema_version == CURRENT_BUCKET_SCHEMA_VERSION and
             bucket.project_id == project_id and bucket.revision == revision and
@@ -360,7 +367,7 @@ def cron_update_buckets():
   to_delete_flat = sum([list(n) for n in to_delete.itervalues()], [])
   if to_delete_flat:
     logging.warning('Deleting buckets: %s', ', '.join(to_delete_flat))
-    ndb.delete_multi(ndb.Key(Bucket, n) for n in to_delete_flat)
+    ndb.delete_multi(ndb.Key(LegacyBucket, n) for n in to_delete_flat)
 
 
 def get_buildbucket_cfg_url(project_id):

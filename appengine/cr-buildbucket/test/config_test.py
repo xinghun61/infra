@@ -361,10 +361,10 @@ class ConfigTest(testing.AppengineTestCase):
 
     config.cron_update_buckets()
 
-    actual = config.Bucket.query().fetch()
+    actual = config.LegacyBucket.query().fetch()
     actual = sorted(actual, key=lambda b: b.key)
     expected = [
-        config.Bucket(
+        config.LegacyBucket(
             id='luci.chromium.try',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='chromium',
@@ -372,7 +372,7 @@ class ConfigTest(testing.AppengineTestCase):
             config_content=to_text(LUCI_CHROMIUM_TRY_CONFIG),
             config_content_binary=to_binary(LUCI_CHROMIUM_TRY_CONFIG),
         ),
-        config.Bucket(
+        config.LegacyBucket(
             id='luci.dart.try',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='dart',
@@ -380,7 +380,7 @@ class ConfigTest(testing.AppengineTestCase):
             config_content=to_text(LUCI_DART_TRY_CONFIG),
             config_content_binary=to_binary(LUCI_DART_TRY_CONFIG),
         ),
-        config.Bucket(
+        config.LegacyBucket(
             id='master.tryserver.chromium.linux',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='chromium',
@@ -390,7 +390,7 @@ class ConfigTest(testing.AppengineTestCase):
                 MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG
             ),
         ),
-        config.Bucket(
+        config.LegacyBucket(
             id='master.tryserver.chromium.win',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='chromium',
@@ -400,7 +400,7 @@ class ConfigTest(testing.AppengineTestCase):
                 MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG
             ),
         ),
-        config.Bucket(
+        config.LegacyBucket(
             id='master.tryserver.test',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='test',
@@ -408,7 +408,7 @@ class ConfigTest(testing.AppengineTestCase):
             config_content=to_text(MASTER_TRYSERVER_TEST_CONFIG),
             config_content_binary=to_binary(MASTER_TRYSERVER_TEST_CONFIG),
         ),
-        config.Bucket(
+        config.LegacyBucket(
             id='master.tryserver.v8',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='v8',
@@ -485,10 +485,10 @@ class ConfigTest(testing.AppengineTestCase):
 
     config.cron_update_buckets()
 
-    actual = config.Bucket.query().fetch()
+    actual = config.LegacyBucket.query().fetch()
     actual = sorted(actual, key=lambda b: b.key.id())
     expected = [
-        config.Bucket(
+        config.LegacyBucket(
             id='master.tryserver.chromium.linux',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='chromium',
@@ -498,7 +498,7 @@ class ConfigTest(testing.AppengineTestCase):
                 MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG
             ),
         ),
-        config.Bucket(
+        config.LegacyBucket(
             id='master.tryserver.chromium.mac',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='chromium',
@@ -508,7 +508,7 @@ class ConfigTest(testing.AppengineTestCase):
                 MASTER_TRYSERVER_CHROMIUM_MAC_CONFIG
             ),
         ),
-        config.Bucket(
+        config.LegacyBucket(
             id='master.tryserver.v8',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='v8',
@@ -535,7 +535,7 @@ class ConfigTest(testing.AppengineTestCase):
 
     # We must not delete buckets defined in a project that currently have a
     # broken config.
-    actual = config.Bucket.get_by_id(
+    actual = config.LegacyBucket.get_by_id(
         MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG.name
     )
     self.assertEqual(

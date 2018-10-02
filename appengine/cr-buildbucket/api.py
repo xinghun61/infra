@@ -105,7 +105,7 @@ def put_request_message_to_build_request(request):
 
 def put_request_messages_to_build_requests(requests):
   buckets = set(r.bucket for r in requests if r.bucket)
-  bucket_keys = [ndb.Key(config.Bucket, b) for b in buckets]
+  bucket_keys = [ndb.Key(config.LegacyBucket, b) for b in buckets]
   bucket_entities = dict(zip(buckets, ndb.get_multi(bucket_keys)))
   return [
       creation.BuildRequest(
@@ -726,7 +726,7 @@ class BuildBucketApi(remote.Service):
     """Returns bucket information."""
     if not user.can_access_bucket_async(request.bucket).get_result():
       raise user.current_identity_cannot('access bucket %s', request.bucket)
-    bucket = config.Bucket.get_by_id(request.bucket)
+    bucket = config.LegacyBucket.get_by_id(request.bucket)
     return BucketMessage(
         name=request.bucket,
         project_id=bucket.project_id,
