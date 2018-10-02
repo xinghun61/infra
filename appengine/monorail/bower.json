@@ -16,7 +16,6 @@
     "chai": "https://github.com/chaijs/chai.git#57c85f624a7e19ffaf1a2c7d07d81180db17bec7",
     "font-roboto": "https://github.com/PolymerElements/font-roboto.git#014b084ae51314648053e792cf6c870946942953",
     "iron-a11y-keys-behavior": "https://github.com/PolymerElements/iron-a11y-keys-behavior.git#b7e78a4a8bdd857780ecd8b54852bb27dbf8f216",
-    "iron-ajax": "https://github.com/PolymerElements/iron-ajax.git#923e2b523832b2b7ff8768afbbec695f87a2dfd7",
     "iron-collapse": "https://github.com/PolymerElements/iron-collapse.git#c39063e959bd80be79ef6ff0b4a080260ef13868",
     "iron-fit-behavior": "https://github.com/PolymerElements/iron-fit-behavior.git#1fb4d9a54bc29b53c50d70b5fceb3fa2fc68ba36",
     "iron-flex-layout": "https://github.com/PolymerElements/iron-flex-layout.git#67461d70607ca19d17b462b9a649c1585094f798",

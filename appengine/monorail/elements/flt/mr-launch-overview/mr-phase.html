@@ -1,6 +1,5 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 
-<link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../../../bower_components/chopsui/chops-dialog.html">
 
 <link rel="import" href="../../redux/selectors.html">
@@ -46,14 +45,6 @@
         padding: 0.1em 8px;
       }
     </style>
-    <template is="dom-if" if="[[target]]">
-      <iron-ajax
-          auto
-          url="https://chromepmo.appspot.com/schedule/mstone/json?mstone=[[target]]"
-          handle-as="json"
-          last-response="{{_milestoneData}}">
-      </iron-ajax>
-    </template>
     <h2>
       <span>
         Approvals<span hidden$="[[_isEmpty(phaseName)]]">:

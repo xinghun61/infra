@@ -37,16 +37,29 @@ class MrPhase extends MetadataMixin(ReduxMixin(Polymer.Element)) {
         type: String,
         value: '',
       },
-      // Possible values: Target, Approved, Launched
-      // TODO(zhangtiff): Compute this dynamically based on some attribute of
-      // the phase.
-      status: {
+      // Possible values: Target, Approved, Launched.
+      _status: {
         type: String,
-        value: 'Target',
+        computed: `_computeStatus(_targetMilestone, _approvedMilestone,
+          _launchedMilestone)`,
       },
-      target: {
+      _approvedMilestone: {
         type: Number,
-        computed: '_computeTarget(fieldValueMap, phaseName)',
+        computed: '_computeApprovedMilestone(fieldValueMap, phaseName)',
+      },
+      _launchedMilestone: {
+        type: Number,
+        computed: '_computeLaunchedMilestone(fieldValueMap, phaseName)',
+      },
+      _targetMilestone: {
+        type: Number,
+        computed: '_computeTargetMilestone(fieldValueMap, phaseName)',
+      },
+      _fetchedMilestone: {
+        type: Number,
+        computed: `_computeFetchedMilestone(_targetMilestone, _approvedMilestone,
+          _launchedMilestone)`,
+        observer: '_fetchMilestoneData',
       },
       approvals: Array,
       fieldDefs: {
@@ -61,12 +74,12 @@ class MrPhase extends MetadataMixin(ReduxMixin(Polymer.Element)) {
       _nextDate: {
         type: Number, // Unix time.
         computed: `_computeNextDate(
-          phaseName, status, _milestoneData.mstones)`,
+          phaseName, _status, _milestoneData.mstones)`,
         value: 0,
       },
       _dateDescriptor: {
         type: String,
-        computed: '_computeDateDescriptor(status)',
+        computed: '_computeDateDescriptor(_status)',
       },
       _setPhaseFields: {
         type: Array,
@@ -126,6 +139,7 @@ class MrPhase extends MetadataMixin(ReduxMixin(Polymer.Element)) {
   _computeNextDate(phaseName, status, data) {
     // Data pulled from https://chromepmo.appspot.com/schedule/mstone/json?mstone=xx
     if (!phaseName || !status || !data || !data.length) return 0;
+    data = data[0];
 
     let key = TARGET_PHASE_MILESTONE_MAP[phaseName];
     if (['Approved', 'Launched'].includes(status)) {
@@ -151,9 +165,49 @@ class MrPhase extends MetadataMixin(ReduxMixin(Polymer.Element)) {
     ));
   }
 
-  _computeTarget(fieldValueMap, phaseName) {
-    const targets = this._valuesForField(fieldValueMap, 'M-Target', phaseName);
-    return targets.length ? targets[0] : undefined;
+  _computeMilestoneFieldValue(fieldValueMap, phaseName, fieldName) {
+    const values = this._valuesForField(fieldValueMap, fieldName, phaseName);
+    return values.length ? values[0] : undefined;
+  }
+
+  _computeApprovedMilestone(fieldValueMap, phaseName) {
+    return this._computeMilestoneFieldValue(fieldValueMap, phaseName,
+      'M-Approved');
+  }
+
+  _computeLaunchedMilestone(fieldValueMap, phaseName) {
+    return this._computeMilestoneFieldValue(fieldValueMap, phaseName,
+      'M-Launched');
+  }
+
+  _computeTargetMilestone(fieldValueMap, phaseName) {
+    return this._computeMilestoneFieldValue(fieldValueMap, phaseName,
+      'M-Target');
+  }
+
+  _computeStatus(target, approved, launched) {
+    if (approved >= target) {
+      if (launched >= approved) {
+        return 'Launched';
+      }
+      return 'Approved';
+    }
+    return 'Target';
+  }
+
+  _computeFetchedMilestone(target, approved, launched) {
+    return Math.max(target || 0, approved || 0, launched || 0);
+  }
+
+  _fetchMilestoneData(milestone) {
+    if (!milestone) return;
+    // HACK. Eventually we want to create a less bespoke way of getting
+    // milestone metadata into Monorail.
+    window.fetch(
+      `https://chromepmo.appspot.com/schedule/mstone/json?mstone=${milestone}`
+    ).then((resp) => resp.json()).then((resp) => {
+      this._milestoneData = resp;
+    });
   }
 
   _isEmpty(str) {
