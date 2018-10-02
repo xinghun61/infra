@@ -54,7 +54,9 @@ from . import flatten_swarmingcfg
 from . import isolate
 from . import swarmingcfg as swarmingcfg_module
 from proto import build_pb2
+from proto import launcher_pb2
 from proto.config import project_config_pb2
+from v2 import tokens
 import annotations
 import buildtags
 import config
@@ -634,6 +636,14 @@ def _setup_swarming_request_task_slices(
   if len(task[u'task_slices']) != 1:
     raise errors.InvalidInputError(
         'base swarming task template can only have one task_slices'
+    )
+
+  if build.key:  # pragma: no branch
+    secrets = launcher_pb2.BuildSecrets(
+        build_token=tokens.generate_build_token(build.key.id()),
+    )
+    task['task_slices'][0]['properties']['secret_bytes'] = (
+        secrets.SerializeToString()
     )
 
   if builder_cfg.expiration_secs > 0:
