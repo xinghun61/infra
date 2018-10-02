@@ -3,10 +3,12 @@
 
 package account
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import vector "infra/qscheduler/qslib/types/vector"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	vector "infra/qscheduler/qslib/types/vector"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -50,7 +52,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_account_254740e2d2f9dda1, []int{0}
+	return fileDescriptor_2a30a156a0712643, []int{0}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -58,8 +60,8 @@ func (m *Config) XXX_Unmarshal(b []byte) error {
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -96,10 +98,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("infra/qscheduler/qslib/types/account/account.proto", fileDescriptor_account_254740e2d2f9dda1)
+	proto.RegisterFile("infra/qscheduler/qslib/types/account/account.proto", fileDescriptor_2a30a156a0712643)
 }
 
-var fileDescriptor_account_254740e2d2f9dda1 = []byte{
+var fileDescriptor_2a30a156a0712643 = []byte{
 	// 200 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x8e, 0xcd, 0x6a, 0x84, 0x30,
 	0x14, 0x46, 0x49, 0x4b, 0x2d, 0x8d, 0x50, 0x4a, 0x56, 0x52, 0x28, 0x48, 0x57, 0x2e, 0x8a, 0x29,

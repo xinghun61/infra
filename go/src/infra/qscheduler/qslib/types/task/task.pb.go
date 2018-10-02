@@ -3,11 +3,13 @@
 
 package task
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import timestamp "github.com/golang/protobuf/ptypes/timestamp"
-import vector "infra/qscheduler/qslib/types/vector"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	timestamp "github.com/golang/protobuf/ptypes/timestamp"
+	vector "infra/qscheduler/qslib/types/vector"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -39,7 +41,7 @@ func (m *Request) Reset()         { *m = Request{} }
 func (m *Request) String() string { return proto.CompactTextString(m) }
 func (*Request) ProtoMessage()    {}
 func (*Request) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_5cd6cfc45cf67bda, []int{0}
+	return fileDescriptor_d30de70d95288ebe, []int{0}
 }
 func (m *Request) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Request.Unmarshal(m, b)
@@ -47,8 +49,8 @@ func (m *Request) XXX_Unmarshal(b []byte) error {
 func (m *Request) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Request.Marshal(b, m, deterministic)
 }
-func (dst *Request) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Request.Merge(dst, src)
+func (m *Request) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Request.Merge(m, src)
 }
 func (m *Request) XXX_Size() int {
 	return xxx_messageInfo_Request.Size(m)
@@ -101,7 +103,7 @@ func (m *Run) Reset()         { *m = Run{} }
 func (m *Run) String() string { return proto.CompactTextString(m) }
 func (*Run) ProtoMessage()    {}
 func (*Run) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_5cd6cfc45cf67bda, []int{1}
+	return fileDescriptor_d30de70d95288ebe, []int{1}
 }
 func (m *Run) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Run.Unmarshal(m, b)
@@ -109,8 +111,8 @@ func (m *Run) XXX_Unmarshal(b []byte) error {
 func (m *Run) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Run.Marshal(b, m, deterministic)
 }
-func (dst *Run) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Run.Merge(dst, src)
+func (m *Run) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Run.Merge(m, src)
 }
 func (m *Run) XXX_Size() int {
 	return xxx_messageInfo_Run.Size(m)
@@ -155,10 +157,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("infra/qscheduler/qslib/types/task/task.proto", fileDescriptor_task_5cd6cfc45cf67bda)
+	proto.RegisterFile("infra/qscheduler/qslib/types/task/task.proto", fileDescriptor_d30de70d95288ebe)
 }
 
-var fileDescriptor_task_5cd6cfc45cf67bda = []byte{
+var fileDescriptor_d30de70d95288ebe = []byte{
 	// 278 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x90, 0xbf, 0x4e, 0xc3, 0x30,
 	0x10, 0xc6, 0x15, 0x52, 0x5a, 0xe2, 0x00, 0x83, 0x07, 0x14, 0x45, 0x42, 0x44, 0x59, 0xc8, 0x80,

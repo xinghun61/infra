@@ -3,13 +3,15 @@
 
 package scheduler
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import timestamp "github.com/golang/protobuf/ptypes/timestamp"
-import account "infra/qscheduler/qslib/types/account"
-import task "infra/qscheduler/qslib/types/task"
-import vector "infra/qscheduler/qslib/types/vector"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	timestamp "github.com/golang/protobuf/ptypes/timestamp"
+	account "infra/qscheduler/qslib/types/account"
+	task "infra/qscheduler/qslib/types/task"
+	vector "infra/qscheduler/qslib/types/vector"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -43,7 +45,7 @@ func (m *Worker) Reset()         { *m = Worker{} }
 func (m *Worker) String() string { return proto.CompactTextString(m) }
 func (*Worker) ProtoMessage()    {}
 func (*Worker) Descriptor() ([]byte, []int) {
-	return fileDescriptor_scheduler_8b502b0b99f47bfd, []int{0}
+	return fileDescriptor_9c9a368e1d01bf8a, []int{0}
 }
 func (m *Worker) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Worker.Unmarshal(m, b)
@@ -51,8 +53,8 @@ func (m *Worker) XXX_Unmarshal(b []byte) error {
 func (m *Worker) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Worker.Marshal(b, m, deterministic)
 }
-func (dst *Worker) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Worker.Merge(dst, src)
+func (m *Worker) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Worker.Merge(m, src)
 }
 func (m *Worker) XXX_Size() int {
 	return xxx_messageInfo_Worker.Size(m)
@@ -101,7 +103,7 @@ func (m *State) Reset()         { *m = State{} }
 func (m *State) String() string { return proto.CompactTextString(m) }
 func (*State) ProtoMessage()    {}
 func (*State) Descriptor() ([]byte, []int) {
-	return fileDescriptor_scheduler_8b502b0b99f47bfd, []int{1}
+	return fileDescriptor_9c9a368e1d01bf8a, []int{1}
 }
 func (m *State) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_State.Unmarshal(m, b)
@@ -109,8 +111,8 @@ func (m *State) XXX_Unmarshal(b []byte) error {
 func (m *State) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_State.Marshal(b, m, deterministic)
 }
-func (dst *State) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_State.Merge(dst, src)
+func (m *State) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_State.Merge(m, src)
 }
 func (m *State) XXX_Size() int {
 	return xxx_messageInfo_State.Size(m)
@@ -163,7 +165,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_scheduler_8b502b0b99f47bfd, []int{2}
+	return fileDescriptor_9c9a368e1d01bf8a, []int{2}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -171,8 +173,8 @@ func (m *Config) XXX_Unmarshal(b []byte) error {
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -201,10 +203,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("infra/qscheduler/qslib/scheduler/scheduler.proto", fileDescriptor_scheduler_8b502b0b99f47bfd)
+	proto.RegisterFile("infra/qscheduler/qslib/scheduler/scheduler.proto", fileDescriptor_9c9a368e1d01bf8a)
 }
 
-var fileDescriptor_scheduler_8b502b0b99f47bfd = []byte{
+var fileDescriptor_9c9a368e1d01bf8a = []byte{
 	// 455 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x92, 0x4f, 0x6f, 0xd3, 0x30,
 	0x18, 0xc6, 0x95, 0x96, 0x15, 0xfa, 0x76, 0xed, 0x86, 0x91, 0x50, 0x14, 0x09, 0xa8, 0x0a, 0x13,

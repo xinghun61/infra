@@ -3,10 +3,12 @@
 
 package simulation
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import timestamp "github.com/golang/protobuf/ptypes/timestamp"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	timestamp "github.com/golang/protobuf/ptypes/timestamp"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -42,7 +44,7 @@ func (m *Generator) Reset()         { *m = Generator{} }
 func (m *Generator) String() string { return proto.CompactTextString(m) }
 func (*Generator) ProtoMessage()    {}
 func (*Generator) Descriptor() ([]byte, []int) {
-	return fileDescriptor_state_acd3e38e0b5c919d, []int{0}
+	return fileDescriptor_e8df602498159471, []int{0}
 }
 func (m *Generator) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Generator.Unmarshal(m, b)
@@ -50,8 +52,8 @@ func (m *Generator) XXX_Unmarshal(b []byte) error {
 func (m *Generator) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Generator.Marshal(b, m, deterministic)
 }
-func (dst *Generator) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Generator.Merge(dst, src)
+func (m *Generator) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Generator.Merge(m, src)
 }
 func (m *Generator) XXX_Size() int {
 	return xxx_messageInfo_Generator.Size(m)
@@ -95,10 +97,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("infra/qscheduler/qslib/simulation/state.proto", fileDescriptor_state_acd3e38e0b5c919d)
+	proto.RegisterFile("infra/qscheduler/qslib/simulation/state.proto", fileDescriptor_e8df602498159471)
 }
 
-var fileDescriptor_state_acd3e38e0b5c919d = []byte{
+var fileDescriptor_e8df602498159471 = []byte{
 	// 224 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x44, 0xce, 0xbf, 0x4e, 0xc3, 0x30,
 	0x10, 0xc7, 0x71, 0x85, 0x7f, 0x22, 0x07, 0x0b, 0x66, 0x89, 0xca, 0x40, 0xc4, 0xd4, 0x05, 0x5b,

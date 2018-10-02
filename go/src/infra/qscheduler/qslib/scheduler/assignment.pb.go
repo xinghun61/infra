@@ -3,9 +3,11 @@
 
 package scheduler
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -21,7 +23,7 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 type Assignment_Type int32
 
 const (
-	// Assign a task to an currently idle worker.
+	// Assign a task to a currently idle worker.
 	Assignment_IDLE_WORKER Assignment_Type = 0
 	// Preempt a running task on a worker with a new task.
 	Assignment_PREEMPT_WORKER Assignment_Type = 1
@@ -31,6 +33,7 @@ var Assignment_Type_name = map[int32]string{
 	0: "IDLE_WORKER",
 	1: "PREEMPT_WORKER",
 }
+
 var Assignment_Type_value = map[string]int32{
 	"IDLE_WORKER":    0,
 	"PREEMPT_WORKER": 1,
@@ -39,8 +42,9 @@ var Assignment_Type_value = map[string]int32{
 func (x Assignment_Type) String() string {
 	return proto.EnumName(Assignment_Type_name, int32(x))
 }
+
 func (Assignment_Type) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_assignment_cab2e3439d9ddb31, []int{0, 0}
+	return fileDescriptor_fcbc6dd4eb727ef1, []int{0, 0}
 }
 
 // An Assignment represents a scheduler decision to assign a task
@@ -48,10 +52,10 @@ func (Assignment_Type) EnumDescriptor() ([]byte, []int) {
 type Assignment struct {
 	// Type describes which kind of assignment this represents.
 	Type Assignment_Type `protobuf:"varint,1,opt,name=type,proto3,enum=scheduler.Assignment_Type" json:"type,omitempty"`
-	// WorkerID of the worker to assign a new task to (and to preempt the previous
+	// WorkerId of the worker to assign a new task to (and to preempt the previous
 	// task of, if this is a PREEMPT_WORKER mutator).
 	WorkerId string `protobuf:"bytes,2,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
-	// RequestID of the task to assign to that worker.
+	// RequestId of the task to assign to that worker.
 	RequestId string `protobuf:"bytes,3,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	// Priority at which the task will run.
 	Priority             int32    `protobuf:"varint,4,opt,name=priority,proto3" json:"priority,omitempty"`
@@ -64,7 +68,7 @@ func (m *Assignment) Reset()         { *m = Assignment{} }
 func (m *Assignment) String() string { return proto.CompactTextString(m) }
 func (*Assignment) ProtoMessage()    {}
 func (*Assignment) Descriptor() ([]byte, []int) {
-	return fileDescriptor_assignment_cab2e3439d9ddb31, []int{0}
+	return fileDescriptor_fcbc6dd4eb727ef1, []int{0}
 }
 func (m *Assignment) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Assignment.Unmarshal(m, b)
@@ -72,8 +76,8 @@ func (m *Assignment) XXX_Unmarshal(b []byte) error {
 func (m *Assignment) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Assignment.Marshal(b, m, deterministic)
 }
-func (dst *Assignment) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Assignment.Merge(dst, src)
+func (m *Assignment) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Assignment.Merge(m, src)
 }
 func (m *Assignment) XXX_Size() int {
 	return xxx_messageInfo_Assignment.Size(m)
@@ -118,10 +122,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("infra/qscheduler/qslib/scheduler/assignment.proto", fileDescriptor_assignment_cab2e3439d9ddb31)
+	proto.RegisterFile("infra/qscheduler/qslib/scheduler/assignment.proto", fileDescriptor_fcbc6dd4eb727ef1)
 }
 
-var fileDescriptor_assignment_cab2e3439d9ddb31 = []byte{
+var fileDescriptor_fcbc6dd4eb727ef1 = []byte{
 	// 217 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x32, 0xcc, 0xcc, 0x4b, 0x2b,
 	0x4a, 0xd4, 0x2f, 0x2c, 0x4e, 0xce, 0x48, 0x4d, 0x29, 0xcd, 0x49, 0x2d, 0xd2, 0x2f, 0x2c, 0xce,

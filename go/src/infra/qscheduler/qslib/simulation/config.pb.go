@@ -3,10 +3,12 @@
 
 package simulation
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import duration "github.com/golang/protobuf/ptypes/duration"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	duration "github.com/golang/protobuf/ptypes/duration"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -49,7 +51,7 @@ func (m *Workload) Reset()         { *m = Workload{} }
 func (m *Workload) String() string { return proto.CompactTextString(m) }
 func (*Workload) ProtoMessage()    {}
 func (*Workload) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_d115cd02ff7d76b1, []int{0}
+	return fileDescriptor_b84ada0365982e8a, []int{0}
 }
 func (m *Workload) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Workload.Unmarshal(m, b)
@@ -57,8 +59,8 @@ func (m *Workload) XXX_Unmarshal(b []byte) error {
 func (m *Workload) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Workload.Marshal(b, m, deterministic)
 }
-func (dst *Workload) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Workload.Merge(dst, src)
+func (m *Workload) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Workload.Merge(m, src)
 }
 func (m *Workload) XXX_Size() int {
 	return xxx_messageInfo_Workload.Size(m)
@@ -116,10 +118,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("infra/qscheduler/qslib/simulation/config.proto", fileDescriptor_config_d115cd02ff7d76b1)
+	proto.RegisterFile("infra/qscheduler/qslib/simulation/config.proto", fileDescriptor_b84ada0365982e8a)
 }
 
-var fileDescriptor_config_d115cd02ff7d76b1 = []byte{
+var fileDescriptor_b84ada0365982e8a = []byte{
 	// 241 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x8e, 0xbd, 0x4e, 0xc3, 0x30,
 	0x14, 0x85, 0x15, 0x4a, 0xa3, 0xd6, 0x2c, 0x60, 0x31, 0x18, 0x24, 0x50, 0xc4, 0x94, 0xc9, 0x16,
