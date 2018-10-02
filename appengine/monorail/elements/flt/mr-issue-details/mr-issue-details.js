@@ -48,32 +48,59 @@ class MrIssueDetails extends ReduxMixin(Polymer.Element) {
     };
   }
 
-  _submitCommentHandler(comment) {
-    this._updateIssue(comment);
+  _submitCommentHandler(comment, files) {
+    this._updateIssue(comment, files);
   }
 
   _updateDescriptionHandler(content) {
     this._updateIssue(content, null, true);
   }
 
-  _updateIssue(commentData, delta, isDescription) {
-    const message = {
-      issueRef: {
-        projectName: this.projectName,
-        localId: this.issueId,
-      },
-      commentContent: commentData || '',
-    };
+  _loadLocalFile(f) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onloadend = () => {
+        resolve({filename: f.name, content: btoa(r.result)});
+      };
+      r.onerror = () => {
+        reject(r.error);
+      };
 
-    if (delta) {
-      message.delta = delta;
-    }
+      r.readAsBinaryString(f);
+    });
+  }
 
-    if (isDescription) {
-      message.isDescription = true;
-    }
+  _updateIssue(commentData, files, delta, isDescription) {
+    // Read file contents from local disk into binary strings, which
+    // we can pass to UpdateIssue as an AttachmentUpload message.
+    const loads = files.map((f) => {
+      return this._loadLocalFile(f);
+    });
 
-    actionCreator.updateIssue(this.dispatch.bind(this), message);
+    Promise.all(loads).then((uploads) => {
+      const message = {
+        trace: {token: this.token},
+        issueRef: {
+          projectName: this.projectName,
+          localId: this.issueId,
+        },
+        commentContent: commentData || '',
+        uploads: uploads,
+      };
+
+      if (delta) {
+        message.delta = delta;
+      }
+
+      if (isDescription) {
+        message.isDescription = true;
+      }
+      // TODO(seanmccullough): add state changes for updatingIssue so
+      // this can disable/re-enable fields while upload is in progress.
+      actionCreator.updateIssue(this.dispatch.bind(this), message);
+    }).catch((reason) => {
+      console.error('loading file for attachment: ', reason);
+    });
   }
 
   _filterComments(comments) {

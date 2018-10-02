@@ -41,6 +41,7 @@ class MrCompactComments extends Polymer.Element {
         computed: '_computeHideToggle(_commentsHiddenCount)',
       },
       _newCommentText: String,
+      _newCommentFiles: Array,
     };
   }
 
@@ -71,7 +72,7 @@ class MrCompactComments extends Polymer.Element {
 
   _submitComment() {
     if (this.onSubmitComment) {
-      this.onSubmitComment(this._newCommentText);
+      this.onSubmitComment(this._newCommentText, this._newCommentFiles);
     }
     this.$.commentText.value = '';
   }
