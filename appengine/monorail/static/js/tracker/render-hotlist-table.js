@@ -92,11 +92,16 @@ function createProjectCell(td, tableRow) {
   td.appendChild(aLink);
 }
 
-function createEditableNoteCell(td, cell, issueID, hotlistID) {
+function createEditableNoteCell(td, cell, projectName, localID, hotlistID) {
   var textBox = document.createElement('textarea');
-  setAttributes(textBox, {'id': 'itemnote-' + issueID,'placeholder': '---',
-                          'class': 'itemnote rowwidgets', 'issueid': issueID,
-                          'style': 'height:15px'})
+  setAttributes(textBox, {
+    'id': `itemnote_${projectName}_${localID}`,
+    'placeholder': '---',
+    'class': 'itemnote rowwidgets',
+    'projectname': projectName,
+    'localid': localID,
+    'style': 'height:15px',
+  });
   if (cell['values'].length > 0) {
     textBox.value = cell['values'][0]['item'];
   }
@@ -227,7 +232,9 @@ function renderHotlistRow(tableRow, pageSettings) {
       createSummaryCell(td, cell);
     } else if (cell['type'] == 'note') {
       if (pageSettings['ownerPerm'] || pageSettings['editorPerm']) {
-        createEditableNoteCell(td, cell, tableRow['issueID'], pageSettings['hotlistID']);
+        createEditableNoteCell(
+            td, cell, tableRow['projectName'], tableRow['localID'],
+            pageSettings['hotlistID']);
       }
       else {
         createSummaryCell(td, cell);

@@ -1543,25 +1543,21 @@ function setCurrentColSpec() {
 }
 
 
-function saveNote(textBox, hotlistID) {
-  var data = {'new_note': textBox.value,
-              'hotlist_ids': [hotlistID],
-              'iid': textBox.getAttribute('issueid')}
-  CS_doPost(hotlistID + '/updatenote.do', onUpdateNoteResponse, data);
-}
-
-function onUpdateNoteResponse(event) {
-  var xhr = event.target;
-    if (xhr.readyState != 4) {
-      return;
-    }
-    if (xhr.status != 200) {
-      window.console.error('200 page error')
-      // TODO(jojwang): fill this in more
-      return;
-    }
-  var response = CS_parseJSON(xhr);
-  $('itemnote-'+response['iid']).value = response['new_note'];
+async function saveNote(textBox, hotlistID) {
+  const projectName = textBox.getAttribute('projectname');
+  const localId = textBox.getAttribute('localid');
+  await window.prpcClient.call(
+      'monorail.Features', 'UpdateHotlistIssueNote', {
+          hotlistRef: {
+            hotlistId: hotlistID,
+          },
+          issueRef: {
+            projectName: textBox.getAttribute('projectname'),
+            localId: textBox.getAttribute('localid'),
+          },
+          note: textBox.value,
+  });
+  $(`itemnote_${projectName}_${localId}`).value = textBox.value;
 }
 
 // TODO(jojwang): monorail:4291, integrate this into autocomplete process
