@@ -27,7 +27,6 @@ from third_party import annotations_pb2
 
 from proto import build_pb2
 from proto import common_pb2
-from proto import launcher_pb2
 from proto import step_pb2
 from proto.config import project_config_pb2
 from proto.config import service_config_pb2
@@ -83,7 +82,6 @@ class SwarmingTest(BaseTest):
 
     self.json_response = None
     self.net_err_response = None
-    self.maxDiff = None
 
     def json_request_async(*_, **__):
       if self.net_err_response is not None:
@@ -625,11 +623,6 @@ class SwarmingTest(BaseTest):
         autospec=True,
         return_value=future(True)
     )
-    self.patch(
-        'v2.tokens.generate_build_token',
-        autospec=True,
-        return_value='beeff00d',
-    )
 
     build = mkBuild(
         parameters={
@@ -686,9 +679,6 @@ class SwarmingTest(BaseTest):
         'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/new'
     )
     actual_task_def = net.json_request_async.call_args[1]['payload']
-    expected_secret_bytes = (
-        launcher_pb2.BuildSecrets(build_token='beeff00d').SerializeToString()
-    )
     props_def = {
         'env': [{
             'key': 'BUILDBUCKET_EXPERIMENTAL',
@@ -746,8 +736,6 @@ class SwarmingTest(BaseTest):
             '-logdog-project',
             'chromium',
         ],
-        'secret_bytes':
-            expected_secret_bytes,
         'dimensions': [
             {'key': 'cores', 'value': '8'},
             {'key': 'os', 'value': 'Ubuntu'},
@@ -1086,12 +1074,6 @@ class SwarmingTest(BaseTest):
       swarming.create_task_async(build).get_result()
 
   def test_create_task_async_canary_template(self):
-    self.patch(
-        'v2.tokens.generate_build_token',
-        autospec=True,
-        return_value='beeff00d',
-    )
-
     build = mkBuild(
         parameters={
             model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
@@ -1134,9 +1116,6 @@ class SwarmingTest(BaseTest):
         'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/new'
     )
     actual_task_def = net.json_request_async.call_args[1]['payload']
-    expected_secret_bytes = (
-        launcher_pb2.BuildSecrets(build_token='beeff00d').SerializeToString()
-    )
     props_def = {
         'env': [{
             'key': 'BUILDBUCKET_EXPERIMENTAL',
@@ -1184,8 +1163,6 @@ class SwarmingTest(BaseTest):
             '-logdog-project',
             'chromium',
         ],
-        'secret_bytes':
-            expected_secret_bytes,
         'dimensions': [
             {'key': 'cores', 'value': '8'},
             {'key': 'os', 'value': 'Ubuntu'},
