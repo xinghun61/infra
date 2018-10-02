@@ -257,6 +257,17 @@ def _normalize_acls(acls):
       del acls[i]
 
 
+def put_bucket(project_id, revision, bucket_cfg):
+  Bucket(
+      id=bucket_cfg.name,
+      entity_schema_version=CURRENT_BUCKET_SCHEMA_VERSION,
+      project_id=project_id,
+      revision=revision,
+      config_content=protobuf.text_format.MessageToString(bucket_cfg),
+      config_content_binary=bucket_cfg.SerializeToString(),
+  ).put()
+
+
 def cron_update_buckets():
   """Synchronizes Bucket entities with configs fetched from luci-config.
 
@@ -338,14 +349,7 @@ def cron_update_buckets():
             bucket.config_content_binary):  # pragma: no coverage
           return
 
-        Bucket(
-            id=bucket_cfg.name,
-            entity_schema_version=CURRENT_BUCKET_SCHEMA_VERSION,
-            project_id=project_id,
-            revision=revision,
-            config_content=protobuf.text_format.MessageToString(bucket_cfg),
-            config_content_binary=bucket_cfg.SerializeToString(),
-        ).put()
+        put_bucket(project_id, revision, bucket_cfg)
         logging.info(
             'Updated bucket %s to revision %s', bucket_cfg.name, revision
         )

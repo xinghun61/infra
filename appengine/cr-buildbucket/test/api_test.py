@@ -20,6 +20,7 @@ from testing_utils import testing
 import mock
 import gae_ts_mon
 
+from proto.config import project_config_pb2
 from test import config_test
 from test.test_util import future, future_exception
 import api
@@ -62,15 +63,10 @@ class EndpointsApiTest(testing.EndpointsTestCase):
             'buildername': 'linux_rel',
         },
     )
-    self.test_bucket = config.Bucket(
-        id='chromium',
-        entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-        project_id='test',
-        revision='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        config_content='something',
-        config_content_binary='something',
+    self.project_id = 'test'
+    config.put_bucket(
+        self.project_id, 'a' * 40, project_config_pb2.Bucket(name='chromium')
     )
-    self.test_bucket.put()
 
   def expect_error(self, method_name, req, error_reason):
     res = self.call_api(method_name, req).json_body
@@ -124,7 +120,7 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     add_async.assert_called_once_with(
         creation.BuildRequest(
             bucket=self.test_build.bucket,
-            project=self.test_bucket.project_id,
+            project=self.project_id,
             tags=req['tags'],
             client_operation_id='42',
             pubsub_callback=model.PubSubCallback(
@@ -160,7 +156,7 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     add_async.assert_called_once_with(
         creation.BuildRequest(
             bucket=self.test_build.bucket,
-            project=self.test_bucket.project_id,
+            project=self.project_id,
             lease_expiration_date=self.future_date,
             tags=[],
         )
@@ -228,14 +224,9 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     self.test_build.tags = ['owner:ivan']
 
     build2 = model.Build(id=2, bucket='v8')
-    config.Bucket(
-        id='v8',
-        entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-        project_id=self.test_bucket.project_id,
-        revision="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        config_content="something",
-        config_content_binary="something",
-    ).put()
+    config.put_bucket(
+        self.project_id, 'a' * 40, project_config_pb2.Bucket(name='v8')
+    )
 
     add_many_async.return_value = future([
         (self.test_build,
@@ -262,13 +253,13 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     add_many_async.assert_called_once_with([
         creation.BuildRequest(
             bucket=self.test_build.bucket,
-            project=self.test_bucket.project_id,
+            project=self.project_id,
             tags=self.test_build.tags,
             client_operation_id='0',
         ),
         creation.BuildRequest(
             bucket=build2.bucket,
-            project=self.test_bucket.project_id,
+            project=self.project_id,
             tags=[],
             client_operation_id='1',
         ),
@@ -698,22 +689,16 @@ class EndpointsApiTest(testing.EndpointsTestCase):
   def test_get_bucket(self, get_buildbucket_cfg_url):
     get_buildbucket_cfg_url.return_value = 'https://example.com/buildbucket.cfg'
 
-    bucket_cfg = '''
+    bucket_cfg = config_test.parse_bucket_cfg(
+        '''
       name: "master.tryserver.chromium.linux"
       acls {
         role: READER
         identity: "anonymous:anonymous"
       }
     '''
-
-    config.Bucket(
-        id='master.tryserver.chromium.linux',
-        project_id='chromium',
-        revision='deadbeef',
-        config_content=bucket_cfg,
-        config_content_binary=config_test.text_to_binary(bucket_cfg),
-    ).put()
-
+    )
+    config.put_bucket('chromium', 'deadbeef', bucket_cfg)
     req = {
         'bucket': 'master.tryserver.chromium.linux',
     }
@@ -722,7 +707,7 @@ class EndpointsApiTest(testing.EndpointsTestCase):
         res, {
             'name': 'master.tryserver.chromium.linux',
             'project_id': 'chromium',
-            'config_file_content': bucket_cfg,
+            'config_file_content': config_test.to_text(bucket_cfg),
             'config_file_url': 'https://example.com/buildbucket.cfg',
             'config_file_rev': 'deadbeef',
         }

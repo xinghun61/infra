@@ -19,7 +19,17 @@ from proto.config import project_config_pb2
 from swarming import flatten_swarmingcfg
 import config
 
-LUCI_CHROMIUM_TRY_CONFIG_TEXT = (
+to_text = text_format.MessageToString
+to_binary = lambda msg: msg.SerializeToString()
+
+
+def parse_bucket_cfg(text):
+  cfg = project_config_pb2.Bucket()
+  text_format.Merge(text, cfg)
+  return cfg
+
+
+LUCI_CHROMIUM_TRY_CONFIG = parse_bucket_cfg(
     '''name: "luci.chromium.try"
 acls {
   group: "all"
@@ -38,7 +48,7 @@ swarming {
 '''
 )
 
-LUCI_DART_TRY_CONFIG_TEXT = (
+LUCI_DART_TRY_CONFIG = parse_bucket_cfg(
     '''name: "luci.dart.try"
 swarming {
   builders {
@@ -53,7 +63,7 @@ swarming {
 '''
 )
 
-MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT = (
+MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG = parse_bucket_cfg(
     '''name: "master.tryserver.chromium.linux"
 acls {
   group: "all"
@@ -65,7 +75,7 @@ acls {
 '''
 )
 
-MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT = (
+MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG = parse_bucket_cfg(
     '''name: "master.tryserver.chromium.win"
 acls {
   group: "all"
@@ -77,7 +87,7 @@ acls {
 '''
 )
 
-MASTER_TRYSERVER_CHROMIUM_MAC_CONFIG_TEXT = (
+MASTER_TRYSERVER_CHROMIUM_MAC_CONFIG = parse_bucket_cfg(
     '''name: "master.tryserver.chromium.mac"
 acls {
   group: "all"
@@ -89,7 +99,7 @@ acls {
 '''
 )
 
-MASTER_TRYSERVER_V8_CONFIG_TEXT = (
+MASTER_TRYSERVER_V8_CONFIG = parse_bucket_cfg(
     '''name: "master.tryserver.v8"
 acls {
   role: WRITER
@@ -98,7 +108,7 @@ acls {
 '''
 )
 
-MASTER_TRYSERVER_TEST_CONFIG_TEXT = (
+MASTER_TRYSERVER_TEST_CONFIG = parse_bucket_cfg(
     '''name: "master.tryserver.test"
 acls {
   role: WRITER
@@ -114,12 +124,6 @@ def parse_cfg(text):
   return cfg
 
 
-def text_to_binary(bucket_cfg_text):
-  cfg = project_config_pb2.Bucket()
-  text_format.Merge(bucket_cfg_text, cfg)
-  return cfg.SerializeToString()
-
-
 def errmsg(text):
   return validation_context.Message(severity=logging.ERROR, text=text)
 
@@ -127,15 +131,9 @@ def errmsg(text):
 class ConfigTest(testing.AppengineTestCase):
 
   def test_get_bucket(self):
-    config.Bucket(
-        id='master.tryserver.chromium.linux',
-        project_id='chromium',
-        revision='deadbeef',
-        config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
-        config_content_binary=text_to_binary(
-            MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT
-        ),
-    ).put()
+    config.put_bucket(
+        'chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG
+    )
     project, cfg = config.get_bucket('master.tryserver.chromium.linux')
     self.assertEqual(project, 'chromium')
     self.assertEqual(
@@ -157,15 +155,9 @@ class ConfigTest(testing.AppengineTestCase):
     self.assertIsNone(config.get_bucket('non.existing')[0])
 
   def test_get_bucket_async(self):
-    config.Bucket(
-        id='master.tryserver.chromium.linux',
-        project_id='chromium',
-        revision='deadbeef',
-        config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
-        config_content_binary=text_to_binary(
-            MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT
-        ),
-    ).put()
+    config.put_bucket(
+        'chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG
+    )
     project, cfg = config.get_bucket_async('master.tryserver.chromium.linux'
                                           ).get_result()
     self.assertEqual(project, 'chromium')
@@ -188,24 +180,12 @@ class ConfigTest(testing.AppengineTestCase):
     self.assertIsNone(config.get_bucket_async('non.existing').get_result()[0])
 
   def test_get_buckets_async(self):
-    config.Bucket(
-        id='master.tryserver.chromium.linux',
-        project_id='chromium',
-        revision='deadbeef',
-        config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
-        config_content_binary=text_to_binary(
-            MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT
-        )
-    ).put()
-    config.Bucket(
-        id='master.tryserver.chromium.win',
-        project_id='chromium',
-        revision='deadbeef',
-        config_content=MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT,
-        config_content_binary=text_to_binary(
-            MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT
-        )
-    ).put()
+    config.put_bucket(
+        'chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG
+    )
+    config.put_bucket(
+        'chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG
+    )
     actual = config.get_buckets_async().get_result()
     expected = [
         (
@@ -242,24 +222,12 @@ class ConfigTest(testing.AppengineTestCase):
     self.assertEqual(actual, expected)
 
   def test_get_buckets_async_with_names(self):
-    config.Bucket(
-        id='master.tryserver.chromium.linux',
-        project_id='chromium',
-        revision='deadbeef',
-        config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
-        config_content_binary=text_to_binary(
-            MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT
-        )
-    ).put()
-    config.Bucket(
-        id='master.tryserver.chromium.win',
-        project_id='chromium',
-        revision='deadbeef',
-        config_content=MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT,
-        config_content_binary=text_to_binary(
-            MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT
-        )
-    ).put()
+    config.put_bucket(
+        'chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG
+    )
+    config.put_bucket(
+        'chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG
+    )
     actual = config.get_buckets_async(['master.tryserver.chromium.linux']
                                      ).get_result()
     expected = [
@@ -401,25 +369,25 @@ class ConfigTest(testing.AppengineTestCase):
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='chromium',
             revision='deadbeef',
-            config_content=LUCI_CHROMIUM_TRY_CONFIG_TEXT,
-            config_content_binary=text_to_binary(LUCI_CHROMIUM_TRY_CONFIG_TEXT),
+            config_content=to_text(LUCI_CHROMIUM_TRY_CONFIG),
+            config_content_binary=to_binary(LUCI_CHROMIUM_TRY_CONFIG),
         ),
         config.Bucket(
             id='luci.dart.try',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='dart',
             revision='deadbeef',
-            config_content=LUCI_DART_TRY_CONFIG_TEXT,
-            config_content_binary=text_to_binary(LUCI_DART_TRY_CONFIG_TEXT),
+            config_content=to_text(LUCI_DART_TRY_CONFIG),
+            config_content_binary=to_binary(LUCI_DART_TRY_CONFIG),
         ),
         config.Bucket(
             id='master.tryserver.chromium.linux',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='chromium',
             revision='deadbeef',
-            config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
-            config_content_binary=text_to_binary(
-                MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT
+            config_content=to_text(MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG),
+            config_content_binary=to_binary(
+                MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG
             ),
         ),
         config.Bucket(
@@ -427,9 +395,9 @@ class ConfigTest(testing.AppengineTestCase):
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='chromium',
             revision='deadbeef',
-            config_content=MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT,
-            config_content_binary=text_to_binary(
-                MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT
+            config_content=to_text(MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG),
+            config_content_binary=to_binary(
+                MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG
             ),
         ),
         config.Bucket(
@@ -437,20 +405,16 @@ class ConfigTest(testing.AppengineTestCase):
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='test',
             revision='babe',
-            config_content=MASTER_TRYSERVER_TEST_CONFIG_TEXT,
-            config_content_binary=text_to_binary(
-                MASTER_TRYSERVER_TEST_CONFIG_TEXT
-            ),
+            config_content=to_text(MASTER_TRYSERVER_TEST_CONFIG),
+            config_content_binary=to_binary(MASTER_TRYSERVER_TEST_CONFIG),
         ),
         config.Bucket(
             id='master.tryserver.v8',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='v8',
             revision='sha1:cfc761d7a953a72ddea8f3d4c9a28e69777ca22c',
-            config_content=MASTER_TRYSERVER_V8_CONFIG_TEXT,
-            config_content_binary=text_to_binary(
-                MASTER_TRYSERVER_V8_CONFIG_TEXT
-            ),
+            config_content=to_text(MASTER_TRYSERVER_V8_CONFIG),
+            config_content_binary=to_binary(MASTER_TRYSERVER_V8_CONFIG),
         ),
     ]
     self.assertEqual(actual, expected)
@@ -509,37 +473,15 @@ class ConfigTest(testing.AppengineTestCase):
         'v8': ('deadbeef', v8_buildbucket_cfg, None),
     }
 
-    config.Bucket(
-        id='master.tryserver.chromium.linux',
-        project_id='chromium',
-        revision='deadbeef',
-        config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
-        config_content_binary=text_to_binary(
-            MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT
-        ),
-    ).put()
-
+    config.put_bucket(
+        'chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG
+    )
     # Will not be updated.
-    config.Bucket(
-        id='master.tryserver.v8',
-        entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-        project_id='v8',
-        revision='deadbeef',
-        config_content=MASTER_TRYSERVER_V8_CONFIG_TEXT,
-        config_content_binary=text_to_binary(MASTER_TRYSERVER_V8_CONFIG_TEXT),
-    ).put()
-
+    config.put_bucket('v8', 'deadbeef', MASTER_TRYSERVER_V8_CONFIG)
     # Will be deleted.
-    config.Bucket(
-        id='master.tryserver.chromium.win',
-        entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-        project_id='chromium',
-        revision='deadbeef',
-        config_content=MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT,
-        config_content_binary=text_to_binary(
-            MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT
-        ),
-    ).put()
+    config.put_bucket(
+        'chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG
+    )
 
     config.cron_update_buckets()
 
@@ -551,9 +493,9 @@ class ConfigTest(testing.AppengineTestCase):
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='chromium',
             revision='new!',
-            config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
-            config_content_binary=text_to_binary(
-                MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT
+            config_content=to_text(MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG),
+            config_content_binary=to_binary(
+                MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG
             ),
         ),
         config.Bucket(
@@ -561,9 +503,9 @@ class ConfigTest(testing.AppengineTestCase):
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='chromium',
             revision='new!',
-            config_content=MASTER_TRYSERVER_CHROMIUM_MAC_CONFIG_TEXT,
-            config_content_binary=text_to_binary(
-                MASTER_TRYSERVER_CHROMIUM_MAC_CONFIG_TEXT
+            config_content=to_text(MASTER_TRYSERVER_CHROMIUM_MAC_CONFIG),
+            config_content_binary=to_binary(
+                MASTER_TRYSERVER_CHROMIUM_MAC_CONFIG
             ),
         ),
         config.Bucket(
@@ -571,26 +513,17 @@ class ConfigTest(testing.AppengineTestCase):
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='v8',
             revision='deadbeef',
-            config_content=MASTER_TRYSERVER_V8_CONFIG_TEXT,
-            config_content_binary=text_to_binary(
-                MASTER_TRYSERVER_V8_CONFIG_TEXT
-            ),
+            config_content=to_text(MASTER_TRYSERVER_V8_CONFIG),
+            config_content_binary=to_binary(MASTER_TRYSERVER_V8_CONFIG),
         ),
     ]
     self.assertEqual(actual, expected)
 
   @mock.patch('components.config.get_project_configs', autospec=True)
   def test_cron_update_buckets_with_broken_configs(self, get_project_configs):
-    bucket = config.Bucket(
-        id='master.tryserver.chromium.linux',
-        project_id='chromium',
-        revision='deadbeef',
-        config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
-        config_content_binary=text_to_binary(
-            MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT
-        ),
+    config.put_bucket(
+        'chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG
     )
-    bucket.put()
 
     get_project_configs.return_value = {
         'chromium': (
@@ -602,8 +535,12 @@ class ConfigTest(testing.AppengineTestCase):
 
     # We must not delete buckets defined in a project that currently have a
     # broken config.
-    actual = bucket.key.get()
-    self.assertEqual(bucket, actual)
+    actual = config.Bucket.get_by_id(
+        MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG.name
+    )
+    self.assertEqual(
+        actual.config_content, to_text(MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG)
+    )
 
   def cfg_validation_test(self, cfg, expected_messages):
     ctx = config_component.validation.Context()

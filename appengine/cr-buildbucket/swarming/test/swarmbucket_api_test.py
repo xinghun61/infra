@@ -43,56 +43,48 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     auth.bootstrap_group('all', [auth.Anonymous])
     user.clear_request_cache()
 
-    chromium_cfg = '''
-      name: "luci.chromium.try"
-      acls {
-        role: SCHEDULER
-        group: "all"
-      }
-      swarming {
-        hostname: "swarming.example.com"
-        builders {
-          name: "linux_chromium_rel_ng"
-          category: "Chromium"
-          build_numbers: YES
-          recipe {
-            repository: "https://example.com"
-            name: "presubmit"
-            properties: "foo:bar"
-            properties_j: "baz:1"
+    chromium_cfg = config_test.parse_bucket_cfg(
+        '''
+          name: "luci.chromium.try"
+          acls {
+            role: SCHEDULER
+            group: "all"
           }
-          dimensions: "foo:bar"
-          dimensions: "baz:baz"
-          auto_builder_dimension: YES
-        }
-        builders {
-          name: "win_chromium_rel_ng"
-          category: "Chromium"
-        }
-      }
+          swarming {
+            hostname: "swarming.example.com"
+            builders {
+              name: "linux_chromium_rel_ng"
+              category: "Chromium"
+              build_numbers: YES
+              recipe {
+                repository: "https://example.com"
+                name: "presubmit"
+                properties: "foo:bar"
+                properties_j: "baz:1"
+              }
+              dimensions: "foo:bar"
+              dimensions: "baz:baz"
+              auto_builder_dimension: YES
+            }
+            builders {
+              name: "win_chromium_rel_ng"
+              category: "Chromium"
+            }
+          }
     '''
-    config.Bucket(
-        id='luci.chromium.try',
-        project_id='chromium',
-        revision='deadbeef',
-        config_content=chromium_cfg,
-        config_content_binary=config_test.text_to_binary(chromium_cfg),
-    ).put()
+    )
+    config.put_bucket('chromium', 'deadbeef', chromium_cfg)
 
-    v8_cfg = '''
+    v8_cfg = config_test.parse_bucket_cfg(
+        '''
       name: "luci.v8.try"
       acls {
         role: READER
         group: "all"
       }
     '''
-    config.Bucket(
-        id='luci.v8.try',
-        project_id='v8',
-        revision='deadbeef',
-        config_content=v8_cfg,
-        config_content_binary=config_test.text_to_binary(v8_cfg),
-    ).put()
+    )
+    config.put_bucket('v8', 'deadbeef', v8_cfg)
 
     props_def = {
         'execution_timeout_secs':
@@ -148,13 +140,9 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
 
   def test_get_builders(self):
     secret_cfg = 'name: "secret"'
-    config.Bucket(
-        id='secret',
-        project_id='secret',
-        revision='deadbeef',
-        config_content=secret_cfg,
-        config_content_binary=config_test.text_to_binary(secret_cfg),
-    ).put()
+    config.put_bucket(
+        'secret', 'deadbeef', config_test.parse_bucket_cfg(secret_cfg)
+    )
 
     resp = self.call_api('get_builders').json_body
     self.assertEqual(
@@ -203,13 +191,9 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         }
       }
     '''
-    config.Bucket(
-        id='luci.other.try',
-        project_id='other',
-        revision='deadbeef',
-        config_content=other_bucket,
-        config_content_binary=config_test.text_to_binary(other_bucket),
-    ).put()
+    config.put_bucket(
+        'other', 'deadbeef', config_test.parse_bucket_cfg(other_bucket)
+    )
 
     req = {
         'bucket': ['luci.chromium.try'],
