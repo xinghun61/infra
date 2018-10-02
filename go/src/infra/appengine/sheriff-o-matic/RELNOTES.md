@@ -1,3 +1,22 @@
+# Release Notes sheriff-o-matic 2018-10-02
+
+- 2 commits, 2 bugs affected since a2127a3 (2018-09-28T15:37:09Z)
+- 2 Authors:
+  - zhangtiff@google.com
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [SoM: Remove some ChromeOS specific logic.](https://chromium-review.googlesource.com/c/1241422) (zhangtiff@google.com)
+- [[som] Don't try to parse currentStep.](https://chromium-review.googlesource.com/c/1257275) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/879417](https://crbug.com/879417)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/887081](https://crbug.com/887081)
 
 # Release Notes sheriff-o-matic 2018-09-28
 
