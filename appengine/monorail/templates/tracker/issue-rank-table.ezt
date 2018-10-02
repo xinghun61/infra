@@ -24,12 +24,18 @@
 
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
-  var tableContainer = $('blocked-scrim');
-  var table = $('blocked-rank');
-  var links = $('blocked-links');
-  var issues = [[]];
-  var detailTemplate = $('ref-detail');
-  var linkTemplate = $('ref-link');
+  // TODO(bug): Remove EZT logic from JS.
+  // Constants with EZT values needed by JS, so there is separation between EZT
+  // and JS logic.
+  const CAN_EDIT_ISSUE = [if-any page_perms.EditIssue]true[else]false[end];
+  const PROJECT_NAME = '[issue.project_name]';
+  const ISSUE_LOCAL_ID = [issue.local_id];
+
+  const tableContainer = $('blocked-scrim');
+  const table = $('blocked-rank');
+  const links = $('blocked-links');
+  const detailTemplate = $('ref-detail');
+  const linkTemplate = $('ref-link');
 
   function createHeader(columns, opt_colspan) {
     var header = document.createElement('tr');
@@ -43,156 +49,168 @@ runOnLoad(function() {
     return header;
   }
 
-  var openHeader = createHeader(['', 'ID', 'Summary']);
-  var closedHeader = createHeader(['Closed issues:'], 3);
-  var danglingHeader = createHeader(['Codesite issues:'], 3);
+  const openHeader = createHeader(['', 'ID', 'Summary']);
+  const closedHeader = createHeader(['Closed issues:'], 3);
+  const danglingHeader = createHeader(['Codesite issues:'], 3);
 
-  function renderTable(issues) {
+  let danglingIssues = [];
+
+  function renderLink(a, issue, issueType) {
+    const host = issueType === 'dangling' ? 'https://code.google.com' : '';
+    a.href = `${host}/p/${issue.projectName}/issues/detail?id=${issue.localId}`;
+    a.title = `issue ${issue.localId}: ${issue.summary}`;
+    a.setAttribute('class', issueType === 'closed' ? 'closed_ref' : '');
+    a.textContent = `${issue.localId}`;
+    if (issueType === 'dangling' || issue.projectName !== PROJECT_NAME) {
+      a.textContent = `${issue.projectName}:` + a.textContent;
+    }
+  }
+
+  function renderLinkTemplate(issue, issueType) {
+    const t = document.importNode(linkTemplate.content, true);
+    const a = t.querySelector('a');
+    renderLink(a, issue, issueType);
+    a.textContent = 'issue ' + a.textContent;
+    return t;
+  }
+
+  function renderDetailTemplate(issue, issueType) {
+    const t = document.importNode(detailTemplate.content, true);
+    const a = t.querySelector('a');
+    renderLink(a, issue, issueType);
+    const tr = t.querySelector('tr');
+    tr.setAttribute('class', issueType === 'open' ? 'drag_item' : '');
+    tr.setAttribute('data-id', `${issue.projectName}_${issue.localId}`);
+    t.querySelector('td.ref_summary').textContent = issue.summary;
+    return t;
+  }
+
+  function renderTable(openIssues, closedIssues) {
     while (table.firstChild)
       table.removeChild(table.firstChild);
 
-    var openIssues = document.createElement('tbody');
-    var closedIssues = document.createElement('tbody');
-    var openDangling = document.createElement('tbody');
-    var closedDangling = document.createElement('tbody');
-    var t = detailTemplate;
-    var tr = t.content.querySelector('tr');
-    var a = t.content.querySelector('a');
+    $('blocked-title').textContent = 'Blocked on';
+    if (CAN_EDIT_ISSUE) {
+      $('blocked-title').textContent += ' (drag to re-order)';
+    }
 
-    issues.forEach(function(issue) {
-      if (issue.is_open && !issue.is_dangling) {
-        tr.setAttribute('data-id', issue.issue_id);
-        tr.setAttribute('class', 'drag_item');
-      } else if (!issue.is_open) {
-        tr.setAttribute('class', 'closed');
-      }
-      a.href = issue.url;
-      a.textContent = issue.issue_ref;
-      t.content.querySelector('td.ref_summary').textContent = issue.summary;
-      var clone = document.importNode(t.content, true);
-
-      if (issue.is_open && !issue.is_dangling) {
-        openIssues.appendChild(clone);
-      } else if (!issue.is_open && !issue.is_dangling) {
-        closedIssues.appendChild(clone);
-      } else if (issue.is_open) {
-        openDangling.appendChild(clone);
-      } else {
-        closedDangling.appendChild(clone);
-      }
-    });
-
-    if (openIssues.firstChild) {
+    if (openIssues) {
+      const openIssuesTbody = document.createElement('tbody');
+      openIssues.forEach(issue => {
+        openIssuesTbody.appendChild(renderDetailTemplate(issue, 'open'));
+      });
       table.appendChild(openHeader);
-      table.appendChild(openIssues);
+      table.appendChild(openIssuesTbody);
     }
-    if (closedIssues.firstChild) {
+
+    if (closedIssues) {
+      const closedIssuesTbody = document.createElement('tbody');
+      closedIssues.forEach(issue => {
+        closedIssuesTbody.appendChild(renderDetailTemplate(issue, 'closed'));
+      });
       table.appendChild(closedHeader);
-      table.appendChild(closedIssues);
+      table.appendChild(closedIssuesTbody);
     }
-    if (openDangling.firstChild || closedDangling.firstChild) {
+
+    if (danglingIssues) {
+      const danglingIssuesTbody = document.createElement('tbody');
+      danglingIssues.forEach(issue => {
+        issue.summary = `Issue ${issue.localId} in ${issue.projectName}.`;
+        danglingIssuesTbody.appendChild(
+            renderDetailTemplate(issue, 'dangling'));
+      });
       table.appendChild(danglingHeader);
-      table.appendChild(openDangling);
-      table.appendChild(closedDangling);
+      table.appendChild(danglingIssuesTbody);
+    }
+
+    if (CAN_EDIT_ISSUE) {
+      _initDragAndDrop(table, onRerank, true);
     }
   }
 
-  function renderIssueLinks(issues) {
+  function renderIssueLinks(openIssues, closedIssues) {
     while (links.firstChild)
       links.removeChild(links.firstChild);
 
-    var openIssues = document.createElement('div');
-    var closedIssues = document.createElement('div');
-    var t = linkTemplate;
-    var a = t.content.querySelector('a');
-
-    issues.forEach(function(issue) {
-      a.href = issue.url;
-      a.title = issue.display_name + ': ' + issue.summary;
-      a.textContent = issue.display_name;
-      if (issue.is_open) {
-        a.setAttribute('class', '');
-        openIssues.appendChild(document.importNode(t.content, true));
-      } else {
-        a.setAttribute('class', 'closed_ref')
-        closedIssues.appendChild(document.importNode(t.content, true));
-      }
-    });
-    links.appendChild(openIssues);
-    links.appendChild(closedIssues);
-  }
-
-  [if-any page_perms.EditIssue]
-
-  function onResponse(event) {
-    var xhr = event.target;
-    if (xhr.readyState != 4) {
-      return;
-    }
-    if (xhr.status != 200) {
-      reloadIssues(issues.slice());
-      alert(xhr.status + ': ' + xhr.statusText + '.\nPlease try again.');
-      return;
-    }
-    var response = CS_parseJSON(xhr);
-    reloadIssues(response.issues);
-    _initDragAndDrop(table, onRerank, true);
-  }
-
-  function onRerank(srcID, targetID, position) {
-    var data = {
-      parent_id: [issue.issue_id],
-      target_id: targetID,
-      moved_ids: srcID,
-      split_above: position == 'above',
-    }
-    CS_doPost('rerankBlockedOn.do', onResponse, data);
-  }
-
-  [end]
-
-  function reloadIssues(opt_issues) {
-    // clear old issues
-    while (issues.pop()) {}
-    if (typeof opt_issues === 'undefined') {
-      var data = {
-        parent_id: [issue.issue_id],
-      }
-      CS_doPost('rerankBlockedOn.do', function(event) {
-        var xhr = event.target;
-        if (xhr.readyState != 4)
-          return;
-        if (xhr.status != 200) {
-          table.textContent = 'Error loading detail. Please try again.'
-          return;
-        }
-        $('blocked-title').textContent = 'Blocked on[if-any page_perms.EditIssue] (drag to re-order)[end]:';
-        var resp = CS_parseJSON(xhr);
-        renderTable(resp.issues);
-        renderIssueLinks(resp.issues);
-        [if-any page_perms.EditIssue]
-          _initDragAndDrop(table, onRerank, true);
-        [end]
-        resp.issues.forEach(function(issue) {
-          issues.push(issue);
-        });
-      }, data, CS_env.token);
-    } else {
-      renderTable(opt_issues);
-      renderIssueLinks(opt_issues);
-      [if-any page_perms.EditIssue]
-        _initDragAndDrop(table, onRerank, true);
-      [end]
-      opt_issues.forEach(function(issue) {
-        issues.push(issue);
+    if (openIssues) {
+      const openIssuesDiv = document.createElement('div');
+      openIssues.forEach(issue => {
+        openIssuesDiv.appendChild(renderLinkTemplate(issue, 'open'));
       });
+      links.appendChild(openIssuesDiv);
+    }
+
+    if (closedIssues) {
+      const closedIssuesDiv = document.createElement('div');
+      closedIssues.forEach(issue => {
+        closedIssuesDiv.appendChild(renderLinkTemplate(issue, 'closed'));
+      });
+      links.appendChild(closedIssuesDiv);
+    }
+
+    if (danglingIssues) {
+      const danglingIssuesDiv = document.createElement('div');
+      danglingIssues.forEach(issue => {
+        issue.summary = `Issue ${issue.localId} in ${issue.projectName}.`;
+        danglingIssuesDiv.appendChild(renderLinkTemplate(issue, 'dangling'));
+      });
+      links.appendChild(danglingIssuesDiv);
     }
   }
 
-  $('show-ranks').addEventListener('click', function(e) {
-    reloadIssues();
+  async function onRerank(srcId, targetId, position) {
+    const movedIssueParts = srcId.split('_');
+    const targetIssueParts = targetId.split('_');
+    const rerankIssuesResponse = await window.prpcClient.call(
+        'monorail.Issues', 'RerankBlockedOnIssues', {
+            issue_ref: {
+              project_name: PROJECT_NAME,
+              local_id: ISSUE_LOCAL_ID,
+            },
+            moved_ref: {
+              project_name: movedIssueParts[[]0],
+              local_id: movedIssueParts[[]1],
+            },
+            target_ref: {
+              project_name: targetIssueParts[[]0],
+              local_id: targetIssueParts[[]1],
+            },
+            split_above: position == 'above',
+        });
+
+    const referencedIssuesResponse = await window.prpcClient.call(
+        'monorail.Issues', 'ListReferencedIssues', {
+            issue_refs: rerankIssuesResponse.blockedOnIssueRefs || [[]],
+        });
+
+    renderTable(
+        referencedIssuesResponse.openRefs, referencedIssuesResponse.closedRefs);
+    renderIssueLinks(
+        referencedIssuesResponse.openRefs, referencedIssuesResponse.closedRefs);
+  }
+
+  async function onShow() {
+    const getIssueResponse = await window.prpcClient.call(
+        'monorail.Issues', 'GetIssue', {
+            issue_ref: {
+              project_name: PROJECT_NAME,
+              local_id: ISSUE_LOCAL_ID,
+            },
+        });
+
+    const referencedIssuesResponse = await window.prpcClient.call(
+        'monorail.Issues', 'ListReferencedIssues', {
+            issue_refs: getIssueResponse.issue.blockedOnIssueRefs || [[]],
+        });
+
+    danglingIssues = getIssueResponse.issue.danglingBlockedOnRefs;
+
+    renderTable(
+        referencedIssuesResponse.openRefs, referencedIssuesResponse.closedRefs);
+    renderIssueLinks(
+        referencedIssuesResponse.openRefs, referencedIssuesResponse.closedRefs);
     tableContainer.style.display = '';
-  });
+  }
 
   function hideTable() {
     tableContainer.style.display = 'none';
@@ -205,7 +223,8 @@ runOnLoad(function() {
       hideTable();
   });
 
-  $('hide-ranks').addEventListener('click', hideTable);
+  $('show-ranks').addEventListener('click', onShow);
 
+  $('hide-ranks').addEventListener('click', hideTable);
 });
 </script>
