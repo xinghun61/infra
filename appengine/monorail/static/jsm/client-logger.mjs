@@ -174,6 +174,11 @@ export class ClientLogger {
       // And also end and report any labels they had running.
       for (let label in startEvent.labels) {
         elapsed = new Date().getTime() - startEvent.labels[label];
+
+        if (maxThresholdMs !== null && elapsed > maxThresholdMs) {
+          continue;
+        }
+
         ga('send', 'timing', {
           'timingCategory': this.category,
           'timingVar': eventName,
