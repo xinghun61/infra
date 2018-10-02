@@ -111,16 +111,20 @@ class TSMonJSHandler(webapp2.RequestHandler):
       self._metrics[metric.name] = metric
 
   def post(self):
-    """POST expects a JSON body that includes a dict of key: metric.name and
-    value: the value to which to set the metric.
+    """POST expects a JSON body that's a dict which includes a key "metrics".
+    This key's value is an array of objects with schema:
     {
-      metric_name: {
-        'value': value,
-        'fields': {
-          'your_defined_field': field_value,
+      "metrics": [{
+        "MetricInfo": {
+          "Name": "monorail/frontend/float_test",
+          "ValueType": 2
         },
-        'start_time': start_time_for_cumulative_metrics,
-      },
+        "Cells": [{
+          "value": 1,
+          "fields": {},
+          "start_time": 1538430628174
+        }]
+      }]
     }
 
     Important!
@@ -130,6 +134,7 @@ class TSMonJSHandler(webapp2.RequestHandler):
     if not self._metrics:
       self.response.set_status(400)
       self.response.write('No metrics have been registered.')
+      logging.warning('gae_ts_mon error: No metrics have been registered.')
       return
 
     try:
@@ -137,65 +142,90 @@ class TSMonJSHandler(webapp2.RequestHandler):
     except ValueError:
       self.response.set_status(400)
       self.response.write('Invalid JSON.')
+      logging.warning('gae_ts_mon error: Invalid JSON.')
       return
 
     if not self.xsrf_is_valid(body):
       self.response.set_status(403)
       self.response.write('XSRF token invalid.')
+      logging.warning('gae_ts_mon error: XSRF token invalid.')
       return
 
     if not isinstance(body, dict):
       self.response.set_status(400)
       self.response.write('Body must be a dictionary.')
+      logging.warning('gae_ts_mon error: Body must be a dictionary.')
       return
 
     if 'metrics' not in body:
       self.response.set_status(400)
       self.response.write('Key "metrics" must be in body.')
+      logging.warning('gae_ts_mon error: Key "metrics" must be in body.')
+      logging.warning('Request body: %s', body)
       return
 
-    for name, measurement in body.get('metrics', {}).iteritems():
+    for metric_measurement in body.get('metrics', []):
+      name = metric_measurement['MetricInfo']['Name']
       metric = self._metrics.get(name, None)
-      fields = measurement.get('fields', {})
-      value = measurement.get('value')
+
       if not metric:
         self.response.set_status(400)
         self.response.write('Metric "%s" is not defined.' % name)
+        logging.warning(
+            'gae_ts_mon error: Metric "%s" is not defined.', name)
         return
 
-      if set(fields.keys()) != set(fs.name for fs in metric.field_spec):
-        self.response.set_status(400)
-        self.response.write('Supplied fields do not match metric "%s".' % name)
-        return
+      for cell in metric_measurement.get('Cells', []):
+        fields = cell.get('fields', {})
+        value = cell.get('value')
 
-      start_time = measurement.get('start_time')
-      if metric.is_cumulative() and not start_time:
-        self.response.set_status(400)
-        self.response.write('Cumulative metrics must have start_time.')
-        return
-
-      if metric.is_cumulative() and not self._start_time_is_valid(start_time):
-        self.response.set_status(400)
-        self.response.write('Invalid start_time.')
-        return
-
-      # Convert distribution metric values into Distribution classes.
-      if (isinstance(metric, (metrics.CumulativeDistributionMetric,
-                              metrics.NonCumulativeDistributionMetric))):
-        if not isinstance(value, dict):
+        metric_field_keys = set(fs.name for fs in metric.field_spec)
+        if set(fields.keys()) != metric_field_keys:
           self.response.set_status(400)
-          self.response.write('Distribution metric values must be a dict.')
+          self.response.write('Supplied fields do not match metric "%s".' % name)
+          logging.warning(
+              'gae_ts_mon error: Supplied fields do not match metric "%s".',
+              name)
+          logging.warning('Supplied fields keys: %s', fields.keys())
+          logging.warning('Metric fields keys: %s', metric_field_keys)
           return
-        dist_value = distribution.Distribution(bucketer=metric.bucketer)
-        dist_value.sum = value.get('sum', 0)
-        dist_value.count = value.get('count', 0)
-        dist_value.buckets.update(value.get('buckets', {}))
-        metric.set(dist_value, fields=fields)
-      else:
-        metric.set(value, fields=fields)
 
-      if metric.is_cumulative():
-        metric.dangerously_set_start_time(measurement.get('start_time'))
+        start_time = cell.get('start_time')
+        if metric.is_cumulative() and not start_time:
+          self.response.set_status(400)
+          self.response.write('Cumulative metrics must have start_time.')
+          logging.warning(
+              'gae_ts_mon error: Cumulative metrics must have start_time.')
+          logging.warning('Metric name: %s', name)
+          return
+
+        if metric.is_cumulative() and not self._start_time_is_valid(start_time):
+          self.response.set_status(400)
+          self.response.write('Invalid start_time: %s.' % start_time)
+          logging.warning(
+              'gae_ts_mon error: Invalid start_time: %s.', start_time)
+          return
+
+        # Convert distribution metric values into Distribution classes.
+        if (isinstance(metric, (metrics.CumulativeDistributionMetric,
+                                metrics.NonCumulativeDistributionMetric))):
+          if not isinstance(value, dict):
+            self.response.set_status(400)
+            self.response.write('Distribution metric values must be a dict.')
+            logging.warning(
+                'gae_ts_mon error: Distribution metric values must be a dict.')
+            logging.warning('Metric value: %s', value)
+            return
+          dist_value = distribution.Distribution(bucketer=metric.bucketer)
+          dist_value.sum = value.get('sum', 0)
+          dist_value.count = value.get('count', 0)
+          dist_value.buckets.update(value.get('buckets', {}))
+          metric.set(dist_value, fields=fields)
+        else:
+          metric.set(value, fields=fields)
+
+        if metric.is_cumulative():
+          metric.dangerously_set_start_time(start_time)
 
     self.response.set_status(201)
     self.response.write('Ok.')

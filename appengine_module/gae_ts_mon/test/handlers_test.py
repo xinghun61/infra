@@ -180,14 +180,21 @@ class TSMonJSHandlerTest(test_case.TestCase):
   def test_post_metrics_unregistered_metric_name(self):
     """Test case when a metric name isn't registered."""
     self.request.body = json.dumps({
-      'metrics': {
-        'frontend/not_defined': {
-          'value': True,
-          'fields': {
-            'client_id': '789',
+      'metrics': [
+        {
+          'MetricInfo': {
+            'Name': 'frontend/not_defined',
+            'ValueType': 2,
           },
-        }
-      },
+          'Cells': [{
+            'value': 'rutabaga',
+            'fields': {
+              'client_id': '789',
+              'rutabaga_id': '789',
+            },
+          }],
+        },
+      ],
     })
     self.ts_mon_handler.post()
 
@@ -197,15 +204,21 @@ class TSMonJSHandlerTest(test_case.TestCase):
   def test_post_metrics_invalid_fields(self):
     """Test case when metric name is fine but fields are not."""
     self.request.body = json.dumps({
-      'metrics': {
-        'frontend/boolean_test': {
-          'value': True,
-          'fields': {
-            'client_id': '789',
-            'rutabaga_id': '789',
+      'metrics': [
+        {
+          'MetricInfo': {
+            'Name': 'frontend/boolean_test',
+            'ValueType': 2,
           },
+          'Cells': [{
+            'value': True,
+            'fields': {
+              'client_id': '789',
+              'rutabaga_id': '789',
+            },
+          }],
         },
-      },
+      ],
     })
     self.ts_mon_handler.post()
 
@@ -215,14 +228,20 @@ class TSMonJSHandlerTest(test_case.TestCase):
   def test_post_rejects_cumulative_without_start_time(self):
     """Test case where start_time is not supplied for CumulativeDistribution."""
     self.request.body = json.dumps({
-      'metrics': {
-        'frontend/cumulative_test': {
-          'value': 321,
-          'fields': {
-            'client_id': '789',
+      'metrics': [
+        {
+          'MetricInfo': {
+            'Name': 'frontend/cumulative_test',
+            'ValueType': 2,
           },
+          'Cells': [{
+            'value': 'rutabaga',
+            'fields': {
+              'client_id': '789',
+            },
+          }],
         },
-      },
+      ],
     })
     self.ts_mon_handler.register_metrics([
       metrics.CumulativeDistributionMetric(
@@ -237,15 +256,21 @@ class TSMonJSHandlerTest(test_case.TestCase):
   def test_post_rejects_start_time_in_future(self):
     """Test rejects when start_time is in the future."""
     self.request.body = json.dumps({
-      'metrics': {
-        'frontend/cumulative_test': {
-          'value': 321,
-          'fields': {
-            'client_id': '789',
+      'metrics': [
+        {
+          'MetricInfo': {
+            'Name': 'frontend/cumulative_test',
+            'ValueType': 2,
           },
-          'start_time': self.mock_timestamp + 1,
+          'Cells': [{
+            'value': 'rutabaga',
+            'fields': {
+              'client_id': '789',
+            },
+            'start_time': self.mock_timestamp + 1,
+          }],
         },
-      },
+      ],
     })
     self.ts_mon_handler.register_metrics([
       metrics.CumulativeDistributionMetric(
@@ -262,15 +287,21 @@ class TSMonJSHandlerTest(test_case.TestCase):
     """Test rejects when start_time is >1 month in the past."""
     one_month_seconds = 60*60*24*30
     self.request.body = json.dumps({
-      'metrics': {
-        'frontend/cumulative_test': {
-          'value': 321,
-          'fields': {
-            'client_id': '789',
+      'metrics': [
+        {
+          'MetricInfo': {
+            'Name': 'frontend/cumulative_test',
+            'ValueType': 2,
           },
-          'start_time': self.mock_timestamp - one_month_seconds * 2,
+          'Cells': [{
+            'value': 'rutabaga',
+            'fields': {
+              'client_id': '789',
+            },
+            'start_time': self.mock_timestamp - one_month_seconds * 2,
+          }],
         },
-      },
+      ],
     })
     self.ts_mon_handler.register_metrics([
       metrics.CumulativeDistributionMetric(
@@ -286,21 +317,21 @@ class TSMonJSHandlerTest(test_case.TestCase):
   def test_post_distribution_metrics_not_a_dict(self):
     """Test case when a distribution metric value is not a dict."""
     self.request.body = json.dumps({
-      'metrics': {
-        'frontend/boolean_test': {
-          'value': True,
-          'fields': {
-            'client_id': '789',
+      'metrics': [
+        {
+          'MetricInfo': {
+            'Name': 'frontend/cumulative_test',
+            'ValueType': 2,
           },
+          'Cells': [{
+            'value': 'rutabaga',
+            'fields': {
+              'client_id': '789',
+            },
+            'start_time': self.mock_timestamp - 60,
+          }],
         },
-        'frontend/cumulative_test': {
-          'value': 'rutabaga',
-          'fields': {
-            'client_id': '789',
-          },
-          'start_time': self.mock_timestamp - 60,
-        },
-      },
+      ],
     })
     self.ts_mon_handler.register_metrics([
       metrics.CumulativeDistributionMetric(
@@ -316,29 +347,40 @@ class TSMonJSHandlerTest(test_case.TestCase):
   def test_post_metrics_normal(self):
     """Test successful POST case."""
     self.request.body = json.dumps({
-      'metrics': {
-        'frontend/boolean_test': {
-          'value': True,
-          'fields': {
-            'client_id': '789',
+      'metrics': [
+        {
+          'MetricInfo': {
+            'Name': 'frontend/boolean_test',
+            'ValueType': 2,
           },
-        },
-        'frontend/cumulative_test': {
-          'value': {
-            'sum': 1234,
-            'count': 4321,
-            'buckets': {
-              0: 123,
-              1: 321,
-              2: 213,
+          'Cells': [{
+            'value': True,
+            'fields': {
+              'client_id': '789',
             },
+          }],
+        }, {
+          'MetricInfo': {
+            'Name': 'frontend/cumulative_test',
+            'ValueType': 2,
           },
-          'fields': {
-            'client_id': '789',
-          },
-          'start_time': self.mock_timestamp - 60,
+          'Cells': [{
+            'value': {
+              'sum': 1234,
+              'count': 4321,
+              'buckets': {
+                0: 123,
+                1: 321,
+                2: 213,
+              },
+            },
+            'fields': {
+              'client_id': '789',
+            },
+            'start_time': self.mock_timestamp - 60,
+          }],
         },
-      },
+      ],
     })
     self.ts_mon_handler.register_metrics([
       metrics.CumulativeDistributionMetric(

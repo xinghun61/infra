@@ -25,8 +25,12 @@ class MonorailTSMonJSHandlerTest(unittest.TestCase):
     _mockTime.return_value = 1537821859
     req = webapp2.Request.blank('/_/ts_mon_js')
     req.body = json.dumps({
-      'metrics': {
-        'monorail/frontend/issue_update_latency': {
+      'metrics': [{
+        'MetricInfo': {
+          'Name': 'monorail/frontend/issue_update_latency',
+          'ValueType': 2,
+        },
+        'Cells': [{
           'value': {
             'sum': 1234,
             'count': 4321,
@@ -40,8 +44,8 @@ class MonorailTSMonJSHandlerTest(unittest.TestCase):
             'client_id': '789',
           },
           'start_time': 1537821859 - 60,
-        },
-      },
+        }],
+      }],
     })
     res = webapp2.Response()
     ts_mon_handler = MonorailTSMonJSHandler(request=req, response=res)
