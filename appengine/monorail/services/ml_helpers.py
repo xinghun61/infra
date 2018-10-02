@@ -17,8 +17,8 @@ import re
 import sys
 
 from apiclient.discovery import build
-from oauth2client.client import GoogleCredentials
 from apiclient.errors import Error as ApiClientError
+from oauth2client.client import GoogleCredentials
 from oauth2client.client import Error as Oauth2ClientError
 
 
