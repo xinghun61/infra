@@ -94,26 +94,3 @@ class ProjectCreateTest(unittest.TestCase):
     mr.auth.user_pb.project_creation_limit.lifetime_count = 91
     help_data = self.servlet.GatherHelpData(mr, {})
     self.assertEqual(9, help_data['cue_remaining_projects'])
-
-
-class CheckProjectNameJSONTest(unittest.TestCase):
-  def setUp(self):
-    services = service_manager.Services(project=fake.ProjectService())
-    self.project = services.project.TestAddProject('proj')
-    self.servlet = projectcreate.CheckProjectNameJSON(
-        'req', 'res', services=services)
-
-  def testHandleRequestNameTaken(self):
-    mr = testing_helpers.MakeMonorailRequest(
-        project=self.project, user_info={'user_id': 222L}, method='POST',
-        params={'project': self.project.project_name})
-    json_data = self.servlet.HandleRequest(mr)
-    self.assertEqual('That project name is not available.',
-                     json_data['error_message'])
-
-  def testHandleRequestNameNotTaken(self):
-    mr = testing_helpers.MakeMonorailRequest(
-        project=self.project, user_info={'user_id': 222L}, method='POST',
-        params={'project': 'not-taken'})
-    json_data = self.servlet.HandleRequest(mr)
-    self.assertEqual('', json_data['error_message'])

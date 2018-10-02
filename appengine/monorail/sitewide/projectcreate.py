@@ -188,21 +188,3 @@ class ProjectCreate(servlet.Servlet):
       # Go to the new project's introduction page.
       return framework_helpers.FormatAbsoluteURL(
           mr, urls.ADMIN_INTRO, project_name=project_name)
-
-
-class CheckProjectNameJSON(jsonfeed.JsonFeed):
-  """JSON data for handling project name checks when creating a project."""
-
-  def HandleRequest(self, mr):
-    """Provide the UI with info about the availability of the project name.
-
-    Args:
-      mr: common information parsed from the HTTP request.
-
-    Returns:
-      Results dictionary in JSON format.
-    """
-    if self.services.project.LookupProjectIDs(mr.cnxn, [mr.specified_project]):
-      return {'error_message': _MSG_PROJECT_NAME_NOT_AVAIL}
-
-    return {'error_message': ''}

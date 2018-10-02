@@ -174,31 +174,6 @@ class FieldCreate(servlet.Servlet):
         mr, urls.ADMIN_LABELS, saved=1, ts=int(time.time()))
 
 
-class CheckFieldNameJSON(jsonfeed.JsonFeed):
-  """JSON data for handling name checks when creating a field."""
-
-  def HandleRequest(self, mr):
-    """Provide the UI with info about the availability of the field name.
-
-    Args:
-      mr: common information parsed from the HTTP request.
-
-    Returns:
-      Results dictionary in JSON format.
-    """
-    field_name = mr.GetParam('field')
-    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
-    choices = ExistingEnumChoices(field_name, config)
-    choices_dicts = [dict(name=choice.name_padded, doc=choice.docstring)
-                     for choice in choices]
-    message = FieldNameErrorMessage(field_name, config)
-
-    return {
-        'error_message': message,
-        'choices': choices_dicts,
-        }
-
-
 def FieldNameErrorMessage(field_name, config):
   """Return an error message for the given field name, or None."""
   field_name_lower = field_name.lower()
@@ -215,12 +190,3 @@ def FieldNameErrorMessage(field_name, config):
       return 'That name is a prefix of an existing field name.'
 
   return None
-
-
-def ExistingEnumChoices(field_name, config):
-  """Return a list of existing label choices for the given prefix."""
-  # If there are existing labels with that prefix, then it must be enum.
-  # The existing labels will be treated as field values.
-  choices = tracker_helpers.LabelsMaskedByFields(
-      config, [field_name], trim_prefix=True)
-  return choices

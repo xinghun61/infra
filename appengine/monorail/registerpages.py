@@ -24,7 +24,6 @@ from features import userhotlists
 from features import inboundemail
 from features import notify
 from features import rerankhotlist
-from features import updatehotlistitems
 from features import savedqueries
 from features import spammodel
 from features import spamtraining
@@ -92,7 +91,6 @@ from tracker import issuelist
 from tracker import issuelistcsv
 from tracker import issueoriginal
 from tracker import issuereindex
-from tracker import issuererank
 from tracker import issuetips
 from tracker import spam
 from tracker import templatecreate
@@ -239,10 +237,8 @@ class ServletRegistry(object):
         urls.ISSUE_ATTACHMENT: issueattachment.AttachmentPage,
         urls.ISSUE_ATTACHMENT_TEXT: issueattachmenttext.AttachmentText,
         urls.ISSUE_BULK_EDIT: issuebulkedit.IssueBulkEdit,
-        urls.COMPONENT_CHECKNAME_JSON: componentcreate.CheckComponentNameJSON,
         urls.COMPONENT_CREATE: componentcreate.ComponentCreate,
         urls.COMPONENT_DETAIL: componentdetail.ComponentDetail,
-        urls.FIELD_CHECKNAME_JSON: fieldcreate.CheckFieldNameJSON,
         urls.FIELD_CREATE: fieldcreate.FieldCreate,
         urls.FIELD_DETAIL: fielddetail.FieldDetail,
         urls.TEMPLATE_CREATE: templatecreate.TemplateCreate,
@@ -261,7 +257,6 @@ class ServletRegistry(object):
         urls.ISSUE_EXPORT_JSON: issueexport.IssueExportJSON,
         urls.ISSUE_IMPORT: issueimport.IssueImport,
         urls.SPAM_MODERATION_QUEUE: spam.ModerationQueue,
-        urls.ISSUE_RERANK_BLOCKED_ON: issuererank.IssueRerank,
         urls.COMPONENT_SUGGESTION: componentpredict.ComponentPredict,
         })
 
@@ -331,7 +326,6 @@ class ServletRegistry(object):
     """Register page and form handlers that aren't associated with projects."""
     self._SetupServlets({
         urls.PROJECT_CREATE: projectcreate.ProjectCreate,
-        urls.CHECK_PROJECT_NAME_JSON: projectcreate.CheckProjectNameJSON,
         # The user settings page is a site-wide servlet, not under /u/.
         urls.USER_SETTINGS: usersettings.UserSettings,
         urls.HOSTING_HOME: hostinghome.HostingHome,
@@ -359,7 +353,6 @@ class ServletRegistry(object):
         urls.HOTLIST_PEOPLE: hotlistpeople.HotlistPeopleList,
         urls.HOTLIST_DETAIL: hotlistdetails.HotlistDetails,
         urls.HOTLIST_RERANK_JSON: rerankhotlist.RerankHotlistIssue,
-        urls.HOTLIST_NEW_NOTES_JSON: updatehotlistitems.UpdateHotlistIssueNote,
         })
 
     profile_redir = registerpages_helpers.MakeRedirectInScope(

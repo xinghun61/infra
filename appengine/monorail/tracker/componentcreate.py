@@ -134,28 +134,6 @@ class ComponentCreate(servlet.Servlet):
         mr, urls.ADMIN_COMPONENTS, saved=1, ts=int(time.time()))
 
 
-class CheckComponentNameJSON(jsonfeed.JsonFeed):
-  """JSON data for handling name checks when creating a component."""
-
-  def HandleRequest(self, mr):
-    """Provide the UI with info about the availability of the component name.
-
-    Args:
-      mr: common information parsed from the HTTP request.
-
-    Returns:
-      Results dictionary in JSON format.
-    """
-    parent_path = mr.GetParam('parent_path')
-    leaf_name = mr.GetParam('leaf_name')
-    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
-    message = LeafNameErrorMessage(parent_path, leaf_name, config)
-
-    return {
-        'error_message': message,
-        }
-
-
 def LeafNameErrorMessage(parent_path, leaf_name, config):
   """Return an error message for the given component name, or None."""
   if not tracker_constants.COMPONENT_NAME_RE.match(leaf_name):

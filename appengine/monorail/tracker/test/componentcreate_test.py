@@ -110,41 +110,6 @@ class ComponentCreateTest(unittest.TestCase):
     self.assertEqual(122L, cd.creator_id)
 
 
-class CheckComponentNameJSONTest(unittest.TestCase):
-
-  def setUp(self):
-    self.services = service_manager.Services(
-        config=fake.ConfigService(),
-        project=fake.ProjectService())
-    self.servlet = componentcreate.CheckComponentNameJSON(
-        'req', 'res', services=self.services)
-    self.project = self.services.project.TestAddProject('proj')
-    self.config = self.services.config.GetProjectConfig(
-        'fake cnxn', self.project.project_id)
-    self.cd = tracker_bizobj.MakeComponentDef(
-        1, self.project.project_id, 'BackEnd', 'doc', False, [], [111L], 0,
-        122L)
-    self.config.component_defs = [self.cd]
-    self.services.config.StoreConfig('fake cnxn', self.config)
-
-  def testHandleRequest_NewComponent(self):
-    mr = testing_helpers.MakeMonorailRequest(
-        project=self.project, perms=permissions.OWNER_ACTIVE_PERMISSIONSET,
-        path='/p/proj/components/checkname?leaf_name=DB')
-    page_data = self.servlet.HandleRequest(mr)
-    self.assertItemsEqual(['error_message'], page_data.keys())
-    self.assertIsNone(page_data['error_message'])
-
-  def testHandleRequest_NameAlreadyUsed(self):
-    mr = testing_helpers.MakeMonorailRequest(
-        project=self.project, perms=permissions.OWNER_ACTIVE_PERMISSIONSET,
-        path='/p/proj/components/checkname?leaf_name=BackEnd')
-    page_data = self.servlet.HandleRequest(mr)
-    self.assertItemsEqual(['error_message'], page_data.keys())
-    self.assertEqual('That name is already in use.',
-                     page_data['error_message'])
-
-
 class ComponentCreateMethodsTest(unittest.TestCase):
 
   def setUp(self):
