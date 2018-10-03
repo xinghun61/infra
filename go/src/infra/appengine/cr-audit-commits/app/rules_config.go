@@ -184,6 +184,7 @@ var RuleMap = map[string]*RepoConfig{
 				Funcs: []RuleFunc{
 					func(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 						files := []string{
+							"infra/bots/assets/go_deps/VERSION",
 							"infra/bots/assets/skp/VERSION",
 							"infra/bots/tasks.json",
 						}
