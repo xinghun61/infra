@@ -132,12 +132,10 @@ type IdleWorker struct {
 	Labels   task.LabelSet
 }
 
-// MarkIdle marks the set of supplied workers as idle, and with
+// MarkIdle marks the given worker as idle, and with
 // the given provisionable labels.
-func (s *Scheduler) MarkIdle(workers []*IdleWorker) {
-	for _, i := range workers {
-		s.state.Workers[i.WorkerId] = &Worker{Labels: i.Labels}
-	}
+func (s *Scheduler) MarkIdle(id string, labels task.LabelSet) {
+	s.state.Workers[id] = &Worker{Labels: labels}
 }
 
 // RunOnce performs a single round of the quota scheduler algorithm

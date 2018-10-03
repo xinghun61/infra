@@ -14,6 +14,8 @@
 syntax = "proto3";
 package scheduler;
 
+import "google/protobuf/timestamp.proto";
+
 // An Assignment represents a scheduler decision to assign a task
 // to a worker.
 message Assignment {
@@ -38,4 +40,11 @@ message Assignment {
 
 	// Priority at which the task will run.
 	int32 priority = 4;
+
+	// Time is the time at which this Assignment was determined.
+	google.protobuf.Timestamp time = 5;
+
+	// TaskToAbort is the id of the task to be aborted on the worker. This is
+	// only meaningful for PREEMPT_WORKER type assignments.
+	string task_to_abort = 6;
 }
