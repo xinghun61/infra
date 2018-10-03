@@ -9,6 +9,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -19,7 +20,6 @@ import (
 
 	"infra/cmd/skylab_swarming_worker/internal/annotations"
 	"infra/cmd/skylab_swarming_worker/internal/event"
-	"infra/cmd/skylab_swarming_worker/internal/log"
 	"infra/cmd/skylab_swarming_worker/internal/lucifer"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
 	"infra/cmd/skylab_swarming_worker/internal/swarming/botcache"

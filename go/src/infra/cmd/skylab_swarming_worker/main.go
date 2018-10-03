@@ -27,7 +27,9 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -39,14 +41,13 @@ import (
 	"infra/cmd/skylab_swarming_worker/internal/autotest"
 	"infra/cmd/skylab_swarming_worker/internal/fifo"
 	"infra/cmd/skylab_swarming_worker/internal/flagx"
-	"infra/cmd/skylab_swarming_worker/internal/log"
 	"infra/cmd/skylab_swarming_worker/internal/lucifer"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
 	"infra/cmd/skylab_swarming_worker/internal/swarming/harness"
 )
 
 func main() {
-	log.Setup()
+	log.SetPrefix(fmt.Sprintf("%s: ", filepath.Base(os.Args[0])))
 	log.Printf("skylab_swarming_worker starting with args: %s", os.Args)
 	a := parseArgs()
 	if err := runSwarmingTask(a); err != nil {

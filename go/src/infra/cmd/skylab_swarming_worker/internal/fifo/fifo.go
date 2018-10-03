@@ -7,11 +7,10 @@ package fifo
 
 import (
 	"io"
+	"log"
 	"os"
 
 	"go.chromium.org/luci/common/errors"
-
-	"infra/cmd/skylab_swarming_worker/internal/log"
 )
 
 // Copier encapsulates the operation of copying from a FIFO.
