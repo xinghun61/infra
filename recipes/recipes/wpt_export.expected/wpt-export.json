@@ -173,6 +173,7 @@
       "python",
       "-u",
       "[START_DIR]/src/third_party/blink/tools/wpt_export.py",
+      "--verbose",
       "--credentials-json",
       "/creds/json/wpt-export.json"
     ],

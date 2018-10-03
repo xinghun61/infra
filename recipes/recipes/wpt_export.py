@@ -38,13 +38,14 @@ def RunSteps(api):
   script = api.path['checkout'].join('third_party', 'blink', 'tools',
                                      'wpt_export.py')
   args = [
+    # TODO(crbug.com/891831): Only use verbose logging if is_experimental.
+    '--verbose',
     '--credentials-json',
     '/creds/json/wpt-export.json',
   ]
   # TODO(robertma): Remove this when the migration is completed.
   if api.runtime.is_experimental:
-    # LUCI
-    args += ['--dry-run', '--verbose']
+    args += ['--dry-run']
   api.python('Export Chromium commits and in-flight CLs to WPT', script, args)
 
 
