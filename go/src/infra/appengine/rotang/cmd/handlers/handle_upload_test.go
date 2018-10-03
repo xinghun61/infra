@@ -21,14 +21,9 @@ import (
 	"infra/appengine/rotang/pkg/datastore"
 
 	"github.com/kylelemons/godebug/pretty"
-	"go.chromium.org/luci/appengine/gaetesting"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
-	"google.golang.org/appengine/aetest"
-	"google.golang.org/appengine/user"
 )
-
-const templatesLocation = "../app/templates"
 
 const (
 	jsonRotation = `
@@ -109,25 +104,6 @@ const (
 			}
 		}`
 )
-
-func newTestContext() context.Context {
-	ctx := gaetesting.TestingContext()
-	datastore.TestTable(ctx)
-	return ctx
-}
-
-func getRequest(url, email string) *http.Request {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		panic(err)
-	}
-	if email != "" {
-		aetest.Login(&user.User{
-			Email: email,
-		}, req)
-	}
-	return req
-}
 
 type fileUpload struct {
 	filename string

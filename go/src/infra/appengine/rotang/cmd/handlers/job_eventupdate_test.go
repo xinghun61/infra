@@ -15,12 +15,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-const (
-	weekDuration = 7 * fullDay
-	fullDay      = 24 * time.Hour
-)
-
-func TestJobSchedule(t *testing.T) {
+func TestJobEventUpdate(t *testing.T) {
 	ctx := newTestContext()
 	ctxCancel, cancel := context.WithCancel(ctx)
 	cancel()
@@ -129,18 +124,17 @@ func TestJobSchedule(t *testing.T) {
 				defer h.configStore(ctx).DeleteRotaConfig(ctx, cfg.Config.Name)
 			}
 
-			h.JobSchedule(tst.ctx)
+			h.JobEventUpdate(tst.ctx)
 
 			recorder := tst.ctx.Writer.(*httptest.ResponseRecorder)
 			if got, want := (recorder.Code != http.StatusOK), tst.fail; got != want {
-				t.Fatalf("%s: JobSchedule(ctx) = %d want: %d", tst.name, recorder.Code, http.StatusOK)
+				t.Fatalf("%s: JobEventUpdate(ctx) = %d want: %d", tst.name, recorder.Code, http.StatusOK)
 			}
 		})
 	}
-
 }
 
-func TestScheduleShifts(t *testing.T) {
+func TestEventUpdate(t *testing.T) {
 	ctx := newTestContext()
 
 	tests := []struct {
@@ -164,51 +158,6 @@ func TestScheduleShifts(t *testing.T) {
 				Name:       "Test Rota",
 				Enabled:    false,
 				Expiration: 4,
-			},
-		},
-	}, {
-		name: "Non existing generator",
-		fail: true,
-		ctx: &router.Context{
-			Context: ctx,
-			Request: getRequest("/", ""),
-		},
-		cfg: &rotang.Configuration{
-			Config: rotang.Config{
-				Name:             "Test Rota",
-				Enabled:          true,
-				Expiration:       2,
-				ShiftsToSchedule: 2,
-				Shifts: rotang.ShiftConfig{
-					StartTime:    midnight,
-					Length:       5,
-					Skip:         2,
-					Generator:    "NotExist",
-					ShiftMembers: 1,
-					Shifts: []rotang.Shift{
-						{
-							Name:     "MTV All Day",
-							Duration: fullDay,
-						},
-					},
-				},
-			},
-			Members: []rotang.ShiftMember{
-				{
-					Email:     "oncaller1@oncall.com",
-					ShiftName: "MTV All Day",
-				}, {
-					Email:     "oncaller2@oncall.com",
-					ShiftName: "MTV All Day",
-				},
-			},
-		},
-		memberPool: []rotang.Member{
-			{
-				Email: "oncaller1@oncall.com",
-			},
-			{
-				Email: "oncaller2@oncall.com",
 			},
 		},
 	}, {
@@ -248,83 +197,6 @@ func TestScheduleShifts(t *testing.T) {
 			},
 			{
 				Email: "oncaller2@oncall.com",
-			},
-		},
-	}, {
-		name: "Shifts not expired",
-		ctx: &router.Context{
-			Context: ctx,
-			Request: getRequest("/", ""),
-		},
-		cfg: &rotang.Configuration{
-			Config: rotang.Config{
-				Name:             "Test Rota",
-				Enabled:          true,
-				Expiration:       2,
-				ShiftsToSchedule: 2,
-				Shifts: rotang.ShiftConfig{
-					StartTime:    midnight,
-					Length:       5,
-					Skip:         2,
-					Generator:    "Fair",
-					ShiftMembers: 1,
-					Shifts: []rotang.Shift{
-						{
-							Name:     "MTV All Day",
-							Duration: fullDay,
-						},
-					},
-				},
-			},
-			Members: []rotang.ShiftMember{
-				{
-					Email:     "oncaller1@oncall.com",
-					ShiftName: "MTV All Day",
-				}, {
-					Email:     "oncaller2@oncall.com",
-					ShiftName: "MTV All Day",
-				},
-			},
-		},
-		memberPool: []rotang.Member{
-			{
-				Email: "oncaller1@oncall.com",
-			},
-			{
-				Email: "oncaller2@oncall.com",
-			},
-		},
-		shifts: []rotang.ShiftEntry{
-			{
-				Name: "MTV All Day",
-				OnCall: []rotang.ShiftMember{
-					{
-						Email:     "oncaller1@oncall.com",
-						ShiftName: "MTV All Day",
-					},
-				},
-				StartTime: midnight,
-				EndTime:   midnight.Add(5 * fullDay),
-			}, {
-				Name: "MTV All Day",
-				OnCall: []rotang.ShiftMember{
-					{
-						Email:     "oncaller2@oncall.com",
-						ShiftName: "MTV All Day",
-					},
-				},
-				StartTime: midnight.Add(7 * fullDay),
-				EndTime:   midnight.Add(12 * fullDay),
-			}, {
-				Name: "MTV All Day",
-				OnCall: []rotang.ShiftMember{
-					{
-						Email:     "oncaller1@oncall.com",
-						ShiftName: "MTV All Day",
-					},
-				},
-				StartTime: midnight.Add(14 * fullDay),
-				EndTime:   midnight.Add(19 * fullDay),
 			},
 		},
 	}, {
@@ -405,9 +277,9 @@ func TestScheduleShifts(t *testing.T) {
 						ShiftName: "MTV All Day",
 					},
 				},
-				StartTime: midnight.Add(7 * fullDay),
-				EndTime:   midnight.Add(12 * fullDay),
-				EvtID:     "0",
+				StartTime: midnight.Add(-weekDuration),
+				EndTime:   midnight.Add(-weekDuration + 5*fullDay),
+				EvtID:     "before 1",
 			}, {
 				Name: "MTV All Day",
 				OnCall: []rotang.ShiftMember{
@@ -416,13 +288,13 @@ func TestScheduleShifts(t *testing.T) {
 						ShiftName: "MTV All Day",
 					},
 				},
-				StartTime: midnight.Add(14 * fullDay),
-				EndTime:   midnight.Add(19 * fullDay),
-				EvtID:     "1",
+				StartTime: midnight,
+				EndTime:   midnight.Add(5 * fullDay),
+				EvtID:     "before 2",
 			},
 		},
 	}, {
-		name: "Success schedule shifts",
+		name: "Success update shifts",
 		ctx: &router.Context{
 			Context: ctx,
 			Request: getRequest("/", ""),
@@ -476,6 +348,7 @@ func TestScheduleShifts(t *testing.T) {
 				},
 				StartTime: midnight,
 				EndTime:   midnight.Add(5 * fullDay),
+				EvtID:     "Before1",
 			}, {
 				Name: "MTV All Day",
 				OnCall: []rotang.ShiftMember{
@@ -486,6 +359,7 @@ func TestScheduleShifts(t *testing.T) {
 				},
 				StartTime: midnight.Add(7 * fullDay),
 				EndTime:   midnight.Add(12 * fullDay),
+				EvtID:     "Before2",
 			},
 		},
 		want: []rotang.ShiftEntry{
@@ -497,8 +371,103 @@ func TestScheduleShifts(t *testing.T) {
 						ShiftName: "MTV All Day",
 					},
 				},
-				StartTime: midnight.Add(14 * fullDay),
-				EndTime:   midnight.Add(19 * fullDay),
+				StartTime: midnight,
+				EndTime:   midnight.Add(5 * fullDay),
+				EvtID:     "Before1",
+			}, {
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "oncaller2@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+				StartTime: midnight.Add(7 * fullDay),
+				EndTime:   midnight.Add(12 * fullDay),
+				EvtID:     "Before2",
+			},
+		},
+	}, {
+		name:     "Success update changed shifts",
+		changeID: true,
+		ctx: &router.Context{
+			Context: ctx,
+			Request: getRequest("/", ""),
+		},
+		cfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Name:             "Test Rota",
+				Enabled:          true,
+				Expiration:       2,
+				ShiftsToSchedule: 2,
+				Shifts: rotang.ShiftConfig{
+					StartTime:    midnight,
+					Length:       5,
+					Skip:         2,
+					Generator:    "Fair",
+					ShiftMembers: 1,
+					Shifts: []rotang.Shift{
+						{
+							Name:     "MTV All Day",
+							Duration: fullDay,
+						},
+					},
+				},
+			},
+			Members: []rotang.ShiftMember{
+				{
+					Email:     "oncaller1@oncall.com",
+					ShiftName: "MTV All Day",
+				}, {
+					Email:     "oncaller2@oncall.com",
+					ShiftName: "MTV All Day",
+				},
+			},
+		},
+		memberPool: []rotang.Member{
+			{
+				Email: "oncaller1@oncall.com",
+			},
+			{
+				Email: "oncaller2@oncall.com",
+			},
+		},
+		shifts: []rotang.ShiftEntry{
+			{
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "oncaller1@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+				StartTime: midnight,
+				EndTime:   midnight.Add(5 * fullDay),
+				EvtID:     "Before1",
+			}, {
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "oncaller2@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+				StartTime: midnight.Add(7 * fullDay),
+				EndTime:   midnight.Add(12 * fullDay),
+				EvtID:     "Before2",
+			},
+		},
+		want: []rotang.ShiftEntry{
+			{
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "oncaller1@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+				StartTime: midnight,
+				EndTime:   midnight.Add(5 * fullDay),
 				EvtID:     "0",
 			}, {
 				Name: "MTV All Day",
@@ -508,13 +477,14 @@ func TestScheduleShifts(t *testing.T) {
 						ShiftName: "MTV All Day",
 					},
 				},
-				StartTime: midnight.Add(21 * fullDay),
-				EndTime:   midnight.Add(26 * fullDay),
+				StartTime: midnight.Add(7 * fullDay),
+				EndTime:   midnight.Add(12 * fullDay),
 				EvtID:     "1",
 			},
 		},
 	}, {
-		name: "Split shifts",
+		name:     "Split shifts",
+		changeID: true,
 		ctx: &router.Context{
 			Context: ctx,
 			Request: getRequest("/", ""),
@@ -662,8 +632,8 @@ func TestScheduleShifts(t *testing.T) {
 						ShiftName: "MTV Shift",
 					},
 				},
-				StartTime: midnight.Add(2 * weekDuration),
-				EndTime:   midnight.Add(4*fullDay + 8*time.Hour + 2*weekDuration),
+				StartTime: midnight,
+				EndTime:   midnight.Add(4*fullDay + 8*time.Hour),
 				EvtID:     "0",
 			}, {
 				Name: "SYD Shift",
@@ -673,8 +643,8 @@ func TestScheduleShifts(t *testing.T) {
 						ShiftName: "SYD Shift",
 					},
 				},
-				StartTime: midnight.Add(8*time.Hour + 2*weekDuration),
-				EndTime:   midnight.Add(4*fullDay + 16*time.Hour + 2*weekDuration),
+				StartTime: midnight.Add(8 * time.Hour),
+				EndTime:   midnight.Add(4*fullDay + 16*time.Hour),
 				EvtID:     "1",
 			}, {
 				Name: "EU Shift",
@@ -684,8 +654,8 @@ func TestScheduleShifts(t *testing.T) {
 						ShiftName: "EU Shift",
 					},
 				},
-				StartTime: midnight.Add(16*time.Hour + 2*weekDuration),
-				EndTime:   midnight.Add(5*fullDay + 2*weekDuration),
+				StartTime: midnight.Add(16 * time.Hour),
+				EndTime:   midnight.Add(5 * fullDay),
 				EvtID:     "2",
 			},
 			{
@@ -696,8 +666,8 @@ func TestScheduleShifts(t *testing.T) {
 						ShiftName: "MTV Shift",
 					},
 				},
-				StartTime: midnight.Add(3 * weekDuration),
-				EndTime:   midnight.Add(4*fullDay + 8*time.Hour + 3*weekDuration),
+				StartTime: midnight.Add(7 * fullDay),
+				EndTime:   midnight.Add(4*fullDay + 8*time.Hour + weekDuration),
 				EvtID:     "3",
 			}, {
 				Name: "SYD Shift",
@@ -707,8 +677,8 @@ func TestScheduleShifts(t *testing.T) {
 						ShiftName: "SYD Shift",
 					},
 				},
-				StartTime: midnight.Add(8*time.Hour + 3*weekDuration),
-				EndTime:   midnight.Add(4*fullDay + 16*time.Hour + 3*weekDuration),
+				StartTime: midnight.Add(8*time.Hour + weekDuration),
+				EndTime:   midnight.Add(4*fullDay + 16*time.Hour + weekDuration),
 				EvtID:     "4",
 			}, {
 				Name: "EU Shift",
@@ -718,8 +688,8 @@ func TestScheduleShifts(t *testing.T) {
 						ShiftName: "EU Shift",
 					},
 				},
-				StartTime: midnight.Add(16*time.Hour + 3*weekDuration),
-				EndTime:   midnight.Add(5*fullDay + 3*weekDuration),
+				StartTime: midnight.Add(16*time.Hour + weekDuration),
+				EndTime:   midnight.Add(5*fullDay + weekDuration),
 				EvtID:     "5",
 			},
 		},
@@ -763,10 +733,16 @@ func TestScheduleShifts(t *testing.T) {
 			if err := h.shiftStore(ctx).AddShifts(ctx, tst.cfg.Config.Name, tst.shifts); err != nil {
 				t.Fatalf("%s: AddShifts(ctx, _) failed: %v", tst.name, err)
 			}
+
+			fake.events = make(map[time.Time]rotang.ShiftEntry)
+			for i := range tst.shifts {
+				sp := tst.shifts[i]
+				fake.events[sp.StartTime] = sp
+			}
 			defer h.shiftStore(ctx).DeleteAllShifts(ctx, tst.cfg.Config.Name)
 
 			fake.Set(nil, false, tst.changeID, 0)
-			err := h.scheduleShifts(tst.ctx, tst.cfg, midnight)
+			err := h.eventUpdate(tst.ctx, tst.cfg, midnight)
 			if got, want := (err != nil), tst.fail; got != want {
 				t.Fatalf("%s: scheduleShifts(ctx, _, %v) = %t want: %t, err: %v", tst.name, midnight, got, want, err)
 			}
@@ -779,7 +755,7 @@ func TestScheduleShifts(t *testing.T) {
 				t.Fatalf("%s: AllShifts(ctx, %q) failed: %v", tst.name, tst.cfg.Config.Name, err)
 			}
 
-			if diff := pretty.Compare(append(tst.shifts, tst.want...), got); diff != "" {
+			if diff := pretty.Compare(tst.want, got); diff != "" {
 				t.Fatalf("%s: scheduleShifts(ctx, _, %v) differ -want +got, %s", tst.name, midnight, diff)
 			}
 		})

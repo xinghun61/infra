@@ -9,10 +9,87 @@ import (
 	"infra/appengine/rotang/pkg/algo"
 	"infra/appengine/rotang/pkg/calendar"
 	"infra/appengine/rotang/pkg/datastore"
+	"net/http"
+	"strconv"
 	"testing"
+	"time"
 
+	"go.chromium.org/luci/appengine/gaetesting"
+	"go.chromium.org/luci/server/router"
 	"golang.org/x/net/context"
+	"google.golang.org/appengine/aetest"
+	"google.golang.org/appengine/user"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
+
+const templatesLocation = "../app/templates"
+
+func newTestContext() context.Context {
+	ctx := gaetesting.TestingContext()
+	datastore.TestTable(ctx)
+	return ctx
+}
+
+func getRequest(url, email string) *http.Request {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		panic(err)
+	}
+	if email != "" {
+		aetest.Login(&user.User{
+			Email: email,
+		}, req)
+	}
+	return req
+}
+
+type fakeCal struct {
+	ret      []rotang.ShiftEntry
+	fail     bool
+	changeID bool
+	rotang.Calenderer
+	id     int
+	events map[time.Time]rotang.ShiftEntry
+}
+
+func (f *fakeCal) Events(_ *router.Context, _ *rotang.Configuration, _, _ time.Time) ([]rotang.ShiftEntry, error) {
+	if f.fail {
+		return nil, status.Errorf(codes.Internal, "fake is failing as requested")
+	}
+	return f.ret, nil
+}
+
+func (f *fakeCal) Event(_ *router.Context, _ *rotang.Configuration, shift *rotang.ShiftEntry) (*rotang.ShiftEntry, error) {
+	if f.fail {
+		return nil, status.Errorf(codes.Internal, "fake is failing as requested")
+	}
+	sp := f.events[shift.StartTime]
+	if f.changeID {
+		sp.EvtID = strconv.Itoa(f.id)
+		f.id++
+	}
+	f.events[shift.StartTime] = sp
+	return &sp, nil
+}
+
+func (f *fakeCal) Set(ret []rotang.ShiftEntry, fail, changeID bool, id int) {
+	f.ret = ret
+	f.fail = fail
+	f.id = id
+	f.changeID = changeID
+}
+
+func (f *fakeCal) CreateEvent(_ *router.Context, _ *rotang.Configuration, shifts []rotang.ShiftEntry) ([]rotang.ShiftEntry, error) {
+	if f.fail {
+		return nil, status.Errorf(codes.Internal, "fake is failing as requested")
+	}
+	for i := range shifts {
+		shifts[i].EvtID = strconv.Itoa(f.id)
+		f.id++
+	}
+	return shifts, nil
+}
 
 func TestNew(t *testing.T) {
 

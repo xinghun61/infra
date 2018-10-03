@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strconv"
 	"testing"
 	"time"
 
@@ -23,37 +22,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
-
-type fakeCal struct {
-	ret  []rotang.ShiftEntry
-	fail bool
-	rotang.Calenderer
-	id int
-}
-
-func (f *fakeCal) Events(_ *router.Context, _ *rotang.Configuration, _, _ time.Time) ([]rotang.ShiftEntry, error) {
-	if f.fail {
-		return nil, status.Errorf(codes.Internal, "fake is failing as requested")
-	}
-	return f.ret, nil
-}
-
-func (f *fakeCal) Set(ret []rotang.ShiftEntry, fail bool, id int) {
-	f.ret = ret
-	f.fail = fail
-	f.id = id
-}
-
-func (f *fakeCal) CreateEvent(_ *router.Context, _ *rotang.Configuration, shifts []rotang.ShiftEntry) ([]rotang.ShiftEntry, error) {
-	if f.fail {
-		return nil, status.Errorf(codes.Internal, "fake is failing as requested")
-	}
-	for i := range shifts {
-		shifts[i].EvtID = strconv.Itoa(f.id)
-		f.id++
-	}
-	return shifts, nil
-}
 
 func TestHandleShiftImport(t *testing.T) {
 	ctx := newTestContext()
@@ -506,7 +474,7 @@ func TestHandleShiftImport(t *testing.T) {
 			tst.ctx.Request = httptest.NewRequest("GET", "/importshifts", nil)
 			tst.ctx.Request.Form = tst.values
 
-			fake.Set(tst.shifts, tst.calFail, 0)
+			fake.Set(tst.shifts, tst.calFail, false, 0)
 			h.HandleShiftImport(tst.ctx)
 			defer h.shiftStore(ctx).DeleteAllShifts(ctx, tst.rotaName)
 
