@@ -3,9 +3,12 @@
 
 package fleet
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	math "math"
+
+	proto "github.com/golang/protobuf/proto"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -36,16 +39,17 @@ func (m *BotSelector) Reset()         { *m = BotSelector{} }
 func (m *BotSelector) String() string { return proto.CompactTextString(m) }
 func (*BotSelector) ProtoMessage()    {}
 func (*BotSelector) Descriptor() ([]byte, []int) {
-	return fileDescriptor_common_7b4bc98591c62dac, []int{0}
+	return fileDescriptor_e1fa3f8860ba148c, []int{0}
 }
+
 func (m *BotSelector) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_BotSelector.Unmarshal(m, b)
 }
 func (m *BotSelector) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_BotSelector.Marshal(b, m, deterministic)
 }
-func (dst *BotSelector) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_BotSelector.Merge(dst, src)
+func (m *BotSelector) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BotSelector.Merge(m, src)
 }
 func (m *BotSelector) XXX_Size() int {
 	return xxx_messageInfo_BotSelector.Size(m)
@@ -68,10 +72,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("infra/appengine/crosskylabadmin/api/fleet/v1/common.proto", fileDescriptor_common_7b4bc98591c62dac)
+	proto.RegisterFile("infra/appengine/crosskylabadmin/api/fleet/v1/common.proto", fileDescriptor_e1fa3f8860ba148c)
 }
 
-var fileDescriptor_common_7b4bc98591c62dac = []byte{
+var fileDescriptor_e1fa3f8860ba148c = []byte{
 	// 139 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xb2, 0xcc, 0xcc, 0x4b, 0x2b,
 	0x4a, 0xd4, 0x4f, 0x2c, 0x28, 0x48, 0xcd, 0x4b, 0xcf, 0xcc, 0x4b, 0xd5, 0x4f, 0x2e, 0xca, 0x2f,

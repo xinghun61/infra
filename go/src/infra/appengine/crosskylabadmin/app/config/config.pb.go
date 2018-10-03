@@ -5,9 +5,10 @@ package config
 
 import (
 	fmt "fmt"
+	math "math"
+
 	proto "github.com/golang/protobuf/proto"
 	duration "github.com/golang/protobuf/ptypes/duration"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -43,6 +44,7 @@ func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d85dab011e4afc14, []int{0}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }
@@ -112,6 +114,7 @@ func (*Swarming) ProtoMessage()    {}
 func (*Swarming) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d85dab011e4afc14, []int{1}
 }
+
 func (m *Swarming) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Swarming.Unmarshal(m, b)
 }
@@ -179,6 +182,7 @@ func (*Tasker) ProtoMessage()    {}
 func (*Tasker) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d85dab011e4afc14, []int{2}
 }
+
 func (m *Tasker) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Tasker.Unmarshal(m, b)
 }
@@ -246,6 +250,7 @@ func (*Cron) ProtoMessage()    {}
 func (*Cron) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d85dab011e4afc14, []int{3}
 }
+
 func (m *Cron) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Cron.Unmarshal(m, b)
 }
