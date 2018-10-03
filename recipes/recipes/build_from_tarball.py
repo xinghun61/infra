@@ -69,7 +69,8 @@ def RunSteps(api):
                     # used by libc++ (std::__1::string) differs from the one re2
                     # expects (std::__cxx11::string), causing link failures.
           'snappy',
-          'yasm',
+          # 'yasm',  # Use the yasm in third_party to prevent having to install
+                     # yasm on the bot.
           # 'zlib',  # TODO(thomasanderson): Add libminizip-dev to sysroots.
       ]
       api.python(

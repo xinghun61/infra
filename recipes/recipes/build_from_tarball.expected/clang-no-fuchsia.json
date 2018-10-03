@@ -113,8 +113,7 @@
       "libjpeg",
       "libwebp",
       "opus",
-      "snappy",
-      "yasm"
+      "snappy"
     ],
     "cwd": "[START_DIR]/build_dir/chromium-71.0.3551.0",
     "env_suffixes": {
