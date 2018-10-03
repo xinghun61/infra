@@ -15,3 +15,5 @@
   login-url="[login_url]"
   logout-url="[logout_url]"
 ></mr-approval-page>
+
+[include "../framework/polymer-footer.ezt"]

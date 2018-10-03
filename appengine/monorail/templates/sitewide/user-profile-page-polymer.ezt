@@ -19,3 +19,5 @@
   last-visit-str="[last_visit_str]"
   starred-users="[starred_users_json]"
 ></mr-profile-page>
+
+[include "../framework/polymer-footer.ezt"]

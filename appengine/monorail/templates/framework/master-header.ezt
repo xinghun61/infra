@@ -1,95 +1,10 @@
-<!DOCTYPE html>
-[# This is the master header file that is included in all Monrail servlets that render a page.
+[# This is the master header file that is included in all Monorail servlets that render a page.
 
    Args:
      arg0: Can be "showtabs", "showusertabs" or "showusergrouptabs" to select which top-plevel tabs are shown.
      arg1: String like "t1", "t2", "t3" to identify the currently active tab.
 ]
-<html lang="en">
-<head>
-  <link rel="icon" type="image/vnd.microsoft.icon" href="/static/images/monorail.ico">
-  [if-any link_rel_canonical]
-    <link rel="canonical" href="[link_rel_canonical]">
-  [end]
-
-  <script type="text/javascript"
-          src="/bower_components/chopsui/prpc-client.js?version=[app_version]"
-          nonce="[nonce]"></script>
-  <script type="text/javascript"
-          src="/static/js/prpc.js?version=[app_version]"
-          nonce="[nonce]"></script>
-  <script type="text/javascript" nonce="[nonce]">
-   [# Javascript object containing basic page data. ]
-   var CS_env = {
-     'absoluteBaseUrl': '[format "js"][absolute_base_url][end]',
-     'app_version': '[format "js"][app_version][end]',
-     'token': '[format "js"][xhr_token][end]',
-     'tokenExpiresSec': [format "js"][token_expires_sec][end],
-     'loggedInUserEmail':
-       [if-any logged_in_user]
-         '[format "js"][logged_in_user.email][end]'
-       [else]
-         null
-       [end],
-     'login_url': '[format "js"][login_url][end]',
-     'logout_url': '[format "js"][logout_url][end]',
-     'profileUrl':
-       [if-any logged_in_user]
-         '[format "js"][logged_in_user.profile_url][end]'
-       [else]
-         null
-       [end],
-     'projectName': '[format "js"][projectname][end]',
-     'is_member': '[format "js"][is_member][end]',
-   };
-   [# Global client for pRPC requests]
-   var prpcClient = new window.__prpc.AutoRefreshPrpcClient(
-      CS_env.token, CS_env.tokenExpiresSec);
-  </script>
-
-  [# Improve the snippet that appears in search]
-  [if-any show_search_metadata]
-    <meta name="Description" content="Monorail is simple, reliable, and flexible issue tracking tool.">
-    <meta name="robots" content="NOODP">
-  [end]
-
-    <title>
-      [if-any title][title] - [end]
-      [if-any title_summary][title_summary] - [end]
-      [if-any projectname]
-        [projectname] -
-      [else]
-        [if-any viewing_user_page][viewed_user.display_name] - [end]
-      [end]
-      [if-any title_summary][else]
-        [if-any project_summary][project_summary] - [end]
-      [end]
-      [site_name]
-    </title>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="referrer" content="no-referrer">
-    [if-any robots_no_index]
-     <meta name="ROBOTS" content="NOINDEX,NOARCHIVE">
-    [else]
-     <meta name="ROBOTS" content="NOARCHIVE">
-    [end]
-    <meta name="viewport" content="width=device-width, minimum-scale=1.0">
-    <link type="text/css" rel="stylesheet" href="/static/css/ph_core.css?version=[app_version]">
-    <link type="text/css" rel="stylesheet" media="(max-width:425px)"
-          href="/static/css/ph_mobile.css?version=[app_version]">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    [if-any category_css]
-     <link type="text/css" rel="stylesheet" href="/static/[category_css]?version=[app_version]">
-    [end]
-    [if-any category2_css]
-     <link type="text/css" rel="stylesheet" href="/static/[category2_css]?version=[app_version]">
-    [end]
-    [if-any page_css]
-     <link type="text/css" rel="stylesheet" href="/static/[page_css]?version=[app_version]">
-    [end]
-    [# NO MORE SCRIPTS IN HEAD, it makes page loading too slow.]
-</head>
+[include "master-header-shared.ezt"]
 
 <body class="[main_tab_mode] [if-any perms.EditIssue]perms_EditIssue[end]">
 

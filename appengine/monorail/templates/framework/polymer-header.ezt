@@ -1,26 +1,14 @@
-<meta name=viewport content="width=device-width, user-scalable=no">
-<meta name=referrer content="no-referrer">
-
-<link rel="icon" type="image/vnd.microsoft.icon" href="/static/images/monorail.ico">
-
-<script type="text/javascript" src="/bower_components/chopsui/prpc-client.js" nonce="[nonce]"></script>
-<script type="text/javascript" src="/bower_components/webcomponentsjs/webcomponents-loader.js" nonce="[nonce]"></script>
-<script type="text/javascript" src="/static/js/prpc.js" nonce="[nonce]"></script>
-
-<script type="text/javascript" nonce="[nonce]">
-  window.prpcClient = new window.__prpc.AutoRefreshPrpcClient(
-      '[format "js"][xhr_token][end]',
-      '[format "js"][token_expires_sec][end]');
-</script>
-
+[include "master-header-shared.ezt"]
 <script src="/static/js/autolink.js" nonce="[nonce]"></script>
 
 <style>
-  * {
+  body {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
     font-family: 'Roboto', 'Noto', sans-serif;
-    line-height: 1.5;
+    line-height: 1.6;
+    font-size: 15px;
+    min-width: 300px;
   }
 </style>
