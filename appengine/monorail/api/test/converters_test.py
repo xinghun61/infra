@@ -273,6 +273,24 @@ class ConverterFunctionsTest(unittest.TestCase):
         ]
     self.assertEqual(expected, actual)
 
+  def testConvertComponentRef(self):
+    """We can convert a component ref."""
+    self.config.component_defs = [
+        tracker_pb2.ComponentDef(component_id=1, path='UI'),
+        tracker_pb2.ComponentDef(component_id=2, path='DB')]
+
+    self.assertEqual(
+        common_pb2.ComponentRef(
+            path='UI',
+            is_derived=False),
+        converters.ConvertComponentRef(1, self.config))
+
+    self.assertEqual(
+        common_pb2.ComponentRef(
+            path='DB',
+            is_derived=True),
+        converters.ConvertComponentRef(2, self.config, True))
+
   def testConvertComponents(self):
     """We can convert a list of components."""
     self.config.component_defs = [

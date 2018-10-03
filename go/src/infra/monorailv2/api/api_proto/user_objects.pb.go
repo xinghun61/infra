@@ -5,8 +5,9 @@ package monorail
 
 import (
 	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
 	math "math"
+
+	proto "github.com/golang/protobuf/proto"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -38,6 +39,7 @@ func (*Commit) ProtoMessage()    {}
 func (*Commit) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e651956a3fdc871c, []int{0}
 }
+
 func (m *Commit) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Commit.Unmarshal(m, b)
 }

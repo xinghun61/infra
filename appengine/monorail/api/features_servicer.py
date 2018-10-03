@@ -11,6 +11,7 @@ from api.api_proto import common_pb2
 from api.api_proto import features_pb2
 from api.api_proto import features_prpc_pb2
 from businesslogic import work_env
+from features import component_helpers
 from features import features_bizobj
 from framework import exceptions
 from framework import framework_bizobj
@@ -263,6 +264,7 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
 
   @monorail_servicer.PRPCMethod
   def UpdateHotlistIssueNote(self, mc, request):
+    """Update the note for the given issue in the given hotlist."""
     hotlist_id = converters.IngestHotlistRef(
         mc.cnxn, self.services.user, self.services.features,
         request.hotlist_ref)
@@ -275,4 +277,19 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
       we.UpdateHotlistIssueNote(hotlist_id, issue_id, request.note)
 
     result = features_pb2.UpdateHotlistIssueNoteResponse()
+    return result
+
+  @monorail_servicer.PRPCMethod
+  def PredictComponent(self, mc, request):
+    """Predict the component of an issue based on the given text."""
+    component_id = component_helpers.PredictComponent(request.text)
+
+    component_ref = None
+    if component_id:
+      with work_env.WorkEnv(mc, self.services) as we:
+        project = we.GetProjectByName(request.project_name)
+        config = we.GetProjectConfig(project.project_id)
+      component_ref = converters.ConvertComponentRef(component_id, config)
+
+    result = features_pb2.PredictComponentResponse(component_ref=component_ref)
     return result

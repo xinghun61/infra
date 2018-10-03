@@ -24,6 +24,7 @@ service Features {
   rpc RemoveIssuesFromHotlists (RemoveIssuesFromHotlistsRequest) returns (RemoveIssuesFromHotlistsResponse) {}
   rpc AddIssuesToHotlists (AddIssuesToHotlistsRequest) returns (AddIssuesToHotlistsResponse) {}
   rpc UpdateHotlistIssueNote (UpdateHotlistIssueNoteRequest) returns (UpdateHotlistIssueNoteResponse) {}
+  rpc PredictComponent (PredictComponentRequest) returns (PredictComponentResponse) {}
 }
 
 
@@ -198,4 +199,18 @@ message UpdateHotlistIssueNoteRequest {
 
 // Next available tag: 1
 message UpdateHotlistIssueNoteResponse {
+}
+
+
+// Next available tag: 4
+message PredictComponentRequest {
+  RequestTrace trace = 1;
+  string text = 2;
+  string project_name = 3;
+}
+
+
+// Next available tag: 2
+message PredictComponentResponse {
+  ComponentRef component_ref = 1;
 }

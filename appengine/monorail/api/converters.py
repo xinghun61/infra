@@ -145,15 +145,21 @@ def ConvertLabels(explicit_labels, derived_labels):
   return explicit_refs + derived_refs
 
 
+def ConvertComponentRef(component_id, config, is_derived=False):
+  """Make a ComponentRef from the component_id and project config."""
+  component_def = tracker_bizobj.FindComponentDefByID(component_id, config)
+  result = common_pb2.ComponentRef(
+      path=component_def.path,
+      is_derived=is_derived)
+  return result
+
+
 def ConvertComponents(explicit_component_ids, derived_component_ids, config):
   """Make a ComponentRef for each component_id."""
-  result = []
-  for cid in explicit_component_ids:
-    cd = tracker_bizobj.FindComponentDefByID(cid, config)
-    result.append(common_pb2.ComponentRef(path=cd.path, is_derived=False))
-  for cid in derived_component_ids:
-    cd = tracker_bizobj.FindComponentDefByID(cid, config)
-    result.append(common_pb2.ComponentRef(path=cd.path, is_derived=True))
+  result = [ConvertComponentRef(cid, config) for cid in explicit_component_ids]
+  result += [
+      ConvertComponentRef(cid, config, is_derived=True)
+      for cid in derived_component_ids]
   return result
 
 

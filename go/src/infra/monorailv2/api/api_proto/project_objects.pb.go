@@ -5,8 +5,9 @@ package monorail
 
 import (
 	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
 	math "math"
+
+	proto "github.com/golang/protobuf/proto"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -36,6 +37,7 @@ func (*Project) ProtoMessage()    {}
 func (*Project) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4f680a8ed8804f88, []int{0}
 }
+
 func (m *Project) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Project.Unmarshal(m, b)
 }
@@ -93,6 +95,7 @@ func (*StatusDef) ProtoMessage()    {}
 func (*StatusDef) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4f680a8ed8804f88, []int{1}
 }
+
 func (m *StatusDef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StatusDef.Unmarshal(m, b)
 }
@@ -162,6 +165,7 @@ func (*LabelDef) ProtoMessage()    {}
 func (*LabelDef) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4f680a8ed8804f88, []int{2}
 }
+
 func (m *LabelDef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_LabelDef.Unmarshal(m, b)
 }
@@ -224,6 +228,7 @@ func (*ComponentDef) ProtoMessage()    {}
 func (*ComponentDef) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4f680a8ed8804f88, []int{3}
 }
+
 func (m *ComponentDef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ComponentDef.Unmarshal(m, b)
 }
@@ -337,6 +342,7 @@ func (*FieldDef) ProtoMessage()    {}
 func (*FieldDef) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4f680a8ed8804f88, []int{4}
 }
+
 func (m *FieldDef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FieldDef.Unmarshal(m, b)
 }
@@ -440,6 +446,7 @@ func (*FieldOptions) ProtoMessage()    {}
 func (*FieldOptions) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4f680a8ed8804f88, []int{5}
 }
+
 func (m *FieldOptions) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FieldOptions.Unmarshal(m, b)
 }
@@ -488,6 +495,7 @@ func (*ApprovalDef) ProtoMessage()    {}
 func (*ApprovalDef) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4f680a8ed8804f88, []int{6}
 }
+
 func (m *ApprovalDef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ApprovalDef.Unmarshal(m, b)
 }
@@ -549,6 +557,7 @@ func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4f680a8ed8804f88, []int{7}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }

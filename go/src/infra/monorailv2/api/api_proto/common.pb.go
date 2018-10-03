@@ -5,8 +5,9 @@ package monorail
 
 import (
 	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
 	math "math"
+
+	proto "github.com/golang/protobuf/proto"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -84,6 +85,7 @@ func (*RequestTrace) ProtoMessage()    {}
 func (*RequestTrace) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d57a37ef5e3928fa, []int{0}
 }
+
 func (m *RequestTrace) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RequestTrace.Unmarshal(m, b)
 }
@@ -145,6 +147,7 @@ func (*ComponentRef) ProtoMessage()    {}
 func (*ComponentRef) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d57a37ef5e3928fa, []int{1}
 }
+
 func (m *ComponentRef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ComponentRef.Unmarshal(m, b)
 }
@@ -195,6 +198,7 @@ func (*FieldRef) ProtoMessage()    {}
 func (*FieldRef) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d57a37ef5e3928fa, []int{2}
 }
+
 func (m *FieldRef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FieldRef.Unmarshal(m, b)
 }
@@ -256,6 +260,7 @@ func (*LabelRef) ProtoMessage()    {}
 func (*LabelRef) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d57a37ef5e3928fa, []int{3}
 }
+
 func (m *LabelRef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_LabelRef.Unmarshal(m, b)
 }
@@ -304,6 +309,7 @@ func (*StatusRef) ProtoMessage()    {}
 func (*StatusRef) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d57a37ef5e3928fa, []int{4}
 }
+
 func (m *StatusRef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StatusRef.Unmarshal(m, b)
 }
@@ -358,6 +364,7 @@ func (*IssueRef) ProtoMessage()    {}
 func (*IssueRef) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d57a37ef5e3928fa, []int{5}
 }
+
 func (m *IssueRef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_IssueRef.Unmarshal(m, b)
 }
@@ -406,6 +413,7 @@ func (*UserRef) ProtoMessage()    {}
 func (*UserRef) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d57a37ef5e3928fa, []int{6}
 }
+
 func (m *UserRef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UserRef.Unmarshal(m, b)
 }
@@ -462,6 +470,7 @@ func (*HotlistRef) ProtoMessage()    {}
 func (*HotlistRef) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d57a37ef5e3928fa, []int{7}
 }
+
 func (m *HotlistRef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_HotlistRef.Unmarshal(m, b)
 }
@@ -516,6 +525,7 @@ func (*ValueAndWhy) ProtoMessage()    {}
 func (*ValueAndWhy) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d57a37ef5e3928fa, []int{8}
 }
+
 func (m *ValueAndWhy) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ValueAndWhy.Unmarshal(m, b)
 }
@@ -563,6 +573,7 @@ func (*Pagination) ProtoMessage()    {}
 func (*Pagination) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d57a37ef5e3928fa, []int{9}
 }
+
 func (m *Pagination) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Pagination.Unmarshal(m, b)
 }
@@ -596,6 +607,7 @@ func (m *Pagination) GetStart() uint32 {
 }
 
 func init() {
+	proto.RegisterEnum("monorail.FieldType", FieldType_name, FieldType_value)
 	proto.RegisterType((*RequestTrace)(nil), "monorail.RequestTrace")
 	proto.RegisterType((*ComponentRef)(nil), "monorail.ComponentRef")
 	proto.RegisterType((*FieldRef)(nil), "monorail.FieldRef")
@@ -606,7 +618,6 @@ func init() {
 	proto.RegisterType((*HotlistRef)(nil), "monorail.HotlistRef")
 	proto.RegisterType((*ValueAndWhy)(nil), "monorail.ValueAndWhy")
 	proto.RegisterType((*Pagination)(nil), "monorail.Pagination")
-	proto.RegisterEnum("monorail.FieldType", FieldType_name, FieldType_value)
 }
 
 func init() { proto.RegisterFile("api/api_proto/common.proto", fileDescriptor_d57a37ef5e3928fa) }

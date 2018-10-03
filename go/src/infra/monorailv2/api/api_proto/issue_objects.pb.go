@@ -5,8 +5,9 @@ package monorail
 
 import (
 	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
 	math "math"
+
+	proto "github.com/golang/protobuf/proto"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -124,6 +125,7 @@ func (*Approval) ProtoMessage()    {}
 func (*Approval) Descriptor() ([]byte, []int) {
 	return fileDescriptor_8ab61f0576fd6c44, []int{0}
 }
+
 func (m *Approval) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Approval.Unmarshal(m, b)
 }
@@ -209,6 +211,7 @@ func (*Amendment) ProtoMessage()    {}
 func (*Amendment) Descriptor() ([]byte, []int) {
 	return fileDescriptor_8ab61f0576fd6c44, []int{1}
 }
+
 func (m *Amendment) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Amendment.Unmarshal(m, b)
 }
@@ -269,6 +272,7 @@ func (*Attachment) ProtoMessage()    {}
 func (*Attachment) Descriptor() ([]byte, []int) {
 	return fileDescriptor_8ab61f0576fd6c44, []int{2}
 }
+
 func (m *Attachment) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Attachment.Unmarshal(m, b)
 }
@@ -370,6 +374,7 @@ func (*Comment) ProtoMessage()    {}
 func (*Comment) Descriptor() ([]byte, []int) {
 	return fileDescriptor_8ab61f0576fd6c44, []int{3}
 }
+
 func (m *Comment) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Comment.Unmarshal(m, b)
 }
@@ -496,6 +501,7 @@ func (*FieldValue) ProtoMessage()    {}
 func (*FieldValue) Descriptor() ([]byte, []int) {
 	return fileDescriptor_8ab61f0576fd6c44, []int{4}
 }
+
 func (m *FieldValue) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FieldValue.Unmarshal(m, b)
 }
@@ -578,6 +584,7 @@ func (*Issue) ProtoMessage()    {}
 func (*Issue) Descriptor() ([]byte, []int) {
 	return fileDescriptor_8ab61f0576fd6c44, []int{5}
 }
+
 func (m *Issue) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Issue.Unmarshal(m, b)
 }
@@ -773,6 +780,7 @@ func (*IssueSummary) ProtoMessage()    {}
 func (*IssueSummary) Descriptor() ([]byte, []int) {
 	return fileDescriptor_8ab61f0576fd6c44, []int{6}
 }
+
 func (m *IssueSummary) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_IssueSummary.Unmarshal(m, b)
 }
@@ -827,6 +835,7 @@ func (*PhaseDef) ProtoMessage()    {}
 func (*PhaseDef) Descriptor() ([]byte, []int) {
 	return fileDescriptor_8ab61f0576fd6c44, []int{7}
 }
+
 func (m *PhaseDef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PhaseDef.Unmarshal(m, b)
 }
@@ -873,6 +882,7 @@ func (*PhaseRef) ProtoMessage()    {}
 func (*PhaseRef) Descriptor() ([]byte, []int) {
 	return fileDescriptor_8ab61f0576fd6c44, []int{8}
 }
+
 func (m *PhaseRef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PhaseRef.Unmarshal(m, b)
 }
@@ -899,6 +909,8 @@ func (m *PhaseRef) GetPhaseName() string {
 }
 
 func init() {
+	proto.RegisterEnum("monorail.ApprovalStatus", ApprovalStatus_name, ApprovalStatus_value)
+	proto.RegisterEnum("monorail.CannedQuery", CannedQuery_name, CannedQuery_value)
 	proto.RegisterType((*Approval)(nil), "monorail.Approval")
 	proto.RegisterType((*Amendment)(nil), "monorail.Amendment")
 	proto.RegisterType((*Attachment)(nil), "monorail.Attachment")
@@ -908,8 +920,6 @@ func init() {
 	proto.RegisterType((*IssueSummary)(nil), "monorail.IssueSummary")
 	proto.RegisterType((*PhaseDef)(nil), "monorail.PhaseDef")
 	proto.RegisterType((*PhaseRef)(nil), "monorail.PhaseRef")
-	proto.RegisterEnum("monorail.ApprovalStatus", ApprovalStatus_name, ApprovalStatus_value)
-	proto.RegisterEnum("monorail.CannedQuery", CannedQuery_name, CannedQuery_value)
 }
 
 func init() { proto.RegisterFile("api/api_proto/issue_objects.proto", fileDescriptor_8ab61f0576fd6c44) }

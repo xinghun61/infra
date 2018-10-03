@@ -5,6 +5,8 @@
 
 """Tests for the projects servicer."""
 
+import json
+import mock
 import unittest
 
 import mox
@@ -13,7 +15,6 @@ from components.prpc import context
 from components.prpc import server
 
 from api import converters
-from api import features_servicer
 from api.api_proto import common_pb2
 from api.api_proto import features_pb2
 from api.api_proto import features_objects_pb2
@@ -25,6 +26,11 @@ from testing import fake
 from tracker import tracker_bizobj
 from services import features_svc
 from services import service_manager
+
+# Import component_helpers_test to mock cloudstorage before it is imported by
+# component_helpers via features servicer.
+from features.test import component_helpers_test
+from api import features_servicer  # pylint: disable=ungrouped-imports
 
 
 class FeaturesServicerTest(unittest.TestCase):
@@ -57,6 +63,26 @@ class FeaturesServicerTest(unittest.TestCase):
         789, 2, 'sum', 'New', 111L, project_name='proj', issue_id=78902)
     self.services.issue.TestAddIssue(self.issue_1)
     self.services.issue.TestAddIssue(self.issue_2)
+
+    # For testing PredictComponent
+    self._ml_engine = component_helpers_test.FakeMLEngine(self)
+    self._top_words = None
+    self._components_by_index = None
+
+    mock.patch(
+        'services.ml_helpers.setup_ml_engine', lambda: self._ml_engine).start()
+    mock.patch(
+        'features.component_helpers._GetTopWords',
+        lambda _: self._top_words).start()
+    mock.patch('cloudstorage.open', self.cloudstorageOpen).start()
+    mock.patch('settings.component_features', 5).start()
+
+    self.addCleanup(mock.patch.stopall)
+
+  def cloudstorageOpen(self, name, mode):
+    """Create a file mock that returns self._components_by_index when read."""
+    open_fn = mock.mock_open(read_data=json.dumps(self._components_by_index))
+    return open_fn(name, mode)
 
   def tearDown(self):
     self.mox.UnsetStubs()
@@ -794,3 +820,33 @@ class FeaturesServicerTest(unittest.TestCase):
         self.services, cnxn=self.cnxn, requester='owner@example.com')
     with self.assertRaises(permissions.PermissionException):
       self.CallWrapped(self.features_svcr.UpdateHotlistIssueNote, mc, request)
+
+  def testPredictComponent_Normal(self):
+    """Test normal case when predicted component exists."""
+    component_id = self.services.config.CreateComponentDef(
+        cnxn=None, project_id=self.project.project_id, path='Ruta>Baga',
+        docstring='', deprecated=False, admin_ids=[], cc_ids=[], created=None,
+        creator_id=None, label_ids=[])
+
+    self._top_words = {
+        'foo': 0,
+        'bar': 1,
+        'baz': 2}
+    self._components_by_index = {
+        '0': '123',
+        '1': str(component_id),
+        '2': '789'}
+    self._ml_engine.expected_features = [3, 0, 1, 0, 0]
+    self._ml_engine.scores = [5, 10, 3]
+
+    request = features_pb2.PredictComponentRequest(
+        project_name='proj',
+        text='foo baz foo foo')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    result = self.CallWrapped(self.features_svcr.PredictComponent, mc, request)
+
+    self.assertEqual(
+        common_pb2.ComponentRef(
+            path='Ruta>Baga'),
+        result.component_ref)
