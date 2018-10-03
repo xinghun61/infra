@@ -42,7 +42,7 @@
       }
     </style>
 
-    <template is="dom-if" if="[[unsupportedFields]]">
+    <template is="dom-if" if="[[unsupportedFields.length]]">
       <span>&#x26A0; Unsupported fields in query:</span>
       <template is="dom-repeat" items="[[unsupportedFields]]" as="field">
         <b>[[field]]</b>
@@ -90,6 +90,7 @@
           },
           unsupportedFields: {
             type: Array,
+            value: [],
           },
         };
       }
@@ -122,7 +123,9 @@
             };
           });
           const flatUnsupportedFields = chartData.reduce((acc, datum) => {
-            acc = acc.concat(datum.unsupportedField);
+            if (datum.unsupportedField) {
+              acc = acc.concat(datum.unsupportedField);
+            }
             return acc;
           }, []);
           this.unsupportedFields = Array.from(new Set(flatUnsupportedFields));

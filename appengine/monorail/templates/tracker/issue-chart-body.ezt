@@ -1,7 +1,5 @@
 <h1>Charts</h1>
 
-[include "../framework/polymer-header.ezt"]
-
 [if-any dev_mode]
   <link rel="import" href="/elements/mr-bar-chart/mr-bar-chart.html?version=[app_version]" nonce="[nonce]">
 [else]
