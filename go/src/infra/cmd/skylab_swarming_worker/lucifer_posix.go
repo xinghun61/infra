@@ -82,25 +82,22 @@ func runLuciferCommand(b *swarming.Bot, w io.Writer, cmd *exec.Cmd) (*luciferRes
 	if w == nil {
 		w = os.Stdout
 	}
-	s := annotations.NewState(w)
-	defer s.Close()
 	f := func(e event.Event, m string) {
 		switch {
-		case isTaskStatus(e):
-			s.OpenStep(string(e))
-			if e == event.TestFailed && m != "autoserv" {
-				r.TestsFailed++
-			}
+		case e == event.TestFailed && m != "autoserv":
+			r.TestsFailed++
 		case isHostStatus(e):
 			s := hostStateUpdates[e]
 			log.Printf("Got host event '%s', set host state to %s", e, s)
 			b.BotInfo.HostState = s
 		default:
-			log.Printf("Unexpected lucifer event: %s", e)
+			log.Printf("Skipping lucifer event: %s", e)
 		}
 	}
 	err := event.RunCommand(cmd, f)
-	s.AddLink("results", resultsURL(b))
+	annotations.BuildStep(w, "Finalization")
+	annotations.StepLink(w, "Stainless results", resultsURL(b))
+	annotations.StepClosed(w)
 	return r, err
 }
 
@@ -108,21 +105,6 @@ func resultsURL(b *swarming.Bot) string {
 	return fmt.Sprintf(
 		"https://stainless.corp.google.com/browse/chromeos-autotest-results/swarming-%s/",
 		b.Task.ID)
-}
-
-// taskStateUpdates is the set of Events that correspond to task state updates.
-var taskStateUpdates = map[event.Event]bool{
-	// Job state changes
-	event.Starting:     true,
-	event.Provisioning: true,
-	event.Running:      true,
-	event.Gathering:    true,
-	event.Parsing:      true,
-	event.Completed:    true,
-
-	// Test status changes
-	event.TestPassed: true,
-	event.TestFailed: true,
 }
 
 // hostStateUpdates maps Events to the target runtime state of the
@@ -137,10 +119,6 @@ var hostStateUpdates = map[event.Event]botcache.HostState{
 	// event.HostReadyToRun
 	// event.HostRunning
 	event.HostFailedRepair: botcache.HostRepairFailed,
-}
-
-func isTaskStatus(e event.Event) bool {
-	return taskStateUpdates[e]
 }
 
 func isHostStatus(e event.Event) bool {
