@@ -88,11 +88,17 @@ def _GetRawLogsFromGetEndpoint(host, data, http_client, retry_delay=5):
       error_message = 'cannot get json log.'
       break
     else:
-      logs = json.loads(response_json).get('logs')
-      if not logs or not isinstance(logs, list):
-        error_message = 'Wrong format - %s' % response_json
-      else:
-        return logs
+      try:
+        logs = json.loads(response_json).get('logs')
+        if not logs or not isinstance(logs, list):
+          error_message = 'Wrong format - %s' % response_json
+        else:
+          return logs
+      except ValueError as e:
+        # For unknown reason sometimes the response_json is truncated and cannot
+        # be json loaded.
+        # This will also help to catch if the response_json is not serializable.
+        error_message = 'Failed to load json - %s' % e.message
     tries += 1
     time.sleep(tries * retry_delay)
 

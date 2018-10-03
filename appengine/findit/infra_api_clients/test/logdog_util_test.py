@@ -8,6 +8,7 @@ import logging
 import mock
 import os
 import sys
+import time
 import unittest
 
 import google
@@ -95,17 +96,29 @@ class LogDogUtilTest(unittest.TestCase):
                                                self.http_client)
     self.assertIsNone(step_metadata)
 
+  @mock.patch.object(time, 'sleep')
   @mock.patch.object(
       rpc_util, 'DownloadJsonData', return_value=(200, json.dumps({
           'a': 'a'
       })))
   @mock.patch.object(logging, 'error')
-  def testGetStepMetadataFromLogDogNoJson(self, mock_logging, _):
+  def testGetStepMetadataFromLogDogNoJson(self, mock_logging, *_):
     step_metadata = logdog_util._GetLogForPath(
         'host', 'project', 'path', self.http_client, retry_delay=0)
     self.assertIsNone(step_metadata)
     mock_logging.assert_called_once_with(
         'Error when fetch log or annotations: Wrong format - {"a": "a"}')
+
+  @mock.patch.object(time, 'sleep')
+  @mock.patch.object(rpc_util, 'DownloadJsonData', return_value=(200, 'a'))
+  @mock.patch.object(logging, 'error')
+  def testGetStepMetadataFromLogDogFailToLoad(self, mock_logging, *_):
+    step_metadata = logdog_util._GetLogForPath(
+        'host', 'project', 'path', self.http_client, retry_delay=0)
+    self.assertIsNone(step_metadata)
+    mock_logging.assert_called_once_with(
+        'Error when fetch log or annotations: Failed to load json - '
+        'No JSON object could be decoded')
 
   @mock.patch.object(rpc_util, 'DownloadJsonData')
   def testGetStepMetadataFromLogDogRetry(self, mock_rpc):
@@ -269,8 +282,9 @@ class LogDogUtilTest(unittest.TestCase):
         log_location)
     self.assertEqual('logs.chromium.org', host)
     self.assertEqual('chromium', project)
-    self.assertEqual('buildbucket/cr-buildbucket.appspot.com/8948240'
-                     '770002521488/+/annotations', path)
+    self.assertEqual(
+        'buildbucket/cr-buildbucket.appspot.com/8948240'
+        '770002521488/+/annotations', path)
 
   def testGetQueryParametersForAnnotationNone(self):
     host, project, path = logdog_util._GetQueryParametersForAnnotation(None)
