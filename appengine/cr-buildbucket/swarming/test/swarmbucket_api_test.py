@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import base64
 import datetime
 import json
 
@@ -10,6 +11,7 @@ from components import auth_testing
 from testing_utils import testing
 import mock
 
+from proto import launcher_pb2
 from proto.config import project_config_pb2
 from swarming import swarmbucket_api
 from test import config_test
@@ -237,6 +239,12 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     self.call_api('get_builders', req, status=400)
 
   def test_get_task_def(self):
+    self.patch(
+        'v2.tokens.generate_build_token',
+        autospec=True,
+        return_value='beeff00d',
+    )
+
     req = {
         'build_request': {
             'bucket':
@@ -249,6 +257,9 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     }
     resp = self.call_api('get_task_def', req).json_body
     actual_task_def = json.loads(resp['task_definition'])
+    expected_secret_bytes = base64.b64encode(
+        launcher_pb2.BuildSecrets(build_token='beeff00d').SerializeToString()
+    )
     props_def = {
         u'env': [{u'key': u'BUILDBUCKET_EXPERIMENTAL', u'value': u'FALSE'}],
         u'extra_args': [
@@ -287,6 +298,8 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
             u'-logdog-project',
             u'chromium',
         ],
+        'secret_bytes':
+            expected_secret_bytes,
         u'execution_timeout_secs':
             u'3600',
         u'cipd_input': {
