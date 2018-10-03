@@ -4,7 +4,7 @@
 
 // +build darwin linux
 
-package main
+package fifo
 
 import (
 	"golang.org/x/sys/unix"

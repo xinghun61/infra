@@ -31,13 +31,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/pkg/errors"
 	"go.chromium.org/luci/common/logging/gologger"
 	"go.chromium.org/luci/logdog/common/types"
 
 	"infra/cmd/skylab_swarming_worker/internal/autotest"
+	"infra/cmd/skylab_swarming_worker/internal/fifo"
 	"infra/cmd/skylab_swarming_worker/internal/flagx"
 	"infra/cmd/skylab_swarming_worker/internal/log"
 	"infra/cmd/skylab_swarming_worker/internal/lucifer"
@@ -109,8 +109,6 @@ func runSwarmingTask(a *args) (err error) {
 			var annotWriter io.Writer
 			annotWriter = os.Stdout
 
-			var fifoDone chan<- struct{}
-			var wg sync.WaitGroup
 			if a.logdogAnnotationURL != "" {
 				// Set up FIFO, pipe, and goroutines like so:
 				//
@@ -133,27 +131,13 @@ func runSwarmingTask(a *args) (err error) {
 				annotWriter = lc.Stdout()
 
 				fifoPath := filepath.Join(resultsDir, "logdog.fifo")
-				if err := makeFIFO(fifoPath); err != nil {
-					return err
-				}
-				r, c, err := openFIFO(fifoPath)
+				fc, err := fifo.NewCopier(annotWriter, fifoPath)
 				if err != nil {
 					return err
 				}
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					io.Copy(lc.Stdout(), r)
-				}()
-				ta.LogDogFile = fifoPath
-				fifoDone = c
+				defer fc.Close()
 			}
-			err := runLuciferTask(b, a, annotWriter, ta, b.DUTName())
-			if fifoDone != nil {
-				close(fifoDone)
-			}
-			wg.Wait()
-			if err != nil {
+			if err := runLuciferTask(b, a, annotWriter, ta, b.DUTName()); err != nil {
 				return errors.Wrap(err, "run lucifer task")
 			}
 			return nil
