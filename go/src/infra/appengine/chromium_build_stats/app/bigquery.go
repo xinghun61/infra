@@ -18,7 +18,7 @@ import (
 
 const (
 	bqDataset     = "ninjalog"
-	bqResultTable = "staging"
+	bqResultTable = "ninjalog"
 )
 
 // SendToBigquery sends ninjalog converted to protocol buffer to BigQuery.

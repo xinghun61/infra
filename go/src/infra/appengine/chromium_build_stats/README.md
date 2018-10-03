@@ -37,3 +37,27 @@ See [infra/go/README.md](../../../../README.md) for preparation.
   $ godoc -http :6060
  and go to http://localhost:6060
  )
+
+## Operation for BigQuery Table
+
+Setup
+
+1. Make Dataset
+
+```
+$ bq --project_id=$PROJECT mk ninjalog
+```
+
+2. Make table
+
+```
+# Set 2 year expiration
+$ bq --project_id=$PROJECT mk --time_partitioning_type=DAY \
+    --time_partitioning_expiration=$((3600 * 24 * 365 * 2)) ninjalog.ninjalog
+```
+
+3. Update schema
+
+```
+$ make update-prod # or `make update-staging`
+```
