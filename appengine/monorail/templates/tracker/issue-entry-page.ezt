@@ -465,9 +465,9 @@ runOnLoad(function() {
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
   if (typeof(ClientLogger) === "function") {
-    let l = new ClientLogger("issues");
+    const l = new ClientLogger("issues");
     l.logStart("new-issue", "user-time");
-    window.addEventListener('submit', function() {
+    document.forms.create_issue_form.addEventListener('submit', function() {
       l.logStart("new-issue", "server-time");
     });
   }
