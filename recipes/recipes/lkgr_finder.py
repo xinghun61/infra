@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from recipe_engine import post_process
 from recipe_engine.recipe_api import Property
 from recipe_engine.types import freeze
 
@@ -27,33 +28,68 @@ DEPS = [
 BUILDERS = freeze({
   'chromium-lkgr-finder': {
     'project': 'chromium',
-    'lkgr_status_gs_path': 'chromium-v8/chromium-lkgr-status',
     'repo': 'https://chromium.googlesource.com/chromium/src',
     'ref': 'refs/heads/lkgr',
-    'gclient_config': 'chromium',
+    'lkgr_status_gs_path': 'chromium-v8/chromium-lkgr-status',
   },
   'V8 lkgr finder': {
     'project': 'v8',
-    'allowed_lag': 4,
-    'lkgr_status_gs_path': 'chromium-v8/lkgr-status',
     'repo': 'https://chromium.googlesource.com/v8/v8',
     'ref': 'refs/heads/lkgr',
-    'gclient_config': 'v8',
+    'lkgr_status_gs_path': 'chromium-v8/lkgr-status',
+    'allowed_lag': 4,
   },
   'WebRTC lkgr finder': {
     'project': 'webrtc',
-    'lkgr_status_gs_path': 'chromium-webrtc/lkgr-status',
     'repo': 'https://webrtc.googlesource.com/src',
     'ref': 'refs/heads/lkgr',
-    'gclient_config': 'webrtc',
+    'lkgr_status_gs_path': 'chromium-webrtc/lkgr-status',
   }
-  # When adding a new builder, please make sure to add dep containing relevant
-  # gclient_config into DEPS list above.
 })
 
 
-def RunSteps(api):
-  botconfig = BUILDERS[api.buildbucket.builder_name]
+PROPERTIES = {
+  'project': Property(
+      kind=str, default=None,
+      help='Project for which LKGR should be calculated.',
+  ),
+  'repo': Property(
+      kind=str, default=None,
+      help='Repo for which LKGR should be updated.'
+  ),
+  'ref': Property(
+      kind=str, default=None,
+      help='LKGR ref to update.'
+  ),
+  'lkgr_status_gs_path': Property(
+      kind=str, default=None,
+      help='Google storage path to which LKGR status reports will be uploaded.',
+  ),
+  'allowed_lag': Property(
+      kind=int, default=None,
+      help='Hours before an LKGR is considered out of date.',
+  ),
+}
+
+
+def RunSteps(api, project, repo, ref, lkgr_status_gs_path, allowed_lag):
+  # TODO(jbudorick): Remove old_botconfig once the three builders above
+  # are explicitly setting their desired properties.
+  old_botconfig = BUILDERS.get(api.buildbucket.builder_name)
+  if old_botconfig:
+    project = project or old_botconfig.get('project')
+    repo = repo or old_botconfig.get('repo')
+    ref = ref or old_botconfig.get('ref')
+    lkgr_status_gs_path = (
+        lkgr_status_gs_path or old_botconfig.get('lkgr_status_gs_path'))
+    allowed_lag = allowed_lag or old_botconfig.get('allowed_lag')
+
+  if not project or not repo or not ref:
+    api.python.failing_step(
+        'configuration missing',
+        'lkgr_finder requires `project`, `repo`, and `ref` '
+        + 'properties to be set.')
+
   api.gclient.set_config('infra')
   api.gclient.c.revisions['infra'] = 'HEAD'
 
@@ -68,14 +104,13 @@ def RunSteps(api):
     api.bot_update.ensure_checkout()
   api.gclient.runhooks()
 
-  repo, ref = botconfig['repo'], botconfig['ref']
   current_lkgr = api.gitiles.commit_log(
       repo, ref, step_name='read lkgr from ref')['commit']
 
   api.file.ensure_directory('mkdirs builder/lw', checkout_dir.join('lw'))
   args = [
     'infra.services.lkgr_finder',
-    '--project=%s' % botconfig['project'],
+    '--project=%s' % project,
     '--verbose',
     '--read-from-file', api.raw_io.input_text(current_lkgr),
     '--write-to-file', api.raw_io.output_text(name='lkgr_hash'),
@@ -86,10 +121,10 @@ def RunSteps(api):
   step_test_data = api.raw_io.test_api.output_text(
       'deadbeef' * 5, name='lkgr_hash')
 
-  if botconfig.get('allowed_lag') is not None:
-    args.append('--allowed-lag=%d' % botconfig['allowed_lag'])
+  if allowed_lag is not None:
+    args.append('--allowed-lag=%d' % allowed_lag)
 
-  if botconfig.get('lkgr_status_gs_path'):
+  if lkgr_status_gs_path:
     args += ['--html', api.raw_io.output_text(name='html')]
     step_test_data += api.raw_io.test_api.output_text(
         '<html>lkgr</html>', name='html')
@@ -97,7 +132,7 @@ def RunSteps(api):
   try:
     with api.context(cwd=checkout_dir.join('infra')):
       api.python(
-          'calculate %s lkgr' % botconfig['project'],
+          'calculate %s lkgr' % project,
           checkout_dir.join('infra', 'run.py'),
           args,
           step_test_data=lambda: step_test_data
@@ -115,17 +150,17 @@ def RunSteps(api):
         and hasattr(step_result.raw_io, 'output_texts')
         and hasattr(step_result.raw_io.output_texts, 'get')):
       html_status = step_result.raw_io.output_texts.get('html')
-    if botconfig.get('lkgr_status_gs_path') and html_status:
+    if lkgr_status_gs_path and html_status:
       if api.runtime.is_experimental:
         api.step('fake HTML status upload', cmd=None)
       else:
         api.gsutil.upload(
           api.raw_io.input_text(html_status),
-          botconfig['lkgr_status_gs_path'],
-          '%s-lkgr-status.html' % botconfig['project'],
+          lkgr_status_gs_path,
+          '%s-lkgr-status.html' % project,
           args=['-a', 'public-read'],
           metadata={'Content-Type': 'text/html'},
-          link_name='%s-lkgr-status.html' % botconfig['project'],
+          link_name='%s-lkgr-status.html' % project,
         )
 
   # We check out regularly, not only on lkgr update, to catch infra failures
@@ -153,14 +188,17 @@ def RunSteps(api):
 
 
 def GenTests(api):
-  def test_props_and_data(buildername):
+  def test_props(buildername):
     return (
         api.properties.generic(buildername=buildername) +
-        api.properties(path_config='kitchen') +
+        api.properties(path_config='kitchen'))
+
+  def test_props_and_data(buildername):
+    return (
+        test_props(buildername) +
         api.step_data(
             'read lkgr from ref',
-            api.gitiles.make_commit_test_data('deadbeef1', 'Commit1'))
-    )
+            api.gitiles.make_commit_test_data('deadbeef1', 'Commit1')))
 
   for buildername, botconfig in BUILDERS.iteritems():
     yield (
@@ -190,4 +228,26 @@ def GenTests(api):
       api.test('v8_experimental') +
       test_props_and_data('V8 lkgr finder') +
       api.runtime(is_luci=True, is_experimental=True)
+  )
+
+  yield (
+      api.test('custom_properties') +
+      test_props_and_data('custom-lkgr-finder') +
+      api.properties(
+          project='custom',
+          repo='https://custom.googlesource.com/src',
+          ref='refs/heads/lkgr',
+          lkgr_status_gs_path='custom/lkgr-status') +
+      api.runtime(is_luci=True, is_experimental=False) +
+      api.post_process(post_process.MustRun, 'calculate custom lkgr') +
+      api.post_process(post_process.StatusCodeIn, 0) +
+      api.post_process(post_process.DropExpectation)
+  )
+
+  yield (
+      api.test('missing_botconfig') +
+      test_props('missing-lkgr-finder') +
+      api.runtime(is_luci=True, is_experimental=False) +
+      api.post_process(post_process.MustRun, 'configuration missing') +
+      api.post_process(post_process.DropExpectation)
   )
