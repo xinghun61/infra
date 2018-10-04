@@ -9,6 +9,7 @@ project repositories: `projects/<project_id>:<buildbucket-app-id>.cfg`.
 """
 
 import collections
+import copy
 import hashlib
 import logging
 import re
@@ -22,6 +23,7 @@ from google.appengine.ext import ndb
 
 from components import auth
 from components import config
+from components import datastore_utils
 from components import gitiles
 from components.config import validation
 
@@ -151,8 +153,9 @@ def validate_settings_cfg(cfg, ctx):  # pragma: no cover
       swarmingcfg.validate_service_cfg(cfg.swarming, ctx)
 
 
+# TODO(crbug.com/851036): delete LegacyBucket in favor of Bucket.
 class LegacyBucket(ndb.Model):
-  """Stores project a bucket belongs to, and its ACLs.
+  """DEPRECATED. Stores project a bucket belongs to, and its ACLs.
 
   For historical reasons, some bucket names must match Chromium Buildbot master
   names, therefore they may not contain project id. Consequently, it is
@@ -178,7 +181,6 @@ class LegacyBucket(ndb.Model):
   # the entity forcefully.
   entity_schema_version = ndb.IntegerProperty()
   # Project id in luci-config.
-  # TODO(crbug.com/851036): move project_id to the entity key.
   project_id = ndb.StringProperty(required=True)
   # Bucket revision matches its config revision.
   revision = ndb.StringProperty(required=True)
@@ -189,6 +191,60 @@ class LegacyBucket(ndb.Model):
   config_content = ndb.TextProperty(required=True)
   # Binary equivalent of config_content.
   config_content_binary = ndb.BlobProperty(required=True)
+
+
+class Project(ndb.Model):
+  """Parent entity for Bucket.
+
+  Does not exist in the datastore.
+
+  Entity key:
+    Root entity. ID is project id.
+  """
+
+
+class Bucket(ndb.Model):
+  """Stores bucket configurations.
+
+  Bucket entities are updated in cron_update_buckets() from project configs.
+
+  Entity key:
+    Parent is Project. Id is a "short" bucket name.
+    See also bucket_name attribute and short_bucket_name().
+  """
+
+  @classmethod
+  def _get_kind(cls):
+    return 'BucketV2'
+
+  # Bucket name not prefixed by project id.
+  # For example "try" or "master.x".
+  #
+  # If a bucket in a config file has "luci.<project_id>." prefix, the
+  # prefix is stripped, e.g. "try", not "luci.chromium.try".
+  bucket_name = ndb.ComputedProperty(lambda self: self.key.id())
+  # Version of entity schema. If not current, cron_update_buckets will update
+  # the entity forcefully.
+  entity_schema_version = ndb.IntegerProperty()
+  # Bucket revision matches its config revision.
+  revision = ndb.StringProperty(required=True)
+  # Binary equivalent of config_content.
+  config = datastore_utils.ProtobufProperty(project_config_pb2.Bucket)
+
+  def _pre_put_hook(self):
+    assert self.config.name == self.key.id()
+
+  @staticmethod
+  def make_key(project_id, bucket_name):
+    return ndb.Key(Project, project_id, Bucket, bucket_name)
+
+
+def short_bucket_name(bucket_name):
+  """Returns bucket name without "luci.<project_id>." prefix."""
+  parts = bucket_name.split('.', 2)
+  if len(parts) == 3 and parts[0] == 'luci':
+    return parts[2]
+  return bucket_name
 
 
 def parse_binary_bucket_config(cfg_bytes):
@@ -265,14 +321,28 @@ def _normalize_acls(acls):
 
 
 def put_bucket(project_id, revision, bucket_cfg):
-  LegacyBucket(
+  legacy_bucket = LegacyBucket(
       id=bucket_cfg.name,
       entity_schema_version=CURRENT_BUCKET_SCHEMA_VERSION,
       project_id=project_id,
       revision=revision,
       config_content=protobuf.text_format.MessageToString(bucket_cfg),
       config_content_binary=bucket_cfg.SerializeToString(),
-  ).put()
+  )
+
+  # New Bucket format uses short bucket names, e.g. "try" instead of
+  # "luci.chromium.try".
+  # Use short name in both entity key and config contents.
+  short_bucket_cfg = copy.deepcopy(bucket_cfg)
+  short_bucket_cfg.name = short_bucket_name(short_bucket_cfg.name)
+  bucket = Bucket(
+      key=Bucket.make_key(project_id, short_bucket_cfg.name),
+      entity_schema_version=CURRENT_BUCKET_SCHEMA_VERSION,
+      revision=revision,
+      config=short_bucket_cfg,
+  )
+
+  ndb.put_multi([bucket, legacy_bucket])
 
 
 def cron_update_buckets():
@@ -289,11 +359,11 @@ def cron_update_buckets():
       cfg_path(), project_config_pb2.BuildbucketCfg
   )
 
-  to_delete = collections.defaultdict(set)  # project_id -> set of bucket names
+  to_delete = collections.defaultdict(set)  # project_id -> ndb keys
   for bucket in LegacyBucket.query().fetch():
-    # TODO(crbug.com/851036): use key only query when bucket id includes
-    # project id
-    to_delete[bucket.project_id].add(bucket.key.id())
+    to_delete[bucket.project_id].add(bucket.key)
+  for key in Bucket.query().fetch(keys_only=True):
+    to_delete[key.parent().id()].add(key)
 
   for project_id, (revision, project_cfg, _) in config_map.iteritems():
     if project_cfg is None:
@@ -310,12 +380,14 @@ def cron_update_buckets():
     builder_mixins_by_name = {m.name: m for m in project_cfg.builder_mixins}
 
     for bucket_cfg in project_cfg.buckets:
-      to_delete[project_id].discard(bucket_cfg.name)
-      bucket = LegacyBucket.get_by_id(bucket_cfg.name)
+      short_name = short_bucket_name(bucket_cfg.name)
+      bucket_key = Bucket.make_key(project_id, short_name)
+      to_delete[project_id].discard(ndb.Key(LegacyBucket, bucket_cfg.name))
+      to_delete[project_id].discard(bucket_key)
+      bucket = bucket_key.get()
       if (bucket and
           bucket.entity_schema_version == CURRENT_BUCKET_SCHEMA_VERSION and
-          bucket.project_id == project_id and bucket.revision == revision and
-          bucket.config_content_binary):
+          bucket.revision == revision):
         continue
 
       # Inline ACL sets.
@@ -324,10 +396,9 @@ def cron_update_buckets():
         if not acl_set:
           logging.error(
               'referenced acl_set not found.\n'
-              'Bucket: %r\n'
+              'Bucket: %s\n'
               'ACL set name: %r\n'
-              'Project id: %r\n'
-              'Config revision: %r', bucket_cfg.name, name, project_id, revision
+              'Config revision: %r', bucket_key, name, revision
           )
           continue
         bucket_cfg.acls.extend(acl_set.acls)
@@ -347,27 +418,25 @@ def cron_update_buckets():
               b, defaults, builder_mixins_by_name
           )
 
-      @ndb.transactional
+      # pylint: disable=no-value-for-parameter
+      @ndb.transactional(xg=True)
       def update_bucket():
-        bucket = LegacyBucket.get_by_id(bucket_cfg.name)
+        bucket = bucket_key.get()
         if (bucket and
             bucket.entity_schema_version == CURRENT_BUCKET_SCHEMA_VERSION and
-            bucket.project_id == project_id and bucket.revision == revision and
-            bucket.config_content_binary):  # pragma: no coverage
+            bucket.revision == revision):  # pragma: no coverage
           return
 
         put_bucket(project_id, revision, bucket_cfg)
-        logging.info(
-            'Updated bucket %s to revision %s', bucket_cfg.name, revision
-        )
+        logging.info('Updated bucket %s to revision %s', bucket_key, revision)
 
       update_bucket()
 
   # Delete non-existing buckets.
   to_delete_flat = sum([list(n) for n in to_delete.itervalues()], [])
   if to_delete_flat:
-    logging.warning('Deleting buckets: %s', ', '.join(to_delete_flat))
-    ndb.delete_multi(ndb.Key(LegacyBucket, n) for n in to_delete_flat)
+    logging.warning('Deleting buckets: %s', ', '.join(map(str, to_delete_flat)))
+    ndb.delete_multi(to_delete_flat)
 
 
 def get_buildbucket_cfg_url(project_id):
