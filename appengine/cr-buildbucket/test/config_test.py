@@ -47,6 +47,8 @@ swarming {
 }
 '''
 )
+LUCI_CHROMIUM_TRY_CONFIG_SHORT = copy.deepcopy(LUCI_CHROMIUM_TRY_CONFIG)
+LUCI_CHROMIUM_TRY_CONFIG_SHORT.name = 'try'
 
 LUCI_DART_TRY_CONFIG = parse_bucket_cfg(
     '''name: "luci.dart.try"
@@ -62,6 +64,8 @@ swarming {
 }
 '''
 )
+LUCI_DART_TRY_CONFIG_SHORT = copy.deepcopy(LUCI_DART_TRY_CONFIG)
+LUCI_DART_TRY_CONFIG_SHORT.name = 'try'
 
 MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG = parse_bucket_cfg(
     '''name: "master.tryserver.chromium.linux"
@@ -131,53 +135,12 @@ def errmsg(text):
 class ConfigTest(testing.AppengineTestCase):
 
   def test_get_bucket(self):
-    config.put_bucket(
-        'chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG
-    )
-    project, cfg = config.get_bucket('master.tryserver.chromium.linux')
-    self.assertEqual(project, 'chromium')
-    self.assertEqual(
-        cfg,
-        project_config_pb2.Bucket(
-            name='master.tryserver.chromium.linux',
-            acls=[
-                project_config_pb2.Acl(
-                    role=project_config_pb2.Acl.READER, group='all'
-                ),
-                project_config_pb2.Acl(
-                    role=project_config_pb2.Acl.SCHEDULER,
-                    group='tryjob-access'
-                ),
-            ]
-        ),
-    )
+    config.put_bucket('chromium', 'deadbeef', LUCI_CHROMIUM_TRY_CONFIG)
+    project_id, cfg = config.get_bucket('chromium/try')
+    self.assertEqual(project_id, 'chromium')
+    self.assertEqual(cfg, LUCI_CHROMIUM_TRY_CONFIG_SHORT)
 
-    self.assertIsNone(config.get_bucket('non.existing')[0])
-
-  def test_get_bucket_async(self):
-    config.put_bucket(
-        'chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG
-    )
-    project, cfg = config.get_bucket_async('master.tryserver.chromium.linux'
-                                          ).get_result()
-    self.assertEqual(project, 'chromium')
-    self.assertEqual(
-        cfg,
-        project_config_pb2.Bucket(
-            name='master.tryserver.chromium.linux',
-            acls=[
-                project_config_pb2.Acl(
-                    role=project_config_pb2.Acl.READER, group='all'
-                ),
-                project_config_pb2.Acl(
-                    role=project_config_pb2.Acl.SCHEDULER,
-                    group='tryjob-access'
-                ),
-            ]
-        ),
-    )
-
-    self.assertIsNone(config.get_bucket_async('non.existing').get_result()[0])
+    self.assertIsNone(config.get_bucket('chromium/nonexistent')[0])
 
   def test_get_buckets_async(self):
     config.put_bucket(

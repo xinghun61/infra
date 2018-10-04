@@ -203,6 +203,22 @@ class Project(ndb.Model):
   """
 
 
+def is_legacy_bucket_id(bucket_id):
+  return '/' not in bucket_id
+
+
+def format_bucket_id(project_id, bucket_name):  # pragma: no cover
+  """Returns a bucket id string."""
+  return '%s/%s' % (project_id, bucket_name)
+
+
+def parse_bucket_id(bucket_id):
+  """Returns a (project_id, bucket_name) tuple."""
+  parts = bucket_id.split('/', 1)
+  assert len(parts) == 2
+  return tuple(parts)
+
+
 class Bucket(ndb.Model):
   """Stores bucket configurations.
 
@@ -233,6 +249,10 @@ class Bucket(ndb.Model):
 
   def _pre_put_hook(self):
     assert self.config.name == self.key.id()
+
+  @property
+  def project_id(self):
+    return self.key.parent().id()
 
   @staticmethod
   def make_key(project_id, bucket_name):
@@ -289,21 +309,29 @@ def get_buckets_async(names=None):
 
 @ndb.non_transactional
 @ndb.tasklet
-def get_bucket_async(name):
-  """Returns a (project, project_config_pb2.Bucket) tuple."""
-  bucket = yield LegacyBucket.get_by_id_async(name)
+def get_bucket_async(bucket_id):
+  """Returns a (project_id, project_config_pb2.Bucket) tuple."""
+  if is_legacy_bucket_id(bucket_id):  # pragma: no cover
+    # Legacy mode. TODO(crbug.com/851036): remove.
+    bucket = yield LegacyBucket.get_by_id_async(bucket_id)
+    if bucket is None:
+      raise ndb.Return(None, None)
+    raise ndb.Return(
+        bucket.project_id,
+        parse_binary_bucket_config(bucket.config_content_binary)
+    )
+
+  key = Bucket.make_key(*parse_bucket_id(bucket_id))
+  bucket = yield key.get_async()
   if bucket is None:
     raise ndb.Return(None, None)
-  raise ndb.Return(
-      bucket.project_id,
-      parse_binary_bucket_config(bucket.config_content_binary)
-  )
+  raise ndb.Return(bucket.project_id, bucket.config)
 
 
 @ndb.non_transactional
-def get_bucket(name):
-  """Returns a (project, project_config_pb2.Bucket) tuple."""
-  return get_bucket_async(name).get_result()
+def get_bucket(bucket_id):
+  """Returns a (project_id, project_config_pb2.Bucket) tuple."""
+  return get_bucket_async(bucket_id).get_result()
 
 
 def _normalize_acls(acls):
@@ -380,8 +408,9 @@ def cron_update_buckets():
     builder_mixins_by_name = {m.name: m for m in project_cfg.builder_mixins}
 
     for bucket_cfg in project_cfg.buckets:
-      short_name = short_bucket_name(bucket_cfg.name)
-      bucket_key = Bucket.make_key(project_id, short_name)
+      bucket_key = Bucket.make_key(
+          project_id, short_bucket_name(bucket_cfg.name)
+      )
       to_delete[project_id].discard(ndb.Key(LegacyBucket, bucket_cfg.name))
       to_delete[project_id].discard(bucket_key)
       bucket = bucket_key.get()
