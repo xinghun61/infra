@@ -47,6 +47,7 @@ backward.
 """
 
 import argparse
+import ast
 import json
 import logging
 import os
@@ -126,9 +127,14 @@ def ParseArgs(argv):
                       'allowed_lag']
 
   parser.add_argument('--project', required=True,
-                      help='Project for which to calculate the LKGR.Currently '
-                           'accepted projects are those with a <project>.cfg '
-                           'file in this directory.')
+                      help='Project for which to calculate the LKGR. Projects '
+                           'without a <project>.cfg file in this directory '
+                           'will need to provide their own with '
+                           '--project-config-file.')
+  parser.add_argument('--project-config-file', type=os.path.realpath,
+                      help='Config file to use to calculate LKGR. '
+                           '(If provided, default_cfg.pyl will not be '
+                           'incorporated into the final config.)')
   parser.add_argument('--workdir',
                       default=os.path.join(
                         os.path.dirname(os.path.abspath(__file__)),
@@ -158,7 +164,12 @@ def main(argv):
   LOGGER = logging.getLogger(__name__)
   LOGGER.addFilter(lkgr_lib.RunLogger())
 
-  config = lkgr_lib.GetProjectConfig(args.project)
+  if args.project_config_file:
+    with open(args.project_config_file) as f:
+      config = ast.literal_eval(f.read())
+  else:
+    config = lkgr_lib.GetProjectConfig(args.project)
+
   for name in config_arg_names:
     cmd_line_config = getattr(args, name, NOTSET)
     if cmd_line_config is not NOTSET:
