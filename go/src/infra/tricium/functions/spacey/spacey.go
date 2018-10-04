@@ -55,15 +55,12 @@ func main() {
 		if err != nil {
 			log.Fatalf("Failed to open file: %v, path: %s", err, p)
 		}
-		defer func() {
-			if err := file.Close(); err != nil {
-				log.Fatalf("Failed to close file: %v, path: %s", err, p)
-			}
-		}()
-
 		comments := analyzeFile(bufio.NewScanner(file), p)
 		commentFreqs := organizeCommentsByCategory(comments)
 		output.Comments = mergeComments(commentFreqs, p)
+		if err := file.Close(); err != nil {
+			log.Fatalf("Failed to close file: %v, path: %s", err, p)
+		}
 	}
 
 	// Write Tricium RESULTS data.
