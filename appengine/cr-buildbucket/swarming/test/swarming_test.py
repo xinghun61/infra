@@ -526,6 +526,23 @@ class SwarmingTest(BaseTest):
         ]
     )
 
+  def test_unset_dimension(self):
+    builder_cfg = self.bucket_cfg.swarming.builders[0]
+    builder_cfg.dimensions[:] = ['cores:']
+
+    build = mkBuild(
+        parameters={
+            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
+        },
+        tags=['builder:linux_chromium_rel_ng'],
+    )
+
+    task_def = swarming.prepare_task_def_async(build).get_result()
+    dim_keys = {
+        d['key'] for d in task_def['task_slices'][0]['properties']['dimensions']
+    }
+    self.assertNotIn('cores', dim_keys)
+
   def test_is_migrating_builder_prod_async_no_master_name(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.luci_migration_host = 'migration.example.com'

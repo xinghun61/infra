@@ -57,7 +57,9 @@ def read_dimensions(builder_cfg):  # pragma: no cover
   if (builder_cfg.auto_builder_dimension == project_config_pb2.YES and
       u'builder' not in dimensions):
     dimensions[u'builder'] = (builder_cfg.name, 0)
-  return dimensions
+
+  # Remove empty values.
+  return {k: (v, exp) for k, (v, exp) in dimensions.iteritems() if v}
 
 
 def _validate_tag(tag, ctx):
