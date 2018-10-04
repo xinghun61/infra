@@ -151,14 +151,17 @@ func respondTestFileList(ctx *router.Context, params URLParams) {
 }
 
 func keysJSON(c context.Context, tfiles []*model.TestFile) ([]byte, error) {
-	type K struct {
+	type wireFormat struct {
+		*model.TestFile
+		// Not sure if anything actually uses this, but it's already here,
+		// so keep it around in case something relies on it.
 		Key string `json:"key"`
 	}
-	keys := make([]K, len(tfiles))
+	toMarshal := make([]wireFormat, len(tfiles))
 	for i, tf := range tfiles {
-		keys[i] = K{datastore.KeyForObj(c, tf).Encode()}
+		toMarshal[i] = wireFormat{tf, datastore.KeyForObj(c, tf).Encode()}
 	}
-	return json.Marshal(keys)
+	return json.Marshal(toMarshal)
 }
 
 func respondTestFileDefault(ctx *router.Context, params URLParams) {
