@@ -144,8 +144,8 @@ class BuildRequest(_BuildRequestBase):
     """Converts the request to a build."""
     build = model.Build(
         id=build_id,
-        bucket=self.bucket,
         project=self.project,
+        bucket=self.bucket,
         initial_tags=self.tags,
         tags=self.tags,
         parameters=self.parameters or {},

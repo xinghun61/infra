@@ -15,6 +15,7 @@ from protorpc import messages
 from proto import build_pb2
 from proto import common_pb2
 import buildtags
+import config
 
 BEGINING_OF_THE_WORLD = datetime.datetime(2010, 1, 1, 0, 0, 0, 0)
 BUILD_TIMEOUT = datetime.timedelta(days=2)
@@ -139,9 +140,17 @@ class Build(ndb.Model):
 
   create_time = ndb.DateTimeProperty(auto_now_add=True)
   created_by = auth.IdentityProperty()
-  # a generic way to distinguish builds.
+  # DEPRECATED, use bucket_id. a generic way to distinguish builds.
   # Different buckets have different permissions.
-  bucket = ndb.StringProperty(required=True)
+  bucket = ndb.StringProperty()
+  # A container of builds, defines a security domain.
+  # Format: "<project_id>/<bucket_name>".
+  # "luci.<project_id>." prefix is stripped from bucket name,
+  # e.g. "chromium/try", not "chromium/luci.chromium.try".
+  # TODO(nodir): make it non-computed.
+  bucket_id = ndb.ComputedProperty(
+      lambda self: self.make_bucket_id(self.project, self.bucket)
+  )
   # property containing the ID of the LUCI project to which this build
   # belongs. Required for new builds, but older builds may not have it.
   project = ndb.StringProperty()
@@ -222,6 +231,8 @@ class Build(ndb.Model):
   def _pre_put_hook(self):
     """Checks Build invariants before putting."""
     super(Build, self)._pre_put_hook()
+    assert self.bucket
+    assert self.bucket_id
     is_started = self.status == BuildStatus.STARTED
     is_completed = self.status == BuildStatus.COMPLETED
     is_canceled = self.result == BuildResult.CANCELED
@@ -270,6 +281,11 @@ class Build(ndb.Model):
     self.lease_key = None
     self.lease_expiration_date = None
     self.leasee = None
+
+  @staticmethod
+  def make_bucket_id(project_id, bucket_name):
+    """Generates a value for model.Build.bucket_id."""
+    return '%s/%s' % (project_id, config.short_bucket_name(bucket_name))
 
 
 class BuildDetailEntity(ndb.Model):
