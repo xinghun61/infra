@@ -1,7 +1,4 @@
 (function(window) {
-  // TODO: make this dynamic so it works on prod too.
-   const PREDICT_ENDPOINT = '/p/chromium/suggest/component.do';
-
   var componentsEl, commentEl, suggestionsEl, newIssueTextArea,
       addCommentTextArea, issueSummaryInput, existingComments, componentEdit;
 
@@ -42,7 +39,7 @@
   }
 
   // Update the list of suggested components.
-  function updateComponents(resp) {
+  function updateComponents(component) {
     componentsEl = document.getElementById('components');
     if (!componentsEl) {
       componentsEl = document.getElementById('componentedit');
@@ -64,13 +61,8 @@
       }
     }
 
-    var suggested = resp.components || [];
     var current = currentComponents();
-    suggested = suggested.filter(function(comp) {
-      return !caseInsensitiveContains(current, comp);
-    });
-
-    if (suggested.length == 0) {
+    if (!component || caseInsensitiveContains(current, component)) {
       return;
     }
 
@@ -80,19 +72,18 @@
     labelEl.style.padding = '0.25em';
     suggestionsEl.appendChild(labelEl);
 
-    suggested.forEach(function(component) {
-      var comp = document.createElement('div');
-      comp.textContent = component;
-      comp.className = 'component-suggestion';
-      comp.title = 'Click to use this component';
-      comp.addEventListener('click', acceptSuggestion);
-      // TODO: UI for explicit rejection.
-      suggestionsEl.appendChild(comp);
-    });
+    const comp = document.createElement('div');
+    comp.textContent = component;
+    comp.className = 'component-suggestion';
+    comp.title = 'Click to use this component';
+    comp.addEventListener('click', acceptSuggestion);
+    // TODO: UI for explicit rejection.
+    suggestionsEl.appendChild(comp);
+
     componentsEl.parentElement.appendChild(suggestionsEl);
   }
 
-  function gatherTextAndPredict() {
+  async function gatherTextAndPredict() {
     // Only suggest components if there are none already.
     if (componentEdit && componentEdit.value.trim() != '') {
       return;
@@ -122,17 +113,16 @@
       }
     }
 
-    var data = {
-      text: text.join('\n').trim(),
-      // TODO: other values?
-    };
+    const response = await window.prpcClient.call(
+        'monorail.Features', 'PredictComponent', {
+            text: text.join('\n').trim(),
+            // Component prediction is only done on Chromium issues.
+            project_name: 'chromium',
+    });
 
-    CS_doPost(PREDICT_ENDPOINT, function(evt) {
-      if (evt.target.responseText) {
-        resp = CS_parseJSON(evt.target);
-        updateComponents(resp);
-      }
-    }, data);
+    if (response.componentRef) {
+      updateComponents(response.componentRef.path);
+    }
   }
 
   window.addEventListener('load', function() {
