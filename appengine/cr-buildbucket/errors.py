@@ -7,7 +7,7 @@ import re
 
 from components import utils
 
-BUCKET_NAME_REGEX = re.compile(r'^[0-9a-z_\.\-/]{1,100}$')
+BUCKET_NAME_REGEX = re.compile(r'^[0-9a-z_\.\-]{1,100}$')
 MAX_LEASE_DURATION = datetime.timedelta(hours=2)
 
 
@@ -47,6 +47,7 @@ class TagIndexIncomplete(Error):
   """Raised when a tag index is permanently incomplete and cannot be used."""
 
 
+# TODO(crbug.com/851036): move to config.py
 def validate_bucket_name(bucket, project_id=None):
   """Raises InvalidInputError if bucket name is invalid."""
   if not bucket:

@@ -219,6 +219,33 @@ def parse_bucket_id(bucket_id):
   return tuple(parts)
 
 
+def validate_project_id(project_id):
+  """Raises errors.InvalidInputError if project_id is invalid."""
+  if not validation.is_valid_project_id(project_id):
+    raise errors.InvalidInputError('invalid project_id %r' % project_id)
+
+
+validate_bucket_name = errors.validate_bucket_name
+
+
+def validate_bucket_id(bucket_id):
+  """Raises errors.InvalidInputError if bucket_id is invalid."""
+  if is_legacy_bucket_id(bucket_id):
+    validate_bucket_name(bucket_id)
+  else:
+    project_id, bucket_name = parse_bucket_id(bucket_id)
+    validate_project_id(project_id)
+    validate_bucket_name(bucket_name)
+
+    parts = bucket_name.split('.', 2)
+    if len(parts) == 3 and parts[0] == 'luci' and parts[1] == project_id:
+      expected_bucket_id = '%s/%s' % (project_id, parts[2])
+      raise errors.InvalidInputError(
+          'invalid bucket_id string %r. Did you mean %r?' %
+          (bucket_id, expected_bucket_id)
+      )
+
+
 class Bucket(ndb.Model):
   """Stores bucket configurations.
 

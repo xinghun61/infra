@@ -5,6 +5,8 @@
 import copy
 import logging
 
+from parameterized import parameterized
+
 from components import utils
 
 utils.fix_protobuf_package()
@@ -18,6 +20,7 @@ import mock
 from proto.config import project_config_pb2
 from swarming import flatten_swarmingcfg
 import config
+import errors
 
 to_text = text_format.MessageToString
 to_binary = lambda msg: msg.SerializeToString()
@@ -711,3 +714,26 @@ class ConfigTest(testing.AppengineTestCase):
 
     cfg.swarming.hostname = 'exists.now'
     self.assertTrue(config.is_swarming_config(cfg))
+
+
+class ValidateBucketIDTest(testing.AppengineTestCase):
+
+  @parameterized.expand([
+      ('chromium',),
+      ('chromium/try',),
+      ('chrome-internal/try',),
+      ('chrome-internal/try.x',),
+  ])
+  def test_valid(self, bucket_id):
+    config.validate_bucket_id(bucket_id)
+
+  @parameterized.expand([
+      ('a/b/c',),
+      ('a:b',),
+      ('a b',),
+      ('a b/c',),
+      ('chromium/luci.chromium.try',),
+  ])
+  def test_invalid(self, bucket_id):
+    with self.assertRaises(errors.InvalidInputError):
+      config.validate_bucket_id(bucket_id)
