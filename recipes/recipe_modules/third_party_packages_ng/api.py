@@ -263,11 +263,19 @@ including:
 
 [dockcross]: https://github.com/dockcross/dockcross
 
-#### Dry runs
+#### Dry runs / experiments
 
-If the recipe is run in experimental mode (according to the
-"recipe_engine/runtime" module), then this recipe will skip the final CIPD
-upload.
+If the recipe is run with `force_build` it will always build all packages
+indicated (and their dependencies), and will not upload any of them to the
+central server.
+
+If the recipe is run in experimental mode (without `force_build`) then the
+recipe will prepend 'experimental/' to all built packages (when fetching or
+uploading). This prefix does not apply to CIPD Sources.  e.g.
+'infra/tools/thing/${platform}' would become
+'experimental/infra/tools/thing/${platform}'. Additionally, you can set the
+package_prefix explicitly, if you want to use a different namespace; the set
+package_prefix overrides 'experimental/' entirely.
 
 #### Examples
 
@@ -364,9 +372,31 @@ class ThirdPartyPackagesNGApi(recipe_api.RecipeApi):
     # Used by CIPDSpec; must be defined here so that it doesn't persist
     # accidentally between recipe tests.
     self._cipd_spec_pool = None
+    # The package prefix to use for built packages (not for package sources).
+    self._package_prefix = ''
 
   def initialize(self):
     self._cipd_spec_pool = cipd_spec.CIPDSpecPool(self.m)
+    # This initialize occurs before the package_prefix parameter could be
+    # assigned.
+    self._package_prefix = (
+      'experimental/' if self.m.runtime.is_experimental else ''
+    )
+
+  @property
+  def package_prefix(self):
+    """Returns the CIPD package name prefix (str), if any is set."""
+    return self._package_prefix
+
+  @package_prefix.setter
+  def package_prefix(self, prefix):
+    """Set the CIPD package name prefix (str).
+
+    All CIPDSpecs for built packages (not sources) will have this string
+    prepended to them.
+    """
+    assert isinstance(prefix, str)
+    self._package_prefix = prefix
 
   BadParse = BadParse
   DuplicatePackage = DuplicatePackage
@@ -427,7 +457,7 @@ class ThirdPartyPackagesNGApi(recipe_api.RecipeApi):
           tool_name, tool_platform(self.m, platform, spec)))
 
     ret = ResolvedSpec(
-      self.m, self._cipd_spec_pool,
+      self.m, self._cipd_spec_pool, self._package_prefix,
       pkgname, platform, base_path, spec, deps, unpinned_tools)
     self._resolved_packages[key] = ret
     return ret

@@ -199,5 +199,7 @@ class CIPDSpec(object):
     pkg_path = self.local_pkg_path()
     assert pkg_path
     tags = {'version': self._symver}
+    if self._api.buildbucket.build.id:
+      tags['build_id'] = str(self._api.buildbucket.build.id)
     refs = ['latest'] if latest else []
     self._api.cipd.register(self._pkg, pkg_path, tags=tags, refs=refs)

@@ -58,9 +58,10 @@ class ResolvedSpec(object):
 
   It has helper methods and properties to read the resolved data.
   """
-  def __init__(self, api, cipd_spec_pool, name, platform, base_path, spec, deps,
-               unpinned_tools):
+  def __init__(self, api, cipd_spec_pool, package_prefix, name, platform,
+               base_path, spec, deps, unpinned_tools):
     self._api = api
+    self._package_prefix = package_prefix
     self._cipd_spec_pool = cipd_spec_pool
 
     self._name = name                     # Name of the package
@@ -202,7 +203,8 @@ class ResolvedSpec(object):
     Args:
       * version (str) - The symver of this package to get the CIPDSpec for.
     """
-    pkg_name = '%s/%s' % (self.upload_pb.pkg_prefix, self.name)
+    pkg_name = '%s%s/%s' % (self._package_prefix, self.upload_pb.pkg_prefix,
+                            self.name)
     if not self._spec_pb.upload.universal:
       pkg_name = '/'.join([pkg_name, self.platform])
     patch_ver = self.create_pb.source.patch_version

@@ -1,6 +1,13 @@
 [
   {
     "cmd": [
+      "echo",
+      ""
+    ],
+    "name": "echo package_prefix"
+  },
+  {
+    "cmd": [
       "python",
       "-u",
       "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",

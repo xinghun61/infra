@@ -5,12 +5,14 @@
 from recipe_engine.recipe_api import Property
 
 DEPS = [
+  "recipe_engine/buildbucket",
   "recipe_engine/cipd",
   "recipe_engine/file",
   "recipe_engine/path",
   "recipe_engine/platform",
   "recipe_engine/properties",
   "recipe_engine/raw_io",
+  "recipe_engine/step",
 
   "third_party_packages_ng",
 ]
@@ -18,11 +20,16 @@ DEPS = [
 PROPERTIES = {
   'GOOS': Property(),
   'GOARCH': Property(),
+  'package_prefix': Property(kind=str, default=''),
   'load_dupe': Property(kind=bool, default=False),
 }
 
-def RunSteps(api, GOOS, GOARCH, load_dupe):
+def RunSteps(api, GOOS, GOARCH, package_prefix, load_dupe):
   builder = api.path['cache'].join('builder')
+  api.third_party_packages_ng.package_prefix = package_prefix
+
+  api.step('echo package_prefix', [
+    'echo', api.third_party_packages_ng.package_prefix])
 
   # do a checkout in `builder`
   pkgs = api.third_party_packages_ng.load_packages_from_path(
@@ -212,15 +219,16 @@ def GenTests(api):
 
     test = (api.test('integration_test_%s-%s' % (goos, goarch))
       + api.platform(plat_name, 64)  # assume all hosts are 64 bits.
-      + api.properties(GOOS=goos, GOARCH=goarch)
+      + api.properties(GOOS=goos, GOARCH=goarch, package_prefix='cool_prefix/')
+      + api.buildbucket.ci_build()
       + api.step_data('find package specs',
                       api.file.glob_paths([
                         pkg_repo_path % name for name, _ in pkgs]))
       + api.override_step_data(mk_name(
         'building already_uploaded',
-        'cipd describe tools/already_uploaded/%s' % plat
+        'cipd describe cool_prefix/tools/already_uploaded/%s' % plat
       ), api.cipd.example_describe(
-        'tools/already_uploaded/%s' % plat,
+        'cool_prefix/tools/already_uploaded/%s' % plat,
         version='version:1.4.1', test_data_tags=['version:1.4.1']))
     )
 

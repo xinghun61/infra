@@ -110,6 +110,6 @@ def _build_impl(api, cipd_spec, is_latest, spec_lookup, force_build, recurse_fn,
       with api.step.nest('run test'):
         verify.run_test(api, workdir, spec, cipd_spec)
 
-    if not force_build and not api.runtime.is_experimental:
+    if not force_build:
       with api.step.nest('do upload'):
         cipd_spec.ensure_uploaded(is_latest)

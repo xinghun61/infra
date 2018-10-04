@@ -55,10 +55,19 @@ PROPERTIES = {
       help=(
         'Forces building packages, even if they\'re available on the CIPD '
         'server already. Doing this disables uploads.')),
+  'package_prefix': Property(
+      kind=str, default='',
+      help=(
+        'Prepends this string before all downloaded/uploaded packages. Allows '
+        'comprehensive testing of the entire packaging process without '
+        'uploading into the prod namespace. If this recipe is run in '
+        'experimental mode (according to the `runtime` module), then '
+        'this will default to "experimental".')),
 }
 
 
-def RunSteps(api, package_locations, to_build, platform, force_build):
+def RunSteps(api, package_locations, to_build, platform, force_build,
+             package_prefix):
   package_repos = api.path['cache'].join('builder')
   current_repos = set()
   try:
@@ -72,6 +81,8 @@ def RunSteps(api, package_locations, to_build, platform, force_build):
   except api.file.Error as err:  # pragma: no cover
     if err.errno_name != 'ENOENT':
       raise
+
+  api.third_party_packages_ng.package_prefix = package_prefix
 
   actual_repos = set()
   with api.step.nest('load packages from desired repos'):

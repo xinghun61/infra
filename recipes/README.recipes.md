@@ -268,7 +268,7 @@ Ensures that the specified CIPD package exists.
 &emsp; **@property**<br>&mdash; **def [swig](/recipes/recipe_modules/third_party_packages/api.py#101)(self):**
 ### *recipe_modules* / [third\_party\_packages\_ng](/recipes/recipe_modules/third_party_packages_ng)
 
-[DEPS](/recipes/recipe_modules/third_party_packages_ng/__init__.py#5): [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/osx\_sdk][depot_tools/recipe_modules/osx_sdk], [depot\_tools/windows\_sdk][depot_tools/recipe_modules/windows_sdk], [recipe\_engine/archive][recipe_engine/recipe_modules/archive], [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipe_modules/third_party_packages_ng/__init__.py#5): [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/osx\_sdk][depot_tools/recipe_modules/osx_sdk], [depot\_tools/windows\_sdk][depot_tools/recipe_modules/windows_sdk], [recipe\_engine/archive][recipe_engine/recipe_modules/archive], [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
 Allows uniform cross-compiliation, version tracking and archival for
 third-party software packages (libs+tools) for distribution via CIPD.
@@ -531,20 +531,28 @@ including:
 
 [dockcross]: https://github.com/dockcross/dockcross
 
-#### Dry runs
+#### Dry runs / experiments
 
-If the recipe is run in experimental mode (according to the
-"recipe_engine/runtime" module), then this recipe will skip the final CIPD
-upload.
+If the recipe is run with `force_build` it will always build all packages
+indicated (and their dependencies), and will not upload any of them to the
+central server.
+
+If the recipe is run in experimental mode (without `force_build`) then the
+recipe will prepend 'experimental/' to all built packages (when fetching or
+uploading). This prefix does not apply to CIPD Sources.  e.g.
+'infra/tools/thing/${platform}' would become
+'experimental/infra/tools/thing/${platform}'. Additionally, you can set the
+package_prefix explicitly, if you want to use a different namespace; the set
+package_prefix overrides 'experimental/' entirely.
 
 #### Examples
 
 As an example of the package definition layout in action, take a look at the
 [third_party_packages](/third_party_packages) folder in this infra.git repo.
 
-#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#355)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#363)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
-&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#500)(self, packages=(), platform='', force_build=False):**
+&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#530)(self, packages=(), platform='', force_build=False):**
 
 Executes entire {fetch,build,package,verify,upload} pipeline for all the
 packages listed, targeting the given platform.
@@ -560,9 +568,9 @@ Args:
 Returns (list[(cipd_pkg, cipd_version)], set[str]) of built CIPD packages
 and their tagged versions, as well as a list of unsupported packages.
 
-&mdash; **def [initialize](/recipes/recipe_modules/third_party_packages_ng/api.py#368)(self):**
+&mdash; **def [initialize](/recipes/recipe_modules/third_party_packages_ng/api.py#378)(self):**
 
-&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#450)(self, path):**
+&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#480)(self, path):**
 
 Loads all package definitions from the given path.
 
@@ -587,6 +595,13 @@ Raises a DuplicatePackage exception if this function encounters a package
 whose name is already registered. This could occur if you call
 load_packages_from_path multiple times, and one of the later calls tries to
 load a pacakge which was registered under one of the earlier calls.
+
+&emsp; **@package_prefix.setter**<br>&mdash; **def [package\_prefix](/recipes/recipe_modules/third_party_packages_ng/api.py#391)(self, prefix):**
+
+Set the CIPD package name prefix (str).
+
+All CIPDSpecs for built packages (not sources) will have this string
+prepended to them.
 ### *recipe_modules* / [wct](/recipes/recipe_modules/wct)
 
 [DEPS](/recipes/recipe_modules/wct/__init__.py#1): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/step][recipe_engine/recipe_modules/step]
@@ -998,12 +1013,12 @@ running this recipe module directly.
 
 This recipe builds and packages third party software, such as Git.
 
-&mdash; **def [RunSteps](/recipes/recipes/third_party_packages_ng.py#61)(api, package_locations, to_build, platform, force_build):**
+&mdash; **def [RunSteps](/recipes/recipes/third_party_packages_ng.py#69)(api, package_locations, to_build, platform, force_build, package_prefix):**
 ### *recipes* / [third\_party\_packages\_ng:tests/full](/recipes/recipe_modules/third_party_packages_ng/tests/full.py)
 
-[DEPS](/recipes/recipe_modules/third_party_packages_ng/tests/full.py#7): [third\_party\_packages\_ng](#recipe_modules-third_party_packages_ng), [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io]
+[DEPS](/recipes/recipe_modules/third_party_packages_ng/tests/full.py#7): [third\_party\_packages\_ng](#recipe_modules-third_party_packages_ng), [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipe_modules/third_party_packages_ng/tests/full.py#24)(api, GOOS, GOARCH, load_dupe):**
+&mdash; **def [RunSteps](/recipes/recipe_modules/third_party_packages_ng/tests/full.py#27)(api, GOOS, GOARCH, package_prefix, load_dupe):**
 ### *recipes* / [tricium\_noop](/recipes/recipes/tricium_noop.py)
 
 [DEPS](/recipes/recipes/tricium_noop.py#12): [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/tricium][recipe_engine/recipe_modules/tricium]
