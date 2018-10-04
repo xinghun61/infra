@@ -23,6 +23,7 @@ import config
 import creation
 import errors
 import model
+import reput_builds
 import search
 import service
 import user
@@ -741,7 +742,8 @@ class BuildBucketApi(remote.Service):
       endpoints.ResourceContainer(
           message_types.VoidMessage,
           tag_key=messages.StringField(1, required=True),
-      ), message_types.VoidMessage
+      ),
+      message_types.VoidMessage,
   )
   @auth.require(auth.is_admin)
   def backfill_tag_index(self, request):
@@ -749,4 +751,11 @@ class BuildBucketApi(remote.Service):
     if ':' in request.tag_key:
       raise endpoints.BadRequestException('invalid tag_key')
     backfill_tag_index.launch(request.tag_key)
+    return message_types.VoidMessage()
+
+  @buildbucket_api_method(message_types.VoidMessage, message_types.VoidMessage)
+  @auth.require(auth.is_admin)
+  def reput_builds(self, _request):  # pragma: no cover
+    """Reputs every build, recomputing its properties."""
+    reput_builds.launch()
     return message_types.VoidMessage()
