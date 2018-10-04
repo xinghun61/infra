@@ -15,9 +15,11 @@ import (
 )
 
 func TestSpellCheckerAnalyzeFiles(t *testing.T) {
-	cp := loadCommentsJSONFile()
-
 	// These tests depend on both dictionary.txt and comment_formats.json.
+	// TODO(qyearsley): Make the tests not depend on these files.
+	cp := loadCommentsJSONFile()
+	dict = loadDictionaryFile()
+
 	Convey("Analyzing simple file with one misspelling generates one comment", t, func() {
 		fileContent := "/* coment */"
 		expected := &tricium.Data_Results{
@@ -527,7 +529,6 @@ func TestSpellCheckerAnalyzeFiles(t *testing.T) {
 func TestGettingCommentFormat(t *testing.T) {
 	cp := loadCommentsJSONFile()
 
-	// This test depends on reading the comment-format file in this
 	Convey("The appropriate comment formats are determined from the file extensions", t, func() {
 		So(cp[".py"], ShouldResemble, &commentFormat{
 			LineStart:  "#",

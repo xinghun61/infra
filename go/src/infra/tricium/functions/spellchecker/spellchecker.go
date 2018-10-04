@@ -52,7 +52,9 @@ var (
 		"tast",   // Name of a ChromeOS test
 	}
 	textFileExts = []string{".txt", ".md"}
-	dict         map[string][]string
+
+	// TODO(qyearsley): Pass around a dict instead of using a global variable.
+	dict map[string][]string
 
 	// Selects words i.e. consecutive letters and numbers
 	justWord = regexp.MustCompile(`[a-zA-Z0-9'-]+`)
@@ -73,6 +75,7 @@ func main() {
 		log.Fatalf("Unexpected argument")
 	}
 	cp := loadCommentsJSONFile()
+	dict = loadDictionaryFile()
 
 	// Read Tricium input FILES data.
 	input := &tricium.Data_Files{}
@@ -113,18 +116,16 @@ func main() {
 }
 
 // Analyzes file line by line to find misspellings within comments.
-// TODO(diegomtzg): Add support for string literals.
 func analyzeFile(scanner *bufio.Scanner, filePath string, checkEveryWord bool, commentPatterns *commentFormat, results *tricium.Data_Results) {
 	lineno := 1
 	s := noComment
 
-	dict = buildDict()
-
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		// Note: Because we split the file lines by whitespace (to analyze each word), we don't
-		// handle multi-word misspellings, although they do exist in the CodeSpell dictionary.
+		// Note: Because we split words in the line by whitespace,
+		// we don't handle multi-word misspellings, although they may
+		// exist in the CodeSpell dictionary.
 		for _, commentWordRange := range whitespaceBreak.FindAllStringIndex(line, -1) {
 			var comments []*tricium.Data_Comment
 			commentWord := line[commentWordRange[0]:commentWordRange[1]]
@@ -240,8 +241,8 @@ func analyzeWords(commentWord, stopPattern string,
 
 // Helper function to convert misspelling information into a tricium comment.
 func buildMisspellingComment(misspelling string, fixes []string, startChar, lineno int, path string) *tricium.Data_Comment {
-	// If there is more than one fix and the last character of the last element of fixes
-	// doesn't have a comma, the word has a reason to be disabled.
+	// If there is more than one fix and the last character of the last element
+	// of fixes doesn't have a comma, the word has a reason to be disabled.
 	if len(fixes) > 1 && !strings.HasSuffix(fixes[len(fixes)-1], ",") {
 		log.Printf("SKIPPING: %q has a reason to be disabled "+
 			"in the CodeSpell dictionary.", misspelling)
@@ -325,10 +326,11 @@ func fixesMessage(fixes []string) string {
 	}
 }
 
-// buildDict constructs a map of misspellings to slices of proposed fixes.
+// loadDictionaryFile reads the dictionary file and constructs a map of
+// misspellings to slices of proposed fixes.
 //
 // All keys in the dictionary are lower-case.
-func buildDict() map[string][]string {
+func loadDictionaryFile() map[string][]string {
 	f := openFileOrDie(dictPath)
 	defer closeFileOrDie(f)
 
