@@ -34,8 +34,9 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
 
   DESCRIPTION = issues_prpc_pb2.IssuesServiceDescription
 
-  def _GetProjectIssueAndConfig(self, mc, issue_ref, use_cache=True,
-                                issue_required=True):
+  def _GetProjectIssueAndConfig(
+      self, mc, issue_ref, use_cache=True, issue_required=True,
+      view_deleted=False):
     """Get three objects that we need for most requests with an issue_ref."""
     issue = None
     with work_env.WorkEnv(mc, self.services, phase='getting P, I, C') as we:
@@ -45,7 +46,8 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
       config = we.GetProjectConfig(project.project_id, use_cache=use_cache)
       if issue_required or issue_ref.local_id:
         issue = we.GetIssueByLocalID(
-          project.project_id, issue_ref.local_id, use_cache=use_cache)
+            project.project_id, issue_ref.local_id, use_cache=use_cache,
+            allow_viewing_deleted=view_deleted)
     return project, issue, config
 
   @monorail_servicer.PRPCMethod
@@ -445,4 +447,16 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
       result = issues_pb2.RerankBlockedOnIssuesResponse(
           blocked_on_issue_refs=converted_issue_refs)
 
+    return result
+
+  @monorail_servicer.PRPCMethod
+  def DeleteIssue(self, mc, request):
+    """Mark or unmark the given issue as deleted."""
+    _project, issue, _config = self._GetProjectIssueAndConfig(
+        mc, request.issue_ref, view_deleted=True)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      we.DeleteIssue(issue, request.delete)
+
+    result = issues_pb2.DeleteIssueResponse()
     return result

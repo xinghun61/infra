@@ -32,6 +32,7 @@ service Issues {
   rpc IssueSnapshot (IssueSnapshotRequest) returns (IssueSnapshotResponse) {}
   rpc PresubmitIssue (PresubmitIssueRequest) returns (PresubmitIssueResponse) {}
   rpc RerankBlockedOnIssues (RerankBlockedOnIssuesRequest) returns (RerankBlockedOnIssuesResponse) {}
+  rpc DeleteIssue (DeleteIssueRequest) returns (DeleteIssueResponse) {}
 }
 
 
@@ -297,4 +298,17 @@ message RerankBlockedOnIssuesRequest {
 // Next available tag: 2
 message RerankBlockedOnIssuesResponse {
   repeated IssueRef blocked_on_issue_refs = 1;
+}
+
+
+// Next available tag: 4
+message DeleteIssueRequest {
+  RequestTrace trace = 1;
+  IssueRef issue_ref = 2;
+  bool delete = 3;
+}
+
+
+// Next available tag: 1
+message DeleteIssueResponse {
 }

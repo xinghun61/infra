@@ -1207,3 +1207,39 @@ class IssuesServicerTest(unittest.TestCase):
         [4, 3],
         [blocked_on_ref.local_id
          for blocked_on_ref in response.blocked_on_issue_refs])
+
+  def testDeleteIssue_Delete(self):
+    """We can delete an issue."""
+    issue = self.services.issue.GetIssue(self.cnxn, self.issue_1.issue_id)
+    self.assertFalse(issue.deleted)
+
+    request = issues_pb2.DeleteIssueRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        delete=True)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    self.CallWrapped(self.issues_svcr.DeleteIssue, mc, request)
+
+    issue = self.services.issue.GetIssue(self.cnxn, self.issue_1.issue_id)
+    self.assertTrue(issue.deleted)
+
+  def testDeleteIssue_Undelete(self):
+    """We can undelete an issue."""
+    self.services.issue.SoftDeleteIssue(
+        self.cnxn, self.project.project_id, 1, True, self.services.user)
+    issue = self.services.issue.GetIssue(self.cnxn, self.issue_1.issue_id)
+    self.assertTrue(issue.deleted)
+
+    request = issues_pb2.DeleteIssueRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        delete=False)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    self.CallWrapped(self.issues_svcr.DeleteIssue, mc, request)
+
+    issue = self.services.issue.GetIssue(self.cnxn, self.issue_1.issue_id)
+    self.assertFalse(issue.deleted)
