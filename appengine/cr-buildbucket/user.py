@@ -151,24 +151,24 @@ def can_update_build_async():  # pragma: no cover
 ## Implementation.
 
 
-def get_role_async(bucket):
-  """Returns the most permissive role of the current identity in |bucket|.
+def get_role_async(bucket_id):
+  """Returns the most permissive role of the current identity in |bucket_id|.
 
   The most permissive role is the role that allows most actions, e.g. WRITER
   is more permissive than READER.
   """
-  errors.validate_bucket_name(bucket)
+  config.validate_bucket_id(bucket_id)
 
   @ndb.tasklet
   def impl():
     ctx = ndb.get_context()
     identity_str = auth.get_current_identity().to_bytes()
-    cache_key = 'role/%s/%s' % (identity_str, bucket)
+    cache_key = 'role/%s/%s' % (identity_str, bucket_id)
     cache = yield ctx.memcache_get(cache_key)
     if cache is not None:
       raise ndb.Return(cache[0])
 
-    _, bucket_cfg = yield config.get_bucket_async(bucket)
+    _, bucket_cfg = yield config.get_bucket_async(bucket_id)
     if not bucket_cfg:
       raise ndb.Return(None)
     if auth.is_admin():
@@ -187,7 +187,7 @@ def get_role_async(bucket):
     yield ctx.memcache_set(cache_key, (role,), time=60)
     raise ndb.Return(role)
 
-  return _get_or_create_cached_future('role/%s' % bucket, impl)
+  return _get_or_create_cached_future('role/%s' % bucket_id, impl)
 
 
 @ndb.tasklet

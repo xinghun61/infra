@@ -66,31 +66,35 @@ class UserTest(testing.AppengineTestCase):
         return_value=future(all_buckets)
     )
 
-    bucket_map = {b.name: b for _, b in all_buckets}
+    bucket_map = {
+        config.format_bucket_id(pid, b.name): b for pid, b in all_buckets
+    }
     self.patch(
         'config.get_bucket_async',
         autospec=True,
-        side_effect=lambda name: future(('chromium', bucket_map.get(name)))
+        side_effect=lambda bid: future(('chromium', bucket_map.get(bid)))
     )
+
+  def get_role(self, bucket_id):
+    return user.get_role_async(bucket_id).get_result()
 
   @mock.patch('components.auth.is_group_member', autospec=True)
   def test_get_role(self, is_group_member):
     is_group_member.side_effect = lambda g, _=None: g == 'a-writers'
 
-    get_role = lambda bucket: user.get_role_async(bucket).get_result()
-    self.assertEqual(get_role('a'), Acl.WRITER)
-    self.assertEqual(get_role('b'), None)
-    self.assertEqual(get_role('c'), Acl.READER)
-    self.assertEqual(get_role('non.existing'), None)
+    self.assertEqual(self.get_role('p1/a'), Acl.WRITER)
+    self.assertEqual(self.get_role('p2/a'), None)
+    self.assertEqual(self.get_role('p3/c'), Acl.READER)
+    self.assertEqual(self.get_role('p1/non.existing'), None)
 
     # Memcache test.
     user.clear_request_cache()
-    self.assertEqual(get_role('a'), Acl.WRITER)
+    self.assertEqual(self.get_role('p1/a'), Acl.WRITER)
 
   def test_get_role_admin(self):
     auth.is_admin.return_value = True
-    self.assertEqual(user.get_role_async('a').get_result(), Acl.WRITER)
-    self.assertEqual(user.get_role_async('non.existing').get_result(), None)
+    self.assertEqual(self.get_role('p1/a'), Acl.WRITER)
+    self.assertEqual(self.get_role('p1/non.existing'), None)
 
   @mock.patch('components.auth.is_group_member', autospec=True)
   def test_get_accessible_buckets_async(self, is_group_member):
