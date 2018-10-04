@@ -369,12 +369,18 @@ def _is_migrating_builder_prod_async(builder_cfg, build):
   """
   ret = None
 
-  MASTER_PROPERTY = 'mastername'
-  master = (build.parameters.get(_PARAM_PROPERTIES) or {}).get(MASTER_PROPERTY)
-  if master is None:
-    # TODO(nodir): undup with logic, it is also in _create_task_def_async
-    props = flatten_swarmingcfg.read_properties(builder_cfg.recipe)
-    master = props.get(MASTER_PROPERTY)
+  master = None
+  props_list = (
+      build.parameters.get(_PARAM_PROPERTIES) or {},
+      flatten_swarmingcfg.read_properties(builder_cfg.recipe),
+  )
+  for prop_name in ('luci_migration_master_name', 'mastername'):
+    for props in props_list:
+      master = props.get(prop_name)
+      if master:
+        break
+    if master:  # pragma: no branch
+      break
 
   host = swarmingcfg_module.clear_dash(builder_cfg.luci_migration_host)
   if master and host:

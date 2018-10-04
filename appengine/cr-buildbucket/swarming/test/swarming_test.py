@@ -591,6 +591,25 @@ class SwarmingTest(BaseTest):
     )
     self.assertTrue(net.json_request_async.called)
 
+  def test_is_migrating_builder_prod_async_custom_name(self):
+    builder_cfg = self.bucket_cfg.swarming.builders[0]
+    builder_cfg.luci_migration_host = 'migration.example.com'
+    build = mkBuild(
+        parameters={
+            'properties': {
+                'luci_migration_master_name': 'custom_master',
+                'mastername': 'ordinary_mastername',
+            },
+        }
+    )
+    self.json_response = {'luci_is_prod': True, 'bucket': 'luci.chromium.try'}
+    self.assertTrue(
+        swarming._is_migrating_builder_prod_async(builder_cfg,
+                                                  build).get_result()
+    )
+    self.assertTrue(net.json_request_async.called)
+    self.assertIn('custom_master', net.json_request_async.call_args[0][0])
+
   def test_is_migrating_builder_prod_async_404(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.luci_migration_host = 'migration.example.com'
