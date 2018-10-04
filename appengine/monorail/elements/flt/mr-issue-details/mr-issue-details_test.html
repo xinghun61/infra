@@ -1,0 +1,47 @@
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<script src="/static/js/autolink.js"></script>
+<link rel="import" href="/elements/redux/redux-mixin.html">
+<link rel="import" href="/elements/flt/mr-issue-details/mr-issue-details.html">
+<test-fixture id="basic">
+  <template>
+    <mr-issue-details></mr-issue-details>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+
+  suite('basic tests', function() {
+    let element;
+
+    setup(function() {
+      element = fixture('basic');
+    });
+
+    test('_updateIssue generates description change', function(done) {
+      sinon.spy(actionCreator, 'updateIssue');
+
+      element.token = '1234';
+      element.issueId = 5;
+      element.projectName = 'chromium';
+      element._updateIssue('comment data', null, null, true);
+
+      flush(() => {
+        assert.deepEqual(actionCreator.updateIssue.args[0][1], {
+          trace: {token: '1234'},
+          issueRef: {
+            projectName: 'chromium',
+            localId: 5,
+          },
+          commentContent: 'comment data',
+          isDescription: true,
+        });
+        assert.isTrue(actionCreator.updateIssue.calledOnce);
+        done();
+      });
+    });
+  });
+})();
+</script>

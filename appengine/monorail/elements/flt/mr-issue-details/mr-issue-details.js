@@ -53,7 +53,7 @@ class MrIssueDetails extends ReduxMixin(Polymer.Element) {
   }
 
   _updateDescriptionHandler(content) {
-    this._updateIssue(content, null, true);
+    this._updateIssue(content, null, null, true);
   }
 
   _loadLocalFile(f) {
@@ -71,6 +71,7 @@ class MrIssueDetails extends ReduxMixin(Polymer.Element) {
   }
 
   _updateIssue(commentData, files, delta, isDescription) {
+    files = files || [];
     // Read file contents from local disk into binary strings, which
     // we can pass to UpdateIssue as an AttachmentUpload message.
     const loads = files.map((f) => {
@@ -85,8 +86,11 @@ class MrIssueDetails extends ReduxMixin(Polymer.Element) {
           localId: this.issueId,
         },
         commentContent: commentData || '',
-        uploads: uploads,
       };
+
+      if (uploads && uploads.length) {
+        message.uploads = uploads;
+      }
 
       if (delta) {
         message.delta = delta;
