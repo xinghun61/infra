@@ -600,11 +600,9 @@ def _GetSuspectedCLsWithOnlyCLInfo(suspected_cls):
 
 
 @ndb.transactional
-def SaveAnalysisAfterHeuristicAnalysisCompletes(master_name, builder_name,
-                                                build_number, build_completed,
-                                                analysis_result, suspected_cls):
+def SaveAnalysisAfterHeuristicAnalysisCompletes(
+    master_name, builder_name, build_number, analysis_result, suspected_cls):
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-  analysis.build_completed = build_completed
   analysis.result = analysis_result
   analysis.status = analysis_status.COMPLETED
   analysis.result_status = GetResultAnalysisStatus(analysis_result)
@@ -651,8 +649,12 @@ def GetHeuristicSuspectedCLs(master_name, builder_name, build_number):
   return suspects
 
 
-def ResetAnalysisForANewAnalysis(master_name, builder_name, build_number,
-                                 pipeline_status_path, current_version):
+def ResetAnalysisForANewAnalysis(master_name,
+                                 builder_name,
+                                 build_number,
+                                 build_completed=False,
+                                 pipeline_status_path=None,
+                                 current_version=None):
   """Resets the WfAnalysis object to start a new analysis."""
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
   analysis.Reset(
@@ -661,7 +663,8 @@ def ResetAnalysisForANewAnalysis(master_name, builder_name, build_number,
       analysis_result_status=None,
       start_time=time_util.GetUTCNow(),
       end_time=None,
-      version=current_version)
+      version=current_version,
+      build_completed=build_completed)
 
 
 def UpdateAbortedAnalysis(parameters):

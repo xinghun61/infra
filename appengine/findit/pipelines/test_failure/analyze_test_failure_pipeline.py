@@ -111,8 +111,12 @@ class AnalyzeTestFailurePipeline(GeneratorPipeline):
         pipeline_input.build_key.GetParts())
 
     build_failure_analysis.ResetAnalysisForANewAnalysis(
-        master_name, builder_name, build_number, self.pipeline_status_path,
-        appengine_util.GetCurrentVersion())
+        master_name,
+        builder_name,
+        build_number,
+        build_completed=pipeline_input.build_completed,
+        pipeline_status_path=self.pipeline_status_path,
+        current_version=appengine_util.GetCurrentVersion())
 
     # TODO(crbug/869684): Use a gauge metric to track intermittent statuses.
 

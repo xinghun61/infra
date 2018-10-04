@@ -199,7 +199,6 @@ def HeuristicAnalysisForCompile(heuristic_params):
     failure_info, signals and heuristic_result.
   """
   failure_info = heuristic_params.failure_info
-  build_completed = heuristic_params.build_completed
   master_name = failure_info.master_name
   builder_name = failure_info.builder_name
   build_number = failure_info.build_number
@@ -234,8 +233,7 @@ def HeuristicAnalysisForCompile(heuristic_params):
 
   # Save results and other info to analysis.
   build_failure_analysis.SaveAnalysisAfterHeuristicAnalysisCompletes(
-      master_name, builder_name, build_number, build_completed,
-      heuristic_result, suspected_cls)
+      master_name, builder_name, build_number, heuristic_result, suspected_cls)
 
   # Save suspected_cls to data_store.
   build_failure_analysis.SaveSuspectedCLs(suspected_cls, master_name,

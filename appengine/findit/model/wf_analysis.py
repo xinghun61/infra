@@ -97,7 +97,8 @@ class WfAnalysis(BaseBuildModel):
             start_time=None,
             end_time=None,
             version=None,
-            aborted=False):
+            aborted=False,
+            build_completed=False):
     """Resets to the state as if no analysis is run."""
     self.pipeline_status_path = pipeline_status_path
     self.status = status
@@ -108,6 +109,7 @@ class WfAnalysis(BaseBuildModel):
     self.end_time = end_time
     self.version = version
     self.failure_result_map = self.failure_result_map or {}
+    self.build_completed = build_completed
     self.put()
 
   @property

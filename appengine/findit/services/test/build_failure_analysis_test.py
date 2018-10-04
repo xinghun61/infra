@@ -828,7 +828,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     build_failure_analysis.SaveAnalysisAfterHeuristicAnalysisCompletes(
-        master_name, builder_name, build_number, True, analysis_result, [])
+        master_name, builder_name, build_number, analysis_result, [])
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
@@ -1091,7 +1091,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     mock_now.return_value = now_time
 
     build_failure_analysis.ResetAnalysisForANewAnalysis(
-        master_name, builder_name, build_number, 'pipeline_status_path',
+        master_name, builder_name, build_number, True, 'pipeline_status_path',
         '12345')
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertEqual(analysis_status.RUNNING, analysis.status)
