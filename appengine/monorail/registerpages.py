@@ -28,7 +28,6 @@ from features import savedqueries
 from features import spammodel
 from features import spamtraining
 from features import componentexport
-from features import componentpredict
 
 from framework import artifactcollision
 from framework import banned
@@ -257,7 +256,6 @@ class ServletRegistry(object):
         urls.ISSUE_EXPORT_JSON: issueexport.IssueExportJSON,
         urls.ISSUE_IMPORT: issueimport.IssueImport,
         urls.SPAM_MODERATION_QUEUE: spam.ModerationQueue,
-        urls.COMPONENT_SUGGESTION: componentpredict.ComponentPredict,
         })
 
     self._SetupUserServlets({

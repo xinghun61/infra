@@ -129,7 +129,6 @@ ISSUE_REINDEX = '/issues/reindex'
 ISSUE_EXPORT = '/issues/export'
 ISSUE_EXPORT_JSON = '/issues/export/json'
 ISSUE_IMPORT = '/issues/import'
-COMPONENT_SUGGESTION = '/suggest/component'
 
 # URLs for hotlist features
 HOTLIST_CREATE = '/hosting/createHotlist'
