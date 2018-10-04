@@ -97,6 +97,10 @@ func (fs dependencyFS) Open(name string) (f http.File, err error) {
 func findFilesMatching(root string, filenameRegexp *regexp.Regexp) (results []string, err error) {
 	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if filenameRegexp.MatchString(path) {
+			// Strip root from the path.
+			if strings.Index(path, root) == 0 {
+				path = filepath.Join(*pathPrefix, path[len(root):])
+			}
 			results = append(results, path)
 		}
 		return err
