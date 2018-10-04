@@ -16,6 +16,9 @@
 </head>
 <body>
   <findit-app id="app" page-header="Flaky Test">
-    <flaky-test flake_json='{{flake_json | tojson}}'>
+    <flaky-test
+      flake_json='{{flake_json | tojson}}'
+      key='{{key}}'
+      show_all_occurrences='{{show_all_occurrences}}'>
   </findit-app>
 </body>

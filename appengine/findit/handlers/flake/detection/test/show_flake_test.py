@@ -159,6 +159,11 @@ class ShowFlakeTest(WaterfallTestCase):
     self.assertEqual(
         json.dumps(
             {
-                'flake_json': flake_dict
-            }, default=str, sort_keys=True, indent=2),
+                'flake_json': flake_dict,
+                'key': flake.key.urlsafe(),
+                'show_all_occurrences': ''
+            },
+            default=str,
+            sort_keys=True,
+            indent=2),
         json.dumps(json.loads(response.body), sort_keys=True, indent=2))

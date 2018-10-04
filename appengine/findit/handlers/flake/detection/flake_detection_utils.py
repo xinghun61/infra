@@ -4,15 +4,12 @@
 """Util functions for flake detection handlers."""
 
 from collections import defaultdict
-from datetime import timedelta
 
 from libs import time_util
 from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
 from model.flake.detection.flake_occurrence import (
     CQFalseRejectionFlakeOccurrence)
-
-_DAYS_IN_A_WEEK = 7
 
 
 def _GetOccurrenceInformation(occurrence):
@@ -130,12 +127,13 @@ def GetFlakeInformation(flake, max_occurrence_count, with_occurrences=True):
     its Flake entity, its flake issue information and information of all its
     flake occurrences.
   """
-  start_time = time_util.GetUTCNow() - timedelta(days=_DAYS_IN_A_WEEK)
-  occurrences = CQFalseRejectionFlakeOccurrence.query(
-      ancestor=flake.key).filter(
-          CQFalseRejectionFlakeOccurrence.time_happened >= start_time).order(
-              -CQFalseRejectionFlakeOccurrence.time_happened).fetch(
-                  max_occurrence_count)
+  occurrences_query = CQFalseRejectionFlakeOccurrence.query(
+      ancestor=flake.key).order(-CQFalseRejectionFlakeOccurrence.time_happened)
+
+  if max_occurrence_count:
+    occurrences = occurrences_query.fetch(max_occurrence_count)
+  else:
+    occurrences = occurrences_query.fetch()
 
   if not occurrences and with_occurrences:
     # Flake must be with occurrences, but there is no occurrence, bail out.

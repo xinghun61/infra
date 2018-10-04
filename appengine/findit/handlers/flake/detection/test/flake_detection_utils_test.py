@@ -198,7 +198,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
         test_label_name=test_label_name)
     flake.put()
 
-    self.assertIsNone(flake_detection_utils.GetFlakeInformation(flake, 2))
+    self.assertIsNone(flake_detection_utils.GetFlakeInformation(flake, None))
 
   @mock.patch.object(time_util, 'GetUTCNow', return_value=datetime(2018, 1, 3))
   def testGetFlakeInformationNoIssue(self, _):

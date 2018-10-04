@@ -24,11 +24,19 @@
         color: #FFF;
       }
 
-      #btn_toggle {
-        float: right;
+      paper-button {
         color: #4285F4;
+        float: right;
       }
+
+      .hidden {
+          display: none;
+        }
     </style>
+    <form id="occurrences_form" action="/flake/occurrences">
+        <input type="text" name="key" id="key" class="hidden" value="{{key}}">
+        <input type="text" name="show_all_occurrences" id="show_all_occurrences" class="hidden" value="{{show_all_occurrences}}">
+    </form>
     <table>
         <tr>
           <td>Test Name:</td>
@@ -47,7 +55,9 @@
     <paper-button noink id="btn_toggle" on-tap="togglecollapsed">
         <template is="dom-if" if="[[!collapsed]]">COLLAPSE ALL</template>
         <template is="dom-if" if="[[collapsed]]">EXPAND ALL</template>
-    </paper-button><br>
+    </paper-button>
+    <paper-button noink id="show_all" on-tap="_showAllOccurrences" hidden$="[[_allOccurrencesShown()]]">MORE OCCURRENCES</paper-button>
+    <br>
     <table width="100%">
       <tr>
         <th width="15%">Occurred at</th>
@@ -77,6 +87,12 @@
           collapsed: {
             type: Boolean,
             value: false
+          },
+          key: {
+            type: String
+          },
+          show_all_occurrences: {
+            type: String
           }
         },
 
@@ -85,11 +101,19 @@
           flake.flake_issue.issue_id != null);
         },
 
+        _allOccurrencesShown() {
+            return this.show_all_occurrences != '';
+        },
+
         // Event handlers.
         togglecollapsed: function (e) {
           this.collapsed = !this.collapsed;
-        }
+        },
 
+        _showAllOccurrences: function (e) {
+            this.show_all_occurrences = '1';
+            this.$.occurrences_form.submit();
+        }
       });
     })();
   </script>

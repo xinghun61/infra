@@ -24,8 +24,15 @@ class ShowFlake(BaseHandler):
       return self.CreateError(
           'Didn\'t find Flake for key %s.' % key, return_code=404)
 
+    show_all_occurrences = self.request.get('show_all_occurrences')
     flake_dict = flake_detection_utils.GetFlakeInformation(
-        flake, max_occurrence_count=_DEFAULT_OCCURRENCE_COUNT)
+        flake,
+        max_occurrence_count=(_DEFAULT_OCCURRENCE_COUNT
+                              if not show_all_occurrences else None))
 
-    data = {'flake_json': flake_dict}
+    data = {
+        'flake_json': flake_dict,
+        'key': key,
+        'show_all_occurrences': show_all_occurrences
+    }
     return {'template': 'flake/detection/show_flake.html', 'data': data}
