@@ -11,6 +11,7 @@ import time
 
 from third_party import ezt
 
+from businesslogic import work_env
 from framework import permissions
 from framework import jsonfeed
 from framework import servlet
@@ -63,13 +64,22 @@ class IssueExportJSON(jsonfeed.JsonFeed):
     Returns:
       Dict of values used by EZT for rendering the page.
     """
-    if not mr.start and not mr.num:
+    if mr.query or mr.can != 1:
+      with work_env.WorkEnv(mr, self.services) as we:
+        url_params = []
+        pipeline = we.ListIssues(mr.query, [mr.project.project_name],
+                                 mr.auth.user_id, mr.num, mr.start, url_params,
+                                 mr.can, mr.group_by_spec, mr.sort_spec, False)
+      issues = pipeline.allowed_results
+    # no user query and mr.can == 1 (we want all issues)
+    elif not mr.start and not mr.num:
       issues = self.services.issue.GetAllIssuesInProject(
           mr.cnxn, mr.project.project_id)
     else:
       local_id_range = range(mr.start, mr.start + mr.num)
       issues = self.services.issue.GetIssuesByLocalIDs(
           mr.cnxn, mr.project.project_id, local_id_range)
+
     user_id_set = tracker_bizobj.UsersInvolvedInIssues(issues)
 
     comments_dict = self.services.issue.GetCommentsForIssues(
@@ -86,6 +96,8 @@ class IssueExportJSON(jsonfeed.JsonFeed):
     # The value 0 indicates "no user", e.g., that an issue has no owner.
     # We don't need to create a User row to represent that.
     user_id_set.discard(0)
+    # TODO(jojwang): update this to handle exceptions.NoSuchUserException()
+    # while still returning the email_dict with found users.
     email_dict = self.services.user.LookupUserEmails(mr.cnxn, user_id_set)
 
     issues_json = [

@@ -12,6 +12,14 @@
      <td style="width:90%">JSON</td>
    </tr>
    <tr>
+     <select id="can" name="can">
+       [include "issue-can-widget.ezt" "search"]
+     </select>
+     <label for="searchq"> for </label>
+     <span id="qq"><input type="text" size="[q_field_size]" id="searchq" name="q"
+         value="[query]" autocomplete="off"></span>
+   </tr>
+   <tr>
      <th>Start</th>
      <td><input type="number" size="7" name="start" value="[initial_start]"></td>
    </tr>
