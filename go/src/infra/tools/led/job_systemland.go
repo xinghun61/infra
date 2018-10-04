@@ -10,11 +10,10 @@ import (
 	"strings"
 
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
-	"go.chromium.org/luci/common/errors"
 	logdog_types "go.chromium.org/luci/logdog/common/types"
 )
 
-func (s *Systemland) apply(ctx context.Context, uid string, ts *swarming.SwarmingRpcsTaskSlice) (args *cookflags.CookFlags, extraTags []string, err error) {
+func (s *Systemland) apply(ctx context.Context, uid string, logPrefix logdog_types.StreamName, ts *swarming.SwarmingRpcsTaskSlice) (args *cookflags.CookFlags, extraTags []string, err error) {
 	ts.Properties.Env = exfiltrateMap(s.Env)
 
 	if s.KitchenArgs != nil {
@@ -22,15 +21,9 @@ func (s *Systemland) apply(ctx context.Context, uid string, ts *swarming.Swarmin
 
 		// generate AnnotationURL, if needed, and add it to tags
 		if strings.Contains(string(args.LogDogFlags.AnnotationURL.Path), generateLogdogToken) {
-			var prefix logdog_types.StreamName
-			prefix, err = generateLogdogStream(ctx, uid)
-			if err != nil {
-				err = errors.Annotate(err, "generating logdog prefix").Err()
-				return
-			}
 			args.LogDogFlags.AnnotationURL.Path = logdog_types.StreamPath(strings.Replace(
 				string(args.LogDogFlags.AnnotationURL.Path), generateLogdogToken,
-				string(prefix), -1))
+				string(logPrefix), -1))
 		}
 		if !args.LogDogFlags.AnnotationURL.IsZero() {
 			extraTags = append(extraTags,

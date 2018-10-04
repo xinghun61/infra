@@ -160,10 +160,10 @@ func (tl *ToplevelFields) apply(st *swarming.SwarmingRpcsNewTaskRequest) {
 	st.User = tl.User
 }
 
-func (js *JobSlice) gen(ctx context.Context, uid string, arc *archiver.Archiver) (ret *swarming.SwarmingRpcsTaskSlice, extraTags []string, err error) {
+func (js *JobSlice) gen(ctx context.Context, uid string, logPrefix logdog_types.StreamName, arc *archiver.Archiver) (ret *swarming.SwarmingRpcsTaskSlice, extraTags []string, err error) {
 	ret = &(*js.S.TaskSlice)
 	var userTags, systemTags []string
-	args, systemTags, err := js.S.apply(ctx, uid, ret)
+	args, systemTags, err := js.S.apply(ctx, uid, logPrefix, ret)
 	if err == nil {
 		userTags, err = js.U.apply(ctx, arc, args, ret)
 	}
@@ -180,8 +180,12 @@ func (js *JobSlice) gen(ctx context.Context, uid string, arc *archiver.Archiver)
 func (jd *JobDefinition) GetSwarmingNewTask(ctx context.Context, uid string, arc *archiver.Archiver) (*swarming.SwarmingRpcsNewTaskRequest, error) {
 	st := &swarming.SwarmingRpcsNewTaskRequest{}
 	jd.TopLevel.apply(st)
+	prefix, err := generateLogdogStream(ctx, uid)
+	if err != nil {
+		return nil, errors.Annotate(err, "generating logdog prefix").Err()
+	}
 	for i, s := range jd.Slices {
-		slc, extraTags, err := s.gen(ctx, uid, arc)
+		slc, extraTags, err := s.gen(ctx, uid, prefix, arc)
 		if err != nil {
 			return nil, errors.Annotate(err, "generating TaskSlice %d", i).Err()
 		}
