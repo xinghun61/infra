@@ -5,3 +5,6 @@ bower_components/
 # Polymer generated files.
 demo/
 static/
+
+# This dir is created just for `polymer analyze` input.
+chopsui/
