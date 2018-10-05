@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Manage shifts</title>
+  </head>
+  <body>
+    <script src="/static/dist/bundle.js"></script>
+    <h4>Shift history</h4>
+    <shifthistory-element shifts='{{.History}}'>
+    </shifthistory-element>
+    <h4>Do the shifts</h4>
+    <shiftcurrent-element shifts='{{.Current}}'>
+    </shiftcurrent-element>
+    <h4>Generate shifts</h4>
+    <shiftgenerate-element rota='{{.Rota}}'>
+    </shiftgenerate-element>
+  </body>
+</html>
