@@ -11,11 +11,9 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"path"
 	"strings"
-	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/GoogleCloudPlatform/google-cloud-go-testing/storage/stiface"
@@ -32,7 +30,6 @@ type Req struct {
 }
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
 	http.Handle("/_ah/push-handlers/pubsub", http.HandlerFunc(pubsubHandler))
 }
 
@@ -63,12 +60,6 @@ func pubsubHandler(w http.ResponseWriter, req *http.Request) {
 	filename := request.PubsubMessage.Attributes["objectId"]
 	bucketID := request.PubsubMessage.Attributes["bucketId"]
 	log.Debugf(ctx, "objectId: %v, bucketId: %v", filename, bucketID)
-
-	if rand.Intn(10) != 0 {
-		fmt.Fprintln(w, "OK")
-		log.Infof(ctx, "request is skipped")
-		return
-	}
 
 	basename := path.Base(filename)
 	if !strings.HasPrefix(basename, "ninja_log") {
