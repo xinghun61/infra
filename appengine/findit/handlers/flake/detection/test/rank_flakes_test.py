@@ -8,6 +8,7 @@ import mock
 import webapp2
 
 from handlers.flake.detection import rank_flakes
+from libs import time_util
 from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
 from waterfall.test.wf_testcase import WaterfallTestCase
@@ -37,6 +38,7 @@ class RankFlakesTest(WaterfallTestCase):
     self.flake1.flake_issue_key = self.flake_issue.key
     self.flake1.false_rejection_count_last_week = 2
     self.flake1.impacted_cl_count_last_week = 2
+    self.flake1.last_occurred_time = datetime.datetime(2018, 10, 1)
     self.flake1.put()
 
     self.flake2 = Flake.Create(
@@ -53,6 +55,7 @@ class RankFlakesTest(WaterfallTestCase):
         test_label_name='suite.test')
     self.flake3.false_rejection_count_last_week = 5
     self.flake3.impacted_cl_count_last_week = 3
+    self.flake3.last_occurred_time = datetime.datetime(2018, 10, 1)
     self.flake3.put()
 
     self.flake1_dict = self.flake1.to_dict()
@@ -60,11 +63,15 @@ class RankFlakesTest(WaterfallTestCase):
     self.flake1_dict['flake_issue'] = self.flake_issue.to_dict()
     self.flake1_dict['flake_issue']['issue_link'] = FlakeIssue.GetLinkForIssue(
         self.flake_issue.monorail_project, self.flake_issue.issue_id)
+    self.flake1_dict['time_delta'] = '1 day, 01:00:00'
 
     self.flake3_dict = self.flake3.to_dict()
     self.flake3_dict['flake_urlsafe_key'] = self.flake3.key.urlsafe()
+    self.flake3_dict['time_delta'] = '1 day, 01:00:00'
 
-  def testRankFlakes(self):
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 10, 2, 1))
+  def testRankFlakes(self, _):
     response = self.test_app.get(
         '/ranked-flakes', params={
             'format': 'json',
@@ -83,7 +90,9 @@ class RankFlakesTest(WaterfallTestCase):
             },
             default=str), response.body)
 
-  def testRankFlakesByOccurrences(self):
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 10, 2, 1))
+  def testRankFlakesByOccurrences(self, _):
     response = self.test_app.get(
         '/ranked-flakes?order_by=occurrences',
         params={
@@ -120,7 +129,9 @@ class RankFlakesTest(WaterfallTestCase):
     self.assertTrue(
         response.headers.get('Location', '').endswith(expected_url_suffix))
 
-  def testGetFlakesByTestSuiteName(self):
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 10, 2, 1))
+  def testGetFlakesByTestSuiteName(self, _):
     response = self.test_app.get(
         '/ranked-flakes?test_filter=suite',
         params={

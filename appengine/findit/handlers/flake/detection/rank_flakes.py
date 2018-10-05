@@ -5,6 +5,7 @@
 from gae_libs import dashboard_util
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
+from libs import time_util
 from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
 
@@ -120,6 +121,8 @@ class RankFlakes(BaseHandler):
             flake_issue.monorail_project, flake_issue.issue_id)
 
       flake_dict['flake_urlsafe_key'] = flake.key.urlsafe()
+      flake_dict['time_delta'] = time_util.FormatTimedelta(
+          time_util.GetUTCNow() - flake.last_occurred_time, with_days=True)
       flakes_data.append(flake_dict)
 
     data = {

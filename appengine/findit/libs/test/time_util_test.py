@@ -38,6 +38,14 @@ class TimeUtilTest(unittest.TestCase):
     self.assertEqual(time_util.FormatTimedelta(timedelta(0, 60)), '00:01:00')
     self.assertEqual(time_util.FormatTimedelta(timedelta(0, 3600)), '01:00:00')
     self.assertEqual(time_util.FormatTimedelta(timedelta(0, 0, 1)), '00:00:00')
+    self.assertEqual(
+        time_util.FormatTimedelta(
+            datetime(2018, 1, 2, 1) - datetime(2018, 1, 1, 1), with_days=True),
+        '1 day, 00:00:00')
+    self.assertEqual(
+        time_util.FormatTimedelta(
+            datetime(2018, 1, 3, 1) - datetime(2018, 1, 1), with_days=True),
+        '2 days, 01:00:00')
 
   def testFormatDatetime(self):
     self.assertIsNone(time_util.FormatDatetime(None))

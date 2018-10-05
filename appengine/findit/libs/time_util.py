@@ -57,13 +57,32 @@ def RemoveMicrosecondsFromDelta(delta):
   return delta - timedelta(microseconds=delta.microseconds)
 
 
-def FormatTimedelta(delta):
-  """Returns a string representing the given time delta."""
+def FormatTimedelta(delta, with_days=False):
+  """Returns a string representing the given time delta.
+
+  Args:
+    delta(timedelta): A timedelta object to format.
+    with_days(bool): Includes days in result if True.
+
+  Returns:
+    A string for the timedelta in the format:
+      'n day(s), HH:MM:SS' if with_days, 'HH:MM:SS' otherwise.
+  """
   if delta is None:
     return None
+
+  days = 0
   hours, remainder = divmod(delta.total_seconds(), 3600)
   minutes, seconds = divmod(remainder, 60)
-  return '%02d:%02d:%02d' % (hours, minutes, seconds)
+  if with_days:
+    days, hours = divmod(hours, 24)
+
+  base_string = '%02d:%02d:%02d' % (hours, minutes, seconds)
+  if not days:
+    return base_string
+  if days == 1:
+    return '1 day, %s' % base_string
+  return '%d days, %s' % (days, base_string)
 
 
 def FormatDatetime(date):

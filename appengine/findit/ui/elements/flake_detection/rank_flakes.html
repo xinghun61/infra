@@ -14,8 +14,9 @@
         padding: 5px;
         color: #FFF;
         background-color: #4285F4;
+        white-space: nowrap;
       }
-      td {
+      table td {
         max-width: 0;
         padding: 2px;
         padding-right: 10px;
@@ -39,14 +40,17 @@
       }
     </style>
     <div class="table-scroll">
-      <table width="90%">
+      <table width="95%">
         <tr>
-          <th width="55%">Test Name</th>
+          <th width="50%">Test Name</th>
           <th width="10%"># Occurrences
           <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Number of a flake's occurrences that caused CLs to be incorrectly rejected.</paper-tooltip>
           </th>
-          <th width="15%"># Impacted CLs
+          <th width="10%"># Impacted CLs
           <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Number of distinct CLs that are impacted by a flake.</paper-tooltip>
+          </th>
+          <th width="15%">Last Occurred
+          <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Time since last occurrence.</paper-tooltip>
           </th>
           <th width="10%">Bug</th>
         </tr>
@@ -58,6 +62,7 @@
             </td>
             <td align="right">[[flake.false_rejection_count_last_week]]</td>
             <td align="right">[[flake.impacted_cl_count_last_week]]</td>
+            <td align="right">[[flake.time_delta]] ago</td>
             <td align="right">
               <template is="dom-if" if="[[hasBug(flake)]]">
                   <a href="[[flake.flake_issue.issue_link]]">[[flake.flake_issue.issue_id]]</a>
