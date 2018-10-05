@@ -81,7 +81,7 @@ def run_script(api, *args, **kwargs):
     dockerbuild_platform = _DOCKERBUILD_PLATFORM[compile_platform]
     repo_root = api.third_party_packages_ng.package_repo_resource()
     cmd = [
-      'infra.tools.dockerbuild', 'run',
+      'infra.tools.dockerbuild', '--logs-debug', 'run',
       '--platform', dockerbuild_platform, '--workdir', workdir.base,
     ]
     for tup in _extract_contextual_dockerbuild_env_args(api):
