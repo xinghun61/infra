@@ -373,20 +373,24 @@ class ThirdPartyPackagesNGApi(recipe_api.RecipeApi):
     # accidentally between recipe tests.
     self._cipd_spec_pool = None
     # The package prefix to use for built packages (not for package sources).
+    #
+    # NOTE: if this has a Falsey value and the recipe is run as
+    # `runtime.is_experimental`, then the @property accessor for this will
+    # always return "experimental/". This is so that there's no way to
+    # misconfigure the module to upload to prod while the user directed the
+    # recipe to run in experimental mode.
     self._package_prefix = ''
 
   def initialize(self):
     self._cipd_spec_pool = cipd_spec.CIPDSpecPool(self.m)
-    # This initialize occurs before the package_prefix parameter could be
-    # assigned.
-    self._package_prefix = (
-      'experimental/' if self.m.runtime.is_experimental else ''
-    )
 
   @property
   def package_prefix(self):
     """Returns the CIPD package name prefix (str), if any is set."""
-    return self._package_prefix
+    ret = self._package_prefix
+    if not ret and self.m.runtime.is_experimental:
+      ret = 'experimental/'
+    return ret
 
   @package_prefix.setter
   def package_prefix(self, prefix):
@@ -457,7 +461,7 @@ class ThirdPartyPackagesNGApi(recipe_api.RecipeApi):
           tool_name, tool_platform(self.m, platform, spec)))
 
     ret = ResolvedSpec(
-      self.m, self._cipd_spec_pool, self._package_prefix,
+      self.m, self._cipd_spec_pool, self.package_prefix,
       pkgname, platform, base_path, spec, deps, unpinned_tools)
     self._resolved_packages[key] = ret
     return ret
