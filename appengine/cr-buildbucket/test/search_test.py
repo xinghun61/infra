@@ -118,6 +118,7 @@ class SearchTest(testing.AppengineTestCase):
 
     index_entry = search.TagIndexEntry(
         bucket=build.bucket,
+        bucket_id=build.bucket_id,
         build_id=build.key.id(),
     )
     for t in search.indexed_tags(build.tags):
@@ -640,8 +641,9 @@ class SearchTest(testing.AppengineTestCase):
     self.test_build.put()
 
     entry = search.TagIndexEntry(
-        bucket=self.test_build.bucket,
         build_id=self.test_build.key.id(),
+        bucket_id=self.test_build.bucket_id,
+        bucket=self.test_build.bucket,
     )
     search.TagIndex(
         id=self.INDEXED_TAG,
@@ -823,7 +825,11 @@ class TagIndexMaintenanceTest(testing.AppengineTestCase):
   def test_add_too_many_to_index(self):
     limit = search.TagIndex.MAX_ENTRY_COUNT
     entries = [
-        search.TagIndexEntry(build_id=i, bucket='x') for i in xrange(limit * 2)
+        search.TagIndexEntry(
+            build_id=i,
+            bucket_id='chromium/try',
+            bucket='luci.chromium.try',
+        ) for i in xrange(limit * 2)
     ]
     tag = 'a:b'
     index_key = search.TagIndex.make_key(0, tag)

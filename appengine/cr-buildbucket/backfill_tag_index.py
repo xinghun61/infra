@@ -4,13 +4,13 @@
 
 """Tag index backfilling."""
 
+# TODO(nodir): update to set bucket_id
+
 import collections
-import json
 import logging
 
 from google.appengine.ext import deferred
 from google.appengine.ext import ndb
-import webapp2
 
 import buildtags
 import bulkproc

@@ -510,10 +510,7 @@ def _tag_index_search_async(q):
       # This is not a security check.
       if q.buckets and e.bucket not in q.buckets:
         continue
-      # TODO(nodir): add project to TagIndexEntry so that we don't fetch
-      # the build if it belongs to a different project.
-      # However, in practice, all builds in a TagIndexEntry belong to the same
-      # project, so we wouldn't gain much from this optimization.
+      # TODO(nodir): use e.bucket_id.
       if check_permissions:
         has = has_access_cache.get(e.bucket)
         if has is None:
@@ -586,7 +583,11 @@ def update_tag_indexes_async(builds):
   for b in builds:
     for t in set(indexed_tags(b.tags)):
       index_entries.setdefault(t, []).append(
-          TagIndexEntry(build_id=b.key.id(), bucket=b.bucket)
+          TagIndexEntry(
+              build_id=b.key.id(),
+              bucket_id=b.bucket_id,
+              bucket=b.bucket,
+          )
       )
   return [
       add_to_tag_index_async(tag, entries)
@@ -631,7 +632,12 @@ class TagIndexEntry(ndb.Model):
   created_time = ndb.DateTimeProperty(auto_now_add=True)
   # ID of the build.
   build_id = ndb.IntegerProperty(indexed=False)
-  # Bucket of the build.
+  # Bucket id of the build.
+  # Same format as model.Build.bucket_id.
+  bucket_id = ndb.StringProperty(indexed=False)
+  # DEPRECTED. Bucket of the build.
+  # Same format as model.Build.bucket.
+  # TODO(crbug.com/851036): delete bucket, in favor of bucket_id.
   bucket = ndb.StringProperty(indexed=False)
 
 

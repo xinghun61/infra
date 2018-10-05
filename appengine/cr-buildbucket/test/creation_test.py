@@ -124,9 +124,9 @@ class CreationTest(testing.AppengineTestCase):
     # user.can_async is patched in setUp()
     user.can_async.side_effect = can_async
 
-  def add(self, bucket, **request_fields):
+  def add(self, bucket, project=None, **request_fields):
     build_req = creation.BuildRequest(
-        self.chromium_project_id, bucket, **request_fields
+        project or self.chromium_project_id, bucket, **request_fields
     )
     return creation.add_async(build_req).get_result()
 
@@ -419,16 +419,25 @@ class CreationTest(testing.AppengineTestCase):
     search.TagIndex(
         id='buildset:foo',
         entries=[
-            search.TagIndexEntry(build_id=int(2**63 - 1), bucket='b'),
-            search.TagIndexEntry(build_id=0, bucket='b'),
+            search.TagIndexEntry(
+                build_id=int(2**63 - 1),
+                bucket_id='p/b',
+                bucket='b',
+            ),
+            search.TagIndexEntry(
+                build_id=0,
+                bucket_id='p/b',
+                bucket='b',
+            ),
         ]
     ).put()
-    build = self.add(bucket='b', tags=['buildset:foo'])
+    build = self.add(project='p', bucket='b', tags=['buildset:foo'])
     index = search.TagIndex.get_by_id('buildset:foo')
     self.assertIsNotNone(index)
     self.assertEqual(len(index.entries), 3)
     self.assertIn(build.key.id(), [e.build_id for e in index.entries])
     self.assertIn('b', [e.bucket for e in index.entries])
+    self.assertIn('p/b', [e.bucket_id for e in index.entries])
 
   def test_buildset_index_failed(self):
     with self.assertRaises(errors.InvalidInputError):
