@@ -100,9 +100,8 @@ class UserTest(testing.AppengineTestCase):
   def test_get_accessible_buckets_async(self, is_group_member):
     is_group_member.side_effect = lambda g, _=None: g in ('xxx', 'yyy')
 
-    config.get_buckets_async.return_value = future([
-        (
-            'p1',
+    config.get_buckets_async.return_value = future({
+        'p1/available_bucket1':
             Bucket(
                 name='available_bucket1',
                 acls=[
@@ -110,9 +109,7 @@ class UserTest(testing.AppengineTestCase):
                     Acl(role=Acl.WRITER, group='yyy')
                 ],
             ),
-        ),
-        (
-            'p2',
+        'p2/available_bucket2':
             Bucket(
                 name='available_bucket2',
                 acls=[
@@ -120,38 +117,37 @@ class UserTest(testing.AppengineTestCase):
                     Acl(role=Acl.WRITER, group='zzz')
                 ],
             ),
-        ),
-        (
-            'p3',
+        'p3/available_bucket3':
             Bucket(
                 name='available_bucket3',
                 acls=[
                     Acl(role=Acl.READER, identity='user:a@example.com'),
                 ],
             ),
-        ),
-        (
-            'p4',
+        'p4/not_available_bucket':
             Bucket(
                 name='not_available_bucket',
                 acls=[Acl(role=Acl.WRITER, group='zzz')],
             ),
-        ),
-    ])
+    })
 
     # call twice for per-request caching of futures.
-    user.get_accessible_buckets_async()
-    availble_buckets = user.get_accessible_buckets_async().get_result()
+    user.get_accessible_buckets_async(legacy_mode=False)
+    availble_buckets = (
+        user.get_accessible_buckets_async(legacy_mode=False).get_result()
+    )
     expected = {
-        ('p1', 'available_bucket1'),
-        ('p2', 'available_bucket2'),
-        ('p3', 'available_bucket3'),
+        'p1/available_bucket1',
+        'p2/available_bucket2',
+        'p3/available_bucket3',
     }
     self.assertEqual(availble_buckets, expected)
 
     # call again for memcache coverage.
     user.clear_request_cache()
-    availble_buckets = user.get_accessible_buckets_async().get_result()
+    availble_buckets = (
+        user.get_accessible_buckets_async(legacy_mode=False).get_result()
+    )
     self.assertEqual(availble_buckets, expected)
 
   @mock.patch('components.auth.is_admin', autospec=True)
