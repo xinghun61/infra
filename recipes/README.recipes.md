@@ -551,9 +551,18 @@ package_prefix overrides 'experimental/' entirely.
 As an example of the package definition layout in action, take a look at the
 [third_party_packages](/third_party_packages) folder in this infra.git repo.
 
-#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#363)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+#### Caches
 
-&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#534)(self, packages=(), platform='', force_build=False):**
+This module uses the following named caches:
+  * `3pp_cipd` - Caches all downloaded and uploaded CIPD packages. Currently
+    tag lookups are performed every time against the CIPD server, but this will
+    hold the actual package files.
+  * `osx_sdk` - Cache for `depot_tools/osx_sdk`. Only on Mac.
+  * `windows_sdk` - Cache for `depot_tools/windows_sdk`. Only on Windows.
+
+#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#372)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+
+&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#543)(self, packages=(), platform='', force_build=False):**
 
 Executes entire {fetch,build,package,verify,upload} pipeline for all the
 packages listed, targeting the given platform.
@@ -569,9 +578,9 @@ Args:
 Returns (list[(cipd_pkg, cipd_version)], set[str]) of built CIPD packages
 and their tagged versions, as well as a list of unsupported packages.
 
-&mdash; **def [initialize](/recipes/recipe_modules/third_party_packages_ng/api.py#384)(self):**
+&mdash; **def [initialize](/recipes/recipe_modules/third_party_packages_ng/api.py#393)(self):**
 
-&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#484)(self, path):**
+&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#493)(self, path):**
 
 Loads all package definitions from the given path.
 
@@ -597,7 +606,7 @@ whose name is already registered. This could occur if you call
 load_packages_from_path multiple times, and one of the later calls tries to
 load a pacakge which was registered under one of the earlier calls.
 
-&emsp; **@package_prefix.setter**<br>&mdash; **def [package\_prefix](/recipes/recipe_modules/third_party_packages_ng/api.py#395)(self, prefix):**
+&emsp; **@package_prefix.setter**<br>&mdash; **def [package\_prefix](/recipes/recipe_modules/third_party_packages_ng/api.py#404)(self, prefix):**
 
 Set the CIPD package name prefix (str).
 

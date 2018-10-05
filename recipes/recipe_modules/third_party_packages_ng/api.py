@@ -281,6 +281,15 @@ package_prefix overrides 'experimental/' entirely.
 
 As an example of the package definition layout in action, take a look at the
 [third_party_packages](/third_party_packages) folder in this infra.git repo.
+
+#### Caches
+
+This module uses the following named caches:
+  * `3pp_cipd` - Caches all downloaded and uploaded CIPD packages. Currently
+    tag lookups are performed every time against the CIPD server, but this will
+    hold the actual package files.
+  * `osx_sdk` - Cache for `depot_tools/osx_sdk`. Only on Mac.
+  * `windows_sdk` - Cache for `depot_tools/windows_sdk`. Only on Windows.
 """
 
 import re
