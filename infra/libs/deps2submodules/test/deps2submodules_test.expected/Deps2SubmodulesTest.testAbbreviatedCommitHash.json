@@ -1,0 +1,13 @@
+[
+  [
+    "[submodule \"a\"]",
+    "\tpath = a",
+    "\turl = https://example.com/xyz/a"
+  ],
+  {
+    "a": [
+      "https://example.com/xyz/a",
+      "deadbabefacebeeffacefeedbeefabcdeffedcba"
+    ]
+  }
+]

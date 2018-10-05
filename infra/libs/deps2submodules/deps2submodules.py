@@ -15,9 +15,12 @@ tree, and it doesn't care what its current directory is.
 """
 
 import collections
+import json
 import logging
 import os
 import re
+
+import requests
 
 from infra.libs.deps2submodules.deps_utils import EvalDepsContent, ExtractUrl
 from infra.libs.deps2submodules.gitlinks import Gitlinks
@@ -25,6 +28,13 @@ from infra.libs.git2 import CalledProcessError
 
 # TODO: move to git2/data and import here
 SHA1_RE = re.compile(r'[0-9a-fA-F]{40}')
+ABBREV_SHA1_RE = re.compile(r'[0-9a-fA-F]{4,39}')
+
+JSON_PREFIX = ")]}'\n"
+
+# The name of the field in the JSON output from Gitiles that
+# gives the value of the SHA-1 hash of a revision.
+_COMMIT_SHA1_KEY = 'commit'
 
 SubmodData = collections.namedtuple('SubmodData', 'url,revision')
 
@@ -157,7 +167,27 @@ class Deps2Submodules(object):
       submodules[path] = SubmodData(url=url, revision=sha1)
     return submodules
 
+  def _TryAbbreviatedSha1(self, url, revision):
+    """Converts an abbreviated commit hash (SHA-1) to its full, 40-char form."""
+    target = '%s/+/%s?format=JSON' % (url, revision)
+    r = requests.get(target)
+    r.raise_for_status()
+    text = r.text
+    if not text.startswith(JSON_PREFIX):
+      raise Exception(
+          'response to %s does not start with JSON prefix' % (target,))
+    text = text[len(JSON_PREFIX):]
+    props = json.loads(text)
+    if _COMMIT_SHA1_KEY in props:
+      return props[_COMMIT_SHA1_KEY]
+    raise Exception('response to %s lacks expected %s field' %
+                    (target, _COMMIT_SHA1_KEY))
+
   def _Resolve(self, url, revision):
+    """Converts revision specifiers to their full, 40-hex-char SHA-1 form.
+
+    Accepts either symbolc ref names, or abbreviated commit hash values.
+    """
     ORIGIN = 'origin/'
     if revision.startswith(ORIGIN):
       revision = revision[len(ORIGIN):]
@@ -171,6 +201,8 @@ class Deps2Submodules(object):
       sha1 = self._known_refs[key]
     else:
       sha1 = self._resolver.Resolve(url, revision)
+      if not sha1 and ABBREV_SHA1_RE.match(revision):
+        sha1 = self._TryAbbreviatedSha1(url, revision)
       self._known_refs[key] = sha1
     if sha1:
       return sha1

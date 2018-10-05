@@ -10,6 +10,8 @@ from infra.libs.git2 import EMPTY_TREE
 from infra.libs.git2.testing_support import TestClock
 from infra.libs.git2.testing_support import TestRepo
 
+import mock
+
 
 def _pretty_print(internal_result):
   return (internal_result[0].splitlines(), internal_result[1])
@@ -159,3 +161,101 @@ class Deps2SubmodulesTest(unittest.TestCase):
     tree_dump = repo.run('ls-tree', '-r', hsh)
     file_dump = repo.run('cat-file', '-p', '%s:.gitmodules' % hsh)
     return (file_dump, tree_dump)
+
+  @mock.patch('requests.get')
+  def testAbbreviatedCommitHash(self, mock_get):
+    mock_response = mock.Mock()
+    mock_response.status_code = 200
+    mock_response.text = textwrap.dedent("""\
+        )]}'
+        {
+           "commit": "deadbabefacebeeffacefeedbeefabcdeffedcba",
+           "other": "irrelevant stuff"
+        }
+        """)
+    mock_get.side_effect = [mock_response]
+
+    deps_file_content = textwrap.dedent("""\
+        deps = {
+          "fount/a": "https://example.com/xyz/a@deadbabe",
+        }
+        """)
+    class FakeResolver(object):
+      def Resolve(self, _url, _ref):
+        return None
+    cut = deps2submodules.Deps2Submodules(deps_file_content,
+                                          FakeResolver(), 'fount/')
+    cut.Evaluate()
+    self.assertEqual(mock_get.call_count, 1)
+    return _pretty_print(cut._gitmodules)
+
+  @mock.patch('requests.get')
+  def testAbbreviatedCommitHash_missingHeader(self, mock_get):
+    mock_response = mock.Mock()
+    mock_response.status_code = 200
+    mock_response.text = textwrap.dedent("""\
+        {
+           "commit": "deadbabefacebeeffacefeedbeefabcdeffedcba",
+           "other": "irrelevant stuff"
+        }
+        """)
+    mock_get.side_effect = [mock_response]
+
+    deps_file_content = textwrap.dedent("""\
+        deps = {
+          "fount/a": "https://example.com/xyz/a@deadbabe",
+        }
+        """)
+    class FakeResolver(object):
+      def Resolve(self, _url, _ref):
+        return None
+    cut = deps2submodules.Deps2Submodules(deps_file_content,
+                                          FakeResolver(), 'fount/')
+    with self.assertRaises(Exception):
+      cut.Evaluate()
+
+  @mock.patch('requests.get')
+  def testAbbreviatedCommitHash_missingField(self, mock_get):
+    mock_response = mock.Mock()
+    mock_response.status_code = 200
+    mock_response.text = textwrap.dedent("""\
+        )]}'
+        {
+           "kommit": "deadbabefacebeeffacefeedbeefabcdeffedcba",
+           "other": "irrelevant stuff"
+        }
+        """)
+    mock_get.side_effect = [mock_response]
+
+    deps_file_content = textwrap.dedent("""\
+        deps = {
+          "fount/a": "https://example.com/xyz/a@deadbabe",
+        }
+        """)
+    class FakeResolver(object):
+      def Resolve(self, _url, _ref):
+        return None
+    cut = deps2submodules.Deps2Submodules(deps_file_content,
+                                          FakeResolver(), 'fount/')
+    with self.assertRaises(Exception):
+      cut.Evaluate()
+
+  @mock.patch('requests.get')
+  def testAbbreviatedCommitHash_badStatus(self, mock_get):
+    mock_response = mock.Mock()
+    mock_response.status_code = 500
+    mock_response.text = 'Something went wrong.'
+    mock_get.side_effect = [mock_response]
+
+    deps_file_content = textwrap.dedent("""\
+        deps = {
+          "fount/a": "https://example.com/xyz/a@deadbabe",
+        }
+        """)
+    class FakeResolver(object):
+      def Resolve(self, _url, _ref):
+        return None
+    cut = deps2submodules.Deps2Submodules(deps_file_content,
+                                          FakeResolver(), 'fount/')
+    with self.assertRaises(Exception):
+      cut.Evaluate()
