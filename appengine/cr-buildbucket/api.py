@@ -111,7 +111,7 @@ def put_request_messages_to_build_requests(requests):
       creation.BuildRequest(
           project=(
               bucket_entities[r.bucket].project_id
-              if bucket_entities[r.bucket] else None
+              if bucket_entities.get(r.bucket) else None
           ),
           bucket=r.bucket,
           tags=r.tags,

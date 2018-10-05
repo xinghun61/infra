@@ -172,6 +172,12 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     }
     self.expect_error('put', req, 'INVALID_INPUT')
 
+  @mock.patch('creation.add_async', autospec=True)
+  def test_put_empty_request(self, add_async):
+    add_async.return_value = future_exception(errors.InvalidInputError())
+    req = {'bucket': ''}
+    self.expect_error('put', req, 'INVALID_INPUT')
+
   ####### RETRY ################################################################
 
   @mock.patch('creation.retry', autospec=True)
