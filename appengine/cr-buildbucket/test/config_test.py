@@ -32,14 +32,20 @@ def parse_bucket_cfg(text):
   return cfg
 
 
-LUCI_CHROMIUM_TRY_CONFIG = parse_bucket_cfg(
+def short_bucket_cfg(cfg):
+  cfg = copy.deepcopy(cfg)
+  cfg.name = config.short_bucket_name(cfg.name)
+  return cfg
+
+
+LUCI_CHROMIUM_TRY = parse_bucket_cfg(
     '''name: "luci.chromium.try"
 acls {
   group: "all"
 }
 swarming {
   builders {
-    name: "release"
+    name: "linux"
     dimensions: "os:Linux"
     dimensions: "pool:luci.chromium.try"
     recipe {
@@ -50,14 +56,12 @@ swarming {
 }
 '''
 )
-LUCI_CHROMIUM_TRY_CONFIG_SHORT = copy.deepcopy(LUCI_CHROMIUM_TRY_CONFIG)
-LUCI_CHROMIUM_TRY_CONFIG_SHORT.name = 'try'
 
-LUCI_DART_TRY_CONFIG = parse_bucket_cfg(
+LUCI_DART_TRY = parse_bucket_cfg(
     '''name: "luci.dart.try"
 swarming {
   builders {
-    name: "release"
+    name: "linux"
     dimensions: "pool:Dart.LUCI"
     recipe {
       repository: "https://example.com"
@@ -67,10 +71,8 @@ swarming {
 }
 '''
 )
-LUCI_DART_TRY_CONFIG_SHORT = copy.deepcopy(LUCI_DART_TRY_CONFIG)
-LUCI_DART_TRY_CONFIG_SHORT.name = 'try'
 
-MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG = parse_bucket_cfg(
+MASTER_TRYSERVER_CHROMIUM_LINUX = parse_bucket_cfg(
     '''name: "master.tryserver.chromium.linux"
 acls {
   group: "all"
@@ -82,7 +84,7 @@ acls {
 '''
 )
 
-MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG = parse_bucket_cfg(
+MASTER_TRYSERVER_CHROMIUM_WIN = parse_bucket_cfg(
     '''name: "master.tryserver.chromium.win"
 acls {
   group: "all"
@@ -94,7 +96,7 @@ acls {
 '''
 )
 
-MASTER_TRYSERVER_CHROMIUM_MAC_CONFIG = parse_bucket_cfg(
+MASTER_TRYSERVER_CHROMIUM_MAC = parse_bucket_cfg(
     '''name: "master.tryserver.chromium.mac"
 acls {
   group: "all"
@@ -106,7 +108,7 @@ acls {
 '''
 )
 
-MASTER_TRYSERVER_V8_CONFIG = parse_bucket_cfg(
+MASTER_TRYSERVER_V8 = parse_bucket_cfg(
     '''name: "master.tryserver.v8"
 acls {
   role: WRITER
@@ -115,7 +117,7 @@ acls {
 '''
 )
 
-MASTER_TRYSERVER_TEST_CONFIG = parse_bucket_cfg(
+MASTER_TRYSERVER_TEST = parse_bucket_cfg(
     '''name: "master.tryserver.test"
 acls {
   role: WRITER
@@ -138,82 +140,40 @@ def errmsg(text):
 class ConfigTest(testing.AppengineTestCase):
 
   def test_get_bucket(self):
-    config.put_bucket('chromium', 'deadbeef', LUCI_CHROMIUM_TRY_CONFIG)
+    config.put_bucket('chromium', 'deadbeef', LUCI_CHROMIUM_TRY)
     project_id, cfg = config.get_bucket('chromium/try')
     self.assertEqual(project_id, 'chromium')
-    self.assertEqual(cfg, LUCI_CHROMIUM_TRY_CONFIG_SHORT)
+    self.assertEqual(cfg, short_bucket_cfg(LUCI_CHROMIUM_TRY))
 
     self.assertIsNone(config.get_bucket('chromium/nonexistent')[0])
 
   def test_get_buckets_async(self):
-    config.put_bucket(
-        'chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG
-    )
-    config.put_bucket(
-        'chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG
-    )
-    actual = config.get_buckets_async().get_result()
-    expected = [
-        (
-            'chromium',
-            project_config_pb2.Bucket(
-                name='master.tryserver.chromium.linux',
-                acls=[
-                    project_config_pb2.Acl(
-                        role=project_config_pb2.Acl.READER, group='all'
-                    ),
-                    project_config_pb2.Acl(
-                        role=project_config_pb2.Acl.SCHEDULER,
-                        group='tryjob-access'
-                    ),
-                ]
-            ),
-        ),
-        (
-            'chromium',
-            project_config_pb2.Bucket(
-                name='master.tryserver.chromium.win',
-                acls=[
-                    project_config_pb2.Acl(
-                        role=project_config_pb2.Acl.READER, group='all'
-                    ),
-                    project_config_pb2.Acl(
-                        role=project_config_pb2.Acl.SCHEDULER,
-                        group='tryjob-access'
-                    ),
-                ]
-            ),
-        ),
-    ]
+    config.put_bucket('chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_LINUX)
+    config.put_bucket('chromium', 'deadbeef', LUCI_CHROMIUM_TRY)
+    config.put_bucket('dart', 'deadbeef', LUCI_DART_TRY)
+    actual = config.get_buckets_async(legacy_mode=False).get_result()
+    expected = {
+        'chromium/master.tryserver.chromium.linux':
+            MASTER_TRYSERVER_CHROMIUM_LINUX,
+        'chromium/try':
+            short_bucket_cfg(LUCI_CHROMIUM_TRY),
+        'dart/try':
+            short_bucket_cfg(LUCI_DART_TRY),
+    }
     self.assertEqual(actual, expected)
 
-  def test_get_buckets_async_with_names(self):
-    config.put_bucket(
-        'chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG
-    )
-    config.put_bucket(
-        'chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG
-    )
-    actual = config.get_buckets_async(['master.tryserver.chromium.linux']
-                                     ).get_result()
-    expected = [
-        (
-            'chromium',
-            project_config_pb2.Bucket(
-                name='master.tryserver.chromium.linux',
-                acls=[
-                    project_config_pb2.Acl(
-                        role=project_config_pb2.Acl.READER, group='all'
-                    ),
-                    project_config_pb2.Acl(
-                        role=project_config_pb2.Acl.SCHEDULER,
-                        group='tryjob-access'
-                    ),
-                ]
-            ),
-        ),
-    ]
+  def test_get_buckets_async_with_bucket_ids(self):
+    config.put_bucket('chromium', 'deadbeef', LUCI_CHROMIUM_TRY)
+    config.put_bucket('chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_WIN)
+    bid = 'chromium/try'
+    actual = config.get_buckets_async([bid], legacy_mode=False).get_result()
+    expected = {'chromium/try': short_bucket_cfg(LUCI_CHROMIUM_TRY)}
     self.assertEqual(actual, expected)
+
+  def test_get_buckets_async_with_bucket_ids_not_found(self):
+    bid = 'chromium/try'
+    with self.assertRaises(errors.NotFoundError):
+      config.get_buckets_async([bid], legacy_mode=False).get_result()
 
   @mock.patch('components.config.get_project_configs', autospec=True)
   def test_cron_update_buckets(self, get_project_configs):
@@ -245,7 +205,7 @@ class ConfigTest(testing.AppengineTestCase):
             mixins: "recipe-x"
           }
           builders {
-            name: "release"
+            name: "linux"
             dimensions: "os:Linux"
           }
         }
@@ -287,7 +247,7 @@ class ConfigTest(testing.AppengineTestCase):
             }
           }
           builders {
-            name: "release"
+            name: "linux"
           }
         }
       }
@@ -335,52 +295,48 @@ class ConfigTest(testing.AppengineTestCase):
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='chromium',
             revision='deadbeef',
-            config_content=to_text(LUCI_CHROMIUM_TRY_CONFIG),
-            config_content_binary=to_binary(LUCI_CHROMIUM_TRY_CONFIG),
+            config_content=to_text(LUCI_CHROMIUM_TRY),
+            config_content_binary=to_binary(LUCI_CHROMIUM_TRY),
         ),
         config.LegacyBucket(
             id='luci.dart.try',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='dart',
             revision='deadbeef',
-            config_content=to_text(LUCI_DART_TRY_CONFIG),
-            config_content_binary=to_binary(LUCI_DART_TRY_CONFIG),
+            config_content=to_text(LUCI_DART_TRY),
+            config_content_binary=to_binary(LUCI_DART_TRY),
         ),
         config.LegacyBucket(
             id='master.tryserver.chromium.linux',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='chromium',
             revision='deadbeef',
-            config_content=to_text(MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG),
-            config_content_binary=to_binary(
-                MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG
-            ),
+            config_content=to_text(MASTER_TRYSERVER_CHROMIUM_LINUX),
+            config_content_binary=to_binary(MASTER_TRYSERVER_CHROMIUM_LINUX),
         ),
         config.LegacyBucket(
             id='master.tryserver.chromium.win',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='chromium',
             revision='deadbeef',
-            config_content=to_text(MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG),
-            config_content_binary=to_binary(
-                MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG
-            ),
+            config_content=to_text(MASTER_TRYSERVER_CHROMIUM_WIN),
+            config_content_binary=to_binary(MASTER_TRYSERVER_CHROMIUM_WIN),
         ),
         config.LegacyBucket(
             id='master.tryserver.test',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='test',
             revision='babe',
-            config_content=to_text(MASTER_TRYSERVER_TEST_CONFIG),
-            config_content_binary=to_binary(MASTER_TRYSERVER_TEST_CONFIG),
+            config_content=to_text(MASTER_TRYSERVER_TEST),
+            config_content_binary=to_binary(MASTER_TRYSERVER_TEST),
         ),
         config.LegacyBucket(
             id='master.tryserver.v8',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='v8',
             revision='sha1:cfc761d7a953a72ddea8f3d4c9a28e69777ca22c',
-            config_content=to_text(MASTER_TRYSERVER_V8_CONFIG),
-            config_content_binary=to_binary(MASTER_TRYSERVER_V8_CONFIG),
+            config_content=to_text(MASTER_TRYSERVER_V8),
+            config_content_binary=to_binary(MASTER_TRYSERVER_V8),
         ),
     ]
     self.assertEqual(actual, expected)
@@ -439,15 +395,11 @@ class ConfigTest(testing.AppengineTestCase):
         'v8': ('deadbeef', v8_buildbucket_cfg, None),
     }
 
-    config.put_bucket(
-        'chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG
-    )
+    config.put_bucket('chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_LINUX)
     # Will not be updated.
-    config.put_bucket('v8', 'deadbeef', MASTER_TRYSERVER_V8_CONFIG)
+    config.put_bucket('v8', 'deadbeef', MASTER_TRYSERVER_V8)
     # Will be deleted.
-    config.put_bucket(
-        'chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG
-    )
+    config.put_bucket('chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_WIN)
 
     config.cron_update_buckets()
 
@@ -459,37 +411,31 @@ class ConfigTest(testing.AppengineTestCase):
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='chromium',
             revision='new!',
-            config_content=to_text(MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG),
-            config_content_binary=to_binary(
-                MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG
-            ),
+            config_content=to_text(MASTER_TRYSERVER_CHROMIUM_LINUX),
+            config_content_binary=to_binary(MASTER_TRYSERVER_CHROMIUM_LINUX),
         ),
         config.LegacyBucket(
             id='master.tryserver.chromium.mac',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='chromium',
             revision='new!',
-            config_content=to_text(MASTER_TRYSERVER_CHROMIUM_MAC_CONFIG),
-            config_content_binary=to_binary(
-                MASTER_TRYSERVER_CHROMIUM_MAC_CONFIG
-            ),
+            config_content=to_text(MASTER_TRYSERVER_CHROMIUM_MAC),
+            config_content_binary=to_binary(MASTER_TRYSERVER_CHROMIUM_MAC),
         ),
         config.LegacyBucket(
             id='master.tryserver.v8',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
             project_id='v8',
             revision='deadbeef',
-            config_content=to_text(MASTER_TRYSERVER_V8_CONFIG),
-            config_content_binary=to_binary(MASTER_TRYSERVER_V8_CONFIG),
+            config_content=to_text(MASTER_TRYSERVER_V8),
+            config_content_binary=to_binary(MASTER_TRYSERVER_V8),
         ),
     ]
     self.assertEqual(actual, expected)
 
   @mock.patch('components.config.get_project_configs', autospec=True)
   def test_cron_update_buckets_with_broken_configs(self, get_project_configs):
-    config.put_bucket(
-        'chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG
-    )
+    config.put_bucket('chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_LINUX)
 
     get_project_configs.return_value = {
         'chromium': (
@@ -501,11 +447,9 @@ class ConfigTest(testing.AppengineTestCase):
 
     # We must not delete buckets defined in a project that currently have a
     # broken config.
-    actual = config.LegacyBucket.get_by_id(
-        MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG.name
-    )
+    actual = config.LegacyBucket.get_by_id(MASTER_TRYSERVER_CHROMIUM_LINUX.name)
     self.assertEqual(
-        actual.config_content, to_text(MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG)
+        actual.config_content, to_text(MASTER_TRYSERVER_CHROMIUM_LINUX)
     )
 
   def cfg_validation_test(self, cfg, expected_messages):

@@ -285,6 +285,10 @@ class Bucket(ndb.Model):
   def make_key(project_id, bucket_name):
     return ndb.Key(Project, project_id, Bucket, bucket_name)
 
+  @property
+  def bucket_id(self):
+    return format_bucket_id(self.project_id, self.bucket_name)
+
 
 def short_bucket_name(bucket_name):
   """Returns bucket name without "luci.<project_id>." prefix."""
@@ -294,7 +298,8 @@ def short_bucket_name(bucket_name):
   return bucket_name
 
 
-def parse_binary_bucket_config(cfg_bytes):
+# TODO(crbug.com/851036): remove.
+def parse_binary_bucket_config(cfg_bytes):  # pragma: no cover
   cfg = project_config_pb2.Bucket()
   cfg.MergeFromString(cfg_bytes)
   return cfg
@@ -307,31 +312,44 @@ def is_swarming_config(cfg):
 
 @ndb.non_transactional
 @ndb.tasklet
-def get_buckets_async(names=None):
-  """Returns a list of configured buckets.
+def get_buckets_async(bucket_ids=None, legacy_mode=True):
+  """Returns configured buckets.
 
-  If names is None, returns all buckets.
-  Otherwise returns only specified buckets, in the same order as names.
-  If a bucket doesn't exist, the corresponding element of the returned list
-  will be None.
+  If bucket_ids is None, returns all buckets.
+  Otherwise returns only specified buckets.
 
   Returns:
-    List of (project_id, project_config_pb2.Bucket) tuples.
-  """
-  if names is None:
-    buckets = yield LegacyBucket.query().fetch_async()
-  else:
-    buckets = yield ndb.get_multi_async([
-        ndb.Key(LegacyBucket, n) for n in names
-    ])
+    {bucket_id: project_config_pb2.Bucket} dict.
+    In legacy mode, returns [(project_id, project_config_pb2.Bucket)].
 
-  ret = []
-  for b in buckets:
-    ret.append((
-        b.project_id,
-        parse_binary_bucket_config(b.config_content_binary) if b else None,
-    ))
-  raise ndb.Return(ret)
+  Raises:
+    errors.NotFoundError if a specified bucket is not found.
+  """
+  if legacy_mode:  # pragma: no cover
+    # Legacy mode. TODO(crbug.com/851036): remove.
+    if bucket_ids is None:
+      buckets = yield LegacyBucket.query().fetch_async()
+    else:
+      buckets = yield ndb.get_multi_async([
+          ndb.Key(LegacyBucket, bid) for bid in bucket_ids
+      ])
+    ret = []
+    for b in buckets:
+      ret.append((
+          b.project_id,
+          parse_binary_bucket_config(b.config_content_binary),
+      ))
+    raise ndb.Return(ret)
+
+  if bucket_ids is not None:
+    keys = [Bucket.make_key(*parse_bucket_id(bid)) for bid in bucket_ids]
+    buckets = yield ndb.get_multi_async(keys)
+    for bid, b in zip(bucket_ids, buckets):
+      if not b:
+        raise errors.NotFoundError('bucket %s not found' % bid)
+  else:
+    buckets = yield Bucket.query().fetch_async()
+  raise ndb.Return({b.bucket_id: b.config for b in buckets})
 
 
 @ndb.non_transactional
