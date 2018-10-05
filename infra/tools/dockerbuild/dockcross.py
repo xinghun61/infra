@@ -329,7 +329,7 @@ class Image(collections.namedtuple('_Image', (
       # Run the process within the working directory.
       cwd = work_dir
 
-      args += [self.bin]
+      args += ['bash', '-x', self.bin]
       if run_args:
         args += ['-a', ' '.join(run_args)]
 
