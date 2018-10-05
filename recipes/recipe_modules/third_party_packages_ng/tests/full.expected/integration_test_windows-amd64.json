@@ -449,7 +449,7 @@
       "cipd.bat",
       "ensure",
       "-root",
-      "[START_DIR]\\windows_sdk",
+      "[CACHE]\\windows_sdk",
       "-ensure-file",
       "chrome_internal/third_party/sdk/windows uploaded:2018-06-13",
       "-json-output",
@@ -492,7 +492,7 @@
       "python",
       "-u",
       "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
-      "[START_DIR]\\windows_sdk\\win_sdk\\bin\\SetEnv.x64.json",
+      "[CACHE]\\windows_sdk\\win_sdk\\bin\\SetEnv.x64.json",
       "/path/to/tmp/json"
     ],
     "cwd": "[START_DIR]\\3pp\\wd\\bottom_dep\\windows-amd64\\1.0\\checkout",
@@ -547,7 +547,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "windows",
-      "VSINSTALLDIR": "[START_DIR]\\windows_sdk",
+      "VSINSTALLDIR": "[CACHE]\\windows_sdk",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "windows-amd64",
       "_3PP_TOOL_PLATFORM": "windows-amd64",
@@ -556,7 +556,7 @@
     "env_prefixes": {
       "PATH": [
         "RECIPE_MODULE[infra::third_party_packages_ng]\\resources\\win_support",
-        "[START_DIR]\\windows_sdk\\win_sdk\\bin\\x64",
+        "[CACHE]\\windows_sdk\\win_sdk\\bin\\x64",
         "[START_DIR]\\3pp\\wd\\bottom_dep\\windows-amd64\\1.0\\tools_prefix",
         "[START_DIR]\\3pp\\wd\\bottom_dep\\windows-amd64\\1.0\\tools_prefix\\bin"
       ]
@@ -1845,7 +1845,7 @@
       "cipd.bat",
       "ensure",
       "-root",
-      "[START_DIR]\\windows_sdk",
+      "[CACHE]\\windows_sdk",
       "-ensure-file",
       "chrome_internal/third_party/sdk/windows uploaded:2018-06-13",
       "-json-output",
@@ -1889,7 +1889,7 @@
       "python",
       "-u",
       "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
-      "[START_DIR]\\windows_sdk\\win_sdk\\bin\\SetEnv.x64.json",
+      "[CACHE]\\windows_sdk\\win_sdk\\bin\\SetEnv.x64.json",
       "/path/to/tmp/json"
     ],
     "cwd": "[START_DIR]\\3pp\\wd\\tool\\windows-amd64\\1.4.1\\checkout",
@@ -1946,7 +1946,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "windows",
-      "VSINSTALLDIR": "[START_DIR]\\windows_sdk",
+      "VSINSTALLDIR": "[CACHE]\\windows_sdk",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "windows-amd64",
@@ -1956,7 +1956,7 @@
     "env_prefixes": {
       "PATH": [
         "RECIPE_MODULE[infra::third_party_packages_ng]\\resources\\win_support",
-        "[START_DIR]\\windows_sdk\\win_sdk\\bin\\x64",
+        "[CACHE]\\windows_sdk\\win_sdk\\bin\\x64",
         "[START_DIR]\\3pp\\wd\\tool\\windows-amd64\\1.4.1\\tools_prefix",
         "[START_DIR]\\3pp\\wd\\tool\\windows-amd64\\1.4.1\\tools_prefix\\bin"
       ]
@@ -2156,7 +2156,7 @@
       "cipd.bat",
       "ensure",
       "-root",
-      "[START_DIR]\\windows_sdk",
+      "[CACHE]\\windows_sdk",
       "-ensure-file",
       "chrome_internal/third_party/sdk/windows uploaded:2018-06-13",
       "-json-output",
@@ -2194,7 +2194,7 @@
       "python",
       "-u",
       "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
-      "[START_DIR]\\windows_sdk\\win_sdk\\bin\\SetEnv.x64.json",
+      "[CACHE]\\windows_sdk\\win_sdk\\bin\\SetEnv.x64.json",
       "/path/to/tmp/json"
     ],
     "cwd": "[START_DIR]\\3pp\\wd\\tool\\windows-amd64\\1.4.1\\verify",
@@ -2244,7 +2244,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "windows",
-      "VSINSTALLDIR": "[START_DIR]\\windows_sdk",
+      "VSINSTALLDIR": "[CACHE]\\windows_sdk",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "windows-amd64",
@@ -2253,7 +2253,7 @@
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]\\windows_sdk\\win_sdk\\bin\\x64"
+        "[CACHE]\\windows_sdk\\win_sdk\\bin\\x64"
       ]
     },
     "name": "building tool.run test.test.py windows [START_DIR]\\3pp\\wd\\tool\\windows-amd64\\1.4.1\\verify\\cipd.pkg",
@@ -2657,7 +2657,7 @@
       "cipd.bat",
       "ensure",
       "-root",
-      "[START_DIR]\\windows_sdk",
+      "[CACHE]\\windows_sdk",
       "-ensure-file",
       "chrome_internal/third_party/sdk/windows uploaded:2018-06-13",
       "-json-output",
@@ -2700,7 +2700,7 @@
       "python",
       "-u",
       "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
-      "[START_DIR]\\windows_sdk\\win_sdk\\bin\\SetEnv.x64.json",
+      "[CACHE]\\windows_sdk\\win_sdk\\bin\\SetEnv.x64.json",
       "/path/to/tmp/json"
     ],
     "cwd": "[START_DIR]\\3pp\\wd\\dep\\windows-amd64\\1.0.0\\checkout",
@@ -2755,7 +2755,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "windows",
-      "VSINSTALLDIR": "[START_DIR]\\windows_sdk",
+      "VSINSTALLDIR": "[CACHE]\\windows_sdk",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "windows-amd64",
       "_3PP_TOOL_PLATFORM": "windows-amd64",
@@ -2764,7 +2764,7 @@
     "env_prefixes": {
       "PATH": [
         "RECIPE_MODULE[infra::third_party_packages_ng]\\resources\\win_support",
-        "[START_DIR]\\windows_sdk\\win_sdk\\bin\\x64",
+        "[CACHE]\\windows_sdk\\win_sdk\\bin\\x64",
         "[START_DIR]\\3pp\\wd\\dep\\windows-amd64\\1.0.0\\tools_prefix",
         "[START_DIR]\\3pp\\wd\\dep\\windows-amd64\\1.0.0\\tools_prefix\\bin"
       ]
@@ -3268,7 +3268,7 @@
       "cipd.bat",
       "ensure",
       "-root",
-      "[START_DIR]\\windows_sdk",
+      "[CACHE]\\windows_sdk",
       "-ensure-file",
       "chrome_internal/third_party/sdk/windows uploaded:2018-06-13",
       "-json-output",
@@ -3311,7 +3311,7 @@
       "python",
       "-u",
       "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
-      "[START_DIR]\\windows_sdk\\win_sdk\\bin\\SetEnv.x64.json",
+      "[CACHE]\\windows_sdk\\win_sdk\\bin\\SetEnv.x64.json",
       "/path/to/tmp/json"
     ],
     "cwd": "[START_DIR]\\3pp\\wd\\pkg\\windows-amd64\\2.0.0\\checkout",
@@ -3366,7 +3366,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "windows",
-      "VSINSTALLDIR": "[START_DIR]\\windows_sdk",
+      "VSINSTALLDIR": "[CACHE]\\windows_sdk",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "windows-amd64",
       "_3PP_TOOL_PLATFORM": "windows-amd64",
@@ -3375,7 +3375,7 @@
     "env_prefixes": {
       "PATH": [
         "RECIPE_MODULE[infra::third_party_packages_ng]\\resources\\win_support",
-        "[START_DIR]\\windows_sdk\\win_sdk\\bin\\x64",
+        "[CACHE]\\windows_sdk\\win_sdk\\bin\\x64",
         "[START_DIR]\\3pp\\wd\\pkg\\windows-amd64\\2.0.0\\tools_prefix",
         "[START_DIR]\\3pp\\wd\\pkg\\windows-amd64\\2.0.0\\tools_prefix\\bin"
       ]
