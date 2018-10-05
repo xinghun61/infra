@@ -17,6 +17,7 @@ from handlers import process_failure_analysis_requests
 from handlers import process_flake_analysis_request
 from handlers.flake.detection import detect_flakes
 from handlers.flake.detection import update_flake_counts
+from handlers.flake.reporting import generate_report
 
 # For appengine pipeline running on backend module.
 pipeline_backend_application = pipeline_handlers._APP
@@ -46,6 +47,8 @@ if appengine_util.IsInProductionApp():
 flake_detection_backend_web_pages_handler_mappings = [
     ('/flake/detection/cron/detect-cq-false-rejection-flakes',
      detect_flakes.DetectCQFalseRejectionFlakesCronJob),
+    ('/flake/detection/cron/generate-flakiness-report',
+     generate_report.PrepareFlakinessReport),
     ('/flake/detection/cron/update-flake-counts',
      update_flake_counts.UpdateFlakeCountsCron),
     ('/flake/detection/task/detect-cq-false-rejection-flakes',

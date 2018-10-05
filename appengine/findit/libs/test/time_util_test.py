@@ -12,6 +12,12 @@ from libs import time_util
 
 class TimeUtilTest(unittest.TestCase):
 
+  def testConvertISOWeekToUTCDatetime(self):
+    dt = time_util.ConvertISOWeekToUTCDatetime(2018, 1)
+    self.assertEqual(dt, datetime(2018, 1, 1, 8, 0, 0))
+    dt = time_util.ConvertISOWeekToUTCDatetime(2018, 52)
+    self.assertEqual(dt, datetime(2018, 12, 24, 8, 0, 0))
+
   def testConvertToTimestamp(self):
     self.assertEqual(
         1490918400, time_util.ConvertToTimestamp(

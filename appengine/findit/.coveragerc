@@ -2,6 +2,7 @@
 include = ./appengine/findit/*
 omit= ./appengine/findit/first_party/*
       ./appengine/findit/third_party/*
+      ./appengine/findit/endpoint_api.py
 
 [report]
 exclude_lines =

@@ -33,3 +33,10 @@ cron:
 - description: Count false rejection occurrences and impacted CLs for each flake
   url: /flake/detection/cron/update-flake-counts
   schedule: every 10 minutes
+
+- description: Prepare weekly flakiness report by component and test from flake occurrences
+  url: /flake/detection/cron/generate-flakiness-report
+  # Dummy schedule, only while testing this by hand. Real schedule below.
+  schedule: 3rd monday of aug 00:00
+  # Mondays at 4AM PST expressed in UTC.
+  # schedule: every monday 14:00

@@ -33,6 +33,25 @@ def GetUTCNowTimestamp():  # pragma: no cover.
   return ConvertToTimestamp(GetUTCNow())
 
 
+def PreviousISOWeek():
+  """Get the a (year, week_number) pair for the last, fully elapsed week.
+
+  Note that the changeover time for this function is Monday 00:00 PST.
+  """
+  last_week_date = GetPSTNow() - timedelta(weeks=1)
+  year, week, _ = last_week_date.isocalendar()
+  return year, week
+
+
+def ConvertISOWeekToUTCDatetime(year, week_number):
+  """Convert an ISO Week/Year pair to a UTC datetime @ Sun->Mon PST Midnight"""
+  iso_week_string = '%d-W%d-1' % (year, week_number)
+  naive_midnight = datetime.strptime(iso_week_string, '%Y-W%W-%w')
+  # This is effectively 8AM on Monday of the given week as a naive datetime.
+  utc_equivalent = ConvertPSTToUTC(naive_midnight)
+  return utc_equivalent
+
+
 def RemoveMicrosecondsFromDelta(delta):
   """Returns a timedelta object without microseconds based on delta."""
   return delta - timedelta(microseconds=delta.microseconds)
