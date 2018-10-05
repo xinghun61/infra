@@ -8,7 +8,6 @@ package logdog
 
 import (
 	"io"
-	"os"
 
 	"go.chromium.org/luci/logdog/client/annotee"
 	"go.chromium.org/luci/logdog/client/butler"
@@ -29,7 +28,6 @@ type Options struct {
 // You must call Close to flush and close all of the resources.
 type Client struct {
 	output    output.Output
-	tempDir   string
 	butler    *butler.Butler
 	processor *annotee.Processor
 	readPipe  *io.PipeReader
@@ -65,12 +63,6 @@ func (c *Client) Close() (err error) {
 			err = err2
 		}
 		c.butler = nil
-	}
-	if c.tempDir != "" {
-		if err2 := os.RemoveAll(c.tempDir); err == nil {
-			err = err2
-		}
-		c.tempDir = ""
 	}
 	if c.output != nil {
 		c.output.Close()

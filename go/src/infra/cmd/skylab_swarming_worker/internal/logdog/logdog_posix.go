@@ -9,10 +9,8 @@ package logdog
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/pkg/errors"
@@ -22,7 +20,6 @@ import (
 	"go.chromium.org/luci/logdog/client/butler"
 	"go.chromium.org/luci/logdog/client/butler/output"
 	"go.chromium.org/luci/logdog/client/butler/output/logdog"
-	"go.chromium.org/luci/logdog/client/butler/streamserver"
 	"go.chromium.org/luci/logdog/client/butler/streamserver/localclient"
 	"go.chromium.org/luci/logdog/common/types"
 	"go.chromium.org/luci/lucictx"
@@ -49,36 +46,11 @@ func New(ctx context.Context, o *Options) (c *Client, err error) {
 		return nil, errors.Wrap(err, "make logdog output")
 	}
 
-	// stream server
-	c.tempDir, err = ioutil.TempDir("", "logdog-stream-server")
-	if err != nil {
-		return nil, errors.Wrap(err, "make streamserver tempdir")
-	}
-	s, err := streamserver.NewUNIXDomainSocketServer(ctx, filepath.Join(c.tempDir, "ld.sock"))
-	if err != nil {
-		return nil, errors.Wrap(err, "make logdog stream server")
-	}
-	// The StreamServer needs to be closed after s.Listen
-	// succeeds.  However, AddStreamServer will arrange for the
-	// StreamServer to be closed separately.  If the StreamServer
-	// is closed a second time, it will panic.
-	if err := s.Listen(); err != nil {
-		return nil, errors.Wrap(err, "start streamserver listen")
-	}
-	defer func() {
-		if s != nil {
-			s.Close()
-		}
-	}()
-
 	// butler
 	c.butler, err = newButler(ctx, o, c.output)
 	if err != nil {
 		return nil, errors.Wrap(err, "make butler")
 	}
-	c.butler.AddStreamServer(s)
-	// Clear StreamServer variable so we don't close it.
-	s = nil
 
 	// annotee processor
 	c.processor = newProcessor(ctx, c.butler, "")
