@@ -8,9 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"infra/appengine/rotang/pkg/algo"
-	"infra/appengine/rotang/pkg/datastore"
-
 	"github.com/kylelemons/godebug/pretty"
 	"go.chromium.org/luci/auth/identity"
 	"go.chromium.org/luci/server/auth"
@@ -436,18 +433,7 @@ func TestHandleShiftImport(t *testing.T) {
 	},
 	}
 
-	fake := &fakeCal{}
-
-	opts := Options{
-		URL:        "http://localhost:8080",
-		Generators: &algo.Generators{},
-		Calendar:   fake,
-	}
-	setupStoreHandlers(&opts, datastore.New)
-	h, err := New(&opts)
-	if err != nil {
-		t.Fatalf("New failed: %v", err)
-	}
+	h := testSetup(t)
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
@@ -474,7 +460,8 @@ func TestHandleShiftImport(t *testing.T) {
 			tst.ctx.Request = httptest.NewRequest("GET", "/importshifts", nil)
 			tst.ctx.Request.Form = tst.values
 
-			fake.Set(tst.shifts, tst.calFail, false, 0)
+			h.calendar.(*fakeCal).Set(tst.shifts, tst.calFail, false, 0)
+
 			h.HandleShiftImport(tst.ctx)
 			defer h.shiftStore(ctx).DeleteAllShifts(ctx, tst.rotaName)
 

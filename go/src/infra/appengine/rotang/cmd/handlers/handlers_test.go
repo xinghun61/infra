@@ -17,8 +17,6 @@ import (
 	"go.chromium.org/luci/appengine/gaetesting"
 	"go.chromium.org/luci/server/router"
 	"golang.org/x/net/context"
-	"google.golang.org/appengine/aetest"
-	"google.golang.org/appengine/user"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -36,12 +34,33 @@ func getRequest(url, email string) *http.Request {
 	if err != nil {
 		panic(err)
 	}
-	if email != "" {
-		aetest.Login(&user.User{
-			Email: email,
-		}, req)
-	}
 	return req
+}
+
+func testSetup(t *testing.T) *State {
+	t.Helper()
+	// Sort out the generators.
+	gs := algo.New()
+	gs.Register(algo.NewLegacy())
+	gs.Register(algo.NewFair())
+	gs.Register(algo.NewRandomGen())
+
+	fake := &fakeCal{}
+
+	opts := Options{
+		URL:         "http://localhost:8080",
+		Generators:  gs,
+		Calendar:    fake,
+		MailSender:  &testableMail{},
+		MailAddress: "admin@example.com",
+		ProdENV:     "production",
+	}
+	setupStoreHandlers(&opts, datastore.New)
+	h, err := New(&opts)
+	if err != nil {
+		t.Fatalf("New failed: %v", err)
+	}
+	return h
 }
 
 type fakeCal struct {
@@ -101,6 +120,7 @@ func TestNew(t *testing.T) {
 		name: "Success",
 		opts: &Options{
 			URL:        "http://localhost:8080",
+			ProdENV:    "production",
 			Generators: &algo.Generators{},
 			MemberStore: func(ctx context.Context) rotang.MemberStorer {
 				return datastore.New(ctx)
@@ -136,7 +156,8 @@ func TestNew(t *testing.T) {
 		name: "Generators Empty",
 		fail: true,
 		opts: &Options{
-			URL: "http://localhost:8080",
+			URL:     "http://localhost:8080",
+			ProdENV: "production",
 			MemberStore: func(ctx context.Context) rotang.MemberStorer {
 				return datastore.New(ctx)
 			},
@@ -153,6 +174,7 @@ func TestNew(t *testing.T) {
 		fail: true,
 		opts: &Options{
 			URL:        "http://localhost:8080",
+			ProdENV:    "production",
 			Generators: &algo.Generators{},
 			Calendar:   &calendar.Calendar{},
 			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {

@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"infra/appengine/rotang"
-	"infra/appengine/rotang/pkg/algo"
-	"infra/appengine/rotang/pkg/calendar"
 	"infra/appengine/rotang/pkg/datastore"
 	"net/http"
 	"net/http/httptest"
@@ -423,16 +421,7 @@ func TestUpdateGET(t *testing.T) {
 	},
 	}
 
-	opts := Options{
-		URL:        "http://localhost:8080",
-		Generators: &algo.Generators{},
-		Calendar:   &calendar.Calendar{},
-	}
-	setupStoreHandlers(&opts, datastore.New)
-	h, err := New(&opts)
-	if err != nil {
-		t.Fatalf("New failed: %v", err)
-	}
+	h := testSetup(t)
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
@@ -508,16 +497,7 @@ func TestGETHandlerCreateRota(t *testing.T) {
 	},
 	}
 
-	opts := Options{
-		URL:        "http://localhost:8080",
-		Generators: &algo.Generators{},
-		Calendar:   &calendar.Calendar{},
-	}
-	setupStoreHandlers(&opts, datastore.New)
-	h, err := New(&opts)
-	if err != nil {
-		t.Fatalf("New failed: %v", err)
-	}
+	h := testSetup(t)
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
@@ -689,16 +669,7 @@ func TestHandleCreateRota(t *testing.T) {
 	},
 	}
 
-	opts := Options{
-		URL:        "http://localhost:8080",
-		Generators: &algo.Generators{},
-		Calendar:   &calendar.Calendar{},
-	}
-	setupStoreHandlers(&opts, datastore.New)
-	h, err := New(&opts)
-	if err != nil {
-		t.Fatalf("New failed: %v", err)
-	}
+	h := testSetup(t)
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
@@ -941,16 +912,7 @@ func TestHandleUpdateRota(t *testing.T) {
 	},
 	}
 
-	opts := Options{
-		URL:        "http://localhost:8080",
-		Generators: &algo.Generators{},
-		Calendar:   &calendar.Calendar{},
-	}
-	setupStoreHandlers(&opts, datastore.New)
-	h, err := New(&opts)
-	if err != nil {
-		t.Fatalf("New failed: %v", err)
-	}
+	h := testSetup(t)
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {

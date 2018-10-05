@@ -17,6 +17,7 @@ import (
 // State holds shared state between handlers.
 type State struct {
 	selfURL     string
+	prodENV     string
 	calendar    rotang.Calenderer
 	generators  *algo.Generators
 	memberStore func(context.Context) rotang.MemberStorer
@@ -31,6 +32,7 @@ type State struct {
 // Options contains the options used by the handlers.
 type Options struct {
 	URL         string
+	ProdENV     string
 	Calendar    rotang.Calenderer
 	Generators  *algo.Generators
 	MailSender  rotang.MailSender
@@ -46,6 +48,8 @@ func New(opt *Options) (*State, error) {
 	switch {
 	case opt == nil:
 		return nil, status.Errorf(codes.InvalidArgument, "opt can not be nil")
+	case opt.ProdENV == "":
+		return nil, status.Errorf(codes.InvalidArgument, "ProdENV must be set")
 	case opt.URL == "":
 		return nil, status.Errorf(codes.InvalidArgument, "URL must be set")
 	case opt.Calendar == nil:
@@ -56,6 +60,7 @@ func New(opt *Options) (*State, error) {
 		return nil, status.Errorf(codes.InvalidArgument, "Store functions can not be nil")
 	}
 	return &State{
+		prodENV:     opt.ProdENV,
 		selfURL:     opt.URL,
 		calendar:    opt.Calendar,
 		generators:  opt.Generators,
@@ -65,4 +70,19 @@ func New(opt *Options) (*State, error) {
 		mailSender:  opt.MailSender,
 		mailAddress: opt.MailAddress,
 	}, nil
+}
+
+// IsProduction is true if the service is running in production.
+func (h *State) IsProduction() bool {
+	return h.prodENV == "production"
+}
+
+// IsStaging is true if the service is running in staging.
+func (h *State) IsStaging() bool {
+	return h.prodENV == "staging"
+}
+
+// IsLocal is true if the service is running in the local dev environment.
+func (h *State) IsLocal() bool {
+	return h.prodENV == "local"
 }

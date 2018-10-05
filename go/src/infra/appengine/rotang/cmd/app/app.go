@@ -6,8 +6,10 @@
 package app
 
 import (
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 
 	"infra/appengine/rotang"
 	"infra/appengine/rotang/cmd/handlers"
@@ -41,10 +43,27 @@ func (a *appengineMailer) Send(ctx context.Context, msg *mail.Message) error {
 	return mail.Send(ctx, msg)
 }
 
-func legacyCred(cfg *oauth2.Config, token *oauth2.Token) func(context.Context) (*http.Client, error) {
-	return func(ctx context.Context) (*http.Client, error) {
-		return cfg.Client(ctx, token), nil
+func legacyCred() (func(context.Context) (*http.Client, error), error) {
+	b, err := ioutil.ReadFile(sheriffConfig)
+	if err != nil {
+		return nil, err
 	}
+	config, err := google.ConfigFromJSON(b, gcal.CalendarScope)
+	if err != nil {
+		return nil, err
+	}
+
+	t, err := ioutil.ReadFile(sheriffToken)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(ctx context.Context) (*http.Client, error) {
+		return config.Client(ctx, &oauth2.Token{
+			RefreshToken: string(t),
+			TokenType:    "Bearer",
+		}), nil
+	}, nil
 }
 
 func serviceDefaultCred() func(context.Context) (*http.Client, error) {
@@ -66,6 +85,20 @@ func setupStoreHandlers(o *handlers.Options, sf func(context.Context) *datastore
 }
 
 func init() {
+	prodENV := os.Getenv("PROD_ENV")
+	switch prodENV {
+	case "production", "local", "staging":
+	default:
+		log.Fatal("env PROD_ENV must be set to one of `production`, `local` or `staging`")
+	}
+
+	cred := serviceDefaultCred()
+	if prodENV == "local" {
+		var err error
+		if cred, err = legacyCred(); err != nil {
+			log.Fatal(err)
+		}
+	}
 	r := router.New()
 	standard.InstallHandlers(r)
 	middleware := standard.Base()
@@ -82,9 +115,10 @@ func init() {
 
 	opts := handlers.Options{
 		URL:        selfURL,
-		Calendar:   calendar.New(serviceDefaultCred()),
+		Calendar:   calendar.New(cred),
 		Generators: gs,
 		MailSender: &appengineMailer{},
+		ProdENV:    prodENV,
 	}
 	setupStoreHandlers(&opts, datastore.New)
 	h, err := handlers.New(&opts)

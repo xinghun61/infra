@@ -2,9 +2,6 @@ package handlers
 
 import (
 	"infra/appengine/rotang"
-	"infra/appengine/rotang/pkg/algo"
-	"infra/appengine/rotang/pkg/calendar"
-	"infra/appengine/rotang/pkg/datastore"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -95,24 +92,7 @@ func TestJobSchedule(t *testing.T) {
 	},
 	}
 
-	// Sort out the generators.
-	gs := algo.New()
-	gs.Register(algo.NewLegacy())
-	gs.Register(algo.NewFair())
-	gs.Register(algo.NewRandomGen())
-
-	opts := Options{
-		URL:         "http://localhost:8080",
-		Generators:  gs,
-		Calendar:    &calendar.Calendar{},
-		MailSender:  &testableMail{},
-		MailAddress: "admin@example.com",
-	}
-	setupStoreHandlers(&opts, datastore.New)
-	h, err := New(&opts)
-	if err != nil {
-		t.Fatalf("New failed: %v", err)
-	}
+	h := testSetup(t)
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
@@ -726,26 +706,7 @@ func TestScheduleShifts(t *testing.T) {
 	},
 	}
 
-	// Sort out the generators.
-	gs := algo.New()
-	gs.Register(algo.NewLegacy())
-	gs.Register(algo.NewFair())
-	gs.Register(algo.NewRandomGen())
-
-	fake := &fakeCal{}
-
-	opts := Options{
-		URL:         "http://localhost:8080",
-		Generators:  gs,
-		Calendar:    fake,
-		MailSender:  &testableMail{},
-		MailAddress: "admin@example.com",
-	}
-	setupStoreHandlers(&opts, datastore.New)
-	h, err := New(&opts)
-	if err != nil {
-		t.Fatalf("New failed: %v", err)
-	}
+	h := testSetup(t)
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
@@ -765,7 +726,7 @@ func TestScheduleShifts(t *testing.T) {
 			}
 			defer h.shiftStore(ctx).DeleteAllShifts(ctx, tst.cfg.Config.Name)
 
-			fake.Set(nil, false, tst.changeID, 0)
+			h.calendar.(*fakeCal).Set(nil, false, false, 0)
 			err := h.scheduleShifts(tst.ctx, tst.cfg, midnight)
 			if got, want := (err != nil), tst.fail; got != want {
 				t.Fatalf("%s: scheduleShifts(ctx, _, %v) = %t want: %t, err: %v", tst.name, midnight, got, want, err)

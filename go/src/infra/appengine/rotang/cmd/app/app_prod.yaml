@@ -1,0 +1,26 @@
+runtime: go
+api_version: go1.8
+
+env_variables:
+  PROD_ENV: "production"
+
+handlers:
+  - url: /images
+    static_dir: images
+    secure: always
+
+  - url: /css
+    static_dir: css
+    secure: always
+
+  - url: /static
+    static_dir: static
+    secure: always
+
+  - url: /
+    script: _go_app
+    secure: always
+
+  - url: /.*
+    script: _go_app
+    secure: always

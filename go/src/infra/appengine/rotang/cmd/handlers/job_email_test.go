@@ -2,9 +2,6 @@ package handlers
 
 import (
 	"infra/appengine/rotang"
-	"infra/appengine/rotang/pkg/algo"
-	"infra/appengine/rotang/pkg/calendar"
-	"infra/appengine/rotang/pkg/datastore"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -863,18 +860,7 @@ This is  a friendly reminder that you're oncall for Test Rota from 2006-01-05 16
 		},
 	}}
 
-	opts := Options{
-		URL:         "http://localhost:8080",
-		Generators:  &algo.Generators{},
-		MailSender:  &testableMail{},
-		MailAddress: "admin@example.com",
-		Calendar:    &calendar.Calendar{},
-	}
-	setupStoreHandlers(&opts, datastore.New)
-	h, err := New(&opts)
-	if err != nil {
-		t.Fatalf("New failed: %v", err)
-	}
+	h := testSetup(t)
 
 	testMail := mail.GetTestable(ctx)
 
