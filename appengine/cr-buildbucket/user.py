@@ -191,11 +191,11 @@ def get_role_async(bucket_id):
 
 
 @ndb.tasklet
-def can_async(bucket, action):
-  errors.validate_bucket_name(bucket)
+def can_async(bucket_id, action):
+  config.validate_bucket_id(bucket_id)
   assert isinstance(action, Action)
 
-  role = yield get_role_async(bucket)
+  role = yield get_role_async(bucket_id)
   raise ndb.Return(role is not None and role >= ACTION_TO_MIN_ROLE[action])
 
 

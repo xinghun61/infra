@@ -174,23 +174,31 @@ class UserTest(testing.AppengineTestCase):
 
   def test_can(self):
     self.mock_role(Acl.READER)
-    can = lambda bucket, action: user.can_async(bucket, action).get_result()
-    self.assertTrue(can('bucket', user.Action.VIEW_BUILD))
-    self.assertFalse(can('bucket', user.Action.CANCEL_BUILD))
-    self.assertFalse(can('bucket', user.Action.SET_NEXT_NUMBER))
+
+    can = lambda action: user.can_async('project/bucket', action).get_result()
+
+    self.assertTrue(can(user.Action.VIEW_BUILD))
+    self.assertFalse(can(user.Action.CANCEL_BUILD))
+    self.assertFalse(can(user.Action.SET_NEXT_NUMBER))
 
     # Memcache coverage
-    self.assertFalse(can('bucket', user.Action.SET_NEXT_NUMBER))
-    self.assertFalse(user.can_add_build_async('bucket').get_result())
+    self.assertFalse(can(user.Action.SET_NEXT_NUMBER))
+
+    self.assertFalse(user.can_add_build_async('project/bucket').get_result())
 
   def test_can_no_roles(self):
     self.mock_role(None)
+    bid = 'project/bucket'
     for action in user.Action:
-      self.assertFalse(user.can_async('bucket', action).get_result())
+      self.assertFalse(user.can_async(bid, action).get_result())
 
   def test_can_bad_input(self):
     with self.assertRaises(errors.InvalidInputError):
-      user.can_async('bad bucket name', user.Action.VIEW_BUILD).get_result()
+      bid = 'bad project id/bucket'
+      user.can_async(bid, user.Action.VIEW_BUILD).get_result()
+    with self.assertRaises(errors.InvalidInputError):
+      bid = 'project_id/bad bucket name'
+      user.can_async(bid, user.Action.VIEW_BUILD).get_result()
 
   def test_can_view_build(self):
     self.mock_role(Acl.READER)
