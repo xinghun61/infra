@@ -12,6 +12,7 @@ import time
 
 from google.appengine.ext import testbed
 
+from framework import exceptions
 from framework import sql
 from proto import user_pb2
 from services import user_svc
@@ -133,6 +134,27 @@ class UserServiceTest(unittest.TestCase):
     self.assertEqual(
         {111L: 'a@example.com', 222L: 'b@example.com'},
         emails_dict)
+
+  def SetUpLookupUserEmails_Missed(self):
+    self.user_service.user_tbl.Select(
+        self.cnxn, cols=['user_id', 'email'], user_id=[222L]).AndReturn([])
+    self.user_service.email_cache.CacheItem(
+        111L, 'a@example.com')
+
+  def testLookupUserEmails_Missed(self):
+    self.SetUpLookupUserEmails_Missed()
+    self.mox.ReplayAll()
+    with self.assertRaises(exceptions.NoSuchUserException):
+      self.user_service.LookupUserEmails(self.cnxn, [111L, 222L])
+    self.mox.VerifyAll()
+
+  def testLookUpUserEmails_IgnoreMissed(self):
+    self.SetUpLookupUserEmails_Missed()
+    self.mox.ReplayAll()
+    emails_dict = self.user_service.LookupUserEmails(
+        self.cnxn, [111L, 222L], ignore_missed=True)
+    self.mox.VerifyAll()
+    self.assertEqual({111L: 'a@example.com'}, emails_dict)
 
   def testLookupUserEmail(self):
     self.SetUpLookupUserEmails()  # Same as testLookupUserEmails()

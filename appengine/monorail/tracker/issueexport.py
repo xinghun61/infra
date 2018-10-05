@@ -96,9 +96,8 @@ class IssueExportJSON(jsonfeed.JsonFeed):
     # The value 0 indicates "no user", e.g., that an issue has no owner.
     # We don't need to create a User row to represent that.
     user_id_set.discard(0)
-    # TODO(jojwang): update this to handle exceptions.NoSuchUserException()
-    # while still returning the email_dict with found users.
-    email_dict = self.services.user.LookupUserEmails(mr.cnxn, user_id_set)
+    email_dict = self.services.user.LookupUserEmails(
+        mr.cnxn, user_id_set, ignore_missed=True)
 
     issues_json = [
       self._MakeIssueJSON(

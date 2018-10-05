@@ -194,18 +194,21 @@ class UserService(object):
 
   ### Lookup of user ID and email address
 
-  def LookupUserEmails(self, cnxn, user_ids):
+  def LookupUserEmails(self, cnxn, user_ids, ignore_missed=False):
     """Return a dict of email addresses for the given user IDs.
 
     Args:
       cnxn: connection to SQL database.
       user_ids: list of int user IDs to look up.
+      ignore_missed: if True, does not throw NoSuchUserException, when there
+        are users not found for some user_ids.
 
     Returns:
       A dict {user_id: email_addr} for all the requested IDs.
 
     Raises:
-      exceptions.NoSuchUserException: if any requested user cannot be found.
+      exceptions.NoSuchUserException: if any requested user cannot be found
+         and ignore_missed is False.
     """
     self.email_cache.CacheItem(framework_constants.NO_USER_SPECIFIED, '')
     emails_dict, missed_ids = self.email_cache.GetAll(user_ids)
@@ -222,8 +225,11 @@ class UserService(object):
     nonexist_ids = [user_id for user_id in user_ids
                     if user_id and user_id not in emails_dict]
     if nonexist_ids:
-      raise exceptions.NoSuchUserException(
-          'No email addresses found for users %r' % nonexist_ids)
+      if ignore_missed:
+        logging.info('No email addresses found for users %r' % nonexist_ids)
+      else:
+        raise exceptions.NoSuchUserException(
+            'No email addresses found for users %r' % nonexist_ids)
 
     return emails_dict
 

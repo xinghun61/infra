@@ -517,7 +517,15 @@ class UserService(object):
       raise exceptions.NoSuchUserException('No user has ID %r' % user_id)
     return email
 
-  def LookupUserEmails(self, cnxn, user_ids):
+  def LookupUserEmails(self, cnxn, user_ids, ignore_missed=False):
+    if ignore_missed:
+      user_dict = {}
+      for user_id in user_ids:
+        try:
+          user_dict[user_id] = self.LookupUserEmail(cnxn, user_id)
+        except exceptions.NoSuchUserException:
+          continue
+      return user_dict
     user_dict = {
         user_id: self.LookupUserEmail(cnxn, user_id)
         for user_id in user_ids}
