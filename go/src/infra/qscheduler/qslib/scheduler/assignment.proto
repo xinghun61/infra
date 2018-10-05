@@ -38,13 +38,13 @@ message Assignment {
 	// RequestId of the task to assign to that worker.
 	string request_id = 3;
 
+	// TaskToAbort is relevant only for the PREEMPT_WORKER type.
+	// It is the request ID of the task that should be preempted.
+	string task_to_abort = 4;
+
 	// Priority at which the task will run.
-	int32 priority = 4;
+	int32 priority = 5;
 
 	// Time is the time at which this Assignment was determined.
-	google.protobuf.Timestamp time = 5;
-
-	// TaskToAbort is the id of the task to be aborted on the worker. This is
-	// only meaningful for PREEMPT_WORKER type assignments.
-	string task_to_abort = 6;
+	google.protobuf.Timestamp time = 6;
 }

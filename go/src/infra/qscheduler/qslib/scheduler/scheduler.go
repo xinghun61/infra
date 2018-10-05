@@ -47,6 +47,14 @@ type Scheduler struct {
 	config *Config
 }
 
+// New returns a newly initialized Scheduler.
+func New() *Scheduler {
+	return &Scheduler{
+		NewState(),
+		NewConfig(),
+	}
+}
+
 // UpdateOrderError is an error that indicates that UpdateAccounts attempted to update a state
 // backwards in time.
 type UpdateOrderError struct {
@@ -57,6 +65,13 @@ type UpdateOrderError struct {
 // Error() implements the error interface.
 func (e *UpdateOrderError) Error() string {
 	return fmt.Sprintf("Update time %v was older than existing state's time %v.", e.Next, e.Previous)
+}
+
+// AddRequest enqueues a new task request.
+func (s *Scheduler) AddRequest(id string, request *task.Request) {
+	// TODO(akeshet): Handle already-enqueued task.
+	// TODO(akeshet): Handle already-running task.
+	s.state.Requests[id] = request
 }
 
 // UpdateTime updates the current time for a quotascheduler, and
@@ -197,6 +212,7 @@ func matchIdleBotsWithLabels(state *State, requestsAtP orderedRequests) []*Assig
 					WorkerId:  wid,
 					RequestId: request.RequestId,
 					Priority:  request.Priority,
+					Time:      state.LastUpdateTime,
 				}
 				output = append(output, m)
 				m.apply(state)
@@ -239,6 +255,7 @@ func matchIdleBots(state *State, requestsAtP []prioritizedRequest) []*Assignment
 			WorkerId:  wid,
 			RequestId: request.RequestId,
 			Priority:  request.Priority,
+			Time:      state.LastUpdateTime,
 		}
 		output = append(output, m)
 		m.apply(state)
@@ -383,7 +400,13 @@ func preemptRunningTasks(state *State, jobsAtP []prioritizedRequest, priority in
 		if !ok || requestAccountBalance.Less(*cost) {
 			continue
 		}
-		mut := &Assignment{Type: Assignment_PREEMPT_WORKER, Priority: priority, RequestId: request.RequestId, WorkerId: candidate.id}
+		mut := &Assignment{
+			Type:        Assignment_PREEMPT_WORKER,
+			Priority:    priority,
+			RequestId:   request.RequestId,
+			TaskToAbort: candidate.worker.RunningTask.RequestId,
+			WorkerId:    candidate.id,
+		}
 		output = append(output, mut)
 		mut.apply(state)
 		request.Scheduled = true

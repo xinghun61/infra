@@ -12,9 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package reconciler implements logic necessary to reconcile API calls
-// (Update, Reap, etc) to qslib with a quotascheduler state. This is the
-// main interface that external clients to qslib should use.
+// Package reconciler implements logic necessary to reconcile qslib API calls
+// with a quotascheduler state. This is the main public interface for  qslib
+// should use.
+//
+// reconciler provides a State struct with the following principle methods:
+//
+//  - AssignTasks: Informs the quotascheduler that the given workers
+//    are idle, and assigns them new tasks.
+//  - Cancellations: Determine which workers should have their currently
+//    running tasks aborted.
+//  - Notify: Informs the quotascheduler of task state changes, in order to
+//    enqueue new tasks in the scheduler or acknowledge that scheduler
+//    assignments have been completed.
+//
+// Not yet implemented methods:
+//  - UpdateConfig: Informs quotascheduler of a new configuration, (for
+//    instance, containing new account policies).
 package reconciler
 
 import (
@@ -109,6 +123,9 @@ type Scheduler interface {
 	// RunOnce runs through one round of the scheduling algorithm, and determines
 	// and returns work assignments.
 	RunOnce() []*scheduler.Assignment
+
+	// AddRequest adds a task request to the queue.
+	AddRequest(id string, request *task.Request)
 }
 
 // AssignTasks accepts a slice of idle workers, and returns tasks to be assigned
@@ -167,28 +184,49 @@ type Cancellation struct {
 	RequestID string
 }
 
-// GetCancellations returns the set of workers and tasks that should be cancelled.
-func (state *State) GetCancellations(t time.Time) []Cancellation {
-	// TODO: implement me
+// Cancellations returns the set of workers and tasks that should be cancelled.
+func (state *State) Cancellations() []Cancellation {
+	// TODO(akeshet): Implement me.
 	return nil
 }
 
-// TaskUpdate represents a change in the state of an existing task, or the
-// creation of a new task.
-type TaskUpdate struct {
-	// TODO: Implement me.
-	// Should specify things like:
-	// - task id
-	// - task state (New, Assigned, Cancelled)
-	// - worker id (if state is Assigned)
-	Time time.Time
-}
+// Notify informs the quotascheduler about task state changes.
+//
+// Task state changes include: creation of new tasks, assignment of task to
+// worker, cancellation of a task.
+//
+// Notify must be called in order to acknowledge that previously returned
+// scheduler operations have been completed (otherwise: subsequent AssignTasks or
+// Cancellations will return stale data until internal timeouts within reconciler
+// expire).
+func (state *State) Notify(s Scheduler, updates ...*TaskUpdate) error {
+	// TODO: Determine whether updates should be time-order sorted, and if so
+	// whether to do that sorting here or to require if from the caller.
 
-// UpdateTasks is called to inform a quotascheduler about task state changes
-// (creation of new tasks, assignment of task to worker, cancellation of a task).
-// These updates must be sent to acknowledge that previously returned
-// scheduler operations have been completed (otherwise, future calls to AssignTasks
-// or GetCancellations will continue to return their previous results).
-func (state *State) UpdateTasks(updates []TaskUpdate) {
-	// TODO: Implement me.
+	for _, u := range updates {
+		switch u.Type {
+		// TODO(akeshet): Add a default case for unhandled types.
+		case TaskUpdate_NEW:
+			// TODO(akeshet): Handle new tasks that are already running on a worker,
+			// likely by having AddRequest return an error.
+			s.AddRequest(
+				u.RequestId,
+				&task.Request{
+					AccountId: u.AccountId,
+					// TODO(akeshet): Clarify whether u.Time corresponds to the pubsub time,
+					// or the enqueue time of the task. If the former, add a field
+					// to TaskUpdate to encode the enqueue time.
+					// We probably want this to mean the enqueue time (created_ts).
+					EnqueueTime: u.Time,
+					Labels:      u.ProvisionableLabels,
+				})
+
+		case TaskUpdate_ASSIGNED:
+			// TODO(akeshet): Implement me.
+		case TaskUpdate_INTERRUPTED:
+			// TODO(akeshet): Implement me.
+		}
+	}
+
+	return nil
 }

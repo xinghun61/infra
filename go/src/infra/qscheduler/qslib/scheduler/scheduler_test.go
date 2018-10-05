@@ -171,7 +171,7 @@ func TestSchedulerPreempt(t *testing.T) {
 				},
 			},
 			[]*Assignment{
-				&Assignment{Type: Assignment_PREEMPT_WORKER, Priority: 0, WorkerId: "w1", RequestId: "t1"},
+				&Assignment{Type: Assignment_PREEMPT_WORKER, Priority: 0, WorkerId: "w1", RequestId: "t1", TaskToAbort: "t2"},
 			},
 		},
 		// Case 1
@@ -387,6 +387,16 @@ func TestUpdateBalance(t *testing.T) {
 		if diff := pretty.Compare(actual, test.Expect); diff != "" {
 			t.Errorf(fmt.Sprintf("Case %d unexpected mutations diff (-got +want): %s", i, diff))
 		}
+	}
+}
+
+// TestAddRequest ensures that AddRequest enqueues a request.
+func TestAddRequest(t *testing.T) {
+	s := New()
+	r := &task.Request{}
+	s.AddRequest("r1", r)
+	if s.state.Requests["r1"] != r {
+		t.Errorf("AddRequest did not enqueue request.")
 	}
 }
 

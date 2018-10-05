@@ -90,7 +90,7 @@ func TestPreempt(t *testing.T) {
 			}},
 	}
 
-	mut := &Assignment{Type: Assignment_PREEMPT_WORKER, Priority: 1, RequestId: "t2", WorkerId: "w1"}
+	mut := &Assignment{Type: Assignment_PREEMPT_WORKER, Priority: 1, RequestId: "t2", WorkerId: "w1", TaskToAbort: "t1"}
 	mut.apply(state)
 
 	if diff := pretty.Compare(state, expect); diff != "" {

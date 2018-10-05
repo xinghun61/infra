@@ -41,6 +41,12 @@ func (m *Assignment) apply(state *State) {
 		}
 		if m.Type == Assignment_PREEMPT_WORKER {
 			oldTask := worker.RunningTask
+			if oldTask.RequestId != m.TaskToAbort {
+				// TODO(akeshet): Determine a graceful way to handle this without
+				// crashing the quotascheduler service.
+				panic(fmt.Sprintf("Attempted to abort task %s, expected %s", oldTask.RequestId, m.TaskToAbort))
+			}
+
 			cost = oldTask.Cost
 
 			// Refund the cost of the preempted task, unless the old task's account no

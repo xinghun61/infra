@@ -21,7 +21,6 @@ import (
 
 	"infra/qscheduler/qslib/scheduler"
 	"infra/qscheduler/qslib/tutils"
-	"infra/qscheduler/qslib/types/task"
 
 	"github.com/kylelemons/godebug/pretty"
 )
@@ -32,54 +31,6 @@ func TestQuotaschedulerInterface(t *testing.T) {
 	var s interface{} = &scheduler.Scheduler{}
 	if _, ok := s.(Scheduler); !ok {
 		t.Errorf("Scheduler interface should be implemented by *scheduler.Scheduler")
-	}
-}
-
-// fakeScheduler is an implementation of the Scheduler interface which reaps
-// according to whatever assignments are provided by MockSchedule.
-type fakeScheduler struct {
-	// assignments is a map from worker ID to the scheduler.Assignment that will
-	// be reaped for that worker.
-	assignments map[string]*scheduler.Assignment
-
-	// idleWorkers is the set of workers that have been marked as idle and have
-	// not yet had any assignments scheduled / reaped for them
-	idleWorkers map[string]bool
-}
-
-// UpdateTime is an implmementation of the Scheduler interface.
-func (s *fakeScheduler) UpdateTime(t time.Time) error {
-	return nil
-}
-
-// MarkIdle is an implementation of the Scheduler interface.
-func (s *fakeScheduler) MarkIdle(id string, labels task.LabelSet) {
-	s.idleWorkers[id] = true
-}
-
-// RunOnce is an implementation of the Scheduler interface.
-func (s *fakeScheduler) RunOnce() []*scheduler.Assignment {
-	response := make([]*scheduler.Assignment, 0, len(s.idleWorkers))
-	for worker := range s.idleWorkers {
-		if match, ok := s.assignments[worker]; ok {
-			response = append(response, match)
-			delete(s.assignments, worker)
-			delete(s.idleWorkers, worker)
-		}
-	}
-	return response
-}
-
-// fakeSchedule sets the given assignment in a fakeScheduler.
-func (s *fakeScheduler) fakeSchedule(a *scheduler.Assignment) {
-	s.assignments[a.WorkerId] = a
-}
-
-// newFakeScheduler returns a new initialized mock scheduler.
-func newFakeScheduler() *fakeScheduler {
-	return &fakeScheduler{
-		assignments: make(map[string]*scheduler.Assignment),
-		idleWorkers: make(map[string]bool),
 	}
 }
 
@@ -160,4 +111,21 @@ func TestQueuedAssignment(t *testing.T) {
 	got = state.AssignTasks(fakeSch, w1, ti)
 	want := []Assignment{Assignment{"w1", "r1"}}
 	assertAssignments(t, "Post-assignment call for w1", got, want)
+}
+
+// TestNotifyNewTask ensures that Notify for a NEW task results in that task
+// being enqueued, and later scheduled.
+func TestNotifyNewTask(t *testing.T) {
+	r := New()
+	s := &fifoScheduler{}
+
+	r.Notify(s, &TaskUpdate{
+		Type:      TaskUpdate_NEW,
+		RequestId: "r1",
+	})
+
+	epoch := time.Unix(0, 0)
+	got := r.AssignTasks(s, []*IdleWorker{&IdleWorker{ID: "w1"}}, epoch)
+	want := []Assignment{Assignment{"w1", "r1"}}
+	assertAssignments(t, "New task", got, want)
 }
