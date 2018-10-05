@@ -179,3 +179,21 @@ class UsersServicerTest(unittest.TestCase):
     self.assertEqual(
         0, self.CallStar(requester='test2@example.com', starred=False))
     self.assertEqual(0, self.CallGetStarCount())
+
+  def testSetExpandPermsPreference_KeepOpen(self):
+    request = users_pb2.SetExpandPermsPreferenceRequest(expand_perms=True)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    self.CallWrapped(self.users_svcr.SetExpandPermsPreference, mc, request)
+
+    user = self.services.user.GetUser(self.cnxn, self.user.user_id)
+    self.assertTrue(user.keep_people_perms_open)
+
+  def testSetExpandPermsPreference_DontKeepOpen(self):
+    request = users_pb2.SetExpandPermsPreferenceRequest(expand_perms=False)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    self.CallWrapped(self.users_svcr.SetExpandPermsPreference, mc, request)
+
+    user = self.services.user.GetUser(self.cnxn, self.user.user_id)
+    self.assertFalse(user.keep_people_perms_open)

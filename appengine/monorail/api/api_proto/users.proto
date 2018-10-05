@@ -17,6 +17,7 @@ service Users {
   rpc GetUserCommits (GetUserCommitsRequest) returns (GetUserCommitsResponse) {}
   rpc GetUserStarCount (GetUserStarCountRequest) returns (GetUserStarCountResponse) {}
   rpc StarUser (StarUserRequest) returns (StarUserResponse) {}
+  rpc SetExpandPermsPreference (SetExpandPermsPreferenceRequest) returns (SetExpandPermsPreferenceResponse) {}
 }
 
 
@@ -91,4 +92,16 @@ message StarUserRequest {
 // Next available tag: 2
 message StarUserResponse {
   uint32 star_count = 1;
+}
+
+
+// Next available tag: 3
+message SetExpandPermsPreferenceRequest {
+  RequestTrace trace = 1;
+  bool expand_perms = 2;
+}
+
+
+// Next available tag: 1
+message SetExpandPermsPreferenceResponse {
 }

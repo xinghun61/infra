@@ -541,7 +541,48 @@ class UserService(object):
       is_banned=None, banned_reason=None, action_limit_updates=None,
       dismissed_cues=None, keep_people_perms_open=None, preview_on_hover=None,
       vacation_message=None):
-    self.UpdateUser(cnxn, user_id, user)
+    # notifications
+    if notify is not None:
+      user.notify_issue_change = notify
+    if notify_starred is not None:
+      user.notify_starred_issue_change = notify_starred
+    if notify_starred_ping is not None:
+      user.notify_starred_ping = notify_starred_ping
+    if email_compact_subject is not None:
+      user.email_compact_subject = email_compact_subject
+    if email_view_widget is not None:
+      user.email_view_widget = email_view_widget
+
+    # display options
+    if after_issue_update is not None:
+      user.after_issue_update = user_pb2.IssueUpdateNav(after_issue_update)
+    if preview_on_hover is not None:
+      user.preview_on_hover = preview_on_hover
+    if dismissed_cues:  # Note, we never set it back to [].
+      user.dismissed_cues = dismissed_cues
+    if keep_people_perms_open is not None:
+      user.keep_people_perms_open = keep_people_perms_open
+
+    # misc
+    if obscure_email is not None:
+      user.obscure_email = obscure_email
+
+    # admin
+    if is_site_admin is not None:
+      user.is_site_admin = is_site_admin
+    if ignore_action_limits is not None:
+      user.ignore_action_limits = ignore_action_limits
+    if is_banned is not None:
+      if is_banned:
+        user.banned = banned_reason or 'No reason given'
+      else:
+        user.reset('banned')
+
+    # user availability
+    if vacation_message is not None:
+      user.vacation_message = vacation_message
+
+    return self.UpdateUser(cnxn, user_id, user)
 
   def GetRecentlyVisitedHotlists(self, _cnxn, user_id):
     try:

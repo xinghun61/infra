@@ -105,3 +105,12 @@ class UsersServicer(monorail_servicer.MonorailServicer):
 
     result = users_pb2.StarUserResponse(star_count=star_count)
     return result
+
+  @monorail_servicer.PRPCMethod
+  def SetExpandPermsPreference(self, mc, request):
+    """Set a users preference on whether to expand perms by default."""
+    with work_env.WorkEnv(mc, self.services) as we:
+      we.UpdateUserSettings(keep_people_perms_open=request.expand_perms)
+
+    result = users_pb2.SetExpandPermsPreferenceResponse()
+    return result

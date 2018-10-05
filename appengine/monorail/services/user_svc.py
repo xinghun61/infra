@@ -574,7 +574,7 @@ class UserService(object):
       else:
         user.reset('banned')
 
-    # user availablity
+    # user availability
     if vacation_message is not None:
       user.vacation_message = vacation_message
 

@@ -1205,6 +1205,20 @@ class WorkEnv(object):
       self.services.user.LookupUserEmail(self.mc.cnxn, user_id)
       return self.services.user_star.CountItemStars(self.mc.cnxn, user_id)
 
+  def UpdateUserSettings(self, **kwargs):
+    """Update the preferences of the specified user.
+
+    Args:
+      keyword_args: dictionary of setting names mapped to new values.
+    """
+    if not self.mc.auth.user_id:
+      raise exceptions.InputException('Cannot update user settings for anon.')
+
+    with self.mc.profiler.Phase(
+        'updating settings for %s with %s' % (self.mc.auth.user_id, kwargs)):
+      self.services.user.UpdateUserSettings(
+          self.mc.cnxn, self.mc.auth.user_id, self.mc.auth.user_pb, **kwargs)
+
   # FUTURE: GetUser()
   # FUTURE: UpdateUser()
   # FUTURE: DeleteUser()
@@ -1580,6 +1594,5 @@ class WorkEnv(object):
       if cue_id in new_dismissed_cues:
         return
       new_dismissed_cues.append(cue_id)
-      self.services.user.UpdateUserSettings(
-          self.mc.cnxn, self.mc.auth.user_id, self.mc.auth.user_pb,
-          dismissed_cues=new_dismissed_cues)
+
+    self.UpdateUserSettings(dismissed_cues=new_dismissed_cues)

@@ -1361,6 +1361,27 @@ class WorkEnvTest(unittest.TestCase):
       with self.assertRaises(exceptions.InputException):
         self.assertFalse(we.GetUserStarCount(None))
 
+  def testUpdateUserSettings(self):
+    """We can update the settings of the logged in user."""
+    self.SignIn()
+    with self.work_env as we:
+      we.UpdateUserSettings(
+          obscure_email=True,
+          dismissed_cues=['code_of_conduct'],
+          keep_people_perms_open=True)
+
+    user = self.services.user.GetUser(self.cnxn, 111L)
+    self.assertTrue(user.obscure_email)
+    self.assertTrue(user.keep_people_perms_open)
+    self.assertEqual(['code_of_conduct'], user.dismissed_cues)
+
+  def testUpdateUserSettings_Anon(self):
+    """A user must be logged in."""
+    with self.work_env as we:
+      with self.assertRaises(exceptions.InputException):
+        we.UpdateUserSettings(keep_people_perms_open=True)
+
+
   # FUTURE: GetUser()
   # FUTURE: UpdateUser()
   # FUTURE: DeleteUser()
