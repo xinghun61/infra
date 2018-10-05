@@ -40,7 +40,7 @@ class NotifyCulpritPipeline(SynchronousPipeline):
 
     # Notify the culprit if it hasn't already been notified by another analysis.
     if culprit_util.PrepareCulpritForSendingNotification(culprit_urlsafe_key):
-      success = culprit_util.NotifyCulprit(culprit)
+      success = culprit_util.NotifyCulprit(culprit, analysis.bug_id)
       if success:
         analysis.Update(has_commented_on_cl=True)
       return success

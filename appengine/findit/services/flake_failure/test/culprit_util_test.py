@@ -624,7 +624,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     culprit = FlakeCulprit.Create('repo', 'revision', 12345)
     culprit.put()
 
-    self.assertFalse(culprit_util.NotifyCulprit(culprit))
+    self.assertFalse(culprit_util.NotifyCulprit(culprit, None))
     culprit = ndb.Key(urlsafe=culprit.key.urlsafe()).get()
     self.assertEqual(culprit.cr_notification_status, analysis_status.ERROR)
 
@@ -641,7 +641,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     culprit = FlakeCulprit.Create('repo', 'revision', 12345)
     culprit.put()
 
-    self.assertFalse(culprit_util.NotifyCulprit(culprit))
+    self.assertFalse(culprit_util.NotifyCulprit(culprit, None))
     culprit = ndb.Key(urlsafe=culprit.key.urlsafe()).get()
     self.assertEqual(culprit.cr_notification_status, analysis_status.ERROR)
 
@@ -658,6 +658,33 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     culprit = FlakeCulprit.Create('repo', 'revision', 12345)
     culprit.put()
 
-    self.assertTrue(culprit_util.NotifyCulprit(culprit))
+    self.assertTrue(culprit_util.NotifyCulprit(culprit, None))
     culprit = ndb.Key(urlsafe=culprit.key.urlsafe()).get()
     self.assertEqual(culprit.cr_notification_status, analysis_status.COMPLETED)
+
+  @mock.patch.object(codereview_util, 'GetCodeReviewForReview')
+  @mock.patch.object(codereview.CodeReview, 'PostMessage')
+  @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
+  def testSendNotificationForCulprit(self, mocked_culprit_info,
+                                     mocked_post_message, _):
+    mocked_culprit_info.return_value = {
+        'review_server_host': 'host',
+        'review_change_id': 'change_id'
+    }
+    mocked_post_message.return_value = True
+    culprit = FlakeCulprit.Create('repo', 'revision', 12345)
+    culprit.put()
+
+    self.assertTrue(culprit_util.NotifyCulprit(culprit, None))
+    culprit = ndb.Key(urlsafe=culprit.key.urlsafe()).get()
+    self.assertEqual(culprit.cr_notification_status, analysis_status.COMPLETED)
+
+  def testGenerateMessageTextWithBug(self):
+    bug_id = 98765
+    culprit = FlakeCulprit.Create('repo', 'revision', 12345)
+    self.assertIn(
+        str(bug_id), culprit_util._GenerateMessageText(culprit, bug_id))
+
+  def testGenerateMessageTextWithoutBug(self):
+    culprit = FlakeCulprit.Create('repo', 'revision', 12345)
+    self.assertIn('revision', culprit_util._GenerateMessageText(culprit, None))

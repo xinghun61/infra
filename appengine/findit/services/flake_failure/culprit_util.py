@@ -37,6 +37,33 @@ https://findit-for-me.appspot.com/waterfall/flake/flake-culprit?key={}
 If the results are correct, please either revert this CL, disable, or fix the
 flaky test.""")
 
+_NOTIFICATION_WITH_BUG_TEMPLATE = textwrap.dedent("""
+{}
+
+Bug: https://bugs.chromium.org/p/chromium/issues/detail?id={}
+""")
+
+
+def _GenerateMessageText(culprit, bug_id):
+  """Generates the body to notify a culprit with.
+
+  Args:
+    culprit (FlakeCulprit): The culprit to extract display information from and
+        eventually notify.
+    bug_id (int): An optional bug to include in the notification text. Can be
+        None if not to be included.
+
+  Returns:
+    message (str): The body of the notification to send.
+  """
+  main_message = _NOTIFICATION_MESSAGE_TEMPLATE.format(
+      culprit.commit_position or culprit.revision, culprit.key.urlsafe())
+
+  if bug_id is None:
+    return main_message
+
+  return _NOTIFICATION_WITH_BUG_TEMPLATE.format(main_message, bug_id)
+
 
 def AbortCreateAndSubmitRevert(parameters, runner_id):
   """Sets the proper fields for an autorevert abort."""
@@ -208,11 +235,13 @@ def IsConfiguredToNotifyCulprits():
                              False)
 
 
-def NotifyCulprit(culprit):
+def NotifyCulprit(culprit, bug_id):
   """Sends a notification to a code review page.
 
   Args:
     culprit (FlakeCulprit): The culprit identified to have introduced flakiness.
+    bud_id (int): An optional bug id to include in the notification. Pass None
+        if not specified.
 
   Returns:
     Bool indicating whether a notification was sent.
@@ -232,8 +261,7 @@ def NotifyCulprit(culprit):
   sent = False
 
   if codereview and review_change_id:
-    message = _NOTIFICATION_MESSAGE_TEMPLATE.format(
-        culprit.commit_position or culprit.revision, culprit.key.urlsafe())
+    message = _GenerateMessageText(culprit, bug_id)
     sent = codereview.PostMessage(review_change_id, message)
   else:
     # Occasionally, a commit was not uploaded for code-review.
