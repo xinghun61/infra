@@ -61,6 +61,10 @@ PROPERTIES = {
       kind=str, default=None,
       help='LKGR ref to update.'
   ),
+  'config': Property(
+      kind=dict, default=None,
+      help='Config dict to use. See infra.services.lkgr_finder for more.',
+  ),
   'lkgr_status_gs_path': Property(
       kind=str, default=None,
       help='Google storage path to which LKGR status reports will be uploaded.',
@@ -72,7 +76,7 @@ PROPERTIES = {
 }
 
 
-def RunSteps(api, project, repo, ref, lkgr_status_gs_path, allowed_lag):
+def RunSteps(api, project, repo, ref, config, lkgr_status_gs_path, allowed_lag):
   # TODO(jbudorick): Remove old_botconfig once the three builders above
   # are explicitly setting their desired properties.
   old_botconfig = BUILDERS.get(api.buildbucket.builder_name)
@@ -118,6 +122,11 @@ def RunSteps(api, project, repo, ref, lkgr_status_gs_path, allowed_lag):
   ]
   if not api.runtime.is_experimental:
     args.append('--email-errors')
+  if config:
+    args.extend([
+        '--project-config-file',
+        api.raw_io.input_text(repr(config), name='config_pyl'),
+    ])
   step_test_data = api.raw_io.test_api.output_text(
       'deadbeef' * 5, name='lkgr_hash')
 
@@ -245,9 +254,37 @@ def GenTests(api):
   )
 
   yield (
-      api.test('missing_botconfig') +
+      api.test('missing_all_properties') +
       test_props('missing-lkgr-finder') +
       api.runtime(is_luci=True, is_experimental=False) +
       api.post_process(post_process.MustRun, 'configuration missing') +
+      api.post_process(post_process.DropExpectation)
+  )
+
+  yield (
+      api.test('custom_config') +
+      test_props_and_data('custom-configuration') +
+      api.properties(
+          project='custom',
+          repo='https://custom.googlesource.com/src',
+          ref='refs/heads/lkgr',
+          config={
+            'project': 'custom',
+            'source_url': 'https://custom.googlesource.com/src',
+            'masters': {
+              'custom.foo': {
+                'builders': [
+                  'custom-foo-builder',
+                ],
+              },
+            },
+          }) +
+      api.runtime(is_luci=True, is_experimental=False) +
+      api.post_process(post_process.MustRun, 'calculate custom lkgr') +
+      api.post_process(
+          post_process.StepCommandContains,
+          'calculate custom lkgr',
+          ['--project-config-file']) +
+      api.post_process(post_process.StatusCodeIn, 0) +
       api.post_process(post_process.DropExpectation)
   )
