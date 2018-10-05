@@ -173,10 +173,10 @@
       "python",
       "-u",
       "[START_DIR]/src/third_party/blink/tools/wpt_export.py",
-      "--verbose",
       "--credentials-json",
       "/creds/json/wpt-export.json",
-      "--dry-run"
+      "--dry-run",
+      "--verbose"
     ],
     "name": "Export Chromium commits and in-flight CLs to WPT"
   },
