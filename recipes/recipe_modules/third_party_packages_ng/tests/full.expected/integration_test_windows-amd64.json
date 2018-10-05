@@ -1453,7 +1453,7 @@
   {
     "cmd": [
       "cipd.bat",
-      "pkg-deploy ",
+      "pkg-deploy",
       "[CACHE]\\3pp_cipd\\cool_prefix\\prefix\\build_tools\\tool\\windows-amd64\\resolved-instance_id-of-version:0.9.0.ch",
       "-root",
       "[START_DIR]\\3pp\\wd\\tool\\windows-amd64\\1.4.1\\tools_prefix",
@@ -1500,7 +1500,7 @@
   {
     "cmd": [
       "cipd.bat",
-      "pkg-deploy ",
+      "pkg-deploy",
       "[CACHE]\\3pp_cipd\\cool_prefix\\prefix\\deps\\bottom_dep\\windows-amd64\\40-chars-fake-of-the-package-instance_id",
       "-root",
       "[START_DIR]\\3pp\\wd\\tool\\windows-amd64\\1.4.1\\deps_prefix",
@@ -2453,7 +2453,7 @@
   {
     "cmd": [
       "cipd.bat",
-      "pkg-deploy ",
+      "pkg-deploy",
       "[CACHE]\\3pp_cipd\\cool_prefix\\prefix\\build_tools\\tool\\windows-amd64\\40-chars-fake-of-the-package-instance_id",
       "-root",
       "[START_DIR]\\3pp\\wd\\dep\\windows-amd64\\1.0.0\\tools_prefix",
@@ -2498,7 +2498,7 @@
   {
     "cmd": [
       "cipd.bat",
-      "pkg-deploy ",
+      "pkg-deploy",
       "[CACHE]\\3pp_cipd\\cool_prefix\\prefix\\deps\\deep_dep\\windows-amd64\\40-chars-fake-of-the-package-instance_id",
       "-root",
       "[START_DIR]\\3pp\\wd\\dep\\windows-amd64\\1.0.0\\deps_prefix",
@@ -3048,7 +3048,7 @@
   {
     "cmd": [
       "cipd.bat",
-      "pkg-deploy ",
+      "pkg-deploy",
       "[CACHE]\\3pp_cipd\\cool_prefix\\prefix\\build_tools\\tool\\windows-amd64\\40-chars-fake-of-the-package-instance_id",
       "-root",
       "[START_DIR]\\3pp\\wd\\pkg\\windows-amd64\\2.0.0\\tools_prefix",
@@ -3093,7 +3093,7 @@
   {
     "cmd": [
       "cipd.bat",
-      "pkg-deploy ",
+      "pkg-deploy",
       "[CACHE]\\3pp_cipd\\cool_prefix\\prefix\\deps\\deep_dep\\windows-amd64\\40-chars-fake-of-the-package-instance_id",
       "-root",
       "[START_DIR]\\3pp\\wd\\pkg\\windows-amd64\\2.0.0\\deps_prefix",
@@ -3123,7 +3123,7 @@
   {
     "cmd": [
       "cipd.bat",
-      "pkg-deploy ",
+      "pkg-deploy",
       "[CACHE]\\3pp_cipd\\cool_prefix\\prefix\\deps\\dep\\windows-amd64\\40-chars-fake-of-the-package-instance_id",
       "-root",
       "[START_DIR]\\3pp\\wd\\pkg\\windows-amd64\\2.0.0\\deps_prefix",

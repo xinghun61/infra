@@ -1555,7 +1555,7 @@
   {
     "cmd": [
       "cipd",
-      "pkg-deploy ",
+      "pkg-deploy",
       "[CACHE]/3pp_cipd/cool_prefix/prefix/deps/bottom_dep/linux-amd64/40-chars-fake-of-the-package-instance_id",
       "-root",
       "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/deps_prefix",
@@ -2300,7 +2300,7 @@
   {
     "cmd": [
       "cipd",
-      "pkg-deploy ",
+      "pkg-deploy",
       "[CACHE]/3pp_cipd/cool_prefix/prefix/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id",
       "-root",
       "[START_DIR]/3pp/wd/dep/linux-armv6l/1.0.0/tools_prefix",
@@ -2345,7 +2345,7 @@
   {
     "cmd": [
       "cipd",
-      "pkg-deploy ",
+      "pkg-deploy",
       "[CACHE]/3pp_cipd/cool_prefix/prefix/deps/deep_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
       "-root",
       "[START_DIR]/3pp/wd/dep/linux-armv6l/1.0.0/deps_prefix",
@@ -3696,7 +3696,7 @@
   {
     "cmd": [
       "cipd",
-      "pkg-deploy ",
+      "pkg-deploy",
       "[CACHE]/3pp_cipd/cool_prefix/prefix/build_tools/tool/linux-amd64/resolved-instance_id-of-version:0.9.0.ch",
       "-root",
       "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/tools_prefix",
@@ -3743,7 +3743,7 @@
   {
     "cmd": [
       "cipd",
-      "pkg-deploy ",
+      "pkg-deploy",
       "[CACHE]/3pp_cipd/cool_prefix/prefix/deps/bottom_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
       "-root",
       "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/deps_prefix",
@@ -4625,7 +4625,7 @@
   {
     "cmd": [
       "cipd",
-      "pkg-deploy ",
+      "pkg-deploy",
       "[CACHE]/3pp_cipd/cool_prefix/prefix/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id",
       "-root",
       "[START_DIR]/3pp/wd/pkg/linux-armv6l/2.0.0/tools_prefix",
@@ -4670,7 +4670,7 @@
   {
     "cmd": [
       "cipd",
-      "pkg-deploy ",
+      "pkg-deploy",
       "[CACHE]/3pp_cipd/cool_prefix/prefix/deps/deep_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
       "-root",
       "[START_DIR]/3pp/wd/pkg/linux-armv6l/2.0.0/deps_prefix",
@@ -4700,7 +4700,7 @@
   {
     "cmd": [
       "cipd",
-      "pkg-deploy ",
+      "pkg-deploy",
       "[CACHE]/3pp_cipd/cool_prefix/prefix/deps/dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
       "-root",
       "[START_DIR]/3pp/wd/pkg/linux-armv6l/2.0.0/deps_prefix",
