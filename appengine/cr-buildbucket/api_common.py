@@ -8,7 +8,24 @@ from protorpc import messages
 
 from components import utils
 
+import config
 import model
+
+
+def format_luci_bucket(bucket_id):
+  """Returns V1 luci bucket name, e.g. "luci.chromium.try"."""
+  return 'luci.%s.%s' % config.parse_bucket_id(bucket_id)
+
+
+def parse_luci_bucket(bucket):
+  """Converts V1 LUCI bucket to a bucket ID string.
+
+  Returns '' if bucket is not a LUCI bucket.
+  """
+  parts = bucket.split('.', 2)
+  if len(parts) == 3 and parts[0] == 'luci':
+    return config.format_bucket_id(parts[1], parts[2])
+  return ''
 
 
 class BuildMessage(messages.Message):

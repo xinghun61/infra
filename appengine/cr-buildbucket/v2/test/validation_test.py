@@ -286,7 +286,6 @@ class ScheduleBuildRequestTests(BaseTestCase):
           ),
       )
       msg.properties.update(p)
-      print msg.properties
       self.assert_invalid(msg, r'property .+ is reserved')
 
   def test_gitiles_commit_incomplete(self):

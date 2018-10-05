@@ -18,6 +18,7 @@ from . import flatten_swarmingcfg
 from . import swarming
 from . import swarmingcfg
 import api
+import api_common
 import config
 import errors
 import sequence
@@ -102,29 +103,37 @@ class SwarmbucketApi(remote.Service):
   def get_builders(self, request):
     """Returns defined swarmbucket builders.
 
+    Returns legacy bucket names, e.g. "luci.chromium.try", not "chromium/try".
+
     Can be used to discover builders.
     """
+    if len(request.bucket) > 100:
+      raise endpoints.BadRequestException(
+          'Number of buckets cannot be greater than 100'
+      )
     if request.bucket:
-      if len(request.bucket) > 100:
-        raise endpoints.BadRequestException(
-            'Number of buckets cannot be greater than 100'
-        )
       # Buckets were specified explicitly.
+      bucket_ids = map(api_common.parse_luci_bucket, request.bucket)
+      bucket_ids = [bid for bid in bucket_ids if bid]
       # Filter out inaccessible ones.
-      bucket_names = [
-          b for b, can in
-          utils.async_apply(request.bucket, user.can_access_bucket_async) if can
+      bucket_ids = [
+          bid for bid, can in
+          utils.async_apply(bucket_ids, user.can_access_bucket_async) if can
       ]
     else:
       # Buckets were not specified explicitly.
       # Use the available ones.
-      accessible = user.get_accessible_buckets_async().get_result()
-      bucket_names = None if accessible is None else [b for _, b in accessible]
-      # bucket_names is None => all buckets are available.
+      bucket_ids = (
+          user.get_accessible_buckets_async(legacy_mode=False).get_result()
+      )
+      # bucket_ids is None => all buckets are available.
 
     res = GetBuildersResponseMessage()
-    for _, bucket in config.get_buckets_async(bucket_names).get_result():
-      if not bucket or not bucket.swarming.builders:
+    buckets = (
+        config.get_buckets_async(bucket_ids, legacy_mode=False).get_result()
+    )
+    for bucket_id, cfg in buckets.iteritems():
+      if not cfg.swarming.builders:
         continue
 
       def to_dims(b):
@@ -134,7 +143,7 @@ class SwarmbucketApi(remote.Service):
 
       res.buckets.append(
           BucketMessage(
-              name=bucket.name,
+              name=api_common.format_luci_bucket(bucket_id),
               builders=[
                   BuilderMessage(
                       name=builder.name,
@@ -143,9 +152,9 @@ class SwarmbucketApi(remote.Service):
                           flatten_swarmingcfg.read_properties(builder.recipe)
                       ),
                       swarming_dimensions=to_dims(builder)
-                  ) for builder in bucket.swarming.builders
+                  ) for builder in cfg.swarming.builders
               ],
-              swarming_hostname=bucket.swarming.hostname,
+              swarming_hostname=cfg.swarming.hostname,
           )
       )
     return res

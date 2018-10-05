@@ -75,3 +75,14 @@ class ApiCommonTests(testing.AppengineTestCase):
         'service_account': 'robot@example.com',
     }
     self.assertEqual(expected, api_common.build_to_dict(self.test_build))
+
+  def test_format_luci_bucket(self):
+    self.assertEqual(
+        api_common.format_luci_bucket('chromium/try'), 'luci.chromium.try'
+    )
+
+  def test_parse_luci_bucket(self):
+    self.assertEqual(
+        api_common.parse_luci_bucket('luci.chromium.try'), 'chromium/try'
+    )
+    self.assertEqual(api_common.parse_luci_bucket('master.x'), '')

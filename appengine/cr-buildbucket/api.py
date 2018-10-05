@@ -6,7 +6,6 @@ import functools
 import json
 import logging
 
-from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 from protorpc import messages
 from protorpc import message_types
