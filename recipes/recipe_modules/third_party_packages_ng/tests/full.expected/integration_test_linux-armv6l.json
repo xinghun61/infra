@@ -448,7 +448,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_PACKAGE_REPO[infra]/run.py",
+      "-m",
       "infra.tools.dockerbuild",
       "run",
       "--platform",
@@ -489,6 +489,7 @@
     "env": {
       "GOARCH": "armv6l",
       "GOOS": "linux",
+      "PYTHONPATH": "RECIPE_PACKAGE_REPO[infra]",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
@@ -1351,7 +1352,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_PACKAGE_REPO[infra]/run.py",
+      "-m",
       "infra.tools.dockerbuild",
       "run",
       "--platform",
@@ -1395,6 +1396,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "linux",
+      "PYTHONPATH": "RECIPE_PACKAGE_REPO[infra]",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -1897,7 +1899,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_PACKAGE_REPO[infra]/run.py",
+      "-m",
       "infra.tools.dockerbuild",
       "run",
       "--platform",
@@ -1941,6 +1943,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "linux",
+      "PYTHONPATH": "RECIPE_PACKAGE_REPO[infra]",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -2185,7 +2188,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_PACKAGE_REPO[infra]/run.py",
+      "-m",
       "infra.tools.dockerbuild",
       "run",
       "--platform",
@@ -2226,6 +2229,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "linux",
+      "PYTHONPATH": "RECIPE_PACKAGE_REPO[infra]",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -2499,7 +2503,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_PACKAGE_REPO[infra]/run.py",
+      "-m",
       "infra.tools.dockerbuild",
       "run",
       "--platform",
@@ -2540,6 +2544,7 @@
     "env": {
       "GOARCH": "armv6l",
       "GOOS": "linux",
+      "PYTHONPATH": "RECIPE_PACKAGE_REPO[infra]",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
@@ -3317,7 +3322,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_PACKAGE_REPO[infra]/run.py",
+      "-m",
       "infra.tools.dockerbuild",
       "run",
       "--platform",
@@ -3358,6 +3363,7 @@
     "env": {
       "GOARCH": "armv6l",
       "GOOS": "linux",
+      "PYTHONPATH": "RECIPE_PACKAGE_REPO[infra]",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
@@ -4081,7 +4087,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_PACKAGE_REPO[infra]/run.py",
+      "-m",
       "infra.tools.dockerbuild",
       "run",
       "--platform",
@@ -4126,6 +4132,7 @@
     "env": {
       "GOARCH": "armv6l",
       "GOOS": "linux",
+      "PYTHONPATH": "RECIPE_PACKAGE_REPO[infra]",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4370,7 +4377,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_PACKAGE_REPO[infra]/run.py",
+      "-m",
       "infra.tools.dockerbuild",
       "run",
       "--platform",
@@ -4411,6 +4418,7 @@
     "env": {
       "GOARCH": "armv6l",
       "GOOS": "linux",
+      "PYTHONPATH": "RECIPE_PACKAGE_REPO[infra]",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4836,7 +4844,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_PACKAGE_REPO[infra]/run.py",
+      "-m",
       "infra.tools.dockerbuild",
       "run",
       "--platform",
@@ -4877,6 +4885,7 @@
     "env": {
       "GOARCH": "armv6l",
       "GOOS": "linux",
+      "PYTHONPATH": "RECIPE_PACKAGE_REPO[infra]",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",

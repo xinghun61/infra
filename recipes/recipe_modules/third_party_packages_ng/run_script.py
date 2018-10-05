@@ -86,9 +86,10 @@ def run_script(api, *args, **kwargs):
     for tup in _extract_contextual_dockerbuild_env_args(api):
       cmd.extend(tup)
     cmd += ['--', interpreter, args[0]] + list(args[1:])
-    return api.python(step_name,
-        api.third_party_packages_ng.package_repo_resource('run.py'), cmd,
-        stdout=stdout, step_test_data=step_test_data)
+    repo_root = api.third_party_packages_ng.package_repo_resource()
+    with api.context(env={'PYTHONPATH': repo_root}):
+      return api.python(step_name,
+          '-m', cmd, stdout=stdout, step_test_data=step_test_data)
 
   @contextmanager
   def no_sdk():
