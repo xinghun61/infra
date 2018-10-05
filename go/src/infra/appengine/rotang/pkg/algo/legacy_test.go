@@ -14,14 +14,6 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 )
 
-var mtvMidnight = func() time.Time {
-	t, err := time.Parse(time.RFC822, "02 Jan 06 00:00 PDT")
-	if err != nil {
-		panic(err)
-	}
-	return t
-}()
-
 const (
 	minimalConfig = `
 {
@@ -150,8 +142,8 @@ func TestLegacyWithHistory(t *testing.T) {
 		current: []rotang.ShiftEntry{
 			{
 				Name:      "MTV all day",
-				StartTime: mtvMidnight,
-				EndTime:   mtvMidnight.Add(2 * fullDay),
+				StartTime: midnight,
+				EndTime:   midnight.Add(2 * fullDay),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "abtest@google.com",
@@ -160,8 +152,8 @@ func TestLegacyWithHistory(t *testing.T) {
 				},
 			}, {
 				Name:      "MTV all day",
-				StartTime: mtvMidnight.Add(2 * fullDay),
-				EndTime:   mtvMidnight.Add(4 * fullDay),
+				StartTime: midnight.Add(2 * fullDay),
+				EndTime:   midnight.Add(4 * fullDay),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "altest@google.com",
@@ -170,8 +162,8 @@ func TestLegacyWithHistory(t *testing.T) {
 				},
 			}, {
 				Name:      "MTV all day",
-				StartTime: mtvMidnight.Add(4 * fullDay),
-				EndTime:   mtvMidnight.Add(6 * fullDay),
+				StartTime: midnight.Add(4 * fullDay),
+				EndTime:   midnight.Add(6 * fullDay),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "awtest@google.com",
@@ -180,8 +172,8 @@ func TestLegacyWithHistory(t *testing.T) {
 				},
 			}, {
 				Name:      "MTV all day",
-				StartTime: mtvMidnight.Add(6 * fullDay),
-				EndTime:   mtvMidnight.Add(8 * fullDay),
+				StartTime: midnight.Add(6 * fullDay),
+				EndTime:   midnight.Add(8 * fullDay),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "abtest@google.com",
@@ -193,8 +185,8 @@ func TestLegacyWithHistory(t *testing.T) {
 		want: []rotang.ShiftEntry{
 			{
 				Name:      "MTV all day",
-				StartTime: mtvMidnight.Add(8 * fullDay),
-				EndTime:   mtvMidnight.Add(10 * fullDay),
+				StartTime: midnight.Add(8 * fullDay),
+				EndTime:   midnight.Add(10 * fullDay),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "abtest@google.com",
@@ -203,8 +195,8 @@ func TestLegacyWithHistory(t *testing.T) {
 				},
 			}, {
 				Name:      "MTV all day",
-				StartTime: mtvMidnight.Add(10 * fullDay),
-				EndTime:   mtvMidnight.Add(12 * fullDay),
+				StartTime: midnight.Add(10 * fullDay),
+				EndTime:   midnight.Add(12 * fullDay),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "altest@google.com",
@@ -213,8 +205,8 @@ func TestLegacyWithHistory(t *testing.T) {
 				},
 			}, {
 				Name:      "MTV all day",
-				StartTime: mtvMidnight.Add(12 * fullDay),
-				EndTime:   mtvMidnight.Add(14 * fullDay),
+				StartTime: midnight.Add(12 * fullDay),
+				EndTime:   midnight.Add(14 * fullDay),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "awtest@google.com",
@@ -223,8 +215,8 @@ func TestLegacyWithHistory(t *testing.T) {
 				},
 			}, {
 				Name:      "MTV all day",
-				StartTime: mtvMidnight.Add(14 * fullDay),
-				EndTime:   mtvMidnight.Add(16 * fullDay),
+				StartTime: midnight.Add(14 * fullDay),
+				EndTime:   midnight.Add(16 * fullDay),
 				OnCall: []rotang.ShiftMember{
 					{
 						Email:     "abtest@google.com",
@@ -278,7 +270,7 @@ func TestLegacyNoHistory(t *testing.T) {
 			name:      "Success 4 entries",
 			numShifts: 4,
 			cfg:       cfg,
-			start:     mtvMidnight,
+			start:     midnight,
 			members: []rotang.Member{
 				{
 					Email: "abtest@google.com",
@@ -296,8 +288,8 @@ func TestLegacyNoHistory(t *testing.T) {
 			want: []rotang.ShiftEntry{
 				{
 					Name:      "MTV all day",
-					StartTime: mtvMidnight,
-					EndTime:   mtvMidnight.Add(2 * fullDay),
+					StartTime: midnight,
+					EndTime:   midnight.Add(2 * fullDay),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "abtest@google.com",
@@ -306,8 +298,8 @@ func TestLegacyNoHistory(t *testing.T) {
 					},
 				}, {
 					Name:      "MTV all day",
-					StartTime: mtvMidnight.Add(2 * fullDay),
-					EndTime:   mtvMidnight.Add(4 * fullDay),
+					StartTime: midnight.Add(2 * fullDay),
+					EndTime:   midnight.Add(4 * fullDay),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "altest@google.com",
@@ -316,8 +308,8 @@ func TestLegacyNoHistory(t *testing.T) {
 					},
 				}, {
 					Name:      "MTV all day",
-					StartTime: mtvMidnight.Add(4 * fullDay),
-					EndTime:   mtvMidnight.Add(6 * fullDay),
+					StartTime: midnight.Add(4 * fullDay),
+					EndTime:   midnight.Add(6 * fullDay),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "awtest@google.com",
@@ -326,8 +318,8 @@ func TestLegacyNoHistory(t *testing.T) {
 					},
 				}, {
 					Name:      "MTV all day",
-					StartTime: mtvMidnight.Add(6 * fullDay),
-					EndTime:   mtvMidnight.Add(8 * fullDay),
+					StartTime: midnight.Add(6 * fullDay),
+					EndTime:   midnight.Add(8 * fullDay),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "abtest@google.com",
@@ -339,7 +331,7 @@ func TestLegacyNoHistory(t *testing.T) {
 		}, {
 			name:      "MixedLists",
 			numShifts: 10,
-			start:     mtvMidnight,
+			start:     midnight,
 			cfg:       euOtherCfg,
 			members: []rotang.Member{
 				{
@@ -382,8 +374,8 @@ func TestLegacyNoHistory(t *testing.T) {
 			want: []rotang.ShiftEntry{
 				{
 					Name:      "MTV all day",
-					StartTime: mtvMidnight,
-					EndTime:   mtvMidnight.Add(2 * fullDay),
+					StartTime: midnight,
+					EndTime:   midnight.Add(2 * fullDay),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "abtest_us@google.com",
@@ -392,8 +384,8 @@ func TestLegacyNoHistory(t *testing.T) {
 					},
 				}, {
 					Name:      "MTV all day",
-					StartTime: mtvMidnight.Add(2 * fullDay),
-					EndTime:   mtvMidnight.Add(4 * fullDay),
+					StartTime: midnight.Add(2 * fullDay),
+					EndTime:   midnight.Add(4 * fullDay),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "altest_us@google.com",
@@ -402,8 +394,8 @@ func TestLegacyNoHistory(t *testing.T) {
 					},
 				}, {
 					Name:      "MTV all day",
-					StartTime: mtvMidnight.Add(4 * fullDay),
-					EndTime:   mtvMidnight.Add(6 * fullDay),
+					StartTime: midnight.Add(4 * fullDay),
+					EndTime:   midnight.Add(6 * fullDay),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "awtest_us@google.com",
@@ -412,8 +404,8 @@ func TestLegacyNoHistory(t *testing.T) {
 					},
 				}, {
 					Name:      "MTV all day",
-					StartTime: mtvMidnight.Add(6 * fullDay),
-					EndTime:   mtvMidnight.Add(8 * fullDay),
+					StartTime: midnight.Add(6 * fullDay),
+					EndTime:   midnight.Add(8 * fullDay),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "abtest_eu@google.com",
@@ -422,8 +414,8 @@ func TestLegacyNoHistory(t *testing.T) {
 					},
 				}, {
 					Name:      "MTV all day",
-					StartTime: mtvMidnight.Add(8 * fullDay),
-					EndTime:   mtvMidnight.Add(10 * fullDay),
+					StartTime: midnight.Add(8 * fullDay),
+					EndTime:   midnight.Add(10 * fullDay),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "abtest_other@google.com",
@@ -432,8 +424,8 @@ func TestLegacyNoHistory(t *testing.T) {
 					},
 				}, {
 					Name:      "MTV all day",
-					StartTime: mtvMidnight.Add(10 * fullDay),
-					EndTime:   mtvMidnight.Add(12 * fullDay),
+					StartTime: midnight.Add(10 * fullDay),
+					EndTime:   midnight.Add(12 * fullDay),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "altest_eu@google.com",
@@ -442,8 +434,8 @@ func TestLegacyNoHistory(t *testing.T) {
 					},
 				}, {
 					Name:      "MTV all day",
-					StartTime: mtvMidnight.Add(12 * fullDay),
-					EndTime:   mtvMidnight.Add(14 * fullDay),
+					StartTime: midnight.Add(12 * fullDay),
+					EndTime:   midnight.Add(14 * fullDay),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "altest_other@google.com",
@@ -452,8 +444,8 @@ func TestLegacyNoHistory(t *testing.T) {
 					},
 				}, {
 					Name:      "MTV all day",
-					StartTime: mtvMidnight.Add(14 * fullDay),
-					EndTime:   mtvMidnight.Add(16 * fullDay),
+					StartTime: midnight.Add(14 * fullDay),
+					EndTime:   midnight.Add(16 * fullDay),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "awtest_eu@google.com",
@@ -462,8 +454,8 @@ func TestLegacyNoHistory(t *testing.T) {
 					},
 				}, {
 					Name:      "MTV all day",
-					StartTime: mtvMidnight.Add(16 * fullDay),
-					EndTime:   mtvMidnight.Add(18 * fullDay),
+					StartTime: midnight.Add(16 * fullDay),
+					EndTime:   midnight.Add(18 * fullDay),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "awtest_other@google.com",
@@ -472,8 +464,8 @@ func TestLegacyNoHistory(t *testing.T) {
 					},
 				}, {
 					Name:      "MTV all day",
-					StartTime: mtvMidnight.Add(18 * fullDay),
-					EndTime:   mtvMidnight.Add(20 * fullDay),
+					StartTime: midnight.Add(18 * fullDay),
+					EndTime:   midnight.Add(20 * fullDay),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "abtest_us@google.com",
@@ -484,12 +476,12 @@ func TestLegacyNoHistory(t *testing.T) {
 			},
 		}, {
 			name:      "Split shift",
-			start:     mtvMidnight,
+			start:     midnight,
 			numShifts: 3,
 			cfg: &rotang.Configuration{
 				Config: rotang.Config{
 					Shifts: rotang.ShiftConfig{
-						StartTime:    mtvMidnight,
+						StartTime:    midnight,
 						Length:       2,
 						ShiftMembers: 2,
 						Shifts: []rotang.Shift{
@@ -537,8 +529,8 @@ func TestLegacyNoHistory(t *testing.T) {
 			want: []rotang.ShiftEntry{
 				{
 					Name:      "MTV shift",
-					StartTime: mtvMidnight,
-					EndTime:   mtvMidnight.Add(fullDay + 12*time.Hour),
+					StartTime: midnight,
+					EndTime:   midnight.Add(fullDay + 12*time.Hour),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "aatest@google.com",
@@ -551,8 +543,8 @@ func TestLegacyNoHistory(t *testing.T) {
 					},
 				}, {
 					Name:      "Other shift",
-					StartTime: mtvMidnight.Add(12 * time.Hour),
-					EndTime:   mtvMidnight.Add(2 * fullDay),
+					StartTime: midnight.Add(12 * time.Hour),
+					EndTime:   midnight.Add(2 * fullDay),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "cctest@google.com",
@@ -565,8 +557,8 @@ func TestLegacyNoHistory(t *testing.T) {
 					},
 				}, {
 					Name:      "MTV shift",
-					StartTime: mtvMidnight.Add(2 * fullDay),
-					EndTime:   mtvMidnight.Add(3*fullDay + 12*time.Hour),
+					StartTime: midnight.Add(2 * fullDay),
+					EndTime:   midnight.Add(3*fullDay + 12*time.Hour),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "aatest@google.com",
@@ -579,8 +571,8 @@ func TestLegacyNoHistory(t *testing.T) {
 					},
 				}, {
 					Name:      "Other shift",
-					StartTime: mtvMidnight.Add(2*fullDay + 12*time.Hour),
-					EndTime:   mtvMidnight.Add(4 * fullDay),
+					StartTime: midnight.Add(2*fullDay + 12*time.Hour),
+					EndTime:   midnight.Add(4 * fullDay),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "cctest@google.com",
@@ -593,8 +585,8 @@ func TestLegacyNoHistory(t *testing.T) {
 					},
 				}, {
 					Name:      "MTV shift",
-					StartTime: mtvMidnight.Add(4 * fullDay),
-					EndTime:   mtvMidnight.Add(5*fullDay + 12*time.Hour),
+					StartTime: midnight.Add(4 * fullDay),
+					EndTime:   midnight.Add(5*fullDay + 12*time.Hour),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "aatest@google.com",
@@ -607,8 +599,8 @@ func TestLegacyNoHistory(t *testing.T) {
 					},
 				}, {
 					Name:      "Other shift",
-					StartTime: mtvMidnight.Add(4*fullDay + 12*time.Hour),
-					EndTime:   mtvMidnight.Add(6 * fullDay),
+					StartTime: midnight.Add(4*fullDay + 12*time.Hour),
+					EndTime:   midnight.Add(6 * fullDay),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "cctest@google.com",
@@ -624,7 +616,7 @@ func TestLegacyNoHistory(t *testing.T) {
 		},
 		{
 			name:      "Can't schedule members for shift",
-			start:     mtvMidnight,
+			start:     midnight,
 			numShifts: 3,
 			members: []rotang.Member{
 				{
@@ -632,7 +624,7 @@ func TestLegacyNoHistory(t *testing.T) {
 					TZ:    *euLocation,
 					OOO: []rotang.OOO{
 						{
-							Start:    mtvMidnight.Add(4 * time.Hour),
+							Start:    midnight.Add(4 * time.Hour),
 							Duration: 2 * time.Hour,
 							Comment:  "OOO - For a few hours.",
 						},
@@ -642,11 +634,11 @@ func TestLegacyNoHistory(t *testing.T) {
 					TZ:    *euLocation,
 					OOO: []rotang.OOO{
 						{
-							Start:    mtvMidnight.Add(8 * time.Hour),
+							Start:    midnight.Add(8 * time.Hour),
 							Duration: 2 * time.Hour,
 							Comment:  "Not during shift",
 						}, {
-							Start:    mtvMidnight.Add(2*fullDay + 8*time.Hour),
+							Start:    midnight.Add(2*fullDay + 8*time.Hour),
 							Duration: 2 * time.Hour,
 							Comment:  "Not during shift",
 						},
@@ -656,11 +648,11 @@ func TestLegacyNoHistory(t *testing.T) {
 					TZ:    *euLocation,
 					OOO: []rotang.OOO{
 						{
-							Start:    mtvMidnight.Add(8 * time.Hour),
+							Start:    midnight.Add(8 * time.Hour),
 							Duration: 2 * time.Hour,
 							Comment:  "Not during shift",
 						}, {
-							Start:    mtvMidnight.Add(2*fullDay + 8*time.Hour),
+							Start:    midnight.Add(2*fullDay + 8*time.Hour),
 							Duration: 2 * time.Hour,
 							Comment:  "Not during shift",
 						},
@@ -679,7 +671,7 @@ func TestLegacyNoHistory(t *testing.T) {
 			cfg: &rotang.Configuration{
 				Config: rotang.Config{
 					Shifts: rotang.ShiftConfig{
-						StartTime:    mtvMidnight,
+						StartTime:    midnight,
 						Length:       2,
 						ShiftMembers: 2,
 						Shifts: []rotang.Shift{
@@ -719,12 +711,12 @@ func TestLegacyNoHistory(t *testing.T) {
 				{
 					// All members OOO for this shift.
 					Name:      "MTV shift",
-					StartTime: mtvMidnight,
-					EndTime:   mtvMidnight.Add(fullDay + 12*time.Hour),
+					StartTime: midnight,
+					EndTime:   midnight.Add(fullDay + 12*time.Hour),
 				}, {
 					Name:      "Other shift",
-					StartTime: mtvMidnight.Add(12 * time.Hour),
-					EndTime:   mtvMidnight.Add(2 * fullDay),
+					StartTime: midnight.Add(12 * time.Hour),
+					EndTime:   midnight.Add(2 * fullDay),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "ddtest@google.com",
@@ -738,8 +730,8 @@ func TestLegacyNoHistory(t *testing.T) {
 				}, {
 					// bbtest and cctest OOO leaving aatest as the only option.
 					Name:      "MTV shift",
-					StartTime: mtvMidnight.Add(2 * fullDay),
-					EndTime:   mtvMidnight.Add(3*fullDay + 12*time.Hour),
+					StartTime: midnight.Add(2 * fullDay),
+					EndTime:   midnight.Add(3*fullDay + 12*time.Hour),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "aatest@google.com",
@@ -748,8 +740,8 @@ func TestLegacyNoHistory(t *testing.T) {
 					},
 				}, {
 					Name:      "Other shift",
-					StartTime: mtvMidnight.Add(2*fullDay + 12*time.Hour),
-					EndTime:   mtvMidnight.Add(4 * fullDay),
+					StartTime: midnight.Add(2*fullDay + 12*time.Hour),
+					EndTime:   midnight.Add(4 * fullDay),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "fftest@google.com",
@@ -762,8 +754,8 @@ func TestLegacyNoHistory(t *testing.T) {
 					},
 				}, {
 					Name:      "MTV shift",
-					StartTime: mtvMidnight.Add(4 * fullDay),
-					EndTime:   mtvMidnight.Add(5*fullDay + 12*time.Hour),
+					StartTime: midnight.Add(4 * fullDay),
+					EndTime:   midnight.Add(5*fullDay + 12*time.Hour),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "bbtest@google.com",
@@ -776,8 +768,8 @@ func TestLegacyNoHistory(t *testing.T) {
 					},
 				}, {
 					Name:      "Other shift",
-					StartTime: mtvMidnight.Add(4*fullDay + 12*time.Hour),
-					EndTime:   mtvMidnight.Add(6 * fullDay),
+					StartTime: midnight.Add(4*fullDay + 12*time.Hour),
+					EndTime:   midnight.Add(6 * fullDay),
 					OnCall: []rotang.ShiftMember{
 						{
 							Email:     "eetest@google.com",

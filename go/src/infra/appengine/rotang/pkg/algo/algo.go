@@ -15,6 +15,14 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+var mtvTime = func() *time.Location {
+	loc, err := time.LoadLocation("America/Los_Angeles")
+	if err != nil {
+		panic(err)
+	}
+	return loc
+}()
+
 // Generators contain the currently registered rotation Generators.
 type Generators struct {
 	registred map[string]rotang.RotaGenerator
@@ -68,12 +76,24 @@ func (a *Generators) List() []string {
 
 const fullDay = 24 * time.Hour
 
+// fixPDTPST handles PST/PDT changes.
+// This due to the StartTime read in from the configuration is set to
+// PDT.
+func fixPDTPST(in time.Time) time.Time {
+	z, _ := in.In(mtvTime).Zone()
+	if z != "PDT" {
+		return in.Add(1 * time.Hour)
+	}
+	return in
+}
+
 // ShiftStartEnd calculates the start and end time of a shift.
 func ShiftStartEnd(start time.Time, shiftNumber, shiftIdx int, sc *rotang.ShiftConfig) (time.Time, time.Time) {
-	hour, minute, _ := sc.StartTime.UTC().Clock()
-	year, month, day := start.UTC().Date()
+	hour, minute, _ := sc.StartTime.Clock()
+	year, month, day := start.Date()
 	shiftStart := time.Date(year, month, day, hour, minute, 0, 0, time.UTC).Add(time.Duration(shiftNumber) *
 		time.Duration(sc.Length+sc.Skip) * fullDay)
+	shiftStart = fixPDTPST(shiftStart)
 	for i := 0; i < shiftIdx; i++ {
 		shiftStart = shiftStart.Add(sc.Shifts[i].Duration)
 	}

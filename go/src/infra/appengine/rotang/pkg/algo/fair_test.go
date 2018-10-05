@@ -14,7 +14,7 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 )
 
-var midnight = time.Date(2006, 1, 2, 0, 0, 0, 0, time.UTC)
+var midnight = time.Date(2006, 8, 2, 0, 0, 0, 0, time.UTC)
 
 func stringToShifts(in, shiftName string) []rotang.ShiftEntry {
 	var res []rotang.ShiftEntry

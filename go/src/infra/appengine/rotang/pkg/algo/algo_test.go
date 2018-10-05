@@ -38,8 +38,41 @@ func stringToGenerators(in string) []rotang.RotaGenerator {
 	return res
 }
 
-func TestRegisterList(t *testing.T) {
+func TestShiftStartEnd(t *testing.T) {
+	tests := []struct {
+		name        string
+		cfg         *rotang.ShiftConfig
+		start       time.Time
+		shiftNumber int
+		shiftIdx    int
+		shifts      int
+	}{{
+		name:   "First try",
+		start:  midnight,
+		shifts: 20,
+		cfg: &rotang.ShiftConfig{
+			StartTime: midnight,
+			Length:    5,
+			Skip:      2,
+			Shifts: []rotang.Shift{
+				{
+					Name:     "MTV all day",
+					Duration: 24 * time.Hour,
+				},
+			},
+		},
+	},
+	}
 
+	for _, tst := range tests {
+		for i := 0; i < tst.shifts; i++ {
+			start, end := ShiftStartEnd(tst.start, i, tst.shiftIdx, tst.cfg)
+			t.Logf("start: %v, end: %v", start, end)
+		}
+	}
+}
+
+func TestRegisterList(t *testing.T) {
 	tests := []struct {
 		name       string
 		generators string

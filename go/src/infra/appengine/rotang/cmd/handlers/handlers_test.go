@@ -141,6 +141,7 @@ func TestNew(t *testing.T) {
 		fail: true,
 		opts: &Options{
 			Generators: &algo.Generators{},
+			ProdENV:    "production",
 			MemberStore: func(ctx context.Context) rotang.MemberStorer {
 				return datastore.New(ctx)
 			},
@@ -186,6 +187,7 @@ func TestNew(t *testing.T) {
 		fail: true,
 		opts: &Options{
 			URL:        "http://localhost:8080",
+			ProdENV:    "production",
 			Generators: &algo.Generators{},
 			MemberStore: func(ctx context.Context) rotang.MemberStorer {
 				return datastore.New(ctx)
@@ -196,6 +198,23 @@ func TestNew(t *testing.T) {
 			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {
 				return datastore.New(ctx)
 			},
+		},
+	}, {
+		name: "No ProdENV",
+		fail: true,
+		opts: &Options{
+			URL:        "http://localhost:8080",
+			Generators: &algo.Generators{},
+			MemberStore: func(ctx context.Context) rotang.MemberStorer {
+				return datastore.New(ctx)
+			},
+			ShiftStore: func(ctx context.Context) rotang.ShiftStorer {
+				return datastore.New(ctx)
+			},
+			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {
+				return datastore.New(ctx)
+			},
+			Calendar: &calendar.Calendar{},
 		},
 	}}
 

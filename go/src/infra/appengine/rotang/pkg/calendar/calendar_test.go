@@ -19,7 +19,7 @@ import (
 	gcal "google.golang.org/api/calendar/v3"
 )
 
-var midnight = time.Date(2006, 1, 2, 0, 0, 0, 0, time.UTC)
+var midnight = time.Date(2006, 8, 2, 0, 0, 0, 0, time.UTC)
 
 func newTestContext() context.Context {
 	ctx := gaetesting.TestingContext()
@@ -359,7 +359,7 @@ func TestFindShifts(t *testing.T) {
 }
 
 func timeMustParse(in string) time.Time {
-	t, err := time.ParseInLocation(dayFormat, in, time.UTC)
+	t, err := time.ParseInLocation(dayFormat, in, mtvTime)
 	if err != nil {
 		panic(err)
 	}

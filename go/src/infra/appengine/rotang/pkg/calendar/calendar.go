@@ -223,6 +223,14 @@ func fillCalendarDescription(cfg *rotang.Configuration, shift rotang.ShiftEntry,
 
 const dayFormat = "2006-01-02"
 
+var mtvTime = func() *time.Location {
+	loc, err := time.LoadLocation("US/Pacific")
+	if err != nil {
+		panic(err)
+	}
+	return loc
+}()
+
 func calToTime(calTime *gcal.EventDateTime) (time.Time, error) {
 	tz := time.UTC
 	if calTime.TimeZone != "" {
@@ -233,9 +241,15 @@ func calToTime(calTime *gcal.EventDateTime) (time.Time, error) {
 		}
 	}
 	if calTime.Date != "" {
+		// This ends up being UTC default since no TZ is specified in the
+		// legacy calendar events. Setting to MTV times makes things line
+		// up better.
+		if calTime.TimeZone == "" {
+			return time.ParseInLocation(dayFormat, calTime.Date, mtvTime)
+		}
 		return time.ParseInLocation(dayFormat, calTime.Date, tz)
 	}
-	return time.Parse(time.RFC3339, calTime.DateTime)
+	return time.ParseInLocation(time.RFC3339, calTime.DateTime, tz)
 }
 
 // UpdateEvent updates the calendar event with information from the provided updated shift.

@@ -18,7 +18,7 @@ import (
 const defaultTokenID = "test@admin"
 
 var mtvMidnight = func() time.Time {
-	t, err := time.Parse(time.RFC822, "02 Jan 06 00:00 PDT")
+	t, err := time.Parse(time.RFC822, "02 Jan 06 00:00 PST")
 	if err != nil {
 		panic(err)
 	}

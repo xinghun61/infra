@@ -18,6 +18,10 @@ import (
 	"golang.org/x/net/context"
 )
 
+func baseTime() time.Time {
+	return time.Date(2018, 9, 28, 0, 0, 0, 0, mtvTime)
+}
+
 func TestCleanOwners(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -60,10 +64,6 @@ func TestCleanOwners(t *testing.T) {
 }
 
 func TestFillIntegers(t *testing.T) {
-	testTime, err := time.Parse("15:04", "13:37")
-	if err != nil {
-		t.Fatalf("time.Parse() failed: %v", err)
-	}
 
 	tests := []struct {
 		name   string
@@ -79,7 +79,7 @@ func TestFillIntegers(t *testing.T) {
 			"shiftLength":      {"5"},
 			"shiftSkip":        {"2"},
 			"shiftMembers":     {"2"},
-			"shiftStart":       {"13:37"},
+			"shiftStart":       {"00:00"},
 		},
 		want: rotang.Config{
 			Expiration:       4,
@@ -91,7 +91,7 @@ func TestFillIntegers(t *testing.T) {
 				Length:       5,
 				Skip:         2,
 				ShiftMembers: 2,
-				StartTime:    testTime,
+				StartTime:    baseTime(),
 			},
 		},
 	}, {
@@ -116,7 +116,7 @@ func TestFillIntegers(t *testing.T) {
 				Length:       5,
 				Skip:         2,
 				ShiftMembers: 2,
-				StartTime:    testTime,
+				StartTime:    baseTime(),
 			},
 		},
 	}}
@@ -530,11 +530,6 @@ func TestHandleCreateRota(t *testing.T) {
 	ctxCancel, cancel := context.WithCancel(ctx)
 	cancel()
 
-	testTime, err := time.Parse("15:04", "13:37")
-	if err != nil {
-		t.Fatalf("time.Parse() failed: %v", err)
-	}
-
 	tests := []struct {
 		name       string
 		fail       bool
@@ -578,7 +573,7 @@ func TestHandleCreateRota(t *testing.T) {
 			"shiftLength":          {"5"},
 			"shiftSkip":            {"2"},
 			"shiftMembers":         {"2"},
-			"shiftStart":           {"13:37"},
+			"shiftStart":           {"00:00"},
 			"members":              {"aa@aa.com", "bb@bb.com"},
 			"addName":              {"First", "Second", "Third"},
 			"addMemberShiftName":   {"", "", ""},
@@ -610,7 +605,7 @@ func TestHandleCreateRota(t *testing.T) {
 					Length:       5,
 					Skip:         2,
 					ShiftMembers: 2,
-					StartTime:    testTime,
+					StartTime:    baseTime().UTC(),
 				},
 			},
 			Members: []rotang.ShiftMember{
@@ -652,7 +647,7 @@ func TestHandleCreateRota(t *testing.T) {
 			"shiftLength":          {"5"},
 			"shiftSkip":            {"2"},
 			"shiftMembers":         {"2"},
-			"shiftStart":           {"13:37"},
+			"shiftStart":           {"00:00"},
 			"members":              {"aa@aa.com", "bb@bb.com"},
 			"addName":              {"First", "Second", "Third"},
 			"addEmail":             {"first@first.com", "second@second.com"},
@@ -720,10 +715,6 @@ func TestHandleUpdateRota(t *testing.T) {
 	if err != nil {
 		t.Fatalf("time.Parse() failed: %v", err)
 	}
-	modifyTime, err := time.Parse("15:04", "23:37")
-	if err != nil {
-		t.Fatalf("time.Parse() failed: %v", err)
-	}
 
 	tests := []struct {
 		name       string
@@ -779,7 +770,7 @@ func TestHandleUpdateRota(t *testing.T) {
 			"shiftLength":          {"4"},
 			"shiftSkip":            {"5"},
 			"shiftMembers":         {"6"},
-			"shiftStart":           {"23:37"},
+			"shiftStart":           {"00:00"},
 			"memberName":           {"aa@aa.com", "bb@bb.com"},
 			"memberShiftName":      {"FirstShift", "SecondShift"},
 			"addName":              {"First", "Second", "Third"},
@@ -843,7 +834,7 @@ func TestHandleUpdateRota(t *testing.T) {
 					Length:       4,
 					Skip:         5,
 					ShiftMembers: 6,
-					StartTime:    modifyTime,
+					StartTime:    baseTime().UTC(),
 				},
 			},
 			Members: []rotang.ShiftMember{

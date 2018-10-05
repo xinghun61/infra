@@ -6,12 +6,8 @@ import (
 	"time"
 
 	"go.chromium.org/luci/common/logging"
-	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
-	"google.golang.org/appengine"
-
-	aeuser "google.golang.org/appengine/user"
 )
 
 const (
@@ -42,23 +38,9 @@ func (h *State) HandleShiftImport(ctx *router.Context) {
 		return
 	}
 
-	usr := auth.CurrentUser(ctx.Context)
-	if usr == nil || usr.Email == "" {
-		http.Error(ctx.Writer, "not logged in", http.StatusProxyAuthRequired)
+	if !adminOrOwner(ctx, rota[0]) {
+		http.Error(ctx.Writer, "not owner of the rota", http.StatusForbidden)
 		return
-	}
-	if !aeuser.IsAdmin(appengine.NewContext(ctx.Request)) {
-		isOwner := false
-		for _, m := range rota[0].Config.Owners {
-			if usr.Email != m {
-				continue
-			}
-			isOwner = true
-		}
-		if !isOwner {
-			http.Error(ctx.Writer, "not owner of the rota", http.StatusForbidden)
-			return
-		}
 	}
 
 	// Adding in 10 years to the end here just to make sure we get all events.

@@ -54,9 +54,22 @@ func fillIntegers(ctx *router.Context, cfg *rotang.Config) error {
 	if cfg.Shifts.ShiftMembers, err = strconv.Atoi(ctx.Request.FormValue("shiftMembers")); err != nil {
 		return err
 	}
-	if cfg.Shifts.StartTime, err = time.Parse("15:04", ctx.Request.FormValue("shiftStart")); err != nil {
+
+	// Turns out reading in a time formatted like "15:04" parse to gibberish.
+	// Until I've figured that out I'll manually create the date.
+	tStr := strings.Split(ctx.Request.FormValue("shiftStart"), ":")
+	if len(tStr) != 2 {
+		return status.Error(codes.InvalidArgument, "shiftStart in wrong format")
+	}
+	h, err := strconv.Atoi(tStr[0])
+	if err != nil {
 		return err
 	}
+	m, err := strconv.Atoi(tStr[1])
+	if err != nil {
+		return err
+	}
+	cfg.Shifts.StartTime = time.Date(2018, 9, 28, h, m, 0, 0, mtvTime)
 
 	return nil
 }
@@ -234,7 +247,6 @@ func (h *State) handlePOST(ctx *router.Context) (*rotang.Configuration, error) {
 		return nil, err
 	}
 	return &cfg, nil
-
 }
 
 func (h *State) updateGET(ctx *router.Context) (*rotang.Configuration, *auth.User, error) {
@@ -261,17 +273,10 @@ func (h *State) updateGET(ctx *router.Context) (*rotang.Configuration, *auth.Use
 		return nil, nil, status.Errorf(codes.Unauthenticated, "login required")
 	}
 
-	isOwner := false
-	for _, o := range rota.Config.Owners {
-		if o == usr.Email {
-			isOwner = true
-			break
-		}
-	}
-
-	if !isOwner {
+	if !adminOrOwner(ctx, rota) {
 		return nil, nil, status.Errorf(codes.Unauthenticated, "not in the rotation owners")
 	}
+	rotas[0].Config.Shifts.StartTime = rotas[0].Config.Shifts.StartTime.In(mtvTime)
 
 	return rotas[0], usr, nil
 }

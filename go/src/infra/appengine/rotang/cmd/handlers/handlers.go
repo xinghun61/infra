@@ -7,12 +7,42 @@ package handlers
 import (
 	"infra/appengine/rotang"
 	"infra/appengine/rotang/pkg/algo"
+	"time"
 
+	"go.chromium.org/luci/server/auth"
+	"go.chromium.org/luci/server/router"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
+	"google.golang.org/appengine"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	aeuser "google.golang.org/appengine/user"
 )
+
+var mtvTime = func() *time.Location {
+	loc, err := time.LoadLocation("America/Los_Angeles")
+	if err != nil {
+		panic(err)
+	}
+	return loc
+}()
+
+func adminOrOwner(ctx *router.Context, cfg *rotang.Configuration) bool {
+	usr := auth.CurrentUser(ctx.Context)
+	if usr == nil || usr.Email == "" {
+		return false
+	}
+	if aeuser.IsAdmin(appengine.NewContext(ctx.Request)) {
+		return true
+	}
+	for _, m := range cfg.Config.Owners {
+		if usr.Email == m {
+			return true
+		}
+	}
+	return false
+}
 
 // State holds shared state between handlers.
 type State struct {

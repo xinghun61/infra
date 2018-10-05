@@ -22,7 +22,7 @@ func (t *testableMail) Send(ctx context.Context, msg *mail.Message) error {
 	return mail.Send(ctx, msg)
 }
 
-var midnight = time.Date(2006, 1, 2, 0, 0, 0, 0, time.UTC)
+var midnight = time.Date(2006, 4, 2, 0, 0, 0, 0, time.UTC)
 
 const pacificTZ = "US/Pacific"
 
@@ -231,9 +231,9 @@ This is  a friendly reminder that you're oncall for {{.RotaName}} from {{.ShiftE
 			{
 				Sender:  "admin@example.com",
 				To:      []string{"oncaller@oncall.com"},
-				Subject: "Upcoming On-call shift for rotation: Test Rota 2006-01-05 16:00:00 -0800 PST to 2006-01-06 16:00:00 -0800 PST",
+				Subject: "Upcoming On-call shift for rotation: Test Rota 2006-04-05 17:00:00 -0700 PDT to 2006-04-06 17:00:00 -0700 PDT",
 				Body: `Hi Test Namesson.
-This is  a friendly reminder that you're oncall for Test Rota from 2006-01-05 16:00:00 -0800 PST to 2006-01-06 16:00:00 -0800 PST`,
+This is  a friendly reminder that you're oncall for Test Rota from 2006-04-05 17:00:00 -0700 PDT to 2006-04-06 17:00:00 -0700 PDT`,
 			},
 		},
 	}, {
