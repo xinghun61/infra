@@ -27,11 +27,12 @@ type Options struct {
 // Client is the LogDog client interface exported from this package.
 // You must call Close to flush and close all of the resources.
 type Client struct {
-	output    output.Output
-	butler    *butler.Butler
-	processor *annotee.Processor
-	readPipe  *io.PipeReader
-	writePipe *io.PipeWriter
+	output            output.Output
+	butler            *butler.Butler
+	processor         *annotee.Processor
+	processorFinished chan struct{}
+	readPipe          *io.PipeReader
+	writePipe         *io.PipeWriter
 }
 
 // Stdout returns a Writer that is directly connected to the root
@@ -52,6 +53,10 @@ func (c *Client) Close() (err error) {
 			err = err2
 		}
 		c.writePipe = nil
+	}
+	if c.processorFinished != nil {
+		<-c.processorFinished
+		c.processorFinished = nil
 	}
 	if c.processor != nil {
 		c.processor.Finish()

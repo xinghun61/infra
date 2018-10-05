@@ -64,11 +64,14 @@ func New(ctx context.Context, o *Options) (c *Client, err error) {
 			Annotate: true,
 		},
 	}
+	ch := make(chan struct{})
+	c.processorFinished = ch
 	// This goroutine terminates when the write pipe is closed.
 	go func() {
 		if err := c.processor.RunStreams(streams); err != nil {
 			log.Printf("Error writing logdog streams: %s", err)
 		}
+		close(ch)
 	}()
 	return c, nil
 }
