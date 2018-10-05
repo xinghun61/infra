@@ -34,8 +34,8 @@ def _CreateFlakeFromRow(row):
       master_name=legacy_master_name,
       builder_name=luci_builder,
       build_number=legacy_build_number)
-  normalized_test_name = Flake.NormalizeTestName(test_name)
-  test_label_name = Flake.GetTestLabelName(test_name)
+  normalized_test_name = Flake.NormalizeTestName(test_name, step_ui_name)
+  test_label_name = Flake.GetTestLabelName(test_name, step_ui_name)
 
   return Flake.Create(
       luci_project=luci_project,

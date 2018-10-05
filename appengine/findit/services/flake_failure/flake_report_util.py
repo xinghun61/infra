@@ -81,11 +81,13 @@ class FlakeAnalysisIssueGenerator(
         build_number=self._analysis.build_number)
 
   def GetTestName(self):
-    return Flake.NormalizeTestName(self._analysis.test_name)
+    return Flake.NormalizeTestName(self._analysis.test_name,
+                                   self._analysis.step_name)
 
   def GetTestLabelName(self):
     # Issues are filed with the test label name.
-    return Flake.GetTestLabelName(self._analysis.test_name)
+    return Flake.GetTestLabelName(self._analysis.test_name,
+                                  self._analysis.step_name)
 
   def GetMonorailProject(self):
     # Currently, flake analysis only works on Chromium project.
@@ -283,7 +285,7 @@ def GenerateWrongResultLink(analysis):
 
 def GenerateTestOutputLogLink(analysis):
   """Generates a link to the swarming task to be surfaced to the bug.
-  
+
   Args:
     analysis (MasterFlakeAnalysis): The analysis whose data points and swarming
         tasks will be queried for surfacing to the bug.

@@ -10,8 +10,10 @@ _GTEST_PREFIXES = ['PRE_', '*']
 
 # Regular expressions to identify parameterized gtests. Note that instantiation
 # names can be empty. For example: ColorSpaceTest.testNullTransform/1.
-_VALUE_PARAMETERIZED_GTESTS_REGEX = re.compile(r'^(.+/)?(.+\..+)/[\d\*]+$')
-_TYPE_PARAMETERIZED_GTESTS_REGEX = re.compile(r'^(.+/)?(.+)/[\d\*]+\.(.+)$')
+_VALUE_PARAMETERIZED_GTESTS_REGEX = re.compile(
+    r'^([\w\*]+/)?(\w+\.\w+)/[\w\*]+$')
+_TYPE_PARAMETERIZED_GTESTS_REGEX = re.compile(
+    r'^([\w\*]+/)?(\w+)/[\w\*]+\.(\w+)$')
 
 # Regular expression for a webkit_layout_test name.
 _LAYOUT_TEST_NAME_PATTERN = re.compile(r'^(([^/]+/)+[^/]+\.[a-zA-Z]+).*$')

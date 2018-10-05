@@ -100,13 +100,13 @@ class FlakeTest(wf_testcase.WaterfallTestCase):
   def testNormalizeTestName(self):
     self.assertEqual('suite.test', Flake.NormalizeTestName('suite.test'))
 
-    self.assertEqual('suite.test', Flake.NormalizeTestName('a/suite.test/0'))
-
-    self.assertEqual('suite.test', Flake.NormalizeTestName('*/suite.test/*'))
+    self.assertEqual('suite.test', Flake.NormalizeTestName('a/suite.test/0',))
 
     self.assertEqual('suite.test', Flake.NormalizeTestName('suite.test/1'))
 
     self.assertEqual('suite.test', Flake.NormalizeTestName('suite.test/*'))
+
+    self.assertEqual('suite.test', Flake.NormalizeTestName('*/suite.test/*'))
 
     self.assertEqual('suite.test',
                      Flake.NormalizeTestName('suite.PRE_PRE_test'))
@@ -114,28 +114,44 @@ class FlakeTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('suite.test',
                      Flake.NormalizeTestName('a/suite.PRE_PRE_test/0'))
 
-    self.assertEqual('a/b.html', Flake.NormalizeTestName('a/b.html'))
+    self.assertEqual('a/b/c/d.html', Flake.NormalizeTestName('a/b/c/d.html'))
 
-    self.assertEqual('a/b.html', Flake.NormalizeTestName('a/b.html?1000-2000'))
+    self.assertEqual('a/b/c/d.html',
+                     Flake.NormalizeTestName('a/b/c/d.html?1000-2000'))
 
-    self.assertEqual('a/b.html', Flake.NormalizeTestName('a/b.html?*'))
+    self.assertEqual('a/b/c/d.html', Flake.NormalizeTestName('a/b/c/d.html?*'))
+
+  def testNormalizeTestNameWithStepName(self):
+    self.assertEqual('suite.test', Flake.NormalizeTestName('a/suite.test/1'))
+
+    self.assertEqual('a.html', Flake.NormalizeTestName('a/b.html'))
+    self.assertEqual('a/b.html',
+                     Flake.NormalizeTestName('a/b.html', 'webkit_layout_tests'))
 
   def testGetTestLabelName(self):
-    self.assertEqual('suite.test', Flake.GetTestLabelName('suite.test'))
+    self.assertEqual('suite.test',
+                     Flake.GetTestLabelName('suite.test', 'base_unittests'))
 
-    self.assertEqual('suite.test/*', Flake.GetTestLabelName('suite.test/1'))
+    self.assertEqual('suite.test/*',
+                     Flake.GetTestLabelName('suite.test/1', 'base_unittests'))
 
-    self.assertEqual('*/suite.test/*', Flake.GetTestLabelName('a/suite.test/0'))
+    self.assertEqual('*/suite.test/*',
+                     Flake.GetTestLabelName('a/suite.test/0', 'base_unittests'))
 
-    self.assertEqual('suite.*test',
-                     Flake.GetTestLabelName('suite.PRE_PRE_test'))
+    self.assertEqual(
+        'suite.*test',
+        Flake.GetTestLabelName('suite.PRE_PRE_test', 'base_unittests'))
 
-    self.assertEqual('*/suite.*test/*',
-                     Flake.GetTestLabelName('a/suite.PRE_PRE_test/0'))
+    self.assertEqual(
+        '*/suite.*test/*',
+        Flake.GetTestLabelName('a/suite.PRE_PRE_test/0', 'base_unittests'))
 
-    self.assertEqual('a/b.html', Flake.NormalizeTestName('a/b.html'))
+    self.assertEqual('a/b.html',
+                     Flake.NormalizeTestName('a/b.html', 'webkit_layout_tests'))
 
-    self.assertEqual('a/b.html?*', Flake.GetTestLabelName('a/b.html?1000-2000'))
+    self.assertEqual(
+        'a/b.html?*',
+        Flake.GetTestLabelName('a/b.html?1000-2000', 'webkit_layout_tests'))
 
   def testGetId(self):
     luci_project = 'chromium'

@@ -38,6 +38,10 @@ class TestNameUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('ColorSpaceTest.testNullTransform',
                      test_name_util.RemoveParametersFromGTestName(test_name))
 
+    test_name = 'A/ColorSpaceTest.testNullTransform/bcd'
+    self.assertEqual('ColorSpaceTest.testNullTransform',
+                     test_name_util.RemoveParametersFromGTestName(test_name))
+
   def testRemoveMaskedValueParametersFromGTestNames(self):
     test_name = '*/ColorSpaceTest.testNullTransform/*'
     self.assertEqual('ColorSpaceTest.testNullTransform',
@@ -49,8 +53,17 @@ class TestNameUtilTest(wf_testcase.WaterfallTestCase):
         '*/ColorSpaceTest.testNullTransform/*',
         test_name_util.ReplaceParametersFromGtestNameWithMask(test_name))
 
+    test_name = 'A/ColorSpaceTest.testNullTransform/bcd'
+    self.assertEqual(
+        '*/ColorSpaceTest.testNullTransform/*',
+        test_name_util.ReplaceParametersFromGtestNameWithMask(test_name))
+
   def testRemoveValueParametersWithoutInstantiationName(self):
     test_name = 'ColorSpaceTest.testNullTransform/12'
+    self.assertEqual('ColorSpaceTest.testNullTransform',
+                     test_name_util.RemoveParametersFromGTestName(test_name))
+
+    test_name = 'ColorSpaceTest.testNullTransform/bcd'
     self.assertEqual('ColorSpaceTest.testNullTransform',
                      test_name_util.RemoveParametersFromGTestName(test_name))
 
@@ -65,8 +78,17 @@ class TestNameUtilTest(wf_testcase.WaterfallTestCase):
         'ColorSpaceTest.testNullTransform/*',
         test_name_util.ReplaceParametersFromGtestNameWithMask(test_name))
 
+    test_name = 'ColorSpaceTest.testNullTransform/bcd'
+    self.assertEqual(
+        'ColorSpaceTest.testNullTransform/*',
+        test_name_util.ReplaceParametersFromGtestNameWithMask(test_name))
+
   def testRemoveTypeParametersFromGTestName(self):
     test_name = '1/FixedCommandTest/4.InvalidCommand'
+    self.assertEqual('FixedCommandTest.InvalidCommand',
+                     test_name_util.RemoveParametersFromGTestName(test_name))
+
+    test_name = '1/FixedCommandTest/bcd.InvalidCommand'
     self.assertEqual('FixedCommandTest.InvalidCommand',
                      test_name_util.RemoveParametersFromGTestName(test_name))
 
@@ -81,8 +103,17 @@ class TestNameUtilTest(wf_testcase.WaterfallTestCase):
         '*/FixedCommandTest/*.InvalidCommand',
         test_name_util.ReplaceParametersFromGtestNameWithMask(test_name))
 
+    test_name = '1/FixedCommandTest/bcd.InvalidCommand'
+    self.assertEqual(
+        '*/FixedCommandTest/*.InvalidCommand',
+        test_name_util.ReplaceParametersFromGtestNameWithMask(test_name))
+
   def testRemoveTypeParametersWithoutInstantiationName(self):
     test_name = 'FixedCommandTest/4.InvalidCommand'
+    self.assertEqual('FixedCommandTest.InvalidCommand',
+                     test_name_util.RemoveParametersFromGTestName(test_name))
+
+    test_name = 'FixedCommandTest/bcd.InvalidCommand'
     self.assertEqual('FixedCommandTest.InvalidCommand',
                      test_name_util.RemoveParametersFromGTestName(test_name))
 
@@ -93,6 +124,11 @@ class TestNameUtilTest(wf_testcase.WaterfallTestCase):
 
   def testReplaceTypeParametersWithMaskWithoutInstantiationName(self):
     test_name = 'FixedCommandTest/4.InvalidCommand'
+    self.assertEqual(
+        'FixedCommandTest/*.InvalidCommand',
+        test_name_util.ReplaceParametersFromGtestNameWithMask(test_name))
+
+    test_name = 'FixedCommandTest/bcd.InvalidCommand'
     self.assertEqual(
         'FixedCommandTest/*.InvalidCommand',
         test_name_util.ReplaceParametersFromGtestNameWithMask(test_name))

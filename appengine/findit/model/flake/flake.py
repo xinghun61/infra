@@ -183,7 +183,7 @@ class Flake(ndb.Model):
     return step_name.split()[0]
 
   @staticmethod
-  def NormalizeTestName(test_name):
+  def NormalizeTestName(test_name, step_name=None):
     """Normalizes test names by removing parameters and queries.
 
     Removes prefixes and parameters from test names if they are gtests. For
@@ -194,21 +194,32 @@ class Flake(ndb.Model):
     example, 'external/wpt/editing/run/inserttext.html?2001-last' maps to
     'external/wpt/editing/run/inserttext.html'
 
+    step_name is an optional argument to help identify the type of the tests.
+    If not given, goes through all normalizers for different types of tests.
+    Note that without step name, this function is not perfect, for example,
+    a/suite/c.html can be both a type parameterized version of suite.html gtest
+    or a webkit_layout_tests.
+
     Args:
-      test_name: The original test name, and it may contain parameters and
-                 prefixes for gtests and queries for webkit_layout_tests.
+      test_name: Any test name, and it can be original test name containing
+                 parameters, normalized test name (no-op) or a test label name
+                 with masks.
+      step_name: The original step name, needed to identify the type of the
+                 test, such as webkit_layout_tests, gtests.
 
     Returns:
       Normalized version of the given test name.
     """
+    if step_name and 'webkit_layout_tests' in step_name:
+      return test_name_util.RemoveSuffixFromWebkitLayoutTestName(test_name)
+
     normalized_test_name = test_name_util.RemoveAllPrefixesFromGTestName(
         test_name_util.RemoveParametersFromGTestName(test_name))
-    normalized_test_name = test_name_util.RemoveSuffixFromWebkitLayoutTestName(
+    return test_name_util.RemoveSuffixFromWebkitLayoutTestName(
         normalized_test_name)
-    return normalized_test_name
 
   @staticmethod
-  def GetTestLabelName(test_name):
+  def GetTestLabelName(test_name, step_name):
     """Gets a label name for the normalized step name for display purpose.
 
     This method works the same way as |NormalizeTestName| except that the
@@ -217,15 +228,15 @@ class Flake(ndb.Model):
     Args:
       test_name: The original test name, and it may contain parameters and
                  prefixes for gtests and queries for webkit_layout_tests.
+      step_name: The original step name, needed to identify the type of the
+                 test, such as webkit_layout_tests, gtests.
 
     Returns:
       A test name with the variable parts being replaced with mask '*'.
     """
-    test_label_name = test_name_util.ReplaceAllPrefixesFromGtestNameWithMask(
-        test_name_util.ReplaceParametersFromGtestNameWithMask(test_name))
-    if test_label_name != test_name:
-      return test_label_name
+    if 'webkit_layout_tests' in step_name:
+      return test_name_util.ReplaceSuffixFromWebkitLayoutTestNameWithMask(
+          test_name)
 
-    test_label_name = (
-        test_name_util.ReplaceSuffixFromWebkitLayoutTestNameWithMask(test_name))
-    return test_label_name
+    return test_name_util.ReplaceAllPrefixesFromGtestNameWithMask(
+        test_name_util.ReplaceParametersFromGtestNameWithMask(test_name))
