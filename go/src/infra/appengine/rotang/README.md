@@ -6,3 +6,11 @@ Doc](https://docs.google.com/document/d/1WdvMckyfzfx9anU1hLHJ16EuvXv4Keo8aUmSTQR
 The goal is replace the current Python script generating the Sheriff rota with
 this Go AppeEngine service. This to have a better base for running/managing the
 service and future developments
+
+## Source structure.
+
+See [BROWSE.md](BROWSE.md)
+
+## Switch over from the old service to this.
+
+See [SWITCH.md](SWITCH.md)

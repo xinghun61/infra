@@ -6,49 +6,46 @@ This document describes the structure of the RotaNG code.
 ## Basic structure.
 
 ```
-    rotang
-    ├── cmd
-    │   ├── app
-    │   │   ├── app.go
-    │   │   ├── app.yaml
-    │   │   ├── css
-    │   │   ├── images
-    │   │   └── token
-    │   └── handlers
-    │       ├── handle_index.go
-    │       ├── handle_index_test.go
-    │       ├── handlers.infra_testing
-    │       ├── handle_upload.go
-    │       ├── handle_upload_test.go
-    │       ├── ...
-    │       └── templates
-    │           └── pages
-    │               ├── index.html
-    │               └── upload.html
-    │               └── ...
-    ├── pkg
-    │   ├── datastore
-    │   │   ├── datastore.go
-    │   │   └── datastore_test.go
-    │   └── jsoncfg
-    │       ├── jsoncfg.go
-    │       └── jsoncfg_test.go
-    ├── Makefile
-    ├── OWNERS
-    ├── README.md
-    └── rotang.go
+.
+├── cmd
+│   ├── app
+│   │   ├── app.go
+│   │   ├── app.infra_testing
+│   │   ├── app_local.yaml
+│   │   ├── app_prod.yaml
+│   │   ├── app_staging.yaml
+│   │   ├── css
+│   │   ├── images
+│   │   ├── static
+│   │   ├── templates
+│   └── handlers
+├── Makefile
+├── OWNERS
+├── pkg
+│   ├── algo
+│   ├── calendar
+│   ├── datastore
+│   └── jsoncfg
+├── README.md
+├── rotang.go
+
+16 directories, 81 files
 ```
 
 * *cmd*; Contains the application(s).
-  * *app*; The Appengine application **app.go** and its configuration **app.yaml** lives here.
+  * *app*; The Appengine application **app.go** and its configuration **app_*\**.yaml** lives here.
+    * `app_local.yaml`, `app_staging.yaml` and `app_prod.yaml` contains configurations for respective environment.
+    * The `static` folder contains the JS elements used by the rota service.
+    * The `templates` folder contains html templates used by the handlers to generate the Web UI pages.
   * *handlers*; Contains all the HTTP handlers.
-  * rotang-tool; The CLI tool.
 
   The cmd folder should contain application code, something using the packages in the **pkg** folder.
 
 * *pkg*; Contains the Go packages used by this project.
   * *datastore*; Implements the storer interfaces using Appengine datastore.
   * *jsoncfg*; handles the conversion from the legacy JSON configuration to the ones used by this service.
+  * algo: This folder contains the generators used to generate new rotation shifts.
+  * calendar: Implements the Caledrer interface using Google calendar.
 
   The pkg folder should contain Go packages used by the applications. A package should not depend on any other
   package in this folder. They should only implement/use interfaces/types defined in the main *rotang.go* package.
