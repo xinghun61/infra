@@ -887,11 +887,11 @@ the permission to schedule a Dataflow job for your project.
 &mdash; **def [RunSteps](/recipes/recipes/remote_execute_dataflow_workflow.py#50)(api, workflow, job_name, gcp_project_id, num_workers, timeout):**
 ### *recipes* / [snapshots/builder](/recipes/recipes/snapshots/builder.py)
 
-[DEPS](/recipes/recipes/snapshots/builder.py#5): [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipes/snapshots/builder.py#5): [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipes/snapshots/builder.py#60)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/snapshots/builder.py#62)(api):**
 
-&mdash; **def [get\_value](/recipes/recipes/snapshots/builder.py#40)(pairs, key):**
+&mdash; **def [get\_value](/recipes/recipes/snapshots/builder.py#42)(pairs, key):**
 
 Returns a the value for the given key in the given pairs.
 

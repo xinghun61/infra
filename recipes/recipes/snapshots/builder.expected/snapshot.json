@@ -81,12 +81,19 @@
   },
   {
     "cmd": [
-      "echo",
-      "snapshot-me"
+      "buildbucket",
+      "put",
+      "-host",
+      "cr-buildbucket-dev.appspot.com",
+      "{\"bucket\": \"luci.chromium.cron\", \"experimental\": false, \"parameters_json\": \"{\\\"builder_name\\\": \\\"Snapshots\\\", \\\"swarming\\\": {\\\"override_builder_cfg\\\": {\\\"dimensions\\\": [\\\"id:snapshot-me\\\"]}}}\", \"tags\": [\"builder:Snapshots\", \"machine_type:mt\", \"parent_buildername:TestBuilder\", \"parent_buildnumber:571\", \"user_agent:recipe\"]}"
     ],
-    "name": "chromium-swarm-dev.machine type: mt",
+    "infra_step": true,
+    "name": "chromium-swarm-dev.buildbucket.put",
+    "stdout": "/path/to/tmp/json",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
     ]
   },
   {

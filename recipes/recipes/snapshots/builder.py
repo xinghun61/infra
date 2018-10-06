@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 DEPS = [
+  'recipe_engine/buildbucket',
   'recipe_engine/cipd',
   'recipe_engine/json',
   'recipe_engine/path',
@@ -12,9 +13,10 @@ DEPS = [
 ]
 
 
-# Swarming servers to snapshot Machine Provider bots on.
+# Servers to snapshot Machine Provider bots on.
+# Each element is a tuple of (Swarming server, Buildbucket server).
 SERVERS = [
-    'chromium-swarm-dev',
+    ('chromium-swarm-dev', 'cr-buildbucket-dev'),
 ]
 
 # OSes where snapshotting is allowed.
@@ -64,8 +66,8 @@ def RunSteps(api):
   api.cipd.ensure(packages_dir, ensure_file)
 
   swarming = packages_dir.join('swarming')
-  for server in SERVERS:
-    with api.step.nest(server):
+  for sw_server, bb_server in SERVERS:
+    with api.step.nest(sw_server):
       # Maps machine_type -> bot_id of bots to snapshot.
       bots = {}
       res = api.step('bots', [
@@ -76,25 +78,43 @@ def RunSteps(api):
           '-field', 'items/machine_type',
           '-json', api.json.output(),
           '-mp',
-          '-server', '%s.appspot.com' % server,
+          '-server', '%s.appspot.com' % sw_server,
       ], step_test_data=lambda: api.json.test_api.output(BOTS_TEST_DATA))
       # For each machine_type, pick a bot to snapshot.
       # TODO(smut): Consider exposing machine_type as a dimension.
       # In that case, a specific bot wouldn't need to be chosen.
       for bot in res.json.output:
-        # Only consider this bot if it's running supported OS.
-        if set(get_value(bot['dimensions'], 'os')).intersection(OSES):
-          bots[bot['machine_type']] = bot['bot_id']
+        # Newly created Machine Provider bots may not have dimensions yet.
+        if bot.get('dimensions'):
+          # Only consider this bot if it's running a supported OS.
+          if set(get_value(bot['dimensions'], 'os')).intersection(OSES):
+            bots[bot['machine_type']] = bot['bot_id']
 
+      api.buildbucket.set_buildbucket_host('%s.appspot.com' % bb_server)
+      builds = []
       for mt, bot in bots.iteritems():
-        api.step('machine type: %s' % mt, ['echo', bot])
+        builds.append({
+            'bucket': 'luci.chromium.cron',
+            'parameters': {
+                'builder_name': 'Snapshots',
+                'swarming': {
+                    'override_builder_cfg': {
+                        'dimensions': ['id:%s' % bot],
+                    },
+                },
+            },
+            'tags': {'machine_type': mt},
+        })
+      api.buildbucket.put(builds)
 
 
 def GenTests(api):
   yield (
     api.test('snapshot') +
     api.platform('linux', 64) +
-    api.properties.git_scheduled(
-        buildername='snapshot',
+    api.properties.git_scheduled() +
+    api.step_data(
+        'chromium-swarm-dev.buildbucket.put',
+        stdout=api.json.output({}),
     )
   )
