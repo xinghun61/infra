@@ -23,7 +23,7 @@ import model
 import user
 
 MAX_RETURN_BUILDS = 1000
-RE_TAG_INDEX_SEARCH_CURSOR = re.compile('^id>\d+$')
+RE_TAG_INDEX_SEARCH_CURSOR = re.compile(r'^id>\d+$')
 
 
 def fix_max_builds(max_builds):
@@ -409,6 +409,53 @@ def _query_search_async(q):
   ))
 
 
+@ndb.non_transactional
+@ndb.tasklet
+def _populate_tag_index_entry_bucket_id(indexes):
+  """Populates indexes[i].entries[j].bucket_id."""
+  to_migrate = {
+      i for i, idx in enumerate(indexes)
+      if any(not e.bucket_id for e in idx.entries)
+  }
+  if not to_migrate:
+    return
+
+  build_ids = sorted({
+      e.build_id
+      for i in to_migrate
+      for e in indexes[i].entries
+      if not e.bucket_id
+  })
+  builds = yield ndb.get_multi_async(
+      ndb.Key(model.Build, bid) for bid in build_ids
+  )
+  bucket_ids = {
+      build_id: build.bucket_id if build else None
+      for build_id, build in zip(build_ids, builds)
+  }
+
+  @ndb.transactional_tasklet
+  def txn_async(key):
+    idx = yield key.get_async()
+    new_entries = []
+    for e in idx.entries:
+      e.bucket_id = e.bucket_id or bucket_ids[e.build_id]
+      if e.bucket_id:
+        new_entries.append(e)
+      else:  # pragma: no cover | pycoverage is confused
+        # Such build does not exist.
+        # Note: add_to_tag_index_async adds new entries with bucket_id.
+        # This code runs only for old TagIndeEntries, so there is no race.
+        pass
+    idx.entries = new_entries
+    yield idx.put_async()
+    raise ndb.Return(idx)
+
+  futs = [(i, txn_async(indexes[i].key)) for i in to_migrate]
+  for i, fut in futs:
+    indexes[i] = fut.get_result()
+
+
 @ndb.tasklet
 def _tag_index_search_async(q):
   """Searches for builds using TagIndex entities. For args doc, see search().
@@ -450,9 +497,10 @@ def _tag_index_search_async(q):
 
   # Load index entries and put them to a min-heap, sorted by build_id.
   entry_heap = []  # tuples (build_id, TagIndexEntry).
-  for idx in (yield ndb.get_multi_async(TagIndex.all_shard_keys(indexed_tag))):
-    if not idx:
-      continue
+  indexes = yield ndb.get_multi_async(TagIndex.all_shard_keys(indexed_tag))
+  indexes = [idx for idx in indexes if idx]
+  yield _populate_tag_index_entry_bucket_id(indexes)
+  for idx in indexes:
     if idx.permanently_incomplete:
       raise errors.TagIndexIncomplete(
           'TagIndex(%s) is incomplete' % idx.key.id()
@@ -656,7 +704,7 @@ class TagIndex(ndb.Model):
   # if incomplete, this TagIndex should not be used in search.
   # It is set to True if there are more than MAX_ENTRY_COUNT builds
   # for this tag.
-  permanently_incomplete = ndb.BooleanProperty()
+  permanently_incomplete = ndb.BooleanProperty(indexed=False)
 
   # entries is a superset of all builds that have the tag equal to the id of
   # this entity. It may contain references to non-existent builds or builds that

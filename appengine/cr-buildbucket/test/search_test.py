@@ -675,6 +675,33 @@ class SearchTest(testing.AppengineTestCase):
           start_cursor='id>0'
       )
 
+  def test_search_with_legacy_index(self):
+    self.test_build.tags = [self.INDEXED_TAG]
+    self.test_build.put()
+
+    idx = search.TagIndex(
+        id=self.INDEXED_TAG,
+        entries=[
+            search.TagIndexEntry(
+                build_id=self.test_build.key.id(),
+                bucket=self.test_build.bucket
+            ),
+            # this entry will be deleted, because bucket_id could not be
+            # resolved.
+            search.TagIndexEntry(build_id=123),
+        ],
+    )
+    idx.put()
+
+    builds, _ = self.search(
+        buckets=[self.test_build.bucket], tags=[self.INDEXED_TAG]
+    )
+    self.assertEqual(builds, [self.test_build])
+
+    idx = idx.key.get()
+    self.assertEqual(len(idx.entries), 1)
+    self.assertEqual(idx.entries[0].bucket_id, self.test_build.bucket_id)
+
   def test_search_with_no_tag_index(self):
     builds, _ = self.search()
     self.assertEqual(builds, [])
