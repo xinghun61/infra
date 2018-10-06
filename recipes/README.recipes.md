@@ -49,7 +49,7 @@
   * [recipes_py_continuous](#recipes-recipes_py_continuous)
   * [remote_execute_dataflow_workflow](#recipes-remote_execute_dataflow_workflow) &mdash; This recipe is used to execute Dataflow workflows.
   * [snapshots/builder](#recipes-snapshots_builder)
-  * [snapshots/snapshots](#recipes-snapshots_snapshots)
+  * [snapshots/snapshot](#recipes-snapshots_snapshot)
   * [sync_submodules](#recipes-sync_submodules)
   * [third_party_packages](#recipes-third_party_packages) &mdash; This recipe builds and packages third party software, such as Git.
   * [third_party_packages:examples/cmake](#recipes-third_party_packages_examples_cmake) &mdash; Recipe for 'cmake' building.
@@ -905,11 +905,11 @@ Returns:
 
 Raises:
   ValueError: If the key doesn't exist.
-### *recipes* / [snapshots/snapshots](/recipes/recipes/snapshots/snapshots.py)
+### *recipes* / [snapshots/snapshot](/recipes/recipes/snapshots/snapshot.py)
 
-[DEPS](/recipes/recipes/snapshots/snapshots.py#5): [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipes/snapshots/snapshot.py#5): [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time], [recipe\_engine/url][recipe_engine/recipe_modules/url]
 
-&mdash; **def [RunSteps](/recipes/recipes/snapshots/snapshots.py#14)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/snapshots/snapshot.py#17)(api):**
 ### *recipes* / [sync\_submodules](/recipes/recipes/sync_submodules.py)
 
 [DEPS](/recipes/recipes/sync_submodules.py#7): [sync\_submodules](#recipe_modules-sync_submodules), [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime]

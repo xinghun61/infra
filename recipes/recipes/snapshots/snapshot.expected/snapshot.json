@@ -27,8 +27,33 @@
   },
   {
     "cmd": [
+      "vpython",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::url]/resources/pycurl.py",
+      "--url",
+      "http://metadata/computeMetadata/v1/instance/zone",
+      "--status-json",
+      "/path/to/tmp/json",
+      "--outfile",
+      "/path/to/tmp/",
+      "--headers-json",
+      "{\"Metadata-Flavor\": \"Google\"}"
+    ],
+    "name": "get zone"
+  },
+  {
+    "cmd": [
       "[START_DIR]/packages/snapshot",
-      "-help"
+      "-disk",
+      "bot-id-disk",
+      "-name",
+      "snapshot-133700000150",
+      "-project",
+      "google.com:chromecompute",
+      "-service-account-json",
+      ":gce",
+      "-zone",
+      "us-zone1-a"
     ],
     "name": "snapshot"
   },
