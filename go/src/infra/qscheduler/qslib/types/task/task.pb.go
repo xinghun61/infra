@@ -5,10 +5,11 @@ package task
 
 import (
 	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
-	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	vector "infra/qscheduler/qslib/types/vector"
 	math "math"
+
+	proto "github.com/golang/protobuf/proto"
+	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -43,6 +44,7 @@ func (*Request) ProtoMessage()    {}
 func (*Request) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d30de70d95288ebe, []int{0}
 }
+
 func (m *Request) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Request.Unmarshal(m, b)
 }
@@ -105,6 +107,7 @@ func (*Run) ProtoMessage()    {}
 func (*Run) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d30de70d95288ebe, []int{1}
 }
+
 func (m *Run) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Run.Unmarshal(m, b)
 }

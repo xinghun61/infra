@@ -5,9 +5,10 @@ package account
 
 import (
 	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
 	vector "infra/qscheduler/qslib/types/vector"
 	math "math"
+
+	proto "github.com/golang/protobuf/proto"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -54,6 +55,7 @@ func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2a30a156a0712643, []int{0}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }

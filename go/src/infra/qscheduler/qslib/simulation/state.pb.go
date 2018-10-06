@@ -5,9 +5,10 @@ package simulation
 
 import (
 	fmt "fmt"
+	math "math"
+
 	proto "github.com/golang/protobuf/proto"
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -46,6 +47,7 @@ func (*Generator) ProtoMessage()    {}
 func (*Generator) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e8df602498159471, []int{0}
 }
+
 func (m *Generator) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Generator.Unmarshal(m, b)
 }

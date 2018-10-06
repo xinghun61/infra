@@ -5,9 +5,10 @@ package scheduler
 
 import (
 	fmt "fmt"
+	math "math"
+
 	proto "github.com/golang/protobuf/proto"
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -76,6 +77,7 @@ func (*Assignment) ProtoMessage()    {}
 func (*Assignment) Descriptor() ([]byte, []int) {
 	return fileDescriptor_fcbc6dd4eb727ef1, []int{0}
 }
+
 func (m *Assignment) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Assignment.Unmarshal(m, b)
 }
@@ -137,8 +139,8 @@ func (m *Assignment) GetTime() *timestamp.Timestamp {
 }
 
 func init() {
-	proto.RegisterType((*Assignment)(nil), "scheduler.Assignment")
 	proto.RegisterEnum("scheduler.Assignment_Type", Assignment_Type_name, Assignment_Type_value)
+	proto.RegisterType((*Assignment)(nil), "scheduler.Assignment")
 }
 
 func init() {

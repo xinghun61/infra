@@ -5,8 +5,9 @@ package vector
 
 import (
 	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
 	math "math"
+
+	proto "github.com/golang/protobuf/proto"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -35,6 +36,7 @@ func (*Vector) ProtoMessage()    {}
 func (*Vector) Descriptor() ([]byte, []int) {
 	return fileDescriptor_35bfe2173543ca2f, []int{0}
 }
+
 func (m *Vector) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Vector.Unmarshal(m, b)
 }

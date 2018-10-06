@@ -5,12 +5,13 @@ package scheduler
 
 import (
 	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
-	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	account "infra/qscheduler/qslib/types/account"
 	task "infra/qscheduler/qslib/types/task"
 	vector "infra/qscheduler/qslib/types/vector"
 	math "math"
+
+	proto "github.com/golang/protobuf/proto"
+	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -47,6 +48,7 @@ func (*Worker) ProtoMessage()    {}
 func (*Worker) Descriptor() ([]byte, []int) {
 	return fileDescriptor_9c9a368e1d01bf8a, []int{0}
 }
+
 func (m *Worker) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Worker.Unmarshal(m, b)
 }
@@ -105,6 +107,7 @@ func (*State) ProtoMessage()    {}
 func (*State) Descriptor() ([]byte, []int) {
 	return fileDescriptor_9c9a368e1d01bf8a, []int{1}
 }
+
 func (m *State) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_State.Unmarshal(m, b)
 }
@@ -167,6 +170,7 @@ func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
 	return fileDescriptor_9c9a368e1d01bf8a, []int{2}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }

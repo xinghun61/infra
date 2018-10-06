@@ -5,9 +5,10 @@ package reconciler
 
 import (
 	fmt "fmt"
+	math "math"
+
 	proto "github.com/golang/protobuf/proto"
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -91,6 +92,7 @@ func (*TaskUpdate) ProtoMessage()    {}
 func (*TaskUpdate) Descriptor() ([]byte, []int) {
 	return fileDescriptor_320df42c60a35510, []int{0}
 }
+
 func (m *TaskUpdate) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TaskUpdate.Unmarshal(m, b)
 }
@@ -152,8 +154,8 @@ func (m *TaskUpdate) GetAccountId() string {
 }
 
 func init() {
-	proto.RegisterType((*TaskUpdate)(nil), "reconciler.TaskUpdate")
 	proto.RegisterEnum("reconciler.TaskUpdate_Type", TaskUpdate_Type_name, TaskUpdate_Type_value)
+	proto.RegisterType((*TaskUpdate)(nil), "reconciler.TaskUpdate")
 }
 
 func init() {
