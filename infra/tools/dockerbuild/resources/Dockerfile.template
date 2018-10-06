@@ -156,6 +156,7 @@ RUN pip install virtualenv cffi distutilscross auditwheel numpy
 
 ### Add helper script
 COPY ${resources_relpath}/start.sh /
+RUN chmod a+x /start.sh
 
 # Enter our "/work" (Dockcross script expectation).
 WORKDIR /work
