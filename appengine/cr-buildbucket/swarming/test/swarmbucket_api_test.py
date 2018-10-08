@@ -355,6 +355,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         }],
     }
     self.assertEqual(actual_task_def, expected_task_def)
+    self.assertEqual(resp['swarming_host'], u'swarming.example.com')
 
   def test_get_task_def_bad_request(self):
     req = {

@@ -78,6 +78,9 @@ class GetTaskDefinitionResponseMessage(messages.Message):
   # build.
   task_definition = messages.StringField(1)
 
+  # The swarming host that we would send this task request to.
+  swarming_host = messages.StringField(2)
+
 
 class SetNextBuildNumberRequest(messages.Message):
   bucket = messages.StringField(1, required=True)
@@ -183,7 +186,10 @@ class SwarmbucketApi(remote.Service):
       ).get_result()
       task_def_json = json.dumps(task_def)
 
-      return GetTaskDefinitionResponseMessage(task_definition=task_def_json)
+      return GetTaskDefinitionResponseMessage(
+          task_definition=task_def_json,
+          swarming_host=build.swarming_hostname,
+      )
     except errors.InvalidInputError as ex:
       raise endpoints.BadRequestException(
           'invalid build request: %s' % ex.message
