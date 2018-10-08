@@ -395,7 +395,9 @@ and will be applied with `git apply`).
   * `script` - Used for "weird" packages which are distributed via e.g.
     an HTML download page or an API. The script must be able to return the
     'latest' version of its source, as well as to actually fetch a specified
-    version.
+    version. Python fetch scripts will be executed with `vpython`, and so
+    may have a .vpython file (or similar) in the usual manner to pull in
+    dependencies like `requests`.
 
 Additionally the Source message contains a `patch_version` field to allow symver
 disambiguation of the built packages when they contain patches or other
@@ -560,9 +562,9 @@ This module uses the following named caches:
   * `osx_sdk` - Cache for `depot_tools/osx_sdk`. Only on Mac.
   * `windows_sdk` - Cache for `depot_tools/windows_sdk`. Only on Windows.
 
-#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#372)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#374)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
-&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#543)(self, packages=(), platform='', force_build=False):**
+&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#545)(self, packages=(), platform='', force_build=False):**
 
 Executes entire {fetch,build,package,verify,upload} pipeline for all the
 packages listed, targeting the given platform.
@@ -578,9 +580,9 @@ Args:
 Returns (list[(cipd_pkg, cipd_version)], set[str]) of built CIPD packages
 and their tagged versions, as well as a list of unsupported packages.
 
-&mdash; **def [initialize](/recipes/recipe_modules/third_party_packages_ng/api.py#393)(self):**
+&mdash; **def [initialize](/recipes/recipe_modules/third_party_packages_ng/api.py#395)(self):**
 
-&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#493)(self, path):**
+&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#495)(self, path):**
 
 Loads all package definitions from the given path.
 
@@ -606,7 +608,7 @@ whose name is already registered. This could occur if you call
 load_packages_from_path multiple times, and one of the later calls tries to
 load a pacakge which was registered under one of the earlier calls.
 
-&emsp; **@package_prefix.setter**<br>&mdash; **def [package\_prefix](/recipes/recipe_modules/third_party_packages_ng/api.py#404)(self, prefix):**
+&emsp; **@package_prefix.setter**<br>&mdash; **def [package\_prefix](/recipes/recipe_modules/third_party_packages_ng/api.py#406)(self, prefix):**
 
 Set the CIPD package name prefix (str).
 

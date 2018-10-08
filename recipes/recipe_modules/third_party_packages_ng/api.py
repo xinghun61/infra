@@ -126,7 +126,9 @@ and will be applied with `git apply`).
   * `script` - Used for "weird" packages which are distributed via e.g.
     an HTML download page or an API. The script must be able to return the
     'latest' version of its source, as well as to actually fetch a specified
-    version.
+    version. Python fetch scripts will be executed with `vpython`, and so
+    may have a .vpython file (or similar) in the usual manner to pull in
+    dependencies like `requests`.
 
 Additionally the Source message contains a `patch_version` field to allow symver
 disambiguation of the built packages when they contain patches or other

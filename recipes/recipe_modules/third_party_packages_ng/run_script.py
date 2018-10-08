@@ -124,6 +124,7 @@ def run_script(api, *args, **kwargs):
 
     elif interpreter == 'python':
       return api.python(step_name, args[0], args[1:],
-                        stdout=stdout, step_test_data=step_test_data)
+                        stdout=stdout, step_test_data=step_test_data,
+                        venv=True)
 
     assert False, 'impossible'  # pragma: no cover

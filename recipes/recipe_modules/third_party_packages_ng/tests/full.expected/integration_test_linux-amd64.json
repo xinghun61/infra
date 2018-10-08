@@ -2286,7 +2286,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]/builder/package_repo/fetch_and_package/fetch.py",
       "latest"
@@ -2403,7 +2403,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]/builder/package_repo/fetch_and_package/fetch.py",
       "checkout",
@@ -3108,7 +3108,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]/builder/package_repo/pkg/fetch.py",
       "latest"
@@ -3345,7 +3345,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]/builder/package_repo/pkg/fetch.py",
       "checkout",
