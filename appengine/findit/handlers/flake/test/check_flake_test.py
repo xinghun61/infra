@@ -595,16 +595,12 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'regression_range_upper':
             12345,
         'most_recent_flakiness': {
-            'blame_list': [],
             'error': None,
             'commit_position': 12345,
-            'previous_build_git_hash': None,
             'pass_rate': 0.9,
             'build_url': None,
-            'previous_build_commit_position': None,
             'try_job_url': None,
             'elapsed_seconds': 0,
-            'has_valid_artifact': True,
             'iterations': None,
             'commit_position_landed_time': '2016-12-31 00:00:00',
             'task_ids': ['task_id1'],

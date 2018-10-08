@@ -204,16 +204,6 @@ class MasterFlakeAnalysisTest(TestCase):
 
     self.assertIsNone(analysis.GetDataPointOfSuspectedBuild())
 
-  def testGetCommitPosition(self):
-    data_point = DataPoint()
-    data_point.blame_list = ['r1', 'r2', 'r3']
-    data_point.commit_position = 100
-    data_point.previous_build_commit_position = 97
-
-    self.assertEqual(98, data_point.GetCommitPosition('r1'))
-    self.assertEqual(99, data_point.GetCommitPosition('r2'))
-    self.assertEqual(100, data_point.GetCommitPosition('r3'))
-
   def testGetErrorExistingError(self):
     error = {'title': 'title', 'description': 'description'}
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
@@ -231,56 +221,6 @@ class MasterFlakeAnalysisTest(TestCase):
     analysis.Save()
 
     self.assertEqual(expected_error, analysis.GetError())
-
-  def testGetRevisionAtCommitPosition(self):
-    data_point = DataPoint()
-    data_point.blame_list = ['r1', 'r2', 'r3']
-    data_point.commit_position = 100
-
-    self.assertEqual('r1', data_point.GetRevisionAtCommitPosition(98))
-    self.assertEqual('r2', data_point.GetRevisionAtCommitPosition(99))
-    self.assertEqual('r3', data_point.GetRevisionAtCommitPosition(100))
-
-  def testGetDictOfCommitPositionAndRevision(self):
-    data_point = DataPoint()
-    data_point.blame_list = ['r1', 'r2', 'r3']
-    data_point.commit_position = 100
-
-    expected_CLs = {100: 'r3', 99: 'r2', 98: 'r1'}
-
-    self.assertEqual(expected_CLs,
-                     data_point.GetDictOfCommitPositionAndRevision())
-
-  def testGetCommitPositionOfBuild(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.data_points = [
-        DataPoint.Create(build_number=100, commit_position=1000),
-        DataPoint.Create(build_number=101, commit_position=1100)
-    ]
-    self.assertIsNone(analysis.GetCommitPositionOfBuild(102))
-    self.assertEqual(1000, analysis.GetCommitPositionOfBuild(100))
-
-  def testGetCommitPositionOfBuildNoDataPoints(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    self.assertIsNone(analysis.GetCommitPositionOfBuild(102))
-
-  def testGetDataPointsWithinBuildNumberRange(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.data_points = [
-        DataPoint.Create(build_number=100, commit_position=1000),
-        DataPoint.Create(build_number=101, commit_position=1100),
-        DataPoint.Create(build_number=110, commit_position=2000)
-    ]
-    self.assertEqual(analysis.data_points,
-                     analysis.GetDataPointsWithinBuildNumberRange(100, 110))
-    self.assertEqual([analysis.data_points[-1]],
-                     analysis.GetDataPointsWithinBuildNumberRange(110, 120))
-    self.assertEqual(analysis.data_points,
-                     analysis.GetDataPointsWithinBuildNumberRange(None, None))
-
-  def testGetDataPointsWithinBuildNumberRangeNoDataPoints(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    self.assertEqual([], analysis.GetDataPointsWithinBuildNumberRange(100, 110))
 
   def testGetDataPointsWithinCommitPositionRange(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
@@ -487,24 +427,6 @@ class MasterFlakeAnalysisTest(TestCase):
 
     self.assertEqual(123, analysis.suspected_flake_build_number)
 
-  def testRemoveDataPointWithBuildNumber(self):
-    data_points = [
-        DataPoint.Create(build_number=100, commit_position=1000),
-        DataPoint.Create(build_number=101, commit_position=1100),
-        DataPoint.Create(build_number=110, commit_position=2000)
-    ]
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.data_points = data_points
-    analysis.RemoveDataPointWithBuildNumber(110)
-
-    self.assertEqual(data_points[:-1], analysis.data_points)
-
-  def testRemoveDataPointWithBuildNumberNoDataPoints(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.RemoveDataPointWithBuildNumber(110)
-
-    self.assertEqual([], analysis.data_points)
-
   def testRemoveDataPointWithCommitPosition(self):
     data_points = [
         DataPoint.Create(build_number=100, commit_position=1000),
@@ -538,13 +460,11 @@ class MasterFlakeAnalysisTest(TestCase):
     old_data_point = DataPoint.Create(
         commit_position=1,
         pass_rate=1.0,
-        iterations=10,
-        blame_list=['r1', 'r2'])
+        iterations=10)
     new_data_point = DataPoint.Create(
         commit_position=2,
         pass_rate=0.5,
-        iterations=10,
-        blame_list=['r1', 'r2'])
+        iterations=10)
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [old_data_point]
@@ -556,20 +476,6 @@ class MasterFlakeAnalysisTest(TestCase):
         old_data_point,
         analysis.FindMatchingDataPointWithCommitPosition(
             old_data_point.commit_position))
-
-  def testFindMatchingDataPointWithBuildNumber(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.data_points = [
-        DataPoint.Create(build_number=100),
-        DataPoint.Create(build_number=103),
-        DataPoint.Create(build_number=200),
-        DataPoint.Create(commit_position=1000)
-    ]
-    self.assertEqual(
-        100,
-        analysis.FindMatchingDataPointWithBuildNumber(100).build_number)
-    self.assertIsNone(analysis.FindMatchingDataPointWithBuildNumber(105))
-    self.assertIsNone(analysis.FindMatchingDataPointWithBuildNumber(None))
 
   @mock.patch.object(logging, 'info')
   def testLogInfo(self, mocked_logging_info):

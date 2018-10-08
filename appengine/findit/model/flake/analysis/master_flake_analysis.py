@@ -52,28 +52,8 @@ class DataPoint(ndb.Model):
   # Any errors associated with generating this data point.
   error = ndb.JsonProperty(indexed=False)
 
-  # TODO(crbug.com/839620): Deprecate previous_build_commit_position,
-  # previous_build_git_hash, and blame_list.
-
-  # The commit position of the build preceding this one. Only relevant if this
-  # data point is generated at the build level.
-  previous_build_commit_position = ndb.IntegerProperty(indexed=False)
-
-  # The git hash of the data point 1 build before this one. Only relevant if
-  # this data point is generated as the result of a flake swarming task.
-  previous_build_git_hash = ndb.StringProperty(indexed=False)
-
-  # The list of revisions between this build and the previous build. Only
-  # relevant if this data point is generated as the result of a flake swarming
-  # task.
-  blame_list = ndb.StringProperty(repeated=True)
-
   # The URL to the try job that generated this data point, if any.
   try_job_url = ndb.StringProperty(indexed=False)
-
-  # A flag indicates whether the checked build has valid artifact.
-  # This flag is only for build level data points.
-  has_valid_artifact = ndb.BooleanProperty(indexed=False, default=True)
 
   # The number of iterations run to determine this data point's pass rate.
   iterations = ndb.IntegerProperty(indexed=False)
@@ -92,11 +72,7 @@ class DataPoint(ndb.Model):
              task_ids=None,
              commit_position=None,
              git_hash=None,
-             previous_build_commit_position=None,
-             previous_build_git_hash=None,
-             blame_list=None,
              try_job_url=None,
-             has_valid_artifact=True,
              iterations=None,
              elapsed_seconds=0,
              error=None,
@@ -110,11 +86,7 @@ class DataPoint(ndb.Model):
     data_point.task_ids = task_ids
     data_point.commit_position = commit_position
     data_point.git_hash = git_hash
-    data_point.previous_build_commit_position = previous_build_commit_position
-    data_point.previous_build_git_hash = previous_build_git_hash
-    data_point.blame_list = blame_list or []
     data_point.try_job_url = try_job_url
-    data_point.has_valid_artifact = has_valid_artifact
     data_point.iterations = iterations
     data_point.elapsed_seconds = elapsed_seconds
     data_point.error = error
@@ -134,47 +106,6 @@ class DataPoint(ndb.Model):
     # TODO(crbug.com/884375): Find the task id that best represents flakiness
     # in case the last one doesn't have any failures (expected to be rare).
     return self.task_ids[-1] if self.task_ids else None
-
-  def GetCommitPosition(self, revision):
-    """Gets the commit position of a revision within blame_list.
-
-    Args:
-      revision (str): The revision to search for.
-
-    Returns:
-      commit_position (int): The calculated commit position of revision.
-    """
-    assert revision in self.blame_list
-
-    for i in range(0, len(self.blame_list)):  # pragma: no branch
-      if revision == self.blame_list[i]:
-        return i + self.previous_build_commit_position + 1
-
-  def GetRevisionAtCommitPosition(self, commit_position):
-    """Gets the corresponding revision to commit_position.
-
-    Args:
-      commit_position (int): The commit position for which to find the
-          corresponding revision within self.blame_list.
-
-    Returns:
-      revision (str): The git revision corresponding to commit_position.
-    """
-    length = len(self.blame_list)
-    assert (commit_position > self.commit_position - length and
-            commit_position <= self.commit_position)
-    return self.blame_list[length - (self.commit_position - commit_position) -
-                           1]
-
-  def GetDictOfCommitPositionAndRevision(self):
-    """Gets a dict of commit_position:revision items for this data_point."""
-    blamed_cls = {}
-    commit_position = self.commit_position
-    for i in xrange(len(self.blame_list) - 1, -1, -1):
-      blamed_cls[commit_position] = self.blame_list[i]
-      commit_position -= 1
-
-    return blamed_cls
 
 
 class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
@@ -405,52 +336,6 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
     self.has_created_autorevert = False
     self.has_submitted_autorevert = False
 
-  def GetCommitPositionOfBuild(self, build_number):
-    """Gets the commit position of a build in self.data_points if available.
-
-      Searches self.data_points for the data point with the corresponding build
-      number and returns its commit position if found, else None. Note that data
-      points generated as a result of try jobs should not have build_number set.
-
-    Args:
-      build_number (int): The build number to find the matching data point.
-
-    Returns:
-      The commit position of the data point with the matching build number.
-    """
-    for data_point in self.data_points:
-      # Skip try job data points since they should not have build_number.
-      if (data_point.build_number == build_number and
-          data_point.try_job_url is None):
-        return data_point.commit_position
-    return None
-
-  # TODO(crbug.com/798231): Remove once build level analysis is removed.
-  def GetDataPointsWithinBuildNumberRange(self, lower_bound_build_number,
-                                          upper_bound_build_number):
-    """Filters data_points by lower and upper bound build numbers.
-
-      All data points within the build number range will be returned, including
-      data points created by try jobs.
-
-    Args:
-      lower_bound_build_number (int): The earlist build number a data point can
-          have not to be filtered out. If None is passed, defaults to 0.
-      upper_bound_build_number (int): The latest build number a data point can
-          have not to be filtered out. If none is passed, defaults to infinity.
-
-    Returns:
-      A list of DataPoints filtered by the input build numbers.
-    """
-    if lower_bound_build_number is None and upper_bound_build_number is None:
-      return self.data_points
-
-    lower_bound = self.GetCommitPositionOfBuild(lower_bound_build_number) or 0
-    upper_bound = self.GetCommitPositionOfBuild(upper_bound_build_number)
-
-    return self.GetDataPointsWithinCommitPositionRange(
-        IntRange(lower=lower_bound, upper=upper_bound))
-
   def GetDataPointsWithinCommitPositionRange(self, int_range):
     """Filters data_points by lower and upper bound commit positions.
 
@@ -469,10 +354,6 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
               data_point.commit_position <= upper)
 
     return filter(PositionInBounds, self.data_points)
-
-  def RemoveDataPointWithBuildNumber(self, build_number):
-    self.data_points = filter(lambda x: x.build_number != build_number,
-                              self.data_points)
 
   def RemoveDataPointWithCommitPosition(self, commit_position):
     self.data_points = filter(lambda x: x.commit_position != commit_position,
@@ -493,22 +374,6 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
 
     return next((data_point for data_point in self.data_points
                  if data_point.commit_position == commit_position), None)
-
-  def FindMatchingDataPointWithBuildNumber(self, build_number):
-    """Finds the data point with the same build_number as the given one.
-
-    Args:
-      build_number (int): DataPoint with the matching build number to search for
-          in the list.
-
-    Returns:
-      A DataPoint with the matching build_number if found, else None.
-    """
-    if build_number is None:
-      return None
-
-    return next((data_point for data_point in self.data_points
-                 if data_point.build_number == build_number), None)
 
   def InitializeRunning(self):
     """Sets up necessary information for an analysis when it begins."""
