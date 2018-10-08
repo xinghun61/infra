@@ -138,11 +138,7 @@ func (c *cmdGetBuilder) grabBuilderDefinition(ctx context.Context, bucket, build
 	if err != nil {
 		return nil, err
 	}
-	// TODO(iannucci): obtain swarming server from answer
-	jd.SwarmingHostname = "chromium-swarm.appspot.com"
-	if strings.Contains(c.bbHost, "-dev.") {
-		jd.SwarmingHostname = "chromium-swarm-dev.appspot.com"
-	}
+	jd.SwarmingHostname = answer.SwarmingHost
 
 	return jd, nil
 }
