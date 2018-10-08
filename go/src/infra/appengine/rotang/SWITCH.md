@@ -1,22 +1,22 @@
 # Switch to RotaNG.
 
 This document describes the steps needed to switch over from the cron/python based rotation generator
-to this new service running in Appengine.
+to the new RotaNG service.
 
-See [Design Doc](https://docs.google.com/document/d/1WdvMckyfzfx9anU1hLHJ16EuvXv4Keo8aUmSTQRuNp4/edit) for some information about the why, how and what.
+See [Design Doc](https://docs.google.com/document/d/1WdvMckyfzfx9anU1hLHJ16EuvXv4Keo8aUmSTQRuNp4/edit) for further information.
 
 
-## Moving over a new rotation.
+## Switch a rotation to the RotaNG service.
 
-### Create a Rotation
+### Create/Import a Rotation
 
   Browse to (https://rota-ng-staging.googleplex.com/).
 
   From here you have a few options on how to create a rotation.
 
- - It's already in there!.
+ - **It's already in there!**.
 
-    - If when following the `Manage rotations` link you can see your rotation this was already imported.
+    - If when following the `Manage rotations` link you can see your rotation it was already imported.
 
       Continue to next step.
 
@@ -27,9 +27,15 @@ See [Design Doc](https://docs.google.com/document/d/1WdvMckyfzfx9anU1hLHJ16EuvXv
 
  - Your rotation is not in `List configurations in backend store`.
 
-   Choose `Create new rotation` from the `Manage rotation page`.
+    - ***Either*** Create a new rotation from scratch.
+        
+        Choose `Create new rotation` from the `Manage rotation page`.
+        
+    - **Or** Import rotation from a configuration file. 
+      
+      Follow the link `Upload Legacy JSON rota configuration` to upload and convert.
 
-###Configure a Rotation
+### Configure a Rotation
 
   - If your rotation already existed press the `modify` button.
 
