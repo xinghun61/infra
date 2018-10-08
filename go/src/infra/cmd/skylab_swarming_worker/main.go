@@ -101,7 +101,8 @@ func runSwarmingTask(a *args) (err error) {
 		}
 	}()
 	return harness.Run(b,
-		func(b *swarming.Bot, resultsDir string) error {
+		func(b *swarming.Bot, i *harness.Info) error {
+			resultsDir := i.ResultsDir
 			ta := lucifer.TaskArgs{
 				AbortSock:  filepath.Join(resultsDir, "abort_sock"),
 				GCPProject: gcpProject,

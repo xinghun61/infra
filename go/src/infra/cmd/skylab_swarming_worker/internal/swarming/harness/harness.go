@@ -23,23 +23,29 @@ import (
 // Func is run by Run.  It is called with a Bot and the path to the
 // results directory.  The Bot will have BotInfo loaded, and the
 // BotInfo will be written back when the swarmingFunc returns.
-type Func func(*swarming.Bot, string) error
+type Func func(*swarming.Bot, *Info) error
+
+// Info holds information about the Swarming harness.
+type Info struct {
+	ResultsDir string
+}
 
 // Run calls a function with a Swarming harness, which prepares and
 // cleans up the results directory and host info.
 func Run(b *swarming.Bot, f Func) (err error) {
-	p, err := prepareResultsDir(b)
+	i := Info{}
+	i.ResultsDir, err = prepareResultsDir(b)
 	if err != nil {
 		return errors.Wrap(err, "prepare results dir")
 	}
 	defer func() {
-		if err := sealResultsDir(p); err != nil {
-			log.Printf("Failed to seal results directory %s", p)
+		if err := sealResultsDir(i.ResultsDir); err != nil {
+			log.Printf("Failed to seal results directory %s", i.ResultsDir)
 			log.Print("Logs will not be offloaded to GS")
 		}
 	}()
 
-	hiPath, err := prepareHostInfo(b, p)
+	hiPath, err := prepareHostInfo(b, i.ResultsDir)
 	if err != nil {
 		// This can happen if the DUT disappeared from the
 		// inventory after the task was scheduled.
@@ -50,7 +56,7 @@ func Run(b *swarming.Bot, f Func) (err error) {
 			err = errors.Wrap(err2, "dimensions update from host info failed")
 		}
 	}()
-	return f(b, p)
+	return f(b, &i)
 }
 
 // prepareResultsDir creates the results dir needed for autoserv.
