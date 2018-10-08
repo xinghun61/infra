@@ -172,8 +172,8 @@ class ConfigTest(testing.AppengineTestCase):
 
   def test_get_buckets_async_with_bucket_ids_not_found(self):
     bid = 'chromium/try'
-    with self.assertRaises(errors.NotFoundError):
-      config.get_buckets_async([bid], legacy_mode=False).get_result()
+    actual = config.get_buckets_async([bid], legacy_mode=False).get_result()
+    self.assertEqual(actual, {bid: None})
 
   @mock.patch('components.config.get_project_configs', autospec=True)
   def test_cron_update_buckets(self, get_project_configs):

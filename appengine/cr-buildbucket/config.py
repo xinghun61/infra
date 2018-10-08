@@ -317,13 +317,11 @@ def get_buckets_async(bucket_ids=None, legacy_mode=True):
 
   If bucket_ids is None, returns all buckets.
   Otherwise returns only specified buckets.
+  If a bucket does not exist, returns a None map value.
 
   Returns:
     {bucket_id: project_config_pb2.Bucket} dict.
     In legacy mode, returns [(project_id, project_config_pb2.Bucket)].
-
-  Raises:
-    errors.NotFoundError if a specified bucket is not found.
   """
   if legacy_mode:  # pragma: no cover
     # Legacy mode. TODO(crbug.com/851036): remove.
@@ -344,12 +342,12 @@ def get_buckets_async(bucket_ids=None, legacy_mode=True):
   if bucket_ids is not None:
     keys = [Bucket.make_key(*parse_bucket_id(bid)) for bid in bucket_ids]
     buckets = yield ndb.get_multi_async(keys)
-    for bid, b in zip(bucket_ids, buckets):
-      if not b:
-        raise errors.NotFoundError('bucket %s not found' % bid)
+    raise ndb.Return({
+        bid: b.config if b else None for bid, b in zip(bucket_ids, buckets)
+    })
   else:
     buckets = yield Bucket.query().fetch_async()
-  raise ndb.Return({b.bucket_id: b.config for b in buckets})
+    raise ndb.Return({b.bucket_id: b.config for b in buckets})
 
 
 @ndb.non_transactional
