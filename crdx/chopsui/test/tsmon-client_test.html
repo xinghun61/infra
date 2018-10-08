@@ -225,9 +225,12 @@
 
   suite('flush', function() {
     test('cumulative distribution', function() {
+      let fields = new Map(Object.entries({
+        "foo_field": TSMonClient.stringField('foo_field'),
+      }));
       let c = tsm.cumulativeDistribution('frontend/cumulativedistribution_test',
-          'cumulative distribution test', undefined, TSMonClient.stringField('foo_field'));
-      let res = new window.Response('ok', {
+          'cumulative distribution test', undefined, fields);
+      let res = new window.Response('Ok.', {
         status: 200,
         headers: {
           'Content-type': 'application/json',
@@ -237,40 +240,45 @@
       let ts = 1;
       tsm.now = () => { return ts; }
 
-      const fields = new Map(Object.entries({"foo_field": "bar_value"}));
+      fields = new Map(Object.entries({"foo_field": "bar_value"}));
       c.add(1, fields);
       tsm.flush();
 
       // First call immediately flushes.
-      sinon.assert.calledWith(window.fetch, sinon.match(tsm._reportPath),
-        sinon.match({
+      sinon.assert.calledWith(window.fetch,
+        sinon.match(tsm._reportPath), sinon.match({
+          method: 'POST',
+          credentials: 'same-origin',
           body: JSON.stringify({
-                "metrics": [{
-                 "MetricInfo": {
-                    "Name": c.info.Name,
-                    "Description": c.info.Description,
-                    "Fields": {
-                      "Name": "foo_field",
-                      "Type": FieldType.STRING
-                    },
-                    "ValueType": c.info.ValueType,
-                  },
-                  "Cells": [{
-                    "value": {
-                      "sum": 1,
-                      "count": 1,
-                      "buckets": [[1, 1]]
-                    },
-                    "fields": {
-                      "foo_field": "bar_value"
-                    },
-                    "start_time": tsm._initTimeMs,
-                  }],
-                }]
-            }),
-            credentials: 'same-origin',
-            method: 'POST',
-          }));
+            "metrics":[{
+              "MetricInfo": {
+                "Name": c.info.Name,
+                "Desription": c.info.Description,
+                "Fields": {
+                  "foo_field": {
+                    "Name": "foo_field",
+                    "Type": FieldType.STRING,
+                  }
+                },
+                "ValueType": c.info.ValueType,
+              },
+              "Cells": [{
+                "value": {
+                  "sum": 1,
+                  "count": 1,
+                  "buckets": [[1,1]],
+                },
+                "fields": {
+                  "foo_field": "bar_value"
+                },
+                "start_time": tsm._initTimeSeconds,
+              }]
+            }],
+            "token": null,
+          }),
+        }
+      ));
+
       ts = 2;
       const firstTimestamp = ts;
       c.add(2, fields);
@@ -282,35 +290,39 @@
       c.add(10, fields);
 
       tsm.flush();
-      sinon.assert.calledWith(window.fetch, sinon.match(tsm._reportPath),
-        sinon.match({
-          body: JSON.stringify({
-              "metrics": [{
-                "MetricInfo": {
-                  "Name": c.info.Name,
-                  "Description": c.info.Description,
-                  "Fields": {
-                      "Name": "foo_field",
-                      "Type": FieldType.STRING
-                    },
-                  "ValueType": c.info.ValueType,
-                },
-                "Cells": [{
-                  "value": {
-                    "sum": 29,
-                    "count": 6,
-                    "buckets": [[2, 2], [4, 3], [5, 1]]
-                  },
-                  "fields": {
-                    "foo_field": "bar_value"
-                  },
-                  "start_time": tsm._initTimeMs,
-                }],
-              }]
-          }),
-          credentials: 'same-origin',
+      sinon.assert.calledWith(window.fetch,
+        sinon.match(tsm._reportPath), sinon.match({
           method: 'POST',
-        }));
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            "metrics":[{
+              "MetricInfo": {
+                "Name": c.info.Name,
+                "Desription": c.info.Description,
+                "Fields": {
+                  "foo_field": {
+                    "Name": "foo_field",
+                    "Type": FieldType.STRING,
+                  }
+                },
+                "ValueType": c.info.ValueType,
+              },
+              "Cells": [{
+                "value": {
+                  "sum": 29,
+                  "count": 6,
+                  "buckets": [[2, 2], [4, 3], [5, 1]]
+                },
+                "fields": {
+                  "foo_field": "bar_value"
+                },
+                "start_time": tsm._initTimeSeconds,
+              }]
+            }],
+            "token": null,
+          }),
+        }
+      ));
     });
   });
 })();

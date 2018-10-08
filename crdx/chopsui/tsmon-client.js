@@ -39,11 +39,19 @@
     boolTest.set(true);
 
     @example create a counter metric, with some fields.
-    let counterTest = tsm.counter('frontend/counter_test', 'test counter', null,
-        [TSMonClient.stringField("some_string"), TSMonClient.boolField("some_bool"),
-        TSMonClient.intField("some_int")]);
-    // Fields are specified by position rather than name when reporting metrics.
-    counterTest.add(1, ["foo", true, 42]);
+    const metricFields = new Map(Object.entries({
+      "some_string": TSMonClient.stringField("some_string"),
+      "some_bool": TSMonClient.boolField("some_bool"),
+      "some_int": TSMonClient.intField("some_int"),
+    }));
+    const counterTest = tsm.counter('frontend/counter_test', 'test counter',
+      null, metricFields);
+    const measurementFields = new Map(Object.entries({
+      "some_string": "foo",
+      "some_bool": true,
+      "some_int": 42,
+    }));
+    counterTest.add(1, fields);
 
     @example create a cumulative distribution metric.
     let cumulativeDistributionTest =
@@ -70,15 +78,16 @@
     /**
      * @constructor
      */
-    constructor() {
-      this._reportPath = "/_/jstsmon";
+    constructor(reportPath="/_/jstsmon", xsrfToken=null) {
+      this._reportPath = reportPath;
+      this._xsrfToken = xsrfToken;
       this._metrics = new Map();
       this._metricValues = new Map();
       this._flushIntervalMs = FLUSH_THRESHOLD_MS;
       this._flushTimer = setTimeout(() => {
         this._onFlush();
       }, this._flushIntervalMs);
-      this._initTimeMs = new Date().getTime();
+      this._initTimeSeconds = Math.floor(new Date().getTime() / 1e3);
     }
 
     _onFlush() {
@@ -143,14 +152,24 @@
           return {
             value: cellValue,
             fields: cell.fields,
-            start_time: this._initTimeMs,
+            start_time: this._initTimeSeconds,
           };
         });
 
+        const fieldsObj = {};
+        for (let [k, v] of met.info.Fields) {
+          fieldsObj[k] = v;
+        }
+        const info = {
+          Name: met.info.Name,
+          Desription: met.info.Description,
+          Fields: fieldsObj,
+          ValueType: met.info.ValueType,
+        };
         let rawMetricValue = {
-          MetricInfo: met.info,
+          MetricInfo: info,
           MetricMetadata: met.metadata,
-          Cells: cells
+          Cells: cells,
         };
 
         rawMetricValues.push(rawMetricValue);
@@ -159,6 +178,12 @@
       this.fetchImpl(rawMetricValues)
         .then(resp => {
           window.console.log("ts_mon response", resp);
+          return resp.text();
+        })
+        .then(text => {
+          if (text !== 'Ok.') {
+            window.console.error('Non-ok response body:', text);
+          }
         })
         .catch(error => {
           window.console.error("Failed to report ts_mon metrics.", error);
@@ -166,8 +191,8 @@
     }
 
     /**
-     * Override this method in a subclass to pass application-specific data
-     * like user IDs or XSRF tokens.
+     * Override this method in a subclass to customize the structure of the
+     * request sent to the back-end.
      *
      * @param {Array<Object>} an Array of raw metric values, defined in flush().
      * @returns {Promise} a Promise that resolves an HTTP Response.
@@ -178,6 +203,7 @@
         credentials: "same-origin",
         body: JSON.stringify({
           metrics: rawMetricValues,
+          token: this._xsrfToken,
         }),
       });
     }
@@ -208,9 +234,9 @@
      */
     _measure(metric, value, fields, cumulative) {
       const expectedFieldLen = metric.info.Fields
-        ? metric.info.Fields.length
+        ? metric.info.Fields.size
         : 0;
-      const gotFieldLen = fields ? fields.length : 0;
+      const gotFieldLen = fields ? fields.size : 0;
       if (expectedFieldLen != gotFieldLen) {
         throw `field count ${
           metric.name
@@ -218,8 +244,9 @@
       }
       let key = this._metricKey(metric.name, fields);
       if (!this._metricValues.has(key)) {
-        const def = metric.defaultValue();
-        this._metricValues.set(key, { value: def, timestampMs: this._initTimeMs });
+        this._metricValues.set(key, {
+          value: metric.defaultValue(),
+        });
       }
       let current = this._metricValues.get(key);
 
@@ -412,7 +439,7 @@
      * @param {String} name
      * @param {String} desc
      * @param {Object} metadata
-     * @param {Array<Object>} fields
+     * @param {Map<String, *>} fields
      */
     constructor(tsMon, vt, name, desc, metadata, fields) {
       this.tsMon = tsMon;
