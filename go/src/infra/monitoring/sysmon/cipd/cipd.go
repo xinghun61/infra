@@ -10,7 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
-	local "go.chromium.org/luci/cipd/client/cipd/local"
+	"go.chromium.org/luci/cipd/common/cipdpkg"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/tsmon"
 	"go.chromium.org/luci/common/tsmon/field"
@@ -57,13 +57,13 @@ func listCIPDVersionFiles(path string) []string {
 	return ret
 }
 
-func readCIPDVersionFile(path string) (local.VersionFile, error) {
+func readCIPDVersionFile(path string) (cipdpkg.VersionFile, error) {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return local.VersionFile{}, nil
+		return cipdpkg.VersionFile{}, nil
 	}
 
-	var ret local.VersionFile
+	var ret cipdpkg.VersionFile
 	err = json.Unmarshal(data, &ret)
 	return ret, err
 }

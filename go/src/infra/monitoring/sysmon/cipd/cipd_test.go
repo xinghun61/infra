@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	local "go.chromium.org/luci/cipd/client/cipd/local"
+	"go.chromium.org/luci/cipd/common/cipdpkg"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -50,7 +50,7 @@ func TestListFiles(t *testing.T) {
 
 			f, err := readCIPDVersionFile(filepath.Join(path, "foo.cipd_version"))
 			So(err, ShouldBeNil)
-			So(f, ShouldResemble, local.VersionFile{
+			So(f, ShouldResemble, cipdpkg.VersionFile{
 				PackageName: "Hello",
 				InstanceID:  "World",
 			})
@@ -59,7 +59,7 @@ func TestListFiles(t *testing.T) {
 		Convey("file doesn't exist", func() {
 			f, err := readCIPDVersionFile(filepath.Join(path, "does not exist"))
 			So(err, ShouldBeNil)
-			So(f, ShouldResemble, local.VersionFile{})
+			So(f, ShouldResemble, cipdpkg.VersionFile{})
 		})
 	})
 }
