@@ -167,11 +167,19 @@ class IssueExportJSON(jsonfeed.JsonFeed):
     }
     return comment_json
 
-  def _MakeFieldValueJSON(self, mr, field, email_dict):
+  def _MakePhaseJSON(self, phase):
+    return {'id': phase.phase_id, 'name': phase.name, 'rank': phase.rank}
+
+  def _MakeFieldValueJSON(self, field, fd_dict, email_dict, phase_dict):
+    fd = fd_dict.get(field.field_id)
     field_value_json = {
-      'field': self.services.config.LookupField(
-          mr.cnxn, mr.project.project_id, field.field_id)
+        'field': fd.field_name,
+        'phase': phase_dict.get(field.phase_id),
     }
+    approval_fd = fd_dict.get(fd.approval_id)
+    if approval_fd:
+      field_value_json['approval'] = approval_fd.field_name
+
     if field.int_value:
       field_value_json['int_value'] = field.int_value
     if field.str_value:
@@ -182,10 +190,27 @@ class IssueExportJSON(jsonfeed.JsonFeed):
       field_value_json['date_value'] = field.date_value
     return field_value_json
 
+  def _MakeApprovalValueJSON(
+      self, approval_value, fd_dict, email_dict, phase_dict):
+    av_json = {
+        'approval': fd_dict.get(approval_value.approval_id).field_name,
+        'status': approval_value.status.name,
+        'setter': email_dict.get(approval_value.setter_id),
+        'set_on': approval_value.set_on,
+        'approvers': [email_dict.get(approver_id) for
+                      approver_id in approval_value.approver_ids],
+        'phase': phase_dict.get(approval_value.phase_id),
+    }
+    return av_json
+
   def _MakeIssueJSON(
         self, mr, issue, email_dict, comment_list, starrer_id_list):
     """Return a dict of info about the issue and its comments."""
     comments = [self._MakeCommentJSON(c, email_dict) for c in comment_list]
+    phase_dict = {phase.phase_id: phase.name for phase in issue.phases}
+    config = self.services.config.GetProjectConfig(
+        mr.cnxn, mr.project.project_id)
+    fd_dict = {fd.field_id: fd for fd in config.field_defs}
     issue_json = {
         'local_id': issue.local_id,
         'reporter': email_dict.get(issue.reporter_id),
@@ -194,8 +219,13 @@ class IssueExportJSON(jsonfeed.JsonFeed):
         'status': issue.status,
         'cc': [email_dict[cc_id] for cc_id in issue.cc_ids],
         'labels': issue.labels,
-        'fields': [self._MakeFieldValueJSON(mr, field, email_dict)
-                   for field in issue.field_values],
+        'phases': [self._MakePhaseJSON(phase) for phase in issue.phases],
+        'fields': [
+            self._MakeFieldValueJSON(field, fd_dict, email_dict, phase_dict)
+            for field in issue.field_values],
+        'approvals': [self._MakeApprovalValueJSON(
+            approval, fd_dict, email_dict, phase_dict)
+                      for approval in issue.approval_values],
         'starrers': [email_dict[starrer] for starrer in starrer_id_list],
         'comments': [c for c in comments if c],
         'opened': issue.opened_timestamp,
