@@ -141,7 +141,7 @@ NONPROJECT_COLLISION = '/hosting/collision'
 # This is for collisions that happen within a project, based at /p/projectname
 ARTIFACT_COLLISION = '/collision'
 CLIENT_MON = '/_/clientmon'
-TS_MON_JS = '/_/ts_mon_js'
+TS_MON_JS = '/_/jstsmon'
 
 CSP_REPORT = '/csp'
 

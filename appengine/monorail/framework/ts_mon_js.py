@@ -11,6 +11,8 @@ from framework import xsrf
 
 from gae_ts_mon.handlers import TSMonJSHandler
 
+from google.appengine.api import users
+
 from infra_libs import ts_mon
 
 
@@ -33,7 +35,9 @@ class MonorailTSMonJSHandler(TSMonJSHandler):
     """
     cnxn = sql.MonorailConnection()
     token = body.get('token')
-    email = body.get('user_email')
+    user = users.get_current_user()
+    email = user.email() if user else None
+
     services = self.app.config.get('services')
     auth = authdata.AuthData.FromEmail(cnxn, email, services, autocreate=False)
     try:

@@ -2,7 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// tsmon-client.js exports its classes onto window.chops.tsmon.
+import '/bower_components/chopsui/tsmon-client.js';
+
 /*
+ClientLogger is a JavaScript library for tracking events with Google Analytics
+and ts_mon.
 
 Example usage (tracking time to create a new issue, including time spent
 by the user editing stuff):
@@ -41,7 +46,14 @@ This would record the following metrics:
 export class ClientLogger {
   constructor(category) {
     this.category = category;
-    const startedEvtsStr = sessionStorage[`ClientLogger.${category}.started`];
+    this.ts_mon = new window.chops.tsmon.TSMonClient('/_/jstsmon.do',
+        window.CS_env.token);
+
+    // TODO(jeffcarp): Populate this with ts_mon metrics.
+    this.metrics = {};
+
+    const categoryKey = `ClientLogger.${category}.started`;
+    const startedEvtsStr = sessionStorage[categoryKey];
     if (startedEvtsStr) {
       this.startedEvents = JSON.parse(startedEvtsStr);
     } else {
@@ -185,6 +197,13 @@ export class ClientLogger {
           'timingLabel': label,
           'timingValue': elapsed
         });
+      }
+
+      for (let metric of Object.values(this.metrics)) {
+        if (this.category === metric.category
+            && eventName === metric.eventName) {
+          metric.metric.add(elapsed);
+        }
       }
 
       delete this.startedEvents[eventName];
