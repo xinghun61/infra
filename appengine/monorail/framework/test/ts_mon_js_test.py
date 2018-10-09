@@ -7,16 +7,24 @@
 
 import json
 import unittest
+from mock import patch
 
 import webapp2
-
-from mock import patch
+from google.appengine.ext import testbed
 
 from framework.ts_mon_js import MonorailTSMonJSHandler
 from services import service_manager
 
 
 class MonorailTSMonJSHandlerTest(unittest.TestCase):
+
+  def setUp(self):
+    self.testbed = testbed.Testbed()
+    self.testbed.activate()
+    self.testbed.init_user_stub()
+
+  def tearDown(self):
+    self.testbed.deactivate()
 
   @patch('framework.xsrf.ValidateToken')
   @patch('time.time')
