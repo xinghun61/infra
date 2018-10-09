@@ -89,17 +89,6 @@ func runSwarmingTask(a *args) (err error) {
 	ctx = gologger.StdConfig.Use(ctx)
 	b := swarming.NewBotFromEnv()
 	log.Printf("Swarming bot config: %#v", b)
-	if err := b.LoadDUTName(); err != nil {
-		return errors.Wrap(err, "load DUT name")
-	}
-	if err := b.LoadBotInfo(); err != nil {
-		return errors.Wrap(err, "load bot info")
-	}
-	defer func() {
-		if err2 := b.DumpBotInfo(); err == nil && err2 != nil {
-			err = errors.Wrap(err2, "dump bot info")
-		}
-	}()
 	return harness.Run(b,
 		func(b *swarming.Bot, i *harness.Info) error {
 			resultsDir := i.ResultsDir

@@ -33,6 +33,17 @@ type Info struct {
 // Run calls a function with a Swarming harness, which prepares and
 // cleans up the results directory and host info.
 func Run(b *swarming.Bot, f Func) (err error) {
+	if err := b.LoadDUTName(); err != nil {
+		return errors.Wrap(err, "load DUT name")
+	}
+	if err := b.LoadBotInfo(); err != nil {
+		return errors.Wrap(err, "load bot info")
+	}
+	defer func() {
+		if err2 := b.DumpBotInfo(); err == nil && err2 != nil {
+			err = errors.Wrap(err2, "dump bot info")
+		}
+	}()
 	i := Info{}
 	i.ResultsDir, err = prepareResultsDir(b)
 	if err != nil {
