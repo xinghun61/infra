@@ -17,6 +17,11 @@ instance_class: F4
 
 automatic_scaling:
   max_instances: 10
+  max_pending_latency: 1s
+  min_pending_latency: 1s
+  min_idle_instances: 1
+  max_idle_instances: 1
+
 
 handlers:
 - url: /(.+\.ico)
@@ -46,4 +51,3 @@ handlers:
 - url: /.*
   script: _go_app
   secure: always
-
