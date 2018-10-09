@@ -7,6 +7,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"golang.org/x/net/context"
 
@@ -17,7 +18,11 @@ import (
 func newSwarmClient(ctx context.Context, authOpts auth.Options, swarmingHost string) (*auth.Authenticator, *http.Client, *swarming.Service, error) {
 	authenticator := auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts)
 	authClient, err := authenticator.Client()
-	if err != nil {
+	switch {
+	case err == auth.ErrLoginRequired:
+		fmt.Fprintln(os.Stderr, "Login required: run `led auth-login`.")
+		os.Exit(1)
+	case err != nil:
 		return nil, nil, nil, err
 	}
 
