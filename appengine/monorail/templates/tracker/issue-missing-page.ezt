@@ -32,11 +32,25 @@
 <p>Issue [local_id] has been deleted.</p>
 
  [if-any page_perms.DeleteIssue]
-  <form action="delete.do" method="post">
-    <input type="hidden" name="token" value="[delete_form_token]">
-    <input type="hidden" name="id" value="[local_id]">
-    <input type="submit" name="undelete" value="Undelete">
-  </form>
+
+  <input id="undelete_issue" type="submit" name="undelete" value="Undelete">
+
+  <script type="text/javascript" nonce="[nonce]">
+  runOnLoad(function() {
+    $('undelete_issue').addEventListener('click', async function(event) {
+      await window.prpcClient.call(
+        'monorail.Issues', 'DeleteIssue', {
+            issueRef: {
+              projectName: window.CS_env.projectName,
+              localId: '[local_id]',
+            },
+            delete: false,
+      });
+      location.reload(true);
+    });
+  });
+  </script>
+
  [end]
 [end]
 

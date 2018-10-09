@@ -1062,7 +1062,7 @@ function TKR_handleListActions(actionsMenu) {
 }
 
 
-function TKR_handleDetailActions() {
+async function TKR_handleDetailActions(localId) {
   var moreActions = $('more_actions');
 
   if (moreActions.value == 'delete') {
@@ -1073,7 +1073,14 @@ function TKR_handleDetailActions() {
       'to a closed value.\n' +
       'Are you sure you want to delete this issue?');
     if (ok) {
-      $('delete_form').submit();
+      await window.prpcClient.call('monorail.Issues', 'DeleteIssue', {
+          issueRef: {
+            projectName: window.CS_env.projectName,
+            localId: localId,
+          },
+          delete: true,
+      });
+      location.reload(true);
       return;
     }
   }
