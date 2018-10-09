@@ -282,13 +282,14 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
   @monorail_servicer.PRPCMethod
   def PredictComponent(self, mc, request):
     """Predict the component of an issue based on the given text."""
-    component_id = component_helpers.PredictComponent(request.text)
+    with work_env.WorkEnv(mc, self.services) as we:
+      project = we.GetProjectByName(request.project_name)
+      config = we.GetProjectConfig(project.project_id)
 
     component_ref = None
+    component_id = component_helpers.PredictComponent(request.text, config)
+
     if component_id:
-      with work_env.WorkEnv(mc, self.services) as we:
-        project = we.GetProjectByName(request.project_name)
-        config = we.GetProjectConfig(project.project_id)
       component_ref = converters.ConvertComponentRef(component_id, config)
 
     result = features_pb2.PredictComponentResponse(component_ref=component_ref)

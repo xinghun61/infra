@@ -850,3 +850,25 @@ class FeaturesServicerTest(unittest.TestCase):
         common_pb2.ComponentRef(
             path='Ruta>Baga'),
         result.component_ref)
+
+  def testPredictComponent_NoPrediction(self):
+    """Test case when no component id was predicted."""
+    self._top_words = {
+        'foo': 0,
+        'bar': 1,
+        'baz': 2}
+    self._components_by_index = {
+        '0': '123',
+        '1': '456',
+        '2': '789'}
+    self._ml_engine.expected_features = [3, 0, 1, 0, 0]
+    self._ml_engine.scores = [5, 10, 3]
+
+    request = features_pb2.PredictComponentRequest(
+        project_name='proj',
+        text='foo baz foo foo')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    result = self.CallWrapped(self.features_svcr.PredictComponent, mc, request)
+
+    self.assertEqual(common_pb2.ComponentRef(), result.component_ref)

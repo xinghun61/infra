@@ -13,6 +13,7 @@ import cloudstorage
 from features import generate_dataset
 from framework import framework_helpers
 from services import ml_helpers
+from tracker import tracker_bizobj
 
 from googleapiclient import discovery
 from oauth2client.client import GoogleCredentials
@@ -77,11 +78,13 @@ def _GetComponentPrediction(ml_engine, instance):
   return scores.index(max(scores))
 
 
-def PredictComponent(raw_text):
+def PredictComponent(raw_text, config):
   """Get the component ID predicted for the given text.
 
   Args:
     raw_text: The raw text for which we want to predict a component.
+    config: The config of the project. Used to decide if the predicted component
+        is valid.
 
   Returns:
     The component ID predicted for the provided component, or None if no
@@ -112,5 +115,9 @@ def PredictComponent(raw_text):
   component_id = components_by_index.get(str(best_score_index))
   if component_id:
     component_id = long(component_id)
+
+  # The predicted component id might not exist.
+  if tracker_bizobj.FindComponentDefByID(component_id, config) is None:
+    return None
 
   return component_id

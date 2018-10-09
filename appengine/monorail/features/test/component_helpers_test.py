@@ -82,6 +82,8 @@ class ComponentHelpersTest(unittest.TestCase):
         cnxn=None, project_id=self.project.project_id, path='Ruta>Baga',
         docstring='', deprecated=False, admin_ids=[], cc_ids=[], created=None,
         creator_id=None, label_ids=[])
+    config = self.services.config.GetProjectConfig(
+        None, self.project.project_id)
 
     self._top_words = {
         'foo': 0,
@@ -96,10 +98,14 @@ class ComponentHelpersTest(unittest.TestCase):
 
     text = 'foo baz foo foo'
 
-    self.assertEqual(component_id, component_helpers.PredictComponent(text))
+    self.assertEqual(
+        component_id, component_helpers.PredictComponent(text, config))
 
   def testPredict_UnknownComponentIndex(self):
     """Test case where the prediction is not in components_by_index."""
+    config = self.services.config.GetProjectConfig(
+        None, self.project.project_id)
+
     self._top_words = {
         'foo': 0,
         'bar': 1,
@@ -113,4 +119,24 @@ class ComponentHelpersTest(unittest.TestCase):
 
     text = 'foo baz foo foo'
 
-    self.assertIsNone(component_helpers.PredictComponent(text))
+    self.assertIsNone(component_helpers.PredictComponent(text, config))
+
+  def testPredict_InvalidComponentIndex(self):
+    """Test case where the prediction is not a valid component id."""
+    config = self.services.config.GetProjectConfig(
+        None, self.project.project_id)
+
+    self._top_words = {
+        'foo': 0,
+        'bar': 1,
+        'baz': 2}
+    self._components_by_index = {
+        '0': '123',
+        '1': '456',
+        '2': '789'}
+    self._ml_engine.expected_features = [3, 0, 1, 0, 0]
+    self._ml_engine.scores = [5, 10, 3]
+
+    text = 'foo baz foo foo'
+
+    self.assertIsNone(component_helpers.PredictComponent(text, config))
