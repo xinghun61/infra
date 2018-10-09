@@ -559,7 +559,7 @@ class ThirdPartyPackagesNGApi(recipe_api.RecipeApi):
     """
     unsupported = set()
 
-    build_plan = []
+    explicit_build_plan = []
     packages = packages or self._loaded_specs.keys()
     platform = platform or platform_for_host(self.m)
     for pkg in packages:
@@ -569,10 +569,17 @@ class ThirdPartyPackagesNGApi(recipe_api.RecipeApi):
       except UnsupportedPackagePlatform:
         unsupported.add(pkg)
         continue
-      build_plan.append((resolved, unicode(version)))
-    build_plan.sort()
+      explicit_build_plan.append((resolved, unicode(version)))
+
+    expanded_build_plan = set()
+    for pkg, version in explicit_build_plan:
+      expanded_build_plan.add((pkg, version))
+      # Anything pulled in either via deps or tools dependencies should be
+      # explicitly built at 'latest'.
+      for subpkg in pkg.all_possible_deps_and_tools:
+        expanded_build_plan.add((subpkg, 'latest'))
 
     ret = []
-    for spec, version in build_plan:
+    for spec, version in sorted(expanded_build_plan):
       ret.append(self._build_resolved_spec(spec, version, force_build))
     return ret, unsupported

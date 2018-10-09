@@ -72,6 +72,14 @@ class ResolvedSpec(object):
     self._deps = deps                     # list[ResolvedSpec]
     self._unpinned_tools = unpinned_tools # list[ResolvedSpec]
 
+    self._all_deps_and_tools = set()
+    for d in self._deps:
+      self._all_deps_and_tools.add(d)
+      self._all_deps_and_tools.update(d.all_possible_deps_and_tools)
+    for d in self._unpinned_tools:
+      self._all_deps_and_tools.add(d)
+      self._all_deps_and_tools.update(d.all_possible_deps_and_tools)
+
     # Universal specs always target linux-amd64, for consistency when running
     # the recipe on different platforms.
     if self._spec_pb.upload.universal:
@@ -177,24 +185,14 @@ class ResolvedSpec(object):
       yield dep
 
   @property
-  def _all_possible_deps_and_tools(self):
-    """Yields all the packages (ResolvedSpecs) that this ResolvedSpec depends
-    on, which includes both `deps` and `tools`, transitively.
-
-    Used internally by the __cmp__ function.
+  def all_possible_deps_and_tools(self):
+    """Returns a set of all the packages (ResolvedSpecs) that this ResolvedSpec
+    depends on, which includes both `deps` and `tools`, transitively.
 
     Infinite recursion is prevented by the _resolve_for function (which
     constructs all of the ResolvedSpec instances).
     """
-    for dep in self._deps:
-      for subdep in dep._all_possible_deps_and_tools:
-        yield subdep
-      yield dep
-    # these are unpinned tools we may have to build.
-    for tool in self._unpinned_tools:
-      for subdep in tool._all_possible_deps_and_tools:
-        yield subdep
-      yield tool
+    return self._all_deps_and_tools
 
   def cipd_spec(self, version):
     """Returns a CIPDSpec object for the result of building this ResolvedSpec's
@@ -211,6 +209,17 @@ class ResolvedSpec(object):
     symver = '%s%s' % (version, '.'+patch_ver if patch_ver else '')
     return self._cipd_spec_pool.get(pkg_name, symver)
 
+  @property
+  def _sort_tuple(self):
+    """Implementation detail of __cmp__, returns a sortable tuple that's
+    used as a last resort when sorting by dependencies fails."""
+    return (
+      len(self.all_possible_deps_and_tools),
+      self.name,
+      self.platform,
+      id(self),
+    )
+
   def __cmp__(self, other):
     """This allows ResolvedSpec's to be sorted.
 
@@ -221,13 +230,13 @@ class ResolvedSpec(object):
 
     # self < other if other depends on self, OR
     #              if other uses self as a tool
-    if self in other._all_possible_deps_and_tools:
+    if self in other.all_possible_deps_and_tools:
       return -1
 
     # self > other if self depends on other, OR
     #              if self uses other as a tool
-    if other in self._all_possible_deps_and_tools:
+    if other in self.all_possible_deps_and_tools:
       return 1
 
-    # otherwise sort alphabetically
-    return cmp(self.name, other.name)
+    # Otherwise sort by #deps and package name.
+    return cmp(self._sort_tuple, other._sort_tuple)
