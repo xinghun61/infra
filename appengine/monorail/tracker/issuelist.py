@@ -312,6 +312,8 @@ def _MakeTableData(
     row.issue_ref = '%s:%d' % (art.project_name, art.local_id)
     row.issue_url = tracker_helpers.FormatRelativeIssueURL(
         art.project_name, urls.ISSUE_DETAIL, id=art.local_id)
+    row.crbug_url = tracker_helpers.FormatCrBugURL(
+        art.project_name, art.local_id)
 
   return table_data
 

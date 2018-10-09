@@ -14,6 +14,8 @@ import logging
 import re
 import urllib
 
+from google.appengine.api import app_identity
+
 import settings
 
 from framework import authdata
@@ -606,6 +608,26 @@ def FormatRelativeIssueURL(project_name, path, **kwargs):
   """
   return framework_helpers.FormatURL(
       None, '/p/%s%s' % (project_name, path), **kwargs)
+
+
+def FormatCrBugURL(project_name, local_id):
+  """Format a short URL to get to an issue in the named project.
+
+  Args:
+    project_name: string name of the project containing the issue.
+    local_id: int local ID of the issue.
+
+  Returns:
+    A URL string.
+  """
+  if app_identity.get_application_id() != 'monorail-prod':
+    return FormatRelativeIssueURL(
+      project_name, urls.ISSUE_DETAIL, id=local_id)
+
+  if project_name == 'chromium':
+    return 'https://crbug.com/%d' % local_id
+
+  return 'https://crbug.com/%s/%d' % (project_name, local_id)
 
 
 def ComputeNewQuotaBytesUsed(project, attachments):

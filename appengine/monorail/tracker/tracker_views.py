@@ -177,6 +177,8 @@ class IssueView(template_helpers.PBProxy):
     self.multiple_blocked_on = ezt.boolean(len(visible_open_blocked_on) >= 2)
     self.detail_relative_url = tracker_helpers.FormatRelativeIssueURL(
         issue.project_name, urls.ISSUE_DETAIL, id=issue.local_id)
+    self.crbug_url = tracker_helpers.FormatCrBugURL(
+        issue.project_name, issue.local_id)
 
 
 class _RestrictionsView(object):

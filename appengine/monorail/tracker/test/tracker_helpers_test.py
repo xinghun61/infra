@@ -685,6 +685,26 @@ class HelpersTest(unittest.TestCase):
         tracker_helpers.FormatRelativeIssueURL(
             'proj', urls.ISSUE_DETAIL, id=123))
 
+  @mock.patch('google.appengine.api.app_identity.get_application_id')
+  def testFormatCrBugURL_Prod(self, mock_get_app_id):
+    mock_get_app_id.return_value = 'monorail-prod'
+    self.assertEquals(
+        'https://crbug.com/proj/123',
+        tracker_helpers.FormatCrBugURL('proj', 123))
+    self.assertEquals(
+        'https://crbug.com/123456',
+        tracker_helpers.FormatCrBugURL('chromium', 123456))
+
+  @mock.patch('google.appengine.api.app_identity.get_application_id')
+  def testFormatCrBugURL_NonProd(self, mock_get_app_id):
+    mock_get_app_id.return_value = 'monorail-staging'
+    self.assertEquals(
+        '/p/proj/issues/detail?id=123',
+        tracker_helpers.FormatCrBugURL('proj', 123))
+    self.assertEquals(
+        '/p/chromium/issues/detail?id=123456',
+        tracker_helpers.FormatCrBugURL('chromium', 123456))
+
   def testComputeNewQuotaBytesUsed(self):
     pass  # TODO(jrobbins): Write this test.
 

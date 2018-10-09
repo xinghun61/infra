@@ -66,7 +66,7 @@
 
     [end]
    <td style="padding:0">
-     <a href="[table_data.issue_url]" class="directlink material-icons" title="direct link"
+     <a href="[table_data.crbug_url]" class="directlink material-icons" title="crbug link"
 	>link</a>
    </td>
   </tr>
