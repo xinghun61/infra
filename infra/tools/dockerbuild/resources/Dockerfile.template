@@ -154,9 +154,10 @@ RUN rm -rf "${SETUP_ROOT}"
 # Install auxiliary "pip" wheels into default Python environment.
 RUN pip install virtualenv cffi distutilscross auditwheel numpy
 
-### Add helper script
+### Add helper script, chmod user-accessible scripts.
 COPY ${resources_relpath}/start.sh /
 RUN chmod a+rx /start.sh
+RUN chmod a+rx /install-util.sh
 
 # Enter our "/work" (Dockcross script expectation).
 WORKDIR /work
