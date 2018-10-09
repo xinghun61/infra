@@ -541,10 +541,10 @@ indicated (and their dependencies), and will not upload any of them to the
 central server.
 
 If the recipe is run in experimental mode (without `force_build`) then the
-recipe will prepend 'experimental/' to all built packages (when fetching or
+recipe will prepend 'experimental/3pp/' to all built packages (when fetching or
 uploading). This prefix does not apply to CIPD Sources.  e.g.
 'infra/tools/thing/${platform}' would become
-'experimental/infra/tools/thing/${platform}'. Additionally, you can set the
+'experimental/3pp/infra/tools/thing/${platform}'. Additionally, you can set the
 package_prefix explicitly, if you want to use a different namespace; the set
 package_prefix overrides 'experimental/' entirely.
 

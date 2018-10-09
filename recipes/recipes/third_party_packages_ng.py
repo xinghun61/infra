@@ -62,7 +62,7 @@ PROPERTIES = {
         'comprehensive testing of the entire packaging process without '
         'uploading into the prod namespace. If this recipe is run in '
         'experimental mode (according to the `runtime` module), then '
-        'this will default to "experimental".')),
+        'this will default to "experimental/3pp/".')),
 }
 
 

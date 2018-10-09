@@ -2,7 +2,7 @@
   {
     "cmd": [
       "echo",
-      "experimental/"
+      "experimental/3pp/"
     ],
     "name": "echo package_prefix"
   },
@@ -198,7 +198,7 @@
     "cmd": [
       "cipd",
       "describe",
-      "experimental/tools/already_uploaded/linux-armv6l",
+      "experimental/3pp/tools/already_uploaded/linux-armv6l",
       "-version",
       "version:1.4.1",
       "-json-output",
@@ -211,7 +211,7 @@
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
-    "name": "building already_uploaded.cipd describe experimental/tools/already_uploaded/linux-armv6l",
+    "name": "building already_uploaded.cipd describe experimental/3pp/tools/already_uploaded/linux-armv6l",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@found 'resolved-instance_id-of-version:1.4.1---'@@@",
@@ -219,7 +219,7 @@
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"pin\": {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.4.1---\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"package\": \"experimental/tools/already_uploaded/linux-armv6l\"@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"experimental/3pp/tools/already_uploaded/linux-armv6l\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    \"refs\": [@@@",
       "@@@STEP_LOG_LINE@json.output@      {@@@",
@@ -251,7 +251,7 @@
     "cmd": [
       "cipd",
       "describe",
-      "experimental/prefix/deps/bottom_dep/linux-amd64",
+      "experimental/3pp/prefix/deps/bottom_dep/linux-amd64",
       "-version",
       "version:1.0",
       "-json-output",
@@ -264,7 +264,7 @@
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
-    "name": "building bottom_dep.cipd describe experimental/prefix/deps/bottom_dep/linux-amd64",
+    "name": "building bottom_dep.cipd describe experimental/3pp/prefix/deps/bottom_dep/linux-amd64",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "step returned non-zero exit code: 1",
@@ -514,7 +514,7 @@
       "cipd",
       "pkg-build",
       "-pkg-def",
-      "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"experimental/prefix/deps/bottom_dep/linux-amd64\", \"root\": \"[START_DIR]/3pp/wd/bottom_dep/linux-amd64/1.0/out\"}",
+      "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"experimental/3pp/prefix/deps/bottom_dep/linux-amd64\", \"root\": \"[START_DIR]/3pp/wd/bottom_dep/linux-amd64/1.0/out\"}",
       "-out",
       "[TMP_BASE]/tmp_tmp_1",
       "-hash-algo",
@@ -530,13 +530,13 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
-    "name": "building bottom_dep.build experimental/prefix/deps/bottom_dep/linux-amd64",
+    "name": "building bottom_dep.build experimental/3pp/prefix/deps/bottom_dep/linux-amd64",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/prefix/deps/bottom_dep/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/3pp/prefix/deps/bottom_dep/linux-amd64\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -552,7 +552,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[CACHE]/3pp_cipd/experimental/prefix/deps/bottom_dep/linux-amd64"
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/bottom_dep/linux-amd64"
     ],
     "env": {
       "GOARCH": "amd64",
@@ -577,7 +577,7 @@
       "/path/to/tmp/json",
       "move",
       "[TMP_BASE]/tmp_tmp_1",
-      "[CACHE]/3pp_cipd/experimental/prefix/deps/bottom_dep/linux-amd64/40-chars-fake-of-the-package-instance_id"
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/bottom_dep/linux-amd64/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
       "GOARCH": "amd64",
@@ -612,7 +612,7 @@
     "cmd": [
       "cipd",
       "pkg-register",
-      "[CACHE]/3pp_cipd/experimental/prefix/deps/bottom_dep/linux-amd64/40-chars-fake-of-the-package-instance_id",
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/bottom_dep/linux-amd64/40-chars-fake-of-the-package-instance_id",
       "-ref",
       "latest",
       "-tag",
@@ -630,13 +630,13 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
-    "name": "building bottom_dep.do upload.register experimental/prefix/deps/bottom_dep/linux-amd64",
+    "name": "building bottom_dep.do upload.register experimental/3pp/prefix/deps/bottom_dep/linux-amd64",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/prefix/deps/bottom_dep/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/3pp/prefix/deps/bottom_dep/linux-amd64\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -650,7 +650,7 @@
     "cmd": [
       "cipd",
       "describe",
-      "experimental/prefix/deps/bottom_dep/linux-armv6l",
+      "experimental/3pp/prefix/deps/bottom_dep/linux-armv6l",
       "-version",
       "version:1.0",
       "-json-output",
@@ -663,7 +663,7 @@
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
-    "name": "building bottom_dep.cipd describe experimental/prefix/deps/bottom_dep/linux-armv6l",
+    "name": "building bottom_dep.cipd describe experimental/3pp/prefix/deps/bottom_dep/linux-armv6l",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "step returned non-zero exit code: 1",
@@ -913,7 +913,7 @@
       "cipd",
       "pkg-build",
       "-pkg-def",
-      "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"experimental/prefix/deps/bottom_dep/linux-armv6l\", \"root\": \"[START_DIR]/3pp/wd/bottom_dep/linux-armv6l/1.0/out\"}",
+      "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"experimental/3pp/prefix/deps/bottom_dep/linux-armv6l\", \"root\": \"[START_DIR]/3pp/wd/bottom_dep/linux-armv6l/1.0/out\"}",
       "-out",
       "[TMP_BASE]/tmp_tmp_2",
       "-hash-algo",
@@ -929,13 +929,13 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
-    "name": "building bottom_dep.build experimental/prefix/deps/bottom_dep/linux-armv6l",
+    "name": "building bottom_dep.build experimental/3pp/prefix/deps/bottom_dep/linux-armv6l",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/prefix/deps/bottom_dep/linux-armv6l\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/3pp/prefix/deps/bottom_dep/linux-armv6l\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -951,7 +951,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[CACHE]/3pp_cipd/experimental/prefix/deps/bottom_dep/linux-armv6l"
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/bottom_dep/linux-armv6l"
     ],
     "env": {
       "GOARCH": "armv6l",
@@ -976,7 +976,7 @@
       "/path/to/tmp/json",
       "move",
       "[TMP_BASE]/tmp_tmp_2",
-      "[CACHE]/3pp_cipd/experimental/prefix/deps/bottom_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id"
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/bottom_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
       "GOARCH": "armv6l",
@@ -1011,7 +1011,7 @@
     "cmd": [
       "cipd",
       "pkg-register",
-      "[CACHE]/3pp_cipd/experimental/prefix/deps/bottom_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/bottom_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
       "-ref",
       "latest",
       "-tag",
@@ -1029,13 +1029,13 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0"
     },
-    "name": "building bottom_dep.do upload.register experimental/prefix/deps/bottom_dep/linux-armv6l",
+    "name": "building bottom_dep.do upload.register experimental/3pp/prefix/deps/bottom_dep/linux-armv6l",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/prefix/deps/bottom_dep/linux-armv6l\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/3pp/prefix/deps/bottom_dep/linux-armv6l\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -1049,7 +1049,7 @@
     "cmd": [
       "cipd",
       "describe",
-      "experimental/prefix/deps/deep_dep/linux-armv6l",
+      "experimental/3pp/prefix/deps/deep_dep/linux-armv6l",
       "-version",
       "version:1.0.0",
       "-json-output",
@@ -1062,7 +1062,7 @@
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
-    "name": "building deep_dep.cipd describe experimental/prefix/deps/deep_dep/linux-armv6l",
+    "name": "building deep_dep.cipd describe experimental/3pp/prefix/deps/deep_dep/linux-armv6l",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "step returned non-zero exit code: 1",
@@ -1181,7 +1181,7 @@
       "cipd",
       "pkg-build",
       "-pkg-def",
-      "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"experimental/prefix/deps/deep_dep/linux-armv6l\", \"root\": \"[START_DIR]/3pp/wd/deep_dep/linux-armv6l/1.0.0/checkout\"}",
+      "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"experimental/3pp/prefix/deps/deep_dep/linux-armv6l\", \"root\": \"[START_DIR]/3pp/wd/deep_dep/linux-armv6l/1.0.0/checkout\"}",
       "-out",
       "[TMP_BASE]/tmp_tmp_3",
       "-hash-algo",
@@ -1197,13 +1197,13 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
     },
-    "name": "building deep_dep.build experimental/prefix/deps/deep_dep/linux-armv6l",
+    "name": "building deep_dep.build experimental/3pp/prefix/deps/deep_dep/linux-armv6l",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/prefix/deps/deep_dep/linux-armv6l\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/3pp/prefix/deps/deep_dep/linux-armv6l\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -1219,7 +1219,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[CACHE]/3pp_cipd/experimental/prefix/deps/deep_dep/linux-armv6l"
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/deep_dep/linux-armv6l"
     ],
     "env": {
       "GOARCH": "armv6l",
@@ -1244,7 +1244,7 @@
       "/path/to/tmp/json",
       "move",
       "[TMP_BASE]/tmp_tmp_3",
-      "[CACHE]/3pp_cipd/experimental/prefix/deps/deep_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id"
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/deep_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
       "GOARCH": "armv6l",
@@ -1279,7 +1279,7 @@
     "cmd": [
       "cipd",
       "pkg-register",
-      "[CACHE]/3pp_cipd/experimental/prefix/deps/deep_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/deep_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
       "-ref",
       "latest",
       "-tag",
@@ -1297,13 +1297,13 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
     },
-    "name": "building deep_dep.do upload.register experimental/prefix/deps/deep_dep/linux-armv6l",
+    "name": "building deep_dep.do upload.register experimental/3pp/prefix/deps/deep_dep/linux-armv6l",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/prefix/deps/deep_dep/linux-armv6l\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/3pp/prefix/deps/deep_dep/linux-armv6l\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -1338,7 +1338,7 @@
     "cmd": [
       "cipd",
       "describe",
-      "experimental/tools/fetch_and_package",
+      "experimental/3pp/tools/fetch_and_package",
       "-version",
       "version:2.0.0",
       "-json-output",
@@ -1351,7 +1351,7 @@
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
-    "name": "building fetch_and_package.cipd describe experimental/tools/fetch_and_package",
+    "name": "building fetch_and_package.cipd describe experimental/3pp/tools/fetch_and_package",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "step returned non-zero exit code: 1",
@@ -1456,7 +1456,7 @@
       "cipd",
       "pkg-build",
       "-pkg-def",
-      "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"experimental/tools/fetch_and_package\", \"root\": \"[START_DIR]/3pp/wd/fetch_and_package/linux-amd64/2.0.0/checkout\"}",
+      "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"experimental/3pp/tools/fetch_and_package\", \"root\": \"[START_DIR]/3pp/wd/fetch_and_package/linux-amd64/2.0.0/checkout\"}",
       "-out",
       "[TMP_BASE]/tmp_tmp_4",
       "-hash-algo",
@@ -1472,13 +1472,13 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
-    "name": "building fetch_and_package.build experimental/tools/fetch_and_package",
+    "name": "building fetch_and_package.build experimental/3pp/tools/fetch_and_package",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/tools/fetch_and_package\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/3pp/tools/fetch_and_package\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -1494,7 +1494,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[CACHE]/3pp_cipd/experimental/tools/fetch_and_package"
+      "[CACHE]/3pp_cipd/experimental/3pp/tools/fetch_and_package"
     ],
     "env": {
       "GOARCH": "amd64",
@@ -1519,7 +1519,7 @@
       "/path/to/tmp/json",
       "move",
       "[TMP_BASE]/tmp_tmp_4",
-      "[CACHE]/3pp_cipd/experimental/tools/fetch_and_package/40-chars-fake-of-the-package-instance_id"
+      "[CACHE]/3pp_cipd/experimental/3pp/tools/fetch_and_package/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
       "GOARCH": "amd64",
@@ -1554,7 +1554,7 @@
     "cmd": [
       "cipd",
       "pkg-register",
-      "[CACHE]/3pp_cipd/experimental/tools/fetch_and_package/40-chars-fake-of-the-package-instance_id",
+      "[CACHE]/3pp_cipd/experimental/3pp/tools/fetch_and_package/40-chars-fake-of-the-package-instance_id",
       "-ref",
       "latest",
       "-tag",
@@ -1572,13 +1572,13 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
-    "name": "building fetch_and_package.do upload.register experimental/tools/fetch_and_package",
+    "name": "building fetch_and_package.do upload.register experimental/3pp/tools/fetch_and_package",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/tools/fetch_and_package\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/3pp/tools/fetch_and_package\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -1592,7 +1592,7 @@
     "cmd": [
       "cipd",
       "describe",
-      "experimental/tools/posix_tool/linux-armv6l",
+      "experimental/3pp/tools/posix_tool/linux-armv6l",
       "-version",
       "version:1.2.0",
       "-json-output",
@@ -1605,7 +1605,7 @@
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
-    "name": "building posix_tool.cipd describe experimental/tools/posix_tool/linux-armv6l",
+    "name": "building posix_tool.cipd describe experimental/3pp/tools/posix_tool/linux-armv6l",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "step returned non-zero exit code: 1",
@@ -2003,7 +2003,7 @@
       "cipd",
       "pkg-build",
       "-pkg-def",
-      "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"experimental/tools/posix_tool/linux-armv6l\", \"root\": \"[START_DIR]/3pp/wd/posix_tool/linux-armv6l/1.2.0/out\"}",
+      "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"experimental/3pp/tools/posix_tool/linux-armv6l\", \"root\": \"[START_DIR]/3pp/wd/posix_tool/linux-armv6l/1.2.0/out\"}",
       "-out",
       "[TMP_BASE]/tmp_tmp_6",
       "-hash-algo",
@@ -2019,13 +2019,13 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
     },
-    "name": "building posix_tool.build experimental/tools/posix_tool/linux-armv6l",
+    "name": "building posix_tool.build experimental/3pp/tools/posix_tool/linux-armv6l",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/tools/posix_tool/linux-armv6l\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/3pp/tools/posix_tool/linux-armv6l\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -2041,7 +2041,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[CACHE]/3pp_cipd/experimental/tools/posix_tool/linux-armv6l"
+      "[CACHE]/3pp_cipd/experimental/3pp/tools/posix_tool/linux-armv6l"
     ],
     "env": {
       "GOARCH": "armv6l",
@@ -2066,7 +2066,7 @@
       "/path/to/tmp/json",
       "move",
       "[TMP_BASE]/tmp_tmp_6",
-      "[CACHE]/3pp_cipd/experimental/tools/posix_tool/linux-armv6l/40-chars-fake-of-the-package-instance_id"
+      "[CACHE]/3pp_cipd/experimental/3pp/tools/posix_tool/linux-armv6l/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
       "GOARCH": "armv6l",
@@ -2101,7 +2101,7 @@
     "cmd": [
       "cipd",
       "pkg-register",
-      "[CACHE]/3pp_cipd/experimental/tools/posix_tool/linux-armv6l/40-chars-fake-of-the-package-instance_id",
+      "[CACHE]/3pp_cipd/experimental/3pp/tools/posix_tool/linux-armv6l/40-chars-fake-of-the-package-instance_id",
       "-ref",
       "latest",
       "-tag",
@@ -2119,13 +2119,13 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.2.0"
     },
-    "name": "building posix_tool.do upload.register experimental/tools/posix_tool/linux-armv6l",
+    "name": "building posix_tool.do upload.register experimental/3pp/tools/posix_tool/linux-armv6l",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/tools/posix_tool/linux-armv6l\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/3pp/tools/posix_tool/linux-armv6l\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -2163,7 +2163,7 @@
     "cmd": [
       "cipd",
       "describe",
-      "experimental/prefix/build_tools/tool/linux-amd64",
+      "experimental/3pp/prefix/build_tools/tool/linux-amd64",
       "-version",
       "version:1.4.1.chops.1",
       "-json-output",
@@ -2177,7 +2177,7 @@
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
-    "name": "building tool.cipd describe experimental/prefix/build_tools/tool/linux-amd64",
+    "name": "building tool.cipd describe experimental/3pp/prefix/build_tools/tool/linux-amd64",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "step returned non-zero exit code: 1",
@@ -2252,7 +2252,7 @@
     "cmd": [
       "cipd",
       "pkg-deploy",
-      "[CACHE]/3pp_cipd/experimental/prefix/deps/bottom_dep/linux-amd64/40-chars-fake-of-the-package-instance_id",
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/bottom_dep/linux-amd64/40-chars-fake-of-the-package-instance_id",
       "-root",
       "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/deps_prefix",
       "-json-output",
@@ -2267,7 +2267,7 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
-    "name": "building tool.fetch sources.installing deps.cipd pkg-deploy [CACHE]/3pp_cipd/experimental/prefix/deps/bottom_dep/linux-amd64/40-chars-fake-of-the-package-instance_id",
+    "name": "building tool.fetch sources.installing deps.cipd pkg-deploy [CACHE]/3pp_cipd/experimental/3pp/prefix/deps/bottom_dep/linux-amd64/40-chars-fake-of-the-package-instance_id",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@3@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -2665,7 +2665,7 @@
       "cipd",
       "pkg-build",
       "-pkg-def",
-      "{\"data\": [{\"dir\": \".\", \"exclude\": []}, {\"version_file\": \".versions/tool.cipd_version\"}], \"install_mode\": \"copy\", \"package\": \"experimental/prefix/build_tools/tool/linux-amd64\", \"root\": \"[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/out\"}",
+      "{\"data\": [{\"dir\": \".\", \"exclude\": []}, {\"version_file\": \".versions/tool.cipd_version\"}], \"install_mode\": \"copy\", \"package\": \"experimental/3pp/prefix/build_tools/tool/linux-amd64\", \"root\": \"[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/out\"}",
       "-out",
       "[TMP_BASE]/tmp_tmp_7",
       "-hash-algo",
@@ -2682,13 +2682,13 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
-    "name": "building tool.build experimental/prefix/build_tools/tool/linux-amd64",
+    "name": "building tool.build experimental/3pp/prefix/build_tools/tool/linux-amd64",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/prefix/build_tools/tool/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/3pp/prefix/build_tools/tool/linux-amd64\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -2704,7 +2704,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[CACHE]/3pp_cipd/experimental/prefix/build_tools/tool/linux-amd64"
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-amd64"
     ],
     "env": {
       "GOARCH": "amd64",
@@ -2730,7 +2730,7 @@
       "/path/to/tmp/json",
       "move",
       "[TMP_BASE]/tmp_tmp_7",
-      "[CACHE]/3pp_cipd/experimental/prefix/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id"
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
       "GOARCH": "amd64",
@@ -2798,7 +2798,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "copy",
-      "[CACHE]/3pp_cipd/experimental/prefix/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id",
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id",
       "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/verify/cipd.pkg"
     ],
     "env": {
@@ -2968,7 +2968,7 @@
     "cmd": [
       "cipd",
       "pkg-register",
-      "[CACHE]/3pp_cipd/experimental/prefix/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id",
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id",
       "-ref",
       "latest",
       "-tag",
@@ -2987,13 +2987,13 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
-    "name": "building tool.do upload.register experimental/prefix/build_tools/tool/linux-amd64",
+    "name": "building tool.do upload.register experimental/3pp/prefix/build_tools/tool/linux-amd64",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/prefix/build_tools/tool/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/3pp/prefix/build_tools/tool/linux-amd64\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -3007,7 +3007,7 @@
     "cmd": [
       "cipd",
       "describe",
-      "experimental/prefix/build_tools/tool/linux-armv6l",
+      "experimental/3pp/prefix/build_tools/tool/linux-armv6l",
       "-version",
       "version:1.4.1.chops.1",
       "-json-output",
@@ -3021,7 +3021,7 @@
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
-    "name": "building tool.cipd describe experimental/prefix/build_tools/tool/linux-armv6l",
+    "name": "building tool.cipd describe experimental/3pp/prefix/build_tools/tool/linux-armv6l",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "step returned non-zero exit code: 1",
@@ -3096,7 +3096,7 @@
     "cmd": [
       "cipd",
       "pkg-fetch",
-      "experimental/prefix/build_tools/tool/linux-amd64",
+      "experimental/3pp/prefix/build_tools/tool/linux-amd64",
       "-version",
       "version:0.9.0.chops.1",
       "-out",
@@ -3113,14 +3113,14 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
-    "name": "building tool.fetch sources.installing tools.cipd pkg-fetch experimental/prefix/build_tools/tool/linux-amd64",
+    "name": "building tool.fetch sources.installing tools.cipd pkg-fetch experimental/3pp/prefix/build_tools/tool/linux-amd64",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@3@@@",
-      "@@@STEP_TEXT@experimental/prefix/build_tools/tool/linux-amd64 resolved-instance_id-of-version:0.9.0.ch@@@",
+      "@@@STEP_TEXT@experimental/3pp/prefix/build_tools/tool/linux-amd64 resolved-instance_id-of-version:0.9.0.ch@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"resolved-instance_id-of-version:0.9.0.ch\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/prefix/build_tools/tool/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/3pp/prefix/build_tools/tool/linux-amd64\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -3136,7 +3136,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[CACHE]/3pp_cipd/experimental/prefix/build_tools/tool/linux-amd64"
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-amd64"
     ],
     "env": {
       "GOARCH": "armv6l",
@@ -3162,7 +3162,7 @@
       "/path/to/tmp/json",
       "move",
       "[TMP_BASE]/tmp_tmp_8",
-      "[CACHE]/3pp_cipd/experimental/prefix/build_tools/tool/linux-amd64/resolved-instance_id-of-version:0.9.0.ch"
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-amd64/resolved-instance_id-of-version:0.9.0.ch"
     ],
     "env": {
       "GOARCH": "armv6l",
@@ -3183,7 +3183,7 @@
     "cmd": [
       "cipd",
       "pkg-deploy",
-      "[CACHE]/3pp_cipd/experimental/prefix/build_tools/tool/linux-amd64/resolved-instance_id-of-version:0.9.0.ch",
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-amd64/resolved-instance_id-of-version:0.9.0.ch",
       "-root",
       "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/tools_prefix",
       "-json-output",
@@ -3198,7 +3198,7 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
-    "name": "building tool.fetch sources.installing tools.cipd pkg-deploy [CACHE]/3pp_cipd/experimental/prefix/build_tools/tool/linux-amd64/resolved-instance_id-of-version:0.9.0.ch",
+    "name": "building tool.fetch sources.installing tools.cipd pkg-deploy [CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-amd64/resolved-instance_id-of-version:0.9.0.ch",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@3@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -3230,7 +3230,7 @@
     "cmd": [
       "cipd",
       "pkg-deploy",
-      "[CACHE]/3pp_cipd/experimental/prefix/deps/bottom_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/bottom_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
       "-root",
       "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/deps_prefix",
       "-json-output",
@@ -3245,7 +3245,7 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
-    "name": "building tool.fetch sources.installing deps.cipd pkg-deploy [CACHE]/3pp_cipd/experimental/prefix/deps/bottom_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
+    "name": "building tool.fetch sources.installing deps.cipd pkg-deploy [CACHE]/3pp_cipd/experimental/3pp/prefix/deps/bottom_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@3@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -3644,7 +3644,7 @@
       "cipd",
       "pkg-build",
       "-pkg-def",
-      "{\"data\": [{\"dir\": \".\", \"exclude\": []}, {\"version_file\": \".versions/tool.cipd_version\"}], \"install_mode\": \"copy\", \"package\": \"experimental/prefix/build_tools/tool/linux-armv6l\", \"root\": \"[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/out\"}",
+      "{\"data\": [{\"dir\": \".\", \"exclude\": []}, {\"version_file\": \".versions/tool.cipd_version\"}], \"install_mode\": \"copy\", \"package\": \"experimental/3pp/prefix/build_tools/tool/linux-armv6l\", \"root\": \"[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/out\"}",
       "-out",
       "[TMP_BASE]/tmp_tmp_9",
       "-hash-algo",
@@ -3661,13 +3661,13 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
-    "name": "building tool.build experimental/prefix/build_tools/tool/linux-armv6l",
+    "name": "building tool.build experimental/3pp/prefix/build_tools/tool/linux-armv6l",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/prefix/build_tools/tool/linux-armv6l\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/3pp/prefix/build_tools/tool/linux-armv6l\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -3683,7 +3683,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[CACHE]/3pp_cipd/experimental/prefix/build_tools/tool/linux-armv6l"
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-armv6l"
     ],
     "env": {
       "GOARCH": "armv6l",
@@ -3709,7 +3709,7 @@
       "/path/to/tmp/json",
       "move",
       "[TMP_BASE]/tmp_tmp_9",
-      "[CACHE]/3pp_cipd/experimental/prefix/build_tools/tool/linux-armv6l/40-chars-fake-of-the-package-instance_id"
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-armv6l/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
       "GOARCH": "armv6l",
@@ -3777,7 +3777,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "copy",
-      "[CACHE]/3pp_cipd/experimental/prefix/build_tools/tool/linux-armv6l/40-chars-fake-of-the-package-instance_id",
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-armv6l/40-chars-fake-of-the-package-instance_id",
       "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/verify/cipd.pkg"
     ],
     "env": {
@@ -3947,7 +3947,7 @@
     "cmd": [
       "cipd",
       "pkg-register",
-      "[CACHE]/3pp_cipd/experimental/prefix/build_tools/tool/linux-armv6l/40-chars-fake-of-the-package-instance_id",
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-armv6l/40-chars-fake-of-the-package-instance_id",
       "-tag",
       "build_id:8945511751514863184",
       "-tag",
@@ -3964,13 +3964,13 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.4.1"
     },
-    "name": "building tool.do upload.register experimental/prefix/build_tools/tool/linux-armv6l",
+    "name": "building tool.do upload.register experimental/3pp/prefix/build_tools/tool/linux-armv6l",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/prefix/build_tools/tool/linux-armv6l\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/3pp/prefix/build_tools/tool/linux-armv6l\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -4012,7 +4012,7 @@
     "cmd": [
       "cipd",
       "describe",
-      "experimental/prefix/deps/dep/linux-armv6l",
+      "experimental/3pp/prefix/deps/dep/linux-armv6l",
       "-version",
       "version:1.0.0",
       "-json-output",
@@ -4025,7 +4025,7 @@
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
-    "name": "building dep.cipd describe experimental/prefix/deps/dep/linux-armv6l",
+    "name": "building dep.cipd describe experimental/3pp/prefix/deps/dep/linux-armv6l",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "step returned non-zero exit code: 1",
@@ -4097,7 +4097,7 @@
     "cmd": [
       "cipd",
       "pkg-deploy",
-      "[CACHE]/3pp_cipd/experimental/prefix/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id",
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id",
       "-root",
       "[START_DIR]/3pp/wd/dep/linux-armv6l/1.0.0/tools_prefix",
       "-json-output",
@@ -4111,7 +4111,7 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
     },
-    "name": "building dep.fetch sources.installing tools.cipd pkg-deploy [CACHE]/3pp_cipd/experimental/prefix/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id",
+    "name": "building dep.fetch sources.installing tools.cipd pkg-deploy [CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@3@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -4142,7 +4142,7 @@
     "cmd": [
       "cipd",
       "pkg-deploy",
-      "[CACHE]/3pp_cipd/experimental/prefix/deps/deep_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/deep_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
       "-root",
       "[START_DIR]/3pp/wd/dep/linux-armv6l/1.0.0/deps_prefix",
       "-json-output",
@@ -4156,7 +4156,7 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
     },
-    "name": "building dep.fetch sources.installing deps.cipd pkg-deploy [CACHE]/3pp_cipd/experimental/prefix/deps/deep_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
+    "name": "building dep.fetch sources.installing deps.cipd pkg-deploy [CACHE]/3pp_cipd/experimental/3pp/prefix/deps/deep_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@3@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -4365,7 +4365,7 @@
       "cipd",
       "pkg-build",
       "-pkg-def",
-      "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"experimental/prefix/deps/dep/linux-armv6l\", \"root\": \"[START_DIR]/3pp/wd/dep/linux-armv6l/1.0.0/out\"}",
+      "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"experimental/3pp/prefix/deps/dep/linux-armv6l\", \"root\": \"[START_DIR]/3pp/wd/dep/linux-armv6l/1.0.0/out\"}",
       "-out",
       "[TMP_BASE]/tmp_tmp_10",
       "-hash-algo",
@@ -4381,13 +4381,13 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
     },
-    "name": "building dep.build experimental/prefix/deps/dep/linux-armv6l",
+    "name": "building dep.build experimental/3pp/prefix/deps/dep/linux-armv6l",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/prefix/deps/dep/linux-armv6l\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/3pp/prefix/deps/dep/linux-armv6l\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -4403,7 +4403,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[CACHE]/3pp_cipd/experimental/prefix/deps/dep/linux-armv6l"
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/dep/linux-armv6l"
     ],
     "env": {
       "GOARCH": "armv6l",
@@ -4428,7 +4428,7 @@
       "/path/to/tmp/json",
       "move",
       "[TMP_BASE]/tmp_tmp_10",
-      "[CACHE]/3pp_cipd/experimental/prefix/deps/dep/linux-armv6l/40-chars-fake-of-the-package-instance_id"
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/dep/linux-armv6l/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
       "GOARCH": "armv6l",
@@ -4463,7 +4463,7 @@
     "cmd": [
       "cipd",
       "pkg-register",
-      "[CACHE]/3pp_cipd/experimental/prefix/deps/dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
       "-ref",
       "latest",
       "-tag",
@@ -4481,13 +4481,13 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "1.0.0"
     },
-    "name": "building dep.do upload.register experimental/prefix/deps/dep/linux-armv6l",
+    "name": "building dep.do upload.register experimental/3pp/prefix/deps/dep/linux-armv6l",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/prefix/deps/dep/linux-armv6l\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/3pp/prefix/deps/dep/linux-armv6l\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -4522,7 +4522,7 @@
     "cmd": [
       "cipd",
       "describe",
-      "experimental/prefix/tools/pkg/linux-armv6l",
+      "experimental/3pp/prefix/tools/pkg/linux-armv6l",
       "-version",
       "version:2.0.0",
       "-json-output",
@@ -4535,7 +4535,7 @@
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
-    "name": "building pkg.cipd describe experimental/prefix/tools/pkg/linux-armv6l",
+    "name": "building pkg.cipd describe experimental/3pp/prefix/tools/pkg/linux-armv6l",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "step returned non-zero exit code: 1",
@@ -4607,7 +4607,7 @@
     "cmd": [
       "cipd",
       "pkg-deploy",
-      "[CACHE]/3pp_cipd/experimental/prefix/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id",
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id",
       "-root",
       "[START_DIR]/3pp/wd/pkg/linux-armv6l/2.0.0/tools_prefix",
       "-json-output",
@@ -4621,7 +4621,7 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
-    "name": "building pkg.fetch sources.installing tools.cipd pkg-deploy [CACHE]/3pp_cipd/experimental/prefix/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id",
+    "name": "building pkg.fetch sources.installing tools.cipd pkg-deploy [CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@3@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -4652,7 +4652,7 @@
     "cmd": [
       "cipd",
       "pkg-deploy",
-      "[CACHE]/3pp_cipd/experimental/prefix/deps/deep_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/deep_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
       "-root",
       "[START_DIR]/3pp/wd/pkg/linux-armv6l/2.0.0/deps_prefix",
       "-json-output",
@@ -4666,7 +4666,7 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
-    "name": "building pkg.fetch sources.installing deps.cipd pkg-deploy [CACHE]/3pp_cipd/experimental/prefix/deps/deep_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
+    "name": "building pkg.fetch sources.installing deps.cipd pkg-deploy [CACHE]/3pp_cipd/experimental/3pp/prefix/deps/deep_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@3@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -4682,7 +4682,7 @@
     "cmd": [
       "cipd",
       "pkg-deploy",
-      "[CACHE]/3pp_cipd/experimental/prefix/deps/dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
       "-root",
       "[START_DIR]/3pp/wd/pkg/linux-armv6l/2.0.0/deps_prefix",
       "-json-output",
@@ -4696,7 +4696,7 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
-    "name": "building pkg.fetch sources.installing deps.cipd pkg-deploy [CACHE]/3pp_cipd/experimental/prefix/deps/dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
+    "name": "building pkg.fetch sources.installing deps.cipd pkg-deploy [CACHE]/3pp_cipd/experimental/3pp/prefix/deps/dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@3@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -4891,7 +4891,7 @@
       "cipd",
       "pkg-build",
       "-pkg-def",
-      "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"experimental/prefix/tools/pkg/linux-armv6l\", \"root\": \"[START_DIR]/3pp/wd/pkg/linux-armv6l/2.0.0/out\"}",
+      "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"experimental/3pp/prefix/tools/pkg/linux-armv6l\", \"root\": \"[START_DIR]/3pp/wd/pkg/linux-armv6l/2.0.0/out\"}",
       "-out",
       "[TMP_BASE]/tmp_tmp_11",
       "-hash-algo",
@@ -4907,13 +4907,13 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
-    "name": "building pkg.build experimental/prefix/tools/pkg/linux-armv6l",
+    "name": "building pkg.build experimental/3pp/prefix/tools/pkg/linux-armv6l",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/prefix/tools/pkg/linux-armv6l\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/3pp/prefix/tools/pkg/linux-armv6l\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -4929,7 +4929,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[CACHE]/3pp_cipd/experimental/prefix/tools/pkg/linux-armv6l"
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/tools/pkg/linux-armv6l"
     ],
     "env": {
       "GOARCH": "armv6l",
@@ -4954,7 +4954,7 @@
       "/path/to/tmp/json",
       "move",
       "[TMP_BASE]/tmp_tmp_11",
-      "[CACHE]/3pp_cipd/experimental/prefix/tools/pkg/linux-armv6l/40-chars-fake-of-the-package-instance_id"
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/tools/pkg/linux-armv6l/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
       "GOARCH": "armv6l",
@@ -4989,7 +4989,7 @@
     "cmd": [
       "cipd",
       "pkg-register",
-      "[CACHE]/3pp_cipd/experimental/prefix/tools/pkg/linux-armv6l/40-chars-fake-of-the-package-instance_id",
+      "[CACHE]/3pp_cipd/experimental/3pp/prefix/tools/pkg/linux-armv6l/40-chars-fake-of-the-package-instance_id",
       "-ref",
       "latest",
       "-tag",
@@ -5007,13 +5007,13 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64",
       "_3PP_VERSION": "2.0.0"
     },
-    "name": "building pkg.do upload.register experimental/prefix/tools/pkg/linux-armv6l",
+    "name": "building pkg.do upload.register experimental/3pp/prefix/tools/pkg/linux-armv6l",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/prefix/tools/pkg/linux-armv6l\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"experimental/3pp/prefix/tools/pkg/linux-armv6l\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"

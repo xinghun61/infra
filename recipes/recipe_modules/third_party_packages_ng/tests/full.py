@@ -228,9 +228,9 @@ def GenTests(api):
                         pkg_repo_path % name for name, _ in pkgs]))
       + api.override_step_data(mk_name(
         'building already_uploaded',
-        'cipd describe experimental/tools/already_uploaded/%s' % plat
+        'cipd describe experimental/3pp/tools/already_uploaded/%s' % plat
       ), api.cipd.example_describe(
-        'experimental/tools/already_uploaded/%s' % plat,
+        'experimental/3pp/tools/already_uploaded/%s' % plat,
         version='version:1.4.1', test_data_tags=['version:1.4.1']))
     )
 
