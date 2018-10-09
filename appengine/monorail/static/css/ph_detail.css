@@ -161,6 +161,7 @@ td.issueheader { background: #e5ecf9; }
 .issuemetaheader {
     padding: 0 5px;
     position: relative;
+    min-width: 14em;
 }
 
 .issuemetaheader a.material-icons {
