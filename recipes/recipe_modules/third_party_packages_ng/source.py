@@ -42,12 +42,15 @@ def resolve_latest(api, spec):
                    step_test_data=lambda: api.raw_io.test_api.stream_output(
                      '\n'.join([
                        'hash\trefs/tags/unrelated',
-                       'hash\trefs/tags/v1-0-0a2',
-                       'hash\trefs/tags/v1-3-0',
-                       'hash\trefs/tags/v1-4-0',
-                       'hash\trefs/tags/v1-4-1',
+                       'hash\trefs/tags/v1.0.0-a2',
+                       'hash\trefs/tags/v1.3.0',
+                       'hash\trefs/tags/v1.4.0',
+                       'hash\trefs/tags/v1.4.1',
+                       'hash\trefs/tags/v1.5.0-rc1',
                      ])))
-    highest = None
+
+    highest_cmp = parse_version('0')
+    highest_str = ''
     for line in step.stdout.splitlines():
       _hash, ref = line.split('\t')
       if ref.startswith('refs/tags/'):
@@ -59,10 +62,12 @@ def resolve_latest(api, spec):
             v_str = '.'.join(v_str.split(source_method_pb.version_join))
 
           v = parse_version(v_str)
-          if highest is None or v > highest:
-            highest = v
-    assert highest is not None
-    version = str(highest)
+          if v > highest_cmp:
+            highest_cmp = v
+            highest_str = v_str
+
+    assert highest_str
+    version = highest_str
     api.step.active_result.presentation.step_text = (
       'resolved version: %s' % (version,))
 

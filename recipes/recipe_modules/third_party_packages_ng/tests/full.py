@@ -36,9 +36,9 @@ def RunSteps(api, GOOS, GOARCH, package_prefix, load_dupe):
   pkgs = api.third_party_packages_ng.load_packages_from_path(
     builder.join('package_repo'))
 
-  # For the test, also explicitly build 'tool@1.4.1', which should de-dup with
-  # the default tool@latest.
-  pkgs.add('tool@1.4.1')
+  # For the test, also explicitly build 'tool@1.5.0-rc1', which should de-dup
+  # with the default tool@latest.
+  pkgs.add('tool@1.5.0-rc1')
 
   # doing it twice should raise a DuplicatePackage exception
   if load_dupe:
@@ -72,7 +72,7 @@ def GenTests(api):
         git {
           repo: "https://go.repo/tool"
           tag_pattern: "v%s"
-          version_join: "-"
+          version_join: "."
         }
         subdir: "src/go.repo/tool"
         patch_dir: "patches"
@@ -188,7 +188,7 @@ def GenTests(api):
 
     already_uploaded='''
     create {
-      source { cipd { pkg: "source/already_uploaded" default_version: "1.4.1" } }
+      source { cipd { pkg: "source/already_uploaded" default_version: "1.5.0-rc1" } }
     }
     upload { pkg_prefix: "tools" }
     ''',
@@ -231,7 +231,7 @@ def GenTests(api):
         'cipd describe experimental/3pp/tools/already_uploaded/%s' % plat
       ), api.cipd.example_describe(
         'experimental/3pp/tools/already_uploaded/%s' % plat,
-        version='version:1.4.1', test_data_tags=['version:1.4.1']))
+        version='version:1.5.0-rc1', test_data_tags=['version:1.5.0-rc1']))
     )
 
     if plat_name != 'win':

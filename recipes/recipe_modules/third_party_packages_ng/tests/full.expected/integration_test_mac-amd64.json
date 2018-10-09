@@ -200,7 +200,7 @@
       "describe",
       "experimental/3pp/tools/already_uploaded/mac-amd64",
       "-version",
-      "version:1.4.1",
+      "version:1.5.0-rc1",
       "-json-output",
       "/path/to/tmp/json"
     ],
@@ -215,11 +215,11 @@
     "name": "building already_uploaded.cipd describe experimental/3pp/tools/already_uploaded/mac-amd64",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_TEXT@found 'resolved-instance_id-of-version:1.4.1---'@@@",
+      "@@@STEP_TEXT@found 'resolved-instance_id-of-version:1.5.0-rc'@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"pin\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.4.1---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.5.0-rc\", @@@",
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"experimental/3pp/tools/already_uploaded/mac-amd64\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    \"refs\": [@@@",
@@ -236,7 +236,7 @@
       "@@@STEP_LOG_LINE@json.output@      {@@@",
       "@@@STEP_LOG_LINE@json.output@        \"registered_by\": \"user:44-blablbla@developer.gserviceaccount.com\", @@@",
       "@@@STEP_LOG_LINE@json.output@        \"registered_ts\": 1446574210, @@@",
-      "@@@STEP_LOG_LINE@json.output@        \"tag\": \"version:1.4.1\"@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"tag\": \"version:1.5.0-rc1\"@@@",
       "@@@STEP_LOG_LINE@json.output@      }@@@",
       "@@@STEP_LOG_LINE@json.output@    ]@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
@@ -1981,7 +1981,7 @@
       "describe",
       "experimental/3pp/prefix/build_tools/tool/mac-amd64",
       "-version",
-      "version:1.4.1.chops.1",
+      "version:1.5.0-rc1.chops.1",
       "-json-output",
       "/path/to/tmp/json"
     ],
@@ -1998,7 +1998,7 @@
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "step returned non-zero exit code: 1",
-      "@@@STEP_TEXT@tag 'version:1.4.1.chops.1' not found@@@",
+      "@@@STEP_TEXT@tag 'version:1.5.0-rc1.chops.1' not found@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"error\": \"no such tag\", @@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": null@@@",
@@ -2016,7 +2016,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1"
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1"
     ],
     "env": {
       "GOARCH": "amd64",
@@ -2026,7 +2026,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.mkdir -p [workdir]",
@@ -2044,7 +2044,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.fetch sources",
     "~followup_annotations": [
@@ -2061,7 +2061,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.fetch sources.installing tools",
     "~followup_annotations": [
@@ -2088,7 +2088,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.fetch sources.installing tools.cipd pkg-fetch experimental/3pp/prefix/build_tools/tool/mac-amd64",
     "~followup_annotations": [
@@ -2123,7 +2123,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.installing tools.ensure cipd package cache exists",
@@ -2150,7 +2150,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.installing tools.move fetched cipd package to cache",
@@ -2164,7 +2164,7 @@
       "pkg-deploy",
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/mac-amd64/resolved-instance_id-of-version:0.9.0.ch",
       "-root",
-      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/tools_prefix",
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/tools_prefix",
       "-json-output",
       "/path/to/tmp/json"
     ],
@@ -2176,7 +2176,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.fetch sources.installing tools.cipd pkg-deploy [CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/mac-amd64/resolved-instance_id-of-version:0.9.0.ch",
     "~followup_annotations": [
@@ -2200,7 +2200,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.fetch sources.installing deps",
     "~followup_annotations": [
@@ -2213,7 +2213,7 @@
       "pkg-deploy",
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/bottom_dep/mac-amd64/40-chars-fake-of-the-package-instance_id",
       "-root",
-      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/deps_prefix",
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/deps_prefix",
       "-json-output",
       "/path/to/tmp/json"
     ],
@@ -2225,7 +2225,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.fetch sources.installing deps.cipd pkg-deploy [CACHE]/3pp_cipd/experimental/3pp/prefix/deps/bottom_dep/mac-amd64/40-chars-fake-of-the-package-instance_id",
     "~followup_annotations": [
@@ -2249,7 +2249,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/src/go.repo/tool"
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/checkout/src/go.repo/tool"
     ],
     "env": {
       "GOARCH": "amd64",
@@ -2259,7 +2259,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.mkdir -p [workdir]/checkout/src/go.repo/tool",
@@ -2273,7 +2273,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
       "--path",
-      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/src/go.repo/tool",
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/checkout/src/go.repo/tool",
       "--url",
       "https://go.repo/tool"
     ],
@@ -2285,7 +2285,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.fetch sources.git setup",
     "~followup_annotations": [
@@ -2298,10 +2298,10 @@
       "retry",
       "fetch",
       "origin",
-      "refs/tags/v1-4-1",
+      "refs/tags/v1.5.0-rc1",
       "--progress"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
@@ -2311,7 +2311,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.git fetch",
@@ -2326,7 +2326,7 @@
       "-f",
       "FETCH_HEAD"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
@@ -2335,7 +2335,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.git checkout",
@@ -2349,7 +2349,7 @@
       "rev-parse",
       "HEAD"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
@@ -2358,7 +2358,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.read revision",
@@ -2376,7 +2376,7 @@
       "-d",
       "-x"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
@@ -2385,7 +2385,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.git clean",
@@ -2399,7 +2399,7 @@
       "submodule",
       "sync"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
@@ -2408,7 +2408,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.submodule sync",
@@ -2424,7 +2424,7 @@
       "--init",
       "--recursive"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
@@ -2433,7 +2433,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.submodule update",
@@ -2460,7 +2460,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.find patches in patches",
@@ -2475,7 +2475,7 @@
       "git",
       "apply"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
@@ -2484,7 +2484,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.git apply",
@@ -2501,7 +2501,7 @@
       "/path/to/tmp/json",
       "copytree",
       "[CACHE]/builder/package_repo",
-      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/.3pp"
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/checkout/.3pp"
     ],
     "env": {
       "GOARCH": "amd64",
@@ -2511,7 +2511,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.copy package definition",
@@ -2529,7 +2529,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.run installation",
     "~followup_annotations": [
@@ -2546,7 +2546,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/out"
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/out"
     ],
     "env": {
       "GOARCH": "amd64",
@@ -2556,7 +2556,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.run installation.make output dir",
@@ -2575,7 +2575,7 @@
       "-json-output",
       "/path/to/tmp/json"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout",
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/checkout",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
@@ -2584,12 +2584,12 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/tools_prefix",
-        "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/tools_prefix/bin"
+        "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/tools_prefix",
+        "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/tools_prefix/bin"
       ]
     },
     "infra_step": true,
@@ -2620,7 +2620,7 @@
       "-output-dir",
       "[CACHE]/osx_sdk/XCode.app"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout",
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/checkout",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
@@ -2629,12 +2629,12 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/tools_prefix",
-        "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/tools_prefix/bin"
+        "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/tools_prefix",
+        "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/tools_prefix/bin"
       ]
     },
     "infra_step": true,
@@ -2650,7 +2650,7 @@
       "--switch",
       "[CACHE]/osx_sdk/XCode.app"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout",
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/checkout",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
@@ -2659,12 +2659,12 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/tools_prefix",
-        "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/tools_prefix/bin"
+        "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/tools_prefix",
+        "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/tools_prefix/bin"
       ]
     },
     "infra_step": true,
@@ -2676,11 +2676,11 @@
   {
     "cmd": [
       "bash",
-      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/.3pp/tool/install-mac.sh",
-      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/out",
-      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/deps_prefix"
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/checkout/.3pp/tool/install-mac.sh",
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/out",
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/deps_prefix"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout",
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/checkout",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
@@ -2689,16 +2689,16 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "env_prefixes": {
       "PATH": [
         "RECIPE_MODULE[infra::third_party_packages_ng]/resources/mac_support",
-        "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/tools_prefix",
-        "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/tools_prefix/bin"
+        "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/tools_prefix",
+        "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/tools_prefix/bin"
       ]
     },
-    "name": "building tool.run installation.install-mac.sh [START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/out [START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/deps_prefix",
+    "name": "building tool.run installation.install-mac.sh [START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/out [START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/deps_prefix",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
     ]
@@ -2709,7 +2709,7 @@
       "xcode-select",
       "--reset"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout",
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/checkout",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
@@ -2718,12 +2718,12 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/tools_prefix",
-        "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/tools_prefix/bin"
+        "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/tools_prefix",
+        "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/tools_prefix/bin"
       ]
     },
     "infra_step": true,
@@ -2737,7 +2737,7 @@
       "cipd",
       "pkg-build",
       "-pkg-def",
-      "{\"data\": [{\"dir\": \".\", \"exclude\": []}, {\"version_file\": \".versions/tool.cipd_version\"}], \"install_mode\": \"symlink\", \"package\": \"experimental/3pp/prefix/build_tools/tool/mac-amd64\", \"root\": \"[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/out\"}",
+      "{\"data\": [{\"dir\": \".\", \"exclude\": []}, {\"version_file\": \".versions/tool.cipd_version\"}], \"install_mode\": \"symlink\", \"package\": \"experimental/3pp/prefix/build_tools/tool/mac-amd64\", \"root\": \"[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/out\"}",
       "-out",
       "[TMP_BASE]/tmp_tmp_7",
       "-hash-algo",
@@ -2753,7 +2753,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.build experimental/3pp/prefix/build_tools/tool/mac-amd64",
     "~followup_annotations": [
@@ -2787,7 +2787,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.ensure cipd pkg cache exists",
@@ -2814,7 +2814,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.mv built cipd pkg to cache",
@@ -2832,7 +2832,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.run test",
     "~followup_annotations": [
@@ -2849,7 +2849,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/verify"
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/verify"
     ],
     "env": {
       "GOARCH": "amd64",
@@ -2859,7 +2859,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.run test.mkdir [verify]",
@@ -2876,7 +2876,7 @@
       "/path/to/tmp/json",
       "copy",
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/mac-amd64/40-chars-fake-of-the-package-instance_id",
-      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/verify/cipd.pkg"
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/verify/cipd.pkg"
     ],
     "env": {
       "GOARCH": "amd64",
@@ -2886,7 +2886,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.run test.cp cipd.pkg [verify]/cipd.pkg",
@@ -2905,7 +2905,7 @@
       "-json-output",
       "/path/to/tmp/json"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/verify",
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/verify",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
@@ -2914,7 +2914,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.run test.ensure_installed",
@@ -2944,7 +2944,7 @@
       "-output-dir",
       "[CACHE]/osx_sdk/XCode.app"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/verify",
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/verify",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
@@ -2953,7 +2953,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.run test.install xcode",
@@ -2968,7 +2968,7 @@
       "--switch",
       "[CACHE]/osx_sdk/XCode.app"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/verify",
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/verify",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
@@ -2977,7 +2977,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.run test.select XCode",
@@ -2989,11 +2989,11 @@
     "cmd": [
       "vpython",
       "-u",
-      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/.3pp/tool/test.py",
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/checkout/.3pp/tool/test.py",
       "mac",
-      "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/verify/cipd.pkg"
+      "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/verify/cipd.pkg"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/verify",
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/verify",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
@@ -3002,9 +3002,9 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
-    "name": "building tool.run test.test.py mac [START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/verify/cipd.pkg",
+    "name": "building tool.run test.test.py mac [START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/verify/cipd.pkg",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
     ]
@@ -3015,7 +3015,7 @@
       "xcode-select",
       "--reset"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/verify",
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/verify",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
@@ -3024,7 +3024,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.run test.reset XCode",
@@ -3042,7 +3042,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.do upload",
     "~followup_annotations": [
@@ -3057,7 +3057,7 @@
       "-tag",
       "build_id:8945511751514863184",
       "-tag",
-      "version:1.4.1.chops.1",
+      "version:1.5.0-rc1.chops.1",
       "-json-output",
       "/path/to/tmp/json"
     ],
@@ -3069,7 +3069,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",
       "_3PP_TOOL_PLATFORM": "mac-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.do upload.register experimental/3pp/prefix/build_tools/tool/mac-amd64",
     "~followup_annotations": [
@@ -3094,7 +3094,7 @@
       "-t",
       "https://go.repo/tool"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "darwin",
@@ -3109,7 +3109,7 @@
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_TEXT@resolved version: 1.4.1@@@"
+      "@@@STEP_TEXT@resolved version: 1.5.0-rc1@@@"
     ]
   },
   {

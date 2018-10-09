@@ -200,7 +200,7 @@
       "describe",
       "experimental/3pp/tools/already_uploaded/linux-armv6l",
       "-version",
-      "version:1.4.1",
+      "version:1.5.0-rc1",
       "-json-output",
       "/path/to/tmp/json"
     ],
@@ -214,11 +214,11 @@
     "name": "building already_uploaded.cipd describe experimental/3pp/tools/already_uploaded/linux-armv6l",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_TEXT@found 'resolved-instance_id-of-version:1.4.1---'@@@",
+      "@@@STEP_TEXT@found 'resolved-instance_id-of-version:1.5.0-rc'@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"pin\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.4.1---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.5.0-rc\", @@@",
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"experimental/3pp/tools/already_uploaded/linux-armv6l\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    \"refs\": [@@@",
@@ -235,7 +235,7 @@
       "@@@STEP_LOG_LINE@json.output@      {@@@",
       "@@@STEP_LOG_LINE@json.output@        \"registered_by\": \"user:44-blablbla@developer.gserviceaccount.com\", @@@",
       "@@@STEP_LOG_LINE@json.output@        \"registered_ts\": 1446574210, @@@",
-      "@@@STEP_LOG_LINE@json.output@        \"tag\": \"version:1.4.1\"@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"tag\": \"version:1.5.0-rc1\"@@@",
       "@@@STEP_LOG_LINE@json.output@      }@@@",
       "@@@STEP_LOG_LINE@json.output@    ]@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
@@ -2156,7 +2156,7 @@
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_TEXT@resolved version: 1.4.1@@@"
+      "@@@STEP_TEXT@resolved version: 1.5.0-rc1@@@"
     ]
   },
   {
@@ -2165,7 +2165,7 @@
       "describe",
       "experimental/3pp/prefix/build_tools/tool/linux-amd64",
       "-version",
-      "version:1.4.1.chops.1",
+      "version:1.5.0-rc1.chops.1",
       "-json-output",
       "/path/to/tmp/json"
     ],
@@ -2181,7 +2181,7 @@
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "step returned non-zero exit code: 1",
-      "@@@STEP_TEXT@tag 'version:1.4.1.chops.1' not found@@@",
+      "@@@STEP_TEXT@tag 'version:1.5.0-rc1.chops.1' not found@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"error\": \"no such tag\", @@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": null@@@",
@@ -2199,7 +2199,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1"
+      "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1"
     ],
     "env": {
       "GOARCH": "amd64",
@@ -2208,7 +2208,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.mkdir -p [workdir]",
@@ -2225,7 +2225,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.fetch sources",
     "~followup_annotations": [
@@ -2241,7 +2241,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.fetch sources.installing deps",
     "~followup_annotations": [
@@ -2254,7 +2254,7 @@
       "pkg-deploy",
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/bottom_dep/linux-amd64/40-chars-fake-of-the-package-instance_id",
       "-root",
-      "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/deps_prefix",
+      "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/deps_prefix",
       "-json-output",
       "/path/to/tmp/json"
     ],
@@ -2265,7 +2265,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.fetch sources.installing deps.cipd pkg-deploy [CACHE]/3pp_cipd/experimental/3pp/prefix/deps/bottom_dep/linux-amd64/40-chars-fake-of-the-package-instance_id",
     "~followup_annotations": [
@@ -2289,7 +2289,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/src/go.repo/tool"
+      "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/checkout/src/go.repo/tool"
     ],
     "env": {
       "GOARCH": "amd64",
@@ -2298,7 +2298,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.mkdir -p [workdir]/checkout/src/go.repo/tool",
@@ -2312,7 +2312,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
       "--path",
-      "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/src/go.repo/tool",
+      "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/checkout/src/go.repo/tool",
       "--url",
       "https://go.repo/tool"
     ],
@@ -2323,7 +2323,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.fetch sources.git setup",
     "~followup_annotations": [
@@ -2336,10 +2336,10 @@
       "retry",
       "fetch",
       "origin",
-      "refs/tags/v1-4-1",
+      "refs/tags/v1.5.0-rc1",
       "--progress"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "linux",
@@ -2348,7 +2348,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.git fetch",
@@ -2363,7 +2363,7 @@
       "-f",
       "FETCH_HEAD"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "linux",
@@ -2371,7 +2371,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.git checkout",
@@ -2385,7 +2385,7 @@
       "rev-parse",
       "HEAD"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "linux",
@@ -2393,7 +2393,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.read revision",
@@ -2411,7 +2411,7 @@
       "-d",
       "-x"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "linux",
@@ -2419,7 +2419,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.git clean",
@@ -2433,7 +2433,7 @@
       "submodule",
       "sync"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "linux",
@@ -2441,7 +2441,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.submodule sync",
@@ -2457,7 +2457,7 @@
       "--init",
       "--recursive"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "linux",
@@ -2465,7 +2465,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.submodule update",
@@ -2491,7 +2491,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.find patches in patches",
@@ -2506,7 +2506,7 @@
       "git",
       "apply"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "linux",
@@ -2514,7 +2514,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.git apply",
@@ -2531,7 +2531,7 @@
       "/path/to/tmp/json",
       "copytree",
       "[CACHE]/builder/package_repo",
-      "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/.3pp"
+      "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/checkout/.3pp"
     ],
     "env": {
       "GOARCH": "amd64",
@@ -2540,7 +2540,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.copy package definition",
@@ -2557,7 +2557,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.run installation",
     "~followup_annotations": [
@@ -2574,7 +2574,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/out"
+      "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/out"
     ],
     "env": {
       "GOARCH": "amd64",
@@ -2583,7 +2583,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.run installation.make output dir",
@@ -2604,13 +2604,13 @@
       "--platform",
       "manylinux-x64",
       "--workdir",
-      "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1",
+      "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1",
       "--env-prefix",
       "PATH",
-      "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/tools_prefix",
+      "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/tools_prefix",
       "--env-prefix",
       "PATH",
-      "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/tools_prefix/bin",
+      "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/tools_prefix/bin",
       "--env",
       "_3PP_TOOL_PLATFORM",
       "linux-amd64",
@@ -2619,7 +2619,7 @@
       "linux",
       "--env",
       "_3PP_VERSION",
-      "1.4.1",
+      "1.5.0-rc1",
       "--env",
       "GOARCH",
       "amd64",
@@ -2634,11 +2634,11 @@
       "tool",
       "--",
       "bash",
-      "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/.3pp/tool/install_bootstrap.sh",
-      "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/out",
-      "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/deps_prefix"
+      "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/checkout/.3pp/tool/install_bootstrap.sh",
+      "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/out",
+      "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/deps_prefix"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout",
+    "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/checkout",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "linux",
@@ -2647,15 +2647,15 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/tools_prefix",
-        "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/tools_prefix/bin"
+        "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/tools_prefix",
+        "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/tools_prefix/bin"
       ]
     },
-    "name": "building tool.run installation.install_bootstrap.sh [START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/out [START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/deps_prefix",
+    "name": "building tool.run installation.install_bootstrap.sh [START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/out [START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/deps_prefix",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
     ]
@@ -2665,7 +2665,7 @@
       "cipd",
       "pkg-build",
       "-pkg-def",
-      "{\"data\": [{\"dir\": \".\", \"exclude\": []}, {\"version_file\": \".versions/tool.cipd_version\"}], \"install_mode\": \"copy\", \"package\": \"experimental/3pp/prefix/build_tools/tool/linux-amd64\", \"root\": \"[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/out\"}",
+      "{\"data\": [{\"dir\": \".\", \"exclude\": []}, {\"version_file\": \".versions/tool.cipd_version\"}], \"install_mode\": \"copy\", \"package\": \"experimental/3pp/prefix/build_tools/tool/linux-amd64\", \"root\": \"[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/out\"}",
       "-out",
       "[TMP_BASE]/tmp_tmp_7",
       "-hash-algo",
@@ -2680,7 +2680,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.build experimental/3pp/prefix/build_tools/tool/linux-amd64",
     "~followup_annotations": [
@@ -2713,7 +2713,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.ensure cipd pkg cache exists",
@@ -2739,7 +2739,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.mv built cipd pkg to cache",
@@ -2756,7 +2756,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.run test",
     "~followup_annotations": [
@@ -2773,7 +2773,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/verify"
+      "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/verify"
     ],
     "env": {
       "GOARCH": "amd64",
@@ -2782,7 +2782,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.run test.mkdir [verify]",
@@ -2799,7 +2799,7 @@
       "/path/to/tmp/json",
       "copy",
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id",
-      "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/verify/cipd.pkg"
+      "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/verify/cipd.pkg"
     ],
     "env": {
       "GOARCH": "amd64",
@@ -2808,7 +2808,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.run test.cp cipd.pkg [verify]/cipd.pkg",
@@ -2826,7 +2826,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/bin_tools"
+      "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/bin_tools"
     ],
     "env": {
       "GOARCH": "amd64",
@@ -2835,7 +2835,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.run test.mkdir [bin_tools]",
@@ -2848,7 +2848,7 @@
       "cipd",
       "ensure",
       "-root",
-      "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/bin_tools",
+      "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/bin_tools",
       "-ensure-file",
       "infra/tools/cipd/linux-amd64 latest\ninfra/tools/luci/vpython/linux-amd64 latest",
       "-json-output",
@@ -2861,7 +2861,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.run test.ensure_installed",
     "~followup_annotations": [
@@ -2896,10 +2896,10 @@
       "--platform",
       "manylinux-x64",
       "--workdir",
-      "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1",
+      "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1",
       "--env-prefix",
       "PATH",
-      "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/bin_tools",
+      "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/bin_tools",
       "--env",
       "_3PP_TOOL_PLATFORM",
       "linux-amd64",
@@ -2908,7 +2908,7 @@
       "linux",
       "--env",
       "_3PP_VERSION",
-      "1.4.1",
+      "1.5.0-rc1",
       "--env",
       "GOARCH",
       "amd64",
@@ -2923,11 +2923,11 @@
       "tool",
       "--",
       "python",
-      "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/.3pp/tool/test.py",
+      "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/checkout/.3pp/tool/test.py",
       "linux",
-      "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/verify/cipd.pkg"
+      "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/verify/cipd.pkg"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/verify",
+    "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/verify",
     "env": {
       "GOARCH": "amd64",
       "GOOS": "linux",
@@ -2936,14 +2936,14 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/bin_tools"
+        "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/bin_tools"
       ]
     },
-    "name": "building tool.run test.test.py linux [START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/verify/cipd.pkg",
+    "name": "building tool.run test.test.py linux [START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/verify/cipd.pkg",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
     ]
@@ -2957,7 +2957,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.do upload",
     "~followup_annotations": [
@@ -2974,7 +2974,7 @@
       "-tag",
       "build_id:8945511751514863184",
       "-tag",
-      "version:1.4.1.chops.1",
+      "version:1.5.0-rc1.chops.1",
       "-json-output",
       "/path/to/tmp/json"
     ],
@@ -2985,7 +2985,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.do upload.register experimental/3pp/prefix/build_tools/tool/linux-amd64",
     "~followup_annotations": [
@@ -3009,7 +3009,7 @@
       "describe",
       "experimental/3pp/prefix/build_tools/tool/linux-armv6l",
       "-version",
-      "version:1.4.1.chops.1",
+      "version:1.5.0-rc1.chops.1",
       "-json-output",
       "/path/to/tmp/json"
     ],
@@ -3025,7 +3025,7 @@
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "step returned non-zero exit code: 1",
-      "@@@STEP_TEXT@tag 'version:1.4.1.chops.1' not found@@@",
+      "@@@STEP_TEXT@tag 'version:1.5.0-rc1.chops.1' not found@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"error\": \"no such tag\", @@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": null@@@",
@@ -3043,7 +3043,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1"
+      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1"
     ],
     "env": {
       "GOARCH": "armv6l",
@@ -3052,7 +3052,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.mkdir -p [workdir] (2)",
@@ -3069,7 +3069,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.fetch sources (2)",
     "~followup_annotations": [
@@ -3085,7 +3085,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.fetch sources.installing tools",
     "~followup_annotations": [
@@ -3111,7 +3111,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.fetch sources.installing tools.cipd pkg-fetch experimental/3pp/prefix/build_tools/tool/linux-amd64",
     "~followup_annotations": [
@@ -3145,7 +3145,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.installing tools.ensure cipd package cache exists",
@@ -3171,7 +3171,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.installing tools.move fetched cipd package to cache",
@@ -3185,7 +3185,7 @@
       "pkg-deploy",
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-amd64/resolved-instance_id-of-version:0.9.0.ch",
       "-root",
-      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/tools_prefix",
+      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/tools_prefix",
       "-json-output",
       "/path/to/tmp/json"
     ],
@@ -3196,7 +3196,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.fetch sources.installing tools.cipd pkg-deploy [CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-amd64/resolved-instance_id-of-version:0.9.0.ch",
     "~followup_annotations": [
@@ -3219,7 +3219,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.fetch sources.installing deps (2)",
     "~followup_annotations": [
@@ -3232,7 +3232,7 @@
       "pkg-deploy",
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/bottom_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
       "-root",
-      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/deps_prefix",
+      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/deps_prefix",
       "-json-output",
       "/path/to/tmp/json"
     ],
@@ -3243,7 +3243,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.fetch sources.installing deps.cipd pkg-deploy [CACHE]/3pp_cipd/experimental/3pp/prefix/deps/bottom_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id",
     "~followup_annotations": [
@@ -3267,7 +3267,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/checkout/src/go.repo/tool"
+      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout/src/go.repo/tool"
     ],
     "env": {
       "GOARCH": "armv6l",
@@ -3276,7 +3276,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.mkdir -p [workdir]/checkout/src/go.repo/tool (2)",
@@ -3290,7 +3290,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
       "--path",
-      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/checkout/src/go.repo/tool",
+      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout/src/go.repo/tool",
       "--url",
       "https://go.repo/tool"
     ],
@@ -3301,7 +3301,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.fetch sources.git setup (2)",
     "~followup_annotations": [
@@ -3314,10 +3314,10 @@
       "retry",
       "fetch",
       "origin",
-      "refs/tags/v1-4-1",
+      "refs/tags/v1.5.0-rc1",
       "--progress"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "armv6l",
       "GOOS": "linux",
@@ -3326,7 +3326,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.git fetch (2)",
@@ -3341,7 +3341,7 @@
       "-f",
       "FETCH_HEAD"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "armv6l",
       "GOOS": "linux",
@@ -3349,7 +3349,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.git checkout (2)",
@@ -3363,7 +3363,7 @@
       "rev-parse",
       "HEAD"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "armv6l",
       "GOOS": "linux",
@@ -3371,7 +3371,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.read revision (2)",
@@ -3389,7 +3389,7 @@
       "-d",
       "-x"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "armv6l",
       "GOOS": "linux",
@@ -3397,7 +3397,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.git clean (2)",
@@ -3411,7 +3411,7 @@
       "submodule",
       "sync"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "armv6l",
       "GOOS": "linux",
@@ -3419,7 +3419,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.submodule sync (2)",
@@ -3435,7 +3435,7 @@
       "--init",
       "--recursive"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "armv6l",
       "GOOS": "linux",
@@ -3443,7 +3443,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.submodule update (2)",
@@ -3469,7 +3469,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.find patches in patches (2)",
@@ -3484,7 +3484,7 @@
       "git",
       "apply"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "armv6l",
       "GOOS": "linux",
@@ -3492,7 +3492,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.git apply (2)",
@@ -3509,7 +3509,7 @@
       "/path/to/tmp/json",
       "copytree",
       "[CACHE]/builder/package_repo",
-      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/checkout/.3pp"
+      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout/.3pp"
     ],
     "env": {
       "GOARCH": "armv6l",
@@ -3518,7 +3518,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.fetch sources.copy package definition (2)",
@@ -3535,7 +3535,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.run installation (2)",
     "~followup_annotations": [
@@ -3552,7 +3552,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/out"
+      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/out"
     ],
     "env": {
       "GOARCH": "armv6l",
@@ -3561,7 +3561,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.run installation.make output dir (2)",
@@ -3582,13 +3582,13 @@
       "--platform",
       "linux-armv6",
       "--workdir",
-      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1",
+      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1",
       "--env-prefix",
       "PATH",
-      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/tools_prefix",
+      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/tools_prefix",
       "--env-prefix",
       "PATH",
-      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/tools_prefix/bin",
+      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/tools_prefix/bin",
       "--env",
       "_3PP_TOOL_PLATFORM",
       "linux-amd64",
@@ -3597,7 +3597,7 @@
       "linux",
       "--env",
       "_3PP_VERSION",
-      "1.4.1",
+      "1.5.0-rc1",
       "--env",
       "GOARCH",
       "armv6l",
@@ -3612,12 +3612,12 @@
       "tool",
       "--",
       "bash",
-      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/checkout/.3pp/tool/install.sh",
+      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout/.3pp/tool/install.sh",
       "arm",
-      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/out",
-      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/deps_prefix"
+      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/out",
+      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/deps_prefix"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/checkout",
+    "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout",
     "env": {
       "GOARCH": "armv6l",
       "GOOS": "linux",
@@ -3626,15 +3626,15 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/tools_prefix",
-        "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/tools_prefix/bin"
+        "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/tools_prefix",
+        "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/tools_prefix/bin"
       ]
     },
-    "name": "building tool.run installation.install.sh arm [START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/out [START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/deps_prefix",
+    "name": "building tool.run installation.install.sh arm [START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/out [START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/deps_prefix",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
     ]
@@ -3644,7 +3644,7 @@
       "cipd",
       "pkg-build",
       "-pkg-def",
-      "{\"data\": [{\"dir\": \".\", \"exclude\": []}, {\"version_file\": \".versions/tool.cipd_version\"}], \"install_mode\": \"copy\", \"package\": \"experimental/3pp/prefix/build_tools/tool/linux-armv6l\", \"root\": \"[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/out\"}",
+      "{\"data\": [{\"dir\": \".\", \"exclude\": []}, {\"version_file\": \".versions/tool.cipd_version\"}], \"install_mode\": \"copy\", \"package\": \"experimental/3pp/prefix/build_tools/tool/linux-armv6l\", \"root\": \"[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/out\"}",
       "-out",
       "[TMP_BASE]/tmp_tmp_9",
       "-hash-algo",
@@ -3659,7 +3659,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.build experimental/3pp/prefix/build_tools/tool/linux-armv6l",
     "~followup_annotations": [
@@ -3692,7 +3692,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.ensure cipd pkg cache exists (2)",
@@ -3718,7 +3718,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.mv built cipd pkg to cache (2)",
@@ -3735,7 +3735,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.run test (2)",
     "~followup_annotations": [
@@ -3752,7 +3752,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/verify"
+      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/verify"
     ],
     "env": {
       "GOARCH": "armv6l",
@@ -3761,7 +3761,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.run test.mkdir [verify] (2)",
@@ -3778,7 +3778,7 @@
       "/path/to/tmp/json",
       "copy",
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-armv6l/40-chars-fake-of-the-package-instance_id",
-      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/verify/cipd.pkg"
+      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/verify/cipd.pkg"
     ],
     "env": {
       "GOARCH": "armv6l",
@@ -3787,7 +3787,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.run test.cp cipd.pkg [verify]/cipd.pkg (2)",
@@ -3805,7 +3805,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/bin_tools"
+      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/bin_tools"
     ],
     "env": {
       "GOARCH": "armv6l",
@@ -3814,7 +3814,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "infra_step": true,
     "name": "building tool.run test.mkdir [bin_tools] (2)",
@@ -3827,7 +3827,7 @@
       "cipd",
       "ensure",
       "-root",
-      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/bin_tools",
+      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/bin_tools",
       "-ensure-file",
       "infra/tools/cipd/linux-amd64 latest\ninfra/tools/luci/vpython/linux-amd64 latest",
       "-json-output",
@@ -3840,7 +3840,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.run test.ensure_installed (2)",
     "~followup_annotations": [
@@ -3875,10 +3875,10 @@
       "--platform",
       "linux-armv6",
       "--workdir",
-      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1",
+      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1",
       "--env-prefix",
       "PATH",
-      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/bin_tools",
+      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/bin_tools",
       "--env",
       "_3PP_TOOL_PLATFORM",
       "linux-amd64",
@@ -3887,7 +3887,7 @@
       "linux",
       "--env",
       "_3PP_VERSION",
-      "1.4.1",
+      "1.5.0-rc1",
       "--env",
       "GOARCH",
       "armv6l",
@@ -3902,11 +3902,11 @@
       "tool",
       "--",
       "python",
-      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/checkout/.3pp/tool/test.py",
+      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout/.3pp/tool/test.py",
       "linux",
-      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/verify/cipd.pkg"
+      "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/verify/cipd.pkg"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/verify",
+    "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/verify",
     "env": {
       "GOARCH": "armv6l",
       "GOOS": "linux",
@@ -3915,14 +3915,14 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/bin_tools"
+        "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/bin_tools"
       ]
     },
-    "name": "building tool.run test.test.py linux [START_DIR]/3pp/wd/tool/linux-armv6l/1.4.1/verify/cipd.pkg",
+    "name": "building tool.run test.test.py linux [START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/verify/cipd.pkg",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
     ]
@@ -3936,7 +3936,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.do upload (2)",
     "~followup_annotations": [
@@ -3951,7 +3951,7 @@
       "-tag",
       "build_id:8945511751514863184",
       "-tag",
-      "version:1.4.1.chops.1",
+      "version:1.5.0-rc1.chops.1",
       "-json-output",
       "/path/to/tmp/json"
     ],
@@ -3962,7 +3962,7 @@
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-armv6l",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.4.1"
+      "_3PP_VERSION": "1.5.0-rc1"
     },
     "name": "building tool.do upload.register experimental/3pp/prefix/build_tools/tool/linux-armv6l",
     "~followup_annotations": [
@@ -3987,7 +3987,7 @@
       "-t",
       "https://go.repo/tool"
     ],
-    "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.4.1/checkout/src/go.repo/tool",
+    "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
       "GOARCH": "armv6l",
       "GOOS": "linux",
@@ -4001,7 +4001,7 @@
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_TEXT@resolved version: 1.4.1@@@"
+      "@@@STEP_TEXT@resolved version: 1.5.0-rc1@@@"
     ]
   },
   {
