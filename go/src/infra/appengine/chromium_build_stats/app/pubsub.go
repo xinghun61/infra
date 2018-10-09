@@ -69,9 +69,15 @@ func pubsubHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	info, err := getFile(ctx, filename, bucketID)
+
+	// TODO(tikuta): Return http error when getFile is failed due to network error.
 	if err != nil {
-		http.Error(w, "failed to get file", http.StatusInternalServerError)
 		log.Errorf(ctx, "failed to get file: %v", err)
+
+		// Sometimes ninja_log is corrupted and getFile return error.
+		// In such case, we don't want Pub/Sub to send
+		// notification again.
+		fmt.Fprintln(w, "Error")
 		return
 	}
 
