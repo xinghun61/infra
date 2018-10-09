@@ -247,10 +247,10 @@ def HeuristicAnalysisForTest(heuristic_params):
       failure_info.build_number, failure_info.failure_type)
 
   # Monitors analysis status change.
-  for step_name in failure_info.failed_steps:
-    RecordTestFailureAnalysisStateChange(
-        master_name, builder_name, build_number, step_name,
-        analysis_status.COMPLETED, analysis_approach_type.HEURISTIC)
+  # Only record one metric for each analysis.
+  RecordTestFailureAnalysisStateChange(master_name, builder_name,
+                                       analysis_status.COMPLETED,
+                                       analysis_approach_type.HEURISTIC)
 
   return TestHeuristicAnalysisOutput(
       failure_info=failure_info,
@@ -391,20 +391,15 @@ def GetsFirstFailureAtTestLevel(master_name, builder_name, build_number,
   return result_steps
 
 
-def RecordTestFailureAnalysisStateChange(
-    master_name, builder_name, build_number, step_name, status, analysis_type):
-  """Records state changes for test failure anlaysis."""
-  step_metadata = {}
-  if step_name:
-    step_metadata = step_util.GetStepMetadata(master_name, builder_name,
-                                              build_number, step_name) or {}
-
+def RecordTestFailureAnalysisStateChange(master_name, builder_name, status,
+                                         analysis_type):
+  """Records state changes for test failure analysis."""
   monitoring.OnWaterfallAnalysisStateChange(
       master_name=master_name,
       builder_name=builder_name,
       failure_type=failure_type.GetDescriptionForFailureType(failure_type.TEST),
-      canonical_step_name=step_metadata.get('canonical_step_name') or 'Unknown',
-      isolate_target_name=step_metadata.get('isolate_target_name') or 'Unknown',
+      canonical_step_name='Unknown',
+      isolate_target_name='Unknown',
       status=analysis_status.STATUS_TO_DESCRIPTION[status],
       analysis_type=analysis_approach_type.STATUS_TO_DESCRIPTION[analysis_type])
 

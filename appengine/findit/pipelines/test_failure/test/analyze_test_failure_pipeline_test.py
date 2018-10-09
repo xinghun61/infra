@@ -220,7 +220,7 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
             builder_name=builder_name,
             build_number=build_number),
         current_failure_info=None,
-        build_completed=False,
+        build_completed=True,
         force=False)
     root_pipeline = AnalyzeTestFailurePipeline(pipeline_input)
     root_pipeline.OnAbort(pipeline_input)
@@ -230,8 +230,8 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(analysis_status.ERROR, analysis.status)
     self.assertIsNone(analysis.result_status)
     self.assertTrue(analysis.aborted)
-    mock_mon.assert_called_once_with(master_name, builder_name, build_number,
-                                     'test', analysis_status.ERROR,
+    mock_mon.assert_called_once_with(master_name, builder_name,
+                                     analysis_status.ERROR,
                                      analysis_approach_type.HEURISTIC)
 
   @mock.patch.object(test_failure_analysis,
@@ -294,7 +294,7 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
             builder_name=builder_name,
             build_number=build_number),
         current_failure_info=None,
-        build_completed=False,
+        build_completed=True,
         force=False)
     root_pipeline = AnalyzeTestFailurePipeline(pipeline_input)
     root_pipeline.OnAbort(pipeline_input)
@@ -305,7 +305,7 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
             master_name=master_name,
             builder_name=builder_name,
             build_number=build_number),
-        build_completed=False,
+        build_completed=True,
         force=False,
         heuristic_result=TestHeuristicAnalysisOutput.FromSerializable(
             heuristic_result),
@@ -316,8 +316,8 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
     mocked_pipeline.assert_has_calls(
         [mock.call().start(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)])
 
-    mock_fn.assert_called_once_with(master_name, builder_name, build_number,
-                                    'test', analysis_status.ERROR,
+    mock_fn.assert_called_once_with(master_name, builder_name,
+                                    analysis_status.ERROR,
                                     analysis_approach_type.HEURISTIC)
 
   @mock.patch.object(monitoring.completed_pipelines, 'increment')

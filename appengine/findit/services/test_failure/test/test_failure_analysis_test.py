@@ -474,8 +474,7 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
     self.assertEqual(
         TestHeuristicAnalysisOutput.FromSerializable(expected_result), result)
-    mock_mon.assert_called_once_with('m', 'b', 99, 'test',
-                                     analysis_status.COMPLETED,
+    mock_mon.assert_called_once_with('m', 'b', analysis_status.COMPLETED,
                                      analysis_approach_type.HEURISTIC)
 
   def testUpdateAnalysisResult(self):
@@ -970,35 +969,13 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(monitoring, 'OnWaterfallAnalysisStateChange')
   def testRecordTestFailureAnalysisStateChangeNoStepName(self, mock_mon):
     test_failure_analysis.RecordTestFailureAnalysisStateChange(
-        'm', 'b', 1, None, analysis_status.COMPLETED,
-        analysis_approach_type.HEURISTIC)
+        'm', 'b', analysis_status.COMPLETED, analysis_approach_type.HEURISTIC)
     mock_mon.assert_called_once_with(
         master_name='m',
         builder_name='b',
         failure_type='test',
         canonical_step_name='Unknown',
         isolate_target_name='Unknown',
-        status='Completed',
-        analysis_type='Heuristic')
-
-  @mock.patch.object(monitoring, 'OnWaterfallAnalysisStateChange')
-  @mock.patch.object(step_util, 'GetStepMetadata')
-  def testRecordTestFailureAnalysisStateChange(self, mock_step_metadata,
-                                               mock_mon):
-    mock_step_metadata.return_value = {
-        'canonical_step_name': 's1',
-        'isolate_target_name': 's1'
-    }
-    test_failure_analysis.RecordTestFailureAnalysisStateChange(
-        'm', 'b', 1, 's1', analysis_status.COMPLETED,
-        analysis_approach_type.HEURISTIC)
-
-    mock_mon.assert_called_once_with(
-        master_name='m',
-        builder_name='b',
-        failure_type='test',
-        canonical_step_name='s1',
-        isolate_target_name='s1',
         status='Completed',
         analysis_type='Heuristic')
 

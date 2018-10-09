@@ -63,14 +63,13 @@ class AnalyzeTestFailurePipeline(GeneratorPipeline):
     analysis, run_try_job, heuristic_aborted = (
         build_failure_analysis.UpdateAbortedAnalysis(pipeline_input))
 
-    if heuristic_aborted and analysis.failure_info:
+    if (heuristic_aborted and analysis.failure_info and
+        pipeline_input.build_completed):
       # Records that heuristic analysis ends in error.
-      master_name, builder_name, build_number = (
-          pipeline_input.build_key.GetParts())
-      for step_name in (analysis.failure_info.get('failed_steps') or {}):
-        test_failure_analysis.RecordTestFailureAnalysisStateChange(
-            master_name, builder_name, build_number, step_name, analysis.status,
-            analysis_approach_type.HEURISTIC)
+      master_name, builder_name, _ = (pipeline_input.build_key.GetParts())
+      test_failure_analysis.RecordTestFailureAnalysisStateChange(
+          master_name, builder_name, analysis.status,
+          analysis_approach_type.HEURISTIC)
     monitoring.aborted_pipelines.increment({'type': 'test'})
 
     if not run_try_job:
