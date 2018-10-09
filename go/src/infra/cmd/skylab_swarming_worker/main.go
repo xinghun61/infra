@@ -91,11 +91,10 @@ func runSwarmingTask(a *args) (err error) {
 	log.Printf("Swarming bot config: %#v", b)
 	return harness.Run(b,
 		func(b *swarming.Bot, i *harness.Info) error {
-			resultsDir := i.ResultsDir
 			ta := lucifer.TaskArgs{
-				AbortSock:  filepath.Join(resultsDir, "abort_sock"),
+				AbortSock:  filepath.Join(i.ResultsDir, "abort_sock"),
 				GCPProject: gcpProject,
-				ResultsDir: resultsDir,
+				ResultsDir: i.ResultsDir,
 			}
 			var annotWriter io.Writer
 			annotWriter = os.Stdout
@@ -121,7 +120,7 @@ func runSwarmingTask(a *args) (err error) {
 				defer lc.Close()
 				annotWriter = lc.Stdout()
 
-				fifoPath := filepath.Join(resultsDir, "logdog.fifo")
+				fifoPath := filepath.Join(i.ResultsDir, "logdog.fifo")
 				fc, err := fifo.NewCopier(annotWriter, fifoPath)
 				if err != nil {
 					return err
