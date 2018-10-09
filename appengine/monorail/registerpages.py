@@ -94,6 +94,7 @@ from tracker import issuetips
 from tracker import spam
 from tracker import templatecreate
 from tracker import templatedetail
+from tracker import fltconversion
 
 from api import api_service
 
@@ -213,7 +214,8 @@ class ServletRegistry(object):
           componentexport.ComponentTrainingDataExport,
         urls.COMPONENT_DATA_EXPORT_TASK:
           componentexport.ComponentTrainingDataExportTask,
-        urls.COMMIT_DATA_CRON: usercommits.GetCommitsCron
+        urls.COMMIT_DATA_CRON: usercommits.GetCommitsCron,
+        urls.FLT_ISSUE_CONVERSION_TASK: fltconversion.FLTConvertTask,
         })
 
     self._SetupProjectServlets({

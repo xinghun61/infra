@@ -56,6 +56,9 @@ BAN_SPAMMER_TASK = '/_task/banSpammer'
 ISSUE_DATE_ACTION_TASK = '/_task/issueDateAction'
 COMPONENT_DATA_EXPORT_TASK = '/_task/componentDataExportTask'
 
+# URL for manually triggered FLT launch issue conversion job.
+FLT_ISSUE_CONVERSION_TASK = '/_task/fltConversionTask'
+
 # URLs of cron job request handlers.  Called from GAE via cron.yaml.
 REINDEX_QUEUE_CRON = '/_cron/reindexQueue'
 RAMCACHE_CONSOLIDATE_CRON = '/_cron/ramCacheConsolidate'
