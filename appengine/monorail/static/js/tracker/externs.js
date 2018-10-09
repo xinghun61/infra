@@ -102,8 +102,6 @@ var _setupKibblesOnEntryPage;
 var _setupKibblesOnListPage;
 var _setupKibblesOnDetailPage;
 
-var _setPeoplePrefs;
-
 var CS_env;
 
 var _checkFieldNameOnServer;

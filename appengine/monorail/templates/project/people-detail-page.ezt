@@ -170,11 +170,13 @@ runOnLoad(function() {
  [if-any read_only][else]
    if ($("show_permissions"))
      $("show_permissions").addEventListener("click", function() {
-       _setPeoplePrefs("[projectname]", 1, "[xhr_token]");
+        window.prpcClient.call(
+            'monorail.Users', 'SetExpandPermsPreference', {expandPerms: true});
      });
    if ($("hide_permissions"))
      $("hide_permissions").addEventListener("click", function() {
-       _setPeoplePrefs("[projectname]", 0, "[xhr_token]");
+        window.prpcClient.call(
+            'monorail.Users', 'SetExpandPermsPreference', {expandPerms: false});
      });
  [end]
 

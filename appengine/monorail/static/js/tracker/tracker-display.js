@@ -322,33 +322,3 @@ function TKR_highlightRow(el) {
   }
   return false;
 }
-
-
-/**
- * XMLHTTP object used to remember display preferences on the server.
- */
-var TKR_prefsXmlHttp = undefined;
-
-
-/**
- * Contact the server to remember a PeopleDetail display preference.
- * @param {string} projectName The name of the current project.
- * @param {number} expand Zero or one for the widget hide/show state.
- * @param {string} token The security token.
- */
-function TKR_setPeoplePrefs(projectName, expand, token) {
-  TKR_prefsXmlHttp = XH_XmlHttpCreate()
-  var prefsURL = '/p/' + projectName + '/people/detailPrefs.do';
-  var data = 'perms_expanded=' + expand + '&token=' + token;
-  XH_XmlHttpPOST(
-      TKR_prefsXmlHttp, prefsURL, data, TKR_prefsFeedCallback);
-}
-
-
-/**
- * The communication with the server has made some progress.  If it is
- * done, then process the response.
- */
-function TKR_prefsFeedCallback() {
-  // Actually, we don't use the return value at all, so do nothing.
-}

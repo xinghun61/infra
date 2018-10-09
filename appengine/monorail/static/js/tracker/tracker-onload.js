@@ -163,8 +163,6 @@ if (BR_hasExcessBlurEvents()) {
 // event handlers above would never get called.
 if (document.captureEvents) document.captureEvents(Event.CLICK);
 
-_setPeoplePrefs = TKR_setPeoplePrefs
-
 _setupKibblesOnEntryPage = TKR_setupKibblesOnEntryPage;
 _setupKibblesOnListPage = TKR_setupKibblesOnListPage;
 _setupKibblesOnDetailPage = TKR_setupKibblesOnDetailPage;
