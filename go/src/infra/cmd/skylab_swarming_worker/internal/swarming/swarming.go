@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"infra/cmd/skylab_swarming_worker/internal/autotest"
+	"infra/cmd/skylab_swarming_worker/internal/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/lucifer"
-	"infra/cmd/skylab_swarming_worker/internal/swarming/botcache"
 )
 
 const (
@@ -39,7 +39,7 @@ type Bot struct {
 	Task          Task
 
 	// BotInfo stores the BotInfo for LoadBotInfo and DumpBotInfo.
-	BotInfo *botcache.BotInfo
+	BotInfo *botinfo.BotInfo
 
 	dutName string
 }
@@ -106,12 +106,12 @@ func (b *Bot) ResultsDir() string {
 // LoadBotInfo loads the BotInfo for the Bot.  If the BotInfo is
 // changed, DumpBotInfo should be called afterward.
 func (b *Bot) LoadBotInfo() error {
-	b.BotInfo = &botcache.BotInfo{}
+	b.BotInfo = &botinfo.BotInfo{}
 	data, err := ioutil.ReadFile(botinfoFilePath(b))
 	if err != nil {
 		return err
 	}
-	if err := botcache.Unmarshal(data, b.BotInfo); err != nil {
+	if err := botinfo.Unmarshal(data, b.BotInfo); err != nil {
 		return err
 	}
 	return nil
@@ -122,7 +122,7 @@ func (b *Bot) DumpBotInfo() error {
 	if b.BotInfo == nil {
 		return errors.New("DumpBotInfo: BotInfo is nil")
 	}
-	data, err := botcache.Marshal(b.BotInfo)
+	data, err := botinfo.Marshal(b.BotInfo)
 	if err != nil {
 		return err
 	}
@@ -131,11 +131,11 @@ func (b *Bot) DumpBotInfo() error {
 
 // botinfoFilePath returns the path for caching dimensions for the given bot.
 func botinfoFilePath(b *Bot) string {
-	return filepath.Join(botcacheDirPath(b), fmt.Sprintf("%s.json", b.DUTID))
+	return filepath.Join(botinfoDirPath(b), fmt.Sprintf("%s.json", b.DUTID))
 }
 
-// botcacheDir returns the path to the cache directory for the given bot.
-func botcacheDirPath(b *Bot) string {
+// botinfoDir returns the path to the cache directory for the given bot.
+func botinfoDirPath(b *Bot) string {
 	return filepath.Join(b.AutotestPath, "swarming_state")
 }
 

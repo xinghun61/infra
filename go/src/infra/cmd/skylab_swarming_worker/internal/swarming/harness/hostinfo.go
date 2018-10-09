@@ -15,8 +15,8 @@ import (
 	"github.com/pkg/errors"
 
 	"infra/cmd/skylab_swarming_worker/internal/autotest"
+	"infra/cmd/skylab_swarming_worker/internal/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
-	"infra/cmd/skylab_swarming_worker/internal/swarming/botcache"
 )
 
 // prepareHostInfo prepopulates the results directory with the host
@@ -61,7 +61,7 @@ func dumpHostInfo(dutName string, resultsDir string, hi *autotest.HostInfo) (str
 
 // updateBotInfoFromHostInfo reads in update host information from the concluded task and
 // updates the bot dimensions with provisioned labels.
-func updateBotInfoFromHostInfo(hiPath string, bi *botcache.BotInfo) error {
+func updateBotInfoFromHostInfo(hiPath string, bi *botinfo.BotInfo) error {
 	blob, err := ioutil.ReadFile(hiPath)
 	if err != nil {
 		return errors.Wrap(err, "failed to read host info from results")
@@ -87,7 +87,7 @@ var provisionableLabelKeys = map[string]struct{}{
 	"storage": {},
 }
 
-func updateProvisionableDimension(label string, bi *botcache.BotInfo) {
+func updateProvisionableDimension(label string, bi *botinfo.BotInfo) {
 	parts := strings.SplitN(label, ":", 2)
 	if len(parts) == 2 {
 		if _, ok := provisionableLabelKeys[parts[0]]; ok {
@@ -100,7 +100,7 @@ var provisionableAttributeKeys = map[string]struct{}{
 	"job_repo_url": {},
 }
 
-func updateProvisionableAttributes(attribute string, value string, bi *botcache.BotInfo) {
+func updateProvisionableAttributes(attribute string, value string, bi *botinfo.BotInfo) {
 	if _, ok := provisionableAttributeKeys[attribute]; ok {
 		bi.ProvisionableAttributes[attribute] = value
 	}

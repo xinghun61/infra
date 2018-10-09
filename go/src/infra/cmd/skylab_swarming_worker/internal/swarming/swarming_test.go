@@ -12,8 +12,8 @@ import (
 
 	"github.com/kylelemons/godebug/pretty"
 
+	"infra/cmd/skylab_swarming_worker/internal/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/lucifer"
-	"infra/cmd/skylab_swarming_worker/internal/swarming/botcache"
 )
 
 func TestGetDutNameFromDimensions(t *testing.T) {
@@ -63,13 +63,13 @@ func TestDumpingAndLoading(t *testing.T) {
 		t.Fatalf("Failed to create temporary directory: %v", err)
 	}
 	defer os.RemoveAll(td)
-	bi := botcache.BotInfo{
-		HostState: botcache.HostReady,
-		ProvisionableLabels: botcache.ProvisionableLabels{
+	bi := botinfo.BotInfo{
+		HostState: botinfo.HostReady,
+		ProvisionableLabels: botinfo.ProvisionableLabels{
 			"cros-version":        "lumpy-release/R00-0.0.0.0",
 			"firmware-ro-version": "Google_000",
 		},
-		ProvisionableAttributes: botcache.ProvisionableAttributes{
+		ProvisionableAttributes: botinfo.ProvisionableAttributes{
 			"job_repo_url": "http://127.0.0.1",
 		},
 	}
@@ -78,7 +78,7 @@ func TestDumpingAndLoading(t *testing.T) {
 		DUTID:        "fake_dut_id",
 		BotInfo:      &bi,
 	}
-	os.Mkdir(botcacheDirPath(b), 0777)
+	os.Mkdir(botinfoDirPath(b), 0777)
 	if err := b.DumpBotInfo(); err != nil {
 		t.Fatalf("Error dumping dimensions: %s", err)
 	}
@@ -101,9 +101,9 @@ func TestLoadInitializesBotInfo(t *testing.T) {
 	b := &Bot{
 		AutotestPath: td,
 		DUTID:        "fake_dut_id",
-		BotInfo:      &botcache.BotInfo{},
+		BotInfo:      &botinfo.BotInfo{},
 	}
-	os.Mkdir(botcacheDirPath(b), 0777)
+	os.Mkdir(botinfoDirPath(b), 0777)
 
 	if err := b.DumpBotInfo(); err != nil {
 		t.Fatalf("Error dumping dimensions: %s", err)
@@ -113,9 +113,9 @@ func TestLoadInitializesBotInfo(t *testing.T) {
 		t.Fatalf("Error loading test file: %s", err)
 	}
 
-	bi := botcache.BotInfo{
-		ProvisionableLabels:     botcache.ProvisionableLabels{},
-		ProvisionableAttributes: botcache.ProvisionableAttributes{},
+	bi := botinfo.BotInfo{
+		ProvisionableLabels:     botinfo.ProvisionableLabels{},
+		ProvisionableAttributes: botinfo.ProvisionableAttributes{},
 	}
 	if !reflect.DeepEqual(*b.BotInfo, bi) {
 		t.Errorf("Got %v, expected %v", *b.BotInfo, bi)

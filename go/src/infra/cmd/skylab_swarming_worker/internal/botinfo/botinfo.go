@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-/*
-Package botcache provides support for caching information on swarming bots.
-*/
-package botcache
+// Package botinfo provides the BotInfo struct which stores dynamic
+// information about a Swarming bot, as well as functions for
+// serializing and deserializing BotInfo.
+package botinfo
 
 import (
 	"encoding/json"

@@ -19,10 +19,10 @@ import (
 	"golang.org/x/sys/unix"
 
 	"infra/cmd/skylab_swarming_worker/internal/annotations"
+	"infra/cmd/skylab_swarming_worker/internal/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/event"
 	"infra/cmd/skylab_swarming_worker/internal/lucifer"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
-	"infra/cmd/skylab_swarming_worker/internal/swarming/botcache"
 )
 
 type luciferResult struct {
@@ -110,15 +110,15 @@ func resultsURL(b *swarming.Bot) string {
 // hostStateUpdates maps Events to the target runtime state of the
 // host.  Host events that don't need to be handled are left as
 // comment placeholders to aid cross-referencing.
-var hostStateUpdates = map[event.Event]botcache.HostState{
-	event.HostClean:        botcache.HostReady,
-	event.HostNeedsCleanup: botcache.HostNeedsCleanup,
-	event.HostNeedsRepair:  botcache.HostNeedsRepair,
-	event.HostNeedsReset:   botcache.HostNeedsReset,
-	event.HostReady:        botcache.HostReady,
+var hostStateUpdates = map[event.Event]botinfo.HostState{
+	event.HostClean:        botinfo.HostReady,
+	event.HostNeedsCleanup: botinfo.HostNeedsCleanup,
+	event.HostNeedsRepair:  botinfo.HostNeedsRepair,
+	event.HostNeedsReset:   botinfo.HostNeedsReset,
+	event.HostReady:        botinfo.HostReady,
 	// event.HostReadyToRun
 	// event.HostRunning
-	event.HostFailedRepair: botcache.HostRepairFailed,
+	event.HostFailedRepair: botinfo.HostRepairFailed,
 }
 
 func isHostStatus(e event.Event) bool {
