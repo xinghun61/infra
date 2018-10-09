@@ -21,8 +21,8 @@ import (
 
 // prepareHostInfo prepopulates the results directory with the host
 // info stores required for autoserv. It returns the path to host info file created.
-func prepareHostInfo(b *swarming.Bot, resultsDir string) (string, error) {
-	hi, err := b.DUTHostInfo()
+func prepareHostInfo(b *swarming.Bot, i *Info) (string, error) {
+	hi, err := loadDUTHostInfo(b)
 	if err != nil {
 		return "", err
 	}
@@ -33,7 +33,7 @@ func prepareHostInfo(b *swarming.Bot, resultsDir string) (string, error) {
 	for attribute, value := range bi.ProvisionableAttributes {
 		hi.Attributes[attribute] = value
 	}
-	return dumpHostInfo(b.DUTName(), resultsDir, hi)
+	return dumpHostInfo(i.DUTName, i.ResultsDir, hi)
 }
 
 // hostInfoSubDir is the filename of the directory for storing host info.

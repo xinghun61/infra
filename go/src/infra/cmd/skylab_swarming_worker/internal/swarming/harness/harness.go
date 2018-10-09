@@ -28,14 +28,19 @@ type Func func(*swarming.Bot, *Info) error
 // Info holds information about the Swarming harness.
 type Info struct {
 	ResultsDir string
+	DUTName    string
 }
 
 // Run calls a function with a Swarming harness, which prepares and
 // cleans up the results directory and host info.
 func Run(b *swarming.Bot, f Func) (err error) {
-	if err := b.LoadDUTName(); err != nil {
+	i := Info{}
+	dn, err := loadDUTName(b)
+	if err != nil {
 		return errors.Wrap(err, "load DUT name")
 	}
+	i.DUTName = dn
+
 	if err := b.LoadBotInfo(); err != nil {
 		return errors.Wrap(err, "load bot info")
 	}
@@ -44,7 +49,6 @@ func Run(b *swarming.Bot, f Func) (err error) {
 			err = errors.Wrap(err2, "dump bot info")
 		}
 	}()
-	i := Info{}
 	i.ResultsDir, err = prepareResultsDir(b)
 	if err != nil {
 		return errors.Wrap(err, "prepare results dir")
@@ -56,7 +60,7 @@ func Run(b *swarming.Bot, f Func) (err error) {
 		}
 	}()
 
-	hiPath, err := prepareHostInfo(b, i.ResultsDir)
+	hiPath, err := prepareHostInfo(b, &i)
 	if err != nil {
 		// This can happen if the DUT disappeared from the
 		// inventory after the task was scheduled.

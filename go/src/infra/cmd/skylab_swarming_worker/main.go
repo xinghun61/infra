@@ -128,7 +128,7 @@ func runSwarmingTask(a *args) (err error) {
 				}
 				defer fc.Close()
 			}
-			if err := runLuciferTask(b, a, annotWriter, ta, b.DUTName()); err != nil {
+			if err := runLuciferTask(b, a, annotWriter, ta, i.DUTName); err != nil {
 				return errors.Wrap(err, "run lucifer task")
 			}
 			return nil
