@@ -439,6 +439,7 @@ SPECS = {s.spec.tag: s for s in (
   Universal('uritemplate', '3.0.0'),
   Universal('urllib3', '1.22'),
   Universal('yapf', '0.22.0'),
+  Universal('yapf', '0.24.0'),
 
   Infra('infra_libs'),
 )}
