@@ -39,8 +39,8 @@
       [end]
      [end]
      <h1 class="not_styled_as_heading">
-       <a href="[issue.crbug_url]" title="crbug link">Issue [issue.local_id]</a>
-       <a href="detail?id=[issue.local_id]" class="material-icons" title="direct link">link</a>
+       Issue [issue.local_id]
+       <a href="[issue.crbug_url]" class="material-icons" title="crbug link">link</a>
      </h1>
 
    </div> [# end issuemetaheader]
