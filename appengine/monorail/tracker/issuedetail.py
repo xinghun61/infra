@@ -146,10 +146,7 @@ class IssueDetail(issuepeek.IssuePeek):
               moved_to_project_name=moved_to_project_name,
               moved_to_id=moved_to_id,
               local_id=mr.local_id,
-              page_perms=page_perms,
-              delete_form_token=xsrf.GenerateToken(
-                  mr.auth.user_id, '/p/%s%s.do' % (
-                      mr.project_name, urls.ISSUE_DELETE_JSON)))
+              page_perms=page_perms)
         else:
           # Issue is not "missing," moved, or deleted, it is just non-existent.
           return self._GetMissingIssuePageData(mr, issue_not_created=True)
@@ -353,9 +350,6 @@ class IssueDetail(issuepeek.IssuePeek):
         'delComment_form_token': xsrf.GenerateToken(
             mr.auth.user_id, '/p/%s%s.do' % (
                 mr.project_name, urls.ISSUE_COMMENT_DELETION_JSON)),
-       'delete_form_token': xsrf.GenerateToken(
-            mr.auth.user_id, '/p/%s%s.do' % (
-                mr.project_name, urls.ISSUE_DELETE_JSON)),
         'flag_spam_token': xsrf.GenerateToken(
             mr.auth.user_id, '/p/%s%s.do' % (
                 mr.project_name, urls.ISSUE_FLAGSPAM_JSON)),
@@ -1122,37 +1116,6 @@ class IssueCommentDeletion(servlet.Servlet):
       kwargs['hotlist_id'] = hotlist_id
     return framework_helpers.FormatAbsoluteURL(
         mr, urls.ISSUE_DETAIL, **kwargs)
-
-
-class IssueDeleteForm(servlet.Servlet):
-  """A form handler to delete or undelete an issue.
-
-  Project owners will see a button on every issue to delete it, and
-  if they specifically visit a deleted issue they will see a button to
-  undelete it.
-  """
-
-  def ProcessFormData(self, mr, post_data):
-    """Process the form that un/deletes an issue comment.
-
-    Args:
-      mr: commonly used info parsed from the request.
-      post_data: The post_data dict for the current request.
-
-    Returns:
-      String URL to redirect the user to after processing.
-    """
-    local_id = int(post_data['id'])
-    delete = 'delete' in post_data
-    logging.info('Marking issue %d as deleted: %r', local_id, delete)
-
-    with work_env.WorkEnv(mr, self.services) as we:
-      issue = we.GetIssueByLocalID(
-          mr.project_id, local_id, allow_viewing_deleted=True)
-      we.DeleteIssue(issue, delete)
-
-    return framework_helpers.FormatAbsoluteURL(
-        mr, urls.ISSUE_DETAIL, id=local_id)
 
 # TODO(jrobbins): do we want this?
 # class IssueDerivedLabelsJSON(jsonfeed.JsonFeed)

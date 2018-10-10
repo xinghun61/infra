@@ -99,7 +99,6 @@ ISSUE_PEEK = '/issues/peek'  # not served, only used in issuepeek.py
 ISSUE_COMMENT_DELETION_JSON = '/issues/delComment'
 ISSUE_ATTACHMENT_DELETION_JSON = '/issues/delAttachment'
 ISSUE_FLAGSPAM_JSON = '/issues/flagspam'
-ISSUE_DELETE_JSON = '/issues/delete'
 ISSUE_ENTRY = '/issues/entry'
 ISSUE_ENTRY_AFTER_LOGIN = '/issues/entryafterlogin'
 ISSUE_BULK_EDIT = '/issues/bulkedit'

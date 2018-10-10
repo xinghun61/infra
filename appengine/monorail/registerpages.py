@@ -231,7 +231,6 @@ class ServletRegistry(object):
         urls.ISSUE_ATTACHMENT_DELETION_JSON:
             issueattachment.IssueAttachmentDeletion,
         urls.ISSUE_FLAGSPAM_JSON: spam.FlagSpamForm,
-        urls.ISSUE_DELETE_JSON: issuedetail.IssueDeleteForm,
         urls.ISSUE_ENTRY: issueentry.IssueEntry,
         urls.ISSUE_ENTRY_AFTER_LOGIN: issueentryafterlogin.IssueEntryAfterLogin,
         urls.ISSUE_TIPS: issuetips.IssueSearchTips,
