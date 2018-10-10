@@ -100,6 +100,7 @@ func commentOnBugToAcknowledgeMerge(ctx context.Context, cfg *RepoConfig, rc *Re
 			if success {
 				logging.Infof(ctx, "Found bug(s): '%s' on relevant commit %s", bugID, rc.CommitHash)
 				bugList := strings.Split(bugID, ",")
+				validBugs := ""
 				for _, bug := range bugList {
 					bugNumber, err := strconv.Atoi(bug)
 					if err != nil {
@@ -115,13 +116,20 @@ func commentOnBugToAcknowledgeMerge(ctx context.Context, cfg *RepoConfig, rc *Re
 					comment := fmt.Sprintf(mergeAckComment, cfg.LinkToCommit(rc.CommitHash), rc.CommitHash, rc.AuthorAccount, rc.CommitterAccount, rc.CommitTime, rc.CommitMessage)
 					err = postComment(ctx, cfg, int32(vIssue.Id), comment, cs, labels)
 					if err != nil {
-						return "", err
+						logging.Errorf(ctx, "Could not comment on bug %s", bug)
+						continue
 					}
-					return fmt.Sprintf("Comment posted on BUG=%d", bugNumber), nil
+					if validBugs == "" {
+						validBugs = bug
+					} else {
+						validBugs += fmt.Sprintf(",%s", bug)
+					}
 				}
-			} else {
-				return "", fmt.Errorf("No bug found on revision %s", rc.CommitHash)
+				if validBugs != "" {
+					return fmt.Sprintf("Comment posted on BUG(S)=%s", validBugs), nil
+				}
 			}
+			return "", fmt.Errorf("No bug found or could not comment on bug(s) found on revision %s", rc.CommitHash)
 		}
 	}
 	return "No notification required", nil

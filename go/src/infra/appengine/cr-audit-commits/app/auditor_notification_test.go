@@ -217,7 +217,7 @@ func TestNotifier(t *testing.T) {
 				CommitHash:   "badc0de",
 			}
 			err = ds.Get(ctx, rc)
-			So(rc.GetNotificationState("rulesAck"), ShouldEqual, "Comment posted on BUG=8675389")
+			So(rc.GetNotificationState("rulesAck"), ShouldEqual, "Comment posted on BUG(S)=8675389")
 			So(rc.NotifiedAll, ShouldBeTrue)
 			m := mail.GetTestable(ctx)
 			So(m.SentMessages(), ShouldBeEmpty)
