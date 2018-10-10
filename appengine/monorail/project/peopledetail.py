@@ -265,19 +265,3 @@ class PeopleDetail(servlet.Servlet):
 
     self.services.project.UpdateProjectRoles(
         cnxn, project.project_id, owner_ids, committer_ids, contributor_ids)
-
-
-class PagePrefs(jsonfeed.JsonFeed):
-  """Remember a user pref for hide/show state of people permissions."""
-
-  def HandleRequest(self, mr):
-    """Store the logged in user's preference for the people detail page."""
-    expanded = bool(mr.GetIntParam('perms_expanded'))
-    logging.info('setting expanded: %r', expanded)
-
-    if mr.auth.user_id:
-      self.services.user.UpdateUserSettings(
-          mr.cnxn, mr.auth.user_id, mr.auth.user_pb,
-          keep_people_perms_open=expanded)
-
-    return {'expanded': expanded}

@@ -181,7 +181,6 @@ class ServletRegistry(object):
         urls.ADMIN_INTRO: projectsummary.ProjectSummary,
         urls.PEOPLE_LIST: peoplelist.PeopleList,
         urls.PEOPLE_DETAIL: peopledetail.PeopleDetail,
-        urls.PEOPLE_DETAIL_PREFS_JSON: peopledetail.PagePrefs,
         urls.UPDATES_LIST: projectupdates.ProjectUpdates,
         urls.ADMIN_META: projectadmin.ProjectAdmin,
         urls.ADMIN_ADVANCED: projectadminadvanced.ProjectAdminAdvanced,

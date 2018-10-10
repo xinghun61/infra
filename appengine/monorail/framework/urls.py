@@ -19,7 +19,6 @@ SUMMARY = '/'  # Now just a redirect to /issues/list
 UPDATES_LIST = '/updates/list'
 PEOPLE_LIST = '/people/list'
 PEOPLE_DETAIL = '/people/detail'
-PEOPLE_DETAIL_PREFS_JSON = '/people/detailPrefs'
 ADMIN_META = '/admin'
 ADMIN_ADVANCED = '/adminAdvanced'
 
