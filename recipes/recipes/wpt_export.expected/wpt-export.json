@@ -148,28 +148,6 @@
   },
   {
     "cmd": [
-      "git",
-      "config",
-      "user.name",
-      "Chromium WPT Sync"
-    ],
-    "cwd": "[START_DIR]/src",
-    "infra_step": true,
-    "name": "set git config user.name"
-  },
-  {
-    "cmd": [
-      "git",
-      "config",
-      "user.email",
-      "blink-w3c-test-autoroller@chromium.org"
-    ],
-    "cwd": "[START_DIR]/src",
-    "infra_step": true,
-    "name": "set git config user.email"
-  },
-  {
-    "cmd": [
       "python",
       "-u",
       "[START_DIR]/src/third_party/blink/tools/wpt_export.py",

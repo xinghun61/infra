@@ -12,8 +12,6 @@ pull requests.
 See: //docs/testing/web_platform_tests.md (https://goo.gl/rSRGmZ)
 """
 
-import contextlib
-
 DEPS = [
   'build/chromium',
   'depot_tools/bot_update',
@@ -30,10 +28,6 @@ DEPS = [
 def RunSteps(api):
   api.gclient.set_config('chromium')
   api.bot_update.ensure_checkout()
-  api.git('config', 'user.name', 'Chromium WPT Sync',
-          name='set git config user.name')
-  api.git('config', 'user.email', 'blink-w3c-test-autoroller@chromium.org',
-          name='set git config user.email')
 
   script = api.path['checkout'].join('third_party', 'blink', 'tools',
                                      'wpt_export.py')

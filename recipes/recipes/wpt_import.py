@@ -19,6 +19,7 @@ DEPS = [
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/git',
+  'depot_tools/git_cl',
   'recipe_engine/context',
   'recipe_engine/file',
   'recipe_engine/json',
@@ -35,8 +36,12 @@ def RunSteps(api):
   api.bot_update.ensure_checkout()
   api.git('config', 'user.name', 'Chromium WPT Sync',
           name='set git config user.name')
-  api.git('config', 'user.email', 'blink-w3c-test-autoroller@chromium.org',
-          name='set git config user.email')
+  # LUCI sets user.email automatically.
+  if not api.runtime.is_luci:
+    api.git('config', 'user.email', 'blink-w3c-test-autoroller@chromium.org',
+            name='set git config user.email')
+  api.git_cl.set_config('basic')
+  api.git_cl.c.repo_location = api.path['checkout']
   blink_dir = api.path['checkout'].join('third_party', 'blink')
 
   # Set up a dummy HOME to avoid being affected by GCE default creds.
@@ -115,9 +120,10 @@ def RunSteps(api):
 
 def git_cl_issue_link(api):
   """Runs a step which adds a link to the current CL if there is one."""
-  issue_step = api.m.git(
-      'cl', 'issue', '--json', api.json.output(),
-      name='git cl issue')
+  issue_step = api.git_cl(
+      'issue', ['--json', api.json.output()],
+      name='git cl issue'
+  )
   issue_result = issue_step.json.output
   if not issue_result or not issue_result.get('issue_url'):
       return

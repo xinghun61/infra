@@ -160,17 +160,6 @@
   {
     "cmd": [
       "git",
-      "config",
-      "user.email",
-      "blink-w3c-test-autoroller@chromium.org"
-    ],
-    "cwd": "[START_DIR]/src",
-    "infra_step": true,
-    "name": "set git config user.email"
-  },
-  {
-    "cmd": [
-      "git",
       "checkout",
       "origin/master"
     ],
@@ -217,14 +206,12 @@
   },
   {
     "cmd": [
-      "git",
-      "cl",
+      "RECIPE_PACKAGE_REPO[depot_tools]/git_cl.py",
       "issue",
       "--json",
       "/path/to/tmp/json"
     ],
     "cwd": "[START_DIR]/src",
-    "infra_step": true,
     "name": "git cl issue",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
