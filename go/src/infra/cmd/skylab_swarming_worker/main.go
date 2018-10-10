@@ -48,11 +48,12 @@ import (
 
 func main() {
 	log.SetPrefix(fmt.Sprintf("%s: ", filepath.Base(os.Args[0])))
-	log.Printf("skylab_swarming_worker starting with args: %s", os.Args)
+	log.Printf("Starting with args: %s", os.Args)
 	a := parseArgs()
-	if err := runSwarmingTask(a); err != nil {
+	if err := mainInner(a); err != nil {
 		log.Fatalf("Error: %s", err)
 	}
+	log.Printf("Exited successfully")
 }
 
 type args struct {
@@ -83,7 +84,7 @@ func parseArgs() *args {
 
 const gcpProject = "chromeos-skylab"
 
-func runSwarmingTask(a *args) (err error) {
+func mainInner(a *args) error {
 	ctx := context.Background()
 	// Set up Go logger for LUCI libraries.
 	ctx = gologger.StdConfig.Use(ctx)
