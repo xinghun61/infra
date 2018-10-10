@@ -8,7 +8,7 @@ DEPS = [
   'recipe_engine/path',
   'recipe_engine/platform',
   'recipe_engine/step',
-  'wct',
+  'build/wct',
 ]
 
 def RunSteps(api):
