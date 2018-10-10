@@ -26,7 +26,7 @@ func prepareHostInfo(b *swarming.Bot, i *Info) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	bi := b.BotInfo
+	bi := i.BotInfo
 	for label, value := range bi.ProvisionableLabels {
 		hi.Labels = append(hi.Labels, fmt.Sprintf("%s:%s", label, value))
 	}

@@ -23,30 +23,31 @@ import (
 	"infra/cmd/skylab_swarming_worker/internal/event"
 	"infra/cmd/skylab_swarming_worker/internal/lucifer"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
+	"infra/cmd/skylab_swarming_worker/internal/swarming/harness"
 )
 
 type luciferResult struct {
 	TestsFailed int
 }
 
-func runLuciferJob(b *swarming.Bot, w io.Writer, r lucifer.RunJobArgs) (*luciferResult, error) {
+func runLuciferJob(b *swarming.Bot, i *harness.Info, w io.Writer, r lucifer.RunJobArgs) (*luciferResult, error) {
 	cmd := lucifer.RunJobCommand(b.LuciferConfig(), r)
 	c := make(chan os.Signal, 1)
 	defer close(c)
 	signal.Notify(c, unix.SIGTERM, unix.SIGINT)
 	defer signal.Stop(c)
 	go listenAndAbort(c, r.AbortSock)
-	return runLuciferCommand(b, w, cmd)
+	return runLuciferCommand(b, i, w, cmd)
 }
 
-func runLuciferAdminTask(b *swarming.Bot, w io.Writer, r lucifer.AdminTaskArgs) (*luciferResult, error) {
+func runLuciferAdminTask(b *swarming.Bot, i *harness.Info, w io.Writer, r lucifer.AdminTaskArgs) (*luciferResult, error) {
 	cmd := lucifer.AdminTaskCommand(b.LuciferConfig(), r)
 	c := make(chan os.Signal)
 	defer close(c)
 	signal.Notify(c, unix.SIGTERM, unix.SIGINT)
 	defer signal.Stop(c)
 	go listenAndAbort(c, r.AbortSock)
-	return runLuciferCommand(b, w, cmd)
+	return runLuciferCommand(b, i, w, cmd)
 }
 
 // listenAndAbort sends an abort to an abort socket when signals are
@@ -74,7 +75,7 @@ func abort(path string) error {
 }
 
 // runLuciferCommand runs a Lucifer exec.Cmd and processes Lucifer events.
-func runLuciferCommand(b *swarming.Bot, w io.Writer, cmd *exec.Cmd) (*luciferResult, error) {
+func runLuciferCommand(b *swarming.Bot, i *harness.Info, w io.Writer, cmd *exec.Cmd) (*luciferResult, error) {
 	log.Printf("Running %s %s", cmd.Path, strings.Join(cmd.Args, " "))
 	cmd.Stderr = os.Stderr
 
@@ -89,7 +90,7 @@ func runLuciferCommand(b *swarming.Bot, w io.Writer, cmd *exec.Cmd) (*luciferRes
 		case isHostStatus(e):
 			s := hostStateUpdates[e]
 			log.Printf("Got host event '%s', set host state to %s", e, s)
-			b.BotInfo.HostState = s
+			i.BotInfo.HostState = s
 		default:
 			log.Printf("Skipping lucifer event: %s", e)
 		}

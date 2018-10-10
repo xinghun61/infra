@@ -8,18 +8,14 @@ Package swarming provides tools for swarming bots.
 package swarming
 
 import (
-	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
-	"infra/cmd/skylab_swarming_worker/internal/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/lucifer"
 )
 
 // Bot contains information about the current swarming bot.
-// BotInfo is only populated if LoadBotInfo is called.
 type Bot struct {
 	AutotestPath  string
 	Env           string
@@ -27,9 +23,6 @@ type Bot struct {
 	Inventory     Inventory
 	LuciferBinDir string
 	Task          Task
-
-	// BotInfo stores the BotInfo for LoadBotInfo and DumpBotInfo.
-	BotInfo *botinfo.BotInfo
 }
 
 /*
@@ -89,40 +82,4 @@ func (b *Bot) ResultsDir() string {
 	// TODO(pprabhu): Reflect the requesting swarming server URL in the resultdir.
 	// This will truly disambiguate results between different swarming servers.
 	return filepath.Join(b.AutotestPath, "results", fmt.Sprintf("swarming-%s", b.Task.ID))
-}
-
-// LoadBotInfo loads the BotInfo for the Bot.  If the BotInfo is
-// changed, DumpBotInfo should be called afterward.
-func (b *Bot) LoadBotInfo() error {
-	b.BotInfo = &botinfo.BotInfo{}
-	data, err := ioutil.ReadFile(botinfoFilePath(b))
-	if err != nil {
-		return err
-	}
-	if err := botinfo.Unmarshal(data, b.BotInfo); err != nil {
-		return err
-	}
-	return nil
-}
-
-// DumpBotInfo writes the BotInfo for the Bot for persistence.
-func (b *Bot) DumpBotInfo() error {
-	if b.BotInfo == nil {
-		return errors.New("DumpBotInfo: BotInfo is nil")
-	}
-	data, err := botinfo.Marshal(b.BotInfo)
-	if err != nil {
-		return err
-	}
-	return ioutil.WriteFile(botinfoFilePath(b), data, 0666)
-}
-
-// botinfoFilePath returns the path for caching dimensions for the given bot.
-func botinfoFilePath(b *Bot) string {
-	return filepath.Join(botinfoDirPath(b), fmt.Sprintf("%s.json", b.DUTID))
-}
-
-// botinfoDir returns the path to the cache directory for the given bot.
-func botinfoDirPath(b *Bot) string {
-	return filepath.Join(b.AutotestPath, "swarming_state")
 }

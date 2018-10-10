@@ -17,6 +17,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"infra/cmd/skylab_swarming_worker/internal/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
 )
 
@@ -29,26 +30,28 @@ type Func func(*swarming.Bot, *Info) error
 type Info struct {
 	ResultsDir string
 	DUTName    string
+	BotInfo    *botinfo.BotInfo
 }
 
 // Run calls a function with a Swarming harness, which prepares and
 // cleans up the results directory and host info.
 func Run(b *swarming.Bot, f Func) (err error) {
 	i := Info{}
-	dn, err := loadDUTName(b)
+	i.DUTName, err = loadDUTName(b)
 	if err != nil {
 		return errors.Wrap(err, "load DUT name")
 	}
-	i.DUTName = dn
 
-	if err := b.LoadBotInfo(); err != nil {
+	i.BotInfo, err = loadBotInfo(b)
+	if err != nil {
 		return errors.Wrap(err, "load bot info")
 	}
 	defer func() {
-		if err2 := b.DumpBotInfo(); err == nil && err2 != nil {
+		if err2 := dumpBotInfo(b, i.BotInfo); err == nil && err2 != nil {
 			err = errors.Wrap(err2, "dump bot info")
 		}
 	}()
+
 	i.ResultsDir, err = prepareResultsDir(b)
 	if err != nil {
 		return errors.Wrap(err, "prepare results dir")
@@ -67,7 +70,7 @@ func Run(b *swarming.Bot, f Func) (err error) {
 		return errors.Wrap(err, "prepare host info failed")
 	}
 	defer func() {
-		if err2 := updateBotInfoFromHostInfo(hiPath, b.BotInfo); err == nil && err2 != nil {
+		if err2 := updateBotInfoFromHostInfo(hiPath, i.BotInfo); err == nil && err2 != nil {
 			err = errors.Wrap(err2, "dimensions update from host info failed")
 		}
 	}()

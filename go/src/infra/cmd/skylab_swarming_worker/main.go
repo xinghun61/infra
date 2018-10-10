@@ -127,7 +127,7 @@ func runSwarmingTask(a *args) (err error) {
 				}
 				defer fc.Close()
 			}
-			if err := runLuciferTask(b, a, annotWriter, ta, i.DUTName); err != nil {
+			if err := runLuciferTask(b, i, a, annotWriter, ta, i.DUTName); err != nil {
 				return errors.Wrap(err, "run lucifer task")
 			}
 			return nil
@@ -135,13 +135,13 @@ func runSwarmingTask(a *args) (err error) {
 	)
 }
 
-func runLuciferTask(b *swarming.Bot, a *args, logdogOutput io.Writer, ta lucifer.TaskArgs, dutName string) error {
+func runLuciferTask(b *swarming.Bot, i *harness.Info, a *args, logdogOutput io.Writer, ta lucifer.TaskArgs, dutName string) error {
 	if n, ok := getAdminTask(a.taskName); ok {
-		if err := runAdminTask(b, n, logdogOutput, ta, dutName); err != nil {
+		if err := runAdminTask(b, i, n, logdogOutput, ta, dutName); err != nil {
 			return errors.Wrap(err, "run admin task")
 		}
 	} else {
-		if err := runTest(b, a, logdogOutput, ta, dutName); err != nil {
+		if err := runTest(b, i, a, logdogOutput, ta, dutName); err != nil {
 			return errors.Wrap(err, "run test")
 		}
 	}
@@ -159,7 +159,7 @@ func getAdminTask(name string) (task string, ok bool) {
 }
 
 // runTest runs a test.
-func runTest(b *swarming.Bot, a *args, logdogOutput io.Writer, ta lucifer.TaskArgs, dutName string) (err error) {
+func runTest(b *swarming.Bot, i *harness.Info, a *args, logdogOutput io.Writer, ta lucifer.TaskArgs, dutName string) (err error) {
 	// TODO(ayatane): Always reboot between each test for now.
 	tc := prejobTaskControl{
 		runReset:     true,
@@ -178,7 +178,7 @@ func runTest(b *swarming.Bot, a *args, logdogOutput io.Writer, ta lucifer.TaskAr
 		XProvisionLabels: a.xProvisionLabels,
 	}
 
-	lr, err := runLuciferJob(b, logdogOutput, r)
+	lr, err := runLuciferJob(b, i, logdogOutput, r)
 	if err != nil {
 		return errors.Wrap(err, "run lucifer failed")
 	}
@@ -235,14 +235,14 @@ func choosePrejobTask(tc prejobTaskControl, hostDirty, hostProtected bool) autot
 }
 
 // runAdminTask runs an admin task.  name is the name of the task.
-func runAdminTask(b *swarming.Bot, name string, logdogOutput io.Writer, ta lucifer.TaskArgs, dutName string) (err error) {
+func runAdminTask(b *swarming.Bot, i *harness.Info, name string, logdogOutput io.Writer, ta lucifer.TaskArgs, dutName string) (err error) {
 	r := lucifer.AdminTaskArgs{
 		TaskArgs: ta,
 		Host:     dutName,
 		Task:     name,
 	}
 
-	if _, err := runLuciferAdminTask(b, logdogOutput, r); err != nil {
+	if _, err := runLuciferAdminTask(b, i, logdogOutput, r); err != nil {
 		return errors.Wrap(err, "run lucifer failed")
 	}
 	return nil
