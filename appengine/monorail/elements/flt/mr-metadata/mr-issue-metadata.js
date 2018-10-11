@@ -42,6 +42,10 @@ class MrIssueMetadata extends ReduxMixin(Polymer.Element) {
         type: Boolean,
         statePath: 'starringIssue',
       },
+      _components: {
+        type: Array,
+        statePath: selectors.componentsForIssue,
+      },
       _fieldDefs: {
         type: Array,
         statePath: selectors.fieldDefsForIssue,

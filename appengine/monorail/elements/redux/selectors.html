@@ -9,7 +9,11 @@
     // multiple issues, and this selector will have to find the viewed
     // issue based on a viewed issue ref.
     const viewedIssue = state => state.issue;
-    const fieldDefs = state => state.projectConfig && state.projectConfig.fieldDefs;
+    const projectConfig = state => state.projectConfig;
+    const fieldDefs = createSelector(
+      projectConfig,
+      config => config && config.fieldDefs
+    );
     const issueFieldValues = createSelector(
       viewedIssue,
       issue => issue && issue.fieldValues
@@ -47,6 +51,27 @@
           }
         }
         return acc;
+      }
+    );
+    // Look up components by path.
+    const componentsMap = createSelector(
+      projectConfig,
+      (config) => {
+        if (!config || !config.componentDefs) return new Map();
+        const acc = new Map();
+        for (const v of config.componentDefs) {
+          let key = v.path;
+          acc.set(key, v);
+        }
+        return acc;
+      }
+    );
+    // Get the list of full componentDefs for the viewed issue.
+    const componentsForIssue = createSelector(
+      viewedIssue,
+      componentsMap,
+      (issue, components) => {
+        return issue.componentRefs.map((comp) => components.get(comp.path));
       }
     );
     const fieldDefsForIssue = createSelector(
@@ -101,10 +126,13 @@
 
     const selectors = Object.freeze({
       viewedIssue,
+      projectConfig,
       fieldDefs,
       issueFieldValues,
       issueType,
       issueFieldValueMap,
+      componentsMap,
+      componentsForIssue,
       fieldDefsForIssue,
       fieldDefsForPhases,
       fieldDefsByApprovalName,
