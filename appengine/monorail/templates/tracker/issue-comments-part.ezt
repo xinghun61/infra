@@ -60,14 +60,14 @@
   [end]
 
   [is show_comment "Yes"]
-    <div class="[if-any comments.is_deleted_bool] delcom ifExpand[end]">
+    <div class="[if-any comments.is_deleted_bool] delcom ifExpand[end]"
+         id="hc[comments.sequence]-undeleted">
       [include "issue-comment-normal-part.ezt" arg0]
     </div>
-    [if-any comments.is_deleted_bool]
-      <div class="ifCollapse">
-        [include "issue-comment-tombstone-part.ezt" arg0]
-      </div>
-    [end]
+    <div class="[if-any comments.is_deleted_bool]ifCollapse[else]hidden[end]"
+         id="hc[comments.sequence]-deleted">
+      [include "issue-comment-tombstone-part.ezt" arg0]
+    </div>
   [else]
     [include "issue-comment-tombstone-part.ezt" arg0]
   [end][# show_comment]

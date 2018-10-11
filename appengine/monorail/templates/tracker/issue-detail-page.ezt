@@ -58,15 +58,17 @@
    <div id="issue_meta_details">
    [include "issue-meta-part.ezt" "show make changes below"]
 
-   [is any_visible_deleted "true"]
-    <br><br>
-    <div style="text-align:right; margin-right:.3em; font-size:90%">
-     <a class="ifCollapse toggleCollapse" href="#"
-        style="white-space:nowrap">Show deleted comments</a>
-     <a class="ifExpand toggleCollapse" href="#"
-        style="white-space:nowrap">Hide deleted comments</a>
-    </div>
-   [end]
+     <div id="toggle-show-deleted-comments"
+          class="[is any_visible_deleted "true"][else]hidden[end]">
+      <br><br>
+      <div style="text-align:right; margin-right:.3em; font-size:90%">
+       <a class="ifCollapse toggleCollapse" href="#"
+          style="white-space:nowrap">Show deleted comments</a>
+       <a class="ifExpand toggleCollapse" href="#"
+          style="white-space:nowrap">Hide deleted comments</a>
+      </div>
+     </div>
+
    </div>
   </div> [# end meta-float]
 
@@ -270,15 +272,56 @@ runOnLoad(function() {
        _TKR_syncStarIcons($("star"), "star2");
     });
 
-  var delCommentElements = document.getElementsByClassName("delComment");
+  const delCommentElements = document.getElementsByClassName('delComment');
   for (var i = 0; i < delCommentElements.length; ++i) {
-     var el = delCommentElements[[]i];
-     el.addEventListener("click", function(event) {
-         var sequence = event.target.getAttribute("data-sequence");
-         var mode = event.target.getAttribute("data-mode");
-         delComment(sequence, mode);
-         event.preventDefault();
-     });
+    const el = delCommentElements[[]i];
+    el.addEventListener("click", function(event) {
+      const sequence = event.target.getAttribute('data-sequence');
+      const mode = Number(event.target.getAttribute('data-mode'));
+      event.target.setAttribute('data-mode', 1 - mode);
+
+      window.prpcClient.call('monorail.Issues', 'DeleteIssueComment', {
+        issueRef: {
+          projectName: window.CS_env.projectName,
+          localId: [issue.local_id],
+        },
+        sequenceNum: sequence,
+        delete: Boolean(mode),
+      });
+
+      const hcId = 'hc' + sequence + '-';
+      const undeletedComment = $(hcId + 'undeleted');
+      const deletedComment = $(hcId + 'deleted');
+      const undeletedCommentControls = $(hcId + 'undeleted-controls');
+      const deletedCommentControls = $(hcId + 'deleted-controls');
+      if (mode) {
+        undeletedComment.classList.add('ifExpand');
+        undeletedComment.classList.add('delcom');
+
+        deletedComment.classList.remove('hidden');
+        deletedComment.classList.add('ifCollapse');
+
+        undeletedCommentControls.classList.add('hidden');
+        deletedCommentControls.classList.remove('hidden');
+      } else {
+        undeletedComment.classList.remove('ifExpand');
+        undeletedComment.classList.remove('delcom');
+
+        deletedComment.classList.remove('ifCollapse');
+        deletedComment.classList.add('hidden');
+
+        undeletedCommentControls.classList.remove('hidden');
+        deletedCommentControls.classList.add('hidden');
+      }
+
+      if (document.getElementsByClassName('delcom').length) {
+        $('toggle-show-deleted-comments').classList.remove('hidden');
+      } else {
+        $('toggle-show-deleted-comments').classList.add('hidden');
+      }
+
+      event.preventDefault();
+    });
   }
 
   function flagComment(comment_id, sequence_num, isSpam) {

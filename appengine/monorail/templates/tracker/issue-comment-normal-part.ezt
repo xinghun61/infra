@@ -1,4 +1,4 @@
-<div class="cursor_off vt issuecomment" id="hc[comments.sequence]">
+<div class="cursor_off vt issuecomment">
 
   <div class="issuecommentheader">
     <span class="author">
@@ -25,25 +25,35 @@
        class='loading' style='display:none;'>Processing</span>
 
       [if-any comments.can_delete_bool][if-any arg0]
-        [if-any comments.is_deleted_bool]
-         <div style="font-size:90%">
-          This comment is not visible to normal users.
-         </div>
-         [if-any comments.is_spam_bool]
-           <a style="font-size: 90%" href="#"
-            class="flagComment" data-spam="[comments.is_spam]" data-id="[comments.id]"
-            data-sequence='[comments.sequence]'
-           >Unmark this comment as spam</a>
-         [else]
-           <a style="font-size: 90%" href="#"
-            class="delComment" data-sequence="[comments.sequence]" data-mode="0"
-           >Undelete comment</a>
-         [end]
-        [else]
-         <a style="font-size: 90%" href="#"
-          class="delComment" data-sequence="[comments.sequence]" data-mode="1"
-          >Delete comment</a>
-        [end]
+        <div id="hc[comments.sequence]-undeleted-controls"
+             class="[if-any comments.is_deleted_bool]hidden[end]"
+             style="display: contents">
+          <a style="font-size: 0.9em" href="#"
+             class="delComment" data-sequence="[comments.sequence]"
+             data-mode="1">
+            Delete comment
+          </a>
+        </div>
+        <div id="hc[comments.sequence]-deleted-controls"
+             class="[if-any comments.is_deleted_bool][else]hidden[end]"
+             style="display: contents">
+          <div style="font-size:90%">
+            This comment is not visible to normal users.
+          </div>
+          [if-any comments.is_spam_bool]
+            <a style="font-size: 0.9em" href="#"
+               class="flagComment" data-spam="[comments.is_spam]"
+               data-id="[comments.id]" data-sequence='[comments.sequence]'>
+              Unmark this comment as spam
+            </a>
+          [else]
+            <a style="font-size: 0.9em" href="#"
+               class="delComment" data-sequence="[comments.sequence]"
+               data-mode="0">
+              Undelete comment
+            </a>
+          [end]
+        </div>
       [end][end]
 
       [if-any page_perms.FlagSpam]
