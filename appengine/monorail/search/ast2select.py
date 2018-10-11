@@ -712,7 +712,6 @@ _PROCESSORS = {
     'attachment': _ProcessAttachmentCond,
     'hotlist_id': _ProcessHotlistIDCond,
     'hotlist': _ProcessHotlistCond,
-    'gate': _ProcessPhaseCond,
     }
 
 
@@ -748,6 +747,14 @@ def _ProcessCond(cond_num, cond, snapshot_mode):
   elif field_def.field_name in _PROCESSORS:
     proc = _PROCESSORS[field_def.field_name]
     return proc(cond, alias, spare_alias, snapshot_mode)
+
+  #  Any phase conditions use the sql.SHORTHAND['phase_cond'], which expects a
+  # 'Phase' alias. 'phase_cond' cannot expect a 'Spare' alias because
+  # _ProcessCustomFieldCond also creates a phase_cond string where it uses the
+  # 'Phase' alias because it needs the 'Spare' alias for other conditions.
+  elif field_def.field_name == 'gate':
+    phase_alias = 'Phase%d' % cond_num
+    return _ProcessPhaseCond(cond, alias, phase_alias, snapshot_mode)
 
   elif field_def.field_id:  # it is a search on a custom field
     phase_alias = 'Phase%d' % cond_num

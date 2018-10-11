@@ -768,8 +768,8 @@ SHORTHAND = {
                      r'\)?' % COMPARE_OP_PAT),
     'phase_cond': (r'\(?'
                    r'('
-                   r'(LOWER\(Spare\d+\.name\) IS NULL OR )?'
-                   r'LOWER\(Spare\d+\.name\) '
+                   r'(LOWER\(Phase\d+\.name\) IS NULL OR )?'
+                   r'LOWER\(Phase\d+\.name\) '
                    r'(%s %%s|IN \(%%s(, ?%%s)*\))'
                    r'( (AND|OR) )?'
                    r')+'
@@ -830,7 +830,8 @@ JOIN_RE_LIST = [
         r'^{table}{opt_alias} ON {tab_col} = {tab_col}'
         r'( AND {tab_col} = {tab_col})?'
         r'( AND {tab_col} = {placeholder})?'
-        r' AND \(?{tab_col} {compare_op} {placeholder}\)?$'),
+        r' AND \(?{tab_col} {compare_op} {placeholder}\)?'
+        r'( AND {tab_col} = {tab_col})?$'),
     _MakeRE(
         r'^{table}{opt_alias} ON {tab_col} = {tab_col}'
         r'( AND {tab_col} = {tab_col})?'
@@ -862,6 +863,8 @@ JOIN_RE_LIST = [
         r'^\({table} AS {table} JOIN IssuePhaseDef AS {table} '
         r'ON {tab_col} = {tab_col} AND {phase_cond}\) '
         r'ON Issue.id = {tab_col}?'),
+    _MakeRE(
+        r'^IssuePhaseDef AS {table} ON {phase_cond}'),
     _MakeRE(
         r'^Issue2ApprovalValue AS {table} ON {tab_col} = {tab_col} '
         r'AND {tab_col} = {placeholder} AND {approval_cond}'),
