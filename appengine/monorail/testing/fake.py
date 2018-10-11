@@ -1747,11 +1747,19 @@ class IssueService(object):
   def SoftDeleteComment(
       self, cnxn, issue, comment, deleted_by_user_id, user_service,
       delete=True, reindex=False, is_spam=False):
+    print "Soft deleting", comment
+    pid = comment.project_id
+    by_iid_idx = self.comments_by_iid[issue.issue_id].index(comment)
+    by_project_idx = (
+        self.comments_by_project[pid][issue.local_id].index(comment))
     comment.is_spam = is_spam
     if delete:
       comment.deleted_by = deleted_by_user_id
     else:
       comment.reset('deleted_by')
+    self.comments_by_project[pid][issue.local_id][by_project_idx] = comment
+    self.comments_by_iid[issue.issue_id][by_iid_idx] = comment
+    self.comments_by_cid[comment.id] = comment
 
   def DeleteComponentReferences(self, _cnxn, component_id):
     for _, issue in self.issues_by_iid.iteritems():

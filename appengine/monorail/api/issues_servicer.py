@@ -460,3 +460,18 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
 
     result = issues_pb2.DeleteIssueResponse()
     return result
+
+  @monorail_servicer.PRPCMethod
+  def DeleteIssueComment(self, mc, request):
+    """Mark or unmark the given comment as deleted."""
+    _project, issue, _config = self._GetProjectIssueAndConfig(
+        mc, request.issue_ref, use_cache=False)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      comments = we.ListIssueComments(issue)
+      if request.sequence_num >= len(comments):
+        raise exceptions.InputException('Invalid sequence number.')
+      we.DeleteComment(issue, comments[request.sequence_num], request.delete)
+
+    result = issues_pb2.DeleteIssueCommentResponse()
+    return result

@@ -33,6 +33,7 @@ service Issues {
   rpc PresubmitIssue (PresubmitIssueRequest) returns (PresubmitIssueResponse) {}
   rpc RerankBlockedOnIssues (RerankBlockedOnIssuesRequest) returns (RerankBlockedOnIssuesResponse) {}
   rpc DeleteIssue (DeleteIssueRequest) returns (DeleteIssueResponse) {}
+  rpc DeleteIssueComment (DeleteIssueCommentRequest) returns (DeleteIssueCommentResponse) {}
 }
 
 
@@ -311,4 +312,18 @@ message DeleteIssueRequest {
 
 // Next available tag: 1
 message DeleteIssueResponse {
+}
+
+
+// Next available tag: 5
+message DeleteIssueCommentRequest {
+  RequestTrace trace = 1;
+  IssueRef issue_ref = 2;
+  uint32 sequence_num = 3;
+  bool delete = 4;
+}
+
+
+// Next available tag: 1
+message DeleteIssueCommentResponse {
 }

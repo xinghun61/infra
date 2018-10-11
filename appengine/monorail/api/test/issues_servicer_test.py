@@ -1243,3 +1243,63 @@ class IssuesServicerTest(unittest.TestCase):
 
     issue = self.services.issue.GetIssue(self.cnxn, self.issue_1.issue_id)
     self.assertFalse(issue.deleted)
+
+  def testDeleteIssueComment_Delete(self):
+    """We can delete an issue comment."""
+    comment = tracker_pb2.IssueComment(
+        project_id=self.project.project_id,
+        issue_id=self.issue_1.issue_id,
+        user_id=111L,
+        content='Foo',
+        timestamp=12345L)
+    self.services.issue.TestAddComment(comment, self.issue_1.local_id)
+
+    request = issues_pb2.DeleteIssueCommentRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        sequence_num=1,
+        delete=True)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    self.CallWrapped(self.issues_svcr.DeleteIssueComment, mc, request)
+
+    comment = self.services.issue.GetComment(self.cnxn, comment.id)
+    self.assertEqual(111L, comment.deleted_by)
+
+  def testDeleteIssueComment_Undelete(self):
+    """We can undelete an issue comment."""
+    comment = tracker_pb2.IssueComment(
+        project_id=self.project.project_id,
+        issue_id=self.issue_1.issue_id,
+        user_id=111L,
+        content='Foo',
+        timestamp=12345L,
+        deleted_by=111L)
+    self.services.issue.TestAddComment(comment, self.issue_1.local_id)
+
+    request = issues_pb2.DeleteIssueCommentRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        sequence_num=1,
+        delete=False)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    self.CallWrapped(self.issues_svcr.DeleteIssueComment, mc, request)
+
+    comment = self.services.issue.GetComment(self.cnxn, comment.id)
+    self.assertIsNone(comment.deleted_by)
+
+  def testDeleteIssueComment_InvalidSequenceNum(self):
+    request = issues_pb2.DeleteIssueCommentRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        sequence_num=1,
+        delete=True)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+
+    with self.assertRaises(exceptions.InputException):
+      self.CallWrapped(self.issues_svcr.DeleteIssueComment, mc, request)
