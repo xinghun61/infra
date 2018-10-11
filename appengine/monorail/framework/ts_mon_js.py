@@ -16,6 +16,11 @@ from google.appengine.api import users
 from infra_libs import ts_mon
 
 
+ISSUE_CREATE_LATENCY_METRIC = ts_mon.CumulativeDistributionMetric(
+  'monorail/frontend/issue_create_latency', (
+    'Latency between Issue Entry form submission and page load of '
+    'the subsequent issue page.'
+  ), field_spec=[ts_mon.StringField('client_id')])
 ISSUE_UPDATE_LATENCY_METRIC = ts_mon.CumulativeDistributionMetric(
   'monorail/frontend/issue_update_latency', (
     'Latency between Issue Update form submission and page load of '
@@ -27,7 +32,9 @@ class MonorailTSMonJSHandler(TSMonJSHandler):
 
   def __init__(self, request=None, response=None):
     super(MonorailTSMonJSHandler, self).__init__(request, response)
-    self.register_metrics([ISSUE_UPDATE_LATENCY_METRIC])
+    self.register_metrics([
+        ISSUE_CREATE_LATENCY_METRIC,
+        ISSUE_UPDATE_LATENCY_METRIC])
 
   def xsrf_is_valid(self, body):
     """This method expects the body dictionary to include two fields:

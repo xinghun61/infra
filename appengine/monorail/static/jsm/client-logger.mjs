@@ -61,6 +61,16 @@ export class ClientLogger {
           (new Map([['client_id', TSMonClient.stringField('client_id')]])),
         ),
       },
+      {
+        category: 'issues',
+        eventName: 'new-issue',
+        metric: this.ts_mon.cumulativeDistribution(
+          'monorail/frontend/issue_create_latency',
+          'Latency between issue entry form submit and issue detail page load.',
+          null,
+          (new Map([['client_id', TSMonClient.stringField('client_id')]])),
+        ),
+      },
     ];
 
     const categoryKey = `ClientLogger.${category}.started`;
