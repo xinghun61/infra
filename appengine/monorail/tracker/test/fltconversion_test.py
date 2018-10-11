@@ -11,8 +11,10 @@ import settings
 from framework import exceptions
 from framework import permissions
 from services import service_manager
-from testing import testing_helpers
 from tracker import fltconversion
+from testing import fake
+from testing import testing_helpers
+from proto import tracker_pb2
 
 class FLTConvertTask(unittest.TestCase):
 
@@ -35,3 +37,51 @@ class FLTConvertTask(unittest.TestCase):
     settings.app_id = 'monorail-prod'
     self.assertRaises(exceptions.ActionNotSupported,
                       self.task.AssertBasePermission, self.mr)
+
+class ConvertLaunchLabels(unittest.TestCase):
+
+  def setUp(self):
+    self.project_fds = [
+        tracker_pb2.FieldDef(
+            field_id=1, project_id=789, field_name='String',
+            field_type=tracker_pb2.FieldTypes.STR_TYPE),
+        tracker_pb2.FieldDef(
+            field_id=2, project_id=789, field_name='Chrome-UX',
+            field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE),
+        tracker_pb2.FieldDef(
+            field_id=3, project_id=789, field_name='Chrome-Privacy',
+            field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE)
+        ]
+    approvalUX = tracker_pb2.ApprovalValue(
+        approval_id=2, status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
+    approvalPrivacy = tracker_pb2.ApprovalValue(approval_id=3)
+    self.approvals = [approvalUX, approvalPrivacy]
+    self.issue = fake.MakeTestIssue(001, 1, 'summary', 'New', 111L)
+
+  def testConvertLaunchLabels_Normal(self):
+    self.issue.labels = [
+        'Launch-UX-NotReviewed', 'Launch-Privacy-Yes', 'Launch-NotRelevant']
+    actual = fltconversion.ConvertLaunchLabels(
+        self.issue, self.approvals, self.project_fds)
+    expected = [
+      tracker_pb2.ApprovalValue(
+          approval_id=2, status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW),
+      tracker_pb2.ApprovalValue(
+          approval_id=3, status=tracker_pb2.ApprovalStatus.APPROVED)
+    ]
+    self.assertEqual(actual, expected)
+
+  def testConvertLaunchLabels_ExtraAndMissingLabels(self):
+    self.issue.labels = [
+        'Blah-Launch-Privacy-Yes',  # Missing, this is not a valid Label
+        'Launch-Security-Yes',  # Extra, no matching approval in given approvals
+        'Launch-UI-Yes']  # Missing Launch-Privacy
+    actual = fltconversion.ConvertLaunchLabels(
+        self.issue, self.approvals, self.project_fds)
+    expected = [
+        tracker_pb2.ApprovalValue(
+            approval_id=2, status=tracker_pb2.ApprovalStatus.APPROVED),
+      tracker_pb2.ApprovalValue(
+          approval_id=3, status=tracker_pb2.ApprovalStatus.NOT_SET)
+        ]
+    self.assertEqual(actual, expected)
