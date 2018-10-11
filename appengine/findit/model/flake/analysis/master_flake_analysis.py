@@ -626,3 +626,20 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
 
   # Track the time the autorevert has been submitted.
   autorevert_submission_time = ndb.DateTimeProperty(indexed=True)
+
+  # Post-analysis/recent flakiness verification fields. These fields should be
+  # used mutually-exclusively from those during main analysis.
+
+  # Whether a check for recent flakiness is in progress. Used to update the UI
+  # and to prevent a scheduling of multiple checks for recent flakiness when one
+  # is already in progress. Values are expected to be either None or those
+  # defined in |libs.analysis_status.py|
+  analyze_recent_flakiness_status = ndb.IntegerProperty(indexed=False)
+
+  # Any error associated with flakiness verification.
+  analyze_recent_flakiness_error = ndb.JsonProperty(indexed=False)
+
+  # The url path to the pipeline status page for checking recent flakiness. Do
+  # not override |pipeline_status_path| for debugging reasons.
+  analyze_recent_flakiness_pipeline_status_path = (
+      ndb.StringProperty(indexed=False))

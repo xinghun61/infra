@@ -10,6 +10,7 @@ import mock
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
 from infra_api_clients import logdog_util
+from model.isolated_target import IsolatedTarget
 from model.wf_build import WfBuild
 from services import swarming
 from waterfall import build_util
@@ -247,6 +248,45 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
   def testGetLatestBuildNumberNoRecentCompletedBuilds(self, _):
     self.assertIsNone(build_util.GetLatestBuildNumber('m', 'b'))
 
+  @mock.patch.object(IsolatedTarget, 'FindIsolateBeforeCommitPositionByMaster')
+  def testGetLatestCommitPositionWithTargets(self, mocked_target):
+    master_name = 'm'
+    builder_name = 'b'
+    target_name = 't'
+    expected_commit_position = 1000
+    target = IsolatedTarget.Create(87654321, '', '', master_name, builder_name,
+                                   '', '', '', '', target_name, '',
+                                   expected_commit_position)
+    mocked_target.return_value = [target]
+    self.assertEqual(
+        expected_commit_position,
+        build_util.GetLatestCommitPosition(master_name, builder_name,
+                                           target_name))
+
+  @mock.patch.object(
+      IsolatedTarget,
+      'FindIsolateBeforeCommitPositionByMaster',
+      return_value=None)
+  @mock.patch.object(build_util, 'GetLatestBuildNumber')
+  @mock.patch.object(build_util, 'GetBuildInfo')
+  def testGetLatestCommitPositionWithBuild(self, mocked_build,
+                                           mocked_build_number, _):
+    master_name = 'm'
+    builder_name = 'b'
+    target_name = 't'
+    latest_build_number = 12345
+    expected_commit_position = 100000
+    mocked_build_number.return_value = latest_build_number
+    mocked_build_info = BuildInfo(master_name, builder_name,
+                                  latest_build_number)
+    mocked_build_info.commit_position = expected_commit_position
+    mocked_build.return_value = 200, mocked_build_info
+
+    self.assertEqual(
+        expected_commit_position,
+        build_util.GetLatestCommitPosition(master_name, builder_name,
+                                           target_name))
+
   @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags')
   def testFindValidBuildNumberForStepNearby(self, mock_list_fn):
     # pylint: disable=unused-argument
@@ -336,7 +376,8 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
   def testGetLogLocationForBuildForLUCIBuildNoBuildbucketBuild(self, _):
     data_json = {
         'properties': [[
-            'buildbucket', {
+            'buildbucket',
+            {
                 'hostname': 'cr-buildbucket.appspot.com',
                 'build': {
                     'created_ts':
@@ -361,7 +402,8 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
   def testGetLogLocationForBuildForLUCIBuild(self, _):
     data_json = {
         'properties': [[
-            'buildbucket', {
+            'buildbucket',
+            {
                 'hostname': 'cr-buildbucket.appspot.com',
                 'build': {
                     'created_ts':

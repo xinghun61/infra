@@ -21,16 +21,17 @@ from model.flake.analysis.flake_try_job_data import FlakeTryJobData
 from model.flake.analysis.master_flake_analysis import DataPoint
 from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakePipeline
+from pipelines.flake_failure import initialize_analyze_recent_flakiness_pipeline
 from waterfall import buildbot
 from waterfall.flake import flake_analysis_service
 from waterfall.test import wf_testcase
 
 
 class CheckFlakeTest(wf_testcase.WaterfallTestCase):
-  app_module = webapp2.WSGIApplication(
-      [
-          ('/waterfall/flake', check_flake.CheckFlake),
-      ], debug=True)
+  app_module = webapp2.WSGIApplication([
+      ('/waterfall/flake', check_flake.CheckFlake),
+  ],
+                                       debug=True)
 
   @mock.patch.object(
       check_flake.auth_util, 'GetUserEmail', return_value='email')
@@ -838,14 +839,15 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'build_number': build_number - 3,
         'git_hash': 'git_hash_2',
         'try_job_url': try_job_url
-    }, {
-        'commit_position': 5,
-        'pass_rate': success_rate,
-        'task_ids': [],
-        'build_number': build_number,
-        'git_hash': 'git_hash_5',
-        'try_job_url': try_job_url
-    }]
+    },
+                       {
+                           'commit_position': 5,
+                           'pass_rate': success_rate,
+                           'task_ids': [],
+                           'build_number': build_number,
+                           'git_hash': 'git_hash_5',
+                           'try_job_url': try_job_url
+                       }]
     self.assertEqual(expected_result, check_flake._GetCoordinatesData(analysis))
 
   def testGetNumbersOfDataPointGroups(self):
@@ -1245,3 +1247,30 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         status=404)
     self.assertEqual('Root pipeline couldn\'t be found.',
                      response.json_body.get('error_message'))
+
+  @mock.patch.object(
+      check_flake.token, 'ValidateAuthToken', return_value=(True, False))
+  @mock.patch.object(initialize_analyze_recent_flakiness_pipeline,
+                     'AnalyzeRecentCommitPosition')
+  def testRequestAnalyzeRecentFlakinessWhenAuthorized(
+      self, mocked_analyze_recent_flakiness, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.Save()
+
+    self.mock_current_user(user_email='test@google.com', is_admin=True)
+
+    self.test_app.post(
+        '/waterfall/flake',
+        params={
+            'key': analysis.key.urlsafe(),
+            'analyze_recent_commit': '1',
+            'format': 'json'
+        })
+    mocked_analyze_recent_flakiness.assert_called_with(analysis.key.urlsafe())

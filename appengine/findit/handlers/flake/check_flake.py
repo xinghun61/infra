@@ -18,6 +18,7 @@ from model.flake.analysis.flake_analysis_request import FlakeAnalysisRequest
 from model.flake.analysis.flake_try_job import FlakeTryJob
 from model.flake.analysis.flake_try_job_data import FlakeTryJobData
 from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
+from pipelines.flake_failure import initialize_analyze_recent_flakiness_pipeline
 from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakePipeline
 from waterfall import buildbot
 from waterfall.flake import flake_analysis_service
@@ -394,10 +395,24 @@ class CheckFlake(BaseHandler):
     return self.CreateRedirect(
         '/waterfall/flake?redirect=1&key=%s' % analysis.key.urlsafe())
 
-  def _HandleAnalyzeRecentCommit(self):  # pragma: no cover.
-    # TODO(crbug.com/889638): Implement handler.
-    return self.CreateError(
-        'Analyzing a recent commit position is not yet implemented', 403)
+  def _HandleAnalyzeRecentCommit(self):
+    key = self.request.get('key')
+
+    if not key:  # pragma: no cover. This is unexpected.
+      return self.CreateError('No key was provided.', 404)
+
+    analysis = ndb.Key(urlsafe=key).get()
+
+    if not analysis:  # pragma: no cover. This is unexpected.
+      logging.error(
+          'Invalid key provided when attemtping to analyze recent flakiness')
+      return self.CreateError('Analysis of flake is not found.', 404)
+
+    initialize_analyze_recent_flakiness_pipeline.AnalyzeRecentCommitPosition(
+        analysis.key.urlsafe())
+
+    return self.CreateRedirect(
+        '/waterfall/flake?redirect=1&key=%s' % analysis.key.urlsafe())
 
   @token.VerifyXSRFToken()
   def HandlePost(self):

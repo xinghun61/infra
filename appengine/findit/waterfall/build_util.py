@@ -11,7 +11,9 @@ from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
 from infra_api_clients import logdog_util
 from libs import time_util
+from model.isolated_target import IsolatedTarget
 from model.wf_build import WfBuild
+from services import constants as services_constants
 from services import swarming
 from waterfall import buildbot
 
@@ -152,6 +154,30 @@ def GetLatestBuildNumber(master_name, builder_name):
     return None
 
   return recent_builds[0]
+
+
+def GetLatestCommitPosition(master_name, builder_name, target_name):
+  """Gets the latest commit position given a master/builder/target."""
+  latest_targets = (
+      IsolatedTarget.FindIsolateBeforeCommitPositionByMaster(
+          master_name, builder_name, services_constants.GITILES_HOST,
+          services_constants.GITILES_PROJECT, services_constants.GITILES_REF,
+          target_name, float('inf')))
+
+  if latest_targets:
+    return latest_targets[0].commit_position
+
+  # Fallback to buildbot for builds not yet migrated to LUCI.
+  # TODO (crbug.com/804617): Remove fallback logic after migration is complete.
+  latest_build_number = GetLatestBuildNumber(master_name, builder_name)
+
+  if not latest_build_number:
+    # Something is wrong. Calling code should be responsible for checking for
+    # the return value.
+    return None
+
+  _, latest_build = GetBuildInfo(master_name, builder_name, latest_build_number)
+  return latest_build.commit_position
 
 
 # TODO(crbug/821865): Remove this after new flake pipelines are stable.
