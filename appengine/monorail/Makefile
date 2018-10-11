@@ -84,6 +84,10 @@ deps:
 	bower install
 	npm install --no-save
 
+	mkdir -p deployed_node_modules/chart.js/dist/
+	ln -sf ../../../node_modules/chart.js/dist/Chart.min.js \
+		deployed_node_modules/chart.js/dist/Chart.min.js
+
 	rm -f bower_components/chopsui
 	ln -sf ../../../crdx/chopsui bower_components/chopsui
 
