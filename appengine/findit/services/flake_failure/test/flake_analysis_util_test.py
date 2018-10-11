@@ -232,3 +232,35 @@ class FlakeAnalysisUtilTest(WaterfallTestCase):
 
     self.assertFalse(flake_analysis_util._BotsAvailableForTask(None))
     self.assertTrue(flake_analysis_util._BotsAvailableForTask(step_metadata))
+
+  def testShouldTakeAutoActionForRerun(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    self.assertFalse(flake_analysis_util.ShouldTakeAutoAction(analysis, True))
+
+  def testShouldTakeAutoActionLikelyFalsePositive(self):
+    culprit_commit_position = 1000
+    culprit = FlakeCulprit.Create('chromium', 'r', culprit_commit_position)
+    culprit.put()
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
+    analysis.data_points = [
+        DataPoint.Create(
+            commit_position=culprit_commit_position, pass_rate=0.5),
+        DataPoint.Create(
+            commit_position=culprit_commit_position - 1, pass_rate=0.0)
+    ]
+    self.assertFalse(flake_analysis_util.ShouldTakeAutoAction(analysis, False))
+
+  def testShouldTakeAutoAction(self):
+    culprit_commit_position = 1000
+    culprit = FlakeCulprit.Create('chromium', 'r', culprit_commit_position)
+    culprit.put()
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
+    analysis.data_points = [
+        DataPoint.Create(
+            commit_position=culprit_commit_position, pass_rate=0.5),
+        DataPoint.Create(
+            commit_position=culprit_commit_position - 1, pass_rate=1.0)
+    ]
+    self.assertTrue(flake_analysis_util.ShouldTakeAutoAction(analysis, False))

@@ -76,6 +76,14 @@ class PassRateUtilTest(WaterfallTestCase):
     self.assertFalse(
         pass_rate_util.HasSufficientInformation(1.0, 100, 0.97, 30))
 
+  def testIsStableFailing(self):
+    self.assertTrue(pass_rate_util.IsStableFailing(0))
+    self.assertTrue(pass_rate_util.IsStableFailing(0.00000001))
+    self.assertFalse(pass_rate_util.IsStableFailing(-1))
+    self.assertFalse(pass_rate_util.IsStableFailing(0.01))
+    self.assertFalse(pass_rate_util.IsStableFailing(0.5))
+    self.assertFalse(pass_rate_util.IsStableFailing(1.0))
+
   def testIsFullyStable(self):
     self.assertTrue(pass_rate_util.IsFullyStable(-1))
     self.assertTrue(pass_rate_util.IsFullyStable(0.0))

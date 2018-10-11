@@ -97,13 +97,15 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
     self.assertEqual(result_status.NOT_FOUND_UNTRIAGED, analysis.result_status)
 
+  @mock.patch.object(
+      flake_analysis_util, 'ShouldTakeAutoAction', return_value=True)
   @mock.patch.object(crrev, 'RedirectByCommitPosition')
   @mock.patch.object(flake_analysis_util, 'UpdateCulprit')
   @mock.patch.object(confidence_score_util, 'CalculateCulpritConfidenceScore')
   @mock.patch.object(swarmed_test_util, 'GetTestLocation')
   def testAnalyzeFlakePipelineAnalysisFinishedWithCulprit(
       self, mocked_test_location, mocked_confidence, mocked_culprit,
-      mocked_revision):
+      mocked_revision, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -183,13 +185,15 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     self.assertEqual(result_status.FOUND_UNTRIAGED, analysis.result_status)
     mocked_revision.assert_called_once_with(mock.ANY, 999)
 
+  @mock.patch.object(
+      flake_analysis_util, 'ShouldTakeAutoAction', return_value=False)
   @mock.patch.object(crrev, 'RedirectByCommitPosition')
   @mock.patch.object(flake_analysis_util, 'UpdateCulprit')
   @mock.patch.object(confidence_score_util, 'CalculateCulpritConfidenceScore')
   @mock.patch.object(swarmed_test_util, 'GetTestLocation')
-  def testAnalyzeFlakePipelineAnalysisFinishedWithCulpritRerun(
+  def testAnalyzeFlakePipelineAnalysisFinishedWithCulpritNoAutoAction(
       self, mocked_test_location, mocked_confidence, mocked_culprit,
-      mocked_revision):
+      mocked_revision, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123

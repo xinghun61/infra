@@ -16,6 +16,7 @@ from model.flake.analysis.flake_culprit import FlakeCulprit
 from services import constants
 from services import swarming
 from services.flake_failure import flake_constants
+from services.flake_failure import pass_rate_util
 from waterfall import waterfall_config
 
 _GIT_REPO = CachedGitilesRepository(FinditHttpClient(),
@@ -154,6 +155,43 @@ def GetETAToStartAnalysis(manually_triggered):
 
   # Convert back to UTC.
   return time_util.ConvertPSTToUTC(eta)
+
+
+def ShouldTakeAutoAction(analysis, rerun):
+  """Determines whether auto action should be taken.
+
+    Rules for auto actions:
+      1. The analysis must not be a rerun to prevent spamming.
+      2. The culprit cannot be stable failing --> flaky, as these are always
+         false positives. Such instances should be interpreted separately as
+         mentioned in crbug.com/809705.
+
+  Args:
+    analysis (MasterFlakeAnalysis): The analysis for which auto actions are to
+      be performed.
+    rerun (bool): Whether this is a rerun of an existing analysis.
+
+  Returns:
+    (bool) Whether or not auto actions should be performed.
+  """
+  if rerun:  # pragma: no branch
+    analysis.LogInfo('Bailing out of auto actions for rerun')
+    return False
+
+  if analysis.culprit_urlsafe_key:  # pragma: no branch
+    culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
+    assert culprit, 'Culprit missing unexpectedly!'
+
+    previous_data_point = analysis.FindMatchingDataPointWithCommitPosition(
+        culprit.commit_position - 1)
+
+    if pass_rate_util.IsStableFailing(previous_data_point.pass_rate):
+      analysis.LogInfo(
+          'Bailing out of auto action for stable failing --> flaky Refer to '
+          'crbug.com/809705 for reference')
+      return False
+
+  return True
 
 
 def ShouldThrottleAnalysis():

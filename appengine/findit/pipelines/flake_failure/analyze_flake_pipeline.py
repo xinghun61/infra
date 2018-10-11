@@ -159,54 +159,54 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
           culprit_urlsafe_key=culprit.key.urlsafe(),
           result_status=result_status.FOUND_UNTRIAGED)
 
-      if parameters.rerun:
-        # Skip performing auto actions for rerun to prevent spamming.
-        analysis.LogInfo('Bailing out of taking auto actions for admin rerun')
-        return
-
+      # TODO(crbug.com/893787): Auto actions to live outside of analysis.
       with pipeline.InOrder():
-        # Determine the test's location for filing bugs.
-        culprit_data_point = analysis.FindMatchingDataPointWithCommitPosition(
-            culprit_commit_position)
-        assert culprit_data_point, 'Culprit unexpectedly missing!'
+        if flake_analysis_util.ShouldTakeAutoAction(
+            analysis, parameters.rerun):  # pragma: no branch
+          # Determine the test's location for filing bugs.
+          culprit_data_point = analysis.FindMatchingDataPointWithCommitPosition(
+              culprit_commit_position)
+          assert culprit_data_point, 'Culprit unexpectedly missing!'
 
-        test_location = swarmed_test_util.GetTestLocation(
-            culprit_data_point.GetSwarmingTaskId(), analysis.test_name)
+          test_location = swarmed_test_util.GetTestLocation(
+              culprit_data_point.GetSwarmingTaskId(), analysis.test_name)
 
-        # Data needed for reverts.
-        build_key = BaseBuildModel.CreateBuildKey(
-            analysis.original_master_name, analysis.original_builder_name,
-            analysis.original_build_number)
-        # Log Monorail bug.
-        yield CreateBugForFlakePipeline(
-            self.CreateInputObjectInstance(
-                CreateBugForFlakeInput,
-                analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
-                step_metadata=parameters.step_metadata,
-                test_location=test_location))
+          # Data needed for reverts.
+          build_key = BaseBuildModel.CreateBuildKey(
+              analysis.original_master_name, analysis.original_builder_name,
+              analysis.original_build_number)
+          # Log Monorail bug.
+          yield CreateBugForFlakePipeline(
+              self.CreateInputObjectInstance(
+                  CreateBugForFlakeInput,
+                  analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+                  step_metadata=parameters.step_metadata,
+                  test_location=test_location))
 
-        # Revert culprit if applicable.
-        yield CreateAndSubmitRevertPipeline(
-            self.CreateInputObjectInstance(
-                CreateAndSubmitRevertInput,
-                analysis_urlsafe_key=analysis.key.urlsafe(),
-                build_key=build_key))
+          # Revert culprit if applicable.
+          yield CreateAndSubmitRevertPipeline(
+              self.CreateInputObjectInstance(
+                  CreateAndSubmitRevertInput,
+                  analysis_urlsafe_key=analysis.key.urlsafe(),
+                  build_key=build_key))
 
-        # Update bug with result.
-        yield UpdateMonorailBugPipeline(
-            self.CreateInputObjectInstance(
-                UpdateMonorailBugInput,
-                analysis_urlsafe_key=analysis_urlsafe_key))
+          # Update bug with result.
+          yield UpdateMonorailBugPipeline(
+              self.CreateInputObjectInstance(
+                  UpdateMonorailBugInput,
+                  analysis_urlsafe_key=analysis_urlsafe_key))
 
-        # Update culprit code review.
-        yield NotifyCulpritPipeline(
-            self.CreateInputObjectInstance(
-                NotifyCulpritInput, analysis_urlsafe_key=analysis_urlsafe_key))
+          # Update culprit code review.
+          yield NotifyCulpritPipeline(
+              self.CreateInputObjectInstance(
+                  NotifyCulpritInput,
+                  analysis_urlsafe_key=analysis_urlsafe_key))
 
-        # Report events to BQ.
-        yield ReportAnalysisEventPipeline(
-            self.CreateInputObjectInstance(
-                ReportEventInput, analysis_urlsafe_key=analysis_urlsafe_key))
+        if not parameters.rerun:  # pragma: no branch
+          # Report events to BQ.
+          yield ReportAnalysisEventPipeline(
+              self.CreateInputObjectInstance(
+                  ReportEventInput, analysis_urlsafe_key=analysis_urlsafe_key))
         return
 
     commit_info = crrev.RedirectByCommitPosition(FinditHttpClient(),

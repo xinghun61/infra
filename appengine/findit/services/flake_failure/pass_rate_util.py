@@ -150,6 +150,25 @@ def HasSufficientInformation(overall_pass_rate, total_iterations,
           not IsStableDefaultThresholds(theoretical_maximum_pass_rate))
 
 
+def IsStableFailing(pass_rate):
+  """Determines whether a pass rate is failing stably.
+
+  Args:
+    pass_rate (float): The pass rate to check.
+
+  Returns:
+    whether or not |pass_rate| is stable failing, e.g. 0%.
+  """
+  assert pass_rate is not None, 'Usage: pass_rate cannot be None'
+
+  flake_settings = waterfall_config.GetCheckFlakeSettings()
+  lower_flake_threshold = flake_settings.get(
+      'lower_flake_threshold', flake_constants.DEFAULT_LOWER_FLAKE_THRESHOLD)
+
+  # Nonexistent tests are considered stable passing.
+  return not TestDoesNotExist(pass_rate) and pass_rate < lower_flake_threshold
+
+
 def IsFullyStable(pass_rate):
   """Determines whether a pass rate is fully stable.
 
