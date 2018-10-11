@@ -39,7 +39,7 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 				"w0": NewWorker(),
 				"w1": &Worker{Labels: []string{"label1"}},
 			},
-			Requests: map[string]*task.Request{
+			QueuedRequests: map[string]*task.Request{
 				"t1": &task.Request{AccountId: "a1", Labels: []string{"label1"}},
 				"t2": &task.Request{AccountId: "a1", Labels: []string{"label2"}},
 			},
@@ -149,7 +149,7 @@ func TestSchedulerPreempt(t *testing.T) {
 						"a1": vector.New(),
 						"a2": vector.New(1),
 					},
-					Requests: map[string]*task.Request{
+					QueuedRequests: map[string]*task.Request{
 						"t1": &task.Request{AccountId: "a2"},
 					},
 					Workers: map[string]*Worker{
@@ -191,7 +191,7 @@ func TestSchedulerPreempt(t *testing.T) {
 						// thus is banned from preempting jobs.
 						"a2": vector.New(0.9 * account.PromoteThreshold),
 					},
-					Requests: map[string]*task.Request{
+					QueuedRequests: map[string]*task.Request{
 						"t1": &task.Request{AccountId: "a1"},
 						"t2": &task.Request{AccountId: "a2"},
 					},
@@ -395,7 +395,7 @@ func TestAddRequest(t *testing.T) {
 	s := New()
 	r := &task.Request{}
 	s.AddRequest("r1", r)
-	if s.state.Requests["r1"] != r {
+	if s.state.QueuedRequests["r1"] != r {
 		t.Errorf("AddRequest did not enqueue request.")
 	}
 }

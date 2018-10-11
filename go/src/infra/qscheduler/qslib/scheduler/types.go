@@ -32,9 +32,9 @@ func NewConfig() *Config {
 // NewState creates an returns a new State instance with all maps initialized.
 func NewState() *State {
 	return &State{
-		Balances: map[string]*vector.Vector{},
-		Requests: map[string]*task.Request{},
-		Workers:  map[string]*Worker{},
+		Balances:       map[string]*vector.Vector{},
+		QueuedRequests: map[string]*task.Request{},
+		Workers:        map[string]*Worker{},
 	}
 }
 

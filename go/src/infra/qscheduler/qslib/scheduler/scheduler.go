@@ -71,7 +71,7 @@ func (e *UpdateOrderError) Error() string {
 func (s *Scheduler) AddRequest(id string, request *task.Request) {
 	// TODO(akeshet): Handle already-enqueued task.
 	// TODO(akeshet): Handle already-running task.
-	s.state.Requests[id] = request
+	s.state.QueuedRequests[id] = request
 }
 
 // UpdateTime updates the current time for a quotascheduler, and

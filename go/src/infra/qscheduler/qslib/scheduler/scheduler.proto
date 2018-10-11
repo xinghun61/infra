@@ -40,9 +40,9 @@ message Worker {
 // configuration information. The state is expected to be updated frequently,
 // on each scheduler tick.
 message State {
-  // Requests that are waiting to be assigned to a worker, keyed by
-  // request id.
-  map<string, task.Request> requests = 1;
+  // QueuedRequests is the set of Requests that are waiting to be assigned to a
+  // worker, keyed by request id.
+  map<string, task.Request> queued_requests = 1;
 
   // Balance of all quota accounts for this pool, keyed by account id.
   map<string, vector.Vector> balances = 2;

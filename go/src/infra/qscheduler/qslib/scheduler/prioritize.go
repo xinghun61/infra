@@ -55,8 +55,8 @@ func (s *Scheduler) prioritizeRequests() orderedRequests {
 
 	// Initial pass: compute priority for each task based purely on account
 	// balance.
-	requests := make(orderedRequests, 0, len(state.Requests))
-	for id, req := range state.Requests {
+	requests := make(orderedRequests, 0, len(state.QueuedRequests))
+	for id, req := range state.QueuedRequests {
 		accoutBalance := state.Balances[req.AccountId]
 		p := account.BestPriorityFor(accoutBalance)
 		requests = append(requests, prioritizedRequest{

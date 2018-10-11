@@ -28,12 +28,12 @@ import (
 func TestIdle(t *testing.T) {
 	t.Parallel()
 	state := &State{
-		Requests: map[string]*task.Request{"t1": &task.Request{}},
-		Workers:  map[string]*Worker{"w1": NewWorker()},
+		QueuedRequests: map[string]*task.Request{"t1": &task.Request{}},
+		Workers:        map[string]*Worker{"w1": NewWorker()},
 	}
 
 	expect := &State{
-		Requests: map[string]*task.Request{},
+		QueuedRequests: map[string]*task.Request{},
 		Workers: map[string]*Worker{
 			"w1": &Worker{RunningTask: &task.Run{
 				RequestId: "t1",
@@ -59,7 +59,7 @@ func TestPreempt(t *testing.T) {
 			"a1": vector.New(),
 			"a2": vector.New(2),
 		},
-		Requests: map[string]*task.Request{
+		QueuedRequests: map[string]*task.Request{
 			"t2": &task.Request{AccountId: "a2"},
 		},
 		Workers: map[string]*Worker{
@@ -77,7 +77,7 @@ func TestPreempt(t *testing.T) {
 			"a1": vector.New(1),
 			"a2": vector.New(1),
 		},
-		Requests: map[string]*task.Request{
+		QueuedRequests: map[string]*task.Request{
 			"t1": &task.Request{AccountId: "a1"},
 		},
 		Workers: map[string]*Worker{

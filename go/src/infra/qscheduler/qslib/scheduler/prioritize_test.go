@@ -46,7 +46,7 @@ func TestBasicPrioritization(t *testing.T) {
 			&Scheduler{
 				&State{
 					Balances: map[string]*vector.Vector{"a1": vector.New(1, 0, 0)},
-					Requests: map[string]*task.Request{
+					QueuedRequests: map[string]*task.Request{
 						"t1": &task.Request{AccountId: "a1"},
 					},
 				},
@@ -59,7 +59,7 @@ func TestBasicPrioritization(t *testing.T) {
 		{
 			&Scheduler{
 				&State{
-					Requests: map[string]*task.Request{"t1": &task.Request{}},
+					QueuedRequests: map[string]*task.Request{"t1": &task.Request{}},
 				},
 				NewConfig(),
 			},
@@ -92,7 +92,7 @@ func TestPrioritizeWithEnqueueTimeTieBreaker(t *testing.T) {
 
 	state := &State{
 		Balances: map[string]*vector.Vector{"a1": vector.New(1, 0, 0)},
-		Requests: map[string]*task.Request{
+		QueuedRequests: map[string]*task.Request{
 			"t2": &lR,
 			"t1": &eR,
 		},
@@ -142,8 +142,8 @@ func TestDemoteBeyondFanout(t *testing.T) {
 			"a1": {},
 			"a2": {},
 		},
-		Requests: reqs,
-		Workers:  workers,
+		QueuedRequests: reqs,
+		Workers:        workers,
 	}
 
 	priList := []prioritizedRequest{
@@ -231,9 +231,9 @@ func TestPrioritize(t *testing.T) {
 	}
 
 	state := &State{
-		Balances: balances,
-		Requests: reqs,
-		Workers:  getWorkers(running),
+		Balances:       balances,
+		QueuedRequests: reqs,
+		Workers:        getWorkers(running),
 	}
 
 	expected := orderedRequests([]prioritizedRequest{

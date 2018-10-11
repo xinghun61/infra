@@ -30,7 +30,7 @@ func (m *Assignment) apply(state *State) {
 	}
 
 	cost := vector.New()
-	newTask := state.Requests[m.RequestId]
+	newTask := state.QueuedRequests[m.RequestId]
 
 	// If we are a preempt mutator and there is a task running, then re-enqueue it
 	// and apply refund.
@@ -63,17 +63,17 @@ func (m *Assignment) apply(state *State) {
 			state.Balances[newAcc] = &newBal
 
 			// Reenqueue the old task.
-			state.Requests[oldTask.RequestId] = oldTask.Request
+			state.QueuedRequests[oldTask.RequestId] = oldTask.Request
 		}
 
 	}
 
 	rt := &task.Run{
 		Priority:  m.Priority,
-		Request:   state.Requests[m.RequestId],
+		Request:   state.QueuedRequests[m.RequestId],
 		Cost:      cost,
 		RequestId: m.RequestId,
 	}
-	delete(state.Requests, m.RequestId)
+	delete(state.QueuedRequests, m.RequestId)
 	state.Workers[m.WorkerId].RunningTask = rt
 }
