@@ -1,0 +1,20 @@
+// Copyright 2018 The Chromium OS Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+syntax = "proto2";
+
+package chrome.chromeos_infra.skylab.proto.inventory;
+option go_package = "inventory";
+
+// NEXT TAG: 4
+enum Environment {
+  ENVIRONMENT_INVALID = 0;
+  ENVIRONMENT_PROD = 1;
+  ENVIRONMENT_STAGING = 2;
+  ENVIRONMENT_SKYLAB = 3 [deprecated=true];
+}
+
+message Timestamp {
+  optional int64 seconds = 1;
+  optional int32 nanos = 2;
+}

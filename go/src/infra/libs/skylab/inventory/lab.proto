@@ -1,0 +1,36 @@
+// Copyright 2018 The Chromium OS Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+syntax = "proto2";
+
+package chrome.chromeos_infra.skylab.proto.inventory;
+option go_package = "inventory";
+
+// This proto definition describes the on-disk configuration data describing the
+// ChromeOS skylab inventory. This is _not_ intended to be used as an API
+// definition between services. As a result, fields are marked as required
+// whenever strict checking is desired, and the proto definition can change
+// relatively freely in the future.
+
+import "connection.proto";
+import "device.proto";
+import "server.proto";
+
+// NEXT TAG: 6
+message Lab {
+  repeated chrome.chromeos_infra.skylab.proto.inventory.DeviceUnderTest
+      duts = 1;
+  repeated chrome.chromeos_infra.skylab.proto.inventory.ServoHostDevice
+      servo_hosts = 2;
+  repeated chrome.chromeos_infra.skylab.proto.inventory.ChameleonDevice
+      chamelons = 3;
+
+  repeated chrome.chromeos_infra.skylab.proto.inventory.ServoHostConnection
+      servo_host_connections = 4;
+  repeated chrome.chromeos_infra.skylab.proto.inventory.ChameleonConnection
+      chameleon_connections = 5;
+}
+
+message Infrastructure {
+  repeated chrome.chromeos_infra.skylab.proto.inventory.Server servers = 1;
+}

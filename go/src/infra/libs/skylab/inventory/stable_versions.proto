@@ -1,0 +1,27 @@
+// Copyright 2018 The Chromium OS Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+syntax = "proto2";
+
+package chrome.chromeos_infra.skylab.proto.inventory;
+option go_package = "inventory";
+
+// NEXT TAG: 5
+message StableVersions {
+  // OS image stable versions.
+  repeated StableVersion android_os_versions = 1;
+  repeated StableVersion chrome_os_versions = 2;
+
+  // Read-write firmware versions. Only relevant for ChromeOS boards.
+  repeated StableVersion rw_firmware_versions = 3;
+  // Used by FAFT testing to install the RO firmware to test. ChromeOS only.
+  repeated StableVersion faft_firmware_versions = 4;
+}
+
+// NEXT TAG: 3
+message StableVersion {
+  required string board = 1;
+  // Versions are opaque strings for the inventory. Different boards may use the
+  // version strings in different ways to obtain the actual images.
+  required string version = 2;
+}

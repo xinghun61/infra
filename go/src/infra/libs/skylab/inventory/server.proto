@@ -1,0 +1,65 @@
+// Copyright 2018 The Chromium OS Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+syntax = "proto2";
+
+package chrome.chromeos_infra.skylab.proto.inventory;
+option go_package = "inventory";
+
+import "common.proto";
+
+// NEXT TAG: 9
+message Server {
+  required string hostname = 1;
+  optional string cname = 2;
+
+  required Environment environment = 3;
+
+  // NEXT TAG: 4
+  enum Status {
+    STATUS_INVALID = 0;
+    STATUS_PRIMARY = 1;
+    STATUS_BACKUP = 2;
+    STATUS_REPAIR_REQUIRED = 3;
+  }
+  required Status status = 4;
+
+  // NEXT TAG: 14
+  // Note: Update ROLE_MAP in skylab_inventory/translation_utils.py accordingly
+  enum Role {
+    ROLE_INVALID = 0;
+    ROLE_AFE = 1;
+    ROLE_CRASH_SERVER = 2;
+    ROLE_DATABASE = 3;
+    ROLE_DATABASE_SLAVE = 4;
+    ROLE_DEVSERVER = 5;
+    ROLE_DRONE = 6;
+    ROLE_GOLO_PROXY = 7;
+    ROLE_HOST_SCHEDULER = 8;
+    ROLE_SCHEDULER = 9;
+    ROLE_SENTINEL = 10;
+    ROLE_SHARD = 11;
+    ROLE_SUITE_SCHEDULER = 12;
+    ROLE_SKYLAB_DRONE = 13;
+    ROLE_SKYLAB_SUITE_PROXY = 14;
+  }
+  repeated Role roles = 5;
+
+  optional Attributes attributes = 6;
+  optional string notes = 7;
+  // List of dut_uids serviced by this server.
+  // This can mean different things for different roles.
+  //   skylab-drone: These are the DUTs owned by the drone.
+  repeated string dut_uids = 8;
+}
+
+// NOTE: Please update SERVER_ATTRIBUTE_TYPE_MAP in
+// skylab_inventory/translation_utils.py accordingly.
+// NEXT TAG: 6
+message Attributes {
+  optional string ip = 1;
+  optional int32 max_processes = 2;
+  optional string mysql_server_id = 3;
+  optional string devserver_restricted_subnet = 4;
+  optional int32 devserver_port = 5;
+}

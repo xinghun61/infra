@@ -1,0 +1,255 @@
+// Copyright 2018 The Chromium OS Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+syntax = "proto2";
+
+package chrome.chromeos_infra.skylab.proto.inventory;
+option go_package = "inventory";
+
+// This proto definition describes the on-disk configuration data describing the
+// ChromeOS skylab inventory. This is _not_ intended to be used as an API
+// definition between services. As a result, fields are marked as required
+// whenever strict checking is desired, and the proto definition can change
+// relatively freely in the future.
+
+import "common.proto";
+
+// NEXT TAG: 4
+message Device {
+  // Each of these must contain a 'CommonDeviceSpecs common' field.
+  // We will use this informal composition based sharing rather than proto
+  // extensions because extensions are unwieldy, and we really want composition
+  // not inhertence.
+  oneof device {
+    DeviceUnderTest dut = 1;
+    ServoHostDevice servo_host = 2;
+    ChameleonDevice chameleon = 3;
+  };
+}
+
+// NEXT TAG: 2
+message DeviceUnderTest {
+  required CommonDeviceSpecs common = 1;
+}
+
+// NEXT TAG: 2
+message ServoHostDevice {
+  required CommonDeviceSpecs common = 1;
+  optional string version = 2;
+}
+
+// NEXT TAG: 2
+message ChameleonDevice {
+  required CommonDeviceSpecs common = 1;
+}
+
+// NEXT TAG: 11
+message CommonDeviceSpecs {
+  required string id = 1;
+  required string hostname = 2;
+
+  // An invariant property corresponding to the hardware deployed for this
+  // device.
+  optional string hwid = 3;
+  // An invariant about the distros inventory tag associated with the device.
+  // For ChromeOS devices, this can be read off of vboot.
+  optional string serial_number = 4;
+
+  optional Location location = 5;
+
+  // A device may be locked for multiple reasons by multiple people. All locks
+  // need to be removed for the device to go back into circulation.
+  repeated DeviceLock device_locks = 6;
+
+  // Deprecated: This is needed for the master AFE in the autotest infra to
+  // forward RPCs to the relevant shard for a device.
+  // Not to be used in skylab.
+  optional Shard owner_shard = 7 [deprecated = true];
+
+  // The scheduling system uses these to target jobs at the right kinds of
+  // devices.
+  optional SchedulableLabels labels = 8;
+
+  // These are opaque keyvals for skylab services. Devices may arbitrarily
+  // define any attributes they want.
+  repeated KeyValue attributes = 9;
+
+  optional Environment environment = 10;
+}
+
+// NEXT TAG: 5
+message Location {
+  required PhysicalLab lab = 1;
+  required int32 row = 2;
+  required int32 rack = 3;
+  required int32 host = 4;
+}
+
+// NEXT TAG: 2
+message PhysicalLab {
+  required string name = 1;
+}
+
+// A DeviceLock is a generic way of pulling any lab device out of commission
+// temporarily. This allows us to quickly take out a device without deleting it
+// from inventory. The exact effect of locking a device varies by the type of
+// device and services involved.
+// NEXT TAG: 6
+message DeviceLock {
+  required bool lock = 1 [deprecated=true];
+  // This field is informational only. Do not assume this as a real user
+  // identity in any auth domain.
+  required string locked_by = 2;
+  required string lock_reason = 3;
+  required Timestamp begin_time = 4;
+  required Timestamp expire_time = 5;
+  required int32 lock_id = 6 [deprecated=true];
+  required string id = 7;
+}
+
+// NEXT TAG: 2
+message Shard {
+  required string hostname = 1;
+}
+
+// These labels are used for scheduling decisions in skylab. They should be
+// semantically known to the inventory service to allow filtering based on them.
+// (i.e., no "extra_labels" field down here)
+//
+// NEXT TAG: ??
+message SchedulableLabels {
+  // TODO(pprabhu) Both of these should be enums, that are shared from
+  // stable_versions.proto But there are 171 of them... (guess it doesn't
+  // matter, make 'em enums)
+  optional string platform = 1;
+  optional string board = 2;
+
+  // critical_pools are pool labels that the builders are dependent on, and that
+  // the cros-infra team is responsible for managing explicitly. All other pool
+  // labels used for adhoc labeling of DUTs go into self_serve_pools.
+  //
+  // NEXT TAG: 6
+  enum DUTPool {
+    DUT_POOL_INVALID = 0;
+    DUT_POOL_CQ = 1;
+    DUT_POOL_BVT = 2;
+    DUT_POOL_SUITES = 3;
+    DUT_POOL_CTS = 4;
+    DUT_POOL_CTS_PERBUILD = 5;
+  }
+  repeated DUTPool critical_pools = 3;
+
+  repeated string self_serve_pools = 4;
+
+  optional HardwareCapabilities capabilities = 5;
+
+  // NEXT TAG: 2
+  enum ECType {
+    EC_TYPE_INVALID = 0;
+    EC_TYPE_CHROME_OS = 1;
+  }
+  optional ECType ec_type = 10;
+
+  optional string model = 13;
+
+  // NEXT TAG: 3
+  enum CTSABI {
+      CTS_ABI_INVALID = 0;
+      CTS_ABI_ARM = 1;
+      CTS_ABI_X86 = 2;
+  }
+  repeated CTSABI cts_abi = 14;
+
+  // NEXT TAG: 4
+  enum OSType {
+      OS_TYPE_INVALID = 0;
+      OS_TYPE_ANDROID = 1;
+      OS_TYPE_CROS = 2;
+      OS_TYPE_JETSTREAM = 3;
+      OS_TYPE_MOBLAB = 4;
+  }
+  optional OSType os_type = 15;
+
+  // Devices go through the phases EVT -> DVT -> PVT during early development.
+  // Post launch devices are in the MP phase.
+  // Certain phases end up having to be repeated as hardware evolves. Leave some
+  // scope for iteration within phases.
+  //
+  // NEXT TAG: 9
+  enum Phase {
+      PHASE_INVALID = 0;
+      PHASE_EVT = 1;
+      PHASE_EVT2 = 2;
+      PHASE_DVT = 3;
+      PHASE_DVT2 = 4;
+      PHASE_PVT = 5;
+      PHASE_PVT2 = 6;
+      PHASE_PVT3 = 7;
+      PHASE_MP = 8;
+  }
+  optional Phase phase = 16;
+
+  repeated string variant = 17;
+  optional TestCoverageHints test_coverage_hints = 18;
+  optional Peripherals peripherals = 19;
+}
+
+// NEXT TAG: ??
+message HardwareCapabilities {
+  optional string modem = 1;
+  optional string telephony = 2;
+  optional string gpu_family = 3;
+  optional string graphics = 4;
+  optional string storage = 5;
+  optional string power = 6;
+  optional bool bluetooth = 7;
+  optional bool internal_display = 8;
+  optional bool webcam = 9;
+  optional bool touchpad = 10;
+
+  // NEXT TAG: 9
+  enum VideoAcceleration {
+      VIDEO_ACCELERATION_INVALID = 0;
+      VIDEO_ACCELERATION_H264 = 1;
+      VIDEO_ACCELERATION_ENC_H264 = 2;
+      VIDEO_ACCELERATION_VP8 = 3;
+      VIDEO_ACCELERATION_ENC_VP8 = 4;
+      VIDEO_ACCELERATION_VP9 = 5;
+      VIDEO_ACCELERATION_ENC_VP9 = 6;
+      VIDEO_ACCELERATION_VP9_2 = 7;
+      VIDEO_ACCELERATION_ENC_VP9_2 = 8;
+  }
+  repeated VideoAcceleration video_acceleration = 11;
+}
+
+// Peripherals list peripherals connected to the device in the lab.
+//
+// These peripherals are not addressable as devices themselves. For peripherals
+// that have complex connections with devices, create a separate device and
+// connections with other devices.
+// NEXT TAG: ??
+message Peripherals {
+    optional bool audio_loopback_dongle = 1;
+    optional bool servo = 2;
+}
+
+// These labels are used by the CI system to provide test coverage hints to
+// Skylab.
+//
+// NEXT TAG: 2
+message TestCoverageHints {
+    // Related to sparse CTS testing. See b/70309087
+    enum CTSSparse {
+        CTS_SPARSE_INVALID = 0;
+        CTS_SPARSE_2 = 1;
+        CTS_SPARSE_3 = 2;
+        CTS_SPARSE_5 = 3;
+    }
+    repeated CTSSparse cts_sparse = 1;
+}
+
+// NEXT TAG: 3
+message KeyValue {
+  required string key = 1;
+  optional string value = 2;
+}
