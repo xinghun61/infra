@@ -127,6 +127,7 @@ func mainInner(a *args) error {
 					return err
 				}
 				defer fc.Close()
+				ta.LogDogFile = fifoPath
 			}
 			if err := runLuciferTask(b, i, a, annotWriter, ta); err != nil {
 				return errors.Wrap(err, "run lucifer task")
