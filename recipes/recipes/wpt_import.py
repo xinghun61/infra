@@ -84,7 +84,10 @@ def RunSteps(api):
     ]
     # TODO(robertma): Drop the experimental branch when migration is completed.
     if api.runtime.is_experimental:
-      args.append('--verbose')
+      args += [
+        '--auto-upload',
+        '--verbose',
+      ]
     else:
       args += [
         '--auto-update',
