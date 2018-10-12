@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<title>ChopsCopyToClipboard</title>
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="../chops-copy-to-clipboard.html">
+
+<test-fixture id="chops-copy-to-clipboard-test">
+  <template>
+    <chops-copy-to-clipboard></chops-copy-to-clipboard>
+  </template>
+</test-fixture>
+<script>
+  'use strict';
+
+  suite('chops-copy-to-clipboard', function() {
+    let element;
+    setup(function() {
+      element = fixture('chops-copy-to-clipboard-test');
+      // document.execCommand is only supposed to be used in response
+      // to user events, so triggering it in unit tests with the
+      // desired side effects (clipboard read/write) isn't possible.
+      // Mock it instead to verify that it has at least been invoked.
+      sinon.stub(document, 'execCommand');
+    });
+
+    teardown(function() {
+     document.execCommand.restore();
+    });
+
+    test('smoke test', function() {
+      assert.isDefined(element);
+    });
+
+    test('copy to clipboard', function() {
+      element.content = 'foo';
+      element.$.button.click();
+      sinon.assert.calledWith(document.execCommand, 'copy');
+    })
+  });
+</script>
+
