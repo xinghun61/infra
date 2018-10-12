@@ -28,12 +28,18 @@ OSES = set([
 BOTS_TEST_DATA = [
     {
         'bot_id': 'snapshot-me',
-        'dimensions': [{'key': 'os', 'value': ['Ubuntu', 'Ubuntu-14.04']}],
+        'dimensions': [
+            {'key': 'os', 'value': ['Ubuntu', 'Ubuntu-14.04']},
+            {'key': 'pool', 'value': ['Chrome']},
+        ],
         'machine_type': 'mt',
     },
     {
         'bot_id': 'dont-snapshot-me',
-        'dimensions': [{'key': 'os', 'value': ['Windows', 'Windows-10']}],
+        'dimensions': [
+            {'key': 'os', 'value': ['Windows', 'Windows-10']},
+            {'key': 'pool', 'value': ['Chrome']},
+        ],
         'machine_type': 'mt',
     },
 ]
@@ -68,7 +74,7 @@ def RunSteps(api):
   swarming = packages_dir.join('swarming')
   for sw_server, bb_server in SERVERS:
     with api.step.nest(sw_server):
-      # Maps machine_type -> bot_id of bots to snapshot.
+      # Maps machine_type -> (bot_id, pool) of bots to snapshot.
       bots = {}
       res = api.step('bots', [
           swarming,
@@ -88,20 +94,20 @@ def RunSteps(api):
         if bot.get('dimensions'):
           # Only consider this bot if it's running a supported OS.
           if set(get_value(bot['dimensions'], 'os')).intersection(OSES):
-            bots[bot['machine_type']] = bot['bot_id']
+            # Pool is required, but snapshotting is pool-independent.
+            pool = get_value(bot['dimensions'], 'pool')[0]
+            bots[bot['machine_type']] = (bot['bot_id'], pool)
 
       api.buildbucket.set_buildbucket_host('%s.appspot.com' % bb_server)
       builds = []
-      for mt, bot in bots.iteritems():
+      for mt, (bot, pool) in bots.iteritems():
         builds.append({
             'bucket': 'luci.chromium.cron',
             'parameters': {
                 'builder_name': 'Snapshots',
                 'swarming': {
                     'override_builder_cfg': {
-                        # Force removal of pool by overriding it to an empty
-                        # string. Otherwise Buildbucket defaults to pool:bucket.
-                        'dimensions': ['id:%s' % bot, 'pool:'],
+                        'dimensions': ['id:%s' % bot, 'pool:%s' % pool],
                     },
                 },
             },
