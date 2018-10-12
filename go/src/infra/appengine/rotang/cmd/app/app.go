@@ -92,13 +92,15 @@ func init() {
 		log.Fatal("env PROD_ENV must be set to one of `production`, `local` or `staging`")
 	}
 
+	lcred, err := legacyCred()
+	if err != nil {
+		log.Fatal(err)
+	}
 	cred := serviceDefaultCred()
 	if prodENV == "local" {
-		var err error
-		if cred, err = legacyCred(); err != nil {
-			log.Fatal(err)
-		}
+		cred = lcred
 	}
+
 	r := router.New()
 	standard.InstallHandlers(r)
 	middleware := standard.Base()
@@ -114,11 +116,12 @@ func init() {
 	gs.Register(algo.NewRandomGen())
 
 	opts := handlers.Options{
-		URL:        selfURL,
-		Calendar:   calendar.New(cred),
-		Generators: gs,
-		MailSender: &appengineMailer{},
-		ProdENV:    prodENV,
+		URL:            selfURL,
+		LegacyCalendar: calendar.New(lcred),
+		Calendar:       calendar.New(cred),
+		Generators:     gs,
+		MailSender:     &appengineMailer{},
+		ProdENV:        prodENV,
 	}
 	setupStoreHandlers(&opts, datastore.New)
 	h, err := handlers.New(&opts)
@@ -134,6 +137,7 @@ func init() {
 	r.GET("/modifyrota", tmw, h.HandleUpdateRota)
 	r.GET("/importshifts", tmw, h.HandleShiftImport)
 	r.GET("/manageshifts", tmw, h.HandleManageShifts)
+	r.GET("/legacy/:name", tmw, h.HandleLegacy)
 
 	r.POST("/shiftsupdate", tmw, h.HandleShiftUpdate)
 	r.POST("/shiftsgenerate", tmw, h.HandleShiftGenerate)
@@ -142,6 +146,9 @@ func init() {
 	r.POST("/createrota", tmw, h.HandleCreateRota)
 	r.POST("/deleterota", tmw, h.HandleDeleteRota)
 	r.POST("/upload", tmw, h.HandleUpload)
+
+	// Recurring jobs.
+	r.GET("/cron/joblegacy", tmw, h.JobLegacy)
 
 	http.DefaultServeMux.Handle("/", r)
 }

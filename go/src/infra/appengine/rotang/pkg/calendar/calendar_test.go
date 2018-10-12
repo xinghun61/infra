@@ -118,6 +118,128 @@ func TestCreateEvent(t *testing.T) {
 	}
 }
 
+func TestFindTrooperEvent(t *testing.T) {
+	tests := []struct {
+		name   string
+		fail   bool
+		events *gcal.Events
+		match  string
+		at     time.Time
+		want   []string
+	}{{
+		name: "Success",
+		events: &gcal.Events{
+			Items: []*gcal.Event{
+				{
+					Start: &gcal.EventDateTime{
+						DateTime: midnight.Add(-fullDay).Format(time.RFC3339),
+					},
+					End: &gcal.EventDateTime{
+						DateTime: midnight.Format(time.RFC3339),
+					},
+					Summary: "CCI-Trooper: not1, not2, not3",
+				}, {
+					Start: &gcal.EventDateTime{
+						DateTime: midnight.Format(time.RFC3339),
+					},
+					End: &gcal.EventDateTime{
+						DateTime: midnight.Add(fullDay).Format(time.RFC3339),
+					},
+					Summary: "CCI-Trooper: this1, this2, this3",
+				}, {
+					Start: &gcal.EventDateTime{
+						DateTime: midnight.Add(fullDay).Format(time.RFC3339),
+					},
+					End: &gcal.EventDateTime{
+						DateTime: midnight.Add(2 * fullDay).Format(time.RFC3339),
+					},
+					Summary: "CCI-Trooper: nope1, nope2, nope3",
+				},
+			},
+		},
+		match: "CCI-Trooper: ",
+		at:    midnight,
+		want:  []string{"this1", "this2", "this3"},
+	}, {
+		name: "No match",
+		fail: true,
+		events: &gcal.Events{
+			Items: []*gcal.Event{
+				{
+					Start: &gcal.EventDateTime{
+						DateTime: midnight.Add(-fullDay).Format(time.RFC3339),
+					},
+					End: &gcal.EventDateTime{
+						DateTime: midnight.Format(time.RFC3339),
+					},
+					Summary: "CCI-Trooper: not1, not2, not3",
+				}, {
+					Start: &gcal.EventDateTime{
+						DateTime: midnight.Format(time.RFC3339),
+					},
+					End: &gcal.EventDateTime{
+						DateTime: midnight.Add(fullDay).Format(time.RFC3339),
+					},
+					Summary: "Nope-Trooper: this1, this2, this3",
+				}, {
+					Start: &gcal.EventDateTime{
+						DateTime: midnight.Add(fullDay).Format(time.RFC3339),
+					},
+					End: &gcal.EventDateTime{
+						DateTime: midnight.Add(2 * fullDay).Format(time.RFC3339),
+					},
+					Summary: "CCI-Trooper: nope1, nope2, nope3",
+				},
+			},
+		},
+		match: "CCI-Trooper: ",
+		at:    midnight,
+		want:  []string{"this1", "this2", "this3"},
+	}, {
+		name: "No shift found",
+		fail: true,
+		events: &gcal.Events{
+			Items: []*gcal.Event{
+				{
+					Start: &gcal.EventDateTime{
+						DateTime: midnight.Add(-fullDay).Format(time.RFC3339),
+					},
+					End: &gcal.EventDateTime{
+						DateTime: midnight.Format(time.RFC3339),
+					},
+					Summary: "CCI-Trooper: not1, not2, not3",
+				}, {
+					Start: &gcal.EventDateTime{
+						DateTime: midnight.Add(fullDay).Format(time.RFC3339),
+					},
+					End: &gcal.EventDateTime{
+						DateTime: midnight.Add(2 * fullDay).Format(time.RFC3339),
+					},
+					Summary: "CCI-Trooper: nope1, nope2, nope3",
+				},
+			},
+		},
+		match: "CCI-Trooper: ",
+		at:    midnight,
+		want:  []string{"this1", "this2", "this3"},
+	},
+	}
+
+	for _, tst := range tests {
+		res, err := findTrooperEvent(tst.events, tst.match, tst.at)
+		if got, want := (err != nil), tst.fail; got != want {
+			t.Errorf("%s: findTrooperEvent(_, %q, %v) = %t want: %t, err: %v", tst.name, tst.match, tst.at, got, want, err)
+			continue
+		}
+		if err != nil {
+			continue
+		}
+		if diff := pretty.Compare(tst.want, res); diff != "" {
+			t.Errorf("%s: findTrooperEvent(_, %q, %v) differ -want +got, %s", tst.name, tst.match, tst.at, diff)
+		}
+	}
+}
+
 func TestEvent(t *testing.T) {
 	ctx := gaetesting.TestingContext()
 	datastore.TestTable(ctx)
@@ -190,6 +312,58 @@ func TestEvent(t *testing.T) {
 				t.Fatalf("%s: Event(ctx, _, _) differ -want +got, %s", tst.name, diff)
 			}
 		})
+	}
+}
+
+func TestTrooperOncaller(t *testing.T) {
+	ctx := gaetesting.TestingContext()
+	ctxCancel, cancel := context.WithCancel(ctx)
+	cancel()
+
+	tests := []struct {
+		name     string
+		fail     bool
+		credFunc func(context.Context) (*http.Client, error)
+		ctx      *router.Context
+		testTime time.Time
+		match    string
+		cal      string
+		want     []rotang.ShiftEntry
+	}{{
+		name: "Canceled Context",
+		fail: true,
+		ctx: &router.Context{
+			Context: ctxCancel,
+		},
+	}, {
+		name:     "Failed credentials",
+		fail:     true,
+		credFunc: fakeFailCred,
+		ctx: &router.Context{
+			Context: ctx,
+			Request: getRequest("/"),
+		},
+	}, {
+		name:     "Success credentials",
+		fail:     true,
+		credFunc: fakePassCred,
+		ctx: &router.Context{
+			Context: ctx,
+			Request: getRequest("/"),
+		},
+	},
+	}
+
+	for _, tst := range tests {
+		c := New(tst.credFunc)
+		_, err := c.TrooperOncall(tst.ctx, tst.cal, tst.match, tst.testTime)
+		if got, want := (err != nil), tst.fail; got != want {
+			t.Errorf("%s: TrooperOncall(ctx, %q, %q, %v) = %t want: %t, err: %v", tst.name, tst.cal, tst.match, tst.testTime, got, want, err)
+			continue
+		}
+		if err != nil {
+			continue
+		}
 	}
 }
 

@@ -48,12 +48,13 @@ func testSetup(t *testing.T) *State {
 	fake := &fakeCal{}
 
 	opts := Options{
-		URL:         "http://localhost:8080",
-		Generators:  gs,
-		Calendar:    fake,
-		MailSender:  &testableMail{},
-		MailAddress: "admin@example.com",
-		ProdENV:     "production",
+		URL:            "http://localhost:8080",
+		Generators:     gs,
+		Calendar:       fake,
+		LegacyCalendar: fake,
+		MailSender:     &testableMail{},
+		MailAddress:    "admin@example.com",
+		ProdENV:        "production",
 	}
 	setupStoreHandlers(&opts, datastore.New)
 	h, err := New(&opts)
@@ -68,8 +69,9 @@ type fakeCal struct {
 	fail     bool
 	changeID bool
 	rotang.Calenderer
-	id     int
-	events map[time.Time]rotang.ShiftEntry
+	id        int
+	events    map[time.Time]rotang.ShiftEntry
+	oncallers []string
 }
 
 func (f *fakeCal) Events(_ *router.Context, _ *rotang.Configuration, _, _ time.Time) ([]rotang.ShiftEntry, error) {
@@ -99,6 +101,11 @@ func (f *fakeCal) Set(ret []rotang.ShiftEntry, fail, changeID bool, id int) {
 	f.changeID = changeID
 }
 
+func (f *fakeCal) SetTroopers(ret []string, fail bool) {
+	f.oncallers = ret
+	f.fail = fail
+}
+
 func (f *fakeCal) CreateEvent(_ *router.Context, _ *rotang.Configuration, shifts []rotang.ShiftEntry) ([]rotang.ShiftEntry, error) {
 	if f.fail {
 		return nil, status.Errorf(codes.Internal, "fake is failing as requested")
@@ -108,6 +115,13 @@ func (f *fakeCal) CreateEvent(_ *router.Context, _ *rotang.Configuration, shifts
 		f.id++
 	}
 	return shifts, nil
+}
+
+func (f *fakeCal) TrooperOncall(_ *router.Context, _, _ string, _ time.Time) ([]string, error) {
+	if f.fail {
+		return nil, status.Errorf(codes.Internal, "fake is failing as requested")
+	}
+	return f.oncallers, nil
 }
 
 func TestNew(t *testing.T) {
@@ -131,7 +145,8 @@ func TestNew(t *testing.T) {
 			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {
 				return datastore.New(ctx)
 			},
-			Calendar: &calendar.Calendar{},
+			Calendar:       &calendar.Calendar{},
+			LegacyCalendar: &calendar.Calendar{},
 		},
 	}, {
 		name: "Options nil",
@@ -151,7 +166,8 @@ func TestNew(t *testing.T) {
 			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {
 				return datastore.New(ctx)
 			},
-			Calendar: &calendar.Calendar{},
+			Calendar:       &calendar.Calendar{},
+			LegacyCalendar: &calendar.Calendar{},
 		},
 	}, {
 		name: "Generators Empty",
@@ -168,16 +184,18 @@ func TestNew(t *testing.T) {
 			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {
 				return datastore.New(ctx)
 			},
-			Calendar: &calendar.Calendar{},
+			Calendar:       &calendar.Calendar{},
+			LegacyCalendar: &calendar.Calendar{},
 		},
 	}, {
 		name: "Store empty",
 		fail: true,
 		opts: &Options{
-			URL:        "http://localhost:8080",
-			ProdENV:    "production",
-			Generators: &algo.Generators{},
-			Calendar:   &calendar.Calendar{},
+			URL:            "http://localhost:8080",
+			ProdENV:        "production",
+			Generators:     &algo.Generators{},
+			Calendar:       &calendar.Calendar{},
+			LegacyCalendar: &calendar.Calendar{},
 			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {
 				return datastore.New(ctx)
 			},
@@ -186,9 +204,10 @@ func TestNew(t *testing.T) {
 		name: "No Calendar",
 		fail: true,
 		opts: &Options{
-			URL:        "http://localhost:8080",
-			ProdENV:    "production",
-			Generators: &algo.Generators{},
+			URL:            "http://localhost:8080",
+			ProdENV:        "production",
+			Generators:     &algo.Generators{},
+			LegacyCalendar: &calendar.Calendar{},
 			MemberStore: func(ctx context.Context) rotang.MemberStorer {
 				return datastore.New(ctx)
 			},
@@ -214,9 +233,29 @@ func TestNew(t *testing.T) {
 			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {
 				return datastore.New(ctx)
 			},
-			Calendar: &calendar.Calendar{},
+			Calendar:       &calendar.Calendar{},
+			LegacyCalendar: &calendar.Calendar{},
 		},
-	}}
+	}, {
+		name: "No LegacyCalendar",
+		fail: true,
+		opts: &Options{
+			URL:        "http://localhost:8080",
+			Generators: &algo.Generators{},
+			MemberStore: func(ctx context.Context) rotang.MemberStorer {
+				return datastore.New(ctx)
+			},
+			ShiftStore: func(ctx context.Context) rotang.ShiftStorer {
+				return datastore.New(ctx)
+			},
+			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {
+				return datastore.New(ctx)
+			},
+			Calendar:       &calendar.Calendar{},
+			LegacyCalendar: &calendar.Calendar{},
+		},
+	},
+	}
 
 	for _, tst := range tests {
 		_, err := New(tst.opts)

@@ -43,29 +43,40 @@ func adminOrOwner(ctx *router.Context, cfg *rotang.Configuration) bool {
 	return false
 }
 
+func buildLegacyMap(h *State) map[string]func(ctx *router.Context, file string) (string, error) {
+	return map[string]func(ctx *router.Context, file string) (string, error){
+		"trooper.js":           h.legacyTrooper,
+		"current_trooper.json": h.legacyTrooper,
+		"current_trooper.txt":  h.legacyTrooper,
+	}
+}
+
 // State holds shared state between handlers.
 type State struct {
-	selfURL     string
-	prodENV     string
-	calendar    rotang.Calenderer
-	generators  *algo.Generators
-	memberStore func(context.Context) rotang.MemberStorer
-	oauthConfig *oauth2.Config
-	token       *oauth2.Token
-	shiftStore  func(context.Context) rotang.ShiftStorer
-	configStore func(context.Context) rotang.ConfigStorer
-	mailAddress string
-	mailSender  rotang.MailSender
+	selfURL        string
+	prodENV        string
+	calendar       rotang.Calenderer
+	legacyCalendar rotang.Calenderer
+	generators     *algo.Generators
+	memberStore    func(context.Context) rotang.MemberStorer
+	oauthConfig    *oauth2.Config
+	token          *oauth2.Token
+	shiftStore     func(context.Context) rotang.ShiftStorer
+	configStore    func(context.Context) rotang.ConfigStorer
+	mailAddress    string
+	mailSender     rotang.MailSender
+	legacyMap      map[string]func(ctx *router.Context, file string) (string, error)
 }
 
 // Options contains the options used by the handlers.
 type Options struct {
-	URL         string
-	ProdENV     string
-	Calendar    rotang.Calenderer
-	Generators  *algo.Generators
-	MailSender  rotang.MailSender
-	MailAddress string
+	URL            string
+	ProdENV        string
+	Calendar       rotang.Calenderer
+	LegacyCalendar rotang.Calenderer
+	Generators     *algo.Generators
+	MailSender     rotang.MailSender
+	MailAddress    string
 
 	MemberStore func(context.Context) rotang.MemberStorer
 	ConfigStore func(context.Context) rotang.ConfigStorer
@@ -83,22 +94,27 @@ func New(opt *Options) (*State, error) {
 		return nil, status.Errorf(codes.InvalidArgument, "URL must be set")
 	case opt.Calendar == nil:
 		return nil, status.Errorf(codes.InvalidArgument, "Calendar can not be nil")
+	case opt.LegacyCalendar == nil:
+		return nil, status.Errorf(codes.InvalidArgument, "LegacyCalendar can not be nil")
 	case opt.Generators == nil:
 		return nil, status.Errorf(codes.InvalidArgument, "Genarators can not be nil")
 	case opt.MemberStore == nil, opt.ShiftStore == nil, opt.ConfigStore == nil:
 		return nil, status.Errorf(codes.InvalidArgument, "Store functions can not be nil")
 	}
-	return &State{
-		prodENV:     opt.ProdENV,
-		selfURL:     opt.URL,
-		calendar:    opt.Calendar,
-		generators:  opt.Generators,
-		memberStore: opt.MemberStore,
-		shiftStore:  opt.ShiftStore,
-		configStore: opt.ConfigStore,
-		mailSender:  opt.MailSender,
-		mailAddress: opt.MailAddress,
-	}, nil
+	h := &State{
+		prodENV:        opt.ProdENV,
+		selfURL:        opt.URL,
+		calendar:       opt.Calendar,
+		legacyCalendar: opt.LegacyCalendar,
+		generators:     opt.Generators,
+		memberStore:    opt.MemberStore,
+		shiftStore:     opt.ShiftStore,
+		configStore:    opt.ConfigStore,
+		mailSender:     opt.MailSender,
+		mailAddress:    opt.MailAddress,
+	}
+	h.legacyMap = buildLegacyMap(h)
+	return h, nil
 }
 
 // IsProduction is true if the service is running in production.

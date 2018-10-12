@@ -1,0 +1,4 @@
+cron:
+- description: "legacy cache"
+  url: /cron/joblegacy
+  schedule: every 10 minutes

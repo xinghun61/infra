@@ -117,6 +117,63 @@ func (c *Calendar) Events(ctx *router.Context, cfg *rotang.Configuration, from, 
 	return eventsToShifts(ctx.Context, events, cfg.Config.Name, &cfg.Config.Shifts)
 }
 
+const fullDay = 24 * time.Hour
+
+// TrooperOncall returns trooper oncallers for specified time.
+func (c *Calendar) TrooperOncall(ctx *router.Context, calendar, match string, t time.Time) ([]string, error) {
+	if err := ctx.Context.Err(); err != nil {
+		return nil, err
+	}
+	client, err := c.credentials(appengine.NewContext(ctx.Request))
+	if err != nil {
+		return nil, err
+	}
+	cal, err := gcal.New(client)
+	if err != nil {
+		return nil, err
+	}
+
+	events, err := cal.Events.List(calendar).
+		ShowDeleted(false).SingleEvents(true).
+		TimeMin(t.Add(-fullDay).Format(time.RFC3339)).TimeMax(t.Add(fullDay).Format(time.RFC3339)).
+		Q(match).
+		OrderBy("startTime").Do()
+	if err != nil {
+		return nil, err
+	}
+
+	return findTrooperEvent(events, match, t)
+}
+
+func findTrooperEvent(es *gcal.Events, match string, t time.Time) ([]string, error) {
+	for _, e := range es.Items {
+		start, err := calToTime(e.Start)
+		if err != nil {
+			return nil, err
+		}
+		end, err := calToTime(e.End)
+		if err != nil {
+			return nil, err
+		}
+		if (t.After(start) || t.Equal(start)) && t.Before(end) {
+			return oncallerFromSummary(e.Summary, match)
+		}
+	}
+	return nil, status.Errorf(codes.NotFound, "trooper oncall shift not found for time: %v", t)
+}
+
+func oncallerFromSummary(in, match string) ([]string, error) {
+	if !strings.HasPrefix(in, match) {
+		return nil, status.Errorf(codes.InvalidArgument, "event has invalid format")
+	}
+
+	oc := strings.Split(strings.TrimPrefix(in, match), ",")
+	for i := range oc {
+		oc[i] = strings.Join(strings.Fields(oc[i]), "")
+	}
+	return oc, nil
+}
+
 // nameShiftSeparator is used to separate the ShiftName from the rota name in Calendar Events.
 const nameShiftSeparator = " - "
 

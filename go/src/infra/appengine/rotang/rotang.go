@@ -203,6 +203,7 @@ type Calenderer interface {
 	Events(ctx *router.Context, cfg *Configuration, from, to time.Time) ([]ShiftEntry, error)
 	UpdateEvent(ctx *router.Context, cfg *Configuration, updated *ShiftEntry) (*ShiftEntry, error)
 	DeleteEvent(ctx *router.Context, cfg *Configuration, shift *ShiftEntry) error
+	TrooperOncall(ctx *router.Context, calid, match string, t time.Time) ([]string, error)
 }
 
 // Info contains information used to fill in Email Subject/Body and Calendar descriptions.

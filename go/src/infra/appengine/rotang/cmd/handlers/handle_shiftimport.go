@@ -43,9 +43,9 @@ func (h *State) HandleShiftImport(ctx *router.Context) {
 		return
 	}
 
-	// Adding in 10 years to the end here just to make sure we get all events.
+	// Adding in a year to the end just to make sure we get all events.
 	// Presuming nobody would schedule for longar than that.
-	shifts, err := h.calendar.Events(ctx, rota[0], time.Now().Add(-importDuration), time.Now().Add(10*importDuration))
+	shifts, err := h.calendar.Events(ctx, rota[0], time.Now().Add(-importDuration), time.Now().Add(importDuration))
 	if err != nil {
 		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 		return
