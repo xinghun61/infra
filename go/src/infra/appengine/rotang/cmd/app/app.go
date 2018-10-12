@@ -133,7 +133,11 @@ func init() {
 	r.GET("/managerota", tmw, h.HandleManageRota)
 	r.GET("/modifyrota", tmw, h.HandleUpdateRota)
 	r.GET("/importshifts", tmw, h.HandleShiftImport)
+	r.GET("/manageshifts", tmw, h.HandleManageShifts)
 
+	r.POST("/shiftsupdate", tmw, h.HandleShiftUpdate)
+	r.POST("/shiftsgenerate", tmw, h.HandleShiftGenerate)
+	r.POST("/generate", tmw, h.HandleGenerate)
 	r.POST("/modifyrota", tmw, h.HandleUpdateRota)
 	r.POST("/createrota", tmw, h.HandleCreateRota)
 	r.POST("/deleterota", tmw, h.HandleDeleteRota)

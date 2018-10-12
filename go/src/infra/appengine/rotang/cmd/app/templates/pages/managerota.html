@@ -34,6 +34,11 @@
          </form>
        </td>
        <td>
+         <form action="manageshifts">
+            <button type="submit" name="name" value="{{$c.Config.Name}}">Shifts</button>
+         </form>
+       </td>
+       <td>
          <form action="deleterota" method="post" onclick="return confirm('Are you sure?')">
             <button type="submit" name="name" value="{{$c.Config.Name}}">Delete</button>
          </form>

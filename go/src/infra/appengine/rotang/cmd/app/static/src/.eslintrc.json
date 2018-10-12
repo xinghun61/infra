@@ -1,0 +1,15 @@
+{
+  "extends": "google",
+  "plugins": [
+    "lit",
+    "prettier"
+  ],
+  "rules": {
+      "require-jsdoc": 0,
+      "indent": ["error", 2]
+  },
+  "parserOptions": {
+        "ecmaVersion": 2017,
+        "sourceType": "module"
+  }
+}

@@ -6,13 +6,13 @@
   <body>
     <script src="/static/dist/bundle.js"></script>
     <h4>Shift history</h4>
-    <shifthistory-element shifts='{{.History}}'>
-    </shifthistory-element>
-    <h4>Do the shifts</h4>
-    <shiftcurrent-element shifts='{{.Current}}'>
-    </shiftcurrent-element>
+    <rota-shift-history shifts='{{.History}}'>
+    </rota-shift-history>
+    <h4>Current shifts</h4>
+    <rota-shift-current shifts='{{.Current}}'>
+    </rota-shift-current>
     <h4>Generate shifts</h4>
-    <shiftgenerate-element rota='{{.Rota}}'>
-    </shiftgenerate-element>
+    <rota-shift-generate rota='{{.Rota}}'>
+    </rota-shift-generate>
   </body>
 </html>

@@ -86,6 +86,10 @@ func makeFair(members []rotang.Member, previous []rotang.ShiftEntry) []rotang.Me
 	}
 	for weight, e := range previous {
 		for _, o := range e.OnCall {
+			// If someone in a previous shift is not a member anymore.
+			if _, ok := oncalls[o.Email]; !ok {
+				continue
+			}
 			oncalls[o.Email].weight += weight + len(previous)/2
 		}
 	}

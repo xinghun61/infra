@@ -14,10 +14,9 @@ import (
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"google.golang.org/appengine"
+	aeuser "google.golang.org/appengine/user"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	aeuser "google.golang.org/appengine/user"
 )
 
 var mtvTime = func() *time.Location {
