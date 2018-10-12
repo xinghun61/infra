@@ -117,6 +117,22 @@ class UsersServicerTest(unittest.TestCase):
     self.assertEqual(expected_0, actual_0)
     self.assertEqual(expected_1, actual_1)
 
+  def testGetUser(self):
+    """We can get a user by email address."""
+    request = common_pb2.UserRef(display_name='test2@example.com')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.users_svcr.GetUser, mc, request)
+    self.assertEqual(response.email, 'test2@example.com')
+    self.assertEqual(response.user_id, 222L)
+    self.assertFalse(response.is_site_admin)
+
+    self.user_2.is_site_admin = True
+    response = self.CallWrapped(
+        self.users_svcr.GetUser, mc, request)
+    self.assertTrue(response.is_site_admin)
+
   def testListReferencedUsers(self):
     """We can get all valid users by email addresses."""
     request = users_pb2.ListReferencedUsersRequest(

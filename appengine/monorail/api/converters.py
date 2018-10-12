@@ -133,7 +133,11 @@ def ConvertUserRefs(explicit_user_ids, derived_user_ids, users_by_id,
 
 def ConvertUsers(users):
   return [
-      users_pb2.User(user_id=user.user_id, email=user.email) for user in users]
+      users_pb2.User(
+          user_id=user.user_id,
+          email=user.email,
+          is_site_admin=user.is_site_admin)
+      for user in users]
 
 
 def ConvertLabels(explicit_labels, derived_labels):

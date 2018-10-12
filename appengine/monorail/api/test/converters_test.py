@@ -250,13 +250,15 @@ class ConverterFunctionsTest(unittest.TestCase):
   def testConvertUser(self):
     """We can convert lists of protorpc Users to protoc Users."""
     user1 = user_pb2.User(user_id=1, email='user1@example.com')
-    user2 = user_pb2.User(user_id=2, email='user2@example.com')
+    user2 = user_pb2.User(
+        user_id=2, email='user2@example.com', is_site_admin=True)
     actual = converters.ConvertUsers([user1, user2])
     self.assertEqual(len(actual), 2)
     self.assertItemsEqual(
         actual,
         [users_pb2.User(user_id=1, email='user1@example.com'),
-         users_pb2.User(user_id=2, email='user2@example.com')])
+         users_pb2.User(user_id=2, email='user2@example.com',
+                        is_site_admin=True)])
 
   def testConvertLabels(self):
     """We can convert labels."""

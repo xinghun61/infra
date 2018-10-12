@@ -23,9 +23,11 @@ service Users {
 
 // TODO(jojwang): monorail:1701, fill User with all info necessary for
 // creating a user profile page.
+// Next available tag: 4
 message User {
   string email = 1;
   int64 user_id = 2;
+  bool is_site_admin = 3;
 }
 
 

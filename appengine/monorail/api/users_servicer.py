@@ -24,18 +24,15 @@ class UsersServicer(monorail_servicer.MonorailServicer):
   DESCRIPTION = users_prpc_pb2.UsersServiceDescription
 
   @monorail_servicer.PRPCMethod
-  def GetUser(self, _mc, request):
-    # Do any request-specific validation:
-    # None.
+  def GetUser(self, mc, request):
+    """Return info about the specified user."""
+    with work_env.WorkEnv(mc, self.services) as we:
+      users = we.ListReferencedUsers([request.display_name])
 
-    # Use work_env to safely operate on business objects.
-    email = request.display_name
-    user_id = request.user_id
+    with mc.profiler.Phase('converting to response objects'):
+      response_users = converters.ConvertUsers(users)
 
-    # Return a response proto.
-    return users_pb2.User(
-        email=email,
-        user_id=user_id)
+    return response_users[0]
 
   @monorail_servicer.PRPCMethod
   def ListReferencedUsers(self, mc, request):
