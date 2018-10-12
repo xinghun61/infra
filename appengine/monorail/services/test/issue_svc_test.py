@@ -1838,9 +1838,12 @@ class IssueServiceTest(unittest.TestCase):
     # TODO(jrobbins): re-implemnent to use Google Cloud Storage.
     pass
 
-  def SetUpUpdateAttachment(self, attachment_id, delta):
+  def SetUpUpdateAttachment(self, comment_id, attachment_id, delta):
     self.services.issue.attachment_tbl.Update(
         self.cnxn, delta, id=attachment_id)
+    self.services.issue.comment_2lc.InvalidateKeys(
+        self.cnxn, [comment_id])
+
 
   def testUpdateAttachment(self):
     delta = {
@@ -1849,12 +1852,13 @@ class IssueServiceTest(unittest.TestCase):
         'mimetype': 'text/plain',
         'deleted': False,
         }
-    self.SetUpUpdateAttachment(1234, delta)
+    self.SetUpUpdateAttachment(5678, 1234, delta)
     self.mox.ReplayAll()
     attach = tracker_pb2.Attachment(
         attachment_id=1234, filename='a_filename', filesize=1024,
         mimetype='text/plain')
-    self.services.issue._UpdateAttachment(self.cnxn, attach)
+    comment = tracker_pb2.IssueComment(id=5678)
+    self.services.issue._UpdateAttachment(self.cnxn, comment, attach)
     self.mox.VerifyAll()
 
   def testStoreAttachmentBlob(self):
@@ -1868,7 +1872,7 @@ class IssueServiceTest(unittest.TestCase):
     issue_1.attachment_count = 1
     self.services.issue.issue_id_2lc.CacheItem((789, 1), 78901)
     self.SetUpGetComments([78901])
-    self.SetUpUpdateAttachment(1234, {'deleted': True})
+    self.SetUpUpdateAttachment(179901, 1234, {'deleted': True})
     self.SetUpUpdateIssues(given_delta={'attachment_count': 0})
     self.SetUpEnqueueIssuesForIndexing([78901])
 

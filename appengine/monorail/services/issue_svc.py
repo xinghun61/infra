@@ -2650,11 +2650,12 @@ class IssueService(object):
 
     return attachment_rows
 
-  def _UpdateAttachment(self, cnxn, attach, update_cols=None):
+  def _UpdateAttachment(self, cnxn, comment, attach, update_cols=None):
     """Update attachment metadata in the DB.
 
     Args:
       cnxn: connection to SQL database.
+      comment: IssueComment PB to invalidate in the cache.
       attach: IssueAttachment PB to update in the DB.
       update_cols: optional list of just the field names to update.
     """
@@ -2669,6 +2670,7 @@ class IssueService(object):
                if key in update_cols}
 
     self.attachment_tbl.Update(cnxn, delta, id=attach.attachment_id)
+    self.comment_2lc.InvalidateKeys(cnxn, [comment.id])
 
   def SoftDeleteAttachment(
       self, cnxn, project_id, local_id, seq_num, attach_id, user_service,
@@ -2705,9 +2707,14 @@ class IssueService(object):
       elif attachment.deleted:
         issue.attachment_count = issue.attachment_count + 1
 
+    logging.info('attachment.deleted was %s', attachment.deleted)
+
     attachment.deleted = delete
 
-    self._UpdateAttachment(cnxn, attachment, update_cols=['deleted'])
+    logging.info('attachment.deleted is %s', attachment.deleted)
+
+    self._UpdateAttachment(
+        cnxn, issue_comment, attachment, update_cols=['deleted'])
     self.UpdateIssue(cnxn, issue, update_cols=['attachment_count'])
 
     if index_now:
