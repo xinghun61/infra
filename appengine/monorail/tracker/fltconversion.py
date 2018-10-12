@@ -6,11 +6,15 @@
 """FLT task to be manually triggered to convert launch issues."""
 import re
 import settings
+import logging
 
 from framework import permissions
 from framework import exceptions
 from framework import jsonfeed
 from proto import tracker_pb2
+from tracker import tracker_bizobj
+
+CONVERSION_COMMENT = "Automatic generating of FLT Launch data."
 
 APPROVALS_TO_LABELS = {
     'Chrome-Accessibility': 'Launch-Accessibility-',
@@ -45,6 +49,7 @@ class FLTConvertTask(jsonfeed.InternalTask):
     if not mr.auth.user_pb.is_site_admin:
       raise permissions.PermissionException(
           'Only site admins may trigger conversion job')
+    # TODO(BEFORE-LAUNCH): REMOVE 'monotail-staging' check
     if settings.app_id != 'monorail-staging':
       raise exceptions.ActionNotSupported(
           'Launch issues conversion only allowed in staging.')
@@ -57,6 +62,39 @@ class FLTConvertTask(jsonfeed.InternalTask):
         'app_id': settings.app_id,
         'is_site_admin': mr.auth.user_pb.is_site_admin,
         }
+
+  def ExecuteIssueChanges(self, config, issue, new_approvals, phases, new_fvs):
+    # Apply Approval and phase changes
+    issue.approval_values = new_approvals
+    issue.phases = phases
+    approval_defs_by_id = {ad.approval_id: ad for ad in config.approval_defs}
+    for av in new_approvals:
+      ad = approval_defs_by_id.get(av.approval_id)
+      if ad:
+        survey = ''
+        if ad.survey:
+          questions = ad.survey.split('\n')
+          survey = '\n'.join(['<b>' + q + '</b>' for q in questions])
+        self.services.issue.InsertComment(
+            self.mr.cnxn, tracker_pb2.IssueComment(
+                issue_id=issue.issue_id, project_id=issue.project_id,
+                user_id=self.mr.auth.user_id, content=survey,
+                is_description=True, approval_id=av.approval_id))
+      else:
+        logging.info(
+            'ERROR: ApprovalDef %r for ApprovalValue %r not valid', ad, av)
+
+    self.services.issue._UpdateIssuesApprovals(self.mr.cnxn, issue)
+
+    # Apply field value changes
+    delta = tracker_bizobj.MakeIssueDelta(
+        None, None, [], [], [], [], ['Type-FLT-Launch', 'FLT-Conversion'],
+        ['Type-Launch'], new_fvs, [], [], [], [], [], [], None, None)
+    amendments, _ = self.services.issue.DeltaUpdateIssue(
+        self.mr.cnxn, self.services, self.mr.auth.user_id, issue.project_id,
+        config, issue, delta, comment=CONVERSION_COMMENT)
+
+    return amendments
 
 
 def ConvertLaunchLabels(issue, approvals, project_fds):
