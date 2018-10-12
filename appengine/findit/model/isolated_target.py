@@ -117,6 +117,7 @@ class IsolatedTarget(ndb.Model):
 
     The reulsts will exclude the revision given.
     """
+    # pylint: disable=singleton-comparison
     return cls.query(
         cls.has_patch == False, cls.luci_project == luci_project,
         cls.bucket == bucket, cls.builder_name == builder_name,
@@ -140,6 +141,7 @@ class IsolatedTarget(ndb.Model):
     The results will exclude the revision given and uses master_name instead of
     project + bucket.
     """
+    # pylint: disable=singleton-comparison
     return cls.query(
         cls.has_patch == False, cls.master_name == master_name,
         cls.builder_name == builder_name, cls.gitiles_host == gitiles_host,
@@ -162,6 +164,7 @@ class IsolatedTarget(ndb.Model):
 
     The results may include the commit postion given.
     """
+    # pylint: disable=singleton-comparison
     return cls.query(cls.has_patch == False, cls.luci_project == luci_project,
                      cls.bucket == bucket, cls.builder_name == builder_name,
                      cls.gitiles_host == gitiles_host,
@@ -186,6 +189,7 @@ class IsolatedTarget(ndb.Model):
     The results may include the commit position given and uses master_name
     instead of project + bucket.
     """
+    # pylint: disable=singleton-comparison
     return cls.query(
         cls.has_patch == False, cls.master_name == master_name,
         cls.builder_name == builder_name, cls.gitiles_host == gitiles_host,
@@ -193,3 +197,21 @@ class IsolatedTarget(ndb.Model):
         cls.target_name == target_name,
         cls.commit_position >= commit_position).order(
             cls.commit_position).fetch(limit=limit)
+
+  @classmethod
+  def FindLatestIsolateByMaster(cls,
+                                master_name,
+                                builder_name,
+                                gitiles_host,
+                                gitiles_project,
+                                gitiles_ref,
+                                target_name,
+                                limit=1):
+    """Finds the latest isolate target with master_name by commit position."""
+    # pylint: disable=singleton-comparison
+    return cls.query(
+        cls.has_patch == False, cls.master_name == master_name,
+        cls.builder_name == builder_name, cls.gitiles_host == gitiles_host,
+        cls.gitiles_project == gitiles_project, cls.gitiles_ref == gitiles_ref,
+        cls.target_name == target_name).order(-cls.commit_position).fetch(
+            limit=limit)

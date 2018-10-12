@@ -248,7 +248,7 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
   def testGetLatestBuildNumberNoRecentCompletedBuilds(self, _):
     self.assertIsNone(build_util.GetLatestBuildNumber('m', 'b'))
 
-  @mock.patch.object(IsolatedTarget, 'FindIsolateBeforeCommitPositionByMaster')
+  @mock.patch.object(IsolatedTarget, 'FindLatestIsolateByMaster')
   def testGetLatestCommitPositionWithTargets(self, mocked_target):
     master_name = 'm'
     builder_name = 'b'

@@ -52,6 +52,11 @@ class IsolatedTargetTest(TestCase):
         'chromium/src', 'refs/heads/master', 'browser_tests', 55655)
     self.assertEqual(after[0],
                      IsolatedTarget.get_by_id('843400990909051/browser_tests'))
+    latest = IsolatedTarget.FindLatestIsolateByMaster(
+        'chromium.linux', 'Linux Builder', 'chromium.googlesource.com',
+        'chromium/src', 'refs/heads/master', 'browser_tests')
+    self.assertEqual(latest[0],
+                     IsolatedTarget.get_by_id('843400990909099/browser_tests'))
 
   def testIsolatedHash(self):
     isolated_hash = 'isolated_hash'

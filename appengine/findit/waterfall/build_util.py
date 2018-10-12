@@ -159,10 +159,10 @@ def GetLatestBuildNumber(master_name, builder_name):
 def GetLatestCommitPosition(master_name, builder_name, target_name):
   """Gets the latest commit position given a master/builder/target."""
   latest_targets = (
-      IsolatedTarget.FindIsolateBeforeCommitPositionByMaster(
+      IsolatedTarget.FindLatestIsolateByMaster(
           master_name, builder_name, services_constants.GITILES_HOST,
           services_constants.GITILES_PROJECT, services_constants.GITILES_REF,
-          target_name, float('inf')))
+          target_name))
 
   if latest_targets:
     return latest_targets[0].commit_position
