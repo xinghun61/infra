@@ -71,6 +71,10 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
         type: String,
         statePath: 'user',
       },
+      userGroups: {
+        type: Array,
+        statePath: 'userGroups',
+      },
       issueId: {
         type: String,
         statePath: 'issueId',
@@ -122,7 +126,7 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
       },
       _isApprovalOwner: {
         type: Boolean,
-        computed: '_computeIsApprovalOwner(approvers, user)',
+        computed: '_computeIsApprovalOwner(approvers, user, userGroups)',
         observer: '_openUserCards',
       },
       _expandIcon: {
@@ -271,10 +275,13 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
     return CLASS_ICON_MAP[cl];
   }
 
-  _computeIsApprovalOwner(users, user) {
-    if (!user || !users) return;
-    return users.find((u) => {
-      return u.displayName === user;
+  _computeIsApprovalOwner(approvers, user, userGroups) {
+    if (!user || !approvers) return;
+    userGroups = userGroups || [];
+    return approvers.find((a) => {
+      return a.displayName === user || userGroups.find(
+        (group) => group.displayName === a.displayName
+      );
     });
   }
 

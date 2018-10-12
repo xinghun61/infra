@@ -26,6 +26,11 @@
       FETCH_PROJECT_CONFIG_SUCCESS: 'FETCH_PROJECT_CONFIG_SUCCESS',
       FETCH_PROJECT_CONFIG_FAILURE: 'FETCH_PROJECT_CONFIG_FAILURE',
 
+      FETCH_USER_GROUPS_START: 'FETCH_USER_GROUPS_START',
+      FETCH_USER_GROUPS_SUCCESS: 'FETCH_USER_GROUPS_SUCCESS',
+      FETCH_USER_GROUPS_FAILURE: 'FETCH_USER_GROUPS_FAILURE',
+
+
       FETCH_ISSUE_START: 'FETCH_ISSUE_START',
       FETCH_ISSUE_SUCCESS: 'FETCH_ISSUE_SUCCESS',
       FETCH_ISSUE_FAILURE: 'FETCH_ISSUE_FAILURE',
@@ -157,8 +162,13 @@
     };
 
     const initial = {
+      user: null,
+      userGroups: [],
+
+      // TODO(zhangtiff): Combine these into viewedIssueRef for consistency.
       issueId: 0,
       projectName: '',
+
       projectConfig: {},
       issue: {},
       comments: [],
@@ -166,6 +176,9 @@
       isStarred: false,
 
       openedDialog: DialogState.NONE,
+
+      fetchingUserGroups: false,
+      fetchUserGroupsError: null,
 
       issueLoaded: false,
       fetchingIssue: false,
@@ -247,6 +260,23 @@
           return Object.assign({}, state, {
             fetchProjectConfigError: action.error,
             fetchingProjectConfig: false,
+          });
+
+        // Request for getting which groups the logged in user belongs to.
+        case actionType.FETCH_USER_GROUPS_START:
+          return Object.assign({}, state, {
+            fetchUserGroupsError: null,
+            fetchingUserGroups: true,
+          });
+        case actionType.FETCH_USER_GROUPS_SUCCESS:
+          return Object.assign({}, state, {
+            userGroups: action.groups,
+            fetchingUserGroups: false,
+          });
+        case actionType.FETCH_USER_GROUPS_FAILURE:
+          return Object.assign({}, state, {
+            fetchUserGroupsError: action.error,
+            fetchingUserGroups: false,
           });
 
         // Request for getting an issue.

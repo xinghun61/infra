@@ -125,6 +125,28 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
       type: actionType.UPDATE_USER,
       user,
     });
+
+    this.dispatch({type: actionType.FETCH_USER_GROUPS_START});
+
+    const getConfig = window.prpcClient.call(
+      'monorail.Users', 'GetMemberships', {
+        userRef: {
+          displayName: user,
+        },
+      }
+    );
+
+    getConfig.then((resp) => {
+      this.dispatch({
+        type: actionType.FETCH_USER_GROUPS_SUCCESS,
+        groups: resp.groupRefs,
+      });
+    }, (error) => {
+      this.dispatch({
+        type: actionType.FETCH_USER_GROUPS_FAILURE,
+        error,
+      });
+    });
   }
 
   _computeUserMenuItems(user, loginUrl, logoutUrl) {
