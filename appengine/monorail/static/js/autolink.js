@@ -258,10 +258,10 @@
 
   function markupAutolinks(plainString, componentRefs) {
     plainString = plainString || '';
-    const chunks = plainString.trim().split(/(<b>[^<\n]+<\/b>)|(\r?\n)/);
+    const chunks = plainString.trim().split(/(<b>[^<\n]+<\/b>)|(\r\n?|\n)/);
     let textRuns = [];
     chunks.filter(Boolean).forEach(chunk => {
-      if (chunk.match(/^\r$/) || chunk.match(/^\n$/)) {
+      if (chunk.match(/^(\r\n?|\n)$/)) {
         textRuns.push({tag: 'br'});
       } else if (chunk.startsWith('<b>') && chunk.endsWith('</b>')) {
         textRuns.push({content: chunk.slice(3, -4), tag: 'b'});

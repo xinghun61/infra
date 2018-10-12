@@ -351,6 +351,7 @@
     test('multilined bolds are not bolded', function() {
       const plainString = '<b>no multiline bolding \nnot allowed go/survey is still linked</b>';
       const actualTextRuns = markupAutolinks(plainString, componentRefs);
+
       assert.deepEqual(
           actualTextRuns, [
             {content: '<b>no multiline bolding '},
@@ -358,6 +359,18 @@
             {content: 'not allowed '},
             {content: 'go/survey', tag: 'a', href: 'https://go/survey'},
             {content: ' is still linked</b>'},
+          ]);
+
+      const plainString2 = '<b>no multiline bold \rwith carriage \r\nreturns</b>';
+      const actualTextRuns2 = markupAutolinks(plainString2, componentRefs);
+
+      assert.deepEqual(
+          actualTextRuns2, [
+            {content: '<b>no multiline bold '},
+            {tag: 'br'},
+            {content: 'with carriage '},
+            {tag: 'br'},
+            {content: 'returns</b>'},
           ]);
     });
   });

@@ -15,13 +15,13 @@ class MrCommentContent extends ReduxMixin(Polymer.Element) {
     return {
       content: String,
       commentReferences: {
-	type: Object,
-	value: () => new Map(),
-	statePath: 'commentReferences',
+        type: Object,
+        value: () => new Map(),
+        statePath: 'commentReferences',
       },
       _textRuns: {
         type: Array,
-	computed: '_computeTextRuns(content, commentReferences)',
+        computed: '_computeTextRuns(content, commentReferences)',
       },
     };
   }
