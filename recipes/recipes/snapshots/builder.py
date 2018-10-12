@@ -99,7 +99,9 @@ def RunSteps(api):
                 'builder_name': 'Snapshots',
                 'swarming': {
                     'override_builder_cfg': {
-                        'dimensions': ['id:%s' % bot],
+                        # Force removal of pool by overriding it to an empty
+                        # string. Otherwise Buildbucket defaults to pool:bucket.
+                        'dimensions': ['id:%s' % bot, 'pool:'],
                     },
                 },
             },
