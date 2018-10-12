@@ -44,6 +44,12 @@ handlers:
 - url: /bower_components
   static_dir: bower_components
   secure: always
+  mime_type: application/javascript
+
+- url: /node_modules
+  static_dir: node_modules
+  secure: always
+  mime_type: application/javascript
 
 - url: /deployed_node_modules
   static_dir: deployed_node_modules
