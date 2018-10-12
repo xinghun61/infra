@@ -13,49 +13,75 @@ class MrChart extends HTMLElement {
 
   constructor() {
     super();
+    this._animationFrameRequested = false;
 
     this.projectName = this.getAttribute('project-name');
     if (!this.projectName || !this.projectName.length) {
       throw new Error('Attribute `project-name` required.');
     }
-  }
 
-  async connectedCallback() {
+    // TODO(jeffcarp): Parameterize start and end time.
+    const currentUnixSeconds = Math.round((new Date()).getTime() / 1000);
+    this.timestamps = this._makeTimestamps(currentUnixSeconds, 14);
+    const indices = this._makeIndices(this.timestamps);
+
+    this.values = [];
+
+    // Attach DOM and initialize chart onto canvas.
     const shadowRoot = this.attachShadow({mode: 'open'});
     shadowRoot.appendChild(this._makeTemplate().content.cloneNode(true));
-
-    await this._fetchData();
-
     const ctx = shadowRoot.getElementById('canvas').getContext('2d');
-    this.chart = new window.Chart(ctx, this._chartConfig());
+    this.chart = new window.Chart(ctx, this._chartConfig(indices, this.values));
+
+    this._fetchData(this.timestamps);
   }
 
-  _fetchData() {
+  _makeTimestamps(untilUnixSeconds, numDaysBack) {
     // Populate array of timestamps we want to fetch.
-    const currentUnixSeconds = Math.round((new Date()).getTime() / 1000);
     const secondsInDay = 24 * 60 * 60;
-    const numDays = 14;
     const timestamps = [];
-    for (let i = 0; i < numDays; i++) {
-      timestamps.unshift(currentUnixSeconds - (secondsInDay * i));
+    for (let i = 0; i < numDaysBack; i++) {
+      // TODO(jeffcarp): Make day always begin at 0:00 UTC.
+      timestamps.unshift(untilUnixSeconds - (secondsInDay * i));
     }
+    return timestamps;
+  }
 
+  _makeIndices(timestamps) {
     const dateFormat = { year: 'numeric', month: 'numeric', day: 'numeric' };
-    this.indices = timestamps.map(ts => (
+    return timestamps.map(ts => (
       (new Date(ts * 1000)).toLocaleDateString('en-US', dateFormat)
     ));
+  }
 
-    // TODO(jeffcarp, 4387): Don't load all data points at once, bisect.
-    const fetchPromises = timestamps.map((ts) => this._fetchDataAtTimestamp(ts));
-    return Promise.all(fetchPromises).then(chartData => {
-      this.values = chartData.map((data) => data.issues);
+  _updateChartValues() {
+    if (this._animationFrameRequested) {
+      return;
+    }
 
-      // Calculate unsupported fields.
+    this._animationFrameRequested = true;
+    window.requestAnimationFrame(() => {
+      this.chart.data.datasets[0].data = this.values;
+      this.chart.update();
+      this._animationFrameRequested = false;
+    });
+  }
+
+  async _fetchData(timestamps) {
+    // TODO(jeffcarp, 4387): Load data points in bisect order.
+    const fetchPromises = timestamps.map(async (ts, index) => {
+      const data = await this._fetchDataAtTimestamp(ts);
+      this.values[index] = data.issues;
+      this._updateChartValues();
+      return data;
+    });
+
+    Promise.all(fetchPromises).then((chartData) => {
+      // TODO(jeffcarp): Reintroduce unsupported fields into UI.
       const flatUnsupportedFields = chartData.reduce((acc, datum) => {
         acc = acc.concat(datum.unsupportedField);
         return acc;
       }, []);
-      // TODO(jeffcarp): Re-display unsupported fields
       this.unsupportedFields = Array.from(new Set(flatUnsupportedFields));
     });
   }
@@ -81,26 +107,24 @@ class MrChart extends HTMLElement {
     });
   }
 
-  _chartConfig() {
+  _chartConfig(indices, values) {
     return {
       type: 'line',
       data: {
-        labels: this.indices,
+        labels: indices,
         datasets: [{
+          label: 'Issue count',
           backgroundColor: 'rgb(54, 162, 235)',
           borderColor: 'rgb(54, 162, 235)',
-          data: this.values,
+          data: values,
           fill: false,
         }]
       },
       options: {
         responsive: true,
         title: {
-          display: false,
-          text: 'Issue count over time'
-        },
-        legend: {
-          display: false,
+          display: true,
+          text: 'Issues over time'
         },
         tooltips: {
           mode: 'index',
@@ -125,7 +149,7 @@ class MrChart extends HTMLElement {
             },
             scaleLabel: {
               display: true,
-              labelString: 'Issue Count'
+              labelString: 'Value'
             }
           }]
         }
@@ -141,6 +165,8 @@ class MrChart extends HTMLElement {
 
     const canvas = document.createElement('canvas');
     canvas.id = 'canvas';
+
+    // TODO(jeffcarp, 4384): Add progress bar.
 
     div.appendChild(canvas);
     templateEl.content.appendChild(div);
