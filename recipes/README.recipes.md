@@ -899,7 +899,11 @@ Raises:
 
 [DEPS](/recipes/recipes/snapshots/snapshot.py#5): [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time], [recipe\_engine/url][recipe_engine/recipe_modules/url]
 
-&mdash; **def [RunSteps](/recipes/recipes/snapshots/snapshot.py#17)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/snapshots/snapshot.py#25)(api):**
+
+&mdash; **def [normalize](/recipes/recipes/snapshots/snapshot.py#17)(s):**
+
+Normalizes a string for use in a resource label.
 ### *recipes* / [sync\_submodules](/recipes/recipes/sync_submodules.py)
 
 [DEPS](/recipes/recipes/sync_submodules.py#7): [sync\_submodules](#recipe_modules-sync_submodules), [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime]

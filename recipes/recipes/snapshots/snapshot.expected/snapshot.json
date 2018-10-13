@@ -46,6 +46,8 @@
       "[START_DIR]/packages/snapshot",
       "-disk",
       "bot-id-disk",
+      "-label",
+      "machine_type:mt",
       "-name",
       "snapshot-133700000150",
       "-project",

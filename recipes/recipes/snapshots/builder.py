@@ -105,6 +105,7 @@ def RunSteps(api):
             'bucket': 'luci.chromium.cron',
             'parameters': {
                 'builder_name': 'Snapshots',
+                'properties': {'machine_type': mt},
                 'swarming': {
                     'override_builder_cfg': {
                         'dimensions': ['id:%s' % bot, 'pool:%s' % pool],

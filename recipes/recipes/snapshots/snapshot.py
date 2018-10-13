@@ -14,6 +14,14 @@ DEPS = [
 ]
 
 
+def normalize(s):
+  """Normalizes a string for use in a resource label."""
+  # Spec: https://cloud.google.com/compute/docs/labeling-resources
+  # Currently only bad characters that occur in practice are handled.
+  # TODO(smut): Adhere to the spec.
+  return s.lower().replace(' ', '-').replace('.', '-')
+
+
 def RunSteps(api):
   packages_dir = api.path['start_dir'].join('packages')
   ensure_file = api.cipd.EnsureFile()
@@ -32,8 +40,8 @@ def RunSteps(api):
   api.step('snapshot', [
       snapshot,
       '-disk', '%s-disk' % api.properties['bot_id'],
+      '-label', 'machine_type:%s' % normalize(api.properties['machine_type']),
       # Name doesn't matter since the snapshot will be identified by labels.
-      # TODO(smut): Add labels.
       '-name', 'snapshot-%s' % int(api.time.time() * 100),
       '-project', 'google.com:chromecompute',
       '-service-account-json', ':gce',
@@ -45,6 +53,6 @@ def GenTests(api):
   yield (
     api.test('snapshot') +
     api.platform('linux', 64) +
-    api.properties(bot_id='bot-id') +
+    api.properties(bot_id='bot-id', machine_type='mt') +
     api.buildbucket.ci_build()
   )
