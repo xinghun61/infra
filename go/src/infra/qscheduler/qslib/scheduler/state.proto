@@ -17,23 +17,7 @@ package scheduler;
 import "google/protobuf/timestamp.proto";
 import "infra/qscheduler/qslib/types/task/task.proto";
 import "infra/qscheduler/qslib/types/vector/vector.proto";
-import "infra/qscheduler/qslib/types/account/account.proto";
-
-
-// Worker represents a resource that can run 1 task at a time. This corresponds
-// to the swarming concept of a Bot. This representation considers only the
-// subset of Labels that are Provisionable (can be changed by running a task),
-// because the quota scheduler algorithm is expected to run against a pool of
-// otherwise homogenous workers.
-message Worker {
-  // Labels represents the set of provisionable labels that this worker
-  // possesses.
-  repeated string labels = 1;
-
-  // RunningTask is, if non-nil, the task that is currently running on the
-  // worker.
-  task.Run running_task = 2;
-}
+import "infra/qscheduler/qslib/scheduler/worker.proto";
 
 // State represents the overall state of a quota scheduler worker pool,
 // account set, and task queue. This is represented separately from
@@ -53,11 +37,4 @@ message State {
   // LastUpdateTime is the last time at which UpdateTime was called on a scheduler,
   // and corresponds to the when the quota account balances were updated.
   google.protobuf.Timestamp last_update_time = 4;
-}
-
-// Config represents configuration information about the behavior of accounts
-// for this quota scheduler pool.
-message Config {
-  // Configuration for a given account, keyed by account id.
-  map<string, account.Config> account_configs = 1;
 }

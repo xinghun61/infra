@@ -1,0 +1,37 @@
+// Copyright 2018 The LUCI Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+package scheduler;
+
+import "google/protobuf/timestamp.proto";
+import "infra/qscheduler/qslib/types/task/task.proto";
+import "infra/qscheduler/qslib/types/vector/vector.proto";
+import "infra/qscheduler/qslib/types/account/account.proto";
+
+
+// Worker represents a resource that can run 1 task at a time. This corresponds
+// to the swarming concept of a Bot. This representation considers only the
+// subset of Labels that are Provisionable (can be changed by running a task),
+// because the quota scheduler algorithm is expected to run against a pool of
+// otherwise homogenous workers.
+message Worker {
+  // Labels represents the set of provisionable labels that this worker
+  // possesses.
+  repeated string labels = 1;
+
+  // RunningTask is, if non-nil, the task that is currently running on the
+  // worker.
+  task.Run running_task = 2;
+}
+
