@@ -1135,7 +1135,8 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     }
 
     expected_cls = [
-        suspected_cl3, {
+        suspected_cl3,
+        {
             'revision': 'rev1',
             'commit_position': 1,
             'url': 'url_1',
@@ -1144,7 +1145,8 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
                 'step1': ['test1']
             },
             'top_score': None
-        }, {
+        },
+        {
             'revision': 'rev2',
             'commit_position': 2,
             'url': 'url_2',
@@ -1792,18 +1794,19 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
             'b_test': ['b_test1'],
         },
         'top_score': None
-    }, {
-        'revision': 'rev2',
-        'commit_position': 2,
-        'url': 'url_2',
-        'author': 'author2@abc.com',
-        'repo_name': 'chromium',
-        'failures': {
-            'a_test': ['a_test1', 'a_test2'],
-            'b_test': ['b_test1'],
-        },
-        'top_score': None
-    }]
+    },
+                    {
+                        'revision': 'rev2',
+                        'commit_position': 2,
+                        'url': 'url_2',
+                        'author': 'author2@abc.com',
+                        'repo_name': 'chromium',
+                        'failures': {
+                            'a_test': ['a_test1', 'a_test2'],
+                            'b_test': ['b_test1'],
+                        },
+                        'top_score': None
+                    }]
     self.assertEqual(expected_culprit_data, try_job_data.culprits)
     self.assertEqual(analysis.result_status, result_status.FOUND_UNTRIAGED)
     self.assertEqual(analysis.suspected_cls, expected_cls)
@@ -2088,8 +2091,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
         TestTryJobResult.FromSerializable({}),
         test_try_job.OnTryJobStateChanged(try_job_id, build_json, parameters))
     mock_fn.assert_called_once_with(try_job_id, failure_type.TEST, build_json)
-    mock_mon.assert_called_once_with('m', 'b', 1, 'a',
-                                     analysis_status.COMPLETED,
+    mock_mon.assert_called_once_with('m', 'b', analysis_status.COMPLETED,
                                      analysis_approach_type.TRY_JOB)
 
   @mock.patch.object(test_failure_analysis,
@@ -2129,5 +2131,5 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
         targeted_tests={'a': ['test1']},
         urlsafe_try_job_key='urlsafe_try_job_key')
     test_try_job.OnTryJobTimeout('id', parameters)
-    mock_mon.assert_called_once_with('m', 'b', 1, 'a', analysis_status.ERROR,
+    mock_mon.assert_called_once_with('m', 'b', analysis_status.ERROR,
                                      analysis_approach_type.TRY_JOB)

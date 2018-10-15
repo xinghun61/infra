@@ -153,6 +153,24 @@ def OnSwarmingTaskTriggered(master_name, builder_name, build_number, step_name,
   # TODO(crbug/869684): Use a gauge metric to track intermittent statuses.
 
 
+def _RecordSwarmingTaskStateChange(master_name, builder_name, build_number,
+                                   step_name, status, analysis_type):
+  """Records state changes for swarming tasks."""
+  step_metadata = {}
+  if step_name:
+    step_metadata = step_util.GetStepMetadata(master_name, builder_name,
+                                              build_number, step_name) or {}
+
+  monitoring.OnWaterfallAnalysisStateChange(
+      master_name=master_name,
+      builder_name=builder_name,
+      failure_type=failure_type.GetDescriptionForFailureType(failure_type.TEST),
+      canonical_step_name=step_metadata.get('canonical_step_name') or 'Unknown',
+      isolate_target_name=step_metadata.get('isolate_target_name') or 'Unknown',
+      status=analysis_status.STATUS_TO_DESCRIPTION[status],
+      analysis_type=analysis_approach_type.STATUS_TO_DESCRIPTION[analysis_type])
+
+
 def OnSwarmingTaskTimeout(run_swarming_task_params, task_id):
   master_name, builder_name, build_number = (
       run_swarming_task_params.build_key.GetParts())
@@ -176,9 +194,9 @@ def OnSwarmingTaskTimeout(run_swarming_task_params, task_id):
         created_ts=data.get('created_ts'),
         started_ts=data.get('started_ts'),
         completed_ts=data.get('completed_ts'))
-    test_failure_analysis.RecordTestFailureAnalysisStateChange(
-        master_name, builder_name, build_number, step_name,
-        analysis_status.COMPLETED, analysis_approach_type.SWARMING)
+    _RecordSwarmingTaskStateChange(master_name, builder_name, build_number,
+                                   step_name, analysis_status.COMPLETED,
+                                   analysis_approach_type.SWARMING)
   else:
     _UpdateSwarmingTaskEntity(
         master_name,
@@ -187,9 +205,9 @@ def OnSwarmingTaskTimeout(run_swarming_task_params, task_id):
         step_name,
         status=analysis_status.ERROR,
         error=error)
-    test_failure_analysis.RecordTestFailureAnalysisStateChange(
-        master_name, builder_name, build_number, step_name,
-        analysis_status.ERROR, analysis_approach_type.SWARMING)
+    _RecordSwarmingTaskStateChange(master_name, builder_name, build_number,
+                                   step_name, analysis_status.ERROR,
+                                   analysis_approach_type.SWARMING)
 
 
 def OnSwarmingTaskError(master_name,
@@ -210,9 +228,9 @@ def OnSwarmingTaskError(master_name,
         step_name,
         status=analysis_status.ERROR,
         error=error)
-    test_failure_analysis.RecordTestFailureAnalysisStateChange(
-        master_name, builder_name, build_number, step_name,
-        analysis_status.ERROR, analysis_approach_type.SWARMING)
+    _RecordSwarmingTaskStateChange(master_name, builder_name, build_number,
+                                   step_name, analysis_status.ERROR,
+                                   analysis_approach_type.SWARMING)
     return False
   else:
     _UpdateSwarmingTaskEntity(
@@ -235,9 +253,9 @@ def OnSwarmingTaskCompleted(master_name, builder_name, build_number, step_name,
       created_ts=data.get('created_ts'),
       started_ts=data.get('started_ts'),
       completed_ts=data.get('completed_ts'))
-  test_failure_analysis.RecordTestFailureAnalysisStateChange(
-      master_name, builder_name, build_number, step_name,
-      analysis_status.COMPLETED, analysis_approach_type.SWARMING)
+  _RecordSwarmingTaskStateChange(master_name, builder_name, build_number,
+                                 step_name, analysis_status.COMPLETED,
+                                 analysis_approach_type.SWARMING)
   return True
 
 

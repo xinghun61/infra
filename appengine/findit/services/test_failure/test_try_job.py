@@ -281,8 +281,8 @@ def GetParametersToScheduleTestTryJob(master_name, builder_name, build_number,
   # TODO(crbug/808699):  update this function call when refactor
   # start_compile_try_job_pipeline.
   parameters = try_job_service.PrepareParametersToScheduleTryJob(
-      master_name, builder_name, build_number, failure_info, heuristic_result
-      if heuristic_result else None, urlsafe_try_job_key)
+      master_name, builder_name, build_number, failure_info,
+      heuristic_result if heuristic_result else None, urlsafe_try_job_key)
 
   parameters['good_revision'] = _GetGoodRevisionTest(master_name, builder_name,
                                                      build_number, failure_info)
@@ -585,12 +585,9 @@ def OnTryJobStateChanged(try_job_id, build_json, run_try_job_params):
 
   if state in [analysis_status.COMPLETED, analysis_status.ERROR]:
     # TODO(crbug/869684): Use a gauge metric to track intermittent statuses.
-    master_name, builder_name, build_number = (
-        run_try_job_params.build_key.GetParts())
-    for step_name in run_try_job_params.targeted_tests or {}:
-      test_failure_analysis.RecordTestFailureAnalysisStateChange(
-          master_name, builder_name, build_number, step_name, state,
-          analysis_approach_type.TRY_JOB)
+    master_name, builder_name, _ = run_try_job_params.build_key.GetParts()
+    test_failure_analysis.RecordTestFailureAnalysisStateChange(
+        master_name, builder_name, state, analysis_approach_type.TRY_JOB)
 
   if result is not None:
     result = TestTryJobResult.FromSerializable(result)
@@ -599,9 +596,7 @@ def OnTryJobStateChanged(try_job_id, build_json, run_try_job_params):
 
 def OnTryJobTimeout(try_job_id, run_try_job_params):
   try_job_service.OnTryJobTimeout(try_job_id, failure_type.TEST)
-  master_name, builder_name, build_number = (
-      run_try_job_params.build_key.GetParts())
-  for step_name in run_try_job_params.targeted_tests or {}:
-    test_failure_analysis.RecordTestFailureAnalysisStateChange(
-        master_name, builder_name, build_number, step_name,
-        analysis_status.ERROR, analysis_approach_type.TRY_JOB)
+  master_name, builder_name, _ = run_try_job_params.build_key.GetParts()
+  test_failure_analysis.RecordTestFailureAnalysisStateChange(
+      master_name, builder_name, analysis_status.ERROR,
+      analysis_approach_type.TRY_JOB)
