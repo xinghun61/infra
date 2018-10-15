@@ -50,6 +50,9 @@ export class ClientLogger {
     this.ts_mon = new TSMonClient('/_/jstsmon.do', window.CS_env.token);
     this._clientId = ClientLogger.generateClientId();
 
+    const standardFields = new Map([
+      ['client_id', TSMonClient.stringField('client_id')]
+    ]);
     this.metrics = [
       {
         category: 'issues',
@@ -57,9 +60,7 @@ export class ClientLogger {
         metric: this.ts_mon.cumulativeDistribution(
           'monorail/frontend/issue_update_latency',
           'Latency between issue update form submit and issue detail page load.',
-          null,
-          (new Map([['client_id', TSMonClient.stringField('client_id')]])),
-        ),
+          null, standardFields),
       },
       {
         category: 'issues',
@@ -67,9 +68,15 @@ export class ClientLogger {
         metric: this.ts_mon.cumulativeDistribution(
           'monorail/frontend/issue_create_latency',
           'Latency between issue entry form submit and issue detail page load.',
-          null,
-          (new Map([['client_id', TSMonClient.stringField('client_id')]])),
-        ),
+          null, standardFields),
+      },
+      {
+        category: 'autocomplete',
+        eventName: 'populate-options',
+        metric: this.ts_mon.cumulativeDistribution(
+          'monorail/frontend/autocomplete_populate_latency',
+          'Latency between page load and autocomplete options loading.',
+          null, standardFields),
       },
     ];
 

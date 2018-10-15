@@ -26,6 +26,10 @@ ISSUE_UPDATE_LATENCY_METRIC = ts_mon.CumulativeDistributionMetric(
     'Latency between Issue Update form submission and page load of '
     'the subsequent issue page.'
   ), field_spec=[ts_mon.StringField('client_id')])
+AUTOCOMPLETE_POPULATE_LATENCY_METRIC = ts_mon.CumulativeDistributionMetric(
+  'monorail/frontend/autocomplete_populate_latency', (
+    'Latency between page load and autocomplete options loading.'
+  ), field_spec=[ts_mon.StringField('client_id')])
 
 
 class MonorailTSMonJSHandler(TSMonJSHandler):
@@ -34,7 +38,8 @@ class MonorailTSMonJSHandler(TSMonJSHandler):
     super(MonorailTSMonJSHandler, self).__init__(request, response)
     self.register_metrics([
         ISSUE_CREATE_LATENCY_METRIC,
-        ISSUE_UPDATE_LATENCY_METRIC])
+        ISSUE_UPDATE_LATENCY_METRIC,
+        AUTOCOMPLETE_POPULATE_LATENCY_METRIC])
 
   def xsrf_is_valid(self, body):
     """This method expects the body dictionary to include two fields:
