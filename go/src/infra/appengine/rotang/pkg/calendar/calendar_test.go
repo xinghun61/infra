@@ -367,6 +367,160 @@ func TestTrooperOncaller(t *testing.T) {
 	}
 }
 
+func TestTrooperToShifts(t *testing.T) {
+	tests := []struct {
+		name   string
+		fail   bool
+		events *gcal.Events
+		match  string
+		want   []rotang.ShiftEntry
+	}{{
+		name: "Success",
+		events: &gcal.Events{
+			Items: []*gcal.Event{
+				{
+					Start: &gcal.EventDateTime{
+						DateTime: midnight.Add(-fullDay).Format(time.RFC3339),
+					},
+					End: &gcal.EventDateTime{
+						DateTime: midnight.Format(time.RFC3339),
+					},
+					Summary: "CCI-Trooper: not1, not2, not3",
+				}, {
+					Start: &gcal.EventDateTime{
+						DateTime: midnight.Format(time.RFC3339),
+					},
+					End: &gcal.EventDateTime{
+						DateTime: midnight.Add(fullDay).Format(time.RFC3339),
+					},
+					Summary: "CCI-Trooper: this1, this2, this3",
+				}, {
+					Start: &gcal.EventDateTime{
+						DateTime: midnight.Add(fullDay).Format(time.RFC3339),
+					},
+					End: &gcal.EventDateTime{
+						DateTime: midnight.Add(2 * fullDay).Format(time.RFC3339),
+					},
+					Summary: "CCI-Trooper: nope1, nope2, nope3",
+				},
+			},
+		},
+		match: "CCI-Trooper: ",
+		want: []rotang.ShiftEntry{
+			{
+				Name:      "troopers",
+				StartTime: midnight.Add(-fullDay),
+				EndTime:   midnight,
+				OnCall: []rotang.ShiftMember{
+					{
+						Email: "not1@google.com",
+					}, {
+						Email: "not2@google.com",
+					}, {
+						Email: "not3@google.com",
+					},
+				},
+			}, {
+				Name:      "troopers",
+				StartTime: midnight,
+				EndTime:   midnight.Add(fullDay),
+				OnCall: []rotang.ShiftMember{
+					{
+						Email: "this1@google.com",
+					}, {
+						Email: "this2@google.com",
+					}, {
+						Email: "this3@google.com",
+					},
+				},
+			}, {
+				Name:      "troopers",
+				StartTime: midnight.Add(fullDay),
+				EndTime:   midnight.Add(2 * fullDay),
+				OnCall: []rotang.ShiftMember{
+					{
+						Email: "nope1@google.com",
+					}, {
+						Email: "nope2@google.com",
+					}, {
+						Email: "nope3@google.com",
+					},
+				},
+			},
+		},
+	},
+	}
+
+	for _, tst := range tests {
+		res, err := trooperToShifts(tst.events, tst.match)
+		if got, want := (err != nil), tst.fail; got != want {
+			t.Errorf("%s: trooperToShifts(_, %q) = %t want: %t, err: %v", tst.name, tst.match, got, want, err)
+			continue
+		}
+		if err != nil {
+			continue
+		}
+
+		if diff := pretty.Compare(tst.want, res); diff != "" {
+			t.Errorf("%s: trooperToShifte(_, %q) differ -want +got, %s", tst.name, tst.match, diff)
+		}
+	}
+
+}
+
+func TestTrooperShifts(t *testing.T) {
+	ctx := gaetesting.TestingContext()
+	ctxCancel, cancel := context.WithCancel(ctx)
+	cancel()
+
+	tests := []struct {
+		name     string
+		fail     bool
+		credFunc func(context.Context) (*http.Client, error)
+		ctx      *router.Context
+		from     time.Time
+		to       time.Time
+		match    string
+		cal      string
+		want     []rotang.ShiftEntry
+	}{{
+		name: "Canceled Context",
+		fail: true,
+		ctx: &router.Context{
+			Context: ctxCancel,
+		},
+	}, {
+		name:     "Failed credentials",
+		fail:     true,
+		credFunc: fakeFailCred,
+		ctx: &router.Context{
+			Context: ctx,
+			Request: getRequest("/"),
+		},
+	}, {
+		name:     "Success credentials",
+		fail:     true,
+		credFunc: fakePassCred,
+		ctx: &router.Context{
+			Context: ctx,
+			Request: getRequest("/"),
+		},
+	},
+	}
+
+	for _, tst := range tests {
+		c := New(tst.credFunc)
+		_, err := c.TrooperShifts(tst.ctx, tst.cal, tst.match, tst.from, tst.to)
+		if got, want := (err != nil), tst.fail; got != want {
+			t.Errorf("%s: TrooperShifts(ctx, %q, %q, %v, %v) = %t want: %t, err: %v", tst.name, tst.cal, tst.match, tst.from, tst.to, got, want, err)
+			continue
+		}
+		if err != nil {
+			continue
+		}
+	}
+}
+
 func TestEvents(t *testing.T) {
 	ctx := gaetesting.TestingContext()
 	datastore.TestTable(ctx)

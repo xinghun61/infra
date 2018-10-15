@@ -14,7 +14,6 @@ import (
 
 const (
 	weekDuration = 7 * fullDay
-	fullDay      = 24 * time.Hour
 )
 
 func TestJobSchedule(t *testing.T) {

@@ -73,6 +73,8 @@ func buildLegacyMap(h *State) map[string]func(ctx *router.Context, file string) 
 		"sheriff_ios.json":               h.legacySheriff,
 		"sheriff_v8.json":                h.legacySheriff,
 		"sheriff_perfbot.json":           h.legacySheriff,
+		// All rotations
+		"all_rotations.js": h.legacyAllRotations,
 	}
 }
 

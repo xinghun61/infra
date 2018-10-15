@@ -119,6 +119,61 @@ func (c *Calendar) Events(ctx *router.Context, cfg *rotang.Configuration, from, 
 
 const fullDay = 24 * time.Hour
 
+// TrooperShifts returns tropper oncallers for a timerange.
+func (c *Calendar) TrooperShifts(ctx *router.Context, calendar, match string, from, to time.Time) ([]rotang.ShiftEntry, error) {
+	if err := ctx.Context.Err(); err != nil {
+		return nil, err
+	}
+	client, err := c.credentials(appengine.NewContext(ctx.Request))
+	if err != nil {
+		return nil, err
+	}
+	cal, err := gcal.New(client)
+	if err != nil {
+		return nil, err
+	}
+	events, err := cal.Events.List(calendar).
+		ShowDeleted(false).SingleEvents(true).
+		TimeMin(from.Format(time.RFC3339)).TimeMax(to.Format(time.RFC3339)).
+		Q(match).
+		OrderBy("startTime").Do()
+	if err != nil {
+		return nil, err
+	}
+	return trooperToShifts(events, match)
+}
+
+func trooperToShifts(events *gcal.Events, match string) ([]rotang.ShiftEntry, error) {
+	var res []rotang.ShiftEntry
+	for _, e := range events.Items {
+		start, err := calToTime(e.Start)
+		if err != nil {
+			return nil, err
+		}
+		end, err := calToTime(e.End)
+		if err != nil {
+			return nil, err
+		}
+		oc, err := oncallerFromSummary(e.Summary, match)
+		if err != nil {
+			return nil, err
+		}
+		var oncallers []rotang.ShiftMember
+		for _, o := range oc {
+			oncallers = append(oncallers, rotang.ShiftMember{
+				Email: o + "@google.com",
+			})
+		}
+		res = append(res, rotang.ShiftEntry{
+			Name:      "troopers",
+			StartTime: start,
+			EndTime:   end,
+			OnCall:    oncallers,
+		})
+	}
+	return res, nil
+}
+
 // TrooperOncall returns trooper oncallers for specified time.
 func (c *Calendar) TrooperOncall(ctx *router.Context, calendar, match string, t time.Time) ([]string, error) {
 	if err := ctx.Context.Err(); err != nil {
