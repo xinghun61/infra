@@ -22,8 +22,8 @@ class FLTConvertTask(unittest.TestCase):
 
   def setUp(self):
     self.services = service_manager.Services(
-        issue=fake.IssueService()
-    )
+        issue=fake.IssueService(),
+        user=fake.UserService())
     self.mr = testing_helpers.MakeMonorailRequest()
     self.task = fltconversion.FLTConvertTask(
         'req', 'res', services=self.services)
@@ -108,6 +108,57 @@ class FLTConvertTask(unittest.TestCase):
         self.config, self.issue, delta,
         comment=fltconversion.CONVERSION_COMMENT)
 
+  def testConvertPeopleLabels(self):
+    self.task.services.user.LookupUserID = mock.Mock(side_effect=[1, 2, 3, 4])
+    self.issue.labels = [
+        'pm-u1', 'pm-u2', 'tl-u2', 'test-3', 'test-4']
+    fvs = self.task.ConvertPeopleLabels(self.mr, self.issue, 11, 12, 13)
+    expected = [
+        tracker_bizobj.MakeFieldValue(11, None, None, 1, None, None, False),
+        tracker_bizobj.MakeFieldValue(12, None, None, 2, None, None, False),
+        tracker_bizobj.MakeFieldValue(13, None, None, 3, None, None, False),
+        tracker_bizobj.MakeFieldValue(13, None, None, 4, None, None, False),
+        ]
+    self.assertEqual(fvs, expected)
+
+  def testConvertPeopleLabels_NoUsers(self):
+    def side_effect(_cnxn, _email):
+      raise exceptions.NoSuchUserException()
+    self.task.services.user.LookupUserID = mock.Mock(side_effect=side_effect)
+    self.assertFalse(
+        len(self.task.ConvertPeopleLabels(self.mr, self.issue, 11, 12, 13)))
+
+  def testCreateUserFieldValue_Chromium(self):
+    self.task.services.user.LookupUserID = mock.Mock(return_value=1)
+    actual = self.task.CreateUserFieldValue(self.mr, 'ldap', 11)
+    expected = tracker_bizobj.MakeFieldValue(
+        11, None, None, 1, None, None, False)
+    self.assertEqual(actual, expected)
+    self.task.services.user.LookupUserID.assert_called_once_with(
+        self.mr.cnxn, 'ldap@chromium.org')
+
+  def testCreateUserFieldValue_Goog(self):
+    def side_effect(_cnxn, email):
+      if email.endswith('chromium.org'):
+        raise exceptions.NoSuchUserException()
+      else:
+        return 2
+    self.task.services.user.LookupUserID = mock.Mock(side_effect=side_effect)
+    actual = self.task.CreateUserFieldValue(self.mr, 'ldap', 11)
+    expected = tracker_bizobj.MakeFieldValue(
+        11, None, None, 2, None, None, False)
+    self.assertEqual(actual, expected)
+    self.task.services.user.LookupUserID.assert_any_call(
+        self.mr.cnxn, 'ldap@chromium.org')
+    self.task.services.user.LookupUserID.assert_any_call(
+        self.mr.cnxn, 'ldap@google.com')
+
+  def testCreateUserFieldValue_NoUserFound(self):
+    def side_effect(_cnxn, _email):
+      raise exceptions.NoSuchUserException()
+    self.task.services.user.LookupUserID = mock.Mock(side_effect=side_effect)
+    self.assertIsNone(self.task.CreateUserFieldValue(self.mr, 'ldap', 11))
+
 class ConvertLaunchLabels(unittest.TestCase):
 
   def setUp(self):
@@ -155,3 +206,26 @@ class ConvertLaunchLabels(unittest.TestCase):
           approval_id=3, status=tracker_pb2.ApprovalStatus.NOT_SET)
         ]
     self.assertEqual(actual, expected)
+
+class ExtractLabelLDAPs(unittest.TestCase):
+
+  def testExtractLabelLDAPs_Normal(self):
+    labels = [
+        'tl-USER1',
+        'pm-',
+        'tL-User2',
+        'test-user4',
+        'PM-USER3',
+        'pm',
+        'test-user5',
+        'test-']
+    actual_pm, actual_tl, actual_tests = fltconversion.ExtractLabelLDAPs(labels)
+    self.assertEqual(actual_pm, 'user3')
+    self.assertEqual(actual_tl, 'user2')
+    self.assertEqual(actual_tests, ['user4', 'user5'])
+
+  def testExtractLabelLDAPs_NoLabels(self):
+    actual_pm, actual_tl, actual_tests = fltconversion.ExtractLabelLDAPs([])
+    self.assertIsNone(actual_pm)
+    self.assertIsNone(actual_tl)
+    self.assertFalse(len(actual_tests))

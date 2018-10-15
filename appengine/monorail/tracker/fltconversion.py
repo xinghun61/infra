@@ -14,6 +14,10 @@ from framework import jsonfeed
 from proto import tracker_pb2
 from tracker import tracker_bizobj
 
+PM_PREFIX = 'pm-'
+TL_PREFIX = 'tl-'
+TEST_PREFIX = 'test-'
+
 CONVERSION_COMMENT = "Automatic generating of FLT Launch data."
 
 APPROVALS_TO_LABELS = {
@@ -96,6 +100,39 @@ class FLTConvertTask(jsonfeed.InternalTask):
 
     return amendments
 
+  def ConvertPeopleLabels(
+      self, mr, issue, pm_field_id, tl_field_id, te_field_id):
+    field_values = []
+    pm_ldap, tl_ldap, test_ldaps = ExtractLabelLDAPs(issue.labels)
+
+    pm_fv = self.CreateUserFieldValue(mr, pm_ldap, pm_field_id)
+    if pm_fv:
+      field_values.append(pm_fv)
+
+    tl_fv = self.CreateUserFieldValue(mr, tl_ldap, tl_field_id)
+    if tl_fv:
+      field_values.append(tl_fv)
+
+    for test_ldap in test_ldaps:
+      te_fv = self.CreateUserFieldValue(mr, test_ldap, te_field_id)
+      if te_fv:
+        field_values.append(te_fv)
+    return field_values
+
+  def CreateUserFieldValue(self, mr, ldap, field_id):
+    if ldap is None:
+      return None
+    try:
+      user_id = self.services.user.LookupUserID(mr.cnxn, ldap+'@chromium.org')
+    except exceptions.NoSuchUserException:
+      try:
+        user_id = self.services.user.LookupUserID(mr.cnxn, ldap+'@google.com')
+      except exceptions.NoSuchUserException:
+        logging.info('No chromium.org or google.com accound found for %s', ldap)
+        return None
+    return tracker_bizobj.MakeFieldValue(
+        field_id, None, None, user_id, None, None, False)
+
 
 def ConvertLaunchLabels(issue, approvals, project_fds):
   """Converts 'Launch-[Review]' values into statuses for given approvals."""
@@ -104,7 +141,7 @@ def ConvertLaunchLabels(issue, approvals, project_fds):
     launch_match = REVIEW_LABELS_RE.match(label)
     if launch_match:
       prefix = launch_match.group()
-      value = label.split(prefix, 1)[1]  # returns 'Yes' from 'Launch-UI-Yes'
+      value = label[len(prefix):]  # returns 'Yes' from 'Launch-UI-Yes'
       label_values[prefix] = value
 
   field_names_dict = {fd.field_id: fd.field_name for fd in project_fds}
@@ -116,3 +153,22 @@ def ConvertLaunchLabels(issue, approvals, project_fds):
     approval.status = VALUE_TO_STATUS.get(label_value, approval.status)
 
   return approvals
+
+
+def ExtractLabelLDAPs(labels):
+  """Extracts LDAPs from labels 'PM-', 'TL-', and 'test-'"""
+
+  pm_ldap = None
+  tl_ldap = None
+  test_ldaps = []
+  for label in labels:
+    label = label.lower()
+    if label.startswith(PM_PREFIX):
+      pm_ldap = label[len(PM_PREFIX):]
+    elif label.startswith(TL_PREFIX):
+      tl_ldap = label[len(TL_PREFIX):]
+    elif label.startswith(TEST_PREFIX):
+      ldap = label[len(TEST_PREFIX):]
+      if ldap:
+        test_ldaps.append(ldap)
+  return pm_ldap, tl_ldap, test_ldaps
