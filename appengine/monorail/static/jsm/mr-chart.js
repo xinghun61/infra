@@ -4,6 +4,7 @@
 
 import '/deployed_node_modules/chart.js/dist/Chart.min.js';
 
+const DEFAULT_NUM_DAYS = 14;
 
 class MrChart extends HTMLElement {
 
@@ -20,9 +21,7 @@ class MrChart extends HTMLElement {
       throw new Error('Attribute `project-name` required.');
     }
 
-    // TODO(jeffcarp): Parameterize start and end time.
-    const currentUnixSeconds = Math.round((new Date()).getTime() / 1000);
-    this.timestamps = this._makeTimestamps(currentUnixSeconds, 14);
+    this.timestamps = this._makeTimestamps(DEFAULT_NUM_DAYS);
     const indices = this._makeIndices(this.timestamps);
 
     this.values = [];
@@ -36,15 +35,38 @@ class MrChart extends HTMLElement {
     this._fetchData(this.timestamps);
   }
 
-  _makeTimestamps(untilUnixSeconds, numDaysBack) {
-    // Populate array of timestamps we want to fetch.
+  // Populate array of timestamps we want to fetch.
+  _makeTimestamps(numDaysBack) {
+    const endTimeSeconds = this._getEndTime();
     const secondsInDay = 24 * 60 * 60;
     const timestamps = [];
     for (let i = 0; i < numDaysBack; i++) {
-      // TODO(jeffcarp): Make day always begin at 0:00 UTC.
-      timestamps.unshift(untilUnixSeconds - (secondsInDay * i));
+      timestamps.unshift(endTimeSeconds - (secondsInDay * i));
     }
     return timestamps;
+  }
+
+  // Get the chart end time from either the URL or current time.
+  _getEndTime() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const endDateString = urlParams.get('end_date');
+    let year, month, day;
+    if (endDateString) {
+      const splitEndDate = endDateString.split('-');
+      year = Number(splitEndDate[0]);
+      month = Number(splitEndDate[1]) - 1;
+      day = Number(splitEndDate[2]);
+    } else {
+      const today = new Date();
+      year = today.getUTCFullYear();
+      month = today.getUTCMonth();
+      day = today.getUTCDate();
+    }
+
+    // Align the date to EOD UTC.
+    const timestampMs = Date.UTC(year, month, day, 23, 59, 59);
+    // Return seconds since back-end expects seconds.
+    return Math.round(timestampMs / 1000);
   }
 
   _makeIndices(timestamps) {
