@@ -79,6 +79,10 @@ class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
         type: Boolean,
         value: false,
       },
+      _statusesGrouped: {
+        type: Array,
+        computed: '_computeStatusesGrouped(statuses, isApproval)',
+      },
       _nicheFieldCount: {
         type: Boolean,
         computed: '_computeNicheFieldCount(fieldDefs)',
@@ -232,6 +236,22 @@ class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
 
   _computeIsSelected(a, b) {
     return a === b;
+  }
+
+  _computeStatusesGrouped(statuses, isApproval) {
+    if (isApproval) {
+      return [{statuses: statuses}];
+    }
+    return [
+      {
+        name: 'Open',
+        statuses: statuses.filter((s) => s.meansOpen),
+      },
+      {
+        name: 'Closed',
+        statuses: statuses.filter((s) => !s.meansOpen),
+      },
+    ];
   }
 
   _mapBlockerRefsToIdStrings(arr, projectName) {

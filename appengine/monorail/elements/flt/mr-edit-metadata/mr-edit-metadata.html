@@ -82,16 +82,34 @@
           <label for="statusInput">Status:</label>
 
           <select id="statusInput">
-            <template is="dom-repeat" items="[[statuses]]">
-              <option
-                value$="[[item.status]]"
-                selected$="[[_computeIsSelected(status, item.status)]]"
-              >
-                [[item.status]]
-                <template is="dom-if" if="[[item.docstring]]">
-                  - [[item.docstring]]
+            <template is="dom-repeat" items="[[_statusesGrouped]]" as="group">
+              <optgroup label$="[[group.name]]" hidden$="[[!group.name]]">
+                <template is="dom-repeat" items="[[group.statuses]]">
+                  <option
+                    value$="[[item.status]]"
+                    selected$="[[_computeIsSelected(status, item.status)]]"
+                  >
+                    [[item.status]]
+                    <template is="dom-if" if="[[item.docstring]]">
+                      = [[item.docstring]]
+                    </template>
+                  </option>
                 </template>
-              </option>
+              </optgroup>
+
+              <template is="dom-if" if="[[!group.name]]">
+                <template is="dom-repeat" items="[[group.statuses]]">
+                  <option
+                    value$="[[item.status]]"
+                    selected$="[[_computeIsSelected(status, item.status)]]"
+                  >
+                    [[item.status]]
+                    <template is="dom-if" if="[[item.docstring]]">
+                      = [[item.docstring]]
+                    </template>
+                  </option>
+                </template>
+              </template>
             </template>
           </select>
         </template>
