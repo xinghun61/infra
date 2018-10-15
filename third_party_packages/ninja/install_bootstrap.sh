@@ -9,9 +9,7 @@ set -o pipefail
 
 PREFIX="$1"
 
-# Cross compiling; rely on `ninja` in $PATH.
-./configure.py
-ninja -j $(nproc)
+./configure.py --bootstrap
 if [[ $PLATFORM == windows* ]]; then
   cp ninja.exe "$PREFIX"
 else

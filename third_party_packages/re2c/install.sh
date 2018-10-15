@@ -8,12 +8,12 @@ set -x
 set -o pipefail
 
 PREFIX="$1"
+DEPS="$2"
 
-# Cross compiling; rely on `ninja` in $PATH.
-./configure.py
-ninja -j $(nproc)
-if [[ $PLATFORM == windows* ]]; then
-  cp ninja.exe "$PREFIX"
-else
-  cp ninja "$PREFIX"
-fi
+./configure \
+  --enable-static --disable-shared \
+  "--prefix=$PREFIX" \
+  "--host=$CROSS_TRIPLE"
+
+make -j $(nproc)
+make install -j $(nproc)
