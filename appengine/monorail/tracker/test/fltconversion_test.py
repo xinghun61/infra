@@ -159,6 +159,64 @@ class FLTConvertTask(unittest.TestCase):
     self.task.services.user.LookupUserID = mock.Mock(side_effect=side_effect)
     self.assertIsNone(self.task.CreateUserFieldValue(self.mr, 'ldap', 11))
 
+
+class ConvertMLabels(unittest.TestCase):
+
+  def setUp(self):
+    self.target_id = 24
+    self.approved_id = 27
+    self.beta_phase = tracker_pb2.Phase(phase_id=1, name='bEtA')
+    self.stable_phase = tracker_pb2.Phase(phase_id=2, name='StAbLe')
+    self.stable_full_phase = tracker_pb2.Phase(phase_id=3, name='stable-FULL')
+    self.stable_exp_phase = tracker_pb2.Phase(phase_id=4, name='STABLE-exp')
+
+  def testConvertMLabels_NormalFinch(self):
+
+    phases = [self.stable_exp_phase, self.beta_phase, self.stable_full_phase]
+    labels = [
+        'launch-m-approved-81-beta',  # beta:M-Approved=81
+        'launch-m-target-80-stable-car',  # ignore
+        'a-Launch-M-Target-80-Stable-car',  # ignore
+        'launch-m-target-70-Stable',  # stable-full:M-Target=70
+        'LAUNCH-M-TARGET-71-STABLE',  # stable-full:M-Target=71
+        'launch-m-target-70-stable-exp',  # stable-exp:M-Target=70
+        'launch-m-target-69-stable-exp',  # stable-exp:M-Target=69
+        'launch-M-APPROVED-70-Stable-Exp',  # stable-exp:M-Approved-70
+        'launch-m-approved-73-stable',  # stable-full:M-Approved-73
+        'launch-m-error-73-stable',  # ignore
+        'launch-m-approved-8-stable',  #ignore
+        'irrelevant label-weird',  # ignore
+    ]
+    actual_fvs = fltconversion.ConvertMLabels(
+        labels, phases, self.target_id, self.approved_id)
+
+    expected_fvs = [
+      tracker_pb2.FieldValue(
+          field_id=self.approved_id, int_value=81,
+          phase_id=self.beta_phase.phase_id, derived=False,),
+      tracker_pb2.FieldValue(
+          field_id=self.target_id, int_value=70,
+          phase_id=self.stable_full_phase.phase_id, derived=False),
+      tracker_pb2.FieldValue(
+          field_id=self.target_id, int_value=71,
+          phase_id=self.stable_full_phase.phase_id, derived=False),
+      tracker_pb2.FieldValue(
+          field_id=self.target_id, int_value=70,
+          phase_id=self.stable_exp_phase.phase_id, derived=False),
+      tracker_pb2.FieldValue(
+          field_id=self.target_id, int_value=69,
+          phase_id=self.stable_exp_phase.phase_id, derived=False),
+      tracker_pb2.FieldValue(
+          field_id=self.approved_id, int_value=70,
+          phase_id=self.stable_exp_phase.phase_id, derived=False),
+      tracker_pb2.FieldValue(
+          field_id=self.approved_id, int_value=73,
+          phase_id=self.stable_full_phase.phase_id, derived=False)
+    ]
+
+    self.assertEqual(actual_fvs, expected_fvs)
+
+
 class ConvertLaunchLabels(unittest.TestCase):
 
   def setUp(self):
