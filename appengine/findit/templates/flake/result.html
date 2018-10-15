@@ -453,13 +453,16 @@
                          error="{{error or ''}}">
     </flake-analysis-info>
     {% if show_admin_options %}
-      {% if most_recent_flakiness %}
+      {% if most_recent_flakiness.commit_position %}
         <check-recent-flakiness last-analyzed-commit-position="{{most_recent_flakiness.commit_position}}"
                                 committed-days-ago="{{most_recent_flakiness.committed_days_ago}}"
                                 pass-rate="{{ '%0.1f%%' % (most_recent_flakiness.pass_rate * 100) }}"
                                 swarm-task="{{most_recent_flakiness.swarm_task}}"
                                 xsrf-token="{{xsrf_token}}"
-                                key="{{key}}">
+                                key="{{key}}"
+                                status="{{most_recent_flakiness.status}}"
+                                pipeline-status-path="{{most_recent_flakiness.pipeline_status_path}}"
+                                can-check-recent-flakiness="{{most_recent_flakiness.can_check_recent_flakiness}}">
         </check-recent-flakiness>
       {% else %}
         <check-recent-flakiness last-analyzed-commit-position=""
@@ -467,7 +470,10 @@
                                 pass-rate=""
                                 swarm-task=""
                                 xsrf-token="{{xsrf_token}}"
-                                key="{{key}}">
+                                key="{{key}}"
+                                status="{{most_recent_flakiness.status}}"
+                                pipeline-status-path="{{most_recent_flakiness.pipeline_status_path}}"
+                                can-check-recent-flakiness="{{most_recent_flakiness.can_check_recent_flakiness}}">
         </check-recent-flakiness>
       {% endif %}
     {% endif %}

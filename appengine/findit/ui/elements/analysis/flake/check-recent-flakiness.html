@@ -50,7 +50,12 @@
           <input type="hidden" name="analyze_recent_commit" value="1" />
           <input type="hidden" name="key" value="[[key]]" />
           <input type="hidden" name="xsrf_token" value="[[xsrfToken]]" />
-          <input type="submit" value="Analyze tip of tree"/>
+          <template is="dom-if" if="[[_canCheckRecentFlakiness()]]">
+            <input type="submit" value="Analyze tip of tree"/>
+          </template>
+          <template is="dom-if" if="[[!_canCheckRecentFlakiness()]]">
+            <input type="submit" value="Analyzing..." disabled>
+          </template>
         </form>
       </div>
       <div slot="expandable-card-content">
@@ -99,8 +104,13 @@
           passRate: String,
           passCount: Number,
           iterations: Number,
+          canCheckRecentFlakiness: String,
           swarmTask: String,
           xsrfToken: String,
+        },
+
+        _canCheckRecentFlakiness: function() {
+          return this.canCheckRecentFlakiness == 'True';
         },
       });
     })();

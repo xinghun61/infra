@@ -235,6 +235,29 @@ def _GetDataPointInfo(data_point):
   return data_point_dict
 
 
+def _CanCheckRecentFlakiness(analysis):
+  """Checks if |analysis| is in an eligible state to check recent flakiness."""
+  return (
+      analysis.analyze_recent_flakiness_status != analysis_status.RUNNING and
+      analysis.status not in [analysis_status.RUNNING, analysis_status.PENDING])
+
+
+def _GetRecentFlakinessInfo(analysis):
+  recent_flakiness_dict = {}
+  latest_data_point = analysis.GetLatestDataPoint()
+
+  if latest_data_point:  # pragma: no branch
+    recent_flakiness_dict = _GetDataPointInfo(latest_data_point)
+
+  recent_flakiness_dict['status'] = analysis.analyze_recent_flakiness_status
+  recent_flakiness_dict['pipeline_status_path'] = (
+      analysis.analyze_recent_flakiness_pipeline_status_path)
+  recent_flakiness_dict['can_check_recent_flakiness'] = (
+      _CanCheckRecentFlakiness(analysis))
+
+  return recent_flakiness_dict
+
+
 class CheckFlake(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
@@ -616,9 +639,6 @@ class CheckFlake(BaseHandler):
     data['pass_rates'] = _GetCoordinatesData(analysis)
 
     # Show the most up-to-date flakiness.
-    latest_data_point = analysis.GetLatestDataPoint()
-    if latest_data_point:
-      recent_flakiness_dict = _GetDataPointInfo(latest_data_point)
-      data['most_recent_flakiness'] = recent_flakiness_dict
+    data['most_recent_flakiness'] = _GetRecentFlakinessInfo(analysis)
 
     return {'template': 'flake/result.html', 'data': data}

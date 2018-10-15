@@ -609,7 +609,10 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'build_number': 101,
             'git_hash': 'hash1',
             'failed_swarming_task_attempts': 0,
-            'committed_days_ago': '1 day, 0:00:00'
+            'committed_days_ago': '1 day, 0:00:00',
+            'status': None,
+            'pipeline_status_path': None,
+            'can_check_recent_flakiness': False,
         },
     }
 
@@ -1274,3 +1277,19 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'format': 'json'
         })
     mocked_analyze_recent_flakiness.assert_called_with(analysis.key.urlsafe())
+
+  def testCanCheckRecentFlakinessMainAnalysisInProgress(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.status = analysis_status.RUNNING
+    self.assertFalse(check_flake._CanCheckRecentFlakiness(analysis))
+
+  def testCanCheckRecentFlakinessAlreadyInProgress(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.analyze_recent_flakiness_status = analysis_status.RUNNING
+    self.assertFalse(check_flake._CanCheckRecentFlakiness(analysis))
+
+  def testCanCheckRecentFlakiness(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.analyze_recent_flakiness_status = analysis_status.COMPLETED
+    analysis.status = analysis_status.COMPLETED
+    self.assertTrue(check_flake._CanCheckRecentFlakiness(analysis))
