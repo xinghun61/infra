@@ -2673,19 +2673,9 @@ class IssueService(object):
     self.comment_2lc.InvalidateKeys(cnxn, [comment.id])
 
   def SoftDeleteAttachment(
-      self, cnxn, project_id, local_id, seq_num, attach_id, user_service,
-      delete=True, index_now=False):
+      self, cnxn, issue, issue_comment, attach_id, user_service, delete=True,
+      index_now=False):
     """Mark attachment as un/deleted, which shows/hides it from avg users."""
-    issue = self.GetIssueByLocalID(cnxn, project_id, local_id, use_cache=False)
-    all_comments = self.GetCommentsForIssue(cnxn, issue.issue_id)
-    try:
-      issue_comment = all_comments[seq_num]
-    except IndexError:
-      logging.warning(
-          'Tried to (un)delete attachment on non-existent comment #%s in  '
-          'issue %s:%s', seq_num, project_id, local_id)
-      return
-
     attachment = None
     for attach in issue_comment.attachments:
       if attach.attachment_id == attach_id:
@@ -2694,7 +2684,7 @@ class IssueService(object):
     if not attachment:
       logging.warning(
           'Tried to (un)delete non-existent attachment #%s in project '
-          '%s issue %s', attach_id, project_id, local_id)
+          '%s issue %s', attach_id, issue.project_id, issue.local_id)
       return
 
     if not issue_comment.deleted_by:

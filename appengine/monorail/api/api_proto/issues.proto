@@ -34,6 +34,7 @@ service Issues {
   rpc RerankBlockedOnIssues (RerankBlockedOnIssuesRequest) returns (RerankBlockedOnIssuesResponse) {}
   rpc DeleteIssue (DeleteIssueRequest) returns (DeleteIssueResponse) {}
   rpc DeleteIssueComment (DeleteIssueCommentRequest) returns (DeleteIssueCommentResponse) {}
+  rpc DeleteAttachment (DeleteAttachmentRequest) returns (DeleteAttachmentResponse) {}
 }
 
 
@@ -326,4 +327,19 @@ message DeleteIssueCommentRequest {
 
 // Next available tag: 1
 message DeleteIssueCommentResponse {
+}
+
+
+// Next available tag: 6
+message DeleteAttachmentRequest {
+  RequestTrace trace = 1;
+  IssueRef issue_ref = 2;
+  uint32 sequence_num = 3;
+  uint32 attachment_id = 4;
+  bool delete = 5;
+}
+
+
+// Next available tag: 1
+message DeleteAttachmentResponse {
 }

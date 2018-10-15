@@ -1285,6 +1285,17 @@ class IssueService(object):
     if attachment not in comment.attachments:
       comment.attachments.extend([attachment])
 
+  def SoftDeleteAttachment(
+      self, _cnxn, _issue, comment, attach_id, _user_service, delete=True,
+      index_now=False):
+    attachment = None
+    for attach in comment.attachments:
+      if attach.attachment_id == attach_id:
+        attachment = attach
+    if not attachment:
+      return
+    attachment.deleted = delete
+
   def GetAttachmentAndContext(self, _cnxn, attachment_id):
     if attachment_id in self.attachments_by_id:
       attach, comment_id, issue_id = self.attachments_by_id[attachment_id]

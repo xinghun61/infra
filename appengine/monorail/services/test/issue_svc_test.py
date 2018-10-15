@@ -1866,19 +1866,24 @@ class IssueServiceTest(unittest.TestCase):
     pass
 
   def testSoftDeleteAttachment(self):
-    issue_1, issue_2 = self.SetUpGetIssues()
-    self.services.issue.issue_2lc = TestableIssueTwoLevelCache(
-        [issue_1, issue_2])
-    issue_1.attachment_count = 1
-    self.services.issue.issue_id_2lc.CacheItem((789, 1), 78901)
-    self.SetUpGetComments([78901])
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue.assume_stale = False
+    issue.attachment_count = 1
+
+    comment = tracker_pb2.IssueComment(
+        project_id=789, content='soon to be deleted', user_id=111L,
+        issue_id=issue.issue_id)
+    attachment = tracker_pb2.Attachment(
+        attachment_id=1234)
+    comment.attachments.append(attachment)
+
     self.SetUpUpdateAttachment(179901, 1234, {'deleted': True})
     self.SetUpUpdateIssues(given_delta={'attachment_count': 0})
     self.SetUpEnqueueIssuesForIndexing([78901])
 
     self.mox.ReplayAll()
     self.services.issue.SoftDeleteAttachment(
-        self.cnxn, 789, 1, 0, 1234, self.services.user)
+        self.cnxn, issue, comment, 1234, self.services.user)
     self.mox.VerifyAll()
 
   ### Reindex queue

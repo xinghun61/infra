@@ -1163,6 +1163,48 @@ class WorkEnvTest(unittest.TestCase):
       self.assertEqual(None, comment.deleted_by)
       mockSoftDeleteComment.assert_not_called()
 
+  def testDeleteAttachment_Normal(self):
+    """We can mark and unmark a comment attachment as deleted."""
+    self.SignIn(user_id=111L)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    comment = tracker_pb2.IssueComment(
+        project_id=789, content='soon to be deleted', user_id=111L,
+        issue_id=issue.issue_id)
+    self.services.issue.TestAddComment(comment, 1)
+    attachment = tracker_pb2.Attachment()
+    self.services.issue.TestAddAttachment(attachment, comment.id, 1)
+    with self.work_env as we:
+      we.DeleteAttachment(
+          issue, comment, attachment.attachment_id, True)
+      self.assertTrue(attachment.deleted)
+      we.DeleteAttachment(
+          issue, comment, attachment.attachment_id, False)
+      self.assertFalse(attachment.deleted)
+
+  @patch('services.issue_svc.IssueService.SoftDeleteComment')
+  @patch('framework.permissions.CanDelete')
+  def testDeleteAttachment_UndeletablePermissions(
+      self, mockCanDelete, mockSoftDeleteComment):
+    """Throws exception when deleter doesn't have permission to do so."""
+    mockCanDelete.return_value = False
+    self.SignIn(user_id=111L)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    comment = tracker_pb2.IssueComment(
+        project_id=789, content='soon to be deleted', user_id=111L,
+        issue_id=issue.issue_id, is_spam=True)
+    self.services.issue.TestAddComment(comment, 1)
+    attachment = tracker_pb2.Attachment()
+    self.services.issue.TestAddAttachment(attachment, comment.id, 1)
+    self.assertFalse(attachment.deleted)
+    with self.work_env as we:
+      with self.assertRaises(permissions.PermissionException):
+        we.DeleteAttachment(
+            issue, comment, attachment.attachment_id, True)
+      self.assertFalse(attachment.deleted)
+      mockSoftDeleteComment.assert_not_called()
+
   def testStarIssue_Normal(self):
     """We can star and unstar issues."""
     issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)

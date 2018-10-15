@@ -1292,6 +1292,7 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertIsNone(comment.deleted_by)
 
   def testDeleteIssueComment_InvalidSequenceNum(self):
+    """We can handle invalid sequence numbers."""
     request = issues_pb2.DeleteIssueCommentRequest(
         issue_ref=common_pb2.IssueRef(
             project_name='proj',
@@ -1303,3 +1304,72 @@ class IssuesServicerTest(unittest.TestCase):
 
     with self.assertRaises(exceptions.InputException):
       self.CallWrapped(self.issues_svcr.DeleteIssueComment, mc, request)
+
+  def testDeleteAttachment_Delete(self):
+    """We can delete an issue comment attachment."""
+    comment = tracker_pb2.IssueComment(
+        project_id=self.project.project_id,
+        issue_id=self.issue_1.issue_id,
+        user_id=111L,
+        content='Foo',
+        timestamp=12345L)
+    self.services.issue.TestAddComment(comment, self.issue_1.local_id)
+    attachment = tracker_pb2.Attachment()
+    self.services.issue.TestAddAttachment(attachment, comment.id, 1)
+
+    request = issues_pb2.DeleteAttachmentRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        sequence_num=1,
+        attachment_id=attachment.attachment_id,
+        delete=True)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    self.CallWrapped(
+        self.issues_svcr.DeleteAttachment, mc, request)
+
+    self.assertTrue(attachment.deleted)
+
+  def testDeleteAttachment_Undelete(self):
+    """We can undelete an issue comment attachment."""
+    comment = tracker_pb2.IssueComment(
+        project_id=self.project.project_id,
+        issue_id=self.issue_1.issue_id,
+        user_id=111L,
+        content='Foo',
+        timestamp=12345L,
+        deleted_by=111L)
+    self.services.issue.TestAddComment(comment, self.issue_1.local_id)
+    attachment = tracker_pb2.Attachment(deleted=True)
+    self.services.issue.TestAddAttachment(attachment, comment.id, 1)
+
+    request = issues_pb2.DeleteAttachmentRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        sequence_num=1,
+        attachment_id=attachment.attachment_id,
+        delete=False)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    self.CallWrapped(
+        self.issues_svcr.DeleteAttachment, mc, request)
+
+    self.assertFalse(attachment.deleted)
+
+  def testDeleteAttachment_InvalidSequenceNum(self):
+    """We can handle invalid sequence numbers."""
+    request = issues_pb2.DeleteAttachmentRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        sequence_num=1,
+        attachment_id=1234,
+        delete=True)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+
+    with self.assertRaises(exceptions.InputException):
+      self.CallWrapped(
+          self.issues_svcr.DeleteAttachment, mc, request)

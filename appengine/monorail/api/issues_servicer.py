@@ -475,3 +475,20 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
 
     result = issues_pb2.DeleteIssueCommentResponse()
     return result
+
+  @monorail_servicer.PRPCMethod
+  def DeleteAttachment(self, mc, request):
+    """Mark or unmark the given attachment as deleted."""
+    _project, issue, _config = self._GetProjectIssueAndConfig(
+        mc, request.issue_ref, use_cache=False)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      comments = we.ListIssueComments(issue)
+      if request.sequence_num >= len(comments):
+        raise exceptions.InputException('Invalid sequence number.')
+      we.DeleteAttachment(
+          issue, comments[request.sequence_num], request.attachment_id,
+          request.delete)
+
+    result = issues_pb2.DeleteAttachmentResponse()
+    return result

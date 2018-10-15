@@ -26,6 +26,7 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 // TODO(jojwang): monorail:1701, fill User with all info necessary for
 // creating a user profile page.
+// Next available tag: 4
 type User struct {
 	Email                string   `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
 	UserId               int64    `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`

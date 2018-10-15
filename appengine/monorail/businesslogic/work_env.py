@@ -134,6 +134,16 @@ class WorkEnv(object):
       raise permissions.PermissionException(
         'User lacks permission %r in issue' % perm)
 
+  def _AssertUserCanDeleteComment(self, issue, comment):
+    project, granted_perms = self._AssertUserCanViewIssue(
+        issue, allow_viewing_deleted=True)
+    permitted = permissions.CanDelete(
+        self.mc.auth.user_id, self.mc.auth.effective_ids, self.mc.perms,
+        comment.deleted_by, comment.user_id, project,
+        permissions.GetRestrictions(issue), granted_perms=granted_perms)
+    if not permitted:
+      raise permissions.PermissionException('Cannot delete comment')
+
   def _AssertUserCanViewHotlist(self, hotlist):
     """Make sure the user may view the hotlist."""
     if not permissions.CanViewHotlist(self.mc.auth.effective_ids, hotlist):
@@ -1024,24 +1034,27 @@ class WorkEnv(object):
 
   def DeleteComment(self, issue, comment, delete):
     """Mark or unmark a comment as deleted by the current user."""
-    self._AssertUserCanViewIssue(issue)
-
-    project = self.GetProject(issue.project_id)
-    config = self.GetProjectConfig(issue.project_id)
-    granted_perms = tracker_bizobj.GetGrantedPerms(
-        issue, self.mc.auth.effective_ids, config)
-    if ((comment.is_spam and self.mc.auth.user_id == comment.user_id) or
-        not permissions.CanDelete(
-            self.mc.auth.user_id, self.mc.auth.effective_ids, self.mc.perms,
-            comment.deleted_by, comment.user_id, project,
-            permissions.GetRestrictions(issue), granted_perms=granted_perms)):
-      raise permissions.PermissionException('Cannot delete comment')
+    self._AssertUserCanDeleteComment(issue, comment)
+    if comment.is_spam and self.mc.auth.user_id == comment.user_id:
+      raise permissions.PermissionException('Cannot delete comment.')
 
     with self.mc.profiler.Phase(
         'deleting issue %r comment %r' % (issue.issue_id, comment.id)):
       self.services.issue.SoftDeleteComment(
           self.mc.cnxn, issue, comment, self.mc.auth.user_id,
           self.services.user, delete=delete)
+
+  def DeleteAttachment(self, issue, comment, attachment_id, delete):
+    """Mark or unmark a comment attachment as deleted by the current user."""
+    # A user can delete an attachment iff they can delete a comment.
+    self._AssertUserCanDeleteComment(issue, comment)
+
+    phase_message = 'deleting issue %r comment %r attachment %r' % (
+        issue.issue_id, comment.id, attachment_id)
+    with self.mc.profiler.Phase(phase_message):
+      self.services.issue.SoftDeleteAttachment(
+          self.mc.cnxn, issue, comment, attachment_id, self.services.user,
+          delete=delete)
 
   def StarIssue(self, issue, starred):
     """Set or clear a star on the given issue for the signed in user."""
