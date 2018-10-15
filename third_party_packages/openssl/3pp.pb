@@ -3,7 +3,7 @@ create {
   source {
     cipd {
       pkg: "infra/third_party/source/openssl"
-      default_version: "1.1.0f"
+      default_version: "1.1.1"
     }
     unpack_archive: true
   }
