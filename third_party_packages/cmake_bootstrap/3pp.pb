@@ -1,10 +1,5 @@
 create {
-  platform_re: ".*-386"
-  unsupported: true
-}
-
-create {
-  platform_re: "linux-.*|mac-.*"
+  platform_re: "linux-amd64|mac-.*"
   source {
     git {
       repo: "https://chromium.googlesource.com/external/github.com/Kitware/CMake"
@@ -13,10 +8,7 @@ create {
     patch_dir: "patches"
   }
 
-  build {
-    tool: "cmake_bootstrap"
-    tool: "ninja"
-  }
+  build {}
 }
 
 upload { pkg_prefix: "infra" }
