@@ -1,5 +1,5 @@
 create {
-  platform_re: "linux-.*|mac-.*"
+  platform_re: "linux-amd64|mac-.*"
   source {
     cipd {
       pkg: "infra/third_party/source/autoconf"
