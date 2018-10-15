@@ -51,7 +51,7 @@ type DBConfig struct {
 	// If empty and CloudSQLInstance is used, will be auto-generated.
 	//
 	// If not empty and CloudSQLInstance is used, it MUST end with
-	// CloudSQLInstance value. This is limitation of weired cloud_sql_proxy CLI
+	// CloudSQLInstance value. This is limitation of weird cloud_sql_proxy CLI
 	// interface.
 	//
 	// For example, if CloudSQLInstance is 'proj:us-central-1:db', then

@@ -113,12 +113,14 @@ LAYOUT = Layout(
         'src/go.chromium.org/luci',
     )],
     go_install_tools=[
+        # Note: please add only tools that really should be in PATH in default
+        # dev environment.
+        'github.com/golang/mock/mockgen',
         'go.chromium.org/gae/tools/proto-gae',
-        'go.chromium.org/luci/tools/cmd/...',
         'go.chromium.org/luci/grpc/cmd/...',
-        'infra/cmd/...',
-        'infra/tools/cloudsqlhelper',
-        'github.com/golang/mock/mockgen'
+        'go.chromium.org/luci/tools/cmd/...',
+        'infra/cmd/bqexport',
+        'infra/cmd/cloudsqlhelper',
     ],
     go_paths=None,
     preserve_gopath=False,
