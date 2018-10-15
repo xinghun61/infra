@@ -51,6 +51,22 @@ If you have questions, feel free to chat with jrobbins or other members of the m
   * Suggestions that we would probably not act on unless there is demonstrated user demand.
 
 
+## Priorities for Queue-Afterglow defects
+
+* Priority-Critical
+  * Significant data loss, site outage, or security problems.
+  * We drop normal development work to resolve these issues and deploy the fixes ASAP.
+* Priority-High
+  * Minor or potential data loss, site unusable by more than a handful of users, unavailable functionality that blocks key users.
+  * We aim to resolve these problems in the next weekly release or an additional release.
+* Priority-Medium
+  * Defects that make the tool harder to use, but don't block usage for more than a few users.
+  * We set milestones on some of these issues to resolve them in a certain quarter, balanced with other work.
+* Priority-Low
+  * Minor or rare problems that we want to track to see if their priority may need to be raised in the future.
+  * We don't actively work on these issues, but we will review code contributions that resolve them without significant downsides.
+
+
 ## Milestones
 
 Milestones are date-based goals for resolving issues that are based on our team's quarterly
