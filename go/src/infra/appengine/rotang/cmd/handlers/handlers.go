@@ -14,9 +14,10 @@ import (
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"google.golang.org/appengine"
-	aeuser "google.golang.org/appengine/user"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	aeuser "google.golang.org/appengine/user"
 )
 
 var mtvTime = func() *time.Location {
@@ -45,9 +46,33 @@ func adminOrOwner(ctx *router.Context, cfg *rotang.Configuration) bool {
 
 func buildLegacyMap(h *State) map[string]func(ctx *router.Context, file string) (string, error) {
 	return map[string]func(ctx *router.Context, file string) (string, error){
+		// Trooper files.
 		"trooper.js":           h.legacyTrooper,
 		"current_trooper.json": h.legacyTrooper,
 		"current_trooper.txt":  h.legacyTrooper,
+		// Sheriff files.
+		"sheriff.js":                     h.legacySheriff,
+		"sheriff_cros_mtv.js":            h.legacySheriff,
+		"sheriff_cros_nonmtv.js":         h.legacySheriff,
+		"sheriff_perf.js":                h.legacySheriff,
+		"sheriff_cr_cros_gardeners.js":   h.legacySheriff,
+		"sheriff_gpu.js":                 h.legacySheriff,
+		"sheriff_angle.js":               h.legacySheriff,
+		"sheriff_android.js":             h.legacySheriff,
+		"sheriff_ios.js":                 h.legacySheriff,
+		"sheriff_v8.js":                  h.legacySheriff,
+		"sheriff_perfbot.js":             h.legacySheriff,
+		"sheriff.json":                   h.legacySheriff,
+		"sheriff_cros_mtv.json":          h.legacySheriff,
+		"sheriff_cros_nonmtv.json":       h.legacySheriff,
+		"sheriff_perf.json":              h.legacySheriff,
+		"sheriff_cr_cros_gardeners.json": h.legacySheriff,
+		"sheriff_gpu.json":               h.legacySheriff,
+		"sheriff_angle.json":             h.legacySheriff,
+		"sheriff_android.json":           h.legacySheriff,
+		"sheriff_ios.json":               h.legacySheriff,
+		"sheriff_v8.json":                h.legacySheriff,
+		"sheriff_perfbot.json":           h.legacySheriff,
 	}
 }
 

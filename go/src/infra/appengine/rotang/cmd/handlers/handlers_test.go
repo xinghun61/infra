@@ -124,6 +124,13 @@ func (f *fakeCal) TrooperOncall(_ *router.Context, _, _ string, _ time.Time) ([]
 	return f.oncallers, nil
 }
 
+func (f *fakeCal) TrooperShifts(_ *router.Context, _, _ string, _ time.Time) ([]rotang.ShiftEntry, error) {
+	if f.fail {
+		return nil, status.Errorf(codes.Internal, "fake is failing as requested")
+	}
+	return f.ret, nil
+}
+
 func TestNew(t *testing.T) {
 
 	tests := []struct {

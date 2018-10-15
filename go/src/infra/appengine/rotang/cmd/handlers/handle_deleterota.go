@@ -3,7 +3,6 @@ package handlers
 import (
 	"net/http"
 
-	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 )
 
@@ -41,21 +40,7 @@ func (h *State) HandleDeleteRota(ctx *router.Context) {
 	}
 	rota := rotas[0]
 
-	usr := auth.CurrentUser(ctx.Context)
-	if usr == nil {
-		http.Error(ctx.Writer, "login required", http.StatusForbidden)
-		return
-	}
-
-	isOwner := false
-	for _, o := range rota.Config.Owners {
-		if o == usr.Email {
-			isOwner = true
-			break
-		}
-	}
-
-	if !isOwner {
+	if !adminOrOwner(ctx, rota) {
 		http.Error(ctx.Writer, "not in the rotation owners", http.StatusForbidden)
 		return
 	}
