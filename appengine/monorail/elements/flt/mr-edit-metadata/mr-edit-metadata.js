@@ -21,7 +21,10 @@ class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
         type: Object,
         value: () => {},
       },
-      summary: String,
+      summary: {
+        type: String,
+        value: '',
+      },
       cc: {
         type: Array,
         value: () => [],
@@ -47,7 +50,10 @@ class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
         type: Array,
         value: () => [],
       },
-      ownerName: String,
+      ownerName: {
+        type: String,
+        value: '',
+      },
       labelNames: {
         type: Array,
         value: () => [],
@@ -106,14 +112,15 @@ class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
     const result = {};
     const root = Polymer.dom(this.root);
 
-    if (this.$.statusInput) {
-      const newStatus = this.$.statusInput.value;
+    const statusInput = root.querySelector('#statusInput');
+    if (statusInput) {
+      const newStatus = statusInput.value;
       if (newStatus !== this.status) {
         result['status'] = newStatus;
       }
     }
 
-    const commentContent = this.$.commentText.value;
+    const commentContent = root.querySelector('#commentText').value;
     if (commentContent) {
       result['comment'] = commentContent;
     }
@@ -128,40 +135,40 @@ class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
       // TODO(zhangtiff): Consider representing baked-in fields such as owner,
       // cc, and status similarly to custom fields to reduce repeated code.
 
-      const newSummary = root.querySelector('#summaryInput').value;
-      if (newSummary !== this.summary) {
-        result['summary'] = newSummary;
+      const summaryInput = root.querySelector('#summaryInput');
+      if (summaryInput) {
+        const newSummary = summaryInput.value;
+        if (newSummary !== this.summary) {
+          result['summary'] = newSummary;
+        }
       }
 
-      // Labels.
-      const labelsInput = root.querySelector('#labelsInput');
-      result['labelsAdded'] = labelsInput.getValuesAdded();
-      result['labelsRemoved'] = labelsInput.getValuesRemoved();
-
-      const newOwner = root.querySelector('#ownerInput').getValue();
-      if (newOwner !== this.ownerName) {
-        result['owner'] = newOwner;
+      const ownerInput = root.querySelector('#ownerInput');
+      if (ownerInput) {
+        const newOwner = ownerInput.getValue();
+        if (newOwner !== this.ownerName) {
+          result['owner'] = newOwner;
+        }
       }
 
-      const ccInput = root.querySelector('#ccInput');
-      result['ccAdded'] = ccInput.getValuesAdded();
-      result['ccRemoved'] = ccInput.getValuesRemoved();
+      this._addListChangesToDelta(result, 'labelsInput',
+        'labelsAdded', 'labelsRemoved');
 
-      const componentsInput = root.querySelector('#componentsInput');
-      result['componentsAdded'] = componentsInput.getValuesAdded();
-      result['componentsRemoved'] = componentsInput.getValuesRemoved();
+      this._addListChangesToDelta(result, 'ccInput',
+        'ccAdded', 'ccRemoved');
 
-      const blockedOnInput = root.querySelector('#blockedOnInput');
-      result['blockedOnAdded'] = blockedOnInput.getValuesAdded();
-      result['blockedOnRemoved'] = blockedOnInput.getValuesRemoved();
+      this._addListChangesToDelta(result, 'componentsInput',
+        'componentsAdded', 'componentsRemoved');
 
-      const blockingInput = root.querySelector('#blockingInput');
-      result['blockingAdded'] = blockingInput.getValuesAdded();
-      result['blockingRemoved'] = blockingInput.getValuesRemoved();
+      this._addListChangesToDelta(result, 'blockedOnInput',
+        'blockedOnAdded', 'blockedOnRemoved');
+
+      this._addListChangesToDelta(result, 'blockingInput',
+        'blockingAdded', 'blockingRemoved');
     }
 
-    result['fieldValuesAdded'] = [];
-    result['fieldValuesRemoved'] = [];
+    let fieldValuesAdded = [];
+    let fieldValuesRemoved = [];
 
     this.fieldDefs.forEach((field) => {
       const fieldName = field.fieldRef.fieldName;
@@ -171,7 +178,7 @@ class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
       const valuesRemoved = input.getValuesRemoved();
 
       valuesAdded.forEach((v) => {
-        result['fieldValuesAdded'].push({
+        fieldValuesAdded.push({
           fieldRef: {
             fieldName: field.fieldRef.fieldName,
             fieldId: field.fieldRef.fieldId,
@@ -181,7 +188,7 @@ class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
       });
 
       valuesRemoved.forEach((v) => {
-        result['fieldValuesRemoved'].push({
+        fieldValuesRemoved.push({
           fieldRef: {
             fieldName: field.fieldRef.fieldName,
             fieldId: field.fieldRef.fieldId,
@@ -191,11 +198,32 @@ class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
       });
     });
 
+    if (fieldValuesAdded.length) {
+      result['fieldValuesAdded'] = fieldValuesAdded;
+    }
+    if (fieldValuesRemoved.length) {
+      result['fieldValuesRemoved'] = fieldValuesRemoved;
+    }
+
     return result;
   }
 
   toggleNicheFields() {
     this.showNicheFields = !this.showNicheFields;
+  }
+
+  _addListChangesToDelta(delta, inputId, addedKey, removedKey) {
+    const root = Polymer.dom(this.root);
+    const input = root.querySelector(`#${inputId}`);
+    if (!input) return;
+    const valuesAdded = input.getValuesAdded();
+    const valuesRemoved = input.getValuesRemoved();
+    if (valuesAdded && valuesAdded.length) {
+      delta[addedKey] = valuesAdded;
+    }
+    if (valuesRemoved && valuesRemoved.length) {
+      delta[removedKey] = valuesRemoved;
+    }
   }
 
   _computeNicheFieldCount(fieldDefs) {

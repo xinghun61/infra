@@ -1,0 +1,54 @@
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/elements/flt/mr-edit-metadata/mr-edit-metadata.html">
+<test-fixture id="basic">
+  <template>
+    <mr-edit-metadata></mr-edit-metadata>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+
+  suite('basic tests', function() {
+    var element;
+
+    setup(function() {
+      element = fixture('basic');
+    });
+
+    test('delta empty when no changes', function() {
+      assert.deepEqual(element.getDelta(), {});
+    });
+
+    test('changing status produces delta change', function(done) {
+      element.statuses = [
+        {'status': 'New'},
+        {'status': 'Old'},
+        {'status': 'Test'},
+      ];
+      element.status = 'New';
+      flush(() => {
+        Polymer.dom(element.root).querySelector('#statusInput').value = 'Old';
+        assert.deepEqual(element.getDelta(), {
+          'status': 'Old',
+        });
+        done();
+      });
+    });
+
+    test('changing summary produces delta change', function(done) {
+      element.summary = 'Old summary';
+      flush(() => {
+        Polymer.dom(element.root).querySelector(
+          '#summaryInput').value = 'newfangled fancy summary';
+        assert.deepEqual(element.getDelta(), {
+          'summary': 'newfangled fancy summary',
+        });
+        done();
+      });
+    });
+  });
+})();
+</script>
