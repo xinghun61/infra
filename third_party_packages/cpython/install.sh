@@ -98,6 +98,11 @@ else
   # currently true).
   EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --build=x86_64-linux-gnu"
 
+  # OpenSSL 1.1.1 depends on pthread, so it needs to come LAST. Python's
+  # Makefile has an LDLAST to allow some ldflags to be the very last thing on
+  # the link line.
+  LDLAST="-lpthread"
+
   # The "crypt" module needs to link against glibc's "crypt" function.
   #
   # TODO: Maybe consider implementing a static version using OpenSSL and
@@ -142,6 +147,7 @@ autoconf
 
 export LDFLAGS
 export CPPFLAGS
+export LDLAST
 # Configure our production Python build with our static configuration
 # environment and generate our basic platform.
 #
