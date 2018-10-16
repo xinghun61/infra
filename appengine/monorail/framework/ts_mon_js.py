@@ -41,19 +41,10 @@ class MonorailTSMonJSHandler(TSMonJSHandler):
         ISSUE_UPDATE_LATENCY_METRIC,
         AUTOCOMPLETE_POPULATE_LATENCY_METRIC])
 
-  def xsrf_is_valid(self, body):
+  def xsrf_is_valid(self, _body):
     """This method expects the body dictionary to include two fields:
     `token` and `user_id`.
     """
-    cnxn = sql.MonorailConnection()
-    token = body.get('token')
-    user = users.get_current_user()
-    email = user.email() if user else None
-
-    services = self.app.config.get('services')
-    auth = authdata.AuthData.FromEmail(cnxn, email, services, autocreate=False)
-    try:
-      xsrf.ValidateToken(token, auth.user_id, xsrf.XHR_SERVLET_PATH)
-      return True
-    except xsrf.TokenIncorrect:
-      return False
+    # Temporarily disable XSRF checking until we fix the errors we are getting
+    # due to expired tokens.
+    return True
