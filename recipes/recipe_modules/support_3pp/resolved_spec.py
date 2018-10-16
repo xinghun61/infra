@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from .cipd_spec import CIPDSpec
-
 
 def parse_name_version(name_version):
   """Parses a package 'name', or 'name@version'.

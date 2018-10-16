@@ -555,7 +555,7 @@
     },
     "env_prefixes": {
       "PATH": [
-        "RECIPE_MODULE[infra::third_party_packages_ng]\\resources\\win_support",
+        "RECIPE_MODULE[infra::support_3pp]\\resources\\win_support",
         "[CACHE]\\windows_sdk\\win_sdk\\bin\\x64",
         "[START_DIR]\\3pp\\wd\\bottom_dep\\windows-amd64\\1.0\\tools_prefix",
         "[START_DIR]\\3pp\\wd\\bottom_dep\\windows-amd64\\1.0\\tools_prefix\\bin"
@@ -2042,7 +2042,7 @@
     },
     "env_prefixes": {
       "PATH": [
-        "RECIPE_MODULE[infra::third_party_packages_ng]\\resources\\win_support",
+        "RECIPE_MODULE[infra::support_3pp]\\resources\\win_support",
         "[CACHE]\\windows_sdk\\win_sdk\\bin\\x64",
         "[START_DIR]\\3pp\\wd\\tool\\windows-amd64\\1.5.0-rc1\\tools_prefix",
         "[START_DIR]\\3pp\\wd\\tool\\windows-amd64\\1.5.0-rc1\\tools_prefix\\bin"
@@ -2880,7 +2880,7 @@
     },
     "env_prefixes": {
       "PATH": [
-        "RECIPE_MODULE[infra::third_party_packages_ng]\\resources\\win_support",
+        "RECIPE_MODULE[infra::support_3pp]\\resources\\win_support",
         "[CACHE]\\windows_sdk\\win_sdk\\bin\\x64",
         "[START_DIR]\\3pp\\wd\\dep\\windows-amd64\\1.0.0\\tools_prefix",
         "[START_DIR]\\3pp\\wd\\dep\\windows-amd64\\1.0.0\\tools_prefix\\bin"
@@ -3520,7 +3520,7 @@
     },
     "env_prefixes": {
       "PATH": [
-        "RECIPE_MODULE[infra::third_party_packages_ng]\\resources\\win_support",
+        "RECIPE_MODULE[infra::support_3pp]\\resources\\win_support",
         "[CACHE]\\windows_sdk\\win_sdk\\bin\\x64",
         "[START_DIR]\\3pp\\wd\\pkg\\windows-amd64\\2.0.0\\tools_prefix",
         "[START_DIR]\\3pp\\wd\\pkg\\windows-amd64\\2.0.0\\tools_prefix\\bin"

@@ -28,7 +28,7 @@ class CIPDSpec(object):
   """CIPDSpec represents a single CIPD package.
 
   It represents a CIPD (pkg, symver) pair, and allows the following operations:
-    * Checking its existance (either locally or on the CIPD server)
+    * Checking its existence (either locally or on the CIPD server)
     * Fetching to a local cached location
     * Building a package into a local cached location
     * Uploading the locally cached package to the server
@@ -121,8 +121,7 @@ class CIPDSpec(object):
     """
     iid = self._resolved_instance_id
     ret = self._local_pkg_path_dir.join(iid)
-    if iid and self._api.path.exists(ret):
-      return ret
+    return ret if iid and self._api.path.exists(ret) else None
 
   def _ensure_fetched(self):
     """This ensures that this package is fetched locally into the cache.

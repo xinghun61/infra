@@ -22,7 +22,7 @@ Each subfolder defines a single software package to fetch, build and upload.
 For example, you might have a folder in your repo like this:
 
     my_repo.git/
-      third_party_packages/  # "root folder"
+      3pp/  # "root folder"
         .vpython             # common vpython file for all package scripts
         zlib/                # zlib "package folder"
           3pp.pb             # REQUIRED: the Spec.proto definition for zlib
@@ -58,7 +58,7 @@ allows specifying differences in how it's fetched/built/tested on a per-target
 basis, and the upload section has some details on how the final result gets
 uploaded to CIPD.
 
-[spec.proto]: /recipes/recipe_modules/third_party_packages_ng/spec.proto
+[spec.proto]: /recipes/recipe_modules/support_3pp/spec.proto
 
 #### Creation Stages
 
@@ -228,8 +228,7 @@ You can also mark the upload as a `universal` package, which will:
 
 Every package will try to build the latest identifiable semver of its source, or
 will attempt to build the semver requested as an input property to the
-`third_party_packages` recipe. This semver is also used to tag the uploaded
-artifacts in CIPD.
+`3pp` recipe. This semver is also used to tag the uploaded artifacts in CIPD.
 
 Because some of the packages here are used as dependencies for others (e.g.
 curl and zlib are dependencies of git, and zlib is a dependency of curl), each
@@ -249,7 +248,7 @@ patch_version in the source message).
 #### Cross Compilation
 
 Third party packages are currently compiled on linux using the
-'infra.tools.dockerbuild' tool from the infra.git repo. This uses a sligthly
+'infra.tools.dockerbuild' tool from the infra.git repo. This uses a slightly
 modified version of the [dockcross] Docker cross-compile environment. Windows
 and OS X targets are built using the 'osx_sdk' and 'windows_sdk' recipe modules,
 each of which provides a hermetic (native) build toolchain for those platforms.
@@ -282,7 +281,7 @@ package_prefix overrides 'experimental/' entirely.
 #### Examples
 
 As an example of the package definition layout in action, take a look at the
-[third_party_packages](/third_party_packages) folder in this infra.git repo.
+[3pp](/3pp) folder in this infra.git repo.
 
 #### Caches
 
@@ -335,27 +334,31 @@ def _flatten_spec_pb_for_platform(orig_spec, platform):
   applied_any = False
   for create_msg in spec.create:
     plat_re = "^(%s)$" % (create_msg.platform_re or '.*')
-    if re.match(plat_re, platform):
-      if create_msg.unsupported:
-        return None
+    if not re.match(plat_re, platform):
+      continue
 
-      # To get the effect of the documented dict.update behavior, round trip
-      # through JSONPB. It's a bit dirty, but it works.
-      dictified = jsonpb.MessageToDict(
-        create_msg, preserving_proto_field_name=True)
-      for k, v in dictified.iteritems():
-        if isinstance(v, dict):
-          resolved_create.setdefault(k, {}).update(v)
-          to_clear = set()
-          for sub_k, sub_v in resolved_create[k].iteritems():
-            if isinstance(sub_v, list) and not any(val for val in sub_v):
-              to_clear.add(sub_k)
-          for sub_k in to_clear:
-            resolved_create[k].pop(sub_k)
-        else:
-          resolved_create[k] = v
+    if create_msg.unsupported:
+      return None
 
-      applied_any = True
+    # We're going to apply this message to our resolved_create.
+    applied_any = True
+
+    # To get the effect of the documented dict.update behavior, round trip
+    # through JSONPB. It's a bit dirty, but it works.
+    dictified = jsonpb.MessageToDict(
+      create_msg, preserving_proto_field_name=True)
+    for k, v in dictified.iteritems():
+      if isinstance(v, dict):
+        resolved_create.setdefault(k, {}).update(v)
+        to_clear = set()
+        for sub_k, sub_v in resolved_create[k].iteritems():
+          if isinstance(sub_v, list) and not any(val for val in sub_v):
+            to_clear.add(sub_k)
+        for sub_k in to_clear:
+          resolved_create[k].pop(sub_k)
+      else:
+        resolved_create[k] = v
+
   if not applied_any:
     return None
 
@@ -371,9 +374,9 @@ def _flatten_spec_pb_for_platform(orig_spec, platform):
   return spec
 
 
-class ThirdPartyPackagesNGApi(recipe_api.RecipeApi):
+class Support3ppApi(recipe_api.RecipeApi):
   def __init__(self, **kwargs):
-    super(ThirdPartyPackagesNGApi, self).__init__(**kwargs)
+    super(Support3ppApi, self).__init__(**kwargs)
     # map of name -> (base_path, spec_pb2.Spec)
     self._loaded_specs = {}
     # map of (name, platform) -> ResolvedSpec
@@ -515,7 +518,7 @@ class ThirdPartyPackagesNGApi(recipe_api.RecipeApi):
     Raises a DuplicatePackage exception if this function encounters a package
     whose name is already registered. This could occur if you call
     load_packages_from_path multiple times, and one of the later calls tries to
-    load a pacakge which was registered under one of the earlier calls.
+    load a package which was registered under one of the earlier calls.
     """
     known_package_specs = self.m.file.glob_paths(
       'find package specs', path,

@@ -20,7 +20,7 @@ DEPS = [
 
   'depot_tools/git',
 
-  'third_party_packages_ng',
+  'support_3pp',
 ]
 
 
@@ -62,7 +62,7 @@ PROPERTIES = {
         'comprehensive testing of the entire packaging process without '
         'uploading into the prod namespace. If this recipe is run in '
         'experimental mode (according to the `runtime` module), then '
-        'this will default to "experimental/3pp/".')),
+        'this will default to "experimental/support_3pp/".')),
 }
 
 
@@ -82,7 +82,7 @@ def RunSteps(api, package_locations, to_build, platform, force_build,
     if err.errno_name != 'ENOENT':
       raise
 
-  api.third_party_packages_ng.package_prefix = package_prefix
+  api.support_3pp.package_prefix = package_prefix
 
   actual_repos = set()
   with api.step.nest('load packages from desired repos'):
@@ -100,7 +100,7 @@ def RunSteps(api, package_locations, to_build, platform, force_build,
 
       if subdir:
         checkout_path = checkout_path.join(*subdir.split('/'))
-      api.third_party_packages_ng.load_packages_from_path(checkout_path)
+      api.support_3pp.load_packages_from_path(checkout_path)
 
   with api.step.nest('remove unused repos'):
     leftovers = current_repos - actual_repos
@@ -108,7 +108,7 @@ def RunSteps(api, package_locations, to_build, platform, force_build,
       api.file.rmtree('rm %s' % (hash_name,),
                       package_repos.join(hash_name))
 
-  _, unsupported = api.third_party_packages_ng.ensure_uploaded(
+  _, unsupported = api.support_3pp.ensure_uploaded(
     to_build, platform, force_build)
 
   if unsupported:
@@ -124,7 +124,7 @@ def GenTests(api):
       api.properties(package_locations=[
         {
           'repo': 'https://example.repo',
-          'subdir': 'third_party_packages',
+          'subdir': 'support_3pp',
         }
       ]) +
       api.runtime(is_luci=True, is_experimental=False))

@@ -5,17 +5,17 @@
 from recipe_engine.recipe_api import Property
 
 DEPS = [
-  "recipe_engine/buildbucket",
-  "recipe_engine/cipd",
-  "recipe_engine/file",
-  "recipe_engine/path",
-  "recipe_engine/platform",
-  "recipe_engine/properties",
-  "recipe_engine/raw_io",
-  "recipe_engine/runtime",
-  "recipe_engine/step",
+  'recipe_engine/buildbucket',
+  'recipe_engine/cipd',
+  'recipe_engine/file',
+  'recipe_engine/path',
+  'recipe_engine/platform',
+  'recipe_engine/properties',
+  'recipe_engine/raw_io',
+  'recipe_engine/runtime',
+  'recipe_engine/step',
 
-  "third_party_packages_ng",
+  'support_3pp',
 ]
 
 PROPERTIES = {
@@ -27,13 +27,13 @@ PROPERTIES = {
 
 def RunSteps(api, GOOS, GOARCH, package_prefix, load_dupe):
   builder = api.path['cache'].join('builder')
-  api.third_party_packages_ng.package_prefix = package_prefix
+  api.support_3pp.package_prefix = package_prefix
 
   api.step('echo package_prefix', [
-    'echo', api.third_party_packages_ng.package_prefix])
+    'echo', api.support_3pp.package_prefix])
 
   # do a checkout in `builder`
-  pkgs = api.third_party_packages_ng.load_packages_from_path(
+  pkgs = api.support_3pp.load_packages_from_path(
     builder.join('package_repo'))
 
   # For the test, also explicitly build 'tool@1.5.0-rc1', which should de-dup
@@ -42,19 +42,19 @@ def RunSteps(api, GOOS, GOARCH, package_prefix, load_dupe):
 
   # doing it twice should raise a DuplicatePackage exception
   if load_dupe:
-    api.third_party_packages_ng.load_packages_from_path(
+    api.support_3pp.load_packages_from_path(
       builder.join('dup_repo'))
 
-  _, unsupported = api.third_party_packages_ng.ensure_uploaded(
+  _, unsupported = api.support_3pp.ensure_uploaded(
     pkgs, '%s-%s' % (GOOS, GOARCH))
 
   excluded = {'unsupported'}
   if api.platform.is_win:
     excluded.add('posix_tool')
-  assert unsupported == excluded, "unexpected: %r" % (unsupported,)
+  assert unsupported == excluded, 'unexpected: %r' % (unsupported,)
 
   # doing it again should hit caches
-  api.third_party_packages_ng.ensure_uploaded(pkgs, '%s-%s' % (GOOS, GOARCH))
+  api.support_3pp.ensure_uploaded(pkgs, '%s-%s' % (GOOS, GOARCH))
 
 
 def GenTests(api):

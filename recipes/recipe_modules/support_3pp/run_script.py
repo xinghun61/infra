@@ -79,7 +79,7 @@ def run_script(api, *args, **kwargs):
   if compile_platform.startswith('linux-'):
     # dockerbuild time.
     dockerbuild_platform = _DOCKERBUILD_PLATFORM[compile_platform]
-    repo_root = api.third_party_packages_ng.package_repo_resource()
+    repo_root = api.support_3pp.package_repo_resource()
     cmd = [
       'infra.tools.dockerbuild', '--logs-debug', 'run',
       '--platform', dockerbuild_platform, '--workdir', workdir.base,
@@ -111,12 +111,10 @@ def run_script(api, *args, **kwargs):
       # running the desired script with `git bash` instead of `bash`.
       env_prefixes = {}
       if api.platform.is_win:
-        env_prefixes['PATH'] = [
-          api.third_party_packages_ng.resource('win_support')]
+        env_prefixes['PATH'] = [api.support_3pp.resource('win_support')]
         cmd = ['git'] + cmd
       elif api.platform.is_mac:
-        env_prefixes['PATH'] = [
-          api.third_party_packages_ng.resource('mac_support')]
+        env_prefixes['PATH'] = [api.support_3pp.resource('mac_support')]
 
       with api.context(env_prefixes=env_prefixes):
         return api.step(step_name, cmd,
@@ -127,4 +125,4 @@ def run_script(api, *args, **kwargs):
                         stdout=stdout, step_test_data=step_test_data,
                         venv=True)
 
-    assert False, 'impossible'  # pragma: no cover
+  raise AssertionError('impossible') # pragma: no cover

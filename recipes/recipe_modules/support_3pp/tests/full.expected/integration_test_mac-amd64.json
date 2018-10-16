@@ -578,7 +578,7 @@
     },
     "env_prefixes": {
       "PATH": [
-        "RECIPE_MODULE[infra::third_party_packages_ng]/resources/mac_support",
+        "RECIPE_MODULE[infra::support_3pp]/resources/mac_support",
         "[START_DIR]/3pp/wd/bottom_dep/mac-amd64/1.0/tools_prefix",
         "[START_DIR]/3pp/wd/bottom_dep/mac-amd64/1.0/tools_prefix/bin"
       ]
@@ -1884,7 +1884,7 @@
     },
     "env_prefixes": {
       "PATH": [
-        "RECIPE_MODULE[infra::third_party_packages_ng]/resources/mac_support",
+        "RECIPE_MODULE[infra::support_3pp]/resources/mac_support",
         "[START_DIR]/3pp/wd/posix_tool/mac-amd64/1.2.0/tools_prefix",
         "[START_DIR]/3pp/wd/posix_tool/mac-amd64/1.2.0/tools_prefix/bin"
       ]
@@ -2812,7 +2812,7 @@
     },
     "env_prefixes": {
       "PATH": [
-        "RECIPE_MODULE[infra::third_party_packages_ng]/resources/mac_support",
+        "RECIPE_MODULE[infra::support_3pp]/resources/mac_support",
         "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/tools_prefix",
         "[START_DIR]/3pp/wd/tool/mac-amd64/1.5.0-rc1/tools_prefix/bin"
       ]
@@ -3690,7 +3690,7 @@
     },
     "env_prefixes": {
       "PATH": [
-        "RECIPE_MODULE[infra::third_party_packages_ng]/resources/mac_support",
+        "RECIPE_MODULE[infra::support_3pp]/resources/mac_support",
         "[START_DIR]/3pp/wd/dep/mac-amd64/1.0.0/tools_prefix",
         "[START_DIR]/3pp/wd/dep/mac-amd64/1.0.0/tools_prefix/bin"
       ]
@@ -4363,7 +4363,7 @@
     },
     "env_prefixes": {
       "PATH": [
-        "RECIPE_MODULE[infra::third_party_packages_ng]/resources/mac_support",
+        "RECIPE_MODULE[infra::support_3pp]/resources/mac_support",
         "[START_DIR]/3pp/wd/pkg/mac-amd64/2.0.0/tools_prefix",
         "[START_DIR]/3pp/wd/pkg/mac-amd64/2.0.0/tools_prefix/bin"
       ]

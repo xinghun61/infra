@@ -109,7 +109,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "glob",
-      "[CACHE]/builder/63dc52509fb3f064956e6d7c3a3446c6fe74309a/third_party_packages",
+      "[CACHE]/builder/63dc52509fb3f064956e6d7c3a3446c6fe74309a/support_3pp",
       "*/3pp.pb"
     ],
     "infra_step": true,
@@ -117,6 +117,8 @@
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@glob@[CACHE]/builder/63dc52509fb3f064956e6d7c3a3446c6fe74309a/support_3pp/pkg_a/3pp.pb@@@",
+      "@@@STEP_LOG_LINE@glob@[CACHE]/builder/63dc52509fb3f064956e6d7c3a3446c6fe74309a/support_3pp/pkg_b/3pp.pb@@@",
       "@@@STEP_LOG_END@glob@@@"
     ]
   },
@@ -125,6 +127,40 @@
     "name": "load packages from desired repos.load package specs",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "[CACHE]/builder/63dc52509fb3f064956e6d7c3a3446c6fe74309a/support_3pp/pkg_a/3pp.pb",
+      "/path/to/tmp/"
+    ],
+    "infra_step": true,
+    "name": "load packages from desired repos.load package specs.read 'pkg_a'",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "[CACHE]/builder/63dc52509fb3f064956e6d7c3a3446c6fe74309a/support_3pp/pkg_b/3pp.pb",
+      "/path/to/tmp/"
+    ],
+    "infra_step": true,
+    "name": "load packages from desired repos.load package specs.read 'pkg_b'",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
     ]
   },
   {
@@ -161,6 +197,17 @@
     "name": "remove unused repos.rm deadbeef",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "import sys; sys.exit(0)"
+    ],
+    "name": "2 packges unsupported for None",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@<br/>pkg_a<br/>pkg_b@@@"
     ]
   },
   {

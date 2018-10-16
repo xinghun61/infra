@@ -9,12 +9,13 @@
   * [infra_system](#recipe_modules-infra_system)
   * [omahaproxy](#recipe_modules-omahaproxy)
   * [recipe_autoroller](#recipe_modules-recipe_autoroller)
+  * [support_3pp](#recipe_modules-support_3pp) &mdash; Allows uniform cross-compiliation, version tracking and archival for third-party software packages (libs+tools) for distribution via CIPD.
   * [sync_submodules](#recipe_modules-sync_submodules)
   * [third_party_packages](#recipe_modules-third_party_packages)
-  * [third_party_packages_ng](#recipe_modules-third_party_packages_ng) &mdash; Allows uniform cross-compiliation, version tracking and archival for third-party software packages (libs+tools) for distribution via CIPD.
   * [windows_sdk](#recipe_modules-windows_sdk)
 
 **[Recipes](#Recipes)**
+  * [3pp](#recipes-3pp) &mdash; This recipe builds and packages third party software, such as Git.
   * [build_conda_cipd_pkg](#recipes-build_conda_cipd_pkg) &mdash; Recipe to build CIPD package with sealed Conda environment.
   * [build_from_tarball](#recipes-build_from_tarball)
   * [build_gsutil_cipd_pkg](#recipes-build_gsutil_cipd_pkg)
@@ -49,6 +50,7 @@
   * [remote_execute_dataflow_workflow](#recipes-remote_execute_dataflow_workflow) &mdash; This recipe is used to execute Dataflow workflows.
   * [snapshots/builder](#recipes-snapshots_builder)
   * [snapshots/snapshot](#recipes-snapshots_snapshot)
+  * [support_3pp:tests/full](#recipes-support_3pp_tests_full)
   * [sync_submodules](#recipes-sync_submodules)
   * [third_party_packages](#recipes-third_party_packages) &mdash; This recipe builds and packages third party software, such as Git.
   * [third_party_packages:examples/cmake](#recipes-third_party_packages_examples_cmake) &mdash; Recipe for 'cmake' building.
@@ -61,8 +63,6 @@
   * [third_party_packages:examples/ninja](#recipes-third_party_packages_examples_ninja) &mdash; Recipe for 'ninja' building.
   * [third_party_packages:examples/python](#recipes-third_party_packages_examples_python) &mdash; Recipe for 'python' building.
   * [third_party_packages:examples/swig](#recipes-third_party_packages_examples_swig) &mdash; Recipe for 'swig' building.
-  * [third_party_packages_ng](#recipes-third_party_packages_ng) &mdash; This recipe builds and packages third party software, such as Git.
-  * [third_party_packages_ng:tests/full](#recipes-third_party_packages_ng_tests_full)
   * [tricium_noop](#recipes-tricium_noop) &mdash; Recipe for Tricium that outputs no results.
   * [windows_sdk:examples/full](#recipes-windows_sdk_examples_full)
   * [wpt_export](#recipes-wpt_export) &mdash; Exports commits in Chromium to the web-platform-tests repo.
@@ -199,76 +199,9 @@ Attempts to roll each project from the provided list.
 
 If rolling any of the projects leads to failures, other
 projects are not affected.
-### *recipe_modules* / [sync\_submodules](/recipes/recipe_modules/sync_submodules)
+### *recipe_modules* / [support\_3pp](/recipes/recipe_modules/support_3pp)
 
-[DEPS](/recipes/recipe_modules/sync_submodules/__init__.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/infra\_paths][depot_tools/recipe_modules/infra_paths], [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
-
-#### **class [SyncSubmodulesApi](/recipes/recipe_modules/sync_submodules/api.py#24)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
-
-&mdash; **def [\_\_call\_\_](/recipes/recipe_modules/sync_submodules/api.py#25)(self, source, source_repo_checkout_name, dest, source_ref='refs/heads/master', dest_ref='refs/heads/master', extra_submodules=None, deps_path_prefix=None, disable_path_prefix=False):**
-
-Args:
-  source: URL of the git repository to mirror.
-  source_repo_checkout_name: Name of the directory that the source repo
-      should be checked out into.
-  dest: URL of the git repository to push to.
-  source_ref: git ref in the source repository to checkout.
-  dest_ref: git ref in the destination repository to push to.
-  extra_submodules: a list of "path=URL" strings.  These are added as extra
-      submodules.
-  deps_path_prefix: path prefix used to filter out DEPS. DEPS with the
-      prefix are included.
-  disable_path_prefix: disable filtering out DEPS by path prefix.
-### *recipe_modules* / [third\_party\_packages](/recipes/recipe_modules/third_party_packages)
-
-[DEPS](/recipes/recipe_modules/third_party_packages/__init__.py#5): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [windows\_sdk](#recipe_modules-windows_sdk), [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/url][recipe_engine/recipe_modules/url]
-
-#### **class [ThirdPartyPackagesApi](/recipes/recipe_modules/third_party_packages/api.py#23)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
-
-&mdash; **def [build\_package](/recipes/recipe_modules/third_party_packages/api.py#188)(self, name, workdir, root, install_mode):**
-
-&emsp; **@property**<br>&mdash; **def [cmake](/recipes/recipe_modules/third_party_packages/api.py#97)(self):**
-
-&emsp; **@property**<br>&mdash; **def [cross\_platform](/recipes/recipe_modules/third_party_packages/api.py#38)(self):**
-
-&emsp; **@property**<br>&mdash; **def [dep](/recipes/recipe_modules/third_party_packages/api.py#113)(self):**
-
-&mdash; **def [does\_package\_exist](/recipes/recipe_modules/third_party_packages/api.py#184)(self, name, version):**
-
-&emsp; **@dry_run.setter**<br>&mdash; **def [dry\_run](/recipes/recipe_modules/third_party_packages/api.py#34)(self, v):**
-
-&mdash; **def [ensure\_package](/recipes/recipe_modules/third_party_packages/api.py#123)(self, workdir, repo_url, package_name_prefix, install_fn, tag, version, cipd_install_mode, test_fn=None):**
-
-Ensures that the specified CIPD package exists.
-
-&emsp; **@property**<br>&mdash; **def [firebase](/recipes/recipe_modules/third_party_packages/api.py#109)(self):**
-
-&emsp; **@property**<br>&mdash; **def [gcloud](/recipes/recipe_modules/third_party_packages/api.py#85)(self):**
-
-&mdash; **def [get\_latest\_release\_tag](/recipes/recipe_modules/third_party_packages/api.py#161)(self, repo_url, prefix='v'):**
-
-&mdash; **def [get\_package\_name](/recipes/recipe_modules/third_party_packages/api.py#120)(self, package_name_prefix):**
-
-&emsp; **@property**<br>&mdash; **def [git](/recipes/recipe_modules/third_party_packages/api.py#81)(self):**
-
-&emsp; **@property**<br>&mdash; **def [go](/recipes/recipe_modules/third_party_packages/api.py#105)(self):**
-
-&emsp; **@property**<br>&mdash; **def [gsutil](/recipes/recipe_modules/third_party_packages/api.py#89)(self):**
-
-&mdash; **def [init\_cross\_platform](/recipes/recipe_modules/third_party_packages/api.py#44)(self, cross_platform):**
-
-&emsp; **@property**<br>&mdash; **def [ninja](/recipes/recipe_modules/third_party_packages/api.py#93)(self):**
-
-&emsp; **@property**<br>&mdash; **def [python](/recipes/recipe_modules/third_party_packages/api.py#77)(self):**
-
-&mdash; **def [register\_package](/recipes/recipe_modules/third_party_packages/api.py#193)(self, package_file, name, version):**
-
-&mdash; **def [support\_prefix](/recipes/recipe_modules/third_party_packages/api.py#117)(self, base):**
-
-&emsp; **@property**<br>&mdash; **def [swig](/recipes/recipe_modules/third_party_packages/api.py#101)(self):**
-### *recipe_modules* / [third\_party\_packages\_ng](/recipes/recipe_modules/third_party_packages_ng)
-
-[DEPS](/recipes/recipe_modules/third_party_packages_ng/__init__.py#5): [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/osx\_sdk][depot_tools/recipe_modules/osx_sdk], [depot\_tools/windows\_sdk][depot_tools/recipe_modules/windows_sdk], [recipe\_engine/archive][recipe_engine/recipe_modules/archive], [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipe_modules/support_3pp/__init__.py#5): [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/osx\_sdk][depot_tools/recipe_modules/osx_sdk], [depot\_tools/windows\_sdk][depot_tools/recipe_modules/windows_sdk], [recipe\_engine/archive][recipe_engine/recipe_modules/archive], [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
 Allows uniform cross-compiliation, version tracking and archival for
 third-party software packages (libs+tools) for distribution via CIPD.
@@ -290,7 +223,7 @@ Each subfolder defines a single software package to fetch, build and upload.
 For example, you might have a folder in your repo like this:
 
     my_repo.git/
-      third_party_packages/  # "root folder"
+      3pp/  # "root folder"
         .vpython             # common vpython file for all package scripts
         zlib/                # zlib "package folder"
           3pp.pb             # REQUIRED: the Spec.proto definition for zlib
@@ -326,7 +259,7 @@ allows specifying differences in how it's fetched/built/tested on a per-target
 basis, and the upload section has some details on how the final result gets
 uploaded to CIPD.
 
-[spec.proto]: /recipes/recipe_modules/third_party_packages_ng/spec.proto
+[spec.proto]: /recipes/recipe_modules/support_3pp/spec.proto
 
 #### Creation Stages
 
@@ -496,8 +429,7 @@ You can also mark the upload as a `universal` package, which will:
 
 Every package will try to build the latest identifiable semver of its source, or
 will attempt to build the semver requested as an input property to the
-`third_party_packages` recipe. This semver is also used to tag the uploaded
-artifacts in CIPD.
+`3pp` recipe. This semver is also used to tag the uploaded artifacts in CIPD.
 
 Because some of the packages here are used as dependencies for others (e.g.
 curl and zlib are dependencies of git, and zlib is a dependency of curl), each
@@ -517,7 +449,7 @@ patch_version in the source message).
 #### Cross Compilation
 
 Third party packages are currently compiled on linux using the
-'infra.tools.dockerbuild' tool from the infra.git repo. This uses a sligthly
+'infra.tools.dockerbuild' tool from the infra.git repo. This uses a slightly
 modified version of the [dockcross] Docker cross-compile environment. Windows
 and OS X targets are built using the 'osx_sdk' and 'windows_sdk' recipe modules,
 each of which provides a hermetic (native) build toolchain for those platforms.
@@ -550,7 +482,7 @@ package_prefix overrides 'experimental/' entirely.
 #### Examples
 
 As an example of the package definition layout in action, take a look at the
-[third_party_packages](/third_party_packages) folder in this infra.git repo.
+[3pp](/3pp) folder in this infra.git repo.
 
 #### Caches
 
@@ -561,9 +493,9 @@ This module uses the following named caches:
   * `osx_sdk` - Cache for `depot_tools/osx_sdk`. Only on Mac.
   * `windows_sdk` - Cache for `depot_tools/windows_sdk`. Only on Windows.
 
-#### **class [ThirdPartyPackagesNGApi](/recipes/recipe_modules/third_party_packages_ng/api.py#374)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+#### **class [Support3ppApi](/recipes/recipe_modules/support_3pp/api.py#377)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
-&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/third_party_packages_ng/api.py#545)(self, packages=(), platform='', force_build=False):**
+&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/support_3pp/api.py#548)(self, packages=(), platform='', force_build=False):**
 
 Executes entire {fetch,build,package,verify,upload} pipeline for all the
 packages listed, targeting the given platform.
@@ -579,9 +511,9 @@ Args:
 Returns (list[(cipd_pkg, cipd_version)], set[str]) of built CIPD packages
 and their tagged versions, as well as a list of unsupported packages.
 
-&mdash; **def [initialize](/recipes/recipe_modules/third_party_packages_ng/api.py#395)(self):**
+&mdash; **def [initialize](/recipes/recipe_modules/support_3pp/api.py#398)(self):**
 
-&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/third_party_packages_ng/api.py#495)(self, path):**
+&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/support_3pp/api.py#498)(self, path):**
 
 Loads all package definitions from the given path.
 
@@ -605,14 +537,81 @@ Returns a set(str) containing the names of the packages which were loaded.
 Raises a DuplicatePackage exception if this function encounters a package
 whose name is already registered. This could occur if you call
 load_packages_from_path multiple times, and one of the later calls tries to
-load a pacakge which was registered under one of the earlier calls.
+load a package which was registered under one of the earlier calls.
 
-&emsp; **@package_prefix.setter**<br>&mdash; **def [package\_prefix](/recipes/recipe_modules/third_party_packages_ng/api.py#406)(self, prefix):**
+&emsp; **@package_prefix.setter**<br>&mdash; **def [package\_prefix](/recipes/recipe_modules/support_3pp/api.py#409)(self, prefix):**
 
 Set the CIPD package name prefix (str).
 
 All CIPDSpecs for built packages (not sources) will have this string
 prepended to them.
+### *recipe_modules* / [sync\_submodules](/recipes/recipe_modules/sync_submodules)
+
+[DEPS](/recipes/recipe_modules/sync_submodules/__init__.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/infra\_paths][depot_tools/recipe_modules/infra_paths], [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+
+#### **class [SyncSubmodulesApi](/recipes/recipe_modules/sync_submodules/api.py#24)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+
+&mdash; **def [\_\_call\_\_](/recipes/recipe_modules/sync_submodules/api.py#25)(self, source, source_repo_checkout_name, dest, source_ref='refs/heads/master', dest_ref='refs/heads/master', extra_submodules=None, deps_path_prefix=None, disable_path_prefix=False):**
+
+Args:
+  source: URL of the git repository to mirror.
+  source_repo_checkout_name: Name of the directory that the source repo
+      should be checked out into.
+  dest: URL of the git repository to push to.
+  source_ref: git ref in the source repository to checkout.
+  dest_ref: git ref in the destination repository to push to.
+  extra_submodules: a list of "path=URL" strings.  These are added as extra
+      submodules.
+  deps_path_prefix: path prefix used to filter out DEPS. DEPS with the
+      prefix are included.
+  disable_path_prefix: disable filtering out DEPS by path prefix.
+### *recipe_modules* / [third\_party\_packages](/recipes/recipe_modules/third_party_packages)
+
+[DEPS](/recipes/recipe_modules/third_party_packages/__init__.py#5): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [windows\_sdk](#recipe_modules-windows_sdk), [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/url][recipe_engine/recipe_modules/url]
+
+#### **class [ThirdPartyPackagesApi](/recipes/recipe_modules/third_party_packages/api.py#23)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+
+&mdash; **def [build\_package](/recipes/recipe_modules/third_party_packages/api.py#188)(self, name, workdir, root, install_mode):**
+
+&emsp; **@property**<br>&mdash; **def [cmake](/recipes/recipe_modules/third_party_packages/api.py#97)(self):**
+
+&emsp; **@property**<br>&mdash; **def [cross\_platform](/recipes/recipe_modules/third_party_packages/api.py#38)(self):**
+
+&emsp; **@property**<br>&mdash; **def [dep](/recipes/recipe_modules/third_party_packages/api.py#113)(self):**
+
+&mdash; **def [does\_package\_exist](/recipes/recipe_modules/third_party_packages/api.py#184)(self, name, version):**
+
+&emsp; **@dry_run.setter**<br>&mdash; **def [dry\_run](/recipes/recipe_modules/third_party_packages/api.py#34)(self, v):**
+
+&mdash; **def [ensure\_package](/recipes/recipe_modules/third_party_packages/api.py#123)(self, workdir, repo_url, package_name_prefix, install_fn, tag, version, cipd_install_mode, test_fn=None):**
+
+Ensures that the specified CIPD package exists.
+
+&emsp; **@property**<br>&mdash; **def [firebase](/recipes/recipe_modules/third_party_packages/api.py#109)(self):**
+
+&emsp; **@property**<br>&mdash; **def [gcloud](/recipes/recipe_modules/third_party_packages/api.py#85)(self):**
+
+&mdash; **def [get\_latest\_release\_tag](/recipes/recipe_modules/third_party_packages/api.py#161)(self, repo_url, prefix='v'):**
+
+&mdash; **def [get\_package\_name](/recipes/recipe_modules/third_party_packages/api.py#120)(self, package_name_prefix):**
+
+&emsp; **@property**<br>&mdash; **def [git](/recipes/recipe_modules/third_party_packages/api.py#81)(self):**
+
+&emsp; **@property**<br>&mdash; **def [go](/recipes/recipe_modules/third_party_packages/api.py#105)(self):**
+
+&emsp; **@property**<br>&mdash; **def [gsutil](/recipes/recipe_modules/third_party_packages/api.py#89)(self):**
+
+&mdash; **def [init\_cross\_platform](/recipes/recipe_modules/third_party_packages/api.py#44)(self, cross_platform):**
+
+&emsp; **@property**<br>&mdash; **def [ninja](/recipes/recipe_modules/third_party_packages/api.py#93)(self):**
+
+&emsp; **@property**<br>&mdash; **def [python](/recipes/recipe_modules/third_party_packages/api.py#77)(self):**
+
+&mdash; **def [register\_package](/recipes/recipe_modules/third_party_packages/api.py#193)(self, package_file, name, version):**
+
+&mdash; **def [support\_prefix](/recipes/recipe_modules/third_party_packages/api.py#117)(self, base):**
+
+&emsp; **@property**<br>&mdash; **def [swig](/recipes/recipe_modules/third_party_packages/api.py#101)(self):**
 ### *recipe_modules* / [windows\_sdk](/recipes/recipe_modules/windows_sdk)
 
 [DEPS](/recipes/recipe_modules/windows_sdk/__init__.py#5): [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/step][recipe_engine/recipe_modules/step]
@@ -636,6 +635,13 @@ Raises:
     StepFailure or InfraFailure.
 ## Recipes
 
+### *recipes* / [3pp](/recipes/recipes/3pp.py)
+
+[DEPS](/recipes/recipes/3pp.py#13): [depot\_tools/git][depot_tools/recipe_modules/git], [support\_3pp](#recipe_modules-support_3pp), [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+
+This recipe builds and packages third party software, such as Git.
+
+&mdash; **def [RunSteps](/recipes/recipes/3pp.py#69)(api, package_locations, to_build, platform, force_build, package_prefix):**
 ### *recipes* / [build\_conda\_cipd\_pkg](/recipes/recipes/build_conda_cipd_pkg.py)
 
 [DEPS](/recipes/recipes/build_conda_cipd_pkg.py#20): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [conda](#recipe_modules-conda), [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties]
@@ -904,6 +910,11 @@ Raises:
 &mdash; **def [normalize](/recipes/recipes/snapshots/snapshot.py#17)(s):**
 
 Normalizes a string for use in a resource label.
+### *recipes* / [support\_3pp:tests/full](/recipes/recipe_modules/support_3pp/tests/full.py)
+
+[DEPS](/recipes/recipe_modules/support_3pp/tests/full.py#7): [support\_3pp](#recipe_modules-support_3pp), [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+
+&mdash; **def [RunSteps](/recipes/recipe_modules/support_3pp/tests/full.py#28)(api, GOOS, GOARCH, package_prefix, load_dupe):**
 ### *recipes* / [sync\_submodules](/recipes/recipes/sync_submodules.py)
 
 [DEPS](/recipes/recipes/sync_submodules.py#7): [sync\_submodules](#recipe_modules-sync_submodules), [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime]
@@ -1016,18 +1027,6 @@ During testing, it may be useful to focus on building Swig. This can be done by
 running this recipe module directly.
 
 &mdash; **def [RunSteps](/recipes/recipe_modules/third_party_packages/examples/swig.py#43)(api, dry_run):**
-### *recipes* / [third\_party\_packages\_ng](/recipes/recipes/third_party_packages_ng.py)
-
-[DEPS](/recipes/recipes/third_party_packages_ng.py#13): [depot\_tools/git][depot_tools/recipe_modules/git], [third\_party\_packages\_ng](#recipe_modules-third_party_packages_ng), [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
-
-This recipe builds and packages third party software, such as Git.
-
-&mdash; **def [RunSteps](/recipes/recipes/third_party_packages_ng.py#69)(api, package_locations, to_build, platform, force_build, package_prefix):**
-### *recipes* / [third\_party\_packages\_ng:tests/full](/recipes/recipe_modules/third_party_packages_ng/tests/full.py)
-
-[DEPS](/recipes/recipe_modules/third_party_packages_ng/tests/full.py#7): [third\_party\_packages\_ng](#recipe_modules-third_party_packages_ng), [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
-
-&mdash; **def [RunSteps](/recipes/recipe_modules/third_party_packages_ng/tests/full.py#28)(api, GOOS, GOARCH, package_prefix, load_dupe):**
 ### *recipes* / [tricium\_noop](/recipes/recipes/tricium_noop.py)
 
 [DEPS](/recipes/recipes/tricium_noop.py#12): [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/tricium][recipe_engine/recipe_modules/tricium]
