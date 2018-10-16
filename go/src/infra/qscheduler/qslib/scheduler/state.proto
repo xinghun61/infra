@@ -15,9 +15,9 @@ syntax = "proto3";
 package scheduler;
 
 import "google/protobuf/timestamp.proto";
-import "infra/qscheduler/qslib/types/task/task.proto";
-import "infra/qscheduler/qslib/types/vector/vector.proto";
+import "infra/qscheduler/qslib/scheduler/task.proto";
 import "infra/qscheduler/qslib/scheduler/worker.proto";
+import "infra/qscheduler/qslib/types/vector/vector.proto";
 
 // State represents the overall state of a quota scheduler worker pool,
 // account set, and task queue. This is represented separately from
@@ -26,7 +26,7 @@ import "infra/qscheduler/qslib/scheduler/worker.proto";
 message State {
   // QueuedRequests is the set of Requests that are waiting to be assigned to a
   // worker, keyed by request id.
-  map<string, task.Request> queued_requests = 1;
+  map<string, TaskRequest> queued_requests = 1;
 
   // Balance of all quota accounts for this pool, keyed by account id.
   map<string, vector.Vector> balances = 2;

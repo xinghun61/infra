@@ -23,7 +23,6 @@ import (
 
 	"infra/qscheduler/qslib/tutils"
 	"infra/qscheduler/qslib/types/account"
-	"infra/qscheduler/qslib/types/task"
 	"infra/qscheduler/qslib/types/vector"
 
 	"github.com/kylelemons/godebug/pretty"
@@ -39,9 +38,9 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 				"w0": NewWorker(),
 				"w1": &Worker{Labels: []string{"label1"}},
 			},
-			QueuedRequests: map[string]*task.Request{
-				"t1": &task.Request{AccountId: "a1", Labels: []string{"label1"}},
-				"t2": &task.Request{AccountId: "a1", Labels: []string{"label2"}},
+			QueuedRequests: map[string]*TaskRequest{
+				"t1": &TaskRequest{AccountId: "a1", Labels: []string{"label1"}},
+				"t2": &TaskRequest{AccountId: "a1", Labels: []string{"label2"}},
 			},
 			Balances: map[string]*vector.Vector{
 				"a1": vector.New(2, 0, 0),
@@ -80,30 +79,30 @@ func TestSchedulerReprioritize(t *testing.T) {
 			},
 			Workers: map[string]*Worker{
 				"w1": &Worker{
-					RunningTask: &task.Run{
+					RunningTask: &TaskRun{
 						Cost:     vector.New(1),
 						Priority: 0,
-						Request:  &task.Request{AccountId: "a1"},
+						Request:  &TaskRequest{AccountId: "a1"},
 					},
 				},
 				"w2": &Worker{
-					RunningTask: &task.Run{
+					RunningTask: &TaskRun{
 						Priority: 0,
-						Request:  &task.Request{AccountId: "a1"},
+						Request:  &TaskRequest{AccountId: "a1"},
 						Cost:     vector.New(),
 					},
 				},
 				"w3": &Worker{
-					RunningTask: &task.Run{
+					RunningTask: &TaskRun{
 						Cost:     vector.New(1),
 						Priority: 2,
-						Request:  &task.Request{AccountId: "a1"},
+						Request:  &TaskRequest{AccountId: "a1"},
 					},
 				},
 				"w4": &Worker{
-					RunningTask: &task.Run{
+					RunningTask: &TaskRun{
 						Priority: 2,
-						Request:  &task.Request{AccountId: "a1"},
+						Request:  &TaskRequest{AccountId: "a1"},
 						Cost:     vector.New(),
 					},
 				},
@@ -149,15 +148,15 @@ func TestSchedulerPreempt(t *testing.T) {
 						"a1": vector.New(),
 						"a2": vector.New(1),
 					},
-					QueuedRequests: map[string]*task.Request{
-						"t1": &task.Request{AccountId: "a2"},
+					QueuedRequests: map[string]*TaskRequest{
+						"t1": &TaskRequest{AccountId: "a2"},
 					},
 					Workers: map[string]*Worker{
 						"w1": &Worker{
-							RunningTask: &task.Run{
+							RunningTask: &TaskRun{
 								Cost:      vector.New(.5, .5, .5),
 								Priority:  1,
-								Request:   &task.Request{AccountId: "a1"},
+								Request:   &TaskRequest{AccountId: "a1"},
 								RequestId: "t2",
 							},
 						},
@@ -191,27 +190,27 @@ func TestSchedulerPreempt(t *testing.T) {
 						// thus is banned from preempting jobs.
 						"a2": vector.New(0.9 * account.PromoteThreshold),
 					},
-					QueuedRequests: map[string]*task.Request{
-						"t1": &task.Request{AccountId: "a1"},
-						"t2": &task.Request{AccountId: "a2"},
+					QueuedRequests: map[string]*TaskRequest{
+						"t1": &TaskRequest{AccountId: "a1"},
+						"t2": &TaskRequest{AccountId: "a2"},
 					},
 					Workers: map[string]*Worker{
 						// A job is running, but it is too costly for a1 to preempt.
 						"w1": &Worker{
-							RunningTask: &task.Run{
+							RunningTask: &TaskRun{
 								Cost:      vector.New(0.5*account.PromoteThreshold, 0, 0),
 								Priority:  1,
-								Request:   &task.Request{},
+								Request:   &TaskRequest{},
 								RequestId: "other_req",
 							},
 						},
 						// A job is running for a2 at a lower priority, so a2 is banned
 						// from preempting jobs.
 						"w2": &Worker{
-							RunningTask: &task.Run{
+							RunningTask: &TaskRun{
 								Cost:      vector.New(0.5 * account.PromoteThreshold),
 								Priority:  1,
-								Request:   &task.Request{AccountId: "a2"},
+								Request:   &TaskRequest{AccountId: "a2"},
 								RequestId: "t3",
 							},
 						},
@@ -322,24 +321,24 @@ func TestUpdateBalance(t *testing.T) {
 				Workers: map[string]*Worker{
 					// Worker running a task.
 					"w1": &Worker{
-						RunningTask: &task.Run{
+						RunningTask: &TaskRun{
 							Cost:     vector.New(1),
 							Priority: 1,
-							Request:  &task.Request{AccountId: "a1"},
+							Request:  &TaskRequest{AccountId: "a1"},
 						},
 					},
 					// Worker running a task with uninitialized Cost.
 					"w2": &Worker{
-						RunningTask: &task.Run{
+						RunningTask: &TaskRun{
 							Priority: 2,
-							Request:  &task.Request{AccountId: "a1"},
+							Request:  &TaskRequest{AccountId: "a1"},
 						},
 					},
 					// Worker running a task with invalid account.
 					"w3": &Worker{
-						RunningTask: &task.Run{
+						RunningTask: &TaskRun{
 							Priority: account.FreeBucket,
-							Request:  &task.Request{AccountId: "a2"},
+							Request:  &TaskRequest{AccountId: "a2"},
 						},
 					},
 				},
@@ -356,24 +355,24 @@ func TestUpdateBalance(t *testing.T) {
 				LastUpdateTime: t2,
 				Workers: map[string]*Worker{
 					"w1": &Worker{
-						RunningTask: &task.Run{
+						RunningTask: &TaskRun{
 							Cost:     vector.New(1, 2),
 							Priority: 1,
-							Request:  &task.Request{AccountId: "a1"},
+							Request:  &TaskRequest{AccountId: "a1"},
 						},
 					},
 					"w2": &Worker{
-						RunningTask: &task.Run{
+						RunningTask: &TaskRun{
 							Cost:     vector.New(0, 0, 2),
 							Priority: 2,
-							Request:  &task.Request{AccountId: "a1"},
+							Request:  &TaskRequest{AccountId: "a1"},
 						},
 					},
 					"w3": &Worker{
-						RunningTask: &task.Run{
+						RunningTask: &TaskRun{
 							Cost:     vector.New(),
 							Priority: account.FreeBucket,
-							Request:  &task.Request{AccountId: "a2"},
+							Request:  &TaskRequest{AccountId: "a2"},
 						},
 					},
 				},
@@ -393,7 +392,7 @@ func TestUpdateBalance(t *testing.T) {
 // TestAddRequest ensures that AddRequest enqueues a request.
 func TestAddRequest(t *testing.T) {
 	s := New()
-	r := &task.Request{}
+	r := &TaskRequest{}
 	s.AddRequest("r1", r)
 	if s.state.QueuedRequests["r1"] != r {
 		t.Errorf("AddRequest did not enqueue request.")

@@ -16,7 +16,7 @@
 Package task describes either a queued or running task as part of the quota
 scheduler algorithm.
 */
-package task
+package scheduler
 
 import (
 	"sort"

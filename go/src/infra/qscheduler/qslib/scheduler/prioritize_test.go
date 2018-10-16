@@ -24,7 +24,6 @@ import (
 
 	"infra/qscheduler/qslib/tutils"
 	"infra/qscheduler/qslib/types/account"
-	"infra/qscheduler/qslib/types/task"
 	"infra/qscheduler/qslib/types/vector"
 )
 
@@ -46,24 +45,24 @@ func TestBasicPrioritization(t *testing.T) {
 			&Scheduler{
 				&State{
 					Balances: map[string]*vector.Vector{"a1": vector.New(1, 0, 0)},
-					QueuedRequests: map[string]*task.Request{
-						"t1": &task.Request{AccountId: "a1"},
+					QueuedRequests: map[string]*TaskRequest{
+						"t1": &TaskRequest{AccountId: "a1"},
 					},
 				},
 				NewConfig(),
 			},
-			[]prioritizedRequest{{RequestId: "t1", Priority: 0, Request: &task.Request{AccountId: "a1"}}},
+			[]prioritizedRequest{{RequestId: "t1", Priority: 0, Request: &TaskRequest{AccountId: "a1"}}},
 		},
 
 		// One request without quota, should be in the FreeBucket.
 		{
 			&Scheduler{
 				&State{
-					QueuedRequests: map[string]*task.Request{"t1": &task.Request{}},
+					QueuedRequests: map[string]*TaskRequest{"t1": &TaskRequest{}},
 				},
 				NewConfig(),
 			},
-			[]prioritizedRequest{{RequestId: "t1", Priority: account.FreeBucket, Request: &task.Request{}}},
+			[]prioritizedRequest{{RequestId: "t1", Priority: account.FreeBucket, Request: &TaskRequest{}}},
 		},
 	}
 
@@ -87,12 +86,12 @@ func TestPrioritizeWithEnqueueTimeTieBreaker(t *testing.T) {
 	eT := tutils.TimestampProto(e)
 	lT := tutils.TimestampProto(l)
 
-	eR := task.Request{AccountId: "a1", EnqueueTime: eT}
-	lR := task.Request{AccountId: "a1", EnqueueTime: lT}
+	eR := TaskRequest{AccountId: "a1", EnqueueTime: eT}
+	lR := TaskRequest{AccountId: "a1", EnqueueTime: lT}
 
 	state := &State{
 		Balances: map[string]*vector.Vector{"a1": vector.New(1, 0, 0)},
-		QueuedRequests: map[string]*task.Request{
+		QueuedRequests: map[string]*TaskRequest{
 			"t2": &lR,
 			"t1": &eR,
 		},
@@ -119,19 +118,19 @@ func TestDemoteBeyondFanout(t *testing.T) {
 			"a2": {},
 		},
 	}
-	running := []*task.Run{
-		{RequestId: "1", Priority: 0, Request: &task.Request{AccountId: "a1"}},
-		{RequestId: "2", Priority: 0, Request: &task.Request{AccountId: "a1"}},
-		{RequestId: "3", Priority: 0, Request: &task.Request{AccountId: "a2"}},
-		{RequestId: "4", Priority: account.FreeBucket, Request: &task.Request{AccountId: "a3"}},
+	running := []*TaskRun{
+		{RequestId: "1", Priority: 0, Request: &TaskRequest{AccountId: "a1"}},
+		{RequestId: "2", Priority: 0, Request: &TaskRequest{AccountId: "a1"}},
+		{RequestId: "3", Priority: 0, Request: &TaskRequest{AccountId: "a2"}},
+		{RequestId: "4", Priority: account.FreeBucket, Request: &TaskRequest{AccountId: "a3"}},
 	}
 	workers := getWorkers(running)
 
-	r1 := task.Request{AccountId: "a1"}
-	r2 := task.Request{AccountId: "a1"}
-	r3 := task.Request{AccountId: "a2"}
-	r4 := task.Request{AccountId: "a3"}
-	reqs := map[string]*task.Request{
+	r1 := TaskRequest{AccountId: "a1"}
+	r2 := TaskRequest{AccountId: "a1"}
+	r3 := TaskRequest{AccountId: "a2"}
+	r4 := TaskRequest{AccountId: "a3"}
+	reqs := map[string]*TaskRequest{
 		"5": &r1,
 		"6": &r2,
 		"7": &r3,
@@ -196,13 +195,13 @@ func TestPrioritize(t *testing.T) {
 	}
 
 	// 6 Jobs are already running. 2 for A1, 2 for A2, 1 for each of A3, A4
-	run1 := task.Run{Priority: 0, Request: &task.Request{AccountId: a1}}
-	run2 := task.Run{Priority: 0, Request: &task.Request{AccountId: a1}}
-	run3 := task.Run{Priority: 1, Request: &task.Request{AccountId: a2}}
-	run4 := task.Run{Priority: 1, Request: &task.Request{AccountId: a2}}
-	run5 := task.Run{Priority: 3, Request: &task.Request{AccountId: a3}}
-	run6 := task.Run{Priority: 3, Request: &task.Request{AccountId: a4}}
-	running := []*task.Run{
+	run1 := TaskRun{Priority: 0, Request: &TaskRequest{AccountId: a1}}
+	run2 := TaskRun{Priority: 0, Request: &TaskRequest{AccountId: a1}}
+	run3 := TaskRun{Priority: 1, Request: &TaskRequest{AccountId: a2}}
+	run4 := TaskRun{Priority: 1, Request: &TaskRequest{AccountId: a2}}
+	run5 := TaskRun{Priority: 3, Request: &TaskRequest{AccountId: a3}}
+	run6 := TaskRun{Priority: 3, Request: &TaskRequest{AccountId: a4}}
+	running := []*TaskRun{
 		&run1,
 		&run2,
 		&run3,
@@ -213,15 +212,15 @@ func TestPrioritize(t *testing.T) {
 
 	// 6 Jobs are requested. 3 for A1, 1 for each of the remaining
 	// A3's requests are the earliest, and 1 second apart.
-	req1 := task.Request{AccountId: a1, EnqueueTime: atTime(0)}
-	req2 := task.Request{AccountId: a1, EnqueueTime: atTime(1)}
-	req3 := task.Request{AccountId: a1, EnqueueTime: atTime(2)}
+	req1 := TaskRequest{AccountId: a1, EnqueueTime: atTime(0)}
+	req2 := TaskRequest{AccountId: a1, EnqueueTime: atTime(1)}
+	req3 := TaskRequest{AccountId: a1, EnqueueTime: atTime(2)}
 	// The remaining requests are later by 1 second each.
-	req4 := task.Request{AccountId: a2, EnqueueTime: atTime(3)}
-	req5 := task.Request{AccountId: a3, EnqueueTime: atTime(4)}
-	req6 := task.Request{AccountId: a4, EnqueueTime: atTime(5)}
+	req4 := TaskRequest{AccountId: a2, EnqueueTime: atTime(3)}
+	req5 := TaskRequest{AccountId: a3, EnqueueTime: atTime(4)}
+	req6 := TaskRequest{AccountId: a4, EnqueueTime: atTime(5)}
 
-	reqs := map[string]*task.Request{
+	reqs := map[string]*TaskRequest{
 		"1": &req1,
 		"2": &req2,
 		"3": &req3,
@@ -295,7 +294,7 @@ func atTime(seconds time.Duration) *timestamp.Timestamp {
 
 // getWorkers is a helper function to turn a slice of running tasks
 // into a workers map.
-func getWorkers(running []*task.Run) map[string]*Worker {
+func getWorkers(running []*TaskRun) map[string]*Worker {
 	workers := make(map[string]*Worker)
 	for i, r := range running {
 		wid := fmt.Sprintf("w%d", i)

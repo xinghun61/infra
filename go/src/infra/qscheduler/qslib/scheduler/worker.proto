@@ -15,7 +15,7 @@ syntax = "proto3";
 package scheduler;
 
 import "google/protobuf/timestamp.proto";
-import "infra/qscheduler/qslib/types/task/task.proto";
+import "infra/qscheduler/qslib/scheduler/task.proto";
 import "infra/qscheduler/qslib/types/vector/vector.proto";
 import "infra/qscheduler/qslib/types/account/account.proto";
 
@@ -32,6 +32,6 @@ message Worker {
 
   // RunningTask is, if non-nil, the task that is currently running on the
   // worker.
-  task.Run running_task = 2;
+  TaskRun running_task = 2;
 }
 

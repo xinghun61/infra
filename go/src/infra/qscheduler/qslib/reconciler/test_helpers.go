@@ -19,7 +19,6 @@ import (
 
 	"infra/qscheduler/qslib/scheduler"
 	"infra/qscheduler/qslib/tutils"
-	"infra/qscheduler/qslib/types/task"
 )
 
 // fakeScheduler is an implementation of the Scheduler interface which makes
@@ -40,7 +39,7 @@ func (s *fakeScheduler) UpdateTime(t time.Time) error {
 }
 
 // MarkIdle is an implementation of the Scheduler interface.
-func (s *fakeScheduler) MarkIdle(id string, labels task.LabelSet) {
+func (s *fakeScheduler) MarkIdle(id string, labels scheduler.LabelSet) {
 	s.idleWorkers[id] = true
 }
 
@@ -58,7 +57,7 @@ func (s *fakeScheduler) RunOnce() []*scheduler.Assignment {
 }
 
 // AddRequest is an implementation of the Scheduler interface.
-func (s *fakeScheduler) AddRequest(id string, request *task.Request) {}
+func (s *fakeScheduler) AddRequest(id string, request *scheduler.TaskRequest) {}
 
 // fakeSchedule sets the given assignment in a fakeScheduler.
 func (s *fakeScheduler) fakeSchedule(a *scheduler.Assignment) {
@@ -89,7 +88,7 @@ func (s *fifoScheduler) UpdateTime(t time.Time) error {
 }
 
 // MarkIdle is an implementation of the Scheduler interface.
-func (s *fifoScheduler) MarkIdle(id string, labels task.LabelSet) {
+func (s *fifoScheduler) MarkIdle(id string, labels scheduler.LabelSet) {
 	for _, idle := range s.idleWorkers {
 		if idle == id {
 			return
@@ -124,6 +123,6 @@ func (s *fifoScheduler) RunOnce() []*scheduler.Assignment {
 }
 
 // AddRequest is an implementation of the Scheduler interface.
-func (s *fifoScheduler) AddRequest(id string, request *task.Request) {
+func (s *fifoScheduler) AddRequest(id string, request *scheduler.TaskRequest) {
 	s.queueIDs = append(s.queueIDs, id)
 }

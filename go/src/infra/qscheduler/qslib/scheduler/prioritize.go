@@ -20,7 +20,6 @@ import (
 	"github.com/golang/protobuf/ptypes"
 
 	"infra/qscheduler/qslib/types/account"
-	"infra/qscheduler/qslib/types/task"
 )
 
 // prioritizedRequest represents a request along with the computed priority
@@ -29,7 +28,7 @@ import (
 type prioritizedRequest struct {
 	RequestId string
 	Priority  int32
-	Request   *task.Request
+	Request   *TaskRequest
 	// Flag used within scheduler to indicate that a request is already handled.
 	Scheduled bool
 }

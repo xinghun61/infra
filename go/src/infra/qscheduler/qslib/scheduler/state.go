@@ -17,7 +17,6 @@ package scheduler
 import (
 	"fmt"
 
-	"infra/qscheduler/qslib/types/task"
 	"infra/qscheduler/qslib/types/vector"
 )
 
@@ -111,7 +110,7 @@ func (s *State) chargeAccount(accountID string, cost *vector.Vector) {
 func (s *State) startRunning(requestID string, workerID string,
 	priority int32, initialCost *vector.Vector) {
 	s.ensureCache()
-	rt := &task.Run{
+	rt := &TaskRun{
 		Priority:  priority,
 		Request:   s.QueuedRequests[requestID],
 		Cost:      initialCost.Copy(),

@@ -18,7 +18,6 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	"infra/qscheduler/qslib/types/account"
-	"infra/qscheduler/qslib/types/task"
 	"infra/qscheduler/qslib/types/vector"
 )
 
@@ -33,7 +32,7 @@ func NewConfig() *Config {
 func NewState() *State {
 	return &State{
 		Balances:       map[string]*vector.Vector{},
-		QueuedRequests: map[string]*task.Request{},
+		QueuedRequests: map[string]*TaskRequest{},
 		Workers:        map[string]*Worker{},
 	}
 }

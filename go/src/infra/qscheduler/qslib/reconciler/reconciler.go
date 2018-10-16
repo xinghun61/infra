@@ -37,7 +37,6 @@ import (
 
 	"infra/qscheduler/qslib/scheduler"
 	"infra/qscheduler/qslib/tutils"
-	"infra/qscheduler/qslib/types/task"
 )
 
 // WorkerQueue represents the queue of qscheduler operations that are pending
@@ -97,7 +96,7 @@ type IdleWorker struct {
 	ID string
 
 	// ProvisionableLabels is the set of provisionable labels of the idle worker.
-	ProvisionableLabels task.LabelSet
+	ProvisionableLabels scheduler.LabelSet
 }
 
 // Assignment represents a scheduler-initated operation to assign a task to a worker.
@@ -118,14 +117,14 @@ type Scheduler interface {
 
 	// MarkIdle informs the scheduler that a given worker is idle, with
 	// given labels.
-	MarkIdle(id string, labels task.LabelSet)
+	MarkIdle(id string, labels scheduler.LabelSet)
 
 	// RunOnce runs through one round of the scheduling algorithm, and determines
 	// and returns work assignments.
 	RunOnce() []*scheduler.Assignment
 
 	// AddRequest adds a task request to the queue.
-	AddRequest(id string, request *task.Request)
+	AddRequest(id string, request *scheduler.TaskRequest)
 }
 
 // AssignTasks accepts a slice of idle workers, and returns tasks to be assigned
@@ -211,7 +210,7 @@ func (state *State) Notify(s Scheduler, updates ...*TaskUpdate) error {
 			// likely by having AddRequest return an error.
 			s.AddRequest(
 				u.RequestId,
-				&task.Request{
+				&scheduler.TaskRequest{
 					AccountId: u.AccountId,
 					// TODO(akeshet): Clarify whether u.Time corresponds to the pubsub time,
 					// or the enqueue time of the task. If the former, add a field

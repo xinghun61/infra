@@ -20,7 +20,6 @@ import (
 
 	"github.com/kylelemons/godebug/pretty"
 
-	"infra/qscheduler/qslib/types/task"
 	"infra/qscheduler/qslib/types/vector"
 )
 
@@ -28,17 +27,17 @@ import (
 func TestApplyIdleAssignment(t *testing.T) {
 	t.Parallel()
 	state := &State{
-		QueuedRequests: map[string]*task.Request{"t1": &task.Request{}},
+		QueuedRequests: map[string]*TaskRequest{"t1": &TaskRequest{}},
 		Workers:        map[string]*Worker{"w1": NewWorker()},
 	}
 
 	expect := &State{
-		QueuedRequests: map[string]*task.Request{},
+		QueuedRequests: map[string]*TaskRequest{},
 		Workers: map[string]*Worker{
-			"w1": &Worker{RunningTask: &task.Run{
+			"w1": &Worker{RunningTask: &TaskRun{
 				RequestId: "t1",
 				Priority:  1,
-				Request:   &task.Request{},
+				Request:   &TaskRequest{},
 				Cost:      vector.New()}},
 		},
 		RunningRequestsCache: map[string]string{"t1": "w1"},
@@ -60,14 +59,14 @@ func TestApplyPreempt(t *testing.T) {
 			"a1": vector.New(),
 			"a2": vector.New(2),
 		},
-		QueuedRequests: map[string]*task.Request{
-			"t2": &task.Request{AccountId: "a2"},
+		QueuedRequests: map[string]*TaskRequest{
+			"t2": &TaskRequest{AccountId: "a2"},
 		},
 		Workers: map[string]*Worker{
-			"w1": &Worker{RunningTask: &task.Run{
+			"w1": &Worker{RunningTask: &TaskRun{
 				Cost:      vector.New(1),
 				Priority:  2,
-				Request:   &task.Request{AccountId: "a1"},
+				Request:   &TaskRequest{AccountId: "a1"},
 				RequestId: "t1",
 			}},
 		},
@@ -78,14 +77,14 @@ func TestApplyPreempt(t *testing.T) {
 			"a1": vector.New(1),
 			"a2": vector.New(1),
 		},
-		QueuedRequests: map[string]*task.Request{
-			"t1": &task.Request{AccountId: "a1"},
+		QueuedRequests: map[string]*TaskRequest{
+			"t1": &TaskRequest{AccountId: "a1"},
 		},
 		Workers: map[string]*Worker{
-			"w1": &Worker{RunningTask: &task.Run{
+			"w1": &Worker{RunningTask: &TaskRun{
 				Cost:      vector.New(1),
 				Priority:  1,
-				Request:   &task.Request{AccountId: "a2"},
+				Request:   &TaskRequest{AccountId: "a2"},
 				RequestId: "t2",
 			},
 			}},

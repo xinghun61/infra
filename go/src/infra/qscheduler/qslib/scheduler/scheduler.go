@@ -32,7 +32,6 @@ import (
 
 	"infra/qscheduler/qslib/tutils"
 	"infra/qscheduler/qslib/types/account"
-	"infra/qscheduler/qslib/types/task"
 	"infra/qscheduler/qslib/types/vector"
 )
 
@@ -68,7 +67,7 @@ func (e *UpdateOrderError) Error() string {
 }
 
 // AddRequest enqueues a new task request.
-func (s *Scheduler) AddRequest(id string, request *task.Request) {
+func (s *Scheduler) AddRequest(id string, request *TaskRequest) {
 	// TODO(akeshet): Handle already-enqueued task.
 	// TODO(akeshet): Handle already-running task.
 	s.state.QueuedRequests[id] = request
@@ -144,12 +143,12 @@ func (s *Scheduler) UpdateTime(t time.Time) error {
 // the provisionable labels that it possesses.
 type IdleWorker struct {
 	WorkerId string
-	Labels   task.LabelSet
+	Labels   LabelSet
 }
 
 // MarkIdle marks the given worker as idle, and with
 // the given provisionable labels.
-func (s *Scheduler) MarkIdle(id string, labels task.LabelSet) {
+func (s *Scheduler) MarkIdle(id string, labels LabelSet) {
 	s.state.Workers[id] = &Worker{Labels: labels}
 }
 
@@ -206,7 +205,7 @@ func matchIdleBotsWithLabels(state *State, requestsAtP orderedRequests) []*Assig
 			continue
 		}
 		for wid, worker := range state.Workers {
-			if worker.isIdle() && task.LabelSet(worker.Labels).Equal(request.Request.Labels) {
+			if worker.isIdle() && LabelSet(worker.Labels).Equal(request.Request.Labels) {
 				m := &Assignment{
 					Type:      Assignment_IDLE_WORKER,
 					WorkerId:  wid,
