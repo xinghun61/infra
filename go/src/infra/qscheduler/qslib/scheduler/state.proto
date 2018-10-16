@@ -37,4 +37,11 @@ message State {
   // LastUpdateTime is the last time at which UpdateTime was called on a scheduler,
   // and corresponds to the when the quota account balances were updated.
   google.protobuf.Timestamp last_update_time = 4;
+
+  // RunningRequestsCache should be treated as private and unexported.
+  //
+  // It is logically the inverse of Workers, a map from request id to worker id
+  // for running tasks. This is used to optimize certain lookups, however
+  // Workers is the authoritative source.
+  map<string, string> running_requests_cache = 5;
 }

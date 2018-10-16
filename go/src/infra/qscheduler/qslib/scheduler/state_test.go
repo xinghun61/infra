@@ -24,8 +24,8 @@ import (
 	"infra/qscheduler/qslib/types/vector"
 )
 
-// TestIdle tests that Apply for IDLE_WORKER behaves correctly.
-func TestIdle(t *testing.T) {
+// TestApplyIdleAssignment tests that Apply for IDLE_WORKER behaves correctly.
+func TestApplyIdleAssignment(t *testing.T) {
 	t.Parallel()
 	state := &State{
 		QueuedRequests: map[string]*task.Request{"t1": &task.Request{}},
@@ -41,18 +41,19 @@ func TestIdle(t *testing.T) {
 				Request:   &task.Request{},
 				Cost:      vector.New()}},
 		},
+		RunningRequestsCache: map[string]string{"t1": "w1"},
 	}
 
 	mut := &Assignment{Type: Assignment_IDLE_WORKER, Priority: 1, RequestId: "t1", WorkerId: "w1"}
-	mut.apply(state)
+	state.applyAssignment(mut)
 
 	if diff := pretty.Compare(state, expect); diff != "" {
 		t.Errorf(fmt.Sprintf("Unexpected state diff (-got +want): %s", diff))
 	}
 }
 
-// TestPreempt tests that Apply for PREEMPT_WORKER behaves correctly.
-func TestPreempt(t *testing.T) {
+// TestApplyPreempt tests that Apply for PREEMPT_WORKER behaves correctly.
+func TestApplyPreempt(t *testing.T) {
 	t.Parallel()
 	state := &State{
 		Balances: map[string]*vector.Vector{
@@ -88,10 +89,11 @@ func TestPreempt(t *testing.T) {
 				RequestId: "t2",
 			},
 			}},
+		RunningRequestsCache: map[string]string{"t2": "w1"},
 	}
 
 	mut := &Assignment{Type: Assignment_PREEMPT_WORKER, Priority: 1, RequestId: "t2", WorkerId: "w1", TaskToAbort: "t1"}
-	mut.apply(state)
+	state.applyAssignment(mut)
 
 	if diff := pretty.Compare(state, expect); diff != "" {
 		t.Errorf(fmt.Sprintf("Unexpected state diff (-got +want): %s", diff))

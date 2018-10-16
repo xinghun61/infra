@@ -215,7 +215,7 @@ func matchIdleBotsWithLabels(state *State, requestsAtP orderedRequests) []*Assig
 					Time:      state.LastUpdateTime,
 				}
 				output = append(output, m)
-				m.apply(state)
+				state.applyAssignment(m)
 				requestsAtP[i] = prioritizedRequest{Scheduled: true}
 				break
 			}
@@ -258,7 +258,7 @@ func matchIdleBots(state *State, requestsAtP []prioritizedRequest) []*Assignment
 			Time:      state.LastUpdateTime,
 		}
 		output = append(output, m)
-		m.apply(state)
+		state.applyAssignment(m)
 		requestsAtP[r] = prioritizedRequest{Scheduled: true}
 		w++
 		if w == len(idleWorkersIds) {
@@ -408,7 +408,7 @@ func preemptRunningTasks(state *State, jobsAtP []prioritizedRequest, priority in
 			WorkerId:    candidate.id,
 		}
 		output = append(output, mut)
-		mut.apply(state)
+		state.applyAssignment(mut)
 		request.Scheduled = true
 		cI++
 	}

@@ -49,6 +49,11 @@ func New(v ...float64) *Vector {
 	return &Vector{Values: s}
 }
 
+// Copy returns a copy of the given vector.
+func (a Vector) Copy() *Vector {
+	return New(a.Values...)
+}
+
 // At is a convenience method to return a Vector's component at a given
 // priority, without the caller needing to worry about bounds checks.
 func (a Vector) At(priority int32) float64 {

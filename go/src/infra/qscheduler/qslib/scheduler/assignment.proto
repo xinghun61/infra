@@ -21,11 +21,14 @@ import "google/protobuf/timestamp.proto";
 message Assignment {
 
 	enum Type {
+		// Invalid assignment type, do not use.
+		NULL = 0;
+
 		// Assign a task to a currently idle worker.
-		IDLE_WORKER = 0;
+		IDLE_WORKER = 1;
 
 		// Preempt a running task on a worker with a new task.
-		PREEMPT_WORKER = 1;
+		PREEMPT_WORKER = 2;
 	}
 
 	// Type describes which kind of assignment this represents.
