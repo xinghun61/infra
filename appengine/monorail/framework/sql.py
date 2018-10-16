@@ -817,7 +817,8 @@ JOIN_RE_LIST = [
         r'^{table}{opt_alias} ON {tab_col} = {tab_col}'
         r'( AND {tab_col} = {tab_col})?'
         r'( AND {tab_col} = {placeholder})?'
-        r'( AND {tab_col} IN \({multi_placeholder}\))?$'),
+        r'( AND {tab_col} IN \({multi_placeholder}\))?'
+        r'( AND {tab_col} = {tab_col})?$'),
     _MakeRE(
         r'^{table}{opt_alias} ON {tab_col} = {tab_col}'
         r'( AND {tab_col} = {tab_col})?'

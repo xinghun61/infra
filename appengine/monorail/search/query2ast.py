@@ -337,7 +337,12 @@ def _ParseStructuredTerm(prefix, op_str, value, fields, now=None):
   # Search entries with or without any value in the specified field.
   if prefix == 'has':
     op = IS_NOT_DEFINED if negate else IS_DEFINED
-    if unquoted_value in fields:  # Look for that field with any value.
+    if '.' in unquoted_value:  # Possible search for phase field with any value.
+      phase_name, possible_field = unquoted_value.split('.', 1)
+      if possible_field in fields:
+        return ast_pb2.MakeCond(
+            op, fields[possible_field], [], [], phase_name=phase_name)
+    elif unquoted_value in fields:  # Look for that field with any value.
       return ast_pb2.MakeCond(op, fields[unquoted_value], [], [])
     else:  # Look for any label with that prefix.
       return ast_pb2.MakeCond(op, fields['label'], [unquoted_value], [])
