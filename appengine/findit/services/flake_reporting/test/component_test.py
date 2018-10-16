@@ -3,8 +3,8 @@
 # found in the LICENSE file.
 import datetime
 
-from model.flake.detection.flake_occurrence import (
-    CQFalseRejectionFlakeOccurrence)
+from model.flake.detection.flake_occurrence import FlakeOccurrence
+from model.flake.detection.flake_occurrence import FlakeType
 from model.flake.flake import Flake
 from model.flake.reporting.report import ComponentFlakinessReport
 from model.flake.reporting.report import TestFlakinessReport
@@ -26,7 +26,8 @@ def _PutData(test, component, cl, week, hour):
 
   time_happened = datetime.datetime.strptime('2018-W%d-4' % week, '%Y-W%W-%w')
   time_happened += datetime.timedelta(hours=hour)
-  occurrence = CQFalseRejectionFlakeOccurrence.Create(
+  occurrence = FlakeOccurrence.Create(
+      flake_type=FlakeType.CQ_FALSE_REJECTION,
       build_id=123 + hour,
       step_ui_name='step',
       test_name=test,

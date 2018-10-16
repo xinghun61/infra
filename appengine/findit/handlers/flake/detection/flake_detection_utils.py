@@ -8,15 +8,15 @@ from collections import defaultdict
 from libs import time_util
 from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
-from model.flake.detection.flake_occurrence import (
-    CQFalseRejectionFlakeOccurrence)
+from model.flake.detection.flake_occurrence import FlakeOccurrence
+from model.flake.detection.flake_occurrence import FlakeType
 
 
 def _GetOccurrenceInformation(occurrence):
   """Gets information of one occurrence in a dict.
 
   Args:
-    occurrence(CQFalseRejectionFlakeOccurrence): one flake occurrence.
+    occurrence(FlakeOccurrence): one flake occurrence.
 
   Returns:
     (dict): Information of one occurrence in a dict.
@@ -93,7 +93,7 @@ def _GetGroupedOccurrencesByBuilder(occurrences):
   """Groups occurrences by builder.
 
   Args:
-    occurrences(list): A list of CQFalseRejectionFlakeOccurrence objects.
+    occurrences(list): A list of FlakeOccurrence objects.
 
   Returns:
     (dict): A dict of lists for occurrences grouped by builder.
@@ -127,8 +127,9 @@ def GetFlakeInformation(flake, max_occurrence_count, with_occurrences=True):
     its Flake entity, its flake issue information and information of all its
     flake occurrences.
   """
-  occurrences_query = CQFalseRejectionFlakeOccurrence.query(
-      ancestor=flake.key).order(-CQFalseRejectionFlakeOccurrence.time_happened)
+  occurrences_query = FlakeOccurrence.query(ancestor=flake.key).filter(
+      FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).order(
+          -FlakeOccurrence.time_happened)
 
   if max_occurrence_count:
     occurrences = occurrences_query.fetch(max_occurrence_count)

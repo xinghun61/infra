@@ -6,8 +6,8 @@ import mock
 from google.appengine.api import taskqueue
 
 from model.flake.analysis.flake_analysis_request import FlakeAnalysisRequest
-from model.flake.detection.flake_occurrence import (
-    CQFalseRejectionFlakeOccurrence)
+from model.flake.detection.flake_occurrence import FlakeOccurrence
+from model.flake.detection.flake_occurrence import FlakeType
 from services import apis
 from waterfall.test.wf_testcase import WaterfallTestCase
 
@@ -24,7 +24,8 @@ class ApisTest(WaterfallTestCase):
     self.mock(taskqueue, 'add', Mocked_taskqueue_add)
 
   def testAnalyzeDetectedFlakeOccurrence(self):
-    occurrence = CQFalseRejectionFlakeOccurrence.Create(
+    occurrence = FlakeOccurrence.Create(
+        flake_type=FlakeType.CQ_FALSE_REJECTION,
         build_id=111,
         step_ui_name='step1',
         test_name='test1',

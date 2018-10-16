@@ -6,8 +6,8 @@ from datetime import datetime
 import mock
 
 from libs import time_util
-from model.flake.detection.flake_occurrence import (
-    CQFalseRejectionFlakeOccurrence)
+from model.flake.detection.flake_occurrence import FlakeOccurrence
+from model.flake.detection.flake_occurrence import FlakeType
 from model.flake.flake import Flake
 from services.flake_detection.update_flake_counts_service import (
     UpdateFlakeCounts)
@@ -58,7 +58,8 @@ class UpdateFlakeCountsTest(WaterfallTestCase):
     legacy_master_name = 'buildbot master'
     legacy_build_number = 999
 
-    occurrence1 = CQFalseRejectionFlakeOccurrence.Create(
+    occurrence1 = FlakeOccurrence.Create(
+        flake_type=FlakeType.CQ_FALSE_REJECTION,
         build_id=1,
         step_ui_name=step_ui_name,
         test_name='t1',
@@ -72,7 +73,8 @@ class UpdateFlakeCountsTest(WaterfallTestCase):
         parent_flake_key=flake1_key)
     occurrence1.put()
 
-    occurrence2 = CQFalseRejectionFlakeOccurrence.Create(
+    occurrence2 = FlakeOccurrence.Create(
+        flake_type=FlakeType.CQ_FALSE_REJECTION,
         build_id=2,
         step_ui_name=step_ui_name,
         test_name='t1',
@@ -86,7 +88,8 @@ class UpdateFlakeCountsTest(WaterfallTestCase):
         parent_flake_key=flake1_key)
     occurrence2.put()
 
-    occurrence3 = CQFalseRejectionFlakeOccurrence.Create(
+    occurrence3 = FlakeOccurrence.Create(
+        flake_type=FlakeType.CQ_FALSE_REJECTION,
         build_id=3,
         step_ui_name=step_ui_name,
         test_name='t2',
@@ -100,7 +103,8 @@ class UpdateFlakeCountsTest(WaterfallTestCase):
         parent_flake_key=flake1_key)
     occurrence3.put()
 
-    occurrence4 = CQFalseRejectionFlakeOccurrence.Create(
+    occurrence4 = FlakeOccurrence.Create(
+        flake_type=FlakeType.CQ_FALSE_REJECTION,
         build_id=4,
         step_ui_name=step_ui_name,
         test_name='t1',

@@ -9,8 +9,8 @@ from google.appengine.ext import ndb
 
 from gae_libs import appengine_util
 from model.flake.flake import Flake
-from model.flake.detection.flake_occurrence import (
-    CQFalseRejectionFlakeOccurrence)
+from model.flake.detection.flake_occurrence import FlakeOccurrence
+from model.flake.detection.flake_occurrence import FlakeType
 from services import bigquery_helper
 from services import monitoring
 
@@ -70,7 +70,8 @@ def _CreateFlakeOccurrenceFromRow(row):
   luci_bucket = row['luci_bucket']
   time_happened = row['test_start_msec']
   gerrit_cl_id = row['gerrit_cl_id']
-  flake_occurrence = CQFalseRejectionFlakeOccurrence.Create(
+  flake_occurrence = FlakeOccurrence.Create(
+      flake_type=FlakeType.CQ_FALSE_REJECTION,
       build_id=build_id,
       step_ui_name=step_ui_name,
       test_name=test_name,
@@ -124,7 +125,7 @@ def _UpdateLastFlakeHappenedTimeForFlakes(occurrences):
   """Updates flakes' last_occurred_time.
 
   Args:
-    occurrences(list): A list of CQFalseRejectionFlakeOccurrence entities.
+    occurrences(list): A list of FlakeOccurrence entities.
   """
 
   flake_key_to_latest_false_rejection_time = {}

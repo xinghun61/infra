@@ -3,8 +3,8 @@ import datetime
 from google.appengine.ext import ndb
 
 from libs import time_util
-from model.flake.detection.flake_occurrence import \
-    CQFalseRejectionFlakeOccurrence as Occurrence
+from model.flake.detection.flake_occurrence import FlakeOccurrence
+from model.flake.detection.flake_occurrence import FlakeType
 from model.flake.reporting.report import ComponentFlakinessReport
 from model.flake.reporting.report import TestFlakinessReport
 from model.flake.reporting.report import TotalFlakinessReport
@@ -59,9 +59,12 @@ def Report(year, week_number):
 
   start = time_util.ConvertISOWeekToUTCDatetime(year, week_number)
   end = start + datetime.timedelta(days=7)
-  query = Occurrence.query(
-      ndb.AND(Occurrence.time_happened >= start,
-              Occurrence.time_happened < end))
+  query = FlakeOccurrence.query()
+  query = query.filter(
+      FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION)
+  query = query.filter(
+      ndb.AND(FlakeOccurrence.time_happened >= start,
+              FlakeOccurrence.time_happened < end))
 
   cursor = None
   more = True

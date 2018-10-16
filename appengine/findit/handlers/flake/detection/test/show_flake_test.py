@@ -12,8 +12,8 @@ from libs import time_util
 from model.flake.flake import Flake
 from model.flake.flake import TestLocation
 from model.flake.flake_issue import FlakeIssue
-from model.flake.detection.flake_occurrence import (
-    CQFalseRejectionFlakeOccurrence)
+from model.flake.detection.flake_occurrence import FlakeOccurrence
+from model.flake.detection.flake_occurrence import FlakeType
 from waterfall.test.wf_testcase import WaterfallTestCase
 
 
@@ -77,7 +77,8 @@ class ShowFlakeTest(WaterfallTestCase):
     legacy_build_number = 999
     time_happened = datetime(2018, 1, 1)
     gerrit_cl_id = 98765
-    occurrence = CQFalseRejectionFlakeOccurrence.Create(
+    occurrence = FlakeOccurrence.Create(
+        flake_type=FlakeType.CQ_FALSE_REJECTION,
         build_id=build_id,
         step_ui_name=step_ui_name,
         test_name=test_name,
@@ -147,6 +148,7 @@ class ShowFlakeTest(WaterfallTestCase):
                     'luci_project': 'chromium'
                 },
                 'build_id': '123',
+                'flake_type': 'CQ_FALSE_REJECTION',
                 'gerrit_cl_id': 98765,
                 'step_ui_name': 'step',
                 'test_name': 'test',

@@ -5,8 +5,8 @@
 from google.appengine.ext import ndb
 
 from libs import time_util
-from model.flake.detection.flake_occurrence import (
-    CQFalseRejectionFlakeOccurrence)
+from model.flake.detection.flake_occurrence import FlakeOccurrence
+from model.flake.detection.flake_occurrence import FlakeType
 from model.flake.flake import Flake
 from services import constants
 
@@ -21,9 +21,9 @@ def _GetFlakeCounts(flake, start_date):
   if flake.last_occurred_time <= start_date:
     return 0, 0
 
-  occurrences = CQFalseRejectionFlakeOccurrence.query(
-      ancestor=flake.key).filter(
-          CQFalseRejectionFlakeOccurrence.time_happened > start_date).fetch()
+  occurrences = FlakeOccurrence.query(ancestor=flake.key).filter(
+      ndb.AND(FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION,
+              FlakeOccurrence.time_happened > start_date)).fetch()
 
   false_rejection_count = len(occurrences)
 

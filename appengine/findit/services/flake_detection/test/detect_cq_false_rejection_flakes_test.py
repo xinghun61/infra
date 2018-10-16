@@ -6,8 +6,8 @@ from datetime import datetime
 import mock
 
 from model.flake.flake import Flake
-from model.flake.detection.flake_occurrence import (
-    CQFalseRejectionFlakeOccurrence)
+from model.flake.detection.flake_occurrence import FlakeOccurrence
+from model.flake.detection.flake_occurrence import FlakeType
 from waterfall.test.wf_testcase import WaterfallTestCase
 from services import bigquery_helper
 from services.flake_detection.detect_cq_false_rejection_flakes import (
@@ -156,7 +156,8 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
     self.assertEqual(1, len(all_flakes))
     self.assertIsNotNone(all_flakes[0].last_occurred_time)
 
-    all_flake_occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()
+    all_flake_occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
     self.assertEqual(1, len(all_flake_occurrences))
     self.assertEqual(all_flakes[0], all_flake_occurrences[0].key.parent().get())
 
@@ -175,7 +176,8 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
     all_flakes = Flake.query().fetch()
     self.assertEqual(1, len(all_flakes))
 
-    all_flake_occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()
+    all_flake_occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
     self.assertEqual(1, len(all_flake_occurrences))
     self.assertEqual(all_flakes[0], all_flake_occurrences[0].key.parent().get())
 
@@ -202,7 +204,8 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
     all_flakes = Flake.query().fetch()
     self.assertEqual(2, len(all_flakes))
 
-    all_flake_occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()
+    all_flake_occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
     self.assertEqual(2, len(all_flake_occurrences))
     parent1 = all_flake_occurrences[0].key.parent().get()
     parent2 = all_flake_occurrences[1].key.parent().get()
@@ -231,7 +234,8 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
     all_flakes = Flake.query().fetch()
     self.assertEqual(1, len(all_flakes))
 
-    all_flake_occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()
+    all_flake_occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
     self.assertEqual(2, len(all_flake_occurrences))
     self.assertEqual(all_flakes[0], all_flake_occurrences[0].key.parent().get())
     self.assertEqual(all_flakes[0], all_flake_occurrences[1].key.parent().get())
@@ -257,7 +261,8 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
     all_flakes = Flake.query().fetch()
     self.assertEqual(1, len(all_flakes))
 
-    all_flake_occurrences = CQFalseRejectionFlakeOccurrence.query().fetch()
+    all_flake_occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
     self.assertEqual(2, len(all_flake_occurrences))
     self.assertEqual(all_flakes[0], all_flake_occurrences[0].key.parent().get())
     self.assertEqual(all_flakes[0], all_flake_occurrences[1].key.parent().get())
@@ -284,7 +289,8 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
     gerrit_cl_id = 98765
 
     # Flake's last_occurred_time is empty, updated.
-    occurrence_1 = CQFalseRejectionFlakeOccurrence.Create(
+    occurrence_1 = FlakeOccurrence.Create(
+        flake_type=FlakeType.CQ_FALSE_REJECTION,
         build_id=123,
         step_ui_name=step_ui_name,
         test_name=test_name,
@@ -302,7 +308,8 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
     self.assertEqual(flake.last_occurred_time, datetime(2018, 1, 1, 1))
 
     # Flake's last_occurred_time is earlier, updated.
-    occurrence_2 = CQFalseRejectionFlakeOccurrence.Create(
+    occurrence_2 = FlakeOccurrence.Create(
+        flake_type=FlakeType.CQ_FALSE_REJECTION,
         build_id=124,
         step_ui_name=step_ui_name,
         test_name=test_name,
@@ -320,7 +327,8 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
     self.assertEqual(flake.last_occurred_time, datetime(2018, 1, 1, 2))
 
     # Flake's last_occurred_time is later, not updated.
-    occurrence_3 = CQFalseRejectionFlakeOccurrence.Create(
+    occurrence_3 = FlakeOccurrence.Create(
+        flake_type=FlakeType.CQ_FALSE_REJECTION,
         build_id=125,
         step_ui_name=step_ui_name,
         test_name=test_name,

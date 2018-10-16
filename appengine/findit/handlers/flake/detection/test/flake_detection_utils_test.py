@@ -10,8 +10,8 @@ from libs import time_util
 from model.flake.flake import Flake
 from model.flake.flake import TestLocation
 from model.flake.flake_issue import FlakeIssue
-from model.flake.detection.flake_occurrence import (
-    CQFalseRejectionFlakeOccurrence)
+from model.flake.detection.flake_occurrence import FlakeOccurrence
+from model.flake.detection.flake_occurrence import FlakeType
 from waterfall.test.wf_testcase import WaterfallTestCase
 
 
@@ -50,7 +50,8 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
     legacy_build_number = 999
     time_happened = datetime(2018, 1, 1)
     gerrit_cl_id = 98765
-    occurrence = CQFalseRejectionFlakeOccurrence.Create(
+    occurrence = FlakeOccurrence.Create(
+        flake_type=FlakeType.CQ_FALSE_REJECTION,
         build_id=build_id,
         step_ui_name=step_ui_name,
         test_name=test_name,
@@ -65,7 +66,8 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
     occurrence.time_detected = datetime(2018, 1, 1)
     occurrence.put()
 
-    occurrence2 = CQFalseRejectionFlakeOccurrence.Create(
+    occurrence2 = FlakeOccurrence.Create(
+        flake_type=FlakeType.CQ_FALSE_REJECTION,
         build_id=124,
         step_ui_name=step_ui_name,
         test_name=test_name,
@@ -80,7 +82,8 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
     occurrence2.time_detected = datetime(2018, 1, 2)
     occurrence2.put()
 
-    occurrence3 = CQFalseRejectionFlakeOccurrence.Create(
+    occurrence3 = FlakeOccurrence.Create(
+        flake_type=FlakeType.CQ_FALSE_REJECTION,
         build_id=125,
         step_ui_name=step_ui_name,
         test_name=test_name,
@@ -134,6 +137,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             'group_by_field':
                 'luci builder 2',
             'occurrences': [{
+                'flake_type': FlakeType.CQ_FALSE_REJECTION,
                 'build_id': '125',
                 'step_ui_name': step_ui_name,
                 'test_name': test_name,
@@ -148,6 +152,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
                 'time_detected': '2018-01-02 02:00:00 UTC',
                 'gerrit_cl_id': gerrit_cl_id
             }, {
+                'flake_type': FlakeType.CQ_FALSE_REJECTION,
                 'build_id': '124',
                 'step_ui_name': step_ui_name,
                 'test_name': test_name,
@@ -166,6 +171,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             'group_by_field':
                 'luci builder',
             'occurrences': [{
+                'flake_type': FlakeType.CQ_FALSE_REJECTION,
                 'build_id': '123',
                 'step_ui_name': step_ui_name,
                 'test_name': test_name,
@@ -223,7 +229,8 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
     legacy_build_number = 999
     time_happened = datetime(2018, 1, 1)
     gerrit_cl_id = 98765
-    occurrence = CQFalseRejectionFlakeOccurrence.Create(
+    occurrence = FlakeOccurrence.Create(
+        flake_type=FlakeType.CQ_FALSE_REJECTION,
         build_id=build_id,
         step_ui_name=step_ui_name,
         test_name=test_name,
@@ -265,6 +272,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             'group_by_field':
                 'luci builder',
             'occurrences': [{
+                'flake_type': FlakeType.CQ_FALSE_REJECTION,
                 'build_id': '123',
                 'step_ui_name': step_ui_name,
                 'test_name': test_name,

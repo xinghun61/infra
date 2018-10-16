@@ -12,8 +12,8 @@ from gae_libs.appengine_util import IsStaging
 from googleapiclient.errors import HttpError
 from libs import time_util
 from model.flake.flake import Flake
-from model.flake.detection.flake_occurrence import (
-    CQFalseRejectionFlakeOccurrence)
+from model.flake.detection.flake_occurrence import FlakeOccurrence
+from model.flake.detection.flake_occurrence import FlakeType
 from model.flake.flake_issue import FlakeIssue
 from services import issue_tracking_service
 from services import monitoring
@@ -239,8 +239,9 @@ def GetFlakesWithEnoughOccurrences():
     a list of corresponding recent and unreported occurrences.
   """
   utc_one_day_ago = time_util.GetUTCNow() - datetime.timedelta(days=1)
-  occurrences = CQFalseRejectionFlakeOccurrence.query(
-      CQFalseRejectionFlakeOccurrence.time_happened > utc_one_day_ago).fetch()
+  occurrences = FlakeOccurrence.query(
+      ndb.AND(FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION,
+              FlakeOccurrence.time_happened > utc_one_day_ago)).fetch()
 
   logging.info(
       'There are %d cq false rejection occurrences within the past 24h.' %
