@@ -27,7 +27,7 @@ from services import client_config_svc
 N_MINUTES = 5
 EXPIRE_AFTER_SECS = 60 * 60
 DEFAULT_LIMIT = 60 * N_MINUTES  # 300 requests in 5 minutes is 1 QPS.
-DEFAULT_API_QPM = 100
+DEFAULT_API_QPM = 200
 
 ANON_USER = 'anon'
 
