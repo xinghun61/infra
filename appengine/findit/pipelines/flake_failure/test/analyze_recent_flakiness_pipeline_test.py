@@ -37,7 +37,7 @@ class AnalyzeRecentFlakinessPipelineTest(WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
   @mock.patch.object(step_util, 'GetStepMetadata')
-  @mock.patch.object(build_util, 'GetLatestCommitPosition')
+  @mock.patch.object(build_util, 'GetLatestCommitPositionAndRevision')
   def testAnalyzeRecentFlakinessPipeline(self, mocked_commit_position,
                                          mocked_step_metadata):
     master_name = 'm'
@@ -123,7 +123,7 @@ class AnalyzeRecentFlakinessPipelineTest(WaterfallTestCase):
                                               step_name)
 
   @mock.patch.object(step_util, 'GetStepMetadata')
-  @mock.patch.object(build_util, 'GetLatestCommitPosition')
+  @mock.patch.object(build_util, 'GetLatestCommitPositionAndRevision')
   def testAnalyzeRecentFlakinessPipelineAlreadyUpToDate(
       self, mocked_commit_position, mocked_step_metadata):
     master_name = 'm'

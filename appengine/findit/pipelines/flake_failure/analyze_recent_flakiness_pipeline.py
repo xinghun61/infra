@@ -58,9 +58,9 @@ class AnalyzeRecentFlakinessPipeline(GeneratorPipeline):
                                   analysis.build_number, analysis.step_name))
 
     recent_commit_position, recent_revision = (
-        build_util.GetLatestCommitPosition(analysis.master_name,
-                                           analysis.builder_name,
-                                           step_metadata.isolate_target_name))
+        build_util.GetLatestCommitPositionAndRevision(
+            analysis.master_name, analysis.builder_name,
+            step_metadata.isolate_target_name))
 
     if (not analysis.data_points or
         analysis.data_points[0].commit_position >= recent_commit_position or

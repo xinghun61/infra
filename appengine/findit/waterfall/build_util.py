@@ -9,6 +9,7 @@ from common import constants
 from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
+from infra_api_clients import crrev
 from infra_api_clients import logdog_util
 from libs import time_util
 from model.isolated_target import IsolatedTarget
@@ -156,8 +157,18 @@ def GetLatestBuildNumber(master_name, builder_name):
   return recent_builds[0]
 
 
-def GetLatestCommitPosition(master_name, builder_name, target_name):
-  """Gets the latest commit position given a master/builder/target."""
+def GetLatestCommitPositionAndRevision(master_name, builder_name, target_name):
+  """Gets the latest commit position and revision for a configuration.
+
+  Args:
+    master_name (str): The name of the master to query.
+    builder_name (str): The name of the builder to query.
+    target_name (str): The desired target name.
+
+  Returns:
+    (int, str): The latest commit position known and its corresponding revision.
+  
+  """
   latest_targets = (
       IsolatedTarget.FindLatestIsolateByMaster(
           master_name, builder_name, services_constants.GITILES_HOST,
@@ -165,7 +176,13 @@ def GetLatestCommitPosition(master_name, builder_name, target_name):
           target_name))
 
   if latest_targets:
-    return latest_targets[0].commit_position
+    commit_position = latest_targets[0].commit_position
+    commit_info = crrev.RedirectByCommitPosition(FinditHttpClient(),
+                                                 commit_position)
+    assert commit_info is not None, 'No info: r%d' % commit_position
+    revision = commit_info['git_sha']
+
+    return commit_position, revision
 
   # Fallback to buildbot for builds not yet migrated to LUCI.
   # TODO (crbug.com/804617): Remove fallback logic after migration is complete.
@@ -174,10 +191,10 @@ def GetLatestCommitPosition(master_name, builder_name, target_name):
   if not latest_build_number:
     # Something is wrong. Calling code should be responsible for checking for
     # the return value.
-    return None
+    return None, None
 
   _, latest_build = GetBuildInfo(master_name, builder_name, latest_build_number)
-  return latest_build.commit_position
+  return latest_build.commit_position, latest_build.chromium_revision
 
 
 # TODO(crbug/821865): Remove this after new flake pipelines are stable.

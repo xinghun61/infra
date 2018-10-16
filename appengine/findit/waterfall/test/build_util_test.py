@@ -9,6 +9,7 @@ import mock
 
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
+from infra_api_clients import crrev
 from infra_api_clients import logdog_util
 from model.isolated_target import IsolatedTarget
 from model.wf_build import WfBuild
@@ -249,19 +250,22 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(build_util.GetLatestBuildNumber('m', 'b'))
 
   @mock.patch.object(IsolatedTarget, 'FindLatestIsolateByMaster')
-  def testGetLatestCommitPositionWithTargets(self, mocked_target):
+  @mock.patch.object(crrev, 'RedirectByCommitPosition')
+  def testGetLatestCommitPositionAndRevisionWithTargets(self, mocked_revision,
+                                                        mocked_target):
     master_name = 'm'
     builder_name = 'b'
     target_name = 't'
     expected_commit_position = 1000
+    expected_revision = 'r1000'
+    mocked_revision.return_value = {'git_sha': expected_revision}
     target = IsolatedTarget.Create(87654321, '', '', master_name, builder_name,
                                    '', '', '', '', target_name, '',
                                    expected_commit_position)
     mocked_target.return_value = [target]
-    self.assertEqual(
-        expected_commit_position,
-        build_util.GetLatestCommitPosition(master_name, builder_name,
-                                           target_name))
+    self.assertEqual((expected_commit_position, expected_revision),
+                     build_util.GetLatestCommitPositionAndRevision(
+                         master_name, builder_name, target_name))
 
   @mock.patch.object(
       IsolatedTarget,
@@ -276,16 +280,17 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     target_name = 't'
     latest_build_number = 12345
     expected_commit_position = 100000
+    expected_revision = 'r100000'
     mocked_build_number.return_value = latest_build_number
     mocked_build_info = BuildInfo(master_name, builder_name,
                                   latest_build_number)
     mocked_build_info.commit_position = expected_commit_position
+    mocked_build_info.chromium_revision = expected_revision
     mocked_build.return_value = 200, mocked_build_info
 
-    self.assertEqual(
-        expected_commit_position,
-        build_util.GetLatestCommitPosition(master_name, builder_name,
-                                           target_name))
+    self.assertEqual((expected_commit_position, expected_revision),
+                     build_util.GetLatestCommitPositionAndRevision(
+                         master_name, builder_name, target_name))
 
   @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags')
   def testFindValidBuildNumberForStepNearby(self, mock_list_fn):
