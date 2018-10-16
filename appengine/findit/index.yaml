@@ -176,9 +176,10 @@ indexes:
   - name: autorevert_submission_time
 
 # For flake detection.
-- kind: CQFalseRejectionFlakeOccurrence
+- kind: FlakeOccurrence
   ancestor: yes
   properties:
+  - name: flake_type
   - name: time_happened
     direction: desc
 
