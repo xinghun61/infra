@@ -70,7 +70,6 @@
         'iOS API Framework Builder',
         'iOS32 Debug',
         'iOS32 Release',
-        'iOS32 Sim Debug (iOS 9.0)',
         'iOS64 Debug',
         'iOS64 Release',
         'iOS64 Sim Debug (iOS 10.0)',
