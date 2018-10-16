@@ -21,6 +21,9 @@ case $OSTYPE in
       arm-*) # explicitly pick armv4, the highest 32bit arm target available
         TARGET="linux-armv4"
         ;;
+      mipsel-*)
+        TARGET="linux-mips32"
+        ;;
       *) # should apply to aarch64, mips32 and mips64
         TARGET="linux-${CROSS_TRIPLE%%-*}"
         ;;

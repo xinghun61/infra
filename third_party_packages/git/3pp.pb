@@ -14,6 +14,7 @@ create {
   build {
     tool: "autoconf"
     tool: "sed"
+    tool: "gettext"
 
     dep: "zlib"
     dep: "curl"
