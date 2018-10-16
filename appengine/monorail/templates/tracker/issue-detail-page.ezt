@@ -302,6 +302,48 @@ runOnLoad(function() {
     });
   }
 
+  const delAttachmentElements =
+      document.getElementsByClassName('delAttachment');
+  Array.from(delAttachmentElements).forEach(el => {
+    el.addEventListener('click', async function(event) {
+      const localId = event.target.dataset.localId;
+      const sequenceNum = event.target.dataset.sequenceNum;
+      const attachmentId = event.target.dataset.attachmentId;
+      const markDeleted = event.target.dataset.markDeleted === 'true';
+
+      await window.prpcClient.call('monorail.Issues', 'DeleteAttachment', {
+        issueRef: {
+          projectName: window.CS_env.projectName,
+          localId: localId,
+        },
+        sequenceNum: sequenceNum,
+        attachmentId: attachmentId,
+        delete: markDeleted,
+      });
+
+      const deletedAttachment = $(`attachment-${attachmentId}-deleted`);
+      const undeletedAttachment = $(`attachment-${attachmentId}`);
+      if (markDeleted) {
+        deletedAttachment.classList.remove('hidden');
+        undeletedAttachment.classList.add('hidden');
+      } else {
+        deletedAttachment.classList.add('hidden');
+        undeletedAttachment.classList.remove('hidden');
+        // If the attachment was deleted when we first loaded the page, we
+        // didn't load the image/video preview, since it didn't exist.
+        // Load it once the attachment has been undeleted.
+        const attachmentImg = $(`attachment-${attachmentId}-img`);
+        const attachmentVideo = $(`attachment-${attachmentId}-video`);
+        if (attachmentImg && !attachmentImg.src) {
+          attachmentImg.src = attachmentImg.dataset.src;
+        }
+        if (attachmentVideo && !attachmentVideo.src) {
+          attachmentVideo.src = attachmentVideo.dataset.src;
+        }
+      }
+    });
+  });
+
   function flagComment(comment_id, sequence_num, isSpam) {
     var f = document.forms[[]"flagcom"];
     f.comment_id.value = comment_id;
