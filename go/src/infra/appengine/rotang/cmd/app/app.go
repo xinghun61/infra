@@ -24,6 +24,7 @@ import (
 	"go.chromium.org/gae/service/mail"
 	"go.chromium.org/luci/appengine/gaeauth/server"
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
+	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
@@ -32,6 +33,7 @@ import (
 )
 
 const (
+	authGroup     = "sheriff-o-matic-access"
 	selfURL       = "rota-ng-staging.googleplex.com"
 	sheriffConfig = "token/sheriff_secret.json"
 	sheriffToken  = "token/sheriff_token.json"
@@ -41,6 +43,24 @@ type appengineMailer struct{}
 
 func (a *appengineMailer) Send(ctx context.Context, msg *mail.Message) error {
 	return mail.Send(ctx, msg)
+}
+
+var errStatus = func(c context.Context, w http.ResponseWriter, status int, msg string) {
+	logging.Errorf(c, "Status %d msg %s", status, msg)
+	w.WriteHeader(status)
+	w.Write([]byte(msg))
+}
+
+func requireGoogler(c *router.Context, next router.Handler) {
+	isGoogler, err := auth.IsMember(c.Context, authGroup)
+	switch {
+	case err != nil:
+		errStatus(c.Context, c.Writer, http.StatusInternalServerError, err.Error())
+	case !isGoogler:
+		errStatus(c.Context, c.Writer, http.StatusForbidden, "Access denied")
+	default:
+		next(c)
+	}
 }
 
 func legacyCred() (func(context.Context) (*http.Client, error), error) {
@@ -109,6 +129,8 @@ func init() {
 		Loader: templates.FileSystemLoader("templates"),
 	}), auth.Authenticate(server.UsersAPIAuthMethod{}))
 
+	protected := tmw.Extend(requireGoogler)
+
 	// Sort out the generators.
 	gs := algo.New()
 	gs.Register(algo.NewLegacy())
@@ -129,23 +151,23 @@ func init() {
 		log.Fatal(err)
 	}
 
-	r.GET("/", tmw, h.HandleIndex)
-	r.GET("/upload", tmw, h.HandleUpload)
-	r.GET("/list", tmw, h.HandleList)
-	r.GET("/createrota", tmw, h.HandleCreateRota)
-	r.GET("/managerota", tmw, h.HandleManageRota)
-	r.GET("/modifyrota", tmw, h.HandleUpdateRota)
-	r.GET("/importshifts", tmw, h.HandleShiftImport)
-	r.GET("/manageshifts", tmw, h.HandleManageShifts)
+	r.GET("/", protected, h.HandleIndex)
+	r.GET("/upload", protected, h.HandleUpload)
+	r.GET("/list", protected, h.HandleList)
+	r.GET("/createrota", protected, h.HandleCreateRota)
+	r.GET("/managerota", protected, h.HandleManageRota)
+	r.GET("/modifyrota", protected, h.HandleUpdateRota)
+	r.GET("/importshifts", protected, h.HandleShiftImport)
+	r.GET("/manageshifts", protected, h.HandleManageShifts)
 	r.GET("/legacy/:name", tmw, h.HandleLegacy)
 
-	r.POST("/shiftsupdate", tmw, h.HandleShiftUpdate)
-	r.POST("/shiftsgenerate", tmw, h.HandleShiftGenerate)
-	r.POST("/generate", tmw, h.HandleGenerate)
-	r.POST("/modifyrota", tmw, h.HandleUpdateRota)
-	r.POST("/createrota", tmw, h.HandleCreateRota)
-	r.POST("/deleterota", tmw, h.HandleDeleteRota)
-	r.POST("/upload", tmw, h.HandleUpload)
+	r.POST("/shiftsupdate", protected, h.HandleShiftUpdate)
+	r.POST("/shiftsgenerate", protected, h.HandleShiftGenerate)
+	r.POST("/generate", protected, h.HandleGenerate)
+	r.POST("/modifyrota", protected, h.HandleUpdateRota)
+	r.POST("/createrota", protected, h.HandleCreateRota)
+	r.POST("/deleterota", protected, h.HandleDeleteRota)
+	r.POST("/upload", protected, h.HandleUpload)
 
 	// Recurring jobs.
 	r.GET("/cron/joblegacy", tmw, h.JobLegacy)

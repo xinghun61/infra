@@ -17,6 +17,10 @@ handlers:
     static_dir: static
     secure: always
 
+  - url: /cron/.*
+    script: _go_app
+    login: admin
+
   - url: /
     script: _go_app
     secure: always
