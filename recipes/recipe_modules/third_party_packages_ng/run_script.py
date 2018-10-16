@@ -28,7 +28,7 @@ def _extract_contextual_dockerbuild_env_args(api):
 _DOCKERBUILD_PLATFORM = {
   'linux-armv6l': 'linux-armv6',
   'linux-arm64': 'linux-arm64',
-  'linux-mips32': 'linux-mipsel',
+  'linux-mipsle': 'linux-mipsel',
   'linux-mips64': 'linux-mips64',
   'linux-amd64': 'manylinux-x64',
   'linux-386': 'manylinux-x86',

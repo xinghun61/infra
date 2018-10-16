@@ -205,7 +205,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "already_uploaded",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -657,7 +657,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -688,7 +688,7 @@
       "[START_DIR]/3pp/wd/bottom_dep/linux-armv6l/1.0"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -704,7 +704,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -729,7 +729,7 @@
       "[START_DIR]/3pp/wd/bottom_dep/linux-armv6l/1.0/checkout"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -754,7 +754,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -789,7 +789,7 @@
       "[START_DIR]/3pp/wd/bottom_dep/linux-armv6l/1.0/checkout/.3pp"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -805,7 +805,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -830,7 +830,7 @@
       "[START_DIR]/3pp/wd/bottom_dep/linux-armv6l/1.0/out"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -868,7 +868,7 @@
       "linux-amd64",
       "--env",
       "GOARCH",
-      "armv6l",
+      "arm",
       "--env",
       "_3PP_VERSION",
       "1.0",
@@ -889,7 +889,7 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/bottom_dep/linux-armv6l/1.0/checkout",
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "PYTHONPATH": "RECIPE_PACKAGE_REPO[infra]",
       "_3PP_PACKAGE_NAME": "bottom_dep",
@@ -922,7 +922,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -954,7 +954,7 @@
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/bottom_dep/linux-armv6l"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -979,7 +979,7 @@
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/bottom_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -995,7 +995,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1022,7 +1022,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1056,7 +1056,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "deep_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1087,7 +1087,7 @@
       "[START_DIR]/3pp/wd/deep_dep/linux-armv6l/1.0.0"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "deep_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1103,7 +1103,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "deep_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1128,7 +1128,7 @@
       "[START_DIR]/3pp/wd/deep_dep/linux-armv6l/1.0.0/checkout"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "deep_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1153,7 +1153,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "deep_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1190,7 +1190,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "deep_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1222,7 +1222,7 @@
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/deep_dep/linux-armv6l"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "deep_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1247,7 +1247,7 @@
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/deep_dep/linux-armv6l/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "deep_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1263,7 +1263,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "deep_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1290,7 +1290,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "deep_dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1599,7 +1599,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1630,7 +1630,7 @@
       "[START_DIR]/3pp/wd/posix_tool/linux-armv6l/1.2.0"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1646,7 +1646,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1671,7 +1671,7 @@
       "[START_DIR]/3pp/wd/posix_tool/linux-armv6l/1.2.0/checkout"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1696,7 +1696,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1722,7 +1722,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1746,7 +1746,7 @@
       "*.*"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1775,7 +1775,7 @@
       "[TMP_BASE]/tmp_tmp_5/archive.tgz"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1799,7 +1799,7 @@
       "[START_DIR]/3pp/wd/posix_tool/linux-armv6l/1.2.0/checkout"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1823,7 +1823,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1854,7 +1854,7 @@
       "[START_DIR]/3pp/wd/posix_tool/linux-armv6l/1.2.0/checkout"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1879,7 +1879,7 @@
       "[START_DIR]/3pp/wd/posix_tool/linux-armv6l/1.2.0/checkout/.3pp"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1895,7 +1895,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1920,7 +1920,7 @@
       "[START_DIR]/3pp/wd/posix_tool/linux-armv6l/1.2.0/out"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -1958,7 +1958,7 @@
       "linux-amd64",
       "--env",
       "GOARCH",
-      "armv6l",
+      "arm",
       "--env",
       "_3PP_VERSION",
       "1.2.0",
@@ -1979,7 +1979,7 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/posix_tool/linux-armv6l/1.2.0/checkout",
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "PYTHONPATH": "RECIPE_PACKAGE_REPO[infra]",
       "_3PP_PACKAGE_NAME": "posix_tool",
@@ -2012,7 +2012,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -2044,7 +2044,7 @@
       "[CACHE]/3pp_cipd/experimental/3pp/tools/posix_tool/linux-armv6l"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -2069,7 +2069,7 @@
       "[CACHE]/3pp_cipd/experimental/3pp/tools/posix_tool/linux-armv6l/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -2085,7 +2085,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -2112,7 +2112,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -3014,7 +3014,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3046,7 +3046,7 @@
       "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3063,7 +3063,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3079,7 +3079,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3105,7 +3105,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3139,7 +3139,7 @@
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-amd64"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3165,7 +3165,7 @@
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-amd64/resolved-instance_id-of-version:0.9.0.ch"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3190,7 +3190,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3213,7 +3213,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3237,7 +3237,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3270,7 +3270,7 @@
       "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout/src/go.repo/tool"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3295,7 +3295,7 @@
       "https://go.repo/tool"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3319,7 +3319,7 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>",
       "_3PP_PACKAGE_NAME": "tool",
@@ -3343,7 +3343,7 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3365,7 +3365,7 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3391,7 +3391,7 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3413,7 +3413,7 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3437,7 +3437,7 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3463,7 +3463,7 @@
       "*"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3486,7 +3486,7 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3512,7 +3512,7 @@
       "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout/.3pp"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3529,7 +3529,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3555,7 +3555,7 @@
       "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/out"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3600,7 +3600,7 @@
       "1.5.0-rc1",
       "--env",
       "GOARCH",
-      "armv6l",
+      "arm",
       "--env",
       "_3PP_PATCH_VERSION",
       "chops.1",
@@ -3619,7 +3619,7 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/checkout",
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "PYTHONPATH": "RECIPE_PACKAGE_REPO[infra]",
       "_3PP_PACKAGE_NAME": "tool",
@@ -3653,7 +3653,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3686,7 +3686,7 @@
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-armv6l"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3712,7 +3712,7 @@
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/linux-armv6l/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3729,7 +3729,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3755,7 +3755,7 @@
       "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/verify"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3781,7 +3781,7 @@
       "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/verify/cipd.pkg"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3808,7 +3808,7 @@
       "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/bin_tools"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3834,7 +3834,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3890,7 +3890,7 @@
       "1.5.0-rc1",
       "--env",
       "GOARCH",
-      "armv6l",
+      "arm",
       "--env",
       "_3PP_PATCH_VERSION",
       "chops.1",
@@ -3908,7 +3908,7 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-armv6l/1.5.0-rc1/verify",
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "PYTHONPATH": "RECIPE_PACKAGE_REPO[infra]",
       "_3PP_PACKAGE_NAME": "tool",
@@ -3930,7 +3930,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3956,7 +3956,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -3989,7 +3989,7 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
@@ -4019,7 +4019,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4050,7 +4050,7 @@
       "[START_DIR]/3pp/wd/dep/linux-armv6l/1.0.0"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4066,7 +4066,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4081,7 +4081,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4104,7 +4104,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4126,7 +4126,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4149,7 +4149,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4181,7 +4181,7 @@
       "[START_DIR]/3pp/wd/dep/linux-armv6l/1.0.0/checkout"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4206,7 +4206,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4241,7 +4241,7 @@
       "[START_DIR]/3pp/wd/dep/linux-armv6l/1.0.0/checkout/.3pp"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4257,7 +4257,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4282,7 +4282,7 @@
       "[START_DIR]/3pp/wd/dep/linux-armv6l/1.0.0/out"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4320,7 +4320,7 @@
       "linux-amd64",
       "--env",
       "GOARCH",
-      "armv6l",
+      "arm",
       "--env",
       "_3PP_VERSION",
       "1.0.0",
@@ -4341,7 +4341,7 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/dep/linux-armv6l/1.0.0/checkout",
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "PYTHONPATH": "RECIPE_PACKAGE_REPO[infra]",
       "_3PP_PACKAGE_NAME": "dep",
@@ -4374,7 +4374,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4406,7 +4406,7 @@
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/dep/linux-armv6l"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4431,7 +4431,7 @@
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/dep/linux-armv6l/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4447,7 +4447,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4474,7 +4474,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4505,7 +4505,7 @@
       "latest"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4529,7 +4529,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4560,7 +4560,7 @@
       "[START_DIR]/3pp/wd/pkg/linux-armv6l/2.0.0"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4576,7 +4576,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4591,7 +4591,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4614,7 +4614,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4636,7 +4636,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4659,7 +4659,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4689,7 +4689,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4721,7 +4721,7 @@
       "[START_DIR]/3pp/wd/pkg/linux-armv6l/2.0.0/checkout"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4743,7 +4743,7 @@
       "[START_DIR]/3pp/wd/pkg/linux-armv6l/2.0.0/checkout"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4767,7 +4767,7 @@
       "[START_DIR]/3pp/wd/pkg/linux-armv6l/2.0.0/checkout/.3pp"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4783,7 +4783,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4808,7 +4808,7 @@
       "[START_DIR]/3pp/wd/pkg/linux-armv6l/2.0.0/out"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4846,7 +4846,7 @@
       "linux-amd64",
       "--env",
       "GOARCH",
-      "armv6l",
+      "arm",
       "--env",
       "_3PP_VERSION",
       "2.0.0",
@@ -4867,7 +4867,7 @@
     ],
     "cwd": "[START_DIR]/3pp/wd/pkg/linux-armv6l/2.0.0/checkout",
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "PYTHONPATH": "RECIPE_PACKAGE_REPO[infra]",
       "_3PP_PACKAGE_NAME": "pkg",
@@ -4900,7 +4900,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4932,7 +4932,7 @@
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/tools/pkg/linux-armv6l"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4957,7 +4957,7 @@
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/tools/pkg/linux-armv6l/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -4973,7 +4973,7 @@
   {
     "cmd": [],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",
@@ -5000,7 +5000,7 @@
       "/path/to/tmp/json"
     ],
     "env": {
-      "GOARCH": "armv6l",
+      "GOARCH": "arm",
       "GOOS": "linux",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-armv6l",

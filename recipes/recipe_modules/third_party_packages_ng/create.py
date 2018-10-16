@@ -52,8 +52,11 @@ def build_resolved_spec(api, spec_lookup, cache, force_build, spec, version):
       '_3PP_PLATFORM': spec.platform,
       '_3PP_TOOL_PLATFORM': spec.tool_platform,
       '_3PP_PACKAGE_NAME': spec.name,
+      # CIPD uses 'mac' instead of 'darwin' for historical reasons.
       'GOOS': spec.platform.split('-')[0].replace('mac', 'darwin'),
-      'GOARCH': spec.platform.split('-')[1],
+      # CIPD encodes the GOARCH/GOARM pair of ('arm', '6') as 'armv6l'.
+      # Since GOARCH=6 is the default, we don't need to specify it.
+      'GOARCH': spec.platform.split('-')[1].replace('armv6l', 'arm'),
     }
     if spec.platform.startswith('mac-'):
       env['MACOSX_DEPLOYMENT_TARGET'] = '10.10'
