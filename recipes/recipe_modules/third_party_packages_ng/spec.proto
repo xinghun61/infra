@@ -323,6 +323,6 @@ message ScriptSource {
   //   $ _3PP_VERSION=1.2.3 python \
   //     /path/to/repo/subdir/package_name/fetch.py url checkout \
   //     /path/to/checkout
-  string name = 1;
+  repeated string name = 1;
 }
 

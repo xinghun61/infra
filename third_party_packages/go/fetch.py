@@ -14,17 +14,23 @@ def do_latest():
   print requests.get('https://golang.org/VERSION?m=text').text.replace('go', '')
 
 
-def do_checkout(version, platform, checkout_path):
-  platform = platform.replace('mac', 'darwin')
-  ext = 'zip' if platform.startswith('windows') else 'tar.gz'
-  download_url = (
-    'https://storage.googleapis.com/golang/go%(version)s.%(platform)s.%(ext)s'
-    % {
-      'version': version,
-      'platform': platform,
-      'ext': ext
-    })
-  print >>sys.stderr, "fetching", download_url
+def do_checkout(version, platform, kind, checkout_path):
+  if kind == 'prebuilt':
+    platform = platform.replace('mac', 'darwin')
+    ext = 'zip' if platform.startswith('windows') else 'tar.gz'
+    download_url = (
+      'https://storage.googleapis.com/golang/go%(version)s.%(platform)s.%(ext)s'
+      % {
+        'version': version,
+        'platform': platform,
+        'ext': ext
+      })
+  else:
+    ext = 'tar.gz'
+    download_url = (
+      'https://storage.googleapis.com/golang/go%s.src.tar.gz' % (version,))
+
+  print >>sys.stderr, 'fetching', download_url
   r = requests.get(download_url, stream=True)
   r.raise_for_status()
   outfile = 'archive.'+ext
@@ -35,17 +41,19 @@ def do_checkout(version, platform, checkout_path):
 
 def main():
   ap = argparse.ArgumentParser()
+  ap.add_argument('kind', choices=('prebuilt', 'source'))
+
   sub = ap.add_subparsers()
 
-  latest = sub.add_parser("latest")
+  latest = sub.add_parser('latest')
   latest.set_defaults(func=lambda _opts: do_latest())
 
-  checkout = sub.add_parser("checkout")
-  checkout.add_argument("checkout_path")
+  checkout = sub.add_parser('checkout')
+  checkout.add_argument('checkout_path')
   checkout.set_defaults(
     func=lambda opts: do_checkout(
       os.environ['_3PP_VERSION'], os.environ['_3PP_PLATFORM'],
-      opts.checkout_path))
+      opts.kind, opts.checkout_path))
 
   opts = ap.parse_args()
   return opts.func(opts)

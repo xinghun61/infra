@@ -72,10 +72,12 @@ def resolve_latest(api, spec):
       'resolved version: %s' % (version,))
 
   elif method_name == 'script':
+    script = spec.host_dir.join(source_method_pb.name[0])
+    args = map(str, source_method_pb.name[1:]) + ['latest']
     version = run_script(api,
-      spec.host_dir.join(source_method_pb.name), 'latest',
+      script, *args,
       stdout=api.raw_io.output(),
-      step_test_data=lambda: api.raw_io.test_api.stream_output('2.0.0'),
+      step_test_data=lambda: api.raw_io.test_api.stream_output('2.0.0')
     ).stdout.strip()
     api.step.active_result.presentation.step_text = (
       'resolved version: %s' % (version,))
@@ -175,8 +177,9 @@ def _do_checkout(api, workdir, spec, version):
 
   elif method_name == 'script':
     # version is already in env as $_3PP_VERSION
-    run_script(
-      api, spec.host_dir.join(source_method_pb.name), 'checkout', checkout_dir)
+    script = spec.host_dir.join(source_method_pb.name[0])
+    args = map(str, source_method_pb.name[1:]) + ['checkout', checkout_dir]
+    run_script(api, script, *args)
 
   else: # pragma: no cover
     assert False, 'Unknown source type %r' % (method_name,)
