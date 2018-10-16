@@ -226,7 +226,6 @@ class ServletRegistry(object):
         urls.ISSUE_DETAIL_FLIPPER_NEXT: issuedetail.FlipperNext,
         urls.ISSUE_DETAIL_FLIPPER_PREV: issuedetail.FlipperPrev,
         urls.ISSUE_DETAIL_FLIPPER_INDEX: issuedetail.FlipperIndex,
-        urls.ISSUE_COMMENT_DELETION_JSON: issuedetail.IssueCommentDeletion,
         urls.ISSUE_ATTACHMENT_DELETION_JSON:
             issueattachment.IssueAttachmentDeletion,
         urls.ISSUE_FLAGSPAM_JSON: spam.FlagSpamForm,

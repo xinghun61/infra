@@ -159,15 +159,6 @@
 
 </div> [# end color_control]
 
-[# Form used to submit comment soft delete and undelete changes.]
-<form name="delcom" action="delComment.do?q=[query]&amp;can=[can]&amp;groupby=[format "url"][groupby][end]&amp;sort=[format "url"][sortspec][end]&amp;colspec=[format "url"][colspec][end]" method="POST">
- <input type="hidden" name="sequence_num" value="">
- <input type="hidden" name="mode" value="">
- <input type="hidden" name="id" value="[issue.local_id]">
- <input type="hidden" name="token" value="[delComment_form_token]">
- <input type="hidden" name="hotlist_id" value="[flipper_hotlist_id]">
-</form>
-
 [# Form used to flag/unflag comments as spam.]
 <form name="flagcom" action="flagspam.do" method="post">
  <input type="hidden" name="comment_id" value="">
@@ -252,25 +243,6 @@ runOnLoad(function() {
     $('desc_update_form').style.display = '';
   });
   [end][# page_perms.EditIssue]
-
-  function delComment(sequence_num, delete_mode) {
-    var r = true;
-    if (delete_mode == 1) {
-      r = confirm('Delete this comment?');
-    }
-    if (!r) {
-      return false;
-    }
-    var f = document.forms[[]"delcom"];
-    f.sequence_num.value = sequence_num;
-    f.mode.value = delete_mode;
-    [# TODO(jrobbins): submit in a subframe,XHR or ask user before losing comment in-progress ]
-    var loading = $('comment-action-loading-' + sequence_num);
-    loading.style.display = 'inline';
-    TKR_initialFormValues = TKR_currentFormValues();
-    f.submit();
-    return false;
-  }
 
   if ($("star"))
     $("star").addEventListener("click", function (event) {

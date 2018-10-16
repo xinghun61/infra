@@ -347,9 +347,6 @@ class IssueDetail(issuepeek.IssuePeek):
         'attachment_form_token': xsrf.GenerateToken(
             mr.auth.user_id, '/p/%s%s.do' % (
                 mr.project_name, urls.ISSUE_ATTACHMENT_DELETION_JSON)),
-        'delComment_form_token': xsrf.GenerateToken(
-            mr.auth.user_id, '/p/%s%s.do' % (
-                mr.project_name, urls.ISSUE_COMMENT_DELETION_JSON)),
         'flag_spam_token': xsrf.GenerateToken(
             mr.auth.user_id, '/p/%s%s.do' % (
                 mr.project_name, urls.ISSUE_FLAGSPAM_JSON)),
@@ -1082,40 +1079,6 @@ def _ChooseNextPage(
 
   return url
 
-
-class IssueCommentDeletion(servlet.Servlet):
-  """Form handler that allows user to delete/undelete comments."""
-
-  def ProcessFormData(self, mr, post_data):
-    """Process the form that un/deletes an issue comment.
-
-    Args:
-      mr: commonly used info parsed from the request.
-      post_data: The post_data dict for the current request.
-
-    Returns:
-      String URL to redirect the user to after processing.
-    """
-    logging.info('post_data = %s', post_data)
-    local_id = int(post_data['id'])
-    sequence_num = int(post_data['sequence_num'])
-    delete = (post_data['mode'] == '1')
-    hotlist_id = post_data.get('hotlist_id', None)
-
-    with work_env.WorkEnv(mr, self.services) as we:
-      issue = we.GetIssueByLocalID(mr.project_id, local_id, use_cache=False)
-
-      all_comments = we.ListIssueComments(issue)
-      logging.info('comments on %s are: %s', local_id, all_comments)
-      comment = all_comments[sequence_num]
-
-      we.DeleteComment(issue, comment, delete)
-
-    kwargs = {'id': local_id}
-    if hotlist_id:
-      kwargs['hotlist_id'] = hotlist_id
-    return framework_helpers.FormatAbsoluteURL(
-        mr, urls.ISSUE_DETAIL, **kwargs)
 
 # TODO(jrobbins): do we want this?
 # class IssueDerivedLabelsJSON(jsonfeed.JsonFeed)
