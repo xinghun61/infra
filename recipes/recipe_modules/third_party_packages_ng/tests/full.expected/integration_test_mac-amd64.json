@@ -722,6 +722,36 @@
   {
     "cmd": [
       "cipd",
+      "describe",
+      "experimental/3pp/prefix/deps/bottom_dep/mac-amd64",
+      "-version",
+      "version:1.0",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "GOARCH": "amd64",
+      "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "_3PP_PACKAGE_NAME": "bottom_dep",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.0"
+    },
+    "name": "building bottom_dep.do upload.cipd describe experimental/3pp/prefix/deps/bottom_dep/mac-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@",
+      "step returned non-zero exit code: 1",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"error\": \"no such tag\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
       "pkg-register",
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/bottom_dep/mac-amd64/40-chars-fake-of-the-package-instance_id",
       "-ref",
@@ -1000,6 +1030,36 @@
   {
     "cmd": [
       "cipd",
+      "describe",
+      "experimental/3pp/prefix/deps/deep_dep/mac-amd64",
+      "-version",
+      "version:1.0.0",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "GOARCH": "amd64",
+      "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "_3PP_PACKAGE_NAME": "deep_dep",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.0.0"
+    },
+    "name": "building deep_dep.do upload.cipd describe experimental/3pp/prefix/deps/deep_dep/mac-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@",
+      "step returned non-zero exit code: 1",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"error\": \"no such tag\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
       "pkg-register",
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/deps/deep_dep/mac-amd64/40-chars-fake-of-the-package-instance_id",
       "-ref",
@@ -1271,6 +1331,35 @@
     "name": "building fetch_and_package.do upload",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "describe",
+      "experimental/3pp/tools/fetch_and_package",
+      "-version",
+      "version:2.0.0",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "GOARCH": "amd64",
+      "GOOS": "linux",
+      "_3PP_PACKAGE_NAME": "fetch_and_package",
+      "_3PP_PLATFORM": "linux-amd64",
+      "_3PP_TOOL_PLATFORM": "linux-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "name": "building fetch_and_package.do upload.cipd describe experimental/3pp/tools/fetch_and_package",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@",
+      "step returned non-zero exit code: 1",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"error\": \"no such tag\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
     ]
   },
   {
@@ -1934,6 +2023,36 @@
     "name": "building posix_tool.do upload",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "describe",
+      "experimental/3pp/tools/posix_tool/mac-amd64",
+      "-version",
+      "version:1.2.0",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "GOARCH": "amd64",
+      "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "_3PP_PACKAGE_NAME": "posix_tool",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.2.0"
+    },
+    "name": "building posix_tool.do upload.cipd describe experimental/3pp/tools/posix_tool/mac-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@",
+      "step returned non-zero exit code: 1",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"error\": \"no such tag\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
     ]
   },
   {
@@ -3052,6 +3171,37 @@
   {
     "cmd": [
       "cipd",
+      "describe",
+      "experimental/3pp/prefix/build_tools/tool/mac-amd64",
+      "-version",
+      "version:1.5.0-rc1.chops.1",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "GOARCH": "amd64",
+      "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "_3PP_PACKAGE_NAME": "tool",
+      "_3PP_PATCH_VERSION": "chops.1",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.5.0-rc1"
+    },
+    "name": "building tool.do upload.cipd describe experimental/3pp/prefix/build_tools/tool/mac-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@",
+      "step returned non-zero exit code: 1",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"error\": \"no such tag\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
       "pkg-register",
       "[CACHE]/3pp_cipd/experimental/3pp/prefix/build_tools/tool/mac-amd64/40-chars-fake-of-the-package-instance_id",
       "-tag",
@@ -3679,6 +3829,36 @@
     "name": "building dep.do upload",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "describe",
+      "experimental/3pp/prefix/deps/dep/mac-amd64",
+      "-version",
+      "version:1.0.0",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "GOARCH": "amd64",
+      "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "_3PP_PACKAGE_NAME": "dep",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "1.0.0"
+    },
+    "name": "building dep.do upload.cipd describe experimental/3pp/prefix/deps/dep/mac-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@",
+      "step returned non-zero exit code: 1",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"error\": \"no such tag\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
     ]
   },
   {
@@ -4322,6 +4502,36 @@
     "name": "building pkg.do upload",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "describe",
+      "experimental/3pp/prefix/tools/pkg/mac-amd64",
+      "-version",
+      "version:2.0.0",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "env": {
+      "GOARCH": "amd64",
+      "GOOS": "darwin",
+      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "_3PP_PACKAGE_NAME": "pkg",
+      "_3PP_PLATFORM": "mac-amd64",
+      "_3PP_TOOL_PLATFORM": "mac-amd64",
+      "_3PP_VERSION": "2.0.0"
+    },
+    "name": "building pkg.do upload.cipd describe experimental/3pp/prefix/tools/pkg/mac-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@",
+      "step returned non-zero exit code: 1",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"error\": \"no such tag\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
     ]
   },
   {

@@ -202,4 +202,11 @@ class CIPDSpec(object):
     if self._api.buildbucket.build.id:
       tags['build_id'] = str(self._api.buildbucket.build.id)
     refs = ['latest'] if latest else []
-    self._api.cipd.register(self._pkg, pkg_path, tags=tags, refs=refs)
+
+    try:
+      # Double check to see that we didn't get scooped by a concurrent recipe.
+      self._api.cipd.describe(
+        self._pkg, self.tag, test_data_tags=(), test_data_refs=())
+    except self._api.step.StepFailure:
+      self._api.step.active_result.presentation.status = self._api.step.SUCCESS
+      self._api.cipd.register(self._pkg, pkg_path, tags=tags, refs=refs)
