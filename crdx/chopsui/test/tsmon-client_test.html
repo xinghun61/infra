@@ -19,6 +19,13 @@
     tsm._name = 'testname';
     tsm._jobName = 'testJobName';
     sinon.stub(window, 'fetch');
+    let res = new window.Response('Ok.', {
+      status: 200,
+      headers: {
+        'Content-type': 'application/json',
+      },
+    });
+    window.fetch.returns(Promise.resolve(res));
   });
 
   teardown(function() {
@@ -222,6 +229,17 @@
     });
   });
 
+  test('disableAfterNextFlush stops sending metrics', function() {
+    chai.assert.isTrue(tsm._continueSendingMetrics);
+    chai.assert.isOk(tsm._flushTimer);
+
+    tsm.disableAfterNextFlush();
+    tsm._onFlush();
+
+    chai.assert.isFalse(tsm._continueSendingMetrics);
+    chai.assert.isNull(tsm._flushTimer);
+    chai.assert.isTrue(window.fetch.called);
+  });
 
   suite('flush', function() {
     test('cumulative distribution', function() {
@@ -230,13 +248,6 @@
       }));
       let c = tsm.cumulativeDistribution('frontend/cumulativedistribution_test',
           'cumulative distribution test', undefined, fields);
-      let res = new window.Response('Ok.', {
-        status: 200,
-        headers: {
-          'Content-type': 'application/json',
-        },
-      });
-      window.fetch.returns(Promise.resolve(res));
       let ts = 1;
       tsm.now = () => { return ts; }
 

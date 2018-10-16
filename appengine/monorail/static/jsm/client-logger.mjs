@@ -48,6 +48,8 @@ export class ClientLogger {
   constructor(category) {
     this.category = category;
     this.ts_mon = new TSMonClient('/_/jstsmon.do', window.CS_env.token);
+    // We only send metrics on page load, so disable for now.
+    this.ts_mon.disableAfterNextFlush();
     this._clientId = ClientLogger.generateClientId();
 
     const standardFields = new Map([

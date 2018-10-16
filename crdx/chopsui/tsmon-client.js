@@ -88,13 +88,29 @@
         this._onFlush();
       }, this._flushIntervalMs);
       this._initTimeSeconds = Math.floor(new Date().getTime() / 1e3);
+
+      // Set to false to stop sending metrics.
+      this._continueSendingMetrics = true;
     }
 
     _onFlush() {
       this.flush();
+
+      // Stop sending metrics if requested.
+      if (!this._continueSendingMetrics) {
+        this._flushTimer = null;
+        return;
+      }
+
       this._flushTimer = setTimeout(() => {
         this._onFlush();
       }, this._flushIntervalMs);
+    }
+
+    // This will still send the current round of metrics but stop sending all
+    // future metrics.
+    disableAfterNextFlush() {
+      this._continueSendingMetrics = false;
     }
 
     /** Returns the current time in milliseconds. */
