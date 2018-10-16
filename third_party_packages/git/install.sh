@@ -11,8 +11,8 @@ PREFIX="$1"
 DEPS="$2"
 
 CPPFLAGS="-I${DEPS}/include"
-LDFLAGS="-flto -L$DEPS/lib"
-CFLAGS="-flto"
+LDFLAGS="-L$DEPS/lib"
+CFLAGS=""
 
 # Write the "version" file. This is used by the "GIT-VERSION-GEN" script to pull
 # the Git version. We name ours after the Git tag that we pulled and our
@@ -61,6 +61,21 @@ if [[ $OSTYPE = darwin* ]]; then
   # linking dynamic or, worse, not seeing them at all.
   LDFLAGS="$LDFLAGS -lz -lcurl"
 else
+  case $CROSS_TRIPLE in
+    x86_64-linux-gnu|i686-linux-gnu)
+      # LTO requires an extra plugin to gcc which isn't available when cross
+      # compiling. However, linux-amd64 is our most useful platform, so it's
+      # worth it to turn on LTO there.
+      LDFLAGS="-flto $LDFLAGS"
+      CFLAGS="-flto"
+      ;;
+    *)
+      # Cross compiling; git wants to run little programs to detect these, but
+      # we actually know them in advance.
+      export ac_cv_fread_reads_directories=y
+      export ac_cv_snprintf_returns_bogus=no
+  esac
+
   # Since we're supplying these libraries, we need to explicitly include them in
   # our LIBS (for "configure" probing) and our Makefile on Linux.
   #
@@ -68,7 +83,7 @@ else
   # make its way to the Makefile (bug?). Therefore, the most direct way to do
   # this is to find the line in Git's "Makefile" that initializes EXTLIBS and
   # add the dependent libraries to it :(
-  LIBS="-lcurl -ldl -lpthread -lz -lidn2 -lssl -lcrypto -lpcre2-8"
+  LIBS="-lcurl -ldl -lz -lidn2 -lssl -lcrypto -lpcre2-8 -lpthread"
   cat >> config.mak <<EOF
 EXTLIBS = $LIBS
 EOF
