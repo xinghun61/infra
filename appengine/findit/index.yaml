@@ -177,6 +177,11 @@ indexes:
 
 # For flake detection.
 - kind: FlakeOccurrence
+  properties:
+  - name: flake_type
+  - name: time_happened
+
+- kind: FlakeOccurrence
   ancestor: yes
   properties:
   - name: flake_type
