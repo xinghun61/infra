@@ -4,21 +4,30 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 """FLT task to be manually triggered to convert launch issues."""
+
 import re
 import settings
 import logging
+import collections
 
 from framework import permissions
 from framework import exceptions
 from framework import jsonfeed
 from proto import tracker_pb2
+from tracker import template_helpers
 from tracker import tracker_bizobj
 
 PM_PREFIX = 'pm-'
 TL_PREFIX = 'tl-'
 TEST_PREFIX = 'test-'
 
-CONVERSION_COMMENT = "Automatic generating of FLT Launch data."
+PM_FIELD = 'pm'
+TL_FIELD = 'tl'
+TE_FIELD = 'te'
+MTARGET_FIELD = 'm-target'
+MAPPROVED_FIELD = 'm-approved'
+
+CONVERSION_COMMENT = 'Automatic generating of FLT Launch data.'
 
 APPROVALS_TO_LABELS = {
     'Chrome-Accessibility': 'Launch-Accessibility-',
@@ -58,10 +67,40 @@ M_LABELS_RE = re.compile(
     r'(?P<channel>%s$)' % PHASE_PAT,
     re.IGNORECASE)
 
+CAN = 2  # Query for open issues only
+# Ensure empty group_by_spec and sort_spec so issues are sorted by 'ID'.
+GROUP_BY_SPEC = ''
+SORT_SPEC = ''
+
+# TODO(jojwang): set CONVERT_NUM this to 300
+CONVERT_NUM = 1
+CONVERT_START = 0
+
+# Queries
+QUERY_MAP = {
+    'default':
+    'Type=Launch Rollout-Type=Default OS=Windows,Mac,Linux,Android,iOS',
+    'finch': 'Type=Launch Rollout-Type=Finch OS=Windows,Mac,Linux,Android,iOS'}
+TEMPLATE_MAP = {
+    'default': 'Chrome Default Launch',
+    'finch': 'Chrome Finch Launch'}
+
+PM_FIELD = 'pm'
+TL_FIELD = 'tl'
+TE_FIELD = 'te'
+MTARGET_FIELD = 'm-target'
+MAPPROVED_FIELD = 'm-approved'
+
+ProjectInfo = collections.namedtuple(
+    'ProjectInfo', 'config, q, approval_values, phases, '
+    'pm_fid, tl_fid, te_fid, m_target_id, m_approved_id')
+
+# TODO(jojwang): PM, TL, TE user fields are project members in bugs-staging
+# assert trying to add non-project members won't cause problems
+
 
 class FLTConvertTask(jsonfeed.InternalTask):
   """FLTConvert converts current Type=Launch issues into Type=FLT-Launch."""
-
 
   def AssertBasePermission(self, mr):
     super(FLTConvertTask, self).AssertBasePermission(mr)
@@ -75,13 +114,87 @@ class FLTConvertTask(jsonfeed.InternalTask):
 
   def HandleRequest(self, mr):
     """Convert Type=Launch issues to new Type=FLT-Launch issues."""
+    _project_info = self.FetchAndAssertProjectInfo(mr)
 
+    # TODO(jojwang):
+    # Search for issues:
+    #   call we.ListIssues
+
+    # Convert issues:
+    #   for issue in pipeline.allowed_results:
+    #     call ConvertLaunchLabels, ConvertMLabels, ConvertPeopleLabels
+    #     call ExecuteIssueChanges
+
+    # Send emails:
+    #   call SendIssueBulkChangeNotification
 
     return {
         'app_id': settings.app_id,
         'is_site_admin': mr.auth.user_pb.is_site_admin,
         }
 
+  def FetchAndAssertProjectInfo(self, mr):
+    # Get request details
+    launch = mr.GetParam('launch')
+    logging.info(launch)
+    q = QUERY_MAP.get(launch)
+    template_name = TEMPLATE_MAP.get(launch)
+    assert q and template_name, 'bad launch type: %s' % launch
+
+    # Get project, config, template, assert template in project
+    project = self.services.project.GetProjectByName(mr.cnxn, 'chromium')
+    config = self.services.config.GetProjectConfig(mr.cnxn, project.project_id)
+    template = self.services.template.GetTemplateByName(
+        mr.cnxn, template_name, project.project_id)
+    assert template, 'template %s not found in chromium project' % template_name
+
+    # Get template approval_values/phases and assert they are expected
+    approval_values, phases = template_helpers.FilterApprovalsAndPhases(
+        template.approval_values, template.phases, config)
+    assert approval_values and phases, (
+        'no approvals or phases in %s' % template_name)
+    assert all(phase.name.lower() in PHASE_MAP.keys() for phase in phases), (
+        'one or more phases not recognized')
+
+    approval_fds = {fd.field_id: fd.field_name for fd in config.field_defs
+                    if fd.field_type is tracker_pb2.FieldTypes.APPROVAL_TYPE}
+    assert all(
+        approval_fds.get(av.approval_id) in APPROVALS_TO_LABELS.keys()
+        for av in approval_values
+        if approval_fds.get(av.approval_id) != 'Chrome-Enterprise'), (
+            'one or more approvals not recognized')
+    approval_def_ids = [ad.approval_id for ad in config.approval_defs]
+    assert all(av.approval_id in approval_def_ids for av in approval_values), (
+        'one or more approvals no in config.approval_defs')
+
+    # Get relevant USER_TYPE FieldDef ids and assert they exist
+    user_fds = {fd.field_name.lower(): fd.field_id for fd in config.field_defs
+                    if fd.field_type is tracker_pb2.FieldTypes.USER_TYPE}
+    logging.info('project USER_TYPE FieldDefs: %s' % user_fds)
+    pm_fid = user_fds.get(PM_FIELD)
+    assert pm_fid, 'project has no FieldDef %s' % PM_FIELD
+    tl_fid = user_fds.get(TL_FIELD)
+    assert tl_fid, 'project has no FieldDef %s' % TL_FIELD
+    te_fid = user_fds.get(TE_FIELD)
+    assert te_fid, 'project has no FieldDef %s' % TE_FIELD
+
+    # Get relevant M Phase INT_TYPE FieldDef ids and assert they exist
+    phase_int_fds = {fd.field_name.lower(): fd.field_id
+                     for fd in config.field_defs
+                     if fd.field_type is tracker_pb2.FieldTypes.INT_TYPE
+                     and fd.is_phase_field and fd.is_multivalued}
+    logging.info(
+        'project Phase INT_TYPE multivalued FieldDefs: %s' % phase_int_fds)
+    m_target_id = phase_int_fds.get(MTARGET_FIELD)
+    assert m_target_id, 'project has no FieldDef %s' % MTARGET_FIELD
+    m_approved_id = phase_int_fds.get(MAPPROVED_FIELD)
+    assert m_approved_id, 'project has no FieldDef %s' % MAPPROVED_FIELD
+
+    return ProjectInfo(config, q, approval_values, phases, pm_fid, tl_fid,
+                       te_fid, m_target_id, m_approved_id)
+
+  # TODO(jojwang): mr needs to be passed in as arg and
+  # all self.mr should be changed to mr
   def ExecuteIssueChanges(self, config, issue, new_approvals, phases, new_fvs):
     # Apply Approval and phase changes
     issue.approval_values = new_approvals
@@ -102,7 +215,6 @@ class FLTConvertTask(jsonfeed.InternalTask):
       else:
         logging.info(
             'ERROR: ApprovalDef %r for ApprovalValue %r not valid', ad, av)
-
     self.services.issue._UpdateIssuesApprovals(self.mr.cnxn, issue)
 
     # Apply field value changes
@@ -149,9 +261,6 @@ class FLTConvertTask(jsonfeed.InternalTask):
         field_id, None, None, user_id, None, None, False)
 
 
-# TODO(jojwang): before calling ConvertMLabels, check that all phases
-# can be found in PHASE_MAP and M-Target and M-Approved are phase fields
-# and multi-valued.
 def ConvertMLabels(labels, phases, m_target_id, m_approved_id):
   field_values = []
   for label in labels:
