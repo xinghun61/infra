@@ -12,4 +12,4 @@ create {
   }
 }
 
-upload { pkg_prefix: "infra/third_party/static_libs" }
+upload { pkg_prefix: "static_libs" }

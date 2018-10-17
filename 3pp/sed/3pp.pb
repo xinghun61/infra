@@ -10,4 +10,4 @@ create {
   build {}
 }
 
-upload { pkg_prefix: "infra/third_party/tools" }
+upload { pkg_prefix: "tools" }

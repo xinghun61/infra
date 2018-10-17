@@ -4,5 +4,5 @@ create {
 }
 
 upload {
-  pkg_prefix: "infra/third_party/build_support"
+  pkg_prefix: "build_support"
 }

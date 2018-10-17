@@ -22,4 +22,4 @@ create {
   }
 }
 
-upload { pkg_prefix: "infra" }
+upload { pkg_prefix: "tools" }

@@ -9,6 +9,6 @@ create {
 }
 
 upload {
-  pkg_prefix: "infra"
+  pkg_prefix: "tools"
   universal: true
 }

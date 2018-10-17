@@ -49,4 +49,4 @@ create {
   }
 }
 
-upload { pkg_prefix: "infra/python" }
+upload { pkg_prefix: "tools" }

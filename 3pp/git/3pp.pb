@@ -28,4 +28,4 @@ create {
   build { install: "build_win.sh" }
 }
 
-upload { pkg_prefix: "infra" }
+upload { pkg_prefix: "tools" }

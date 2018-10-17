@@ -19,4 +19,4 @@ create {
   build { tool: "go" }
 }
 
-upload { pkg_prefix: "go/cmd/github.com/golang" }
+upload { pkg_prefix: "go/github.com/golang" }
