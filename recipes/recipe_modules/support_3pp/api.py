@@ -270,13 +270,9 @@ If the recipe is run with `force_build` it will always build all packages
 indicated (and their dependencies), and will not upload any of them to the
 central server.
 
-If the recipe is run in experimental mode (without `force_build`) then the
-recipe will prepend 'experimental/3pp/' to all built packages (when fetching or
-uploading). This prefix does not apply to CIPD Sources.  e.g.
-'infra/tools/thing/${platform}' would become
-'experimental/3pp/infra/tools/thing/${platform}'. Additionally, you can set the
-package_prefix explicitly, if you want to use a different namespace; the set
-package_prefix overrides 'experimental/' entirely.
+The recipe must always be run with a package_prefix (by assigning to the
+.package_prefix property on the Support3ppApi). If the recipe is run in
+experimental mode, 'experimental/' will be prepended to this.
 
 #### Examples
 
@@ -386,13 +382,12 @@ class Support3ppApi(recipe_api.RecipeApi):
     # Used by CIPDSpec; must be defined here so that it doesn't persist
     # accidentally between recipe tests.
     self._cipd_spec_pool = None
-    # The package prefix to use for built packages (not for package sources).
+
+    # (required) The package prefix to use for built packages (not for package
+    # sources).
     #
-    # NOTE: if this has a Falsey value and the recipe is run as
-    # `runtime.is_experimental`, then the @property accessor for this will
-    # always return "experimental/". This is so that there's no way to
-    # misconfigure the module to upload to prod while the user directed the
-    # recipe to run in experimental mode.
+    # NOTE: If `runtime.is_experimental`, then this is prepended with
+    # 'experimental/'.
     self._package_prefix = ''
 
   def initialize(self):
@@ -401,10 +396,11 @@ class Support3ppApi(recipe_api.RecipeApi):
   @property
   def package_prefix(self):
     """Returns the CIPD package name prefix (str), if any is set."""
-    ret = self._package_prefix
-    if not ret and self.m.runtime.is_experimental:
-      ret = 'experimental/3pp/'
-    return ret
+    assert self._package_prefix, 'A non-empty package prefix is required.'
+    return (
+      ('experimental/' if self.m.runtime.is_experimental else '')
+      + self._package_prefix + '/'
+    )
 
   @package_prefix.setter
   def package_prefix(self, prefix):
@@ -414,7 +410,7 @@ class Support3ppApi(recipe_api.RecipeApi):
     prepended to them.
     """
     assert isinstance(prefix, str)
-    self._package_prefix = prefix
+    self._package_prefix = prefix.strip('/')
 
   BadParse = BadParse
   DuplicatePackage = DuplicatePackage

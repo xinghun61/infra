@@ -56,10 +56,10 @@ PROPERTIES = {
         'Forces building packages, even if they\'re available on the CIPD '
         'server already. Doing this disables uploads.')),
   'package_prefix': Property(
-      kind=str, default='',
+      kind=str,
       help=(
-        'Prepends this string before all downloaded/uploaded packages. Allows '
-        'comprehensive testing of the entire packaging process without '
+        'Joins this CIPD namespace before all downloaded/uploaded packages. '
+        'Allows comprehensive testing of the entire packaging process without '
         'uploading into the prod namespace. If this recipe is run in '
         'experimental mode (according to the `runtime` module), then '
         'this will default to "experimental/support_3pp/".')),
@@ -121,12 +121,15 @@ def RunSteps(api, package_locations, to_build, platform, force_build,
 def GenTests(api):
   def defaults():
     return (
-      api.properties(package_locations=[
-        {
-          'repo': 'https://example.repo',
-          'subdir': 'support_3pp',
-        }
-      ]) +
+      api.properties(
+        package_locations=[
+          {
+            'repo': 'https://example.repo',
+            'subdir': 'support_3pp',
+          }
+        ],
+        package_prefix='hello_world',
+      ) +
       api.runtime(is_luci=True, is_experimental=False))
 
   yield api.test('basic') + defaults()

@@ -2,7 +2,7 @@
   {
     "cmd": [
       "echo",
-      ""
+      "3pp/"
     ],
     "name": "echo package_prefix"
   },

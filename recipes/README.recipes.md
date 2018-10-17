@@ -471,13 +471,9 @@ If the recipe is run with `force_build` it will always build all packages
 indicated (and their dependencies), and will not upload any of them to the
 central server.
 
-If the recipe is run in experimental mode (without `force_build`) then the
-recipe will prepend 'experimental/3pp/' to all built packages (when fetching or
-uploading). This prefix does not apply to CIPD Sources.  e.g.
-'infra/tools/thing/${platform}' would become
-'experimental/3pp/infra/tools/thing/${platform}'. Additionally, you can set the
-package_prefix explicitly, if you want to use a different namespace; the set
-package_prefix overrides 'experimental/' entirely.
+The recipe must always be run with a package_prefix (by assigning to the
+.package_prefix property on the Support3ppApi). If the recipe is run in
+experimental mode, 'experimental/' will be prepended to this.
 
 #### Examples
 
@@ -493,9 +489,9 @@ This module uses the following named caches:
   * `osx_sdk` - Cache for `depot_tools/osx_sdk`. Only on Mac.
   * `windows_sdk` - Cache for `depot_tools/windows_sdk`. Only on Windows.
 
-#### **class [Support3ppApi](/recipes/recipe_modules/support_3pp/api.py#377)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+#### **class [Support3ppApi](/recipes/recipe_modules/support_3pp/api.py#373)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
-&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/support_3pp/api.py#548)(self, packages=(), platform='', force_build=False):**
+&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/support_3pp/api.py#544)(self, packages=(), platform='', force_build=False):**
 
 Executes entire {fetch,build,package,verify,upload} pipeline for all the
 packages listed, targeting the given platform.
@@ -511,9 +507,9 @@ Args:
 Returns (list[(cipd_pkg, cipd_version)], set[str]) of built CIPD packages
 and their tagged versions, as well as a list of unsupported packages.
 
-&mdash; **def [initialize](/recipes/recipe_modules/support_3pp/api.py#398)(self):**
+&mdash; **def [initialize](/recipes/recipe_modules/support_3pp/api.py#393)(self):**
 
-&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/support_3pp/api.py#498)(self, path):**
+&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/support_3pp/api.py#494)(self, path):**
 
 Loads all package definitions from the given path.
 
@@ -539,7 +535,7 @@ whose name is already registered. This could occur if you call
 load_packages_from_path multiple times, and one of the later calls tries to
 load a package which was registered under one of the earlier calls.
 
-&emsp; **@package_prefix.setter**<br>&mdash; **def [package\_prefix](/recipes/recipe_modules/support_3pp/api.py#409)(self, prefix):**
+&emsp; **@package_prefix.setter**<br>&mdash; **def [package\_prefix](/recipes/recipe_modules/support_3pp/api.py#405)(self, prefix):**
 
 Set the CIPD package name prefix (str).
 
@@ -914,7 +910,7 @@ Normalizes a string for use in a resource label.
 
 [DEPS](/recipes/recipe_modules/support_3pp/tests/full.py#7): [support\_3pp](#recipe_modules-support_3pp), [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipe_modules/support_3pp/tests/full.py#28)(api, GOOS, GOARCH, package_prefix, load_dupe):**
+&mdash; **def [RunSteps](/recipes/recipe_modules/support_3pp/tests/full.py#27)(api, GOOS, GOARCH, load_dupe):**
 ### *recipes* / [sync\_submodules](/recipes/recipes/sync_submodules.py)
 
 [DEPS](/recipes/recipes/sync_submodules.py#7): [sync\_submodules](#recipe_modules-sync_submodules), [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime]

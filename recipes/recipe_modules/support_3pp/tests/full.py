@@ -21,13 +21,12 @@ DEPS = [
 PROPERTIES = {
   'GOOS': Property(),
   'GOARCH': Property(),
-  'package_prefix': Property(kind=str, default=''),
   'load_dupe': Property(kind=bool, default=False),
 }
 
-def RunSteps(api, GOOS, GOARCH, package_prefix, load_dupe):
+def RunSteps(api, GOOS, GOARCH, load_dupe):
   builder = api.path['cache'].join('builder')
-  api.support_3pp.package_prefix = package_prefix
+  api.support_3pp.package_prefix = '3pp'
 
   api.step('echo package_prefix', [
     'echo', api.support_3pp.package_prefix])
