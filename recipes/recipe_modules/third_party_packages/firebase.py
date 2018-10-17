@@ -65,4 +65,4 @@ class FirebaseApi(util.ModuleShim):
         ],
         stdout=self.m.raw_io.output(),
         step_test_data=lambda: self.m.raw_io.test_api.stream_output('3.19.3')
-      ).stdout
+      ).stdout.strip()
