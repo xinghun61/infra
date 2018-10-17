@@ -110,9 +110,9 @@ class FLTConvertTask(unittest.TestCase):
 
   def testConvertPeopleLabels(self):
     self.task.services.user.LookupUserID = mock.Mock(side_effect=[1, 2, 3, 4])
-    self.issue.labels = [
+    labels = [
         'pm-u1', 'pm-u2', 'tl-u2', 'test-3', 'test-4']
-    fvs = self.task.ConvertPeopleLabels(self.mr, self.issue, 11, 12, 13)
+    fvs = self.task.ConvertPeopleLabels(self.mr, labels, 11, 12, 13)
     expected = [
         tracker_bizobj.MakeFieldValue(11, None, None, 1, None, None, False),
         tracker_bizobj.MakeFieldValue(12, None, None, 2, None, None, False),
@@ -124,9 +124,10 @@ class FLTConvertTask(unittest.TestCase):
   def testConvertPeopleLabels_NoUsers(self):
     def side_effect(_cnxn, _email):
       raise exceptions.NoSuchUserException()
+    labels = []
     self.task.services.user.LookupUserID = mock.Mock(side_effect=side_effect)
     self.assertFalse(
-        len(self.task.ConvertPeopleLabels(self.mr, self.issue, 11, 12, 13)))
+        len(self.task.ConvertPeopleLabels(self.mr, labels, 11, 12, 13)))
 
   def testCreateUserFieldValue_Chromium(self):
     self.task.services.user.LookupUserID = mock.Mock(return_value=1)
@@ -235,13 +236,12 @@ class ConvertLaunchLabels(unittest.TestCase):
         approval_id=2, status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
     approvalPrivacy = tracker_pb2.ApprovalValue(approval_id=3)
     self.approvals = [approvalUX, approvalPrivacy]
-    self.issue = fake.MakeTestIssue(001, 1, 'summary', 'New', 111L)
 
   def testConvertLaunchLabels_Normal(self):
-    self.issue.labels = [
+    labels = [
         'Launch-UX-NotReviewed', 'Launch-Privacy-Yes', 'Launch-NotRelevant']
     actual = fltconversion.ConvertLaunchLabels(
-        self.issue, self.approvals, self.project_fds)
+        labels, self.approvals, self.project_fds)
     expected = [
       tracker_pb2.ApprovalValue(
           approval_id=2, status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW),
@@ -251,12 +251,12 @@ class ConvertLaunchLabels(unittest.TestCase):
     self.assertEqual(actual, expected)
 
   def testConvertLaunchLabels_ExtraAndMissingLabels(self):
-    self.issue.labels = [
+    labels = [
         'Blah-Launch-Privacy-Yes',  # Missing, this is not a valid Label
         'Launch-Security-Yes',  # Extra, no matching approval in given approvals
         'Launch-UI-Yes']  # Missing Launch-Privacy
     actual = fltconversion.ConvertLaunchLabels(
-        self.issue, self.approvals, self.project_fds)
+        labels, self.approvals, self.project_fds)
     expected = [
         tracker_pb2.ApprovalValue(
             approval_id=2, status=tracker_pb2.ApprovalStatus.APPROVED),

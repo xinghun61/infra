@@ -116,9 +116,9 @@ class FLTConvertTask(jsonfeed.InternalTask):
     return amendments
 
   def ConvertPeopleLabels(
-      self, mr, issue, pm_field_id, tl_field_id, te_field_id):
+      self, mr, labels, pm_field_id, tl_field_id, te_field_id):
     field_values = []
-    pm_ldap, tl_ldap, test_ldaps = ExtractLabelLDAPs(issue.labels)
+    pm_ldap, tl_ldap, test_ldaps = ExtractLabelLDAPs(labels)
 
     pm_fv = self.CreateUserFieldValue(mr, pm_ldap, pm_field_id)
     if pm_fv:
@@ -174,10 +174,10 @@ def ConvertMLabels(labels, phases, m_target_id, m_approved_id):
   return field_values
 
 
-def ConvertLaunchLabels(issue, approvals, project_fds):
+def ConvertLaunchLabels(labels, approvals, project_fds):
   """Converts 'Launch-[Review]' values into statuses for given approvals."""
   label_values = {}
-  for label in issue.labels:
+  for label in labels:
     launch_match = REVIEW_LABELS_RE.match(label)
     if launch_match:
       prefix = launch_match.group()
