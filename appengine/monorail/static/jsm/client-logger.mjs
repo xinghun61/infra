@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// tsmon-client.js exports its classes onto window.chops.tsmon.
-import '/bower_components/chopsui/tsmon-client.js';
+// Important: tsmon-client.js must be imported before this file for now.
+// TODO(4430): Import tsmon-client.js here with cache busting.
 const TSMonClient = window.chops.tsmon.TSMonClient;
 
 /*
