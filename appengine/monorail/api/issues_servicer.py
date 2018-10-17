@@ -492,3 +492,15 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
 
     result = issues_pb2.DeleteAttachmentResponse()
     return result
+
+  @monorail_servicer.PRPCMethod
+  def FlagIssue(self, mc, request):
+    """Flag or unflag the given issue as spam."""
+    _project, issue, _config = self._GetProjectIssueAndConfig(
+        mc, request.issue_ref)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      we.FlagIssue(issue, request.flag)
+
+    result = issues_pb2.FlagIssueResponse()
+    return result

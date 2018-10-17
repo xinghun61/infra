@@ -988,6 +988,55 @@ class WorkEnvTest(unittest.TestCase):
       _actual = we.DeleteIssue(issue, False)
     self.assertFalse(issue.deleted)
 
+  def testFlagIssue_Normal(self):
+    """Users can mark and unmark an issue as spam."""
+    self.services.user.TestAddUser('user222@example.com', 222L)
+    self.SignIn(user_id=222L)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    with self.work_env as we:
+      we.FlagIssue(issue, True)
+    self.assertEqual(
+        [222L], self.services.spam.reports_by_issue_id[78901])
+    self.assertNotIn(
+        222L, self.services.spam.manual_verdicts_by_issue_id[78901])
+    with self.work_env as we:
+      we.FlagIssue(issue, False)
+    self.assertEqual(
+        [], self.services.spam.reports_by_issue_id[78901])
+    self.assertNotIn(
+        222L, self.services.spam.manual_verdicts_by_issue_id[78901])
+
+  def testFlagIssue_AutoVerdict(self):
+    """Admins can mark and unmark an issue as spam and it counts as verdict."""
+    self.SignIn(user_id=self.admin_user.user_id)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    with self.work_env as we:
+      we.FlagIssue(issue, True)
+    self.assertEqual(
+        [444L], self.services.spam.reports_by_issue_id[78901])
+    self.assertTrue(self.services.spam.manual_verdicts_by_issue_id[78901][444L])
+    with self.work_env as we:
+      we.FlagIssue(issue, False)
+    self.assertEqual(
+        [], self.services.spam.reports_by_issue_id[78901])
+    self.assertFalse(
+        self.services.spam.manual_verdicts_by_issue_id[78901][444L])
+
+  def testFlagIssue_NotAllowed(self):
+    """Anons can't mark issues as spam."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        we.FlagIssue(issue, True)
+
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        we.FlagIssue(issue, False)
+
   def testRerankBlockedOnIssues_SplitBelow(self):
     parent_issue = fake.MakeTestIssue(
         789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)

@@ -123,13 +123,18 @@ class WorkEnv(object):
           'User is not allowed to view this issue')
     return project, granted_perms
 
-  def _AssertPermInIssue(self, issue, perm):
-    """Make sure the user may use perm on the given issue."""
+  def _UserCanUsePermInIssue(self, issue, perm):
+    """Test if the user may use perm on the given issue."""
     project, granted_perms = self._AssertUserCanViewIssue(
         issue, allow_viewing_deleted=True)
     permitted = self.mc.perms.CanUsePerm(
         perm, self.mc.auth.effective_ids, project,
         permissions.GetRestrictions(issue), granted_perms=granted_perms)
+    return permitted
+
+  def _AssertPermInIssue(self, issue, perm):
+    """Make sure the user may use perm on the given issue."""
+    permitted = self._UserCanUsePermInIssue(issue, perm)
     if not permitted:
       raise permissions.PermissionException(
         'User lacks permission %r in issue' % perm)
@@ -959,6 +964,19 @@ class WorkEnv(object):
       self.services.issue.SoftDeleteIssue(
           self.mc.cnxn, issue.project_id, issue.local_id, delete,
           self.services.user)
+
+  def FlagIssue(self, issue, flag):
+    """Flag or unflag the given issue as spam."""
+    self._AssertPermInIssue(issue, permissions.FLAG_SPAM)
+
+    with self.mc.profiler.Phase('Marking issue %r as spam' % (issue.issue_id)):
+      self.services.spam.FlagIssues(
+          self.mc.cnxn, self.services.issue, [issue], self.mc.auth.user_id,
+          flag)
+      if self._UserCanUsePermInIssue(issue, permissions.VERDICT_SPAM):
+        self.services.spam.RecordManualIssueVerdicts(
+            self.mc.cnxn, self.services.issue, [issue], self.mc.auth.user_id,
+            flag)
 
   # TODO(jrobbins): This method also requires self.mc to be a MonorailRequest.
   def GetIssuePositionInHotlist(self, current_issue, hotlist):

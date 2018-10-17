@@ -35,6 +35,7 @@ service Issues {
   rpc DeleteIssue (DeleteIssueRequest) returns (DeleteIssueResponse) {}
   rpc DeleteIssueComment (DeleteIssueCommentRequest) returns (DeleteIssueCommentResponse) {}
   rpc DeleteAttachment (DeleteAttachmentRequest) returns (DeleteAttachmentResponse) {}
+  rpc FlagIssue (FlagIssueRequest) returns (FlagIssueResponse) {}
 }
 
 
@@ -342,4 +343,17 @@ message DeleteAttachmentRequest {
 
 // Next available tag: 1
 message DeleteAttachmentResponse {
+}
+
+
+// Next available tag: 4
+message FlagIssueRequest {
+  RequestTrace trace = 1;
+  IssueRef issue_ref = 2;
+  bool flag = 3;
+}
+
+
+// Next available tag: 1
+message FlagIssueResponse {
 }
