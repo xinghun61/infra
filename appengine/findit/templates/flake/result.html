@@ -519,6 +519,12 @@
         {% else %}
           Pipeline was not started.
         {% endif %}
+        Recent flakiness pipeline:
+        {% if most_recent_flakiness.pipeline_status_path %}
+          <a href="{{ most_recent_flakiness.pipeline_status_path }}" target="_blank">recent flakiness pipeline status</a>
+        {% else %}
+          No check recent flakiness pipeline started.
+        {% endif %}
       </p>
 
       <!-- Rerun analysis button -->
