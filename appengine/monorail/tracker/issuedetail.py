@@ -344,9 +344,6 @@ class IssueDetail(issuepeek.IssuePeek):
         'starred': ezt.boolean(starred),
         'discourage_plus_one': ezt.boolean(discourage_plus_one),
         'pagegen': str(long(time.time() * 1000000)),
-        'attachment_form_token': xsrf.GenerateToken(
-            mr.auth.user_id, '/p/%s%s.do' % (
-                mr.project_name, urls.ISSUE_ATTACHMENT_DELETION_JSON)),
         'flag_spam_token': xsrf.GenerateToken(
             mr.auth.user_id, '/p/%s%s.do' % (
                 mr.project_name, urls.ISSUE_FLAGSPAM_JSON)),
