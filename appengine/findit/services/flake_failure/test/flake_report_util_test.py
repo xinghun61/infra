@@ -23,13 +23,13 @@ class FlakeReportUtilTest(WaterfallTestCase):
   def testGenerateAnalysisLink(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
     self.assertIn(analysis.key.urlsafe(),
-                  flake_report_util.GenerateAnalysisLink(analysis))
+                  flake_report_util._GenerateAnalysisLink(analysis))
 
   def testGenerateWrongResultLink(self):
     test_name = 'test_name'
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', test_name)
     self.assertIn(test_name,
-                  flake_report_util.GenerateWrongResultLink(analysis))
+                  flake_report_util._GenerateWrongResultLink(analysis))
 
   def testGetMinimumConfidenceToFileBugs(self):
     self.UpdateUnitTestConfigSettings('check_flake_settings',
@@ -486,7 +486,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
 
     self.assertFalse(flake_report_util.UnderDailyLimit())
 
-  def testGenerateCommentWithCulprit(self):
+  def testGenerateMessageTextWithCulprit(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -505,15 +505,16 @@ class FlakeReportUtilTest(WaterfallTestCase):
     culprit.put()
     analysis.culprit_urlsafe_key = culprit.key.urlsafe()
     analysis.confidence_in_culprit = 0.6713
-    comment = flake_report_util.GenerateBugComment(analysis)
-    self.assertIn('culprit r123 with confidence 67.1%', comment)
+    comment = flake_report_util._GenerateMessageText(analysis)
+    self.assertIn('67.1% confidence', comment)
+    self.assertIn('r123', comment)
     self.assertIn(task_id, comment)
 
   @mock.patch.object(
       MasterFlakeAnalysis,
       'GetRepresentativeSwarmingTaskId',
       return_value='task_id')
-  def testGenerateCommentForLongstandingFlake(self, _):
+  def testGenerateMessageTextNoCulprit(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -525,7 +526,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
     analysis.original_builder_name = builder_name
     analysis.original_build_number = build_number
     analysis.status = analysis_status.COMPLETED
-    comment = flake_report_util.GenerateBugComment(analysis)
+    comment = flake_report_util._GenerateMessageText(analysis)
     self.assertTrue('longstanding' in comment, comment)
 
   @mock.patch.object(

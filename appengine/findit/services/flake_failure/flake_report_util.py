@@ -15,18 +15,19 @@ from services import swarming
 from services.flake_failure import flake_constants
 from waterfall import waterfall_config
 
-# TODO(crbug.com/881635): Include a link to the stdio of the flaky test as well.
-_BODY_TEMPLATE = textwrap.dedent("""
-  Flaky test: {}
-  Sample failed build due to flakiness: {}
-  Test output log: {}
-  Culprit ({} confidence): {}
-  Analysis: {}
+_RESULT_WITH_CULPRIT_TEMPLATE = textwrap.dedent("""
+Flaky test: {test_name}
+Sample failed build due to flakiness: {build_link}
+Test output log: {test_output_log_link}
+Culprit ({confidence_score} confidence): r{commit_position}
+Analysis: {analysis_link}
 
-  Please revert the culprit, or disable the test and find the appropriate owner.
+Please revert the culprit, or disable the test and find the appropriate owner.
 
-  If the culprit above is wrong, please file a bug using this link:
-  {}""")
+If the culprit above is wrong, please file a bug using this link:
+{wrong_result_link}
+
+Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).""")
 
 _WRONG_RESULT_LINK_TEMPLATE = (
     'https://bugs.chromium.org/p/chromium/issues/entry?'
@@ -36,34 +37,86 @@ _WRONG_RESULT_LINK_TEMPLATE = (
     'summary=%5BFindit%5D%20Flake%20Analyzer%20-%20Wrong%20result%20for%20{}&'
     'comment=Link%20to%20Analysis%3A%20{}')
 
-# TODO(crbug.com/883992): Merge _BODY_TEMPLATE and _CULPRIT_COMMENT_TEMPLATE.
-# Comment for culprit template.
-_CULPRIT_COMMENT_TEMPLATE = textwrap.dedent("""
-Flaky test: %s
-Test output log: %s
-Findit identified the culprit r%s with confidence %.1f%% for the example failed
-build %s based on the flakiness trend:
+_UNKNOWN_CULPRIT_TEMPLATE = textwrap.dedent("""
+Flaky test: {test_name}
+Sample failed build due to flakiness: {build_link}
+Test output log: {test_output_log_link}
+Analysis: {analysis_link}
 
-https://findit-for-me.appspot.com/waterfall/flake?key=%s
-
-If the culprit above is wrong, please file a bug using this link:
-%s
-
-Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).""")
-
-_LOW_FLAKINESS_COMMENT_TEMPLATE = textwrap.dedent("""
-Flaky test: %s
-Test output log: %s
-
-This flake is either longstanding, has low flakiness, or is not reproducible for
-the example failed build %s based on the flakiness trend:
-
-https://findit-for-me.appspot.com/waterfall/flake?key=%s
+This flake is either longstanding, has low flakiness, or is not reproducible.
 
 Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).""")
 
 _FINDIT_ANALYZED_LABEL_TEXT = 'Test-Findit-Analyzed'
 
+
+def _GenerateAnalysisLink(analysis):
+  """Returns a link to Findit's result page of a MasterFlakeAnalysis."""
+  return 'https://findit-for-me.appspot.com/waterfall/flake?key={}'.format(
+      analysis.key.urlsafe())
+
+
+def _GenerateWrongResultLink(analysis):
+  """Returns the test with a link to file a bug agasinst a wrong result."""
+  return _WRONG_RESULT_LINK_TEMPLATE.format(analysis.test_name,
+                                            _GenerateAnalysisLink(analysis))
+
+
+def _GenerateTestOutputLogLink(analysis):
+  """Generates a link to the swarming task to be surfaced to the bug.
+
+  Args:
+    analysis (MasterFlakeAnalysis): The analysis whose data points and swarming
+        tasks will be queried for surfacing to the bug.
+
+  Returns:
+    url (str): The url to the swarming task.
+  """
+  task_id = analysis.GetRepresentativeSwarmingTaskId()
+  assert task_id, 'Representative task id unexpectedly not found!'
+
+  return swarming.GetSwarmingTaskUrl(task_id)
+
+
+def _GenerateMessageText(analysis):
+  """Generates the text to create or update a bug with depending on results.
+
+  Args:
+    analysis (MasterFlakeAnalysis): The completed analysis with results to
+      determine what to update the bug with.
+
+  Returns:
+    (str): The text to upodate the bug with.
+  """
+  analysis_link = _GenerateAnalysisLink(analysis)
+
+  build_link = build_url.CreateBuildUrl(analysis.original_master_name,
+                                        analysis.original_builder_name,
+                                        analysis.original_build_number)
+  test_output_log_link = _GenerateTestOutputLogLink(analysis)
+
+  if analysis.culprit_urlsafe_key:
+    culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
+    assert culprit, 'Culprit is unexpectedly missing.'
+
+    culprit_confidence = "{0:0.1f}%".format(
+        analysis.confidence_in_culprit * 100)
+    wrong_result_link = _GenerateWrongResultLink(analysis)
+
+    return _RESULT_WITH_CULPRIT_TEMPLATE.format(
+        test_name=analysis.test_name,
+        build_link=build_link,
+        test_output_log_link=test_output_log_link,
+        confidence_score=culprit_confidence,
+        commit_position=culprit.commit_position,
+        analysis_link=analysis_link,
+        wrong_result_link=wrong_result_link)
+
+  return _UNKNOWN_CULPRIT_TEMPLATE.format(
+      test_name=analysis.original_test_name,
+      build_link=build_link,
+      test_output_log_link=test_output_log_link,
+      analysis_link=analysis_link)
 
 class FlakeAnalysisIssueGenerator(
     issue_tracking_service.FlakyTestIssueGenerator):
@@ -94,50 +147,10 @@ class FlakeAnalysisIssueGenerator(
     return 'chromium'
 
   def GetDescription(self):
-    culprit_url = 'None'
-    culprit_confidence = 'None'
-    if self._analysis.culprit_urlsafe_key:
-      culprit = ndb.Key(urlsafe=self._analysis.culprit_urlsafe_key).get()
-      assert culprit, 'Culprit is unexpectedly missing.'
-
-      culprit_url = culprit.url
-      culprit_confidence = "{0:0.1f}%".format(
-          self._analysis.confidence_in_culprit * 100)
-
-    analysis_link = GenerateAnalysisLink(self._analysis)
-    wrong_result_link = GenerateWrongResultLink(self._analysis)
-    build_link = build_url.CreateBuildUrl(self._analysis.original_master_name,
-                                          self._analysis.original_builder_name,
-                                          self._analysis.original_build_number)
-    test_output_log_link = GenerateTestOutputLogLink(self._analysis)
-    body = _BODY_TEMPLATE.format(self._analysis.test_name, test_output_log_link,
-                                 build_link, culprit_confidence, culprit_url,
-                                 analysis_link, wrong_result_link)
-    return body
+    return _GenerateMessageText(self._analysis)
 
   def GetComment(self):
-    assert not self._analysis.failed
-
-    build_link = build_url.CreateBuildUrl(self._analysis.original_master_name,
-                                          self._analysis.original_builder_name,
-                                          self._analysis.original_build_number)
-    test_output_log_link = GenerateTestOutputLogLink(self._analysis)
-
-    if self._analysis.culprit_urlsafe_key is not None:
-      culprit = ndb.Key(urlsafe=self._analysis.culprit_urlsafe_key).get()
-      assert culprit, 'Culprit is unexpectedly missing.'
-      assert self._analysis.confidence_in_culprit is not None, (
-          'Confidence score is unexpectedly missing in culprit.')
-
-      wrong_result_link = GenerateWrongResultLink(self._analysis)
-      return _CULPRIT_COMMENT_TEMPLATE % (
-          self._analysis.test_name, test_output_log_link,
-          culprit.commit_position, self._analysis.confidence_in_culprit * 100,
-          build_link, self._analysis.key.urlsafe(), wrong_result_link)
-
-    return _LOW_FLAKINESS_COMMENT_TEMPLATE % (self._analysis.test_name,
-                                              test_output_log_link, build_link,
-                                              self._analysis.key.urlsafe())
+    return _GenerateMessageText(self._analysis)
 
   def ShouldRestoreChromiumSheriffLabel(self):
     # Analysis results are not always immediately actionable, so don't restore
@@ -181,8 +194,8 @@ def ShouldFileBugForAnalysis(analysis):
   if not HasSufficientConfidenceInCulprit(analysis,
                                           GetMinimumConfidenceToFileBugs()):
     analysis.LogInfo('''Analysis has confidence {:.2%}
-        which isn\'t high enough to file a bug.'''
-                     .format(analysis.confidence_in_culprit))
+        which isn\'t high enough to file a bug.'''.format(
+        analysis.confidence_in_culprit))
     return False
 
   if not UnderDailyLimit():
@@ -246,57 +259,6 @@ def ShouldUpdateBugForAnalysis(analysis):
   # TODO(crbug.com/847960): Do not update bugs if Findit already logged one as
   # the information would be redundant.
   return True
-
-
-def GenerateAnalysisLink(analysis):
-  """Returns a link to Findit's result page of a MasterFlakeAnalysis."""
-  return 'https://findit-for-me.appspot.com/waterfall/flake?key={}'.format(
-      analysis.key.urlsafe())
-
-
-def GenerateBugComment(analysis):
-  """Generates a comment to update a bug with based on the analysis' result."""
-  assert not analysis.failed
-  build_link = build_url.CreateBuildUrl(analysis.original_master_name,
-                                        analysis.original_builder_name,
-                                        analysis.original_build_number)
-  test_output_log_link = GenerateTestOutputLogLink(analysis)
-
-  if analysis.culprit_urlsafe_key is not None:
-    culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
-    assert culprit
-    assert analysis.confidence_in_culprit is not None
-    wrong_result_link = GenerateWrongResultLink(analysis)
-    return _CULPRIT_COMMENT_TEMPLATE % (
-        analysis.test_name, test_output_log_link, culprit.commit_position,
-        analysis.confidence_in_culprit * 100, build_link,
-        analysis.key.urlsafe(), wrong_result_link)
-
-  return _LOW_FLAKINESS_COMMENT_TEMPLATE % (analysis.test_name,
-                                            test_output_log_link, build_link,
-                                            analysis.key.urlsafe())
-
-
-def GenerateWrongResultLink(analysis):
-  """Returns the test with a link to file a bug agasinst a wrong result."""
-  return _WRONG_RESULT_LINK_TEMPLATE.format(analysis.test_name,
-                                            GenerateAnalysisLink(analysis))
-
-
-def GenerateTestOutputLogLink(analysis):
-  """Generates a link to the swarming task to be surfaced to the bug.
-
-  Args:
-    analysis (MasterFlakeAnalysis): The analysis whose data points and swarming
-        tasks will be queried for surfacing to the bug.
-
-  Returns:
-    url (str): The url to the swarming task.
-  """
-  task_id = analysis.GetRepresentativeSwarmingTaskId()
-  assert task_id, 'Representative task id unexpectedly not found!'
-
-  return swarming.GetSwarmingTaskUrl(task_id)
 
 
 def UnderDailyLimit():
