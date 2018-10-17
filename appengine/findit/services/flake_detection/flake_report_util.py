@@ -11,10 +11,9 @@ from google.appengine.ext import ndb
 from gae_libs.appengine_util import IsStaging
 from googleapiclient.errors import HttpError
 from libs import time_util
-from model.flake.flake import Flake
 from model.flake.detection.flake_occurrence import FlakeOccurrence
-from model.flake.detection.flake_occurrence import FlakeType
 from model.flake.flake_issue import FlakeIssue
+from model.flake.flake_type import FlakeType
 from services import issue_tracking_service
 from services import monitoring
 from services.apis import AnalyzeDetectedFlakeOccurrence

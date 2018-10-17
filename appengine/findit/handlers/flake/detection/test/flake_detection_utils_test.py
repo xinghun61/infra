@@ -7,11 +7,11 @@ import mock
 
 from handlers.flake.detection import flake_detection_utils
 from libs import time_util
+from model.flake.detection.flake_occurrence import FlakeOccurrence
 from model.flake.flake import Flake
 from model.flake.flake import TestLocation
 from model.flake.flake_issue import FlakeIssue
-from model.flake.detection.flake_occurrence import FlakeOccurrence
-from model.flake.detection.flake_occurrence import FlakeType
+from model.flake.flake_type import FlakeType
 from waterfall.test.wf_testcase import WaterfallTestCase
 
 

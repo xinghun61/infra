@@ -6,9 +6,8 @@ import datetime
 
 from gae_libs.testcase import TestCase
 from model.flake.flake import Flake
-from model.flake.detection.flake_occurrence import BuildConfiguration
 from model.flake.detection.flake_occurrence import FlakeOccurrence
-from model.flake.detection.flake_occurrence import FlakeType
+from model.flake.flake_type import FlakeType
 
 
 class FlakeOccurrenceTest(TestCase):

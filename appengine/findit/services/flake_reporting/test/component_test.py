@@ -4,8 +4,8 @@
 import datetime
 
 from model.flake.detection.flake_occurrence import FlakeOccurrence
-from model.flake.detection.flake_occurrence import FlakeType
 from model.flake.flake import Flake
+from model.flake.flake_type import FlakeType
 from model.flake.reporting.report import ComponentFlakinessReport
 from model.flake.reporting.report import TestFlakinessReport
 from model.flake.reporting.report import TotalFlakinessReport

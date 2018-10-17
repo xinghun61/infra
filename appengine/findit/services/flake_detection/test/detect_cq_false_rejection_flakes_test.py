@@ -5,9 +5,9 @@
 from datetime import datetime
 import mock
 
-from model.flake.flake import Flake
 from model.flake.detection.flake_occurrence import FlakeOccurrence
-from model.flake.detection.flake_occurrence import FlakeType
+from model.flake.flake import Flake
+from model.flake.flake_type import FlakeType
 from waterfall.test.wf_testcase import WaterfallTestCase
 from services import bigquery_helper
 from services.flake_detection.detect_cq_false_rejection_flakes import (

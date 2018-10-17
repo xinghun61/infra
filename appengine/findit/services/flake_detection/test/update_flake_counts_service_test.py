@@ -7,8 +7,8 @@ import mock
 
 from libs import time_util
 from model.flake.detection.flake_occurrence import FlakeOccurrence
-from model.flake.detection.flake_occurrence import FlakeType
 from model.flake.flake import Flake
+from model.flake.flake_type import FlakeType
 from services.flake_detection.update_flake_counts_service import (
     UpdateFlakeCounts)
 from waterfall.test.wf_testcase import WaterfallTestCase

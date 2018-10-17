@@ -5,10 +5,7 @@
 from google.appengine.ext import ndb
 from google.appengine.ext.ndb import msgprop
 
-from protorpc import messages
-
-from model.flake.flake import Flake
-
+from model.flake.flake_type import FlakeType
 
 class BuildConfiguration(ndb.Model):
   """Tracks the build configuration of a flake occurrence."""
@@ -24,21 +21,6 @@ class BuildConfiguration(ndb.Model):
   # This should be removed once all builders are migrated to LUCI.
   legacy_master_name = ndb.StringProperty(indexed=False, required=True)
   legacy_build_number = ndb.IntegerProperty(indexed=False, required=True)
-
-
-class FlakeType(messages.Enum):
-  """Enumerates types of flakes for FlakeOccurrence."""
-
-  # A flaky test that caused a CL to be incorrectly rejected by CQ.
-  # For how this type of flake occurrence is detected, please refer to:
-  # services/flake_detection/flaky_tests.cq_false_rejection.sql.
-  CQ_FALSE_REJECTION = 1
-
-  # A flaky test that failed in the (with patch) steps, but passed in the
-  # (retry with patch) steps.
-  # For how this type of flake occurrence is detected, please refer to:
-  # services/flake_detection/flaky_tests.retry_with_patch.sql.
-  RETRY_WITH_PATCH = 2
 
 
 class FlakeOccurrence(ndb.Model):

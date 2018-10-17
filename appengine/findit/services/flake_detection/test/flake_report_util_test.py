@@ -7,10 +7,10 @@ import textwrap
 
 from googleapiclient.errors import HttpError
 from libs import time_util
+from model.flake.detection.flake_occurrence import FlakeOccurrence
 from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
-from model.flake.detection.flake_occurrence import FlakeOccurrence
-from model.flake.detection.flake_occurrence import FlakeType
+from model.flake.flake_type import FlakeType
 from services import issue_tracking_service
 from services.flake_detection import flake_report_util
 from waterfall.test.wf_testcase import WaterfallTestCase

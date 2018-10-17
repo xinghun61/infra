@@ -8,9 +8,9 @@ import os
 from google.appengine.ext import ndb
 
 from gae_libs import appengine_util
-from model.flake.flake import Flake
 from model.flake.detection.flake_occurrence import FlakeOccurrence
-from model.flake.detection.flake_occurrence import FlakeType
+from model.flake.flake import Flake
+from model.flake.flake_type import FlakeType
 from services import bigquery_helper
 from services import monitoring
 

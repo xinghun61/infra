@@ -7,7 +7,7 @@ from google.appengine.api import taskqueue
 
 from model.flake.analysis.flake_analysis_request import FlakeAnalysisRequest
 from model.flake.detection.flake_occurrence import FlakeOccurrence
-from model.flake.detection.flake_occurrence import FlakeType
+from model.flake.flake_type import FlakeType
 from services import apis
 from waterfall.test.wf_testcase import WaterfallTestCase
 
