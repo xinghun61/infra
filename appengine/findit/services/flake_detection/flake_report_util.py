@@ -319,8 +319,9 @@ def ReportFlakesToMonorail(flake_tuples_to_report):
 
   utc_one_day_ago = time_util.GetUTCNow() - datetime.timedelta(days=1)
   num_updated_issues_24h = (
-      FlakeIssue.query(FlakeIssue.last_updated_time_by_flake_detection >
-                       utc_one_day_ago).count())
+      FlakeIssue.query(
+          FlakeIssue.last_updated_time_by_flake_detection > utc_one_day_ago)
+      .count())
   if num_updated_issues_24h >= _CREATE_OR_UPDATE_ISSUES_LIMIT_24H:
     logging.info('Issues created or updated during the past 24 hours has '
                  'reached the limit.')

@@ -151,42 +151,44 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
                 'time_happened': '2018-01-02 02:00:00 UTC',
                 'time_detected': '2018-01-02 02:00:00 UTC',
                 'gerrit_cl_id': gerrit_cl_id
-            }, {
-                'flake_type': FlakeType.CQ_FALSE_REJECTION,
-                'build_id': '124',
-                'step_ui_name': step_ui_name,
-                'test_name': test_name,
-                'build_configuration': {
-                    'luci_project': 'chromium',
-                    'luci_bucket': 'try',
-                    'luci_builder': 'luci builder 2',
-                    'legacy_master_name': 'buildbot master',
-                    'legacy_build_number': 999
-                },
-                'time_happened': '2018-01-02 00:00:00 UTC',
-                'time_detected': '2018-01-02 00:00:00 UTC',
-                'gerrit_cl_id': gerrit_cl_id
-            }]
-        }, {
-            'group_by_field':
-                'luci builder',
-            'occurrences': [{
-                'flake_type': FlakeType.CQ_FALSE_REJECTION,
-                'build_id': '123',
-                'step_ui_name': step_ui_name,
-                'test_name': test_name,
-                'build_configuration': {
-                    'luci_project': 'chromium',
-                    'luci_bucket': 'try',
-                    'luci_builder': 'luci builder',
-                    'legacy_master_name': 'buildbot master',
-                    'legacy_build_number': 999
-                },
-                'time_happened': '2018-01-01 00:00:00 UTC',
-                'time_detected': '2018-01-01 00:00:00 UTC',
-                'gerrit_cl_id': gerrit_cl_id
-            }]
-        }],
+            },
+                            {
+                                'flake_type': FlakeType.CQ_FALSE_REJECTION,
+                                'build_id': '124',
+                                'step_ui_name': step_ui_name,
+                                'test_name': test_name,
+                                'build_configuration': {
+                                    'luci_project': 'chromium',
+                                    'luci_bucket': 'try',
+                                    'luci_builder': 'luci builder 2',
+                                    'legacy_master_name': 'buildbot master',
+                                    'legacy_build_number': 999
+                                },
+                                'time_happened': '2018-01-02 00:00:00 UTC',
+                                'time_detected': '2018-01-02 00:00:00 UTC',
+                                'gerrit_cl_id': gerrit_cl_id
+                            }]
+        },
+                        {
+                            'group_by_field':
+                                'luci builder',
+                            'occurrences': [{
+                                'flake_type': FlakeType.CQ_FALSE_REJECTION,
+                                'build_id': '123',
+                                'step_ui_name': step_ui_name,
+                                'test_name': test_name,
+                                'build_configuration': {
+                                    'luci_project': 'chromium',
+                                    'luci_bucket': 'try',
+                                    'luci_builder': 'luci builder',
+                                    'legacy_master_name': 'buildbot master',
+                                    'legacy_build_number': 999
+                                },
+                                'time_happened': '2018-01-01 00:00:00 UTC',
+                                'time_detected': '2018-01-01 00:00:00 UTC',
+                                'gerrit_cl_id': gerrit_cl_id
+                            }]
+                        }],
     }
     self.assertEqual(expected_flake_dict,
                      flake_detection_utils.GetFlakeInformation(flake, 5))

@@ -7,7 +7,8 @@ from google.appengine.api import taskqueue
 from common import constants
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
-from services.flake_detection import detect_cq_false_rejection_flakes
+from model.flake.flake_type import FlakeType
+from services.flake_detection import detect_flake_occurrences
 from services.flake_detection import flake_report_util
 
 
@@ -33,7 +34,8 @@ class DetectCQFalseRejectionFlakes(BaseHandler):
   PERMISSION_LEVEL = Permission.APP_SELF
 
   def HandleGet(self):
-    detect_cq_false_rejection_flakes.QueryAndStoreFlakes()
+    detect_flake_occurrences.QueryAndStoreFlakes(FlakeType.CQ_FALSE_REJECTION)
+    detect_flake_occurrences.QueryAndStoreFlakes(FlakeType.RETRY_WITH_PATCH)
     flake_tuples_to_report = flake_report_util.GetFlakesWithEnoughOccurrences()
     flake_report_util.ReportFlakesToMonorail(flake_tuples_to_report)
 

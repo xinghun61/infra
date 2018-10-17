@@ -7,6 +7,7 @@ from google.appengine.ext.ndb import msgprop
 
 from model.flake.flake_type import FlakeType
 
+
 class BuildConfiguration(ndb.Model):
   """Tracks the build configuration of a flake occurrence."""
 

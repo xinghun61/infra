@@ -4,6 +4,7 @@
 
 from protorpc import messages
 
+
 class FlakeType(messages.Enum):
   """Enumerates types of flakes for FlakeOccurrence."""
 

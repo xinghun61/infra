@@ -18,10 +18,10 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 
 
 class ShowFlakeTest(WaterfallTestCase):
-  app_module = webapp2.WSGIApplication(
-      [
-          ('/flake/detection/ui/show-flake', show_flake.ShowFlake),
-      ], debug=True)
+  app_module = webapp2.WSGIApplication([
+      ('/flake/detection/ui/show-flake', show_flake.ShowFlake),
+  ],
+                                       debug=True)
 
   def testParameterHasNoKey(self):
     response = self.test_app.get(
@@ -159,13 +159,12 @@ class ShowFlakeTest(WaterfallTestCase):
     }
 
     self.assertEqual(
-        json.dumps(
-            {
-                'flake_json': flake_dict,
-                'key': flake.key.urlsafe(),
-                'show_all_occurrences': ''
-            },
-            default=str,
-            sort_keys=True,
-            indent=2),
+        json.dumps({
+            'flake_json': flake_dict,
+            'key': flake.key.urlsafe(),
+            'show_all_occurrences': ''
+        },
+                   default=str,
+                   sort_keys=True,
+                   indent=2),
         json.dumps(json.loads(response.body), sort_keys=True, indent=2))

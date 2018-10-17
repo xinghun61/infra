@@ -10,13 +10,13 @@ from model.flake.flake import Flake
 from model.flake.flake_type import FlakeType
 from waterfall.test.wf_testcase import WaterfallTestCase
 from services import bigquery_helper
-from services.flake_detection.detect_cq_false_rejection_flakes import (
+from services.flake_detection.detect_flake_occurrences import (
     QueryAndStoreFlakes)
-from services.flake_detection.detect_cq_false_rejection_flakes import (
+from services.flake_detection.detect_flake_occurrences import (
     _UpdateLastFlakeHappenedTimeForFlakes)
 
 
-class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
+class DetectFlakesOccurrencesTest(WaterfallTestCase):
 
   def _GetEmptyQueryResponse(self):
     """Returns an empty query response for testing.
@@ -44,35 +44,42 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
                 'type': 'STRING',
                 'name': 'luci_builder',
                 'mode': 'NULLABLE'
-            }, {
-                'type': 'STRING',
-                'name': 'legacy_master_name',
-                'mode': 'NULLABLE'
-            }, {
-                'type': 'INTEGER',
-                'name': 'legacy_build_number',
-                'mode': 'NULLABLE'
-            }, {
-                'type': 'INTEGER',
-                'name': 'build_id',
-                'mode': 'NULLABLE'
-            }, {
-                'type': 'STRING',
-                'name': 'step_ui_name',
-                'mode': 'NULLABLE'
-            }, {
-                'type': 'STRING',
-                'name': 'test_name',
-                'mode': 'NULLABLE'
-            }, {
-                'type': 'TIMESTAMP',
-                'name': 'test_start_msec',
-                'mode': 'NULLABLE'
-            }, {
-                'type': 'INTEGER',
-                'name': 'gerrit_cl_id',
-                'mode': 'NULLABLE'
-            }]
+            },
+                       {
+                           'type': 'STRING',
+                           'name': 'legacy_master_name',
+                           'mode': 'NULLABLE'
+                       },
+                       {
+                           'type': 'INTEGER',
+                           'name': 'legacy_build_number',
+                           'mode': 'NULLABLE'
+                       },
+                       {
+                           'type': 'INTEGER',
+                           'name': 'build_id',
+                           'mode': 'NULLABLE'
+                       },
+                       {
+                           'type': 'STRING',
+                           'name': 'step_ui_name',
+                           'mode': 'NULLABLE'
+                       },
+                       {
+                           'type': 'STRING',
+                           'name': 'test_name',
+                           'mode': 'NULLABLE'
+                       },
+                       {
+                           'type': 'TIMESTAMP',
+                           'name': 'test_start_msec',
+                           'mode': 'NULLABLE'
+                       },
+                       {
+                           'type': 'INTEGER',
+                           'name': 'gerrit_cl_id',
+                           'mode': 'NULLABLE'
+                       }]
         }
     }
 
@@ -133,7 +140,7 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
     query_response['totalRows'] = str(int(query_response['totalRows']) + 1)
 
   def setUp(self):
-    super(DetectCQFalseRejectionFlakesTest, self).setUp()
+    super(DetectFlakesOccurrencesTest, self).setUp()
 
     # NormalizeStepName performs network requests, needs to be mocked.
     patcher = mock.patch.object(
@@ -150,16 +157,28 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
     mocked_get_client.return_value = mocked_client
     mocked_client.jobs().query().execute.return_value = query_response
 
-    QueryAndStoreFlakes()
+    QueryAndStoreFlakes(FlakeType.CQ_FALSE_REJECTION)
 
     all_flakes = Flake.query().fetch()
     self.assertEqual(1, len(all_flakes))
     self.assertIsNotNone(all_flakes[0].last_occurred_time)
 
-    all_flake_occurrences = FlakeOccurrence.query(
+    all_false_rejection_occurrences = FlakeOccurrence.query(
         FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
-    self.assertEqual(1, len(all_flake_occurrences))
-    self.assertEqual(all_flakes[0], all_flake_occurrences[0].key.parent().get())
+    self.assertEqual(1, len(all_false_rejection_occurrences))
+    self.assertEqual(all_flakes[0],
+                     all_false_rejection_occurrences[0].key.parent().get())
+
+    QueryAndStoreFlakes(FlakeType.RETRY_WITH_PATCH)
+    all_retry_with_patch_occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.RETRY_WITH_PATCH).fetch()
+    self.assertEqual(1, len(all_retry_with_patch_occurrences))
+    self.assertEqual(all_flakes[0],
+                     all_retry_with_patch_occurrences[0].key.parent().get())
+
+    all_flake_occurrences = FlakeOccurrence.query(
+        ancestor=all_flakes[0].key).fetch()
+    self.assertEqual(2, len(all_flake_occurrences))
 
   @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
   def testIdenticalFlakeOccurrences(self, mocked_get_client):
@@ -171,7 +190,7 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
     mocked_get_client.return_value = mocked_client
     mocked_client.jobs().query().execute.return_value = query_response
 
-    QueryAndStoreFlakes()
+    QueryAndStoreFlakes(FlakeType.CQ_FALSE_REJECTION)
 
     all_flakes = Flake.query().fetch()
     self.assertEqual(1, len(all_flakes))
@@ -199,7 +218,7 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
     mocked_get_client.return_value = mocked_client
     mocked_client.jobs().query().execute.return_value = query_response
 
-    QueryAndStoreFlakes()
+    QueryAndStoreFlakes(FlakeType.CQ_FALSE_REJECTION)
 
     all_flakes = Flake.query().fetch()
     self.assertEqual(2, len(all_flakes))
@@ -229,7 +248,7 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
     mocked_get_client.return_value = mocked_client
     mocked_client.jobs().query().execute.return_value = query_response
 
-    QueryAndStoreFlakes()
+    QueryAndStoreFlakes(FlakeType.CQ_FALSE_REJECTION)
 
     all_flakes = Flake.query().fetch()
     self.assertEqual(1, len(all_flakes))
@@ -256,7 +275,7 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
     mocked_get_client.return_value = mocked_client
     mocked_client.jobs().query().execute.return_value = query_response
 
-    QueryAndStoreFlakes()
+    QueryAndStoreFlakes(FlakeType.CQ_FALSE_REJECTION)
 
     all_flakes = Flake.query().fetch()
     self.assertEqual(1, len(all_flakes))

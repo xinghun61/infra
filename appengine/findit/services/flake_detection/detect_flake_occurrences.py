@@ -10,14 +10,21 @@ from google.appengine.ext import ndb
 from gae_libs import appengine_util
 from model.flake.detection.flake_occurrence import FlakeOccurrence
 from model.flake.flake import Flake
+from model.flake import flake_type
 from model.flake.flake_type import FlakeType
 from services import bigquery_helper
 from services import monitoring
 
-# Path to the query used to detect flaky tests that caused cq false rejections.
-PATH_TO_FLAKY_TESTS_QUERY = os.path.realpath(
-    os.path.join(__file__, os.path.pardir,
-                 'flaky_tests.cq_false_rejection.sql'))
+MAP_FLAKY_TESTS_QUERY_PATH = {
+    FlakeType.CQ_FALSE_REJECTION:
+        os.path.realpath(
+            os.path.join(__file__, os.path.pardir,
+                         'flaky_tests.cq_false_rejection.sql')),
+    FlakeType.RETRY_WITH_PATCH:
+        os.path.realpath(
+            os.path.join(__file__, os.path.pardir,
+                         'flaky_tests.retry_with_patch.sql'))
+}
 
 
 def _CreateFlakeFromRow(row):
@@ -44,7 +51,7 @@ def _CreateFlakeFromRow(row):
       test_label_name=test_label_name)
 
 
-def _CreateFlakeOccurrenceFromRow(row):
+def _CreateFlakeOccurrenceFromRow(row, flake_type_enum):
   """Creates a FlakeOccurrence from a row fetched from BigQuery."""
   luci_project = row['luci_project']
   step_ui_name = row['step_ui_name']
@@ -71,7 +78,7 @@ def _CreateFlakeOccurrenceFromRow(row):
   time_happened = row['test_start_msec']
   gerrit_cl_id = row['gerrit_cl_id']
   flake_occurrence = FlakeOccurrence.Create(
-      flake_type=FlakeType.CQ_FALSE_REJECTION,
+      flake_type=flake_type_enum,
       build_id=build_id,
       step_ui_name=step_ui_name,
       test_name=test_name,
@@ -144,28 +151,33 @@ def _UpdateLastFlakeHappenedTimeForFlakes(occurrences):
     flake.put()
 
 
-def QueryAndStoreFlakes():
+def QueryAndStoreFlakes(flake_type_enum):
   """Runs the query to fetch flake occurrences and store them."""
-  with open(PATH_TO_FLAKY_TESTS_QUERY) as f:
+  path = MAP_FLAKY_TESTS_QUERY_PATH[flake_type_enum]
+  flake_type_desc = flake_type.FLAKE_TYPE_DESCRIPTIONS.get(
+      flake_type_enum, 'N/A')
+  with open(path) as f:
     query = f.read()
 
   success, rows = bigquery_helper.ExecuteQuery(
       appengine_util.GetApplicationId(), query)
 
   if not success:
-    logging.error(
-        'Failed executing the query to detect cq false rejection flakes.')
-    monitoring.OnFlakeDetectionQueryFailed(flake_type='cq false rejection')
+    logging.error('Failed executing the query to detect %s flakes.',
+                  flake_type_desc)
+    monitoring.OnFlakeDetectionQueryFailed(flake_type=flake_type_desc)
     return
 
-  logging.info('Fetched %d cq false rejection flake occurrences from BigQuery.',
-               len(rows))
+  logging.info('Fetched %d %s flake occurrences from BigQuery.', len(rows),
+               flake_type_desc)
 
   local_flakes = [_CreateFlakeFromRow(row) for row in rows]
   _StoreMultipleLocalEntities(local_flakes)
 
-  local_flake_occurrences = [_CreateFlakeOccurrenceFromRow(row) for row in rows]
+  local_flake_occurrences = [
+      _CreateFlakeOccurrenceFromRow(row, flake_type_enum) for row in rows
+  ]
   new_occurrences = _StoreMultipleLocalEntities(local_flake_occurrences)
   _UpdateLastFlakeHappenedTimeForFlakes(new_occurrences)
   monitoring.OnFlakeDetectionDetectNewOccurrences(
-      flake_type='cq false rejection', num_occurrences=len(new_occurrences))
+      flake_type=flake_type_desc, num_occurrences=len(new_occurrences))
