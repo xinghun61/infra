@@ -299,7 +299,7 @@ class TestStatusConversion(unittest.TestCase):
             status=model.BuildStatus.COMPLETED,
             result=model.BuildResult.SUCCESS
         ),
-        build_pb2.Build(status=common_pb2.SUCCESS)
+        build_pb2.Build(status=common_pb2.SUCCESS),
     )
 
   def test_build_failure(self):
@@ -309,7 +309,7 @@ class TestStatusConversion(unittest.TestCase):
             result=model.BuildResult.FAILURE,
             failure_reason=model.FailureReason.BUILD_FAILURE
         ),
-        build_pb2.Build(status=common_pb2.FAILURE)
+        build_pb2.Build(status=common_pb2.FAILURE),
     )
 
   def test_generic_failure(self):
@@ -349,7 +349,7 @@ class TestStatusConversion(unittest.TestCase):
             result=model.BuildResult.CANCELED,
             cancelation_reason=model.CancelationReason.CANCELED_EXPLICITLY
         ),
-        build_pb2.Build(status=common_pb2.CANCELED)
+        build_pb2.Build(status=common_pb2.CANCELED),
     )
 
   def test_timeout(self):

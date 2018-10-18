@@ -624,18 +624,21 @@ class ConfigTest(testing.AppengineTestCase):
     self.cfg_validation_test(
         parse_cfg(
             '''
-      buckets { name: "c" }
-      buckets { name: "b" }
-      buckets { name: "a" }
-      '''
-        ), [
+            buckets { name: "c" }
+            buckets { name: "b" }
+            buckets { name: "a" }
+            '''
+        ),
+        [
             validation_context.Message(
-                severity=logging.WARNING, text='Bucket b: out of order'
+                severity=logging.WARNING,
+                text='Bucket b: out of order',
             ),
             validation_context.Message(
-                severity=logging.WARNING, text='Bucket a: out of order'
+                severity=logging.WARNING,
+                text='Bucket a: out of order',
             ),
-        ]
+        ],
     )
 
   @mock.patch('components.config.get_config_set_location', autospec=True)

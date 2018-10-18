@@ -1088,14 +1088,13 @@ _STEP_SUBSTEP.oneofs_by_name['substep'].fields.append(
     _STEP_SUBSTEP.fields_by_name['step']
 )
 _STEP_SUBSTEP.fields_by_name[
-    'step'
-].containing_oneof = _STEP_SUBSTEP.oneofs_by_name['substep']
+    'step'].containing_oneof = _STEP_SUBSTEP.oneofs_by_name['substep']
 _STEP_SUBSTEP.oneofs_by_name['substep'].fields.append(
     _STEP_SUBSTEP.fields_by_name['annotation_stream']
 )
-_STEP_SUBSTEP.fields_by_name[
-    'annotation_stream'
-].containing_oneof = _STEP_SUBSTEP.oneofs_by_name['substep']
+_STEP_SUBSTEP.fields_by_name['annotation_stream'
+                            ].containing_oneof = _STEP_SUBSTEP.oneofs_by_name[
+                                'substep']
 _STEP_PROGRESS.containing_type = _STEP
 _STEP_PROPERTY.containing_type = _STEP
 _STEP.fields_by_name['command'].message_type = _STEP_COMMAND
@@ -1105,11 +1104,9 @@ _STEP.fields_by_name['substep'].message_type = _STEP_SUBSTEP
 _STEP.fields_by_name['stdout_stream'].message_type = _LOGDOGSTREAM
 _STEP.fields_by_name['stderr_stream'].message_type = _LOGDOGSTREAM
 _STEP.fields_by_name[
-    'started'
-].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
+    'started'].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
 _STEP.fields_by_name[
-    'ended'
-].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
+    'ended'].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
 _STEP.fields_by_name['progress'].message_type = _STEP_PROGRESS
 _STEP.fields_by_name['link'].message_type = _LINK
 _STEP.fields_by_name['other_links'].message_type = _LINK
@@ -1122,13 +1119,13 @@ _LINK.fields_by_name['url'].containing_oneof = _LINK.oneofs_by_name['value']
 _LINK.oneofs_by_name['value'].fields.append(
     _LINK.fields_by_name['logdog_stream']
 )
-_LINK.fields_by_name['logdog_stream'
-                    ].containing_oneof = _LINK.oneofs_by_name['value']
+_LINK.fields_by_name['logdog_stream'].containing_oneof = _LINK.oneofs_by_name[
+    'value']
 _LINK.oneofs_by_name['value'].fields.append(
     _LINK.fields_by_name['isolate_object']
 )
-_LINK.fields_by_name['isolate_object'
-                    ].containing_oneof = _LINK.oneofs_by_name['value']
+_LINK.fields_by_name['isolate_object'].containing_oneof = _LINK.oneofs_by_name[
+    'value']
 _LINK.oneofs_by_name['value'].fields.append(_LINK.fields_by_name['dm_link'])
 _LINK.fields_by_name['dm_link'].containing_oneof = _LINK.oneofs_by_name['value']
 DESCRIPTOR.message_types_by_name['FailureDetails'] = _FAILUREDETAILS

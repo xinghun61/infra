@@ -119,10 +119,8 @@ class SwarmbucketApi(remote.Service):
       bucket_ids = map(api_common.parse_luci_bucket, request.bucket)
       bucket_ids = [bid for bid in bucket_ids if bid]
       # Filter out inaccessible ones.
-      bucket_ids = [
-          bid for bid, can in
-          utils.async_apply(bucket_ids, user.can_access_bucket_async) if can
-      ]
+      bids_can = utils.async_apply(bucket_ids, user.can_access_bucket_async)
+      bucket_ids = [bid for bid, can in bids_can if can]
     else:
       # Buckets were not specified explicitly.
       # Use the available ones.

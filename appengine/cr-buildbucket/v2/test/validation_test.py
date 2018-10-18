@@ -183,8 +183,11 @@ class SearchBuildsRequestTests(BaseTestCase):
   def test_valid(self):
     msg = rpc_pb2.SearchBuildsRequest(
         predicate=rpc_pb2.BuildPredicate(
-            builder=build_pb2.
-            BuilderID(project='chromium', bucket='try', builder='linux-rel'),
+            builder=build_pb2.BuilderID(
+                project='chromium',
+                bucket='try',
+                builder='linux-rel',
+            ),
         )
     )
     self.assert_valid(msg)
@@ -748,8 +751,11 @@ class BuildPredicateTests(BaseTestCase):
 
   def test_valid(self):
     msg = rpc_pb2.BuildPredicate(
-        builder=build_pb2.
-        BuilderID(project='chromium', bucket='try', builder='linux-rel')
+        builder=build_pb2.BuilderID(
+            project='chromium',
+            bucket='try',
+            builder='linux-rel',
+        )
     )
     self.assert_valid(msg)
 

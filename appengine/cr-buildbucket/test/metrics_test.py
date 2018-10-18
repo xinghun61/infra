@@ -142,7 +142,7 @@ class MetricsTest(testing.AppengineTestCase):
             'builder': 'release',
             'must_be_never_leased': True,
         },
-        target_fields=metrics.GLOBAL_TARGET_FIELDS
+        target_fields=metrics.GLOBAL_TARGET_FIELDS,
     )
     self.assertEqual(max_lease, 3 * 24 * 3600)
     max_start = metrics.MAX_AGE_SCHEDULED.get(
@@ -151,7 +151,7 @@ class MetricsTest(testing.AppengineTestCase):
             'builder': 'release',
             'must_be_never_leased': False,
         },
-        target_fields=metrics.GLOBAL_TARGET_FIELDS
+        target_fields=metrics.GLOBAL_TARGET_FIELDS,
     )
     self.assertEqual(max_start, 4 * 24 * 3600)
 
@@ -164,7 +164,7 @@ class MetricsTest(testing.AppengineTestCase):
             'builder': 'release',
             'must_be_never_leased': True,
         },
-        target_fields=metrics.GLOBAL_TARGET_FIELDS
+        target_fields=metrics.GLOBAL_TARGET_FIELDS,
     )
     self.assertEqual(max_lease, 0)
     max_start = metrics.MAX_AGE_SCHEDULED.get(
@@ -173,7 +173,7 @@ class MetricsTest(testing.AppengineTestCase):
             'builder': 'release',
             'must_be_never_leased': False,
         },
-        target_fields=metrics.GLOBAL_TARGET_FIELDS
+        target_fields=metrics.GLOBAL_TARGET_FIELDS,
     )
     self.assertEqual(max_start, 0)
 

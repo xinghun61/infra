@@ -41,9 +41,9 @@ class AccessServicer(object):
     )
     if request.resource_kind != 'bucket':
       return access_pb2.PermittedActionsResponse()
+    roles = utils.async_apply(request.resource_ids, user.get_role_async)
     permitted = {
-        bucket: create_resource_permissions(role) for bucket, role in
-        utils.async_apply(request.resource_ids, user.get_role_async)
+        bucket: create_resource_permissions(role) for bucket, role in roles
     }
     logging.debug('Permitted: %s', permitted)
     return access_pb2.PermittedActionsResponse(
@@ -53,17 +53,15 @@ class AccessServicer(object):
 
   def Description(self, _request, _context):
     """Returns a description of actions and roles available."""
+    ResourceDescription = access_pb2.DescriptionResponse.ResourceDescription
     return access_pb2.DescriptionResponse(
         resources=[
-            access_pb2.DescriptionResponse.ResourceDescription(
+            ResourceDescription(
                 kind='bucket',
                 comment='A bucket of builds.',
                 actions={
-                    action.name:
-                    access_pb2.DescriptionResponse.ResourceDescription.Action(
-                        comment=description,
-                    ) for action, description in
-                    user.ACTION_DESCRIPTIONS.iteritems()
+                    action.name: ResourceDescription.Action(comment=desc)
+                    for action, desc in user.ACTION_DESCRIPTIONS.iteritems()
                 },
                 roles={
                     project_config_pb2.Acl.Role.Name(role):

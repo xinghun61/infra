@@ -235,8 +235,9 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     )
 
     add_many_async.return_value = future([
-        (self.test_build,
-         None), (build2, None), (None, errors.InvalidInputError('Just bad'))
+        (self.test_build, None),
+        (build2, None),
+        (None, errors.InvalidInputError('Just bad')),
     ])
     req = {
         'builds': [
@@ -482,30 +483,36 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     )
 
     heartbeat_batch.return_value = [
-        (self.test_build.key.id(), self.test_build,
-         None), (build2.key.id(), None, errors.LeaseExpiredError())
+        (self.test_build.key.id(), self.test_build, None),
+        (build2.key.id(), None, errors.LeaseExpiredError()),
     ]
     req = {
-        'heartbeats': [{
-            'build_id': self.test_build.key.id(),
-            'lease_key': 42,
-            'lease_expiration_ts': self.future_ts,
-        }, {
-            'build_id': build2.key.id(),
-            'lease_key': 42,
-            'lease_expiration_ts': self.future_ts,
-        }],
+        'heartbeats': [
+            {
+                'build_id': self.test_build.key.id(),
+                'lease_key': 42,
+                'lease_expiration_ts': self.future_ts,
+            },
+            {
+                'build_id': build2.key.id(),
+                'lease_key': 42,
+                'lease_expiration_ts': self.future_ts,
+            },
+        ]
     }
     res = self.call_api('heartbeat_batch', req).json_body
-    heartbeat_batch.assert_called_with([{
-        'build_id': self.test_build.key.id(),
-        'lease_key': 42,
-        'lease_expiration_date': self.future_date,
-    }, {
-        'build_id': build2.key.id(),
-        'lease_key': 42,
-        'lease_expiration_date': self.future_date,
-    }])
+    heartbeat_batch.assert_called_with([
+        {
+            'build_id': self.test_build.key.id(),
+            'lease_key': 42,
+            'lease_expiration_date': self.future_date,
+        },
+        {
+            'build_id': build2.key.id(),
+            'lease_key': 42,
+            'lease_expiration_date': self.future_date,
+        },
+    ])
 
     result1 = res['results'][0]
     self.assertEqual(int(result1['build_id']), self.test_build.key.id())
