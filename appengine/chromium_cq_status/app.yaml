@@ -1,5 +1,3 @@
-application: chromium-cq-status
-version: 2
 runtime: python27
 api_version: 1
 threadsafe: true
@@ -10,36 +8,11 @@ builtins:
 handlers:
 - url: /js
   static_dir: js
-- url: /tracing/base
-  static_dir: third_party/catapult/tracing/tracing/base
-- url: /tracing/core
-  static_dir: third_party/catapult/tracing/tracing/core
-- url: /tracing/extras
-  static_dir: third_party/catapult/tracing/tracing/extras
-- url: /tracing/importer
-  static_dir: third_party/catapult/tracing/tracing/importer
-- url: /tracing/model
-  static_dir: third_party/catapult/tracing/tracing/model
-- url: /tracing/ui
-  static_dir: third_party/catapult/tracing/tracing/ui
-- url: /components
-  static_dir: third_party/catapult/tracing/third_party/components
-- url: /d3.min.js
-  static_files: third_party/catapult/tracing/third_party/d3/d3.min.js
-  upload: third_party/catapult/tracing/third_party/d3/d3.min.js
-- url: /jszip.min.js
-  static_files: third_party/catapult/tracing/third_party/jszip/jszip.min.js
-  upload: third_party/catapult/tracing/third_party/jszip/jszip.min.js
-- url: /gl-matrix-min.js
-  static_files: third_party/catapult/tracing/third_party/gl-matrix/dist/gl-matrix-min.js
-  upload: third_party/catapult/tracing/third_party/gl-matrix/dist/gl-matrix-min.js
 - url: /.*
   script: main.app
 
 libraries:
 - name: webapp2
-  version: latest
-- name: numpy
   version: latest
 
 includes:
@@ -50,4 +23,3 @@ skip_files:
 - ^(.*/)?.*~$
 - ^(.*/)?.*\.py[co]$
 - ^(.*/)?\..*$
-- ^third_party/catapult/tracing/test_data/.*$

@@ -11,8 +11,6 @@ from handlers.patch_status import PatchStatus, PatchStatusV2
 from handlers.patch_summary import PatchSummary, PatchSummaryV2
 from handlers.post import Post
 from handlers.recent import Recent
-from handlers.stats_viewer import StatsViewer
-from handlers.stats_data_points import StatsDataPoints
 
 handlers = [
   (r'/', Index),
@@ -24,8 +22,6 @@ handlers = [
   (r'/v2/patch-status/(.*)/(.*)/(.*)', PatchStatusV2),
   (r'/v2/patch-summary/(.*)/(.*)/(.*)', PatchSummaryV2),
   (r'/post', Post),
-  (r'/stats/(highest|lowest)/(.*)/(.*)', StatsDataPoints),
-  (r'/stats/(.*)/(.*)', StatsViewer),
 ]
 
 app = webapp2.WSGIApplication(handlers, debug=True)

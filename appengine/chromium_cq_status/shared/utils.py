@@ -18,13 +18,6 @@ from shared.config import HOST_ACLS
 
 compressed_separators = (',', ':')
 
-def cronjob(cronjob_handler):
-  def checked_cronjob_handler(self, *args):
-    assert (self.request.headers.get('X-AppEngine-Cron') or  # pragma: no cover
-        users.is_current_user_admin())
-    cronjob_handler(self, *args)  # pragma: no cover
-  return checked_cronjob_handler
-
 def cross_origin_json(handler):
   @functools.wraps(handler)
   def headered_json_handler(self, *args):

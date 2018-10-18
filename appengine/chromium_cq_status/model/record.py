@@ -14,7 +14,7 @@ class Record(ndb.Model): # pragma: no cover
 
   def to_dict(self):
     return {
-      'key': self.key.id() if type(self.key.id()) != long else None,
+      'key': self.key.id() if not isinstance(self.key.id(), long) else None,
       'timestamp': to_unix_timestamp(self.timestamp),
       'tags': self.tags,
       'fields': self.fields,

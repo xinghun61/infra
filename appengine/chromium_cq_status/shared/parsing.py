@@ -41,7 +41,7 @@ def parse_fields(value):
   if not value:
     return {}
   fields_json = json.loads(value)
-  if type(fields_json) != dict:
+  if not isinstance(fields_json, dict):
     raise ValueError('fields parameter must be JSON dictionary')
   return fields_json
 

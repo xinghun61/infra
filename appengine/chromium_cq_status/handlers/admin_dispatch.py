@@ -6,10 +6,9 @@ import webapp2
 
 from google.appengine.api import users
 
-from admin import clear_stats, set_bot_password
+from admin import set_bot_password
 
 commands = {
-  'clear-stats': clear_stats,
   'set-bot-password': set_bot_password,
 }
 

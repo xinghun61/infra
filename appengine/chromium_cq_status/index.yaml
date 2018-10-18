@@ -10,31 +10,6 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
-- kind: CQStats
-  properties:
-  - name: interval_minutes
-  - name: begin
-    direction: desc
-
-- kind: CQStats
-  properties:
-  - name: interval_minutes
-  - name: end
-    direction: desc
-
-- kind: CQStats
-  properties:
-  - name: interval_minutes
-  - name: project
-  - name: begin
-    direction: desc
-
-- kind: CQStats
-  properties:
-  - name: project
-  - name: begin
-    direction: desc
-
 - kind: Record
   properties:
   - name: tags
