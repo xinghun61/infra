@@ -19,6 +19,7 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 	"golang.org/x/net/context"
 	"google.golang.org/appengine"
+	"google.golang.org/appengine/log"
 )
 
 const (
@@ -81,8 +82,17 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	// Create a new App Engine context from the request.
 	ctx := appengine.NewContext(r)
 
-	err := putMetrics(ctx, r.Body)
+	metrics, err := extractMetrics(r.Body)
 	if err != nil {
+		log.Errorf(ctx, "Could not extract metrics: %v", err)
+		log.Errorf(ctx, "Reported metrics: %v", metrics)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = putMetrics(ctx, metrics)
+	if err != nil {
+		log.Errorf(ctx, "Could not write to BQ: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -119,13 +129,8 @@ func extractMetrics(content io.Reader) (Metrics, error) {
 
 // putMetrics extracts the Metrics from the request and streams them into the
 // BigQuery table.
-func putMetrics(ctx context.Context, request io.Reader) error {
+func putMetrics(ctx context.Context, metrics Metrics) error {
 	client, err := bigquery.NewClient(ctx, projectID)
-	if err != nil {
-		return err
-	}
-
-	metrics, err := extractMetrics(request)
 	if err != nil {
 		return err
 	}
