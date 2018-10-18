@@ -179,22 +179,19 @@ func (s *State) deleteWorkerIfOlder(workerID string, t time.Time) {
 func (s *State) applyAssignment(m *Assignment) {
 	s.validateAssignment(m)
 
-	cost := vector.New()
+	// Nil here will be treated as 0 cost by startRunning call below.
+	var cost *vector.Vector
 
-	// Determine initial cost, and apply and preconditions to starting the
-	// new task run.
-	switch m.Type {
-	case Assignment_IDLE_WORKER:
-		cost = vector.New()
-
-	case Assignment_PREEMPT_WORKER:
+	// If preempting, determine initial cost, and apply and preconditions
+	// to starting the new task run.
+	if m.Type == Assignment_PREEMPT_WORKER {
 		worker := s.Workers[m.WorkerId]
 		cost = worker.RunningTask.Cost
 		// Refund the cost of the preempted task.
-		s.refundAccount(worker.RunningTask.Request.AccountId, cost)
+		s.refundAccount(worker.RunningTask.Request.AccountId, *cost)
 
 		// Charge the preempting account for the cost of the preempted task.
-		s.chargeAccount(s.QueuedRequests[m.RequestId].AccountId, cost)
+		s.chargeAccount(s.QueuedRequests[m.RequestId].AccountId, *cost)
 
 		// Remove the preempted job and return it to the queue.
 		s.reenqueueRunningRequest(m.TaskToAbort)
@@ -243,18 +240,18 @@ func (s *State) validateAssignment(m *Assignment) {
 
 // refundAccount applies a cost-sized refund to account with given id (if it
 // exists).
-func (s *State) refundAccount(accountID string, cost *vector.Vector) {
+func (s *State) refundAccount(accountID string, cost vector.Vector) {
 	if _, ok := s.Balances[accountID]; ok {
-		bal := s.Balances[accountID].Plus(*cost)
+		bal := s.Balances[accountID].Plus(cost)
 		s.Balances[accountID] = &bal
 	}
 }
 
 // chargeAccount applies a cost-sized charge to the account with given id (if it
 // exists).
-func (s *State) chargeAccount(accountID string, cost *vector.Vector) {
+func (s *State) chargeAccount(accountID string, cost vector.Vector) {
 	if _, ok := s.Balances[accountID]; ok {
-		bal := s.Balances[accountID].Minus(*cost)
+		bal := s.Balances[accountID].Minus(cost)
 		s.Balances[accountID] = &bal
 	}
 }
@@ -264,11 +261,16 @@ func (s *State) chargeAccount(accountID string, cost *vector.Vector) {
 // and request currently exist and are idle.
 func (s *State) startRunning(requestID string, workerID string,
 	priority int32, initialCost *vector.Vector) {
+	if initialCost == nil {
+		initialCost = vector.New()
+	} else {
+		initialCost = initialCost.Copy()
+	}
 	s.ensureCache()
 	rt := &TaskRun{
 		Priority:  priority,
 		Request:   s.QueuedRequests[requestID],
-		Cost:      initialCost.Copy(),
+		Cost:      initialCost,
 		RequestId: requestID,
 	}
 	s.Workers[workerID].RunningTask = rt
