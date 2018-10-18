@@ -995,13 +995,13 @@ class WorkEnvTest(unittest.TestCase):
     issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     with self.work_env as we:
-      we.FlagIssue(issue, True)
+      we.FlagIssues([issue], True)
     self.assertEqual(
         [222L], self.services.spam.reports_by_issue_id[78901])
     self.assertNotIn(
         222L, self.services.spam.manual_verdicts_by_issue_id[78901])
     with self.work_env as we:
-      we.FlagIssue(issue, False)
+      we.FlagIssues([issue], False)
     self.assertEqual(
         [], self.services.spam.reports_by_issue_id[78901])
     self.assertNotIn(
@@ -1013,12 +1013,12 @@ class WorkEnvTest(unittest.TestCase):
     issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     with self.work_env as we:
-      we.FlagIssue(issue, True)
+      we.FlagIssues([issue], True)
     self.assertEqual(
         [444L], self.services.spam.reports_by_issue_id[78901])
     self.assertTrue(self.services.spam.manual_verdicts_by_issue_id[78901][444L])
     with self.work_env as we:
-      we.FlagIssue(issue, False)
+      we.FlagIssues([issue], False)
     self.assertEqual(
         [], self.services.spam.reports_by_issue_id[78901])
     self.assertFalse(
@@ -1031,11 +1031,11 @@ class WorkEnvTest(unittest.TestCase):
 
     with self.assertRaises(permissions.PermissionException):
       with self.work_env as we:
-        we.FlagIssue(issue, True)
+        we.FlagIssues([issue], True)
 
     with self.assertRaises(permissions.PermissionException):
       with self.work_env as we:
-        we.FlagIssue(issue, False)
+        we.FlagIssues([issue], False)
 
   def testRerankBlockedOnIssues_SplitBelow(self):
     parent_issue = fake.MakeTestIssue(

@@ -494,13 +494,23 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     return result
 
   @monorail_servicer.PRPCMethod
-  def FlagIssue(self, mc, request):
-    """Flag or unflag the given issue as spam."""
-    _project, issue, _config = self._GetProjectIssueAndConfig(
-        mc, request.issue_ref)
+  def FlagIssues(self, mc, request):
+    """Flag or unflag the given issues as spam."""
+    project_names = {ref.project_name for ref in request.issue_refs}
+    if len(project_names) != 1:
+      raise exceptions.InputException(
+          'Cross-project spam flagging is not supported.')
 
+    project_name = project_names.pop()
     with work_env.WorkEnv(mc, self.services) as we:
-      we.FlagIssue(issue, request.flag)
+      # Set the permissions for the project.
+      project = we.GetProjectByName(project_name)
+      mc.LookupLoggedInUserPerms(project)
 
-    result = issues_pb2.FlagIssueResponse()
+      issue_ids = converters.IngestIssueRefs(
+          mc.cnxn, request.issue_refs, self.services)
+      issues_by_id = we.GetIssuesDict(issue_ids, use_cache=False)
+      we.FlagIssues(issues_by_id.values(), request.flag)
+
+    result = issues_pb2.FlagIssuesResponse()
     return result

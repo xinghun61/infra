@@ -965,17 +965,19 @@ class WorkEnv(object):
           self.mc.cnxn, issue.project_id, issue.local_id, delete,
           self.services.user)
 
-  def FlagIssue(self, issue, flag):
-    """Flag or unflag the given issue as spam."""
-    self._AssertPermInIssue(issue, permissions.FLAG_SPAM)
+  def FlagIssues(self, issues, flag):
+    """Flag or unflag the given issues as spam."""
+    for issue in issues:
+      self._AssertPermInIssue(issue, permissions.FLAG_SPAM)
 
-    with self.mc.profiler.Phase('Marking issue %r as spam' % (issue.issue_id)):
+    issue_ids = [issue.issue_id for issue in issues]
+    with self.mc.profiler.Phase('Marking issues %r as spam' % issue_ids):
       self.services.spam.FlagIssues(
-          self.mc.cnxn, self.services.issue, [issue], self.mc.auth.user_id,
+          self.mc.cnxn, self.services.issue, issues, self.mc.auth.user_id,
           flag)
       if self._UserCanUsePermInIssue(issue, permissions.VERDICT_SPAM):
         self.services.spam.RecordManualIssueVerdicts(
-            self.mc.cnxn, self.services.issue, [issue], self.mc.auth.user_id,
+            self.mc.cnxn, self.services.issue, issues, self.mc.auth.user_id,
             flag)
 
   # TODO(jrobbins): This method also requires self.mc to be a MonorailRequest.
