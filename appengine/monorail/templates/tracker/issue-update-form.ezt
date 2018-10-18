@@ -400,10 +400,17 @@ runOnLoad(function() {
        _TKR_syncStarIcons($("star2"), "star");
   });
 
-  if ($("flag_spam")) {
-    $("flag_spam").addEventListener("click", function(event) {
-      $("spam_form").submit();
-      return;
+  if ($('flag_spam')) {
+    $('flag_spam').addEventListener('click', async function(event) {
+      const isSpam = (event.target.dataset.isSpam === 'true');
+      await window.prpcClient.call('monorail.Issues', 'FlagIssues', {
+        issueRefs: [{
+          projectName: window.CS_env.projectName,
+          localId: '[issue.local_id]',
+        }],
+        flag: isSpam,
+      });
+      location.reload(true);
     });
   }
 

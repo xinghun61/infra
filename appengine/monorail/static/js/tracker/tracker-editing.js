@@ -1103,28 +1103,27 @@ async function TKR_handleDetailActions(localId) {
 /**
  * The user has selected the "Flag as spam..." menu item.
  */
-function TKR_flagSpam(isSpam) {
-  var selectedLocalIDs = [];
-  for (var i = 0; i < issueRefs.length; i++) {
-    var checkbox = document.getElementById('cb_' + issueRefs[i]['id']);
+async function TKR_flagSpam(isSpam) {
+  const selectedIssueRefs = [];
+  issueRefs.forEach(issueRef => {
+    const checkbox = $('cb_' + issueRef.id);
     if (checkbox && checkbox.checked) {
-      selectedLocalIDs.push(issueRefs[i]['id']);
+      selectedIssueRefs.push({
+          projectName: issueRef.project_name,
+          localId: issueRef.id,
+      });
     }
-  }
-  if (selectedLocalIDs.length > 0) {
+  });
+  if (selectedIssueRefs.length > 0) {
     if (!confirm((isSpam ? 'Flag' : 'Un-flag') +
-          ' all selected issues as spam?')) {
+        ' all selected issues as spam?')) {
       return;
     }
-    var selectedLocalIDString = selectedLocalIDs.join(',');
-    $('bulk_spam_ids').value = selectedLocalIDString;
-    $('bulk_spam_value').value = isSpam;
-
-    var loading = $('bulk-action-loading');
-    loading.style.visibility = 'visible';
-
-    var form = $('bulkspam');
-    form.submit();
+    await window.prpcClient.call('monorail.Issues', 'FlagIssues', {
+      issueRefs: selectedIssueRefs,
+      flag: isSpam,
+    });
+    location.reload(true);
   } else {
     alert('Please select some issues to flag as spam');
   }

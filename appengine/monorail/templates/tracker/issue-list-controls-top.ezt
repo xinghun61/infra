@@ -63,12 +63,6 @@
    </form>
 </div>
 
-<form id='bulkspam' method="post" action="flagspam.do">
-  <input type="hidden" name="token" value="[flag_spam_token]">
-  <input type="hidden" id="bulk_spam_ids" name="ids">
-  <input type="hidden" id="bulk_spam_value" name="spam" value="true">
-</form>
-
 [if-any is_hotlist]
 <form id='bulkremoveissues' method="POST" action="/u/[viewed_user_id]/hotlists/[hotlist.name].do">
 <input type="hidden" name="token" value="[edit_hotlist_token]">
