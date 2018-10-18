@@ -225,64 +225,6 @@ var query_test_data = {
         "attempt_start_ts": 1434070481416440,
         "done": false,
         "action": "verifier_jobs_update",
-        "diff": {
-          "JOB_RUNNING": "KEY_MISSING",
-          "JOB_SUCCEEDED": [
-            {
-              "build_id": "9043261822262727792",
-              "parent_name": null,
-              "tests": [
-                "defaulttests"
-              ],
-              "slave": "vm000-c4",
-              "url": "http://build.chromium.org/p/tryserver.chromium.linux/builders/infra_tester/builds/9999",
-              "created_ts": "2015-06-12 00:58:58.194440",
-              "builder": "infra_tester",
-              "clobber": null,
-              "project": "",
-              "reason": "CQ",
-              "master": "tryserver.chromium.linux",
-              "result": 0,
-              "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDMyNjE4MjIyNjI3Mjc3OTIM",
-              "requester": "commit-bot@chromium.org",
-              "buildnumber": 9999,
-              "category": "cq",
-              "build_properties": {
-                "got_revision": "a905d1305e010fd9cbc2717988bf89a66a5c6d8a",
-                "recipe": "infra/infra_repo_trybot",
-                "patch_project": "infra",
-                "category": "cq",
-                "project": "",
-                "slavename": "vm000-c4",
-                "attempt_start_ts": 1434070481416440,
-                "blamelist": [
-                  "nobody@chromium.org"
-                ],
-                "branch": null,
-                "master": "tryserver.chromium.linux",
-                "patchset": 40001,
-                "issue": 0152223302,
-                "revision": "",
-                "workdir": "/b/build/slave/infra_tester",
-                "repository": "",
-                "buildername": "infra_tester",
-                "testfilter": [
-                  "defaulttests"
-                ],
-                "mastername": "tryserver.chromium.linux",
-                "patch_storage": "rietveld",
-                "reason": "CQ",
-                "requester": "commit-bot@chromium.org",
-                "buildbotURL": "http://build.chromium.org/p/tryserver.chromium.linux/",
-                "rietveld": "https://codereview.chromium.org",
-                "buildnumber": 9999,
-                "requestedAt": 1434070504
-              },
-              "job_state": "JOB_SUCCEEDED",
-              "revision": ""
-            }
-          ]
-        },
         "patchset": 40001,
         "issue": 0152223302
       },
@@ -353,48 +295,6 @@ var query_test_data = {
         "attempt_start_ts": 1434070481416440,
         "done": false,
         "action": "verifier_jobs_update",
-        "diff": {
-          "JOB_RUNNING": [
-            {
-              "build_id": "9043261822262727792",
-              "parent_name": null,
-              "tests": [
-                "defaulttests"
-              ],
-              "slave": null,
-              "url": "http://build.chromium.org/p/tryserver.chromium.linux/builders/infra_tester/builds/9999",
-              "created_ts": "2015-06-12 00:55:04.806000",
-              "builder": "infra_tester",
-              "clobber": null,
-              "project": null,
-              "reason": "CQ",
-              "master": "tryserver.chromium.linux",
-              "result": -1,
-              "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDMyNjE4MjIyNjI3Mjc3OTIM",
-              "requester": null,
-              "buildnumber": null,
-              "category": "cq",
-              "build_properties": {
-                "category": "cq",
-                "rietveld": "https://codereview.chromium.org",
-                "testfilter": [
-                  "defaulttests"
-                ],
-                "patch_storage": "rietveld",
-                "attempt_start_ts": 1434070481416440,
-                "master": "tryserver.chromium.linux",
-                "reason": "CQ",
-                "patchset": 40001,
-                "issue": 0152223302,
-                "patch_project": "infra",
-                "revision": "HEAD"
-              },
-              "job_state": "JOB_RUNNING",
-              "revision": "HEAD"
-            }
-          ],
-          "JOB_PENDING": "KEY_MISSING"
-        },
         "patchset": 40001,
         "issue": 0152223302
       },
@@ -465,47 +365,6 @@ var query_test_data = {
         "attempt_start_ts": 1434070481416440,
         "done": false,
         "action": "verifier_jobs_update",
-        "diff": {
-          "JOB_PENDING": [
-            {
-              "build_id": "9043261822262727792",
-              "parent_name": null,
-              "tests": [
-                "defaulttests"
-              ],
-              "slave": null,
-              "url": null,
-              "created_ts": "2015-06-12 00:54:45.778320",
-              "builder": "infra_tester",
-              "clobber": null,
-              "project": null,
-              "reason": "CQ",
-              "master": "tryserver.chromium.linux",
-              "result": 6,
-              "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDMyNjE4MjIyNjI3Mjc3OTIM",
-              "requester": null,
-              "buildnumber": null,
-              "category": "cq",
-              "build_properties": {
-                "category": "cq",
-                "rietveld": "https://codereview.chromium.org",
-                "testfilter": [
-                  "defaulttests"
-                ],
-                "patch_storage": "rietveld",
-                "attempt_start_ts": 1434070481416440,
-                "master": "tryserver.chromium.linux",
-                "reason": "CQ",
-                "patchset": 40001,
-                "issue": 0152223302,
-                "patch_project": "infra",
-                "revision": "HEAD"
-              },
-              "job_state": "JOB_PENDING",
-              "revision": "HEAD"
-            }
-          ]
-        },
         "patchset": 40001,
         "issue": 0152223302
       },
