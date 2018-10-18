@@ -234,8 +234,6 @@ class AbstractTwoLevelCache(object):
     """
     if use_cache:
       result_dict, missed_keys = self.cache.GetAll(keys)
-      logging.info('using cache for kind %s, found %r, missing %r',
-                   self.memcache_prefix, result_dict, missed_keys)
     else:
       result_dict, missed_keys = {}, list(keys)
 
