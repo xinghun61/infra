@@ -314,8 +314,7 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(logdog_util, 'GetStepLogLegacy', return_value='log')
   @mock.patch.object(logging, 'error')
   def testGetStepLogNotJosonLoadable(self, mocked_log, *_):
-    self.assertEqual(
-        'log',
+    self.assertIsNone(
         step_util.GetWaterfallBuildStepLog('m', 'b', 123, 's', None,
                                            'step_metadata'))
     mocked_log.assert_called_with(

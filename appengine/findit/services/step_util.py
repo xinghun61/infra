@@ -333,6 +333,7 @@ def _ReturnStepLog(data, log_type):
     except ValueError:
       logging.error(
           'Failed to json load data for %s. Data is: %s.' % (log_type, data))
+      return None
 
   return data
 

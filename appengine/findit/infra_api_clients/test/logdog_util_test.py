@@ -14,10 +14,9 @@ import unittest
 import google
 
 from common import rpc_util
+from common.findit_http_client import FinditHttpClient
 from infra_api_clients import logdog_util
-
 from waterfall.test import wf_testcase
-from libs.http.retry_http_client import RetryHttpClient
 
 third_party = os.path.join(
     os.path.dirname(__file__), os.path.pardir, os.path.pardir, 'third_party')
@@ -52,7 +51,7 @@ class LogDogUtilTest(unittest.TestCase):
 
   def setUp(self):
     super(LogDogUtilTest, self).setUp()
-    self.http_client = RetryHttpClient()
+    self.http_client = FinditHttpClient()
     self.master_name = 'tryserver.m'
     self.builder_name = 'b'
     self.build_number = 123
@@ -81,56 +80,6 @@ class LogDogUtilTest(unittest.TestCase):
     expected_builder_name = 'Mac_10.10_Release__Intel_'
     self.assertEqual(expected_builder_name,
                      logdog_util._ProcessStringForLogDog(builder_name))
-
-  @mock.patch.object(
-      rpc_util, 'DownloadJsonData', return_value=(200, _SAMPLE_GET_RESPONSE))
-  def testGetStepMetadataFromLogDog(self, _):
-    step_metadata = logdog_util._GetLogForPath('host', 'project', 'path',
-                                               self.http_client)
-    self.assertEqual(
-        json.loads(step_metadata), wf_testcase.SAMPLE_STEP_METADATA)
-
-  @mock.patch.object(rpc_util, 'DownloadJsonData', return_value=(404, None))
-  def testGetStepMetadataFromLogDogNoResponse(self, _):
-    step_metadata = logdog_util._GetLogForPath('host', 'project', 'path',
-                                               self.http_client)
-    self.assertIsNone(step_metadata)
-
-  @mock.patch.object(time, 'sleep')
-  @mock.patch.object(
-      rpc_util, 'DownloadJsonData', return_value=(200, json.dumps({
-          'a': 'a'
-      })))
-  @mock.patch.object(logging, 'error')
-  def testGetStepMetadataFromLogDogNoJson(self, mock_logging, *_):
-    step_metadata = logdog_util._GetLogForPath(
-        'host', 'project', 'path', self.http_client, retry_delay=0)
-    self.assertIsNone(step_metadata)
-    mock_logging.assert_called_once_with(
-        'Error when fetch log or annotations: Wrong format - {"a": "a"}')
-
-  @mock.patch.object(time, 'sleep')
-  @mock.patch.object(rpc_util, 'DownloadJsonData', return_value=(200, 'a'))
-  @mock.patch.object(logging, 'error')
-  def testGetStepMetadataFromLogDogFailToLoad(self, mock_logging, *_):
-    step_metadata = logdog_util._GetLogForPath(
-        'host', 'project', 'path', self.http_client, retry_delay=0)
-    self.assertIsNone(step_metadata)
-    mock_logging.assert_called_once_with(
-        'Error when fetch log or annotations: Failed to load json - '
-        'No JSON object could be decoded')
-
-  @mock.patch.object(rpc_util, 'DownloadJsonData')
-  def testGetStepMetadataFromLogDogRetry(self, mock_rpc):
-    mal_formatted_response = (200, json.dumps({'a': 'a'}))
-    mock_rpc.side_effect = [
-        mal_formatted_response, mal_formatted_response, (200,
-                                                         _SAMPLE_GET_RESPONSE)
-    ]
-    step_metadata = logdog_util._GetLogForPath(
-        'host', 'project', 'path', self.http_client, retry_delay=0)
-    self.assertEqual(
-        json.loads(step_metadata), wf_testcase.SAMPLE_STEP_METADATA)
 
   def testProcessAnnotationsToGetStreamForStepMetadata(self):
     step_proto = _CreateProtobufMessage(self.step_name, self.stdout_stream,
@@ -225,16 +174,17 @@ class LogDogUtilTest(unittest.TestCase):
                     'size': 1234
                 }
             }
-        }, {
-            'streamIndex': 1,
-            'datagram': {
-                'data': base64.b64encode(step_log_p2),
-                'partial': {
-                    'index': 1,
-                    'size': 1234
-                }
-            }
-        }]
+        },
+                 {
+                     'streamIndex': 1,
+                     'datagram': {
+                         'data': base64.b64encode(step_log_p2),
+                         'partial': {
+                             'index': 1,
+                             'size': 1234
+                         }
+                     }
+                 }]
     }
 
     mock_fn.side_effect = [(200, json.dumps(data1)), (200, json.dumps(data2))]
@@ -347,19 +297,45 @@ class LogDogUtilTest(unittest.TestCase):
                                          self.step_metadata_stream)
     env = annotations.command.environ
     env['LOGDOG_STREAM_PREFIX'] = 'path'
-    env['LOGDOG_COORDINATOR_HOST'] = 'logdog.com'
+    env['LOGDOG_STREAM_PROJECT'] = 'project'
     self.assertIsNone(
         logdog_util._GetLog(annotations, self.step_name, 'stdout',
                             self.http_client))
 
-  @mock.patch.object(logdog_util, '_GetLogForPath')
-  def testGetLog(self, *_):
+  @mock.patch.object(
+      FinditHttpClient, 'Get', return_value=(404, None, 'header'))
+  @mock.patch.object(logging, 'error')
+  def testGetLogRequestFail(self, mock_log, _):
     annotations = _CreateProtobufMessage(self.step_name, self.stdout_stream,
                                          self.step_metadata_stream)
     env = annotations.command.environ
     env['LOGDOG_STREAM_PREFIX'] = 'path'
     env['LOGDOG_COORDINATOR_HOST'] = 'logdog.com'
     env['LOGDOG_STREAM_PROJECT'] = 'project'
-    self.assertIsNotNone(
+    self.assertIsNone(
         logdog_util._GetLog(annotations, self.step_name, 'stdout',
                             self.http_client))
+    url = ('https://logdog.com/logs/project/path/+/%s?format=raw' %
+           self.stdout_stream)
+    mock_log.assert_called_once_with(
+        'Failed to get the log from %s: status_code-%d, log-%s',
+        url, 404, None)
+
+  @mock.patch.object(FinditHttpClient, 'Get')
+  def testGetLog(self, mock_get):
+    annotations = _CreateProtobufMessage(self.step_name, self.stdout_stream,
+                                         self.step_metadata_stream)
+    env = annotations.command.environ
+    env['LOGDOG_STREAM_PREFIX'] = 'path'
+    env['LOGDOG_COORDINATOR_HOST'] = 'logdog.com'
+    env['LOGDOG_STREAM_PROJECT'] = 'project'
+
+    dummy_result = {"a": "b"}
+    mock_get.return_value = (200, dummy_result, 'header')
+    self.assertEqual(
+        dummy_result,
+        logdog_util._GetLog(annotations, self.step_name, 'step_metadata',
+                            self.http_client))
+    mock_get.assert_called_once_with(
+        'https://logdog.com/logs/project/path/+/%s?format=raw' %
+        self.step_metadata_stream)

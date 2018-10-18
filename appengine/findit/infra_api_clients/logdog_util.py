@@ -107,38 +107,6 @@ def _GetRawLogsFromGetEndpoint(host, data, http_client, retry_delay=5):
   return None
 
 
-def _GetLogForPath(host, project, path, http_client, retry_delay=5):
-  """Gets a specific log.
-
-  Downloads raw logs from logdog and merges logs into one log.
-  """
-  data = {'project': project, 'path': path}
-  logs = _GetRawLogsFromGetEndpoint(host, data, http_client, retry_delay)
-  if not logs:
-    return None
-
-  # Logs format as below:
-  #   [
-  #      {
-  #          'text': {
-  #              'lines': [
-  #                 {
-  #                     'value': 'line'
-  #                 }
-  #              ]
-  #          }
-  #      }
-  #   ]
-  sio = cStringIO.StringIO()
-  for log in logs:
-    for line in log.get('text', {}).get('lines', []):
-      sio.write('%s\n' % line.get('value', '').encode('utf-8'))
-  data = sio.getvalue()
-  sio.close()
-
-  return data
-
-
 def _GetAnnotationsProtoForPath(host, project, path, http_client):
   """Gets annotations from logdog endpoint(s).
 
@@ -271,7 +239,16 @@ def _GetLog(annotations, step_name, log_type, http_client):
   if not all([host, project, prefix]):
     return None
   path = '%s/+/%s' % (prefix, stream)
-  return _GetLogForPath(host, project, path, http_client)
+
+  log_url = 'https://{host}/logs/{project}/{path}?format=raw'.format(
+      host=host, project=project, path=path)
+  status_code, log, _ = http_client.Get(log_url)
+
+  if status_code != 200 or not log:
+    logging.error('Failed to get the log from %s: status_code-%d, log-%s',
+                  log_url, status_code, log)
+    return None
+  return log
 
 
 def GetStepLogForBuild(buildbucket_build, step_name, log_type, http_client):
