@@ -38,7 +38,7 @@
     },
     "python_version": {
       "type": "string",
-      "pattern": "^\\d\\.\\d.\\d{2}$"
+      "pattern": "^\\d\\.\\d.\\d{1,2}$"
     }
   },
   "additionalProperties": false,
@@ -253,6 +253,7 @@
       "enum": [
         "ia32",
         "x64",
+        "x86",
         "arm",
         "arm64",
         "mips",
