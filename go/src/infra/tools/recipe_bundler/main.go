@@ -12,7 +12,7 @@ import (
 
 	"github.com/maruel/subcommands"
 
-	"go.chromium.org/luci/cipd/version"
+	"go.chromium.org/luci/cipd/version/versioncmd"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/data/rand/mathrand"
 	log "go.chromium.org/luci/common/logging"
@@ -65,7 +65,7 @@ in conjunction with the infra.git "recipe_bundler" recipe.
 			{}, // spacer
 
 			subcommands.CmdHelp,
-			version.SubcommandVersion,
+			versioncmd.Version,
 		},
 	}
 

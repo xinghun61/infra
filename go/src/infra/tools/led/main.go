@@ -14,7 +14,7 @@ import (
 
 	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/auth/client/authcli"
-	"go.chromium.org/luci/cipd/version"
+	"go.chromium.org/luci/cipd/version/versioncmd"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/data/rand/mathrand"
 	log "go.chromium.org/luci/common/logging"
@@ -126,7 +126,7 @@ The spec (as it is) for JobDefinition is at:
 			{}, // spacer
 
 			subcommands.CmdHelp,
-			version.SubcommandVersion,
+			versioncmd.Version,
 
 			{}, // spacer
 
