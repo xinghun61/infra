@@ -6,9 +6,11 @@ import logging
 import re
 
 from google.appengine.ext import ndb
+from google.appengine.ext.ndb import msgprop
 
 from libs import test_name_util
 from model.flake.flake_issue import FlakeIssue
+from model.flake.flake_type import FlakeType
 from services import step_util
 
 # Regular expression used to match the noarmlized name of a gtest.
@@ -32,6 +34,13 @@ def _GetTestSuiteName(normalized_test_name):
     return gtest_match.group(1)
 
   return None
+
+
+class FlakeCountsByType(ndb.Model):
+  """Counts for a specific flake type."""
+  flake_type = msgprop.EnumProperty(FlakeType, required=True)
+  occurrence_count = ndb.IntegerProperty(default=0)
+  impacted_cl_count = ndb.IntegerProperty(default=0)
 
 
 class TestLocation(ndb.Model):
@@ -92,11 +101,18 @@ class Flake(ndb.Model):
   last_occurred_time = ndb.DateTimeProperty(indexed=True)
 
   # Statistical fields.
+  # TODO(crbug/896006): remove false_rejection_count_last_week and
+  # impacted_cl_count_last_week when it's stable to use new count fields.
   # Number of false rejection occurrences in the past week.
   false_rejection_count_last_week = ndb.IntegerProperty(default=0, indexed=True)
 
   # Number of distinct impacted CLs in the past week.
   impacted_cl_count_last_week = ndb.IntegerProperty(default=0, indexed=True)
+
+  # Numbers of flake occurrences and distinct impacted CLs in the past week for
+  # each flake type.
+  flake_counts_last_week = ndb.StructuredProperty(
+      FlakeCountsByType, repeated=True)
 
   # A string like 'Blink>NFC' based on the tags of the OWNERS file applicable to
   # the test location.

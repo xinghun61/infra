@@ -7,30 +7,75 @@ from google.appengine.ext import ndb
 from libs import time_util
 from model.flake.detection.flake_occurrence import FlakeOccurrence
 from model.flake.flake import Flake
+from model.flake.flake import FlakeCountsByType
 from model.flake.flake_type import FlakeType
 from services import constants
 
 
-def _GetFlakeCounts(flake, start_date):
+def _GetsTypedFlakeCounts(
+    flake, start_date, flake_type, counted_gerrit_cl_ids):
+  """Gets the counts of a type of occurrences for a flakes within a time range.
+
+  Args:
+    flake(Flake): Object to be updated.
+    start_date(datetime): Earliest time to check.
+    flake_type(FlakeType): Type of the flake.
+    counted_gerrit_cl_ids(set): A set of gerrit cl ids that have been counted.
+
+  Returns:
+    (FlakeCountsByType, set): A FlakeCountsByType to store the counts of a type
+      of the flake, and a set of counted cls.
+  """
+  occurrences = FlakeOccurrence.query(ancestor=flake.key).filter(
+      ndb.AND(FlakeOccurrence.flake_type == flake_type,
+              FlakeOccurrence.time_happened > start_date)).fetch()
+
+  occurrence_count = len(occurrences)
+
+  # Only count the CL as being impacted if it was not counted before.
+  gerrit_cl_ids = set(
+      [occurrence.gerrit_cl_id
+       for occurrence in occurrences]) - counted_gerrit_cl_ids
+  counted_gerrit_cl_ids = counted_gerrit_cl_ids | gerrit_cl_ids
+
+  impacted_cl_count = len(gerrit_cl_ids)
+
+  return FlakeCountsByType(
+      flake_type=flake_type, occurrence_count=occurrence_count,
+      impacted_cl_count=impacted_cl_count), counted_gerrit_cl_ids
+
+
+def _UpdateFlakeCounts(flake, start_date):
   """Gets the counts of the flake within certain time range.
 
   Args:
     flake(Flake): Object to be updated.
     start_date(datetime): Earliest time to check.
   """
+  flake.false_rejection_count_last_week = 0
+  flake.impacted_cl_count_last_week = 0
+  flake.flake_counts_last_week = []
+
   if flake.last_occurred_time <= start_date:
-    return 0, 0
+    return
 
-  occurrences = FlakeOccurrence.query(ancestor=flake.key).filter(
-      ndb.AND(FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION,
-              FlakeOccurrence.time_happened > start_date)).fetch()
+  counted_gerrit_cl_ids = set([])
 
-  false_rejection_count = len(occurrences)
+  for flake_type in [FlakeType.CQ_FALSE_REJECTION,
+                          FlakeType.RETRY_WITH_PATCH]:
+    # Counts the occurrences/impacted CLs of the flake from the type with the
+    # highest impact to the type with the lowest impact.
+    # So that we don't count the same CL multiple times.
+    typed_counts, counted_gerrit_cl_ids = _GetsTypedFlakeCounts(
+        flake, start_date, flake_type, counted_gerrit_cl_ids)
+    flake.flake_counts_last_week.append(typed_counts)
 
-  gerrit_cl_ids = set([occurrence.gerrit_cl_id for occurrence in occurrences])
-  impacted_cl_count = len(gerrit_cl_ids)
-
-  return false_rejection_count, impacted_cl_count
+    # This is a workaround: we don't differentiate flakes from different types
+    # for now, so that we can bring back the flakes on our dashboard quickly.
+    # TODO(crbug/896006): Remove false_rejection_count_last_week and
+    # impacted_cl_count_last_week.
+    flake.false_rejection_count_last_week += typed_counts.occurrence_count
+    flake.impacted_cl_count_last_week += typed_counts.impacted_cl_count
 
 
 def _UpdateCountsForNewFlake(start_date):
@@ -43,8 +88,7 @@ def _UpdateCountsForNewFlake(start_date):
       Flake.false_rejection_count_last_week == 0).fetch()
 
   for flake in flakes:
-    flake.false_rejection_count_last_week, flake.impacted_cl_count_last_week = (
-        _GetFlakeCounts(flake, start_date))
+    _UpdateFlakeCounts(flake, start_date)
 
   ndb.put_multi(flakes)
 
@@ -62,8 +106,7 @@ def _UpdateCountsForOldFlake(start_date):
       Flake.false_rejection_count_last_week > 0).fetch()
 
   for flake in flakes:
-    flake.false_rejection_count_last_week, flake.impacted_cl_count_last_week = (
-        _GetFlakeCounts(flake, start_date))
+    _UpdateFlakeCounts(flake, start_date)
 
   ndb.put_multi(flakes)
 

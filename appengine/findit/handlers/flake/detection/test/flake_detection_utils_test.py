@@ -117,6 +117,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             0,
         'impacted_cl_count_last_week':
             0,
+        'flake_counts_last_week': [],
         'flake_issue': {
             'monorail_project':
                 'chromium',
@@ -266,6 +267,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             0,
         'impacted_cl_count_last_week':
             0,
+        'flake_counts_last_week': [],
         'component':
             None,
         'test_location':

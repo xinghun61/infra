@@ -8,6 +8,7 @@ import mock
 from libs import time_util
 from model.flake.detection.flake_occurrence import FlakeOccurrence
 from model.flake.flake import Flake
+from model.flake.flake import FlakeCountsByType
 from model.flake.flake_type import FlakeType
 from services.flake_detection.update_flake_counts_service import (
     UpdateFlakeCounts)
@@ -118,11 +119,32 @@ class UpdateFlakeCountsTest(WaterfallTestCase):
         parent_flake_key=flake3_key)
     occurrence4.put()
 
+    occurrence5 = FlakeOccurrence.Create(
+        flake_type=FlakeType.RETRY_WITH_PATCH,
+        build_id=3,
+        step_ui_name=step_ui_name,
+        test_name='t2',
+        luci_project=luci_project,
+        luci_bucket=luci_bucket,
+        luci_builder=luci_builder,
+        legacy_master_name=legacy_master_name,
+        legacy_build_number=legacy_build_number,
+        time_happened=datetime(2018, 8, 31),
+        gerrit_cl_id=98761,
+        parent_flake_key=flake1_key)
+    occurrence5.put()
+
     UpdateFlakeCounts()
 
     flake1 = flake1_key.get()
-    self.assertEqual(2, flake1.false_rejection_count_last_week)
+    self.assertEqual(3, flake1.false_rejection_count_last_week)
     self.assertEqual(1, flake1.impacted_cl_count_last_week)
+    self.assertEqual([
+        FlakeCountsByType(flake_type=FlakeType.CQ_FALSE_REJECTION,
+                          impacted_cl_count=1, occurrence_count=2),
+        FlakeCountsByType(flake_type=FlakeType.RETRY_WITH_PATCH,
+                          impacted_cl_count=0, occurrence_count=1)],
+        flake1.flake_counts_last_week)
 
     flake2 = flake2_key.get()
     self.assertEqual(0, flake2.false_rejection_count_last_week)

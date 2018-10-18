@@ -130,6 +130,7 @@ class ShowFlakeTest(WaterfallTestCase):
             0,
         'impacted_cl_count_last_week':
             0,
+        'flake_counts_last_week': [],
         'component':
             'Mock>Component',
         'test_location': {
