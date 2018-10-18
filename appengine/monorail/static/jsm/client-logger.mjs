@@ -47,40 +47,7 @@ This would record the following metrics:
 export class ClientLogger {
   constructor(category) {
     this.category = category;
-    this.ts_mon = new TSMonClient('/_/jstsmon.do', window.CS_env.token);
-    // We only send metrics on page load, so disable for now.
-    this.ts_mon.disableAfterNextFlush();
-    this._clientId = ClientLogger.generateClientId();
-
-    const standardFields = new Map([
-      ['client_id', TSMonClient.stringField('client_id')]
-    ]);
-    this.metrics = [
-      {
-        category: 'issues',
-        eventName: 'issue-update',
-        metric: this.ts_mon.cumulativeDistribution(
-          'monorail/frontend/issue_update_latency',
-          'Latency between issue update form submit and issue detail page load.',
-          null, standardFields),
-      },
-      {
-        category: 'issues',
-        eventName: 'new-issue',
-        metric: this.ts_mon.cumulativeDistribution(
-          'monorail/frontend/issue_create_latency',
-          'Latency between issue entry form submit and issue detail page load.',
-          null, standardFields),
-      },
-      {
-        category: 'autocomplete',
-        eventName: 'populate-options',
-        metric: this.ts_mon.cumulativeDistribution(
-          'monorail/frontend/autocomplete_populate_latency',
-          'Latency between page load and autocomplete options loading.',
-          null, standardFields),
-      },
-    ];
+    // TODO(jeffcarp): Reinstate TSMonClient.
 
     const categoryKey = `ClientLogger.${category}.started`;
     const startedEvtsStr = sessionStorage[categoryKey];
@@ -227,16 +194,6 @@ export class ClientLogger {
           'timingLabel': label,
           'timingValue': elapsed
         });
-      }
-
-      const metricFields = new Map(Object.entries({
-        'client_id': this._clientId,
-      }));
-      for (let metric of this.metrics) {
-        if (this.category === metric.category
-            && eventName === metric.eventName) {
-          metric.metric.add(elapsed, metricFields);
-        }
       }
 
       delete this.startedEvents[eventName];
