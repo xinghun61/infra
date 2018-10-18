@@ -13,7 +13,7 @@ import (
 	"golang.org/x/net/context"
 	"gopkg.in/yaml.v2"
 
-	cipd "go.chromium.org/luci/cipd/client/cipd/local"
+	cipd "go.chromium.org/luci/cipd/client/cipd/builder"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

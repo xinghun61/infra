@@ -10,12 +10,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"go.chromium.org/luci/cipd/common/cipdpkg"
+	"golang.org/x/net/context"
+
+	cipdpkg "go.chromium.org/luci/cipd/client/cipd/pkg"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/tsmon"
 	"go.chromium.org/luci/common/tsmon/field"
 	"go.chromium.org/luci/common/tsmon/metric"
-	"golang.org/x/net/context"
 )
 
 var (

@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"go.chromium.org/luci/cipd/common/cipdpkg"
+	cipdpkg "go.chromium.org/luci/cipd/client/cipd/pkg"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
