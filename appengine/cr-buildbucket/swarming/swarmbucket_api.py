@@ -148,7 +148,7 @@ class SwarmbucketApi(remote.Service):
         config.get_buckets_async(bucket_ids, legacy_mode=False).get_result()
     )
     for bucket_id, cfg in buckets.iteritems():
-      if cfg and not cfg.swarming.builders:
+      if not cfg or not cfg.swarming.builders:
         continue
 
       def to_dims(b):
