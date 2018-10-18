@@ -26,6 +26,7 @@ import time
 import xml.etree.ElementTree as xml
 
 import infra_libs
+from infra_libs import luci_auth
 from infra.libs import git
 
 
@@ -151,10 +152,15 @@ def FetchBuilderJsonFromMilo(master, builder, limit=100,
     'Content-Type': 'application/json',
   }
   http = httplib2.Http(timeout=300)
+  creds = None
   if service_account_file:
-      creds = infra_libs.get_signed_jwt_assertion_credentials(
-                service_account_file, scope=OAUTH_SCOPES)
-      creds.authorize(http)
+    creds = infra_libs.get_signed_jwt_assertion_credentials(
+        service_account_file, scope=OAUTH_SCOPES)
+  elif luci_auth.available():
+    creds = luci_auth.LUCICredentials(scopes=OAUTH_SCOPES)
+
+  if creds:
+    creds.authorize(http)
 
   resp, content = http.request(
       MILO_JSON_ENDPOINT, method='POST', headers=headers, body=json.dumps(body))
