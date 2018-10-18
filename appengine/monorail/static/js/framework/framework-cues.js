@@ -21,14 +21,14 @@
  * @return {boolean} false to cancel any event.
  */
 function CS_dismissCue(cueId) {
-  var cueElements = document.querySelectorAll('.cue');
-  for (var i = 0; i < cueElements.length; ++i) {
+  let cueElements = document.querySelectorAll('.cue');
+  for (let i = 0; i < cueElements.length; ++i) {
     cueElements[i].style.display = 'none';
   }
 
   if (CS_env.token) {
     window.prpcClient.call(
-        'monorail.Features', 'DismissCue', {'cue_id': cueId});
+      'monorail.Features', 'DismissCue', {'cue_id': cueId});
   }
   return false;
 }

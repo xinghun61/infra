@@ -13,13 +13,13 @@ function setUp() {
 
 function testAddItemToFirstCharMap_OneWordLabel() {
   _AC_AddItemToFirstCharMap(firstCharMap, 'h', 'Hot');
-  var hArray = firstCharMap['h'];
+  let hArray = firstCharMap['h'];
   assertEquals(1, hArray.length);
   assertEquals('Hot', hArray[0].value);
 
   _AC_AddItemToFirstCharMap(firstCharMap, '-', '-Hot');
   _AC_AddItemToFirstCharMap(firstCharMap, 'h', '-Hot');
-  var minusArray = firstCharMap['-'];
+  let minusArray = firstCharMap['-'];
   assertEquals(1, minusArray.length);
   assertEquals('-Hot', minusArray[0].value);
   hArray = firstCharMap['h'];
@@ -31,10 +31,10 @@ function testAddItemToFirstCharMap_OneWordLabel() {
 function testAddItemToFirstCharMap_KeyValueLabels() {
   _AC_AddItemToFirstCharMap(firstCharMap, 'p', 'Priority-High');
   _AC_AddItemToFirstCharMap(firstCharMap, 'h', 'Priority-High');
-  var pArray = firstCharMap['p'];
+  let pArray = firstCharMap['p'];
   assertEquals(1, pArray.length);
   assertEquals('Priority-High', pArray[0].value);
-  var hArray = firstCharMap['h'];
+  let hArray = firstCharMap['h'];
   assertEquals(1, hArray.length);
   assertEquals('Priority-High', hArray[0].value);
 }

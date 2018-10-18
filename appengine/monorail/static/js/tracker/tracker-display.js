@@ -22,14 +22,14 @@
  * @param {Element} opt_menuButton The HTML element for a menu button that
  *    was pressed to open the menu.  When a button was used, we need to ignore
  *    the first "click" event, otherwise the menu will immediately close.
- * @returns Always returns false to indicate that the browser should handle the
+ * @return Always returns false to indicate that the browser should handle the
  * event normally.
  */
 function TKR_showBelow(id, el, opt_deltaX, opt_deltaY, opt_menuButton) {
-  var popupDiv = $(id);
-  var elBounds = nodeBounds(el)
-  var startX = elBounds.x;
-  var startY = elBounds.y + elBounds.h;
+  let popupDiv = $(id);
+  let elBounds = nodeBounds(el);
+  let startX = elBounds.x;
+  let startY = elBounds.y + elBounds.h;
   if (BR_IsIE()) {
     startX -= 1;
     startY -= 2;
@@ -37,7 +37,7 @@ function TKR_showBelow(id, el, opt_deltaX, opt_deltaY, opt_menuButton) {
   if (BR_IsSafari()) {
     startX += 1;
   }
-  popupDiv.style.display = 'block'; //needed so that offsetWidth != 0
+  popupDiv.style.display = 'block'; // needed so that offsetWidth != 0
 
   popupDiv.style.left = '-2000px';
   if (id == 'pop_dot' || id == 'redoMenu') {
@@ -47,7 +47,7 @@ function TKR_showBelow(id, el, opt_deltaX, opt_deltaY, opt_menuButton) {
   if (opt_deltaY) startY += opt_deltaY;
   popupDiv.style.left = (startX)+'px';
   popupDiv.style.top = (startY)+'px';
-  var popup = new TKR_MyPopup(popupDiv, opt_menuButton);
+  let popup = new TKR_MyPopup(popupDiv, opt_menuButton);
   popup.show();
   return false;
 }
@@ -62,28 +62,28 @@ function TKR_showBelow(id, el, opt_deltaX, opt_deltaY, opt_menuButton) {
  * @param {Element} el The HTML element that the popup should appear near.
  * @param {number} opt_deltaX Optional X offset to finetune placement.
  * @param {number} opt_deltaY Optional Y offset to finetune placement.
- * @returns Always returns false to indicate that the browser should handle the
+ * @return Always returns false to indicate that the browser should handle the
  * event normally.
  */
 function TKR_showRight(id, el, opt_deltaX, opt_deltaY) {
-  var popupDiv = $(id);
-  var elBounds = nodeBounds(el);
-  var startX = elBounds.x + elBounds.w;
-  var startY = elBounds.y;
+  let popupDiv = $(id);
+  let elBounds = nodeBounds(el);
+  let startX = elBounds.x + elBounds.w;
+  let startY = elBounds.y;
 
   // Calculate pageSize.w and pageSize.h
-  var docElemWidth = document.documentElement.clientWidth;
-  var docElemHeight = document.documentElement.clientHeight;
-  var pageSize = {
+  let docElemWidth = document.documentElement.clientWidth;
+  let docElemHeight = document.documentElement.clientHeight;
+  let pageSize = {
     w: (window.innerWidth || docElemWidth && docElemWidth > 0 ?
-        docElemWidth : document.body.clientWidth) || 1,
+      docElemWidth : document.body.clientWidth) || 1,
     h: (window.innerHeight || docElemHeight && docElemHeight > 0 ?
-        docElemHeight : document.body.clientHeight) || 1
-  }
+      docElemHeight : document.body.clientHeight) || 1,
+  };
 
   // We need to make the popupDiv visible in order to capture its width
   popupDiv.style.display = 'block';
-  var popupDivBounds = nodeBounds(popupDiv);
+  let popupDivBounds = nodeBounds(popupDiv);
 
   // Show popup to the left
   if (startX + popupDivBounds.w > pageSize.w) {
@@ -118,7 +118,7 @@ function TKR_showRight(id, el, opt_deltaX, opt_deltaY) {
   if (opt_deltaY) startY += opt_deltaY;
   popupDiv.style.left = (startX)+'px';
   popupDiv.style.top = (startY)+'px';
-  var popup = new TKR_MyPopup(popupDiv);
+  let popup = new TKR_MyPopup(popupDiv);
   popup.show();
   return false;
 }
@@ -131,11 +131,11 @@ function TKR_showRight(id, el, opt_deltaX, opt_deltaY) {
  * @param {string} id The HTML ID of the element to hide.
  */
 function TKR_closePopup(id) {
-  var e = $(id);
+  let e = $(id);
   if (e) {
-    for (var i = 0; i < gPopupController.activePopups_.length; ++i) {
+    for (let i = 0; i < gPopupController.activePopups_.length; ++i) {
       if (e === gPopupController.activePopups_[i]._div) {
-        var popup = gPopupController.activePopups_[i];
+        let popup = gPopupController.activePopups_[i];
         popup.hide();
         gPopupController.activePopups_.splice(i, 1);
         return;
@@ -152,11 +152,11 @@ var TKR_allColumnNames = []; // Will be defined in HTML file.
  * was selected. The list of popup menu names is computed from the list of
  * columns specified in the HTML for the issue list page.
  * @param menuItem {Element} The menu item that the user clicked.
- * @returns Always returns false to indicate that the browser should handle the
+ * @return Always returns false to indicate that the browser should handle the
  * event normally.
  */
 function TKR_closeAllPopups(menuItem) {
-  for (var col_index = 0; col_index < TKR_allColumnNames.length; col_index++) {
+  for (let col_index = 0; col_index < TKR_allColumnNames.length; col_index++) {
     TKR_closePopup('pop_' + col_index);
     TKR_closePopup('filter_' + col_index);
   }
@@ -169,11 +169,11 @@ function TKR_closeAllPopups(menuItem) {
 
 /**
  * Close all the submenus (of which, one may be currently open).
- * @returns Always returns false to indicate that the browser should handle the
+ * @return Always returns false to indicate that the browser should handle the
  * event normally.
  */
 function TKR_closeSubmenus() {
-  for (var col_index = 0; col_index < TKR_allColumnNames.length; col_index++) {
+  for (let col_index = 0; col_index < TKR_allColumnNames.length; col_index++) {
     TKR_closePopup('filter_' + col_index);
   }
   return false;
@@ -186,7 +186,7 @@ function TKR_closeSubmenus() {
  * section display in the opened state, regardless of what state is
  * was in before.
  * @param {Element} el The HTML element that the user clicked on.
- * @returns Always returns false to indicate that the browser should handle the
+ * @return Always returns false to indicate that the browser should handle the
  * event normally.
  */
 function TKR_showHidden(el) {
@@ -210,15 +210,14 @@ function TKR_showHidden(el) {
  * element, and by CSS rules that trigger based on that CSS class.
  * @param {string} colName The name of the column to toggle,
  * corresponds to a CSS class.
- * @returns Always returns false to indicate that the browser should
+ * @return Always returns false to indicate that the browser should
  * handle the event normally.
  */
 function TKR_toggleColumn(colName) {
-  var controlDiv = $('colcontrol');
+  let controlDiv = $('colcontrol');
   if (controlDiv.classList.contains(colName)) {
     controlDiv.classList.remove(colName);
-  }
-  else {
+  } else {
     controlDiv.classList.add(colName);
   }
   return false;
@@ -232,11 +231,11 @@ function TKR_toggleColumn(colName) {
  * TODO(jrobbins): actually, this automatically hides the other groups.
  * @param {string} rowClassName The name of the row group to toggle,
  * corresponds to a CSS class.
- * @returns Always returns false to indicate that the browser should
+ * @return Always returns false to indicate that the browser should
  * handle the event normally.
  */
 function TKR_toggleRows(rowClassName) {
-  var controlDiv = $('colcontrol');
+  let controlDiv = $('colcontrol');
   controlDiv.classList.add('hide_pri_groups');
   controlDiv.classList.add('hide_mile_groups');
   controlDiv.classList.add('hide_stat_groups');
@@ -267,7 +266,7 @@ TKR_MyPopup.prototype.show = function() {
   this._div.style.display = 'block';
   this._isVisible = true;
   PC_addPopup(this);
-}
+};
 
 
 /**
@@ -277,7 +276,7 @@ TKR_MyPopup.prototype.show = function() {
 TKR_MyPopup.prototype.hide = function() {
   this._div.style.display = 'none';
   this._isVisible = false;
-}
+};
 
 
 /**
@@ -286,7 +285,7 @@ TKR_MyPopup.prototype.hide = function() {
  */
 TKR_MyPopup.prototype.deactivate = function(e) {
   if (this._isVisible) {
-    var p = GetMousePosition(e);
+    let p = GetMousePosition(e);
     if (nodeBounds(this._div).contains(p)) {
       return false; // use clicked on popup, remain visible
     } else if (this._launcher && nodeBounds(this._launcher).contains(p)) {
@@ -299,25 +298,24 @@ TKR_MyPopup.prototype.deactivate = function(e) {
   } else {
     return true; // already deactivated, not visible
   }
-}
+};
 
 
 /**
  * Highlight the issue row on the list page that contains the given
  * checkbox.
  * @param {Element} cb The checkbox that the user changed.
- * @returns Always returns false to indicate that the browser should
+ * @return Always returns false to indicate that the browser should
  * handle the event normally.
  */
 function TKR_highlightRow(el) {
-  var checked = el.checked;
+  let checked = el.checked;
   while (el && el.tagName != 'TR') {
     el = el.parentNode;
   }
   if (checked) {
     el.classList.add('selected');
-  }
-  else {
+  } else {
     el.classList.remove('selected');
   }
   return false;

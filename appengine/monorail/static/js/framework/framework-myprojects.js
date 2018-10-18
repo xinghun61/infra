@@ -14,7 +14,7 @@
 var myprojects;
 
 (function() {
-  var target = document.getElementById('projects-dropdown');
+  let target = document.getElementById('projects-dropdown');
 
   if (!target) {
     return;
@@ -25,7 +25,7 @@ var myprojects;
   myprojects.addEvent(window, 'load', CS_updateProjects);
   myprojects.addOnOpen(CS_updateProjects);
   myprojects.addEvent(window, 'load', function() {
-      document.body.appendChild(myprojects.menu);
+    document.body.appendChild(myprojects.menu);
   });
 })();
 
@@ -36,26 +36,26 @@ var myprojects;
 function CS_updateProjects() {
   if (!myprojects) return;
   const userProjectsPromise = window.prpcClient.call(
-      'monorail.Projects', 'GetUserProjects', {});
-  userProjectsPromise.then(userProjects => {
+    'monorail.Projects', 'GetUserProjects', {});
+  userProjectsPromise.then((userProjects) => {
     // Grab and show projects if user is signed in.
     if (userProjects) {
       const starredProjects = userProjects.starredProjects || [];
       const projects = (userProjects.ownerOf || [])
-          .concat(userProjects.memberOf || [])
-          .concat(userProjects.contributorTo || []);
+        .concat(userProjects.memberOf || [])
+        .concat(userProjects.contributorTo || []);
 
       myprojects.clear();
 
       projects.sort();
-      projects.forEach(project => {
+      projects.forEach((project) => {
         myprojects.addItem(project, `/p/${project}/`, 'projects', 'Projects');
       });
 
       starredProjects.sort();
-      starredProjects.forEach(project => {
+      starredProjects.forEach((project) => {
         myprojects.addItem(
-            project, `/p/${project}/`, 'starred_projects', 'Starred Projects');
+          project, `/p/${project}/`, 'starred_projects', 'Starred Projects');
       });
 
       if (projects.length === 0 && starredProjects.length === 0) {
@@ -73,9 +73,9 @@ function CS_updateProjects() {
       myprojects.clear();
 
       myprojects.addItem(
-          'Sign in to see your favorites',
-          CS_env['login_url'],
-          'controls');
+        'Sign in to see your favorites',
+        CS_env['login_url'],
+        'controls');
 
       CS_addDefaultControl();
     }
@@ -89,5 +89,5 @@ function CS_updateProjects() {
 function CS_addDefaultControl() {
   myprojects.addSeparator('controls', '');
   myprojects.addItem('Find projects...', '/hosting/',
-                     'controls');
+    'controls');
 }

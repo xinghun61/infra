@@ -16,7 +16,7 @@
  * @param {dict} attrs Dictionary of {attrName: attrValue, ..}
  */
 function setAttributes(el, attrs) {
-  for (var key in attrs) {
+  for (let key in attrs) {
     el.setAttribute(key, attrs[key]);
   }
 }
@@ -32,10 +32,10 @@ function setAttributes(el, attrs) {
  * @return an element containing the widget elements
  */
 function createWidgets(tableRow, readOnly, userLoggedIn) {
-  var widgets = document.createElement('td');
+  let widgets = document.createElement('td');
   widgets.setAttribute('class', 'rowwidgets nowrap');
 
-  var gripper = document.createElement('a');
+  let gripper = document.createElement('a');
   gripper.setAttribute('class', 'gripper');
   gripper.textContent = '\u2059';
   widgets.appendChild(gripper);
@@ -44,22 +44,22 @@ function createWidgets(tableRow, readOnly, userLoggedIn) {
     if (userLoggedIn) {
       // TODO(jojwang): for bulk edit, only show a checkbox next to an issue that
       // the user has permission to edit.
-        var checkbox = document.createElement('input');
-        setAttributes(checkbox, {'class': 'checkRangeSelect',
-                                 'id': 'cb_' + tableRow['issueRef'],
-                                 'type': 'checkbox'});
+      let checkbox = document.createElement('input');
+      setAttributes(checkbox, {'class': 'checkRangeSelect',
+        'id': 'cb_' + tableRow['issueRef'],
+        'type': 'checkbox'});
       widgets.appendChild(checkbox);
       widgets.appendChild(document.createTextNode(' '));
 
-      var star = document.createElement('a');
-      var starColor = tableRow['isStarred'] ? 'cornflowerblue' : 'gray';
-      var starred = tableRow['isStarred'] ? 'Un-s' : 'S' ;
+      let star = document.createElement('a');
+      let starColor = tableRow['isStarred'] ? 'cornflowerblue' : 'gray';
+      let starred = tableRow['isStarred'] ? 'Un-s' : 'S';
       setAttributes(star, {'class': 'star',
-                           'id': 'star-' + tableRow['projectName'] + tableRow['localID'],
-                           'style': 'color:' + starColor,
-                           'title': starred + 'tar this issue',
-                           'data-project-name': tableRow['projectName'],
-                           'data-local-id': tableRow['localID']});
+        'id': 'star-' + tableRow['projectName'] + tableRow['localID'],
+        'style': 'color:' + starColor,
+        'title': starred + 'tar this issue',
+        'data-project-name': tableRow['projectName'],
+        'data-local-id': tableRow['localID']});
       star.textContent = (tableRow['isStarred'] ? '\u2605' : '\u2606');
       widgets.appendChild(star);
     }
@@ -76,24 +76,24 @@ function createWidgets(tableRow, readOnly, userLoggedIn) {
 */
 function createIDCell(td, tableRow, isCrossProject) {
   td.classList.add('id');
-  var aLink = document.createElement('a');
+  let aLink = document.createElement('a');
   aLink.setAttribute('href', tableRow['issueCleanURL']);
   aLink.setAttribute('class', 'computehref');
-  var aLinkContent = (isCrossProject ? (tableRow['projectName'] + ':') : '' ) + tableRow['localID'];
+  let aLinkContent = (isCrossProject ? (tableRow['projectName'] + ':') : '' ) + tableRow['localID'];
   aLink.textContent = aLinkContent;
   td.appendChild(aLink);
 }
 
 function createProjectCell(td, tableRow) {
   td.classList.add('project');
-  var aLink = document.createElement('a');
+  let aLink = document.createElement('a');
   aLink.setAttribute('href', tableRow['projectURL']);
   aLink.textContent = tableRow['projectName'];
   td.appendChild(aLink);
 }
 
 function createEditableNoteCell(td, cell, projectName, localID, hotlistID) {
-  var textBox = document.createElement('textarea');
+  let textBox = document.createElement('textarea');
   setAttributes(textBox, {
     'id': `itemnote_${projectName}_${localID}`,
     'placeholder': '---',
@@ -105,16 +105,20 @@ function createEditableNoteCell(td, cell, projectName, localID, hotlistID) {
   if (cell['values'].length > 0) {
     textBox.value = cell['values'][0]['item'];
   }
-  textBox.addEventListener('blur', function(e) {saveNote(e.target, hotlistID)});
-  debouncedKeyHandler = debounce(function(e) {saveNote(e.target, hotlistID)});
+  textBox.addEventListener('blur', function(e) {
+    saveNote(e.target, hotlistID);
+  });
+  debouncedKeyHandler = debounce(function(e) {
+    saveNote(e.target, hotlistID);
+  });
   textBox.addEventListener('keyup', debouncedKeyHandler, false);
   td.appendChild(textBox);
 }
 
 function enter_detector(e) {
-    if(e.which==13||e.keyCode==13){
-      this.blur();
-    }
+  if (e.which==13||e.keyCode==13) {
+    this.blur();
+  }
 }
 
 
@@ -138,10 +142,10 @@ function createSummaryCell(td, cell) {
  * @param {dict} cell dictionary {'type': 'Summary', .. } of relevant cell info.
 */
 function createAttrAndUnfiltCell(td, cell) {
-  if(cell['noWrap'] == 'yes') {
+  if (cell['noWrap'] == 'yes') {
     td.className += ' nowrapspan';
   }
-  if(cell['align']) {
+  if (cell['align']) {
     td.setAttribute('align', cell['align']);
   }
   fillValues(td, cell['values']);
@@ -149,7 +153,7 @@ function createAttrAndUnfiltCell(td, cell) {
 
 function createUrlCell(td, cell) {
   td.classList.add('url');
-  cell.values.forEach(value => {
+  cell.values.forEach((value) => {
     let aLink = document.createElement('a');
     aLink.href = value['item'];
     aLink.target = '_blank';
@@ -167,10 +171,10 @@ function createUrlCell(td, cell) {
  */
 function fillNonColumnLabels(td, labels) {
   labels.forEach( function(label) {
-    var aLabel = document.createElement('a');
+    let aLabel = document.createElement('a');
     setAttributes(aLabel, {'class': 'label', 'href': 'list?q=label:' + label['value']});
     if (label['isDerived']) {
-      var i = document.createElement('i');
+      let i = document.createElement('i');
       i.textContent = label['value'];
       aLabel.appendChild(i);
     } else {
@@ -190,7 +194,7 @@ function fillNonColumnLabels(td, labels) {
 function fillValues(td, values) {
   if (values.length > 0) {
     values.forEach( function(value, index, array) {
-      var span = document.createElement('span');
+      let span = document.createElement('span');
       if (value['isDerived']) {
         span.className = 'derived';
       }
@@ -212,7 +216,7 @@ function fillValues(td, values) {
  * @param {dict} pageSettings dict of relevant settings for the hotlist and user viewing the page.
  */
 function renderHotlistRow(tableRow, pageSettings) {
-  var tr = document.createElement('tr');
+  let tr = document.createElement('tr');
   if (pageSettings['cursor'] == tableRow['issueRef']) {
     tr.setAttribute('class', 'ifOpened hoverTarget cursor_on drag_item');
   } else {
@@ -221,10 +225,10 @@ function renderHotlistRow(tableRow, pageSettings) {
 
   setAttributes(tr, {'data-idx': tableRow['idx'], 'data-id': tableRow['issueID'], 'issue-context-url': tableRow['issueContextURL']});
   widgets = createWidgets(tableRow, pageSettings['readOnly'],
-                          pageSettings['userLoggedIn']);
+    pageSettings['userLoggedIn']);
   tr.appendChild(widgets);
   tableRow['cells'].forEach(function(cell) {
-    var td = document.createElement('td');
+    let td = document.createElement('td');
     td.setAttribute('class', 'col_' + cell['colIndex']);
     if (cell['type'] == 'ID') {
       createIDCell(td, tableRow, (pageSettings['isCrossProject'] == 'True'));
@@ -233,17 +237,16 @@ function renderHotlistRow(tableRow, pageSettings) {
     } else if (cell['type'] == 'note') {
       if (pageSettings['ownerPerm'] || pageSettings['editorPerm']) {
         createEditableNoteCell(
-            td, cell, tableRow['projectName'], tableRow['localID'],
-            pageSettings['hotlistID']);
-      }
-      else {
+          td, cell, tableRow['projectName'], tableRow['localID'],
+          pageSettings['hotlistID']);
+      } else {
         createSummaryCell(td, cell);
       }
     } else if (cell['type'] == 'project') {
-      createProjectCell(td, tableRow)
+      createProjectCell(td, tableRow);
     } else if (cell['type'] == 'url') {
       createUrlCell(td, cell);
-    } else{
+    } else {
       createAttrAndUnfiltCell(td, cell);
     }
     tr.appendChild(td);
@@ -252,9 +255,9 @@ function renderHotlistRow(tableRow, pageSettings) {
   let directLink = document.createElement('a');
   directLink.setAttribute('class', 'directlink material-icons');
   directLink.setAttribute('href', directLinkURL);
-  directLink.textContent = 'link';  // Renders as a link icon.
+  directLink.textContent = 'link'; // Renders as a link icon.
   let lastCol = document.createElement('td');
-  lastCol.appendChild(directLink)
+  lastCol.appendChild(directLink);
   tr.appendChild(lastCol);
   return tr;
 }
@@ -263,17 +266,17 @@ function renderHotlistRow(tableRow, pageSettings) {
 /**
  * Helper function to create the group header row
  * @param {dict} group dict of relevant values for the current group
- * @returns a <tr> element to be added to the current <tbody>
+ * @return a <tr> element to be added to the current <tbody>
  */
 function renderGroupRow(group) {
-  var tr = document.createElement('tr');
+  let tr = document.createElement('tr');
   tr.setAttribute('class', 'group_row');
-  var td = document.createElement('td');
-  setAttributes(td, {'colspan': '100', 'class': 'toggleHidden',});
-  var whenClosedImg = document.createElement('img');
-  setAttributes(whenClosedImg, {'class': 'ifClosed', 'src': '/static/images/plus.gif',});
+  let td = document.createElement('td');
+  setAttributes(td, {'colspan': '100', 'class': 'toggleHidden'});
+  let whenClosedImg = document.createElement('img');
+  setAttributes(whenClosedImg, {'class': 'ifClosed', 'src': '/static/images/plus.gif'});
   td.appendChild(whenClosedImg);
-  var whenOpenImg = document.createElement('img');
+  let whenOpenImg = document.createElement('img');
   setAttributes(whenOpenImg, {'class': 'ifOpened', 'src': '/static/images/minus.gif'});
   td.appendChild(whenOpenImg);
   tr.appendChild(td);
@@ -281,10 +284,10 @@ function renderGroupRow(group) {
   div = document.createElement('div');
   div.textContent += group['rowsInGroup'];
 
-  div.textContent += (group['rowsInGroup'] == '1' ? ' issue:': ' issues:')
+  div.textContent += (group['rowsInGroup'] == '1' ? ' issue:': ' issues:');
 
   group['cells'].forEach(function(cell) {
-    var hasValue = false;
+    let hasValue = false;
     cell['values'].forEach(function(value) {
       if (value['item'] !== 'None') {
         hasValue = true;
@@ -309,8 +312,8 @@ function renderGroupRow(group) {
  * @param {dict} pageSettings dict of relevant settings for the hotlist and user viewing the page.
  */
 function renderHotlistTable(tableData, pageSettings) {
-  var tbody;
-  var table = $('resultstable');
+  let tbody;
+  let table = $('resultstable');
 
   // TODO(jojwang): this would not work if grouping did not require a page refresh
   // that wiped the table of all its children. This should be redone to be more
@@ -323,8 +326,8 @@ function renderHotlistTable(tableData, pageSettings) {
   }
 
   tableData.forEach(function(tableRow) {
-    if (tableRow['group'] !== 'no'){
-      //add current tbody to table, need a new tbody with group row
+    if (tableRow['group'] !== 'no') {
+      // add current tbody to table, need a new tbody with group row
       if (typeof tbody !== 'undefined') {
         table.appendChild(tbody);
       }
@@ -340,16 +343,15 @@ function renderHotlistTable(tableData, pageSettings) {
   tbody.appendChild(document.createElement('tr'));
   table.appendChild(tbody);
 
-  var stars = document.getElementsByClassName("star");
+  let stars = document.getElementsByClassName('star');
   for (var i = 0; i < stars.length; ++i) {
-    var star = stars[i];
-    star.addEventListener("click", function (event) {
-      var projectName = event.target.getAttribute("data-project-name");
-      var localID = event.target.getAttribute("data-local-id");
+    let star = stars[i];
+    star.addEventListener('click', function(event) {
+      let projectName = event.target.getAttribute('data-project-name');
+      let localID = event.target.getAttribute('data-local-id');
       _TKR_toggleStar(event.target, projectName, localID, null, null, null);
     });
   }
-
 }
 
 
@@ -362,32 +364,32 @@ function renderHotlistTable(tableData, pageSettings) {
  *  viewing the page.
  * @param {str} hotlistID the number ID of the current hotlist
 */
-function activateDragDrop(tableData, pageSettings, hotlistID){
+function activateDragDrop(tableData, pageSettings, hotlistID) {
   function onHotlistRerank(srcID, targetID, position) {
-    var data = {
+    let data = {
       target_id: targetID,
       moved_ids: srcID,
       split_above: position == 'above',
       colspec: pageSettings['colSpec'],
-      can: pageSettings['can']
-    }
+      can: pageSettings['can'],
+    };
     CS_doPost(hotlistID + '/rerank.do', onHotlistResponse, data);
   }
 
   function onHotlistResponse(event) {
-    var xhr = event.target;
+    let xhr = event.target;
     if (xhr.readyState != 4) {
       return;
     }
     if (xhr.status != 200) {
-      window.console.error('200 page error')
+      window.console.error('200 page error');
       // TODO(jojwang): fill this in more
       return;
     }
-    var response = CS_parseJSON(xhr);
+    let response = CS_parseJSON(xhr);
     renderHotlistTable(
-        (response['table_data'] == '' ? tableData : response['table_data']),
-        pageSettings);
+      (response['table_data'] == '' ? tableData : response['table_data']),
+      pageSettings);
     // TODO(jojwang): pass pagination state to server
     _initDragAndDrop($('resultstable'), onHotlistRerank, true);
   }

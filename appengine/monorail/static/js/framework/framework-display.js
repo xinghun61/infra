@@ -56,7 +56,7 @@ function CS_hideEl(el) {
  *     if used as an event handler.
  */
 function CS_showEl(el) {
-    el.style.display = '';
+  el.style.display = '';
   return false;
 }
 

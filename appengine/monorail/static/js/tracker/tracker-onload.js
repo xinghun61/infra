@@ -11,7 +11,6 @@
  */
 
 
-
 /**
  * This code is run on every DIT page load.  It registers a handler
  * for autocomplete on four different types of text fields based on the
@@ -20,43 +19,44 @@
 function TKR_onload() {
   _ac_install();
 
-  _ac_register(function (input, event) {
-     if (input.id.startsWith('hotlists')) return TKR_hotlistsStore;
-     if (input.id.startsWith('search')) return TKR_searchStore;
-     if (input.id.startsWith('query_') || input.id.startsWith('predicate_'))
-       return TKR_projectQueryStore;
-     if (input.id.startsWith('cmd')) return TKR_quickEditStore;
-     if (input.id.startsWith('label')) return TKR_labelStore;
-     if (input.id.startsWith('component')) return TKR_componentListStore;
-     if (input.id.startsWith('status')) return TKR_statusStore;
-     if (input.id.startsWith('member')) return TKR_memberListStore;
-     if (input.id == 'admin_names_editor') return TKR_memberListStore;
-     if (input.id.startsWith('owner')) return TKR_ownerStore;
-     if (input.name == 'needs_perm' || input.name == 'grants_perm') {
-       return TKR_customPermissionsStore;
-     }
-     if (input.id == 'owner_editor') return TKR_ownerStore;
-     if (input.className.indexOf('userautocomplete') != -1) {
-       var customFieldIDStr = input.name;
-       var uac = TKR_userAutocompleteStores[customFieldIDStr];
-       if (uac) return uac;
-       return TKR_ownerStore;
-     }
-     if (input.className.indexOf('autocomplete') != -1) {
-       return TKR_autoCompleteStore;
-     }
-     if (input.id.startsWith('copy_to') || input.id.startsWith('move_to') ||
+  _ac_register(function(input, event) {
+    if (input.id.startsWith('hotlists')) return TKR_hotlistsStore;
+    if (input.id.startsWith('search')) return TKR_searchStore;
+    if (input.id.startsWith('query_') || input.id.startsWith('predicate_')) {
+      return TKR_projectQueryStore;
+    }
+    if (input.id.startsWith('cmd')) return TKR_quickEditStore;
+    if (input.id.startsWith('label')) return TKR_labelStore;
+    if (input.id.startsWith('component')) return TKR_componentListStore;
+    if (input.id.startsWith('status')) return TKR_statusStore;
+    if (input.id.startsWith('member')) return TKR_memberListStore;
+    if (input.id == 'admin_names_editor') return TKR_memberListStore;
+    if (input.id.startsWith('owner')) return TKR_ownerStore;
+    if (input.name == 'needs_perm' || input.name == 'grants_perm') {
+      return TKR_customPermissionsStore;
+    }
+    if (input.id == 'owner_editor') return TKR_ownerStore;
+    if (input.className.indexOf('userautocomplete') != -1) {
+      let customFieldIDStr = input.name;
+      let uac = TKR_userAutocompleteStores[customFieldIDStr];
+      if (uac) return uac;
+      return TKR_ownerStore;
+    }
+    if (input.className.indexOf('autocomplete') != -1) {
+      return TKR_autoCompleteStore;
+    }
+    if (input.id.startsWith('copy_to') || input.id.startsWith('move_to') ||
          input.id.startsWith('new_savedquery_projects') ||
          input.id.startsWith('savedquery_projects')) {
-       return TKR_projectStore;
-     }
-   });
+      return TKR_projectStore;
+    }
+  });
 
- _PC_Install();
- TKR_allColumnNames = _allColumnNames;
- TKR_labelFieldIDPrefix = _lfidprefix;
- TKR_allOrigLabels = _allOrigLabels;
- TKR_initialFormValues = TKR_currentFormValues();
+  _PC_Install();
+  TKR_allColumnNames = _allColumnNames;
+  TKR_labelFieldIDPrefix = _lfidprefix;
+  TKR_allOrigLabels = _allOrigLabels;
+  TKR_initialFormValues = TKR_currentFormValues();
 }
 
 // External names for functions that are called directly from HTML.
@@ -95,7 +95,7 @@ _accomp = _AC_Completion;
 _acreg = _ac_register;
 
 _formatContextQueryArgs = TKR_formatContextQueryArgs;
-_ctxArgs = "";
+_ctxArgs = '';
 _ctxCan = undefined;
 _ctxQuery = undefined;
 _ctxSortspec = undefined;

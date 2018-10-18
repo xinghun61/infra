@@ -38,8 +38,8 @@ var Menu = function(target, opt_onShow) {
   this.onOpenEvents = [];
   this.menu = this.createElement('div', 'menuDiv instance' + this.iid);
   this.targetId = this.target.getAttribute('id');
-  var menuId = (this.targetId != null) ?
-      'menuDiv-' + this.targetId : 'menuDiv-instance' + this.iid;
+  let menuId = (this.targetId != null) ?
+    'menuDiv-' + this.targetId : 'menuDiv-instance' + this.iid;
   this.menu.setAttribute('id', menuId);
   this.menu.role = 'listbox';
   this.hide();
@@ -123,7 +123,7 @@ Menu.prototype.onOpenEvents = null;
  * @return {Element} a reference to the newly created element.
  */
 Menu.prototype.createElement = function(element, opt_className, opt_content) {
-  var div = document.createElement(element);
+  let div = document.createElement(element);
   div.className = opt_className;
   if (opt_content) {
     this.append(opt_content, div);
@@ -163,7 +163,7 @@ Menu.prototype.addEvent = function(element, eventType, callback) {
  * menuInstance.onOpenEvents.
  */
 Menu.prototype.addOnOpen = function(eventCallback) {
-  var eventIndex = this.onOpenEvents.length;
+  let eventIndex = this.onOpenEvents.length;
   this.onOpenEvents.push(eventCallback);
   return eventIndex;
 };
@@ -190,10 +190,10 @@ Menu.prototype.addOnOpen = function(eventCallback) {
  */
 Menu.prototype.addCategory = function(category, opt_title) {
   this.categories = this.categories || [];
-  var categoryDiv = this.createElement('div', 'menuCategory ' + category);
+  let categoryDiv = this.createElement('div', 'menuCategory ' + category);
   categoryDiv._categoryName = category;
   if (opt_title) {
-    var categoryTitle = this.createElement('b', 'categoryTitle ' +
+    let categoryTitle = this.createElement('b', 'categoryTitle ' +
           category, opt_title);
     categoryTitle.style.display = 'block';
     this.append(categoryTitle);
@@ -214,8 +214,8 @@ Menu.prototype.emptyCategory = function(category) {
   if (!this.categories[category]) {
     return;
   }
-  var div = this.categories[category];
-  for (var i = div.childNodes.length - 1; i >= 0; i--) {
+  let div = this.categories[category];
+  for (let i = div.childNodes.length - 1; i >= 0; i--) {
     div.removeChild(div.childNodes[i]);
   }
 };
@@ -246,8 +246,8 @@ Menu.prototype.clear = function() {
  * @return {Element} returns the item removed.
  */
 Menu.prototype.removeItem = function(item) {
-  var result = null;
-  for (var i = 0; i < this.items.length; i++) {
+  let result = null;
+  for (let i = 0; i < this.items.length; i++) {
     if (this.items[i] == item) {
       result = this.items[i];
       this.items.splice(i, 1);
@@ -264,7 +264,7 @@ Menu.prototype.removeItem = function(item) {
  * @param {string} category the name of the category to retrieve and remove.
  */
 Menu.prototype.removeCategory = function(category) {
-  var div = this.categories[category];
+  let div = this.categories[category];
   if (!div || !div.parentNode) {
     return;
   }
@@ -310,19 +310,19 @@ Menu.prototype.removeCategory = function(category) {
  * @return {Element} returns the element that was created.
  */
 Menu.prototype.addItem = function(html_or_element, opt_href, opt_category,
-                                  opt_title) {
-  var category = opt_category ? (this.categories[opt_category] ||
+  opt_title) {
+  let category = opt_category ? (this.categories[opt_category] ||
                                  this.addCategory(opt_category, opt_title)) :
-      this.categories['default'];
-  var menuHref = (opt_href == undefined ? '#' : opt_href);
-  var menuItem = undefined;
+    this.categories['default'];
+  let menuHref = (opt_href == undefined ? '#' : opt_href);
+  let menuItem = undefined;
   if (menuHref) {
     menuItem = this.createElement('a', 'menuItem', html_or_element);
   } else {
     menuItem = this.createElement('span', 'menuText', html_or_element);
   }
-  var itemText = typeof html_or_element == 'string' ? html_or_element :
-      html_or_element.textContent || 'ERROR';
+  let itemText = typeof html_or_element == 'string' ? html_or_element :
+    html_or_element.textContent || 'ERROR';
 
   menuItem.style.display = 'block';
   if (menuHref) {
@@ -347,10 +347,10 @@ Menu.prototype.addItem = function(html_or_element, opt_href, opt_category,
  *     the named category already exists.
  */
 Menu.prototype.addSeparator = function(opt_category, opt_title) {
-  var category = opt_category ? (this.categories[opt_category] ||
+  let category = opt_category ? (this.categories[opt_category] ||
                                  this.addCategory(opt_category, opt_title)) :
-      this.categories['default'];
-  var hr = this.createElement('hr', 'menuSeparator');
+    this.categories['default'];
+  let hr = this.createElement('hr', 'menuSeparator');
   this.append(hr, category);
 };
 
@@ -360,13 +360,13 @@ Menu.prototype.addSeparator = function(opt_category, opt_title) {
  * and calculation of offscreen width considerations.
  */
 Menu.prototype.adjustSizeAndLocation = function() {
-  var style = this.menu.style;
+  let style = this.menu.style;
   style.position = 'absolute';
 
-  var firstCategory = null;
-  for (var i = 0; i < this.categories.length; i++) {
+  let firstCategory = null;
+  for (let i = 0; i < this.categories.length; i++) {
     this.categories[i].className = this.categories[i].className.
-        replace(/ first/, '');
+      replace(/ first/, '');
     if (this.categories[i].childNodes.length == 0) {
       this.categories[i].style.display = 'none';
     } else {
@@ -378,24 +378,24 @@ Menu.prototype.adjustSizeAndLocation = function() {
     }
   }
 
-  var alreadyVisible = style.display != 'none' &&
+  let alreadyVisible = style.display != 'none' &&
       style.visibility != 'hidden';
-  var docElemWidth = document.documentElement.clientWidth;
-  var docElemHeight = document.documentElement.clientHeight;
-  var pageSize = {
+  let docElemWidth = document.documentElement.clientWidth;
+  let docElemHeight = document.documentElement.clientHeight;
+  let pageSize = {
     w: (window.innerWidth || docElemWidth && docElemWidth > 0 ?
-        docElemWidth : document.body.clientWidth) || 1,
+      docElemWidth : document.body.clientWidth) || 1,
     h: (window.innerHeight || docElemHeight && docElemHeight > 0 ?
-        docElemHeight : document.body.clientHeight) || 1
+      docElemHeight : document.body.clientHeight) || 1,
   };
-  var targetPos = this.find(this.target);
-  var targetSize = {w: this.target.offsetWidth,
-                    h: this.target.offsetHeight};
-  var menuSize = {w: this.menu.offsetWidth, h: this.menu.offsetHeight};
+  let targetPos = this.find(this.target);
+  let targetSize = {w: this.target.offsetWidth,
+    h: this.target.offsetHeight};
+  let menuSize = {w: this.menu.offsetWidth, h: this.menu.offsetHeight};
 
   if (!alreadyVisible) {
-    var oldVisibility = style.visibility;
-    var oldDisplay = style.display;
+    let oldVisibility = style.visibility;
+    let oldDisplay = style.display;
     style.visibility = 'hidden';
     style.display = '';
     style.height = '';
@@ -405,7 +405,7 @@ Menu.prototype.adjustSizeAndLocation = function() {
     style.visibility = oldVisibility;
   }
 
-  var addScroll = (this.menu.offsetHeight / pageSize.h) > 0.8;
+  let addScroll = (this.menu.offsetHeight / pageSize.h) > 0.8;
   if (addScroll) {
     menuSize.h = parseInt((pageSize.h * 0.8), 10);
     style.height = menuSize.h + 'px';
@@ -444,7 +444,7 @@ Menu.prototype.adjustSizeAndLocation = function() {
  *
  */
 Menu.prototype.append = function(text_or_element, opt_target) {
-  var element = opt_target || this.menu;
+  let element = opt_target || this.menu;
   if (typeof opt_target == 'string' && this.categories[opt_target]) {
     element = this.categories[opt_target];
   }
@@ -526,7 +526,7 @@ Menu.prototype.show = function() {
 
     // Hide other menus
     for (var i = 0; i < Menu.instance.length; i++) {
-      var menuInstance = Menu.instance[i];
+      let menuInstance = Menu.instance[i];
       if (menuInstance != this) {
         menuInstance.hide();
       }
@@ -546,7 +546,7 @@ Menu.prototype.hide = function() {
 };
 
 Menu.prototype.find = function(element) {
-  var curleft = 0, curtop = 0;
+  let curleft = 0, curtop = 0;
   if (element.offsetParent) {
     do {
       curleft += element.offsetLeft;
@@ -555,7 +555,7 @@ Menu.prototype.find = function(element) {
     while ((element = element.offsetParent) && (element.style &&
           element.style.position != 'relative' &&
           element.style.position != 'absolute'));
-    }
+  }
   return {x: curleft, y: curtop};
 };
 

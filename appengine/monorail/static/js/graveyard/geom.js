@@ -19,9 +19,9 @@ function nodeBounds(obj) {
   function fixRectForScrolling(r) {
     // Need to take into account scrolling offset of ancestors (IE already does
     // this)
-    for (var o = obj.offsetParent;
-         o && o.offsetParent;
-         o = o.offsetParent) {
+    for (let o = obj.offsetParent;
+      o && o.offsetParent;
+      o = o.offsetParent) {
       if (o.scrollLeft) {
         r.x -= o.scrollLeft;
       }
@@ -31,7 +31,7 @@ function nodeBounds(obj) {
     }
   }
 
-  var refWindow;
+  let refWindow;
   if (obj.ownerDocument && obj.ownerDocument.parentWindow) {
     refWindow = obj.ownerDocument.parentWindow;
   } else if (obj.ownerDocument && obj.ownerDocument.defaultView) {
@@ -42,27 +42,27 @@ function nodeBounds(obj) {
 
   // IE, Mozilla 3+
   if (obj.getBoundingClientRect) {
-    var rect = obj.getBoundingClientRect();
+    let rect = obj.getBoundingClientRect();
 
     return new Rect(rect.left + GetScrollLeft(refWindow),
-                    rect.top + GetScrollTop(refWindow),
-                    rect.right - rect.left,
-                    rect.bottom - rect.top,
-                    refWindow);
+      rect.top + GetScrollTop(refWindow),
+      rect.right - rect.left,
+      rect.bottom - rect.top,
+      refWindow);
   }
 
   // Mozilla < 3
   if (obj.ownerDocument && obj.ownerDocument.getBoxObjectFor) {
-    var box = obj.ownerDocument.getBoxObjectFor(obj);
+    let box = obj.ownerDocument.getBoxObjectFor(obj);
     var r = new Rect(box.x, box.y, box.width, box.height, refWindow);
     fixRectForScrolling(r);
     return r;
   }
 
   // Fallback to recursively computing this
-  var left = 0;
-  var top = 0;
-  for (var o = obj; o.offsetParent; o = o.offsetParent) {
+  let left = 0;
+  let top = 0;
+  for (let o = obj; o.offsetParent; o = o.offsetParent) {
     left += o.offsetLeft;
     top += o.offsetTop;
   }
@@ -74,14 +74,14 @@ function nodeBounds(obj) {
 
 function GetMousePosition(e) {
   // copied from http://www.quirksmode.org/js/events_compinfo.html
-  var posx = 0;
-  var posy = 0;
+  let posx = 0;
+  let posy = 0;
   if (e.pageX || e.pageY) {
     posx = e.pageX;
     posy = e.pageY;
   } else if (e.clientX || e.clientY) {
-    var obj = (e.target ? e.target : e.srcElement);
-    var refWindow;
+    let obj = (e.target ? e.target : e.srcElement);
+    let refWindow;
     if (obj.ownerDocument && obj.ownerDocument.parentWindow) {
       refWindow = obj.ownerDocument.parentWindow;
     } else {

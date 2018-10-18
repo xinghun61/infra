@@ -199,4 +199,3 @@ class MrChart extends HTMLElement {
 }
 
 customElements.define(MrChart.is(), MrChart);
-

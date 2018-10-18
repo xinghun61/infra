@@ -44,17 +44,17 @@ function TKR_toggleStar(el, projectName, localId, userId, hotlistId) {
   } else if (projectName && localId) {
     starRequestMessage.issue_ref = {
       project_name: projectName,
-      local_id: localId
+      local_id: localId,
     };
     window.prpcClient.call('monorail.Issues', 'StarIssue', starRequestMessage);
   } else if (projectName) {
     starRequestMessage.project_name = projectName;
     window.prpcClient.call(
-        'monorail.Projects', 'StarProject', starRequestMessage);
+      'monorail.Projects', 'StarProject', starRequestMessage);
   } else if (hotlistId) {
     starRequestMessage.hotlist_ref = {hotlist_id: hotlistId};
     window.prpcClient.call(
-        'monorail.Features', 'StarHotlist', starRequestMessage);
+      'monorail.Features', 'StarHotlist', starRequestMessage);
   }
 }
 
@@ -68,7 +68,7 @@ function TKR_toggleStar(el, projectName, localId, userId, hotlistId) {
  *      stars.
  */
 function TKR_toggleStarLocal(el, opt_formElementId) {
-  var starred = (el.textContent.trim() == TKR_STAR_OFF) ? 1 : 0;
+  let starred = (el.textContent.trim() == TKR_STAR_OFF) ? 1 : 0;
 
   el.textContent = starred ? TKR_STAR_ON : TKR_STAR_OFF;
   el.style.color = starred ? 'cornflowerblue' : 'grey';
@@ -88,13 +88,13 @@ function TKR_toggleStarLocal(el, opt_formElementId) {
  * @param {string} otherStarId ID of the other star icon.
  */
 function TKR_syncStarIcons(clickedStar, otherStarId) {
-  var otherStar = document.getElementById(otherStarId);
+  let otherStar = document.getElementById(otherStarId);
   if (!otherStar) {
     return;
   }
   TKR_toggleStarLocal(otherStar);
 
-  var vote_feedback = document.getElementById('vote_feedback');
+  let vote_feedback = document.getElementById('vote_feedback');
   if (!vote_feedback) {
     return;
   }

@@ -14,15 +14,15 @@
  * Add an indexOf method to all arrays, if this brower's JS implementation
  * does not already have it.
  * @param {Object} item The item to find
- * @returns {number} The index of the given item, or -1 if not found.
+ * @return {number} The index of the given item, or -1 if not found.
  */
 if (Array.prototype.indexOf == undefined) {
   Array.prototype.indexOf = function(item) {
-    for (var i = 0; i < this.length; ++i) {
+    for (let i = 0; i < this.length; ++i) {
       if (this[i] == item) return i;
     }
     return -1;
-  }
+  };
 }
 
 
@@ -38,8 +38,8 @@ if (Array.prototype.indexOf == undefined) {
  * consistently.  After that, I can remove this hack.
  */
 function TKR_forceProperTableWidth() {
- var e = $('confirmarea');
- if (e) e.style.display='none';
+  let e = $('confirmarea');
+  if (e) e.style.display='none';
 }
 
 
@@ -76,13 +76,13 @@ function _buildFieldsForIssueDelta(issueDelta, valuesByName) {
       const field_id = key.substring('custom_'.length);
       values = values.filter(Boolean);
       if (valuesByName.get('op_' + key) === 'remove') {
-        values.forEach(value => {
+        values.forEach((value) => {
           issueDelta.field_vals_remove.push({
             field_ref: {field_id: field_id},
             value: value});
         });
       } else {
-        values.forEach(value => {
+        values.forEach((value) => {
           issueDelta.field_vals_add.push({
             field_ref: {field_id: field_id},
             value: value});
@@ -98,7 +98,7 @@ function _classifyPlusMinusItems(values) {
     add: [],
     remove: []};
   values = new Set(values);
-  values.forEach(value => {
+  values.forEach((value) => {
     if (!value.startsWith('-') && value) {
       result.add.push(value);
     } else if (value.startsWith('-') && value.substring(1)) {
@@ -121,26 +121,26 @@ function TKR_buildIssueDelta(valuesByName) {
   }
   if (valuesByName.has('cc')) {
     const cc_usernames = _classifyPlusMinusItems(
-        valuesByName.get('cc')[0].toLowerCase().split(/[,;\s]+/));
+      valuesByName.get('cc')[0].toLowerCase().split(/[,;\s]+/));
     issueDelta.cc_refs_add = cc_usernames.add.map(
-        email => ({display_name: email}));
+      (email) => ({display_name: email}));
     issueDelta.cc_refs_remove = cc_usernames.remove.map(
-        email => ({display_name: email}));
+      (email) => ({display_name: email}));
   }
   if (valuesByName.has('components')) {
     const components = _classifyPlusMinusItems(
-        valuesByName.get('components')[0].split(/[,;\s]/));
+      valuesByName.get('components')[0].split(/[,;\s]/));
     issueDelta.comp_refs_add = components.add.map(
-        path => ({path: path}));
+      (path) => ({path: path}));
     issueDelta.comp_refs_remove = components.remove.map(
-        path => ({path: path}));
+      (path) => ({path: path}));
   }
   if (valuesByName.has('label')) {
     const labels = _classifyPlusMinusItems(valuesByName.get('label'));
     issueDelta.label_refs_add = labels.add.map(
-        label => ({label: label}));
+      (label) => ({label: label}));
     issueDelta.label_refs_remove = labels.remove.map(
-        label => ({label: label}));
+      (label) => ({label: label}));
   }
   if (valuesByName.has('blocked_on')) {
     const blockedOn = _classifyPlusMinusItems(valuesByName.get('blocked_on'));
@@ -154,7 +154,7 @@ function TKR_buildIssueDelta(valuesByName) {
   }
   if (valuesByName.has('merge_into')) {
     issueDelta.merged_into_ref = TKR_parseIssueRef(
-        valuesByName.get('merge_into')[0]);
+      valuesByName.get('merge_into')[0]);
   }
   if (valuesByName.has('summary')) {
     issueDelta.summary = valuesByName.get('summary')[0];

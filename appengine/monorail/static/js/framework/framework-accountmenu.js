@@ -15,7 +15,7 @@
 var accountMenu;
 
 (function() {
-  var target = document.getElementById('account-menu');
+  let target = document.getElementById('account-menu');
 
   if (!target) {
     return;
@@ -33,6 +33,6 @@ var accountMenu;
   accountMenu.addItem('Sign out', CS_env.logout_url);
 
   accountMenu.addEvent(window, 'load', function() {
-      document.body.appendChild(accountMenu.menu);
+    document.body.appendChild(accountMenu.menu);
   });
 })();

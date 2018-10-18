@@ -137,8 +137,10 @@ function _ac_install() {
  */
 function _ac_register(storeConstructor) {
   // check that not already registered
-  for (var i = ac_storeConstructors.length; --i >= 0;) {
-    if (ac_storeConstructors[i] === storeConstructor) { return; }
+  for (let i = ac_storeConstructors.length; --i >= 0;) {
+    if (ac_storeConstructors[i] === storeConstructor) {
+      return;
+    }
   }
   ac_storeConstructors.push(storeConstructor);
 }
@@ -176,7 +178,7 @@ function _ac_cancel() {
 
 /** add a handler without whacking any existing handler. @private */
 function ac_addHandler_(node, handlerName, handler) {
-  var oldHandler = node[handlerName];
+  let oldHandler = node[handlerName];
   if (!oldHandler) {
     node[handlerName] = handler;
   } else {
@@ -206,9 +208,9 @@ function ac_cancelEvent_(event) {
     @private
 */
 function ac_fnchain_(a, b) {
-  return function () {
-    var ar = a.apply(this, arguments);
-    var br = b.apply(this, arguments);
+  return function() {
+    let ar = a.apply(this, arguments);
+    let br = b.apply(this, arguments);
 
     // NOTE 1: (undefined && false) -> undefined
     // NOTE 2: returning FALSE from a onkeypressed cancels it,
@@ -219,31 +221,31 @@ function ac_fnchain_(a, b) {
     } else {
       return true;
     }
-  }
+  };
 }
 
 /** key press handler.  @private */
 function ac_keyevent_(event) {
   event = event || window.event;
 
-  var source = event.target || event.srcElement;
+  let source = event.target || event.srcElement;
   if (('INPUT' == source.tagName && source.type.match(/^text|email$/i))
        || 'TEXTAREA' == source.tagName) {
-    var code = GetKeyCode(event);
-    var isDown = event.type == 'keydown';
-    var isShiftKey = event.shiftKey;
-    var storeFound = true;
+    let code = GetKeyCode(event);
+    let isDown = event.type == 'keydown';
+    let isShiftKey = event.shiftKey;
+    let storeFound = true;
 
     if ((source !== ac_focusedInput) || (ac_store === null)) {
       ac_focusedInput = source;
       storeFound = false;
       if (ENTER_KEYCODE !== code && ESC_KEYCODE !== code) {
-        for (var i = 0; i < ac_storeConstructors.length; ++i) {
-          var store = (ac_storeConstructors[i])(source, event);
+        for (let i = 0; i < ac_storeConstructors.length; ++i) {
+          let store = (ac_storeConstructors[i])(source, event);
           if (store) {
             ac_store = store;
             ac_oldBlurHandler = ac_addHandler_(
-                ac_focusedInput, 'onblur', _ac_ob);
+              ac_focusedInput, 'onblur', _ac_ob);
             storeFound = true;
             break;
           }
@@ -266,36 +268,39 @@ function ac_keyevent_(event) {
     // If the user hit Escape when the auto-complete menu was not shown,
     // then blur the input text field so that the user can use keyboard
     // shortcuts.
-    var acList = document.getElementById('ac-list');
+    let acList = document.getElementById('ac-list');
     if (ESC_KEYCODE == code &&
         (!acList || acList.style.display == 'none')) {
       ac_focusedInput.blur();
     }
     if (storeFound) {
-      var isCompletion = ac_store.isCompletionKey(code, isDown, isShiftKey);
-      var hasResults = ac_completions && (ac_completions.length > 0);
-      var cancelEvent = false;
+      let isCompletion = ac_store.isCompletionKey(code, isDown, isShiftKey);
+      let hasResults = ac_completions && (ac_completions.length > 0);
+      let cancelEvent = false;
 
       if (isCompletion && hasResults) {
         // Cancel any enter keystrokes if something is selected so that the
         // browser doesn't go submitting the form.
         cancelEvent = (!ac_suppressCompletions && !!ac_completions &&
                        (ac_selected != -1));
-        window.setTimeout(function () {
-          if (ac_store) { ac_handleKey_(code, isDown, isShiftKey); }
+        window.setTimeout(function() {
+          if (ac_store) {
+            ac_handleKey_(code, isDown, isShiftKey);
+          }
         }, 0);
       } else if (!isCompletion) {
-       // Don't want to also blur the field. Up and down move the cursor (in
-       // Firefox) to the start/end of the field. We also don't want that while
-       // the list is showing.
-       cancelEvent = (code == ESC_KEYCODE ||
+        // Don't want to also blur the field. Up and down move the cursor (in
+        // Firefox) to the start/end of the field. We also don't want that while
+        // the list is showing.
+        cancelEvent = (code == ESC_KEYCODE ||
                       code == DOWN_KEYCODE ||
                       code == UP_KEYCODE);
 
-        window.setTimeout(function () {
-          if (ac_store) { ac_handleKey_(code, isDown, isShiftKey); }
+        window.setTimeout(function() {
+          if (ac_store) {
+            ac_handleKey_(code, isDown, isShiftKey);
+          }
         }, 0);
-
       } else { // implicit if (isCompletion && !hasResults)
         if (ac_store.oncomplete) {
           ac_store.oncomplete(false, code, ac_focusedInput, undefined);
@@ -339,7 +344,7 @@ function _ac_real_onblur(event) {
  *  when the user clicks away from a text field (or in many other
  *  situations where the user clicks, but that is OK). */
 function _ac_fake_onblur(e) {
-  var targ;
+  let targ;
   if (!e) var e = window.event;
   if (e.target) targ = e.target;
   else if (e.srcElement) targ = e.srcElement;
@@ -360,15 +365,15 @@ function _ac_fake_onblur(e) {
 function _AC_Store() {
 }
 /** returns the chunk of the input to treat as completable. */
-_AC_Store.prototype.completable = function (inputValue, caret) {
+_AC_Store.prototype.completable = function(inputValue, caret) {
   console.log('UNIMPLEMENTED completable');
 };
 /** returns the chunk of the input to treat as completable. */
-_AC_Store.prototype.completions = function (prefix, tofilter) {
+_AC_Store.prototype.completions = function(prefix, tofilter) {
   console.log('UNIMPLEMENTED completions');
 };
 /** returns the chunk of the input to treat as completable. */
-_AC_Store.prototype.oncomplete = function (completed, keycode, element, text) {
+_AC_Store.prototype.oncomplete = function(completed, keycode, element, text) {
   // Call the onkeyup handler so that choosing an autocomplete option has
   // the same side-effect as typing.  E.g., exposing the next row of input
   // fields.
@@ -377,16 +382,16 @@ _AC_Store.prototype.oncomplete = function (completed, keycode, element, text) {
 };
 /** substitutes a completion for a completable in a text input's value. */
 _AC_Store.prototype.substitute =
-  function (inputValue, caret, completable, completion) {
-  console.log('UNIMPLEMENTED substitute');
-};
+  function(inputValue, caret, completable, completion) {
+    console.log('UNIMPLEMENTED substitute');
+  };
 /** true iff hitting a comma key should complete. */
 _AC_Store.prototype.commaCompletes = true;
 /**
  * true iff the given keystroke should cause a completion (and be consumed in
  * the process.
  */
-_AC_Store.prototype.isCompletionKey = function (code, isDown, isShiftKey) {
+_AC_Store.prototype.isCompletionKey = function(code, isDown, isShiftKey) {
   if (!isDown && (ENTER_KEYCODE === code
                   || (AC_COMMA_KEYCODE == code && this.commaCompletes))) {
     return true;
@@ -396,13 +401,13 @@ _AC_Store.prototype.isCompletionKey = function (code, isDown, isShiftKey) {
     // requires that the onkeypress event for tab be consumed or it navigates
     // to next field.
     return false;
-    //JER: return isDown == BR_IsIE();
+    // JER: return isDown == BR_IsIE();
   }
   return false;
 };
 
 function _AC_AddItemToFirstCharMap(firstCharMap, ch, s) {
-  var l = firstCharMap[ch];
+  let l = firstCharMap[ch];
   if (!l) {
     l = firstCharMap[ch] = [];
   } else if (l[l.length - 1].value == s) {
@@ -419,18 +424,20 @@ function _AC_AddItemToFirstCharMap(firstCharMap, ch, s) {
 function _AC_SimpleStore(strings, opt_docStrings) {
   this.firstCharMap_ = {};
 
-  for (var i = 0; i < strings.length; ++i) {
-    var s = strings[i];
-    if (!s) { continue; }
+  for (let i = 0; i < strings.length; ++i) {
+    let s = strings[i];
+    if (!s) {
+      continue;
+    }
     if (opt_docStrings && opt_docStrings[s]) {
       s = s + ' ' + opt_docStrings[s];
     }
 
-    var parts = s.split(/\W+/);
-    for (var j = 0; j < parts.length; ++j) {
+    let parts = s.split(/\W+/);
+    for (let j = 0; j < parts.length; ++j) {
       if (parts[j]) {
         _AC_AddItemToFirstCharMap(
-            this.firstCharMap_, parts[j].charAt(0).toLowerCase(), strings[i]);
+          this.firstCharMap_, parts[j].charAt(0).toLowerCase(), strings[i]);
       }
     }
   }
@@ -442,46 +449,45 @@ function _AC_SimpleStore(strings, opt_docStrings) {
 _AC_SimpleStore.prototype = new _AC_Store();
 _AC_SimpleStore.prototype.constructor = _AC_SimpleStore;
 _AC_SimpleStore.prototype.completable =
-  function (inputValue, caret) {
-
+  function(inputValue, caret) {
   // complete after the last comma not inside ""s
-  var start = 0;
-  var state = 0;
-  for (var i = 0; i < caret; ++i) {
-    var ch = inputValue.charAt(i);
-    switch (state) {
-    case 0:
-      if ('"' == ch) {
-        state = 1;
-      } else if (',' == ch || ' ' == ch) {
-        start = i + 1;
+    let start = 0;
+    let state = 0;
+    for (let i = 0; i < caret; ++i) {
+      let ch = inputValue.charAt(i);
+      switch (state) {
+      case 0:
+        if ('"' == ch) {
+          state = 1;
+        } else if (',' == ch || ' ' == ch) {
+          start = i + 1;
+        }
+        break;
+      case 1:
+        if ('"' == ch) {
+          state = 0;
+        }
+        break;
       }
-      break;
-    case 1:
-      if ('"' == ch) {
-        state = 0;
-      }
-      break;
     }
-  }
-  while (start < caret &&
+    while (start < caret &&
          ' \t\r\n'.indexOf(inputValue.charAt(start)) >= 0) {
-    ++start;
-  }
-  return inputValue.substring(start, caret);
-};
+      ++start;
+    }
+    return inputValue.substring(start, caret);
+  };
 
 
 /** Simple function to create a <span> with matching text in bold.
  */
 function _AC_CreateSpanWithMatchHighlighted(match) {
-    var span = document.createElement('span');
-    span.appendChild(document.createTextNode(match[1] || ''));
-    var bold = document.createElement('b');
-    span.appendChild(bold);
-    bold.appendChild(document.createTextNode(match[2]));
-    span.appendChild(document.createTextNode(match[3] || ''));
-    return span;
+  let span = document.createElement('span');
+  span.appendChild(document.createTextNode(match[1] || ''));
+  let bold = document.createElement('b');
+  span.appendChild(bold);
+  bold.appendChild(document.createTextNode(match[2]));
+  span.appendChild(document.createTextNode(match[3] || ''));
+  return span;
 };
 
 
@@ -501,30 +507,30 @@ _AC_SimpleStore.prototype.completions = function(prefix) {
   // Since we use prefix to build a regular expression, we need to escape RE
   // characters. We match '-', '{', '$' and others in the prefix and convert
   // them into "\-", "\{", "\$".
-  var regexForRegexCharacters = /([\^*+\-\$\\\{\}\(\)\[\]\#?\.])/g;
-  var modifiedPrefix = prefix.replace(regexForRegexCharacters, '\\$1');
+  let regexForRegexCharacters = /([\^*+\-\$\\\{\}\(\)\[\]\#?\.])/g;
+  let modifiedPrefix = prefix.replace(regexForRegexCharacters, '\\$1');
 
   // Match the modifiedPrefix anywhere as long as it is either at the very
   // beginning "Th" -> "The Hobbit", or comes immediately after a word separator
   // such as "Ga" -> "The-Great-Gatsby".
-  var patternRegex = '^(.*\\W)?(' + modifiedPrefix + ')(.*)';
-  var pattern = new RegExp(patternRegex, 'i' /* ignore case */);
+  let patternRegex = '^(.*\\W)?(' + modifiedPrefix + ')(.*)';
+  let pattern = new RegExp(patternRegex, 'i' /* ignore case */);
 
   // We keep separate lists of possible completions that were generated
   // by matching a value or generated by matching a docstring.  We return
   // a concatenated list so that value matches all come before docstring
   // matches.
-  var completions = [];
-  var docCompletions = [];
+  let completions = [];
+  let docCompletions = [];
 
   if (toFilter) {
-    var toFilterLength = toFilter.length;
-    for (var i = 0; i < toFilterLength; ++i) {
-      var docStr = this.docstrings[toFilter[i].value];
-      var compSpan = null;
-      var docSpan = null;
-      var matches = toFilter[i].value.match(pattern);
-      var docMatches = docStr && docStr.match(pattern);
+    let toFilterLength = toFilter.length;
+    for (let i = 0; i < toFilterLength; ++i) {
+      let docStr = this.docstrings[toFilter[i].value];
+      let compSpan = null;
+      let docSpan = null;
+      let matches = toFilter[i].value.match(pattern);
+      let docMatches = docStr && docStr.match(pattern);
       if (matches) {
         compSpan = _AC_CreateSpanWithMatchHighlighted(matches);
         if (docStr) docSpan = document.createTextNode(docStr);
@@ -534,8 +540,8 @@ _AC_SimpleStore.prototype.completions = function(prefix) {
       }
 
       if (compSpan) {
-        var newCompletion = new _AC_Completion(
-            toFilter[i].value, compSpan, docSpan);
+        let newCompletion = new _AC_Completion(
+          toFilter[i].value, compSpan, docSpan);
 
         if (matches) {
           completions.push(newCompletion);
@@ -556,15 +562,15 @@ _AC_SimpleStore.prototype.completions = function(prefix) {
 // select the first possible completion (if any).  When the user
 // hits ENTER, that first completion is substituted.  When that
 // behavior is not desired, override this to return false.
-_AC_SimpleStore.prototype.autoselectFirstRow = function () {
+_AC_SimpleStore.prototype.autoselectFirstRow = function() {
   return true;
 };
 
 // Comparison function for _AC_Completion
 function _AC_CompareACCompletion(a, b) {
   // convert it to lower case and remove all leading junk
-  var aval = a.value.toLowerCase().replace(/^\W*/,'');
-  var bval = b.value.toLowerCase().replace(/^\W*/,'');
+  let aval = a.value.toLowerCase().replace(/^\W*/, '');
+  let bval = b.value.toLowerCase().replace(/^\W*/, '');
 
   if (a.value === b.value) {
     return 0;
@@ -576,7 +582,7 @@ function _AC_CompareACCompletion(a, b) {
 }
 
 _AC_SimpleStore.prototype.substitute =
-function (inputValue, caret, completable, completion) {
+function(inputValue, caret, completable, completion) {
   return inputValue.substring(0, caret - completable.length) +
     completion.value + ', ' + inputValue.substring(caret);
 };
@@ -593,7 +599,7 @@ function _AC_Completion(value, compSpan, docSpan) {
   if (typeof docSpan == 'string') docSpan = document.createTextNode(docSpan);
   this.docSpan = docSpan;
 }
-_AC_Completion.prototype.toString = function () {
+_AC_Completion.prototype.toString = function() {
   return '(AC_Completion: ' + this.value + ')';
 };
 
@@ -639,8 +645,8 @@ var ac_max_options = 100;
 function ac_handleKey_(code, isDown, isShiftKey) {
   // check completions
   ac_checkCompletions();
-  var show = true;
-  var numCompletions = ac_completions ? ac_completions.length : 0;
+  let show = true;
+  let numCompletions = ac_completions ? ac_completions.length : 0;
   // handle enter and tab on key press and the rest on key down
   if (ac_store.isCompletionKey(code, isDown, isShiftKey)) {
     if (ac_selected < 0 && numCompletions >= 1 &&
@@ -648,8 +654,8 @@ function ac_handleKey_(code, isDown, isShiftKey) {
       ac_selected = 0;
     }
     if (ac_selected >= 0) {
-      var backupInput = ac_focusedInput;
-      var completeValue = ac_completions[ac_selected].value;
+      let backupInput = ac_focusedInput;
+      let completeValue = ac_completions[ac_selected].value;
       ac_complete();
       if (ac_store.oncomplete) {
         ac_store.oncomplete(true, code, backupInput, completeValue);
@@ -657,22 +663,22 @@ function ac_handleKey_(code, isDown, isShiftKey) {
     }
   } else {
     switch (code) {
-    case ESC_KEYCODE:  // escape
-      //JER?? ac_suppressCompletions = true;
+    case ESC_KEYCODE: // escape
+      // JER?? ac_suppressCompletions = true;
       ac_selected = -1;
       show = false;
       break;
-    case UP_KEYCODE:  // up
+    case UP_KEYCODE: // up
       if (isDown) {
         // firefox fires arrow events on both down and press, but IE only fires
         // then on press.
         ac_selected = Math.max(numCompletions >= 0 ? 0 : -1, ac_selected - 1);
       }
       break;
-    case DOWN_KEYCODE:  // down
+    case DOWN_KEYCODE: // down
       if (isDown) {
-         ac_selected = Math.min(
-              ac_max_options - 1, Math.min(numCompletions - 1, ac_selected + 1));
+        ac_selected = Math.min(
+          ac_max_options - 1, Math.min(numCompletions - 1, ac_selected + 1));
       }
       break;
     }
@@ -690,11 +696,10 @@ function ac_handleKey_(code, isDown, isShiftKey) {
       case BACKSPACE_KEYCODE:
       case DELETE_KEYCODE:
         break;
-      default:  // User typed some new characters.
+      default: // User typed some new characters.
         ac_everTyped = true;
       }
     }
-
   }
 
   if (ac_focusedInput) {
@@ -724,20 +729,20 @@ function _ac_mouseover(optionIndex) {
 
 /** perform the substitution of the currently selected item. */
 function ac_complete() {
-  var caret = ac_getCaretPosition_(ac_focusedInput);
-  var completion = ac_completions[ac_selected];
+  let caret = ac_getCaretPosition_(ac_focusedInput);
+  let completion = ac_completions[ac_selected];
 
   ac_focusedInput.value = ac_store.substitute(
-      ac_focusedInput.value, caret,
-      ac_lastCompletable, completion);
+    ac_focusedInput.value, caret,
+    ac_lastCompletable, completion);
   // When the prefix starts with '*' we want to return the complete set of all
   // possible completions. We treat the ac_lastCompletable value as empty so
   // that the caret is correctly calculated (i.e. the caret should not consider
   // placeholder values like '*member').
-  var new_caret = caret + completion.value.length;
+  let new_caret = caret + completion.value.length;
   if (!ac_lastCompletable.startsWith('*')) {
     // Only consider the ac_lastCompletable length if it does not start with '*'
-    new_caret = new_caret - ac_lastCompletable.length
+    new_caret = new_caret - ac_lastCompletable.length;
   }
   // If we inserted something ending in two quotation marks, position
   // the cursor between the quotation marks. If we inserted a complete term,
@@ -748,8 +753,8 @@ function ac_complete() {
     new_caret--;
   } else if (completion.value.substring(completion.value.length - 1) != ':' &&
              completion.value.substring(completion.value.length - 1) != '=') {
-    new_caret++;  // To account for the comma.
-    new_caret++;  // To account for the space after the comma.
+    new_caret++; // To account for the comma.
+    new_caret++; // To account for the space after the comma.
   }
   ac_selected = -1;
   ac_completions = null;
@@ -771,18 +776,20 @@ var ac_everTyped = false;
  */
 function ac_checkCompletions() {
   if (ac_focusedInput && !ac_suppressCompletions) {
-    var caret = ac_getCaretPosition_(ac_focusedInput);
-    var completable = ac_store.completable(ac_focusedInput.value, caret);
+    let caret = ac_getCaretPosition_(ac_focusedInput);
+    let completable = ac_store.completable(ac_focusedInput.value, caret);
 
     // If we already have completed, then our work here is done.
-    if (completable == ac_lastCompletable) { return; }
+    if (completable == ac_lastCompletable) {
+      return;
+    }
 
     ac_completions = null;
     ac_selected = -1;
 
-    var oldSelected =
+    let oldSelected =
       ((ac_selected >= 0 && ac_selected < ac_completions.length) ?
-       ac_completions[ac_selected].value : null);
+        ac_completions[ac_selected].value : null);
     ac_completions = ac_store.completions(completable);
     ac_selected = oldSelected ? 0 : -1;
     ac_lastCompletable = completable;
@@ -798,10 +805,10 @@ function ac_checkCompletions() {
  * @private
  */
 function ac_updateCompletionList(show) {
-  var clist = document.getElementById('ac-list');
+  let clist = document.getElementById('ac-list');
   let input = ac_focusedInput;
   if (input) {
-   input.setAttribute('aria-activedescendant', 'ac-status-row-none');
+    input.setAttribute('aria-activedescendant', 'ac-status-row-none');
   }
   let tableEl;
   let tableBody;
@@ -839,19 +846,19 @@ function ac_updateCompletionList(show) {
       ac_selected = 0;
     }
 
-    var headerCount= 0;
-    for (var i = 0; i < Math.min(ac_max_options, ac_completions.length); ++i) {
+    let headerCount= 0;
+    for (let i = 0; i < Math.min(ac_max_options, ac_completions.length); ++i) {
       if (ac_completions[i].heading) {
         var rowEl = document.createElement('tr');
         tableBody.appendChild(rowEl);
-        var cellEl = document.createElement('th');
+        let cellEl = document.createElement('th');
         rowEl.appendChild(cellEl);
         cellEl.setAttribute('colspan', 2);
         if (headerCount) {
-            cellEl.appendChild(document.createElement('br'));
+          cellEl.appendChild(document.createElement('br'));
         }
         cellEl.appendChild(
-            document.createTextNode(ac_completions[i].heading));
+          document.createTextNode(ac_completions[i].heading));
         headerCount++;
       } else {
         var rowEl = document.createElement('tr');
@@ -866,29 +873,31 @@ function ac_updateCompletionList(show) {
           event.preventDefault();
         });
         rowEl.addEventListener('mouseup', function(event) {
-            var target = event.target;
-            while (target && target.tagName != 'TR')
-              target = target.parentNode;
-            var idx = Number(target.getAttribute('data-index'));
-            try {
-              _ac_select(idx);
-            } finally {
-              return false;
-            }
+          let target = event.target;
+          while (target && target.tagName != 'TR') {
+            target = target.parentNode;
+          }
+          let idx = Number(target.getAttribute('data-index'));
+          try {
+            _ac_select(idx);
+          } finally {
+            return false;
+          }
         });
         rowEl.addEventListener('mouseover', function(event) {
-            var target = event.target;
-            while (target && target.tagName != 'TR')
-              target = target.parentNode;
-            var idx = Number(target.getAttribute('data-index'));
-            _ac_mouseover(idx);
+          let target = event.target;
+          while (target && target.tagName != 'TR') {
+            target = target.parentNode;
+          }
+          let idx = Number(target.getAttribute('data-index'));
+          _ac_mouseover(idx);
         });
-        var valCellEl = document.createElement('td');
+        let valCellEl = document.createElement('td');
         rowEl.appendChild(valCellEl);
         if (ac_completions[i].compSpan) {
           valCellEl.appendChild(ac_completions[i].compSpan);
         }
-        var docCellEl = document.createElement('td');
+        let docCellEl = document.createElement('td');
         rowEl.appendChild(docCellEl);
         if (ac_completions[i].docSpan &&
             ac_completions[i].docSpan.textContent) {
@@ -899,7 +908,7 @@ function ac_updateCompletionList(show) {
     }
 
     // position
-    var inputBounds = nodeBounds(ac_focusedInput);
+    let inputBounds = nodeBounds(ac_focusedInput);
     clist.style.left = inputBounds.x + 'px';
     clist.style.top = (inputBounds.y + inputBounds.h) + 'px';
 
@@ -908,13 +917,12 @@ function ac_updateCompletionList(show) {
     // Note - we use '' instead of 'block', since 'block' has odd effects on
     // the screen in IE, and causes scrollbars to resize
     clist.style.display = '';
-
   } else {
     tableBody = document.getElementById('ac-table-body');
     if (clist && tableBody) {
       clist.style.display = 'none';
       while (tableBody.childNodes.length) {
-          tableBody.removeChild(tableBody.childNodes[0]);
+        tableBody.removeChild(tableBody.childNodes[0]);
       }
     }
   }
@@ -926,13 +934,13 @@ function ac_updateCompletionList(show) {
 
 /** Scroll the autocomplete menu to show the currently selected row. */
 function ac_autoscroll() {
-  var acList = document.getElementById('ac-list');
-  var acSelRow = acList.getElementsByClassName('selected')[0];
-  var acSelRowTop = acSelRow ? acSelRow.offsetTop : 0;
-  var acSelRowHeight = acSelRow ? acSelRow.offsetHeight : 0;
+  let acList = document.getElementById('ac-list');
+  let acSelRow = acList.getElementsByClassName('selected')[0];
+  let acSelRowTop = acSelRow ? acSelRow.offsetTop : 0;
+  let acSelRowHeight = acSelRow ? acSelRow.offsetHeight : 0;
 
 
-  var EXTRA = 8;  // Go an extra few pixels so the next row is partly exposed.
+  let EXTRA = 8; // Go an extra few pixels so the next row is partly exposed.
 
   if (!acList || !acSelRow) return;
 
@@ -955,7 +963,7 @@ function ac_autoscroll() {
  */
 function ac_getCaretPosition_(textField) {
   if ('INPUT' == textField.tagName) {
-    var caret = textField.value.length;
+    let caret = textField.value.length;
 
     // chrome/firefox
     if (undefined != textField.selectionStart) {
@@ -969,8 +977,8 @@ function ac_getCaretPosition_(textField) {
       // ie
     } else if (document.selection) {
       // get an empty selection range
-      var range = document.selection.createRange();
-      var origSelectionLength = range.text.length;
+      let range = document.selection.createRange();
+      let origSelectionLength = range.text.length;
       // Force selection start to 0 position
       range.moveStart('character', -caret);
       // the caret end position is the new selection length
@@ -997,7 +1005,7 @@ function ac_getCaretPosition_(textField) {
  * on key press, the keycode for comma comes out as 44.
  * on keydown it comes out as 188.
  */
-var AC_COMMA_KEYCODE = ','.charCodeAt(0);
+const AC_COMMA_KEYCODE = ','.charCodeAt(0);
 
 function BR_hasExcessBlurEvents() {
   return navigator.userAgent.toLowerCase().indexOf('webkit') != -1;

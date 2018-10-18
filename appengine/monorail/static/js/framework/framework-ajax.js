@@ -21,10 +21,10 @@ var DEBOUNCE_THRESH_MS = 2000;
  * el.addEventListener('keyup', debouncedKeyHandler);
  */
 function debounce(func, opt_threshold_ms) {
-  var timeout;
+  let timeout;
   return function() {
-    var context = this, args = arguments;
-    var later = function() {
+    let context = this, args = arguments;
+    let later = function() {
       timeout = null;
       func.apply(context, args);
     };
@@ -41,20 +41,20 @@ function debounce(func, opt_threshold_ms) {
  * @return {string} encoded POST data.
  */
 function CS_postData(args) {
-  var params = [];
+  let params = [];
 
   if (args instanceof Array) {
     for (var key in args) {
-      var inputValue = args[key];
-      var name = inputValue[0];
-      var value = inputValue[1];
+      let inputValue = args[key];
+      let name = inputValue[0];
+      let value = inputValue[1];
       if (value !== undefined) {
-        params.push(name + "=" + encodeURIComponent(String(value)));
+        params.push(name + '=' + encodeURIComponent(String(value)));
       }
     }
   } else {
     for (var key in args) {
-      params.push(key + "=" + encodeURIComponent(String(args[key])));
+      params.push(key + '=' + encodeURIComponent(String(args[key])));
     }
   }
 
@@ -75,7 +75,7 @@ function CS_postData(args) {
  */
 function CS_doPost(url, callback, args) {
   window.prpcClient.ensureTokenIsValid().then(() => {
-    var xh = XH_XmlHttpCreate();
+    let xh = XH_XmlHttpCreate();
     XH_XmlHttpPOST(xh, url, CS_postData(args), callback);
   });
 }
@@ -136,15 +136,15 @@ function refreshTokens(event, formToken, formTokenPath, tokenExpiresSec) {
   event.preventDefault();
   const message = {
     token: formToken,
-    tokenPath: formTokenPath
+    tokenPath: formTokenPath,
   };
   const refreshTokenPromise = window.prpcClient.call(
-      'monorail.Sitewide', 'RefreshToken', message);
+    'monorail.Sitewide', 'RefreshToken', message);
 
-  refreshTokenPromise.then(freshToken => {
-    var tokenFields = document.querySelectorAll("input[name=token]");
-    for (var i = 0; i < tokenFields.length; ++i) {
-        tokenFields[i].value = freshToken.token;
+  refreshTokenPromise.then((freshToken) => {
+    let tokenFields = document.querySelectorAll('input[name=token]');
+    for (let i = 0; i < tokenFields.length; ++i) {
+      tokenFields[i].value = freshToken.token;
     }
     if (formToSubmit) {
       formToSubmit.submit();

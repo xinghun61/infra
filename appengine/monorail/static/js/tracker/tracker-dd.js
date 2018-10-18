@@ -19,11 +19,10 @@
  *    class 'drag_item'
  */
 function TKR_initDragAndDrop(container, opt_onDrop, opt_preventMultiple) {
-
-  var dragSrc = null;
-  var dragLocation = null;
-  var dragItems = container.getElementsByClassName('drag_item');
-  var target = null;
+  let dragSrc = null;
+  let dragLocation = null;
+  let dragItems = container.getElementsByClassName('drag_item');
+  let target = null;
 
   opt_preventMultiple = opt_preventMultiple || false;
   opt_onDrop = opt_onDrop || function() {};
@@ -33,8 +32,8 @@ function TKR_initDragAndDrop(container, opt_onDrop, opt_preventMultiple) {
   }
 
   function _handleDragStart(event) {
-    var el = event.currentTarget;
-    var gripper = el.getElementsByClassName('gripper');
+    let el = event.currentTarget;
+    let gripper = el.getElementsByClassName('gripper');
     if (gripper.length && !gripper[0].contains(target)) {
       event.preventDefault();
       return;
@@ -56,13 +55,14 @@ function TKR_initDragAndDrop(container, opt_onDrop, opt_preventMultiple) {
   }
 
   function _handleDragOver(event) {
-    if (dragSrc == null)
+    if (dragSrc == null) {
       return true;
+    }
     event.preventDefault();
-    var el = event.currentTarget;
-    var rect = el.getBoundingClientRect(),
-        classes = el.classList;
-    var section = inRect(rect, event.clientX, event.clientY);
+    let el = event.currentTarget;
+    let rect = el.getBoundingClientRect(),
+      classes = el.classList;
+    let section = inRect(rect, event.clientX, event.clientY);
     if (section == 'top' && !classes.contains('top')) {
       dragLocation = 'top';
       classes.remove('bottom');
@@ -81,19 +81,20 @@ function TKR_initDragAndDrop(container, opt_onDrop, opt_preventMultiple) {
   }
 
   function _handleDragDrop(event) {
-    var el = event.currentTarget;
-    if (dragSrc == null || el == dragSrc)
+    let el = event.currentTarget;
+    if (dragSrc == null || el == dragSrc) {
       return true;
+    }
 
     if (opt_preventMultiple) {
-      var dragItems = container.getElementsByClassName('drag_item');
-      for (var i = 0; i < dragItems.length; i++) {
+      let dragItems = container.getElementsByClassName('drag_item');
+      for (let i = 0; i < dragItems.length; i++) {
         dragItems[i].setAttribute('draggable', false);
       }
     }
 
-    var srcID = dragSrc.getAttribute('data-id');
-    var id = el.getAttribute('data-id');
+    let srcID = dragSrc.getAttribute('data-id');
+    let id = el.getAttribute('data-id');
 
     if (dragLocation == 'top') {
       el.parentNode.insertBefore(dragSrc, el);
@@ -111,13 +112,13 @@ function TKR_initDragAndDrop(container, opt_onDrop, opt_preventMultiple) {
       dragSrc.style.opacity = 1;
       dragSrc = null;
     }
-    for (var i = 0; i < dragItems.length; i++) {
+    for (let i = 0; i < dragItems.length; i++) {
       removeClasses(dragItems[i]);
     }
   }
 
-  for (var i = 0; i < dragItems.length; i++) {
-    var el = dragItems[i];
+  for (let i = 0; i < dragItems.length; i++) {
+    let el = dragItems[i];
     el.setAttribute('draggable', true);
     el.addEventListener('mousedown', _handleMouseDown);
     el.addEventListener('dragstart', _handleDragStart);
@@ -128,5 +129,4 @@ function TKR_initDragAndDrop(container, opt_onDrop, opt_preventMultiple) {
       removeClasses(event.currentTarget);
     });
   }
-
 }

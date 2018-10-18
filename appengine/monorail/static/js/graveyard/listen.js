@@ -10,8 +10,8 @@ var unlisten;
 var unlistenByKey;
 
 (function() {
-  var listeners = {};
-  var nextId = 0;
+  let listeners = {};
+  let nextId = 0;
 
   function getHashCode_(obj) {
     if (obj.listen_hc_ == null) {
@@ -33,10 +33,10 @@ var unlistenByKey;
    * @return {string} key to identify this tuple in the listeners hash.
    */
   function createKey_(node, event, listener, opt_useCapture) {
-    var nodeHc = getHashCode_(node);
-    var listenerHc = getHashCode_(listener);
+    let nodeHc = getHashCode_(node);
+    let listenerHc = getHashCode_(listener);
     opt_useCapture = !!opt_useCapture;
-    var key = nodeHc + '_' + event + '_' + listenerHc + '_' + opt_useCapture;
+    let key = nodeHc + '_' + event + '_' + listenerHc + '_' + opt_useCapture;
     return key;
   }
 
@@ -61,20 +61,20 @@ var unlistenByKey;
    * @return {string} a unique key to indentify this listener.
    */
   listen = function(node, event, listener, opt_useCapture) {
-    var key = createKey_(node, event, listener, opt_useCapture);
+    let key = createKey_(node, event, listener, opt_useCapture);
 
     // addEventListener does not allow multiple listeners
     if (key in listeners) {
       return key;
     }
 
-    var proxy = handleEvent.bind(null, key);
+    let proxy = handleEvent.bind(null, key);
     listeners[key] = {
       listener: listener,
       proxy: proxy,
       event: event,
       node: node,
-      useCapture: opt_useCapture
+      useCapture: opt_useCapture,
     };
 
     if (node.addEventListener) {
@@ -86,7 +86,7 @@ var unlistenByKey;
     }
 
     return key;
-  }
+  };
 
   /**
    * Removes an event listener which was added with listen().
@@ -100,10 +100,10 @@ var unlistenByKey;
    * @return {boolean} indicating whether the listener was there to remove.
    */
   unlisten = function(node, event, listener, opt_useCapture) {
-    var key = createKey_(node, event, listener, opt_useCapture);
+    let key = createKey_(node, event, listener, opt_useCapture);
 
     return unlistenByKey(key);
-  }
+  };
 
   /**
    * Variant of {@link unlisten} that takes a key that was returned by
@@ -116,11 +116,11 @@ var unlistenByKey;
     if (!(key in listeners)) {
       return false;
     }
-    var listener = listeners[key];
-    var proxy = listener.proxy;
-    var event = listener.event;
-    var node = listener.node;
-    var useCapture = listener.useCapture;
+    let listener = listeners[key];
+    let proxy = listener.proxy;
+    let event = listener.event;
+    let node = listener.node;
+    let useCapture = listener.useCapture;
 
     if (node.removeEventListener) {
       node.removeEventListener(event, proxy, useCapture);
@@ -130,7 +130,7 @@ var unlistenByKey;
 
     delete listeners[key];
     return true;
-  }
+  };
 
   /**
    * The function which is actually called when the DOM event occurs. This
@@ -139,8 +139,7 @@ var unlistenByKey;
   function handleEvent(key) {
     // pass all arguments which were sent to this function except listenerID
     // on to the actual listener.
-    var args = Array.prototype.splice.call(arguments, 1, arguments.length);
+    let args = Array.prototype.splice.call(arguments, 1, arguments.length);
     return listeners[key].listener.apply(null, args);
   }
-
 })();

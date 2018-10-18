@@ -28,12 +28,12 @@ function Point(x, y, opt_coordinateFrame) {
     */
   this.coordinateFrame = opt_coordinateFrame || null;
 }
-Point.prototype.toString = function () {
+Point.prototype.toString = function() {
   return '[P ' + this.x + ',' + this.y + ']';
 };
 Point.prototype.clone = function() {
   return new Point(this.x, this.y, this.coordinateFrame);
-}
+};
 
 /** a distance between two points in 2-space in cartesian form.
   * A delta doesn't have a coordinate frame associated since all the coordinate
@@ -51,7 +51,7 @@ function Delta(dx, dy) {
   /** a numeric distance along the y dimension. */
   this.dy = dy;
 }
-Delta.prototype.toString = function () {
+Delta.prototype.toString = function() {
   return '[D ' + this.dx + ',' + this.dy + ']';
 };
 
@@ -94,7 +94,7 @@ function Rect(x, y, w, h, opt_coordinateFrame) {
 Rect.prototype.contains = function(p) {
   return this.x <= p.x && p.x < (this.x + this.w) &&
              this.y <= p.y && p.y < (this.y + this.h);
-}
+};
 
 /**
  * Determines whether the given rectangle intersects this rectangle.
@@ -103,9 +103,9 @@ Rect.prototype.contains = function(p) {
  * @return boolean indicating if this the two rectangles intersect
  */
 Rect.prototype.intersects = function(r) {
-  var p = function(x, y) {
+  let p = function(x, y) {
     return new Point(x, y, null);
-  }
+  };
 
   return this.contains(p(r.x, r.y)) ||
          this.contains(p(r.x + r.w, r.y)) ||
@@ -115,9 +115,9 @@ Rect.prototype.intersects = function(r) {
          r.contains(p(this.x + this.w, this.y)) ||
          r.contains(p(this.x + this.w, this.y + this.h)) ||
          r.contains(p(this.x, this.y + this.h));
-}
+};
 
-Rect.prototype.toString = function () {
+Rect.prototype.toString = function() {
   return '[R ' + this.w + 'x' + this.h + '+' + this.x + '+' + this.y + ']';
 };
 

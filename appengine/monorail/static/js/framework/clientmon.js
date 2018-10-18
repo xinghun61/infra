@@ -12,13 +12,13 @@
   // to the server. It reports at most every THRESHOLD_MS milliseconds and
   // each report contains error signatures with counts.
 
-  var errBuff = {};
-  var THRESHOLD_MS = 2000;
+  let errBuff = {};
+  let THRESHOLD_MS = 2000;
 
   function throttle(fn) {
-    var last, timer;
+    let last, timer;
     return function() {
-      var now = Date.now();
+      let now = Date.now();
       if (last && now < last + THRESHOLD_MS) {
         clearTimeout(timer);
         timer = setTimeout(function() {
@@ -31,14 +31,14 @@
       }
     };
   }
-  var flushErrs = throttle(function() {
-    var data = {errors: JSON.stringify(errBuff)};
+  let flushErrs = throttle(function() {
+    let data = {errors: JSON.stringify(errBuff)};
     CS_doPost('/_/clientmon.do', null, data);
     errBuff = {};
   });
 
   window.addEventListener('error', function(evt) {
-    var signature = evt.message;
+    let signature = evt.message;
     if (evt.error instanceof Error) {
       signature += '\n' + evt.error.stack;
     }

@@ -17,21 +17,21 @@ function setUp() {
 
 function testPostData() {
   assertEquals(
-      'token=d34db33f',
-      CS_postData({}));
+    'token=d34db33f',
+    CS_postData({}));
   assertEquals(
-      'token=d34db33f',
+    'token=d34db33f',
     CS_postData({}, true));
   assertEquals(
-      '',
-      CS_postData({}, false));
+    '',
+    CS_postData({}, false));
   assertEquals(
-      'a=5&b=foo&token=d34db33f',
-      CS_postData({a: 5, b: 'foo'}));
+    'a=5&b=foo&token=d34db33f',
+    CS_postData({a: 5, b: 'foo'}));
 
-  var unescaped = {};
+  let unescaped = {};
   unescaped['f oo?'] = 'b&ar';
   assertEquals(
-      'f%20oo%3F=b%26ar',
-      CS_postData(unescaped, false));
+    'f%20oo%3F=b%26ar',
+    CS_postData(unescaped, false));
 }

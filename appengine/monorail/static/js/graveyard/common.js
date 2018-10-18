@@ -5,7 +5,7 @@
  * https://developers.google.com/open-source/licenses/bsd
  */
 
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 // This file contains common utilities and basic javascript infrastructure.
 //
 // Notes:
@@ -103,7 +103,7 @@
 //
 // - Miscellaneous
 // IsDefined(): returns true if argument is not undefined
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 
 // browser detection
 function BR_AgentContains_(str) {
@@ -138,28 +138,28 @@ function BR_IsNav() {
 }
 
 var BACKSPACE_KEYCODE = 8;
-var COMMA_KEYCODE = 188;                // ',' key
-var DEBUG_KEYCODE = 68;                 // 'D' key
+var COMMA_KEYCODE = 188; // ',' key
+var DEBUG_KEYCODE = 68; // 'D' key
 var DELETE_KEYCODE = 46;
-var DOWN_KEYCODE = 40;                  // DOWN arrow key
-var ENTER_KEYCODE = 13;                 // ENTER key
-var ESC_KEYCODE = 27;                   // ESC key
-var LEFT_KEYCODE = 37;                  // LEFT arrow key
-var RIGHT_KEYCODE = 39;                 // RIGHT arrow key
-var SPACE_KEYCODE = 32;                 // space bar
-var TAB_KEYCODE = 9;                    // TAB key
-var UP_KEYCODE = 38;                    // UP arrow key
+var DOWN_KEYCODE = 40; // DOWN arrow key
+var ENTER_KEYCODE = 13; // ENTER key
+var ESC_KEYCODE = 27; // ESC key
+var LEFT_KEYCODE = 37; // LEFT arrow key
+var RIGHT_KEYCODE = 39; // RIGHT arrow key
+var SPACE_KEYCODE = 32; // space bar
+var TAB_KEYCODE = 9; // TAB key
+var UP_KEYCODE = 38; // UP arrow key
 var SHIFT_KEYCODE = 16;
 var PAGE_DOWN_KEYCODE = 34;
 var PAGE_UP_KEYCODE = 33;
 
-var MAX_EMAIL_ADDRESS_LENGTH = 320;     // 64 + '@' + 255
-var MAX_SIGNATURE_LENGTH = 1000;        // 1000 chars of maximum signature
+var MAX_EMAIL_ADDRESS_LENGTH = 320; // 64 + '@' + 255
+var MAX_SIGNATURE_LENGTH = 1000; // 1000 chars of maximum signature
 
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 // Assertions
 // DEPRECATED: Use assert.js
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 /**
  * DEPRECATED: Use assert.js
  */
@@ -258,58 +258,60 @@ function AssertType(value, type, opt_msg) {
   // for backwards compatability only
   if (typeof value == type) return;
 
-  if (value || value == "") {
+  if (value || value == '') {
     try {
       if (type == AssertTypeMap[typeof value] || value instanceof type) return;
-    } catch (e) { /* failure, type was an illegal argument to instanceof */ }
+    } catch (e) {/* failure, type was an illegal argument to instanceof */}
   }
-  var makeMsg = opt_msg === undefined;
+  let makeMsg = opt_msg === undefined;
   if (makeMsg) {
     if (typeof type == 'function') {
-      var match = type.toString().match(/^\s*function\s+([^\s\{]+)/);
+      let match = type.toString().match(/^\s*function\s+([^\s\{]+)/);
       if (match) type = match[1];
     }
-    opt_msg = "AssertType failed: <" + value + "> not typeof "+ type;
+    opt_msg = 'AssertType failed: <' + value + '> not typeof '+ type;
   }
   Fail(opt_msg);
 }
 
 var AssertTypeMap = {
-  'string'  : String,
-  'number'  : Number,
-  'boolean' : Boolean
+  'string': String,
+  'number': Number,
+  'boolean': Boolean,
 };
 
 var EXPIRED_COOKIE_VALUE = 'EXPIRED';
 
 
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 // Window/screen utilities
 // TODO: these should be renamed (e.g. GetWindowWidth to GetWindowInnerWidth
 // and moved to geom.js)
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 // Get page offset of an element
 function GetPageOffsetLeft(el) {
-  var x = el.offsetLeft;
-  if (el.offsetParent != null)
+  let x = el.offsetLeft;
+  if (el.offsetParent != null) {
     x += GetPageOffsetLeft(el.offsetParent);
+  }
   return x;
 }
 
 // Get page offset of an element
 function GetPageOffsetTop(el) {
-  var y = el.offsetTop;
-  if (el.offsetParent != null)
+  let y = el.offsetTop;
+  if (el.offsetParent != null) {
     y += GetPageOffsetTop(el.offsetParent);
+  }
   return y;
 }
 
 // Get page offset of an element
 function GetPageOffset(el) {
-  var x = el.offsetLeft;
-  var y = el.offsetTop;
+  let x = el.offsetLeft;
+  let y = el.offsetTop;
   if (el.offsetParent != null) {
-    var pos = GetPageOffset(el.offsetParent);
+    let pos = GetPageOffset(el.offsetParent);
     x += pos.x;
     y += pos.y;
   }
@@ -330,7 +332,7 @@ var getScrollTopGetters_ = {
   },
   dom_: function(win) {
     return win.pageYOffset;
-  }
+  },
 };
 
 // Get the x position scroll offset.
@@ -347,7 +349,7 @@ var getScrollLeftGetters_ = {
   },
   dom_: function(win) {
     return win.pageXOffset;
-  }
+  },
 };
 
 // Scroll so that as far as possible the entire element is in view.
@@ -364,7 +366,7 @@ var getWindowWidthGetters_ = {
   },
   dom_: function(win) {
     return win.innerWidth;
-  }
+  },
 };
 
 function GetWindowHeight(win) {
@@ -380,7 +382,7 @@ var getWindowHeightGetters_ = {
   },
   dom_: function(win) {
     return win.innerHeight;
-  }
+  },
 };
 
 /**
@@ -401,8 +403,8 @@ function GetWindowPropertyByBrowser_(win, getters) {
     if (BR_IsSafari()) {
       return getters.dom_(win);
     } else if (!window.opera &&
-               "compatMode" in win.document &&
-               win.document.compatMode == "CSS1Compat") {
+               'compatMode' in win.document &&
+               win.document.compatMode == 'CSS1Compat') {
       return getters.ieStandards_(win);
     } else if (BR_IsIE()) {
       return getters.ieQuirks_(win);
@@ -453,7 +455,7 @@ function GetCenteringTop(win, height) {
  * @return {Window} a reference to the new child window
  */
 function Popup(url, opt_name, opt_width, opt_height, opt_center,
-               opt_hide_scrollbars, opt_noresize, opt_blocked_msg) {
+  opt_hide_scrollbars, opt_noresize, opt_blocked_msg) {
   if (!opt_height) {
     opt_height = Math.floor(GetWindowHeight(window.top) * 0.8);
   }
@@ -461,12 +463,12 @@ function Popup(url, opt_name, opt_width, opt_height, opt_center,
     opt_width = Math.min(GetAvailScreenWidth(window), opt_height);
   }
 
-  var features = "resizable=" + (opt_noresize ? "no" : "yes") + "," +
-                 "scrollbars=" + (opt_hide_scrollbars ? "no" : "yes") + "," +
-                 "width=" + opt_width + ",height=" + opt_height;
+  let features = 'resizable=' + (opt_noresize ? 'no' : 'yes') + ',' +
+                 'scrollbars=' + (opt_hide_scrollbars ? 'no' : 'yes') + ',' +
+                 'width=' + opt_width + ',height=' + opt_height;
   if (opt_center) {
-    features += ",left=" + GetCenteringLeft(window, opt_width) + "," +
-                "top=" + GetCenteringTop(window, opt_height);
+    features += ',left=' + GetCenteringLeft(window, opt_width) + ',' +
+                'top=' + GetCenteringTop(window, opt_height);
   }
   return OpenWindow(window, url, opt_name, features, opt_blocked_msg);
 }
@@ -485,7 +487,7 @@ function Popup(url, opt_name, opt_width, opt_height, opt_center,
  * @return {Window} a reference to the new child window
  */
 function OpenWindow(win, url, opt_name, opt_features, opt_blocked_msg) {
-  var newwin = OpenWindowHelper(top, url, opt_name, opt_features);
+  let newwin = OpenWindowHelper(top, url, opt_name, opt_features);
   if (!newwin || newwin.closed || !newwin.focus) {
     newwin = OpenWindowHelper(win, url, opt_name, opt_features);
   }
@@ -503,7 +505,7 @@ function OpenWindow(win, url, opt_name, opt_features, opt_blocked_msg) {
  * (Copied from caribou's common.js library with small modifications.)
  */
 function OpenWindowHelper(win, url, name, features) {
-  var newwin;
+  let newwin;
   if (features) {
     newwin = win.open(url, name, features);
   } else if (name) {
@@ -514,9 +516,9 @@ function OpenWindowHelper(win, url, name, features) {
   return newwin;
 }
 
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 // String utilities
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 // Do html escaping
 var amp_re_ = /&/g;
 var lt_re_ = /</g;
@@ -544,9 +546,9 @@ var trailingspc_re_ = /[\n\t ]+$/;
 // Converts a string to its canonicalized label form.
 var illegal_chars_re_ = /[ \/(){}&|\\\"\000]/g;
 
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 // TextArea utilities
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 
 // Gets the cursor pos in a text area. Returns -1 if the cursor pos cannot
 // be determined or if the cursor out of the textfield.
@@ -555,14 +557,13 @@ function GetCursorPos(win, textfield) {
     if (IsDefined(textfield.selectionEnd)) {
       // Mozilla directly supports this
       return textfield.selectionEnd;
-
     } else if (win.document.selection && win.document.selection.createRange) {
       // IE doesn't export an accessor for the endpoints of a selection.
       // Instead, it uses the TextRange object, which has an extremely obtuse
       // API. Here's what seems to work:
 
       // (1) Obtain a textfield from the current selection (cursor)
-      var tr = win.document.selection.createRange();
+      let tr = win.document.selection.createRange();
 
       // Check if the current selection is in the textfield
       if (tr.parentElement() != textfield) {
@@ -570,14 +571,14 @@ function GetCursorPos(win, textfield) {
       }
 
       // (2) Make a text range encompassing the textfield
-      var tr2 = tr.duplicate();
+      let tr2 = tr.duplicate();
       tr2.moveToElementText(textfield);
 
       // (3) Move the end of the copy to the beginning of the selection
-      tr2.setEndPoint("EndToStart", tr);
+      tr2.setEndPoint('EndToStart', tr);
 
       // (4) The span of the textrange copy is equivalent to the cursor pos
-      var cursor = tr2.text.length;
+      let cursor = tr2.text.length;
 
       // Finally, perform a sanity check to make sure the cursor is in the
       // textfield. IE sometimes screws this up when the window is activated
@@ -586,14 +587,14 @@ function GetCursorPos(win, textfield) {
       }
       return cursor;
     } else {
-      Debug("Unable to get cursor position for: " + navigator.userAgent);
+      Debug('Unable to get cursor position for: ' + navigator.userAgent);
 
       // Just return the size of the textfield
       // TODO: Investigate how to get cursor pos in Safari!
       return textfield.value.length;
     }
   } catch (e) {
-    DumpException(e, "Cannot get cursor pos");
+    DumpException(e, 'Cannot get cursor pos');
   }
 
   return -1;
@@ -605,24 +606,23 @@ function SetCursorPos(win, textfield, pos) {
     // Mozilla directly supports this
     textfield.selectionStart = pos;
     textfield.selectionEnd = pos;
-
   } else if (win.document.selection && textfield.createTextRange) {
     // IE has textranges. A textfield's textrange encompasses the
     // entire textfield's text by default
-    var sel = textfield.createTextRange();
+    let sel = textfield.createTextRange();
 
     sel.collapse(true);
-    sel.move("character", pos);
+    sel.move('character', pos);
     sel.select();
   }
 }
 
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 // Array utilities
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 // Find an item in an array, returns the key, or -1 if not found
 function FindInArray(array, x) {
-  for (var i = 0; i < array.length; i++) {
+  for (let i = 0; i < array.length; i++) {
     if (array[i] == x) {
       return i;
     }
@@ -632,9 +632,10 @@ function FindInArray(array, x) {
 
 // Delete an element from an array
 function DeleteArrayElement(array, x) {
-  var i = 0;
-  while (i < array.length && array[i] != x)
+  let i = 0;
+  while (i < array.length && array[i] != x) {
     i++;
+  }
   array.splice(i, 1);
 }
 
@@ -646,7 +647,7 @@ function DeleteArrayElement(array, x) {
 // regular expression cannot be reusable.
 var specialchars_re_ = /[()<>@,;:\\\".\[\]]/;
 
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 // Timeouts
 //
 // It is easy to forget to put a try/catch block around a timeout function,
@@ -657,7 +658,7 @@ var specialchars_re_ = /[()<>@,;:\\\".\[\]]/;
 // When storing timeouts in a window, we can't let that variable be renamed
 // since the window could be top.js, and renaming such a property could
 // clash with any of the variables/functions defined in top.js.
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 /**
  * Sets a timeout safely.
  * @param win the window object. If null is passed in, then a timeout if set
@@ -671,8 +672,8 @@ function SafeTimeout(win, fn, ms) {
   if (!win._tm) {
     win._tm = [];
   }
-  var timeoutfn = SafeTimeoutFunction_(win, fn);
-  var id = win.setTimeout(timeoutfn, ms);
+  let timeoutfn = SafeTimeoutFunction_(win, fn);
+  let id = win.setTimeout(timeoutfn, ms);
 
   // Save the id so that it can be removed from the _tm array
   timeoutfn.id = id;
@@ -689,7 +690,7 @@ function SafeTimeoutFunction_(win, fn) {
     try {
       fn(win);
 
-      var t = win._tm;
+      let t = win._tm;
       if (t) {
         delete t[timeoutfn.id];
       }
@@ -700,16 +701,16 @@ function SafeTimeoutFunction_(win, fn) {
   return timeoutfn;
 }
 
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 // Misc
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 // Check if a value is defined
 function IsDefined(value) {
   return (typeof value) != 'undefined';
 }
 
 function GetKeyCode(event) {
-  var code;
+  let code;
   if (event.keyCode) {
     code = event.keyCode;
   } else if (event.which) {

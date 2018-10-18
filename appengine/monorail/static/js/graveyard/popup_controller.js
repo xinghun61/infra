@@ -92,7 +92,7 @@ function PopupController() {
 function _PC_Install(opt_doc) {
   if (gPopupControllerInstalled) return false;
   gPopupControllerInstalled = true;
-  var doc = (opt_doc) ? opt_doc : document;
+  let doc = (opt_doc) ? opt_doc : document;
 
   // insert _notifyPopups in BODY's onmousedown chain
   listen(doc.body, 'mousedown', PC_notifyPopups);
@@ -110,8 +110,8 @@ function _PC_Install(opt_doc) {
 function PC_notifyPopups(e) {
   if (gPopupController.activePopups_.length == 0) return false;
   e = e || window.event;
-  for (var i = gPopupController.activePopups_.length - 1; i >= 0; --i) {
-    var popup = gPopupController.activePopups_[i];
+  for (let i = gPopupController.activePopups_.length - 1; i >= 0; --i) {
+    let popup = gPopupController.activePopups_[i];
     PC_assertIsPopup(popup);
     if (popup.deactivate(e)) {
       gPopupController.activePopups_.splice(i, 1);
@@ -129,7 +129,7 @@ function PC_notifyPopups(e) {
  */
 function PC_addPopup(popup) {
   PC_assertIsPopup(popup);
-  for (var i = 0; i < gPopupController.activePopups_.length; ++i) {
+  for (let i = 0; i < gPopupController.activePopups_.length; ++i) {
     if (popup === gPopupController.activePopups_[i]) return false;
   }
   gPopupController.activePopups_.push(popup);

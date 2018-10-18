@@ -17,10 +17,11 @@
  * @param {boolean} newWindow Open a new tab or window.
  */
 function TKR_go(url, newWindow) {
-  if (newWindow)
+  if (newWindow) {
     window.open(url, '_blank');
-  else
+  } else {
     document.location = url;
+  }
 }
 
 
@@ -29,7 +30,7 @@ function TKR_go(url, newWindow) {
  * @param {string} anchor Name of the <a name="xxx"> anchor on the page.
  */
 function TKR_goToAnchor(anchor) {
- document.location.hash = anchor;
+  document.location.hash = anchor;
 }
 
 
@@ -42,8 +43,8 @@ function TKR_goToAnchor(anchor) {
  * @return {Element} user editable colspec form field.
  */
 function TKR_getColspecElement() {
- var elem = document.getElementById('colspec_field');
- return elem && elem.firstChild;
+  let elem = document.getElementById('colspec_field');
+  return elem && elem.firstChild;
 }
 
 
@@ -56,7 +57,7 @@ function TKR_getColspecElement() {
  * @return {Element} colspec hidden form field.
  */
 function TKR_getSearchColspecElement() {
- return document.getElementById('search_colspec').firstChild;
+  return document.getElementById('search_colspec').firstChild;
 }
 
 
@@ -68,7 +69,7 @@ function TKR_getSearchColspecElement() {
  * @return {Element} artifact query form field, or undefined.
  */
 function TKR_getArtifactSearchField() {
-  var qq = document.getElementById('qq');
+  let qq = document.getElementById('qq');
   return qq ? qq.firstChild : undefined;
 }
 
@@ -81,15 +82,14 @@ var MAX_ARTIFACT_SEARCH_FIELD_SIZE = 75;
 var AUTOSIZE_STEP = 3;
 
 function TKR_autosizeArtifactSerchField() {
-  var qq = TKR_getArtifactSearchField();
+  let qq = TKR_getArtifactSearchField();
   if (qq) {
-    var new_size = qq.value.length + AUTOSIZE_STEP;
+    let new_size = qq.value.length + AUTOSIZE_STEP;
     if (new_size > MAX_ARTIFACT_SEARCH_FIELD_SIZE) {
       new_size = MAX_ARTIFACT_SEARCH_FIELD_SIZE;
     }
     if (new_size > qq.size) {
       qq.size = new_size;
-
     }
   }
 }
@@ -101,26 +101,26 @@ window.setInterval(TKR_autosizeArtifactSerchField, 700);
  * Build a query string for all the common contextual values that we use.
  */
 function TKR_formatContextQueryArgs() {
-  var args = "";
-  var colSpecElem = TKR_getColspecElement()
+  let args = '';
+  let colSpecElem = TKR_getColspecElement();
   if (!colSpecElem) {
     return;
   }
-  var colspec = colSpecElem.value;
-  if (_ctxHotlistID != "") args += "&hotlist_id=" + _ctxHotlistID;
-  if (_ctxCan != 2) args += "&can=" + _ctxCan;
-  args += "&q=" + encodeURIComponent(_ctxQuery);
-  if (_ctxSortspec != "") args += "&sort=" + _ctxSortspec;
-  if (_ctxGroupBy != "") args += "&groupby=" + _ctxGroupBy;
-  if (colspec != _ctxDefaultColspec) args += "&colspec=" + colspec;
-  if (_ctxStart != 0) args += "&start=" + _ctxStart;
-  if (_ctxNum != _ctxResultsPerPage) args += "&num=" + _ctxNum;
+  let colspec = colSpecElem.value;
+  if (_ctxHotlistID != '') args += '&hotlist_id=' + _ctxHotlistID;
+  if (_ctxCan != 2) args += '&can=' + _ctxCan;
+  args += '&q=' + encodeURIComponent(_ctxQuery);
+  if (_ctxSortspec != '') args += '&sort=' + _ctxSortspec;
+  if (_ctxGroupBy != '') args += '&groupby=' + _ctxGroupBy;
+  if (colspec != _ctxDefaultColspec) args += '&colspec=' + colspec;
+  if (_ctxStart != 0) args += '&start=' + _ctxStart;
+  if (_ctxNum != _ctxResultsPerPage) args += '&num=' + _ctxNum;
   return args;
 }
 
 // Fields that should use ":" when filtering.
 var _PRETOKENIZED_FIELDS = [
-    'owner', 'reporter', 'cc', 'commentby', 'component'];
+  'owner', 'reporter', 'cc', 'commentby', 'component'];
 
 /**
  * The user wants to narrow his/her search results by adding a search term
@@ -130,11 +130,11 @@ var _PRETOKENIZED_FIELDS = [
  * @param {string} suffix Field or label value, e.g., "High".
  */
 function TKR_filterTo(prefix, suffix) {
-  var newQuery = TKR_getArtifactSearchField().value;
+  let newQuery = TKR_getArtifactSearchField().value;
   if (newQuery != '') newQuery += ' ';
 
-  var op = '=';
-  for (var i = 0; i < _PRETOKENIZED_FIELDS.length; i++) {
+  let op = '=';
+  for (let i = 0; i < _PRETOKENIZED_FIELDS.length; i++) {
     if (prefix == _PRETOKENIZED_FIELDS[i]) {
       op = ':';
       break;
@@ -142,7 +142,7 @@ function TKR_filterTo(prefix, suffix) {
   }
 
   newQuery += prefix + op + suffix;
-  var url = 'list?can=' + $('can').value + '&q=' + newQuery;
+  let url = 'list?can=' + $('can').value + '&q=' + newQuery;
   if ($('sort') && $('sort').value) url += '&sort=' + $('sort').value;
   url += '&colspec=' + TKR_getColspecElement().value;
   TKR_go(url);
@@ -157,26 +157,28 @@ function TKR_filterTo(prefix, suffix) {
  * @param {boolean} descending True if the values should be reversed.
  */
 function TKR_addSort(colname, descending) {
-  var existingSortSpec = '';
-  if ($('sort')) { existingSortSpec = $('sort').value; }
-  var oldSpecs = existingSortSpec.split(/ +/);
-  var sortDirective = colname;
+  let existingSortSpec = '';
+  if ($('sort')) {
+    existingSortSpec = $('sort').value;
+  }
+  let oldSpecs = existingSortSpec.split(/ +/);
+  let sortDirective = colname;
   if (descending) sortDirective = '-' + colname;
-  var specs = [sortDirective];
-  for (var i = 0; i < oldSpecs.length; i++) {
-    if (oldSpecs[i] != "" && oldSpecs[i] != colname &&
+  let specs = [sortDirective];
+  for (let i = 0; i < oldSpecs.length; i++) {
+    if (oldSpecs[i] != '' && oldSpecs[i] != colname &&
         oldSpecs[i] != '-' + colname) {
-      specs.push(oldSpecs[i])
+      specs.push(oldSpecs[i]);
     }
   }
 
-  var isHotlist = window.location.href.includes('/hotlists/');
-  var url = isHotlist ? ($('hotlist_name').value + '?') : ('list?');
-  url  += ('can='+ $('can').value + '&q=' +
+  let isHotlist = window.location.href.includes('/hotlists/');
+  let url = isHotlist ? ($('hotlist_name').value + '?') : ('list?');
+  url += ('can='+ $('can').value + '&q=' +
       TKR_getArtifactSearchField().value);
   url += '&sort=' + specs.join('+');
   url += '&colspec=' + TKR_getColspecElement().value;
-  TKR_go(url)
+  TKR_go(url);
 }
 
 /** Convenience function for sorting in ascending order. */

@@ -48,13 +48,13 @@ function XH_XmlHttpInit_() {
    * @type Array.<String>
    * @private
    */
-  var XH_ACTIVE_X_IDENTS = ["MSXML2.XMLHTTP.6.0", "MSXML2.XMLHTTP.3.0",
-                            "MSXML2.XMLHTTP", "Microsoft.XMLHTTP"];
+  let XH_ACTIVE_X_IDENTS = ['MSXML2.XMLHTTP.6.0', 'MSXML2.XMLHTTP.3.0',
+    'MSXML2.XMLHTTP', 'Microsoft.XMLHTTP'];
 
-  if (typeof XMLHttpRequest == "undefined" &&
-      typeof ActiveXObject != "undefined") {
-    for (var i = 0; i < XH_ACTIVE_X_IDENTS.length; i++) {
-      var candidate = XH_ACTIVE_X_IDENTS[i];
+  if (typeof XMLHttpRequest == 'undefined' &&
+      typeof ActiveXObject != 'undefined') {
+    for (let i = 0; i < XH_ACTIVE_X_IDENTS.length; i++) {
+      let candidate = XH_ACTIVE_X_IDENTS[i];
 
       try {
         new ActiveXObject(candidate);
@@ -67,8 +67,8 @@ function XH_XmlHttpInit_() {
 
     // couldn't find any matches
     if (!XH_ieProgId_) {
-      throw Error("Could not create ActiveXObject. ActiveX might be disabled," +
-                  " or MSXML might not be installed.");
+      throw Error('Could not create ActiveXObject. ActiveX might be disabled,' +
+                  ' or MSXML might not be installed.');
     }
   }
 }
@@ -97,7 +97,7 @@ function XH_XmlHttpCreate() {
  * @param {Function} handler function called when the response is received.
  */
 function XH_XmlHttpGET(xmlHttp, url, handler) {
-  xmlHttp.open("GET", url, true);
+  xmlHttp.open('GET', url, true);
   xmlHttp.onreadystatechange = handler;
   XH_XmlHttpSend(xmlHttp, null);
 }
@@ -110,9 +110,9 @@ function XH_XmlHttpGET(xmlHttp, url, handler) {
  * @param {Function} handler function called when the response is received.
  */
 function XH_XmlHttpPOST(xmlHttp, url, data, handler) {
-  xmlHttp.open("POST", url, true);
+  xmlHttp.open('POST', url, true);
   xmlHttp.onreadystatechange = handler;
-  xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+  xmlHttp.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
   XH_XmlHttpSend(xmlHttp, data);
 }
 
