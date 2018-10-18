@@ -111,6 +111,26 @@ def _GetGroupedOccurrencesByBuilder(occurrences):
   return _ToList(occurrences_dict)
 
 
+def _FetchFlakeOccurrences(flake, flake_type, max_occurrence_count):
+  """Fetches flake occurrences of a certain type.
+
+  Args:
+    flake(Flake): Flake object for a flaky test.
+    flake_type(FlakeType): Type of the occurrences.
+    max_occurrence_count(int): Maximum number of occurrences to fetch.
+
+  Returns:
+    (list): A list of occurrences.
+  """
+  occurrences_query = FlakeOccurrence.query(ancestor=flake.key).filter(
+      FlakeOccurrence.flake_type == flake_type).order(
+          -FlakeOccurrence.time_happened)
+
+  if max_occurrence_count:
+    return occurrences_query.fetch(max_occurrence_count)
+  return occurrences_query.fetch()
+
+
 def GetFlakeInformation(flake, max_occurrence_count, with_occurrences=True):
   """Gets information for a detected flakes.
   Gets occurrences of the flake and the attached monorail issue.
@@ -127,19 +147,26 @@ def GetFlakeInformation(flake, max_occurrence_count, with_occurrences=True):
     its Flake entity, its flake issue information and information of all its
     flake occurrences.
   """
-  occurrences_query = FlakeOccurrence.query(ancestor=flake.key).filter(
-      FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).order(
-          -FlakeOccurrence.time_happened)
+  occurrences = []
+  for flake_type in [FlakeType.CQ_FALSE_REJECTION, FlakeType.RETRY_WITH_PATCH]:
+    typed_occurrences = _FetchFlakeOccurrences(flake, flake_type,
+                                               max_occurrence_count)
+    occurrences.extend(typed_occurrences)
 
-  if max_occurrence_count:
-    occurrences = occurrences_query.fetch(max_occurrence_count)
-  else:
-    occurrences = occurrences_query.fetch()
+    if max_occurrence_count:
+      max_occurrence_count = max_occurrence_count - len(typed_occurrences)
+      if max_occurrence_count == 0:
+        # Bails out if the number of occurrences with higher impact has hit the
+        # cap.
+        break
 
   if not occurrences and with_occurrences:
     # Flake must be with occurrences, but there is no occurrence, bail out.
     return None
 
+  # Makes sure occurrences are sorted by time_happened in descending order,
+  # regardless of types.
+  occurrences.sort(key=lambda x: x.time_happened, reverse=True)
   flake_dict = flake.to_dict()
   flake_dict['occurrences'] = _GetGroupedOccurrencesByBuilder(occurrences)
 

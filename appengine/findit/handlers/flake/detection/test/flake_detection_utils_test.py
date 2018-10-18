@@ -67,7 +67,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
     occurrence.put()
 
     occurrence2 = FlakeOccurrence.Create(
-        flake_type=FlakeType.CQ_FALSE_REJECTION,
+        flake_type=FlakeType.RETRY_WITH_PATCH,
         build_id=124,
         step_ui_name=step_ui_name,
         test_name=test_name,
@@ -76,10 +76,10 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
         luci_builder='luci builder 2',
         legacy_master_name=legacy_master_name,
         legacy_build_number=legacy_build_number,
-        time_happened=datetime(2018, 1, 2),
+        time_happened=datetime(2018, 1, 2, 3),
         gerrit_cl_id=gerrit_cl_id,
         parent_flake_key=flake.key)
-    occurrence2.time_detected = datetime(2018, 1, 2)
+    occurrence2.time_detected = datetime(2018, 1, 2, 3)
     occurrence2.put()
 
     occurrence3 = FlakeOccurrence.Create(
@@ -134,62 +134,66 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             'file_path': '../../some/test/path/a.cc',
             'line_number': 42,
         },
-        'occurrences': [{
-            'group_by_field':
-                'luci builder 2',
-            'occurrences': [{
-                'flake_type': FlakeType.CQ_FALSE_REJECTION,
-                'build_id': '125',
-                'step_ui_name': step_ui_name,
-                'test_name': test_name,
-                'build_configuration': {
-                    'luci_project': 'chromium',
-                    'luci_bucket': 'try',
-                    'luci_builder': 'luci builder 2',
-                    'legacy_master_name': 'buildbot master',
-                    'legacy_build_number': 999
-                },
-                'time_happened': '2018-01-02 02:00:00 UTC',
-                'time_detected': '2018-01-02 02:00:00 UTC',
-                'gerrit_cl_id': gerrit_cl_id
+        'occurrences': [
+            {
+                'group_by_field':
+                    'luci builder 2',
+                'occurrences': [
+                    {
+                      'flake_type': FlakeType.RETRY_WITH_PATCH,
+                      'build_id': '124',
+                      'step_ui_name': step_ui_name,
+                      'test_name': test_name,
+                      'build_configuration': {
+                        'luci_project': 'chromium',
+                        'luci_bucket': 'try',
+                        'luci_builder': 'luci builder 2',
+                        'legacy_master_name': 'buildbot master',
+                        'legacy_build_number': 999
+                      },
+                      'time_happened': '2018-01-02 03:00:00 UTC',
+                      'time_detected': '2018-01-02 03:00:00 UTC',
+                      'gerrit_cl_id': gerrit_cl_id
+                    },
+                    {
+                      'flake_type': FlakeType.CQ_FALSE_REJECTION,
+                      'build_id': '125',
+                      'step_ui_name': step_ui_name,
+                      'test_name': test_name,
+                      'build_configuration': {
+                          'luci_project': 'chromium',
+                          'luci_bucket': 'try',
+                          'luci_builder': 'luci builder 2',
+                          'legacy_master_name': 'buildbot master',
+                          'legacy_build_number': 999
+                      },
+                      'time_happened': '2018-01-02 02:00:00 UTC',
+                      'time_detected': '2018-01-02 02:00:00 UTC',
+                      'gerrit_cl_id': gerrit_cl_id
+                    },
+                ]
             },
-                            {
-                                'flake_type': FlakeType.CQ_FALSE_REJECTION,
-                                'build_id': '124',
-                                'step_ui_name': step_ui_name,
-                                'test_name': test_name,
-                                'build_configuration': {
-                                    'luci_project': 'chromium',
-                                    'luci_bucket': 'try',
-                                    'luci_builder': 'luci builder 2',
-                                    'legacy_master_name': 'buildbot master',
-                                    'legacy_build_number': 999
-                                },
-                                'time_happened': '2018-01-02 00:00:00 UTC',
-                                'time_detected': '2018-01-02 00:00:00 UTC',
-                                'gerrit_cl_id': gerrit_cl_id
-                            }]
-        },
-                        {
-                            'group_by_field':
-                                'luci builder',
-                            'occurrences': [{
-                                'flake_type': FlakeType.CQ_FALSE_REJECTION,
-                                'build_id': '123',
-                                'step_ui_name': step_ui_name,
-                                'test_name': test_name,
-                                'build_configuration': {
-                                    'luci_project': 'chromium',
-                                    'luci_bucket': 'try',
-                                    'luci_builder': 'luci builder',
-                                    'legacy_master_name': 'buildbot master',
-                                    'legacy_build_number': 999
-                                },
-                                'time_happened': '2018-01-01 00:00:00 UTC',
-                                'time_detected': '2018-01-01 00:00:00 UTC',
-                                'gerrit_cl_id': gerrit_cl_id
-                            }]
-                        }],
+            {
+                'group_by_field':
+                    'luci builder',
+                'occurrences': [{
+                    'flake_type': FlakeType.CQ_FALSE_REJECTION,
+                    'build_id': '123',
+                    'step_ui_name': step_ui_name,
+                    'test_name': test_name,
+                    'build_configuration': {
+                        'luci_project': 'chromium',
+                        'luci_bucket': 'try',
+                        'luci_builder': 'luci builder',
+                        'legacy_master_name': 'buildbot master',
+                        'legacy_build_number': 999
+                    },
+                    'time_happened': '2018-01-01 00:00:00 UTC',
+                    'time_detected': '2018-01-01 00:00:00 UTC',
+                    'gerrit_cl_id': gerrit_cl_id
+                }]
+            }
+        ],
     }
     self.assertEqual(expected_flake_dict,
                      flake_detection_utils.GetFlakeInformation(flake, 5))
@@ -295,4 +299,4 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
     }
 
     self.assertEqual(expected_flake_dict,
-                     flake_detection_utils.GetFlakeInformation(flake, 2))
+                     flake_detection_utils.GetFlakeInformation(flake, 1))
