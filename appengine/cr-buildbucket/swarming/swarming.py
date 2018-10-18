@@ -74,7 +74,12 @@ _PARAM_CHANGES = 'changes'
 
 _BUILD_RUN_RESULT_FILENAME = 'build-run-result.json'
 _BUILD_RUN_RESULT_CORRUPTED = 'corrupted'
-_BUILD_RUN_RESULT_MAX_SIZE_MB = 1
+
+# Note: we do not store build-run-result.json as is.
+# Instead we convert it to a list of buildbucket.v2.Step and store
+# in binary form in model.BuildSteps, which has its own limit.
+# A limit is still needed to avoid OOMs.
+_BUILD_RUN_RESULT_MAX_SIZE_MB = 2
 _BUILD_RUN_RESULT_MAX_SIZE = _BUILD_RUN_RESULT_MAX_SIZE_MB * (1e6)
 _BUILD_RUN_RESULT_TOO_LARGE = '>= %d MB' % _BUILD_RUN_RESULT_MAX_SIZE_MB
 _BUILD_RUN_RESULT_SIZE_METRIC = gae_ts_mon.CumulativeDistributionMetric(

@@ -1890,7 +1890,7 @@ class SwarmingTest(BaseTest):
             'files': {
                 swarming._BUILD_RUN_RESULT_FILENAME: {
                     'h': 'deadbeef',
-                    's': 1 + (1 << 20),
+                    's': 1 + (2 << 20),
                 },
             },
         })
