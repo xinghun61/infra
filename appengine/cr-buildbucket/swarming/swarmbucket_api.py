@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import functools
 import json
 
 from google.appengine.ext import ndb
@@ -35,6 +36,7 @@ def swarmbucket_api_method(
   )
 
   def decorator(fn):
+    fn = adapt_exceptions(fn)
     fn = auth.public(fn)
     fn = endpoints_decorator(fn)
 
@@ -45,6 +47,18 @@ def swarmbucket_api_method(
     return ndb.toplevel(fn)
 
   return decorator
+
+
+def adapt_exceptions(fn):
+
+  @functools.wraps(fn)
+  def decorated(*args, **kwargs):
+    try:
+      return fn(*args, **kwargs)
+    except errors.InvalidInputError as ex:
+      raise endpoints.BadRequestException(ex.message)
+
+  return decorated
 
 
 class BuilderMessage(messages.Message):

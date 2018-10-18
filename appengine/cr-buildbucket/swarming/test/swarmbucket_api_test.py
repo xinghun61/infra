@@ -232,6 +232,12 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         },
     )
 
+  def test_get_builders_bad_request(self):
+    req = {
+        'bucket': ['luci..x'],
+    }
+    self.call_api('get_builders', req, status=400)
+
   def test_get_builders_with_bucket_filtering_limit(self):
     req = {
         'bucket': ['luci.chromium.try'] * 200,

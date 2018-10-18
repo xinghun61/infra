@@ -233,9 +233,14 @@ def validate_bucket_id(bucket_id):
   if is_legacy_bucket_id(bucket_id):
     validate_bucket_name(bucket_id)
   else:
-    project_id, bucket_name = parse_bucket_id(bucket_id)
-    validate_project_id(project_id)
-    validate_bucket_name(bucket_name)
+    try:
+      project_id, bucket_name = parse_bucket_id(bucket_id)
+      validate_project_id(project_id)
+      validate_bucket_name(bucket_name)
+    except errors.InvalidInputError as ex:
+      raise errors.InvalidInputError(
+          'invalid bucket_id %r: %s' % (bucket_id, ex)
+      )
 
     parts = bucket_name.split('.', 2)
     if len(parts) == 3 and parts[0] == 'luci' and parts[1] == project_id:
