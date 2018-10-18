@@ -221,6 +221,10 @@ class IssueImport(servlet.Servlet):
       comment.attachments.append(
           self._ParseAttachment(attachment, event_log))
 
+    if comment_json['description_num']:
+      comment.is_description = True
+      comment.description_num = comment_json['description_num']
+
     return comment
 
   def _ParseAmendment(self, amendment_json, user_id_dict, _event_log):

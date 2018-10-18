@@ -100,7 +100,10 @@ class IssueExportTest(unittest.TestCase):
 
     email_dict = {111L: 'user1@test.com', 222L: 'user2@test.com',
                   333L: 'user3@test.com', 444L: 'user4@test.com'}
-    comment_list = [tracker_pb2.IssueComment(content='simple')]
+    comment_list = [
+        tracker_pb2.IssueComment(content='simple'),
+        tracker_pb2.IssueComment(
+            content='issue desc', description_num='1', is_description=True)]
     starrer_id_list = [222L, 333L]
 
     issue_JSON = self.jsonfeed._MakeIssueJSON(
@@ -140,7 +143,15 @@ class IssueExportTest(unittest.TestCase):
              'timestamp': None,
              'amendments': [],
              'commenter': None,
-             'attachments': []}],
+             'attachments': [],
+             'description_num': None},
+            {'content': 'issue desc',
+             'timestamp': None,
+             'amendments': [],
+             'commenter': None,
+             'attachments': [],
+             'description_num': '1'},
+            ],
         'opened': 1,
         'modified': 3,
         'closed': 2,

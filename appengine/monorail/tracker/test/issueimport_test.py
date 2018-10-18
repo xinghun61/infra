@@ -11,6 +11,7 @@ from framework import permissions
 from services import service_manager
 from testing import testing_helpers
 from tracker import issueimport
+from proto import tracker_pb2
 
 
 class IssueExportTest(unittest.TestCase):
@@ -19,6 +20,7 @@ class IssueExportTest(unittest.TestCase):
     self.services = service_manager.Services()
     self.servlet = issueimport.IssueImport(
         'req', 'res', services=self.services)
+    self.event_log = None
 
   def testAssertBasePermission(self):
     """Only site admins can import issues."""
@@ -28,3 +30,37 @@ class IssueExportTest(unittest.TestCase):
                       self.servlet.AssertBasePermission, mr)
     mr.auth.user_pb.is_site_admin = True
     self.servlet.AssertBasePermission(mr)
+
+  def testParseComment(self):
+    """Test a Comment JSON is correctly parsed."""
+    users_id_dict = {'adam@test.com': 111L}
+    json = {
+        'timestamp': 123,
+        'commenter': 'adam@test.com',
+        'content': 'so basically, what I was thinkig of',
+        'amendments': [],
+        'attachments': [],
+        'description_num': None,
+        }
+    comment = self.servlet._ParseComment(
+        12, users_id_dict, json, self.event_log)
+    self.assertEqual(
+        comment, tracker_pb2.IssueComment(
+            project_id=12, timestamp=123, user_id=111L,
+            content='so basically, what I was thinkig of'))
+
+    json_desc = {
+        'timestamp': 223,
+        'commenter': 'adam@test.com',
+        'content': 'I cant believe youve done this',
+        'description_num': '2',
+        'amendments': [],
+        'attachments': [],
+    }
+    desc_comment = self.servlet._ParseComment(
+        12, users_id_dict, json_desc, self.event_log)
+    self.assertEqual(
+        desc_comment, tracker_pb2.IssueComment(
+            project_id=12, timestamp=223, user_id=111L,
+            content='I cant believe youve done this',
+            is_description=True, description_num='2'))

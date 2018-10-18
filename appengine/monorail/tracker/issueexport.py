@@ -164,6 +164,7 @@ class IssueExportJSON(jsonfeed.JsonFeed):
       'content': comment.content,
       'amendments': [a for a in amendments if a],
       'attachments': [a for a in attachments if a],
+      'description_num': comment.description_num
     }
     return comment_json
 
