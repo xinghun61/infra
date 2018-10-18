@@ -5,6 +5,7 @@
 import textwrap
 
 from infra.libs.git2 import CalledProcessError
+from infra.libs.git2 import EMPTY_TREE
 from infra.libs.git2.testing_support import GitEntry
 
 MASTER = 'refs/heads/master'
@@ -233,6 +234,32 @@ def idle(f):
   f.checkpoint('first')
   f.run()
   f.checkpoint('should be no difference')
+
+
+@test
+def epoch(f):
+  """Specifies a starting point explicitly."""
+  tree1 = {
+      'other': {'greeting.txt':'Hello, world!'}}
+  c = f.make_commit('first', tree1)
+  start = c.hsh
+  tree2 = {
+      'other': {'greeting.txt':'Good-bye, cruel world!'}}
+  f.make_commit('second', tree2)
+  f.checkpoint('before')
+  f.run(epoch=start)
+  f.checkpoint('after')
+
+
+@test
+def epoch_nonexist(f):
+  """Specifies a bogus starting point."""
+  tree = {
+      'other': {'greeting.txt':'Hello, world!'}}
+  f.make_commit('first', tree)
+  f.checkpoint('before')
+  f.run(epoch=EMPTY_TREE)
+  f.checkpoint('after')
 
 
 # @test

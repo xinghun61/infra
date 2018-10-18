@@ -26,6 +26,9 @@ REF_NAME = 'refs/heads/master'
 # Only commits after this can be relied upon to have a suitable DEPS
 # file, so we start here.  (In other repos we can simply start at the
 # beginning of history.)
+#
+# TODO(crbug/895967): move this to builder config, once the ability
+# to specify on the command line has been deployed.
 _CHROMIUM_SRC_EPOCH='3c70abf6069f043037e9f932f62e0cb45e6592fe'
 
 
@@ -39,8 +42,8 @@ def _Humanish(url):
   return url
 
 
-def reify_submodules(origin_repo, target,
-                     dry_run=False, limit=None, extra_submodules=None):
+def reify_submodules(origin_repo, target, dry_run=False,
+                     limit=None, extra_submodules=None, epoch=None):
   origin_repo.fetch()
 
   shadow = repo.Repo(target)
@@ -52,12 +55,24 @@ def reify_submodules(origin_repo, target,
   if synth_parent is INVALID:
     # If the shadow repo doesn't have any commits yet (we're just
     # starting up for the first time), start at the beginning of history
-    # at the origin repo, except for one special case in chromium/src.
-    #
-    # Note that looking up _CHROMIUM_SRC_EPOCH on repos other than
-    # chromium/src produces INVALID, and that's fine (it means we'll
-    # start at the beginning of history).
-    processed = origin_repo.get_commit(_CHROMIUM_SRC_EPOCH)
+    # at the origin repo, either the absolute beginning, or the "epoch"
+    # at which we are configured to start.
+    if epoch:
+      processed = origin_repo.get_commit(epoch)
+      if processed is INVALID:
+        LOGGER.error("Requested epoch commit %s does not exist", epoch)
+        return False
+    else:
+      # For now, preserve the former behavior when this new "epoch" optional
+      # argument is missing.  But once this new capability is deployed, the
+      # default behavior here should simply be to always start at the absolute
+      # beginning: i.e., there's no reason to default to the _CHROMIUM_SRC_EPOCH
+      # once that value can be explicitly passed in to us from the config.
+      #
+      # Note that looking up _CHROMIUM_SRC_EPOCH on repos other than
+      # chromium/src produces INVALID, and that's fine (it means we'll
+      # start at the beginning of history).
+      processed = origin_repo.get_commit(_CHROMIUM_SRC_EPOCH)
   else:
     footers = synth_parent.data.footers
     if MIRRORED_COMMIT not in footers:

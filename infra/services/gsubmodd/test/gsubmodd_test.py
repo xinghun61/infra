@@ -71,12 +71,12 @@ class Context(object):
 
   def make_commit(self, description, spec):
     self._ensure_init()
-    self.origin[MASTER].make_commit(description, spec)
+    return self.origin[MASTER].make_commit(description, spec)
 
   def record(self, o):
     self.results.append(o)
 
-  def run(self):
+  def run(self, **kwargs):
     self._ensure_init()
     stdout = sys.stdout
     stderr = sys.stderr
@@ -109,7 +109,7 @@ class Context(object):
         sys.stderr = sys.stdout = fh
         try:
           self.local.reify()
-          ret = gsubmodd.reify_submodules(self.local, self.target_url)
+          ret = gsubmodd.reify_submodules(self.local, self.target_url, **kwargs)
           if not ret:
             self.record('reify_submodules() call failed')
         except Exception:  # pragma: no cover

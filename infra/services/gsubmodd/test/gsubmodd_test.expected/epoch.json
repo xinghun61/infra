@@ -1,0 +1,61 @@
+[
+  [
+    "before",
+    {
+      "refs/heads/master": [
+        [
+          "74c63e0c549dc2e57ca586e18a2bbcceec52b6d2",
+          [
+            "second"
+          ]
+        ],
+        [
+          "097b9255e0b7212533393041c01a3ab2df93be55",
+          [
+            "first"
+          ]
+        ]
+      ]
+    },
+    {}
+  ],
+  {
+    "log output": [
+      "INFO: Running ('git', 'fetch')",
+      "INFO: at commit 74c63e0c549dc2e57ca586e18a2bbcceec52b6d2",
+      "WARNING: commit 74c63e0c549dc2e57ca586e18a2bbcceec52b6d2 has no DEPS file",
+      "INFO: Running ('git', 'push', 'origin', '817134c86d0cc9a6085c6174b91d27526c431e15:refs/heads/master')"
+    ]
+  },
+  [
+    "after",
+    {
+      "refs/heads/master": [
+        [
+          "74c63e0c549dc2e57ca586e18a2bbcceec52b6d2",
+          [
+            "second"
+          ]
+        ],
+        [
+          "097b9255e0b7212533393041c01a3ab2df93be55",
+          [
+            "first"
+          ]
+        ]
+      ]
+    },
+    {
+      "refs/heads/master": [
+        [
+          "817134c86d0cc9a6085c6174b91d27526c431e15",
+          [
+            "second",
+            "",
+            "Cr-Mirrored-Commit: 74c63e0c549dc2e57ca586e18a2bbcceec52b6d2"
+          ]
+        ]
+      ]
+    }
+  ]
+]

@@ -1,0 +1,37 @@
+[
+  [
+    "before",
+    {
+      "refs/heads/master": [
+        [
+          "097b9255e0b7212533393041c01a3ab2df93be55",
+          [
+            "first"
+          ]
+        ]
+      ]
+    },
+    {}
+  ],
+  "reify_submodules() call failed",
+  {
+    "log output": [
+      "INFO: Running ('git', 'fetch')",
+      "ERROR: Requested epoch commit 4b825dc642cb6eb9a060e54bf8d69288fbee4904 does not exist"
+    ]
+  },
+  [
+    "after",
+    {
+      "refs/heads/master": [
+        [
+          "097b9255e0b7212533393041c01a3ab2df93be55",
+          [
+            "first"
+          ]
+        ]
+      ]
+    },
+    {}
+  ]
+]

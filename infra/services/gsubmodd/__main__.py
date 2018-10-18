@@ -17,7 +17,7 @@ from infra_libs import logs
 # TODO: quit loading up this poor tuple with every new config option
 # that comes along.
 Options = collections.namedtuple('Options',
-    'repo,target,loop_opts,dry_run,interval,limit,extras')
+    'repo,target,loop_opts,dry_run,interval,limit,extras,epoch')
 
 
 def parse_args(args):  # pragma: no cover
@@ -44,6 +44,8 @@ def parse_args(args):  # pragma: no cover
   parser.add_argument('--repo_dir', metavar='DIR', default='local_clones',
                       help=('The directory to use for git clones '
                             '(default: %(default)s)'))
+  parser.add_argument('--epoch', metavar='SHA1',
+                      help='Earliest commit to fortify with submodules')
   parser.add_argument(
       '--interval', type=float, default=5.0, metavar='SECONDS',
       help='How long (in seconds) to sleep between iterations of the '
@@ -58,8 +60,8 @@ def parse_args(args):  # pragma: no cover
   logs.process_argparse_options(opts)
   loop_opts = outer_loop.process_argparse_options(opts)
 
-  return Options(repo, opts.target_repo, loop_opts,
-                 opts.dry_run, opts.interval, opts.limit, opts.extra_submodule)
+  return Options(repo, opts.target_repo, loop_opts, opts.dry_run,
+                 opts.interval, opts.limit, opts.extra_submodule, opts.epoch)
 
 
 def main(args):  # pragma: no cover
