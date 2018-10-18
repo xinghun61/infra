@@ -117,14 +117,23 @@ type Scheduler interface {
 
 	// MarkIdle informs the scheduler that a given worker is idle, with
 	// given labels.
-	MarkIdle(id string, labels scheduler.LabelSet)
+	MarkIdle(id string, labels scheduler.LabelSet, t time.Time)
 
 	// RunOnce runs through one round of the scheduling algorithm, and determines
 	// and returns work assignments.
 	RunOnce() []*scheduler.Assignment
 
 	// AddRequest adds a task request to the queue.
-	AddRequest(id string, request *scheduler.TaskRequest)
+	AddRequest(id string, request *scheduler.TaskRequest, t time.Time)
+
+	// NotifyRequest informs the scheduler authoritatively that the given request
+	// was running on the given worker (or was idle, for workerID = "") at the
+	// given time.
+	//
+	// Supplied requestID must not be "".
+	//
+	// Note: calls to NotifyRequest come from task update pubsub messages from swarming.
+	NotifyRequest(requestID string, workerID string, t time.Time)
 }
 
 // AssignTasks accepts a slice of idle workers, and returns tasks to be assigned
@@ -137,7 +146,7 @@ func (state *State) AssignTasks(s Scheduler, workers []*IdleWorker, t time.Time)
 	// idle (because they don't have anything already enqueued). Mark these as idle.
 	for _, w := range workers {
 		if q := state.WorkerQueues[w.ID]; q == nil {
-			s.MarkIdle(w.ID, w.ProvisionableLabels)
+			s.MarkIdle(w.ID, w.ProvisionableLabels, t)
 		}
 	}
 
@@ -199,33 +208,6 @@ func (state *State) Cancellations() []Cancellation {
 // Cancellations will return stale data until internal timeouts within reconciler
 // expire).
 func (state *State) Notify(s Scheduler, updates ...*TaskUpdate) error {
-	// TODO: Determine whether updates should be time-order sorted, and if so
-	// whether to do that sorting here or to require if from the caller.
-
-	for _, u := range updates {
-		switch u.Type {
-		// TODO(akeshet): Add a default case for unhandled types.
-		case TaskUpdate_NEW:
-			// TODO(akeshet): Handle new tasks that are already running on a worker,
-			// likely by having AddRequest return an error.
-			s.AddRequest(
-				u.RequestId,
-				&scheduler.TaskRequest{
-					AccountId: u.AccountId,
-					// TODO(akeshet): Clarify whether u.Time corresponds to the pubsub time,
-					// or the enqueue time of the task. If the former, add a field
-					// to TaskUpdate to encode the enqueue time.
-					// We probably want this to mean the enqueue time (created_ts).
-					EnqueueTime: u.Time,
-					Labels:      u.ProvisionableLabels,
-				})
-
-		case TaskUpdate_ASSIGNED:
-			// TODO(akeshet): Implement me.
-		case TaskUpdate_INTERRUPTED:
-			// TODO(akeshet): Implement me.
-		}
-	}
-
+	// TODO(akeshet): Implement me.
 	return nil
 }

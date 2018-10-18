@@ -14,9 +14,38 @@
 
 package scheduler
 
+import (
+	"time"
+
+	"infra/qscheduler/qslib/tutils"
+)
+
 // isIdle returns whether the given worker is currently idle.
 func (w *Worker) isIdle() bool {
 	return w.RunningTask == nil
+}
+
+// latestConfirmedTime returns the newer of the its ConfirmedTime or that of the
+// request it is running (if it is running one).
+func (w *Worker) latestConfirmedTime() time.Time {
+	t := tutils.Timestamp(w.ConfirmedTime)
+	if w.isIdle() {
+		return t
+	}
+	tr := tutils.Timestamp(w.RunningTask.Request.ConfirmedTime)
+	if tr.After(t) {
+		return tr
+	}
+	return t
+}
+
+// confirm updates a worker's confirmed time (to acknowledge that its state
+// is consistent with authoritative source as of this time). The update is
+// only applied if it is a forward-in-time update.
+func (w *Worker) confirm(t time.Time) {
+	if tutils.Timestamp(w.ConfirmedTime).Before(t) {
+		w.ConfirmedTime = tutils.TimestampProto(t)
+	}
 }
 
 // NewWorker creates a new worker, with given labels.

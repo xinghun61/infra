@@ -112,20 +112,3 @@ func TestQueuedAssignment(t *testing.T) {
 	want := []Assignment{Assignment{"w1", "r1"}}
 	assertAssignments(t, "Post-assignment call for w1", got, want)
 }
-
-// TestNotifyNewTask ensures that Notify for a NEW task results in that task
-// being enqueued, and later scheduled.
-func TestNotifyNewTask(t *testing.T) {
-	r := New()
-	s := &fifoScheduler{}
-
-	r.Notify(s, &TaskUpdate{
-		Type:      TaskUpdate_NEW,
-		RequestId: "r1",
-	})
-
-	epoch := time.Unix(0, 0)
-	got := r.AssignTasks(s, []*IdleWorker{&IdleWorker{ID: "w1"}}, epoch)
-	want := []Assignment{Assignment{"w1", "r1"}}
-	assertAssignments(t, "New task", got, want)
-}

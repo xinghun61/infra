@@ -29,6 +29,11 @@ message TaskRequest {
 
   // The set of Provisionable Labels for this task.
   repeated string labels = 3;
+
+  // ConfirmedTime is the most recent time at which the Request state was
+  // provided or confirmed by external authority (via a call to Enforce or
+  // AddRequest).
+  google.protobuf.Timestamp confirmed_time = 4;
 }
 
 // TaskRun represents a task that has been assigned to a worker and is

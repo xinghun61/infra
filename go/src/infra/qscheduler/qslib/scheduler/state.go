@@ -16,9 +16,164 @@ package scheduler
 
 import (
 	"fmt"
+	"time"
 
+	"infra/qscheduler/qslib/tutils"
 	"infra/qscheduler/qslib/types/vector"
 )
+
+// AddRequest enqueues a new task request with the given time, (or if the task
+// exists already, notifies that the task was idle at the given time).
+func (s *State) addRequest(requestID string, request *TaskRequest, t time.Time) {
+	if _, ok := s.getRequest(requestID); ok {
+		// Request already exists, simply notify that it should be idle at the
+		// given time.
+		s.notifyRequest(requestID, "", t)
+	} else {
+		request.confirm(t)
+		s.QueuedRequests[requestID] = request
+	}
+}
+
+// markIdle implements MarkIdle for a given state.
+func (s *State) markIdle(workerID string, labels LabelSet, t time.Time) {
+	worker, ok := s.Workers[workerID]
+	if !ok {
+		// This is a new worker, create it and return.
+		s.Workers[workerID] = &Worker{ConfirmedTime: tutils.TimestampProto(t), Labels: labels}
+		return
+	}
+
+	// Ignore call if our state is newer.
+	if worker.latestConfirmedTime().After(t) {
+		if !tutils.Timestamp(worker.ConfirmedTime).After(t) {
+			// TODO(akeshet): Once a diagnostic/logging layer exists, log this case.
+			// This case means that the following order of events happened:
+			// 1) We marked worker as idle at t=0.
+			// 2) We received a request at t=2, and matched it to that worker.
+			// 3) We received an "is idle" call for that worker at t=1.
+			//
+			// This is most likely due to out-of-order message delivery. In any case
+			// it should be fairly harmless, as it will self-heal once we receive a
+			// later markIdle call for this worker or notifyRequest for this
+			// match at t=3.
+		}
+		return
+	}
+
+	worker.Labels = labels
+	worker.confirm(t)
+
+	if worker.isIdle() {
+		// Our worker was already idle and we've updated its labels and idle time, so
+		// we're done.
+		return
+	}
+
+	// Our worker wasn't previously idle. Remove the previous request it was
+	// running.
+	previousRequestID := worker.RunningTask.RequestId
+	s.deleteRequest(previousRequestID)
+}
+
+// notifyRequest that implements Scheduler.NotifyRequest for a given State.
+func (s *State) notifyRequest(requestID string, workerID string, t time.Time) {
+	if requestID == "" {
+		panic("Must supply a requestID.")
+	}
+
+	if request, ok := s.getRequest(requestID); ok {
+		if tutils.Timestamp(request.ConfirmedTime).Before(t) {
+			s.updateRequest(requestID, workerID, t, request)
+		}
+	} else {
+		// The request didn't exist, but the notification might be more up to date
+		// that our information about the worker, in which case delete the worker.
+		s.deleteWorkerIfOlder(workerID, t)
+	}
+}
+
+// getRequest looks up the given requestID among either the running or queued
+// tasks, and returns (the request if it exists, boolean indication if
+// request exists).
+func (s *State) getRequest(requestID string) (r *TaskRequest, ok bool) {
+	s.ensureCache()
+	if wid, ok := s.RunningRequestsCache[requestID]; ok {
+		return s.Workers[wid].RunningTask.Request, true
+	}
+	r, ok = s.QueuedRequests[requestID]
+	return r, ok
+}
+
+// updateRequest fixes stale opinion about the given request. This method should
+// only be called for requests that were already determined to be stale relative
+// to time t.
+func (s *State) updateRequest(requestID string, workerID string, t time.Time,
+	r *TaskRequest) {
+	s.ensureCache()
+	allegedWorkerID, isRunning := s.RunningRequestsCache[requestID]
+	if allegedWorkerID == workerID {
+		// Our state is already correct, so just update times and we are done.
+		r.confirm(t)
+		if isRunning {
+			// Also update the worker's time, if this is a forward-in-time update
+			// for it.
+			worker := s.Workers[allegedWorkerID]
+			worker.confirm(t)
+		}
+		return
+	}
+
+	if workerID == "" {
+		// We thought the request was running on a worker, but were notified it
+		// is idle.
+		allegedWorker := s.Workers[allegedWorkerID]
+
+		if t.Before(allegedWorker.latestConfirmedTime()) {
+			// However, the worker was marked idle more recently than this notification's
+			// timestamp, and was later matched to this request by the scheduler.
+			// This probably means that this notification is a late delivery of a
+			// message that was emitted after the scheduler assignment.
+			// Ignore it.
+			//
+			// NOTE: Revisit if this is the actual desired behavior. If the assignment
+			// of the request to the worker was dropped or ignored by swarming, then
+			// the inconsistency will only be healed by a future call to either MarkIdle
+			// for this worker or Notify for this request.
+			//
+			// TODO(akeshet): Once a logging or metrics layer is added, log the fact
+			// that this has occurred.
+			return
+		}
+		// The request should be queued, although it is not. Fix this by putting the
+		// request into the queue and removing the alleged worker.
+		s.deleteWorker(allegedWorkerID)
+		r.ConfirmedTime = tutils.TimestampProto(t)
+		s.QueuedRequests[requestID] = r
+		return
+	}
+
+	if allegedWorkerID != "" {
+		// The request was believed to be non-idle, but is running on a different
+		// worker than expected. Delete this worker and request.
+		s.deleteWorker(allegedWorkerID)
+	}
+
+	// If our information about workerID is older than this notification, then
+	// delete it and its request too.
+	s.deleteWorkerIfOlder(workerID, t)
+}
+
+// deleteWorkerIfOlder deletes the worker with the given ID (along with any
+// request it was running) if its confirmed time and that of any
+// request it is running is older than t.
+func (s *State) deleteWorkerIfOlder(workerID string, t time.Time) {
+	if worker, ok := s.Workers[workerID]; ok {
+		if worker.latestConfirmedTime().Before(t) {
+			s.deleteWorker(workerID)
+		}
+	}
+}
 
 // applyAssignment applies the given Assignment to state.
 func (s *State) applyAssignment(m *Assignment) {
@@ -130,6 +285,21 @@ func (s *State) deleteWorker(workerID string) {
 			delete(s.RunningRequestsCache, worker.RunningTask.RequestId)
 		}
 		delete(s.Workers, workerID)
+	}
+}
+
+// deleteRequest deletes the request with the given ID, whether it is running
+// or queued. If the request is neither running nor enqueued, it does nothing.
+func (s *State) deleteRequest(requestID string) {
+	// TODO(akeshet): eliminate most of these calls to ensureCache() by
+	// by adding a getWorkerForRequest method.
+	s.ensureCache()
+	if _, ok := s.QueuedRequests[requestID]; ok {
+		delete(s.QueuedRequests, requestID)
+	} else if workerID, ok := s.RunningRequestsCache[requestID]; ok {
+		worker := s.Workers[workerID]
+		worker.RunningTask = nil
+		delete(s.RunningRequestsCache, requestID)
 	}
 }
 

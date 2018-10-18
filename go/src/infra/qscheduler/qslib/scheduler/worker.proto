@@ -33,5 +33,15 @@ message Worker {
   // RunningTask is, if non-nil, the task that is currently running on the
   // worker.
   TaskRun running_task = 2;
-}
 
+  // ConfirmedIdleTime is the most recent time at which the Worker state was
+  // directly confirmed as idle by external authority (via a call to MarkIdle or
+  // NotifyRequest).
+  google.protobuf.Timestamp confirmed_time = 3;
+
+  // TODO(akeshet): Add the concept of an Inactive worker, which will exist
+  // in the scheduler State object, but will be ignored for scheduling purposes.
+  // Instead of deleting workers when they are neither running nor idle, we will
+  // retain them so we can remember their confirmed time, allowing us to ignore
+  // backward-in-time updates.
+}

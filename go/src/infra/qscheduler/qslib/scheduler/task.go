@@ -20,6 +20,9 @@ package scheduler
 
 import (
 	"sort"
+	"time"
+
+	"infra/qscheduler/qslib/tutils"
 )
 
 // LabelSet represents a set of provisionable labels.
@@ -65,4 +68,14 @@ func (a LabelSet) Equal(b LabelSet) bool {
 	}
 
 	return true
+}
+
+// confirm updates a request's confirmed time (to acknowledge that its state
+// is consistent with authoritative source as of this time). The update is
+// only applied if it is a forward-in-time update or if the existing time
+// was undefined.
+func (r *TaskRequest) confirm(t time.Time) {
+	if r.ConfirmedTime == nil || tutils.Timestamp(r.ConfirmedTime).Before(t) {
+		r.ConfirmedTime = tutils.TimestampProto(t)
+	}
 }

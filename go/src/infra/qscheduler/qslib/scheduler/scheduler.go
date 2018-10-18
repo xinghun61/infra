@@ -67,10 +67,8 @@ func (e *UpdateOrderError) Error() string {
 }
 
 // AddRequest enqueues a new task request.
-func (s *Scheduler) AddRequest(id string, request *TaskRequest) {
-	// TODO(akeshet): Handle already-enqueued task.
-	// TODO(akeshet): Handle already-running task.
-	s.state.QueuedRequests[id] = request
+func (s *Scheduler) AddRequest(id string, request *TaskRequest, t time.Time) {
+	s.state.addRequest(id, request, t)
 }
 
 // UpdateTime updates the current time for a quotascheduler, and
@@ -146,10 +144,23 @@ type IdleWorker struct {
 	Labels   LabelSet
 }
 
-// MarkIdle marks the given worker as idle, and with
-// the given provisionable labels.
-func (s *Scheduler) MarkIdle(id string, labels LabelSet) {
-	s.state.Workers[id] = &Worker{Labels: labels}
+// MarkIdle marks the given worker as idle, and with the given provisionable,
+// labels, as of the given time.
+//
+// Note: calls to MarkIdle come from bot reap calls from swarming.
+func (s *Scheduler) MarkIdle(id string, labels LabelSet, t time.Time) {
+	s.state.markIdle(id, labels, t)
+}
+
+// NotifyRequest informs the scheduler authoritatively that the given request
+// was running on the given worker (or was idle, for workerID = "") at the
+// given time.
+//
+// Supplied requestID must not be "".
+//
+// Note: calls to NotifyRequest come from task update pubsub messages from swarming.
+func (s *Scheduler) NotifyRequest(requestID string, workerID string, t time.Time) {
+	s.state.notifyRequest(requestID, workerID, t)
 }
 
 // RunOnce performs a single round of the quota scheduler algorithm

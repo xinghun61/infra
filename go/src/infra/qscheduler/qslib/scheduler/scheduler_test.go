@@ -80,30 +80,34 @@ func TestSchedulerReprioritize(t *testing.T) {
 			Workers: map[string]*Worker{
 				"w1": &Worker{
 					RunningTask: &TaskRun{
-						Cost:     vector.New(1),
-						Priority: 0,
-						Request:  &TaskRequest{AccountId: "a1"},
+						Cost:      vector.New(1),
+						Priority:  0,
+						Request:   &TaskRequest{AccountId: "a1"},
+						RequestId: "r1",
 					},
 				},
 				"w2": &Worker{
 					RunningTask: &TaskRun{
-						Priority: 0,
-						Request:  &TaskRequest{AccountId: "a1"},
-						Cost:     vector.New(),
+						Priority:  0,
+						Request:   &TaskRequest{AccountId: "a1"},
+						Cost:      vector.New(),
+						RequestId: "r2",
 					},
 				},
 				"w3": &Worker{
 					RunningTask: &TaskRun{
-						Cost:     vector.New(1),
-						Priority: 2,
-						Request:  &TaskRequest{AccountId: "a1"},
+						Cost:      vector.New(1),
+						Priority:  2,
+						Request:   &TaskRequest{AccountId: "a1"},
+						RequestId: "r3",
 					},
 				},
 				"w4": &Worker{
 					RunningTask: &TaskRun{
-						Priority: 2,
-						Request:  &TaskRequest{AccountId: "a1"},
-						Cost:     vector.New(),
+						Priority:  2,
+						Request:   &TaskRequest{AccountId: "a1"},
+						Cost:      vector.New(),
+						RequestId: "r4",
 					},
 				},
 			},
@@ -118,6 +122,7 @@ func TestSchedulerReprioritize(t *testing.T) {
 	expects := s.state.Clone()
 	expects.Workers["w2"].RunningTask.Priority = 1
 	expects.Workers["w3"].RunningTask.Priority = 1
+	expects.regenCache()
 
 	muts := s.RunOnce()
 
@@ -125,9 +130,7 @@ func TestSchedulerReprioritize(t *testing.T) {
 		t.Errorf("Unexpected muts, got %s want {}", muts)
 	}
 
-	if diff := pretty.Compare(s.state, expects); diff != "" {
-		t.Errorf(fmt.Sprintf("Unexpected state diff (-got +want): %s", diff))
-	}
+	assertStateEqual(t, "reprioritize", s.state, expects)
 }
 
 // TestPreempt tests that the scheduler correctly preempts lower priority jobs
@@ -391,18 +394,11 @@ func TestUpdateBalance(t *testing.T) {
 
 // TestAddRequest ensures that AddRequest enqueues a request.
 func TestAddRequest(t *testing.T) {
+	tm := time.Unix(0, 0)
 	s := New()
 	r := &TaskRequest{}
-	s.AddRequest("r1", r)
+	s.AddRequest("r1", r, tm)
 	if s.state.QueuedRequests["r1"] != r {
 		t.Errorf("AddRequest did not enqueue request.")
 	}
-}
-
-// stateAtTime is a testing helper that creates an initialized but empty
-//  State instance with the given time as its LastAccountUpdate time.
-func stateAtTime(t time.Time) *State {
-	s := NewState()
-	s.LastUpdateTime = tutils.TimestampProto(t)
-	return s
 }
