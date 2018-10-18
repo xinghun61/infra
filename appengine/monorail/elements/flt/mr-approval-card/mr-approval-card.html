@@ -10,7 +10,7 @@
 <link rel="import" href="../../shared/field-types.html">
 <link rel="import" href="../../mr-comment-content/mr-comment-content.html">
 <link rel="import" href="../../mr-user-link/mr-user-link.html">
-<link rel="import" href="../mr-compact-comments/mr-compact-comments.html">
+<link rel="import" href="../mr-comments/mr-comments.html">
 <link rel="import" href="../mr-inline-editor/mr-inline-editor.html">
 <link rel="import" href="../mr-edit-metadata/mr-edit-metadata.html">
 <link rel="import" href="../mr-metadata/mr-metadata.html">
@@ -145,10 +145,10 @@
         </div>
       </mr-inline-editor>
       <h3>Approval comments / Changelog</h3>
-      <mr-compact-comments
+      <mr-comments
         comments="[[_comments]]"
         on-submit-comment="[[_onSubmitComment]]"
-      ></mr-compact-comments>
+      ></mr-comments>
     </iron-collapse>
     <chops-dialog id="editApproval" aria-labelledby="approvalDialogTitle">
       <h3 id="approvalDialogTitle">

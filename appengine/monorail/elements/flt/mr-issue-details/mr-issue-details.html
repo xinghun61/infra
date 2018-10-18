@@ -3,7 +3,7 @@
 <link rel="import" href="../../redux/redux-mixin.html">
 <link rel="import" href="../../mr-comment-content/mr-comment-content.html">
 
-<link rel="import" href="../mr-compact-comments/mr-compact-comments.html">
+<link rel="import" href="../mr-comments/mr-comments.html">
 <link rel="import" href="../mr-inline-editor/mr-inline-editor.html">
 <link rel="import" href="../mr-issue-details/mr-attachment-gallery.html">
 <link rel="import" href="../shared/mr-flt-styles.html">
@@ -44,11 +44,11 @@
       <mr-comment-content content="[[_description.content]]"></mr-comment-content>
     </mr-inline-editor>
     <h3>Feature discussion / Changelog</h3>
-    <mr-compact-comments
+    <mr-comments
       comments="[[_comments]]"
       comments-shown-count=5
       on-submit-comment="[[_onSubmitComment]]"
-    ></mr-compact-comments>
+    ></mr-comments>
   </template>
   <script src="./mr-issue-details.js"></script>
 <dom-module>

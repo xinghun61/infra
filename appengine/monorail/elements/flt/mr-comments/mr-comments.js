@@ -1,15 +1,15 @@
 'use strict';
 
 /**
- * `<mr-compact-comments>`
+ * `<mr-comments>`
  *
  * Display Monorail comments in a dense and compact way. Currently used by the
  * feature launch tracking page.
  *
  */
-class MrCompactComments extends Polymer.Element {
+class MrComments extends Polymer.Element {
   static get is() {
-    return 'mr-compact-comments';
+    return 'mr-comments';
   }
 
   static get properties() {
@@ -81,4 +81,4 @@ class MrCompactComments extends Polymer.Element {
     return comment.descriptionNum || comment.amendments;
   }
 }
-customElements.define(MrCompactComments.is, MrCompactComments);
+customElements.define(MrComments.is, MrComments);
