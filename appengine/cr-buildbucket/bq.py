@@ -70,7 +70,7 @@ class CronExportBuildsExperimental(CronExportBuilds):
 
 
 def _process_pull_task_batch(queue_name, dataset):
-  """Exports up to 100 builds to BigQuery.
+  """Exports up to 500 builds to BigQuery.
 
   Leases pull tasks, fetches build entities, tries to convert them to v2 format
   and insert into BigQuery in v2 format.
@@ -94,7 +94,9 @@ def _process_pull_task_batch(queue_name, dataset):
   lease_duration = datetime.timedelta(minutes=5)
   lease_deadline = now + lease_duration
   q = taskqueue.Queue(queue_name)
-  tasks = q.lease_tasks(lease_duration.total_seconds(), 100)
+  # https://cloud.google.com/bigquery/quotas#streaming_inserts
+  # says "We recommend using about 500 rows per request".
+  tasks = q.lease_tasks(lease_duration.total_seconds(), 500)
   if not tasks:
     return
 
