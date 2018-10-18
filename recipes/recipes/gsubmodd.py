@@ -24,6 +24,9 @@ PROPERTIES = {
     'target_repo': Property(help='URL of mirror repo to be built/maintained.'),
     'limit': Property(help='Maximum number of commits to process per interval.',
                       default=''),
+    'epoch': Property(
+        help='(Hash of) existing commit after which to start mirror history.',
+        default=''),
 }
 
 # How long to run. Should be in sync with buildbot scheduler period.
@@ -33,7 +36,7 @@ CYCLE_TIME_SEC = 10 * 60
 MAX_ERROR_COUNT = 5
 
 
-def RunSteps(api, source_repo, target_repo, limit=''):
+def RunSteps(api, source_repo, target_repo, limit='', epoch=''):
   # Checkout infra/infra solution.
   api.gclient.set_config('infra')
   api.gclient.c.solutions[0].revision = 'origin/deployed'
@@ -50,6 +53,8 @@ def RunSteps(api, source_repo, target_repo, limit=''):
         ]
   if limit:
     args.extend(['--limit', limit])
+  if epoch:
+    args.extend(['--epoch', epoch])
   args.append(source_repo)
 
   api.python('gsubmodd', api.path['checkout'].join('run.py'), args)
@@ -65,6 +70,13 @@ def GenTests(api):
     api.test('limited') +
     api.properties(source_repo='https://example.com/chromium/src',
                    limit='2000',
+                   target_repo='https://example.com/experimental/codesearch') +
+    api.step_data('gsubmodd', retcode=0)
+  )
+  yield (
+    api.test('epoch') +
+    api.properties(source_repo='https://example.com/chromium/src',
+                   epoch='3c70abf6069f043037e9f932f62e0cb45e6592fe',
                    target_repo='https://example.com/experimental/codesearch') +
     api.step_data('gsubmodd', retcode=0)
   )
