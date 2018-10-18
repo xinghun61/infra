@@ -69,9 +69,10 @@ def build_to_message(build, include_lease_key=False):
   assert build.key
   assert build.key.id()
 
+  project_id, bucket_name = config.parse_bucket_id(build.bucket_id)
+
   msg = BuildMessage(
       id=build.key.id(),
-      bucket=build.bucket,
       tags=build.tags,
       parameters_json=json.dumps(build.parameters or {}, sort_keys=True),
       status=build.status,
@@ -91,11 +92,21 @@ def build_to_message(build, include_lease_key=False):
       retry_of=build.retry_of,
       canary_preference=build.canary_preference,
       canary=build.canary,
-      project=build.project,
+      project=project_id,
       experimental=build.experimental,
       service_account=build.service_account,
       # when changing this function, make sure build_to_dict would still work
   )
+
+  if build.swarming_hostname:
+    # This is a LUCI build.
+    # In V1, LUCI builds use a "long" bucket name, e.g. "luci.chromium.try"
+    # as opposed to just "try". This is because in the past bucket names
+    # were globally unique, as opposed to unique per project.
+    msg.bucket = format_luci_bucket(build.bucket_id)
+  else:
+    msg.bucket = bucket_name
+
   if build.lease_expiration_date is not None:
     msg.lease_expiration_ts = utils.datetime_to_timestamp(
         build.lease_expiration_date

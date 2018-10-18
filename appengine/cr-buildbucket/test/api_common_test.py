@@ -22,12 +22,14 @@ class ApiCommonTests(testing.AppengineTestCase):
     )
     self.test_build = model.Build(
         id=1,
-        bucket='chromium',
+        project='chromium',
+        bucket='luci.chromium.try',
         create_time=datetime.datetime(2017, 1, 1),
         parameters={
             'buildername': 'linux_rel',
         },
         canary_preference=model.CanaryPreference.AUTO,
+        swarming_hostname='swarming.example.com',
     )
 
   def test_expired_build_to_message(self):
@@ -40,7 +42,8 @@ class ApiCommonTests(testing.AppengineTestCase):
 
   def test_build_to_dict_empty(self):
     expected = {
-        'bucket': 'chromium',
+        'project': 'chromium',
+        'bucket': 'luci.chromium.try',
         'created_ts': '1483228800000000',
         'id': '1',
         'parameters_json': json.dumps({'buildername': 'linux_rel'}),
@@ -52,6 +55,14 @@ class ApiCommonTests(testing.AppengineTestCase):
     }
     self.assertEqual(expected, api_common.build_to_dict(self.test_build))
 
+  def test_build_to_dict_non_luci(self):
+    self.test_build.bucket = 'master.chromium'
+    self.test_build.swarming_hostname = None
+
+    actual = api_common.build_to_dict(self.test_build)
+    self.assertEqual(actual['project'], 'chromium')
+    self.assertEqual(actual['bucket'], 'master.chromium')
+
   def test_build_to_dict_full(self):
     self.test_build.start_time = datetime.datetime(2017, 1, 2)
     self.test_build.complete_time = datetime.datetime(2017, 1, 2)
@@ -60,7 +71,8 @@ class ApiCommonTests(testing.AppengineTestCase):
     self.test_build.result_details = {'result': 'nice'}
     self.test_build.service_account = 'robot@example.com'
     expected = {
-        'bucket': 'chromium',
+        'project': 'chromium',
+        'bucket': 'luci.chromium.try',
         'completed_ts': '1483315200000000',
         'created_ts': '1483228800000000',
         'id': '1',

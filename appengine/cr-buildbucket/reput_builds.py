@@ -12,8 +12,6 @@ from google.appengine.ext import ndb
 from components import utils
 
 import bulkproc
-import config
-import model
 
 PROC_NAME = 'reput_builds'
 
@@ -40,17 +38,4 @@ def _reput_builds(build_keys):  # pragma: no cover
 def _reput_build_async(build_key):  # pragma: no cover
   build = yield build_key.get_async()
   if build:
-
-    # Some old builds do not have a project.
-    if not build.project:
-      project_id, _ = yield config.get_bucket_async(build.bucket)
-      # If the bucket no longer exists, assume it is from internal project
-      # "chrome". The correctness of project value is not that important
-      # in this case, we just need some well-formed value.
-      build.project = project_id or 'chrome'
-
-    # Some completed builds in prod and dev have no complete time.
-    # Derive it from status_changed_time.
-    if build.status == model.BuildStatus.COMPLETED and not build.complete_time:
-      build.complete_time = build.status_changed_time
     yield build.put_async()

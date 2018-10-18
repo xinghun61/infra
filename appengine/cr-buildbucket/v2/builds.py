@@ -12,6 +12,7 @@ from google.protobuf import timestamp_pb2
 from proto import build_pb2
 from proto import common_pb2
 import buildtags
+import config
 import model
 
 __all__ = [
@@ -160,14 +161,10 @@ def _parse_tags(dest_msg, tags):
 
 
 def _get_builder_id(build):
-  bucket = build.bucket
-  # in V2, we drop "luci.{project}." prefix.
-  luci_prefix = 'luci.%s.' % build.project
-  if bucket.startswith(luci_prefix):
-    bucket = bucket[len(luci_prefix):]
+  project_id, bucket_name = config.parse_bucket_id(build.bucket_id)
   return build_pb2.BuilderID(
-      project=build.project,
-      bucket=bucket,
+      project=project_id,
+      bucket=bucket_name,
       builder=(build.parameters or {}).get(model.BUILDER_PARAMETER) or '',
   )
 

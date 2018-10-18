@@ -186,7 +186,7 @@ class SwarmbucketApi(remote.Service):
       build_request = build_request.normalize()
 
       identity = auth.get_current_identity()
-      if not user.can_view_build_async(build_request).get_result():
+      if not user.can_access_bucket_async(build_request.bucket).get_result():
         raise endpoints.ForbiddenException(
             '%s cannot view builds in bucket %s' %
             (identity, build_request.bucket)

@@ -124,7 +124,7 @@ def can_async_fn(action):
 
 def can_async_fn_for_build(action):
   assert isinstance(action, Action)
-  return lambda build: can_async(build.bucket, action)
+  return lambda build: can_async(build.bucket_id, action)
 
 
 # Functions for each Action.

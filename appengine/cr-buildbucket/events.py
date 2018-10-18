@@ -9,7 +9,6 @@ on_something_happened functions must be called after the transaction completed
 successfully.
 """
 
-import json
 import logging
 
 from google.appengine.ext import ndb
@@ -27,7 +26,8 @@ import notifications
 def on_build_created(build):  # pragma: no cover
   assert not ndb.in_transaction()
   logging.info(
-      'Build %s for bucket %s was created by %s', build.key.id(), build.bucket,
+      'Build %s for bucket %s was created by %s', build.key.id(),
+      build.bucket_id,
       auth.get_current_identity().to_bytes()
   )
   metrics.inc_created_builds(build)
