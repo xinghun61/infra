@@ -13,7 +13,7 @@ from libs.gitiles.blame import Blame
 from libs.gitiles.blame import Region
 from libs.gitiles.change_log import ChangeLog
 from model.flake.analysis.flake_culprit import FlakeCulprit
-from model.flake.analysis.master_flake_analysis import DataPoint
+from model.flake.analysis.data_point import DataPoint
 from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from services import git
 from services import swarmed_test_util

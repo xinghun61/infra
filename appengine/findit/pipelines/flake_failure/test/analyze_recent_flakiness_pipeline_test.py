@@ -8,7 +8,7 @@ from dto.flakiness import Flakiness
 from dto.step_metadata import StepMetadata
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs import analysis_status
-from model.flake.analysis.master_flake_analysis import DataPoint
+from model.flake.analysis.data_point import DataPoint
 from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.analyze_recent_flakiness_pipeline import (
     AnalyzeRecentFlakinessInput)

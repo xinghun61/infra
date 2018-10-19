@@ -11,7 +11,7 @@ from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs.gitiles.change_log import ChangeLog
 from libs.gitiles.change_log import Contributor
 from libs.list_of_basestring import ListOfBasestring
-from model.flake.analysis.master_flake_analysis import DataPoint
+from model.flake.analysis.data_point import DataPoint
 from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
     UpdateFlakeAnalysisDataPointsInput)

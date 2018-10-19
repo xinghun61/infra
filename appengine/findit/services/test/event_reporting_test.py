@@ -11,7 +11,7 @@ from libs import time_util
 from model import suspected_cl_status
 from model.flake.analysis import triggering_sources
 from model.flake.analysis.flake_culprit import FlakeCulprit
-from model.flake.analysis.master_flake_analysis import DataPoint
+from model.flake.analysis.data_point import DataPoint
 from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from model.proto.gen import findit_pb2
 from model.proto.gen.compile_analysis_pb2 import CompileAnalysisCompletionEvent
@@ -101,14 +101,15 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
         'commit_position': commit_position,
         'url': 'https://codereview.chromium.org/123',
         'status': suspected_cl_status.CORRECT
-    }, {
-        'repo_name': repo_name,
-        'revision': revision + 'bad',
-        'commit_position': commit_position,
-        'url': 'https://codereview.chromium.org/123',
-        'status': suspected_cl_status.CORRECT,
-        'failures': ['hello']
-    }]
+    },
+                              {
+                                  'repo_name': repo_name,
+                                  'revision': revision + 'bad',
+                                  'commit_position': commit_position,
+                                  'url': 'https://codereview.chromium.org/123',
+                                  'status': suspected_cl_status.CORRECT,
+                                  'failures': ['hello']
+                              }]
     analysis.put()
 
     event = TestAnalysisCompletionEvent()
@@ -128,14 +129,15 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
         'commit_position': commit_position,
         'url': 'https://codereview.chromium.org/123',
         'status': suspected_cl_status.CORRECT
-    }, {
-        'repo_name': repo_name,
-        'revision': revision + 'bad',
-        'commit_position': commit_position,
-        'url': 'https://codereview.chromium.org/123',
-        'status': suspected_cl_status.CORRECT,
-        'top_score': None
-    }]
+    },
+                              {
+                                  'repo_name': repo_name,
+                                  'revision': revision + 'bad',
+                                  'commit_position': commit_position,
+                                  'url': 'https://codereview.chromium.org/123',
+                                  'status': suspected_cl_status.CORRECT,
+                                  'top_score': None
+                              }]
     analysis.put()
 
     event = TestAnalysisCompletionEvent()
@@ -649,11 +651,12 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
                 'rule': 'CXX',
                 'output_nodes': ['obj/a/b/test.c.o'],
                 'dependencies': ["a/b/c.cc", "new/c.cc"]
-            }, {
-                'rule': 'LINK',
-                'output_nodes': ['obj/a/b/test.d.o'],
-                'dependencies': []
-            }]
+            },
+                             {
+                                 'rule': 'LINK',
+                                 'output_nodes': ['obj/a/b/test.d.o'],
+                                 'dependencies': []
+                             }]
         }
     }
     repo_name = 'chromium'
@@ -689,14 +692,15 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
         'commit_position': commit_position,
         'url': 'https://codereview.chromium.org/123',
         'status': suspected_cl_status.CORRECT
-    }, {
-        'repo_name': repo_name,
-        'revision': revision,
-        'commit_position': commit_position,
-        'url': 'https://codereview.chromium.org/123',
-        'status': suspected_cl_status.CORRECT,
-        'top_score': None
-    }]
+    },
+                              {
+                                  'repo_name': repo_name,
+                                  'revision': revision,
+                                  'commit_position': commit_position,
+                                  'url': 'https://codereview.chromium.org/123',
+                                  'status': suspected_cl_status.CORRECT,
+                                  'top_score': None
+                              }]
     analysis.put()
 
     event = event_reporting.CreateCompileFailureAnalysisCompletionEvent(
@@ -758,11 +762,12 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
                 'rule': 'CXX',
                 'output_nodes': ['obj/a/b/test.c.o'],
                 'dependencies': ["a/b/c.cc", "new/c.cc"]
-            }, {
-                'rule': 'LINK',
-                'output_nodes': ['obj/a/b/test.d.o'],
-                'dependencies': []
-            }]
+            },
+                             {
+                                 'rule': 'LINK',
+                                 'output_nodes': ['obj/a/b/test.d.o'],
+                                 'dependencies': []
+                             }]
         }
     }
     repo_name = 'chromium'
@@ -863,11 +868,12 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
                 'rule': 'CXX',
                 'output_nodes': ['obj/a/b/test.c.o'],
                 'dependencies': ["a/b/c.cc", "new/c.cc"]
-            }, {
-                'rule': 'LINK',
-                'output_nodes': ['obj/a/b/test.d.o'],
-                'dependencies': []
-            }]
+            },
+                             {
+                                 'rule': 'LINK',
+                                 'output_nodes': ['obj/a/b/test.d.o'],
+                                 'dependencies': []
+                             }]
         }
     }
     repo_name = 'chromium'
@@ -956,11 +962,12 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
                 'rule': 'CXX',
                 'output_nodes': ['obj/a/b/test.c.o'],
                 'dependencies': ["a/b/c.cc", "new/c.cc"]
-            }, {
-                'rule': 'LINK',
-                'output_nodes': ['obj/a/b/test.d.o'],
-                'dependencies': []
-            }]
+            },
+                             {
+                                 'rule': 'LINK',
+                                 'output_nodes': ['obj/a/b/test.d.o'],
+                                 'dependencies': []
+                             }]
         }
     }
     repo_name = 'chromium'
@@ -1039,11 +1046,12 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
                 'rule': 'CXX',
                 'output_nodes': ['obj/a/b/test.c.o'],
                 'dependencies': ["a/b/c.cc", "new/c.cc"]
-            }, {
-                'rule': 'LINK',
-                'output_nodes': ['obj/a/b/test.d.o'],
-                'dependencies': []
-            }]
+            },
+                             {
+                                 'rule': 'LINK',
+                                 'output_nodes': ['obj/a/b/test.d.o'],
+                                 'dependencies': []
+                             }]
         }
     }
     repo_name = 'chromium'
@@ -1146,11 +1154,12 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
                 'rule': 'CXX',
                 'output_nodes': ['obj/a/b/test.c.o'],
                 'dependencies': ["a/b/c.cc", "new/c.cc"]
-            }, {
-                'rule': 'LINK',
-                'output_nodes': ['obj/a/b/test.d.o'],
-                'dependencies': []
-            }]
+            },
+                             {
+                                 'rule': 'LINK',
+                                 'output_nodes': ['obj/a/b/test.d.o'],
+                                 'dependencies': []
+                             }]
         }
     }
     repo_name = 'chromium'
@@ -1400,8 +1409,8 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     }
     analysis.put()
 
-    event = event_reporting.CreateTestFailureAnalysisCompletionEvent(analysis)[
-        0]
+    event = event_reporting.CreateTestFailureAnalysisCompletionEvent(
+        analysis)[0]
     self.assertFalse(event.flake)
     self.assertEqual(event.analysis_info.master_name, master)
     self.assertEqual(event.analysis_info.builder_name, builder)
@@ -1504,8 +1513,8 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     }
     analysis.put()
 
-    event = event_reporting.CreateTestFailureAnalysisCompletionEvent(analysis)[
-        0]
+    event = event_reporting.CreateTestFailureAnalysisCompletionEvent(
+        analysis)[0]
     self.assertEqual(event.analysis_info.master_name, master)
     self.assertEqual(event.analysis_info.builder_name, builder)
     self.assertEqual(event.analysis_info.step_name, step)
@@ -1605,14 +1614,15 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
         'commit_position': commit_position,
         'url': 'https://codereview.chromium.org/123',
         'status': suspected_cl_status.CORRECT
-    }, {
-        'repo_name': repo_name,
-        'revision': revision,
-        'commit_position': commit_position,
-        'url': 'https://codereview.chromium.org/123',
-        'status': suspected_cl_status.CORRECT,
-        'failures': ['failure']
-    }]
+    },
+                              {
+                                  'repo_name': repo_name,
+                                  'revision': revision,
+                                  'commit_position': commit_position,
+                                  'url': 'https://codereview.chromium.org/123',
+                                  'status': suspected_cl_status.CORRECT,
+                                  'failures': ['failure']
+                              }]
     analysis.failure_result_map = {
         step: {
             test: "{}/{}/{}".format(master, builder, suspected_build_number),
@@ -1624,8 +1634,8 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     }
     analysis.put()
 
-    event = event_reporting.CreateTestFailureAnalysisCompletionEvent(analysis)[
-        0]
+    event = event_reporting.CreateTestFailureAnalysisCompletionEvent(
+        analysis)[0]
     self.assertEqual(event.analysis_info.master_name, master)
     self.assertEqual(event.analysis_info.builder_name, builder)
     self.assertEqual(event.analysis_info.step_name, step)

@@ -10,7 +10,7 @@ from gae_libs.pipelines import pipeline_handlers
 from infra_api_clients.swarming.swarming_task_data import SwarmingTaskData
 from model.flake.analysis.flake_analysis_request import FlakeAnalysisRequest
 from model.flake.analysis.flake_culprit import FlakeCulprit
-from model.flake.analysis.master_flake_analysis import DataPoint
+from model.flake.analysis.data_point import DataPoint
 from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure import create_bug_for_flake_pipeline
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (

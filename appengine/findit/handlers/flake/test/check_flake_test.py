@@ -18,7 +18,7 @@ from model.flake.analysis.flake_analysis_request import FlakeAnalysisRequest
 from model.flake.analysis.flake_culprit import FlakeCulprit
 from model.flake.analysis.flake_try_job import FlakeTryJob
 from model.flake.analysis.flake_try_job_data import FlakeTryJobData
-from model.flake.analysis.master_flake_analysis import DataPoint
+from model.flake.analysis.data_point import DataPoint
 from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakePipeline
 from pipelines.flake_failure import initialize_analyze_recent_flakiness_pipeline

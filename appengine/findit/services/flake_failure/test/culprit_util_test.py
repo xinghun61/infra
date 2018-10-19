@@ -13,7 +13,7 @@ from libs import time_util
 from infra_api_clients.codereview import codereview
 from infra_api_clients.codereview import codereview_util
 from model.flake.analysis.flake_culprit import FlakeCulprit
-from model.flake.analysis.master_flake_analysis import DataPoint
+from model.flake.analysis.data_point import DataPoint
 from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.create_and_submit_revert_pipeline import (
     CreateAndSubmitRevertInput)

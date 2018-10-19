@@ -13,7 +13,7 @@ from libs import analysis_status
 from model import result_status
 from model import triage_status
 from model.flake.analysis.flake_culprit import FlakeCulprit
-from model.flake.analysis.master_flake_analysis import DataPoint
+from model.flake.analysis.data_point import DataPoint
 from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from model.isolated_target import IsolatedTarget
 from waterfall.build_info import BuildInfo
@@ -169,11 +169,6 @@ class MasterFlakeAnalysisTest(TestCase):
                      MasterFlakeAnalysis.GetBuildConfigurationFromKey(None))
     self.assertEqual((master_name, builder_name),
                      MasterFlakeAnalysis.GetBuildConfigurationFromKey(key))
-
-  def testGetSwarmingTaskId(self):
-    task_ids = ['a', 'b', 'c']
-    data_point = DataPoint.Create(task_ids=task_ids)
-    self.assertEqual(data_point.GetSwarmingTaskId(), 'c')
 
   def testGetDataPointOfSuspectedBuildNoSuspectedFlakeBuildNumber(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
@@ -458,13 +453,9 @@ class MasterFlakeAnalysisTest(TestCase):
 
   def testFindMatchingDataPoint(self):
     old_data_point = DataPoint.Create(
-        commit_position=1,
-        pass_rate=1.0,
-        iterations=10)
+        commit_position=1, pass_rate=1.0, iterations=10)
     new_data_point = DataPoint.Create(
-        commit_position=2,
-        pass_rate=0.5,
-        iterations=10)
+        commit_position=2, pass_rate=0.5, iterations=10)
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [old_data_point]
