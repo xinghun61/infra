@@ -12,6 +12,12 @@ class Map(db.Model):
   content = db.TextProperty()
 
 
+LUCI_CHROMIUM_TRY_BUILDERS_URL = (
+    'https://cr-buildbucket.appspot.com/_ah/api/swarmbucket/v1/'
+    'builders?bucket=luci.chromium.try'
+)
+
+
 class MainPage(webapp2.RequestHandler):
   def get(self):
     self.response.headers['Content-Type'] = 'application/json'
@@ -25,7 +31,7 @@ class BuildersMap(webapp2.RequestHandler):
     builders = copy.deepcopy(hardcoded.BUILDERS)
 
     for builder, builder_def in builders.iteritems():
-      master = builder_def['master']
+      master = builder_def.pop('master')
       builder_def['bucket'] = 'master.' + master
 
       # If this builder is ready for LUCI, use the corresponding LUCI bucket
@@ -49,6 +55,16 @@ class BuildersMap(webapp2.RequestHandler):
               master, builder)
           # Retry the entire task.
           raise
+
+    # Add pure luci.chromium.try builders
+    chromium_try_builders = json.load(
+        urllib2.urlopen(LUCI_CHROMIUM_TRY_BUILDERS_URL))
+    assert len(chromium_try_builders['buckets']) == 1
+    for b in chromium_try_builders['buckets'][0]['builders']:
+      if b['name'] not in builders:
+        builders[b['name']] = {
+          'bucket': 'luci.chromium.try',
+        }
 
     b_map = Map(content=json.dumps(builders), key_name='builders')
     b_map.put()
