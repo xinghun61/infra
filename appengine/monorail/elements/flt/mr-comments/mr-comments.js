@@ -22,6 +22,10 @@ class MrComments extends Polymer.Element {
         type: Array,
         value: [],
       },
+      headingLevel: {
+        type: Number,
+        value: 4,
+      },
       onSubmitComment: Function,
       user: {
         type: String,

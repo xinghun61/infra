@@ -332,6 +332,10 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
   _updateSurveyHandler(content) {
     this._updateApproval(content, null, true);
   }
+
+  _toString(bool) {
+    return bool.toString();
+  }
 }
 
 customElements.define(MrApprovalCard.is, MrApprovalCard);

@@ -18,10 +18,11 @@
         --mr-inline-editor-textarea-min-height: 200px;
         --mr-inline-editor-textarea-max-height: 500px;
       }
-      h3 {
+      [role="heading"] {
         display: flex;
         justify-content: space-between;
         align-items: baseline;
+        @apply --mr-inline-editor-header-style;
       }
       .content {
         padding: 0.5em 0;
@@ -35,7 +36,7 @@
         padding: 0.5em 4px;
       }
     </style>
-    <h3>
+    <div class="medium-heading" role="heading" aria-level$="[[headingLevel]]">
       [[title]]
 
       <template is="dom-if" if="[[!editing]]">
@@ -56,7 +57,7 @@
           </chops-button>
         </div>
       </template>
-    </h3>
+    </div>
     <textarea id="textEditor"
         class="content"
         value="{{_displayedContent::input}}"

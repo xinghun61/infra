@@ -23,7 +23,12 @@
       chops-button.de-emphasized {
         border-color: transparent;
       }
-      h3 {
+      /* Note: decoupling heading levels from styles is useful for
+       * accessibility because styles will not always line up with semantically
+       * appropriate heading levels.
+       */
+      .medium-heading {
+        font-size: 16px;
         font-weight: normal;
         line-height: 1;
         padding: 0.5em 0;

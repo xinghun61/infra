@@ -44,6 +44,14 @@
         --approval-accent-color: hsl(357, 100%, 39%);
       }
       h3 {
+        margin: 0;
+        padding: 0;
+        display: inline;
+        font-weight: inherit;
+        font-size: inherit;
+        line-height: inherit;
+      }
+      h4 {
         display: flex;
         justify-content: space-between;
         align-items: baseline;
@@ -108,9 +116,9 @@
         box-sizing: border-box;
       }
     </style>
-    <button class="header" on-click="toggleCard" aria-expanded$="[[opened]]">
+    <button class="header" on-click="toggleCard" aria-expanded$="[[_toString(opened)]]">
       <iron-icon class="expand-icon" icon="[[_expandIcon]]"></iron-icon>
-      [[fieldName]]
+      <h3>[[fieldName]]</h3>
       <span class="status">
         <iron-icon class="status-icon" icon=[[_statusIcon]]></iron-icon>
         [[_status]]
@@ -134,6 +142,7 @@
         field-defs="[[fieldDefs]]"
       ></mr-metadata>
       <mr-inline-editor
+        heading-level=4
         content="[[_survey.content]]"
         title$="[[fieldName]] Survey"
         edit-text="Edit responses"
@@ -144,8 +153,9 @@
           <mr-comment-content content="[[_survey.content]]"></mr-comment-content>
         </div>
       </mr-inline-editor>
-      <h3>Approval comments / Changelog</h3>
+      <h4 class="medium-heading">Approval comments / Changelog</h3>
       <mr-comments
+        heading-level=5
         comments="[[_comments]]"
         on-submit-comment="[[_onSubmitComment]]"
       ></mr-comments>

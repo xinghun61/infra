@@ -27,6 +27,10 @@ class MrInlineEditor extends Polymer.Element {
         type: String,
         value: 'Edit',
       },
+      headingLevel: {
+        type: Number,
+        value: 3,
+      },
       placeholder: String,
       _boldLines: {
         type: Array,

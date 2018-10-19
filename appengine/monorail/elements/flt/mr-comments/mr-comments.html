@@ -30,12 +30,6 @@
       button.toggle[hidden], .card-comment[hidden] {
         display: none;
       }
-      h4 {
-        font-size: 100%;
-        font-weight: normal;
-        margin: 0;
-        padding: 0;
-      }
       textarea {
         width: 100%;
         margin: 0.5em 0;
@@ -81,11 +75,11 @@
     </button>
     <template is="dom-repeat" items="[[comments]]" as="comment">
       <div class="card-comment" hidden$=[[_computeCommentHidden(_commentsHidden,_commentsHiddenCount,index)]]>
-        <h4 class="comment-header">
+        <span role="heading" aria-level$="[[headingLevel]]" class="comment-header">
           Comment [[comment.sequenceNum]] by
           <mr-user-link display-name="[[comment.commenter.displayName]]" user-id="[[comment.commenter.userId]]"></mr-user-link> on
           <chops-timestamp timestamp="[[comment.timestamp]]"></chops-timestamp>
-        </h4>
+        </span>
         <div>
           <div class="comment-attachments">
             <template is="dom-repeat" items="[[comment.attachments]]" as="attachment">

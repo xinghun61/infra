@@ -35,16 +35,18 @@
     </style>
     <mr-attachment-gallery hidden></mr-attachment-gallery>
     <mr-inline-editor
-        content="[[_description.content]]"
-        title="Feature description"
-        edit-text="Edit description"
-        placeholder="Feature description"
-        on-save="[[_updateDescription]]"
+      heading-level=2
+      content="[[_description.content]]"
+      title="Feature description"
+      edit-text="Edit description"
+      placeholder="Feature description"
+      on-save="[[_updateDescription]]"
     >
       <mr-comment-content content="[[_description.content]]"></mr-comment-content>
     </mr-inline-editor>
-    <h3>Feature discussion / Changelog</h3>
+    <h2 class="medium-heading">Feature discussion / Changelog</h2>
     <mr-comments
+      heading-level=3
       comments="[[_comments]]"
       comments-shown-count=5
       on-submit-comment="[[_onSubmitComment]]"

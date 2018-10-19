@@ -105,28 +105,30 @@
     >
       <span slot="subheader">&gt; Feature Launch Issue</span>
     </mr-header>
-    <template is="dom-if" if="[[!issueLoaded]]">
-      <div class="container-outside">
-        Loading...
-      </div>
-    </template>
-    <template is="dom-if" if="[[fetchIssueError]]">
-      <div class="container-outside">
-        [[fetchIssueError]]
-      </div>
-    </template>
-    <template is="dom-if" if="[[issueLoaded]]">
-      <mr-issue-header></mr-issue-header>
-      <div class="container-outside">
-        <div class="metadata-container">
-          <mr-issue-metadata></mr-issue-metadata>
+    <main>
+      <template is="dom-if" if="[[!issueLoaded]]">
+        <div class="container-outside">
+          Loading...
         </div>
-        <div class="container-main">
-          <mr-issue-details class="main-item"></mr-issue-details>
-          <mr-launch-overview class="main-item"></mr-launch-overview>
+      </template>
+      <template is="dom-if" if="[[fetchIssueError]]">
+        <div class="container-outside">
+          [[fetchIssueError]]
         </div>
-      </div>
-    </template>
+      </template>
+      <template is="dom-if" if="[[issueLoaded]]">
+        <mr-issue-header></mr-issue-header>
+        <div class="container-outside">
+          <aside class="metadata-container">
+            <mr-issue-metadata></mr-issue-metadata>
+          </aside>
+          <div class="container-main">
+            <mr-issue-details class="main-item"></mr-issue-details>
+            <mr-launch-overview class="main-item"></mr-launch-overview>
+          </div>
+        </div>
+      </template>
+    </main>
     <mr-edit-issue-dialog></mr-edit-issue-dialog>
   </template>
   <script src="./mr-approval-page.js"></script>
