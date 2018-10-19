@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"path"
 	"strings"
@@ -70,9 +71,14 @@ func pubsubHandler(w http.ResponseWriter, req *http.Request) {
 
 	info, err := getFile(ctx, filename, bucketID)
 
-	// TODO(tikuta): Return http error when getFile is failed due to network error.
 	if err != nil {
 		log.Errorf(ctx, "failed to get file: %v", err)
+
+		// TODO(tikuta): This may not cover all network error.
+		if nerr, ok := err.(net.Error); ok && nerr.Temporary() {
+			http.Error(w, "Failed to get file due to temporary network error", http.StatusInternalServerError)
+			return
+		}
 
 		// Sometimes ninja_log is corrupted and getFile return error.
 		// In such case, we don't want Pub/Sub to send
