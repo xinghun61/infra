@@ -26,10 +26,10 @@ PROPERTIES = {
 
 def RunSteps(api, GOOS, GOARCH, load_dupe):
   builder = api.path['cache'].join('builder')
-  api.support_3pp.package_prefix = '3pp'
+  api.support_3pp.set_package_prefix('3pp')
 
   api.step('echo package_prefix', [
-    'echo', api.support_3pp.package_prefix])
+    'echo', api.support_3pp.package_prefix()])
 
   # do a checkout in `builder`
   pkgs = api.support_3pp.load_packages_from_path(
@@ -50,7 +50,7 @@ def RunSteps(api, GOOS, GOARCH, load_dupe):
   excluded = {'unsupported'}
   if api.platform.is_win:
     excluded.add('posix_tool')
-  assert unsupported == excluded, 'unexpected: %r' % (unsupported,)
+  assert unsupported == excluded, 'unexpected: %r' % (unsupported-excluded,)
 
   # doing it again should hit caches
   api.support_3pp.ensure_uploaded(pkgs, '%s-%s' % (GOOS, GOARCH))
@@ -63,7 +63,7 @@ def GenTests(api):
       source { cipd { pkg: "source/bottom_dep" default_version: "1.0" } }
       build {}
     }
-    upload { pkg_prefix: "prefix/deps" }
+    upload { pkg_prefix: "deps" }
     ''',
     tool='''
     create {
@@ -137,14 +137,14 @@ def GenTests(api):
       }
     }
 
-    upload { pkg_prefix: "prefix/build_tools" }
+    upload { pkg_prefix: "build_tools" }
     ''',
 
     deep_dep='''
     create {
       source { cipd {pkg: "source/deep_dep" default_version: "1.0.0"} }
     }
-    upload { pkg_prefix: "prefix/deps" }
+    upload { pkg_prefix: "deps" }
     ''',
 
     dep='''
@@ -155,7 +155,7 @@ def GenTests(api):
         dep: "deep_dep"
       }
     }
-    upload { pkg_prefix: "prefix/deps" }
+    upload { pkg_prefix: "deps" }
     ''',
 
     pkg='''
@@ -166,11 +166,28 @@ def GenTests(api):
         dep:  "dep"
       }
     }
-    upload { pkg_prefix: "prefix/tools" }
+    upload { pkg_prefix: "tools" }
     ''',
 
     unsupported='''
     create { unsupported: true }
+    ''',
+
+    windows_experiment='''
+    create {
+      platform_re: "linux-.*|mac-.*"
+      source { script { name: "fetch.py" } }
+      build {}
+    }
+
+    create {
+      platform_re: "windows-.*"
+      experimental: true
+      source { script { name: "fetch.py" } }
+      build { install: "win_install.py" }
+    }
+
+    upload { pkg_prefix: "tools" }
     ''',
 
     posix_tool='''
@@ -218,7 +235,7 @@ def GenTests(api):
     plat = '%s-%s' % (goos, goarch)
 
     test = (api.test('integration_test_%s-%s' % (goos, goarch))
-      + api.runtime(is_luci=True, is_experimental=True)
+      + api.runtime(is_luci=True, is_experimental=False)
       + api.platform(plat_name, 64)  # assume all hosts are 64 bits.
       + api.properties(GOOS=goos, GOARCH=goarch)
       + api.buildbucket.ci_build()
@@ -227,9 +244,9 @@ def GenTests(api):
                         pkg_repo_path % name for name, _ in pkgs]))
       + api.override_step_data(mk_name(
         'building already_uploaded',
-        'cipd describe experimental/3pp/tools/already_uploaded/%s' % plat
+        'cipd describe 3pp/tools/already_uploaded/%s' % plat
       ), api.cipd.example_describe(
-        'experimental/3pp/tools/already_uploaded/%s' % plat,
+        '3pp/tools/already_uploaded/%s' % plat,
         version='version:1.5.0-rc1', test_data_tags=['version:1.5.0-rc1']))
     )
 

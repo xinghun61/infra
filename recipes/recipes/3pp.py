@@ -82,7 +82,7 @@ def RunSteps(api, package_locations, to_build, platform, force_build,
     if err.errno_name != 'ENOENT':
       raise
 
-  api.support_3pp.package_prefix = package_prefix
+  api.support_3pp.set_package_prefix(package_prefix)
 
   actual_repos = set()
   with api.step.nest('load packages from desired repos'):

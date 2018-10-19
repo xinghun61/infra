@@ -217,8 +217,20 @@ message Spec {
     // current platform.
     string platform_re = 1;
 
+    // (optional) If true, then the recipe will treat this package/platform as
+    // experimental. That is, it will prepend 'experimental/' to it's CIPD
+    // package name. This is the same effect as running the entire recipe in
+    // experimental mode, except on a per-package basis. The two experimental
+    // prefixes do not stack :).
+    bool experimental = 2;
+
+    // (optional) If true, all other fields are ignored and the recipe will
+    // return an error indicating that this package isn't configured for the
+    // current ${platform}.
+    bool unsupported = 3;
+
     // (required) How to obtain the source for this pkg.
-    Source source = 2;
+    Source source = 4;
 
     // (optional) How to transform the source into the output pkg.
     //
@@ -228,18 +240,13 @@ message Spec {
     //
     // If this message is present, the package will be built according to the
     // Build message.
-    Build build = 3;
+    Build build = 5;
 
     // (optional) Options for creating a CIPD package from the built source.
-    Package package = 4;
+    Package package = 6;
 
     // (optional) How to verify that the output pkg is useful.
-    Verify verify = 5;
-
-    // (optional) If true, all other fields are ignored and the recipe will
-    // return an error indicating that this package isn't configured for the
-    // current ${platform}.
-    bool unsupported = 6;
+    Verify verify = 7;
   }
   // (required) How the package should be created.
   //

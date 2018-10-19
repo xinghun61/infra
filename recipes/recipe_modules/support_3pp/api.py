@@ -274,7 +274,10 @@ central server.
 
 The recipe must always be run with a package_prefix (by assigning to the
 .package_prefix property on the Support3ppApi). If the recipe is run in
-experimental mode, 'experimental/' will be prepended to this.
+experimental mode, 'experimental/' will be prepended to this. Additionally, you
+may specify `experimental: true` in the Create message for a package, which will
+have the same effect when running the recipe in production (to allow adding new
+packages or package/platform combintations experimentally).
 
 #### Examples
 
@@ -395,17 +398,21 @@ class Support3ppApi(recipe_api.RecipeApi):
   def initialize(self):
     self._cipd_spec_pool = cipd_spec.CIPDSpecPool(self.m)
 
-  @property
-  def package_prefix(self):
-    """Returns the CIPD package name prefix (str), if any is set."""
+  def package_prefix(self, experimental=False):
+    """Returns the CIPD package name prefix (str), if any is set.
+
+    This will prepend 'experimental/' to the currently set prefix if:
+      * The recipe is running in experimental mode; OR
+      * You pass experimental=True
+    """
     assert self._package_prefix, 'A non-empty package prefix is required.'
+    experimental = experimental or self.m.runtime.is_experimental
     return (
-      ('experimental/' if self.m.runtime.is_experimental else '')
+      ('experimental/' if experimental else '')
       + self._package_prefix + '/'
     )
 
-  @package_prefix.setter
-  def package_prefix(self, prefix):
+  def set_package_prefix(self, prefix):
     """Set the CIPD package name prefix (str).
 
     All CIPDSpecs for built packages (not sources) will have this string
@@ -481,7 +488,7 @@ class Support3ppApi(recipe_api.RecipeApi):
           tool_name, tool_platform(self.m, platform, spec)))
 
     ret = ResolvedSpec(
-      self.m, self._cipd_spec_pool, self.package_prefix,
+      self.m, self._cipd_spec_pool, self.package_prefix(create_pb.experimental),
       pkgname, platform, base_path, spec, deps, unpinned_tools)
     self._resolved_packages[key] = ret
     return ret

@@ -475,7 +475,10 @@ central server.
 
 The recipe must always be run with a package_prefix (by assigning to the
 .package_prefix property on the Support3ppApi). If the recipe is run in
-experimental mode, 'experimental/' will be prepended to this.
+experimental mode, 'experimental/' will be prepended to this. Additionally, you
+may specify `experimental: true` in the Create message for a package, which will
+have the same effect when running the recipe in production (to allow adding new
+packages or package/platform combintations experimentally).
 
 #### Examples
 
@@ -491,9 +494,9 @@ This module uses the following named caches:
   * `osx_sdk` - Cache for `depot_tools/osx_sdk`. Only on Mac.
   * `windows_sdk` - Cache for `depot_tools/windows_sdk`. Only on Windows.
 
-#### **class [Support3ppApi](/recipes/recipe_modules/support_3pp/api.py#375)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+#### **class [Support3ppApi](/recipes/recipe_modules/support_3pp/api.py#378)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
-&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/support_3pp/api.py#554)(self, packages=(), platform='', force_build=False):**
+&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/support_3pp/api.py#561)(self, packages=(), platform='', force_build=False):**
 
 Executes entire {fetch,build,package,verify,upload} pipeline for all the
 packages listed, targeting the given platform.
@@ -509,9 +512,9 @@ Args:
 Returns (list[(cipd_pkg, cipd_version)], set[str]) of built CIPD packages
 and their tagged versions, as well as a list of unsupported packages.
 
-&mdash; **def [initialize](/recipes/recipe_modules/support_3pp/api.py#395)(self):**
+&mdash; **def [initialize](/recipes/recipe_modules/support_3pp/api.py#398)(self):**
 
-&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/support_3pp/api.py#504)(self, path):**
+&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/support_3pp/api.py#511)(self, path):**
 
 Loads all package definitions from the given path.
 
@@ -537,7 +540,15 @@ whose name is already registered. This could occur if you call
 load_packages_from_path multiple times, and one of the later calls tries to
 load a package which was registered under one of the earlier calls.
 
-&emsp; **@package_prefix.setter**<br>&mdash; **def [package\_prefix](/recipes/recipe_modules/support_3pp/api.py#407)(self, prefix):**
+&mdash; **def [package\_prefix](/recipes/recipe_modules/support_3pp/api.py#401)(self, experimental=False):**
+
+Returns the CIPD package name prefix (str), if any is set.
+
+This will prepend 'experimental/' to the currently set prefix if:
+  * The recipe is running in experimental mode; OR
+  * You pass experimental=True
+
+&mdash; **def [set\_package\_prefix](/recipes/recipe_modules/support_3pp/api.py#415)(self, prefix):**
 
 Set the CIPD package name prefix (str).
 
