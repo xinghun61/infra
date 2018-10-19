@@ -127,6 +127,8 @@ class FLTConvertTask(unittest.TestCase):
     self.task.ExecuteIssueChanges.assert_called_once_with(
         self.config, issue1, new_approvals, phases, new_fvs)
 
+    patcher.stop()
+
   def testFetchAndAssertProjectInfo(self):
 
     # test no 'launch' in request
