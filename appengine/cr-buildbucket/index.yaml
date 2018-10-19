@@ -3,19 +3,19 @@ indexes:
 # Popular searches.
 - kind: Build
   properties:
-    - name: bucket
+    - name: bucket_id
     - name: tags
 
 - kind: Build
   properties:
-    - name: bucket
+    - name: bucket_id
     - name: tags
     - name: status
     - name: experimental
 
 - kind: Build
   properties:
-    - name: bucket
+    - name: bucket_id
     - name: tags
     - name: incomplete
     - name: experimental
@@ -23,7 +23,7 @@ indexes:
 # Peeking.
 - kind: Build
   properties:
-  - name: bucket
+  - name: bucket_id
   - name: is_leased
   - name: status
   - name: __key__
@@ -44,7 +44,7 @@ indexes:
 # Build lease/start latency monitoring.
 - kind: Build
   properties:
-  - name: bucket
+  - name: bucket_id
   - name: experimental
   - name: status
   - name: never_leased
