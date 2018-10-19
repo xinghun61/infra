@@ -122,13 +122,13 @@ func TestUpdateConfigs(t *testing.T) {
 			revs, err := getStoredProjectConfigRevisions(ctx)
 			So(err, ShouldBeNil)
 			So(revs, ShouldResemble, map[string]string{
-				"infra":      "d2b8011d0651413774033b48fbab212d9acf3e8c",
-				"playground": "1b40db8eff9122552687206f19c8b68ebb2480be",
+				"infra":      "fac958dbf074f5d82548bf99c1bd4380ec916d71",
+				"playground": "33c3bc06def39dd8c7f2d341ce37b5080980f1bd",
 			})
 
 			rev, err := getStoredServiceConfigRevision(ctx)
 			So(err, ShouldBeNil)
-			So(rev, ShouldEqual, "8dad5f169bcb18e5d6ac020ebd032a284e9d1734")
+			So(rev, ShouldEqual, "5ffee516cf8e7a15f4610792c02000b98dd490a3")
 
 			sc, err := getServiceConfig(ctx)
 			So(err, ShouldBeNil)
@@ -161,12 +161,12 @@ func TestUpdateConfigs(t *testing.T) {
 			revs, err = getStoredProjectConfigRevisions(ctx)
 			So(err, ShouldBeNil)
 			So(revs, ShouldResemble, map[string]string{
-				"infra":      "d2b8011d0651413774033b48fbab212d9acf3e8c",
-				"playground": "1b40db8eff9122552687206f19c8b68ebb2480be",
+				"infra":      "fac958dbf074f5d82548bf99c1bd4380ec916d71",
+				"playground": "33c3bc06def39dd8c7f2d341ce37b5080980f1bd",
 			})
 			rev, err = getStoredServiceConfigRevision(ctx)
 			So(err, ShouldBeNil)
-			So(rev, ShouldEqual, "8dad5f169bcb18e5d6ac020ebd032a284e9d1734")
+			So(rev, ShouldEqual, "5ffee516cf8e7a15f4610792c02000b98dd490a3")
 		})
 	})
 }
