@@ -17,6 +17,7 @@ from components import utils
 
 from proto import common_pb2
 import buildtags
+import config
 import errors
 import metrics
 import model
@@ -85,22 +86,26 @@ def fetch_page_async(query, page_size, start_cursor, predicate=None):
 
 
 @ndb.tasklet
-def check_acls_async(buckets, inc_metric=None):
+def check_acls_async(bucket_ids, inc_metric=None):
   """Checks access to the buckets.
 
   Raises an error if the current identity doesn't have access to any of the
   buckets.
   """
-  assert buckets
-  for bucket in buckets:
-    errors.validate_bucket_name(bucket)
+  assert bucket_ids
+  bucket_ids = sorted(set(bucket_ids))
 
-  futs = [user.can_search_builds_async(b) for b in buckets]
-  for bucket, fut in zip(buckets, futs):
+  for bucket_id in bucket_ids:
+    config.validate_bucket_id(bucket_id)
+
+  futs = [user.can_search_builds_async(b) for b in bucket_ids]
+  for bucket_id, fut in zip(bucket_ids, futs):
     if not (yield fut):
       if inc_metric:  # pragma: no cover
-        inc_metric.increment(fields={'bucket': bucket})
-      raise user.current_identity_cannot('search builds in bucket %s', bucket)
+        inc_metric.increment(fields={'bucket': bucket_id})
+      raise user.current_identity_cannot(
+          'search builds in bucket %s', bucket_id
+      )
 
 
 class StatusFilter(messages.Enum):
@@ -121,7 +126,7 @@ class Query(object):
   def __init__(
       self,
       project=None,
-      buckets=None,
+      bucket_ids=None,
       tags=None,
       status=None,
       result=None,
@@ -142,11 +147,10 @@ class Query(object):
 
     Args:
       project (str): project id to search in.
-        Mutually exclusive with buckets.
-      buckets (list of str): a list of buckets to search in.
+        Mutually exclusive with bucket_ids.
+      bucket_ids (list of str): a list of bucket_ids to search in.
         A build must be in one of the buckets.
         Mutually exclusive with project.
-        TODO(nodir): change buckets to project-scoped bucket names, not global.
       tags (list of str): a list of tags that a build must have.
         All of the |tags| must be present in a build.
       status (StatusFilter or common_pb2.Status): build status.
@@ -170,7 +174,7 @@ class Query(object):
         experimental builds. Otherwise, experimental builds will be excluded.
     """
     self.project = project
-    self.buckets = buckets
+    self.bucket_ids = bucket_ids
     self.tags = tags
     self.status = status
     self.result = result
@@ -210,16 +214,10 @@ class Query(object):
 
   def validate(self):
     """Raises errors.InvalidInputError if self is invalid."""
-    if not isinstance(self.status, (type(None), StatusFilter, int)):
-      raise errors.InvalidInputError(
-          'status must be a StatusFilter, int or None'
-      )
-    if self.buckets is not None and not isinstance(self.buckets, list):
-      raise errors.InvalidInputError('Buckets must be a list or None')
-    if self.buckets and self.project:
-      raise errors.InvalidInputError(
-          'project is mutually exclusive with buckets'
-      )
+    assert isinstance(self.status, (type(None), StatusFilter, int)), self.status
+    assert isinstance(self.bucket_ids, (type(None), list)), self.bucket_ids
+    assert not (self.bucket_ids and self.project)
+
     buildtags.validate_tags(self.tags, 'search')
 
     create_time_range = (
@@ -277,13 +275,13 @@ def search_async(q):
   q.created_by = user.parse_identity(q.created_by)
   q.status = q.status if q.status != common_pb2.STATUS_UNSPECIFIED else None
 
-  if not q.buckets and q.retry_of is not None:
+  if not q.bucket_ids and q.retry_of is not None:
     retry_of_build = yield model.Build.get_by_id_async(q.retry_of)
     if retry_of_build:
-      q.buckets = [retry_of_build.bucket]
-  if q.buckets:
-    yield check_acls_async(q.buckets)
-    q.buckets = set(q.buckets)
+      q.bucket_ids = [retry_of_build.bucket_id]
+  if q.bucket_ids:
+    yield check_acls_async(q.bucket_ids)
+    q.bucket_ids = set(q.bucket_ids)
 
   is_tag_index_cursor = (
       q.start_cursor and RE_TAG_INDEX_SEARCH_CURSOR.match(q.start_cursor)
@@ -336,19 +334,29 @@ def _query_search_async(q):
   """Searches for builds using NDB query. For args doc, see search().
 
   Assumes:
-  - arguments are valid
-  - if bool(buckets), permissions are checked.
+  - q is valid
+  - if bool(bucket_ids), permissions are checked.
   """
-  if not q.buckets:
-    accessible = yield user.get_accessible_buckets_async()
-    if accessible is not None:
-      q.buckets = [
-          b for pid, b in accessible if not q.project or pid == q.project
-      ]
-      if not q.buckets:
+  if not q.bucket_ids:
+    q.bucket_ids = yield user.get_accessible_buckets_async(legacy_mode=False)
+    if q.bucket_ids is None:
+      # User has access to all buckets.
+      pass
+    else:
+      if q.project:
+
+        def get_project_id(bucket_id):
+          project_id, _ = config.parse_bucket_id(bucket_id)
+          return project_id
+
+        # Note: get_accessible_buckets_async is memcached per user for 10m.
+        q.bucket_id = {
+            bid for bid in q.bucket_ids if get_project_id(bid) == q.project
+        }
+      if not q.bucket_ids:
         raise ndb.Return([], None)
-  # (buckets is None) means the requester has access to all buckets.
-  assert q.buckets is None or q.buckets
+  # (q.bucket_ids is None) means the requester has access to all buckets.
+  assert q.bucket_ids is None or q.bucket_ids
 
   check_buckets_locally = q.retry_of is not None
   dq = model.Build.query()
@@ -378,9 +386,8 @@ def _query_search_async(q):
   if not q.include_experimental:
     dq = dq.filter(model.Build.experimental == False)
 
-  # buckets is None if the current identity has access to ALL buckets.
-  if q.buckets and not check_buckets_locally:
-    dq = dq.filter(model.Build.bucket.IN(q.buckets))
+  if q.bucket_ids and not check_buckets_locally:
+    dq = dq.filter(model.Build.bucket_id.IN(q.bucket_ids))
 
   id_low, id_high = q.get_create_time_order_build_id_range()
   if id_low is not None:
@@ -396,7 +403,7 @@ def _query_search_async(q):
         return False
     elif expected_statuses_v1 and build.status not in expected_statuses_v1:
       return False  # pragma: no cover
-    if q.buckets and build.bucket not in q.buckets:
+    if q.bucket_ids and build.bucket_id not in q.bucket_ids:
       return False
     if not _between(build.create_time, q.create_time_low, q.create_time_high):
       return False  # pragma: no cover
@@ -462,13 +469,13 @@ def _tag_index_search_async(q):
 
   Assumes:
   - arguments are valid
-  - if bool(buckets), permissions are checked.
+  - if bool(q.bucket_ids), permissions are checked.
 
   Raises:
     errors.TagIndexIncomplete if the tag index is complete and cannot be used.
   """
   assert q.tags
-  assert not q.buckets or isinstance(q.buckets, set)
+  assert not q.bucket_ids or isinstance(q.bucket_ids, set)
 
   # Choose a tag to search by.
   all_indexed_tags = indexed_tags(q.tags)
@@ -514,7 +521,7 @@ def _tag_index_search_async(q):
 
   # If buckets were not specified explicitly, permissions were not checked
   # earlier. In this case, check permissions for each build.
-  check_permissions = not q.buckets
+  check_permissions = not q.bucket_ids
   has_access_cache = {}
 
   # scalar_filters maps a name of a model.Build attribute to a filter value.
@@ -526,6 +533,8 @@ def _tag_index_search_async(q):
       ('created_by', q.created_by),
       ('retry_of', q.retry_of),
       ('canary', q.canary),
+      # TODO(crbug.com/851036): use e.bucket_id to filter by project before
+      # fetching a build.
       ('project', q.project),
   ]
   scalar_filters = [(a, v) for a, v in scalar_filters if v is not None]
@@ -556,14 +565,13 @@ def _tag_index_search_async(q):
         continue
       # If we filter by bucket, check it here without fetching the build.
       # This is not a security check.
-      if q.buckets and e.bucket not in q.buckets:
+      if q.bucket_ids and e.bucket_id not in q.bucket_ids:
         continue
-      # TODO(nodir): use e.bucket_id.
       if check_permissions:
-        has = has_access_cache.get(e.bucket)
+        has = has_access_cache.get(e.bucket_id)
         if has is None:
-          has = yield user.can_search_builds_async(e.bucket)
-          has_access_cache[e.bucket] = has
+          has = yield user.can_search_builds_async(e.bucket_id)
+          has_access_cache[e.bucket_id] = has
         if not has:
           continue
       entries_to_fetch.append(e)
@@ -579,7 +587,7 @@ def _tag_index_search_async(q):
     )
     for e, b in zip(entries_to_fetch, builds):
       # Check for inconsistent entries.
-      if not (b and b.bucket == e.bucket and indexed_tag in b.tags):
+      if not (b and b.bucket_id == e.bucket_id and indexed_tag in b.tags):
         logging.warning('entry with build_id %d is inconsistent', e.build_id)
         inconsistent_entries += 1
         continue

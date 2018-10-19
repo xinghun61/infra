@@ -355,6 +355,30 @@ def get_buckets_async(bucket_ids=None, legacy_mode=True):
     raise ndb.Return({b.bucket_id: b.config for b in buckets})
 
 
+@utils.memcache_async('resolve_bucket_name_async', time=300)  # memcache for 5m
+@ndb.non_transactional
+@ndb.tasklet
+def resolve_bucket_name_async(bucket_name):
+  """Returns bucket id for the bucket name.
+
+  Does not check access.
+
+  Raises:
+    errors.InvalidInputError if the bucket name is not unique.
+
+  Returns:
+    bucket id string or None if such bucket does not exist.
+  """
+  buckets = yield Bucket.query(Bucket.bucket_name == bucket_name).fetch_async()
+  if len(buckets) > 1:
+    raise errors.InvalidInputError(
+        'bucket name %r is ambiguous, '
+        'it has to be prefixed with a project id: "<project_id>/%s"' %
+        (bucket_name, bucket_name)
+    )
+  raise ndb.Return(buckets[0].bucket_id if buckets else None)
+
+
 @ndb.non_transactional
 @ndb.tasklet
 def get_bucket_async(bucket_id):

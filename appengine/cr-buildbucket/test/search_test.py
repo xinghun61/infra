@@ -18,15 +18,10 @@ import errors
 import model
 import search
 import user
+import v2
 
 
 class ValidateQueryTests(testing.AppengineTestCase):
-
-  def test_invalid_status(self):
-    q = search.Query(status=[],)
-    err_pattern = r'status must be a StatusFilter, int or None'
-    with self.assertRaisesRegexp(errors.InvalidInputError, err_pattern):
-      q.validate()
 
   def test_two_ranges(self):
     q = search.Query(
@@ -53,24 +48,11 @@ class SearchTest(testing.AppengineTestCase):
     self.now = datetime.datetime(2015, 1, 1)
     self.patch('components.utils.utcnow', side_effect=lambda: self.now)
 
-    self.chromium_project_id = 'test'
-    self.chromium_bucket = project_config_pb2.Bucket(name='chromium')
-    self.patch(
-        'config.get_bucket_async',
-        return_value=future((self.chromium_project_id, self.chromium_bucket))
-    )
-    self.patch(
-        'user.get_accessible_buckets_async',
-        autospec=True,
-        return_value=future([
-            (self.chromium_project_id, self.chromium_bucket.name),
-        ]),
-    )
-
+    self.chromium_try = project_config_pb2.Bucket(name='try')
     self.test_build = model.Build(
         id=model.create_build_ids(self.now, 1)[0],
-        project=self.chromium_project_id,
-        bucket='chromium',
+        project='chromium',
+        bucket='luci.chromium.try',
         create_time=self.now,
         tags=[self.INDEXED_TAG],
         parameters={
@@ -83,14 +65,24 @@ class SearchTest(testing.AppengineTestCase):
         },
         canary=False,
     )
+
+    self.patch(
+        'config.get_bucket_async',
+        return_value=future({'chromium/try': self.chromium_try})
+    )
+    self.patch(
+        'user.get_accessible_buckets_async',
+        autospec=True,
+        return_value=future({'chromium/try'}),
+    )
     self.patch('search.TagIndex.random_shard_index', return_value=0)
 
-  def mock_cannot(self, action, bucket=None):
+  def mock_cannot(self, action, bucket_id=None):
 
-    def can_async(requested_bucket, requested_action, _identity=None):
+    def can_async(requested_bucket_id, requested_action, _identity=None):
       match = (
           requested_action == action and
-          (bucket is None or requested_bucket == bucket)
+          (bucket_id is None or requested_bucket_id == bucket_id)
       )
       return future(not match)
 
@@ -103,7 +95,6 @@ class SearchTest(testing.AppengineTestCase):
     for _ in xrange(count):
       b = model.Build(
           id=model.create_build_ids(self.now, 1)[0],
-          bucket=self.test_build.bucket,
           tags=tags,
           create_time=self.now
       )
@@ -114,12 +105,14 @@ class SearchTest(testing.AppengineTestCase):
 
   def put_build(self, build):
     """Puts a build and updates tag index."""
+    build.project = build.project or self.test_build.project
+    build.bucket = build.bucket or self.test_build.bucket
     build.put()
 
     index_entry = search.TagIndexEntry(
-        bucket=build.bucket,
-        bucket_id=build.bucket_id,
         build_id=build.key.id(),
+        bucket_id=build.bucket_id,
+        bucket=build.bucket,
     )
     for t in search.indexed_tags(build.tags):
       search.add_to_tag_index_async(t, [index_entry]).get_result()
@@ -131,28 +124,17 @@ class SearchTest(testing.AppengineTestCase):
     keys = lambda builds: [b.key for b in builds]
     self.assertEqual(keys(first), keys(second))
 
-  def test_search(self):
-    build2 = model.Build(bucket=self.test_build.bucket)
+  def test_without_buckets(self):
+    self.mock_cannot(user.Action.SEARCH_BUILDS, 'chromium/ci')
+
+    self.put_build(self.test_build)
+
+    build2 = model.Build(bucket='luci.chromium.ci', tags=[self.INDEXED_TAG])
     self.put_build(build2)
 
-    self.test_build.tags = ['important:true']
-    self.put_build(self.test_build)
-    builds, _ = self.search(
-        buckets=[self.test_build.bucket],
-        tags=self.test_build.tags,
-    )
-    self.assertEqual(builds, [self.test_build])
-
-  def test_search_without_buckets(self):
-    self.mock_cannot(user.Action.SEARCH_BUILDS, 'other bucket')
-
-    build2 = model.Build(bucket='other bucket', tags=[self.INDEXED_TAG])
-    self.put_build(self.test_build)
-    self.put_build(build2)
-
-    builds, _ = self.search(tags=[self.INDEXED_TAG])
-    self.assertEqual(builds, [self.test_build])
     builds, _ = self.search()
+    self.assertEqual(builds, [self.test_build])
+    builds, _ = self.search(tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [self.test_build])
 
     # All buckets are available.
@@ -164,92 +146,84 @@ class SearchTest(testing.AppengineTestCase):
     self.assertEqual(builds, [build2, self.test_build])
 
     # No buckets are available.
-    user.get_accessible_buckets_async.return_value = future([])
+    user.get_accessible_buckets_async.return_value = future(set())
     self.mock_cannot(user.Action.SEARCH_BUILDS)
     builds, _ = self.search()
     self.assertEqual(builds, [])
     builds, _ = self.search(tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [])
 
-  def test_search_with_auth_error(self):
+  def test_auth_error(self):
     self.mock_cannot(user.Action.SEARCH_BUILDS)
     self.put_build(self.test_build)
 
     with self.assertRaises(auth.AuthorizationError):
-      self.search(buckets=[self.test_build.bucket])
+      self.search(bucket_ids=['chromium/try'])
 
-  def test_search_many_tags(self):
+  def test_filter_by_tag(self):
+    build2 = model.Build()
+    self.put_build(build2)
+
+    self.test_build.tags = ['important:true']
+    self.put_build(self.test_build)
+    builds, _ = self.search(tags=self.test_build.tags)
+    self.assertEqual(builds, [self.test_build])
+
+  def test_filter_by_many_tags(self):
     self.test_build.tags = [self.INDEXED_TAG, 'important:true', 'author:ivan']
     self.put_build(self.test_build)
     build2 = model.Build(
-        bucket=self.test_build.bucket,
         tags=self.test_build.tags[:2],  # not authored by Ivan.
     )
     self.put_build(build2)
 
     # Search by both tags.
     builds, _ = self.search(
-        tags=[self.INDEXED_TAG, 'important:true', 'author:ivan'],
-        buckets=[self.test_build.bucket],
+        tags=[self.INDEXED_TAG, 'important:true', 'author:ivan']
     )
     self.assertEqual(builds, [self.test_build])
 
-    builds, _ = self.search(
-        tags=['important:true', 'author:ivan'],
-        buckets=[self.test_build.bucket],
-    )
+    builds, _ = self.search(tags=['important:true', 'author:ivan'],)
     self.assertEqual(builds, [self.test_build])
 
-  def test_search_by_build_address(self):
+  def test_filter_by_build_address(self):
     build_address = 'build_address:chromium/infra/1'
     self.test_build.tags = [build_address]
     self.put_build(self.test_build)
 
-    user.get_accessible_buckets_async.return_value = future([
-        (self.test_build.project, self.test_build.bucket),
-    ])
     builds, _ = self.search(tags=[build_address])
     self.assertEqual(builds, [self.test_build])
 
-  def test_search_bucket(self):
+  def test_filter_by_bucket(self):
     self.put_build(self.test_build)
-    build2 = model.Build(bucket='other bucket')
+    build2 = model.Build(bucket='luci.chromium.ci')
     self.put_build(build2)
 
-    builds, _ = self.search(buckets=[self.test_build.bucket])
+    builds, _ = self.search(bucket_ids=['chromium/try'])
     self.assertEqual(builds, [self.test_build])
 
-  def test_search_project(self):
+  def test_filter_by_project(self):
     self.put_build(self.test_build)
-    build2 = model.Build(project='v8', bucket='other bucket')
+    build2 = model.Build(project='v8')
     self.put_build(build2)
 
-    builds, _ = self.search(project=self.chromium_project_id)
+    builds, _ = self.search(project='chromium')
     self.assertEqual(builds, [self.test_build])
 
-  def test_search_project_indexed(self):
+  def test_filter_by_project_indexed(self):
     self.put_build(self.test_build)
-    build2 = model.Build(project='v8', bucket='other bucket')
+    build2 = model.Build(project='v8')
     self.put_build(build2)
 
     builds, _ = self.search(
-        project=self.chromium_project_id,
+        project='chromium',
         tags=[self.INDEXED_TAG],
     )
     self.assertEqual(builds, [self.test_build])
 
-  def test_search_project_and_bucket(self):
-    self.put_build(self.test_build)
-    with self.assertRaises(errors.InvalidInputError):
-      self.search(
-          project=self.chromium_project_id,
-          buckets=[self.test_build.bucket],
-      )
-
-  def test_search_by_status(self):
+  def test_filter_by_status(self):
     self.put_build(self.test_build)
     build2 = model.Build(
-        bucket=self.test_build.bucket,
         status=model.BuildStatus.COMPLETED,
         result=model.BuildResult.SUCCESS,
         create_time=utils.utcnow(),
@@ -258,46 +232,34 @@ class SearchTest(testing.AppengineTestCase):
     )
     self.put_build(build2)
 
-    builds, _ = self.search(
-        buckets=[self.test_build.bucket], status=search.StatusFilter.SCHEDULED
-    )
+    builds, _ = self.search(status=search.StatusFilter.SCHEDULED)
     self.assertEqual(builds, [self.test_build])
     builds, _ = self.search(
-        buckets=[self.test_build.bucket],
-        status=search.StatusFilter.SCHEDULED,
-        tags=[self.INDEXED_TAG]
+        status=search.StatusFilter.SCHEDULED, tags=[self.INDEXED_TAG]
     )
     self.assertEqual(builds, [self.test_build])
 
     builds, _ = self.search(
-        buckets=[self.test_build.bucket],
         status=search.StatusFilter.COMPLETED,
         result=model.BuildResult.FAILURE,
         tags=[self.INDEXED_TAG]
     )
     self.assertEqual(builds, [])
     builds, _ = self.search(
-        buckets=[self.test_build.bucket],
-        status=search.StatusFilter.COMPLETED,
-        result=model.BuildResult.FAILURE
+        status=search.StatusFilter.COMPLETED, result=model.BuildResult.FAILURE
     )
     self.assertEqual(builds, [])
 
-    builds, _ = self.search(
-        buckets=[self.test_build.bucket], status=search.StatusFilter.INCOMPLETE
-    )
+    builds, _ = self.search(status=search.StatusFilter.INCOMPLETE)
     self.assertEqual(builds, [self.test_build])
     builds, _ = self.search(
-        buckets=[self.test_build.bucket],
-        status=search.StatusFilter.INCOMPLETE,
-        tags=[self.INDEXED_TAG]
+        status=search.StatusFilter.INCOMPLETE, tags=[self.INDEXED_TAG]
     )
     self.assertEqual(builds, [self.test_build])
 
-  def test_search_by_status_v2(self):
+  def test_filter_by_status_v2(self):
     self.put_build(self.test_build)
     build2 = model.Build(
-        bucket=self.test_build.bucket,
         status=model.BuildStatus.COMPLETED,
         result=model.BuildResult.SUCCESS,
         create_time=utils.utcnow(),
@@ -306,50 +268,35 @@ class SearchTest(testing.AppengineTestCase):
     )
     self.put_build(build2)
 
-    builds, _ = self.search(
-        buckets=[self.test_build.bucket], status=common_pb2.SCHEDULED
-    )
+    builds, _ = self.search(status=common_pb2.SCHEDULED)
     self.assertEqual(builds, [self.test_build])
     builds, _ = self.search(
-        buckets=[self.test_build.bucket],
-        status=common_pb2.SCHEDULED,
-        tags=[self.INDEXED_TAG]
+        status=common_pb2.SCHEDULED, tags=[self.INDEXED_TAG]
     )
     self.assertEqual(builds, [self.test_build])
 
-    builds, _ = self.search(
-        buckets=[self.test_build.bucket],
-        status=common_pb2.FAILURE,
-        tags=[self.INDEXED_TAG]
-    )
+    builds, _ = self.search(status=common_pb2.FAILURE, tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [])
-    builds, _ = self.search(
-        buckets=[self.test_build.bucket], status=common_pb2.FAILURE
-    )
+    builds, _ = self.search(status=common_pb2.FAILURE)
     self.assertEqual(builds, [])
 
-  def test_search_by_created_by(self):
+  def test_filter_by_created_by(self):
     self.put_build(self.test_build)
     build2 = model.Build(
-        bucket=self.test_build.bucket,
         tags=[self.INDEXED_TAG],
         created_by=auth.Identity.from_bytes('user:x@chromium.org')
     )
     self.put_build(build2)
 
-    builds, _ = self.search(
-        created_by='x@chromium.org',
-        buckets=[self.test_build.bucket],
-    )
+    builds, _ = self.search(created_by='x@chromium.org')
     self.assertEqual(builds, [build2])
     builds, _ = self.search(
         created_by='x@chromium.org',
-        buckets=[self.test_build.bucket],
         tags=[self.INDEXED_TAG],
     )
     self.assertEqual(builds, [build2])
 
-  def test_search_by_build_id_range_lo(self):
+  def test_filter_by_build_id_range_lo(self):
     builds = self.put_many_builds(count=5)
     # make builds order same as search results order
     builds.reverse()
@@ -360,7 +307,7 @@ class SearchTest(testing.AppengineTestCase):
     actual, _ = self.search(build_low=builds[0].key.id() + 1)
     self.assert_equal_keys(builds[1:], actual)
 
-  def test_search_by_build_id_range_hi(self):
+  def test_filter_by_build_id_range_hi(self):
     builds = self.put_many_builds(count=5)
     # make builds order same as search results order
     builds.reverse()
@@ -371,7 +318,7 @@ class SearchTest(testing.AppengineTestCase):
     actual, _ = self.search(build_high=builds[-1].key.id() + 1)
     self.assert_equal_keys(builds, actual)
 
-  def test_search_by_creation_time_range(self):
+  def test_filter_by_creation_time_range(self):
     too_old = model.BEGINING_OF_THE_WORLD - datetime.timedelta(milliseconds=1)
     old_time = model.BEGINING_OF_THE_WORLD + datetime.timedelta(milliseconds=1)
     new_time = datetime.datetime(2012, 12, 5)
@@ -379,7 +326,6 @@ class SearchTest(testing.AppengineTestCase):
     create_time = datetime.datetime(2011, 2, 4)
     old_build = model.Build(
         id=model.create_build_ids(create_time, 1)[0],
-        bucket=self.test_build.bucket,
         tags=[self.INDEXED_TAG],
         created_by=auth.Identity.from_bytes('user:x@chromium.org'),
         create_time=create_time,
@@ -389,60 +335,41 @@ class SearchTest(testing.AppengineTestCase):
 
     # Test lower bound
 
-    builds, _ = self.search(
-        create_time_low=too_old,
-        buckets=[self.test_build.bucket],
-    )
+    builds, _ = self.search(create_time_low=too_old)
+    self.assertEqual(builds, [self.test_build, old_build])
+
+    builds, _ = self.search(create_time_low=old_time)
     self.assertEqual(builds, [self.test_build, old_build])
 
     builds, _ = self.search(
         create_time_low=old_time,
-        buckets=[self.test_build.bucket],
-    )
-    self.assertEqual(builds, [self.test_build, old_build])
-
-    builds, _ = self.search(
-        create_time_low=old_time,
-        buckets=[self.test_build.bucket],
         tags=[self.INDEXED_TAG],
     )
     self.assertEqual(builds, [self.test_build, old_build])
 
-    builds, _ = self.search(
-        create_time_low=new_time,
-        buckets=[self.test_build.bucket],
-    )
+    builds, _ = self.search(create_time_low=new_time)
     self.assertEqual(builds, [self.test_build])
 
     builds, _ = self.search(
         create_time_low=new_time,
-        buckets=[self.test_build.bucket],
         tags=[self.INDEXED_TAG],
     )
     self.assertEqual(builds, [self.test_build])
 
     # Test upper bound
 
-    builds, _ = self.search(
-        create_time_high=too_old,
-        buckets=[self.test_build.bucket],
-    )
+    builds, _ = self.search(create_time_high=too_old)
+    self.assertEqual(builds, [])
+
+    builds, _ = self.search(create_time_high=old_time)
     self.assertEqual(builds, [])
 
     builds, _ = self.search(
         create_time_high=old_time,
-        buckets=[self.test_build.bucket],
-    )
-    self.assertEqual(builds, [])
-
-    builds, _ = self.search(
-        create_time_high=old_time,
-        buckets=[self.test_build.bucket],
         tags=[self.INDEXED_TAG],
     )
     builds, _ = self.search(
         create_time_high=new_time,
-        buckets=[self.test_build.bucket],
         tags=[self.INDEXED_TAG],
     )
     self.assertEqual(builds, [old_build])
@@ -451,7 +378,6 @@ class SearchTest(testing.AppengineTestCase):
         create_time_high=(
             self.test_build.create_time + datetime.timedelta(milliseconds=1)
         ),
-        buckets=[self.test_build.bucket],
         tags=[self.INDEXED_TAG],
     )
     self.assertEqual(builds, [self.test_build, old_build])
@@ -461,21 +387,18 @@ class SearchTest(testing.AppengineTestCase):
     builds, _ = self.search(
         create_time_low=new_time,
         create_time_high=old_time,
-        buckets=[self.test_build.bucket],
     )
     self.assertEqual(builds, [])
 
     builds, _ = self.search(
         create_time_low=old_time,
         create_time_high=new_time,
-        buckets=[self.test_build.bucket],
     )
     self.assertEqual(builds, [old_build])
 
     builds, _ = self.search(
         create_time_low=old_time,
         create_time_high=new_time,
-        buckets=[self.test_build.bucket],
         tags=[self.INDEXED_TAG],
     )
     self.assertEqual(builds, [old_build])
@@ -485,15 +408,13 @@ class SearchTest(testing.AppengineTestCase):
     builds, _ = self.search(
         create_time_low=new_time,
         create_time_high=old_time,
-        buckets=[self.test_build.bucket],
         tags=[self.INDEXED_TAG],
     )
     self.assertEqual(builds, [])
 
-  def test_search_by_retry_of(self):
+  def test_filter_by_retry_of(self):
     self.put_build(self.test_build)
     build2 = model.Build(
-        bucket=self.test_build.bucket,
         retry_of=42,
         tags=[self.INDEXED_TAG],
     )
@@ -504,30 +425,23 @@ class SearchTest(testing.AppengineTestCase):
     builds, _ = self.search(retry_of=42, tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [build2])
 
-  def test_search_by_retry_of_and_buckets(self):
+  def test_filter_by_retry_of_and_buckets(self):
     self.test_build.retry_of = 42
     self.put_build(self.test_build)
-    self.put_build(model.Build(bucket='other bucket', retry_of=42))
+    self.put_build(model.Build(bucket='luci.chromium.ci', retry_of=42))
 
-    builds, _ = self.search(
-        retry_of=42,
-        buckets=[self.test_build.bucket],
-    )
+    builds, _ = self.search(retry_of=42)
     self.assertEqual(builds, [self.test_build])
     builds, _ = self.search(
         retry_of=42,
-        buckets=[self.test_build.bucket],
         tags=[self.INDEXED_TAG],
     )
     self.assertEqual(builds, [self.test_build])
 
-  def test_search_by_retry_of_with_auth_error(self):
-    self.mock_cannot(user.Action.SEARCH_BUILDS, bucket=self.test_build.bucket)
+  def test_filter_by_retry_of_with_auth_error(self):
+    self.mock_cannot(user.Action.SEARCH_BUILDS, bucket_id='chromium/try')
     self.put_build(self.test_build)
-    build2 = model.Build(
-        bucket=self.test_build.bucket,
-        retry_of=self.test_build.key.id(),
-    )
+    build2 = model.Build(retry_of=self.test_build.key.id(),)
     self.put_build(build2)
 
     with self.assertRaises(auth.AuthorizationError):
@@ -539,31 +453,24 @@ class SearchTest(testing.AppengineTestCase):
       # that we don't have access to.
       self.search(retry_of=self.test_build.key.id(), tags=[self.INDEXED_TAG])
 
-  def test_search_by_created_by_with_bad_string(self):
+  def test_filter_by_created_by_with_bad_string(self):
     with self.assertRaises(errors.InvalidInputError):
       self.search(created_by='blah')
 
-  def test_search_with_paging_using_datastore_query(self):
+  def test_filter_by_with_paging_using_datastore_query(self):
     self.put_many_builds()
 
-    first_page, next_cursor = self.search(
-        buckets=[self.test_build.bucket],
-        max_builds=10,
-    )
+    first_page, next_cursor = self.search(max_builds=10)
     self.assertEqual(len(first_page), 10)
     self.assertTrue(next_cursor)
 
-    second_page, _ = self.search(
-        buckets=[self.test_build.bucket],
-        max_builds=10,
-        start_cursor=next_cursor
-    )
+    second_page, _ = self.search(max_builds=10, start_cursor=next_cursor)
     self.assertEqual(len(second_page), 10)
     # no cover due to a bug in coverage (http://stackoverflow.com/a/35325514)
     self.assertTrue(any(new not in first_page for new in second_page)
                    )  # pragma: no cover
 
-  def test_search_with_paging_using_tag_index(self):
+  def test_filter_by_with_paging_using_tag_index(self):
     self.put_many_builds(20, tags=[self.INDEXED_TAG])
 
     first_page, first_cursor = self.search(
@@ -584,78 +491,72 @@ class SearchTest(testing.AppengineTestCase):
     self.assertEqual(len(third_page), 0)
     self.assertFalse(third_cursor)
 
-  def test_search_with_bad_tags(self):
+  def test_filter_by_with_bad_tags(self):
 
     def test_bad_tag(tags):
       with self.assertRaises(errors.InvalidInputError):
-        self.search(buckets=['bucket'], tags=tags)
+        self.search(tags=tags)
 
     test_bad_tag(['x'])
     test_bad_tag([1])
     test_bad_tag({})
     test_bad_tag(1)
 
-  def test_search_with_bad_buckets(self):
+  def test_filter_by_with_non_number_max_builds(self):
     with self.assertRaises(errors.InvalidInputError):
-      self.search(buckets={})
-    with self.assertRaises(errors.InvalidInputError):
-      self.search(buckets=[1])
+      self.search(tags=['a:b'], max_builds='a')
 
-  def test_search_with_non_number_max_builds(self):
+  def test_filter_by_with_negative_max_builds(self):
     with self.assertRaises(errors.InvalidInputError):
-      self.search(buckets=['b'], tags=['a:b'], max_builds='a')
+      self.search(tags=['a:b'], max_builds=-2)
 
-  def test_search_with_negative_max_builds(self):
-    with self.assertRaises(errors.InvalidInputError):
-      self.search(buckets=['b'], tags=['a:b'], max_builds=-2)
-
-  def test_search_by_indexed_tag(self):
+  def test_filter_by_indexed_tag(self):
     self.put_build(self.test_build)
 
     secret_build = model.Build(
+        project='secret',
         bucket='secret.bucket',
         tags=[self.INDEXED_TAG],
     )
     self.put_build(secret_build)
 
     different_buildset = model.Build(
+        project='secret',
         bucket='secret.bucket',
         tags=['buildset:2'],
     )
     self.put_build(different_buildset)
 
     different_bucket = model.Build(
-        bucket='another bucket',
+        bucket='luci.chromium.ci',
         tags=[self.INDEXED_TAG],
     )
     self.put_build(different_bucket)
 
-    self.mock_cannot(user.Action.SEARCH_BUILDS, 'secret.bucket')
+    self.mock_cannot(user.Action.SEARCH_BUILDS, 'secret/secret.bucket')
     builds, _ = self.search(
-        tags=[self.INDEXED_TAG], buckets=[self.test_build.bucket]
+        tags=[self.INDEXED_TAG], bucket_ids=['chromium/try']
     )
     self.assertEqual(builds, [self.test_build])
 
-  def test_search_with_dup_tag_entries(self):
+  def test_filter_by_with_dup_tag_entries(self):
     self.test_build.tags = [self.INDEXED_TAG]
     self.test_build.put()
 
     entry = search.TagIndexEntry(
         build_id=self.test_build.key.id(),
-        bucket_id=self.test_build.bucket_id,
-        bucket=self.test_build.bucket,
+        bucket_id='chromium/try',
+        bucket='luci.chromium.try',
     )
     search.TagIndex(
         id=self.INDEXED_TAG,
         entries=[entry, entry],
     ).put()
 
-    builds, _ = self.search(
-        buckets=[self.test_build.bucket], tags=[self.INDEXED_TAG]
-    )
+    builds, _ = self.search(tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [self.test_build])
 
-  def test_search_with_incomplete_index(self):
+  def test_filter_by_with_incomplete_index(self):
     self.test_build.tags = [self.INDEXED_TAG]
     self.test_build.put()
 
@@ -663,19 +564,13 @@ class SearchTest(testing.AppengineTestCase):
 
     search.TagIndex(id=self.INDEXED_TAG, permanently_incomplete=True).put()
 
-    builds, _ = self.search(
-        buckets=[self.test_build.bucket], tags=[self.INDEXED_TAG]
-    )
+    builds, _ = self.search(tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [self.test_build])
 
     with self.assertRaises(errors.TagIndexIncomplete):
-      self.search(
-          buckets=[self.test_build.bucket],
-          tags=[self.INDEXED_TAG],
-          start_cursor='id>0'
-      )
+      self.search(tags=[self.INDEXED_TAG], start_cursor='id>0')
 
-  def test_search_with_legacy_index(self):
+  def test_filter_by_with_legacy_index(self):
     self.test_build.tags = [self.INDEXED_TAG]
     self.test_build.put()
 
@@ -684,7 +579,7 @@ class SearchTest(testing.AppengineTestCase):
         entries=[
             search.TagIndexEntry(
                 build_id=self.test_build.key.id(),
-                bucket=self.test_build.bucket
+                bucket='luci.chromium.try',
             ),
             # this entry will be deleted, because bucket_id could not be
             # resolved.
@@ -693,31 +588,25 @@ class SearchTest(testing.AppengineTestCase):
     )
     idx.put()
 
-    builds, _ = self.search(
-        buckets=[self.test_build.bucket], tags=[self.INDEXED_TAG]
-    )
+    builds, _ = self.search(tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [self.test_build])
 
     idx = idx.key.get()
     self.assertEqual(len(idx.entries), 1)
-    self.assertEqual(idx.entries[0].bucket_id, self.test_build.bucket_id)
+    self.assertEqual(idx.entries[0].bucket_id, 'chromium/try')
 
-  def test_search_with_no_tag_index(self):
+  def test_filter_by_with_no_tag_index(self):
     builds, _ = self.search()
     self.assertEqual(builds, [])
 
-  def test_search_with_inconsistent_entries(self):
+  def test_filter_by_with_inconsistent_entries(self):
     self.put_build(self.test_build)
 
-    will_be_deleted = model.Build(
-        bucket=self.test_build.bucket, tags=[self.INDEXED_TAG]
-    )
+    will_be_deleted = model.Build(tags=[self.INDEXED_TAG])
     self.put_build(will_be_deleted)  # updates index
     will_be_deleted.key.delete()
 
-    buildset_will_change = model.Build(
-        bucket=self.test_build.bucket, tags=[self.INDEXED_TAG]
-    )
+    buildset_will_change = model.Build(tags=[self.INDEXED_TAG])
     self.put_build(buildset_will_change)  # updates index
     buildset_will_change.tags = []
     buildset_will_change.put()
@@ -725,7 +614,7 @@ class SearchTest(testing.AppengineTestCase):
     builds, _ = self.search(tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [self.test_build])
 
-  def test_search_with_tag_index_cursor(self):
+  def test_filter_by_with_tag_index_cursor(self):
     builds = self.put_many_builds(10)
     builds.reverse()
     res, cursor = self.search(
@@ -738,7 +627,6 @@ class SearchTest(testing.AppengineTestCase):
     builds.reverse()
     res, cursor = self.search(
         tags=[self.INDEXED_TAG],
-        buckets=[self.test_build.bucket],
         create_time_low=builds[5].create_time,
         start_cursor='id>%d' % builds[7].key.id()
     )
@@ -747,7 +635,6 @@ class SearchTest(testing.AppengineTestCase):
 
     res, cursor = self.search(
         tags=[self.INDEXED_TAG],
-        buckets=[self.test_build.bucket],
         create_time_high=builds[7].create_time,
         start_cursor='id>%d' % builds[5].key.id()
     )
@@ -755,36 +642,27 @@ class SearchTest(testing.AppengineTestCase):
     self.assertEqual(res, builds[8:])
     self.assertIsNone(cursor)
 
-  def test_search_with_tag_index_cursor_but_no_inded_tag(self):
+  def test_filter_by_with_tag_index_cursor_but_no_inded_tag(self):
     with self.assertRaises(errors.InvalidInputError):
       self.search(start_cursor='id>1')
 
-  def test_search_with_experimental(self):
+  def test_filter_by_with_experimental(self):
     self.put_build(self.test_build)
     build2 = model.Build(
         id=self.test_build.key.id() - 1,  # newer
-        bucket=self.test_build.bucket,
         tags=self.test_build.tags,
         experimental=True,
     )
     self.put_build(build2)
 
-    builds, _ = self.search(buckets=[self.test_build.bucket])
+    builds, _ = self.search(bucket_ids=['chromium/try'])
     self.assertEqual(builds, [self.test_build])
-    builds, _ = self.search(
-        buckets=[self.test_build.bucket], tags=[self.INDEXED_TAG]
-    )
+    builds, _ = self.search(tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [self.test_build])
 
-    builds, _ = self.search(
-        buckets=[self.test_build.bucket], include_experimental=True
-    )
+    builds, _ = self.search(include_experimental=True)
     self.assertEqual(builds, [build2, self.test_build])
-    builds, _ = self.search(
-        buckets=[self.test_build.bucket],
-        tags=[self.INDEXED_TAG],
-        include_experimental=True
-    )
+    builds, _ = self.search(tags=[self.INDEXED_TAG], include_experimental=True)
     self.assertEqual(builds, [build2, self.test_build])
 
   def test_multiple_shard_of_tag_index(self):
@@ -803,22 +681,17 @@ class SearchTest(testing.AppengineTestCase):
 
     # Retrieve all builds from tag indexes.
     expected = sorted(shard0_builds + shard1_builds, key=lambda b: b.key.id())
-    actual, _ = self.search(
-        buckets=[self.test_build.bucket], tags=[self.INDEXED_TAG]
-    )
+    actual, _ = self.search(tags=[self.INDEXED_TAG])
     self.assertEqual(expected, actual)
 
   def test_bad_cursor(self):
     with self.assertRaises(errors.InvalidInputError):
-      self.search(
-          buckets=[self.test_build.bucket],
-          start_cursor='a bad cursor',
-      )
+      self.search(start_cursor='a bad cursor',)
 
   def test_no_permissions(self):
     user.can_async.return_value = future(False)
     with self.assertRaises(auth.AuthorizationError):
-      self.search(buckets=['chromium'])
+      self.search(bucket_ids=['chromium/try'])
 
 
 class TagIndexTest(testing.AppengineTestCase):

@@ -24,7 +24,6 @@ from proto.config import project_config_pb2
 from test import config_test
 from test.test_util import future, future_exception
 import api
-import backfill_tag_index
 import config
 import creation
 import errors
@@ -35,7 +34,7 @@ import v2
 import user
 
 
-class EndpointsApiTest(testing.EndpointsTestCase):
+class V1ApiTest(testing.EndpointsTestCase):
   api_service_cls = api.BuildBucketApi
 
   test_build = None
@@ -44,7 +43,7 @@ class EndpointsApiTest(testing.EndpointsTestCase):
   future_date = None
 
   def setUp(self):
-    super(EndpointsApiTest, self).setUp()
+    super(V1ApiTest, self).setUp()
     gae_ts_mon.reset_for_unittest(disable=True)
     auth.disable_process_cache()
     user.clear_request_cache()
@@ -57,15 +56,27 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     self.future_ts = str(utils.datetime_to_timestamp(self.future_date))
     self.test_build = model.Build(
         id=1,
-        bucket='chromium',
+        project='chromium',
+        bucket='luci.chromium.try',
         create_time=datetime.datetime(2017, 1, 1),
         parameters={
             'buildername': 'linux_rel',
         },
+        swarming_hostname='swarming.example.com',
+        swarming_task_id='deadbeef',
     )
-    self.project_id = 'test'
     config.put_bucket(
-        self.project_id, 'a' * 40, project_config_pb2.Bucket(name='chromium')
+        'chromium',
+        'a' * 40,
+        config_test.parse_bucket_cfg(
+            '''
+            name: "luci.chromium.try"
+            acls {
+              role: READER
+              identity: "anonymous:anonymous"
+            }
+            '''
+        ),
     )
 
   def expect_error(self, method_name, req, error_reason):
@@ -119,8 +130,8 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     resp = self.call_api('put', req).json_body
     add_async.assert_called_once_with(
         creation.BuildRequest(
-            bucket=self.test_build.bucket,
-            project=self.project_id,
+            project='chromium',
+            bucket='luci.chromium.try',
             tags=req['tags'],
             client_operation_id='42',
             pubsub_callback=model.PubSubCallback(
@@ -155,8 +166,8 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     resp = self.call_api('put', req).json_body
     add_async.assert_called_once_with(
         creation.BuildRequest(
-            bucket=self.test_build.bucket,
-            project=self.project_id,
+            project='chromium',
+            bucket='luci.chromium.try',
             lease_expiration_date=self.future_date,
             tags=[],
         )
@@ -229,9 +240,16 @@ class EndpointsApiTest(testing.EndpointsTestCase):
   def test_put_batch(self, add_many_async):
     self.test_build.tags = ['owner:ivan']
 
-    build2 = model.Build(id=2, bucket='v8')
+    build2 = model.Build(
+        id=2,
+        project='chromium',
+        bucket='luci.chromium.ci',
+        swarming_hostname=self.test_build.swarming_hostname,
+    )
     config.put_bucket(
-        self.project_id, 'a' * 40, project_config_pb2.Bucket(name='v8')
+        'chromium',
+        'a' * 40,
+        project_config_pb2.Bucket(name='luci.chromium.ci'),
     )
 
     add_many_async.return_value = future([
@@ -242,12 +260,12 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     req = {
         'builds': [
             {
-                'bucket': self.test_build.bucket,
+                'bucket': 'luci.chromium.try',
                 'tags': self.test_build.tags,
                 'client_operation_id': '0',
             },
             {
-                'bucket': build2.bucket,
+                'bucket': 'luci.chromium.ci',
                 'client_operation_id': '1',
             },
             {
@@ -259,20 +277,20 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     resp = self.call_api('put_batch', req).json_body
     add_many_async.assert_called_once_with([
         creation.BuildRequest(
-            bucket=self.test_build.bucket,
-            project=self.project_id,
+            project='chromium',
+            bucket='luci.chromium.try',
             tags=self.test_build.tags,
             client_operation_id='0',
         ),
         creation.BuildRequest(
-            bucket=build2.bucket,
-            project=self.project_id,
+            project='chromium',
+            bucket='luci.chromium.ci',
             tags=[],
             client_operation_id='1',
         ),
         creation.BuildRequest(
-            bucket='bad name',
             project=None,
+            bucket='bad name',
             tags=[],
             client_operation_id='2',
         ),
@@ -315,7 +333,7 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     time_low = model.BEGINING_OF_THE_WORLD
     time_high = datetime.datetime(2120, 5, 4)
     req = {
-        'bucket': ['chromium'],
+        'bucket': ['luci.chromium.try'],
         'cancelation_reason': 'CANCELED_EXPLICITLY',
         'created_by': 'user:x@chromium.org',
         'result': 'CANCELED',
@@ -331,7 +349,7 @@ class EndpointsApiTest(testing.EndpointsTestCase):
 
     search_async.assert_called_once_with(
         search.Query(
-            buckets=req['bucket'],
+            bucket_ids=['chromium/try'],
             tags=req['tag'],
             status=search.StatusFilter.COMPLETED,
             result=model.BuildResult.CANCELED,
@@ -773,3 +791,43 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     auth.bootstrap_group(auth.ADMIN_GROUP, [auth.Anonymous])
     self.call_api('backfill_tag_index', {}, status=400)
     self.call_api('backfill_tag_index', {'tag_key': 'a:b'}, status=400)
+
+
+class ConvertBucketTest(testing.AppengineTestCase):
+
+  def setUp(self):
+    super(ConvertBucketTest, self).setUp()
+    user.clear_request_cache()
+
+    config.put_bucket(
+        'chromium',
+        'a' * 40,
+        config_test.parse_bucket_cfg(
+            '''
+            name: "luci.chromium.try"
+            acls {
+              role: READER
+              identity: "anonymous:anonymous"
+            }
+            '''
+        ),
+    )
+
+  def test_convert_bucket_native(self):
+    self.assertEqual(api.convert_bucket('chromium/try'), 'chromium/try')
+
+  def test_convert_bucket_luci(self):
+    self.assertEqual(api.convert_bucket('luci.chromium.try'), 'chromium/try')
+
+  def test_convert_bucket_resolution_fails(self):
+    with self.assertRaises(auth.AuthorizationError):
+      api.convert_bucket('master.x')
+
+  def test_convert_bucket_access_check(self):
+    config.put_bucket(
+        'chromium',
+        'a' * 40,
+        config_test.parse_bucket_cfg('name: "secret"'),
+    )
+    with self.assertRaises(auth.AuthorizationError):
+      api.convert_bucket('secret')

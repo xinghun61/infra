@@ -175,6 +175,22 @@ class ConfigTest(testing.AppengineTestCase):
     actual = config.get_buckets_async([bid], legacy_mode=False).get_result()
     self.assertEqual(actual, {bid: None})
 
+  def resolve_try_bucket(self):
+    return config.resolve_bucket_name_async('try').get_result()
+
+  def test_resolve_bucket_name_async_does_not_exist(self):
+    self.assertIsNone(self.resolve_try_bucket())
+
+  def test_resolve_bucket_name_async_unique(self):
+    config.put_bucket('chromium', 'deadbeef', LUCI_CHROMIUM_TRY)
+    self.assertEqual(self.resolve_try_bucket(), 'chromium/try')
+
+  def test_resolve_bucket_name_async_ambiguous(self):
+    config.put_bucket('chromium', 'deadbeef', LUCI_CHROMIUM_TRY)
+    config.put_bucket('dart', 'deadbeef', LUCI_DART_TRY)
+    with self.assertRaisesRegexp(errors.InvalidInputError, r'ambiguous'):
+      self.resolve_try_bucket()
+
   @mock.patch('components.config.get_project_configs', autospec=True)
   def test_cron_update_buckets(self, get_project_configs):
     chromium_buildbucket_cfg = parse_cfg(

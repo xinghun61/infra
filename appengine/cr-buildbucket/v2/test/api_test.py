@@ -49,7 +49,7 @@ class BaseTestCase(testing.AppengineTestCase):
     self.patch(
         'user.get_accessible_buckets_async',
         autospec=True,
-        return_value=future([('chromium', 'luci.chromium.try')]),
+        return_value=future({'chromium/try'}),
     )
 
     self.now = datetime.datetime(2015, 1, 1)
@@ -211,7 +211,7 @@ class GetBuildTests(BaseTestCase):
 
     search_async.assert_called_once_with(
         search.Query(
-            buckets=['luci.chromium.try'],
+            bucket_ids=['chromium/try'],
             tags=['build_address:luci.chromium.try/linux-try/2'],
         )
     )
@@ -260,7 +260,7 @@ class SearchTests(BaseTestCase):
 
     search_async.assert_called_once_with(
         search.Query(
-            buckets=['luci.chromium.try'],
+            bucket_ids=['chromium/try'],
             tags=['builder:linux-try'],
             include_experimental=False,
             status=common_pb2.STATUS_UNSPECIFIED,
@@ -477,7 +477,7 @@ class BatchTests(BaseTestCase):
     res = self.call(self.api.Batch, req)
     search_async.assert_called_once_with(
         search.Query(
-            buckets=['luci.chromium.try'],
+            bucket_ids=['chromium/try'],
             tags=['builder:linux-rel'],
             status=common_pb2.STATUS_UNSPECIFIED,
             include_experimental=False,
@@ -533,7 +533,7 @@ class BuildPredicateToSearchQueryTests(BaseTestCase):
     )
     q = api.build_predicate_to_search_query(predicate)
     self.assertEqual(q.project, 'chromium')
-    self.assertFalse(q.buckets)
+    self.assertFalse(q.bucket_ids)
     self.assertFalse(q.tags)
 
   def test_project_bucket(self):
@@ -542,7 +542,7 @@ class BuildPredicateToSearchQueryTests(BaseTestCase):
     )
     q = api.build_predicate_to_search_query(predicate)
     self.assertFalse(q.project)
-    self.assertEqual(q.buckets, ['luci.chromium.try'])
+    self.assertEqual(q.bucket_ids, ['chromium/try'])
     self.assertFalse(q.tags)
 
   def test_project_bucket_builder(self):
@@ -553,7 +553,7 @@ class BuildPredicateToSearchQueryTests(BaseTestCase):
     )
     q = api.build_predicate_to_search_query(predicate)
     self.assertFalse(q.project)
-    self.assertEqual(q.buckets, ['luci.chromium.try'])
+    self.assertEqual(q.bucket_ids, ['chromium/try'])
     self.assertEqual(q.tags, ['builder:linux-rel'])
 
   def test_create_time(self):

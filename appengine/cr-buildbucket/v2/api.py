@@ -23,6 +23,7 @@ from v2 import tokens
 from v2 import validation
 from v2 import default_field_masks
 import buildtags
+import config
 import model
 import search
 import service
@@ -111,8 +112,8 @@ def rpc_impl_async(rpc_name):
   return decorator
 
 
-def v1_bucket(builder_id):
-  return 'luci.%s.%s' % (builder_id.project, builder_id.bucket)
+def bucket_id_string(builder_id):
+  return config.format_bucket_id(builder_id.project, builder_id.bucket)
 
 
 @ndb.tasklet
@@ -149,7 +150,7 @@ def build_predicate_to_search_query(predicate):
   # Filter by builder.
   if predicate.HasField('builder'):
     if predicate.builder.bucket:
-      q.buckets = [v1_bucket(predicate.builder)]
+      q.bucket_ids = [bucket_id_string(predicate.builder)]
     else:
       q.project = predicate.builder.project
     if predicate.builder.builder:
@@ -188,12 +189,14 @@ def get_build_async(req, _ctx, mask):
   if req.id:
     build_v1 = yield service.get_async(req.id)
   else:
-    bucket = v1_bucket(req.builder)
     tag = buildtags.build_address_tag(
-        bucket, req.builder.builder, req.build_number
+        # TODO(crbug.com/851036): migrate build_address to use short buckets.
+        'luci.%s.%s' % (req.builder.project, req.builder.bucket),
+        req.builder.builder,
+        req.build_number,
     )
     found, _ = yield search.search_async(
-        search.Query(buckets=[bucket], tags=[tag])
+        search.Query(bucket_ids=[bucket_id_string(req.builder)], tags=[tag])
     )
     build_v1 = found[0] if found else None
 

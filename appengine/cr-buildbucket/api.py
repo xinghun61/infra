@@ -159,6 +159,41 @@ def catch_errors(fn, response_message_class):
   return decorated
 
 
+def convert_bucket(bucket):
+  """Converts a bucket strings to a bucket ids.
+
+  A bucket string is either a bucket id (e.g. "chromium/try") or
+  a legacy bucket name (e.g. "master.tryserver.x", "luci.chromium.try").
+
+  Raises:
+    auth.AuthorizationError if the requester doesn't have access to the bucket.
+    errors.InvalidInputError if bucket is ambiguous.
+  """
+  if not config.is_legacy_bucket_id(bucket):
+    bucket_id = bucket
+  else:
+    bucket_id = api_common.parse_luci_bucket(bucket)
+    if not bucket_id:
+      # The slowest code path.
+      # Does not apply to LUCI.
+      bucket_id = config.resolve_bucket_name_async(bucket).get_result()
+      if bucket_id:
+        logging.info('resolved bucket id %r => %r', bucket, bucket_id)
+
+  # Check ACLs here to return user-supplied bucket name, not computed bucket id
+  # to prevent sniffing bucket names.
+  if not bucket_id or not user.can_access_bucket_async(bucket_id).get_result():
+    raise user.current_identity_cannot('access bucket %r', bucket)
+
+  return bucket_id
+
+
+def convert_bucket_list(buckets):
+  # This could be made concurrent, but in practice we search by at most one
+  # bucket.
+  return map(convert_bucket, buckets)
+
+
 def buildbucket_api_method(
     request_message_class, response_message_class, **kwargs
 ):
@@ -351,7 +386,7 @@ class BuildBucketApi(remote.Service):
     assert isinstance(request.tag, list)
     builds, next_cursor = search.search_async(
         search.Query(
-            buckets=request.bucket,
+            bucket_ids=convert_bucket_list(request.bucket),
             tags=request.tag,
             status=request.status,
             result=request.result,
