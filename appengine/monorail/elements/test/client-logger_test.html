@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<title>ClientLogger Test</title>
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+
+<script type="module">
+import ClientLogger from '../../static/jsm/client-logger.js';
+
+suite('constructor', function() {
+  test('assigns this.category', function() {
+    const c = new ClientLogger('rutabaga');
+    assert.equal(c.category, 'rutabaga');
+  });
+
+  test('gets started events from sessionStorage', function() {
+    const startedEvents = {
+      event1: {
+        time: 12345678,
+        labels: ['label1', 'label2'],
+      },
+      event2: {
+        time: 87654321,
+        labels: ['label2'],
+      },
+    };
+    const key = 'ClientLogger.rutabaga.started';
+    sessionStorage[key] = JSON.stringify(startedEvents);
+
+    const c = new ClientLogger('rutabaga');
+    assert.deepEqual(startedEvents, c.startedEvents);
+  });
+});
+</script>

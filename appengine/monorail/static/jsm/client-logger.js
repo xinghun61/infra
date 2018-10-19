@@ -4,7 +4,6 @@
 
 // Important: tsmon-client.js must be imported before this file for now.
 // TODO(4430): Import tsmon-client.js here with cache busting.
-const TSMonClient = window.chops.tsmon.TSMonClient;
 
 /*
 ClientLogger is a JavaScript library for tracking events with Google Analytics
@@ -44,7 +43,7 @@ This would record the following metrics:
   }
 */
 
-export class ClientLogger {
+export default class ClientLogger {
   constructor(category) {
     this.category = category;
     // TODO(jeffcarp): Reinstate TSMonClient.
