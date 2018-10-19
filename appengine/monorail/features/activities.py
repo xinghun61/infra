@@ -37,16 +37,19 @@ class ActivityView(template_helpers.PBProxy):
       compress_whitespace=True, base_format=ezt.FORMAT_HTML)
 
   def __init__(
-      self, pb, services, mr, prefetched_issues, users_by_id,
+      self, pb, mr, prefetched_issues, users_by_id,
+      prefetched_projects, prefetched_configs,
       autolink=None, all_ref_artifacts=None, ending=None, highlight=None):
     """Constructs an ActivityView out of an Activity protocol buffer.
 
     Args:
       pb: an IssueComment or Activity protocol buffer.
-      services: connections to backend services.
       mr: HTTP request info, used by the artifact autolink.
       prefetched_issues: dictionary of the issues for the comments being shown.
       users_by_id: dict {user_id: UserView} for all relevant users.
+      prefetched_projects: dict {project_id: project} including all the projects
+          that we might need.
+      prefetched_configs: dict {project_id: config} for those projects.
       autolink: Autolink instance.
       all_ref_artifacts: list of all artifacts in the activity stream.
       ending: ending type for activity titles, 'in_project' or 'by_user'
@@ -79,12 +82,10 @@ class ActivityView(template_helpers.PBProxy):
 
       # TODO(jrobbins): pass effective_ids of the commenter so that he/she
       # can be identified as a project member or not.
-      # TODO(jrobbins): Prefetch all needed projects and configs just like the
-      # way that we batch-prefetch issues.
-      config = services.config.GetProjectConfig(mr.cnxn, issue.project_id)
+      config = prefetched_configs[issue.project_id]
       self.issue = tracker_views.IssueView(issue, users_by_id, config)
       self.user = self.comment.creator
-      project = services.project.GetProject(mr.cnxn, issue.project_id)
+      project = prefetched_projects[issue.project_id]
       self.project_name = project.project_name
       self.project = project_views.ProjectView(project)
 
@@ -225,7 +226,8 @@ def GatherUpdatesData(
   with mr.profiler.Phase('rendering activities'):
     for activity in displayed_activities:
       entry = ActivityView(
-          activity, services, mr, prefetched_issues, users_by_id,
+          activity, mr, prefetched_issues, users_by_id,
+          prefetched_projects, prefetched_configs,
           autolink=autolink, all_ref_artifacts=all_ref_artifacts, ending=ending,
           highlight=highlight)
 
