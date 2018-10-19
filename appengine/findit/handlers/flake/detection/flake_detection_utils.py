@@ -4,8 +4,12 @@
 """Util functions for flake detection handlers."""
 
 from collections import defaultdict
+import logging
 
 from libs import time_util
+from libs import analysis_status
+from model import entity_util
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from model.flake.detection.flake_occurrence import FlakeOccurrence
 from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
@@ -111,6 +115,79 @@ def _GetGroupedOccurrencesByBuilder(occurrences):
   return _ToList(occurrences_dict)
 
 
+def _GetFlakeAnalysesResults(bug_id):
+  """Gets flake analyses results for a flaky test.
+
+  Uses bug_id for a flake to query all analyses for this flake, then gets
+  culprits if found.
+
+  Args:
+    bug_id (int): Bug id of the flake. It should be the same ID to trigger the
+      flake analyses.
+
+  Returns:
+    culprits, sample_analysis (list, dict): A list of culprits information or
+    a dict of information for a sample analysis if there is no culprit at all.
+  """
+  culprits = {}
+
+  # TODO(crbug/894215): Query for culprits directly after we change to file
+  # a bug per culprit instead of flake.
+  analyses = MasterFlakeAnalysis.query(
+      MasterFlakeAnalysis.bug_id == bug_id).fetch()
+  if not analyses:
+    return [], None
+
+  culprit_urlsafe_keys = set(
+      [analysis.culprit_urlsafe_key for analysis in analyses])
+
+  if culprit_urlsafe_keys != {None}:
+    # Found culprits.
+    for key in culprit_urlsafe_keys:
+      culprit = entity_util.GetEntityFromUrlsafeKey(key)
+      if not culprit:
+        logging.error('Failed to get FlakeCulprit entity from key %s', key)
+        continue
+      culprits[key] = {
+          'revision': culprit.revision,
+          'commit_position': culprit.commit_position,
+          'culprit_key': key
+      }
+
+  if culprits:
+    return culprits.values(), None
+
+  # No culprits have been found for this flake.
+  # Prior to use a completed analysis as a sample; otherwise a running one;
+  # otherwise a pending analysis; failed analysis will not be used.
+  sample_analysis = {}
+  for analysis in analyses:
+    if analysis.status == analysis_status.COMPLETED:
+      # A completed analysis found, returns immediately.
+      return [], {
+          'status': ('%s, no culprit found' %
+                     analysis_status.STATUS_TO_DESCRIPTION[analysis.status]),
+          'analysis_key':
+              analysis.key.urlsafe()
+      }
+
+    if analysis.status == analysis_status.RUNNING:
+      sample_analysis = {
+          'status': analysis_status.RUNNING,
+          'analysis_key': analysis.key.urlsafe()
+      }
+    elif not sample_analysis and analysis.status == analysis_status.PENDING:
+      sample_analysis = {
+          'status': analysis_status.PENDING,
+          'analysis_key': analysis.key.urlsafe()
+      }
+
+  if sample_analysis:
+    sample_analysis['status'] = analysis_status.STATUS_TO_DESCRIPTION[
+        sample_analysis['status']]
+  return [], sample_analysis
+
+
 def _FetchFlakeOccurrences(flake, flake_type, max_occurrence_count):
   """Fetches flake occurrences of a certain type.
 
@@ -176,4 +253,6 @@ def GetFlakeInformation(flake, max_occurrence_count, with_occurrences=True):
     flake_dict['flake_issue']['issue_link'] = FlakeIssue.GetLinkForIssue(
         flake_issue.monorail_project, flake_issue.issue_id)
 
+    flake_dict['culprits'], flake_dict['sample_analysis'] = (
+        _GetFlakeAnalysesResults(flake_issue.issue_id))
   return flake_dict

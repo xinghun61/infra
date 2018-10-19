@@ -137,6 +137,9 @@ class ShowFlakeTest(WaterfallTestCase):
             'file_path': '../../some/test/path/a.cc',
             'line_number': 42,
         },
+        'culprits': [],
+        'sample_analysis':
+            None,
         'occurrences': [{
             'group_by_field':
                 'luci builder',

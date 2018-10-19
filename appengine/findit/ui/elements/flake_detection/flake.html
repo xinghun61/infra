@@ -43,13 +43,25 @@
           <td>[[flake_json.test_label_name]]</td>
         </tr>
 
-        <template is="dom-if" if="[[hasBug([[flake_json]])]]">
+        <template is="dom-if" if="[[hasBug(flake_json)]]">
           <tr>
               <td>Bug:</td>
               <td>
                 <a href="[[flake_json.flake_issue.issue_link]]">[[flake_json.flake_issue.issue_id]]</a>
               </td>
           </tr>
+          <template is="dom-repeat" items="{{flake_json.culprits}}" as="culprit">
+              <tr>
+                  <td rowspan$="[[flake_json.culprits.length]]">Culprit:</td>
+                  <td> <a href$="[[_getCulpritPageLink(culprit.culprit_key)]]" target="_blank">[[_getCulpritIdentifier(culprit)]]</a>
+              </tr>
+          </template>
+          <template is="dom-if" if="[[flake_json.sample_analysis]]">
+              <tr>
+                  <td>Sample Analysis:</td>
+                  <td> <a href$="[[_getAnalysisLink(flake_json.sample_analysis.analysis_key)]]" target="_blank">[[flake_json.sample_analysis.status]]</a>
+              </tr>
+          </template>
         </template>
     </table>
     <paper-button noink id="btn_toggle" on-tap="togglecollapsed">
@@ -97,12 +109,27 @@
         },
 
         hasBug: function(flake) {
-          return (flake.flake_issue != null &&
+          return (flake.flake_issue_key != null && flake.flake_issue != null &&
           flake.flake_issue.issue_id != null);
         },
 
         _allOccurrencesShown() {
             return this.show_all_occurrences != '';
+        },
+
+        _getCulpritPageLink(culprit_key) {
+            return '/waterfall/flake/flake-culprit?key=' + culprit_key;
+        },
+
+        _getCulpritIdentifier(culprit) {
+            if (culprit.commit_position) {
+              return culprit.commit_position;
+            }
+            return culprit.revision;
+        },
+
+        _getAnalysisLink(analysis_key) {
+            return '/waterfall/flake?key=' + analysis_key;
         },
 
         // Event handlers.

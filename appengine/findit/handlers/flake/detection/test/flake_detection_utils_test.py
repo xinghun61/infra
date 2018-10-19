@@ -6,7 +6,10 @@ from datetime import datetime
 import mock
 
 from handlers.flake.detection import flake_detection_utils
+from libs import analysis_status
 from libs import time_util
+from model.flake.analysis.flake_culprit import FlakeCulprit
+from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from model.flake.detection.flake_occurrence import FlakeOccurrence
 from model.flake.flake import Flake
 from model.flake.flake import TestLocation
@@ -98,6 +101,16 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
     occurrence3.time_detected = datetime(2018, 1, 2, 2)
     occurrence3.put()
 
+    culprit = FlakeCulprit.Create('chromium', 'rev', 123456, 'culprit_url')
+    culprit.put()
+
+    analysis = MasterFlakeAnalysis.Create(legacy_master_name, luci_builder,
+                                          legacy_build_number, step_ui_name,
+                                          test_name)
+    analysis.bug_id = 900
+    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
+    analysis.put()
+
     expected_flake_dict = {
         'luci_project':
             'chromium',
@@ -134,66 +147,71 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             'file_path': '../../some/test/path/a.cc',
             'line_number': 42,
         },
-        'occurrences': [
-            {
-                'group_by_field':
-                    'luci builder 2',
-                'occurrences': [
-                    {
-                      'flake_type': FlakeType.RETRY_WITH_PATCH,
-                      'build_id': '124',
-                      'step_ui_name': step_ui_name,
-                      'test_name': test_name,
-                      'build_configuration': {
-                        'luci_project': 'chromium',
-                        'luci_bucket': 'try',
-                        'luci_builder': 'luci builder 2',
-                        'legacy_master_name': 'buildbot master',
-                        'legacy_build_number': 999
-                      },
-                      'time_happened': '2018-01-02 03:00:00 UTC',
-                      'time_detected': '2018-01-02 03:00:00 UTC',
-                      'gerrit_cl_id': gerrit_cl_id
-                    },
-                    {
-                      'flake_type': FlakeType.CQ_FALSE_REJECTION,
-                      'build_id': '125',
-                      'step_ui_name': step_ui_name,
-                      'test_name': test_name,
-                      'build_configuration': {
-                          'luci_project': 'chromium',
-                          'luci_bucket': 'try',
-                          'luci_builder': 'luci builder 2',
-                          'legacy_master_name': 'buildbot master',
-                          'legacy_build_number': 999
-                      },
-                      'time_happened': '2018-01-02 02:00:00 UTC',
-                      'time_detected': '2018-01-02 02:00:00 UTC',
-                      'gerrit_cl_id': gerrit_cl_id
-                    },
-                ]
-            },
-            {
-                'group_by_field':
-                    'luci builder',
-                'occurrences': [{
-                    'flake_type': FlakeType.CQ_FALSE_REJECTION,
-                    'build_id': '123',
+        'culprits': [{
+            'revision': 'rev',
+            'commit_position': 123456,
+            'culprit_key': culprit.key.urlsafe()
+        }],
+        'sample_analysis':
+            None,
+        'occurrences': [{
+            'group_by_field':
+                'luci builder 2',
+            'occurrences': [
+                {
+                    'flake_type': FlakeType.RETRY_WITH_PATCH,
+                    'build_id': '124',
                     'step_ui_name': step_ui_name,
                     'test_name': test_name,
                     'build_configuration': {
                         'luci_project': 'chromium',
                         'luci_bucket': 'try',
-                        'luci_builder': 'luci builder',
+                        'luci_builder': 'luci builder 2',
                         'legacy_master_name': 'buildbot master',
                         'legacy_build_number': 999
                     },
-                    'time_happened': '2018-01-01 00:00:00 UTC',
-                    'time_detected': '2018-01-01 00:00:00 UTC',
+                    'time_happened': '2018-01-02 03:00:00 UTC',
+                    'time_detected': '2018-01-02 03:00:00 UTC',
                     'gerrit_cl_id': gerrit_cl_id
-                }]
-            }
-        ],
+                },
+                {
+                    'flake_type': FlakeType.CQ_FALSE_REJECTION,
+                    'build_id': '125',
+                    'step_ui_name': step_ui_name,
+                    'test_name': test_name,
+                    'build_configuration': {
+                        'luci_project': 'chromium',
+                        'luci_bucket': 'try',
+                        'luci_builder': 'luci builder 2',
+                        'legacy_master_name': 'buildbot master',
+                        'legacy_build_number': 999
+                    },
+                    'time_happened': '2018-01-02 02:00:00 UTC',
+                    'time_detected': '2018-01-02 02:00:00 UTC',
+                    'gerrit_cl_id': gerrit_cl_id
+                },
+            ]
+        },
+                        {
+                            'group_by_field':
+                                'luci builder',
+                            'occurrences': [{
+                                'flake_type': FlakeType.CQ_FALSE_REJECTION,
+                                'build_id': '123',
+                                'step_ui_name': step_ui_name,
+                                'test_name': test_name,
+                                'build_configuration': {
+                                    'luci_project': 'chromium',
+                                    'luci_bucket': 'try',
+                                    'luci_builder': 'luci builder',
+                                    'legacy_master_name': 'buildbot master',
+                                    'legacy_build_number': 999
+                                },
+                                'time_happened': '2018-01-01 00:00:00 UTC',
+                                'time_detected': '2018-01-01 00:00:00 UTC',
+                                'gerrit_cl_id': gerrit_cl_id
+                            }]
+                        }],
     }
     self.assertEqual(expected_flake_dict,
                      flake_detection_utils.GetFlakeInformation(flake, 5))
@@ -300,3 +318,44 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
 
     self.assertEqual(expected_flake_dict,
                      flake_detection_utils.GetFlakeInformation(flake, 1))
+
+  def testGetFlakeAnalysesResultsNoAnalyses(self):
+    self.assertEqual(([], None),
+                     flake_detection_utils._GetFlakeAnalysesResults(123))
+
+  def testGetFlakeAnalysesResultsFailedToGetCulprit(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 12345, 's', 't')
+    analysis.bug_id = 123
+    analysis.culprit_urlsafe_key = 'culprit.key'
+    analysis.status = analysis_status.COMPLETED
+    analysis.put()
+
+    self.assertEqual(([], {
+        'status': 'Completed, no culprit found',
+        'analysis_key': analysis.key.urlsafe()
+    }), flake_detection_utils._GetFlakeAnalysesResults(123))
+
+  def testGetFlakeAnalysesResultsShowRunningAnalysis(self):
+    analysis_1 = MasterFlakeAnalysis.Create('m', 'b', 12345, 's', 't')
+    analysis_1.bug_id = 123
+    analysis_1.status = analysis_status.RUNNING
+    analysis_1.put()
+
+    analysis_2 = MasterFlakeAnalysis.Create('m', 'b', 12345, 's', 't')
+    analysis_2.bug_id = 123
+    analysis_2.status = analysis_status.ERROR
+    analysis_2.put()
+
+    self.assertEqual(([], {
+        'status': 'Running',
+        'analysis_key': analysis_1.key.urlsafe()
+    }), flake_detection_utils._GetFlakeAnalysesResults(123))
+
+  def testGetFlakeAnalysesResultsNotShowErrorAnalysis(self):
+    analysis_2 = MasterFlakeAnalysis.Create('m', 'b', 12345, 's', 't')
+    analysis_2.bug_id = 123
+    analysis_2.status = analysis_status.ERROR
+    analysis_2.put()
+
+    self.assertEqual(([], {}),
+                     flake_detection_utils._GetFlakeAnalysesResults(123))
