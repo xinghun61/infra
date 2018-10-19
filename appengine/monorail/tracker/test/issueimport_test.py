@@ -63,4 +63,4 @@ class IssueExportTest(unittest.TestCase):
         desc_comment, tracker_pb2.IssueComment(
             project_id=12, timestamp=223, user_id=111L,
             content='I cant believe youve done this',
-            is_description=True, description_num='2'))
+            is_description=True))

@@ -207,6 +207,9 @@ class IssueExportJSON(jsonfeed.JsonFeed):
   def _MakeIssueJSON(
         self, mr, issue, email_dict, comment_list, starrer_id_list):
     """Return a dict of info about the issue and its comments."""
+    descriptions = [c for c in comment_list if c.is_description]
+    for i, d in enumerate(descriptions):
+      d.description_num = str(i+1)
     comments = [self._MakeCommentJSON(c, email_dict) for c in comment_list]
     phase_dict = {phase.phase_id: phase.name for phase in issue.phases}
     config = self.services.config.GetProjectConfig(

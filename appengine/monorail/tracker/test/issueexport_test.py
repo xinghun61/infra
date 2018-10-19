@@ -103,7 +103,7 @@ class IssueExportTest(unittest.TestCase):
     comment_list = [
         tracker_pb2.IssueComment(content='simple'),
         tracker_pb2.IssueComment(
-            content='issue desc', description_num='1', is_description=True)]
+            content='issue desc', is_description=True)]
     starrer_id_list = [222L, 333L]
 
     issue_JSON = self.jsonfeed._MakeIssueJSON(

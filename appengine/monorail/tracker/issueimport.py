@@ -223,7 +223,6 @@ class IssueImport(servlet.Servlet):
 
     if comment_json['description_num']:
       comment.is_description = True
-      comment.description_num = comment_json['description_num']
 
     return comment
 
