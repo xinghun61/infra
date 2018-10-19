@@ -70,7 +70,7 @@ def main(args):  # pragma: no cover
 
   loop_results = outer_loop.loop(
       task=lambda: gsubmodd.reify_submodules(opts.repo, opts.target,
-          opts.dry_run, opts.limit, opts.extras),
+          opts.dry_run, opts.limit, opts.extras, opts.epoch),
       sleep_timeout=lambda: opts.interval,
       **opts.loop_opts)
 
