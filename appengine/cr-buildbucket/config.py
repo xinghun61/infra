@@ -382,6 +382,9 @@ def get_bucket_async(bucket_id):
   bucket = yield key.get_async()
   if bucket is None:
     raise ndb.Return(None, None)
+  # TODO(crbug.com/851036): replace returned project_id with rev,
+  # when legacy mode is dropped.
+  # The caller knows project id.
   raise ndb.Return(bucket.project_id, bucket.config)
 
 

@@ -176,18 +176,14 @@ class SwarmbucketApi(remote.Service):
   def get_task_def(self, request):
     """Returns a swarming task definition for a build request."""
     try:
+      api.convert_bucket(request.build_request.bucket)  # checks access
+
       build_request = api.put_request_message_to_build_request(
           request.build_request
       )
       build_request = build_request.normalize()
 
       identity = auth.get_current_identity()
-      if not user.can_access_bucket_async(build_request.bucket).get_result():
-        raise endpoints.ForbiddenException(
-            '%s cannot view builds in bucket %s' %
-            (identity, build_request.bucket)
-        )
-
       build = build_request.create_build(1, identity, utils.utcnow())
       task_def = swarming.prepare_task_def_async(
           build, build_number=0, fake_build=True

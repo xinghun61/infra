@@ -6,6 +6,7 @@ import functools
 import json
 import logging
 
+from google import protobuf
 from google.appengine.ext import ndb
 from protorpc import messages
 from protorpc import message_types
@@ -104,15 +105,14 @@ def put_request_message_to_build_request(request):
 
 
 def put_request_messages_to_build_requests(requests):
-  buckets = {r.bucket for r in requests if r.bucket}
-  bucket_keys = [ndb.Key(config.LegacyBucket, b) for b in buckets]
-  bucket_entities = dict(zip(buckets, ndb.get_multi(bucket_keys)))
+  bucket_to_project = {}
+  for b in {r.bucket for r in requests}:
+    project_id, _ = config.parse_bucket_id(convert_bucket(b))
+    bucket_to_project[b] = project_id
+  # TODO(nodir): replace BuildRequest with rpc_pb2.ScheduleBuildRequest.
   return [
       creation.BuildRequest(
-          project=(
-              bucket_entities[r.bucket].project_id
-              if bucket_entities.get(r.bucket) else None
-          ),
+          project=bucket_to_project[r.bucket],
           bucket=r.bucket,
           tags=r.tags,
           parameters=parse_json_object(r.parameters_json, 'parameters_json'),
@@ -165,10 +165,13 @@ def convert_bucket(bucket):
   A bucket string is either a bucket id (e.g. "chromium/try") or
   a legacy bucket name (e.g. "master.tryserver.x", "luci.chromium.try").
 
+  Check ACLs.
+
   Raises:
     auth.AuthorizationError if the requester doesn't have access to the bucket.
     errors.InvalidInputError if bucket is ambiguous.
   """
+  config.validate_bucket_id(bucket)
   if not config.is_legacy_bucket_id(bucket):
     bucket_id = bucket
   else:
@@ -759,15 +762,18 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def get_bucket(self, request):
     """Returns bucket information."""
-    if not user.can_access_bucket_async(request.bucket).get_result():
-      raise user.current_identity_cannot('access bucket %s', request.bucket)
-    bucket = config.LegacyBucket.get_by_id(request.bucket)
+    bucket_id = convert_bucket(request.bucket)  # checks access
+    project_id, bucket_name = config.parse_bucket_id(bucket_id)
+    # TODO(crbug.com/851036): use config.get_bucket when TODO in
+    # get_bucket_async is done.
+    bucket = config.Bucket.make_key(project_id, bucket_name).get()
+    assert bucket  # access check would have failed.
     return BucketMessage(
-        name=request.bucket,
-        project_id=bucket.project_id,
-        config_file_content=bucket.config_content,
+        name=bucket_name,
+        project_id=project_id,
+        config_file_content=protobuf.text_format.MessageToString(bucket.config),
         config_file_rev=bucket.revision,
-        config_file_url=config.get_buildbucket_cfg_url(bucket.project_id),
+        config_file_url=config.get_buildbucket_cfg_url(project_id),
     )
 
   ####### BULK PROCESSING ######################################################

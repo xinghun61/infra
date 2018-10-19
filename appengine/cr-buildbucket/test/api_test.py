@@ -65,6 +65,7 @@ class V1ApiTest(testing.EndpointsTestCase):
         swarming_hostname='swarming.example.com',
         swarming_task_id='deadbeef',
     )
+
     config.put_bucket(
         'chromium',
         'a' * 40,
@@ -72,7 +73,7 @@ class V1ApiTest(testing.EndpointsTestCase):
             '''
             name: "luci.chromium.try"
             acls {
-              role: READER
+              role: SCHEDULER
               identity: "anonymous:anonymous"
             }
             '''
@@ -178,7 +179,7 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   def test_put_with_malformed_parameters_json(self):
     req = {
-        'bucket': 'chromium',
+        'bucket': 'luci.chromium.try',
         'parameters_json': '}non-json',
     }
     self.expect_error('put', req, 'INVALID_INPUT')
@@ -249,7 +250,15 @@ class V1ApiTest(testing.EndpointsTestCase):
     config.put_bucket(
         'chromium',
         'a' * 40,
-        project_config_pb2.Bucket(name='luci.chromium.ci'),
+        config_test.parse_bucket_cfg(
+            '''
+            name: "luci.chromium.ci"
+            acls {
+              role: SCHEDULER
+              identity: "anonymous:anonymous"
+            }
+            '''
+        ),
     )
 
     add_many_async.return_value = future([
@@ -269,7 +278,8 @@ class V1ApiTest(testing.EndpointsTestCase):
                 'client_operation_id': '1',
             },
             {
-                'bucket': 'bad name',
+                'bucket': 'luci.chromium.try',
+                'tags': ['bad tag'],
                 'client_operation_id': '2',
             },
         ],
@@ -289,9 +299,9 @@ class V1ApiTest(testing.EndpointsTestCase):
             client_operation_id='1',
         ),
         creation.BuildRequest(
-            project=None,
-            bucket='bad name',
-            tags=[],
+            project='chromium',
+            bucket='luci.chromium.try',
+            tags=['bad tag'],
             client_operation_id='2',
         ),
     ])
@@ -319,7 +329,7 @@ class V1ApiTest(testing.EndpointsTestCase):
   def test_put_batch_with_exception(self, add_many_async):
     add_many_async.return_value = future([(None, Exception())])
     req = {
-        'builds': [{'bucket': 'chromium'}],
+        'builds': [{'bucket': 'luci.chromium.try'}],
     }
     self.call_api('put_batch', req, status=500)
 
@@ -722,12 +732,12 @@ class V1ApiTest(testing.EndpointsTestCase):
 
     bucket_cfg = config_test.parse_bucket_cfg(
         '''
-      name: "master.tryserver.chromium.linux"
-      acls {
-        role: READER
-        identity: "anonymous:anonymous"
-      }
-    '''
+        name: "master.tryserver.chromium.linux"
+        acls {
+          role: READER
+          identity: "anonymous:anonymous"
+        }
+        '''
     )
     config.put_bucket('chromium', 'deadbeef', bucket_cfg)
     req = {
