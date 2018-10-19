@@ -160,6 +160,21 @@ message Spec {
       repeated string dep = 3;
 
       // TODO: options for controlling toolchain
+
+      // The docker environments for linux-amd64 is very old (in order to
+      // conform to PEP 513). As such, sometimes it's a hindrance for building
+      // universal packages (such as those using nodejs), as they're so old that
+      // node cannot run on them (!!).
+      //
+      // This option should be used VERY sparingly. A better solution would be
+      // to:
+      //   * Separate the docker image creation from the `dockerbuild` tool
+      //   (maybe as a 3pp package?) and allow an explicit dependency on
+      //   a dockcross-derived image here.
+      //   * OR, switch away from dockerbuild images and use dockcross directly,
+      //   using the normal linux-x64 by default, and optionally being able to
+      //   explicitly choose the manylinux-x64 for packages that need it.
+      bool no_docker_env = 4;
     }
 
     // See CIPD documentation for specifics about these options.

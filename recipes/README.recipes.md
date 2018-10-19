@@ -423,7 +423,9 @@ You can also mark the upload as a `universal` package, which will:
   * Omit the `${platform}` suffix from the upload name
   * Set the target platform for the package to `linux-amd64`, regardless of
     what platform you build the recipe on. This was chosen arbitrarially to
-    ensure that "universal" packages build consistently.
+    ensure that "universal" packages build consistently. You can override this
+    behavior (and bypass the normal docker environment entirely) by setting
+    the no_docker_env flag to true in your Create.Build message.
 
 #### Versions
 
@@ -489,9 +491,9 @@ This module uses the following named caches:
   * `osx_sdk` - Cache for `depot_tools/osx_sdk`. Only on Mac.
   * `windows_sdk` - Cache for `depot_tools/windows_sdk`. Only on Windows.
 
-#### **class [Support3ppApi](/recipes/recipe_modules/support_3pp/api.py#373)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+#### **class [Support3ppApi](/recipes/recipe_modules/support_3pp/api.py#375)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
-&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/support_3pp/api.py#544)(self, packages=(), platform='', force_build=False):**
+&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/support_3pp/api.py#554)(self, packages=(), platform='', force_build=False):**
 
 Executes entire {fetch,build,package,verify,upload} pipeline for all the
 packages listed, targeting the given platform.
@@ -507,9 +509,9 @@ Args:
 Returns (list[(cipd_pkg, cipd_version)], set[str]) of built CIPD packages
 and their tagged versions, as well as a list of unsupported packages.
 
-&mdash; **def [initialize](/recipes/recipe_modules/support_3pp/api.py#393)(self):**
+&mdash; **def [initialize](/recipes/recipe_modules/support_3pp/api.py#395)(self):**
 
-&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/support_3pp/api.py#494)(self, path):**
+&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/support_3pp/api.py#504)(self, path):**
 
 Loads all package definitions from the given path.
 
@@ -535,7 +537,7 @@ whose name is already registered. This could occur if you call
 load_packages_from_path multiple times, and one of the later calls tries to
 load a package which was registered under one of the earlier calls.
 
-&emsp; **@package_prefix.setter**<br>&mdash; **def [package\_prefix](/recipes/recipe_modules/support_3pp/api.py#405)(self, prefix):**
+&emsp; **@package_prefix.setter**<br>&mdash; **def [package\_prefix](/recipes/recipe_modules/support_3pp/api.py#407)(self, prefix):**
 
 Set the CIPD package name prefix (str).
 

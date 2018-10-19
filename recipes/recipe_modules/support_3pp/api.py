@@ -222,7 +222,9 @@ You can also mark the upload as a `universal` package, which will:
   * Omit the `${platform}` suffix from the upload name
   * Set the target platform for the package to `linux-amd64`, regardless of
     what platform you build the recipe on. This was chosen arbitrarially to
-    ensure that "universal" packages build consistently.
+    ensure that "universal" packages build consistently. You can override this
+    behavior (and bypass the normal docker environment entirely) by setting
+    the no_docker_env flag to true in your Create.Build message.
 
 #### Versions
 
@@ -449,6 +451,14 @@ class Support3ppApi(recipe_api.RecipeApi):
         "%s not supported for %s" % (pkgname, platform))
 
     create_pb = spec.create[0]
+
+    # Universal specs using docker always target linux-amd64, for consistency
+    # when running the recipe on different platforms. We change the target
+    # platform here from the native platform so that dep and tool resolutions
+    # occur for linux-amd64.
+    if spec.upload.universal and not create_pb.build.no_docker_env:
+      platform = 'linux-amd64'
+
     source_pb = create_pb.source
     assert source_pb.patch_version == source_pb.patch_version.strip('.'), (
       'source.patch_version has starting/trailing dots')

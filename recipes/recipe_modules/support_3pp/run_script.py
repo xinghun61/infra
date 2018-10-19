@@ -49,7 +49,7 @@ def run_script(api, *args, **kwargs):
   Kwargs:
     * compile_platform (str) - Indicates what platform we want this step to
       compile for. If omitted, executes under the host platform without any
-      compiler available.
+      compiler available. Omit to use the host environment.
     * workdir (Workdir) - The working directory object we're running the script
       under. Required if `compile_platform` is specified.
     * stdout - Passed through to the underlying step.

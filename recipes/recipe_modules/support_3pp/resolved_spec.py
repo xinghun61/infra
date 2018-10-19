@@ -78,11 +78,6 @@ class ResolvedSpec(object):
       self._all_deps_and_tools.add(d)
       self._all_deps_and_tools.update(d.all_possible_deps_and_tools)
 
-    # Universal specs always target linux-amd64, for consistency when running
-    # the recipe on different platforms.
-    if self._spec_pb.upload.universal:
-      self._platform = 'linux-amd64'
-
   @property
   def name(self):
     """The name of the package."""
