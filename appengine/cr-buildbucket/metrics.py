@@ -9,7 +9,9 @@ from google.appengine.ext import ndb
 from components import utils
 import gae_ts_mon
 
+import api_common
 import buildtags
+import config
 import model
 
 # Override default target fields for app-global metrics.
@@ -63,6 +65,7 @@ def _fields_for(build, field_names):
     src, _, typ = _BUILD_FIELDS[f]
     assert src in (_SOURCE_ATTR, _SOURCE_TAG)
     if src == _SOURCE_ATTR:
+      # TODO(crbug.com/851036): read bucket from bucket_id.
       val = getattr(build, f)
     else:
       if tags is None:
@@ -231,11 +234,11 @@ TAG_INDEX_SEARCH_SKIPPED_BUILDS = gae_ts_mon.NonCumulativeDistributionMetric(
 
 
 @ndb.tasklet
-def set_build_count_metric_async(bucket, builder, status, experimental):
-  assert isinstance(bucket, basestring)
-  assert isinstance(builder, basestring)
+def set_build_count_metric_async(
+    bucket_id, bucket_field, builder, status, experimental
+):
   q = model.Build.query(
-      model.Build.bucket == bucket,
+      model.Build.bucket_id == bucket_id,
       model.Build.tags == 'builder:%s' % builder,
       model.Build.status == status,
       model.Build.experimental == experimental,
@@ -247,7 +250,7 @@ def set_build_count_metric_async(bucket, builder, status, experimental):
     return
 
   fields = {
-      'bucket': bucket,
+      'bucket': bucket_field,
       'builder': builder,
       'status': str(status),
   }
@@ -256,9 +259,9 @@ def set_build_count_metric_async(bucket, builder, status, experimental):
 
 
 @ndb.tasklet
-def set_build_latency(bucket, builder, must_be_never_leased):
+def set_build_latency(bucket_id, bucket_field, builder, must_be_never_leased):
   q = model.Build.query(
-      model.Build.bucket == bucket,
+      model.Build.bucket_id == bucket_id,
       model.Build.tags == 'builder:%s' % builder,
       model.Build.status == model.BuildStatus.SCHEDULED,
       model.Build.experimental == False,
@@ -277,7 +280,7 @@ def set_build_latency(bucket, builder, must_be_never_leased):
   else:
     max_age = 0
   fields = {
-      'bucket': bucket,
+      'bucket': bucket_field,
       'builder': builder,
       'must_be_never_leased': must_be_never_leased,
   }
@@ -296,18 +299,39 @@ def update_global_metrics():
   """Updates the metrics in GLOBAL_METRICS."""
   start = utils.utcnow()
 
+  builder_ids = set()  # {(bucket_id, builder)}
+  for key in model.Builder.query().iter(keys_only=True):
+    project_id, bucket, builder = key.id().split(':', 2)
+    bucket_id = (
+        # TODO(crbug.com/851036): remove parse_luci_bucket call
+        # once we don't have Builder entities with legacy bucket names.
+        api_common.parse_luci_bucket(bucket) or
+        config.format_bucket_id(project_id, bucket)
+    )
+    builder_ids.add((bucket_id, builder))
+
+  all_luci_bucket_ids = {
+      bid for bid, config in config.get_buckets_async().get_result().iteritems()
+      if config and config.swarming.builders
+  }
+
   # Collect a list of counting/latency queries.
   count_query_queue = []
   latency_query_queue = []
-  for key in model.Builder.query().iter(keys_only=True):
-    _, bucket, builder = key.id().split(':', 2)
+  # TODO(crbug.com/851036): join with the loop above and remove builder_ids set.
+  for bucket_id, builder in builder_ids:
+    legacy_bucket_name = api_common.legacy_bucket_name(
+        bucket_id, bucket_id in all_luci_bucket_ids
+    )
     latency_query_queue.extend([
-        (bucket, builder, True),
-        (bucket, builder, False),
+        (bucket_id, legacy_bucket_name, builder, True),
+        (bucket_id, legacy_bucket_name, builder, False),
     ])
     for status in (model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED):
       for experimental in (False, True):
-        count_query_queue.append((bucket, builder, status, experimental))
+        count_query_queue.append(
+            (bucket_id, legacy_bucket_name, builder, status, experimental)
+        )
 
   # Process counting/latency queries with _CONCURRENT_QUERY_LIMIT workers.
 

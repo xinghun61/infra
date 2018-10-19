@@ -4,11 +4,13 @@
 
 import json
 
+from google.appengine.ext import ndb
 from protorpc import messages
 
 from components import utils
 
 import config
+import logging
 import model
 
 
@@ -26,6 +28,37 @@ def parse_luci_bucket(bucket):
   if len(parts) == 3 and parts[0] == 'luci':
     return config.format_bucket_id(parts[1], parts[2])
   return ''
+
+
+@ndb.tasklet
+def to_bucket_id_async(bucket):
+  """Converts a bucket string to a bucket id.
+
+  A bucket string is either a bucket id (e.g. "chromium/try") or
+  a legacy bucket name (e.g. "master.tryserver.x", "luci.chromium.try").
+
+  Does not check access.
+
+  Returns:
+    bucket id string or None if such bucket does not exist.
+
+  Raises:
+    errors.InvalidInputError if bucket is invalid or ambiguous.
+  """
+  config.validate_bucket_id(bucket)
+  if not config.is_legacy_bucket_id(bucket):
+    raise ndb.Return(bucket)
+
+  bucket_id = parse_luci_bucket(bucket)
+  if bucket_id:
+    raise ndb.Return(bucket_id)
+
+  # The slowest code path.
+  # Does not apply to LUCI.
+  bucket_id = config.resolve_bucket_name_async(bucket).get_result()
+  if bucket_id:
+    logging.info('resolved bucket id %r => %r', bucket, bucket_id)
+  raise ndb.Return(bucket_id)
 
 
 class BuildMessage(messages.Message):
@@ -63,16 +96,30 @@ def datetime_to_timestamp_safe(value):
   return utils.datetime_to_timestamp(value)
 
 
+def legacy_bucket_name(bucket_id, is_luci):
+  if is_luci:
+    # In V1, LUCI builds use a "long" bucket name, e.g. "luci.chromium.try"
+    # as opposed to just "try". This is because in the past bucket names
+    # were globally unique, as opposed to unique per project.
+    return format_luci_bucket(bucket_id)
+
+  _, bucket_name = config.parse_bucket_id(bucket_id)
+  return bucket_name
+
+
 def build_to_message(build, include_lease_key=False):
   """Converts model.Build to BuildMessage."""
   assert build
   assert build.key
   assert build.key.id()
 
-  project_id, bucket_name = config.parse_bucket_id(build.bucket_id)
+  project_id, _ = config.parse_bucket_id(build.bucket_id)
+  is_luci = bool(build.swarming_hostname)
 
   msg = BuildMessage(
       id=build.key.id(),
+      project=project_id,
+      bucket=legacy_bucket_name(build.bucket_id, is_luci),
       tags=build.tags,
       parameters_json=json.dumps(build.parameters or {}, sort_keys=True),
       status=build.status,
@@ -92,20 +139,10 @@ def build_to_message(build, include_lease_key=False):
       retry_of=build.retry_of,
       canary_preference=build.canary_preference,
       canary=build.canary,
-      project=project_id,
       experimental=build.experimental,
       service_account=build.service_account,
       # when changing this function, make sure build_to_dict would still work
   )
-
-  if build.swarming_hostname:
-    # This is a LUCI build.
-    # In V1, LUCI builds use a "long" bucket name, e.g. "luci.chromium.try"
-    # as opposed to just "try". This is because in the past bucket names
-    # were globally unique, as opposed to unique per project.
-    msg.bucket = format_luci_bucket(build.bucket_id)
-  else:
-    msg.bucket = bucket_name
 
   if build.lease_expiration_date is not None:
     msg.lease_expiration_ts = utils.datetime_to_timestamp(

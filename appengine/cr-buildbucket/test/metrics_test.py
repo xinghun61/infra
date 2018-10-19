@@ -8,9 +8,10 @@ from google.appengine.ext import ndb
 import mock
 import gae_ts_mon
 
-from proto.config import project_config_pb2
+from test import config_test
 from test.test_util import future
 from testing_utils import testing
+import config
 import metrics
 import model
 import v2
@@ -25,49 +26,56 @@ class MetricsTest(testing.AppengineTestCase):
   def test_set_build_count_metric(self):
     ndb.put_multi([
         model.Build(
-            bucket='chromium',
+            project='chromium',
+            bucket='luci.chromium.try',
             status=model.BuildStatus.SCHEDULED,
             create_time=datetime.datetime(2015, 1, 1),
             tags=['builder:release'],
             experimental=True,
         ),
         model.Build(
-            bucket='chromium',
+            project='chromium',
+            bucket='luci.chromium.try',
             status=model.BuildStatus.SCHEDULED,
             tags=['builder:release'],
             create_time=datetime.datetime(2015, 1, 1),
         ),
         model.Build(
-            bucket='chromium',
+            project='chromium',
+            bucket='luci.chromium.try',
             status=model.BuildStatus.SCHEDULED,
             tags=['builder:release'],
             create_time=datetime.datetime(2015, 1, 1),
         ),
         model.Build(
-            bucket='chromium',
+            project='chromium',
+            bucket='luci.chromium.try',
             status=model.BuildStatus.SCHEDULED,
             tags=['builder:debug'],
             create_time=datetime.datetime(2015, 1, 1),
         ),
         model.Build(
-            bucket='v8',
+            project='chromium',
+            bucket='luci.chromium.ci',
             status=model.BuildStatus.SCHEDULED,
             create_time=datetime.datetime(2015, 1, 1),
         ),
         model.Build(
-            bucket='chromium',
+            project='chromium',
+            bucket='luci.chromium.try',
             status=model.BuildStatus.STARTED,
             create_time=datetime.datetime(2015, 1, 1),
             start_time=datetime.datetime(2015, 1, 1),
         ),
     ])
     metrics.set_build_count_metric_async(
-        'chromium', 'release', model.BuildStatus.SCHEDULED, False
+        'chromium/try', 'luci.chromium.try', 'release',
+        model.BuildStatus.SCHEDULED, False
     ).get_result()
     self.assertEqual(
         2,
         metrics.BUILD_COUNT_PROD.get({
-            'bucket': 'chromium',
+            'bucket': 'luci.chromium.try',
             'builder': 'release',
             'status': 'SCHEDULED',
         },
@@ -80,7 +88,8 @@ class MetricsTest(testing.AppengineTestCase):
 
     ndb.put_multi([
         model.Build(
-            bucket='chromium',
+            project='chromium',
+            bucket='luci.chromium.try',
             tags=['builder:release'],
             status=model.BuildStatus.SCHEDULED,
             never_leased=True,
@@ -88,28 +97,32 @@ class MetricsTest(testing.AppengineTestCase):
             experimental=True,  # should be ignored by both metrics
         ),
         model.Build(
-            bucket='chromium',
+            project='chromium',
+            bucket='luci.chromium.try',
             tags=['builder:release'],
             status=model.BuildStatus.SCHEDULED,
             never_leased=True,
             create_time=datetime.datetime(2015, 1, 1),
         ),
         model.Build(
-            bucket='chromium',
+            project='chromium',
+            bucket='luci.chromium.try',
             tags=['builder:release'],
             status=model.BuildStatus.SCHEDULED,
             never_leased=False,
             create_time=datetime.datetime(2014, 12, 31),
         ),
         model.Build(
-            bucket='chromium',
+            project='chromium',
+            bucket='luci.chromium.try',
             tags=['builder:release'],
             status=model.BuildStatus.SCHEDULED,
             never_leased=True,
             create_time=datetime.datetime(2015, 1, 3),
         ),
         model.Build(
-            bucket='chromium',
+            project='chromium',
+            bucket='luci.chromium.try',
             tags=['builder:release'],
             status=model.BuildStatus.COMPLETED,
             result=model.BuildResult.CANCELED,
@@ -127,18 +140,23 @@ class MetricsTest(testing.AppengineTestCase):
             # never_leased is None, so this should be ignored by both metrics.
         ),
         model.Build(
-            bucket='v8',
+            project='chromium',
+            bucket='luci.chromium.ci',
             tags=['builder:release'],
             status=model.BuildStatus.SCHEDULED,
             never_leased=True,
             create_time=datetime.datetime(2015, 1, 3),
         ),
     ])
-    metrics.set_build_latency('chromium', 'release', True).get_result()
-    metrics.set_build_latency('chromium', 'release', False).get_result()
+    metrics.set_build_latency(
+        'chromium/try', 'luci.chromium.try', 'release', True
+    ).get_result()
+    metrics.set_build_latency(
+        'chromium/try', 'luci.chromium.try', 'release', False
+    ).get_result()
     max_lease = metrics.MAX_AGE_SCHEDULED.get(
         {
-            'bucket': 'chromium',
+            'bucket': 'luci.chromium.try',
             'builder': 'release',
             'must_be_never_leased': True,
         },
@@ -147,7 +165,7 @@ class MetricsTest(testing.AppengineTestCase):
     self.assertEqual(max_lease, 3 * 24 * 3600)
     max_start = metrics.MAX_AGE_SCHEDULED.get(
         {
-            'bucket': 'chromium',
+            'bucket': 'luci.chromium.try',
             'builder': 'release',
             'must_be_never_leased': False,
         },
@@ -156,11 +174,15 @@ class MetricsTest(testing.AppengineTestCase):
     self.assertEqual(max_start, 4 * 24 * 3600)
 
   def test_set_build_lease_latency_no_pending_builds(self):
-    metrics.set_build_latency('chromium', 'release', True).get_result()
-    metrics.set_build_latency('chromium', 'release', False).get_result()
+    metrics.set_build_latency(
+        'chromium/try', 'luci.chromium.try', 'release', True
+    ).get_result()
+    metrics.set_build_latency(
+        'chromium/try', 'luci.chromium.try', 'release', False
+    ).get_result()
     max_lease = metrics.MAX_AGE_SCHEDULED.get(
         {
-            'bucket': 'chromium',
+            'bucket': 'luci.chromium.try',
             'builder': 'release',
             'must_be_never_leased': True,
         },
@@ -169,7 +191,7 @@ class MetricsTest(testing.AppengineTestCase):
     self.assertEqual(max_lease, 0)
     max_start = metrics.MAX_AGE_SCHEDULED.get(
         {
-            'bucket': 'chromium',
+            'bucket': 'luci.chromium.try',
             'builder': 'release',
             'must_be_never_leased': False,
         },
@@ -187,25 +209,50 @@ class MetricsTest(testing.AppengineTestCase):
 
     model.Builder(id='chromium:luci.chromium.try:release').put()
     model.Builder(id='chromium:luci.chromium.try:debug').put()
+    model.Builder(id='chromium:try:debug').put()
+    config.put_bucket(
+        'chromium',
+        'a' * 40,
+        config_test.parse_bucket_cfg(
+            '''
+          name: "luci.chromium.try"
+          swarming {
+            builders {}
+          }
+          '''
+        ),
+    )
 
     metrics.update_global_metrics()
 
-    set_build_latency.assert_any_call('luci.chromium.try', 'release', True)
-    set_build_latency.assert_any_call('luci.chromium.try', 'release', False)
-    set_build_latency.assert_any_call('luci.chromium.try', 'debug', True)
-    set_build_latency.assert_any_call('luci.chromium.try', 'debug', False)
+    set_build_latency.assert_any_call(
+        'chromium/try', 'luci.chromium.try', 'release', True
+    )
+    set_build_latency.assert_any_call(
+        'chromium/try', 'luci.chromium.try', 'release', False
+    )
+    set_build_latency.assert_any_call(
+        'chromium/try', 'luci.chromium.try', 'debug', True
+    )
+    set_build_latency.assert_any_call(
+        'chromium/try', 'luci.chromium.try', 'debug', False
+    )
 
     set_build_count_metric_async.assert_any_call(
-        'luci.chromium.try', 'release', model.BuildStatus.SCHEDULED, False
+        'chromium/try', 'luci.chromium.try', 'release',
+        model.BuildStatus.SCHEDULED, False
     )
     set_build_count_metric_async.assert_any_call(
-        'luci.chromium.try', 'release', model.BuildStatus.SCHEDULED, True
+        'chromium/try', 'luci.chromium.try', 'release',
+        model.BuildStatus.SCHEDULED, True
     )
     set_build_count_metric_async.assert_any_call(
-        'luci.chromium.try', 'debug', model.BuildStatus.SCHEDULED, False
+        'chromium/try', 'luci.chromium.try', 'debug',
+        model.BuildStatus.SCHEDULED, False
     )
     set_build_count_metric_async.assert_any_call(
-        'luci.chromium.try', 'debug', model.BuildStatus.SCHEDULED, True
+        'chromium/try', 'luci.chromium.try', 'debug',
+        model.BuildStatus.SCHEDULED, True
     )
 
   def test_fields_for(self):

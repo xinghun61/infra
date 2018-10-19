@@ -7,9 +7,11 @@ import json
 
 from components import utils
 
+from test import config_test
 from testing_utils import testing
 
 import api_common
+import config
 import model
 
 
@@ -98,3 +100,30 @@ class ApiCommonTests(testing.AppengineTestCase):
         api_common.parse_luci_bucket('luci.chromium.try'), 'chromium/try'
     )
     self.assertEqual(api_common.parse_luci_bucket('master.x'), '')
+
+
+class ToBucketIDTest(testing.AppengineTestCase):
+
+  def setUp(self):
+    super(ToBucketIDTest, self).setUp()
+
+    config.put_bucket(
+        'chromium',
+        'a' * 40,
+        config_test.parse_bucket_cfg('name: "luci.chromium.try"'),
+    )
+
+  def to_bucket_id(self, bucket):
+    return api_common.to_bucket_id_async(bucket).get_result()
+
+  def test_convert_bucket_native(self):
+    self.assertEqual(self.to_bucket_id('chromium/try'), 'chromium/try')
+
+  def test_convert_bucket_luci(self):
+    self.assertEqual(self.to_bucket_id('luci.chromium.try'), 'chromium/try')
+
+  def test_convert_bucket_resolution(self):
+    self.assertEqual(self.to_bucket_id('try'), 'chromium/try')
+
+  def test_convert_bucket_resolution_fails(self):
+    self.assertIsNone(self.to_bucket_id('master.x'))

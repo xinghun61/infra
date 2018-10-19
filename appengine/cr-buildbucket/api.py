@@ -160,31 +160,19 @@ def catch_errors(fn, response_message_class):
 
 
 def convert_bucket(bucket):
-  """Converts a bucket strings to a bucket ids.
+  """Converts a bucket string to a bucket id and checks access.
 
-  A bucket string is either a bucket id (e.g. "chromium/try") or
-  a legacy bucket name (e.g. "master.tryserver.x", "luci.chromium.try").
-
-  Check ACLs.
+  A synchronous wrapper for api_common.to_bucket_id_async that also checks
+  access.
 
   Raises:
     auth.AuthorizationError if the requester doesn't have access to the bucket.
-    errors.InvalidInputError if bucket is ambiguous.
+    errors.InvalidInputError if bucket is invalid or ambiguous.
   """
-  config.validate_bucket_id(bucket)
-  if not config.is_legacy_bucket_id(bucket):
-    bucket_id = bucket
-  else:
-    bucket_id = api_common.parse_luci_bucket(bucket)
-    if not bucket_id:
-      # The slowest code path.
-      # Does not apply to LUCI.
-      bucket_id = config.resolve_bucket_name_async(bucket).get_result()
-      if bucket_id:
-        logging.info('resolved bucket id %r => %r', bucket, bucket_id)
+  bucket_id = api_common.to_bucket_id_async(bucket).get_result()
 
-  # Check ACLs here to return user-supplied bucket name, not computed bucket id
-  # to prevent sniffing bucket names.
+  # Check access here to return user-supplied bucket name,
+  # as opposed to computed bucket id to prevent sniffing bucket names.
   if not bucket_id or not user.can_access_bucket_async(bucket_id).get_result():
     raise user.current_identity_cannot('access bucket %r', bucket)
 
