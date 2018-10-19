@@ -1076,6 +1076,19 @@ class WorkEnv(object):
           self.mc.cnxn, issue, comment, attachment_id, self.services.user,
           delete=delete)
 
+  def FlagComment(self, issue, comment, flag):
+    """Mark or unmark a comment as spam."""
+    self._AssertPermInIssue(issue, permissions.FLAG_SPAM)
+    with self.mc.profiler.Phase(
+        'flagging issue %r comment %r' % (issue.issue_id, comment.id)):
+      self.services.spam.FlagComment(
+          self.mc.cnxn, issue.issue_id, comment.id, comment.user_id,
+          self.mc.auth.user_id, flag)
+      if self._UserCanUsePermInIssue(issue, permissions.VERDICT_SPAM):
+        self.services.spam.RecordManualCommentVerdict(
+            self.mc.cnxn, self.services.issue, self.services.user, comment.id,
+            self.mc.auth.user_id, flag)
+
   def StarIssue(self, issue, starred):
     """Set or clear a star on the given issue for the signed in user."""
     if not self.mc.auth.user_id:

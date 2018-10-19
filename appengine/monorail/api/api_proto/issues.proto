@@ -27,8 +27,7 @@ service Issues {
   rpc ListComments (ListCommentsRequest) returns (ListCommentsResponse) {}
   rpc ListActivities (ListActivitiesRequest) returns (ListActivitiesResponse) {}
   rpc DeleteComment (DeleteCommentRequest) returns (google.protobuf.Empty) {}
-  rpc UpdateApproval (UpdateApprovalRequest)
-      returns (UpdateApprovalResponse) {}
+  rpc UpdateApproval (UpdateApprovalRequest) returns (UpdateApprovalResponse) {}
   rpc IssueSnapshot (IssueSnapshotRequest) returns (IssueSnapshotResponse) {}
   rpc PresubmitIssue (PresubmitIssueRequest) returns (PresubmitIssueResponse) {}
   rpc RerankBlockedOnIssues (RerankBlockedOnIssuesRequest) returns (RerankBlockedOnIssuesResponse) {}
@@ -36,6 +35,7 @@ service Issues {
   rpc DeleteIssueComment (DeleteIssueCommentRequest) returns (DeleteIssueCommentResponse) {}
   rpc DeleteAttachment (DeleteAttachmentRequest) returns (DeleteAttachmentResponse) {}
   rpc FlagIssues (FlagIssuesRequest) returns (FlagIssuesResponse) {}
+  rpc FlagComment (FlagCommentRequest) returns (FlagCommentResponse) {}
 }
 
 
@@ -356,4 +356,18 @@ message FlagIssuesRequest {
 
 // Next available tag: 1
 message FlagIssuesResponse {
+}
+
+
+// Next available tag: 5
+message FlagCommentRequest {
+  RequestTrace trace = 1;
+  IssueRef issue_ref = 2;
+  uint32 sequence_num = 3;
+  bool flag = 4;
+}
+
+
+// Next available tag: 1
+message FlagCommentResponse {
 }

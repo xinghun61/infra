@@ -1254,6 +1254,60 @@ class WorkEnvTest(unittest.TestCase):
       self.assertFalse(attachment.deleted)
       mockSoftDeleteComment.assert_not_called()
 
+  def testFlagComment_Normal(self):
+    """We can mark and unmark a comment as spam."""
+    self.SignIn(user_id=111L)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    comment = tracker_pb2.IssueComment(
+        project_id=789, content='soon to be deleted', user_id=111L,
+        issue_id=issue.issue_id)
+    self.services.issue.TestAddComment(comment, 1)
+
+    comment_reports = self.services.spam.comment_reports_by_issue_id
+    with self.work_env as we:
+      we.FlagComment(issue, comment, True)
+      self.assertEqual([111L], comment_reports[issue.issue_id][comment.id])
+      we.FlagComment(issue, comment, False)
+      self.assertEqual([], comment_reports[issue.issue_id][comment.id])
+
+  def testFlagComment_AutoVerdict(self):
+    """Admins can mark and unmark a comment as spam, and it is a verdict."""
+    self.SignIn(user_id=self.admin_user.user_id)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    comment = tracker_pb2.IssueComment(
+        project_id=789, content='soon to be deleted', user_id=111L,
+        issue_id=issue.issue_id)
+    self.services.issue.TestAddComment(comment, 1)
+
+    comment_reports = self.services.spam.comment_reports_by_issue_id
+    manual_verdicts = self.services.spam.manual_verdicts_by_comment_id
+    with self.work_env as we:
+      we.FlagComment(issue, comment, True)
+      self.assertEqual([444L], comment_reports[issue.issue_id][comment.id])
+      self.assertTrue(manual_verdicts[comment.id][444L])
+      we.FlagComment(issue, comment, False)
+      self.assertEqual([], comment_reports[issue.issue_id][comment.id])
+      self.assertFalse(manual_verdicts[comment.id][444L])
+
+  def testFlagComment_NotAllowed(self):
+    """Anons can't mark comment as spam."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    comment = tracker_pb2.IssueComment(
+        project_id=789, content='soon to be deleted', user_id=111L,
+        issue_id=issue.issue_id)
+    self.services.issue.TestAddComment(comment, 1)
+
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        we.FlagComment(issue, comment, True)
+
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        we.FlagComment(issue, comment, False)
+
   def testStarIssue_Normal(self):
     """We can star and unstar issues."""
     issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)

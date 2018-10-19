@@ -1500,7 +1500,7 @@ class IssuesServicerTest(unittest.TestCase):
         [], self.services.spam.reports_by_issue_id[self.issue_1.issue_id])
     self.assertEqual({}, self.services.spam.manual_verdicts_by_issue_id)
 
-  def testFlagISsue_CrossProjectNotAllowed(self):
+  def testFlagIssue_CrossProjectNotAllowed(self):
     """Test that cross-project requests are rejected."""
     request = issues_pb2.FlagIssuesRequest(
         issue_refs=[
@@ -1518,3 +1518,160 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertEqual(
         [], self.services.spam.reports_by_issue_id[self.issue_1.issue_id])
     self.assertEqual({}, self.services.spam.manual_verdicts_by_issue_id)
+
+  def testFlagComment_InvalidSequenceNumber(self):
+    """Test that we reject requests with invalid sequence numbers."""
+    request = issues_pb2.FlagCommentRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        sequence_num=1,
+        flag=True)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='user@example.com')
+    with self.assertRaises(exceptions.InputException):
+      self.CallWrapped(self.issues_svcr.FlagComment, mc, request)
+
+  def testFlagComment_Normal(self):
+    """Test that an user can flag a comment as spam."""
+    self.services.user.TestAddUser('user@example.com', 999L)
+    comment = tracker_pb2.IssueComment(
+        project_id=789, content='soon to be deleted', user_id=111L,
+        issue_id=self.issue_1.issue_id)
+    self.services.issue.TestAddComment(comment, 1)
+
+    request = issues_pb2.FlagCommentRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        sequence_num=1,
+        flag=True)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='user@example.com')
+    self.CallWrapped(self.issues_svcr.FlagComment, mc, request)
+
+    comment_reports = self.services.spam.comment_reports_by_issue_id
+    manual_verdicts = self.services.spam.manual_verdicts_by_comment_id
+    self.assertEqual([999L], comment_reports[self.issue_1.issue_id][comment.id])
+    self.assertNotIn(999L, manual_verdicts[comment.id])
+
+  def testFlagComment_Unflag(self):
+    """Test that we can un-flag a comment as spam."""
+    comment = tracker_pb2.IssueComment(
+        project_id=789, content='soon to be deleted', user_id=999L,
+        issue_id=self.issue_1.issue_id)
+    self.services.issue.TestAddComment(comment, 1)
+
+    self.services.spam.FlagComment(
+        self.cnxn, self.issue_1.issue_id, comment.id, 999L, 111L, True)
+    self.services.spam.RecordManualCommentVerdict(
+        self.cnxn, self.services.issue, self.services.user, comment.id, 111L,
+        True)
+
+    request = issues_pb2.FlagCommentRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        sequence_num=1,
+        flag=False)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    self.CallWrapped(self.issues_svcr.FlagComment, mc, request)
+
+    comment_reports = self.services.spam.comment_reports_by_issue_id
+    manual_verdicts = self.services.spam.manual_verdicts_by_comment_id
+    self.assertEqual([], comment_reports[self.issue_1.issue_id][comment.id])
+    self.assertFalse(manual_verdicts[comment.id][111L])
+
+  def testFlagComment_OwnerAutoVerdict(self):
+    """Test that an owner can flag a comment as spam and it is a verdict."""
+    comment = tracker_pb2.IssueComment(
+        project_id=789, content='soon to be deleted', user_id=999L,
+        issue_id=self.issue_1.issue_id)
+    self.services.issue.TestAddComment(comment, 1)
+
+    request = issues_pb2.FlagCommentRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        sequence_num=1,
+        flag=True)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    self.CallWrapped(self.issues_svcr.FlagComment, mc, request)
+
+    comment_reports = self.services.spam.comment_reports_by_issue_id
+    manual_verdicts = self.services.spam.manual_verdicts_by_comment_id
+    self.assertEqual([111L], comment_reports[self.issue_1.issue_id][comment.id])
+    self.assertTrue(manual_verdicts[comment.id][111L])
+
+  def testFlagComment_CommitterAutoVerdict(self):
+    """Test that an owner can flag an issue as spam and it is a verdict."""
+    self.services.user.TestAddUser('committer@example.com', 999L)
+    self.services.project.TestAddProjectMembers(
+        [999L], self.project, fake.COMMITTER_ROLE)
+
+    comment = tracker_pb2.IssueComment(
+        project_id=789, content='soon to be deleted', user_id=999L,
+        issue_id=self.issue_1.issue_id)
+    self.services.issue.TestAddComment(comment, 1)
+
+    request = issues_pb2.FlagCommentRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        sequence_num=1,
+        flag=True)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='committer@example.com')
+    self.CallWrapped(self.issues_svcr.FlagComment, mc, request)
+
+    comment_reports = self.services.spam.comment_reports_by_issue_id
+    manual_verdicts = self.services.spam.manual_verdicts_by_comment_id
+    self.assertEqual([999L], comment_reports[self.issue_1.issue_id][comment.id])
+    self.assertTrue(manual_verdicts[comment.id][999L])
+
+  def testFlagComment_ContributorAutoVerdict(self):
+    """Test that an owner can flag an issue as spam and it is a verdict."""
+    comment = tracker_pb2.IssueComment(
+        project_id=789, content='soon to be deleted', user_id=999L,
+        issue_id=self.issue_1.issue_id)
+    self.services.issue.TestAddComment(comment, 1)
+
+    request = issues_pb2.FlagCommentRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        sequence_num=1,
+        flag=True)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='approver2@example.com')
+    self.CallWrapped(self.issues_svcr.FlagComment, mc, request)
+
+    comment_reports = self.services.spam.comment_reports_by_issue_id
+    manual_verdicts = self.services.spam.manual_verdicts_by_comment_id
+    self.assertEqual([222L], comment_reports[self.issue_1.issue_id][comment.id])
+    self.assertTrue(manual_verdicts[comment.id][222L])
+
+  def testFlagComment_NotAllowed(self):
+    """Test that anon users cannot flag issues as spam."""
+    comment = tracker_pb2.IssueComment(
+        project_id=789, content='soon to be deleted', user_id=999L,
+        issue_id=self.issue_1.issue_id)
+    self.services.issue.TestAddComment(comment, 1)
+
+    request = issues_pb2.FlagCommentRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        sequence_num=1,
+        flag=True)
+    mc = monorailcontext.MonorailContext(self.services, cnxn=self.cnxn)
+
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.issues_svcr.FlagComment, mc, request)
+
+    comment_reports = self.services.spam.comment_reports_by_issue_id
+    manual_verdicts = self.services.spam.manual_verdicts_by_comment_id
+    self.assertNotIn(comment.id, comment_reports[self.issue_1.issue_id])
+    self.assertEqual({}, manual_verdicts[comment.id])

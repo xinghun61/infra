@@ -514,3 +514,18 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
 
     result = issues_pb2.FlagIssuesResponse()
     return result
+
+  @monorail_servicer.PRPCMethod
+  def FlagComment(self, mc, request):
+    """Flag or unflag the given comment as spam."""
+    _project, issue, _config = self._GetProjectIssueAndConfig(
+        mc, request.issue_ref, use_cache=False)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      comments = we.ListIssueComments(issue)
+      if request.sequence_num >= len(comments):
+        raise exceptions.InputException('Invalid sequence number.')
+      we.FlagComment(issue, comments[request.sequence_num], request.flag)
+
+    result = issues_pb2.FlagCommentResponse()
+    return result
