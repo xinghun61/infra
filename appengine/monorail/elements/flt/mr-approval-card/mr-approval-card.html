@@ -51,15 +51,6 @@
         font-size: inherit;
         line-height: inherit;
       }
-      h4 {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-      }
-      mr-edit-metadata {
-        width: 600px;
-        max-width: 100%;
-      }
       mr-inline-editor {
         display: block;
         width: 100%;
@@ -81,9 +72,6 @@
         box-sizing: border-box;
         padding: 0.5em 16px;
         padding-bottom: 1em;
-      }
-      .dialog-actions {
-        text-align: right;
       }
       .expand-icon {
         margin-right: 8px;
@@ -109,7 +97,7 @@
         margin-left: 32px;
       }
       .survey {
-        padding: 1em 0;
+        padding: 0.5em 0;
         max-height: 500px;
         overflow-y: auto;
         max-width: 100%;
@@ -129,10 +117,6 @@
         <template is="dom-if" if="[[_isApprovalOwner]]">
           You are an approver for this bit.
         </template>
-        <chops-button on-click="edit">
-          <iron-icon icon="create"></iron-icon>
-          Edit approval data
-        </chops-button>
       </div>
       <mr-metadata
         aria-label$="[[fieldName]] Approval Metadata"
@@ -157,33 +141,24 @@
       <mr-comments
         heading-level=5
         comments="[[_comments]]"
-        on-submit-comment="[[_onSubmitComment]]"
-      ></mr-comments>
+      >
+        <h4 id$="[[_editId]]" class="medium-heading">
+          Editing approval: [[phaseName]] &gt; [[fieldName]]
+        </h4>
+        <mr-edit-metadata
+          id="metadataForm"
+          approvers="[[approvers]]"
+          field-defs="[[fieldDefs]]"
+          statuses="[[_availableStatuses]]"
+          status="[[_status]]"
+          is-approver="[[_isApprovalOwner]]"
+          is-approval
+          disabled="[[updatingApproval]]"
+          on-save="save"
+          on-discard="reset"
+        ></mr-edit-metadata>
+      </mr-comments>
     </iron-collapse>
-    <chops-dialog id="editApproval" aria-labelledby="approvalDialogTitle">
-      <h3 id="approvalDialogTitle">
-        Editing approval: [[phaseName]] &gt; [[fieldName]]
-      </h3>
-      <mr-edit-metadata
-        id="metadataForm"
-        approvers="[[approvers]]"
-        field-defs="[[fieldDefs]]"
-        statuses="[[_availableStatuses]]"
-        status="[[_status]]"
-        is-approver="[[_isApprovalOwner]]"
-        is-approval
-      ></mr-edit-metadata>
-      <div class="dialog-actions">
-        <chops-button on-click="cancel" class="de-emphasized">
-          <iron-icon icon="close"></iron-icon>
-          Cancel
-        </chops-button>
-        <chops-button on-click="save" class="emphasized">
-          <iron-icon icon="create"></iron-icon>
-          Save changes
-        </chops-button>
-      </div>
-    </chops-dialog>
   </template>
   <script src="./mr-approval-card.js"></script>
 <dom-module>

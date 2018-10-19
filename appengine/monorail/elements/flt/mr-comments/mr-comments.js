@@ -26,11 +26,6 @@ class MrComments extends Polymer.Element {
         type: Number,
         value: 4,
       },
-      onSubmitComment: Function,
-      user: {
-        type: String,
-        value: 'you@google.com',
-      },
       _commentsHidden: {
         type: Boolean,
         value: true,
@@ -44,8 +39,6 @@ class MrComments extends Polymer.Element {
         value: false,
         computed: '_computeHideToggle(_commentsHiddenCount)',
       },
-      _newCommentText: String,
-      _newCommentFiles: Array,
     };
   }
 
@@ -72,13 +65,6 @@ class MrComments extends Polymer.Element {
   _pluralize(count, baseWord, pluralWord) {
     pluralWord = pluralWord || `${baseWord}s`;
     return count == 1 ? baseWord : pluralWord;
-  }
-
-  _submitComment() {
-    if (this.onSubmitComment) {
-      this.onSubmitComment(this._newCommentText, this._newCommentFiles);
-    }
-    this.$.commentText.value = '';
   }
 
   _showDiff(comment) {

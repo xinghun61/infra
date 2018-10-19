@@ -229,6 +229,10 @@ function ac_keyevent_(event) {
   event = event || window.event;
 
   let source = event.target || event.srcElement;
+  if (source.shadowRoot) {
+    // Find the element within the shadowDOM.
+    source = event.path[0];
+  }
   if (('INPUT' == source.tagName && source.type.match(/^text|email$/i))
        || 'TEXTAREA' == source.tagName) {
     let code = GetKeyCode(event);
@@ -612,7 +616,7 @@ var ac_storeConstructors = [];
  */
 var ac_focusedInput = null;
 /**
- * null or the autocomplete store used to compelte ac_focusedInput.
+ * null or the autocomplete store used to complete ac_focusedInput.
  * @private
  */
 var ac_store = null;

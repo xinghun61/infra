@@ -39,6 +39,7 @@
         if (!fieldValues) return new Map();
         const acc = new Map();
         for (const v of fieldValues) {
+          if (!v || !v.fieldRef || !v.fieldRef.fieldName || !v.value) continue;
           let key = [v.fieldRef.fieldName];
           if (v.phaseRef && v.phaseRef.phaseName) {
             key.push(v.phaseRef.phaseName);

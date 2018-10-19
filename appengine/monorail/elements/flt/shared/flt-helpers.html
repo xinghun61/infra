@@ -7,6 +7,8 @@
         if (!equals) {
           equals = (a, b) => (a === b);
         }
+        listA = listA || [];
+        listB = listB || [];
         return listA.filter((a) => {
           return !listB.find((b) => (equals(a, b)));
         });

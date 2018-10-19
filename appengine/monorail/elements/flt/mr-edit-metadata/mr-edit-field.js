@@ -13,6 +13,12 @@ class MrEditField extends Polymer.Element {
 
   static get properties() {
     return {
+      // TODO(zhangtiff): Redesign this a bit so we don't need two separate
+      // ways of specifying "type" for a field. Right now, "type" is mapped to
+      // the Monorail custom field types whereas "acType" includes additional
+      // data types such as components, and labels.
+      // String specifying what kind of autocomplete to add to this field.
+      acType: String,
       delimiter: {
         type: String,
         value: ',',
@@ -32,6 +38,10 @@ class MrEditField extends Polymer.Element {
       options: {
         type: Array,
         value: () => [],
+      },
+      _acType: {
+        type: String,
+        computed: '_computeAcType(acType, type)',
       },
       _initialValue: {
         type: String,
@@ -160,6 +170,15 @@ class MrEditField extends Polymer.Element {
 
   _computeIsSelected(initialValue, optionName) {
     return initialValue === optionName;
+  }
+
+  _computeAcType(acType, type) {
+    return acType || (type === fieldTypes.USER_TYPE ? 'member' : '');
+  }
+
+  _computeDomAutocomplete(acType) {
+    if (acType) return 'off';
+    return '';
   }
 }
 

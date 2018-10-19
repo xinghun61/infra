@@ -2,24 +2,10 @@
 <script src="../../node_modules/redux/dist/redux.js"></script>
 <script>
   (function(window) {
-    // Assumption: We don't want to display multiple dialogs at once.
-    const DialogState = Object.freeze({
-      NONE: 0,
-      EDIT_ISSUE: 1,
-
-      // TODO(zhangtiff): Move other dialogs to be managed by Redux. (or not?)
-      EDIT_APPROVAL: 2,
-      VIEW_ATTACHMENT: 3,
-    });
-
     const actionType = {
       // Misc global state.
       UPDATE_ISSUE_REF: 'UPDATE_ISSUE_REF',
       UPDATE_USER: 'UPDATE_USER',
-
-      // UI state.
-      OPEN_DIALOG: 'OPEN_DIALOG',
-      CLOSE_DIALOG: 'CLOSE_DIALOG',
 
       // AJAX request state.
       FETCH_PROJECT_CONFIG_START: 'FETCH_PROJECT_CONFIG_START',
@@ -175,8 +161,6 @@
       commentReferences: new Map(),
       isStarred: false,
 
-      openedDialog: DialogState.NONE,
-
       fetchingUserGroups: false,
       fetchUserGroupsError: null,
 
@@ -233,16 +217,6 @@
         case actionType.UPDATE_USER:
           return Object.assign({}, state, {
             user: action.user,
-          });
-
-        // Opening and closing dialogs.
-        case actionType.OPEN_DIALOG:
-          return Object.assign({}, state, {
-            openedDialog: action.dialog,
-          });
-        case actionType.CLOSE_DIALOG:
-          return Object.assign({}, state, {
-            openedDialog: DialogState.NONE,
           });
 
         // Request for getting configuration settings for a project.
@@ -411,6 +385,5 @@
     window.store = store || {};
     window.actionType = actionType || {};
     window.actionCreator = actionCreator || {};
-    window.DialogState = DialogState || {};
   })(window);
 </script>

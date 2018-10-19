@@ -51,7 +51,13 @@
       </select>
     </template>
 
-    <input id="editInput" value$="[[_initialValue]]" hidden$="[[!_fieldIsBasic]]" />
+    <input
+      id="editInput"
+      value$="[[_initialValue]]"
+      hidden$="[[!_fieldIsBasic]]"
+      data-ac-type$="[[_acType]]"
+      autocomplete$="[[_computeDomAutocomplete(_acType)]]"
+    />
   </template>
   <script src="./mr-edit-field.js"></script>
 <dom-module>

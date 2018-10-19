@@ -28,7 +28,7 @@
       a.label[data-derived] {
         font-style: italic;
       }
-      chops-button {
+      a.button {
         border: 1px solid hsl(120, 15%, 90%);
       }
       .edit-container {
@@ -73,12 +73,6 @@
         cursor: default;
       }
     </style>
-    <div class="edit-container">
-      <chops-button on-click="edit">
-        <iron-icon icon="create"></iron-icon>
-        Edit feature metadata
-      </chops-button>
-    </div>
     <div class="star-line">
       <button on-click="toggleStar" disabled$="[[!_canStar]]">
         <template is="dom-if" if="[[isStarred]]">

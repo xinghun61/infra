@@ -75,6 +75,11 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
         type: Array,
         statePath: 'userGroups',
       },
+      issue: {
+        type: Object,
+        statePath: 'issue',
+        observer: 'reset',
+      },
       issueId: {
         type: String,
         statePath: 'issueId',
@@ -112,6 +117,10 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
             (status) => ({status, rank: 1}));
         },
       },
+      updatingApproval: {
+        type: Boolean,
+        statePath: 'updatingApproval',
+      },
       _availableStatuses: {
         type: Array,
         computed: '_filterStatuses(_status, statuses, _isApprovalOwner)',
@@ -119,6 +128,10 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
       _comments: {
         type: Array,
         computed: '_filterComments(comments, fieldName)',
+      },
+      _editId: {
+        type: String,
+        computed: '_computeEditId(fieldName)',
       },
       _survey: {
         type: String,
@@ -141,12 +154,6 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
         type: String,
         computed: '_computeStatusIcon(class)',
       },
-      _onSubmitComment: {
-        type: Function,
-        value: function() {
-          return this._submitCommentHandler.bind(this);
-        },
-      },
       _updateSurvey: {
         type: Function,
         value: function() {
@@ -156,17 +163,27 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
     };
   }
 
-  edit() {
+  reset(issue) {
+    if (!this.$.metadataForm) return;
     this.$.metadataForm.reset();
-    this.$.editApproval.open();
-  }
-
-  cancel() {
-    this.$.editApproval.close();
   }
 
   save() {
-    const data = this.$.metadataForm.getDelta();
+    const form = this.$.metadataForm;
+    const data = form.getDelta();
+    const loads = form.loadAttachments();
+    const delta = this._generateDelta(data);
+
+    Promise.all(loads).then((uploads) => {
+      if (data.comment || Object.keys(delta).length > 0) {
+        this._updateApproval(data.comment, delta, uploads);
+      }
+    }).catch((reason) => {
+      console.error('loading file for attachment: ', reason);
+    });
+  }
+
+  _generateDelta(data) {
     let delta = {};
 
     if (data.status) {
@@ -196,12 +213,7 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
     if (fieldValuesRemoved.length) {
       delta['fieldValsRemove'] = data.fieldValuesRemoved;
     }
-
-    if (data.comment || Object.keys(delta).length > 0) {
-      this._updateApproval(data.comment, delta);
-    }
-
-    this.cancel();
+    return delta;
   }
 
   _displayNamesToUserRefs(list) {
@@ -212,11 +224,7 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
     this.opened = !this.opened;
   }
 
-  _submitCommentHandler(comment) {
-    this._updateApproval(comment);
-  }
-
-  _updateApproval(commentData, delta, isDescription) {
+  _updateApproval(commentData, delta, uploads, isDescription) {
     const baseMessage = {
       issueRef: {
         projectName: this.projectName,
@@ -235,6 +243,10 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
 
     if (isDescription) {
       message.isDescription = true;
+    }
+
+    if (uploads && uploads.length) {
+      message.uploads = uploads;
     }
 
     this.dispatch({type: actionType.UPDATE_APPROVAL_START});
@@ -299,6 +311,10 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
     return fdMap.get(approvalName) || [];
   }
 
+  _computeEditId(fieldName) {
+    return `edit${fieldName}`;
+  }
+
   // TODO(zhangtiff): Change data flow here so that this is only computed
   // once for all approvals.
   _computeSurvey(comments, fieldName) {
@@ -330,7 +346,7 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
   }
 
   _updateSurveyHandler(content) {
-    this._updateApproval(content, null, true);
+    this._updateApproval(content, null, null, true);
   }
 
   _toString(bool) {

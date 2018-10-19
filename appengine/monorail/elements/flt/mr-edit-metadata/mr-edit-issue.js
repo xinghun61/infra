@@ -4,14 +4,14 @@
 const ISSUE_ID_REGEX = /([A-Za-z]+)?:?(\d+)/;
 
 /**
- * `<mr-edit-issue-dialog>`
+ * `<mr-edit-issue>`
  *
- * Issue editing dialog.
+ * Issue editing form.
  *
  */
-class MrEditIssueDialog extends ReduxMixin(Polymer.Element) {
+class MrEditIssue extends ReduxMixin(Polymer.Element) {
   static get is() {
-    return 'mr-edit-issue-dialog';
+    return 'mr-edit-issue';
   }
 
   static get properties() {
@@ -19,6 +19,7 @@ class MrEditIssueDialog extends ReduxMixin(Polymer.Element) {
       issue: {
         type: Object,
         statePath: 'issue',
+        observer: 'reset',
       },
       issueId: {
         type: Number,
@@ -32,13 +33,13 @@ class MrEditIssueDialog extends ReduxMixin(Polymer.Element) {
         type: Object,
         statePath: 'projectConfig',
       },
-      openedDialog: {
-        type: Number,
-        statePath: 'openedDialog',
-      },
       statuses: {
         type: Array,
         statePath: 'projectConfig.statusDefs',
+      },
+      updatingIssue: {
+        type: Boolean,
+        statePath: 'updatingIssue',
       },
       _labelNames: {
         type: Array,
@@ -48,17 +49,6 @@ class MrEditIssueDialog extends ReduxMixin(Polymer.Element) {
         type: Array,
         statePath: selectors.fieldDefsForIssue,
       },
-      _opened: {
-        type: Boolean,
-        computed: '_computeOpened(openedDialog)',
-        observer: '_resetOnOpenChange',
-      },
-      _openedChange: {
-        type: Function,
-        value: function() {
-          return this._openedChangeHandler.bind(this);
-        },
-      },
     };
   }
 
@@ -66,17 +56,28 @@ class MrEditIssueDialog extends ReduxMixin(Polymer.Element) {
     Polymer.dom(this.root).querySelector('#metadataForm').reset();
   }
 
-  _resetOnOpenChange(opened) {
-    if (opened) {
-      this.reset();
-    }
+  save() {
+    const form = Polymer.dom(this.root).querySelector('#metadataForm');
+    const data = form.getDelta();
+    const message = this._generateMessage(data);
+
+    // Add files to message.
+    const loads = form.loadAttachments();
+    Promise.all(loads).then((uploads) => {
+      if (uploads && uploads.length) {
+        message.uploads = uploads;
+      }
+
+      if (message.commentContent || message.delta || message.uploads) {
+        actionCreator.updateIssue(this.dispatch.bind(this), message);
+      }
+    }).catch((reason) => {
+      console.error('loading file for attachment: ', reason);
+    });
   }
 
-  save() {
-    const data = Polymer.dom(this.root).querySelector(
-      '#metadataForm').getDelta();
-
-    const message = {
+  _generateMessage(data) {
+    let message = {
       issueRef: {
         projectName: this.projectName,
         localId: this.issueId,
@@ -175,15 +176,7 @@ class MrEditIssueDialog extends ReduxMixin(Polymer.Element) {
       message.delta = delta;
     }
 
-    if (message.commentContent || message.delta) {
-      actionCreator.updateIssue(this.dispatch.bind(this), message);
-    }
-
-    this.cancel();
-  }
-
-  cancel() {
-    this.$.editDialog.close();
+    return message;
   }
 
   _displayNameToUserRef(name) {
@@ -206,21 +199,9 @@ class MrEditIssueDialog extends ReduxMixin(Polymer.Element) {
     return labels.map((l) => l.label);
   }
 
-  _computeOpened(openedDialog) {
-    return openedDialog === DialogState.EDIT_ISSUE;
-  }
-
   _omitEmptyDisplayName(displayName) {
     return displayName === '----' ? '' : displayName;
   }
-
-  _openedChangeHandler(opened) {
-    // Opening the dialog happens outside the context of the dialog, through an
-    // aciton dispatch.
-    if (!opened) {
-      this.dispatch({type: actionType.CLOSE_DIALOG});
-    }
-  }
 }
 
-customElements.define(MrEditIssueDialog.is, MrEditIssueDialog);
+customElements.define(MrEditIssue.is, MrEditIssue);

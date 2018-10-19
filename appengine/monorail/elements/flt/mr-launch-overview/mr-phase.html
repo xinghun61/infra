@@ -38,9 +38,6 @@
         margin-left: 16px;
         font-size: 80%;
       }
-      .dialog-actions {
-        text-align: right;
-      }
       .phase-edit {
         padding: 0.1em 8px;
       }
@@ -98,18 +95,12 @@
         field-defs="[[fieldDefs]]"
         field-values="[[fieldValues]]"
         phase-name="[[phaseName]]"
+        disabled="[[updatingIssue]]"
+        on-save="save"
+        on-discard="cancel"
         is-approval
+        disable-attachments
       ></mr-edit-metadata>
-      <div class="dialog-actions">
-        <chops-button on-click="cancel" class="de-emphasized">
-          <iron-icon icon="close"></iron-icon>
-          Cancel
-        </chops-button>
-        <chops-button on-click="save" class="emphasized">
-          <iron-icon icon="create"></iron-icon>
-          Save changes
-        </chops-button>
-      </div>
     </chops-dialog>
   </template>
   <script src="./mr-phase.js"></script>

@@ -1,1 +1,11 @@
+[include "footer-script.ezt"]
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  _fetchOptions('[projectname]', CS_env.token,
+    [project.cached_content_timestamp]);
+  _onload();
+});
+</script>
+
 [include "master-footer-shared.ezt"]

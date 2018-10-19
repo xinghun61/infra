@@ -1,19 +1,29 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/chopsui/chops-button.html">
+<link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../../bower_components/vaadin-upload/vaadin-upload.html">
+<link rel="import" href="../../../bower_components/vaadin-upload/theme/lumo/vaadin-upload.html">
+
 <link rel="import" href="../../redux/redux-mixin.html">
 <link rel="import" href="../../redux/selectors.html">
+<link rel="import" href="../shared/mr-flt-styles.html">
 <link rel="import" href="../shared/metadata-mixin.html">
 <link rel="import" href="./mr-edit-field.html">
 
 <dom-module id="mr-edit-metadata">
   <template>
-    <style>
+    <style include="mr-flt-styles">
       :host {
         display: block;
+        font-size: 12px;
         --mr-edit-field-styles: {
           box-sizing: border-box;
           width: 100%;
           padding: 0.25em 4px;
         }
+      }
+      vaadin-upload {
+        margin-bottom: 1em;
       }
       select,
       input {
@@ -22,7 +32,7 @@
       label {
         font-weight: bold;
         word-wrap: break-word;
-        text-align: right;
+        text-align: left;
       }
       textarea {
         width: 100%;
@@ -53,11 +63,19 @@
         cursor: pointer;
         text-decoration: underline;
       }
+      .discard-button {
+        margin-right: 16px;
+      }
+      .edit-actions {
+        width: 100%;
+        margin: 0.5em 0;
+        text-align: right;
+      }
       .input-grid {
         padding: 0.5em 0;
         display: grid;
         max-width: 100%;
-        grid-gap: 8px;
+        grid-gap: 10px;
         grid-template-columns: 120px auto;
         align-items: flex-start;
       }
@@ -73,6 +91,10 @@
       }
     </style>
     <form id="editForm">
+      <textarea id="commentText" placeholder="Add a comment"></textarea>
+      <vaadin-upload files="{{_newAttachments}}" no-auto hidden$="[[disableAttachments]]">
+        <iron-icon slot="drop-label-icon" icon="cloud-upload"></iron-icon>
+      </vaadin-upload>
       <div class="input-grid">
         <template is="dom-if" if="[[!isApproval]]">
           <label for="summaryInput">Summary:</label>
@@ -120,6 +142,7 @@
           <mr-edit-field
             id="ownerInput"
             type="USER_TYPE"
+            ac-type="owner"
             initial-values="[[_wrapList(ownerName)]]"
           ></mr-edit-field>
 
@@ -136,6 +159,7 @@
             id="componentsInput"
             type="STR_TYPE"
             initial-values="[[_mapComponentRefsToNames(components)]]"
+            ac-type="component"
             multi
           ></mr-edit-field>
         </template>
@@ -188,6 +212,7 @@
           <label for="labelsInput" on-click="_clickLabelForCustomInput">Labels:</label>
           <mr-edit-field
             id="labelsInput"
+            ac-type="label"
             initial-values="[[labelNames]]"
             multi
           ></mr-edit-field>
@@ -203,8 +228,43 @@
           </span>
         </button>
       </div>
-      <textarea id="commentText" placeholder="Comment to explain this change"></textarea>
+      <div class="edit-actions">
+        <chops-button
+          on-click="discard"
+          class="de-emphasized discard-button"
+          disabled="[[disabled]]"
+        >
+          <iron-icon icon="close"></iron-icon>
+          Discard changes
+        </chops-button>
+        <chops-button on-click="save" class="emphasized" disabled="[[disabled]]">
+          <iron-icon icon="create"></iron-icon>
+          Save changes
+        </chops-button>
+      </div>
     </form>
   </template>
   <script src="./mr-edit-metadata.js"></script>
 <dom-module>
+<dom-module id="upload-theme" theme-for="vaadin-upload-file">
+  <!-- Custom styling to hide some unused controls and add some
+       extra affordances. -->
+  <template>
+    <style>
+      [part="start-button"], [part="status"], [part="progress"] {
+        display:none;
+      }
+      [part="row"]:hover {
+        background: #eee;
+      }
+      [part="clear-button"] {
+        cursor: pointer;
+        font-size: 100%;
+      }
+      [part="clear-button"]:before {
+        font-family: sans-serif;
+        content: 'X';
+      }
+    </style>
+  </template>
+</dom-module>

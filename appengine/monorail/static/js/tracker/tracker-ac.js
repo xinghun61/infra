@@ -23,6 +23,11 @@ var TKR_hotlistsStore;
 var TKR_labelStore;
 
 /**
+ * Like TKR_labelStore but adds a trailing comma instead of replacing.
+ */
+var TKR_labelMultiStore;
+
+/**
  * This is an autocomplete store that holds issue components.
  */
 var TKR_componentListStore;
@@ -757,9 +762,11 @@ function TKR_setUpLabelStore(labelDefs) {
     return completion.value;
   };
 
-  /* Given what the user typed, return the part of it that should be used
-   * to determine the auto-complete options offered to the user. */
-  TKR_labelStore.completable = function(inputValue, cursor) {
+  TKR_labelMultiStore = new _AC_SimpleStore(TKR_labelWords, docdict);
+
+  TKR_labelMultiStore.substitute = TKR_acSubstituteWithComma;
+
+  const completable = function(inputValue, cursor) {
     if (cursor == 0) {
       return '*label'; // Show every well-known label that is not redundant.
     }
@@ -795,9 +802,7 @@ function TKR_setUpLabelStore(labelDefs) {
     return result;
   };
 
-  /* Start with all labels or only those that match what the user typed so far,
-   * then filter out any that would lead to conflicts or redundancy. */
-  TKR_labelStore.completions = function(prefix, tofilter) {
+  const completions = function(prefix, tofilter) {
     let comps = TKR_fullComplete(prefix, labelDefs);
     if (comps == null) {
       comps = _AC_SimpleStore.prototype.completions.call(
@@ -832,6 +837,12 @@ function TKR_setUpLabelStore(labelDefs) {
 
     return filtered_comps;
   };
+
+  TKR_labelStore.completable = completable;
+  TKR_labelStore.completions = completions;
+
+  TKR_labelMultiStore.completable = completable;
+  TKR_labelMultiStore.completions = completions;
 }
 
 

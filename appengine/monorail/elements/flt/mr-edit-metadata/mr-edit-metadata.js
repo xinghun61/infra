@@ -79,10 +79,19 @@ class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
         type: Boolean,
         value: false,
       },
+      disabled: {
+        type: Boolean,
+        value: false,
+      },
+      disableAttachments: {
+        type: Boolean,
+        value: false,
+      },
       _statusesGrouped: {
         type: Array,
         computed: '_computeStatusesGrouped(statuses, isApproval)',
       },
+      _newAttachments: Array,
       _nicheFieldCount: {
         type: Boolean,
         computed: '_computeNicheFieldCount(fieldDefs)',
@@ -104,11 +113,44 @@ class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
     // behavior with custom input elements.
     if (this.isApproval) {
       if (this.isApprover) {
-        Polymer.dom(this.root).querySelector('#approversInput').reset();
+        const approversInput = Polymer.dom(this.root).querySelector(
+          '#approversInput');
+        if (approversInput) {
+          approversInput.reset();
+        }
       }
     }
     Polymer.dom(this.root).querySelectorAll('mr-edit-field').forEach((el) => {
       el.reset();
+    });
+  }
+
+  save() {
+    this.dispatchEvent(new CustomEvent('save'));
+  }
+
+  discard() {
+    this.dispatchEvent(new CustomEvent('discard'));
+  }
+
+  loadAttachments() {
+    if (!this._newAttachments || !this._newAttachments.length) return [];
+    return this._newAttachments.map((f) => {
+      return this._loadLocalFile(f);
+    });
+  }
+
+  _loadLocalFile(f) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onloadend = () => {
+        resolve({filename: f.name, content: btoa(r.result)});
+      };
+      r.onerror = () => {
+        reject(r.error);
+      };
+
+      r.readAsBinaryString(f);
     });
   }
 
@@ -287,10 +329,12 @@ class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
   }
 
   _mapUserRefsToNames(users) {
+    if (!users) return [];
     return users.map((u) => (u.displayName));
   }
 
   _mapComponentRefsToNames(components) {
+    if (!components) return [];
     return components.map((c) => c.path);
   }
 
@@ -316,6 +360,7 @@ class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
   }
 
   _wrapList(item) {
+    if (!item) return [];
     return [item];
   }
 }

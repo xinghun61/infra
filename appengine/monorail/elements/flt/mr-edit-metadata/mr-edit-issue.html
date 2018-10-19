@@ -1,0 +1,30 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../../redux/selectors.html">
+<link rel="import" href="../../redux/redux-mixin.html">
+<link rel="import" href="../mr-edit-metadata/mr-edit-metadata.html">
+<link rel="import" href="../shared/mr-flt-styles.html">
+
+<dom-module id="mr-edit-issue">
+  <template>
+    <style include="mr-flt-styles"></style>
+    <mr-edit-metadata
+      id="metadataForm"
+      owner-name="[[_omitEmptyDisplayName(issue.ownerRef.displayName)]]"
+      cc="[[issue.ccRefs]]"
+      status="[[issue.statusRef.status]]"
+      statuses="[[statuses]]"
+      summary="[[issue.summary]]"
+      components="[[issue.componentRefs]]"
+      field-defs="[[_fieldDefs]]"
+      field-values="[[issue.fieldValues]]"
+      blocked-on="[[issue.blockedOnIssueRefs]]"
+      blocking="[[issue.blockingIssueRefs]]"
+      label-names="[[_labelNames]]"
+      on-save="save"
+      on-discard="reset"
+      disabled="[[updatingIssue]]"
+    ></mr-edit-metadata>
+  </template>
+  <script src="./mr-edit-issue.js"></script>
+</dom-module>

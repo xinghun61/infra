@@ -25,6 +25,11 @@ class MrPhase extends MetadataMixin(ReduxMixin(Polymer.Element)) {
 
   static get properties() {
     return {
+      issue: {
+        type: Object,
+        statePath: 'issue',
+        observer: 'reset',
+      },
       projectName: {
         type: String,
         statePath: 'projectName',
@@ -36,6 +41,10 @@ class MrPhase extends MetadataMixin(ReduxMixin(Polymer.Element)) {
       phaseName: {
         type: String,
         value: '',
+      },
+      updatingIssue: {
+        type: Boolean,
+        statePath: 'updatingIssue',
       },
       // Possible values: Target, Approved, Launched.
       _status: {
@@ -90,12 +99,16 @@ class MrPhase extends MetadataMixin(ReduxMixin(Polymer.Element)) {
   }
 
   edit() {
-    this.$.metadataForm.reset();
+    this.reset();
     this.$.editPhase.open();
   }
 
   cancel() {
     this.$.editPhase.close();
+  }
+
+  reset() {
+    this.$.metadataForm.reset();
   }
 
   save() {
@@ -132,7 +145,6 @@ class MrPhase extends MetadataMixin(ReduxMixin(Polymer.Element)) {
     if (message.commentContent || message.delta) {
       actionCreator.updateIssue(this.dispatch.bind(this), message);
     }
-
     this.cancel();
   }
 
