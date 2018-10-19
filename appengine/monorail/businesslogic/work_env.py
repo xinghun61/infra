@@ -870,7 +870,7 @@ class WorkEnv(object):
     """Update an issue's approval."""
 
     issue, approval_value = self.services.issue.GetIssueApproval(
-        self.mc.cnxn, issue_id, approval_id)
+        self.mc.cnxn, issue_id, approval_id, use_cache=False)
 
     self._AssertPermInIssue(issue, permissions.EDIT_ISSUE)
     project = self.GetProject(issue.project_id)
