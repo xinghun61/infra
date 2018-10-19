@@ -317,7 +317,7 @@ def is_swarming_config(cfg):
 
 @ndb.non_transactional
 @ndb.tasklet
-def get_buckets_async(bucket_ids=None, legacy_mode=True):
+def get_buckets_async(bucket_ids=None):
   """Returns configured buckets.
 
   If bucket_ids is None, returns all buckets.
@@ -326,24 +326,7 @@ def get_buckets_async(bucket_ids=None, legacy_mode=True):
 
   Returns:
     {bucket_id: project_config_pb2.Bucket} dict.
-    In legacy mode, returns [(project_id, project_config_pb2.Bucket)].
   """
-  if legacy_mode:  # pragma: no cover
-    # Legacy mode. TODO(crbug.com/851036): remove.
-    if bucket_ids is None:
-      buckets = yield LegacyBucket.query().fetch_async()
-    else:
-      buckets = yield ndb.get_multi_async([
-          ndb.Key(LegacyBucket, bid) for bid in bucket_ids
-      ])
-    ret = []
-    for b in buckets:
-      ret.append((
-          b.project_id,
-          parse_binary_bucket_config(b.config_content_binary),
-      ))
-    raise ndb.Return(ret)
-
   if bucket_ids is not None:
     keys = [Bucket.make_key(*parse_bucket_id(bid)) for bid in bucket_ids]
     buckets = yield ndb.get_multi_async(keys)

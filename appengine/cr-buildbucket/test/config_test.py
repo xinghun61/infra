@@ -151,7 +151,7 @@ class ConfigTest(testing.AppengineTestCase):
     config.put_bucket('chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_LINUX)
     config.put_bucket('chromium', 'deadbeef', LUCI_CHROMIUM_TRY)
     config.put_bucket('dart', 'deadbeef', LUCI_DART_TRY)
-    actual = config.get_buckets_async(legacy_mode=False).get_result()
+    actual = config.get_buckets_async().get_result()
     expected = {
         'chromium/master.tryserver.chromium.linux':
             MASTER_TRYSERVER_CHROMIUM_LINUX,
@@ -166,13 +166,13 @@ class ConfigTest(testing.AppengineTestCase):
     config.put_bucket('chromium', 'deadbeef', LUCI_CHROMIUM_TRY)
     config.put_bucket('chromium', 'deadbeef', MASTER_TRYSERVER_CHROMIUM_WIN)
     bid = 'chromium/try'
-    actual = config.get_buckets_async([bid], legacy_mode=False).get_result()
+    actual = config.get_buckets_async([bid]).get_result()
     expected = {'chromium/try': short_bucket_cfg(LUCI_CHROMIUM_TRY)}
     self.assertEqual(actual, expected)
 
   def test_get_buckets_async_with_bucket_ids_not_found(self):
     bid = 'chromium/try'
-    actual = config.get_buckets_async([bid], legacy_mode=False).get_result()
+    actual = config.get_buckets_async([bid]).get_result()
     self.assertEqual(actual, {bid: None})
 
   def resolve_bucket(self, bucket_name):

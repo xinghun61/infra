@@ -104,7 +104,7 @@ def put_request_message_to_build_request(request):
 
 
 def put_request_messages_to_build_requests(requests):
-  buckets = set(r.bucket for r in requests if r.bucket)
+  buckets = {r.bucket for r in requests if r.bucket}
   bucket_keys = [ndb.Key(config.LegacyBucket, b) for b in buckets]
   bucket_entities = dict(zip(buckets, ndb.get_multi(bucket_keys)))
   return [

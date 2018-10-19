@@ -132,10 +132,8 @@ class UserTest(testing.AppengineTestCase):
     })
 
     # call twice for per-request caching of futures.
-    user.get_accessible_buckets_async(legacy_mode=False)
-    availble_buckets = (
-        user.get_accessible_buckets_async(legacy_mode=False).get_result()
-    )
+    user.get_accessible_buckets_async()
+    availble_buckets = user.get_accessible_buckets_async().get_result()
     expected = {
         'p1/available_bucket1',
         'p2/available_bucket2',
@@ -145,9 +143,7 @@ class UserTest(testing.AppengineTestCase):
 
     # call again for memcache coverage.
     user.clear_request_cache()
-    availble_buckets = (
-        user.get_accessible_buckets_async(legacy_mode=False).get_result()
-    )
+    availble_buckets = user.get_accessible_buckets_async().get_result()
     self.assertEqual(availble_buckets, expected)
 
   @mock.patch('components.auth.is_admin', autospec=True)

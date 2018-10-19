@@ -338,7 +338,7 @@ def _query_search_async(q):
   - if bool(bucket_ids), permissions are checked.
   """
   if not q.bucket_ids:
-    q.bucket_ids = yield user.get_accessible_buckets_async(legacy_mode=False)
+    q.bucket_ids = yield user.get_accessible_buckets_async()
     if q.bucket_ids is None:
       # User has access to all buckets.
       pass

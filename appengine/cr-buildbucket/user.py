@@ -13,7 +13,6 @@ import os
 import threading
 
 from google.appengine.api import app_identity
-from google.appengine.api import memcache
 from google.appengine.ext import ndb
 
 from components import auth
@@ -199,7 +198,7 @@ def can_async(bucket_id, action):
   raise ndb.Return(role is not None and role >= ACTION_TO_MIN_ROLE[action])
 
 
-def get_accessible_buckets_async(legacy_mode=True):
+def get_accessible_buckets_async():
   """Returns buckets accessible to the current identity.
 
   A bucket is accessible if the requester has ACCESS_BUCKET permission.
@@ -218,7 +217,7 @@ def get_accessible_buckets_async(legacy_mode=True):
       raise ndb.Return(None)
 
     identity = auth.get_current_identity().to_bytes()
-    cache_key = 'accessible_buckets/%s/%s' % (legacy_mode, identity)
+    cache_key = 'accessible_buckets_v2/%s' % identity
     ctx = ndb.get_context()
     available_buckets = yield ctx.memcache_get(cache_key)
     if available_buckets is not None:
@@ -226,23 +225,14 @@ def get_accessible_buckets_async(legacy_mode=True):
     logging.info('Computing a list of available buckets for %s' % identity)
     group_buckets_map = collections.defaultdict(set)
     available_buckets = set()
-    if legacy_mode:  # pragma: no cover
-      # Legacy mode. TODO(crbug.com/851036): remove.
-      all_buckets = yield config.get_buckets_async(legacy_mode=True)
-      for pid, bucket in all_buckets:
-        for rule in bucket.acls:
-          if rule.identity == identity:
-            available_buckets.add((pid, bucket.name))
-          if rule.group:
-            group_buckets_map[rule.group].add((pid, bucket.name))
-    else:
-      all_buckets = yield config.get_buckets_async(legacy_mode=False)
-      for bucket_id, cfg in all_buckets.iteritems():
-        for rule in cfg.acls:
-          if rule.identity == identity:
-            available_buckets.add(bucket_id)
-          elif rule.group:  # pragma: no branch
-            group_buckets_map[rule.group].add(bucket_id)
+    all_buckets = yield config.get_buckets_async()
+
+    for bucket_id, cfg in all_buckets.iteritems():
+      for rule in cfg.acls:
+        if rule.identity == identity:
+          available_buckets.add(bucket_id)
+        elif rule.group:  # pragma: no branch
+          group_buckets_map[rule.group].add(bucket_id)
 
     for group, buckets in group_buckets_map.iteritems():
       if available_buckets.issuperset(buckets):
@@ -253,8 +243,7 @@ def get_accessible_buckets_async(legacy_mode=True):
     yield ctx.memcache_set(cache_key, available_buckets, 10 * 60)
     raise ndb.Return(available_buckets)
 
-  mem_cache_key = 'accessible_buckets/%s' % legacy_mode
-  return _get_or_create_cached_future(mem_cache_key, impl)
+  return _get_or_create_cached_future('accessible_buckets', impl)
 
 
 @utils.cache

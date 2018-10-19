@@ -138,15 +138,11 @@ class SwarmbucketApi(remote.Service):
     else:
       # Buckets were not specified explicitly.
       # Use the available ones.
-      bucket_ids = (
-          user.get_accessible_buckets_async(legacy_mode=False).get_result()
-      )
+      bucket_ids = user.get_accessible_buckets_async().get_result()
       # bucket_ids is None => all buckets are available.
 
     res = GetBuildersResponseMessage()
-    buckets = (
-        config.get_buckets_async(bucket_ids, legacy_mode=False).get_result()
-    )
+    buckets = config.get_buckets_async(bucket_ids).get_result()
     for bucket_id, cfg in buckets.iteritems():
       if not cfg or not cfg.swarming.builders:
         continue
