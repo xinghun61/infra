@@ -79,7 +79,7 @@ class FLTConvertTask(unittest.TestCase):
     # Set up mocks
     patcher = mock.patch(
         'search.frontendsearchpipeline.FrontendSearchPipeline',
-        spec=True, visible_results=[issue1])
+        spec=True, allowed_results=[issue1])
     mockPipeline = patcher.start()
 
     self.task.services.issue.GetIssue = mock.Mock(return_value=issue1)
@@ -245,6 +245,22 @@ class FLTConvertTask(unittest.TestCase):
         self.task.FetchAndAssertProjectInfo(mr),
         fltconversion.ProjectInfo(
             self.config, fltconversion.QUERY_MAP['default'],
+            template.approval_values, template.phases, 4, 5, 6, 7, 8))
+
+    # FINCH special case
+    # test approvals for Finch not required
+    mr = testing_helpers.MakeMonorailRequest(path='url/url?launch=finch')
+    self.assertRaisesRegexp(
+        AssertionError, 'finch template not set up correctly',
+        self.task.FetchAndAssertProjectInfo, mr)
+
+    for av in template.approval_values:
+      av.status = tracker_pb2.ApprovalStatus.NEEDS_REVIEW
+
+    self.assertEqual(
+        self.task.FetchAndAssertProjectInfo(mr),
+        fltconversion.ProjectInfo(
+            self.config, fltconversion.QUERY_MAP['finch'],
             template.approval_values, template.phases, 4, 5, 6, 7, 8))
 
   @mock.patch('time.time')

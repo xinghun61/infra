@@ -74,8 +74,7 @@ CAN = 2  # Query for open issues only
 GROUP_BY_SPEC = ''
 SORT_SPEC = ''
 
-# TODO(jojwang): set CONVERT_NUM this to 300
-CONVERT_NUM = 1
+CONVERT_NUM = 300
 CONVERT_START = 0
 
 # Queries
@@ -90,9 +89,6 @@ TEMPLATE_MAP = {
 ProjectInfo = collections.namedtuple(
     'ProjectInfo', 'config, q, approval_values, phases, '
     'pm_fid, tl_fid, te_fid, m_target_id, m_approved_id')
-
-# TODO(jojwang): PM, TL, TE user fields are project members in bugs-staging
-# assert trying to add non-project members won't cause problems
 
 
 class FLTConvertTask(jsonfeed.InternalTask):
@@ -119,8 +115,7 @@ class FLTConvertTask(jsonfeed.InternalTask):
           CONVERT_START, [], 2, GROUP_BY_SPEC, SORT_SPEC, False)
 
     # Convert issues:
-    # TODO(jojwang): BEFORE LAUNCH change to pipeline.allowed_results
-    for possible_stale_issue in pipeline.visible_results:
+    for possible_stale_issue in pipeline.allowed_results:
       issue = self.services.issue.GetIssue(
           mr.cnxn, possible_stale_issue.issue_id, use_cache=False)
       new_approvals = ConvertLaunchLabels(
@@ -140,7 +135,7 @@ class FLTConvertTask(jsonfeed.InternalTask):
 
     return {
         'converted_issues': [
-            issue.local_id for issue in pipeline.visible_results],
+            issue.local_id for issue in pipeline.allowed_results],
         }
 
   def FetchAndAssertProjectInfo(self, mr):
@@ -165,6 +160,10 @@ class FLTConvertTask(jsonfeed.InternalTask):
         'no approvals or phases in %s' % template_name)
     assert all(phase.name.lower() in PHASE_MAP.keys() for phase in phases), (
         'one or more phases not recognized')
+    if launch == 'finch':
+      assert all(
+          av.status is tracker_pb2.ApprovalStatus.NEEDS_REVIEW
+          for av in approval_values), 'finch template not set up correctly'
 
     approval_fds = {fd.field_id: fd.field_name for fd in config.field_defs
                     if fd.field_type is tracker_pb2.FieldTypes.APPROVAL_TYPE}
