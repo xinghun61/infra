@@ -176,6 +176,25 @@ class ProjectCfgTest(testing.AppengineTestCase):
     self.cfg_test(
         '''
           hostname: "example.com"
+          builders {
+            name: "veeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeery"
+                  "looooooooooooooooooooooooooooooooooooooooooooooooooooooooong"
+                  "naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaame"
+          }
+        ''',
+        '',
+        [(
+            'builder '
+            'veeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeery'
+            'looooooooooooooooooooooooooooooooooooooooooooooooooooooooong'
+            'naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaame: '
+            'name length is > 128'
+        )],
+    )
+
+    self.cfg_test(
+        '''
+          hostname: "example.com"
           builder_defaults {name: "x"}
           builders {
             name: "release"

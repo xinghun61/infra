@@ -206,6 +206,9 @@ def validate_builder_cfg(builder, mixin_names, final, ctx):
   if final and not builder.name:
     ctx.error('name unspecified')
   else:
+    if len(builder.name) > 128:
+      ctx.error('name length is > 128')
+
     invalid_chars = ''.join(
         sorted(
             set(
