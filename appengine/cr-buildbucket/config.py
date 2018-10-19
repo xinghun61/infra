@@ -355,7 +355,9 @@ def get_buckets_async(bucket_ids=None, legacy_mode=True):
     raise ndb.Return({b.bucket_id: b.config for b in buckets})
 
 
-@utils.memcache_async('resolve_bucket_name_async', time=300)  # memcache for 5m
+@utils.memcache_async(
+    'resolve_bucket_name_async', key_args=['bucket_name'], time=300
+)  # memcache for 5m
 @ndb.non_transactional
 @ndb.tasklet
 def resolve_bucket_name_async(bucket_name):
