@@ -4,8 +4,6 @@
 
 """Tag index backfilling."""
 
-# TODO(nodir): update to set bucket_id
-
 import collections
 import logging
 
@@ -45,7 +43,7 @@ def _process_builds(builds, tag_key, entry_limit):
     for t in b.tags:
       k, v = buildtags.parse(t)
       if k == tag_key:
-        new_entries[v].append([b.bucket, b.key.id()])
+        new_entries[v].append([b.bucket_id, b.key.id()])
         entry_count += 1
         if entry_count >= entry_limit:
           break
@@ -69,7 +67,7 @@ def _enqueue_flush_entries(tag_key, new_entries):  # pragma: no cover
 def _flush_entries(tag_key, new_entries):
   """Adds new entries to TagIndex entities.
 
-  new_entries is {tag_value: [[bucket, build_id]]}.
+  new_entries is {tag_value: [[bucket_id, build_id]]}.
   """
   logging.info(
       'flushing %d tag entries in %d TagIndex entities for tag key %s',
@@ -105,7 +103,7 @@ def _flush_entries(tag_key, new_entries):
 def _add_index_entries_async(tag, entries):
   """Adds TagIndexEntries to one TagIndex.
 
-  entries is [[bucket, build_id]].
+  entries is [[bucket_id, build_id]].
 
   Returns True if made changes.
   """
@@ -117,7 +115,7 @@ def _add_index_entries_async(tag, entries):
 
   existing = {e.build_id for e in idx.entries}
   added = False
-  for bucket, build_id in entries:
+  for bucket_id, build_id in entries:
     if build_id not in existing:
       if len(idx.entries) >= search.TagIndex.MAX_ENTRY_COUNT:
         logging.warning((
@@ -129,7 +127,9 @@ def _add_index_entries_async(tag, entries):
         yield idx.put_async()
         raise ndb.Return(True)
 
-      idx.entries.append(search.TagIndexEntry(bucket=bucket, build_id=build_id))
+      idx.entries.append(
+          search.TagIndexEntry(bucket_id=bucket_id, build_id=build_id)
+      )
       added = True
   if not added:
     raise ndb.Return(False)

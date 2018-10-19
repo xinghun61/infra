@@ -2,9 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import contextlib
 import datetime
-import json
 
 from components import auth
 from components import net
@@ -17,12 +15,9 @@ from proto import common_pb2
 from proto.config import project_config_pb2
 from proto.config import service_config_pb2
 from test.test_util import future, future_exception
-import api_common
-import config
 import creation
 import errors
 import model
-import notifications
 import search
 import swarming
 import user
@@ -45,8 +40,7 @@ class CreationTest(testing.AppengineTestCase):
     self.now = datetime.datetime(2015, 1, 1)
     self.patch('components.utils.utcnow', side_effect=lambda: self.now)
 
-    self.chromium_project_id = 'test'
-    self.chromium_bucket = project_config_pb2.Bucket(name='chromium')
+    self.chromium_try = project_config_pb2.Bucket(name='luci.chromium.try')
     self.chromium_swarming = project_config_pb2.Swarming(
         hostname='chromium-swarm.appspot.com',
         builders=[
@@ -63,22 +57,15 @@ class CreationTest(testing.AppengineTestCase):
     )
     self.patch(
         'config.get_bucket_async',
-        return_value=future((self.chromium_project_id, self.chromium_bucket))
-    )
-    self.patch(
-        'user.get_accessible_buckets_async',
-        autospec=True,
-        return_value=future([
-            (self.chromium_project_id, self.chromium_bucket.name),
-        ]),
+        return_value=future(('chromium', self.chromium_try))
     )
     self.patch('swarming.create_task_async', return_value=future(None))
     self.patch('swarming.cancel_task_async', return_value=future(None))
 
     self.test_build = model.Build(
         id=model.create_build_ids(self.now, 1)[0],
-        bucket='chromium',
-        project=self.chromium_project_id,
+        project='chromium',
+        bucket='luci.chromium.try',
         create_time=self.now,
         parameters={
             model.BUILDER_PARAMETER:
@@ -124,22 +111,21 @@ class CreationTest(testing.AppengineTestCase):
     # user.can_async is patched in setUp()
     user.can_async.side_effect = can_async
 
-  def add(self, bucket, project=None, **request_fields):
+  def add(self, bucket=None, project=None, **request_fields):
     build_req = creation.BuildRequest(
-        project or self.chromium_project_id, bucket, **request_fields
+        project or 'chromium', bucket or 'luci.chromium.try', **request_fields
     )
     return creation.add_async(build_req).get_result()
 
   def test_add(self):
     params = {model.BUILDER_PARAMETER: 'linux_rel'}
     build = self.add(
-        bucket='chromium',
         parameters=params,
         canary_preference=model.CanaryPreference.CANARY,
     )
     self.assertIsNotNone(build.key)
     self.assertIsNotNone(build.key.id())
-    self.assertEqual(build.bucket, 'chromium')
+    self.assertEqual(build.bucket_id, 'chromium/try')
     self.assertEqual(build.parameters, params)
     self.assertEqual(build.created_by, auth.get_current_identity())
     self.assertEqual(build.canary_preference, model.CanaryPreference.CANARY)
@@ -154,7 +140,6 @@ class CreationTest(testing.AppengineTestCase):
     )
 
     build = self.add(
-        bucket='chromium',
         parameters={model.BUILDER_PARAMETER: 'linux_rel'},
         gitiles_commit=gitiles_commit,
     )
@@ -162,7 +147,6 @@ class CreationTest(testing.AppengineTestCase):
 
     with self.assertRaises(errors.InvalidInputError):
       self.add(
-          bucket='chromium',
           parameters={model.BUILDER_PARAMETER: 'linux_rel'},
           gitiles_commit=1,
       )
@@ -207,12 +191,10 @@ class CreationTest(testing.AppengineTestCase):
 
   def test_add_with_client_operation_id(self):
     build = self.add(
-        bucket='chromium',
         parameters={model.BUILDER_PARAMETER: 'linux_rel'},
         client_operation_id='1',
     )
     build2 = self.add(
-        bucket='chromium',
         parameters={model.BUILDER_PARAMETER: 'linux_rel'},
         client_operation_id='1',
     )
@@ -221,17 +203,14 @@ class CreationTest(testing.AppengineTestCase):
 
   def test_add_with_bad_bucket_name(self):
     with self.assertRaises(errors.InvalidInputError):
-      self.add(bucket='chromium as')
-    with self.assertRaises(errors.InvalidInputError):
-      self.add(bucket='')
+      self.add(bucket='invalid bucket name')
 
   def test_add_with_bad_canary_preference(self):
     with self.assertRaises(errors.InvalidInputError):
-      self.add(bucket='bucket', canary_preference=None)
+      self.add(canary_preference=None)
 
   def test_add_with_leasing(self):
     build = self.add(
-        bucket='chromium',
         lease_expiration_date=utils.utcnow() + datetime.timedelta(seconds=10),
     )
     self.assertTrue(build.is_leased)
@@ -241,22 +220,22 @@ class CreationTest(testing.AppengineTestCase):
   def test_add_with_auth_error(self):
     self.mock_cannot(user.Action.ADD_BUILD)
     with self.assertRaises(auth.AuthorizationError):
-      self.add(bucket=self.test_build.bucket)
+      self.add()
 
   def test_add_with_bad_parameters(self):
     with self.assertRaises(errors.InvalidInputError):
-      self.add(bucket='bucket', parameters=[])
+      self.add(parameters=[])
 
   def test_add_with_swarming_400(self):
-    self.chromium_bucket.swarming.MergeFrom(self.chromium_swarming)
+    self.chromium_try.swarming.MergeFrom(self.chromium_swarming)
     swarming.create_task_async.return_value = future_exception(
         net.Error('', status_code=400, response='bad request')
     )
     with self.assertRaises(errors.InvalidInputError):
-      self.add(bucket=self.test_build.bucket)
+      self.add()
 
   def test_add_with_build_numbers(self):
-    self.chromium_bucket.swarming.MergeFrom(self.chromium_swarming)
+    self.chromium_try.swarming.MergeFrom(self.chromium_swarming)
 
     build_numbers = {}
 
@@ -268,13 +247,13 @@ class CreationTest(testing.AppengineTestCase):
 
     (_, ex0), (_, ex1) = creation.add_many_async([
         creation.BuildRequest(
-            project=self.chromium_project_id,
-            bucket=self.chromium_bucket.name,
+            project='chromium',
+            bucket='luci.chromium.try',
             parameters={model.BUILDER_PARAMETER: 'infra', 'i': 1},
         ),
         creation.BuildRequest(
-            project=self.chromium_project_id,
-            bucket=self.chromium_bucket.name,
+            project='chromium',
+            bucket='luci.chromium.try',
             parameters={model.BUILDER_PARAMETER: 'infra', 'i': 2},
         )
     ]).get_result()
@@ -286,7 +265,7 @@ class CreationTest(testing.AppengineTestCase):
   @mock.patch('sequence.try_return_async', autospec=True)
   def test_add_with_build_numbers_and_return(self, try_return_async):
     try_return_async.return_value = future(None)
-    self.chromium_bucket.swarming.MergeFrom(self.chromium_swarming)
+    self.chromium_try.swarming.MergeFrom(self.chromium_swarming)
 
     class Error(Exception):
       pass
@@ -296,23 +275,23 @@ class CreationTest(testing.AppengineTestCase):
     with self.assertRaises(Error):
       creation.add_async(
           creation.BuildRequest(
-              project=self.chromium_project_id,
-              bucket=self.chromium_bucket.name,
+              project='chromium',
+              bucket='luci.chromium.try',
               parameters={model.BUILDER_PARAMETER: 'infra'},
           )
       ).get_result()
 
-    try_return_async.assert_called_with('chromium/infra', 1)
+    try_return_async.assert_called_with('luci.chromium.try/infra', 1)
 
   def test_add_with_swarming_200_and_400(self):
-    self.chromium_bucket.swarming.MergeFrom(self.chromium_swarming)
+    self.chromium_try.swarming.MergeFrom(self.chromium_swarming)
 
     def create_task_async(b, number):  # pylint: disable=unused-argument
       if b.parameters['i'] == 1:
         return future_exception(
             net.Error('', status_code=400, response='bad request')
         )
-      b.swarming_hostname = self.chromium_bucket.swarming.hostname
+      b.swarming_hostname = self.chromium_try.swarming.hostname
       b.swarming_task_id = 'deadbeef'
       return future(None)
 
@@ -320,50 +299,45 @@ class CreationTest(testing.AppengineTestCase):
 
     (b0, ex0), (b1, ex1) = creation.add_many_async([
         creation.BuildRequest(
-            project=self.chromium_project_id,
-            bucket=self.chromium_bucket.name,
+            project='chromium',
+            bucket='luci.chromium.try',
             parameters={model.BUILDER_PARAMETER: 'infra', 'i': 0},
         ),
         creation.BuildRequest(
-            project=self.chromium_project_id,
-            bucket=self.chromium_bucket.name,
+            project='chromium',
+            bucket='luci.chromium.try',
             parameters={model.BUILDER_PARAMETER: 'infra', 'i': 1},
         )
     ]).get_result()
 
     self.assertIsNone(ex0)
-    self.assertEqual(b0.bucket, self.chromium_bucket.name)
+    self.assertEqual(b0.bucket, 'luci.chromium.try')
 
     self.assertIsNotNone(ex1)
     self.assertIsNone(b1)
 
   def test_add_with_swarming_403(self):
-    self.chromium_bucket.swarming.MergeFrom(self.chromium_swarming)
+    self.chromium_try.swarming.MergeFrom(self.chromium_swarming)
 
     swarming.create_task_async.return_value = future_exception(
         net.AuthError('', status_code=403, response='no no')
     )
     with self.assertRaisesRegexp(auth.AuthorizationError, 'no no'):
-      self.add(bucket=self.test_build.bucket)
+      self.add()
 
   def test_add_with_builder_name(self):
     build = self.add(
-        bucket='chromium',
         parameters={model.BUILDER_PARAMETER: 'linux_rel'},
         client_operation_id='1',
     )
     self.assertTrue('builder:linux_rel' in build.tags)
 
   def test_add_builder_tag(self):
-    build = self.add(
-        bucket='chromium',
-        parameters={model.BUILDER_PARAMETER: 'foo'},
-    )
+    build = self.add(parameters={model.BUILDER_PARAMETER: 'foo'},)
     self.assertEqual(build.tags, ['builder:foo'])
 
   def test_add_builder_tag_multi(self):
     build = self.add(
-        bucket='chromium',
         parameters={model.BUILDER_PARAMETER: 'foo'},
         tags=['builder:foo', 'builder:foo'],
     )
@@ -371,14 +345,10 @@ class CreationTest(testing.AppengineTestCase):
 
   def test_add_builder_tag_different(self):
     with self.assertRaises(errors.InvalidInputError):
-      self.add(
-          bucket='chromium',
-          tags=['builder:foo', 'builder:bar'],
-      )
+      self.add(tags=['builder:foo', 'builder:bar'],)
 
   def test_add_builder_tag_coincide(self):
     build = self.add(
-        bucket='chromium',
         parameters={model.BUILDER_PARAMETER: 'foo'},
         tags=['builder:foo'],
     )
@@ -387,33 +357,32 @@ class CreationTest(testing.AppengineTestCase):
   def test_add_builder_tag_conflict(self):
     with self.assertRaises(errors.InvalidInputError):
       self.add(
-          bucket='chromium',
           parameters={model.BUILDER_PARAMETER: 'foo'},
           tags=['builder:bar'],
       )
 
   def test_add_long_buildset(self):
     with self.assertRaises(errors.InvalidInputError):
-      self.add(bucket='b', tags=['buildset:' + ('a' * 2000)])
+      self.add(tags=['buildset:' + ('a' * 2000)])
 
   def test_buildset_index(self):
-    build = self.add(bucket='b', tags=['buildset:foo', 'buildset:bar'])
+    build = self.add(tags=['buildset:foo', 'buildset:bar'])
 
     for t in build.tags:
       index = search.TagIndex.get_by_id(t)
       self.assertIsNotNone(index)
       self.assertEqual(len(index.entries), 1)
       self.assertEqual(index.entries[0].build_id, build.key.id())
-      self.assertEqual(index.entries[0].bucket, 'b')
+      self.assertEqual(index.entries[0].bucket_id, build.bucket_id)
 
   def test_buildset_index_with_client_op_id(self):
-    build = self.add(bucket='b', tags=['buildset:foo'], client_operation_id='0')
+    build = self.add(tags=['buildset:foo'], client_operation_id='0')
 
     index = search.TagIndex.get_by_id('buildset:foo')
     self.assertIsNotNone(index)
     self.assertEqual(len(index.entries), 1)
     self.assertEqual(index.entries[0].build_id, build.key.id())
-    self.assertEqual(index.entries[0].bucket, 'b')
+    self.assertEqual(index.entries[0].bucket_id, build.bucket_id)
 
   def test_buildset_index_existing(self):
     search.TagIndex(
@@ -421,27 +390,24 @@ class CreationTest(testing.AppengineTestCase):
         entries=[
             search.TagIndexEntry(
                 build_id=int(2**63 - 1),
-                bucket_id='p/b',
-                bucket='b',
+                bucket_id='chromium/try',
             ),
             search.TagIndexEntry(
                 build_id=0,
-                bucket_id='p/b',
-                bucket='b',
+                bucket_id='chromium/try',
             ),
         ]
     ).put()
-    build = self.add(project='p', bucket='b', tags=['buildset:foo'])
+    build = self.add(tags=['buildset:foo'])
     index = search.TagIndex.get_by_id('buildset:foo')
     self.assertIsNotNone(index)
     self.assertEqual(len(index.entries), 3)
     self.assertIn(build.key.id(), [e.build_id for e in index.entries])
-    self.assertIn('b', [e.bucket for e in index.entries])
-    self.assertIn('p/b', [e.bucket_id for e in index.entries])
+    self.assertIn(build.bucket_id, [e.bucket_id for e in index.entries])
 
   def test_buildset_index_failed(self):
     with self.assertRaises(errors.InvalidInputError):
-      self.add(bucket='', tags=['buildset:foo'])
+      self.add(bucket='invalid bucket', tags=['buildset:foo'])
     index = search.TagIndex.get_by_id('buildset:foo')
     self.assertIsNone(index)
 
@@ -449,13 +415,13 @@ class CreationTest(testing.AppengineTestCase):
     self.mock_cannot(user.Action.ADD_BUILD, bucket='forbidden')
     results = creation.add_many_async([
         creation.BuildRequest(
-            project=self.chromium_project_id,
-            bucket='chromium',
+            project='chromium',
+            bucket='luci.chromium.try',
             tags=['buildset:a'],
         ),
         creation.BuildRequest(
-            project=self.chromium_project_id,
-            bucket='chromium',
+            project='chromium',
+            bucket='luci.chromium.try',
             tags=['buildset:a'],
         ),
     ]).get_result()
@@ -474,20 +440,20 @@ class CreationTest(testing.AppengineTestCase):
     self.assertIsNotNone(index)
     self.assertEqual(len(index.entries), 2)
     self.assertEqual(index.entries[0].build_id, results[1][0].key.id())
-    self.assertEqual(index.entries[0].bucket, results[1][0].bucket)
+    self.assertEqual(index.entries[0].bucket_id, results[1][0].bucket_id)
     self.assertEqual(index.entries[1].build_id, results[0][0].key.id())
-    self.assertEqual(index.entries[1].bucket, results[0][0].bucket)
+    self.assertEqual(index.entries[1].bucket_id, results[0][0].bucket_id)
 
   def test_add_many_invalid_input(self):
     results = creation.add_many_async([
         creation.BuildRequest(
-            project=self.chromium_project_id,
-            bucket='chromium',
+            project='chromium',
+            bucket='luci.chromium.try',
             tags=['buildset:a'],
         ),
         creation.BuildRequest(
-            project=self.chromium_project_id,
-            bucket='chromium',
+            project='chromium',
+            bucket='luci.chromium.try',
             tags=['buildset:a', 'x'],
         ),
     ]).get_result()
@@ -503,15 +469,15 @@ class CreationTest(testing.AppengineTestCase):
     self.assertIsNotNone(index)
     self.assertEqual(len(index.entries), 1)
     self.assertEqual(index.entries[0].build_id, results[0][0].key.id())
-    self.assertEqual(index.entries[0].bucket, results[0][0].bucket)
+    self.assertEqual(index.entries[0].bucket_id, results[0][0].bucket_id)
 
   def test_add_many_auth_error(self):
     self.mock_cannot(user.Action.ADD_BUILD, bucket='forbidden')
     with self.assertRaises(auth.AuthorizationError):
       creation.add_many_async([
           creation.BuildRequest(
-              project=self.chromium_project_id,
-              bucket='chromium',
+              project='chromium',
+              bucket='luci.chromium.try',
               tags=['buildset:a'],
           ),
           creation.BuildRequest(
@@ -526,14 +492,14 @@ class CreationTest(testing.AppengineTestCase):
 
   def test_add_many_with_client_op_id(self):
     req1 = creation.BuildRequest(
-        project=self.chromium_project_id,
-        bucket='chromium',
+        project='chromium',
+        bucket='luci.chromium.try',
         tags=['buildset:a'],
         client_operation_id='0',
     )
     req2 = creation.BuildRequest(
-        project=self.chromium_project_id,
-        bucket='chromium',
+        project='chromium',
+        bucket='luci.chromium.try',
         tags=['buildset:a'],
     )
     creation.add_async(req1).get_result()
@@ -542,11 +508,11 @@ class CreationTest(testing.AppengineTestCase):
     # Build for req1 must be added only once.
     idx = search.TagIndex.get_by_id('buildset:a')
     self.assertEqual(len(idx.entries), 2)
-    self.assertEqual(idx.entries[0].bucket, 'chromium')
+    self.assertEqual(idx.entries[0].bucket_id, 'chromium/try')
 
   @mock.patch('search.add_to_tag_index_async', autospec=True)
   def test_add_with_tag_index_contention(self, add_to_tag_index_async):
-    self.chromium_bucket.swarming.MergeFrom(self.chromium_swarming)
+    self.chromium_try.swarming.MergeFrom(self.chromium_swarming)
 
     def mock_create_task_async(build, build_number):
       build.swarming_hostname = 'swarming.example.com'
@@ -562,14 +528,14 @@ class CreationTest(testing.AppengineTestCase):
     with self.assertRaisesRegexp(Exception, 'contention'):
       creation.add_many_async([
           creation.BuildRequest(
-              project=self.chromium_project_id,
-              bucket='chromium',
+              project='chromium',
+              bucket='luci.chromium.try',
               parameters={model.BUILDER_PARAMETER: 'infra'},
               tags=['buildset:a'],
           ),
           creation.BuildRequest(
-              project=self.chromium_project_id,
-              bucket='chromium',
+              project='chromium',
+              bucket='luci.chromium.try',
               parameters={model.BUILDER_PARAMETER: 'infra'},
               tags=['buildset:a'],
           ),

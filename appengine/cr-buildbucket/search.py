@@ -642,7 +642,6 @@ def update_tag_indexes_async(builds):
           TagIndexEntry(
               build_id=b.key.id(),
               bucket_id=b.bucket_id,
-              bucket=b.bucket,
           )
       )
   return [
@@ -691,10 +690,6 @@ class TagIndexEntry(ndb.Model):
   # Bucket id of the build.
   # Same format as model.Build.bucket_id.
   bucket_id = ndb.StringProperty(indexed=False)
-  # DEPRECTED. Bucket of the build.
-  # Same format as model.Build.bucket.
-  # TODO(crbug.com/851036): delete bucket, in favor of bucket_id.
-  bucket = ndb.StringProperty(indexed=False)
 
 
 class TagIndex(ndb.Model):

@@ -28,10 +28,13 @@ class BackfillTagIndexTest(testing.AppengineTestCase):
   def test_process(self):
     builds = [
         model.Build(
-            id=i, bucket='chromium', tags=[
+            id=i,
+            project='chromium',
+            bucket='try',
+            tags=[
                 'buildset:%d' % (i % 3),
                 'a:b',
-            ]
+            ],
         ) for i in xrange(50, 60)
     ]
 
@@ -40,13 +43,13 @@ class BackfillTagIndexTest(testing.AppengineTestCase):
     backfill_tag_index._enqueue_flush_entries.assert_called_with(
         'buildset', {
             '0': [
-                ['chromium', 51],
-                ['chromium', 54],
+                ['chromium/try', 51],
+                ['chromium/try', 54],
             ],
-            '1': [['chromium', 52]],
+            '1': [['chromium/try', 52]],
             '2': [
-                ['chromium', 50],
-                ['chromium', 53],
+                ['chromium/try', 50],
+                ['chromium/try', 53],
             ],
         }
     )
@@ -55,23 +58,23 @@ class BackfillTagIndexTest(testing.AppengineTestCase):
     search.TagIndex(
         id='buildset:0',
         entries=[
-            search.TagIndexEntry(bucket='chormium', build_id=51),
+            search.TagIndexEntry(bucket_id='chromium/try', build_id=51),
         ]
     ).put()
     search.TagIndex(
         id='buildset:2',
         entries=[
-            search.TagIndexEntry(bucket='chormium', build_id=1),
-            search.TagIndexEntry(bucket='chormium', build_id=100),
+            search.TagIndexEntry(bucket_id='chromium/try', build_id=1),
+            search.TagIndexEntry(bucket_id='chromium/try', build_id=100),
         ]
     ).put()
 
     backfill_tag_index._flush_entries(
         'buildset',
         {
-            '0': [['chromium', 51]],
-            '1': [['chromium', 52]],
-            '2': [['chromium', 50]],
+            '0': [['chromium/try', 51]],
+            '1': [['chromium/try', 52]],
+            '2': [['chromium/try', 50]],
         },
     )
 
@@ -105,9 +108,9 @@ class BackfillTagIndexTest(testing.AppengineTestCase):
       backfill_tag_index._flush_entries(
           'buildset',
           {
-              '0': [['chromium', 51]],
-              '1': [['chromium', 52]],
-              '2': [['chromium', 50]],
+              '0': [['chromium/try', 51]],
+              '1': [['chromium/try', 52]],
+              '2': [['chromium/try', 50]],
           },
       )
 
@@ -122,13 +125,13 @@ class BackfillTagIndexTest(testing.AppengineTestCase):
     self.assertEqual(idx2.entries[0].build_id, 50)
 
     backfill_tag_index._enqueue_flush_entries.assert_called_with(
-        'buildset', {'1': [['chromium', 52]]}
+        'buildset', {'1': [['chromium/try', 52]]}
     )
 
   def test_flush_entries_too_many(self):
     backfill_tag_index._flush_entries(
         'buildset',
-        {'0': [['chromium', i] for i in xrange(1, 2001)]},
+        {'0': [['chromium/try', i] for i in xrange(1, 2001)]},
     )
 
     idx0 = search.TagIndex.get_by_id('buildset:0')
@@ -139,5 +142,5 @@ class BackfillTagIndexTest(testing.AppengineTestCase):
     # once more for coverage
     backfill_tag_index._flush_entries(
         'buildset',
-        {'0': [['chromium', 1]]},
+        {'0': [['chromium/try', 1]]},
     )
