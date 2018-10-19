@@ -5,11 +5,13 @@
 
 """FLT task to be manually triggered to convert launch issues."""
 
+import collections
+import logging
 import re
 import settings
-import logging
-import collections
+import time
 
+from businesslogic import work_env
 from framework import permissions
 from framework import exceptions
 from framework import jsonfeed
@@ -85,12 +87,6 @@ TEMPLATE_MAP = {
     'default': 'Chrome Default Launch',
     'finch': 'Chrome Finch Launch'}
 
-PM_FIELD = 'pm'
-TL_FIELD = 'tl'
-TE_FIELD = 'te'
-MTARGET_FIELD = 'm-target'
-MAPPROVED_FIELD = 'm-approved'
-
 ProjectInfo = collections.namedtuple(
     'ProjectInfo', 'config, q, approval_values, phases, '
     'pm_fid, tl_fid, te_fid, m_target_id, m_approved_id')
@@ -114,23 +110,37 @@ class FLTConvertTask(jsonfeed.InternalTask):
 
   def HandleRequest(self, mr):
     """Convert Type=Launch issues to new Type=FLT-Launch issues."""
-    _project_info = self.FetchAndAssertProjectInfo(mr)
+    project_info = self.FetchAndAssertProjectInfo(mr)
 
-    # TODO(jojwang):
     # Search for issues:
-    #   call we.ListIssues
+    with work_env.WorkEnv(mr, self.services) as we:
+      pipeline = we.ListIssues(
+          project_info.q, ['chromium'], mr.auth.user_id, CONVERT_NUM,
+          CONVERT_START, [], 2, GROUP_BY_SPEC, SORT_SPEC, False)
 
     # Convert issues:
-    #   for issue in pipeline.allowed_results:
-    #     call ConvertLaunchLabels, ConvertMLabels, ConvertPeopleLabels
-    #     call ExecuteIssueChanges
-
-    # Send emails:
-    #   call SendIssueBulkChangeNotification
+    # TODO(jojwang): BEFORE LAUNCH change to pipeline.allowed_results
+    for possible_stale_issue in pipeline.visible_results:
+      issue = self.services.issue.GetIssue(
+          mr.cnxn, possible_stale_issue.issue_id, use_cache=False)
+      new_approvals = ConvertLaunchLabels(
+          issue.labels, project_info.approval_values,
+          project_info.config.field_defs)
+      m_fvs = ConvertMLabels(
+          issue.labels, project_info.phases,
+          project_info.m_target_id, project_info.m_approved_id)
+      people_fvs = self.ConvertPeopleLabels(
+          mr, issue.labels,
+          project_info.pm_fid, project_info.tl_fid, project_info.te_fid)
+      amendments = self.ExecuteIssueChanges(
+          project_info.config, issue, new_approvals,
+          project_info.phases, m_fvs + people_fvs)
+      logging.info('SUCCESSFULLY CONVERTED ISSUE: %s' % issue.local_id)
+      logging.info('amendments %r', amendments)
 
     return {
-        'app_id': settings.app_id,
-        'is_site_admin': mr.auth.user_pb.is_site_admin,
+        'converted_issues': [
+            issue.local_id for issue in pipeline.visible_results],
         }
 
   def FetchAndAssertProjectInfo(self, mr):
@@ -211,7 +221,8 @@ class FLTConvertTask(jsonfeed.InternalTask):
             self.mr.cnxn, tracker_pb2.IssueComment(
                 issue_id=issue.issue_id, project_id=issue.project_id,
                 user_id=self.mr.auth.user_id, content=survey,
-                is_description=True, approval_id=av.approval_id))
+                is_description=True, approval_id=av.approval_id,
+                timestamp=int(time.time())))
       else:
         logging.info(
             'ERROR: ApprovalDef %r for ApprovalValue %r not valid', ad, av)

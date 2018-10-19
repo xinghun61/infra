@@ -8,6 +8,7 @@ import unittest
 import settings
 import mock
 
+from businesslogic import work_env
 from framework import exceptions
 from framework import permissions
 from services import service_manager
@@ -34,6 +35,8 @@ class FLTConvertTask(unittest.TestCase):
     self.issue = fake.MakeTestIssue(
         789, 1, 'summary', 'New', 111L, issue_id=78901)
     self.config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    self.work_env = work_env.WorkEnv(
+        self.mr, self.services, 'Testing')
 
   def testAssertBasePermission(self):
     self.mr.auth.user_pb.is_site_admin = True
@@ -48,6 +51,81 @@ class FLTConvertTask(unittest.TestCase):
     settings.app_id = 'monorail-prod'
     self.assertRaises(exceptions.ActionNotSupported,
                       self.task.AssertBasePermission, self.mr)
+
+  def testHandleRequest(self):
+    # Set up Objects
+    issue1 = fake.MakeTestIssue(
+        789, 1, 'sum', 'New', 111L, issue_id=78901,
+        labels=[
+            'Launch-M-Approved-71-Stable', 'Launch-M-Target-70-Beta',
+            'Launch-UI-Yes', 'Launch-Privacy-NeedInfo',
+            'pm-jojwang', 'tl-annajo'])
+
+    approval_values = [tracker_pb2.ApprovalValue(approval_id=7),
+                       tracker_pb2.ApprovalValue(approval_id=8)]
+    phases = [tracker_pb2.Phase(name='Stable', phase_id=88),
+              tracker_pb2.Phase(name='Beta', phase_id=89)]
+
+    project_info = fltconversion.ProjectInfo(
+        self.config, 'q=query', approval_values, phases, 11, 12, 13, 14, 15)
+
+    self.config.field_defs = [
+        tracker_pb2.FieldDef(field_id=7, field_name='Chrome-UX',
+                             field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE),
+        tracker_pb2.FieldDef(field_id=8, field_name='Chrome-Privacy',
+                             field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE)
+    ]
+
+    # Set up mocks
+    patcher = mock.patch(
+        'search.frontendsearchpipeline.FrontendSearchPipeline',
+        spec=True, visible_results=[issue1])
+    mockPipeline = patcher.start()
+
+    self.task.services.issue.GetIssue = mock.Mock(return_value=issue1)
+
+    self.task.FetchAndAssertProjectInfo = mock.Mock(return_value=project_info)
+
+    with self.work_env as we:
+      we.ListIssues = mock.Mock(return_value=mockPipeline)
+
+    def side_effect(_cnxn, email):
+      if email == 'jojwang@chromium.org':
+        return 111L
+      if email == 'annajo@google.com':
+        return 222L
+      raise exceptions.NoSuchUserException
+    self.task.services.user.LookupUserID = mock.Mock(side_effect=side_effect)
+
+    self.task.ExecuteIssueChanges = mock.Mock(return_value=[])
+
+    # Call
+    json = self.task.HandleRequest(self.mr)
+
+    # assert
+    self.assertEqual(json['converted_issues'], [1])
+
+    new_approvals = [
+        tracker_pb2.ApprovalValue(
+            approval_id=7, status=tracker_pb2.ApprovalStatus.APPROVED),
+        tracker_pb2.ApprovalValue(
+            approval_id=8, status=tracker_pb2.ApprovalStatus.NEED_INFO)]
+    new_fvs = [
+      # M-Approved Stable
+      tracker_bizobj.MakeFieldValue(
+          15, 71, None, None, None, None, False, phase_id=88),
+      # M-Target Beta
+      tracker_bizobj.MakeFieldValue(
+          14, 70, None, None, None, None, False, phase_id=89),
+      # PM field
+      tracker_bizobj.MakeFieldValue(
+          11, None, None, 111L, None, None, False),
+      # TL field
+      tracker_bizobj.MakeFieldValue(
+          12, None, None, 222L, None, None, False)]
+
+    self.task.ExecuteIssueChanges.assert_called_once_with(
+        self.config, issue1, new_approvals, phases, new_fvs)
 
   def testFetchAndAssertProjectInfo(self):
 
@@ -167,7 +245,9 @@ class FLTConvertTask(unittest.TestCase):
             self.config, fltconversion.QUERY_MAP['default'],
             template.approval_values, template.phases, 4, 5, 6, 7, 8))
 
-  def testExecuteIssueChanges(self):
+  @mock.patch('time.time')
+  def testExecuteIssueChanges(self, mockTime):
+    mockTime.return_value = 123
     self.task.services.issue._UpdateIssuesApprovals = mock.Mock()
     self.task.services.issue.DeltaUpdateIssue = mock.Mock(
         return_value=([], None))
@@ -202,18 +282,18 @@ class FLTConvertTask(unittest.TestCase):
         labels_remove=['Type-Launch'], field_vals_add=new_fvs)
     cmt_1 = tracker_pb2.IssueComment(
         issue_id=78901, project_id=789, user_id=self.mr.auth.user_id,
-        content='', is_description=True, approval_id=1)
+        content='', is_description=True, approval_id=1, timestamp=123)
     cmt_2 = tracker_pb2.IssueComment(
         issue_id=78901, project_id=789, user_id=self.mr.auth.user_id,
-        content='', is_description=True, approval_id=2)
+        content='', is_description=True, approval_id=2, timestamp=123)
     cmt_3 = tracker_pb2.IssueComment(
         issue_id=78901, project_id=789, user_id=self.mr.auth.user_id,
         content='<b>Q1</b>\n<b>Q2</b>\n<b></b>\n<b>Q3</b>',
-        is_description=True, approval_id=3)
+        is_description=True, approval_id=3, timestamp=123)
     cmt_4 = tracker_pb2.IssueComment(
         issue_id=78901, project_id=789, user_id=self.mr.auth.user_id,
         content='<b>Q1</b>\n<b>Q2</b>\n<b></b>\n<b>Q3 two</b>',
-        is_description=True, approval_id=4)
+        is_description=True, approval_id=4, timestamp=123)
 
 
     comment_calls = [mock.call(self.mr.cnxn, cmt_1),
