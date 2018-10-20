@@ -61,7 +61,7 @@
 
   [is show_comment "Yes"]
     <div class="[if-any comments.is_deleted_bool] delcom ifExpand[end]"
-         id="hc[comments.sequence]-undeleted">
+         id="hc[comments.sequence]">
       [include "issue-comment-normal-part.ezt" arg0]
     </div>
     <div class="[if-any comments.is_deleted_bool]ifCollapse[else]hidden[end]"

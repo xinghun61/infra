@@ -159,16 +159,6 @@
 
 </div> [# end color_control]
 
-[# Form used to flag/unflag comments as spam.]
-<form name="flagcom" action="flagspam.do" method="post">
- <input type="hidden" name="comment_id" value="">
- <input type="hidden" name="sequence_num" value="">
- <input type="hidden" name="spam" value="">
- <input type="hidden" name="id" value="[issue.local_id]">
- <input type="hidden" name="token" value="[flag_spam_token]">
-</form>
-
-
 <div id="helparea"></div>
 
 <script type="text/javascript" nonce="[nonce]">
@@ -250,57 +240,86 @@ runOnLoad(function() {
        _TKR_syncStarIcons($("star"), "star2");
     });
 
+  function markComment(sequenceNum, markedSpam, markedDeleted) {
+    const commentElId = 'hc' + sequenceNum;
+
+    const comment = $(commentElId);
+    const controls = $(commentElId + '-controls');
+    const deletedComment = $(commentElId + '-deleted');
+    const deletedControls = $(commentElId + '-deleted-controls');
+    const spamControls = $(commentElId + '-spam-controls');
+
+    if (markedSpam || markedDeleted) {
+      comment.classList.add('ifExpand');
+      comment.classList.add('delcom');
+      controls.classList.add('hidden');
+
+      deletedComment.classList.remove('hidden');
+      deletedComment.classList.add('ifCollapse');
+
+      if (markedDeleted) {
+        deletedControls.classList.remove('hidden');
+      } else if (spamControls) {
+        spamControls.classList.remove('hidden');
+      }
+    } else {
+      comment.classList.remove('ifExpand');
+      comment.classList.remove('delcom');
+      controls.classList.remove('hidden');
+
+      deletedComment.classList.add('hidden');
+      deletedComment.classList.remove('ifCollapse');
+      deletedControls.classList.add('hidden');
+      if (spamControls) {
+        spamControls.classList.add('hidden');
+      }
+    }
+
+    if (document.getElementsByClassName('delcom').length) {
+      $('toggle-show-deleted-comments').classList.remove('hidden');
+    } else {
+      $('toggle-show-deleted-comments').classList.add('hidden');
+    }
+  }
+
+  const flagCommentElements = document.getElementsByClassName('flagComment');
+  Array.from(flagCommentElements).forEach(el => {
+    el.addEventListener('click', function(event) {
+      const sequenceNum = event.target.dataset.sequenceNum;
+      const markSpam = (event.target.dataset.markSpam === 'true');
+
+      window.prpcClient.call('monorail.Issues', 'FlagComment', {
+        issueRef: {
+          projectName: window.CS_env.projectName,
+          localId: event.target.dataset.localId,
+        },
+        sequenceNum: sequenceNum,
+        flag: markSpam,
+      });
+
+      markComment(sequenceNum, markSpam, false);
+    });
+  });
+
   const delCommentElements = document.getElementsByClassName('delComment');
-  for (var i = 0; i < delCommentElements.length; ++i) {
-    const el = delCommentElements[[]i];
-    el.addEventListener("click", function(event) {
-      const sequence = event.target.getAttribute('data-sequence');
-      const mode = Number(event.target.getAttribute('data-mode'));
-      event.target.setAttribute('data-mode', 1 - mode);
+  Array.from(delCommentElements).forEach(el => {
+    el.addEventListener('click', function(event) {
+      const sequenceNum = event.target.dataset.sequenceNum;
+      const markDeleted = (event.target.dataset.markDeleted === 'true');
 
       window.prpcClient.call('monorail.Issues', 'DeleteIssueComment', {
         issueRef: {
           projectName: window.CS_env.projectName,
-          localId: [issue.local_id],
+          localId: event.target.dataset.localId,
         },
-        sequenceNum: sequence,
-        delete: Boolean(mode),
+        sequenceNum: sequenceNum,
+        delete: markDeleted,
       });
 
-      const hcId = 'hc' + sequence + '-';
-      const undeletedComment = $(hcId + 'undeleted');
-      const deletedComment = $(hcId + 'deleted');
-      const undeletedCommentControls = $(hcId + 'undeleted-controls');
-      const deletedCommentControls = $(hcId + 'deleted-controls');
-      if (mode) {
-        undeletedComment.classList.add('ifExpand');
-        undeletedComment.classList.add('delcom');
-
-        deletedComment.classList.remove('hidden');
-        deletedComment.classList.add('ifCollapse');
-
-        undeletedCommentControls.classList.add('hidden');
-        deletedCommentControls.classList.remove('hidden');
-      } else {
-        undeletedComment.classList.remove('ifExpand');
-        undeletedComment.classList.remove('delcom');
-
-        deletedComment.classList.remove('ifCollapse');
-        deletedComment.classList.add('hidden');
-
-        undeletedCommentControls.classList.remove('hidden');
-        deletedCommentControls.classList.add('hidden');
-      }
-
-      if (document.getElementsByClassName('delcom').length) {
-        $('toggle-show-deleted-comments').classList.remove('hidden');
-      } else {
-        $('toggle-show-deleted-comments').classList.add('hidden');
-      }
-
+      markComment(sequenceNum, false, markDeleted);
       event.preventDefault();
     });
-  }
+  });
 
   const delAttachmentElements =
       document.getElementsByClassName('delAttachment');
@@ -343,32 +362,6 @@ runOnLoad(function() {
       }
     });
   });
-
-  function flagComment(comment_id, sequence_num, isSpam) {
-    var f = document.forms[[]"flagcom"];
-    f.comment_id.value = comment_id;
-    f.sequence_num.value = sequence_num;
-    f.spam.value = isSpam.toLowerCase() == "false";
-
-    var loading = $('comment-action-loading-' + sequence_num);
-    loading.style.display = 'inline';
-
-    TKR_initialFormValues = TKR_currentFormValues();
-    f.submit();
-    return false;
-  }
-
-  var flagCommentElements = document.getElementsByClassName("flagComment");
-  for (var i = 0; i < flagCommentElements.length; ++i) {
-     var el = flagCommentElements[[]i];
-     el.addEventListener("click", function(event) {
-         var id = event.target.getAttribute("data-id");
-         var sequence = event.target.getAttribute("data-sequence");
-         var isSpam = event.target.getAttribute("data-spam");
-         flagComment(id, sequence, isSpam);
-         event.preventDefault();
-     });
-  }
 
   const updateForm = document.querySelector('form[id="issue_update_form"]');
   if (updateForm) {

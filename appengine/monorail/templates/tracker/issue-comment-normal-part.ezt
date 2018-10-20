@@ -24,47 +24,66 @@
       <span id='comment-action-loading-[comments.sequence]'
        class='loading' style='display:none;'>Processing</span>
 
+      [if-any comments.flagged_spam_bool]
+        [define comment_status]Spam[end]
+      [else][if-any comments.is_deleted_bool]
+        [define comment_status]Deleted[end]
+      [else]
+        [define comment_status]Normal[end]
+      [end][end]
+
       [if-any comments.can_delete_bool][if-any arg0]
-        <div id="hc[comments.sequence]-undeleted-controls"
-             class="[if-any comments.is_deleted_bool]hidden[end]"
+        <div id="hc[comments.sequence]-controls"
+             class="[is comment_status "Normal"][else]hidden[end]"
              style="display: contents">
           <a style="font-size: 0.9em" href="#"
-             class="delComment" data-sequence="[comments.sequence]"
-             data-mode="1">
+             class="delComment"
+             data-local-id="[issue.local_id]"
+             data-sequence-num="[comments.sequence]"
+             data-mark-deleted="true">
             Delete comment
+          </a>
+          <a style="font-size: 0.9em; color: gray; text-decoration: none;"
+             class="spamflag flagComment"
+             data-local-id="[issue.local_id]"
+             data-sequence-num="[comments.sequence]"
+             data-mark-spam="true"
+             title="Flag as spam">
+            &#9872;
           </a>
         </div>
         <div id="hc[comments.sequence]-deleted-controls"
-             class="[if-any comments.is_deleted_bool][else]hidden[end]"
+             class="[is comment_status "Deleted"][else]hidden[end]"
              style="display: contents">
-          <div style="font-size:90%">
+          <div style="font-size: 0.9em">
             This comment is not visible to normal users.
           </div>
-          [if-any comments.is_spam_bool]
-            <a style="font-size: 0.9em" href="#"
-               class="flagComment" data-spam="[comments.is_spam]"
-               data-id="[comments.id]" data-sequence='[comments.sequence]'>
-              Unmark this comment as spam
-            </a>
-          [else]
-            <a style="font-size: 0.9em" href="#"
-               class="delComment" data-sequence="[comments.sequence]"
-               data-mode="0">
-              Undelete comment
-            </a>
-          [end]
+          <a style="font-size: 0.9em" href="#"
+             class="delComment"
+             data-local-id="[issue.local_id]"
+             data-sequence-num="[comments.sequence]"
+             data-mark-deleted="false">
+            Undelete comment
+          </a>
         </div>
       [end][end]
-
       [if-any page_perms.FlagSpam]
-       <a class="spamflag flagComment"
-        data-spam="[comments.flagged_spam]" data-id="[comments.id]" data-sequence="[comments.sequence]"
-        style="color:[if-any comments.flagged_spam_bool]red[else]gray[end]; text-decoration:none;"
-        title="[if-any comments.flagged_spam_bool]Un-f[else]F[end]lag as spam">
-       [if-any comments.flagged_spam_bool]&#9873;[else]&#9872;[end]
-       </a>
+        <div id="hc[comments.sequence]-spam-controls"
+             class="[is comment_status "Spam"][else]hidden[end]"
+             style="display: contents">
+          <div style="font-size: 0.9em">
+            This comment is not visible to normal users.
+          </div>
+          <a style="font-size: 0.9em; color: red;" href="#"
+             class="spamflag flagComment"
+             data-local-id="[issue.local_id]"
+             data-sequence-num="[comments.sequence]"
+             data-mark-spam="false"
+             title="Un-flag as spam">
+            Un-flag this comment as spam &#9873;
+          </a>
+        </div>
       [end]
-
      </div>
     [end]
 
