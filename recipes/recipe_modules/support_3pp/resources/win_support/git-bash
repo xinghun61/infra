@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-EDITOR=/dev/null "$(cygpath "$(which git.exe)")/bin/bash.exe" "$@"
+EDITOR=/dev/null "$(cygpath "$(dirname "$(which git.exe)")")/bash.exe" "$@"
