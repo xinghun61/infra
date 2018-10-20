@@ -162,7 +162,7 @@ class CreationTest(testing.AppengineTestCase):
     creation.add_many_async([
         creation.BuildRequest(
             project='chromium',
-            bucket='try',
+            bucket='luci.chromium.try',
             parameters={model.BUILDER_PARAMETER: 'linux_rel'},
             canary_preference=model.CanaryPreference.PROD,
         ),

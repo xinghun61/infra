@@ -222,6 +222,10 @@ class Build(ndb.Model):
   swarming_task_id = ndb.StringProperty()
   service_account = ndb.StringProperty()
 
+  @property
+  def is_luci(self):  # pragma: no cover
+    return bool(self.swarming_hostname)
+
   # LogDog integration
 
   logdog_hostname = ndb.StringProperty()

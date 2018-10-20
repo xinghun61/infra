@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import collections
 import logging
 
 from google.appengine.ext import ndb
@@ -21,31 +22,55 @@ GLOBAL_TARGET_FIELDS = {
     'task_num': 0,  # instance ID
 }
 
-_SOURCE_TAG = 0  # read field the value from a tag
-_SOURCE_ATTR = 1  # read field the value from an attr
-# tuple item meanings are: value source, gae_ts_mon field type, value type.
-_TAG_STR_FIELD = (_SOURCE_TAG, gae_ts_mon.StringField, str)
-_ATTR_STR_FIELD = (_SOURCE_ATTR, gae_ts_mon.StringField, str)
+BuildMetricField = collections.namedtuple(
+    'BuildMetricField',
+    [
+        'value_type',  # e.g. str
+        'field_type',  # e.g. gae_ts_mon.StringField
+        'getter',  # function (model.Build) => value
+    ]
+)
+
+
+def str_attr_field(attr):
+  return BuildMetricField(
+      value_type=str,
+      field_type=gae_ts_mon.StringField,
+      getter=lambda b: getattr(b, attr),
+  )
+
 _BUILD_FIELDS = {
-    'bucket': _ATTR_STR_FIELD,
-    'builder': _TAG_STR_FIELD,
-    'canary': (_SOURCE_ATTR, gae_ts_mon.BooleanField, bool),
-    'cancelation_reason': _ATTR_STR_FIELD,
-    'failure_reason': _ATTR_STR_FIELD,
-    'result': _ATTR_STR_FIELD,
-    'status': _ATTR_STR_FIELD,
-    'user_agent': _TAG_STR_FIELD,
+    'bucket': BuildMetricField(
+        value_type=str,
+        field_type=gae_ts_mon.StringField,
+        getter=lambda b: api_common.legacy_bucket_name(b.bucket_id, b.is_luci),
+    ),
+    'builder': BuildMetricField(
+        value_type=str,
+        field_type=gae_ts_mon.StringField,
+        getter=lambda b: (b.parameters or {}).get(model.BUILDER_PARAMETER),
+    ),
+    'canary': BuildMetricField(
+        value_type=bool,
+        field_type=gae_ts_mon.BooleanField,
+        getter=lambda b: b.canary,
+    ),
+    'cancelation_reason': str_attr_field('cancelation_reason'),
+    'failure_reason': str_attr_field('failure_reason'),
+    'result': str_attr_field('result'),
+    'status': str_attr_field('status'),
+    'user_agent': BuildMetricField(
+        value_type=str,
+        field_type=gae_ts_mon.StringField,
+        getter=lambda b: (
+            dict(buildtags.parse(t) for t in b.tags).get('user_agent')),
+    ),
 }
 _METRIC_PREFIX_PROD = 'buildbucket/builds/'
 _METRIC_PREFIX_EXPERIMENTAL = 'buildbucket/builds-experimental/'
 
 # Maximum number of concurrent counting/latency queries.
 _CONCURRENT_QUERY_LIMIT = 100
-
-
-def _default_field_value(name):
-  return _BUILD_FIELDS[name][2]()
-
 
 BUCKETER_24_HR = gae_ts_mon.GeometricBucketer(growth_factor=10**0.05)
 BUCKETER_48_HR = gae_ts_mon.GeometricBucketer(growth_factor=10**0.053)
@@ -55,23 +80,13 @@ BUCKETER_1K = gae_ts_mon.GeometricBucketer(growth_factor=10**0.031)
 
 def _fields_for(build, field_names):
   """Returns field values for a build"""
-  for f in field_names:
-    if f not in _BUILD_FIELDS:
-      raise ValueError('invalid field %r' % f)
-
-  tags = None
   result = {}
-  for f in field_names:
-    src, _, typ = _BUILD_FIELDS[f]
-    assert src in (_SOURCE_ATTR, _SOURCE_TAG)
-    if src == _SOURCE_ATTR:
-      # TODO(crbug.com/851036): read bucket from bucket_id.
-      val = getattr(build, f)
-    else:
-      if tags is None:
-        tags = dict(buildtags.parse(t) for t in build.tags)
-      val = tags.get(f)
-    result[f] = typ(val or _default_field_value(f))
+  for field_name in field_names:
+    field = _BUILD_FIELDS.get(field_name)
+    if not field:
+      raise ValueError('invalid field %r' % field_name)
+    val = field.getter(build) or field.value_type()
+    result[field_name] = field.value_type(val)
   return result
 
 

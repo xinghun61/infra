@@ -305,9 +305,8 @@ def add_many_async(build_request_list):
     for b in new_builds.itervalues():
       builder = b.parameters.get(model.BUILDER_PARAMETER)
       if builder:
-        # TODO(crbug.com/851036): use b.bucket_id instead of b.bucket
-        # and use short bucket name.
-        builder_ids.add('%s:%s:%s' % (b.project, b.bucket, builder))
+        project_id, bucket_name = config.parse_bucket_id(b.bucket_id)
+        builder_ids.add('%s:%s:%s' % (project_id, bucket_name, builder))
     keys = [ndb.Key(model.Builder, bid) for bid in builder_ids]
     builders = yield ndb.get_multi_async(keys)
 

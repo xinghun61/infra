@@ -114,12 +114,11 @@ def build_to_message(build, include_lease_key=False):
   assert build.key.id()
 
   project_id, _ = config.parse_bucket_id(build.bucket_id)
-  is_luci = bool(build.swarming_hostname)
 
   msg = BuildMessage(
       id=build.key.id(),
       project=project_id,
-      bucket=legacy_bucket_name(build.bucket_id, is_luci),
+      bucket=legacy_bucket_name(build.bucket_id, build.is_luci),
       tags=build.tags,
       parameters_json=json.dumps(build.parameters or {}, sort_keys=True),
       status=build.status,

@@ -258,8 +258,10 @@ class MetricsTest(testing.AppengineTestCase):
   def test_fields_for(self):
     build = model.Build(
         bucket='master.x',
+        parameters={
+            model.BUILDER_PARAMETER: 'release',
+        },
         tags=[
-            'builder:release',
             'user_agent:cq',
             'something:else',
         ],
