@@ -93,7 +93,6 @@
   {
     "cmd": [
       "git",
-      "retry",
       "fetch",
       "origin",
       "refs/tags/v2.1.2",
@@ -1463,7 +1462,6 @@
   {
     "cmd": [
       "git",
-      "retry",
       "fetch",
       "origin",
       "refs/tags/v2.12.2.2",
@@ -2554,7 +2552,6 @@
   {
     "cmd": [
       "git",
-      "retry",
       "fetch",
       "origin",
       "refs/tags/v1.7.2",
@@ -2799,7 +2796,6 @@
   {
     "cmd": [
       "git",
-      "retry",
       "fetch",
       "origin",
       "refs/tags/v3.9.1",
@@ -3043,7 +3039,6 @@
   {
     "cmd": [
       "git",
-      "retry",
       "fetch",
       "origin",
       "refs/tags/rel-3.0.12",
@@ -3846,7 +3841,6 @@
   {
     "cmd": [
       "git",
-      "retry",
       "fetch",
       "origin",
       "refs/tags/v0.3.1",

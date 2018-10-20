@@ -2980,7 +2980,6 @@
   {
     "cmd": [
       "git",
-      "retry",
       "fetch",
       "origin",
       "refs/tags/v1.5.0-rc1",

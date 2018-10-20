@@ -169,7 +169,6 @@
   {
     "cmd": [
       "git",
-      "retry",
       "cache",
       "populate",
       "-c",
@@ -219,7 +218,6 @@
   {
     "cmd": [
       "git",
-      "retry",
       "fetch",
       "origin",
       "master",
