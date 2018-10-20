@@ -13,7 +13,7 @@ cipd ensure -root . -ensure-file - <<EOF
 infra/7z/\${platform} version:9.20
 EOF
 
-./7z.exe x "PortableGit*.exe" -o "$PREFIX" -y
+./7z.exe x PortableGit*.exe -o "$PREFIX" -y
 
 cd "$PREFIX"
 
