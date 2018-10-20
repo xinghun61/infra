@@ -78,6 +78,18 @@ class DataPoint(ndb.Model):
     data_point.commit_position_landed_time = commit_position_landed_time
     return data_point
 
+  def GetPassCount(self):
+    """Computes the number of iterations that passed given a DataPoint."""
+    if self.pass_rate is None or self.iterations is None:
+      # Can't compute, so return None.
+      return None
+
+    if self.pass_rate < 0:
+      # Test doesn't exist.
+      return 0
+
+    return int(round(self.pass_rate * self.iterations))
+
   def GetSwarmingTaskId(self):
     """Returns the last swarming task in the list.
 

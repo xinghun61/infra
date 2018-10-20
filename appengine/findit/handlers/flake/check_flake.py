@@ -11,6 +11,7 @@ from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 from gae_libs.http import auth_util
 from libs import analysis_status
+from libs import floating_point_util
 from libs import time_util
 from model import triage_status
 from model.flake.analysis import triggering_sources
@@ -20,6 +21,7 @@ from model.flake.analysis.flake_try_job_data import FlakeTryJobData
 from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure import initialize_analyze_recent_flakiness_pipeline
 from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakePipeline
+from services.flake_failure import flake_constants
 from waterfall import buildbot
 from waterfall.flake import flake_analysis_service
 
@@ -242,6 +244,18 @@ def _CanCheckRecentFlakiness(analysis):
       analysis.status not in [analysis_status.RUNNING, analysis_status.PENDING])
 
 
+def _GetPassRateAsString(pass_rate):
+  """Returns a floating point pass rate as a human-readable string."""
+  if pass_rate is None:
+    return 'unknown'
+
+  if floating_point_util.AlmostEquals(pass_rate,
+                                      flake_constants.PASS_RATE_TEST_NOT_FOUND):
+    return 'disabled or deleted'
+
+  return '%0.1f%%' % (pass_rate * 100)
+
+
 def _GetRecentFlakinessInfo(analysis):
   recent_flakiness_dict = {}
   latest_data_point = analysis.GetLatestDataPoint()
@@ -249,6 +263,10 @@ def _GetRecentFlakinessInfo(analysis):
   if latest_data_point:  # pragma: no branch
     recent_flakiness_dict = _GetDataPointInfo(latest_data_point)
 
+  recent_flakiness_dict['pass_rate'] = _GetPassRateAsString(
+      recent_flakiness_dict.get('pass_rate'))
+  recent_flakiness_dict['pass_count'] = (
+      latest_data_point.GetPassCount() if latest_data_point else None)
   recent_flakiness_dict['status'] = analysis.analyze_recent_flakiness_status
   recent_flakiness_dict['pipeline_status_path'] = (
       analysis.analyze_recent_flakiness_pipeline_status_path)

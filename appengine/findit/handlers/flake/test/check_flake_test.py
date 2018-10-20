@@ -504,6 +504,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     data_point1.pass_rate = success_rate
     data_point1.task_ids = ['task_id1']
     data_point1.commit_position = 12345
+    data_point1.iterations = 100
     data_point1.git_hash = 'hash1'
     data_point1.commit_position_landed_time = datetime.datetime(2016, 12, 31)
     analysis.data_points.append(data_point1)
@@ -598,11 +599,12 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'most_recent_flakiness': {
             'error': None,
             'commit_position': 12345,
-            'pass_rate': 0.9,
+            'pass_rate': '90.0%',
             'build_url': None,
             'try_job_url': None,
             'elapsed_seconds': 0,
-            'iterations': None,
+            'pass_count': 90,
+            'iterations': 100,
             'commit_position_landed_time': '2016-12-31 00:00:00',
             'task_ids': ['task_id1'],
             'swarm_task': 'task_id1',
@@ -1293,3 +1295,10 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.analyze_recent_flakiness_status = analysis_status.COMPLETED
     analysis.status = analysis_status.COMPLETED
     self.assertTrue(check_flake._CanCheckRecentFlakiness(analysis))
+
+  def testGetPassRateAsString(self):
+    self.assertEqual('disabled or deleted',
+                     check_flake._GetPassRateAsString(-1))
+    self.assertEqual('unknown', check_flake._GetPassRateAsString(None))
+    self.assertEqual('100.0%', check_flake._GetPassRateAsString(1.0))
+    self.assertEqual('64.1%', check_flake._GetPassRateAsString(0.641))

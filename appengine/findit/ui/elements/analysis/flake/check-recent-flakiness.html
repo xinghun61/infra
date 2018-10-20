@@ -75,13 +75,17 @@
 
             <tr>
               <td class="description">Pass Rate</td>
-              <td class="data">[[passRate]]</td>
+              <td class="data">[[passRate]]
+                <template is="dom-if" if="[[_showPassCount()]]">
+                 ([[passCount]] / [[iterations]])
+                </template>
+              </td>
             </tr>
 
             <tr>
               <td class="description">Swarm Task</td>
               <td class="data">
-               <a href$="https://chromium-swarm.appspot.com/task?id=[[swarmTask]]">[[swarmTask]]</a>
+               <a href$="https://chromium-swarm.appspot.com/task?id=[[swarmTask]]">task</a>
                </td>
             </tr>
           </template>
@@ -111,6 +115,10 @@
 
         _canCheckRecentFlakiness: function() {
           return this.canCheckRecentFlakiness == 'True';
+        },
+
+        _showPassCount: function() {
+          return this.passRate != 'disabled or deleted';
         },
       });
     })();
