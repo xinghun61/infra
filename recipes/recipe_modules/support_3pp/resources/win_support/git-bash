@@ -1,2 +1,4 @@
 #!/usr/bin/env bash
-EDITOR=/dev/null "$(cygpath "$(dirname "$(which git.exe)")")/bash.exe" "$@"
+# git is  root/mingw64/libexec/git-core/git.exe
+# bash is root/bin/bash.exe
+EDITOR=/dev/null "$(cygpath "$(dirname "$(which git.exe)")")/../../../bin/bash.exe" "$@"
