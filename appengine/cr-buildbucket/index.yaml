@@ -55,3 +55,13 @@ indexes:
   properties:
   - name: status
   - name: swarming_task_id
+
+# metrics.set_build_latency needs this index
+- kind: Build
+  properties:
+  - name: bucket_id
+  - name: experimental
+  - name: never_leased
+  - name: status
+  - name: tags
+  - name: create_time
