@@ -10,7 +10,7 @@ set -o pipefail
 PREFIX="$1"
 
 cipd ensure -root . -ensure-file - <<EOF
-infra/7z/${platform} version:9.20
+infra/7z/\${platform} version:9.20
 EOF
 
 ./7z.exe x "PortableGit*.exe" -o "$PREFIX" -y
