@@ -7,23 +7,22 @@ set -e
 set -x
 set -o pipefail
 
-$PREFIX="$1"
+PREFIX="$1"
 
-mkdir 7z
-cipd ensure -root 7z -ensure-file - <<EOF
+cipd ensure -root . -ensure-file - <<EOF
 infra/7z/${platform} version:9.20
 EOF
 
-7z/7z.exe x "*.exe" -o "$PREFIX" -y
+./7z.exe x "PortableGit*.exe" -o "$PREFIX" -y
 
 cd "$PREFIX"
 
-# 7z.exe does not support "RunProgram" installation header, which specifies
-# the script to run after extraction. If the downloaded exe worked, it would
-# run the post-install script. Here we hard-code the name of the file to run
-# instead of extracting it from the downloaded archive because we already
-# have to know too much about it (see below), so we have to break the API
-# boundary anyway.
+# 7z.exe silent extraction does not support "RunProgram" installation header,
+# which specifies the script to run after extraction. If the downloaded exe
+# worked, it would run the post-install script. Here we hard-code the name of
+# the file to run instead of extracting it from the downloaded archive because
+# we already have to know too much about it (see below), so we have to break the
+# API boundary anyway.
 #
 # We expect exit code 1. The post-script.bat tries to delete itself in
 # the end and it always causes a non-zero exit code.
@@ -33,7 +32,7 @@ cd "$PREFIX"
 # This has been the case for at least 2yrs
 # https://github.com/git-for-windows/build-extra/commit/f1962c881ab18dd1ade087d2f5a7cac5b976f624
 #
-# BUG: https://github.com/git-for-windows/git/issues/1147
+# BUG(WontFix): https://github.com/git-for-windows/git/issues/1147
 ./git-bash.exe --no-needs-console --hide --no-cd --command=post-install.bat || true
 rm post-install.bat
 
