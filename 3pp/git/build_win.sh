@@ -9,11 +9,11 @@ set -o pipefail
 
 PREFIX="$1"
 
-cipd ensure -root . -ensure-file - <<EOF
+cipd.exe ensure -root . -ensure-file - <<EOF
 infra/7z/\${platform} version:9.20
 EOF
 
-./7z.exe x PortableGit*.exe -o "$PREFIX" -y
+./7z.exe x PortableGit*.exe "-o$PREFIX" -y
 
 cd "$PREFIX"
 
@@ -34,7 +34,6 @@ cd "$PREFIX"
 #
 # BUG(WontFix): https://github.com/git-for-windows/git/issues/1147
 ./git-bash.exe --no-needs-console --hide --no-cd --command=post-install.bat || true
-rm post-install.bat
 
 mingw_dir=mingw32
 if [[ -d mingw64 ]]; then
