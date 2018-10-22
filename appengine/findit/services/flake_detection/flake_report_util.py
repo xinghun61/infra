@@ -28,7 +28,7 @@ _CREATE_OR_UPDATE_ISSUES_LIMIT_24H = 30
 # Note that it has to be x different CLs, different patchsets of the same CL are
 # only counted once, and the reason is to filter out flaky tests that are caused
 # by a specific uncommitted CL.
-_MIN_REQUIRED_FALSELY_REJECTED_CLS_24H = 3
+_MIN_REQUIRED_IMPACTED_CLS_24H = 3
 
 # Flake detection bug templates.
 _FLAKE_DETECTION_BUG_DESCRIPTION = textwrap.dedent("""
@@ -217,7 +217,7 @@ def _FlakeHasEnoughOccurrences(unreported_occurrences):
   """
   cl_ids = [occurrence.gerrit_cl_id for occurrence in unreported_occurrences]
   unique_cl_ids = set(cl_ids)
-  return len(unique_cl_ids) >= _MIN_REQUIRED_FALSELY_REJECTED_CLS_24H
+  return len(unique_cl_ids) >= _MIN_REQUIRED_IMPACTED_CLS_24H
 
 
 def GetFlakesWithEnoughOccurrences():
@@ -239,12 +239,11 @@ def GetFlakesWithEnoughOccurrences():
   """
   utc_one_day_ago = time_util.GetUTCNow() - datetime.timedelta(days=1)
   occurrences = FlakeOccurrence.query(
-      ndb.AND(FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION,
-              FlakeOccurrence.time_happened > utc_one_day_ago)).fetch()
+      FlakeOccurrence.time_happened > utc_one_day_ago).fetch()
 
   logging.info(
-      'There are %d cq false rejection occurrences within the past 24h.' %
-      len(occurrences))
+      'There are %d cq false rejection or \'retry with patch\' occurrences'
+      ' within the past 24h.' % len(occurrences))
 
   flake_key_to_occurrences = defaultdict(list)
   for occurrence in occurrences:
