@@ -91,7 +91,7 @@
      <script
        type="module"
        async defer
-       src="/static/jsm/mr-flipper.js?version=[app_version]"
+       src="/static/js/elements/mr-flipper.js?version=[app_version]"
        nonce="[nonce]">
      </script>
     </div>

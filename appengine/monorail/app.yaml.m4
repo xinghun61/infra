@@ -60,8 +60,8 @@ handlers:
   static_dir: elements
   secure: always
 
-- url: /static/jsm
-  static_dir: static/jsm
+- url: /static/js
+  static_dir: static/js
   mime_type: application/javascript
 
 - url: /static
