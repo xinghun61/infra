@@ -452,34 +452,34 @@
                          bug-id="{{bug_id}}"
                          error="{{error or ''}}">
     </flake-analysis-info>
-    {% if show_admin_options %}
-      {% if most_recent_flakiness.commit_position %}
-        <check-recent-flakiness last-analyzed-commit-position="{{most_recent_flakiness.commit_position}}"
-                                committed-days-ago="{{most_recent_flakiness.committed_days_ago}}"
-                                pass-rate="{{most_recent_flakiness.pass_rate}}"
-                                pass-count="{{most_recent_flakiness.pass_count}}"
-                                iterations="{{most_recent_flakiness.iterations}}"
-                                swarm-task="{{most_recent_flakiness.swarm_task}}"
-                                xsrf-token="{{xsrf_token}}"
-                                key="{{key}}"
-                                status="{{most_recent_flakiness.status}}"
-                                pipeline-status-path="{{most_recent_flakiness.pipeline_status_path}}"
-                                can-check-recent-flakiness="{{most_recent_flakiness.can_check_recent_flakiness}}">
-        </check-recent-flakiness>
-      {% else %}
-        <check-recent-flakiness last-analyzed-commit-position=""
-                                committed-days-ago=""
-                                pass-rate=""
-                                pass-count=""
-                                iterations=""
-                                swarm-task=""
-                                xsrf-token="{{xsrf_token}}"
-                                key="{{key}}"
-                                status="{{most_recent_flakiness.status}}"
-                                pipeline-status-path="{{most_recent_flakiness.pipeline_status_path}}"
-                                can-check-recent-flakiness="{{most_recent_flakiness.can_check_recent_flakiness}}">
-        </check-recent-flakiness>
-      {% endif %}
+
+    <!-- Check recent flakiness UI -->
+    {% if most_recent_flakiness.commit_position %}
+      <check-recent-flakiness last-analyzed-commit-position="{{most_recent_flakiness.commit_position}}"
+                              committed-days-ago="{{most_recent_flakiness.committed_days_ago}}"
+                              pass-rate="{{most_recent_flakiness.pass_rate}}"
+                              pass-count="{{most_recent_flakiness.pass_count}}"
+                              iterations="{{most_recent_flakiness.iterations}}"
+                              swarm-task="{{most_recent_flakiness.swarm_task}}"
+                              xsrf-token="{{xsrf_token}}"
+                              key="{{key}}"
+                              status="{{most_recent_flakiness.status}}"
+                              pipeline-status-path="{{most_recent_flakiness.pipeline_status_path}}"
+                              can-check-recent-flakiness="{{most_recent_flakiness.can_check_recent_flakiness}}">
+      </check-recent-flakiness>
+    {% else %}
+      <check-recent-flakiness last-analyzed-commit-position=""
+                              committed-days-ago=""
+                              pass-rate=""
+                              pass-count=""
+                              iterations=""
+                              swarm-task=""
+                              xsrf-token="{{xsrf_token}}"
+                              key="{{key}}"
+                              status="{{most_recent_flakiness.status}}"
+                              pipeline-status-path="{{most_recent_flakiness.pipeline_status_path}}"
+                              can-check-recent-flakiness="{{most_recent_flakiness.can_check_recent_flakiness}}">
+      </check-recent-flakiness>
     {% endif %}
 
     <!-- Graph -->
