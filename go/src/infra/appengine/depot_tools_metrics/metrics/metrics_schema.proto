@@ -1,5 +1,16 @@
 syntax = "proto2";
+
 package metrics;
+
+message HttpRequest {
+  optional string host = 1;
+  optional string method = 2;
+  optional string path = 3;
+  repeated string arguments = 4;
+  optional int64 status = 5;
+  optional double response_time = 6;
+}
+
 message MetricsSchema {
   repeated string arguments = 1;
   optional string command = 2;
@@ -11,4 +22,5 @@ message MetricsSchema {
   repeated string project_urls = 8;
   optional string python_version = 9;
   optional int64 timestamp = 10;
+  repeated HttpRequest http_requests = 11;
 }

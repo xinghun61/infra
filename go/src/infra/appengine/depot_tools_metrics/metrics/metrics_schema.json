@@ -39,6 +39,36 @@
     "python_version": {
       "type": "string",
       "pattern": "^\\d\\.\\d.\\d{1,2}$"
+    },
+    "http_requests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "host": {
+            "$ref": "#/definitions/known_http_hosts"
+          },
+          "method": {
+            "$ref": "#/definitions/known_http_methods"
+          },
+          "path": {
+            "$ref": "#/definitions/known_http_paths"
+          },
+          "arguments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/known_http_args"
+            }
+          },
+          "status": {
+            "type": "integer"
+          },
+          "response_time": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
+      }
     }
   },
   "additionalProperties": false,
@@ -260,6 +290,51 @@
         "mips",
         "ppc",
         "s390"
+      ]
+    },
+    "known_http_hosts": {
+      "enum": [
+        "chrome-internal-review.googlesource.com",
+        "chromium-review.googlesource.com",
+        "dart-review.googlesource.com",
+        "pdfium-review.googlesource.com",
+        "skia-review.googlesource.com",
+        "webrtc-review.googlesource.com"
+      ]
+    },
+    "known_http_methods": {
+      "enum": [
+        "DELETE",
+        "GET",
+        "PATCH",
+        "POST",
+        "PUT"
+      ]
+    },
+    "known_http_paths": {
+      "enum": [
+        "accounts",
+        "changes",
+        "changes/abandon",
+        "changes/comments",
+        "changes/detail",
+        "changes/edit",
+        "changes/message",
+        "changes/restore",
+        "changes/reviewers",
+        "changes/revisions/commit",
+        "changes/revisions/review",
+        "changes/submit",
+        "projects/branches"
+      ]
+    },
+    "known_http_args": {
+      "enum": [
+        "ALL_REVISIONS",
+        "CURRENT_COMMIT",
+        "CURRENT_REVISION",
+        "DETAILED_ACCOUNTS",
+        "LABELS"
       ]
     }
   }
