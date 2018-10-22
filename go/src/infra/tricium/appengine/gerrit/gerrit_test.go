@@ -99,7 +99,7 @@ func TestCreateRobotComment(t *testing.T) {
 				StartChar: int32(startChar),
 				EndChar:   int32(endChar),
 			})
-			So(roco.Line, ShouldEqual, startLine)
+			So(roco.Line, ShouldEqual, endLine)
 			So(roco.Range, ShouldResemble, &commentRange{
 				StartLine:      startLine,
 				EndLine:        endLine,
@@ -165,7 +165,7 @@ func TestCreateRobotComment(t *testing.T) {
     }
   ],
   "path": "README.md",
-  "line": 10,
+  "line": 20,
   "range": {
     "start_line": 10,
     "start_character": 2,

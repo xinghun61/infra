@@ -209,15 +209,21 @@ func createRobotComment(c context.Context, runID int64, comment tricium.Data_Com
 		Properties:     map[string]string{"tricium_comment_uuid": comment.Id},
 		FixSuggestions: createFillSuggestions(comment.Suggestions),
 	}
+	// If no StartLine is given, the comment is assumed to be a file-level comment,
+	// and the line field will not be populated so it will be set to zero.
 	if comment.StartLine > 0 {
-		roco.Line = int(comment.StartLine)
 		if comment.EndLine > 0 {
+			// If range is set, [the line field] equals the end line of the range.
+			// See: https://goo.gl/RdiFDM
+			roco.Line = int(comment.EndLine)
 			roco.Range = &commentRange{
 				StartLine:      int(comment.StartLine),
 				EndLine:        int(comment.EndLine),
 				StartCharacter: int(comment.StartChar),
 				EndCharacter:   int(comment.EndChar),
 			}
+		} else {
+			roco.Line = int(comment.StartLine)
 		}
 	}
 	return roco
