@@ -22,16 +22,18 @@ class TestGit(unittest.TestCase):
 
   @classmethod
   def setUpClass(cls):
-    cls._orig_environ = os.environ.copy()
-    cls._is_windows = os.name == 'nt'
-    cls._exe_suffix = '.exe' if cls._is_windows else ''
+    os.environ.pop('GIT_CONFIG_NOSYSTEM', None)
 
-    cls.tdir = tempfile.mkdtemp(dir=os.getcwd(), suffix='test_git')
+    cls._exe_suffix = '.exe' if os.name == 'nt' else ''
+
+    cls.tdir = os.path.abspath(
+      tempfile.mkdtemp(dir=os.getcwd(), suffix='test_git'))
 
     cls.pkg_dir = os.path.join(cls.tdir, 'install')
     subprocess.check_call([
-        'cipd', 'pkg-deploy', CIPD_PACKAGE_PATH, '-root', cls.pkg_dir],
-        shell=cls._is_windows)
+      'cipd' + cls._exe_suffix,
+      'pkg-deploy', CIPD_PACKAGE_PATH, '-root', cls.pkg_dir
+    ])
     cls.bin_dir = os.path.join(cls.pkg_dir, 'bin')
 
   @classmethod
@@ -43,40 +45,50 @@ class TestGit(unittest.TestCase):
   def setUp(self):
     self.workdir = tempfile.mkdtemp(dir=self.tdir)
 
-    # Clear PATH so we don't pick up other Git instances when doing relative
-    # path tests.
-    os.environ = self._orig_environ.copy()
-    os.environ['PATH'] = ''
-
-  def tearDown(self):
-    os.environ = self._orig_environ
-
   def test_version_from_relpath(self):
-    rv = subprocess.call(['git', 'version'],
-        cwd=self.bin_dir, shell=self._is_windows)
-    self.assertEqual(rv, 0)
+    # in python 2.7, `cwd` doesn't change the lookup of executables, so we have
+    # to use os.chdir.
+    cwd = os.getcwd()
+    try:
+      os.chdir(self.bin_dir)
+      out = subprocess.check_output(
+        [os.path.join('.', 'git' + self._exe_suffix), 'version'])
+    finally:
+      os.chdir(cwd)
+    self.assertIn(os.environ['_3PP_VERSION'], out)
 
   def test_clone_from_relpath(self):
     git = os.path.join('install', 'bin', 'git' + self._exe_suffix)
-    dst = os.path.join(self.workdir, 'repo')
-    rv = subprocess.call([git, 'clone', self.HTTPS_REPO_URL, dst],
-        cwd=self.tdir, shell=self._is_windows)
+    # See test_version_from_relpath.
+    cwd = os.getcwd()
+    try:
+      os.chdir(self.tdir)
+      dst = os.path.join(self.workdir, 'repo')
+      rv = subprocess.call([git, 'clone', self.HTTPS_REPO_URL, dst])
+    finally:
+      os.chdir(cwd)
+
     self.assertEqual(rv, 0)
 
   def test_clone_from_abspath(self):
     git = os.path.join(self.bin_dir, 'git' + self._exe_suffix)
     dst = os.path.join(self.workdir, 'repo')
     rv = subprocess.call([git, 'clone', self.HTTPS_REPO_URL, dst],
-        cwd=self.tdir, shell=self._is_windows)
+        cwd=self.tdir)
     self.assertEqual(rv, 0)
 
   def test_clone_from_indirect_path(self):
     dst = os.path.join(self.workdir, 'repo')
-    os.environ['PATH'] = self.bin_dir
 
-    rv = subprocess.call(['git', 'clone', self.HTTPS_REPO_URL, dst],
-                         cwd=self.tdir, shell=self._is_windows)
-    self.assertEqual(rv, 0)
+    ogPATH = os.environ['PATH']
+    try:
+      os.environ['PATH'] = self.bin_dir
+      rv = subprocess.call(
+        ['git' + self._exe_suffix, 'clone', self.HTTPS_REPO_URL, dst],
+        cwd=self.tdir)
+      self.assertEqual(rv, 0)
+    finally:
+      os.environ['PATH'] = ogPATH
 
   def _setup_test_repo(self, git, path):
     def g(*cmd):
@@ -96,7 +108,7 @@ class TestGit(unittest.TestCase):
 
     rv = subprocess.call(
         [git, '--no-pager', 'log', '--perl-regexp', '--author', '^.*$'],
-        cwd=self.workdir, shell=self._is_windows)
+        cwd=self.workdir)
     self.assertEqual(rv, 0)
 
 
@@ -113,4 +125,4 @@ if __name__ == '__main__':
   CIPD_PACKAGE_PATH = sys.argv[1]
   sys.argv[1:2] = []
 
-  unittest.main()
+  unittest.main(verbosity=2)

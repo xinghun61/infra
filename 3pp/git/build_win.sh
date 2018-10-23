@@ -44,6 +44,10 @@ fi
 ./cmd/git.exe config -f $mingw_dir/etc/gitconfig core.filemode     false
 ./cmd/git.exe config -f $mingw_dir/etc/gitconfig core.preloadindex true
 ./cmd/git.exe config -f $mingw_dir/etc/gitconfig core.fscache      true
+# Disable "Git Credential Manager", which pops modal dialogs when we don't
+# want it. Kitchen will set credential.helper=luci anyway on bots.
+./cmd/git.exe config -f $mingw_dir/etc/gitconfig --unset credential.helper
+
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 cp $SCRIPT_DIR/profile.d.python.sh etc/profile.d/python.sh
