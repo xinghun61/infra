@@ -384,10 +384,10 @@ class V1ApiTest(testing.EndpointsTestCase):
   def test_peek(self, peek):
     self.test_build.put()
     peek.return_value = ([self.test_build], 'the cursor')
-    req = {'bucket': [self.test_build.bucket]}
+    req = {'bucket': ['luci.chromium.try']}
     res = self.call_api('peek', req).json_body
     peek.assert_called_once_with(
-        req['bucket'],
+        ['chromium/try'],
         max_builds=None,
         start_cursor=None,
     )
@@ -717,11 +717,11 @@ class V1ApiTest(testing.EndpointsTestCase):
   @mock.patch('service.pause', autospec=True)
   def test_pause(self, pause):
     req = {
-        'bucket': 'foo.bar.baz',
+        'bucket': 'luci.chromium.try',
         'is_paused': True,
     }
     res = self.call_api('pause', req).json_body
-    pause.assert_called_once_with('foo.bar.baz', True)
+    pause.assert_called_once_with('chromium/try', True)
     self.assertEqual(res, {})
 
   ####### GET_BUCKET ###########################################################

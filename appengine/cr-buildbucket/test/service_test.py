@@ -129,6 +129,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     for _ in xrange(count):
       b = model.Build(
           id=model.create_build_ids(self.now, 1)[0],
+          project=self.test_build.project,
           bucket=self.test_build.bucket,
           tags=tags,
           create_time=self.now
@@ -223,7 +224,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_peek(self):
     self.test_build.put()
-    builds, _ = service.peek(buckets=[self.test_build.bucket])
+    builds, _ = service.peek(bucket_ids=[self.test_build.bucket_id])
     self.assertEqual(builds, [self.test_build])
 
   def test_peek_multi(self):
@@ -233,21 +234,25 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     # build key is derived from the inverted current time, so later builds get
     # smaller ids. Only exception: if the time is the same, randomness decides
     # the order. So artificially create an id here to avoid flakiness.
-    build2 = model.Build(id=self.test_build.key.id() - 1, bucket='bucket2')
+    build2 = model.Build(
+        id=self.test_build.key.id() - 1, project='chromium', bucket='ci'
+    )
     build2.put()
-    builds, _ = service.peek(buckets=[self.test_build.bucket, 'bucket2'])
+    builds, _ = service.peek(
+        bucket_ids=[self.test_build.bucket_id, 'chromium/ci']
+    )
     self.assertEqual(builds, [self.test_build, build2])
 
   def test_peek_with_paging(self):
     self.put_many_builds()
     first_page, next_cursor = service.peek(
-        buckets=[self.test_build.bucket], max_builds=10
+        bucket_ids=[self.test_build.bucket_id], max_builds=10
     )
     self.assertTrue(first_page)
     self.assertTrue(next_cursor)
 
     second_page, _ = service.peek(
-        buckets=[self.test_build.bucket], start_cursor=next_cursor
+        bucket_ids=[self.test_build.bucket_id], start_cursor=next_cursor
     )
 
     self.assertTrue(all(b not in second_page for b in first_page))
@@ -255,22 +260,22 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_peek_with_bad_cursor(self):
     self.put_many_builds()
     with self.assertRaises(errors.InvalidInputError):
-      service.peek(buckets=[self.test_build.bucket], start_cursor='abc')
+      service.peek(bucket_ids=[self.test_build.bucket_id], start_cursor='abc')
 
   def test_peek_without_buckets(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.peek(buckets=[])
+      service.peek(bucket_ids=[])
 
   def test_peek_with_auth_error(self):
     self.mock_cannot(user.Action.SEARCH_BUILDS)
     self.test_build.put()
     with self.assertRaises(auth.AuthorizationError):
-      service.peek(buckets=[self.test_build.bucket])
+      service.peek(bucket_ids=[self.test_build.bucket_id])
 
   def test_peek_does_not_return_leased_builds(self):
     self.test_build.put()
     self.lease()
-    builds, _ = service.peek([self.test_build.bucket])
+    builds, _ = service.peek([self.test_build.bucket_id])
     self.assertFalse(builds)
 
   #################################### LEASE ###################################
@@ -764,36 +769,39 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   ################################ PAUSE BUCKET ################################
 
   def test_pause_bucket(self):
+    self.test_build.project = 'p'
     self.test_build.bucket = 'foo'
     self.put_many_builds(5)
 
+    self.test_build.project = 'p'
     self.test_build.bucket = 'bar'
     self.put_many_builds(5)
 
-    service.pause('foo', True)
-    builds, _ = service.peek(['foo', 'bar'])
+    service.pause('p/foo', True)
+    builds, _ = service.peek(['p/foo', 'p/bar'])
     self.assertEqual(len(builds), 5)
-    self.assertFalse(any(b.bucket == 'foo' for b in builds))
+    self.assertFalse(any(b.bucket == 'p/foo' for b in builds))
 
   def test_pause_all_requested_buckets(self):
     self.test_build.bucket = 'foo'
     self.put_many_builds(5)
 
     service.pause('foo', True)
-    builds, _ = service.peek(['foo'])
+    builds, _ = service.peek(['p/foo'])
     self.assertEqual(len(builds), 0)
 
   def test_pause_then_unpause(self):
+    self.test_build.project = 'p'
     self.test_build.bucket = 'foo'
     self.test_build.put()
 
-    service.pause('foo', True)
-    service.pause('foo', True)  # Again, to cover equality case.
-    builds, _ = service.peek(['foo'])
+    service.pause('p/foo', True)
+    service.pause('p/foo', True)  # Again, to cover equality case.
+    builds, _ = service.peek(['p/foo'])
     self.assertEqual(len(builds), 0)
 
-    service.pause('foo', False)
-    builds, _ = service.peek(['foo'])
+    service.pause('p/foo', False)
+    builds, _ = service.peek(['p/foo'])
     self.assertEqual(len(builds), 1)
 
   def test_pause_bucket_invalid_bucket_name(self):

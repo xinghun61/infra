@@ -2,11 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import collections
-import contextlib
 import datetime
 import logging
-import random
 import urlparse
 
 from google.appengine.api import taskqueue
@@ -15,26 +12,21 @@ from google.appengine.ext import deferred
 from google.appengine.ext import ndb
 
 from components import auth
-from components import net
 from components import utils
 import gae_ts_mon
 
 from proto import build_pb2
-from proto.config import project_config_pb2
 import buildtags
 import config
 import errors
 import events
 import model
 import search
-import sequence
 import swarming
 import user
 
 MAX_RETURN_BUILDS = 100
 DEFAULT_LEASE_DURATION = datetime.timedelta(minutes=1)
-
-validate_bucket_name = errors.validate_bucket_name
 
 # A cumlative counter of access denied errors in peek() method.
 # This metric exists because defining it on the buildbucket server is easier
@@ -88,13 +80,13 @@ def get_async(build_id):
   raise ndb.Return(build)
 
 
-def peek(buckets, max_builds=None, start_cursor=None):
-  """Returns builds available for leasing in the specified |buckets|.
+def peek(bucket_ids, max_builds=None, start_cursor=None):
+  """Returns builds available for leasing in the specified |bucket_ids|.
 
   Builds are sorted by creation time, oldest first.
 
   Args:
-    buckets (list of string): fetch only builds in any of |buckets|.
+    bucket_ids (list of string): fetch only builds in any of |bucket_ids|.
     max_builds (int): maximum number of builds to return. Defaults to 10.
     start_cursor (string): a value of "next" cursor returned by previous
       peek call. If not None, return next builds in the query.
@@ -105,18 +97,18 @@ def peek(buckets, max_builds=None, start_cursor=None):
       next_cursor (str): cursor for the next page.
         None if there are no more builds.
   """
-  if not buckets:
+  if not bucket_ids:
     raise errors.InvalidInputError('No buckets specified')
-  buckets = sorted(set(buckets))
+  bucket_ids = sorted(set(bucket_ids))
   search.check_acls_async(
-      buckets, inc_metric=PEEK_ACCESS_DENIED_ERROR_COUNTER
+      bucket_ids, inc_metric=PEEK_ACCESS_DENIED_ERROR_COUNTER
   ).get_result()
   max_builds = search.fix_max_builds(max_builds)
 
   # Prune any buckets that are paused.
-  bucket_states = _get_bucket_states(buckets)
+  bucket_states = _get_bucket_states(bucket_ids)
   active_buckets = []
-  for b in buckets:
+  for b in bucket_ids:
     if bucket_states[b].is_paused:
       logging.warning('Ignoring paused bucket: %s.', b)
       continue
@@ -129,7 +121,7 @@ def peek(buckets, max_builds=None, start_cursor=None):
   q = model.Build.query(
       model.Build.status == model.BuildStatus.SCHEDULED,
       model.Build.is_leased == False,
-      model.Build.bucket.IN(active_buckets),
+      model.Build.bucket_id.IN(active_buckets),
   )
   q = q.order(-model.Build.key)  # oldest first.
 
@@ -138,7 +130,7 @@ def peek(buckets, max_builds=None, start_cursor=None):
   def local_predicate(b):
     return (
         b.status == model.BuildStatus.SCHEDULED and not b.is_leased and
-        b.bucket in active_buckets
+        b.bucket_id in active_buckets
     )
 
   return search.fetch_page_async(
@@ -281,23 +273,23 @@ def start(build_id, lease_key, url, canary):
   return build
 
 
-def _get_bucket_states(buckets):
+def _get_bucket_states(bucket_ids):
   """Returns the list of bucket states for all named buckets.
 
   Args:
-    buckets (list): A list of bucket name strings. The bucket names are assumed
-      to have already been validated.
+    bucket_ids (list): A list of bucket id strings.
+      Assumed to have already been validated.
 
   Returns (dict):
-    A map of bucket name to BucketState for that bucket.
+    A map of bucket id to BucketState for that bucket.
   """
   # Get bucket keys and deduplicate.
-  default_states = [model.BucketState(id=b) for b in buckets]
+  default_states = [model.BucketState(id=b) for b in bucket_ids]
   states = ndb.get_multi(state.key for state in default_states)
   for i, state in enumerate(states):
     if not state:
       states[i] = default_states[i]
-  return dict(zip(buckets, states))
+  return dict(zip(bucket_ids, states))
 
 
 @ndb.tasklet
@@ -670,21 +662,22 @@ def _task_delete_many_builds(bucket, status, tags=None, created_by=None):
   q.map(del_if_unchanged, keys_only=True)
 
 
-def pause(bucket, is_paused):
-  if not user.can_pause_buckets_async(bucket).get_result():
-    raise user.current_identity_cannot('pause bucket of %s', bucket)
+def pause(bucket_id, is_paused):
+  if not user.can_pause_buckets_async(bucket_id).get_result():
+    raise user.current_identity_cannot('pause bucket of %s', bucket_id)
 
-  validate_bucket_name(bucket)
-  _, cfg = config.get_bucket(bucket)
+  config.validate_bucket_id(bucket_id)
+  _, cfg = config.get_bucket(bucket_id)
   if not cfg:
-    raise errors.InvalidInputError('Invalid bucket: %s' % (bucket,))
+    raise errors.InvalidInputError('Invalid bucket: %s' % bucket_id)
   if config.is_swarming_config(cfg):
     raise errors.InvalidInputError('Cannot pause a Swarming bucket')
 
   @ndb.transactional
   def try_set_pause():
     state = (
-        model.BucketState.get_by_id(id=bucket) or model.BucketState(id=bucket)
+        model.BucketState.get_by_id(bucket_id) or
+        model.BucketState(id=bucket_id)
     )
     if state.is_paused != is_paused:
       state.is_paused = is_paused

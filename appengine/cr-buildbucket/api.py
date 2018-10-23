@@ -418,7 +418,7 @@ class BuildBucketApi(remote.Service):
     """Returns available builds."""
     assert isinstance(request.bucket, list)
     builds, next_cursor = service.peek(
-        request.bucket,
+        convert_bucket_list(request.bucket),
         max_builds=request.max_builds,
         start_cursor=request.start_cursor,
     )
@@ -733,7 +733,7 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def pause(self, request):
     """Pauses or unpause a bucket."""
-    service.pause(request.bucket, request.is_paused)
+    service.pause(convert_bucket(request.bucket), request.is_paused)
     return self.PauseResponse()
 
   ####### GET_BUCKET ###########################################################
