@@ -38,8 +38,8 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 		s := New(tm)
 		s.MarkIdle("w0", []string{}, tm)
 		s.MarkIdle("w1", []string{"label1"}, tm)
-		s.AddRequest("t1", &TaskRequest{AccountId: "a1", Labels: []string{"label1"}}, tm)
-		s.AddRequest("t2", &TaskRequest{AccountId: "a1", Labels: []string{"label2"}}, tm)
+		s.AddRequest("t1", NewRequest("a1", []string{"label1"}, tm), tm)
+		s.AddRequest("t2", NewRequest("a1", []string{"label2"}, tm), tm)
 		c := account.NewConfig(0, 0, vector.New())
 		s.AddAccount("a1", c, vector.New(2, 0, 0))
 		Convey("when scheduling jobs", func() {
@@ -70,7 +70,7 @@ func TestSchedulerReprioritize(t *testing.T) {
 		for _, i := range []int{1, 2} {
 			rid := fmt.Sprintf("r%d", i)
 			wid := fmt.Sprintf("w%d", i)
-			s.AddRequest(rid, &TaskRequest{AccountId: "a1"}, tm0)
+			s.AddRequest(rid, NewRequest("a1", nil, tm0), tm0)
 			s.MarkIdle(wid, []string{}, tm0)
 			s.state.applyAssignment(&Assignment{RequestId: rid, WorkerId: wid, Type: Assignment_IDLE_WORKER})
 		}
@@ -113,14 +113,14 @@ func TestSchedulerPreempt(t *testing.T) {
 		for _, i := range []int{1, 2} {
 			rid := fmt.Sprintf("r%d", i)
 			wid := fmt.Sprintf("w%d", i)
-			s.AddRequest(rid, &TaskRequest{AccountId: "a1"}, tm0)
+			s.AddRequest(rid, NewRequest("a1", nil, tm0), tm0)
 			s.MarkIdle(wid, []string{}, tm0)
 			s.state.applyAssignment(&Assignment{RequestId: rid, WorkerId: wid, Type: Assignment_IDLE_WORKER, Priority: 1})
 		}
 		s.state.Workers["w1"].RunningTask.Cost = vector.New(0, 1)
 		Convey("given a new P0 request from a different account", func() {
 			s.config.AccountConfigs["a2"] = &account.Config{}
-			s.AddRequest("r3", &TaskRequest{AccountId: "a2"}, tm0)
+			s.AddRequest("r3", NewRequest("a2", nil, tm0), tm0)
 			Convey("given sufficient balance", func() {
 				s.state.Balances["a2"] = vector.New(1)
 				Convey("when scheduling", func() {
@@ -144,7 +144,7 @@ func TestSchedulerPreempt(t *testing.T) {
 		})
 
 		Convey("given a new P0 request from the same account", func() {
-			s.AddRequest("r3", &TaskRequest{AccountId: "a1"}, tm0)
+			s.AddRequest("r3", NewRequest("a1", nil, tm0), tm0)
 			stateBefore := s.state.Clone()
 			Convey("when scheduling", func() {
 				got := s.RunOnce()
@@ -204,6 +204,7 @@ func TestUpdateErrors(t *testing.T) {
 // TestUpdateBalance tests that UpdateBalance makes the correct modifications
 // to account balances and task run costs.
 func TestUpdateBalance(t *testing.T) {
+	epoch := time.Unix(0, 0)
 	t0 := tutils.TimestampProto(epoch)
 	t1 := tutils.TimestampProto(epoch.Add(1 * time.Second))
 	t2 := tutils.TimestampProto(epoch.Add(2 * time.Second))
@@ -247,21 +248,21 @@ func TestUpdateBalance(t *testing.T) {
 						RunningTask: &TaskRun{
 							Cost:     vector.New(1),
 							Priority: 1,
-							Request:  &TaskRequest{AccountId: "a1"},
+							Request:  NewRequest("a1", nil, epoch),
 						},
 					},
 					// Worker running a task with uninitialized Cost.
 					"w2": &Worker{
 						RunningTask: &TaskRun{
 							Priority: 2,
-							Request:  &TaskRequest{AccountId: "a1"},
+							Request:  NewRequest("a1", nil, epoch),
 						},
 					},
 					// Worker running a task with invalid account.
 					"w3": &Worker{
 						RunningTask: &TaskRun{
 							Priority: account.FreeBucket,
-							Request:  &TaskRequest{AccountId: "a2"},
+							Request:  NewRequest("a2", nil, epoch),
 						},
 					},
 				},
@@ -281,21 +282,21 @@ func TestUpdateBalance(t *testing.T) {
 						RunningTask: &TaskRun{
 							Cost:     vector.New(1, 2),
 							Priority: 1,
-							Request:  &TaskRequest{AccountId: "a1"},
+							Request:  NewRequest("a1", nil, epoch),
 						},
 					},
 					"w2": &Worker{
 						RunningTask: &TaskRun{
 							Cost:     vector.New(0, 0, 2),
 							Priority: 2,
-							Request:  &TaskRequest{AccountId: "a1"},
+							Request:  NewRequest("a1", nil, epoch),
 						},
 					},
 					"w3": &Worker{
 						RunningTask: &TaskRun{
 							Cost:     vector.New(),
 							Priority: account.FreeBucket,
-							Request:  &TaskRequest{AccountId: "a2"},
+							Request:  NewRequest("a2", nil, epoch),
 						},
 					},
 				},
@@ -316,7 +317,7 @@ func TestUpdateBalance(t *testing.T) {
 func TestAddRequest(t *testing.T) {
 	tm := time.Unix(0, 0)
 	s := New(tm)
-	r := &TaskRequest{}
+	r := NewRequest("a1", nil, tm)
 	s.AddRequest("r1", r, tm)
 	if s.state.QueuedRequests["r1"] != r {
 		t.Errorf("AddRequest did not enqueue request.")

@@ -26,7 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/kylelemons/godebug/pretty"
 
 	"infra/qscheduler/qslib/tutils"
@@ -35,10 +34,6 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 )
-
-// epoch is an arbitrary time for testing purposes, corresponds to
-// 01/01/2018 @ 1:00 am UTC
-var epoch = time.Unix(1514768400, 0)
 
 // TestPrioritizeOne tests that PrioritizeRequests behaves correctly
 // for a single request.
@@ -50,8 +45,6 @@ func TestPrioritizeOne(t *testing.T) {
 	Convey("Given a scheduler, with a request for account", t, func() {
 		tm := time.Unix(0, 0)
 		s := New(tm)
-		s.AddRequest(rid, &TaskRequest{AccountId: aid}, tm)
-
 		accountCases := []struct {
 			accountBalance   *vector.Vector
 			expectedPriority int32
@@ -70,6 +63,7 @@ func TestPrioritizeOne(t *testing.T) {
 			},
 		}
 
+		s.AddRequest(rid, NewRequest(aid, nil, tm), tm)
 		for _, c := range accountCases {
 			Convey(fmt.Sprintf("given account balance is %v", c.accountBalance.Values), func() {
 				s.AddAccount(aid, &account.Config{}, c.accountBalance)
@@ -109,7 +103,7 @@ func TestPrioritizeMany(t *testing.T) {
 		perm := rand.Perm(nReqs)
 		for _, i := range perm {
 			tm := time.Unix(int64(i), 0)
-			s.AddRequest(strconv.Itoa(i), &TaskRequest{AccountId: aid, EnqueueTime: tutils.TimestampProto(tm)}, tm)
+			s.AddRequest(strconv.Itoa(i), NewRequest(aid, nil, tm), tm)
 		}
 
 		Convey("given no matching account", func() {
@@ -202,13 +196,6 @@ func TestForPriority(t *testing.T) {
 			t.Errorf(fmt.Sprintf("P%d slice got unexpected diff (-got +want): %s", p, diff))
 		}
 	}
-}
-
-// atTime is a helper method to create proto.Timestamp objects at various
-// times relative to a fixed "0" time.
-func atTime(seconds time.Duration) *timestamp.Timestamp {
-	timeAfter := epoch.Add(seconds * time.Second)
-	return tutils.TimestampProto(timeAfter)
 }
 
 // getWorkers is a helper function to turn a slice of running tasks

@@ -69,7 +69,7 @@ func TestMarkIdle(t *testing.T) {
 
 		Convey("given a worker running a task at t=1", func() {
 			state.markIdle("w1", []string{}, tm1)
-			state.addRequest("r1", &TaskRequest{}, tm1)
+			state.addRequest("r1", NewRequest("", nil, tm1), tm1)
 			state.applyAssignment(&Assignment{Type: Assignment_IDLE_WORKER, RequestId: "r1", WorkerId: "w1"})
 			Convey("when marking idle again with newer time t=2", func() {
 				state.markIdle("w1", []string{}, tm2)
@@ -98,7 +98,7 @@ func TestNotifyRequest(t *testing.T) {
 	tm4 := time.Unix(4, 0)
 	Convey("Given a state with a request(t=1) and idle worker(t=3) and a match between them", t, func() {
 		state := NewState(tm0)
-		state.addRequest("r1", &TaskRequest{}, tm1)
+		state.addRequest("r1", NewRequest("", nil, tm1), tm1)
 		state.markIdle("w1", []string{}, tm3)
 		a := &Assignment{
 			Type:      Assignment_IDLE_WORKER,
@@ -157,7 +157,7 @@ func TestNotifyRequest(t *testing.T) {
 
 	Convey("Given a state with a matched request and worker both at t=1 and a separate idle worker at t=3", t, func() {
 		state := NewState(tm0)
-		state.addRequest("r1", &TaskRequest{}, tm1)
+		state.addRequest("r1", NewRequest("", nil, tm1), tm1)
 		state.markIdle("w1", []string{}, tm1)
 		state.markIdle("w2", []string{}, tm3)
 		a := &Assignment{
@@ -253,19 +253,20 @@ func TestApplyIdleAssignment(t *testing.T) {
 // TestApplyPreempt tests that Apply for PREEMPT_WORKER behaves correctly.
 func TestApplyPreempt(t *testing.T) {
 	t.Parallel()
+	tm := time.Unix(0, 0)
 	state := &State{
 		Balances: map[string]*vector.Vector{
 			"a1": vector.New(),
 			"a2": vector.New(2),
 		},
 		QueuedRequests: map[string]*TaskRequest{
-			"t2": &TaskRequest{AccountId: "a2"},
+			"t2": NewRequest("a2", nil, tm),
 		},
 		Workers: map[string]*Worker{
 			"w1": &Worker{RunningTask: &TaskRun{
 				Cost:      vector.New(1),
 				Priority:  2,
-				Request:   &TaskRequest{AccountId: "a1"},
+				Request:   NewRequest("a1", nil, tm),
 				RequestId: "t1",
 			}},
 		},
@@ -277,13 +278,13 @@ func TestApplyPreempt(t *testing.T) {
 			"a2": vector.New(1),
 		},
 		QueuedRequests: map[string]*TaskRequest{
-			"t1": &TaskRequest{AccountId: "a1"},
+			"t1": NewRequest("a1", nil, tm),
 		},
 		Workers: map[string]*Worker{
 			"w1": &Worker{RunningTask: &TaskRun{
 				Cost:      vector.New(1),
 				Priority:  1,
-				Request:   &TaskRequest{AccountId: "a2"},
+				Request:   NewRequest("a2", nil, tm),
 				RequestId: "t2",
 			},
 			}},

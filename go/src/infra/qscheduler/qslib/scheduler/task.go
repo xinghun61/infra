@@ -70,6 +70,15 @@ func (a LabelSet) Equal(b LabelSet) bool {
 	return true
 }
 
+// NewRequest creates a new TaskRequest.
+func NewRequest(accountID string, labels []string, enqueueTime time.Time) *TaskRequest {
+	return &TaskRequest{
+		AccountId:   accountID,
+		EnqueueTime: tutils.TimestampProto(enqueueTime),
+		Labels:      labels,
+	}
+}
+
 // confirm updates a request's confirmed time (to acknowledge that its state
 // is consistent with authoritative source as of this time). The update is
 // only applied if it is a forward-in-time update or if the existing time
