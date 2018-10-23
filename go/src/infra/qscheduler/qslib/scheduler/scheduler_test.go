@@ -34,8 +34,8 @@ import (
 // requests with idle workers, if they are available.
 func TestMatchWithIdleWorkers(t *testing.T) {
 	Convey("Given 2 tasks and 2 idle workers", t, func() {
-		s := New()
 		tm := time.Unix(0, 0)
+		s := New(tm)
 		s.MarkIdle("w0", []string{}, tm)
 		s.MarkIdle("w1", []string{"label1"}, tm)
 		s.AddRequest("t1", &TaskRequest{AccountId: "a1", Labels: []string{"label1"}}, tm)
@@ -45,9 +45,10 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 		Convey("when scheduling jobs", func() {
 			muts := s.RunOnce()
 			Convey("then both jobs should be matched, with provisionable label used as tie-breaker", func() {
+				tmproto := tutils.TimestampProto(tm)
 				expects := []*Assignment{
-					&Assignment{Type: Assignment_IDLE_WORKER, Priority: 0, RequestId: "t1", WorkerId: "w1"},
-					&Assignment{Type: Assignment_IDLE_WORKER, Priority: 0, RequestId: "t2", WorkerId: "w0"},
+					&Assignment{Type: Assignment_IDLE_WORKER, Priority: 0, RequestId: "t1", WorkerId: "w1", Time: tmproto},
+					&Assignment{Type: Assignment_IDLE_WORKER, Priority: 0, RequestId: "t2", WorkerId: "w0", Time: tmproto},
 				}
 				So(muts, shouldResemblePretty, expects)
 			})
@@ -62,8 +63,8 @@ func TestSchedulerReprioritize(t *testing.T) {
 	// Prepare a situation in which one P0 job (out of 2 running) will be
 	// demoted, and a separate P2 job will be promoted to P1.
 	Convey("Given two running requests with different costs for an account that needs 1 demotion from P0, and supports 1 additional P1 job", t, func() {
-		s := New()
 		tm0 := time.Unix(0, 0)
+		s := New(tm0)
 		s.config.AccountConfigs["a1"] = &account.Config{ChargeRate: vector.New(1.1, 0.9)}
 		s.state.Balances["a1"] = vector.New(2*account.DemoteThreshold, 2*account.PromoteThreshold, 0)
 		for _, i := range []int{1, 2} {
@@ -105,8 +106,8 @@ func TestSchedulerReprioritize(t *testing.T) {
 // running on a worker, when a higher priority job appears to take its place.
 func TestSchedulerPreempt(t *testing.T) {
 	Convey("Given a state with two running P1 tasks", t, func() {
-		s := New()
 		tm0 := time.Unix(0, 0)
+		s := New(tm0)
 		s.config.AccountConfigs["a1"] = &account.Config{ChargeRate: vector.New(1, 1, 1)}
 		s.state.Balances["a1"] = vector.New(0.5*account.PromoteThreshold, 1)
 		for _, i := range []int{1, 2} {
@@ -166,15 +167,17 @@ func TestUpdateErrors(t *testing.T) {
 	}{
 		{
 			&Scheduler{
-				NewState(),
-				NewConfig(),
+				&State{},
+				&Config{},
 			},
 			time.Unix(0, 0),
 			errors.New("timestamp: nil Timestamp"),
 		},
 		{
+			// Force UTC time representation, so that we get a predictable error
+			// message that we can assert on.
 			&Scheduler{
-				stateAtTime(time.Unix(100, 0).UTC()),
+				NewState(time.Unix(100, 0).UTC()),
 				NewConfig(),
 			},
 			time.Unix(0, 0).UTC(),
@@ -182,7 +185,7 @@ func TestUpdateErrors(t *testing.T) {
 		},
 		{
 			&Scheduler{
-				stateAtTime(time.Unix(0, 0)),
+				NewState(time.Unix(0, 0)),
 				NewConfig(),
 			},
 			time.Unix(1, 0),
@@ -312,7 +315,7 @@ func TestUpdateBalance(t *testing.T) {
 // TestAddRequest ensures that AddRequest enqueues a request.
 func TestAddRequest(t *testing.T) {
 	tm := time.Unix(0, 0)
-	s := New()
+	s := New(tm)
 	r := &TaskRequest{}
 	s.AddRequest("r1", r, tm)
 	if s.state.QueuedRequests["r1"] != r {

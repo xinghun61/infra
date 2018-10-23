@@ -43,11 +43,11 @@ func TestMarkIdle(t *testing.T) {
 	tm1 := time.Unix(1, 0)
 	tm2 := time.Unix(2, 0)
 	Convey("Given an empty state", t, func() {
-		state := NewState()
+		state := NewState(tm0)
 		Convey("when a worker marked idle at t=1", func() {
 			state.markIdle("w1", []string{"old_label"}, tm1)
 			Convey("then the worker is added to the state.", func() {
-				want := NewState()
+				want := NewState(tm0)
 				want.Workers["w1"] = &Worker{Labels: []string{"old_label"}, ConfirmedTime: tutils.TimestampProto(tm1)}
 				So(state, shouldResemblePretty, want)
 			})
@@ -97,7 +97,7 @@ func TestNotifyRequest(t *testing.T) {
 	tm3 := time.Unix(3, 0)
 	tm4 := time.Unix(4, 0)
 	Convey("Given a state with a request(t=1) and idle worker(t=3) and a match between them", t, func() {
-		state := NewState()
+		state := NewState(tm0)
 		state.addRequest("r1", &TaskRequest{}, tm1)
 		state.markIdle("w1", []string{}, tm3)
 		a := &Assignment{
@@ -156,7 +156,7 @@ func TestNotifyRequest(t *testing.T) {
 	})
 
 	Convey("Given a state with a matched request and worker both at t=1 and a separate idle worker at t=3", t, func() {
-		state := NewState()
+		state := NewState(tm0)
 		state.addRequest("r1", &TaskRequest{}, tm1)
 		state.markIdle("w1", []string{}, tm1)
 		state.markIdle("w2", []string{}, tm3)
@@ -184,14 +184,14 @@ func TestNotifyRequest(t *testing.T) {
 		Convey("when notifying (contradictory match) with a newer time t=4", func() {
 			state.notifyRequest("r1", "w2", tm4)
 			Convey("then the request and both workers are deleted.", func() {
-				So(state, shouldResemblePretty, NewState())
+				So(state, shouldResemblePretty, NewState(tm0))
 			})
 		})
 
 	})
 
 	Convey("Given a state with an idle worker(t=1), and a notify call with a match to an unknown request for that worker", t, func() {
-		state := NewState()
+		state := NewState(tm0)
 		state.markIdle("w1", []string{}, tm1)
 		stateBefore := state.Clone()
 		Convey("when notifying (unknown request for worker) with older time t=0", func() {
@@ -203,18 +203,10 @@ func TestNotifyRequest(t *testing.T) {
 		Convey("when notifying (unknown request for worker) with newer time t=2", func() {
 			state.notifyRequest("r1", "w1", tm2)
 			Convey("then the worker is deleted.", func() {
-				So(state, shouldResemblePretty, NewState())
+				So(state, shouldResemblePretty, NewState(tm0))
 			})
 		})
 	})
-}
-
-// stateAtTime is a testing helper that creates an initialized but empty
-//  State instance with the given time as its LastAccountUpdate time.
-func stateAtTime(t time.Time) *State {
-	s := NewState()
-	s.LastUpdateTime = tutils.TimestampProto(t)
-	return s
 }
 
 // Helper method to assert that two State instances are deeply equal.

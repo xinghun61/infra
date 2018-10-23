@@ -15,8 +15,11 @@
 package scheduler
 
 import (
+	"time"
+
 	"github.com/golang/protobuf/proto"
 
+	"infra/qscheduler/qslib/tutils"
 	"infra/qscheduler/qslib/types/account"
 	"infra/qscheduler/qslib/types/vector"
 )
@@ -29,11 +32,12 @@ func NewConfig() *Config {
 }
 
 // NewState creates an returns a new State instance with all maps initialized.
-func NewState() *State {
+func NewState(t time.Time) *State {
 	return &State{
 		Balances:       map[string]*vector.Vector{},
 		QueuedRequests: map[string]*TaskRequest{},
 		Workers:        map[string]*Worker{},
+		LastUpdateTime: tutils.TimestampProto(t),
 	}
 }
 
@@ -42,7 +46,11 @@ func (s *State) Clone() *State {
 	// Merge clone into intiated state, to ensure that any empty maps are preserved
 	// as empty maps rather than turned into nil maps as proto.Clone would do
 	// on its own.
-	ns := NewState()
+	ns := NewState(time.Unix(0, 0))
+	// Time is a required argument to the above constructor, but we don't want to
+	// specify it in the empty initialized state. This will get overwritten by
+	// the merge below (unless it was missing from s).
+	ns.LastUpdateTime = nil
 	proto.Merge(ns, proto.Clone(s))
 	return ns
 }

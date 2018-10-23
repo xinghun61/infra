@@ -47,9 +47,9 @@ type Scheduler struct {
 }
 
 // New returns a newly initialized Scheduler.
-func New() *Scheduler {
+func New(t time.Time) *Scheduler {
 	return &Scheduler{
-		NewState(),
+		NewState(t),
 		NewConfig(),
 	}
 }

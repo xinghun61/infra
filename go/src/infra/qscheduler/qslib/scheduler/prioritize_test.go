@@ -49,7 +49,7 @@ func TestPrioritizeOne(t *testing.T) {
 
 	Convey("Given a scheduler, with a request for account", t, func() {
 		tm := time.Unix(0, 0)
-		s := New()
+		s := New(tm)
 		s.AddRequest(rid, &TaskRequest{AccountId: aid}, tm)
 
 		accountCases := []struct {
@@ -102,7 +102,7 @@ func TestPrioritizeMany(t *testing.T) {
 	nReqs := 10
 	aid := "a1"
 	Convey("Given requests with different enqueue times, but inserted in random order", t, func() {
-		s := New()
+		s := New(time.Unix(0, 0))
 		// Use a fixed seed, so the test is reproducible and the request order is
 		// pseudo-random.
 		rand.Seed(10)
