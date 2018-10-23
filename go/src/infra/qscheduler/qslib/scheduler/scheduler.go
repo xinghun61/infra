@@ -66,6 +66,20 @@ func (e *UpdateOrderError) Error() string {
 	return fmt.Sprintf("Update time %v was older than existing state's time %v.", e.Next, e.Previous)
 }
 
+// AddAccount creates a new account with the given id, config, and initialBalance
+// (or zero balance if nil).
+//
+// If an account with that id already exists, then it is overwritten.
+func (s *Scheduler) AddAccount(id string, config *account.Config, initialBalance *vector.Vector) {
+	s.config.AccountConfigs[id] = config
+	if initialBalance == nil {
+		initialBalance = vector.New()
+	} else {
+		initialBalance = initialBalance.Copy()
+	}
+	s.state.Balances[id] = initialBalance
+}
+
 // AddRequest enqueues a new task request.
 func (s *Scheduler) AddRequest(id string, request *TaskRequest, t time.Time) {
 	s.state.addRequest(id, request, t)
