@@ -18,12 +18,14 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"golang.org/x/net/context"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
+	"infra/appengine/crosskylabadmin/app/clients/mock"
 	"infra/appengine/crosskylabadmin/app/config"
 )
 
@@ -427,6 +429,38 @@ func TestRefreshAndSummarizeBotsFields(t *testing.T) {
 					})
 				})
 			})
+		})
+	})
+}
+
+// TODO(pprabhu) This test is currently a stub. It should filter by dimensions other than dut_id.
+func TestSummarizeBotsWithDimensions(t *testing.T) {
+	Convey("with three swarming duts available", t, func() {
+		c := testingContext()
+		mc := gomock.NewController(t)
+		defer mc.Finish()
+		mockSwarming := mock.NewMockSwarmingClient(mc)
+		tracker := TrackerServerImpl{
+			ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
+				return mockSwarming, nil
+			},
+		}
+
+		bots := readyBotsForDutIDs([]string{"dut_1", "dut_2", "dut_3"})
+		mockSwarming.EXPECT().ListAliveBotsInPool(
+			gomock.Any(), gomock.Eq(config.Get(c).Swarming.BotPool), gomock.Any(),
+		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+		mockSwarming.EXPECT().ListSortedRecentTasksForBot(
+			gomock.Any(), gomock.Any(), gomock.Any(),
+		).AnyTimes().Return([]*swarming.SwarmingRpcsTaskResult{}, nil)
+
+		Convey("refresh filtering to available dut returns one bot", func() {
+			refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
+				Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
+			})
+			So(err, ShouldBeNil)
+			So(refreshed.DutIds, ShouldHaveLength, 1)
+			So(refreshed.DutIds, ShouldContain, "dut_1")
 		})
 	})
 }

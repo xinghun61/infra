@@ -56,6 +56,75 @@ func testingContext() context.Context {
 	return c
 }
 
+// readyBotsForDutIDs returns BotInfos for DUTs with the given dut ids in "ready" state.
+func readyBotsForDutIDs(ids []string) []*swarming.SwarmingRpcsBotInfo {
+	bis := make([]*swarming.SwarmingRpcsBotInfo, 0, len(ids))
+	for _, id := range ids {
+		bis = append(bis, &swarming.SwarmingRpcsBotInfo{
+			BotId: fmt.Sprintf("bot_%s", id),
+			Dimensions: []*swarming.SwarmingRpcsStringListPair{
+				{
+					Key:   "dut_id",
+					Value: []string{id},
+				},
+				{
+					Key:   "dut_state",
+					Value: []string{"ready"},
+				},
+			},
+		})
+	}
+	return bis
+}
+
+// setBotDimension sets the dimension with given key to values.
+func setBotDimension(b *swarming.SwarmingRpcsBotInfo, key string, values []string) {
+	for _, keyval := range b.Dimensions {
+		if keyval.Key == key {
+			keyval.Value = values
+			return
+		}
+	}
+	b.Dimensions = append(b.Dimensions, &swarming.SwarmingRpcsStringListPair{
+		Key:   key,
+		Value: values,
+	})
+}
+
+// fakeListAliveBotsInPool returns a function that implements SwarmingClient.ListAliveBotsInPool.
+//
+// This fake implementation captures the bots argument and returns a subset of the bots
+// filtered by the dimensions argument in the SwarmingClient.ListAliveBotsInPool call.
+func fakeListAliveBotsInPool(bots []*swarming.SwarmingRpcsBotInfo) func(context.Context, string, strpair.Map) ([]*swarming.SwarmingRpcsBotInfo, error) {
+	return func(_ context.Context, _ string, ds strpair.Map) ([]*swarming.SwarmingRpcsBotInfo, error) {
+		resp := []*swarming.SwarmingRpcsBotInfo{}
+		for _, b := range bots {
+			if botContainsDims(b, ds) {
+				resp = append(resp, b)
+			}
+		}
+		return resp, nil
+	}
+}
+
+// botContainsDims determines if the bot b satisfies the requirements specified via dims
+func botContainsDims(b *swarming.SwarmingRpcsBotInfo, dims strpair.Map) bool {
+	bdm := strpair.Map{}
+	for _, bds := range b.Dimensions {
+		bdm[bds.Key] = bds.Value
+	}
+	for key, values := range dims {
+		for _, value := range values {
+			if !bdm.Contains(key, value) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// ///////// TODO(pprabhu) Stop using fakeSwarmingClient and delete everything below
+
 // fakeSwarmingClient implements SwarmingClient.
 type fakeSwarmingClient struct {
 	m sync.Mutex
