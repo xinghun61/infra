@@ -1,5 +1,4 @@
 create {
-  source { patch_version: "chromium.16" }
   verify { test: "git_test.py" }
 }
 
@@ -24,8 +23,8 @@ create {
 
 create {
   platform_re: "windows-.*"
-  source { script { name: "windows_fetch.py" }}
-  build { install: "build_win.sh" }
+  source { script { name: "fetch_win.py" }}
+  build { install: "install_win.sh" }
 }
 
 upload { pkg_prefix: "tools" }
