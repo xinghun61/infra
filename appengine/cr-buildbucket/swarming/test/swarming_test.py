@@ -34,13 +34,12 @@ from proto.config import service_config_pb2
 from swarming import isolate
 from swarming import swarming
 from test.test_util import future, future_exception, ununicide
-import annotations
 import errors
 import model
 import user
 
 LINUX_CHROMIUM_REL_NG_CACHE_NAME = (
-    'builder_980988014eb33bf5578a0f44e123402888e39083523bfd9214fea0c8a080db17'
+    'builder_c7a0b323f25e60c6973918a075aad0b9d7f9c43afe40287662a279d8745874ac'
 )
 
 
@@ -175,7 +174,7 @@ class SwarmingTest(BaseTest):
 
     self.task_template = {
         'name':
-            'buildbucket:${bucket}:${builder}',
+            'bb-${build_id}-${project}-${builder}',
         'priority':
             '100',
         'tags': [
@@ -819,12 +818,12 @@ class SwarmingTest(BaseTest):
     props_def_first[u'dimensions'].sort(key=lambda x: (x[u'key'], x[u'value']))
     expected_task_def = {
         'name':
-            'buildbucket:luci.chromium.try:linux_chromium_rel_ng',
+            'bb-1-chromium-linux_chromium_rel_ng',
         'priority':
             '108',
         'tags': [
             'build_address:luci.chromium.try/linux_chromium_rel_ng/1',
-            'buildbucket_bucket:luci.chromium.try',
+            'buildbucket_bucket:chromium/try',
             'buildbucket_build_id:1',
             'buildbucket_hostname:cr-buildbucket.appspot.com',
             'buildbucket_template_canary:0',
@@ -897,12 +896,7 @@ class SwarmingTest(BaseTest):
             'swarming_task_id:deadbeef',
         }
     )
-    self.assertEqual(
-        build.url, (
-            'https://milo.example.com'
-            '/p/chromium/builders/luci.chromium.try/linux_chromium_rel_ng/1'
-        )
-    )
+    self.assertEqual(build.url, 'https://milo.example.com/b/1')
 
     self.assertEqual(build.service_account, 'robot@example.com')
 
@@ -922,7 +916,7 @@ class SwarmingTest(BaseTest):
                 services=[u'https://chromium-swarm.appspot.com'],
                 audience=[auth.Identity('user', 'test@localhost')],
                 impersonate=auth.Identity('user', 'john@example.com'),
-                tags=['buildbucket:bucket:luci.chromium.try'],
+                tags=['buildbucket:bucket:chromium/try'],
             )
         ]
     )
@@ -965,7 +959,7 @@ class SwarmingTest(BaseTest):
   def test_create_task_async_new_swarming_template_format(self):
     self.task_template = {
         'name':
-            'buildbucket:${bucket}:${builder}',
+            'bb-${build_id}-${project}-${builder}',
         'priority':
             '100',
         'task_slices': [{
@@ -1257,11 +1251,11 @@ class SwarmingTest(BaseTest):
     props_def_first[u'dimensions'].sort(key=lambda x: (x[u'key'], x[u'value']))
     expected_task_def = {
         'name':
-            'buildbucket:luci.chromium.try:linux_chromium_rel_ng-canary',
+            'bb-1-chromium-linux_chromium_rel_ng-canary',
         'priority':
             '108',
         'tags': [
-            'buildbucket_bucket:luci.chromium.try',
+            'buildbucket_bucket:chromium/try',
             'buildbucket_build_id:1',
             'buildbucket_hostname:cr-buildbucket.appspot.com',
             'buildbucket_template_canary:1',
@@ -1975,19 +1969,12 @@ class SwarmingTest(BaseTest):
     )
 
     self.assertEqual(
-        swarming._generate_build_url('milo.example.com', build, 3), (
-            'https://milo.example.com/p/chromium/builders/'
-            'luci.chromium.try/linux_chromium_rel_ng/3'
-        )
+        swarming._generate_build_url('milo.example.com', build),
+        'https://milo.example.com/b/1',
     )
 
     self.assertEqual(
-        swarming._generate_build_url('milo.example.com', build, None),
-        ('https://milo.example.com/p/chromium/builds/b1')
-    )
-
-    self.assertEqual(
-        swarming._generate_build_url(None, build, 54),
+        swarming._generate_build_url(None, build),
         ('https://swarming.example.com/task?id=deadbeef')
     )
 

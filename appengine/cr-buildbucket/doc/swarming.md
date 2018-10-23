@@ -140,7 +140,7 @@ of the message.
 A swarming task created by buildbucket has extra tags:
 
   * `buildbucket_hostname:<hostname>`
-  * `buildbucket_bucket:<bucket>`
+  * `buildbucket_bucket_id:<project_id>/<bucket>`, e.g. `chromium/try`.
   * `buildbucket_build_id:<id>`
   * `buildbucket_template_revision:<template commit hash>`
   * `buildbucket_template_canary:<1 if created from canary template>`

@@ -125,7 +125,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     }
     self.task_template = {
         'name':
-            'buildbucket:${bucket}:${builder}',
+            'bb-${build_id}-${project}-${builder}',
         'priority':
             '100',
         'task_slices': [{
@@ -331,17 +331,17 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
             u'path':
                 u'cache/builder',
             u'name': (
-                u'builder_980988014eb33bf5578a0f44e123402888e39083523bfd921'
-                u'4fea0c8a080db17'
+                u'builder_c7a0b323f25e60c6973918a075aad0b9d7f9c43afe40287662a27'
+                '9d8745874ac'
             ),
         }],
     }
     expected_task_def = {
         u'name':
-            u'buildbucket:luci.chromium.try:linux_chromium_rel_ng',
+            u'bb-1-chromium-linux_chromium_rel_ng',
         u'tags': [
             u'build_address:luci.chromium.try/linux_chromium_rel_ng/0',
-            u'buildbucket_bucket:luci.chromium.try',
+            u'buildbucket_bucket:chromium/try',
             u'buildbucket_build_id:1',
             u'buildbucket_hostname:cr-buildbucket.appspot.com',
             u'buildbucket_template_canary:0',

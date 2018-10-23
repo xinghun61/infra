@@ -58,6 +58,7 @@ from proto import launcher_pb2
 from proto.config import project_config_pb2
 from v2 import tokens
 import annotations
+import api_common
 import buildtags
 import config
 import errors
@@ -315,7 +316,7 @@ def _buildbucket_property(build):
       'hostname': app_identity.get_default_version_hostname(),
       'build': {
           'project': build.project,
-          'bucket': build.bucket,
+          'bucket': api_common.format_luci_bucket(build.bucket_id),
           'created_by': build.created_by.to_bytes(),
           'created_ts': utils.datetime_to_timestamp(build.create_time),
           'id': str(build.key.id()),
@@ -466,9 +467,8 @@ def _create_task_def_async(
   build.swarming_hostname = swarming_cfg.hostname
   if not build.swarming_hostname:  # pragma: no cover
     raise Error('swarming hostname is not configured')
-  h = hashlib.sha256('%s:%s' % (build.bucket, builder_cfg.name)).hexdigest()
+  h = hashlib.sha256('%s/%s' % (build.bucket_id, builder_cfg.name)).hexdigest()
   task_template_params = {
-      'bucket': build.bucket,
       'builder_hash': h,
       'build_id': build.key.id(),
       'build_result_filename': _BUILD_RUN_RESULT_FILENAME,
@@ -622,7 +622,7 @@ def _calc_tags(
 ):
   """Calculates the Swarming task request tags to use."""
   tags = set(tags or [])
-  tags.add('buildbucket_bucket:%s' % build.bucket)
+  tags.add('buildbucket_bucket:%s' % build.bucket_id)
   tags.add('buildbucket_build_id:%s' % build.key.id())
   tags.add(
       'buildbucket_hostname:%s' % app_identity.get_default_version_hostname()
@@ -817,13 +817,13 @@ def _get_builder_async(build):
   """
   if not build.parameters:
     raise errors.InvalidInputError(
-        'A build for bucket %r must have parameters' % build.bucket
+        'A build for bucket %r must have parameters' % build.bucket_id
     )
   builder_name = build.parameters.get(model.BUILDER_PARAMETER)
   if not isinstance(builder_name, basestring):
     raise errors.InvalidInputError('Invalid builder name %r' % builder_name)
 
-  project_id, bucket_cfg = yield config.get_bucket_async(build.bucket)
+  project_id, bucket_cfg = yield config.get_bucket_async(build.bucket_id)
   assert bucket_cfg, 'if there is no bucket, this code should not have run'
   assert project_id == build.project, '%r != %r' % (project_id, build.project)
   if not bucket_cfg.HasField('swarming'):
@@ -836,7 +836,7 @@ def _get_builder_async(build):
       raise ndb.Return(bucket_cfg, builder_cfg)
 
   raise errors.BuilderNotFoundError(
-      'Builder %r is not found in bucket %r' % (builder_name, build.bucket)
+      'Builder %r is not found in bucket %r' % (builder_name, build.bucket_id)
   )
 
 
@@ -873,11 +873,15 @@ def _prepare_task_def_async(
   if build_number is not None:
     build.tags.append(
         buildtags.build_address_tag(
-            build.bucket, builder_cfg.name, build_number
+            # TODO(crbug.com/851036): migrate build address to use short
+            # bucket names.
+            api_common.format_luci_bucket(build.bucket_id),
+            builder_cfg.name,
+            build_number,
         )
     )
 
-  build.url = _generate_build_url(settings.milo_hostname, build, build_number)
+  build.url = _generate_build_url(settings.milo_hostname, build)
 
   if build.experimental is None:
     build.experimental = (builder_cfg.experimental == project_config_pb2.YES)
@@ -916,7 +920,7 @@ def create_task_async(build, build_number=None):
       payload=task_def,
       # Make Swarming know what bucket the task belong too. Swarming uses
       # this to authorize access to pools assigned to specific buckets only.
-      delegation_tag='buildbucket:bucket:%s' % build.bucket,
+      delegation_tag='buildbucket:bucket:%s' % build.bucket_id,
       # Higher timeout than normal because if the task creation request
       # fails, but the task is actually created, later we will receive a
       # notification that the task is completed, but we won't have a build
@@ -967,24 +971,14 @@ def create_task_async(build, build_number=None):
   build.never_leased = False
 
 
-def _generate_build_url(milo_hostname, build, build_number):
+def _generate_build_url(milo_hostname, build):
   if not milo_hostname:
     return (
         'https://%s/task?id=%s' %
         (build.swarming_hostname, build.swarming_task_id)
     )
-  if build_number is not None:
-    return (
-        'https://%s/p/%s/builders/%s/%s/%d' % (
-            milo_hostname, build.project, build.bucket,
-            build.parameters[model.BUILDER_PARAMETER], build_number
-        )
-    )
 
-  return (
-      'https://%s/p/%s/builds/b%d' %
-      (milo_hostname, build.project, build.key.id())
-  )
+  return 'https://%s/b/%d' % (milo_hostname, build.key.id())
 
 
 @ndb.tasklet
@@ -1043,7 +1037,7 @@ def _load_task_result_async(hostname, task_id):  # pragma: no cover
 
 
 @ndb.tasklet
-def _load_build_run_result_async(task_result, bucket, builder):
+def _load_build_run_result_async(task_result, bucket_id, builder):
   """Fetches _BUILD_RUN_RESULT_FILENAME from swarming task output.
 
   Logs errors.
@@ -1090,10 +1084,11 @@ def _load_build_run_result_async(task_result, bucket, builder):
   if result_size >= _BUILD_RUN_RESULT_MAX_SIZE:
     raise ndb.Return(None, _BUILD_RUN_RESULT_TOO_LARGE)
   _BUILD_RUN_RESULT_SIZE_METRIC.add(
-      result_size / 1000, {
-          'bucket': bucket,
+      result_size / 1000,
+      {
+          'bucket': bucket_id,
           'builder': builder,
-      }
+      },
   )
 
   result_loc = isolated_loc._replace(digest=result_entry['h'])
@@ -1263,13 +1258,13 @@ def _extract_build_steps(build_run_result):
 
 
 @ndb.tasklet
-def _sync_build_async(build_id, task_result, bucket, builder):
+def _sync_build_async(build_id, task_result, bucket_id, builder):
   """Syncs Build entity in the datastore with the swarming task."""
   build_run_result = None
   build_run_result_error = False
   if task_result:
     build_run_result, build_run_result_error = yield (
-        _load_build_run_result_async(task_result, bucket, builder)
+        _load_build_run_result_async(task_result, bucket_id, builder)
     )
 
   build_key = ndb.Key(model.Build, build_id)
@@ -1280,7 +1275,7 @@ def _sync_build_async(build_id, task_result, bucket, builder):
   _BUILD_STEPS_SIZE_METRIC.add(
       step_byte_size / 1000,  # convert to Kb
       {
-          'bucket': bucket,
+          'bucket': bucket_id,
           'builder': builder,
       },
   )
@@ -1431,7 +1426,7 @@ class SubNotify(webapp2.RequestHandler):
     _sync_build_async(
         build_id,
         result,
-        build.bucket,
+        build.bucket_id,
         build.parameters[model.BUILDER_PARAMETER],
     ).get_result()
 
@@ -1477,7 +1472,7 @@ class CronUpdateBuilds(webapp2.RequestHandler):
           build.swarming_hostname, build.swarming_task_id, build.key.id()
       )
     yield _sync_build_async(
-        build.key.id(), result, build.bucket,
+        build.key.id(), result, build.bucket_id,
         build.parameters[model.BUILDER_PARAMETER]
     )
 
