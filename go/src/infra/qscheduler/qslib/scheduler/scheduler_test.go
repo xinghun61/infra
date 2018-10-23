@@ -40,8 +40,8 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 		s.MarkIdle("w1", []string{"label1"}, tm)
 		s.AddRequest("t1", &TaskRequest{AccountId: "a1", Labels: []string{"label1"}}, tm)
 		s.AddRequest("t2", &TaskRequest{AccountId: "a1", Labels: []string{"label2"}}, tm)
-		s.state.Balances["a1"] = vector.New(2, 0, 0)
-		s.config.AccountConfigs["a1"] = account.NewConfig()
+		c := account.NewConfig(0, 0, vector.New())
+		s.AddAccount("a1", c, vector.New(2, 0, 0))
 		Convey("when scheduling jobs", func() {
 			muts := s.RunOnce()
 			Convey("then both jobs should be matched, with provisionable label used as tie-breaker", func() {

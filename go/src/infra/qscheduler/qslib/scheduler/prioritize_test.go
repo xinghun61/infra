@@ -127,7 +127,7 @@ func TestPrioritizeMany(t *testing.T) {
 		})
 
 		Convey("given an account with no maximum fanout", func() {
-			s.AddAccount(aid, account.NewConfig(), nil)
+			s.AddAccount(aid, account.NewConfig(0, 0, vector.New()), nil)
 			Convey("when prioritizing", func() {
 				got := s.prioritizeRequests()
 				Convey("then requests are prioritized by enqueue time.", func() {

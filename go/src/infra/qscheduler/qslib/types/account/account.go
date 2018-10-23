@@ -77,7 +77,16 @@ func NextBalance(balance *vector.Vector, c *Config, elapsedSecs float64, running
 	return v
 }
 
-// NewConfig creates a new Config instance with initialized member Vectors.
-func NewConfig() *Config {
-	return &Config{ChargeRate: vector.New()}
+// TODO(akeshet): Consider removing the NewConfig helper, as it is not really
+// doing any non-trivial initialization, and using inline literals is more go-ish.
+// On the other hand, it does make tests and example code more compact and
+// readable.
+
+// NewConfig creates a new Config instance.
+func NewConfig(fanout int, chargeSeconds float64, chargeRate *vector.Vector) *Config {
+	return &Config{
+		ChargeRate:       chargeRate.Copy(),
+		MaxChargeSeconds: chargeSeconds,
+		MaxFanout:        int32(fanout),
+	}
 }
