@@ -1218,19 +1218,11 @@ def _sync_build_in_memory(
     build.start_time = ts('started_ts') or build.start_time
     build.complete_time = ts('completed_ts') or ts('abandoned_ts') or now
     if build_run_result:
-      # Do not put entire annotation proto into build entity.
-      # It significantly increases egress which signficantly increases the risk
-      # of hitting daily AppEngine quota.
-      small_build_run_result = build_run_result.copy()
-      ann = small_build_run_result.pop('annotations', {}) or {}
-      build.result_details['build_run_result'] = small_build_run_result
-      # TODO(nodir,iannucci): define a schema for UI in a proto
+      ann = build_run_result.get('annotations') or {}
       build.result_details['ui'] = {
           'info': '\n'.join(ann.get('text', [])),
       }
-      build.result_details['properties'] = _extract_properties(
-          build_run_result.get('annotations') or {}
-      )
+      build.result_details['properties'] = _extract_properties(ann)
     if errmsg:
       build.result_details['error'] = {'message': errmsg}
   return True
