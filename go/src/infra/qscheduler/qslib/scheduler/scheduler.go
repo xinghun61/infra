@@ -79,11 +79,11 @@ func (s *Scheduler) AddAccount(id string, config *account.Config, initialBalance
 }
 
 // AddRequest enqueues a new task request.
-func (s *Scheduler) AddRequest(id string, request *TaskRequest, t time.Time) {
-	s.state.addRequest(id, request, t)
+func (s *Scheduler) AddRequest(requestID string, request *TaskRequest, t time.Time) {
+	s.state.addRequest(requestID, request, t)
 }
 
-// IsAssigned returns whether the given request is currently assigned to a
+// IsAssigned returns whether the given request is currently assigned to the
 // given worker. It is provided for a consistency checks.
 func (s *Scheduler) IsAssigned(requestID string, workerID string) bool {
 	if w, ok := s.state.Workers[workerID]; ok {
@@ -168,11 +168,12 @@ type IdleWorker struct {
 }
 
 // MarkIdle marks the given worker as idle, and with the given provisionable,
-// labels, as of the given time.
+// labels, as of the given time. If this call is contradicted by newer knowledge
+// of state, then it does nothing.
 //
 // Note: calls to MarkIdle come from bot reap calls from swarming.
-func (s *Scheduler) MarkIdle(id string, labels LabelSet, t time.Time) {
-	s.state.markIdle(id, labels, t)
+func (s *Scheduler) MarkIdle(workerID string, labels LabelSet, t time.Time) {
+	s.state.markIdle(workerID, labels, t)
 }
 
 // NotifyRequest informs the scheduler authoritatively that the given request

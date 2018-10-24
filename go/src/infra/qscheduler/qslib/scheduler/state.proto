@@ -44,4 +44,9 @@ message State {
   // for running tasks. This is used to optimize certain lookups, however
   // Workers is the authoritative source.
   map<string, string> running_requests_cache = 5;
+
+  // TODO(akeshet): Add a store of (completed request id, timestamp) that will
+  // allow us to remember all the tasks that were completed within the last
+  // X hours, and ignore any possible extremely-stale AddRequest calls we get
+  // about them.
 }

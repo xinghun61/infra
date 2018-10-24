@@ -67,4 +67,8 @@ message TaskUpdate {
 	// for the new task. This field is only relevant and should only be set
 	// for NEW type updates.
 	string account_id = 6;
+
+	// EnqueueTime is the time at which a request was first enqueued. This field
+	// is only relevant for NEW type updates.
+	google.protobuf.Timestamp enqueue_time = 7;
 }

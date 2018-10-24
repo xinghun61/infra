@@ -12,23 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package reconciler implements logic necessary to reconcile qslib API calls
-// with a quotascheduler state. This is the main public interface for  qslib
-// should use.
-//
-// reconciler provides a State struct with the following principle methods:
-//
-//  - AssignTasks: Informs the quotascheduler that the given workers
-//    are idle, and assigns them new tasks.
-//  - Cancellations: Determine which workers should have their currently
-//    running tasks aborted.
-//  - Notify: Informs the quotascheduler of task state changes, in order to
-//    enqueue new tasks in the scheduler or acknowledge that scheduler
-//    assignments have been completed.
-//
-// Not yet implemented methods:
-//  - UpdateConfig: Informs quotascheduler of a new configuration, (for
-//    instance, containing new account policies).
+/*
+Package reconciler provides a wrapper around a global state scheduler to be used
+by a per-worker pulling dispatcher. TODO(akeshet): Rename this package to
+something more descriptive but still succinct. Options include: broker,
+distributor, mediator, etc.
+
+The primary scheduler.Scheduler implementation intended to be used by reconciler
+is the quotascheduler algorithm as implemented in qslib/scheduler. The primary
+dispatcher client is intended to be swarming.
+
+The reconciler tracks the queue of actions for workers that have pending
+actions (both those in the most recent pull call from client, and those not).
+For each worker, reconciler holds actions in the queue until they are acknowledged,
+and orchestrates task preemption.
+*/
 package reconciler
 
 import (
@@ -117,14 +115,18 @@ type Scheduler interface {
 
 	// MarkIdle informs the scheduler that a given worker is idle, with
 	// given labels.
-	MarkIdle(id string, labels scheduler.LabelSet, t time.Time)
+	MarkIdle(workerID string, labels scheduler.LabelSet, t time.Time)
 
 	// RunOnce runs through one round of the scheduling algorithm, and determines
 	// and returns work assignments.
 	RunOnce() []*scheduler.Assignment
 
 	// AddRequest adds a task request to the queue.
-	AddRequest(id string, request *scheduler.TaskRequest, t time.Time)
+	AddRequest(requestID string, request *scheduler.TaskRequest, t time.Time)
+
+	// IsAssigned returns whether the given request is currently assigned to the
+	// given worker.
+	IsAssigned(requestID string, workerID string) bool
 
 	// NotifyRequest informs the scheduler authoritatively that the given request
 	// was running on the given worker (or was idle, for workerID = "") at the
@@ -136,22 +138,31 @@ type Scheduler interface {
 	NotifyRequest(requestID string, workerID string, t time.Time)
 }
 
-// AssignTasks accepts a slice of idle workers, and returns tasks to be assigned
+// AssignTasks accepts one or more idle workers, and returns tasks to be assigned
 // to those workers (if there are tasks available).
-func (state *State) AssignTasks(s Scheduler, workers []*IdleWorker, t time.Time) []Assignment {
-	// Step 1: Update scheduler time.
+func (state *State) AssignTasks(s Scheduler, t time.Time, workers ...*IdleWorker) []Assignment {
 	s.UpdateTime(t)
 
-	// Step 2: Determine which of the supplied workers should be newly marked as
-	// idle (because they don't have anything already enqueued). Mark these as idle.
+	// Determine which of the supplied workers should be newly marked as
+	// idle. This should be done if either:
+	//  - The reconciler doesn't have anything queued for that worker.
+	//  - The reconciler has a task queued for that worker, but it is inconsistent
+	//    with the scheduler's opinion. This means we've received some previous
+	//    notify call with an unexpected worker for a given request. We defer
+	//    to the scheduler's state, which has its own NotifyRequest logic that
+	//    correctly handles this and accounts for out-of-order updates and other
+	//    subtleties.
 	for _, w := range workers {
-		if q := state.WorkerQueues[w.ID]; q == nil {
-			s.MarkIdle(w.ID, w.ProvisionableLabels, t)
+		wid := w.ID
+		q, ok := state.WorkerQueues[wid]
+		if !ok || !s.IsAssigned(q.TaskToAssign, wid) {
+			s.MarkIdle(wid, w.ProvisionableLabels, t)
+			delete(state.WorkerQueues, wid)
 		}
 	}
 
-	// Step 3: Call scheduler, and update worker queues based on assignments
-	// that it yielded.
+	// Call scheduler, and update worker queues based on assignments that it
+	// yielded.
 	newAssignments := s.RunOnce()
 	for _, a := range newAssignments {
 		if a.TaskToAbort != "" && a.Type != scheduler.Assignment_PREEMPT_WORKER {
@@ -166,7 +177,7 @@ func (state *State) AssignTasks(s Scheduler, workers []*IdleWorker, t time.Time)
 		}
 	}
 
-	// Step 4: Yield from worker queues.
+	// Yield from worker queues.
 	assignments := make([]Assignment, 0, len(workers))
 	for _, w := range workers {
 		if q, ok := state.WorkerQueues[w.ID]; ok {
@@ -194,8 +205,13 @@ type Cancellation struct {
 
 // Cancellations returns the set of workers and tasks that should be cancelled.
 func (state *State) Cancellations() []Cancellation {
-	// TODO(akeshet): Implement me.
-	return nil
+	c := make([]Cancellation, 0, len(state.WorkerQueues))
+	for wid, q := range state.WorkerQueues {
+		if q.TaskToAbort != "" {
+			c = append(c, Cancellation{RequestID: q.TaskToAbort, WorkerID: wid})
+		}
+	}
+	return c
 }
 
 // Notify informs the quotascheduler about task state changes.
@@ -208,6 +224,45 @@ func (state *State) Cancellations() []Cancellation {
 // Cancellations will return stale data until internal timeouts within reconciler
 // expire).
 func (state *State) Notify(s Scheduler, updates ...*TaskUpdate) error {
-	// TODO(akeshet): Implement me.
+	for _, update := range updates {
+		switch update.Type {
+		case TaskUpdate_NEW:
+			req := scheduler.NewRequest(update.AccountId, update.ProvisionableLabels,
+				tutils.Timestamp(update.EnqueueTime))
+			s.AddRequest(update.RequestId, req, tutils.Timestamp(update.Time))
+
+		case TaskUpdate_ASSIGNED:
+			wid := update.WorkerId
+			rid := update.RequestId
+			updateTime := tutils.Timestamp(update.Time)
+			// This NotifyRequest call ensures scheduler state consistency with
+			// the latest update.
+			s.NotifyRequest(rid, wid, updateTime)
+			if q, ok := state.WorkerQueues[wid]; ok {
+				if !updateTime.Before(q.EnqueueTime) {
+					delete(state.WorkerQueues, wid)
+					// TODO(akeshet): Log or handle "unexpected request on worker" here.
+				} else {
+					// TODO(akeshet): Consider whether we should delete from workerqueue
+					// here for non-forward updates that are still a (wid, rid) match
+					// for the expected assignment.
+				}
+			}
+
+		case TaskUpdate_INTERRUPTED:
+			rid := update.RequestId
+			updateTime := tutils.Timestamp(update.Time)
+			// This NotifyRequest call ensures scheduler state consistency with
+			// the latest update.
+			s.NotifyRequest(rid, "", updateTime)
+			// TODO(akeshet): Add an inverse map from aborting request -> previous
+			// worker to avoid the need for this iteration through all workers.
+			for wid, q := range state.WorkerQueues {
+				if q.TaskToAbort == rid && q.EnqueueTime.Before(updateTime) {
+					delete(state.WorkerQueues, wid)
+				}
+			}
+		}
+	}
 	return nil
 }
