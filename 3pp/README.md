@@ -7,6 +7,10 @@ definitions.
 
 [support_3pp]: /recipes/README.recipes.md#recipe_modules-support_3pp
 
+# Building stuff locally
+
+See [./run_locally.sh]. You can pass `help` as the first argument for the
+lowdown.
 
 # CIPD Sources
 
