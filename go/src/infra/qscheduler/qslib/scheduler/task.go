@@ -12,10 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/*
-Package task describes either a queued or running task as part of the quota
-scheduler algorithm.
-*/
 package scheduler
 
 import (

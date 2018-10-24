@@ -56,6 +56,11 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 	})
 }
 
+/*func Example() {
+	fmt.Println("asdf")
+	// Output: fdsa
+}*/
+
 // TestReprioritize tests that the scheduler correctly changes the priority
 // of running jobs (promote or demote) if the account balance makes that
 // necessary.

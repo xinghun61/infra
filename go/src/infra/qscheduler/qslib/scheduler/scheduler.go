@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package scheduler provides Scheduler, which is an implementation of
-// the quotascheduler algorithm.
-//
-// TODO(akeshet): Describe a story around the main calls that scheduler exposes,
-// and implement a few remaining ones. They will be things like:
-//  - Get/Set Config
-//  - InsertTask
-//  - UpdateTime
-//  - ReapFor
+/*
+Package scheduler provides Scheduler, which is an implementation of the
+quotascheduler algorithm. The algorithm priorities and matches requests to workers,
+tracks account balances, and ensures consistency between the scheduler's estimate
+of Request and Worker states and the client-supplied authoritative state.
+
+scheduler.Scheduler is an implementation of the reconciler.Scheduler interface.
+
+See the provided example in this packages godoc or doc_test.go for usage.
+*/
 package scheduler
 
 import (
@@ -35,12 +36,9 @@ import (
 	"infra/qscheduler/qslib/types/vector"
 )
 
-// TODO(akeshet): Move all public API calls for scheduler to their own
-// file.
-// TODO(akeshet): Add unit test around the public API calls.
-
-// Scheduler encapsulates the state of a running quotascheduler, and its method
-// provide an implementation of the quotascheduler algorithm.
+// Scheduler encapsulates the state and configuration of a running
+// quotascheduler for a single pool, and its methods provide an implementation
+// of the quotascheduler algorithm.
 type Scheduler struct {
 	state  *State
 	config *Config
@@ -83,6 +81,17 @@ func (s *Scheduler) AddAccount(id string, config *account.Config, initialBalance
 // AddRequest enqueues a new task request.
 func (s *Scheduler) AddRequest(id string, request *TaskRequest, t time.Time) {
 	s.state.addRequest(id, request, t)
+}
+
+// IsAssigned returns whether the given request is currently assigned to a
+// given worker. It is provided for a consistency checks.
+func (s *Scheduler) IsAssigned(requestID string, workerID string) bool {
+	if w, ok := s.state.Workers[workerID]; ok {
+		if !w.isIdle() {
+			return w.RunningTask.RequestId == requestID
+		}
+	}
+	return false
 }
 
 // UpdateTime updates the current time for a quotascheduler, and
