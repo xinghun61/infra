@@ -70,14 +70,14 @@ func TestSchedulerReprioritize(t *testing.T) {
 	Convey("Given two running requests with different costs for an account that needs 1 demotion from P0, and supports 1 additional P1 job", t, func() {
 		tm0 := time.Unix(0, 0)
 		s := New(tm0)
-		s.config.AccountConfigs["a1"] = &account.Config{ChargeRate: vector.New(1.1, 0.9)}
-		s.state.Balances["a1"] = vector.New(2*account.DemoteThreshold, 2*account.PromoteThreshold, 0)
+		aid := "a1"
+		s.config.AccountConfigs[aid] = &account.Config{ChargeRate: vector.New(1.1, 0.9)}
+		s.state.Balances[aid] = vector.New(2*account.DemoteThreshold, 2*account.PromoteThreshold, 0)
+
 		for _, i := range []int{1, 2} {
 			rid := fmt.Sprintf("r%d", i)
 			wid := fmt.Sprintf("w%d", i)
-			s.AddRequest(rid, NewRequest("a1", nil, tm0), tm0)
-			s.MarkIdle(wid, []string{}, tm0)
-			s.state.applyAssignment(&Assignment{RequestId: rid, WorkerId: wid, Type: Assignment_IDLE_WORKER})
+			addRunningRequest(s, rid, wid, aid, 0, tm0)
 		}
 		s.state.Workers["w2"].RunningTask.Cost = vector.New(1)
 

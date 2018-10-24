@@ -140,12 +140,8 @@ func TestPrioritizeMany(t *testing.T) {
 			s.AddAccount(aid, &account.Config{MaxFanout: int32(maxFanout)}, vector.New(0, 1))
 
 			// Two requests are already running.
-			s.AddRequest("11", &TaskRequest{AccountId: aid}, time.Unix(0, 0))
-			s.AddRequest("12", &TaskRequest{AccountId: aid}, time.Unix(0, 0))
-			s.MarkIdle("11", []string{}, time.Unix(0, 0))
-			s.MarkIdle("12", []string{}, time.Unix(0, 0))
-			s.state.applyAssignment(&Assignment{Priority: 1, RequestId: "11", WorkerId: "11", Type: Assignment_IDLE_WORKER})
-			s.state.applyAssignment(&Assignment{Priority: 1, RequestId: "12", WorkerId: "12", Type: Assignment_IDLE_WORKER})
+			addRunningRequest(s, "11", "11", aid, 1, time.Unix(0, 0))
+			addRunningRequest(s, "12", "12", aid, 1, time.Unix(0, 0))
 
 			Convey("when prioritizing", func() {
 				got := s.prioritizeRequests()
@@ -165,6 +161,14 @@ func TestPrioritizeMany(t *testing.T) {
 			})
 		})
 	})
+}
+
+// addRunningRequest is a test helper to add a new request to a scheduler and
+// immediately start it running on a new worker.
+func addRunningRequest(s *Scheduler, rid string, wid string, aid string, pri int32, tm time.Time) {
+	s.AddRequest(rid, NewRequest(aid, []string{}, tm), tm)
+	s.MarkIdle(wid, []string{}, tm)
+	s.state.applyAssignment(&Assignment{Priority: pri, RequestId: rid, WorkerId: wid, Type: Assignment_IDLE_WORKER})
 }
 
 // TestForPriority tests that ForPriority method returns the correct
