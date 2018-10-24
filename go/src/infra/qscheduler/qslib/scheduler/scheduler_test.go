@@ -113,8 +113,7 @@ func TestSchedulerPreempt(t *testing.T) {
 	Convey("Given a state with two running P1 tasks", t, func() {
 		tm0 := time.Unix(0, 0)
 		s := New(tm0)
-		s.config.AccountConfigs["a1"] = &account.Config{ChargeRate: vector.New(1, 1, 1)}
-		s.state.Balances["a1"] = vector.New(0.5*account.PromoteThreshold, 1)
+		s.AddAccount("a1", account.NewConfig(0, 0, vector.New(1, 1, 1)), vector.New(0.5*account.PromoteThreshold, 1))
 		for _, i := range []int{1, 2} {
 			rid := fmt.Sprintf("r%d", i)
 			wid := fmt.Sprintf("w%d", i)
@@ -124,14 +123,16 @@ func TestSchedulerPreempt(t *testing.T) {
 		}
 		s.state.Workers["w1"].RunningTask.Cost = vector.New(0, 1)
 		Convey("given a new P0 request from a different account", func() {
-			s.config.AccountConfigs["a2"] = &account.Config{}
+			s.AddAccount("a2", account.NewConfig(0, 0, vector.New()), vector.New())
 			s.AddRequest("r3", NewRequest("a2", nil, tm0), tm0)
 			Convey("given sufficient balance", func() {
 				s.state.Balances["a2"] = vector.New(1)
 				Convey("when scheduling", func() {
+					tm1 := time.Unix(1, 0)
+					s.UpdateTime(tm1)
 					got := s.RunOnce()
 					Convey("then the cheaper running job is preempted.", func() {
-						want := &Assignment{Type: Assignment_PREEMPT_WORKER, Priority: 0, WorkerId: "w2", RequestId: "r3", TaskToAbort: "r2"}
+						want := &Assignment{Type: Assignment_PREEMPT_WORKER, Priority: 0, WorkerId: "w2", RequestId: "r3", TaskToAbort: "r2", Time: tutils.TimestampProto(tm1)}
 						So(got, shouldResemblePretty, []*Assignment{want})
 					})
 				})

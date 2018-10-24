@@ -439,6 +439,7 @@ func preemptRunningTasks(state *State, jobsAtP []prioritizedRequest, priority in
 			RequestId:   request.RequestId,
 			TaskToAbort: candidate.worker.RunningTask.RequestId,
 			WorkerId:    candidate.id,
+			Time:        state.LastUpdateTime,
 		}
 		output = append(output, mut)
 		state.applyAssignment(mut)
