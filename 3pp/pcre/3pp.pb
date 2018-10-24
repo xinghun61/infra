@@ -4,6 +4,7 @@ create {
     cipd {
       pkg: "infra/third_party/source/pcre"
       default_version: "8.41"
+      original_download_url: "https://ftp.pcre.org/pub/pcre/"
     }
     unpack_archive: true
   }

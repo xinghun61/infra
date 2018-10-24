@@ -5,6 +5,7 @@ create {
     cipd {
       pkg: "infra/third_party/source/nsl"
       default_version: "1.0.4"
+      original_download_url: "https://github.com/thkukuk/libnsl/releases"
     }
     unpack_archive: true
   }

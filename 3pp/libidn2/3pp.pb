@@ -4,6 +4,7 @@ create {
     cipd {
       pkg: "infra/third_party/source/libidn2"
       default_version: "2.0.4"
+      original_download_url: "https://ftp.gnu.org/gnu/libidn/"
     }
     unpack_archive: true
   }

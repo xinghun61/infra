@@ -4,6 +4,7 @@ create {
     cipd {
       pkg: "infra/third_party/source/sqlite-autoconf"
       default_version: "3.19.3"
+      original_download_url: "https://www.sqlite.org/download.html"
     }
     unpack_archive: true
   }

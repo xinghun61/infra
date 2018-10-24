@@ -321,6 +321,10 @@ message CipdSource {
   // a version (e.g. as a dep for some other package). This will translate
   // to the CIPD tag of `version:$default_version`.
   string default_version = 2;
+  // (required) The URL to the download page where we obtained this source. This
+  // is required, but is not used as part of the build, it's purely for
+  // documentation.
+  string original_download_url = 3;
 }
 
 // This is a custom catch-all script to probe for the latest version and

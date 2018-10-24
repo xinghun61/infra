@@ -466,6 +466,12 @@ class Support3ppApi(recipe_api.RecipeApi):
     if spec.upload.universal and not create_pb.build.no_docker_env:
       platform = 'linux-amd64'
 
+    if create_pb.source.WhichOneof('method') == 'cipd':
+      if not create_pb.source.cipd.original_download_url:  # pragma: no cover
+        raise Exception(
+          'CIPD Source for `%s/%s` must have `original_download_url`.' % (
+          pkgname, platform))
+
     source_pb = create_pb.source
     assert source_pb.patch_version == source_pb.patch_version.strip('.'), (
       'source.patch_version has starting/trailing dots')

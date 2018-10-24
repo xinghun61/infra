@@ -60,7 +60,11 @@ def GenTests(api):
   pkgs = sorted(dict(
     bottom_dep='''
     create {
-      source { cipd { pkg: "source/bottom_dep" default_version: "1.0" } }
+      source { cipd {
+        pkg: "source/bottom_dep"
+        default_version: "1.0"
+        original_download_url: "https://some.internet.example.com"
+      } }
       build {}
     }
     upload { pkg_prefix: "deps" }
@@ -142,14 +146,22 @@ def GenTests(api):
 
     deep_dep='''
     create {
-      source { cipd {pkg: "source/deep_dep" default_version: "1.0.0"} }
+      source { cipd {
+        pkg: "source/deep_dep"
+        default_version: "1.0.0"
+        original_download_url: "https://some.internet.example.com"
+      } }
     }
     upload { pkg_prefix: "deps" }
     ''',
 
     dep='''
     create {
-      source { cipd {pkg: "source/dep" default_version: "1.0.0"} }
+      source { cipd {
+        pkg: "source/dep"
+        default_version: "1.0.0"
+        original_download_url: "https://some.internet.example.com"
+      } }
       build {
         tool: "tool"
         dep: "deep_dep"
@@ -194,7 +206,11 @@ def GenTests(api):
     create {
       platform_re: "linux-.*|mac-.*"
       source {
-        cipd { pkg: "source/posix_tool" default_version: "1.2.0" }
+        cipd {
+          pkg: "source/posix_tool"
+          default_version: "1.2.0"
+          original_download_url: "https://some.internet.example.com"
+        }
         unpack_archive: true
       }
       build {}  # default build options
@@ -204,7 +220,11 @@ def GenTests(api):
 
     already_uploaded='''
     create {
-      source { cipd { pkg: "source/already_uploaded" default_version: "1.5.0-rc1" } }
+      source { cipd {
+        pkg: "source/already_uploaded"
+        default_version: "1.5.0-rc1"
+        original_download_url: "https://some.internet.example.com"
+      } }
     }
     upload { pkg_prefix: "tools" }
     ''',

@@ -15,6 +15,7 @@ create {
     cipd {
       pkg: "infra/third_party/source/python"
       default_version: "2.7.15",
+      original_download_url: "https://www.python.org/downloads/release/python-2715/"
     }
     unpack_archive: true
     patch_dir: "patches"

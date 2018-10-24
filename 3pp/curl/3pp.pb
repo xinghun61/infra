@@ -5,6 +5,7 @@ create {
     cipd {
       pkg: "infra/third_party/source/curl"
       default_version: "7.59.0"
+      original_download_url: "https://curl.haxx.se/download.html"
     }
     unpack_archive: true
   }

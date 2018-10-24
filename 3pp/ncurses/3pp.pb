@@ -4,6 +4,7 @@ create {
     cipd {
       pkg: "infra/third_party/source/ncurses"
       default_version: "6.0"
+      original_download_url: "https://ftp.gnu.org/gnu/ncurses/"
     }
     unpack_archive: true
     patch_dir: "patches"
