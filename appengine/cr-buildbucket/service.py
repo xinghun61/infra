@@ -601,18 +601,18 @@ def check_expired_builds():
   _fut_results(*futures)
 
 
-def delete_many_builds(bucket, status, tags=None, created_by=None):
+def delete_many_builds(bucket_id, status, tags=None, created_by=None):
   if status not in (model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED):
     raise errors.InvalidInputError(
         'status can be STARTED or SCHEDULED, not %s' % status
     )
-  if not user.can_delete_scheduled_builds_async(bucket).get_result():
-    raise user.current_identity_cannot('delete scheduled builds of %s', bucket)
+  if not user.can_delete_scheduled_builds_async(bucket_id).get_result():
+    raise user.current_identity_cannot('delete builds of %s', bucket_id)
   # Validate created_by prior scheduled a push task.
   created_by = user.parse_identity(created_by)
   deferred.defer(
       _task_delete_many_builds,
-      bucket,
+      bucket_id,
       status,
       tags=tags,
       created_by=created_by,
@@ -627,7 +627,7 @@ def delete_many_builds(bucket, status, tags=None, created_by=None):
   )
 
 
-def _task_delete_many_builds(bucket, status, tags=None, created_by=None):
+def _task_delete_many_builds(bucket_id, status, tags=None, created_by=None):
 
   @ndb.transactional_tasklet
   def txn(key):
@@ -653,7 +653,7 @@ def _task_delete_many_builds(bucket, status, tags=None, created_by=None):
   tags = tags or []
   created_by = user.parse_identity(created_by)
   q = model.Build.query(
-      model.Build.bucket == bucket, model.Build.status == status
+      model.Build.bucket_id == bucket_id, model.Build.status == status
   )
   for t in tags:
     q = q.filter(model.Build.tags == t)

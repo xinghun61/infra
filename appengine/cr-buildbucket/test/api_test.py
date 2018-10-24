@@ -699,14 +699,14 @@ class V1ApiTest(testing.EndpointsTestCase):
   @mock.patch('service.delete_many_builds', autospec=True)
   def test_delete_many_builds(self, delete_many_builds):
     req = {
-        'bucket': 'chromium',
+        'bucket': 'luci.chromium.try',
         'status': 'SCHEDULED',
         'tag': ['tag:0'],
         'created_by': 'nodir@google.com',
     }
     self.call_api('delete_many_builds', req)
     delete_many_builds.assert_called_once_with(
-        'chromium',
+        'chromium/try',
         model.BuildStatus.SCHEDULED,
         tags=['tag:0'],
         created_by='nodir@google.com'

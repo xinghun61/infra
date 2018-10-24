@@ -708,7 +708,7 @@ class BuildBucketApi(remote.Service):
   def delete_many_builds(self, request):
     """Deletes scheduled or started builds in a bucket."""
     service.delete_many_builds(
-        request.bucket,
+        convert_bucket(request.bucket),
         request.status,
         tags=request.tag[:],
         created_by=request.created_by

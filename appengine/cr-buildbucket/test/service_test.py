@@ -662,6 +662,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_delete_many_scheduled_builds(self):
     self.test_build.put()
     completed_build = model.Build(
+        project=self.test_build.project,
         bucket=self.test_build.bucket,
         status=model.BuildStatus.COMPLETED,
         result=model.BuildResult.SUCCESS,
@@ -673,7 +674,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertIsNotNone(self.test_build.key.get())
     self.assertIsNotNone(completed_build.key.get())
     service._task_delete_many_builds(
-        self.test_build.bucket, model.BuildStatus.SCHEDULED
+        self.test_build.bucket_id, model.BuildStatus.SCHEDULED
     )
     self.assertIsNone(self.test_build.key.get())
     self.assertIsNotNone(completed_build.key.get())
@@ -682,6 +683,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.put()
 
     started_build = model.Build(
+        project=self.test_build.project,
         bucket=self.test_build.bucket,
         status=model.BuildStatus.STARTED,
         create_time=utils.utcnow(),
@@ -691,6 +693,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     started_build.put()
 
     completed_build = model.Build(
+        project=self.test_build.project,
         bucket=self.test_build.bucket,
         status=model.BuildStatus.COMPLETED,
         result=model.BuildResult.SUCCESS,
@@ -701,7 +704,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     completed_build.put()
 
     service._task_delete_many_builds(
-        self.test_build.bucket, model.BuildStatus.STARTED
+        self.test_build.bucket_id, model.BuildStatus.STARTED
     )
     self.assertIsNotNone(self.test_build.key.get())
     self.assertIsNone(started_build.key.get())
@@ -712,23 +715,25 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.put()
 
     service._task_delete_many_builds(
-        self.test_build.bucket, model.BuildStatus.SCHEDULED, tags=['tag:0']
+        self.test_build.bucket_id, model.BuildStatus.SCHEDULED, tags=['tag:0']
     )
     self.assertIsNotNone(self.test_build.key.get())
 
     service._task_delete_many_builds(
-        self.test_build.bucket, model.BuildStatus.SCHEDULED, tags=['tag:1']
+        self.test_build.bucket_id, model.BuildStatus.SCHEDULED, tags=['tag:1']
     )
     self.assertIsNone(self.test_build.key.get())
 
   def test_delete_many_builds_created_by(self):
     self.test_build.created_by = auth.Identity('user', 'nodir@google.com')
     self.test_build.put()
-    other_build = model.Build(bucket=self.test_build.bucket)
+    other_build = model.Build(
+        project=self.test_build.project, bucket=self.test_build.bucket
+    )
     other_build.put()
 
     service._task_delete_many_builds(
-        self.test_build.bucket,
+        self.test_build.bucket_id,
         model.BuildStatus.SCHEDULED,
         created_by='nodir@google.com'
     )
@@ -739,18 +744,18 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.mock_cannot(user.Action.DELETE_SCHEDULED_BUILDS)
     with self.assertRaises(auth.AuthorizationError):
       service.delete_many_builds(
-          self.test_build.bucket, model.BuildStatus.SCHEDULED
+          self.test_build.bucket_id, model.BuildStatus.SCHEDULED
       )
 
   def test_delete_many_builds_schedule_task(self):
     service.delete_many_builds(
-        self.test_build.bucket, model.BuildStatus.SCHEDULED
+        self.test_build.bucket_id, model.BuildStatus.SCHEDULED
     )
 
   def test_delete_many_completed_builds(self):
     with self.assertRaises(errors.InvalidInputError):
       service.delete_many_builds(
-          self.test_build.bucket, model.BuildStatus.COMPLETED
+          self.test_build.bucket_id, model.BuildStatus.COMPLETED
       )
 
   @mock.patch('swarming.cancel_task_transactionally_async', autospec=True)
@@ -761,7 +766,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.put()
 
     service._task_delete_many_builds(
-        self.test_build.bucket, model.BuildStatus.SCHEDULED
+        self.test_build.bucket_id, model.BuildStatus.SCHEDULED
     )
 
     cancel_task_async.assert_called_with('swarming.example.com', 'deadbeef')
