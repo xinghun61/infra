@@ -33,7 +33,7 @@ func (w *Worker) latestConfirmedTime() time.Time {
 		return t
 	}
 	tr := tutils.Timestamp(w.RunningTask.Request.ConfirmedTime)
-	if tr.After(t) {
+	if t.Before(tr) {
 		return tr
 	}
 	return t

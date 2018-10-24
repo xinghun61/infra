@@ -96,7 +96,7 @@ func (s *Scheduler) UpdateTime(t time.Time) error {
 		return err
 	}
 
-	if t0.After(t) {
+	if t.Before(t0) {
 		return &UpdateOrderError{Previous: t0, Next: t}
 	}
 

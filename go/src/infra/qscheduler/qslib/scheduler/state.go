@@ -45,8 +45,8 @@ func (s *State) markIdle(workerID string, labels LabelSet, t time.Time) {
 	}
 
 	// Ignore call if our state is newer.
-	if worker.latestConfirmedTime().After(t) {
-		if !tutils.Timestamp(worker.ConfirmedTime).After(t) {
+	if t.Before(worker.latestConfirmedTime()) {
+		if !t.Before(tutils.Timestamp(worker.ConfirmedTime)) {
 			// TODO(akeshet): Once a diagnostic/logging layer exists, log this case.
 			// This case means that the following order of events happened:
 			// 1) We marked worker as idle at t=0.
@@ -83,7 +83,7 @@ func (s *State) notifyRequest(requestID string, workerID string, t time.Time) {
 	}
 
 	if request, ok := s.getRequest(requestID); ok {
-		if tutils.Timestamp(request.ConfirmedTime).Before(t) {
+		if !t.Before(tutils.Timestamp(request.ConfirmedTime)) {
 			s.updateRequest(requestID, workerID, t, request)
 		}
 	} else {
@@ -169,7 +169,7 @@ func (s *State) updateRequest(requestID string, workerID string, t time.Time,
 // request it is running is older than t.
 func (s *State) deleteWorkerIfOlder(workerID string, t time.Time) {
 	if worker, ok := s.Workers[workerID]; ok {
-		if worker.latestConfirmedTime().Before(t) {
+		if !t.Before(worker.latestConfirmedTime()) {
 			s.deleteWorker(workerID)
 		}
 	}

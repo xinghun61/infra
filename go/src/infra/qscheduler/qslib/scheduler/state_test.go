@@ -131,6 +131,18 @@ func TestNotifyRequest(t *testing.T) {
 				So(tutils.Timestamp(state.QueuedRequests["r1"].ConfirmedTime), ShouldEqual, tm4)
 			})
 		})
+		Convey("when notifying (idle request) with the same time as the worker", func() {
+			state.notifyRequest("r1", "", tm3)
+			Convey("then the worker is deleted.", func() {
+				So(state.Workers, ShouldNotContainKey, "w1")
+			})
+			Convey("then the request is deleted.", func() {
+				So(state.QueuedRequests, ShouldContainKey, "r1")
+			})
+			Convey("then the request time is updated.", func() {
+				So(tutils.Timestamp(state.QueuedRequests["r1"].ConfirmedTime), ShouldEqual, tm3)
+			})
+		})
 
 		Convey("when notifying (correct match) with older time t=0", func() {
 			state.notifyRequest("r1", "w1", tm0)
@@ -198,6 +210,12 @@ func TestNotifyRequest(t *testing.T) {
 			state.notifyRequest("r1", "w1", tm0)
 			Convey("then the update is ignored.", func() {
 				So(state, shouldResemblePretty, stateBefore)
+			})
+		})
+		Convey("when notifying (unknown request for worker) with equal time t=1", func() {
+			state.notifyRequest("r1", "w1", tm1)
+			Convey("then the worker is deleted.", func() {
+				So(state, shouldResemblePretty, NewState(tm0))
 			})
 		})
 		Convey("when notifying (unknown request for worker) with newer time t=2", func() {
