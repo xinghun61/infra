@@ -328,6 +328,7 @@ def get_buckets_async(bucket_ids=None):
     {bucket_id: project_config_pb2.Bucket} dict.
   """
   if bucket_ids is not None:
+    bucket_ids = list(bucket_ids)
     keys = [Bucket.make_key(*parse_bucket_id(bid)) for bid in bucket_ids]
     buckets = yield ndb.get_multi_async(keys)
     raise ndb.Return({

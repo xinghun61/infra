@@ -23,6 +23,34 @@ class NumberSequence(ndb.Model):
 
 
 @ndb.tasklet
+def _migrate_entity_async(seq_name):
+  """Migrates NumberSequence from old name to the new name."""
+  parts = seq_name.split('/', 2)  # project, bucket, builder
+  if len(parts) != 3:
+    return
+
+  new = yield NumberSequence.get_by_id_async(seq_name)
+  if new:
+    # New entity exists, so there is nothing to migrate.
+    return
+
+  old_name = 'luci.%s.%s/%s' % tuple(parts)
+
+  @ndb.transactional_tasklet(xg=True)  # pylint: disable=no-value-for-parameter
+  def txn_async():
+    old, new = yield (
+        NumberSequence.get_by_id_async(old_name),
+        NumberSequence.get_by_id_async(seq_name),
+    )
+    if new or not old:
+      return
+    new = NumberSequence(id=seq_name, next_number=old.next_number)
+    yield (new.put_async(), old.key.delete_async())
+
+  yield txn_async()
+
+
+@ndb.tasklet
 def generate_async(seq_name, count):
   """Generates sequence numbers.
 
@@ -37,6 +65,7 @@ def generate_async(seq_name, count):
     The generated number. For a returned number i, numbers [i, i+count) can be
     used by the caller.
   """
+  yield _migrate_entity_async(seq_name)
 
   @ndb.transactional_tasklet
   def txn():
@@ -64,7 +93,6 @@ def generate_async(seq_name, count):
   raise ndb.Return(number)
 
 
-@ndb.transactional
 def set_next(seq_name, next_number):
   """Sets the next number to generate.
 
@@ -76,34 +104,47 @@ def set_next(seq_name, next_number):
   Raises:
     ValueError if the supplied number is too small.
   """
-  assert isinstance(next_number, int)
-  seq = NumberSequence.get_by_id(seq_name) or NumberSequence(id=seq_name)
-  if next_number == seq.next_number:
-    return
-  elif next_number < seq.next_number:
-    raise ValueError('next number must be at least %d' % seq.next_number)
-  seq.next_number = next_number
-  seq.put()
+  _migrate_entity_async(seq_name).get_result()
+
+  @ndb.transactional
+  def txn():
+    assert isinstance(next_number, int)
+    seq = NumberSequence.get_by_id(seq_name) or NumberSequence(id=seq_name)
+    if next_number == seq.next_number:
+      return
+    elif next_number < seq.next_number:
+      raise ValueError('next number must be at least %d' % seq.next_number)
+    seq.next_number = next_number
+    seq.put()
+
+  txn()
 
 
-@ndb.transactional_tasklet
+@ndb.tasklet
 def try_return_async(seq_name, number):
   """Attempts to return the generated number back to the sequence.
 
   Returns False if the number wasn't returned and cannot be reused by someone
   else.
   """
-  seq = yield NumberSequence.get_by_id_async(seq_name)
-  if not seq:
-    # If there is not sequence entity, the number can be used by someone else.
+  yield _migrate_entity_async(seq_name)
+
+  @ndb.transactional_tasklet
+  def txn_async():
+    seq = yield NumberSequence.get_by_id_async(seq_name)
+    if not seq:
+      # If there is not sequence entity, the number can be used by someone else.
+      raise ndb.Return(True)
+    if seq.next_number != number + 1:
+      raise ndb.Return(False)
+    seq.next_number = number
+    yield seq.put_async()
     raise ndb.Return(True)
-  if seq.next_number != number + 1:
-    raise ndb.Return(False)
-  seq.next_number = number
-  yield seq.put_async()
-  raise ndb.Return(True)
+
+  ret = yield txn_async()
+  raise ndb.Return(ret)
 
 
-def builder_seq_name(bucket, builder):  # pragma: no cover
+def builder_seq_name(bucket_id, builder):  # pragma: no cover
   """Returns name of a number sequence for the builder."""
-  return '%s/%s' % (bucket, builder)
+  return '%s/%s' % (bucket_id, builder)

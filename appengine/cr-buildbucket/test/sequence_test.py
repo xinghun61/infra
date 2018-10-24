@@ -5,7 +5,6 @@
 from testing_utils import testing
 
 import sequence
-import v2
 
 
 class SequenceTest(testing.AppengineTestCase):
@@ -34,3 +33,21 @@ class SequenceTest(testing.AppengineTestCase):
     self.assertEqual(sequence.generate_async('a', 1).get_result(), 2)
     self.assertFalse(sequence.try_return_async('a', 1).get_result())
     self.assertTrue(sequence.try_return_async('a', 2).get_result())
+
+  def test_migration(self):
+    old_name = 'luci.chromium.try/linux'
+    new_name = 'chromium/try/linux'
+    sequence.NumberSequence(id=old_name, next_number=42).put()
+    self.assertEqual(sequence.generate_async(new_name, 1).get_result(), 42)
+
+    old = sequence.NumberSequence.get_by_id(old_name)
+    new = sequence.NumberSequence.get_by_id(new_name)
+
+    self.assertIsNone(old)
+    self.assertEqual(new.next_number, 43)
+
+    self.assertEqual(sequence.generate_async(new_name, 1).get_result(), 43)
+
+  def test_migration_no_entity(self):
+    new_name = 'chromium/try/linux'
+    self.assertEqual(sequence.generate_async(new_name, 1).get_result(), 1)

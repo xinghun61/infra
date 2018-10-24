@@ -214,7 +214,8 @@ class SwarmbucketApi(remote.Service):
           (request.builder, request.bucket)
       )
 
-    seq_name = sequence.builder_seq_name(request.bucket, request.builder)
+    bucket_id = api_common.parse_luci_bucket(request.bucket)
+    seq_name = sequence.builder_seq_name(bucket_id, request.builder)
     try:
       sequence.set_next(seq_name, request.next_number)
     except ValueError as ex:

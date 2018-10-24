@@ -329,20 +329,20 @@ def add_many_async(build_request_list):
     """Creates a swarming task for each new build in a swarming bucket."""
 
     # Fetch and index swarmbucket builder configs.
-    buckets = set(b.bucket for b in new_builds.itervalues())
-    bucket_cfg_futs = {b: config.get_bucket_async(b) for b in buckets}
-    builder_cfgs = {}  # {(bucket, builder): cfg}
-    for bucket, fut in bucket_cfg_futs.iteritems():
-      _, bucket_cfg = yield fut
+    bucket_ids = {b.bucket_id for b in new_builds.itervalues()}
+    bucket_cfgs = yield config.get_buckets_async(bucket_ids)
+    builder_cfgs = {}  # {(bucket_id, builder): cfg}
+    for bucket_id, bucket_cfg in bucket_cfgs.iteritems():
+      assert bucket_cfg  # must exist since we checked access earlier
       for builder_cfg in bucket_cfg.swarming.builders:
-        builder_cfgs[(bucket, builder_cfg.name)] = builder_cfg
+        builder_cfgs[(bucket_id, builder_cfg.name)] = builder_cfg
 
     # For each swarmbucket builder with build numbers, generate numbers.
     # Filter and index new_builds first.
     numbered = {}  # {(bucket, builder): [i]}
     for i, b in new_builds.iteritems():
       builder = (b.parameters or {}).get(model.BUILDER_PARAMETER)
-      builder_id = (b.bucket, builder)
+      builder_id = (b.bucket_id, builder)
       cfg = builder_cfgs.get(builder_id)
       if cfg and cfg.build_numbers == project_config_pb2.YES:
         numbered.setdefault(builder_id, []).append(i)
@@ -362,8 +362,8 @@ def add_many_async(build_request_list):
 
     create_futs = {}
     for i, b in new_builds.iteritems():
-      _, cfg = yield bucket_cfg_futs[b.bucket]
-      if cfg and config.is_swarming_config(cfg):
+      cfg = bucket_cfgs[b.bucket_id]
+      if cfg and config.is_swarming_config(cfg):  # pragma: no branch
         create_futs[i] = swarming.create_task_async(b, build_numbers[i][1])
 
     for i, fut in create_futs.iteritems():

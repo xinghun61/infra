@@ -12,9 +12,10 @@ from testing_utils import testing
 import mock
 
 from proto import common_pb2
-from proto.config import project_config_pb2
 from proto.config import service_config_pb2
+from test import config_test
 from test.test_util import future, future_exception
+import config
 import creation
 import errors
 import model
@@ -40,25 +41,23 @@ class CreationTest(testing.AppengineTestCase):
     self.now = datetime.datetime(2015, 1, 1)
     self.patch('components.utils.utcnow', side_effect=lambda: self.now)
 
-    self.chromium_try = project_config_pb2.Bucket(name='luci.chromium.try')
-    self.chromium_swarming = project_config_pb2.Swarming(
-        hostname='chromium-swarm.appspot.com',
-        builders=[
-            project_config_pb2.Builder(
-                name='infra',
-                dimensions=['pool:default'],
-                build_numbers=project_config_pb2.YES,
-                recipe=project_config_pb2.Builder.Recipe(
-                    repository='https://example.com',
-                    name='presubmit',
-                ),
-            ),
-        ],
+    self.chromium_try = config_test.parse_bucket_cfg(
+        '''
+        name: "luci.chromium.try"
+        swarming {
+          hostname: "chromium-swarm.appspot.com"
+          builders {
+            name: "linux"
+            build_numbers: YES
+            recipe {
+              repository: "https://example.com"
+              name: "recipe"
+            }
+          }
+        }
+        '''
     )
-    self.patch(
-        'config.get_bucket_async',
-        return_value=future(('chromium', self.chromium_try))
-    )
+    config.put_bucket('chromium', 'a' * 40, self.chromium_try)
     self.patch('swarming.create_task_async', return_value=future(None))
     self.patch('swarming.cancel_task_async', return_value=future(None))
 
@@ -69,7 +68,7 @@ class CreationTest(testing.AppengineTestCase):
         create_time=self.now,
         parameters={
             model.BUILDER_PARAMETER:
-                'infra',
+                'linux',
             'changes': [{
                 'author': 'nodir@google.com',
                 'message': 'buildbucket: initial commit'
@@ -227,7 +226,6 @@ class CreationTest(testing.AppengineTestCase):
       self.add(parameters=[])
 
   def test_add_with_swarming_400(self):
-    self.chromium_try.swarming.MergeFrom(self.chromium_swarming)
     swarming.create_task_async.return_value = future_exception(
         net.Error('', status_code=400, response='bad request')
     )
@@ -235,8 +233,6 @@ class CreationTest(testing.AppengineTestCase):
       self.add()
 
   def test_add_with_build_numbers(self):
-    self.chromium_try.swarming.MergeFrom(self.chromium_swarming)
-
     build_numbers = {}
 
     def create_task_async(build, build_number):
@@ -249,12 +245,12 @@ class CreationTest(testing.AppengineTestCase):
         creation.BuildRequest(
             project='chromium',
             bucket='luci.chromium.try',
-            parameters={model.BUILDER_PARAMETER: 'infra', 'i': 1},
+            parameters={model.BUILDER_PARAMETER: 'linux', 'i': 1},
         ),
         creation.BuildRequest(
             project='chromium',
             bucket='luci.chromium.try',
-            parameters={model.BUILDER_PARAMETER: 'infra', 'i': 2},
+            parameters={model.BUILDER_PARAMETER: 'linux', 'i': 2},
         )
     ]).get_result()
 
@@ -265,7 +261,6 @@ class CreationTest(testing.AppengineTestCase):
   @mock.patch('sequence.try_return_async', autospec=True)
   def test_add_with_build_numbers_and_return(self, try_return_async):
     try_return_async.return_value = future(None)
-    self.chromium_try.swarming.MergeFrom(self.chromium_swarming)
 
     class Error(Exception):
       pass
@@ -277,14 +272,13 @@ class CreationTest(testing.AppengineTestCase):
           creation.BuildRequest(
               project='chromium',
               bucket='luci.chromium.try',
-              parameters={model.BUILDER_PARAMETER: 'infra'},
+              parameters={model.BUILDER_PARAMETER: 'linux'},
           )
       ).get_result()
 
-    try_return_async.assert_called_with('luci.chromium.try/infra', 1)
+    try_return_async.assert_called_with('chromium/try/linux', 1)
 
   def test_add_with_swarming_200_and_400(self):
-    self.chromium_try.swarming.MergeFrom(self.chromium_swarming)
 
     def create_task_async(b, number):  # pylint: disable=unused-argument
       if b.parameters['i'] == 1:
@@ -301,12 +295,12 @@ class CreationTest(testing.AppengineTestCase):
         creation.BuildRequest(
             project='chromium',
             bucket='luci.chromium.try',
-            parameters={model.BUILDER_PARAMETER: 'infra', 'i': 0},
+            parameters={model.BUILDER_PARAMETER: 'linux', 'i': 0},
         ),
         creation.BuildRequest(
             project='chromium',
             bucket='luci.chromium.try',
-            parameters={model.BUILDER_PARAMETER: 'infra', 'i': 1},
+            parameters={model.BUILDER_PARAMETER: 'linux', 'i': 1},
         )
     ]).get_result()
 
@@ -317,7 +311,6 @@ class CreationTest(testing.AppengineTestCase):
     self.assertIsNone(b1)
 
   def test_add_with_swarming_403(self):
-    self.chromium_try.swarming.MergeFrom(self.chromium_swarming)
 
     swarming.create_task_async.return_value = future_exception(
         net.AuthError('', status_code=403, response='no no')
@@ -512,7 +505,6 @@ class CreationTest(testing.AppengineTestCase):
 
   @mock.patch('search.add_to_tag_index_async', autospec=True)
   def test_add_with_tag_index_contention(self, add_to_tag_index_async):
-    self.chromium_try.swarming.MergeFrom(self.chromium_swarming)
 
     def mock_create_task_async(build, build_number):
       build.swarming_hostname = 'swarming.example.com'
@@ -530,13 +522,13 @@ class CreationTest(testing.AppengineTestCase):
           creation.BuildRequest(
               project='chromium',
               bucket='luci.chromium.try',
-              parameters={model.BUILDER_PARAMETER: 'infra'},
+              parameters={model.BUILDER_PARAMETER: 'linux'},
               tags=['buildset:a'],
           ),
           creation.BuildRequest(
               project='chromium',
               bucket='luci.chromium.try',
-              parameters={model.BUILDER_PARAMETER: 'infra'},
+              parameters={model.BUILDER_PARAMETER: 'linux'},
               tags=['buildset:a'],
           ),
       ]).get_result()
@@ -556,7 +548,7 @@ class CreationTest(testing.AppengineTestCase):
     self.assertEqual(build.bucket, self.test_build.bucket)
     self.assertEqual(build.parameters, self.test_build.parameters)
     self.assertEqual(build.retry_of, self.test_build.key.id())
-    self.assertEqual(build.tags, ['builder:infra', 'x:x'])
+    self.assertEqual(build.tags, ['builder:linux', 'x:x'])
     self.assertEqual(build.canary_preference, model.CanaryPreference.CANARY)
 
   def test_retry_with_build_address(self):
