@@ -23,4 +23,5 @@ message MetricsSchema {
   optional string python_version = 9;
   optional int64 timestamp = 10;
   repeated HttpRequest http_requests = 11;
+  optional string git_version = 12;
 }

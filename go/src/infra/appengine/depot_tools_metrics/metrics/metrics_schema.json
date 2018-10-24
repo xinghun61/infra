@@ -38,7 +38,11 @@
     },
     "python_version": {
       "type": "string",
-      "pattern": "^\\d\\.\\d.\\d{1,2}$"
+      "pattern": "^\\d\\.\\d{1,2}.\\d{1,2}$"
+    },
+    "git_version": {
+      "type": "string",
+      "pattern": "^\\d\\.\\d{1,2}.\\d{1,2}$"
     },
     "http_requests": {
       "type": "array",
