@@ -8,9 +8,7 @@ create {
     }
     unpack_archive: true
   }
-  build {
-    dep: "ncurses"
-  }
+  build {}
 }
 
 upload { pkg_prefix: "static_libs" }
