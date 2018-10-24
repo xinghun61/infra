@@ -35,7 +35,9 @@ create {
     dep: "ncurses"
     dep: "zlib"
     dep: "sqlite"
-    dep: "openssl"
+
+    # Mac can link with the system openssl to get Keychain support.
+    dep: "openssl_headers"
   }
 }
 
