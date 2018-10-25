@@ -15,6 +15,7 @@
 package reconciler_test
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -26,6 +27,8 @@ import (
 type Dummy struct{}
 
 func Example() {
+	ctx := context.Background()
+
 	// Create a scheduler and reconciler.
 	s := scheduler.New(time.Now())
 	r := reconciler.New()
@@ -46,19 +49,19 @@ func Example() {
 		EnqueueTime:         t,
 		Time:                t,
 	}
-	r.Notify(s, taskUpdate)
+	r.Notify(ctx, s, taskUpdate)
 
 	// Notify the reconciler of a new idle worker, and fetch an assignment
 	// for it. This will fetch Request1 to run on it.
 	workerID := "Worker1"
 	idleWorker := &reconciler.IdleWorker{ID: workerID, ProvisionableLabels: labels}
-	a := r.AssignTasks(s, time.Now(), idleWorker)
+	a := r.AssignTasks(ctx, s, time.Now(), idleWorker)
 
 	fmt.Printf("%s was assigned %s.\n", a[0].WorkerID, a[0].RequestID)
 
 	// A subsequent call for this worker will return the same task,
 	// because the previous assignment has not yet been acknowledged.
-	a = r.AssignTasks(s, time.Now(), idleWorker)
+	a = r.AssignTasks(ctx, s, time.Now(), idleWorker)
 
 	fmt.Printf("%s was again assigned %s.\n", a[0].WorkerID, a[0].RequestID)
 
@@ -70,11 +73,11 @@ func Example() {
 		WorkerId:  workerID,
 		Time:      t,
 	}
-	r.Notify(s, taskUpdate)
+	r.Notify(ctx, s, taskUpdate)
 
 	// Now, a subsequent AssignTasks call for this worker will return
 	// nothing, as there are no other tasks in the queue.
-	a = r.AssignTasks(s, time.Now(), idleWorker)
+	a = r.AssignTasks(ctx, s, time.Now(), idleWorker)
 	fmt.Printf("After ACK, there were %d new assignments.\n", len(a))
 
 	// Output:

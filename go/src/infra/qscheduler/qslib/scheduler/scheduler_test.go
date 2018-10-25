@@ -15,6 +15,7 @@
 package scheduler
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -33,17 +34,18 @@ import (
 // TestMatchWithIdleWorkers tests that the scheduler correctly matches
 // requests with idle workers, if they are available.
 func TestMatchWithIdleWorkers(t *testing.T) {
+	ctx := context.Background()
 	Convey("Given 2 tasks and 2 idle workers", t, func() {
 		tm := time.Unix(0, 0)
 		s := New(tm)
-		s.MarkIdle("w0", []string{}, tm)
-		s.MarkIdle("w1", []string{"label1"}, tm)
-		s.AddRequest("t1", NewRequest("a1", []string{"label1"}, tm), tm)
-		s.AddRequest("t2", NewRequest("a1", []string{"label2"}, tm), tm)
+		s.MarkIdle(ctx, "w0", []string{}, tm)
+		s.MarkIdle(ctx, "w1", []string{"label1"}, tm)
+		s.AddRequest(ctx, "t1", NewRequest("a1", []string{"label1"}, tm), tm)
+		s.AddRequest(ctx, "t2", NewRequest("a1", []string{"label2"}, tm), tm)
 		c := account.NewConfig(0, 0, vector.New())
-		s.AddAccount("a1", c, vector.New(2, 0, 0))
+		s.AddAccount(ctx, "a1", c, vector.New(2, 0, 0))
 		Convey("when scheduling jobs", func() {
-			muts := s.RunOnce()
+			muts := s.RunOnce(ctx)
 			Convey("then both jobs should be matched, with provisionable label used as tie-breaker", func() {
 				tmproto := tutils.TimestampProto(tm)
 				expects := []*Assignment{
@@ -65,6 +67,7 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 // of running jobs (promote or demote) if the account balance makes that
 // necessary.
 func TestSchedulerReprioritize(t *testing.T) {
+	ctx := context.Background()
 	// Prepare a situation in which one P0 job (out of 2 running) will be
 	// demoted, and a separate P2 job will be promoted to P1.
 	Convey("Given two running requests with different costs for an account that needs 1 demotion from P0, and supports 1 additional P1 job", t, func() {
@@ -77,13 +80,13 @@ func TestSchedulerReprioritize(t *testing.T) {
 		for _, i := range []int{1, 2} {
 			rid := fmt.Sprintf("r%d", i)
 			wid := fmt.Sprintf("w%d", i)
-			addRunningRequest(s, rid, wid, aid, 0, tm0)
+			addRunningRequest(ctx, s, rid, wid, aid, 0, tm0)
 		}
 		s.state.Workers["w2"].RunningTask.Cost = vector.New(1)
 
 		Convey("given both requests running at P0", func() {
 			Convey("when scheduling", func() {
-				s.RunOnce()
+				s.RunOnce(ctx)
 				Convey("then the cheaper request should be demoted.", func() {
 					So(s.state.Workers["w1"].RunningTask.Priority, ShouldEqual, 1)
 					So(s.state.Workers["w2"].RunningTask.Priority, ShouldEqual, 0)
@@ -97,7 +100,7 @@ func TestSchedulerReprioritize(t *testing.T) {
 			}
 			Convey("when scheduling", func() {
 
-				s.RunOnce()
+				s.RunOnce(ctx)
 				Convey("then the more expensive should be promoted.", func() {
 					So(s.state.Workers["w1"].RunningTask.Priority, ShouldEqual, 2)
 					So(s.state.Workers["w2"].RunningTask.Priority, ShouldEqual, 1)
@@ -110,27 +113,28 @@ func TestSchedulerReprioritize(t *testing.T) {
 // TestPreempt tests that the scheduler correctly preempts lower priority jobs
 // running on a worker, when a higher priority job appears to take its place.
 func TestSchedulerPreempt(t *testing.T) {
+	ctx := context.Background()
 	Convey("Given a state with two running P1 tasks", t, func() {
 		tm0 := time.Unix(0, 0)
 		s := New(tm0)
-		s.AddAccount("a1", account.NewConfig(0, 0, vector.New(1, 1, 1)), vector.New(0.5*account.PromoteThreshold, 1))
+		s.AddAccount(ctx, "a1", account.NewConfig(0, 0, vector.New(1, 1, 1)), vector.New(0.5*account.PromoteThreshold, 1))
 		for _, i := range []int{1, 2} {
 			rid := fmt.Sprintf("r%d", i)
 			wid := fmt.Sprintf("w%d", i)
-			s.AddRequest(rid, NewRequest("a1", nil, tm0), tm0)
-			s.MarkIdle(wid, []string{}, tm0)
+			s.AddRequest(ctx, rid, NewRequest("a1", nil, tm0), tm0)
+			s.MarkIdle(ctx, wid, []string{}, tm0)
 			s.state.applyAssignment(&Assignment{RequestId: rid, WorkerId: wid, Type: Assignment_IDLE_WORKER, Priority: 1})
 		}
 		s.state.Workers["w1"].RunningTask.Cost = vector.New(0, 1)
 		Convey("given a new P0 request from a different account", func() {
-			s.AddAccount("a2", account.NewConfig(0, 0, vector.New()), vector.New())
-			s.AddRequest("r3", NewRequest("a2", nil, tm0), tm0)
+			s.AddAccount(ctx, "a2", account.NewConfig(0, 0, vector.New()), vector.New())
+			s.AddRequest(ctx, "r3", NewRequest("a2", nil, tm0), tm0)
 			Convey("given sufficient balance", func() {
 				s.state.Balances["a2"] = vector.New(1)
 				Convey("when scheduling", func() {
 					tm1 := time.Unix(1, 0)
-					s.UpdateTime(tm1)
-					got := s.RunOnce()
+					s.UpdateTime(ctx, tm1)
+					got := s.RunOnce(ctx)
 					Convey("then the cheaper running job is preempted.", func() {
 						want := &Assignment{Type: Assignment_PREEMPT_WORKER, Priority: 0, WorkerId: "w2", RequestId: "r3", TaskToAbort: "r2", Time: tutils.TimestampProto(tm1)}
 						So(got, shouldResemblePretty, []*Assignment{want})
@@ -140,7 +144,7 @@ func TestSchedulerPreempt(t *testing.T) {
 			Convey("given insufficient balance", func() {
 				stateBefore := s.state.Clone()
 				Convey("when scheduling", func() {
-					got := s.RunOnce()
+					got := s.RunOnce(ctx)
 					Convey("then nothing happens.", func() {
 						So(got, ShouldBeEmpty)
 						So(s.state, shouldResemblePretty, stateBefore)
@@ -150,10 +154,10 @@ func TestSchedulerPreempt(t *testing.T) {
 		})
 
 		Convey("given a new P0 request from the same account", func() {
-			s.AddRequest("r3", NewRequest("a1", nil, tm0), tm0)
+			s.AddRequest(ctx, "r3", NewRequest("a1", nil, tm0), tm0)
 			stateBefore := s.state.Clone()
 			Convey("when scheduling", func() {
-				got := s.RunOnce()
+				got := s.RunOnce(ctx)
 				Convey("then nothing happens.", func() {
 					So(got, ShouldBeEmpty)
 					So(s.state, shouldResemblePretty, stateBefore)
@@ -166,6 +170,7 @@ func TestSchedulerPreempt(t *testing.T) {
 // TestUpdateErrors test that UpdateBalance returns the correct errors
 // under error conditions.
 func TestUpdateErrors(t *testing.T) {
+	ctx := context.Background()
 	cases := []struct {
 		S      *Scheduler
 		T      time.Time
@@ -200,7 +205,7 @@ func TestUpdateErrors(t *testing.T) {
 	}
 
 	for i, test := range cases {
-		e := test.S.UpdateTime(test.T)
+		e := test.S.UpdateTime(ctx, test.T)
 		if !reflect.DeepEqual(e, test.Expect) {
 			t.Errorf("In case %d, got error: %+v, want error: %+v", i, e, test.Expect)
 		}
@@ -210,6 +215,7 @@ func TestUpdateErrors(t *testing.T) {
 // TestUpdateBalance tests that UpdateBalance makes the correct modifications
 // to account balances and task run costs.
 func TestUpdateBalance(t *testing.T) {
+	ctx := context.Background()
 	epoch := time.Unix(0, 0)
 	t0 := tutils.TimestampProto(epoch)
 	t1 := tutils.TimestampProto(epoch.Add(1 * time.Second))
@@ -312,7 +318,7 @@ func TestUpdateBalance(t *testing.T) {
 
 	for i, test := range cases {
 		actual := test.State
-		(&Scheduler{test.State, test.Config}).UpdateTime(test.T)
+		(&Scheduler{test.State, test.Config}).UpdateTime(ctx, test.T)
 		if diff := pretty.Compare(actual, test.Expect); diff != "" {
 			t.Errorf(fmt.Sprintf("Case %d unexpected mutations diff (-got +want): %s", i, diff))
 		}
@@ -321,10 +327,11 @@ func TestUpdateBalance(t *testing.T) {
 
 // TestAddRequest ensures that AddRequest enqueues a request.
 func TestAddRequest(t *testing.T) {
+	ctx := context.Background()
 	tm := time.Unix(0, 0)
 	s := New(tm)
 	r := NewRequest("a1", nil, tm)
-	s.AddRequest("r1", r, tm)
+	s.AddRequest(ctx, "r1", r, tm)
 	if s.state.QueuedRequests["r1"] != r {
 		t.Errorf("AddRequest did not enqueue request.")
 	}

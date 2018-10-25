@@ -25,6 +25,7 @@ See the provided example in this packages godoc or doc_test.go for usage.
 package scheduler
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"time"
@@ -68,7 +69,7 @@ func (e *UpdateOrderError) Error() string {
 // (or zero balance if nil).
 //
 // If an account with that id already exists, then it is overwritten.
-func (s *Scheduler) AddAccount(id string, config *account.Config, initialBalance *vector.Vector) {
+func (s *Scheduler) AddAccount(ctx context.Context, id string, config *account.Config, initialBalance *vector.Vector) {
 	s.config.AccountConfigs[id] = config
 	if initialBalance == nil {
 		initialBalance = vector.New()
@@ -79,7 +80,7 @@ func (s *Scheduler) AddAccount(id string, config *account.Config, initialBalance
 }
 
 // AddRequest enqueues a new task request.
-func (s *Scheduler) AddRequest(requestID string, request *TaskRequest, t time.Time) {
+func (s *Scheduler) AddRequest(ctx context.Context, requestID string, request *TaskRequest, t time.Time) {
 	s.state.addRequest(requestID, request, t)
 }
 
@@ -97,7 +98,7 @@ func (s *Scheduler) IsAssigned(requestID string, workerID string) bool {
 // UpdateTime updates the current time for a quotascheduler, and
 // updates quota account balances accordingly, based on running jobs,
 // account policies, and the time elapsed since the last update.
-func (s *Scheduler) UpdateTime(t time.Time) error {
+func (s *Scheduler) UpdateTime(ctx context.Context, t time.Time) error {
 	state := s.state
 	config := s.config
 	t0, err := ptypes.Timestamp(state.LastUpdateTime)
@@ -172,7 +173,7 @@ type IdleWorker struct {
 // of state, then it does nothing.
 //
 // Note: calls to MarkIdle come from bot reap calls from swarming.
-func (s *Scheduler) MarkIdle(workerID string, labels LabelSet, t time.Time) {
+func (s *Scheduler) MarkIdle(ctx context.Context, workerID string, labels LabelSet, t time.Time) {
 	s.state.markIdle(workerID, labels, t)
 }
 
@@ -183,7 +184,7 @@ func (s *Scheduler) MarkIdle(workerID string, labels LabelSet, t time.Time) {
 // Supplied requestID must not be "".
 //
 // Note: calls to NotifyRequest come from task update pubsub messages from swarming.
-func (s *Scheduler) NotifyRequest(requestID string, workerID string, t time.Time) {
+func (s *Scheduler) NotifyRequest(ctx context.Context, requestID string, workerID string, t time.Time) {
 	s.state.notifyRequest(requestID, workerID, t)
 }
 
@@ -192,7 +193,7 @@ func (s *Scheduler) NotifyRequest(requestID string, workerID string, t time.Time
 //
 // TODO(akeshet): Revisit how to make this function an interruptable goroutine-based
 // calculation.
-func (s *Scheduler) RunOnce() []*Assignment {
+func (s *Scheduler) RunOnce(ctx context.Context) []*Assignment {
 	state := s.state
 	config := s.config
 	requests := s.prioritizeRequests()

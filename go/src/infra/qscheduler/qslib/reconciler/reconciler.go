@@ -30,6 +30,7 @@ and orchestrates task preemption.
 package reconciler
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -111,18 +112,18 @@ type Assignment struct {
 // by qslib/scheduler.Scheduler.
 type Scheduler interface {
 	// UpdateTime informs the scheduler of the current time.
-	UpdateTime(t time.Time) error
+	UpdateTime(ctx context.Context, t time.Time) error
 
 	// MarkIdle informs the scheduler that a given worker is idle, with
 	// given labels.
-	MarkIdle(workerID string, labels scheduler.LabelSet, t time.Time)
+	MarkIdle(ctx context.Context, workerID string, labels scheduler.LabelSet, t time.Time)
 
 	// RunOnce runs through one round of the scheduling algorithm, and determines
 	// and returns work assignments.
-	RunOnce() []*scheduler.Assignment
+	RunOnce(ctx context.Context) []*scheduler.Assignment
 
 	// AddRequest adds a task request to the queue.
-	AddRequest(requestID string, request *scheduler.TaskRequest, t time.Time)
+	AddRequest(ctx context.Context, requestID string, request *scheduler.TaskRequest, t time.Time)
 
 	// IsAssigned returns whether the given request is currently assigned to the
 	// given worker.
@@ -135,13 +136,13 @@ type Scheduler interface {
 	// Supplied requestID must not be "".
 	//
 	// Note: calls to NotifyRequest come from task update pubsub messages from swarming.
-	NotifyRequest(requestID string, workerID string, t time.Time)
+	NotifyRequest(ctx context.Context, requestID string, workerID string, t time.Time)
 }
 
 // AssignTasks accepts one or more idle workers, and returns tasks to be assigned
 // to those workers (if there are tasks available).
-func (state *State) AssignTasks(s Scheduler, t time.Time, workers ...*IdleWorker) []Assignment {
-	s.UpdateTime(t)
+func (state *State) AssignTasks(ctx context.Context, s Scheduler, t time.Time, workers ...*IdleWorker) []Assignment {
+	s.UpdateTime(ctx, t)
 
 	// Determine which of the supplied workers should be newly marked as
 	// idle. This should be done if either:
@@ -156,14 +157,14 @@ func (state *State) AssignTasks(s Scheduler, t time.Time, workers ...*IdleWorker
 		wid := w.ID
 		q, ok := state.WorkerQueues[wid]
 		if !ok || !s.IsAssigned(q.TaskToAssign, wid) {
-			s.MarkIdle(wid, w.ProvisionableLabels, t)
+			s.MarkIdle(ctx, wid, w.ProvisionableLabels, t)
 			delete(state.WorkerQueues, wid)
 		}
 	}
 
 	// Call scheduler, and update worker queues based on assignments that it
 	// yielded.
-	newAssignments := s.RunOnce()
+	newAssignments := s.RunOnce(ctx)
 	for _, a := range newAssignments {
 		if a.TaskToAbort != "" && a.Type != scheduler.Assignment_PREEMPT_WORKER {
 			panic(fmt.Sprintf("Received a non-preempt assignment specifing a task to abort %s.", a.TaskToAbort))
@@ -204,7 +205,7 @@ type Cancellation struct {
 }
 
 // Cancellations returns the set of workers and tasks that should be cancelled.
-func (state *State) Cancellations() []Cancellation {
+func (state *State) Cancellations(ctx context.Context) []Cancellation {
 	c := make([]Cancellation, 0, len(state.WorkerQueues))
 	for wid, q := range state.WorkerQueues {
 		if q.TaskToAbort != "" {
@@ -223,13 +224,13 @@ func (state *State) Cancellations() []Cancellation {
 // scheduler operations have been completed (otherwise: subsequent AssignTasks or
 // Cancellations will return stale data until internal timeouts within reconciler
 // expire).
-func (state *State) Notify(s Scheduler, updates ...*TaskUpdate) error {
+func (state *State) Notify(ctx context.Context, s Scheduler, updates ...*TaskUpdate) error {
 	for _, update := range updates {
 		switch update.Type {
 		case TaskUpdate_NEW:
 			req := scheduler.NewRequest(update.AccountId, update.ProvisionableLabels,
 				tutils.Timestamp(update.EnqueueTime))
-			s.AddRequest(update.RequestId, req, tutils.Timestamp(update.Time))
+			s.AddRequest(ctx, update.RequestId, req, tutils.Timestamp(update.Time))
 
 		case TaskUpdate_ASSIGNED:
 			wid := update.WorkerId
@@ -237,7 +238,7 @@ func (state *State) Notify(s Scheduler, updates ...*TaskUpdate) error {
 			updateTime := tutils.Timestamp(update.Time)
 			// This NotifyRequest call ensures scheduler state consistency with
 			// the latest update.
-			s.NotifyRequest(rid, wid, updateTime)
+			s.NotifyRequest(ctx, rid, wid, updateTime)
 			if q, ok := state.WorkerQueues[wid]; ok {
 				if !updateTime.Before(q.EnqueueTime) {
 					delete(state.WorkerQueues, wid)
@@ -254,7 +255,7 @@ func (state *State) Notify(s Scheduler, updates ...*TaskUpdate) error {
 			updateTime := tutils.Timestamp(update.Time)
 			// This NotifyRequest call ensures scheduler state consistency with
 			// the latest update.
-			s.NotifyRequest(rid, "", updateTime)
+			s.NotifyRequest(ctx, rid, "", updateTime)
 			// TODO(akeshet): Add an inverse map from aborting request -> previous
 			// worker to avoid the need for this iteration through all workers.
 			for wid, q := range state.WorkerQueues {

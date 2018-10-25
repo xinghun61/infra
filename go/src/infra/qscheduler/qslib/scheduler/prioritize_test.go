@@ -20,6 +20,7 @@
 package scheduler
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -38,7 +39,7 @@ import (
 // TestPrioritizeOne tests that PrioritizeRequests behaves correctly
 // for a single request.
 func TestPrioritizeOne(t *testing.T) {
-
+	ctx := context.Background()
 	aid := "a1"
 	rid := "r1"
 
@@ -63,10 +64,10 @@ func TestPrioritizeOne(t *testing.T) {
 			},
 		}
 
-		s.AddRequest(rid, NewRequest(aid, nil, tm), tm)
+		s.AddRequest(ctx, rid, NewRequest(aid, nil, tm), tm)
 		for _, c := range accountCases {
 			Convey(fmt.Sprintf("given account balance is %v", c.accountBalance.Values), func() {
-				s.AddAccount(aid, &account.Config{}, c.accountBalance)
+				s.AddAccount(ctx, aid, &account.Config{}, c.accountBalance)
 				Convey("when prioritizing", func() {
 					got := s.prioritizeRequests()
 					Convey(fmt.Sprintf("then the request gets priority %d.", c.expectedPriority), func() {
@@ -92,7 +93,7 @@ func TestPrioritizeOne(t *testing.T) {
 // TestPrioritizeMany tests that PrioritizeRequests behaves correctly
 // for a number of requests.
 func TestPrioritizeMany(t *testing.T) {
-	t.Parallel()
+	ctx := context.Background()
 	nReqs := 10
 	aid := "a1"
 	Convey("Given requests with different enqueue times, but inserted in random order", t, func() {
@@ -103,7 +104,7 @@ func TestPrioritizeMany(t *testing.T) {
 		perm := rand.Perm(nReqs)
 		for _, i := range perm {
 			tm := time.Unix(int64(i), 0)
-			s.AddRequest(strconv.Itoa(i), NewRequest(aid, nil, tm), tm)
+			s.AddRequest(ctx, strconv.Itoa(i), NewRequest(aid, nil, tm), tm)
 		}
 
 		Convey("given no matching account", func() {
@@ -121,7 +122,7 @@ func TestPrioritizeMany(t *testing.T) {
 		})
 
 		Convey("given an account with no maximum fanout", func() {
-			s.AddAccount(aid, account.NewConfig(0, 0, vector.New()), nil)
+			s.AddAccount(ctx, aid, account.NewConfig(0, 0, vector.New()), nil)
 			Convey("when prioritizing", func() {
 				got := s.prioritizeRequests()
 				Convey("then requests are prioritized by enqueue time.", func() {
@@ -137,11 +138,11 @@ func TestPrioritizeMany(t *testing.T) {
 
 		Convey("given the account specifices a maximum fanout and some requests for that account are already running", func() {
 			maxFanout := 5
-			s.AddAccount(aid, &account.Config{MaxFanout: int32(maxFanout)}, vector.New(0, 1))
+			s.AddAccount(ctx, aid, &account.Config{MaxFanout: int32(maxFanout)}, vector.New(0, 1))
 
 			// Two requests are already running.
-			addRunningRequest(s, "11", "11", aid, 1, time.Unix(0, 0))
-			addRunningRequest(s, "12", "12", aid, 1, time.Unix(0, 0))
+			addRunningRequest(ctx, s, "11", "11", aid, 1, time.Unix(0, 0))
+			addRunningRequest(ctx, s, "12", "12", aid, 1, time.Unix(0, 0))
 
 			Convey("when prioritizing", func() {
 				got := s.prioritizeRequests()
@@ -165,9 +166,9 @@ func TestPrioritizeMany(t *testing.T) {
 
 // addRunningRequest is a test helper to add a new request to a scheduler and
 // immediately start it running on a new worker.
-func addRunningRequest(s *Scheduler, rid string, wid string, aid string, pri int32, tm time.Time) {
-	s.AddRequest(rid, NewRequest(aid, []string{}, tm), tm)
-	s.MarkIdle(wid, []string{}, tm)
+func addRunningRequest(ctx context.Context, s *Scheduler, rid string, wid string, aid string, pri int32, tm time.Time) {
+	s.AddRequest(ctx, rid, NewRequest(aid, []string{}, tm), tm)
+	s.MarkIdle(ctx, wid, []string{}, tm)
 	s.state.applyAssignment(&Assignment{Priority: pri, RequestId: rid, WorkerId: wid, Type: Assignment_IDLE_WORKER})
 }
 

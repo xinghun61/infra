@@ -15,6 +15,7 @@
 package reconciler
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -50,6 +51,7 @@ func assertAssignments(t *testing.T, description string,
 // worker is correctly assigned, and that subsequent calls after Notify
 // return the correct results.
 func TestOneAssignment(t *testing.T) {
+	ctx := context.Background()
 	Convey("Given an empty scheduler and reconciler state", t, func() {
 		t0 := time.Unix(0, 0)
 		t1 := time.Unix(1, 0)
@@ -70,11 +72,11 @@ func TestOneAssignment(t *testing.T) {
 				EnqueueTime:         tutils.TimestampProto(t0),
 			}
 
-			r.Notify(s, taskUpdate)
+			r.Notify(ctx, s, taskUpdate)
 
 			Convey("when AssignTasks is called for a worker", func() {
 				wid := "Worker1"
-				as := r.AssignTasks(s, t0, &IdleWorker{ID: wid})
+				as := r.AssignTasks(ctx, s, t0, &IdleWorker{ID: wid})
 
 				Convey("then it is given the assigned task.", func() {
 					So(as, ShouldHaveLength, 1)
@@ -84,7 +86,7 @@ func TestOneAssignment(t *testing.T) {
 				})
 
 				Convey("when AssignTasks is called again for the same worker", func() {
-					as = r.AssignTasks(s, t1, &IdleWorker{ID: wid})
+					as = r.AssignTasks(ctx, s, t1, &IdleWorker{ID: wid})
 					Convey("then it is given the same task.", func() {
 						So(as, ShouldHaveLength, 1)
 						a := as[0]
@@ -114,10 +116,10 @@ func TestOneAssignment(t *testing.T) {
 							Type:      TaskUpdate_ASSIGNED,
 							Time:      tutils.TimestampProto(c.t),
 						}
-						r.Notify(s, taskUpdate)
+						r.Notify(ctx, s, taskUpdate)
 
 						Convey("when AssignTasks is called again for the same worker", func() {
-							as = r.AssignTasks(s, t2, &IdleWorker{ID: wid})
+							as = r.AssignTasks(ctx, s, t2, &IdleWorker{ID: wid})
 							Convey("then it is no longer given the task.", func() {
 								So(as, ShouldBeEmpty)
 							})
@@ -133,10 +135,10 @@ func TestOneAssignment(t *testing.T) {
 						Type:      TaskUpdate_ASSIGNED,
 						Time:      tutils.TimestampProto(t1),
 					}
-					r.Notify(s, taskUpdate)
+					r.Notify(ctx, s, taskUpdate)
 
 					Convey("when AssignTasks is called again for the same worker", func() {
-						as = r.AssignTasks(s, t2, &IdleWorker{ID: wid})
+						as = r.AssignTasks(ctx, s, t2, &IdleWorker{ID: wid})
 						Convey("then it is no longer given the task.", func() {
 							So(as, ShouldBeEmpty)
 						})
@@ -151,9 +153,9 @@ func TestOneAssignment(t *testing.T) {
 						Type:      TaskUpdate_ASSIGNED,
 						Time:      tutils.TimestampProto(t1),
 					}
-					r.Notify(s, taskUpdate)
+					r.Notify(ctx, s, taskUpdate)
 					Convey("when AssignTasks is called again for the same worker", func() {
-						as = r.AssignTasks(s, t2, &IdleWorker{ID: wid})
+						as = r.AssignTasks(ctx, s, t2, &IdleWorker{ID: wid})
 						Convey("then it is no longer given the task.", func() {
 							So(as, ShouldBeEmpty)
 						})
@@ -171,6 +173,7 @@ func TestOneAssignment(t *testing.T) {
 // TestQueuedAssignment tests that a scheduler assignment is queued until
 // the relevant worker calls AssignTasks.
 func TestQueuedAssignment(t *testing.T) {
+	ctx := context.Background()
 	Convey("Given an empty scheduler and reconciler state", t, func() {
 		t0 := time.Unix(0, 0)
 		r := New()
@@ -178,7 +181,7 @@ func TestQueuedAssignment(t *testing.T) {
 		Convey("given a worker with a label is idle", func() {
 			wid := "Worker1"
 			labels := []string{"Label1"}
-			r.AssignTasks(s, t0, &IdleWorker{wid, labels})
+			r.AssignTasks(ctx, s, t0, &IdleWorker{wid, labels})
 			Convey("given a request is enqueued with that label", func() {
 				rid := "Request1"
 				taskUpdate := &TaskUpdate{
@@ -188,16 +191,16 @@ func TestQueuedAssignment(t *testing.T) {
 					RequestId:           rid,
 					Type:                TaskUpdate_NEW,
 				}
-				r.Notify(s, taskUpdate)
+				r.Notify(ctx, s, taskUpdate)
 				Convey("when a different worker without that label calls AssignTasks", func() {
 					wid2 := "Worker2"
 					t1 := time.Unix(1, 0)
-					as := r.AssignTasks(s, t1, &IdleWorker{wid2, []string{}})
+					as := r.AssignTasks(ctx, s, t1, &IdleWorker{wid2, []string{}})
 					Convey("then it is given no task.", func() {
 						So(as, ShouldBeEmpty)
 					})
 					Convey("when the labeled worker calls AssignTasks", func() {
-						as = r.AssignTasks(s, t1, &IdleWorker{wid, labels})
+						as = r.AssignTasks(ctx, s, t1, &IdleWorker{wid, labels})
 						Convey("it is given the task.", func() {
 							So(as, ShouldHaveLength, 1)
 							So(as[0].RequestID, ShouldEqual, rid)
@@ -212,6 +215,7 @@ func TestQueuedAssignment(t *testing.T) {
 }
 
 func TestPreemption(t *testing.T) {
+	ctx := context.Background()
 	Convey("Given an empty scheduler and reconciler state", t, func() {
 		t0 := time.Unix(0, 0)
 		r := New()
@@ -225,10 +229,10 @@ func TestPreemption(t *testing.T) {
 				RequestId:   oldRequest,
 				Type:        TaskUpdate_NEW,
 			}
-			r.Notify(s, taskUpdate)
+			r.Notify(ctx, s, taskUpdate)
 
 			wid := "Worker1"
-			r.AssignTasks(s, t0, &IdleWorker{ID: wid})
+			r.AssignTasks(ctx, s, t0, &IdleWorker{ID: wid})
 
 			// Note: This is more of a test of the scheduler's behavior than the
 			// reconciler, but it is a precondition for the rest of the test cases.
@@ -236,7 +240,7 @@ func TestPreemption(t *testing.T) {
 
 			Convey("given a new request with higher priority", func() {
 				aid := "Account1"
-				s.AddAccount(aid, account.NewConfig(0, 0, vector.New()), vector.New(1))
+				s.AddAccount(ctx, aid, account.NewConfig(0, 0, vector.New()), vector.New(1))
 				t1 := time.Unix(1, 0)
 				newRequest := "Request2"
 				taskUpdate := &TaskUpdate{
@@ -246,17 +250,17 @@ func TestPreemption(t *testing.T) {
 					RequestId:   newRequest,
 					Type:        TaskUpdate_NEW,
 				}
-				r.Notify(s, taskUpdate)
+				r.Notify(ctx, s, taskUpdate)
 
 				Convey("when AssignTasks is called with no idle workers and the scheduler preempts the old request with the new one", func() {
-					r.AssignTasks(s, t1)
+					r.AssignTasks(ctx, s, t1)
 
 					// Note: This is more of a test of the scheduler's behavior than the
 					// reconciler, but it is a precondition for the rest of the test cases.
 					So(s.IsAssigned(newRequest, wid), ShouldBeTrue)
 
 					Convey("when GetCancellations is called", func() {
-						c := r.Cancellations()
+						c := r.Cancellations(ctx)
 						Convey("then it returns a cancellation for the old request on that worker.", func() {
 							So(c, ShouldHaveLength, 1)
 							So(c[0].RequestID, ShouldEqual, oldRequest)
@@ -271,9 +275,9 @@ func TestPreemption(t *testing.T) {
 							RequestId: oldRequest,
 							Type:      TaskUpdate_INTERRUPTED,
 						}
-						r.Notify(s, taskUpdate)
+						r.Notify(ctx, s, taskUpdate)
 						Convey("when GetCancellations is called", func() {
-							c := r.Cancellations()
+							c := r.Cancellations(ctx)
 							Convey("then it returns nothing.", func() {
 								So(c, ShouldBeEmpty)
 							})
@@ -282,7 +286,7 @@ func TestPreemption(t *testing.T) {
 
 					Convey("when AssignTasks is called for the intended worker", func() {
 						t2 := time.Unix(2, 0)
-						as := r.AssignTasks(s, t2, &IdleWorker{wid, []string{}})
+						as := r.AssignTasks(ctx, s, t2, &IdleWorker{wid, []string{}})
 						Convey("then it returns the preempting request.", func() {
 							So(as, ShouldHaveLength, 1)
 							So(as[0].RequestID, ShouldEqual, newRequest)
@@ -293,7 +297,7 @@ func TestPreemption(t *testing.T) {
 					Convey("when AssignTasks is called for a different worker", func() {
 						t2 := time.Unix(2, 0)
 						wid2 := "Worker2"
-						as := r.AssignTasks(s, t2, &IdleWorker{wid2, []string{}})
+						as := r.AssignTasks(ctx, s, t2, &IdleWorker{wid2, []string{}})
 						Convey("then it returns the preempted request.", func() {
 							So(as, ShouldHaveLength, 1)
 							So(as[0].RequestID, ShouldEqual, oldRequest)
@@ -304,7 +308,7 @@ func TestPreemption(t *testing.T) {
 					Convey("when AssignTasks is called for the intended worker and a different worker simultaneously", func() {
 						t2 := time.Unix(2, 0)
 						wid2 := "Worker2"
-						as := r.AssignTasks(s, t2, &IdleWorker{wid, []string{}}, &IdleWorker{wid2, []string{}})
+						as := r.AssignTasks(ctx, s, t2, &IdleWorker{wid, []string{}}, &IdleWorker{wid2, []string{}})
 						Convey("then intended worker receives preempting request, other receives preempted request.", func() {
 							So(as, ShouldHaveLength, 2)
 							a1 := Assignment{RequestID: newRequest, WorkerID: wid}
