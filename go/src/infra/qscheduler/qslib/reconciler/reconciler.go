@@ -38,53 +38,9 @@ import (
 	"infra/qscheduler/qslib/tutils"
 )
 
-// WorkerQueue represents the queue of qscheduler operations that are pending
-// for a given worker.
-//
-// At present, the queue of operations for a worker can be at most 2 elements
-// in length, and consist of either:
-// - An Abort Job operation followed by an Assign Job operation.
-// - An Assign Job operation.
-//
-// Therefore, instead of representing this as a list of operations, it is
-// convenient to flatten this queue into a single object.
-//
-// TODO: Turn this into a proto, because it will need to get serialized.
-type WorkerQueue struct {
-	// EnqueueTime is the time at which these operations were enqueued.
-	EnqueueTime time.Time
-
-	// TaskToAssign is the task request that should be assigned to this worker.
-	TaskToAssign string
-
-	// TaskToAbort indicates the task request id that should be aborted on this worker.
-	//
-	// Empty string "" indicates that there is nothing to abort.
-	TaskToAbort string
-}
-
-// Config represents configuration options for a reconciler.
-type Config struct {
-	// TODO: Implement me.
-	// Include things such as:
-	// - ACK timeout for worker aborts.
-	// - ACK timeout for worker-task assignments.
-}
-
-// State represents a reconciler, which includes its configuration and the
-// pending operations that are in-flight and have not been ACK'ed yet.
-//
-// TODO: Turn this into a proto, because it will need to get serialized.
-type State struct {
-	Config *Config
-
-	WorkerQueues map[string]*WorkerQueue
-}
-
 // New returns a new initialized State instance.
 func New() *State {
 	return &State{
-		Config:       &Config{},
 		WorkerQueues: make(map[string]*WorkerQueue),
 	}
 }
@@ -172,7 +128,7 @@ func (state *State) AssignTasks(ctx context.Context, s Scheduler, t time.Time, w
 		// TODO(akeshet): Log if there was a previous WorkerQueue that we are
 		// overwriting.
 		state.WorkerQueues[a.WorkerId] = &WorkerQueue{
-			EnqueueTime:  tutils.Timestamp(a.Time),
+			EnqueueTime:  a.Time,
 			TaskToAssign: a.RequestId,
 			TaskToAbort:  a.TaskToAbort,
 		}
@@ -240,7 +196,7 @@ func (state *State) Notify(ctx context.Context, s Scheduler, updates ...*TaskUpd
 			// the latest update.
 			s.NotifyRequest(ctx, rid, wid, updateTime)
 			if q, ok := state.WorkerQueues[wid]; ok {
-				if !updateTime.Before(q.EnqueueTime) {
+				if !updateTime.Before(tutils.Timestamp(q.EnqueueTime)) {
 					delete(state.WorkerQueues, wid)
 					// TODO(akeshet): Log or handle "unexpected request on worker" here.
 				} else {
@@ -259,7 +215,7 @@ func (state *State) Notify(ctx context.Context, s Scheduler, updates ...*TaskUpd
 			// TODO(akeshet): Add an inverse map from aborting request -> previous
 			// worker to avoid the need for this iteration through all workers.
 			for wid, q := range state.WorkerQueues {
-				if q.TaskToAbort == rid && q.EnqueueTime.Before(updateTime) {
+				if q.TaskToAbort == rid && tutils.Timestamp(q.EnqueueTime).Before(updateTime) {
 					delete(state.WorkerQueues, wid)
 				}
 			}

@@ -72,3 +72,32 @@ message TaskUpdate {
 	// is only relevant for NEW type updates.
 	google.protobuf.Timestamp enqueue_time = 7;
 }
+
+// WorkerQueue represents the queue of qscheduler operations that are pending
+// for a given worker.
+//
+// At present, the queue of operations for a worker can be at most 2 elements
+// in length, and consist of either:
+// - An Abort Job operation followed by an Assign Job operation.
+// - An Assign Job operation.
+//
+// Therefore, instead of representing this as a list of operations, it is
+// convenient to flatten this queue into a single object.
+message WorkerQueue {
+	// EnqueueTime is the time at which these operations were enqueued.
+	google.protobuf.Timestamp enqueue_time = 1;
+
+	// TaskToAssign is the task request that should be assigned to this worker.
+	string task_to_assign = 2;
+
+	// TaskToAbort indicates the task request id that should be aborted on this worker.
+	//
+	// Empty string "" indicates that there is nothing to abort.
+	string task_to_abort = 3;
+}
+
+// State represents a reconciler, which includes its configuration and the
+// pending operations that are in-flight and have not been ACK'ed yet.
+message State {
+	map<string, WorkerQueue> worker_queues = 1;
+}
