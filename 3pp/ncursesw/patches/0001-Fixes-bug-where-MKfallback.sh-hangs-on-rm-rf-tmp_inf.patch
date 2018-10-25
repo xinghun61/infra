@@ -1,0 +1,29 @@
+From 794ceb942c61e7d14cfb742acad2096db63d61cf Mon Sep 17 00:00:00 2001
+From: Robert Iannucci <iannucci@chromium.org>
+Date: Fri, 21 Sep 2018 23:00:39 -0700
+Subject: [PATCH] Fixes bug where MKfallback.sh hangs on `rm -rf tmp_info`.
+
+I'm not really sure if this is docker, my mac, the container, or what,
+but it repeatably hangs for me, and we manage the cleanup of that
+directory externally anyway.
+---
+ ncurses/tinfo/MKfallback.sh | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/ncurses/tinfo/MKfallback.sh b/ncurses/tinfo/MKfallback.sh
+index 11f1d2e..d3c0800 100755
+--- a/ncurses/tinfo/MKfallback.sh
++++ b/ncurses/tinfo/MKfallback.sh
+@@ -134,6 +134,7 @@ cat <<EOF
+ EOF
+ 
+ if test -n "$tmp_info" ; then
+-	echo removing temporary terminfo directory... >&2
+-	rm -rf $tmp_info
++	echo removing temporary terminfo directory: `pwd`$tmp_info... >&2
++	# this removal step seems to hang on docker for unknown reasons
++	#rm -rf $tmp_info
+ fi
+-- 
+2.18.0
+
