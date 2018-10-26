@@ -1,0 +1,33 @@
+From 004cd42f927a98f969507a999807f79641271efa Mon Sep 17 00:00:00 2001
+From: Robert Iannucci <iannucci@chromium.org>
+Date: Wed, 24 Oct 2018 15:53:01 -0700
+Subject: [PATCH] Make libtool relocatable
+
+---
+ libtoolize.in | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/libtoolize.in b/libtoolize.in
+index 798bd0a..097ce4a 100644
+--- a/libtoolize.in
++++ b/libtoolize.in
+@@ -1901,11 +1901,11 @@ func_require_seen_libtool ()
+   pkgmacro_files="@pkgmacro_files@"
+ 
+   # Locations for important files:
+-  prefix="@prefix@"
+-  datadir="@datadir@"
+-  pkgauxdir="@pkgauxdir@"
+-  pkgltdldir="@pkgdatadir@"
+-  aclocaldir="@aclocaldir@"
++  prefix=$(CDPATH= cd -- "$(dirname "$(dirname -- "$0")")" && pwd -P)
++  datadir="$prefix/share"
++  pkgauxdir="$prefix/share/libtool/build-aux"
++  pkgltdldir="$prefix/share/libtool"
++  aclocaldir="$prefix/share/aclocal"
+ 
+   # Allow the user to override the master libtoolize repository:
+   if test -n "$_lt_pkgdatadir"; then
+-- 
+2.19.1
+
