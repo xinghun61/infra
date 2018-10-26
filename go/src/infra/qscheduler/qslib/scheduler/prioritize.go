@@ -48,8 +48,8 @@ type orderedRequests []prioritizedRequest
 //
 // This function does not modify state or config.
 func (s *Scheduler) prioritizeRequests() orderedRequests {
-	state := s.state
-	config := s.config
+	state := s.State
+	config := s.Config
 	// TODO Use container/heap rather than slices to make this faster.
 
 	// Initial pass: compute priority for each task based purely on account
