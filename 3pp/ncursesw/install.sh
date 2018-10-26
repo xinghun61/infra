@@ -18,8 +18,7 @@ fi > /dev/null
 # The "ncurses" package, by default, uses a fixed-path location for terminal
 # information. This is not relocatable, so we need to disable it. Instead, we
 # will compile ncurses with a set of hand-picked custom terminal information
-# data baked in, as well as the ability to probe terminal via termcap if
-# needed.
+# data baked in.
 #
 # To do this, we need to build in multiple stages:
 # 1) Generic configure / make so that the "tic" (terminfo compiler) and
@@ -47,7 +46,7 @@ tic_prefix=$(realpath ../tic_prefix)
   mkdir -p $tic_build
   cd $tic_build
 
-  $src/configure --enable-widec --enable-termcap --prefix $tic_prefix
+  $src/configure --enable-widec --prefix $tic_prefix
   make install -j $(nproc)
 )
 
@@ -92,7 +91,6 @@ PATH=$tic_prefix/bin:$PATH ./configure \
   --host=$CROSS_TRIPLE \
   --disable-database \
   --disable-db-install \
-  --enable-termcap \
   --enable-widec \
   --with-fallbacks="$fallbacks"
 make clean
