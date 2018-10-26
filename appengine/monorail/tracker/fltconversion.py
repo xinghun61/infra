@@ -116,20 +116,26 @@ class FLTConvertTask(jsonfeed.InternalTask):
 
     # Convert issues:
     for possible_stale_issue in pipeline.allowed_results:
+      # Note: These approval values and phases from templates will be used
+      # and modified to create approval values and phases for each issue.
+      # We need to create copies for each issue so changes are not carried
+      # over to the conversion of the next issue in the loop.
+      template_avs = self.CreateApprovalCopies(project_info.approval_values)
+      template_phases = self.CreatePhasesCopies(project_info.phases)
       issue = self.services.issue.GetIssue(
           mr.cnxn, possible_stale_issue.issue_id, use_cache=False)
       new_approvals = ConvertLaunchLabels(
-          issue.labels, project_info.approval_values,
+          issue.labels, template_avs,
           project_info.config.field_defs)
       m_fvs = ConvertMLabels(
-          issue.labels, project_info.phases,
+          issue.labels, template_phases,
           project_info.m_target_id, project_info.m_approved_id)
       people_fvs = self.ConvertPeopleLabels(
           mr, issue.labels,
           project_info.pm_fid, project_info.tl_fid, project_info.te_fid)
       amendments = self.ExecuteIssueChanges(
           project_info.config, issue, new_approvals,
-          project_info.phases, m_fvs + people_fvs)
+          template_phases, m_fvs + people_fvs)
       logging.info('SUCCESSFULLY CONVERTED ISSUE: %s' % issue.local_id)
       logging.info('amendments %r', amendments)
 
@@ -137,6 +143,25 @@ class FLTConvertTask(jsonfeed.InternalTask):
         'converted_issues': [
             issue.local_id for issue in pipeline.allowed_results],
         }
+
+  def CreateApprovalCopies(self, avs):
+    return [
+      tracker_pb2.ApprovalValue(
+          approval_id=av.approval_id,
+          status=av.status,
+          approver_ids=av.approver_ids,
+          setter_id=av.setter_id,
+          set_on=av.set_on,
+          phase_id=av.phase_id) for av in avs
+    ]
+
+  def CreatePhasesCopies(self, phases):
+    return [
+      tracker_pb2.Phase(
+          phase_id=phase.phase_id,
+          name=phase.name,
+          rank=phase.rank) for phase in phases
+        ]
 
   def FetchAndAssertProjectInfo(self, mr):
     # Get request details

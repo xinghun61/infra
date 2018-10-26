@@ -60,9 +60,17 @@ class FLTConvertTask(unittest.TestCase):
             'Launch-M-Approved-71-Stable', 'Launch-M-Target-70-Beta',
             'Launch-UI-Yes', 'Launch-Privacy-NeedInfo',
             'pm-jojwang', 'tl-annajo'])
+    issue2 = fake.MakeTestIssue(
+        789, 2, 'sum', 'New', 111L, issue_id=78902,
+        labels=[
+            'Launch-M-Target-71-Stable', 'Launch-M-Approved-70-Beta',
+            'pm-jojwang', 'tl-annajo'])
 
-    approval_values = [tracker_pb2.ApprovalValue(approval_id=7),
-                       tracker_pb2.ApprovalValue(approval_id=8)]
+    approval_values = [
+        tracker_pb2.ApprovalValue(
+            approval_id=7, status=tracker_pb2.ApprovalStatus.NOT_SET),
+        tracker_pb2.ApprovalValue(
+            approval_id=8, status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)]
     phases = [tracker_pb2.Phase(name='Stable', phase_id=88),
               tracker_pb2.Phase(name='Beta', phase_id=89)]
 
@@ -79,10 +87,10 @@ class FLTConvertTask(unittest.TestCase):
     # Set up mocks
     patcher = mock.patch(
         'search.frontendsearchpipeline.FrontendSearchPipeline',
-        spec=True, allowed_results=[issue1])
+        spec=True, allowed_results=[issue1, issue2])
     mockPipeline = patcher.start()
 
-    self.task.services.issue.GetIssue = mock.Mock(return_value=issue1)
+    self.task.services.issue.GetIssue = mock.Mock(side_effect=[issue1, issue2])
 
     self.task.FetchAndAssertProjectInfo = mock.Mock(return_value=project_info)
 
@@ -103,14 +111,14 @@ class FLTConvertTask(unittest.TestCase):
     json = self.task.HandleRequest(self.mr)
 
     # assert
-    self.assertEqual(json['converted_issues'], [1])
+    self.assertEqual(json['converted_issues'], [1, 2])
 
-    new_approvals = [
+    new_approvals1 = [
         tracker_pb2.ApprovalValue(
             approval_id=7, status=tracker_pb2.ApprovalStatus.APPROVED),
         tracker_pb2.ApprovalValue(
             approval_id=8, status=tracker_pb2.ApprovalStatus.NEED_INFO)]
-    new_fvs = [
+    new_fvs1 = [
       # M-Approved Stable
       tracker_bizobj.MakeFieldValue(
           15, 71, None, None, None, None, False, phase_id=88),
@@ -124,8 +132,28 @@ class FLTConvertTask(unittest.TestCase):
       tracker_bizobj.MakeFieldValue(
           12, None, None, 222L, None, None, False)]
 
-    self.task.ExecuteIssueChanges.assert_called_once_with(
-        self.config, issue1, new_approvals, phases, new_fvs)
+    new_approvals2 = [
+        tracker_pb2.ApprovalValue(
+            approval_id=7, status=tracker_pb2.ApprovalStatus.NOT_SET),
+        tracker_pb2.ApprovalValue(
+            approval_id=8, status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
+    ]
+    new_fvs2 = [
+        tracker_bizobj.MakeFieldValue(
+            14, 71, None, None, None, None, False, phase_id=88),
+        tracker_bizobj.MakeFieldValue(
+            15, 70, None, None, None, None, False, phase_id=89),
+        # PM field
+        tracker_bizobj.MakeFieldValue(
+            11, None, None, 111L, None, None, False),
+        # TL field
+        tracker_bizobj.MakeFieldValue(
+            12, None, None, 222L, None, None, False)]
+
+    execute_calls = [
+        mock.call(self.config, issue1, new_approvals1, phases, new_fvs1),
+        mock.call(self.config, issue2, new_approvals2, phases, new_fvs2)]
+    self.task.ExecuteIssueChanges.assert_has_calls(execute_calls)
 
     patcher.stop()
 
