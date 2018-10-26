@@ -655,6 +655,7 @@ class Servlet(webapp2.RequestHandler):
         'False': ezt.boolean(False),
 
         'dev_mode': ezt.boolean(settings.dev_mode),
+        'script_prefix_dir': settings.script_prefix_dir,
 
         'site_name': settings.site_name,
         'show_search_metadata': ezt.boolean(False),

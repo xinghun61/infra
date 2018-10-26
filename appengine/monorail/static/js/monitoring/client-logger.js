@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Important: tsmon-client.js must be imported before this file for now.
-// TODO(4430): Import tsmon-client.js here with cache busting.
+import '../../../bower_components/chopsui/tsmon-client.js';
 
 /*
 ClientLogger is a JavaScript library for tracking events with Google Analytics

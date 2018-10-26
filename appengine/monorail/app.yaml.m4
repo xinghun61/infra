@@ -11,6 +11,8 @@ threadsafe: no
 
 default_expiration: "3600d"
 
+define(`SCRIPT_PREFIX_DIR', `syscmd(`git rev-parse HEAD | head -c 7')')
+
 ifdef(`PROD', `
 instance_class: F4
 automatic_scaling:
@@ -46,6 +48,12 @@ handlers:
   secure: always
   mime_type: application/javascript
 
+# Used with relative imports for cache busting.
+- url: /SCRIPT_PREFIX_DIR/bower_components
+  static_dir: bower_components
+  secure: always
+  mime_type: application/javascript
+
 - url: /node_modules
   static_dir: node_modules
   secure: always
@@ -60,9 +68,16 @@ handlers:
   static_dir: elements
   secure: always
 
+# Used with relative imports for cache busting.
+- url: /SCRIPT_PREFIX_DIR/static/js
+  static_dir: static/js
+  mime_type: application/javascript
+  secure: always
+
 - url: /static/js
   static_dir: static/js
   mime_type: application/javascript
+  secure: always
 
 - url: /static
   static_dir: static
@@ -101,6 +116,9 @@ libraries:
 
 includes:
 - gae_ts_mon
+
+env_variables:
+  SCRIPT_FILE_PREFIX_DIR: 'SCRIPT_PREFIX_DIR'
 
 skip_files:
 - ^(.*/)?#.*#$

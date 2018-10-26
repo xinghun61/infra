@@ -102,13 +102,8 @@ a.src=g;m.parentNode.insertBefore(a,m)
 </script>
 
 <script
-  defer
-  src="/bower_components/chopsui/tsmon-client.js?version=[app_version]"
-  nonce="[nonce]">
-</script>
-<script
   type="module"
   defer
-  src="/static/js/monitoring/client-logger.js?version=[app_version]"
+  src="/[script_prefix_dir]/static/js/monitoring/client-logger.js"
   nonce="[nonce]">
 </script>
