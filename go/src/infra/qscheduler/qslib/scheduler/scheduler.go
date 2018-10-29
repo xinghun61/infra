@@ -62,6 +62,7 @@ func (e *UpdateOrderError) Error() string {
 //
 // If an account with that id already exists, then it is overwritten.
 func (s *Scheduler) AddAccount(ctx context.Context, id string, config *account.Config, initialBalance *vector.Vector) {
+	s.ensureMaps()
 	s.Config.AccountConfigs[id] = config
 	if initialBalance == nil {
 		initialBalance = vector.New()
@@ -73,12 +74,14 @@ func (s *Scheduler) AddAccount(ctx context.Context, id string, config *account.C
 
 // AddRequest enqueues a new task request.
 func (s *Scheduler) AddRequest(ctx context.Context, requestID string, request *TaskRequest, t time.Time) {
+	s.ensureMaps()
 	s.State.addRequest(requestID, request, t)
 }
 
 // IsAssigned returns whether the given request is currently assigned to the
 // given worker. It is provided for a consistency checks.
 func (s *Scheduler) IsAssigned(requestID string, workerID string) bool {
+	s.ensureMaps()
 	if w, ok := s.State.Workers[workerID]; ok {
 		if !w.isIdle() {
 			return w.RunningTask.RequestId == requestID
@@ -91,6 +94,7 @@ func (s *Scheduler) IsAssigned(requestID string, workerID string) bool {
 // updates quota account balances accordingly, based on running jobs,
 // account policies, and the time elapsed since the last update.
 func (s *Scheduler) UpdateTime(ctx context.Context, t time.Time) error {
+	s.ensureMaps()
 	state := s.State
 	config := s.Config
 	t0, err := ptypes.Timestamp(state.LastUpdateTime)
@@ -166,6 +170,7 @@ type IdleWorker struct {
 //
 // Note: calls to MarkIdle come from bot reap calls from swarming.
 func (s *Scheduler) MarkIdle(ctx context.Context, workerID string, labels LabelSet, t time.Time) {
+	s.ensureMaps()
 	s.State.markIdle(workerID, labels, t)
 }
 
@@ -177,6 +182,7 @@ func (s *Scheduler) MarkIdle(ctx context.Context, workerID string, labels LabelS
 //
 // Note: calls to NotifyRequest come from task update pubsub messages from swarming.
 func (s *Scheduler) NotifyRequest(ctx context.Context, requestID string, workerID string, t time.Time) {
+	s.ensureMaps()
 	s.State.notifyRequest(requestID, workerID, t)
 }
 
@@ -186,6 +192,7 @@ func (s *Scheduler) NotifyRequest(ctx context.Context, requestID string, workerI
 // TODO(akeshet): Revisit how to make this function an interruptable goroutine-based
 // calculation.
 func (s *Scheduler) RunOnce(ctx context.Context) []*Assignment {
+	s.ensureMaps()
 	state := s.State
 	config := s.Config
 	requests := s.prioritizeRequests()
@@ -441,6 +448,25 @@ func preemptRunningTasks(state *State, jobsAtP []prioritizedRequest, priority in
 		cI++
 	}
 	return output
+}
+
+// ensureMaps ensures that all maps in scheduler or its child structs are
+// non-nil, and initializes them otherwise.
+//
+// This is necessary because protobuf deserialization of an empty map returns a nil map.
+func (s *Scheduler) ensureMaps() {
+	if s.Config.AccountConfigs == nil {
+		s.Config.AccountConfigs = make(map[string]*account.Config)
+	}
+	if s.State.Balances == nil {
+		s.State.Balances = make(map[string]*vector.Vector)
+	}
+	if s.State.QueuedRequests == nil {
+		s.State.QueuedRequests = make(map[string]*TaskRequest)
+	}
+	if s.State.Workers == nil {
+		s.State.Workers = make(map[string]*Worker)
+	}
 }
 
 // minInt returns the lesser of two integers.
