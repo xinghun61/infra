@@ -62,7 +62,7 @@ func disableGRPCLogging(ctx context.Context) {
 func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, env environ.Env) (rc int, build *milo.Step, err error) {
 	flags := c.CookFlags.LogDogFlags
 
-	log.Infof(ctx, "Using LogDog URL: %s", flags.AnnotationURL)
+	log.Infof(ctx, "Using LogDog URL: %s", &flags.AnnotationURL)
 
 	// Install a global gRPC logger adapter. This routes gRPC log messages that
 	// are emitted through our logger. We only log gRPC prints if our logger is
