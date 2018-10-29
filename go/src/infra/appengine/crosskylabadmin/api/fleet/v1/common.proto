@@ -17,5 +17,16 @@ option go_package = "fleet";
 message BotSelector {
     // dut_ids selects bots by the dut_id dimension.
     string dut_id = 1;
+
+    // dimensions select bots by Swarming dimensions.
+    //
+    // All fields in the dimension message must match for a bot to be selected.
+    BotDimensions dimensions = 2;
+}
+
+// BotDimensions is a subset of Swarming bot dimensions.
+message BotDimensions {
+    repeated string pools = 1;
+    string model = 2;
 }
 

@@ -81,6 +81,9 @@ message BotSummary {
     // Killed tasks are counted as legitimate tasks (i.e., time spent running a
     // task that is then killed does not count as idle time)
     google.protobuf.Duration idle_duration = 3;
+
+    // Subset of Swarming dimensions for the current bot.
+    BotDimensions dimensions = 4;
 }
 
 enum DutState {

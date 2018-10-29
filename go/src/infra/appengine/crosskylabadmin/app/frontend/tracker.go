@@ -115,8 +115,7 @@ func getBotsFromSwarming(ctx context.Context, sc clients.SwarmingClient, pool st
 
 	sels = dropDuplicateSelectors(sels)
 
-	// For now, each selector can only yield 0 or 1 bot to update.
-	bots := make([]*swarming.SwarmingRpcsBotInfo, 0, len(sels))
+	bots := make([][]*swarming.SwarmingRpcsBotInfo, 0, len(sels))
 	// Protects access to bots
 	m := &sync.Mutex{}
 	err := parallel.WorkPool(clients.MaxConcurrentSwarmingCalls, func(workC chan<- func() error) {
@@ -130,25 +129,50 @@ func getBotsFromSwarming(ctx context.Context, sc clients.SwarmingClient, pool st
 				}
 				m.Lock()
 				defer m.Unlock()
-				bots = append(bots, bs...)
+				bots = append(bots, bs)
 				return nil
 			}
 		}
 	})
-	return bots, err
+	return flattenAndDedpulicateBots(bots), err
 }
 
 // getFilteredBotsFromSwarming lists bots for a single selector by calling the Swarming service.
 // This function is intended to be used in a parallel.WorkPool().
 func getFilteredBotsFromSwarming(ctx context.Context, sc clients.SwarmingClient, pool string, sel *fleet.BotSelector) ([]*swarming.SwarmingRpcsBotInfo, error) {
-	dims := strpair.Map{
-		clients.DutIDDimensionKey: []string{sel.DutId},
+	dims := make(strpair.Map)
+	if sel.DutId != "" {
+		dims[clients.DutIDDimensionKey] = []string{sel.DutId}
+	}
+	if sel.GetDimensions().GetModel() != "" {
+		dims[clients.DutModelDimensionKey] = []string{sel.Dimensions.Model}
+	}
+	if len(sel.GetDimensions().GetPools()) > 0 {
+		dims[clients.DutPoolDimensionKey] = sel.Dimensions.Pools
+	}
+
+	if len(dims) == 0 {
+		return nil, fmt.Errorf("empty selector %v", sel)
 	}
 	bs, err := sc.ListAliveBotsInPool(ctx, pool, dims)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to get bots in pool %s with dimensions %s", pool, dims).Err()
 	}
 	return bs, nil
+}
+
+func flattenAndDedpulicateBots(nb [][]*swarming.SwarmingRpcsBotInfo) []*swarming.SwarmingRpcsBotInfo {
+	bm := make(map[string]*swarming.SwarmingRpcsBotInfo)
+	for _, bs := range nb {
+		for _, b := range bs {
+			bm[b.BotId] = b
+		}
+	}
+	bots := make([]*swarming.SwarmingRpcsBotInfo, 0, len(bm))
+	for _, v := range bm {
+		bots = append(bots, v)
+	}
+	return bots
 }
 
 var dutStateMap = map[string]fleet.DutState{
@@ -165,24 +189,41 @@ var dutStateMap = map[string]fleet.DutState{
 func botInfoToSummary(bots []*swarming.SwarmingRpcsBotInfo) (map[string]*fleet.BotSummary, error) {
 	bsm := make(map[string]*fleet.BotSummary, len(bots))
 	for _, bi := range bots {
-		dutID, err := extractSingleValuedDimension(bi, clients.DutIDDimensionKey)
+		dims := swarmingDimensionsMap(bi.Dimensions)
+		dutID, err := extractSingleValuedDimension(dims, clients.DutIDDimensionKey)
 		if err != nil {
 			return bsm, errors.Annotate(err, "failed to obtain dutID for bot %q", bi.BotId).Err()
 		}
-		dutStateStr, err := extractSingleValuedDimension(bi, clients.DutStateDimensionKey)
+		bs := &fleet.BotSummary{DutId: dutID}
+
+		dss, err := extractSingleValuedDimension(dims, clients.DutStateDimensionKey)
 		if err != nil {
 			return bsm, errors.Annotate(err, "failed to obtain DutState for bot %q", bi.BotId).Err()
 		}
-		dutState, ok := dutStateMap[dutStateStr]
-		if !ok {
-			dutState = fleet.DutState_DutStateInvalid
+		if ds, ok := dutStateMap[dss]; ok {
+			bs.DutState = ds
+		} else {
+			bs.DutState = fleet.DutState_DutStateInvalid
 		}
-		bsm[bi.BotId] = &fleet.BotSummary{
-			DutId:    dutID,
-			DutState: dutState,
+
+		if l, err := extractSingleValuedDimension(dims, clients.DutModelDimensionKey); err == nil {
+			initializeDimensionsForBotSummary(bs)
+			bs.Dimensions.Model = l
 		}
+		if ls, ok := dims[clients.DutPoolDimensionKey]; ok {
+			initializeDimensionsForBotSummary(bs)
+			bs.Dimensions.Pools = ls
+		}
+
+		bsm[bi.BotId] = bs
 	}
 	return bsm, nil
+}
+
+func initializeDimensionsForBotSummary(bs *fleet.BotSummary) {
+	if bs.Dimensions == nil {
+		bs.Dimensions = &fleet.BotDimensions{}
+	}
 }
 
 // setIdleDuration updates the bot summaries with the duration each bot has been idle.
@@ -243,20 +284,27 @@ func insertBotSummary(ctx context.Context, bsm map[string]*fleet.BotSummary) ([]
 	return updated, nil
 }
 
-func extractSingleValuedDimension(bi *swarming.SwarmingRpcsBotInfo, key string) (string, error) {
-	for _, dim := range bi.Dimensions {
-		if dim.Key == key {
-			switch len(dim.Value) {
-			case 1:
-				return dim.Value[0], nil
-			case 0:
-				return "", fmt.Errorf("no value for dimension %s", key)
-			default:
-				return "", fmt.Errorf("multiple values for dimension %s", key)
-			}
-		}
+func swarmingDimensionsMap(sdims []*swarming.SwarmingRpcsStringListPair) strpair.Map {
+	dims := make(strpair.Map)
+	for _, sdim := range sdims {
+		dims[sdim.Key] = sdim.Value
 	}
-	return "", fmt.Errorf("failed to find dimension %s", key)
+	return dims
+}
+
+func extractSingleValuedDimension(dims strpair.Map, key string) (string, error) {
+	vs, ok := dims[key]
+	if !ok {
+		return "", fmt.Errorf("failed to find dimension %s", key)
+	}
+	switch len(vs) {
+	case 1:
+		return vs[0], nil
+	case 0:
+		return "", fmt.Errorf("no value for dimension %s", key)
+	default:
+		return "", fmt.Errorf("multiple values for dimension %s", key)
+	}
 }
 
 func getBotSummariesFromDatastore(ctx context.Context, sels []*fleet.BotSelector) ([]*fleetBotSummaryEntity, error) {

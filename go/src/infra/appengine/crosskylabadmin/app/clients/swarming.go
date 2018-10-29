@@ -46,9 +46,16 @@ const (
 	// DutIDDimensionKey identifies the swarming dimension containing the ID for
 	// the DUT corresponding to a bot.
 	DutIDDimensionKey = "dut_id"
+	// DutModelDimensionKey identifies the swarming dimension containing the
+	// Autotest model label for the DUT.
+	DutModelDimensionKey = "label-model"
+	// DutPoolDimensionKey identifies the swarming dimension containing the
+	// Autotest pool label for the DUT.
+	DutPoolDimensionKey = "label-pool"
 	// DutStateDimensionKey identifies the swarming dimension containing the
 	// autotest DUT state for a bot.
 	DutStateDimensionKey = "dut_state"
+
 	// PoolDimensionKey identifies the swarming pool dimension.
 	PoolDimensionKey = "pool"
 	// SwarmingTimeLayout is the layout used by swarming RPCs to specify timestamps.

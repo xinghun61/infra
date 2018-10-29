@@ -433,9 +433,8 @@ func TestRefreshAndSummarizeBotsFields(t *testing.T) {
 	})
 }
 
-// TODO(pprabhu) This test is currently a stub. It should filter by dimensions other than dut_id.
-func TestSummarizeBotsWithDimensions(t *testing.T) {
-	Convey("with three swarming duts available", t, func() {
+func TestRefreshBotsWithDimensions(t *testing.T) {
+	Convey("with three swarming duts with various models and pools", t, func() {
 		c := testingContext()
 		mc := gomock.NewController(t)
 		defer mc.Finish()
@@ -446,7 +445,17 @@ func TestSummarizeBotsWithDimensions(t *testing.T) {
 			},
 		}
 
-		bots := readyBotsForDutIDs([]string{"dut_1", "dut_2", "dut_3"})
+		b1 := readyBotsForDutIDs([]string{"dut_cq_link"})[0]
+		setBotDimension(b1, "label-pool", []string{"cq"})
+		setBotDimension(b1, "label-model", []string{"link"})
+		b2 := readyBotsForDutIDs([]string{"dut_cq_lumpy"})[0]
+		setBotDimension(b2, "label-pool", []string{"cq"})
+		setBotDimension(b2, "label-model", []string{"lumpy"})
+		b3 := readyBotsForDutIDs([]string{"dut_bvt_lumpy"})[0]
+		setBotDimension(b3, "label-pool", []string{"bvt"})
+		setBotDimension(b3, "label-model", []string{"lumpy"})
+		bots := []*swarming.SwarmingRpcsBotInfo{b1, b2, b3}
+
 		mockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(c).Swarming.BotPool), gomock.Any(),
 		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
@@ -454,13 +463,81 @@ func TestSummarizeBotsWithDimensions(t *testing.T) {
 			gomock.Any(), gomock.Any(), gomock.Any(),
 		).AnyTimes().Return([]*swarming.SwarmingRpcsTaskResult{}, nil)
 
-		Convey("refresh filtering to available dut returns one bot", func() {
+		Convey("refresh filtering by pool works", func() {
 			refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
-				Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
+				Selectors: []*fleet.BotSelector{
+					{Dimensions: &fleet.BotDimensions{Pools: []string{"cq"}}},
+				},
+			})
+			So(err, ShouldBeNil)
+			So(refreshed.DutIds, ShouldHaveLength, 2)
+			So(refreshed.DutIds, ShouldContain, "dut_cq_link")
+			So(refreshed.DutIds, ShouldContain, "dut_cq_lumpy")
+		})
+
+		Convey("refresh filtering by model works", func() {
+			refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
+				Selectors: []*fleet.BotSelector{
+					{Dimensions: &fleet.BotDimensions{Model: "lumpy"}},
+				},
+			})
+			So(err, ShouldBeNil)
+			So(refreshed.DutIds, ShouldHaveLength, 2)
+			So(refreshed.DutIds, ShouldContain, "dut_cq_lumpy")
+			So(refreshed.DutIds, ShouldContain, "dut_bvt_lumpy")
+		})
+
+		Convey("refresh filtering by pool and model works", func() {
+			refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
+				Selectors: []*fleet.BotSelector{
+					{Dimensions: &fleet.BotDimensions{Pools: []string{"cq"}, Model: "lumpy"}},
+				},
 			})
 			So(err, ShouldBeNil)
 			So(refreshed.DutIds, ShouldHaveLength, 1)
-			So(refreshed.DutIds, ShouldContain, "dut_1")
+			So(refreshed.DutIds, ShouldContain, "dut_cq_lumpy")
+		})
+	})
+}
+
+func TestSummarizeBotsWithDimensions(t *testing.T) {
+	Convey("for a bot with non-trivial dimensions", t, func() {
+		c := testingContext()
+		mc := gomock.NewController(t)
+		defer mc.Finish()
+		mockSwarming := mock.NewMockSwarmingClient(mc)
+		tracker := TrackerServerImpl{
+			ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
+				return mockSwarming, nil
+			},
+		}
+
+		bots := readyBotsForDutIDs([]string{"dut_cq_link"})
+		b := bots[0]
+		setBotDimension(b, "label-pool", []string{"cq", "bvt"})
+		setBotDimension(b, "label-model", []string{"link"})
+
+		mockSwarming.EXPECT().ListAliveBotsInPool(
+			gomock.Any(), gomock.Eq(config.Get(c).Swarming.BotPool), gomock.Any(),
+		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+		mockSwarming.EXPECT().ListSortedRecentTasksForBot(
+			gomock.Any(), gomock.Any(), gomock.Any(),
+		).AnyTimes().Return([]*swarming.SwarmingRpcsTaskResult{}, nil)
+
+		Convey("refresh and summarize without filter include non-trivial dimensions", func() {
+			refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{})
+			So(err, ShouldBeNil)
+			So(refreshed.DutIds, ShouldHaveLength, 1)
+			So(refreshed.DutIds, ShouldContain, "dut_cq_link")
+
+			summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{})
+			So(err, ShouldBeNil)
+			So(summarized.Bots, ShouldHaveLength, 1)
+			So(summarized.Bots[0].Dimensions, ShouldNotBeNil)
+			So(summarized.Bots[0].Dimensions.Pools, ShouldHaveLength, 2)
+			So(summarized.Bots[0].Dimensions.Pools, ShouldContain, "cq")
+			So(summarized.Bots[0].Dimensions.Pools, ShouldContain, "bvt")
+			So(summarized.Bots[0].Dimensions.Model, ShouldEqual, "link")
 		})
 	})
 }
