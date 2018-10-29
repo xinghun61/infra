@@ -5,4 +5,5 @@ create {
 
 upload {
   pkg_prefix: "build_support"
+  universal: true
 }

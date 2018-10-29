@@ -38,6 +38,12 @@ def main():
     '--no-index', '--find-links', SCRIPT_DIR,
     # install to this python installation
     '--prefix', PREFIX,
+    # log everything we can,
+    '-vvv',
     # Which wheels to install
     'pip', 'setuptools', 'wheel'
   ]))
+
+
+if __name__ == '__main__':
+  main()
