@@ -1,4 +1,9 @@
 create {
+  platform_re: "windows-.*"
+  unsupported: true
+}
+
+create {
   source { script { name: "fetch.py" } }
   build {}
 }
