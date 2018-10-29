@@ -104,8 +104,41 @@ class FLTConvertTask(jsonfeed.InternalTask):
       raise exceptions.ActionNotSupported(
           'Launch issues conversion only allowed in staging.')
 
+  def UndoConversion(self, mr):
+    with work_env.WorkEnv(mr, self.services) as we:
+      pipeline = we.ListIssues(
+          'Type=FLT-Launch FLT-Conversion', ['chromium'], mr.auth.user_id,
+          CONVERT_NUM, CONVERT_START, [], 2, GROUP_BY_SPEC, SORT_SPEC, False)
+
+    project = self.services.project.GetProjectByName(mr.cnxn, 'chromium')
+    config = self.services.config.GetProjectConfig(mr.cnxn, project.project_id)
+    pm_id = tracker_bizobj.FindFieldDef('PM', config)
+    tl_id = tracker_bizobj.FindFieldDef('TL', config)
+    te_id = tracker_bizobj.FindFieldDef('TE', config)
+    for possible_stale_issue in pipeline.allowed_results:
+      issue = self.services.issue.GetIssue(
+          mr.cnxn, possible_stale_issue.issue_id, use_cache=False)
+
+      issue.approval_values = []
+      issue.phases = []
+      issue.field_values = [fv for fv in issue.field_values
+                            if fv.phase_id is None]
+      issue.field_values = [fv for fv in issue.field_values
+                            if fv.field_id not in
+                            [pm_id, tl_id, te_id]]
+      issue.labels.remove('Type-FLT-Launch')
+      issue.labels.remove('FLT-Conversion')
+      issue.labels.append('Type-Launch')
+
+      self.services.issue._UpdateIssuesApprovals(mr.cnxn, issue)
+      self.services.issue.UpdateIssue(mr.cnxn, issue)
+    return {"deleting": [issue.local_id for issue in pipeline.allowed_results]}
+
   def HandleRequest(self, mr):
     """Convert Type=Launch issues to new Type=FLT-Launch issues."""
+    launch = mr.GetParam('launch')
+    if launch == 'delete':
+      return self.UndoConversion(mr)
     project_info = self.FetchAndAssertProjectInfo(mr)
 
     # Search for issues:

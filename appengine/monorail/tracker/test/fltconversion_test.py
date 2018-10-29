@@ -4,6 +4,7 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 """Unittests for the flt launch issues conversion task."""
+import copy
 import unittest
 import settings
 import mock
@@ -37,6 +38,25 @@ class FLTConvertTask(unittest.TestCase):
     self.config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     self.work_env = work_env.WorkEnv(
         self.mr, self.services, 'Testing')
+    self.issue1 = fake.MakeTestIssue(
+        789, 1, 'sum', 'New', 111L, issue_id=78901,
+        labels=[
+            'Launch-M-Approved-71-Stable', 'Launch-M-Target-70-Beta',
+            'Launch-UI-Yes', 'Launch-Privacy-NeedInfo',
+            'pm-jojwang', 'tl-annajo'])
+    self.issue2 = fake.MakeTestIssue(
+        789, 2, 'sum', 'New', 111L, issue_id=78902,
+        labels=[
+            'Launch-M-Target-71-Stable', 'Launch-M-Approved-70-Beta',
+            'pm-jojwang', 'tl-annajo'])
+
+    self.approval_values = [
+        tracker_pb2.ApprovalValue(
+            approval_id=7, status=tracker_pb2.ApprovalStatus.NOT_SET),
+        tracker_pb2.ApprovalValue(
+            approval_id=8, status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)]
+    self.phases = [tracker_pb2.Phase(name='Stable', phase_id=88),
+              tracker_pb2.Phase(name='Beta', phase_id=89)]
 
   def testAssertBasePermission(self):
     self.mr.auth.user_pb.is_site_admin = True
@@ -54,28 +74,9 @@ class FLTConvertTask(unittest.TestCase):
 
   def testHandleRequest(self):
     # Set up Objects
-    issue1 = fake.MakeTestIssue(
-        789, 1, 'sum', 'New', 111L, issue_id=78901,
-        labels=[
-            'Launch-M-Approved-71-Stable', 'Launch-M-Target-70-Beta',
-            'Launch-UI-Yes', 'Launch-Privacy-NeedInfo',
-            'pm-jojwang', 'tl-annajo'])
-    issue2 = fake.MakeTestIssue(
-        789, 2, 'sum', 'New', 111L, issue_id=78902,
-        labels=[
-            'Launch-M-Target-71-Stable', 'Launch-M-Approved-70-Beta',
-            'pm-jojwang', 'tl-annajo'])
-
-    approval_values = [
-        tracker_pb2.ApprovalValue(
-            approval_id=7, status=tracker_pb2.ApprovalStatus.NOT_SET),
-        tracker_pb2.ApprovalValue(
-            approval_id=8, status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)]
-    phases = [tracker_pb2.Phase(name='Stable', phase_id=88),
-              tracker_pb2.Phase(name='Beta', phase_id=89)]
-
     project_info = fltconversion.ProjectInfo(
-        self.config, 'q=query', approval_values, phases, 11, 12, 13, 14, 15)
+        self.config, 'q=query', self.approval_values, self.phases,
+        11, 12, 13, 14, 15)
 
     self.config.field_defs = [
         tracker_pb2.FieldDef(field_id=7, field_name='Chrome-UX',
@@ -87,10 +88,11 @@ class FLTConvertTask(unittest.TestCase):
     # Set up mocks
     patcher = mock.patch(
         'search.frontendsearchpipeline.FrontendSearchPipeline',
-        spec=True, allowed_results=[issue1, issue2])
+        spec=True, allowed_results=[self.issue1, self.issue2])
     mockPipeline = patcher.start()
 
-    self.task.services.issue.GetIssue = mock.Mock(side_effect=[issue1, issue2])
+    self.task.services.issue.GetIssue = mock.Mock(
+        side_effect=[self.issue1, self.issue2])
 
     self.task.FetchAndAssertProjectInfo = mock.Mock(return_value=project_info)
 
@@ -151,10 +153,75 @@ class FLTConvertTask(unittest.TestCase):
             12, None, None, 222L, None, None, False)]
 
     execute_calls = [
-        mock.call(self.config, issue1, new_approvals1, phases, new_fvs1),
-        mock.call(self.config, issue2, new_approvals2, phases, new_fvs2)]
+        mock.call(
+            self.config, self.issue1, new_approvals1, self.phases, new_fvs1),
+        mock.call(
+            self.config, self.issue2, new_approvals2, self.phases, new_fvs2)]
     self.task.ExecuteIssueChanges.assert_has_calls(execute_calls)
 
+    patcher.stop()
+
+  def testHandleRequest_UndoConversion(self):
+    # test Delete() is actually called
+    mr = testing_helpers.MakeMonorailRequest(path='url/url?launch=delete')
+    self.task.UndoConversion = mock.Mock(return_value={'deleteing': [1, 2]})
+    actualReturn = self.task.HandleRequest(mr)
+    self.assertEqual({'deleteing': [1, 2]}, actualReturn)
+
+  def testUndoConversion(self):
+    # Set up objects
+    self.issue1.field_values = [
+        # Test non phase and TL/PM/TE field_values are not deleted
+        tracker_bizobj.MakeFieldValue(
+            17, None, 'strvalue', None, None, None, False)]
+    issue1 = copy.copy(self.issue1)
+    issue2 = copy.copy(self.issue2)
+    fvs = [
+        tracker_bizobj.MakeFieldValue(
+            11, None, None, 222L, None, None, False),
+        tracker_bizobj.MakeFieldValue(
+            12, None, None, 111L, None, None, False)]
+    self.config.field_defs = [
+        tracker_pb2.FieldDef(field_id=11, field_name='PM'),
+        tracker_pb2.FieldDef(field_id=12, field_name='TL')]
+    # Add elements added during conversion that should be removed
+    issue1.labels.extend(['Type-FLT-Launch', 'FLT-Conversion'])
+    issue2.labels.extend(['Type-FLT-Launch', 'FLT-Conversion'])
+    issue1.approval_values = self.approval_values
+    issue2.approval_values = self.approval_values
+    issue1.phases = self.phases
+    issue2.phases = self.phases
+    issue1.field_values.extend(fvs)
+
+    # Set up mocks
+    patcher = mock.patch(
+        'search.frontendsearchpipeline.FrontendSearchPipeline',
+        spec=True, allowed_results=[issue1, issue2])  # converted issues
+    mockPipeline = patcher.start()
+    self.task.services.project.GetProjectByName = mock.Mock()
+    self.task.services.config.GetProjectConfig = mock.Mock(
+        return_value=self.config)
+    self.task.services.issue.GetIssue = mock.Mock(
+        side_effect=[issue1, issue2])
+    self.task.services.issue._UpdateIssuesApprovals = mock.Mock()
+    self.task.services.issue.UpdateIssue = mock.Mock()
+
+    with self.work_env as we:
+      we.ListIssues = mock.Mock(return_value=mockPipeline)
+
+    json = self.task.UndoConversion(self.mr)
+    self.assertEqual(json['deleting'], [1, 2])
+    # assert convert issue1 is back to the pre-conversion state, self.issue1.
+    self.assertEqual(issue1, self.issue1)
+    self.assertEqual(issue2, self.issue2)
+
+    # assert UpdateIssue calls were made with pre-conversion state issues.
+    update_calls = [
+        mock.call(self.mr.cnxn, self.issue1),
+        mock.call(self.mr.cnxn, self.issue2)]
+    self.task.services.issue._UpdateIssuesApprovals.assert_has_calls(
+        update_calls)
+    self.task.services.issue.UpdateIssue.assert_has_calls(update_calls)
     patcher.stop()
 
   def testFetchAndAssertProjectInfo(self):
@@ -174,7 +241,8 @@ class FLTConvertTask(unittest.TestCase):
 
     mr = testing_helpers.MakeMonorailRequest(path='url/url?launch=default')
     # test no template
-    self.task.services.template.GetTemplateByName = mock.Mock(return_value=None)
+    self.task.services.template.GetTemplateByName = mock.Mock(
+        return_value=None)
     self.assertRaisesRegexp(AssertionError, r'not found in chromium project',
                             self.task.FetchAndAssertProjectInfo, mr)
 
