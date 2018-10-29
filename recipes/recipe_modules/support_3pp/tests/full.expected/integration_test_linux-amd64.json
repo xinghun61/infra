@@ -2649,7 +2649,8 @@
   {
     "cmd": [
       "git",
-      "apply"
+      "apply",
+      "-v"
     ],
     "cwd": "[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/checkout/src/go.repo/tool",
     "env": {

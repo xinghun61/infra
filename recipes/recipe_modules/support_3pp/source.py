@@ -224,4 +224,4 @@ def _do_checkout(api, workdir, spec, version):
         'find patches in %s' % patch_dir,
         spec.host_dir.join(*(patch_dir.split('/'))), '*'))
     with api.context(cwd=checkout_dir):
-      api.git('apply', *patches)
+      api.git('apply', '-v', *patches)
