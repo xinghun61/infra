@@ -32,22 +32,27 @@ class MrFlipper extends HTMLElement {
   }
 
   // Eventually this should be replaced with pRPC.
-  async fetchFlipperData() {
+  fetchFlipperData() {
     const options = {
       credentials: 'include',
       method: 'GET',
     };
-    const response = await fetch(`detail/flipper${location.search}`, options);
-    const responseBody = await response.text();
-    let responseData;
-    try {
-      // Strip XSSI prefix from response.
-      responseData = JSON.parse(responseBody.substr(5));
-    } catch {
-      return;
-    }
+    fetch(`detail/flipper${location.search}`, options).then(
+      (response) => response.text()
+    ).then(
+      (responseBody) => {
+        let responseData;
+        try {
+          // Strip XSSI prefix from response.
+          responseData = JSON.parse(responseBody.substr(5));
+        } catch (e) {
+          console.error(`Error parsing JSON response for flipper: ${e}`);
+          return;
+        }
 
-    this._updateTemplate(responseData);
+        this._updateTemplate(responseData);
+      }
+    );
   }
 
   _updateTemplate(data) {
@@ -85,39 +90,45 @@ class MrFlipper extends HTMLElement {
     // Also don't use innerHTML anywhere other than in this specific scenario.
     tmpl.innerHTML = `
       <style>
-        .pagination {
-          text-align: center;
+        :host {
           display: flex;
+          align-items: baseline;
+          flex-direction: row;
         }
-        .pagination div {
+        a {
+          display: block;
+          padding: 0.25em 0;
+        }
+        a, div {
           flex: 1;
           white-space: nowrap;
           padding: 0 2px;
         }
-        .pagination div.counts, a.prev-url, a.next-url {
+        .counts {
+          padding: 0 16px;
+        }
+        .counts, a.prev-url, a.next-url {
           /* Initially not shown */
           visibility: hidden;
         }
         @media (max-width: 960px) {
-          .pagination {
-            display: block;
+          :host {
+            display: inline-block;
           }
         }
       </style>
 
-      <div class="pagination">
-        <div>
-          <a href="" title="Prev" class="prev-url">&lsaquo; Prev</a>
-        </div>
-        <div class="counts">
-          <span class="current-index">&nbsp;</span>
-          <span>of</span>
-          <span class="total-count">&nbsp;</span>
-        </div>
-        <div>
-          <a href="" title="Next" class="next-url">Next &rsaquo;</a>
-        </div>
+      <a href="" title="Prev" class="prev-url">
+        &lsaquo; Prev
+      </a>
+      <div class="counts">
+        <span class="current-index">&nbsp;</span>
+        <span>of</span>
+        <span class="total-count">&nbsp;</span>
       </div>
+      <a href="" title="Next" class="next-url">
+        Next &rsaquo;
+      </a>
     `;
     return tmpl;
   }

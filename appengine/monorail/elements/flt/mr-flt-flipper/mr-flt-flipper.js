@@ -9,7 +9,7 @@
  * A view-only component for an issue flipper.
  *
  */
-class MrFlipper extends Polymer.Element {
+class MrFltFlipper extends Polymer.Element {
   static get is() {
     return 'mr-flt-flipper';
   }
@@ -38,4 +38,4 @@ class MrFlipper extends Polymer.Element {
   }
 }
 
-customElements.define(MrFlipper.is, MrFlipper);
+customElements.define(MrFltFlipper.is, MrFltFlipper);

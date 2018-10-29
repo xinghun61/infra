@@ -1,11 +1,8 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 
-<link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
-<link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
 <link rel="import" href="../../../bower_components/chopsui/chops-timestamp.html">
 
 <link rel="import" href="../../redux/redux-mixin.html">
-<link rel="import" href="../mr-flt-flipper/mr-flt-flipper.html">
 <link rel="import" href="../../mr-user-link/mr-user-link.html">
 
 <dom-module id="mr-issue-header">
@@ -23,7 +20,6 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        --iron-icon-fill-color: hsl(227, 15%, 66%);
       }
       h1 {
         font-size: 100%;
@@ -32,8 +28,8 @@
         padding: 0;
         margin: 0;
       }
-      mr-flt-flipper {
-        font-size: 85%;
+      mr-flipper {
+        font-size: 0.75em;
       }
       .byline {
         display: block;
@@ -64,13 +60,8 @@
         on <chops-timestamp timestamp="[[issue.openedTimestamp]]"></chops-timestamp>
       </small>
     </div>
-
-    <mr-flt-flipper
-        prev-url="/p/chromium/issues/approval?id=[[_prevId]]"
-        next-url="/p/chromium/issues/approval?id=[[_nextId]]"
-        index="[[_flipperIndex]]"
-        count="[[_flipperCount]]">
-    </mr-flt-flipper>
+    <mr-flipper />
   </template>
+  <script src="../../../static/js/elements/mr-flipper.js"></script>
   <script src="./mr-issue-header.js"></script>
 </dom-module>
