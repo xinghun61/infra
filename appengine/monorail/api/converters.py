@@ -636,8 +636,16 @@ def IngestFieldValues(cnxn, user_service, field_values, config, phases=None):
   for fv in field_values:
     fd = fds_by_name.get(fv.field_ref.field_name.lower())
     if fd:
+      if not str(fv.value):
+        logging.info('Ignoring blank field value: %r', fv)
+        continue
       ingested_fv = field_helpers.ParseOneFieldValue(
           cnxn, user_service, fd, str(fv.value))
+      if not ingested_fv:
+        raise exceptions.InputException(
+          'Unparsable value for field %s' % fv.field_ref.field_name)
+      if ingested_fv.user_id == field_helpers.INVALID_USER_ID:
+        raise exceptions.NoSuchUserException()
       if fd.is_phase_field:
         ingested_fv.phase_id = phases_by_name.get(fv.phase_ref.phase_name)
       ingested_fvs.append(ingested_fv)

@@ -1031,6 +1031,53 @@ class ConverterFunctionsTest(unittest.TestCase):
         ]
     )
 
+  def testIngestFieldValues_EmptyUser(self):
+    """We ignore empty user email strings."""
+    self.services.user.TestAddUser('user1@example.com', 111L)
+    self.config.field_defs = [self.fd_1, self.fd_2, self.fd_4, self.fd_6]
+    field_values = [
+        issue_objects_pb2.FieldValue(
+            value='user1@example.com',
+            field_ref=common_pb2.FieldRef(field_name='UserField')),
+        issue_objects_pb2.FieldValue(
+            value='',
+            field_ref=common_pb2.FieldRef(field_name='UserField'))
+        ]
+
+    actual = converters.IngestFieldValues(
+        self.cnxn, self.services.user, field_values, self.config, [])
+    self.assertEqual(
+        actual,
+        [tracker_pb2.FieldValue(user_id=111L, field_id=4, derived=False)])
+
+  def testIngestFieldValues_InvalidUser(self):
+    """We reject invalid user email strings."""
+    self.config.field_defs = [self.fd_1, self.fd_2, self.fd_4, self.fd_6]
+    field_values = [
+        issue_objects_pb2.FieldValue(
+            value='bad value',
+            field_ref=common_pb2.FieldRef(field_name='UserField'))]
+
+    with self.assertRaises(exceptions.NoSuchUserException):
+      converters.IngestFieldValues(
+          self.cnxn, self.services.user, field_values, self.config, [])
+
+  def testIngestFieldValues_InvalidInt(self):
+    """We reject invalid int-field strings."""
+    self.config.field_defs = [self.fd_1, self.fd_2, self.fd_4, self.fd_6]
+    field_values = [
+        issue_objects_pb2.FieldValue(
+            value='Not a number',
+            field_ref=common_pb2.FieldRef(field_name='SecField'))]
+
+    with self.assertRaises(exceptions.InputException) as cm:
+      converters.IngestFieldValues(
+          self.cnxn, self.services.user, field_values, self.config, [])
+
+    self.assertEqual(
+        'Unparsable value for field SecField',
+        cm.exception.message)
+
   def testIngestHotlistRef(self):
     self.services.user.TestAddUser('user1@example.com', 111L)
     hotlist = self.services.features.CreateHotlist(
