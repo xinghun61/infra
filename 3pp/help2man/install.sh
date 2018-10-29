@@ -12,4 +12,5 @@ PREFIX="$1"
 ./configure --enable-static --disable-shared \
   --prefix "$PREFIX" \
   --host "$CROSS_TRIPLE"
+make -j $(nproc)
 make install -j $(nproc)
