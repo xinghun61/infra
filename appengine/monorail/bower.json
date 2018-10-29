@@ -55,7 +55,8 @@
     "vaadin-usage-statistics": "https://github.com/vaadin/vaadin-usage-statistics.git#10b3fb3c02d46f01e4f10727c145f0e164dd317f",
     "web-animations-js": "https://github.com/web-animations/web-animations-js.git#a2dddad1c210c8abe5bc1c5a5e126e9946d44252",
     "web-component-tester": "https://github.com/Polymer/web-component-tester.git#1ddc0535aa436849e9653df6d4f9d93a6dc6d398",
-    "webcomponentsjs": "https://github.com/webcomponents/webcomponentsjs.git#e97a592f9662af69970039ecf425d031373b6f57"
+    "webcomponentsjs": "https://github.com/webcomponents/webcomponentsjs.git#e97a592f9662af69970039ecf425d031373b6f57",
+    "polymer-resin": "^2.0.0"
   },
   "resolutions": {
     "accessibility-developer-tools": "3616c094e090174f70b53ca4cea25529522abffb",
