@@ -152,7 +152,7 @@ class ShowFlakeTest(WaterfallTestCase):
                     'luci_project': 'chromium'
                 },
                 'build_id': '123',
-                'flake_type': 'CQ_FALSE_REJECTION',
+                'flake_type': 'cq false rejection',
                 'gerrit_cl_id': 98765,
                 'step_ui_name': 'step',
                 'test_name': 'test',

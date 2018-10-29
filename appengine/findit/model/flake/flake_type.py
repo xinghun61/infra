@@ -22,5 +22,5 @@ class FlakeType(messages.Enum):
 
 FLAKE_TYPE_DESCRIPTIONS = {
     FlakeType.CQ_FALSE_REJECTION: 'cq false rejection',
-    FlakeType.RETRY_WITH_PATCH: 'retry with patch'
+    FlakeType.RETRY_WITH_PATCH: 'cq retry with patch'
 }

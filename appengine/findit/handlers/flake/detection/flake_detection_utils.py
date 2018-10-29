@@ -14,6 +14,7 @@ from model.flake.detection.flake_occurrence import FlakeOccurrence
 from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
 from model.flake.flake_type import FlakeType
+from model.flake.flake_type import FLAKE_TYPE_DESCRIPTIONS
 
 
 def _GetOccurrenceInformation(occurrence):
@@ -39,6 +40,8 @@ def _GetOccurrenceInformation(occurrence):
       occurrence_dict['time_happened'])
   occurrence_dict['time_detected'] = time_util.FormatDatetime(
       occurrence_dict['time_detected'])
+  occurrence_dict['flake_type'] = FLAKE_TYPE_DESCRIPTIONS.get(
+      occurrence_dict['flake_type'], 'Unknown')
 
   return occurrence_dict
 

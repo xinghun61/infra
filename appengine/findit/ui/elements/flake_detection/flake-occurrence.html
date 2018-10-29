@@ -8,16 +8,16 @@
       td {
         max-width: 0;
         padding: 2px;
-        padding-right: 10px;
         height: 25px;
         vertical-align: top;
         overflow: hidden;
         text-overflow: ellipsis;
       }
     </style>
-      <td width="15%"><a href="http://ci.chromium.org/b/[[occurrence_json.build_id]]">[[occurrence_json.time_happened]]</a></td>
+      <td width="12%"><a href="http://ci.chromium.org/b/[[occurrence_json.build_id]]">[[occurrence_json.time_happened]]</a></td>
+      <td width="8%">[[occurrence_json.flake_type]]</td>
       <td width="30%">[[occurrence_json.step_ui_name]]</td>
-      <td width="55%">
+      <td width="50%">
           [[occurrence_json.test_name]]
           <paper-tooltip position="left" fit-to-visible-bounds="true" offset="0">[[occurrence_json.test_name]]</paper-tooltip>
       </td>

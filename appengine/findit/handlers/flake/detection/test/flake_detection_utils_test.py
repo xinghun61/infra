@@ -159,7 +159,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
                 'luci builder 2',
             'occurrences': [
                 {
-                    'flake_type': FlakeType.RETRY_WITH_PATCH,
+                    'flake_type': 'cq retry with patch',
                     'build_id': '124',
                     'step_ui_name': step_ui_name,
                     'test_name': test_name,
@@ -175,7 +175,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
                     'gerrit_cl_id': gerrit_cl_id
                 },
                 {
-                    'flake_type': FlakeType.CQ_FALSE_REJECTION,
+                    'flake_type': 'cq false rejection',
                     'build_id': '125',
                     'step_ui_name': step_ui_name,
                     'test_name': test_name,
@@ -196,7 +196,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
                             'group_by_field':
                                 'luci builder',
                             'occurrences': [{
-                                'flake_type': FlakeType.CQ_FALSE_REJECTION,
+                                'flake_type': 'cq false rejection',
                                 'build_id': '123',
                                 'step_ui_name': step_ui_name,
                                 'test_name': test_name,
@@ -298,7 +298,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             'group_by_field':
                 'luci builder',
             'occurrences': [{
-                'flake_type': FlakeType.CQ_FALSE_REJECTION,
+                'flake_type': 'cq false rejection',
                 'build_id': '123',
                 'step_ui_name': step_ui_name,
                 'test_name': test_name,
