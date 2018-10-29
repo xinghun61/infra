@@ -176,6 +176,8 @@ class MrEditIssue extends ReduxMixin(Polymer.Element) {
       message.delta = delta;
     }
 
+    // TODO(zhangtiff): monorail:4418, allow option of not sending email
+    message.sendEmail = true;
     return message;
   }
 
