@@ -844,7 +844,8 @@ def ConvertConfig(
       for cd in config.component_defs]
   field_defs = [
       ConvertFieldDef(fd, [], users_by_id, config, True)
-      for fd in config.field_defs]
+      for fd in config.field_defs
+      if not fd.is_deleted]
   approval_defs = [
       ConvertApprovalDef(ad, users_by_id, config, True)
       for ad in config.approval_defs]

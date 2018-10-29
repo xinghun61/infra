@@ -1414,6 +1414,25 @@ class ConverterFunctionsTest(unittest.TestCase):
         ['Duplicate', 'New'],
         sorted(s.status for s in actual.statuses_offer_merge))
 
+  def testConvertConfig_FiltersDeletedFieldDefs(self):
+    """Deleted fieldDefs don't make it into the config response."""
+    labels_by_id = {1: 'Security', 2: 'Usability'}
+    deleted_fd1 = tracker_pb2.FieldDef(
+        field_name='DeletedField', field_id=100,
+        field_type=tracker_pb2.FieldTypes.STR_TYPE,
+        applicable_type='',
+        is_deleted=True)
+    deleted_fd2 = tracker_pb2.FieldDef(
+        field_name='RemovedField', field_id=101,
+        field_type=tracker_pb2.FieldTypes.ENUM_TYPE,
+        applicable_type='',
+        is_deleted=True)
+    self.config.field_defs = [self.fd_1, self.fd_2, self.fd_3, deleted_fd1,
+        deleted_fd2]
+    actual = converters.ConvertConfig(
+        self.project, self.config, self.users_by_id, labels_by_id)
+    self.assertEqual(3, len(actual.field_defs))
+
   def testConvertHotlist(self):
     """We can convert a hotlist to protoc."""
     hotlist = testing_helpers.Blank(
