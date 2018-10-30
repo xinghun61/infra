@@ -10,6 +10,7 @@
 import Queue
 import ast
 import base64
+import collections
 import datetime
 import httplib2
 import json
@@ -133,13 +134,18 @@ class GitWrapper(object):
 ##################################################
 
 
+Build = collections.namedtuple(
+    'Build', ['number', 'result', 'revision'])
+
+
 MILO_JSON_ENDPOINT = (
     'https://luci-milo.appspot.com/prpc/milo.Buildbot/GetBuildbotBuildsJSON')
 
 
 OAUTH_SCOPES = ['https://www.googleapis.com/auth/userinfo.email']
 
-def FetchBuilderJsonFromMilo(master, builder, limit=100,
+
+def _FetchBuilderJsonFromMilo(master, builder, limit=100,
                              service_account_file=None): # pragma: no cover
   LOGGER.debug('Fetching buildbot json for %s/%s from milo', master, builder)
   body = {
@@ -173,59 +179,103 @@ def FetchBuilderJsonFromMilo(master, builder, limit=100,
       json.loads(base64.b64decode(build['data'])) for build in data['builds']]
   return {build['number']: build for build in builds}
 
-def GetMasterNameFromURL(master_url):
-  s = master_url.rstrip('/').split('/')
-  return s[-1]
 
-def FetchBuilderJson(fetch_q):
+def _FetchBuildbotJson(master, builder, service_account_file=None):
+  limits = [100, 50, 25, 10]
+  sleep = 1
+  try:
+    for i in xrange(len(limits)):  # pragma: no branch
+      try:
+        return _FetchBuilderJsonFromMilo(
+            master, builder, limit=limits[i],
+            service_account_file=service_account_file)
+      except httplib2.HttpLib2Error:
+        if i == len(limits) - 1:
+          raise
+        LOGGER.warning(
+            'HTTP Error when fetching past %d builds of %s. Will try '
+            'fetching %d builds after a %d second sleep.',
+            limits[i], builder, limits[i+1], sleep)
+        time.sleep(sleep)
+        sleep *= 2
+  except httplib2.HttpLib2Error as e:
+    LOGGER.error(
+        'RequestException while fetching %s/%s:\n%s',
+        master, builder, repr(e))
+    return None
+
+
+def FetchBuildbotBuilds(master, builder, service_account_file=None):
+  builder_data = _FetchBuildbotJson(
+      master, builder, service_account_file=service_account_file)
+
+  if builder_data is None:
+    return None
+
+  builds = []
+  for build_number, build_data in builder_data.iteritems():
+    build_properties = {
+      prop[0]: prop[1]
+      for prop in build_data.get('properties') or []
+    }
+    # Revision fallthrough:
+    revision = (
+        # * If there is a got_src_revision, we probably want to use that,
+        #   because otherwise it wouldn't be specified.
+        build_properties.get('got_src_revision')
+        # * If we're in Git and there's a got_revision_git, might as well
+        #   use that since it is guaranteed to be the right type.
+        or build_properties.get('got_revision_git')
+        # * Finally, just use the default got_revision.
+        or build_properties.get('got_revision')
+        or None)
+    status = EvaluateBuildData(build_data)
+    if revision is None:
+      if status is STATUS.FAILURE or status is STATUS.RUNNING:
+        # The build failed too early or is still in early stage even before
+        # chromium revision was tagged. If we allow 'revision' fallback it
+        # will end up being non-chromium revision for non chromium projects.
+        continue
+    if not revision:
+      revision = build_data.get(
+          'sourceStamp', {}).get('revision', None)
+    if not revision:
+      continue
+    if len(str(revision)) < 40:
+      # Ignore stource stamps that don't contain a proper git hash. This
+      # can happen if very old build numbers get into the build data.
+      continue
+    builds.append(Build(build_number, status, revision))
+
+  return builds
+
+
+def FetchBuildsWorker(fetch_q, fetch_fn):  # pragma: no cover
   """Pull build json from buildbot masters.
 
   Args:
     @param fetch_q: A pre-populated Queue.Queue containing tuples of:
-      master_url: Url of the buildbot master to get json from.
+      master: buildbot master to get json from.
       builder: Name of the builder on that master.
       output_builds: Output dictionary of builder to build data.
     @type fetch_q: tuple
   """
   while True:
     try:
-      master_url, builder, service_account, output_builds = fetch_q.get(False)
+      master, builder, service_account, output_builds = fetch_q.get(False)
     except Queue.Empty:
       return
 
-    limits = [100, 50, 25, 10]
-    sleep = 1
-    try:
-      for i in xrange(len(limits)):  # pragma: no branch
-        try:
-          builder_history = FetchBuilderJsonFromMilo(
-              GetMasterNameFromURL(master_url), builder,
-              limit=limits[i], service_account_file=service_account)
-          output_builds[builder] = builder_history
-          break
-        except httplib2.HttpLib2Error:
-          if i == len(limits)-1:
-            raise
-          LOGGER.warning(
-              'HTTP Error when fetching past %d builds of %s. Will try '
-              'fetching %d builds after a %d second sleep.',
-              limits[i], builder, limits[i+1], sleep)
-          time.sleep(sleep)
-          sleep *= 2
-    except httplib2.HttpLib2Error as e:
-      LOGGER.error(
-          'RequestException while fetching %s/%s:\n%s',
-          master_url, builder, repr(e))
-      output_builds[builder] = None
+    output_builds[builder] = fetch_fn(
+        master, builder, service_account_file=service_account)
 
 
-def FetchBuildData(masters, max_threads=0, service_account=None):  # pragma: no cover
+def FetchBuilds(masters, max_threads=0, service_account=None):  # pragma: no cover
   """Fetch all build data about the builders in the input masters.
 
   Args:
     @param masters: Dictionary of the form
     { master: {
-        base_url: string
         builders: [list of strings]
     } }
     This dictionary is a subset of the project configuration json.
@@ -236,15 +286,15 @@ def FetchBuildData(masters, max_threads=0, service_account=None):  # pragma: no 
   build_data = {master: {} for master in masters}
   fetch_q = Queue.Queue()
   for master, master_data in masters.iteritems():
-    master_url = master_data['base_url']
     builders = master_data['builders']
     for builder in builders:
-      fetch_q.put((master_url, builder, service_account, build_data[master]))
+      fetch_q.put((master, builder, service_account, build_data[master]))
   fetch_threads = set()
   if not max_threads:
     max_threads = fetch_q.qsize()
   for _ in xrange(max_threads):
-    th = threading.Thread(target=FetchBuilderJson, args=(fetch_q,))
+    th = threading.Thread(target=FetchBuildsWorker,
+                          args=(fetch_q, FetchBuildbotBuilds))
     th.start()
     fetch_threads.add(th)
   for th in fetch_threads:
@@ -260,15 +310,34 @@ def FetchBuildData(masters, max_threads=0, service_account=None):  # pragma: no 
   return build_data, failures
 
 
-def ReadBuildData(filename):  # pragma: no cover
+_BUILD_DATA_VERSION = 2
+
+
+def LoadBuilds(filename):
   """Read all build data from a file or stdin."""
-  try:
-    fh = sys.stdin if filename == '-' else open(filename, 'r')
-    with fh:
-      return json.load(fh)
-  except (IOError, ValueError), e:
-    LOGGER.error('Could not read build data from %s:\n%s\n', filename, repr(e))
-    raise
+  fh = sys.stdin if filename == '-' else open(filename, 'r')
+  with fh:
+    wrapped_builds = json.load(fh)
+
+  if wrapped_builds.get('version') != _BUILD_DATA_VERSION:
+    return None
+
+  builds = wrapped_builds.get('builds', {})
+  for key, val in builds.iteritems():
+    for builder, builder_data in val.iteritems():
+      builds[key][builder] = [Build(*b) for b in builder_data]
+
+  return builds
+
+
+def DumpBuilds(builds, filename):
+  """Dump all build data to a file."""
+  wrapped_builds = {
+    'builds': builds,
+    'version': _BUILD_DATA_VERSION,
+  }
+  with open(filename, 'w') as fh:
+    json.dump(wrapped_builds, fh, indent=2)
 
 
 ##################################################
@@ -284,11 +353,11 @@ def IsResultFailure(result_data):  # pragma: no cover
   return result_data not in (0, 1, '0', '1')
 
 
-def EvaluateBuildData(build_data):  # pragma: no cover
+def EvaluateBuildData(build_data):
   """Determine the status of a build."""
   status = STATUS.SUCCESS
 
-  if build_data['currentStep'] is not None:
+  if build_data.get('currentStep') is not None:
     status = STATUS.RUNNING
     for step in build_data['steps']:
       if step['isFinished'] is True and IsResultFailure(step.get('results')):
@@ -299,12 +368,22 @@ def EvaluateBuildData(build_data):  # pragma: no cover
   return status
 
 
-def CollateRevisionHistory(build_data, lkgr_builders, repo):  # pragma: no cover
-  """Organize complex build data into a simpler form.
+def CollateRevisionHistory(builds, repo):
+  """Sorts builds and revisions in repository order.
 
   Args:
-    build_data: json-formatted build data returned by buildbot.
-    lkgr_builders: List of interesting builders.
+    builds: a dict of the form:
+
+    ```
+    builds := {
+      master: {
+        builder: [Build, ...],
+        ...,
+      },
+      ...
+    }
+    ```
+
     repo (GitWrapper): repository in which the revision occurs.
 
   Returns:
@@ -313,7 +392,7 @@ def CollateRevisionHistory(build_data, lkgr_builders, repo):  # pragma: no cover
     ```
     build_history := {
       master: {
-        builder: [(revision, status, build_num), ...],
+        builder: [Build, ...],
         ...,
       },
       ...
@@ -328,59 +407,15 @@ def CollateRevisionHistory(build_data, lkgr_builders, repo):  # pragma: no cover
   """
   build_history = {}
   revisions = set()
-  # TODO(agable): Make build_data stronly typed, so we're not messing with JSON
-  for master, master_data in build_data.iteritems():
-    if master not in lkgr_builders:
-      continue
+  for master, master_data in builds.iteritems():
     LOGGER.debug('Collating master %s', master)
     master_history = build_history.setdefault(master, {})
-    for (builder, builder_data) in master_data.iteritems():
-      if builder not in lkgr_builders[master]['builders']:
-        continue
+    for builder, builder_data in master_data.iteritems():
       LOGGER.debug('Collating builder %s', builder)
-      builder_history = []
-      for build_num in sorted(builder_data.keys(), key=int):
-        this_build_data = builder_data[build_num]
-        txt = this_build_data.get('text', [])
-        if txt is None:
-          continue
-        if 'exception' in txt and 'slave' in txt and 'lost' in txt:
-          continue
-        this_build_properties = {
-          prop[0]: prop[1]
-          for prop in this_build_data.get('properties', [])
-        }
-        # Revision fallthrough:
-        revision = (
-            # * If there is a got_src_revision, we probably want to use that,
-            #   because otherwise it wouldn't be specified.
-            this_build_properties.get('got_src_revision')
-            # * If we're in Git and there's a got_revision_git, might as well
-            #   use that since it is guaranteed to be the right type.
-            or this_build_properties.get('got_revision_git')
-            # * Finally, just use the default got_revision.
-            or this_build_properties.get('got_revision')
-            or None)
-        status = EvaluateBuildData(this_build_data)
-        if revision is None:
-          if status is STATUS.FAILURE or status is STATUS.RUNNING:
-            # The build failed too early or is still in early stage even before
-            # chromium revision was tagged. If we allow 'revision' fallback it
-            # will end up being non-chromium revision for non chromium projects.
-            continue
-        if not revision:
-          revision = this_build_data.get(
-              'sourceStamp', {}).get('revision', None)
-        if not revision:
-          continue
-        if len(str(revision)) < 40:
-          # Ignore stource stamps that don't contain a proper git hash. This
-          # can happen if very old build numbers get into the build data.
-          continue
-        revisions.add(str(revision))
-        builder_history.append((revision, status, build_num))
+      for build in builder_data:
+        revisions.add(str(build.revision))
       master_history[builder] = repo.sort(
-          builder_history, keyfunc=lambda x: x[0])
+          builder_data, keyfunc=lambda b: b.revision)
   revisions = repo.sort(revisions)
   return (build_history, revisions)
 
@@ -425,32 +460,33 @@ def FindLKGRCandidate(build_history, revisions, revkey, status_gen=None):
     good_revision = True
     for master, builder, gen, prev in builders:
       try:
-        while revkey(revision) < revkey(prev[-1][0]):
+        while revkey(revision) < revkey(prev[-1].revision):
           prev.append(gen.next())
       except StopIteration:  # pragma: no cover
-        prev.append((NOREV, STATUS.UNKNOWN, -1))
+        prev.append(Build(-1, STATUS.UNKNOWN, NOREV))
 
       # current build matches revision
-      if revkey(revision) == revkey(prev[-1][0]):
-        status = prev[-1][1]
+      if revkey(revision) == revkey(prev[-1].revision):
+        status = prev[-1].result
       elif len(prev) == 1:
-        assert revkey(revision) > revkey(prev[-1][0])
+        assert revkey(revision) > revkey(prev[-1].revision)
         # most recent build is behind revision
         status = STATUS.UNKNOWN
-      elif prev[-1][1] == STATUS.UNKNOWN:  # pragma: no cover
+      elif prev[-1].result == STATUS.UNKNOWN:  # pragma: no cover
         status = STATUS.UNKNOWN
       else:
         # We color space between FAILED and INPROGRESS builds as FAILED,
         # since that is what it will eventually become.
-        if prev[-1][1] == STATUS.SUCCESS and prev[-2][1] == STATUS.RUNNING:  # pragma: no cover
+        if (prev[-1].result == STATUS.SUCCESS
+            and prev[-2].result == STATUS.RUNNING):  # pragma: no cover
           status = STATUS.RUNNING
-        elif prev[-1][1] == prev[-2][1] == STATUS.SUCCESS:
+        elif prev[-1].result == prev[-2].result == STATUS.SUCCESS:
           status = STATUS.SUCCESS
         else:
           status = STATUS.FAILURE
       build_num = None
-      if revkey(revision) == revkey(prev[-1][0]):
-        build_num = prev[-1][2]
+      if revkey(revision) == revkey(prev[-1].revision):
+        build_num = prev[-1].number
       status_gen.build_cb(master, builder, status, build_num)
       if status != STATUS.SUCCESS:
         good_revision = False
