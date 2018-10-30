@@ -27,317 +27,334 @@ import (
 	"infra/appengine/crosskylabadmin/app/config"
 )
 
-// TestRefreshAndSummarizeBots tests the RefreshBots-SummarizeBots API.
 // This function only validates the DutID field, to ensure that the correct bots are updated/summarized.
-// Other tests should verify the other fields of returned bots.
-func TestRefreshAndSummarizeBots(t *testing.T) {
-	Convey("In testing context", t, FailureHalts, func() {
+// Other tests should verify the fields of returned bots.
+func TestRefreshAndSummarizeNoBotsAvailable(t *testing.T) {
+	Convey("with no swarming duts available", t, func() {
 		tf, cleanup := newTestFixtureWithFakeSwarming(t)
 		defer cleanup()
+		tf.FakeSwarming.setAvailableDutIDs([]string{})
 
-		Convey("with no swarming duts available", func() {
-			tf.FakeSwarming.setAvailableDutIDs([]string{})
+		Convey("refresh without filter refreshes no duts", func() {
+			refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
+			So(err, ShouldBeNil)
+			So(refreshed.DutIds, ShouldBeEmpty)
 
-			Convey("refresh without filter refreshes no duts", func() {
-				refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
+		})
+
+		Convey("refresh with empty filter refreshes no duts", func() {
+			refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
+				Selectors: makeBotSelectorForDuts([]string{}),
+			})
+			So(err, ShouldBeNil)
+			So(refreshed.DutIds, ShouldBeEmpty)
+		})
+
+		Convey("refresh with non-empty filter refreshes no duts", func() {
+			refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
+				Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
+			})
+			So(err, ShouldBeNil)
+			So(refreshed.DutIds, ShouldBeEmpty)
+
+			Convey("then summarize without filter summarizes no duts", func() {
+				summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{})
 				So(err, ShouldBeNil)
-				So(refreshed.DutIds, ShouldBeEmpty)
-
+				So(summarized.Bots, ShouldBeEmpty)
 			})
 
-			Convey("refresh with empty filter refreshes no duts", func() {
-				refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
+			Convey("then summarize with empty filter summarizes no duts", func() {
+				summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{}),
 				})
 				So(err, ShouldBeNil)
-				So(refreshed.DutIds, ShouldBeEmpty)
+				So(summarized.Bots, ShouldBeEmpty)
 			})
 
-			Convey("refresh with non-empty filter refreshes no duts", func() {
-				refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
+			Convey("then summarize with non-empty filter summarizes no duts", func() {
+				summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
 				})
 				So(err, ShouldBeNil)
-				So(refreshed.DutIds, ShouldBeEmpty)
-
-				Convey("then summarize without filter summarizes no duts", func() {
-					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{})
-					So(err, ShouldBeNil)
-					So(summarized.Bots, ShouldBeEmpty)
-				})
-
-				Convey("then summarize with empty filter summarizes no duts", func() {
-					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
-						Selectors: makeBotSelectorForDuts([]string{}),
-					})
-					So(err, ShouldBeNil)
-					So(summarized.Bots, ShouldBeEmpty)
-				})
-
-				Convey("then summarize with non-empty filter summarizes no duts", func() {
-					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
-						Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
-					})
-					So(err, ShouldBeNil)
-					So(summarized.Bots, ShouldBeEmpty)
-				})
-			})
-		})
-
-		Convey("with a single dut available", func() {
-			tf.FakeSwarming.setAvailableDutIDs([]string{"dut_1"})
-
-			Convey("refresh filtering to available dut refreshes that dut", func() {
-				refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
-					Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
-				})
-
-				So(err, ShouldBeNil)
-				So(refreshed.DutIds, ShouldHaveLength, 1)
-				So(refreshed.DutIds, ShouldContain, "dut_1")
-			})
-
-			Convey("refresh filtering to unknown dut refreshes no duts", func() {
-				refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
-					Selectors: makeBotSelectorForDuts([]string{"dut_2"}),
-				})
-				So(err, ShouldBeNil)
-				So(refreshed.DutIds, ShouldBeEmpty)
-			})
-
-			Convey("refresh without filter refreshes that dut", func() {
-				refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
-				So(err, ShouldBeNil)
-				So(refreshed.DutIds, ShouldHaveLength, 1)
-				So(refreshed.DutIds, ShouldContain, "dut_1")
-
-				Convey("then summarize without filter summarizes that dut", func() {
-					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{})
-					So(err, ShouldBeNil)
-
-					duts := extractSummarizedDutIDs(summarized)
-					So(duts, ShouldHaveLength, 1)
-					So(duts, ShouldContain, "dut_1")
-				})
-
-				Convey("then summarize with empty filter summarizes not duts", func() {
-					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
-						Selectors: []*fleet.BotSelector{{}},
-					})
-					So(err, ShouldBeNil)
-					So(summarized.Bots, ShouldBeEmpty)
-				})
-
-				Convey("then summarize filtering to available dut summarizes that dut", func() {
-					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
-						Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
-					})
-					So(err, ShouldBeNil)
-
-					duts := extractSummarizedDutIDs(summarized)
-					So(duts, ShouldHaveLength, 1)
-					So(duts, ShouldContain, "dut_1")
-				})
-
-				Convey("then summarize filtering to unknown dut summarizes no duts", func() {
-					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
-						Selectors: makeBotSelectorForDuts([]string{"dut_2"}),
-					})
-					So(err, ShouldBeNil)
-					So(summarized.Bots, ShouldBeEmpty)
-				})
-			})
-		})
-
-		Convey("with two duts available", func() {
-			tf.FakeSwarming.setAvailableDutIDs([]string{"dut_1", "dut_2"})
-
-			Convey("refresh without filter refreshes both duts", func() {
-				refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
-				So(err, ShouldBeNil)
-				So(refreshed.DutIds, ShouldHaveLength, 2)
-				So(refreshed.DutIds, ShouldContain, "dut_1")
-				So(refreshed.DutIds, ShouldContain, "dut_2")
-
-				Convey("then summarize without filter summarizes both duts", func() {
-					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{})
-					So(err, ShouldBeNil)
-
-					duts := extractSummarizedDutIDs(summarized)
-					So(duts, ShouldHaveLength, 2)
-					So(duts, ShouldContain, "dut_1")
-					So(duts, ShouldContain, "dut_2")
-				})
-			})
-
-			Convey("refresh with 2 filters matching existing duts refreshes both duts", func() {
-				refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
-					Selectors: makeBotSelectorForDuts([]string{"dut_1", "dut_2"}),
-				})
-				So(err, ShouldBeNil)
-				So(refreshed.DutIds, ShouldHaveLength, 2)
-				So(refreshed.DutIds, ShouldContain, "dut_1")
-				So(refreshed.DutIds, ShouldContain, "dut_2")
-
-				Convey("then summarize filtering one available dut and one unknown dut refreshes one dut", func() {
-					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
-						Selectors: makeBotSelectorForDuts([]string{"dut_1", "dut_non_existent"}),
-					})
-					So(err, ShouldBeNil)
-
-					duts := extractSummarizedDutIDs(summarized)
-					So(duts, ShouldHaveLength, 1)
-					So(duts, ShouldContain, "dut_1")
-				})
-			})
-		})
-
-		// More DUTs to refresh than WorkPool concurrency.
-		Convey("with a large number of duts available", func() {
-			numDuts := 3 * clients.MaxConcurrentSwarmingCalls
-			dutNames := make([]string, 0, numDuts)
-			for i := 0; i < numDuts; i++ {
-				dutNames = append(dutNames, fmt.Sprintf("dut_%d", i))
-			}
-			tf.FakeSwarming.setAvailableDutIDs(dutNames)
-			Convey("refresh selecting all the DUTs refreshes all duts", func() {
-				refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
-					Selectors: makeBotSelectorForDuts(dutNames),
-				})
-				So(err, ShouldBeNil)
-				So(refreshed.DutIds, ShouldHaveLength, numDuts)
-				for _, d := range dutNames {
-					So(refreshed.DutIds, ShouldContain, d)
-				}
+				So(summarized.Bots, ShouldBeEmpty)
 			})
 		})
 	})
 }
 
-func TestRefreshAndSummarizeBotsDutState(t *testing.T) {
-	Convey("In testing context", t, FailureHalts, func() {
+// This function only validates the DutID field, to ensure that the correct bots are updated/summarized.
+// Other tests should verify the fields of returned bots.
+func TestRefreshAndSummarizeOneBotAvailable(t *testing.T) {
+	Convey("with a single dut available", t, func() {
 		tf, cleanup := newTestFixtureWithFakeSwarming(t)
 		defer cleanup()
+		tf.FakeSwarming.setAvailableDutIDs([]string{"dut_1"})
 
-		Convey("with a swarming dut in state needs_reset", func() {
-			tf.FakeSwarming.botInfos = make(map[string]*swarming.SwarmingRpcsBotInfo)
-			tf.FakeSwarming.botInfos["bot_dut_1"] = &swarming.SwarmingRpcsBotInfo{
-				BotId: "bot_dut_1",
-				Dimensions: []*swarming.SwarmingRpcsStringListPair{
-					{
-						Key:   "dut_id",
-						Value: []string{"dut_1"},
-					},
-					{
-						Key:   "dut_state",
-						Value: []string{"needs_reset"},
-					},
-				},
-			}
-			Convey("refresh with empty filter", func() {
-				_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
-					Selectors: makeBotSelectorForDuts([]string{}),
+		Convey("refresh filtering to available dut refreshes that dut", func() {
+			refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
+				Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
+			})
+
+			So(err, ShouldBeNil)
+			So(refreshed.DutIds, ShouldHaveLength, 1)
+			So(refreshed.DutIds, ShouldContain, "dut_1")
+		})
+
+		Convey("refresh filtering to unknown dut refreshes no duts", func() {
+			refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
+				Selectors: makeBotSelectorForDuts([]string{"dut_2"}),
+			})
+			So(err, ShouldBeNil)
+			So(refreshed.DutIds, ShouldBeEmpty)
+		})
+
+		Convey("refresh without filter refreshes that dut", func() {
+			refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
+			So(err, ShouldBeNil)
+			So(refreshed.DutIds, ShouldHaveLength, 1)
+			So(refreshed.DutIds, ShouldContain, "dut_1")
+
+			Convey("then summarize without filter summarizes that dut", func() {
+				summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{})
+				So(err, ShouldBeNil)
+
+				duts := extractSummarizedDutIDs(summarized)
+				So(duts, ShouldHaveLength, 1)
+				So(duts, ShouldContain, "dut_1")
+			})
+
+			Convey("then summarize with empty filter summarizes not duts", func() {
+				summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
+					Selectors: []*fleet.BotSelector{{}},
+				})
+				So(err, ShouldBeNil)
+				So(summarized.Bots, ShouldBeEmpty)
+			})
+
+			Convey("then summarize filtering to available dut summarizes that dut", func() {
+				summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
+					Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
 				})
 				So(err, ShouldBeNil)
 
-				Convey("then summarizing without filter summarizes bot with state needs_reset", func() {
-					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
-						Selectors: makeBotSelectorForDuts([]string{}),
-					})
-					So(err, ShouldBeNil)
-					So(summarized.Bots, ShouldHaveLength, 1)
+				duts := extractSummarizedDutIDs(summarized)
+				So(duts, ShouldHaveLength, 1)
+				So(duts, ShouldContain, "dut_1")
+			})
 
-					bot := summarized.Bots[0]
-					So(bot.DutId, ShouldEqual, "dut_1")
-					So(bot.DutState, ShouldEqual, fleet.DutState_NeedsReset)
+			Convey("then summarize filtering to unknown dut summarizes no duts", func() {
+				summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
+					Selectors: makeBotSelectorForDuts([]string{"dut_2"}),
 				})
+				So(err, ShouldBeNil)
+				So(summarized.Bots, ShouldBeEmpty)
+			})
+		})
+	})
+}
+
+// This function only validates the DutID field, to ensure that the correct bots are updated/summarized.
+// Other tests should verify the fields of returned bots.
+func TestRefreshAndSummarizeMultipleBotsAvailable(t *testing.T) {
+	Convey("with two duts available", t, func() {
+		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		defer cleanup()
+		tf.FakeSwarming.setAvailableDutIDs([]string{"dut_1", "dut_2"})
+
+		Convey("refresh without filter refreshes both duts", func() {
+			refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
+			So(err, ShouldBeNil)
+			So(refreshed.DutIds, ShouldHaveLength, 2)
+			So(refreshed.DutIds, ShouldContain, "dut_1")
+			So(refreshed.DutIds, ShouldContain, "dut_2")
+
+			Convey("then summarize without filter summarizes both duts", func() {
+				summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{})
+				So(err, ShouldBeNil)
+
+				duts := extractSummarizedDutIDs(summarized)
+				So(duts, ShouldHaveLength, 2)
+				So(duts, ShouldContain, "dut_1")
+				So(duts, ShouldContain, "dut_2")
+			})
+		})
+
+		Convey("refresh with 2 filters matching existing duts refreshes both duts", func() {
+			refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
+				Selectors: makeBotSelectorForDuts([]string{"dut_1", "dut_2"}),
+			})
+			So(err, ShouldBeNil)
+			So(refreshed.DutIds, ShouldHaveLength, 2)
+			So(refreshed.DutIds, ShouldContain, "dut_1")
+			So(refreshed.DutIds, ShouldContain, "dut_2")
+
+			Convey("then summarize filtering one available dut and one unknown dut refreshes one dut", func() {
+				summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
+					Selectors: makeBotSelectorForDuts([]string{"dut_1", "dut_non_existent"}),
+				})
+				So(err, ShouldBeNil)
+
+				duts := extractSummarizedDutIDs(summarized)
+				So(duts, ShouldHaveLength, 1)
+				So(duts, ShouldContain, "dut_1")
+			})
+		})
+	})
+}
+
+// This function only validates the DutID field, to ensure that the correct bots are updated/summarized.
+// Other tests should verify the fields of returned bots.
+func TestRefreshLargeNumberOfBotsAvailable(t *testing.T) {
+	Convey("with a large number of duts available", t, func() {
+		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		defer cleanup()
+		// More DUTs to refresh than WorkPool concurrency.
+		numDuts := 3 * clients.MaxConcurrentSwarmingCalls
+		dutNames := make([]string, 0, numDuts)
+		for i := 0; i < numDuts; i++ {
+			dutNames = append(dutNames, fmt.Sprintf("dut_%d", i))
+		}
+		tf.FakeSwarming.setAvailableDutIDs(dutNames)
+
+		Convey("refresh selecting all the DUTs refreshes all duts", func() {
+			refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
+				Selectors: makeBotSelectorForDuts(dutNames),
+			})
+			So(err, ShouldBeNil)
+			So(refreshed.DutIds, ShouldHaveLength, numDuts)
+			for _, d := range dutNames {
+				So(refreshed.DutIds, ShouldContain, d)
+			}
+		})
+	})
+}
+
+func TestRefreshAndSummarizeBotsDutState(t *testing.T) {
+	Convey("with a swarming dut in state needs_reset", t, func() {
+		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		defer cleanup()
+		tf.FakeSwarming.botInfos = make(map[string]*swarming.SwarmingRpcsBotInfo)
+		tf.FakeSwarming.botInfos["bot_dut_1"] = &swarming.SwarmingRpcsBotInfo{
+			BotId: "bot_dut_1",
+			Dimensions: []*swarming.SwarmingRpcsStringListPair{
+				{
+					Key:   "dut_id",
+					Value: []string{"dut_1"},
+				},
+				{
+					Key:   "dut_state",
+					Value: []string{"needs_reset"},
+				},
+			},
+		}
+
+		Convey("refresh with empty filter", func() {
+			_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
+				Selectors: makeBotSelectorForDuts([]string{}),
+			})
+			So(err, ShouldBeNil)
+
+			Convey("then summarizing without filter summarizes bot with state needs_reset", func() {
+				summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
+					Selectors: makeBotSelectorForDuts([]string{}),
+				})
+				So(err, ShouldBeNil)
+				So(summarized.Bots, ShouldHaveLength, 1)
+
+				bot := summarized.Bots[0]
+				So(bot.DutId, ShouldEqual, "dut_1")
+				So(bot.DutState, ShouldEqual, fleet.DutState_NeedsReset)
 			})
 		})
 	})
 }
 
 func TestRefreshAndSummarizeIdleDuration(t *testing.T) {
-	Convey("In testing context", t, FailureHalts, func() {
+	Convey("with a swarming dut with no recent tasks", t, func() {
 		tf, cleanup := newTestFixtureWithFakeSwarming(t)
 		defer cleanup()
+		tf.FakeSwarming.setAvailableDutIDs([]string{"dut_task_1"})
 
-		Convey("with a swarming dut with no recent tasks", func() {
-			tf.FakeSwarming.setAvailableDutIDs([]string{"dut_task_1"})
-			Convey("refresh with empty filter", func() {
-				_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
+		Convey("refresh with empty filter", func() {
+			_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
+				Selectors: makeBotSelectorForDuts([]string{}),
+			})
+			So(err, ShouldBeNil)
+
+			Convey("then summarizing without filter summarizes dut with unknown idle duration", func() {
+				summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{}),
 				})
 				So(err, ShouldBeNil)
+				So(summarized.Bots, ShouldHaveLength, 1)
 
-				Convey("then summarizing without filter summarizes dut with unknown idle duration", func() {
-					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
-						Selectors: makeBotSelectorForDuts([]string{}),
-					})
-					So(err, ShouldBeNil)
-					So(summarized.Bots, ShouldHaveLength, 1)
-
-					bot := summarized.Bots[0]
-					So(bot.DutId, ShouldEqual, "dut_task_1")
-					So(bot.IdleDuration, ShouldBeNil)
-				})
+				bot := summarized.Bots[0]
+				So(bot.DutId, ShouldEqual, "dut_task_1")
+				So(bot.IdleDuration, ShouldBeNil)
 			})
 		})
+	})
 
-		Convey("with a swarming dut with one recent completed task", func() {
-			tf.FakeSwarming.setAvailableDutIDs([]string{"dut_task_1"})
-			tf.FakeSwarming.botTasks["bot_dut_task_1"] = []*swarming.SwarmingRpcsTaskResult{
-				{
-					State:       "COMPLETED",
-					CompletedTs: "2016-01-02T10:04:05.999999999",
-				},
-			}
-			Convey("refresh with empty filter", func() {
-				_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
+	Convey("with a swarming dut with one recent completed task", t, func() {
+		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		defer cleanup()
+		tf.FakeSwarming.setAvailableDutIDs([]string{"dut_task_1"})
+		tf.FakeSwarming.botTasks["bot_dut_task_1"] = []*swarming.SwarmingRpcsTaskResult{
+			{
+				State:       "COMPLETED",
+				CompletedTs: "2016-01-02T10:04:05.999999999",
+			},
+		}
+
+		Convey("refresh with empty filter", func() {
+			_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
+				Selectors: makeBotSelectorForDuts([]string{}),
+			})
+			So(err, ShouldBeNil)
+
+			Convey("then summarizing without filter summarizes dut with sane idle duration", func() {
+				summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{}),
 				})
 				So(err, ShouldBeNil)
+				So(summarized.Bots, ShouldHaveLength, 1)
 
-				Convey("then summarizing without filter summarizes dut with sane idle duration", func() {
-					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
-						Selectors: makeBotSelectorForDuts([]string{}),
-					})
-					So(err, ShouldBeNil)
-					So(summarized.Bots, ShouldHaveLength, 1)
-
-					bot := summarized.Bots[0]
-					So(bot.DutId, ShouldEqual, "dut_task_1")
-					So(bot.IdleDuration, ShouldNotBeNil)
-					So(bot.IdleDuration.Seconds, ShouldBeGreaterThan, 0)
-				})
+				bot := summarized.Bots[0]
+				So(bot.DutId, ShouldEqual, "dut_task_1")
+				So(bot.IdleDuration, ShouldNotBeNil)
+				So(bot.IdleDuration.Seconds, ShouldBeGreaterThan, 0)
 			})
 		})
+	})
 
-		Convey("with a swarming dut with one running task", func() {
-			tf.FakeSwarming.setAvailableDutIDs([]string{"dut_task_1"})
-			tf.FakeSwarming.botTasks["bot_dut_task_1"] = []*swarming.SwarmingRpcsTaskResult{
-				{
-					State: "RUNNING",
-				},
-			}
-			Convey("refresh with empty filter", func() {
-				_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
+	Convey("with a swarming dut with one running task", t, func() {
+		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		defer cleanup()
+		tf.FakeSwarming.setAvailableDutIDs([]string{"dut_task_1"})
+		tf.FakeSwarming.botTasks["bot_dut_task_1"] = []*swarming.SwarmingRpcsTaskResult{
+			{
+				State: "RUNNING",
+			},
+		}
+
+		Convey("refresh with empty filter", func() {
+			_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
+				Selectors: makeBotSelectorForDuts([]string{}),
+			})
+			So(err, ShouldBeNil)
+
+			Convey("then summarizing without filter summarizes dut with idle duration zero", func() {
+				summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{}),
 				})
 				So(err, ShouldBeNil)
+				So(summarized.Bots, ShouldHaveLength, 1)
 
-				Convey("then summarizing without filter summarizes dut with idle duration zero", func() {
-					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
-						Selectors: makeBotSelectorForDuts([]string{}),
-					})
-					So(err, ShouldBeNil)
-					So(summarized.Bots, ShouldHaveLength, 1)
-
-					bot := summarized.Bots[0]
-					So(bot.DutId, ShouldEqual, "dut_task_1")
-					So(bot.IdleDuration, ShouldNotBeNil)
-					So(bot.IdleDuration.Seconds, ShouldEqual, 0)
-					So(bot.IdleDuration.Nanos, ShouldEqual, 0)
-				})
+				bot := summarized.Bots[0]
+				So(bot.DutId, ShouldEqual, "dut_task_1")
+				So(bot.IdleDuration, ShouldNotBeNil)
+				So(bot.IdleDuration.Seconds, ShouldEqual, 0)
+				So(bot.IdleDuration.Nanos, ShouldEqual, 0)
 			})
 		})
 	})
@@ -439,46 +456,49 @@ func TestSummarizeBotsWithDimensions(t *testing.T) {
 }
 
 func TestHealthSummary(t *testing.T) {
-	Convey("in testing context", t, func() {
+	Convey("with one bot available in state ready", t, func() {
 		tf, cleanup := newTestFixture(t)
 		defer cleanup()
 
+		bots := readyBotsForDutIDs([]string{"dut_ready"})
+		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
+			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
+		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
 		tf.MockSwarming.EXPECT().ListSortedRecentTasksForBot(
 			gomock.Any(), gomock.Any(), gomock.Any(),
 		).AnyTimes().Return([]*swarming.SwarmingRpcsTaskResult{}, nil)
 
-		Convey("with one bot available in state ready", func() {
-			bots := readyBotsForDutIDs([]string{"dut_ready"})
-			tf.MockSwarming.EXPECT().ListAliveBotsInPool(
-				gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
-			).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
-
-			Convey("bot summary reports the bot healthy", func() {
-				_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
-				So(err, ShouldBeNil)
-				summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{})
-				So(err, ShouldBeNil)
-				So(summarized.Bots, ShouldHaveLength, 1)
-				So(summarized.Bots[0].Health, ShouldEqual, fleet.Health_Healthy)
-			})
+		Convey("bot summary reports the bot healthy", func() {
+			_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
+			So(err, ShouldBeNil)
+			summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{})
+			So(err, ShouldBeNil)
+			So(summarized.Bots, ShouldHaveLength, 1)
+			So(summarized.Bots[0].Health, ShouldEqual, fleet.Health_Healthy)
 		})
+	})
 
-		Convey("with one bot available in state repair_failed", func() {
-			bots := readyBotsForDutIDs([]string{"dut_repair_failed"})
-			b := bots[0]
-			setBotDimension(b, "dut_state", []string{"repair_failed"})
-			tf.MockSwarming.EXPECT().ListAliveBotsInPool(
-				gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
-			).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+	Convey("with one bot available in state repair_failed", t, func() {
+		tf, cleanup := newTestFixture(t)
+		defer cleanup()
 
-			Convey("bot summary reports the bot unhealthy", func() {
-				_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
-				So(err, ShouldBeNil)
-				summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{})
-				So(err, ShouldBeNil)
-				So(summarized.Bots, ShouldHaveLength, 1)
-				So(summarized.Bots[0].Health, ShouldEqual, fleet.Health_Unhealthy)
-			})
+		bots := readyBotsForDutIDs([]string{"dut_repair_failed"})
+		b := bots[0]
+		setBotDimension(b, "dut_state", []string{"repair_failed"})
+		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
+			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
+		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+		tf.MockSwarming.EXPECT().ListSortedRecentTasksForBot(
+			gomock.Any(), gomock.Any(), gomock.Any(),
+		).AnyTimes().Return([]*swarming.SwarmingRpcsTaskResult{}, nil)
+
+		Convey("bot summary reports the bot unhealthy", func() {
+			_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
+			So(err, ShouldBeNil)
+			summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{})
+			So(err, ShouldBeNil)
+			So(summarized.Bots, ShouldHaveLength, 1)
+			So(summarized.Bots[0].Health, ShouldEqual, fleet.Health_Unhealthy)
 		})
 	})
 }
