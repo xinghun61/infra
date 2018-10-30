@@ -108,7 +108,7 @@ suite('MonorailTSMon', () => {
       sinon.assert.calledOnce(metric.add);
       assert.equal(metric.add.args[0][0], 1);
       const argsKeys = Array.from(metric.add.args[0][1].keys());
-      assert.deepEqual(argsKeys, ['client_id']);
+      assert.deepEqual(argsKeys, ['client_id', 'host_name']);
     });
 
   });

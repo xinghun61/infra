@@ -66,9 +66,9 @@ export default class MonorailTSMon {
     this.client = MonorailTSMon.getGlobalClient();
 
     // TODO(jeffcarp, 4415): Deduplicate metric defs.
-    // TODO(jeffcarp, 4407): Pass GAE version as a field.
     const standardFields = new Map([
-      ['client_id', TSMonClient.stringField('client_id')]
+      ['client_id', TSMonClient.stringField('client_id')],
+      ['host_name', TSMonClient.stringField('host_name')],
     ]);
 
     // TODO(jeffcarp): Add metrics.
@@ -76,7 +76,10 @@ export default class MonorailTSMon {
   }
 
   recordUserTiming(category, eventName, elapsed) {
-    const metricFields = new Map([['client_id', this.client.clientId]]);
+    const metricFields = new Map([
+      ['client_id', this.client.clientId],
+      ['host_name', window.CS_env.app_version],
+    ]);
     for (let metric of this.userTimingMetrics) {
       if (category === metric.category
           && eventName === metric.eventName) {
