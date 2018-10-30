@@ -1,0 +1,17 @@
+/*
+ * This is a GNU "ld" version script.
+ *
+ * It is typically used to version symbols, but can also be used to set the
+ * exportability of symbols. We use it to limit global export of symbols to
+ * only those that are part of the Python ABI, excluding symbols in the
+ * peripheral statically-linked libraries (notably OpenSSL).
+ */
+
+{
+  global:
+    Py*;
+    *_Py*;
+
+  local:
+    *;
+};

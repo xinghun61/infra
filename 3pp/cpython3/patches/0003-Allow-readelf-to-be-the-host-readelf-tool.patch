@@ -1,0 +1,25 @@
+From b51031316774cc884616831d96e6565bcd450f30 Mon Sep 17 00:00:00 2001
+From: Robert Iannucci <iannucci@chromium.org>
+Date: Wed, 24 Oct 2018 17:18:08 -0700
+Subject: [PATCH] Allow `readelf` to be the host readelf tool
+
+---
+ configure.ac | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/configure.ac b/configure.ac
+index b5877e6ce8..45f225af21 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1203,7 +1203,7 @@ fi
+ AC_CHECK_TOOLS([READELF], [readelf], [:])
+ if test "$cross_compiling" = yes; then
+     case "$READELF" in
+-	readelf|:)
++	:)
+ 	AC_MSG_ERROR([readelf for the host is required for cross builds])
+ 	;;
+     esac
+-- 
+2.19.1
+

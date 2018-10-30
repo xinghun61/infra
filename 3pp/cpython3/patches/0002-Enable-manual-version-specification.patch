@@ -1,0 +1,71 @@
+From 72d2ff811459203493ea800c7c20f8a269d3eebb Mon Sep 17 00:00:00 2001
+From: Robert Iannucci <iannucci@chromium.org>
+Date: Tue, 9 Oct 2018 15:36:18 -0700
+Subject: [PATCH 2/2] Enable manual version specification.
+
+Add the "--enable-py-version-override" option, which overrides the
+version that the Python interpreter reports.
+---
+ Include/patchlevel.h | 10 ++++++++++
+ configure.ac         | 12 ++++++++++++
+ pyconfig.h.in        |  3 +++
+ 3 files changed, 25 insertions(+)
+
+diff --git a/Include/patchlevel.h b/Include/patchlevel.h
+index d375d2897e..5de8abdad8 100644
+--- a/Include/patchlevel.h
++++ b/Include/patchlevel.h
+@@ -33,3 +33,13 @@
+                         (PY_MICRO_VERSION <<  8) | \
+                         (PY_RELEASE_LEVEL <<  4) | \
+                         (PY_RELEASE_SERIAL << 0))
++
++/* Infra-specific extension: if a version override is provided, replace prefer
++   it over our hard-coded PY_VERSION.
++
++   We define this here so diffs aren't upset when PY_VERSION changes. */
++#include "pyconfig.h"
++#if defined(PY_VERSION_OVERRIDE)
++#undef PY_VERSION
++#define PY_VERSION PY_VERSION_OVERRIDE
++#endif /* PY_VERSION_OVERRIDE */
+diff --git a/configure.ac b/configure.ac
+index 620b48a6e7..b5877e6ce8 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -2893,6 +2893,18 @@ LDFLAGS="-fsanitize=address $LDFLAGS"
+ AC_CHECK_LIB(nsl, t_open, [LIBS="-lnsl $LIBS"]) # SVR4
+ AC_CHECK_LIB(socket, socket, [LIBS="-lsocket $LIBS"], [], $LIBS) # SVR4 sockets
+ 
++# py-vesion-override option
++AC_MSG_CHECKING(for Python version override)
++AC_ARG_ENABLE(py-version-override,
++AS_HELP_STRING([--enable-py-version-override=PY_VERSION],
++               [Manually override Python version.]),
++[
++	AC_MSG_RESULT(overridden: $enable_py_version_override)
++	AC_DEFINE_UNQUOTED(PY_VERSION_OVERRIDE, "$enable_py_version_override",
++                     [Define to override PY_VERSION])
++],
++[AC_MSG_RESULT(no value specified)])
++
+ AC_MSG_CHECKING(for --with-libs)
+ AC_ARG_WITH(libs,
+             AS_HELP_STRING([--with-libs='lib1 ...'], [link against additional libs]),
+diff --git a/pyconfig.h.in b/pyconfig.h.in
+index a82e82cc9c..6fb3172177 100644
+--- a/pyconfig.h.in
++++ b/pyconfig.h.in
+@@ -1334,6 +1334,9 @@
+    externally defined: 0 */
+ #undef Py_HASH_ALGORITHM
+ 
++/* Define to override the PY_VERSION reported Python version. */
++#undef PY_VERSION_OVERRIDE
++
+ /* assume C89 semantics that RETSIGTYPE is always void */
+ #undef RETSIGTYPE
+ 
+-- 
+2.18.0
+
