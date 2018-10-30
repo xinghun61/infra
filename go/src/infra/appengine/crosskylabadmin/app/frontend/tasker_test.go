@@ -289,13 +289,48 @@ func TestTriggerRepairOnRepairFailed(t *testing.T) {
 			So(err, ShouldBeNil)
 			assertBotsWithTaskCount(resp.BotTasks, map[string]int{"dut_1": 1})
 		})
-		// TODO(pprabhu) Add a case with an outstanding repair task.
 	})
 
-	// TODO(pprabhu) Add a case where the intial repair task has completed,
-	// but is within TimeSinceLastRepair. No new tasks should be created,
-	// and no task should be returned.
-	// TODO(pprabhu) Add a case where the initial repair task times out instead of completing.
+	Convey("with one known bot in state repair_failed and a recent repair task", t, func() {
+		tf, cleanup := newTestFixture(t)
+		defer cleanup()
+		setKnownBotsInState(tf, []string{"dut_1"}, "repair_failed")
+		yyyy, mm, dd := time.Now().Date()
+		expectListRecentTasks(tf, 0, "", &swarming.SwarmingRpcsTaskResult{
+			State:       "COMPLETED",
+			CompletedTs: fmt.Sprintf("%04d-%02d-%02dT00:00:00.00000000", yyyy, mm, dd),
+		})
+
+		Convey("TriggerRepairOnRepairFailed triggers a task for the dut", func() {
+			resp, err := tf.Tasker.TriggerRepairOnRepairFailed(tf.C, &fleet.TriggerRepairOnRepairFailedRequest{
+				Selectors:           []*fleet.BotSelector{},
+				TimeSinceLastRepair: google.NewDuration(24 * time.Hour),
+				Priority:            20,
+			})
+			So(err, ShouldBeNil)
+			assertBotsWithTaskCount(resp.BotTasks, map[string]int{"dut_1": 0})
+		})
+	})
+
+	Convey("with one known bot in state repair_failed and a running repair task", t, func() {
+		tf, cleanup := newTestFixture(t)
+		defer cleanup()
+		setKnownBotsInState(tf, []string{"dut_1"}, "repair_failed")
+		expectListRecentTasks(tf, 0, "", &swarming.SwarmingRpcsTaskResult{State: "RUNNING"})
+
+		Convey("TriggerRepairOnRepairFailed triggers a task for the dut", func() {
+			resp, err := tf.Tasker.TriggerRepairOnRepairFailed(tf.C, &fleet.TriggerRepairOnRepairFailedRequest{
+				Selectors:           []*fleet.BotSelector{},
+				TimeSinceLastRepair: google.NewDuration(24 * time.Hour),
+				Priority:            20,
+			})
+			So(err, ShouldBeNil)
+			// The already running task is returned
+			assertBotsWithTaskCount(resp.BotTasks, map[string]int{"dut_1": 1})
+		})
+	})
+
+	// TODO(pprabhu) Add a case where the initial repair task times out1instead of completing.
 	// TODO(pprabhu) Add a case where the initial repair task is killed instead of completing.
 }
 
