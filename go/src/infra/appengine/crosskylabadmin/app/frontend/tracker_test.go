@@ -519,13 +519,3 @@ func extractSummarizedDutIDs(resp *fleet.SummarizeBotsResponse) []string {
 	}
 	return duts
 }
-
-// expecteDefaultPerBotRefresh sets up the default expectations for refreshing
-// each bot, once the list of bots is known.
-//
-// This is useful for tests that only target the initial Swarming bot listing logic.
-func expectDefaultPerBotRefresh(tf testFixture) {
-	tf.MockSwarming.EXPECT().ListSortedRecentTasksForBot(
-		gomock.Any(), gomock.Any(), gomock.Any(),
-	).AnyTimes().Return([]*swarming.SwarmingRpcsTaskResult{}, nil)
-}

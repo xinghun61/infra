@@ -16,24 +16,25 @@ package frontend
 
 import (
 	"fmt"
-	"strings"
+	"sort"
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/proto/google"
-	"golang.org/x/net/context"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
+	"infra/appengine/crosskylabadmin/app/config"
 )
 
 func TestEnsureBackgroundTasks(t *testing.T) {
 	Convey("with 2 known bots", t, func() {
-		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		tf, cleanup := newTestFixture(t)
 		defer cleanup()
-		setKnownBots(tf.C, tf.FakeSwarming, []string{"dut_1", "dut_2"})
+		setKnownReadyBots(tf, []string{"dut_1", "dut_2"})
 
 		Convey("EnsureBackgroundTasks for unknown bot creates no tasks", func() {
 			resp, err := tf.Tasker.EnsureBackgroundTasks(tf.C, &fleet.EnsureBackgroundTasksRequest{
@@ -43,124 +44,124 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(resp.BotTasks, ShouldBeEmpty)
 		})
+	})
 
-		taskURLFirst := []string{}
+	Convey("with 2 known bots", t, func() {
+		tf, cleanup := newTestFixture(t)
+		defer cleanup()
+		setKnownReadyBots(tf, []string{"dut_1", "dut_2"})
+
 		Convey("EnsureBackgroundTasks(Reset) for known bot", func() {
+			taskCount := 5
+			expectListRecentTasks(tf, taskCount, "PENDING")
+			for t := 0; t < taskCount; t++ {
+				expectTaskCreation(tf, fmt.Sprintf("task_%d", t), "dut_1", "needs_reset", "admin_reset", 10)
+			}
+
 			resp, err := tf.Tasker.EnsureBackgroundTasks(tf.C, &fleet.EnsureBackgroundTasksRequest{
 				Type:      fleet.TaskType_Reset,
 				Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
-				TaskCount: 5,
+				TaskCount: int32(taskCount),
 				Priority:  10,
 			})
 
-			So(err, ShouldBeNil)
-			Convey("creates expected swarming tasks", func() {
-				So(tf.FakeSwarming.taskArgs, ShouldHaveLength, 5)
-				for _, ta := range tf.FakeSwarming.taskArgs {
-					So(ta.DutID, ShouldEqual, "dut_1")
-					So(ta.DutState, ShouldEqual, "needs_reset")
-					So(ta.Priority, ShouldEqual, 10)
-
-					cmd := strings.Join(ta.Cmd, " ")
-					So(cmd, ShouldContainSubstring, "-task-name admin_reset")
-				}
-
-			})
 			Convey("returns bot list with requested tasks", func() {
-				So(resp.BotTasks, ShouldHaveLength, 1)
-				botTasks := resp.BotTasks[0]
-				So(botTasks.DutId, ShouldEqual, "dut_1")
-				So(botTasks.Tasks, ShouldHaveLength, 5)
-				for _, t := range botTasks.Tasks {
+				So(err, ShouldBeNil)
+				assertBotsWithTaskCount(resp.BotTasks, map[string]int{"dut_1": taskCount})
+				for _, t := range resp.BotTasks[0].Tasks {
 					So(t.Type, ShouldEqual, fleet.TaskType_Reset)
 					So(t.TaskUrl, ShouldNotBeNil)
-					taskURLFirst = append(taskURLFirst, t.TaskUrl)
 				}
-			})
-
-			Convey("then another EnsureBackgroundTasks(Reset) with more tasks requested", func() {
-				resp, err := tf.Tasker.EnsureBackgroundTasks(tf.C, &fleet.EnsureBackgroundTasksRequest{
-					Type:      fleet.TaskType_Reset,
-					Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
-					TaskCount: 7,
-					Priority:  10,
-				})
-
-				So(err, ShouldBeNil)
-				Convey("creates remaining swarming tasks", func() {
-					// This includes the 5 created earlier.
-					So(tf.FakeSwarming.taskArgs, ShouldHaveLength, 7)
-				})
-				Convey("returns bot list containing tasks created earlier and the new tasks", func() {
-					So(resp.BotTasks, ShouldHaveLength, 1)
-					botTasks := resp.BotTasks[0]
-					So(botTasks.DutId, ShouldEqual, "dut_1")
-					So(botTasks.Tasks, ShouldHaveLength, 7)
-					taskURLSecond := []string{}
-					for _, t := range botTasks.Tasks {
-						taskURLSecond = append(taskURLSecond, t.TaskUrl)
-					}
-					for _, t := range taskURLFirst {
-						So(t, ShouldBeIn, taskURLSecond)
-					}
-				})
 			})
 		})
 	})
 
+	Convey("with 2 known bots", t, func() {
+		tf, cleanup := newTestFixture(t)
+		defer cleanup()
+		setKnownReadyBots(tf, []string{"dut_1", "dut_2"})
+
+		Convey("EnsureBackgroundTasks(Reset) for known bot with existing tasks", func() {
+			oldTaskIDs := []string{"old_task_0", "old_task_1"}
+			newTaskIDs := []string{"new_task_0", "new_task_1", "new_task_2"}
+			taskIDs := append(oldTaskIDs, newTaskIDs...)
+			requestedTaskCount := len(taskIDs)
+
+			existingTasks := make([]*swarming.SwarmingRpcsTaskResult, 0, len(oldTaskIDs))
+			for _, tid := range oldTaskIDs {
+				existingTasks = append(existingTasks, &swarming.SwarmingRpcsTaskResult{
+					BotId:  "bot_dut_1",
+					TaskId: tid,
+				})
+			}
+			expectListRecentTasks(tf, requestedTaskCount, "PENDING", existingTasks...)
+			for _, tid := range newTaskIDs {
+				expectTaskCreation(tf, tid, "", "needs_reset", "admin_reset", 10)
+			}
+
+			resp, err := tf.Tasker.EnsureBackgroundTasks(tf.C, &fleet.EnsureBackgroundTasksRequest{
+				Type:      fleet.TaskType_Reset,
+				Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
+				TaskCount: int32(requestedTaskCount),
+				Priority:  10,
+			})
+
+			Convey("returns bot list containing existing and newly created tasks", func() {
+				So(err, ShouldBeNil)
+				assertBotsWithTaskCount(resp.BotTasks, map[string]int{"dut_1": len(taskIDs)})
+				taskURLs := []string{}
+				for _, t := range resp.BotTasks[0].Tasks {
+					taskURLs = append(taskURLs, t.TaskUrl)
+				}
+				assertTaskURLsForIDs(taskURLs, taskIDs)
+			})
+
+		})
+	})
+
 	Convey("with a large number of known bots", t, func() {
-		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		tf, cleanup := newTestFixture(t)
 		defer cleanup()
 
 		numDuts := 6 * clients.MaxConcurrentSwarmingCalls
 		allDuts := make([]string, 0, numDuts)
 		taskDuts := make([]string, 0, numDuts/2)
+		perDutTaskCount := 6
 		for i := 0; i < numDuts; i++ {
 			allDuts = append(allDuts, fmt.Sprintf("dut_%d", i))
 			if i%2 == 0 {
 				taskDuts = append(taskDuts, allDuts[i])
 			}
 		}
-		setKnownBots(tf.C, tf.FakeSwarming, allDuts)
+		setKnownReadyBots(tf, allDuts)
 
 		Convey("EnsureBackgroundTasks(Repair) for some of the known bots", func() {
+			expectListRecentTasks(tf, perDutTaskCount, "PENDING").AnyTimes()
+			for _, d := range taskDuts {
+				for i := 0; i < perDutTaskCount; i++ {
+					expectTaskCreation(tf, fmt.Sprintf("task_%s_%d", d, i), d, "needs_repair", "admin_repair", 0)
+				}
+			}
+
 			resp, err := tf.Tasker.EnsureBackgroundTasks(tf.C, &fleet.EnsureBackgroundTasksRequest{
 				Type:      fleet.TaskType_Repair,
 				Selectors: makeBotSelectorForDuts(taskDuts),
-				TaskCount: 6,
+				TaskCount: int32(perDutTaskCount),
 				Priority:  9,
 			})
 
-			So(err, ShouldBeNil)
-			Convey("creates expected swarming tasks", func() {
-				So(tf.FakeSwarming.taskArgs, ShouldHaveLength, 6*len(taskDuts))
-				gotDuts := map[string]int{}
-				for _, ta := range tf.FakeSwarming.taskArgs {
-					So(ta.DutState, ShouldEqual, "needs_repair")
-					So(ta.Priority, ShouldEqual, 9)
-					gotDuts[ta.DutID] = gotDuts[ta.DutID] + 1
-					cmd := strings.Join(ta.Cmd, " ")
-					So(cmd, ShouldContainSubstring, "-task-name admin_repair")
-				}
-				So(gotDuts, ShouldHaveLength, len(taskDuts))
-				for d, c := range gotDuts {
-					So(d, ShouldBeIn, taskDuts)
-					So(c, ShouldEqual, 6)
-				}
-			})
-			Convey("returns bot list with requested tasks", func() {
+			Convey("returns bot lists for expected duts with the right number of tasks", func() {
+				So(err, ShouldBeNil)
 				So(resp.BotTasks, ShouldHaveLength, len(taskDuts))
-				gotDuts := map[string]bool{}
+				gotDuts := []string{}
+				taskCount := 0
 				for _, bt := range resp.BotTasks {
-					So(bt.Tasks, ShouldHaveLength, 6)
-					for _, t := range bt.Tasks {
-						So(t.Type, ShouldEqual, fleet.TaskType_Repair)
-						So(t.TaskUrl, ShouldNotBeNil)
-					}
-					So(bt.DutId, ShouldBeIn, taskDuts)
-					gotDuts[bt.DutId] = true
+					gotDuts = append(gotDuts, bt.DutId)
+					taskCount += len(bt.Tasks)
 				}
-				So(gotDuts, ShouldHaveLength, len(taskDuts))
+				assertStringSetsEqual(gotDuts, taskDuts)
+				So(gotDuts, ShouldResemble, taskDuts)
+				So(taskCount, ShouldEqual, perDutTaskCount*len(taskDuts))
 			})
 		})
 	})
@@ -168,82 +169,60 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 
 func TestTriggerRepairOnIdle(t *testing.T) {
 	Convey("with one known bot with no task history", t, func() {
-		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		tf, cleanup := newTestFixture(t)
 		defer cleanup()
-		setKnownBots(tf.C, tf.FakeSwarming, []string{"dut_1"})
+		setKnownReadyBots(tf, []string{"dut_1"})
+		expectListRecentTasks(tf, 0, "PENDING")
+		expectListSortedRecentTasksForBot(tf, "dut_1")
 
 		Convey("TriggerRepairOnIdle triggers a task for the dut", func() {
+			expectTaskCreation(tf, "task_1", "dut_1", "", "admin_repair", 0)
+
 			resp, err := tf.Tasker.TriggerRepairOnIdle(tf.C, &fleet.TriggerRepairOnIdleRequest{
 				Selectors:    []*fleet.BotSelector{},
 				IdleDuration: google.NewDuration(4),
 				Priority:     20,
 			})
 			So(err, ShouldBeNil)
-			So(resp.BotTasks, ShouldHaveLength, 1)
-
-			botTask := resp.BotTasks[0]
-			So(botTask.DutId, ShouldEqual, "dut_1")
-			So(botTask.Tasks, ShouldHaveLength, 1)
-
-			Convey("then TriggerRepairOnIdle returns the already scheduled task", func() {
-				taskURL := botTask.Tasks[0].TaskUrl
-				resp, err := tf.Tasker.TriggerRepairOnIdle(tf.C, &fleet.TriggerRepairOnIdleRequest{
-					Selectors:    []*fleet.BotSelector{},
-					IdleDuration: google.NewDuration(4),
-					Priority:     20,
-				})
-				So(err, ShouldBeNil)
-				So(resp.BotTasks, ShouldHaveLength, 1)
-
-				botTask := resp.BotTasks[0]
-				So(botTask.DutId, ShouldEqual, "dut_1")
-				So(botTask.Tasks, ShouldHaveLength, 1)
-				So(botTask.Tasks[0].TaskUrl, ShouldEqual, taskURL)
-			})
+			assertBotsWithTaskCount(resp.BotTasks, map[string]int{"dut_1": 1})
 		})
 	})
 
 	Convey("with one known bot with one task long ago", t, func() {
-		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		tf, cleanup := newTestFixture(t)
 		defer cleanup()
-		setKnownBots(tf.C, tf.FakeSwarming, []string{"dut_1"})
-		tf.FakeSwarming.botTasks["bot_dut_1"] = []*swarming.SwarmingRpcsTaskResult{
-			{
-				State:       "COMPLETED",
-				CompletedTs: "2016-01-02T10:04:05.999999999",
-			},
-		}
-		_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
-		So(err, ShouldBeNil)
+
+		setKnownReadyBots(tf, []string{"dut_1"})
+		expectListRecentTasks(tf, 0, "PENDING")
+		expectListSortedRecentTasksForBot(tf, "dut_1", &swarming.SwarmingRpcsTaskResult{
+			State:       "COMPLETED",
+			CompletedTs: "2016-01-02T10:04:05.999999999",
+		})
 
 		Convey("TriggerRepairOnIdle triggers a task for the dut", func() {
+			expectTaskCreation(tf, "task_1", "dut_1", "", "admin_repair", 0)
+
 			resp, err := tf.Tasker.TriggerRepairOnIdle(tf.C, &fleet.TriggerRepairOnIdleRequest{
 				Selectors:    []*fleet.BotSelector{},
 				IdleDuration: google.NewDuration(4),
 				Priority:     20,
 			})
 			So(err, ShouldBeNil)
-			So(resp.BotTasks, ShouldHaveLength, 1)
-
-			botTask := resp.BotTasks[0]
-			So(botTask.DutId, ShouldEqual, "dut_1")
-			So(botTask.Tasks, ShouldHaveLength, 1)
+			assertBotsWithTaskCount(resp.BotTasks, map[string]int{"dut_1": 1})
 		})
 	})
 
 	Convey("with one known bot with one task in recent past", t, func() {
-		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		tf, cleanup := newTestFixture(t)
 		defer cleanup()
-		setKnownBots(tf.C, tf.FakeSwarming, []string{"dut_1"})
+
+		setKnownReadyBots(tf, []string{"dut_1"})
+		expectListRecentTasks(tf, 0, "PENDING")
 		yyyy, mm, dd := time.Now().Date()
-		tf.FakeSwarming.botTasks["bot_dut_1"] = []*swarming.SwarmingRpcsTaskResult{
-			{
-				State:       "COMPLETED",
-				CompletedTs: fmt.Sprintf("%04d-%02d-%02dT00:00:00.00000000", yyyy, mm, dd),
-			},
-		}
-		_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
-		So(err, ShouldBeNil)
+		expectListSortedRecentTasksForBot(tf, "dut_1", &swarming.SwarmingRpcsTaskResult{
+			State:       "COMPLETED",
+			CompletedTs: fmt.Sprintf("%04d-%02d-%02dT00:00:00.00000000", yyyy, mm, dd),
+		})
 
 		Convey("TriggerRepairOnIdle does not trigger a task", func() {
 			resp, err := tf.Tasker.TriggerRepairOnIdle(tf.C, &fleet.TriggerRepairOnIdleRequest{
@@ -252,24 +231,17 @@ func TestTriggerRepairOnIdle(t *testing.T) {
 				Priority:     20,
 			})
 			So(err, ShouldBeNil)
-			So(resp.BotTasks, ShouldHaveLength, 1)
-
-			botTask := resp.BotTasks[0]
-			So(botTask.Tasks, ShouldHaveLength, 0)
+			assertBotsWithTaskCount(resp.BotTasks, map[string]int{"dut_1": 0})
 		})
 	})
 
-	Convey("with one known bot and one running task", t, func() {
-		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+	Convey("with one known bot with one running task", t, func() {
+		tf, cleanup := newTestFixture(t)
 		defer cleanup()
-		setKnownBots(tf.C, tf.FakeSwarming, []string{"dut_1"})
-		tf.FakeSwarming.botTasks["bot_dut_1"] = []*swarming.SwarmingRpcsTaskResult{
-			{
-				State: "RUNNING",
-			},
-		}
-		_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
-		So(err, ShouldBeNil)
+
+		setKnownReadyBots(tf, []string{"dut_1"})
+		expectListRecentTasks(tf, 0, "PENDING")
+		expectListSortedRecentTasksForBot(tf, "dut_1", &swarming.SwarmingRpcsTaskResult{State: "RUNNING"})
 
 		Convey("TriggerRepairOnIdle does not trigger a task", func() {
 			resp, err := tf.Tasker.TriggerRepairOnIdle(tf.C, &fleet.TriggerRepairOnIdleRequest{
@@ -278,19 +250,16 @@ func TestTriggerRepairOnIdle(t *testing.T) {
 				Priority:     20,
 			})
 			So(err, ShouldBeNil)
-			So(resp.BotTasks, ShouldHaveLength, 1)
-
-			botTask := resp.BotTasks[0]
-			So(botTask.Tasks, ShouldHaveLength, 0)
+			assertBotsWithTaskCount(resp.BotTasks, map[string]int{"dut_1": 0})
 		})
 	})
 }
 
 func TestTriggerRepairOnRepairFailed(t *testing.T) {
 	Convey("with one known bot in state ready", t, func() {
-		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		tf, cleanup := newTestFixture(t)
 		defer cleanup()
-		setKnownBots(tf.C, tf.FakeSwarming, []string{"dut_1"})
+		setKnownReadyBots(tf, []string{"dut_1"})
 
 		Convey("TriggerRepairOnRepairFailed does not trigger a task for the dut", func() {
 			resp, err := tf.Tasker.TriggerRepairOnRepairFailed(tf.C, &fleet.TriggerRepairOnRepairFailedRequest{
@@ -299,78 +268,158 @@ func TestTriggerRepairOnRepairFailed(t *testing.T) {
 				Priority:            20,
 			})
 			So(err, ShouldBeNil)
-			So(resp.BotTasks, ShouldHaveLength, 1)
-
-			botTask := resp.BotTasks[0]
-			So(botTask.Tasks, ShouldHaveLength, 0)
+			assertBotsWithTaskCount(resp.BotTasks, map[string]int{"dut_1": 0})
 		})
 	})
 
 	Convey("with one known bot in state repair_failed", t, func() {
-		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		tf, cleanup := newTestFixture(t)
 		defer cleanup()
-		tf.FakeSwarming.botInfos = map[string]*swarming.SwarmingRpcsBotInfo{
-			"bot_dut_1": {
-				BotId: "bot_dut_1",
-				Dimensions: []*swarming.SwarmingRpcsStringListPair{
-					{
-						Key:   "dut_id",
-						Value: []string{"dut_1"},
-					},
-					{
-						Key:   "dut_state",
-						Value: []string{"repair_failed"},
-					},
-				},
-			},
-		}
-		_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
-		So(err, ShouldBeNil)
+		setKnownBotsInState(tf, []string{"dut_1"}, "repair_failed")
+		expectListRecentTasks(tf, 0, "")
 
 		Convey("TriggerRepairOnRepairFailed triggers a task for the dut", func() {
+			expectTaskCreation(tf, "task_1", "dut_1", "", "admin_repair", 0)
+
 			resp, err := tf.Tasker.TriggerRepairOnRepairFailed(tf.C, &fleet.TriggerRepairOnRepairFailedRequest{
 				Selectors:           []*fleet.BotSelector{},
 				TimeSinceLastRepair: google.NewDuration(24 * time.Hour),
 				Priority:            20,
 			})
 			So(err, ShouldBeNil)
-			So(resp.BotTasks, ShouldHaveLength, 1)
-
-			botTask := resp.BotTasks[0]
-			So(botTask.Tasks, ShouldHaveLength, 1)
-			taskURL := botTask.Tasks[0].TaskUrl
-
-			Convey("then TriggerRepairOnRepairFailed returns the same task", func() {
-				resp, err := tf.Tasker.TriggerRepairOnRepairFailed(tf.C, &fleet.TriggerRepairOnRepairFailedRequest{
-					Selectors:           []*fleet.BotSelector{},
-					TimeSinceLastRepair: google.NewDuration(24 * time.Hour),
-					Priority:            20,
-				})
-				So(err, ShouldBeNil)
-				So(resp.BotTasks, ShouldHaveLength, 1)
-
-				botTask := resp.BotTasks[0]
-				So(botTask.Tasks, ShouldHaveLength, 1)
-				So(botTask.Tasks[0].TaskUrl, ShouldEqual, taskURL)
-			})
+			assertBotsWithTaskCount(resp.BotTasks, map[string]int{"dut_1": 1})
 		})
+		// TODO(pprabhu) Add a case with an outstanding repair task.
 	})
 
-	// TODO(pprabhu) Add a case where the initial repair task has completed,
+	// TODO(pprabhu) Add a case where the intial repair task has completed,
 	// but is within TimeSinceLastRepair. No new tasks should be created,
 	// and no task should be returned.
 	// TODO(pprabhu) Add a case where the initial repair task times out instead of completing.
 	// TODO(pprabhu) Add a case where the initial repair task is killed instead of completing.
 }
 
-func setKnownBots(c context.Context, fsc *fakeSwarmingClient, duts []string) {
-	fsc.setAvailableDutIDs(duts)
-	server := TrackerServerImpl{
-		ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
-			return fsc, nil
-		},
+// setKnownReadyBots refreshes the internal state of the services under test so that
+// the provided duts in ready state are known to the services.
+func setKnownReadyBots(tf testFixture, duts []string) {
+	setKnownBotsInState(tf, duts, "ready")
+}
+
+// setKnownBots refreshes the internal state of the services under test so that
+// the provided duts are known to the services.
+func setKnownBotsInState(tf testFixture, duts []string, state string) {
+	// Clone tf so that MockSwarming interactions do not intefere with the
+	// actual test.
+	tf, cleanup := tf.CloneWithFreshMocks()
+	defer cleanup()
+
+	bots := make([]*swarming.SwarmingRpcsBotInfo, 0, len(duts))
+	for _, d := range duts {
+		bots = append(bots, botForDUT(d, state, ""))
 	}
-	resp, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{})
+
+	tf.MockSwarming.EXPECT().ListAliveBotsInPool(
+		gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
+	).AnyTimes().Return(bots, nil)
+	expectDefaultPerBotRefresh(tf)
+
+	resp, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
 	So(err, ShouldBeNil)
 	So(resp.DutIds, ShouldHaveLength, len(duts))
+}
+
+// expectListRecentTasks sets up expectations for checking taskCount recent tasks in the given state.
+//
+// This function returns the gomock expectation for further call chaining as necessary.
+// Pass in the zero value for an argument to not setup any expectation for that
+// argument in the create task call.
+//
+// tasks are the Swarming tasks returned by the mock call.
+func expectListRecentTasks(tf testFixture, taskCount int, state string, tasks ...*swarming.SwarmingRpcsTaskResult) *gomock.Call {
+	var s interface{}
+	if state == "" {
+		s = gomock.Any()
+	} else {
+		s = gomock.Eq(state)
+	}
+	var tc interface{}
+	if taskCount == 0 {
+		tc = gomock.Any()
+	} else {
+		tc = gomock.Eq(taskCount)
+	}
+	if tasks == nil {
+		tasks = make([]*swarming.SwarmingRpcsTaskResult, 0, 0)
+	}
+	return tf.MockSwarming.EXPECT().ListRecentTasks(gomock.Any(), gomock.Any(), s, tc).Return(tasks, nil)
+}
+
+// expectListSortedRecentTaskForBot sets up expectations for listing resent
+// tasks for a bot for the given dut.
+//
+// This function returns the gomock expectation for further call chaining as necessary.
+// Pass in the zero value for an argument to not setup any expectation for that
+// argument in the create task call.
+//
+// dutID is the ID of the Dut (not the bot) to target.
+// tasks are the Swarming tasks returned by the mock call.
+func expectListSortedRecentTasksForBot(tf testFixture, dutID string, tasks ...*swarming.SwarmingRpcsTaskResult) *gomock.Call {
+	var b interface{}
+	if dutID == "" {
+		b = gomock.Any()
+	} else {
+		b = fmt.Sprintf("bot_%s", dutID)
+	}
+	if tasks == nil {
+		tasks = make([]*swarming.SwarmingRpcsTaskResult, 0, 0)
+	}
+	return tf.MockSwarming.EXPECT().ListSortedRecentTasksForBot(gomock.Any(), b, gomock.Any()).Return(tasks, nil)
+}
+
+// expectTaskCreation sets up the expectations for a single task creation.
+//
+// This function returns the gomock expectation for further call chaining as necessary.
+// Pass in the zero value for an argument to not setup any expectation for that
+// argument in the create task call.
+//
+// taskID is the ID of the created task.
+// Other arguments are expectations for the task creation call.
+// dutState is the state the DUT should be in before the task, e.g. "needs_reset".
+// tname is task name, e.g. "admin_reset".
+func expectTaskCreation(tf testFixture, taskID string, dutID string, dutState string, tname string, priority int) *gomock.Call {
+	m := &createTaskArgsMatcher{
+		DutID:    dutID,
+		DutState: dutState,
+		Priority: int64(priority),
+	}
+	if tname != "" {
+		m.CmdSubString = fmt.Sprintf("-task-name %s", tname)
+	}
+	return tf.MockSwarming.EXPECT().CreateTask(gomock.Any(), m).Return(taskID, nil)
+}
+
+// assertBotsWithTaskCount ensures that botTasks have the expected bots and
+// corresponding number of tasks.
+func assertBotsWithTaskCount(botTasks []*fleet.TaskerBotTasks, exp map[string]int) {
+	So(botTasks, ShouldHaveLength, len(exp))
+	for _, bt := range botTasks {
+		So(exp, ShouldContainKey, bt.DutId)
+		So(bt.Tasks, ShouldHaveLength, exp[bt.DutId])
+	}
+}
+
+// assertTaskURLsForIDs ensures that taskURLs correspond to taskIDs.
+func assertTaskURLsForIDs(taskURLs, taskIDs []string) {
+	So(taskURLs, ShouldHaveLength, len(taskIDs))
+	sort.Strings(taskIDs)
+	sort.Strings(taskURLs)
+	for i := range taskIDs {
+		So(taskURLs[i], ShouldContainSubstring, taskIDs[i])
+	}
+}
+
+func assertStringSetsEqual(a, b []string) {
+	sort.Strings(a)
+	sort.Strings(b)
+	So(a, ShouldResemble, b)
 }

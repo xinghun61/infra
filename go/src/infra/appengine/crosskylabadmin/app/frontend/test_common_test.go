@@ -15,6 +15,7 @@
 package frontend
 
 import (
+	"infra/appengine/crosskylabadmin/app/clients"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -156,5 +157,70 @@ func TestBotForDUT(t *testing.T) {
 			},
 		},
 		)
+	})
+}
+
+func TestCreateTaskArgsMatcher(t *testing.T) {
+	Convey("matching with nil args fails", t, func() {
+		So((&createTaskArgsMatcher{
+			DutID:        "dut_id",
+			DutState:     "dut_state",
+			Priority:     10,
+			CmdSubString: "-b c",
+		}).Matches(nil), ShouldBeFalse)
+	})
+
+	Convey("with non-nil args", t, func() {
+		arg := &clients.SwarmingCreateTaskArgs{
+			Cmd:                  []string{"a", "-b", "c"},
+			DutID:                "dut_id",
+			DutState:             "dut_state",
+			ExecutionTimeoutSecs: 20,
+			Priority:             10,
+		}
+		Convey("all fields matching pass", func() {
+			So((&createTaskArgsMatcher{
+				DutID:        "dut_id",
+				DutState:     "dut_state",
+				Priority:     10,
+				CmdSubString: "-b c",
+			}).Matches(arg), ShouldBeTrue)
+		})
+		Convey("missing fields matching pass", func() {
+			So((&createTaskArgsMatcher{}).Matches(arg), ShouldBeTrue)
+		})
+
+		Convey("mistaching DutID fails", func() {
+			So((&createTaskArgsMatcher{
+				DutID:        "wrong",
+				DutState:     "dut_state",
+				Priority:     10,
+				CmdSubString: "-b c",
+			}).Matches(arg), ShouldBeFalse)
+		})
+		Convey("mistaching DutState fails", func() {
+			So((&createTaskArgsMatcher{
+				DutID:        "dut_id",
+				DutState:     "wrong",
+				Priority:     10,
+				CmdSubString: "-b c",
+			}).Matches(arg), ShouldBeFalse)
+		})
+		Convey("mistaching Priority fails", func() {
+			So((&createTaskArgsMatcher{
+				DutID:        "dut_id",
+				DutState:     "dut_state",
+				Priority:     999,
+				CmdSubString: "-b c",
+			}).Matches(arg), ShouldBeFalse)
+		})
+		Convey("mistaching CmdSubstring fails", func() {
+			So((&createTaskArgsMatcher{
+				DutID:        "dut_id",
+				DutState:     "dut_state",
+				Priority:     10,
+				CmdSubString: "-x z",
+			}).Matches(arg), ShouldBeFalse)
+		})
 	})
 }

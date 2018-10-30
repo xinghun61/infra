@@ -16,9 +16,7 @@ package frontend
 
 import (
 	"fmt"
-	"sort"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -36,45 +34,32 @@ import (
 )
 
 type testFixture struct {
-	C       context.Context
+	T *testing.T
+	C context.Context
+
 	Tracker fleet.TrackerServer
 	Tasker  fleet.TaskerServer
 
-	// Deprecated. New tests should use MockSwarming instead.
-	FakeSwarming *fakeSwarmingClient
 	MockSwarming *mock.MockSwarmingClient
 }
 
-// newTextFixtureWithFakeSwarming creates a new testFixture to be used in unittests.
-// The function returns the created testFixture and cleanup function that must be deferred by the caller.
+// CloneWithFreshMocks creates a new testFixtures with its own mock setup, but
+// shared appengine service state with the original.
 //
-// This is a transitional function while existing tests are in migration.
-// New tests should use newTestFixture instead.
-func newTestFixtureWithFakeSwarming(_ *testing.T) (testFixture, func()) {
-	tf := testFixture{}
-	tf.C = testingContext()
-	tf.FakeSwarming = &fakeSwarmingClient{
-		pool:    config.Get(tf.C).Swarming.BotPool,
-		taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
-	}
-	tf.Tracker = &TrackerServerImpl{
-		ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
-			return tf.FakeSwarming, nil
-		},
-	}
-	tf.Tasker = &TaskerServerImpl{
-		ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
-			return tf.FakeSwarming, nil
-		},
-	}
-	return tf, func() {}
+// CloneWithFreshMocks should be used inside test helper functions that need to
+// record-replay mock interactions independent of the test.
+func (tf *testFixture) CloneWithFreshMocks() (testFixture, func()) {
+	return newTestFixtureWithContext(tf.C, tf.T)
 }
 
 // newTextFixture creates a new testFixture to be used in unittests.
 // The function returns the created testFixture and cleanup function that must be deferred by the caller.
 func newTestFixture(t *testing.T) (testFixture, func()) {
-	tf := testFixture{}
-	tf.C = testingContext()
+	return newTestFixtureWithContext(testingContext(), t)
+}
+
+func newTestFixtureWithContext(c context.Context, t *testing.T) (testFixture, func()) {
+	tf := testFixture{T: t, C: c}
 
 	mc := gomock.NewController(t)
 	tf.MockSwarming = mock.NewMockSwarmingClient(mc)
@@ -191,113 +176,14 @@ func botContainsDims(b *swarming.SwarmingRpcsBotInfo, dims strpair.Map) bool {
 	return true
 }
 
-// ///////// TODO(pprabhu) Stop using fakeSwarmingClient and delete everything below
-
-// fakeSwarmingClient implements SwarmingClient.
-type fakeSwarmingClient struct {
-	m sync.Mutex
-	// pool is the single common pool that all bots belong to.
-	pool string
-
-	// botInfos maps the dut_id for a bot to its swarming.SwarmingRpcsBotInfo
-	botInfos map[string]*swarming.SwarmingRpcsBotInfo
-	// botTasks maps the bot_id for a bot to the known tasks for the bot.
-	botTasks map[string][]*swarming.SwarmingRpcsTaskResult
-
-	// taskArgs accumulates the arguments to CreateTask calls on fakeSwarmingClient
-	taskArgs []*clients.SwarmingCreateTaskArgs
-	// nextTaskID is used to construct the next task ID to be returned from CreateTask()
-	nextTaskID int
-	// taskIDs accumulates the generated Swarming task ids by CreateTask calls.
-	taskIDs map[*clients.SwarmingCreateTaskArgs]string
-}
-
-// ListAliveBotsInPool is a fake implementation of SwarmingClient.ListAliveBotsInPool.
+// expecteDefaultPerBotRefresh sets up the default expectations for refreshing
+// each bot, once the list of bots is known.
 //
-// This function is intentionally simple. It only supports filtering by dut_id dimension.
-func (fsc *fakeSwarmingClient) ListAliveBotsInPool(c context.Context, pool string, dims strpair.Map) ([]*swarming.SwarmingRpcsBotInfo, error) {
-	resp := []*swarming.SwarmingRpcsBotInfo{}
-	if pool != fsc.pool {
-		return resp, nil
-	}
-	switch len(dims) {
-	case 0:
-		for _, bi := range fsc.botInfos {
-			resp = append(resp, bi)
-		}
-	case 1:
-		k := dims.Get("dut_id")
-		if k == "" {
-			panic(fmt.Sprintf("got dims %s, want a single key: dut_id", dims))
-		}
-		bi, ok := fsc.botInfos[k]
-		if ok {
-			resp = append(resp, bi)
-		}
-	}
-	return resp, nil
-}
-
-// setAvailableDutIDs sets the bot list returned by fakeSwarmingClient.ListAliveBotsInPool
-// to be the bots corresponding to the given dut IDs.
-//
-// Default values are used for other dimensions / tasks for the bot.
-func (fsc *fakeSwarmingClient) setAvailableDutIDs(duts []string) {
-	fsc.botInfos = make(map[string]*swarming.SwarmingRpcsBotInfo)
-	fsc.botTasks = make(map[string][]*swarming.SwarmingRpcsTaskResult)
-	for _, d := range duts {
-		fsc.botInfos[d] = &swarming.SwarmingRpcsBotInfo{
-			BotId: fmt.Sprintf("bot_%s", d),
-			Dimensions: []*swarming.SwarmingRpcsStringListPair{
-				{
-					Key:   "dut_id",
-					Value: []string{d},
-				},
-				{
-					Key:   "dut_state",
-					Value: []string{"ready"},
-				},
-			},
-		}
-	}
-}
-
-// CreateTask stores the arguments to the CreateTask call in fsc and returns unique task IDs.
-func (fsc *fakeSwarmingClient) CreateTask(c context.Context, args *clients.SwarmingCreateTaskArgs) (string, error) {
-	fsc.m.Lock()
-	defer fsc.m.Unlock()
-	fsc.taskArgs = append(fsc.taskArgs, args)
-	tid := fmt.Sprintf("fake_task_%d", fsc.nextTaskID)
-	fsc.nextTaskID = fsc.nextTaskID + 1
-	fsc.taskIDs[args] = tid
-	return tid, nil
-}
-
-// ListRecentTasks is a simplistic implementation of SwarmingClient.ListRecentTasks.
-//
-// This function simply returns all created tasks in the requested state (default: PENDING)
-func (fsc *fakeSwarmingClient) ListRecentTasks(c context.Context, tags []string, state string, limit int) ([]*swarming.SwarmingRpcsTaskResult, error) {
-	fsc.m.Lock()
-	defer fsc.m.Unlock()
-
-	if state == "" {
-		state = "PENDING"
-	}
-	trs := []*swarming.SwarmingRpcsTaskResult{}
-	for _, ta := range fsc.taskArgs {
-		if tagsMatch(tags, ta.Tags) {
-			trs = append(trs, &swarming.SwarmingRpcsTaskResult{
-				State:  state,
-				Tags:   tags,
-				TaskId: fsc.taskIDs[ta],
-			})
-		}
-	}
-	return trs, nil
-}
-
-func (fsc *fakeSwarmingClient) ListSortedRecentTasksForBot(c context.Context, botID string, limit int) ([]*swarming.SwarmingRpcsTaskResult, error) {
-	return fsc.botTasks[botID], nil
+// This is useful for tests that only target the initial Swarming bot listing logic.
+func expectDefaultPerBotRefresh(tf testFixture) {
+	tf.MockSwarming.EXPECT().ListSortedRecentTasksForBot(
+		gomock.Any(), gomock.Any(), gomock.Any(),
+	).AnyTimes().Return([]*swarming.SwarmingRpcsTaskResult{}, nil)
 }
 
 // makeBotSelector returns a fleet.BotSelector selecting each of the duts
@@ -310,17 +196,53 @@ func makeBotSelectorForDuts(duts []string) []*fleet.BotSelector {
 	return bs
 }
 
-// tagsMatch returns true if ts1 and ts2 contain the same tags.
-func tagsMatch(ts1 []string, ts2 []string) bool {
-	if len(ts1) != len(ts2) {
+// createTaskArgsMatcher is a gomock matcher to validate a subset of the fields
+// of clients.SwarmingCreateTaskArgs argument.
+type createTaskArgsMatcher struct {
+	DutID        string
+	DutState     string
+	Priority     int64
+	CmdSubString string
+}
+
+func (m *createTaskArgsMatcher) Matches(x interface{}) bool {
+	var args clients.SwarmingCreateTaskArgs
+	switch a := x.(type) {
+	case clients.SwarmingCreateTaskArgs:
+		args = a
+	case *clients.SwarmingCreateTaskArgs:
+		args = *a
+	default:
 		return false
 	}
-	sort.Strings(ts1)
-	sort.Strings(ts2)
-	for i := range ts1 {
-		if ts1[i] != ts2[i] {
+
+	if (m.DutID != "" && args.DutID != m.DutID) ||
+		(m.DutState != "" && args.DutState != m.DutState) ||
+		(m.Priority != 0 && args.Priority != m.Priority) {
+		return false
+	}
+	if m.CmdSubString != "" {
+		cmd := strings.Join(args.Cmd, " ")
+		if !strings.Contains(cmd, m.CmdSubString) {
 			return false
 		}
 	}
 	return true
+}
+
+func (m *createTaskArgsMatcher) String() string {
+	s := "is clients.SwarmingCreateTaskArgs with fields like"
+	if m.DutID != "" {
+		s = fmt.Sprintf("%s DutID: %s", s, m.DutID)
+	}
+	if m.DutState != "" {
+		s = fmt.Sprintf("%s DutState: %s", s, m.DutState)
+	}
+	if m.Priority != 0 {
+		s = fmt.Sprintf("%s DutState: %d", s, m.Priority)
+	}
+	if m.CmdSubString != "" {
+		s = fmt.Sprintf("%s CmdSubString: %s", s, m.CmdSubString)
+	}
+	return s
 }
