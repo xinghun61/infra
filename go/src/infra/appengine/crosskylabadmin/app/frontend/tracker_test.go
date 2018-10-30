@@ -31,9 +31,12 @@ import (
 // Other tests should verify the fields of returned bots.
 func TestRefreshAndSummarizeNoBotsAvailable(t *testing.T) {
 	Convey("with no swarming duts available", t, func() {
-		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		tf, cleanup := newTestFixture(t)
 		defer cleanup()
-		tf.FakeSwarming.setAvailableDutIDs([]string{})
+		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
+			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
+		).AnyTimes().Return([]*swarming.SwarmingRpcsBotInfo{}, nil)
+		expectDefaultPerBotRefresh(tf)
 
 		Convey("refresh without filter refreshes no duts", func() {
 			refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
@@ -86,9 +89,13 @@ func TestRefreshAndSummarizeNoBotsAvailable(t *testing.T) {
 // Other tests should verify the fields of returned bots.
 func TestRefreshAndSummarizeOneBotAvailable(t *testing.T) {
 	Convey("with a single dut available", t, func() {
-		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		tf, cleanup := newTestFixture(t)
 		defer cleanup()
-		tf.FakeSwarming.setAvailableDutIDs([]string{"dut_1"})
+		bots := []*swarming.SwarmingRpcsBotInfo{botForDUT("dut_1", "ready", "")}
+		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
+			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
+		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+		expectDefaultPerBotRefresh(tf)
 
 		Convey("refresh filtering to available dut refreshes that dut", func() {
 			refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
@@ -157,9 +164,16 @@ func TestRefreshAndSummarizeOneBotAvailable(t *testing.T) {
 // Other tests should verify the fields of returned bots.
 func TestRefreshAndSummarizeMultipleBotsAvailable(t *testing.T) {
 	Convey("with two duts available", t, func() {
-		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		tf, cleanup := newTestFixture(t)
 		defer cleanup()
-		tf.FakeSwarming.setAvailableDutIDs([]string{"dut_1", "dut_2"})
+		bots := []*swarming.SwarmingRpcsBotInfo{
+			botForDUT("dut_1", "ready", ""),
+			botForDUT("dut_2", "ready", ""),
+		}
+		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
+			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
+		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+		expectDefaultPerBotRefresh(tf)
 
 		Convey("refresh without filter refreshes both duts", func() {
 			refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
@@ -206,15 +220,22 @@ func TestRefreshAndSummarizeMultipleBotsAvailable(t *testing.T) {
 // Other tests should verify the fields of returned bots.
 func TestRefreshLargeNumberOfBotsAvailable(t *testing.T) {
 	Convey("with a large number of duts available", t, func() {
-		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		tf, cleanup := newTestFixture(t)
 		defer cleanup()
+
 		// More DUTs to refresh than WorkPool concurrency.
 		numDuts := 3 * clients.MaxConcurrentSwarmingCalls
 		dutNames := make([]string, 0, numDuts)
+		bots := make([]*swarming.SwarmingRpcsBotInfo, 0, numDuts)
 		for i := 0; i < numDuts; i++ {
-			dutNames = append(dutNames, fmt.Sprintf("dut_%d", i))
+			dn := fmt.Sprintf("dut_%d", i)
+			dutNames = append(dutNames, dn)
+			bots = append(bots, botForDUT(dn, "ready", ""))
 		}
-		tf.FakeSwarming.setAvailableDutIDs(dutNames)
+		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
+			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
+		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+		expectDefaultPerBotRefresh(tf)
 
 		Convey("refresh selecting all the DUTs refreshes all duts", func() {
 			refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
@@ -231,22 +252,13 @@ func TestRefreshLargeNumberOfBotsAvailable(t *testing.T) {
 
 func TestRefreshAndSummarizeBotsDutState(t *testing.T) {
 	Convey("with a swarming dut in state needs_reset", t, func() {
-		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		tf, cleanup := newTestFixture(t)
 		defer cleanup()
-		tf.FakeSwarming.botInfos = make(map[string]*swarming.SwarmingRpcsBotInfo)
-		tf.FakeSwarming.botInfos["bot_dut_1"] = &swarming.SwarmingRpcsBotInfo{
-			BotId: "bot_dut_1",
-			Dimensions: []*swarming.SwarmingRpcsStringListPair{
-				{
-					Key:   "dut_id",
-					Value: []string{"dut_1"},
-				},
-				{
-					Key:   "dut_state",
-					Value: []string{"needs_reset"},
-				},
-			},
-		}
+		bots := []*swarming.SwarmingRpcsBotInfo{botForDUT("dut_1", "needs_reset", "")}
+		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
+			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
+		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+		expectDefaultPerBotRefresh(tf)
 
 		Convey("refresh with empty filter", func() {
 			_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
@@ -271,9 +283,13 @@ func TestRefreshAndSummarizeBotsDutState(t *testing.T) {
 
 func TestRefreshAndSummarizeIdleDuration(t *testing.T) {
 	Convey("with a swarming dut with no recent tasks", t, func() {
-		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		tf, cleanup := newTestFixture(t)
 		defer cleanup()
-		tf.FakeSwarming.setAvailableDutIDs([]string{"dut_task_1"})
+		bots := []*swarming.SwarmingRpcsBotInfo{botForDUT("dut_task_1", "ready", "")}
+		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
+			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
+		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+		expectDefaultPerBotRefresh(tf)
 
 		Convey("refresh with empty filter", func() {
 			_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
@@ -296,15 +312,20 @@ func TestRefreshAndSummarizeIdleDuration(t *testing.T) {
 	})
 
 	Convey("with a swarming dut with one recent completed task", t, func() {
-		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		tf, cleanup := newTestFixture(t)
 		defer cleanup()
-		tf.FakeSwarming.setAvailableDutIDs([]string{"dut_task_1"})
-		tf.FakeSwarming.botTasks["bot_dut_task_1"] = []*swarming.SwarmingRpcsTaskResult{
+		bots := []*swarming.SwarmingRpcsBotInfo{botForDUT("dut_task_1", "ready", "")}
+		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
+			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
+		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+		tf.MockSwarming.EXPECT().ListSortedRecentTasksForBot(
+			gomock.Any(), gomock.Eq("bot_dut_task_1"), gomock.Any(),
+		).AnyTimes().Return([]*swarming.SwarmingRpcsTaskResult{
 			{
 				State:       "COMPLETED",
 				CompletedTs: "2016-01-02T10:04:05.999999999",
 			},
-		}
+		}, nil)
 
 		Convey("refresh with empty filter", func() {
 			_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
@@ -328,14 +349,19 @@ func TestRefreshAndSummarizeIdleDuration(t *testing.T) {
 	})
 
 	Convey("with a swarming dut with one running task", t, func() {
-		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		tf, cleanup := newTestFixture(t)
 		defer cleanup()
-		tf.FakeSwarming.setAvailableDutIDs([]string{"dut_task_1"})
-		tf.FakeSwarming.botTasks["bot_dut_task_1"] = []*swarming.SwarmingRpcsTaskResult{
+		bots := []*swarming.SwarmingRpcsBotInfo{botForDUT("dut_task_1", "ready", "")}
+		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
+			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
+		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+		tf.MockSwarming.EXPECT().ListSortedRecentTasksForBot(
+			gomock.Any(), gomock.Eq("bot_dut_task_1"), gomock.Any(),
+		).AnyTimes().Return([]*swarming.SwarmingRpcsTaskResult{
 			{
 				State: "RUNNING",
 			},
-		}
+		}, nil)
 
 		Convey("refresh with empty filter", func() {
 			_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
@@ -373,9 +399,7 @@ func TestRefreshBotsWithDimensions(t *testing.T) {
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
 		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
-		tf.MockSwarming.EXPECT().ListSortedRecentTasksForBot(
-			gomock.Any(), gomock.Any(), gomock.Any(),
-		).AnyTimes().Return([]*swarming.SwarmingRpcsTaskResult{}, nil)
+		expectDefaultPerBotRefresh(tf)
 
 		Convey("refresh filtering by pool works", func() {
 			refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
@@ -425,9 +449,7 @@ func TestSummarizeBotsWithDimensions(t *testing.T) {
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
 		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
-		tf.MockSwarming.EXPECT().ListSortedRecentTasksForBot(
-			gomock.Any(), gomock.Any(), gomock.Any(),
-		).AnyTimes().Return([]*swarming.SwarmingRpcsTaskResult{}, nil)
+		expectDefaultPerBotRefresh(tf)
 
 		Convey("refresh and summarize without filter include non-trivial dimensions", func() {
 			refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
@@ -456,9 +478,7 @@ func TestHealthSummary(t *testing.T) {
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
 		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
-		tf.MockSwarming.EXPECT().ListSortedRecentTasksForBot(
-			gomock.Any(), gomock.Any(), gomock.Any(),
-		).AnyTimes().Return([]*swarming.SwarmingRpcsTaskResult{}, nil)
+		expectDefaultPerBotRefresh(tf)
 
 		Convey("bot summary reports the bot healthy", func() {
 			_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
@@ -478,9 +498,7 @@ func TestHealthSummary(t *testing.T) {
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
 		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
-		tf.MockSwarming.EXPECT().ListSortedRecentTasksForBot(
-			gomock.Any(), gomock.Any(), gomock.Any(),
-		).AnyTimes().Return([]*swarming.SwarmingRpcsTaskResult{}, nil)
+		expectDefaultPerBotRefresh(tf)
 
 		Convey("bot summary reports the bot unhealthy", func() {
 			_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
@@ -500,4 +518,14 @@ func extractSummarizedDutIDs(resp *fleet.SummarizeBotsResponse) []string {
 		duts = append(duts, bot.DutId)
 	}
 	return duts
+}
+
+// expecteDefaultPerBotRefresh sets up the default expectations for refreshing
+// each bot, once the list of bots is known.
+//
+// This is useful for tests that only target the initial Swarming bot listing logic.
+func expectDefaultPerBotRefresh(tf testFixture) {
+	tf.MockSwarming.EXPECT().ListSortedRecentTasksForBot(
+		gomock.Any(), gomock.Any(), gomock.Any(),
+	).AnyTimes().Return([]*swarming.SwarmingRpcsTaskResult{}, nil)
 }
