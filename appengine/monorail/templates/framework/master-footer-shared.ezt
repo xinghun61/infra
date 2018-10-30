@@ -96,7 +96,7 @@ a.src=g;m.parentNode.insertBefore(a,m)
 
 <script
   type="module"
-  defer
+  async defer
   src="/[script_prefix_dir]/static/js/monitoring/client-logger.js"
   nonce="[nonce]">
 </script>

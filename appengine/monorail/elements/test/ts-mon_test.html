@@ -1,0 +1,148 @@
+<meta charset="utf-8">
+<script src="/bower_components/web-component-tester/browser.js"></script>
+
+<script type="module">
+import MonorailTSMon, {
+  MonorailTSMonClient,
+} from '../../static/js/monitoring/ts-mon.js';
+
+suite('MonorailTSMonClient', () => {
+  let client;
+
+  setup(() => {
+    window.CS_env = {
+      token: 'rutabaga-token',
+      tokenExpiresSec: 1234,
+    };
+    window.chops = {rpc: {PrpcClient: sinon.spy()}};
+    MonorailTSMonClient.prototype.disableAfterNextFlush = sinon.spy();
+    client = new MonorailTSMonClient();
+  });
+
+  teardown(() => {
+    delete window.CS_env;
+  });
+
+  suite('constructor', () => {
+    test('initializes a prpcClient', () => {
+      assert.equal(client.prpcClient.constructor.name, 'AutoRefreshPrpcClient');
+    });
+
+    test('sets a client ID', () => {
+      assert.isNotNull(client.clientId);
+    });
+
+    test('disables sending after next flush', () => {
+      sinon.assert.calledOnce(client.disableAfterNextFlush);
+    });
+  });
+
+  test('generateClientId', () => {
+    const clientID = MonorailTSMonClient.generateClientId();
+    assert.isNaN(clientID);
+    const clientIDNum = parseInt(clientID, 32);
+    assert.isNotNaN(clientIDNum);
+    assert.isAtLeast(clientIDNum, 0);
+    assert.isAtMost(clientIDNum, Math.pow(2, 32));
+  });
+});
+
+suite('MonorailTSMon', () => {
+  let mts;
+
+  setup(() => {
+    window.CS_env = {
+      token: 'rutabaga-token',
+      tokenExpiresSec: 1234,
+    };
+    window.chops = {rpc: {PrpcClient: sinon.spy()}};
+    mts = new MonorailTSMon();
+  });
+
+  teardown(() => {
+    delete window.CS_env;
+  });
+
+  suite('constructor', () => {
+    test('initializes a MonorailTSMonClient', () => {
+      assert.equal(mts.client.constructor.name, 'MonorailTSMonClient');
+      // Metrics are currently empty.
+      assert.deepEqual(mts.userTimingMetrics, []);
+    });
+
+    test('all instances share the same client', () => {
+      const mts2 = new MonorailTSMon();
+      assert.equal(mts.client, mts2.client);
+
+      const mts3 = new MonorailTSMon();
+      assert.equal(mts2.client, mts3.client);
+    });
+
+    test('all instances share the same client ID', () => {
+      const mts2 = new MonorailTSMon();
+      assert.equal(mts.clientId, mts2.clientId);
+
+      const mts3 = new MonorailTSMon();
+      assert.equal(mts2.clientId, mts3.clientId);
+    });
+  });
+
+  suite('recordUserTiming', () => {
+    test('records a timing metric only if matches', () => {
+      const metric = {add: sinon.spy() };
+      mts.userTimingMetrics = [{
+        category: 'rutabaga',
+        eventName: 'grew',
+        metric: metric,
+      }];
+
+      mts.recordUserTiming('kohlrabi', 'grew', 1);
+      sinon.assert.notCalled(metric.add);
+
+      metric.add.reset();
+      mts.recordUserTiming('rutabaga', 'went bad', 1);
+      sinon.assert.notCalled(metric.add);
+
+      metric.add.reset();
+      mts.recordUserTiming('rutabaga', 'grew', 1);
+      sinon.assert.calledOnce(metric.add);
+      assert.equal(metric.add.args[0][0], 1);
+      const argsKeys = Array.from(metric.add.args[0][1].keys());
+      assert.deepEqual(argsKeys, ['client_id']);
+    });
+
+  });
+
+  suite('getPageTypeFromPath', () => {
+    test('returns null by default', () => {
+      const actual = MonorailTSMon.getPageTypeFromPath('/rutabgaga');
+      assert.equal(null, actual);
+    });
+
+    test('picks up issue detail path', () => {
+      const path = '/p/rutabaga/issues/detail?id=1#c3';
+      const actual = MonorailTSMon.getPageTypeFromPath(path);
+      assert.equal('issue_detail', actual);
+    });
+
+    test('picks up issue list path', () => {
+      const path = '/p/rutabaga/issues/list?mode=list#things';
+      const actual = MonorailTSMon.getPageTypeFromPath(path);
+      assert.equal('issue_list', actual);
+    });
+  });
+
+  suite('getGlobalClient', () => {
+    test('only creates one global client', () => {
+      delete window.__tsMonClient;
+      const client1 = MonorailTSMon.getGlobalClient();
+      assert.equal(client1, window.__tsMonClient);
+
+      const client2 = MonorailTSMon.getGlobalClient();
+      assert.equal(client2, window.__tsMonClient);
+      assert.equal(client2, client1);
+    });
+  });
+
+});
+</script>
