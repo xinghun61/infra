@@ -194,35 +194,25 @@ def main(argv):
                    ' project %s' % (args.manual, args.project))
       return 1
   else:
-    builds = None
+    lkgr_builders = config['masters']
     if args.build_data:
-      try:
-        builds = lkgr_lib.LoadBuilds(args.build_data)
-      except IOError as e:
-        LOGGER.error('Could not read build data from %s:\n%s\n',
-                     args.build_data, repr(e))
-        raise
-
-    if builds is None:
-      builds = {}
-      buildbot_builders = config.get('masters', [])
-      if buildbot_builders:
-        buildbot_builds, failures = lkgr_lib.FetchBuilds(
-            buildbot_builders, args.max_threads, args.service_account)
-        if failures > 0:
-          return 1
-        builds.update(buildbot_builds)
+      builds = lkgr_lib.ReadBuildData(args.build_data)
+    else:
+      builds, failures = lkgr_lib.FetchBuildData(
+          lkgr_builders, args.max_threads, args.service_account)
+      if failures > 0:
+        return 1
 
     if args.dump_build_data:
       try:
-        lkgr_lib.DumpBuilds(builds, args.dump_build_data)
-      except IOError as e:
-        LOGGER.warn('Could not dump to %s:\n%s\n',
-                    args.dump_build_data, repr(e))
-
+        with open(args.dump_build_data, 'w') as fh:
+          json.dump(builds, fh, indent=2)
+      except IOError, e:
+        LOGGER.warn('Could not dump to %s:\n%s\n' %
+                    (args.dump_build_data, repr(e)))
 
     (build_history, revisions) = lkgr_lib.CollateRevisionHistory(
-        builds, repo)
+        builds, lkgr_builders, repo)
 
     status_gen = status_generator.StatusGeneratorStub()
     if args.html:
