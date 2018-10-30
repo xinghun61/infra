@@ -1,4 +1,9 @@
 create {
+  platform_re: ".*-arm.*|.*-mips.*"
+  unsupported: true
+}
+
+create {
   platform_re: "linux-.*|mac-.*"
   source {
     cipd {
