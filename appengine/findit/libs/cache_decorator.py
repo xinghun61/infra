@@ -87,7 +87,8 @@ class CacheDecorator(object):
                cache,
                namespace=None,
                expire_time=0,
-               key_generator=_DefaultKeyGenerator):
+               key_generator=_DefaultKeyGenerator,
+               result_validator=None):
     """
     Args:
       cache (Cache): An instance of an implementation of interface `Cache`.
@@ -98,11 +99,14 @@ class CacheDecorator(object):
         current time (up to 0 month). Defaults to 0 -- never expire.
       key_generator (function): A function to generate a key to represent a call
         to the decorated function. Defaults to :func:`_DefaultKeyGenerator`.
+      result_validator (function): A function return a bool value to indicate if
+        the result is valid or not. Invalid result will not be cached.
     """
     self._cache = cache
     self._namespace = namespace
     self._expire_time = expire_time
     self._key_generator = key_generator
+    self._result_validator = result_validator
 
   def GetCache(self, key, func, args, kwargs):
     """Gets cached result for key.
@@ -182,7 +186,8 @@ class Cached(CacheDecorator):
         return cached_result
 
       result = func(*args, **kwargs)
-      if result:
+      if result and (not self._result_validator or
+                     self._result_validator(result)):
         self.SetCache(key, result, func, args, kwargs)
 
       return result

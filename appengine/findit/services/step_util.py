@@ -414,7 +414,8 @@ def GetWaterfallBuildStepLog(master_name,
 @Cached(
     PickledMemCache(),
     namespace='step_metadata',
-    expire_time=_METADATA_CACHE_EXPIRE_TIME_SECONDS)
+    expire_time=_METADATA_CACHE_EXPIRE_TIME_SECONDS,
+    result_validator=lambda step_metadata: isinstance(step_metadata, dict))
 def GetStepMetadata(master_name, builder_name, build_number, step_name):
   return GetWaterfallBuildStepLog(master_name,
                                   builder_name, build_number, step_name,

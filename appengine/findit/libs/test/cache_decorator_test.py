@@ -91,10 +91,16 @@ class CachedTest(unittest.TestCase):
   def testCachedDecoratorWhenResultShouldNotBeCached(self):
     dummy_cache = _DummyCache({})
 
-    results = [None, 0, [], {}, '']
+    results = ['invalid', None, 0, [], {}, '']
+
+    def ResultValidator(result):
+      return result != 'invalid'
 
     @cache_decorator.Cached(
-        namespace='n', key_generator=_DummyKeyGenerator, cache=dummy_cache)
+        namespace='n',
+        key_generator=_DummyKeyGenerator,
+        cache=dummy_cache,
+        result_validator=ResultValidator)
     def func():
       return results.pop()
 
@@ -107,6 +113,8 @@ class CachedTest(unittest.TestCase):
     self.assertEqual(0, func())
     self.assertEqual({}, dummy_cache.cached_data)
     self.assertIsNone(func())
+    self.assertEqual({}, dummy_cache.cached_data)
+    self.assertEqual('invalid', func())
     self.assertEqual({}, dummy_cache.cached_data)
 
   def testCachedDecoratorWithMethodInAClass(self):

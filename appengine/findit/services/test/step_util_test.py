@@ -355,15 +355,22 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
         step_util.StepIsSupportedForMaster(master_name, builder_name,
                                            build_number, step_name))
 
-  @mock.patch.object(
-      step_util,
-      'GetWaterfallBuildStepLog',
-      return_value={'canonical_step_name': 'step_name'})
+  @mock.patch.object(step_util, 'GetWaterfallBuildStepLog')
   def testGetStepMetadataCached(self, mock_fn):
-    step_util.GetStepMetadata('m', 'b', 200, 'step_name on a platform')
-    step_util.GetStepMetadata('m', 'b', 200, 'step_name on a platform')
+    mock_fn.side_effect = ['invalid', {'canonical_step_name': 'step_name'}]
+    # Returns the invalid step_metadata but not cache it.
+    self.assertEqual(
+        'invalid',
+        step_util.GetStepMetadata('m', 'b', 201, 'step_name on a platform'))
     self.assertTrue(mock_fn.call_count == 1)
-    step_util.GetStepMetadata('m', 'b', 201, 'step_name on a platform')
+    # Returns the valid step_metadata and cache it.
+    self.assertEqual({
+        'canonical_step_name': 'step_name'
+    }, step_util.GetStepMetadata('m', 'b', 201, 'step_name on a platform'))
+    self.assertTrue(mock_fn.call_count == 2)
+    self.assertEqual({
+        'canonical_step_name': 'step_name'
+    }, step_util.GetStepMetadata('m', 'b', 201, 'step_name on a platform'))
     self.assertTrue(mock_fn.call_count == 2)
 
   @mock.patch.object(
