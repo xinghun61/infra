@@ -53,9 +53,14 @@ class AnalyzeRecentFlakinessPipeline(GeneratorPipeline):
     analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
     assert analysis, 'Analysis missing unexpectedly!'
 
-    step_metadata = StepMetadata.FromSerializable(
+    step_metadata = (
         step_util.GetStepMetadata(analysis.master_name, analysis.builder_name,
-                                  analysis.build_number, analysis.step_name))
+                                  analysis.build_number, analysis.step_name) or
+        step_util.GetStepMetadata(
+            analysis.original_master_name, analysis.original_builder_name,
+            analysis.original_build_number, analysis.original_step_name))
+
+    step_metadata = StepMetadata.FromSerializable(step_metadata)
 
     recent_commit_position, recent_revision = (
         build_util.GetLatestCommitPositionAndRevision(

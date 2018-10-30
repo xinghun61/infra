@@ -155,9 +155,13 @@ def ScheduleAnalysisIfNeeded(
         'will be captured in version %s', repr(normalized_test),
         repr(original_test), analysis.version_number)
 
-    step_metadata = step_util.GetStepMetadata(
-        normalized_test.master_name, normalized_test.builder_name,
-        normalized_test.build_number, normalized_test.step_name)
+    step_metadata = (
+        step_util.GetStepMetadata(
+            normalized_test.master_name, normalized_test.builder_name,
+            normalized_test.build_number, normalized_test.step_name) or
+        step_util.GetStepMetadata(
+            original_test.master_name, original_test.builder_name,
+            original_test.build_number, original_test.step_name))
 
     logging.info('Initializing flake analysis pipeline for key: %s',
                  analysis.key)
