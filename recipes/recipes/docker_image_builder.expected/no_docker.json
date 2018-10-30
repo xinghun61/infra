@@ -91,9 +91,12 @@
     ]
   },
   {
-    "name": "$result",
-    "reason": "Step('Find docker bin') failed with return_code 1",
-    "recipe_result": null,
-    "status_code": 1
+    "failure": {
+      "failure": {
+        "step": "Find docker bin"
+      },
+      "humanReason": "Step('Find docker bin') failed with return_code 1"
+    },
+    "name": "$result"
   }
 ]

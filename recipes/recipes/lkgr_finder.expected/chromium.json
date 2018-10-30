@@ -314,8 +314,7 @@
     "name": "push lkgr to ref"
   },
   {
-    "name": "$result",
-    "recipe_result": null,
-    "status_code": 0
+    "jsonResult": null,
+    "name": "$result"
   }
 ]

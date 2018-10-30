@@ -598,9 +598,12 @@
     ]
   },
   {
-    "name": "$result",
-    "reason": "Step('result (2)') failed with return_code 1",
-    "recipe_result": null,
-    "status_code": 1
+    "failure": {
+      "failure": {
+        "step": "result (2)"
+      },
+      "humanReason": "Step('result (2)') failed with return_code 1"
+    },
+    "name": "$result"
   }
 ]

@@ -1127,4 +1127,4 @@ Runs a step which adds a link to the current CL if there is one.
 [recipe_engine/recipe_modules/time]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/04620158d8f45c68cc8bc39e30ce4a85c368046a/README.recipes.md#recipe_modules-time
 [recipe_engine/recipe_modules/tricium]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/04620158d8f45c68cc8bc39e30ce4a85c368046a/README.recipes.md#recipe_modules-tricium
 [recipe_engine/recipe_modules/url]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/04620158d8f45c68cc8bc39e30ce4a85c368046a/README.recipes.md#recipe_modules-url
-[recipe_engine/wkt/RecipeApi]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/04620158d8f45c68cc8bc39e30ce4a85c368046a/recipe_engine/recipe_api.py#1012
+[recipe_engine/wkt/RecipeApi]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/04620158d8f45c68cc8bc39e30ce4a85c368046a/recipe_engine/recipe_api.py#1015

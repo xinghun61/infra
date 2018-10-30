@@ -70,8 +70,14 @@
     "name": "load package specs (2)"
   },
   {
-    "name": "$result",
-    "reason": "Uncaught Exception: DuplicatePackage('something',)",
-    "status_code": -1
+    "failure": {
+      "exception": {
+        "traceback": [
+          "<omitted by recipe engine>"
+        ]
+      },
+      "humanReason": "Uncaught Exception: DuplicatePackage('something',)"
+    },
+    "name": "$result"
   }
 ]

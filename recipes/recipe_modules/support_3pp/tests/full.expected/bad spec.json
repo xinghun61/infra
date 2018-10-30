@@ -47,8 +47,14 @@
     ]
   },
   {
-    "name": "$result",
-    "reason": "Uncaught Exception: BadParse('While adding \\'bad\\': \\'1:1 : Message type \"Spec\" has no field named \"narwhal\".\\'',)",
-    "status_code": -1
+    "failure": {
+      "exception": {
+        "traceback": [
+          "<omitted by recipe engine>"
+        ]
+      },
+      "humanReason": "Uncaught Exception: BadParse('While adding \\'bad\\': \\'1:1 : Message type \"Spec\" has no field named \"narwhal\".\\'',)"
+    },
+    "name": "$result"
   }
 ]

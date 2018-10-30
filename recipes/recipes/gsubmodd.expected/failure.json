@@ -137,9 +137,12 @@
     ]
   },
   {
-    "name": "$result",
-    "reason": "Step('gsubmodd') failed with return_code 1",
-    "recipe_result": null,
-    "status_code": 1
+    "failure": {
+      "failure": {
+        "step": "gsubmodd"
+      },
+      "humanReason": "Step('gsubmodd') failed with return_code 1"
+    },
+    "name": "$result"
   }
 ]

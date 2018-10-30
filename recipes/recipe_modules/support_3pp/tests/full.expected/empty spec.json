@@ -48,9 +48,12 @@
     ]
   },
   {
-    "name": "$result",
-    "reason": "Bad spec PB for 'bad'",
-    "recipe_result": null,
-    "status_code": 1
+    "failure": {
+      "failure": {
+        "step": ""
+      },
+      "humanReason": "Bad spec PB for 'bad'"
+    },
+    "name": "$result"
   }
 ]

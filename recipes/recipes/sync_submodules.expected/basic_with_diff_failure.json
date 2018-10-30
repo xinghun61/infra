@@ -177,9 +177,12 @@
     ]
   },
   {
-    "name": "$result",
-    "reason": "Infra Failure: Step('git diff-index') returned 2",
-    "recipe_result": null,
-    "status_code": 2
+    "failure": {
+      "failure": {
+        "step": "git diff-index"
+      },
+      "humanReason": "Infra Failure: Step('git diff-index') returned 2"
+    },
+    "name": "$result"
   }
 ]

@@ -110,9 +110,12 @@
     ]
   },
   {
-    "name": "$result",
-    "reason": "WCT only runs on Linux.",
-    "recipe_result": null,
-    "status_code": 1
+    "failure": {
+      "failure": {
+        "step": ""
+      },
+      "humanReason": "WCT only runs on Linux."
+    },
+    "name": "$result"
   }
 ]

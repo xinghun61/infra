@@ -1193,9 +1193,12 @@
     ]
   },
   {
-    "name": "$result",
-    "reason": "Step('make') failed with return_code 1",
-    "recipe_result": null,
-    "status_code": 1
+    "failure": {
+      "failure": {
+        "step": "make"
+      },
+      "humanReason": "Step('make') failed with return_code 1"
+    },
+    "name": "$result"
   }
 ]
