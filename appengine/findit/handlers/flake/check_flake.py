@@ -356,9 +356,10 @@ class CheckFlake(BaseHandler):
     return analysis, scheduled
 
   @staticmethod
-  def _CanRerunAnalysis(analysis):
-    return not (analysis.status == analysis_status.RUNNING or
-                analysis.status == analysis_status.PENDING)
+  def _AnalysisCompleted(analysis):
+    return analysis.status not in [
+        analysis_status.RUNNING, analysis_status.PENDING
+    ]
 
   def _HandleRerunAnalysis(self):
     """Rerun an analysis as a response to a user request."""
@@ -375,7 +376,7 @@ class CheckFlake(BaseHandler):
     if not analysis:
       return self.CreateError('Analysis of flake is not found.', 404)
 
-    if not self._CanRerunAnalysis(analysis):
+    if not self._AnalysisCompleted(analysis):
       return self.CreateError(
           'Cannot rerun analysis if one is currently running or pending.', 400)
 
@@ -578,7 +579,7 @@ class CheckFlake(BaseHandler):
     if not analysis.end_time:
       analysis.end_time = time_util.GetUTCNow()
 
-    analysis_complete = analysis.status != analysis_status.RUNNING
+    analysis_complete = self._AnalysisCompleted(analysis)
 
     data = {
         'key':
