@@ -50,17 +50,13 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 				fakeSwarming.ResetTasks()
 			})
 
-			Convey("EnsureBackgroundTasks for unknown bot", func() {
+			Convey("EnsureBackgroundTasks for unknown bot creates no tasks", func() {
 				resp, err := tasker.EnsureBackgroundTasks(c, &fleet.EnsureBackgroundTasksRequest{
 					Type:      fleet.TaskType_Reset,
 					Selectors: makeBotSelectorForDuts([]string{"dut_3"}),
 				})
-				Convey("succeeds", func() {
-					So(err, ShouldBeNil)
-				})
-				Convey("returns empty bot tasks", func() {
-					So(resp.BotTasks, ShouldBeEmpty)
-				})
+				So(err, ShouldBeNil)
+				So(resp.BotTasks, ShouldBeEmpty)
 			})
 
 			taskURLFirst := []string{}
@@ -72,9 +68,7 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 					Priority:  10,
 				})
 
-				Convey("succeeds", func() {
-					So(err, ShouldBeNil)
-				})
+				So(err, ShouldBeNil)
 				Convey("creates expected swarming tasks", func() {
 					So(fakeSwarming.taskArgs, ShouldHaveLength, 5)
 					for _, ta := range fakeSwarming.taskArgs {
@@ -107,9 +101,7 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 						Priority:  10,
 					})
 
-					Convey("succeeds", func() {
-						So(err, ShouldBeNil)
-					})
+					So(err, ShouldBeNil)
 					Convey("creates remaining swarming tasks", func() {
 						// This includes the 5 created earlier.
 						So(fakeSwarming.taskArgs, ShouldHaveLength, 7)
@@ -151,9 +143,7 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 					Priority:  9,
 				})
 
-				Convey("succeeds", func() {
-					So(err, ShouldBeNil)
-				})
+				So(err, ShouldBeNil)
 				Convey("creates expected swarming tasks", func() {
 					So(fakeSwarming.taskArgs, ShouldHaveLength, 6*len(taskDuts))
 					gotDuts := map[string]int{}
@@ -217,12 +207,13 @@ func TestTriggerRepairOnIdle(t *testing.T) {
 				})
 				So(err, ShouldBeNil)
 				So(resp.BotTasks, ShouldHaveLength, 1)
+
 				botTask := resp.BotTasks[0]
 				So(botTask.DutId, ShouldEqual, "dut_1")
 				So(botTask.Tasks, ShouldHaveLength, 1)
-				taskURL := botTask.Tasks[0].TaskUrl
 
-				Convey("second TriggerRepairOnIdle returns the already scheduled task", func() {
+				Convey("then TriggerRepairOnIdle returns the already scheduled task", func() {
+					taskURL := botTask.Tasks[0].TaskUrl
 					resp, err := tasker.TriggerRepairOnIdle(c, &fleet.TriggerRepairOnIdleRequest{
 						Selectors:    []*fleet.BotSelector{},
 						IdleDuration: google.NewDuration(4),
@@ -230,6 +221,7 @@ func TestTriggerRepairOnIdle(t *testing.T) {
 					})
 					So(err, ShouldBeNil)
 					So(resp.BotTasks, ShouldHaveLength, 1)
+
 					botTask := resp.BotTasks[0]
 					So(botTask.DutId, ShouldEqual, "dut_1")
 					So(botTask.Tasks, ShouldHaveLength, 1)
@@ -255,6 +247,7 @@ func TestTriggerRepairOnIdle(t *testing.T) {
 					})
 					So(err, ShouldBeNil)
 					So(resp.BotTasks, ShouldHaveLength, 1)
+
 					botTask := resp.BotTasks[0]
 					So(botTask.DutId, ShouldEqual, "dut_1")
 					So(botTask.Tasks, ShouldHaveLength, 1)
@@ -280,6 +273,7 @@ func TestTriggerRepairOnIdle(t *testing.T) {
 					})
 					So(err, ShouldBeNil)
 					So(resp.BotTasks, ShouldHaveLength, 1)
+
 					botTask := resp.BotTasks[0]
 					So(botTask.Tasks, ShouldHaveLength, 0)
 				})
@@ -302,6 +296,7 @@ func TestTriggerRepairOnIdle(t *testing.T) {
 					})
 					So(err, ShouldBeNil)
 					So(resp.BotTasks, ShouldHaveLength, 1)
+
 					botTask := resp.BotTasks[0]
 					So(botTask.Tasks, ShouldHaveLength, 0)
 				})
@@ -334,6 +329,7 @@ func TestTriggerRepairOnRepairFailed(t *testing.T) {
 				})
 				So(err, ShouldBeNil)
 				So(resp.BotTasks, ShouldHaveLength, 1)
+
 				botTask := resp.BotTasks[0]
 				So(botTask.Tasks, ShouldHaveLength, 0)
 			})
@@ -366,11 +362,12 @@ func TestTriggerRepairOnRepairFailed(t *testing.T) {
 				})
 				So(err, ShouldBeNil)
 				So(resp.BotTasks, ShouldHaveLength, 1)
+
 				botTask := resp.BotTasks[0]
 				So(botTask.Tasks, ShouldHaveLength, 1)
 				taskURL := botTask.Tasks[0].TaskUrl
 
-				Convey("another TriggerRepairOnRepairFailed returns the same task", func() {
+				Convey("then TriggerRepairOnRepairFailed returns the same task", func() {
 					resp, err := tasker.TriggerRepairOnRepairFailed(c, &fleet.TriggerRepairOnRepairFailedRequest{
 						Selectors:           []*fleet.BotSelector{},
 						TimeSinceLastRepair: google.NewDuration(24 * time.Hour),
@@ -378,6 +375,7 @@ func TestTriggerRepairOnRepairFailed(t *testing.T) {
 					})
 					So(err, ShouldBeNil)
 					So(resp.BotTasks, ShouldHaveLength, 1)
+
 					botTask := resp.BotTasks[0]
 					So(botTask.Tasks, ShouldHaveLength, 1)
 					So(botTask.Tasks[0].TaskUrl, ShouldEqual, taskURL)
