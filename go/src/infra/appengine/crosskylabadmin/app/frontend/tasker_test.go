@@ -31,7 +31,6 @@ import (
 )
 
 func TestEnsureBackgroundTasks(t *testing.T) {
-	t.Parallel()
 	Convey("In testing context", t, FailureHalts, func() {
 		c := testingContext()
 		fakeSwarming := &fakeSwarmingClient{
@@ -191,7 +190,6 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 }
 
 func TestTriggerRepairOnIdle(t *testing.T) {
-	t.Parallel()
 	Convey("In testing context", t, FailureHalts, func() {
 		c := testingContext()
 		fakeSwarming := &fakeSwarmingClient{
@@ -313,7 +311,6 @@ func TestTriggerRepairOnIdle(t *testing.T) {
 }
 
 func TestTriggerRepairOnRepairFailed(t *testing.T) {
-	t.Parallel()
 	Convey("In testing context", t, FailureHalts, func() {
 		c := testingContext()
 		fakeSwarming := &fakeSwarmingClient{

@@ -33,7 +33,6 @@ import (
 // This function only validates the DutID field, to ensure that the correct bots are updated/summarized.
 // Other tests should verify the other fields of returned bots.
 func TestRefreshAndSummarizeBots(t *testing.T) {
-	t.Parallel()
 	Convey("In testing context", t, FailureHalts, func() {
 		c := testingContext()
 		fakeSwarming := &fakeSwarmingClient{
@@ -295,7 +294,6 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 }
 
 func TestRefreshAndSummarizeBotsFields(t *testing.T) {
-	t.Parallel()
 	Convey("In testing context", t, FailureHalts, func() {
 		c := testingContext()
 		fakeSwarming := &fakeSwarmingClient{
