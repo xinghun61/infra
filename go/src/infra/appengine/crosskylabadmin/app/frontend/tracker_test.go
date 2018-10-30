@@ -542,6 +542,57 @@ func TestSummarizeBotsWithDimensions(t *testing.T) {
 	})
 }
 
+func TestHealthSummary(t *testing.T) {
+	Convey("in testing context", t, func() {
+		c := testingContext()
+		mc := gomock.NewController(t)
+		defer mc.Finish()
+		mockSwarming := mock.NewMockSwarmingClient(mc)
+		tracker := TrackerServerImpl{
+			ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
+				return mockSwarming, nil
+			},
+		}
+		mockSwarming.EXPECT().ListSortedRecentTasksForBot(
+			gomock.Any(), gomock.Any(), gomock.Any(),
+		).AnyTimes().Return([]*swarming.SwarmingRpcsTaskResult{}, nil)
+
+		Convey("with one bot available in state ready", func() {
+			bots := readyBotsForDutIDs([]string{"dut_ready"})
+			mockSwarming.EXPECT().ListAliveBotsInPool(
+				gomock.Any(), gomock.Eq(config.Get(c).Swarming.BotPool), gomock.Any(),
+			).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+
+			Convey("bot summary reports the bot healthy", func() {
+				_, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{})
+				So(err, ShouldBeNil)
+				summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{})
+				So(err, ShouldBeNil)
+				So(summarized.Bots, ShouldHaveLength, 1)
+				So(summarized.Bots[0].Health, ShouldEqual, fleet.Health_Healthy)
+			})
+		})
+
+		Convey("with one bot available in state repair_failed", func() {
+			bots := readyBotsForDutIDs([]string{"dut_repair_failed"})
+			b := bots[0]
+			setBotDimension(b, "dut_state", []string{"repair_failed"})
+			mockSwarming.EXPECT().ListAliveBotsInPool(
+				gomock.Any(), gomock.Eq(config.Get(c).Swarming.BotPool), gomock.Any(),
+			).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
+
+			Convey("bot summary reports the bot unhealthy", func() {
+				_, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{})
+				So(err, ShouldBeNil)
+				summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{})
+				So(err, ShouldBeNil)
+				So(summarized.Bots, ShouldHaveLength, 1)
+				So(summarized.Bots[0].Health, ShouldEqual, fleet.Health_Unhealthy)
+			})
+		})
+	})
+}
+
 // extractSummarizedDutIDs extracts the DutIDs of the the summarized bots.
 func extractSummarizedDutIDs(resp *fleet.SummarizeBotsResponse) []string {
 	var duts []string

@@ -183,6 +183,13 @@ var dutStateMap = map[string]fleet.DutState{
 	"repair_failed": fleet.DutState_RepairFailed,
 }
 
+var healthyDutStates = map[fleet.DutState]bool{
+	fleet.DutState_Ready:        true,
+	fleet.DutState_NeedsCleanup: true,
+	fleet.DutState_NeedsRepair:  true,
+	fleet.DutState_NeedsReset:   true,
+}
+
 // botInfoToSummary initializes fleet.BotSummary for each bot.
 //
 // This function returns a map from the bot ID to fleet.BotSummary object for it.
@@ -213,6 +220,11 @@ func botInfoToSummary(bots []*swarming.SwarmingRpcsBotInfo) (map[string]*fleet.B
 		if ls, ok := dims[clients.DutPoolDimensionKey]; ok {
 			initializeDimensionsForBotSummary(bs)
 			bs.Dimensions.Pools = ls
+		}
+		if healthy := healthyDutStates[bs.DutState]; healthy {
+			bs.Health = fleet.Health_Healthy
+		} else {
+			bs.Health = fleet.Health_Unhealthy
 		}
 
 		bsm[bi.BotId] = bs
