@@ -212,12 +212,6 @@ type fakeSwarmingClient struct {
 	taskIDs map[*clients.SwarmingCreateTaskArgs]string
 }
 
-// ResetTasks clears away cached information about created tasks.
-func (fsc *fakeSwarmingClient) ResetTasks() {
-	fsc.taskArgs = []*clients.SwarmingCreateTaskArgs{}
-	fsc.taskIDs = map[*clients.SwarmingCreateTaskArgs]string{}
-}
-
 // ListAliveBotsInPool is a fake implementation of SwarmingClient.ListAliveBotsInPool.
 //
 // This function is intentionally simple. It only supports filtering by dut_id dimension.

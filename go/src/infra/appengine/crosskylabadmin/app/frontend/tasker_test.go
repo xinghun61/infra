@@ -37,10 +37,6 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 		Convey("with 2 known bots", func() {
 			setKnownBots(tf.C, tf.FakeSwarming, []string{"dut_1", "dut_2"})
 
-			Reset(func() {
-				tf.FakeSwarming.ResetTasks()
-			})
-
 			Convey("EnsureBackgroundTasks for unknown bot creates no tasks", func() {
 				resp, err := tf.Tasker.EnsureBackgroundTasks(tf.C, &fleet.EnsureBackgroundTasksRequest{
 					Type:      fleet.TaskType_Reset,
@@ -177,10 +173,6 @@ func TestTriggerRepairOnIdle(t *testing.T) {
 
 		Convey("with one known bot", func() {
 			setKnownBots(tf.C, tf.FakeSwarming, []string{"dut_1"})
-
-			Reset(func() {
-				tf.FakeSwarming.ResetTasks()
-			})
 
 			Convey("TriggerRepairOnIdle triggers a task for the dut", func() {
 				resp, err := tf.Tasker.TriggerRepairOnIdle(tf.C, &fleet.TriggerRepairOnIdleRequest{
