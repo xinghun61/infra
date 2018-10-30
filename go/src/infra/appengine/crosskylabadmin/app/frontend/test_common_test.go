@@ -115,3 +115,46 @@ func TestBotContainsDims(t *testing.T) {
 		)
 	})
 }
+
+func TestBotForDUT(t *testing.T) {
+	Convey("empty dimensions", t, func() {
+		So(botForDUT("dut1", "", ""), ShouldResemble, &swarming.SwarmingRpcsBotInfo{
+			BotId: "bot_dut1",
+			Dimensions: []*swarming.SwarmingRpcsStringListPair{
+				{
+					Key:   "dut_state",
+					Value: []string{""},
+				},
+				{
+					Key:   "dut_id",
+					Value: []string{"dut1"},
+				},
+			},
+		})
+	})
+
+	Convey("non-trivial dimensions with whitespace", t, func() {
+		So(botForDUT("dut1", "fake_state", "a: x, y ; b :z"), ShouldResemble, &swarming.SwarmingRpcsBotInfo{
+			BotId: "bot_dut1",
+			Dimensions: []*swarming.SwarmingRpcsStringListPair{
+				{
+					Key:   "a",
+					Value: []string{"x", "y"},
+				},
+				{
+					Key:   "b",
+					Value: []string{"z"},
+				},
+				{
+					Key:   "dut_state",
+					Value: []string{"fake_state"},
+				},
+				{
+					Key:   "dut_id",
+					Value: []string{"dut1"},
+				},
+			},
+		},
+		)
+	})
+}

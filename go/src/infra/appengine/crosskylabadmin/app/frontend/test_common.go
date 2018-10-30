@@ -17,6 +17,7 @@ package frontend
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"sync"
 	"testing"
 
@@ -119,39 +120,43 @@ func testingContext() context.Context {
 	return c
 }
 
-// readyBotsForDutIDs returns BotInfos for DUTs with the given dut ids in "ready" state.
-func readyBotsForDutIDs(ids []string) []*swarming.SwarmingRpcsBotInfo {
-	bis := make([]*swarming.SwarmingRpcsBotInfo, 0, len(ids))
-	for _, id := range ids {
-		bis = append(bis, &swarming.SwarmingRpcsBotInfo{
-			BotId: fmt.Sprintf("bot_%s", id),
-			Dimensions: []*swarming.SwarmingRpcsStringListPair{
-				{
-					Key:   "dut_id",
-					Value: []string{id},
-				},
-				{
-					Key:   "dut_state",
-					Value: []string{"ready"},
-				},
-			},
-		})
-	}
-	return bis
-}
-
-// setBotDimension sets the dimension with given key to values.
-func setBotDimension(b *swarming.SwarmingRpcsBotInfo, key string, values []string) {
-	for _, keyval := range b.Dimensions {
-		if keyval.Key == key {
-			keyval.Value = values
-			return
+// botForDUT returns BotInfos for DUTs with the given dut id.
+//
+// state is the bot's state dimension.
+// dims is a convenient way to specify other bot dimensions.
+// "a:x,y;b:z" will set the dimensions of the bot to ["a": ["x", "y"], "b": ["z"]].
+func botForDUT(id string, state string, dims string) *swarming.SwarmingRpcsBotInfo {
+	sdims := make([]*swarming.SwarmingRpcsStringListPair, 0, 2)
+	if dims != "" {
+		ds := strings.Split(dims, ";")
+		for _, d := range ds {
+			d = strings.Trim(d, " ")
+			kvs := strings.Split(d, ":")
+			if len(kvs) != 2 {
+				panic(fmt.Sprintf("dims string |%s|%s has a non-keyval dimension |%s|", dims, ds, d))
+			}
+			sdim := &swarming.SwarmingRpcsStringListPair{
+				Key:   strings.Trim(kvs[0], " "),
+				Value: []string{},
+			}
+			for _, v := range strings.Split(kvs[1], ",") {
+				sdim.Value = append(sdim.Value, strings.Trim(v, " "))
+			}
+			sdims = append(sdims, sdim)
 		}
 	}
-	b.Dimensions = append(b.Dimensions, &swarming.SwarmingRpcsStringListPair{
-		Key:   key,
-		Value: values,
+	sdims = append(sdims, &swarming.SwarmingRpcsStringListPair{
+		Key:   "dut_state",
+		Value: []string{state},
 	})
+	sdims = append(sdims, &swarming.SwarmingRpcsStringListPair{
+		Key:   "dut_id",
+		Value: []string{id},
+	})
+	return &swarming.SwarmingRpcsBotInfo{
+		BotId:      fmt.Sprintf("bot_%s", id),
+		Dimensions: sdims,
+	}
 }
 
 // fakeListAliveBotsInPool returns a function that implements SwarmingClient.ListAliveBotsInPool.
