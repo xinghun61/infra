@@ -18,7 +18,9 @@ import (
 	"fmt"
 	"sort"
 	"sync"
+	"testing"
 
+	"github.com/golang/mock/gomock"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/appengine/gaetesting"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
@@ -28,8 +30,69 @@ import (
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
+	"infra/appengine/crosskylabadmin/app/clients/mock"
 	"infra/appengine/crosskylabadmin/app/config"
 )
+
+type testFixture struct {
+	C       context.Context
+	Tracker fleet.TrackerServer
+	Tasker  fleet.TaskerServer
+
+	// Deprecated. New tests should use MockSwarming instead.
+	FakeSwarming *fakeSwarmingClient
+	MockSwarming *mock.MockSwarmingClient
+}
+
+// newTextFixtureWithFakeSwarming creates a new testFixture to be used in unittests.
+// The function returns the created testFixture and cleanup function that must be deferred by the caller.
+//
+// This is a transitional function while existing tests are in migration.
+// New tests should use newTestFixture instead.
+func newTestFixtureWithFakeSwarming(_ *testing.T) (testFixture, func()) {
+	tf := testFixture{}
+	tf.C = testingContext()
+	tf.FakeSwarming = &fakeSwarmingClient{
+		pool:    config.Get(tf.C).Swarming.BotPool,
+		taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
+	}
+	tf.Tracker = &TrackerServerImpl{
+		ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
+			return tf.FakeSwarming, nil
+		},
+	}
+	tf.Tasker = &TaskerServerImpl{
+		ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
+			return tf.FakeSwarming, nil
+		},
+	}
+	return tf, func() {}
+}
+
+// newTextFixture creates a new testFixture to be used in unittests.
+// The function returns the created testFixture and cleanup function that must be deferred by the caller.
+func newTestFixture(t *testing.T) (testFixture, func()) {
+	tf := testFixture{}
+	tf.C = testingContext()
+
+	mc := gomock.NewController(t)
+	tf.MockSwarming = mock.NewMockSwarmingClient(mc)
+	tf.Tracker = &TrackerServerImpl{
+		ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
+			return tf.MockSwarming, nil
+		},
+	}
+	tf.Tasker = &TaskerServerImpl{
+		ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
+			return tf.MockSwarming, nil
+		},
+	}
+
+	cleanup := func() {
+		mc.Finish()
+	}
+	return tf, cleanup
+}
 
 func testingContext() context.Context {
 	c := gaetesting.TestingContextWithAppID("dev~infra-crosskylabadmin")

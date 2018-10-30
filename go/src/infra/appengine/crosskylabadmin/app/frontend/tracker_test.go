@@ -21,11 +21,9 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
-	"golang.org/x/net/context"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
-	"infra/appengine/crosskylabadmin/app/clients/mock"
 	"infra/appengine/crosskylabadmin/app/config"
 )
 
@@ -34,29 +32,21 @@ import (
 // Other tests should verify the other fields of returned bots.
 func TestRefreshAndSummarizeBots(t *testing.T) {
 	Convey("In testing context", t, FailureHalts, func() {
-		c := testingContext()
-		fakeSwarming := &fakeSwarmingClient{
-			pool:    config.Get(c).Swarming.BotPool,
-			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
-		}
-		tracker := TrackerServerImpl{
-			ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
-				return fakeSwarming, nil
-			},
-		}
+		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		defer cleanup()
 
 		Convey("with no swarming duts available", func() {
-			fakeSwarming.setAvailableDutIDs([]string{})
+			tf.FakeSwarming.setAvailableDutIDs([]string{})
 
 			Convey("refresh without filter refreshes no duts", func() {
-				refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{})
+				refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
 				So(err, ShouldBeNil)
 				So(refreshed.DutIds, ShouldBeEmpty)
 
 			})
 
 			Convey("refresh with empty filter refreshes no duts", func() {
-				refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
+				refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{}),
 				})
 				So(err, ShouldBeNil)
@@ -64,20 +54,20 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 			})
 
 			Convey("refresh with non-empty filter refreshes no duts", func() {
-				refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
+				refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
 				})
 				So(err, ShouldBeNil)
 				So(refreshed.DutIds, ShouldBeEmpty)
 
 				Convey("then summarize without filter summarizes no duts", func() {
-					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{})
+					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{})
 					So(err, ShouldBeNil)
 					So(summarized.Bots, ShouldBeEmpty)
 				})
 
 				Convey("then summarize with empty filter summarizes no duts", func() {
-					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
 						Selectors: makeBotSelectorForDuts([]string{}),
 					})
 					So(err, ShouldBeNil)
@@ -85,7 +75,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 				})
 
 				Convey("then summarize with non-empty filter summarizes no duts", func() {
-					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
 						Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
 					})
 					So(err, ShouldBeNil)
@@ -95,10 +85,10 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 		})
 
 		Convey("with a single dut available", func() {
-			fakeSwarming.setAvailableDutIDs([]string{"dut_1"})
+			tf.FakeSwarming.setAvailableDutIDs([]string{"dut_1"})
 
 			Convey("refresh filtering to available dut refreshes that dut", func() {
-				refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
+				refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
 				})
 
@@ -108,7 +98,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 			})
 
 			Convey("refresh filtering to unknown dut refreshes no duts", func() {
-				refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
+				refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{"dut_2"}),
 				})
 				So(err, ShouldBeNil)
@@ -116,13 +106,13 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 			})
 
 			Convey("refresh without filter refreshes that dut", func() {
-				refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{})
+				refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
 				So(err, ShouldBeNil)
 				So(refreshed.DutIds, ShouldHaveLength, 1)
 				So(refreshed.DutIds, ShouldContain, "dut_1")
 
 				Convey("then summarize without filter summarizes that dut", func() {
-					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{})
+					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{})
 					So(err, ShouldBeNil)
 
 					duts := extractSummarizedDutIDs(summarized)
@@ -131,7 +121,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 				})
 
 				Convey("then summarize with empty filter summarizes not duts", func() {
-					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
 						Selectors: []*fleet.BotSelector{{}},
 					})
 					So(err, ShouldBeNil)
@@ -139,7 +129,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 				})
 
 				Convey("then summarize filtering to available dut summarizes that dut", func() {
-					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
 						Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
 					})
 					So(err, ShouldBeNil)
@@ -150,7 +140,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 				})
 
 				Convey("then summarize filtering to unknown dut summarizes no duts", func() {
-					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
 						Selectors: makeBotSelectorForDuts([]string{"dut_2"}),
 					})
 					So(err, ShouldBeNil)
@@ -160,17 +150,17 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 		})
 
 		Convey("with two duts available", func() {
-			fakeSwarming.setAvailableDutIDs([]string{"dut_1", "dut_2"})
+			tf.FakeSwarming.setAvailableDutIDs([]string{"dut_1", "dut_2"})
 
 			Convey("refresh without filter refreshes both duts", func() {
-				refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{})
+				refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
 				So(err, ShouldBeNil)
 				So(refreshed.DutIds, ShouldHaveLength, 2)
 				So(refreshed.DutIds, ShouldContain, "dut_1")
 				So(refreshed.DutIds, ShouldContain, "dut_2")
 
 				Convey("then summarize without filter summarizes both duts", func() {
-					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{})
+					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{})
 					So(err, ShouldBeNil)
 
 					duts := extractSummarizedDutIDs(summarized)
@@ -181,7 +171,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 			})
 
 			Convey("refresh with 2 filters matching existing duts refreshes both duts", func() {
-				refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
+				refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{"dut_1", "dut_2"}),
 				})
 				So(err, ShouldBeNil)
@@ -190,7 +180,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 				So(refreshed.DutIds, ShouldContain, "dut_2")
 
 				Convey("then summarize filtering one available dut and one unknown dut refreshes one dut", func() {
-					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
 						Selectors: makeBotSelectorForDuts([]string{"dut_1", "dut_non_existent"}),
 					})
 					So(err, ShouldBeNil)
@@ -209,9 +199,9 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 			for i := 0; i < numDuts; i++ {
 				dutNames = append(dutNames, fmt.Sprintf("dut_%d", i))
 			}
-			fakeSwarming.setAvailableDutIDs(dutNames)
+			tf.FakeSwarming.setAvailableDutIDs(dutNames)
 			Convey("refresh selecting all the DUTs refreshes all duts", func() {
-				refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
+				refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
 					Selectors: makeBotSelectorForDuts(dutNames),
 				})
 				So(err, ShouldBeNil)
@@ -226,20 +216,12 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 
 func TestRefreshAndSummarizeBotsDutState(t *testing.T) {
 	Convey("In testing context", t, FailureHalts, func() {
-		c := testingContext()
-		fakeSwarming := &fakeSwarmingClient{
-			pool:    config.Get(c).Swarming.BotPool,
-			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
-		}
-		tracker := TrackerServerImpl{
-			ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
-				return fakeSwarming, nil
-			},
-		}
+		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		defer cleanup()
 
 		Convey("with a swarming dut in state needs_reset", func() {
-			fakeSwarming.botInfos = make(map[string]*swarming.SwarmingRpcsBotInfo)
-			fakeSwarming.botInfos["bot_dut_1"] = &swarming.SwarmingRpcsBotInfo{
+			tf.FakeSwarming.botInfos = make(map[string]*swarming.SwarmingRpcsBotInfo)
+			tf.FakeSwarming.botInfos["bot_dut_1"] = &swarming.SwarmingRpcsBotInfo{
 				BotId: "bot_dut_1",
 				Dimensions: []*swarming.SwarmingRpcsStringListPair{
 					{
@@ -253,13 +235,13 @@ func TestRefreshAndSummarizeBotsDutState(t *testing.T) {
 				},
 			}
 			Convey("refresh with empty filter", func() {
-				_, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
+				_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{}),
 				})
 				So(err, ShouldBeNil)
 
 				Convey("then summarizing without filter summarizes bot with state needs_reset", func() {
-					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
 						Selectors: makeBotSelectorForDuts([]string{}),
 					})
 					So(err, ShouldBeNil)
@@ -276,27 +258,19 @@ func TestRefreshAndSummarizeBotsDutState(t *testing.T) {
 
 func TestRefreshAndSummarizeIdleDuration(t *testing.T) {
 	Convey("In testing context", t, FailureHalts, func() {
-		c := testingContext()
-		fakeSwarming := &fakeSwarmingClient{
-			pool:    config.Get(c).Swarming.BotPool,
-			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
-		}
-		tracker := TrackerServerImpl{
-			ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
-				return fakeSwarming, nil
-			},
-		}
+		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		defer cleanup()
 
 		Convey("with a swarming dut with no recent tasks", func() {
-			fakeSwarming.setAvailableDutIDs([]string{"dut_task_1"})
+			tf.FakeSwarming.setAvailableDutIDs([]string{"dut_task_1"})
 			Convey("refresh with empty filter", func() {
-				_, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
+				_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{}),
 				})
 				So(err, ShouldBeNil)
 
 				Convey("then summarizing without filter summarizes dut with unknown idle duration", func() {
-					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
 						Selectors: makeBotSelectorForDuts([]string{}),
 					})
 					So(err, ShouldBeNil)
@@ -310,21 +284,21 @@ func TestRefreshAndSummarizeIdleDuration(t *testing.T) {
 		})
 
 		Convey("with a swarming dut with one recent completed task", func() {
-			fakeSwarming.setAvailableDutIDs([]string{"dut_task_1"})
-			fakeSwarming.botTasks["bot_dut_task_1"] = []*swarming.SwarmingRpcsTaskResult{
+			tf.FakeSwarming.setAvailableDutIDs([]string{"dut_task_1"})
+			tf.FakeSwarming.botTasks["bot_dut_task_1"] = []*swarming.SwarmingRpcsTaskResult{
 				{
 					State:       "COMPLETED",
 					CompletedTs: "2016-01-02T10:04:05.999999999",
 				},
 			}
 			Convey("refresh with empty filter", func() {
-				_, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
+				_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{}),
 				})
 				So(err, ShouldBeNil)
 
 				Convey("then summarizing without filter summarizes dut with sane idle duration", func() {
-					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
 						Selectors: makeBotSelectorForDuts([]string{}),
 					})
 					So(err, ShouldBeNil)
@@ -339,20 +313,20 @@ func TestRefreshAndSummarizeIdleDuration(t *testing.T) {
 		})
 
 		Convey("with a swarming dut with one running task", func() {
-			fakeSwarming.setAvailableDutIDs([]string{"dut_task_1"})
-			fakeSwarming.botTasks["bot_dut_task_1"] = []*swarming.SwarmingRpcsTaskResult{
+			tf.FakeSwarming.setAvailableDutIDs([]string{"dut_task_1"})
+			tf.FakeSwarming.botTasks["bot_dut_task_1"] = []*swarming.SwarmingRpcsTaskResult{
 				{
 					State: "RUNNING",
 				},
 			}
 			Convey("refresh with empty filter", func() {
-				_, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
+				_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{}),
 				})
 				So(err, ShouldBeNil)
 
 				Convey("then summarizing without filter summarizes dut with idle duration zero", func() {
-					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+					summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{
 						Selectors: makeBotSelectorForDuts([]string{}),
 					})
 					So(err, ShouldBeNil)
@@ -371,15 +345,8 @@ func TestRefreshAndSummarizeIdleDuration(t *testing.T) {
 
 func TestRefreshBotsWithDimensions(t *testing.T) {
 	Convey("with three swarming duts with various models and pools", t, func() {
-		c := testingContext()
-		mc := gomock.NewController(t)
-		defer mc.Finish()
-		mockSwarming := mock.NewMockSwarmingClient(mc)
-		tracker := TrackerServerImpl{
-			ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
-				return mockSwarming, nil
-			},
-		}
+		tf, cleanup := newTestFixture(t)
+		defer cleanup()
 
 		b1 := readyBotsForDutIDs([]string{"dut_cq_link"})[0]
 		setBotDimension(b1, "label-pool", []string{"cq"})
@@ -392,15 +359,15 @@ func TestRefreshBotsWithDimensions(t *testing.T) {
 		setBotDimension(b3, "label-model", []string{"lumpy"})
 		bots := []*swarming.SwarmingRpcsBotInfo{b1, b2, b3}
 
-		mockSwarming.EXPECT().ListAliveBotsInPool(
-			gomock.Any(), gomock.Eq(config.Get(c).Swarming.BotPool), gomock.Any(),
+		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
+			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
 		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
-		mockSwarming.EXPECT().ListSortedRecentTasksForBot(
+		tf.MockSwarming.EXPECT().ListSortedRecentTasksForBot(
 			gomock.Any(), gomock.Any(), gomock.Any(),
 		).AnyTimes().Return([]*swarming.SwarmingRpcsTaskResult{}, nil)
 
 		Convey("refresh filtering by pool works", func() {
-			refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
+			refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
 				Selectors: []*fleet.BotSelector{
 					{Dimensions: &fleet.BotDimensions{Pools: []string{"cq"}}},
 				},
@@ -412,7 +379,7 @@ func TestRefreshBotsWithDimensions(t *testing.T) {
 		})
 
 		Convey("refresh filtering by model works", func() {
-			refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
+			refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
 				Selectors: []*fleet.BotSelector{
 					{Dimensions: &fleet.BotDimensions{Model: "lumpy"}},
 				},
@@ -424,7 +391,7 @@ func TestRefreshBotsWithDimensions(t *testing.T) {
 		})
 
 		Convey("refresh filtering by pool and model works", func() {
-			refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
+			refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
 				Selectors: []*fleet.BotSelector{
 					{Dimensions: &fleet.BotDimensions{Pools: []string{"cq"}, Model: "lumpy"}},
 				},
@@ -438,35 +405,28 @@ func TestRefreshBotsWithDimensions(t *testing.T) {
 
 func TestSummarizeBotsWithDimensions(t *testing.T) {
 	Convey("for a bot with non-trivial dimensions", t, func() {
-		c := testingContext()
-		mc := gomock.NewController(t)
-		defer mc.Finish()
-		mockSwarming := mock.NewMockSwarmingClient(mc)
-		tracker := TrackerServerImpl{
-			ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
-				return mockSwarming, nil
-			},
-		}
+		tf, cleanup := newTestFixture(t)
+		defer cleanup()
 
 		bots := readyBotsForDutIDs([]string{"dut_cq_link"})
 		b := bots[0]
 		setBotDimension(b, "label-pool", []string{"cq", "bvt"})
 		setBotDimension(b, "label-model", []string{"link"})
 
-		mockSwarming.EXPECT().ListAliveBotsInPool(
-			gomock.Any(), gomock.Eq(config.Get(c).Swarming.BotPool), gomock.Any(),
+		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
+			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
 		).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
-		mockSwarming.EXPECT().ListSortedRecentTasksForBot(
+		tf.MockSwarming.EXPECT().ListSortedRecentTasksForBot(
 			gomock.Any(), gomock.Any(), gomock.Any(),
 		).AnyTimes().Return([]*swarming.SwarmingRpcsTaskResult{}, nil)
 
 		Convey("refresh and summarize without filter include non-trivial dimensions", func() {
-			refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{})
+			refreshed, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
 			So(err, ShouldBeNil)
 			So(refreshed.DutIds, ShouldHaveLength, 1)
 			So(refreshed.DutIds, ShouldContain, "dut_cq_link")
 
-			summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{})
+			summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{})
 			So(err, ShouldBeNil)
 			So(summarized.Bots, ShouldHaveLength, 1)
 			So(summarized.Bots[0].Dimensions, ShouldNotBeNil)
@@ -480,29 +440,23 @@ func TestSummarizeBotsWithDimensions(t *testing.T) {
 
 func TestHealthSummary(t *testing.T) {
 	Convey("in testing context", t, func() {
-		c := testingContext()
-		mc := gomock.NewController(t)
-		defer mc.Finish()
-		mockSwarming := mock.NewMockSwarmingClient(mc)
-		tracker := TrackerServerImpl{
-			ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
-				return mockSwarming, nil
-			},
-		}
-		mockSwarming.EXPECT().ListSortedRecentTasksForBot(
+		tf, cleanup := newTestFixture(t)
+		defer cleanup()
+
+		tf.MockSwarming.EXPECT().ListSortedRecentTasksForBot(
 			gomock.Any(), gomock.Any(), gomock.Any(),
 		).AnyTimes().Return([]*swarming.SwarmingRpcsTaskResult{}, nil)
 
 		Convey("with one bot available in state ready", func() {
 			bots := readyBotsForDutIDs([]string{"dut_ready"})
-			mockSwarming.EXPECT().ListAliveBotsInPool(
-				gomock.Any(), gomock.Eq(config.Get(c).Swarming.BotPool), gomock.Any(),
+			tf.MockSwarming.EXPECT().ListAliveBotsInPool(
+				gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
 			).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
 
 			Convey("bot summary reports the bot healthy", func() {
-				_, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{})
+				_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
 				So(err, ShouldBeNil)
-				summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{})
+				summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{})
 				So(err, ShouldBeNil)
 				So(summarized.Bots, ShouldHaveLength, 1)
 				So(summarized.Bots[0].Health, ShouldEqual, fleet.Health_Healthy)
@@ -513,14 +467,14 @@ func TestHealthSummary(t *testing.T) {
 			bots := readyBotsForDutIDs([]string{"dut_repair_failed"})
 			b := bots[0]
 			setBotDimension(b, "dut_state", []string{"repair_failed"})
-			mockSwarming.EXPECT().ListAliveBotsInPool(
-				gomock.Any(), gomock.Eq(config.Get(c).Swarming.BotPool), gomock.Any(),
+			tf.MockSwarming.EXPECT().ListAliveBotsInPool(
+				gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
 			).AnyTimes().DoAndReturn(fakeListAliveBotsInPool(bots))
 
 			Convey("bot summary reports the bot unhealthy", func() {
-				_, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{})
+				_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
 				So(err, ShouldBeNil)
-				summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{})
+				summarized, err := tf.Tracker.SummarizeBots(tf.C, &fleet.SummarizeBotsRequest{})
 				So(err, ShouldBeNil)
 				So(summarized.Bots, ShouldHaveLength, 1)
 				So(summarized.Bots[0].Health, ShouldEqual, fleet.Health_Unhealthy)

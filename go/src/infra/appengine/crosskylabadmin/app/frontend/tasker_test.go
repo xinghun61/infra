@@ -27,31 +27,22 @@ import (
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
-	"infra/appengine/crosskylabadmin/app/config"
 )
 
 func TestEnsureBackgroundTasks(t *testing.T) {
 	Convey("In testing context", t, FailureHalts, func() {
-		c := testingContext()
-		fakeSwarming := &fakeSwarmingClient{
-			pool:    config.Get(c).Swarming.BotPool,
-			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
-		}
-		tasker := TaskerServerImpl{
-			ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
-				return fakeSwarming, nil
-			},
-		}
+		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		defer cleanup()
 
 		Convey("with 2 known bots", func() {
-			setKnownBots(c, fakeSwarming, []string{"dut_1", "dut_2"})
+			setKnownBots(tf.C, tf.FakeSwarming, []string{"dut_1", "dut_2"})
 
 			Reset(func() {
-				fakeSwarming.ResetTasks()
+				tf.FakeSwarming.ResetTasks()
 			})
 
 			Convey("EnsureBackgroundTasks for unknown bot creates no tasks", func() {
-				resp, err := tasker.EnsureBackgroundTasks(c, &fleet.EnsureBackgroundTasksRequest{
+				resp, err := tf.Tasker.EnsureBackgroundTasks(tf.C, &fleet.EnsureBackgroundTasksRequest{
 					Type:      fleet.TaskType_Reset,
 					Selectors: makeBotSelectorForDuts([]string{"dut_3"}),
 				})
@@ -61,7 +52,7 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 
 			taskURLFirst := []string{}
 			Convey("EnsureBackgroundTasks(Reset) for known bot", func() {
-				resp, err := tasker.EnsureBackgroundTasks(c, &fleet.EnsureBackgroundTasksRequest{
+				resp, err := tf.Tasker.EnsureBackgroundTasks(tf.C, &fleet.EnsureBackgroundTasksRequest{
 					Type:      fleet.TaskType_Reset,
 					Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
 					TaskCount: 5,
@@ -70,8 +61,8 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 
 				So(err, ShouldBeNil)
 				Convey("creates expected swarming tasks", func() {
-					So(fakeSwarming.taskArgs, ShouldHaveLength, 5)
-					for _, ta := range fakeSwarming.taskArgs {
+					So(tf.FakeSwarming.taskArgs, ShouldHaveLength, 5)
+					for _, ta := range tf.FakeSwarming.taskArgs {
 						So(ta.DutID, ShouldEqual, "dut_1")
 						So(ta.DutState, ShouldEqual, "needs_reset")
 						So(ta.Priority, ShouldEqual, 10)
@@ -94,7 +85,7 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 				})
 
 				Convey("then another EnsureBackgroundTasks(Reset) with more tasks requested", func() {
-					resp, err := tasker.EnsureBackgroundTasks(c, &fleet.EnsureBackgroundTasksRequest{
+					resp, err := tf.Tasker.EnsureBackgroundTasks(tf.C, &fleet.EnsureBackgroundTasksRequest{
 						Type:      fleet.TaskType_Reset,
 						Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
 						TaskCount: 7,
@@ -104,7 +95,7 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 					So(err, ShouldBeNil)
 					Convey("creates remaining swarming tasks", func() {
 						// This includes the 5 created earlier.
-						So(fakeSwarming.taskArgs, ShouldHaveLength, 7)
+						So(tf.FakeSwarming.taskArgs, ShouldHaveLength, 7)
 					})
 					Convey("returns bot list containing tasks created earlier and the new tasks", func() {
 						So(resp.BotTasks, ShouldHaveLength, 1)
@@ -133,10 +124,10 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 					taskDuts = append(taskDuts, allDuts[i])
 				}
 			}
-			setKnownBots(c, fakeSwarming, allDuts)
+			setKnownBots(tf.C, tf.FakeSwarming, allDuts)
 
 			Convey("EnsureBackgroundTasks(Repair) for some of the known bots", func() {
-				resp, err := tasker.EnsureBackgroundTasks(c, &fleet.EnsureBackgroundTasksRequest{
+				resp, err := tf.Tasker.EnsureBackgroundTasks(tf.C, &fleet.EnsureBackgroundTasksRequest{
 					Type:      fleet.TaskType_Repair,
 					Selectors: makeBotSelectorForDuts(taskDuts),
 					TaskCount: 6,
@@ -145,9 +136,9 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 
 				So(err, ShouldBeNil)
 				Convey("creates expected swarming tasks", func() {
-					So(fakeSwarming.taskArgs, ShouldHaveLength, 6*len(taskDuts))
+					So(tf.FakeSwarming.taskArgs, ShouldHaveLength, 6*len(taskDuts))
 					gotDuts := map[string]int{}
-					for _, ta := range fakeSwarming.taskArgs {
+					for _, ta := range tf.FakeSwarming.taskArgs {
 						So(ta.DutState, ShouldEqual, "needs_repair")
 						So(ta.Priority, ShouldEqual, 9)
 						gotDuts[ta.DutID] = gotDuts[ta.DutID] + 1
@@ -181,26 +172,18 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 
 func TestTriggerRepairOnIdle(t *testing.T) {
 	Convey("In testing context", t, FailureHalts, func() {
-		c := testingContext()
-		fakeSwarming := &fakeSwarmingClient{
-			pool:    config.Get(c).Swarming.BotPool,
-			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
-		}
-		f := func(context.Context, string) (clients.SwarmingClient, error) {
-			return fakeSwarming, nil
-		}
-		tasker := TaskerServerImpl{f}
-		tracker := TrackerServerImpl{f}
+		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		defer cleanup()
 
 		Convey("with one known bot", func() {
-			setKnownBots(c, fakeSwarming, []string{"dut_1"})
+			setKnownBots(tf.C, tf.FakeSwarming, []string{"dut_1"})
 
 			Reset(func() {
-				fakeSwarming.ResetTasks()
+				tf.FakeSwarming.ResetTasks()
 			})
 
 			Convey("TriggerRepairOnIdle triggers a task for the dut", func() {
-				resp, err := tasker.TriggerRepairOnIdle(c, &fleet.TriggerRepairOnIdleRequest{
+				resp, err := tf.Tasker.TriggerRepairOnIdle(tf.C, &fleet.TriggerRepairOnIdleRequest{
 					Selectors:    []*fleet.BotSelector{},
 					IdleDuration: google.NewDuration(4),
 					Priority:     20,
@@ -214,7 +197,7 @@ func TestTriggerRepairOnIdle(t *testing.T) {
 
 				Convey("then TriggerRepairOnIdle returns the already scheduled task", func() {
 					taskURL := botTask.Tasks[0].TaskUrl
-					resp, err := tasker.TriggerRepairOnIdle(c, &fleet.TriggerRepairOnIdleRequest{
+					resp, err := tf.Tasker.TriggerRepairOnIdle(tf.C, &fleet.TriggerRepairOnIdleRequest{
 						Selectors:    []*fleet.BotSelector{},
 						IdleDuration: google.NewDuration(4),
 						Priority:     20,
@@ -230,17 +213,17 @@ func TestTriggerRepairOnIdle(t *testing.T) {
 			})
 
 			Convey("and one task in the long past", func() {
-				fakeSwarming.botTasks["bot_dut_1"] = []*swarming.SwarmingRpcsTaskResult{
+				tf.FakeSwarming.botTasks["bot_dut_1"] = []*swarming.SwarmingRpcsTaskResult{
 					{
 						State:       "COMPLETED",
 						CompletedTs: "2016-01-02T10:04:05.999999999",
 					},
 				}
-				_, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{})
+				_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
 				So(err, ShouldBeNil)
 
 				Convey("TriggerRepairOnIdle triggers a task for the dut", func() {
-					resp, err := tasker.TriggerRepairOnIdle(c, &fleet.TriggerRepairOnIdleRequest{
+					resp, err := tf.Tasker.TriggerRepairOnIdle(tf.C, &fleet.TriggerRepairOnIdleRequest{
 						Selectors:    []*fleet.BotSelector{},
 						IdleDuration: google.NewDuration(4),
 						Priority:     20,
@@ -256,17 +239,17 @@ func TestTriggerRepairOnIdle(t *testing.T) {
 
 			Convey("and one task in recent past", func() {
 				yyyy, mm, dd := time.Now().Date()
-				fakeSwarming.botTasks["bot_dut_1"] = []*swarming.SwarmingRpcsTaskResult{
+				tf.FakeSwarming.botTasks["bot_dut_1"] = []*swarming.SwarmingRpcsTaskResult{
 					{
 						State:       "COMPLETED",
 						CompletedTs: fmt.Sprintf("%04d-%02d-%02dT00:00:00.00000000", yyyy, mm, dd),
 					},
 				}
-				_, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{})
+				_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
 				So(err, ShouldBeNil)
 
 				Convey("TriggerRepairOnIdle does not trigger a task", func() {
-					resp, err := tasker.TriggerRepairOnIdle(c, &fleet.TriggerRepairOnIdleRequest{
+					resp, err := tf.Tasker.TriggerRepairOnIdle(tf.C, &fleet.TriggerRepairOnIdleRequest{
 						Selectors:    []*fleet.BotSelector{},
 						IdleDuration: google.NewDuration(4 * 24 * time.Hour),
 						Priority:     20,
@@ -280,16 +263,16 @@ func TestTriggerRepairOnIdle(t *testing.T) {
 			})
 
 			Convey("and one running task", func() {
-				fakeSwarming.botTasks["bot_dut_1"] = []*swarming.SwarmingRpcsTaskResult{
+				tf.FakeSwarming.botTasks["bot_dut_1"] = []*swarming.SwarmingRpcsTaskResult{
 					{
 						State: "RUNNING",
 					},
 				}
-				_, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{})
+				_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
 				So(err, ShouldBeNil)
 
 				Convey("TriggerRepairOnIdle does not trigger a task", func() {
-					resp, err := tasker.TriggerRepairOnIdle(c, &fleet.TriggerRepairOnIdleRequest{
+					resp, err := tf.Tasker.TriggerRepairOnIdle(tf.C, &fleet.TriggerRepairOnIdleRequest{
 						Selectors:    []*fleet.BotSelector{},
 						IdleDuration: google.NewDuration(4 * 24 * time.Hour),
 						Priority:     20,
@@ -307,22 +290,14 @@ func TestTriggerRepairOnIdle(t *testing.T) {
 
 func TestTriggerRepairOnRepairFailed(t *testing.T) {
 	Convey("In testing context", t, FailureHalts, func() {
-		c := testingContext()
-		fakeSwarming := &fakeSwarmingClient{
-			pool:    config.Get(c).Swarming.BotPool,
-			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
-		}
-		f := func(context.Context, string) (clients.SwarmingClient, error) {
-			return fakeSwarming, nil
-		}
-		tracker := TrackerServerImpl{f}
-		tasker := TaskerServerImpl{f}
+		tf, cleanup := newTestFixtureWithFakeSwarming(t)
+		defer cleanup()
 
 		Convey("with one known bot in state ready", func() {
-			setKnownBots(c, fakeSwarming, []string{"dut_1"})
+			setKnownBots(tf.C, tf.FakeSwarming, []string{"dut_1"})
 
 			Convey("TriggerRepairOnRepairFailed does not trigger a task for the dut", func() {
-				resp, err := tasker.TriggerRepairOnRepairFailed(c, &fleet.TriggerRepairOnRepairFailedRequest{
+				resp, err := tf.Tasker.TriggerRepairOnRepairFailed(tf.C, &fleet.TriggerRepairOnRepairFailedRequest{
 					Selectors:           []*fleet.BotSelector{},
 					TimeSinceLastRepair: google.NewDuration(24 * time.Hour),
 					Priority:            20,
@@ -336,7 +311,7 @@ func TestTriggerRepairOnRepairFailed(t *testing.T) {
 		})
 
 		Convey("with one known bot in state repair_failed", func() {
-			fakeSwarming.botInfos = map[string]*swarming.SwarmingRpcsBotInfo{
+			tf.FakeSwarming.botInfos = map[string]*swarming.SwarmingRpcsBotInfo{
 				"bot_dut_1": {
 					BotId: "bot_dut_1",
 					Dimensions: []*swarming.SwarmingRpcsStringListPair{
@@ -351,11 +326,11 @@ func TestTriggerRepairOnRepairFailed(t *testing.T) {
 					},
 				},
 			}
-			_, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{})
+			_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{})
 			So(err, ShouldBeNil)
 
 			Convey("TriggerRepairOnRepairFailed triggers a task for the dut", func() {
-				resp, err := tasker.TriggerRepairOnRepairFailed(c, &fleet.TriggerRepairOnRepairFailedRequest{
+				resp, err := tf.Tasker.TriggerRepairOnRepairFailed(tf.C, &fleet.TriggerRepairOnRepairFailedRequest{
 					Selectors:           []*fleet.BotSelector{},
 					TimeSinceLastRepair: google.NewDuration(24 * time.Hour),
 					Priority:            20,
@@ -368,7 +343,7 @@ func TestTriggerRepairOnRepairFailed(t *testing.T) {
 				taskURL := botTask.Tasks[0].TaskUrl
 
 				Convey("then TriggerRepairOnRepairFailed returns the same task", func() {
-					resp, err := tasker.TriggerRepairOnRepairFailed(c, &fleet.TriggerRepairOnRepairFailedRequest{
+					resp, err := tf.Tasker.TriggerRepairOnRepairFailed(tf.C, &fleet.TriggerRepairOnRepairFailedRequest{
 						Selectors:           []*fleet.BotSelector{},
 						TimeSinceLastRepair: google.NewDuration(24 * time.Hour),
 						Priority:            20,
