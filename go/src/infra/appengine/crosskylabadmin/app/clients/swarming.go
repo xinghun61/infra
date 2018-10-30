@@ -37,8 +37,8 @@ import (
 )
 
 const (
-	// MaxConcurrentSwarmingCalls is the maximum number of concurrent swarming calls
-	// made within the context of a single RPC call to this app.
+	// MaxConcurrentSwarmingCalls is the maximum number of concurrent swarming
+	// calls made within the context of a single RPC call to this app.
 	//
 	// There is no per-instance limit (yet).
 	MaxConcurrentSwarmingCalls = 10
@@ -62,14 +62,14 @@ const (
 	SwarmingTimeLayout = "2006-01-02T15:04:05.999999999"
 )
 
-// paginationChunkSize is the number of items requested in a single page in various
-// Swarming RPC calls.
+// paginationChunkSize is the number of items requested in a single page in
+// various Swarming RPC calls.
 const paginationChunkSize = 100
 
 // SwarmingClient exposes Swarming client API used by this package.
 //
-// In prod, a SwarmingClient for interacting with the Swarming service will be used.
-// Tests should use a fake.
+// In prod, a SwarmingClient for interacting with the Swarming service will be
+// used. Tests should use a fake.
 type SwarmingClient interface {
 	ListAliveBotsInPool(context.Context, string, strpair.Map) ([]*swarming.SwarmingRpcsBotInfo, error)
 	ListRecentTasks(c context.Context, tags []string, state string, limit int) ([]*swarming.SwarmingRpcsTaskResult, error)
@@ -79,7 +79,8 @@ type SwarmingClient interface {
 
 // SwarmingCreateTaskArgs contains the arguments to SwarmingClient.CreateTask.
 //
-// This struct contains only a small subset of the Swarming task arguments that is needed by this app.
+// This struct contains only a small subset of the Swarming task arguments that
+// is needed by this app.
 type SwarmingCreateTaskArgs struct {
 	Cmd []string
 	// The task targets a dut with the given dut id.
@@ -95,10 +96,11 @@ type SwarmingCreateTaskArgs struct {
 
 type swarmingClientImpl swarming.Service
 
-// NewSwarmingClient returns a SwarmingClient for interaction with the Swarming service.
+// NewSwarmingClient returns a SwarmingClient for interaction with the Swarming
+// service.
 func NewSwarmingClient(c context.Context, host string) (SwarmingClient, error) {
-	// The Swarming call to list bots requires special previliges (beyond task trigger privilege)
-	// This app is authorized to make those API calls.
+	// The Swarming call to list bots requires special previliges (beyond task
+	// trigger privilege) This app is authorized to make those API calls.
 	t, err := auth.GetRPCTransport(c, auth.AsSelf)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to get RPC transport for host %s", host).Err()
@@ -220,9 +222,11 @@ func (sc *swarmingClientImpl) ListRecentTasks(c context.Context, tags []string, 
 	return trs, nil
 }
 
-// ListSortedRecentTasksForBot lists the most recent tasks for the bot with given dutID.
+// ListSortedRecentTasksForBot lists the most recent tasks for the bot with
+// given dutID.
 //
-// duration specifies how far in the back are the tasks allowed to have started. limit limits the number of tasks returned.
+// duration specifies how far in the back are the tasks allowed to have
+// started. limit limits the number of tasks returned.
 func (sc *swarmingClientImpl) ListSortedRecentTasksForBot(c context.Context, botID string, limit int) ([]*swarming.SwarmingRpcsTaskResult, error) {
 	trs := []*swarming.SwarmingRpcsTaskResult{}
 	// TODO(pprabhu) These should really be sorted by STARTED_TS.
@@ -251,17 +255,19 @@ func (sc *swarmingClientImpl) ListSortedRecentTasksForBot(c context.Context, bot
 	return trs, nil
 }
 
-// TimeSinceBotTask returns the duration.Duration elapsed since the given task completed on a bot.
+// TimeSinceBotTask returns the duration.Duration elapsed since the given task
+// completed on a bot.
 //
-// This function only considers tasks that were executed by Swarming to a specific bot. For tasks
-// that were never executed on a bot, this function returns nil duration.
+// This function only considers tasks that were executed by Swarming to a
+// specific bot. For tasks that were never executed on a bot, this function
+// returns nil duration.
 func TimeSinceBotTask(tr *swarming.SwarmingRpcsTaskResult) (*duration.Duration, error) {
 	switch tr.State {
 	case "RUNNING":
 		return &duration.Duration{}, nil
 	case "COMPLETED", "TIMED_OUT":
-		// TIMED_OUT tasks are considered to have completed as opposed to
-		// EXPIRED tasks, which set tr.AbandonedTs
+		// TIMED_OUT tasks are considered to have completed as opposed to EXPIRED
+		// tasks, which set tr.AbandonedTs
 		ts, err := time.Parse(SwarmingTimeLayout, tr.CompletedTs)
 		if err != nil {
 			return nil, errors.Annotate(err, "swarming returned corrupted completed timestamp %s", tr.CompletedTs).Err()

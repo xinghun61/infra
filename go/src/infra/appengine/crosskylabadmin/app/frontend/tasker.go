@@ -36,8 +36,8 @@ import (
 const (
 	// infraToolsDir is the well known path to infra tools deployed on the drone.
 	infraToolsDir = "/opt/infra-tools"
-	// skylabSwarmingWrokerPath is the path to the binary on the drone
-	// that is the entry point of all tasks.
+	// skylabSwarmingWrokerPath is the path to the binary on the drone that is
+	// the entry point of all tasks.
 	skylabSwarmingWorkerPath = infraToolsDir + "/skylab_swarming_worker"
 )
 
@@ -46,8 +46,9 @@ type SwarmingFactory func(c context.Context, host string) (clients.SwarmingClien
 
 // TaskerServerImpl implements the fleet.TaskerServer interface.
 type TaskerServerImpl struct {
-	// ClientFactory is an optional factory function for creating
-	// clients.  If it is nil, clients.NewSwarmingClient is used.
+	// ClientFactory is an optional factory function for creating clients.
+	//
+	// If SwarmingFactory is nil, clients.NewSwarmingClient is used.
 	ClientFactory SwarmingFactory
 }
 
@@ -157,8 +158,8 @@ func triggerRepairOnRepairFailedForBot(ctx context.Context, sc clients.SwarmingC
 	}
 
 	tags := withCommonTags(cfg, fmt.Sprintf("repair_failed_task:%s", bse.DutID))
-	// A repair task should only be created if enough time has passed since the last attempt,
-	// irrespective of the state the old task is in.
+	// A repair task should only be created if enough time has passed since the
+	// last attempt, irrespective of the state the old task is in.
 	oldTasks, err := sc.ListRecentTasks(ctx, tags, "", 1)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to list existing on-idle tasks triggered for dut %s", bse.DutID).Err()
@@ -276,7 +277,8 @@ func ensureBackgroundTasksForBot(ctx context.Context, sc clients.SwarmingClient,
 
 // createTasksPerBot uses worker() to create tasks for each bot in bses.
 //
-// worker() must accept a fleetBotSummaryEntity and create tasks for the corresponding bot.
+// worker() must accept a fleetBotSummaryEntity and create tasks for the
+// corresponding bot.
 func createTasksPerBot(bses []*fleetBotSummaryEntity, worker func(*fleetBotSummaryEntity) (*fleet.TaskerBotTasks, error)) (*fleet.TaskerTasksResponse, error) {
 	// Protects access to botTasks
 	m := &sync.Mutex{}
@@ -318,9 +320,10 @@ func repairTasksWithIDs(host string, dutID string, taskIDs []string) *fleet.Task
 	}
 }
 
-// luciferAdminTaskCmd returns a slice of strings for a lucifer admin
-// task command.  logdogURL, if non-empty, is used as the LogDog
-// annotation URL.
+// luciferAdminTaskCmd returns a slice of strings for a lucifer admin task
+// command.
+//
+// logdogURL, if non-empty, is used as the LogDog annotation URL.
 func luciferAdminTaskCmd(ttype fleet.TaskType, logdogURL string) []string {
 	s := []string{
 		skylabSwarmingWorkerPath,
@@ -332,9 +335,10 @@ func luciferAdminTaskCmd(ttype fleet.TaskType, logdogURL string) []string {
 	return s
 }
 
-// generateLogDogURL generates a LogDog annotation URL for the LogDog
-// server corresponding to the configured Swarming server.  If the
-// LogDog server can't be determined, an empty string is returned.
+// generateLogDogURL generates a LogDog annotation URL for the LogDog server
+// corresponding to the configured Swarming server.
+//
+// If the LogDog server can't be determined, an empty string is returned.
 func generateLogDogURL(cfg *config.Config) string {
 	if cfg.Tasker.LogdogHost != "" {
 		return logdogAnnotationURL(cfg.Tasker.LogdogHost, uuid.New().String())
@@ -342,8 +346,7 @@ func generateLogDogURL(cfg *config.Config) string {
 	return ""
 }
 
-// logdogAnnotationURL generates a LogDog annotation URL for the
-// LogDog server.
+// logdogAnnotationURL generates a LogDog annotation URL for the LogDog server.
 func logdogAnnotationURL(server, id string) string {
 	return fmt.Sprintf("logdog://%s/chromeos/skylab/%s/+/annotations",
 		server, id)

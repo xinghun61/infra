@@ -53,7 +53,9 @@ func (tf *testFixture) CloneWithFreshMocks() (testFixture, func()) {
 }
 
 // newTextFixture creates a new testFixture to be used in unittests.
-// The function returns the created testFixture and cleanup function that must be deferred by the caller.
+//
+// The function returns the created testFixture and cleanup function that must
+// be deferred by the caller.
 func newTestFixture(t *testing.T) (testFixture, func()) {
 	return newTestFixtureWithContext(testingContext(), t)
 }
@@ -109,7 +111,8 @@ func testingContext() context.Context {
 //
 // state is the bot's state dimension.
 // dims is a convenient way to specify other bot dimensions.
-// "a:x,y;b:z" will set the dimensions of the bot to ["a": ["x", "y"], "b": ["z"]].
+// "a:x,y;b:z" will set the dimensions of the bot to ["a": ["x", "y"], "b":
+//   ["z"]].
 func botForDUT(id string, state string, dims string) *swarming.SwarmingRpcsBotInfo {
 	sdims := make([]*swarming.SwarmingRpcsStringListPair, 0, 2)
 	if dims != "" {
@@ -144,10 +147,12 @@ func botForDUT(id string, state string, dims string) *swarming.SwarmingRpcsBotIn
 	}
 }
 
-// fakeListAliveBotsInPool returns a function that implements SwarmingClient.ListAliveBotsInPool.
+// fakeListAliveBotsInPool returns a function that implements
+// SwarmingClient.ListAliveBotsInPool.
 //
-// This fake implementation captures the bots argument and returns a subset of the bots
-// filtered by the dimensions argument in the SwarmingClient.ListAliveBotsInPool call.
+// This fake implementation captures the bots argument and returns a subset of
+// the bots filtered by the dimensions argument in the
+// SwarmingClient.ListAliveBotsInPool call.
 func fakeListAliveBotsInPool(bots []*swarming.SwarmingRpcsBotInfo) func(context.Context, string, strpair.Map) ([]*swarming.SwarmingRpcsBotInfo, error) {
 	return func(_ context.Context, _ string, ds strpair.Map) ([]*swarming.SwarmingRpcsBotInfo, error) {
 		resp := []*swarming.SwarmingRpcsBotInfo{}
@@ -160,7 +165,8 @@ func fakeListAliveBotsInPool(bots []*swarming.SwarmingRpcsBotInfo) func(context.
 	}
 }
 
-// botContainsDims determines if the bot b satisfies the requirements specified via dims
+// botContainsDims determines if the bot b satisfies the requirements specified
+// via dims
 func botContainsDims(b *swarming.SwarmingRpcsBotInfo, dims strpair.Map) bool {
 	bdm := strpair.Map{}
 	for _, bds := range b.Dimensions {
@@ -179,7 +185,8 @@ func botContainsDims(b *swarming.SwarmingRpcsBotInfo, dims strpair.Map) bool {
 // expecteDefaultPerBotRefresh sets up the default expectations for refreshing
 // each bot, once the list of bots is known.
 //
-// This is useful for tests that only target the initial Swarming bot listing logic.
+// This is useful for tests that only target the initial Swarming bot listing
+// logic.
 func expectDefaultPerBotRefresh(tf testFixture) {
 	tf.MockSwarming.EXPECT().ListSortedRecentTasksForBot(
 		gomock.Any(), gomock.Any(), gomock.Any(),

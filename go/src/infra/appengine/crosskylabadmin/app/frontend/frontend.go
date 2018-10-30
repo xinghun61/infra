@@ -60,8 +60,8 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 
 // checkAccess verifies that the request is from an authorized user.
 //
-// Servers should use checkAccess as a Prelude while handling requests to uniformly
-// check access across the API.
+// Servers should use checkAccess as a Prelude while handling requests to
+// uniformly check access across the API.
 func checkAccess(c context.Context, _ string, _ proto.Message) (context.Context, error) {
 	switch allow, err := auth.IsMember(c, config.Get(c).AccessGroup); {
 	case err != nil:

@@ -35,8 +35,9 @@ import (
 
 // TrackerServerImpl implements the fleet.TrackerServer interface.
 type TrackerServerImpl struct {
-	// ClientFactory is an optional factory function for creating
-	// clients.  If it is nil, clients.NewSwarmingClient is used.
+	// ClientFactory is an optional factory function for creating clients.
+	//
+	// If SwarmingFactory is nil, clients.NewSwarmingClient is used.
 	ClientFactory SwarmingFactory
 }
 
@@ -135,7 +136,9 @@ func getBotsFromSwarming(ctx context.Context, sc clients.SwarmingClient, pool st
 	return flattenAndDedpulicateBots(bots), err
 }
 
-// getFilteredBotsFromSwarming lists bots for a single selector by calling the Swarming service.
+// getFilteredBotsFromSwarming lists bots for a single selector by calling the
+// Swarming service.
+//
 // This function is intended to be used in a parallel.WorkPool().
 func getFilteredBotsFromSwarming(ctx context.Context, sc clients.SwarmingClient, pool string, sel *fleet.BotSelector) ([]*swarming.SwarmingRpcsBotInfo, error) {
 	dims := make(strpair.Map)
@@ -190,7 +193,8 @@ var healthyDutStates = map[fleet.DutState]bool{
 
 // botInfoToSummary initializes fleet.BotSummary for each bot.
 //
-// This function returns a map from the bot ID to fleet.BotSummary object for it.
+// This function returns a map from the bot ID to fleet.BotSummary object for
+// it.
 func botInfoToSummary(bots []*swarming.SwarmingRpcsBotInfo) (map[string]*fleet.BotSummary, error) {
 	bsm := make(map[string]*fleet.BotSummary, len(bots))
 	for _, bi := range bots {
@@ -236,7 +240,8 @@ func initializeDimensionsForBotSummary(bs *fleet.BotSummary) {
 	}
 }
 
-// setIdleDuration updates the bot summaries with the duration each bot has been idle.
+// setIdleDuration updates the bot summaries with the duration each bot has
+// been idle.
 func setIdleDuration(ctx context.Context, sc clients.SwarmingClient, bsm map[string]*fleet.BotSummary) error {
 	return parallel.WorkPool(clients.MaxConcurrentSwarmingCalls, func(workC chan<- func() error) {
 		for bid := range bsm {
@@ -255,7 +260,8 @@ func setIdleDuration(ctx context.Context, sc clients.SwarmingClient, bsm map[str
 	})
 }
 
-// getIdleDuration queries swarming for the duration since last task on the bot.
+// getIdleDuration queries swarming for the duration since last task on the
+// bot.
 func getIdleDuration(ctx context.Context, sc clients.SwarmingClient, botID string) (*duration.Duration, error) {
 	trs, err := sc.ListSortedRecentTasksForBot(ctx, botID, 1)
 	if err != nil {

@@ -27,7 +27,9 @@ import (
 	"infra/appengine/crosskylabadmin/app/config"
 )
 
-// This function only validates the DutID field, to ensure that the correct bots are updated/summarized.
+// This function only validates the DutID field, to ensure that the correct
+// bots are updated/summarized.
+//
 // Other tests should verify the fields of returned bots.
 func TestRefreshAndSummarizeNoBotsAvailable(t *testing.T) {
 	Convey("with no swarming duts available", t, func() {
@@ -85,7 +87,9 @@ func TestRefreshAndSummarizeNoBotsAvailable(t *testing.T) {
 	})
 }
 
-// This function only validates the DutID field, to ensure that the correct bots are updated/summarized.
+// This function only validates the DutID field, to ensure that the correct
+// bots are updated/summarized.
+//
 // Other tests should verify the fields of returned bots.
 func TestRefreshAndSummarizeOneBotAvailable(t *testing.T) {
 	Convey("with a single dut available", t, func() {
@@ -160,7 +164,9 @@ func TestRefreshAndSummarizeOneBotAvailable(t *testing.T) {
 	})
 }
 
-// This function only validates the DutID field, to ensure that the correct bots are updated/summarized.
+// This function only validates the DutID field, to ensure that the correct
+// bots are updated/summarized.
+//
 // Other tests should verify the fields of returned bots.
 func TestRefreshAndSummarizeMultipleBotsAvailable(t *testing.T) {
 	Convey("with two duts available", t, func() {
@@ -216,7 +222,9 @@ func TestRefreshAndSummarizeMultipleBotsAvailable(t *testing.T) {
 	})
 }
 
-// This function only validates the DutID field, to ensure that the correct bots are updated/summarized.
+// This function only validates the DutID field, to ensure that the correct
+// bots are updated/summarized.
+//
 // Other tests should verify the fields of returned bots.
 func TestRefreshLargeNumberOfBotsAvailable(t *testing.T) {
 	Convey("with a large number of duts available", t, func() {

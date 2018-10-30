@@ -330,12 +330,14 @@ func TestTriggerRepairOnRepairFailed(t *testing.T) {
 		})
 	})
 
-	// TODO(pprabhu) Add a case where the initial repair task times out1instead of completing.
-	// TODO(pprabhu) Add a case where the initial repair task is killed instead of completing.
+	// TODO(pprabhu) Add a case where the initial repair task times out1instead
+	// of completing.
+	// TODO(pprabhu) Add a case where the initial repair task is killed instead
+	// of completing.
 }
 
-// setKnownReadyBots refreshes the internal state of the services under test so that
-// the provided duts in ready state are known to the services.
+// setKnownReadyBots refreshes the internal state of the services under test so
+// that the provided duts in ready state are known to the services.
 func setKnownReadyBots(tf testFixture, duts []string) {
 	setKnownBotsInState(tf, duts, "ready")
 }
@@ -343,8 +345,8 @@ func setKnownReadyBots(tf testFixture, duts []string) {
 // setKnownBots refreshes the internal state of the services under test so that
 // the provided duts are known to the services.
 func setKnownBotsInState(tf testFixture, duts []string, state string) {
-	// Clone tf so that MockSwarming interactions do not intefere with the
-	// actual test.
+	// Clone tf so that MockSwarming interactions do not intefere with the actual
+	// test.
 	tf, cleanup := tf.CloneWithFreshMocks()
 	defer cleanup()
 
@@ -363,11 +365,12 @@ func setKnownBotsInState(tf testFixture, duts []string, state string) {
 	So(resp.DutIds, ShouldHaveLength, len(duts))
 }
 
-// expectListRecentTasks sets up expectations for checking taskCount recent tasks in the given state.
+// expectListRecentTasks sets up expectations for checking taskCount recent
+// tasks in the given state.
 //
-// This function returns the gomock expectation for further call chaining as necessary.
-// Pass in the zero value for an argument to not setup any expectation for that
-// argument in the create task call.
+// This function returns the gomock expectation for further call chaining as
+// necessary.  Pass in the zero value for an argument to not setup any
+// expectation for that argument in the create task call.
 //
 // tasks are the Swarming tasks returned by the mock call.
 func expectListRecentTasks(tf testFixture, taskCount int, state string, tasks ...*swarming.SwarmingRpcsTaskResult) *gomock.Call {
@@ -392,12 +395,12 @@ func expectListRecentTasks(tf testFixture, taskCount int, state string, tasks ..
 // expectListSortedRecentTaskForBot sets up expectations for listing resent
 // tasks for a bot for the given dut.
 //
-// This function returns the gomock expectation for further call chaining as necessary.
-// Pass in the zero value for an argument to not setup any expectation for that
-// argument in the create task call.
+// This function returns the gomock expectation for further call chaining as
+// necessary.  Pass in the zero value for an argument to not setup any
+// expectation for that argument in the create task call.
 //
-// dutID is the ID of the Dut (not the bot) to target.
-// tasks are the Swarming tasks returned by the mock call.
+// dutID is the ID of the Dut (not the bot) to target.  tasks are the Swarming
+// tasks returned by the mock call.
 func expectListSortedRecentTasksForBot(tf testFixture, dutID string, tasks ...*swarming.SwarmingRpcsTaskResult) *gomock.Call {
 	var b interface{}
 	if dutID == "" {
@@ -413,13 +416,14 @@ func expectListSortedRecentTasksForBot(tf testFixture, dutID string, tasks ...*s
 
 // expectTaskCreation sets up the expectations for a single task creation.
 //
-// This function returns the gomock expectation for further call chaining as necessary.
-// Pass in the zero value for an argument to not setup any expectation for that
-// argument in the create task call.
+// This function returns the gomock expectation for further call chaining as
+// necessary.  Pass in the zero value for an argument to not setup any
+// expectation for that argument in the create task call.
 //
 // taskID is the ID of the created task.
 // Other arguments are expectations for the task creation call.
-// dutState is the state the DUT should be in before the task, e.g. "needs_reset".
+// dutState is the state the DUT should be in before the task, e.g.
+//   "needs_reset".
 // tname is task name, e.g. "admin_reset".
 func expectTaskCreation(tf testFixture, taskID string, dutID string, dutState string, tname string, priority int) *gomock.Call {
 	m := &createTaskArgsMatcher{
