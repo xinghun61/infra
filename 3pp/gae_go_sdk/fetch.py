@@ -24,7 +24,9 @@ ZIP_PREFIX = 'go_appengine_sdk_' + _gae_platform() + '-'
 
 def do_latest():
   BASE_URL = 'https://www.googleapis.com/storage/v1/b/appengine-sdks/o/'
-  r = requests.get(BASE_URL+'?prefix=featured/%s&delimiter=/' % ZIP_PREFIX)
+  url = BASE_URL+'?prefix=featured/%s&delimiter=/' % ZIP_PREFIX
+  print >>sys.stderr, "Hitting %r" % url
+  r = requests.get(url)
   r.raise_for_status()
   data = r.json()
   max_ver, max_string = parse_version(''), ''
