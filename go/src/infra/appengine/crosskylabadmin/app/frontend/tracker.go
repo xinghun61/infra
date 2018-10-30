@@ -113,8 +113,6 @@ func getBotsFromSwarming(ctx context.Context, sc clients.SwarmingClient, pool st
 		return bots, nil
 	}
 
-	sels = dropDuplicateSelectors(sels)
-
 	bots := make([][]*swarming.SwarmingRpcsBotInfo, 0, len(sels))
 	// Protects access to bots
 	m := &sync.Mutex{}
@@ -376,16 +374,4 @@ func filterNotFoundEntities(bses []*fleetBotSummaryEntity, merr errors.MultiErro
 		return nil, errs
 	}
 	return filtered, nil
-}
-
-func dropDuplicateSelectors(sels []*fleet.BotSelector) []*fleet.BotSelector {
-	msels := make(map[string]*fleet.BotSelector, len(sels))
-	for _, s := range sels {
-		msels[s.DutId] = s
-	}
-	usels := make([]*fleet.BotSelector, 0, len(msels))
-	for _, s := range msels {
-		usels = append(usels, s)
-	}
-	return usels
 }
