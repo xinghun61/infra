@@ -224,7 +224,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 	})
 }
 
-func TestRefreshAndSummarizeBotsFields(t *testing.T) {
+func TestRefreshAndSummarizeBotsDutState(t *testing.T) {
 	Convey("In testing context", t, FailureHalts, func() {
 		c := testingContext()
 		fakeSwarming := &fakeSwarmingClient{
@@ -271,6 +271,21 @@ func TestRefreshAndSummarizeBotsFields(t *testing.T) {
 				})
 			})
 		})
+	})
+}
+
+func TestRefreshAndSummarizeIdleDuration(t *testing.T) {
+	Convey("In testing context", t, FailureHalts, func() {
+		c := testingContext()
+		fakeSwarming := &fakeSwarmingClient{
+			pool:    config.Get(c).Swarming.BotPool,
+			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
+		}
+		tracker := TrackerServerImpl{
+			ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
+				return fakeSwarming, nil
+			},
+		}
 
 		Convey("with a swarming dut with no recent tasks", func() {
 			fakeSwarming.setAvailableDutIDs([]string{"dut_task_1"})
