@@ -12,7 +12,6 @@
 <h2>Spam Moderation Queue: Automatic Classifier Close Calls</h2>
 [include "../framework/artifact-list-pagination-part.ezt"]
 
-<form method="POST" action="spamqueue.do">
 <button type="submit" vaue="mark_spam" disabled="true">Mark as Spam</button>
 <button type="submit" value="mark_ham" disabled="true">Mark as Ham</button>
 
@@ -57,7 +56,6 @@
 </table>
 
 [include "../framework/artifact-list-pagination-part.ezt"]
-<input type="hidden" name="token" value="[moderate_spam_token]">
 <button type="submit" vaue="mark_spam" disabled="true">Mark as Spam</button>
 <button type="submit" value="mark_ham" disabled="true">Mark as Ham</button>
 
@@ -77,26 +75,45 @@ runOnLoad(function() {
         setDisabled(true);
     });
   }
-  var checkboxNodes = document.querySelectorAll("input[type=checkbox]");
-  var checkboxes = Array();
-  for (var i = 0; i < checkboxNodes.length; ++i) {
-    var checkbox = checkboxNodes.item(i);
-    checkboxes.push(checkbox);
-    checkbox.addEventListener("change", updateEnabled);
-  }
+
+  const checkboxes = Array.from(
+      document.querySelectorAll('input[type=checkbox]'));
+  checkboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', updateEnabled);
+  });
+
+  const buttons = Array.from(
+      document.querySelectorAll('button[type=submit]'));
+  buttons.forEach(button => {
+    button.addEventListener('click', function(event) {
+      const markSpam = (button.value === 'mark_spam');
+      const issueRefs = [];
+      checkboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+          issueRefs.push({
+              projectName: window.CS_env.projectName,
+              localId: checkbox.value,
+          });
+          const rowElement = checkbox.parentElement.parentElement;
+          rowElement.parentElement.removeChild(rowElement);
+        }
+      });
+      window.prpcClient.call('monorail.Issues', 'FlagIssues', {
+        issueRefs: issueRefs,
+        flag: markSpam,
+      });
+    });
+  });
 
   function updateEnabled() {
-    var anySelected = checkboxes.some(function(checkbox) {
-      return checkbox.checked;
-    });
+    const anySelected = checkboxes.some(checkbox => checkbox.checked);
     setDisabled(!anySelected);
    }
 
   function setDisabled(disabled) {
-    var buttons = document.querySelectorAll("button[type=submit]");
-    for (var i = 0; i < buttons.length; ++i) {
-      buttons.item(i).disabled = disabled;
-    }
+    buttons.forEach(button => {
+      button.disabled = disabled;
+    });
   }
 });
 </script>
