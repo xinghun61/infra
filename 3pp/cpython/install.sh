@@ -39,6 +39,8 @@ SETUP_LOCAL_ATTACH=(
 PROBE_DEFAULT_SSL_CA_CERTS=0
 
 if [[ $_3PP_PLATFORM == mac* ]]; then
+  PYTHONEXE=python.exe
+
   # Mac Python installations use 2-byte Unicode.
   UNICODE_TYPE=ucs2
   # Flags gathered from stock Python installation.
@@ -85,6 +87,8 @@ if [[ $_3PP_PLATFORM == mac* ]]; then
     "_ssl::-lssl.0.9.8 -lcrypto.0.9.8"
   )
 else
+  PYTHONEXE=python
+
   # Linux Python (Ubuntu) installations use 4-byte Unicode.
   UNICODE_TYPE=ucs4
   EXTRA_CONFIGURE_ARGS="--with-fpectl --with-dbmliborder=bdb:gdbm"
