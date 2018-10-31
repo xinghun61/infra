@@ -45,7 +45,7 @@ class MrEditField extends Polymer.Element {
       },
       _initialValue: {
         type: String,
-        computed: '_computeInitialValue(initialValues)',
+        computed: '_joinValues(initialValues)',
       },
       // Set to true if a field uses a standard input instead of any sort of
       // fancier edit type.
@@ -64,23 +64,29 @@ class MrEditField extends Polymer.Element {
   }
 
   reset() {
+    this.setValue(this.initialValues);
+  }
+
+  setValue(v) {
+    if (!Array.isArray(v)) {
+      v = [v];
+    }
     const input = this._getInput();
     if (this._fieldIsBasic) {
-      input.value = this._initialValue;
+      input.value = this._joinValues(v);
     }
     if (this._fieldIsEnum(this.type)) {
       if (this.multi) {
         Polymer.dom(this.root).querySelectorAll('.enum-input').forEach(
           (checkbox) => {
             checkbox.checked = this._optionInValues(
-              this.initialValues, checkbox.value);
+              v, checkbox.value);
           }
         );
       } else {
         const options = Array.from(input.querySelectorAll('option'));
         input.selectedIndex = options.findIndex((option) => {
-          return this._computeIsSelected(this._initialValue,
-            option.value);
+          return this._computeIsSelected(this._joinValues(v), option.value);
         });
       }
     }
@@ -153,7 +159,7 @@ class MrEditField extends Polymer.Element {
     return type === fieldTypes.URL_TYPE;
   }
 
-  _computeInitialValue(values) {
+  _joinValues(values) {
     return values.join(',');
   }
 

@@ -88,7 +88,7 @@ deps:
 	ln -sf ../../../node_modules/chart.js/dist/Chart.min.js \
 		deployed_node_modules/chart.js/dist/Chart.min.js
 
-	rm -f bower_components/chopsui
+	rm -rf bower_components/chopsui
 	ln -sf ../../../crdx/chopsui bower_components/chopsui
 
 vulcanize: clean_vulcanized

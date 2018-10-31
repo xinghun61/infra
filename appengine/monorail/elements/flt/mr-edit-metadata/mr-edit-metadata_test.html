@@ -32,7 +32,7 @@
       flush(() => {
         Polymer.dom(element.root).querySelector('#statusInput').value = 'Old';
         assert.deepEqual(element.getDelta(), {
-          'status': 'Old',
+          status: 'Old',
         });
         done();
       });
@@ -44,7 +44,109 @@
         Polymer.dom(element.root).querySelector(
           '#summaryInput').value = 'newfangled fancy summary';
         assert.deepEqual(element.getDelta(), {
-          'summary': 'newfangled fancy summary',
+          summary: 'newfangled fancy summary',
+        });
+        done();
+      });
+    });
+
+    test('changing custom fields produces delta', function(done) {
+      element.fieldDefs = [
+        {
+          fieldRef: {
+            fieldName: 'testField',
+            fieldId: 1,
+          },
+        },
+        {
+          fieldRef: {
+            fieldName: 'fakeField',
+            fieldId: 2,
+          },
+        },
+      ];
+      flush(() => {
+        Polymer.dom(element.root).querySelector(
+          '#testFieldInput').setValue('test value');
+        assert.deepEqual(element.getDelta(), {
+          fieldValuesAdded: [
+            {
+              fieldRef: {
+                fieldName: 'testField',
+                fieldId: 1,
+              },
+              value: 'test value',
+            },
+          ],
+        });
+        done();
+      });
+    });
+
+    test('_optionsForField computes options for fieldDef', function() {
+      const labels = [
+        {
+          label: 'enumField-one',
+        },
+        {
+          label: 'enumField-two',
+        },
+      ];
+
+      assert.deepEqual(element._optionsForField(labels, 'enumField'), [
+        {
+          label: 'enumField-one',
+          optionName: 'one',
+        },
+        {
+          label: 'enumField-two',
+          optionName: 'two',
+        },
+      ]);
+    });
+
+    test('changing enum fields produces delta', function(done) {
+      element.fieldDefs = [
+        {
+          fieldRef: {
+            fieldName: 'enumField',
+            fieldId: 1,
+            type: 'ENUM_FIELD'
+          },
+          isMultivalued: true,
+        },
+      ];
+      element.projectConfig = {
+        labelDefs: [
+          {
+            label: 'enumField-one',
+          },
+          {
+            label: 'enumField-two',
+          },
+        ]
+      };
+      flush(() => {
+        Polymer.dom(element.root).querySelector(
+          '#enumFieldInput').setValue(['one', 'two']);
+        console.log(JSON.stringify(element.getDelta()));
+        assert.deepEqual(element.getDelta(), {
+          fieldValuesAdded: [
+            {
+              fieldRef: {
+                fieldName: 'enumField',
+                fieldId: 1,
+              },
+              value: 'one',
+            },
+            {
+              fieldRef: {
+                fieldName: 'enumField',
+                fieldId: 1,
+              },
+              value: 'two',
+            },
+          ],
         });
         done();
       });

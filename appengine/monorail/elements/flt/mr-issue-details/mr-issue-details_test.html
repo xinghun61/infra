@@ -21,12 +21,14 @@
     });
 
     test('_updateIssue generates description change', function(done) {
-      sinon.spy(actionCreator, 'updateIssue');
+      window.actionCreator = {
+        updateIssue: sinon.stub(),
+      };
 
       element.token = '1234';
       element.issueId = 5;
       element.projectName = 'chromium';
-      element._updateIssue('comment data', null, null, true);
+      element._updateIssue('comment data', null, true);
 
       flush(() => {
         assert.deepEqual(actionCreator.updateIssue.args[0][1], {
@@ -37,6 +39,7 @@
           },
           commentContent: 'comment data',
           isDescription: true,
+          sendEmail: true,
         });
         assert.isTrue(actionCreator.updateIssue.calledOnce);
         done();

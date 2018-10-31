@@ -340,6 +340,7 @@ class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
 
   _optionsForField(labelDefs, fieldName) {
     const options = [];
+    labelDefs = labelDefs || [];
 
     // TODO(zhangtiff): Find a way to avoid traversing through every label on
     // every enum field.
