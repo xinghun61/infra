@@ -59,8 +59,8 @@ class SpamService(object):
     self.verdict_tbl = sql.SQLTableManager(SPAMVERDICT_TABLE_NAME)
     self.issue_tbl = sql.SQLTableManager(ISSUE_TABLE)
 
-    self.ml_engine = ml_helpers.setup_ml_engine()
-
+    # ML Engine library is lazy loaded below.
+    self.ml_engine = None
 
   def LookupIssueFlaggers(self, cnxn, issue_id):
     """Returns users who've reported the issue or its comments as spam.
@@ -291,6 +291,10 @@ class SpamService(object):
     model_name = 'projects/%s/models/%s' % (
       settings.classifier_project_id, settings.spam_model_name)
     body = {'instances': [{"inputs": instance["word_hashes"]}]}
+
+    if not self.ml_engine:
+      self.ml_engine = ml_helpers.setup_ml_engine()
+
     request = self.ml_engine.projects().predict(name=model_name, body=body)
     response = request.execute()
     logging.info('ML Engine API response: %r' % response)
@@ -363,6 +367,10 @@ class SpamService(object):
     if self._IsExempt(author, is_project_member):
       return result
 
+    if not self.ml_engine:
+      self.ml_engine = ml_helpers.setup_ml_engine()
+
+    # If setup_ml_engine returns None, it failed to init.
     if not self.ml_engine:
       logging.error("ML Engine not initialized.")
       self.ml_engine_failures.increment()
