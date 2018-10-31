@@ -2,20 +2,56 @@
 
 ## Deploying a new version to an existing instance
 
-1.  You need the master and replica databases set up on the Developer API console
-1.  Make sure that the app ID is correct in app.yaml.
-1.  In the monorail directory, run the command  `make deploy_staging `
-1.  Make any needed schema changes by looking at the end of schema/alter-table-log.txt.  Be sure to connect to the staging master DB.
-1.  On console.cloud.google.com, try out the new version using a version specific URL:
-    1.  Test some of the expected changes
-    1.  Add a comment to an issue
-    1.  Enter a new issue and CC your personal account
-    1.  Verify that you got an email (at the "all" email address specified in settings.py)
-    1.  Try doing a query that is not cached, then repeat it to test the cached case
-1.  When everything looks good, make the new version the default on staging.
-1.  If you updated the staging schema, disconnect from the staging master DB so that command prompt is not left open in a terminal window.
-1.  Repeat the process on prod.  Be sure to repeat the same schema changes on the prod database.
-1.  If you updated the prod schema, disconnect from the prod master DB so that command prompt is not left open in a terminal window.
+If any step below fails. Halt deploy and ping Monorail chat.
+
+1. Prequalify
+    1. Check for signs of trouble
+        1. [go/cit-hangout](http://go/devx-pages)
+        1. [Viceroy](http://go/monorail-prod-viceroy)
+        1. [go/devx-pages](http://go/devx-pages)
+        1. [GAE dashboard](https://console.cloud.google.com/appengine?project=monorail-prod&duration=PT1H)
+        1. [Error Reporting](http://console.cloud.google.com/errors?time=P1D&order=COUNT_DESC&resolution=OPEN&resolution=ACKNOWLEDGED&project=monorail-prod)
+    1. If there are any significant operational problems with Monorail or ChOps
+       in general, halt deploy.
+    1. Run `gclient sync`.
+1. Update Schema
+    1. Check for changes since last deploy: `tail -30 schema/alter-table-log.txt`
+    1. Copy and paste the new changes into the master DB in staging.
+       Please be careful when pasting into SQL prompt.
+1. Upload Staging Version
+    1. `make deploy_staging`
+1. Test on Staging
+    1. For each commit since last deploy, verify affected functionality still works.
+1. Make Live on Staging
+    1. Update module `besearch` to be the live version on staging.
+    1. Update the other modules, `default` and `latency-insensitive`.
+1. Upload Production Version
+    1. `make deploy_prod`
+    1. If you updated the staging schema, disconnect from the staging master DB so
+       that command prompt is not left open in a terminal window.
+1. On console.cloud.google.com, try out the new version using a version specific URL:
+    1. Test some of the expected changes.
+    1. Add a comment to an issue.
+    1. Enter a new issue and CC your personal account.
+    1. Verify that you got an email (at the "all" email address specified in settings.py).
+    1. Try doing a query that is not cached, then repeat it to test the cached case.
+1. Make Live on Prod
+    1. Repeat the same schema changes on the prod database.
+    1. Click on a bunch of projects to generate some traffic to the new version.
+    1. Split traffic 1% with new version using cookie-based traffic splitting.
+        1. **Important:** Make sure to split traffic for all 3 modules, starting
+           with `besearch`.
+    1. Wait an hour.
+    1. If nothing looks off, proceed slowly to 25%, then 100%. Start with
+       `besearch` each time.
+    1. If you updated the prod schema, disconnect from the prod master DB so that
+       command prompt is not left open in a terminal window.
+1. Monitor Viceroy and Error Reporting
+    1. Modest latency increases are normal in the first 10-20 minutes
+    1. Check [/p/chromium updates page](https://bugs.chromium.org/p/chromium/updates/list).
+    1. [Chromedash](http://go/chromedash), should work after deployment.
+1. Announce the Deployment.
+    1. Copy changes since last deploy: `git log --oneline .`.
 
 ## Creating and deploying a new Monorail instance
 
@@ -25,7 +61,7 @@
     1.  Set up IP address and configure admin password and allowed IP addr. [Instructions](https://cloud.google.com/sql/docs/mysql-client#configure-instance-mysql).
     1.  Set up backups on master.  The first backup must be created before you can configure replicas.
 1.  Fork settings.py and configure every part of it, especially trusted domains and "all" email settings.
-1.  You might want to also update */*_constants.py files.
+1.  You might want to also update `*/*_constants.py` files.
 1.  Set up log saving to bigquery or something.
 1.  Set up monitoring and alerts.
 1.  Set up attachment storage in GCS.
