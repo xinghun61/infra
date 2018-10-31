@@ -58,6 +58,9 @@ if [[ $_3PP_PLATFORM == mac* ]]; then
   # rather than search all of the paths for a ".dylib" and then, failing
   # that, do a second sweep for ".a".
   LDFLAGS="$LDFLAGS -Wl,-search_paths_first"
+
+  # Our builder system is missing X11 headers, so this module does not build.
+  SETUP_LOCAL_SKIP+=(_tkinter)
 else
   PYTHONEXE=python
 
