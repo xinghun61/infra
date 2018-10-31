@@ -649,6 +649,7 @@ class IssuesServicerTest(unittest.TestCase):
     request.issue_ref.local_id = 1
     request.uploads.extend([
           issues_pb2.AttachmentUpload(filename='a.txt', content='aaaaa')])
+    request.send_email = True
 
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='approver3@example.com',
@@ -687,8 +688,7 @@ class IssuesServicerTest(unittest.TestCase):
     work_env.WorkEnv(mc, self.services).UpdateIssueApproval.\
     assert_called_once_with(
         self.issue_1.issue_id, 3, ANY, u'Well, actually', False,
-        attachments=[(u'a.txt', 'aaaaa', 'text/plain')]
-    )
+        attachments=[(u'a.txt', 'aaaaa', 'text/plain')], send_email=True)
     self.assertEqual(expected, actual)
 
   @patch('businesslogic.work_env.WorkEnv.UpdateIssueApproval')
@@ -740,7 +740,7 @@ class IssuesServicerTest(unittest.TestCase):
     ).UpdateIssueApproval.assert_called_once_with(
         self.issue_1.issue_id, 3,
         tracker_pb2.ApprovalDelta(),
-        u'Better response.', True, attachments=[])
+        u'Better response.', True, attachments=[], send_email=False)
     self.assertEqual(expected, actual)
 
 

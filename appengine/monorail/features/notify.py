@@ -799,7 +799,7 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
     recipient_ids = []
     if comment.amendments:
       for amendment in comment.amendments:
-        if amendment.custom_field_name is 'Status':
+        if amendment.custom_field_name == 'Status':
           if (approval_value.status is
               tracker_pb2.ApprovalStatus.REVIEW_REQUESTED):
             recipient_ids = approval_value.approver_ids
@@ -807,7 +807,7 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
             recipient_ids.extend([issue.owner_id])
             recipient_ids.extend(user_ids_from_fields)
 
-        elif amendment.custom_field_name is 'Approvers':
+        elif amendment.custom_field_name == 'Approvers':
           recipient_ids.extend(approval_value.approver_ids)
           recipient_ids.append(issue.owner_id)
           recipient_ids.extend(user_ids_from_fields)

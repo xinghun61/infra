@@ -314,7 +314,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
       av, _comment = we.UpdateIssueApproval(
           issue.issue_id, approval_fd.field_id, approval_delta,
           request.comment_content, request.is_description,
-          attachments=attachments)
+          attachments=attachments, send_email=request.send_email)
 
     with mc.profiler.Phase('converting to response objects'):
       users_by_id = framework_views.MakeAllUserViews(
