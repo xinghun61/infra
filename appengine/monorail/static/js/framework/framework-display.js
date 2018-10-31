@@ -130,49 +130,40 @@ function CS_toggleCollapse(el) {
 
 
 /**
- * Register a function for mouse clicks on a table row.  This is needed because
- * some browsers (now including Chrome) do not generate click events for mouse
- * buttons other than the primary mouse button.  So, we look for a mousedown
- * and mouseup at about the same location.
+ * Register a function for mouse clicks on the results table.  We
+ * listen on the table to avoid adding 1000 individual listeners on
+ * the cells.  This is needed because some browsers (now including
+ * Chrome) do not generate click events for mouse buttons other than
+ * the primary mouse button.  Chrome and Firefox generate auxclick
+ * events, but Edge does not.
  */
 
-var CS_lastX = 0, CS_lastY = 0;
-
 function CS_addClickListener(tableEl, handler) {
-  tableEl.addEventListener('click', function(event) {
-    if (event.target.classList.contains('computehref') &&
-        (event.button == 0 || event.button == 1) &&
-        (event.clientX != 0 || event.clientY != 0)) {
-      event.preventDefault();
-    }
-    if (event.target.tagName == 'A') {
+  function maybeClick(event) {
+    let target = event.target;
+    let inLink = target.tagName == 'A' || target.parentNode.tagName == 'A';
+
+    if (inLink) {
+      // The <a> elements already have the correct hrefs.
       return;
     }
-    if (event.button == 1) {
-      event.preventDefault();
-    }
-  });
-  tableEl.addEventListener('mousedown', function(event) {
-    if (event.target.tagName == 'A' &&
-        !event.target.classList.contains('computehref')) {
+    if (event.button == 2) {
+      // User is trying to open a context menu, not trying to navigate.
       return;
     }
-    CS_lastX = event.clientX;
-    CS_lastY = event.clientY;
-    if (event.button == 1) {
-      event.preventDefault();
-    }
-  });
-  tableEl.addEventListener('mouseup', function(event) {
-    if (event.target.tagName == 'A' &&
-        !event.target.classList.contains('computehref')) {
+
+    let td = target;
+    while (td && td.tagName != "TD") td = td.parentNode;
+    if (td.classList.contains("rowwidgets")) {
+      // User clicked on a checkbox.
       return;
     }
-    if (CS_lastX - 2 < event.clientX && CS_lastX + 2 > event.clientX &&
-        CS_lastY - 2 < event.clientY && CS_lastY + 2 > event.clientY) {
-      handler(event);
-    }
-  });
+    // User clicked on an issue ID link or text or cell.
+    event.preventDefault();
+    handler(event);
+  }
+  tableEl.addEventListener('click', maybeClick);
+  tableEl.addEventListener('auxclick', maybeClick);
 }
 
 
