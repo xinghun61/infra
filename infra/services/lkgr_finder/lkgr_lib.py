@@ -348,7 +348,7 @@ def CollateRevisionHistory(build_data, lkgr_builders, repo):  # pragma: no cover
           continue
         this_build_properties = {
           prop[0]: prop[1]
-          for prop in this_build_data.get('properties', [])
+          for prop in this_build_data.get('properties') or []
         }
         # Revision fallthrough:
         revision = (
