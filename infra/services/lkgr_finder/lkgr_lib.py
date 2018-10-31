@@ -26,9 +26,12 @@ import threading
 import time
 import xml.etree.ElementTree as xml
 
+import google.protobuf.message
 import infra_libs
 from infra_libs import luci_auth
 from infra.libs import git
+from infra.libs.buildbucket.proto import common_pb2
+from infra.libs.buildbucket.proto import rpc_pb2
 
 
 class RunLogger(logging.Filter):
@@ -205,7 +208,8 @@ def _FetchBuildbotJson(master, builder, service_account_file=None):
     return None
 
 
-def FetchBuildbotBuilds(master, builder, service_account_file=None):
+def FetchBuildbotBuildsForBuilder(
+    master, builder, service_account_file=None):
   builder_data = _FetchBuildbotJson(
       master, builder, service_account_file=service_account_file)
 
@@ -250,6 +254,102 @@ def FetchBuildbotBuilds(master, builder, service_account_file=None):
   return builds
 
 
+_BUILDBUCKET_SEARCH_ENDPOINT_V2 = (
+    'https://{buildbucket_instance}/prpc/buildbucket.v2.Builds/SearchBuilds')
+_DEFAULT_BUILDBUCKET_INSTANCE = 'cr-buildbucket.appspot.com'
+
+
+def _FetchFromBuildbucketImpl(
+    project, bucket_name, builder,
+    service_account_file=None):  # pragma: no cover
+  request_pb = rpc_pb2.SearchBuildsRequest()
+  request_pb.predicate.builder.project = project
+  request_pb.predicate.builder.bucket = bucket_name
+  request_pb.predicate.builder.builder = builder
+  request_pb.predicate.status = common_pb2.ENDED_MASK
+  request_pb.fields.paths.extend([
+    'builds.*.number',
+    'builds.*.status',
+    'builds.*.input.gitiles_commit.id',
+  ])
+
+  headers = {
+    'Accept': 'application/prpc; encoding=binary',
+    'Content-Type': 'application/prpc; encoding=binary',
+  }
+
+  http = httplib2.Http(timeout=300)
+  creds = None
+  if service_account_file:
+    creds = infra_libs.get_signed_jwt_assertion_credentials(
+        service_account_file, scope=OAUTH_SCOPES)
+  elif luci_auth.available():
+    creds = luci_auth.LUCICredentials(scopes=OAUTH_SCOPES)
+  if creds:
+    creds.authorize(http)
+
+  resp, content = http.request(
+      _BUILDBUCKET_SEARCH_ENDPOINT_V2.format(
+          buildbucket_instance=_DEFAULT_BUILDBUCKET_INSTANCE),
+      method='POST',
+      headers=headers,
+      body=request_pb.SerializeToString())
+  grpc_code = resp.get('X-Prpc-Grpc-Code'.lower())
+  if grpc_code != '0':
+    raise httplib2.HttpLib2Error('Invalid GRPC exit code: %s\n%s' % (
+        grpc_code, content))
+  response_pb = rpc_pb2.SearchBuildsResponse()
+  response_pb.ParseFromString(content)
+
+  return response_pb
+
+
+_BUILDBUCKET_STATUS = {
+  common_pb2.CANCELED: STATUS.UNKNOWN,
+  common_pb2.FAILURE: STATUS.FAILURE,
+  common_pb2.INFRA_FAILURE: STATUS.FAILURE,
+  common_pb2.SUCCESS: STATUS.SUCCESS,
+}
+
+
+def FetchBuildbucketBuildsForBuilder(
+    bucket, builder, service_account_file=None):
+  LOGGER.debug('Fetching builds for %s/%s from buildbucket', bucket, builder)
+
+  if not '/' in bucket:
+    LOGGER.error(
+        'Unexpected bucket "%s". '
+        + 'Buckets should be specified as $PROJECT/$BUCKET_NAME.',
+        bucket)
+    return None
+
+  project, bucket_name = bucket.split('/', 1)
+
+  try:
+    response_pb = _FetchFromBuildbucketImpl(
+        project, bucket_name, builder,
+        service_account_file=service_account_file)
+  except httplib2.HttpLib2Error as e:
+    LOGGER.error(
+        'RequestException while fetching %s/%s/%s:\n%s',
+        project, bucket_name, builder, repr(e))
+    return None
+  except google.protobuf.message.Error as e:
+    LOGGER.error(
+        'Unknown protobuf error while fetching %s/%s/%s:\n%s',
+        project, bucket_name, builder, repr(e))
+    return None
+
+  builds = []
+  for build_pb in response_pb.builds:
+    number = build_pb.number
+    result = _BUILDBUCKET_STATUS.get(build_pb.status)
+    revision = build_pb.input.gitiles_commit.id
+    if bool(number) and bool(revision) and result is not None:
+      builds.append(Build(number, result, revision))
+  return builds
+
+
 def FetchBuildsWorker(fetch_q, fetch_fn):  # pragma: no cover
   """Pull build json from buildbot masters.
 
@@ -270,7 +370,8 @@ def FetchBuildsWorker(fetch_q, fetch_fn):  # pragma: no cover
         master, builder, service_account_file=service_account)
 
 
-def FetchBuilds(masters, max_threads=0, service_account=None):  # pragma: no cover
+def FetchBuildbotBuilds(
+    masters, max_threads=0, service_account=None):  # pragma: no cover
   """Fetch all build data about the builders in the input masters.
 
   Args:
@@ -283,29 +384,55 @@ def FetchBuilds(masters, max_threads=0, service_account=None):  # pragma: no cov
     @param max_threads: Maximum number of parallel requests.
     @type max_threads: int
   """
-  build_data = {master: {} for master in masters}
+  return _FetchBuilds(
+      masters, FetchBuildbotBuildsForBuilder,
+      max_threads=max_threads, service_account=service_account)
+
+
+def FetchBuildbucketBuilds(
+    buckets, max_threads=0, service_account=None):  # pragma: no cover
+  """Fetch all build data about the builders from the given buckets.
+
+  Args:
+    @param buckets: Dictionary of the form
+    { bucket: {
+        builders: [list of strings]
+    } }
+    This dictionary is a subset of the project configuration json.
+    @type buckets: dict
+    @param max_threads: Maximum number of parallel requests.
+    @type max_threads: int
+  """
+  return _FetchBuilds(
+      buckets, FetchBuildbucketBuildsForBuilder,
+      max_threads=max_threads, service_account=service_account)
+
+
+def _FetchBuilds(
+    config, fetch_fn, max_threads=0, service_account=None):  # pragma: no cover
+  build_data = {key: {} for key in config}
   fetch_q = Queue.Queue()
-  for master, master_data in masters.iteritems():
-    builders = master_data['builders']
+  for key, config_data in config.iteritems():
+    builders = config_data['builders']
     for builder in builders:
-      fetch_q.put((master, builder, service_account, build_data[master]))
+      fetch_q.put((key, builder, service_account, build_data[key]))
   fetch_threads = set()
   if not max_threads:
     max_threads = fetch_q.qsize()
   for _ in xrange(max_threads):
     th = threading.Thread(target=FetchBuildsWorker,
-                          args=(fetch_q, FetchBuildbotBuilds))
+                          args=(fetch_q, fetch_fn))
     th.start()
     fetch_threads.add(th)
   for th in fetch_threads:
     th.join()
 
   failures = 0
-  for master, builders in build_data.iteritems():
+  for key, builders in build_data.iteritems():
     for builder, builds in builders.iteritems():
       if builds is None:
         failures += 1
-        LOGGER.error('Failed to fetch builds for %s:%s' % (master,builder))
+        LOGGER.error('Failed to fetch builds for %s:%s' % (key, builder))
 
   return build_data, failures
 

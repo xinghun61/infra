@@ -207,11 +207,19 @@ def main(argv):
       builds = {}
       buildbot_builders = config.get('masters', [])
       if buildbot_builders:
-        buildbot_builds, failures = lkgr_lib.FetchBuilds(
+        buildbot_builds, failures = lkgr_lib.FetchBuildbotBuilds(
             buildbot_builders, args.max_threads, args.service_account)
         if failures > 0:
           return 1
         builds.update(buildbot_builds)
+
+      buildbucket_builders = config.get('buckets', [])
+      if buildbucket_builders:
+        buildbucket_builds, failures = lkgr_lib.FetchBuildbucketBuilds(
+            buildbucket_builders, args.max_threads, args.service_account)
+        if failures > 0:
+          return 1
+        builds.update(buildbucket_builds)
 
     if args.dump_build_data:
       try:

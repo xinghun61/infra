@@ -15,6 +15,9 @@ import sys
 import tempfile
 import unittest
 
+import google.protobuf.message
+from infra.libs.buildbucket.proto import common_pb2
+from infra.libs.buildbucket.proto import rpc_pb2
 from infra.services.lkgr_finder import lkgr_lib
 from infra.services.lkgr_finder.status_generator import StatusGeneratorStub
 
@@ -22,21 +25,21 @@ from infra.services.lkgr_finder.status_generator import StatusGeneratorStub
 # TODO(agable): Test everything else once I can import pymox.
 
 
-class FetchBuildbotBuildsTest(unittest.TestCase):
+class FetchBuildbotBuildsForBuilderTest(unittest.TestCase):
 
   @mock.patch('infra.services.lkgr_finder.lkgr_lib._FetchBuilderJsonFromMilo')
   def testFetchSucceeded(self, mocked_fetch):
     mocked_fetch.return_value = {
       1: {'results': 0, 'properties': [('got_revision', 'a' * 40)]},
     }
-    builds = lkgr_lib.FetchBuildbotBuilds('master1', 'builder1')
+    builds = lkgr_lib.FetchBuildbotBuildsForBuilder('master1', 'builder1')
     self.assertIn(lkgr_lib.Build(1, lkgr_lib.STATUS.SUCCESS, 'a' * 40), builds)
 
   @mock.patch('infra.services.lkgr_finder.lkgr_lib._FetchBuilderJsonFromMilo')
   @mock.patch('time.sleep', return_value=None)
   def testFetchFailed(self, _mocked_sleep, mocked_fetch):
     mocked_fetch.side_effect = httplib2.HttpLib2Error
-    builds = lkgr_lib.FetchBuildbotBuilds('master1', 'builder1')
+    builds = lkgr_lib.FetchBuildbotBuildsForBuilder('master1', 'builder1')
     self.assertEquals(None, builds)
 
   @mock.patch('infra.services.lkgr_finder.lkgr_lib._FetchBuildbotJson')
@@ -56,7 +59,7 @@ class FetchBuildbotBuildsTest(unittest.TestCase):
     }
 
     mocked_fetch.return_value = build_data
-    actual_builds = lkgr_lib.FetchBuildbotBuilds('master1', 'builder1')
+    actual_builds = lkgr_lib.FetchBuildbotBuildsForBuilder('master1', 'builder1')
     self.assertEquals(len(actual_builds), 1)
     self.assertEquals(
         '0123456789abcdef0123456789abcdef01234567',
@@ -99,7 +102,7 @@ class FetchBuildbotBuildsTest(unittest.TestCase):
     ]
 
     mocked_fetch.return_value = build_data
-    actual_builds = lkgr_lib.FetchBuildbotBuilds('master1', 'builder1')
+    actual_builds = lkgr_lib.FetchBuildbotBuildsForBuilder('master1', 'builder1')
     self.assertEquals(actual_builds, expected_builds)
 
   @mock.patch('infra.services.lkgr_finder.lkgr_lib._FetchBuildbotJson')
@@ -129,7 +132,7 @@ class FetchBuildbotBuildsTest(unittest.TestCase):
     ]
 
     mocked_fetch.return_value = build_data
-    actual_builds = lkgr_lib.FetchBuildbotBuilds('master1', 'builder1')
+    actual_builds = lkgr_lib.FetchBuildbotBuildsForBuilder('master1', 'builder1')
     self.assertEquals(actual_builds, expected_builds)
 
 
@@ -188,6 +191,87 @@ class EvaluateBuildDataTest(unittest.TestCase):
     self.assertEquals(
         lkgr_lib.STATUS.FAILURE,
         lkgr_lib.EvaluateBuildData(build_data))
+
+
+class FetchBuildbucketBuildsForBuilderTest(unittest.TestCase):
+
+  @mock.patch('infra.services.lkgr_finder.lkgr_lib._FetchFromBuildbucketImpl')
+  def testFetchSucceeded(self, mocked_fetch):
+    response_pb = rpc_pb2.SearchBuildsResponse()
+    build_pb = response_pb.builds.add()
+    build_pb.number = 123
+    build_pb.status = common_pb2.SUCCESS
+    build_pb.input.gitiles_commit.id = 'a' * 40
+    mocked_fetch.return_value = response_pb
+
+    builds = lkgr_lib.FetchBuildbucketBuildsForBuilder(
+        'project1/bucket1', 'builder1')
+    self.assertEquals(
+        builds,
+        [lkgr_lib.Build(123, lkgr_lib.STATUS.SUCCESS, 'a' * 40)])
+
+  @mock.patch('infra.services.lkgr_finder.lkgr_lib._FetchFromBuildbucketImpl')
+  def testFetchFailed(self, mocked_fetch):
+    mocked_fetch.side_effect = httplib2.HttpLib2Error
+    builds = lkgr_lib.FetchBuildbucketBuildsForBuilder(
+        'project1/bucket1', 'builder1')
+    self.assertEquals(builds, None)
+
+  @mock.patch('infra.services.lkgr_finder.lkgr_lib._FetchFromBuildbucketImpl')
+  def testProtoError(self, mocked_fetch):
+    mocked_fetch.side_effect = google.protobuf.message.DecodeError
+    builds = lkgr_lib.FetchBuildbucketBuildsForBuilder(
+        'project1/bucket1', 'builder1')
+    self.assertEquals(builds, None)
+
+  @mock.patch('infra.services.lkgr_finder.lkgr_lib._FetchFromBuildbucketImpl')
+  def testMalformattedBucket(self, mocked_fetch):
+    builds = lkgr_lib.FetchBuildbucketBuildsForBuilder(
+        'project1_bucket1', 'builder1')
+    self.assertEquals(builds, None)
+    mocked_fetch.assert_not_called()
+
+  @mock.patch('infra.services.lkgr_finder.lkgr_lib._FetchFromBuildbucketImpl')
+  def testFetchBuildCanceled(self, mocked_fetch):
+    response_pb = rpc_pb2.SearchBuildsResponse()
+    build_pb = response_pb.builds.add()
+    build_pb.number = 123
+    build_pb.status = common_pb2.CANCELED
+    build_pb.input.gitiles_commit.id = 'a' * 40
+    mocked_fetch.return_value = response_pb
+
+    builds = lkgr_lib.FetchBuildbucketBuildsForBuilder(
+        'project1/bucket1', 'builder1')
+    self.assertEquals(
+        builds,
+        [lkgr_lib.Build(123, lkgr_lib.STATUS.UNKNOWN, 'a' * 40)])
+
+  @mock.patch('infra.services.lkgr_finder.lkgr_lib._FetchFromBuildbucketImpl')
+  def testFetchBuildFailed(self, mocked_fetch):
+    response_pb = rpc_pb2.SearchBuildsResponse()
+    build_pb = response_pb.builds.add()
+    build_pb.number = 123
+    build_pb.status = common_pb2.FAILURE
+    build_pb.input.gitiles_commit.id = 'a' * 40
+    mocked_fetch.return_value = response_pb
+
+    builds = lkgr_lib.FetchBuildbucketBuildsForBuilder(
+        'project1/bucket1', 'builder1')
+    self.assertEquals(
+        builds,
+        [lkgr_lib.Build(123, lkgr_lib.STATUS.FAILURE, 'a' * 40)])
+
+  @mock.patch('infra.services.lkgr_finder.lkgr_lib._FetchFromBuildbucketImpl')
+  def testFetchMissingPieces(self, mocked_fetch):
+    response_pb = rpc_pb2.SearchBuildsResponse()
+    build_pb = response_pb.builds.add()
+    build_pb.number = 123
+    build_pb.status = common_pb2.SCHEDULED
+    mocked_fetch.return_value = response_pb
+
+    builds = lkgr_lib.FetchBuildbucketBuildsForBuilder(
+        'project1/bucket1', 'builder1')
+    self.assertEquals(builds, [])
 
 
 class CollateRevisionHistoryTest(unittest.TestCase):
