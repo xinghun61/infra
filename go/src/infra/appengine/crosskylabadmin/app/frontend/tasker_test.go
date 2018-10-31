@@ -218,10 +218,9 @@ func TestTriggerRepairOnIdle(t *testing.T) {
 
 		setKnownReadyBots(tf, []string{"dut_1"})
 		expectListRecentTasks(tf, 0, "PENDING")
-		yyyy, mm, dd := time.Now().Date()
 		expectListSortedRecentTasksForBot(tf, "dut_1", &swarming.SwarmingRpcsTaskResult{
 			State:       "COMPLETED",
-			CompletedTs: fmt.Sprintf("%04d-%02d-%02dT00:00:00.00000000", yyyy, mm, dd),
+			CompletedTs: timeOffsetFromNowInSwarmingFormat(-5 * time.Second),
 		})
 
 		Convey("TriggerRepairOnIdle does not trigger a task", func() {
@@ -295,13 +294,12 @@ func TestTriggerRepairOnRepairFailed(t *testing.T) {
 		tf, validate := newTestFixture(t)
 		defer validate()
 		setKnownBotsInState(tf, []string{"dut_1"}, "repair_failed")
-		yyyy, mm, dd := time.Now().Date()
 		expectListRecentTasks(tf, 0, "", &swarming.SwarmingRpcsTaskResult{
 			State:       "COMPLETED",
-			CompletedTs: fmt.Sprintf("%04d-%02d-%02dT00:00:00.00000000", yyyy, mm, dd),
+			CompletedTs: timeOffsetFromNowInSwarmingFormat(-5 * time.Second),
 		})
 
-		Convey("TriggerRepairOnRepairFailed triggers a task for the dut", func() {
+		Convey("TriggerRepairOnRepairFailed does not trigger a task for the dut", func() {
 			resp, err := tf.Tasker.TriggerRepairOnRepairFailed(tf.C, &fleet.TriggerRepairOnRepairFailedRequest{
 				Selectors:           []*fleet.BotSelector{},
 				TimeSinceLastRepair: google.NewDuration(24 * time.Hour),
@@ -318,7 +316,7 @@ func TestTriggerRepairOnRepairFailed(t *testing.T) {
 		setKnownBotsInState(tf, []string{"dut_1"}, "repair_failed")
 		expectListRecentTasks(tf, 0, "", &swarming.SwarmingRpcsTaskResult{State: "RUNNING"})
 
-		Convey("TriggerRepairOnRepairFailed triggers a task for the dut", func() {
+		Convey("TriggerRepairOnRepairFailed does not trigger a task for the dut", func() {
 			resp, err := tf.Tasker.TriggerRepairOnRepairFailed(tf.C, &fleet.TriggerRepairOnRepairFailedRequest{
 				Selectors:           []*fleet.BotSelector{},
 				TimeSinceLastRepair: google.NewDuration(24 * time.Hour),

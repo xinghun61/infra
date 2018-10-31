@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"go.chromium.org/gae/service/datastore"
@@ -201,6 +202,13 @@ func makeBotSelectorForDuts(duts []string) []*fleet.BotSelector {
 		bs = append(bs, &fleet.BotSelector{DutId: d})
 	}
 	return bs
+}
+
+// timeOffsetFromNowInSwarmingFormat returns a string representation of time offset
+// from now as returned by Swarming.
+func timeOffsetFromNowInSwarmingFormat(offset time.Duration) string {
+	t := time.Now().UTC().Add(offset)
+	return t.Format("2006-01-02T15:04:05.999999999")
 }
 
 // createTaskArgsMatcher is a gomock matcher to validate a subset of the fields
