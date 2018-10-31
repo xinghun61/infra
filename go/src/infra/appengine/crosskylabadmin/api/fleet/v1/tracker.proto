@@ -90,8 +90,13 @@ message BotSummary {
   // A healthy bot is safe to use for external workload. For unhealthy bots,
   // this field summarizes the reason for the unhealthy state of the bot.
   Health health = 5;
+
+  // diagnosis contains the tasks that explain how the DUT got into
+  // its present state.
+  repeated Task diagnosis = 6;
 }
 
+// DutState specifies the possible values for DUT state.
 enum DutState {
   DutStateInvalid = 0;
   Ready = 1;
@@ -114,4 +119,12 @@ enum Health {
   // Coming soon ?...
   //   UnhealthyStuckInProvisionRepairLoop
   //   UnhealthyFailingProvisionFrequently
+}
+
+// Task contains information about a Swarming task.
+message Task {
+  string id = 1;
+  string name = 2;
+  DutState state_before = 3;
+  DutState state_after = 4;
 }
