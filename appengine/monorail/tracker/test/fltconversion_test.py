@@ -224,6 +224,87 @@ class FLTConvertTask(unittest.TestCase):
     self.task.services.issue.UpdateIssue.assert_has_calls(update_calls)
     patcher.stop()
 
+  def testVerifyConversion(self):
+    # Set up objects
+    self.issue1.labels.extend(
+        # Launch-M-Target-70-Stable-Exp should be ignored
+        ['Rollout-Type-Default', 'Launch-M-Target-70-Stable-Exp'])
+    self.issue1.phases = [tracker_pb2.Phase(name='Beta', phase_id=1),
+                          tracker_pb2.Phase(name='Stable', phase_id=2)]
+    self.issue1.approval_values = [
+      tracker_pb2.ApprovalValue(
+          approval_id=1, status=tracker_pb2.ApprovalStatus.NOT_SET),
+      tracker_pb2.ApprovalValue(
+          approval_id=2, status=tracker_pb2.ApprovalStatus.APPROVED),
+      tracker_pb2.ApprovalValue(
+          approval_id=3, status=tracker_pb2.ApprovalStatus.NEED_INFO),
+    ]
+    self.issue1.field_values = [
+        # problem = expected field for TL
+        tracker_bizobj.MakeFieldValue(4, None, None, 111L, None, None, False),
+        tracker_pb2.FieldValue(field_id=7, int_value=70, phase_id=1),
+        tracker_pb2.FieldValue(field_id=8, int_value=71, phase_id=2),
+    ]
+
+    self.issue2.labels.extend(
+        ['Rollout-Type-Finch'])
+    self.issue2.phases = [tracker_pb2.Phase(name='Beta', phase_id=1),
+                          tracker_pb2.Phase(name='Stable-Full', phase_id=2),
+                          tracker_pb2.Phase(name='Stable-Exp', phase_id=3)]
+    self.issue2.approval_values = [
+        tracker_pb2.ApprovalValue(
+            approval_id=1, status=tracker_pb2.ApprovalStatus.NOT_SET),
+        tracker_pb2.ApprovalValue(
+            approval_id=2, status=tracker_pb2.ApprovalStatus.NOT_SET),
+        tracker_pb2.ApprovalValue(
+            # problem = approval Chrome-Privacy has status approved for None
+            approval_id=3, status=tracker_pb2.ApprovalStatus.APPROVED),
+    ]
+    self.issue2.field_values = [
+        # problem = no phase field for label 'Launch-M-Approved-70-Beta'
+        tracker_pb2.FieldValue(field_id=7, int_value=71, phase_id=2),
+        tracker_bizobj.MakeFieldValue(4, None, None, 111L, None, None, False),
+        tracker_bizobj.MakeFieldValue(5, None, None, 111L, None, None, False),
+        ]
+
+    self.config.field_defs = [
+        tracker_pb2.FieldDef(field_id=1, field_name='Chrome-Test'),
+        tracker_pb2.FieldDef(field_id=2, field_name='Chrome-UX'),
+        tracker_pb2.FieldDef(field_id=3, field_name='Chrome-Privacy'),
+        tracker_pb2.FieldDef(field_id=4, field_name='PM'),
+        tracker_pb2.FieldDef(field_id=5, field_name='TL'),
+        tracker_pb2.FieldDef(field_id=6, field_name='TE'),
+        tracker_pb2.FieldDef(field_id=7, field_name='M-Target'),
+        tracker_pb2.FieldDef(field_id=8, field_name='M-Approved'),
+    ]
+
+    # Set up mocks
+    patcher = mock.patch(
+        'search.frontendsearchpipeline.FrontendSearchPipeline',
+        spec=True, allowed_results=[self.issue1, self.issue2])
+    mockPipeline = patcher.start()
+    self.task.services.project.GetProjectByName = mock.Mock()
+    self.task.services.config.GetProjectConfig = mock.Mock(
+        return_value=self.config)
+    self.task.services.issue.GetIssue = mock.Mock(
+        side_effect=[self.issue1, self.issue2])
+    self.task.services.user.LookupUserID = mock.Mock(return_value=111L)
+    with self.work_env as we:
+      we.ListIssues = mock.Mock(return_value=mockPipeline)
+
+    # Assert
+    json = self.task.VerifyConversion(self.mr)
+    self.assertEqual(json['issues verified'], ['issue 1', 'issue 2'])
+    problems = json['problems found']
+    expected_problems = [
+        'issue 1: missing a field for TL',
+        'issue 2: approval Chrome-Privacy has status \'APPROVED\' for '
+        'label value None',
+        'issue 2: no phase field for label Launch-M-Approved-70-Beta',
+    ]
+    self.assertEqual(problems, expected_problems)
+    patcher.stop()
+
   def testFetchAndAssertProjectInfo(self):
 
     # test no 'launch' in request

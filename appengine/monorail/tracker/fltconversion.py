@@ -50,7 +50,11 @@ VALUE_TO_STATUS = {
     'Yes': tracker_pb2.ApprovalStatus.APPROVED,
     'No': tracker_pb2.ApprovalStatus.NOT_APPROVED,
     'NA': tracker_pb2.ApprovalStatus.NA,
+    # 'Started' is not a valid label value in the chromium project,
+    # but for some reason, some labels have this value.
+    'Started': tracker_pb2.ApprovalStatus.REVIEW_STARTED,
 }
+
 # Adding '^' before each label prefix to ensure Blah-Launch-UI-Yes is ignored
 REVIEW_LABELS_RE = re.compile('^' + '|^'.join(APPROVALS_TO_LABELS.values()))
 
@@ -107,7 +111,7 @@ class FLTConvertTask(jsonfeed.InternalTask):
   def UndoConversion(self, mr):
     with work_env.WorkEnv(mr, self.services) as we:
       pipeline = we.ListIssues(
-          'Type=FLT-Launch FLT-Conversion', ['chromium'], mr.auth.user_id,
+          'Type=FLT-Launch label:FLT-Conversion', ['chromium'], mr.auth.user_id,
           CONVERT_NUM, CONVERT_START, [], 2, GROUP_BY_SPEC, SORT_SPEC, False)
 
     project = self.services.project.GetProjectByName(mr.cnxn, 'chromium')
@@ -132,13 +136,116 @@ class FLTConvertTask(jsonfeed.InternalTask):
 
       self.services.issue._UpdateIssuesApprovals(mr.cnxn, issue)
       self.services.issue.UpdateIssue(mr.cnxn, issue)
-    return {"deleting": [issue.local_id for issue in pipeline.allowed_results]}
+    return {'deleting': [issue.local_id for issue in pipeline.allowed_results],
+            'num': len(pipeline.allowed_results),
+    }
+
+  def VerifyConversion(self, mr):
+    """Verify that all FLT-Conversion issues were converted correctly."""
+    with work_env.WorkEnv(mr, self.services) as we:
+      pipeline = we.ListIssues(
+          'label:FLT-Conversion', ['chromium'], mr.auth.user_id,
+          CONVERT_NUM, CONVERT_START, [], 2, GROUP_BY_SPEC, SORT_SPEC, False)
+
+    project = self.services.project.GetProjectByName(mr.cnxn, 'chromium')
+    config = self.services.config.GetProjectConfig(mr.cnxn, project.project_id)
+    approval_names = {fd.field_id: fd.field_name for fd in config.field_defs
+                      if fd.field_name in APPROVALS_TO_LABELS.keys()}
+    pm_id = tracker_bizobj.FindFieldDef('PM', config).field_id
+    tl_id = tracker_bizobj.FindFieldDef('TL', config).field_id
+    te_id = tracker_bizobj.FindFieldDef('TE', config).field_id
+    mapproved_id = tracker_bizobj.FindFieldDef('M-Approved', config).field_id
+    mtarget_id = tracker_bizobj.FindFieldDef('M-Target', config).field_id
+
+    problems = []
+    for possible_stale_issue in pipeline.allowed_results:
+      issue = self.services.issue.GetIssue(
+          mr.cnxn, possible_stale_issue.issue_id, use_cache=False)
+      # Check correct template used
+      if 'Rollout-Type-Default' in issue.labels:
+        if not all(phase.name.lower() in ['beta', 'stable']
+                   for phase in issue.phases):
+          problems.append((
+              issue.local_id, 'incorrect phases for Default rollout'))
+      elif 'Rollout-Type-Finch' in issue.labels:
+        if not all(phase.name.lower() in ['beta', 'stable-exp', 'stable-full']
+                   for phase in issue.phases):
+          problems.append((
+              issue.local_id, 'incorrect phases for Finch rollout'))
+      else:
+        problems.append((
+            issue.local_id, 'no rollout-type; should not have been converted'))
+
+      # Check approval_values
+      for av in issue.approval_values:
+        name = approval_names.get(av.approval_id)
+        label_pre = APPROVALS_TO_LABELS.get(name)
+        if not label_pre:
+          # either name was None or not found in APPROVALS_TO_LABELS
+          problems.append((issue.local_id, 'approval %s not recognized' % name))
+          continue
+        label_value = next((l[len(label_pre):] for l in issue.labels
+                            if l.startswith(label_pre)), None)
+        if (not label_value or label_value == 'NotReviewed') and av.status in [
+            tracker_pb2.ApprovalStatus.NOT_SET,
+            tracker_pb2.ApprovalStatus.NEEDS_REVIEW]:
+          continue
+        if av.status is VALUE_TO_STATUS.get(label_value):
+          continue
+        # neither of the above ifs passed
+        problems.append((issue.local_id,
+                         'approval %s has status %r for label value %s' % (
+                             name, av.status.name, label_value)))
+
+      # Check people field_values
+      expected_people_fvs = self.ConvertPeopleLabels(
+          mr, issue.labels, pm_id, tl_id, te_id)
+      for people_fv in expected_people_fvs:
+        if people_fv not in issue.field_values:
+          if people_fv.field_id == tl_id:
+            role = 'TL'
+          elif people_fv.field_id == pm_id:
+            role = 'PM'
+          else:
+            role = 'TE'
+          problems.append((issue.local_id, 'missing a field for %s' % role))
+
+      # Check M phase field_values
+      phase_dict = {
+          phase.name.lower(): phase.phase_id for phase in issue.phases}
+      for label in issue.labels:
+        match = re.match(M_LABELS_RE, label)
+        if match:
+          channel = match.group('channel')
+          if (channel.lower() == 'stable-exp'
+              and 'Rollout-Type-Default' in issue.labels):
+            # ignore stable-exp for default rollouts.
+            continue
+          milestone = match.group('m')
+          m_type = match.group('type')
+          m_id = mapproved_id if m_type == 'Approved' else mtarget_id
+          phase_id = phase_dict.get(
+              channel.lower(), phase_dict.get('stable-full', None))
+          if not next((
+              fv for fv in issue.field_values
+              if fv.phase_id == phase_id and fv.field_id == m_id and
+              fv.int_value == int(milestone)), None):
+            problems.append((
+                issue.local_id, 'no phase field for label %s' % label))
+
+    return {
+        'problems found': ['issue %d: %s' % problem for problem in problems],
+        'issues verified': ['issue %d' % issue.local_id for
+                            issue in pipeline.allowed_results],
+    }
 
   def HandleRequest(self, mr):
     """Convert Type=Launch issues to new Type=FLT-Launch issues."""
     launch = mr.GetParam('launch')
     if launch == 'delete':
       return self.UndoConversion(mr)
+    if launch == 'verify':
+      return self.VerifyConversion(mr)
     project_info = self.FetchAndAssertProjectInfo(mr)
 
     # Search for issues:
@@ -169,8 +276,7 @@ class FLTConvertTask(jsonfeed.InternalTask):
       amendments = self.ExecuteIssueChanges(
           project_info.config, issue, new_approvals,
           template_phases, m_fvs + people_fvs)
-      logging.info('SUCCESSFULLY CONVERTED ISSUE: %s' % issue.local_id)
-      logging.info('amendments %r', amendments)
+      logging.info(amendments)
 
     return {
         'converted_issues': [
