@@ -11,6 +11,13 @@ message HttpRequest {
   optional double response_time = 6;
 }
 
+message SubCommandExecution {
+  optional string command = 1;
+  repeated string arguments = 2;
+  optional double execution_time = 3;
+  optional int64 exit_code = 4;
+}
+
 message MetricsSchema {
   repeated string arguments = 1;
   optional string command = 2;
@@ -24,4 +31,5 @@ message MetricsSchema {
   optional int64 timestamp = 10;
   repeated HttpRequest http_requests = 11;
   optional string git_version = 12;
+  repeated SubCommandExecution sub_commands = 13;
 }

@@ -44,6 +44,31 @@
       "type": "string",
       "pattern": "^\\d\\.\\d{1,2}.\\d{1,2}$"
     },
+    "sub_commands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "$ref": "#/definitions/known_sub_commands"
+          },
+          "arguments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/known_sub_command_arguments"
+            }
+          },
+          "execution_time": {
+            "type": "number",
+            "minimum": 0
+          },
+          "exit_code": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
     "http_requests": {
       "type": "array",
       "items": {
@@ -339,6 +364,28 @@
         "CURRENT_REVISION",
         "DETAILED_ACCOUNTS",
         "LABELS"
+      ]
+    },
+    "known_sub_commands": {
+      "enum": [
+        "git push"
+      ]
+    },
+    "known_sub_command_arguments": {
+      "enum": [
+        "cc",
+        "hashtag",
+        "l=Auto-Submit+1",
+        "l=Commit-Queue+1",
+        "l=Commit-Queue+2",
+        "label",
+        "notify=ALL",
+        "notify=NONE",
+        "private",
+        "r",
+        "ready",
+        "topic",
+        "wip"
       ]
     }
   }
