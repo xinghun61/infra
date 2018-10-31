@@ -15,103 +15,103 @@ option go_package = "fleet";
 // Tracker service exposes rpcs to summarize the state of ChromeOS Skylab
 // Swarming bot fleet.
 service Tracker {
-    // RefreshBots instructs the Tracker service to update Swarming bot
-    // information from the Swarming server hosting ChromeOS Skylab bots.
-    //
-    // RefreshBots stops at the first error encountered and returns the error. A
-    // failed RefreshBots call may have refreshed some of the bots requested.
-    // It is safe to call RefreshBots to continue from a partially failed call.
-    rpc RefreshBots(RefreshBotsRequest) returns (RefreshBotsResponse);
+  // RefreshBots instructs the Tracker service to update Swarming bot
+  // information from the Swarming server hosting ChromeOS Skylab bots.
+  //
+  // RefreshBots stops at the first error encountered and returns the error. A
+  // failed RefreshBots call may have refreshed some of the bots requested.
+  // It is safe to call RefreshBots to continue from a partially failed call.
+  rpc RefreshBots(RefreshBotsRequest) returns (RefreshBotsResponse);
 
-    // SummarizeBots returns summary information about Swarming bots.
-    // This includes ChromeOS Skylab specific dimensions/state information as
-    // well as a summary of the recenty history of administrative tasks.
-    //
-    // SummarizeBots stops at the first error encountered and returns the error.
-    rpc SummarizeBots(SummarizeBotsRequest) returns (SummarizeBotsResponse);
+  // SummarizeBots returns summary information about Swarming bots.
+  // This includes ChromeOS Skylab specific dimensions/state information as
+  // well as a summary of the recenty history of administrative tasks.
+  //
+  // SummarizeBots stops at the first error encountered and returns the error.
+  rpc SummarizeBots(SummarizeBotsRequest) returns (SummarizeBotsResponse);
 }
 
 // RefreshBotsRequest can be used to restrict the Swarming bots to refresh via
 // the Tracker.RefreshBots rpc.
 message RefreshBotsRequest {
-    // selectors whitelists the bots to refresh. This includes new bots
-    // discovered from Swarming matching the selectors.
-    // Bots selected via repeated selectors are unioned together.
-    //
-    // If no selectors are provided, all bots are selected.
-    repeated BotSelector selectors = 2;
+  // selectors whitelists the bots to refresh. This includes new bots
+  // discovered from Swarming matching the selectors.
+  // Bots selected via repeated selectors are unioned together.
+  //
+  // If no selectors are provided, all bots are selected.
+  repeated BotSelector selectors = 2;
 }
 
 // RefreshBotsResponse contains information about the Swarming bots actually
 // refreshed in response to a Tracker.RefreshBots rpc.
 message RefreshBotsResponse {
-    // dut_ids lists the dut_id of of the bots refreshed.
-    repeated string dut_ids = 1;
+  // dut_ids lists the dut_id of of the bots refreshed.
+  repeated string dut_ids = 1;
 }
 
 // SummarizeBotsRequest can be used to restrict the Swarming bots to summarize
 // via the Tracker.SummarizeBots rpc.
 message SummarizeBotsRequest {
-    // selectors whitelists the bots to refresh, from the already known bots to
-    // Tracker. Bots selected via repeated selectors are unioned together.
-    //
-    // If no selectors are provided, all bots are selected.
-    repeated BotSelector selectors = 1;
+  // selectors whitelists the bots to refresh, from the already known bots to
+  // Tracker. Bots selected via repeated selectors are unioned together.
+  //
+  // If no selectors are provided, all bots are selected.
+  repeated BotSelector selectors = 1;
 }
 
 // SummarizeBotsResponse contains summary information about Swarming bots
 // returned by the Tracker.SummarizeBots rpc.
 message SummarizeBotsResponse {
-    repeated BotSummary bots = 1;
+  repeated BotSummary bots = 1;
 }
 
 // BotSummary contains the summary information tracked by Tracker for a single
 // Skylab Swarming bot.
 message BotSummary {
-    // dut_id contains the dut_id dimension for the bot.
-    string dut_id = 1;
+  // dut_id contains the dut_id dimension for the bot.
+  string dut_id = 1;
 
-    // dut_state contains the current Autotest state of the dut corresponding to
-    // this bot.
-    DutState dut_state = 2;
+  // dut_state contains the current Autotest state of the dut corresponding to
+  // this bot.
+  DutState dut_state = 2;
 
-    // idle_duration contains the time since this bot last ran a task.
-    //
-    // A bot is considered idle for the time that it wasn't running any task.
-    // Killed tasks are counted as legitimate tasks (i.e., time spent running a
-    // task that is then killed does not count as idle time)
-    google.protobuf.Duration idle_duration = 3;
+  // idle_duration contains the time since this bot last ran a task.
+  //
+  // A bot is considered idle for the time that it wasn't running any task.
+  // Killed tasks are counted as legitimate tasks (i.e., time spent running a
+  // task that is then killed does not count as idle time)
+  google.protobuf.Duration idle_duration = 3;
 
-    // Subset of Swarming dimensions for the current bot.
-    BotDimensions dimensions = 4;
+  // Subset of Swarming dimensions for the current bot.
+  BotDimensions dimensions = 4;
 
-    // health is the history aware health of the bot.
-    //
-    // A healthy bot is safe to use for external workload. For unhealthy bots,
-    // this field summarizes the reason for the unhealthy state of the bot.
-    Health health = 5;
+  // health is the history aware health of the bot.
+  //
+  // A healthy bot is safe to use for external workload. For unhealthy bots,
+  // this field summarizes the reason for the unhealthy state of the bot.
+  Health health = 5;
 }
 
 enum DutState {
-    DutStateInvalid = 0;
-    Ready = 1;
-    NeedsCleanup = 2;
-    NeedsRepair = 3;
-    NeedsReset = 4;
-    RepairFailed = 5;
+  DutStateInvalid = 0;
+  Ready = 1;
+  NeedsCleanup = 2;
+  NeedsRepair = 3;
+  NeedsReset = 4;
+  RepairFailed = 5;
 }
 
 enum Health {
-    HealthInvalid = 0;
+  HealthInvalid = 0;
 
-    // A Healthy bot may be used for external workload.
-    Healthy = 1;
+  // A Healthy bot may be used for external workload.
+  Healthy = 1;
 
-    // An Unhealthy bot is not usable for external workload.
-    // Further classification of the problem is not available.
-    Unhealthy = 2;
+  // An Unhealthy bot is not usable for external workload.
+  // Further classification of the problem is not available.
+  Unhealthy = 2;
 
-    // Coming soon ?...
-    //   UnhealthyStuckInProvisionRepairLoop
-    //   UnhealthyFailingProvisionFrequently
+  // Coming soon ?...
+  //   UnhealthyStuckInProvisionRepairLoop
+  //   UnhealthyFailingProvisionFrequently
 }
