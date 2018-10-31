@@ -76,7 +76,7 @@ func TestOneAssignment(t *testing.T) {
 
 			Convey("when AssignTasks is called for a worker", func() {
 				wid := "Worker1"
-				as := r.AssignTasks(ctx, s, t0, &IdleWorker{ID: wid})
+				as, _ := r.AssignTasks(ctx, s, t0, &IdleWorker{ID: wid})
 
 				Convey("then it is given the assigned task.", func() {
 					So(as, ShouldHaveLength, 1)
@@ -86,7 +86,7 @@ func TestOneAssignment(t *testing.T) {
 				})
 
 				Convey("when AssignTasks is called again for the same worker", func() {
-					as = r.AssignTasks(ctx, s, t1, &IdleWorker{ID: wid})
+					as, _ = r.AssignTasks(ctx, s, t1, &IdleWorker{ID: wid})
 					Convey("then it is given the same task.", func() {
 						So(as, ShouldHaveLength, 1)
 						a := as[0]
@@ -119,7 +119,7 @@ func TestOneAssignment(t *testing.T) {
 						r.Notify(ctx, s, taskUpdate)
 
 						Convey("when AssignTasks is called again for the same worker", func() {
-							as = r.AssignTasks(ctx, s, t2, &IdleWorker{ID: wid})
+							as, _ = r.AssignTasks(ctx, s, t2, &IdleWorker{ID: wid})
 							Convey("then it is no longer given the task.", func() {
 								So(as, ShouldBeEmpty)
 							})
@@ -138,7 +138,7 @@ func TestOneAssignment(t *testing.T) {
 					r.Notify(ctx, s, taskUpdate)
 
 					Convey("when AssignTasks is called again for the same worker", func() {
-						as = r.AssignTasks(ctx, s, t2, &IdleWorker{ID: wid})
+						as, _ = r.AssignTasks(ctx, s, t2, &IdleWorker{ID: wid})
 						Convey("then it is no longer given the task.", func() {
 							So(as, ShouldBeEmpty)
 						})
@@ -155,7 +155,7 @@ func TestOneAssignment(t *testing.T) {
 					}
 					r.Notify(ctx, s, taskUpdate)
 					Convey("when AssignTasks is called again for the same worker", func() {
-						as = r.AssignTasks(ctx, s, t2, &IdleWorker{ID: wid})
+						as, _ = r.AssignTasks(ctx, s, t2, &IdleWorker{ID: wid})
 						Convey("then it is no longer given the task.", func() {
 							So(as, ShouldBeEmpty)
 						})
@@ -195,12 +195,12 @@ func TestQueuedAssignment(t *testing.T) {
 				Convey("when a different worker without that label calls AssignTasks", func() {
 					wid2 := "Worker2"
 					t1 := time.Unix(1, 0)
-					as := r.AssignTasks(ctx, s, t1, &IdleWorker{wid2, []string{}})
+					as, _ := r.AssignTasks(ctx, s, t1, &IdleWorker{wid2, []string{}})
 					Convey("then it is given no task.", func() {
 						So(as, ShouldBeEmpty)
 					})
 					Convey("when the labeled worker calls AssignTasks", func() {
-						as = r.AssignTasks(ctx, s, t1, &IdleWorker{wid, labels})
+						as, _ = r.AssignTasks(ctx, s, t1, &IdleWorker{wid, labels})
 						Convey("it is given the task.", func() {
 							So(as, ShouldHaveLength, 1)
 							So(as[0].RequestID, ShouldEqual, rid)
@@ -286,7 +286,7 @@ func TestPreemption(t *testing.T) {
 
 					Convey("when AssignTasks is called for the intended worker", func() {
 						t2 := time.Unix(2, 0)
-						as := r.AssignTasks(ctx, s, t2, &IdleWorker{wid, []string{}})
+						as, _ := r.AssignTasks(ctx, s, t2, &IdleWorker{wid, []string{}})
 						Convey("then it returns the preempting request.", func() {
 							So(as, ShouldHaveLength, 1)
 							So(as[0].RequestID, ShouldEqual, newRequest)
@@ -297,7 +297,7 @@ func TestPreemption(t *testing.T) {
 					Convey("when AssignTasks is called for a different worker", func() {
 						t2 := time.Unix(2, 0)
 						wid2 := "Worker2"
-						as := r.AssignTasks(ctx, s, t2, &IdleWorker{wid2, []string{}})
+						as, _ := r.AssignTasks(ctx, s, t2, &IdleWorker{wid2, []string{}})
 						Convey("then it returns the preempted request.", func() {
 							So(as, ShouldHaveLength, 1)
 							So(as[0].RequestID, ShouldEqual, oldRequest)
@@ -308,7 +308,7 @@ func TestPreemption(t *testing.T) {
 					Convey("when AssignTasks is called for the intended worker and a different worker simultaneously", func() {
 						t2 := time.Unix(2, 0)
 						wid2 := "Worker2"
-						as := r.AssignTasks(ctx, s, t2, &IdleWorker{wid, []string{}}, &IdleWorker{wid2, []string{}})
+						as, _ := r.AssignTasks(ctx, s, t2, &IdleWorker{wid, []string{}}, &IdleWorker{wid2, []string{}})
 						Convey("then intended worker receives preempting request, other receives preempted request.", func() {
 							So(as, ShouldHaveLength, 2)
 							a1 := Assignment{RequestID: newRequest, WorkerID: wid}

@@ -55,13 +55,13 @@ func Example() {
 	// for it. This will fetch Request1 to run on it.
 	workerID := "Worker1"
 	idleWorker := &reconciler.IdleWorker{ID: workerID, ProvisionableLabels: labels}
-	a := r.AssignTasks(ctx, s, time.Now(), idleWorker)
+	a, _ := r.AssignTasks(ctx, s, time.Now(), idleWorker)
 
 	fmt.Printf("%s was assigned %s.\n", a[0].WorkerID, a[0].RequestID)
 
 	// A subsequent call for this worker will return the same task,
 	// because the previous assignment has not yet been acknowledged.
-	a = r.AssignTasks(ctx, s, time.Now(), idleWorker)
+	a, _ = r.AssignTasks(ctx, s, time.Now(), idleWorker)
 
 	fmt.Printf("%s was again assigned %s.\n", a[0].WorkerID, a[0].RequestID)
 
@@ -77,7 +77,7 @@ func Example() {
 
 	// Now, a subsequent AssignTasks call for this worker will return
 	// nothing, as there are no other tasks in the queue.
-	a = r.AssignTasks(ctx, s, time.Now(), idleWorker)
+	a, _ = r.AssignTasks(ctx, s, time.Now(), idleWorker)
 	fmt.Printf("After ACK, there were %d new assignments.\n", len(a))
 
 	// Output:

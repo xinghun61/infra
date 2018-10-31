@@ -61,7 +61,7 @@ func Example() {
 	t := time.Now()
 	s.UpdateTime(ctx, t)
 	// This will return a match between Request1 and Worker1.
-	assignments := s.RunOnce(ctx)
+	assignments, _ := s.RunOnce(ctx)
 
 	// True.
 	IsOn(requestID, workerID, s)

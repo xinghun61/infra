@@ -45,7 +45,7 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 		c := account.NewConfig(0, 0, vector.New())
 		s.AddAccount(ctx, "a1", c, vector.New(2, 0, 0))
 		Convey("when scheduling jobs", func() {
-			muts := s.RunOnce(ctx)
+			muts, _ := s.RunOnce(ctx)
 			Convey("then both jobs should be matched, with provisionable label used as tie-breaker", func() {
 				tmproto := tutils.TimestampProto(tm)
 				expects := []*Assignment{
@@ -57,11 +57,6 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 		})
 	})
 }
-
-/*func Example() {
-	fmt.Println("asdf")
-	// Output: fdsa
-}*/
 
 // TestReprioritize tests that the scheduler correctly changes the priority
 // of running jobs (promote or demote) if the account balance makes that
@@ -134,7 +129,7 @@ func TestSchedulerPreempt(t *testing.T) {
 				Convey("when scheduling", func() {
 					tm1 := time.Unix(1, 0)
 					s.UpdateTime(ctx, tm1)
-					got := s.RunOnce(ctx)
+					got, _ := s.RunOnce(ctx)
 					Convey("then the cheaper running job is preempted.", func() {
 						want := &Assignment{Type: Assignment_PREEMPT_WORKER, Priority: 0, WorkerId: "w2", RequestId: "r3", TaskToAbort: "r2", Time: tutils.TimestampProto(tm1)}
 						So(got, shouldResemblePretty, []*Assignment{want})
@@ -144,7 +139,7 @@ func TestSchedulerPreempt(t *testing.T) {
 			Convey("given insufficient balance", func() {
 				stateBefore := s.State.Clone()
 				Convey("when scheduling", func() {
-					got := s.RunOnce(ctx)
+					got, _ := s.RunOnce(ctx)
 					Convey("then nothing happens.", func() {
 						So(got, ShouldBeEmpty)
 						So(s.State, shouldResemblePretty, stateBefore)
@@ -157,7 +152,7 @@ func TestSchedulerPreempt(t *testing.T) {
 			s.AddRequest(ctx, "r3", NewRequest("a1", nil, tm0), tm0)
 			stateBefore := s.State.Clone()
 			Convey("when scheduling", func() {
-				got := s.RunOnce(ctx)
+				got, _ := s.RunOnce(ctx)
 				Convey("then nothing happens.", func() {
 					So(got, ShouldBeEmpty)
 					So(s.State, shouldResemblePretty, stateBefore)

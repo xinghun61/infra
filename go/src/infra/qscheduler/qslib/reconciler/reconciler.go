@@ -72,14 +72,14 @@ type Scheduler interface {
 
 	// MarkIdle informs the scheduler that a given worker is idle, with
 	// given labels.
-	MarkIdle(ctx context.Context, workerID string, labels scheduler.LabelSet, t time.Time)
+	MarkIdle(ctx context.Context, workerID string, labels scheduler.LabelSet, t time.Time) error
 
 	// RunOnce runs through one round of the scheduling algorithm, and determines
 	// and returns work assignments.
-	RunOnce(ctx context.Context) []*scheduler.Assignment
+	RunOnce(ctx context.Context) ([]*scheduler.Assignment, error)
 
 	// AddRequest adds a task request to the queue.
-	AddRequest(ctx context.Context, requestID string, request *scheduler.TaskRequest, t time.Time)
+	AddRequest(ctx context.Context, requestID string, request *scheduler.TaskRequest, t time.Time) error
 
 	// IsAssigned returns whether the given request is currently assigned to the
 	// given worker.
@@ -92,12 +92,12 @@ type Scheduler interface {
 	// Supplied requestID must not be "".
 	//
 	// Note: calls to NotifyRequest come from task update pubsub messages from swarming.
-	NotifyRequest(ctx context.Context, requestID string, workerID string, t time.Time)
+	NotifyRequest(ctx context.Context, requestID string, workerID string, t time.Time) error
 }
 
 // AssignTasks accepts one or more idle workers, and returns tasks to be assigned
 // to those workers (if there are tasks available).
-func (state *State) AssignTasks(ctx context.Context, s Scheduler, t time.Time, workers ...*IdleWorker) []Assignment {
+func (state *State) AssignTasks(ctx context.Context, s Scheduler, t time.Time, workers ...*IdleWorker) ([]Assignment, error) {
 	s.UpdateTime(ctx, t)
 
 	// Determine which of the supplied workers should be newly marked as
@@ -113,14 +113,20 @@ func (state *State) AssignTasks(ctx context.Context, s Scheduler, t time.Time, w
 		wid := w.ID
 		q, ok := state.WorkerQueues[wid]
 		if !ok || !s.IsAssigned(q.TaskToAssign, wid) {
-			s.MarkIdle(ctx, wid, w.ProvisionableLabels, t)
+			if err := s.MarkIdle(ctx, wid, w.ProvisionableLabels, t); err != nil {
+				return nil, err
+			}
 			delete(state.WorkerQueues, wid)
 		}
 	}
 
 	// Call scheduler, and update worker queues based on assignments that it
 	// yielded.
-	newAssignments := s.RunOnce(ctx)
+	newAssignments, err := s.RunOnce(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, a := range newAssignments {
 		if a.TaskToAbort != "" && a.Type != scheduler.Assignment_PREEMPT_WORKER {
 			panic(fmt.Sprintf("Received a non-preempt assignment specifing a task to abort %s.", a.TaskToAbort))
@@ -145,7 +151,7 @@ func (state *State) AssignTasks(ctx context.Context, s Scheduler, t time.Time, w
 		}
 	}
 
-	return assignments
+	return assignments, nil
 }
 
 // Cancellation represents a scheduler-initated operation to cancel a task on a worker.

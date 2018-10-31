@@ -61,7 +61,7 @@ func (e *UpdateOrderError) Error() string {
 // (or zero balance if nil).
 //
 // If an account with that id already exists, then it is overwritten.
-func (s *Scheduler) AddAccount(ctx context.Context, id string, config *account.Config, initialBalance *vector.Vector) {
+func (s *Scheduler) AddAccount(ctx context.Context, id string, config *account.Config, initialBalance *vector.Vector) error {
 	s.ensureMaps()
 	s.Config.AccountConfigs[id] = config
 	if initialBalance == nil {
@@ -70,12 +70,14 @@ func (s *Scheduler) AddAccount(ctx context.Context, id string, config *account.C
 		initialBalance = initialBalance.Copy()
 	}
 	s.State.Balances[id] = initialBalance
+	return nil
 }
 
 // AddRequest enqueues a new task request.
-func (s *Scheduler) AddRequest(ctx context.Context, requestID string, request *TaskRequest, t time.Time) {
+func (s *Scheduler) AddRequest(ctx context.Context, requestID string, request *TaskRequest, t time.Time) error {
 	s.ensureMaps()
 	s.State.addRequest(requestID, request, t)
+	return nil
 }
 
 // IsAssigned returns whether the given request is currently assigned to the
@@ -169,9 +171,10 @@ type IdleWorker struct {
 // of state, then it does nothing.
 //
 // Note: calls to MarkIdle come from bot reap calls from swarming.
-func (s *Scheduler) MarkIdle(ctx context.Context, workerID string, labels LabelSet, t time.Time) {
+func (s *Scheduler) MarkIdle(ctx context.Context, workerID string, labels LabelSet, t time.Time) error {
 	s.ensureMaps()
 	s.State.markIdle(workerID, labels, t)
+	return nil
 }
 
 // NotifyRequest informs the scheduler authoritatively that the given request
@@ -181,9 +184,10 @@ func (s *Scheduler) MarkIdle(ctx context.Context, workerID string, labels LabelS
 // Supplied requestID must not be "".
 //
 // Note: calls to NotifyRequest come from task update pubsub messages from swarming.
-func (s *Scheduler) NotifyRequest(ctx context.Context, requestID string, workerID string, t time.Time) {
+func (s *Scheduler) NotifyRequest(ctx context.Context, requestID string, workerID string, t time.Time) error {
 	s.ensureMaps()
 	s.State.notifyRequest(requestID, workerID, t)
+	return nil
 }
 
 // RunOnce performs a single round of the quota scheduler algorithm
@@ -191,7 +195,7 @@ func (s *Scheduler) NotifyRequest(ctx context.Context, requestID string, workerI
 //
 // TODO(akeshet): Revisit how to make this function an interruptable goroutine-based
 // calculation.
-func (s *Scheduler) RunOnce(ctx context.Context) []*Assignment {
+func (s *Scheduler) RunOnce(ctx context.Context) ([]*Assignment, error) {
 	s.ensureMaps()
 	state := s.State
 	config := s.Config
@@ -225,7 +229,7 @@ func (s *Scheduler) RunOnce(ctx context.Context) []*Assignment {
 	output = append(output, matchIdleBotsWithLabels(state, freeJobs)...)
 	output = append(output, matchIdleBots(state, freeJobs)...)
 
-	return output
+	return output, nil
 }
 
 // matchIdleBotsWithLabels matches requests with idle workers that already
