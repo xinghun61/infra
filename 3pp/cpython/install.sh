@@ -211,7 +211,7 @@ fi
 
 # TODO: maybe strip python executable?
 
-pip_bootstrap.py "$PREFIX"
+$PREFIX/bin/python `which pip_bootstrap.py` "$PREFIX"
 
 # Cleanup!
 rm -rf $PREFIX/lib/*.a

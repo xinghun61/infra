@@ -9,6 +9,8 @@
 # This is inspired by https://bootstrap.pypa.io/get-pip.py, but extremely
 # stripped down.
 
+from __future__ import print_function
+
 import os
 import sys
 
@@ -20,7 +22,7 @@ def main():
   # Find pip wheel in this directory.
   for filename in os.listdir(SCRIPT_DIR):
     if filename.startswith('pip-'):
-      sys.path.insert(0, os.path.abspath(filename))
+      sys.path.insert(0, os.path.abspath(os.path.join(SCRIPT_DIR, filename)))
       break
   else:
     assert False, 'pip_bootstrap.py must be run in a directory with a pip wheel'
@@ -29,6 +31,8 @@ def main():
   # pip, setuptools and wheel.
   # pylint: disable=no-name-in-module
   # pylint: disable=no-member
+  import pip
+  print("imported %r" % pip)
   import pip._internal
 
   sys.exit(pip._internal.main([

@@ -202,7 +202,7 @@ cat "$SCRIPT_DIR/python_ssl_suffix.py" >> $PREFIX/lib/python*/ssl.py
 
 # TODO: maybe strip python executable?
 
-$INTERP `which pip_bootstrap.py` "$PREFIX"
+$PREFIX/bin/python3 `which pip_bootstrap.py` "$PREFIX"
 
 PYTHON_MAJOR=$(cd $PREFIX/lib && echo python*)
 
