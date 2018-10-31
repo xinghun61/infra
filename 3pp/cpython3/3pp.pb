@@ -1,4 +1,9 @@
 create {
+  platform_re: "windows-.*"
+  unsupported: true
+}
+
+create {
   source { patch_version: "chromium.1" }
   verify { test: "python_test.py" }
 }
