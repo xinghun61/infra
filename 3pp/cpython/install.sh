@@ -190,6 +190,12 @@ done
 for x in "${SETUP_LOCAL_ATTACH[@]}"; do
   SETUP_LOCAL_FLAGS+=(--attach "$x")
 done
+
+INTERP=python2
+if [[ $_3PP_PLATFORM == $_3PP_TOOL_PLATFORM ]]; then  # not cross compiling
+  INTERP=./$PYTHONEXE
+fi
+
 python -s -S "$SCRIPT_DIR/python_mod_gen.py" \
   --pybuilddir $(cat pybuilddir.txt) \
   --output ./Modules/Setup.local \
@@ -211,7 +217,7 @@ fi
 
 # TODO: maybe strip python executable?
 
-$PREFIX/bin/python `which pip_bootstrap.py` "$PREFIX"
+$INTERP `which pip_bootstrap.py` "$PREFIX"
 
 # Cleanup!
 rm -rf $PREFIX/lib/*.a
