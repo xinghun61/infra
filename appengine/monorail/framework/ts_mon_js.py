@@ -20,7 +20,8 @@ ISSUE_CREATE_LATENCY_METRIC = ts_mon.CumulativeDistributionMetric(
   'monorail/frontend/issue_create_latency', (
     'Latency between Issue Entry form submission and page load of '
     'the subsequent issue page.'
-  ), field_spec=[ts_mon.StringField('client_id')])
+  ), field_spec=[
+    ts_mon.StringField('client_id'), ts_mon.StringField('host_name')])
 ISSUE_UPDATE_LATENCY_METRIC = ts_mon.CumulativeDistributionMetric(
   'monorail/frontend/issue_update_latency', (
     'Latency between Issue Update form submission and page load of '

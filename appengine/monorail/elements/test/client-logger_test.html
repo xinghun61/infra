@@ -3,29 +3,43 @@
 
 <script type="module">
 import ClientLogger from '../../static/js/monitoring/client-logger.js';
+import MonorailTSMon from '../../static/js/monitoring/ts-mon.js';
 
-suite('constructor', function() {
-  test('assigns this.category', function() {
-    const c = new ClientLogger('rutabaga');
-    assert.equal(c.category, 'rutabaga');
-  });
+suite('ClientLogger', () => {
 
-  test('gets started events from sessionStorage', function() {
-    const startedEvents = {
-      event1: {
-        time: 12345678,
-        labels: ['label1', 'label2'],
-      },
-      event2: {
-        time: 87654321,
-        labels: ['label2'],
-      },
+  setup(() => {
+    window.CS_env = {
+      token: 'rutabaga-token',
+      tokenExpiresSec: 1234,
     };
-    const key = 'ClientLogger.rutabaga.started';
-    sessionStorage[key] = JSON.stringify(startedEvents);
-
-    const c = new ClientLogger('rutabaga');
-    assert.deepEqual(startedEvents, c.startedEvents);
+    window.chops = {rpc: {PrpcClient: sinon.spy()}};
+    MonorailTSMon.prototype.disableAfterNextFlush = sinon.spy();
   });
+
+  suite('constructor', function() {
+    test('assigns this.category', function() {
+      const c = new ClientLogger('rutabaga');
+      assert.equal(c.category, 'rutabaga');
+    });
+
+    test('gets started events from sessionStorage', function() {
+      const startedEvents = {
+        event1: {
+          time: 12345678,
+          labels: ['label1', 'label2'],
+        },
+        event2: {
+          time: 87654321,
+          labels: ['label2'],
+        },
+      };
+      const key = 'ClientLogger.rutabaga.started';
+      sessionStorage[key] = JSON.stringify(startedEvents);
+
+      const c = new ClientLogger('rutabaga');
+      assert.deepEqual(startedEvents, c.startedEvents);
+    });
+  });
+
 });
 </script>

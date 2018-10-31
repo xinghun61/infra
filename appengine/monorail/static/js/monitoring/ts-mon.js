@@ -9,15 +9,32 @@ import '../prpc.js';
 const TS_MON_JS_PATH = '/_/jstsmon.do';
 const TS_MON_CLIENT_GLOBAL_NAME = '__tsMonClient';
 
-export class MonorailTSMonClient extends TSMonClient {
+export default class MonorailTSMon extends TSMonClient {
 
   constructor() {
-    super();
-    this.clientId = MonorailTSMonClient.generateClientId();
+    super(TS_MON_JS_PATH);
+    this.clientId = MonorailTSMon.generateClientId();
     this.disableAfterNextFlush();
     // Create an instance of pRPC client for refreshing XSRF tokens.
     this.prpcClient = new window.__prpc.AutoRefreshPrpcClient(
       window.CS_env.token, window.CS_env.tokenExpiresSec);
+
+    // TODO(jeffcarp, 4415): Deduplicate metric defs.
+    const standardFields = new Map([
+      ['client_id', TSMonClient.stringField('client_id')],
+      ['host_name', TSMonClient.stringField('host_name')],
+    ]);
+    this._userTimingMetrics = [
+      {
+        category: 'issues',
+        eventName: 'new-issue',
+        metric: this.cumulativeDistribution(
+          'monorail/frontend/issue_create_latency',
+          'Latency between issue entry form submit and issue detail page load.',
+          null, standardFields,
+        ),
+      }
+    ];
   }
 
   fetchImpl(rawMetricValues) {
@@ -33,54 +50,12 @@ export class MonorailTSMonClient extends TSMonClient {
     });
   }
 
-  static generateClientId() {
-    /**
-     * Returns a random string used as the client_id field in ts_mon metrics.
-     *
-     * Rationale:
-     * If we assume Monorail has sustained 40 QPS, assume every request
-     * generates a new ClientLogger (likely an overestimation), and we want
-     * the likelihood of a client ID collision to be 0.01% for all IDs
-     * generated in any given year (in other words, 1 collision every 10K
-     * years), we need to generate a random string with at least 2^30 different
-     * possible values (i.e. 30 bits of entropy, see log2(d) in Wolfram link
-     * below). Using an unsigned integer gives us 32 bits of entropy, more than
-     * enough.
-     *
-     * Returns:
-     *   A string (the base-32 representation of a random 32-bit integer).
-
-     * References:
-     * - https://en.wikipedia.org/wiki/Birthday_problem
-     * - https://www.wolframalpha.com/input/?i=d%3D40+*+60+*+60+*+24+*+365,+p%3D0.0001,+n+%3D+sqrt(2d+*+ln(1%2F(1-p))),+d,+log2(d),+n
-     * - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/toString
-     */
-    const randomvalues = new Uint32Array(1);
-    window.crypto.getRandomValues(randomvalues);
-    return randomvalues[0].toString(32);
-  }
-}
-
-export default class MonorailTSMon {
-  constructor() {
-    this.client = MonorailTSMon.getGlobalClient();
-
-    // TODO(jeffcarp, 4415): Deduplicate metric defs.
-    const standardFields = new Map([
-      ['client_id', TSMonClient.stringField('client_id')],
-      ['host_name', TSMonClient.stringField('host_name')],
-    ]);
-
-    // TODO(jeffcarp): Add metrics.
-    this.userTimingMetrics = [];
-  }
-
   recordUserTiming(category, eventName, elapsed) {
     const metricFields = new Map([
-      ['client_id', this.client.clientId],
+      ['client_id', this.clientId],
       ['host_name', window.CS_env.app_version],
     ]);
-    for (let metric of this.userTimingMetrics) {
+    for (let metric of this._userTimingMetrics) {
       if (category === metric.category
           && eventName === metric.eventName) {
         metric.metric.add(elapsed, metricFields);
@@ -110,8 +85,35 @@ export default class MonorailTSMon {
   static getGlobalClient() {
     const key = TS_MON_CLIENT_GLOBAL_NAME;
     if (!window.hasOwnProperty(key)) {
-      window[key] = new MonorailTSMonClient(TS_MON_JS_PATH);
+      window[key] = new MonorailTSMon();
     }
     return window[key];
+  }
+
+  static generateClientId() {
+    /**
+     * Returns a random string used as the client_id field in ts_mon metrics.
+     *
+     * Rationale:
+     * If we assume Monorail has sustained 40 QPS, assume every request
+     * generates a new ClientLogger (likely an overestimation), and we want
+     * the likelihood of a client ID collision to be 0.01% for all IDs
+     * generated in any given year (in other words, 1 collision every 10K
+     * years), we need to generate a random string with at least 2^30 different
+     * possible values (i.e. 30 bits of entropy, see log2(d) in Wolfram link
+     * below). Using an unsigned integer gives us 32 bits of entropy, more than
+     * enough.
+     *
+     * Returns:
+     *   A string (the base-32 representation of a random 32-bit integer).
+
+     * References:
+     * - https://en.wikipedia.org/wiki/Birthday_problem
+     * - https://www.wolframalpha.com/input/?i=d%3D40+*+60+*+60+*+24+*+365,+p%3D0.0001,+n+%3D+sqrt(2d+*+ln(1%2F(1-p))),+d,+log2(d),+n
+     * - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/toString
+     */
+    const randomvalues = new Uint32Array(1);
+    window.crypto.getRandomValues(randomvalues);
+    return randomvalues[0].toString(32);
   }
 }

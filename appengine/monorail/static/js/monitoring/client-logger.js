@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '../../../bower_components/chopsui/tsmon-client.js';
+import MonorailTSMon from './ts-mon.js';
 
 /*
 ClientLogger is a JavaScript library for tracking events with Google Analytics
@@ -45,7 +45,7 @@ This would record the following metrics:
 export default class ClientLogger {
   constructor(category) {
     this.category = category;
-    // TODO(jeffcarp): Reinstate TSMonClient.
+    this.tsMon = MonorailTSMon.getGlobalClient();
 
     const categoryKey = `ClientLogger.${category}.started`;
     const startedEvtsStr = sessionStorage[categoryKey];
@@ -200,6 +200,7 @@ export default class ClientLogger {
         JSON.stringify(this.startedEvents);
 
     this.logEvent(`${eventName}-end`, eventLabel);
+    this.tsMon.recordUserTiming(this.category, eventName, elapsed);
   }
 }
 

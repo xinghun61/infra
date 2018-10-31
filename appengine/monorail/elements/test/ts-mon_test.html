@@ -2,50 +2,7 @@
 <script src="/bower_components/web-component-tester/browser.js"></script>
 
 <script type="module">
-import MonorailTSMon, {
-  MonorailTSMonClient,
-} from '../../static/js/monitoring/ts-mon.js';
-
-suite('MonorailTSMonClient', () => {
-  let client;
-
-  setup(() => {
-    window.CS_env = {
-      token: 'rutabaga-token',
-      tokenExpiresSec: 1234,
-    };
-    window.chops = {rpc: {PrpcClient: sinon.spy()}};
-    MonorailTSMonClient.prototype.disableAfterNextFlush = sinon.spy();
-    client = new MonorailTSMonClient();
-  });
-
-  teardown(() => {
-    delete window.CS_env;
-  });
-
-  suite('constructor', () => {
-    test('initializes a prpcClient', () => {
-      assert.equal(client.prpcClient.constructor.name, 'AutoRefreshPrpcClient');
-    });
-
-    test('sets a client ID', () => {
-      assert.isNotNull(client.clientId);
-    });
-
-    test('disables sending after next flush', () => {
-      sinon.assert.calledOnce(client.disableAfterNextFlush);
-    });
-  });
-
-  test('generateClientId', () => {
-    const clientID = MonorailTSMonClient.generateClientId();
-    assert.isNaN(clientID);
-    const clientIDNum = parseInt(clientID, 32);
-    assert.isNotNaN(clientIDNum);
-    assert.isAtLeast(clientIDNum, 0);
-    assert.isAtMost(clientIDNum, Math.pow(2, 32));
-  });
-});
+import MonorailTSMon from '../../static/js/monitoring/ts-mon.js';
 
 suite('MonorailTSMon', () => {
   let mts;
@@ -56,6 +13,7 @@ suite('MonorailTSMon', () => {
       tokenExpiresSec: 1234,
     };
     window.chops = {rpc: {PrpcClient: sinon.spy()}};
+    MonorailTSMon.prototype.disableAfterNextFlush = sinon.spy();
     mts = new MonorailTSMon();
   });
 
@@ -64,33 +22,32 @@ suite('MonorailTSMon', () => {
   });
 
   suite('constructor', () => {
-    test('initializes a MonorailTSMonClient', () => {
-      assert.equal(mts.client.constructor.name, 'MonorailTSMonClient');
-      // Metrics are currently empty.
-      assert.deepEqual(mts.userTimingMetrics, []);
+    test('initializes a prpcClient', () => {
+      assert.equal(mts.prpcClient.constructor.name, 'AutoRefreshPrpcClient');
     });
 
-    test('all instances share the same client', () => {
-      const mts2 = new MonorailTSMon();
-      assert.equal(mts.client, mts2.client);
-
-      const mts3 = new MonorailTSMon();
-      assert.equal(mts2.client, mts3.client);
+    test('sets a client ID', () => {
+      assert.isNotNull(mts.clientId);
     });
 
-    test('all instances share the same client ID', () => {
-      const mts2 = new MonorailTSMon();
-      assert.equal(mts.clientId, mts2.clientId);
-
-      const mts3 = new MonorailTSMon();
-      assert.equal(mts2.clientId, mts3.clientId);
+    test('disables sending after next flush', () => {
+      sinon.assert.calledOnce(mts.disableAfterNextFlush);
     });
+  });
+
+  test('generateClientId', () => {
+    const clientID = MonorailTSMon.generateClientId();
+    assert.isNaN(clientID);
+    const clientIDNum = parseInt(clientID, 32);
+    assert.isNotNaN(clientIDNum);
+    assert.isAtLeast(clientIDNum, 0);
+    assert.isAtMost(clientIDNum, Math.pow(2, 32));
   });
 
   suite('recordUserTiming', () => {
     test('records a timing metric only if matches', () => {
       const metric = {add: sinon.spy() };
-      mts.userTimingMetrics = [{
+      mts._userTimingMetrics = [{
         category: 'rutabaga',
         eventName: 'grew',
         metric: metric,
@@ -143,6 +100,5 @@ suite('MonorailTSMon', () => {
       assert.equal(client2, client1);
     });
   });
-
 });
 </script>
