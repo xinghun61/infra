@@ -235,7 +235,6 @@
       "[START_DIR]/src/third_party/blink/tools/wpt_import.py",
       "--credentials-json",
       "/creds/json/wpt-import.json",
-      "--auto-upload",
       "--verbose",
       "--auth-refresh-token-json",
       "/creds/refresh_tokens/blink-w3c-test-autoroller",
