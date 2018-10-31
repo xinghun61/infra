@@ -54,8 +54,8 @@ func (tf *testFixture) CloneWithFreshMocks() (testFixture, func()) {
 
 // newTextFixture creates a new testFixture to be used in unittests.
 //
-// The function returns the created testFixture and cleanup function that must
-// be deferred by the caller.
+// The function returns the created testFixture and a validation function that
+// must be deferred by the caller.
 func newTestFixture(t *testing.T) (testFixture, func()) {
 	return newTestFixtureWithContext(testingContext(), t)
 }
@@ -76,10 +76,10 @@ func newTestFixtureWithContext(c context.Context, t *testing.T) (testFixture, fu
 		},
 	}
 
-	cleanup := func() {
+	validate := func() {
 		mc.Finish()
 	}
-	return tf, cleanup
+	return tf, validate
 }
 
 func testingContext() context.Context {

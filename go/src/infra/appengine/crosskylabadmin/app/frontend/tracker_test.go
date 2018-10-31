@@ -33,8 +33,8 @@ import (
 // Other tests should verify the fields of returned bots.
 func TestRefreshAndSummarizeNoBotsAvailable(t *testing.T) {
 	Convey("with no swarming duts available", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
 		).AnyTimes().Return([]*swarming.SwarmingRpcsBotInfo{}, nil)
@@ -93,8 +93,8 @@ func TestRefreshAndSummarizeNoBotsAvailable(t *testing.T) {
 // Other tests should verify the fields of returned bots.
 func TestRefreshAndSummarizeOneBotAvailable(t *testing.T) {
 	Convey("with a single dut available", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 		bots := []*swarming.SwarmingRpcsBotInfo{botForDUT("dut_1", "ready", "")}
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
@@ -170,8 +170,8 @@ func TestRefreshAndSummarizeOneBotAvailable(t *testing.T) {
 // Other tests should verify the fields of returned bots.
 func TestRefreshAndSummarizeMultipleBotsAvailable(t *testing.T) {
 	Convey("with two duts available", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 		bots := []*swarming.SwarmingRpcsBotInfo{
 			botForDUT("dut_1", "ready", ""),
 			botForDUT("dut_2", "ready", ""),
@@ -228,8 +228,8 @@ func TestRefreshAndSummarizeMultipleBotsAvailable(t *testing.T) {
 // Other tests should verify the fields of returned bots.
 func TestRefreshLargeNumberOfBotsAvailable(t *testing.T) {
 	Convey("with a large number of duts available", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 
 		// More DUTs to refresh than WorkPool concurrency.
 		numDuts := 3 * clients.MaxConcurrentSwarmingCalls
@@ -260,8 +260,8 @@ func TestRefreshLargeNumberOfBotsAvailable(t *testing.T) {
 
 func TestRefreshAndSummarizeBotsDutState(t *testing.T) {
 	Convey("with a swarming dut in state needs_reset", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 		bots := []*swarming.SwarmingRpcsBotInfo{botForDUT("dut_1", "needs_reset", "")}
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
@@ -291,8 +291,8 @@ func TestRefreshAndSummarizeBotsDutState(t *testing.T) {
 
 func TestRefreshAndSummarizeIdleDuration(t *testing.T) {
 	Convey("with a swarming dut with no recent tasks", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 		bots := []*swarming.SwarmingRpcsBotInfo{botForDUT("dut_task_1", "ready", "")}
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
@@ -320,8 +320,8 @@ func TestRefreshAndSummarizeIdleDuration(t *testing.T) {
 	})
 
 	Convey("with a swarming dut with one recent completed task", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 		bots := []*swarming.SwarmingRpcsBotInfo{botForDUT("dut_task_1", "ready", "")}
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
@@ -357,8 +357,8 @@ func TestRefreshAndSummarizeIdleDuration(t *testing.T) {
 	})
 
 	Convey("with a swarming dut with one running task", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 		bots := []*swarming.SwarmingRpcsBotInfo{botForDUT("dut_task_1", "ready", "")}
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
 			gomock.Any(), gomock.Eq(config.Get(tf.C).Swarming.BotPool), gomock.Any(),
@@ -396,8 +396,8 @@ func TestRefreshAndSummarizeIdleDuration(t *testing.T) {
 
 func TestRefreshBotsWithDimensions(t *testing.T) {
 	Convey("with three swarming duts with various models and pools", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 
 		bots := []*swarming.SwarmingRpcsBotInfo{
 			botForDUT("dut_cq_link", "ready", "label-pool:cq; label-model:link"),
@@ -448,8 +448,8 @@ func TestRefreshBotsWithDimensions(t *testing.T) {
 
 func TestSummarizeBotsWithDimensions(t *testing.T) {
 	Convey("for a bot with non-trivial dimensions", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 
 		bots := []*swarming.SwarmingRpcsBotInfo{
 			botForDUT("dut_cq_link", "ready", "label-pool:cq,bvt; label-model:link"),
@@ -479,8 +479,8 @@ func TestSummarizeBotsWithDimensions(t *testing.T) {
 
 func TestHealthSummary(t *testing.T) {
 	Convey("with one bot available in state ready", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 
 		bots := []*swarming.SwarmingRpcsBotInfo{botForDUT("dut_ready", "ready", "")}
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(
@@ -499,8 +499,8 @@ func TestHealthSummary(t *testing.T) {
 	})
 
 	Convey("with one bot available in state repair_failed", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 
 		bots := []*swarming.SwarmingRpcsBotInfo{botForDUT("dut_ready", "repair_failed", "")}
 		tf.MockSwarming.EXPECT().ListAliveBotsInPool(

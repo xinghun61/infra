@@ -32,8 +32,8 @@ import (
 
 func TestEnsureBackgroundTasks(t *testing.T) {
 	Convey("with 2 known bots", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 		setKnownReadyBots(tf, []string{"dut_1", "dut_2"})
 
 		Convey("EnsureBackgroundTasks for unknown bot creates no tasks", func() {
@@ -47,8 +47,8 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 	})
 
 	Convey("with 2 known bots", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 		setKnownReadyBots(tf, []string{"dut_1", "dut_2"})
 
 		Convey("EnsureBackgroundTasks(Reset) for known bot", func() {
@@ -77,8 +77,8 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 	})
 
 	Convey("with 2 known bots", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 		setKnownReadyBots(tf, []string{"dut_1", "dut_2"})
 
 		Convey("EnsureBackgroundTasks(Reset) for known bot with existing tasks", func() {
@@ -120,8 +120,8 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 	})
 
 	Convey("with a large number of known bots", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 
 		numDuts := 6 * clients.MaxConcurrentSwarmingCalls
 		allDuts := make([]string, 0, numDuts)
@@ -169,8 +169,8 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 
 func TestTriggerRepairOnIdle(t *testing.T) {
 	Convey("with one known bot with no task history", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 		setKnownReadyBots(tf, []string{"dut_1"})
 		expectListRecentTasks(tf, 0, "PENDING")
 		expectListSortedRecentTasksForBot(tf, "dut_1")
@@ -189,8 +189,8 @@ func TestTriggerRepairOnIdle(t *testing.T) {
 	})
 
 	Convey("with one known bot with one task long ago", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 
 		setKnownReadyBots(tf, []string{"dut_1"})
 		expectListRecentTasks(tf, 0, "PENDING")
@@ -213,8 +213,8 @@ func TestTriggerRepairOnIdle(t *testing.T) {
 	})
 
 	Convey("with one known bot with one task in recent past", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 
 		setKnownReadyBots(tf, []string{"dut_1"})
 		expectListRecentTasks(tf, 0, "PENDING")
@@ -236,8 +236,8 @@ func TestTriggerRepairOnIdle(t *testing.T) {
 	})
 
 	Convey("with one known bot with one running task", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 
 		setKnownReadyBots(tf, []string{"dut_1"})
 		expectListRecentTasks(tf, 0, "PENDING")
@@ -257,8 +257,8 @@ func TestTriggerRepairOnIdle(t *testing.T) {
 
 func TestTriggerRepairOnRepairFailed(t *testing.T) {
 	Convey("with one known bot in state ready", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 		setKnownReadyBots(tf, []string{"dut_1"})
 
 		Convey("TriggerRepairOnRepairFailed does not trigger a task for the dut", func() {
@@ -273,8 +273,8 @@ func TestTriggerRepairOnRepairFailed(t *testing.T) {
 	})
 
 	Convey("with one known bot in state repair_failed", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 		setKnownBotsInState(tf, []string{"dut_1"}, "repair_failed")
 		expectListRecentTasks(tf, 0, "")
 
@@ -292,8 +292,8 @@ func TestTriggerRepairOnRepairFailed(t *testing.T) {
 	})
 
 	Convey("with one known bot in state repair_failed and a recent repair task", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 		setKnownBotsInState(tf, []string{"dut_1"}, "repair_failed")
 		yyyy, mm, dd := time.Now().Date()
 		expectListRecentTasks(tf, 0, "", &swarming.SwarmingRpcsTaskResult{
@@ -313,8 +313,8 @@ func TestTriggerRepairOnRepairFailed(t *testing.T) {
 	})
 
 	Convey("with one known bot in state repair_failed and a running repair task", t, func() {
-		tf, cleanup := newTestFixture(t)
-		defer cleanup()
+		tf, validate := newTestFixture(t)
+		defer validate()
 		setKnownBotsInState(tf, []string{"dut_1"}, "repair_failed")
 		expectListRecentTasks(tf, 0, "", &swarming.SwarmingRpcsTaskResult{State: "RUNNING"})
 
@@ -347,8 +347,8 @@ func setKnownReadyBots(tf testFixture, duts []string) {
 func setKnownBotsInState(tf testFixture, duts []string, state string) {
 	// Clone tf so that MockSwarming interactions do not intefere with the actual
 	// test.
-	tf, cleanup := tf.CloneWithFreshMocks()
-	defer cleanup()
+	tf, validate := tf.CloneWithFreshMocks()
+	defer validate()
 
 	bots := make([]*swarming.SwarmingRpcsBotInfo, 0, len(duts))
 	for _, d := range duts {
