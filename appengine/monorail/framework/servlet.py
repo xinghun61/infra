@@ -776,9 +776,6 @@ class Servlet(webapp2.RequestHandler):
       base_data['form_token'] = xsrf.GenerateToken(
         mr.auth.user_id, form_token_path)
       base_data['form_token_path'] = form_token_path
-      base_data['flag_spam_token'] = xsrf.GenerateToken(
-         mr.auth.user_id, '/p/%s%s.do' % (
-         mr.project_name, urls.ISSUE_FLAGSPAM_JSON))
 
     return base_data
 

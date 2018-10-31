@@ -344,9 +344,6 @@ class IssueDetail(issuepeek.IssuePeek):
         'starred': ezt.boolean(starred),
         'discourage_plus_one': ezt.boolean(discourage_plus_one),
         'pagegen': str(long(time.time() * 1000000)),
-        'flag_spam_token': xsrf.GenerateToken(
-            mr.auth.user_id, '/p/%s%s.do' % (
-                mr.project_name, urls.ISSUE_FLAGSPAM_JSON)),
 
         # For deep linking and input correction after a failed submit.
         'initial_summary': issue_view.summary,
