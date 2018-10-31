@@ -1583,3 +1583,12 @@ ALTER TABLE UserGroupSettings
 ALTER TABLE Invalidate MODIFY COLUMN kind enum(
     'user', 'usergroup', 'project', 'issue', 'issue_id',
     'hotlist', 'comment', 'template') NOT NULL;
+
+================================================================
+2018-10-30: Fix ApprovalValue status enum for 'review_started'
+
+ALTER TABLE Template2ApprovalValue MODIFY status ENUM (
+  'needs_review', 'na', 'review_requested', 'review_started', 'need_info', 'approved', 'not_approved', 'not_set') DEFAULT 'not_set' NOT NULL;
+
+ALTER TABLE Issue2ApprovalValue MODIFY status ENUM (
+  'needs_review', 'na', 'review_requested', 'review_started', 'need_info', 'approved', 'not_approved', 'not_set') DEFAULT 'not_set' NOT NULL;

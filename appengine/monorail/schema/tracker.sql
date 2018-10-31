@@ -503,7 +503,7 @@ CREATE TABLE Template2ApprovalValue (
   approval_id INT NOT NULL,
   template_id INT NOT NULL,
   phase_id INT,
-  status ENUM ('needs_review', 'na', 'review_requested', 'started', 'need_info', 'approved', 'not_approved', 'not_set') DEFAULT 'not_set' NOT NULL,
+  status ENUM ('needs_review', 'na', 'review_requested', 'review_started', 'need_info', 'approved', 'not_approved', 'not_set') DEFAULT 'not_set' NOT NULL,
 
   PRIMARY KEY (approval_id, template_id),
 
@@ -830,7 +830,7 @@ CREATE TABLE Issue2ApprovalValue (
   issue_id INT NOT NULL,
   approval_id INT NOT NULL,
   phase_id INT,
-  status ENUM ('needs_review', 'na', 'review_requested', 'started', 'need_info', 'approved', 'not_approved', 'not_set') DEFAULT 'not_set' NOT NULL,
+  status ENUM ('needs_review', 'na', 'review_requested', 'review_started', 'need_info', 'approved', 'not_approved', 'not_set') DEFAULT 'not_set' NOT NULL,
   setter_id INT UNSIGNED,
   set_on INT,
 
