@@ -29,10 +29,9 @@ class FlakeReportUtilTest(WaterfallTestCase):
     return flake
 
   def _CreateFlakeOccurrence(self, build_id, step_ui_name, test_name,
-                             gerrit_cl_id, parent_flake_key,
-                             flake_type=FlakeType.CQ_FALSE_REJECTION):
+                             gerrit_cl_id, parent_flake_key):
     flake_occurrence = FlakeOccurrence.Create(
-        flake_type=flake_type,
+        flake_type=FlakeType.CQ_FALSE_REJECTION,
         build_id=build_id,
         step_ui_name=step_ui_name,
         test_name=test_name,
@@ -63,8 +62,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
 
     flake = self._CreateFlake('step', 'test', 'test_label')
     self._CreateFlakeOccurrence(111, 'step1', 'test1', 98765, flake.key)
-    self._CreateFlakeOccurrence(222, 'step2', 'test2', 98764, flake.key,
-                                flake_type=FlakeType.RETRY_WITH_PATCH)
+    self._CreateFlakeOccurrence(222, 'step2', 'test2', 98764, flake.key)
     self._CreateFlakeOccurrence(333, 'step3', 'test3', 98763, flake.key)
 
   # This test tests that getting flakes with enough occurrences works properly.
@@ -78,7 +76,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
   # with different CLs, and different patchsets of the same CL are only counted
   # once.
   def testMinimumRequiredFalselyRejectedCLs(self):
-    occurrences = FlakeOccurrence.query().fetch()
+    occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
     for occurrence in occurrences:
       occurrence.gerrit_cl_id = 565656
       occurrence.put()
@@ -88,7 +87,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
 
   # This test tests that occurrences happened more than one day ago are ignored.
   def testIgnoreOutdatedOccurrences(self):
-    occurrences = FlakeOccurrence.query().fetch()
+    occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
     occurrences[2].time_happened = self._GetDatetimeHoursAgo(25)
     occurrences[2].put()
 
@@ -139,7 +139,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
     flake.flake_issue_key = flake_issue.key
     flake.put()
 
-    occurrences = FlakeOccurrence.query().fetch()
+    occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
     occurrences[2].time_detected = self._GetDatetimeHoursAgo(10)
     occurrences[2].put()
 
@@ -157,7 +158,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
     flake.flake_issue_key = flake_issue.key
     flake.put()
 
-    occurrences = FlakeOccurrence.query().fetch()
+    occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
     for occurrence in occurrences:
       occurrence.time_detected = self._GetDatetimeHoursAgo(10)
       occurrence.put()
@@ -175,7 +177,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
                                       {'create_and_update_bug': False})
 
     flake = Flake.query().fetch()[0]
-    occurrences = FlakeOccurrence.query().fetch()
+    occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
     flake_report_util.ReportFlakesToMonorail([(flake, occurrences)])
     self.assertFalse(mock_create_bug_fn.called)
     self.assertFalse(mock_update_bug_fn.called)
@@ -190,7 +193,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
   @mock.patch.object(issue_tracking_service, 'CreateBug', return_value=66666)
   def testCreateIssue(self, mock_create_bug_fn, mock_update_bug_fn, _):
     flake = Flake.query().fetch()[0]
-    occurrences = FlakeOccurrence.query().fetch()
+    occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
     flake_report_util.ReportFlakesToMonorail([(flake, occurrences)])
 
     expected_status = 'Untriaged'
@@ -265,7 +269,8 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     flake_issue.put()
     flake.flake_issue_key = flake_issue.key
     flake.put()
-    occurrences = FlakeOccurrence.query().fetch()
+    occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
     mock_get_merged_issue.return_value.id = 12345
     mock_get_merged_issue.return_value.open = False
 
@@ -289,7 +294,8 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     flake_issue.put()
     flake.flake_issue_key = flake_issue.key
     flake.put()
-    occurrences = FlakeOccurrence.query().fetch()
+    occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
     mock_get_merged_issue.return_value.id = 12345
     mock_get_merged_issue.return_value.open = True
     flake_report_util.ReportFlakesToMonorail([(flake, occurrences)])
@@ -348,7 +354,8 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     flake_issue.put()
     flake.flake_issue_key = flake_issue.key
     flake.put()
-    occurrences = FlakeOccurrence.query().fetch()
+    occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
     mock_get_merged_issue.return_value.id = 56789
     mock_get_merged_issue.return_value.open = True
     flake_report_util.ReportFlakesToMonorail([(flake, occurrences)])
@@ -370,7 +377,8 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
         mock.Mock(status=403), 'Error happened')
 
     flake1 = Flake.query().fetch()[0]
-    occurrences1 = FlakeOccurrence.query(ancestor=flake1.key).fetch()
+    occurrences1 = FlakeOccurrence.query(ancestor=flake1.key).filter(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
     flake2 = self._CreateFlake('step_other', 'test_other', 'test_label_other')
     self._CreateFlakeOccurrence(777, 'step1_other', 'test1_other', 54321,
                                 flake2.key)
@@ -378,7 +386,8 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
                                 flake2.key)
     self._CreateFlakeOccurrence(999, 'step3_other', 'test3_other', 54323,
                                 flake2.key)
-    occurrences2 = FlakeOccurrence.query(ancestor=flake2.key).fetch()
+    occurrences2 = FlakeOccurrence.query(ancestor=flake2.key).filter(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
 
     flake_report_util.ReportFlakesToMonorail([(flake1, occurrences1),
                                               (flake2, occurrences2)])
@@ -392,7 +401,8 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
         'flake_detection_settings', {'report_flakes_to_flake_analyzer': False})
 
     flake = Flake.query().fetch()[0]
-    occurrences = FlakeOccurrence.query().fetch()
+    occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
     flake_report_util.ReportFlakesToFlakeAnalyzer([(flake, occurrences)])
     self.assertFalse(mock_analyze_flake_occurrence.called)
 
@@ -403,7 +413,8 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     flake_issue.put()
     flake.flake_issue_key = flake_issue.key
     flake.put()
-    occurrences = FlakeOccurrence.query().fetch()
+    occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
 
     flake_report_util.ReportFlakesToFlakeAnalyzer([(flake, occurrences)])
     self.assertEqual(3, mock_analyze_flake_occurrence.call_count)
