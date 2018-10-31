@@ -912,11 +912,11 @@ Raises:
   ValueError: If the key doesn't exist.
 ### *recipes* / [snapshots/snapshot](/recipes/recipes/snapshots/snapshot.py)
 
-[DEPS](/recipes/recipes/snapshots/snapshot.py#5): [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time], [recipe\_engine/url][recipe_engine/recipe_modules/url]
+[DEPS](/recipes/recipes/snapshots/snapshot.py#5): [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time], [recipe\_engine/url][recipe_engine/recipe_modules/url], [recipe\_engine/uuid][recipe_engine/recipe_modules/uuid]
 
-&mdash; **def [RunSteps](/recipes/recipes/snapshots/snapshot.py#25)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/snapshots/snapshot.py#26)(api):**
 
-&mdash; **def [normalize](/recipes/recipes/snapshots/snapshot.py#17)(s):**
+&mdash; **def [normalize](/recipes/recipes/snapshots/snapshot.py#18)(s):**
 
 Normalizes a string for use in a resource label.
 ### *recipes* / [support\_3pp:tests/full](/recipes/recipe_modules/support_3pp/tests/full.py)
@@ -1127,4 +1127,5 @@ Runs a step which adds a link to the current CL if there is one.
 [recipe_engine/recipe_modules/time]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/ee0e2c37c03936c3683be03d215f58d47d04ee08/README.recipes.md#recipe_modules-time
 [recipe_engine/recipe_modules/tricium]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/ee0e2c37c03936c3683be03d215f58d47d04ee08/README.recipes.md#recipe_modules-tricium
 [recipe_engine/recipe_modules/url]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/ee0e2c37c03936c3683be03d215f58d47d04ee08/README.recipes.md#recipe_modules-url
+[recipe_engine/recipe_modules/uuid]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/ee0e2c37c03936c3683be03d215f58d47d04ee08/README.recipes.md#recipe_modules-uuid
 [recipe_engine/wkt/RecipeApi]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/ee0e2c37c03936c3683be03d215f58d47d04ee08/recipe_engine/recipe_api.py#1015

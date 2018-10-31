@@ -11,6 +11,7 @@ DEPS = [
   'recipe_engine/step',
   'recipe_engine/time',
   'recipe_engine/url',
+  'recipe_engine/uuid',
 ]
 
 
@@ -39,10 +40,12 @@ def RunSteps(api):
   snapshot = packages_dir.join('snapshot')
   api.step('snapshot', [
       snapshot,
+      'create',
       '-disk', '%s-disk' % api.properties['bot_id'],
       '-label', 'machine_type:%s' % normalize(api.properties['machine_type']),
+      '-label', 'timestamp:%s' % int(api.time.time()),
       # Name doesn't matter since the snapshot will be identified by labels.
-      '-name', 'snapshot-%s' % int(api.time.time() * 100),
+      '-name', 'snapshot-%s' % api.uuid.random(),
       '-project', 'google.com:chromecompute',
       '-service-account-json', ':gce',
       '-zone', zone,

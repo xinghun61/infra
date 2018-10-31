@@ -44,12 +44,15 @@
   {
     "cmd": [
       "[START_DIR]/packages/snapshot",
+      "create",
       "-disk",
       "bot-id-disk",
       "-label",
       "machine_type:mt",
+      "-label",
+      "timestamp:1337000001",
       "-name",
-      "snapshot-133700000150",
+      "snapshot-00000000-0000-0000-0000-000000001337",
       "-project",
       "google.com:chromecompute",
       "-service-account-json",
