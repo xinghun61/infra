@@ -96,7 +96,7 @@ message BotSummary {
   repeated Task diagnosis = 6;
 }
 
-// DutState specifies the possible values for DUT state.
+// DutState specifies the valid values for DUT state.
 enum DutState {
   DutStateInvalid = 0;
   Ready = 1;

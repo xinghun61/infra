@@ -19,13 +19,13 @@ package appengine
 import (
 	"net/http"
 
-	"infra/appengine/crosskylabadmin/app/config"
-	"infra/appengine/crosskylabadmin/app/cron"
-	"infra/appengine/crosskylabadmin/app/frontend"
-
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/common/data/rand/mathrand"
 	"go.chromium.org/luci/server/router"
+
+	"infra/appengine/crosskylabadmin/app/config"
+	"infra/appengine/crosskylabadmin/app/cron"
+	"infra/appengine/crosskylabadmin/app/frontend"
 )
 
 func init() {

@@ -25,7 +25,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-// DutState specifies the possible values for DUT state.
+// DutState specifies the valid values for DUT state.
 type DutState int32
 
 const (
