@@ -5,21 +5,19 @@ ENV CHROMIUM_REV e41aeaed051c8cc401e0bce2a6d57dcc330808e6
 
 RUN /usr/bin/apt-get update
 RUN /usr/bin/apt-get -y dist-upgrade
-RUN /usr/bin/apt-get -y install curl
-RUN /usr/bin/apt-get -y install iputils-ping
-RUN /usr/bin/apt-get -y install lsb-release
-RUN /usr/bin/apt-get -y install lsof
-RUN /usr/bin/apt-get -y install netcat-openbsd
-RUN /usr/bin/apt-get -y install sshpass
-RUN /usr/bin/apt-get -y install sudo
-RUN /usr/bin/apt-get -y install udev
-RUN /usr/bin/apt-get -y install usbutils
-RUN /usr/bin/apt-get -y install wget
+RUN /usr/bin/apt-get -y install curl iputils-ping locales lsb-release lsof \
+      netcat-openbsd sshpass sudo udev usbutils wget
 
 RUN echo 'ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true' \
       | /usr/bin/debconf-set-selections
 RUN echo 'msttcorefonts msttcorefonts/defoma select note' \
       | /usr/bin/debconf-set-selections
+
+RUN /usr/sbin/locale-gen en_US.UTF-8
+RUN /usr/sbin/update-locale
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
 
 RUN /bin/mkdir /tmp/setup-deps
 RUN /usr/bin/wget -O- \
