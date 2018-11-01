@@ -379,6 +379,7 @@
         "l=Commit-Queue+1",
         "l=Commit-Queue+2",
         "label",
+        "m",
         "notify=ALL",
         "notify=NONE",
         "private",
