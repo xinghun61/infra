@@ -78,8 +78,9 @@ CAN = 2  # Query for open issues only
 GROUP_BY_SPEC = ''
 SORT_SPEC = ''
 
-CONVERT_NUM = 300
+CONVERT_NUM = 20
 CONVERT_START = 0
+VERIFY_NUM = 400
 
 # Queries
 QUERY_MAP = {
@@ -119,7 +120,7 @@ class FLTConvertTask(jsonfeed.InternalTask):
     pm_id = tracker_bizobj.FindFieldDef('PM', config)
     tl_id = tracker_bizobj.FindFieldDef('TL', config)
     te_id = tracker_bizobj.FindFieldDef('TE', config)
-    for possible_stale_issue in pipeline.allowed_results:
+    for possible_stale_issue in pipeline.visible_results:
       issue = self.services.issue.GetIssue(
           mr.cnxn, possible_stale_issue.issue_id, use_cache=False)
 
@@ -136,8 +137,8 @@ class FLTConvertTask(jsonfeed.InternalTask):
 
       self.services.issue._UpdateIssuesApprovals(mr.cnxn, issue)
       self.services.issue.UpdateIssue(mr.cnxn, issue)
-    return {'deleting': [issue.local_id for issue in pipeline.allowed_results],
-            'num': len(pipeline.allowed_results),
+    return {'deleting': [issue.local_id for issue in pipeline.visible_results],
+            'num': len(pipeline.visible_results),
     }
 
   def VerifyConversion(self, mr):
@@ -145,7 +146,7 @@ class FLTConvertTask(jsonfeed.InternalTask):
     with work_env.WorkEnv(mr, self.services) as we:
       pipeline = we.ListIssues(
           'label:FLT-Conversion', ['chromium'], mr.auth.user_id,
-          CONVERT_NUM, CONVERT_START, [], 2, GROUP_BY_SPEC, SORT_SPEC, False)
+          VERIFY_NUM, CONVERT_START, [], 2, GROUP_BY_SPEC, SORT_SPEC, False)
 
     project = self.services.project.GetProjectByName(mr.cnxn, 'chromium')
     config = self.services.config.GetProjectConfig(mr.cnxn, project.project_id)
@@ -237,6 +238,7 @@ class FLTConvertTask(jsonfeed.InternalTask):
         'problems found': ['issue %d: %s' % problem for problem in problems],
         'issues verified': ['issue %d' % issue.local_id for
                             issue in pipeline.allowed_results],
+        'num': len(pipeline.allowed_results),
     }
 
   def HandleRequest(self, mr):
@@ -255,7 +257,7 @@ class FLTConvertTask(jsonfeed.InternalTask):
           CONVERT_START, [], 2, GROUP_BY_SPEC, SORT_SPEC, False)
 
     # Convert issues:
-    for possible_stale_issue in pipeline.allowed_results:
+    for possible_stale_issue in pipeline.visible_results:
       # Note: These approval values and phases from templates will be used
       # and modified to create approval values and phases for each issue.
       # We need to create copies for each issue so changes are not carried
@@ -280,7 +282,8 @@ class FLTConvertTask(jsonfeed.InternalTask):
 
     return {
         'converted_issues': [
-            issue.local_id for issue in pipeline.allowed_results],
+            issue.local_id for issue in pipeline.visible_results],
+        'num': len(pipeline.visible_results),
         }
 
   def CreateApprovalCopies(self, avs):

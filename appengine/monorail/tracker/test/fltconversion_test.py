@@ -88,7 +88,7 @@ class FLTConvertTask(unittest.TestCase):
     # Set up mocks
     patcher = mock.patch(
         'search.frontendsearchpipeline.FrontendSearchPipeline',
-        spec=True, allowed_results=[self.issue1, self.issue2])
+        spec=True, visible_results=[self.issue1, self.issue2])
     mockPipeline = patcher.start()
 
     self.task.services.issue.GetIssue = mock.Mock(
@@ -196,7 +196,7 @@ class FLTConvertTask(unittest.TestCase):
     # Set up mocks
     patcher = mock.patch(
         'search.frontendsearchpipeline.FrontendSearchPipeline',
-        spec=True, allowed_results=[issue1, issue2])  # converted issues
+        spec=True, visible_results=[issue1, issue2])  # converted issues
     mockPipeline = patcher.start()
     self.task.services.project.GetProjectByName = mock.Mock()
     self.task.services.config.GetProjectConfig = mock.Mock(
