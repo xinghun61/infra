@@ -448,7 +448,9 @@ class FLTConvertTask(unittest.TestCase):
         return_value=([], None))
     self.task.services.issue.InsertComment = mock.Mock()
     self.config.approval_defs = [
-        tracker_pb2.ApprovalDef(approval_id=1, survey=''), # test empty survey
+        tracker_pb2.ApprovalDef(
+            # test empty survey
+            approval_id=1, survey='', approver_ids=[111L, 222L]),
         tracker_pb2.ApprovalDef(approval_id=2), # test missing survey
         tracker_pb2.ApprovalDef(survey='Missing approval_id should not error.'),
         tracker_pb2.ApprovalDef(approval_id=3, survey='Q1\nQ2\n\nQ3'),
@@ -456,8 +458,7 @@ class FLTConvertTask(unittest.TestCase):
         tracker_pb2.ApprovalDef()]
 
     new_avs = [tracker_pb2.ApprovalValue(
-        approval_id=1, status=tracker_pb2.ApprovalStatus.APPROVED,
-        approver_ids=[111L, 222L]),
+        approval_id=1, status=tracker_pb2.ApprovalStatus.APPROVED),
                tracker_pb2.ApprovalValue(approval_id=4),
                tracker_pb2.ApprovalValue(approval_id=2),
                tracker_pb2.ApprovalValue(approval_id=3)]
@@ -470,6 +471,8 @@ class FLTConvertTask(unittest.TestCase):
     _amendments = self.task.ExecuteIssueChanges(
         self.config, self.issue, new_avs, phases, new_fvs)
 
+    # approver_ids set in ExecuteIssueChanges()
+    new_avs[0].approver_ids = [111L, 222L]
     self.issue.approval_values = new_avs
     self.issue.phases = phases
     delta = tracker_pb2.IssueDelta(

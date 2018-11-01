@@ -291,7 +291,6 @@ class FLTConvertTask(jsonfeed.InternalTask):
       tracker_pb2.ApprovalValue(
           approval_id=av.approval_id,
           status=av.status,
-          approver_ids=av.approver_ids,
           setter_id=av.setter_id,
           set_on=av.set_on,
           phase_id=av.phase_id) for av in avs
@@ -373,12 +372,11 @@ class FLTConvertTask(jsonfeed.InternalTask):
   # all self.mr should be changed to mr
   def ExecuteIssueChanges(self, config, issue, new_approvals, phases, new_fvs):
     # Apply Approval and phase changes
-    issue.approval_values = new_approvals
-    issue.phases = phases
     approval_defs_by_id = {ad.approval_id: ad for ad in config.approval_defs}
     for av in new_approvals:
       ad = approval_defs_by_id.get(av.approval_id)
       if ad:
+        av.approver_ids = ad.approver_ids
         survey = ''
         if ad.survey:
           questions = ad.survey.split('\n')
@@ -392,9 +390,11 @@ class FLTConvertTask(jsonfeed.InternalTask):
       else:
         logging.info(
             'ERROR: ApprovalDef %r for ApprovalValue %r not valid', ad, av)
+    issue.approval_values = new_approvals
     self.services.issue._UpdateIssuesApprovals(self.mr.cnxn, issue)
 
     # Apply field value changes
+    issue.phases = phases
     delta = tracker_bizobj.MakeIssueDelta(
         None, None, [], [], [], [], ['Type-FLT-Launch', 'FLT-Conversion'],
         ['Type-Launch'], new_fvs, [], [], [], [], [], [], None, None)
