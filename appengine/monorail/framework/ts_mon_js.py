@@ -16,21 +16,26 @@ from google.appengine.api import users
 from infra_libs import ts_mon
 
 
+STANDARD_FIELDS = [
+  ts_mon.StringField('client_id'),
+  ts_mon.StringField('host_name'),
+]
+
+
 ISSUE_CREATE_LATENCY_METRIC = ts_mon.CumulativeDistributionMetric(
   'monorail/frontend/issue_create_latency', (
     'Latency between Issue Entry form submission and page load of '
     'the subsequent issue page.'
-  ), field_spec=[
-    ts_mon.StringField('client_id'), ts_mon.StringField('host_name')])
+  ), field_spec=STANDARD_FIELDS)
 ISSUE_UPDATE_LATENCY_METRIC = ts_mon.CumulativeDistributionMetric(
   'monorail/frontend/issue_update_latency', (
     'Latency between Issue Update form submission and page load of '
     'the subsequent issue page.'
-  ), field_spec=[ts_mon.StringField('client_id')])
+  ), field_spec=STANDARD_FIELDS)
 AUTOCOMPLETE_POPULATE_LATENCY_METRIC = ts_mon.CumulativeDistributionMetric(
   'monorail/frontend/autocomplete_populate_latency', (
     'Latency between page load and autocomplete options loading.'
-  ), field_spec=[ts_mon.StringField('client_id')])
+  ), field_spec=STANDARD_FIELDS)
 
 
 class MonorailTSMonJSHandler(TSMonJSHandler):

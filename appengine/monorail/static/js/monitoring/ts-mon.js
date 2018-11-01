@@ -33,6 +33,15 @@ export default class MonorailTSMon extends TSMonClient {
           'Latency between issue entry form submit and issue detail page load.',
           null, standardFields,
         ),
+      },
+      {
+        category: 'issues',
+        eventName: 'issue-update',
+        metric: this.cumulativeDistribution(
+          'monorail/frontend/issue_update_latency',
+          'Latency between issue update form submit and issue detail page load.',
+          null, standardFields,
+        ),
       }
     ];
   }

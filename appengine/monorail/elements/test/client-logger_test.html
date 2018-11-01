@@ -41,5 +41,33 @@ suite('ClientLogger', () => {
     });
   });
 
+  test('records ts_mon metrics', function() {
+    window.ga = sinon.spy();
+    const c = new ClientLogger('issues');
+    const issueCreateMetric = c.tsMon._userTimingMetrics[0].metric;
+    issueCreateMetric.add = sinon.spy();
+    const issueUpdateMetric = c.tsMon._userTimingMetrics[1].metric;
+    issueUpdateMetric.add = sinon.spy();
+
+    c.logStart('rutabaga');
+    c.logEnd('rutabaga');
+    sinon.assert.notCalled(issueCreateMetric.add);
+    sinon.assert.notCalled(issueUpdateMetric.add);
+    issueCreateMetric.add.reset();
+    issueUpdateMetric.add.reset();
+
+    c.logStart('new-issue');
+    c.logEnd('new-issue');
+    sinon.assert.calledOnce(issueCreateMetric.add);
+    sinon.assert.notCalled(issueUpdateMetric.add);
+    issueCreateMetric.add.reset();
+    issueUpdateMetric.add.reset();
+
+    c.logStart('issue-update');
+    c.logEnd('issue-update');
+    sinon.assert.notCalled(issueCreateMetric.add);
+    sinon.assert.calledOnce(issueUpdateMetric.add);
+  });
+
 });
 </script>
