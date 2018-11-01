@@ -36,7 +36,7 @@ class FieldDetail(servlet.Servlet):
     # it is usually cached in RAM, just always get it and include it
     # in the MonorailRequest, mr.
     config = self.services.config.GetProjectConfig(
-        mr.cnxn, mr.project_id)
+        mr.cnxn, mr.project_id, use_cache=False)
     field_def = tracker_bizobj.FindFieldDef(mr.field_name, config)
     if not field_def:
       self.abort(404, 'custom field not found')
