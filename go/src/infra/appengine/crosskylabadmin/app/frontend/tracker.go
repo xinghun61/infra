@@ -198,40 +198,48 @@ var healthyDutStates = map[fleet.DutState]bool{
 func botInfoToSummary(bots []*swarming.SwarmingRpcsBotInfo) (map[string]*fleet.BotSummary, error) {
 	bsm := make(map[string]*fleet.BotSummary, len(bots))
 	for _, bi := range bots {
-		dims := swarmingDimensionsMap(bi.Dimensions)
-		dutID, err := extractSingleValuedDimension(dims, clients.DutIDDimensionKey)
+		bs, err := singleBotInfoToSummary(bi)
 		if err != nil {
-			return bsm, errors.Annotate(err, "failed to obtain dutID for bot %q", bi.BotId).Err()
+			return bsm, errors.Annotate(err, "failed to make summary for bot %q", bi.BotId).Err()
 		}
-		bs := &fleet.BotSummary{DutId: dutID}
-
-		dss, err := extractSingleValuedDimension(dims, clients.DutStateDimensionKey)
-		if err != nil {
-			return bsm, errors.Annotate(err, "failed to obtain DutState for bot %q", bi.BotId).Err()
-		}
-		if ds, ok := dutStateMap[dss]; ok {
-			bs.DutState = ds
-		} else {
-			bs.DutState = fleet.DutState_DutStateInvalid
-		}
-
-		if l, err := extractSingleValuedDimension(dims, clients.DutModelDimensionKey); err == nil {
-			initializeDimensionsForBotSummary(bs)
-			bs.Dimensions.Model = l
-		}
-		if ls, ok := dims[clients.DutPoolDimensionKey]; ok {
-			initializeDimensionsForBotSummary(bs)
-			bs.Dimensions.Pools = ls
-		}
-		if healthy := healthyDutStates[bs.DutState]; healthy {
-			bs.Health = fleet.Health_Healthy
-		} else {
-			bs.Health = fleet.Health_Unhealthy
-		}
-
 		bsm[bi.BotId] = bs
 	}
 	return bsm, nil
+}
+
+// singleBotInfoToSummary returns a BotSummary for the bot.
+func singleBotInfoToSummary(bi *swarming.SwarmingRpcsBotInfo) (*fleet.BotSummary, error) {
+	dims := swarmingDimensionsMap(bi.Dimensions)
+	dutID, err := extractSingleValuedDimension(dims, clients.DutIDDimensionKey)
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to obtain dutID for bot %q", bi.BotId).Err()
+	}
+	bs := &fleet.BotSummary{DutId: dutID}
+
+	dss, err := extractSingleValuedDimension(dims, clients.DutStateDimensionKey)
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to obtain DutState for bot %q", bi.BotId).Err()
+	}
+	if ds, ok := dutStateMap[dss]; ok {
+		bs.DutState = ds
+	} else {
+		bs.DutState = fleet.DutState_DutStateInvalid
+	}
+
+	if l, err := extractSingleValuedDimension(dims, clients.DutModelDimensionKey); err == nil {
+		initializeDimensionsForBotSummary(bs)
+		bs.Dimensions.Model = l
+	}
+	if ls, ok := dims[clients.DutPoolDimensionKey]; ok {
+		initializeDimensionsForBotSummary(bs)
+		bs.Dimensions.Pools = ls
+	}
+	if healthy := healthyDutStates[bs.DutState]; healthy {
+		bs.Health = fleet.Health_Healthy
+	} else {
+		bs.Health = fleet.Health_Unhealthy
+	}
+	return bs, nil
 }
 
 func initializeDimensionsForBotSummary(bs *fleet.BotSummary) {
