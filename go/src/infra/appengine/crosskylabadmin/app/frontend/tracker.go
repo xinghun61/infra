@@ -176,6 +176,8 @@ func flattenAndDedpulicateBots(nb [][]*swarming.SwarmingRpcsBotInfo) []*swarming
 	return bots
 }
 
+// dutStateMap maps string values to DutState values.  The zero value
+// for unknown keys is DutState_StateInvalid.
 var dutStateMap = map[string]fleet.DutState{
 	"ready":         fleet.DutState_Ready,
 	"needs_cleanup": fleet.DutState_NeedsCleanup,
@@ -223,11 +225,7 @@ func singleBotInfoToSummary(bi *swarming.SwarmingRpcsBotInfo) (*fleet.BotSummary
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to obtain DutState for bot %q", bi.BotId).Err()
 	}
-	if ds, ok := dutStateMap[dss]; ok {
-		bs.DutState = ds
-	} else {
-		bs.DutState = fleet.DutState_DutStateInvalid
-	}
+	bs.DutState = dutStateMap[dss]
 
 	if l, err := extractSingleValuedDimension(dims, clients.DutModelDimensionKey); err == nil {
 		bs.Dimensions.Model = l
