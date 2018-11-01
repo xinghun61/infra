@@ -2,17 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import contextlib
-import datetime
 import mock
-
-from google.appengine.ext import ndb
 
 from test.test_util import future_exception
 from testing_utils import testing
 import backfill_tag_index
-import bulkproc
-import main
 import model
 import search
 import v2
@@ -29,8 +23,7 @@ class BackfillTagIndexTest(testing.AppengineTestCase):
     builds = [
         model.Build(
             id=i,
-            project='chromium',
-            bucket='try',
+            bucket_id='chromium/try',
             tags=[
                 'buildset:%d' % (i % 3),
                 'a:b',

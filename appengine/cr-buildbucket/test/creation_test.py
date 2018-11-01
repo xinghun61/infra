@@ -63,8 +63,7 @@ class CreationTest(testing.AppengineTestCase):
 
     self.test_build = model.Build(
         id=model.create_build_ids(self.now, 1)[0],
-        project='chromium',
-        bucket='luci.chromium.try',
+        bucket_id='chromium/try',
         create_time=self.now,
         parameters={
             model.BUILDER_PARAMETER:
@@ -305,7 +304,7 @@ class CreationTest(testing.AppengineTestCase):
     ]).get_result()
 
     self.assertIsNone(ex0)
-    self.assertEqual(b0.bucket, 'luci.chromium.try')
+    self.assertEqual(b0.bucket_id, 'chromium/try')
 
     self.assertIsNotNone(ex1)
     self.assertIsNone(b1)
@@ -545,7 +544,7 @@ class CreationTest(testing.AppengineTestCase):
     self.assertIsNotNone(build)
     self.assertIsNotNone(build.key)
     self.assertNotEqual(build.key.id(), self.test_build.key.id())
-    self.assertEqual(build.bucket, self.test_build.bucket)
+    self.assertEqual(build.bucket_id, self.test_build.bucket_id)
     self.assertEqual(build.parameters, self.test_build.parameters)
     self.assertEqual(build.retry_of, self.test_build.key.id())
     self.assertEqual(build.tags, ['builder:linux', 'x:x'])
@@ -557,7 +556,7 @@ class CreationTest(testing.AppengineTestCase):
     self.assertIsNotNone(build)
     self.assertIsNotNone(build.key)
     self.assertNotEqual(build.key.id(), self.test_build.key.id())
-    self.assertEqual(build.bucket, self.test_build.bucket)
+    self.assertEqual(build.bucket_id, self.test_build.bucket_id)
     self.assertEqual(build.parameters, self.test_build.parameters)
     self.assertEqual(build.retry_of, self.test_build.key.id())
 

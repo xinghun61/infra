@@ -24,8 +24,7 @@ class ApiCommonTests(testing.AppengineTestCase):
     )
     self.test_build = model.Build(
         id=1,
-        project='chromium',
-        bucket='luci.chromium.try',
+        bucket_id='chromium/try',
         create_time=datetime.datetime(2017, 1, 1),
         parameters={
             'buildername': 'linux_rel',
@@ -58,7 +57,7 @@ class ApiCommonTests(testing.AppengineTestCase):
     self.assertEqual(expected, api_common.build_to_dict(self.test_build))
 
   def test_build_to_dict_non_luci(self):
-    self.test_build.bucket = 'master.chromium'
+    self.test_build.bucket_id = 'chromium/master.chromium'
     self.test_build.swarming_hostname = None
 
     actual = api_common.build_to_dict(self.test_build)

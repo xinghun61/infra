@@ -25,8 +25,7 @@ class V2BuildsTest(unittest.TestCase):
 
   def test_get_builder_id(self):
     build = model.Build(
-        project='chromium',
-        bucket='master.tryserver.chromium.linux',
+        bucket_id='chromium/master.tryserver.chromium.linux',
         parameters={
             model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
         },
@@ -42,8 +41,7 @@ class V2BuildsTest(unittest.TestCase):
 
   def test_get_builder_id_luci(self):
     build = model.Build(
-        project='chromium',
-        bucket='luci.chromium.try',
+        bucket_id='chromium/try',
         parameters={
             model.BUILDER_PARAMETER: 'linux-rel',
         },
@@ -371,8 +369,7 @@ class TestStatusConversion(unittest.TestCase):
 def mkbuild(**kwargs):
   args = dict(
       id=1,
-      project='chromium',
-      bucket='luci.chromium.try',
+      bucket_id='chromium/try',
       parameters={model.BUILDER_PARAMETER: 'linux-rel'},
       created_by=auth.Identity('user', 'john@example.com'),
   )

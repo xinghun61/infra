@@ -26,46 +26,46 @@ class MetricsTest(testing.AppengineTestCase):
   def test_set_build_count_metric(self):
     ndb.put_multi([
         model.Build(
-            project='chromium',
-            bucket='luci.chromium.try',
+            bucket_id='chromium/try',
             status=model.BuildStatus.SCHEDULED,
             create_time=datetime.datetime(2015, 1, 1),
             tags=['builder:release'],
             experimental=True,
+            swarming_hostname='swarming.example.com',
         ),
         model.Build(
-            project='chromium',
-            bucket='luci.chromium.try',
+            bucket_id='chromium/try',
             status=model.BuildStatus.SCHEDULED,
             tags=['builder:release'],
             create_time=datetime.datetime(2015, 1, 1),
+            swarming_hostname='swarming.example.com',
         ),
         model.Build(
-            project='chromium',
-            bucket='luci.chromium.try',
+            bucket_id='chromium/try',
             status=model.BuildStatus.SCHEDULED,
             tags=['builder:release'],
             create_time=datetime.datetime(2015, 1, 1),
+            swarming_hostname='swarming.example.com',
         ),
         model.Build(
-            project='chromium',
-            bucket='luci.chromium.try',
+            bucket_id='chromium/try',
             status=model.BuildStatus.SCHEDULED,
             tags=['builder:debug'],
             create_time=datetime.datetime(2015, 1, 1),
+            swarming_hostname='swarming.example.com',
         ),
         model.Build(
-            project='chromium',
-            bucket='luci.chromium.ci',
+            bucket_id='chromium/ci',
             status=model.BuildStatus.SCHEDULED,
             create_time=datetime.datetime(2015, 1, 1),
+            swarming_hostname='swarming.example.com',
         ),
         model.Build(
-            project='chromium',
-            bucket='luci.chromium.try',
+            bucket_id='chromium/try',
             status=model.BuildStatus.STARTED,
             create_time=datetime.datetime(2015, 1, 1),
             start_time=datetime.datetime(2015, 1, 1),
+            swarming_hostname='swarming.example.com',
         ),
     ])
     metrics.set_build_count_metric_async(
@@ -88,41 +88,40 @@ class MetricsTest(testing.AppengineTestCase):
 
     ndb.put_multi([
         model.Build(
-            project='chromium',
-            bucket='luci.chromium.try',
+            bucket_id='chromium/try',
             tags=['builder:release'],
             status=model.BuildStatus.SCHEDULED,
             never_leased=True,
             create_time=datetime.datetime(2014, 1, 1),
             experimental=True,  # should be ignored by both metrics
+            swarming_hostname='swarming.example.com',
         ),
         model.Build(
-            project='chromium',
-            bucket='luci.chromium.try',
+            bucket_id='chromium/try',
             tags=['builder:release'],
             status=model.BuildStatus.SCHEDULED,
             never_leased=True,
             create_time=datetime.datetime(2015, 1, 1),
+            swarming_hostname='swarming.example.com',
         ),
         model.Build(
-            project='chromium',
-            bucket='luci.chromium.try',
+            bucket_id='chromium/try',
             tags=['builder:release'],
             status=model.BuildStatus.SCHEDULED,
             never_leased=False,
             create_time=datetime.datetime(2014, 12, 31),
+            swarming_hostname='swarming.example.com',
         ),
         model.Build(
-            project='chromium',
-            bucket='luci.chromium.try',
+            bucket_id='chromium/try',
             tags=['builder:release'],
             status=model.BuildStatus.SCHEDULED,
             never_leased=True,
             create_time=datetime.datetime(2015, 1, 3),
+            swarming_hostname='swarming.example.com',
         ),
         model.Build(
-            project='chromium',
-            bucket='luci.chromium.try',
+            bucket_id='chromium/try',
             tags=['builder:release'],
             status=model.BuildStatus.COMPLETED,
             result=model.BuildResult.CANCELED,
@@ -131,21 +130,23 @@ class MetricsTest(testing.AppengineTestCase):
             create_time=datetime.datetime(2015, 1, 3),
             complete_time=datetime.datetime(2015, 1, 4),
             canary=False,
+            swarming_hostname='swarming.example.com',
         ),
         model.Build(
-            bucket='chromium',
+            bucket_id='chromium/try',
             tags=['builder:release'],
             status=model.BuildStatus.SCHEDULED,
             create_time=datetime.datetime(2014, 1, 3),
             # never_leased is None, so this should be ignored by both metrics.
+            swarming_hostname='swarming.example.com',
         ),
         model.Build(
-            project='chromium',
-            bucket='luci.chromium.ci',
+            bucket_id='chromium/ci',
             tags=['builder:release'],
             status=model.BuildStatus.SCHEDULED,
             never_leased=True,
             create_time=datetime.datetime(2015, 1, 3),
+            swarming_hostname='swarming.example.com',
         ),
     ])
     metrics.set_build_latency(
@@ -257,7 +258,7 @@ class MetricsTest(testing.AppengineTestCase):
 
   def test_fields_for(self):
     build = model.Build(
-        bucket='master.x',
+        bucket_id='chromium/try',
         parameters={
             model.BUILDER_PARAMETER: 'release',
         },
@@ -269,9 +270,10 @@ class MetricsTest(testing.AppengineTestCase):
         result=model.BuildResult.FAILURE,
         failure_reason=model.FailureReason.BUILD_FAILURE,
         canary=True,
+        swarming_hostname='swarming.example.com',
     )
     expected = {
-        'bucket': 'master.x',
+        'bucket': 'luci.chromium.try',
         'builder': 'release',
         'canary': True,
         'user_agent': 'cq',

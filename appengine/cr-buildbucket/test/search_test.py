@@ -51,8 +51,7 @@ class SearchTest(testing.AppengineTestCase):
     self.chromium_try = project_config_pb2.Bucket(name='try')
     self.test_build = model.Build(
         id=model.create_build_ids(self.now, 1)[0],
-        project='chromium',
-        bucket='luci.chromium.try',
+        bucket_id='chromium/try',
         create_time=self.now,
         tags=[self.INDEXED_TAG],
         parameters={
@@ -105,8 +104,7 @@ class SearchTest(testing.AppengineTestCase):
 
   def put_build(self, build):
     """Puts a build and updates tag index."""
-    build.project = build.project or self.test_build.project
-    build.bucket = build.bucket or self.test_build.bucket
+    build.bucket_id = build.bucket_id or self.test_build.bucket_id
     build.put()
 
     index_entry = search.TagIndexEntry(
@@ -128,7 +126,7 @@ class SearchTest(testing.AppengineTestCase):
 
     self.put_build(self.test_build)
 
-    build2 = model.Build(bucket='luci.chromium.ci', tags=[self.INDEXED_TAG])
+    build2 = model.Build(bucket_id='chromium/ci', tags=[self.INDEXED_TAG])
     self.put_build(build2)
 
     builds, _ = self.search()
@@ -195,7 +193,7 @@ class SearchTest(testing.AppengineTestCase):
 
   def test_filter_by_bucket(self):
     self.put_build(self.test_build)
-    build2 = model.Build(bucket='luci.chromium.ci')
+    build2 = model.Build(bucket_id='chromium/ci')
     self.put_build(build2)
 
     builds, _ = self.search(bucket_ids=['chromium/try'])
@@ -203,7 +201,7 @@ class SearchTest(testing.AppengineTestCase):
 
   def test_filter_by_project(self):
     self.put_build(self.test_build)
-    build2 = model.Build(project='v8')
+    build2 = model.Build(bucket_id='v8/try')
     self.put_build(build2)
 
     builds, _ = self.search(project='chromium')
@@ -211,7 +209,7 @@ class SearchTest(testing.AppengineTestCase):
 
   def test_filter_by_project_indexed(self):
     self.put_build(self.test_build)
-    build2 = model.Build(project='v8')
+    build2 = model.Build(bucket_id='v8/try')
     self.put_build(build2)
 
     builds, _ = self.search(
@@ -427,7 +425,7 @@ class SearchTest(testing.AppengineTestCase):
   def test_filter_by_retry_of_and_buckets(self):
     self.test_build.retry_of = 42
     self.put_build(self.test_build)
-    self.put_build(model.Build(bucket='luci.chromium.ci', retry_of=42))
+    self.put_build(model.Build(bucket_id='chromium/ci', retry_of=42))
 
     builds, _ = self.search(retry_of=42)
     self.assertEqual(builds, [self.test_build])
@@ -513,21 +511,19 @@ class SearchTest(testing.AppengineTestCase):
     self.put_build(self.test_build)
 
     secret_build = model.Build(
-        project='secret',
-        bucket='secret.bucket',
+        bucket_id='secret/secret',
         tags=[self.INDEXED_TAG],
     )
     self.put_build(secret_build)
 
     different_buildset = model.Build(
-        project='secret',
-        bucket='secret.bucket',
+        bucket_id='secret/secret',
         tags=['buildset:2'],
     )
     self.put_build(different_buildset)
 
     different_bucket = model.Build(
-        bucket='luci.chromium.ci',
+        bucket_id='chromium/ci',
         tags=[self.INDEXED_TAG],
     )
     self.put_build(different_bucket)
@@ -739,12 +735,12 @@ class TagIndexMaintenanceTest(testing.AppengineTestCase):
     builds = [
         model.Build(
             id=1,
-            bucket='chromium',
+            bucket_id='chromium/try',
             tags=['buildset:1', 'buildset:2'],
         ),
         model.Build(
             id=2,
-            bucket='v8',
+            bucket_id='v8/try',
             tags=['buildset:2'],
         ),
     ]

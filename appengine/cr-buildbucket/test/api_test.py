@@ -56,8 +56,7 @@ class V1ApiTest(testing.EndpointsTestCase):
     self.future_ts = str(utils.datetime_to_timestamp(self.future_date))
     self.test_build = model.Build(
         id=1,
-        project='chromium',
-        bucket='luci.chromium.try',
+        bucket_id='chromium/try',
         create_time=datetime.datetime(2017, 1, 1),
         parameters={
             'buildername': 'linux_rel',
@@ -95,7 +94,7 @@ class V1ApiTest(testing.EndpointsTestCase):
     resp = self.call_api('get', {'id': build_id}).json_body
     get_async.assert_called_once_with(build_id)
     self.assertEqual(resp['build']['id'], str(build_id))
-    self.assertEqual(resp['build']['bucket'], self.test_build.bucket)
+    self.assertEqual(resp['build']['bucket'], 'luci.chromium.try')
     self.assertEqual(resp['build']['lease_expiration_ts'], self.future_ts)
     self.assertEqual(resp['build']['status'], 'SCHEDULED')
     self.assertEqual(
@@ -120,7 +119,7 @@ class V1ApiTest(testing.EndpointsTestCase):
     add_async.return_value = future(self.test_build)
     req = {
         'client_operation_id': '42',
-        'bucket': self.test_build.bucket,
+        'bucket': 'luci.chromium.try',
         'tags': self.test_build.tags,
         'pubsub_callback': {
             'topic': 'projects/foo/topic/bar',
@@ -150,7 +149,7 @@ class V1ApiTest(testing.EndpointsTestCase):
   def test_put_with_parameters(self, add_async):
     add_async.return_value = future(self.test_build)
     req = {
-        'bucket': self.test_build.bucket,
+        'bucket': 'luci.chromium.try',
         'parameters_json': json.dumps(self.test_build.parameters),
     }
     resp = self.call_api('put', req).json_body
@@ -161,7 +160,7 @@ class V1ApiTest(testing.EndpointsTestCase):
     self.test_build.lease_expiration_date = self.future_date
     add_async.return_value = future(self.test_build)
     req = {
-        'bucket': self.test_build.bucket,
+        'bucket': 'luci.chromium.try',
         'lease_expiration_ts': self.future_ts,
     }
     resp = self.call_api('put', req).json_body
@@ -195,10 +194,11 @@ class V1ApiTest(testing.EndpointsTestCase):
   @mock.patch('creation.retry', autospec=True)
   def test_retry(self, retry):
     build = model.Build(
-        bucket='chromium',
+        bucket_id='chromium/try',
         parameters={model.BUILDER_PARAMETER: 'debug'},
         tags=['a:b'],
         retry_of=2,
+        swarming_hostname='swarming.example.com',
     )
     build.put()
     retry.return_value = build
@@ -224,7 +224,7 @@ class V1ApiTest(testing.EndpointsTestCase):
         ),
     )
     self.assertEqual(resp['build']['id'], str(build.key.id()))
-    self.assertEqual(resp['build']['bucket'], build.bucket)
+    self.assertEqual(resp['build']['bucket'], 'luci.chromium.try')
     self.assertEqual(
         json.loads(resp['build']['parameters_json']), build.parameters
     )
@@ -243,8 +243,7 @@ class V1ApiTest(testing.EndpointsTestCase):
 
     build2 = model.Build(
         id=2,
-        project='chromium',
-        bucket='luci.chromium.ci',
+        bucket_id='chromium/ci',
         swarming_hostname=self.test_build.swarming_hostname,
     )
     config.put_bucket(
@@ -309,13 +308,13 @@ class V1ApiTest(testing.EndpointsTestCase):
     res0 = resp['results'][0]
     self.assertEqual(res0['client_operation_id'], '0')
     self.assertEqual(res0['build']['id'], str(self.test_build.key.id()))
-    self.assertEqual(res0['build']['bucket'], self.test_build.bucket)
+    self.assertEqual(res0['build']['bucket'], 'luci.chromium.try')
     self.assertEqual(res0['build']['tags'], self.test_build.tags)
 
     res1 = resp['results'][1]
     self.assertEqual(res1['client_operation_id'], '1')
     self.assertEqual(res1['build']['id'], str(build2.key.id()))
-    self.assertEqual(res1['build']['bucket'], build2.bucket)
+    self.assertEqual(res1['build']['bucket'], 'luci.chromium.ci')
 
     res2 = resp['results'][2]
     self.assertEqual(
@@ -506,7 +505,7 @@ class V1ApiTest(testing.EndpointsTestCase):
     self.test_build.lease_expiration_date = self.future_date
     build2 = model.Build(
         id=2,
-        bucket='chromium',
+        bucket_id='chromium/try',
         lease_expiration_date=self.future_date,
     )
 

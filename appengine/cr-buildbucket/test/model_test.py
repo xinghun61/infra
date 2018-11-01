@@ -17,14 +17,14 @@ import v2
 class BuildTest(testing.AppengineTestCase):
 
   def test_regenerate_lease_key(self):
-    build = model.Build(bucket='chromium')
+    build = model.Build(bucket_id='chromium/try')
     build.put()
     orig_lease_key = 0
     build.regenerate_lease_key()
     self.assertNotEqual(build.lease_key, orig_lease_key)
 
   def test_put_with_bad_tags(self):
-    build = model.Build(bucket='1', tags=['x'])
+    build = model.Build(bucket_id='chromium/try', tags=['x'])
     with self.assertRaises(AssertionError):
       build.put()
 

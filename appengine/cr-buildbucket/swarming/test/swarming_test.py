@@ -2467,8 +2467,7 @@ def b64json(data):
 def mkBuild(**kwargs):
   args = dict(
       id=1,
-      project='chromium',
-      bucket='luci.chromium.try',
+      bucket_id='chromium/try',
       create_time=utils.utcnow(),
       created_by=auth.Identity('user', 'john@example.com'),
       canary_preference=model.CanaryPreference.PROD,

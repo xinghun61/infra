@@ -13,9 +13,9 @@ from testing_utils import testing
 import mock
 
 from proto import build_pb2
-from proto.config import project_config_pb2
 from proto.config import service_config_pb2
 from test.test_util import future
+from test import config_test
 import config
 import errors
 import model
@@ -44,51 +44,47 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.now = datetime.datetime(2015, 1, 1)
     self.patch('components.utils.utcnow', side_effect=lambda: self.now)
 
-    self.chromium_bucket = project_config_pb2.Bucket(name='chromium')
-    self.chromium_project_id = 'test'
-    self.chromium_swarming = project_config_pb2.Swarming(
-        hostname='chromium-swarm.appspot.com',
-        builders=[
-            project_config_pb2.Builder(
-                name='infra',
-                dimensions=['pool:default'],
-                build_numbers=project_config_pb2.YES,
-                recipe=project_config_pb2.Builder.Recipe(
-                    repository='https://example.com',
-                    name='presubmit',
-                ),
-            ),
-        ],
-    )
-    self.patch(
-        'config.get_bucket_async',
-        return_value=future((self.chromium_project_id, self.chromium_bucket)),
-    )
-    self.patch(
-        'user.get_accessible_buckets_async',
-        autospec=True,
-        return_value=future(
-            (self.chromium_project_id, self.chromium_bucket.name)
+    config.put_bucket(
+        'chromium',
+        'a' * 40,
+        config_test.parse_bucket_cfg(
+            '''
+            name: "luci.chromium.try"
+            acls {
+              role: READER
+              identity: "anonymous:anonymous"
+            }
+            swarming {
+              hostname: "chromium-swarm.appspot.com"
+              builders {
+                name: "linux"
+                build_numbers: YES
+                recipe {
+                  repository: "https://example.com"
+                  name: "recipe"
+                }
+              }
+            }
+            '''
         ),
     )
-    self.patch('swarming.cancel_task_async', return_value=future(None))
-
-    self.test_build = model.Build(
-        id=model.create_build_ids(self.now, 1)[0],
-        bucket='chromium',
-        project=self.chromium_project_id,
-        create_time=self.now,
-        parameters={
-            model.BUILDER_PARAMETER:
-                'infra',
-            'changes': [{
-                'author': 'nodir@google.com',
-                'message': 'buildbucket: initial commit'
-            }],
-        },
-        canary=False,
+    config.put_bucket(
+        'chromium',
+        'a' * 40,
+        config_test.parse_bucket_cfg(
+            '''
+            name: "master.chromium"
+            acls {
+              role: READER
+              identity: "anonymous:anonymous"
+            }
+            '''
+        ),
     )
 
+    self.patch('swarming.cancel_task_async', return_value=future(None))
+
+    self.test_build = mkBuild()
     self.patch(
         'google.appengine.api.app_identity.get_default_version_hostname',
         autospec=True,
@@ -111,31 +107,24 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
     self.patch('search.TagIndex.random_shard_index', return_value=0)
 
-  def mock_cannot(self, action, bucket=None):
+  def mock_cannot(self, action, bucket_id=None):
 
-    def can_async(requested_bucket, requested_action, _identity=None):
+    def can_async(requested_bucket_id, requested_action, _identity=None):
       match = (
           requested_action == action and
-          (bucket is None or requested_bucket == bucket)
+          (bucket_id is None or requested_bucket_id == bucket_id)
       )
       return future(not match)
 
     # user.can_async is patched in setUp()
     user.can_async.side_effect = can_async
 
-  def put_many_builds(self, count=100, tags=None):
+  def put_many_builds(self, count=100, tags=None, **kwargs):
     tags = tags or []
     builds = []
     for _ in xrange(count):
-      b = model.Build(
-          id=model.create_build_ids(self.now, 1)[0],
-          project=self.test_build.project,
-          bucket=self.test_build.bucket,
-          tags=tags,
-          create_time=self.now
-      )
+      builds.append(mkBuild(**kwargs))
       self.now += datetime.timedelta(seconds=1)
-      builds.append(b)
     ndb.put_multi(builds)
     return builds
 
@@ -234,9 +223,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     # build key is derived from the inverted current time, so later builds get
     # smaller ids. Only exception: if the time is the same, randomness decides
     # the order. So artificially create an id here to avoid flakiness.
-    build2 = model.Build(
-        id=self.test_build.key.id() - 1, project='chromium', bucket='ci'
-    )
+    build2 = mkBuild(id=self.test_build.key.id() - 1,)
     build2.put()
     builds, _ = service.peek(
         bucket_ids=[self.test_build.bucket_id, 'chromium/ci']
@@ -661,14 +648,10 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_delete_many_scheduled_builds(self):
     self.test_build.put()
-    completed_build = model.Build(
-        project=self.test_build.project,
-        bucket=self.test_build.bucket,
+    completed_build = mkBuild(
         status=model.BuildStatus.COMPLETED,
         result=model.BuildResult.SUCCESS,
-        create_time=utils.utcnow(),
         complete_time=utils.utcnow() + datetime.timedelta(seconds=1),
-        canary=False,
     )
     completed_build.put()
     self.assertIsNotNone(self.test_build.key.get())
@@ -682,24 +665,17 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_delete_many_started_builds(self):
     self.test_build.put()
 
-    started_build = model.Build(
-        project=self.test_build.project,
-        bucket=self.test_build.bucket,
+    started_build = mkBuild(
         status=model.BuildStatus.STARTED,
-        create_time=utils.utcnow(),
         start_time=utils.utcnow(),
-        canary=False,
     )
     started_build.put()
 
-    completed_build = model.Build(
-        project=self.test_build.project,
-        bucket=self.test_build.bucket,
+    completed_build = mkBuild(
         status=model.BuildStatus.COMPLETED,
         result=model.BuildResult.SUCCESS,
         create_time=utils.utcnow(),
         complete_time=utils.utcnow(),
-        canary=False,
     )
     completed_build.put()
 
@@ -727,9 +703,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_delete_many_builds_created_by(self):
     self.test_build.created_by = auth.Identity('user', 'nodir@google.com')
     self.test_build.put()
-    other_build = model.Build(
-        project=self.test_build.project, bucket=self.test_build.bucket
-    )
+    other_build = mkBuild()
     other_build.put()
 
     service._task_delete_many_builds(
@@ -774,39 +748,55 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   ################################ PAUSE BUCKET ################################
 
   def test_pause_bucket(self):
-    self.test_build.project = 'p'
-    self.test_build.bucket = 'foo'
-    self.put_many_builds(5)
+    config.put_bucket(
+        'chromium',
+        'a' * 40,
+        config_test.parse_bucket_cfg('name: "master.foo"'),
+    )
+    config.put_bucket(
+        'chromium',
+        'a' * 40,
+        config_test.parse_bucket_cfg('name: "master.bar"'),
+    )
 
-    self.test_build.project = 'p'
-    self.test_build.bucket = 'bar'
-    self.put_many_builds(5)
+    self.put_many_builds(5, bucket_id='chromium/master.foo')
+    self.put_many_builds(5, bucket_id='chromium/master.bar')
 
-    service.pause('p/foo', True)
-    builds, _ = service.peek(['p/foo', 'p/bar'])
+    service.pause('chromium/master.foo', True)
+    builds, _ = service.peek(['chromium/master.foo', 'chromium/master.bar'])
     self.assertEqual(len(builds), 5)
-    self.assertFalse(any(b.bucket == 'p/foo' for b in builds))
+    self.assertTrue(all(b.bucket_id == 'chromium/master.bar' for b in builds))
 
   def test_pause_all_requested_buckets(self):
-    self.test_build.bucket = 'foo'
-    self.put_many_builds(5)
+    config.put_bucket(
+        'chromium',
+        'a' * 40,
+        config_test.parse_bucket_cfg('name: "master.foo"'),
+    )
+    self.put_many_builds(5, bucket_id='chromium/master.foo')
 
-    service.pause('foo', True)
-    builds, _ = service.peek(['p/foo'])
+    service.pause('chromium/master.foo', True)
+    builds, _ = service.peek(['chromium/master.foo'])
     self.assertEqual(len(builds), 0)
 
   def test_pause_then_unpause(self):
-    self.test_build.project = 'p'
-    self.test_build.bucket = 'foo'
+    bid = 'chromium/master.foo'
+    self.test_build.bucket_id = bid
     self.test_build.put()
 
-    service.pause('p/foo', True)
-    service.pause('p/foo', True)  # Again, to cover equality case.
-    builds, _ = service.peek(['p/foo'])
+    config.put_bucket(
+        'chromium',
+        'a' * 40,
+        config_test.parse_bucket_cfg('name: "master.foo"'),
+    )
+
+    service.pause(bid, True)
+    service.pause(bid, True)  # Again, to cover equality case.
+    builds, _ = service.peek([bid])
     self.assertEqual(len(builds), 0)
 
-    service.pause('p/foo', False)
-    builds, _ = service.peek(['p/foo'])
+    service.pause(bid, False)
+    builds, _ = service.peek([bid])
     self.assertEqual(len(builds), 1)
 
   def test_pause_bucket_invalid_bucket_name(self):
@@ -824,9 +814,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
       service.pause('test', True)
 
   def test_pause_swarming_bucket(self):
-    self.chromium_bucket.swarming.MergeFrom(self.chromium_swarming)
     with self.assertRaises(errors.InvalidInputError):
-      service.pause('test', True)
+      service.pause('luci.chromium.try', True)
 
   ############################ UNREGISTER BUILDERS #############################
 
@@ -838,3 +827,19 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     service.unregister_builders()
     builders = model.Builder.query().fetch()
     self.assertFalse(builders)
+
+
+def mkBuild(**kwargs):
+  args = dict(
+      id=model.create_build_ids(utils.utcnow(), 1)[0],
+      bucket_id='chromium/try',
+      create_time=utils.utcnow(),
+      created_by=auth.Identity('user', 'john@example.com'),
+      canary_preference=model.CanaryPreference.PROD,
+      parameters={
+          model.BUILDER_PARAMETER: 'linux',
+      },
+      canary=False,
+  )
+  args.update(kwargs)
+  return model.Build(**args)

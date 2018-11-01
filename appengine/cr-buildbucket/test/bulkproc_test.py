@@ -55,7 +55,7 @@ class StartTest(TestBase):
     builds = [
         model.Build(
             id=model.create_build_ids(day_date(day), 1, randomness=False)[0],
-            bucket='chromium',
+            bucket_id='chromium/try',
             create_time=day_date(day),
         ) for day in xrange(3)
     ]
@@ -118,7 +118,7 @@ class StartTest(TestBase):
     ndb.put_multi([
         model.Build(
             id=model.create_build_ids(day_date(day), 1, randomness=False)[0],
-            bucket='chromium',
+            bucket_id='chromium/try',
             create_time=day_date(day),
         ) for day in xrange(150)
     ])
@@ -147,10 +147,12 @@ class SegmentTest(TestBase):
   def test_segment_partial(self, enqueue_tasks):
     ndb.put_multi([
         model.Build(
-            id=i, bucket='chromium', tags=[
+            id=i,
+            bucket_id='chromium/try',
+            tags=[
                 'buildset:%d' % (i % 3),
                 'a:b',
-            ]
+            ],
         ) for i in xrange(50, 60)
     ])
 
@@ -194,8 +196,9 @@ class SegmentTest(TestBase):
   @mock.patch('bulkproc.enqueue_tasks', autospec=True)
   def test_segment_full(self, enqueue_tasks):
     ndb.put_multi([
-        model.Build(id=i, bucket='chromium', tags=['buildset:%d' % (i % 3)])
-        for i in xrange(50, 52)
+        model.Build(
+            id=i, bucket_id='chromium/try', tags=['buildset:%d' % (i % 3)]
+        ) for i in xrange(50, 52)
     ])
     self.post({
         'job_id': 'jobid',
@@ -212,8 +215,9 @@ class SegmentTest(TestBase):
   @mock.patch('bulkproc.enqueue_tasks', autospec=True)
   def test_segment_attempt_2(self, enqueue_tasks):
     ndb.put_multi([
-        model.Build(id=i, bucket='chromium', tags=['buildset:%d' % (i % 3)])
-        for i in xrange(50, 60)
+        model.Build(
+            id=i, bucket_id='chromium/try', tags=['buildset:%d' % (i % 3)]
+        ) for i in xrange(50, 60)
     ])
 
     # process 5 builds

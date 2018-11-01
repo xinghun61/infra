@@ -198,7 +198,7 @@ class UserTest(testing.AppengineTestCase):
 
   def test_can_view_build(self):
     self.mock_role(Acl.READER)
-    build = model.Build(project='project', bucket='bucket')
+    build = model.Build(bucket_id='chromium/try')
     self.assertTrue(user.can_view_build_async(build).get_result())
     self.assertFalse(user.can_lease_build_async(build).get_result())
 

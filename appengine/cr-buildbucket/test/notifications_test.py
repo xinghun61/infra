@@ -55,7 +55,7 @@ class NotificationsTest(testing.AppengineTestCase):
   def test_pubsub_callback(self):
     build = model.Build(
         id=1,
-        bucket='chromium',
+        bucket_id='chromium/try',
         create_time=datetime.datetime(2017, 1, 1),
         pubsub_callback=model.PubSubCallback(
             topic='projects/example/topics/buildbucket',
@@ -132,7 +132,7 @@ class NotificationsTest(testing.AppengineTestCase):
   def test_no_pubsub_callback(self):
     build = model.Build(
         id=1,
-        bucket='chromium',
+        bucket_id='chromium/try',
         create_time=datetime.datetime(2017, 1, 1),
     )
 

@@ -140,12 +140,17 @@ class BuildRequest(_BuildRequestBase):
          self.client_operation_id)
     )
 
+  # TODO(crbug.com/851036): accept bucket_id in BuildRequest instead of
+  # project and bucket.
+  @property
+  def bucket_id(self):
+    return '%s/%s' % (self.project, config.short_bucket_name(self.bucket))
+
   def create_build(self, build_id, created_by, now):
     """Converts the request to a build."""
     build = model.Build(
         id=build_id,
-        project=self.project,
-        bucket=self.bucket,
+        bucket_id=self.bucket_id,
         initial_tags=self.tags,
         tags=self.tags,
         parameters=self.parameters or {},
@@ -490,9 +495,10 @@ def retry(
   build = model.Build.get_by_id(build_id)
   if not build:
     raise errors.BuildNotFoundError('Build %s not found' % build_id)
+  _, bucket_name = config.parse_bucket_id(build.bucket_id)
   req = BuildRequest(
       build.project,
-      build.bucket,
+      bucket_name,
       tags=build.initial_tags if build.initial_tags is not None else build.tags,
       parameters=build.parameters,
       lease_expiration_date=lease_expiration_date,

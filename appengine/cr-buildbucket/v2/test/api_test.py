@@ -77,8 +77,7 @@ class BaseTestCase(testing.AppengineTestCase):
   def new_build_v1(self, builder_name='linux-try', **kwargs):
     build_kwargs = dict(
         id=model.create_build_ids(self.now, 1)[0],
-        project='chromium',
-        bucket='luci.chromium.try',
+        bucket_id='chromium/try',
         parameters={
             model.BUILDER_PARAMETER: builder_name,
         },
@@ -192,8 +191,7 @@ class GetBuildTests(BaseTestCase):
   @mock.patch('search.search_async', autospec=True)
   def test_by_number(self, search_async):
     build_v1 = self.new_build_v1(
-        project='chromium',
-        bucket='luci.chromium.try',
+        bucket_id='chromium/try',
         builder_name='linux-try',
         tags=[
             buildtags.build_address_tag('luci.chromium.try', 'linux-try', 2),
@@ -295,7 +293,7 @@ class UpdateBuildTests(BaseTestCase):
         model.Build(
             id=123,
             status=model.BuildStatus.STARTED,
-            bucket='bucket',
+            bucket_id='chromium/try',
             created_by=auth.Identity('user', 'foo@google.com'),
             create_time=timestamp_pb2.Timestamp(seconds=1500000000
                                                ).ToDatetime(),

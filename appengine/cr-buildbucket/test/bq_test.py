@@ -15,14 +15,10 @@ from test import test_util
 from testing_utils import testing
 import mock
 
-from third_party import annotations_pb2
-
 from proto import build_pb2
 from proto import common_pb2
 from proto import step_pb2
-from proto.config import service_config_pb2
 from test import test_util
-import annotations
 import bq
 import bqh
 import model
@@ -51,7 +47,7 @@ class BigQueryExportTest(testing.AppengineTestCase):
     enqueue_pull_task_async.return_value = test_util.future(None)
 
     build = model.Build(
-        id=1, bucket='luci.chromium.try', status=model.BuildStatus.COMPLETED
+        id=1, bucket_id='chromium/try', status=model.BuildStatus.COMPLETED
     )
 
     ndb.transactional(  # pylint: disable=no-value-for-parameter
@@ -126,21 +122,6 @@ class BigQueryExportTest(testing.AppengineTestCase):
         [r['json']['id'] for r in actual_payload['rows']],
         [1, 2],
     )
-
-  def test_cron_export_builds_to_bq_unsupported(self):
-    model.Build(
-        id=1,
-        bucket='luci.foo',
-        status=model.BuildStatus.COMPLETED,
-        result=model.BuildResult.SUCCESS,
-        create_time=datetime.datetime(2018, 1, 1),
-        complete_time=datetime.datetime(2018, 1, 1),
-    ).put()
-    self.queue.add([
-        taskqueue.Task(method='PULL', payload=json.dumps({'id': 1}))
-    ])
-    bq._process_pull_task_batch(self.queue.name, 'builds')
-    self.assertFalse(net.json_request.called)
 
   @mock.patch('v2.build_to_v2', autospec=True)
   @mock.patch(
@@ -234,8 +215,7 @@ class BigQueryExportTest(testing.AppengineTestCase):
 def mkbuild(**kwargs):
   args = dict(
       id=1,
-      project='chromium',
-      bucket='luci.chromium.try',
+      bucket_id='chromium/try',
       parameters={model.BUILDER_PARAMETER: 'linux-rel'},
       created_by=auth.Identity('user', 'john@example.com'),
       create_time=datetime.datetime(2018, 1, 1),
