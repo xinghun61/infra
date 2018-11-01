@@ -203,17 +203,16 @@ func (sc *swarmingClientImpl) ListRecentTasks(c context.Context, tags []string, 
 
 	// Limit() only limits the number of tasks returned in a single page. The
 	// client must keep track of the total number returned across the calls.
+	p := pager{remaining: limit}
 	for {
-		chunk := paginationChunkSize
-		if limit < paginationChunkSize {
-			chunk = limit
-		}
+		chunk := p.next()
 		ic, _ := context.WithTimeout(c, 60*time.Second)
 		resp, err := call.Limit(int64(chunk)).Context(ic).Do()
 		if err != nil {
 			return nil, errors.Reason("failed to list tasks with tags %s", strings.Join(tags, " ")).InternalReason(err.Error()).Err()
 		}
 		trs = append(trs, resp.Items...)
+		p.record(len(resp.Items))
 		if resp.Cursor == "" {
 			break
 		}
@@ -229,24 +228,22 @@ func (sc *swarmingClientImpl) ListRecentTasks(c context.Context, tags []string, 
 // started. limit limits the number of tasks returned.
 func (sc *swarmingClientImpl) ListSortedRecentTasksForBot(c context.Context, botID string, limit int) ([]*swarming.SwarmingRpcsTaskResult, error) {
 	trs := []*swarming.SwarmingRpcsTaskResult{}
-	// TODO(pprabhu) These should really be sorted by STARTED_TS.
+	// TODO(pprabhu): These should really be sorted by STARTED_TS.
 	// See crbug.com/857595 and crbug.com/857598
 	call := sc.Bot.Tasks(botID).Sort("CREATED_TS")
 
 	// Limit() only limits the number of tasks returned in a single page. The
 	// client must keep track of the total number returned across the calls.
-	for limit > 0 {
-		chunk := paginationChunkSize
-		if limit < paginationChunkSize {
-			chunk = limit
-		}
+	p := pager{remaining: limit}
+	for {
+		chunk := p.next()
 		ic, _ := context.WithTimeout(c, 60*time.Second)
 		resp, err := call.Limit(int64(chunk)).Context(ic).Do()
 		if err != nil {
 			return nil, errors.Reason("failed to list tasks for dut %s", botID).InternalReason(err.Error()).Err()
 		}
 		trs = append(trs, resp.Items...)
-		limit -= len(resp.Items)
+		p.record(len(resp.Items))
 		if resp.Cursor == "" {
 			break
 		}
@@ -286,4 +283,26 @@ func TimeSinceBotTask(tr *swarming.SwarmingRpcsTaskResult) (*duration.Duration, 
 		return nil, fmt.Errorf("unknown swarming task state %s", tr.State)
 	}
 	return nil, nil
+}
+
+// Pager manages pagination of API calls.
+type pager struct {
+	remaining int
+}
+
+// Next returns the number of items to request next.
+func (p *pager) next() int {
+	switch {
+	case p.remaining < 0:
+		return 0
+	case p.remaining < paginationChunkSize:
+		return p.remaining
+	default:
+		return paginationChunkSize
+	}
+}
+
+// Record records that items have been received.
+func (p *pager) record(n int) {
+	p.remaining -= n
 }
