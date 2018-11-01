@@ -227,12 +227,10 @@ func singleBotInfoToSummary(bi *swarming.SwarmingRpcsBotInfo) (*fleet.BotSummary
 	}
 	bs.DutState = dutStateMap[dss]
 
-	if l, err := extractSingleValuedDimension(dims, clients.DutModelDimensionKey); err == nil {
-		bs.Dimensions.Model = l
+	if vs := dims[clients.DutModelDimensionKey]; len(vs) == 1 {
+		bs.Dimensions.Model = vs[0]
 	}
-	if ls, ok := dims[clients.DutPoolDimensionKey]; ok {
-		bs.Dimensions.Pools = ls
-	}
+	bs.Dimensions.Pools = dims[clients.DutPoolDimensionKey]
 	if healthy := healthyDutStates[bs.DutState]; healthy {
 		bs.Health = fleet.Health_Healthy
 	} else {
