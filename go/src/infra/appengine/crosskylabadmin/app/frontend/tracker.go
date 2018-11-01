@@ -209,12 +209,15 @@ func botInfoToSummary(bots []*swarming.SwarmingRpcsBotInfo) (map[string]*fleet.B
 
 // singleBotInfoToSummary returns a BotSummary for the bot.
 func singleBotInfoToSummary(bi *swarming.SwarmingRpcsBotInfo) (*fleet.BotSummary, error) {
-	dims := swarmingDimensionsMap(bi.Dimensions)
-	dutID, err := extractSingleValuedDimension(dims, clients.DutIDDimensionKey)
-	if err != nil {
-		return nil, errors.Annotate(err, "failed to obtain dutID for bot %q", bi.BotId).Err()
+	bs := &fleet.BotSummary{
+		Dimensions: &fleet.BotDimensions{},
 	}
-	bs := &fleet.BotSummary{DutId: dutID}
+	dims := swarmingDimensionsMap(bi.Dimensions)
+	var err error
+	bs.DutId, err = extractSingleValuedDimension(dims, clients.DutIDDimensionKey)
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to obtain DUT ID for bot %q", bi.BotId).Err()
+	}
 
 	dss, err := extractSingleValuedDimension(dims, clients.DutStateDimensionKey)
 	if err != nil {
@@ -227,11 +230,9 @@ func singleBotInfoToSummary(bi *swarming.SwarmingRpcsBotInfo) (*fleet.BotSummary
 	}
 
 	if l, err := extractSingleValuedDimension(dims, clients.DutModelDimensionKey); err == nil {
-		initializeDimensionsForBotSummary(bs)
 		bs.Dimensions.Model = l
 	}
 	if ls, ok := dims[clients.DutPoolDimensionKey]; ok {
-		initializeDimensionsForBotSummary(bs)
 		bs.Dimensions.Pools = ls
 	}
 	if healthy := healthyDutStates[bs.DutState]; healthy {
@@ -240,12 +241,6 @@ func singleBotInfoToSummary(bi *swarming.SwarmingRpcsBotInfo) (*fleet.BotSummary
 		bs.Health = fleet.Health_Unhealthy
 	}
 	return bs, nil
-}
-
-func initializeDimensionsForBotSummary(bs *fleet.BotSummary) {
-	if bs.Dimensions == nil {
-		bs.Dimensions = &fleet.BotDimensions{}
-	}
 }
 
 // setIdleDuration updates the bot summaries with the duration each bot has
