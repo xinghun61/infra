@@ -175,7 +175,7 @@
         actualMatches.push(match[0]);
       }
       assert.deepEqual(
-          actualMatches, ['omg/123', 'b/1234']);
+          actualMatches, ['omg/123', 'cl/123', 'b/1234']);
     });
 
     test('test implied link regex string', function() {
@@ -187,7 +187,7 @@
         actualMatches.push(match[0]);
       }
       assert.deepEqual(
-          actualMatches, ['incomplete.com', 'hey.net/other="(blah)"']);
+          actualMatches, ['incomplete.com', 'help.com', 'hey.net/other="(blah)"']);
     });
 
     test('test full link regex string', function() {

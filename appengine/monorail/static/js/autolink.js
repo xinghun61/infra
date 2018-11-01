@@ -4,16 +4,26 @@
 
 (function(window) {
   'use strict';
-  const CRBUG_LINK_RE = /(?<prefix>\b(https?:\/\/)?crbug\.com\/)((?<projectName>\b[-a-z0-9]+)(?<separator>\/))?(?<localId>\d+)\b(?<anchor>\#c[0-9]+)?/gi;
-  const ISSUE_TRACKER_RE = /(?<prefix>\b(issues?|bugs?)[ \t]*(:|=)?)([ \t]*(?<projectName>\b[-a-z0-9]+[:\#])?(?<numberSign>\#?)(?<localId>\d+)\b(,?[ \t]*(and|or)?)?)+/gi;
-  const PROJECT_LOCALID_RE = /((?<projectName>\b[-a-z0-9]+[:\#])?(?<numberSign>\#?)(?<localId>\d+))/gi;
+  const CRBUG_LINK_RE = /(\b(https?:\/\/)?crbug\.com\/)((\b[-a-z0-9]+)(\/))?(\d+)\b(\#c[0-9]+)?/gi;
+  const CRBUG_LINK_RE_PROJECT_GROUP = 4;
+  const CRBUG_LINK_RE_ID_GROUP = 6;
+  const ISSUE_TRACKER_RE = /(\b(issues?|bugs?)[ \t]*(:|=)?)([ \t]*((\b[-a-z0-9]+)[:\#])?(\#?)(\d+)\b(,?[ \t]*(and|or)?)?)+/gi;
+  const PROJECT_LOCALID_RE = /(((\b[-a-z0-9]+)[:\#])?(\#?)(\d+))/gi;
+  const PROJECT_LOCALID_RE_PROJECT_GROUP = 3;
+  const PROJECT_LOCALID_RE_ID_GROUP = 5;
   const IMPLIED_EMAIL_RE = /\b[a-z]((-|\.)?[a-z0-9])+@[a-z]((-|\.)?[a-z0-9])+\.(com|net|org|edu)\b/gi;
-  const SHORT_LINK_RE = /(?<![-/._])\b(https?:\/\/|ftp:\/\/|mailto:)?(go|g|shortn|who|teams)\/([^\s<]+)/gi;
-  const NUMERIC_SHORT_LINK_RE = /(?<![-/._])\b(https?:\/\/|ftp:\/\/)?(b|t|o|omg|cl|cr)\/([0-9]+)/gi;
-  const IMPLIED_LINK_RE = /(?<![-/._])\b[a-z]((-|\.)?[a-z0-9])+\.(com|net|org|edu)\b(\/[^\s<]*)?/gi;
+  // TODO(zhangtiff): Add (?<![-/._]) back to the beginning of the 3 Regexes below
+  // once Firefox supports lookaheads.
+  const SHORT_LINK_RE = /\b(https?:\/\/|ftp:\/\/|mailto:)?(go|g|shortn|who|teams)\/([^\s<]+)/gi;
+  const NUMERIC_SHORT_LINK_RE = /\b(https?:\/\/|ftp:\/\/)?(b|t|o|omg|cl|cr)\/([0-9]+)/gi;
+  const IMPLIED_LINK_RE = /\b[a-z]((-|\.)?[a-z0-9])+\.(com|net|org|edu)\b(\/[^\s<]*)?/gi;
   const IS_LINK_RE = /\b(https?:\/\/|ftp:\/\/|mailto:)([^\s<]+)/gi;
-  const GIT_HASH_RE = /\b(?<prefix>r(evision\s+#?)?)?(?<revNum>([a-f0-9]{40}))\b/gi;
-  const SVN_REF_RE = /\b(?<prefix>r(evision\s+#?)?)(?<revNum>([0-9]{4,7}))\b/gi;
+  const GIT_HASH_RE = /\b(r(evision\s+#?)?)?([a-f0-9]{40})\b/gi;
+  const SVN_REF_RE = /\b(r(evision\s+#?)?)([0-9]{4,7})\b/gi;
+  // The revNum is in the same position for the above two Regexes. The
+  // extraction function uses this similar format to allow switching out
+  // Regexes easily, so be careful about changing GIT_HASH_RE and SVN_HASH_RE.
+  const REV_NUM_GROUP = 3;
   const LINK_TRAILING_CHARS = [
     [null, ':'],
     [null, '.'],
@@ -103,9 +113,9 @@
 
   // Extract referenced artifacts info functions.
   function ExtractCrbugProjectAndIssueIds(match, defaultProjectName='chromium') {
-    const groups = match.groups;
-    const projectName = groups.projectName || defaultProjectName;
-    return [{projectName: projectName, localId: groups.localId}];
+    const projectName = match[CRBUG_LINK_RE_PROJECT_GROUP] || defaultProjectName;
+    const localId = match[CRBUG_LINK_RE_ID_GROUP];
+    return [{projectName: projectName, localId: localId}];
   }
 
   function ExtractTrackerProjectAndIssueIds(match, defaultProjectName='chromium') {
@@ -113,10 +123,13 @@
     let refMatch;
     let refs = [];
     while ((refMatch = issueRefRE.exec(match[0])) !== null) {
-      if (refMatch.groups.projectName) {
-        defaultProjectName = refMatch.groups.projectName.slice(0, -1);
+      if (refMatch[PROJECT_LOCALID_RE_PROJECT_GROUP]) {
+        defaultProjectName = refMatch[PROJECT_LOCALID_RE_PROJECT_GROUP];
       }
-      refs.push({projectName: defaultProjectName, localId: refMatch.groups.localId});
+      refs.push({
+        projectName: defaultProjectName,
+        localId: refMatch[PROJECT_LOCALID_RE_ID_GROUP]
+      });
     }
     return refs;
   }
@@ -145,8 +158,8 @@
 
   function ReplaceCrbugIssueRef(match, components, defaultProjectName='chromium') {
     components = components || {};
-    const projectName = match.groups.projectName || defaultProjectName;
-    const localId = match.groups.localId;
+    const projectName = match[CRBUG_LINK_RE_PROJECT_GROUP] || defaultProjectName;
+    const localId = match[CRBUG_LINK_RE_ID_GROUP];
     return [ReplaceIssueRef(match[0], projectName, localId, components)];
   }
 
@@ -161,11 +174,12 @@
         // Create textrun for content between previous and current match.
         textRuns.push({content: match[0].slice(pos, refMatch.index)});
       }
-      if (refMatch.groups.projectName) {
-        defaultProjectName = refMatch.groups.projectName.slice(0, -1);
+      if (refMatch[PROJECT_LOCALID_RE_PROJECT_GROUP]) {
+        defaultProjectName = refMatch[PROJECT_LOCALID_RE_PROJECT_GROUP];
       }
       textRuns.push(ReplaceIssueRef(
-          refMatch[0], defaultProjectName, refMatch.groups.localId, components));
+          refMatch[0], defaultProjectName,
+          refMatch[PROJECT_LOCALID_RE_ID_GROUP], components));
       pos = refMatch.index + refMatch[0].length;
     }
     if (match[0].slice(pos) !== '') {
@@ -218,7 +232,7 @@
 
   function ReplaceRevisionRef(match, _components, _defaultProjectName) {
     const content = match[0];
-    const href = `https://crrev.com/${match.groups.revNum}`;
+    const href = `https://crrev.com/${match[REV_NUM_GROUP]}`;
     return [{content: content, tag: 'a', href: href}];
   }
 
