@@ -15,3 +15,4 @@
 package swarming
 
 //go:generate cproto -proto-path ../../../../luci/appengine/swarming/proto ../../../../luci/appengine/swarming/proto
+//go:generate svcdec -type ExternalSchedulerServer
