@@ -149,15 +149,15 @@ export default class ClientLogger {
       elapsed += startEvent.elapsed[eventLabel];
     }
 
+    if (maxThresholdMs !== null && elapsed > maxThresholdMs) {
+      return;
+    }
+
     // If they've specified a label, report the elapsed since the start
     // of that label.
     if (eventLabel) {
       if (startEvent.labels[eventLabel]) {
         elapsed = new Date().getTime() - startEvent.labels[eventLabel];
-
-        if (maxThresholdMs !== null && elapsed > maxThresholdMs) {
-          return;
-        }
 
         ga('send', 'timing', {
           'timingCategory': this.category,
@@ -182,10 +182,6 @@ export default class ClientLogger {
       for (let label in startEvent.labels) {
         elapsed = new Date().getTime() - startEvent.labels[label];
 
-        if (maxThresholdMs !== null && elapsed > maxThresholdMs) {
-          continue;
-        }
-
         ga('send', 'timing', {
           'timingCategory': this.category,
           'timingVar': eventName,
@@ -196,11 +192,12 @@ export default class ClientLogger {
 
       delete this.startedEvents[eventName];
     }
+
+    this.tsMon.recordUserTiming(this.category, eventName, elapsed);
+
     sessionStorage[`ClientLogger.${this.category}.started`] =
         JSON.stringify(this.startedEvents);
-
     this.logEvent(`${eventName}-end`, eventLabel);
-    this.tsMon.recordUserTiming(this.category, eventName, elapsed);
   }
 }
 

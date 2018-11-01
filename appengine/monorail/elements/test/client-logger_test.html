@@ -13,6 +13,7 @@ suite('ClientLogger', () => {
       tokenExpiresSec: 1234,
     };
     window.chops = {rpc: {PrpcClient: sinon.spy()}};
+    window.ga = sinon.spy();
     MonorailTSMon.prototype.disableAfterNextFlush = sinon.spy();
   });
 
@@ -67,6 +68,52 @@ suite('ClientLogger', () => {
     c.logEnd('issue-update');
     sinon.assert.notCalled(issueCreateMetric.add);
     sinon.assert.calledOnce(issueUpdateMetric.add);
+  });
+
+  suite('logEnd', () => {
+    let c, clock;
+    setup(() => {
+      c = new ClientLogger('rutabaga');
+      clock = sinon.useFakeTimers(1000);
+      c.tsMon.recordUserTiming = sinon.spy();
+    });
+
+    teardown(() => {
+      clock.restore();
+    });
+
+    test('throws an error if no event was started', () => {
+      c.startedEvents = {someEvent: {}};
+      assert.throws(() => {
+        c.logEnd('bogus');
+      });
+      sinon.assert.notCalled(window.ga);
+    });
+
+    test('calls ga() with timing and event info', () => {
+      c.startedEvents = {someEvent: {time: 900}};
+      c.logEnd('someEvent');
+
+      assert.deepEqual(window.ga.getCall(0).args, [
+        'send', 'timing', {
+          timingCategory: 'rutabaga',
+          timingValue: 100,
+          timingVar: 'someEvent',
+      }]);
+      assert.deepEqual(window.ga.getCall(1).args, [
+        'send', 'event', 'rutabaga', 'someEvent-end', undefined, undefined
+      ]);
+      sinon.assert.calledWith(c.tsMon.recordUserTiming, 'rutabaga',
+        'someEvent', 100);
+    });
+
+    test('does not log events over threshold', () => {
+      c.startedEvents = {rutabaga: {time: 900}};
+      c.logEnd('rutabaga', null, 99);
+
+      sinon.assert.notCalled(window.ga);
+      sinon.assert.notCalled(c.tsMon.recordUserTiming);
+    });
   });
 
 });
