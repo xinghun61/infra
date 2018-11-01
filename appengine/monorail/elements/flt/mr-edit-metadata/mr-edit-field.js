@@ -41,7 +41,7 @@ class MrEditField extends Polymer.Element {
       },
       _acType: {
         type: String,
-        computed: '_computeAcType(acType, type)',
+        computed: '_computeAcType(acType, type, multi)',
       },
       _initialValue: {
         type: String,
@@ -178,8 +178,11 @@ class MrEditField extends Polymer.Element {
     return initialValue === optionName;
   }
 
-  _computeAcType(acType, type) {
-    return acType || (type === fieldTypes.USER_TYPE ? 'member' : '');
+  _computeAcType(acType, type, multi) {
+    if (type === fieldTypes.USER_TYPE) {
+      return multi ? 'member' : 'owner';
+    }
+    return acType;
   }
 
   _computeDomAutocomplete(acType) {
