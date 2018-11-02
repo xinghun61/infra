@@ -1,0 +1,74 @@
+// Copyright 2018 The LUCI Authors. All rights reserved.
+// Use of this source code is governed under the Apache License, Version 2.0
+// that can be found in the LICENSE file.
+
+syntax = "proto3";
+
+package qscheduler;
+
+import "infra/qscheduler/qslib/types/account/account.proto";
+
+// This API is under development and subject to compatibility-breaking changes.
+// Do not use for production.
+
+// QSchedulerAdmin is the administrative API for a quotascheduler.
+service QSchedulerAdmin {
+    // Administrative endpoints.
+
+    // CreateSchedulerPool creates a scheduler, with the given configuration
+    // options.
+    rpc CreateSchedulerPool(CreateSchedulerPoolRequest) returns (CreateSchedulerPoolResponse);
+
+    // CreateAccount creates a quota account within a scheduler, with the
+    // given configuration options.
+    rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse);
+
+    // ListAccounts returns the set of accounts for a given scheduler.
+    rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse);
+}
+
+message CreateSchedulerPoolRequest {
+    // TODO(akeshet): The client shouldn't be creating this id. It should be
+    // creating a scheduler pool for a given name, and the id should be generated
+    // by admin service and returned. Punting on this for now because the naming
+    // and organization scheme for scheduler pools is not yet established. (i.e.
+    // will we have some hierarchical structure to these pools? will there be
+    // sub-pools?).
+    string pool_id = 1;
+
+    // Config is the scheduler configuration for the scheduler to create.
+    SchedulerPoolConfig config = 2;
+}
+
+message CreateSchedulerPoolResponse {}
+
+message CreateAccountRequest {
+    // PoolID is the id of the scheduler to create an account within.
+    string pool_id = 1;
+
+    // TODO(akeshet): Similar to pool_id above, account_id should be generated
+    // on the server, not client. Instead, pass in some kind of path or
+    // hierarchical account name. Punting until this is figured out better.
+    string account_id = 2;
+
+    // Config is the quota account config for the quota account to create.
+    account.Config config = 3;
+}
+
+message CreateAccountResponse {}
+
+message ListAccountsRequest {
+    // PoolID is the id of the scheduler to list accounts from.
+    string pool_id = 1;
+}
+
+message ListAccountsResponse {
+    map<string, account.Config> accounts = 1;
+}
+
+message SchedulerPoolConfig{
+    // Labels is a list of swarming dimensions in "key:value" form. This corresponds
+    // to swarming.ExternalSchedulerConfig.dimensionsions; it is the minimal set
+    // of dimensions for tasks or bots that will use this scheduler.
+    repeated string labels = 1;
+}
