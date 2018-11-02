@@ -1,5 +1,8 @@
 'use strict';
 
+const APPROVER_RESTRICTED_STATUSES = new Set(
+  ['NA', 'Approved', 'NotApproved']);
+
 const STATUS_ENUM_TO_TEXT = {
   '': 'NotSet',
   'NEEDS_REVIEW': 'NeedsReview',
@@ -332,13 +335,21 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
     return {};
   }
 
-  _filterStatuses(status, statuses, isApprover) {
+  _filterStatuses(status, statuses, isApprovalOwner) {
+    const currentStatusIsRestricted =
+      APPROVER_RESTRICTED_STATUSES.has(status);
     return statuses.filter((s) => {
+      const includeCurrentStatus = s.status === status;
       // These statuses should only be set by approvers.
-      if (!isApprover && ['NA', 'Approved', 'NotApproved'].includes(s.status)) {
-        return false;
+      // Non-approvers can't change statuses when they're set to an
+      // approvers-only status.
+      if (!isApprovalOwner &&
+          (APPROVER_RESTRICTED_STATUSES.has(s.status) ||
+          currentStatusIsRestricted)
+      ) {
+        return includeCurrentStatus;
       }
-      return s.status === status || s.status !== 'NotSet';
+      return includeCurrentStatus || s.status !== 'NotSet';
     });
   }
 
