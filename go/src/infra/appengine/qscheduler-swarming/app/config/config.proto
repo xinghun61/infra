@@ -1,0 +1,23 @@
+// Copyright 2018 The LUCI Authors. All rights reserved.
+// Use of this source code is governed under the Apache License, Version 2.0
+// that can be found in the LICENSE file.
+
+syntax = "proto3";
+
+package qscheduler.config;
+
+option go_package = "config";
+
+// Note: docstrings use generated go style variable names.
+
+// Config is the configuration data served by luci-config for this app.
+message Config {
+  // AccessGroup is the luci-auth group controlling access to admin app APIs.
+  string access_group = 1;
+
+  // QuotaScheduler contains QS-specific config information.
+  QuotaScheduler quota_scheduler = 2;
+}
+
+// QuotaScheduler contains configuration information for the QuotaScheduler app.
+message QuotaScheduler {}
