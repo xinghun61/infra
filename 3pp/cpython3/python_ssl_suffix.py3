@@ -22,33 +22,23 @@ def _attach_cacert_bundle():
   # Identify local system "cacert" paths.
   cabases = []
   if sys.platform == 'darwin':
-    # On OS X, dump the system's cert list a max of once every 24 hours to
-    # somewhere we can load into openssl.
-    import time
+    # On OS X, dump the system's cert list from the Keychain. Shelling
+    # out isn't super efficient, but reimplementing this with ctypes would also
+    # be pretty gnarly.
     import subprocess
-
-    prefix = sys.base_exec_prefix
-    dumped_pem = os.path.join(prefix, 'cert.pem')
-
-    # Dump if the file is missing or if it's older than 24 hours.
-    do_dump = True
     try:
-      do_dump = time.time() - os.stat(dumped_pem).st_mtime > 24*60*60
-    except:  # pylint: disable=bare-except
-      pass
-
-    if do_dump:
-      try:
-        subprocess.call(
-          ['security', 'find-certificate', '-a', '-p'],
-          stdout=open(dumped_pem+'.tmp', 'wb'))
-        os.rename(dumped_pem+'.tmp', dumped_pem)
-      except:  # pylint: disable=bare-except
-        pass
-    cabases += [
-        prefix,
-        '/System/Library/OpenSSL',
-    ]
+      certs = subprocess.check_output(
+        ['/usr/local/bin/security', 'find-certificate', '-a', '-p'],
+      ).decode('ascii')
+      SSLContext.set_default_verify_paths = (
+        lambda self: self.load_verify_locations(cadata=certs))
+      return # We're done; this is the best it gets
+    except Exception as ex:
+      print(
+        "ERROR: failed to load certs from system Keychain: %r" % ex,
+        file=sys.stderr)
+      print("   falling back to '/System/Library/OpenSSL'", file=sys.stderr)
+      cabases += ['/System/Library/OpenSSL']
   if sys.platform.startswith('linux'):
     cabases += [
         '/etc/ssl',
