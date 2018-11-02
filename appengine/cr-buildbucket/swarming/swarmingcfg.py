@@ -124,16 +124,16 @@ def _validate_dimensions(field_name, dimensions, ctx):
 
 def _validate_relative_path(path, ctx):
   if not path:
-    ctx.error('path is required')
+    ctx.error('required')
   if '\\' in path:
     ctx.error(
-        'path cannot contain \\. On Windows forward-slashes will be '
+        'cannot contain \\. On Windows forward-slashes will be '
         'replaced with back-slashes.'
     )
   if '..' in path.split('/'):
-    ctx.error('path cannot contain ".."')
+    ctx.error('cannot contain ".."')
   if path.startswith('/'):
-    ctx.error('path cannot start with "/"')
+    ctx.error('cannot start with "/"')
 
 
 def _validate_recipe_cfg(recipe, ctx, final=True):
@@ -143,7 +143,7 @@ def _validate_recipe_cfg(recipe, ctx, final=True):
   """
   if final:
     if not recipe.name:
-      ctx.error('name unspecified')
+      ctx.error('name: unspecified')
     repo = clear_dash(recipe.repository)
     if recipe.cipd_package and repo:
       ctx.error('specify either cipd_package or repository, not both')
@@ -203,24 +203,26 @@ def validate_builder_cfg(builder, mixin_names, final, ctx):
 
   If final is False, does not validate for completeness.
   """
-  if final and not builder.name:
-    ctx.error('name unspecified')
-  else:
-    if len(builder.name) > 128:
-      ctx.error('name length is > 128')
+  with ctx.prefix('name: '):
+    if final and not builder.name:
+      ctx.error('unspecified')
+    else:
+      if len(builder.name) > 128:
+        ctx.error('length is > 128')
 
-    invalid_chars = ''.join(
-        sorted(
-            set(
-                c for c in builder.name if c not in _BUILDER_NAME_VALID_CHAR_SET
-            )
-        )
-    )
-    if invalid_chars:
-      ctx.error(
-          'name uses invalid char(s) %r. Alphabet: "%s"', invalid_chars,
-          BUILDER_NAME_VALID_CHARS
+      invalid_chars = ''.join(
+          sorted(
+              set(
+                  c for c in builder.name
+                  if c not in _BUILDER_NAME_VALID_CHAR_SET
+              )
+          )
       )
+      if invalid_chars:
+        ctx.error(
+            'invalid char(s) %r. Alphabet: "%s"', invalid_chars,
+            BUILDER_NAME_VALID_CHARS
+        )
 
   for i, t in enumerate(builder.swarming_tags):
     with ctx.prefix('tag #%d: ', i + 1):
@@ -245,10 +247,11 @@ def validate_builder_cfg(builder, mixin_names, final, ctx):
         else:
           cache_paths.add(c.path)
         if c.wait_for_warm_cache_secs:
-          if c.wait_for_warm_cache_secs < 60:
-            ctx.error('wait_for_warm_cache_secs must be at least 60 seconds')
-          elif c.wait_for_warm_cache_secs % 60:
-            ctx.error('wait_for_warm_cache_secs must be rounded on 60 seconds')
+          with ctx.prefix('wait_for_warm_cache_secs: '):
+            if c.wait_for_warm_cache_secs < 60:
+              ctx.error('must be at least 60 seconds')
+            elif c.wait_for_warm_cache_secs % 60:
+              ctx.error('must be rounded on 60 seconds')
           fallback_secs.add(c.wait_for_warm_cache_secs)
   if len(fallback_secs) > 7:
     # There can only be 8 task_slices.
@@ -261,7 +264,7 @@ def validate_builder_cfg(builder, mixin_names, final, ctx):
     _validate_recipe_cfg(builder.recipe, ctx, final=final)
 
   if builder.priority > 200:
-    ctx.error('priority must be in [0, 200] range; got %d', builder.priority)
+    ctx.error('priority: must be in [0, 200] range; got %d', builder.priority)
 
   if builder.service_account:
     with ctx.prefix('service_account: '):
@@ -281,11 +284,14 @@ def validate_builder_cfg(builder, mixin_names, final, ctx):
 
 def _validate_cache_entry(entry, ctx):
   if not entry.name:
-    ctx.error('name is required')
+    ctx.error('name: required')
   elif not _CACHE_NAME_RE.match(entry.name):
-    ctx.error('name "%s" does not match %s', entry.name, _CACHE_NAME_RE.pattern)
+    ctx.error(
+        'name: "%s" does not match %s', entry.name, _CACHE_NAME_RE.pattern
+    )
 
-  _validate_relative_path(entry.path, ctx)
+  with ctx.prefix('path: '):
+    _validate_relative_path(entry.path, ctx)
 
 
 def validate_builder_mixins(mixins, ctx):
@@ -302,9 +308,9 @@ def validate_builder_mixins(mixins, ctx):
     with ctx.prefix('builder_mixin %s: ' % (m.name or '#%s' % (i + 1))):
       if not m.name:
         # with final=False below, validate_builder_cfg will ignore name.
-        ctx.error('name unspecified')
+        ctx.error('name: unspecified')
       elif m.name in seen:
-        ctx.error('duplicate name')
+        ctx.error('name: duplicate')
       else:
         seen.add(m.name)
       validate_builder_cfg(m, by_name, False, ctx)
@@ -371,7 +377,7 @@ def validate_project_cfg(swarming, mixins, mixins_are_valid, ctx):
   if swarming.HasField('builder_defaults'):
     with ctx.prefix('builder_defaults: '):
       if swarming.builder_defaults.name:
-        ctx.error('do not specify default name')
+        ctx.error('name: not allowed')
       subctx = make_subctx()
       validate_builder_cfg(swarming.builder_defaults, mixins, False, subctx)
       if subctx.result().has_errors:
@@ -392,7 +398,7 @@ def validate_project_cfg(swarming, mixins, mixins_are_valid, ctx):
           merged, swarming.builder_defaults, mixins
       )
       if merged.name in seen:
-        ctx.error('duplicate builder name')
+        ctx.error('name: duplicate')
       else:
         seen.add(merged.name)
       validate_builder_cfg(merged, mixins, True, ctx)

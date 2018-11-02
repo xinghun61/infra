@@ -16,6 +16,7 @@ from proto.config import project_config_pb2
 from proto.config import service_config_pb2
 from test import config_test
 from swarming import swarmingcfg
+import errors
 
 
 class ProjectCfgTest(testing.AppengineTestCase):
@@ -129,8 +130,8 @@ class ProjectCfgTest(testing.AppengineTestCase):
         '',
         [
             'hostname: unspecified',
-            'builder #1: name unspecified',
-            'builder #1: recipe: name unspecified',
+            'builder #1: name: unspecified',
+            'builder #1: recipe: name: unspecified',
             'builder #1: recipe: specify either cipd_package or repository',
         ],
     )
@@ -153,7 +154,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
         ''',
         '',
         [
-            'builder meep: duplicate builder name',
+            'builder meep: name: duplicate',
         ],
     )
 
@@ -166,10 +167,8 @@ class ProjectCfgTest(testing.AppengineTestCase):
         ''',
         '',
         [
-            (
-                'builder :/:: name uses invalid char(s) u\'/:\'. '
-                'Alphabet: "%s"'
-            ) % swarmingcfg.BUILDER_NAME_VALID_CHARS,
+            ('builder :/:: name: invalid char(s) u\'/:\'. '
+             'Alphabet: "%s"') % swarmingcfg.BUILDER_NAME_VALID_CHARS,
         ],
     )
 
@@ -188,7 +187,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
             'veeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeery'
             'looooooooooooooooooooooooooooooooooooooooooooooooooooooooong'
             'naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaame: '
-            'name length is > 128'
+            'name: length is > 128'
         )],
     )
 
@@ -207,7 +206,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
         ''',
         '',
         [
-            'builder_defaults: do not specify default name',
+            'builder_defaults: name: not allowed',
         ],
     )
 
@@ -282,19 +281,19 @@ class ProjectCfgTest(testing.AppengineTestCase):
                 'it is added by swarmbucket automatically'
             ),
             'builder b2: dimension #2: duplicate key x',
-            'builder b2: cache #1: name is required',
-            'builder b2: cache #1: path is required',
+            'builder b2: cache #1: name: required',
+            'builder b2: cache #1: path: required',
             (
                 'builder b2: cache #2: '
-                'name "a/b" does not match ^[a-z0-9_]{1,4096}$'
+                'name: "a/b" does not match ^[a-z0-9_]{1,4096}$'
             ),
             (
-                'builder b2: cache #3: path cannot contain \\. '
+                'builder b2: cache #3: path: cannot contain \\. '
                 'On Windows forward-slashes will be replaced with back-slashes.'
             ),
-            'builder b2: cache #4: path cannot contain ".."',
-            'builder b2: cache #5: path cannot start with "/"',
-            'builder b2: priority must be in [0, 200] range; got 300',
+            'builder b2: cache #4: path: cannot contain ".."',
+            'builder b2: cache #5: path: cannot start with "/"',
+            'builder b2: priority: must be in [0, 200] range; got 300',
         ],
     )
 
@@ -324,7 +323,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
         ''',
         '',
         [
-            'builder rel: cache #1: wait_for_warm_cache_secs must be rounded '
+            'builder rel: cache #1: wait_for_warm_cache_secs: must be rounded '
             'on 60 seconds',
         ],
     )
@@ -339,7 +338,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
         ''',
         '',
         [
-            'builder rel: cache #1: wait_for_warm_cache_secs must be at least '
+            'builder rel: cache #1: wait_for_warm_cache_secs: must be at least '
             '60 seconds'
         ],
     )
@@ -520,14 +519,14 @@ class ProjectCfgTest(testing.AppengineTestCase):
     test(
         '''
           builder_mixins {}
-        ''', ['builder_mixin #1: name unspecified']
+        ''', ['builder_mixin #1: name: unspecified']
     )
 
     test(
         '''
           builder_mixins { name: "a" }
           builder_mixins { name: "a" }
-        ''', ['builder_mixin a: duplicate name']
+        ''', ['builder_mixin a: name: duplicate']
     )
 
     test(
