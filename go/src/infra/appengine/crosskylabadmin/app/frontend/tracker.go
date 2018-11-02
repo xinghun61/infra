@@ -68,7 +68,7 @@ func (tsi *TrackerServerImpl) RefreshBots(ctx context.Context, req *fleet.Refres
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to extract bot summary from bot info").Err()
 	}
-	if err := setIdleDuration(ctx, sc, bsm); err != nil {
+	if err := addTaskInfoToSummaries(ctx, sc, bsm); err != nil {
 		return nil, errors.Annotate(err, "failed to set idle time for bots").Err()
 	}
 	updated, err := insertBotSummary(ctx, bsm)
@@ -239,24 +239,30 @@ func singleBotInfoToSummary(bi *swarming.SwarmingRpcsBotInfo) (*fleet.BotSummary
 	return bs, nil
 }
 
-// setIdleDuration updates the bot summaries with the duration each bot has
-// been idle.
-func setIdleDuration(ctx context.Context, sc clients.SwarmingClient, bsm map[string]*fleet.BotSummary) error {
+// addTaskInfoToSummaries updates the bot summaries with information
+// derived from the bot's tasks.
+func addTaskInfoToSummaries(ctx context.Context, sc clients.SwarmingClient, bsm map[string]*fleet.BotSummary) error {
 	return parallel.WorkPool(clients.MaxConcurrentSwarmingCalls, func(workC chan<- func() error) {
 		for bid := range bsm {
 			// In-scope variable for goroutine closure.
 			bid := bid
 			bs := bsm[bid]
 			workC <- func() error {
-				idle, err := getIdleDuration(ctx, sc, bid)
-				if err != nil {
-					return err
-				}
-				bs.IdleDuration = idle
-				return nil
+				return addTaskInfoToSummary(ctx, sc, bid, bs)
 			}
 		}
 	})
+}
+
+// addTaskInfoToSummary updates the bot summary with information derived
+// from the bot's tasks.
+func addTaskInfoToSummary(ctx context.Context, sc clients.SwarmingClient, botID string, bs *fleet.BotSummary) error {
+	d, err := getIdleDuration(ctx, sc, botID)
+	if err != nil {
+		return errors.Annotate(err, "failed to get idle duration of bot %s", botID).Err()
+	}
+	bs.IdleDuration = d
+	return nil
 }
 
 // getIdleDuration queries swarming for the duration since last task on the
