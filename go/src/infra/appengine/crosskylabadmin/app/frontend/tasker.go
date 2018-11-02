@@ -41,6 +41,12 @@ const (
 	skylabSwarmingWorkerPath = infraToolsDir + "/skylab_swarming_worker"
 )
 
+var taskName = map[fleet.TaskType]string{
+	fleet.TaskType_Cleanup: "AdminCleanup",
+	fleet.TaskType_Repair:  "AdminRepair",
+	fleet.TaskType_Reset:   "AdminReset",
+}
+
 // SwarmingFactory is a constructor for a SwarmingClient.
 type SwarmingFactory func(c context.Context, host string) (clients.SwarmingClient, error)
 
@@ -108,7 +114,7 @@ func triggerRepairOnIdleForBot(ctx context.Context, sc clients.SwarmingClient, r
 	if logdogURL != "" {
 		tags = append(tags, fmt.Sprintf("log_location:%s", logdogURL))
 	}
-	tid, err := sc.CreateTask(ctx, &clients.SwarmingCreateTaskArgs{
+	tid, err := sc.CreateTask(ctx, taskName[fleet.TaskType_Repair], &clients.SwarmingCreateTaskArgs{
 		Cmd:                  luciferAdminTaskCmd(fleet.TaskType_Repair, logdogURL),
 		DutID:                bse.DutID,
 		ExecutionTimeoutSecs: cfg.Tasker.BackgroundTaskExecutionTimeoutSecs,
@@ -184,7 +190,7 @@ func triggerRepairOnRepairFailedForBot(ctx context.Context, sc clients.SwarmingC
 	if logdogURL != "" {
 		tags = append(tags, fmt.Sprintf("log_location:%s", logdogURL))
 	}
-	tid, err := sc.CreateTask(ctx, &clients.SwarmingCreateTaskArgs{
+	tid, err := sc.CreateTask(ctx, taskName[fleet.TaskType_Repair], &clients.SwarmingCreateTaskArgs{
 		Cmd:                  luciferAdminTaskCmd(fleet.TaskType_Repair, logdogURL),
 		DutID:                bse.DutID,
 		DutState:             "repair_failed",
@@ -251,7 +257,7 @@ func ensureBackgroundTasksForBot(ctx context.Context, sc clients.SwarmingClient,
 		if logdogURL != "" {
 			tags = append(tags, fmt.Sprintf("log_location:%s", logdogURL))
 		}
-		tid, err := sc.CreateTask(ctx, &clients.SwarmingCreateTaskArgs{
+		tid, err := sc.CreateTask(ctx, taskName[req.Type], &clients.SwarmingCreateTaskArgs{
 			Cmd:                  luciferAdminTaskCmd(req.Type, logdogURL),
 			DutID:                bse.DutID,
 			DutState:             dutStateForTask[req.Type],

@@ -432,7 +432,7 @@ func expectTaskCreation(tf testFixture, taskID string, dutID string, dutState st
 	if tname != "" {
 		m.CmdSubString = fmt.Sprintf("-task-name %s", tname)
 	}
-	return tf.MockSwarming.EXPECT().CreateTask(gomock.Any(), m).Return(taskID, nil)
+	return tf.MockSwarming.EXPECT().CreateTask(gomock.Any(), gomock.Any(), m).Return(taskID, nil)
 }
 
 // assertBotsWithTaskCount ensures that botTasks have the expected bots and

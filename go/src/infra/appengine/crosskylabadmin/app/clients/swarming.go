@@ -74,7 +74,7 @@ type SwarmingClient interface {
 	ListAliveBotsInPool(context.Context, string, strpair.Map) ([]*swarming.SwarmingRpcsBotInfo, error)
 	ListRecentTasks(c context.Context, tags []string, state string, limit int) ([]*swarming.SwarmingRpcsTaskResult, error)
 	ListSortedRecentTasksForBot(c context.Context, botID string, limit int) ([]*swarming.SwarmingRpcsTaskResult, error)
-	CreateTask(c context.Context, args *SwarmingCreateTaskArgs) (string, error)
+	CreateTask(c context.Context, name string, args *SwarmingCreateTaskArgs) (string, error)
 }
 
 // SwarmingCreateTaskArgs contains the arguments to SwarmingClient.CreateTask.
@@ -138,7 +138,7 @@ func (sc *swarmingClientImpl) ListAliveBotsInPool(c context.Context, pool string
 // CreateTask creates a Swarming task.
 //
 // On success, CreateTask returns the opaque task ID returned by Swarming.
-func (sc *swarmingClientImpl) CreateTask(c context.Context, args *SwarmingCreateTaskArgs) (string, error) {
+func (sc *swarmingClientImpl) CreateTask(c context.Context, name string, args *SwarmingCreateTaskArgs) (string, error) {
 	dims := []*swarming.SwarmingRpcsStringPair{
 		{
 			Key:   DutIDDimensionKey,
@@ -158,10 +158,9 @@ func (sc *swarmingClientImpl) CreateTask(c context.Context, args *SwarmingCreate
 
 	ntr := &swarming.SwarmingRpcsNewTaskRequest{
 		EvaluateOnly: false,
-		// This is information only, but Swarming doesn't like it unset.
-		Name:     "FleetAdminTask",
-		Priority: args.Priority,
-		Tags:     args.Tags,
+		Name:         name,
+		Priority:     args.Priority,
+		Tags:         args.Tags,
 		TaskSlices: []*swarming.SwarmingRpcsTaskSlice{
 			{
 				ExpirationSecs: args.ExpirationSecs,

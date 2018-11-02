@@ -76,14 +76,14 @@ func (mr *MockSwarmingClientMockRecorder) ListSortedRecentTasksForBot(c, botID, 
 }
 
 // CreateTask mocks base method
-func (m *MockSwarmingClient) CreateTask(c context.Context, args *clients.SwarmingCreateTaskArgs) (string, error) {
-	ret := m.ctrl.Call(m, "CreateTask", c, args)
+func (m *MockSwarmingClient) CreateTask(c context.Context, name string, args *clients.SwarmingCreateTaskArgs) (string, error) {
+	ret := m.ctrl.Call(m, "CreateTask", c, name, args)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateTask indicates an expected call of CreateTask
-func (mr *MockSwarmingClientMockRecorder) CreateTask(c, args interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTask", reflect.TypeOf((*MockSwarmingClient)(nil).CreateTask), c, args)
+func (mr *MockSwarmingClientMockRecorder) CreateTask(c, name, args interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTask", reflect.TypeOf((*MockSwarmingClient)(nil).CreateTask), c, name, args)
 }
