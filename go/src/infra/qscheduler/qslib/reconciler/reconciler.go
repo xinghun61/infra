@@ -98,6 +98,7 @@ type Scheduler interface {
 // AssignTasks accepts one or more idle workers, and returns tasks to be assigned
 // to those workers (if there are tasks available).
 func (state *State) AssignTasks(ctx context.Context, s Scheduler, t time.Time, workers ...*IdleWorker) ([]Assignment, error) {
+	state.ensureMaps()
 	s.UpdateTime(ctx, t)
 
 	// Determine which of the supplied workers should be newly marked as
@@ -168,6 +169,7 @@ type Cancellation struct {
 
 // Cancellations returns the set of workers and tasks that should be cancelled.
 func (state *State) Cancellations(ctx context.Context) []Cancellation {
+	state.ensureMaps()
 	c := make([]Cancellation, 0, len(state.WorkerQueues))
 	for wid, q := range state.WorkerQueues {
 		if q.TaskToAbort != "" {
@@ -187,6 +189,7 @@ func (state *State) Cancellations(ctx context.Context) []Cancellation {
 // Cancellations will return stale data until internal timeouts within reconciler
 // expire).
 func (state *State) Notify(ctx context.Context, s Scheduler, updates ...*TaskUpdate) error {
+	state.ensureMaps()
 	for _, update := range updates {
 		switch update.Type {
 		case TaskUpdate_NEW:
@@ -228,4 +231,13 @@ func (state *State) Notify(ctx context.Context, s Scheduler, updates ...*TaskUpd
 		}
 	}
 	return nil
+}
+
+// ensureMaps initializes any nil maps in reconciler.
+//
+// This is necessary because protobuf deserialization of an empty map returns a nil map.
+func (state *State) ensureMaps() {
+	if state.WorkerQueues == nil {
+		state.WorkerQueues = make(map[string]*WorkerQueue)
+	}
 }
