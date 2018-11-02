@@ -7,15 +7,49 @@ package ninjaproto;
 
 import "google/protobuf/timestamp.proto";
 
+// NinjaTask message for the log uploaded from chromium developers or buildbot.
+// Due to row size limit (1MB) of BigQuery streaming insert, this message
+// corresponds to the one task of ninja_log.
+// NEXT ID TO USE: 14
 message NinjaTask {
   // Identifier of build used in buildbucket api v2 (go/buildbucket-api-v2)
+  // Or UUID when ninja log is uploaded from autoninja.
   int64 build_id = 1;
 
+  // Build targets passed to ninja.
+  repeated string targets = 8;
+
   // Step name to distinguish multiple compile steps in a build.
+  // This is not used when ninja_log is uploaded from chromium developers.
   string step_name = 2;
 
   // ninja’s -j value
   int64 jobs = 3;
+
+  // Build directory (e.g. C:/src/chromium/src/out/Default).
+  string build_dir = 9;
+
+  // hostname of machine.
+  string hostname = 10;
+
+  // OS.
+  enum OS {
+    UNKNOWN = 0;
+    WIN = 1;
+    LINUX = 2;
+    MAC = 3;
+  }
+  OS os = 11;
+
+  // The number of cpu cores.
+  int32 cpu_core = 12;
+
+  // Content of args.gn.
+  message KeyValue {
+    string key = 1;
+    string value = 2;
+  }
+  repeated KeyValue build_configs = 13;
 
   // Ninja log entry.
   // https://github.com/ninja-build/ninja/blob/265a6eaf399778c746c7d2c02b8742f3c0ff07e9/src/build_log.h#L54
