@@ -15,9 +15,7 @@ from .util import rmtree
 
 
 def is_staging(hostname):
-  return (
-      hostname.startswith('swarm-staging-') or
-      hostname == 'swarm0-c4')
+  return hostname.startswith('swarm-staging-')
 
 
 def is_internal(hostname):
