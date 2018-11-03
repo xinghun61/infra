@@ -27,7 +27,7 @@ class UsersServicer(monorail_servicer.MonorailServicer):
   def GetUser(self, mc, request):
     """Return info about the specified user."""
     with work_env.WorkEnv(mc, self.services) as we:
-      users = we.ListReferencedUsers([request.display_name])
+      users = we.ListReferencedUsers([request.user_ref.display_name])
 
     with mc.profiler.Phase('converting to response objects'):
       response_users = converters.ConvertUsers(users)

@@ -886,14 +886,16 @@ class WorkEnv(object):
 
     if approval_delta.status:
       if not permissions.CanUpdateApprovalStatus(
-          self.mc.auth.effective_ids, approval_value.approver_ids,
+          self.mc.auth.effective_ids, self.mc.perms, project,
+          approval_value.approver_ids,
           approval_value.status, approval_delta.status):
         raise permissions.PermissionException(
             'User not allowed to make this status update.')
 
     if approval_delta.approver_ids_remove or approval_delta.approver_ids_add:
       if not permissions.CanUpdateApprovers(
-          self.mc.auth.effective_ids, approval_value.approver_ids):
+          self.mc.auth.effective_ids, self.mc.perms, project,
+          approval_value.approver_ids):
         raise permissions.PermissionException(
             'User not allowed to modify approvers of this approval.')
 

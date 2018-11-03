@@ -70,6 +70,7 @@ EDIT_ISSUE_OWNER = 'EditIssueOwner'
 EDIT_ISSUE_SUMMARY = 'EditIssueSummary'
 EDIT_ISSUE_STATUS = 'EditIssueStatus'
 EDIT_ISSUE_CC = 'EditIssueCc'
+EDIT_ISSUE_APPROVAL = 'EditIssueApproval'
 DELETE_ISSUE = 'DeleteIssue'
 ADD_ISSUE_COMMENT = 'AddIssueComment'
 VIEW_INBOUND_MESSAGES = 'ViewInboundMessages'
@@ -303,6 +304,7 @@ ADMIN_PERMISSIONSET = PermissionSet(
      ADMINISTER_SITE, VIEW_EXPIRED_PROJECT, EDIT_OTHER_USERS,
      VIEW_QUOTA, EDIT_QUOTA,
      CREATE_ISSUE, ADD_ISSUE_COMMENT, EDIT_ISSUE, DELETE_ISSUE,
+     EDIT_ISSUE_APPROVAL,
      VIEW_INBOUND_MESSAGES,
      DELETE_ANY, EDIT_ANY_MEMBER_NOTES,
      CREATE_GROUP, EDIT_GROUP, DELETE_GROUP, VIEW_GROUP,
@@ -933,7 +935,7 @@ def CanCommentIssue(effective_ids, perms, project, issue, granted_perms=None):
 
 
 def CanUpdateApprovalStatus(
-    effective_ids, approver_ids, current_status, new_status):
+    effective_ids, perms, project, approver_ids, current_status, new_status):
   """Return True if a user can change the approval status to the new status."""
   if not effective_ids.isdisjoint(approver_ids):
     return True # Approval approvers can always change the approval status
@@ -941,15 +943,15 @@ def CanUpdateApprovalStatus(
   if set([current_status, new_status]).isdisjoint(RESTRICTED_APPROVAL_STATUSES):
     return True
 
-  return False
+  return perms.CanUsePerm(EDIT_ISSUE_APPROVAL, effective_ids, project, [])
 
 
-def CanUpdateApprovers(effective_ids, current_approver_ids):
+def CanUpdateApprovers(effective_ids, perms, project, current_approver_ids):
   """Return True if a user can edit the list of approvers for an approval."""
   if not effective_ids.isdisjoint(current_approver_ids):
     return True
 
-  return False
+  return perms.CanUsePerm(EDIT_ISSUE_APPROVAL, effective_ids, project, [])
 
 
 def CanViewComponentDef(effective_ids, perms, project, component_def):

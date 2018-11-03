@@ -88,15 +88,6 @@ class UsersServicerTest(unittest.TestCase):
     with self.assertRaises(exceptions.NoSuchUserException):
       self.CallWrapped(self.users_svcr.GetMemberships, mc, request)
 
-  def testGetUser_Normal(self):
-    """We can get a user by email address."""
-    request = common_pb2.UserRef(display_name='test2@example.com', user_id=222L)
-    mc = monorailcontext.MonorailContext(
-        self.services, cnxn=self.cnxn, requester='owner@example.com')
-    response = self.CallWrapped(self.users_svcr.GetUser, mc, request)
-    self.assertEqual('test2@example.com', response.email)
-    self.assertEqual(222L, response.user_id)
-
   def testListCommits_Normal(self):
     """We can get user commits"""
     request = users_pb2.GetUserCommitsRequest(email="test@example.com",
@@ -119,7 +110,8 @@ class UsersServicerTest(unittest.TestCase):
 
   def testGetUser(self):
     """We can get a user by email address."""
-    request = common_pb2.UserRef(display_name='test2@example.com')
+    user_ref = common_pb2.UserRef(display_name='test2@example.com')
+    request = users_pb2.GetUserRequest(user_ref=user_ref)
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
     response = self.CallWrapped(
