@@ -312,6 +312,10 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
         issue_phases = results_dict[issue_id].phases
         if phase not in issue_phases:
           issue_phases.append(phase)
+    # Order issue phases
+    for issue in results_dict.itervalues():
+      if issue.phases:
+        issue.phases.sort(key=lambda phase: phase.rank)
 
     for issue_id, dst_issue_id, kind, rank in relation_rows:
       src_issue = results_dict.get(issue_id)

@@ -170,9 +170,9 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
         (78901, 'codesite', 5001, 'blocking'),
         (78901, 'codesite', 5002, 'blockedon')]
     self.phase_rows = [(1, 'Canary', 1), (2, 'Stable', 11)]
-    self.approvalvalue_rows = [(21, 78901, 1, 'needs_review', None, None),
-                               (23, 78901, 1, 'not_set', None, None),
-                               (22, 78901, 2, 'not_set', None, None)]
+    self.approvalvalue_rows = [(22, 78901, 2, 'not_set', None, None),
+                               (21, 78901, 1, 'needs_review', None, None),
+                               (23, 78901, 1, 'not_set', None, None)]
     self.av_approver_rows = [
         (21, 111, 78901), (21, 222, 78901), (21, 333, 78901)]
 
@@ -181,8 +181,9 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     self.mox.ResetAll()
 
   def testUnpackApprovalValue(self):
-    av, issue_id = self.issue_2lc._UnpackApprovalValue(
-        self.approvalvalue_rows[0])
+    row = next(
+        row for row in self.approvalvalue_rows if row[3] == 'needs_review')
+    av, issue_id = self.issue_2lc._UnpackApprovalValue(row)
     self.assertEqual(av.status, tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
     self.assertIsNone(av.setter_id)
     self.assertIsNone(av.set_on)
@@ -221,7 +222,9 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     self.assertEqual(av_21.phase_id, 1)
     self.assertItemsEqual(av_21.approver_ids, [111, 222, 333])
     self.assertIsNotNone(tracker_bizobj.FindPhaseByID(2, issue.phases))
-    self.assertEqual(len(issue.phases), 2)
+    self.assertEqual(issue.phases,
+                     [tracker_pb2.Phase(rank=1, phase_id=1, name='Canary'),
+                      tracker_pb2.Phase(rank=11, phase_id=2, name='Stable')])
     av_22 = tracker_bizobj.FindApprovalValueByID(
         22, issue.approval_values)
     self.assertEqual(av_22.phase_id, 2)
