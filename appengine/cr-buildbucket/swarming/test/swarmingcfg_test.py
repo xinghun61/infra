@@ -168,7 +168,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
         '',
         [
             ('builder :/:: name: invalid char(s) u\'/:\'. '
-             'Alphabet: "%s"') % swarmingcfg.BUILDER_NAME_VALID_CHARS,
+             'Alphabet: "%s"') % errors.BUILDER_NAME_VALID_CHARS,
         ],
     )
 

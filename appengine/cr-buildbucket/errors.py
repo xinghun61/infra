@@ -4,11 +4,15 @@
 
 import datetime
 import re
+import string
 
 from components import utils
 
 BUCKET_NAME_REGEX = re.compile(r'^[0-9a-z_\.\-]{1,100}$')
 MAX_LEASE_DURATION = datetime.timedelta(hours=2)
+
+BUILDER_NAME_VALID_CHARS = string.ascii_letters + string.digits + '()-_. '
+_BUILDER_NAME_VALID_CHAR_SET = frozenset(BUILDER_NAME_VALID_CHARS)
 
 
 class Error(Exception):
@@ -45,6 +49,25 @@ class LeaseExpiredError(Error):
 
 class TagIndexIncomplete(Error):
   """Raised when a tag index is permanently incomplete and cannot be used."""
+
+
+# TODO(nodir): move to config.py. Cannot be done because config.py depends on
+# swarmingcfg.py which needs this function.
+def validate_builder_name(name):
+  if not name:
+    raise InvalidInputError('unspecified')
+
+  if len(name) > 128:
+    raise InvalidInputError('length is > 128')
+
+  invalid_chars = ''.join(
+      sorted(set(c for c in name if c not in _BUILDER_NAME_VALID_CHAR_SET))
+  )
+  if invalid_chars:
+    raise InvalidInputError(
+        'invalid char(s) %r. Alphabet: "%s"' %
+        (invalid_chars, BUILDER_NAME_VALID_CHARS)
+    )
 
 
 # TODO(crbug.com/851036): move to config.py

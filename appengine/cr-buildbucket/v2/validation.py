@@ -17,6 +17,7 @@ from proto import build_pb2
 from proto import common_pb2
 
 import buildtags
+import config
 import errors
 import model
 
@@ -109,11 +110,9 @@ def validate_tags(string_pairs, mode):
     if ':' in p.key:
       _err('tag key "%s" cannot have a colon', p.key)
 
-  try:
+  with _handle_invalid_input_error():
     tags = ['%s:%s' % (p.key, p.value) for p in string_pairs]
     buildtags.validate_tags(tags, mode)
-  except errors.InvalidInputError as ex:
-    _err(ex.message)
 
 
 ################################################################################
@@ -124,6 +123,12 @@ def validate_tags(string_pairs, mode):
 def validate_builder_id(builder_id):
   """Validates build_pb2.BuilderID."""
   _check_truth(builder_id, 'project', 'bucket', 'builder')
+  with _enter('project'), _handle_invalid_input_error():
+    config.validate_project_id(builder_id.project)
+  with _enter('bucket'), _handle_invalid_input_error():
+    config.validate_bucket_name(builder_id.bucket)
+  with _enter('builder'), _handle_invalid_input_error():
+    errors.validate_builder_name(builder_id.builder)
 
 
 ################################################################################
@@ -422,6 +427,14 @@ def _enter(name):
 def _err(fmt, *args):
   field_path = '.'.join(_field_stack())
   raise Error('%s: %s' % (field_path, fmt % args))
+
+
+@contextlib.contextmanager
+def _handle_invalid_input_error():
+  try:
+    yield
+  except errors.InvalidInputError as ex:
+    _err(ex.message)
 
 
 def _enter_err(name, fmt, *args):

@@ -4,6 +4,8 @@
 
 import datetime
 
+from parameterized import parameterized
+
 from components import utils
 
 from testing_utils import testing
@@ -29,6 +31,19 @@ class ErrorsTest(testing.AppengineTestCase):
   def test_default_message(self):
     ex = errors.BuildIsCompletedError()
     self.assertEqual(ex.message, 'Build is complete and cannot be changed.')
+
+  @parameterized.expand([
+      ('a', None),
+      ('', r'unspecified'),
+      ('a' * 200, r'length is > 128'),
+      ('#', r'invalid char\(s\)'),
+  ])
+  def test_validate_builder_name(self, name, error_pattern):
+    if error_pattern:
+      with self.assertRaisesRegexp(errors.InvalidInputError, error_pattern):
+        errors.validate_builder_name(name)
+    else:
+      errors.validate_builder_name(name)
 
 
 class ValidateLeaseExpirationDateTest(testing.AppengineTestCase):

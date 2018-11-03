@@ -144,6 +144,24 @@ class BuilderIDTests(BaseTestCase):
     msg = build_pb2.BuilderID(project='', bucket='try', builder='linux-rel')
     self.assert_invalid(msg, r'project: required')
 
+  def test_invalid_project(self):
+    msg = build_pb2.BuilderID(
+        project='Chromium', bucket='try', builder='linux-rel'
+    )
+    self.assert_invalid(msg, r'project: invalid')
+
+  def test_invalid_bucket(self):
+    msg = build_pb2.BuilderID(
+        project='chromium', bucket='a b', builder='linux-rel'
+    )
+    self.assert_invalid(
+        msg, r'bucket: Bucket name "a b" does not match regular'
+    )
+
+  def test_invalid_builder(self):
+    msg = build_pb2.BuilderID(project='chromium', bucket='try', builder='#')
+    self.assert_invalid(msg, r'builder: invalid char\(s\)')
+
 
 ################################################################################
 # Validation of rpc.proto messages.

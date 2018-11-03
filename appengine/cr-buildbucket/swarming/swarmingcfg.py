@@ -7,12 +7,12 @@
 import copy
 import json
 import re
-import string
 
 from components.config import validation
 
 from proto.config import project_config_pb2
 from . import flatten_swarmingcfg
+import errors
 
 _DIMENSION_KEY_RGX = re.compile(r'^[a-zA-Z\_\-]+$')
 # Copied from
@@ -21,9 +21,6 @@ _DIMENSION_KEY_RGX = re.compile(r'^[a-zA-Z\_\-]+$')
 _CACHE_NAME_RE = re.compile(ur'^[a-z0-9_]{1,4096}$')
 # See https://chromium.googlesource.com/infra/luci/luci-py/+/master/appengine/swarming/server/service_accounts.py
 _SERVICE_ACCOUNT_RE = re.compile(r'^[0-9a-zA-Z_\-\.\+\%]+@[0-9a-zA-Z_\-\.]+$')
-
-BUILDER_NAME_VALID_CHARS = string.ascii_letters + string.digits + '()-_. '
-_BUILDER_NAME_VALID_CHAR_SET = frozenset(BUILDER_NAME_VALID_CHARS)
 
 
 def _validate_hostname(hostname, ctx):
@@ -203,26 +200,11 @@ def validate_builder_cfg(builder, mixin_names, final, ctx):
 
   If final is False, does not validate for completeness.
   """
-  with ctx.prefix('name: '):
-    if final and not builder.name:
-      ctx.error('unspecified')
-    else:
-      if len(builder.name) > 128:
-        ctx.error('length is > 128')
-
-      invalid_chars = ''.join(
-          sorted(
-              set(
-                  c for c in builder.name
-                  if c not in _BUILDER_NAME_VALID_CHAR_SET
-              )
-          )
-      )
-      if invalid_chars:
-        ctx.error(
-            'invalid char(s) %r. Alphabet: "%s"', invalid_chars,
-            BUILDER_NAME_VALID_CHARS
-        )
+  if final or builder.name:
+    try:
+      errors.validate_builder_name(builder.name)
+    except errors.InvalidInputError as ex:
+      ctx.error('name: %s', ex.message)
 
   for i, t in enumerate(builder.swarming_tags):
     with ctx.prefix('tag #%d: ', i + 1):
