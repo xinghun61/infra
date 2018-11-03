@@ -71,7 +71,7 @@ class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
         type: Boolean,
         value: false,
       },
-      isApprover: {
+      hasApproverPrivileges: {
         type: Boolean,
         value: false,
       },
@@ -112,7 +112,7 @@ class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
     // the form. Haven't been able to figure out a way to replicate form reset
     // behavior with custom input elements.
     if (this.isApproval) {
-      if (this.isApprover) {
+      if (this.hasApproverPrivileges) {
         const approversInput = Polymer.dom(this.root).querySelector(
           '#approversInput');
         if (approversInput) {
@@ -172,7 +172,7 @@ class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
     }
 
     if (this.isApproval) {
-      if (this.isApprover) {
+      if (this.hasApproverPrivileges) {
         const approversInput = root.querySelector('#approversInput');
         result['approversAdded'] = approversInput.getValuesAdded();
         result['approversRemoved'] = approversInput.getValuesRemoved();

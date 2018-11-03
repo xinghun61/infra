@@ -71,7 +71,7 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
         statePath: selectors.fieldDefsByApprovalName,
       },
       user: {
-        type: String,
+        type: Object,
         statePath: 'user',
       },
       userGroups: {
@@ -126,7 +126,7 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
       },
       _availableStatuses: {
         type: Array,
-        computed: '_filterStatuses(_status, statuses, _isApprovalOwner)',
+        computed: '_filterStatuses(_status, statuses, _hasApproverPrivileges)',
       },
       _comments: {
         type: Array,
@@ -144,6 +144,11 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
         type: Boolean,
         computed: '_computeIsApprovalOwner(approvers, user, userGroups)',
         observer: '_openUserCards',
+      },
+      _hasApproverPrivileges: {
+        type: Boolean,
+        computed: `_computeHasApproverPrivileges(user.isSiteAdmin,
+          _isApprovalOwner)`,
       },
       _expandIcon: {
         type: String,
@@ -297,10 +302,14 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
     if (!user || !approvers) return;
     userGroups = userGroups || [];
     return approvers.find((a) => {
-      return a.displayName === user || userGroups.find(
+      return a.displayName === user.email || userGroups.find(
         (group) => group.displayName === a.displayName
       );
     });
+  }
+
+  _computeHasApproverPrivileges(isSiteAdmin, isApprovalOwner) {
+    return isSiteAdmin || isApprovalOwner;
   }
 
   // TODO(zhangtiff): Change data flow here so that this is only computed
@@ -335,7 +344,7 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
     return {};
   }
 
-  _filterStatuses(status, statuses, isApprovalOwner) {
+  _filterStatuses(status, statuses, hasApproverPrivileges) {
     const currentStatusIsRestricted =
       APPROVER_RESTRICTED_STATUSES.has(status);
     return statuses.filter((s) => {
@@ -343,7 +352,7 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
       // These statuses should only be set by approvers.
       // Non-approvers can't change statuses when they're set to an
       // approvers-only status.
-      if (!isApprovalOwner &&
+      if (!hasApproverPrivileges &&
           (APPROVER_RESTRICTED_STATUSES.has(s.status) ||
           currentStatusIsRestricted)
       ) {

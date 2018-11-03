@@ -9,7 +9,6 @@
 <link rel="import" href="../../redux/redux-mixin.html">
 <link rel="import" href="../../shared/field-types.html">
 <link rel="import" href="../../mr-comment-content/mr-comment-content.html">
-<link rel="import" href="../../mr-user-link/mr-user-link.html">
 <link rel="import" href="../mr-comments/mr-comments.html">
 <link rel="import" href="../mr-inline-editor/mr-inline-editor.html">
 <link rel="import" href="../mr-edit-metadata/mr-edit-metadata.html">
@@ -117,6 +116,9 @@
         <template is="dom-if" if="[[_isApprovalOwner]]">
           You are an approver for this bit.
         </template>
+        <template is="dom-if" if="[[user.isSiteAdmin]]">
+          Your site admin privileges give you full access to edit this approval.
+        </template>
       </div>
       <mr-metadata
         aria-label$="[[fieldName]] Approval Metadata"
@@ -151,7 +153,7 @@
           field-defs="[[fieldDefs]]"
           statuses="[[_availableStatuses]]"
           status="[[_status]]"
-          is-approver="[[_isApprovalOwner]]"
+          has-approver-privileges="[[_hasApproverPrivileges]]"
           is-approval
           disabled="[[updatingApproval]]"
           on-save="save"

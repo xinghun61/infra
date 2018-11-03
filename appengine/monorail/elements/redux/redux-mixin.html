@@ -5,16 +5,15 @@
     const actionType = {
       // Misc global state.
       UPDATE_ISSUE_REF: 'UPDATE_ISSUE_REF',
-      UPDATE_USER: 'UPDATE_USER',
 
       // AJAX request state.
       FETCH_PROJECT_CONFIG_START: 'FETCH_PROJECT_CONFIG_START',
       FETCH_PROJECT_CONFIG_SUCCESS: 'FETCH_PROJECT_CONFIG_SUCCESS',
       FETCH_PROJECT_CONFIG_FAILURE: 'FETCH_PROJECT_CONFIG_FAILURE',
 
-      FETCH_USER_GROUPS_START: 'FETCH_USER_GROUPS_START',
-      FETCH_USER_GROUPS_SUCCESS: 'FETCH_USER_GROUPS_SUCCESS',
-      FETCH_USER_GROUPS_FAILURE: 'FETCH_USER_GROUPS_FAILURE',
+      FETCH_USER_START: 'FETCH_USER_START',
+      FETCH_USER_SUCCESS: 'FETCH_USER_SUCCESS',
+      FETCH_USER_FAILURE: 'FETCH_USER_FAILURE',
 
 
       FETCH_ISSUE_START: 'FETCH_ISSUE_START',
@@ -161,8 +160,8 @@
       commentReferences: new Map(),
       isStarred: false,
 
-      fetchingUserGroups: false,
-      fetchUserGroupsError: null,
+      fetchingUser: false,
+      fetchUserError: null,
 
       issueLoaded: false,
       fetchingIssue: false,
@@ -214,10 +213,6 @@
             issueId: action.issueId || state.issueId,
             projectName: action.projectName || state.projectName,
           });
-        case actionType.UPDATE_USER:
-          return Object.assign({}, state, {
-            user: action.user,
-          });
 
         // Request for getting configuration settings for a project.
         case actionType.FETCH_PROJECT_CONFIG_START:
@@ -236,21 +231,23 @@
             fetchingProjectConfig: false,
           });
 
-        // Request for getting which groups the logged in user belongs to.
-        case actionType.FETCH_USER_GROUPS_START:
+        // Request for getting backend metadata related to a user, such as
+        // which groups they belong to and whether they're a site admin. 
+        case actionType.FETCH_USER_START:
           return Object.assign({}, state, {
-            fetchUserGroupsError: null,
-            fetchingUserGroups: true,
+            fetchUserError: null,
+            fetchingUser: true,
           });
-        case actionType.FETCH_USER_GROUPS_SUCCESS:
+        case actionType.FETCH_USER_SUCCESS:
           return Object.assign({}, state, {
             userGroups: action.groups,
-            fetchingUserGroups: false,
+            user: action.user,
+            fetchingUser: false,
           });
-        case actionType.FETCH_USER_GROUPS_FAILURE:
+        case actionType.FETCH_USER_FAILURE:
           return Object.assign({}, state, {
-            fetchUserGroupsError: action.error,
-            fetchingUserGroups: false,
+            fetchUserError: action.error,
+            fetchingUser: false,
           });
 
         // Request for getting an issue.

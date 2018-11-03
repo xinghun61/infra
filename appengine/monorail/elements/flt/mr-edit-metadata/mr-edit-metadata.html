@@ -164,7 +164,7 @@
           ></mr-edit-field>
         </template>
 
-        <template is="dom-if" if="[[_and(isApprover, isApproval)]]">
+        <template is="dom-if" if="[[_and(hasApproverPrivileges, isApproval)]]">
           <label for="approversInput" on-click="_clickLabelForCustomInput">Approvers:</label>
           <mr-edit-field
             id="approversInput"

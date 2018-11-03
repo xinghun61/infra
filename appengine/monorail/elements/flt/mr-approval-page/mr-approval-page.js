@@ -52,12 +52,12 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
         observer: '_userChanged',
       },
       _user: {
-        type: String,
+        type: Object,
         statePath: 'user',
       },
       _userMenuItems: {
         type: Array,
-        computed: '_computeUserMenuItems(_user, loginUrl, logoutUrl)',
+        computed: '_computeUserMenuItems(_user.email, loginUrl, logoutUrl)',
       },
     };
   }
@@ -121,14 +121,17 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
   }
 
   _userChanged(user) {
-    this.dispatch({
-      type: actionType.UPDATE_USER,
-      user,
-    });
+    this.dispatch({type: actionType.FETCH_USER_START});
 
-    this.dispatch({type: actionType.FETCH_USER_GROUPS_START});
+    const getUser = window.prpcClient.call(
+      'monorail.Users', 'GetUser', {
+        userRef: {
+          displayName: user,
+        },
+      }
+    );
 
-    const getConfig = window.prpcClient.call(
+    const getMemberships = window.prpcClient.call(
       'monorail.Users', 'GetMemberships', {
         userRef: {
           displayName: user,
@@ -136,28 +139,29 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
       }
     );
 
-    getConfig.then((resp) => {
+    Promise.all([getUser, getMemberships]).then((resp) => {
       this.dispatch({
-        type: actionType.FETCH_USER_GROUPS_SUCCESS,
-        groups: resp.groupRefs,
+        type: actionType.FETCH_USER_SUCCESS,
+        user: resp[0],
+        groups: resp[1].groupRefs,
       });
     }, (error) => {
       this.dispatch({
-        type: actionType.FETCH_USER_GROUPS_FAILURE,
+        type: actionType.FETCH_USER_FAILURE,
         error,
       });
     });
   }
 
-  _computeUserMenuItems(user, loginUrl, logoutUrl) {
+  _computeUserMenuItems(userEmail, loginUrl, logoutUrl) {
     return [
       {text: 'Switch accounts', url: loginUrl},
       {separator: true},
-      {text: 'Profile', url: `/u/${user}`},
-      {text: 'Updates', url: `/u/${user}/updates`},
+      {text: 'Profile', url: `/u/${userEmail}`},
+      {text: 'Updates', url: `/u/${userEmail}/updates`},
       {text: 'Settings', url: '/hosting/settings'},
-      {text: 'Saved queries', url: `/u/${user}/queries`},
-      {text: 'Hotlists', url: `/u/${user}/hotlists`},
+      {text: 'Saved queries', url: `/u/${userEmail}/queries`},
+      {text: 'Hotlists', url: `/u/${userEmail}/hotlists`},
       {separator: true},
       {text: 'Sign out', url: logoutUrl},
     ];
