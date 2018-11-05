@@ -774,6 +774,15 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
     recipient_ids = self._GetApprovalEmailRecipients(
         approval_value, comment, issue, user_ids_from_fields,
         omit_ids=[comment.user_id])
+    _direct, indirect = self.services.usergroup.ExpandAnyUserGroups(
+        mr.cnxn, recipient_ids)  # _direct ids are already in recipient_ids
+    if indirect:
+      recipient_ids.extend(indirect)
+      users_by_id.update(framework_views.MakeAllUserViews(
+          mr.cnxn, self.services.user, indirect))
+
+    # TODO(jojwang): monorail:3588, refine email contents based on direct
+    # and indirect user_ids returned.
 
     email_tasks = []
     for rid in recipient_ids:

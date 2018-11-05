@@ -290,13 +290,21 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     self.services.user.TestAddUser('otherapprovalTL@example.com', 444L)
 
     # Approvers
-    self.services.user.TestAddUser('approver_old@example.com', 7)
-    self.services.user.TestAddUser('approver_new@example.com', 8)
-    self.services.user.TestAddUser('approver_still@example.com', 9)
+    self.services.user.TestAddUser('approver_old@example.com', 777L)
+    self.services.user.TestAddUser('approver_new@example.com', 888L)
+    self.services.user.TestAddUser('approver_still@example.com', 999L)
+    self.services.user.TestAddUser('approver_group@example.com', 666L)
+    self.services.user.TestAddUser('group_mem1@example.com', 661L)
+    self.services.user.TestAddUser('group_mem2@example.com', 662L)
+    self.services.user.TestAddUser('group_mem3@example.com', 663L)
+    self.services.usergroup.TestAddGroupSettings(
+        666L, 'approver_group@example.com')
+    self.services.usergroup.TestAddMembers(666L, [661L, 662L, 663L])
     canary_phase = tracker_pb2.Phase(
         name='Canary', phase_id=1, rank=1)
     approval_values = [
-        tracker_pb2.ApprovalValue(approval_id=3, approver_ids=[8, 9])]
+        tracker_pb2.ApprovalValue(approval_id=3,
+                                  approver_ids=[888L, 999L, 666L, 661L])]
     approval_issue = MakeTestIssue(
         project_id=12345, local_id=2, owner_id=2, reporter_id=1,
         is_spam=True)
@@ -310,10 +318,10 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     ]
     self.services.issue.TestAddIssue(approval_issue)
 
-    amend = tracker_bizobj.MakeApprovalApproversAmendment([8], [7])
+    amend = tracker_bizobj.MakeApprovalApproversAmendment([888L], [777L])
 
     comment = tracker_pb2.IssueComment(
-        project_id=12345, user_id=9, issue_id=approval_issue.issue_id,
+        project_id=12345, user_id=999L, issue_id=approval_issue.issue_id,
         amendments=[amend], timestamp=1234567890, content='just a comment.')
     self.services.issue.TestAddComment(comment, approval_issue.local_id)
 
@@ -336,7 +344,36 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     self.assertItemsEqual(
         ['user@example.com', 'approver_old@example.com',
          'approver_new@example.com', 'TL@example.com',
-         'approvalTL@example.com'],
+         'approvalTL@example.com', 'approver_group@example.com',
+         'group_mem1@example.com', 'group_mem2@example.com',
+         'group_mem3@example.com'],
+        result['notified'])
+
+    # Test no approvers/groups notified
+    # Status change to NEED_INFO does not email approvers.
+    amend2 = tracker_bizobj.MakeApprovalStatusAmendment(
+        tracker_pb2.ApprovalStatus.NEED_INFO)
+    comment2 = tracker_pb2.IssueComment(
+        project_id=12345, user_id=999L, issue_id=approval_issue.issue_id,
+        amendments=[amend2], timestamp=1234567891, content='')
+    self.services.issue.TestAddComment(comment2, approval_issue.local_id)
+    task = notify.NotifyApprovalChangeTask(
+        request=None, response=None, services=self.services)
+    params = {
+        'send_email': 1,
+        'issue_id': approval_issue.issue_id,
+        'approval_id': 3,
+        'comment_id': comment2.id,
+    }
+    mr = testing_helpers.MakeMonorailRequest(
+        user_info={'user_id': 1},
+        params=params,
+        method='POST',
+        services=self.services)
+    result = task.HandleRequest(mr)
+    self.assertTrue('Status: need_info' in result['tasks'][0]['body'])
+    self.assertItemsEqual(
+        ['user@example.com', 'TL@example.com', 'approvalTL@example.com'],
         result['notified'])
 
   def testNotifyApprovalChangeTask_GetApprovalEmailRecipients(self):
