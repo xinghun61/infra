@@ -203,7 +203,7 @@ func parseCrChangeListURL(clURL string) (cl, error) {
 		return nil, err
 	}
 	toks := urlTrimSplit(p.Path)
-	if len(toks) == 0 || toks[0] == "c" {
+	if len(toks) == 0 || toks[0] == "c" || strings.Contains(p.Hostname(), "googlesource") {
 		if len(toks) == 0 {
 			// https://<gerrit_host>/#/c/<issue>
 			// https://<gerrit_host>/#/c/<issue>/<patchset>
@@ -212,6 +212,9 @@ func parseCrChangeListURL(clURL string) (cl, error) {
 				return nil, errors.Reason("bad format for (old) gerrit URL: %q", clURL).Err()
 			}
 			toks = toks[1:] // remove "c"
+		} else if len(toks) == 1 {
+			// https://<gerrit_host>/<issue>
+			// toks is already in the correct form
 		} else {
 			toks = toks[1:] // remove "c"
 			// https://<gerrit_host>/c/<issue>

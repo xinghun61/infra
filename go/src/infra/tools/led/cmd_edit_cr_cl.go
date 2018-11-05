@@ -33,6 +33,7 @@ Recognized URLs:
 	https://<gerrit_host>/c/<issue>/<patchset>
 	https://<gerrit_host>/#/c/<issue>
 	https://<gerrit_host>/#/c/<issue>/<patchset>
+	https://<googlesource_host>/<issue>
 
 This command is more "art" than "science", and knows about a lot of the
 (sometimes strange) conventions of the current chromium recipes. If you're
