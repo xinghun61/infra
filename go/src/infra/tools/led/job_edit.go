@@ -170,7 +170,7 @@ func (ejd *EditJobDefinition) Properties(props map[string]string) {
 	ejd.tweakUserland(func(u *Userland) error {
 		for k, v := range props {
 			if v == "" {
-				delete(u.RecipeProperties, v)
+				delete(u.RecipeProperties, k)
 			} else {
 				var obj interface{}
 				if err := json.Unmarshal([]byte(v), &obj); err != nil {
