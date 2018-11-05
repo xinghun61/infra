@@ -49,6 +49,18 @@ func (mr *MockSwarmingClientMockRecorder) ListAliveBotsInPool(arg0, arg1, arg2 i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAliveBotsInPool", reflect.TypeOf((*MockSwarmingClient)(nil).ListAliveBotsInPool), arg0, arg1, arg2)
 }
 
+// ListBotTasks mocks base method
+func (m *MockSwarmingClient) ListBotTasks(id string) clients.BotTasksCursor {
+	ret := m.ctrl.Call(m, "ListBotTasks", id)
+	ret0, _ := ret[0].(clients.BotTasksCursor)
+	return ret0
+}
+
+// ListBotTasks indicates an expected call of ListBotTasks
+func (mr *MockSwarmingClientMockRecorder) ListBotTasks(id interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBotTasks", reflect.TypeOf((*MockSwarmingClient)(nil).ListBotTasks), id)
+}
+
 // ListRecentTasks mocks base method
 func (m *MockSwarmingClient) ListRecentTasks(c context.Context, tags []string, state string, limit int) ([]*v1.SwarmingRpcsTaskResult, error) {
 	ret := m.ctrl.Call(m, "ListRecentTasks", c, tags, state, limit)
@@ -86,4 +98,40 @@ func (m *MockSwarmingClient) CreateTask(c context.Context, name string, args *cl
 // CreateTask indicates an expected call of CreateTask
 func (mr *MockSwarmingClientMockRecorder) CreateTask(c, name, args interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTask", reflect.TypeOf((*MockSwarmingClient)(nil).CreateTask), c, name, args)
+}
+
+// MockBotTasksCursor is a mock of BotTasksCursor interface
+type MockBotTasksCursor struct {
+	ctrl     *gomock.Controller
+	recorder *MockBotTasksCursorMockRecorder
+}
+
+// MockBotTasksCursorMockRecorder is the mock recorder for MockBotTasksCursor
+type MockBotTasksCursorMockRecorder struct {
+	mock *MockBotTasksCursor
+}
+
+// NewMockBotTasksCursor creates a new mock instance
+func NewMockBotTasksCursor(ctrl *gomock.Controller) *MockBotTasksCursor {
+	mock := &MockBotTasksCursor{ctrl: ctrl}
+	mock.recorder = &MockBotTasksCursorMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockBotTasksCursor) EXPECT() *MockBotTasksCursorMockRecorder {
+	return m.recorder
+}
+
+// Next mocks base method
+func (m *MockBotTasksCursor) Next(arg0 context.Context, arg1 int64) ([]*v1.SwarmingRpcsTaskResult, error) {
+	ret := m.ctrl.Call(m, "Next", arg0, arg1)
+	ret0, _ := ret[0].([]*v1.SwarmingRpcsTaskResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Next indicates an expected call of Next
+func (mr *MockBotTasksCursorMockRecorder) Next(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Next", reflect.TypeOf((*MockBotTasksCursor)(nil).Next), arg0, arg1)
 }

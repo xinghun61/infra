@@ -24,12 +24,14 @@ type DecoratedTracker struct {
 }
 
 func (s *DecoratedTracker) RefreshBots(c context.Context, req *RefreshBotsRequest) (rsp *RefreshBotsResponse, err error) {
-	var newCtx context.Context
 	if s.Prelude != nil {
+		var newCtx context.Context
 		newCtx, err = s.Prelude(c, "RefreshBots", req)
+		if err == nil {
+			c = newCtx
+		}
 	}
 	if err == nil {
-		c = newCtx
 		rsp, err = s.Service.RefreshBots(c, req)
 	}
 	if s.Postlude != nil {
@@ -39,12 +41,14 @@ func (s *DecoratedTracker) RefreshBots(c context.Context, req *RefreshBotsReques
 }
 
 func (s *DecoratedTracker) SummarizeBots(c context.Context, req *SummarizeBotsRequest) (rsp *SummarizeBotsResponse, err error) {
-	var newCtx context.Context
 	if s.Prelude != nil {
+		var newCtx context.Context
 		newCtx, err = s.Prelude(c, "SummarizeBots", req)
+		if err == nil {
+			c = newCtx
+		}
 	}
 	if err == nil {
-		c = newCtx
 		rsp, err = s.Service.SummarizeBots(c, req)
 	}
 	if s.Postlude != nil {

@@ -72,6 +72,7 @@ const paginationChunkSize = 100
 // used. Tests should use a fake.
 type SwarmingClient interface {
 	ListAliveBotsInPool(context.Context, string, strpair.Map) ([]*swarming.SwarmingRpcsBotInfo, error)
+	ListBotTasks(id string) BotTasksCursor
 	ListRecentTasks(c context.Context, tags []string, state string, limit int) ([]*swarming.SwarmingRpcsTaskResult, error)
 	ListSortedRecentTasksForBot(c context.Context, botID string, limit int) ([]*swarming.SwarmingRpcsTaskResult, error)
 	CreateTask(c context.Context, name string, args *SwarmingCreateTaskArgs) (string, error)
@@ -220,33 +221,63 @@ func (sc *swarmingClientImpl) ListRecentTasks(c context.Context, tags []string, 
 	return trs, nil
 }
 
+// BotTasksCursor tracks a paginated query for Swarming bot tasks.
+type BotTasksCursor interface {
+	Next(context.Context, int64) ([]*swarming.SwarmingRpcsTaskResult, error)
+}
+
+// botTasksCursorImpl tracks a paginated query for Swarming bot tasks.
+type botTasksCursorImpl struct {
+	description string
+	call        *swarming.BotTasksCall
+}
+
+// Next returns at most the next N tasks from the task cursor.
+func (c *botTasksCursorImpl) Next(ctx context.Context, n int64) ([]*swarming.SwarmingRpcsTaskResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+	resp, err := c.call.Limit(n).Context(ctx).Do()
+	if err != nil {
+		return nil, errors.Reason("failed to list %s", c.description).InternalReason(err.Error()).Err()
+	}
+	if resp.Cursor != "" {
+		c.call.Cursor(resp.Cursor)
+	}
+	return resp.Items, nil
+}
+
+// ListBotTasks lists the bot's tasks.  Since the query is paginated,
+// this function returns a TaskCursor that the caller can iterate on.
+func (sc *swarmingClientImpl) ListBotTasks(id string) BotTasksCursor {
+	// TODO(pprabhu): These should really be sorted by STARTED_TS.
+	// See crbug.com/857595 and crbug.com/857598
+	call := sc.Bot.Tasks(id).Sort("CREATED_TS")
+	return &botTasksCursorImpl{
+		description: fmt.Sprintf("tasks for bot %s", id),
+		call:        call,
+	}
+}
+
 // ListSortedRecentTasksForBot lists the most recent tasks for the bot with
 // given dutID.
 //
 // duration specifies how far in the back are the tasks allowed to have
 // started. limit limits the number of tasks returned.
-func (sc *swarmingClientImpl) ListSortedRecentTasksForBot(c context.Context, botID string, limit int) ([]*swarming.SwarmingRpcsTaskResult, error) {
-	trs := []*swarming.SwarmingRpcsTaskResult{}
-	// TODO(pprabhu): These should really be sorted by STARTED_TS.
-	// See crbug.com/857595 and crbug.com/857598
-	call := sc.Bot.Tasks(botID).Sort("CREATED_TS")
-
-	// Limit() only limits the number of tasks returned in a single page. The
-	// client must keep track of the total number returned across the calls.
+func (sc *swarmingClientImpl) ListSortedRecentTasksForBot(ctx context.Context, botID string, limit int) ([]*swarming.SwarmingRpcsTaskResult, error) {
+	var trs []*swarming.SwarmingRpcsTaskResult
+	c := sc.ListBotTasks(botID)
 	p := pager{remaining: limit}
 	for {
 		chunk := p.next()
-		ic, _ := context.WithTimeout(c, 60*time.Second)
-		resp, err := call.Limit(int64(chunk)).Context(ic).Do()
+		trs2, err := c.Next(ctx, int64(chunk))
 		if err != nil {
 			return nil, errors.Reason("failed to list tasks for dut %s", botID).InternalReason(err.Error()).Err()
 		}
-		trs = append(trs, resp.Items...)
-		p.record(len(resp.Items))
-		if resp.Cursor == "" {
+		if len(trs2) == 0 {
 			break
 		}
-		call = call.Cursor(resp.Cursor)
+		p.record(len(trs2))
+		trs = append(trs, trs2...)
 	}
 	return trs, nil
 }

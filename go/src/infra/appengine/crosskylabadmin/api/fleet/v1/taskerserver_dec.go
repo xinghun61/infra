@@ -24,12 +24,14 @@ type DecoratedTasker struct {
 }
 
 func (s *DecoratedTasker) TriggerRepairOnIdle(c context.Context, req *TriggerRepairOnIdleRequest) (rsp *TaskerTasksResponse, err error) {
-	var newCtx context.Context
 	if s.Prelude != nil {
+		var newCtx context.Context
 		newCtx, err = s.Prelude(c, "TriggerRepairOnIdle", req)
+		if err == nil {
+			c = newCtx
+		}
 	}
 	if err == nil {
-		c = newCtx
 		rsp, err = s.Service.TriggerRepairOnIdle(c, req)
 	}
 	if s.Postlude != nil {
@@ -39,12 +41,14 @@ func (s *DecoratedTasker) TriggerRepairOnIdle(c context.Context, req *TriggerRep
 }
 
 func (s *DecoratedTasker) TriggerRepairOnRepairFailed(c context.Context, req *TriggerRepairOnRepairFailedRequest) (rsp *TaskerTasksResponse, err error) {
-	var newCtx context.Context
 	if s.Prelude != nil {
+		var newCtx context.Context
 		newCtx, err = s.Prelude(c, "TriggerRepairOnRepairFailed", req)
+		if err == nil {
+			c = newCtx
+		}
 	}
 	if err == nil {
-		c = newCtx
 		rsp, err = s.Service.TriggerRepairOnRepairFailed(c, req)
 	}
 	if s.Postlude != nil {
@@ -54,12 +58,14 @@ func (s *DecoratedTasker) TriggerRepairOnRepairFailed(c context.Context, req *Tr
 }
 
 func (s *DecoratedTasker) EnsureBackgroundTasks(c context.Context, req *EnsureBackgroundTasksRequest) (rsp *TaskerTasksResponse, err error) {
-	var newCtx context.Context
 	if s.Prelude != nil {
+		var newCtx context.Context
 		newCtx, err = s.Prelude(c, "EnsureBackgroundTasks", req)
+		if err == nil {
+			c = newCtx
+		}
 	}
 	if err == nil {
-		c = newCtx
 		rsp, err = s.Service.EnsureBackgroundTasks(c, req)
 	}
 	if s.Postlude != nil {
