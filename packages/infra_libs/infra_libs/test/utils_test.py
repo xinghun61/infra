@@ -18,6 +18,37 @@ class _UtilTestException(Exception):
 
 
 class ReadJsonTest(unittest.TestCase):
+
+  def test_parse_rfc3339_epoch(self):
+    self.assertEqual(
+        1502943692,
+        infra_libs.parse_rfc3339_epoch('2017-08-17T04:21:32.722952943Z'))
+
+    self.assertEqual(
+        1502943692,
+        infra_libs.parse_rfc3339_epoch('2017-08-17T04:21:32Z'))
+
+    self.assertEqual(
+        63126020,
+        infra_libs.parse_rfc3339_epoch('1972-01-01T10:00:20.021-05:00'))
+
+    self.assertEqual(
+        -1041337173,
+        infra_libs.parse_rfc3339_epoch('1937-01-01T12:00:27.87+00:20'))
+
+    with self.assertRaises(ValueError):
+      infra_libs.parse_rfc3339_epoch('')
+
+    with self.assertRaises(ValueError):
+      infra_libs.parse_rfc3339_epoch('2017-08-17T04:21:32.722952943777777Z')
+
+    with self.assertRaises(ValueError):
+      infra_libs.parse_rfc3339_epoch('2017-08-17T04:21:32.722952943ZA')
+
+    with self.assertRaises(ValueError):
+      infra_libs.parse_rfc3339_epoch('1972-01-01T01:00:00.01+08')
+
+
   def test_read_from_file(self):
     new_dict = infra_libs.read_json_as_utf8(
       filename=os.path.join(DATA_DIR, 'utils_test_dict.json'))

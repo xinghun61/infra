@@ -2,12 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import base64
 import httplib
 import json
 import os
 import socket
 import time
+import urllib
 import unittest
 
 import infra_libs
@@ -394,54 +394,52 @@ class HttpMockTest(unittest.TestCase):
 class DelegateServiceAccountCredentialsTest(unittest.TestCase):
 
   def setUp(self):
+    self.email = 'test@example.com'
+    self.project = '-'
+    self.scopes = ['scope']
     self.mock_http = mock.Mock()
-    self.c = httplib2_utils.DelegateServiceAccountCredentials(
-        self.mock_http, 'test@example.com', ['scope'])
+    self.creds = httplib2_utils.DelegateServiceAccountCredentials(
+        self.mock_http, self.email, self.scopes)
 
   def tearDown(self):
     mock.patch.stopall()
 
-  def test_sign_blob(self):
+  def test_generate_assertion(self):
     self.mock_http.request.return_value = (
-        httplib2.Response({'status': 200}),
-        '{"keyId": "foo", "signature": "bar"}')
-    key_id, signature = self.c.sign_blob('foo')
+      httplib2.Response({'status': 200}),
+      '{"accessToken": "testtoken",'
+      '"expireTime":"2017-08-17T04:21:32.722952943Z"}')
+
+    self.creds._refresh(None)
+    self.assertEqual('testtoken', self.creds.access_token)
 
     self.mock_http.request.assert_called_once_with(
-        'https://iam.googleapis.com/v1/projects/-/serviceAccounts/'
-        'test@example.com:signBlob',
+        uri='https://iamcredentials.googleapis.com/v1/projects/%s/'
+            'serviceAccounts/%s:generateAccessToken' %
+            (urllib.quote_plus(self.project),
+             urllib.quote_plus(self.email)),
         method='POST',
-        body='{"bytesToSign": "Zm9v"}',
-        headers={'Content-Type': 'application/json'})
-    self.assertEqual('foo', key_id)
-    self.assertEqual('bar', signature)
+        body=json.dumps({'scope': self.scopes}),
+        headers={'Content-Type': 'application/json'}
+    )
 
-  def test_sign_blob_http_error(self):
+    self.assertEqual(['scope'], self.creds._canonicalize_scopes('scope'))
+
+  def test_generate_assertion_httpfail(self):
     self.mock_http.request.return_value = (
-        httplib2.Response({'status': 404}), 'Oh dear')
+      httplib2.Response({'status': 403}), '')
+
     with self.assertRaises(httplib2_utils.AuthError):
-      self.c.sign_blob('foo')
+      self.creds._refresh(None)
 
-  @mock.patch('infra_libs.httplib2_utils.DelegateServiceAccountCredentials.'
-              'sign_blob', autospec=True)
-  def test_generate_assertion(self, mock_sign_blob):
-    mock_sign_blob.return_value = ('key_id', 'aGVsbG8=')
-    ret = self.c._generate_assertion()
+  def test_authorize_http(self):
+    self.mock_http.request.return_value = (
+      httplib2.Response({'status': 200}),
+      '{"accessToken": "testtoken",'
+      '"expireTime":"2017-08-17T04:21:32.722952943Z"}')
 
-    header, payload, signature = (
-        self._unpadded_b64decode(x) for x in ret.split('.'))
-    payload = json.loads(payload)
-
-    self.assertEqual('{"alg":"RS256","typ":"JWT"}', header)
-    self.assertEqual('test@example.com', payload['iss'])
-    self.assertEqual('scope', payload['scope'])
-    self.assertEqual('https://accounts.google.com/o/oauth2/token',
-                     payload['aud'])
-    self.assertIn('exp', payload)
-    self.assertIn('iat', payload)
-    self.assertEqual('hello', signature)
-
-  def _unpadded_b64decode(self, encoded):
-    # Pad to a multiple of 4 bytes.
-    return base64.b64decode(encoded + ('=' * (len(encoded) % 4)))
-
+    self.creds._refresh(None)
+    headers = {}
+    self.creds.apply(headers)
+    self.assertEqual('Bearer %s' % 'testtoken',
+                     headers['Authorization'])
