@@ -30,6 +30,9 @@ def SetUpGetUsers(user_service, cnxn):
       cnxn, cols=user_svc.ACTIONLIMIT_COLS, user_id=[333L]).AndReturn([])
   user_service.dismissedcues_tbl.Select(
       cnxn, cols=user_svc.DISMISSEDCUES_COLS, user_id=[333L]).AndReturn([])
+  user_service.linkedaccount_tbl.Select(
+      cnxn, cols=user_svc.LINKEDACCOUNT_COLS, parent_id=[333L], child_id=[333L],
+      or_where_conds=True).AndReturn([])
 
 
 def MakeUserService(cache_manager, my_mox):
@@ -66,14 +69,35 @@ class UserTwoLevelCacheTest(unittest.TestCase):
         ]
     actionlimit_rows = []
     dismissedcues_rows = []
+    linkedaccount_rows = []
     user_dict = self.user_service.user_2lc._DeserializeUsersByID(
-        user_rows, actionlimit_rows, dismissedcues_rows)
+        user_rows, actionlimit_rows, dismissedcues_rows, linkedaccount_rows)
     self.assertEqual(2, len(user_dict))
     self.assertEqual('a@example.com', user_dict[111L].email)
     self.assertFalse(user_dict[111L].is_site_admin)
     self.assertEqual('', user_dict[111L].banned)
     self.assertFalse(user_dict[111L].notify_issue_change)
     self.assertEqual('b@example.com', user_dict[222L].email)
+    self.assertIsNone(user_dict[111L].linked_parent_id)
+    self.assertEqual([], user_dict[111L].linked_child_ids)
+    self.assertIsNone(user_dict[222L].linked_parent_id)
+    self.assertEqual([], user_dict[222L].linked_child_ids)
+
+  def testDeserializeUsersByID_LinkedAccounts(self):
+    user_rows = [
+        (111L, 'a@example.com', False, False, False, False, True, False, '',
+         'stay_same_issue', False, False, False, True, 0, 0, None),
+        ]
+    actionlimit_rows = []
+    dismissedcues_rows = []
+    linkedaccount_rows = [(111L, 222L), (111L, 333L), (444L, 111L)]
+    user_dict = self.user_service.user_2lc._DeserializeUsersByID(
+        user_rows, actionlimit_rows, dismissedcues_rows, linkedaccount_rows)
+    self.assertEqual(1, len(user_dict))
+    user_pb = user_dict[111L]
+    self.assertEqual('a@example.com', user_pb.email)
+    self.assertEqual(444L, user_pb.linked_parent_id)
+    self.assertEqual([222L, 333L], user_pb.linked_child_ids)
 
   def testFetchItems(self):
     SetUpGetUsers(self.user_service, self.cnxn)
@@ -310,19 +334,6 @@ class UserServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     self.user_service.TrimUserVisitedHotlists(self.cnxn, commit=False)
     self.mox.VerifyAll()
-
-  def SetUpLookupParentEmail(self):
-    self.user_service.linkedaccount_tbl.SelectValue(
-        self.cnxn, 'parent_email', child_email='test@google.com').AndReturn(
-            'test@chromium.org')
-
-  def testLookupParentEmail(self):
-    self.SetUpLookupParentEmail()
-    self.mox.ReplayAll()
-    parent_email = self.user_service.LookupParentEmail(self.cnxn,
-        'test@google.com')
-    self.mox.VerifyAll()
-    self.assertEqual('test@chromium.org', parent_email)
 
   def testUpdateUserSettings(self):
     self.SetUpUpdateUser()

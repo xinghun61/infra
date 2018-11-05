@@ -119,11 +119,13 @@ CREATE TABLE User2Project (
 
 
 CREATE TABLE LinkedAccount (
-  parent_email VARCHAR(255) NOT NULL,  -- lowercase
-  child_email VARCHAR(255) NOT NULL,  -- lowercase
+  parent_id INT UNSIGNED NOT NULL,
+  child_id INT UNSIGNED NOT NULL,
 
-  KEY (parent_email),
-  UNIQUE KEY (child_email)
+  KEY (parent_id),
+  UNIQUE KEY (child_id),
+  FOREIGN KEY (parent_id) REFERENCES User(user_id),
+  FOREIGN KEY (child_id) REFERENCES User(user_id)
 ) ENGINE=INNODB;
 
 

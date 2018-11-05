@@ -1,4 +1,4 @@
-[if-any cue]
+[if-any cue account_cue]
 
 [# Do not show cue if there is an alert shown on the page.]
 [if-any alerts.show][else]
@@ -45,6 +45,18 @@
 [else][is cue "code_of_conduct"]
  [# Note: code-of-conduct cue card is implemented in cues-conduct.ezt which is
     included from forms where users post text.]
+
+[else][if-any account_cue]
+
+  <table id="alert-table" align="center" border="0" cellspacing="0" cellpadding="0">
+   <tr><td class="notice" id="notice">
+    [# Cue card to warn users who are using a child account.]
+    [is account_cue "switch_to_parent_account"]
+        <div>You are signed in to a linked account.</div>
+	<a href="[login_url]">Switch to [parent_email]</a>.
+    [end]
+  </td></tr>
+ </table>
 
 [else]
 
@@ -129,7 +141,9 @@
     [# Cue card to tell users what it means to star a hotlist]
     [is cue "explain_hotlist_starring"]
         <b>Note:</b>
-        Starring a hotlist will not cc you on any updates. It simply adds the hotlist to your Starred hotlists category on this page so that you can conveniently revisit it.
+        Starring a hotlist will not cc you on any updates.
+        It simply adds the hotlist to your Starred hotlists category on this
+        page so that you can conveniently revisit it.
     [end]
 
    </span>
@@ -141,6 +155,7 @@
     [end]
   </td></tr>
  </table>
+[end]
 [end]
 [end]
 

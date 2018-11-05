@@ -43,7 +43,7 @@ ACTIONLIMIT_COLS = [
     'period_hard_limit']
 DISMISSEDCUES_COLS = ['user_id', 'cue']
 HOTLISTVISITHISTORY_COLS = ['hotlist_id', 'user_id', 'viewed']
-LINKEDACCOUNT_COLS = ['parent_email', 'child_email']
+LINKEDACCOUNT_COLS = ['parent_id', 'child_id']
 
 
 class UserTwoLevelCache(caches.AbstractTwoLevelCache):
@@ -62,13 +62,14 @@ class UserTwoLevelCache(caches.AbstractTwoLevelCache):
     return value.user_id is not None
 
   def _DeserializeUsersByID(
-      self, user_rows, actionlimit_rows, dismissedcue_rows):
+      self, user_rows, actionlimit_rows, dismissedcue_rows, linkedaccount_rows):
     """Convert database row tuples into User PBs.
 
     Args:
       user_rows: rows from the User DB table.
       actionlimit_rows: rows from the ActionLimit DB table.
       dismissedcue_rows: rows from the DismissedCues DB table.
+      linkedaccount_rows: rows from the LinkedAccount DB table.
 
     Returns:
       A dict {user_id: user_pb} for all the users referenced in user_rows.
@@ -130,6 +131,13 @@ class UserTwoLevelCache(caches.AbstractTwoLevelCache):
         continue
       result_dict[user_id].dismissed_cues.append(cue)
 
+    # Put in any linked accounts.
+    for parent_id, child_id in linkedaccount_rows:
+      if parent_id in result_dict:
+        result_dict[parent_id].linked_child_ids.append(child_id)
+      if child_id in result_dict:
+        result_dict[child_id].linked_parent_id = parent_id
+
     return result_dict
 
   def FetchItems(self, cnxn, keys):
@@ -148,8 +156,11 @@ class UserTwoLevelCache(caches.AbstractTwoLevelCache):
         cnxn, cols=ACTIONLIMIT_COLS, user_id=keys)
     dismissedcues_rows = self.user_service.dismissedcues_tbl.Select(
         cnxn, cols=DISMISSEDCUES_COLS, user_id=keys)
+    linkedaccount_rows = self.user_service.linkedaccount_tbl.Select(
+        cnxn, cols=LINKEDACCOUNT_COLS, parent_id=keys, child_id=keys,
+        or_where_conds=True)
     return self._DeserializeUsersByID(
-        user_rows, actionlimit_rows, dismissedcues_rows)
+        user_rows, actionlimit_rows, dismissedcues_rows, linkedaccount_rows)
 
 
 class UserService(object):
@@ -507,21 +518,6 @@ class UserService(object):
          self.hotlistvisithistory_tbl.Delete(
              cnxn, user_id=user_id, where=[('viewed < %s', [cut_off_date])],
              commit=commit)
-
-  def LookupParentEmail(self, cnxn, child_email):
-      """Get the parent address linked to a child address.
-
-      Args:
-        cnxn: connection to SQL database.
-        child_email: String @google.com email address.
-
-      Returns:
-        String @chromium.org email address associated with the child address.
-      """
-      parent_email = self.linkedaccount_tbl.SelectValue(cnxn, 'parent_email',
-          child_email=child_email)
-      return parent_email
-
 
   def UpdateUserSettings(
       self, cnxn, user_id, user, notify=None, notify_starred=None,

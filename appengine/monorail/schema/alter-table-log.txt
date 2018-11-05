@@ -1592,3 +1592,18 @@ ALTER TABLE Template2ApprovalValue MODIFY status ENUM (
 
 ALTER TABLE Issue2ApprovalValue MODIFY status ENUM (
   'needs_review', 'na', 'review_requested', 'review_started', 'need_info', 'approved', 'not_approved', 'not_set') DEFAULT 'not_set' NOT NULL;
+
+
+================================================================
+2018-11-02: Redo LinkedAccount table.
+
+DROP TABLE LinkedAccount;
+CREATE TABLE LinkedAccount (
+  parent_id INT UNSIGNED NOT NULL,
+  child_id INT UNSIGNED NOT NULL,
+
+  KEY (parent_id),
+  UNIQUE KEY (child_id),
+  FOREIGN KEY (parent_id) REFERENCES User(user_id),
+  FOREIGN KEY (child_id) REFERENCES User(user_id)
+) ENGINE=INNODB;

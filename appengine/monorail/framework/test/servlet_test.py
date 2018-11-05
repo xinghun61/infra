@@ -43,7 +43,9 @@ class ServletTest(unittest.TestCase):
   def setUp(self):
     services = service_manager.Services(
         project=fake.ProjectService(),
-        project_star=fake.ProjectStarService())
+        project_star=fake.ProjectStarService(),
+        user=fake.UserService())
+    services.user.TestAddUser('user@example.com', 111L)
     self.page_class = TestableServlet(
         webapp2.Request.blank('/'), webapp2.Response(), services=services)
     self.testbed = testbed.Testbed()
@@ -234,6 +236,7 @@ class ServletTest(unittest.TestCase):
         path='/p/proj', project=project)
     help_data = self.page_class.GatherHelpData(mr, {})
     self.assertEqual(None, help_data['cue'])
+    self.assertEqual(None, help_data['account_cue'])
 
   def testGatherHelpData_VacationReminder(self):
     project = fake.Project(project_name='proj')
@@ -246,6 +249,7 @@ class ServletTest(unittest.TestCase):
     mr.auth.user_pb.dismissed_cues = ['you_are_on_vacation']
     help_data = self.page_class.GatherHelpData(mr, {})
     self.assertEqual(None, help_data['cue'])
+    self.assertEqual(None, help_data['account_cue'])
 
   def testGatherHelpData_YouAreBouncing(self):
     project = fake.Project(project_name='proj')
@@ -258,6 +262,18 @@ class ServletTest(unittest.TestCase):
     mr.auth.user_pb.dismissed_cues = ['your_email_bounced']
     help_data = self.page_class.GatherHelpData(mr, {})
     self.assertEqual(None, help_data['cue'])
+    self.assertEqual(None, help_data['account_cue'])
+
+  def testGatherHelpData_ChildAccount(self):
+    """Display a warning when user is signed in to a child account."""
+    project = fake.Project(project_name='proj')
+    _request, mr = testing_helpers.GetRequestObjects(
+        path='/p/proj', project=project)
+    mr.auth.user_pb.linked_parent_id = 111L
+    help_data = self.page_class.GatherHelpData(mr, {})
+    self.assertEqual(None, help_data['cue'])
+    self.assertEqual('switch_to_parent_account', help_data['account_cue'])
+    self.assertEqual('user@example.com', help_data['parent_email'])
 
   def testGatherDebugData_Visibility(self):
     project = fake.Project(

@@ -122,6 +122,9 @@ class User(messages.Message):
   email_bounce_timestamp = messages.IntegerField(46, default=0)
   vacation_message = messages.StringField(47)
 
+  linked_parent_id = messages.IntegerField(48)
+  linked_child_ids = messages.IntegerField(49, repeated=True)
+
 
 def MakeUser(user_id, email=None, obscure_email=False):
   """Create and return a new user record in RAM."""

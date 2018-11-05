@@ -817,6 +817,7 @@ class Servlet(webapp2.RequestHandler):
     """
     help_data = {
         'cue': None,  # for cues.ezt
+        'account_cue': None,  # for cues.ezt
         }
     dismissed = []
     if mr.auth.user_pb:
@@ -827,6 +828,12 @@ class Servlet(webapp2.RequestHandler):
       if (mr.auth.user_pb.email_bounce_timestamp and
           'your_email_bounced' not in dismissed):
         help_data['cue'] = 'your_email_bounced'
+      if mr.auth.user_pb.linked_parent_id:
+        # This one is not dismissable.
+        help_data['account_cue'] = 'switch_to_parent_account'
+        parent_email = self.services.user.LookupUserEmail(
+            mr.cnxn, mr.auth.user_pb.linked_parent_id)
+        help_data['parent_email'] = parent_email
 
     return help_data
 
