@@ -90,6 +90,9 @@ func (tsi *TaskerServerImpl) TriggerRepairOnIdle(ctx context.Context, req *fleet
 
 func triggerRepairOnIdleForBot(ctx context.Context, sc clients.SwarmingClient, req *fleet.TriggerRepairOnIdleRequest, bse *fleetBotSummaryEntity) (*fleet.TaskerBotTasks, error) {
 	cfg := config.Get(ctx)
+	// TODO(ayatane): This should use the cached info from the
+	// Tracker rather than talk to Swarming directly with
+	// getIdleDuration.
 	idle, err := getIdleDuration(ctx, sc, bse.BotID)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to get idle time for bot %q", bse.BotID).Err()
