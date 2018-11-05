@@ -104,10 +104,6 @@ class FLTConvertTask(jsonfeed.InternalTask):
     if not mr.auth.user_pb.is_site_admin:
       raise permissions.PermissionException(
           'Only site admins may trigger conversion job')
-    # TODO(BEFORE-LAUNCH): REMOVE 'monotail-staging' check
-    if settings.app_id != 'monorail-staging':
-      raise exceptions.ActionNotSupported(
-          'Launch issues conversion only allowed in staging.')
 
   def UndoConversion(self, mr):
     with work_env.WorkEnv(mr, self.services) as we:

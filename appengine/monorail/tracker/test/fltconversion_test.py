@@ -63,13 +63,11 @@ class FLTConvertTask(unittest.TestCase):
     settings.app_id = 'monorail-staging'
     self.task.AssertBasePermission(self.mr)
 
+    settings.app_id = 'monorail-prod'
+    self.task.AssertBasePermission(self.mr)
+
     self.mr.auth.user_pb.is_site_admin = False
     self.assertRaises(permissions.PermissionException,
-                      self.task.AssertBasePermission, self.mr)
-
-    self.mr.auth.user_pb.is_site_admin = True
-    settings.app_id = 'monorail-prod'
-    self.assertRaises(exceptions.ActionNotSupported,
                       self.task.AssertBasePermission, self.mr)
 
   def testHandleRequest(self):
