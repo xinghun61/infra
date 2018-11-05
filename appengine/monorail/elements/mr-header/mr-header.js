@@ -15,6 +15,7 @@ class MrHeader extends Polymer.Element {
     return {
       loginUrl: String,
       logoutUrl: String,
+      projectName: String,
       user: String,
       _userMenuItems: {
         type: Array,

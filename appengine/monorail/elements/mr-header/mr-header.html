@@ -18,7 +18,13 @@
       }
     </style>
     <chops-header app-title="Monorail" logo-src="/static/images/monorail.ico">
-      <span slot="subheader"><slot name="subheader"></slot></span>
+      <span slot="subheader">
+        &gt;
+        <a href$="/p/[[projectName]]/">
+          Project: [[projectName]]
+        </a>
+        <slot name="subheader"></slot>
+      </span>
       <template is="dom-if" if="[[user]]">
         <mr-dropdown text="[[user]]" items="[[_userMenuItems]]"></mr-dropdown>
       </template>
