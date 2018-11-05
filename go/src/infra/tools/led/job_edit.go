@@ -163,7 +163,7 @@ func (ejd *EditJobDefinition) Priority(priority int64) {
 }
 
 // Properties edits the recipe properties.
-func (ejd *EditJobDefinition) Properties(props map[string]string) {
+func (ejd *EditJobDefinition) Properties(props map[string]string, auto bool) {
 	if len(props) == 0 {
 		return
 	}
@@ -174,7 +174,10 @@ func (ejd *EditJobDefinition) Properties(props map[string]string) {
 			} else {
 				var obj interface{}
 				if err := json.Unmarshal([]byte(v), &obj); err != nil {
-					return err
+					if !auto {
+						return err
+					}
+					obj = v
 				}
 				u.RecipeProperties[k] = obj
 			}

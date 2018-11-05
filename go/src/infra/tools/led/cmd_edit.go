@@ -45,6 +45,12 @@ led get-builder ... |
 				"(repeatable) override a recipe property. This takes a parameter of `property_name=json_value`. "+
 					"Providing an empty json_value will remove that property.")
 
+			ret.Flags.Var(&ret.propertiesAuto, "pa",
+				"(repeatable) override a recipe property, using the recipe engine autoconvert rule. "+
+					"This takes a parameter of `property_name=json_value_or_string`. If json_value_or_string "+
+					"cannot be decoded as JSON, it will be used verbatim as the property value. "+
+					"Providing an empty json_value will remove that property.")
+
 			ret.Flags.StringVar(&ret.recipeIsolate, "rbh", "",
 				"override the recipe bundle `hash` (if not using CIPD or git). These should be prepared with"+
 					" `recipes.py bundle` from the repo containing your desired recipe and then isolating the"+
@@ -82,6 +88,7 @@ type cmdEdit struct {
 	recipeIsolate  string
 	dimensions     stringmapflag.Value
 	properties     stringmapflag.Value
+	propertiesAuto stringmapflag.Value
 	recipeURL      string
 	recipeRevision string
 	recipeName     string
@@ -132,7 +139,8 @@ func (c *cmdEdit) Run(a subcommands.Application, args []string, env subcommands.
 		ejd := jd.Edit()
 		ejd.RecipeSource(c.recipeIsolate, c.recipeURL, c.recipeRevision, c.recipeCIPDPkg, c.recipeCIPDVer)
 		ejd.Dimensions(c.dimensions)
-		ejd.Properties(c.properties)
+		ejd.Properties(c.properties, false)
+		ejd.Properties(c.propertiesAuto, true)
 		ejd.Recipe(c.recipeName)
 		ejd.SwarmingHostname(c.swarmingHost)
 		return ejd.Finalize()
