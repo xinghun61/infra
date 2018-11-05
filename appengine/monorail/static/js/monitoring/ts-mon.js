@@ -8,6 +8,10 @@ import '../prpc.js';
 
 const TS_MON_JS_PATH = '/_/jstsmon.do';
 const TS_MON_CLIENT_GLOBAL_NAME = '__tsMonClient';
+export const PAGE_TYPES = Object.freeze({
+  ISSUE_DETAIL: Symbol('issue_detail'),
+  ISSUE_LIST: Symbol('issue_list'),
+});
 
 export default class MonorailTSMon extends TSMonClient {
 
@@ -44,6 +48,17 @@ export default class MonorailTSMon extends TSMonClient {
         ),
       }
     ];
+
+    this.pageLoadMetric = this.cumulativeDistribution(
+      'frontend/dom_content_loaded',
+      'domContentLoaded performance timing.',
+      null, (new Map([
+        ['client_id', TSMonClient.stringField('client_id')],
+        ['host_name', TSMonClient.stringField('host_name')],
+        ['template_name', TSMonClient.stringField('template_name')],
+      ]))
+    );
+    this.recordPageLoadTiming();
   }
 
   fetchImpl(rawMetricValues) {
@@ -72,15 +87,36 @@ export default class MonorailTSMon extends TSMonClient {
     }
   }
 
-  // TODO(jeffcarp): This will be used for page load timing metrics.
-  static getPageTypeFromPath(pathname=window.location.pathname) {
+  recordPageLoadTiming() {
+    // See timing definitions here:
+    // https://developer.mozilla.org/en-US/docs/Web/API/PerformanceNavigationTiming
+    const t = window.performance.timing;
+    const domContentLoadedMs = t.domContentLoadedEventEnd - t.navigationStart;
+
+    const measurePageTypes = new Set([
+      PAGE_TYPES.ISSUE_LIST,
+      PAGE_TYPES.ISSUE_DETAIL,
+    ]);
+    const pageType = MonorailTSMon.getPageTypeFromPath(window.location.pathname);
+    if (measurePageTypes.has(pageType)) {
+      const metricFields = new Map([
+        ['client_id', this.clientId],
+        ['host_name', window.CS_env.app_version],
+        ['template_name', pageType.description],
+      ]);
+      this.pageLoadMetric.add(domContentLoadedMs, metricFields);
+    }
+  }
+
+  // Returns an enum from PAGE_TYPES or null based on path.
+  static getPageTypeFromPath(path) {
     const regexToPageType = {
-      '/p/[A-Za-z]+/issues/detail': 'issue_detail',
-      '/p/[A-Za-z]+/issues/list': 'issue_list',
+      '/p/[A-Za-z0-9\-]+/issues/detail': PAGE_TYPES.ISSUE_DETAIL,
+      '/p/[A-Za-z0-9\-]+/issues/list': PAGE_TYPES.ISSUE_LIST,
     };
 
     for (const [regex, pageType] of Object.entries(regexToPageType)) {
-      if (pathname.match(regex)) {
+      if (path.match(regex)) {
         return pageType;
       }
     }
