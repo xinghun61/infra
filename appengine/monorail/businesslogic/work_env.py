@@ -662,7 +662,8 @@ class WorkEnv(object):
   def CreateIssue(
       self, project_id, summary, status, owner_id, cc_ids, labels,
       field_values, component_ids, marked_description, blocked_on=None,
-      blocking=None, attachments=None, phases=None, approval_values=None):
+      blocking=None, attachments=None, phases=None, approval_values=None,
+      send_email=True):
     """Create and store a new issue with all the given information.
 
     Args:
@@ -681,6 +682,7 @@ class WorkEnv(object):
           the time the comment was made.
       phases: list of Phase PBs.
       approval_values: list of ApprovalValue PBs.
+      send_email: set to False to avoid email notifications.
 
     Returns:
       A tuple (newly created Issue, Comment PB for the description).
@@ -702,6 +704,15 @@ class WorkEnv(object):
       self.services.project.UpdateRecentActivity(self.mc.cnxn, project_id)
       new_issue = self.services.issue.GetIssueByLocalID(
           self.mc.cnxn, project_id, new_local_id)
+
+    if send_email:
+      with self.mc.profiler.Phase('queueing notification tasks'):
+        hostport = framework_helpers.GetHostPort()
+        send_notifications.PrepareAndSendIssueChangeNotification(
+            new_issue.issue_id, hostport, reporter_id, comment_id=comment.id)
+        send_notifications.PrepareAndSendIssueBlockingNotification(
+            new_issue.issue_id, hostport, new_issue.blocked_on_iids,
+            reporter_id)
 
     return new_issue, comment
 

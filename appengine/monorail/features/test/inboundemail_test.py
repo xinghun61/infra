@@ -7,6 +7,7 @@
 
 import unittest
 import webapp2
+from mock import patch
 
 import mox
 import time
@@ -230,7 +231,9 @@ class InboundEmailTest(unittest.TestCase):
     self.mox.VerifyAll()
     self.assertIsNone(ret)
 
-  def testProcessAlert_NewIssue(self):
+  @patch('features.send_notifications.PrepareAndSendIssueBlockingNotification')
+  @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testProcessAlert_NewIssue(self, fake_pasicn, fake_pasibn):
     """When an alert for a new incident comes in, create a new issue."""
     self.mox.StubOutWithMock(tracker_helpers, 'LookupComponentIDs')
     tracker_helpers.LookupComponentIDs(
@@ -278,8 +281,12 @@ class InboundEmailTest(unittest.TestCase):
     self.assertEqual(
         'Filed by user@example.com on behalf of user@google.com\n\nissue body',
         actual_comments[0].content)
+    self.assertEqual(1, len(fake_pasicn.mock_calls))
+    self.assertEqual(1, len(fake_pasibn.mock_calls))
 
-  def testProcessAlert_NewIssue_Codesearch(self):
+  @patch('features.send_notifications.PrepareAndSendIssueBlockingNotification')
+  @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testProcessAlert_NewIssue_Codesearch(self, fake_pasicn, fake_pasibn):
     """When an alert for a new incident comes in, create a new issue.
 
     If the body contains the string 'codesearch' then we should auto-assign to
@@ -317,6 +324,8 @@ class InboundEmailTest(unittest.TestCase):
     actual_issue = self.services.issue.GetIssueByLocalID(
         self.cnxn, self.project.project_id, 101L)
     self.assertEqual([2], actual_issue.component_ids)
+    self.assertEqual(1, len(fake_pasicn.mock_calls))
+    self.assertEqual(1, len(fake_pasibn.mock_calls))
 
   def testProcessAlert_ExistingIssue(self):
     """When an alert for an ongoing incident comes in, add a comment."""

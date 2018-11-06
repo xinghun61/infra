@@ -268,7 +268,6 @@ class IssueEntry(servlet.Servlet):
     component_ids = tracker_helpers.LookupComponentIDs(
         parsed.components.paths, config, mr.errors)
 
-    reporter_id = mr.auth.user_id
     self.CheckCaptcha(mr, post_data)
 
     if not parsed.summary.strip() or parsed.summary == PLACEHOLDER_SUMMARY:
@@ -321,7 +320,7 @@ class IssueEntry(servlet.Servlet):
           if approval_values:
             _AttachDefaultApprovers(config, approval_values)
 
-          issue, comment = we.CreateIssue(
+          issue, _ = we.CreateIssue(
               mr.project_id, parsed.summary, parsed.status,
               parsed.users.owner_id, parsed.users.cc_ids, labels, field_values,
               component_ids, marked_description,
@@ -361,12 +360,6 @@ class IssueEntry(servlet.Servlet):
           initial_hotlists=parsed.hotlists.entered_str,
           component_required=ezt.boolean(template.component_required))
       return
-
-    send_notifications.PrepareAndSendIssueChangeNotification(
-        issue.issue_id, mr.request.host, reporter_id, comment_id=comment.id)
-
-    send_notifications.PrepareAndSendIssueBlockingNotification(
-        issue.issue_id, mr.request.host, parsed.blocked_on.iids, reporter_id)
 
     # format a redirect url
     return framework_helpers.FormatAbsoluteURL(

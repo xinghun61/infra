@@ -554,7 +554,9 @@ class WorkEnvTest(unittest.TestCase):
   # FUTURE: project saved queries.
   # FUTURE: GetProjectPermissionsForUser()
 
-  def testCreateIssue_Normal(self):
+  @patch('features.send_notifications.PrepareAndSendIssueBlockingNotification')
+  @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testCreateIssue_Normal(self, fake_pasicn, fake_pasibn):
     """We can create an issue."""
     self.SignIn(user_id=111L)
     approval_values = [tracker_pb2.ApprovalValue(approval_id=23, phase_id=3)]
@@ -583,6 +585,31 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual(1, len(self.services.issue.enqueued_issues))
     self.assertEqual(actual_issue.issue_id,
         self.services.issue.enqueued_issues[0])
+
+    # Verify that tasks were queued to send email notifications.
+    hostport = 'testing-app.appspot.com'
+    fake_pasicn.assert_called_once_with(
+        actual_issue.issue_id, hostport, 111L, comment_id=comment.id)
+    fake_pasibn.assert_called_once_with(
+        actual_issue.issue_id, hostport, [], 111L)
+
+  @patch('features.send_notifications.PrepareAndSendIssueBlockingNotification')
+  @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testCreateIssue_DontSendEmail(self, fake_pasicn, fake_pasibn):
+    """We can create an issue, without queueing notification tasks."""
+    self.SignIn(user_id=111L)
+    with self.work_env as we:
+      actual_issue, comment = we.CreateIssue(
+          789, 'sum', 'New', 222L, [333L], ['Hot'], [], [], 'desc',
+          send_email=False)
+    self.assertEqual(789, actual_issue.project_id)
+    self.assertEqual('sum', actual_issue.summary)
+    self.assertEqual('New', actual_issue.status)
+    self.assertEqual('desc', comment.content)
+
+    # Verify that tasks were not queued to send email notifications.
+    self.assertEqual([], fake_pasicn.mock_calls)
+    self.assertEqual([], fake_pasibn.mock_calls)
 
   def testListIssues_Normal(self):
     """We can do a query that generates some results."""

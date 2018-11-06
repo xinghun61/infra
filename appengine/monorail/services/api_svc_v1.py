@@ -726,20 +726,16 @@ class MonorailApi(remote.Service):
         raise endpoints.BadRequestException(
             'Invalid field values: %s' % mar.errors.custom_fields)
 
-      new_issue, comment = we.CreateIssue(
+      new_issue, _ = we.CreateIssue(
           mar.project_id, request.summary, request.status, owner_id,
           cc_ids, request.labels + fields_labels, fields_add,
           comp_ids, request.description,
           blocked_on=api_pb2_v1_helpers.convert_issueref_pbs(
               request.blockedOn, mar, self._services),
           blocking=api_pb2_v1_helpers.convert_issueref_pbs(
-              request.blocking, mar, self._services))
+              request.blocking, mar, self._services),
+          send_email=request.sendEmail)
       we.StarIssue(new_issue, True)
-
-      if request.sendEmail:
-        send_notifications.PrepareAndSendIssueChangeNotification(
-            new_issue.issue_id, framework_helpers.GetHostPort(),
-            new_issue.reporter_id, comment_id=comment.id)
 
     return api_pb2_v1_helpers.convert_issue(
         api_pb2_v1.IssuesGetInsertResponse, new_issue, mar, self._services)
