@@ -79,7 +79,7 @@ class TestAndroidDockerClient(unittest.TestCase):
     client = containers.AndroidDockerClient()
     client.create_container(desc, 'image', 'swarm-url.com', {})
     mock_create_container.assert_called_once_with(
-        desc, 'image', 'swarm-url.com', {})
+        desc, 'image', 'swarm-url.com', {}, cpu_shares=512)
     mock_add_device.assert_called_once_with(desc)
 
   @mock.patch.object(swarm_containers, '_DOCKER_VOLUMES', {})

@@ -99,8 +99,11 @@ class AndroidDockerClient(containers.DockerClient):
   def create_container(self, container_desc, image_name, swarming_url, labels,
                        additional_env=None):
     assert isinstance(container_desc, AndroidContainerDescriptor)
+    # Launch containers with a cpu_share value of 1/2 of the default of 1024.
+    # This will theoretically decrease each container's weight when CPU cycles
+    # are constrained.
     super(AndroidDockerClient, self).create_container(
-        container_desc, image_name, swarming_url, labels)
+        container_desc, image_name, swarming_url, labels, cpu_shares=512)
     self.add_device(container_desc)
 
   def add_device(self, container_desc, sleep_time=1.0):
