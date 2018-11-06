@@ -141,10 +141,13 @@ def _GetFlakeAnalysesResults(bug_id):
   if not analyses:
     return [], None
 
-  culprit_urlsafe_keys = set(
-      [analysis.culprit_urlsafe_key for analysis in analyses])
+  culprit_urlsafe_keys = set([
+      analysis.culprit_urlsafe_key
+      for analysis in analyses
+      if analysis.culprit_urlsafe_key
+  ])
 
-  if culprit_urlsafe_keys != {None}:
+  if culprit_urlsafe_keys:
     # Found culprits.
     for key in culprit_urlsafe_keys:
       culprit = entity_util.GetEntityFromUrlsafeKey(key)

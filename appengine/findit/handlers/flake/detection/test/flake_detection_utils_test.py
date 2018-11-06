@@ -111,6 +111,12 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
     analysis.culprit_urlsafe_key = culprit.key.urlsafe()
     analysis.put()
 
+    analysis_1 = MasterFlakeAnalysis.Create(legacy_master_name, luci_builder,
+                                            legacy_build_number - 1,
+                                            step_ui_name, test_name)
+    analysis_1.bug_id = 900
+    analysis_1.put()
+
     expected_flake_dict = {
         'luci_project':
             'chromium',
