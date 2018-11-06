@@ -55,7 +55,8 @@ class TestCrosDockerClient(unittest.TestCase):
         'CROS_SSH_ID_FILE_PATH': 'some_ssh_path',
     }
     mock_create_container.assert_called_once_with(
-        desc, 'image', 'swarm-url.com', {}, additional_env=expected_env)
+        desc, 'image', 'swarm-url.com', {}, additional_env=expected_env,
+        privileged=True)
     self.assertEquals(len(fake_container_backend.exec_inputs), 1)
     self.assertIn(
         containers.UNIVERSAL_CROS_HOSTNAME,
@@ -76,5 +77,6 @@ class TestCrosDockerClient(unittest.TestCase):
         'CROS_SSH_ID_FILE_PATH': 'some_ssh_path',
     }
     mock_create_container.assert_called_once_with(
-        desc, 'image', 'swarm-url.com', {}, additional_env=expected_env)
+        desc, 'image', 'swarm-url.com', {}, additional_env=expected_env,
+        privileged=True)
     self.assertEquals(len(fake_container_backend.exec_inputs), 0)

@@ -224,7 +224,7 @@ class DockerClient(object):
     self._num_configured_containers = num_configured_containers
 
   def create_container(self, container_desc, image_name, swarming_url, labels,
-                       additional_env=None):
+                       additional_env=None, **kwargs):
     container_workdir = '/b/%s' % container_desc.name
     pw = pwd.getpwnam('chrome-bot')
     uid, gid = pw.pw_uid, pw.pw_gid
@@ -246,6 +246,7 @@ class DockerClient(object):
         name=container_desc.name,
         detach=True,  # Don't block until it exits.
         labels=labels,
+        **kwargs
     )
     new_container.start()
     container_desc.log_started()

@@ -61,9 +61,11 @@ class CrosDockerClient(containers.DockerClient):
     env = {
         CROS_SSH_ID_ENV_VAR: container_desc.ssh_id_path,
     }
+    # Create the container with elevated privileges so the CrOS chroot (needed
+    # for DUT flashing) can be created.
     container = super(CrosDockerClient, self).create_container(
         container_desc, image_name, swarming_url, labels,
-        additional_env=env)
+        additional_env=env, privileged=True)
 
     # Add an entry to /etc/hosts that points a universal hostname to the
     # cros device.
