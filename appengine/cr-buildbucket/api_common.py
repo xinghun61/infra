@@ -45,9 +45,12 @@ def to_bucket_id_async(bucket):
   Raises:
     errors.InvalidInputError if bucket is invalid or ambiguous.
   """
-  config.validate_bucket_id(bucket)
-  if not config.is_legacy_bucket_id(bucket):
+  is_legacy = config.is_legacy_bucket_id(bucket)
+  if not is_legacy:
+    config.validate_bucket_id(bucket)
     raise ndb.Return(bucket)
+
+  config.validate_bucket_name(bucket)
 
   bucket_id = parse_luci_bucket(bucket)
   if bucket_id:

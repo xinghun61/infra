@@ -668,8 +668,7 @@ def pause(bucket_id, is_paused):
 
   config.validate_bucket_id(bucket_id)
   _, cfg = config.get_bucket(bucket_id)
-  if not cfg:
-    raise errors.InvalidInputError('Invalid bucket: %s' % bucket_id)
+  assert cfg, 'permission check should have failed'
   if config.is_swarming_config(cfg):
     raise errors.InvalidInputError('Cannot pause a Swarming bucket')
 

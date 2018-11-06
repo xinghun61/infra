@@ -799,23 +799,19 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     builds, _ = service.peek([bid])
     self.assertEqual(len(builds), 1)
 
-  def test_pause_bucket_invalid_bucket_name(self):
-    with self.assertRaises(errors.InvalidInputError):
-      service.pause('wharbl|gharbl', True)
-
   def test_pause_bucket_auth_error(self):
     self.mock_cannot(user.Action.PAUSE_BUCKET)
     with self.assertRaises(auth.AuthorizationError):
-      service.pause('test', True)
+      service.pause('chromium/no.such.bucket', True)
 
   def test_pause_invalid_bucket(self):
     config.get_bucket_async.return_value = future((None, None))
     with self.assertRaises(errors.InvalidInputError):
-      service.pause('test', True)
+      service.pause('a/#', True)
 
   def test_pause_swarming_bucket(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.pause('luci.chromium.try', True)
+      service.pause('chromium/try', True)
 
   ############################ UNREGISTER BUILDERS #############################
 

@@ -691,7 +691,6 @@ class ConfigTest(testing.AppengineTestCase):
 class ValidateBucketIDTest(testing.AppengineTestCase):
 
   @parameterized.expand([
-      ('chromium',),
       ('chromium/try',),
       ('chrome-internal/try',),
       ('chrome-internal/try.x',),
@@ -701,11 +700,18 @@ class ValidateBucketIDTest(testing.AppengineTestCase):
 
   @parameterized.expand([
       ('a/b/c',),
-      ('a:b',),
-      ('a b',),
       ('a b/c',),
       ('chromium/luci.chromium.try',),
   ])
   def test_invalid(self, bucket_id):
     with self.assertRaises(errors.InvalidInputError):
+      config.validate_bucket_id(bucket_id)
+
+  @parameterized.expand([
+      ('chromium',),
+      ('a:b',),
+  ])
+  def test_assertions(self, bucket_id):
+    # We must never pass legacy bucket id to validate_bucket_id().
+    with self.assertRaises(AssertionError):
       config.validate_bucket_id(bucket_id)
