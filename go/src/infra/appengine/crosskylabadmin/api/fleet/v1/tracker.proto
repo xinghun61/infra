@@ -5,6 +5,7 @@
 syntax = "proto3";
 
 import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
 
 import "infra/appengine/crosskylabadmin/api/fleet/v1/common.proto";
 
@@ -127,4 +128,5 @@ message Task {
   string name = 2;
   DutState state_before = 3;
   DutState state_after = 4;
+  google.protobuf.Timestamp started_ts = 5;
 }
