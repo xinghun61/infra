@@ -46,6 +46,15 @@ export default class MonorailTSMon extends TSMonClient {
           'Latency between issue update form submit and issue detail page load.',
           null, standardFields,
         ),
+      },
+      {
+        category: 'autocomplete',
+        eventName: 'populate-options',
+        metric: this.cumulativeDistribution(
+          'monorail/frontend/autocomplete_populate_latency',
+          'Latency between page load and autocomplete options loading.',
+          null, standardFields,
+        ),
       }
     ];
 
