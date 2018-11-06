@@ -9,8 +9,8 @@ import '../prpc.js';
 const TS_MON_JS_PATH = '/_/jstsmon.do';
 const TS_MON_CLIENT_GLOBAL_NAME = '__tsMonClient';
 export const PAGE_TYPES = Object.freeze({
-  ISSUE_DETAIL: Symbol('issue_detail'),
-  ISSUE_LIST: Symbol('issue_list'),
+  ISSUE_DETAIL: 'issue_detail',
+  ISSUE_LIST: 'issue_list',
 });
 
 export default class MonorailTSMon extends TSMonClient {
@@ -102,7 +102,7 @@ export default class MonorailTSMon extends TSMonClient {
       const metricFields = new Map([
         ['client_id', this.clientId],
         ['host_name', window.CS_env.app_version],
-        ['template_name', pageType.description],
+        ['template_name', pageType],
       ]);
       this.pageLoadMetric.add(domContentLoadedMs, metricFields);
     }

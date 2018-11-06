@@ -108,7 +108,7 @@ suite('MonorailTSMon', () => {
 
     test('does not record page load timing on other pages', () => {
       mts.pageLoadMetric = {add: sinon.spy()};
-      getPageTypeFromPathStub.returns(Symbol('rutabaga'));
+      getPageTypeFromPathStub.returns('rutabaga');
       mts.recordPageLoadTiming();
       sinon.assert.notCalled(mts.pageLoadMetric.add);
     });
@@ -131,14 +131,14 @@ suite('MonorailTSMon', () => {
       const path = '/p/rutabaga/issues/detail?id=1#c3';
       const actual = MonorailTSMon.getPageTypeFromPath(path);
       assert.equal(actual, PAGE_TYPES.ISSUE_DETAIL);
-      assert.equal(actual.description, 'issue_detail');
+      assert.equal(actual, 'issue_detail');
     });
 
     test('picks up issue list path', () => {
       const path = '/p/ruta-0baga/issues/list?mode=list#things';
       const actual = MonorailTSMon.getPageTypeFromPath(path);
       assert.equal(actual, PAGE_TYPES.ISSUE_LIST);
-      assert.equal(actual.description, 'issue_list');
+      assert.equal(actual, 'issue_list');
     });
   });
 
