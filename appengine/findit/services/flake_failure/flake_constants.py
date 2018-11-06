@@ -33,7 +33,7 @@ DEFAULT_ITERATIONS_TO_RUN_AFTER_TIMEOUT = 10
 DEFAULT_LOWER_FLAKE_THRESHOLD = 1e-7
 
 # Number of bugs for flaky tests allowed to be filed per day.
-DEFAULT_NEW_FLAKE_BUGS_PER_DAY = 2
+DEFAULT_MAX_BUG_UPDATES_PER_DAY = 30
 
 # Number of commit positions to look back. Flakiness is most relevant within
 # roughly 500 build cycles from when it's detected, and each build has roughly
@@ -50,6 +50,13 @@ DEFAULT_MAX_ITERATIONS_TO_RERUN = 400
 # Maximum number of times a swarming task can be retried for the same data
 # point.
 DEFAULT_MAX_SWARMING_TASK_RETRIES_PER_DATA_POINT = 3
+
+# Minimum number of occurrences of a flaky test that are associated with
+# different CLs within the past 24h are required in order to report the flake.
+# Note that it has to be x different CLs, different patchsets of the same CL are
+# only counted once, and the reason is to filter out flaky tests that are caused
+# by a specific uncommitted CL.
+DEFAULT_MINIMUM_REQUIRED_IMPACTED_CLS_PER_DAY = 3
 
 # Default minimum confidence score to run try jobs.
 DEFAULT_MINIMUM_CONFIDENCE_SCORE = 0.6

@@ -17,18 +17,8 @@ from model.flake.flake_type import FlakeType
 from services import issue_tracking_service
 from services import monitoring
 from services.apis import AnalyzeDetectedFlakeOccurrence
+from services.flake_failure import flake_constants
 from waterfall import waterfall_config
-
-# Maximum number of Monorail issues allowed to be created or updated in any 24h
-# window.
-_CREATE_OR_UPDATE_ISSUES_LIMIT_24H = 30
-
-# Minimum number of occurrences of a flaky test that are associated with
-# different CLs within the past 24h are required in order to report the flake.
-# Note that it has to be x different CLs, different patchsets of the same CL are
-# only counted once, and the reason is to filter out flaky tests that are caused
-# by a specific uncommitted CL.
-_MIN_REQUIRED_FALSELY_REJECTED_CLS_24H = 3
 
 # Flake detection bug templates.
 _FLAKE_DETECTION_BUG_DESCRIPTION = textwrap.dedent("""
@@ -215,9 +205,13 @@ def _FlakeHasEnoughOccurrences(unreported_occurrences):
                             flake and haven't been reported yet.
                             The caller is responsible for making sure of it.
   """
+  flake_detection_settings = waterfall_config.GetFlakeDetectionSettings()
+  required_falsely_rejected_cls = flake_detection_settings.get(
+      'min_required_impacted_cls_per_day',
+      flake_constants.DEFAULT_MINIMUM_REQUIRED_IMPACTED_CLS_PER_DAY)
   cl_ids = [occurrence.gerrit_cl_id for occurrence in unreported_occurrences]
   unique_cl_ids = set(cl_ids)
-  return len(unique_cl_ids) >= _MIN_REQUIRED_FALSELY_REJECTED_CLS_24H
+  return len(unique_cl_ids) >= required_falsely_rejected_cls
 
 
 def GetFlakesWithEnoughOccurrences():
@@ -289,22 +283,11 @@ def GetFlakesWithEnoughOccurrences():
   return flake_and_occurrences_tuples
 
 
-def _IsCreateAndUpdateBugEnabled():
-  """Returns True if the feature to create or update bugs is enabled.
-
-  Returns:
-    Returns True if it is enabled, otherwise False.
-  """
-  # Unless the flag is explicitly set, assumes disabled by default.
-  return waterfall_config.GetFlakeDetectionSettings().get(
-      'create_and_update_bug', False)
-
-
 def ReportFlakesToMonorail(flake_tuples_to_report):
   """Reports newly detected flakes and occurrences to Monorail.
 
   ONLY create or update a bug if:
-    rule 1. Has NOT reached _CREATE_OR_UPDATE_ISSUES_LIMIT_24H.
+    rule 1. Has NOT reached the maximum configured bug update limit within 24h.
     rule 2. The bug wasn't created or updated within the past 24h.
 
   Args:
@@ -312,19 +295,20 @@ def ReportFlakesToMonorail(flake_tuples_to_report):
                             entity and second element is a list of corresponding
                             occurrences to report.
   """
-  if not _IsCreateAndUpdateBugEnabled():
-    logging.info('Skip reporting flakes to Monorail because the feature is '
-                 'disabled.')
-    return
+  action_settings = waterfall_config.GetActionSettings()
+  limit = action_settings.get('max_flake_bug_updates_per_day',
+                              flake_constants.DEFAULT_MAX_BUG_UPDATES_PER_DAY)
 
   utc_one_day_ago = time_util.GetUTCNow() - datetime.timedelta(days=1)
   num_updated_issues_24h = (
       FlakeIssue.query(
           FlakeIssue.last_updated_time_by_flake_detection > utc_one_day_ago)
       .count())
-  if num_updated_issues_24h >= _CREATE_OR_UPDATE_ISSUES_LIMIT_24H:
+
+  if num_updated_issues_24h >= limit:
     logging.info('Issues created or updated during the past 24 hours has '
                  'reached the limit.')
+    return
 
   # An issue can be updated at most once in any 24h window avoid noises.
   flake_tuples_to_report = [
@@ -333,8 +317,7 @@ def ReportFlakesToMonorail(flake_tuples_to_report):
   ]
 
   num_of_flakes_to_report = min(
-      len(flake_tuples_to_report),
-      _CREATE_OR_UPDATE_ISSUES_LIMIT_24H - num_updated_issues_24h)
+      len(flake_tuples_to_report), limit - num_updated_issues_24h)
   flake_tuples_to_report = flake_tuples_to_report[:num_of_flakes_to_report]
   logging.info('There are %d flakes whose issues will be created or updated.' %
                num_of_flakes_to_report)

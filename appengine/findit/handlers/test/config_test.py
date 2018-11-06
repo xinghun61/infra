@@ -115,11 +115,12 @@ _MOCK_ACTION_SETTINGS = {
         10,
     'rotations_url': (
         'https://build.chromium.org/deprecated/chromium/all_rotations.js'),
+    'max_flake_bug_updates_per_day':
+        30,
 }
 
 _MOCK_CHECK_FLAKE_SETTINGS = {
     'autorevert_enabled': True,
-    'create_monorail_bug': True,
     'iterations_to_run_after_timeout': 10,
     'lower_flake_threshold': 1e-7,
     'upper_flake_threshold': 0.9999999,
@@ -128,19 +129,17 @@ _MOCK_CHECK_FLAKE_SETTINGS = {
     'max_iterations_to_rerun': 400,
     'minimum_confidence_to_create_bug': .9,
     'minimum_confidence_to_update_cr': 0.5,
-    'new_flake_bugs_per_day': 2,
     'per_iteration_timeout_seconds': 60,
     'swarming_task_cushion': 2.0,
     'swarming_task_retries_per_build': 2,
     'throttle_flake_analyses': True,
     'timeout_per_test_seconds': 120,
     'timeout_per_swarming_task_seconds': 3600,
-    'update_monorail_bug': True,
 }
 
 _MOCK_FLAKE_DETECTION_SETTINGS = {
-    'create_and_update_bug': True,
     'report_flakes_to_flake_analyzer': True,
+    'min_required_impacted_cls_per_day': 3,
 }
 
 _MOCK_CODE_REVIEW_SETTINGS = {
@@ -153,10 +152,10 @@ _MOCK_VERSION_NUMBER = 12
 
 
 class ConfigTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication(
-      [
-          ('/config', config.Configuration),
-      ], debug=True)
+  app_module = webapp2.WSGIApplication([
+      ('/config', config.Configuration),
+  ],
+                                       debug=True)
 
   def testGetConfigurationSettings(self):
     config_data = {

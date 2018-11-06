@@ -118,6 +118,7 @@ def _GenerateMessageText(analysis):
       test_output_log_link=test_output_log_link,
       analysis_link=analysis_link)
 
+
 class FlakeAnalysisIssueGenerator(
     issue_tracking_service.FlakyTestIssueGenerator):
   """Encapsulates the details of issues filed by Flake Analyzer."""
@@ -182,8 +183,8 @@ def ShouldFileBugForAnalysis(analysis):
     - A duplicate bug hasn't been filed by Findit or CTF.
     - A duplicate bug hasn't been filed by a human.
   """
-  if not IsBugFilingEnabled():
-    analysis.LogInfo('Bug creation feature disabled.')
+  if not UnderDailyLimit():
+    analysis.LogInfo('Reached bug filing limit for the day.')
     return False
 
   if HasPreviousAttempt(analysis):
@@ -196,10 +197,6 @@ def ShouldFileBugForAnalysis(analysis):
     analysis.LogInfo('''Analysis has confidence {:.2%}
         which isn\'t high enough to file a bug.'''.format(
         analysis.confidence_in_culprit))
-    return False
-
-  if not UnderDailyLimit():
-    analysis.LogInfo('Reached bug filing limit for the day.')
     return False
 
   # Check if there's already a bug attached to this issue.
@@ -236,19 +233,6 @@ def ShouldUpdateBugForAnalysis(analysis):
                               'insufficient-datapoints')
     return False
 
-  if not IsBugUpdatingEnabled():
-    analysis.LogInfo('update_monorail_bug not set or is False')
-    if analysis.culprit_urlsafe_key:
-      # There is a culprit, but updating bugs is disabled.
-      monitoring.OnFlakeCulprit('culprit-identified', 'none',
-                                'update-bug-disabled')
-    else:
-      analysis.LogInfo('No culprit to update bugs with')
-      # There is no culprit, but updating bugs is disabled.
-      monitoring.OnFlakeCulprit('culprit-not-identified', 'none',
-                                'update-bug-disabled')
-    return False
-
   if (analysis.culprit_urlsafe_key and not HasSufficientConfidenceInCulprit(
       analysis, GetMinimumConfidenceToUpdateBugs())):
     # There is a culprit, but insufficient confidence.
@@ -262,12 +246,13 @@ def ShouldUpdateBugForAnalysis(analysis):
 
 
 def UnderDailyLimit():
-  check_flake_settings = waterfall_config.GetCheckFlakeSettings()
-  daily_bug_limit = check_flake_settings.get(
-      'new_flake_bugs_per_day', flake_constants.DEFAULT_NEW_FLAKE_BUGS_PER_DAY)
+  action_settings = waterfall_config.GetActionSettings()
+  daily_bug_limit = action_settings.get(
+      'max_flake_bug_updates_per_day',
+      flake_constants.DEFAULT_MAX_BUG_UPDATES_PER_DAY)
   query = master_flake_analysis.MasterFlakeAnalysis.query(
-      master_flake_analysis.MasterFlakeAnalysis.request_time >=
-      time_util.GetMostRecentUTCMidnight())
+      master_flake_analysis.MasterFlakeAnalysis.request_time >= time_util
+      .GetMostRecentUTCMidnight())
   bugs_filed_today = 0
 
   more = True
@@ -300,17 +285,6 @@ def GetMinimumConfidenceToFileBugs():
   return waterfall_config.GetCheckFlakeSettings().get(
       'minimum_confidence_to_create_bug',
       flake_constants.DEFAULT_MINIMUM_CONFIDENCE_TO_CREATE_BUG)
-
-
-def IsBugFilingEnabled():
-  """Returns True if bug filing is enabled, False otherwise."""
-  return waterfall_config.GetCheckFlakeSettings().get('create_monorail_bug',
-                                                      False)
-
-
-def IsBugUpdatingEnabled():
-  return waterfall_config.GetCheckFlakeSettings().get('update_monorail_bug',
-                                                      False)
 
 
 def HasPreviousAttempt(analysis):

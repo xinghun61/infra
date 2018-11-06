@@ -103,11 +103,10 @@ class FlakeReportUtilTest(WaterfallTestCase):
     flakes_with_occurrences = flake_report_util.GetFlakesWithEnoughOccurrences()
     self.assertEqual(1, len(flakes_with_occurrences))
     self.assertEqual(3, len(flakes_with_occurrences[0][1]))
-
-    with mock.patch.object(flake_report_util,
-                           '_CREATE_OR_UPDATE_ISSUES_LIMIT_24H', 0):
-      flake_report_util.ReportFlakesToMonorail(flakes_with_occurrences)
-      self.assertFalse(mock_update_or_create_bug.called)
+    self.UpdateUnitTestConfigSettings('action_settings',
+                                      {'max_flake_bug_updates_per_day': 0})
+    flake_report_util.ReportFlakesToMonorail(flakes_with_occurrences)
+    self.assertFalse(mock_update_or_create_bug.called)
 
   # This test tests that any issue can be created or updated at most once in any
   # 24 hours window.

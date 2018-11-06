@@ -121,6 +121,7 @@ class FinditConfig(VersionedConfig):
   #     'auto_create_revert_daily_threshold_test': 10,
   #     'auto_commit_revert_daily_threshold_test': 4,
   #     'rotations_url': 'rotations_url',
+  #     'max_flake_bug_updates_per_day': 30,
   # }
   action_settings = ndb.JsonProperty(indexed=False, default={})
 
@@ -137,9 +138,6 @@ class FinditConfig(VersionedConfig):
   #     'swarming_task_retries_per_build': 2,
   #     'iterations_to_run_after_timeout': 10,
   #     'max_iterations_per_task': 200,
-  #     'create_monorail_bug': True,
-  #     'new_flake_bugs_per_day': 2,
-  #     'update_monorail_bug': False,
   #     'throttle_flake_analyses': False,
   #     'minimum_confidence_to_create_bug': .9
   # }
@@ -147,8 +145,8 @@ class FinditConfig(VersionedConfig):
 
   # A dict containing settings for Flake Detection. For example,
   # {
-  #     'create_and_update_bug': True,
   #     'report_flakes_to_flake_analyzer': True,
+  #     'min_required_impacted_cls_per_day': 3,
   # }
   flake_detection_settings = ndb.JsonProperty(indexed=False, default={})
 
