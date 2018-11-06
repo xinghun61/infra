@@ -204,17 +204,17 @@ class SwarmbucketApi(remote.Service):
   @swarmbucket_api_method(SetNextBuildNumberRequest, message_types.VoidMessage)
   def set_next_build_number(self, request):
     """Sets the build number that will be used for the next build."""
-    if not user.can_set_next_number_async(request.bucket).get_result():
+    bucket_id = api.convert_bucket(request.bucket)
+    if not user.can_set_next_number_async(bucket_id).get_result():
       raise endpoints.ForbiddenException('access denied')
-    _, bucket = config.get_bucket(request.bucket)
+    _, bucket = config.get_bucket(bucket_id)
 
     if not any(b.name == request.builder for b in bucket.swarming.builders):
       raise endpoints.BadRequestException(
           'builder "%s" not found in bucket "%s"' %
-          (request.builder, request.bucket)
+          (request.builder, bucket_id)
       )
 
-    bucket_id = api_common.parse_luci_bucket(request.bucket)
     seq_name = sequence.builder_seq_name(bucket_id, request.builder)
     try:
       sequence.set_next(seq_name, request.next_number)
