@@ -91,5 +91,14 @@ func (c *CookFlags) Normalize() error {
 		}
 	}
 
+	if c.CallUpdateBuild {
+		if c.BuildbucketHostname == "" {
+			return inputError("-call-update-build requires -buildbucket-hostname")
+		}
+		if c.Mode != CookSwarming {
+			return inputError("-call-update-build requires -mode=swarming")
+		}
+	}
+
 	return c.LogDogFlags.setupAndValidate(c.Mode)
 }

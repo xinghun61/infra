@@ -45,6 +45,9 @@ type CookFlags struct {
 	KnownGerritHost stringlistflag.Flag `json:"known_gerrit_host"`
 
 	LogDogFlags LogDogFlags `json:"logdog_flags"`
+
+	BuildbucketHostname string `json:"buildbucket_hostname"`
+	CallUpdateBuild     bool   `json:"call_update_build"`
 }
 
 // Register the CookFlags with the provided FlagSet.
@@ -148,6 +151,18 @@ func (c *CookFlags) Register(fs *flag.FlagSet) {
 			"hosts are accessed anonymously, and the anonymous access has very low quota. Kitchen "+
 			"needs to know all such hostnames in advance to be able to force authenticated access "+
 			"to them.")
+	fs.StringVar(
+		&c.BuildbucketHostname,
+		"buildbucket-hostname",
+		"",
+		"Hostname of the buildbucket for the current build.")
+	fs.BoolVar(
+		&c.CallUpdateBuild,
+		"call-update-build",
+		false,
+		"Whether to call buildbucket.v2.Builds.UpdateBuild RPC "+
+			"while build is running. "+
+			"Requires -buildbucket-hostname and -mode=swarming. ")
 
 	c.LogDogFlags.register(fs)
 }
@@ -175,6 +190,8 @@ func (c *CookFlags) Dump() []string {
 	ret.str("luci-system-account", c.SystemAccount)
 	ret.str("luci-system-account-json", c.SystemAccountJSON)
 	ret.list("known-gerrit-host", c.KnownGerritHost)
+	ret.str("buildbucket-hostname", c.BuildbucketHostname)
+	ret.boolean("call-update-build", c.CallUpdateBuild)
 
 	return append(ret, c.LogDogFlags.Dump()...)
 }

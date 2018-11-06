@@ -143,6 +143,27 @@ var flagTestCases = []struct {
 			},
 		},
 	},
+
+	{
+		flags: []string{
+			"-mode", "swarming",
+			"-repository", "meep",
+			"-recipe", "cool_recipe",
+			"-call-update-build",
+		},
+		errValidate: `-call-update-build requires -buildbucket-hostname`,
+	},
+
+	{
+		flags: []string{
+			"-mode", "buildbot",
+			"-repository", "meep",
+			"-recipe", "cool_recipe",
+			"-buildbucket-hostname", "buildbucket.example.com",
+			"-call-update-build",
+		},
+		errValidate: `-call-update-build requires -mode=swarming`,
+	},
 }
 
 func TestFlags(t *testing.T) {
