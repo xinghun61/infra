@@ -68,13 +68,30 @@ WORKDIR=${WORKDIR:-$REPO/.3pp_wd}
 LOGIN_EMAIL=$(luci-auth info | awk '/Logged in/{gsub("\.$", "", $4); print $4}')
 CIPD_EMAIL=$(sed 's/@/_at_/' <<<"$LOGIN_EMAIL")
 
-if [[ $OSTYPE = darwin* ]]; then
+# scan for platforms
+for arg in "$@"; do
+  if [[ $arg == platform* ]]; then
+    case $arg in
+      *linux*)
+        TARG_OS=linux
+        ;;
+      *mac*)
+        TARG_OS=mac
+        ;;
+      *windows*)
+        TARG_OS=windows
+        ;;
+    esac
+  fi
+done
+
+if [[ $OSTYPE = darwin* && ( $TARG_OS == '' || $TARG_OS == mac ) ]]; then
   echo 'On OS X we need a fresh sudo token to run `xcode-select` as part of SDK setup.'
   sudo -v
 fi
 
 echo Using \$WORKDIR: $WORKDIR
-echo Using \$CIPD_PREFIX: experimental/$CIPD_EMAIL
+echo Using upload prefix: experimental/$CIPD_EMAIL
 
 rm -rf $WORKDIR/3pp
 
