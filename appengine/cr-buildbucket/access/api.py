@@ -12,6 +12,7 @@ from components import utils
 from access import access_pb2
 from access import access_prpc_pb2
 from proto.config import project_config_pb2
+import api_common
 import user
 
 __all__ = ['AccessServicer']
@@ -41,9 +42,15 @@ class AccessServicer(object):
     )
     if request.resource_kind != 'bucket':
       return access_pb2.PermittedActionsResponse()
-    roles = utils.async_apply(request.resource_ids, user.get_role_async)
+    bucket_ids = dict(
+        utils.async_apply(request.resource_ids, api_common.to_bucket_id_async)
+    )
+    roles = dict(
+        utils.async_apply(bucket_ids.itervalues(), user.get_role_async)
+    )
     permitted = {
-        bucket: create_resource_permissions(role) for bucket, role in roles
+        rid: create_resource_permissions(roles[bucket_ids[rid]])
+        for rid in request.resource_ids
     }
     logging.debug('Permitted: %s', permitted)
     return access_pb2.PermittedActionsResponse(
