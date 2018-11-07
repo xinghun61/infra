@@ -1,0 +1,120 @@
+// Copyright 2018 The LUCI Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package frontend
+
+import (
+	"testing"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	. "github.com/smartystreets/goconvey/convey"
+	"go.chromium.org/luci/appengine/gaetesting"
+
+	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
+)
+
+func TestCreateScheduler(t *testing.T) {
+	Convey("Given an admin server running in a test context", t, func() {
+		ctx := gaetesting.TestingContext()
+		admin := &QSchedulerAdminServerImpl{}
+		Convey("when CreateSchedulerPool is called with a pool id", func() {
+			req := qscheduler.CreateSchedulerPoolRequest{
+				PoolId: "Pool 1",
+			}
+			resp, err := admin.CreateSchedulerPool(ctx, &req)
+			Convey("then response is error-free.", func() {
+				So(resp, ShouldNotBeNil)
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+}
+
+func TestCreateListAccount(t *testing.T) {
+	poolID := "Pool1"
+	Convey("Given an admin server running in a test context", t, func() {
+		ctx := gaetesting.TestingContext()
+		admin := &QSchedulerAdminServerImpl{}
+		Convey("when CreateAccount is called with a nonexistent pool", func() {
+			req := qscheduler.CreateAccountRequest{
+				PoolId: poolID,
+			}
+			resp, err := admin.CreateAccount(ctx, &req)
+			Convey("then an error with code NotFound is returned.", func() {
+				So(resp, ShouldBeNil)
+				So(err, ShouldNotBeNil)
+				s, ok := status.FromError(err)
+				So(ok, ShouldBeTrue)
+				So(s.Code(), ShouldEqual, codes.NotFound)
+			})
+		})
+
+		Convey("when ListAccounts is called for nonexistent pool", func() {
+			req := qscheduler.ListAccountsRequest{
+				PoolId: poolID,
+			}
+			resp, err := admin.ListAccounts(ctx, &req)
+			Convey("then an error with code notFound is returned.", func() {
+				So(resp, ShouldBeNil)
+				So(err, ShouldNotBeNil)
+				s, ok := status.FromError(err)
+				So(ok, ShouldBeTrue)
+				So(s.Code(), ShouldEqual, codes.NotFound)
+			})
+		})
+
+		Convey("with a scheduler pool", func() {
+			req := qscheduler.CreateSchedulerPoolRequest{
+				PoolId: poolID,
+			}
+			admin.CreateSchedulerPool(ctx, &req)
+			Convey("when ListAccounts is called for that pool", func() {
+				req := qscheduler.ListAccountsRequest{
+					PoolId: poolID,
+				}
+				resp, err := admin.ListAccounts(ctx, &req)
+				Convey("then it returns no results.", func() {
+					So(resp, ShouldResemble, &qscheduler.ListAccountsResponse{})
+					So(err, ShouldBeNil)
+				})
+			})
+
+			Convey("when CreateAccount is called for that pool", func() {
+				accountID := "Account1"
+				req := qscheduler.CreateAccountRequest{
+					AccountId: accountID,
+					PoolId:    poolID,
+				}
+				resp, err := admin.CreateAccount(ctx, &req)
+				Convey("then it succeeds.", func() {
+					So(resp, ShouldResemble, &qscheduler.CreateAccountResponse{})
+					So(err, ShouldBeNil)
+				})
+				Convey("when ListAccounts is called for that pool", func() {
+					req := qscheduler.ListAccountsRequest{
+						PoolId: poolID,
+					}
+					resp, err := admin.ListAccounts(ctx, &req)
+					Convey("then it returns a list with that account.", func() {
+						So(err, ShouldBeNil)
+						So(resp.Accounts, ShouldContainKey, accountID)
+						So(resp.Accounts, ShouldHaveLength, 1)
+					})
+				})
+			})
+		})
+	})
+}
