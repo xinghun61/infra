@@ -28,6 +28,8 @@ if 'infra_libs' not in sys.modules:  # pragma: no cover
 
 sys.modules['infra_libs'].ts_mon = sys.modules[__package__]
 sys.modules['infra_libs.ts_mon'] = sys.modules[__package__]
+sys.modules['infra_libs'].utils = sys.modules[__package__]
+sys.modules['infra_libs.utils'] = sys.modules[__package__]
 
 # Put the httplib2_utils package into infra_lib directly.
 import infra_libs.ts_mon.httplib2_utils
