@@ -40,11 +40,11 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 	}
 	swarming.RegisterExternalSchedulerServer(&apiServer, &swarming.DecoratedExternalScheduler{
 		Service: &QSchedulerServerImpl{},
-		Prelude: checkAccess,
+		Prelude: checkUserAccess,
 	})
 	qscheduler.RegisterQSchedulerAdminServer(&apiServer, &qscheduler.DecoratedQSchedulerAdmin{
 		Service: &QSchedulerAdminServerImpl{},
-		Prelude: checkAccess,
+		Prelude: checkAdminAccess,
 	})
 
 	discovery.Enable(&apiServer)
@@ -58,12 +58,33 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 	apiServer.InstallHandlers(r, mwAuthenticated)
 }
 
-// checkAccess verifies that the request is from an authorized user.
-//
-// Servers should use checkAccess as a Prelude while handling requests to uniformly
-// check access across the API.
-func checkAccess(c context.Context, _ string, _ proto.Message) (context.Context, error) {
-	switch allow, err := auth.IsMember(c, config.Get(c).AccessGroup); {
+// TODO(akeshet): Remove the code duplication between these various access
+// check functions.
+
+// checkAdminAccess verifies that the request is from an authorized admin.
+func checkAdminAccess(c context.Context, _ string, _ proto.Message) (context.Context, error) {
+	a := config.Get(c).Auth
+	if a == nil {
+		return c, status.Errorf(codes.PermissionDenied, "no auth configured: permission denied")
+	}
+
+	switch allow, err := auth.IsMember(c, a.AdminGroup); {
+	case err != nil:
+		return c, status.Errorf(codes.Internal, "can't check ACL - %s", err)
+	case !allow:
+		return c, status.Errorf(codes.PermissionDenied, "permission denied")
+	}
+	return c, nil
+}
+
+// checkUserAccess verifies that the request is from an authorized user.
+func checkUserAccess(c context.Context, _ string, _ proto.Message) (context.Context, error) {
+	a := config.Get(c).Auth
+	if a == nil {
+		return c, status.Errorf(codes.PermissionDenied, "no auth configured: permission denied")
+	}
+
+	switch allow, err := auth.IsMember(c, a.SwarmingGroup); {
 	case err != nil:
 		return c, status.Errorf(codes.Internal, "can't check ACL - %s", err)
 	case !allow:

@@ -12,11 +12,23 @@ option go_package = "config";
 
 // Config is the configuration data served by luci-config for this app.
 message Config {
-  // AccessGroup is the luci-auth group controlling access to admin app APIs.
-  string access_group = 1;
+  string access_group = 1 [deprecated=true];
 
   // QuotaScheduler contains QS-specific config information.
   QuotaScheduler quota_scheduler = 2;
+
+  // Auth describes which access levels are granted to which groups.
+  Auth auth = 3;
+}
+
+message Auth {
+  // AdminGroup is the luci-auth group controlling access to the administrative
+  // endpoints of this server (the QSchedulerAdmin API).
+  string admin_group = 1;
+
+  // SwarmingGroup is the luci-auth group controlling access to the scheduler
+  // endpoints of this server (the swarming.ExternalScheduler API).
+  string swarming_group = 2;
 }
 
 // QuotaScheduler contains configuration information for the QuotaScheduler app.
