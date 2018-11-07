@@ -10,10 +10,13 @@ generate: ninjaproto/ninjalog.proto
 
 update-staging: ninjaproto/ninjalog.proto
 	bqschemaupdater -message-dir ninjaproto -message ninjaproto.NinjaTask -table chromium-build-stats-staging.ninjalog.ninjalog
+	bqschemaupdater -message-dir ninjaproto -message ninjaproto.NinjaTask -table chromium-build-stats-staging.ninjalog.user
 
 # namiko(TODO): change table name later
 update-prod: ninjaproto/ninjalog.proto
 	bqschemaupdater -message-dir ninjaproto -message ninjaproto.NinjaTask -table chromium-build-stats.ninjalog.ninjalog
+	bqschemaupdater -message-dir ninjaproto -message ninjaproto.NinjaTask -table chromium-build-stats.ninjalog.user
+
 
 deploy-staging:
 	gae.py upload --app-id chromium-build-stats-staging --app-dir=app/

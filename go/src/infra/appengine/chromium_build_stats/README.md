@@ -51,9 +51,14 @@ $ bq --project_id=$PROJECT mk ninjalog
 2. Make table
 
 ```
-# Set 2 year expiration
+# Set 2 year expiration.
+# This is for log table from buildbot.
 $ bq --project_id=$PROJECT mk --time_partitioning_type=DAY \
     --time_partitioning_expiration=$((3600 * 24 * 365 * 2)) ninjalog.ninjalog
+
+# This is for log table from chromium developer.
+$ bq --project_id=$PROJECT mk --time_partitioning_type=DAY \
+    --time_partitioning_expiration=$((3600 * 24 * 365 * 2)) ninjalog.user
 ```
 
 3. Update schema
