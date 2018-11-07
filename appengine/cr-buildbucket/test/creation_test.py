@@ -464,7 +464,7 @@ class CreationTest(testing.AppengineTestCase):
     self.assertEqual(index.entries[0].bucket_id, results[0][0].bucket_id)
 
   def test_add_many_auth_error(self):
-    self.mock_cannot(user.Action.ADD_BUILD, bucket='forbidden')
+    self.mock_cannot(user.Action.ADD_BUILD, bucket='forbidden/forbidden')
     with self.assertRaises(auth.AuthorizationError):
       creation.add_many_async([
           creation.BuildRequest(

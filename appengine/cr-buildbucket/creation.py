@@ -254,12 +254,12 @@ def add_many_async(build_request_list):
   def check_access_async():
     """For each pending request, check ACLs.
 
-    Make one ACL query per bucket.
+    Make one ACL query per bucket id.
     Raise an exception if at least one request is denied, as opposed to saving
     the exception in results, for backward compatibility.
     """
-    buckets = sorted({r.bucket for _, r in pending_reqs()})
-    for b, can in utils.async_apply(buckets, user.can_add_build_async):
+    bucket_ids = sorted({r.bucket_id for _, r in pending_reqs()})
+    for b, can in utils.async_apply(bucket_ids, user.can_add_build_async):
       if not can:
         raise user.current_identity_cannot('add builds to bucket %s', b)
 
