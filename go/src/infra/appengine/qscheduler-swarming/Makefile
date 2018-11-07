@@ -8,6 +8,9 @@ projdir := $(patsubst %/,%,$(dir $(mkfile_path)))
 dev:
 	gae.py devserver -A dev --app-dir $(projdir)/app/appengine -- --host 0.0.0.0 --port 8082 --admin_port 7999 --log_level debug
 
+up-dev:
+	gae.py upload -A qscheduler-swarming-dev --app-dir $(projdir)/app/appengine
+
 test:
 	go test ./...
 
