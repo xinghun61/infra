@@ -294,31 +294,51 @@ func TestPreemption(t *testing.T) {
 						})
 					})
 
-					Convey("when AssignTasks is called for a different worker", func() {
+					Convey("when AssignTasks is called for a different worker prior to ACK of the cancellation", func() {
 						t2 := time.Unix(2, 0)
 						wid2 := "Worker2"
 						as, _ := r.AssignTasks(ctx, s, t2, &IdleWorker{wid2, []string{}})
-						Convey("then it returns the preempted request.", func() {
-							So(as, ShouldHaveLength, 1)
-							So(as[0].RequestID, ShouldEqual, oldRequest)
-							So(as[0].WorkerID, ShouldEqual, wid2)
+						Convey("then it returns nothing.", func() {
+							So(as, ShouldHaveLength, 0)
 						})
 					})
 
-					Convey("when AssignTasks is called for the intended worker and a different worker simultaneously", func() {
+					Convey("when the cancellation is ACKed", func() {
 						t2 := time.Unix(2, 0)
-						wid2 := "Worker2"
-						as, _ := r.AssignTasks(ctx, s, t2, &IdleWorker{wid, []string{}}, &IdleWorker{wid2, []string{}})
-						Convey("then intended worker receives preempting request, other receives preempted request.", func() {
-							So(as, ShouldHaveLength, 2)
-							a1 := Assignment{RequestID: newRequest, WorkerID: wid}
-							a2 := Assignment{RequestID: oldRequest, WorkerID: wid2}
-							asm := make(map[string]Assignment)
-							for _, a := range as {
-								asm[a.WorkerID] = a
-							}
-							So(asm[a1.WorkerID], ShouldResemble, a1)
-							So(asm[a2.WorkerID], ShouldResemble, a2)
+
+						taskUpdate := &TaskUpdate{
+							EnqueueTime: tutils.TimestampProto(t0),
+							Time:        tutils.TimestampProto(t0),
+							RequestId:   oldRequest,
+							Type:        TaskUpdate_NEW,
+						}
+						r.Notify(ctx, s, taskUpdate)
+
+						Convey("when AssignTasks is called for a different worker", func() {
+
+							wid2 := "Worker2"
+							as, _ := r.AssignTasks(ctx, s, t2, &IdleWorker{wid2, []string{}})
+							Convey("then it returns the previously cancelled request.", func() {
+								So(as, ShouldHaveLength, 1)
+								So(as[0].RequestID, ShouldEqual, oldRequest)
+								So(as[0].WorkerID, ShouldEqual, wid2)
+							})
+						})
+
+						Convey("when AssignTasks is called for the intended worker and a different worker simultaneously", func() {
+							wid2 := "Worker2"
+							as, _ := r.AssignTasks(ctx, s, t2, &IdleWorker{wid, []string{}}, &IdleWorker{wid2, []string{}})
+							Convey("then intended worker receives preempting request, other receives preempted request.", func() {
+								So(as, ShouldHaveLength, 2)
+								a1 := Assignment{RequestID: newRequest, WorkerID: wid}
+								a2 := Assignment{RequestID: oldRequest, WorkerID: wid2}
+								asm := make(map[string]Assignment)
+								for _, a := range as {
+									asm[a.WorkerID] = a
+								}
+								So(asm[a1.WorkerID], ShouldResemble, a1)
+								So(asm[a2.WorkerID], ShouldResemble, a2)
+							})
 						})
 					})
 				})

@@ -295,9 +295,7 @@ func TestApplyPreempt(t *testing.T) {
 			"a1": vector.New(1),
 			"a2": vector.New(1),
 		},
-		QueuedRequests: map[string]*TaskRequest{
-			"t1": NewRequest("a1", nil, tm),
-		},
+		QueuedRequests: map[string]*TaskRequest{},
 		Workers: map[string]*Worker{
 			"w1": &Worker{RunningTask: &TaskRun{
 				Cost:      vector.New(1),

@@ -193,8 +193,9 @@ func (s *State) applyAssignment(m *Assignment) {
 		// Charge the preempting account for the cost of the preempted task.
 		s.chargeAccount(s.QueuedRequests[m.RequestId].AccountId, *cost)
 
-		// Remove the preempted job and return it to the queue.
-		s.reenqueueRunningRequest(m.TaskToAbort)
+		// Remove the preempted job from worker.
+		oldRequestID := worker.RunningTask.RequestId
+		s.deleteRequest(oldRequestID)
 	}
 
 	// Start the new task run.
@@ -302,19 +303,6 @@ func (s *State) deleteRequest(requestID string) {
 		worker := s.Workers[workerID]
 		worker.RunningTask = nil
 		delete(s.RunningRequestsCache, requestID)
-	}
-}
-
-// reenqueueRunningRequest moves the given request back into the queue, if it exists
-// and is running. Otherwise it does nothing.
-func (s *State) reenqueueRunningRequest(requestID string) {
-	s.ensureCache()
-	if workerID, ok := s.RunningRequestsCache[requestID]; ok {
-		w := s.Workers[workerID]
-		request := w.RunningTask.Request
-		w.RunningTask = nil
-		delete(s.RunningRequestsCache, requestID)
-		s.QueuedRequests[requestID] = request
 	}
 }
 
