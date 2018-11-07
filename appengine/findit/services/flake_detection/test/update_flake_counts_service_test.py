@@ -140,16 +140,27 @@ class UpdateFlakeCountsTest(WaterfallTestCase):
     self.assertEqual(3, flake1.false_rejection_count_last_week)
     self.assertEqual(1, flake1.impacted_cl_count_last_week)
     self.assertEqual([
-        FlakeCountsByType(flake_type=FlakeType.CQ_FALSE_REJECTION,
-                          impacted_cl_count=1, occurrence_count=2),
-        FlakeCountsByType(flake_type=FlakeType.RETRY_WITH_PATCH,
-                          impacted_cl_count=0, occurrence_count=1)],
-        flake1.flake_counts_last_week)
+        FlakeCountsByType(
+            flake_type=FlakeType.CQ_FALSE_REJECTION,
+            impacted_cl_count=1,
+            occurrence_count=2),
+        FlakeCountsByType(
+            flake_type=FlakeType.RETRY_WITH_PATCH,
+            impacted_cl_count=0,
+            occurrence_count=1)
+    ], flake1.flake_counts_last_week)
 
     flake2 = flake2_key.get()
     self.assertEqual(0, flake2.false_rejection_count_last_week)
     self.assertEqual(0, flake2.impacted_cl_count_last_week)
+    self.assertEqual([], flake2.flake_counts_last_week)
 
     flake3 = flake3_key.get()
     self.assertEqual(1, flake3.false_rejection_count_last_week)
     self.assertEqual(1, flake3.impacted_cl_count_last_week)
+    self.assertEqual([
+        FlakeCountsByType(
+            flake_type=FlakeType.CQ_FALSE_REJECTION,
+            impacted_cl_count=1,
+            occurrence_count=1)
+    ], flake3.flake_counts_last_week)

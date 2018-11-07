@@ -12,8 +12,7 @@ from model.flake.flake_type import FlakeType
 from services import constants
 
 
-def _GetsTypedFlakeCounts(
-    flake, start_date, flake_type, counted_gerrit_cl_ids):
+def _GetsTypedFlakeCounts(flake, start_date, flake_type, counted_gerrit_cl_ids):
   """Gets the counts of a type of occurrences for a flakes within a time range.
 
   Args:
@@ -32,16 +31,19 @@ def _GetsTypedFlakeCounts(
 
   occurrence_count = len(occurrences)
 
+  if not occurrence_count:
+    return None, counted_gerrit_cl_ids
+
   # Only count the CL as being impacted if it was not counted before.
-  gerrit_cl_ids = set(
-      [occurrence.gerrit_cl_id
-       for occurrence in occurrences]) - counted_gerrit_cl_ids
+  gerrit_cl_ids = set([occurrence.gerrit_cl_id for occurrence in occurrences
+                      ]) - counted_gerrit_cl_ids
   counted_gerrit_cl_ids = counted_gerrit_cl_ids | gerrit_cl_ids
 
   impacted_cl_count = len(gerrit_cl_ids)
 
   return FlakeCountsByType(
-      flake_type=flake_type, occurrence_count=occurrence_count,
+      flake_type=flake_type,
+      occurrence_count=occurrence_count,
       impacted_cl_count=impacted_cl_count), counted_gerrit_cl_ids
 
 
@@ -61,13 +63,15 @@ def _UpdateFlakeCounts(flake, start_date):
 
   counted_gerrit_cl_ids = set([])
 
-  for flake_type in [FlakeType.CQ_FALSE_REJECTION,
-                          FlakeType.RETRY_WITH_PATCH]:
+  for flake_type in [FlakeType.CQ_FALSE_REJECTION, FlakeType.RETRY_WITH_PATCH]:
     # Counts the occurrences/impacted CLs of the flake from the type with the
     # highest impact to the type with the lowest impact.
     # So that we don't count the same CL multiple times.
     typed_counts, counted_gerrit_cl_ids = _GetsTypedFlakeCounts(
         flake, start_date, flake_type, counted_gerrit_cl_ids)
+    if not typed_counts:
+      continue
+
     flake.flake_counts_last_week.append(typed_counts)
 
     # This is a workaround: we don't differentiate flakes from different types
