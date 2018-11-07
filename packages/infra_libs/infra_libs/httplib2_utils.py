@@ -19,7 +19,7 @@ import oauth2client.client
 
 from googleapiclient import errors
 from infra_libs.ts_mon.common import http_metrics
-from infra_libs import utils
+from infra_libs.utils import parse_rfc3339_epoch
 
 DEFAULT_SCOPES = ['email']
 
@@ -232,7 +232,7 @@ class DelegateServiceAccountCredentials(
 
     resp = json.loads(content)
     self.access_token = resp['accessToken']
-    self.token_expiry = utils.parse_rfc3339_epoch(resp['expireTime'])
+    self.token_expiry = parse_rfc3339_epoch(resp['expireTime'])
 
 
 class RetriableHttp(object):
