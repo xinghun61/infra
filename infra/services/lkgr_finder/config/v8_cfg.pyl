@@ -88,6 +88,7 @@
       'luci_builder_ui_group': 'fyi',
       'luci_bucket': 'luci.v8.ci',
       'builders': [
+        'Linux V8 FYI Release (NVIDIA)',
         'V8-Blink Linux 64',
         'V8 Linux GN',
       ],
