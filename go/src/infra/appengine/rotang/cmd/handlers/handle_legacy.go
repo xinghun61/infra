@@ -44,7 +44,12 @@ func (h *State) HandleLegacy(ctx *router.Context) {
 		fmt.Fprint(ctx.Writer, val)
 		return
 	}
+	doCORS(ctx)
 	fmt.Fprint(ctx.Writer, string(item.Value()))
+}
+
+func doCORS(ctx *router.Context) {
+	ctx.Writer.Header().Add("Access-Control-Allow-Origin", "*")
 }
 
 const (

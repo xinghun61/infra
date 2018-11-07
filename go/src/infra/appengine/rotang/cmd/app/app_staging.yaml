@@ -1,5 +1,5 @@
 runtime: go
-api_version: go1.8
+api_version: go1
 
 env_variables:
   PROD_ENV: "staging"
