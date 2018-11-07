@@ -21,16 +21,18 @@ func TestParametersJSON(t *testing.T) {
 			Name:       "FileIsolator",
 			Dimensions: []string{"pool:Chrome", "os:Ubuntu13.04"},
 		}
-		recipe := &admin.Worker_Recipe{&tricium.Recipe{
-			Name:        "recipe",
-			CipdPackage: "infra/recipe_bundle",
-			CipdVersion: "live",
-			Properties:  "{\"enable\":\"all\"}",
-		}}
-		actual_bytes, err := swarmingParametersJSON(w, recipe)
+		recipe := &admin.Worker_Recipe{
+			Recipe: &tricium.Recipe{
+				Name:        "recipe",
+				CipdPackage: "infra/recipe_bundle",
+				CipdVersion: "live",
+				Properties:  "{\"enable\":\"all\"}",
+			},
+		}
+		actualBytes, err := swarmingParametersJSON(w, recipe)
 		So(err, ShouldBeNil)
 		actual := make(map[string]interface{})
-		err = json.Unmarshal([]byte(actual_bytes), &actual)
+		err = json.Unmarshal([]byte(actualBytes), &actual)
 		So(err, ShouldBeNil)
 		expected := map[string]interface{}{
 			"builder_name": "tricium",
@@ -56,19 +58,19 @@ func TestMakeRequest(t *testing.T) {
 	Convey("Creates a valid build request", t, func() {
 		pubsubTopic := "topic"
 		pubsubUserdata := "userdata"
-		parameters_json := "{}"
+		parametersJSON := "{}"
 		tags := []string{"tag"}
 
 		So(
-			makeRequest(pubsubTopic, pubsubUserdata, parameters_json, tags),
+			makeRequest(pubsubTopic, pubsubUserdata, parametersJSON, tags),
 			ShouldResemble, &bbapi.ApiPutRequestMessage{
-				Bucket: "luci.infra.tricium",
+				Bucket: bucket,
 				PubsubCallback: &bbapi.ApiPubSubCallbackMessage{
 					Topic:    pubsubTopic,
 					UserData: pubsubUserdata,
 				},
 				Tags:           tags,
-				ParametersJson: parameters_json,
+				ParametersJson: parametersJSON,
 			})
 	})
 }

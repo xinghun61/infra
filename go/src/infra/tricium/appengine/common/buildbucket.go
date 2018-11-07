@@ -21,6 +21,7 @@ import (
 
 const (
 	buildbucketBasePath = "/_ah/api/buildbucket/v1/builds"
+	bucket              = "luci.tricium.try"
 )
 
 // BuildbucketServer implements the ServerAPI for the buildbucket service.
@@ -150,7 +151,7 @@ func swarmingParametersJSON(worker *admin.Worker, recipe *admin.Worker_Recipe) (
 
 func makeRequest(pubsubTopic, pubsubUserdata, parametersJSON string, tags []string) *bbapi.ApiPutRequestMessage {
 	return &bbapi.ApiPutRequestMessage{
-		Bucket: "luci.infra.tricium",
+		Bucket: bucket,
 		PubsubCallback: &bbapi.ApiPubSubCallbackMessage{
 			Topic:    pubsubTopic,
 			UserData: pubsubUserdata,
