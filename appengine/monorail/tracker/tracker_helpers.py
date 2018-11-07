@@ -1119,6 +1119,7 @@ def GetLabelOptions(config, custom_permissions):
     fd.field_name
     for fd in config.field_defs
     if not fd.is_deleted
+    and fd.field_type is tracker_pb2.FieldTypes.ENUM_TYPE
   ]
   non_masked_labels = LabelsNotMaskedByFields(config, field_names)
   for wkl in non_masked_labels:

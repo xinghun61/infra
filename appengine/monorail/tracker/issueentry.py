@@ -130,11 +130,13 @@ class IssueEntry(servlet.Servlet):
     # TODO(jeffcarp): Unit test this.
     offer_templates = len(config_view.template_names) > 1
     restrict_to_known = config.restrict_to_known
-    field_name_set = {fd.field_name.lower() for fd in config.field_defs
-                      if not fd.is_deleted}  # TODO(jrobbins): restrictions
+    enum_field_name_set = {fd.field_name.lower() for fd in config.field_defs
+                      if fd.field_type is tracker_pb2.FieldTypes.ENUM_TYPE
+                      and not fd.is_deleted}  # TODO(jrobbins): restrictions
     link_or_template_labels = mr.GetListParam('labels', template.labels)
     labels = [lab for lab in link_or_template_labels
-              if not tracker_bizobj.LabelIsMaskedByField(lab, field_name_set)]
+              if not tracker_bizobj.LabelIsMaskedByField(
+                  lab, enum_field_name_set)]
 
     approval_ids = [av.approval_id for av in template.approval_values]
     field_user_views = tracker_views.MakeFieldUserViews(

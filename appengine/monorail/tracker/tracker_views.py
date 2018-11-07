@@ -795,7 +795,8 @@ class IssueTemplateView(template_helpers.PBProxy):
         mr.auth.effective_ids, mr.perms, mr.project, template))
 
     field_name_set = {fd.field_name.lower() for fd in config.field_defs
-                      if not fd.is_deleted}  # TODO(jrobbins): restrictions
+                      if fd.field_type is tracker_pb2.FieldTypes.ENUM_TYPE and
+                      not fd.is_deleted}  # TODO(jrobbins): restrictions
     non_masked_labels = [
         lab for lab in template.labels
         if not tracker_bizobj.LabelIsMaskedByField(lab, field_name_set)]
@@ -897,7 +898,9 @@ class ConfigView(template_helpers.PBProxy):
           config)
 
     self.field_names = [  # TODO(jrobbins): field-level controls
-        fd.field_name for fd in config.field_defs if not fd.is_deleted]
+        fd.field_name for fd in config.field_defs if
+        fd.field_type is tracker_pb2.FieldTypes.ENUM_TYPE and
+        not fd.is_deleted]
     self.issue_labels = tracker_helpers.LabelsNotMaskedByFields(
         config, self.field_names)
     self.excl_prefixes = [

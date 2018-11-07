@@ -74,7 +74,8 @@ class TemplateDetail(servlet.Servlet):
           mr.cnxn, self.services.user, users_involved)
       framework_views.RevealAllEmailsToMembers(mr.auth, mr.project, users_by_id)
     field_name_set = {fd.field_name.lower() for fd in config.field_defs
-                      if not fd.is_deleted}
+                      if fd.field_type is tracker_pb2.FieldTypes.ENUM_TYPE and
+                      not fd.is_deleted}
     non_masked_labels = tracker_bizobj.NonMaskedLabels(
         template.labels, field_name_set)
 

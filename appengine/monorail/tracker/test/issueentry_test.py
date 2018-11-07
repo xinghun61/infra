@@ -121,6 +121,22 @@ class IssueEntryTest(unittest.TestCase):
     self.services.user.GetUser(
         mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes().AndReturn(user)
     self.mox.ReplayAll()
+    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
+    config.field_defs = [
+        tracker_bizobj.MakeFieldDef(
+            24, mr.project_id, 'NotEnum',
+            tracker_pb2.FieldTypes.STR_TYPE, None, '', False, False,
+            False, None, None, '', False, '', '',
+            tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False),
+        tracker_bizobj.MakeFieldDef(
+            24, mr.project_id, 'Choices',
+            tracker_pb2.FieldTypes.ENUM_TYPE, None, '', False, False,
+            False, None, None, '', False, '', '',
+            tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)]
+    self.services.config.StoreConfig(mr.cnxn, config)
+    template = tracker_pb2.TemplateDef(
+        labels=['NotEnum-Not-Masked', 'Choices-Masked'])
+    self.services.template.GetTemplateByName.return_value = template
 
     page_data = self.servlet.GatherPageData(mr)
     self.mox.VerifyAll()
@@ -130,6 +146,7 @@ class IssueEntryTest(unittest.TestCase):
     self.assertTrue(page_data['must_edit_summary'])
     self.assertEqual(page_data['approval_subfields_present'],
                      ezt.boolean(False))
+    self.assertEqual(page_data['labels'], ['NotEnum-Not-Masked'])
 
   def testGatherPageData_Approvals(self):
     user = self.services.user.TestAddUser('user@invalid', 100)

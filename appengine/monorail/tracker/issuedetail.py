@@ -39,6 +39,7 @@ from framework import template_helpers
 from framework import urls
 from framework import xsrf
 from proto import user_pb2
+from proto import tracker_pb2
 from services import features_svc
 from services import tracker_fulltext
 from tracker import field_helpers
@@ -252,7 +253,8 @@ class IssueDetail(issuepeek.IssuePeek):
 
     restrict_to_known = config.restrict_to_known
     field_name_set = {fd.field_name.lower() for fd in config.field_defs
-                      if not fd.is_deleted}  # TODO(jrobbins): restrictions
+                      if fd.field_type is tracker_pb2.FieldTypes.ENUM_TYPE and
+                      not fd.is_deleted}  # TODO(jrobbins): restrictions
     non_masked_labels = tracker_bizobj.NonMaskedLabels(
         issue.labels, field_name_set)
 

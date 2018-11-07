@@ -81,8 +81,13 @@ class TemplateDetailTest(unittest.TestCase):
         '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'Approval for Security',
         False)
-    self.fd_5 =  tracker_bizobj.MakeFieldDef(
+    self.fd_5 = tracker_bizobj.MakeFieldDef(
         5, 789, 'GateTarget', tracker_pb2.FieldTypes.INT_TYPE, None,
+        '', False, False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action',
+        'milestone target', False, is_phase_field=True)
+    self.fd_6 = tracker_bizobj.MakeFieldDef(
+        6, 789, 'Choices', tracker_pb2.FieldTypes.ENUM_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'no_action',
         'milestone target', False, is_phase_field=True)
@@ -106,13 +111,16 @@ class TemplateDetailTest(unittest.TestCase):
     self.config = self.services.config.GetProjectConfig(
         'fake cnxn', self.project.project_id)
     self.templates = testing_helpers.DefaultTemplates()
+    self.template.labels.extend(
+        ['GateTarget-Should-Not', 'GateTarget-Be-Masked',
+         'Choices-Wrapped', 'Choices-Burritod'])
     self.templates.append(self.template)
     self.services.template.GetProjectTemplates = Mock(
         return_value=self.templates)
     self.services.template.FindTemplateByName = Mock(return_value=self.template)
     self.config.component_defs.append(self.cd_1)
     self.config.field_defs.extend(
-        [self.fd_1, self.fd_2, self.fd_3, self.fd_4, self.fd_5])
+        [self.fd_1, self.fd_2, self.fd_3, self.fd_4, self.fd_5, self.fd_6])
     self.config.approval_defs.extend([self.ad_3, self.ad_4])
     self.services.config.StoreConfig(None, self.config)
 
@@ -167,7 +175,9 @@ class TemplateDetailTest(unittest.TestCase):
     self.assertTrue(page_data['initial_owner_defaults_to_member'])
     self.assertEqual(page_data['initial_components'], 'BackEnd')
     self.assertFalse(page_data['initial_component_required'])
-    self.assertItemsEqual(page_data['labels'], ['label1', 'label2'])
+    self.assertItemsEqual(
+        page_data['labels'],
+        ['label1', 'label2', 'GateTarget-Should-Not', 'GateTarget-Be-Masked'])
     self.assertEqual(page_data['initial_admins'], 'sport@example.com')
     self.assertTrue(page_data['initial_add_approvals'])
     self.assertEqual(len(page_data['initial_phases']), 6)

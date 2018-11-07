@@ -630,7 +630,7 @@ class ProjectsServicerTest(unittest.TestCase):
         sorted(label.label for label in response.label_options))
 
   def testGetLabelOptions_FieldMasksLabel(self):
-    self.AddField('Type')
+    self.AddField('Type', field_type_str='ENUM_TYPE')
 
     request = projects_pb2.GetLabelOptionsRequest(project_name='proj')
     mc = monorailcontext.MonorailContext(

@@ -66,7 +66,7 @@ def ParseFieldDefRequest(post_data, config):
   applicable_type = post_data.get('applicable_type', '')
   applicable_predicate = ''  # TODO(jrobbins): placeholder for future feature
   revised_labels = _ParseChoicesIntoWellKnownLabels(
-      choices_text, field_name, config)
+      choices_text, field_name, config, field_type_str)
   date_action_str = post_data.get('date_action')
   approvers_str = post_data.get('approver_names', '').strip().rstrip(',')
   survey = post_data.get('survey', '')
@@ -84,18 +84,28 @@ def ParseFieldDefRequest(post_data, config):
       approvers_str, survey, parent_approval_name, is_phase_field)
 
 
-def _ParseChoicesIntoWellKnownLabels(choices_text, field_name, config):
+def _ParseChoicesIntoWellKnownLabels(
+    choices_text, field_name, config, field_type_str):
   """Parse a field's possible choices and integrate them into the config.
 
   Args:
     choices_text: string with one label and optional docstring per line.
     field_name: string name of the field definition being edited.
     config: ProjectIssueConfig PB of the current project.
+    field_type_str: string name of the new field's type. None if an existing
+      field is being updated
 
   Returns:
     A revised list of labels that can be used to update the config.
   """
+  fd = tracker_bizobj.FindFieldDef(field_name, config)
   matches = framework_constants.IDENTIFIER_DOCSTRING_RE.findall(choices_text)
+  maskingFieldNames = []
+  # wkls should only be masked by the field if it is an enum_type.
+  if (field_type_str == 'enum_type') or (
+      fd and fd.field_type is tracker_pb2.FieldTypes.ENUM_TYPE):
+    maskingFieldNames.append(field_name.lower())
+
   new_labels = [
       ('%s-%s' % (field_name, label), choice_docstring.strip(), False)
       for label, choice_docstring in matches]
@@ -103,7 +113,7 @@ def _ParseChoicesIntoWellKnownLabels(choices_text, field_name, config):
       (wkl.label, wkl.label_docstring, False)
       for wkl in config.well_known_labels
       if not tracker_bizobj.LabelIsMaskedByField(
-          wkl.label, [field_name.lower()])]
+          wkl.label, maskingFieldNames)]
   revised_labels = kept_labels + new_labels
   return revised_labels
 

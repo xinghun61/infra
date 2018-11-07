@@ -124,7 +124,7 @@ class FieldHelpersTest(unittest.TestCase):
     choices_text = 'Hot = Lots of activity\nCold = Not much activity'
     field_name = 'somefield'
     revised_labels = field_helpers._ParseChoicesIntoWellKnownLabels(
-        choices_text, field_name, self.config)
+        choices_text, field_name, self.config, 'enum_type')
     unchanged_labels = [
         (label_def.label, label_def.label_docstring, False)
         for label_def in self.config.well_known_labels]
@@ -137,7 +137,7 @@ class FieldHelpersTest(unittest.TestCase):
     choices_text = 'High = Must be fixed\nMedium = Might slip'
     field_name = 'Priority'
     revised_labels = field_helpers._ParseChoicesIntoWellKnownLabels(
-        choices_text, field_name, self.config)
+        choices_text, field_name, self.config, 'enum_type')
     kept_labels = [
         (label_def.label, label_def.label_docstring, False)
         for label_def in self.config.well_known_labels
@@ -147,6 +147,34 @@ class FieldHelpersTest(unittest.TestCase):
         ('Priority-Medium', 'Might slip', False)]
     self.maxDiff = None
     self.assertEqual(kept_labels + new_labels, revised_labels)
+
+    # test None field_type_str, updating existing fielddef
+    self.config.field_defs.append(tracker_pb2.FieldDef(
+        field_id=13, field_name='Priority',
+        field_type=tracker_pb2.FieldTypes.ENUM_TYPE))
+    revised_labels = field_helpers._ParseChoicesIntoWellKnownLabels(
+        choices_text, field_name, self.config, None)
+    self.assertEqual(kept_labels + new_labels, revised_labels)
+
+  def testParseChoicesIntoWellKnownLabels_NotEnumField(self):
+    choices_text = ''
+    field_name = 'NotEnum'
+    self.config.well_known_labels = [
+        tracker_pb2.LabelDef(label='NotEnum-Should'),
+        tracker_pb2.LabelDef(label='NotEnum-Not-Be-Masked')]
+    revised_labels = field_helpers._ParseChoicesIntoWellKnownLabels(
+        choices_text, field_name, self.config, 'str_type')
+    new_labels = [
+        ('NotEnum-Should', None, False),
+        ('NotEnum-Not-Be-Masked', None, False)]
+    self.assertEqual(new_labels, revised_labels)
+
+    # test None field_type_str, updating existing fielddef
+    self.config.field_defs.append(tracker_pb2.FieldDef(
+        field_id=13, field_name='NotEnum',
+        field_type=tracker_pb2.FieldTypes.STR_TYPE))
+    revised_labels = field_helpers._ParseChoicesIntoWellKnownLabels(
+        choices_text, field_name, self.config, None)
 
   def testShiftEnumFieldsIntoLabels_Empty(self):
     labels = []

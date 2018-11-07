@@ -29,6 +29,7 @@ from framework import monorailrequest
 from framework import permissions
 from framework import servlet
 from framework import urls
+from proto import tracker_pb2
 from tracker import field_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_constants
@@ -175,7 +176,8 @@ class AdminLabels(IssueAdminBase):
 
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
     field_names = [fd.field_name for fd in config.field_defs
-                   if not fd.is_deleted]
+                   if fd.field_type is tracker_pb2.FieldTypes.ENUM_TYPE
+                   and not fd.is_deleted]
     masked_labels = tracker_helpers.LabelsMaskedByFields(config, field_names)
     wkl_tuples.extend([
         (masked.name, masked.docstring, False) for masked in masked_labels])
