@@ -42,10 +42,6 @@
     </div>
   </div>
 
-[else][is cue "code_of_conduct"]
- [# Note: code-of-conduct cue card is implemented in cues-conduct.ezt which is
-    included from forms where users post text.]
-
 [else][if-any account_cue]
 
   <table id="alert-table" align="center" border="0" cellspacing="0" cellpadding="0">
@@ -57,6 +53,10 @@
     [end]
   </td></tr>
  </table>
+
+[else][is cue "code_of_conduct"]
+ [# Note: code-of-conduct cue card is implemented in cues-conduct.ezt which is
+    included from forms where users post text.]
 
 [else]
 
