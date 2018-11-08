@@ -151,6 +151,19 @@
         done();
       });
     });
+
+    test('approver input appears when user has privileges', function(done) {
+      assert.isNull(
+        element.shadowRoot.querySelector('#approversInput'));
+      element.isApproval = true;
+      element.hasApproverPrivileges = true;
+
+      flush(() => {
+        assert.isNotNull(
+          element.shadowRoot.querySelector('#approversInput'));
+        done();
+      });
+    });
   });
 })();
 </script>

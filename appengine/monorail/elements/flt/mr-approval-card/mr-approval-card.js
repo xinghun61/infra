@@ -142,7 +142,7 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
       },
       _isApprovalOwner: {
         type: Boolean,
-        computed: '_computeIsApprovalOwner(approvers, user, userGroups)',
+        computed: '_computeIsApprovalOwner(approvers, user.email, userGroups)',
         observer: '_openUserCards',
       },
       _hasApproverPrivileges: {
@@ -298,11 +298,11 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
     return CLASS_ICON_MAP[cl];
   }
 
-  _computeIsApprovalOwner(approvers, user, userGroups) {
-    if (!user || !approvers) return;
+  _computeIsApprovalOwner(approvers, userEmail, userGroups) {
+    if (!userEmail || !approvers) return false;
     userGroups = userGroups || [];
-    return approvers.find((a) => {
-      return a.displayName === user.email || userGroups.find(
+    return !!approvers.find((a) => {
+      return a.displayName === userEmail || userGroups.find(
         (group) => group.displayName === a.displayName
       );
     });

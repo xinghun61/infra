@@ -1,5 +1,4 @@
 [include "master-header-shared.ezt"]
-<script src="/static/js/autolink.js" nonce="[nonce]"></script>
 
 <style>
   body {
