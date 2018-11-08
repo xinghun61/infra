@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import contextlib
+import copy
 import os
 import datetime
 
@@ -135,7 +137,7 @@ class RpcImplTests(BaseTestCase):
   @mock.patch('service.get_async', autospec=True)
   def test_trimming_exclude(self, get_async):
     get_async.return_value = future(
-        self.new_build_v1(parameters={'properties': {'a': 'b'}})
+        self.new_build_v1(parameters={model.PROPERTIES_PARAMETER: {'a': 'b'}})
     )
     req = rpc_pb2.GetBuildRequest(id=1)
     res = self.call(self.api.GetBuild, req)
@@ -145,7 +147,7 @@ class RpcImplTests(BaseTestCase):
   def test_trimming_include(self, get_async):
     get_async.return_value = future(
         self.new_build_v1(parameters={
-            'properties': {'a': 'b'},
+            model.PROPERTIES_PARAMETER: {'a': 'b'},
         }),
     )
     req = rpc_pb2.GetBuildRequest(
@@ -298,32 +300,62 @@ class UpdateBuildTests(BaseTestCase):
       metadata.append((api.BUILD_TOKEN_HEADER, token))
     return build_req, ctx
 
-  @mock.patch('service.get_async', autospec=True)
-  def test_update_steps(self, mock_get_async):
-    build = model.Build(
-        id=123,
-        status=model.BuildStatus.STARTED,
-        bucket_id='chromium/try',
-        created_by=auth.Identity('user', 'foo@google.com'),
-        create_time=utils.utcnow(),
-        start_time=utils.utcnow(),
-        parameters_actual=dict(),
-    )
-    mock_get_async.return_value = future(build)
+  @contextlib.contextmanager
+  def mock_build(self, build_id):
+    with mock.patch('service.get_async', autospec=True) as mock_get_async:
+      build = model.Build(
+          id=build_id,
+          status=model.BuildStatus.STARTED,
+          bucket_id='chromium/try',
+          created_by=auth.Identity('user', 'foo@google.com'),
+          create_time=utils.utcnow(),
+          start_time=utils.utcnow(),
+          parameters_actual=dict(),
+      )
+      mock_get_async.return_value = future(build)
+      yield build
 
-    build_proto = build_pb2.Build(id=123)
-    with open(os.path.join(THIS_DIR, 'steps.pb.txt')) as f:
-      text = protoutil.parse_multiline(f.read())
-      text_format.Merge(text, build_proto)
+  def test_update_steps(self):
+    with self.mock_build(build_id=123) as build:
+      build_proto = build_pb2.Build(id=123)
+      with open(os.path.join(THIS_DIR, 'steps.pb.txt')) as f:
+        text = protoutil.parse_multiline(f.read())
+        text_format.Merge(text, build_proto)
 
-    req, ctx = self._mk_update_req(build_proto)
-    req.fields.paths[:] = ['id', 'steps']
+      req, ctx = self._mk_update_req(build_proto)
+      req.fields.paths[:] = ['id', 'steps']
+      actual = self.call(self.api.UpdateBuild, req, ctx=ctx)
+      self.assertEqual(actual, build_proto)
 
-    actual = self.call(self.api.UpdateBuild, req, ctx=ctx)
-    self.assertEqual(actual, build_proto)
+      persisted = model.BuildSteps.key_for(build.key).get()
+      self.assertEqual(persisted.step_container.steps, build_proto.steps)
 
-    persisted = model.BuildSteps.key_for(build.key).get()
-    self.assertEqual(persisted.step_container.steps, build_proto.steps)
+  def test_update_properties(self):
+    with self.mock_build(build_id=123) as build:
+      expected_props = {'a': 1}
+      build_steps = model.BuildSteps(
+          key=model.BuildSteps.key_for(build.key),
+          step_container=build_pb2.Build(
+              steps=[step_pb2.Step(name='bot_update')],
+          ),
+      )
+      build_steps.put()
+
+      build_proto = build_pb2.Build(id=123)
+      build_proto.output.properties.update(expected_props)
+
+      req, ctx = self._mk_update_req(build_proto)
+      req.update_mask.paths[:] = ['build.output.properties']
+      req.fields.paths[:] = ['id', 'steps', 'output.properties']
+      actual = self.call(self.api.UpdateBuild, req, ctx=ctx)
+      expected = copy.deepcopy(build_proto)
+      expected.MergeFrom(build_steps.step_container)
+      self.assertEqual(actual, expected)
+
+      build = build.key.get()
+      self.assertEqual(
+          build.result_details[model.PROPERTIES_PARAMETER], expected_props
+      )
 
   def test_missing_token(self):
     build = build_pb2.Build(

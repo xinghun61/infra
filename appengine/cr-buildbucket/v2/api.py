@@ -2,9 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
 import functools
 
 from google.appengine.ext import ndb
+from google.protobuf import json_format
 from google.protobuf import symbol_database
 
 from components import auth
@@ -255,6 +257,8 @@ def update_build_async(req, ctx, _mask):
     )
   validation.validate_update_build_request(req)
 
+  update_paths = set(req.update_mask.paths)
+
   @ndb.transactional_tasklet
   def txn_async():
     build_proto = req.build
@@ -265,18 +269,28 @@ def update_build_async(req, ctx, _mask):
       raise not_found(
           'Cannot update nonexisting build with id %s', build_proto.id
       )
+    to_put = [build]
 
-    # Update build steps.
-    build_steps = model.BuildSteps(
-        key=model.BuildSteps.key_for(build.key),
-        step_container=build_pb2.Build(steps=build_proto.steps),
-    )
+    if 'build.steps' not in update_paths:
+      build_steps = yield model.BuildSteps.key_for(build.key).get_async()
+    else:
+      # Update build steps.
+      build_steps = model.BuildSteps(
+          key=model.BuildSteps.key_for(build.key),
+          step_container=build_pb2.Build(steps=build_proto.steps),
+      )
+      to_put.append(build_steps)
 
-    # Currently, only build steps are supported; later, update other fields
-    # specified in req.update_mask.
+    if 'build.output.properties' in update_paths:
+      # TODO(nodir): persist it in a separate entity, in Struct binary format.
+      # The following is inefficient.
+      build.result_details = build.result_details or {}
+      build.result_details[model.PROPERTIES_PARAMETER] = json.loads(
+          json_format.MessageToJson(build_proto.output.properties)
+      )
 
     # Store and convert back to build_pb2.Build proto for return.
-    yield ndb.put_multi_async([build, build_steps])
+    yield ndb.put_multi_async(to_put)
     raise ndb.Return(v2.build_to_v2(build, build_steps))
 
   build = yield txn_async()

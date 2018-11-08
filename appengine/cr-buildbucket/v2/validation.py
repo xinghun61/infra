@@ -197,9 +197,11 @@ def validate_update_build_request(req):
   if not req.HasField('build'):
     _enter_err('build', 'required')
 
-  with _enter('update_mask'):
-    if req.update_mask.paths != ['build.steps']:
-      _err('update only supports build.steps path currently')
+  with _enter('update_mask', 'paths'):
+    supported = {'build.steps', 'build.output.properties'}
+    unsupported = set(req.update_mask.paths) - supported
+    if unsupported:
+      _err('unsupported path(s) %r', sorted(unsupported))
 
   with _enter('build'):
     with _enter('steps'):
@@ -416,12 +418,12 @@ def _check_repeated(msg, field_name, validator):
 
 
 @contextlib.contextmanager
-def _enter(name):
-  _field_stack().append(name)
+def _enter(*names):
+  _field_stack().extend(names)
   try:
     yield
   finally:
-    _field_stack().pop()
+    _field_stack()[-len(names):] = []
 
 
 def _err(fmt, *args):

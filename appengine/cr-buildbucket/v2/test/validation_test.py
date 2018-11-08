@@ -423,9 +423,14 @@ class UpdateBuildRequestTests(BaseTestCase):
     )
     self.assert_invalid(msg, 'required')
 
-  def test_missing_update_mask(self):
-    msg = rpc_pb2.UpdateBuildRequest(build=build_pb2.Build())
-    self.assert_invalid(msg, 'update only supports build.steps path currently')
+  def test_unsupported_paths(self):
+    msg = rpc_pb2.UpdateBuildRequest(
+        build=build_pb2.Build(),
+        update_mask=field_mask_pb2.FieldMask(paths=['build.input'],)
+    )
+    self.assert_invalid(
+        msg, r'update_mask\.paths: unsupported path\(s\) .+build\.input.+'
+    )
 
   @mock.patch('model.BuildSteps', autospec=True)
   def test_steps_too_big(self, mock_steps_mod):
