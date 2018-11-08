@@ -26,20 +26,24 @@ ISSUE_CREATE_LATENCY_METRIC = ts_mon.CumulativeDistributionMetric(
   'monorail/frontend/issue_create_latency', (
     'Latency between Issue Entry form submission and page load of '
     'the subsequent issue page.'
-  ), field_spec=STANDARD_FIELDS)
+  ), field_spec=STANDARD_FIELDS,
+  units=ts_mon.MetricsDataUnits.MILLISECONDS)
 ISSUE_UPDATE_LATENCY_METRIC = ts_mon.CumulativeDistributionMetric(
   'monorail/frontend/issue_update_latency', (
     'Latency between Issue Update form submission and page load of '
     'the subsequent issue page.'
-  ), field_spec=STANDARD_FIELDS)
+  ), field_spec=STANDARD_FIELDS,
+  units=ts_mon.MetricsDataUnits.MILLISECONDS)
 AUTOCOMPLETE_POPULATE_LATENCY_METRIC = ts_mon.CumulativeDistributionMetric(
   'monorail/frontend/autocomplete_populate_latency', (
     'Latency between page load and autocomplete options loading.'
-  ), field_spec=STANDARD_FIELDS)
+  ), field_spec=STANDARD_FIELDS,
+  units=ts_mon.MetricsDataUnits.MILLISECONDS)
 DOM_CONTENT_LOADED_METRIC = ts_mon.CumulativeDistributionMetric(
   'frontend/dom_content_loaded', (
     'domContentLoaded performance timing.'
-  ), field_spec=STANDARD_FIELDS + [ts_mon.StringField('template_name')])
+  ), field_spec=STANDARD_FIELDS + [ts_mon.StringField('template_name')],
+  units=ts_mon.MetricsDataUnits.MILLISECONDS)
 
 
 class MonorailTSMonJSHandler(TSMonJSHandler):
