@@ -7,12 +7,12 @@ package handlers
 import (
 	"infra/appengine/rotang"
 	"infra/appengine/rotang/pkg/algo"
+	"net/http"
 	"time"
 
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 	"golang.org/x/net/context"
-	"golang.org/x/oauth2"
 	"google.golang.org/appengine"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -80,14 +80,13 @@ func buildLegacyMap(h *State) map[string]func(ctx *router.Context, file string) 
 
 // State holds shared state between handlers.
 type State struct {
-	selfURL        string
+	projectID      func(context.Context) string
 	prodENV        string
 	calendar       rotang.Calenderer
 	legacyCalendar rotang.Calenderer
 	generators     *algo.Generators
+	backupCred     func(context.Context) (*http.Client, error)
 	memberStore    func(context.Context) rotang.MemberStorer
-	oauthConfig    *oauth2.Config
-	token          *oauth2.Token
 	shiftStore     func(context.Context) rotang.ShiftStorer
 	configStore    func(context.Context) rotang.ConfigStorer
 	mailAddress    string
@@ -97,13 +96,14 @@ type State struct {
 
 // Options contains the options used by the handlers.
 type Options struct {
-	URL            string
+	ProjectID      func(context.Context) string
 	ProdENV        string
 	Calendar       rotang.Calenderer
 	LegacyCalendar rotang.Calenderer
 	Generators     *algo.Generators
 	MailSender     rotang.MailSender
 	MailAddress    string
+	BackupCred     func(context.Context) (*http.Client, error)
 
 	MemberStore func(context.Context) rotang.MemberStorer
 	ConfigStore func(context.Context) rotang.ConfigStorer
@@ -117,8 +117,6 @@ func New(opt *Options) (*State, error) {
 		return nil, status.Errorf(codes.InvalidArgument, "opt can not be nil")
 	case opt.ProdENV == "":
 		return nil, status.Errorf(codes.InvalidArgument, "ProdENV must be set")
-	case opt.URL == "":
-		return nil, status.Errorf(codes.InvalidArgument, "URL must be set")
 	case opt.Calendar == nil:
 		return nil, status.Errorf(codes.InvalidArgument, "Calendar can not be nil")
 	case opt.LegacyCalendar == nil:
@@ -127,10 +125,14 @@ func New(opt *Options) (*State, error) {
 		return nil, status.Errorf(codes.InvalidArgument, "Genarators can not be nil")
 	case opt.MemberStore == nil, opt.ShiftStore == nil, opt.ConfigStore == nil:
 		return nil, status.Errorf(codes.InvalidArgument, "Store functions can not be nil")
+	case opt.BackupCred == nil:
+		return nil, status.Errorf(codes.InvalidArgument, "BackupCred can not be nil")
+	case opt.ProjectID == nil:
+		return nil, status.Errorf(codes.InvalidArgument, "ProjectID can not be nil")
 	}
 	h := &State{
 		prodENV:        opt.ProdENV,
-		selfURL:        opt.URL,
+		projectID:      opt.ProjectID,
 		calendar:       opt.Calendar,
 		legacyCalendar: opt.LegacyCalendar,
 		generators:     opt.Generators,
@@ -139,6 +141,7 @@ func New(opt *Options) (*State, error) {
 		configStore:    opt.ConfigStore,
 		mailSender:     opt.MailSender,
 		mailAddress:    opt.MailAddress,
+		backupCred:     opt.BackupCred,
 	}
 	h.legacyMap = buildLegacyMap(h)
 	return h, nil

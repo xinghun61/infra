@@ -131,7 +131,7 @@ func TestEventUpdate(t *testing.T) {
 		name: "Config not enabled",
 		ctx: &router.Context{
 			Context: ctx,
-			Request: getRequest("/", ""),
+			Request: getRequest("/"),
 		},
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{
@@ -145,7 +145,7 @@ func TestEventUpdate(t *testing.T) {
 		fail: true,
 		ctx: &router.Context{
 			Context: ctx,
-			Request: getRequest("/", ""),
+			Request: getRequest("/"),
 		},
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{
@@ -183,7 +183,7 @@ func TestEventUpdate(t *testing.T) {
 		name: "Don't consider already ended shifts",
 		ctx: &router.Context{
 			Context: ctx,
-			Request: getRequest("/", ""),
+			Request: getRequest("/"),
 		},
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{
@@ -277,7 +277,7 @@ func TestEventUpdate(t *testing.T) {
 		name: "Success update shifts",
 		ctx: &router.Context{
 			Context: ctx,
-			Request: getRequest("/", ""),
+			Request: getRequest("/"),
 		},
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{
@@ -372,7 +372,7 @@ func TestEventUpdate(t *testing.T) {
 		changeID: true,
 		ctx: &router.Context{
 			Context: ctx,
-			Request: getRequest("/", ""),
+			Request: getRequest("/"),
 		},
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{
@@ -467,7 +467,7 @@ func TestEventUpdate(t *testing.T) {
 		changeID: true,
 		ctx: &router.Context{
 			Context: ctx,
-			Request: getRequest("/", ""),
+			Request: getRequest("/"),
 		},
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{

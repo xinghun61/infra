@@ -360,7 +360,7 @@ func TestUpdateGET(t *testing.T) {
 		ctx: &router.Context{
 			Context: ctx,
 			Writer:  httptest.NewRecorder(),
-			Request: getRequest("/updaterota", ""),
+			Request: getRequest("/updaterota"),
 		},
 	}, {
 		name: "Not logged in",
@@ -375,7 +375,7 @@ func TestUpdateGET(t *testing.T) {
 		ctx: &router.Context{
 			Context: ctx,
 			Writer:  httptest.NewRecorder(),
-			Request: getRequest("/updaterota", ""),
+			Request: getRequest("/updaterota"),
 		},
 	}, {
 		name: "No rota",
@@ -395,7 +395,7 @@ func TestUpdateGET(t *testing.T) {
 		ctx: &router.Context{
 			Context: ctx,
 			Writer:  httptest.NewRecorder(),
-			Request: getRequest("/updaterota", ""),
+			Request: getRequest("/updaterota"),
 		},
 	}, {
 		name: "Not in owners",
@@ -416,7 +416,7 @@ func TestUpdateGET(t *testing.T) {
 		ctx: &router.Context{
 			Context: ctx,
 			Writer:  httptest.NewRecorder(),
-			Request: getRequest("/updaterota", ""),
+			Request: getRequest("/updaterota"),
 		},
 	},
 	}
@@ -471,7 +471,7 @@ func TestGETHandlerCreateRota(t *testing.T) {
 		ctx: &router.Context{
 			Context: ctx,
 			Writer:  httptest.NewRecorder(),
-			Request: getRequest("/createrota", ""),
+			Request: getRequest("/createrota"),
 		},
 	}, {
 		name: "GET Success",
@@ -484,7 +484,7 @@ func TestGETHandlerCreateRota(t *testing.T) {
 		ctx: &router.Context{
 			Context: ctx,
 			Writer:  httptest.NewRecorder(),
-			Request: getRequest("/createrota", ""),
+			Request: getRequest("/createrota"),
 		},
 	}, {
 		name: "Not logged in",
@@ -492,7 +492,7 @@ func TestGETHandlerCreateRota(t *testing.T) {
 		ctx: &router.Context{
 			Context: ctx,
 			Writer:  httptest.NewRecorder(),
-			Request: getRequest("/createrota", ""),
+			Request: getRequest("/createrota"),
 		},
 	},
 	}

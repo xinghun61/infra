@@ -33,7 +33,7 @@ func TestHandleManageRota(t *testing.T) {
 		ctx: &router.Context{
 			Context: ctxCancel,
 			Writer:  httptest.NewRecorder(),
-			Request: getRequest("/", ""),
+			Request: getRequest("/"),
 		},
 	}, {
 		name: "Rotation success",
@@ -41,7 +41,7 @@ func TestHandleManageRota(t *testing.T) {
 		ctx: &router.Context{
 			Context: ctx,
 			Writer:  httptest.NewRecorder(),
-			Request: getRequest("/", ""),
+			Request: getRequest("/"),
 		},
 		memberPool: []rotang.Member{
 			{
@@ -69,7 +69,7 @@ func TestHandleManageRota(t *testing.T) {
 		ctx: &router.Context{
 			Context: ctx,
 			Writer:  httptest.NewRecorder(),
-			Request: getRequest("/", ""),
+			Request: getRequest("/"),
 		},
 		memberPool: []rotang.Member{
 			{
@@ -97,7 +97,7 @@ func TestHandleManageRota(t *testing.T) {
 		ctx: &router.Context{
 			Context: ctx,
 			Writer:  httptest.NewRecorder(),
-			Request: getRequest("/", ""),
+			Request: getRequest("/"),
 		},
 		memberPool: []rotang.Member{
 			{

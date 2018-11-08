@@ -50,5 +50,5 @@ func (h *State) HandleDeleteRota(ctx *router.Context) {
 		return
 	}
 
-	http.Redirect(ctx.Writer, ctx.Request, h.selfURL+"/managerota", http.StatusOK)
+	http.Redirect(ctx.Writer, ctx.Request, "/managerota", http.StatusOK)
 }

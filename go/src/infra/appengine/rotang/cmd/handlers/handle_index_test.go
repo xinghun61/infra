@@ -49,7 +49,7 @@ func TestHandleIndex(t *testing.T) {
 		ctx: &router.Context{
 			Context: ctxCancel,
 			Writer:  httptest.NewRecorder(),
-			Request: getRequest("/", ""),
+			Request: getRequest("/"),
 		},
 	},
 		{
@@ -57,7 +57,7 @@ func TestHandleIndex(t *testing.T) {
 			ctx: &router.Context{
 				Context: ctx,
 				Writer:  httptest.NewRecorder(),
-				Request: getRequest("/", ""),
+				Request: getRequest("/"),
 			},
 		}, {
 			name:  "Index Success - User, no rotas",
@@ -65,7 +65,7 @@ func TestHandleIndex(t *testing.T) {
 			ctx: &router.Context{
 				Context: ctx,
 				Writer:  httptest.NewRecorder(),
-				Request: getRequest("/", ""),
+				Request: getRequest("/"),
 			},
 		}, {
 			name:  "Index Success - User in rota",
@@ -73,7 +73,7 @@ func TestHandleIndex(t *testing.T) {
 			ctx: &router.Context{
 				Context: ctx,
 				Writer:  httptest.NewRecorder(),
-				Request: getRequest("/", ""),
+				Request: getRequest("/"),
 			},
 			memberPool: []rotang.Member{
 				{

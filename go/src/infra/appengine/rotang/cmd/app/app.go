@@ -28,15 +28,16 @@ import (
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
+	"google.golang.org/appengine"
 
 	gcal "google.golang.org/api/calendar/v3"
 )
 
 const (
-	authGroup     = "sheriff-o-matic-access"
-	selfURL       = "rota-ng-staging.googleplex.com"
-	sheriffConfig = "token/sheriff_secret.json"
-	sheriffToken  = "token/sheriff_token.json"
+	datastoreScope = "https://www.googleapis.com/auth/datastore"
+	authGroup      = "sheriff-o-matic-access"
+	sheriffConfig  = "token/sheriff_secret.json"
+	sheriffToken   = "token/sheriff_token.json"
 )
 
 type appengineMailer struct{}
@@ -86,9 +87,9 @@ func legacyCred() (func(context.Context) (*http.Client, error), error) {
 	}, nil
 }
 
-func serviceDefaultCred() func(context.Context) (*http.Client, error) {
+func serviceDefaultCred(scope string) func(context.Context) (*http.Client, error) {
 	return func(ctx context.Context) (*http.Client, error) {
-		return google.DefaultClient(ctx, gcal.CalendarScope)
+		return google.DefaultClient(ctx, scope)
 	}
 }
 
@@ -116,7 +117,7 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	cred := serviceDefaultCred()
+	cred := serviceDefaultCred(gcal.CalendarScope)
 	if prodENV == "local" {
 		cred = lcred
 	}
@@ -138,7 +139,8 @@ func init() {
 	gs.Register(algo.NewRandomGen())
 
 	opts := handlers.Options{
-		URL:            selfURL,
+		ProjectID:      appengine.AppID,
+		BackupCred:     serviceDefaultCred(datastoreScope),
 		LegacyCalendar: calendar.New(lcred),
 		Calendar:       calendar.New(cred),
 		Generators:     gs,
@@ -171,6 +173,7 @@ func init() {
 
 	// Recurring jobs.
 	r.GET("/cron/joblegacy", tmw, h.JobLegacy)
+	r.GET("/cron/backup", tmw, h.JobBackup)
 
 	http.DefaultServeMux.Handle("/", r)
 }

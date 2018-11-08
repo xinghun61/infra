@@ -29,12 +29,20 @@ func newTestContext() context.Context {
 	return ctx
 }
 
-func getRequest(url, email string) *http.Request {
+func getRequest(url string) *http.Request {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		panic(err)
 	}
 	return req
+}
+
+func defaultClient(_ context.Context) (*http.Client, error) {
+	return http.DefaultClient, nil
+}
+
+func idFunc(_ context.Context) string {
+	return "rota-ng-test"
 }
 
 func testSetup(t *testing.T) *State {
@@ -48,13 +56,14 @@ func testSetup(t *testing.T) *State {
 	fake := &fakeCal{}
 
 	opts := Options{
-		URL:            "http://localhost:8080",
+		ProjectID:      idFunc,
 		Generators:     gs,
 		Calendar:       fake,
 		LegacyCalendar: fake,
 		MailSender:     &testableMail{},
 		MailAddress:    "admin@example.com",
 		ProdENV:        "production",
+		BackupCred:     defaultClient,
 	}
 	setupStoreHandlers(&opts, datastore.New)
 	h, err := New(&opts)
@@ -140,7 +149,7 @@ func TestNew(t *testing.T) {
 	}{{
 		name: "Success",
 		opts: &Options{
-			URL:        "http://localhost:8080",
+			ProjectID:  idFunc,
 			ProdENV:    "production",
 			Generators: &algo.Generators{},
 			MemberStore: func(ctx context.Context) rotang.MemberStorer {
@@ -154,34 +163,17 @@ func TestNew(t *testing.T) {
 			},
 			Calendar:       &calendar.Calendar{},
 			LegacyCalendar: &calendar.Calendar{},
+			BackupCred:     defaultClient,
 		},
 	}, {
 		name: "Options nil",
 		fail: true,
 	}, {
-		name: "URL empty",
-		fail: true,
-		opts: &Options{
-			Generators: &algo.Generators{},
-			ProdENV:    "production",
-			MemberStore: func(ctx context.Context) rotang.MemberStorer {
-				return datastore.New(ctx)
-			},
-			ShiftStore: func(ctx context.Context) rotang.ShiftStorer {
-				return datastore.New(ctx)
-			},
-			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {
-				return datastore.New(ctx)
-			},
-			Calendar:       &calendar.Calendar{},
-			LegacyCalendar: &calendar.Calendar{},
-		},
-	}, {
 		name: "Generators Empty",
 		fail: true,
 		opts: &Options{
-			URL:     "http://localhost:8080",
-			ProdENV: "production",
+			ProjectID: idFunc,
+			ProdENV:   "production",
 			MemberStore: func(ctx context.Context) rotang.MemberStorer {
 				return datastore.New(ctx)
 			},
@@ -193,12 +185,13 @@ func TestNew(t *testing.T) {
 			},
 			Calendar:       &calendar.Calendar{},
 			LegacyCalendar: &calendar.Calendar{},
+			BackupCred:     defaultClient,
 		},
 	}, {
 		name: "Store empty",
 		fail: true,
 		opts: &Options{
-			URL:            "http://localhost:8080",
+			ProjectID:      idFunc,
 			ProdENV:        "production",
 			Generators:     &algo.Generators{},
 			Calendar:       &calendar.Calendar{},
@@ -206,12 +199,13 @@ func TestNew(t *testing.T) {
 			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {
 				return datastore.New(ctx)
 			},
+			BackupCred: defaultClient,
 		},
 	}, {
 		name: "No Calendar",
 		fail: true,
 		opts: &Options{
-			URL:            "http://localhost:8080",
+			ProjectID:      idFunc,
 			ProdENV:        "production",
 			Generators:     &algo.Generators{},
 			LegacyCalendar: &calendar.Calendar{},
@@ -224,12 +218,52 @@ func TestNew(t *testing.T) {
 			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {
 				return datastore.New(ctx)
 			},
+			BackupCred: defaultClient,
 		},
 	}, {
 		name: "No ProdENV",
 		fail: true,
 		opts: &Options{
-			URL:        "http://localhost:8080",
+			ProjectID:  idFunc,
+			Generators: &algo.Generators{},
+			MemberStore: func(ctx context.Context) rotang.MemberStorer {
+				return datastore.New(ctx)
+			},
+			ShiftStore: func(ctx context.Context) rotang.ShiftStorer {
+				return datastore.New(ctx)
+			},
+			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {
+				return datastore.New(ctx)
+			},
+			Calendar:       &calendar.Calendar{},
+			LegacyCalendar: &calendar.Calendar{},
+			BackupCred:     defaultClient,
+		},
+	}, {
+		name: "No LegacyCalendar",
+		fail: true,
+		opts: &Options{
+			ProjectID:  idFunc,
+			Generators: &algo.Generators{},
+			MemberStore: func(ctx context.Context) rotang.MemberStorer {
+				return datastore.New(ctx)
+			},
+			ShiftStore: func(ctx context.Context) rotang.ShiftStorer {
+				return datastore.New(ctx)
+			},
+			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {
+				return datastore.New(ctx)
+			},
+			Calendar:       &calendar.Calendar{},
+			LegacyCalendar: &calendar.Calendar{},
+			BackupCred:     defaultClient,
+		},
+	}, {
+		name: "BackupCred missing",
+		fail: true,
+		opts: &Options{
+			ProjectID:  idFunc,
+			ProdENV:    "production",
 			Generators: &algo.Generators{},
 			MemberStore: func(ctx context.Context) rotang.MemberStorer {
 				return datastore.New(ctx)
@@ -244,10 +278,10 @@ func TestNew(t *testing.T) {
 			LegacyCalendar: &calendar.Calendar{},
 		},
 	}, {
-		name: "No LegacyCalendar",
+		name: "ProjectID missing",
 		fail: true,
 		opts: &Options{
-			URL:        "http://localhost:8080",
+			ProdENV:    "production",
 			Generators: &algo.Generators{},
 			MemberStore: func(ctx context.Context) rotang.MemberStorer {
 				return datastore.New(ctx)

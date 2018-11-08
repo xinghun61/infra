@@ -146,14 +146,14 @@ func TestUploadGet(t *testing.T) {
 		ctx: &router.Context{
 			Context: ctxCancel,
 			Writer:  httptest.NewRecorder(),
-			Request: getRequest("/upload", ""),
+			Request: getRequest("/upload"),
 		},
 	}, {
 		name: "Success Get upload",
 		ctx: &router.Context{
 			Context: ctx,
 			Writer:  httptest.NewRecorder(),
-			Request: getRequest("/upload", ""),
+			Request: getRequest("/upload"),
 		},
 	},
 	}

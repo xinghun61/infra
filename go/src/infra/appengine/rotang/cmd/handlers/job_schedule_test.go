@@ -136,7 +136,7 @@ func TestScheduleShifts(t *testing.T) {
 		name: "Config not enabled",
 		ctx: &router.Context{
 			Context: ctx,
-			Request: getRequest("/", ""),
+			Request: getRequest("/"),
 		},
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{
@@ -150,7 +150,7 @@ func TestScheduleShifts(t *testing.T) {
 		fail: true,
 		ctx: &router.Context{
 			Context: ctx,
-			Request: getRequest("/", ""),
+			Request: getRequest("/"),
 		},
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{
@@ -195,7 +195,7 @@ func TestScheduleShifts(t *testing.T) {
 		fail: true,
 		ctx: &router.Context{
 			Context: ctx,
-			Request: getRequest("/", ""),
+			Request: getRequest("/"),
 		},
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{
@@ -233,7 +233,7 @@ func TestScheduleShifts(t *testing.T) {
 		name: "Shifts not expired",
 		ctx: &router.Context{
 			Context: ctx,
-			Request: getRequest("/", ""),
+			Request: getRequest("/"),
 		},
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{
@@ -310,7 +310,7 @@ func TestScheduleShifts(t *testing.T) {
 		name: "Don't consider already ended shifts",
 		ctx: &router.Context{
 			Context: ctx,
-			Request: getRequest("/", ""),
+			Request: getRequest("/"),
 		},
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{
@@ -404,7 +404,7 @@ func TestScheduleShifts(t *testing.T) {
 		name: "Success schedule shifts",
 		ctx: &router.Context{
 			Context: ctx,
-			Request: getRequest("/", ""),
+			Request: getRequest("/"),
 		},
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{
@@ -496,7 +496,7 @@ func TestScheduleShifts(t *testing.T) {
 		name: "Split shifts",
 		ctx: &router.Context{
 			Context: ctx,
-			Request: getRequest("/", ""),
+			Request: getRequest("/"),
 		},
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{

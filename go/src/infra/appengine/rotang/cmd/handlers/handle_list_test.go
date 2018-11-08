@@ -33,7 +33,7 @@ func TestHandleList(t *testing.T) {
 			ctx: &router.Context{
 				Context: ctxCancel,
 				Writer:  httptest.NewRecorder(),
-				Request: getRequest("/list", ""),
+				Request: getRequest("/list"),
 			},
 		}, {
 			name: "List No entries",
@@ -41,14 +41,14 @@ func TestHandleList(t *testing.T) {
 			ctx: &router.Context{
 				Context: ctx,
 				Writer:  httptest.NewRecorder(),
-				Request: getRequest("/list", ""),
+				Request: getRequest("/list"),
 			},
 		}, {
 			name: "Success multiple entries",
 			ctx: &router.Context{
 				Context: ctx,
 				Writer:  httptest.NewRecorder(),
-				Request: getRequest("/list", ""),
+				Request: getRequest("/list"),
 			},
 			memberPool: []rotang.Member{
 				{
