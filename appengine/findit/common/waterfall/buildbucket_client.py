@@ -11,7 +11,6 @@ import urllib
 from buildbucket_proto.build_pb2 import Build
 from buildbucket_proto.rpc_pb2 import GetBuildRequest
 from common.findit_http_client import FinditHttpClient
-from gae_libs.http import auth_util
 from libs.math.integers import constrain
 
 # https://github.com/grpc/grpc-go/blob/master/codes/codes.go
@@ -77,9 +76,9 @@ class TryJob(
             'dimensions',  # Optional. Dimensions used to match a Swarmingbot.
             'pubsub_callback',  # Optional. PubSub callback info.
             'priority',  # Optional swarming priority 1 (high) thru 200 (low).
-            'expiration_secs', # Optional seconds to expire the try job. i.e.
-                               # give up if no bot becomes available when the
-                               # task has been pending this long.
+            'expiration_secs',  # Optional seconds to expire the try job. i.e.
+            # give up if no bot becomes available when the
+            # task has been pending this long.
         ))):
   """Represents a try-job to be triggered through Buildbucket.
 
@@ -98,11 +97,10 @@ class TryJob(
       pubsub_callback=None,
       priority=None,
       expiration_secs=None):
-    return super(cls,
-                 TryJob).__new__(cls, master_name, builder_name, properties,
-                                 tags, additional_build_parameters, cache_name,
-                                 dimensions, pubsub_callback, priority,
-                                 expiration_secs)
+    return super(cls, TryJob).__new__(
+        cls, master_name, builder_name, properties, tags,
+        additional_build_parameters, cache_name, dimensions, pubsub_callback,
+        priority, expiration_secs)
 
   def _AddSwarmbucketOverrides(self, parameters):
     assert self.cache_name
@@ -128,8 +126,8 @@ class TryJob(
       parameters['swarming']['override_builder_cfg']['priority'] = priority
 
     if self.expiration_secs is not None:
-      parameters['swarming']['override_builder_cfg'][
-          'expiration_secs'] = int(self.expiration_secs)
+      parameters['swarming']['override_builder_cfg']['expiration_secs'] = int(
+          self.expiration_secs)
 
     if self.dimensions:
       parameters['swarming']['override_builder_cfg']['dimensions'] = (

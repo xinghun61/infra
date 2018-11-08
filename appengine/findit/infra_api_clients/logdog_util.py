@@ -226,6 +226,27 @@ def _GetQueryParametersForAnnotation(log_location):
   return host, project, path
 
 
+def GetLogFromViewUrl(base_log, http_client):
+  """Gets a log from it's view url.
+
+  Args:
+    base_log(str): View url in the format
+      like https://{host}/logs/{project}/{path}
+    http_client (FinditHttpClient): http_client to make the request.
+
+  Returns:
+    log (str or None): Requested log.
+  """
+  log_url = '{base_log}?format=raw'.format(base_log=base_log)
+  status_code, log, _ = http_client.Get(log_url)
+
+  if status_code != 200 or not log:
+    logging.error('Failed to get the log from %s: status_code-%d, log-%s',
+                  log_url, status_code, log)
+    return None
+  return log
+
+
 def _GetLog(annotations, step_name, log_type, http_client):
   if not annotations:
     return None
@@ -240,24 +261,12 @@ def _GetLog(annotations, step_name, log_type, http_client):
     return None
   path = '%s/+/%s' % (prefix, stream)
 
-  log_url = 'https://{host}/logs/{project}/{path}?format=raw'.format(
+  base_url = 'https://{host}/logs/{project}/{path}'.format(
       host=host, project=project, path=path)
-  status_code, log, _ = http_client.Get(log_url)
-
-  if status_code != 200 or not log:
-    logging.error('Failed to get the log from %s: status_code-%d, log-%s',
-                  log_url, status_code, log)
-    return None
-  return log
+  return GetLogFromViewUrl(base_url, http_client)
 
 
-def GetStepLogForBuild(buildbucket_build, step_name, log_type, http_client):
-  log_location = GetLogLocationFromBuildbucketBuild(buildbucket_build)
-  host, project, path = _GetQueryParametersForAnnotation(log_location)
-  annotations = _GetAnnotationsProtoForPath(host, project, path, http_client)
-  return _GetLog(annotations, step_name, log_type, http_client)
-
-
+# TODO(crbug/902137): Remove this after all builders are migrated to LUCI.
 def GetStepLogLegacy(log_location, step_name, log_type, http_client):
   host, project, path = _GetQueryParametersForAnnotation(log_location)
   if not host:

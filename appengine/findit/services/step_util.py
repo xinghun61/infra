@@ -8,6 +8,8 @@ import inspect
 import json
 import logging
 
+from google.protobuf.field_mask_pb2 import FieldMask
+
 from common.constants import SUPPORTED_ISOLATED_SCRIPT_TESTS
 from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
@@ -315,7 +317,8 @@ def IsStepSupportedByFindit(test_result_object, step_name, master_name):
   return True
 
 
-def _ReturnStepLog(data, log_type):
+def _ParseStepLogIfAppropriate(data, log_type):
+  """PConditionally parses the contents of data, based on the log type."""
   if not data:
     return None
 
@@ -338,38 +341,51 @@ def _ReturnStepLog(data, log_type):
   return data
 
 
+def _GetStepLogViewUrl(build, full_step_name, log_type):
+  """Gets view url of the requested log.
+
+  Args:
+    build(A buildbucket_proto.build_pb2.Build proto): Information about a build.
+    full_step_name(str): Full name of the step.
+    log_type(str): Type of the log.
+
+  Returns:
+    (str): view_url of the requested log.
+  """
+  for step in build.steps or []:
+    if step.name == full_step_name:
+      for log in step.logs or []:
+        if log.name.lower() == log_type:
+          return log.view_url
+
+  return None
+
+
 def GetStepLogForLuciBuild(build_id,
                            full_step_name,
                            http_client,
                            log_type='stdout'):
-  """Returns specific log of the specified step."""
+  """Returns specific log of the specified step in a LUCI build.
 
-  error, build = buildbucket_client.GetTryJobs([build_id])[0]
-  if error:
+  Args:
+    build_id(int): Buildbucket id.
+    full_step_name(str): Full name of the step.
+    http_client(FinditHttpClient): Http_client to make the request.
+    log_type(str): Type of the log.
+
+  Returns:
+    Requested Log processed by _ParseStepLogIfAppropriate.
+  """
+
+  build = buildbucket_client.GetV2Build(build_id, FieldMask(paths=['steps']))
+  if not build:
     logging.exception('Error retrieving buildbucket build id: %s' % build_id)
     return None
 
-  data = logdog_util.GetStepLogForBuild(build.response, full_step_name,
-                                        log_type, http_client)
+  data = logdog_util.GetLogFromViewUrl(
+      _GetStepLogViewUrl(build, full_step_name, log_type), http_client)
 
-  return _ReturnStepLog(data, log_type)
-
-
-def _StepMetadataKeyGenerator(func, args, kwargs, namespace=None):
-  """Generates a key to a cached step_metadata for a step in a specific build.
-
-  Args:
-    func (function): An arbitrary function.
-    args (list): Positional arguments passed to ``func``.
-    kwargs (dict): Keyword arguments passed to ``func``.
-    namespace (str): A prefix to the key for the cache.
-
-  Returns:
-    A string to represent a call to the given function with the given arguments.
-  """
-  params = inspect.getcallargs(func, *args, **kwargs)
-  encoded_params = [hashlib.md5(str(params[p])).hexdigest() for p in params]
-  return '%s-%s' % (namespace, '-'.join(encoded_params))
+  return _ParseStepLogIfAppropriate(data, log_type)
 
 
 def _CanonicalStepNameKeyGenerator(func, args, kwargs, namespace=None):
@@ -408,7 +424,7 @@ def GetWaterfallBuildStepLog(master_name,
   data = logdog_util.GetStepLogLegacy(build.log_location, full_step_name,
                                       log_type, http_client)
 
-  return _ReturnStepLog(data, log_type)
+  return _ParseStepLogIfAppropriate(data, log_type)
 
 
 @Cached(

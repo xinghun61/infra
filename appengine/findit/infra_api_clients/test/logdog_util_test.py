@@ -262,15 +262,6 @@ class LogDogUtilTest(unittest.TestCase):
 
   @mock.patch.object(rpc_util, 'DownloadJsonData')
   @mock.patch.object(logdog_util, '_GetLog')
-  @mock.patch.object(logdog_util, '_GetQueryParametersForAnnotation')
-  def testGetStepLogForBuild(self, mock_location, mock_log, mock_data):
-    mock_location.return_value = 'host', 'project', 'path'
-    mock_data.return_value = (200, self._GenerateTailRes())
-    logdog_util.GetStepLogForBuild({}, 'step', 'stdout', self.http_client)
-    self.assertTrue(mock_log.called)
-
-  @mock.patch.object(rpc_util, 'DownloadJsonData')
-  @mock.patch.object(logdog_util, '_GetLog')
   def testGetStepLogLegacy(self, mock_log, mock_data):
     mock_data.return_value = (200, self._GenerateTailRes())
     logdog_util.GetStepLogLegacy('logdog://logdog.com/project/path', 'step',
@@ -318,8 +309,7 @@ class LogDogUtilTest(unittest.TestCase):
     url = ('https://logdog.com/logs/project/path/+/%s?format=raw' %
            self.stdout_stream)
     mock_log.assert_called_once_with(
-        'Failed to get the log from %s: status_code-%d, log-%s',
-        url, 404, None)
+        'Failed to get the log from %s: status_code-%d, log-%s', url, 404, None)
 
   @mock.patch.object(FinditHttpClient, 'Get')
   def testGetLog(self, mock_get):

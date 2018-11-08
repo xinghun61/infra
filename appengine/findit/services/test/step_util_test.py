@@ -6,6 +6,9 @@ import json
 import logging
 import mock
 
+from buildbucket_proto.build_pb2 import Build
+from buildbucket_proto.step_pb2 import Step
+
 from common.waterfall import buildbucket_client
 from infra_api_clients import logdog_util
 from libs.test_results.gtest_test_results import GtestTestResults
@@ -18,20 +21,6 @@ from waterfall import buildbot
 from waterfall import waterfall_config
 from waterfall.build_info import BuildInfo
 from waterfall.test import wf_testcase
-
-
-class MockLuciBuild(object):
-
-  def __init__(self, response):
-    self.response = response
-
-
-MOCK_BUILDS = [(None,
-                MockLuciBuild({
-                    'tags': [
-                        'swarming_tag:log_location:logdog://host/project/path'
-                    ]
-                }))]
 
 
 class MockWaterfallBuild(object):
@@ -320,18 +309,46 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
     mocked_log.assert_called_with(
         'Failed to json load data for step_metadata. Data is: log.')
 
-  @mock.patch.object(
-      buildbucket_client, 'GetTryJobs', return_value=[(Exception(), None)])
+  @mock.patch.object(buildbucket_client, 'GetV2Build', return_value=None)
   def testGetStepLogForLuciBuildError(self, _):
     self.assertIsNone(step_util.GetStepLogForLuciBuild(87654321, 's', None))
 
-  @mock.patch.object(buildbucket_client, 'GetTryJobs', return_value=MOCK_BUILDS)
-  @mock.patch.object(logdog_util, 'GetStepLogForBuild', return_value='log')
-  @mock.patch.object(step_util, '_ReturnStepLog', return_value='log')
-  def testGetStepLogForLuciBuild(self, *_):
+  @mock.patch.object(step_util, '_ParseStepLogIfAppropriate',
+                     return_value='log')
+  @mock.patch.object(logdog_util, 'GetLogFromViewUrl', return_value='log')
+  @mock.patch.object(buildbucket_client, 'GetV2Build')
+  def testGetStepLogForLuciBuild(self, mock_get_build, mock_get_log, _):
+    build_id = 8945610992972640896
+    mock_log = Step.Log()
+    mock_log.name = 'step_metadata'
+    mock_log.view_url = 'view_url'
+    mock_step = Step()
+    mock_step.name = 's'
+    mock_step.logs.extend([mock_log])
+    mock_build = Build()
+    mock_build.id = build_id
+    mock_build.steps.extend([mock_step])
+    mock_get_build.return_value = mock_build
     self.assertEqual(
         'log',
-        step_util.GetStepLogForLuciBuild(87654321, 's', None, 'step_metadata'))
+        step_util.GetStepLogForLuciBuild(build_id, 's', None, 'step_metadata'))
+    mock_get_log.assert_called_once_with('view_url', None)
+
+  def testGetStepLogViewUrlNoMatchingLog(self):
+    build_id = 8945610992972640896
+    mock_log = Step.Log()
+    mock_log.name = 'another_log'
+    mock_log.view_url = 'view_url'
+    mock_step1 = Step()
+    mock_step1.name = 's1'
+    mock_step1.logs.extend([mock_log])
+    mock_step2 = Step()
+    mock_step2.name = 's2'
+    mock_step2.logs.extend([mock_log])
+    mock_build = Build()
+    mock_build.id = build_id
+    mock_build.steps.extend([mock_step1, mock_step2])
+    self.assertIsNone(step_util._GetStepLogViewUrl(mock_build, 's2', 'log'))
 
   @mock.patch.object(
       step_util,
