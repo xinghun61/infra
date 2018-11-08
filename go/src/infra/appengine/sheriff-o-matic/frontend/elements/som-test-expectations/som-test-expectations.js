@@ -24,8 +24,7 @@ class SomTestExpectations extends Polymer.Element {
       },
       clientId: {
         type: String,
-        // Default to staging, localhost is whitelisted for dev/debugging.
-        value: '408214842030-n7qkqet08nqmsvoap6qkik6euga4v41v.apps.googleusercontent.com'
+        computed: '_computeClientId()'
       },
       _testExpectationsJson: {
         type: Array,
@@ -59,11 +58,16 @@ class SomTestExpectations extends Polymer.Element {
     };
   }
 
-  ready() {
+  _computeClientId() {
     if (window.location.host == 'sheriff-o-matic.appspot.com') {
-      this.clientId = '297387252952-io4k56a9uagle7rq4o8b7sclfih6136c.apps.googleusercontent.com';
+      return '297387252952-io4k56a9uagle7rq4o8b7sclfih6136c.apps.googleusercontent.com';
     }
 
+    // Staging is whitelisted for localhost/dev.
+    return '408214842030-n7qkqet08nqmsvoap6qkik6euga4v41v.apps.googleusercontent.com';
+  }
+
+  ready() {
     super.ready();
 
     this.refresh();
