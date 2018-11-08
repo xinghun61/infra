@@ -237,7 +237,7 @@ def validate_build_token(req, ctx):
 
   try:
     tokens.validate_build_token(token, req.build.id)
-  except auth.tokens.InvalidTokenError as e:
+  except auth.InvalidTokenError as e:
     raise StatusError(prpc.StatusCode.UNAUTHENTICATED, '%s', e.message)
 
 

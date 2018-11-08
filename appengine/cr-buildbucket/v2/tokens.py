@@ -15,8 +15,10 @@ class BuildToken(auth.TokenKind):
 
 
 def generate_build_token(build_id):
+  """Returns a token associated with the build."""
   return BuildToken.generate(str(build_id))
 
 
 def validate_build_token(token, build_id):
+  """Raises auth.InvalidTokenError if the token is invalid."""
   return BuildToken.validate(token, str(build_id))

@@ -14,6 +14,7 @@ from google.rpc import status_pb2
 from components import auth
 from components import prpc
 from components import protoutil
+from components import utils
 from components.prpc import context as prpc_context
 from testing_utils import testing
 import mock
@@ -274,7 +275,21 @@ class SearchTests(BaseTestCase):
 
 class UpdateBuildTests(BaseTestCase):
 
-  def _mk_update_req(self, build, token):
+  def setUp(self):
+    super(UpdateBuildTests, self).setUp()
+    self.validate_build_token = self.patch(
+        'v2.tokens.validate_build_token',
+        autospec=True,
+        return_value=None,
+    )
+
+    self.can_update_build_async = self.patch(
+        'user.can_update_build_async',
+        autospec=True,
+        return_value=future(True),
+    )
+
+  def _mk_update_req(self, build, token='token'):
     build_req = rpc_pb2.UpdateBuildRequest(build=build)
     build_req.update_mask.paths[:] = ['build.steps']
     ctx = prpc_context.ServicerContext()
@@ -283,50 +298,39 @@ class UpdateBuildTests(BaseTestCase):
       metadata.append((api.BUILD_TOKEN_HEADER, token))
     return build_req, ctx
 
-  @mock.patch('components.utils.time_time', autospec=True)
   @mock.patch('service.get_async', autospec=True)
-  @mock.patch('user.can_update_build_async', autospec=True)
-  def test_valid(self, mock_can_update, mock_get_async, mock_time):
-    mock_time.side_effect = iter([1, 2, 3, 4])
-    mock_can_update.return_value = future(True)
-    mock_get_async.return_value = future(
-        model.Build(
-            id=123,
-            status=model.BuildStatus.STARTED,
-            bucket_id='chromium/try',
-            created_by=auth.Identity('user', 'foo@google.com'),
-            create_time=timestamp_pb2.Timestamp(seconds=1500000000
-                                               ).ToDatetime(),
-            start_time=timestamp_pb2.Timestamp(seconds=1500000000).ToDatetime(),
-            parameters_actual=dict(),
-        )
+  def test_update_steps(self, mock_get_async):
+    build = model.Build(
+        id=123,
+        status=model.BuildStatus.STARTED,
+        bucket_id='chromium/try',
+        created_by=auth.Identity('user', 'foo@google.com'),
+        create_time=utils.utcnow(),
+        start_time=utils.utcnow(),
+        parameters_actual=dict(),
     )
+    mock_get_async.return_value = future(build)
 
-    build_id = 123
-    build = build_pb2.Build(id=build_id)
+    build_proto = build_pb2.Build(id=123)
     with open(os.path.join(THIS_DIR, 'steps.pb.txt')) as f:
       text = protoutil.parse_multiline(f.read())
-      text_format.Merge(text, build)
+      text_format.Merge(text, build_proto)
 
-    token = tokens.generate_build_token(build_id)
-    req, ctx = self._mk_update_req(build, token)
-    req.fields.paths[:] = ['id', 'status', 'created_by', 'steps']
+    req, ctx = self._mk_update_req(build_proto)
+    req.fields.paths[:] = ['id', 'steps']
 
     actual = self.call(self.api.UpdateBuild, req, ctx=ctx)
-    expected = build_pb2.Build(
-        id=123,
-        status=common_pb2.STARTED,
-        created_by='user:foo@google.com',
-        steps=build.steps,
-    )
-    self.assertEqual(actual, expected)
+    self.assertEqual(actual, build_proto)
+
+    persisted = model.BuildSteps.key_for(build.key).get()
+    self.assertEqual(persisted.step_container.steps, build_proto.steps)
 
   def test_missing_token(self):
     build = build_pb2.Build(
         id=123,
         status=common_pb2.STARTED,
     )
-    req, ctx = self._mk_update_req(build, None)
+    req, ctx = self._mk_update_req(build, token=None)
     self.call(
         self.api.UpdateBuild,
         req,
@@ -335,17 +339,15 @@ class UpdateBuildTests(BaseTestCase):
         expected_details='missing token in build update request',
     )
 
-  @mock.patch('components.utils.time_time', autospec=True)
-  def test_bad_token(self, mock_time):
-    mock_time.side_effect = iter([1, 2, 3, 4])
+  def test_invalid_token(self):
+    self.validate_build_token.side_effect = auth.InvalidTokenError
 
     build = build_pb2.Build(
         id=123,
         status=common_pb2.STARTED,
     )
 
-    token = tokens.generate_build_token(456)
-    req, ctx = self._mk_update_req(build, token)
+    req, ctx = self._mk_update_req(build)
     self.call(
         self.api.UpdateBuild,
         req,
@@ -353,43 +355,13 @@ class UpdateBuildTests(BaseTestCase):
         expected_code=prpc.StatusCode.UNAUTHENTICATED,
     )
 
-  @mock.patch('components.utils.time_time', autospec=True)
-  def test_expired_token(self, mock_time):
-    mock_time.side_effect = iter([
-        2 * i * model.BUILD_TIMEOUT.total_seconds() for i in range(4)
-    ])
-
-    build_id = 123
-    build = build_pb2.Build(
-        id=build_id,
-        status=common_pb2.STARTED,
-    )
-
-    token = tokens.generate_build_token(build_id)
-    req, ctx = self._mk_update_req(build, token)
-    self.call(
-        self.api.UpdateBuild,
-        req,
-        ctx=ctx,
-        expected_code=prpc.StatusCode.UNAUTHENTICATED,
-        expected_details='Bad token: expired',
-    )
-
-  @mock.patch('components.utils.time_time', autospec=True)
-  @mock.patch('user.can_update_build_async', autospec=True)
   @mock.patch('v2.validation.validate_update_build_request', autospec=True)
-  def test_invalid_build_proto(
-      self, mock_validation, mock_can_update, mock_time
-  ):
-    mock_time.side_effect = iter([1, 2, 3, 4])
-    mock_can_update.return_value = future(True)
+  def test_invalid_build_proto(self, mock_validation):
     mock_validation.side_effect = validation.Error('invalid build proto')
 
-    build_id = 123
-    build = build_pb2.Build(id=build_id)
+    build = build_pb2.Build(id=123)
 
-    token = tokens.generate_build_token(build_id)
-    req, ctx = self._mk_update_req(build, token)
+    req, ctx = self._mk_update_req(build)
     self.call(
         self.api.UpdateBuild,
         req,
@@ -398,22 +370,16 @@ class UpdateBuildTests(BaseTestCase):
         expected_details='invalid build proto',
     )
 
-  @mock.patch('components.utils.time_time', autospec=True)
   @mock.patch('service.get_async', autospec=True)
-  @mock.patch('user.can_update_build_async', autospec=True)
-  def test_invalid_id(self, mock_can_update, mock_get_async, mock_time):
-    mock_time.side_effect = iter([1, 2, 3, 4])
-    mock_can_update.return_value = future(True)
+  def test_invalid_id(self, mock_get_async):
     mock_get_async.return_value = future(None)
 
-    build_id = 123
     build = build_pb2.Build(
-        id=build_id,
+        id=123,
         status=common_pb2.STARTED,
     )
 
-    token = tokens.generate_build_token(build_id)
-    req, ctx = self._mk_update_req(build, token)
+    req, ctx = self._mk_update_req(build)
     self.call(
         self.api.UpdateBuild,
         req,
@@ -422,18 +388,15 @@ class UpdateBuildTests(BaseTestCase):
         expected_details='Cannot update nonexisting build with id 123',
     )
 
-  @mock.patch('components.auth.is_group_member', autospec=True)
-  def test_invalid_user(self, mock_is_group_member):
-    mock_is_group_member.return_value = False
+  def test_invalid_user(self):
+    self.can_update_build_async.return_value = future(False)
 
-    build_id = 123
     build = build_pb2.Build(
-        id=build_id,
+        id=123,
         status=common_pb2.STARTED,
     )
 
-    token = tokens.generate_build_token(build_id)
-    req, ctx = self._mk_update_req(build, token)
+    req, ctx = self._mk_update_req(build)
     self.call(
         self.api.UpdateBuild,
         req,
