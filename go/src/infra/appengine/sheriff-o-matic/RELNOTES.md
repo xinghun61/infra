@@ -1,3 +1,37 @@
+
+# Release Notes sheriff-o-matic 2018-11-08
+
+- 2 commits, 1 bugs affected since d8aeda3 (2018-10-02T20:15:04Z)
+- 2 Authors:
+  - seanmccullough@chromium.org
+  - benjhayden@chromium.org
+
+## Changes in this release
+
+- [[som] Fix client ID in google-signin-aware element.](https://chromium-review.googlesource.com/c/1327285) (seanmccullough@chromium.org)
+- [Remove test/index.html files.](https://chromium-review.googlesource.com/c/1237417) (benjhayden@chromium.org)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/884814](https://crbug.com/884814)
+
+# Release Notes sheriff-o-matic 2018-11-08
+
+- 2 commits, 1 bugs affected since d8aeda3 (2018-10-02T20:15:04Z)
+- 2 Authors:
+  - seanmccullough@chromium.org
+  - benjhayden@chromium.org
+
+## Changes in this release
+
+- [[som] Fix client ID in google-signin-aware element.](https://chromium-review.googlesource.com/c/1327285) (seanmccullough@chromium.org)
+- [Remove test/index.html files.](https://chromium-review.googlesource.com/c/1237417) (benjhayden@chromium.org)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/884814](https://crbug.com/884814)
 # Release Notes sheriff-o-matic 2018-10-02
 
 - 2 commits, 2 bugs affected since a2127a3 (2018-09-28T15:37:09Z)
