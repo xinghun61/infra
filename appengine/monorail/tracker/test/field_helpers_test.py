@@ -148,6 +148,7 @@ class FieldHelpersTest(unittest.TestCase):
     self.maxDiff = None
     self.assertEqual(kept_labels + new_labels, revised_labels)
 
+    # TODO(jojwang): test this separately
     # test None field_type_str, updating existing fielddef
     self.config.field_defs.append(tracker_pb2.FieldDef(
         field_id=13, field_name='Priority',
@@ -169,12 +170,14 @@ class FieldHelpersTest(unittest.TestCase):
         ('NotEnum-Not-Be-Masked', None, False)]
     self.assertEqual(new_labels, revised_labels)
 
+    # TODO(jojwang): test this separately
     # test None field_type_str, updating existing fielddef
     self.config.field_defs.append(tracker_pb2.FieldDef(
         field_id=13, field_name='NotEnum',
         field_type=tracker_pb2.FieldTypes.STR_TYPE))
     revised_labels = field_helpers._ParseChoicesIntoWellKnownLabels(
         choices_text, field_name, self.config, None)
+    self.assertEqual(revised_labels, new_labels)
 
   def testShiftEnumFieldsIntoLabels_Empty(self):
     labels = []
