@@ -14,6 +14,7 @@ from infra_api_clients import logdog_util
 from libs.test_results.gtest_test_results import GtestTestResults
 from libs.test_results.webkit_layout_test_results import WebkitLayoutTestResults
 from model.isolated_target import IsolatedTarget
+from model.wf_build import WfBuild
 from services import step_util
 from services import swarming
 from waterfall import build_util
@@ -26,6 +27,7 @@ from waterfall.test import wf_testcase
 class MockWaterfallBuild(object):
 
   def __init__(self):
+    self.build_id = None
     self.log_location = 'logdog://logs.chromium.org/chromium/buildbucket/path'
 
 
@@ -286,6 +288,20 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
     step_metadata = step_util.GetWaterfallBuildStepLog('m', 'b', 123, 's', None,
                                                        'step_metadata')
     self.assertIsNone(step_metadata)
+
+  @mock.patch.object(
+      step_util,
+      'GetStepLogForLuciBuild',
+      return_value=wf_testcase.SAMPLE_STEP_METADATA)
+  @mock.patch.object(build_util, 'DownloadBuildData')
+  def testGetStepMetadataFromLUCIBuild(self, mock_build, _):
+    build = WfBuild.Create('m', 'b', 123)
+    build.build_id = 8948240770002521488
+    build.put()
+    mock_build.return_value = (None, build)
+    step_metadata = step_util.GetWaterfallBuildStepLog('m', 'b', 123, 's', None,
+                                                       'step_metadata')
+    self.assertEqual(step_metadata, wf_testcase.SAMPLE_STEP_METADATA)
 
   @mock.patch.object(
       build_util, 'DownloadBuildData', return_value=(200, MockWaterfallBuild()))

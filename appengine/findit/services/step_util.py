@@ -421,6 +421,12 @@ def GetWaterfallBuildStepLog(master_name,
   _, build = build_util.DownloadBuildData(master_name, builder_name,
                                           build_number)
 
+  if build.build_id:
+    # This build should be a LUCI build.
+    return GetStepLogForLuciBuild(build.build_id, full_step_name, http_client,
+                                  log_type)
+
+  # This build is a buildbot build, fall back to the legacy way of getting log.
   data = logdog_util.GetStepLogLegacy(build.log_location, full_step_name,
                                       log_type, http_client)
 

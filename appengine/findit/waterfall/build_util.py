@@ -27,11 +27,32 @@ def _BuildDataNeedUpdating(build):
       (time_util.GetUTCNow() - build.last_crawled_time).total_seconds() >= 300))
 
 
-def _GetLogLocationForBuild(build_data):
-  """Gets log location for a build.
+def _GetBuildIDForLUCIBuild(build_data):
+  """Gets build_id for a LUCI build.
 
   For a LUCI build, we can get buildbucket_id of the build from buildbucket
-  property and then get log location from buildbucket API.
+  property.
+
+  Each property would look like a list like:
+    [property_name, property_content, annotation]
+  """
+  if not build_data:
+    return None
+
+  data_json = json.loads(build_data)
+  properties = data_json.get('properties') or []
+  for property_item in properties:
+    if property_item[0] == 'buildbucket':  #pragma: no branch.
+      buildbucket = property_item[1]
+      return int(buildbucket.get('build', {}).get('id'))
+
+  return None
+
+
+# TODO (crbug/902137): remove this logic after all builders are migrated to
+# LUCI.
+def _GetLogLocationForBuildbotBuild(build_data):
+  """Gets log location for a buildbot build.
 
   For a buildbot build, we can get log location directly from log_location
   property.
@@ -44,25 +65,11 @@ def _GetLogLocationForBuild(build_data):
 
   data_json = json.loads(build_data)
   properties = data_json.get('properties') or []
-  buildbucket = None
   for property_item in properties:
     if property_item[0] == 'log_location':
       return property_item[1]
 
-    if property_item[0] == 'buildbucket':
-      buildbucket = property_item[1]
-
-  if not isinstance(buildbucket, dict):
-    return None
-
-  buildbucket_id = buildbucket.get('build', {}).get('id')
-  error, build = buildbucket_client.GetTryJobs([buildbucket_id])[0]
-  if error:
-    logging.exception(
-        'Error retrieving buildbucket build id: %s' % buildbucket_id)
-    return None
-
-  return logdog_util.GetLogLocationFromBuildbucketBuild(build.response)
+  return None
 
 
 def DownloadBuildData(master_name, builder_name, build_number):
@@ -81,9 +88,16 @@ def DownloadBuildData(master_name, builder_name, build_number):
     build.last_crawled_time = time_util.GetUTCNow()
     build_updated = True
 
-  if build.data and not build.log_location:
-    build.log_location = _GetLogLocationForBuild(build.data)
-    build_updated = True
+  if build.data:
+    original_build_id = build.build_id
+    original_log_location = build.log_location
+    build.build_id = build.build_id or _GetBuildIDForLUCIBuild(build.data)
+    if not build.build_id:
+      build.log_location = (
+          build.log_location or _GetLogLocationForBuildbotBuild(build.data))
+    build_updated = (
+        original_build_id != build.build_id or
+        original_log_location != build.log_location)
 
   if build_updated:
     build.put()
