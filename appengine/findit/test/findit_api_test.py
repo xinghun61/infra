@@ -2,8 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from datetime import datetime
 import json
+import logging
 import mock
 import pickle
 import re
@@ -17,21 +17,15 @@ from common import exceptions
 from common.waterfall import failure_type
 import endpoint_api
 from libs import analysis_status
-from libs import time_util
 from model import analysis_approach_type
 from model.base_build_model import BaseBuildModel
 from model.base_suspected_cl import RevertCL
-from model.flake.analysis import triggering_sources
-from model.flake.analysis.flake_analysis_request import FlakeAnalysisRequest
-from model.flake.analysis.flake_swarming_task import FlakeSwarmingTask
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
-from services import apis
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
-from waterfall.flake import step_mapper
 
 
 class FinditApiTest(testing.EndpointsTestCase):
@@ -378,16 +372,17 @@ class FinditApiTest(testing.EndpointsTestCase):
                     'delete a/b/y.cc': 5,
                     'modify e/f/z.cc': 1,
                 }
-            }, {
-                'build_number': 3,
-                'repo_name': 'chromium',
-                'revision': 'git_hash2',
-                'commit_position': 288,
-                'score': 1,
-                'hints': {
-                    'modify d/e/f.cc': 1,
-                }
-            }]
+            },
+                              {
+                                  'build_number': 3,
+                                  'repo_name': 'chromium',
+                                  'revision': 'git_hash2',
+                                  'commit_position': 288,
+                                  'score': 1,
+                                  'hints': {
+                                      'modify d/e/f.cc': 1,
+                                  }
+                              }]
         }]
     }
     analysis.put()
@@ -410,12 +405,13 @@ class FinditApiTest(testing.EndpointsTestCase):
             'revision': 'git_hash1',
             'commit_position': 234,
             'analysis_approach': 'HEURISTIC'
-        }, {
-            'repo_name': 'chromium',
-            'revision': 'git_hash2',
-            'commit_position': 288,
-            'analysis_approach': 'HEURISTIC'
-        }],
+        },
+                          {
+                              'repo_name': 'chromium',
+                              'revision': 'git_hash2',
+                              'commit_position': 288,
+                              'analysis_approach': 'HEURISTIC'
+                          }],
         'analysis_approach':
             'HEURISTIC',
         'is_flaky_test':
@@ -691,12 +687,13 @@ class FinditApiTest(testing.EndpointsTestCase):
                 'first_failure': 3,
                 'last_pass': 2,
                 'suspected_cls': []
-            }, {
-                'test_name': 'Unittest3.Subtest2',
-                'first_failure': 3,
-                'last_pass': 2,
-                'suspected_cls': []
-            }]
+            },
+                      {
+                          'test_name': 'Unittest3.Subtest2',
+                          'first_failure': 3,
+                          'last_pass': 2,
+                          'suspected_cls': []
+                      }]
         }]
     }
     analysis.put()
@@ -715,21 +712,22 @@ class FinditApiTest(testing.EndpointsTestCase):
         'has_findings': True,
         'is_finished': True,
         'is_supported': True,
-    }, {
-        'master_url': master_url,
-        'builder_name': builder_name,
-        'build_number': build_number,
-        'step_name': 'b on platform',
-        'is_sub_test': True,
-        'test_name': 'Unittest3.Subtest2',
-        'first_known_failed_build_number': 3,
-        'analysis_approach': 'HEURISTIC',
-        'is_flaky_test': True,
-        'try_job_status': 'FINISHED',
-        'has_findings': True,
-        'is_finished': True,
-        'is_supported': True,
-    }]
+    },
+                        {
+                            'master_url': master_url,
+                            'builder_name': builder_name,
+                            'build_number': build_number,
+                            'step_name': 'b on platform',
+                            'is_sub_test': True,
+                            'test_name': 'Unittest3.Subtest2',
+                            'first_known_failed_build_number': 3,
+                            'analysis_approach': 'HEURISTIC',
+                            'is_flaky_test': True,
+                            'try_job_status': 'FINISHED',
+                            'has_findings': True,
+                            'is_finished': True,
+                            'is_supported': True,
+                        }]
 
     self._MockMasterIsSupported(supported=True)
 
@@ -796,105 +794,116 @@ class FinditApiTest(testing.EndpointsTestCase):
         },
     }
     analysis.result = {
-        'failures': [{
-            'step_name':
-                'a',
-            'first_failure':
-                4,
-            'last_pass':
-                3,
-            'supported':
-                True,
-            'suspected_cls': [{
-                'build_number': 4,
-                'repo_name': 'chromium',
-                'revision': 'r4_2_failed',
-                'commit_position': None,
-                'url': None,
-                'score': 2,
-                'hints': {
-                    'modified f4_2.cc (and it was in log)': 2,
-                },
-            }],
-        }, {
-            'step_name':
-                'b on platform',
-            'first_failure':
-                3,
-            'last_pass':
-                2,
-            'supported':
-                True,
-            'suspected_cls': [{
-                'build_number': 3,
-                'repo_name': 'chromium',
-                'revision': 'r3_1',
-                'commit_position': None,
-                'url': None,
-                'score': 5,
-                'hints': {
-                    'added x/y/f3_1.cc (and it was in log)': 5,
-                },
-            }, {
-                'build_number': 4,
-                'repo_name': 'chromium',
-                'revision': 'r4_1',
-                'commit_position': None,
-                'url': None,
-                'score': 2,
-                'hints': {
-                    'modified f4.cc (and it was in log)': 2,
-                },
-            }],
-            'tests': [{
-                'test_name':
-                    'Unittest1.Subtest1',
+        'failures': [
+            {
+                'step_name':
+                    'a',
+                'first_failure':
+                    4,
+                'last_pass':
+                    3,
+                'supported':
+                    True,
+                'suspected_cls': [{
+                    'build_number': 4,
+                    'repo_name': 'chromium',
+                    'revision': 'r4_2_failed',
+                    'commit_position': None,
+                    'url': None,
+                    'score': 2,
+                    'hints': {
+                        'modified f4_2.cc (and it was in log)': 2,
+                    },
+                }],
+            },
+            {
+                'step_name':
+                    'b on platform',
                 'first_failure':
                     3,
                 'last_pass':
                     2,
-                'suspected_cls': [{
-                    'build_number': 2,
-                    'repo_name': 'chromium',
-                    'revision': 'r2_1',
-                    'commit_position': None,
-                    'url': None,
-                    'score': 5,
-                    'hints': {
-                        'added x/y/f99_1.cc (and it was in log)': 5,
+                'supported':
+                    True,
+                'suspected_cls': [
+                    {
+                        'build_number': 3,
+                        'repo_name': 'chromium',
+                        'revision': 'r3_1',
+                        'commit_position': None,
+                        'url': None,
+                        'score': 5,
+                        'hints': {
+                            'added x/y/f3_1.cc (and it was in log)': 5,
+                        },
                     },
-                }]
-            }, {
-                'test_name':
-                    'Unittest2.Subtest1',
-                'first_failure':
-                    4,
-                'last_pass':
-                    2,
-                'suspected_cls': [{
-                    'build_number': 2,
-                    'repo_name': 'chromium',
-                    'revision': 'r2_1',
-                    'commit_position': None,
-                    'url': None,
-                    'score': 5,
-                    'hints': {
-                        'added x/y/f99_1.cc (and it was in log)': 5,
+                    {
+                        'build_number': 4,
+                        'repo_name': 'chromium',
+                        'revision': 'r4_1',
+                        'commit_position': None,
+                        'url': None,
+                        'score': 2,
+                        'hints': {
+                            'modified f4.cc (and it was in log)': 2,
+                        },
+                    }
+                ],
+                'tests': [
+                    {
+                        'test_name':
+                            'Unittest1.Subtest1',
+                        'first_failure':
+                            3,
+                        'last_pass':
+                            2,
+                        'suspected_cls': [{
+                            'build_number': 2,
+                            'repo_name': 'chromium',
+                            'revision': 'r2_1',
+                            'commit_position': None,
+                            'url': None,
+                            'score': 5,
+                            'hints': {
+                                'added x/y/f99_1.cc (and it was in log)': 5,
+                            },
+                        }]
                     },
-                }]
-            }, {
-                'test_name': 'Unittest3.Subtest1',
+                    {
+                        'test_name':
+                            'Unittest2.Subtest1',
+                        'first_failure':
+                            4,
+                        'last_pass':
+                            2,
+                        'suspected_cls': [{
+                            'build_number': 2,
+                            'repo_name': 'chromium',
+                            'revision': 'r2_1',
+                            'commit_position': None,
+                            'url': None,
+                            'score': 5,
+                            'hints': {
+                                'added x/y/f99_1.cc (and it was in log)': 5,
+                            },
+                        }]
+                    },
+                    {
+                        'test_name': 'Unittest3.Subtest1',
+                        'first_failure': 4,
+                        'last_pass': 2,
+                        'suspected_cls': []
+                    }
+                ]
+            },
+            {
+                'step_name': 'c',
                 'first_failure': 4,
-                'last_pass': 2,
-                'suspected_cls': []
-            }]
-        }, {
-            'step_name': 'c',
-            'first_failure': 4,
-            'last_pass': 3,
-            'supported': False,
-            'suspected_cls': [],
-        }]
+                'last_pass': 3,
+                'supported': False,
+                'suspected_cls': [],
+            }
+        ]
     }
     analysis.put()
 
@@ -988,122 +997,126 @@ class FinditApiTest(testing.EndpointsTestCase):
             True,
         'is_supported':
             True,
-    }, {
-        'master_url':
-            master_url,
-        'builder_name':
-            builder_name,
-        'build_number':
-            build_number,
-        'step_name':
-            'b on platform',
-        'is_sub_test':
-            True,
-        'test_name':
-            'Unittest1.Subtest1',
-        'first_known_failed_build_number':
-            3,
-        'suspected_cls': [{
-            'repo_name': 'chromium',
-            'revision': 'r2_1',
-            'confidence': 90,
-            'analysis_approach': 'HEURISTIC',
-            'revert_committed': False
-        }],
-        'analysis_approach':
-            'HEURISTIC',
-        'is_flaky_test':
-            False,
-        'try_job_status':
-            'FINISHED',
-        'has_findings':
-            True,
-        'is_finished':
-            True,
-        'is_supported':
-            True,
-    }, {
-        'master_url':
-            master_url,
-        'builder_name':
-            builder_name,
-        'build_number':
-            build_number,
-        'step_name':
-            'b on platform',
-        'is_sub_test':
-            True,
-        'test_name':
-            'Unittest2.Subtest1',
-        'first_known_failed_build_number':
-            4,
-        'suspected_cls': [{
-            'repo_name': 'chromium',
-            'revision': 'r2_1',
-            'confidence': 90,
-            'analysis_approach': 'HEURISTIC',
-            'revert_committed': False
-        }],
-        'analysis_approach':
-            'HEURISTIC',
-        'is_flaky_test':
-            False,
-        'try_job_status':
-            'FINISHED',
-        'has_findings':
-            True,
-        'is_finished':
-            True,
-        'is_supported':
-            True,
-    }, {
-        'master_url':
-            master_url,
-        'builder_name':
-            builder_name,
-        'build_number':
-            build_number,
-        'step_name':
-            'b on platform',
-        'is_sub_test':
-            True,
-        'test_name':
-            'Unittest3.Subtest1',
-        'first_known_failed_build_number':
-            4,
-        'suspected_cls': [{
-            'repo_name': 'chromium',
-            'revision': 'r4_10',
-            'commit_position': 410,
-            'analysis_approach': 'TRY_JOB',
-            'confidence': 100,
-            'revert_cl_url': 'revert_cl_url',
-            'revert_committed': False
-        }],
-        'analysis_approach':
-            'TRY_JOB',
-        'is_flaky_test':
-            False,
-        'try_job_status':
-            'FINISHED',
-        'has_findings':
-            True,
-        'is_finished':
-            True,
-        'is_supported':
-            True,
-    }, {
-        'master_url': master_url,
-        'builder_name': builder_name,
-        'build_number': build_number,
-        'step_name': 'c',
-        'is_sub_test': False,
-        'analysis_approach': 'HEURISTIC',
-        'is_flaky_test': False,
-        'has_findings': False,
-        'is_finished': True,
-        'is_supported': False,
-    }]
+    },
+                        {
+                            'master_url':
+                                master_url,
+                            'builder_name':
+                                builder_name,
+                            'build_number':
+                                build_number,
+                            'step_name':
+                                'b on platform',
+                            'is_sub_test':
+                                True,
+                            'test_name':
+                                'Unittest1.Subtest1',
+                            'first_known_failed_build_number':
+                                3,
+                            'suspected_cls': [{
+                                'repo_name': 'chromium',
+                                'revision': 'r2_1',
+                                'confidence': 90,
+                                'analysis_approach': 'HEURISTIC',
+                                'revert_committed': False
+                            }],
+                            'analysis_approach':
+                                'HEURISTIC',
+                            'is_flaky_test':
+                                False,
+                            'try_job_status':
+                                'FINISHED',
+                            'has_findings':
+                                True,
+                            'is_finished':
+                                True,
+                            'is_supported':
+                                True,
+                        },
+                        {
+                            'master_url':
+                                master_url,
+                            'builder_name':
+                                builder_name,
+                            'build_number':
+                                build_number,
+                            'step_name':
+                                'b on platform',
+                            'is_sub_test':
+                                True,
+                            'test_name':
+                                'Unittest2.Subtest1',
+                            'first_known_failed_build_number':
+                                4,
+                            'suspected_cls': [{
+                                'repo_name': 'chromium',
+                                'revision': 'r2_1',
+                                'confidence': 90,
+                                'analysis_approach': 'HEURISTIC',
+                                'revert_committed': False
+                            }],
+                            'analysis_approach':
+                                'HEURISTIC',
+                            'is_flaky_test':
+                                False,
+                            'try_job_status':
+                                'FINISHED',
+                            'has_findings':
+                                True,
+                            'is_finished':
+                                True,
+                            'is_supported':
+                                True,
+                        },
+                        {
+                            'master_url':
+                                master_url,
+                            'builder_name':
+                                builder_name,
+                            'build_number':
+                                build_number,
+                            'step_name':
+                                'b on platform',
+                            'is_sub_test':
+                                True,
+                            'test_name':
+                                'Unittest3.Subtest1',
+                            'first_known_failed_build_number':
+                                4,
+                            'suspected_cls': [{
+                                'repo_name': 'chromium',
+                                'revision': 'r4_10',
+                                'commit_position': 410,
+                                'analysis_approach': 'TRY_JOB',
+                                'confidence': 100,
+                                'revert_cl_url': 'revert_cl_url',
+                                'revert_committed': False
+                            }],
+                            'analysis_approach':
+                                'TRY_JOB',
+                            'is_flaky_test':
+                                False,
+                            'try_job_status':
+                                'FINISHED',
+                            'has_findings':
+                                True,
+                            'is_finished':
+                                True,
+                            'is_supported':
+                                True,
+                        },
+                        {
+                            'master_url': master_url,
+                            'builder_name': builder_name,
+                            'build_number': build_number,
+                            'step_name': 'c',
+                            'is_sub_test': False,
+                            'analysis_approach': 'HEURISTIC',
+                            'is_flaky_test': False,
+                            'has_findings': False,
+                            'is_finished': True,
+                            'is_supported': False,
+                        }]
 
     self._MockMasterIsSupported(supported=True)
 
@@ -1346,3 +1359,15 @@ class FinditApiTest(testing.EndpointsTestCase):
         'AnalyzeBuildFailures',
         body=builds)
     self.assertFalse(mocked_func.called)
+
+  @mock.patch.object(logging, 'error')
+  def testGetSwarmingTaskAndTryJobForFailureInfoMismatch(self, mock_log):
+    failure_result_map = {'s': {'t': 'm/b/1'}}
+    self.assertEqual(
+        (None, None, None),
+        endpoint_api.FindItApi()._GetSwarmingTaskAndTryJobForFailure(
+            's', None, failure_result_map, None, None))
+    mock_log.assert_has_called_once_with(
+        'Try_job_key in wrong format - failure_result_map: %s; step_name: %s;'
+        ' test_name: %s.', json.dumps(failure_result_map, default=str), 's',
+        None)

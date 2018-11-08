@@ -500,6 +500,16 @@ class FindItApi(remote.Service):
     else:
       try_job_key = failure_result_map.get(step_name)
 
+    if not isinstance(try_job_key, basestring):
+      if try_job_key:
+        # Mismatch between failure_info and failure_result_map, cannot trust the
+        # data.
+        logging.error(
+            'Try_job_key in wrong format - failure_result_map: %s;'
+            ' step_name: %s; test_name: %s.',
+            json.dumps(failure_result_map, default=str), step_name, test_name)
+      return None, None, None
+
     # Gets the swarming task for the test.
     swarming_task = swarming_tasks.get(step_name, {}).get(try_job_key)
 
