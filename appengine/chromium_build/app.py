@@ -216,7 +216,7 @@ def get_and_cache_rowdata(localpath):
   Here we assume localpath is already unquoted.
   """
   row_data = get_data_from_cache(localpath)
-  if row_data and type(row_data) == type({}):
+  if row_data and isinstance(row_data, dict):
     return row_data
   row = Row.get_by_key_name(localpath)
   if not row:
@@ -879,7 +879,7 @@ def nonfatal_fetch_url(url, *args, **kwargs):
 def fetch_page(localpath, remoteurl, maxage, postfetch=None, postsave=None,
                fetch_url=nonfatal_fetch_url):
   """Fetches data about a set of pages."""
-  if type(localpath) != type(''):
+  if not isinstance(localpath, (str, unicode)):
     logging.error('fetch_page: localpath is %r, expected a string' % (
         repr(localpath)))
     return

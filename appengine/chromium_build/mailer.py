@@ -73,7 +73,6 @@ class Email(BaseHandler):
 
     step_fields = ['started',
                    'text',
-                   'results',
                    'name',
                    'logs',
                    'urls']
