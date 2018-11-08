@@ -4,6 +4,8 @@
 
 (function(window) {
   'use strict';
+  // When crbug links don't specify a project, the default project is Chromium.
+  const CRBUG_DEFAULT_PROJECT = 'chromium';
   const CRBUG_LINK_RE = /(\b(https?:\/\/)?crbug\.com\/)((\b[-a-z0-9]+)(\/))?(\d+)\b(\#c[0-9]+)?/gi;
   const CRBUG_LINK_RE_PROJECT_GROUP = 4;
   const CRBUG_LINK_RE_ID_GROUP = 6;
@@ -112,13 +114,14 @@
   }
 
   // Extract referenced artifacts info functions.
-  function ExtractCrbugProjectAndIssueIds(match, defaultProjectName='chromium') {
-    const projectName = match[CRBUG_LINK_RE_PROJECT_GROUP] || defaultProjectName;
+  function ExtractCrbugProjectAndIssueIds(match, _defaultProjectName) {
+    // When crbug links don't specify a project, the default project is Chromium.
+    const projectName = match[CRBUG_LINK_RE_PROJECT_GROUP] || CRBUG_DEFAULT_PROJECT;
     const localId = match[CRBUG_LINK_RE_ID_GROUP];
     return [{projectName: projectName, localId: localId}];
   }
 
-  function ExtractTrackerProjectAndIssueIds(match, defaultProjectName='chromium') {
+  function ExtractTrackerProjectAndIssueIds(match, defaultProjectName) {
     const issueRefRE = PROJECT_LOCALID_RE;
     let refMatch;
     let refs = [];
@@ -138,7 +141,8 @@
   function ReplaceIssueRef(stringMatch, projectName, localId, components) {
     if (components.openRefs && components.openRefs.length) {
       const openRef = components.openRefs.find(ref => {
-          return (ref.localId == localId) && (ref.projectName === projectName);
+        return ref.localId && ref.projectName && (ref.localId == localId) &&
+            (ref.projectName.toLowerCase() === projectName.toLowerCase());
       });
       if (openRef) {
         return createIssueRefRun(projectName, localId, false, stringMatch);
@@ -146,8 +150,8 @@
     }
     if (components.closedRefs && components.closedRefs.length) {
       const closedRef = components.closedRefs.find(ref => {
-        return (ref.localId == localId) &&
-            (ref.projectName.toLowerCase() == projectName.toLowerCase());
+        return ref.localId && ref.projectName && (ref.localId == localId) &&
+            (ref.projectName.toLowerCase() === projectName.toLowerCase());
       });
       if (closedRef) {
         return createIssueRefRun(projectName, localId, true, stringMatch);
@@ -156,14 +160,15 @@
     return {content: stringMatch};
   }
 
-  function ReplaceCrbugIssueRef(match, components, defaultProjectName='chromium') {
+  function ReplaceCrbugIssueRef(match, components, _defaultProjectName) {
     components = components || {};
-    const projectName = match[CRBUG_LINK_RE_PROJECT_GROUP] || defaultProjectName;
+    // When crbug links don't specify a project, the default project is Chromium.
+    const projectName = match[CRBUG_LINK_RE_PROJECT_GROUP] || CRBUG_DEFAULT_PROJECT;
     const localId = match[CRBUG_LINK_RE_ID_GROUP];
     return [ReplaceIssueRef(match[0], projectName, localId, components)];
   }
 
-  function ReplaceTrackerIssueRef(match, components, defaultProjectName='chromium') {
+  function ReplaceTrackerIssueRef(match, components, defaultProjectName) {
     components = components || {};
     const issueRefRE = PROJECT_LOCALID_RE;
     let textRuns = [];
@@ -246,7 +251,7 @@
     };
   }
 
-  function getReferencedArtifacts(comments, token, tokenExpiresSec) {
+  function getReferencedArtifacts(comments, defaultProjectName='chromium') {
     return new Promise((resolve, reject) => {
       let artifactsByComponents = new Map();
       let fetchPromises = [];
@@ -257,12 +262,12 @@
             let match;
             comments.forEach(comment => {
               while((match = re.exec(comment.content)) !== null) {
-                refs.push.apply(refs, extractRefs(match));
+                refs.push.apply(refs, extractRefs(match, defaultProjectName));
               };
             });
           });
           if (refs.length) {
-            fetchPromises.push(lookup(refs, componentName, token, tokenExpiresSec));
+            fetchPromises.push(lookup(refs, componentName));
           }
         }
       });
@@ -270,7 +275,8 @@
     });
   }
 
-  function markupAutolinks(plainString, componentRefs) {
+  function markupAutolinks(plainString, componentRefs,
+                           defaultProjectName='chromium') {
     plainString = plainString || '';
     const chunks = plainString.trim().split(/(<b>[^<\n]+<\/b>)|(\r\n?|\n)/);
     let textRuns = [];
@@ -280,23 +286,26 @@
       } else if (chunk.startsWith('<b>') && chunk.endsWith('</b>')) {
         textRuns.push({content: chunk.slice(3, -4), tag: 'b'});
       } else {
-        textRuns.push.apply(textRuns, autolinkChunk(chunk, componentRefs));
+        textRuns.push.apply(
+            textRuns, autolinkChunk(chunk, componentRefs, defaultProjectName));
       }
     });
     return textRuns;
   }
 
-  function autolinkChunk(chunk, componentRefs) {
+  function autolinkChunk(chunk, componentRefs, defaultProjectName) {
     let textRuns = [{content: chunk}];
     Components.forEach(({lookup, extractRefs, refRegs, replacer}, componentName) => {
       refRegs.forEach(re => {
-        textRuns = applyLinks(textRuns, replacer, re, componentRefs.get(componentName));
+        textRuns = applyLinks(textRuns, replacer, re,
+        componentRefs.get(componentName), defaultProjectName);
       });
     });
     return textRuns;
   }
 
-  function applyLinks(textRuns, replacer, re, existingRefs) {
+  function applyLinks(textRuns, replacer, re, existingRefs,
+                      defaultProjectName) {
     let resultRuns = [];
     textRuns.forEach(textRun => {
       if (textRun.tag) {
@@ -310,7 +319,8 @@
             // Create textrun for content between previous and current match.
             resultRuns.push({content: content.slice(pos, match.index)});
           }
-          resultRuns.push.apply(resultRuns, replacer(match, existingRefs));
+          resultRuns.push.apply(
+              resultRuns, replacer(match, existingRefs, defaultProjectName));
           pos = match.index + match[0].length;
         }
         if (content.slice(pos) !== '') {

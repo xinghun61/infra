@@ -14,24 +14,39 @@
     const {lookup, extractRefs, refRegs, replacer} = components.get('01-tracker-crbug');
 
     test('Extract crbug project and local ids', function() {
-      let match = refRegs[0].exec('https://crbug.com/monorail/1234');
+      const match = refRegs[0].exec('https://crbug.com/monorail/1234');
       refRegs[0].lastIndex = 0;
-      let ref = extractRefs(match);
+      const ref = extractRefs(match);
       assert.deepEqual(ref, [{projectName: 'monorail', localId: '1234'}]);
+    });
+
+    test('Extract crbug default project name', function() {
+      const match = refRegs[0].exec('http://crbug.com/1234');
+      refRegs[0].lastIndex = 0;
+      const ref = extractRefs(match);
+      assert.deepEqual(ref, [{projectName: 'chromium', localId: '1234'}]);
+    });
+
+    test('Extract crbug passed project name is ignored', function() {
+      const match = refRegs[0].exec('https://crbug.com/1234');
+      refRegs[0].lastIndex = 0;
+      const ref = extractRefs(match, 'foo');
+      assert.deepEqual(ref, [{projectName: 'chromium', localId: '1234'}]);
     });
 
     test('Replace crbug with found components', function() {
       const str = 'crbug.com/monorail/1234';
       const match = refRegs[0].exec(str);
       refRegs[0].lastIndex = 0;
-      const components = {closedRefs: [{localId: 1234, projectName: 'monorail'}, {}]};
+      const components = {
+        closedRefs: [{localId: 1234, projectName: 'monorail'}, {}]};
       const actualRun = replacer(match, components);
       assert.deepEqual(
           actualRun,
           [{
             tag: 'a',
             css: 'strike-through',
-            href:'/p/monorail/issues/detail?id=1234',
+            href: '/p/monorail/issues/detail?id=1234',
             content: str
           }]
       );
@@ -41,15 +56,48 @@
       const str = 'crbug.com/1234';
       const match = refRegs[0].exec(str);
       refRegs[0].lastIndex = 0;
-      const components = {openRefs: [{localId: 134}, {localId: 1234, projectName: 'chromium'}]};
+      const components = {
+        openRefs: [{localId: 134}, {localId: 1234, projectName: 'chromium'}],
+      };
       const actualRun = replacer(match, components);
       assert.deepEqual(
           actualRun,
           [{
             tag: 'a',
-            href:'/p/chromium/issues/detail?id=1234',
-            css:'',
+            href: '/p/chromium/issues/detail?id=1234',
+            css: '',
             content: str
+          }]
+      );
+    });
+
+    test('Replace crbug incomplete responses', function() {
+      const str = 'crbug.com/1234';
+      const match = refRegs[0].exec(str);
+      refRegs[0].lastIndex = 0;
+      const components = {
+        openRefs: [{localId: 1234}, {projectName: 'chromium'}],
+        closedRefs: [{localId: 1234}, {projectName: 'chromium'}]
+      };
+      const actualRun = replacer(match, components);
+      assert.deepEqual(actualRun, [{content:str}]);
+    });
+
+    test('Replace crbug passed project name is ignored', function() {
+      const str = 'crbug.com/1234';
+      const match = refRegs[0].exec(str);
+      refRegs[0].lastIndex = 0;
+      const components = {
+        openRefs: [{localId: 134}, {localId: 1234, projectName: 'chromium'}],
+      };
+      const actualRun = replacer(match, components, 'foo');
+      assert.deepEqual(
+          actualRun,
+          [{
+            tag: 'a',
+            href: '/p/chromium/issues/detail?id=1234',
+            css: '',
+            content: str,
           }]
       );
     });
@@ -71,10 +119,10 @@
     refRegs[0].lastIndex = 0;
 
     test('Extract tracker projects and local ids', function() {
-      const actualRefs = extractRefs(match);
+      const actualRefs = extractRefs(match, 'foo-project');
       assert.deepEqual(
           actualRefs,
-          [{projectName: 'chromium', localId: '123'},
+          [{projectName: 'foo-project', localId: '123'},
            {projectName: 'monorail', localId: '234'},
            {projectName: 'monorail', localId: '345'},
            {projectName: 'PROJ', localId: '456'}]);
@@ -90,14 +138,14 @@
           {projectName: 'proj', localId: 456},
         ]
       };
-      const actualTextRuns = replacer(match, components);
+      const actualTextRuns = replacer(match, components, 'chromium');
       assert.deepEqual(
           actualTextRuns,
           [
             {content: 'bugs='},
             {
               tag: 'a',
-              href:'/p/chromium/issues/detail?id=123',
+              href: '/p/chromium/issues/detail?id=123',
               css: '',
               content: '123',
             },
@@ -108,11 +156,46 @@
             {content: ' and '},
             {
               tag: 'a',
-              href:'/p/PROJ/issues/detail?id=456',
+              href: '/p/PROJ/issues/detail?id=456',
               css: 'strike-through',
               content: 'PROJ:#456',
             },
           ]
+      );
+    });
+
+    test('Replace tracker refs mixed case refs.', function() {
+      const components = {
+        openRefs: [
+          {projectName: 'mOnOrAIl', localId: 234},
+        ],
+        closedRefs: [
+          {projectName: 'LeMuR', localId: 123},
+        ]
+      };
+      const actualTextRuns = replacer(match, components, 'lEmUr');
+      assert.deepEqual(
+          actualTextRuns,
+          [
+            {content: 'bugs='},
+            {
+              tag: 'a',
+              href: '/p/lEmUr/issues/detail?id=123',
+              css: 'strike-through',
+              content: '123',
+            },
+            {content: ', '},
+            {
+              tag: 'a',
+              href: '/p/monorail/issues/detail?id=234',
+              css: '',
+              content: 'monorail:234'
+            },
+            {content: ' or '},
+            {content: '#345'},
+            {content: ' and '},
+            {content: 'PROJ:#456'},
+          ],
       );
     });
   });
