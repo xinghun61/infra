@@ -17,7 +17,7 @@
       "--revision",
       "src@HEAD"
     ],
-    "env_suffixes": {
+    "env_prefixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
       ]
@@ -162,15 +162,99 @@
   },
   {
     "cmd": [
-      "python",
-      "-u",
-      "[START_DIR]/src/third_party/blink/tools/wpt_export.py",
-      "--credentials-json",
-      "/creds/json/wpt-export.json",
-      "--dry-run",
-      "--verbose"
+      "git",
+      "config",
+      "user.name",
+      "Chromium WPT Sync"
     ],
-    "name": "Export Chromium commits and in-flight CLs to WPT"
+    "cwd": "[START_DIR]/src",
+    "infra_step": true,
+    "name": "set git config user.name"
+  },
+  {
+    "cmd": [
+      "git",
+      "checkout",
+      "origin/master"
+    ],
+    "cwd": "[START_DIR]/src",
+    "infra_step": true,
+    "name": "git checkout"
+  },
+  {
+    "cmd": [
+      "git",
+      "branch",
+      "-D",
+      "update_wpt"
+    ],
+    "cwd": "[START_DIR]/src",
+    "infra_step": true,
+    "name": "git branch"
+  },
+  {
+    "cmd": [
+      "git",
+      "new-branch",
+      "update_wpt"
+    ],
+    "cwd": "[START_DIR]/src",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+    },
+    "infra_step": true,
+    "name": "git new-branch update_wpt"
+  },
+  {
+    "cmd": [
+      "vpython",
+      "-u",
+      "[START_DIR]/src/third_party/blink/tools/wpt_import.py",
+      "--credentials-json",
+      "/creds/json/wpt-import.json",
+      "--auto-update",
+      "--auto-file-bugs"
+    ],
+    "cwd": "[START_DIR]/src/third_party/blink",
+    "name": "Import changes from WPT to Chromium"
+  },
+  {
+    "cmd": [
+      "RECIPE_PACKAGE_REPO[depot_tools]/git_cl.py",
+      "issue",
+      "--json",
+      "/path/to/tmp/json"
+    ],
+    "cwd": "[START_DIR]/src",
+    "name": "git cl issue",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"issue\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"issue_url\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "checkout",
+      "origin/master"
+    ],
+    "cwd": "[START_DIR]/src",
+    "infra_step": true,
+    "name": "git checkout (2)"
+  },
+  {
+    "cmd": [
+      "git",
+      "branch",
+      "-D",
+      "update_wpt"
+    ],
+    "cwd": "[START_DIR]/src",
+    "infra_step": true,
+    "name": "git branch (2)"
   },
   {
     "jsonResult": null,

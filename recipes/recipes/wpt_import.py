@@ -37,31 +37,9 @@ def RunSteps(api):
   api.git('config', 'user.name', 'Chromium WPT Sync',
           name='set git config user.name')
   # LUCI sets user.email automatically.
-  if not api.runtime.is_luci:
-    api.git('config', 'user.email', 'blink-w3c-test-autoroller@chromium.org',
-            name='set git config user.email')
   api.git_cl.set_config('basic')
   api.git_cl.c.repo_location = api.path['checkout']
   blink_dir = api.path['checkout'].join('third_party', 'blink')
-
-  # Set up a dummy HOME to avoid being affected by GCE default creds.
-  @contextlib.contextmanager
-  def create_dummy_home():
-    temp_home = None
-    try:
-      temp_home = api.path.mkdtemp('home')
-      api.file.copy('copy credentials to dummy HOME',
-                    api.path.expanduser('~/.netrc'),
-                    api.path.join(temp_home, '.netrc'))
-      # This global config must be set; otherwise, `git cl` will complain.
-      with api.context(cwd=temp_home):
-        api.git('config', '--global', 'http.cookiefile',
-                api.path.join(temp_home, '.gitcookies'),
-                name='set git config http.cookiefile in dummy HOME')
-      yield temp_home
-    finally:
-      if temp_home:
-        api.file.rmtree('rmtree dummy HOME', temp_home)
 
   @contextlib.contextmanager
   def new_branch(name):
@@ -81,41 +59,14 @@ def RunSteps(api):
     args = [
       '--credentials-json',
       '/creds/json/wpt-import.json',
+      '--auto-update',
+      '--auto-file-bugs',
     ]
-    # TODO(robertma): Drop the experimental branch when migration is completed.
-    if api.runtime.is_experimental:
-      args += [
-        '--verbose',
-      ]
-    else:
-      args += [
-        '--auto-update',
-        '--auto-file-bugs',
-      ]
-
-    # BuildBot only, as the service account on LUCI has the right permissions.
-    if not api.runtime.is_luci:
-      args += [
-        '--auth-refresh-token-json',
-        '/creds/refresh_tokens/blink-w3c-test-autoroller',
-        '--monorail-auth-json',
-        '/creds/service_accounts/service-account-wpt-monorail-api.json',
-      ]
 
     try:
-      if api.runtime.is_luci:
-        with api.context(cwd=blink_dir):
-          api.python('Import changes from WPT to Chromium', script, args,
-                     venv=True)
-      else:
-        # Prevent BuildBot from using the default GCE service account.
-        with create_dummy_home() as temp_home:
-          with api.context(cwd=blink_dir,
-                           # Override GCE creds detection of git-cl.
-                           env={'SKIP_GCE_AUTH_FOR_GIT': '1',
-                                'HOME': temp_home}):
-            api.python('Import changes from WPT to Chromium', script, args,
-                       venv=True)
+      with api.context(cwd=blink_dir):
+        api.python('Import changes from WPT to Chromium', script, args,
+                   venv=True)
     finally:
       git_cl_issue_link(api)
 
@@ -137,7 +88,7 @@ def GenTests(api):
   yield (
       api.test('wpt-import-with-issue') +
       api.properties(
-          mastername='chromium.infra.cron',
+          mastername='luci.infra.cron',
           buildername='wpt-importer',
           slavename='fake-slave') +
       api.step_data(
@@ -148,23 +99,11 @@ def GenTests(api):
           })))
 
   yield (
-      api.test('wpt-import-without-issue_luci') +
+      api.test('wpt-import-without-issue') +
       api.properties(
-          mastername='chromium.infra.cron',
+          mastername='luci.infra.cron',
           buildername='wpt-importer',
           slavename='fake-slave') +
-      api.runtime(is_luci=True, is_experimental=False) +
-      api.step_data(
-          'git cl issue',
-          api.json.output({'issue': None, 'issue_url': None})))
-
-  yield (
-      api.test('wpt-import-without-issue_buildbot_experimental') +
-      api.properties(
-          mastername='chromium.infra.cron',
-          buildername='wpt-importer',
-          slavename='fake-slave') +
-      api.runtime(is_luci=False, is_experimental=True) +
       api.step_data(
           'git cl issue',
           api.json.output({'issue': None, 'issue_url': None})))
