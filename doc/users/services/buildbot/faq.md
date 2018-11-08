@@ -1,8 +1,13 @@
 # Chromium Buildbot FAQ
 
+> **Buildbot end of life date is March 1, 2019**. As of [March 1](buildbot_eol.md), all Chromium/Chrome builds hosted on [chromium.org](https://www.chromium.org) will be running on LUCI.
+
 [TOC]
 
 ## How to setup a new buildbot master?
+
+**Please create a LUCI builder instead of Buildbot.** Buildbot end of life is
+March 1, 2019.
 
 [go/new-master](http://go/new-master)
 

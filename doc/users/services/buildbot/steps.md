@@ -1,5 +1,7 @@
 # Infra steps in the builds
 
+> **Buildbot end of life date is March 1, 2019**. As of [March 1](buildbot_eol.md), all Chromium/Chrome builds hosted on [chromium.org](https://www.chromium.org) will be running on LUCI.
+
 Purpose of various common steps in builders on the waterfall and tryservers.
 
 ## find_isolated_tests step

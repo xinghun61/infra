@@ -2,6 +2,8 @@
 
 [go/builders-pyl]
 
+> **Buildbot end of life date is March 1, 2019**. As of [March 1](buildbot_eol.md), all Chromium/Chrome builds hosted on [chromium.org](https://www.chromium.org) will be running on LUCI.
+
 builders.pyl is a declarative definition of a buildbot master. It is
 intended to hide all of the buildbot-specific implementation details
 from the user and just expose the features and settings a

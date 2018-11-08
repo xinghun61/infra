@@ -10,6 +10,10 @@ the Google Cloud Platform and is designed to scale well for large projects.
 
 ## Current Status
 
+**As of March 1, 2019, LUCI will become the sole service supporting
+Chrome/Chromium builds.** For more information, see [Buildbot End of
+Life](buildbot/buildbot_eol.md).
+
 LUCI is currently being deployed over the Chromium project. All users
 should start seeing LUCI being used over Buildbot builders over time.
 

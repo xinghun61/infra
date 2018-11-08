@@ -1,5 +1,7 @@
 # Buildbot
 
+> **Buildbot end of life date is March 1, 2019**. As of [March 1](buildbot_eol.md), all Chromium/Chrome builds hosted on [chromium.org](https://www.chromium.org) will be running on LUCI.
+
 Runs builds and tests. Enables Chromium CI and tryserver.
 
 *   Locations
