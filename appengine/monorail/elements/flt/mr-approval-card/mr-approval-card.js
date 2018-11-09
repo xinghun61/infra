@@ -183,7 +183,8 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
     const delta = this._generateDelta(data);
 
     Promise.all(loads).then((uploads) => {
-      if (data.comment || Object.keys(delta).length > 0) {
+      if (data.comment || Object.keys(delta).length > 0 ||
+          uploads.length > 0) {
         this._updateApproval(data.comment, delta, uploads);
       }
     }).catch((reason) => {
