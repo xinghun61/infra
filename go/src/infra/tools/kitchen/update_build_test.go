@@ -5,13 +5,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"golang.org/x/net/context"
+	"github.com/golang/protobuf/proto"
 
 	"go.chromium.org/luci/buildbucket/proto"
+	"go.chromium.org/luci/common/proto/milo"
 
 	. "github.com/smartystreets/goconvey/convey"
 	. "go.chromium.org/luci/common/testing/assertions"
@@ -75,5 +77,75 @@ func TestBuildUpdater(t *testing.T) {
 		Convey("first succeeded, second failed", func() {
 			So(run(nil, fmt.Errorf("fatal")), ShouldErrLike, "fatal")
 		})
+	})
+}
+
+func TestParseUpdateBuildRequest(t *testing.T) {
+	t.Parallel()
+
+	Convey(`parseUpdateBuildRequest`, t, func() {
+		ctx := context.Background()
+
+		ann := &milo.Step{}
+		err := proto.UnmarshalText(`
+			substep {
+				step {
+					name: "s1"
+					property {
+						name: "p1"
+						value: "1"
+					}
+				}
+			}
+			substep {
+				step {
+					name: "s2"
+					property {
+						name: "p1"
+						value: "11"
+					}
+					property {
+						name: "p2"
+						value: "2"
+					}
+				}
+			}`, ann)
+		expected := &buildbucketpb.UpdateBuildRequest{}
+		err = proto.UnmarshalText(`
+			build {
+				steps {
+					name: "s1"
+					status: STARTED
+				}
+				steps {
+					name: "s2"
+					status: STARTED
+				}
+				output {
+					properties {
+						fields {
+							key: "p1"
+							value { number_value: 11 }
+						}
+						fields {
+							key: "p2"
+							value { number_value: 2 }
+						}
+					}
+				}
+			}
+			update_mask {
+				paths: "steps"
+				paths: "output.properties"
+			}
+			fields {}
+			`, expected)
+		So(err, ShouldBeNil)
+
+		annURL := "logdog://logdog.example.com/chromium/prefix/+/annotations"
+		actual, err := parseUpdateBuildRequest(ctx, ann, annURL)
+		So(err, ShouldBeNil)
+
+		So(actual, ShouldResembleProto, expected)
 	})
 }

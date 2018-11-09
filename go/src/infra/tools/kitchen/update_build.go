@@ -8,8 +8,13 @@ import (
 	"context"
 	"sync"
 
+	"google.golang.org/genproto/protobuf/field_mask"
+
+	"go.chromium.org/luci/buildbucket"
 	"go.chromium.org/luci/buildbucket/proto"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/proto/milo"
 )
 
 // runBuildUpdater calls client.UpdateBuild.
@@ -64,4 +69,39 @@ func runBuildUpdater(ctx context.Context, client buildbucketpb.BuildsClient, req
 			return err
 		}
 	}
+}
+
+// parseUpdateBuildRequest converts an annotation proto to an UpdateBuild RPC
+// request.
+// The returned request only attempts to update steps and output properties
+// and asks no build fields in response.
+// The context is used only for logging.
+// annURL is used to construct absolute logdog URLs of step logs.
+func parseUpdateBuildRequest(c context.Context, ann *milo.Step, annURL string) (*buildbucketpb.UpdateBuildRequest, error) {
+	steps, err := buildbucket.ConvertBuildSteps(c, ann.Substep, annURL)
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to parse steps from an annotation proto").Err()
+	}
+
+	props, err := milo.ExtractProperties(ann)
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to extract properties from an annotation proto").Err()
+	}
+
+	return &buildbucketpb.UpdateBuildRequest{
+		Build: &buildbucketpb.Build{
+			Steps: steps,
+			Output: &buildbucketpb.Build_Output{
+				Properties: props,
+			},
+		},
+		UpdateMask: &field_mask.FieldMask{
+			Paths: []string{
+				"steps",
+				"output.properties",
+			},
+		},
+		// minimize output by asking nothing back.
+		Fields: &field_mask.FieldMask{},
+	}, nil
 }
