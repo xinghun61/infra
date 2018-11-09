@@ -124,6 +124,29 @@ class NotifyTaskBase(jsonfeed.InternalTask):
         compress_whitespace=False, base_format=ezt.FORMAT_RAW)
 
 
+def _MergeLinkedAccountReasons(addr_reasons_dict):
+  """Return an addr_reasons_dict where parents omit child accounts."""
+  all_ids = set(addr_perm.user.user_id
+                for addr_perm in addr_reasons_dict)
+  merged_ids = set()
+
+  result = {}
+  for addr_perm, reasons in addr_reasons_dict.iteritems():
+    parent_id = addr_perm.user.linked_parent_id
+    if parent_id and parent_id in all_ids:
+      # The current user is a child account and the parent would be notified,
+      # so only notify the parent.
+      merged_ids.add(parent_id)
+    else:
+      result[addr_perm] = reasons
+
+  for addr_perm, reasons in result.iteritems():
+    if addr_perm.user.user_id in merged_ids:
+      reasons.append(notify_reasons.REASON_LINKED_ACCOUNT)
+
+  return result
+
+
 def MakeBulletedEmailWorkItems(
     group_reason_list, issue, body_for_non_members, body_for_members,
     project, hostport, commenter_view, detail_url, seq_num=None,
@@ -153,6 +176,8 @@ def MakeBulletedEmailWorkItems(
   for group, reason in group_reason_list:
     for memb_addr_perm in group:
       addr_reasons_dict.setdefault(memb_addr_perm, []).append(reason)
+
+  addr_reasons_dict = _MergeLinkedAccountReasons(addr_reasons_dict)
 
   email_tasks = []
   for memb_addr_perm, reasons in addr_reasons_dict.iteritems():

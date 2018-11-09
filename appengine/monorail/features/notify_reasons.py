@@ -43,7 +43,7 @@ REASON_ALSO_NOTIFY = 'A rule was set up to notify you'
 REASON_ALL_NOTIFICATIONS = (
     'The project was configured to send all issue notifications '
     'to this address')
-
+REASON_LINKED_ACCOUNT = 'Your linked account would have been notified'
 
 # An AddrPerm is how we represent our decision to notify a given
 # email address, which version of the email body to send to them, and

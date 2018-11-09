@@ -17,6 +17,7 @@ from features import notify_reasons
 from framework import emailfmt
 from framework import framework_views
 from framework import urls
+from proto import user_pb2
 from services import service_manager
 from testing import fake
 
@@ -46,6 +47,61 @@ class TaskQueueingFunctionsTest(unittest.TestCase):
     tasks = self.taskqueue_stub.get_filtered_tasks(
         url=urls.OUTBOUND_EMAIL_TASK + '.do')
     self.assertEqual(2, len(tasks))
+
+
+class MergeLinkedAccountReasonsTest(unittest.TestCase):
+
+  def setUp(self):
+    parent = user_pb2.User(
+        user_id=111L, email='parent@example.org',
+        linked_child_ids=[222L])
+    child = user_pb2.User(
+        user_id=222L, email='child@example.org',
+        linked_parent_id=111L)
+    user_3 = user_pb2.User(
+        user_id=333L, email='user4@example.org')
+    user_4 = user_pb2.User(
+        user_id=444L, email='user4@example.org')
+    self.addr_perm_parent = notify_reasons.AddrPerm(
+        False, parent.email, parent, notify_reasons.REPLY_NOT_ALLOWED)
+    self.addr_perm_child = notify_reasons.AddrPerm(
+        False, child.email, child, notify_reasons.REPLY_NOT_ALLOWED)
+    self.addr_perm_3 = notify_reasons.AddrPerm(
+        False, user_3.email, user_3, notify_reasons.REPLY_NOT_ALLOWED)
+    self.addr_perm_4 = notify_reasons.AddrPerm(
+        False, user_4.email, user_4, notify_reasons.REPLY_NOT_ALLOWED)
+
+  def testEmptyDict(self):
+    """Zero users to notify."""
+    self.assertEqual(
+        {},
+        notify_helpers._MergeLinkedAccountReasons({}))
+
+  def testNormal(self):
+    """No users are related."""
+    addr_reasons_dict = {
+       self.addr_perm_parent: [notify_reasons.REASON_CCD],
+       self.addr_perm_3: [notify_reasons.REASON_OWNER],
+       self.addr_perm_4: [notify_reasons.REASON_CCD],
+       }
+    self.assertEqual(
+        {self.addr_perm_parent: [notify_reasons.REASON_CCD],
+         self.addr_perm_3: [notify_reasons.REASON_OWNER],
+         self.addr_perm_4: [notify_reasons.REASON_CCD]
+         },
+        notify_helpers._MergeLinkedAccountReasons(addr_reasons_dict))
+
+  def testMerged(self):
+    """A child is merged into parent notification."""
+    addr_reasons_dict = {
+       self.addr_perm_parent: [notify_reasons.REASON_OWNER],
+       self.addr_perm_child: [notify_reasons.REASON_CCD],
+       }
+    self.assertEqual(
+        {self.addr_perm_parent: [notify_reasons.REASON_OWNER,
+                                 notify_reasons.REASON_LINKED_ACCOUNT]
+         },
+        notify_helpers._MergeLinkedAccountReasons(addr_reasons_dict))
 
 
 class MakeBulletedEmailWorkItemsTest(unittest.TestCase):

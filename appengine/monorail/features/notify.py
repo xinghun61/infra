@@ -515,6 +515,8 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
     member_additional_addrs = {}
     non_member_additional_addrs = {}
 
+    # TODO(jrobbins): Merge ids_to_notify_of_issue entries for linked accounts.
+
     for user_id in ids_to_notify_of_issue:
       if not user_id:
         continue  # Don't try to notify NO_USER_SPECIFIED
