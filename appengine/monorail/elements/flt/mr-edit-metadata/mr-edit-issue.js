@@ -41,6 +41,10 @@ class MrEditIssue extends ReduxMixin(Polymer.Element) {
         type: Boolean,
         statePath: 'updatingIssue',
       },
+      updateIssueError: {
+        type: Object,
+        statePath: 'updateIssueError',
+      },
       _labelNames: {
         type: Array,
         computed: '_computeLabelNames(issue.labelRefs)',

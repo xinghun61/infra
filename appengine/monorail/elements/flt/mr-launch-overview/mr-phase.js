@@ -45,6 +45,11 @@ class MrPhase extends MetadataMixin(ReduxMixin(Polymer.Element)) {
       updatingIssue: {
         type: Boolean,
         statePath: 'updatingIssue',
+        observer: '_updatingIssueChanged',
+      },
+      updateIssueError: {
+        type: Object,
+        statePath: 'updateIssueError',
       },
       // Possible values: Target, Approved, Launched.
       _status: {
@@ -147,7 +152,13 @@ class MrPhase extends MetadataMixin(ReduxMixin(Polymer.Element)) {
     if (message.commentContent || message.delta) {
       actionCreator.updateIssue(this.dispatch.bind(this), message);
     }
-    this.cancel();
+  }
+
+  _updatingIssueChanged(isUpdateInFlight) {
+    if (!isUpdateInFlight && !this.updateIssueError) {
+      // Close phase edit modal only after request finishes without errors.
+      this.cancel();
+    }
   }
 
   _computeNextDate(phaseName, status, data) {

@@ -121,7 +121,7 @@
       </template>
       <template is="dom-if" if="[[fetchIssueError]]">
         <div class="container-outside">
-          [[fetchIssueError]]
+          [[fetchIssueError.description]]
         </div>
       </template>
       <template is="dom-if" if="[[issueLoaded]]">

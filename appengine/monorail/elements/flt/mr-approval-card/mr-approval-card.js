@@ -124,6 +124,10 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
         type: Boolean,
         statePath: 'updatingApproval',
       },
+      updateApprovalError: {
+        type: Object,
+        statePath: 'updateApprovalError',
+      },
       _availableStatuses: {
         type: Array,
         computed: '_filterStatuses(_status, statuses, _hasApproverPrivileges)',

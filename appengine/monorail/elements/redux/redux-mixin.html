@@ -232,7 +232,7 @@
           });
 
         // Request for getting backend metadata related to a user, such as
-        // which groups they belong to and whether they're a site admin. 
+        // which groups they belong to and whether they're a site admin.
         case actionType.FETCH_USER_START:
           return Object.assign({}, state, {
             fetchUserError: null,
@@ -342,6 +342,7 @@
         case actionType.UPDATE_ISSUE_START:
           return Object.assign({}, state, {
             updatingIssue: true,
+            updateIssueError: null,
           });
         case actionType.UPDATE_ISSUE_SUCCESS:
           return Object.assign({}, state, {
@@ -357,6 +358,7 @@
         // Request for updating an approval.
         case actionType.UPDATE_APPROVAL_START:
           return Object.assign({}, state, {
+            updateApprovalError: null,
             updatingApproval: true,
           });
         case actionType.UPDATE_APPROVAL_SUCCESS:

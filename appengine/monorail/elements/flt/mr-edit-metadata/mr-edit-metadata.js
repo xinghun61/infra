@@ -87,6 +87,7 @@ class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
         type: Boolean,
         value: false,
       },
+      error: String,
       _statusesGrouped: {
         type: Array,
         computed: '_computeStatusesGrouped(statuses, isApproval)',

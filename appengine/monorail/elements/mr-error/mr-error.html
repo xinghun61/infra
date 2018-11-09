@@ -1,0 +1,31 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+
+<dom-module id="mr-error">
+  <template>
+    <style>
+      :host {
+        display: flex;
+        align-items: center;
+        flex-direction: row;
+        justify-content: flex-start;
+        box-sizing: border-box;
+        width: 100%;
+        margin: 0.5em 0;
+        padding: 0.25em 8px;
+        border: 1px solid #B71C1C;
+        border-radius: 4px;
+        background: #FFEBEE;
+      }
+      :host([hidden]) {
+        display: none;
+      }
+      iron-icon {
+        --iron-icon-fill-color: #B71C1C;
+      }
+    </style>
+    <iron-icon icon="close"></iron-icon>
+    <slot></slot>
+  </template>
+  <script src="./mr-error.js"></script>
+</dom-module>

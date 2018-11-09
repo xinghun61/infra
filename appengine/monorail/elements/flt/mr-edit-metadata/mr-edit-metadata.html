@@ -6,6 +6,7 @@
 
 <link rel="import" href="../../redux/redux-mixin.html">
 <link rel="import" href="../../redux/selectors.html">
+<link rel="import" href="../../mr-error/mr-error.html">
 <link rel="import" href="../shared/mr-flt-styles.html">
 <link rel="import" href="../shared/metadata-mixin.html">
 <link rel="import" href="./mr-edit-field.html">
@@ -90,6 +91,9 @@
         }
       }
     </style>
+    <template is="dom-if" if="[[error]]">
+      <mr-error>[[error]]</mr-error>
+    </template>
     <form id="editForm">
       <textarea id="commentText" placeholder="Add a comment"></textarea>
       <vaadin-upload files="{{_newAttachments}}" no-auto hidden$="[[disableAttachments]]">
