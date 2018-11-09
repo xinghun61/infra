@@ -14,6 +14,7 @@ import (
 
 	"go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/proto/milo"
+	"go.chromium.org/luci/logdog/common/types"
 
 	. "github.com/smartystreets/goconvey/convey"
 	. "go.chromium.org/luci/common/testing/assertions"
@@ -142,8 +143,12 @@ func TestParseUpdateBuildRequest(t *testing.T) {
 			`, expected)
 		So(err, ShouldBeNil)
 
-		annURL := "logdog://logdog.example.com/chromium/prefix/+/annotations"
-		actual, err := parseUpdateBuildRequest(ctx, ann, annURL)
+		annAddr := &types.StreamAddr{
+			Host:    "logdog.example.com",
+			Project: "chromium",
+			Path:    "prefix/+/annotations",
+		}
+		actual, err := parseUpdateBuildRequest(ctx, ann, annAddr)
 		So(err, ShouldBeNil)
 
 		So(actual, ShouldResembleProto, expected)
