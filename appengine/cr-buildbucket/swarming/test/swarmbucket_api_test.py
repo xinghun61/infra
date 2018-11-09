@@ -261,9 +261,6 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     }
     resp = self.call_api('get_task_def', req).json_body
     actual_task_def = json.loads(resp['task_definition'])
-    expected_secret_bytes = base64.b64encode(
-        launcher_pb2.BuildSecrets(build_token='beeff00d').SerializeToString()
-    )
     props_def = {
         u'env': [{u'key': u'BUILDBUCKET_EXPERIMENTAL', u'value': u'FALSE'}],
         u'extra_args': [
@@ -302,8 +299,6 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
             u'-logdog-project',
             u'chromium',
         ],
-        'secret_bytes':
-            expected_secret_bytes,
         u'execution_timeout_secs':
             u'3600',
         u'cipd_input': {

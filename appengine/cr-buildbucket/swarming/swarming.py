@@ -514,7 +514,7 @@ def _create_task_def_async(
   task = _apply_if_tags(task)
 
   _setup_swarming_request_task_slices(
-      build, builder_cfg, extra_cipd_packages, task
+      build, builder_cfg, extra_cipd_packages, task, fake_build
   )
 
   if not fake_build:  # pragma: no branch | covered by swarmbucketapi_test.py
@@ -636,7 +636,7 @@ def _calc_tags(
 
 
 def _setup_swarming_request_task_slices(
-    build, builder_cfg, extra_cipd_packages, task
+    build, builder_cfg, extra_cipd_packages, task, fake_build
 ):
   """Mutate the task request with named cache, CIPD packages and (soon) expiring
   dimensions.
@@ -649,7 +649,7 @@ def _setup_swarming_request_task_slices(
         'base swarming task template can only have one task_slices'
     )
 
-  if build.key:  # pragma: no branch
+  if not fake_build and build.key:  # pragma: no branch
     secrets = launcher_pb2.BuildSecrets(
         build_token=tokens.generate_build_token(build.key.id()),
     )
