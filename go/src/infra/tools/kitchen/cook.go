@@ -18,6 +18,7 @@ import (
 	"github.com/maruel/subcommands"
 	"golang.org/x/net/context"
 
+	"go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 	log "go.chromium.org/luci/common/logging"
@@ -63,8 +64,9 @@ type cookRun struct {
 	engine       recipeEngine
 	kitchenProps *kitchenProperties
 
-	systemAuth *AuthContext // used by kitchen itself for logdog, bigquery, git
-	recipeAuth *AuthContext // used by the recipe
+	systemAuth   *AuthContext // used by kitchen itself for logdog, bigquery, git
+	recipeAuth   *AuthContext // used by the recipe
+	buildSecrets *buildbucketpb.BuildSecrets
 }
 
 // kitchenProperties defines the structure of "$kitchen" build property.
@@ -465,6 +467,11 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 	path, _ := env.Get("PATH")
 	if err := os.Setenv("PATH", path); err != nil {
 		return fail(errors.Annotate(err, "failed to update process PATH").Err())
+	}
+
+	// Read BuildSecrets message from swarming secret bytes.
+	if c.buildSecrets, err = readBuildSecrets(ctx); err != nil {
+		return fail(errors.Annotate(err, "failed to read build secrets").Err())
 	}
 
 	// Create systemAuth and recipeAuth authentication contexts, since we are

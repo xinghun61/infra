@@ -8,6 +8,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/golang/protobuf/proto"
 	"google.golang.org/genproto/protobuf/field_mask"
 
 	"go.chromium.org/luci/buildbucket"
@@ -16,6 +17,7 @@ import (
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/proto/milo"
 	"go.chromium.org/luci/logdog/common/types"
+	"go.chromium.org/luci/lucictx"
 )
 
 // runBuildUpdater calls client.UpdateBuild.
@@ -105,4 +107,18 @@ func parseUpdateBuildRequest(c context.Context, ann *milo.Step, annAddr *types.S
 		// minimize output by asking nothing back.
 		Fields: &field_mask.FieldMask{},
 	}, nil
+}
+
+// readBuildSecrets populates c.buildSecrets from swarming secret bytes, if any.
+func readBuildSecrets(ctx context.Context) (*buildbucketpb.BuildSecrets, error) {
+	swarming := lucictx.GetSwarming(ctx)
+	if swarming == nil {
+		return nil, nil
+	}
+
+	secrets := &buildbucketpb.BuildSecrets{}
+	if err := proto.Unmarshal(swarming.SecretBytes, secrets); err != nil {
+		return nil, err
+	}
+	return secrets, nil
 }
