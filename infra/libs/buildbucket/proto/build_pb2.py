@@ -998,16 +998,14 @@ _BUILDERID = _descriptor.Descriptor(
 )
 
 _BUILD_INPUT.fields_by_name[
-    'properties'
-].message_type = google_dot_protobuf_dot_struct__pb2._STRUCT
+    'properties'].message_type = google_dot_protobuf_dot_struct__pb2._STRUCT
 _BUILD_INPUT.fields_by_name['gitiles_commit'
                            ].message_type = common__pb2._GITILESCOMMIT
 _BUILD_INPUT.fields_by_name['gerrit_changes'
                            ].message_type = common__pb2._GERRITCHANGE
 _BUILD_INPUT.containing_type = _BUILD
 _BUILD_OUTPUT.fields_by_name[
-    'properties'
-].message_type = google_dot_protobuf_dot_struct__pb2._STRUCT
+    'properties'].message_type = google_dot_protobuf_dot_struct__pb2._STRUCT
 _BUILD_OUTPUT.fields_by_name['gitiles_commit'
                             ].message_type = common__pb2._GITILESCOMMIT
 _BUILD_OUTPUT.containing_type = _BUILD
@@ -1019,8 +1017,7 @@ _BUILD.fields_by_name[
     'start_time'
 ].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
 _BUILD.fields_by_name[
-    'end_time'
-].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
+    'end_time'].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
 _BUILD.fields_by_name[
     'update_time'
 ].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
@@ -1040,8 +1037,8 @@ _BUILD.fields_by_name['infra_failure_reason'
 _BUILD.oneofs_by_name['status_reason'].fields.append(
     _BUILD.fields_by_name['cancel_reason']
 )
-_BUILD.fields_by_name['cancel_reason'
-                     ].containing_oneof = _BUILD.oneofs_by_name['status_reason']
+_BUILD.fields_by_name['cancel_reason'].containing_oneof = _BUILD.oneofs_by_name[
+    'status_reason']
 _BUILDINFRA_BUILDBUCKET.containing_type = _BUILDINFRA
 _BUILDINFRA_SWARMING.fields_by_name['task_dimensions'
                                    ].message_type = common__pb2._STRINGPAIR

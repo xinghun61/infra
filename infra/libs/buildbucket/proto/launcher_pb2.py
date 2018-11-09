@@ -17,7 +17,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package='buildbucket.v2',
     syntax='proto3',
     serialized_pb=_b(
-        '\n\x0elauncher.proto\x12\x0e\x62uildbucket.v2\"#\n\x0c\x42uildSecrets\x12\x13\n\x0b\x62uild_token\x18\x01 \x01(\x0c\x42\x36Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3'
+        '\n\x0elauncher.proto\x12\x0e\x62uildbucket.v2\"#\n\x0c\x42uildSecrets\x12\x13\n\x0b\x62uild_token\x18\x01 \x01(\tB6Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3'
     )
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -34,11 +34,11 @@ _BUILDSECRETS = _descriptor.Descriptor(
             full_name='buildbucket.v2.BuildSecrets.build_token',
             index=0,
             number=1,
-            type=12,
+            type=9,
             cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=_b(""),
+            default_value=_b("").decode('utf-8'),
             message_type=None,
             enum_type=None,
             containing_type=None,
