@@ -52,6 +52,9 @@ If any step below fails. Halt deploy and ping Monorail chat.
     1. [Chromedash](http://go/chromedash), should work after deployment.
 1. Announce the Deployment.
     1. Copy changes since last deploy: `git log --oneline .`.
+1. Add a new row to the [Monorail Deployment Stats](http://go/monorail-deployment-stats)
+   spreadsheet to help track deploys/followups/rollbacks. It is important to do this
+   even if the deploy failed for some reason.
 
 ## Creating and deploying a new Monorail instance
 
