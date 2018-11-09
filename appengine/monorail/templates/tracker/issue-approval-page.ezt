@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<title>Approval Issue</title>
-
+[define title]Approval Issue [local_id][end]
 [include "../framework/polymer-header.ezt"]
 
 [if-any dev_mode]
