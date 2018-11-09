@@ -27,6 +27,8 @@ import (
 	"strings"
 	"time"
 
+	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+
 	"github.com/golang/protobuf/ptypes/duration"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/data/strpair"
@@ -340,4 +342,28 @@ func (p *Pager) Next() int {
 // not return the exact number of items requested).
 func (p *Pager) Record(n int) {
 	p.Remaining -= n
+}
+
+// GetStateDimension gets the dut_state value from a dimension slice.
+func GetStateDimension(s []*swarming.SwarmingRpcsStringListPair) fleet.DutState {
+	for _, p := range s {
+		if p.Key != DutStateDimensionKey {
+			continue
+		}
+		if len(p.Value) != 1 {
+			return fleet.DutState_DutStateInvalid
+		}
+		return dutStateMap[p.Value[0]]
+	}
+	return fleet.DutState_DutStateInvalid
+}
+
+// dutStateMap maps string values to DutState values.  The zero value
+// for unknown keys is DutState_StateInvalid.
+var dutStateMap = map[string]fleet.DutState{
+	"ready":         fleet.DutState_Ready,
+	"needs_cleanup": fleet.DutState_NeedsCleanup,
+	"needs_repair":  fleet.DutState_NeedsRepair,
+	"needs_reset":   fleet.DutState_NeedsReset,
+	"repair_failed": fleet.DutState_RepairFailed,
 }

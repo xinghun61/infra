@@ -176,16 +176,6 @@ func flattenAndDedpulicateBots(nb [][]*swarming.SwarmingRpcsBotInfo) []*swarming
 	return bots
 }
 
-// dutStateMap maps string values to DutState values.  The zero value
-// for unknown keys is DutState_StateInvalid.
-var dutStateMap = map[string]fleet.DutState{
-	"ready":         fleet.DutState_Ready,
-	"needs_cleanup": fleet.DutState_NeedsCleanup,
-	"needs_repair":  fleet.DutState_NeedsRepair,
-	"needs_reset":   fleet.DutState_NeedsReset,
-	"repair_failed": fleet.DutState_RepairFailed,
-}
-
 var healthyDutStates = map[fleet.DutState]bool{
 	fleet.DutState_Ready:        true,
 	fleet.DutState_NeedsCleanup: true,
@@ -221,11 +211,10 @@ func singleBotInfoToSummary(bi *swarming.SwarmingRpcsBotInfo) (*fleet.BotSummary
 		return nil, errors.Annotate(err, "failed to obtain DUT ID for bot %q", bi.BotId).Err()
 	}
 
-	dss, err := extractSingleValuedDimension(dims, clients.DutStateDimensionKey)
-	if err != nil {
-		return nil, errors.Annotate(err, "failed to obtain DutState for bot %q", bi.BotId).Err()
+	bs.DutState = clients.GetStateDimension(bi.Dimensions)
+	if bs.DutState == fleet.DutState_DutStateInvalid {
+		return nil, errors.Reason("failed to obtain DutState for bot %q", bi.BotId).Err()
 	}
-	bs.DutState = dutStateMap[dss]
 
 	if vs := dims[clients.DutModelDimensionKey]; len(vs) == 1 {
 		bs.Dimensions.Model = vs[0]
