@@ -110,6 +110,7 @@ var RuleMap = map[string]*RepoConfig{
 			"autoroll-rules-spirv":        AutoRollRulesDEPS("spirv-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
 			"autoroll-rules-src-internal": AutoRollRulesDEPS("src-internal-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
 			"autoroll-rules-webrtc":       AutoRollRulesDEPS("webrtc-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
+			"autoroll-rules-wpt":          AutoRollRulesLayoutTests("wpt-autoroller@chops-service-accounts.iam.gserviceaccount.com"),
 			"findit-rules": AccountRules{
 				Account: "findit-for-me@appspot.gserviceaccount.com",
 				Funcs: []RuleFunc{

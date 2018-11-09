@@ -32,7 +32,7 @@ func AutoRollRulesDEPS(account string) AccountRules {
 	}
 }
 
-// AutoRollRulesDepsAndTasks returns an AccountRules instance for an account
+// AutoRollRulesDEPSAndTasks returns an AccountRules instance for an account
 // which should only modify the ``DEPS`` and ``infra/bots/tasks.json`` files.
 func AutoRollRulesDEPSAndTasks(account string) AccountRules {
 	return AccountRules{
@@ -62,6 +62,18 @@ func AutoRollRulesSKCMS(account string) AccountRules {
 		Account: account,
 		Funcs: []RuleFunc{
 			OnlyModifiesSKCMS,
+		},
+		notificationFunction: fileBugForAutoRollViolation,
+	}
+}
+
+// AutoRollRulesLayoutTests returns an AccountRules instance for an account
+// which should only modify ``third_party/WebKit/LayoutTests``.
+func AutoRollRulesLayoutTests(account string) AccountRules {
+	return AccountRules{
+		Account: account,
+		Funcs: []RuleFunc{
+			OnlyModifiesLayoutTests,
 		},
 		notificationFunction: fileBugForAutoRollViolation,
 	}
@@ -104,4 +116,10 @@ func OnlyModifiesFuchsiaSDKVersions(ctx context.Context, ap *AuditParams, rc *Re
 // modifies files in the ``third_party/skcms`` directory.
 func OnlyModifiesSKCMS(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 	return OnlyModifiesDirRule(ctx, ap, rc, cs, "OnlyModifiesSKCMS", "third_party/skcms")
+}
+
+// OnlyModifiesLayoutTests is a RuleFunc which verifies that the audited CL
+// only modifies files in the ``third_party/WebKit/LayoutTests`` directory.
+func OnlyModifiesLayoutTests(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+	return OnlyModifiesDirRule(ctx, ap, rc, cs, "OnlyModifiesLayoutTests", "third_party/WebKit/LayoutTests")
 }
