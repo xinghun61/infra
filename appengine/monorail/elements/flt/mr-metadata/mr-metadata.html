@@ -138,7 +138,7 @@
       </tr>
       <template is="dom-repeat" items="[[group.fieldDefs]]" as="field">
         <tr hidden$="[[_fieldIsHidden(_fieldValueMap, field)]]">
-          <th>[[field.fieldRef.fieldName]]:</th>
+          <th title$="[[field.fieldRef.fieldName]]">[[field.fieldRef.fieldName]]:</th>
           <td>
             <mr-field-values
               name="[[field.fieldRef.fieldName]]"
@@ -156,7 +156,7 @@
 
     <template is="dom-repeat" items="[[_fieldDefsWithoutGroup]]" as="field">
       <tr hidden$="[[_fieldIsHidden(_fieldValueMap, field)]]">
-        <th>[[field.fieldRef.fieldName]]:</th>
+        <th title$="[[field.fieldRef.fieldName]]">[[field.fieldRef.fieldName]]:</th>
         <td>
           <mr-field-values
             name="[[field.fieldRef.fieldName]]"
