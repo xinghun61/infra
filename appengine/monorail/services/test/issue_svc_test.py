@@ -956,6 +956,21 @@ class IssueServiceTest(unittest.TestCase):
   def testDeltaUpdateIssue(self):
     pass  # TODO(jrobbins): write more tests
 
+  def testDeltaUpdateIssue_NoOp(self):
+    """If the user didn't provide any content, we don't make an IssueComment."""
+    commenter_id = 222L
+    issue = fake.MakeTestIssue(
+        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        status='Live', issue_id=78901, project_name='proj')
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    delta = tracker_pb2.IssueDelta()
+
+    amendments, comment_pb = self.services.issue.DeltaUpdateIssue(
+        self.cnxn, self.services, commenter_id, issue.project_id, config,
+        issue, delta, comment='', index_now=False, timestamp=self.now)
+    self.assertEqual([], amendments)
+    self.assertIsNone(comment_pb)
+
   def testDeltaUpdateIssue_MergedInto(self):
     commenter_id = 222L
     issue = fake.MakeTestIssue(

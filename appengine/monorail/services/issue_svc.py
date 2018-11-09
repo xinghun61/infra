@@ -1320,8 +1320,9 @@ class IssueService(object):
           int(time.time()).
 
     Returns:
-      A list of Amendment PBs that describe the set of metadata updates that
-      the user made.  This tuple is later used in making the IssueComment.
+      A tuple (amendments, comment_pb) with a list of Amendment PBs that
+      describe the set of metadata updates that the user made, and the
+      resulting IssueComment (or None if no comment was created).
     """
     timestamp = timestamp or int(time.time())
     old_effective_owner = tracker_bizobj.GetOwnerId(issue)
@@ -1345,8 +1346,9 @@ class IssueService(object):
 
     # If this was a no-op with no comment, bail out and don't save,
     # invalidate, or re-index anything.
-    if not amendments and (not comment or not comment.strip()):
-      logging.info('No amendments and no comment, so this is a no-op.')
+    if (not amendments and (not comment or not comment.strip()) and
+        not attachments):
+      logging.info('No amendments, comment, attachments: this is a no-op.')
       return [], None
 
     # Note: no need to check for collisions when the user is doing a delta.
