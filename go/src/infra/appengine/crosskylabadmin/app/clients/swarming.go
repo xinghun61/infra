@@ -203,16 +203,16 @@ func (sc *swarmingClientImpl) ListRecentTasks(c context.Context, tags []string, 
 
 	// Limit() only limits the number of tasks returned in a single page. The
 	// client must keep track of the total number returned across the calls.
-	p := pager{remaining: limit}
+	p := Pager{Remaining: limit}
 	for {
-		chunk := p.next()
+		chunk := p.Next()
 		ic, _ := context.WithTimeout(c, 60*time.Second)
 		resp, err := call.Limit(int64(chunk)).Context(ic).Do()
 		if err != nil {
 			return nil, errors.Reason("failed to list tasks with tags %s", strings.Join(tags, " ")).InternalReason(err.Error()).Err()
 		}
 		trs = append(trs, resp.Items...)
-		p.record(len(resp.Items))
+		p.Record(len(resp.Items))
 		if resp.Cursor == "" {
 			break
 		}
@@ -266,9 +266,9 @@ func (sc *swarmingClientImpl) ListBotTasks(id string) BotTasksCursor {
 func (sc *swarmingClientImpl) ListSortedRecentTasksForBot(ctx context.Context, botID string, limit int) ([]*swarming.SwarmingRpcsTaskResult, error) {
 	var trs []*swarming.SwarmingRpcsTaskResult
 	c := sc.ListBotTasks(botID)
-	p := pager{remaining: limit}
+	p := Pager{Remaining: limit}
 	for {
-		chunk := p.next()
+		chunk := p.Next()
 		trs2, err := c.Next(ctx, int64(chunk))
 		if err != nil {
 			return nil, errors.Reason("failed to list tasks for dut %s", botID).InternalReason(err.Error()).Err()
@@ -276,7 +276,7 @@ func (sc *swarmingClientImpl) ListSortedRecentTasksForBot(ctx context.Context, b
 		if len(trs2) == 0 {
 			break
 		}
-		p.record(len(trs2))
+		p.Record(len(trs2))
 		trs = append(trs, trs2...)
 	}
 	return trs, nil
@@ -316,23 +316,28 @@ func TimeSinceBotTask(tr *swarming.SwarmingRpcsTaskResult) (*duration.Duration, 
 }
 
 // Pager manages pagination of API calls.
-type pager struct {
-	remaining int
+type Pager struct {
+	// Remaining is set to the number of items to retrieve.  This
+	// can be modified after Pager has been used, but not
+	// concurrently.
+	Remaining int
 }
 
-// Next returns the number of items to request next.
-func (p *pager) next() int {
+// Next returns the number of items to request.  If there are no more
+// items to request, returns 0.
+func (p *Pager) Next() int {
 	switch {
-	case p.remaining < 0:
+	case p.Remaining < 0:
 		return 0
-	case p.remaining < paginationChunkSize:
-		return p.remaining
+	case p.Remaining < paginationChunkSize:
+		return p.Remaining
 	default:
 		return paginationChunkSize
 	}
 }
 
-// Record records that items have been received.
-func (p *pager) record(n int) {
-	p.remaining -= n
+// Record records that items have been received (since a request may
+// not return the exact number of items requested).
+func (p *Pager) Record(n int) {
+	p.Remaining -= n
 }
