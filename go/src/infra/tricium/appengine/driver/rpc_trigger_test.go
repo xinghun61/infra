@@ -75,7 +75,7 @@ func TestHelperFunctions(t *testing.T) {
 			Project:       "my-luci-config-project-id",
 			GitURL:        "http://my-gerrit.com/my-project",
 			GitRef:        "refs/changes/97/597/2",
-			Paths:         []string{"README.md"},
+			Files:         []tricium.Data_File{{Path: "README.md"}},
 			GerritHost:    "http://my-gerrit-review.com/my-project",
 			GerritProject: "my-project",
 			GerritChange:  "my-project~master~I8473b95934b5732ac55d26311a706c9c2bde9940",
@@ -86,7 +86,7 @@ func TestHelperFunctions(t *testing.T) {
 			Project: "another-luci-config-project-id",
 			GitURL:  "http://my-nongerrit.com/repo-url",
 			GitRef:  "refs/foo",
-			Paths:   []string{"README.md"},
+			Files:   []tricium.Data_File{{Path: "README.md"}},
 		}), ShouldBeNil)
 
 		Convey("Swarming tags include Gerrit details for Gerrit requests", func() {

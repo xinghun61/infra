@@ -7,4 +7,4 @@ package tricium
 //go:generate go install go.chromium.org/gae/tools/proto-gae
 //go:generate go install go.chromium.org/luci/grpc/cmd/cproto
 //go:generate cproto
-//go:generate proto-gae -type ProjectConfig -type ServiceConfig -type Acl
+//go:generate proto-gae -type ProjectConfig -type ServiceConfig -type Acl -type Data_File

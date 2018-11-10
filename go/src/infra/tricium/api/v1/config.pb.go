@@ -3,9 +3,11 @@
 
 package tricium
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -32,6 +34,7 @@ var Acl_Role_name = map[int32]string{
 	0: "READER",
 	1: "REQUESTER",
 }
+
 var Acl_Role_value = map[string]int32{
 	"READER":    0,
 	"REQUESTER": 1,
@@ -40,8 +43,9 @@ var Acl_Role_value = map[string]int32{
 func (x Acl_Role) String() string {
 	return proto.EnumName(Acl_Role_name, int32(x))
 }
+
 func (Acl_Role) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_config_08c5afac441858b1, []int{5, 0}
+	return fileDescriptor_9a660f81c8b61665, []int{5, 0}
 }
 
 // Tricium service configuration.
@@ -86,16 +90,17 @@ func (m *ServiceConfig) Reset()         { *m = ServiceConfig{} }
 func (m *ServiceConfig) String() string { return proto.CompactTextString(m) }
 func (*ServiceConfig) ProtoMessage()    {}
 func (*ServiceConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_08c5afac441858b1, []int{0}
+	return fileDescriptor_9a660f81c8b61665, []int{0}
 }
+
 func (m *ServiceConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServiceConfig.Unmarshal(m, b)
 }
 func (m *ServiceConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ServiceConfig.Marshal(b, m, deterministic)
 }
-func (dst *ServiceConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ServiceConfig.Merge(dst, src)
+func (m *ServiceConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ServiceConfig.Merge(m, src)
 }
 func (m *ServiceConfig) XXX_Size() int {
 	return xxx_messageInfo_ServiceConfig.Size(m)
@@ -193,16 +198,17 @@ func (m *ProjectConfig) Reset()         { *m = ProjectConfig{} }
 func (m *ProjectConfig) String() string { return proto.CompactTextString(m) }
 func (*ProjectConfig) ProtoMessage()    {}
 func (*ProjectConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_08c5afac441858b1, []int{1}
+	return fileDescriptor_9a660f81c8b61665, []int{1}
 }
+
 func (m *ProjectConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ProjectConfig.Unmarshal(m, b)
 }
 func (m *ProjectConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ProjectConfig.Marshal(b, m, deterministic)
 }
-func (dst *ProjectConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ProjectConfig.Merge(dst, src)
+func (m *ProjectConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProjectConfig.Merge(m, src)
 }
 func (m *ProjectConfig) XXX_Size() int {
 	return xxx_messageInfo_ProjectConfig.Size(m)
@@ -283,16 +289,17 @@ func (m *RepoDetails) Reset()         { *m = RepoDetails{} }
 func (m *RepoDetails) String() string { return proto.CompactTextString(m) }
 func (*RepoDetails) ProtoMessage()    {}
 func (*RepoDetails) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_08c5afac441858b1, []int{2}
+	return fileDescriptor_9a660f81c8b61665, []int{2}
 }
+
 func (m *RepoDetails) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RepoDetails.Unmarshal(m, b)
 }
 func (m *RepoDetails) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_RepoDetails.Marshal(b, m, deterministic)
 }
-func (dst *RepoDetails) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RepoDetails.Merge(dst, src)
+func (m *RepoDetails) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RepoDetails.Merge(m, src)
 }
 func (m *RepoDetails) XXX_Size() int {
 	return xxx_messageInfo_RepoDetails.Size(m)
@@ -310,12 +317,14 @@ type isRepoDetails_Source interface {
 type RepoDetails_GerritProject struct {
 	GerritProject *GerritProject `protobuf:"bytes,4,opt,name=gerrit_project,json=gerritProject,proto3,oneof"`
 }
+
 type RepoDetails_GitRepo struct {
 	GitRepo *GitRepo `protobuf:"bytes,5,opt,name=git_repo,json=gitRepo,proto3,oneof"`
 }
 
 func (*RepoDetails_GerritProject) isRepoDetails_Source() {}
-func (*RepoDetails_GitRepo) isRepoDetails_Source()       {}
+
+func (*RepoDetails_GitRepo) isRepoDetails_Source() {}
 
 func (m *RepoDetails) GetSource() isRepoDetails_Source {
 	if m != nil {
@@ -445,16 +454,17 @@ func (m *GerritProject) Reset()         { *m = GerritProject{} }
 func (m *GerritProject) String() string { return proto.CompactTextString(m) }
 func (*GerritProject) ProtoMessage()    {}
 func (*GerritProject) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_08c5afac441858b1, []int{3}
+	return fileDescriptor_9a660f81c8b61665, []int{3}
 }
+
 func (m *GerritProject) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GerritProject.Unmarshal(m, b)
 }
 func (m *GerritProject) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_GerritProject.Marshal(b, m, deterministic)
 }
-func (dst *GerritProject) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GerritProject.Merge(dst, src)
+func (m *GerritProject) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GerritProject.Merge(m, src)
 }
 func (m *GerritProject) XXX_Size() int {
 	return xxx_messageInfo_GerritProject.Size(m)
@@ -498,16 +508,17 @@ func (m *GitRepo) Reset()         { *m = GitRepo{} }
 func (m *GitRepo) String() string { return proto.CompactTextString(m) }
 func (*GitRepo) ProtoMessage()    {}
 func (*GitRepo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_08c5afac441858b1, []int{4}
+	return fileDescriptor_9a660f81c8b61665, []int{4}
 }
+
 func (m *GitRepo) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GitRepo.Unmarshal(m, b)
 }
 func (m *GitRepo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_GitRepo.Marshal(b, m, deterministic)
 }
-func (dst *GitRepo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GitRepo.Merge(dst, src)
+func (m *GitRepo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GitRepo.Merge(m, src)
 }
 func (m *GitRepo) XXX_Size() int {
 	return xxx_messageInfo_GitRepo.Size(m)
@@ -545,16 +556,17 @@ func (m *Acl) Reset()         { *m = Acl{} }
 func (m *Acl) String() string { return proto.CompactTextString(m) }
 func (*Acl) ProtoMessage()    {}
 func (*Acl) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_08c5afac441858b1, []int{5}
+	return fileDescriptor_9a660f81c8b61665, []int{5}
 }
+
 func (m *Acl) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Acl.Unmarshal(m, b)
 }
 func (m *Acl) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Acl.Marshal(b, m, deterministic)
 }
-func (dst *Acl) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Acl.Merge(dst, src)
+func (m *Acl) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Acl.Merge(m, src)
 }
 func (m *Acl) XXX_Size() int {
 	return xxx_messageInfo_Acl.Size(m)
@@ -603,16 +615,17 @@ func (m *Selection) Reset()         { *m = Selection{} }
 func (m *Selection) String() string { return proto.CompactTextString(m) }
 func (*Selection) ProtoMessage()    {}
 func (*Selection) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_08c5afac441858b1, []int{6}
+	return fileDescriptor_9a660f81c8b61665, []int{6}
 }
+
 func (m *Selection) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Selection.Unmarshal(m, b)
 }
 func (m *Selection) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Selection.Marshal(b, m, deterministic)
 }
-func (dst *Selection) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Selection.Merge(dst, src)
+func (m *Selection) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Selection.Merge(m, src)
 }
 func (m *Selection) XXX_Size() int {
 	return xxx_messageInfo_Selection.Size(m)
@@ -663,16 +676,17 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_08c5afac441858b1, []int{7}
+	return fileDescriptor_9a660f81c8b61665, []int{7}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -683,6 +697,13 @@ func (m *Config) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Config proto.InternalMessageInfo
 
+func (m *Config) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
 type isConfig_ValueType interface {
 	isConfig_ValueType()
 }
@@ -690,11 +711,13 @@ type isConfig_ValueType interface {
 type Config_Value struct {
 	Value string `protobuf:"bytes,2,opt,name=value,proto3,oneof"`
 }
+
 type Config_ValueJ struct {
 	ValueJ string `protobuf:"bytes,3,opt,name=value_j,json=valueJ,proto3,oneof"`
 }
 
-func (*Config_Value) isConfig_ValueType()  {}
+func (*Config_Value) isConfig_ValueType() {}
+
 func (*Config_ValueJ) isConfig_ValueType() {}
 
 func (m *Config) GetValueType() isConfig_ValueType {
@@ -702,13 +725,6 @@ func (m *Config) GetValueType() isConfig_ValueType {
 		return m.ValueType
 	}
 	return nil
-}
-
-func (m *Config) GetName() string {
-	if m != nil {
-		return m.Name
-	}
-	return ""
 }
 
 func (m *Config) GetValue() string {
@@ -792,6 +808,7 @@ func _Config_OneofSizer(msg proto.Message) (n int) {
 }
 
 func init() {
+	proto.RegisterEnum("tricium.Acl_Role", Acl_Role_name, Acl_Role_value)
 	proto.RegisterType((*ServiceConfig)(nil), "tricium.ServiceConfig")
 	proto.RegisterType((*ProjectConfig)(nil), "tricium.ProjectConfig")
 	proto.RegisterType((*RepoDetails)(nil), "tricium.RepoDetails")
@@ -800,14 +817,11 @@ func init() {
 	proto.RegisterType((*Acl)(nil), "tricium.Acl")
 	proto.RegisterType((*Selection)(nil), "tricium.Selection")
 	proto.RegisterType((*Config)(nil), "tricium.Config")
-	proto.RegisterEnum("tricium.Acl_Role", Acl_Role_name, Acl_Role_value)
 }
 
-func init() {
-	proto.RegisterFile("infra/tricium/api/v1/config.proto", fileDescriptor_config_08c5afac441858b1)
-}
+func init() { proto.RegisterFile("infra/tricium/api/v1/config.proto", fileDescriptor_9a660f81c8b61665) }
 
-var fileDescriptor_config_08c5afac441858b1 = []byte{
+var fileDescriptor_9a660f81c8b61665 = []byte{
 	// 777 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x54, 0xcf, 0x6f, 0xdc, 0x44,
 	0x14, 0x5e, 0x67, 0x77, 0xed, 0xf5, 0x4b, 0x76, 0xb3, 0x1d, 0x95, 0xd4, 0x0d, 0x07, 0xb6, 0x46,

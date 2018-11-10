@@ -180,7 +180,7 @@ func TestCreateRobotComment(t *testing.T) {
 }
 
 func TestGetChangedLinesFromPatch(t *testing.T) {
-	Convey("Extract changed lines", t, func() {
+	Convey("Extract changed lines with added and modified files", t, func() {
 		patch := `commit 29943c31812f582bd174740d9f9414a99632c687 (HEAD -> master)
 Author: Foo Bar <foobar@google.com>
 Date:   Tue Jun 26 17:58:25 2018 -0700
@@ -224,7 +224,7 @@ index 0000000..ab8dadd
 		So(actualLines, ShouldResemble, expectedLines)
 	})
 
-	Convey("Extract changed lines", t, func() {
+	Convey("Extract changed lines with a deleted file", t, func() {
 		patch := `commit 29943c31812f582bd174740d9f9414a99632c687 (HEAD -> master)
 Author: Foo Bar <foobar@google.com>
 Date:   Tue Jun 26 17:58:25 2018 -0700

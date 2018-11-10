@@ -139,13 +139,16 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 		return "", errors.Annotate(err, "failed to get project config").Err()
 	}
 	var paths []string
+	var files []tricium.Data_File
 	for _, file := range req.Files {
 		paths = append(paths, file.Path)
+		files = append(files, *file)
 	}
 	request := &track.AnalyzeRequest{
 		Received: clock.Now(c).UTC(),
 		Project:  req.Project,
-		Paths:    paths,
+		Paths:    paths, // TODO(qyearsley): Remove crbug.com/870389
+		Files:    files,
 	}
 	repo := tricium.LookupRepoDetails(pc, req)
 	if repo == nil {

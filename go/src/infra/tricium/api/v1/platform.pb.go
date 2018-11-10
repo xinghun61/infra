@@ -3,9 +3,11 @@
 
 package tricium
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -60,6 +62,7 @@ var Platform_Name_name = map[int32]string{
 	26: "CHROMEOS",
 	31: "FUCHSIA",
 }
+
 var Platform_Name_value = map[string]int32{
 	"ANY":      0,
 	"LINUX":    1,
@@ -76,8 +79,9 @@ var Platform_Name_value = map[string]int32{
 func (x Platform_Name) String() string {
 	return proto.EnumName(Platform_Name_name, int32(x))
 }
+
 func (Platform_Name) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_platform_63bf7bea30ed52ea, []int{0, 0}
+	return fileDescriptor_def4186eac94d158, []int{0, 0}
 }
 
 // Platforms supported by Tricium.
@@ -91,16 +95,17 @@ func (m *Platform) Reset()         { *m = Platform{} }
 func (m *Platform) String() string { return proto.CompactTextString(m) }
 func (*Platform) ProtoMessage()    {}
 func (*Platform) Descriptor() ([]byte, []int) {
-	return fileDescriptor_platform_63bf7bea30ed52ea, []int{0}
+	return fileDescriptor_def4186eac94d158, []int{0}
 }
+
 func (m *Platform) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Platform.Unmarshal(m, b)
 }
 func (m *Platform) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Platform.Marshal(b, m, deterministic)
 }
-func (dst *Platform) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Platform.Merge(dst, src)
+func (m *Platform) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Platform.Merge(m, src)
 }
 func (m *Platform) XXX_Size() int {
 	return xxx_messageInfo_Platform.Size(m)
@@ -138,16 +143,17 @@ func (m *Platform_Details) Reset()         { *m = Platform_Details{} }
 func (m *Platform_Details) String() string { return proto.CompactTextString(m) }
 func (*Platform_Details) ProtoMessage()    {}
 func (*Platform_Details) Descriptor() ([]byte, []int) {
-	return fileDescriptor_platform_63bf7bea30ed52ea, []int{0, 0}
+	return fileDescriptor_def4186eac94d158, []int{0, 0}
 }
+
 func (m *Platform_Details) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Platform_Details.Unmarshal(m, b)
 }
 func (m *Platform_Details) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Platform_Details.Marshal(b, m, deterministic)
 }
-func (dst *Platform_Details) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Platform_Details.Merge(dst, src)
+func (m *Platform_Details) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Platform_Details.Merge(m, src)
 }
 func (m *Platform_Details) XXX_Size() int {
 	return xxx_messageInfo_Platform_Details.Size(m)
@@ -180,16 +186,16 @@ func (m *Platform_Details) GetHasRuntime() bool {
 }
 
 func init() {
+	proto.RegisterEnum("tricium.Platform_Name", Platform_Name_name, Platform_Name_value)
 	proto.RegisterType((*Platform)(nil), "tricium.Platform")
 	proto.RegisterType((*Platform_Details)(nil), "tricium.Platform.Details")
-	proto.RegisterEnum("tricium.Platform_Name", Platform_Name_name, Platform_Name_value)
 }
 
 func init() {
-	proto.RegisterFile("infra/tricium/api/v1/platform.proto", fileDescriptor_platform_63bf7bea30ed52ea)
+	proto.RegisterFile("infra/tricium/api/v1/platform.proto", fileDescriptor_def4186eac94d158)
 }
 
-var fileDescriptor_platform_63bf7bea30ed52ea = []byte{
+var fileDescriptor_def4186eac94d158 = []byte{
 	// 270 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0xd0, 0xc1, 0x4e, 0xb3, 0x40,
 	0x14, 0x05, 0xe0, 0x9f, 0xd2, 0xbf, 0xd0, 0x8b, 0x31, 0xd7, 0x49, 0x34, 0xa4, 0x0b, 0x4b, 0xea,

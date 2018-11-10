@@ -34,15 +34,6 @@ import (
 // All timestamps are in UTC.
 const timeStampLayout = "2006-01-02 15:04:05.000000000"
 
-// Status field values in a Gerrit FileInfo struct.
-// See Gerrit API docs: https://goo.gl/ABFHDg
-// This list is not exhaustive.
-const (
-	fileStatusAdded    = "A"
-	fileStatusDeleted  = "D"
-	fileStatusModified = "M"
-)
-
 // Project tracks the last poll of a Gerrit project.
 //
 // Mutable entity.
@@ -341,28 +332,32 @@ func extractUpdates(c context.Context, p *Project, changes []gr.ChangeInfo) ([]g
 }
 
 // enqueueAnalyzeRequests enqueues Analyze requests for the provided Gerrit changes.
-func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, repo *tricium.RepoDetails, changes []gr.ChangeInfo) error {
-	logging.Infof(ctx, "Enqueue Analyze requests for %d changes.", len(changes))
+func enqueueAnalyzeRequests(c context.Context, triciumProject string, repo *tricium.RepoDetails, changes []gr.ChangeInfo) error {
+	logging.Infof(c, "Enqueue Analyze requests for %d changes.", len(changes))
 	if len(changes) == 0 {
 		return nil
 	}
 	gerritProject := repo.GetGerritProject()
-	changes = filterByWhitelist(ctx, repo.WhitelistedGroup, changes)
+	changes = filterByWhitelist(c, repo.WhitelistedGroup, changes)
 	var tasks []*tq.Task
-	for _, c := range changes {
+	for _, change := range changes {
 		var files []*tricium.Data_File
-		for k, v := range c.Revisions[c.CurrentRevision].Files {
-			if v.Status != fileStatusDeleted {
-				files = append(files, &tricium.Data_File{
-					Path:     k,
-					IsBinary: v.Binary,
-				})
+		curRev := change.Revisions[change.CurrentRevision]
+		for k, v := range curRev.Files {
+			status := statusFromCode(c, v.Status)
+			if status == tricium.Data_DELETED {
+				continue // Never consider deleted files; they don't exist after the patch.
 			}
+			files = append(files, &tricium.Data_File{
+				Path:     k,
+				Status:   status,
+				IsBinary: v.Binary,
+			})
 		}
 		if len(files) == 0 {
 			logging.Fields{
-				"change ID": c.ID,
-			}.Infof(ctx, "Not making Analyze request for change; changes has no files.")
+				"change ID": change.ID,
+			}.Infof(c, "Not making Analyze request for change; changes has no files.")
 			continue
 		}
 		// Sorting files according to their paths to account for random enumeration in go maps.
@@ -377,8 +372,8 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, repo *tr
 				GerritRevision: &tricium.GerritRevision{
 					Host:    gerritProject.Host,
 					Project: gerritProject.Project,
-					Change:  c.ID,
-					GitRef:  c.Revisions[c.CurrentRevision].Ref,
+					Change:  change.ID,
+					GitRef:  curRev.Ref,
 					GitUrl:  gerritProject.GitUrl,
 				},
 			},
@@ -389,10 +384,10 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, repo *tr
 		}
 		t := tq.NewPOSTTask("/internal/analyze", nil)
 		t.Payload = b
-		logging.Debugf(ctx, "Converted change details (%v) to Tricium request (%v).", c, req)
+		logging.Debugf(c, "Converted change details (%v) to Tricium request (%v).", c, req)
 		tasks = append(tasks, t)
 	}
-	if err := tq.Add(ctx, common.AnalyzeQueue, tasks...); err != nil {
+	if err := tq.Add(c, common.AnalyzeQueue, tasks...); err != nil {
 		return errors.Annotate(err, "failed to enqueue Analyze request").Err()
 	}
 	return nil
@@ -404,20 +399,20 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, repo *tr
 // A CL is analyzed if the owner (author) of the CL is in at least one of the
 // the whitelist groups for this repo as specified in the project config.
 // If there are no whitelisted groups, then there is no filtering.
-func filterByWhitelist(ctx context.Context, whitelistedGroups []string, changes []gr.ChangeInfo) []gr.ChangeInfo {
+func filterByWhitelist(c context.Context, whitelistedGroups []string, changes []gr.ChangeInfo) []gr.ChangeInfo {
 	if len(whitelistedGroups) == 0 {
 		return changes
 	}
 
 	// The auth DB should be set in state by middleware.
-	state := auth.GetState(ctx)
+	state := auth.GetState(c)
 	if state == nil {
-		logging.Errorf(ctx, "failed to check auth, no State in context.")
+		logging.Errorf(c, "failed to check auth, no State in context.")
 		return nil
 	}
 	authDB := state.DB()
 	if authDB == nil {
-		logging.Errorf(ctx, "Failed to check auth, nil auth DB in State.")
+		logging.Errorf(c, "Failed to check auth, nil auth DB in State.")
 		return nil
 	}
 
@@ -425,8 +420,8 @@ func filterByWhitelist(ctx context.Context, whitelistedGroups []string, changes 
 	// of owners we've already checked.
 	owners := map[string]bool{}
 	whitelistedChanges := make([]gr.ChangeInfo, 0, len(changes))
-	for _, c := range changes {
-		email := c.Owner.Email
+	for _, change := range changes {
+		email := change.Owner.Email
 		whitelisted, ok := owners[email]
 		if !ok {
 			// If we fail to check the whitelist for a user, we'll
@@ -434,21 +429,21 @@ func filterByWhitelist(ctx context.Context, whitelistedGroups []string, changes 
 			owners[email] = false
 			ident, err := identity.MakeIdentity("user:" + email)
 			if err != nil {
-				logging.WithError(err).Errorf(ctx, "Failed to create identity for %q.", email)
+				logging.WithError(err).Errorf(c, "Failed to create identity for %q.", email)
 				continue
 			}
-			authOK, err := authDB.IsMember(ctx, ident, whitelistedGroups)
+			authOK, err := authDB.IsMember(c, ident, whitelistedGroups)
 			if err != nil {
-				logging.WithError(err).Errorf(ctx, "Failed to check auth for %q.", email)
+				logging.WithError(err).Errorf(c, "Failed to check auth for %q.", email)
 			}
 			whitelisted = authOK
 			if !whitelisted {
-				logging.Infof(ctx, "Owner %q is not whitelisted, skipping Analyze.", email)
+				logging.Infof(c, "Owner %q is not whitelisted, skipping Analyze.", email)
 			}
 			owners[email] = whitelisted
 		}
 		if whitelisted {
-			whitelistedChanges = append(whitelistedChanges, c)
+			whitelistedChanges = append(whitelistedChanges, change)
 		}
 	}
 	return whitelistedChanges
@@ -458,4 +453,28 @@ func filterByWhitelist(ctx context.Context, whitelistedGroups []string, changes 
 // a Gerrit host and project.
 func gerritProjectID(host, project string) string {
 	return fmt.Sprintf("%s:%s", host, project)
+}
+
+// statusFromCode returns a file status given a one character code.
+//
+// The input is one of the valid values for the status field in
+// Gerrit FileInfo; see https://goo.gl/ABFHDg.
+func statusFromCode(c context.Context, status string) tricium.Data_Status {
+	switch status {
+	case "M":
+		return tricium.Data_MODIFIED
+	case "A":
+		return tricium.Data_ADDED
+	case "D":
+		return tricium.Data_DELETED
+	case "R":
+		return tricium.Data_RENAMED
+	case "C":
+		return tricium.Data_COPIED
+	case "W":
+		return tricium.Data_REWRITTEN
+	default:
+		logging.Warningf(c, "Received unrecognized status %q.", status)
+		return tricium.Data_MODIFIED
+	}
 }

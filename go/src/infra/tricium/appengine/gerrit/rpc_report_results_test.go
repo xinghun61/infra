@@ -26,6 +26,9 @@ func TestReportResultsRequest(t *testing.T) {
 		request := &track.AnalyzeRequest{
 			GitURL: "https://chromium-review.googlesource.com",
 			GitRef: "refs/changes/88/508788/1",
+			Files: []tricium.Data_File{
+				{Path: "dir/file.txt"},
+			},
 		}
 		So(ds.Put(ctx, request), ShouldBeNil)
 		requestKey := ds.KeyForObj(ctx, request)
@@ -52,24 +55,26 @@ func TestReportResultsRequest(t *testing.T) {
 		// Add example Comment and associated CommentSelection entities.
 		workerKey := ds.NewKey(ctx, "WorkerRun", workerName, 0, analyzerKey)
 
-		changedLines := ChangedLinesInfo{"file": {2, 5, 6}}
-		json1, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
+		changedLines := ChangedLinesInfo{
+			"dir/file.txt": {2, 5, 6},
+		}
+		deletedFileCommentJSON, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
 			Category: "L",
 			Message:  "Line too long",
-			Path:     "deleted_file",
+			Path:     "dir/deleted_file.txt",
 		})
-		json2, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
+		inChangeCommentJSON, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
 			Category:  "L",
 			Message:   "Line too short",
-			Path:      "file",
+			Path:      "dir/file.txt",
 			StartLine: 2,
 			EndLine:   3,
 		})
 		So(err, ShouldBeNil)
 		comments := []*track.Comment{
-			{Parent: workerKey, Comment: []byte(json1)},
-			{Parent: workerKey, Comment: []byte(json2)},
-			{Parent: workerKey, Comment: []byte(json2)},
+			{Parent: workerKey, Comment: []byte(deletedFileCommentJSON)},
+			{Parent: workerKey, Comment: []byte(inChangeCommentJSON)},
+			{Parent: workerKey, Comment: []byte(inChangeCommentJSON)},
 		}
 		So(ds.Put(ctx, comments), ShouldBeNil)
 		So(ds.Put(ctx, &track.CommentSelection{
@@ -115,7 +120,7 @@ func TestReportResultsRequest(t *testing.T) {
 		// Put more comments in until the number of included comments
 		// has reached the maximum comment number threshold.
 		for len(comments) < maxComments+1 {
-			comment := &track.Comment{Parent: workerKey, Comment: []byte(json1)}
+			comment := &track.Comment{Parent: workerKey, Comment: []byte(deletedFileCommentJSON)}
 			comments = append(comments, comment)
 			So(ds.Put(ctx, comment), ShouldBeNil)
 			So(ds.Put(ctx, &track.CommentSelection{
@@ -136,20 +141,21 @@ func TestReportResultsRequest(t *testing.T) {
 			So(len(mock.LastComments), ShouldEqual, maxComments)
 		})
 
-		json3, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
+		// This comment is not on a changed line.
+		outsideChangeCommentJSON, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
 			Category:  "L",
 			Message:   "Line too short",
-			Path:      "file",
+			Path:      "dir/file.txt",
 			StartLine: 3,
 			EndLine:   3,
 		})
-		// Put the new comment with line numbers in;
-		comment3 := &track.Comment{Parent: workerKey, Comment: []byte(json3)}
-		comments = append(comments, comment3)
-		So(ds.Put(ctx, comment3), ShouldBeNil)
+		// Put the new comment with line numbers in.
+		outsideChangeComment := &track.Comment{Parent: workerKey, Comment: []byte(outsideChangeCommentJSON)}
+		comments = append(comments, outsideChangeComment)
+		So(ds.Put(ctx, outsideChangeComment), ShouldBeNil)
 		So(ds.Put(ctx, &track.CommentSelection{
 			ID:       1,
-			Parent:   ds.KeyForObj(ctx, comment3),
+			Parent:   ds.KeyForObj(ctx, outsideChangeComment),
 			Included: true,
 		}), ShouldBeNil)
 		So(len(comments), ShouldEqual, maxComments+2)
@@ -165,7 +171,7 @@ func TestReportResultsRequest(t *testing.T) {
 		})
 
 		// Put one more comment in;
-		comment := &track.Comment{Parent: workerKey, Comment: []byte(json1)}
+		comment := &track.Comment{Parent: workerKey, Comment: []byte(deletedFileCommentJSON)}
 		comments = append(comments, comment)
 		So(ds.Put(ctx, comment), ShouldBeNil)
 		So(ds.Put(ctx, &track.CommentSelection{
@@ -183,6 +189,105 @@ func TestReportResultsRequest(t *testing.T) {
 			}, mock)
 			So(err, ShouldBeNil)
 			So(len(mock.LastComments), ShouldEqual, 0)
+		})
+	})
+}
+
+func TestReportResultsRequestWithRenamedOrCopiedFiles(t *testing.T) {
+	Convey("Test Environment", t, func() {
+		ctx := triciumtest.Context()
+
+		// Add request -> run -> function -> worker to datastore.
+		request := &track.AnalyzeRequest{
+			GitURL: "https://chromium-review.googlesource.com",
+			GitRef: "refs/changes/88/508788/1",
+			Files: []tricium.Data_File{
+				{Path: "dir/file.txt"},
+				{Path: "dir/renamed_file.txt", Status: tricium.Data_RENAMED},
+				{Path: "dir/copied_file.txt", Status: tricium.Data_COPIED},
+			},
+		}
+		So(ds.Put(ctx, request), ShouldBeNil)
+		requestKey := ds.KeyForObj(ctx, request)
+		run := &track.WorkflowRun{ID: 1, Parent: requestKey}
+		So(ds.Put(ctx, run), ShouldBeNil)
+		runKey := ds.KeyForObj(ctx, run)
+		So(ds.Put(ctx, &track.FunctionRun{
+			ID:     "MyLinter",
+			Parent: runKey,
+		}), ShouldBeNil)
+		analyzerKey := ds.NewKey(ctx, "FunctionRun", "MyLinter", 0, runKey)
+		So(ds.Put(ctx, &track.FunctionRunResult{
+			ID:          1,
+			Parent:      analyzerKey,
+			Name:        "MyLinter",
+			NumComments: 2,
+		}), ShouldBeNil)
+		workerName := "MyLinter_UBUNTU"
+		So(ds.Put(ctx, &track.WorkerRun{
+			ID:     workerName,
+			Parent: analyzerKey,
+		}), ShouldBeNil)
+
+		// Add example Comment and associated CommentSelection entities.
+		workerKey := ds.NewKey(ctx, "WorkerRun", workerName, 0, analyzerKey)
+
+		changedLines := ChangedLinesInfo{
+			"dir/file.txt":         {2, 5, 6},
+			"dir/renamed_file.txt": {1, 2, 3, 4, 5, 6, 7},
+			"dir/copied_file.txt":  {1, 2, 3, 4, 5, 6, 7},
+		}
+		inChangeCommentJSON, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
+			Category:  "L",
+			Message:   "Line too short",
+			Path:      "dir/file.txt",
+			StartLine: 2,
+			EndLine:   3,
+		})
+		inRenamedFileCommentJSON, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
+			Category:  "L",
+			Message:   "Line doesn't look right",
+			Path:      "dir/renamed_file.txt",
+			StartLine: 2,
+			EndLine:   3,
+		})
+		inCopiedFileCommentJSON, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
+			Category:  "L",
+			Message:   "Line doesn't look right",
+			Path:      "dir/copied_file.txt",
+			StartLine: 2,
+			EndLine:   3,
+		})
+		So(err, ShouldBeNil)
+		comments := []*track.Comment{
+			{Parent: workerKey, Comment: []byte(inChangeCommentJSON)},
+			{Parent: workerKey, Comment: []byte(inRenamedFileCommentJSON)},
+			{Parent: workerKey, Comment: []byte(inCopiedFileCommentJSON)},
+		}
+		So(ds.Put(ctx, comments), ShouldBeNil)
+		So(ds.Put(ctx, &track.CommentSelection{
+			ID:       1,
+			Parent:   ds.KeyForObj(ctx, comments[0]),
+			Included: true,
+		}), ShouldBeNil)
+		So(ds.Put(ctx, &track.CommentSelection{
+			ID: 1, Parent: ds.KeyForObj(ctx, comments[1]),
+			Included: true,
+		}), ShouldBeNil)
+		So(ds.Put(ctx, &track.CommentSelection{
+			ID:       1,
+			Parent:   ds.KeyForObj(ctx, comments[2]),
+			Included: true,
+		}), ShouldBeNil)
+
+		Convey("Does not report comments in renamed or copied files", func() {
+			mock := &mockRestAPI{ChangedLines: changedLines}
+			err := reportResults(ctx, &admin.ReportResultsRequest{
+				RunId:    run.ID,
+				Analyzer: "MyLinter",
+			}, mock)
+			So(err, ShouldBeNil)
+			So(len(mock.LastComments), ShouldEqual, 1)
 		})
 	})
 }

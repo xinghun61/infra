@@ -21,6 +21,19 @@ message Data {
     RESULTS = 4;
   }
 
+  // File change status.
+  //
+  // This corresponds to the status field provided by Gerrit in FileInfo:
+  // https://goo.gl/ABFHDg
+  enum Status {
+    MODIFIED = 0;
+    ADDED = 1;
+    DELETED = 2;
+    RENAMED = 3;
+    COPIED = 4;
+    REWRITTEN = 5;
+  }
+
   // Details for supported types, specifically whether a type is tied to
   // a platform.
   //
@@ -72,8 +85,11 @@ message Data {
     // and the path separator character is "/".
     string path = 1;
 
-    // Whether or not this file contains binary content (not text)
+    // Whether or not this file contains binary content (not text).
     bool is_binary = 2;
+
+    // How the file was changed.
+    Status status = 3;
   }
 
   // Details needed to replay a clang compilation.

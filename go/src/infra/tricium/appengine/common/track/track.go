@@ -71,7 +71,10 @@ type AnalyzeRequest struct {
 	// this analyze request.
 	Project string
 	// Paths to files listed in the request.
+	// DEPRECATED
 	Paths []string `gae:",noindex"`
+	// Files listed in the request, including metadata.
+	Files []tricium.Data_File `gae:",noindex"`
 	// Full URL of Git repository hosting files in the request.
 	GitURL string `gae:",noindex"`
 	// Git ref to use in the git repo.

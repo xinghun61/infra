@@ -61,6 +61,12 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 
 			// Get the changed lines for this revision.
 			changedLines, err := gerrit.GetChangedLines(c, request.GerritHost, request.GerritChange, request.GitRef)
+			for _, file := range request.Files {
+				if file.Status == tricium.Data_RENAMED ||
+					file.Status == tricium.Data_COPIED {
+					delete(changedLines, file.Path)
+				}
+			}
 			for path, lines := range changedLines {
 				logging.Debugf(c, "Num changed lines for %s is %d.", path, len(lines))
 			}

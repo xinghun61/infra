@@ -3,9 +3,11 @@
 
 package tricium
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -32,6 +34,7 @@ var Function_Type_name = map[int32]string{
 	1: "ISOLATOR",
 	2: "ANALYZER",
 }
+
 var Function_Type_value = map[string]int32{
 	"NONE":     0,
 	"ISOLATOR": 1,
@@ -41,8 +44,9 @@ var Function_Type_value = map[string]int32{
 func (x Function_Type) String() string {
 	return proto.EnumName(Function_Type_name, int32(x))
 }
+
 func (Function_Type) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_function_64ec3c42805d68e1, []int{0, 0}
+	return fileDescriptor_494474ef965cee69, []int{0, 0}
 }
 
 // Tricium function.
@@ -106,16 +110,17 @@ func (m *Function) Reset()         { *m = Function{} }
 func (m *Function) String() string { return proto.CompactTextString(m) }
 func (*Function) ProtoMessage()    {}
 func (*Function) Descriptor() ([]byte, []int) {
-	return fileDescriptor_function_64ec3c42805d68e1, []int{0}
+	return fileDescriptor_494474ef965cee69, []int{0}
 }
+
 func (m *Function) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Function.Unmarshal(m, b)
 }
 func (m *Function) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Function.Marshal(b, m, deterministic)
 }
-func (dst *Function) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Function.Merge(dst, src)
+func (m *Function) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Function.Merge(m, src)
 }
 func (m *Function) XXX_Size() int {
 	return xxx_messageInfo_Function.Size(m)
@@ -207,16 +212,17 @@ func (m *ConfigDef) Reset()         { *m = ConfigDef{} }
 func (m *ConfigDef) String() string { return proto.CompactTextString(m) }
 func (*ConfigDef) ProtoMessage()    {}
 func (*ConfigDef) Descriptor() ([]byte, []int) {
-	return fileDescriptor_function_64ec3c42805d68e1, []int{1}
+	return fileDescriptor_494474ef965cee69, []int{1}
 }
+
 func (m *ConfigDef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ConfigDef.Unmarshal(m, b)
 }
 func (m *ConfigDef) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ConfigDef.Marshal(b, m, deterministic)
 }
-func (dst *ConfigDef) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ConfigDef.Merge(dst, src)
+func (m *ConfigDef) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ConfigDef.Merge(m, src)
 }
 func (m *ConfigDef) XXX_Size() int {
 	return xxx_messageInfo_ConfigDef.Size(m)
@@ -288,16 +294,17 @@ func (m *Impl) Reset()         { *m = Impl{} }
 func (m *Impl) String() string { return proto.CompactTextString(m) }
 func (*Impl) ProtoMessage()    {}
 func (*Impl) Descriptor() ([]byte, []int) {
-	return fileDescriptor_function_64ec3c42805d68e1, []int{2}
+	return fileDescriptor_494474ef965cee69, []int{2}
 }
+
 func (m *Impl) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Impl.Unmarshal(m, b)
 }
 func (m *Impl) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Impl.Marshal(b, m, deterministic)
 }
-func (dst *Impl) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Impl.Merge(dst, src)
+func (m *Impl) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Impl.Merge(m, src)
 }
 func (m *Impl) XXX_Size() int {
 	return xxx_messageInfo_Impl.Size(m)
@@ -307,27 +314,6 @@ func (m *Impl) XXX_DiscardUnknown() {
 }
 
 var xxx_messageInfo_Impl proto.InternalMessageInfo
-
-type isImpl_Impl interface {
-	isImpl_Impl()
-}
-
-type Impl_Recipe struct {
-	Recipe *Recipe `protobuf:"bytes,5,opt,name=recipe,proto3,oneof"`
-}
-type Impl_Cmd struct {
-	Cmd *Cmd `protobuf:"bytes,6,opt,name=cmd,proto3,oneof"`
-}
-
-func (*Impl_Recipe) isImpl_Impl() {}
-func (*Impl_Cmd) isImpl_Impl()    {}
-
-func (m *Impl) GetImpl() isImpl_Impl {
-	if m != nil {
-		return m.Impl
-	}
-	return nil
-}
 
 func (m *Impl) GetNeedsForPlatform() Platform_Name {
 	if m != nil {
@@ -353,6 +339,29 @@ func (m *Impl) GetRuntimePlatform() Platform_Name {
 func (m *Impl) GetCipdPackages() []*CipdPackage {
 	if m != nil {
 		return m.CipdPackages
+	}
+	return nil
+}
+
+type isImpl_Impl interface {
+	isImpl_Impl()
+}
+
+type Impl_Recipe struct {
+	Recipe *Recipe `protobuf:"bytes,5,opt,name=recipe,proto3,oneof"`
+}
+
+type Impl_Cmd struct {
+	Cmd *Cmd `protobuf:"bytes,6,opt,name=cmd,proto3,oneof"`
+}
+
+func (*Impl_Recipe) isImpl_Impl() {}
+
+func (*Impl_Cmd) isImpl_Impl() {}
+
+func (m *Impl) GetImpl() isImpl_Impl {
+	if m != nil {
+		return m.Impl
 	}
 	return nil
 }
@@ -471,16 +480,17 @@ func (m *Recipe) Reset()         { *m = Recipe{} }
 func (m *Recipe) String() string { return proto.CompactTextString(m) }
 func (*Recipe) ProtoMessage()    {}
 func (*Recipe) Descriptor() ([]byte, []int) {
-	return fileDescriptor_function_64ec3c42805d68e1, []int{3}
+	return fileDescriptor_494474ef965cee69, []int{3}
 }
+
 func (m *Recipe) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Recipe.Unmarshal(m, b)
 }
 func (m *Recipe) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Recipe.Marshal(b, m, deterministic)
 }
-func (dst *Recipe) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Recipe.Merge(dst, src)
+func (m *Recipe) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Recipe.Merge(m, src)
 }
 func (m *Recipe) XXX_Size() int {
 	return xxx_messageInfo_Recipe.Size(m)
@@ -534,16 +544,17 @@ func (m *Cmd) Reset()         { *m = Cmd{} }
 func (m *Cmd) String() string { return proto.CompactTextString(m) }
 func (*Cmd) ProtoMessage()    {}
 func (*Cmd) Descriptor() ([]byte, []int) {
-	return fileDescriptor_function_64ec3c42805d68e1, []int{4}
+	return fileDescriptor_494474ef965cee69, []int{4}
 }
+
 func (m *Cmd) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Cmd.Unmarshal(m, b)
 }
 func (m *Cmd) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Cmd.Marshal(b, m, deterministic)
 }
-func (dst *Cmd) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Cmd.Merge(dst, src)
+func (m *Cmd) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Cmd.Merge(m, src)
 }
 func (m *Cmd) XXX_Size() int {
 	return xxx_messageInfo_Cmd.Size(m)
@@ -587,16 +598,17 @@ func (m *CipdPackage) Reset()         { *m = CipdPackage{} }
 func (m *CipdPackage) String() string { return proto.CompactTextString(m) }
 func (*CipdPackage) ProtoMessage()    {}
 func (*CipdPackage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_function_64ec3c42805d68e1, []int{5}
+	return fileDescriptor_494474ef965cee69, []int{5}
 }
+
 func (m *CipdPackage) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CipdPackage.Unmarshal(m, b)
 }
 func (m *CipdPackage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CipdPackage.Marshal(b, m, deterministic)
 }
-func (dst *CipdPackage) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CipdPackage.Merge(dst, src)
+func (m *CipdPackage) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CipdPackage.Merge(m, src)
 }
 func (m *CipdPackage) XXX_Size() int {
 	return xxx_messageInfo_CipdPackage.Size(m)
@@ -629,20 +641,20 @@ func (m *CipdPackage) GetVersion() string {
 }
 
 func init() {
+	proto.RegisterEnum("tricium.Function_Type", Function_Type_name, Function_Type_value)
 	proto.RegisterType((*Function)(nil), "tricium.Function")
 	proto.RegisterType((*ConfigDef)(nil), "tricium.ConfigDef")
 	proto.RegisterType((*Impl)(nil), "tricium.Impl")
 	proto.RegisterType((*Recipe)(nil), "tricium.Recipe")
 	proto.RegisterType((*Cmd)(nil), "tricium.Cmd")
 	proto.RegisterType((*CipdPackage)(nil), "tricium.CipdPackage")
-	proto.RegisterEnum("tricium.Function_Type", Function_Type_name, Function_Type_value)
 }
 
 func init() {
-	proto.RegisterFile("infra/tricium/api/v1/function.proto", fileDescriptor_function_64ec3c42805d68e1)
+	proto.RegisterFile("infra/tricium/api/v1/function.proto", fileDescriptor_494474ef965cee69)
 }
 
-var fileDescriptor_function_64ec3c42805d68e1 = []byte{
+var fileDescriptor_494474ef965cee69 = []byte{
 	// 631 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x54, 0xcf, 0x6f, 0xd3, 0x3c,
 	0x18, 0x5e, 0x9a, 0xb4, 0x6b, 0xdf, 0x74, 0xdf, 0xfa, 0xf9, 0xdb, 0x87, 0xa2, 0x1d, 0xa0, 0x64,

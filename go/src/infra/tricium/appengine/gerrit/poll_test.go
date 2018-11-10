@@ -238,11 +238,8 @@ func TestPollBasicBehavior(t *testing.T) {
 			lastChangeTs := tc.Now().UTC()
 			// Fill up with one change per project.
 			for _, gd := range gerritProjects {
-				files := map[string]*gr.FileInfo{
-					"README.md": {Status: fileStatusAdded},
-				}
 				revisions := map[string]gr.RevisionInfo{
-					"abcdef": {Files: files},
+					"abcdef": {Files: map[string]*gr.FileInfo{"README.md": {}}},
 				}
 				api.addChanges(gd.Host, gd.Project, []gr.ChangeInfo{
 					{
@@ -301,13 +298,14 @@ func TestPollBasicBehavior(t *testing.T) {
 			lastChangeTs := tc.Now().UTC()
 			// Fill up with one change per project.
 			for _, gd := range gerritProjects {
-				files := map[string]*gr.FileInfo{
-					"changed.txt": {Status: fileStatusModified},
-					"deleted.txt": {Status: fileStatusDeleted},
-					"binary.png":  {Status: fileStatusModified, Binary: true},
-				}
 				revisions := map[string]gr.RevisionInfo{
-					"abcdef": {Files: files},
+					"abcdef": {
+						Files: map[string]*gr.FileInfo{
+							"changed.txt": {},
+							"deleted.txt": {Status: "D"},
+							"binary.png":  {Binary: true},
+						},
+					},
 				}
 				api.addChanges(gd.Host, gd.Project, []gr.ChangeInfo{
 					{
@@ -339,10 +337,14 @@ func TestPollBasicBehavior(t *testing.T) {
 					So(ar.Files, ShouldResemble, []*tricium.Data_File{
 						{
 							Path:     "binary.png",
-							IsBinary: true},
+							IsBinary: true,
+							Status:   tricium.Data_MODIFIED,
+						},
 						{
 							Path:     "changed.txt",
-							IsBinary: false},
+							IsBinary: false,
+							Status:   tricium.Data_MODIFIED,
+						},
 					})
 				}
 			})
@@ -392,9 +394,7 @@ func TestPollBasicBehavior(t *testing.T) {
 					tc.Add(time.Second)
 					changeID := fmt.Sprintf("%s~%s~%s%d", gd.Project, branch, changeIDFooter, i)
 					rev := fmt.Sprintf("%s%d", revBase, i)
-					files := map[string]*gr.FileInfo{
-						"README.md": {Status: fileStatusModified},
-					}
+					files := map[string]*gr.FileInfo{"README.md": {}}
 					revisions := make(map[string]gr.RevisionInfo)
 					revisions[rev] = gr.RevisionInfo{Files: files}
 					changes = append(changes, gr.ChangeInfo{
@@ -494,11 +494,8 @@ func TestPollWhitelistBehavior(t *testing.T) {
 		Convey("No whitelisted groups means all changes are analyzed", func() {
 			api := &mockPollRestAPI{}
 			lastChangeTs := tc.Now().UTC()
-			files := map[string]*gr.FileInfo{
-				"README.md": {Status: fileStatusAdded},
-			}
 			revisions := map[string]gr.RevisionInfo{
-				"abcdef": {Files: files},
+				"abcdef": {Files: map[string]*gr.FileInfo{"README.md": {}}},
 			}
 			api.addChanges(host, noWhitelistProject, []gr.ChangeInfo{
 				{
@@ -521,11 +518,8 @@ func TestPollWhitelistBehavior(t *testing.T) {
 		Convey("Poll with a change by a whitelisted user", func() {
 			api := &mockPollRestAPI{}
 			lastChangeTs := tc.Now().UTC()
-			files := map[string]*gr.FileInfo{
-				"README.md": {Status: fileStatusAdded},
-			}
 			revisions := map[string]gr.RevisionInfo{
-				"abcdef": {Files: files},
+				"abcdef": {Files: map[string]*gr.FileInfo{"README.md": {}}},
 			}
 			api.addChanges(host, whitelistProject, []gr.ChangeInfo{
 				{
@@ -548,11 +542,8 @@ func TestPollWhitelistBehavior(t *testing.T) {
 		Convey("Poll with a change by an unwhitelisted user", func() {
 			api := &mockPollRestAPI{}
 			lastChangeTs := tc.Now().UTC()
-			files := map[string]*gr.FileInfo{
-				"README.md": {Status: fileStatusAdded},
-			}
 			revisions := map[string]gr.RevisionInfo{
-				"abcdef": {Files: files},
+				"abcdef": {Files: map[string]*gr.FileInfo{"README.md": {}}},
 			}
 			api.addChanges(host, whitelistProject, []gr.ChangeInfo{
 				{
@@ -571,5 +562,22 @@ func TestPollWhitelistBehavior(t *testing.T) {
 				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, 0)
 			})
 		})
+	})
+}
+
+func TestStatusCode(t *testing.T) {
+	ctx := triciumtest.Context()
+
+	Convey("Valid codes", t, func() {
+		So(statusFromCode(ctx, "A"), ShouldEqual, tricium.Data_ADDED)
+		So(statusFromCode(ctx, "D"), ShouldEqual, tricium.Data_DELETED)
+		So(statusFromCode(ctx, "R"), ShouldEqual, tricium.Data_RENAMED)
+		So(statusFromCode(ctx, "C"), ShouldEqual, tricium.Data_COPIED)
+		So(statusFromCode(ctx, "W"), ShouldEqual, tricium.Data_REWRITTEN)
+		So(statusFromCode(ctx, "M"), ShouldEqual, tricium.Data_MODIFIED)
+	})
+
+	Convey("Unknown status means modified", t, func() {
+		So(statusFromCode(ctx, "X"), ShouldEqual, tricium.Data_MODIFIED)
 	})
 }
