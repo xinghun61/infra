@@ -140,8 +140,8 @@ func (b *buildUpdater) parseRequest(ctx context.Context, annBytes []byte) (*buil
 		},
 		UpdateMask: &field_mask.FieldMask{
 			Paths: []string{
-				"steps",
-				"output.properties",
+				"build.steps",
+				"build.output.properties",
 			},
 		},
 		// minimize output by asking nothing back.
