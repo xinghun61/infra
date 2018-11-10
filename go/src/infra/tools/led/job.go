@@ -64,6 +64,11 @@ func JobSliceFromTaskSlice(ts *swarming.SwarmingRpcsTaskSlice) (*JobSlice, error
 				return nil, errors.Annotate(err, "parsing kitchen cook args").Err()
 			}
 			props.Command = nil
+
+			// We aren't going to be a real buildbucket job, so we won't have a way
+			// to upload build.proto's to buildbucket.
+			ret.S.KitchenArgs.CallUpdateBuild = false
+
 			if !ret.S.KitchenArgs.LogDogFlags.AnnotationURL.IsZero() {
 				// annotation urls are one-time use; if we got one as part of the new
 				// task request, the odds are that it's already been used. We do this
