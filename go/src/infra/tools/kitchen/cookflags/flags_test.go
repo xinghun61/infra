@@ -153,6 +153,16 @@ var flagTestCases = []struct {
 		},
 		errValidate: `-call-update-build requires -buildbucket-hostname`,
 	},
+	{
+		flags: []string{
+			"-mode", "swarming",
+			"-repository", "meep",
+			"-recipe", "cool_recipe",
+			"-buildbucket-hostname", "buildbucket.example.com",
+			"-call-update-build",
+		},
+		errValidate: `-call-update-build requires a valid -buildbucket-build-id`,
+	},
 
 	{
 		flags: []string{
@@ -160,6 +170,7 @@ var flagTestCases = []struct {
 			"-repository", "meep",
 			"-recipe", "cool_recipe",
 			"-buildbucket-hostname", "buildbucket.example.com",
+			"-buildbucket-build-id", "42",
 			"-call-update-build",
 		},
 		errValidate: `-call-update-build requires -mode=swarming`,

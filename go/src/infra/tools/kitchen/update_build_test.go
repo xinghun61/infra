@@ -11,7 +11,9 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
+	"google.golang.org/grpc/metadata"
 
+	"go.chromium.org/luci/buildbucket"
 	"go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/proto/milo"
 	"go.chromium.org/luci/logdog/common/types"
@@ -21,139 +23,90 @@ import (
 	. "go.chromium.org/luci/common/testing/assertions"
 )
 
+func newAnnBytes(stepNames ...string) []byte {
+	ann := &milo.Step{
+		Substep: make([]*milo.Step_Substep, len(stepNames)),
+	}
+	for i, n := range stepNames {
+		ann.Substep[i] = &milo.Step_Substep{
+			Substep: &milo.Step_Substep_Step{
+				Step: &milo.Step{Name: n},
+			},
+		}
+	}
+
+	ret, err := proto.Marshal(ann)
+	if err != nil {
+		panic(err)
+	}
+	return ret
+}
+
 func TestBuildUpdater(t *testing.T) {
 	t.Parallel()
 
-	Convey(`BuildUpdater`, t, func(c C) {
-		ctx := context.Background()
+	Convey(`buildUpdater`, t, func(c C) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		client := buildbucketpb.NewMockBuildsClient(ctrl)
 
-		run := func(err1, err2 error) error {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			client := buildbucketpb.NewMockBuildsClient(ctrl)
-
-			// req1 and req2 must be deep-different, so that gomock does not confuse
-			// them.
-			req1 := &buildbucketpb.UpdateBuildRequest{
-				Build: &buildbucketpb.Build{
-					Output: &buildbucketpb.Build_Output{
-						SummaryMarkdown: "from req1",
-					},
-				},
-			}
-			req2 := &buildbucketpb.UpdateBuildRequest{
-				Build: &buildbucketpb.Build{
-					Output: &buildbucketpb.Build_Output{
-						SummaryMarkdown: "from req2",
-					},
-				},
-			}
-			res := &buildbucketpb.Build{}
-			gomock.InOrder(
-				// non-last might be not called
-				client.EXPECT().UpdateBuild(ctx, req1).MinTimes(0).Return(res, err1),
-				// last one must be called exactly once
-				client.EXPECT().UpdateBuild(ctx, req2).Times(1).Return(res, err2),
-			)
-
-			requests := make(chan *buildbucketpb.UpdateBuildRequest)
-			done := make(chan error)
-			go func() {
-				done <- runBuildUpdater(ctx, client, requests)
-			}()
-
-			requests <- req1
-			requests <- req2
-			close(requests)
-			return <-done
+		ctx, cancel := context.WithCancel(context.Background())
+		bu := &buildUpdater{
+			buildID:    42,
+			buildToken: "build token",
+			annAddr: &types.StreamAddr{
+				Host:    "logdog.example.com",
+				Project: "chromium",
+				Path:    "prefix/+/annotations",
+			},
+			client:      client,
+			annotations: make(chan []byte),
 		}
 
-		Convey("two successful requests", func() {
-			So(run(nil, nil), ShouldBeNil)
-		})
+		Convey(`run`, func() {
 
-		Convey("first failed, second succeeded", func() {
-			So(run(fmt.Errorf("transient"), nil), ShouldBeNil)
-		})
+			run := func(err1, err2 error) error {
+				updateBuild := func(ctx context.Context, req *buildbucketpb.UpdateBuildRequest) (*buildbucketpb.Build, error) {
+					md, ok := metadata.FromOutgoingContext(ctx)
+					c.So(ok, ShouldBeTrue)
+					c.So(md.Get(buildbucket.BuildTokenHeader), ShouldResemble, []string{"build token"})
 
-		Convey("first succeeded, second failed", func() {
-			So(run(nil, fmt.Errorf("fatal")), ShouldErrLike, "fatal")
+					c.So(req.Build.Steps[0].Name, ShouldEqual, "step1")
+					c.So(len(req.Build.Steps), ShouldBeIn, []int{1, 2})
+
+					res := &buildbucketpb.Build{}
+					if len(req.Build.Steps) == 1 {
+						return res, err1
+					}
+					return res, err2
+				}
+				client.EXPECT().UpdateBuild(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(updateBuild)
+
+				done := make(chan error)
+				go func() {
+					done <- bu.Run(ctx)
+				}()
+
+				bu.AnnotationUpdated(newAnnBytes("step1"))
+				bu.AnnotationUpdated(newAnnBytes("step1", "step2"))
+				cancel()
+				return <-done
+			}
+
+			Convey("two successful requests", func() {
+				So(run(nil, nil), ShouldBeNil)
+			})
+
+			Convey("first failed, second succeeded", func() {
+				So(run(fmt.Errorf("transient"), nil), ShouldBeNil)
+			})
+
+			Convey("first succeeded, second failed", func() {
+				So(run(nil, fmt.Errorf("fatal")), ShouldErrLike, "fatal")
+			})
 		})
 	})
-}
 
-func TestParseUpdateBuildRequest(t *testing.T) {
-	t.Parallel()
-
-	Convey(`parseUpdateBuildRequest`, t, func() {
-		ctx := context.Background()
-
-		ann := &milo.Step{}
-		err := proto.UnmarshalText(`
-			substep {
-				step {
-					name: "s1"
-					property {
-						name: "p1"
-						value: "1"
-					}
-				}
-			}
-			substep {
-				step {
-					name: "s2"
-					property {
-						name: "p1"
-						value: "11"
-					}
-					property {
-						name: "p2"
-						value: "2"
-					}
-				}
-			}`, ann)
-		expected := &buildbucketpb.UpdateBuildRequest{}
-		err = proto.UnmarshalText(`
-			build {
-				steps {
-					name: "s1"
-					status: STARTED
-				}
-				steps {
-					name: "s2"
-					status: STARTED
-				}
-				output {
-					properties {
-						fields {
-							key: "p1"
-							value { number_value: 11 }
-						}
-						fields {
-							key: "p2"
-							value { number_value: 2 }
-						}
-					}
-				}
-			}
-			update_mask {
-				paths: "steps"
-				paths: "output.properties"
-			}
-			fields {}
-			`, expected)
-		So(err, ShouldBeNil)
-
-		annAddr := &types.StreamAddr{
-			Host:    "logdog.example.com",
-			Project: "chromium",
-			Path:    "prefix/+/annotations",
-		}
-		actual, err := parseUpdateBuildRequest(ctx, ann, annAddr)
-		So(err, ShouldBeNil)
-
-		So(actual, ShouldResembleProto, expected)
-	})
 }
 
 func TestReadBuildSecrets(t *testing.T) {

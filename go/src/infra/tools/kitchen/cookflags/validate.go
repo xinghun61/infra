@@ -95,6 +95,9 @@ func (c *CookFlags) Normalize() error {
 		if c.BuildbucketHostname == "" {
 			return inputError("-call-update-build requires -buildbucket-hostname")
 		}
+		if c.BuildbucketBuildID <= 0 {
+			return inputError("-call-update-build requires a valid -buildbucket-build-id")
+		}
 		if c.Mode != CookSwarming {
 			return inputError("-call-update-build requires -mode=swarming")
 		}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/genproto/protobuf/field_mask"
+	"google.golang.org/grpc/metadata"
 
 	"go.chromium.org/luci/buildbucket"
 	"go.chromium.org/luci/buildbucket/proto"
@@ -20,68 +21,106 @@ import (
 	"go.chromium.org/luci/lucictx"
 )
 
-// runBuildUpdater calls client.UpdateBuild.
-// Assumes requests are not mutated.
-// Assumes references in the channel are unique.
-// Assumes latest request overrides preceding ones.
-// Exits when requests is closed.
+// buildUpdater implements an annotee callback for updated annotations
+// and makes buildbucket.v2.Builds.UpdateBuild RPCs accordingly.
+type buildUpdater struct {
+	annAddr    *types.StreamAddr
+	buildID    int64
+	buildToken string
+	client     buildbucketpb.BuildsClient
+
+	// annotations contains latest state of the build in the form of
+	// binary serialized milo.Step.
+	// Must not be closed.
+	annotations chan []byte
+}
+
+// Run calls client.UpdateBuild on new b.annotations.
 // Logs transient errors and returns a fatal error, if any.
-func runBuildUpdater(ctx context.Context, client buildbucketpb.BuildsClient, requests <-chan *buildbucketpb.UpdateBuildRequest) error {
-	var latest *buildbucketpb.UpdateBuildRequest
-	done := false
+func (b *buildUpdater) Run(ctx context.Context) error {
+	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs(buildbucket.BuildTokenHeader, b.buildToken))
+
 	cond := sync.NewCond(&sync.Mutex{})
+	// protected by cond.L
+	var state struct {
+		latest    []byte
+		latestVer int
+		done      bool
+	}
 
 	// Listen to new requests.
 	go func() {
-		for r := range requests {
-			cond.L.Lock()
-			latest = r
-			cond.L.Unlock()
-			cond.Signal()
-		}
+		for {
+			select {
+			case ann := <-b.annotations:
+				cond.L.Lock()
+				state.latest = ann
+				state.latestVer++
+				cond.L.Unlock()
+				cond.Signal()
 
-		cond.L.Lock()
-		done = true
-		cond.L.Unlock()
-		cond.Signal()
+			case <-ctx.Done():
+				cond.L.Lock()
+				state.done = true
+				cond.L.Unlock()
+				cond.Signal()
+				return
+			}
+		}
 	}()
 
 	// Send requests.
-	var sent *buildbucketpb.UpdateBuildRequest
+	var sentVer int
 	for {
 		// Wait for news.
 		cond.L.Lock()
-		if sent == latest && !done {
+		if sentVer == state.latestVer && !state.done {
 			cond.Wait()
 		}
-		localLatest := latest
-		localDone := done
+		local := state
 		cond.L.Unlock()
 
 		var err error
-		if sent != localLatest {
-			_, err = client.UpdateBuild(ctx, localLatest)
-			if err != nil {
+		if sentVer != local.latestVer {
+			if err = b.updateBuild(ctx, local.latest); err != nil {
 				logging.Errorf(ctx, "UpdateBuild RPC failed: %s", err)
 			} else {
-				sent = localLatest
+				sentVer = local.latestVer
 			}
 		}
 
-		if localDone {
+		if local.done {
 			return err
 		}
 	}
 }
 
-// parseUpdateBuildRequest converts an annotation proto to an UpdateBuild RPC
-// request.
+// updateBuild makes an UpdateBuild RPC based on the annotation,
+// see also b.parseRequest.
+func (b *buildUpdater) updateBuild(ctx context.Context, annBytes []byte) error {
+	req, err := b.parseRequest(ctx, annBytes)
+	if err != nil {
+		return errors.Annotate(err, "failed to parse UpdateBuild request").Err()
+	}
+
+	if _, err = b.client.UpdateBuild(ctx, req); err != nil {
+		return errors.Annotate(err, "UpdateBuild RPC failed").Err()
+	}
+
+	return nil
+}
+
+// parseRequest converts a binary-serialized annotation proto to an UpdateBuild
+// RPC request.
 // The returned request only attempts to update steps and output properties
 // and asks no build fields in response.
-// The context is used only for logging.
-// annAddr is used to construct absolute logdog URLs of step logs.
-func parseUpdateBuildRequest(c context.Context, ann *milo.Step, annAddr *types.StreamAddr) (*buildbucketpb.UpdateBuildRequest, error) {
-	steps, err := buildbucket.ConvertBuildSteps(c, ann.Substep, annAddr)
+func (b *buildUpdater) parseRequest(ctx context.Context, annBytes []byte) (*buildbucketpb.UpdateBuildRequest, error) {
+	ann := &milo.Step{}
+	if err := proto.Unmarshal(annBytes, ann); err != nil {
+		return nil, errors.Annotate(err, "failed to parse annotation proto").Err()
+	}
+
+	steps, err := buildbucket.ConvertBuildSteps(ctx, ann.Substep, b.annAddr)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to parse steps from an annotation proto").Err()
 	}
@@ -93,6 +132,7 @@ func parseUpdateBuildRequest(c context.Context, ann *milo.Step, annAddr *types.S
 
 	return &buildbucketpb.UpdateBuildRequest{
 		Build: &buildbucketpb.Build{
+			Id:    b.buildID,
 			Steps: steps,
 			Output: &buildbucketpb.Build_Output{
 				Properties: props,
@@ -107,6 +147,13 @@ func parseUpdateBuildRequest(c context.Context, ann *milo.Step, annAddr *types.S
 		// minimize output by asking nothing back.
 		Fields: &field_mask.FieldMask{},
 	}, nil
+}
+
+// AnnotationUpdated is an annotee.Options.AnnotationUpdated callback
+// that enqueues an UpdateBuild RPC.
+// Assumes annBytes will stay unchanged.
+func (b *buildUpdater) AnnotationUpdated(annBytes []byte) {
+	b.annotations <- annBytes
 }
 
 // readBuildSecrets populates c.buildSecrets from swarming secret bytes, if any.

@@ -46,6 +46,7 @@ type CookFlags struct {
 
 	LogDogFlags LogDogFlags `json:"logdog_flags"`
 
+	BuildbucketBuildID  int64  `json:"buildbucket_build_id"`
 	BuildbucketHostname string `json:"buildbucket_hostname"`
 	CallUpdateBuild     bool   `json:"call_update_build"`
 }
@@ -156,13 +157,18 @@ func (c *CookFlags) Register(fs *flag.FlagSet) {
 		"buildbucket-hostname",
 		"",
 		"Hostname of the buildbucket for the current build.")
+	fs.Int64Var(
+		&c.BuildbucketBuildID,
+		"buildbucket-build-id",
+		0,
+		"ID of the current buildbucket build.")
 	fs.BoolVar(
 		&c.CallUpdateBuild,
 		"call-update-build",
 		false,
 		"Whether to call buildbucket.v2.Builds.UpdateBuild RPC "+
 			"while build is running. "+
-			"Requires -buildbucket-hostname and -mode=swarming. ")
+			"Requires -buildbucket-hostname, -buildbucket-build-id and -mode=swarming. ")
 
 	c.LogDogFlags.register(fs)
 }
@@ -191,6 +197,9 @@ func (c *CookFlags) Dump() []string {
 	ret.str("luci-system-account-json", c.SystemAccountJSON)
 	ret.list("known-gerrit-host", c.KnownGerritHost)
 	ret.str("buildbucket-hostname", c.BuildbucketHostname)
+	if c.BuildbucketBuildID != 0 {
+		ret.str("buildbucket-build-id", strconv.FormatInt(c.BuildbucketBuildID, 10))
+	}
 	ret.boolean("call-update-build", c.CallUpdateBuild)
 
 	return append(ret, c.LogDogFlags.Dump()...)

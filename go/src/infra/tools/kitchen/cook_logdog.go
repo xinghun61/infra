@@ -8,16 +8,19 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"golang.org/x/net/context"
 
+	"go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/errors"
 	log "go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/proto/milo"
 	"go.chromium.org/luci/common/system/environ"
 	"go.chromium.org/luci/common/system/exitcode"
 	grpcLogging "go.chromium.org/luci/grpc/logging"
+	"go.chromium.org/luci/grpc/prpc"
 
 	"go.chromium.org/luci/logdog/client/annotee"
 	"go.chromium.org/luci/logdog/client/annotee/annotation"
@@ -59,7 +62,14 @@ func disableGRPCLogging(ctx context.Context) {
 //	  - Otherwise, wait for the process to finish.
 //	- Shut down the Butler instance.
 // If recipe engine returns non-zero value, the returned err is nil.
+// TODO(nodir): split/refactor this function when kitchen is not used on
+// Buildbot, it is too big.
 func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, env environ.Env) (rc int, build *milo.Step, err error) {
+	// A group of child goroutines.
+	// This function will wait for their completion.
+	var wg sync.WaitGroup
+	defer wg.Wait()
+
 	flags := c.CookFlags.LogDogFlags
 
 	log.Infof(ctx, "Using LogDog URL: %s", &flags.AnnotationURL)
@@ -128,7 +138,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 
 	proc, err := eng.commandRun(procCtx, filepath.Join(c.TempDir, "rr"), env)
 	if err != nil {
-		return 0, nil, errors.Annotate(err, "failed to build recipe comamnd").Err()
+		return 0, nil, errors.Annotate(err, "failed to build recipe command").Err()
 	}
 
 	// Register and instantiate our LogDog Output.
@@ -247,6 +257,23 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 		Offline:                false,
 		CloseSteps:             true,
 	}
+
+	if c.CallUpdateBuild {
+		bu, err := c.newBuildUpdater()
+		if err != nil {
+			return 0, nil, errors.Annotate(err, "failed to create a build updater").Err()
+		}
+		annoteeOpts.AnnotationUpdated = bu.AnnotationUpdated
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := bu.Run(procCtx); err != nil {
+				// TODO(nodir): fail the build run when this happens.
+				log.WithError(err).Errorf(ctx, "build updater crashed")
+			}
+		}()
+	}
 	if c.mode.shouldEmitLogDogLinks() {
 		annoteeOpts.LinkGenerator = &annotee.CoordinatorLinkGenerator{
 			Host:    flags.AnnotationURL.Host,
@@ -293,6 +320,24 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 	// Our process and Butler instance will be consumed in our teardown
 	// defer() statements.
 	return
+}
+
+// newBuildUpdater creates a buildUpdater that uses system auth for RPCs.
+func (c *cookRun) newBuildUpdater() (*buildUpdater, error) {
+	httpClient, err := c.systemAuth.Authenticator().Client()
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to create a system-auth HTTP client for updating build state on the server").Err()
+	}
+	return &buildUpdater{
+		annAddr:    &c.CookFlags.LogDogFlags.AnnotationURL,
+		buildID:    c.BuildbucketBuildID,
+		buildToken: c.buildSecrets.BuildToken,
+		client: buildbucketpb.NewBuildsPRPCClient(&prpc.Client{
+			Host: c.CookFlags.BuildbucketHostname,
+			C:    httpClient,
+		}),
+		annotations: make(chan []byte),
+	}, nil
 }
 
 // getLogDogStreamServer returns a LogDog stream server instance configured for
