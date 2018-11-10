@@ -10,8 +10,11 @@ import os
 import subprocess
 import sys
 
+import test
+
 WORKSPACE_ROOT = os.path.dirname(os.path.abspath(__file__))
 
+assert os.path.dirname(os.path.abspath(test.__file__)) == WORKSPACE_ROOT
 
 def group_by_dir(filestream):
   prefix = None
@@ -99,13 +102,15 @@ def main(args):
   if len(args) < 1 or args[0] not in TOOL_FUNC:
     show_help()
 
+  cache = test.SkipCache(args[0])
   verbose = '--verbose' in args
 
   def filestream():
     for path in sys.stdin:
       path = path.rstrip()
-      if path:
-        yield path
+      if not path or cache.is_skipped(path):
+        continue
+      yield path
 
   return TOOL_FUNC[args[0]](verbose, filestream())
 

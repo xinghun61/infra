@@ -1,0 +1,5 @@
+{
+  "comment": "coverage is low because of the generated code",
+  "expected_coverage_min": 0,
+  "expected_coverage_max": 100.0
+}
