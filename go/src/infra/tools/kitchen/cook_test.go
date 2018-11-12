@@ -29,7 +29,11 @@ import (
 )
 
 func TestCook(t *testing.T) {
-	t.Parallel()
+	// TODO(crbug.com/904533): Running tests that use git in parallel may be
+	// causing issues on Windows.
+	//
+	// t.Parallel()
+
 	Convey("cook", t, func() {
 		cook := cmdCook.CommandRun().(*cookRun)
 

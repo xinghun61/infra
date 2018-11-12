@@ -117,7 +117,11 @@ func TestGitConfig(t *testing.T) {
 }
 
 func TestGit(t *testing.T) {
-	t.Parallel()
+	// TODO(crbug.com/904533): Running tests that use git in parallel may be
+	// causing issues on Windows.
+	//
+	// t.Parallel()
+
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skipf("git is not present: %s", err)
 	}
