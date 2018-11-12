@@ -173,7 +173,7 @@
         <th>BlockedOn:</th>
         <td>
           <template is="dom-repeat" items="[[blockedOn]]">
-            <a href$="/p/[[item.projectName]]/issues/approval?id=[[item.localId]]">
+            <a href$="/p/[[item.projectName]]/issues/detail?id=[[item.localId]]">
               Issue [[item.localId]]</a>
             <br />
           </template>
@@ -186,7 +186,7 @@
         <th>Blocking:</th>
         <td>
           <template is="dom-repeat" items="[[blocking]]">
-            <a href$="/p/[[item.projectName]]/issues/approval?id=[[item.localId]]">
+            <a href$="/p/[[item.projectName]]/issues/detail?id=[[item.localId]]">
               Issue [[item.localId]]</a>
             <br />
           </template>
