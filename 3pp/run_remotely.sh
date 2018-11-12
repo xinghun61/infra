@@ -77,7 +77,7 @@ for arg in "$@"; do
   fi
 done
 
-CL_URL=$(git cl issue --json - 2> /dev/null | python ./run_remotely_slurp_cl.py)
+CL_URL=$(git cl issue --json >(python ./run_remotely_slurp_cl.py) > /dev/null)
 
 echo Using upload prefix: experimental/$CIPD_EMAIL
 echo Using os:$TARG_OS
