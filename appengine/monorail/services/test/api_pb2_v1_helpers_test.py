@@ -371,6 +371,25 @@ class ApiV1HelpersTest(unittest.TestCase):
     self.assertEquals(['other:2', '-test-project:3'], result.blocking)
     self.assertEquals(amendment_mergedinto.newvalue, result.mergedInto)
 
+  def testConvertApprovalAmendments(self):
+    """Test convert_approval_comment."""
+    self.services.user.TestAddUser('user1@example.com', 111L)
+    self.services.user.TestAddUser('user2@example.com', 222L)
+    self.services.user.TestAddUser('user3@example.com', 333L)
+    mar = mock.Mock()
+    mar.cnxn = None
+    amendment_status = tracker_bizobj.MakeApprovalStatusAmendment(
+        tracker_pb2.ApprovalStatus.APPROVED)
+    amendment_approvers = tracker_bizobj.MakeApprovalApproversAmendment(
+        [111L, 222L], [333L])
+    amendments = [amendment_status, amendment_approvers]
+    result = api_pb2_v1_helpers.convert_approval_amendments(
+        amendments, mar, self.services)
+    self.assertEquals(amendment_status.newvalue, result.status)
+    self.assertEquals(['user1@example.com', 'user2@example.com',
+                       '-user3@example.com'],
+                      result.approvers)
+
   def testConvertComment(self):
     """Test convert_comment."""
     mar = mock.Mock()
@@ -397,6 +416,35 @@ class ApiV1HelpersTest(unittest.TestCase):
     self.assertTrue(
         datetime.datetime(2015, 7, 23, 0, 0, 0) <= result.published <=
         datetime.datetime(2015, 7, 25, 0, 0, 0))
+    self.assertEqual(result.kind, 'monorail#issueComment')
+
+  def testConvertApprovalComment(self):
+    """Test convert_approval_comment."""
+    mar = mock.Mock()
+    mar.cnxn = None
+    issue = fake.MakeTestIssue(project_id=12345, local_id=1, summary='sum',
+                               status='New', owner_id=1001)
+    comment = tracker_pb2.IssueComment(
+        user_id=1,
+        content='test content',
+        sequence=1,
+        deleted_by=1,
+        timestamp=1437700000,
+    )
+    result = api_pb2_v1_helpers.convert_approval_comment(
+        issue, comment, mar, self.services, None)
+    self.assertEquals('user@example.com', result.author.name)
+    self.assertEquals(comment.content, result.content)
+    self.assertEquals('user@example.com', result.deletedBy.name)
+    self.assertEquals(1, result.id)
+    # Ensure that the published timestamp falls in a timestamp range to account
+    # for the test being run in different timezones.
+    # Using "Fri, 23 Jul 2015 00:00:00" and "Fri, 25 Jul 2015 00:00:00".
+    self.assertTrue(
+        datetime.datetime(2015, 7, 23, 0, 0, 0) <= result.published <=
+        datetime.datetime(2015, 7, 25, 0, 0, 0))
+    self.assertEqual(result.kind, 'monorail#approvalComment')
+
 
   def testGetUserEmail(self):
     email = api_pb2_v1_helpers._get_user_email(self.services.user, '', 1)

@@ -331,6 +331,27 @@ def convert_comment(issue, comment, mar, services, granted_perms):
       kind='monorail#issueComment',
       is_description=comment.is_description)
 
+def convert_approval_comment(issue, comment, mar, services, granted_perms):
+  can_delete = permissions.CanDelete(
+      mar.auth.user_id, mar.auth.effective_ids, mar.perms,
+      comment.deleted_by, comment.user_id, mar.project,
+      permissions.GetRestrictions(issue), granted_perms=granted_perms)
+
+  return api_pb2_v1.ApprovalCommentWrapper(
+      attachments=[convert_attachment(a) for a in comment.attachments],
+      author=convert_person(
+          comment.user_id, mar.cnxn, services, trap_exception=True),
+      canDelete=can_delete,
+      content=comment.content,
+      deletedBy=convert_person(comment.deleted_by, mar.cnxn, services,
+                               trap_exception=True),
+      id=comment.sequence,
+      published=datetime.datetime.fromtimestamp(comment.timestamp),
+      approvalUpdates=convert_approval_amendments(
+          comment.amendments, mar, services),
+      kind='monorail#approvalComment',
+      is_description=comment.is_description)
+
 
 def convert_attachment(attachment):
   """Convert Monorail Attachment PB to API Attachment."""
@@ -388,6 +409,37 @@ def convert_amendments(issue, amendments, mar, services):
       fv.fieldName = amendment.custom_field_name
       fv.fieldValue = tracker_bizobj.AmendmentString(amendment, users_by_id)
       result.fieldValues.append(fv)
+
+  return result
+
+
+def convert_approval_amendments(amendments, mar, services):
+  """Convert a list of Monorail Amendment PBs API ApprovalUpdate."""
+  amendments_user_ids = tracker_bizobj.UsersInvolvedInAmendments(amendments)
+  users_by_id = framework_views.MakeAllUserViews(
+      mar.cnxn, services.user, amendments_user_ids)
+  framework_views.RevealAllEmailsToMembers(mar.auth, mar.project, users_by_id)
+
+  result = api_pb2_v1.ApprovalUpdate(kind='monorail#approvalCommentUpdate')
+  for amendment in amendments:
+    if amendment.field == tracker_pb2.FieldID.CUSTOM:
+      if amendment.custom_field_name == 'Status':
+        result.status = amendment.newvalue
+      elif amendment.custom_field_name == 'Approvers':
+        for user_id in amendment.added_user_ids:
+          user_email = _get_user_email(
+              services.user, mar.cnxn, user_id)
+          result.approvers.append(user_email)
+        for user_id in amendment.removed_user_ids:
+          user_email = _get_user_email(
+              services.user, mar.cnxn, user_id)
+          result.approvers.append('-%s' % user_email)
+      else:
+        fv = api_pb2_v1.FieldValue()
+        fv.fieldName = amendment.custom_field_name
+        fv.fieldValue = tracker_bizobj.AmendmentString(amendment, users_by_id)
+        # TODO(jojwang): monorail:4229, add approvalName field to FieldValue
+        result.fieldValues.append(fv)
 
   return result
 

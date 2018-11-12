@@ -136,6 +136,14 @@ class Update(messages.Message):
   is_description = messages.BooleanField(13)
 
 
+class ApprovalUpdate(messages.Message):
+  """Approval update."""
+  approvers = messages.StringField(1, repeated=True)
+  status = messages.StringField(2)
+  kind = messages.StringField(3)
+  # TODO(jojwang): monorail:4229, add fieldValues
+
+
 class ProjectIssueConfig(messages.Message):
   """Issue configuration of project."""
   kind = messages.StringField(1)
@@ -168,6 +176,20 @@ class IssueCommentWrapper(messages.Message):
   id = messages.IntegerField(6, variant=messages.Variant.INT32)
   published = message_types.DateTimeField(7)
   updates = messages.MessageField(Update, 8)
+  kind = messages.StringField(9)
+  is_description = messages.BooleanField(10)
+
+
+class ApprovalCommentWrapper(messages.Message):
+  """Approval comment details."""
+  attachments = messages.MessageField(Attachment, 1, repeated=True)
+  author = messages.MessageField(AtomPerson, 2)
+  canDelete = messages.BooleanField(3)
+  content = messages.StringField(4)
+  deletedBy = messages.MessageField(AtomPerson, 5)
+  id = messages.IntegerField(6, variant=messages.Variant.INT32)
+  published = message_types.DateTimeField(7)
+  approvalUpdates = messages.MessageField(ApprovalUpdate, 8)
   kind = messages.StringField(9)
   is_description = messages.BooleanField(10)
 
