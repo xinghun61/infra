@@ -6,7 +6,7 @@ import '/deployed_node_modules/chart.js/dist/Chart.min.js';
 
 const DEFAULT_NUM_DAYS = 14;
 
-class MrChart extends HTMLElement {
+export default class MrChart extends HTMLElement {
 
   static is() {
     return 'mr-chart';
@@ -24,6 +24,12 @@ class MrChart extends HTMLElement {
     this.timestamps = this._makeTimestamps(DEFAULT_NUM_DAYS);
     const indices = this._makeIndices(this.timestamps);
 
+    // This object helps us order the data after we receive it async.
+    this.timestampsToIndices = {};
+    this.timestamps.forEach((ts, index) => {
+      this.timestampsToIndices[ts] = index;
+    });
+
     this.values = [];
 
     // Attach DOM and initialize chart onto canvas.
@@ -39,11 +45,11 @@ class MrChart extends HTMLElement {
   _makeTimestamps(numDaysBack) {
     const endTimeSeconds = this._getEndTime();
     const secondsInDay = 24 * 60 * 60;
-    const timestamps = [];
+    const timestampsChronological = [];
     for (let i = 0; i < numDaysBack; i++) {
-      timestamps.unshift(endTimeSeconds - (secondsInDay * i));
+      timestampsChronological.unshift(endTimeSeconds - (secondsInDay * i));
     }
-    return timestamps;
+    return MrChart.sortInBisectOrder(timestampsChronological);
   }
 
   // Get the chart end time from either the URL or current time.
@@ -90,7 +96,6 @@ class MrChart extends HTMLElement {
   }
 
   async _fetchData(timestamps) {
-    // TODO(jeffcarp, 4387): Load data points in bisect order.
     const fetchPromises = timestamps.map(async (ts, index) => {
       const data = await this._fetchDataAtTimestamp(ts);
       this.values[index] = data.issues;
@@ -98,14 +103,15 @@ class MrChart extends HTMLElement {
       return data;
     });
 
-    Promise.all(fetchPromises).then((chartData) => {
-      // TODO(jeffcarp): Reintroduce unsupported fields into UI.
-      const flatUnsupportedFields = chartData.reduce((acc, datum) => {
+    const chartData = await Promise.all(fetchPromises);
+    const flatUnsupportedFields = chartData.reduce((acc, datum) => {
+      if (datum.unsupportedField) {
         acc = acc.concat(datum.unsupportedField);
-        return acc;
-      }, []);
-      this.unsupportedFields = Array.from(new Set(flatUnsupportedFields));
-    });
+      }
+      return acc;
+    }, []);
+    // TODO(jeffcarp): Re-introduce unsupported fields back into the UI.
+    this.unsupportedFields = Array.from(new Set(flatUnsupportedFields));
   }
 
   _fetchDataAtTimestamp(timestamp) {
@@ -189,13 +195,26 @@ class MrChart extends HTMLElement {
     canvas.id = 'canvas';
 
     // TODO(jeffcarp, 4384): Add progress bar.
-
     div.appendChild(canvas);
     templateEl.content.appendChild(div);
 
     return templateEl;
   }
 
+  static sortInBisectOrder(timestamps) {
+    const arr = [];
+    if (timestamps.length === 0) {
+      return arr;
+    } else if (timestamps.length <= 2) {
+      return timestamps;
+    } else {
+      const beginTs = timestamps.shift();
+      const endTs = timestamps.pop();
+      const medianTs = timestamps.splice(timestamps.length / 2, 1)[0];
+      return [beginTs, endTs, medianTs].concat(
+        MrChart.sortInBisectOrder(timestamps));
+    }
+  }
 }
 
 customElements.define(MrChart.is(), MrChart);

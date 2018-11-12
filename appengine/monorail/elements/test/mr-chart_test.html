@@ -1,0 +1,41 @@
+<meta charset="utf-8">
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<script type="module" src="/static/js/elements/mr-chart.js"></script>
+
+<test-fixture id="basic">
+  <template>
+    <mr-chart project-name="rutabaga"></mr-chart>
+  </template>
+</test-fixture>
+
+<script type="module">
+import MrChart from '../../static/js/elements/mr-chart.js';
+
+suite('basic tests', function() {
+  let element;
+
+  setup(function() {
+    element = fixture('basic');
+
+    sinon.stub(window, 'fetch');
+    const response = new window.Response('Ok.', {
+      status: 201,
+      headers: {'Content-type': 'application/json'},
+    });
+    window.fetch.returns(Promise.resolve(response));
+  });
+
+  teardown(function() {
+    window.fetch.restore();
+  });
+
+  test('sortInBisectOrder orders first, last, median recursively', function() {
+    assert.deepEqual(MrChart.sortInBisectOrder([]), []);
+    assert.deepEqual(MrChart.sortInBisectOrder([9]), [9]);
+    assert.deepEqual(MrChart.sortInBisectOrder([8, 9]), [8, 9]);
+    assert.deepEqual(MrChart.sortInBisectOrder([7, 8, 9]), [7, 9, 8]);
+    assert.deepEqual(
+      MrChart.sortInBisectOrder([1, 2, 3, 4, 5]), [1, 5, 3, 2, 4]);
+  });
+});
+</script>
