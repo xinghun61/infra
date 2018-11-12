@@ -70,6 +70,8 @@ class MergeLinkedAccountReasonsTest(unittest.TestCase):
         False, user_3.email, user_3, notify_reasons.REPLY_NOT_ALLOWED)
     self.addr_perm_4 = notify_reasons.AddrPerm(
         False, user_4.email, user_4, notify_reasons.REPLY_NOT_ALLOWED)
+    self.addr_perm_5 = notify_reasons.AddrPerm(
+        False, 'alias@example.com', None, notify_reasons.REPLY_NOT_ALLOWED)
 
   def testEmptyDict(self):
     """Zero users to notify."""
@@ -83,11 +85,13 @@ class MergeLinkedAccountReasonsTest(unittest.TestCase):
        self.addr_perm_parent: [notify_reasons.REASON_CCD],
        self.addr_perm_3: [notify_reasons.REASON_OWNER],
        self.addr_perm_4: [notify_reasons.REASON_CCD],
+       self.addr_perm_5: [notify_reasons.REASON_CCD],
        }
     self.assertEqual(
         {self.addr_perm_parent: [notify_reasons.REASON_CCD],
          self.addr_perm_3: [notify_reasons.REASON_OWNER],
-         self.addr_perm_4: [notify_reasons.REASON_CCD]
+         self.addr_perm_4: [notify_reasons.REASON_CCD],
+         self.addr_perm_5: [notify_reasons.REASON_CCD]
          },
         notify_helpers._MergeLinkedAccountReasons(addr_reasons_dict))
 

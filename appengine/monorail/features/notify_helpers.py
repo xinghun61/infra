@@ -127,12 +127,13 @@ class NotifyTaskBase(jsonfeed.InternalTask):
 def _MergeLinkedAccountReasons(addr_reasons_dict):
   """Return an addr_reasons_dict where parents omit child accounts."""
   all_ids = set(addr_perm.user.user_id
-                for addr_perm in addr_reasons_dict)
+                for addr_perm in addr_reasons_dict
+                if addr_perm.user)
   merged_ids = set()
 
   result = {}
   for addr_perm, reasons in addr_reasons_dict.iteritems():
-    parent_id = addr_perm.user.linked_parent_id
+    parent_id = addr_perm.user.linked_parent_id if addr_perm.user else None
     if parent_id and parent_id in all_ids:
       # The current user is a child account and the parent would be notified,
       # so only notify the parent.
@@ -141,7 +142,7 @@ def _MergeLinkedAccountReasons(addr_reasons_dict):
       result[addr_perm] = reasons
 
   for addr_perm, reasons in result.iteritems():
-    if addr_perm.user.user_id in merged_ids:
+    if addr_perm.user and addr_perm.user.user_id in merged_ids:
       reasons.append(notify_reasons.REASON_LINKED_ACCOUNT)
 
   return result
