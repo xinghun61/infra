@@ -345,8 +345,8 @@ func (p *Pager) Record(n int) {
 }
 
 // GetStateDimension gets the dut_state value from a dimension slice.
-func GetStateDimension(s []*swarming.SwarmingRpcsStringListPair) fleet.DutState {
-	for _, p := range s {
+func GetStateDimension(dims []*swarming.SwarmingRpcsStringListPair) fleet.DutState {
+	for _, p := range dims {
 		if p.Key != DutStateDimensionKey {
 			continue
 		}
