@@ -143,7 +143,7 @@ function CS_addClickListener(tableEl, handler) {
     let target = event.target;
     let inLink = target.tagName == 'A' || target.parentNode.tagName == 'A';
 
-    if (inLink) {
+    if (inLink && !target.classList.contains("computehref")) {
       // The <a> elements already have the correct hrefs.
       return;
     }
