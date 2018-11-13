@@ -1,7 +1,7 @@
 const path = require('path');
 
 module.exports = {
-  entry: ['./src/constants.js', './src/rotashiftcurrent.js', './src/rotashifthistory.js', './src/rotashiftgenerate.js'],
+  entry: ['./src/rotamember.js', './src/constants.js', './src/rotashiftcurrent.js', './src/rotashifthistory.js', './src/rotashiftgenerate.js'],
   devtool: 'inline-source-map',
   module: {
     rules: [

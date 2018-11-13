@@ -6,6 +6,7 @@
 package app
 
 import (
+	"context"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -17,7 +18,6 @@ import (
 	"infra/appengine/rotang/pkg/calendar"
 	"infra/appengine/rotang/pkg/datastore"
 
-	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 
@@ -162,6 +162,7 @@ func init() {
 	r.GET("/importshifts", protected, h.HandleShiftImport)
 	r.GET("/manageshifts", protected, h.HandleManageShifts)
 	r.GET("/legacy/:name", tmw, h.HandleLegacy)
+	r.GET("/memberjson", protected, h.HandleMember)
 
 	r.POST("/shiftsupdate", protected, h.HandleShiftUpdate)
 	r.POST("/shiftsgenerate", protected, h.HandleShiftGenerate)
@@ -170,6 +171,7 @@ func init() {
 	r.POST("/createrota", protected, h.HandleCreateRota)
 	r.POST("/deleterota", protected, h.HandleDeleteRota)
 	r.POST("/upload", protected, h.HandleUpload)
+	r.POST("/memberjson", protected, h.HandleMember)
 
 	// Recurring jobs.
 	r.GET("/cron/joblegacy", tmw, h.JobLegacy)

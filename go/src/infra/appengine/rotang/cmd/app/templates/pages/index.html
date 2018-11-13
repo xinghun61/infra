@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <title>rota-ng</title>
 <body>
+<script src="/static/dist/bundle.js"></script>
 <h1> rota-ng </h1>
 <a href="https://docs.google.com/document/d/1WdvMckyfzfx9anU1hLHJ16EuvXv4Keo8aUmSTQRuNp4/edit"> Design </a>
 <br/>
@@ -14,7 +15,8 @@ Rota NG Source
 </p>
 <p> Information about how to
 <a href="https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/appengine/rotang/SWITCH.md">
-  Switch to RotaNG
+Switch to RotaNG
+</p>
 </a>
 </p>
 <a href="upload">Upload Legacy JSON rota configuraton</a><br>
@@ -22,21 +24,7 @@ Rota NG Source
 <a href="managerota">Manage rotations</a><br>
 
 {{if .Rotas}}
-<h2>Rotations you are a member of</h2>
-<table class="table">
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Oncall</th>
-    </tr>
-  </thead>
-  <tbody>
-  {{range $r := .Rotas}}
-    <tr>
-      <td><a href="oncall/{{$r}}">{{$r}}</a></td>
-    </tr>
-  {{end}}
-  </tbody>
-</table>
+<h2>Member stuff</h2>
+<rota-member></rota-member>
 {{end}}
 </body>
