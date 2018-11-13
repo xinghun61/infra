@@ -14,8 +14,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"context"
+
 	"go.chromium.org/gae/service/datastore"
-	"golang.org/x/net/context"
 )
 
 const (
@@ -180,6 +181,10 @@ func (s *Store) UpdateMember(ctx context.Context, member *rotang.Member) error {
 	dsMember := DsMember{
 		Key:   rootKey(ctx),
 		Email: member.Email,
+	}
+	// Datastore needs times set to UTC.
+	for i := range member.OOO {
+		member.OOO[i].Start = member.OOO[i].Start.UTC()
 	}
 	return datastore.RunInTransaction(ctx, func(ctx context.Context) error {
 		if err := datastore.Get(ctx, &dsMember); err != nil {

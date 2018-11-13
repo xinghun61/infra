@@ -11,7 +11,7 @@ import (
 
 	"infra/appengine/rotang"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/kylelemons/godebug/pretty"
 	"go.chromium.org/gae/service/datastore"

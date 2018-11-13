@@ -5,8 +5,8 @@ import (
 	"sort"
 	"time"
 
+	"context"
 	"go.chromium.org/gae/service/datastore"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -61,26 +61,48 @@ func (s *Store) Oncall(ctx context.Context, at time.Time, rota string) (*rotang.
 		return nil, err
 	}
 	for _, shift := range dsEntries {
-		insideShift := (at.After(shift.StartTime) || at.Equal(shift.StartTime)) && at.Before(shift.EndTime)
-		splitStart := time.Date(at.Year(), at.Month(), at.Day(),
-			shift.StartTime.Hour(), shift.StartTime.Minute(), shift.StartTime.Second(), shift.StartTime.Nanosecond(), time.UTC)
-		splitEnd := splitStart.Add(shift.EndTime.Sub(shift.StartTime) % (24 * time.Hour))
-		// If the shift is 24 hours we'll end up with a full extra day.
-		if splitStart.Equal(splitEnd) {
-			splitEnd = splitEnd.Add(24 * time.Hour)
+		if !(at.After(shift.StartTime) || at.Equal(shift.StartTime)) && at.Before(shift.EndTime) {
+			continue
 		}
-		insideSplit := (at.After(splitStart) || at.Equal(splitStart)) && at.Before(splitEnd)
+		shiftDuration := shift.EndTime.Sub(shift.StartTime) % (24 * time.Hour)
+		// Duration == 0  => 24 hour shift.
+		if shiftDuration != 0 {
+			// RotaNG stores split shifts like:
+			//
+			// MTV Shift 2018-10-01 07:00 PDT -> 2018-10-05 19:00 PDT 12hours
+			// SYD Shift 2018-10-01 19:00 PDT -> 2018-10-06 07:00 PDT 12hours
+			//
+			// First the `s` time is set to the same day as the requested at time
+			// with H and M set to `shift.StartTime` -> 2018-10-04 19:00.
+			// `e` is set by adding the Shift Duration to `s`.
+			//
+			// In this case though at 2018-10-04 05:00 will not be inside the s->e range
+			// 2018-10-04 19:00 -> 2018-10-05 07:00 due to the date changing during the
+			// shift. To check for this happening the duration between `at` and `e` is
+			// calculated. If this is > shiftDuration (12h in this case) the `s` and `e`
+			// times are backed up by one day.
+			s := time.Date(at.Year(), at.Month(), at.Day(),
+				shift.StartTime.Hour(), shift.StartTime.Minute(),
+				shift.StartTime.Second(), shift.StartTime.Nanosecond(),
+				time.UTC)
+			e := s.Add(shiftDuration)
+			if e.Sub(at) > shiftDuration {
+				s = s.Add(-24 * time.Hour)
+				e = e.Add(-24 * time.Hour)
+			}
+			if !((at.After(s) || at.Equal(s)) && at.Before(e)) {
+				continue
+			}
+		}
 
-		if insideShift && insideSplit {
-			return &rotang.ShiftEntry{
-				Name:      shift.Name,
-				OnCall:    shift.OnCall,
-				StartTime: shift.StartTime,
-				EndTime:   shift.EndTime,
-				Comment:   shift.Comment,
-				EvtID:     shift.EvtID,
-			}, nil
-		}
+		return &rotang.ShiftEntry{
+			Name:      shift.Name,
+			OnCall:    shift.OnCall,
+			StartTime: shift.StartTime,
+			EndTime:   shift.EndTime,
+			Comment:   shift.Comment,
+			EvtID:     shift.EvtID,
+		}, nil
 	}
 	return nil, status.Errorf(codes.NotFound, "no matching shift found for rota: %q", rota)
 }

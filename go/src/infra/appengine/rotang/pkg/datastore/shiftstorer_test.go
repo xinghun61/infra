@@ -3,11 +3,13 @@ package datastore
 import (
 	"infra/appengine/rotang"
 	"infra/appengine/rotang/pkg/algo"
+	"sort"
 	"testing"
 	"time"
 
+	"context"
+
 	"github.com/kylelemons/godebug/pretty"
-	"golang.org/x/net/context"
 )
 
 var midnight = time.Date(2006, 1, 2, 0, 0, 0, 0, time.UTC)
@@ -73,6 +75,33 @@ func TestAllShifts(t *testing.T) {
 				Description: "Test",
 			},
 		},
+	}, {
+		name: "Shifts not sorted",
+		ctx:  ctx,
+		rota: "test rota",
+		rotaCfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Name:        "test rota",
+				Description: "Test",
+			},
+		},
+		add: []rotang.ShiftEntry{
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight.Add(2 * 8 * time.Hour),
+				EndTime:   midnight.Add(3 * 8 * time.Hour),
+			},
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight,
+				EndTime:   midnight.Add(8 * time.Hour),
+			},
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight.Add(8 * time.Hour),
+				EndTime:   midnight.Add(2 * 8 * time.Hour),
+			},
+		},
 	},
 	}
 
@@ -98,6 +127,7 @@ func TestAllShifts(t *testing.T) {
 			if err != nil {
 				return
 			}
+			sort.Sort(byStartTime(tst.add))
 
 			if diff := pretty.Compare(tst.add, shifts); diff != "" {
 				t.Fatalf("%s: store.UpdateShift(ctx, %q) differ -want +got, %s", tst.name, tst.rota, diff)
@@ -1069,6 +1099,108 @@ func TestOncall(t *testing.T) {
 			{
 				Email:     "syd@oncall.com",
 				ShiftName: "SYD Shift",
+			},
+		},
+	}, {
+		name:     "Trickier Multiple shifts",
+		rota:     "test rota",
+		ctx:      ctx,
+		time:     midnight.Add(5*time.Hour + 24*time.Hour),
+		nrShifts: 4,
+		rotaCfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Description: "Test",
+				Name:        "test rota",
+				Shifts: rotang.ShiftConfig{
+					StartTime:    midnight.Add(6 * time.Hour),
+					ShiftMembers: 1,
+					Length:       4,
+					Shifts: []rotang.Shift{
+						{
+							Name:     "MTV Shift",
+							Duration: 12 * time.Hour,
+						},
+						{
+							Name:     "SYD Shift",
+							Duration: 12 * time.Hour,
+						},
+					},
+				},
+			},
+			Members: []rotang.ShiftMember{
+				{
+					Email:     "mtv@oncall.com",
+					ShiftName: "MTV Shift",
+				},
+				{
+					Email:     "syd@oncall.com",
+					ShiftName: "SYD Shift",
+				},
+			},
+		},
+		memberPool: []rotang.Member{
+			{
+				Email: "mtv@oncall.com",
+			},
+			{
+				Email: "syd@oncall.com",
+			},
+		},
+		want: []rotang.ShiftMember{
+			{
+				Email:     "syd@oncall.com",
+				ShiftName: "SYD Shift",
+			},
+		},
+	}, {
+		name:     "Multiple shifts end in another day",
+		rota:     "test rota",
+		ctx:      ctx,
+		time:     midnight.Add(22*time.Hour + 24*time.Hour),
+		nrShifts: 4,
+		rotaCfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Description: "Test",
+				Name:        "test rota",
+				Shifts: rotang.ShiftConfig{
+					StartTime:    midnight.Add(19 * time.Hour),
+					ShiftMembers: 1,
+					Length:       4,
+					Shifts: []rotang.Shift{
+						{
+							Name:     "MTV Shift",
+							Duration: 12 * time.Hour,
+						},
+						{
+							Name:     "SYD Shift",
+							Duration: 12 * time.Hour,
+						},
+					},
+				},
+			},
+			Members: []rotang.ShiftMember{
+				{
+					Email:     "mtv@oncall.com",
+					ShiftName: "MTV Shift",
+				},
+				{
+					Email:     "syd@oncall.com",
+					ShiftName: "SYD Shift",
+				},
+			},
+		},
+		memberPool: []rotang.Member{
+			{
+				Email: "mtv@oncall.com",
+			},
+			{
+				Email: "syd@oncall.com",
+			},
+		},
+		want: []rotang.ShiftMember{
+			{
+				Email:     "mtv@oncall.com",
+				ShiftName: "MTV Shift",
 			},
 		},
 	},
