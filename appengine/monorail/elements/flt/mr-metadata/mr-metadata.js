@@ -6,7 +6,7 @@
  * Generalized metadata for either approvals or issues.
  *
  */
-class MrMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
+class MrMetadata extends MetadataMixin(Polymer.Element) {
   static get is() {
     return 'mr-metadata';
   }
@@ -18,25 +18,6 @@ class MrMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
       setter: Object,
       cc: Array,
       components: Array,
-      fieldDefs: Array,
-      fieldGroups: {
-        type: Array,
-        // TODO(zhangtiff): Remove this hardcoded data once backend custom
-        // field grouping is implemented.
-        value: () => [
-          {
-            groupName: 'Feature Team',
-            fieldNames: ['PM', 'Tech Lead', 'Tech-Lead', 'TechLead', 'TL',
-              'Team', 'UX', 'TE'],
-          },
-          {
-            groupName: 'Docs',
-            fieldNames: ['PRD', 'DD', 'Design Doc', 'Design-Doc',
-              'DesignDoc', 'Mocks', 'Test Plan', 'Test-Plan', 'TestPlan',
-              'Metrics'],
-          },
-        ],
-      },
       issueStatus: String,
       blockedOn: Array,
       blocking: Array,
@@ -52,61 +33,7 @@ class MrMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
         reflectToAttribute: true,
         readOnly: true,
       },
-      _fieldValueMap: {
-        type: Object,
-        statePath: selectors.issueFieldValueMap,
-        value: () => {},
-      },
-      _fieldGroupMap: {
-        type: Object,
-        computed: '_computeFieldGroupMap(fieldGroups)',
-        value: () => {},
-      },
-      _fieldGroupsWithDefs: {
-        type: Array,
-        computed: '_computeFieldGroupsWithDefs(fieldDefs, fieldGroups)',
-      },
-      _fieldDefsWithoutGroup: {
-        type: Array,
-        computed: '_computeFieldDefsWithoutGroup(fieldDefs, _fieldGroupMap)',
-      },
     };
-  }
-
-  _computeFieldGroupMap(fieldGroups) {
-    return fieldGroups.reduce((acc, group) => {
-      return group.fieldNames.reduce((acc, fieldName) => {
-        acc[fieldName] = group.groupName;
-        return acc;
-      }, acc);
-    }, {});
-  }
-
-  _computeFieldGroupsWithDefs(fieldDefs, fieldGroups) {
-    if (!fieldDefs) return [];
-    return fieldGroups.reduce((acc, group) => {
-      const groupFields = group.fieldNames.reduce((acc, name) => {
-        const fd = fieldDefs.find((fd) => (fd.fieldRef.fieldName == name));
-        if (fd) {
-          acc.push(fd);
-        }
-        return acc;
-      }, []);
-      if (groupFields.length > 0) {
-        acc.push({
-          groupName: group.groupName,
-          fieldDefs: groupFields,
-        });
-      }
-      return acc;
-    }, []);
-  }
-
-  _computeFieldDefsWithoutGroup(fieldDefs, fieldGroupMap) {
-    if (!fieldDefs) return [];
-    return fieldDefs.filter((fd) => {
-      return !(fd.fieldRef.fieldName in fieldGroupMap);
-    });
   }
 
   _fieldIsHidden(fieldValueMap, fieldDef) {

@@ -6,7 +6,7 @@
  * Editing form for either an approval or the overall issue.
  *
  */
-class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
+class MrEditMetadata extends MetadataMixin(Polymer.Element) {
   static get is() {
     return 'mr-edit-metadata';
   }
@@ -30,10 +30,6 @@ class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
         value: () => [],
       },
       components: {
-        type: Array,
-        value: () => [],
-      },
-      fieldDefs: {
         type: Array,
         value: () => [],
       },
@@ -96,11 +92,6 @@ class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
       _nicheFieldCount: {
         type: Boolean,
         computed: '_computeNicheFieldCount(fieldDefs)',
-      },
-      _fieldValueMap: {
-        type: Object,
-        statePath: selectors.issueFieldValueMap,
-        value: () => {},
       },
     };
   }
@@ -217,7 +208,8 @@ class MrEditMetadata extends MetadataMixin(ReduxMixin(Polymer.Element)) {
     let fieldValuesAdded = [];
     let fieldValuesRemoved = [];
 
-    this.fieldDefs.forEach((field) => {
+    const fieldDefs = this.fieldDefs || [];
+    fieldDefs.forEach((field) => {
       const fieldName = field.fieldRef.fieldName;
       const input = root.querySelector(
         `#${this._idForField(fieldName)}`);

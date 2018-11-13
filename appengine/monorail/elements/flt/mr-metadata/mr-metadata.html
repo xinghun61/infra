@@ -6,8 +6,6 @@
 <link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
 
 <link rel="import" href="../../mr-user-link/mr-user-link.html">
-<link rel="import" href="../../redux/redux-mixin.html">
-<link rel="import" href="../../redux/selectors.html">
 <link rel="import" href="../shared/metadata-mixin.html">
 <link rel="import" href="../mr-metadata/mr-field-values.html">
 
@@ -130,7 +128,7 @@
       </tr>
     </template>
 
-    <template is="dom-repeat" items="[[_fieldGroupsWithDefs]]" as="group">
+    <template is="dom-repeat" items="[[_fieldDefsWithGroups]]" as="group">
       <tr>
         <th class="group-title" colspan="2">
           [[group.groupName]]
