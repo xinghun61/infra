@@ -1230,6 +1230,37 @@ class IssueMergeTest(unittest.TestCase):
     self.assertItemsEqual([1, 2, 3, 4, 5], issue_2_starrers)
 
 
+class MergeLinkedMembersTest(unittest.TestCase):
+
+  def setUp(self):
+    self.cnxn = 'fake cnxn'
+    self.services = service_manager.Services(
+        user=fake.UserService())
+    self.user1 = self.services.user.TestAddUser('one@example.com', 111L)
+    self.user2 = self.services.user.TestAddUser('two@example.com', 222L)
+
+  def testNoLinkedAccounts(self):
+    """When no candidate accounts are linked, they are all returned."""
+    actual = tracker_helpers._MergeLinkedMembers(
+        self.cnxn, self.services.user, [111L, 222L])
+    self.assertEquals([111L, 222L], actual)
+
+  def testSomeLinkedButNoMasking(self):
+    """If an account has linked accounts, but they are not here, keep it."""
+    self.user1.linked_child_ids = [999L]
+    self.user2.linked_parent_id = 999L
+    actual = tracker_helpers._MergeLinkedMembers(
+        self.cnxn, self.services.user, [111L, 222L])
+    self.assertEquals([111L, 222L], actual)
+
+  def testParentMasksChild(self):
+    """When two accounts linked, only the parent is returned."""
+    self.user2.linked_parent_id = 111L
+    actual = tracker_helpers._MergeLinkedMembers(
+        self.cnxn, self.services.user, [111L, 222L])
+    self.assertEquals([111L], actual)
+
+
 class FilterMemberDataTest(unittest.TestCase):
 
   def setUp(self):

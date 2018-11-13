@@ -1049,6 +1049,8 @@ def GetVisibleMembers(mr, project, services):
   visible_member_ids = _FilterMemberData(
       mr, project.owner_ids, project.committer_ids, project.contributor_ids,
       indirect_user_ids, project)
+  visible_member_ids = _MergeLinkedMembers(
+      mr.cnxn, services.user, visible_member_ids)
 
   visible_member_views = framework_views.MakeAllUserViews(
       mr.cnxn, services.user, visible_member_ids, group_ids=all_group_ids)
@@ -1064,6 +1066,15 @@ def GetVisibleMembers(mr, project, services):
       and not m.user_id in ac_exclusion_ids}
 
   return visible_member_views
+
+
+def _MergeLinkedMembers(cnxn, user_service, user_ids):
+  """Remove any linked child accounts if the parent would also be shown."""
+  all_ids = set(user_ids)
+  users_by_id = user_service.GetUsersByIDs(cnxn, user_ids)
+  result = [uid for uid in user_ids
+            if users_by_id[uid].linked_parent_id not in all_ids]
+  return result
 
 
 def _FilterMemberData(
