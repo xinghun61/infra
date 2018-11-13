@@ -434,7 +434,7 @@ class UpdateBuildTests(BaseTestCase):
         req,
         ctx=ctx,
         expected_code=prpc.StatusCode.PERMISSION_DENIED,
-        expected_details='user not permitted to update build',
+        expected_details='anonymous:anonymous not permitted to update build',
     )
 
 

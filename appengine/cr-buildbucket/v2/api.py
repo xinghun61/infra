@@ -253,7 +253,8 @@ def update_build_async(req, ctx, _mask):
   validate_build_token(req, ctx)
   if not (yield user.can_update_build_async()):
     raise StatusError(
-        prpc.StatusCode.PERMISSION_DENIED, 'user not permitted to update build'
+        prpc.StatusCode.PERMISSION_DENIED, '%s not permitted to update build' %
+        auth.get_current_identity().to_bytes()
     )
   validation.validate_update_build_request(req)
 

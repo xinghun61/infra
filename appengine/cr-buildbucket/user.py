@@ -24,7 +24,7 @@ import config
 import errors
 
 # Group whitelisting users to update builds. They are expected to be robots.
-UPDATE_BUILDS_ALLOWED_USERS = 'buildbucket-update-builds-users'
+UPDATE_BUILD_ALLOWED_USERS = 'buildbucket-update-build-users'
 
 ################################################################################
 ## Role definitions.
@@ -143,7 +143,7 @@ can_set_next_number_async = can_async_fn(Action.SET_NEXT_NUMBER)
 @ndb.tasklet
 def can_update_build_async():  # pragma: no cover
   """Returns if the current identity is whitelisted to update builds."""
-  raise ndb.Return(auth.is_group_member(UPDATE_BUILDS_ALLOWED_USERS))
+  raise ndb.Return(auth.is_group_member(UPDATE_BUILD_ALLOWED_USERS))
 
 
 ################################################################################
