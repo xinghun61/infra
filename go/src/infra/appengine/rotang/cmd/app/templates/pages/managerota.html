@@ -43,6 +43,13 @@
             <button type="submit" name="name" value="{{$c.Config.Name}}">Delete</button>
          </form>
        </td>
+       <td>
+         <form action="enabledisable" method="post">
+           <button type="submit" name="name" value="{{$c.Config.Name}}">
+             {{if eq $c.Config.Enabled true}}Disable{{else}}Enable{{end}}
+           </button>
+         </form>
+       </td>
      </tr>
    {{end}}
   </tbody>

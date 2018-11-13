@@ -68,6 +68,13 @@ func (h *State) notifyEmail(ctx context.Context, cfg *rotang.Configuration, t ti
 	return nil
 }
 
+const (
+	emailSender = "oncall_notify"
+	// emailDomain is used when the h.mailAddress was not specifically set.
+	// See https://cloud.google.com/appengine/docs/standard/go/mail/.
+	emailDomain = ".appspotmail.com"
+)
+
 // sendMail executes the subject/body templates and sends the mail out.
 func (h *State) sendMail(ctx context.Context, cfg *rotang.Configuration, shift *rotang.ShiftEntry, email string) error {
 	m, err := h.memberStore(ctx).Member(ctx, email)
@@ -98,8 +105,14 @@ func (h *State) sendMail(ctx context.Context, cfg *rotang.Configuration, shift *
 		return err
 	}
 
+	sender := h.mailAddress
+	if sender == "" {
+		// https://cloud.google.com/appengine/docs/standard/go/mail/
+		sender = emailSender + "@" + h.projectID(ctx) + emailDomain
+	}
+
 	return h.mailSender.Send(ctx, &mail.Message{
-		Sender:  h.mailAddress,
+		Sender:  sender,
 		To:      []string{email},
 		Subject: subjectBuf.String(),
 		Body:    bodyBuf.String(),

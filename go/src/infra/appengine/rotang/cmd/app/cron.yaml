@@ -6,3 +6,11 @@ cron:
 - description: "Daily Cloud Datastore Export"
   url: /cron/backup
   schedule: every 24 hours
+
+- description: "Oncall Notification Email"
+  url: /cron/email
+  schedule: every 24 hours
+
+- description: "Auto Schedule New Shifts"
+  url: /cron/schedule
+  schedule: every 24 hours

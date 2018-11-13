@@ -171,11 +171,14 @@ func init() {
 	r.POST("/createrota", protected, h.HandleCreateRota)
 	r.POST("/deleterota", protected, h.HandleDeleteRota)
 	r.POST("/upload", protected, h.HandleUpload)
+	r.POST("/enabledisable", protected, h.HandleEnableDisable)
 	r.POST("/memberjson", protected, h.HandleMember)
 
 	// Recurring jobs.
 	r.GET("/cron/joblegacy", tmw, h.JobLegacy)
 	r.GET("/cron/backup", tmw, h.JobBackup)
+	r.GET("/cron/email", tmw, h.JobEmail)
+	r.GET("/cron/schedule", tmw, h.JobSchedule)
 
 	http.DefaultServeMux.Handle("/", r)
 }
