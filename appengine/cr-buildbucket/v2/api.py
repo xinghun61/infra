@@ -4,6 +4,7 @@
 
 import json
 import functools
+import logging
 
 from google.appengine.ext import ndb
 from google.protobuf import json_format
@@ -250,6 +251,7 @@ def update_build_async(req, ctx, _mask):
 
   For now, only update build steps.
   """
+  logging.debug('updating build %d', req.build.id)
   validate_build_token(req, ctx)
   if not (yield user.can_update_build_async()):
     raise StatusError(
