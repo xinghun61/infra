@@ -360,8 +360,16 @@ class MonorailRequest(MonorailRequestBase):
     self.specified_user_id = self.GetIntParam('u', default_value=0)
     self.specified_logged_in_user_id = self.GetIntParam(
         'logged_in_user_id', default_value=0)
-    self.specified_me_user_id = self.GetIntParam(
+    self.specified_me_user_ids = self.GetIntListParam('me_user_ids')
+
+    # TODO(jrobbins): Phase this out after next deployment.  If an old
+    # version of the default GAE module sends a request with the old
+    # me_user_id= parameter, then accept it.
+    specified_me_user_id = self.GetIntParam(
         'me_user_id', default_value=0)
+    if specified_me_user_id:
+      self.specified_me_user_ids = [specified_me_user_id]
+
     self.specified_project = self.GetParam('project')
     self.specified_project_id = self.GetIntParam('project_id')
     self.query_project_names = self.GetListParam('projects', default_value=[])

@@ -780,20 +780,20 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     urlfetch.make_fetch_call(
       a_fake_rpc, mox.StrContains(
           urls.BACKEND_SEARCH + '?groupby=cc&invalidation_timestep=12345&'
-          +'logged_in_user_id=777&me_user_id=555&'
+          +'logged_in_user_id=777&me_user_ids=555&'
           +'num=201&projects=proj&q=priority%3Dhigh&shard_id=2&start=0'),
           follow_redirects=False,
       headers=mox.IsA(dict))
     self.mox.ReplayAll()
 
     processed_invalidations_up_to = 12345
-    me_user_id = 555L
+    me_user_ids = [555L]
     logged_in_user_id = 777L
     new_url_num = 201
     url_params = [('num', '300'), ('groupby', 'cc')]
     frontendsearchpipeline._StartBackendSearchCall(
         ['proj'], (2, 'priority=high'), processed_invalidations_up_to,
-        me_user_id, logged_in_user_id, new_url_num, url_params)
+        me_user_ids, logged_in_user_id, new_url_num, url_params)
     self.mox.VerifyAll()
 
   def testStartBackendNonviewableCall(self):
@@ -825,7 +825,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     search_limit_reached = {}  # Booleans accumulate here, per-shard.
     processed_invalidations_up_to = 12345
 
-    me_user_id = 111L
+    me_user_ids = [111L]
     logged_in_user_id = 0
     new_url_num = 100
     url_params = None
@@ -835,7 +835,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     frontendsearchpipeline._HandleBackendSearchResponse(
         ['proj'], rpc_tuple, rpc_tuples, 0, filtered_iids,
         search_limit_reached, processed_invalidations_up_to, error_responses,
-        me_user_id, logged_in_user_id, new_url_num, url_params)
+        me_user_ids, logged_in_user_id, new_url_num, url_params)
     self.assertEqual([], rpc_tuples)
     self.assertIn(2, error_responses)
 
@@ -857,7 +857,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     search_limit_reached = {}  # Booleans accumulate here, per-shard.
     processed_invalidations_up_to = 12345
 
-    me_user_id = 111L
+    me_user_ids = [111L]
     logged_in_user_id = 0
     new_url_num = 100
     url_params = None
@@ -865,12 +865,11 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     frontendsearchpipeline._HandleBackendSearchResponse(
       ['proj'], rpc_tuple, rpc_tuples, 2, filtered_iids,
       search_limit_reached, processed_invalidations_up_to, error_responses,
-      me_user_id, logged_in_user_id, new_url_num, url_params)
+      me_user_ids, logged_in_user_id, new_url_num, url_params)
     self.assertEqual([], rpc_tuples)
     self.assertEqual({2: []}, filtered_iids)
     self.assertEqual({2: False}, search_limit_reached)
     self.assertEqual({2}, error_responses)
-
 
   def testHandleBackendSearchResponse_Normal(self):
     response_str = (
@@ -889,7 +888,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     search_limit_reached = {}  # Booleans accumulate here, per-shard.
     processed_invalidations_up_to = 12345
 
-    me_user_id = 111L
+    me_user_ids = [111L]
     logged_in_user_id = 0
     new_url_num = 100
     url_params = None
@@ -897,11 +896,10 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     frontendsearchpipeline._HandleBackendSearchResponse(
       ['proj'], rpc_tuple, rpc_tuples, 2, filtered_iids,
       search_limit_reached, processed_invalidations_up_to, error_responses,
-      me_user_id, logged_in_user_id, new_url_num, url_params)
+      me_user_ids, logged_in_user_id, new_url_num, url_params)
     self.assertEqual([], rpc_tuples)
     self.assertEqual({2: [10002, 10042]}, filtered_iids)
     self.assertEqual({2: False}, search_limit_reached)
-
 
   def testHandleBackendSearchResponse_TriggersRetry(self):
     response_str = None
@@ -914,7 +912,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     processed_invalidations_up_to = 12345
     error_responses = set()
 
-    me_user_id = 111L
+    me_user_ids = [111L]
     logged_in_user_id = 0
     new_url_num = 100
     url_params = None
@@ -923,14 +921,14 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     a_fake_rpc = testing_helpers.Blank(callback=None)
     rpc = frontendsearchpipeline._StartBackendSearchCall(
         ['proj'], 2, processed_invalidations_up_to,
-        me_user_id, logged_in_user_id, new_url_num, url_params, failfast=False
+        me_user_ids, logged_in_user_id, new_url_num, url_params, failfast=False
       ).AndReturn(a_fake_rpc)
     self.mox.ReplayAll()
 
     frontendsearchpipeline._HandleBackendSearchResponse(
         ['proj'], rpc_tuple, rpc_tuples, 2, filtered_iids,
         search_limit_reached, processed_invalidations_up_to, error_responses,
-        me_user_id, logged_in_user_id, new_url_num, url_params)
+        me_user_ids, logged_in_user_id, new_url_num, url_params)
     self.mox.VerifyAll()
     _, retry_shard_id, retry_rpc = rpc_tuples[0]
     self.assertEqual(2, retry_shard_id)

@@ -66,7 +66,7 @@ class IssueListUnitTest(unittest.TestCase):
     mockStartBackendSearch.assert_called_with(
         self.mr.cnxn, ['proj'], [self.project.project_id],
         mock.ANY, {}, {}, {}, set(),
-        self.services, self.mr.me_user_id, 0, self.mr.num, url_params,
+        self.services, [self.mr.me_user_id], 0, self.mr.num, url_params,
         [''], self.mr.can, self.mr.group_by_spec, self.mr.sort_spec,
         self.mr.warnings, self.mr.use_cached_searches)
     mockFinishBackendSearch.assert_called_with([])

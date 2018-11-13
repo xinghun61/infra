@@ -73,7 +73,7 @@ class BackendSearchPipelineTest(unittest.TestCase):
     self.SetUpPromises('Priority:High')
     self.mox.ReplayAll()
     backendsearchpipeline.BackendSearchPipeline(
-      self.mr, self.services, 100, ['proj'], None, None)
+      self.mr, self.services, 100, ['proj'], None, [])
     self.mox.VerifyAll()
 
   def testMakePromises_SignedIn(self):
@@ -82,14 +82,14 @@ class BackendSearchPipelineTest(unittest.TestCase):
     self.SetUpPromises('owner:111')
     self.mox.ReplayAll()
     backendsearchpipeline.BackendSearchPipeline(
-      self.mr, self.services, 100, ['proj'], 111L, 111L)
+      self.mr, self.services, 100, ['proj'], 111L, [111L])
     self.mox.VerifyAll()
 
   def testSearchForIIDs(self):
     self.SetUpPromises('Priority:High')
     self.mox.ReplayAll()
     be_pipeline = backendsearchpipeline.BackendSearchPipeline(
-      self.mr, self.services, 100, ['proj'], 111L, 111L)
+      self.mr, self.services, 100, ['proj'], 111L, [111L])
     be_pipeline.result_iids_promise = testing_helpers.Blank(
       WaitAndGetValue=lambda: ([10002, 10052], False, None))
     be_pipeline.SearchForIIDs()

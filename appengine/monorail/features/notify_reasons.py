@@ -224,7 +224,8 @@ def EvaluateSubscriptions(
       if issue.project_id not in sq.executes_in_project_ids:
         continue
       cond = savedqueries_helpers.SavedQueryToCond(sq)
-      cond, _warnings = searchpipeline.ReplaceKeywordsWithUserID(uid, cond)
+      # TODO(jrobbins): Support linked accounts me_user_ids.
+      cond, _warnings = searchpipeline.ReplaceKeywordsWithUserIDs([uid], cond)
       cond_ast = query2ast.ParseUserQuery(
         cond, '', query2ast.BUILTIN_ISSUE_FIELDS, config)
 

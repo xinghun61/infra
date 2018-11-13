@@ -53,7 +53,7 @@ class BackendSearchPipeline(object):
 
   def __init__(
       self, mr, services, default_results_per_page,
-      query_project_names, logged_in_user_id, me_user_id):
+      query_project_names, logged_in_user_id, me_user_ids):
 
     self.mr = mr
     self.services = services
@@ -64,7 +64,7 @@ class BackendSearchPipeline(object):
     self.query_project_ids = [
         p.project_id for p in self.query_project_list]
 
-    self.me_user_id = me_user_id
+    self.me_user_ids = me_user_ids
     self.mr.auth = authdata.AuthData.FromUserID(
         mr.cnxn, logged_in_user_id, services)
 
@@ -85,11 +85,11 @@ class BackendSearchPipeline(object):
     self.canned_query = savedqueries_helpers.SavedQueryIDToCond(
         self.mr.cnxn, self.services.features, self.mr.can)
 
-    self.canned_query, warnings = searchpipeline.ReplaceKeywordsWithUserID(
-        self.me_user_id, self.canned_query)
+    self.canned_query, warnings = searchpipeline.ReplaceKeywordsWithUserIDs(
+        self.me_user_ids, self.canned_query)
     self.mr.warnings.extend(warnings)
-    self.user_query, warnings = searchpipeline.ReplaceKeywordsWithUserID(
-        self.me_user_id, self.mr.query)
+    self.user_query, warnings = searchpipeline.ReplaceKeywordsWithUserIDs(
+        self.me_user_ids, self.mr.query)
     self.mr.warnings.extend(warnings)
     logging.debug('Searching query: %s %s', self.canned_query, self.user_query)
 

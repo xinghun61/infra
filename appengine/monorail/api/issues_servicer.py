@@ -343,8 +343,9 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     if request.canned_query:
       canned_query = savedqueries_helpers.SavedQueryIDToCond(
           mc.cnxn, self.services.features, request.canned_query)
-      canned_query, warnings = searchpipeline.ReplaceKeywordsWithUserID(
-          mc.auth.user_id, canned_query)
+      # TODO(jrobbins): support linked accounts me_user_ids.
+      canned_query, warnings = searchpipeline.ReplaceKeywordsWithUserIDs(
+          [mc.auth.user_id], canned_query)
     else:
       canned_query = None
 

@@ -50,7 +50,7 @@ def _AccumulateIssueProjectsAndConfigs(
   config_dict.update(new_configs_dict)
 
 
-def ReplaceKeywordsWithUserID(me_user_id, query):
+def ReplaceKeywordsWithUserIDs(me_user_ids, query):
   """Substitutes User ID in terms such as is:starred and me.
 
   This is done on the query string before it is parsed because the query string
@@ -58,10 +58,10 @@ def ReplaceKeywordsWithUserID(me_user_id, query):
   user for owner:me should not retrieve results stored for some other user.
 
   Args:
-    me_user_id: Null when no user is logged in, or user ID of the logged in
+    me_user_ids: [] when no user is logged in, or user ID of the logged in
         user when doing an interactive search, or the viewed user ID when
         viewing someone else's dashboard, or the subscribing user's ID when
-        evaluating subscriptions.
+        evaluating subscriptions.  Also contains linked account IDs.
     query: The query string.
 
   Returns:
@@ -70,11 +70,12 @@ def ReplaceKeywordsWithUserID(me_user_id, query):
     and warnings is a list of warning strings to display to the user.
   """
   warnings = []
-  if me_user_id:
-    star_term = 'starredby:%d' % me_user_id
+  if me_user_ids:
+    me_user_ids_str = ','.join(str(uid) for uid in me_user_ids)
+    star_term = 'starredby:%s' % me_user_ids_str
     query = IS_STARRED_RE.sub(star_term, query)
     if KEYWORD_ME_RE.search(query):
-      query = ME_RE.sub(str(me_user_id), query)
+      query = ME_RE.sub(me_user_ids_str, query)
   else:
     if IS_STARRED_RE.search(query):
       warnings.append('"is:starred" ignored because you are not signed in.')

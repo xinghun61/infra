@@ -366,7 +366,7 @@ class FilterRulesHelpersTest(unittest.TestCase):
     config = tracker_pb2.ProjectIssueConfig(
         exclusive_label_prefixes=excl_prefixes,
         component_defs=component_defs)
-    predicate_asts = filterrules_helpers.ParsePredicateASTs(rules, config, None)
+    predicate_asts = filterrules_helpers.ParsePredicateASTs(rules, config, [])
 
     # No components.
     issue = fake.MakeTestIssue(
@@ -477,7 +477,7 @@ class FilterRulesHelpersTest(unittest.TestCase):
     config = tracker_pb2.ProjectIssueConfig(
         exclusive_label_prefixes=excl_prefixes,
         project_id=self.project.project_id)
-    predicate_asts = filterrules_helpers.ParsePredicateASTs(rules, config, None)
+    predicate_asts = filterrules_helpers.ParsePredicateASTs(rules, config, [])
 
     # No rules fire.
     issue = fake.MakeTestIssue(
@@ -601,7 +601,7 @@ class FilterRulesHelpersTest(unittest.TestCase):
     config = tracker_pb2.ProjectIssueConfig(
         exclusive_label_prefixes=excl_prefixes,
         project_id=self.project.project_id)
-    predicate_asts = filterrules_helpers.ParsePredicateASTs(rules, config, None)
+    predicate_asts = filterrules_helpers.ParsePredicateASTs(rules, config, [])
     traces = {
         (tracker_pb2.FieldID.CC, 111L):
             'Added by rule: IF Watch THEN ADD CC',

@@ -70,14 +70,14 @@ class FrontendSearchPipeline(object):
   is pretty much in the order of the source code lines here.
   """
 
-  def __init__(self, cnxn, services, auth, me_user_id,
+  def __init__(self, cnxn, services, auth, me_user_ids,
                query, query_project_names, items_per_page, paginate_start,
                url_params, can, group_by_spec, sort_spec, warnings,
                errors, use_cached_searches, profiler, display_mode='list',
                project=None):
     self.cnxn = cnxn
     self.url_params = url_params
-    self.me_user_id = me_user_id
+    self.me_user_ids = me_user_ids
     self.auth = auth
     self.logged_in_user_id = auth.user_id or 0
     self.can = can
@@ -155,7 +155,7 @@ class FrontendSearchPipeline(object):
           self.cnxn, self.query_project_names, self.query_project_ids,
           self.harmonized_config, self.unfiltered_iids,
           self.search_limit_reached, self.nonviewable_iids,
-          self.error_responses, self.services, self.me_user_id,
+          self.error_responses, self.services, self.me_user_ids,
           self.logged_in_user_id, self.items_per_page + self.paginate_start,
           self.url_params, self.subqueries, self.can, self.group_by_spec,
           self.sort_spec, self.warnings, self.use_cached_searches)
@@ -537,7 +537,7 @@ def _MakeBackendCallback(func, *args):
 def _StartBackendSearch(
     cnxn, query_project_names, query_project_ids, harmonized_config,
     unfiltered_iids_dict, search_limit_reached_dict,
-    nonviewable_iids, error_responses, services, me_user_id,
+    nonviewable_iids, error_responses, services, me_user_ids,
     logged_in_user_id, new_url_num, url_params, subqueries, can, group_by_spec,
     sort_spec, warnings, use_cached_searches):
   """Request that our backends search and return a list of matching issue IDs.
@@ -557,10 +557,10 @@ def _StartBackendSearch(
         projects being searched that the signed in user cannot view.
     error_responses: shard_iids of shards that encountered errors.
     services: connections to backends.
-    me_user_id: None when no user is logged in, or user ID of the logged in
-        user when doing an interactive search, or the viewed user ID when
+    me_user_ids: Empty list when no user is logged in, or user ID of the logged
+        in user when doing an interactive search, or the viewed user ID when
         viewing someone else's dashboard, or the subscribing user's ID when
-        evaluating subscriptions.
+        evaluating subscriptions.  And, any linked accounts.
     logged_in_user_id: user_id of the logged in user, 0 otherwise
     new_url_num: the new value of the 'num' parameter
     url_params: list of (param_name, param_value) we want to keep
@@ -587,8 +587,8 @@ def _StartBackendSearch(
   rpc_tuples = []
   needed_shard_keys = set()
   for subquery in subqueries:
-    subquery, warnings = searchpipeline.ReplaceKeywordsWithUserID(
-        me_user_id, subquery)
+    subquery, warnings = searchpipeline.ReplaceKeywordsWithUserIDs(
+        me_user_ids, subquery)
     warnings.extend(warnings)
     for shard_id in range(settings.num_logical_shards):
       needed_shard_keys.add((shard_id, subquery))
@@ -602,7 +602,7 @@ def _StartBackendSearch(
     cached_unfiltered_iids_dict, cached_search_limit_reached_dict = (
         _GetCachedSearchResults(
             cnxn, query_project_ids, needed_shard_keys,
-            harmonized_config, project_shard_timestamps, services, me_user_id,
+            harmonized_config, project_shard_timestamps, services, me_user_ids,
             can, group_by_spec, sort_spec, warnings))
     unfiltered_iids_dict.update(cached_unfiltered_iids_dict)
     search_limit_reached_dict.update(cached_search_limit_reached_dict)
@@ -624,14 +624,15 @@ def _StartBackendSearch(
     rpc = _StartBackendSearchCall(
         query_project_names, shard_key,
         services.cache_manager.processed_invalidations_up_to,
-        me_user_id, logged_in_user_id, new_url_num, url_params)
+        me_user_ids, logged_in_user_id, new_url_num, url_params)
     rpc_tuple = (time.time(), shard_key, rpc)
     rpc.callback = _MakeBackendCallback(
         _HandleBackendSearchResponse, query_project_names, rpc_tuple,
         rpc_tuples, settings.backend_retries, unfiltered_iids_dict,
         search_limit_reached_dict,
         services.cache_manager.processed_invalidations_up_to,
-        error_responses, me_user_id, logged_in_user_id, new_url_num, url_params)
+        error_responses, me_user_ids, logged_in_user_id, new_url_num,
+        url_params)
     rpc_tuples.append(rpc_tuple)
 
   return rpc_tuples
@@ -765,7 +766,7 @@ def _AccumulateNonviewableIIDs(
 
 def _GetCachedSearchResults(
     cnxn, query_project_ids, needed_shard_keys, harmonized_config,
-    project_shard_timestamps, services, me_user_id, can, group_by_spec,
+    project_shard_timestamps, services, me_user_ids, can, group_by_spec,
     sort_spec, warnings):
   """Return a dict of cached search results that are not already stale.
 
@@ -790,10 +791,10 @@ def _GetCachedSearchResults(
     project_shard_timestamps: a dict {(project_id, shard_id): timestamp, ...}
         that tells when each shard was last invalidated.
     services: connections to backends.
-    me_user_id: None when no user is logged in, or user ID of the logged in
-        user when doing an interactive search, or the viewed user ID when
+    me_user_ids: Empty list when no user is logged in, or user ID of the logged
+        in user when doing an interactive search, or the viewed user ID when
         viewing someone else's dashboard, or the subscribing user's ID when
-        evaluating subscriptions.
+        evaluating subscriptions.  And, any linked accounts.
     can: "canned query" number to scope the user's search.
     group_by_spec: string that lists the grouping order.
     sort_spec: string that lists the sort order.
@@ -813,8 +814,8 @@ def _GetCachedSearchResults(
   projects_str = projects_str or 'all'
   canned_query = savedqueries_helpers.SavedQueryIDToCond(
       cnxn, services.features, can)
-  canned_query, warnings = searchpipeline.ReplaceKeywordsWithUserID(
-      me_user_id, canned_query)
+  canned_query, warnings = searchpipeline.ReplaceKeywordsWithUserIDs(
+      me_user_ids, canned_query)
   warnings.extend(warnings)
 
   sd = sorting.ComputeSortDirectives(
@@ -890,7 +891,7 @@ def _MakeBackendRequestHeaders(failfast):
 
 def _StartBackendSearchCall(
     query_project_names, shard_key, invalidation_timestep,
-    me_user_id, logged_in_user_id, new_url_num, url_params,
+    me_user_ids, logged_in_user_id, new_url_num, url_params,
     deadline=None, failfast=True):
   """Ask a backend to query one shard of the database."""
   shard_id, subquery = shard_key
@@ -900,8 +901,8 @@ def _StartBackendSearchCall(
       projects=','.join(query_project_names),
       q=subquery, start=0, num=new_url_num,
       logged_in_user_id=logged_in_user_id,
-      me_user_id=me_user_id, shard_id=shard_id,
-      invalidation_timestep=invalidation_timestep))
+      me_user_ids=','.join(str(uid) for uid in me_user_ids),
+      shard_id=shard_id, invalidation_timestep=invalidation_timestep))
   logging.info('\n\nCalling backend: %s', url)
   rpc = urlfetch.create_rpc(
       deadline=deadline or settings.backend_deadline)
@@ -933,7 +934,7 @@ def _StartBackendNonviewableCall(
 def _HandleBackendSearchResponse(
     query_project_names, rpc_tuple, rpc_tuples, remaining_retries,
     unfiltered_iids, search_limit_reached, invalidation_timestep,
-    error_responses, me_user_id, logged_in_user_id, new_url_num, url_params):
+    error_responses, me_user_ids, logged_in_user_id, new_url_num, url_params):
   """Process one backend response and retry if there was an error."""
   start_time, shard_key, rpc = rpc_tuple
   duration_sec = time.time() - start_time
@@ -974,14 +975,14 @@ def _HandleBackendSearchResponse(
     logging.error('backend call for shard %r failed, retrying', shard_key)
     retry_rpc = _StartBackendSearchCall(
         query_project_names, shard_key, invalidation_timestep,
-        me_user_id, logged_in_user_id, new_url_num, url_params,
+        me_user_ids, logged_in_user_id, new_url_num, url_params,
         failfast=remaining_retries > 2)
     retry_rpc_tuple = (time.time(), shard_key, retry_rpc)
     retry_rpc.callback = _MakeBackendCallback(
         _HandleBackendSearchResponse, query_project_names,
         retry_rpc_tuple, rpc_tuples, remaining_retries - 1, unfiltered_iids,
         search_limit_reached, invalidation_timestep, error_responses,
-        me_user_id, logged_in_user_id, new_url_num, url_params)
+        me_user_ids, logged_in_user_id, new_url_num, url_params)
     rpc_tuples.append(retry_rpc_tuple)
 
 

@@ -48,7 +48,7 @@ class BackendSearch(jsonfeed.InternalTask):
     pipeline = backendsearchpipeline.BackendSearchPipeline(
         mr, self.services, self._DEFAULT_RESULTS_PER_PAGE,
         mr.query_project_names, mr.specified_logged_in_user_id,
-        mr.specified_me_user_id)
+        mr.specified_me_user_ids)
     pipeline.SearchForIIDs()
 
     start = time.time()

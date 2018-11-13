@@ -1365,7 +1365,7 @@ class IssueService(object):
       logging.info('Rules were not given')
       rules = services.features.GetFilterRules(cnxn, config.project_id)
       predicate_asts = filterrules_helpers.ParsePredicateASTs(
-          rules, config, None)
+          rules, config, [])
 
     filterrules_helpers.ApplyGivenRules(
         cnxn, services, issue, config, rules, predicate_asts)

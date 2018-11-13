@@ -716,6 +716,19 @@ class WorkEnv(object):
 
     return new_issue, comment
 
+  def _MergeLinkedAccounts(self, me_user_id):
+    """Return a list of the given user ID and any linked accounts."""
+    if not me_user_id:
+      return []
+
+    result = [me_user_id]
+    me_user = self.services.user.GetUser(self.mc.cnxn, me_user_id)
+    if me_user:
+      if me_user.linked_parent_id:
+        result.append(me_user.linked_parent_id)
+      result.extend(me_user.linked_child_ids)
+    return result
+
   def ListIssues(self, query_string, query_project_names, me_user_id,
                  items_per_page, paginate_start, url_params, can,
                  group_by_spec, sort_spec, use_cached_searches,
@@ -725,8 +738,9 @@ class WorkEnv(object):
     # Individual results are filtered by permissions in SearchForIIDs().
 
     with self.mc.profiler.Phase('searching issues'):
+      me_user_ids = self._MergeLinkedAccounts(me_user_id)
       pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-          self.mc.cnxn, self.services, self.mc.auth, me_user_id,
+          self.mc.cnxn, self.services, self.mc.auth, me_user_ids,
           query_string, query_project_names, items_per_page, paginate_start,
           url_params, can, group_by_spec, sort_spec, self.mc.warnings,
           self.mc.errors, use_cached_searches, self.mc.profiler,
@@ -754,8 +768,9 @@ class WorkEnv(object):
     with self.mc.profiler.Phase('finding issue position in search'):
       url_params = [(name, self.mc.GetParam(name)) for name in
                     framework_helpers.RECOGNIZED_PARAMS]
+      me_user_ids = self._MergeLinkedAccounts(self.mc.me_user_id)
       pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-           self.mc.cnxn, self.services, self.mc.auth, self.mc.me_user_id,
+           self.mc.cnxn, self.services, self.mc.auth, me_user_ids,
            self.mc.query, self.mc.query_project_names, self.mc.num,
            self.mc.start, url_params, self.mc.can, self.mc.group_by_spec,
            self.mc.sort_spec, self.mc.warnings, self.mc.errors,

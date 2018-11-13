@@ -98,7 +98,7 @@ def RecomputeAllDerivedFieldsNow(
         cnxn, project.project_id, use_cache=False)
 
   rules = services.features.GetFilterRules(cnxn, project.project_id)
-  predicate_asts = ParsePredicateASTs(rules, config, None)
+  predicate_asts = ParsePredicateASTs(rules, config, [])
   modified_issues = []
   for issue in issues:
     any_change, _traces = ApplyGivenRules(
@@ -114,12 +114,12 @@ def RecomputeAllDerivedFieldsNow(
       cnxn, [issue.issue_id for issue in modified_issues])
 
 
-def ParsePredicateASTs(rules, config, me_user_id):
+def ParsePredicateASTs(rules, config, me_user_ids):
   """Parse the given rules in QueryAST PBs."""
   predicates = [rule.predicate for rule in rules]
-  if me_user_id:
+  if me_user_ids:
     predicates = [
-      searchpipeline.ReplaceKeywordsWithUserID(me_user_id, pred)[0]
+      searchpipeline.ReplaceKeywordsWithUserIDs(me_user_ids, pred)[0]
       for pred in predicates]
   predicate_asts = [
       query2ast.ParseUserQuery(pred, '', query2ast.BUILTIN_ISSUE_FIELDS, config)
@@ -145,7 +145,7 @@ def ApplyFilterRules(cnxn, services, issue, config):
   SIDE-EFFECT: update the derived_* fields of the Issue PB.
   """
   rules = services.features.GetFilterRules(cnxn, issue.project_id)
-  predicate_asts = ParsePredicateASTs(rules, config, None)
+  predicate_asts = ParsePredicateASTs(rules, config, [])
   return ApplyGivenRules(cnxn, services, issue, config, rules, predicate_asts)
 
 

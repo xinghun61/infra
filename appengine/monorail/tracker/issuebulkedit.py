@@ -314,7 +314,7 @@ class IssueBulkEdit(servlet.Servlet):
         rules = self.services.features.GetFilterRules(
             mr.cnxn, config.project_id)
         predicate_asts = filterrules_helpers.ParsePredicateASTs(
-            rules, config, None)
+            rules, config, [])
         for issue in editable_issues:
           old_owner_id = tracker_bizobj.GetOwnerId(issue)
           merge_into_iid = (
