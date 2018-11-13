@@ -147,7 +147,7 @@ class MastersTest(wf_testcase.WaterfallTestCase):
         'auto_create_revert_daily_threshold_test':
             10,
         'rotations_url': (
-            'https://build.chromium.org/deprecated/chromium/all_rotations.js'),
+            'https://rota-ng.appspot.com/legacy/all_rotations.js'),
         'max_flake_bug_updates_per_day':
             30,
     }, waterfall_config.GetActionSettings())

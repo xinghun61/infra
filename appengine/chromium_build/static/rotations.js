@@ -104,7 +104,7 @@
   }
 
   $(document).ready(function() {
-    $.get('https://build.chromium.org/deprecated/chromium/all_rotations.js',
+    $.get('https://rota-ng.appspot.com/legacy/all_rotations.js',
         function(json) {
             parseJson(json);
             initHighlights();
