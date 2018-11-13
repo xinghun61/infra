@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from recipe_engine.post_process import DoesNotRun, MustRun, DropExpectation
+
 
 DEPS = [
     'build/docker',
@@ -11,6 +13,7 @@ DEPS = [
     'recipe_engine/path',
     'recipe_engine/properties',
     'recipe_engine/raw_io',
+    'recipe_engine/runtime',
     'recipe_engine/service_account',
     'recipe_engine/step',
     'recipe_engine/time',
@@ -78,7 +81,7 @@ def RunSteps(api):
   api.step('Build image', ['/bin/bash', build_script])
 
   creds = api.service_account.from_credentials_json(
-      _CONTAINER_REGISTRY_CREDENTIAL_PATH)
+      _CONTAINER_REGISTRY_CREDENTIAL_PATH) if not api.runtime.is_luci else None
   api.docker.login(
       server='gcr.io', project='chromium-container-registry',
       service_account=creds)
@@ -115,7 +118,15 @@ def GenTests(api):
       api.properties(
         container_name='android_docker', dir_name='android_devices')
   )
-
+  yield (
+      api.test('full_build_luci') +
+      api.properties(container_name='swarm_docker') +
+      api.runtime(is_luci=True, is_experimental=False) +
+      api.post_process(DoesNotRun, 'get access token for '
+                       'service-account-container_registry_pusher.json') +
+      api.post_process(MustRun, 'get access token for default account') +
+      api.post_process(DropExpectation)
+  )
   yield (
       api.test('no_docker') +
       api.step_data('Find docker bin', retcode=1)
