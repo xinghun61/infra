@@ -411,5 +411,5 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
         ]]
     }
 
-    self.assertEqual(8948345336480880560,
+    self.assertEqual('8948345336480880560',
                      build_util._GetBuildIDForLUCIBuild(json.dumps(data_json)))

@@ -44,7 +44,7 @@ def _GetBuildIDForLUCIBuild(build_data):
   for property_item in properties:
     if property_item[0] == 'buildbucket':  #pragma: no branch.
       buildbucket = property_item[1]
-      return int(buildbucket.get('build', {}).get('id'))
+      return buildbucket.get('build', {}).get('id')
 
   return None
 

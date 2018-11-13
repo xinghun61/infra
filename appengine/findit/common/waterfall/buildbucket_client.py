@@ -306,14 +306,14 @@ def GetV2Build(build_id, fields=None):
   """Get a buildbucket build from the v2 API.
 
   Args:
-    build_id (int64): Buildbucket id of the build to get.
+    build_id (str): Buildbucket id of the build to get.
     fields (google.protobuf.FieldMask): Mask for the paths to get, as not all
         fields are populated by default (such as steps).
 
   Returns:
     A buildbucket_proto.build_pb2.Build proto.
   """
-  request = GetBuildRequest(id=build_id, fields=fields)
+  request = GetBuildRequest(id=int(build_id), fields=fields)
   status_code, content, response_headers = FinditHttpClient().Post(
       _BUILDBUCKET_V2_GET_BUILD_ENDPOINT,
       request.SerializeToString(),

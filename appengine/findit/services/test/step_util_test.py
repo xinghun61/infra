@@ -296,7 +296,7 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(build_util, 'DownloadBuildData')
   def testGetStepMetadataFromLUCIBuild(self, mock_build, _):
     build = WfBuild.Create('m', 'b', 123)
-    build.build_id = 8948240770002521488
+    build.build_id = '8948240770002521488'
     build.put()
     mock_build.return_value = (None, build)
     step_metadata = step_util.GetWaterfallBuildStepLog('m', 'b', 123, 's', None,
@@ -327,14 +327,14 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(buildbucket_client, 'GetV2Build', return_value=None)
   def testGetStepLogForLuciBuildError(self, _):
-    self.assertIsNone(step_util.GetStepLogForLuciBuild(87654321, 's', None))
+    self.assertIsNone(step_util.GetStepLogForLuciBuild('87654321', 's', None))
 
-  @mock.patch.object(step_util, '_ParseStepLogIfAppropriate',
-                     return_value='log')
+  @mock.patch.object(
+      step_util, '_ParseStepLogIfAppropriate', return_value='log')
   @mock.patch.object(logdog_util, 'GetLogFromViewUrl', return_value='log')
   @mock.patch.object(buildbucket_client, 'GetV2Build')
   def testGetStepLogForLuciBuild(self, mock_get_build, mock_get_log, _):
-    build_id = 8945610992972640896
+    build_id = '8945610992972640896'
     mock_log = Step.Log()
     mock_log.name = 'step_metadata'
     mock_log.view_url = 'view_url'
@@ -342,7 +342,7 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
     mock_step.name = 's'
     mock_step.logs.extend([mock_log])
     mock_build = Build()
-    mock_build.id = build_id
+    mock_build.id = int(build_id)
     mock_build.steps.extend([mock_step])
     mock_get_build.return_value = mock_build
     self.assertEqual(

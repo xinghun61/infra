@@ -368,7 +368,7 @@ def GetStepLogForLuciBuild(build_id,
   """Returns specific log of the specified step in a LUCI build.
 
   Args:
-    build_id(int): Buildbucket id.
+    build_id(str): Buildbucket id.
     full_step_name(str): Full name of the step.
     http_client(FinditHttpClient): Http_client to make the request.
     log_type(str): Type of the log.
