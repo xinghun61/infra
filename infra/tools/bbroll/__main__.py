@@ -223,7 +223,8 @@ class PinConfig(_PinConfig):
   def get_version(self, template):
     """Retrieves raw version of the pin in the task template."""
     package_name = self.cipd_package
-    for pkg in template['properties']['cipd_input']['packages']:
+    props = template['task_slices'][0]['properties']
+    for pkg in props['cipd_input']['packages']:
       if pkg['package_name'] == package_name:
         return self.raw_version(pkg['version'])
     return None
