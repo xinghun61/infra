@@ -10,23 +10,49 @@
 
 <script type="module">
 import MrChart from '../../static/js/elements/mr-chart.js';
+import '../../bower_components/chopsui/prpc-client.js';
 
 suite('basic tests', function() {
   let element;
 
   setup(function() {
-    element = fixture('basic');
+    sinon.stub(window, 'fetch', () => {
+      return new Promise((resolve, reject) => {
+        // TODO: Export prefix from prpc-client and use that.
+        const xssiPrefix = ')]}\'';
+        const dataStr = JSON.stringify({
+          snapshotCount: [{count: 0}],
+          unsupportedField: [],
+        });
+        const responseBody = new Blob([xssiPrefix + dataStr]);
 
-    sinon.stub(window, 'fetch');
-    const response = new window.Response('Ok.', {
-      status: 201,
-      headers: {'Content-type': 'application/json'},
+        resolve(new Response(responseBody, {
+          status: 201,
+          headers: {
+            'Content-type': 'application/json',
+            'X-Prpc-Grpc-Code': 0,
+          },
+        }));
+      });
     });
-    window.fetch.returns(Promise.resolve(response));
+    // Stub RAF to execute immediately.
+    sinon.stub(window, 'requestAnimationFrame', (func) => func());
+
+    window.prpcClient = new window.chops.rpc.PrpcClient();
+    element = fixture('basic');
   });
 
   teardown(function() {
     window.fetch.restore();
+    window.requestAnimationFrame.restore();
+  });
+
+  test('sets this.projectname', () => {
+    assert.equal(element.projectName, 'rutabaga');
+  });
+
+  test('sends data request after instantiation', () => {
+    assert.equal(window.fetch.getCalls().length, 14);
   });
 
   test('sortInBisectOrder orders first, last, median recursively', function() {
@@ -36,6 +62,16 @@ suite('basic tests', function() {
     assert.deepEqual(MrChart.sortInBisectOrder([7, 8, 9]), [7, 9, 8]);
     assert.deepEqual(
       MrChart.sortInBisectOrder([1, 2, 3, 4, 5]), [1, 5, 3, 2, 4]);
+  });
+
+  test('progress bar shown initially, updated after data', async () => {
+    assert.equal(element.progressBar.style.visibility, 'visible');
+    assert.equal(element.progressBar.value, 0.05);
+
+    await element._fetchData([12345678]);
+
+    assert.equal(element.progressBar.style.visibility, 'hidden');
+    assert.equal(element.progressBar.value, 1);
   });
 });
 </script>

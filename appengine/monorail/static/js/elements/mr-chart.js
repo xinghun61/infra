@@ -21,15 +21,8 @@ export default class MrChart extends HTMLElement {
       throw new Error('Attribute `project-name` required.');
     }
 
-    this.timestamps = this._makeTimestamps(DEFAULT_NUM_DAYS);
-    const indices = this._makeIndices(this.timestamps);
-
-    // This object helps us order the data after we receive it async.
-    this.timestampsToIndices = {};
-    this.timestamps.forEach((ts, index) => {
-      this.timestampsToIndices[ts] = index;
-    });
-
+    const timestamps = this._makeTimestamps(DEFAULT_NUM_DAYS);
+    const indices = this._makeIndices(timestamps);
     this.values = [];
 
     // Attach DOM and initialize chart onto canvas.
@@ -37,8 +30,9 @@ export default class MrChart extends HTMLElement {
     shadowRoot.appendChild(this._makeTemplate().content.cloneNode(true));
     const ctx = shadowRoot.getElementById('canvas').getContext('2d');
     this.chart = new window.Chart(ctx, this._chartConfig(indices, this.values));
+    this.progressBar = shadowRoot.querySelector('progress');
 
-    this._fetchData(this.timestamps);
+    this._fetchData(timestamps);
   }
 
   // Populate array of timestamps we want to fetch.
@@ -91,14 +85,25 @@ export default class MrChart extends HTMLElement {
     window.requestAnimationFrame(() => {
       this.chart.data.datasets[0].data = this.values;
       this.chart.update();
+
+      if (this.progressBar.value === 1) {
+        this.progressBar.style.visibility = 'hidden';
+      }
+
       this._animationFrameRequested = false;
     });
   }
 
   async _fetchData(timestamps) {
+    let numTimestampsLoaded = 0;
     const fetchPromises = timestamps.map(async (ts, index) => {
       const data = await this._fetchDataAtTimestamp(ts);
       this.values[index] = data.issues;
+      numTimestampsLoaded += 1;
+      const progressValue = numTimestampsLoaded / timestamps.length;
+      this.progressBar.setAttribute('value', progressValue);
+      this.progressBar.style.setProperty('--value', progressValue + '%');
+
       this._updateChartValues();
       return data;
     });
@@ -194,8 +199,30 @@ export default class MrChart extends HTMLElement {
     const canvas = document.createElement('canvas');
     canvas.id = 'canvas';
 
-    // TODO(jeffcarp, 4384): Add progress bar.
+    const progress = document.createElement('progress');
+    progress.value = 0.05;
+    progress.style.width = '100%';
+    progress.style.visibility = 'visible';
+
+    const styleSheet = document.createElement('style');
+    const css = `
+      progress {
+        background-color: white;
+        border: 1px solid #666;
+      }
+      ::-webkit-progress-bar {
+        background-color: white;
+      }
+      progress::-webkit-progress-value {
+        transition: width 1s;
+        background-color: rgb(54, 162, 235);
+      }
+    `;
+    styleSheet.appendChild(document.createTextNode(css));
+
+    div.appendChild(styleSheet);
     div.appendChild(canvas);
+    div.appendChild(progress);
     templateEl.content.appendChild(div);
 
     return templateEl;
