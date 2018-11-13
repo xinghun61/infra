@@ -302,18 +302,17 @@ class UpdateBuildTests(BaseTestCase):
 
   @contextlib.contextmanager
   def mock_build(self, build_id):
-    with mock.patch('service.get_async', autospec=True) as mock_get_async:
-      build = model.Build(
-          id=build_id,
-          status=model.BuildStatus.STARTED,
-          bucket_id='chromium/try',
-          created_by=auth.Identity('user', 'foo@google.com'),
-          create_time=utils.utcnow(),
-          start_time=utils.utcnow(),
-          parameters_actual=dict(),
-      )
-      mock_get_async.return_value = future(build)
-      yield build
+    build = model.Build(
+        id=build_id,
+        status=model.BuildStatus.STARTED,
+        bucket_id='chromium/try',
+        created_by=auth.Identity('user', 'foo@google.com'),
+        create_time=utils.utcnow(),
+        start_time=utils.utcnow(),
+        parameters_actual=dict(),
+    )
+    build.put()
+    yield build
 
   def test_update_steps(self):
     with self.mock_build(build_id=123) as build:

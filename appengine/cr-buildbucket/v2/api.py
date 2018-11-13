@@ -264,8 +264,8 @@ def update_build_async(req, ctx, _mask):
   def txn_async():
     build_proto = req.build
 
-    # Get existing build.
-    build = yield service.get_async(build_proto.id)
+    # Get an existing build.
+    build = yield model.Build.get_by_id_async(build_proto.id)
     if not build:
       raise not_found(
           'Cannot update nonexisting build with id %s', build_proto.id
