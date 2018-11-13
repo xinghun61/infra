@@ -61,9 +61,12 @@ def RunSteps(api):
   # a full clobber, but this recipe shouldn't be run too frequently and doesn't
   # require fast cycle times.
   # TODO(bpastene): Be smarter about this.
+  container_name = api.properties['container_name']
   with api.step.nest('Clear all local images'):
     get_images_step = api.step(
-        'Get images', [docker_bin, 'images', '-q'], stdout=api.raw_io.output(),
+        'Get images',
+        [docker_bin, 'images', '-q', '-f', 'reference=%s:*' % container_name],
+        stdout=api.raw_io.output(),
         step_test_data=lambda: api.raw_io.test_api.stream_output('img1'))
     for image_id in get_images_step.stdout.splitlines():
       try:
@@ -75,7 +78,6 @@ def RunSteps(api):
 
   # Run the build script. It assign a name to the resulting image and tags it
   # with 'latest'.
-  container_name = api.properties['container_name']
   dir_name = api.properties.get('dir_name', container_name)
   build_script = api.path['checkout'].join('docker', dir_name, 'build.sh')
   api.step('Build image', ['/bin/bash', build_script])
@@ -133,11 +135,11 @@ def GenTests(api):
   )
   yield (
       api.test('unknown_version') +
-      api.properties(container_name='swarm') +
+      api.properties(container_name='swarm_docker') +
       api.step_data('Get docker version', stdout=api.raw_io.output(''))
   )
   yield (
       api.test('failed_image_deletion') +
-      api.properties(container_name='swarm') +
+      api.properties(container_name='swarm_docker') +
       api.step_data('Clear all local images.Delete image img1', retcode=1)
   )

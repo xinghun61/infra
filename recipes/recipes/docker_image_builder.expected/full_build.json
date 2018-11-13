@@ -104,7 +104,9 @@
     "cmd": [
       "/usr/bin/docker",
       "images",
-      "-q"
+      "-q",
+      "-f",
+      "reference=android_docker:*"
     ],
     "name": "Clear all local images.Get images",
     "stdout": "/path/to/tmp/",

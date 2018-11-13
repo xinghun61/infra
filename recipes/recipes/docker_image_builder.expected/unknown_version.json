@@ -104,7 +104,9 @@
     "cmd": [
       "/usr/bin/docker",
       "images",
-      "-q"
+      "-q",
+      "-f",
+      "reference=swarm_docker:*"
     ],
     "name": "Clear all local images.Get images",
     "stdout": "/path/to/tmp/",
@@ -127,7 +129,7 @@
   {
     "cmd": [
       "/bin/bash",
-      "[START_DIR]/infra/docker/swarm/build.sh"
+      "[START_DIR]/infra/docker/swarm_docker/build.sh"
     ],
     "name": "Build image"
   },
@@ -164,8 +166,8 @@
     "cmd": [
       "/usr/bin/docker",
       "tag",
-      "swarm:latest",
-      "gcr.io/chromium-container-registry/swarm:2012-05-14-12-53"
+      "swarm_docker:latest",
+      "gcr.io/chromium-container-registry/swarm_docker:2012-05-14-12-53"
     ],
     "name": "Tag image"
   },
@@ -173,12 +175,12 @@
     "cmd": [
       "/usr/bin/docker",
       "push",
-      "gcr.io/chromium-container-registry/swarm:2012-05-14-12-53"
+      "gcr.io/chromium-container-registry/swarm_docker:2012-05-14-12-53"
     ],
     "name": "Push image",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
-      "@@@STEP_TEXT@image = swarm:1-2-3: digest: sha256:deadbeef size:123@@@"
+      "@@@STEP_TEXT@image = swarm_docker:1-2-3: digest: sha256:deadbeef size:123@@@"
     ]
   },
   {
