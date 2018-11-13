@@ -6,7 +6,7 @@
 """Tests for the API v1."""
 
 import endpoints
-from mock import Mock, patch
+from mock import Mock, patch, ANY
 import os
 import unittest
 import webtest
@@ -16,6 +16,7 @@ from google.appengine.ext import testbed
 from protorpc import messages
 from protorpc import message_types
 
+from features import send_notifications
 from framework import authdata
 from framework import exceptions
 from framework import permissions
@@ -452,7 +453,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
         project_id=12345)
 
     issue1 = fake.MakeTestIssue(
-        12345, 1, 'Issue 1', 'New', 2)
+        12345, 1, 'Issue 1', 'New', 2, issue_id=1234501)
     self.services.issue.TestAddIssue(issue1)
 
     self.SetUpFieldDefs(
@@ -790,6 +791,272 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
     self.call_api('issues_comments_undelete', self.request)
     self.assertIsNone(comments[1].deleted_by)
+
+
+  def approvalRequest(self, approval, request_fields=None, comment=None):
+    request = {'userId': 'user@example.com',
+               'requester': 'requester@example.com',
+               'projectId': 'test-project',
+               'issueId': 1,
+               'approvalName': 'Legal-Review',
+               'sendEmail': False,
+    }
+    if request_fields:
+      request.update(request_fields)
+
+    self.SetUpFieldDefs(
+        1, 12345, 'Legal-Review', tracker_pb2.FieldTypes.APPROVAL_TYPE)
+
+    issue1 = fake.MakeTestIssue(
+        12345, 1, 'Issue 1', 'New', 2, approval_values=[approval])
+    self.services.issue.TestAddIssue(issue1)
+
+    self.services.issue.GetIssueApproval = Mock(
+        return_value=(issue1, approval))
+    self.services.issue.DeltaUpdateIssueApproval = Mock(return_value=comment)
+
+    self.mock(api_svc_v1.MonorailApi, 'mar_factory',
+              lambda x, y, z: FakeMonorailApiRequest(
+                  request, self.services))
+    return request, issue1
+
+  def testApprovalsCommentsInsert_NoCommentPermission(self):
+    """No permission to comment on an issue, including approvals."""
+
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[2],
+        access=project_pb2.ProjectAccess.MEMBERS_ONLY,
+        project_id=12345)
+
+    approval = tracker_pb2.ApprovalValue(approval_id=1)
+    request, _issue = self.approvalRequest(approval)
+
+    with self.call_should_fail(403):
+      self.call_api('approvals_comments_insert', request)
+
+  def testApprovalsCommentsInsert_NoApprovalFound(self):
+    """No approval with approvalName found."""
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[2],
+        project_id=12345)
+
+    approval = tracker_pb2.ApprovalValue(approval_id=1)
+    request, _issue = self.approvalRequest(approval)
+    self.config.field_defs = []
+
+    with self.call_should_fail(400):
+      self.call_api('approvals_comments_insert', request)
+
+    # Test wrong field_type is also caught.
+    self.SetUpFieldDefs(
+        1, 12345, 'Legal-Review', tracker_pb2.FieldTypes.STR_TYPE)
+    with self.call_should_fail(400):
+      self.call_api('approvals_comments_insert', request)
+
+  @patch('time.time')
+  def testApprovalsCommentsInsert_StatusChanges_Normal(self, mock_time):
+    test_time = 6789
+    mock_time.return_value = test_time
+    comment = tracker_pb2.IssueComment(
+        id=123, issue_id=10001,
+        project_id=12345, user_id=1,  # requester
+        content='this is a comment',
+        timestamp=1437700000,
+        amendments=[tracker_bizobj.MakeApprovalStatusAmendment(
+            tracker_pb2.ApprovalStatus.REVIEW_REQUESTED)])
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[2], project_id=12345)
+    approval = tracker_pb2.ApprovalValue(
+        approval_id=1, approver_ids=[444L],
+        status=tracker_pb2.ApprovalStatus.NOT_SET)
+
+    request, issue = self.approvalRequest(
+        approval,
+        request_fields={'approvalUpdates': {'status': 'review_requested'}},
+        comment=comment)
+    response = self.call_api('approvals_comments_insert', request).json_body
+    approval_delta = tracker_bizobj.MakeApprovalDelta(
+        tracker_pb2.ApprovalStatus.REVIEW_REQUESTED, 1, [], [], [], [], [],
+        set_on=test_time)
+    self.services.issue.DeltaUpdateIssueApproval.assert_called_with(
+        None, 1, self.config, issue, approval, approval_delta,
+        comment_content=None, is_description=None)
+
+    self.assertEqual(response['author']['name'], 'requester@example.com')
+    self.assertEqual(response['content'], comment.content)
+    self.assertTrue(response['canDelete'])
+    self.assertEqual(response['approvalUpdates'],
+                     {'kind': 'monorail#approvalCommentUpdate',
+                      'status': 'review_requested'})
+
+  def testApprovalsCommentsInsert_StatusChanges_NoPerms(self):
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[2],
+        project_id=12345)
+    approval = tracker_pb2.ApprovalValue(
+        approval_id=1, approver_ids=[444L],
+        status=tracker_pb2.ApprovalStatus.NOT_SET)
+    request, _issue = self.approvalRequest(
+        approval,
+        request_fields={'approvalUpdates': {'status': 'approved'}})
+    with self.call_should_fail(403):
+      self.call_api('approvals_comments_insert', request)
+
+  @patch('time.time')
+  def testApprovalsCommentsInsert_StatusChanges_ApproverPerms(self, mock_time):
+    test_time = 6789
+    mock_time.return_value = test_time
+    comment = tracker_pb2.IssueComment(
+        id=123, issue_id=1234501,
+        project_id=12345, user_id=1,
+        content='this is a comment',
+        timestamp=1437700000,
+        amendments=[tracker_bizobj.MakeApprovalStatusAmendment(
+            tracker_pb2.ApprovalStatus.APPROVED)])
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[2],
+        project_id=12345)
+    approval = tracker_pb2.ApprovalValue(
+        approval_id=1, approver_ids=[1],  # requester
+        status=tracker_pb2.ApprovalStatus.NOT_SET)
+    request, issue = self.approvalRequest(
+        approval,
+        request_fields={'approvalUpdates': {'status': 'approved'}},
+        comment=comment)
+    response = self.call_api('approvals_comments_insert', request).json_body
+
+    approval_delta = tracker_bizobj.MakeApprovalDelta(
+        tracker_pb2.ApprovalStatus.APPROVED, 1, [], [], [], [], [],
+        set_on=test_time)
+    self.services.issue.DeltaUpdateIssueApproval.assert_called_with(
+        None, 1, self.config, issue, approval, approval_delta,
+        comment_content=None, is_description=None)
+    self.assertEqual(response['author']['name'], 'requester@example.com')
+    self.assertEqual(response['content'], comment.content)
+    self.assertTrue(response['canDelete'])
+    self.assertEqual(response['approvalUpdates'],
+                     {'kind': 'monorail#approvalCommentUpdate',
+                      'status': 'approved'})
+
+  def testApprovalsCommentsInsert_ApproverChanges_NoPerms(self):
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[2],
+        project_id=12345)
+
+    approval = tracker_pb2.ApprovalValue(
+        approval_id=1, approver_ids=[444L],
+        status=tracker_pb2.ApprovalStatus.NOT_SET)
+    request, _issue = self.approvalRequest(
+        approval,
+        request_fields={'approvalUpdates': {'approvers': 'someone@test.com'}})
+    with self.call_should_fail(403):
+      self.call_api('approvals_comments_insert', request)
+
+  @patch('time.time')
+  def testApprovalsCommentsInsert_ApproverChanges_ApproverPerms(
+      self, mock_time):
+    test_time = 6789
+    mock_time.return_value = test_time
+    comment = tracker_pb2.IssueComment(
+        id=123, issue_id=1234501,
+        project_id=12345, user_id=1,
+        content='this is a comment',
+        timestamp=1437700000,
+        amendments=[tracker_bizobj.MakeApprovalApproversAmendment(
+            [2], [123])])
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[2],
+        project_id=12345)
+
+    approval = tracker_pb2.ApprovalValue(
+        approval_id=1, approver_ids=[1],  # requester
+        status=tracker_pb2.ApprovalStatus.NOT_SET)
+    request, issue = self.approvalRequest(
+        approval,
+        request_fields={
+            'approvalUpdates':
+            {'approvers': ['user@example.com', '-group@example.com']}},
+        comment=comment)
+    response = self.call_api('approvals_comments_insert', request).json_body
+
+    approval_delta = tracker_bizobj.MakeApprovalDelta(
+        None, 1, [2], [123], [], [], [], set_on=test_time)
+    self.services.issue.DeltaUpdateIssueApproval.assert_called_with(
+        None, 1, self.config, issue, approval, approval_delta,
+        comment_content=None, is_description=None)
+    self.assertEqual(response['author']['name'], 'requester@example.com')
+    self.assertEqual(response['content'], comment.content)
+    self.assertTrue(response['canDelete'])
+    self.assertEqual(response['approvalUpdates'],
+                     {'kind': 'monorail#approvalCommentUpdate',
+                      'approvers': ['user@example.com', '-group@example.com']})
+
+  @patch('time.time')
+  def testApprovalsCommentsInsert_IsSurvey(self, mock_time):
+    test_time = 6789
+    mock_time.return_value = test_time
+    comment = tracker_pb2.IssueComment(
+        id=123, issue_id=10001,
+        project_id=12345, user_id=1,
+        content='this is a comment',
+        timestamp=1437700000)
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[2],
+        project_id=12345)
+
+    approval = tracker_pb2.ApprovalValue(
+        approval_id=1, approver_ids=[1],  # requester
+        status=tracker_pb2.ApprovalStatus.NOT_SET)
+    request, issue = self.approvalRequest(
+        approval,
+        request_fields={'content': 'updated survey', 'is_description': True},
+        comment=comment)
+    response = self.call_api('approvals_comments_insert', request).json_body
+
+    approval_delta = tracker_bizobj.MakeApprovalDelta(
+        None, 1, [], [], [], [], [], set_on=test_time)
+    self.services.issue.DeltaUpdateIssueApproval.assert_called_with(
+        None, 1, self.config, issue, approval, approval_delta,
+        comment_content='updated survey', is_description=True)
+    self.assertEqual(response['author']['name'], 'requester@example.com')
+    self.assertTrue(response['canDelete'])
+
+  @patch('time.time')
+  @patch('features.send_notifications.PrepareAndSendApprovalChangeNotification')
+  def testApprovalsCommentsInsert_SendEmail(
+      self, mockPrepareAndSend, mock_time,):
+    test_time = 6789
+    mock_time.return_value = test_time
+    comment = tracker_pb2.IssueComment(
+        id=123, issue_id=10001,
+        project_id=12345, user_id=1,
+        content='this is a comment',
+        timestamp=1437700000)
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[2],
+        project_id=12345)
+
+    approval = tracker_pb2.ApprovalValue(
+        approval_id=1, approver_ids=[1],  # requester
+        status=tracker_pb2.ApprovalStatus.NOT_SET)
+    request, issue = self.approvalRequest(
+        approval,
+        request_fields={'content': comment.content, 'sendEmail': True},
+        comment=comment)
+
+    response = self.call_api('approvals_comments_insert', request).json_body
+
+    mockPrepareAndSend.assert_called_with(
+        issue.issue_id, approval.approval_id, ANY, comment.id, send_email=True)
+
+    approval_delta = tracker_bizobj.MakeApprovalDelta(
+        None, 1, [], [], [], [], [], set_on=test_time)
+    self.services.issue.DeltaUpdateIssueApproval.assert_called_with(
+        None, 1, self.config, issue, approval, approval_delta,
+        comment_content=comment.content, is_description=None)
+    self.assertEqual(response['author']['name'], 'requester@example.com')
+    self.assertTrue(response['canDelete'])
+
 
   def testGroupsSettingsList_AllSettings(self):
     resp = self.call_api('groups_settings_list', self.request).json_body

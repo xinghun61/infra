@@ -626,6 +626,92 @@ class MonorailApi(remote.Service):
     return self.aux_delete_comment(mar, request, False)
 
   @monorail_api_method(
+      api_pb2_v1.APPROVALS_COMMENTS_INSERT_REQUEST_RESOURCE_CONTAINER,
+      api_pb2_v1.ApprovalsCommentsInsertResponse,
+      path=("projects/{projectId}/issues/{issueId}/"
+            "approvals/{approvalName}/comments"),
+      http_method='POST',
+      name='issues.approvals.comments.insert')
+  def approvals_comments_insert(self, mar, request):
+    """Add an approval comment."""
+    approval_fd = tracker_bizobj.FindFieldDef(
+        request.approvalName, mar.config)
+    if not approval_fd or (
+        approval_fd.field_type != tracker_pb2.FieldTypes.APPROVAL_TYPE):
+      raise endpoints.BadRequestException(
+          'Field definition for %s not found in project config' %
+          request.approvalName)
+    issue, approval = self._services.issue.GetIssueApproval(
+        mar.cnxn, request.issueId, approval_fd.field_id, use_cache=False)
+
+    if not permissions.CanCommentIssue(
+        mar.auth.effective_ids, mar.perms, mar.project, issue,
+        mar.granted_perms):
+      raise permissions.PermissionException(
+          'User is not allowed to comment on this issue (%s, %d)' %
+          (request.projectId, request.issueId))
+
+    updates_dict = {}
+    if request.approvalUpdates:
+      # TODO(jojwang): When field value changes are allowed.
+      # make sure all belong to approval fieldvalues.
+      if request.approvalUpdates.approvers:
+        if not permissions.CanUpdateApprovers(
+            mar.auth.effective_ids, mar.perms, mar.project,
+            approval.approver_ids):
+          raise permissions.PermissionException(
+              'User is not allowed to update approvers')
+        approvers_add, approvers_remove = api_pb2_v1_helpers.split_remove_add(
+            request.approvalUpdates.approvers)
+        updates_dict['approver_ids_add'] = self._services.user.LookupUserIDs(
+            mar.cnxn, approvers_add, autocreate=True).values()
+        updates_dict['approver_ids_remove'] = self._services.user.LookupUserIDs(
+            mar.cnxn, approvers_remove, autocreate=True).values()
+      if request.approvalUpdates.status:
+        status = tracker_pb2.ApprovalStatus(
+            request.approvalUpdates.status.upper())
+        if not permissions.CanUpdateApprovalStatus(
+            mar.auth.effective_ids, mar.perms, mar.project,
+            approval.approver_ids,
+            approval.status, status):
+          raise permissions.PermissionException(
+              'User is not allowed to make this status change')
+        updates_dict['status'] = status
+    logging.info(time.time)
+    approval_delta = tracker_bizobj.MakeApprovalDelta(
+        updates_dict.get('status'), mar.auth.user_id,
+        updates_dict.get('approver_ids_add', []),
+        updates_dict.get('approver_ids_remove', []), [], [], [])
+    # TODO(jojwang): monorail:4229, add fieldValue changes
+    comment = self._services.issue.DeltaUpdateIssueApproval(
+        mar.cnxn, mar.auth.user_id, mar.config, issue, approval, approval_delta,
+        comment_content=request.content,
+        is_description=request.is_description)
+
+    cmnts = self._services.issue.GetCommentsForIssue(mar.cnxn, issue.issue_id)
+    seq = len(cmnts) - 1
+
+    if request.sendEmail:
+      send_notifications.PrepareAndSendApprovalChangeNotification(
+          issue.issue_id, approval.approval_id,
+          framework_helpers.GetHostPort(), comment.id, send_email=True)
+
+    can_delete = permissions.CanDelete(
+        mar.auth.user_id, mar.auth.effective_ids, mar.perms,
+        comment.deleted_by, comment.user_id, mar.project,
+        permissions.GetRestrictions(issue), granted_perms=mar.granted_perms)
+    return api_pb2_v1.ApprovalsCommentsInsertResponse(
+        id=seq,
+        kind='monorail#approvalComment',
+        author=api_pb2_v1_helpers.convert_person(
+            comment.user_id, mar.cnxn, self._services),
+        content=comment.content,
+        published=datetime.datetime.fromtimestamp(comment.timestamp),
+        approvalUpdates=api_pb2_v1_helpers.convert_approval_amendments(
+            comment.amendments, mar, self._services),
+        canDelete=can_delete)
+
+  @monorail_api_method(
       api_pb2_v1.USERS_GET_REQUEST_RESOURCE_CONTAINER,
       api_pb2_v1.UsersGetResponse,
       path='users/{userId}',

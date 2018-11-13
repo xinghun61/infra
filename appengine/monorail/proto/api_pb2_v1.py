@@ -343,6 +343,30 @@ class IssuesCommentsListResponse(messages.Message):
   totalResults = messages.IntegerField(3, variant=messages.Variant.INT32)
   kind = messages.StringField(4)
 
+########################## ApprovalComments Message ################
+
+"""Request to insert an issue approval's comments."""
+APPROVALS_COMMENTS_INSERT_REQUEST_RESOURCE_CONTAINER = ResourceContainer(
+    ApprovalCommentWrapper,
+    projectId=messages.StringField(1, required=True),
+    issueId=messages.IntegerField(
+        2, required=True, variant=messages.Variant.INT32),
+    approvalName=messages.StringField(3, required=True),
+    sendEmail=messages.BooleanField(4)
+)
+
+
+class ApprovalsCommentsInsertResponse(messages.Message):
+  """Response message of request to insert an isuse's comments."""
+  error = messages.MessageField(ErrorMessage, 1)
+  id = messages.IntegerField(2, variant=messages.Variant.INT32)
+  kind = messages.StringField(3)
+  author = messages.MessageField(AtomPerson, 4)
+  content = messages.StringField(5)
+  published = message_types.DateTimeField(6)
+  approvalUpdates = messages.MessageField(ApprovalUpdate, 7)
+  canDelete = messages.BooleanField(8)
+  approvalName = messages.StringField(9)
 
 ########################## Users Message ##########################
 
