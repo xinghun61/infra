@@ -98,6 +98,14 @@ func GetFromSwarmingTask(ctx context.Context, authOpts auth.Options, host, taskI
 		ServiceAccount: req.ServiceAccount,
 	}
 
+	// Clear all secret bytes. The swarming server sends them as
+	// "<REDACTED>".encode("base64"), which is, at best, useless. However tasks
+	// that then read them usually crash.
+	newTask.Properties.SecretBytes = ""
+	for _, ts := range newTask.TaskSlices {
+		ts.Properties.SecretBytes = ""
+	}
+
 	jd, err := JobDefinitionFromNewTaskRequest(newTask)
 	if err != nil {
 		return err
