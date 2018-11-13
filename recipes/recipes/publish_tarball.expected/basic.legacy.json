@@ -263,8 +263,7 @@
     "cmd": [
       "python",
       "-u",
-      "[TMP_BASE]/gn_tmp_1/gn/build/gen.py",
-      "--no-sysroot"
+      "[TMP_BASE]/gn_tmp_1/gn/build/gen.py"
     ],
     "name": "generate last_commit_position.h"
   },

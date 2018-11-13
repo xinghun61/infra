@@ -290,7 +290,7 @@ def RunSteps(api):
                ['git', 'clone', 'https://gn.googlesource.com/gn', git_root])
       tools_gn = api.path['checkout'].join('tools', 'gn')
       api.python('generate last_commit_position.h',
-                 git_root.join('build', 'gen.py'), ['--no-sysroot'])
+                 git_root.join('build', 'gen.py'))
       api.file.remove('rm README.md', tools_gn.join('README.md'))
       for f in api.file.listdir(
           'listdir gn', git_root, test_data=['build', '.git']):
