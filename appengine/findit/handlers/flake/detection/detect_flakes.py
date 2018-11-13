@@ -8,8 +8,9 @@ from common import constants
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 from model.flake.flake_type import FlakeType
+from services import flake_issue_util
+
 from services.flake_detection import detect_flake_occurrences
-from services.flake_detection import flake_report_util
 
 
 class DetectCQFalseRejectionFlakesCronJob(BaseHandler):
@@ -36,11 +37,11 @@ class DetectCQFalseRejectionFlakes(BaseHandler):
   def HandleGet(self):
     detect_flake_occurrences.QueryAndStoreFlakes(FlakeType.CQ_FALSE_REJECTION)
     detect_flake_occurrences.QueryAndStoreFlakes(FlakeType.RETRY_WITH_PATCH)
-    flake_tuples_to_report = flake_report_util.GetFlakesWithEnoughOccurrences()
-    flake_report_util.ReportFlakesToMonorail(flake_tuples_to_report)
+    flake_tuples_to_report = flake_issue_util.GetFlakesWithEnoughOccurrences()
+    flake_issue_util.ReportFlakesToMonorail(flake_tuples_to_report)
 
     # Reporting to Flake Analyzer needs to come after reporting to Monorail
     # because it makes Flake Analyzer's job easier if it can reuse the issues
     # filed by Flake Detection.
-    flake_report_util.ReportFlakesToFlakeAnalyzer(flake_tuples_to_report)
+    flake_issue_util.ReportFlakesToFlakeAnalyzer(flake_tuples_to_report)
     return {'return_code': 200}

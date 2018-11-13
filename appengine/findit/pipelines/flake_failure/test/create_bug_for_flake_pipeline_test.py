@@ -32,10 +32,10 @@ from pipelines.flake_failure.get_isolate_sha_pipeline import (
     GetIsolateShaForCommitPositionPipeline)
 from pipelines.flake_failure.get_isolate_sha_pipeline import (
     GetIsolateShaOutput)
-from services import issue_tracking_service
+from services import flake_issue_util
 from services import swarmed_test_util
 from services import swarming
-from services.flake_failure import flake_report_util
+from services.flake_failure import flake_bug_util
 from waterfall import build_util
 from waterfall.build_info import BuildInfo
 from waterfall.test.wf_testcase import WaterfallTestCase
@@ -48,7 +48,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
   @mock.patch.object(build_util, 'GetLatestBuildNumber')
   @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags')
   @mock.patch.object(
-      flake_report_util, 'ShouldFileBugForAnalysis', return_value=True)
+      flake_bug_util, 'ShouldFileBugForAnalysis', return_value=True)
   @mock.patch.object(build_util, 'GetBuildInfo')
   def testCreateBugForFlakePipeline(self, mocked_build_info, should_file_fn,
                                     list_swarming_fn, latest_build_number, *_):
@@ -148,7 +148,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
   @mock.patch.object(build_util, 'GetLatestBuildNumber')
   @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags')
   @mock.patch.object(
-      flake_report_util, 'ShouldFileBugForAnalysis', return_value=True)
+      flake_bug_util, 'ShouldFileBugForAnalysis', return_value=True)
   @mock.patch.object(build_util, 'GetBuildInfo')
   def testCreateBugForFlakePipelineNewBuildIsTriggeringBuild(
       self, mocked_build_info, should_file_fn, list_swarming_fn,
@@ -207,7 +207,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
   @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=200)
   @mock.patch.object(swarmed_test_util, 'IsTestEnabled', return_value=False)
   @mock.patch.object(
-      flake_report_util, 'ShouldFileBugForAnalysis', return_value=True)
+      flake_bug_util, 'ShouldFileBugForAnalysis', return_value=True)
   @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags')
   def testCreateBugForFlakePipelineWhenNoTasksReturned(self, list_swarming_fn,
                                                        *_):
@@ -246,7 +246,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
   @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags')
   @mock.patch.object(swarmed_test_util, 'IsTestEnabled', return_value=False)
   @mock.patch.object(
-      flake_report_util, 'ShouldFileBugForAnalysis', return_value=True)
+      flake_bug_util, 'ShouldFileBugForAnalysis', return_value=True)
   def testCreateBugForFlakePipelineIfTestDisabled(
       self, should_file_fn, test_enabled_fn, list_swarming_fn, _):
     master_name = 'm'
@@ -282,11 +282,9 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertTrue(test_enabled_fn.called)
 
   @mock.patch.object(
-      issue_tracking_service,
-      'SearchOpenIssueIdForFlakyTest',
-      return_value=None)
+      flake_issue_util, 'SearchOpenIssueIdForFlakyTest', return_value=None)
   @mock.patch.object(
-      flake_report_util, 'ShouldFileBugForAnalysis', return_value=False)
+      flake_bug_util, 'ShouldFileBugForAnalysis', return_value=False)
   def testShouldFileBugReturnsFalse(self, should_file_fn,
                                     mock_search_open_bug_id):
     master_name = 'm'
@@ -317,11 +315,9 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     mock_search_open_bug_id.assert_called_once_with('t')
 
   @mock.patch.object(
-      flake_report_util, 'ShouldFileBugForAnalysis', return_value=False)
+      flake_bug_util, 'ShouldFileBugForAnalysis', return_value=False)
   @mock.patch.object(
-      issue_tracking_service,
-      'SearchOpenIssueIdForFlakyTest',
-      return_value=1234)
+      flake_issue_util, 'SearchOpenIssueIdForFlakyTest', return_value=1234)
   def testShouldFileReturnsFalseWithExistingOpenBug(
       self, mock_search_open_bug_id, should_file_fn):
     master_name = 'm'
@@ -355,7 +351,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
   @mock.patch.object(swarmed_test_util, 'IsTestEnabled', return_value=True)
   @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=None)
   @mock.patch.object(
-      flake_report_util, 'ShouldFileBugForAnalysis', return_value=True)
+      flake_bug_util, 'ShouldFileBugForAnalysis', return_value=True)
   def testCreateBugForFlakePipelineWhenFailToGetLatestBuild(
       self, should_file_fn, latest_build_fn, *_):
     master_name = 'm'
@@ -391,7 +387,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
   @mock.patch.object(swarmed_test_util, 'IsTestEnabled', return_value=True)
   @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=123)
   @mock.patch.object(
-      flake_report_util, 'ShouldFileBugForAnalysis', return_value=True)
+      flake_bug_util, 'ShouldFileBugForAnalysis', return_value=True)
   @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags')
   def testCreateBugForFlakePipelineWhenFailToGetLatestBuildInfo(
       self, list_swarming_fn, should_file_fn, latest_build_fn, *_):
@@ -424,8 +420,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertTrue(latest_build_fn.called)
     self.assertFalse(analysis.has_attempted_filing)
 
-  @mock.patch.object(
-      issue_tracking_service, 'CreateOrUpdateIssue', return_value=None)
+  @mock.patch.object(flake_issue_util, 'CreateOrUpdateIssue', return_value=None)
   def testCreateBugPipelineFailedToCreateBug(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
@@ -439,8 +434,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertTrue(analysis.has_attempted_filing)
     self.assertIsNone(analysis.bug_id)
 
-  @mock.patch.object(
-      issue_tracking_service, 'CreateOrUpdateIssue', return_value=55)
+  @mock.patch.object(flake_issue_util, 'CreateOrUpdateIssue', return_value=55)
   def testCreateBugPipeline(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
@@ -458,7 +452,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertEqual(55, analysis.bug_id)
 
   @mock.patch.object(
-      issue_tracking_service, 'CreateOrUpdateIssue',
+      flake_issue_util, 'CreateOrUpdateIssue',
       return_value=123)  # 123 is the bug_number.
   def testCreateBugPipelineStillFlakyInRecentCommit(self, _):
     master_name = 'm'
@@ -490,7 +484,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.execute_queued_tasks()
 
   @mock.patch.object(
-      issue_tracking_service, 'CreateOrUpdateIssue',
+      flake_issue_util, 'CreateOrUpdateIssue',
       return_value=123)  # 123 is the bug number.
   def testCreateBugIfStillFlakyStable(self, update_or_create_bug_fn):
     master_name = 'm'

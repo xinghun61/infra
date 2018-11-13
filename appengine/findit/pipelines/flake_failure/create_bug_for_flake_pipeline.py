@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TODO(crbug.com/810912): Refactor into services.
+# TODO(crbug.com/903451): Deprecate once auto action layer is in place.
 
 from google.appengine.ext import ndb
 
@@ -26,20 +26,14 @@ from pipelines.flake_failure.save_flakiness_verification_pipeline import (
     SaveFlakinessVerificationInput)
 from pipelines.flake_failure.save_flakiness_verification_pipeline import (
     SaveFlakinessVerificationPipeline)
-from services import issue_tracking_service
+from services import flake_issue_util
 from services import swarmed_test_util
 from services import monitoring
 from services import swarming
-from services.flake_failure import flake_report_util
+from services.flake_failure import flake_bug_util
 from services.flake_failure import pass_rate_util
+from services.issue_generator import FlakeAnalysisIssueGenerator
 from waterfall import build_util
-
-# TODO(crbug.com/850661): Merge CreateBugForFlakePipeline and
-# UpdateMonorailBugPipeline into a single bug handling piepline.
-
-# TODO(crbug.com/783335): Allow these values to be configurable.
-_ITERATIONS_TO_CONFIRM_FLAKE = 30  # 30 iterations.
-_ITERATIONS_TO_CONFIRM_FLAKE_TIMEOUT = 60 * 60  # One hour.
 
 
 class CreateBugForFlakeInput(StructuredObject):
@@ -76,9 +70,9 @@ class CreateBugForFlakePipeline(GeneratorPipeline):
     analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
     assert analysis
 
-    if not flake_report_util.ShouldFileBugForAnalysis(analysis):
+    if not flake_bug_util.ShouldFileBugForAnalysis(analysis):
       if not analysis.bug_id:  # pragma: no branch
-        bug_id = issue_tracking_service.SearchOpenIssueIdForFlakyTest(
+        bug_id = flake_issue_util.SearchOpenIssueIdForFlakyTest(
             analysis.test_name)
         analysis.Update(bug_id=bug_id)
       return
@@ -173,8 +167,8 @@ class CreateBugPipeline(GeneratorPipeline):
     # Log our attempt in analysis so we don't retry perpetually.
     analysis.Update(has_attempted_filing=True)
 
-    issue_generator = flake_report_util.FlakeAnalysisIssueGenerator(analysis)
-    issue_id = issue_tracking_service.CreateOrUpdateIssue(issue_generator)
+    issue_generator = FlakeAnalysisIssueGenerator(analysis)
+    issue_id = flake_issue_util.CreateOrUpdateIssue(issue_generator)
     if not issue_id:
       analysis.LogError('Couldn\'t create bug!')
       return

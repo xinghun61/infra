@@ -8,8 +8,8 @@ import webapp2
 from gae_libs.handlers.base_handler import BaseHandler
 from handlers.flake.detection import detect_flakes
 from model.flake.flake_type import FlakeType
+from services import flake_issue_util
 from services.flake_detection import detect_flake_occurrences
-from services.flake_detection import flake_report_util
 from waterfall.test.wf_testcase import WaterfallTestCase
 
 
@@ -43,9 +43,9 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
                                        debug=True)
 
   @mock.patch.object(BaseHandler, 'IsRequestFromAppSelf', return_value=True)
-  @mock.patch.object(flake_report_util, 'ReportFlakesToFlakeAnalyzer')
-  @mock.patch.object(flake_report_util, 'ReportFlakesToMonorail')
-  @mock.patch.object(flake_report_util, 'GetFlakesWithEnoughOccurrences')
+  @mock.patch.object(flake_issue_util, 'ReportFlakesToFlakeAnalyzer')
+  @mock.patch.object(flake_issue_util, 'ReportFlakesToMonorail')
+  @mock.patch.object(flake_issue_util, 'GetFlakesWithEnoughOccurrences')
   @mock.patch.object(detect_flake_occurrences, 'QueryAndStoreFlakes')
   def testFlakesDetected(self, mock_detect, mock_get_flakes, mock_bug,
                          mock_analysis, _):

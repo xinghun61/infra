@@ -1,88 +1,156 @@
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-"""
-Functions to support filing monorail bugs, but don't interact with the
-service directly.
-"""
-
-import re
-import json
-import urllib
+"""Functions for interfacing with Mororail bugs."""
 import logging
 
-from dto.test_location import TestLocation
-from libs.test_results import test_results_util
-from services import constants
-from services import swarming
-from services import swarmed_test_util
-
-_COMPONENT_LINK = (
-    'https://storage.googleapis.com/chromium-owners/component_map_subdirs.json')
-
-_COMPONENT_PATH_REGEX = r'[\/][A-Za-z\._-]+$'
+from gae_libs import appengine_util
+from monorail_api import Issue
+from monorail_api import IssueTrackerAPI
+from services import issue_constants
 
 
-def GetComponent(http_client, master_name, builder_name, build_number,
-                 step_name, test_name):
-  """Return the component of the given information."""
-  logging.info('Looking for component of config: %s/%s/%d/%s and test: %s',
-               master_name, builder_name, build_number, step_name, test_name)
+def GetOpenIssues(query, monorail_project):
+  """Searches for open bugs that match the query.
 
-  # This is a layout test.
-  if 'layout' in step_name.lower():
-    logging.info('Found layout test.')
-    return GetNearestComponentForPath(
-        'third_party/WebKit/LayoutTests/' + test_name)
+  This method wraps a call IssueTrackerAPI.getIssues(), it is needed because
+  it's unclear from the API name and the documentation whether the returned
+  issues are all open issues or not, so check the property to make sure that
+  only open bugs are considered.
 
-  # Look for the isolate data given the config.
-  isolated_data = swarming.GetIsolatedDataForStep(
-      master_name, builder_name, build_number, step_name, http_client)
-  if not isolated_data:
-    logging.info('No isolate data found.')
+  Args:
+    query: A query to search for bugs on Monorail.
+    monorail_project: The monorail project to search for.
+
+  Returns:
+    A list of open bugs that match the query.
+  """
+  issue_tracker_api = IssueTrackerAPI(
+      monorail_project, use_staging=appengine_util.IsStaging())
+  issues = issue_tracker_api.getIssues(query)
+  if not issues:
+    return []
+
+  return [issue for issue in issues if issue.open]
+
+
+def OpenBugAlreadyExistsForId(bug_id, project_id='chromium'):
+  """Returns True if the bug exists and is open on monorail."""
+  existing_bug = GetMergedDestinationIssueForId(bug_id, project_id)
+  return existing_bug and existing_bug.open
+
+
+def GetMergedDestinationIssueForId(issue_id, monorail_project='chromium'):
+  """Given an id, traverse the merge chain to get the destination issue.
+
+  Args:
+    issue_id: The id to get merged destination issue for.
+    monorail_project: The Monorail project the issue is on.
+
+  Returns:
+    The destination issue if the original issue was merged, otherwise itself,
+    and returns None if there is an exception while communicating with
+    Monorail.
+
+    NOTE: If there is a cycle in the merge chain, the first visited issue in
+    the cycle will be returned.
+  """
+  if issue_id is None:
     return None
 
-  # From the isolate data, get the test results for the given test_name.
-  results = swarmed_test_util.RetrieveShardedTestResultsFromIsolatedServer(
-      isolated_data, http_client)
-  if not results:
-    logging.info('No test results found for isolate data.')
-    return None
+  issue_tracker_api = IssueTrackerAPI(
+      monorail_project, use_staging=appengine_util.IsStaging())
+  issue = issue_tracker_api.getIssue(issue_id)
+  visited_issues = set()
 
-  # This is a gtest. Use the result log to get the file path, and return the
-  # component from that.
-  return GetGTestComponent(test_name, results)
+  while issue and issue.merged_into:
+    logging.info('Issue %s was merged into %s on project: %s.', issue.id,
+                 issue.merged_into, monorail_project)
+    visited_issues.add(issue)
+    issue = issue_tracker_api.getIssue(issue.merged_into)
+    if issue in visited_issues:
+      # There is a cycle, bails out.
+      break
 
-
-def GetGTestComponent(test_name, results):
-  """Given a gtest test_name and results, return the component of the test."""
-  test_results = test_results_util.GetTestResultObject(results)
-  location, err = test_results.GetTestLocation(test_name) if test_results else (
-      None, constants.WRONG_FORMAT_LOG)
-  if not location:
-    logging.info('No location found for %s with error %s.', test_name, err)
-    return None
-
-  return GetNearestComponentForPath(
-      TestLocation.FromSerializable(location).file.replace('../../', ''))
+  return issue
 
 
-def GetNearestComponentForPath(path):
-  """Given the path, find the nearest match from the component directory."""
-  original_path = path
-  response = urllib.urlopen(_COMPONENT_LINK).read()
-  components = json.loads(response)
-  dir_to_component = components['dir-to-component']
+def CreateBug(issue, project_id='chromium'):
+  """Creates a bug with the given information.
 
-  matches = re.search(_COMPONENT_PATH_REGEX, path, re.DOTALL)
-  while matches and path not in dir_to_component:
-    path = path[:matches.start()]
-    matches = re.search(_COMPONENT_PATH_REGEX, path, re.DOTALL)
+  Returns:
+    (int) id of the bug that was filed.
+  """
+  assert issue
 
-  if path in dir_to_component:
-    component = dir_to_component[path]
-    logging.info('Found component %s for path %s', component, original_path)
-    return component
+  issue_tracker_api = IssueTrackerAPI(
+      project_id, use_staging=appengine_util.IsStaging())
+  issue_tracker_api.create(issue)
 
-  logging.info('Couldn\'t find component for given path %s.', original_path)
-  return None
+  return issue.id
+
+
+def UpdateBug(issue, comment, project_id='chromium'):
+  """Creates a bug with the given information."""
+  assert issue
+
+  issue_tracker_api = IssueTrackerAPI(
+      project_id, use_staging=appengine_util.IsStaging())
+  issue_tracker_api.update(issue, comment, send_email=True)
+
+  return issue.id
+
+
+def CreateIssueWithIssueGenerator(issue_generator):
+  """Creates a new issue with a given issue generator.
+
+  Args:
+    issue_generator: A FlakyTestIssueGenerator object.
+
+  Returns:
+    The id of the newly created issue.
+  """
+  labels = issue_generator.GetLabels()
+  labels.append(issue_generator.GetPriority())
+  issue = Issue({
+      'status': issue_generator.GetStatus(),
+      'summary': issue_generator.GetSummary(),
+      'description': issue_generator.GetDescription(),
+      'projectId': issue_generator.GetMonorailProject(),
+      'labels': labels,
+      'fieldValues': [issue_generator.GetFlakyTestCustomizedField()]
+  })
+
+  issue_id = CreateBug(issue, issue_generator.GetMonorailProject())
+  if issue_id:
+    issue_generator.OnIssueCreated()
+
+  return issue_id
+
+
+def UpdateIssueWithIssueGenerator(issue_id, issue_generator):
+  """Updates an existing issue with a given issue generator.
+
+  Args:
+    issue_id: Id of the issue to be updated.
+    issue_generator: A FlakyTestIssueGenerator object.
+  """
+  issue = GetMergedDestinationIssueForId(issue_id,
+                                         issue_generator.GetMonorailProject())
+  for label in issue_generator.GetLabels():
+    # It is most likely that existing issues already have their priorities set
+    # by developers, so it would be annoy if FindIt tries to overwrite it.
+    if label.startswith('Pri-'):
+      continue
+
+    if (label == issue_constants.SHERIFF_CHROMIUM_LABEL and
+        not issue_generator.ShouldRestoreChromiumSheriffLabel()):
+      continue
+
+    if label not in issue.labels:
+      issue.labels.append(label)
+
+  issue.field_values.append(issue_generator.GetFlakyTestCustomizedField())
+  UpdateBug(issue, issue_generator.GetComment(),
+            issue_generator.GetMonorailProject())
+  issue_generator.OnIssueUpdated()

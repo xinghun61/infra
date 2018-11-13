@@ -1,55 +1,39 @@
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-import copy
 import datetime
 import mock
 
 from libs import analysis_status
 from libs import time_util
-from model.flake.flake import Flake
-from model.flake.flake_issue import FlakeIssue
-from model.flake.analysis.flake_culprit import FlakeCulprit
 from model.flake.analysis.data_point import DataPoint
 from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
-from services import issue_tracking_service
-from services.flake_failure import flake_report_util
+from services import flake_issue_util
+from services import monorail_util
+from services.flake_failure import flake_bug_util
 from waterfall.test.wf_testcase import WaterfallTestCase
-from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 
 
-class FlakeReportUtilTest(WaterfallTestCase):
-
-  def testGenerateAnalysisLink(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
-    self.assertIn(analysis.key.urlsafe(),
-                  flake_report_util._GenerateAnalysisLink(analysis))
-
-  def testGenerateWrongResultLink(self):
-    test_name = 'test_name'
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', test_name)
-    self.assertIn(test_name,
-                  flake_report_util._GenerateWrongResultLink(analysis))
+class FlakeBugUtilTest(WaterfallTestCase):
 
   def testGetMinimumConfidenceToFileBugs(self):
     self.UpdateUnitTestConfigSettings('check_flake_settings',
                                       {'minimum_confidence_to_create_bug': 0.9})
-    self.assertEqual(0.9, flake_report_util.GetMinimumConfidenceToFileBugs())
+    self.assertEqual(0.9, flake_bug_util.GetMinimumConfidenceToFileBugs())
 
   def testGetMinimumConfidenceToUpdateBugs(self):
     self.UpdateUnitTestConfigSettings('check_flake_settings',
                                       {'minimum_confidence_to_update_cr': 0.8})
-    self.assertEqual(0.8, flake_report_util.GetMinimumConfidenceToUpdateBugs())
+    self.assertEqual(0.8, flake_bug_util.GetMinimumConfidenceToUpdateBugs())
 
-  @mock.patch.object(flake_report_util, 'UnderDailyLimit', return_value=True)
+  @mock.patch.object(flake_bug_util, 'UnderDailyLimit', return_value=True)
+  @mock.patch.object(flake_bug_util, 'HasPreviousAttempt', return_value=False)
   @mock.patch.object(
-      flake_report_util, 'HasPreviousAttempt', return_value=False)
+      flake_bug_util, 'HasSufficientConfidenceInCulprit', return_value=True)
   @mock.patch.object(
-      flake_report_util, 'HasSufficientConfidenceInCulprit', return_value=True)
+      monorail_util, 'OpenBugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
-      issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
-  @mock.patch.object(
-      issue_tracking_service,
+      flake_issue_util,
       'OpenIssueAlreadyExistsForFlakyTest',
       return_value=False)
   def testShouldFileBugForAnalysis(self, test_exists_fn, id_exists_fn,
@@ -65,20 +49,19 @@ class FlakeReportUtilTest(WaterfallTestCase):
                                           build_number, step_name, test_name)
     analysis.Save()
 
-    self.assertTrue(flake_report_util.ShouldFileBugForAnalysis(analysis))
+    self.assertTrue(flake_bug_util.ShouldFileBugForAnalysis(analysis))
     id_exists_fn.assert_not_called()
     sufficient_confidence_fn.assert_called()
     previous_attempt_fn.assert_called()
     test_exists_fn.assert_called()
     under_limit_fn.assert_called_with()
 
-  @mock.patch.object(flake_report_util, 'UnderDailyLimit', return_value=True)
+  @mock.patch.object(flake_bug_util, 'UnderDailyLimit', return_value=True)
+  @mock.patch.object(flake_bug_util, 'HasPreviousAttempt', return_value=False)
   @mock.patch.object(
-      flake_report_util, 'HasPreviousAttempt', return_value=False)
+      flake_bug_util, 'HasSufficientConfidenceInCulprit', return_value=True)
   @mock.patch.object(
-      flake_report_util, 'HasSufficientConfidenceInCulprit', return_value=True)
-  @mock.patch.object(
-      issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=True)
+      monorail_util, 'OpenBugAlreadyExistsForId', return_value=True)
   def testShouldFileBugForAnalysisWhenBugIdExists(self, id_exists_fn, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -91,16 +74,15 @@ class FlakeReportUtilTest(WaterfallTestCase):
     analysis.bug_id = 1
     analysis.Save()
 
-    self.assertFalse(flake_report_util.ShouldFileBugForAnalysis(analysis))
+    self.assertFalse(flake_bug_util.ShouldFileBugForAnalysis(analysis))
     self.assertTrue(id_exists_fn.called)
 
-  @mock.patch.object(flake_report_util, 'UnderDailyLimit', return_value=True)
+  @mock.patch.object(flake_bug_util, 'UnderDailyLimit', return_value=True)
+  @mock.patch.object(flake_bug_util, 'HasPreviousAttempt', return_value=False)
   @mock.patch.object(
-      flake_report_util, 'HasPreviousAttempt', return_value=False)
+      monorail_util, 'OpenBugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
-      issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
-  @mock.patch.object(
-      flake_report_util, 'HasSufficientConfidenceInCulprit', return_value=False)
+      flake_bug_util, 'HasSufficientConfidenceInCulprit', return_value=False)
   def testShouldFileBugForAnalysisWithoutSufficientConfidence(
       self, confidence_fn, *_):
     master_name = 'm'
@@ -114,15 +96,15 @@ class FlakeReportUtilTest(WaterfallTestCase):
     analysis.confidence_in_culprit = 0.5
     analysis.Save()
 
-    self.assertFalse(flake_report_util.ShouldFileBugForAnalysis(analysis))
+    self.assertFalse(flake_bug_util.ShouldFileBugForAnalysis(analysis))
     self.assertTrue(confidence_fn.called)
 
-  @mock.patch.object(flake_report_util, 'UnderDailyLimit', return_value=True)
+  @mock.patch.object(flake_bug_util, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(
-      issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
+      monorail_util, 'OpenBugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
-      flake_report_util, 'HasSufficientConfidenceInCulprit', return_value=True)
-  @mock.patch.object(flake_report_util, 'HasPreviousAttempt', return_value=True)
+      flake_bug_util, 'HasSufficientConfidenceInCulprit', return_value=True)
+  @mock.patch.object(flake_bug_util, 'HasPreviousAttempt', return_value=True)
   def testShouldFileBugForAnalysisWithPreviousAttempt(self, attempt_fn, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -135,16 +117,15 @@ class FlakeReportUtilTest(WaterfallTestCase):
     analysis.confidence_in_culprit = 0.5
     analysis.Save()
 
-    self.assertFalse(flake_report_util.ShouldFileBugForAnalysis(analysis))
+    self.assertFalse(flake_bug_util.ShouldFileBugForAnalysis(analysis))
     self.assertTrue(attempt_fn.called)
 
   @mock.patch.object(
-      issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
+      monorail_util, 'OpenBugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
-      flake_report_util, 'HasSufficientConfidenceInCulprit', return_value=True)
-  @mock.patch.object(
-      flake_report_util, 'HasPreviousAttempt', return_value=False)
-  @mock.patch.object(flake_report_util, 'UnderDailyLimit', return_value=False)
+      flake_bug_util, 'HasSufficientConfidenceInCulprit', return_value=True)
+  @mock.patch.object(flake_bug_util, 'HasPreviousAttempt', return_value=False)
+  @mock.patch.object(flake_bug_util, 'UnderDailyLimit', return_value=False)
   def testShouldFileBugForAnalysisWhenOverLimit(self, daily_limit_fn, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -157,20 +138,17 @@ class FlakeReportUtilTest(WaterfallTestCase):
     analysis.confidence_in_culprit = 0.5
     analysis.Save()
 
-    self.assertFalse(flake_report_util.ShouldFileBugForAnalysis(analysis))
+    self.assertFalse(flake_bug_util.ShouldFileBugForAnalysis(analysis))
     daily_limit_fn.assert_called_with()
 
   @mock.patch.object(
-      issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
+      monorail_util, 'OpenBugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
-      flake_report_util, 'HasSufficientConfidenceInCulprit', return_value=True)
+      flake_bug_util, 'HasSufficientConfidenceInCulprit', return_value=True)
+  @mock.patch.object(flake_bug_util, 'HasPreviousAttempt', return_value=False)
+  @mock.patch.object(flake_bug_util, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(
-      flake_report_util, 'HasPreviousAttempt', return_value=False)
-  @mock.patch.object(flake_report_util, 'UnderDailyLimit', return_value=True)
-  @mock.patch.object(
-      issue_tracking_service,
-      'OpenIssueAlreadyExistsForFlakyTest',
-      return_value=True)
+      flake_issue_util, 'OpenIssueAlreadyExistsForFlakyTest', return_value=True)
   def testShouldFileBugForAnalysisWhenBugExistsForTest(self, test_exists_Fn,
                                                        *_):
     master_name = 'm'
@@ -184,7 +162,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
     analysis.confidence_in_culprit = 0.5
     analysis.Save()
 
-    self.assertFalse(flake_report_util.ShouldFileBugForAnalysis(analysis))
+    self.assertFalse(flake_bug_util.ShouldFileBugForAnalysis(analysis))
     self.assertTrue(test_exists_Fn.called)
 
   def testShouldUpdateBugForAnalysisNoBugId(self):
@@ -195,7 +173,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
     self.UpdateUnitTestConfigSettings(
         'check_flake_settings', {'minimum_confidence_score_to_update_cr': 0.6})
 
-    self.assertFalse(flake_report_util.ShouldUpdateBugForAnalysis(analysis))
+    self.assertFalse(flake_bug_util.ShouldUpdateBugForAnalysis(analysis))
 
   def testShouldUpdateBugForAnalysisNoBugIdWithCulprit(self):
     master_name = 'm'
@@ -216,7 +194,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
     self.UpdateUnitTestConfigSettings(
         'check_flake_settings', {'minimum_confidence_score_to_update_cr': 0.6})
 
-    self.assertFalse(flake_report_util.ShouldUpdateBugForAnalysis(analysis))
+    self.assertFalse(flake_bug_util.ShouldUpdateBugForAnalysis(analysis))
 
   def testShouldUpdateBugForAnalysisInsufficientDataPoints(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
@@ -227,10 +205,10 @@ class FlakeReportUtilTest(WaterfallTestCase):
     self.UpdateUnitTestConfigSettings(
         'check_flake_settings', {'minimum_confidence_score_to_update_cr': 0.6})
 
-    self.assertFalse(flake_report_util.ShouldUpdateBugForAnalysis(analysis))
+    self.assertFalse(flake_bug_util.ShouldUpdateBugForAnalysis(analysis))
 
   @mock.patch.object(
-      flake_report_util, 'HasSufficientConfidenceInCulprit', return_value=False)
+      flake_bug_util, 'HasSufficientConfidenceInCulprit', return_value=False)
   def testShouldUpdateBugForAnalysisInsufficientConfidence(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
     analysis.status = analysis_status.COMPLETED
@@ -242,7 +220,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
     self.UpdateUnitTestConfigSettings(
         'check_flake_settings', {'minimum_confidence_score_to_update_cr': 0.6})
 
-    self.assertFalse(flake_report_util.ShouldUpdateBugForAnalysis(analysis))
+    self.assertFalse(flake_bug_util.ShouldUpdateBugForAnalysis(analysis))
 
   def testShouldUpdateBugForAnalysis(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
@@ -253,7 +231,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
     self.UpdateUnitTestConfigSettings(
         'check_flake_settings', {'minimum_confidence_score_to_update_cr': 0.6})
 
-    self.assertTrue(flake_report_util.ShouldUpdateBugForAnalysis(analysis))
+    self.assertTrue(flake_bug_util.ShouldUpdateBugForAnalysis(analysis))
 
   def testHasPreviousAttempt(self):
     master_name = 'm'
@@ -265,11 +243,11 @@ class FlakeReportUtilTest(WaterfallTestCase):
                                           build_number, step_name, test_name)
     analysis.has_attempted_filing = True
     analysis.Save()
-    self.assertTrue(flake_report_util.HasPreviousAttempt(analysis))
+    self.assertTrue(flake_bug_util.HasPreviousAttempt(analysis))
 
     analysis.has_attempted_filing = False
     analysis.put()
-    self.assertFalse(flake_report_util.HasPreviousAttempt(analysis))
+    self.assertFalse(flake_bug_util.HasPreviousAttempt(analysis))
 
   def testHasSufficientConfidenceInCulprit(self):
     master_name = 'm'
@@ -283,22 +261,22 @@ class FlakeReportUtilTest(WaterfallTestCase):
     analysis.confidence_in_culprit = None
     analysis.Save()
     self.assertFalse(
-        flake_report_util.HasSufficientConfidenceInCulprit(analysis, 0.5))
+        flake_bug_util.HasSufficientConfidenceInCulprit(analysis, 0.5))
 
     analysis.confidence_in_culprit = 1.0
     analysis.Save()
     self.assertTrue(
-        flake_report_util.HasSufficientConfidenceInCulprit(analysis, 1.0))
+        flake_bug_util.HasSufficientConfidenceInCulprit(analysis, 1.0))
 
     analysis.confidence_in_culprit = .9
     analysis.put()
     self.assertTrue(
-        flake_report_util.HasSufficientConfidenceInCulprit(analysis, 0.9))
+        flake_bug_util.HasSufficientConfidenceInCulprit(analysis, 0.9))
 
     analysis.confidence_in_culprit = .8
     analysis.put()
     self.assertFalse(
-        flake_report_util.HasSufficientConfidenceInCulprit(analysis, 0.9))
+        flake_bug_util.HasSufficientConfidenceInCulprit(analysis, 0.9))
 
   @mock.patch.object(
       time_util,
@@ -356,7 +334,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
         master_name, builder_name, build_number + 6, step_name, test_name)
     analysis.Save()
 
-    self.assertTrue(flake_report_util.UnderDailyLimit())
+    self.assertTrue(flake_bug_util.UnderDailyLimit())
 
   @mock.patch.object(
       time_util,
@@ -396,153 +374,4 @@ class FlakeReportUtilTest(WaterfallTestCase):
                                           build_number, step_name, test_name)
     analysis.put()
 
-    self.assertFalse(flake_report_util.UnderDailyLimit())
-
-  def testGenerateMessageTextWithCulprit(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    task_id = 'task_id'
-    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
-                                          build_number, step_name, test_name)
-    analysis.original_master_name = master_name
-    analysis.original_builder_name = builder_name
-    analysis.original_build_number = build_number
-    analysis.status = analysis_status.COMPLETED
-    analysis.data_points = [DataPoint.Create(task_ids=[task_id])]
-    culprit = FlakeCulprit.Create('c', 'r', 123, 'http://')
-    culprit.flake_analysis_urlsafe_keys.append(analysis.key.urlsafe())
-    culprit.put()
-    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
-    analysis.confidence_in_culprit = 0.6713
-    comment = flake_report_util._GenerateMessageText(analysis)
-    self.assertIn('67.1% confidence', comment)
-    self.assertIn('r123', comment)
-    self.assertIn(task_id, comment)
-
-  @mock.patch.object(
-      MasterFlakeAnalysis,
-      'GetRepresentativeSwarmingTaskId',
-      return_value='task_id')
-  def testGenerateMessageTextNoCulprit(self, _):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
-                                          build_number, step_name, test_name)
-    analysis.original_master_name = master_name
-    analysis.original_builder_name = builder_name
-    analysis.original_build_number = build_number
-    analysis.status = analysis_status.COMPLETED
-    comment = flake_report_util._GenerateMessageText(analysis)
-    self.assertTrue('longstanding' in comment, comment)
-
-  @mock.patch.object(
-      MasterFlakeAnalysis,
-      'GetRepresentativeSwarmingTaskId',
-      return_value='task_id')
-  @mock.patch.object(Flake, 'NormalizeStepName', return_value='normalized_step')
-  @mock.patch.object(
-      issue_tracking_service,
-      'SearchOpenIssueIdForFlakyTest',
-      return_value=None)
-  @mock.patch.object(issue_tracking_service, 'UpdateBug')
-  @mock.patch.object(issue_tracking_service, 'CreateBug', return_value=66666)
-  def testCreateIssueWhenFlakeAndIssueDoesNotExist(self, mock_create_bug_fn,
-                                                   mock_update_bug_fn, *_):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    culprit = FlakeCulprit.Create('git', 'rev', 1)
-    culprit.put()
-    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
-                                          build_number, step_name, test_name)
-    analysis.original_master_name = master_name
-    analysis.original_builder_name = builder_name
-    analysis.original_build_number = build_number
-    analysis.data_points = [
-        DataPoint.Create(commit_position=200, pass_rate=.5, git_hash='hash')
-    ]
-    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
-    analysis.confidence_in_culprit = .5
-    analysis.Save()
-
-    issue_generator = flake_report_util.FlakeAnalysisIssueGenerator(analysis)
-    description = issue_generator.GetDescription()
-    self.assertEqual(
-        66666, issue_tracking_service.CreateOrUpdateIssue(issue_generator))
-    self.assertTrue(mock_create_bug_fn.called)
-    self.assertFalse(mock_update_bug_fn.called)
-    self.assertIn('(50.0% confidence)', description)
-    self.assertIn('Test-Findit-Wrong', description)
-    self.assertIn('task_id', description)
-
-    fetched_flakes = Flake.query().fetch()
-    fetched_flake_issues = FlakeIssue.query().fetch()
-    self.assertEqual(1, len(fetched_flakes))
-    self.assertEqual(1, len(fetched_flake_issues))
-    self.assertEqual(66666, fetched_flake_issues[0].issue_id)
-    self.assertEqual(
-        None, fetched_flake_issues[0].last_updated_time_by_flake_detection)
-    self.assertEqual(fetched_flakes[0].flake_issue_key,
-                     fetched_flake_issues[0].key)
-
-  @mock.patch.object(
-      MasterFlakeAnalysis,
-      'GetRepresentativeSwarmingTaskId',
-      return_value='task_id')
-  @mock.patch.object(Flake, 'NormalizeTestName', return_value='normalized_test')
-  @mock.patch.object(Flake, 'NormalizeStepName', return_value='normalized_step')
-  @mock.patch.object(
-      issue_tracking_service,
-      'SearchOpenIssueIdForFlakyTest',
-      return_value=None)
-  @mock.patch.object(issue_tracking_service, 'GetMergedDestinationIssueForId')
-  @mock.patch.object(issue_tracking_service, 'UpdateBug')
-  @mock.patch.object(issue_tracking_service, 'CreateBug')
-  def testUpdateIssueWhenFlakeAndIssueExists(
-      self, mock_create_bug_fn, mock_update_bug_fn, mock_get_merged_issue, *_):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
-                                          build_number, step_name, test_name)
-    analysis.original_master_name = master_name
-    analysis.original_builder_name = builder_name
-    analysis.original_build_number = build_number
-    analysis.Save()
-
-    flake = Flake.Create(
-        luci_project='chromium',
-        normalized_step_name='normalized_step',
-        normalized_test_name='normalized_test',
-        test_label_name='test_label')
-    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
-    flake_issue.put()
-    flake.flake_issue_key = flake_issue.key
-    flake.put()
-    mock_get_merged_issue.return_value.id = 12345
-    mock_get_merged_issue.return_value.open = True
-
-    issue_generator = flake_report_util.FlakeAnalysisIssueGenerator(analysis)
-    issue_tracking_service.CreateOrUpdateIssue(issue_generator)
-    self.assertFalse(mock_create_bug_fn.called)
-    self.assertTrue(mock_update_bug_fn.called)
-
-    fetched_flakes = Flake.query().fetch()
-    fetched_flake_issues = FlakeIssue.query().fetch()
-    self.assertEqual(1, len(fetched_flakes))
-    self.assertEqual(1, len(fetched_flake_issues))
-    self.assertEqual(12345, fetched_flake_issues[0].issue_id)
-    self.assertEqual(
-        None, fetched_flake_issues[0].last_updated_time_by_flake_detection)
-    self.assertEqual(fetched_flakes[0].flake_issue_key,
-                     fetched_flake_issues[0].key)
+    self.assertFalse(flake_bug_util.UnderDailyLimit())

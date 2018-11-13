@@ -10,9 +10,10 @@ from gae_libs import appengine_util
 from gae_libs.pipelines import SynchronousPipeline
 from libs.structured_object import StructuredObject
 from monorail_api import IssueTrackerAPI
-from services import issue_tracking_service
+from services import monorail_util
 from services.flake_failure import flake_constants
-from services.flake_failure import flake_report_util
+from services.flake_failure import flake_bug_util
+from services.issue_generator import FlakeAnalysisIssueGenerator
 
 
 class UpdateMonorailBugInput(StructuredObject):
@@ -34,13 +35,13 @@ class UpdateMonorailBugPipeline(SynchronousPipeline):
     analysis = ndb.Key(urlsafe=parameters.analysis_urlsafe_key).get()
     assert analysis
 
-    if not flake_report_util.ShouldUpdateBugForAnalysis(analysis):
+    if not flake_bug_util.ShouldUpdateBugForAnalysis(analysis):
       return False
 
     project_name = flake_constants.CHROMIUM_PROJECT_NAME
     issue_tracker = IssueTrackerAPI(
         project_name, use_staging=appengine_util.IsStaging())
-    issue = issue_tracking_service.GetMergedDestinationIssueForId(
+    issue = monorail_util.GetMergedDestinationIssueForId(
         analysis.bug_id, issue_tracker)
     if not issue:
       analysis.LogWarning(
@@ -64,9 +65,8 @@ class UpdateMonorailBugPipeline(SynchronousPipeline):
           'reason': ''
       })
 
-    issue_generator = flake_report_util.FlakeAnalysisIssueGenerator(analysis)
-    issue_tracking_service.UpdateIssueWithIssueGenerator(
-        issue.id, issue_generator)
+    issue_generator = FlakeAnalysisIssueGenerator(analysis)
+    monorail_util.UpdateIssueWithIssueGenerator(issue.id, issue_generator)
     analysis.Update(has_commented_on_bug=True)
     analysis.LogInfo('Bug %s/%s was updated.' % (project_name, analysis.bug_id))
     return True
