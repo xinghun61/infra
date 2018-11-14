@@ -136,6 +136,236 @@ func TestAllShifts(t *testing.T) {
 	}
 }
 
+func TestShiftsFromTo(t *testing.T) {
+	ctx := newTestContext()
+	ctxCancel, cancel := context.WithCancel(ctx)
+	cancel()
+
+	tests := []struct {
+		name    string
+		fail    bool
+		ctx     context.Context
+		from    time.Time
+		to      time.Time
+		rota    string
+		rotaCfg *rotang.Configuration
+		add     []rotang.ShiftEntry
+		want    []rotang.ShiftEntry
+	}{{
+		name: "Canceled context",
+		fail: true,
+		ctx:  ctxCancel,
+		rota: "test rota",
+		rotaCfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Name:        "test rota",
+				Description: "Test",
+			},
+		},
+	}, {
+		name: "No To or From",
+		ctx:  ctx,
+		rota: "test rota",
+		rotaCfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Name:        "test rota",
+				Description: "Test",
+			},
+		},
+		add: []rotang.ShiftEntry{
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight,
+				EndTime:   midnight.Add(8 * time.Hour),
+			},
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight.Add(8 * time.Hour),
+				EndTime:   midnight.Add(2 * 8 * time.Hour),
+			},
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight.Add(2 * 8 * time.Hour),
+				EndTime:   midnight.Add(3 * 8 * time.Hour),
+			},
+		},
+		want: []rotang.ShiftEntry{
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight,
+				EndTime:   midnight.Add(8 * time.Hour),
+			},
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight.Add(8 * time.Hour),
+				EndTime:   midnight.Add(2 * 8 * time.Hour),
+			},
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight.Add(2 * 8 * time.Hour),
+				EndTime:   midnight.Add(3 * 8 * time.Hour),
+			},
+		},
+	}, {
+		name: "No shifts",
+		fail: true,
+		ctx:  ctx,
+		rota: "test rota",
+		rotaCfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Name:        "test rota",
+				Description: "Test",
+			},
+		},
+	}, {
+		name: "From set",
+		ctx:  ctx,
+		rota: "test rota",
+		rotaCfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Name:        "test rota",
+				Description: "Test",
+			},
+		},
+		add: []rotang.ShiftEntry{
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight,
+				EndTime:   midnight.Add(8 * time.Hour),
+			},
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight.Add(8 * time.Hour),
+				EndTime:   midnight.Add(2 * 8 * time.Hour),
+			},
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight.Add(2 * 8 * time.Hour),
+				EndTime:   midnight.Add(3 * 8 * time.Hour),
+			},
+		},
+		from: midnight.Add(10 * time.Hour),
+		want: []rotang.ShiftEntry{
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight.Add(8 * time.Hour),
+				EndTime:   midnight.Add(2 * 8 * time.Hour),
+			},
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight.Add(2 * 8 * time.Hour),
+				EndTime:   midnight.Add(3 * 8 * time.Hour),
+			},
+		},
+	}, {
+		name: "To set",
+		ctx:  ctx,
+		rota: "test rota",
+		rotaCfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Name:        "test rota",
+				Description: "Test",
+			},
+		},
+		add: []rotang.ShiftEntry{
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight,
+				EndTime:   midnight.Add(8 * time.Hour),
+			},
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight.Add(8 * time.Hour),
+				EndTime:   midnight.Add(2 * 8 * time.Hour),
+			},
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight.Add(2 * 8 * time.Hour),
+				EndTime:   midnight.Add(3 * 8 * time.Hour),
+			},
+		},
+		want: []rotang.ShiftEntry{
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight,
+				EndTime:   midnight.Add(8 * time.Hour),
+			},
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight.Add(8 * time.Hour),
+				EndTime:   midnight.Add(2 * 8 * time.Hour),
+			},
+		},
+		to: midnight.Add(2 * 8 * time.Hour),
+	}, {
+		name: "From and To set",
+		ctx:  ctx,
+		rota: "test rota",
+		rotaCfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Name:        "test rota",
+				Description: "Test",
+			},
+		},
+		add: []rotang.ShiftEntry{
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight,
+				EndTime:   midnight.Add(8 * time.Hour),
+			},
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight.Add(8 * time.Hour),
+				EndTime:   midnight.Add(2 * 8 * time.Hour),
+			},
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight.Add(2 * 8 * time.Hour),
+				EndTime:   midnight.Add(3 * 8 * time.Hour),
+			},
+		},
+		want: []rotang.ShiftEntry{
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight.Add(8 * time.Hour),
+				EndTime:   midnight.Add(2 * 8 * time.Hour),
+			},
+		},
+		from: midnight.Add(10 * time.Hour),
+		to:   midnight.Add(12 * time.Hour),
+	},
+	}
+
+	store := New(ctx)
+
+	for _, tst := range tests {
+		t.Run(tst.name, func(t *testing.T) {
+			if err := store.CreateRotaConfig(ctx, tst.rotaCfg); err != nil {
+				t.Fatalf("%s: store.CreateRotaConfig(ctx, _) failed: %v", tst.name, err)
+			}
+			defer store.DeleteRotaConfig(ctx, tst.rotaCfg.Config.Name)
+			if tst.add != nil {
+				if err := store.AddShifts(ctx, tst.rotaCfg.Config.Name, tst.add); err != nil {
+					t.Fatalf("%s: store.AddShifts(ctx, %q, _) failed: %v", tst.name, tst.rotaCfg.Config.Name, err)
+				}
+				defer store.DeleteAllShifts(ctx, tst.rotaCfg.Config.Name)
+			}
+
+			shifts, err := store.ShiftsFromTo(tst.ctx, tst.rotaCfg.Config.Name, tst.from, tst.to)
+			if got, want := (err != nil), tst.fail; got != want {
+				t.Fatalf("%s: store.AllShifts(ctx, %q) = %t want: %t, err: %v", tst.name, tst.rota, got, want, err)
+			}
+			if err != nil {
+				return
+			}
+
+			if diff := pretty.Compare(tst.want, shifts); diff != "" {
+				t.Fatalf("%s: store.UpdateShift(ctx, %q) differ -want +got, %s", tst.name, tst.rota, diff)
+			}
+		})
+	}
+}
+
 func TestUpdateShift(t *testing.T) {
 	ctx := newTestContext()
 	ctxCancel, cancel := context.WithCancel(ctx)

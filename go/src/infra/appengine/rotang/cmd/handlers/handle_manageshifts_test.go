@@ -480,18 +480,6 @@ func TestHandleUpdatedShifts(t *testing.T) {
 					},
 				},
 			},
-			{
-				Name:      "MTV Half Day",
-				StartTime: midnight.Add(2 * fullDay),
-				EndTime:   midnight.Add(3 * fullDay),
-				OnCall: []rotang.ShiftMember{
-					{
-						ShiftName: "MTV Half Day",
-						Email:     "mtv2@oncall.com",
-					},
-				},
-				Comment: "After Update",
-			},
 		},
 	}}
 

@@ -41,15 +41,12 @@ func (h *State) eventUpdate(ctx *router.Context, cfg *rotang.Configuration, t ti
 		return status.Errorf(codes.InvalidArgument, "no shifts configured for rota: %q", cfg.Config.Name)
 	}
 
-	shifts, err := h.shiftStore(ctx.Context).AllShifts(ctx.Context, cfg.Config.Name)
+	shifts, err := h.shiftStore(ctx.Context).ShiftsFromTo(ctx.Context, cfg.Config.Name, t, time.Time{})
 	if err != nil {
 		return err
 	}
 
 	for _, s := range shifts {
-		if s.EndTime.Before(t) {
-			continue
-		}
 		resShift, err := h.calendar.Event(ctx, cfg, &s)
 		if err != nil {
 			return err

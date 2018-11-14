@@ -40,18 +40,8 @@ func (h *State) scheduleShifts(ctx *router.Context, cfg *rotang.Configuration, t
 	if len(cfg.Config.Shifts.Shifts) == 0 {
 		return status.Errorf(codes.InvalidArgument, "no shifts configured for rota: %q", cfg.Config.Name)
 	}
-	shifts, err := h.shiftStore(ctx.Context).AllShifts(ctx.Context, cfg.Config.Name)
-	if err != nil {
-		return err
-	}
-	var nrShifts int
-	for _, s := range shifts {
-		if s.EndTime.Before(t) {
-			continue
-		}
-		nrShifts++
-	}
-	if nrShifts/len(cfg.Config.Shifts.Shifts) > cfg.Config.Expiration {
+	shifts, err := h.shiftStore(ctx.Context).ShiftsFromTo(ctx.Context, cfg.Config.Name, t, time.Time{})
+	if len(shifts)/len(cfg.Config.Shifts.Shifts) > cfg.Config.Expiration {
 		logging.Infof(ctx.Context, "still enough shifts scheduled for rota: %q", cfg.Config.Name)
 		return nil
 	}

@@ -244,14 +244,11 @@ func (h *State) handleUpdatedShifts(ctx context.Context, cfg *rotang.Configurati
 		}
 	}
 
-	as, err := shiftStorer.AllShifts(ctx, cfg.Config.Name)
+	as, err := shiftStorer.ShiftsFromTo(ctx, cfg.Config.Name, lastShift, time.Time{})
 	if err != nil {
 		return err
 	}
 	for _, s := range as {
-		if s.StartTime.Before(lastShift) || s.StartTime.Equal(lastShift) {
-			continue
-		}
 		if err := shiftStorer.DeleteShift(ctx, cfg.Config.Name, s.StartTime); err != nil {
 			return err
 		}

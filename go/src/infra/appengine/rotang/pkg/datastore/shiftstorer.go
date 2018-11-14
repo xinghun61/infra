@@ -277,6 +277,73 @@ func (s *Store) AllShifts(ctx context.Context, rota string) ([]rotang.ShiftEntry
 	return shifts, nil
 }
 
+// ShiftsFromTo fetches shifts inside the specified range.
+// Leaving From or To to time.Unset gives either from the beginning of time or end of time.
+func (s *Store) ShiftsFromTo(ctx context.Context, rota string, from, to time.Time) ([]rotang.ShiftEntry, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	dsShifts := DsShifts{
+		Key:  rootKey(ctx),
+		Name: rota,
+	}
+	if err := datastore.Get(ctx, &dsShifts); err != nil {
+		if err == datastore.ErrNoSuchEntity {
+			return nil, status.Errorf(codes.NotFound, "shifts not found")
+		}
+		return nil, err
+	}
+
+	query := datastore.NewQuery(shiftEntryKind).Ancestor(datastore.KeyForObj(ctx, &dsShifts))
+
+	var dsEntries []DsShiftEntry
+	switch {
+	case to.IsZero() && from.IsZero():
+		return s.AllShifts(ctx, rota)
+	case from.IsZero():
+		if err := datastore.GetAll(ctx, query.Lt("StartTime", to), &dsEntries); err != nil {
+			return nil, err
+		}
+	case to.IsZero():
+		if err := datastore.GetAll(ctx, query.Gte("EndTime", from), &dsEntries); err != nil {
+			return nil, err
+		}
+	default:
+		// Only a single inequality filter allowed for Datastore queries.
+		// https://cloud.google.com/appengine/docs/standard/go/datastore/query-restrictions
+		// To work around this the From time is queried with datastore and to is filtered
+		// out manually.
+		var tmpEntries []DsShiftEntry
+		if err := datastore.GetAll(ctx, query.Gte("EndTime", from), &tmpEntries); err != nil {
+			return nil, err
+		}
+		sort.Slice(dsEntries, func(i, j int) bool {
+			return dsEntries[i].StartTime.Before(dsEntries[j].StartTime)
+		})
+		for _, e := range tmpEntries {
+			if e.StartTime.After(to) && e.EndTime.After(to) {
+				continue
+			}
+			dsEntries = append(dsEntries, e)
+		}
+
+	}
+
+	var shifts []rotang.ShiftEntry
+	for _, shift := range dsEntries {
+		shifts = append(shifts, rotang.ShiftEntry{
+			Name:      shift.Name,
+			StartTime: shift.StartTime,
+			EndTime:   shift.EndTime,
+			Comment:   shift.Comment,
+			OnCall:    shift.OnCall,
+			EvtID:     shift.EvtID,
+		})
+	}
+
+	return shifts, nil
+}
+
 // Shift returns the requested shift.
 func (s *Store) Shift(ctx context.Context, rota string, start time.Time) (*rotang.ShiftEntry, error) {
 	if err := ctx.Err(); err != nil {

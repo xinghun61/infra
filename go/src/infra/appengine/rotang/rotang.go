@@ -178,6 +178,7 @@ type TokenStorer interface {
 type ShiftStorer interface {
 	AddShifts(ctx context.Context, rota string, entries []ShiftEntry) error
 	AllShifts(cxt context.Context, rota string) ([]ShiftEntry, error)
+	ShiftsFromTo(ctx context.Context, rota string, from, to time.Time) ([]ShiftEntry, error)
 	Shift(cxt context.Context, rota string, start time.Time) (*ShiftEntry, error)
 	DeleteAllShifts(ctx context.Context, rota string) error
 	DeleteShift(ctx context.Context, rota string, start time.Time) error

@@ -927,6 +927,7 @@ func TestCreateRotaConfiguration(t *testing.T) {
 		fail       bool
 		in         rotang.Configuration
 		memberPool []rotang.Member
+		add        *rotang.Configuration
 	}{
 		{
 			name: "Store success",
@@ -980,6 +981,55 @@ func TestCreateRotaConfiguration(t *testing.T) {
 				},
 			},
 			fail: true,
+		}, {
+			name: "Rota exists",
+			fail: true,
+			ctx:  ctx,
+			in: rotang.Configuration{
+				Config: rotang.Config{
+					Description:      "Test description",
+					Name:             "Sheriff Oncall Rotation",
+					Calendar:         "testCalendarLink@testland.com",
+					ShiftsToSchedule: 4,
+					Email: rotang.Email{
+						Subject: "Chrome OS build sheriff reminder",
+						Body:    "Some reminder",
+					},
+					Shifts: rotang.ShiftConfig{
+						ShiftMembers: 1,
+					},
+				},
+				Members: []rotang.ShiftMember{
+					{
+						Email: "letestbot@google.com",
+					},
+					{
+						Email: "testsheriff@google.com",
+					},
+					{
+						Email: "anothersheriff@google.com",
+					},
+				},
+			},
+			memberPool: []rotang.Member{
+				{
+					Name:  "Test Bot",
+					Email: "letestbot@google.com",
+				},
+				{
+					Name:  "Test Sheriff",
+					Email: "testsheriff@google.com",
+				},
+				{
+					Name:  "Another Test Sheriff",
+					Email: "anothersheriff@google.com",
+				},
+			},
+			add: &rotang.Configuration{
+				Config: rotang.Config{
+					Name: "Sheriff Oncall Rotation",
+				},
+			},
 		},
 	}
 	store := New(ctx)
@@ -992,6 +1042,12 @@ func TestCreateRotaConfiguration(t *testing.T) {
 				}
 				defer store.DeleteMember(ctx, m.Email)
 			}
+			if tst.add != nil {
+				if err := store.CreateRotaConfig(ctx, tst.add); err != nil {
+					t.Fatalf("%s: store.CreateRotaConfig(ctx, _) failed: %v", tst.name, err)
+				}
+				defer store.DeleteRotaConfig(ctx, tst.add.Config.Name)
+			}
 			err := store.CreateRotaConfig(tst.ctx, &tst.in)
 			if got, want := (err != nil), tst.fail; got != want {
 				t.Fatalf("%s: datastore.CreateRotaConfig() = %t want: %t, err: %v", tst.name, got, want, err)
@@ -999,6 +1055,8 @@ func TestCreateRotaConfiguration(t *testing.T) {
 			if err != nil {
 				return
 			}
+			defer store.DeleteRotaConfig(ctx, tst.in.Config.Name)
+
 			got, err := store.RotaConfig(ctx, tst.in.Config.Name)
 			if err != nil {
 				t.Fatalf("%s: store.RotaConfig(ctx, %q) failed: %v", tst.name, tst.in.Config.Name, err)
