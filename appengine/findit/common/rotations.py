@@ -10,7 +10,7 @@ from libs import time_util
 from model.wf_config import FinditConfig
 
 _ROTATIONS_URL = (
-    'https://rota-ng.appspot.com/legacy/all_rotatons.js')
+    'https://rota-ng.appspot.com/legacy/all_rotations.js')
 
 _HTTP_CLIENT = FinditHttpClient()
 
