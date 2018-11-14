@@ -6,7 +6,7 @@
 # under that package name.
 
 # Proto3 Protocol Buffers generator (protoc).
-infra/tools/protoc/windows  protobuf_version:v3.2.0
+infra/tools/protoc/windows-amd64  protobuf_version:v3.6.1
 
 # LogDog tool.
 infra/tools/luci/logdog/logdog/windows-amd64  git_revision:5cf65fdf804a9b3f3023f79d5b3cab2a88ccd09e

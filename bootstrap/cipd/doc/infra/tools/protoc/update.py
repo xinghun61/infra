@@ -40,7 +40,8 @@ SUPPORTED_PLATFORMS = [
   ('linux-amd64', 'linux-x86_64'),
   ('mac-amd64', 'osx-x86_64'),
   # no 64-bit version, but 32-bit works on amd64 just fine.
-  ('windows', 'win32'),
+  ('windows-386', 'win32'),
+  ('windows-amd64', 'win32'),
 ]
 
 
@@ -96,7 +97,7 @@ def do_download(gh_asset, for_windows):
 
 def repackage(gh_release, version, platform, gh_vers, dry_run, inspect):
   name = 'protoc-%s-%s.zip' % (version, gh_vers)
-  for_windows = platform == 'windows'
+  for_windows = platform.startswith('windows')
   exe_sfx = '.exe' if for_windows else ''
 
   asset = None
