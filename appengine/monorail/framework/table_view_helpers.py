@@ -523,20 +523,30 @@ class TableCell(object):
         self.non_column_labels)
 
 
-def CompositeTableCell(columns_to_combine, cell_factories):
+def CompositeFactoryTableCell(factory_col_list_arg):
   """Cell factory that combines multiple cells in a combined column."""
 
   class FactoryClass(TableCell):
-    def __init__(self, art, config=None, **kw):
+    factory_col_list = factory_col_list_arg
+
+    def __init__(self, art, **kw):
       TableCell.__init__(self, CELL_TYPE_UNFILTERABLE, [])
 
-      for sub_col in columns_to_combine:
+      for sub_factory, sub_col in self.factory_col_list:
         kw['col'] = sub_col
-        sub_factory = ChooseCellFactory(sub_col, cell_factories, config)
         sub_cell = sub_factory(art, **kw)
         self.non_column_labels.extend(sub_cell.non_column_labels)
         self.values.extend(sub_cell.values)
   return FactoryClass
+
+
+def CompositeColTableCell(columns_to_combine, cell_factories, config):
+  """Cell factory that combines multiple cells in a combined column."""
+  factory_col_list = []
+  for sub_col in columns_to_combine:
+    sub_factory = ChooseCellFactory(sub_col, cell_factories, config)
+    factory_col_list.append((sub_factory, sub_col))
+  return CompositeFactoryTableCell(factory_col_list)
 
 
 class CellItem(object):
@@ -650,10 +660,11 @@ def ChooseCellFactory(col, cell_factories, config):
     return cell_factories[col]
 
   if '/' in col:
-    return CompositeTableCell(col.split('/'), cell_factories)
+    return CompositeColTableCell(col.split('/'), cell_factories, config)
 
   fd = tracker_bizobj.FindFieldDef(col, config)
   if fd and fd.field_type != tracker_pb2.FieldTypes.ENUM_TYPE:
-    return TableCellCustom
+    return CompositeFactoryTableCell(
+        [(TableCellCustom, col), (TableCellKeyLabels, col)])
 
   return TableCellKeyLabels

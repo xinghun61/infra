@@ -12,6 +12,7 @@ from framework import framework_views
 from framework import table_view_helpers
 from proto import tracker_pb2
 from testing import fake
+from testing import testing_helpers
 from tracker import tracker_bizobj
 
 
@@ -77,6 +78,7 @@ class TableCellTest(unittest.TestCase):
     self.assertEqual(cell.values[0].item,'<b>bold</b> "summary".')
 
   # TODO(jrobbins): TableCellProject, TableCellStars
+
 
 
 class TableViewHelpersTest(unittest.TestCase):
@@ -522,9 +524,61 @@ class TableViewHelpersTest(unittest.TestCase):
     # The column is a non-enum custom field.
     actual = table_view_helpers.ChooseCellFactory(
         'deadline', cell_factories, self.config)
-    self.assertEqual(table_view_helpers.TableCellCustom, actual)
+    self.assertEqual(
+      [(table_view_helpers.TableCellCustom, 'deadline'),
+       (table_view_helpers.TableCellKeyLabels, 'deadline')],
+      actual.factory_col_list)
 
     # Column that don't match one of the other cases is assumed to be a label.
     actual = table_view_helpers.ChooseCellFactory(
         'reward', cell_factories, self.config)
     self.assertEqual(table_view_helpers.TableCellKeyLabels, actual)
+
+  def testCompositeFactoryTableCell_Empty(self):
+    """If we made a composite of zero columns, it would have no values."""
+    composite = table_view_helpers.CompositeFactoryTableCell([])
+    cell = composite('artifact')
+    self.assertEqual([], cell.values)
+
+  def testCompositeFactoryTableCell_Normal(self):
+    """If we make a composite, it has values from each of the sub cells."""
+    composite = table_view_helpers.CompositeFactoryTableCell(
+        [(sub_factory_1, 'col1'),
+         (sub_factory_2, 'col2')])
+
+    cell = composite('artifact')
+    self.assertEqual(
+        ['sub_cell_1_col1',
+         'sub_cell_2_col2'],
+        cell.values)
+
+  def testCompositeColTableCell_Empty(self):
+    """If we made a composite of zero columns, it would have no values."""
+    composite = table_view_helpers.CompositeColTableCell([], {}, self.config)
+    cell = composite('artifact')
+    self.assertEqual([], cell.values)
+
+
+  def testCompositeColTableCell_Normal(self):
+    """If we make a composite, it has values from each of the sub cells."""
+    composite = table_view_helpers.CompositeColTableCell(
+      ['col1', 'col2'],
+      {'col1': sub_factory_1, 'col2': sub_factory_2},
+      self.config)
+    cell = composite('artifact')
+    self.assertEqual(
+        ['sub_cell_1_col1',
+         'sub_cell_2_col2'],
+        cell.values)
+
+
+def sub_factory_1(_art, **kw):
+  return testing_helpers.Blank(
+      values=['sub_cell_1_%s' % kw['col']],
+      non_column_labels=[])
+
+
+def sub_factory_2(_art, **kw):
+  return testing_helpers.Blank(
+      values=['sub_cell_2_%s' % kw['col']],
+      non_column_labels=[])
