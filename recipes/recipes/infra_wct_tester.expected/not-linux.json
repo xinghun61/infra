@@ -84,7 +84,7 @@
       "-root",
       "[START_DIR]\\packages",
       "-ensure-file",
-      "dart/browsers/chrome/windows-386 b6b434ed592da55513d813b2cfb3422008fb280d\ninfra/nodejs/nodejs/windows-386 node_version:4.5.0\ninfra/testing/wct/windows-386 prod",
+      "dart/browsers/chrome/windows-386 b6b434ed592da55513d813b2cfb3422008fb280d\ninfra/nodejs/nodejs/windows-386 node_version:8.9.4\ninfra/testing/wct/windows-386 prod",
       "-json-output",
       "/path/to/tmp/json"
     ],
@@ -97,7 +97,7 @@
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"dart/browsers/chrome/windows-386\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-node_version:4.5\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-node_version:8.9\", @@@",
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/nodejs/nodejs/windows-386\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
