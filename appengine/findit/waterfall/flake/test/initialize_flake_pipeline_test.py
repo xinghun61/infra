@@ -13,6 +13,7 @@ from libs import analysis_status
 from libs.list_of_basestring import ListOfBasestring
 from model.flake.analysis.data_point import DataPoint
 from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.flake import Flake
 from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakeInput
 from pipelines.flake_failure.next_commit_position_pipeline import (
     NextCommitPositionOutput)
@@ -49,11 +50,18 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.MockUTCNow(mocked_now)
 
     test = TestInfo('m', 'b 1', 123, 's', 't')
+    flake = Flake.Create('chromium', 's', 't', 'label')
     need_analysis, analysis = initialize_flake_pipeline._NeedANewAnalysis(
-        test, test, None, user_email='test@google.com', allow_new_analysis=True)
+        test,
+        test,
+        flake.key,
+        None,
+        user_email='test@google.com',
+        allow_new_analysis=True)
 
     self.assertTrue(need_analysis)
     self.assertIsNotNone(analysis)
+    self.assertEqual(flake.key, analysis.flake_key)
     self.assertFalse(analysis.triggering_user_email_obscured)
     self.assertEqual(mocked_now, analysis.request_time)
 
@@ -63,6 +71,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 123
     step_name = 's'
     test_name = 't'
+    flake = Flake.Create('chromium', step_name, test_name, 'l')
     _CreateAndSaveMasterFlakeAnalysis(
         master_name,
         builder_name,
@@ -79,6 +88,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     need_analysis, analysis = initialize_flake_pipeline._NeedANewAnalysis(
         test,
         test,
+        flake.key,
         None,
         user_email='test@google.com',
         allow_new_analysis=True,
@@ -96,7 +106,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 123
     step_name = 's'
     test_name = 't'
-
+    flake = Flake.Create('chromium', step_name, test_name, 'l')
     analysis = _CreateAndSaveMasterFlakeAnalysis(
         master_name,
         builder_name,
@@ -104,6 +114,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
         step_name,
         test_name,
         status=analysis_status.COMPLETED)
+    analysis.flake_key = flake.key
     data_point = DataPoint()
     data_point.pass_rate = .5
     data_point.build_number = 100
@@ -118,6 +129,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     need_analysis, analysis = initialize_flake_pipeline._NeedANewAnalysis(
         test,
         test,
+        flake.key,
         None,
         user_email='test@google.com',
         allow_new_analysis=True,
@@ -174,10 +186,12 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     mocked_need_analysis.return_value = (True, mocked_analysis)
     test = TestInfo('m', 'b 1', 123, 's', 't')
     manually_triggered = False
+    flake = Flake.Create('chromium', 's', 't', 'l')
 
     analysis = initialize_flake_pipeline.ScheduleAnalysisIfNeeded(
         test,
         test,
+        flake.key,
         bug_id=None,
         allow_new_analysis=True,
         manually_triggered=manually_triggered,
@@ -207,13 +221,13 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     ])
 
   @mock.patch('waterfall.flake.initialize_flake_pipeline.AnalyzeFlakePipeline')
-  def testNotStartPipelineForNewAnalysis(self, mocked_pipeline):
+  def testNotStartPipelineForExistingAnalysis(self, mocked_pipeline):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
     step_name = 's'
     test_name = 't'
-
+    flake = Flake.Create('chromium', step_name, test_name, 'l')
     _CreateAndSaveMasterFlakeAnalysis(
         master_name,
         builder_name,
@@ -225,7 +239,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     test = TestInfo(master_name, builder_name, build_number, step_name,
                     test_name)
     analysis = initialize_flake_pipeline.ScheduleAnalysisIfNeeded(
-        test, test, queue_name=constants.DEFAULT_QUEUE)
+        test, test, flake.key, queue_name=constants.DEFAULT_QUEUE)
 
     self.assertFalse(mocked_pipeline.called)
     self.assertIsNotNone(analysis)

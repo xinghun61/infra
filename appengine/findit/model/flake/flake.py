@@ -256,3 +256,7 @@ class Flake(ndb.Model):
 
     return test_name_util.ReplaceAllPrefixesFromGtestNameWithMask(
         test_name_util.ReplaceParametersFromGtestNameWithMask(test_name))
+
+  def GetIssue(self):
+    """Returns the associated FlakeIssue."""
+    return self.flake_issue_key.get() if self.flake_issue_key else None

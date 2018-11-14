@@ -18,6 +18,7 @@ from model import triage_status
 from model.base_analysis import BaseAnalysis
 from model.base_build_model import BaseBuildModel
 from model.base_triaged_model import TriagedModel
+from model.flake.flake import Flake
 from model.flake.analysis.data_point import DataPoint
 from services.flake_failure import pass_rate_util
 
@@ -442,6 +443,9 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
 
   # The bug id in which this flake is reported.
   bug_id = ndb.IntegerProperty(indexed=True)
+
+  # The Flake entity that was responsible for triggering this analysis.
+  flake_key = ndb.KeyProperty(Flake, indexed=False)
 
   # A bit to track if a bug filing has been attempted.
   has_attempted_filing = ndb.BooleanProperty(default=False)

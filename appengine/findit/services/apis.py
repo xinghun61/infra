@@ -14,15 +14,17 @@ from libs import time_util
 from model.flake.analysis.flake_analysis_request import FlakeAnalysisRequest
 
 
-def AnalyzeDetectedFlakeOccurrence(flake_occurrence, bug_id):
+def AnalyzeDetectedFlakeOccurrence(flake, flake_occurrence, bug_id):
   """Analyze detected flake occurrence by Flake Detection.
 
   Args:
+    flake (Flake): The Flake triggering this analysis.
     flake_occurrece (FlakeOccurrence): A FlakeOccurrence model entity.
-    bug_id (str): Id of the bug to update after the analysis finishes.
+    bug_id (int): Id of the bug to update after the analysis finishes.
   """
   test_name = flake_occurrence.test_name
   analysis_request = FlakeAnalysisRequest.Create(test_name, False, bug_id)
+  analysis_request.flake_key = flake.key
 
   master_name = flake_occurrence.build_configuration.legacy_master_name
   builder_name = flake_occurrence.build_configuration.luci_builder
@@ -30,6 +32,7 @@ def AnalyzeDetectedFlakeOccurrence(flake_occurrence, bug_id):
   step_ui_name = flake_occurrence.step_ui_name
   analysis_request.AddBuildStep(master_name, builder_name, build_number,
                                 step_ui_name, time_util.GetUTCNow())
+  analysis_request.Save()
 
   logging.info('flake report for detected flake occurrence: %r',
                analysis_request)

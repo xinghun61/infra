@@ -24,6 +24,7 @@ from waterfall import build_util
 
 def _NeedANewAnalysis(normalized_test,
                       original_test,
+                      flake_key,
                       bug_id=None,
                       allow_new_analysis=False,
                       force=False,
@@ -37,9 +38,11 @@ def _NeedANewAnalysis(normalized_test,
 
   Args:
     normalized_test (TestInfo): Info of the normalized flaky test after mapping
-       a CQ trybot step to a Waterfall buildbot step, striping prefix "PRE_"
-       from a gtest, etc.
+      a CQ trybot step to a Waterfall buildbot step, striping prefix "PRE_" from
+      a gtest, etc.
     original_test (TestInfo): Info of the original flaky test.
+    flake_key (Key): The key to the Flake responsible for triggering this
+      analysis.
     bug_id (int): The monorail bug id to update when analysis is done.
     allow_new_analysis (bool): Indicate whether a new analysis is allowed.
     force (bool): Indicate whether to force a rerun of current analysis.
@@ -70,6 +73,7 @@ def _NeedANewAnalysis(normalized_test,
     analysis.original_step_name = original_test.step_name
     analysis.original_test_name = original_test.test_name
     analysis.bug_id = bug_id
+    analysis.flake_key = flake_key
 
   if not analysis:
     if not allow_new_analysis:
@@ -106,6 +110,7 @@ def _NeedANewAnalysis(normalized_test,
 def ScheduleAnalysisIfNeeded(
     normalized_test,
     original_test,
+    flake_key,
     bug_id=None,
     allow_new_analysis=False,
     force=False,
@@ -120,9 +125,11 @@ def ScheduleAnalysisIfNeeded(
 
   Args:
     normalized_test (TestInfo): Info of the normalized flaky test after mapping
-       a CQ trybot step to a Waterfall buildbot step, striping prefix "PRE_"
-       from a gtest, etc.
+      a CQ trybot step to a Waterfall buildbot step, striping prefix "PRE_"
+      from a gtest, etc.
     original_test (TestInfo): Info of the original flaky test.
+    flake_key (ndb.Key): The key to the Flake responsible for triggering this
+      analysis.
     bug_id (int): The monorail bug id to update when analysis is done.
     allow_new_analysis (bool): Indicate whether a new analysis is allowed.
     force (bool): Indicate whether to force a rerun of current analysis.
@@ -140,6 +147,7 @@ def ScheduleAnalysisIfNeeded(
   need_new_analysis, analysis = _NeedANewAnalysis(
       normalized_test,
       original_test,
+      flake_key,
       bug_id=bug_id,
       allow_new_analysis=allow_new_analysis,
       force=force,

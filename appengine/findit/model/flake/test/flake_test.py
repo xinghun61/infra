@@ -4,6 +4,7 @@
 import mock
 
 from model.flake.flake import Flake
+from model.flake.flake_issue import FlakeIssue
 from services import step_util
 from waterfall.test import wf_testcase
 
@@ -217,3 +218,34 @@ class FlakeTest(wf_testcase.WaterfallTestCase):
     fetched_flakes = Flake.query().fetch()
     self.assertEqual(1, len(fetched_flakes))
     self.assertEqual(None, fetched_flakes[0].test_suite_name)
+
+  def testGetIssue(self):
+    luci_project = 'chromium'
+    normalized_step_name = 'normalized_step'
+    normalized_test_name = 'a/b.html'
+    test_label_name = 'test_label'
+    bug_id = 12345
+
+    flake_issue = FlakeIssue.Create(luci_project, bug_id)
+    flake_issue.put()
+    flake = Flake.Create(
+        luci_project=luci_project,
+        normalized_step_name=normalized_step_name,
+        normalized_test_name=normalized_test_name,
+        test_label_name=test_label_name)
+    flake.flake_issue_key = flake_issue.key
+    self.assertEqual(flake_issue, flake.GetIssue())
+
+  def testGetIssueNoIssue(self):
+    luci_project = 'chromium'
+    normalized_step_name = 'normalized_step'
+    normalized_test_name = 'a/b.html'
+    test_label_name = 'test_label'
+
+    flake = Flake.Create(
+        luci_project=luci_project,
+        normalized_step_name=normalized_step_name,
+        normalized_test_name=normalized_test_name,
+        test_label_name=test_label_name)
+
+    self.assertIsNone(flake.GetIssue())

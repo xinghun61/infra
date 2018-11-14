@@ -465,7 +465,7 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     self.assertEqual(3, mock_analyze_flake_occurrence.call_count)
     expected_call_args = []
     for occurrence in occurrences:
-      expected_call_args.append(((occurrence, 12345),))
+      expected_call_args.append(((flake, occurrence, 12345),))
 
     self.assertEqual(expected_call_args,
                      mock_analyze_flake_occurrence.call_args_list)

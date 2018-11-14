@@ -279,6 +279,7 @@ def ScheduleAnalysisForFlake(request,
     analysis = initialize_flake_pipeline.ScheduleAnalysisIfNeeded(
         normalized_test,
         original_test,
+        request.flake_key,
         bug_id=request.bug_id,
         allow_new_analysis=True,
         manually_triggered=manually_triggered,

@@ -9,6 +9,7 @@ from common import constants
 from model.flake.analysis import triggering_sources
 from model.flake.analysis.flake_analysis_request import BuildStep
 from model.flake.analysis.flake_analysis_request import FlakeAnalysisRequest
+from model.flake.flake import Flake
 from services import monitoring
 from waterfall.flake import flake_analysis_service
 from waterfall.test import wf_testcase
@@ -296,8 +297,10 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(monitoring, 'OnFlakeAnalysisTriggered')
   def testAuthorizedAccessAndNewAnalysisNeededAndTriggered(self, mock_mon, _):
     step = BuildStep.Create('m', 'b', 80, 's', datetime(2016, 10, 20))
+    flake = Flake.Create('chromium', 's', 't', 'l')
     request = FlakeAnalysisRequest.Create('flake', False, 123)
     request.build_steps = [step]
+    request.flake_key = flake.key
     user_email = 'test@chromium.org'
     triggering_source = triggering_sources.FINDIT_UI
 
@@ -337,6 +340,7 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
       mocked_ScheduleAnalysisIfNeeded.assert_called_once_with(
           normalized_test,
           original_test,
+          flake.key,
           bug_id=123,
           allow_new_analysis=True,
           manually_triggered=False,
@@ -366,7 +370,9 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
         'isolate_target_name': 'wf_s',
         'canonical_step_name': 'wf_s'
     }
+    flake = Flake.Create('chromium', 's', 't', 'l')
     request = FlakeAnalysisRequest.Create('flake', False, 123)
+    request.flake_key = flake.key
     request.build_steps = [step]
     user_email = 'test@chromium.org'
     triggering_source = triggering_sources.FINDIT_UI
@@ -399,6 +405,7 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
       mocked_ScheduleAnalysisIfNeeded.assert_called_once_with(
           normalized_test,
           original_test,
+          flake.key,
           bug_id=123,
           allow_new_analysis=True,
           manually_triggered=False,

@@ -6,6 +6,7 @@ from google.appengine.ext import ndb
 
 from gae_libs.model.versioned_model import VersionedModel
 from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
+from model.flake.flake import Flake
 
 
 class BuildStep(ndb.Model):
@@ -90,6 +91,9 @@ class FlakeAnalysisRequest(VersionedModel):
 
   # The bug id for this flake on Monorail.
   bug_id = ndb.IntegerProperty(indexed=False)
+
+  # The key to the Flake entity to be associated with the resulting analysis.
+  flake_key = ndb.KeyProperty(Flake)
 
   # The reporter of this bug, use triggering_source as an emun to define this
   # value. The triggering source FINDIT_PIPELINES should be used for when

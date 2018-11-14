@@ -335,7 +335,7 @@ def ReportFlakesToFlakeAnalyzer(flake_tuples_to_report):
     flake_issue = _GetFlakeIssue(flake)
     issue_id = flake_issue.issue_id if flake_issue else None
     for occurrence in occurrences:
-      AnalyzeDetectedFlakeOccurrence(occurrence, issue_id)
+      AnalyzeDetectedFlakeOccurrence(flake, occurrence, issue_id)
 
 
 def CreateOrUpdateIssue(issue_generator, luci_project='chromium'):

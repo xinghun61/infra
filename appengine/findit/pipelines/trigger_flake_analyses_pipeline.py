@@ -17,6 +17,7 @@ from waterfall import waterfall_config
 from waterfall.flake import flake_analysis_service
 
 
+# TODO(crbug.com/904048): Route through Flake Detection instead.
 class TriggerFlakeAnalysesPipeline(GeneratorPipeline):
   """A pipeline that automatically triggers flake analyses."""
   input_type = BuildKey
@@ -39,6 +40,9 @@ class TriggerFlakeAnalysesPipeline(GeneratorPipeline):
                    build_number, step, len(flaky_tests))
 
       for test_name in flaky_tests:
+        # TODO(crbug.com/904050): Create a Flake/lakeIssue and associate with
+        # request. Eventually, FlakeAnalysisRequest should be deprecated as well
+        # in favor of just Flake.
         request = FlakeAnalysisRequest.Create(test_name, False, None)
         request.AddBuildStep(master_name, builder_name, build_number, step,
                              time_util.GetUTCNow())
