@@ -23,6 +23,11 @@ Also, take a look at the "Error reporting" section of the Google Cloud Console f
 production app to see if there are any new errors that are impacting users.  File Afterglow
 issues to track these problems.
 
+And, take a look at any recent threads on
+[g/monorail-eng](http://g/monorail-eng) to see if users have asked us
+questions there or if there are any current b/ issues that are sending
+notifications there.
+
 If you have questions, feel free to chat with jrobbins or other members of the monorail team.
 
 
