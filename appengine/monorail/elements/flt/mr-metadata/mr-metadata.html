@@ -5,6 +5,7 @@
 <link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
 
+<link rel="import" href="../../mr-bug-link/mr-bug-link.html">
 <link rel="import" href="../../mr-user-link/mr-user-link.html">
 <link rel="import" href="../shared/metadata-mixin.html">
 <link rel="import" href="../mr-metadata/mr-field-values.html">
@@ -171,8 +172,12 @@
         <th>BlockedOn:</th>
         <td>
           <template is="dom-repeat" items="[[blockedOn]]">
-            <a href$="/p/[[item.projectName]]/issues/detail?id=[[item.localId]]">
-              Issue [[item.localId]]</a>
+            <mr-bug-link
+              project-name="[[projectName]]"
+              issue="[[_getIssueForRef(blockerReferences, item)]]"
+              is-closed$="[[_getIsClosedForRef(blockerReferences, item)]]"
+            >
+            </mr-bug-link>
             <br />
           </template>
         </td>
@@ -184,8 +189,12 @@
         <th>Blocking:</th>
         <td>
           <template is="dom-repeat" items="[[blocking]]">
-            <a href$="/p/[[item.projectName]]/issues/detail?id=[[item.localId]]">
-              Issue [[item.localId]]</a>
+            <mr-bug-link
+              project-name="[[projectName]]"
+              issue="[[_getIssueForRef(blockerReferences, item)]]"
+              is-closed$="[[_getIsClosedForRef(blockerReferences, item)]]"
+            >
+            </mr-bug-link>
             <br />
           </template>
         </td>

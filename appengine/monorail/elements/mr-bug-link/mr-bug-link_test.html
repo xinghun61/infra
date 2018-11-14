@@ -1,0 +1,58 @@
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/elements/mr-bug-link/mr-bug-link.html">
+<test-fixture id="basic">
+  <template>
+    <mr-bug-link></mr-bug-link>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+
+  suite('basic tests', function() {
+    var element;
+
+    setup(function() {
+      element = fixture('basic');
+    });
+
+    test('renders', function(done) {
+      flush(() => {
+        assert.isDefined(element, 'element is defined');
+        done();
+      });
+    });
+
+    test('strikethrough when closed', function(done) {
+      const link = Polymer.dom(element.root).querySelector('#bugLink');
+      assert.isFalse(
+          window.getComputedStyle(link).getPropertyValue(
+            'text-decoration').includes('line-through'));
+      element.isClosed = true;
+      flush(() => {
+        assert.isTrue(
+            window.getComputedStyle(link).getPropertyValue(
+              'text-decoration').includes('line-through'));
+        done();
+      });
+    });
+
+    test('shows projectName only when different from global', function(done) {
+      element.issue = {
+        projectName: 'test',
+        localId: 11,
+      };
+      const link = Polymer.dom(element.root).querySelector('#bugLink');
+      assert.equal(link.textContent.trim(), 'Issue 11');
+
+      element.projectName = 'other';
+      flush(() => {
+        assert.equal(link.textContent.trim(), 'Issue test:11');
+        done();
+      });
+    });
+  });
+})();
+</script>
