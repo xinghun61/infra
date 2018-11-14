@@ -424,8 +424,10 @@ def cron_update_buckets():
         defaults = bucket_cfg.swarming.builder_defaults
         bucket_cfg.swarming.ClearField('builder_defaults')
         if not any(d.startswith('pool:') for d in defaults.dimensions):
-          # TODO(crbug.com/851036): make it "luci.<project>.<bucket name>".
-          defaults.dimensions.append('pool:' + bucket_cfg.name)
+          defaults.dimensions.append(
+              'pool:luci.%s.%s' %
+              (project_id, short_bucket_name(bucket_cfg.name))
+          )
         for b in bucket_cfg.swarming.builders:
           flatten_swarmingcfg.flatten_builder(
               b, defaults, builder_mixins_by_name

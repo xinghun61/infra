@@ -228,7 +228,7 @@ class ConfigTest(testing.AppengineTestCase):
           }
         }
         buckets {
-          name: "luci.chromium.try"
+          name: "try"
           acl_sets: "public"
           acls {
             role: SCHEDULER
