@@ -823,9 +823,8 @@ def _get_builder_async(build):
   if not isinstance(builder_name, basestring):
     raise errors.InvalidInputError('Invalid builder name %r' % builder_name)
 
-  project_id, bucket_cfg = yield config.get_bucket_async(build.bucket_id)
+  _, bucket_cfg = yield config.get_bucket_async(build.bucket_id)
   assert bucket_cfg, 'if there is no bucket, this code should not have run'
-  assert project_id == build.project, '%r != %r' % (project_id, build.project)
   if not bucket_cfg.HasField('swarming'):
     raise errors.InvalidInputError(
         'bucket %r is not a swarming bucket' % bucket_cfg.name

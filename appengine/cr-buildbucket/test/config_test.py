@@ -141,8 +141,8 @@ class ConfigTest(testing.AppengineTestCase):
 
   def test_get_bucket(self):
     config.put_bucket('chromium', 'deadbeef', LUCI_CHROMIUM_TRY)
-    project_id, cfg = config.get_bucket('chromium/try')
-    self.assertEqual(project_id, 'chromium')
+    rev, cfg = config.get_bucket('chromium/try')
+    self.assertEqual(rev, 'deadbeef')
     self.assertEqual(cfg, short_bucket_cfg(LUCI_CHROMIUM_TRY))
 
     self.assertIsNone(config.get_bucket('chromium/nonexistent')[0])

@@ -169,7 +169,7 @@ class SwarmingTest(BaseTest):
     self.patch(
         'config.get_bucket_async',
         autospec=True,
-        return_value=future(('chromium', self.bucket_cfg))
+        return_value=future(('deadbeef', self.bucket_cfg))
     )
 
     self.task_template = {

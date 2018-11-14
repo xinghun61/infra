@@ -751,16 +751,14 @@ class BuildBucketApi(remote.Service):
   def get_bucket(self, request):
     """Returns bucket information."""
     bucket_id = convert_bucket(request.bucket)  # checks access
-    project_id, bucket_name = config.parse_bucket_id(bucket_id)
-    # TODO(crbug.com/851036): use config.get_bucket when TODO in
-    # get_bucket_async is done.
-    bucket = config.Bucket.make_key(project_id, bucket_name).get()
-    assert bucket  # access check would have failed.
+    project_id, _ = config.parse_bucket_id(bucket_id)
+    rev, bucket_cfg = config.get_bucket(bucket_id)
+    assert bucket_cfg  # access check would have failed.
     return BucketMessage(
-        name=bucket_name,
+        name=request.bucket,
         project_id=project_id,
-        config_file_content=protobuf.text_format.MessageToString(bucket.config),
-        config_file_rev=bucket.revision,
+        config_file_content=protobuf.text_format.MessageToString(bucket_cfg),
+        config_file_rev=rev,
         config_file_url=config.get_buildbucket_cfg_url(project_id),
     )
 

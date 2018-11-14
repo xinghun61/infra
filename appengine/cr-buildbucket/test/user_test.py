@@ -72,7 +72,7 @@ class UserTest(testing.AppengineTestCase):
     self.patch(
         'config.get_bucket_async',
         autospec=True,
-        side_effect=lambda bid: future(('chromium', bucket_map.get(bid)))
+        side_effect=lambda bid: future(('deadbeef', bucket_map.get(bid)))
     )
 
   def get_role(self, bucket_id):

@@ -67,7 +67,7 @@ class SearchTest(testing.AppengineTestCase):
 
     self.patch(
         'config.get_bucket_async',
-        return_value=future({'chromium/try': self.chromium_try})
+        return_value=future({'deadbeef': self.chromium_try})
     )
     self.patch(
         'user.get_accessible_buckets_async',

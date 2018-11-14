@@ -365,30 +365,17 @@ def resolve_bucket_name_async(bucket_name):
 @ndb.non_transactional
 @ndb.tasklet
 def get_bucket_async(bucket_id):
-  """Returns a (project_id, project_config_pb2.Bucket) tuple."""
-  if is_legacy_bucket_id(bucket_id):  # pragma: no cover
-    # Legacy mode. TODO(crbug.com/851036): remove.
-    bucket = yield LegacyBucket.get_by_id_async(bucket_id)
-    if bucket is None:
-      raise ndb.Return(None, None)
-    raise ndb.Return(
-        bucket.project_id,
-        parse_binary_bucket_config(bucket.config_content_binary)
-    )
-
+  """Returns a (revision, project_config_pb2.Bucket) tuple."""
   key = Bucket.make_key(*parse_bucket_id(bucket_id))
   bucket = yield key.get_async()
   if bucket is None:
     raise ndb.Return(None, None)
-  # TODO(crbug.com/851036): replace returned project_id with rev,
-  # when legacy mode is dropped.
-  # The caller knows project id.
-  raise ndb.Return(bucket.project_id, bucket.config)
+  raise ndb.Return(bucket.revision, bucket.config)
 
 
 @ndb.non_transactional
 def get_bucket(bucket_id):
-  """Returns a (project_id, project_config_pb2.Bucket) tuple."""
+  """Returns a (revision, project_config_pb2.Bucket) tuple."""
   return get_bucket_async(bucket_id).get_result()
 
 
