@@ -162,8 +162,11 @@ func init() {
 	r.GET("/importshifts", protected, h.HandleShiftImport)
 	r.GET("/manageshifts", protected, h.HandleManageShifts)
 	r.GET("/legacy/:name", tmw, h.HandleLegacy)
+	r.GET("/oncall", protected, h.HandleOncall)
+	r.GET("/oncall/:name", protected, h.HandleOncall)
 	r.GET("/memberjson", protected, h.HandleMember)
 
+	r.POST("/oncalljson", protected, h.HandleOncallJSON)
 	r.POST("/shiftsupdate", protected, h.HandleShiftUpdate)
 	r.POST("/shiftsgenerate", protected, h.HandleShiftGenerate)
 	r.POST("/generate", protected, h.HandleGenerate)

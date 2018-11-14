@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<title>oncall</title>
+<body>
+<script src="/static/dist/bundle.js"></script>
+{{if .Rotas}}
+<fieldset>
+  <legend>Oncall</legend>
+    <rota-oncall rotas="{{.Rotas}}" user="{{.User}}">
+    </rota-oncall>
+</fieldset>
+{{end}}
+{{if .Current}}
+  <rota-shift-swap shifts='{{.Current}}'>
+  </rota-shift-swap>
+{{end}}
+</body>

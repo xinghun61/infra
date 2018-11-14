@@ -5,6 +5,8 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
 	"infra/appengine/rotang"
 	"net/http"
 
@@ -37,6 +39,12 @@ func (h *State) HandleIndex(ctx *router.Context) {
 		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	if err := enc.Encode(rotas); err != nil {
+		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	templates.MustRender(ctx.Context, ctx.Writer, "pages/index.html", templates.Args{"Rotas": rotas, "User": usr})
+	templates.MustRender(ctx.Context, ctx.Writer, "pages/index.html", templates.Args{"Rotas": buf.String(), "User": usr.Email})
 }

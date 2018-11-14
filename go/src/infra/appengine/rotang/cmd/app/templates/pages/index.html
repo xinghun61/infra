@@ -24,6 +24,9 @@ Switch to RotaNG
 <a href="managerota">Manage rotations</a><br>
 
 {{if .Rotas}}
+<h2>Rotations you are a member of</h2>
+<rota-oncall rotas="{{.Rotas}}" user="{{.User}}">
+</rota-oncall>
 <h2>Member stuff</h2>
 <rota-member></rota-member>
 {{end}}
