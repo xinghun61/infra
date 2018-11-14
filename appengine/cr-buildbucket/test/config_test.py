@@ -11,9 +11,11 @@ from components import utils
 
 utils.fix_protobuf_package()
 
+from google.appengine.ext import ndb
+from google.protobuf import text_format
+
 from components import config as config_component
 from components.config import validation_context
-from google.protobuf import text_format
 from testing_utils import testing
 import mock
 
@@ -21,9 +23,6 @@ from proto.config import project_config_pb2
 from swarming import flatten_swarmingcfg
 import config
 import errors
-
-to_text = text_format.MessageToString
-to_binary = lambda msg: msg.SerializeToString()
 
 
 def parse_bucket_cfg(text):
@@ -39,91 +38,96 @@ def short_bucket_cfg(cfg):
 
 
 LUCI_CHROMIUM_TRY = parse_bucket_cfg(
-    '''name: "luci.chromium.try"
-acls {
-  group: "all"
-}
-swarming {
-  builders {
-    name: "linux"
-    dimensions: "os:Linux"
-    dimensions: "pool:luci.chromium.try"
-    recipe {
-      repository: "https://example.com"
-      name: "x"
+    '''
+    name: "luci.chromium.try"
+    acls {
+      role: READER
+      group: "all"
     }
-  }
-}
+    acls {
+      role: SCHEDULER
+      identity: "user:johndoe@example.com"
+    }
+    swarming {
+      builders {
+        name: "linux"
+        dimensions: "os:Linux"
+        dimensions: "pool:luci.chromium.try"
+        recipe {
+          repository: "https://example.com"
+          name: "x"
+        }
+      }
+    }
 '''
 )
 
 LUCI_DART_TRY = parse_bucket_cfg(
-    '''name: "luci.dart.try"
-swarming {
-  builders {
-    name: "linux"
-    dimensions: "pool:Dart.LUCI"
-    recipe {
-      repository: "https://example.com"
-      name: "x"
+    '''
+    name: "luci.dart.try"
+    swarming {
+      builders {
+        name: "linux"
+        dimensions: "pool:Dart.LUCI"
+        recipe {
+          repository: "https://example.com"
+          name: "x"
+        }
+      }
     }
-  }
-}
-'''
+    '''
 )
 
 MASTER_TRYSERVER_CHROMIUM_LINUX = parse_bucket_cfg(
-    '''name: "master.tryserver.chromium.linux"
-acls {
-  group: "all"
-}
-acls {
-  role: SCHEDULER
-  group: "tryjob-access"
-}
-'''
+    '''
+    name: "master.tryserver.chromium.linux"
+    acls {
+      role: READER
+      group: "all"
+    }
+    acls {
+      role: SCHEDULER
+      group: "tryjob-access"
+    }
+    '''
 )
 
 MASTER_TRYSERVER_CHROMIUM_WIN = parse_bucket_cfg(
-    '''name: "master.tryserver.chromium.win"
-acls {
-  group: "all"
-}
-acls {
-  role: SCHEDULER
-  group: "tryjob-access"
-}
-'''
+    '''
+    name: "master.tryserver.chromium.win"
+    acls {
+      role: READER
+      group: "all"
+    }
+    acls {
+      role: SCHEDULER
+      group: "tryjob-access"
+    }
+    '''
 )
 
 MASTER_TRYSERVER_CHROMIUM_MAC = parse_bucket_cfg(
-    '''name: "master.tryserver.chromium.mac"
-acls {
-  group: "all"
-}
-acls {
-  role: SCHEDULER
-  group: "tryjob-access"
-}
-'''
+    '''
+    name: "master.tryserver.chromium.mac"
+    acls {
+      role: READER
+      group: "all"
+    }
+    acls {
+      role: SCHEDULER
+      group: "tryjob-access"
+    }
+    '''
 )
 
 MASTER_TRYSERVER_V8 = parse_bucket_cfg(
-    '''name: "master.tryserver.v8"
-acls {
-  role: WRITER
-  group: "v8-team"
-}
-'''
-)
-
-MASTER_TRYSERVER_TEST = parse_bucket_cfg(
-    '''name: "master.tryserver.test"
-acls {
-  role: WRITER
-  identity: "user:root@google.com"
-}
-'''
+    '''
+    name: "master.tryserver.v8"
+    acls {
+      role: WRITER
+      group: "v8-team"
+    }
+    '''
 )
 
 
@@ -204,65 +208,70 @@ class ConfigTest(testing.AppengineTestCase):
   def test_cron_update_buckets(self, get_project_configs):
     chromium_buildbucket_cfg = parse_cfg(
         '''
-      acl_sets {
-        name: "public"
-        acls {
-          role: READER
-          group: "all"
-        }
-        acls {
-          role: READER
-          group: "all"
-        }
-      }
-      builder_mixins {
-        name: "recipe-x"
-        recipe {
-          repository: "https://example.com"
-          name: "x"
-        }
-      }
-      buckets {
-        name: "luci.chromium.try"
-        acl_sets: "public"
-        swarming {
-          builder_defaults {
-            mixins: "recipe-x"
+        acl_sets {
+          name: "public"
+          acls {
+            role: READER
+            group: "all"
           }
-          builders {
-            name: "linux"
-            dimensions: "os:Linux"
-          }
-        }
-      }
-      buckets {
-        name: "master.tryserver.chromium.linux"
-        acl_sets: "public"
-        acl_sets: "undefined_acl_set_will_cause_an_error_in_log_but_not_failure"
-        acls {
-          role: SCHEDULER
-          group: "tryjob-access"
-        }
-      }
 
-      buckets {
-        name: "master.tryserver.chromium.win"
-        acls {
-          role: READER
-          group: "all"
+          # Test deduplication.
+          acls {
+            group: "all"
+          }
         }
-        acls {
-          role: SCHEDULER
-          group: "tryjob-access"
+        builder_mixins {
+          name: "recipe-x"
+          recipe {
+            repository: "https://example.com"
+            name: "x"
+          }
         }
-      }
-      '''
+        buckets {
+          name: "luci.chromium.try"
+          acl_sets: "public"
+          acls {
+            role: SCHEDULER
+            identity: "johndoe@example.com"
+          }
+          swarming {
+            builder_defaults {
+              mixins: "recipe-x"
+            }
+            builders {
+              name: "linux"
+              dimensions: "os:Linux"
+            }
+          }
+        }
+        buckets {
+          name: "master.tryserver.chromium.linux"
+          acl_sets: "public"
+          acl_sets: "undefined_acl_set_will_log_an_error_but_not_failure"
+          acls {
+            role: SCHEDULER
+            group: "tryjob-access"
+          }
+        }
+
+        buckets {
+          name: "master.tryserver.chromium.win"
+          acls {
+            role: READER
+            group: "all"
+          }
+          acls {
+            role: SCHEDULER
+            group: "tryjob-access"
+          }
+        }
+        '''
     )
 
     dart_buildbucket_cfg = parse_cfg(
         '''
       buckets {
-        name: "luci.dart.try"
+        name: "try"
         swarming {
           builder_defaults {
             dimensions: "pool:Dart.LUCI"
@@ -291,77 +300,51 @@ class ConfigTest(testing.AppengineTestCase):
       '''
     )
 
-    test_buildbucket_cfg = parse_cfg(
-        '''
-      buckets {
-        name: "master.tryserver.test"
-        acls {
-          role: WRITER
-          identity: "root@google.com"
-        }
-      }
-      '''
-    )
-
     get_project_configs.return_value = {
         'chromium': ('deadbeef', chromium_buildbucket_cfg, None),
         'dart': ('deadbeef', dart_buildbucket_cfg, None),
         'v8': (None, v8_buildbucket_cfg, None),
-        'test': ('babe', test_buildbucket_cfg, None),
     }
 
     config.cron_update_buckets()
 
-    actual = config.LegacyBucket.query().fetch()
+    actual = config.Bucket.query().fetch()
     actual = sorted(actual, key=lambda b: b.key)
     expected = [
-        config.LegacyBucket(
-            id='luci.chromium.try',
-            entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-            project_id='chromium',
-            revision='deadbeef',
-            config_content=to_text(LUCI_CHROMIUM_TRY),
-            config_content_binary=to_binary(LUCI_CHROMIUM_TRY),
-        ),
-        config.LegacyBucket(
-            id='luci.dart.try',
-            entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-            project_id='dart',
-            revision='deadbeef',
-            config_content=to_text(LUCI_DART_TRY),
-            config_content_binary=to_binary(LUCI_DART_TRY),
-        ),
-        config.LegacyBucket(
+        config.Bucket(
+            parent=ndb.Key(config.Project, 'chromium'),
             id='master.tryserver.chromium.linux',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-            project_id='chromium',
             revision='deadbeef',
-            config_content=to_text(MASTER_TRYSERVER_CHROMIUM_LINUX),
-            config_content_binary=to_binary(MASTER_TRYSERVER_CHROMIUM_LINUX),
+            config=MASTER_TRYSERVER_CHROMIUM_LINUX,
         ),
-        config.LegacyBucket(
+        config.Bucket(
+            parent=ndb.Key(config.Project, 'chromium'),
             id='master.tryserver.chromium.win',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-            project_id='chromium',
             revision='deadbeef',
-            config_content=to_text(MASTER_TRYSERVER_CHROMIUM_WIN),
-            config_content_binary=to_binary(MASTER_TRYSERVER_CHROMIUM_WIN),
+            config=MASTER_TRYSERVER_CHROMIUM_WIN,
         ),
-        config.LegacyBucket(
-            id='master.tryserver.test',
+        config.Bucket(
+            parent=ndb.Key(config.Project, 'chromium'),
+            id='try',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-            project_id='test',
-            revision='babe',
-            config_content=to_text(MASTER_TRYSERVER_TEST),
-            config_content_binary=to_binary(MASTER_TRYSERVER_TEST),
+            revision='deadbeef',
+            config=short_bucket_cfg(LUCI_CHROMIUM_TRY),
         ),
-        config.LegacyBucket(
+        config.Bucket(
+            parent=ndb.Key(config.Project, 'dart'),
+            id='try',
+            entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
+            revision='deadbeef',
+            config=short_bucket_cfg(LUCI_DART_TRY),
+        ),
+        config.Bucket(
+            parent=ndb.Key(config.Project, 'v8'),
             id='master.tryserver.v8',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-            project_id='v8',
             revision='sha1:cfc761d7a953a72ddea8f3d4c9a28e69777ca22c',
-            config_content=to_text(MASTER_TRYSERVER_V8),
-            config_content_binary=to_binary(MASTER_TRYSERVER_V8),
+            config=MASTER_TRYSERVER_V8
         ),
     ]
     self.assertEqual(actual, expected)
@@ -370,50 +353,42 @@ class ConfigTest(testing.AppengineTestCase):
   def test_cron_update_buckets_with_existing(self, get_project_configs):
     chromium_buildbucket_cfg = parse_cfg(
         '''
-      buckets {
-        name: "master.tryserver.chromium.linux"
-        acls {
-          role: READER
-          group: "all"
+        buckets {
+          name: "master.tryserver.chromium.linux"
+          acls {
+            role: READER
+            group: "all"
+          }
+          acls {
+            role: SCHEDULER
+            group: "tryjob-access"
+          }
         }
-        acls {
-          role: SCHEDULER
-          group: "tryjob-access"
-        }
-      }
 
-      buckets {
-        name: "master.tryserver.chromium.mac"
-        acls {
-          role: READER
-          group: "all"
+        buckets {
+          name: "master.tryserver.chromium.mac"
+          acls {
+            role: READER
+            group: "all"
+          }
+          acls {
+            role: SCHEDULER
+            group: "tryjob-access"
+          }
         }
-        acls {
-          role: SCHEDULER
-          group: "tryjob-access"
-        }
-      }
-      '''
+        '''
     )
 
     v8_buildbucket_cfg = parse_cfg(
         '''
-      buckets {
-        name: "master.tryserver.chromium.linux"
-        acls {
-          role: WRITER
-          group: "v8-team"
+        buckets {
+          name: "master.tryserver.v8"
+          acls {
+            role: WRITER
+            group: "v8-team"
+          }
         }
-      }
-
-      buckets {
-        name: "master.tryserver.v8"
-        acls {
-          role: WRITER
-          group: "v8-team"
-        }
-      }
-      '''
+        '''
     )
     get_project_configs.return_value = {
         'chromium': ('new!', chromium_buildbucket_cfg, None),
@@ -428,32 +403,29 @@ class ConfigTest(testing.AppengineTestCase):
 
     config.cron_update_buckets()
 
-    actual = config.LegacyBucket.query().fetch()
-    actual = sorted(actual, key=lambda b: b.key.id())
+    actual = config.Bucket.query().fetch()
+    actual = sorted(actual, key=lambda b: b.key)
     expected = [
-        config.LegacyBucket(
+        config.Bucket(
+            parent=ndb.Key(config.Project, 'chromium'),
             id='master.tryserver.chromium.linux',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-            project_id='chromium',
             revision='new!',
-            config_content=to_text(MASTER_TRYSERVER_CHROMIUM_LINUX),
-            config_content_binary=to_binary(MASTER_TRYSERVER_CHROMIUM_LINUX),
+            config=MASTER_TRYSERVER_CHROMIUM_LINUX,
         ),
-        config.LegacyBucket(
+        config.Bucket(
+            parent=ndb.Key(config.Project, 'chromium'),
             id='master.tryserver.chromium.mac',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-            project_id='chromium',
             revision='new!',
-            config_content=to_text(MASTER_TRYSERVER_CHROMIUM_MAC),
-            config_content_binary=to_binary(MASTER_TRYSERVER_CHROMIUM_MAC),
+            config=MASTER_TRYSERVER_CHROMIUM_MAC,
         ),
-        config.LegacyBucket(
+        config.Bucket(
+            parent=ndb.Key(config.Project, 'v8'),
             id='master.tryserver.v8',
             entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-            project_id='v8',
             revision='deadbeef',
-            config_content=to_text(MASTER_TRYSERVER_V8),
-            config_content_binary=to_binary(MASTER_TRYSERVER_V8),
+            config=MASTER_TRYSERVER_V8,
         ),
     ]
     self.assertEqual(actual, expected)
@@ -472,10 +444,9 @@ class ConfigTest(testing.AppengineTestCase):
 
     # We must not delete buckets defined in a project that currently have a
     # broken config.
-    actual = config.LegacyBucket.get_by_id(MASTER_TRYSERVER_CHROMIUM_LINUX.name)
-    self.assertEqual(
-        actual.config_content, to_text(MASTER_TRYSERVER_CHROMIUM_LINUX)
-    )
+    bucket_id = 'chromium/' + MASTER_TRYSERVER_CHROMIUM_LINUX.name
+    _, actual = config.get_bucket(bucket_id)
+    self.assertEqual(actual, MASTER_TRYSERVER_CHROMIUM_LINUX)
 
   def cfg_validation_test(self, cfg, expected_messages):
     ctx = config_component.validation.Context()

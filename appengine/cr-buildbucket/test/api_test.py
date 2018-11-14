@@ -14,13 +14,14 @@ sys.path.insert(
     0, os.path.join(REPO_ROOT_DIR, 'luci', 'appengine', 'third_party_local')
 )
 
+from google.protobuf import text_format
+
 from components import auth
 from components import utils
 from testing_utils import testing
 import mock
 import gae_ts_mon
 
-from proto.config import project_config_pb2
 from test import config_test
 from test.test_util import future, future_exception
 import api
@@ -747,7 +748,7 @@ class V1ApiTest(testing.EndpointsTestCase):
         res, {
             'name': 'master.tryserver.chromium.linux',
             'project_id': 'chromium',
-            'config_file_content': config_test.to_text(bucket_cfg),
+            'config_file_content': text_format.MessageToString(bucket_cfg),
             'config_file_url': 'https://example.com/buildbucket.cfg',
             'config_file_rev': 'deadbeef',
         }

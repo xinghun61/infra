@@ -153,46 +153,6 @@ def validate_settings_cfg(cfg, ctx):  # pragma: no cover
       swarmingcfg.validate_service_cfg(cfg.swarming, ctx)
 
 
-# TODO(crbug.com/851036): delete LegacyBucket in favor of Bucket.
-class LegacyBucket(ndb.Model):
-  """DEPRECATED. Stores project a bucket belongs to, and its ACLs.
-
-  For historical reasons, some bucket names must match Chromium Buildbot master
-  names, therefore they may not contain project id. Consequently, it is
-  impossible to retrieve a project id from bucket name without an additional
-  {bucket_name -> project_id} map. This entity kind is used to store the mapping
-  and a copy of a bucket config retrieved from luci-config.
-
-  By storing this mapping, we reserve bucket names for projects. If project X
-  is trying to use a bucket name already being used by project Y, the
-  config of projct X is considered invalid.
-
-  Bucket entities are updated in cron_update_buckets() from project configs.
-
-  Entity key:
-    Root entity. Id is bucket name.
-  """
-
-  @classmethod
-  def _get_kind(cls):
-    return 'Bucket'
-
-  # Version of entity schema. If not current, cron_update_buckets will update
-  # the entity forcefully.
-  entity_schema_version = ndb.IntegerProperty()
-  # Project id in luci-config.
-  project_id = ndb.StringProperty(required=True)
-  # Bucket revision matches its config revision.
-  revision = ndb.StringProperty(required=True)
-  # Bucket configuration (Bucket message in project_config.proto),
-  # copied verbatim from luci-config for get_bucket API.
-  # Must not be used in by serving code paths, use config_content_binary
-  # instead.
-  config_content = ndb.TextProperty(required=True)
-  # Binary equivalent of config_content.
-  config_content_binary = ndb.BlobProperty(required=True)
-
-
 class Project(ndb.Model):
   """Parent entity for Bucket.
 
@@ -300,13 +260,6 @@ def short_bucket_name(bucket_name):
   return bucket_name
 
 
-# TODO(crbug.com/851036): remove.
-def parse_binary_bucket_config(cfg_bytes):  # pragma: no cover
-  cfg = project_config_pb2.Bucket()
-  cfg.MergeFromString(cfg_bytes)
-  return cfg
-
-
 def is_swarming_config(cfg):
   """Returns True if this is a Swarming bucket config."""
   return cfg and cfg.HasField('swarming')
@@ -394,28 +347,17 @@ def _normalize_acls(acls):
 
 
 def put_bucket(project_id, revision, bucket_cfg):
-  legacy_bucket = LegacyBucket(
-      id=bucket_cfg.name,
-      entity_schema_version=CURRENT_BUCKET_SCHEMA_VERSION,
-      project_id=project_id,
-      revision=revision,
-      config_content=protobuf.text_format.MessageToString(bucket_cfg),
-      config_content_binary=bucket_cfg.SerializeToString(),
-  )
-
   # New Bucket format uses short bucket names, e.g. "try" instead of
   # "luci.chromium.try".
   # Use short name in both entity key and config contents.
   short_bucket_cfg = copy.deepcopy(bucket_cfg)
   short_bucket_cfg.name = short_bucket_name(short_bucket_cfg.name)
-  bucket = Bucket(
+  Bucket(
       key=Bucket.make_key(project_id, short_bucket_cfg.name),
       entity_schema_version=CURRENT_BUCKET_SCHEMA_VERSION,
       revision=revision,
       config=short_bucket_cfg,
-  )
-
-  ndb.put_multi([bucket, legacy_bucket])
+  ).put()
 
 
 def cron_update_buckets():
@@ -433,8 +375,6 @@ def cron_update_buckets():
   )
 
   to_delete = collections.defaultdict(set)  # project_id -> ndb keys
-  for bucket in LegacyBucket.query().fetch():
-    to_delete[bucket.project_id].add(bucket.key)
   for key in Bucket.query().fetch(keys_only=True):
     to_delete[key.parent().id()].add(key)
 
@@ -456,7 +396,6 @@ def cron_update_buckets():
       bucket_key = Bucket.make_key(
           project_id, short_bucket_name(bucket_cfg.name)
       )
-      to_delete[project_id].discard(ndb.Key(LegacyBucket, bucket_cfg.name))
       to_delete[project_id].discard(bucket_key)
       bucket = bucket_key.get()
       if (bucket and
