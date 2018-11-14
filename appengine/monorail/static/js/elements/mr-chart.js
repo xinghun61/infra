@@ -4,7 +4,7 @@
 
 import '/deployed_node_modules/chart.js/dist/Chart.min.js';
 
-const DEFAULT_NUM_DAYS = 14;
+const DEFAULT_NUM_DAYS = 30;
 
 export default class MrChart extends HTMLElement {
 
