@@ -43,12 +43,12 @@ class FLTConvertTask(unittest.TestCase):
         labels=[
             'Launch-M-Approved-71-Stable', 'Launch-M-Target-70-Beta',
             'Launch-UI-Yes', 'Launch-Privacy-NeedInfo',
-            'pm-jojwang', 'tl-annajo'])
+            'pm-jojwang', 'tl-annajo', 'Type-Launch'])
     self.issue2 = fake.MakeTestIssue(
         789, 2, 'sum', 'New', 111L, issue_id=78902,
         labels=[
             'Launch-M-Target-71-Stable', 'Launch-M-Approved-70-Beta',
-            'pm-jojwang', 'tl-annajo'])
+            'pm-jojwang', 'tl-annajo', 'Type-Launch'])
 
     self.approval_values = [
         tracker_pb2.ApprovalValue(
@@ -172,8 +172,8 @@ class FLTConvertTask(unittest.TestCase):
         # Test non phase and TL/PM/TE field_values are not deleted
         tracker_bizobj.MakeFieldValue(
             17, None, 'strvalue', None, None, None, False)]
-    issue1 = copy.copy(self.issue1)
-    issue2 = copy.copy(self.issue2)
+    issue1 = copy.deepcopy(self.issue1)
+    issue2 = copy.deepcopy(self.issue2)
     fvs = [
         tracker_bizobj.MakeFieldValue(
             11, None, None, 222L, None, None, False),
@@ -181,10 +181,13 @@ class FLTConvertTask(unittest.TestCase):
             12, None, None, 111L, None, None, False)]
     self.config.field_defs = [
         tracker_pb2.FieldDef(field_id=11, field_name='PM'),
-        tracker_pb2.FieldDef(field_id=12, field_name='TL')]
-    # Add elements added during conversion that should be removed
+        tracker_pb2.FieldDef(field_id=12, field_name='TL'),
+        tracker_pb2.FieldDef(field_id=13, field_name='TE')]
+    # Make element edits made during conversion that should be undone.
     issue1.labels.extend(['Type-FLT-Launch', 'FLT-Conversion'])
+    issue1.labels.remove('Type-Launch')
     issue2.labels.extend(['Type-FLT-Launch', 'FLT-Conversion'])
+    issue2.labels.remove('Type-Launch')
     issue1.approval_values = self.approval_values
     issue2.approval_values = self.approval_values
     issue1.phases = self.phases

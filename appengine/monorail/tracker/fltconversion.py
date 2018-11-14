@@ -88,8 +88,8 @@ QUERY_MAP = {
     'Type=Launch Rollout-Type=Default OS=Windows,Mac,Linux,Android,iOS',
     'finch': 'Type=Launch Rollout-Type=Finch OS=Windows,Mac,Linux,Android,iOS'}
 TEMPLATE_MAP = {
-    'default': 'Chrome Default Launch',
-    'finch': 'Chrome Finch Launch'}
+    'default': 'Chrome Launch - Default',
+    'finch': 'Chrome Launch - Experimental'}
 
 ProjectInfo = collections.namedtuple(
     'ProjectInfo', 'config, q, approval_values, phases, '
@@ -113,9 +113,9 @@ class FLTConvertTask(jsonfeed.InternalTask):
 
     project = self.services.project.GetProjectByName(mr.cnxn, 'chromium')
     config = self.services.config.GetProjectConfig(mr.cnxn, project.project_id)
-    pm_id = tracker_bizobj.FindFieldDef('PM', config)
-    tl_id = tracker_bizobj.FindFieldDef('TL', config)
-    te_id = tracker_bizobj.FindFieldDef('TE', config)
+    pm_id = tracker_bizobj.FindFieldDef('PM', config).field_id
+    tl_id = tracker_bizobj.FindFieldDef('TL', config).field_id
+    te_id = tracker_bizobj.FindFieldDef('TE', config).field_id
     for possible_stale_issue in pipeline.visible_results:
       issue = self.services.issue.GetIssue(
           mr.cnxn, possible_stale_issue.issue_id, use_cache=False)
