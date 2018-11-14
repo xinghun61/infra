@@ -358,8 +358,7 @@ def CreateOrUpdateIssue(issue_generator, luci_project='chromium'):
   test_name = issue_generator.GetTestName()
   test_label_name = issue_generator.GetTestLabelName()
 
-  flake_key = ndb.Key(Flake, Flake.GetId(luci_project, step_name, test_name))
-  target_flake = flake_key.get()
+  target_flake = Flake.Get(luci_project, step_name, test_name)
   if not target_flake:
     target_flake = Flake.Create(luci_project, step_name, test_name,
                                 test_label_name)

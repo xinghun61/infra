@@ -183,6 +183,26 @@ class FlakeTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(1, len(fetched_flakes))
     self.assertEqual(flake, fetched_flakes[0])
 
+  def testGet(self):
+    luci_project = 'chromium'
+    normalized_step_name = 'normalized_step'
+    normalized_test_name = 'normalized_test'
+    test_label_name = 'test_label'
+
+    flake = Flake.Create(
+        luci_project=luci_project,
+        normalized_step_name=normalized_step_name,
+        normalized_test_name=normalized_test_name,
+        test_label_name=test_label_name)
+
+    flake.put()
+
+    retrieved_flake = Flake.Get(luci_project, normalized_step_name,
+                                normalized_test_name)
+    self.assertIsNotNone(retrieved_flake)
+    self.assertEqual(normalized_test_name, retrieved_flake.normalized_test_name)
+    self.assertEqual(normalized_step_name, retrieved_flake.normalized_step_name)
+
   def testComputeTestSuiteName(self):
     luci_project = 'chromium'
     normalized_step_name = 'normalized_step'

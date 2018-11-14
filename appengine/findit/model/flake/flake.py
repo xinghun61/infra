@@ -120,6 +120,10 @@ class Flake(ndb.Model):
 
   test_location = ndb.StructuredProperty(TestLocation)
 
+  @classmethod
+  def _CreateKey(cls, luci_project, step_name, test_name):
+    return ndb.Key(cls, cls.GetId(luci_project, step_name, test_name))
+
   @staticmethod
   def GetId(luci_project, normalized_step_name, normalized_test_name):
     return '%s@%s@%s' % (luci_project, normalized_step_name,
@@ -140,6 +144,10 @@ class Flake(ndb.Model):
         normalized_test_name=normalized_test_name,
         test_label_name=test_label_name,
         id=flake_id)
+
+  @classmethod
+  def Get(cls, luci_project, step_name, test_name):
+    return cls._CreateKey(luci_project, step_name, test_name).get()
 
   # TODO(crbug.com/873256): Switch to use base_test_target and refactor this out
   # to services/step.py (with a better name) for reuse by other code once the
