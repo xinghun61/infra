@@ -169,6 +169,7 @@ func init() {
 	r.POST("/oncalljson", protected, h.HandleOncallJSON)
 	r.POST("/shiftsupdate", protected, h.HandleShiftUpdate)
 	r.POST("/shiftsgenerate", protected, h.HandleShiftGenerate)
+	r.POST("/shiftswap", protected, h.HandleShiftSwap)
 	r.POST("/generate", protected, h.HandleGenerate)
 	r.POST("/modifyrota", protected, h.HandleUpdateRota)
 	r.POST("/createrota", protected, h.HandleCreateRota)
