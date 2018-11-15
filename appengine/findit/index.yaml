@@ -325,3 +325,13 @@ indexes:
   - name: target_name
   - name: commit_position
     direction: desc
+
+# For Code Coverage.
+- kind: PostsubmitReport
+  properties:
+  - name: server_host
+  - name: project
+  - name: commit_position
+    direction: desc
+  - name: commit_timestamp
+    direction: desc

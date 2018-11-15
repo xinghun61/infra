@@ -9,10 +9,12 @@ import logging
 import re
 import urlparse
 
+from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 from google.protobuf.field_mask_pb2 import FieldMask
 
 from buildbucket_proto.build_pb2 import Build
+from gae_libs import appengine_util
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 
@@ -53,6 +55,26 @@ class CompletedBuildPubsubIngestor(BaseHandler):
     # notification by returning 200, and prevent pubsub from retrying it.
 
 
+def _HandleCodeCoverageBuilds(build, properties):  # pragma: no cover
+  """Schedules a taskqueue task to process the code coverage data."""
+  if (build.builder.project != 'chromium'
+      or build.builder.bucket not in ('ci', 'try')
+      or build.builder.builder not in (
+          'linux-code-coverage', 'linux-coverage-rel')):
+    return
+
+  coverage_metadata_gs = properties.get('coverage_metadata_gs')
+  if not coverage_metadata_gs:
+    logging.info('coverage_metadata_gs not available in %r', build.builder)
+    return
+
+  taskqueue.add(
+      url='/coverage/task/process-data',
+      payload=json.dumps({'build_id': build.id}),
+      target=appengine_util.GetTargetNameForModule('code-coverage'),
+      queue_name='code-coverage-process-data')
+
+
 def _DecodeSwarmingHashesPropertyName(prop):
   """Extracts ref, commit position and patch status from property name.
 
@@ -86,6 +108,9 @@ def _IngestProto(build_id):
 
   # Convert the Struct to standard dict, to use .get, .iteritems etc.
   properties = dict(properties_struct.items())
+
+  # TODO: revert.
+  _HandleCodeCoverageBuilds(build, properties)
 
   swarm_hashes_properties = {}
   for k, v in properties.iteritems():

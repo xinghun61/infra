@@ -28,8 +28,10 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
       ],
       debug=True)
 
+  @mock.patch.object(completed_build_pubsub_ingestor,
+                     '_HandleCodeCoverageBuilds')
   @mock.patch.object(FinditHttpClient, 'Post')
-  def testSucessfulPushCIBuild(self, mock_post):
+  def testSucessfulPushCIBuild(self, mock_post, *_):
     mock_build = Build()
     mock_build.id = 8945610992972640896
     mock_build.status = 12
@@ -76,8 +78,10 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
         IsolatedTarget.get_by_id('8945610992972640896/mock_target').build_id)
     self.assertEqual(1, len(json.loads(response.body)['created_rows']))
 
+  @mock.patch.object(completed_build_pubsub_ingestor,
+                     '_HandleCodeCoverageBuilds')
   @mock.patch.object(FinditHttpClient, 'Post')
-  def testPushNoBuild(self, mock_post):
+  def testPushNoBuild(self, mock_post, *_):
     mock_headers = {'X-Prpc-Grpc-Code': '5'}
     mock_post.return_value = (404, 'Build not found', mock_headers)
 
@@ -100,8 +104,10 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
         '/index-isolated-builds?format=json', params=request_body, status=404)
     self.assertEqual(404, response.status_int)
 
+  @mock.patch.object(completed_build_pubsub_ingestor,
+                     '_HandleCodeCoverageBuilds')
   @mock.patch.object(FinditHttpClient, 'Post')
-  def testPushPendingBuild(self, mock_post):
+  def testPushPendingBuild(self, mock_post, *_):
     request_body = json.dumps({
         'message': {
             'attributes': {
@@ -122,8 +128,10 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     self.assertFalse(mock_post.called)
     self.assertEqual(200, response.status_int)
 
+  @mock.patch.object(completed_build_pubsub_ingestor,
+                     '_HandleCodeCoverageBuilds')
   @mock.patch.object(FinditHttpClient, 'Post')
-  def testSucessfulPushBadFormat(self, mock_post):
+  def testSucessfulPushBadFormat(self, mock_post, *_):
     request_body = json.dumps({
         'message': {},
     })
@@ -132,8 +140,10 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     self.assertFalse(mock_post.called)
     self.assertEqual(200, response.status_int)
 
+  @mock.patch.object(completed_build_pubsub_ingestor,
+                     '_HandleCodeCoverageBuilds')
   @mock.patch.object(FinditHttpClient, 'Post')
-  def testNonIsolateBuild(self, mock_post):
+  def testNonIsolateBuild(self, mock_post, *_):
     # This build does not isolate any targets.
     mock_build = Build()
     mock_build.id = 8945610992972640896
@@ -171,8 +181,10 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     self.assertEqual(200, response.status_int)
     self.assertNotIn('created_rows', response.body)
 
+  @mock.patch.object(completed_build_pubsub_ingestor,
+                     '_HandleCodeCoverageBuilds')
   @mock.patch.object(FinditHttpClient, 'Post')
-  def testNoMasternameBuild(self, mock_post):
+  def testNoMasternameBuild(self, mock_post, *_):
     mock_build = Build()
     mock_build.id = 8945610992972640896
     mock_build.status = 12
@@ -211,8 +223,10 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     self.assertEqual(200, response.status_int)
     self.assertNotIn('created_rows', response.body)
 
+  @mock.patch.object(completed_build_pubsub_ingestor,
+                     '_HandleCodeCoverageBuilds')
   @mock.patch.object(FinditHttpClient, 'Post')
-  def testSucessfulPushTryJob(self, mock_post):
+  def testSucessfulPushTryJob(self, mock_post, *_):
     mock_build = Build()
     mock_build.id = 8945610992972640896
     mock_build.status = 12
@@ -270,8 +284,10 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     self.assertEqual('chromium.linux', entry.master_name)
     self.assertEqual('linux_chromium_compile_dbg_ng', entry.builder_name)
 
+  @mock.patch.object(completed_build_pubsub_ingestor,
+                     '_HandleCodeCoverageBuilds')
   @mock.patch.object(FinditHttpClient, 'Post')
-  def testPushIgnoreV2Push(self, mock_post):
+  def testPushIgnoreV2Push(self, mock_post, *_):
     request_body = json.dumps({
         'message': {
             'attributes': {
