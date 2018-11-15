@@ -121,7 +121,7 @@ class UpdateFlakeCountsTest(WaterfallTestCase):
 
     occurrence5 = FlakeOccurrence.Create(
         flake_type=FlakeType.RETRY_WITH_PATCH,
-        build_id=3,
+        build_id=5,
         step_ui_name=step_ui_name,
         test_name='t2',
         luci_project=luci_project,
@@ -134,11 +134,41 @@ class UpdateFlakeCountsTest(WaterfallTestCase):
         parent_flake_key=flake1_key)
     occurrence5.put()
 
+    occurrence6 = FlakeOccurrence.Create(
+        flake_type=FlakeType.RETRY_WITH_PATCH,
+        build_id=6,
+        step_ui_name=step_ui_name,
+        test_name='t2',
+        luci_project=luci_project,
+        luci_bucket=luci_bucket,
+        luci_builder=luci_builder,
+        legacy_master_name=legacy_master_name,
+        legacy_build_number=legacy_build_number,
+        time_happened=datetime(2018, 8, 31),
+        gerrit_cl_id=98766,
+        parent_flake_key=flake1_key)
+    occurrence6.put()
+
+    occurrence7 = FlakeOccurrence.Create(
+        flake_type=FlakeType.RETRY_WITH_PATCH,
+        build_id=7,
+        step_ui_name=step_ui_name,
+        test_name='t2',
+        luci_project=luci_project,
+        luci_bucket=luci_bucket,
+        luci_builder=luci_builder,
+        legacy_master_name=legacy_master_name,
+        legacy_build_number=legacy_build_number,
+        time_happened=datetime(2018, 8, 31),
+        gerrit_cl_id=98767,
+        parent_flake_key=flake1_key)
+    occurrence7.put()
+
     UpdateFlakeCounts()
 
     flake1 = flake1_key.get()
-    self.assertEqual(3, flake1.false_rejection_count_last_week)
-    self.assertEqual(1, flake1.impacted_cl_count_last_week)
+    self.assertEqual(5, flake1.false_rejection_count_last_week)
+    self.assertEqual(3, flake1.impacted_cl_count_last_week)
     self.assertEqual([
         FlakeCountsByType(
             flake_type=FlakeType.CQ_FALSE_REJECTION,
@@ -146,21 +176,20 @@ class UpdateFlakeCountsTest(WaterfallTestCase):
             occurrence_count=2),
         FlakeCountsByType(
             flake_type=FlakeType.RETRY_WITH_PATCH,
-            impacted_cl_count=0,
-            occurrence_count=1)
+            impacted_cl_count=2,
+            occurrence_count=3)
     ], flake1.flake_counts_last_week)
+    self.assertEqual(120, flake1.flake_score_last_week)
 
     flake2 = flake2_key.get()
-    self.assertEqual(0, flake2.false_rejection_count_last_week)
-    self.assertEqual(0, flake2.impacted_cl_count_last_week)
     self.assertEqual([], flake2.flake_counts_last_week)
+    self.assertEqual(0, flake2.flake_score_last_week)
 
     flake3 = flake3_key.get()
-    self.assertEqual(1, flake3.false_rejection_count_last_week)
-    self.assertEqual(1, flake3.impacted_cl_count_last_week)
     self.assertEqual([
         FlakeCountsByType(
             flake_type=FlakeType.CQ_FALSE_REJECTION,
             impacted_cl_count=1,
             occurrence_count=1)
     ], flake3.flake_counts_last_week)
+    self.assertEqual(0, flake3.flake_score_last_week)

@@ -11,6 +11,18 @@ from model.flake.flake import FlakeCountsByType
 from model.flake.flake_type import FlakeType
 from services import constants
 
+# Minimum number of distinct impacted CLs for a flake to calculate the flake
+# score.
+_MIN_DISTINCT_CL_NUMBER = 3
+
+# Weights for each type of flakes.
+# The weights are picked by intuitive, after comparing with other candidates.
+# See goo.gl/y5awC5 for the comparison.
+_FLAKE_TYPE_WEIGHT = {
+    FlakeType.CQ_FALSE_REJECTION: 100,
+    FlakeType.RETRY_WITH_PATCH: 10
+}
+
 
 def _GetsTypedFlakeCounts(flake, start_date, flake_type, counted_gerrit_cl_ids):
   """Gets the counts of a type of occurrences for a flakes within a time range.
@@ -41,13 +53,30 @@ def _GetsTypedFlakeCounts(flake, start_date, flake_type, counted_gerrit_cl_ids):
 
   impacted_cl_count = len(gerrit_cl_ids)
 
+  if occurrence_count == 0:
+    return None, counted_gerrit_cl_ids
+
   return FlakeCountsByType(
       flake_type=flake_type,
       occurrence_count=occurrence_count,
       impacted_cl_count=impacted_cl_count), counted_gerrit_cl_ids
 
 
-def _UpdateFlakeCounts(flake, start_date):
+def _CalculateWeightedFlakeScore(flake_counts_last_week):
+  """Calculates flake score by occurrences of each type and their weights.
+
+  Args:
+    flake_counts_last_week(list): A list of FlakeCountsByType.
+  """
+  flake_score_last_week = 0
+  for typed_counts in flake_counts_last_week:
+    flake_score_last_week += (
+        typed_counts.impacted_cl_count *
+        _FLAKE_TYPE_WEIGHT[typed_counts.flake_type])
+  return flake_score_last_week
+
+
+def _UpdateFlakeCountsAndScore(flake, start_date):
   """Gets the counts of the flake within certain time range.
 
   Args:
@@ -57,6 +86,7 @@ def _UpdateFlakeCounts(flake, start_date):
   flake.false_rejection_count_last_week = 0
   flake.impacted_cl_count_last_week = 0
   flake.flake_counts_last_week = []
+  flake.flake_score_last_week = 0
 
   if flake.last_occurred_time <= start_date:
     return
@@ -81,24 +111,31 @@ def _UpdateFlakeCounts(flake, start_date):
     flake.false_rejection_count_last_week += typed_counts.occurrence_count
     flake.impacted_cl_count_last_week += typed_counts.impacted_cl_count
 
+  if len(counted_gerrit_cl_ids) < _MIN_DISTINCT_CL_NUMBER:
+    # If there is not enough occurrences for the flake, bail out.
+    return
+
+  flake.flake_score_last_week = _CalculateWeightedFlakeScore(
+      flake.flake_counts_last_week)
+
 
 def _UpdateCountsForNewFlake(start_date):
-  """Updates counts for new or re-occurred flakes.
+  """Updates counts for new, re-occurred or rare flakes.
 
   Args:
     start_date(datetime): Earliest time to check.
   """
   flakes = Flake.query().filter(Flake.last_occurred_time > start_date).filter(
-      Flake.false_rejection_count_last_week == 0).fetch()
+      Flake.flake_score_last_week == 0).fetch()
 
   for flake in flakes:
-    _UpdateFlakeCounts(flake, start_date)
+    _UpdateFlakeCountsAndScore(flake, start_date)
 
   ndb.put_multi(flakes)
 
 
 def _UpdateCountsForOldFlake(start_date):
-  """Updates counts for old flakes - flakes with counts greater than 0.
+  """Updates counts for old flakes - flakes with score greater than 0.
 
   a. if the flake has 1+ occurrences within the time range, updates counts.
   b. if the flake didn't occurred within the time range, resets counts.
@@ -106,11 +143,10 @@ def _UpdateCountsForOldFlake(start_date):
   Args:
     start_date(datetime): Earliest time to check.
   """
-  flakes = Flake.query().filter(
-      Flake.false_rejection_count_last_week > 0).fetch()
+  flakes = Flake.query().filter(Flake.flake_score_last_week > 0).fetch()
 
   for flake in flakes:
-    _UpdateFlakeCounts(flake, start_date)
+    _UpdateFlakeCountsAndScore(flake, start_date)
 
   ndb.put_multi(flakes)
 

@@ -191,7 +191,7 @@ indexes:
 # For cron to update Flake counts.
 - kind: Flake
   properties:
-  - name: false_rejection_count_last_week
+  - name: flake_score_last_week
   - name: last_occurred_time
 
 # For ranked flakes dashboard forward paging.

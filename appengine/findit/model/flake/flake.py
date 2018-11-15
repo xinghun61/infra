@@ -114,6 +114,11 @@ class Flake(ndb.Model):
   flake_counts_last_week = ndb.StructuredProperty(
       FlakeCountsByType, repeated=True)
 
+  # Score of the flake for ranking.
+  # The score is calculated by the number of distinct impacted CLs in each flake
+  # type and weights of each flake type.
+  flake_score_last_week = ndb.IntegerProperty(indexed=True, default=0)
+
   # A string like 'Blink>NFC' based on the tags of the OWNERS file applicable to
   # the test location.
   component = ndb.StringProperty(indexed=True)
