@@ -323,8 +323,7 @@ class UpdateBuildTests(BaseTestCase):
 
       req, ctx = self._mk_update_req(build_proto)
       req.fields.paths[:] = ['id', 'steps']
-      actual = self.call(self.api.UpdateBuild, req, ctx=ctx)
-      self.assertEqual(actual, build_proto)
+      self.call(self.api.UpdateBuild, req, ctx=ctx)
 
       persisted = model.BuildSteps.key_for(build.key).get()
       self.assertEqual(persisted.step_container.steps, build_proto.steps)
@@ -346,10 +345,10 @@ class UpdateBuildTests(BaseTestCase):
       req, ctx = self._mk_update_req(build_proto)
       req.update_mask.paths[:] = ['build.output.properties']
       req.fields.paths[:] = ['id', 'steps', 'output.properties']
-      actual = self.call(self.api.UpdateBuild, req, ctx=ctx)
+      self.call(self.api.UpdateBuild, req, ctx=ctx)
+
       expected = copy.deepcopy(build_proto)
       expected.MergeFrom(build_steps.step_container)
-      self.assertEqual(actual, expected)
 
       build = build.key.get()
       self.assertEqual(

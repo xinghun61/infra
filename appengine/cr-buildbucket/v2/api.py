@@ -294,10 +294,12 @@ def update_build_async(req, ctx, _mask):
 
     # Store and convert back to build_pb2.Build proto for return.
     yield ndb.put_multi_async(to_put)
-    raise ndb.Return(build, build_steps)
 
-  build, build_steps = yield txn_async()
-  raise ndb.Return(v2.build_to_v2(build, build_steps))
+  yield txn_async()
+
+  # Do not return anything.
+  # Clients does not need the response, they just want to provide data.
+  raise ndb.Return(build_pb2.Build())
 
 
 # Maps an rpc_pb2.BatchRequest.Request field name to an async function
