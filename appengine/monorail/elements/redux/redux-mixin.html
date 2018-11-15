@@ -50,18 +50,19 @@
     };
 
     const actionCreator = {
-      fetchCommentReferences: (dispatch, comments) => {
-        dispatch({type: actionType.FETCH_COMMENT_REFERENCES_START});
+      fetchCommentReferences: (dispatch, comments, projectName) => {
+        dispatch({type: actionType.FETCH_REFERENCES_START});
 
-        window.__autolink.getReferencedArtifacts(comments).then((refs) => {
-          commentRefs = new Map();
-          refs.forEach(({componentName, existingRefs}) => {
-            commentRefs.set(componentName, existingRefs);
-          });
-          dispatch({
-            type: actionType.FETCH_COMMENT_REFERENCES_SUCCESS,
-            commentReferences: commentRefs,
-          });
+        window.__autolink.getReferencedArtifacts(comments, projectName).then(
+          (refs) => {
+            commentRefs = new Map();
+            refs.forEach(({componentName, existingRefs}) => {
+              commentRefs.set(componentName, existingRefs);
+            });
+            dispatch({
+              type: actionType.FETCH_REFERENCES_SUCCESS,
+              commentReferences: commentRefs,
+            });
         }, (error) => {
           dispatch({
             type: actionType.FETCH_COMMENT_REFERENCES_FAILURE,
@@ -146,7 +147,8 @@
             type: actionType.FETCH_COMMENTS_SUCCESS,
             comments: resp.comments,
           });
-          actionCreator.fetchCommentReferences(dispatch, resp.comments);
+          actionCreator.fetchCommentReferences(
+              dispatch, resp.comments, message.projectName);
         }, (error) => {
           dispatch({
             type: actionType.FETCH_COMMENTS_FAILURE,
