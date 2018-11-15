@@ -412,9 +412,9 @@
           ]);
     });
 
-    test('Only existing issues get linked', function() {
+    test('only existing issues get linked', function() {
       const plainString = 'only existing bugs = 456, monorail:123, 234 and chromium:345 get linked';
-      const actualTextRuns = markupAutolinks(plainString, componentRefs, 'chromium');
+      const actualTextRuns = markupAutolinks(plainString, componentRefs);
       assert.deepEqual(
           actualTextRuns, [
             {content: 'only existing '},

@@ -19,13 +19,9 @@ class MrCommentContent extends ReduxMixin(Polymer.Element) {
         value: () => new Map(),
         statePath: 'commentReferences',
       },
-      projectName: {
-        type: String,
-        statePath: 'projectName',
-      },
       _textRuns: {
         type: Array,
-        computed: '_computeTextRuns(content, commentReferences, projectName)',
+        computed: '_computeTextRuns(content, commentReferences)',
       },
     };
   }
@@ -34,9 +30,8 @@ class MrCommentContent extends ReduxMixin(Polymer.Element) {
     return tag == str;
   }
 
-  _computeTextRuns(content, commentReferences, projectName) {
-    return window.__autolink.markupAutolinks(
-        content, commentReferences, projectName);
+  _computeTextRuns(content, commentReferences) {
+    return window.__autolink.markupAutolinks(content, commentReferences);
   }
 }
 customElements.define(MrCommentContent.is, MrCommentContent);
