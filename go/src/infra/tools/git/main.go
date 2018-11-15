@@ -170,7 +170,7 @@ func gitTransientRetry() retry.Iterator {
 	return &retry.ExponentialBackoff{
 		Limited: retry.Limited{
 			Delay:   3 * time.Second,
-			Retries: 10,
+			Retries: 12,
 		},
 		Multiplier: 1.5,
 	}

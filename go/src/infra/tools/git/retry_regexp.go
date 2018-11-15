@@ -38,6 +38,7 @@ var defaultGitRetryRegexpSource = []string{
 
 	// crbug.com/202807
 	`The remote end hung up unexpectedly`,
+	`The remote end hung up upon initial contact`,
 
 	// crbug.com/298189
 	`TLS packet with unexpected length was received`,
@@ -71,6 +72,12 @@ var defaultGitRetryRegexpSource = []string{
 
 	// b/110032771
 	`Revision .* of patch set \d+ does not match refs/changes`,
+
+	// crbug.com/850130 & crbug.com/898208
+	`Git repository not found`,
+	`Couldn't connect to server`,
+	`transfer closed with outstanding read data remaining`,
+	`Access denied to`,
 }
 
 // DefaultGitRetryRegexp is the set of default transient regular expressions to
