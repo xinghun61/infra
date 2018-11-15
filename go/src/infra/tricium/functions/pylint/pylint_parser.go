@@ -181,10 +181,17 @@ func parsePylintLine(line string) *tricium.Data_Comment {
 	if err != nil {
 		return nil
 	}
+	category, symbol, message := match[4], match[5], match[6]
+	if symbol == "undefined-variable" {
+		message = (message + ".\n" +
+			"This check could give false positives when there are wildcard imports\n" +
+			"(from module import *). It is recommended to avoid wildcard imports; see\n" +
+			"https://www.python.org/dev/peps/pep-0008/#imports")
+	}
 	return &tricium.Data_Comment{
 		Path:      match[1],
-		Message:   fmt.Sprintf("%s.\nTo disable, add: # pylint: disable=%s", match[6], match[5]),
-		Category:  fmt.Sprintf("Pylint/%s/%s", match[4], match[5]),
+		Message:   fmt.Sprintf("%s.\nTo disable, add: # pylint: disable=%s", message, symbol),
+		Category:  fmt.Sprintf("Pylint/%s/%s", category, symbol),
 		StartLine: int32(lineno),
 		StartChar: int32(column),
 	}

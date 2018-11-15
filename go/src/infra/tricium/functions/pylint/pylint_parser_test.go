@@ -90,6 +90,9 @@ func TestPylintParsingFunctions(t *testing.T) {
 					{
 						Path: "test.py",
 						Message: "Undefined variable 'main'.\n" +
+							"This check could give false positives when there are wildcard imports\n" +
+							"(from module import *). It is recommended to avoid wildcard imports; see\n" +
+							"https://www.python.org/dev/peps/pep-0008/#imports.\n" +
 							"To disable, add: # pylint: disable=undefined-variable",
 						Category:  "Pylint/error/undefined-variable",
 						StartLine: 26,
@@ -112,6 +115,21 @@ func TestPylintParsingFunctions(t *testing.T) {
 				Category: "Pylint/warning/unused-argument",
 				Message: "Unused argument 'z'.\n" +
 					"To disable, add: # pylint: disable=unused-argument",
+				Path:      "src/foo.py",
+				StartLine: 45,
+				StartChar: 12,
+			})
+		})
+
+		Convey("Unused variable gives a special-case warning", func() {
+			line := "src/foo.py:45:12 [warning/undefined-variable] Undefined variable 'z'"
+			So(parsePylintLine(line), ShouldResemble, &tricium.Data_Comment{
+				Category: "Pylint/warning/undefined-variable",
+				Message: "Undefined variable 'z'.\n" +
+					"This check could give false positives when there are wildcard imports\n" +
+					"(from module import *). It is recommended to avoid wildcard imports; see\n" +
+					"https://www.python.org/dev/peps/pep-0008/#imports.\n" +
+					"To disable, add: # pylint: disable=undefined-variable",
 				Path:      "src/foo.py",
 				StartLine: 45,
 				StartChar: 12,
