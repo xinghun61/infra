@@ -845,8 +845,9 @@ class MonorailApi(remote.Service):
               (mar.auth.email, project_name))
     url_params = [(name, mar.GetParam(name)) for name in
                   framework_helpers.RECOGNIZED_PARAMS]
+    # TODO(jrobbins): This should go through work_env.
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-        mar.cnxn, self._services, mar.auth, mar.me_user_id, mar.query,
+        mar.cnxn, self._services, mar.auth, [mar.me_user_id], mar.query,
         mar.query_project_names, mar.num, mar.start, url_params, mar.can,
         mar.group_by_spec, mar.sort_spec, mar.warnings, mar.errors,
         mar.use_cached_searches, mar.profiler, display_mode=mar.mode,
