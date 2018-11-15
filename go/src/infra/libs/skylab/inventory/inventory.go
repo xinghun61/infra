@@ -55,3 +55,45 @@ func WriteLab(lab *Lab, dataDir string) error {
 	f = nil
 	return nil
 }
+
+const infraFilename = "server_db.textpb"
+
+// LoadInfrastructure loads infrastructure information from the inventory data directory.
+func LoadInfrastructure(dataDir string) (*Infrastructure, error) {
+	b, err := ioutil.ReadFile(filepath.Join(dataDir, infraFilename))
+	if err != nil {
+		return nil, errors.Annotate(err, "load infrastructure inventory %s", dataDir).Err()
+	}
+	infrastructure := Infrastructure{}
+	if err := proto.UnmarshalText(string(b), &infrastructure); err != nil {
+		return nil, errors.Annotate(err, "load infrastructure inventory %s", dataDir).Err()
+	}
+	return &infrastructure, nil
+
+}
+
+// WriteInfrastructure writes infrastructure information to the inventory data directory.
+func WriteInfrastructure(infrastructure *Infrastructure, dataDir string) error {
+	f, err := ioutil.TempFile(dataDir, infraFilename)
+	if err != nil {
+		return errors.Annotate(err, "write infrastructure inventory %s", dataDir).Err()
+	}
+	defer func() {
+		if f != nil {
+			_ = os.Remove(f.Name())
+		}
+	}()
+	defer f.Close()
+	m := proto.TextMarshaler{}
+	if err := m.Marshal(f, infrastructure); err != nil {
+		return errors.Annotate(err, "write infrastructure inventory %s", dataDir).Err()
+	}
+	if err := f.Close(); err != nil {
+		return errors.Annotate(err, "write infrastructure inventory %s", dataDir).Err()
+	}
+	if err := os.Rename(f.Name(), filepath.Join(dataDir, infraFilename)); err != nil {
+		return errors.Annotate(err, "write infrastructure inventory %s", dataDir).Err()
+	}
+	f = nil
+	return nil
+}
