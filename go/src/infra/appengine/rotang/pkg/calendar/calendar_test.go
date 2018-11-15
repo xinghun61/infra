@@ -734,7 +734,7 @@ func TestShiftsToEvents(t *testing.T) {
 		},
 		want: []*gcal.Event{
 			{
-				Summary: "Test Rota - MTV All Day",
+				Summary: "Test Rota",
 				Attendees: []*gcal.EventAttendee{
 					{
 						Email: "test1@test.com",

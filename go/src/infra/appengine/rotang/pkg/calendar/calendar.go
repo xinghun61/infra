@@ -291,7 +291,10 @@ func shiftsToEvents(cfg *rotang.Configuration, shifts []rotang.ShiftEntry) ([]*g
 	var res []*gcal.Event
 	for _, s := range shifts {
 		var att []*gcal.EventAttendee
-		sum := cfg.Config.Name + nameShiftSeparator + s.Name
+		sum := cfg.Config.Name
+		if len(cfg.Config.Shifts.Shifts) > 1 {
+			sum = cfg.Config.Name + nameShiftSeparator + s.Name
+		}
 		desc, err := fillCalendarDescription(cfg, s, sum)
 		if err != nil {
 			return nil, err

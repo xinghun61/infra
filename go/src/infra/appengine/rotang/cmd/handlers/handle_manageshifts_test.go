@@ -160,11 +160,15 @@ func TestHandleGeneratedShifts(t *testing.T) {
 		name       string
 		fail       bool
 		cfg        *rotang.Configuration
+		ctx        *router.Context
 		memberPool []rotang.Member
 		rotaShifts *RotaShifts
 		want       []rotang.ShiftEntry
 	}{{
 		name: "Success",
+		ctx: &router.Context{
+			Context: ctx,
+		},
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{
 				Name: "Test Rota",
@@ -303,7 +307,7 @@ func TestHandleGeneratedShifts(t *testing.T) {
 			}
 			defer h.configStore(ctx).DeleteRotaConfig(ctx, tst.cfg.Config.Name)
 
-			err := h.handleGeneratedShifts(ctx, tst.cfg, tst.rotaShifts)
+			err := h.handleGeneratedShifts(tst.ctx, tst.cfg, tst.rotaShifts)
 			if got, want := (err != nil), tst.fail; got != want {
 				t.Fatalf("%s: handleGeneratedShifts(ctx, _, _) = %t want: %t, err: %v", tst.name, got, want, err)
 			}
@@ -329,6 +333,7 @@ func TestHandleUpdatedShifts(t *testing.T) {
 	tests := []struct {
 		name       string
 		fail       bool
+		ctx        *router.Context
 		cfg        *rotang.Configuration
 		memberPool []rotang.Member
 		rotaShifts *RotaShifts
@@ -336,6 +341,9 @@ func TestHandleUpdatedShifts(t *testing.T) {
 		want       []rotang.ShiftEntry
 	}{{
 		name: "Success",
+		ctx: &router.Context{
+			Context: ctx,
+		},
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{
 				Name: "Test Rota",
@@ -501,7 +509,7 @@ func TestHandleUpdatedShifts(t *testing.T) {
 				t.Fatalf("%s: AddShifts(ctx, _, %q, _) failed: %v", tst.name, tst.cfg.Config.Name, err)
 			}
 
-			err := h.handleUpdatedShifts(ctx, tst.cfg, tst.rotaShifts)
+			err := h.handleUpdatedShifts(tst.ctx, tst.cfg, tst.rotaShifts)
 			if got, want := (err != nil), tst.fail; got != want {
 				t.Fatalf("%s: handleUpdatedShifts(ctx, _, _) = %t want: %t, err: %v", tst.name, got, want, err)
 			}

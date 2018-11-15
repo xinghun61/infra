@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -197,21 +197,38 @@ func (h *State) HandleShiftGenerate(ctx *router.Context) {
 		return
 	}
 
-	if err := h.handleGeneratedShifts(ctx.Context, cfg, ss); err != nil {
+	if err := h.handleGeneratedShifts(ctx, cfg, ss); err != nil {
 		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
-func (h *State) handleGeneratedShifts(ctx context.Context, cfg *rotang.Configuration, ss *RotaShifts) error {
-	shiftStorer := h.shiftStore(ctx)
+func (h *State) handleGeneratedShifts(ctx *router.Context, cfg *rotang.Configuration, ss *RotaShifts) error {
+	shiftStorer := h.shiftStore(ctx.Context)
 
 	var shifts []rotang.ShiftEntry
 	for _, split := range ss.SplitShifts {
 		shifts = append(shifts, split.Shifts...)
 	}
 
-	return shiftStorer.AddShifts(ctx, cfg.Config.Name, shifts)
+	if err := shiftStorer.AddShifts(ctx.Context, cfg.Config.Name, shifts); err != nil {
+		return err
+	}
+
+	if !cfg.Config.Enabled {
+		logging.Infof(ctx.Context, "calendar not updated for rota: %q due to not being enabled")
+		return nil
+	}
+	resShifts, err := h.calendar.CreateEvent(ctx, cfg, shifts)
+	if err != nil {
+		return err
+	}
+	for _, s := range resShifts {
+		if err := shiftStorer.UpdateShift(ctx.Context, cfg.Config.Name, &s); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // HandleShiftUpdate handles shift updates.
@@ -222,19 +239,26 @@ func (h *State) HandleShiftUpdate(ctx *router.Context) {
 		return
 	}
 
-	if err := h.handleUpdatedShifts(ctx.Context, cfg, ss); err != nil {
+	if err := h.handleUpdatedShifts(ctx, cfg, ss); err != nil {
 		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
-func (h *State) handleUpdatedShifts(ctx context.Context, cfg *rotang.Configuration, ss *RotaShifts) error {
-	shiftStorer := h.shiftStore(ctx)
+func (h *State) handleUpdatedShifts(ctx *router.Context, cfg *rotang.Configuration, ss *RotaShifts) error {
+	shiftStorer := h.shiftStore(ctx.Context)
 
 	var lastShift time.Time
 	for _, split := range ss.SplitShifts {
 		for _, shift := range split.Shifts {
-			if err := shiftStorer.UpdateShift(ctx, cfg.Config.Name, &shift); err != nil {
+			us := &shift
+			if cfg.Config.Enabled {
+				var err error
+				if us, err = h.calendar.UpdateEvent(ctx, cfg, &shift); err != nil {
+					return err
+				}
+			}
+			if err := shiftStorer.UpdateShift(ctx.Context, cfg.Config.Name, us); err != nil {
 				return err
 			}
 			if lastShift.After(shift.StartTime) {
@@ -244,13 +268,18 @@ func (h *State) handleUpdatedShifts(ctx context.Context, cfg *rotang.Configurati
 		}
 	}
 
-	as, err := shiftStorer.ShiftsFromTo(ctx, cfg.Config.Name, lastShift, time.Time{})
+	as, err := shiftStorer.ShiftsFromTo(ctx.Context, cfg.Config.Name, lastShift, time.Time{})
 	if err != nil {
 		return err
 	}
 	for _, s := range as {
-		if err := shiftStorer.DeleteShift(ctx, cfg.Config.Name, s.StartTime); err != nil {
+		if err := shiftStorer.DeleteShift(ctx.Context, cfg.Config.Name, s.StartTime); err != nil {
 			return err
+		}
+		if cfg.Config.Enabled {
+			if err := h.calendar.DeleteEvent(ctx, cfg, &s); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
