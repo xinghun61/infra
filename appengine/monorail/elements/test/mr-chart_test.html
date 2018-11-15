@@ -12,13 +12,13 @@
 import MrChart from '../../static/js/elements/mr-chart.js';
 import '../../bower_components/chopsui/prpc-client.js';
 
-suite('basic tests', function() {
+suite('MrChart', function() {
   let element;
 
   setup(function() {
     sinon.stub(window, 'fetch', () => {
       return new Promise((resolve, reject) => {
-        // TODO: Export prefix from prpc-client and use that.
+        // TODO(jeffcarp): Export prefix from prpc-client and use that.
         const xssiPrefix = ')]}\'';
         const dataStr = JSON.stringify({
           snapshotCount: [{count: 0}],
@@ -47,31 +47,217 @@ suite('basic tests', function() {
     window.requestAnimationFrame.restore();
   });
 
-  test('sets this.projectname', () => {
-    assert.equal(element.projectName, 'rutabaga');
+  suite('constructor', function() {
+    test('sets this.projectname', () => {
+      assert.equal(element.projectName, 'rutabaga');
+    });
+
+    test('sends data request after instantiation', () => {
+      assert.equal(window.fetch.getCalls().length, 30);
+    });
   });
 
-  test('sends data request after instantiation', () => {
-    assert.equal(window.fetch.getCalls().length, 14);
+  suite('data loading', function() {
+
+    setup(() => {
+      sinon.stub(MrChart, 'getSearchParams');
+      const searchParams = new URLSearchParams();
+      searchParams.set('q', 'owner:rutabaga@chromium.org');
+      MrChart.getSearchParams.returns(searchParams);
+
+      // Stub MrChart.makeTimestamps to return 6, not 30 data points.
+      const originalMakeTimestamps = MrChart.makeTimestamps;
+      sinon.stub(MrChart, 'makeTimestamps', (endDate) => {
+        return originalMakeTimestamps(endDate, 6);
+      });
+    });
+
+    teardown(() => {
+      MrChart.getSearchParams.restore();
+      MrChart.makeTimestamps.restore();
+    });
+
+    test('makes a series of XHR calls', async () => {
+      window.fetch.reset();
+
+      const endDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
+      await element._fetchData(endDate);
+
+      const actualTimestamps = fetch.getCalls().map(call => (
+        JSON.parse(call.args[1].body).timestamp
+      ));
+      assert.deepEqual(actualTimestamps, [
+        1540857599, 1541289599, 1541116799, 1540943999, 1541203199, 1541030399,
+      ])
+
+      const queries = fetch.getCalls().map(call => (
+        JSON.parse(call.args[1].body).query
+      ));
+      assert.deepEqual(queries, [
+        'owner:rutabaga@chromium.org', 'owner:rutabaga@chromium.org',
+        'owner:rutabaga@chromium.org', 'owner:rutabaga@chromium.org',
+        'owner:rutabaga@chromium.org', 'owner:rutabaga@chromium.org',
+      ])
+
+      const projectNames = fetch.getCalls().map(call => (
+        JSON.parse(call.args[1].body).projectName
+      ));
+      assert.deepEqual(projectNames, [
+        'rutabaga', 'rutabaga', 'rutabaga', 'rutabaga', 'rutabaga', 'rutabaga',
+      ])
+    });
   });
 
-  test('sortInBisectOrder orders first, last, median recursively', function() {
-    assert.deepEqual(MrChart.sortInBisectOrder([]), []);
-    assert.deepEqual(MrChart.sortInBisectOrder([9]), [9]);
-    assert.deepEqual(MrChart.sortInBisectOrder([8, 9]), [8, 9]);
-    assert.deepEqual(MrChart.sortInBisectOrder([7, 8, 9]), [7, 9, 8]);
-    assert.deepEqual(
-      MrChart.sortInBisectOrder([1, 2, 3, 4, 5]), [1, 5, 3, 2, 4]);
+  suite('end date change detection', function() {
+
+    setup(() => {
+      sinon.spy(window.history, 'pushState');
+      sinon.spy(element, '_fetchData');
+    });
+
+    teardown(() => {
+      element._fetchData.restore();
+      window.history.pushState.restore();
+    });
+
+    test('changes URL param when end_date input changes', async () => {
+      element.endDateInput.value = '2017-10-02';
+      const event = new Event('change');
+      element.endDateInput.dispatchEvent(event);
+
+      sinon.assert.calledOnce(history.pushState);
+      sinon.assert.calledWith(history.pushState, {}, '',
+        sinon.match('/elements/test/mr-chart_test.html?wct=go&end_date=2017-10-02'));
+
+      sinon.assert.calledOnce(element._fetchData);
+      const endDate = new Date(Date.UTC(2017, 9, 2, 23, 59, 59));
+      sinon.assert.calledWith(element._fetchData, endDate);
+    });
   });
 
-  test('progress bar shown initially, updated after data', async () => {
-    assert.equal(element.progressBar.style.visibility, 'visible');
-    assert.equal(element.progressBar.value, 0.05);
+  suite('progress bar', function() {
+    test('visible based on loading progress', async () => {
+      assert.equal(element.progressBar.style.visibility, 'visible');
+      assert.equal(element.progressBar.value, 0.05);
+      assert.isTrue(element.endDateInput.disabled);
 
-    await element._fetchData([12345678]);
+      const endDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
+      await element._fetchData(endDate);
 
-    assert.equal(element.progressBar.style.visibility, 'hidden');
-    assert.equal(element.progressBar.value, 1);
+      assert.equal(element.progressBar.style.visibility, 'hidden');
+      assert.equal(element.progressBar.value, 1);
+      assert.isFalse(element.endDateInput.disabled);
+
+      const endDate2 = new Date(Date.UTC(2018, 5, 3, 23, 59, 59));
+      const fetchDataPromise = element._fetchData(endDate);
+
+      // Values are reset on second call.
+      assert.equal(element.progressBar.style.visibility, 'visible');
+      assert.equal(element.progressBar.value, 0.05);
+      assert.isTrue(element.endDateInput.disabled);
+
+      await fetchDataPromise;
+
+      assert.equal(element.progressBar.style.visibility, 'hidden');
+      assert.equal(element.progressBar.value, 1);
+      assert.isFalse(element.endDateInput.disabled);
+    });
+  });
+
+
+  suite('static methods', () => {
+
+    suite('sortInBisectOrder', () => {
+      test('orders first, last, median recursively', function() {
+        assert.deepEqual(MrChart.sortInBisectOrder([]), []);
+        assert.deepEqual(MrChart.sortInBisectOrder([9]), [9]);
+        assert.deepEqual(MrChart.sortInBisectOrder([8, 9]), [8, 9]);
+        assert.deepEqual(MrChart.sortInBisectOrder([7, 8, 9]), [7, 9, 8]);
+        assert.deepEqual(
+          MrChart.sortInBisectOrder([1, 2, 3, 4, 5]), [1, 5, 3, 2, 4]);
+      });
+    });
+
+    suite('makeTimestamps', () => {
+      test('throws an error if endDate not passed', () => {
+        assert.throws(() => {
+          MrChart.makeTimestamps();
+        }, 'endDate required');
+      });
+      test('returns an array of in seconds', () => {
+        const endDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
+        const secondsInDay = 24 * 60 * 60;
+
+        assert.deepEqual(MrChart.makeTimestamps(endDate, 6), [
+          1541289599 - (secondsInDay * 5), 1541289599 - (secondsInDay * 4),
+          1541289599 - (secondsInDay * 3), 1541289599 - (secondsInDay * 2),
+          1541289599 - (secondsInDay * 1), 1541289599 - (secondsInDay * 0),
+        ]);
+      });
+    });
+
+    suite('dateStringToDate', () => {
+      test('returns null if no input', function() {
+        assert.isNull(MrChart.dateStringToDate());
+      });
+
+      test('returns a new Date at EOD UTC', function() {
+        const actualDate = MrChart.dateStringToDate('2018-11-03');
+
+        const expectedDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
+        // Time sanity check.
+        assert.equal(expectedDate.getTime(), 1541289599000);
+
+        assert.equal(actualDate.getTime(), expectedDate.getTime());
+      });
+    });
+
+    suite('getSearchParams', () => {
+      test('returns URLSearchParams', function() {
+        const urlParams = new URLSearchParams(location.search.substring(1));
+        urlParams.set('eat', 'rutabagas');
+        const newUrl = `${location.protocol}//${location.host}${location.pathname}?${urlParams.toString()}`;
+        window.history.pushState({}, '', newUrl);
+
+        const actualParams = MrChart.getSearchParams();
+        assert.equal(actualParams.get('eat'), 'rutabagas');
+      });
+    });
+
+    suite('getEndDate', () => {
+      let clock;
+
+      setup(() => {
+        sinon.stub(MrChart, 'getSearchParams');
+        clock = sinon.useFakeTimers(10000);
+      });
+
+      teardown(() => {
+        clock.restore();
+        MrChart.getSearchParams.restore();
+      });
+
+      test('returns end date if in URL params', function() {
+        const searchParams = new URLSearchParams();
+        searchParams.set('end_date', '2018-11-03');
+        MrChart.getSearchParams.returns(searchParams);
+
+        const expectedDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
+        // Time sanity check.
+        assert.equal(Math.round(expectedDate.getTime() / 1e3), 1541289599);
+
+        const actual = MrChart.getEndDate();
+        assert.equal(actual.getTime(), expectedDate.getTime());
+      });
+
+      test('returns current date if not in URL params', function() {
+        MrChart.getSearchParams.returns(new URLSearchParams());
+
+        const actual = MrChart.getEndDate();
+        assert.equal(actual.getTime(), 28799000);
+      });
+    });
+
   });
 });
 </script>

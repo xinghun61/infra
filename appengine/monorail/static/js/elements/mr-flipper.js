@@ -84,7 +84,7 @@ class MrFlipper extends HTMLElement {
     }
   }
 
-  _template(currentIndex, totalCount, prevUrl, nextUrl) {
+  _template() {
     const tmpl = document.createElement('template');
     // Warning: do not interpolate any variables into the below string.
     // Also don't use innerHTML anywhere other than in this specific scenario.

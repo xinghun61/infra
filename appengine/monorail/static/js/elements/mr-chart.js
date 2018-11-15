@@ -20,53 +20,32 @@ export default class MrChart extends HTMLElement {
     if (!this.projectName || !this.projectName.length) {
       throw new Error('Attribute `project-name` required.');
     }
-
-    const timestamps = this._makeTimestamps(DEFAULT_NUM_DAYS);
-    const indices = this._makeIndices(timestamps);
     this.values = [];
+    this.indices = [];
 
-    // Attach DOM and initialize chart onto canvas.
+    // Set up DOM and initialize chart onto canvas.
     const shadowRoot = this.attachShadow({mode: 'open'});
-    shadowRoot.appendChild(this._makeTemplate().content.cloneNode(true));
+    shadowRoot.appendChild(this._template().content.cloneNode(true));
     const ctx = shadowRoot.getElementById('canvas').getContext('2d');
-    this.chart = new window.Chart(ctx, this._chartConfig(indices, this.values));
+    this.chart = new window.Chart(ctx, this._chartConfig(this.indices, this.values));
     this.progressBar = shadowRoot.querySelector('progress');
+    this.endDateInput = shadowRoot.getElementById('end-date');
 
-    this._fetchData(timestamps);
-  }
+    // Get initial date.
+    const endDate = MrChart.getEndDate();
+    this.endDateInput.value = endDate.toISOString().substr(0, 10);
 
-  // Populate array of timestamps we want to fetch.
-  _makeTimestamps(numDaysBack) {
-    const endTimeSeconds = this._getEndTime();
-    const secondsInDay = 24 * 60 * 60;
-    const timestampsChronological = [];
-    for (let i = 0; i < numDaysBack; i++) {
-      timestampsChronological.unshift(endTimeSeconds - (secondsInDay * i));
-    }
-    return MrChart.sortInBisectOrder(timestampsChronological);
-  }
+    this.endDateInput.addEventListener('change', (e) => {
+      const newEndDate = MrChart.dateStringToDate(e.target.value);
+      this._fetchData(newEndDate);
 
-  // Get the chart end time from either the URL or current time.
-  _getEndTime() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const endDateString = urlParams.get('end_date');
-    let year, month, day;
-    if (endDateString) {
-      const splitEndDate = endDateString.split('-');
-      year = Number(splitEndDate[0]);
-      month = Number(splitEndDate[1]) - 1;
-      day = Number(splitEndDate[2]);
-    } else {
-      const today = new Date();
-      year = today.getUTCFullYear();
-      month = today.getUTCMonth();
-      day = today.getUTCDate();
-    }
+      const urlParams = MrChart.getSearchParams();
+      urlParams.set('end_date', this.endDateInput.value);
+      const newUrl = `${location.protocol}//${location.host}${location.pathname}?${urlParams.toString()}`;
+      window.history.pushState({}, '', newUrl);
+    });
 
-    // Align the date to EOD UTC.
-    const timestampMs = Date.UTC(year, month, day, 23, 59, 59);
-    // Return seconds since back-end expects seconds.
-    return Math.round(timestampMs / 1000);
+    this._fetchData(endDate);
   }
 
   _makeIndices(timestamps) {
@@ -84,18 +63,34 @@ export default class MrChart extends HTMLElement {
     this._animationFrameRequested = true;
     window.requestAnimationFrame(() => {
       this.chart.data.datasets[0].data = this.values;
+      this.chart.data.labels = this.indices;
       this.chart.update();
 
       if (this.progressBar.value === 1) {
         this.progressBar.style.visibility = 'hidden';
+        this.endDateInput.disabled = false;
+      } else {
+        this.progressBar.style.visibility = 'visible';
+        this.endDateInput.disabled = true;
       }
 
       this._animationFrameRequested = false;
     });
   }
 
-  async _fetchData(timestamps) {
+  async _fetchData(endDate) {
+    // Reset chart variables except indices.
+    this.values = [];
+    this.progressBar.value = 0.05;
+
+    // Render blank chart.
+    this._updateChartValues();
+
     let numTimestampsLoaded = 0;
+    const timestampsChronological = MrChart.makeTimestamps(endDate);
+    this.indices = this._makeIndices(timestampsChronological);
+    const timestamps = MrChart.sortInBisectOrder(timestampsChronological);
+
     const fetchPromises = timestamps.map(async (ts, index) => {
       const data = await this._fetchDataAtTimestamp(ts);
       this.values[index] = data.issues;
@@ -121,7 +116,7 @@ export default class MrChart extends HTMLElement {
 
   _fetchDataAtTimestamp(timestamp) {
     return new Promise((resolve, reject) => {
-      const params = new URLSearchParams(document.location.search.substring(1));
+      const params = MrChart.getSearchParams();
       const query = params.get('q');
       const message = {
         timestamp: timestamp,
@@ -190,44 +185,48 @@ export default class MrChart extends HTMLElement {
     };
   }
 
-  _makeTemplate() {
-    const templateEl = document.createElement('template');
-    const div = document.createElement('div');
-    div.style.maxWidth = '800px';
-    div.style.margin = '0 auto';
-
-    const canvas = document.createElement('canvas');
-    canvas.id = 'canvas';
-
-    const progress = document.createElement('progress');
-    progress.value = 0.05;
-    progress.style.width = '100%';
-    progress.style.visibility = 'visible';
-
-    const styleSheet = document.createElement('style');
-    const css = `
-      progress {
-        background-color: white;
-        border: 1px solid #666;
-      }
-      ::-webkit-progress-bar {
-        background-color: white;
-      }
-      progress::-webkit-progress-value {
-        transition: width 1s;
-        background-color: rgb(54, 162, 235);
-      }
+  _template() {
+    const tmpl = document.createElement('template');
+    // Warning: do not interpolate any variables into the below string.
+    // Also don't use innerHTML anywhere other than in this specific scenario.
+    tmpl.innerHTML = `
+      <style>
+        div#container {
+          max-width: 800px;
+          margin: 0 auto;
+        }
+        div#options{
+          max-width: 360px;
+          margin: 2em auto;
+          text-align: center;
+        }
+        progress {
+          background-color: white;
+          border: 1px solid #666;
+          margin: 0 0 1em;
+        }
+        ::-webkit-progress-bar {
+          background-color: white;
+        }
+        progress::-webkit-progress-value {
+          transition: width 1s;
+          background-color: rgb(54, 162, 235);
+        }
+      </style>
+      <div id="container">
+        <canvas id="canvas"></canvas>
+        <div id="options">
+          <progress value="0.05" style="width: 100%; visibility: visible;">Loading chart...</progress>
+          <label for="end-date">Choose end date:</label>
+          <br />
+          <input type="date" id="end-date" name="end-date" value="" />
+        </div>
+      </div>
     `;
-    styleSheet.appendChild(document.createTextNode(css));
-
-    div.appendChild(styleSheet);
-    div.appendChild(canvas);
-    div.appendChild(progress);
-    templateEl.content.appendChild(div);
-
-    return templateEl;
+    return tmpl;
   }
 
+  // Move first, last, and median to the beginning of the array, recursively.
   static sortInBisectOrder(timestamps) {
     const arr = [];
     if (timestamps.length === 0) {
@@ -242,6 +241,53 @@ export default class MrChart extends HTMLElement {
         MrChart.sortInBisectOrder(timestamps));
     }
   }
+
+  // Populate array of timestamps we want to fetch.
+  static makeTimestamps(endDate, numDays=DEFAULT_NUM_DAYS) {
+    if (!endDate) {
+      throw new Error('endDate required');
+    }
+    const endTimeSeconds = Math.round(endDate.getTime() / 1000);
+    const secondsInDay = 24 * 60 * 60;
+    const timestampsChronological = [];
+    for (let i = 0; i < numDays; i++) {
+      timestampsChronological.unshift(endTimeSeconds - (secondsInDay * i));
+    }
+    return timestampsChronological;
+  }
+
+  // Convert a string '2018-11-03' to a Date object.
+  static dateStringToDate(dateString) {
+    if (!dateString) {
+      return null;
+    }
+    const splitDate = dateString.split('-');
+    const year = Number.parseInt(splitDate[0]);
+    // Month is 0-indexed, so subtract one.
+    const month = Number.parseInt(splitDate[1]) - 1;
+    const day = Number.parseInt(splitDate[2]);
+    return new Date(Date.UTC(year, month, day, 23, 59, 59));
+  }
+
+  // Return a URLSearchParams object. Separate method for stubbing.
+  static getSearchParams() {
+    return new URLSearchParams(document.location.search.substring(1));
+  }
+
+  // Returns a Date taken from end_date URL param, defaults to current date.
+  static getEndDate() {
+    const urlParams = MrChart.getSearchParams();
+    if (urlParams.has('end_date')) {
+      return MrChart.dateStringToDate(urlParams.get('end_date'));
+    } else {
+      const today = new Date();
+      today.setHours(23);
+      today.setMinutes(59);
+      today.setSeconds(59);
+      return today;
+    }
+  }
+
 }
 
 customElements.define(MrChart.is(), MrChart);

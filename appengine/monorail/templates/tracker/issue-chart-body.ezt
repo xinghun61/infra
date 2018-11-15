@@ -4,7 +4,7 @@
 
 <script
   type="module"
-  src="/static/js/elements/mr-chart.js?version=[app_version]"
+  src="/[script_prefix_dir]/static/js/elements/mr-chart.js?version=[app_version]"
   async defer
   nonce="[nonce]">
 </script>
