@@ -24,7 +24,7 @@ from model.code_coverage import PresubmitReport
 
 
 class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
-  PERMISSION_LEVEL = Permission.ADMIN
+  PERMISSION_LEVEL = Permission.APP_SELF
 
   def _ProcessFullRepositoryData(self, commit, data, gs_url, build_id):
     # Load the commit log first so that we could fail fast before redo all.

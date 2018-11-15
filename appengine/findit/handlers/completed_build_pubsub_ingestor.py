@@ -63,9 +63,10 @@ def _HandleCodeCoverageBuilds(build, properties):  # pragma: no cover
           'linux-code-coverage', 'linux-coverage-rel')):
     return
 
-  coverage_metadata_gs = properties.get('coverage_metadata_gs')
-  if not coverage_metadata_gs:
-    logging.info('coverage_metadata_gs not available in %r', build.builder)
+  coverage_metadata_gs_path = properties.get('coverage_metadata_gs_path')
+  coverage_gs_bucket = properties.get('coverage_gs_bucket')
+  if not coverage_metadata_gs_path or not coverage_gs_bucket:
+    logging.info('coverage GS bucket info not available in %r', build.id)
     return
 
   taskqueue.add(
