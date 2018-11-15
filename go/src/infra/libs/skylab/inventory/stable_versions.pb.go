@@ -40,6 +40,7 @@ func (*StableVersions) ProtoMessage()    {}
 func (*StableVersions) Descriptor() ([]byte, []int) {
 	return fileDescriptor_c3aed830256165b3, []int{0}
 }
+
 func (m *StableVersions) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StableVersions.Unmarshal(m, b)
 }
@@ -103,6 +104,7 @@ func (*StableVersion) ProtoMessage()    {}
 func (*StableVersion) Descriptor() ([]byte, []int) {
 	return fileDescriptor_c3aed830256165b3, []int{1}
 }
+
 func (m *StableVersion) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StableVersion.Unmarshal(m, b)
 }

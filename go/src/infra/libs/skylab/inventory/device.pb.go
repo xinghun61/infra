@@ -411,6 +411,7 @@ func (*Device) ProtoMessage()    {}
 func (*Device) Descriptor() ([]byte, []int) {
 	return fileDescriptor_870276a56ac00da5, []int{0}
 }
+
 func (m *Device) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Device.Unmarshal(m, b)
 }
@@ -586,6 +587,7 @@ func (*DeviceUnderTest) ProtoMessage()    {}
 func (*DeviceUnderTest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_870276a56ac00da5, []int{1}
 }
+
 func (m *DeviceUnderTest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeviceUnderTest.Unmarshal(m, b)
 }
@@ -626,6 +628,7 @@ func (*ServoHostDevice) ProtoMessage()    {}
 func (*ServoHostDevice) Descriptor() ([]byte, []int) {
 	return fileDescriptor_870276a56ac00da5, []int{2}
 }
+
 func (m *ServoHostDevice) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServoHostDevice.Unmarshal(m, b)
 }
@@ -672,6 +675,7 @@ func (*ChameleonDevice) ProtoMessage()    {}
 func (*ChameleonDevice) Descriptor() ([]byte, []int) {
 	return fileDescriptor_870276a56ac00da5, []int{3}
 }
+
 func (m *ChameleonDevice) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ChameleonDevice.Unmarshal(m, b)
 }
@@ -733,6 +737,7 @@ func (*CommonDeviceSpecs) ProtoMessage()    {}
 func (*CommonDeviceSpecs) Descriptor() ([]byte, []int) {
 	return fileDescriptor_870276a56ac00da5, []int{4}
 }
+
 func (m *CommonDeviceSpecs) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CommonDeviceSpecs.Unmarshal(m, b)
 }
@@ -839,6 +844,7 @@ func (*Location) ProtoMessage()    {}
 func (*Location) Descriptor() ([]byte, []int) {
 	return fileDescriptor_870276a56ac00da5, []int{5}
 }
+
 func (m *Location) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Location.Unmarshal(m, b)
 }
@@ -899,6 +905,7 @@ func (*PhysicalLab) ProtoMessage()    {}
 func (*PhysicalLab) Descriptor() ([]byte, []int) {
 	return fileDescriptor_870276a56ac00da5, []int{6}
 }
+
 func (m *PhysicalLab) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PhysicalLab.Unmarshal(m, b)
 }
@@ -950,6 +957,7 @@ func (*DeviceLock) ProtoMessage()    {}
 func (*DeviceLock) Descriptor() ([]byte, []int) {
 	return fileDescriptor_870276a56ac00da5, []int{7}
 }
+
 func (m *DeviceLock) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeviceLock.Unmarshal(m, b)
 }
@@ -1033,6 +1041,7 @@ func (*Shard) ProtoMessage()    {}
 func (*Shard) Descriptor() ([]byte, []int) {
 	return fileDescriptor_870276a56ac00da5, []int{8}
 }
+
 func (m *Shard) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Shard.Unmarshal(m, b)
 }
@@ -1091,6 +1100,7 @@ func (*SchedulableLabels) ProtoMessage()    {}
 func (*SchedulableLabels) Descriptor() ([]byte, []int) {
 	return fileDescriptor_870276a56ac00da5, []int{9}
 }
+
 func (m *SchedulableLabels) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SchedulableLabels.Unmarshal(m, b)
 }
@@ -1224,6 +1234,7 @@ func (*HardwareCapabilities) ProtoMessage()    {}
 func (*HardwareCapabilities) Descriptor() ([]byte, []int) {
 	return fileDescriptor_870276a56ac00da5, []int{10}
 }
+
 func (m *HardwareCapabilities) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_HardwareCapabilities.Unmarshal(m, b)
 }
@@ -1339,6 +1350,7 @@ func (*Peripherals) ProtoMessage()    {}
 func (*Peripherals) Descriptor() ([]byte, []int) {
 	return fileDescriptor_870276a56ac00da5, []int{11}
 }
+
 func (m *Peripherals) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Peripherals.Unmarshal(m, b)
 }
@@ -1388,6 +1400,7 @@ func (*TestCoverageHints) ProtoMessage()    {}
 func (*TestCoverageHints) Descriptor() ([]byte, []int) {
 	return fileDescriptor_870276a56ac00da5, []int{12}
 }
+
 func (m *TestCoverageHints) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TestCoverageHints.Unmarshal(m, b)
 }
@@ -1428,6 +1441,7 @@ func (*KeyValue) ProtoMessage()    {}
 func (*KeyValue) Descriptor() ([]byte, []int) {
 	return fileDescriptor_870276a56ac00da5, []int{13}
 }
+
 func (m *KeyValue) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_KeyValue.Unmarshal(m, b)
 }
@@ -1461,6 +1475,13 @@ func (m *KeyValue) GetValue() string {
 }
 
 func init() {
+	proto.RegisterEnum("chrome.chromeos_infra.skylab.proto.inventory.SchedulableLabels_DUTPool", SchedulableLabels_DUTPool_name, SchedulableLabels_DUTPool_value)
+	proto.RegisterEnum("chrome.chromeos_infra.skylab.proto.inventory.SchedulableLabels_ECType", SchedulableLabels_ECType_name, SchedulableLabels_ECType_value)
+	proto.RegisterEnum("chrome.chromeos_infra.skylab.proto.inventory.SchedulableLabels_CTSABI", SchedulableLabels_CTSABI_name, SchedulableLabels_CTSABI_value)
+	proto.RegisterEnum("chrome.chromeos_infra.skylab.proto.inventory.SchedulableLabels_OSType", SchedulableLabels_OSType_name, SchedulableLabels_OSType_value)
+	proto.RegisterEnum("chrome.chromeos_infra.skylab.proto.inventory.SchedulableLabels_Phase", SchedulableLabels_Phase_name, SchedulableLabels_Phase_value)
+	proto.RegisterEnum("chrome.chromeos_infra.skylab.proto.inventory.HardwareCapabilities_VideoAcceleration", HardwareCapabilities_VideoAcceleration_name, HardwareCapabilities_VideoAcceleration_value)
+	proto.RegisterEnum("chrome.chromeos_infra.skylab.proto.inventory.TestCoverageHints_CTSSparse", TestCoverageHints_CTSSparse_name, TestCoverageHints_CTSSparse_value)
 	proto.RegisterType((*Device)(nil), "chrome.chromeos_infra.skylab.proto.inventory.Device")
 	proto.RegisterType((*DeviceUnderTest)(nil), "chrome.chromeos_infra.skylab.proto.inventory.DeviceUnderTest")
 	proto.RegisterType((*ServoHostDevice)(nil), "chrome.chromeos_infra.skylab.proto.inventory.ServoHostDevice")
@@ -1475,13 +1496,6 @@ func init() {
 	proto.RegisterType((*Peripherals)(nil), "chrome.chromeos_infra.skylab.proto.inventory.Peripherals")
 	proto.RegisterType((*TestCoverageHints)(nil), "chrome.chromeos_infra.skylab.proto.inventory.TestCoverageHints")
 	proto.RegisterType((*KeyValue)(nil), "chrome.chromeos_infra.skylab.proto.inventory.KeyValue")
-	proto.RegisterEnum("chrome.chromeos_infra.skylab.proto.inventory.SchedulableLabels_DUTPool", SchedulableLabels_DUTPool_name, SchedulableLabels_DUTPool_value)
-	proto.RegisterEnum("chrome.chromeos_infra.skylab.proto.inventory.SchedulableLabels_ECType", SchedulableLabels_ECType_name, SchedulableLabels_ECType_value)
-	proto.RegisterEnum("chrome.chromeos_infra.skylab.proto.inventory.SchedulableLabels_CTSABI", SchedulableLabels_CTSABI_name, SchedulableLabels_CTSABI_value)
-	proto.RegisterEnum("chrome.chromeos_infra.skylab.proto.inventory.SchedulableLabels_OSType", SchedulableLabels_OSType_name, SchedulableLabels_OSType_value)
-	proto.RegisterEnum("chrome.chromeos_infra.skylab.proto.inventory.SchedulableLabels_Phase", SchedulableLabels_Phase_name, SchedulableLabels_Phase_value)
-	proto.RegisterEnum("chrome.chromeos_infra.skylab.proto.inventory.HardwareCapabilities_VideoAcceleration", HardwareCapabilities_VideoAcceleration_name, HardwareCapabilities_VideoAcceleration_value)
-	proto.RegisterEnum("chrome.chromeos_infra.skylab.proto.inventory.TestCoverageHints_CTSSparse", TestCoverageHints_CTSSparse_name, TestCoverageHints_CTSSparse_value)
 }
 
 func init() { proto.RegisterFile("device.proto", fileDescriptor_870276a56ac00da5) }

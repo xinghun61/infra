@@ -37,6 +37,7 @@ func (*ServoHostConnection) ProtoMessage()    {}
 func (*ServoHostConnection) Descriptor() ([]byte, []int) {
 	return fileDescriptor_51baa40a1cc6b48b, []int{0}
 }
+
 func (m *ServoHostConnection) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServoHostConnection.Unmarshal(m, b)
 }
@@ -98,6 +99,7 @@ func (*ChameleonConnection) ProtoMessage()    {}
 func (*ChameleonConnection) Descriptor() ([]byte, []int) {
 	return fileDescriptor_51baa40a1cc6b48b, []int{1}
 }
+
 func (m *ChameleonConnection) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ChameleonConnection.Unmarshal(m, b)
 }

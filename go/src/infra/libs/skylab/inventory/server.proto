@@ -42,6 +42,7 @@ message Server {
     ROLE_SUITE_SCHEDULER = 12;
     ROLE_SKYLAB_DRONE = 13;
     ROLE_SKYLAB_SUITE_PROXY = 14;
+    ROLE_RPMSERVER = 15;
   }
   repeated Role roles = 5;
 

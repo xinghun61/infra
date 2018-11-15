@@ -81,6 +81,7 @@ func (*Timestamp) ProtoMessage()    {}
 func (*Timestamp) Descriptor() ([]byte, []int) {
 	return fileDescriptor_555bd8c177793206, []int{0}
 }
+
 func (m *Timestamp) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Timestamp.Unmarshal(m, b)
 }
@@ -114,8 +115,8 @@ func (m *Timestamp) GetNanos() int32 {
 }
 
 func init() {
-	proto.RegisterType((*Timestamp)(nil), "chrome.chromeos_infra.skylab.proto.inventory.Timestamp")
 	proto.RegisterEnum("chrome.chromeos_infra.skylab.proto.inventory.Environment", Environment_name, Environment_value)
+	proto.RegisterType((*Timestamp)(nil), "chrome.chromeos_infra.skylab.proto.inventory.Timestamp")
 }
 
 func init() { proto.RegisterFile("common.proto", fileDescriptor_555bd8c177793206) }

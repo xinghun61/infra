@@ -38,6 +38,7 @@ func (*Lab) ProtoMessage()    {}
 func (*Lab) Descriptor() ([]byte, []int) {
 	return fileDescriptor_a33572512533a9b1, []int{0}
 }
+
 func (m *Lab) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Lab.Unmarshal(m, b)
 }
@@ -104,6 +105,7 @@ func (*Infrastructure) ProtoMessage()    {}
 func (*Infrastructure) Descriptor() ([]byte, []int) {
 	return fileDescriptor_a33572512533a9b1, []int{1}
 }
+
 func (m *Infrastructure) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Infrastructure.Unmarshal(m, b)
 }
