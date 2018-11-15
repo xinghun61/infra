@@ -603,6 +603,7 @@ class MonorailApi(remote.Service):
         mar.cnxn, mar.project_id, request.issueId)
     comments = self._services.issue.GetCommentsForIssue(
         mar.cnxn, issue.issue_id)
+    comments = [comment for comment in comments if not comment.approval_id]
     visible_comments = []
     for comment in comments[
         request.startIndex:(request.startIndex + request.maxResults)]:
@@ -624,6 +625,45 @@ class MonorailApi(remote.Service):
   def issues_comments_undelete(self, mar, request):
     """Restore a deleted comment."""
     return self.aux_delete_comment(mar, request, False)
+
+  @monorail_api_method(
+      api_pb2_v1.APPROVALS_COMMENTS_LIST_REQUEST_RESOURCE_CONTAINER,
+      api_pb2_v1.ApprovalsCommentsListResponse,
+      path="projects/{projectId}/issues/{issueId}/"
+            "approvals/{approvalName}/comments/",
+      http_method='GET',
+      name='approval.comments.list')
+  def approvals_comments_list(self, mar, request):
+    """List all comments for an issue approval."""
+    issue = self._services.issue.GetIssueByLocalID(
+        mar.cnxn, mar.project_id, request.issueId)
+    if not permissions.CanViewIssue(
+        mar.auth.effective_ids, mar.perms, mar.project, issue,
+        mar.granted_perms):
+      raise permissions.PermissionException(
+          'User is not allowed to view this issue (%s, %d)' %
+          (request.projectId, request.issueId))
+    config = self._services.config.GetProjectConfig(mar.cnxn, issue.project_id)
+    approval_fd = tracker_bizobj.FindFieldDef(request.approvalName, config)
+    if not approval_fd:
+      raise endpoints.BadRequestException(
+          'Field definition for %s not found in project config' %
+          request.approvalName)
+    comments = self._services.issue.GetCommentsForIssue(
+        mar.cnxn, issue.issue_id)
+    comments = [comment for comment in comments
+                if comment.approval_id == approval_fd.field_id]
+    visible_comments = []
+    for comment in comments[
+        request.startIndex:(request.startIndex + request.maxResults)]:
+      visible_comments.append(
+          api_pb2_v1_helpers.convert_approval_comment(
+              issue, comment, mar, self._services, mar.granted_perms))
+
+    return api_pb2_v1.ApprovalsCommentsListResponse(
+        kind='monorail#approvalCommentList',
+        totalResults=len(comments),
+        items=visible_comments)
 
   @monorail_api_method(
       api_pb2_v1.APPROVALS_COMMENTS_INSERT_REQUEST_RESOURCE_CONTAINER,

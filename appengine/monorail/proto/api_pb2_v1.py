@@ -368,6 +368,28 @@ class ApprovalsCommentsInsertResponse(messages.Message):
   canDelete = messages.BooleanField(8)
   approvalName = messages.StringField(9)
 
+
+"""Requests to list an approval's comments."""
+APPROVALS_COMMENTS_LIST_REQUEST_RESOURCE_CONTAINER = ResourceContainer(
+    message_types.VoidMessage,
+    projectId=messages.StringField(1, required=True),
+    issueId=messages.IntegerField(
+        2, required=True, variant=messages.Variant.INT32),
+    approvalName=messages.StringField(3, required=True),
+    maxResults=messages.IntegerField(
+        4, default=100, variant=messages.Variant.INT32),
+    startIndex=messages.IntegerField(
+        5, default=0, variant=messages.Variant.INT32)
+)
+
+
+class ApprovalsCommentsListResponse(messages.Message):
+  """Response message of request to list an approval's comments."""
+  error = messages.MessageField(ErrorMessage, 1)
+  items = messages.MessageField(ApprovalCommentWrapper, 2, repeated=True)
+  totalResults = messages.IntegerField(3, variant=messages.Variant.INT32)
+  kind = messages.StringField(4)
+
 ########################## Users Message ##########################
 
 """Request to get a user."""

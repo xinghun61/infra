@@ -792,8 +792,8 @@ class MonorailApiTest(testing.EndpointsTestCase):
     self.call_api('issues_comments_undelete', self.request)
     self.assertIsNone(comments[1].deleted_by)
 
-
-  def approvalRequest(self, approval, request_fields=None, comment=None):
+  def approvalRequest(self, approval, request_fields=None, comment=None,
+                      issue_labels=None):
     request = {'userId': 'user@example.com',
                'requester': 'requester@example.com',
                'projectId': 'test-project',
@@ -808,7 +808,8 @@ class MonorailApiTest(testing.EndpointsTestCase):
         1, 12345, 'Legal-Review', tracker_pb2.FieldTypes.APPROVAL_TYPE)
 
     issue1 = fake.MakeTestIssue(
-        12345, 1, 'Issue 1', 'New', 2, approval_values=[approval])
+        12345, 1, 'Issue 1', 'New', 2, approval_values=[approval],
+        labels=issue_labels)
     self.services.issue.TestAddIssue(issue1)
 
     self.services.issue.GetIssueApproval = Mock(
@@ -819,6 +820,95 @@ class MonorailApiTest(testing.EndpointsTestCase):
               lambda x, y, z: FakeMonorailApiRequest(
                   request, self.services))
     return request, issue1
+
+  def getFakeComments(self):
+    return [
+        tracker_pb2.IssueComment(
+            id=123, issue_id=1234501, project_id=12345, user_id=1,
+            content='1st comment', timestamp=1437700000, approval_id=1),
+        tracker_pb2.IssueComment(
+            id=223, issue_id=1234501, project_id=12345, user_id=1,
+            content='2nd comment', timestamp=1437700000, approval_id=2),
+        tracker_pb2.IssueComment(
+            id=323, issue_id=1234501, project_id=12345, user_id=1,
+            content='3rd comment', timestamp=1437700000, approval_id=1,
+            is_description=True),
+        tracker_pb2.IssueComment(
+            id=423, issue_id=1234501, project_id=12345, user_id=1,
+            content='4th comment', timestamp=1437700000)]
+
+  def testApprovalsCommentsList_NoViewPermission(self):
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[2],
+        project_id=12345)
+
+    approval = tracker_pb2.ApprovalValue(approval_id=1)
+    request, _issue = self.approvalRequest(
+        approval, issue_labels=['Restrict-View-Google'])
+
+    with self.call_should_fail(403):
+      self.call_api('approvals_comments_list', request)
+
+  def testApprovalsCommentsList_NoApprovalFound(self):
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[2],
+        project_id=12345)
+
+    approval = tracker_pb2.ApprovalValue(approval_id=1)
+    request, _issue = self.approvalRequest(approval)
+    self.config.field_defs = []  # empty field_defs of approval fd
+
+    with self.call_should_fail(400):
+      self.call_api('approvals_comments_list', request)
+
+  def testApprovalsCommentsList(self):
+    """Get comments of requested issue approval."""
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[2], project_id=12345)
+    self.services.issue.GetCommentsForIssue = Mock(
+        return_value=self.getFakeComments())
+
+    approval = tracker_pb2.ApprovalValue(approval_id=1)
+    request, _issue = self.approvalRequest(approval)
+
+    response = self.call_api('approvals_comments_list', request).json_body
+    self.assertEqual(response['kind'], 'monorail#approvalCommentList')
+    self.assertEqual(response['totalResults'], 2)
+    self.assertEqual(len(response['items']), 2)
+
+  def testApprovalsCommentsList_MaxResults(self):
+    """get comments of requested issue approval with maxResults."""
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[2], project_id=12345)
+    self.services.issue.GetCommentsForIssue = Mock(
+        return_value=self.getFakeComments())
+
+    approval = tracker_pb2.ApprovalValue(approval_id=1)
+    request, _issue = self.approvalRequest(
+        approval, request_fields={'maxResults': 1})
+
+    response = self.call_api('approvals_comments_list', request).json_body
+    self.assertEqual(response['kind'], 'monorail#approvalCommentList')
+    self.assertEqual(response['totalResults'], 2)
+    self.assertEqual(len(response['items']), 1)
+    self.assertEqual(response['items'][0]['content'], '1st comment')
+
+  @patch('testing.fake.IssueService.GetCommentsForIssue')
+  def testApprovalsCommentsList_StartIndex(self, mockGetComments):
+    """get comments of requested issue approval with maxResults."""
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[2], project_id=12345)
+    mockGetComments.return_value = self.getFakeComments()
+
+    approval = tracker_pb2.ApprovalValue(approval_id=1)
+    request, _issue = self.approvalRequest(
+        approval, request_fields={'startIndex': 1})
+
+    response = self.call_api('approvals_comments_list', request).json_body
+    self.assertEqual(response['kind'], 'monorail#approvalCommentList')
+    self.assertEqual(response['totalResults'], 2)
+    self.assertEqual(len(response['items']), 1)
+    self.assertEqual(response['items'][0]['content'], '3rd comment')
 
   def testApprovalsCommentsInsert_NoCommentPermission(self):
     """No permission to comment on an issue, including approvals."""
@@ -1056,7 +1146,6 @@ class MonorailApiTest(testing.EndpointsTestCase):
         comment_content=comment.content, is_description=None)
     self.assertEqual(response['author']['name'], 'requester@example.com')
     self.assertTrue(response['canDelete'])
-
 
   def testGroupsSettingsList_AllSettings(self):
     resp = self.call_api('groups_settings_list', self.request).json_body
