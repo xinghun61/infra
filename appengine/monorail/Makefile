@@ -15,6 +15,8 @@ DEV_APPSERVER_FLAGS?=
 FRONTEND_MODULES?= default
 BACKEND_MODULES?= besearch latency-insensitive
 
+BRANCH_NAME := $(shell git rev-parse --abbrev-ref HEAD)
+
 VULCANIZE_PATH = ./node_modules/vulcanize/bin/vulcanize
 CRISPER_PATH = ./node_modules/crisper/bin/crisper
 VULCANIZE = $(VULCANIZE_PATH) $(1).html --inline-script \
@@ -138,7 +140,7 @@ config_local:
 # For deploying demo versions, e.g. context for a code review.
 deploy_demo: clean_deps deps vulcanize config_demo
 	@echo "---[Demo $(STAGEID)]---"
-	$(GAE_PY) upload -A $(STAGEID) $(FRONTEND_MODULES) $(BACKEND_MODULES)
+	$(GAE_PY) upload --tag $(BRANCH_NAME) -A $(STAGEID) $(FRONTEND_MODULES) $(BACKEND_MODULES)
 	make clean_vulcanized
 
 # AppEngine apps can be tested locally and in non-default versions upload to
