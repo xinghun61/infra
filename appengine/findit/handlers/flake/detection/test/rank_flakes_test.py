@@ -15,10 +15,10 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 
 
 class RankFlakesTest(WaterfallTestCase):
-  app_module = webapp2.WSGIApplication(
-      [
-          ('/ranked-flakes', rank_flakes.RankFlakes),
-      ], debug=True)
+  app_module = webapp2.WSGIApplication([
+      ('/ranked-flakes', rank_flakes.RankFlakes),
+  ],
+                                       debug=True)
 
   def setUp(self):
     super(RankFlakesTest, self).setUp()
@@ -36,8 +36,9 @@ class RankFlakesTest(WaterfallTestCase):
         test_label_name='normalized_test_name')
 
     self.flake1.flake_issue_key = self.flake_issue.key
-    self.flake1.false_rejection_count_last_week = 2
+    self.flake1.false_rejection_count_last_week = 3
     self.flake1.impacted_cl_count_last_week = 2
+    self.flake1.flake_score_last_week = 0
     self.flake1.last_occurred_time = datetime.datetime(2018, 10, 1)
     self.flake1.put()
 
@@ -55,6 +56,7 @@ class RankFlakesTest(WaterfallTestCase):
         test_label_name='suite.test')
     self.flake3.false_rejection_count_last_week = 5
     self.flake3.impacted_cl_count_last_week = 3
+    self.flake3.flake_score_last_week = 10800
     self.flake3.last_occurred_time = datetime.datetime(2018, 10, 1)
     self.flake3.put()
 
@@ -78,40 +80,15 @@ class RankFlakesTest(WaterfallTestCase):
         }, status=200)
 
     self.assertEqual(
-        json.dumps(
-            {
-                'flakes_data': [self.flake3_dict],
-                'prev_cursor': '',
-                'cursor': '',
-                'n': '',
-                'luci_project': '',
-                'test_filter': '',
-                'order_by': ''
-            },
-            default=str), response.body)
-
-  @mock.patch.object(
-      time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 10, 2, 1))
-  def testRankFlakesByOccurrences(self, _):
-    response = self.test_app.get(
-        '/ranked-flakes?order_by=occurrences',
-        params={
-            'format': 'json',
+        json.dumps({
+            'flakes_data': [self.flake3_dict],
+            'prev_cursor': '',
+            'cursor': '',
+            'n': '',
+            'luci_project': '',
+            'test_filter': ''
         },
-        status=200)
-
-    self.assertEqual(
-        json.dumps(
-            {
-                'flakes_data': [self.flake3_dict, self.flake1_dict],
-                'prev_cursor': '',
-                'cursor': '',
-                'n': '',
-                'luci_project': '',
-                'test_filter': '',
-                'order_by': 'occurrences'
-            },
-            default=str), response.body)
+                   default=str), response.body)
 
   @mock.patch.object(
       Flake, 'NormalizeTestName', return_value='normalized_test_name')
@@ -140,14 +117,12 @@ class RankFlakesTest(WaterfallTestCase):
         status=200)
 
     self.assertEqual(
-        json.dumps(
-            {
-                'flakes_data': [self.flake3_dict],
-                'prev_cursor': '',
-                'cursor': '',
-                'n': '',
-                'luci_project': '',
-                'test_filter': 'suite',
-                'order_by': ''
-            },
-            default=str), response.body)
+        json.dumps({
+            'flakes_data': [self.flake3_dict],
+            'prev_cursor': '',
+            'cursor': '',
+            'n': '',
+            'luci_project': '',
+            'test_filter': 'suite'
+        },
+                   default=str), response.body)

@@ -17,8 +17,9 @@ _MIN_IMPACTED_CLS_WEEKLY = 3
 def _GetFlakesByTestFilter(test_name, luci_project):
   """Gets flakes by test name, then sorts them by occurrences."""
   test_suite_search = False
-  flakes = Flake.query(Flake.normalized_test_name == Flake.NormalizeTestName(
-      test_name)).filter(Flake.luci_project == luci_project).fetch()
+  flakes = Flake.query(
+      Flake.normalized_test_name == Flake.NormalizeTestName(test_name)).filter(
+          Flake.luci_project == luci_project).fetch()
 
   if not flakes:
     # It's possible that the test_name is actually test suite.
@@ -27,19 +28,15 @@ def _GetFlakesByTestFilter(test_name, luci_project):
     test_suite_search = True
 
   flakes = [f for f in flakes if f.false_rejection_count_last_week > 0]
-  flakes.sort(
-      key=lambda flake: flake.false_rejection_count_last_week, reverse=True)
+  flakes.sort(key=lambda flake: flake.flake_score_last_week, reverse=True)
   return flakes, test_suite_search
 
 
-def _GetFlakeQueryResults(luci_project, order_by, cursor, direction, page_size):
+def _GetFlakeQueryResults(luci_project, cursor, direction, page_size):
   """Gets queried results of flakes.
 
   Args:
     luci_project (str): Luci project of the flakes.
-    order_by (str): Indicates the property to perform as the inequality filter
-      and the first sort property. Currently supports
-      impacted_cl_count_last_week (default) and false_rejection_count_last_week.
     cursor (None or str): The cursor provides a cursor in the current query
       results, allowing you to retrieve the next set based on the offset.
     direction (str): Either previous or next.
@@ -54,14 +51,9 @@ def _GetFlakeQueryResults(luci_project, order_by, cursor, direction, page_size):
       bottom position of entities of the current page.
   """
   flake_query = Flake.query(Flake.luci_project == luci_project)
-  if order_by == 'occurrences':
-    flake_query = flake_query.filter(Flake.false_rejection_count_last_week > 0)
-    first_sort_property = Flake.false_rejection_count_last_week
-  else:
-    # Orders flakes by impacted_cl_count_last_week by default.
-    flake_query = flake_query.filter(
-        Flake.impacted_cl_count_last_week >= _MIN_IMPACTED_CLS_WEEKLY)
-    first_sort_property = Flake.impacted_cl_count_last_week
+  # Orders flakes by flake_score_last_week.
+  flake_query = flake_query.filter(Flake.flake_score_last_week > 0)
+  first_sort_property = Flake.flake_score_last_week
 
   return dashboard_util.GetPagedResults(
       flake_query,
@@ -87,7 +79,6 @@ class RankFlakes(BaseHandler):
     test_filter = self.request.get('test_filter').strip()
     page_size = int(self.request.get('n').strip()) if self.request.get(
         'n') else _DEFAULT_PAGE_SIZE
-    order_by = self.request.get('order_by').strip()
 
     if test_filter:
       # No paging if search for a test name.
@@ -107,7 +98,7 @@ class RankFlakes(BaseHandler):
 
     else:
       flakes, prev_cursor, cursor = _GetFlakeQueryResults(
-          luci_project, order_by, self.request.get('cursor'),
+          luci_project, self.request.get('cursor'),
           self.request.get('direction').strip(), page_size)
 
     flakes_data = []
@@ -134,11 +125,9 @@ class RankFlakes(BaseHandler):
             cursor,
         'n':
             page_size if page_size != _DEFAULT_PAGE_SIZE else '',
-        'luci_project': (luci_project
-                         if luci_project != _DEFAULT_LUCI_PROJECT else ''),
+        'luci_project': (
+            luci_project if luci_project != _DEFAULT_LUCI_PROJECT else ''),
         'test_filter':
-            test_filter,
-        'order_by':
-            order_by
+            test_filter
     }
     return {'template': 'flake/detection/rank_flakes.html', 'data': data}

@@ -42,13 +42,8 @@
     <div class="table-scroll">
       <table width="95%">
         <tr>
-          <th width="50%">Test Name</th>
-          <th width="10%"># Occurrences
-          <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Number of a flake's occurrences that caused CLs to be incorrectly rejected or additional 'retry with patch' steps.</paper-tooltip>
-          </th>
-          <th width="10%"># Impacted CLs
-          <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Number of distinct CLs that are impacted by a flake.</paper-tooltip>
-          </th>
+          <th width="10%">Ranking</th>
+          <th width="65%">Test Name</th>
           <th width="15%">Last Occurred
           <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Time since last occurrence.</paper-tooltip>
           </th>
@@ -56,12 +51,11 @@
         </tr>
         <template is="dom-repeat" items="[[flakes]]" as="flake">
           <tr>
+            <td align="right">[[flake.flake_score_last_week]]</td>
             <td>
               <a target="_blank" href="/flake/occurrences?key=[[flake.flake_urlsafe_key]]">[[flake.test_label_name]]</a>
               <paper-tooltip position="bottom" offset="0" fit-to-visible-bounds="true">[[flake.test_label_name]]</paper-tooltip>
             </td>
-            <td align="right">[[flake.false_rejection_count_last_week]]</td>
-            <td align="right">[[flake.impacted_cl_count_last_week]]</td>
             <td align="right">[[flake.time_delta]] ago</td>
             <td align="right">
               <template is="dom-if" if="[[hasBug(flake)]]">

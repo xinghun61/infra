@@ -219,6 +219,18 @@ indexes:
   - name: test_label_name
     direction: asc
 
+- kind: Flake
+  properties:
+  - name: luci_project
+  - name: flake_score_last_week
+    direction: desc
+  - name: last_occurred_time
+    direction: desc
+  - name: normalized_step_name
+    direction: asc
+  - name: test_label_name
+    direction: asc
+
 # For ranked flakes dashboard backward paging.
 - kind: Flake
   properties:
@@ -236,6 +248,18 @@ indexes:
   properties:
   - name: luci_project
   - name: impacted_cl_count_last_week
+    direction: asc
+  - name: last_occurred_time
+    direction: asc
+  - name: normalized_step_name
+    direction: desc
+  - name: test_label_name
+    direction: desc
+
+- kind: Flake
+  properties:
+  - name: luci_project
+  - name: flake_score_last_week
     direction: asc
   - name: last_occurred_time
     direction: asc
