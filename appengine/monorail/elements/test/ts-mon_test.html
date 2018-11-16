@@ -50,19 +50,24 @@ suite('MonorailTSMon', () => {
       const metric = {add: sinon.spy() };
       mts._userTimingMetrics = [{
         category: 'rutabaga',
-        eventName: 'grew',
+        eventName: 'rutabaga-name',
+        eventLabel: 'rutabaga-label',
         metric: metric,
       }];
 
-      mts.recordUserTiming('kohlrabi', 'grew', 1);
+      mts.recordUserTiming('kohlrabi', 'rutabaga-name', 'rutabaga-label', 1);
       sinon.assert.notCalled(metric.add);
-
       metric.add.reset();
-      mts.recordUserTiming('rutabaga', 'went bad', 1);
+
+      mts.recordUserTiming('rutabaga', 'is-a-tuber', 'rutabaga-label', 1);
       sinon.assert.notCalled(metric.add);
-
       metric.add.reset();
-      mts.recordUserTiming('rutabaga', 'grew', 1);
+
+      mts.recordUserTiming('rutabaga', 'rutabaga-name', 'went bad', 1);
+      sinon.assert.notCalled(metric.add);
+      metric.add.reset();
+
+      mts.recordUserTiming('rutabaga', 'rutabaga-name', 'rutabaga-label', 1);
       sinon.assert.calledOnce(metric.add);
       assert.equal(metric.add.args[0][0], 1);
       const argsKeys = Array.from(metric.add.args[0][1].keys());

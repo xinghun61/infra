@@ -32,6 +32,7 @@ export default class MonorailTSMon extends TSMonClient {
       {
         category: 'issues',
         eventName: 'new-issue',
+        eventLabel: 'server-time',
         metric: this.cumulativeDistribution(
           'monorail/frontend/issue_create_latency',
           'Latency between issue entry form submit and issue detail page load.',
@@ -41,6 +42,7 @@ export default class MonorailTSMon extends TSMonClient {
       {
         category: 'issues',
         eventName: 'issue-update',
+        eventLabel: 'computer-time',
         metric: this.cumulativeDistribution(
           'monorail/frontend/issue_update_latency',
           'Latency between issue update form submit and issue detail page load.',
@@ -50,6 +52,7 @@ export default class MonorailTSMon extends TSMonClient {
       {
         category: 'autocomplete',
         eventName: 'populate-options',
+        eventLabel: 'user-time',
         metric: this.cumulativeDistribution(
           'monorail/frontend/autocomplete_populate_latency',
           'Latency between page load and autocomplete options loading.',
@@ -83,14 +86,15 @@ export default class MonorailTSMon extends TSMonClient {
     });
   }
 
-  recordUserTiming(category, eventName, elapsed) {
+  recordUserTiming(category, eventName, eventLabel, elapsed) {
     const metricFields = new Map([
       ['client_id', this.clientId],
       ['host_name', window.CS_env.app_version],
     ]);
     for (let metric of this._userTimingMetrics) {
       if (category === metric.category
-          && eventName === metric.eventName) {
+          && eventName === metric.eventName
+          && eventLabel === metric.eventLabel) {
         metric.metric.add(elapsed, metricFields);
       }
     }

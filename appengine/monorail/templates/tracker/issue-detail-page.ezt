@@ -416,7 +416,7 @@ runOnLoad(function() {
       cl.logEnd("issue-search");
     }
     if (cl.started("issue-update")) {
-      cl.logEnd("issue-update", null, 120 * 1000);
+      cl.logEnd("issue-update", "computer-time", 120 * 1000);
     }
   }
 });

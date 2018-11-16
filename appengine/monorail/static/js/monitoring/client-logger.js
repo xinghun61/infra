@@ -103,18 +103,19 @@ export default class ClientLogger {
       throw `logPause called for event with no logStart: ${eventName}`;
     }
 
-    let elapsed = new Date().getTime() - startEvent.time;
+    if (!startEvent.labels[eventLabel]) {
+      throw `logPause called for event label with no logStart: ${eventName}.${eventLabel}`;
+    }
+
+    let elapsed = new Date().getTime() - startEvent.labels[eventLabel];
     if (!startEvent.elapsed) {
-      startEvent.elapsed = {
-        eventLabel: 0
-      };
+      startEvent.elapsed = {};
+      startEvent.elapsed[eventLabel] = 0;
     }
 
     // Save accumulated time.
     startEvent.elapsed[eventLabel] += elapsed;
 
-    // Reset the start time.
-    startEvent.labels[eventLabel] = new Date().getTime();
     sessionStorage[`ClientLogger.${this.category}.started`] =
         JSON.stringify(this.startedEvents);
   }
@@ -131,7 +132,14 @@ export default class ClientLogger {
       throw `logResume called for event with no logStart: ${eventName}`;
     }
 
-    startEvent.time = new Date().getTime();
+    if (!startEvent.hasOwnProperty('elapsed')
+        || !startEvent.elapsed.hasOwnProperty(eventLabel)) {
+      throw `logResume called for event that was never paused: ${eventName}.${eventLabel}`;
+    }
+
+    // TODO(jeffcarp): Throw if an event is resumed twice.
+
+    startEvent.labels[eventLabel] = new Date().getTime();
 
     sessionStorage[`ClientLogger.${this.category}.started`] =
         JSON.stringify(this.startedEvents);
@@ -144,60 +152,65 @@ export default class ClientLogger {
       throw `logEnd called for event with no logStart: ${eventName}`;
     }
 
-    let elapsed = new Date().getTime() - startEvent.time;
-    if (startEvent.elapsed && startEvent.elapsed[eventLabel]) {
-      elapsed += startEvent.elapsed[eventLabel];
-    }
-
-    if (maxThresholdMs !== null && elapsed > maxThresholdMs) {
-      return;
-    }
-
     // If they've specified a label, report the elapsed since the start
     // of that label.
     if (eventLabel) {
-      if (startEvent.labels[eventLabel]) {
-        elapsed = new Date().getTime() - startEvent.labels[eventLabel];
-
-        ga('send', 'timing', {
-          'timingCategory': this.category,
-          'timingVar': eventName,
-          'timingLabel': eventLabel,
-          'timingValue': elapsed
-        });
-
-        delete startEvent.labels[eventLabel];
-      } else {
+      if (!startEvent.labels.hasOwnProperty(eventLabel)) {
         throw `logEnd called for event + label with no logStart: ` +
           `${eventName}/${eventLabel}`;
       }
+
+      this._sendTiming(startEvent, eventName, eventLabel, maxThresholdMs);
+
+      delete startEvent.labels[eventLabel];
+      if (startEvent.hasOwnProperty('elapsed')) {
+        delete startEvent.elapsed[eventLabel];
+      }
     } else {
       // If no label is specified, report timing for the whole event.
-      ga('send', 'timing', {
-        'timingCategory': this.category,
-        'timingVar': eventName,
-        'timingValue': elapsed
-      });
+      this._sendTiming(startEvent, eventName, null, maxThresholdMs);
+
       // And also end and report any labels they had running.
       for (let label in startEvent.labels) {
-        elapsed = new Date().getTime() - startEvent.labels[label];
-
-        ga('send', 'timing', {
-          'timingCategory': this.category,
-          'timingVar': eventName,
-          'timingLabel': label,
-          'timingValue': elapsed
-        });
+        this._sendTiming(startEvent, eventName, label, maxThresholdMs);
       }
 
       delete this.startedEvents[eventName];
     }
 
-    this.tsMon.recordUserTiming(this.category, eventName, elapsed);
-
     sessionStorage[`ClientLogger.${this.category}.started`] =
         JSON.stringify(this.startedEvents);
     this.logEvent(`${eventName}-end`, eventLabel);
+  }
+
+  _sendTiming(event, eventName, recordOnlyThisLabel, maxThresholdMs=null) {
+    // Calculate elapsed.
+    let elapsed;
+    if (recordOnlyThisLabel) {
+      elapsed = new Date().getTime() - event.labels[recordOnlyThisLabel];
+      if (event.elapsed && event.elapsed[recordOnlyThisLabel]) {
+        elapsed += event.elapsed[recordOnlyThisLabel];
+      }
+    } else {
+      elapsed = new Date().getTime() - event.time;
+    }
+
+    // Return if elapsed exceeds maxThresholdMs.
+    if (maxThresholdMs !== null && elapsed > maxThresholdMs) {
+      return;
+    }
+
+    const options = {
+      'timingCategory': this.category,
+      'timingVar': eventName,
+      'timingValue': elapsed,
+    };
+    if (recordOnlyThisLabel) {
+      options['timingLabel'] = recordOnlyThisLabel;
+    }
+    ga('send', 'timing', options);
+    this.tsMon.recordUserTiming(
+      this.category, eventName, recordOnlyThisLabel, elapsed);
   }
 }
 
