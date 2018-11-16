@@ -101,9 +101,9 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
     // Reload the issue data when the id changes.
 
     const message = {
-      issue_ref: {
-        project_name: projectName,
-        local_id: id,
+      issueRef: {
+        projectName: projectName,
+        localId: id,
       },
     };
 

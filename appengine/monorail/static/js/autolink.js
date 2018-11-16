@@ -62,7 +62,7 @@
       '03-user-emails',
       {
         lookup: LookupReferencedUsers,
-        extractRefs: (match, _defaultProjectName) => { return [match[0]]; },
+        extractRefs: (match, _currentProjectName) => { return [match[0]]; },
         refRegs: [IMPLIED_EMAIL_RE],
         replacer: ReplaceUserRef,
       }
@@ -71,7 +71,7 @@
       '04-urls',
       {
         lookup: null,
-        extractRefs: (match, _defaultProjectName) => { return [match[0]]; },
+        extractRefs: (match, _currentProjectName) => { return [match[0]]; },
         refRegs: [SHORT_LINK_RE, NUMERIC_SHORT_LINK_RE, IMPLIED_LINK_RE, IS_LINK_RE],
         replacer: ReplaceLinkRef,
       }
@@ -80,7 +80,7 @@
       '06-versioncontrol',
       {
         lookup: null,
-        extractRefs: (match, _defaultProjectName) => { return [match[0]]; },
+        extractRefs: (match, _currentProjectName) => { return [match[0]]; },
         refRegs: [GIT_HASH_RE, SVN_REF_RE],
         replacer: ReplaceRevisionRef,
       }
@@ -114,23 +114,23 @@
   }
 
   // Extract referenced artifacts info functions.
-  function ExtractCrbugProjectAndIssueIds(match, _defaultProjectName) {
+  function ExtractCrbugProjectAndIssueIds(match, _currentProjectName) {
     // When crbug links don't specify a project, the default project is Chromium.
     const projectName = match[CRBUG_LINK_RE_PROJECT_GROUP] || CRBUG_DEFAULT_PROJECT;
     const localId = match[CRBUG_LINK_RE_ID_GROUP];
     return [{projectName: projectName, localId: localId}];
   }
 
-  function ExtractTrackerProjectAndIssueIds(match, defaultProjectName) {
+  function ExtractTrackerProjectAndIssueIds(match, currentProjectName) {
     const issueRefRE = PROJECT_LOCALID_RE;
     let refMatch;
     let refs = [];
     while ((refMatch = issueRefRE.exec(match[0])) !== null) {
       if (refMatch[PROJECT_LOCALID_RE_PROJECT_GROUP]) {
-        defaultProjectName = refMatch[PROJECT_LOCALID_RE_PROJECT_GROUP];
+        currentProjectName = refMatch[PROJECT_LOCALID_RE_PROJECT_GROUP];
       }
       refs.push({
-        projectName: defaultProjectName,
+        projectName: currentProjectName,
         localId: refMatch[PROJECT_LOCALID_RE_ID_GROUP]
       });
     }
@@ -160,7 +160,7 @@
     return {content: stringMatch};
   }
 
-  function ReplaceCrbugIssueRef(match, components, _defaultProjectName) {
+  function ReplaceCrbugIssueRef(match, components, _currentProjectName) {
     components = components || {};
     // When crbug links don't specify a project, the default project is Chromium.
     const projectName = match[CRBUG_LINK_RE_PROJECT_GROUP] || CRBUG_DEFAULT_PROJECT;
@@ -168,7 +168,7 @@
     return [ReplaceIssueRef(match[0], projectName, localId, components)];
   }
 
-  function ReplaceTrackerIssueRef(match, components, defaultProjectName) {
+  function ReplaceTrackerIssueRef(match, components, currentProjectName) {
     components = components || {};
     const issueRefRE = PROJECT_LOCALID_RE;
     let textRuns = [];
@@ -180,10 +180,10 @@
         textRuns.push({content: match[0].slice(pos, refMatch.index)});
       }
       if (refMatch[PROJECT_LOCALID_RE_PROJECT_GROUP]) {
-        defaultProjectName = refMatch[PROJECT_LOCALID_RE_PROJECT_GROUP];
+        currentProjectName = refMatch[PROJECT_LOCALID_RE_PROJECT_GROUP];
       }
       textRuns.push(ReplaceIssueRef(
-          refMatch[0], defaultProjectName,
+          refMatch[0], currentProjectName,
           refMatch[PROJECT_LOCALID_RE_ID_GROUP], components));
       pos = refMatch.index + refMatch[0].length;
     }
@@ -193,7 +193,7 @@
     return textRuns;
   }
 
-  function ReplaceUserRef(match, components, _defaultProjectName) {
+  function ReplaceUserRef(match, components, _currentProjectName) {
     components = components || {};
     let href;
     let textRun = {content: match[0], tag: 'a'};
@@ -210,7 +210,7 @@
     return [textRun];
   }
 
-  function ReplaceLinkRef(match, _componets, _defaultProjectName) {
+  function ReplaceLinkRef(match, _componets, _currentProjectName) {
     let content = match[0];
     let trailing = '';
     LINK_TRAILING_CHARS.forEach(([begin, end]) => {
@@ -235,7 +235,7 @@
     return textRuns;
   }
 
-  function ReplaceRevisionRef(match, _components, _defaultProjectName) {
+  function ReplaceRevisionRef(match, _components, _currentProjectName) {
     const content = match[0];
     const href = `https://crrev.com/${match[REV_NUM_GROUP]}`;
     return [{content: content, tag: 'a', href: href}];
@@ -251,7 +251,7 @@
     };
   }
 
-  function getReferencedArtifacts(comments, defaultProjectName='chromium') {
+  function getReferencedArtifacts(comments, currentProjectName) {
     return new Promise((resolve, reject) => {
       let artifactsByComponents = new Map();
       let fetchPromises = [];
@@ -262,7 +262,7 @@
             let match;
             comments.forEach(comment => {
               while((match = re.exec(comment.content)) !== null) {
-                refs.push.apply(refs, extractRefs(match, defaultProjectName));
+                refs.push.apply(refs, extractRefs(match, currentProjectName));
               };
             });
           });
@@ -275,8 +275,7 @@
     });
   }
 
-  function markupAutolinks(plainString, componentRefs,
-                           defaultProjectName='chromium') {
+  function markupAutolinks(plainString, componentRefs, currentProjectName) {
     plainString = plainString || '';
     const chunks = plainString.trim().split(/(<b>[^<\n]+<\/b>)|(\r\n?|\n)/);
     let textRuns = [];
@@ -287,25 +286,24 @@
         textRuns.push({content: chunk.slice(3, -4), tag: 'b'});
       } else {
         textRuns.push.apply(
-            textRuns, autolinkChunk(chunk, componentRefs, defaultProjectName));
+            textRuns, autolinkChunk(chunk, componentRefs, currentProjectName));
       }
     });
     return textRuns;
   }
 
-  function autolinkChunk(chunk, componentRefs, defaultProjectName) {
+  function autolinkChunk(chunk, componentRefs, currentProjectName) {
     let textRuns = [{content: chunk}];
     Components.forEach(({lookup, extractRefs, refRegs, replacer}, componentName) => {
       refRegs.forEach(re => {
         textRuns = applyLinks(textRuns, replacer, re,
-        componentRefs.get(componentName), defaultProjectName);
+        componentRefs.get(componentName), currentProjectName);
       });
     });
     return textRuns;
   }
 
-  function applyLinks(textRuns, replacer, re, existingRefs,
-                      defaultProjectName) {
+  function applyLinks(textRuns, replacer, re, existingRefs, currentProjectName) {
     let resultRuns = [];
     textRuns.forEach(textRun => {
       if (textRun.tag) {
@@ -320,7 +318,7 @@
             resultRuns.push({content: content.slice(pos, match.index)});
           }
           resultRuns.push.apply(
-              resultRuns, replacer(match, existingRefs, defaultProjectName));
+              resultRuns, replacer(match, existingRefs, currentProjectName));
           pos = match.index + match[0].length;
         }
         if (content.slice(pos) !== '') {
