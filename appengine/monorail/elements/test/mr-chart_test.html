@@ -12,14 +12,15 @@
 import MrChart from '../../static/js/elements/mr-chart.js';
 import '../../bower_components/chopsui/prpc-client.js';
 
+// TODO(jeffcarp): Export prefix from prpc-client and use that.
+const xssiPrefix = ')]}\'';
+
 suite('MrChart', function() {
   let element;
 
   setup(function() {
     sinon.stub(window, 'fetch', () => {
       return new Promise((resolve, reject) => {
-        // TODO(jeffcarp): Export prefix from prpc-client and use that.
-        const xssiPrefix = ')]}\'';
         const dataStr = JSON.stringify({
           snapshotCount: [{count: 0}],
           unsupportedField: [],
@@ -105,6 +106,29 @@ suite('MrChart', function() {
       assert.deepEqual(projectNames, [
         'rutabaga', 'rutabaga', 'rutabaga', 'rutabaga', 'rutabaga', 'rutabaga',
       ])
+    });
+
+    test('sets indices and correctly re-orders values', async () => {
+      const timestampMap = new Map([
+        [1540857599, 0],
+        [1540943999, 1],
+        [1541030399, 2],
+        [1541116799, 3],
+        [1541203199, 4],
+        [1541289599, 5],
+      ]);
+      sinon.stub(element, '_fetchDataAtTimestamp', (ts) => ({
+        issues: timestampMap.get(ts),
+      }));
+
+      const endDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
+      await element._fetchData(endDate);
+
+      assert.deepEqual(element.indices, [
+        '10/29/2018', '10/30/2018', '10/31/2018',
+        '11/1/2018', '11/2/2018', '11/3/2018',
+      ]);
+      assert.deepEqual(element.values, [0, 1, 2, 3, 4, 5]);
     });
   });
 
@@ -258,6 +282,18 @@ suite('MrChart', function() {
       });
     });
 
+    suite('makeIndices', () => {
+      test('returns dates in mm/dd/yyy format', () => {
+        const timestamps = [
+          1540857599, 1540943999, 1541030399,
+          1541116799, 1541203199, 1541289599,
+        ];
+        assert.deepEqual(MrChart.makeIndices(timestamps), [
+          '10/29/2018', '10/30/2018', '10/31/2018',
+          '11/1/2018', '11/2/2018', '11/3/2018',
+        ]);
+      });
+    });
   });
 });
 </script>

@@ -48,13 +48,6 @@ export default class MrChart extends HTMLElement {
     this._fetchData(endDate);
   }
 
-  _makeIndices(timestamps) {
-    const dateFormat = { year: 'numeric', month: 'numeric', day: 'numeric' };
-    return timestamps.map(ts => (
-      (new Date(ts * 1000)).toLocaleDateString('en-US', dateFormat)
-    ));
-  }
-
   _updateChartValues() {
     if (this._animationFrameRequested) {
       return;
@@ -80,7 +73,6 @@ export default class MrChart extends HTMLElement {
 
   async _fetchData(endDate) {
     // Reset chart variables except indices.
-    this.values = [];
     this.progressBar.value = 0.05;
 
     // Render blank chart.
@@ -88,11 +80,16 @@ export default class MrChart extends HTMLElement {
 
     let numTimestampsLoaded = 0;
     const timestampsChronological = MrChart.makeTimestamps(endDate);
-    this.indices = this._makeIndices(timestampsChronological);
+    const tsToIndexMap = new Map(timestampsChronological.map((ts, idx) => (
+      [ts, idx]
+    )));
+    this.indices = MrChart.makeIndices(timestampsChronological);
     const timestamps = MrChart.sortInBisectOrder(timestampsChronological);
+    this.values = new Array(timestamps.length).fill(undefined);
 
-    const fetchPromises = timestamps.map(async (ts, index) => {
+    const fetchPromises = timestamps.map(async (ts) => {
       const data = await this._fetchDataAtTimestamp(ts);
+      const index = tsToIndexMap.get(ts);
       this.values[index] = data.issues;
       numTimestampsLoaded += 1;
       const progressValue = numTimestampsLoaded / timestamps.length;
@@ -286,6 +283,13 @@ export default class MrChart extends HTMLElement {
       today.setSeconds(59);
       return today;
     }
+  }
+
+  static makeIndices(timestamps) {
+    const dateFormat = { year: 'numeric', month: 'numeric', day: 'numeric' };
+    return timestamps.map(ts => (
+      (new Date(ts * 1000)).toLocaleDateString('en-US', dateFormat)
+    ));
   }
 
 }
