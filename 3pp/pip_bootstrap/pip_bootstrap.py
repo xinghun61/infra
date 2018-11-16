@@ -35,6 +35,23 @@ def main():
   print("imported %r" % pip)
   import pip._internal
 
+  if sys.platform == 'win32':
+    # HACK - We change sys.executable here so that pip generates e.g. pip.exe
+    # containing `#!python.exe` instead of `#!C:\abs\path\to\python.exe`. This,
+    # in turn, will allow pip and friends to work, as long as `python.exe` is in
+    # %PATH%.
+    #
+    # Additional exe shims will have absolute paths; however we believe that
+    # it's acceptable for developers to not relocate their python installations
+    # after installing additional pip packages to them, since this is the
+    # behavior of stock python. On bots we don't use these exe shims at all, so
+    # it's a moot point.
+    #
+    # Unfortunately, this additionally only works for .exe files, not .bat
+    # files, meaning that we'll need to find a way in depot_tools to get the
+    # python.exe on %PATH%, instead of python.bat.
+    sys.executable = 'python.exe'
+
   sys.exit(pip._internal.main([
     # obliterate whatever is there
     'install', '--upgrade', '--force-reinstall', '--ignore-installed',

@@ -86,7 +86,7 @@ class TestPython(unittest.TestCase):
 if __name__ == '__main__':
   platform = os.environ['_3PP_PLATFORM']
   tool_platform = os.environ['_3PP_TOOL_PLATFORM']
-  if platform != tool_platform:
+  if 'windows' not in platform and platform != tool_platform:
     print 'SKIPPING TESTS'
     print '  platform:', platform
     print '  tool_platform:', tool_platform

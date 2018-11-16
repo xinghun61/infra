@@ -1,11 +1,8 @@
 create {
-  platform_re: "windows-.*"
-  unsupported: true
-}
-
-create {
   source { script { name: "fetch.py" } }
-  build {}
+  build {
+    no_docker_env: true
+  }
 }
 
 upload {

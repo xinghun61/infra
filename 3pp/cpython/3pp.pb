@@ -1,10 +1,4 @@
 create {
-  platform_re: "windows-.*"
-  unsupported: true
-}
-
-create {
-  source { patch_version: "chromium.14" }
   verify { test: "python_test.py" }
 }
 
@@ -19,6 +13,7 @@ create {
     }
     unpack_archive: true
     patch_dir: "patches"
+    patch_version: "chromium.14"
   }
   build {
     tool: "autoconf"
@@ -55,6 +50,19 @@ create {
     # part of 'libc'.
     dep: "nsl"
   }
+}
+
+create {
+  # We never supported 64bit python for python2; why start now?
+  platform_re: "windows-386"
+  source { script { name: "fetch.py" } }
+  build {
+    tool: "lessmsi"
+    tool: "pip_bootstrap"
+
+    install: "install_win.sh"
+  }
+  verify { test: "python_test.py" }
 }
 
 upload { pkg_prefix: "tools" }

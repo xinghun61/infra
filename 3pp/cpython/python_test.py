@@ -29,8 +29,9 @@ class TestPython(unittest.TestCase):
 
   @classmethod
   def setUpClass(cls):
-    cls._expected_version = (
-      os.environ['_3PP_VERSION'] + '+' + os.environ['_3PP_PATCH_VERSION'])
+    cls._expected_version = os.environ['_3PP_VERSION']
+    if '_3PP_PATCH_VERSION' in os.environ:
+      cls._expected_version += '+' + os.environ['_3PP_PATCH_VERSION']
     cls._is_windows = os.name == 'nt'
     cls._exe_suffix = '.exe' if cls._is_windows else ''
 
@@ -94,6 +95,10 @@ class TestPython(unittest.TestCase):
     rv = subprocess.call([self.python, '-c', script])
     self.assertEqual(rv, 0)
 
+  @unittest.skipIf(
+    sys.platform == 'win32',
+    'sqlite in windows distro is older'
+  )
   def test_sqlite_version(self):
     script = (
         'import sqlite3; '
@@ -145,7 +150,7 @@ class TestPython(unittest.TestCase):
 if __name__ == '__main__':
   platform = os.environ['_3PP_PLATFORM']
   tool_platform = os.environ['_3PP_TOOL_PLATFORM']
-  if platform != tool_platform:
+  if 'windows' not in platform and platform != tool_platform:
     print 'SKIPPING TESTS'
     print '  platform:', platform
     print '  tool_platform:', tool_platform
