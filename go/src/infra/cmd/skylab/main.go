@@ -11,11 +11,13 @@ import (
 
 	"github.com/maruel/subcommands"
 
+	"go.chromium.org/luci/auth/client/authcli"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/data/rand/mathrand"
 	"go.chromium.org/luci/common/logging/gologger"
 
 	"infra/cmd/skylab/internal/cmd"
+	"infra/cmd/skylab/internal/site"
 )
 
 func getApplication() *cli.Application {
@@ -27,9 +29,13 @@ func getApplication() *cli.Application {
 		},
 		Commands: []*subcommands.Command{
 			subcommands.CmdHelp,
+			authcli.SubcommandInfo(site.DefaultAuthOptions, "whoami", false),
+			authcli.SubcommandLogin(site.DefaultAuthOptions, "login", false),
+			authcli.SubcommandLogout(site.DefaultAuthOptions, "logout", false),
 
 			// Main commands.
 			cmd.BalancePool,
+			cmd.Repair,
 		},
 	}
 }
