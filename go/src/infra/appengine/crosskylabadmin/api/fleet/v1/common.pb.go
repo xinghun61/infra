@@ -27,7 +27,7 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 // and to select the bots against which admin tasks are managed by the Tasker
 // RPCs.
 type BotSelector struct {
-	// dut_ids selects bots by the dut_id dimension.
+	// dut_id selects a bot by the dut_id dimension.
 	DutId string `protobuf:"bytes,1,opt,name=dut_id,json=dutId,proto3" json:"dut_id,omitempty"`
 	// dimensions select bots by Swarming dimensions.
 	//
