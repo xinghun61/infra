@@ -54,6 +54,9 @@ const (
 	// DutPoolDimensionKey identifies the swarming dimension containing the
 	// Autotest pool label for the DUT.
 	DutPoolDimensionKey = "label-pool"
+	// DutNameDimensionKey identifies the swarming dimension
+	// containing the DUT name.
+	DutNameDimensionKey = "dut_name"
 	// DutStateDimensionKey identifies the swarming dimension containing the
 	// autotest DUT state for a bot.
 	DutStateDimensionKey = "dut_state"

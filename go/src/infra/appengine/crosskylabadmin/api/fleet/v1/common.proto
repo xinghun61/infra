@@ -28,5 +28,6 @@ message BotSelector {
 message BotDimensions {
   repeated string pools = 1;
   string model = 2;
+  string dut_name = 3;
 }
 

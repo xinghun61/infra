@@ -151,6 +151,9 @@ func getFilteredBotsFromSwarming(ctx context.Context, sc clients.SwarmingClient,
 	if p := sel.GetDimensions().GetPools(); len(p) > 0 {
 		dims[clients.DutPoolDimensionKey] = p
 	}
+	if n := sel.GetDimensions().GetDutName(); n != "" {
+		dims[clients.DutNameDimensionKey] = []string{n}
+	}
 
 	if len(dims) == 0 {
 		return nil, fmt.Errorf("empty selector %v", sel)
