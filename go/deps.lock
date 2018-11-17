@@ -1,5 +1,5 @@
-hash: fe259fcb2af9f50c62d9cc2b8da8a091788bf018deca711cc30f7c8d77c56f57
-updated: 2018-11-16T15:48:36.615114-08:00
+hash: 092a884bc3496b06ac3153b90b2fdaf556a84b6d97e1a1f77ceefa3a135a21fa
+updated: 2018-11-16T16:08:14.408514-08:00
 imports:
 - name: cloud.google.com/go
   version: 74b12019e2aa53ec27882158f59192d7cd6d1998
@@ -37,6 +37,9 @@ imports:
 - name: github.com/chromedp/chromedp
   version: bf52fed0d3e6fc1acb7096f4748fec335fcb5547
   repo: https://chromium.googlesource.com/external/github.com/chromedp/chromedp.git
+- name: github.com/chzyer/readline
+  version: 2972be24d48e78746da79ba8e24e8b488c9880de
+  repo: https://chromium.googlesource.com/external/github.com/chzyer/readline.git
 - name: github.com/danjacques/gofslock
   version: afa47669cc5499f1d05eddcaad3961756ca4e09c
   repo: https://chromium.googlesource.com/external/github.com/danjacques/gofslock.git
@@ -295,6 +298,9 @@ imports:
   repo: https://chromium.googlesource.com/external/github.com/census-instrumentation/opencensus-go.git
   subpackages:
   - plugin/grpc
+- name: go.starlark.net
+  version: f4938bde408026d8b3d43a28b75f500b5ecb00d8
+  repo: https://chromium.googlesource.com/external/github.com/google/starlark-go.git
 - name: golang.org/x/build
   version: 1cf306ea29af714ae6f446eda4fc3ac8abb37e6d
   repo: https://go.googlesource.com/build.git

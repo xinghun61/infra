@@ -356,9 +356,18 @@ import:
   subpackages:
   - bmp
   - tiff
+
+# TODO(vadimsh): Remove once luci-go switches to use starlark.
 - package: github.com/google/skylark
   version: master
   repo: https://chromium.googlesource.com/external/github.com/google/skylark.git
+- package: go.starlark.net
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/google/starlark-go.git
+- package: github.com/chzyer/readline
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/chzyer/readline.git
+
 - package: github.com/waigani/diffparser
   version: master
   repo: https://chromium.googlesource.com/external/github.com/waigani/diffparser.git
