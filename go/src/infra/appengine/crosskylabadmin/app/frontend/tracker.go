@@ -142,14 +142,14 @@ func getBotsFromSwarming(ctx context.Context, sc clients.SwarmingClient, pool st
 // This function is intended to be used in a parallel.WorkPool().
 func getFilteredBotsFromSwarming(ctx context.Context, sc clients.SwarmingClient, pool string, sel *fleet.BotSelector) ([]*swarming.SwarmingRpcsBotInfo, error) {
 	dims := make(strpair.Map)
-	if sel.DutId != "" {
-		dims[clients.DutIDDimensionKey] = []string{sel.DutId}
+	if id := sel.GetDutId(); id != "" {
+		dims[clients.DutIDDimensionKey] = []string{id}
 	}
-	if sel.GetDimensions().GetModel() != "" {
-		dims[clients.DutModelDimensionKey] = []string{sel.Dimensions.Model}
+	if m := sel.GetDimensions().GetModel(); m != "" {
+		dims[clients.DutModelDimensionKey] = []string{m}
 	}
-	if len(sel.GetDimensions().GetPools()) > 0 {
-		dims[clients.DutPoolDimensionKey] = sel.Dimensions.Pools
+	if p := sel.GetDimensions().GetPools(); len(p) > 0 {
+		dims[clients.DutPoolDimensionKey] = p
 	}
 
 	if len(dims) == 0 {
