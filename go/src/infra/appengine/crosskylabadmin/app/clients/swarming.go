@@ -232,10 +232,14 @@ type BotTasksCursor interface {
 type botTasksCursorImpl struct {
 	description string
 	call        *swarming.BotTasksCall
+	done        bool
 }
 
 // Next returns at most the next N tasks from the task cursor.
 func (c *botTasksCursorImpl) Next(ctx context.Context, n int64) ([]*swarming.SwarmingRpcsTaskResult, error) {
+	if c.done || n < 1 {
+		return nil, nil
+	}
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 	resp, err := c.call.Limit(n).Context(ctx).Do()
@@ -244,6 +248,8 @@ func (c *botTasksCursorImpl) Next(ctx context.Context, n int64) ([]*swarming.Swa
 	}
 	if resp.Cursor != "" {
 		c.call.Cursor(resp.Cursor)
+	} else {
+		c.done = true
 	}
 	return resp.Items, nil
 }
