@@ -279,7 +279,7 @@ func (sc *swarmingClientImpl) ListSortedRecentTasksForBot(ctx context.Context, b
 		chunk := p.Next()
 		trs2, err := c.Next(ctx, int64(chunk))
 		if err != nil {
-			return nil, errors.Reason("failed to list tasks for dut %s", botID).InternalReason(err.Error()).Err()
+			return nil, err
 		}
 		if len(trs2) == 0 {
 			break
