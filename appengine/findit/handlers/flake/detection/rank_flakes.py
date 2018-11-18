@@ -8,6 +8,7 @@ from gae_libs.handlers.base_handler import Permission
 from libs import time_util
 from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
+from model.flake.flake_type import FLAKE_TYPE_DESCRIPTIONS
 
 _DEFAULT_PAGE_SIZE = 100
 _DEFAULT_LUCI_PROJECT = 'chromium'
@@ -114,6 +115,11 @@ class RankFlakes(BaseHandler):
       flake_dict['flake_urlsafe_key'] = flake.key.urlsafe()
       flake_dict['time_delta'] = time_util.FormatTimedelta(
           time_util.GetUTCNow() - flake.last_occurred_time, with_days=True)
+
+      for count_dict in flake_dict['flake_counts_last_week']:
+        count_dict['flake_type'] = FLAKE_TYPE_DESCRIPTIONS.get(
+            count_dict['flake_type'], 'Unknown')
+
       flakes_data.append(flake_dict)
 
     data = {

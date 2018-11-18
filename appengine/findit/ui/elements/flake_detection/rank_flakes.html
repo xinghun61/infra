@@ -1,5 +1,6 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
 <link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
+<link rel="import" href="/ui/elements/flake_detection/rank-flake-item.html">
 
 
 <dom-module id="rank-flakes">
@@ -16,14 +17,13 @@
         background-color: #4285F4;
         white-space: nowrap;
       }
-      table td {
-        max-width: 0;
-        padding: 2px;
-        padding-right: 10px;
-        height: 30px;
-        vertical-align: top;
-        overflow: hidden;
-        text-overflow: ellipsis;
+
+     .num-header {
+        text-align: right;
+     }
+
+     .str-header {
+        text-align: left;
       }
 
       tr:nth-child(odd) {
@@ -38,31 +38,23 @@
         max-height: calc(100vh - 270px);
         overflow-y: auto;
       }
+
+      rank-flake-item {
+        display: table-row;
+      }
     </style>
     <div class="table-scroll">
       <table width="95%">
         <tr>
           <th width="10%">Ranking</th>
-          <th width="65%">Test Name</th>
-          <th width="15%">Last Occurred
+          <th class="str-header" width="65%">Test Name</th>
+          <th class="num-header" width="15%">Last Occurred
           <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Time since last occurrence.</paper-tooltip>
           </th>
-          <th width="10%">Bug</th>
+          <th class="num-header" width="10%">Bug</th>
         </tr>
         <template is="dom-repeat" items="[[flakes]]" as="flake">
-          <tr>
-            <td align="right">[[flake.flake_score_last_week]]</td>
-            <td>
-              <a target="_blank" href="/flake/occurrences?key=[[flake.flake_urlsafe_key]]">[[flake.test_label_name]]</a>
-              <paper-tooltip position="bottom" offset="0" fit-to-visible-bounds="true">[[flake.test_label_name]]</paper-tooltip>
-            </td>
-            <td align="right">[[flake.time_delta]] ago</td>
-            <td align="right">
-              <template is="dom-if" if="[[hasBug(flake)]]">
-                  <a href="[[flake.flake_issue.issue_link]]">[[flake.flake_issue.issue_id]]</a>
-              </template>
-            </td>
-          </tr>
+          <rank-flake-item flake=[[flake]] index=[[index]]></rank-flake-item>
         </template>
       </table>
     </div>
@@ -78,11 +70,6 @@
           flakes: {
             type: Array
           },
-        },
-
-        hasBug: function(flake) {
-          return (flake.flake_issue != null &&
-          flake.flake_issue.issue_id != null);
         }
       });
     })();
