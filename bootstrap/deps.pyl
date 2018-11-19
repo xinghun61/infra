@@ -269,9 +269,9 @@
     'rev': '496f40dca9a47c0f1dfe0cd841256485708c8442',
   },
   'protobuf': {
-    'version': '3.5.1',
+    'version': '3.6.1',
     'build': '0',
-    'gs': '4b19636ff27dd6f571f7919a6f478a3e5ab399b3.tar.gz',
+    'gs': '34e4719103d0979fa157e5d3a7574c7d99df9085.tar.gz',
   },
   'pyasn1': {
     'version': '0.1.7',

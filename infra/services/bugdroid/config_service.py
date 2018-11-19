@@ -9,7 +9,7 @@ import httplib2
 import json
 import logging
 
-from google import protobuf
+from google.protobuf import text_format
 from oauth2client.client import OAuth2Credentials
 
 from infra.services.bugdroid.proto import repo_config_pb2
@@ -52,7 +52,7 @@ def get_repos(credentials_db, configfile=None):
     content_text = base64.b64decode(config_content)
 
   cfg = repo_config_pb2.RepoConfigs()
-  protobuf.text_format.Merge(content_text, cfg)
+  text_format.Merge(content_text, cfg)
   for repo in cfg.repos:
     if not repo.no_merge_refs:
       repo.no_merge_refs.extend(DEFAULT_NO_MERGE_REFS)

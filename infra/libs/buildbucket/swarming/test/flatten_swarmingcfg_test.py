@@ -6,7 +6,7 @@ import json
 import logging
 import unittest
 
-from google import protobuf
+from google.protobuf import text_format
 
 from infra.libs.buildbucket.proto.config import project_config_pb2
 from infra.libs.buildbucket.swarming import flatten_swarmingcfg
@@ -28,7 +28,7 @@ class ProjectCfgTest(unittest.TestCase):
 
     def test(cfg_text, expected_builder_text):
       cfg = project_config_pb2.BuildbucketCfg()
-      protobuf.text_format.Merge(cfg_text, cfg)
+      text_format.Merge(cfg_text, cfg)
       builder = cfg.buckets[0].swarming.builders[0]
       flatten_swarmingcfg.flatten_builder(
           builder,
@@ -37,7 +37,7 @@ class ProjectCfgTest(unittest.TestCase):
       )
 
       expected = project_config_pb2.Builder()
-      protobuf.text_format.Merge(expected_builder_text, expected)
+      text_format.Merge(expected_builder_text, expected)
       self.assertEqual(builder, expected)
 
     test(

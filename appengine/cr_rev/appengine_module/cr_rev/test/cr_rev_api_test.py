@@ -2,11 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from test_support import test_env
-test_env.setup_test_env()
-
-from test_support import test_case
-
 from appengine_module.testing_utils import testing
 from appengine_module.cr_rev import controller
 from appengine_module.cr_rev import cr_rev_api
@@ -14,7 +9,7 @@ from appengine_module.cr_rev import models
 from appengine_module.cr_rev.test import model_helpers
 
 
-class TestCrRevApi(test_case.EndpointsTestCase):
+class TestCrRevApi(testing.EndpointsTestCase):
   api_service_cls = cr_rev_api.CrRevApi
 
   def _make_api_call(self, funcname, params=None, status=None):
