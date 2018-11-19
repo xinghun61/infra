@@ -12,6 +12,12 @@ import sys
 
 import httplib2
 
+def IsGoogler(server):
+    """Check whether this script run inside corp network."""
+    h = httplib2.Http()
+    _, content = h.request('https://'+server+'/should-upload', 'GET')
+    return content == 'Success'
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--server',
@@ -20,6 +26,9 @@ def main():
     parser.add_argument('--ninjalog', required=True,
                         help='ninjalog file to upload.')
     args = parser.parse_args()
+
+    if not IsGoogler(args.server):
+        return 0
 
     output = cStringIO.StringIO()
 
