@@ -17,12 +17,11 @@ import (
 )
 
 const (
-	bqDataset     = "ninjalog"
-	bqResultTable = "ninjalog"
+	bqDataset = "ninjalog"
 )
 
 // SendToBigquery sends ninjalog converted to protocol buffer to BigQuery.
-func SendToBigquery(ctx context.Context, info *ninjalog.NinjaLog) error {
+func SendToBigquery(ctx context.Context, info *ninjalog.NinjaLog, bqResultTable string) error {
 	projectID := appengine.AppID(ctx)
 	client, err := bigquery.NewClient(ctx, projectID)
 	if err != nil {

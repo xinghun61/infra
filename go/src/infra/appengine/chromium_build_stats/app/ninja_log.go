@@ -155,6 +155,41 @@ ninja end: {{ .EndTime }} <br />
 
 func init() {
 	http.Handle("/ninja_log/", http.StripPrefix("/ninja_log/", http.HandlerFunc(ninjaLogHandler)))
+	http.Handle("/upload_ninja_log/", http.HandlerFunc(uploadNinjaLogHandler))
+}
+
+func uploadNinjaLogHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := appengine.NewContext(r)
+
+	// X-AppEngine-Trusted-IP-Request=1 means the request is coming from a corp machine.
+	if r.Header.Get("X-AppEngine-Trusted-IP-Request") != "1" {
+		log.Warningf(ctx, "request from non trusted ip")
+		http.Error(w, "Access Denied: You're not on corp.", http.StatusForbidden)
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		log.Warningf(ctx, "request is not post: %s", r.Method)
+		http.Error(w, "Only POST method is allowed.", http.StatusMethodNotAllowed)
+		return
+	}
+
+	defer r.Body.Close()
+	ninjalog, err := ninjalog.Parse("ninjalog", r.Body)
+	if err != nil {
+		log.Errorf(ctx, "failed to parse ninjalog: %v", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// TODO(tikuta): Take metadata from query parameter.
+
+	if err := SendToBigquery(ctx, ninjalog, "user"); err != nil {
+		http.Error(w, "failed to send BigQuery", http.StatusInternalServerError)
+		log.Errorf(ctx, "failed to send BigQuery: %v", err)
+		return
+	}
+	fmt.Fprintln(w, "OK")
 }
 
 // ninjaLogHandler handles /<path>/<format> for ninja_log file in gs://chrome-goma-log/<path>
