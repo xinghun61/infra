@@ -158,6 +158,18 @@ class BuilderIDTests(BaseTestCase):
         msg, r'bucket: Bucket name "a b" does not match regular'
     )
 
+  def test_v1_bucket(self):
+    msg = build_pb2.BuilderID(
+        project='chromium', bucket='luci.chromium.ci', builder='linux-rel'
+    )
+    self.assert_invalid(
+        msg,
+        (
+            r'bucket: invalid usage of v1 bucket format in v2 API; '
+            'use u\'ci\' instead'
+        ),
+    )
+
   def test_invalid_builder(self):
     msg = build_pb2.BuilderID(project='chromium', bucket='try', builder='#')
     self.assert_invalid(msg, r'builder: invalid char\(s\)')

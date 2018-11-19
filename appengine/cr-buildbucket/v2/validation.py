@@ -127,6 +127,12 @@ def validate_builder_id(builder_id):
     config.validate_project_id(builder_id.project)
   with _enter('bucket'), _handle_invalid_input_error():
     config.validate_bucket_name(builder_id.bucket)
+    parts = builder_id.bucket.split('.')
+    if len(parts) >= 3 and parts[0] == 'luci':
+      _err(
+          'invalid usage of v1 bucket format in v2 API; use %r instead',
+          parts[2]
+      )
   with _enter('builder'), _handle_invalid_input_error():
     errors.validate_builder_name(builder_id.builder)
 
