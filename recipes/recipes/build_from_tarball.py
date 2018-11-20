@@ -89,9 +89,12 @@ def RunSteps(api):
 
       gn_bootstrap_args = ['--gn-gen-args=%s' % ' '.join(gn_args)]
       if [int(x) for x in version.split('.')] >= [69, 0, 3491, 0]:
-        # TODO(thomasanderson): Add libc++ sources to gn so this flag is not
-        # required.
-        gn_bootstrap_args.append('--with-sysroot')
+        # TODO(thomasanderson): We need libc++ to avoid the system's libstdc++,
+        # which is often too old for C++14 (https://crbug.com/907025).
+        if [int(x) for x in version.split('.')] < [72, 0, 3610, 0]:
+          # The M72 version above is the first one without the --with-sysroot
+          # option, which was removed due to https://crbug.com/904350.
+          gn_bootstrap_args.append('--with-sysroot')
         gn_bootstrap_env['LDFLAGS'] = '-fuse-ld=lld'
       with api.context(env=gn_bootstrap_env):
         api.python(
@@ -122,4 +125,7 @@ def GenTests(api):
          api.platform('linux', 64))
   yield (api.test('clang-no-fuchsia') +
          api.properties.generic(version='71.0.3551.0') +
+         api.platform('linux', 64))
+  yield (api.test('basic-gn-without-sysroot') +
+         api.properties.generic(version='72.0.3610.0') +
          api.platform('linux', 64))
