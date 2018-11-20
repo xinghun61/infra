@@ -115,25 +115,6 @@ def SearchOpenIssueIdForFlakyTest(test_name, monorail_project='chromium'):
                                                        monorail_project))
 
 
-def _FlakeIssueWasCreatedOrUpdatedWithinPast24h(flake):
-  """Returns True if the flake issue was created or updated within the past 24h.
-
-  Args:
-    flake: A Flake Model entity.
-
-  Returns:
-    A boolean value indicates whether the issue was create or updated within the
-    past 24 hours.
-  """
-  flake_issue = _GetFlakeIssue(flake)
-  if not flake_issue:
-    return False
-
-  utc_one_day_ago = time_util.GetUTCNow() - datetime.timedelta(days=1)
-  return (flake_issue.last_updated_time_by_flake_detection and
-          flake_issue.last_updated_time_by_flake_detection > utc_one_day_ago)
-
-
 def _GetFlakeIssue(flake):
   """Returns the associated flake issue if it exists.
 
@@ -192,7 +173,7 @@ def GetFlakesWithEnoughOccurrences():
 
   Returns:
     A list of tuples whose first element is a flake entity and second element is
-    a list of corresponding recent and unreported occurrences.
+    number of corresponding recent and unreported occurrences.
   """
   utc_one_day_ago = time_util.GetUTCNow() - datetime.timedelta(days=1)
   occurrences = FlakeOccurrence.query(
@@ -220,13 +201,12 @@ def GetFlakesWithEnoughOccurrences():
         flake_issue.last_updated_time_by_flake_detection
         if flake_issue else None)
 
-    new_occurrences = [
-        occurrence for occurrence in occurrences
-        if (not last_updated_time_by_flake_detection or
-            occurrence.time_detected > last_updated_time_by_flake_detection)
-    ]
-    if new_occurrences:
-      flake_key_to_unreported_occurrences[flake_key] = new_occurrences
+    if (last_updated_time_by_flake_detection and
+        last_updated_time_by_flake_detection > utc_one_day_ago):
+      # An issue can be updated at most once in any 24h window avoid noises.
+      continue
+
+    flake_key_to_unreported_occurrences[flake_key] = occurrences
 
   # Set to None to avoid being mistakenly used in following code.
   flake_key_to_occurrences = None
@@ -238,12 +218,12 @@ def GetFlakesWithEnoughOccurrences():
   ]
 
   # Cannot use a dictionary because Model is not immutable.
-  flake_and_occurrences_tuples = []
+  flake_and_occurrences_count_tuples = []
   for flake in flakes_with_enough_occurrences:
-    flake_and_occurrences_tuples.append(
-        (flake, flake_key_to_unreported_occurrences[flake.key]))
+    flake_and_occurrences_count_tuples.append(
+        (flake, len(flake_key_to_unreported_occurrences[flake.key])))
 
-  return flake_and_occurrences_tuples
+  return flake_and_occurrences_count_tuples
 
 
 # TODO(crbug.com/903459): Move ReportFlakesToMonorail and
@@ -275,20 +255,14 @@ def ReportFlakesToMonorail(flake_tuples_to_report):
                  'reached the limit.')
     return
 
-  # An issue can be updated at most once in any 24h window avoid noises.
-  flake_tuples_to_report = [
-      flake_tuple for flake_tuple in flake_tuples_to_report
-      if not _FlakeIssueWasCreatedOrUpdatedWithinPast24h(flake_tuple[0])
-  ]
-
   num_of_flakes_to_report = min(
       len(flake_tuples_to_report), limit - num_updated_issues_24h)
   flake_tuples_to_report = flake_tuples_to_report[:num_of_flakes_to_report]
   logging.info('There are %d flakes whose issues will be created or updated.' %
                num_of_flakes_to_report)
 
-  for flake, occurrences in flake_tuples_to_report:
-    issue_generator = FlakeDetectionIssueGenerator(flake, len(occurrences))
+  for flake, occurrences_count in flake_tuples_to_report:
+    issue_generator = FlakeDetectionIssueGenerator(flake, occurrences_count)
     try:
       CreateOrUpdateIssue(issue_generator, flake.luci_project)
 

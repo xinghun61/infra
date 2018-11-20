@@ -119,7 +119,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
   def testGetFlakesWithEnoughOccurrences(self):
     flakes_with_occurrences = flake_issue_util.GetFlakesWithEnoughOccurrences()
     self.assertEqual(1, len(flakes_with_occurrences))
-    self.assertEqual(3, len(flakes_with_occurrences[0][1]))
+    self.assertEqual(3, flakes_with_occurrences[0][1])
 
   # This test tests that in order for a flake to have enough occurrences, there
   # needs to be at least 3 (_MIN_REQUIRED_FALSELY_REJECTED_CLS_24H) occurrences
@@ -152,34 +152,14 @@ class FlakeReportUtilTest(WaterfallTestCase):
   def testCreateOrUpdateIssuesPerDayLimit(self, mock_update_or_create_bug):
     flakes_with_occurrences = flake_issue_util.GetFlakesWithEnoughOccurrences()
     self.assertEqual(1, len(flakes_with_occurrences))
-    self.assertEqual(3, len(flakes_with_occurrences[0][1]))
+    self.assertEqual(3, flakes_with_occurrences[0][1])
     self.UpdateUnitTestConfigSettings('action_settings',
                                       {'max_flake_bug_updates_per_day': 0})
     flake_issue_util.ReportFlakesToMonorail(flakes_with_occurrences)
     self.assertFalse(mock_update_or_create_bug.called)
 
-  # This test tests that any issue can be created or updated at most once in any
-  # 24 hours window.
-  @mock.patch.object(flake_issue_util, 'CreateOrUpdateIssue')
-  def testIssuesCanBeCreatedOrUpdatedAtMostOncePerDay(
-      self, mock_update_or_create_bug):
-    flake = Flake.query().fetch()[0]
-    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=900)
-    flake_issue.put()
-    flake.flake_issue_key = flake_issue.key
-    flake.put()
-
-    flakes_with_occurrences = flake_issue_util.GetFlakesWithEnoughOccurrences()
-    self.assertEqual(1, len(flakes_with_occurrences))
-    self.assertEqual(3, len(flakes_with_occurrences[0][1]))
-
-    flake_issue.last_updated_time_by_flake_detection = (
-        self._GetDatetimeHoursAgo(1))
-    flake_issue_util.ReportFlakesToMonorail(flakes_with_occurrences)
-    self.assertFalse(mock_update_or_create_bug.called)
-
-  # This test tests that occurrences that were already reported are ignored.
-  def testIgnoreAlreadyReportedOccurrencesToMonorail(self):
+  # This test tests that flakes that were updated within 24h are ignored.
+  def testIgnoreFlakesAlreadyUpdatedWith24h(self):
     flake = Flake.query().fetch()[0]
     flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=900)
     flake_issue.last_updated_time_by_flake_detection = (
@@ -226,9 +206,9 @@ class FlakeReportUtilTest(WaterfallTestCase):
                                       {'create_and_update_bug': False})
 
     flake = Flake.query().fetch()[0]
-    occurrences = FlakeOccurrence.query(
-        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
-    flake_issue_util.ReportFlakesToMonorail([(flake, occurrences)])
+    occurrences_count = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).count()
+    flake_issue_util.ReportFlakesToMonorail([(flake, occurrences_count)])
     self.assertFalse(mock_create_bug_fn.called)
     self.assertFalse(mock_update_bug_fn.called)
 
@@ -240,9 +220,9 @@ class FlakeReportUtilTest(WaterfallTestCase):
   @mock.patch.object(monorail_util, 'CreateBug', return_value=66666)
   def testCreateIssue(self, mock_create_bug_fn, mock_update_bug_fn, _):
     flake = Flake.query().fetch()[0]
-    occurrences = FlakeOccurrence.query(
-        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
-    flake_issue_util.ReportFlakesToMonorail([(flake, occurrences)])
+    occurrences_count = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).count()
+    flake_issue_util.ReportFlakesToMonorail([(flake, occurrences_count)])
 
     expected_status = 'Untriaged'
     expected_summary = 'test_label is flaky'
@@ -314,12 +294,12 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     flake_issue.put()
     flake.flake_issue_key = flake_issue.key
     flake.put()
-    occurrences = FlakeOccurrence.query(
-        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
+    occurrences_count = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).count()
     mock_get_merged_issue.return_value.id = 12345
     mock_get_merged_issue.return_value.open = False
 
-    flake_issue_util.ReportFlakesToMonorail([(flake, occurrences)])
+    flake_issue_util.ReportFlakesToMonorail([(flake, occurrences_count)])
 
     expected_previous_bug_description = (
         '\n\nThis flaky test was previously tracked in bug 12345.\n\n')
@@ -339,11 +319,11 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     flake_issue.put()
     flake.flake_issue_key = flake_issue.key
     flake.put()
-    occurrences = FlakeOccurrence.query(
-        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
+    occurrences_count = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).count()
     mock_get_merged_issue.return_value.id = 12345
     mock_get_merged_issue.return_value.open = True
-    flake_issue_util.ReportFlakesToMonorail([(flake, occurrences)])
+    flake_issue_util.ReportFlakesToMonorail([(flake, occurrences_count)])
 
     expected_wrong_result_link = (
         'https://bugs.chromium.org/p/chromium/issues/entry?status=Unconfirmed&'
@@ -1096,3 +1076,24 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     self.assertEqual(1, len(fetched_flake_issues))
     self.assertEqual(45678, fetched_flake_issues[0].issue_id)
     self.assertEqual(flake.flake_issue_key, fetched_flake_issues[0].key)
+
+  @mock.patch.object(
+      flake_issue_util, 'SearchOpenIssueIdForFlakyTest', return_value=True)
+  def testOpenIssueAlreadyExistsForFlakyTest(self, _):
+    self.assertTrue(flake_issue_util.OpenIssueAlreadyExistsForFlakyTest('t'))
+
+  def testGetFlakeIssueDataInconsistent(self):
+    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
+    flake_issue.put()
+    flake_issue_key = flake_issue.key
+    flake = Flake.Create(
+        luci_project='chromium',
+        normalized_step_name='step',
+        normalized_test_name='suite.test',
+        test_label_name='*/suite.test/*')
+    flake.flake_issue_key = flake_issue_key
+    flake.put()
+
+    flake_issue_key.delete()
+
+    self.assertIsNone(flake_issue_util._GetFlakeIssue(flake))
