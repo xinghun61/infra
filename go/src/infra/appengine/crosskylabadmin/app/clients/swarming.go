@@ -211,6 +211,9 @@ func (sc *swarmingClientImpl) ListRecentTasks(c context.Context, tags []string, 
 	p := Pager{Remaining: limit}
 	for {
 		chunk := p.Next()
+		if chunk == 0 {
+			break
+		}
 		ic, _ := context.WithTimeout(c, 60*time.Second)
 		resp, err := call.Limit(int64(chunk)).Context(ic).Do()
 		if err != nil {
@@ -280,6 +283,9 @@ func (sc *swarmingClientImpl) ListSortedRecentTasksForBot(ctx context.Context, b
 	p := Pager{Remaining: limit}
 	for {
 		chunk := p.Next()
+		if chunk == 0 {
+			break
+		}
 		trs2, err := c.Next(ctx, int64(chunk))
 		if err != nil {
 			return nil, err
