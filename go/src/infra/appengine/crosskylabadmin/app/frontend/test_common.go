@@ -41,7 +41,8 @@ type testFixture struct {
 	Tracker fleet.TrackerServer
 	Tasker  fleet.TaskerServer
 
-	MockSwarming *mock.MockSwarmingClient
+	MockSwarming       *mock.MockSwarmingClient
+	MockBotTasksCursor *mock.MockBotTasksCursor
 }
 
 // CloneWithFreshMocks creates a new testFixtures with its own mock setup, but
@@ -76,6 +77,7 @@ func newTestFixtureWithContext(c context.Context, t *testing.T) (testFixture, fu
 			return tf.MockSwarming, nil
 		},
 	}
+	tf.MockBotTasksCursor = mock.NewMockBotTasksCursor(mc)
 
 	validate := func() {
 		mc.Finish()
@@ -196,6 +198,10 @@ func expectDefaultPerBotRefresh(tf testFixture) {
 	tf.MockSwarming.EXPECT().ListSortedRecentTasksForBot(
 		gomock.Any(), gomock.Any(), gomock.Any(),
 	).AnyTimes().Return([]*swarming.SwarmingRpcsTaskResult{}, nil)
+	tf.MockSwarming.EXPECT().ListBotTasks(gomock.Any()).AnyTimes().Return(
+		tf.MockBotTasksCursor)
+	tf.MockBotTasksCursor.EXPECT().Next(gomock.Any(), gomock.Any()).AnyTimes().Return(
+		[]*swarming.SwarmingRpcsTaskResult{}, nil)
 }
 
 // makeBotSelector returns a fleet.BotSelector selecting each of the duts

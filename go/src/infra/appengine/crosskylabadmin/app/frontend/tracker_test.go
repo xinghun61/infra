@@ -334,6 +334,15 @@ func TestRefreshAndSummarizeIdleDuration(t *testing.T) {
 				CompletedTs: "2016-01-02T10:04:05.999999999",
 			},
 		}, nil)
+		tf.MockSwarming.EXPECT().ListBotTasks(gomock.Any()).AnyTimes().Return(
+			tf.MockBotTasksCursor)
+		tf.MockBotTasksCursor.EXPECT().Next(gomock.Any(), gomock.Any()).AnyTimes().Return(
+			[]*swarming.SwarmingRpcsTaskResult{
+				{
+					State:       "COMPLETED",
+					CompletedTs: "2016-01-02T10:04:05.999999999",
+				},
+			}, nil)
 
 		Convey("refresh with empty filter", func() {
 			_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{
@@ -370,6 +379,14 @@ func TestRefreshAndSummarizeIdleDuration(t *testing.T) {
 				State: "RUNNING",
 			},
 		}, nil)
+		tf.MockSwarming.EXPECT().ListBotTasks(gomock.Any()).AnyTimes().Return(
+			tf.MockBotTasksCursor)
+		tf.MockBotTasksCursor.EXPECT().Next(gomock.Any(), gomock.Any()).AnyTimes().Return(
+			[]*swarming.SwarmingRpcsTaskResult{
+				{
+					State: "RUNNING",
+				},
+			}, nil)
 
 		Convey("refresh with empty filter", func() {
 			_, err := tf.Tracker.RefreshBots(tf.C, &fleet.RefreshBotsRequest{

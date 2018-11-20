@@ -31,6 +31,7 @@ import (
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
 	"infra/appengine/crosskylabadmin/app/config"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/diagnosis"
 )
 
 // TrackerServerImpl implements the fleet.TrackerServer interface.
@@ -258,6 +259,11 @@ func addTaskInfoToSummary(ctx context.Context, sc clients.SwarmingClient, botID 
 		return errors.Annotate(err, "failed to get idle duration of bot %s", botID).Err()
 	}
 	bs.IdleDuration = d
+	ts, err := diagnosis.Diagnose(ctx, sc, botID, bs.DutState)
+	if err != nil {
+		return errors.Annotate(err, "failed to get diagnosis for bot %s", botID).Err()
+	}
+	bs.Diagnosis = ts
 	return nil
 }
 
