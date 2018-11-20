@@ -59,7 +59,7 @@ func (NinjaTask_OS) EnumDescriptor() ([]byte, []int) {
 // NEXT ID TO USE: 14
 type NinjaTask struct {
 	// Identifier of build used in buildbucket api v2 (go/buildbucket-api-v2)
-	// Or UUID when ninja log is uploaded from autoninja.
+	// Or some random number representing an invocation of build.
 	BuildId int64 `protobuf:"varint,1,opt,name=build_id,json=buildId,proto3" json:"build_id,omitempty"`
 	// Build targets passed to ninja.
 	Targets []string `protobuf:"bytes,8,rep,name=targets,proto3" json:"targets,omitempty"`

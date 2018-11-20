@@ -6,9 +6,12 @@ package ninjalog
 
 import (
 	"bufio"
+	crand "crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
+	"math/big"
 	"sort"
 	"strconv"
 	"strings"
@@ -488,9 +491,19 @@ func ToProto(info *NinjaLog) []*npb.NinjaTask {
 	var ninjaTasks []*npb.NinjaTask
 	weightedTime := WeightedTime(info.Steps)
 	steps := Dedup(info.Steps)
+	timestamp := createdTimestamp()
+
+	buildID := info.Metadata.BuildID
+	if buildID == 0 {
+		// Set random number if buildID is not set.
+		// This is mainly for ninjalog from chromium developer.
+		seed, _ := crand.Int(crand.Reader, big.NewInt(math.MaxInt64))
+		buildID = seed.Int64()
+	}
+
 	for _, s := range steps {
 		ninjalog := &npb.NinjaTask{
-			BuildId:  info.Metadata.BuildID,
+			BuildId:  buildID,
 			StepName: info.Metadata.StepName,
 			Jobs:     int64(info.Metadata.Jobs),
 			LogEntry: &npb.NinjaTask_LogEntry{
@@ -500,7 +513,7 @@ func ToProto(info *NinjaLog) []*npb.NinjaTask {
 				EndDurationSec:   s.End.Seconds(),
 			},
 			WeightedDurationSec: weightedTime[s.Out].Seconds(),
-			CreatedAt:           createdTimestamp(),
+			CreatedAt:           timestamp,
 		}
 		sort.Strings(ninjalog.LogEntry.Outputs)
 		ninjaTasks = append(ninjaTasks, ninjalog)

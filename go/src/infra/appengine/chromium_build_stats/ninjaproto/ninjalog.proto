@@ -13,7 +13,7 @@ import "google/protobuf/timestamp.proto";
 // NEXT ID TO USE: 14
 message NinjaTask {
   // Identifier of build used in buildbucket api v2 (go/buildbucket-api-v2)
-  // Or UUID when ninja log is uploaded from autoninja.
+  // Or some random number representing an invocation of build.
   int64 build_id = 1;
 
   // Build targets passed to ninja.
