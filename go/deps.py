@@ -48,6 +48,7 @@ import time
 # See 'install' function below.
 VENDORED_TOOLS = [
   'github.com/golang/lint/golint',
+  'github.com/golang/mock/mockgen',
   'github.com/golang/protobuf/protoc-gen-go',
   'github.com/kisielk/errcheck',
   'github.com/maruel/panicparse/cmd/pp',
