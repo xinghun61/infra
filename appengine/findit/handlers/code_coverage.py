@@ -11,11 +11,12 @@ from google.appengine.ext import ndb
 from google.protobuf.field_mask_pb2 import FieldMask
 from google.protobuf import json_format
 
-from gae_libs.handlers.base_handler import BaseHandler, Permission
-from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
-
 from common.findit_http_client import FinditHttpClient
 from common.waterfall.buildbucket_client import GetV2Build
+from gae_libs.caches import CompressedMemCache
+from gae_libs.handlers.base_handler import BaseHandler, Permission
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from libs.cache_decorator import Cached
 from model.proto.gen.code_coverage_pb2 import CoverageReport
 from model.code_coverage import CoverageData
 from model.code_coverage import PostsubmitReport
@@ -189,10 +190,36 @@ class ServeCodeCoverageData(BaseHandler):
 
     if change and patchset:
       logging.info('Servicing coverage data for presubmit')
+      presubmit_reports = PresubmitReport.query(
+          PresubmitReport.server_host == host,
+          PresubmitReport.change == int(change),
+          PresubmitReport.patchset == int(patchset)).fetch()
+      if not presubmit_reports:
+        return BaseHandler.CreateError(
+            'Requested coverage data is not found.', 404, allowed_origin='*')
 
-      code_revision_index = '%s-%s' % (change, patchset)
-      entity = CoverageData.Get(host, code_revision_index, 'patch', 'ALL')
-      data = entity.data  # TODO: change data format as needed.
+      compressed_data_gs_url = presubmit_reports[0].gs_url
+      if not compressed_data_gs_url.endswith('compressed.json.gz'):
+        return BaseHandler.CreateError(
+            'Gs url: "%s" for compressed data is not in expected format.' %
+            compressed_data_gs_url, 500)
+
+      rebased_data_gs_url = compressed_data_gs_url.replace(
+          'compressed.json.gz', 'rebased_flat.json')
+
+      @Cached(CompressedMemCache(), expire_time=24 * 60 * 60)
+      def _GetGcsData(url):
+        status, content, _ = FinditHttpClient().Get(url)
+        return status, content
+
+      status, content = _GetGcsData(rebased_data_gs_url)
+      if status != 200:
+        return BaseHandler.CreateError(
+            'Can not retrieve the coverage data: %s' % rebased_data_gs_url,
+            500,
+            allowed_origin='*')
+
+      data = json.loads(content)
       return {
           'data': {
               'host': host,
@@ -201,7 +228,7 @@ class ServeCodeCoverageData(BaseHandler):
               'patchset': patchset,
               'data': data,
           },
-          'allowed_origin': '*',
+          'allowed_origin': '*'
       }
     elif project:
       logging.info('Servicing coverage data for postsubmit')

@@ -77,7 +77,7 @@ class BaseHandler(webapp2.RequestHandler):
     return auth_util.IsCurrentUserAdmin() or self.request.get('debug') == '1'
 
   @staticmethod
-  def CreateError(error_message, return_code=500):
+  def CreateError(error_message, return_code=500, allowed_origin=None):
     logging.error('Error occurred: %s', error_message)
     return {
         'template': 'error.html',
@@ -85,6 +85,7 @@ class BaseHandler(webapp2.RequestHandler):
             'error_message': error_message
         },
         'return_code': return_code,
+        'allowed_origin': allowed_origin,
     }
 
   @staticmethod
