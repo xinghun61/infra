@@ -202,8 +202,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
   @mock.patch.object(monorail_util, 'CreateBug')
   def testDisableCreateAndUpdateBugs(self, mock_create_bug_fn,
                                      mock_update_bug_fn):
-    self.UpdateUnitTestConfigSettings('flake_detection_settings',
-                                      {'create_and_update_bug': False})
+    self.UpdateUnitTestConfigSettings('action_settings',
+                                      {'max_flake_bug_updates_per_day': 0})
 
     flake = Flake.query().fetch()[0]
     occurrences_count = FlakeOccurrence.query(

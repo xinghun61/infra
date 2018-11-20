@@ -135,14 +135,14 @@ class MonorailUtilTest(wf_testcase.WaterfallTestCase):
     mock_api.return_value.update.assert_has_calls(
         mock.call(issue, comment, send_email=True))
 
-  @mock.patch.object(IssueTrackerAPI, 'getIssue')
-  def testGetMergedDestinationIssueWithoutMergeInto(self, mock_get_issue):
+  @mock.patch('services.monorail_util.IssueTrackerAPI')
+  def testGetMergedDestinationIssueWithoutMergeInto(self, mock_api):
     issue = Issue({'id': 12345})
-    mock_get_issue.return_value = issue
+    mock_api.return_value.getIssue.return_value = issue
     self.assertEqual(issue, monorail_util.GetMergedDestinationIssueForId(12345))
 
-  @mock.patch.object(IssueTrackerAPI, 'getIssue')
-  def testGetMergedDestinationIssueWithMergeInto(self, mock_get_issue):
+  @mock.patch('services.monorail_util.IssueTrackerAPI')
+  def testGetMergedDestinationIssueWithMergeInto(self, mock_api):
     issue = Issue({'id': 12345, 'mergedInto': {'issueId': 56789}})
 
     another_issue = Issue({'id': 56789})
@@ -156,12 +156,12 @@ class MonorailUtilTest(wf_testcase.WaterfallTestCase):
 
       return None
 
-    mock_get_issue.side_effect = _return_issue
+    mock_api.return_value.getIssue.side_effect = _return_issue
     self.assertEqual(another_issue,
                      monorail_util.GetMergedDestinationIssueForId(12345))
 
-  @mock.patch.object(IssueTrackerAPI, 'getIssue')
-  def testGetMergedDestinationIssueWithMergeInCircle(self, mock_get_issue):
+  @mock.patch('services.monorail_util.IssueTrackerAPI')
+  def testGetMergedDestinationIssueWithMergeInCircle(self, mock_api):
     issue = Issue({'id': 12345, 'mergedInto': {'issueId': 56789}})
 
     another_issue = Issue({'id': 56789, 'mergedInto': {'issueId': 12345}})
@@ -175,7 +175,7 @@ class MonorailUtilTest(wf_testcase.WaterfallTestCase):
 
       return None
 
-    mock_get_issue.side_effect = _return_issue
+    mock_api.return_value.getIssue.side_effect = _return_issue
     self.assertEqual(issue, monorail_util.GetMergedDestinationIssueForId(12345))
 
   # This test tests that creating issue via issue generator without previous
