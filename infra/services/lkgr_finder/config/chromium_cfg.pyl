@@ -7,7 +7,9 @@
       'builders': [
         'Win Builder',
         'Win Builder (dbg)',
-        'Win x64 Builder',
+        # TODO(machenbach): Uncomment when https://crbug.com/906989 is
+        # resoleved.
+        # 'Win x64 Builder',
         'Win x64 Builder (dbg)',
       ],
     },  # chromium.win
