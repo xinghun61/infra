@@ -22,10 +22,17 @@ class RankFlakesTest(WaterfallTestCase):
 
   def setUp(self):
     super(RankFlakesTest, self).setUp()
-    self.flake_issue = FlakeIssue.Create(
+
+    self.flake_issue0 = FlakeIssue.Create(
         monorail_project='chromium', issue_id=900)
-    self.flake_issue.last_updated_time = datetime.datetime(2018, 1, 1)
-    self.flake_issue.put()
+    self.flake_issue0.last_updated_time = datetime.datetime(2018, 1, 1)
+    self.flake_issue0.put()
+
+    self.flake_issue1 = FlakeIssue.Create(
+        monorail_project='chromium', issue_id=1000)
+    self.flake_issue1.last_updated_time = datetime.datetime(2018, 1, 1)
+    self.flake_issue1.merge_destination_key = self.flake_issue0.key
+    self.flake_issue1.put()
 
     self.luci_project = 'chromium'
     self.normalized_step_name = 'normalized_step_name'
@@ -35,7 +42,7 @@ class RankFlakesTest(WaterfallTestCase):
         normalized_test_name='normalized_test_name',
         test_label_name='normalized_test_name')
 
-    self.flake1.flake_issue_key = self.flake_issue.key
+    self.flake1.flake_issue_key = self.flake_issue1.key
     self.flake1.false_rejection_count_last_week = 3
     self.flake1.impacted_cl_count_last_week = 2
     self.flake1.flake_score_last_week = 0
@@ -58,11 +65,34 @@ class RankFlakesTest(WaterfallTestCase):
     self.flake3.impacted_cl_count_last_week = 3
     self.flake3.flake_score_last_week = 10800
     self.flake3.last_occurred_time = datetime.datetime(2018, 10, 1)
+    self.flake3.flake_issue_key = self.flake_issue0.key
     self.flake3.put()
+
+    self.flake1_dict = self.flake1.to_dict()
+    self.flake1_dict['flake_urlsafe_key'] = self.flake1.key.urlsafe()
+    self.flake1_dict['flake_issue'] = self.flake_issue0.to_dict()
+    self.flake1_dict['flake_issue']['issue_link'] = FlakeIssue.GetLinkForIssue(
+        self.flake_issue0.monorail_project, self.flake_issue0.issue_id)
+    self.flake1_dict['time_delta'] = '1 day, 01:00:00'
+    self.flake1_dict['flake_counts_last_week'] = [
+        {
+            'flake_type': 'cq false rejection',
+            'impacted_cl_count': 0,
+            'occurrence_count': 0
+        },
+        {
+            'flake_type': 'cq retry with patch',
+            'impacted_cl_count': 0,
+            'occurrence_count': 0
+        },
+    ]
 
     self.flake3_dict = self.flake3.to_dict()
     self.flake3_dict['flake_urlsafe_key'] = self.flake3.key.urlsafe()
     self.flake3_dict['time_delta'] = '1 day, 01:00:00'
+    self.flake3_dict['flake_issue'] = self.flake_issue0.to_dict()
+    self.flake3_dict['flake_issue']['issue_link'] = FlakeIssue.GetLinkForIssue(
+        self.flake_issue0.monorail_project, self.flake_issue0.issue_id)
     self.flake3_dict['flake_counts_last_week'] = [
         {
             'flake_type': 'cq false rejection',
@@ -96,6 +126,8 @@ class RankFlakesTest(WaterfallTestCase):
             'luci_project':
                 '',
             'test_filter':
+                '',
+            'bug_key':
                 '',
             'flake_weights': [('cq false rejection', 100),
                               ('cq retry with patch', 10)]
@@ -141,6 +173,70 @@ class RankFlakesTest(WaterfallTestCase):
                 '',
             'test_filter':
                 'suite',
+            'bug_key':
+                '',
+            'flake_weights': [('cq false rejection', 100),
+                              ('cq retry with patch', 10)]
+        },
+                   default=str), response.body)
+
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 10, 2, 1))
+  def testGetFlakesByMergedBugKey(self, _):
+    bug_key_urlsafe = self.flake_issue0.key.urlsafe()
+    response = self.test_app.get(
+        '/ranked-flakes?bug_key=%s' % bug_key_urlsafe,
+        params={
+            'format': 'json',
+        },
+        status=200)
+
+    self.assertEqual(
+        json.dumps({
+            'flakes_data': [self.flake3_dict, self.flake1_dict],
+            'prev_cursor':
+                '',
+            'cursor':
+                '',
+            'n':
+                '',
+            'luci_project':
+                '',
+            'test_filter':
+                '',
+            'bug_key':
+                bug_key_urlsafe,
+            'flake_weights': [('cq false rejection', 100),
+                              ('cq retry with patch', 10)]
+        },
+                   default=str), response.body)
+
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 10, 2, 1))
+  def testGetFlakesByIndependentBugKey(self, _):
+    bug_key_urlsafe = self.flake_issue1.key.urlsafe()
+    response = self.test_app.get(
+        '/ranked-flakes?bug_key=%s' % bug_key_urlsafe,
+        params={
+            'format': 'json',
+        },
+        status=200)
+
+    self.assertEqual(
+        json.dumps({
+            'flakes_data': [self.flake1_dict],
+            'prev_cursor':
+                '',
+            'cursor':
+                '',
+            'n':
+                '',
+            'luci_project':
+                '',
+            'test_filter':
+                '',
+            'bug_key':
+                bug_key_urlsafe,
             'flake_weights': [('cq false rejection', 100),
                               ('cq retry with patch', 10)]
         },

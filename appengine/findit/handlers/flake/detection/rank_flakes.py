@@ -6,6 +6,7 @@ from gae_libs import dashboard_util
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 from libs import time_util
+from model import entity_util
 from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
 from model.flake.flake_type import FLAKE_TYPE_DESCRIPTIONS
@@ -33,6 +34,32 @@ def _GetFlakesByTestFilter(test_name, luci_project):
   flakes = [f for f in flakes if f.false_rejection_count_last_week > 0]
   flakes.sort(key=lambda flake: flake.flake_score_last_week, reverse=True)
   return flakes, test_suite_search
+
+
+def _GetFlakesByBug(bug_key_urlsafe):
+  """Gets flakes link to the same bug.
+
+  Gets flakes directly link to the bug and also flakes link to bugs that are
+    merged into this bug.
+  """
+  flake_issue = entity_util.GetEntityFromUrlsafeKey(bug_key_urlsafe)
+  assert flake_issue, 'Requested FlakeIssue {} not found.'.format(
+      bug_key_urlsafe)
+
+  all_issue_keys = [flake_issue.key]
+  issue_leaves = FlakeIssue.query(
+      FlakeIssue.merge_destination_key == flake_issue.key).fetch(keys_only=True)
+  all_issue_keys.extend(issue_leaves)
+
+  flakes = []
+  for issue_key in all_issue_keys:
+    flakes_to_issue = Flake.query(Flake.flake_issue_key == issue_key).fetch()
+    flakes.extend(flakes_to_issue)
+
+  flakes = [f for f in flakes if f.false_rejection_count_last_week > 0]
+  flakes.sort(
+      key=lambda flake: flake.false_rejection_count_last_week, reverse=True)
+  return flakes
 
 
 def _GetFlakeQueryResults(luci_project, cursor, direction, page_size):
@@ -109,13 +136,14 @@ class RankFlakes(BaseHandler):
     test_filter = self.request.get('test_filter').strip()
     page_size = int(self.request.get('n').strip()) if self.request.get(
         'n') else _DEFAULT_PAGE_SIZE
+    bug_key_urlsafe = self.request.get('bug_key').strip()
+    prev_cursor = ''
+    cursor = ''
 
     if test_filter:
       # No paging if search for a test name.
       flakes, test_suite_search = _GetFlakesByTestFilter(
           test_filter, luci_project)
-      prev_cursor = ''
-      cursor = ''
 
       if len(flakes) == 1 and not test_suite_search:
         # Only one flake is retrieved when searching a test by full name,
@@ -125,6 +153,8 @@ class RankFlakes(BaseHandler):
         flake = flakes[0]
         return self.CreateRedirect(
             '/flake/occurrences?key=%s' % flake.key.urlsafe())
+    if bug_key_urlsafe:
+      flakes = _GetFlakesByBug(bug_key_urlsafe)
 
     else:
       flakes, prev_cursor, cursor = _GetFlakeQueryResults(
@@ -135,8 +165,10 @@ class RankFlakes(BaseHandler):
     for flake in flakes:
       flake_dict = flake.to_dict()
 
+      # Tries to use merge_destination first, then falls back to the bug that
+      # directly associates to the flake.
       flake_issue = GetFlakeIssue(flake)
-      if flake_issue:
+      if flake_issue:  # pragma: no branch.
         flake_dict['flake_issue'] = flake_issue.to_dict()
         flake_dict['flake_issue']['issue_link'] = FlakeIssue.GetLinkForIssue(
             flake_issue.monorail_project, flake_issue.issue_id)
@@ -163,6 +195,8 @@ class RankFlakes(BaseHandler):
             luci_project if luci_project != _DEFAULT_LUCI_PROJECT else ''),
         'test_filter':
             test_filter,
+        'bug_key':
+            bug_key_urlsafe,
         'flake_weights': [[
             FLAKE_TYPE_DESCRIPTIONS[flake_type], FLAKE_TYPE_WEIGHT[flake_type]
         ] for flake_type in sorted(FLAKE_TYPE_DESCRIPTIONS)]
