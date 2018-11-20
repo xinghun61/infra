@@ -26,11 +26,11 @@
         text-align: left;
       }
 
-      tr:nth-child(odd) {
+      rank-flake-item:nth-child(odd) {
         background-color: #E8F0FE;
       }
 
-      tr:nth-child(even) {
+      rank-flake-item:nth-child(even) {
         background-color: #FFF;
       }
 
@@ -46,15 +46,17 @@
     <div class="table-scroll">
       <table width="95%">
         <tr>
-          <th width="10%">Ranking</th>
-          <th class="str-header" width="65%">Test Name</th>
+          <th width="10%">Flake Score
+          <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Flake Score = Sum(# of impacted CLs * Weight).</paper-tooltip></th>
+          <th class="str-header" width="65%">Test Name
+          <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Name of a flaky test, or a group of parameterized tests.</paper-tooltip></th>
           <th class="num-header" width="15%">Last Occurred
           <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Time since last occurrence.</paper-tooltip>
           </th>
           <th class="num-header" width="10%">Bug</th>
         </tr>
         <template is="dom-repeat" items="[[flakes]]" as="flake">
-          <rank-flake-item flake=[[flake]] index=[[index]]></rank-flake-item>
+          <rank-flake-item flake=[[flake]] weights=[[weights]]></rank-flake-item>
         </template>
       </table>
     </div>
@@ -70,7 +72,10 @@
           flakes: {
             type: Array
           },
-        }
+          weights: {
+            type: Array
+          }
+        },
       });
     })();
   </script>

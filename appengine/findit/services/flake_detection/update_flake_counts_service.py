@@ -9,19 +9,12 @@ from model.flake.detection.flake_occurrence import FlakeOccurrence
 from model.flake.flake import Flake
 from model.flake.flake import FlakeCountsByType
 from model.flake.flake_type import FlakeType
+from model.flake.flake_type import FLAKE_TYPE_WEIGHT
 from services import constants
 
 # Minimum number of distinct impacted CLs for a flake to calculate the flake
 # score.
 _MIN_DISTINCT_CL_NUMBER = 3
-
-# Weights for each type of flakes.
-# The weights are picked by intuitive, after comparing with other candidates.
-# See goo.gl/y5awC5 for the comparison.
-_FLAKE_TYPE_WEIGHT = {
-    FlakeType.CQ_FALSE_REJECTION: 100,
-    FlakeType.RETRY_WITH_PATCH: 10
-}
 
 
 def _GetsTypedFlakeCounts(flake, start_date, flake_type, counted_gerrit_cl_ids):
@@ -72,7 +65,7 @@ def _CalculateWeightedFlakeScore(flake_counts_last_week):
   for typed_counts in flake_counts_last_week:
     flake_score_last_week += (
         typed_counts.impacted_cl_count *
-        _FLAKE_TYPE_WEIGHT[typed_counts.flake_type])
+        FLAKE_TYPE_WEIGHT[typed_counts.flake_type])
   return flake_score_last_week
 
 

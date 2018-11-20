@@ -24,3 +24,11 @@ FLAKE_TYPE_DESCRIPTIONS = {
     FlakeType.CQ_FALSE_REJECTION: 'cq false rejection',
     FlakeType.RETRY_WITH_PATCH: 'cq retry with patch'
 }
+
+# Weights for each type of flakes.
+# The weights are picked by intuitive, after comparing with other candidates.
+# See goo.gl/y5awC5 for the comparison.
+FLAKE_TYPE_WEIGHT = {
+    FlakeType.CQ_FALSE_REJECTION: 100,
+    FlakeType.RETRY_WITH_PATCH: 10
+}

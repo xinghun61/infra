@@ -21,7 +21,7 @@
           id="selection-chart"
           type="column"
           options='{{_generateChartOptions()}}'
-          data = '{{_getChartDataFromFlake(flake)}}'>
+          data = '{{_getChartDataFromFlake(flake, weights)}}'>
         </google-chart>
       </div>
       <div class="buttons">
@@ -39,11 +39,23 @@
           // A Flake objects to use this chart to show it's counts.
           flake: {
             type: Object
+          },
+          weights: {
+            type: Array
           }
         },
 
         toggleDialog: function () {
           this.$.dialog.toggle();
+        },
+
+        _getWeight: function (flake_type, weights) {
+          for (let weight_info of weights) {
+            if (weight_info[0] == flake_type) {
+              return weight_info[1];
+            }
+          }
+          return -1;
         },
 
         _generateChartOptions: function () {
@@ -56,24 +68,24 @@
                   textPosition: 'in'
               },
               chartArea: {
-                  right: 110
+                  right: 100
               },
               annotations: {
                   alwaysOutside: true
-              }
+              },
+              vAxis: { baseline: 0 }
           }
         },
 
-        _getChartDataFromFlake: function (flake) {
+        _getChartDataFromFlake: function (flake, weights) {
             let data = [];
 
             // Declares columns.
             data.push(['Flake Type', 'Occurrences', { 'role': 'annotation' },
                 'Impacted CLs', { 'role': 'annotation'}]);
-
             for (let count of flake.flake_counts_last_week) {
                 let row = [
-                    count.flake_type,
+                    count.flake_type + ' (W=' + this._getWeight(count.flake_type, weights) +')',
                     count.occurrence_count, 'Occ (' + count.occurrence_count +')',
                     count.impacted_cl_count, 'CL (' + count.impacted_cl_count +')'];
                 data.push(row);

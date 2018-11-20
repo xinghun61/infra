@@ -31,8 +31,8 @@
         text-align: left;
       }
     </style>
-      <td class="num-content"><paper-button class="rank-button" on-tap="showDialog"><u>[[_getRank(index)]]</u></paper-button>
-      <flake-score-chart class="flake_dialog" flake={{flake}}></flake-score-chart>
+      <td class="num-content"><paper-button class="rank-button" on-tap="showDialog"><u>[[flake.flake_score_last_week]]</u></paper-button>
+      <flake-score-chart class="flake_dialog" flake={{flake}} weights=[[weights]]></flake-score-chart>
       </td>
       <td class="str-content">
         <a target="_blank" href="/flake/occurrences?key=[[flake.flake_urlsafe_key]]">[[flake.test_label_name]]</a>
@@ -55,14 +55,9 @@
           flake: {
             type: Object
           },
-
-          index: {
-            type: Number
+          weights: {
+            type: Array
           }
-        },
-
-        _getRank: function (index) {
-          return index + 1;
         },
 
         hasBug: function (flake) {

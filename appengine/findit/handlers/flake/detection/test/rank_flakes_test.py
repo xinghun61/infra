@@ -60,16 +60,21 @@ class RankFlakesTest(WaterfallTestCase):
     self.flake3.last_occurred_time = datetime.datetime(2018, 10, 1)
     self.flake3.put()
 
-    self.flake1_dict = self.flake1.to_dict()
-    self.flake1_dict['flake_urlsafe_key'] = self.flake1.key.urlsafe()
-    self.flake1_dict['flake_issue'] = self.flake_issue.to_dict()
-    self.flake1_dict['flake_issue']['issue_link'] = FlakeIssue.GetLinkForIssue(
-        self.flake_issue.monorail_project, self.flake_issue.issue_id)
-    self.flake1_dict['time_delta'] = '1 day, 01:00:00'
-
     self.flake3_dict = self.flake3.to_dict()
     self.flake3_dict['flake_urlsafe_key'] = self.flake3.key.urlsafe()
     self.flake3_dict['time_delta'] = '1 day, 01:00:00'
+    self.flake3_dict['flake_counts_last_week'] = [
+        {
+            'flake_type': 'cq false rejection',
+            'impacted_cl_count': 0,
+            'occurrence_count': 0
+        },
+        {
+            'flake_type': 'cq retry with patch',
+            'impacted_cl_count': 0,
+            'occurrence_count': 0
+        },
+    ]
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 10, 2, 1))
@@ -82,11 +87,18 @@ class RankFlakesTest(WaterfallTestCase):
     self.assertEqual(
         json.dumps({
             'flakes_data': [self.flake3_dict],
-            'prev_cursor': '',
-            'cursor': '',
-            'n': '',
-            'luci_project': '',
-            'test_filter': ''
+            'prev_cursor':
+                '',
+            'cursor':
+                '',
+            'n':
+                '',
+            'luci_project':
+                '',
+            'test_filter':
+                '',
+            'flake_weights': [('cq false rejection', 100),
+                              ('cq retry with patch', 10)]
         },
                    default=str), response.body)
 
@@ -119,10 +131,17 @@ class RankFlakesTest(WaterfallTestCase):
     self.assertEqual(
         json.dumps({
             'flakes_data': [self.flake3_dict],
-            'prev_cursor': '',
-            'cursor': '',
-            'n': '',
-            'luci_project': '',
-            'test_filter': 'suite'
+            'prev_cursor':
+                '',
+            'cursor':
+                '',
+            'n':
+                '',
+            'luci_project':
+                '',
+            'test_filter':
+                'suite',
+            'flake_weights': [('cq false rejection', 100),
+                              ('cq retry with patch', 10)]
         },
                    default=str), response.body)

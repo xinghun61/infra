@@ -9,6 +9,7 @@ from libs import time_util
 from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
 from model.flake.flake_type import FLAKE_TYPE_DESCRIPTIONS
+from model.flake.flake_type import FLAKE_TYPE_WEIGHT
 
 _DEFAULT_PAGE_SIZE = 100
 _DEFAULT_LUCI_PROJECT = 'chromium'
@@ -69,6 +70,33 @@ def _GetFlakeQueryResults(luci_project, cursor, direction, page_size):
       page_size=page_size)
 
 
+def _GetFlakeCountsList(flake_counts_last_week):
+  """Gets flake counts for all flake types, even if there's no
+    occurrences for some of the types.
+
+  Args:
+    flake_counts_last_week(list): A list of FlakeCountsByType.
+  """
+  flake_counts_last_week_dict = {}
+  for flake_type, type_desc in FLAKE_TYPE_DESCRIPTIONS.iteritems():
+    flake_counts_last_week_dict[flake_type] = {
+        'flake_type': type_desc,
+        'impacted_cl_count': 0,
+        'occurrence_count': 0
+    }
+
+  for flake_count in flake_counts_last_week:
+    flake_counts_last_week_dict[flake_count.flake_type][
+        'impacted_cl_count'] = flake_count.impacted_cl_count
+    flake_counts_last_week_dict[flake_count.flake_type][
+        'occurrence_count'] = flake_count.occurrence_count
+
+  return [
+      flake_counts_last_week_dict[flake_type]
+      for flake_type in sorted(FLAKE_TYPE_DESCRIPTIONS)
+  ]
+
+
 class RankFlakes(BaseHandler):
   """Queries flakes and ranks them by number of occurrences in descending order.
   """
@@ -116,9 +144,8 @@ class RankFlakes(BaseHandler):
       flake_dict['time_delta'] = time_util.FormatTimedelta(
           time_util.GetUTCNow() - flake.last_occurred_time, with_days=True)
 
-      for count_dict in flake_dict['flake_counts_last_week']:
-        count_dict['flake_type'] = FLAKE_TYPE_DESCRIPTIONS.get(
-            count_dict['flake_type'], 'Unknown')
+      flake_dict['flake_counts_last_week'] = _GetFlakeCountsList(
+          flake.flake_counts_last_week)
 
       flakes_data.append(flake_dict)
 
@@ -134,6 +161,9 @@ class RankFlakes(BaseHandler):
         'luci_project': (
             luci_project if luci_project != _DEFAULT_LUCI_PROJECT else ''),
         'test_filter':
-            test_filter
+            test_filter,
+        'flake_weights': [[
+            FLAKE_TYPE_DESCRIPTIONS[flake_type], FLAKE_TYPE_WEIGHT[flake_type]
+        ] for flake_type in sorted(FLAKE_TYPE_DESCRIPTIONS)]
     }
     return {'template': 'flake/detection/rank_flakes.html', 'data': data}
