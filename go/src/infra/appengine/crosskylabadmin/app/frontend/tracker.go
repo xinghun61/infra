@@ -213,6 +213,10 @@ func singleBotInfoToSummary(bi *swarming.SwarmingRpcsBotInfo) (*fleet.BotSummary
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to obtain DUT ID for bot %q", bi.BotId).Err()
 	}
+	bs.Dimensions.DutName, err = extractSingleValuedDimension(dims, clients.DutNameDimensionKey)
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to obtain DUT name for bot %q", bi.BotId).Err()
+	}
 
 	bs.DutState = clients.GetStateDimension(bi.Dimensions)
 	if bs.DutState == fleet.DutState_DutStateInvalid {

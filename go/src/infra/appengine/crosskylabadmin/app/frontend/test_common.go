@@ -142,6 +142,10 @@ func botForDUT(id string, state string, dims string) *swarming.SwarmingRpcsBotIn
 		Key:   "dut_id",
 		Value: []string{id},
 	})
+	sdims = append(sdims, &swarming.SwarmingRpcsStringListPair{
+		Key:   "dut_name",
+		Value: []string{id + "-host"},
+	})
 	return &swarming.SwarmingRpcsBotInfo{
 		BotId:      fmt.Sprintf("bot_%s", id),
 		Dimensions: sdims,

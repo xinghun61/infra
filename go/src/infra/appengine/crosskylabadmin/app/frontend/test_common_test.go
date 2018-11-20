@@ -15,8 +15,9 @@
 package frontend
 
 import (
-	"infra/appengine/crosskylabadmin/app/clients"
 	"testing"
+
+	"infra/appengine/crosskylabadmin/app/clients"
 
 	. "github.com/smartystreets/goconvey/convey"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
@@ -122,14 +123,9 @@ func TestBotForDUT(t *testing.T) {
 		So(botForDUT("dut1", "", ""), ShouldResemble, &swarming.SwarmingRpcsBotInfo{
 			BotId: "bot_dut1",
 			Dimensions: []*swarming.SwarmingRpcsStringListPair{
-				{
-					Key:   "dut_state",
-					Value: []string{""},
-				},
-				{
-					Key:   "dut_id",
-					Value: []string{"dut1"},
-				},
+				{Key: "dut_state", Value: []string{""}},
+				{Key: "dut_id", Value: []string{"dut1"}},
+				{Key: "dut_name", Value: []string{"dut1-host"}},
 			},
 		})
 	})
@@ -138,22 +134,11 @@ func TestBotForDUT(t *testing.T) {
 		So(botForDUT("dut1", "fake_state", "a: x, y ; b :z"), ShouldResemble, &swarming.SwarmingRpcsBotInfo{
 			BotId: "bot_dut1",
 			Dimensions: []*swarming.SwarmingRpcsStringListPair{
-				{
-					Key:   "a",
-					Value: []string{"x", "y"},
-				},
-				{
-					Key:   "b",
-					Value: []string{"z"},
-				},
-				{
-					Key:   "dut_state",
-					Value: []string{"fake_state"},
-				},
-				{
-					Key:   "dut_id",
-					Value: []string{"dut1"},
-				},
+				{Key: "a", Value: []string{"x", "y"}},
+				{Key: "b", Value: []string{"z"}},
+				{Key: "dut_state", Value: []string{"fake_state"}},
+				{Key: "dut_id", Value: []string{"dut1"}},
+				{Key: "dut_name", Value: []string{"dut1-host"}},
 			},
 		},
 		)
