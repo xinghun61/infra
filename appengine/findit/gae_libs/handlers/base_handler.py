@@ -103,6 +103,9 @@ class BaseHandler(webapp2.RequestHandler):
         'data': data to feed the template or as the response if no template,
         'return_code': the HTTP status code for the response,
         'cache_expiry': how many seconds to set for cache control,
+        'allowed_origin': a string representing the origin that the response can
+                          be shared with, and the value is exactly one of '*',
+                          '<origin>' and None.
       }
       If None or empty dict is returned, the overriding method should send the
       response to the client by itself.
@@ -117,7 +120,12 @@ class BaseHandler(webapp2.RequestHandler):
     """
     return BaseHandler.CreateError('Not implemented yet!', 501)
 
-  def _SendResponse(self, template, data, return_code, cache_expiry=None):
+  def _SendResponse(self,
+                    template,
+                    data,
+                    return_code,
+                    cache_expiry=None,
+                    allowed_origin=None):
     """Sends the response to the client in json or html as requested.
 
     Args:
@@ -125,6 +133,9 @@ class BaseHandler(webapp2.RequestHandler):
       data: the data to feed the template or as the response if no template.
       return_code: the http status code for the response.
       cache_expiry: (optional) max-age for public cache-control in seconds.
+      allowed_origin: a string representing the origin that the response can
+                      be shared with, and the value is exactly one of '*',
+                      '<origin>' and None.
     """
     self.response.clear()
     self.response.set_status(return_code)
@@ -165,6 +176,13 @@ class BaseHandler(webapp2.RequestHandler):
     if cache_expiry is not None:
       self.response.headers['cache-control'] = (
           'max-age=%s, public' % cache_expiry)
+
+    if allowed_origin:
+      self.response.headers['Access-Control-Allow-Origin'] = allowed_origin
+      self.response.headers['Access-Control-Allow-Methods'] = 'GET'
+      self.response.headers['Access-Control-Allow-Headers'] = (
+          'Origin, Authorization, Content-Type, Accept')
+
     self.response.headers['Content-Type'] = content_type
     # Set X-Frame-Options to prevent Clickjacking.
     self.response.headers['X-Frame-Options'] = 'SAMEORIGIN'
@@ -182,6 +200,7 @@ class BaseHandler(webapp2.RequestHandler):
         return_code = 401
         redirect_url = None
         cache_expiry = None
+        allowed_origin = None
       else:
         result = handler_func() or {}
         redirect_url = result.get('redirect_url')
@@ -190,6 +209,8 @@ class BaseHandler(webapp2.RequestHandler):
         data = result.get('data', {})
         return_code = result.get('return_code', 200)
         cache_expiry = result.get('cache_expiry', None)
+        allowed_origin = result.get('allowed_origin', None)
+
     except Exception as e:
       user_agent = self.request.headers.get('user-agent')
       if not (user_agent and 'GoogleSecurityScanner' in user_agent):
@@ -200,6 +221,7 @@ class BaseHandler(webapp2.RequestHandler):
       return_code = 500
       redirect_url = None
       cache_expiry = None
+      allowed_origin = None
 
     if redirect_url is not None:
       self.response.clear()
@@ -213,11 +235,12 @@ class BaseHandler(webapp2.RequestHandler):
       data['user_info'] = auth_util.GetUserInfo(self.request.url)
       # If not yet, generate one xsrf token for the login user.
       if not data.get('xsrf_token') and data.get('user_info', {}).get('email'):
-        data['xsrf_token'] = token.GenerateAuthToken('site',
-                                                     data.get('user_info',
-                                                              {}).get('email'))
+        data['xsrf_token'] = token.GenerateAuthToken(
+            'site',
+            data.get('user_info', {}).get('email'))
 
-    self._SendResponse(template, data, return_code, cache_expiry)
+    self._SendResponse(template, data, return_code, cache_expiry,
+                       allowed_origin)
 
   def get(self):
     self._Handle(self.HandleGet)

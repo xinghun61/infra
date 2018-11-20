@@ -1,7 +1,6 @@
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """This module is to process the code coverage metadata."""
 
 import json
@@ -29,8 +28,8 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
   def _ProcessFullRepositoryData(self, commit, data, gs_url, build_id):
     # Load the commit log first so that we could fail fast before redo all.
     repo_url = 'https://%s/%s' % (commit.host, commit.project)
-    change_log = CachedGitilesRepository(
-        FinditHttpClient(), repo_url).GetChangeLog(commit.id)
+    change_log = CachedGitilesRepository(FinditHttpClient(),
+                                         repo_url).GetChangeLog(commit.id)
     assert change_log is not None, 'Failed to retrieve the commit log'
 
     # Save the file-level, directory-level and line-level coverage data.
@@ -55,31 +54,26 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
         if data_type == 'dirs' and group_data['path'] == '//':
           repo_summaries = group_data['summaries']
 
-        coverage_data = CoverageData.Create(
-            commit.host,
-            code_revision_index,
-            data_type,
-            group_data['path'],
-            group_data)
+        coverage_data = CoverageData.Create(commit.host, code_revision_index,
+                                            data_type, group_data['path'],
+                                            group_data)
         entities.append(coverage_data)
         if len(entities) >= 100:  # Batch save.
           total += len(entities)
           ndb.put_multi(entities)
           entities = []
-          logging.info('Dumped %d CoverageData entities of type %s',
-                       total, data_type)
+          logging.info('Dumped %d CoverageData entities of type %s', total,
+                       data_type)
       if entities:  # There might be some remaining data.
         ndb.put_multi(entities)
         total += len(entities)
-        logging.info('Dumped %d CoverageData entities of type %s',
-                     total, data_type)
+        logging.info('Dumped %d CoverageData entities of type %s', total,
+                     data_type)
       if component_summaries:
-        CoverageData.Create(
-            commit.host,
-            code_revision_index,
-            data_type,
-            '>>',
-            {'dirs': component_summaries, 'path': '>>'}).put()
+        CoverageData.Create(commit.host, code_revision_index, data_type, '>>', {
+            'dirs': component_summaries,
+            'path': '>>'
+        }).put()
 
     # Create a repository-level record so that it shows up on UI.
     PostsubmitReport(
@@ -95,16 +89,12 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
         build_id=build_id).put()
 
   def _ProcessCLPatchData(self, patch, data, gs_url, build_id):
-    CoverageData.Create(
-        patch.host,
-        '%s-%s' % (patch.change, patch.patchset),
-        'patch',
-        'ALL',
-        data).put()
+    CoverageData.Create(patch.host, '%s-%s' % (patch.change, patch.patchset),
+                        'patch', 'ALL', data).put()
     PresubmitReport(
-        key=ndb.Key(PresubmitReport,
-                    '%s$%s$%s$%s' % (
-                        patch.host, patch.change, patch.patchset, build_id)),
+        key=ndb.Key(
+            PresubmitReport, '%s$%s$%s$%s' % (patch.host, patch.change,
+                                              patch.patchset, build_id)),
         server_host=patch.host,
         project=patch.project,
         change=patch.change,
@@ -115,8 +105,7 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
   def _processCodeCoverageData(self, build_id):
     build = GetV2Build(
         build_id,
-        fields=FieldMask(
-            paths=['id', 'output.properties', 'input', 'builder']))
+        fields=FieldMask(paths=['id', 'output.properties', 'input', 'builder']))
 
     if not build:
       return BaseHandler.CreateError(
@@ -133,8 +122,7 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
     status, content, _ = FinditHttpClient().Get(gs_url)
     if status != 200:
       return BaseHandler.CreateError(
-          'Can not retrieve the coverage data: %s' % gs_url,
-          500)
+          'Can not retrieve the coverage data: %s' % gs_url, 500)
 
     logging.info('Decompressing and loading coverage data...')
     decompressed_data = zlib.decompress(content)
@@ -157,8 +145,8 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
       patch = patches[0]  # Assume there is only 1 patch which is true in CQ.
       self._ProcessCLPatchData(patch, data['files'], gs_url, build_id)
     else:  # For a commit, we save the data by file and directory.
-      self._ProcessFullRepositoryData(
-          build.input.gitiles_commit, data, gs_url, build_id)
+      self._ProcessFullRepositoryData(build.input.gitiles_commit, data, gs_url,
+                                      build_id)
 
   def HandlePost(self):
     """Loads the data from GS bucket, and dumps them into ndb."""
@@ -212,16 +200,16 @@ class ServeCodeCoverageData(BaseHandler):
               'change': change,
               'patchset': patchset,
               'data': data,
-          }
+          },
+          'allowed_origin': '*',
       }
     elif project:
       logging.info('Servicing coverage data for postsubmit')
       if not revision:
         logging.info('Repo-level data')
         query = PostsubmitReport.query(
-            PostsubmitReport.server_host == host,
-            PostsubmitReport.project == project).order(
-                -PostsubmitReport.commit_position).order(
+            PostsubmitReport.server_host == host, PostsubmitReport.project ==
+            project).order(-PostsubmitReport.commit_position).order(
                 -PostsubmitReport.commit_timestamp)
         entities, _, _ = query.fetch_page(100)
         data = [e._to_dict() for e in entities]
@@ -237,15 +225,13 @@ class ServeCodeCoverageData(BaseHandler):
         data = entity.data if entity else None
       return {
           'data': {
-            'host': host,
-            'project': project,
-            'revision': revision,
-            'data_type': data_type,
-            'path': path,
-            'data': data,
+              'host': host,
+              'project': project,
+              'revision': revision,
+              'data_type': data_type,
+              'path': path,
+              'data': data,
           }
       }
     else:
-      return BaseHandler.CreateError(
-          'Invalid request',
-          400)
+      return BaseHandler.CreateError('Invalid request', 400)

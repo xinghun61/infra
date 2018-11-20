@@ -253,6 +253,18 @@ class ResultTest(testing.AppengineTestCase):
     self.assertTrue(response.cache_control.public)
     self.assertEquals(5, response.cache_control.max_age)
 
+  def testAllowOrigin(self):
+    SetResultHandler.RESULT = {'allowed_origin': '*'}
+    response = self.test_app.get('/result')
+    self.assertEquals(200, response.status_int)
+    self.assertIn('Access-Control-Allow-Origin', response.headers)
+    self.assertEquals('*', response.headers['Access-Control-Allow-Origin'])
+    self.assertIn('Access-Control-Allow-Headers', response.headers)
+    self.assertEquals('Origin, Authorization, Content-Type, Accept',
+                      response.headers['Access-Control-Allow-Headers'])
+    self.assertIn('Access-Control-Allow-Methods', response.headers)
+    self.assertEquals('GET', response.headers['Access-Control-Allow-Methods'])
+
 
 class RedirectHandler(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
