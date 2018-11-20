@@ -629,10 +629,10 @@ class MonorailApi(remote.Service):
   @monorail_api_method(
       api_pb2_v1.APPROVALS_COMMENTS_LIST_REQUEST_RESOURCE_CONTAINER,
       api_pb2_v1.ApprovalsCommentsListResponse,
-      path="projects/{projectId}/issues/{issueId}/"
-            "approvals/{approvalName}/comments/",
+      path='projects/{projectId}/issues/{issueId}/'
+            'approvals/{approvalName}/comments/',
       http_method='GET',
-      name='approval.comments.list')
+      name='approvals.comments.list')
   def approvals_comments_list(self, mar, request):
     """List all comments for an issue approval."""
     issue = self._services.issue.GetIssueByLocalID(
@@ -671,7 +671,7 @@ class MonorailApi(remote.Service):
       path=("projects/{projectId}/issues/{issueId}/"
             "approvals/{approvalName}/comments"),
       http_method='POST',
-      name='issues.approvals.comments.insert')
+      name='approvals.comments.insert')
   def approvals_comments_insert(self, mar, request):
     """Add an approval comment."""
     approval_fd = tracker_bizobj.FindFieldDef(
