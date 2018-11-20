@@ -147,7 +147,9 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             'last_updated_time_by_flake_detection':
                 datetime(2018, 1, 1),
             'issue_link': ('https://monorail-prod.appspot.com/p/chromium/'
-                           'issues/detail?id=900')
+                           'issues/detail?id=900'),
+            'merge_destination_key':
+                None
         },
         'component':
             'Mock>Component',
@@ -358,6 +360,16 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
 
     self.assertEqual(([], {
         'status': 'Running',
+        'analysis_key': analysis_1.key.urlsafe()
+    }), flake_detection_utils._GetFlakeAnalysesResults(123))
+
+  def testGetFlakeAnalysesResultsShowPendingAnalysis(self):
+    analysis_1 = MasterFlakeAnalysis.Create('m', 'b', 12345, 's', 't')
+    analysis_1.bug_id = 123
+    analysis_1.put()
+
+    self.assertEqual(([], {
+        'status': 'Pending',
         'analysis_key': analysis_1.key.urlsafe()
     }), flake_detection_utils._GetFlakeAnalysesResults(123))
 

@@ -15,16 +15,19 @@ class FlakeIssueTest(TestCase):
   def testCreate(self):
     monorail_project = 'chromium'
     issue_id = 123
-    flake_issue = FlakeIssue.Create(
-        monorail_project=monorail_project, issue_id=issue_id)
+    FlakeIssue.Create(
+        monorail_project=monorail_project, issue_id=issue_id).put()
 
-    flake_issue.put()
+    flake_issue = FlakeIssue.Get(monorail_project, issue_id)
 
     fetched_flake_issues = FlakeIssue.query().fetch()
     self.assertEqual(1, len(fetched_flake_issues))
     self.assertEqual(flake_issue, fetched_flake_issues[0])
     self.assertIsNone(
         fetched_flake_issues[0].last_updated_time_by_flake_detection)
+    self.assertEqual(monorail_project, flake_issue.monorail_project)
+    self.assertEqual(issue_id, flake_issue.issue_id)
+    self.assertIsNone(flake_issue.merge_destination_key)
 
   def testLuciProjectToMonorailProject(self):
     self.assertEqual('chromium',
@@ -48,3 +51,29 @@ class FlakeIssueTest(TestCase):
     self.assertEqual(
         'https://monorail-prod.appspot.com/p/chromium/issues/detail?id=12345',
         FlakeIssue.GetLinkForIssue(monorail_project, issue_id))
+
+  def testGetMostUpdatedIssue(self):
+    monorail_project = 'chromium'
+    issue_id = 12345
+    merge_issue_id = 67890
+
+    merge_issue = FlakeIssue.Create(
+        monorail_project=monorail_project, issue_id=merge_issue_id)
+    merge_issue.put()
+
+    flake_issue = FlakeIssue.Create(
+        monorail_project=monorail_project, issue_id=issue_id)
+    flake_issue.merge_destination_key = merge_issue.key
+    flake_issue.put()
+
+    self.assertEqual(merge_issue, flake_issue.GetMostUpdatedIssue())
+
+  def testGetMostUpdatedIssueNoMerge(self):
+    monorail_project = 'chromium'
+    issue_id = 12345
+
+    flake_issue = FlakeIssue.Create(
+        monorail_project=monorail_project, issue_id=issue_id)
+    flake_issue.put()
+
+    self.assertEqual(flake_issue, flake_issue.GetMostUpdatedIssue())

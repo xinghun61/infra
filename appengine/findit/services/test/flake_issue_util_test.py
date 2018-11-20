@@ -779,12 +779,10 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
         issue_generator=test_issue_generator)
     self.assertFalse(mock_update_with_issue_generator_fn.called)
     fetched_flakes = Flake.query().fetch()
-    fetched_flake_issues = FlakeIssue.query().fetch()
-    self.assertIn(flake, fetched_flakes)
-    self.assertEqual(1, len(fetched_flake_issues))
-    self.assertEqual(66666, fetched_flake_issues[0].issue_id)
-    self.assertEqual(fetched_flakes[0].flake_issue_key,
-                     fetched_flake_issues[0].key)
+
+    new_flake_issue = FlakeIssue.Get(
+        monorail_project='chromium', issue_id=66666)
+    self.assertEqual(fetched_flakes[0].flake_issue_key, new_flake_issue.key)
 
   @mock.patch.object(
       MasterFlakeAnalysis,
@@ -939,13 +937,15 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     mock_update_with_issue_generator_fn.assert_called_once_with(
         issue_id=99999, issue_generator=test_issue_generator)
     fetched_flakes = Flake.query().fetch()
-    fetched_flake_issues = FlakeIssue.query().fetch()
-    self.assertIn(flake, fetched_flakes)
     self.assertEqual('step', fetched_flakes[0].normalized_step_name)
     self.assertEqual('suite.test', fetched_flakes[0].normalized_test_name)
-    self.assertEqual(1, len(fetched_flake_issues))
-    self.assertEqual(99999, fetched_flake_issues[0].issue_id)
-    self.assertEqual(flake.flake_issue_key, fetched_flake_issues[0].key)
+
+    original_issues = FlakeIssue.query(FlakeIssue.issue_id == 12345).fetch()
+    self.assertEqual(1, len(original_issues))
+
+    new_flake_issue = FlakeIssue.Get(
+        monorail_project='chromium', issue_id=99999)
+    self.assertEqual(fetched_flakes[0].flake_issue_key, new_flake_issue.key)
 
   # This test tests that if a flake has a flake issue attached and the bug was
   # merged to another bug on Monorail, but that destination bug was closed, then
@@ -969,6 +969,9 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     flake.flake_issue_key = flake_issue.key
     flake.put()
 
+    # Merged issue is already in data store.
+    FlakeIssue.Create(monorail_project='chromium', issue_id=56789).put()
+
     mock_get_merged_issue.return_value.id = 56789
     mock_get_merged_issue.return_value.open = False
 
@@ -979,11 +982,13 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
         issue_generator=test_issue_generator)
     self.assertFalse(mock_update_with_issue_generator_fn.called)
     fetched_flakes = Flake.query().fetch()
-    fetched_flake_issues = FlakeIssue.query().fetch()
-    self.assertIn(flake, fetched_flakes)
-    self.assertEqual(1, len(fetched_flake_issues))
-    self.assertEqual(66666, fetched_flake_issues[0].issue_id)
-    self.assertEqual(flake.flake_issue_key, fetched_flake_issues[0].key)
+    original_issue = FlakeIssue.Get(monorail_project='chromium', issue_id=12345)
+    merged_issue = FlakeIssue.Get(monorail_project='chromium', issue_id=56789)
+    self.assertEqual(original_issue.merge_destination_key, merged_issue.key)
+
+    new_flake_issue = FlakeIssue.Get(
+        monorail_project='chromium', issue_id=66666)
+    self.assertEqual(fetched_flakes[0].flake_issue_key, new_flake_issue.key)
 
   # This test tests that if there is no existing flake for a test, and couldn't
   # find an existing issue about this flaky test on Monorail, then should create
@@ -1061,6 +1066,11 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     flake.flake_issue_key = flake_issue.key
     flake.put()
 
+    leaf_flake_issue = FlakeIssue.Create(
+        monorail_project='chromium', issue_id=67890)
+    leaf_flake_issue.merge_destination_key = flake_issue.key
+    leaf_flake_issue.put()
+
     mock_get_merged_issue.return_value.id = 45678
     mock_get_merged_issue.return_value.open = True
 
@@ -1071,11 +1081,12 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     mock_update_with_issue_generator_fn.assert_called_once_with(
         issue_id=45678, issue_generator=test_issue_generator)
     fetched_flakes = Flake.query().fetch()
-    fetched_flake_issues = FlakeIssue.query().fetch()
-    self.assertIn(flake, fetched_flakes)
-    self.assertEqual(1, len(fetched_flake_issues))
-    self.assertEqual(45678, fetched_flake_issues[0].issue_id)
-    self.assertEqual(flake.flake_issue_key, fetched_flake_issues[0].key)
+
+    original_issue = FlakeIssue.Get(monorail_project='chromium', issue_id=12345)
+
+    merged_issue = FlakeIssue.Get(monorail_project='chromium', issue_id=45678)
+    self.assertEqual(original_issue.merge_destination_key, merged_issue.key)
+    self.assertEqual(fetched_flakes[0].flake_issue_key, original_issue.key)
 
   @mock.patch.object(
       flake_issue_util, 'SearchOpenIssueIdForFlakyTest', return_value=True)
@@ -1096,4 +1107,4 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
 
     flake_issue_key.delete()
 
-    self.assertIsNone(flake_issue_util._GetFlakeIssue(flake))
+    self.assertIsNone(flake_issue_util.GetFlakeIssue(flake))

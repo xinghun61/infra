@@ -25,10 +25,30 @@ class FlakeIssue(ndb.Model):
   # at most once every 24 hours.
   last_updated_time_by_flake_detection = ndb.DateTimeProperty()
 
-  @classmethod
-  def Create(cls, monorail_project, issue_id):
+  # Key to the FINAL destination of merging chain that this issue is a part of.
+  # For example, if FlakeIssueA merged into FlakeIssueB (FlakeIssueB is not
+  # merged into any other issue), the value would be key to FlakeIssueB;
+  # And if FlakeIssueC is merged into FlakeIssueD, and FlakeIssueD is merged
+  # into FlakeIssueE, both FlakeIssueC and FlakeIssueD should store the key to
+  # FlakeIssueE as their merge_destination_key.
+  # Puts FlakeIssue in quotes because the key refers to the same data model.
+  merge_destination_key = ndb.KeyProperty(kind='FlakeIssue', indexed=True)
+
+  @staticmethod
+  def _CreateKey(monorail_project, issue_id):  # pragma: no cover
+    return ndb.Key(FlakeIssue, '%s@%d' % (monorail_project, issue_id))
+
+  @staticmethod
+  def Create(monorail_project, issue_id):
     """Creates a FlakeIssue entity for a Monorail issue."""
-    return cls(monorail_project=monorail_project, issue_id=issue_id)
+    return FlakeIssue(
+        monorail_project=monorail_project,
+        issue_id=issue_id,
+        key=FlakeIssue._CreateKey(monorail_project, issue_id))
+
+  @staticmethod
+  def Get(monorail_project, issue_id):
+    return FlakeIssue._CreateKey(monorail_project, issue_id).get()
 
   @staticmethod
   def GetMonorailProjectFromLuciProject(luci_project):
@@ -60,3 +80,11 @@ class FlakeIssue(ndb.Model):
     suffix = 'staging' if IsStaging() else 'prod'
 
     return url_template % (suffix, monorail_project, issue_id)
+
+  def GetMergeDestination(self):
+    """Gets the FlakeIssue entity of this issue's final merged destination."""
+    return self.merge_destination_key.get(
+    ) if self.merge_destination_key else None
+
+  def GetMostUpdatedIssue(self):
+    return self.GetMergeDestination() or self

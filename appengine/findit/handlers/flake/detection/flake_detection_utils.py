@@ -15,6 +15,7 @@ from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
 from model.flake.flake_type import FlakeType
 from model.flake.flake_type import FLAKE_TYPE_DESCRIPTIONS
+from services.flake_issue_util import GetFlakeIssue
 
 
 def _GetOccurrenceInformation(occurrence):
@@ -253,8 +254,8 @@ def GetFlakeInformation(flake, max_occurrence_count, with_occurrences=True):
   flake_dict = flake.to_dict()
   flake_dict['occurrences'] = _GetGroupedOccurrencesByBuilder(occurrences)
 
-  if flake.flake_issue_key:
-    flake_issue = flake.flake_issue_key.get()
+  flake_issue = GetFlakeIssue(flake)
+  if flake_issue:
     flake_dict['flake_issue'] = flake_issue.to_dict()
     flake_dict['flake_issue']['issue_link'] = FlakeIssue.GetLinkForIssue(
         flake_issue.monorail_project, flake_issue.issue_id)

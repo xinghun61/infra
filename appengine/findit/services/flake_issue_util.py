@@ -115,14 +115,18 @@ def SearchOpenIssueIdForFlakyTest(test_name, monorail_project='chromium'):
                                                        monorail_project))
 
 
-def _GetFlakeIssue(flake):
-  """Returns the associated flake issue if it exists.
+def GetFlakeIssue(flake):
+  """Returns the associated flake issue to a flake.
+
+  Tries to use the flake's issue's merge_destination, and falls back to the
+    issue itself if it doesn't merge into any other ones.
 
   Args:
     flake: A Flake Model entity.
 
   Returns:
-    A FlakeIssue entity if it exists, otherwise None.
+    A FlakeIssue entity if it exists, otherwise None. This entity should be the
+      final merging destination issue.
   """
   if not flake or not flake.flake_issue_key:
     return None
@@ -135,7 +139,7 @@ def _GetFlakeIssue(flake):
     flake.put()
     return None
 
-  return flake_issue
+  return flake_issue.GetMostUpdatedIssue()
 
 
 def _FlakeHasEnoughOccurrences(unreported_occurrences):
@@ -196,7 +200,7 @@ def GetFlakesWithEnoughOccurrences():
   # last update time of the associated flake issue.
   flake_key_to_unreported_occurrences = {}
   for flake_key, occurrences in flake_key_to_occurrences.iteritems():
-    flake_issue = _GetFlakeIssue(flake_key.get())
+    flake_issue = GetFlakeIssue(flake_key.get())
     last_updated_time_by_flake_detection = (
         flake_issue.last_updated_time_by_flake_detection
         if flake_issue else None)
@@ -269,7 +273,7 @@ def ReportFlakesToMonorail(flake_tuples_to_report):
       # Update FlakeIssue's last_updated_time_by_flake_detection property. This
       # property is only applicable to Flake Detection because Flake Detection
       # can update an issue at most once every 24 hours.
-      flake_issue = flake.flake_issue_key.get()
+      flake_issue = GetFlakeIssue(flake)
       flake_issue.last_updated_time_by_flake_detection = time_util.GetUTCNow()
       flake_issue.put()
     except HttpError as error:
@@ -306,10 +310,60 @@ def ReportFlakesToFlakeAnalyzer(flake_tuples_to_report):
     return
 
   for flake, occurrences in flake_tuples_to_report:
-    flake_issue = _GetFlakeIssue(flake)
+    flake_issue = GetFlakeIssue(flake)
     issue_id = flake_issue.issue_id if flake_issue else None
     for occurrence in occurrences:
       AnalyzeDetectedFlakeOccurrence(flake, occurrence, issue_id)
+
+
+def _GetOrCreateFlakeIssue(issue_id, monorail_project):
+  """Gets or creates a FlakeIssue entity for the monorail issue.
+
+  Args:
+    issue_id (int): Id of the issue.
+    monorail_project (str): Monorail project of the issue.
+  Returns:
+    (FlakeIssue): a FlakeIssue entity of the issue.
+  """
+  flake_issue = FlakeIssue.Get(monorail_project, issue_id)
+  if flake_issue:
+    return flake_issue
+
+  flake_issue = FlakeIssue.Create(monorail_project, issue_id)
+  flake_issue.put()
+  return flake_issue
+
+
+def _UpdateMergeDestination(flake_issue, merged_issue_id, flake_luci_project):
+  """Updates flake_issue and all other issues that are merged into it to
+    store the new merging_destination.
+
+  Args:
+    flake_issue (FlakeIssue): A FlakeIssue to update.
+    merged_issue_id (int): Id of the merged_issue.
+    flake_luci_project (str): Luci project of the flake.
+  """
+  monorail_project = FlakeIssue.GetMonorailProjectFromLuciProject(
+      flake_luci_project)
+  merged_flake_issue = _GetOrCreateFlakeIssue(merged_issue_id,
+                                              flake_luci_project)
+  assert merged_flake_issue, (
+      'Failed to get or create FlakeIssue for merged_issue %s' %
+      FlakeIssue.GetLinkForIssue(monorail_project, merged_issue_id))
+
+  merged_flake_issue_key = merged_flake_issue.key
+  flake_issue.merge_destination_key = merged_flake_issue_key
+  flake_issue.put()
+
+  # Updates all issues that were merged into this flake_issue before.
+  issue_leaves = FlakeIssue.query(
+      FlakeIssue.merge_destination_key == flake_issue.key).fetch()
+  if not issue_leaves:
+    return
+
+  for issue_leaf in issue_leaves:
+    issue_leaf.merge_destination_key = merged_flake_issue_key
+  ndb.put_multi(issue_leaves)
 
 
 def CreateOrUpdateIssue(issue_generator, luci_project='chromium'):
@@ -339,8 +393,7 @@ def CreateOrUpdateIssue(issue_generator, luci_project='chromium'):
     target_flake.put()
 
   monorail_project = issue_generator.GetMonorailProject()
-  flake_issue = target_flake.flake_issue_key.get(
-  ) if target_flake.flake_issue_key else None
+  flake_issue = GetFlakeIssue(target_flake)
   previous_tracking_bug_id = None
 
   if flake_issue:
@@ -348,13 +401,13 @@ def CreateOrUpdateIssue(issue_generator, luci_project='chromium'):
         flake_issue.issue_id, monorail_project)
     if flake_issue.issue_id != merged_issue.id:
       logging.info(
-          'Currently attached issue %s was merged to %s, attach the new issue '
-          'id to this flake.',
+          'Currently attached issue %s was merged to %s, updates this issue and'
+          ' all issues were merged into it.',
           FlakeIssue.GetLinkForIssue(monorail_project, flake_issue.issue_id),
           FlakeIssue.GetLinkForIssue(monorail_project, merged_issue.id))
       previous_tracking_bug_id = flake_issue.issue_id
-      flake_issue.issue_id = merged_issue.id
-      flake_issue.put()
+      _UpdateMergeDestination(flake_issue, merged_issue.id,
+                              target_flake.luci_project)
 
     if merged_issue.open:
       logging.info(
@@ -364,24 +417,25 @@ def CreateOrUpdateIssue(issue_generator, luci_project='chromium'):
           target_flake.key)
       issue_generator.SetPreviousTrackingBugId(previous_tracking_bug_id)
       monorail_util.UpdateIssueWithIssueGenerator(
-          issue_id=flake_issue.issue_id, issue_generator=issue_generator)
-      return flake_issue.issue_id
+          issue_id=merged_issue.id, issue_generator=issue_generator)
+      return merged_issue.id
 
-    logging.info(
-        'flake %s has no issue attached or the attached issue was closed.' %
-        target_flake.key)
     previous_tracking_bug_id = merged_issue.id
+
+  logging.info(
+      'flake %s has no issue attached or the attached issue was closed.' %
+      target_flake.key)
 
   # Re-use an existing open bug if possible.
   issue_id = SearchOpenIssueIdForFlakyTest(target_flake.normalized_test_name,
                                            monorail_project)
   if issue_id:
     logging.info(
-        'An existing issue %s was found, attach it flake: %s and update it '
+        'An existing issue %s was found, attach it to flake: %s and update it '
         'with new occurrences.',
         FlakeIssue.GetLinkForIssue(monorail_project, issue_id),
         target_flake.key)
-    _AssignIssueIdToFlake(issue_id, target_flake)
+    _AssignIssueToFlake(issue_id, target_flake)
     issue_generator.SetPreviousTrackingBugId(previous_tracking_bug_id)
     monorail_util.UpdateIssueWithIssueGenerator(
         issue_id=issue_id, issue_generator=issue_generator)
@@ -394,11 +448,11 @@ def CreateOrUpdateIssue(issue_generator, luci_project='chromium'):
   logging.info('%s was created for flake: %s.',
                FlakeIssue.GetLinkForIssue(monorail_project, issue_id),
                target_flake.key)
-  _AssignIssueIdToFlake(issue_id, target_flake)
+  _AssignIssueToFlake(issue_id, target_flake)
   return issue_id
 
 
-def _AssignIssueIdToFlake(issue_id, flake):
+def _AssignIssueToFlake(issue_id, flake):
   """Assigns an issue id to a flake, and created a FlakeIssue if necessary.
 
   Args:
@@ -407,18 +461,8 @@ def _AssignIssueIdToFlake(issue_id, flake):
   """
   assert flake, 'The flake entity cannot be None.'
 
-  flake_issue = flake.flake_issue_key.get() if flake.flake_issue_key else None
-  if flake_issue and flake_issue.issue_id == issue_id:
-    return
-
-  if flake_issue:
-    flake_issue.issue_id = issue_id
-    flake_issue.put()
-    return
-
   monorail_project = FlakeIssue.GetMonorailProjectFromLuciProject(
       flake.luci_project)
-  flake_issue = FlakeIssue.Create(monorail_project, issue_id)
-  flake_issue.put()
+  flake_issue = _GetOrCreateFlakeIssue(issue_id, monorail_project)
   flake.flake_issue_key = flake_issue.key
   flake.put()

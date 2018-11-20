@@ -10,6 +10,7 @@ from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
 from model.flake.flake_type import FLAKE_TYPE_DESCRIPTIONS
 from model.flake.flake_type import FLAKE_TYPE_WEIGHT
+from services.flake_issue_util import GetFlakeIssue
 
 _DEFAULT_PAGE_SIZE = 100
 _DEFAULT_LUCI_PROJECT = 'chromium'
@@ -134,8 +135,8 @@ class RankFlakes(BaseHandler):
     for flake in flakes:
       flake_dict = flake.to_dict()
 
-      if flake.flake_issue_key:
-        flake_issue = flake.flake_issue_key.get()
+      flake_issue = GetFlakeIssue(flake)
+      if flake_issue:
         flake_dict['flake_issue'] = flake_issue.to_dict()
         flake_dict['flake_issue']['issue_link'] = FlakeIssue.GetLinkForIssue(
             flake_issue.monorail_project, flake_issue.issue_id)

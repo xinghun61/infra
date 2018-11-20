@@ -110,7 +110,9 @@ class ShowFlakeTest(WaterfallTestCase):
             'last_updated_time_by_flake_detection':
                 '2018-01-01 00:00:00',
             'monorail_project':
-                'chromium'
+                'chromium',
+            'merge_destination_key':
+                None
         },
         'flake_issue_key':
             flake_issue.key,
