@@ -31,6 +31,8 @@
     servers to generate declarations for you, which you then include in
     your html.
 
+    See a step-by-step how-to at `//doc/front_end_monitoring.md`.
+
     @example initialize the client
     let tsm = new TSMonClient();
 
