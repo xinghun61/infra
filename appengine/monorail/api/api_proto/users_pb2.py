@@ -7,7 +7,6 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -21,10 +20,10 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='api/api_proto/users.proto',
   package='monorail',
   syntax='proto3',
+  serialized_options=None,
   serialized_pb=_b('\n\x19\x61pi/api_proto/users.proto\x12\x08monorail\x1a api/api_proto/user_objects.proto\x1a\x1a\x61pi/api_proto/common.proto\"=\n\x04User\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x0f\n\x07user_id\x18\x02 \x01(\x03\x12\x15\n\ris_site_admin\x18\x03 \x01(\x08\"S\n\x1aListReferencedUsersRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x0e\n\x06\x65mails\x18\x02 \x03(\t\"<\n\x1bListReferencedUsersResponse\x12\x1d\n\x05users\x18\x01 \x03(\x0b\x32\x0e.monorail.User\"\\\n\x0eGetUserRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12#\n\x08user_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\"c\n\x15GetMembershipsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12#\n\x08user_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\"?\n\x16GetMembershipsResponse\x12%\n\ngroup_refs\x18\x01 \x03(\x0b\x32\x11.monorail.UserRef\"~\n\x15GetUserCommitsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\r\n\x05\x65mail\x18\x02 \x01(\t\x12\x16\n\x0e\x66rom_timestamp\x18\x03 \x01(\x07\x12\x17\n\x0funtil_timestamp\x18\x04 \x01(\x07\"@\n\x16GetUserCommitsResponse\x12&\n\x0cuser_commits\x18\x01 \x03(\x0b\x32\x10.monorail.Commit\"e\n\x17GetUserStarCountRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12#\n\x08user_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\".\n\x18GetUserStarCountResponse\x12\x12\n\nstar_count\x18\x01 \x01(\r\"n\n\x0fStarUserRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12#\n\x08user_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\x12\x0f\n\x07starred\x18\x03 \x01(\x08\"&\n\x10StarUserResponse\x12\x12\n\nstar_count\x18\x01 \x01(\r\"^\n\x1fSetExpandPermsPreferenceRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0c\x65xpand_perms\x18\x02 \x01(\x08\"\"\n SetExpandPermsPreferenceResponse2\xe9\x04\n\x05Users\x12\x35\n\x07GetUser\x12\x18.monorail.GetUserRequest\x1a\x0e.monorail.User\"\x00\x12\x64\n\x13ListReferencedUsers\x12$.monorail.ListReferencedUsersRequest\x1a%.monorail.ListReferencedUsersResponse\"\x00\x12U\n\x0eGetMemberships\x12\x1f.monorail.GetMembershipsRequest\x1a .monorail.GetMembershipsResponse\"\x00\x12U\n\x0eGetUserCommits\x12\x1f.monorail.GetUserCommitsRequest\x1a .monorail.GetUserCommitsResponse\"\x00\x12[\n\x10GetUserStarCount\x12!.monorail.GetUserStarCountRequest\x1a\".monorail.GetUserStarCountResponse\"\x00\x12\x43\n\x08StarUser\x12\x19.monorail.StarUserRequest\x1a\x1a.monorail.StarUserResponse\"\x00\x12s\n\x18SetExpandPermsPreference\x12).monorail.SetExpandPermsPreferenceRequest\x1a*.monorail.SetExpandPermsPreferenceResponse\"\x00\x62\x06proto3')
   ,
   dependencies=[api_dot_api__proto_dot_user__objects__pb2.DESCRIPTOR,api_dot_api__proto_dot_common__pb2.DESCRIPTOR,])
-_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 
 
@@ -42,28 +41,28 @@ _USER = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='user_id', full_name='monorail.User.user_id', index=1,
       number=2, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='is_site_admin', full_name='monorail.User.is_site_admin', index=2,
       number=3, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -87,21 +86,21 @@ _LISTREFERENCEDUSERSREQUEST = _descriptor.Descriptor(
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='emails', full_name='monorail.ListReferencedUsersRequest.emails', index=1,
       number=2, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -125,14 +124,14 @@ _LISTREFERENCEDUSERSRESPONSE = _descriptor.Descriptor(
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -156,21 +155,21 @@ _GETUSERREQUEST = _descriptor.Descriptor(
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='user_ref', full_name='monorail.GetUserRequest.user_ref', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -194,21 +193,21 @@ _GETMEMBERSHIPSREQUEST = _descriptor.Descriptor(
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='user_ref', full_name='monorail.GetMembershipsRequest.user_ref', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -232,14 +231,14 @@ _GETMEMBERSHIPSRESPONSE = _descriptor.Descriptor(
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -263,35 +262,35 @@ _GETUSERCOMMITSREQUEST = _descriptor.Descriptor(
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='email', full_name='monorail.GetUserCommitsRequest.email', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='from_timestamp', full_name='monorail.GetUserCommitsRequest.from_timestamp', index=2,
       number=3, type=7, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='until_timestamp', full_name='monorail.GetUserCommitsRequest.until_timestamp', index=3,
       number=4, type=7, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -315,14 +314,14 @@ _GETUSERCOMMITSRESPONSE = _descriptor.Descriptor(
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -346,21 +345,21 @@ _GETUSERSTARCOUNTREQUEST = _descriptor.Descriptor(
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='user_ref', full_name='monorail.GetUserStarCountRequest.user_ref', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -384,14 +383,14 @@ _GETUSERSTARCOUNTRESPONSE = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -415,28 +414,28 @@ _STARUSERREQUEST = _descriptor.Descriptor(
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='user_ref', full_name='monorail.StarUserRequest.user_ref', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='starred', full_name='monorail.StarUserRequest.starred', index=2,
       number=3, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -460,14 +459,14 @@ _STARUSERRESPONSE = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -491,21 +490,21 @@ _SETEXPANDPERMSPREFERENCEREQUEST = _descriptor.Descriptor(
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='expand_perms', full_name='monorail.SetExpandPermsPreferenceRequest.expand_perms', index=1,
       number=2, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -529,7 +528,7 @@ _SETEXPANDPERMSPREFERENCERESPONSE = _descriptor.Descriptor(
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -567,6 +566,7 @@ DESCRIPTOR.message_types_by_name['StarUserRequest'] = _STARUSERREQUEST
 DESCRIPTOR.message_types_by_name['StarUserResponse'] = _STARUSERRESPONSE
 DESCRIPTOR.message_types_by_name['SetExpandPermsPreferenceRequest'] = _SETEXPANDPERMSPREFERENCEREQUEST
 DESCRIPTOR.message_types_by_name['SetExpandPermsPreferenceResponse'] = _SETEXPANDPERMSPREFERENCERESPONSE
+_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 User = _reflection.GeneratedProtocolMessageType('User', (_message.Message,), dict(
   DESCRIPTOR = _USER,
@@ -666,5 +666,83 @@ SetExpandPermsPreferenceResponse = _reflection.GeneratedProtocolMessageType('Set
   ))
 _sym_db.RegisterMessage(SetExpandPermsPreferenceResponse)
 
+
+
+_USERS = _descriptor.ServiceDescriptor(
+  name='Users',
+  full_name='monorail.Users',
+  file=DESCRIPTOR,
+  index=0,
+  serialized_options=None,
+  serialized_start=1201,
+  serialized_end=1818,
+  methods=[
+  _descriptor.MethodDescriptor(
+    name='GetUser',
+    full_name='monorail.Users.GetUser',
+    index=0,
+    containing_service=None,
+    input_type=_GETUSERREQUEST,
+    output_type=_USER,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='ListReferencedUsers',
+    full_name='monorail.Users.ListReferencedUsers',
+    index=1,
+    containing_service=None,
+    input_type=_LISTREFERENCEDUSERSREQUEST,
+    output_type=_LISTREFERENCEDUSERSRESPONSE,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='GetMemberships',
+    full_name='monorail.Users.GetMemberships',
+    index=2,
+    containing_service=None,
+    input_type=_GETMEMBERSHIPSREQUEST,
+    output_type=_GETMEMBERSHIPSRESPONSE,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='GetUserCommits',
+    full_name='monorail.Users.GetUserCommits',
+    index=3,
+    containing_service=None,
+    input_type=_GETUSERCOMMITSREQUEST,
+    output_type=_GETUSERCOMMITSRESPONSE,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='GetUserStarCount',
+    full_name='monorail.Users.GetUserStarCount',
+    index=4,
+    containing_service=None,
+    input_type=_GETUSERSTARCOUNTREQUEST,
+    output_type=_GETUSERSTARCOUNTRESPONSE,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='StarUser',
+    full_name='monorail.Users.StarUser',
+    index=5,
+    containing_service=None,
+    input_type=_STARUSERREQUEST,
+    output_type=_STARUSERRESPONSE,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='SetExpandPermsPreference',
+    full_name='monorail.Users.SetExpandPermsPreference',
+    index=6,
+    containing_service=None,
+    input_type=_SETEXPANDPERMSPREFERENCEREQUEST,
+    output_type=_SETEXPANDPERMSPREFERENCERESPONSE,
+    serialized_options=None,
+  ),
+])
+_sym_db.RegisterServiceDescriptor(_USERS)
+
+DESCRIPTOR.services_by_name['Users'] = _USERS
 
 # @@protoc_insertion_point(module_scope)

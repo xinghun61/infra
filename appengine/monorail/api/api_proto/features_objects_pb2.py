@@ -7,7 +7,6 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -21,10 +20,10 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='api/api_proto/features_objects.proto',
   package='monorail',
   syntax='proto3',
+  serialized_options=None,
   serialized_pb=_b('\n$api/api_proto/features_objects.proto\x12\x08monorail\x1a\x1a\x61pi/api_proto/common.proto\x1a!api/api_proto/issue_objects.proto\"c\n\x07Hotlist\x12$\n\towner_ref\x18\x01 \x01(\x0b\x32\x11.monorail.UserRef\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0f\n\x07summary\x18\x03 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x04 \x01(\t\"\x88\x01\n\x0bHotlistItem\x12\x1e\n\x05issue\x18\x01 \x01(\x0b\x32\x0f.monorail.Issue\x12\x0c\n\x04rank\x18\x02 \x01(\r\x12$\n\tadder_ref\x18\x03 \x01(\x0b\x32\x11.monorail.UserRef\x12\x17\n\x0f\x61\x64\x64\x65\x64_timestamp\x18\x04 \x01(\r\x12\x0c\n\x04note\x18\x05 \x01(\tb\x06proto3')
   ,
   dependencies=[api_dot_api__proto_dot_common__pb2.DESCRIPTOR,api_dot_api__proto_dot_issue__objects__pb2.DESCRIPTOR,])
-_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 
 
@@ -42,35 +41,35 @@ _HOTLIST = _descriptor.Descriptor(
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='name', full_name='monorail.Hotlist.name', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='summary', full_name='monorail.Hotlist.summary', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='description', full_name='monorail.Hotlist.description', index=3,
       number=4, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -94,42 +93,42 @@ _HOTLISTITEM = _descriptor.Descriptor(
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='rank', full_name='monorail.HotlistItem.rank', index=1,
       number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='adder_ref', full_name='monorail.HotlistItem.adder_ref', index=2,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='added_timestamp', full_name='monorail.HotlistItem.added_timestamp', index=3,
       number=4, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='note', full_name='monorail.HotlistItem.note', index=4,
       number=5, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -144,6 +143,7 @@ _HOTLISTITEM.fields_by_name['issue'].message_type = api_dot_api__proto_dot_issue
 _HOTLISTITEM.fields_by_name['adder_ref'].message_type = api_dot_api__proto_dot_common__pb2._USERREF
 DESCRIPTOR.message_types_by_name['Hotlist'] = _HOTLIST
 DESCRIPTOR.message_types_by_name['HotlistItem'] = _HOTLISTITEM
+_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 Hotlist = _reflection.GeneratedProtocolMessageType('Hotlist', (_message.Message,), dict(
   DESCRIPTOR = _HOTLIST,

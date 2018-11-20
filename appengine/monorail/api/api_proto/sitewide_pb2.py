@@ -7,7 +7,6 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -20,10 +19,10 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='api/api_proto/sitewide.proto',
   package='monorail',
   syntax='proto3',
+  serialized_options=None,
   serialized_pb=_b('\n\x1c\x61pi/api_proto/sitewide.proto\x12\x08monorail\x1a\x1a\x61pi/api_proto/common.proto\"_\n\x13RefreshTokenRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\r\n\x05token\x18\x02 \x01(\t\x12\x12\n\ntoken_path\x18\x03 \x01(\t\"@\n\x14RefreshTokenResponse\x12\r\n\x05token\x18\x01 \x01(\t\x12\x19\n\x11token_expires_sec\x18\x02 \x01(\r2[\n\x08Sitewide\x12O\n\x0cRefreshToken\x12\x1d.monorail.RefreshTokenRequest\x1a\x1e.monorail.RefreshTokenResponse\"\x00\x62\x06proto3')
   ,
   dependencies=[api_dot_api__proto_dot_common__pb2.DESCRIPTOR,])
-_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 
 
@@ -41,28 +40,28 @@ _REFRESHTOKENREQUEST = _descriptor.Descriptor(
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='token', full_name='monorail.RefreshTokenRequest.token', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='token_path', full_name='monorail.RefreshTokenRequest.token_path', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -86,21 +85,21 @@ _REFRESHTOKENRESPONSE = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='token_expires_sec', full_name='monorail.RefreshTokenResponse.token_expires_sec', index=1,
       number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -113,6 +112,7 @@ _REFRESHTOKENRESPONSE = _descriptor.Descriptor(
 _REFRESHTOKENREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 DESCRIPTOR.message_types_by_name['RefreshTokenRequest'] = _REFRESHTOKENREQUEST
 DESCRIPTOR.message_types_by_name['RefreshTokenResponse'] = _REFRESHTOKENRESPONSE
+_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 RefreshTokenRequest = _reflection.GeneratedProtocolMessageType('RefreshTokenRequest', (_message.Message,), dict(
   DESCRIPTOR = _REFRESHTOKENREQUEST,
@@ -128,5 +128,29 @@ RefreshTokenResponse = _reflection.GeneratedProtocolMessageType('RefreshTokenRes
   ))
 _sym_db.RegisterMessage(RefreshTokenResponse)
 
+
+
+_SITEWIDE = _descriptor.ServiceDescriptor(
+  name='Sitewide',
+  full_name='monorail.Sitewide',
+  file=DESCRIPTOR,
+  index=0,
+  serialized_options=None,
+  serialized_start=233,
+  serialized_end=324,
+  methods=[
+  _descriptor.MethodDescriptor(
+    name='RefreshToken',
+    full_name='monorail.Sitewide.RefreshToken',
+    index=0,
+    containing_service=None,
+    input_type=_REFRESHTOKENREQUEST,
+    output_type=_REFRESHTOKENRESPONSE,
+    serialized_options=None,
+  ),
+])
+_sym_db.RegisterServiceDescriptor(_SITEWIDE)
+
+DESCRIPTOR.services_by_name['Sitewide'] = _SITEWIDE
 
 # @@protoc_insertion_point(module_scope)
