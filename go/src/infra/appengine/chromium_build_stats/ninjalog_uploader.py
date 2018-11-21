@@ -24,32 +24,62 @@ def IsGoogler(server):
     _, content = h.request('https://'+server+'/should-upload', 'GET')
     return content == 'Success'
 
-def GetMetadata(args):
+def GetMetadata(cmdline, ninjalog):
     """Get metadata for uploaded ninjalog."""
 
     # TODO(tikuta): Support build_configs from args.gn.
 
-    build_dir = os.path.dirname(args.ninjalog)
+    build_dir = os.path.dirname(ninjalog)
     metadata = {
         'platform': platform.system(),
         'cwd': build_dir,
         'hostname': socket.gethostname(),
         'cpu_core': multiprocessing.cpu_count(),
-        'cmdline': args.cmdline,
+        'cmdline': cmdline,
     }
 
     return metadata
+
+def GetNinjalog(cmdline):
+    """GetNinjalog returns the path to ninjalog from cmdline.
+
+    >>> GetNinjalog(['ninja'])
+    './.ninja_log'
+    >>> GetNinjalog(['ninja', '-C', 'out/Release'])
+    'out/Release/.ninja_log'
+    >>> GetNinjalog(['ninja', '-Cout/Release'])
+    'out/Release/.ninja_log'
+    >>> GetNinjalog(['ninja', '-C'])
+    './.ninja_log'
+    >>> GetNinjalog(['ninja', '-C', 'out/Release', '-C', 'out/Debug'])
+    'out/Debug/.ninja_log'
+    """
+    # ninjalog is in current working directory by default.
+    ninjalog_dir = '.'
+
+    i = 0
+    while i < len(cmdline):
+        cmd = cmdline[i]
+        i += 1
+        if cmd == '-C' and i < len(cmdline):
+            ninjalog_dir = cmdline[i]
+            i += 1
+            continue
+
+        if cmd.startswith('-C') and len(cmd) > len('-C'):
+            ninjalog_dir = cmd[len('-C'):]
+
+    return os.path.join(ninjalog_dir, '.ninja_log')
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--server',
                         default='chromium-build-stats.appspot.com',
                         help='server to upload ninjalog file.')
-    parser.add_argument('--ninjalog', required=True,
-                        help='ninjalog file to upload.')
+    parser.add_argument('--ninjalog', help='ninjalog file to upload.')
     parser.add_argument('--verbose', action='store_true',
                         help='Enable verbose logging.')
-    parser.add_argument('--cmdline', nargs=argparse.REMAINDER,
+    parser.add_argument('--cmdline', required=True, nargs=argparse.REMAINDER,
                         help='command line args passed to ninja.')
 
     args = parser.parse_args()
@@ -63,14 +93,20 @@ def main():
     if not IsGoogler(args.server):
         return 0
 
+
+    ninjalog = args.ninjalog or GetNinjalog(args.cmdline)
+    if not os.path.isfile(ninjalog):
+        logging.warn("ninjalog is not found in %s", ninjalog)
+        return 1
+
     output = cStringIO.StringIO()
 
-    with open(args.ninjalog) as f:
+    with open(ninjalog) as f:
         with gzip.GzipFile(fileobj=output, mode='wb') as g:
             g.write(f.read())
             g.write('# end of ninja log\n')
 
-            metadata = GetMetadata(args)
+            metadata = GetMetadata(args.cmdline, ninjalog)
             logging.info('send metadata: %s', metadata)
             g.write(json.dumps(metadata))
 
