@@ -190,7 +190,7 @@ func pollProject(c context.Context, triciumProject string, repo *tricium.RepoDet
 
 	// No changes found.
 	if len(changes) == 0 {
-		logging.Infof(c, "Poll done. No changes found.")
+		logging.Infof(c, "Poll done for %q. No changes found.", triciumProject)
 		return nil
 	}
 
@@ -333,7 +333,8 @@ func extractUpdates(c context.Context, p *Project, changes []gr.ChangeInfo) ([]g
 
 // enqueueAnalyzeRequests enqueues Analyze requests for the provided Gerrit changes.
 func enqueueAnalyzeRequests(c context.Context, triciumProject string, repo *tricium.RepoDetails, changes []gr.ChangeInfo) error {
-	logging.Infof(c, "Enqueue Analyze requests for %d changes.", len(changes))
+	logging.Infof(c, "Enqueueing Analyze requests for %d changes for project %q.",
+		len(changes), triciumProject)
 	if len(changes) == 0 {
 		return nil
 	}
@@ -384,7 +385,7 @@ func enqueueAnalyzeRequests(c context.Context, triciumProject string, repo *tric
 		}
 		t := tq.NewPOSTTask("/internal/analyze", nil)
 		t.Payload = b
-		logging.Debugf(c, "Converted change details (%v) to Tricium request (%v).", c, req)
+		logging.Debugf(c, "Created AnalyzeRequest: %v", req)
 		tasks = append(tasks, t)
 	}
 	if err := tq.Add(c, common.AnalyzeQueue, tasks...); err != nil {
