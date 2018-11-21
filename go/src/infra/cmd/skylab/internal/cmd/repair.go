@@ -42,7 +42,7 @@ type repairRun struct {
 
 func (c *repairRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	if err := c.innerRun(a, args, env); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
+		fmt.Fprintf(os.Stderr, "%s: %s\n", progName, err)
 		return 1
 	}
 	return 0
