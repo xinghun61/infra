@@ -17,7 +17,6 @@ import (
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 
-	"infra/cmd/skylab/internal/hive"
 	"infra/cmd/skylab/internal/site"
 )
 
@@ -50,12 +49,12 @@ func (c *repairRun) Run(a subcommands.Application, args []string, env subcommand
 
 func (c *repairRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
 	ctx := cli.GetContext(a, c, env)
-	e := c.envFlags.Env()
-	o, err := c.authFlags.Options()
+	cl, err := httpClient(ctx, &c.authFlags)
 	if err != nil {
 		return errors.Annotate(err, "failed to get auth options").Err()
 	}
-	s, err := hive.NewSwarmingService(ctx, e.SwarmingService, o)
+	e := c.envFlags.Env()
+	s, err := newSwarmingService(e.SwarmingService, cl)
 	if err != nil {
 		return errors.Annotate(err, "failed to create Swarming client").Err()
 	}

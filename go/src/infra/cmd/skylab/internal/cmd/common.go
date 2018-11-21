@@ -5,7 +5,14 @@
 package cmd
 
 import (
+	"context"
 	"flag"
+	"net/http"
+
+	"go.chromium.org/luci/auth"
+	"go.chromium.org/luci/auth/client/authcli"
+	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
+	"go.chromium.org/luci/common/errors"
 
 	"infra/cmd/skylab/internal/site"
 )
@@ -25,4 +32,30 @@ func (f envFlags) Env() site.Environment {
 		return site.Dev
 	}
 	return site.Prod
+}
+
+// httpClient returns an HTTP client with authentication set up.
+func httpClient(ctx context.Context, f *authcli.Flags) (*http.Client, error) {
+	o, err := f.Options()
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to get auth options").Err()
+	}
+	a := auth.NewAuthenticator(ctx, auth.OptionalLogin, o)
+	c, err := a.Client()
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to create HTTP client").Err()
+	}
+	return c, nil
+
+}
+
+const swarmingAPISuffix = "_ah/api/swarming/v1/"
+
+func newSwarmingService(service string, c *http.Client) (*swarming.Service, error) {
+	s, err := swarming.New(c)
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to create Swarming client for host %s", service).Err()
+	}
+	s.BasePath = service + swarmingAPISuffix
+	return s, nil
 }
