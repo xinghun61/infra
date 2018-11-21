@@ -1,0 +1,9 @@
+package: infra/tricium/function/eslint
+install_mode: copy
+data:
+  - file: eslint_parser
+  - file: .eslintrc
+
+  # Third Party Dependencies
+  - dir: node
+  - dir: eslint
