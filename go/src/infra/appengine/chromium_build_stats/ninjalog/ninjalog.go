@@ -93,6 +93,7 @@ func (s ByWeightedTime) Less(i, j int) bool {
 // Metadata is data added by compile.py.
 type Metadata struct {
 	// BuildID is identifier of build used in buildbucket api v2 (go/buildbucket-api-v2)
+	// Or some random number representing an invocation of build.
 	BuildID int64 `json:"build_id"`
 
 	// Platform is platform of buildbot.
@@ -113,8 +114,17 @@ type Metadata struct {
 	// Exit is exit status of ninja.
 	Exit int `json:"exit"`
 
+	// Hostname is hostname of builder.
+	Hostname string `json:"hostname"`
+
 	// StepName is stepname to distinguish multiple compile steps in a build.
 	StepName string `json:"step_name"`
+
+	// CPUCore is the number of cpu cores.
+	CPUCore int32 `json:"cpu_core"`
+
+	// BuildConfigs is content of args.gn.
+	BuildConfigs map[string]string `json:"build_configs"`
 
 	// Env is environment variables.
 	Env map[string]string `json:"env"`
@@ -501,11 +511,70 @@ func ToProto(info *NinjaLog) []*npb.NinjaTask {
 		buildID = seed.Int64()
 	}
 
+	os := npb.NinjaTask_UNKNOWN
+
+	// Parse platform as it is returned from python's platform.system().
+	switch platform := info.Metadata.Platform; {
+	case platform == "Windows" || strings.Contains(platform, "CYGWIN"):
+		os = npb.NinjaTask_WIN
+	case platform == "Linux":
+		os = npb.NinjaTask_LINUX
+	case platform == "Darwin":
+		os = npb.NinjaTask_MAC
+	}
+
+	var buildConfigs []*npb.NinjaTask_KeyValue
+	for k, v := range info.Metadata.BuildConfigs {
+		buildConfigs = append(buildConfigs, &npb.NinjaTask_KeyValue{
+			Key:   k,
+			Value: v,
+		})
+	}
+
+	// Configuring order is matter for same key.
+	sort.SliceStable(buildConfigs, func(i, j int) bool {
+		return buildConfigs[i].Key < buildConfigs[j].Key
+	})
+
+	// Parse ninja's commandline to extract build targets.
+	var targets []string
+
+	// We assume info.Metadata.Cmdline[0] is ninja or ninja.exe
+	for i := 1; i < len(info.Metadata.Cmdline); i++ {
+		arg := info.Metadata.Cmdline[i]
+		switch arg {
+		case "-C", "-f", "-j", "-k", "-l", "-d", "-t", "-w":
+			i++
+			continue
+		case "--version", "-v", "--verbose", "-n", "-h", "--help":
+			continue
+		}
+
+		if strings.HasPrefix(arg, "-C") ||
+			strings.HasPrefix(arg, "-f") ||
+			strings.HasPrefix(arg, "-j") ||
+			strings.HasPrefix(arg, "-k") ||
+			strings.HasPrefix(arg, "-l") ||
+			strings.HasPrefix(arg, "-d") ||
+			strings.HasPrefix(arg, "-t") ||
+			strings.HasPrefix(arg, "-w") {
+			continue
+		}
+
+		targets = append(targets, arg)
+	}
+
 	for _, s := range steps {
 		ninjalog := &npb.NinjaTask{
-			BuildId:  buildID,
-			StepName: info.Metadata.StepName,
-			Jobs:     int64(info.Metadata.Jobs),
+			BuildId:      buildID,
+			Targets:      targets,
+			StepName:     info.Metadata.StepName,
+			Jobs:         int64(info.Metadata.Jobs),
+			BuildDir:     info.Metadata.Cwd,
+			Hostname:     info.Metadata.Hostname,
+			Os:           os,
+			CpuCore:      info.Metadata.CPUCore,
+			BuildConfigs: buildConfigs,
 			LogEntry: &npb.NinjaTask_LogEntry{
 				Outputs:          append(s.Outs, s.Out),
 				CommandHash:      s.CmdHash,

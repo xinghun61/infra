@@ -182,7 +182,7 @@ func uploadNinjaLogHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO(tikuta): Take metadata from query parameter.
+	log.Infof(ctx, "ninjalog metadata: %v", ninjalog.Metadata)
 
 	if err := SendToBigquery(ctx, ninjalog, "user"); err != nil {
 		http.Error(w, "failed to send BigQuery", http.StatusInternalServerError)
