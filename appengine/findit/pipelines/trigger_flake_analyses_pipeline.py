@@ -10,11 +10,15 @@ from libs import time_util
 from model.flake.analysis import triggering_sources
 from model.flake.analysis.flake_analysis_request import FlakeAnalysisRequest
 from model.wf_analysis import WfAnalysis
+from services import flake_util
 from services import monitoring
 from services import step_util
 from services.parameters import BuildKey
 from waterfall import waterfall_config
 from waterfall.flake import flake_analysis_service
+
+# TODO(crbug.com/905458): Dynamically capture/store luci project.
+_LUCI_PROJECT = 'chromium'
 
 
 # TODO(crbug.com/904048): Route through Flake Detection instead.
@@ -23,8 +27,7 @@ class TriggerFlakeAnalysesPipeline(GeneratorPipeline):
   input_type = BuildKey
 
   def RunImpl(self, build_key):
-    """Triggers flake analyses for flaky tests found by build failure analysis.
-    """
+    """Triggers flake analyses for flaky tests found by CI failure analysis."""
     master_name, builder_name, build_number = build_key.GetParts()
     flake_settings = waterfall_config.GetCheckFlakeSettings()
     throttled = flake_settings.get('throttle_flake_analyses', True)
@@ -40,12 +43,14 @@ class TriggerFlakeAnalysesPipeline(GeneratorPipeline):
                    build_number, step, len(flaky_tests))
 
       for test_name in flaky_tests:
-        # TODO(crbug.com/904050): Create a Flake/lakeIssue and associate with
-        # request. Eventually, FlakeAnalysisRequest should be deprecated as well
-        # in favor of just Flake.
+        # TODO(crbug.com/904050): Deprecate FlakeAnalysisRequest in favor of
+        # Flake.
+        flake = flake_util.GetFlake(_LUCI_PROJECT, step, test_name, master_name,
+                                    builder_name, build_number)
         request = FlakeAnalysisRequest.Create(test_name, False, None)
         request.AddBuildStep(master_name, builder_name, build_number, step,
                              time_util.GetUTCNow())
+        request.flake_key = flake.key
         scheduled = flake_analysis_service.ScheduleAnalysisForFlake(
             request, 'findit-for-me@appspot.gserviceaccount.com', False,
             triggering_sources.FINDIT_PIPELINE)
