@@ -29,7 +29,7 @@ var Repair = &subcommands.Command{
 	CommandRun: func() subcommands.CommandRun {
 		c := &repairRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
-		c.Flags.BoolVar(&c.dev, "dev", false, "Run in dev environment")
+		c.envFlags.Register(&c.Flags)
 		return c
 	},
 }
@@ -37,7 +37,7 @@ var Repair = &subcommands.Command{
 type repairRun struct {
 	subcommands.CommandRunBase
 	authFlags authcli.Flags
-	dev       bool
+	envFlags  envFlags
 }
 
 func (c *repairRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -50,7 +50,7 @@ func (c *repairRun) Run(a subcommands.Application, args []string, env subcommand
 
 func (c *repairRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
 	ctx := cli.GetContext(a, c, env)
-	e := c.environment()
+	e := c.envFlags.Env()
 	o, err := c.authFlags.Options()
 	if err != nil {
 		return errors.Annotate(err, "failed to get auth options").Err()
@@ -67,13 +67,6 @@ func (c *repairRun) innerRun(a subcommands.Application, args []string, env subco
 		fmt.Printf("Created Swarming task %s for host %s\n", swarmingTaskURL(e, id), host)
 	}
 	return nil
-}
-
-func (c *repairRun) environment() site.Environment {
-	if c.dev {
-		return site.Dev
-	}
-	return site.Prod
 }
 
 func createRepairTask(ctx context.Context, s *swarming.Service, e site.Environment, host string) (taskID string, err error) {
