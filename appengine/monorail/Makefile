@@ -21,7 +21,7 @@ VULCANIZE_PATH = ./node_modules/vulcanize/bin/vulcanize
 CRISPER_PATH = ./node_modules/crisper/bin/crisper
 VULCANIZE = $(VULCANIZE_PATH) $(1).html --inline-script \
 		| $(CRISPER_PATH) \
-		--html $(1).vulcanized.html --js $(1).vulcanized.js --only-split
+		--html $(1).vulcanized.html --js $(1).vulcanized.js
 
 PY_DIRS = api,features,framework,project,proto,search,services,sitewide,testing,tracker
 
@@ -96,7 +96,6 @@ deps:
 vulcanize: clean_vulcanized
 	$(call VULCANIZE, elements/flt/mr-approval-page/mr-approval-page)
 	$(call VULCANIZE, elements/chdir/mr-profile-page/mr-profile-page)
-	$(call VULCANIZE, elements/mr-bar-chart/mr-bar-chart)
 
 clean_vulcanized:
 	find . -name "*.vulcanized.*" -delete

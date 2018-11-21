@@ -5,7 +5,6 @@
 <link rel="import" href="/elements/flt/mr-approval-page/mr-approval-page.html?version=[app_version]" nonce="[nonce]">
 [else]
 <link rel="import" href="/elements/flt/mr-approval-page/mr-approval-page.vulcanized.html?version=[app_version]" nonce="[nonce]">
-<script src="/elements/flt/mr-approval-page/mr-approval-page.vulcanized.js?version=[app_version]" nonce="[nonce]"></script>
 [end]
 
 <mr-approval-page [if-any logged_in_user]
