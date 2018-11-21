@@ -222,12 +222,12 @@ def GetFlakesWithEnoughOccurrences():
   ]
 
   # Cannot use a dictionary because Model is not immutable.
-  flake_and_occurrences_count_tuples = []
+  flake_and_occurrences_tuples = []
   for flake in flakes_with_enough_occurrences:
-    flake_and_occurrences_count_tuples.append(
-        (flake, len(flake_key_to_unreported_occurrences[flake.key])))
+    flake_and_occurrences_tuples.append(
+        (flake, flake_key_to_unreported_occurrences[flake.key]))
 
-  return flake_and_occurrences_count_tuples
+  return flake_and_occurrences_tuples
 
 
 # TODO(crbug.com/903459): Move ReportFlakesToMonorail and
@@ -265,8 +265,8 @@ def ReportFlakesToMonorail(flake_tuples_to_report):
   logging.info('There are %d flakes whose issues will be created or updated.' %
                num_of_flakes_to_report)
 
-  for flake, occurrences_count in flake_tuples_to_report:
-    issue_generator = FlakeDetectionIssueGenerator(flake, occurrences_count)
+  for flake, occurrences in flake_tuples_to_report:
+    issue_generator = FlakeDetectionIssueGenerator(flake, len(occurrences))
     try:
       CreateOrUpdateIssue(issue_generator, flake.luci_project)
 

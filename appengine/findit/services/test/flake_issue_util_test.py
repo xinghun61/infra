@@ -119,7 +119,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
   def testGetFlakesWithEnoughOccurrences(self):
     flakes_with_occurrences = flake_issue_util.GetFlakesWithEnoughOccurrences()
     self.assertEqual(1, len(flakes_with_occurrences))
-    self.assertEqual(3, flakes_with_occurrences[0][1])
+    self.assertEqual(3, len(flakes_with_occurrences[0][1]))
 
   # This test tests that in order for a flake to have enough occurrences, there
   # needs to be at least 3 (_MIN_REQUIRED_FALSELY_REJECTED_CLS_24H) occurrences
@@ -152,7 +152,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
   def testCreateOrUpdateIssuesPerDayLimit(self, mock_update_or_create_bug):
     flakes_with_occurrences = flake_issue_util.GetFlakesWithEnoughOccurrences()
     self.assertEqual(1, len(flakes_with_occurrences))
-    self.assertEqual(3, flakes_with_occurrences[0][1])
+    self.assertEqual(3, len(flakes_with_occurrences[0][1]))
     self.UpdateUnitTestConfigSettings('action_settings',
                                       {'max_flake_bug_updates_per_day': 0})
     flake_issue_util.ReportFlakesToMonorail(flakes_with_occurrences)
@@ -206,9 +206,9 @@ class FlakeReportUtilTest(WaterfallTestCase):
                                       {'max_flake_bug_updates_per_day': 0})
 
     flake = Flake.query().fetch()[0]
-    occurrences_count = FlakeOccurrence.query(
-        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).count()
-    flake_issue_util.ReportFlakesToMonorail([(flake, occurrences_count)])
+    occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
+    flake_issue_util.ReportFlakesToMonorail([(flake, occurrences)])
     self.assertFalse(mock_create_bug_fn.called)
     self.assertFalse(mock_update_bug_fn.called)
 
@@ -220,9 +220,9 @@ class FlakeReportUtilTest(WaterfallTestCase):
   @mock.patch.object(monorail_util, 'CreateBug', return_value=66666)
   def testCreateIssue(self, mock_create_bug_fn, mock_update_bug_fn, _):
     flake = Flake.query().fetch()[0]
-    occurrences_count = FlakeOccurrence.query(
-        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).count()
-    flake_issue_util.ReportFlakesToMonorail([(flake, occurrences_count)])
+    occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
+    flake_issue_util.ReportFlakesToMonorail([(flake, occurrences)])
 
     expected_status = 'Untriaged'
     expected_summary = 'test_label is flaky'
@@ -294,12 +294,12 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     flake_issue.put()
     flake.flake_issue_key = flake_issue.key
     flake.put()
-    occurrences_count = FlakeOccurrence.query(
-        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).count()
+    occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
     mock_get_merged_issue.return_value.id = 12345
     mock_get_merged_issue.return_value.open = False
 
-    flake_issue_util.ReportFlakesToMonorail([(flake, occurrences_count)])
+    flake_issue_util.ReportFlakesToMonorail([(flake, occurrences)])
 
     expected_previous_bug_description = (
         '\n\nThis flaky test was previously tracked in bug 12345.\n\n')
@@ -319,11 +319,11 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     flake_issue.put()
     flake.flake_issue_key = flake_issue.key
     flake.put()
-    occurrences_count = FlakeOccurrence.query(
-        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).count()
+    occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
     mock_get_merged_issue.return_value.id = 12345
     mock_get_merged_issue.return_value.open = True
-    flake_issue_util.ReportFlakesToMonorail([(flake, occurrences_count)])
+    flake_issue_util.ReportFlakesToMonorail([(flake, occurrences)])
 
     expected_wrong_result_link = (
         'https://bugs.chromium.org/p/chromium/issues/entry?status=Unconfirmed&'
