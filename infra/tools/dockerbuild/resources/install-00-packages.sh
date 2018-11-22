@@ -12,10 +12,10 @@
 # have to update its repositories to point to the CentOS vault in order for
 # "yum" to work.
 if [ -x /usr/bin/apt-get ]; then
-  apt-get install -y zlib1g-dev libbz2-dev
+  apt-get install -y zlib1g-dev libbz2-dev libltdl-dev texi2html texinfo
   apt-get clean --yes
 elif [ -x /usr/bin/yum ]; then
-  yum install -y zlib-devel bzip2-devel
+  yum install -y zlib-devel bzip2-devel libltdl-devel texi2html texinfo
   yum clean all
 else
   echo "UKNOWN package platform."

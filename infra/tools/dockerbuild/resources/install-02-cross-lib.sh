@@ -36,6 +36,11 @@ if [ -z "${NO_HOST}" ]; then
   CONFIG_ARGS="${CONFIG_ARGS} --host=${CROSS_TRIPLE}"
 fi
 
+# Generate configure script, if needed
+if [ -f ./autogen.sh ]; then
+  ./autogen.sh
+fi
+
 ./configure ${CONFIG_ARGS}
 make -j$(nproc)
 make install
