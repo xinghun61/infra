@@ -99,7 +99,7 @@ class FlakeTestResultsTest(wf_testcase.WaterfallTestCase):
         },
         'interrupted': False,
         'path_delimiter': '/',
-        'layout_tests_dir': '/b/s/w/ir/third_party/WebKit/LayoutTests',
+        'layout_tests_dir': '/b/s/w/ir/third_party/blink/web_tests',
         'flag_name': None,
         'version': 3,
         'chromium_revision': '',

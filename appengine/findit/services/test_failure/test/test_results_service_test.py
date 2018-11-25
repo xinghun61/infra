@@ -62,27 +62,27 @@ class TestResultsUtilTest(wf_testcase.WaterfallTestCase):
 
     expected_failed_test_log = {
         'bluetooth/requestDevice/chooser/new-scan-device-changed.html': (
-            base64.b64encode('third_party/WebKit/LayoutTests/bluetooth/request'
+            base64.b64encode('third_party/blink/web_tests/bluetooth/request'
                              'Device/chooser/new-scan-device-changed.html')),
         'virtual/spv2/fast/css/error-in-last-decl.html':
             base64.b64encode(
-                'third_party/WebKit/LayoutTests/fast/css/'
+                'third_party/blink/web_tests/fast/css/'
                 'error-in-last-decl.html'),
         'virtual/high-contrast-mode/paint/high-contrast-mode/image-filter-none/'
         'gradient-noinvert.html':
             base64.b64encode(
-                'third_party/WebKit/LayoutTests/paint/high-contrast-mode/'
+                'third_party/blink/web_tests/paint/high-contrast-mode/'
                 'image-filter-none/gradient-noinvert.html'),
         'bluetooth/requestDevice/chooser/new-scan-device-added.html': (
-            base64.b64encode('third_party/WebKit/LayoutTests/bluetooth/request'
+            base64.b64encode('third_party/blink/web_tests/bluetooth/request'
                              'Device/chooser/new-scan-device-added.html')),
         'bluetooth/requestDevice/chooser/unknown-status-test.html': (
-            base64.b64encode('third_party/WebKit/LayoutTests/bluetooth/request'
+            base64.b64encode('third_party/blink/web_tests/bluetooth/request'
                              'Device/chooser/unknown-status-test.html')),
         'virtual/high-contrast-mode/paint/high-contrast-mode/'
         'image-filter-all/text-on-backgrounds.html':
             base64.b64encode(
-                'third_party/WebKit/LayoutTests/paint/high-contrast-mode/'
+                'third_party/blink/web_tests/paint/high-contrast-mode/'
                 'image-filter-all/text-on-backgrounds.html')
     }
 

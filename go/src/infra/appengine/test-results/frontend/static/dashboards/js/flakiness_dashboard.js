@@ -33,7 +33,7 @@ var FORWARD = 'forward';
 var BACKWARD = 'backward';
 var TEST_URL_BASE_PATH_FOR_BROWSING =
     'https://chromium.googlesource.com/' +
-    'chromium/src/+/master/third_party/WebKit/LayoutTests/';
+    'chromium/src/+/master/third_party/blink/web_tests/';
 var TEST_URL_BASE_PATH_FOR_XHR = 'http://src.chromium.org/blink/trunk/LayoutTests/';
 var TEST_RESULTS_BASE_PATH = '/data/layout_results/';
 var GPU_RESULTS_BASE_PATH = 'http://chromium-browser-gpu-tests.commondatastorage.googleapis.com/runs/'

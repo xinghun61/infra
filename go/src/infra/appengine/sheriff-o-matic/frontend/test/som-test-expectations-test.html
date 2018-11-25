@@ -37,7 +37,7 @@
         '/api/v1/testexpectations', [
           200,
           {'Content-Type': 'application/json'},
-          '[{"FileName":"third_party/WebKit/LayoutTests/TestExpectations","LineNumber":2171,"TestName":"accessibility/aria-activedescendant.html","Bugs":["crbug.com/620432"],"Modifiers":null,"Expectations":["Failure"]},{"FileName":"third_party/WebKit/LayoutTests/SmokeTests","LineNumber":1,"TestName":"accessibility/aria-labelledby-on-input.html","Bugs":null,"Modifiers":null,"Expectations":null},{"FileName":"third_party/WebKit/LayoutTests/SmokeTests","LineNumber":2,"TestName":"accessibility/aria-link-supports-press.html","Bugs":null,"Modifiers":null,"Expectations":null}]'
+          '[{"FileName":"third_party/blink/web_tests/TestExpectations","LineNumber":2171,"TestName":"accessibility/aria-activedescendant.html","Bugs":["crbug.com/620432"],"Modifiers":null,"Expectations":["Failure"]},{"FileName":"third_party/blink/web_tests/SmokeTests","LineNumber":1,"TestName":"accessibility/aria-labelledby-on-input.html","Bugs":null,"Modifiers":null,"Expectations":null},{"FileName":"third_party/blink/web_tests/SmokeTests","LineNumber":2,"TestName":"accessibility/aria-link-supports-press.html","Bugs":null,"Modifiers":null,"Expectations":null}]'
         ]
       );
       element.refresh();
@@ -50,7 +50,7 @@
 
     test('open edit form', function(done) {
       let val = {
-        "FileName":"third_party/WebKit/LayoutTests/TestExpectations",
+        "FileName":"third_party/blink/web_tests/TestExpectations",
         "LineNumber":1779,
         "TestName":"accessibility/aria-activedescendant.html",
         "Bugs":["crbug.com/620432"],

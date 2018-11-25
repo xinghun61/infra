@@ -127,7 +127,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
     step = WfStep.Create(master_name, builder_name, build_number, step_name)
     step.log_data = json.dumps({
         'fast/test.html':
-            'dGhpcmRfcGFydHkvV2ViS2l0L0xheW91dFRlc3RzL2Zhc3QvdGVzdC5odG1s'
+            'dGhpcmRfcGFydHkvYmxpbmsvd2ViX3Rlc3RzL2Zhc3QvdGVzdC5odG1s'
     })
     step.isolated = True
     step.put()
@@ -140,7 +140,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
     self.assertIsNotNone(step)
     self.assertIsNotNone(step.log_data)
     self.assertEqual({
-        'third_party/WebKit/LayoutTests/fast/test.html': []
+        'third_party/blink/web_tests/fast/test.html': []
     }, signals['webkit_layout_tests']['files'])
 
   @mock.patch.object(

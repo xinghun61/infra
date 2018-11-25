@@ -90,7 +90,7 @@ _SAMPLE_TEST_RESULTS = {
     },
     'interrupted': False,
     'path_delimiter': '/',
-    'layout_tests_dir': '/b/s/w/ir/third_party/WebKit/LayoutTests',
+    'layout_tests_dir': '/b/s/w/ir/third_party/blink/web_tests',
     'flag_name': None,
     'version': 3,
     'chromium_revision': '',
@@ -166,7 +166,7 @@ _SAMPLE_FLATTEN_TEST_RESULTS = {
     'interrupted': False,
     'chromium_revision': '',
     'random_order_seed': 4,
-    'layout_tests_dir': '/b/s/w/ir/third_party/WebKit/LayoutTests',
+    'layout_tests_dir': '/b/s/w/ir/third_party/blink/web_tests',
     'version': 3,
     'builder_name': '',
     'num_passes': 3,
@@ -283,7 +283,7 @@ class WebkitLayoutTestResultsTest(wf_testcase.WaterfallTestCase):
             },
             'interrupted': False,
             'path_delimiter': '/',
-            'layout_tests_dir': '/b/s/w/ir/third_party/WebKit/LayoutTests',
+            'layout_tests_dir': '/b/s/w/ir/third_party/blink/web_tests',
             'flag_name': None,
             'version': 3,
             'chromium_revision': '',
@@ -521,7 +521,7 @@ class WebkitLayoutTestResultsTest(wf_testcase.WaterfallTestCase):
     test_name = 'bluetooth/requestDevice/chooser/new-scan-device-changed.html'
     expected_test_location = {
         'line': None,
-        'file': 'third_party/WebKit/LayoutTests/bluetooth/requestDevice/'
+        'file': 'third_party/blink/web_tests/bluetooth/requestDevice/'
                 'chooser/new-scan-device-changed.html',
     }
     result, error = self.test_result.GetTestLocation(test_name)
@@ -532,7 +532,7 @@ class WebkitLayoutTestResultsTest(wf_testcase.WaterfallTestCase):
     test_name = 'virtual/spv2/fast/css/error-in-last-decl.html'
     expected_test_location = {
         'line': None,
-        'file': 'third_party/WebKit/LayoutTests/fast/css/'
+        'file': 'third_party/blink/web_tests/fast/css/'
                 'error-in-last-decl.html',
     }
     result, error = self.test_result.GetTestLocation(test_name)
@@ -544,7 +544,7 @@ class WebkitLayoutTestResultsTest(wf_testcase.WaterfallTestCase):
         'bluetooth/requestDevice/chooser/unknown-status-test.html?5000-6000')
     expected_test_location = {
         'line': None,
-        'file': 'third_party/WebKit/LayoutTests/bluetooth/requestDevice/'
+        'file': 'third_party/blink/web_tests/bluetooth/requestDevice/'
                 'chooser/unknown-status-test.html',
     }
     result, error = self.test_result.GetTestLocation(test_name)

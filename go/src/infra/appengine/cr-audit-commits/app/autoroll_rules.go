@@ -68,7 +68,7 @@ func AutoRollRulesSKCMS(account string) AccountRules {
 }
 
 // AutoRollRulesLayoutTests returns an AccountRules instance for an account
-// which should only modify ``third_party/WebKit/LayoutTests``.
+// which should only modify ``third_party/blink/web_tests``.
 func AutoRollRulesLayoutTests(account string) AccountRules {
 	return AccountRules{
 		Account: account,
@@ -119,7 +119,7 @@ func OnlyModifiesSKCMS(ctx context.Context, ap *AuditParams, rc *RelevantCommit,
 }
 
 // OnlyModifiesLayoutTests is a RuleFunc which verifies that the audited CL
-// only modifies files in the ``third_party/WebKit/LayoutTests`` directory.
+// only modifies files in the ``third_party/blink/web_tests`` directory.
 func OnlyModifiesLayoutTests(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-	return OnlyModifiesDirRule(ctx, ap, rc, cs, "OnlyModifiesLayoutTests", "third_party/WebKit/LayoutTests")
+	return OnlyModifiesDirRule(ctx, ap, rc, cs, "OnlyModifiesLayoutTests", "third_party/blink/web_tests")
 }

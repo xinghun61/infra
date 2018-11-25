@@ -79,7 +79,7 @@ ADD_RESULTS({
     "num_regressions": 0,
     "build_number": "3",
     "interrupted": false,
-    "layout_tests_dir": "\/tmp\/cr\/src\/third_party\/WebKit\/LayoutTests",
+    "layout_tests_dir": "\/tmp\/cr\/src\/third_party\/blink\/web_tests",
     "version": 3,
     "builder_name": "Webkit",
     "num_passes": 10,

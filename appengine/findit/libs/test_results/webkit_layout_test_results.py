@@ -52,9 +52,7 @@ SKIPPING_STATUSES = (
 # appear in expects.
 NON_TEST_OUTCOME_EXPECTATIONS = ('REBASELINE', 'SKIP', 'SLOW', 'WONTFIX')
 
-# TODO (crbug/835960): Use third_party/blink/web_tests instead when tests are
-# moved.
-_BASE_FILE_PATH = 'third_party/WebKit/LayoutTests'
+_BASE_FILE_PATH = 'third_party/blink/web_tests'
 
 _VIRTUAL_TEST_NAME_PATTERN = re.compile(r'^virtual/[^/]+/(.*)$')
 
@@ -148,15 +146,15 @@ class WebkitLayoutTestResults(BaseTestResults):
 
     Test file path is constructed from test_name based on some heuristic rule:
      1. For test_name in the format like 'virtual/a/bb/ccc.html', file path
-       should be: 'third_party/WebKit/LayoutTests/bb/ccc.html'
+       should be: 'third_party/blink/web_tests/bb/ccc.html'
      2. For other test names, file path should like
-      'third_party/WebKit/LayoutTests/%s' % test_name
+      'third_party/blink/web_tests/%s' % test_name
 
     # TODO(crbug/806002): Handle below cases.
     There are other cases which has NOT been covered:
     1. Baseline files: for example, for a test a/bb/ccc.html, it's
       possible to find a file like
-      'third_party/WebKit/LayoutTests/a/bb/ccc_expected.txt'. Such files should
+      'third_party/blink/web_tests/a/bb/ccc_expected.txt'. Such files should
       also be considered to add to test locations, but not covered right now.
     2. Derived tests: for example, for a file named external/wpt/foo.any.js,
       there will be two tests generated from it, external/wpt/foo.window.html
