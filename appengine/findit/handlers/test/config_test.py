@@ -89,38 +89,25 @@ _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS = {
 }
 
 _MOCK_ACTION_SETTINGS = {
-    'cr_notification_build_threshold':
-        2,
-    'cr_notification_latency_limit_minutes':
-        1000,
-    'cr_notification_should_notify_flake_culprit':
-        True,
-    'culprit_commit_limit_hours':
-        24,
-    'auto_create_revert_compile':
-        True,
-    'auto_commit_revert_compile':
-        True,
-    'auto_commit_revert_daily_threshold_compile':
-        4,
-    'auto_create_revert_daily_threshold_compile':
-        10,
-    'auto_create_revert_test':
-        True,
-    'auto_commit_revert_test':
-        True,
-    'auto_commit_revert_daily_threshold_test':
-        4,
-    'auto_create_revert_daily_threshold_test':
-        10,
-    'rotations_url': (
-        'https://rota-ng.appspot.com/legacy/all_rotations.js'),
-    'max_flake_bug_updates_per_day':
-        30,
+    'cr_notification_build_threshold': 2,
+    'cr_notification_latency_limit_minutes': 1000,
+    'cr_notification_should_notify_flake_culprit': True,
+    'culprit_commit_limit_hours': 24,
+    'auto_create_revert_compile': True,
+    'auto_commit_revert_compile': True,
+    'auto_commit_revert_daily_threshold_compile': 4,
+    'auto_create_revert_daily_threshold_compile': 10,
+    'auto_create_revert_test': True,
+    'auto_commit_revert_test': True,
+    'auto_commit_revert_daily_threshold_test': 4,
+    'auto_create_revert_daily_threshold_test': 10,
+    'auto_create_revert_daily_threshold_flake': 10,
+    'auto_commit_revert_daily_threshold_flake': 4,
+    'rotations_url': ('https://rota-ng.appspot.com/legacy/all_rotations.js'),
+    'max_flake_bug_updates_per_day': 30,
 }
 
 _MOCK_CHECK_FLAKE_SETTINGS = {
-    'autorevert_enabled': True,
     'iterations_to_run_after_timeout': 10,
     'lower_flake_threshold': 1e-7,
     'upper_flake_threshold': 0.9999999,

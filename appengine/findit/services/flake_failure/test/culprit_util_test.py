@@ -31,16 +31,6 @@ from waterfall.test import wf_testcase
 
 class CulpritUtilTest(wf_testcase.WaterfallTestCase):
 
-  @mock.patch.object(waterfall_config, 'GetCheckFlakeSettings')
-  def testIsAutorevertEnabled(self, mocked_flake_settings):
-    mocked_flake_settings.return_value = {'autorevert_enabled': True}
-    self.assertTrue(culprit_util.IsAutorevertEnabled())
-
-  @mock.patch.object(waterfall_config, 'GetCheckFlakeSettings')
-  def testIsAutorevertEnabledNotEnabled(self, mocked_flake_settings):
-    mocked_flake_settings.return_value = {'autorevert_enabled': False}
-    self.assertFalse(culprit_util.IsAutorevertEnabled())
-
   def testAbortCreateAndSubmitRevertNothingMatchesNothingChanged(self):
     pipeline_id = 'foobar'
     build_key = 'buildid'
@@ -112,7 +102,6 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(culprit.submit_revert_pipeline_id)
     self.assertEqual(analysis_status.ERROR, culprit.revert_submission_status)
 
-  @mock.patch.object(culprit_util, 'IsAutorevertEnabled', return_value=True)
   @mock.patch.object(
       culprit_action, 'CommitRevert', return_value=constants.COMMITTED)
   @mock.patch.object(
@@ -120,7 +109,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(culprit_util, 'CanRevertForAnalysis', return_value=True)
   @mock.patch.object(culprit_util, 'UnderLimitForAutorevert', return_value=True)
   def testCreateAndSubmitRevert(self, under_limit, can_revert, revert_fn,
-                                commit_fn, enabled_fn):
+                                commit_fn):
     build_key = 'mock_build_key'
     repo = 'chromium'
     rev = 'rev1'
@@ -147,7 +136,6 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
         analysis_urlsafe_key=analysis.key.urlsafe(), build_key=build_key)
     culprit_util.CreateAndSubmitRevert(pipeline_input, pipeline_id)
 
-    enabled_fn.assert_called_once()
     under_limit.assert_called_once()
     can_revert.assert_called_once_with(analysis)
     revert_fn.assert_called_once_with(revert_expected, pipeline_id)
@@ -156,42 +144,6 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(analysis.has_created_autorevert)
     self.assertTrue(analysis.has_submitted_autorevert)
 
-  @mock.patch.object(culprit_util, 'IsAutorevertEnabled', return_value=False)
-  @mock.patch.object(
-      culprit_action, 'CommitRevert', return_value=constants.COMMITTED)
-  @mock.patch.object(
-      culprit_action, 'RevertCulprit', return_value=constants.CREATED_BY_FINDIT)
-  @mock.patch.object(culprit_util, 'CanRevertForAnalysis', return_value=True)
-  @mock.patch.object(culprit_util, 'UnderLimitForAutorevert', return_value=True)
-  def testCreateAndSubmitRevertNotEnabled(self, under_limit, can_revert,
-                                          revert_fn, commit_fn, enabled_fn):
-    build_key = 'mock_build_key'
-    repo = 'chromium'
-    rev = 'rev1'
-    commit_position = 100
-    pipeline_id = 'foo'
-
-    culprit = FlakeCulprit.Create(repo, rev, commit_position)
-    culprit.put()
-
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
-    analysis.put()
-
-    pipeline_input = CreateAndSubmitRevertInput(
-        analysis_urlsafe_key=analysis.key.urlsafe(), build_key=build_key)
-    culprit_util.CreateAndSubmitRevert(pipeline_input, pipeline_id)
-
-    enabled_fn.assert_called_once()
-    under_limit.assert_not_called()
-    can_revert.assert_not_called()
-    revert_fn.assert_not_called()
-    commit_fn.assert_not_called()
-
-    self.assertFalse(analysis.has_created_autorevert)
-    self.assertFalse(analysis.has_submitted_autorevert)
-
-  @mock.patch.object(culprit_util, 'IsAutorevertEnabled', return_value=True)
   @mock.patch.object(
       culprit_action, 'CommitRevert', return_value=constants.COMMITTED)
   @mock.patch.object(
@@ -200,7 +152,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       culprit_util, 'UnderLimitForAutorevert', return_value=False)
   def testCreateAndSubmitRevertOverLimit(self, under_limit, can_revert,
-                                         revert_fn, commit_fn, enabled_fn):
+                                         revert_fn, commit_fn):
     build_key = 'mock_build_key'
     repo = 'chromium'
     rev = 'rev1'
@@ -218,7 +170,6 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
         analysis_urlsafe_key=analysis.key.urlsafe(), build_key=build_key)
     culprit_util.CreateAndSubmitRevert(pipeline_input, pipeline_id)
 
-    enabled_fn.assert_called_once()
     under_limit.assert_called_once()
     can_revert.assert_not_called()
     revert_fn.assert_not_called()
@@ -227,7 +178,6 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(analysis.has_created_autorevert)
     self.assertFalse(analysis.has_submitted_autorevert)
 
-  @mock.patch.object(culprit_util, 'IsAutorevertEnabled', return_value=True)
   @mock.patch.object(
       culprit_action, 'CommitRevert', return_value=constants.COMMITTED)
   @mock.patch.object(
@@ -235,7 +185,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(culprit_util, 'CanRevertForAnalysis', return_value=False)
   @mock.patch.object(culprit_util, 'UnderLimitForAutorevert', return_value=True)
   def testCreateAndSubmitRevertCannotRevert(self, under_limit, can_revert,
-                                            revert_fn, commit_fn, enabled_fn):
+                                            revert_fn, commit_fn):
     build_key = 'mock_build_key'
     repo = 'chromium'
     rev = 'rev1'
@@ -253,7 +203,6 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
         analysis_urlsafe_key=analysis.key.urlsafe(), build_key=build_key)
     culprit_util.CreateAndSubmitRevert(pipeline_input, pipeline_id)
 
-    enabled_fn.assert_called_once()
     under_limit.assert_called_once()
     can_revert.assert_called_once_with(analysis)
     revert_fn.assert_not_called()
@@ -262,7 +211,6 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(analysis.has_created_autorevert)
     self.assertFalse(analysis.has_submitted_autorevert)
 
-  @mock.patch.object(culprit_util, 'IsAutorevertEnabled', return_value=True)
   @mock.patch.object(
       culprit_action, 'CommitRevert', return_value=constants.COMMITTED)
   @mock.patch.object(
@@ -272,7 +220,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(culprit_util, 'CanRevertForAnalysis', return_value=True)
   @mock.patch.object(culprit_util, 'UnderLimitForAutorevert', return_value=True)
   def testCreateAndSubmitRevertCreateFailed(self, under_limit, can_revert,
-                                            revert_fn, commit_fn, enabled_fn):
+                                            revert_fn, commit_fn):
     build_key = 'mock_build_key'
     repo = 'chromium'
     rev = 'rev1'
@@ -295,7 +243,6 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
         analysis_urlsafe_key=analysis.key.urlsafe(), build_key=build_key)
     culprit_util.CreateAndSubmitRevert(pipeline_input, pipeline_id)
 
-    enabled_fn.assert_called_once()
     under_limit.assert_called_once()
     can_revert.assert_called_once_with(analysis)
     revert_fn.assert_called_once_with(revert_expected, pipeline_id)
@@ -304,7 +251,6 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(analysis.has_created_autorevert)
     self.assertFalse(analysis.has_submitted_autorevert)
 
-  @mock.patch.object(culprit_util, 'IsAutorevertEnabled', return_value=True)
   @mock.patch.object(
       culprit_action, 'CommitRevert', return_value=constants.ERROR)
   @mock.patch.object(
@@ -312,7 +258,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(culprit_util, 'CanRevertForAnalysis', return_value=True)
   @mock.patch.object(culprit_util, 'UnderLimitForAutorevert', return_value=True)
   def testCreateAndSubmitRevertSubmitFailed(self, under_limit, can_revert,
-                                            revert_fn, commit_fn, enabled_fn):
+                                            revert_fn, commit_fn):
     build_key = 'mock_build_key'
     repo = 'chromium'
     rev = 'rev1'
@@ -339,7 +285,6 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
         analysis_urlsafe_key=analysis.key.urlsafe(), build_key=build_key)
     culprit_util.CreateAndSubmitRevert(pipeline_input, pipeline_id)
 
-    enabled_fn.assert_called_once()
     under_limit.assert_called_once()
     can_revert.assert_called_once_with(analysis)
     revert_fn.assert_called_once_with(revert_expected, pipeline_id)

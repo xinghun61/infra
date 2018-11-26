@@ -146,15 +146,18 @@ class MastersTest(wf_testcase.WaterfallTestCase):
             4,
         'auto_create_revert_daily_threshold_test':
             10,
-        'rotations_url': (
-            'https://rota-ng.appspot.com/legacy/all_rotations.js'),
+        'auto_create_revert_daily_threshold_flake':
+            10,
+        'auto_commit_revert_daily_threshold_flake':
+            4,
+        'rotations_url': ('https://rota-ng.appspot.com/legacy/all_rotations.js'
+                         ),
         'max_flake_bug_updates_per_day':
             30,
     }, waterfall_config.GetActionSettings())
 
   def testGetCheckFlakeSettings(self):
     self.assertEqual({
-        'autorevert_enabled': True,
         'iterations_to_run_after_timeout': 10,
         'lower_flake_threshold': 1e-7,
         'max_commit_positions_to_look_back': 5000,

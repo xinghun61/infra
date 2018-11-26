@@ -120,6 +120,8 @@ class FinditConfig(VersionedConfig):
   #     'auto_commit_revert_test': False,
   #     'auto_create_revert_daily_threshold_test': 10,
   #     'auto_commit_revert_daily_threshold_test': 4,
+  #     'auto_reate_revert_daily_threshold_flake': 10,
+  #     'auto_commit_revert_daily_threshold_flake': 4,
   #     'rotations_url': 'rotations_url',
   #     'max_flake_bug_updates_per_day': 30,
   # }

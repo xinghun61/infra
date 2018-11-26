@@ -313,6 +313,8 @@ _CONFIG_SPEC = {  # yapf: disable
         'auto_create_revert_compile': bool,
         'auto_create_revert_daily_threshold_compile': int,
         'auto_commit_revert_daily_threshold_test': int,
+        'auto_create_revert_daily_threshold_flake': int,
+        'auto_commit_revert_daily_threshold_flake': int,
         'auto_commit_revert_test': bool,
         'auto_create_revert_test': bool,
         'auto_create_revert_daily_threshold_test': int,
@@ -325,7 +327,6 @@ _CONFIG_SPEC = {  # yapf: disable
     }),
     'builders_to_trybots': (dict, True, _ValidateTrybotMapping),
     'check_flake_settings': (dict, True, {
-        'autorevert_enabled': bool,
         'iterations_to_run_after_timeout': int,
         'lower_flake_threshold': float,
         'max_commit_positions_to_look_back': int,

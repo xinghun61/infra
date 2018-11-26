@@ -26,9 +26,6 @@ from services.parameters import SubmitRevertCLParameters
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 
-# TODO(crbug.com/828464): Make this configurable.
-_AUTO_REVERT_LIMIT = 4
-
 _NOTIFICATION_MESSAGE_TEMPLATE = textwrap.dedent("""
 Findit (https://goo.gl/kROfz5) identified this CL at revision {} as the culprit
 for introducing flakiness in the tests as shown on:
@@ -92,11 +89,6 @@ def AbortCreateAndSubmitRevert(parameters, runner_id):
     culprit.put()
 
 
-def IsAutorevertEnabled():
-  check_flake_settings = waterfall_config.GetCheckFlakeSettings()
-  return check_flake_settings.get('autorevert_enabled', False)
-
-
 def CreateAndSubmitRevert(parameters, runner_id):
   """Wraps the creation and submission of autoreverts for flaky tests."""
   analysis = ndb.Key(urlsafe=parameters.analysis_urlsafe_key).get()
@@ -104,9 +96,8 @@ def CreateAndSubmitRevert(parameters, runner_id):
   culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
   assert culprit
 
-  if not IsAutorevertEnabled():
-    analysis.LogInfo('Autorevert for flaky tests is not enabled.')
-    return False
+  # TODO(crbug.com/907675): Create, but not auto commit reverts for some
+  # culprits.
 
   if not UnderLimitForAutorevert():
     analysis.LogInfo('Not autoreverting since limit has been reached.')
@@ -151,11 +142,17 @@ def CreateAndSubmitRevert(parameters, runner_id):
 
 def UnderLimitForAutorevert():
   """Returns True if currently under the limit for autoreverts."""
+  action_settings = waterfall_config.GetActionSettings()
+
+  # Do not auto commit revert if not configured to do so.
+  limit = action_settings.get('auto_commit_revert_daily_threshold_flake')
+
   query = MasterFlakeAnalysis.query(
       MasterFlakeAnalysis.autorevert_submission_time >=
       time_util.GetMostRecentUTCMidnight(),
       MasterFlakeAnalysis.has_submitted_autorevert == True)
-  return query.count(_AUTO_REVERT_LIMIT) < _AUTO_REVERT_LIMIT
+
+  return query.count(limit) < limit
 
 
 def CanRevertForAnalysis(analysis):
