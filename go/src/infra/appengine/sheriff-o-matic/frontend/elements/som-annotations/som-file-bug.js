@@ -44,7 +44,7 @@ class SomFileBug extends Polymer.mixinBehaviors([AnnotationManagerBehavior, Post
           },
           {
             label: 'Pri-2',
-            tip: 'Want (for target milstone)',
+            tip: 'Want (for target milestone)',
           },
           {
             label: 'Pri-3',
