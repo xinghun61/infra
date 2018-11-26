@@ -25,10 +25,10 @@ class PermissionLevelHandler(BaseHandler):
 
 
 class PermissionTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication(
-      [
-          ('/permission', PermissionLevelHandler),
-      ], debug=True)
+  app_module = webapp2.WSGIApplication([
+      ('/permission', PermissionLevelHandler),
+  ],
+                                       debug=True)
 
   def _VerifyUnauthorizedAccess(self, mocked_user_email=None, is_admin=False):
     if mocked_user_email:
@@ -204,10 +204,10 @@ class UnImplementedHandler(BaseHandler):
 
 
 class UnimplementedGetAndPostTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication(
-      [
-          ('/unimplemented', UnImplementedHandler),
-      ], debug=True)
+  app_module = webapp2.WSGIApplication([
+      ('/unimplemented', UnImplementedHandler),
+  ],
+                                       debug=True)
 
   def testUnimplementedGet(self):
     self.assertRaisesRegexp(webtest.app.AppError, '.*501 Not Implemented.*',
@@ -228,10 +228,10 @@ class SetResultHandler(BaseHandler):
 
 
 class ResultTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication(
-      [
-          ('/result', SetResultHandler),
-      ], debug=True)
+  app_module = webapp2.WSGIApplication([
+      ('/result', SetResultHandler),
+  ],
+                                       debug=True)
 
   def testNoResult(self):
     SetResultHandler.RESULT = None
@@ -274,10 +274,10 @@ class RedirectHandler(BaseHandler):
 
 
 class RedirectTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication(
-      [
-          ('/redirect', RedirectHandler),
-      ], debug=True)
+  app_module = webapp2.WSGIApplication([
+      ('/redirect', RedirectHandler),
+  ],
+                                       debug=True)
 
   def testRedirect(self):
     response = self.test_app.post('/redirect', status=302)
@@ -285,10 +285,10 @@ class RedirectTest(testing.AppengineTestCase):
 
 
 class ResultFormatTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication(
-      [
-          ('/format', SetResultHandler),
-      ], debug=True)
+  app_module = webapp2.WSGIApplication([
+      ('/format', SetResultHandler),
+  ],
+                                       debug=True)
 
   def testDefaultFormatIsHtml(self):
     SetResultHandler.RESULT = {'data': 'error'}
@@ -360,10 +360,10 @@ class InternalExceptionHandler(BaseHandler):
 
 
 class InternalExceptionTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication(
-      [
-          ('/exception', InternalExceptionHandler),
-      ], debug=True)
+  app_module = webapp2.WSGIApplication([
+      ('/exception', InternalExceptionHandler),
+  ],
+                                       debug=True)
 
   @mock.patch('logging.exception')
   def testNormalInternalException(self, mocked_log_exception):
@@ -383,3 +383,45 @@ class InternalExceptionTest(testing.AppengineTestCase):
         '/exception',
         headers={'user-agent': '...GoogleSecurityScanner...'})
     self.assertFalse(mocked_log_exception.called)
+
+
+class CreateErrorTest(testing.AppengineTestCase):
+
+  def testCreateError(self):
+    result = BaseHandler.CreateError('error message', 500)
+    expected_result = {
+        'template': 'error.html',
+        'data': {
+            'error_message': 'error message'
+        },
+        'return_code': 500,
+        'allowed_origin': None,
+    }
+    self.assertEquals(expected_result, result)
+
+  def testCreateErrorWithAllowOrigin(self):
+    result = BaseHandler.CreateError('error message', 500, allowed_origin='*')
+    expected_result = {
+        'template': 'error.html',
+        'data': {
+            'error_message': 'error message'
+        },
+        'return_code': 500,
+        'allowed_origin': '*',
+    }
+    self.assertEquals(expected_result, result)
+
+  def testCreateErrorWithOptionalData(self):
+    kwargs = {'optional_key': 'optional_value'}
+    result = BaseHandler.CreateError(
+        'error message', 500, allowed_origin='*', **kwargs)
+    expected_result = {
+        'template': 'error.html',
+        'data': {
+            'error_message': 'error message',
+            'optional_key': 'optional_value'
+        },
+        'return_code': 500,
+        'allowed_origin': '*',
+    }
+    self.assertEquals(expected_result, result)

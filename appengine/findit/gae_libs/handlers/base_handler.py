@@ -77,9 +77,23 @@ class BaseHandler(webapp2.RequestHandler):
     return auth_util.IsCurrentUserAdmin() or self.request.get('debug') == '1'
 
   @staticmethod
-  def CreateError(error_message, return_code=500, allowed_origin=None):
+  def CreateError(error_message, return_code=500, allowed_origin=None,
+                  **kwargs):
+    """Creates an error page.
+
+    Args:
+      error_message (str): A human-readable error message.
+      return_code (int): The return code.
+      allowed_origin (str): a string representing the origin that the response
+                            can be shared with, and the value is exactly one of
+                            '*', '<origin>' and None.
+      kwargs (dict): Optional data.
+
+    Returns:
+      A dict that will be consumed by the handlers to create an error page.
+    """
     logging.error('Error occurred: %s', error_message)
-    return {
+    result = {
         'template': 'error.html',
         'data': {
             'error_message': error_message
@@ -87,6 +101,9 @@ class BaseHandler(webapp2.RequestHandler):
         'return_code': return_code,
         'allowed_origin': allowed_origin,
     }
+
+    result['data'].update(kwargs)
+    return result
 
   @staticmethod
   def CreateRedirect(url):

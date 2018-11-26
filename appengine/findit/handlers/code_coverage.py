@@ -22,6 +22,9 @@ from model.code_coverage import CoverageData
 from model.code_coverage import PostsubmitReport
 from model.code_coverage import PresubmitReport
 
+# List of Gerrit projects that Findit supports.
+_PROJECTS_WHITELIST = set(['chromium/src'])
+
 
 class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
   PERMISSION_LEVEL = Permission.APP_SELF
@@ -190,6 +193,14 @@ class ServeCodeCoverageData(BaseHandler):
 
     if change and patchset:
       logging.info('Servicing coverage data for presubmit')
+      if project not in _PROJECTS_WHITELIST:
+        kwargs = {'is_project_supported': False}
+        return BaseHandler.CreateError(
+            error_message='Project "%s" is not supported.' % project,
+            return_code=404,
+            allowed_origin='*',
+            **kwargs)
+
       presubmit_reports = PresubmitReport.query(
           PresubmitReport.server_host == host,
           PresubmitReport.change == int(change),
