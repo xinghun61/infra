@@ -13,7 +13,7 @@ from google.protobuf import json_format
 
 from common.findit_http_client import FinditHttpClient
 from common.waterfall.buildbucket_client import GetV2Build
-from gae_libs.caches import CompressedMemCache
+from gae_libs.caches import PickledMemCache
 from gae_libs.handlers.base_handler import BaseHandler, Permission
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs.cache_decorator import Cached
@@ -207,13 +207,16 @@ class ServeCodeCoverageData(BaseHandler):
       rebased_data_gs_url = compressed_data_gs_url.replace(
           'compressed.json.gz', 'rebased_flat.json')
 
-      @Cached(CompressedMemCache(), expire_time=24 * 60 * 60)
+      @Cached(PickledMemCache(), expire_time=48 * 60 * 60)
       def _GetGcsData(url):
         status, content, _ = FinditHttpClient().Get(url)
-        return status, content
+        if status != 200:
+          return None
 
-      status, content = _GetGcsData(rebased_data_gs_url)
-      if status != 200:
+        return content
+
+      content = _GetGcsData(rebased_data_gs_url)
+      if not content:
         return BaseHandler.CreateError(
             'Can not retrieve the coverage data: %s' % rebased_data_gs_url,
             500,
