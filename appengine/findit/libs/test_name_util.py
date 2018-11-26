@@ -5,6 +5,9 @@
 
 import re
 
+# Regular expression used to get the suite name of a normalized gtest name.
+GTEST_REGEX = re.compile(r'^([a-zA-Z_]\w*)\.[a-zA-Z_]\w*$')
+
 # Used to identify the prefix in gtests.
 _GTEST_PREFIXES = ['PRE_', '*']
 
@@ -18,6 +21,9 @@ _TYPE_PARAMETERIZED_GTESTS_REGEX = re.compile(
 # Regular expression for a webkit_layout_test name.
 _LAYOUT_TEST_NAME_PATTERN = re.compile(r'^(([^/]+/)+[^/]+\.[a-zA-Z]+).*$')
 _VIRTUAL_LAYOUT_TEST_NAME_PATTERN = re.compile(r'^virtual/[^/]+/(.*)$')
+
+# Regular expression used to get the suite name of a normalized java test name.
+_JAVA_TEST_REGEX = re.compile(r'(?:[a-zA-Z_]\w*\.)*([a-zA-Z_]\w*)#[a-zA-Z_]\w+')
 
 
 def RemoveParametersFromGTestName(test_name):
@@ -180,3 +186,39 @@ def RemoveVirtualLayersFromWebkitLayoutTestName(test_name):
     return match.group(1)
 
   return test_name
+
+
+def GetTestSuiteName(normalized_test_name, step_ui_name):
+  """Returns the test suite name of the given test in the given test step.
+
+  Assumption:
+    * All gtests are in suite.test format, while other tests are not.
+    * All webkit layout tests are in path/to/file.html format.
+    * All Java tests are in package.path.to.ClassName#testCase format.
+  Currently, only supports these three types, for other type of tests,
+  returns None.
+
+  Args:
+    normalized_test_name: A normalized test name.
+
+  Returns:
+    The test suite name if it's gtest/layout test/java test, otherwise None.
+  """
+  # For Webkit layout tests, the suite name is the immediate directory.
+  if 'webkit_layout_tests' in step_ui_name:
+    index = normalized_test_name.rfind('/')
+    if index > 0:
+      return normalized_test_name[:index]
+    return None
+
+  # For gtests, the suite name is the class name.
+  gtest_match = GTEST_REGEX.match(normalized_test_name)
+  if gtest_match:
+    return gtest_match.group(1)
+
+  # For Java tests, the suite name is the class name.
+  java_match = _JAVA_TEST_REGEX.match(normalized_test_name)
+  if java_match:
+    return java_match.group(1)
+
+  return None

@@ -57,14 +57,29 @@ class FlakeOccurrence(ndb.Model):
   # The id of the gerrit cl this occurrence is associated with.
   gerrit_cl_id = ndb.IntegerProperty(required=True)
 
+  # Tags that specify the category of the flake occurrence, e.g. builder name,
+  # master name, step name, etc.
+  tags = ndb.StringProperty(repeated=True)
+
   @staticmethod
   def GetId(flake_type, build_id, step_ui_name, test_name):
     return '%s@%s@%s@%s' % (flake_type, build_id, step_ui_name, test_name)
 
   @classmethod
-  def Create(cls, flake_type, build_id, step_ui_name, test_name, luci_project,
-             luci_bucket, luci_builder, legacy_master_name, legacy_build_number,
-             time_happened, gerrit_cl_id, parent_flake_key):
+  def Create(cls,
+             flake_type,
+             build_id,
+             step_ui_name,
+             test_name,
+             luci_project,
+             luci_bucket,
+             luci_builder,
+             legacy_master_name,
+             legacy_build_number,
+             time_happened,
+             gerrit_cl_id,
+             parent_flake_key,
+             tags=None):
     """Creates a cq false rejection flake occurrence.
 
     Args:
@@ -93,7 +108,8 @@ class FlakeOccurrence(ndb.Model):
         time_happened=time_happened,
         gerrit_cl_id=gerrit_cl_id,
         id=flake_occurrence_id,
-        parent=parent_flake_key)
+        parent=parent_flake_key,
+        tags=tags or [])
 
 
 # TODO(crbug.com/889548): This model is replaced by FlakeOccurrence, and it is

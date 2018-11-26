@@ -120,12 +120,12 @@ class ShowFlakeTest(WaterfallTestCase):
             'chromium',
         'last_occurred_time':
             None,
+        'last_test_location_based_tag_update_time':
+            None,
         'normalized_step_name':
             'normalized_step_name',
         'normalized_test_name':
             'normalized_test_name',
-        'test_suite_name':
-            None,
         'test_label_name':
             'test_label',
         'false_rejection_count_last_week':
@@ -137,6 +137,7 @@ class ShowFlakeTest(WaterfallTestCase):
             0,
         'component':
             'Mock>Component',
+        'tags': [],
         'test_location': {
             'file_path': '../../some/test/path/a.cc',
             'line_number': 42,
@@ -155,6 +156,7 @@ class ShowFlakeTest(WaterfallTestCase):
                     'luci_builder': 'luci builder',
                     'luci_project': 'chromium'
                 },
+                'tags': [],
                 'build_id': '123',
                 'flake_type': 'cq false rejection',
                 'gerrit_cl_id': 98765,

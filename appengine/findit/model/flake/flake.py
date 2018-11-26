@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import logging
-import re
 
 from google.appengine.ext import ndb
 from google.appengine.ext.ndb import msgprop
@@ -12,28 +11,6 @@ from libs import test_name_util
 from model.flake.flake_issue import FlakeIssue
 from model.flake.flake_type import FlakeType
 from services import step_util
-
-# Regular expression used to match the noarmlized name of a gtest.
-_GTEST_REGEX = re.compile(r'^([a-zA-Z_]\w*)\.[a-zA-Z_]\w*$')
-
-
-def _GetTestSuiteName(normalized_test_name):
-  """Returns the test suite name of a given test name.
-
-  Assumption: all gtests are in suite.test format, while other tests are not.
-  Currently, only supports gtests, for other type of tests, returns None.
-
-  Args:
-    normalized_test_name: A normalized test name.
-
-  Returns:
-    The test suite name if it's gtest, otherwise None.
-  """
-  gtest_match = _GTEST_REGEX.match(normalized_test_name)
-  if gtest_match:
-    return gtest_match.group(1)
-
-  return None
 
 
 class FlakeCountsByType(ndb.Model):
@@ -88,12 +65,6 @@ class Flake(ndb.Model):
   # of always a spcific one.
   test_label_name = ndb.StringProperty(required=True)
 
-  # test_suite_name is used to identify a suite of tests, and it has different
-  # meanings for different type of tests. For gtest such as 'A/suite.test/0',
-  # test_suite_name is 'suite'.
-  test_suite_name = ndb.ComputedProperty(
-      lambda self: _GetTestSuiteName(self.normalized_test_name))
-
   # The FlakeIssue entity that this flake is associated with.
   flake_issue_key = ndb.KeyProperty(FlakeIssue)
 
@@ -123,7 +94,17 @@ class Flake(ndb.Model):
   # the test location.
   component = ndb.StringProperty(indexed=True)
 
+  # The source file location where the test is defined.
   test_location = ndb.StructuredProperty(TestLocation)
+
+  # Tags that specify the category of the flake occurrence, e.g. builder name,
+  # master name, step name, etc.
+  tags = ndb.StringProperty(repeated=True)
+
+  # When was the last update of tags based on the test location. Used to
+  # determine when to update again since WATCHLIST or dir-component mapping
+  # could change along the time.
+  last_test_location_based_tag_update_time = ndb.DateTimeProperty()
 
   @classmethod
   def _CreateKey(cls, luci_project, step_name, test_name):
@@ -240,12 +221,14 @@ class Flake(ndb.Model):
       Normalized version of the given test name.
     """
     if step_name and 'webkit_layout_tests' in step_name:
-      return test_name_util.RemoveSuffixFromWebkitLayoutTestName(test_name)
+      return test_name_util.RemoveSuffixFromWebkitLayoutTestName(
+          test_name_util.RemoveVirtualLayersFromWebkitLayoutTestName(test_name))
 
-    normalized_test_name = test_name_util.RemoveAllPrefixesFromGTestName(
+    test_name = test_name_util.RemoveAllPrefixesFromGTestName(
         test_name_util.RemoveParametersFromGTestName(test_name))
+
     return test_name_util.RemoveSuffixFromWebkitLayoutTestName(
-        normalized_test_name)
+        test_name_util.RemoveVirtualLayersFromWebkitLayoutTestName(test_name))
 
   @staticmethod
   def GetTestLabelName(test_name, step_name):

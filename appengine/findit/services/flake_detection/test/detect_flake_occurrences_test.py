@@ -3,17 +3,23 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+import json
 import mock
+import textwrap
 
+from dto.test_location import TestLocation as DTOTestLocation
+from model.flake.detection.flake_occurrence import BuildConfiguration
 from model.flake.detection.flake_occurrence import FlakeOccurrence
 from model.flake.flake import Flake
+from model.flake.flake import TestLocation as NDBTestLocation
 from model.flake.flake_type import FlakeType
 from waterfall.test.wf_testcase import WaterfallTestCase
 from services import bigquery_helper
+from services.flake_detection import detect_flake_occurrences
 from services.flake_detection.detect_flake_occurrences import (
     QueryAndStoreFlakes)
 from services.flake_detection.detect_flake_occurrences import (
-    _UpdateLastFlakeHappenedTimeForFlakes)
+    _UpdateFlakeMetadata)
 
 
 class DetectFlakesOccurrencesTest(WaterfallTestCase):
@@ -33,6 +39,10 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
         'totalRows': '0',
         'schema': {
             'fields': [{
+                'type': 'STRING',
+                'name': 'gerrit_project',
+                'mode': 'NULLABLE'
+            }, {
                 'type': 'STRING',
                 'name': 'luci_project',
                 'mode': 'NULLABLE'
@@ -94,7 +104,8 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
                              step_ui_name='fake_step',
                              test_name='fake_test',
                              test_start_msec='0',
-                             gerrit_cl_id='98765'):
+                             gerrit_cl_id='98765',
+                             gerrit_project='chromium/src'):
     """Adds a row to the provided query response for testing.
 
     To obtain a query response for testing for the initial time, please call
@@ -104,6 +115,9 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     """
     row = {
         'f': [
+            {
+                'v': gerrit_project
+            },
             {
                 'v': luci_project
             },
@@ -148,8 +162,83 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     self.addCleanup(patcher.stop)
     patcher.start()
 
+  def testNormalizePath(self):
+    self.assertEqual('a/b/c', detect_flake_occurrences._NormalizePath('a/b/c'))
+    self.assertEqual('a/b/c',
+                     detect_flake_occurrences._NormalizePath('../../a/b/c'))
+    self.assertEqual('a/b/c',
+                     detect_flake_occurrences._NormalizePath('../../a/b/./c'))
+    self.assertEqual('b/c',
+                     detect_flake_occurrences._NormalizePath('../a/../b/c'))
+
+  @mock.patch.object(
+      detect_flake_occurrences.step_util,
+      'GetStepMetadata',
+      return_value={'swarm_task_ids': ['t1', 't2']})
+  @mock.patch.object(
+      detect_flake_occurrences.swarmed_test_util,
+      'GetTestLocation',
+      side_effect=[None, DTOTestLocation(file='../../path/a.cc', line=2)])
+  def testGetTestLocation(self, *_):
+    occurrence = FlakeOccurrence(
+        build_configuration=BuildConfiguration(
+            legacy_master_name='master',
+            luci_builder='builder',
+            legacy_build_number=123,
+        ),
+        step_ui_name='test on Mac',
+    )
+    self.assertEqual(
+        'path/a.cc',
+        detect_flake_occurrences._GetTestLocation(occurrence).file_path)
+
+  @mock.patch.object(
+      detect_flake_occurrences.FinditHttpClient,
+      'Get',
+      return_value=(200,
+                    json.dumps({
+                        'dir-to-component': {
+                            'p/dir1': 'a>b',
+                            'p/dir2': 'd>e>f',
+                        }
+                    }), None))
+  def testGetChromiumDirectoryToComponentMapping(self, *_):
+    self.assertEqual({
+        'p/dir1/': 'a>b',
+        'p/dir2/': 'd>e>f'
+    }, detect_flake_occurrences._GetChromiumDirectoryToComponentMapping())
+
+  @mock.patch.object(
+      detect_flake_occurrences.CachedGitilesRepository,
+      'GetSource',
+      return_value=textwrap.dedent(r"""
+                         {
+                           'WATCHLIST_DEFINITIONS': {
+                             'watchlist1': {
+                               'filepath': 'path/to/source\.cc'
+                             },
+                             'watchlist2': {
+                               'filepath': 'a/to/file1\.cc'\
+                                           '|b/to/file2\.cc'
+                             }
+                           }
+                         }"""))
+  def testGetChromiumWATCHLISTS(self, *_):
+    self.assertEqual({
+        'watchlist1': r'path/to/source\.cc',
+        'watchlist2': r'a/to/file1\.cc|b/to/file2\.cc',
+    }, detect_flake_occurrences._GetChromiumWATCHLISTS())
+
+  @mock.patch.object(
+      detect_flake_occurrences, '_GetTestLocation', return_value=None)
+  @mock.patch.object(
+      detect_flake_occurrences,
+      '_GetChromiumDirectoryToComponentMapping',
+      return_value={})
+  @mock.patch.object(
+      detect_flake_occurrences, '_GetChromiumWATCHLISTS', return_value={})
   @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
-  def testOneFlakeOccurrence(self, mocked_get_client):
+  def testOneFlakeOccurrence(self, mocked_get_client, *_):
     query_response = self._GetEmptyQueryResponse()
     self._AddRowToQueryResponse(query_response=query_response)
 
@@ -180,8 +269,16 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
         ancestor=all_flakes[0].key).fetch()
     self.assertEqual(2, len(all_flake_occurrences))
 
+  @mock.patch.object(
+      detect_flake_occurrences, '_GetTestLocation', return_value=None)
+  @mock.patch.object(
+      detect_flake_occurrences,
+      '_GetChromiumDirectoryToComponentMapping',
+      return_value={})
+  @mock.patch.object(
+      detect_flake_occurrences, '_GetChromiumWATCHLISTS', return_value={})
   @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
-  def testIdenticalFlakeOccurrences(self, mocked_get_client):
+  def testIdenticalFlakeOccurrences(self, mocked_get_client, *_):
     query_response = self._GetEmptyQueryResponse()
     self._AddRowToQueryResponse(query_response=query_response)
     self._AddRowToQueryResponse(query_response=query_response)
@@ -200,8 +297,16 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     self.assertEqual(1, len(all_flake_occurrences))
     self.assertEqual(all_flakes[0], all_flake_occurrences[0].key.parent().get())
 
+  @mock.patch.object(
+      detect_flake_occurrences, '_GetTestLocation', return_value=None)
+  @mock.patch.object(
+      detect_flake_occurrences,
+      '_GetChromiumDirectoryToComponentMapping',
+      return_value={})
+  @mock.patch.object(
+      detect_flake_occurrences, '_GetChromiumWATCHLISTS', return_value={})
   @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
-  def testFlakeOccurrencesWithDifferentParent(self, mocked_get_client):
+  def testFlakeOccurrencesWithDifferentParent(self, mocked_get_client, *_):
     query_response = self._GetEmptyQueryResponse()
     self._AddRowToQueryResponse(
         query_response=query_response,
@@ -232,8 +337,16 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     self.assertTrue(parent2 in all_flakes)
     self.assertNotEqual(parent1, parent2)
 
+  @mock.patch.object(
+      detect_flake_occurrences, '_GetTestLocation', return_value=None)
+  @mock.patch.object(
+      detect_flake_occurrences,
+      '_GetChromiumDirectoryToComponentMapping',
+      return_value={})
+  @mock.patch.object(
+      detect_flake_occurrences, '_GetChromiumWATCHLISTS', return_value={})
   @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
-  def testParameterizedGtestFlakeOccurrences(self, mocked_get_client):
+  def testParameterizedGtestFlakeOccurrences(self, mocked_get_client, *_):
     query_response = self._GetEmptyQueryResponse()
     self._AddRowToQueryResponse(
         query_response=query_response,
@@ -259,8 +372,16 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     self.assertEqual(all_flakes[0], all_flake_occurrences[0].key.parent().get())
     self.assertEqual(all_flakes[0], all_flake_occurrences[1].key.parent().get())
 
+  @mock.patch.object(
+      detect_flake_occurrences, '_GetTestLocation', return_value=None)
+  @mock.patch.object(
+      detect_flake_occurrences,
+      '_GetChromiumDirectoryToComponentMapping',
+      return_value={})
+  @mock.patch.object(
+      detect_flake_occurrences, '_GetChromiumWATCHLISTS', return_value={})
   @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
-  def testGtestWithPrefixesFlakeOccurrences(self, mocked_get_client):
+  def testGtestWithPrefixesFlakeOccurrences(self, mocked_get_client, *_):
     query_response = self._GetEmptyQueryResponse()
     self._AddRowToQueryResponse(
         query_response=query_response,
@@ -286,7 +407,62 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     self.assertEqual(all_flakes[0], all_flake_occurrences[0].key.parent().get())
     self.assertEqual(all_flakes[0], all_flake_occurrences[1].key.parent().get())
 
-  def testUpdateLastFlakeHappenedTimeForFlakes(self):
+  @mock.patch.object(
+      detect_flake_occurrences,
+      '_GetTestLocation',
+      return_value=NDBTestLocation(file_path='base/feature/url_test.cc',))
+  def testUpdateTestLocationAndTags(self, *_):
+    flake = Flake(
+        normalized_test_name='suite.test',
+        tags=[
+            'gerrit_project::chromium/src', 'watchlist::old', 'directory::old',
+            'component::old', 'parent_component::old', 'source::old'
+        ],
+    )
+    occurrences = [
+        FlakeOccurrence(step_ui_name='browser_tests'),
+    ]
+    component_mapping = {
+        'base/feature/': 'root>a>b',
+        'base/feature/url': 'root>a>b>c',
+    }
+    watchlist = {
+        'feature': 'base/feature',
+        'url': r'base/feature/url_test\.cc',
+        'other': 'a/b/c',
+    }
+
+    expected_tags = sorted([
+        'gerrit_project::chromium/src',
+        'watchlist::feature',
+        'watchlist::url',
+        'directory::base/feature/',
+        'directory::base/',
+        'source::base/feature/url_test.cc',
+        'component::root>a>b',
+        'parent_component::root>a>b',
+        'parent_component::root>a',
+        'parent_component::root',
+    ])
+
+    for tag in flake.tags:
+      name = tag.split(detect_flake_occurrences.TAG_SEPARATOR)[0]
+      self.assertTrue(name in detect_flake_occurrences.SUPPORTED_TAGS)
+
+    self.assertTrue(
+        detect_flake_occurrences._UpdateTestLocationAndTags(
+            flake, occurrences, component_mapping, watchlist))
+    self.assertEqual(expected_tags, flake.tags)
+
+  @mock.patch.object(
+      detect_flake_occurrences, '_GetTestLocation', return_value=None)
+  @mock.patch.object(
+      detect_flake_occurrences,
+      '_GetChromiumDirectoryToComponentMapping',
+      return_value={})
+  @mock.patch.object(
+      detect_flake_occurrences, '_GetChromiumWATCHLISTS', return_value={})
+  def testUpdateMetadataForFlakes(self, *_):
     luci_project = 'chromium'
     normalized_step_name = 'normalized_step_name'
     normalized_test_name = 'normalized_test_name'
@@ -307,7 +483,7 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     legacy_build_number = 999
     gerrit_cl_id = 98765
 
-    # Flake's last_occurred_time is empty, updated.
+    # Flake's last_occurred_time and tags are empty, updated.
     occurrence_1 = FlakeOccurrence.Create(
         flake_type=FlakeType.CQ_FALSE_REJECTION,
         build_id=123,
@@ -320,13 +496,15 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
         legacy_build_number=legacy_build_number,
         time_happened=datetime(2018, 1, 1, 1),
         gerrit_cl_id=gerrit_cl_id,
-        parent_flake_key=flake_key)
+        parent_flake_key=flake_key,
+        tags=['tag1::v1'])
     occurrence_1.put()
-    _UpdateLastFlakeHappenedTimeForFlakes([occurrence_1])
+    _UpdateFlakeMetadata([occurrence_1])
     flake = flake_key.get()
     self.assertEqual(flake.last_occurred_time, datetime(2018, 1, 1, 1))
+    self.assertEqual(flake.tags, ['tag1::v1'])
 
-    # Flake's last_occurred_time is earlier, updated.
+    # Flake's last_occurred_time is earlier and tags are different, updated.
     occurrence_2 = FlakeOccurrence.Create(
         flake_type=FlakeType.CQ_FALSE_REJECTION,
         build_id=124,
@@ -339,13 +517,15 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
         legacy_build_number=legacy_build_number,
         time_happened=datetime(2018, 1, 1, 2),
         gerrit_cl_id=gerrit_cl_id,
-        parent_flake_key=flake_key)
+        parent_flake_key=flake_key,
+        tags=['tag2::v2'])
     occurrence_2.put()
-    _UpdateLastFlakeHappenedTimeForFlakes([occurrence_2])
+    _UpdateFlakeMetadata([occurrence_2])
     flake = flake_key.get()
     self.assertEqual(flake.last_occurred_time, datetime(2018, 1, 1, 2))
+    self.assertEqual(flake.tags, ['tag1::v1', 'tag2::v2'])
 
-    # Flake's last_occurred_time is later, not updated.
+    # Flake's last_occurred_time is later and tags are the same, not updated.
     occurrence_3 = FlakeOccurrence.Create(
         flake_type=FlakeType.CQ_FALSE_REJECTION,
         build_id=125,
@@ -358,8 +538,10 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
         legacy_build_number=legacy_build_number,
         time_happened=datetime(2018, 1, 1),
         gerrit_cl_id=gerrit_cl_id,
-        parent_flake_key=flake_key)
+        parent_flake_key=flake_key,
+        tags=['tag2::v2'])
     occurrence_3.put()
-    _UpdateLastFlakeHappenedTimeForFlakes([occurrence_3])
+    _UpdateFlakeMetadata([occurrence_3])
     flake = flake_key.get()
     self.assertEqual(flake.last_occurred_time, datetime(2018, 1, 1, 2))
+    self.assertEqual(flake.tags, ['tag1::v1', 'tag2::v2'])

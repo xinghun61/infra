@@ -97,6 +97,7 @@ WITH
           STRUCT(
             build.build_id,
             build.gerrit_change,
+            build.patch_project,
             build.gitiles_repository,
             build.gitiles_revision_cp,
             build.steps)
@@ -119,6 +120,7 @@ WITH
       build.id AS build_id,
       build.status,
       gerrit_change,
+      JSON_EXTRACT_SCALAR(build.output.properties,  '$.patch_project') AS patch_project,
       JSON_EXTRACT_SCALAR(build.output.properties,  '$.repository') AS gitiles_repository,
       JSON_EXTRACT_SCALAR(build.output.properties, '$.got_revision_cp') AS gitiles_revision_cp,
       build.steps
@@ -154,6 +156,7 @@ WITH
   SELECT
     fbg.cq_name,
     # Info about the patch.
+    failed_build.patch_project,
     failed_build.gerrit_change,
     fbg.patchset_group_id AS patchset_group_id,
     # Info about the code checkouted in the build.
@@ -315,7 +318,8 @@ SELECT
   entire_build.cq_name,
   # Info about the patch.
   entire_build.gerrit_change.host AS gerrit_host,
-  entire_build.gerrit_change.project AS gerrit_project,
+  # Buildbucket does not populate gerrit_change.project yet.
+  IF(entire_build.gerrit_change.project IS NOT NULL AND entire_build.gerrit_change.project != '', entire_build.gerrit_change.project, entire_build.patch_project) AS gerrit_project,
   entire_build.gerrit_change.change AS gerrit_cl_id,
   entire_build.gerrit_change.patchset AS gerrit_cl_patchset_number,
   entire_build.patchset_group_id AS gerrit_cl_patchset_group_number,

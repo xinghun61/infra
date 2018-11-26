@@ -5,18 +5,27 @@
 <dom-module id="app-messages">
   <template>
     <style>
-      paper-dialog,
-      paper-button {
-        background-color: #1F78B4;
-        color: #FFF;
-      }
-
       .message-container {
         min-width: 500px;
         max-width: 800px;
         min-height: 100px;
         max-height: 300px;
         overflow-y: auto;
+      }
+
+      table {
+        border-collapse: collapse;
+        border: 1px solid gray;
+      }
+
+      table td, table th {
+        padding: 5px;
+        border: 1px solid gray;
+      }
+
+      .red-text {
+        font-weight: bold;
+        color: red;
       }
     </style>
 
@@ -103,6 +112,94 @@
             If the confidence score is high enough, the Gerrit CL will be notified.
           </div>
         </template>
+        <template is="dom-if" if="[[_isPredefinedMessage(_message, 600)]]">
+          <div>
+            <h3>Simple search:</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Tag</th>
+                  <th>Example</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>test_type</td>
+                  <td>
+                    <a href="/ranked-flakes?flake_filter=test_type::network_service_browser_tests">test_type::network_service_browser_tests</a> matches tests in the step "network_service_browser_tests", "network_service_browser_tests on Mac", etc<br>
+                  </td>
+                </tr>
+                <tr>
+                  <td>component</td>
+                  <td>
+                    <a href="/ranked-flakes?flake_filter=component::Blink>Accessibility">component::Blink>Accessibility</a> matches tests whose source files match COMPONENT definition in <a href="https://cs.chromium.org/chromium/src/third_party/blink/renderer/modules/accessibility/OWNERS?q=COMPONENT">OWNERS</a> file. If an OWNERS file in a sub-directory define another sub-component, those tests for the sub-component are NOT included here<br>
+                  </td>
+                </tr>
+                <tr>
+                  <td>directory</td>
+                  <td>
+                    <a href="/ranked-flakes?flake_filter=directory::base/">directory::base/</a> matches tests defined in the source file within the directory base/. Arbitrary level of directories are supported except the root directory of the code base<br>
+                  </td>
+                </tr>
+                <tr>
+                  <td>watchlist</td>
+                  <td>
+                    <a href="/ranked-flakes?flake_filter=watchlist::accessibility">watchlist::accessibility</a> matches tests whose source files match the accessibility watchlist in src/WATCHLISTS<br>
+                  </td>
+                </tr>
+                <tr>
+                  <td>binary</td>
+                  <td>
+                    <a href="/ranked-flakes?flake_filter=binary::browser_tests">binary::browser_tests</a> matches tests in all steps using browser_tests binary, e.g. "browser_tests", "network_service_browser_tests on Mac", etc<br>
+                  </td>
+                </tr>
+                <tr>
+                  <td>step</td>
+                  <td>
+                    <a href="/ranked-flakes?flake_filter=step::browser_tests">step::browser_tests</a> matches tests in the step on Milo "browser_tests" but not "browser_tests on Mac"<br>
+                  </td>
+                </tr>
+                <tr>
+                  <td>suite</td>
+                  <td>
+                    <a href="/ranked-flakes?flake_filter=suite::GCMConnectionHandlerImplTest">suite::GCMConnectionHandlerImplTest</a> matches gtest GCMConnectionHandlerImplTest.*<br>
+                    <a href="/ranked-flakes?flake_filter=suite::FullscreenVideoTest">suite::FullscreenVideoTest</a> matches Java tests *.FullscreenVideoTest#test*<br>
+                    <a href="/ranked-flakes?flake_filter=suite::third_party/blink/web_tests/fast/events">suite::third_party/blink/web_tests/fast/events</a> matches Blink layout tests fast/events/*. The immediate directory of a Blink layout tests is chosen as the suite name of the test<br>
+                  </td>
+                </tr>
+                <tr>
+                  <td>source</td>
+                  <td>
+                    <a href="/ranked-flakes?flake_filter=source::base/hash_unittest.cc">source::base/hash_unittest.cc</a> matches tests defined in the source file base/hash_unittest.cc<br>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div>
+            <h3>Advanced Search:</h3>
+            You may search flakes with arbitrary combination of the above supported tags:<br>
+            * All tags could be combined with "@"<br>
+            * Any tag turns from a positive filter to a negative filter if it is prefixed with "-".<br>
+            At least one positive filter should be given.<br>
+            <br>
+
+            The search results will only include flakes that: <br>
+            * The flake match ALL positive filters<br>
+            * The flake does NOT match ANY negative fliters<br>
+            <br>
+
+            Examples:<br>
+            * <a href="/ranked-flakes?flake_filter=test_type::browser_tests@test_type::network_service_browser_tests">test_type::browser_tests@test_type::network_service_browser_tests</a> matches tests flaking in both browser_tests and network_service_browser_tests<br>
+            * <a href="/ranked-flakes?flake_filter=-test_type::browser_tests@test_type::network_service_browser_tests"><span class="red-text">-</span>test_type::browser_tests@test_type::network_service_browser_tests</a> matches tests flaking in network_service_browser_tests but NOT in browser_tests<br>
+          </div>
+
+          <br>
+          <div>
+            <b>Note</b>: There are more built-in tags. Please reach out to findit@chromium.org or chrome-findit@ if you need a more complex search.
+          </div>
+        </template>
         <template is="dom-if" if="[[_isCustomizedMessage(_message)]]">
           <template is="dom-if" if="[[!_message.preFormat]]">
             <div style="text-align: center">
@@ -130,6 +227,7 @@
         300: 'Choose a range or point to analyze',
         400: 'Analysis Status',
         500: 'Flake Analysis Findings',
+        600: 'Flake Searching',
       };
 
       Polymer({

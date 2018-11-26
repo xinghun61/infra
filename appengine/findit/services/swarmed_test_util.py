@@ -93,7 +93,7 @@ def GetTestLocation(task_id, test_name):
   test_location, error = test_results.GetTestLocation(
       test_name) if test_results else (None, constants.WRONG_FORMAT_LOG)
   if error:
-    logging.error('Failed to get test location for task %s: %s', task_id, error)
+    logging.info('Failed to get test location for task %s: %s', task_id, error)
     return None
   return TestLocation.FromSerializable(test_location or {})
 

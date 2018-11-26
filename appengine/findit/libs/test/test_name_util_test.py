@@ -161,3 +161,20 @@ class TestNameUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         test_name,
         test_name_util.RemoveVirtualLayersFromWebkitLayoutTestName(test_name))
+
+  def testGetTestSuiteName(self):
+    self.assertEqual(
+        'a/b/c',
+        test_name_util.GetTestSuiteName('a/b/c/page.html',
+                                        'webkit_layout_tests'))
+    self.assertIsNone(
+        test_name_util.GetTestSuiteName('page.html', 'webkit_layout_tests'))
+    self.assertEqual(
+        'suite', test_name_util.GetTestSuiteName('suite.test', 'browser_tests'))
+    self.assertEqual(
+        'ClassName',
+        test_name_util.GetTestSuiteName('org.chromium.package.ClassName#testA',
+                                        'base_junittests'))
+    self.assertIsNone(
+        test_name_util.GetTestSuiteName('__main__.ChromeDriver.testA',
+                                        'chromedriver_py_tests'))

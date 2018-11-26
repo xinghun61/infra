@@ -124,13 +124,13 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             'normalized_step_name',
         'normalized_test_name':
             'normalized_test_name',
-        'test_suite_name':
-            None,
         'test_label_name':
             'test_label',
         'flake_issue_key':
             flake_issue.key,
         'last_occurred_time':
+            None,
+        'last_test_location_based_tag_update_time':
             None,
         'false_rejection_count_last_week':
             0,
@@ -157,6 +157,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             'file_path': '../../some/test/path/a.cc',
             'line_number': 42,
         },
+        'tags': [],
         'culprits': [{
             'revision': 'rev',
             'commit_position': 123456,
@@ -173,6 +174,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
                     'build_id': '124',
                     'step_ui_name': step_ui_name,
                     'test_name': test_name,
+                    'tags': [],
                     'build_configuration': {
                         'luci_project': 'chromium',
                         'luci_bucket': 'try',
@@ -189,6 +191,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
                     'build_id': '125',
                     'step_ui_name': step_ui_name,
                     'test_name': test_name,
+                    'tags': [],
                     'build_configuration': {
                         'luci_project': 'chromium',
                         'luci_bucket': 'try',
@@ -210,6 +213,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
                                 'build_id': '123',
                                 'step_ui_name': step_ui_name,
                                 'test_name': test_name,
+                                'tags': [],
                                 'build_configuration': {
                                     'luci_project': 'chromium',
                                     'luci_bucket': 'try',
@@ -287,13 +291,13 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             normalized_step_name,
         'normalized_test_name':
             normalized_test_name,
-        'test_suite_name':
-            None,
         'test_label_name':
             test_label_name,
         'flake_issue_key':
             None,
         'last_occurred_time':
+            None,
+        'last_test_location_based_tag_update_time':
             None,
         'false_rejection_count_last_week':
             0,
@@ -306,6 +310,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             None,
         'test_location':
             None,
+        'tags': [],
         'occurrences': [{
             'group_by_field':
                 'luci builder',
@@ -314,6 +319,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
                 'build_id': '123',
                 'step_ui_name': step_ui_name,
                 'test_name': test_name,
+                'tags': [],
                 'build_configuration': {
                     'luci_project': 'chromium',
                     'luci_bucket': 'try',

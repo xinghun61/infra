@@ -20,6 +20,7 @@
           <option value="300">Re-analyze flake with a given range</option>
           <option value="400">Build Analysis Status</option>
           <option value="500">Culprit Analysis Status</option>
+          <option value="600">Flake Searching</option>
           <option value="1">Preformat</option>
           <option value="0">Undefined</option>
         </select>
@@ -33,7 +34,7 @@
         Polymer({
           is: 'other-element',
           fireMessageEvent: function () {
-            var message_code = document.getElementById('message-code').value;
+            var message_code = this.shadowRoot.getElementById('message-code').value;
             if (message_code == '0')
               message_code = undefined;
             console.log('Message code:' + message_code);

@@ -52,59 +52,64 @@ class RankFlakesTest(WaterfallTestCase):
     self.flake2 = Flake.Create(
         luci_project=self.luci_project,
         normalized_step_name=self.normalized_step_name,
-        normalized_test_name='suite.test',
-        test_label_name='suite.test')
+        normalized_test_name='suite.test1',
+        test_label_name='suite.test1')
     self.flake2.put()
 
     self.flake3 = Flake.Create(
         luci_project=self.luci_project,
         normalized_step_name=self.normalized_step_name,
-        normalized_test_name='suite.test',
-        test_label_name='suite.test')
+        normalized_test_name='suite.test2',
+        test_label_name='suite.test2')
     self.flake3.false_rejection_count_last_week = 5
     self.flake3.impacted_cl_count_last_week = 3
     self.flake3.flake_score_last_week = 10800
     self.flake3.last_occurred_time = datetime.datetime(2018, 10, 1)
     self.flake3.flake_issue_key = self.flake_issue0.key
+    self.flake3.tags = ['suite::suite', 'test_type::flavored_tests']
     self.flake3.put()
 
+    self.flake4 = Flake.Create(
+        luci_project=self.luci_project,
+        normalized_step_name=self.normalized_step_name,
+        normalized_test_name='suite.test3',
+        test_label_name='suite.test3')
+    self.flake4.false_rejection_count_last_week = 5
+    self.flake4.impacted_cl_count_last_week = 3
+    self.flake4.flake_score_last_week = 1080
+    self.flake4.last_occurred_time = datetime.datetime(2018, 10, 1)
+    self.flake4.tags = ['test_type::tests']
+    self.flake4.put()
+
     self.flake1_dict = self.flake1.to_dict()
-    self.flake1_dict['flake_urlsafe_key'] = self.flake1.key.urlsafe()
     self.flake1_dict['flake_issue'] = self.flake_issue0.to_dict()
     self.flake1_dict['flake_issue']['issue_link'] = FlakeIssue.GetLinkForIssue(
         self.flake_issue0.monorail_project, self.flake_issue0.issue_id)
-    self.flake1_dict['time_delta'] = '1 day, 01:00:00'
-    self.flake1_dict['flake_counts_last_week'] = [
-        {
-            'flake_type': 'cq false rejection',
-            'impacted_cl_count': 0,
-            'occurrence_count': 0
-        },
-        {
-            'flake_type': 'cq retry with patch',
-            'impacted_cl_count': 0,
-            'occurrence_count': 0
-        },
-    ]
 
     self.flake3_dict = self.flake3.to_dict()
-    self.flake3_dict['flake_urlsafe_key'] = self.flake3.key.urlsafe()
-    self.flake3_dict['time_delta'] = '1 day, 01:00:00'
     self.flake3_dict['flake_issue'] = self.flake_issue0.to_dict()
     self.flake3_dict['flake_issue']['issue_link'] = FlakeIssue.GetLinkForIssue(
         self.flake_issue0.monorail_project, self.flake_issue0.issue_id)
-    self.flake3_dict['flake_counts_last_week'] = [
-        {
-            'flake_type': 'cq false rejection',
-            'impacted_cl_count': 0,
-            'occurrence_count': 0
-        },
-        {
-            'flake_type': 'cq retry with patch',
-            'impacted_cl_count': 0,
-            'occurrence_count': 0
-        },
-    ]
+
+    self.flake4_dict = self.flake4.to_dict()
+
+    for data, flake in ((self.flake1_dict, self.flake1),
+                        (self.flake3_dict, self.flake3), (self.flake4_dict,
+                                                          self.flake4)):
+      data['flake_urlsafe_key'] = flake.key.urlsafe()
+      data['time_delta'] = '1 day, 01:00:00'
+      data['flake_counts_last_week'] = [
+          {
+              'flake_type': 'cq false rejection',
+              'impacted_cl_count': 0,
+              'occurrence_count': 0
+          },
+          {
+              'flake_type': 'cq retry with patch',
+              'impacted_cl_count': 0,
+              'occurrence_count': 0
+          },
+      ]
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 10, 2, 1))
@@ -116,7 +121,7 @@ class RankFlakesTest(WaterfallTestCase):
 
     self.assertEqual(
         json.dumps({
-            'flakes_data': [self.flake3_dict],
+            'flakes_data': [self.flake3_dict, self.flake4_dict],
             'prev_cursor':
                 '',
             'cursor':
@@ -125,36 +130,37 @@ class RankFlakesTest(WaterfallTestCase):
                 '',
             'luci_project':
                 '',
-            'test_filter':
+            'flake_filter':
                 '',
             'bug_key':
                 '',
+            'error_message':
+                None,
             'flake_weights': [('cq false rejection', 100),
                               ('cq retry with patch', 10)]
         },
                    default=str), response.body)
 
-  @mock.patch.object(
-      Flake, 'NormalizeTestName', return_value='normalized_test_name')
+  @mock.patch.object(Flake, 'NormalizeTestName', return_value='suite.test2')
   def testSearchRedirect(self, _):
     response = self.test_app.get(
-        '/ranked-flakes?test_filter=test_name',
+        '/ranked-flakes?flake_filter=test_name',
         params={
             'format': 'json',
         },
         status=302)
 
     expected_url_suffix = (
-        '/flake/occurrences?key=%s' % self.flake1.key.urlsafe())
+        '/flake/occurrences?key=%s' % self.flake3.key.urlsafe())
 
     self.assertTrue(
         response.headers.get('Location', '').endswith(expected_url_suffix))
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 10, 2, 1))
-  def testGetFlakesByTestSuiteName(self, _):
+  def testGetFlakesBySimpleSearch(self, _):
     response = self.test_app.get(
-        '/ranked-flakes?test_filter=suite',
+        '/ranked-flakes?flake_filter=suite::suite',
         params={
             'format': 'json',
         },
@@ -171,10 +177,45 @@ class RankFlakesTest(WaterfallTestCase):
                 '',
             'luci_project':
                 '',
-            'test_filter':
-                'suite',
+            'flake_filter':
+                'suite::suite',
             'bug_key':
                 '',
+            'error_message':
+                None,
+            'flake_weights': [('cq false rejection', 100),
+                              ('cq retry with patch', 10)]
+        },
+                   default=str), response.body)
+
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 10, 2, 1))
+  def testGetFlakesByAdvancedSearch(self, _):
+    response = self.test_app.get(
+        '/ranked-flakes?flake_filter='
+        'test_type::flavored_tests@-test_type::tests',
+        params={
+            'format': 'json',
+        },
+        status=200)
+
+    self.assertEqual(
+        json.dumps({
+            'flakes_data': [self.flake3_dict],
+            'prev_cursor':
+                '',
+            'cursor':
+                '',
+            'n':
+                '',
+            'luci_project':
+                '',
+            'flake_filter':
+                'test_type::flavored_tests@-test_type::tests',
+            'bug_key':
+                '',
+            'error_message':
+                None,
             'flake_weights': [('cq false rejection', 100),
                               ('cq retry with patch', 10)]
         },
@@ -202,10 +243,12 @@ class RankFlakesTest(WaterfallTestCase):
                 '',
             'luci_project':
                 '',
-            'test_filter':
+            'flake_filter':
                 '',
             'bug_key':
                 bug_key_urlsafe,
+            'error_message':
+                None,
             'flake_weights': [('cq false rejection', 100),
                               ('cq retry with patch', 10)]
         },
@@ -233,10 +276,12 @@ class RankFlakesTest(WaterfallTestCase):
                 '',
             'luci_project':
                 '',
-            'test_filter':
+            'flake_filter':
                 '',
             'bug_key':
                 bug_key_urlsafe,
+            'error_message':
+                None,
             'flake_weights': [('cq false rejection', 100),
                               ('cq retry with patch', 10)]
         },

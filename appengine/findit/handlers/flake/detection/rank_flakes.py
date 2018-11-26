@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+
 from gae_libs import dashboard_util
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
@@ -11,29 +13,107 @@ from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
 from model.flake.flake_type import FLAKE_TYPE_DESCRIPTIONS
 from model.flake.flake_type import FLAKE_TYPE_WEIGHT
+from services.flake_detection.detect_flake_occurrences import SUPPORTED_TAGS
+from services.flake_detection.detect_flake_occurrences import TAG_SEPARATOR
 from services.flake_issue_util import GetFlakeIssue
 
 _DEFAULT_PAGE_SIZE = 100
 _DEFAULT_LUCI_PROJECT = 'chromium'
-_MIN_IMPACTED_CLS_WEEKLY = 3
 
 
-def _GetFlakesByTestFilter(test_name, luci_project):
-  """Gets flakes by test name, then sorts them by occurrences."""
-  test_suite_search = False
-  flakes = Flake.query(
-      Flake.normalized_test_name == Flake.NormalizeTestName(test_name)).filter(
-          Flake.luci_project == luci_project).fetch()
+def _GetFlakesByFilter(flake_filter, luci_project):
+  """Gets flakes by the given filter, then sorts them by the flake score.
 
-  if not flakes:
-    # It's possible that the test_name is actually test suite.
-    flakes = Flake.query(Flake.test_suite_name == test_name).filter(
-        Flake.luci_project == luci_project).fetch()
-    test_suite_search = True
+  Args:
+    flake_filter (str): It could be a test name, or a tag-based filter in the
+      following forms:
+      * tag:value
+      * tag1:value1@tag2:value2
+      * tag1:value1@-tag2:value2
+    luci_project (str): The Luci project that the flakes are for.
 
-  flakes = [f for f in flakes if f.false_rejection_count_last_week > 0]
+  Returns:
+    (flakes, grouping_search, error_message)
+    flakes (list): A list of Flake that are in descending order of flake score.
+    grouping_search (bool): Whether it is a group searching.
+    error_message (str): An error message if there is one; otherwise None.
+  """
+  logging.info('Searching filter: %s', flake_filter)
+
+  flakes = []
+  grouping_search = False
+  error_message = None
+
+  if TAG_SEPARATOR not in flake_filter:
+    # Search for a specific test.
+    flakes = Flake.query(Flake.normalized_test_name == Flake.NormalizeTestName(
+        flake_filter)).filter(Flake.luci_project == luci_project).fetch()
+    flakes = [f for f in flakes if f.flake_score_last_week]
+
+    return flakes, grouping_search, error_message
+
+  grouping_search = True
+  filters = [f.strip() for f in flake_filter.split('@') if f.strip()]
+
+  # The resulted flakes are those:
+  # * Match all of positive filters
+  # * Not match any of negative filters
+  positive_filters = []
+  negative_filters = []
+  invalid_filters = []
+  for f in filters:
+    parts = [p.strip() for p in f.split(TAG_SEPARATOR)]
+    if len(parts) != 2 or not parts[1]:
+      invalid_filters.append(f)
+      continue
+
+    negative = False
+    if parts[0][0] == '-':
+      parts[0] = parts[0][1:]
+      negative = True
+
+    if parts[0] not in SUPPORTED_TAGS:
+      invalid_filters.append(f)
+      continue
+
+    if negative:
+      negative_filters.append(TAG_SEPARATOR.join(parts))
+    else:
+      positive_filters.append(TAG_SEPARATOR.join(parts))
+
+  if invalid_filters:
+    error_message = 'Unsupported tag filters: %s' % ', '.join(invalid_filters)
+    return flakes, grouping_search, error_message
+
+  if not positive_filters:
+    # At least one positive filter should be given.
+    error_message = 'At least one positive filter required'
+    return flakes, grouping_search, error_message
+
+  logging.info('Positive filters: %r', positive_filters)
+  logging.info('Negative filters: %r', negative_filters)
+
+  query = Flake.query(Flake.luci_project == luci_project)
+  for tag in positive_filters:
+    query = query.filter(Flake.tags == tag)
+
+  cursor = None
+  more = True
+  while more:
+    results, cursor, more = query.fetch_page(
+        _DEFAULT_PAGE_SIZE, start_cursor=cursor)
+    print results
+
+    for result in results:
+      if not result.flake_score_last_week:
+        continue
+      if negative_filters and any(t in result.tags for t in negative_filters):
+        continue
+      flakes.append(result)
+
+  logging.info('Search got %d flakes', len(flakes))
   flakes.sort(key=lambda flake: flake.flake_score_last_week, reverse=True)
-  return flakes, test_suite_search
+  return flakes, grouping_search, error_message
 
 
 def _GetFlakesByBug(bug_key_urlsafe):
@@ -133,19 +213,20 @@ class RankFlakes(BaseHandler):
   def HandleGet(self):
     luci_project = self.request.get(
         'luci_project').strip() or _DEFAULT_LUCI_PROJECT
-    test_filter = self.request.get('test_filter').strip()
+    flake_filter = self.request.get('flake_filter').strip()
     page_size = int(self.request.get('n').strip()) if self.request.get(
         'n') else _DEFAULT_PAGE_SIZE
     bug_key_urlsafe = self.request.get('bug_key').strip()
     prev_cursor = ''
     cursor = ''
+    error_message = None
 
-    if test_filter:
+    if flake_filter:
       # No paging if search for a test name.
-      flakes, test_suite_search = _GetFlakesByTestFilter(
-          test_filter, luci_project)
+      flakes, grouping_search, error_message = _GetFlakesByFilter(
+          flake_filter, luci_project)
 
-      if len(flakes) == 1 and not test_suite_search:
+      if len(flakes) == 1 and not grouping_search:
         # Only one flake is retrieved when searching a test by full name,
         # redirects to the flake's page.
         # In the case when searching by test suite name, should not redirect
@@ -153,9 +234,8 @@ class RankFlakes(BaseHandler):
         flake = flakes[0]
         return self.CreateRedirect(
             '/flake/occurrences?key=%s' % flake.key.urlsafe())
-    if bug_key_urlsafe:
+    elif bug_key_urlsafe:
       flakes = _GetFlakesByBug(bug_key_urlsafe)
-
     else:
       flakes, prev_cursor, cursor = _GetFlakeQueryResults(
           luci_project, self.request.get('cursor'),
@@ -193,10 +273,12 @@ class RankFlakes(BaseHandler):
             page_size if page_size != _DEFAULT_PAGE_SIZE else '',
         'luci_project': (
             luci_project if luci_project != _DEFAULT_LUCI_PROJECT else ''),
-        'test_filter':
-            test_filter,
+        'flake_filter':
+            flake_filter,
         'bug_key':
             bug_key_urlsafe,
+        'error_message':
+            error_message,
         'flake_weights': [[
             FLAKE_TYPE_DESCRIPTIONS[flake_type], FLAKE_TYPE_WEIGHT[flake_type]
         ] for flake_type in sorted(FLAKE_TYPE_DESCRIPTIONS)]

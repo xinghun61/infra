@@ -71,7 +71,7 @@
         return;
       }
 
-      $('#test_filter').val('');
+      $('#flake_filter').val('');
       submitForm();
     }
 
@@ -89,7 +89,14 @@
         submitFormWithCursor($(this));
       });
 
-      $('#test_filter').keypress(requestFilteredResults);
+      $(document).on('keydown', function(event){
+        if (event.key == '?') {
+          event.preventDefault();
+          displayMessage(600);
+        }
+      });
+
+      $('#flake_filter').keypress(requestFilteredResults);
 
       if ('{{ cursor }}' == '') {
         $('.next').prop('disabled', true);
@@ -116,8 +123,11 @@
       <input type="text" name="n" id="n" class="hidden" value="{{n}}">
       <input type="text" name="cursor" id="cursor" class="hidden">
       <input type="text" name="direction" id="direction" class="hidden">
-      <input type="text" name="test_filter" id="test_filter" size="100" placeholder="Try searching by test name (E.g. CrElementsInputTest.All) or just suite name (E.g. CrElementsInputTest)." value="{{ test_filter }}"/>
+      <input type="text" name="flake_filter" id="flake_filter" size="200" placeholder="Search by full test name, test_type:network_service_browser_tests, binary:browser_tests, component:Blink>Accessibility, watchlist:accessibility, directory:base/, etc (Press '?' for more search options)" value="{{ flake_filter }}"/>
     </form>
+    {% if error_message %}
+    <div style="font-weight:bold; color: red">{{ error_message }}</div>
+    {% endif %}
     <br>
     <div class="paging">
       <button class="previous">Previous</button>
