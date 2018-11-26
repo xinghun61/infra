@@ -1,0 +1,16 @@
+{
+  "name": "chopsui",
+  "version": "0.0.1",
+  "description": "Shared Chops frontend elements.",
+  "dependencies": {
+    "@polymer/lit-element": "^0.6.3",
+    "@webcomponents/webcomponentsjs": "^2.2.0"
+  },
+  "devDependencies": {
+    "eslint": "^5.9.0",
+    "eslint-config-google": "^0.11.0",
+    "lerna": "^2.11.0"
+  },
+  "author": "Chrome Operations team",
+  "license": "ISC"
+}
