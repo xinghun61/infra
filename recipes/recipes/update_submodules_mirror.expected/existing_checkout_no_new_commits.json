@@ -1,0 +1,108 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[CACHE]/the_best_builder"
+    ],
+    "infra_step": true,
+    "name": "Create checkout parent dir"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "glob",
+      "[CACHE]/the_best_builder",
+      "src/"
+    ],
+    "infra_step": true,
+    "name": "Check for existing source checkout dir",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@glob@[CACHE]/the_best_builder/src@@@",
+      "@@@STEP_LOG_END@glob@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "fetch",
+      "--all"
+    ],
+    "cwd": "[CACHE]/the_best_builder/src/",
+    "infra_step": true,
+    "name": "git fetch"
+  },
+  {
+    "cmd": [],
+    "name": "Check for new commits",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@no new commits, exiting@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gitiles]/resources/gerrit_client.py",
+      "--json-file",
+      "/path/to/tmp/json",
+      "--url",
+      "https://chromium.googlesource.com/codesearch/src_mirror/+log/master",
+      "--format",
+      "json",
+      "--log-limit",
+      "2"
+    ],
+    "name": "Check for new commits.Find latest commit to target repo",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_TEXT@<br />2 commits fetched@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"log\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"author\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"name\": \"Submodules bot\"@@@",
+      "@@@STEP_LOG_LINE@json.output@      }, @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"commit\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"author\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"name\": \"Someone else\"@@@",
+      "@@@STEP_LOG_LINE@json.output@      }, @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"commit\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "rev-parse",
+      "master"
+    ],
+    "cwd": "[CACHE]/the_best_builder/src/",
+    "infra_step": true,
+    "name": "Check for new commits.Get latest commit hash in source repo",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "jsonResult": null,
+    "name": "$result"
+  }
+]

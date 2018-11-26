@@ -64,6 +64,7 @@
   * [third_party_packages:examples/python](#recipes-third_party_packages_examples_python) &mdash; Recipe for 'python' building.
   * [third_party_packages:examples/swig](#recipes-third_party_packages_examples_swig) &mdash; Recipe for 'swig' building.
   * [tricium_noop](#recipes-tricium_noop) &mdash; Recipe for Tricium that outputs no results.
+  * [update_submodules_mirror](#recipes-update_submodules_mirror)
   * [windows_sdk:examples/full](#recipes-windows_sdk_examples_full)
   * [wpt_export](#recipes-wpt_export) &mdash; Exports commits in Chromium to the web-platform-tests repo.
   * [wpt_import](#recipes-wpt_import) &mdash; Imports changes from web-platform-tests into Chromium.
@@ -1047,6 +1048,11 @@ tricium builder, which shouldn't actually be used in runs
 triggered by Tricium.
 
 &mdash; **def [RunSteps](/recipes/recipes/tricium_noop.py#21)(api):**
+### *recipes* / [update\_submodules\_mirror](/recipes/recipes/update_submodules_mirror.py)
+
+[DEPS](/recipes/recipes/update_submodules_mirror.py#10): [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+
+&mdash; **def [RunSteps](/recipes/recipes/update_submodules_mirror.py#33)(api, source_repo, target_repo):**
 ### *recipes* / [windows\_sdk:examples/full](/recipes/recipe_modules/windows_sdk/examples/full.py)
 
 [DEPS](/recipes/recipe_modules/windows_sdk/examples/full.py#5): [windows\_sdk](#recipe_modules-windows_sdk), [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step]
