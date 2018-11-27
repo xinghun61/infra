@@ -48,7 +48,7 @@ def RunSteps(api, source_repo, target_repo):
   glob = api.m.file.glob_paths('Check for existing source checkout dir',
                                checkout_dir, source_checkout_name)
   if glob == []:
-    api.git('checkout', source_repo, source_checkout_dir)
+    api.git('clone', source_repo, source_checkout_dir)
 
   # This is implicitly used by all the git steps below.
   api.m.path['checkout'] = source_checkout_dir

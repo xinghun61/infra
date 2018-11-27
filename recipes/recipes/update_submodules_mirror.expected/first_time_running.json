@@ -35,13 +35,13 @@
   {
     "cmd": [
       "git",
-      "checkout",
+      "clone",
       "https://chromium.googlesource.com/chromium/src",
       "[CACHE]/the_best_builder/src/"
     ],
     "cwd": "None",
     "infra_step": true,
-    "name": "git checkout"
+    "name": "git clone"
   },
   {
     "cmd": [
