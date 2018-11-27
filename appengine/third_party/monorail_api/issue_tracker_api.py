@@ -66,6 +66,8 @@ class IssueTrackerAPI(object):
       updates['summary'] = issue.summary
     if 'status' in issue.changed:
       updates['status'] = issue.status
+      if issue.status == 'Duplicate':
+        updates['mergedInto'] = issue.merged_into
     if 'owner' in issue.changed:
       updates['owner'] = issue.owner
     if 'blocked_on' in issue.changed:

@@ -109,7 +109,8 @@ class IssueTrackerAPITestCase(unittest.TestCase):
         'fieldValues': [monorail_api.CustomizedField('name', 'value')]
     })
     issue.summary = 'NewSummary'
-    issue.status = 'Assigned'
+    issue.status = 'Duplicate'
+    issue.merged_into = '124'
     issue.owner = '----'
     issue.blocked_on.append('12345')
     issue.labels.append('Label-X')
@@ -134,7 +135,8 @@ class IssueTrackerAPITestCase(unittest.TestCase):
             'labels': ['Label-X', '-Label-Y'],
             'components': ['Test>Flaky'],
             'owner': '----',
-            'status': 'Assigned',
+            'status': 'Duplicate',
+            'mergedInto': '124',
             'summary': 'NewSummary'
         },
         'field_values': [{
