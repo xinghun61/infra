@@ -630,7 +630,7 @@ class MonorailApi(remote.Service):
       api_pb2_v1.APPROVALS_COMMENTS_LIST_REQUEST_RESOURCE_CONTAINER,
       api_pb2_v1.ApprovalsCommentsListResponse,
       path='projects/{projectId}/issues/{issueId}/'
-            'approvals/{approvalName}/comments/',
+            'approvals/{approvalName}/comments',
       http_method='GET',
       name='approvals.comments.list')
   def approvals_comments_list(self, mar, request):
