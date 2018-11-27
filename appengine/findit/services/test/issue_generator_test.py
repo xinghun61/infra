@@ -18,10 +18,12 @@ class IssueGeneratorTest(WaterfallTestCase):
     self.assertIn(analysis.key.urlsafe(),
                   issue_generator._GenerateAnalysisLink(analysis))
 
-  def testGenerateWrongResultLink(self):
-    test_name = 'test_name'
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', test_name)
-    self.assertIn(test_name, issue_generator._GenerateWrongResultLink(analysis))
+  def testGenerateWrongCulpritLink(self):
+    commit_position = 1000
+    culprit = FlakeCulprit.Create('c', 'r', commit_position, 'http://')
+    link = issue_generator._GenerateWrongCulpritLink(culprit)
+    self.assertIn(str(commit_position), link)
+    self.assertIn(culprit.key.urlsafe(), link)
 
   def testGenerateMessageTextWithCulprit(self):
     master_name = 'm'
@@ -43,9 +45,8 @@ class IssueGeneratorTest(WaterfallTestCase):
     analysis.culprit_urlsafe_key = culprit.key.urlsafe()
     analysis.confidence_in_culprit = 0.6713
     comment = issue_generator._GenerateMessageText(analysis)
-    self.assertIn('67.1% confidence', comment)
     self.assertIn('r123', comment)
-    self.assertIn(task_id, comment)
+    self.assertIn(culprit.key.urlsafe(), comment)
 
   @mock.patch.object(
       MasterFlakeAnalysis,

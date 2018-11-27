@@ -820,9 +820,7 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
                      flake_issue_util.CreateOrUpdateIssue(issue_generator))
     self.assertTrue(mock_create_bug_fn.called)
     self.assertFalse(mock_update_bug_fn.called)
-    self.assertIn('(50.0% confidence)', description)
     self.assertIn('Test-Findit-Wrong', description)
-    self.assertIn('task_id', description)
 
     fetched_flake_issues = FlakeIssue.query().fetch()
     self.assertEqual(1, len(fetched_flake_issues))

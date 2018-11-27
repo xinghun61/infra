@@ -23,15 +23,17 @@ from services import swarming
 # merged into a single bug-filing entry point capable of handling the various
 # bug updates.
 
+# The link to the flake culprit page to encapsulate all impacted analyses by
+# a common culprit.
+_CULPRIT_LINK_TEMPLATE = (
+    'https://findit-for-me.appspot.com/waterfall/flake/flake-culprit?key={}')
+
 # The base template for updating a bug with culprit findings.
 _RESULT_WITH_CULPRIT_TEMPLATE = textwrap.dedent("""
-Flaky test: {test_name}
-Sample failed build due to flakiness: {build_link}
-Test output log: {test_output_log_link}
-Culprit ({confidence_score} confidence): r{commit_position}
-Analysis: {analysis_link}
+Findit identified the culprit r{commit_position} as introducing flaky test(s)
+summarized in {culprit_link}
 
-Please revert the culprit, or disable the test and find the appropriate owner.
+Please revert the culprit, or disable the test(s) and find the appropriate owner to fix or delete.
 
 If the culprit above is wrong, please file a bug using this link:
 {wrong_result_link}
@@ -40,15 +42,18 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).""")
 
 # The link to include with bug updates about wrong findings for users to
 # report.
-_WRONG_RESULT_LINK_TEMPLATE = (
+_WRONG_CULPRIT_LINK_TEMPLATE = (
     'https://bugs.chromium.org/p/chromium/issues/entry?'
     'status=Unconfirmed&'
     'labels=Pri-1,Test-Findit-Wrong&'
     'components=Tools%3ETest%3EFindit%3EFlakiness&'
-    'summary=%5BFindit%5D%20Flake%20Analyzer%20-%20Wrong%20result%20for%20{}&'
-    'comment=Link%20to%20Analysis%3A%20{}')
+    'summary=%5BFindit%5D%20Flake%20Analyzer%20-%20Wrong%20culprit%20'
+    'r{commit_position}&comment=Link%20to%20Culprit%3A%20{culprit_link}')
 
-# The base template for completed analyses without findings.
+# The base template for completed analyses without findings. Currently not yet
+# used as analyses without findings don't update bugs.
+# TODO(crbug.com/902408): Still update bugs when there are no findings so
+# sheriffs or developers can disable or delete tests at their discretion.
 _UNKNOWN_CULPRIT_TEMPLATE = textwrap.dedent("""
 Flaky test: {test_name}
 Sample failed build due to flakiness: {build_link}
@@ -108,10 +113,16 @@ def _GenerateAnalysisLink(analysis):
       analysis.key.urlsafe())
 
 
-def _GenerateWrongResultLink(analysis):
+def _GenerateCulpritLink(culprit_urlsafe_key):
+  """Returns a link to a FlakeCulprit page."""
+  return _CULPRIT_LINK_TEMPLATE.format(culprit_urlsafe_key)
+
+
+def _GenerateWrongCulpritLink(culprit):
   """Returns the test with a link to file a bug agasinst a wrong result."""
-  return _WRONG_RESULT_LINK_TEMPLATE.format(analysis.test_name,
-                                            _GenerateAnalysisLink(analysis))
+  return _WRONG_CULPRIT_LINK_TEMPLATE.format(
+      commit_position=culprit.commit_position,
+      culprit_link=_GenerateCulpritLink(culprit.key.urlsafe()))
 
 
 def _GenerateTestOutputLogLink(analysis):
@@ -140,30 +151,26 @@ def _GenerateMessageText(analysis):
   Returns:
     (str): The text to upodate the bug with.
   """
+  # Culprit identified.
+  if analysis.culprit_urlsafe_key:
+    culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
+    assert culprit, 'Culprit is unexpectedly missing.'
+
+    culprit_link = _GenerateCulpritLink(analysis.culprit_urlsafe_key)
+    wrong_result_link = _GenerateWrongCulpritLink(culprit)
+
+    return _RESULT_WITH_CULPRIT_TEMPLATE.format(
+        commit_position=culprit.commit_position,
+        culprit_link=culprit_link,
+        wrong_result_link=wrong_result_link)
+
+  # Culprit not identified.
   analysis_link = _GenerateAnalysisLink(analysis)
 
   build_link = build_url.CreateBuildUrl(analysis.original_master_name,
                                         analysis.original_builder_name,
                                         analysis.original_build_number)
   test_output_log_link = _GenerateTestOutputLogLink(analysis)
-
-  if analysis.culprit_urlsafe_key:
-    culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
-    assert culprit, 'Culprit is unexpectedly missing.'
-
-    culprit_confidence = "{0:0.1f}%".format(
-        analysis.confidence_in_culprit * 100)
-    wrong_result_link = _GenerateWrongResultLink(analysis)
-
-    return _RESULT_WITH_CULPRIT_TEMPLATE.format(
-        test_name=analysis.test_name,
-        build_link=build_link,
-        test_output_log_link=test_output_log_link,
-        confidence_score=culprit_confidence,
-        commit_position=culprit.commit_position,
-        analysis_link=analysis_link,
-        wrong_result_link=wrong_result_link)
-
   return _UNKNOWN_CULPRIT_TEMPLATE.format(
       test_name=analysis.original_test_name,
       build_link=build_link,
