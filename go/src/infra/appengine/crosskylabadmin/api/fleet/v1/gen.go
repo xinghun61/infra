@@ -15,6 +15,7 @@
 //go:generate cproto
 //go:generate svcdec -type TrackerServer
 //go:generate svcdec -type TaskerServer
+//go:generate svcdec -type InventoryServer
 
 // Package fleet contains service definitions for fleet management in
 // crosskylabadmin.

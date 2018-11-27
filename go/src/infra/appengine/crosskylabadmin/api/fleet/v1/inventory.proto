@@ -1,0 +1,117 @@
+// Copyright 2018 The LUCI Authors. All rights reserved.
+// Use of this source code is governed under the Apache License, Version 2.0
+// that can be found in the LICENSE file.
+
+syntax = "proto3";
+
+package crosskylabadmin.fleet;
+
+option go_package = "fleet";
+
+
+// Inventory service helps manage ChromeOS Dut Pools.
+service Inventory {
+
+  // EnsurePoolHealthy ensures that a target pool has only healthy DUTs.
+  //
+  // EnsurePoolHealthy works by swapping unhealthy DUTs from target pool with
+  // healthy DUTs from a spare pool.
+  rpc EnsurePoolHealthy(EnsurePoolHealthyRequest) returns
+      (EnsurePoolHealthyResponse);
+}
+
+message EnsurePoolHealthyRequest {
+  // dut_selectors filters the set of DUTs considered by EnsurePoolHealhy.
+  //
+  // All pool changes occurs within this selected set of DUTs.
+  // It is an error to omit dut_selector because that would allow
+  // unconstrained DUT reallocation between pools, disregarding all other
+  // labels.
+  DutSelector dut_selector = 1;
+
+  // target_pool is the pool that should contain healthy DUTs.
+  string target_pool = 2;
+
+  // spare_pool is the pool from which healthy DUTs will be swapped into
+  // target_pool.
+  string spare_pool = 3;
+
+  // max_unhealthy_duts is the maximum number of DUTs that may be unhealthy in
+  // the target pool before any action is taken.
+  //
+  // If the total number of unhealthy DUTs is above this threshold,
+  // EnsurePoolHealthy does not change DUT pools and returns an error.
+  // TODO: FILL IN ERRROR INFO.
+  int32 max_unhealthy_duts = 4;
+
+  message Options {
+    // If dryrun is true, no inventory changes are made. Proposed changes are
+    // returned.
+    bool dryrun = 1;
+  }
+  Options options = 5;
+}
+
+message EnsurePoolHealthyResponse {
+  enum Failure {
+    FAILURE_INVALID = 0;
+
+    // Target pool had more than max_unhealthy_duts unhealthy duts before any
+    // action was taken.
+    TOO_MANY_UNHEALTHY_DUTS = 1;
+  }
+
+  // Failures encountered during pool balancing.
+  //
+  // All the remaining fields of the response are still valid in the presence of
+  // failures.
+  repeated Failure failures = 1;
+
+  // target_pool_status summarizes the target pool after the required
+  // inventory changes are executed.
+  //
+  // Within the pool, only DUTs selected via dut_selector are summarized.
+  PoolStatus target_pool_status = 2;
+
+  // spare_pool_status summarizes the spare pool after the required
+  // inventory changes are executed.
+  //
+  // Within the pool, only DUTs selected via dut_selector are summarized.
+  PoolStatus spare_pool_status = 3;
+
+  // url is an opaque URL for this inventory change.
+  //
+  // It is intended to be the gerrit CL corresponding to the change, or the
+  // gitiles path for a committed changelist for the change.
+  //
+  // url is empty in dryrun mode.
+  string url = 4;
+
+  // changes correspond to the proposed or executed pool changes to ensure
+  // inventory in response to various API methods calls.
+  repeated PoolChange changes = 5;
+}
+
+message DutSelector {
+  string model = 1;
+}
+
+message PoolStatus {
+  // size is the number of DUTs in this pool.
+  int32 size = 1;
+
+  // healthy_count is the number of healthy DUTs in this pool.
+  int32 healthy_count = 2;
+}
+
+// PoolChange is a single change of DUT pools in the inventory.
+message PoolChange {
+  // dut_id is the inventory ID of the DUT whose pool was modified.
+  string dut_id = 1;
+
+  // old_pool is the pool the DUT was removed from.
+  string old_pool = 2;
+
+  // new_pool is the pool the DUT was moved to.
+  string new_pool = 3;
+}

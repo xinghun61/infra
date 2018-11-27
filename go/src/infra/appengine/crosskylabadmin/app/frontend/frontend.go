@@ -46,6 +46,10 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 		Service: &TaskerServerImpl{},
 		Prelude: checkAccess,
 	})
+	fleet.RegisterInventoryServer(&api, &fleet.DecoratedInventory{
+		Service: &InventoryServerImpl{},
+		Prelude: checkAccess,
+	})
 
 	discovery.Enable(&api)
 
