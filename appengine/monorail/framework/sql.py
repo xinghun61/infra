@@ -877,9 +877,11 @@ ORDER_BY_RE_LIST = [
     _MakeRE(r'^{tab_col}{opt_asc_desc}$'),
     _MakeRE(r'^LOWER\({tab_col}\){opt_asc_desc}$'),
     _MakeRE(r'^ISNULL\({tab_col}\){opt_asc_desc}$'),
+    _MakeRE(r'^\(ISNULL\({tab_col}\) AND ISNULL\({tab_col}\)\){opt_asc_desc}$'),
     _MakeRE(r'^FIELD\({tab_col}, {multi_placeholder}\){opt_asc_desc}$'),
     _MakeRE(r'^FIELD\(IF\(ISNULL\({tab_col}\), {tab_col}, {tab_col}\), '
             r'{multi_placeholder}\){opt_asc_desc}$'),
+    _MakeRE(r'^CONCAT\({tab_col}, {tab_col}\){opt_asc_desc}$'),
     ]
 GROUP_BY_RE_LIST = [
     TAB_COL_RE,

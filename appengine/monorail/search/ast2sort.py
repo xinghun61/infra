@@ -81,11 +81,13 @@ def _ProcessReporterSD(fmt):
 def _ProcessOwnerSD(fmt):
   """Convert a 'owner' sort directive into SQL."""
   left_joins = [
-      (fmt('User AS {alias} ON (Issue.owner_id = {alias}.user_id OR '
-           'Issue.derived_owner_id = {alias}.user_id)'), [])]
+      (fmt('User AS {alias}_exp ON Issue.owner_id = {alias}_exp.user_id'), []),
+      (fmt('User AS {alias}_der ON '
+           'Issue.derived_owner_id = {alias}_der.user_id'), [])]
   order_by = [
-      (fmt('ISNULL({alias}.email) {sort_dir}'), []),
-      (fmt('{alias}.email {sort_dir}'), [])]
+      (fmt('(ISNULL({alias}_exp.email) AND ISNULL({alias}_der.email)) '
+           '{sort_dir}'), []),
+      (fmt('CONCAT({alias}_exp.email, {alias}_der.email) {sort_dir}'), [])]
   return left_joins, order_by
 
 

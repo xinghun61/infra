@@ -70,12 +70,14 @@ class AST2SortTest(unittest.TestCase):
   def testProcessOwnerSD(self):
     left_joins, order_by = ast2sort._ProcessOwnerSD(self.fmt)
     self.assertEqual(
-        [('User AS {alias} ON (Issue.owner_id = {alias}.user_id OR '
-          'Issue.derived_owner_id = {alias}.user_id)', [])],
+        [('User AS {alias}_exp ON Issue.owner_id = {alias}_exp.user_id', []),
+         ('User AS {alias}_der ON '
+          'Issue.derived_owner_id = {alias}_der.user_id', [])],
         left_joins)
     self.assertEqual(
-        [('ISNULL({alias}.email) {sort_dir}', []),
-         ('{alias}.email {sort_dir}', [])],
+        [('(ISNULL({alias}_exp.email) AND ISNULL({alias}_der.email)) '
+          '{sort_dir}', []),
+         ('CONCAT({alias}_exp.email, {alias}_der.email) {sort_dir}', [])],
         order_by)
 
   def testProcessCcSD(self):
