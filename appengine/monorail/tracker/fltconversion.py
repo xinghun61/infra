@@ -108,7 +108,7 @@ class FLTConvertTask(jsonfeed.InternalTask):
   def UndoConversion(self, mr):
     with work_env.WorkEnv(mr, self.services) as we:
       pipeline = we.ListIssues(
-          'Type=FLT-Launch label:FLT-Conversion', ['chromium'], mr.auth.user_id,
+          'Type=FLT-Launch FLT=Conversion', ['chromium'], mr.auth.user_id,
           CONVERT_NUM, CONVERT_START, [], 2, GROUP_BY_SPEC, SORT_SPEC, False)
 
     project = self.services.project.GetProjectByName(mr.cnxn, 'chromium')
@@ -141,7 +141,7 @@ class FLTConvertTask(jsonfeed.InternalTask):
     """Verify that all FLT-Conversion issues were converted correctly."""
     with work_env.WorkEnv(mr, self.services) as we:
       pipeline = we.ListIssues(
-          'label:FLT-Conversion', ['chromium'], mr.auth.user_id,
+          'FLT=Conversion', ['chromium'], mr.auth.user_id,
           VERIFY_NUM, CONVERT_START, [], 2, GROUP_BY_SPEC, SORT_SPEC, False)
 
     project = self.services.project.GetProjectByName(mr.cnxn, 'chromium')
