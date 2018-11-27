@@ -21,6 +21,7 @@ from model.proto.gen.code_coverage_pb2 import CoverageReport
 from model.code_coverage import CoverageData
 from model.code_coverage import PostsubmitReport
 from model.code_coverage import PresubmitReport
+from waterfall import waterfall_config
 
 # List of Gerrit projects that Findit supports.
 _PROJECTS_WHITELIST = set(['chromium/src'])
@@ -162,6 +163,17 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
     return self._processCodeCoverageData(int(self.request.get('build_id')))
 
 
+def _IsServePresubmitCoverageDataEnabled():
+  """Returns True if the feature to serve presubmit coverage data is enabled.
+
+  Returns:
+    Returns True if it is enabled, otherwise, False.
+  """
+  # Unless the flag is explicitly set, assuming disabled by default.
+  return waterfall_config.GetCodeCoverageSettings().get(
+      'serve_presubmit_coverage_data', False)
+
+
 class ServeCodeCoverageData(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
@@ -197,6 +209,15 @@ class ServeCodeCoverageData(BaseHandler):
         kwargs = {'is_project_supported': False}
         return BaseHandler.CreateError(
             error_message='Project "%s" is not supported.' % project,
+            return_code=404,
+            allowed_origin='*',
+            **kwargs)
+
+      if not _IsServePresubmitCoverageDataEnabled():
+        # TODO(crbug.com/908609): Switch to 'is_service_enabled'.
+        kwargs = {'is_project_supported': False}
+        return BaseHandler.CreateError(
+            error_message=('The functionality has been temporarity disabled.'),
             return_code=404,
             allowed_origin='*',
             **kwargs)

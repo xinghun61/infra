@@ -346,6 +346,9 @@ _CONFIG_SPEC = {  # yapf: disable
         'report_flakes_to_flake_analyzer': bool,
         'min_required_impacted_cls_per_day': int,
     }),
+    'code_coverage_settings': (dict, True, {
+        'serve_presubmit_coverage_data': bool,
+    }),
     'code_review_settings': (dict, True, {
         'commit_bot_emails': list,
         'gerrit_hosts': list,
@@ -421,6 +424,7 @@ class Configuration(BaseHandler):
         'action_settings': settings.action_settings,
         'check_flake_settings': settings.check_flake_settings,
         'flake_detection_settings': settings.flake_detection_settings,
+        'code_coverage_settings': settings.code_coverage_settings,
         'code_review_settings': settings.code_review_settings,
         'version': settings.version_number,
         'latest_version': latest_version,

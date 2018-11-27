@@ -176,6 +176,10 @@ _DEFAULT_FLAKE_DETECTION_SETTINGS = {
     'min_required_impacted_cls_per_day': 3,
 }
 
+_DEFAULT_CODE_COVERAGE_SETTINGS = {
+    'serve_presubmit_coverage_data': True,
+}
+
 _DEFAULT_CODE_REVIEW_SETTINGS = {
     'rietveld_hosts': ['codereview.chromium.org'],
     'gerrit_hosts': ['chromium-review.googlesource.com'],
@@ -191,6 +195,7 @@ DEFAULT_CONFIG_DATA = {
     'action_settings': _DEFAULT_ACTION_SETTINGS,
     'check_flake_settings': _DEFAULT_CHECK_FLAKE_SETTINGS,
     'flake_detection_settings': _DEFAULT_FLAKE_DETECTION_SETTINGS,
+    'code_coverage_settings': _DEFAULT_CODE_COVERAGE_SETTINGS,
     'code_review_settings': _DEFAULT_CODE_REVIEW_SETTINGS,
 }
 

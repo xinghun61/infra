@@ -174,6 +174,11 @@ class MastersTest(wf_testcase.WaterfallTestCase):
         'upper_flake_threshold': 0.9999999
     }, waterfall_config.GetCheckFlakeSettings())
 
+  def testGetCodeCoverageSettings(self):
+    self.assertEqual({
+        'serve_presubmit_coverage_data': True
+    }, waterfall_config.GetCodeCoverageSettings())
+
   def testGetCodeReviewSettings(self):
     self.assertEqual({
         'rietveld_hosts': ['codereview.chromium.org'],

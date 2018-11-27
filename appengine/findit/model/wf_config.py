@@ -152,6 +152,12 @@ class FinditConfig(VersionedConfig):
   # }
   flake_detection_settings = ndb.JsonProperty(indexed=False, default={})
 
+  # A dict containing settings for Code Coverage. For example,
+  # {
+  #     'serve_presubmit_coverage_data': True,
+  # }
+  code_coverage_settings = ndb.JsonProperty(indexed=False, default={})
+
   # A dict containing settings for interacting with code review systems.
   # For example,
   # {

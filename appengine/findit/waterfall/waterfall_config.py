@@ -159,5 +159,9 @@ def GetFlakeDetectionSettings():
   return FinditConfig.Get().flake_detection_settings
 
 
+def GetCodeCoverageSettings():
+  return FinditConfig().Get().code_coverage_settings
+
+
 def GetCodeReviewSettings():
   return FinditConfig().Get().code_review_settings
