@@ -237,6 +237,63 @@ This is  a friendly reminder that you're oncall for Test Rota from 2006-04-05 17
 			},
 		},
 	}, {
+		name: "Only send Email for the first day of the shift",
+		time: midnight.Add(1 * 24 * time.Hour),
+		ctx: &router.Context{
+			Context: ctx,
+			Writer:  httptest.NewRecorder(),
+		},
+		cfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Description: "Test",
+				Enabled:     true,
+				Name:        "Test Rota",
+				Email: rotang.Email{
+					Subject: `Upcoming On-call shift for rotation: {{.RotaName}} {{.ShiftEntry.StartTime.In .Member.TZ}} to {{.ShiftEntry.EndTime.In .Member.TZ}}`,
+					Body: `Hi {{.Member.Name}}.
+This is  a friendly reminder that you're oncall for {{.RotaName}} from {{.ShiftEntry.StartTime.In .Member.TZ}} to {{.ShiftEntry.EndTime.In .Member.TZ}}`,
+					DaysBeforeNotify: 4,
+				},
+				Shifts: rotang.ShiftConfig{
+					StartTime: midnight,
+					Length:    5,
+					Skip:      2,
+					Shifts: []rotang.Shift{
+						{
+							Name:     "MTV all day",
+							Duration: 24 * time.Hour,
+						},
+					},
+				},
+			},
+			Members: []rotang.ShiftMember{
+				{
+					Email:     "oncaller@oncall.com",
+					ShiftName: "MTV all day",
+				},
+			},
+		},
+		memberPool: []rotang.Member{
+			{
+				Email: "oncaller@oncall.com",
+				Name:  "Test Namesson",
+				TZ:    *mtvTime,
+			},
+		},
+		shifts: []rotang.ShiftEntry{
+			{
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "oncaller@oncall.com",
+						ShiftName: "MTV all day",
+					},
+				},
+				StartTime: midnight.Add(4 * 24 * time.Hour),
+				EndTime:   midnight.Add(9 * 24 * time.Hour),
+			},
+		},
+	}, {
 		name: "Nobody on call",
 		time: midnight,
 		ctx: &router.Context{

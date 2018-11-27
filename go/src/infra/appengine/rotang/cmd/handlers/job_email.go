@@ -45,13 +45,13 @@ func (h *State) notifyEmail(ctx context.Context, cfg *rotang.Configuration, t ti
 	if cfg.Config.Email.DaysBeforeNotify == 0 || !cfg.Config.Enabled {
 		return nil
 	}
-	t = t.UTC().Add(time.Duration(cfg.Config.Email.DaysBeforeNotify) * 24 * time.Hour)
+	t = t.UTC().Add(time.Duration(cfg.Config.Email.DaysBeforeNotify) * fullDay)
 	ss := cfg.Config.Shifts.StartTime.UTC()
 	for _, s := range cfg.Config.Shifts.Shifts {
 		// Only care about the date of the `t`time and then use the StartTime from the ShiftConfiguration to set
 		// the start of the shift.
 		ct := time.Date(t.Year(), t.Month(), t.Day(), ss.Hour(), ss.Minute(), ss.Second(), ss.Nanosecond(), time.UTC)
-		shift, err := h.shiftStore(ctx).Oncall(ctx, ct, cfg.Config.Name)
+		shift, err := h.shiftStore(ctx).Shift(ctx, cfg.Config.Name, ct)
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
 				continue
@@ -74,6 +74,9 @@ const (
 	// See https://cloud.google.com/appengine/docs/standard/go/mail/.
 	emailDomain = ".appspotmail.com"
 )
+
+// stagingEmail is used as the To address for all emails in the staging environment.
+const stagingEmail = "rotang-staging@google.com"
 
 // sendMail executes the subject/body templates and sends the mail out.
 func (h *State) sendMail(ctx context.Context, cfg *rotang.Configuration, shift *rotang.ShiftEntry, email string) error {
@@ -109,6 +112,11 @@ func (h *State) sendMail(ctx context.Context, cfg *rotang.Configuration, shift *
 	if sender == "" {
 		// https://cloud.google.com/appengine/docs/standard/go/mail/
 		sender = emailSender + "@" + h.projectID(ctx) + emailDomain
+	}
+
+	if h.IsStaging() {
+		logging.Infof(ctx, "running in the staging env. sending email to: g/rotang-staging")
+		email = stagingEmail
 	}
 
 	return h.mailSender.Send(ctx, &mail.Message{
