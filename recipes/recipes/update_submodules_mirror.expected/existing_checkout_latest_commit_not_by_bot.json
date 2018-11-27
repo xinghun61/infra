@@ -9,7 +9,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[CACHE]/the_best_builder"
+      "[CACHE]/codesearch_update_submodules_mirror"
     ],
     "infra_step": true,
     "name": "Create checkout parent dir"
@@ -22,14 +22,14 @@
       "--json-output",
       "/path/to/tmp/json",
       "glob",
-      "[CACHE]/the_best_builder",
+      "[CACHE]/codesearch_update_submodules_mirror",
       "src/"
     ],
     "infra_step": true,
     "name": "Check for existing source checkout dir",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
-      "@@@STEP_LOG_LINE@glob@[CACHE]/the_best_builder/src@@@",
+      "@@@STEP_LOG_LINE@glob@[CACHE]/codesearch_update_submodules_mirror/src@@@",
       "@@@STEP_LOG_END@glob@@@"
     ]
   },
@@ -39,7 +39,7 @@
       "fetch",
       "--all"
     ],
-    "cwd": "[CACHE]/the_best_builder/src/",
+    "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
     "infra_step": true,
     "name": "git fetch"
   },
@@ -91,7 +91,7 @@
       "solutions=[{'managed':False,'name':'src/','url':'https://chromium.googlesource.com/chromium/src','deps_file':'DEPS'}]",
       "--output-json=-"
     ],
-    "cwd": "[CACHE]/the_best_builder/src/",
+    "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
     "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
@@ -115,7 +115,7 @@
       "4ad2459561d76217c9b7aff412c5c086b491078a",
       "v8"
     ],
-    "cwd": "[CACHE]/the_best_builder/src/",
+    "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
     "infra_step": true,
     "name": "Add gitlinks.Add v8 gitlink",
     "~followup_annotations": [
@@ -132,7 +132,7 @@
       "13a00f110ef910a25763346d6538b60f12845656",
       "buildtools"
     ],
-    "cwd": "[CACHE]/the_best_builder/src/",
+    "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
     "infra_step": true,
     "name": "Add gitlinks.Add buildtools gitlink",
     "~followup_annotations": [
@@ -148,7 +148,7 @@
       "/path/to/tmp/json",
       "copy",
       "[submodule \"v8\"]\n\tpath = v8\n\turl = https://chromium.googlesource.com/v8/v8.git\n[submodule \"buildtools\"]\n\tpath = buildtools\n\turl = https://chromium.googlesource.com/chromium/buildtools.git",
-      "[CACHE]/the_best_builder/src/.gitmodules"
+      "[CACHE]/codesearch_update_submodules_mirror/src/.gitmodules"
     ],
     "infra_step": true,
     "name": "Write .gitmodules file"
@@ -159,7 +159,7 @@
       "add",
       ".gitmodules"
     ],
-    "cwd": "[CACHE]/the_best_builder/src/",
+    "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
     "infra_step": true,
     "name": "git add"
   },
@@ -174,7 +174,7 @@
       "-m",
       "Synthetic commit for submodules"
     ],
-    "cwd": "[CACHE]/the_best_builder/src/",
+    "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
     "infra_step": true,
     "name": "git -c"
   },
@@ -186,7 +186,7 @@
       "--force",
       "https://chromium.googlesource.com/_direct/codesearch/src_mirror"
     ],
-    "cwd": "[CACHE]/the_best_builder/src/",
+    "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
     "infra_step": true,
     "name": "git push"
   },

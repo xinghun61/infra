@@ -37,10 +37,18 @@ def RunSteps(api, source_repo, target_repo):
   # force pushed.
   assert target_host.endswith('googlesource.com')
 
-  checkout_dir = api.m.path['cache'].join(
-      re.sub(r'\W', '_', api.buildbucket.builder_name))
+  # NOTE: This name must match the definition in cr-buildbucket.cfg. Do not
+  # change without adjusting that config to match.
+  checkout_dir = api.m.path['cache'].join('codesearch_update_submodules_mirror')
   api.m.file.ensure_directory('Create checkout parent dir', checkout_dir)
 
+  # We assume here that we won't have a mirror for two repos with the same name.
+  # If we do, the directories will have the same name. This shouldn't be an
+  # issue, but if it is we should add an intermediate directory with an
+  # unambiguous name.
+  #
+  # We want to keep the final component equal to the below, as gclient/DEPS can
+  # be sensitive to the name of the directory a repo is checked out to.
   source_checkout_name = source_project[source_project.rfind('/') + 1:] + '/'
   source_checkout_dir = checkout_dir.join(source_checkout_name)
 
@@ -145,8 +153,8 @@ def GenTests(api):
       api.test('first_time_running') +
       api.properties(
           source_repo='https://chromium.googlesource.com/chromium/src',
-          target_repo='https://chromium.googlesource.com/codesearch/src_mirror',
-          buildername='the best builder') +
+          target_repo='https://chromium.googlesource.com/codesearch/src_mirror'
+      ) +
       api.step_data('Check for existing source checkout dir',
                     # Checkout doesn't exist.
                     api.raw_io.stream_output('', stream='stdout')) +
@@ -161,8 +169,8 @@ def GenTests(api):
       api.test('existing_checkout_no_new_commits') +
       api.properties(
           source_repo='https://chromium.googlesource.com/chromium/src',
-          target_repo='https://chromium.googlesource.com/codesearch/src_mirror',
-          buildername='the best builder') +
+          target_repo='https://chromium.googlesource.com/codesearch/src_mirror'
+      ) +
       api.step_data('Check for existing source checkout dir',
                     api.raw_io.stream_output('src', stream='stdout')) +
       api.step_data('Check for new commits.Find latest commit to target repo',
@@ -185,8 +193,8 @@ def GenTests(api):
       api.test('existing_checkout_new_commits') +
       api.properties(
           source_repo='https://chromium.googlesource.com/chromium/src',
-          target_repo='https://chromium.googlesource.com/codesearch/src_mirror',
-          buildername='the best builder') +
+          target_repo='https://chromium.googlesource.com/codesearch/src_mirror'
+      ) +
       api.step_data('Check for existing source checkout dir',
                     api.raw_io.stream_output('src', stream='stdout')) +
       api.step_data('Check for new commits.Find latest commit to target repo',
@@ -211,8 +219,8 @@ def GenTests(api):
       api.test('existing_checkout_latest_commit_not_by_bot') +
       api.properties(
           source_repo='https://chromium.googlesource.com/chromium/src',
-          target_repo='https://chromium.googlesource.com/codesearch/src_mirror',
-          buildername='the best builder') +
+          target_repo='https://chromium.googlesource.com/codesearch/src_mirror'
+      ) +
       api.step_data('Check for existing source checkout dir',
                     api.raw_io.stream_output('src', stream='stdout')) +
       api.step_data('Check for new commits.Find latest commit to target repo',
