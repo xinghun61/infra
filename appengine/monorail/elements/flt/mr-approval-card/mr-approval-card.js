@@ -267,7 +267,7 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
     // TODO(zhangtiff): monorail:4418, allow option of not sending email
     message.sendEmail = true;
 
-    window.prpcClient.call(
+    window.prpcCall(
       'monorail.Issues', 'UpdateApproval', message
     ).then((resp) => {
       this.dispatch({

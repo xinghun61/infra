@@ -9,13 +9,6 @@
     <link rel="canonical" href="[link_rel_canonical]">
   [end]
 
-  <!-- TODO(4442): Load pRPC library asynchronously. -->
-  <script type="text/javascript"
-          src="/bower_components/chopsui/prpc-client.js?version=[app_version]"
-          nonce="[nonce]"></script>
-  <script type="text/javascript"
-          src="/static/js/prpc.js?version=[app_version]"
-          nonce="[nonce]"></script>
   <script type="text/javascript" nonce="[nonce]">
    [# Javascript object containing basic page data. ]
    window.CS_env = {
@@ -40,9 +33,6 @@
      'projectName': '[format "js"][projectname][end]',
      'is_member': '[format "js"][is_member][end]',
    };
-   [# Global client for pRPC requests]
-   window.prpcClient = new window.__prpc.AutoRefreshPrpcClient(
-      CS_env.token, CS_env.tokenExpiresSec);
   </script>
 
   [# Improve the snippet that appears in search]

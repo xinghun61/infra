@@ -11,3 +11,30 @@
     min-width: 300px;
   }
 </style>
+
+<script type="text/javascript" nonce="[nonce]">
+/*
+Using a Promise to wait for prpc.js to load is necessary because JS module code
+executes after HTML imports are resolved.
+
+TODO(jeffcarp): Remove after transition to JS modules.
+*/
+
+window.__waitForPrpcLoading = new Promise((resolve) => {
+  window.__prpcClientOnLoad = resolve;
+});
+
+// For the time being, Polymer pages must use window.prpcCall.
+window.prpcCall = function(service, method, message) {
+  return new Promise(async (resolve) => {
+    const client = await window.__waitForPrpcLoading;
+    client.call(service, method, message).then(resolve);
+  });
+};
+</script>
+
+<script type="module" nonce="[nonce]">
+import AutoRefreshPrpcClient from '/[script_prefix_dir]/static/js/prpc.js';
+const client = new AutoRefreshPrpcClient(CS_env.token, CS_env.tokenExpiresSec);
+window.__prpcClientOnLoad(client);
+</script>

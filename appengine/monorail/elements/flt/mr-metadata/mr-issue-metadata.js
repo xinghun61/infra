@@ -81,7 +81,7 @@ class MrIssueMetadata extends ReduxMixin(Polymer.Element) {
       starred: newIsStarred,
     };
 
-    const starIssue = window.prpcClient.call(
+    const starIssue = window.prpcCall(
       'monorail.Issues', 'StarIssue', message
     );
 

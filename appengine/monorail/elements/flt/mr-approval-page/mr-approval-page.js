@@ -79,7 +79,7 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
       projectName,
     };
 
-    const getConfig = window.prpcClient.call(
+    const getConfig = window.prpcCall(
       'monorail.Projects', 'GetConfig', message
     );
 
@@ -123,7 +123,7 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
   _userChanged(user) {
     this.dispatch({type: actionType.FETCH_USER_START});
 
-    const getUser = window.prpcClient.call(
+    const getUser = window.prpcCall(
       'monorail.Users', 'GetUser', {
         userRef: {
           displayName: user,
@@ -131,7 +131,7 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
       }
     );
 
-    const getMemberships = window.prpcClient.call(
+    const getMemberships = window.prpcCall(
       'monorail.Users', 'GetMemberships', {
         userRef: {
           displayName: user,

@@ -1,3 +1,10 @@
+<script type="module" nonce="[nonce]">
+// Load and instantiate pRPC client before any other script.
+import AutoRefreshPrpcClient from '/[script_prefix_dir]/static/js/prpc.js';
+window.prpcClient = new AutoRefreshPrpcClient(
+  CS_env.token, CS_env.tokenExpiresSec);
+</script>
+
 <script type="text/javascript" src="/bower_components/webcomponentsjs/webcomponents-loader.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="/static/js/framework/externs.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="/static/js/framework/env.js?version=[app_version]" nonce="[nonce]"></script>

@@ -60,7 +60,7 @@ class MrProfilePage extends Polymer.Element {
       untilTimestamp: currentTime,
     };
 
-    const getCommits = window.prpcClient.call(
+    const getCommits = window.prpcCall(
       'monorail.Users', 'GetUserCommits', commitMessage
     );
 
@@ -75,7 +75,7 @@ class MrProfilePage extends Polymer.Element {
       },
     };
 
-    const listActivities = window.prpcClient.call(
+    const listActivities = window.prpcCall(
       'monorail.Issues', 'ListActivities', commentMessage
     );
 

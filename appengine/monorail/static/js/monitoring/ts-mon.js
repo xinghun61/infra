@@ -4,7 +4,7 @@
 
 import '../../../bower_components/chopsui/tsmon-client.js';
 const TSMonClient = window.chops.tsmon.TSMonClient;
-import '../prpc.js';
+import AutoRefreshPrpcClient from '../prpc.js';
 
 const TS_MON_JS_PATH = '/_/jstsmon.do';
 const TS_MON_CLIENT_GLOBAL_NAME = '__tsMonClient';
@@ -20,7 +20,7 @@ export default class MonorailTSMon extends TSMonClient {
     this.clientId = MonorailTSMon.generateClientId();
     this.disableAfterNextFlush();
     // Create an instance of pRPC client for refreshing XSRF tokens.
-    this.prpcClient = new window.__prpc.AutoRefreshPrpcClient(
+    this.prpcClient = new AutoRefreshPrpcClient(
       window.CS_env.token, window.CS_env.tokenExpiresSec);
 
     // TODO(jeffcarp, 4415): Deduplicate metric defs.
