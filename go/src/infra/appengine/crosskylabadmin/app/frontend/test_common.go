@@ -68,12 +68,12 @@ func newTestFixtureWithContext(c context.Context, t *testing.T) (testFixture, fu
 	mc := gomock.NewController(t)
 	tf.MockSwarming = mock.NewMockSwarmingClient(mc)
 	tf.Tracker = &TrackerServerImpl{
-		ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
+		SwarmingFactory: func(context.Context, string) (clients.SwarmingClient, error) {
 			return tf.MockSwarming, nil
 		},
 	}
 	tf.Tasker = &TaskerServerImpl{
-		ClientFactory: func(context.Context, string) (clients.SwarmingClient, error) {
+		SwarmingFactory: func(context.Context, string) (clients.SwarmingClient, error) {
 			return tf.MockSwarming, nil
 		},
 	}

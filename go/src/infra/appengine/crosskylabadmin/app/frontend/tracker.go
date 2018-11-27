@@ -36,15 +36,15 @@ import (
 
 // TrackerServerImpl implements the fleet.TrackerServer interface.
 type TrackerServerImpl struct {
-	// ClientFactory is an optional factory function for creating clients.
+	// SwarmingFactory is an optional factory function for creating clients.
 	//
 	// If SwarmingFactory is nil, clients.NewSwarmingClient is used.
-	ClientFactory SwarmingFactory
+	SwarmingFactory SwarmingFactory
 }
 
-func (tsi *TrackerServerImpl) newClient(c context.Context, host string) (clients.SwarmingClient, error) {
-	if tsi.ClientFactory != nil {
-		return tsi.ClientFactory(c, host)
+func (tsi *TrackerServerImpl) newSwarmingClient(c context.Context, host string) (clients.SwarmingClient, error) {
+	if tsi.SwarmingFactory != nil {
+		return tsi.SwarmingFactory(c, host)
 	}
 	return clients.NewSwarmingClient(c, host)
 }
@@ -56,7 +56,7 @@ func (tsi *TrackerServerImpl) RefreshBots(ctx context.Context, req *fleet.Refres
 	}()
 
 	cfg := config.Get(ctx)
-	sc, err := tsi.newClient(ctx, cfg.Swarming.Host)
+	sc, err := tsi.newSwarmingClient(ctx, cfg.Swarming.Host)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to obtain Swarming client").Err()
 	}
