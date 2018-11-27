@@ -14,9 +14,10 @@ import (
 	"testing"
 	"time"
 
+	"context"
+
 	"go.chromium.org/luci/appengine/gaetesting"
 	"go.chromium.org/luci/server/router"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -244,6 +245,7 @@ func TestNew(t *testing.T) {
 		fail: true,
 		opts: &Options{
 			ProjectID:  idFunc,
+			ProdENV:    "production",
 			Generators: &algo.Generators{},
 			MemberStore: func(ctx context.Context) rotang.MemberStorer {
 				return datastore.New(ctx)
@@ -254,9 +256,8 @@ func TestNew(t *testing.T) {
 			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {
 				return datastore.New(ctx)
 			},
-			Calendar:       &calendar.Calendar{},
-			LegacyCalendar: &calendar.Calendar{},
-			BackupCred:     defaultClient,
+			Calendar:   &calendar.Calendar{},
+			BackupCred: defaultClient,
 		},
 	}, {
 		name: "BackupCred missing",
@@ -294,6 +295,7 @@ func TestNew(t *testing.T) {
 			},
 			Calendar:       &calendar.Calendar{},
 			LegacyCalendar: &calendar.Calendar{},
+			BackupCred:     defaultClient,
 		},
 	},
 	}

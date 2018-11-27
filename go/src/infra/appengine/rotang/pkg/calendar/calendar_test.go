@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"context"
 	"github.com/kylelemons/godebug/pretty"
 	"go.chromium.org/luci/appengine/gaetesting"
 	"go.chromium.org/luci/server/router"
-	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 
 	"google.golang.org/grpc/codes"

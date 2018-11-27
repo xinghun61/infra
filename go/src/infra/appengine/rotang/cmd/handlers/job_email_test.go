@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
+	"context"
 	"github.com/kylelemons/godebug/pretty"
 	"go.chromium.org/gae/service/mail"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/clock/testclock"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
-	"golang.org/x/net/context"
 )
 
 type testableMail struct{}

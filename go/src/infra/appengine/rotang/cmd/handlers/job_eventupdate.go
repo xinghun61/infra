@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// JobEventUpdate reads calendar Events and updaes shifts accordingly.
+// JobEventUpdate reads calendar Events and updates shifts accordingly.
 func (h *State) JobEventUpdate(ctx *router.Context) {
 	if err := ctx.Context.Err(); err != nil {
 		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)

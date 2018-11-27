@@ -7,12 +7,13 @@ import (
 	"testing"
 	"time"
 
+	"context"
+
 	"github.com/julienschmidt/httprouter"
 	"github.com/kylelemons/godebug/pretty"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/clock/testclock"
 	"go.chromium.org/luci/server/router"
-	"golang.org/x/net/context"
 )
 
 func TestHandleLegacy(t *testing.T) {
@@ -242,7 +243,7 @@ func TestLegacySheriff(t *testing.T) {
 		t.Run(tst.name, func(t *testing.T) {
 			for _, m := range tst.memberPool {
 				if err := h.memberStore(ctx).CreateMember(ctx, &m); err != nil {
-					t.Fatalf("%s: AddMember(ctx, _) failed: %v", tst.name, err)
+					t.Fatalf("%s: CreateMember(ctx, _) failed: %v", tst.name, err)
 				}
 				defer h.memberStore(ctx).DeleteMember(ctx, m.Email)
 			}

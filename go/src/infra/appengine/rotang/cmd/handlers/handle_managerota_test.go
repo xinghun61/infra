@@ -6,12 +6,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"context"
 	"go.chromium.org/luci/auth/identity"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/authtest"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
-	"golang.org/x/net/context"
 )
 
 func TestHandleManageRota(t *testing.T) {

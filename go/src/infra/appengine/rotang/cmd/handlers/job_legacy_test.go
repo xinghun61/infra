@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"context"
 	"go.chromium.org/luci/server/router"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

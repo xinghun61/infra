@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"context"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/router"
-	"golang.org/x/net/context"
 
 	"google.golang.org/appengine"
 	"google.golang.org/grpc/codes"

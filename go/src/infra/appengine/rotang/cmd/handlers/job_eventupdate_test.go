@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"context"
 	"github.com/kylelemons/godebug/pretty"
 	"go.chromium.org/luci/server/router"
-	"golang.org/x/net/context"
 )
 
 func TestJobEventUpdate(t *testing.T) {
