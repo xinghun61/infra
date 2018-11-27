@@ -1,0 +1,5 @@
+package: infra/tricium/function/gosec
+install_mode: copy
+data:
+  - file: gosecwrapper
+  - dir: bin
