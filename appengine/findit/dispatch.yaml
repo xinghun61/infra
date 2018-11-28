@@ -28,3 +28,6 @@ dispatch:
 
   - url: "*/coverage/*"
     module: code-coverage
+
+  - url: "*/trooper"
+    module: frontend

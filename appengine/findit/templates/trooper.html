@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<head>
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <title>Trooper Settings</title>
+  <style>
+  table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+    padding: 5px;
+  }
+  th {
+    text-align: left;
+  }
+  </style>
+  <meta charset="utf-8">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="/ui/elements/findit-app.html">
+  <script>
+    $(function() {
+      document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
+    });
+  </script>
+</head>
+<body>
+  <findit-app id="app" login-required="true">
+    <form id="trooper-form" action="/trooper" method="post">
+      <input type="hidden" name="xsrf_token" value="{{xsrf_token}}"/>
+      <table>
+        <tr>
+          <th>Feature</th>
+          <th>Status</th>
+          <th>Available Action</th>
+          <th>Update Message</th>
+        </tr>
+        <tr>
+          <td>Auto-commit of reverts</td>
+          <td>
+            {% if auto_commit_revert_on %}
+              On
+            {% else %}
+              Off
+            {% endif %}
+          </td>
+          <td>
+            {% if auto_commit_revert_on %}
+              <button type="submit" name="auto_commit_revert" value="false">Disable Auto Commit</button>
+            {% else %}
+              <button type="submit" name="auto_commit_revert" value="true">Enable Auto Commit</button>
+            {% endif %}
+          </td>
+          <td rowspan="2"><textarea id="update_reason" name="update_reason" rows="6" cols="80" required></textarea></td>
+        </tr>
+        <tr>
+          <td>Code coverage service</td>
+          <td>
+            {% if code_coverage_on %}
+              On
+            {% else %}
+              Off
+            {% endif %}
+          </td>
+          <td>
+            {% if code_coverage_on %}
+              <button type="submit" name="code_coverage" value="false">Disable Code Coverage</button>
+            {% else %}
+              <button type="submit" name="code_coverage" value="true">Enable Code Coverage</button>
+            {% endif %}
+          </td>
+        </tr>
+      </table>
+    </form>
+    <br>
+    Note:<br>
+    Clicking the 'Enable/Disable Auto Commit' button change auto-commit settings for all failures types that Findit supports (currently compile failures and consistent test failures).<br>
+    Clicking the 'Enable/Disable Code Coverage' button change code coverage settings for all types of coverage data that Findit supoprts (currently only presubmit).<br>
+    Admins: Use config page if you want to change settings for specific types of data.
+  </findit-app>
+</body>

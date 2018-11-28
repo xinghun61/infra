@@ -10,7 +10,6 @@ from gae_libs import appengine_util
 from gae_libs.pipelines import pipeline_status_ui
 from handlers import auto_revert_metrics
 from handlers import build_failure
-from handlers import change_auto_revert_setting
 from handlers import check_duplicate_failures
 from handlers import check_trybot_mapping
 from handlers import config
@@ -21,6 +20,7 @@ from handlers import home
 from handlers import list_analyses
 from handlers import pipeline_errors_dashboard
 from handlers import triage_suspected_cl
+from handlers import trooper
 from handlers import try_job_dashboard
 from handlers.flake import check_flake
 from handlers.flake import flake_culprit
@@ -44,9 +44,8 @@ if appengine_util.IsInProductionApp():
 # waterfall frontend.
 waterfall_frontend_web_pages_handler_mappings = [
     ('/', home.Home),
+    ('/trooper', trooper.Trooper),
     ('/waterfall/auto-revert-metrics', auto_revert_metrics.AutoRevertMetrics),
-    ('/waterfall/change-auto-revert-setting',
-     change_auto_revert_setting.ChangeAutoRevertSetting),
     ('/waterfall/check-duplicate-failures',
      check_duplicate_failures.CheckDuplicateFailures),
     ('/waterfall/check-flake', check_flake.CheckFlake),

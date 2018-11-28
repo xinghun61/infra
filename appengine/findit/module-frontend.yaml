@@ -63,6 +63,10 @@ handlers:
   script: frontend_main.waterfall_frontend_web_application
   secure: always
 
+- url: /trooper
+  script: frontend_main.waterfall_frontend_web_application
+  secure: always
+
 skip_files:
 - ^(.*/)?#.*#$
 - ^(.*/)?.*~$
