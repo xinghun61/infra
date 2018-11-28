@@ -111,7 +111,3 @@ func generateLogLocation(e site.Environment) string {
 	return fmt.Sprintf("logdog://%s/%s/skylab/%s/+/annotations",
 		e.LogDogHost, e.LUCIProject, u.String())
 }
-
-func swarmingTaskURL(e site.Environment, taskID string) string {
-	return fmt.Sprintf("%stask?id=%s", e.SwarmingService, taskID)
-}

@@ -7,6 +7,7 @@ package cmd
 import (
 	"context"
 	"flag"
+	"fmt"
 	"net/http"
 
 	"go.chromium.org/luci/auth"
@@ -58,4 +59,8 @@ func newSwarmingService(service string, c *http.Client) (*swarming.Service, erro
 	}
 	s.BasePath = service + swarmingAPISuffix
 	return s, nil
+}
+
+func swarmingTaskURL(e site.Environment, taskID string) string {
+	return fmt.Sprintf("%stask?id=%s", e.SwarmingService, taskID)
 }

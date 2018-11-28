@@ -35,6 +35,7 @@ func getApplication() *cli.Application {
 
 			// Main commands.
 			cmd.BalancePool,
+			cmd.Diagnose,
 			cmd.Repair,
 			cmd.Update,
 		},

@@ -14,23 +14,26 @@ import (
 
 // Environment contains environment specific values.
 type Environment struct {
+	LUCIProject     string
 	SwarmingService string
 	LogDogHost      string
-	LUCIProject     string
+	AdminService    string
 }
 
 // Prod is the environment for prod.
 var Prod = Environment{
+	LUCIProject:     "chromeos",
 	SwarmingService: "https://chromeos-swarming.appspot.com/",
 	LogDogHost:      "luci-logdog.appspot.com",
-	LUCIProject:     "chromeos",
+	AdminService:    "chromeos-skylab-bot-fleet.appspot.com",
 }
 
 // Dev is the environment for dev.
 var Dev = Environment{
+	LUCIProject:     "chromeos",
 	SwarmingService: "https://chromium-swarm-dev.appspot.com/",
 	LogDogHost:      "luci-logdog-dev.appspot.com",
-	LUCIProject:     "chromeos",
+	AdminService:    "skylab-staging-bot-fleet.appspot.com",
 }
 
 // DefaultAuthOptions is an auth.Options struct prefilled with chrome-infra
