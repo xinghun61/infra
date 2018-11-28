@@ -4,19 +4,14 @@
 
 .PHONY: test clean
 
-gosecwrapper: gosec
-	go build -o gosecwrapper
+gosec_wrapper: gosec
+	go build -o gosec_wrapper
 
-test: gosecwrapper
-	./gosecwrapper -input=test -output=out && go test || echo "TEST FAILED"
+test: gosec_wrapper
+	./gosec_wrapper -input=test -output=out && go test || echo "TEST FAILED"
 
 clean:
-	rm -rf ./bin gosecwrapper
+	rm -rf bin out gosec_wrapper
 
 gosec:
 	if [ ! -d ./bin ] ; then mkdir bin && curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s latest; fi
-
-cipd:
-	cipd create -pkg-def=cipd.yaml
-	cipd set-ref infra/tricium/function/gosec -ref live -version latest
-

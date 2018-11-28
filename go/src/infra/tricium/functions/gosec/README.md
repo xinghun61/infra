@@ -9,8 +9,8 @@ Consumes Tricium FILES and producs Tricium RESULTS comments.
 Local testing:
 
 ```
-$ make gosecwrapper
-$ ./gosecwrapper --input=test --output=out
+$ make gosec_wrapper
+$ ./gosec_wrapper --input=test --output=out
 ```
 
 ## Deployment

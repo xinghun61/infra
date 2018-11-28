@@ -260,7 +260,7 @@ func runGosecParallel(maxWorkers int) ([]Issue, error) {
 		wg.Add(1)
 		go gosecWorker(jobs, &wg)
 	}
-	log.Printf("Spawned all workders\n")
+	log.Printf("Spawned all workers\n")
 
 	// Distribute jobs into queue.
 	for c, file := range files {
