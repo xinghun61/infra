@@ -132,8 +132,9 @@ class RankFlakesTest(WaterfallTestCase):
                 '',
             'flake_filter':
                 '',
-            'bug_key':
+            'bug_id':
                 '',
+            'monorail_project': '',
             'error_message':
                 None,
             'flake_weights': [('cq false rejection', 100),
@@ -179,8 +180,9 @@ class RankFlakesTest(WaterfallTestCase):
                 '',
             'flake_filter':
                 'suite::suite',
-            'bug_key':
+            'bug_id':
                 '',
+            'monorail_project': '',
             'error_message':
                 None,
             'flake_weights': [('cq false rejection', 100),
@@ -212,8 +214,9 @@ class RankFlakesTest(WaterfallTestCase):
                 '',
             'flake_filter':
                 'test_type::flavored_tests@-test_type::tests',
-            'bug_key':
+            'bug_id':
                 '',
+            'monorail_project': '',
             'error_message':
                 None,
             'flake_weights': [('cq false rejection', 100),
@@ -224,9 +227,9 @@ class RankFlakesTest(WaterfallTestCase):
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 10, 2, 1))
   def testGetFlakesByMergedBugKey(self, _):
-    bug_key_urlsafe = self.flake_issue0.key.urlsafe()
+    bug_id = self.flake_issue0.issue_id
     response = self.test_app.get(
-        '/ranked-flakes?bug_key=%s' % bug_key_urlsafe,
+        '/ranked-flakes?bug_id=%s' % bug_id,
         params={
             'format': 'json',
         },
@@ -245,8 +248,9 @@ class RankFlakesTest(WaterfallTestCase):
                 '',
             'flake_filter':
                 '',
-            'bug_key':
-                bug_key_urlsafe,
+            'bug_id':
+                bug_id,
+            'monorail_project': '',
             'error_message':
                 None,
             'flake_weights': [('cq false rejection', 100),
@@ -257,9 +261,9 @@ class RankFlakesTest(WaterfallTestCase):
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 10, 2, 1))
   def testGetFlakesByIndependentBugKey(self, _):
-    bug_key_urlsafe = self.flake_issue1.key.urlsafe()
+    bug_id = self.flake_issue1.issue_id
     response = self.test_app.get(
-        '/ranked-flakes?bug_key=%s' % bug_key_urlsafe,
+        '/ranked-flakes?bug_id=%s' % bug_id,
         params={
             'format': 'json',
         },
@@ -278,8 +282,9 @@ class RankFlakesTest(WaterfallTestCase):
                 '',
             'flake_filter':
                 '',
-            'bug_key':
-                bug_key_urlsafe,
+            'bug_id':
+                bug_id,
+            'monorail_project': '',
             'error_message':
                 None,
             'flake_weights': [('cq false rejection', 100),

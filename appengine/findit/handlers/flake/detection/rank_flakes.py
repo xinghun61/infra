@@ -19,6 +19,7 @@ from services.flake_issue_util import GetFlakeIssue
 
 _DEFAULT_PAGE_SIZE = 100
 _DEFAULT_LUCI_PROJECT = 'chromium'
+_DEFAULT_MONORAIL_PROJECT = 'chromium'
 
 
 def _GetFlakesByFilter(flake_filter, luci_project):
@@ -116,15 +117,14 @@ def _GetFlakesByFilter(flake_filter, luci_project):
   return flakes, grouping_search, error_message
 
 
-def _GetFlakesByBug(bug_key_urlsafe):
+def _GetFlakesByBug(monorail_project, bug_id):
   """Gets flakes link to the same bug.
 
   Gets flakes directly link to the bug and also flakes link to bugs that are
     merged into this bug.
   """
-  flake_issue = entity_util.GetEntityFromUrlsafeKey(bug_key_urlsafe)
-  assert flake_issue, 'Requested FlakeIssue {} not found.'.format(
-      bug_key_urlsafe)
+  flake_issue = FlakeIssue.Get(monorail_project, bug_id)
+  assert flake_issue, 'Requested FlakeIssue {} not found.'.format(bug_id)
 
   all_issue_keys = [flake_issue.key]
   issue_leaves = FlakeIssue.query(
@@ -216,7 +216,10 @@ class RankFlakes(BaseHandler):
     flake_filter = self.request.get('flake_filter').strip()
     page_size = int(self.request.get('n').strip()) if self.request.get(
         'n') else _DEFAULT_PAGE_SIZE
-    bug_key_urlsafe = self.request.get('bug_key').strip()
+    bug_id = int(self.request.get('bug_id').strip()) if self.request.get(
+        'bug_id') else None
+    monorail_project = self.request.get('monorail_project').strip(
+    ) if self.request.get('monorail_project') else _DEFAULT_MONORAIL_PROJECT
     prev_cursor = ''
     cursor = ''
     error_message = None
@@ -234,8 +237,8 @@ class RankFlakes(BaseHandler):
         flake = flakes[0]
         return self.CreateRedirect(
             '/flake/occurrences?key=%s' % flake.key.urlsafe())
-    elif bug_key_urlsafe:
-      flakes = _GetFlakesByBug(bug_key_urlsafe)
+    elif bug_id:
+      flakes = _GetFlakesByBug(monorail_project, bug_id)
     else:
       flakes, prev_cursor, cursor = _GetFlakeQueryResults(
           luci_project, self.request.get('cursor'),
@@ -275,8 +278,10 @@ class RankFlakes(BaseHandler):
             luci_project if luci_project != _DEFAULT_LUCI_PROJECT else ''),
         'flake_filter':
             flake_filter,
-        'bug_key':
-            bug_key_urlsafe,
+        'bug_id':
+            bug_id or '',
+        'monorail_project': (
+            luci_project if luci_project != _DEFAULT_MONORAIL_PROJECT else ''),
         'error_message':
             error_message,
         'flake_weights': [[
