@@ -96,9 +96,9 @@ def RunSteps(api, source_repo, target_repo):
                   "'url':'%s',"
                   "'deps_file':'DEPS'}]"
                   % (source_checkout_name, source_repo))
-  with api.context(cwd=source_checkout_dir):
+  with api.context(cwd=checkout_dir):
     deps = json.loads(api.gclient('evaluate DEPS',
-                                  ['revinfo', '--deps', '--all',
+                                  ['revinfo', '--deps', 'all',
                                    '--ignore-dep-type=cipd',
                                    '--spec', gclient_spec, '--output-json=-'],
                                   stdout=api.raw_io.output_text()).stdout)

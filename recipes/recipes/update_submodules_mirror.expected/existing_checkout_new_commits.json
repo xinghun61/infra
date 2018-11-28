@@ -105,13 +105,13 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "revinfo",
       "--deps",
-      "--all",
+      "all",
       "--ignore-dep-type=cipd",
       "--spec",
       "solutions=[{'managed':False,'name':'src/','url':'https://chromium.googlesource.com/chromium/src','deps_file':'DEPS'}]",
       "--output-json=-"
     ],
-    "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
+    "cwd": "[CACHE]/codesearch_update_submodules_mirror",
     "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
