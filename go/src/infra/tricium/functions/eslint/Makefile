@@ -6,11 +6,14 @@ OUT_BASE=eslint-deps
 
 .PHONY: test clean
 
-eslint_parser: node eslint
+eslint_parser: eslint
 	go build -o eslint_parser
+
+eslint:
+	./setup.py
 
 test: eslint_parser
 	./eslint_parser -input=test -output=out
 
 clean:
-	rm -rf eslint_parser eslint node out
+	rm -rf eslint_parser eslint node out eslint.tar.gz node.tar.gz

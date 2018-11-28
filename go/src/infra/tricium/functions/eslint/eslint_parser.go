@@ -26,7 +26,7 @@ const (
 
 var severityLevels = []string{"warning", "error"}
 
-// Message is the structure of ESLint error messages
+// Message is the structure of ESLint error messages.
 type Message struct {
 	RuleID    string
 	Message   string
@@ -37,7 +37,7 @@ type Message struct {
 	EndColumn int32
 }
 
-// FileErrors is parent structure of ESLint errors for every file
+// FileErrors is the parent structure of ESLint errors for every file.
 type FileErrors struct {
 	FilePath     string
 	Messages     []Message
@@ -156,7 +156,7 @@ func scanEslintOutput(scanner *bufio.Scanner, results *tricium.Data_Results, don
 	}
 }
 
-// For every error message create a Tricium comment
+// makeCommentForMessage constructs a Tricium comment from one message.
 func makeCommentForMessage(path string, message Message) *tricium.Data_Comment {
 	return &tricium.Data_Comment{
 		Path:      path,
