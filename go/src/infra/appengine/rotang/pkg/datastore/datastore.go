@@ -324,6 +324,9 @@ func (s *Store) RotaConfig(ctx context.Context, name string) ([]*rotang.Configur
 			ID:  name,
 		}
 		if err := datastore.Get(ctx, &r); err != nil {
+			if err == datastore.ErrNoSuchEntity {
+				return nil, status.Errorf(codes.NotFound, "rota: %q not found", name)
+			}
 			return nil, err
 		}
 		rotas = append(rotas, r)
