@@ -34,10 +34,23 @@ import (
 // All timestamps are in UTC.
 const timeStampLayout = "2006-01-02 15:04:05.000000000"
 
-// Project tracks the last poll of a Gerrit project.
+// Datastore schema diagram for tracked Gerrit projects and CLs:
 //
-// Mutable entity.
-// LUCI datastore ID (=string on the form host:project) field.
+//    +------------------+
+//    |GerritProject     |
+//    |id=<host:project> |
+//    +---+--------------+
+//        |
+//    +---+-----------+
+//    |Change         |
+//    |id=<change ID> |
+//    +---------------+
+
+// Project represents one Gerrit project, which corresponds to one repo.
+//
+// Mutable entity. This is used to track the last poll time.
+// The kind is "GerritProject"; this is not to be confused with
+// `GerritProject` from the Tricium config schema.
 type Project struct {
 	ID       string `gae:"$id"`
 	Instance string
@@ -46,11 +59,10 @@ type Project struct {
 	LastPoll time.Time
 }
 
-// Change tracks the last seen revision for a Gerrit change.
+// Change represents one CL (one Gerrit change).
 //
-// Mutable entity.
-// LUCI datastore ID (=fully-qualified Gerrit change ID)
-// and parent (=key to GerritProject entity) fields.
+// Mutable entity. This is used to track the latest patchset.
+// It's assumed that entities for inactive changes are cleaned up.
 type Change struct {
 	ID           string  `gae:"$id"`
 	Parent       *ds.Key `gae:"$parent"`
@@ -66,7 +78,7 @@ func (c byUpdatedTime) Less(i, j int) bool { return c[i].Updated.Time().Before(c
 
 // poll queries Gerrit for changes since the last poll.
 //
-// Change queries are done on a per project basis for project with configured
+// GerritChange queries are done on a per project basis for project with configured
 // Gerrit details.
 //
 // This function will be called periodically by a cron job, but may also be
@@ -157,13 +169,13 @@ func pollProject(c context.Context, triciumProject string, repo *tricium.RepoDet
 		return nil
 	}
 
-	logging.Infof(c, "Last poll: %+v", p)
+	logging.Debugf(c, "Last poll for %q: %s", p.ID, p.LastPoll)
 
-	// TODO(emso): Add a limit for how many entries that will be processed
+	// TODO(qyearsley): Add a limit for how many entries that will be processed
 	// in a poll. If, for instance, the service is restarted after some
 	// down time, all changes since the last poll before the service went
 	// down will be processed. Too many changes to process could cause the
-	// transaction to fail due to the number of entries touched. A failed
+	// transaction to fail due to the number of entries touched; a failed
 	// transaction will cause the same poll pointer to be used at the next
 	// poll, and the same problem will happen again.
 
@@ -250,7 +262,7 @@ func pollProject(c context.Context, triciumProject string, repo *tricium.RepoDet
 	}, &ds.TransactionOptions{XG: true}); err != nil {
 		return err
 	}
-	logging.Infof(c, "Poll done. Processed %d change(s).", len(changes))
+	logging.Infof(c, "Poll done for %q. Processed %d change(s).", triciumProject, len(changes))
 
 	// Convert diff to Analyze requests.
 	//
@@ -259,19 +271,22 @@ func pollProject(c context.Context, triciumProject string, repo *tricium.RepoDet
 	return enqueueAnalyzeRequests(c, triciumProject, repo, diff)
 }
 
-// extractUpdates extracts change updates.
+// extractUpdates extracts change updates, which determines what to analyze.
 //
-// Compares stored tracking of changes and those found in the poll. Returns
-// the change diff list to convert to Analyze requests, the list of tracked
-// changes to update, and then the list of tracked changes to remove.
-func extractUpdates(c context.Context, p *Project, changes []gr.ChangeInfo) ([]gr.ChangeInfo, []*Change, []*Change, error) {
+// Compares stored tracked changes with those found in the poll. Takes as
+// input the list of changes found in the poll.
+//
+// Returns the Gerrit changes to analyze, as well as the Change entities
+// to update (re-put) and remove.
+func extractUpdates(c context.Context, p *Project, pollChanges []gr.ChangeInfo) ([]gr.ChangeInfo, []*Change, []*Change, error) {
 	var diff []gr.ChangeInfo
 	var uchanges []*Change
 	var dchanges []*Change
+
 	// Get list of tracked changes.
 	pkey := ds.NewKey(c, "GerritProject", p.ID, 0, nil)
 	var trackedChanges []*Change
-	for _, change := range changes {
+	for _, change := range pollChanges {
 		trackedChanges = append(trackedChanges, &Change{ID: change.ID, Parent: pkey})
 	}
 	if err := ds.Get(c, trackedChanges); err != nil {
@@ -286,44 +301,46 @@ func extractUpdates(c context.Context, p *Project, changes []gr.ChangeInfo) ([]g
 			return diff, uchanges, dchanges, err
 		}
 	}
-	// Create map of tracked changes.
+
+	// Create a map of tracked changes stored in the datastore,
+	// so that tracked changes can be looked up by ID when iterating
+	// through changes from the poll.
 	t := map[string]Change{}
 	for _, change := range trackedChanges {
 		if change != nil {
 			t[change.ID] = *change
 		}
 	}
-	// TODO(emso): Consider depending on the order provided by datastore.
-	// That is, depend on keys and values being in the same order from Get.
-	logging.Debugf(c, "Found %d tracked changes.", len(t))
+
 	// Compare polled changes to tracked changes, update tracking and add to the
 	// diff list when there is an updated revision change.
-	for _, change := range changes {
+	for _, change := range pollChanges {
 		tc, ok := t[change.ID]
 		switch {
-		// For untracked and new/draft, start tracking and add to diff list.
-		case !ok && (change.Status == "NEW" || change.Status == "DRAFT"):
+		// Untracked open change; start tracking and add to diff list.
+		case !ok && isOpen(change):
 			logging.Debugf(c, "Found untracked %s change (%s); tracking.", change.Status, change.ID)
 			tc.ID = change.ID
 			tc.LastRevision = change.CurrentRevision
 			uchanges = append(uchanges, &tc)
 			diff = append(diff, change)
-		// Untracked and not new/draft, move on to the next change.
+		// Untracked closed change; move on to the next change.
 		case !ok:
 			logging.Debugf(c, "Found untracked %s change (%s); leaving untracked.", change.Status, change.ID)
-		// For tracked and merged/abandoned, stop tracking (clean up).
-		case change.Status == "MERGED" || change.Status == "ABANDONED":
+		// Tracked closed change; stop tracking (clean up).
+		case !isOpen(change):
 			logging.Debugf(c, "Found tracked %s change (%s); removing.", change.Status, change.ID)
-			// Note that we are only adding keys for entries
-			// already present in the datastore to the delete list.
-			// That is, we should not get any NoSuchEntity errors.
+			// Because we are only adding keys found by the query,
+			// we should not get any NoSuchEntity errors.
 			dchanges = append(dchanges, &tc)
-		// For tracked and unseen revision, update tracking and add to diff list.
+		// Open tracked changes with a new revision: update tracking and add
+		// to diff list.
 		case tc.LastRevision != change.CurrentRevision:
 			logging.Debugf(c, "Found tracked %s change (%s) with new revision; updating.", change.Status, change.ID)
 			tc.LastRevision = change.CurrentRevision
 			uchanges = append(uchanges, &tc)
 			diff = append(diff, change)
+		// Open tracked change with no new revision: Leave as is.
 		default:
 			logging.Debugf(c, "Found tracked %s change (%s) with no update; leaving as is.", change.Status, change.ID)
 		}
@@ -331,13 +348,25 @@ func extractUpdates(c context.Context, p *Project, changes []gr.ChangeInfo) ([]g
 	return diff, uchanges, dchanges, nil
 }
 
+// isOpen checks whether a Gerrit CL is considered open.
+//
+// Status is one of "NEW", "MERGED", or "ABANDONED", where "NEW" indicates
+// any open change. ChangeInfo schema: https://goo.gl/M8Csu6
+func isOpen(change gr.ChangeInfo) bool {
+	return change.Status == "NEW"
+}
+
 // enqueueAnalyzeRequests enqueues Analyze requests for the provided Gerrit changes.
+//
+// Changes that shouldn't be analyzed will be skipped; this includes changes by
+// owners that aren't whitelisted, as well as empty changes, such as those
+// containing only deleted files.
 func enqueueAnalyzeRequests(c context.Context, triciumProject string, repo *tricium.RepoDetails, changes []gr.ChangeInfo) error {
-	logging.Infof(c, "Enqueueing Analyze requests for %d changes for project %q.",
-		len(changes), triciumProject)
 	if len(changes) == 0 {
 		return nil
 	}
+	logging.Infof(c, "Preparing to enqueue Analyze requests for %d changes for project %q.",
+		len(changes), triciumProject)
 	gerritProject := repo.GetGerritProject()
 	changes = filterByWhitelist(c, repo.WhitelistedGroup, changes)
 	var tasks []*tq.Task
@@ -361,8 +390,9 @@ func enqueueAnalyzeRequests(c context.Context, triciumProject string, repo *tric
 			}.Infof(c, "Not making Analyze request for change; changes has no files.")
 			continue
 		}
-		// Sorting files according to their paths to account for random enumeration in go maps.
-		// This is to get consistent behavior for the same input.
+		// Sorting files according to their paths to account for random
+		// enumeration in go maps. This is to get consistent behavior for the
+		// same input.
 		sort.Slice(files, func(i, j int) bool {
 			return files[i].Path < files[j].Path
 		})
@@ -439,7 +469,10 @@ func filterByWhitelist(c context.Context, whitelistedGroups []string, changes []
 			}
 			whitelisted = authOK
 			if !whitelisted {
-				logging.Infof(c, "Owner %q is not whitelisted, skipping Analyze.", email)
+				logging.Fields{
+					"email":  email,
+					"groups": whitelistedGroups,
+				}.Infof(c, "Owner not whitelisted; skipping Analyze.")
 			}
 			owners[email] = whitelisted
 		}
@@ -462,7 +495,9 @@ func gerritProjectID(host, project string) string {
 // Gerrit FileInfo; see https://goo.gl/ABFHDg.
 func statusFromCode(c context.Context, status string) tricium.Data_Status {
 	switch status {
-	case "M":
+	case "", "M":
+		// An empty or missing Status field indicates "MODIFIED".
+		// Gerrit uses an empty status field for modified files.
 		return tricium.Data_MODIFIED
 	case "A":
 		return tricium.Data_ADDED

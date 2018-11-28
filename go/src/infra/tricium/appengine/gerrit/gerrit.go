@@ -110,7 +110,6 @@ func (gerritServer) QueryChanges(c context.Context, host, project string, lastTi
 	var changes []gr.ChangeInfo
 	// Compose, connect, and send.
 	url := composeChangesQueryURL(host, project, lastTimestamp, offset)
-	logging.Debugf(c, "Using changes query URL %q.", url)
 	body, err := fetchResponse(c, url, map[string]string{
 		"Content-Disposition": "application/json",
 		"Content-Type":        "application/json",

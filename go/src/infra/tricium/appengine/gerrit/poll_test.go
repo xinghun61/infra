@@ -245,6 +245,7 @@ func TestPollBasicBehavior(t *testing.T) {
 					{
 						ID:              "project~branch~Ideadc0de",
 						Project:         gd.Project,
+						Status:          "NEW",
 						CurrentRevision: "abcdef",
 						Updated:         gr.TimeStamp(lastChangeTs),
 						Revisions:       revisions,
@@ -311,6 +312,7 @@ func TestPollBasicBehavior(t *testing.T) {
 					{
 						ID:              "project~branch~Ideadc0de",
 						Project:         gd.Project,
+						Status:          "NEW",
 						CurrentRevision: "abcdef",
 						Updated:         gr.TimeStamp(lastChangeTs),
 						Revisions:       revisions,
@@ -362,6 +364,7 @@ func TestPollBasicBehavior(t *testing.T) {
 					{
 						ID:              "project~branch~Ideadc0de",
 						Project:         gd.Project,
+						Status:          "NEW",
 						CurrentRevision: "abcdef",
 						Updated:         gr.TimeStamp(lastChangeTs),
 						Revisions:       revisions,
@@ -400,6 +403,7 @@ func TestPollBasicBehavior(t *testing.T) {
 					changes = append(changes, gr.ChangeInfo{
 						ID:              changeID,
 						Project:         gd.Project,
+						Status:          "NEW",
 						CurrentRevision: rev,
 						Updated:         gr.TimeStamp(tc.Now().UTC()),
 						Revisions:       revisions,
@@ -501,6 +505,7 @@ func TestPollWhitelistBehavior(t *testing.T) {
 				{
 					ID:              "project~branch~Ideadc0de",
 					Project:         noWhitelistProject,
+					Status:          "NEW",
 					CurrentRevision: "abcdef",
 					Updated:         gr.TimeStamp(lastChangeTs),
 					Revisions:       revisions,
@@ -525,6 +530,7 @@ func TestPollWhitelistBehavior(t *testing.T) {
 				{
 					ID:              "project~branch~Ideadc0de",
 					Project:         whitelistProject,
+					Status:          "NEW",
 					CurrentRevision: "abcdef",
 					Updated:         gr.TimeStamp(lastChangeTs),
 					Revisions:       revisions,
@@ -549,6 +555,7 @@ func TestPollWhitelistBehavior(t *testing.T) {
 				{
 					ID:              "project~branch~Ideadc0de",
 					Project:         whitelistProject,
+					Status:          "NEW",
 					CurrentRevision: "abcdef",
 					Updated:         gr.TimeStamp(lastChangeTs),
 					Revisions:       revisions,
