@@ -221,12 +221,15 @@ message CoverageReport {
   // Code coverage info of individual source files.
   repeated File files = 4;
 
+  // Code coverage info of individual source files saved in separate files.
+  repeated string file_shards = 5;
+
   // Code coverage summary for all directories.
-  repeated GroupCoverageSummary dirs = 5;
+  repeated GroupCoverageSummary dirs = 6;
 
   // Code coverage summary for all crbug components.
-  repeated GroupCoverageSummary components = 6;
+  repeated GroupCoverageSummary components = 7;
 
   // Code coverage summary for the root directory.
-  repeated Metric summaries = 7;
+  repeated Metric summaries = 8;
 }

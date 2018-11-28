@@ -103,7 +103,11 @@ proto:
 
 
 ##### Unit tests ###
-test:
+clean-expect_tests:  # $$ is to escape $ in makefile.
+	ps auxef | grep ENV/bin/expect_tests | grep -v grep | \
+	  awk '{print $$2}' | xargs kill -9 >/dev/null 2>&1 | echo
+
+test: clean-expect_tests
 	@mkdir -p $(TMPDIR)/coverage
 	$(INFRAPYTHON) ../../test.py test appengine/findit \
 	  --html-report $(TMPDIR)/coverage

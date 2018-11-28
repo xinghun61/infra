@@ -27,10 +27,39 @@ from waterfall import waterfall_config
 _PROJECTS_WHITELIST = set(['chromium/src'])
 
 
-class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
-  PERMISSION_LEVEL = Permission.APP_SELF
+def _GetValidatedData(gs_url):
+  """Returns the json data from the given GS url after validation.
 
-  def _ProcessFullRepositoryData(self, commit, data, gs_url, build_id):
+  Returns:
+    json_data (dict): the json data of the file pointed by the given GS url, or
+        None if the data can't be retrieved.
+  """
+  logging.info('Fetching %s', gs_url)
+  status, content, _ = FinditHttpClient().Get(gs_url)
+  assert status == 200, 'Can not retrieve the data: %s' % gs_url
+
+  logging.info('Decompressing and loading coverage data...')
+  decompressed_data = zlib.decompress(content)
+
+  del content  # Explicitly release memory.
+  data = json.loads(decompressed_data)
+  del decompressed_data  # Explicitly release memory.
+  logging.info('Finished decompressing and loading coverage data.')
+
+  # Validate that the data is in good format.
+  logging.info('Validating coverage data...')
+  report = CoverageReport()
+  json_format.ParseDict(data, report, ignore_unknown_fields=True)
+  del report  # Explicitly delete the proto message to release memory.
+  logging.info('Finished validating coverage data.')
+
+  return data
+
+
+class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
+  PERMISSION_LEVEL = Permission.ADMIN
+
+  def _ProcessFullRepositoryData(self, commit, data, full_gs_dir, build_id):
     # Load the commit log first so that we could fail fast before redo all.
     repo_url = 'https://%s/%s' % (commit.host, commit.project)
     change_log = CachedGitilesRepository(FinditHttpClient(),
@@ -39,46 +68,68 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
 
     # Save the file-level, directory-level and line-level coverage data.
     code_revision_index = '%s-%s' % (commit.project, commit.id)
+
     component_summaries = []
-    repo_summaries = None
-    for data_type in ('files', 'dirs', 'components'):
-      if data_type not in data:
+    for data_type in ('dirs', 'components', 'files', 'file_shards'):
+      sub_data = data.get(data_type)
+      if not sub_data:
         continue
 
+      logging.info('Processing %d entries for %s', len(sub_data), data_type)
+
+      actual_data_type = data_type
+      if data_type == 'file_shards':
+        actual_data_type = 'files'
+
+      def FlushEntries(entries, total, last=False):
+        # Flush the data in a batch and release memory.
+        if len(entries) < 100 and not (last and entries):
+          return entries, total
+
+        ndb.put_multi(entries)
+
+        total += len(entries)
+
+        logging.info('Dumped %d CoverageData entries of type %s', total,
+                     actual_data_type)
+        return [], total
+
+      def IterateOverFileShards(file_shards):
+        for file_path in file_shards:
+          url = '%s/%s' % (full_gs_dir, file_path)
+          # Download data one by one.
+          yield _GetValidatedData(url).get('files', [])
+
+      if data_type == 'file_shards':
+        data_iterator = IterateOverFileShards(sub_data)
+      else:
+        data_iterator = [sub_data]
+
       entities = []
-      sub_data = data[data_type] or []
-
-      logging.info('Dumping %d entries for %s', len(sub_data), data_type)
       total = 0
-      for group_data in sub_data:
-        if data_type == 'components':
-          component_summaries.append({
-              'name': group_data['path'],
-              'summaries': group_data['summaries'],
-          })
-        if data_type == 'dirs' and group_data['path'] == '//':
-          repo_summaries = group_data['summaries']
 
-        coverage_data = CoverageData.Create(commit.host, code_revision_index,
-                                            data_type, group_data['path'],
-                                            group_data)
-        entities.append(coverage_data)
-        if len(entities) >= 100:  # Batch save.
-          total += len(entities)
-          ndb.put_multi(entities)
-          entities = []
-          logging.info('Dumped %d CoverageData entities of type %s', total,
-                       data_type)
-      if entities:  # There might be some remaining data.
-        ndb.put_multi(entities)
-        total += len(entities)
-        logging.info('Dumped %d CoverageData entities of type %s', total,
-                     data_type)
-      if component_summaries:
-        CoverageData.Create(commit.host, code_revision_index, data_type, '>>', {
-            'dirs': component_summaries,
-            'path': '>>'
-        }).put()
+      for dataset in data_iterator:
+        for group_data in dataset:
+          if actual_data_type == 'components':
+            component_summaries.append({
+                'name': group_data['path'],
+                'summaries': group_data['summaries'],
+            })
+
+          coverage_data = CoverageData.Create(commit.host, code_revision_index,
+                                              actual_data_type,
+                                              group_data['path'], group_data)
+          entities.append(coverage_data)
+          entities, total = FlushEntries(entities, total, last=False)
+        del dataset  # Explicitly release memory.
+      FlushEntries(entities, total, last=True)
+
+    if component_summaries:
+      CoverageData.Create(
+          commit.host, code_revision_index, actual_data_type, '>>', {
+          'dirs': component_summaries,
+          'path': '>>'
+      }).put()
 
     # Create a repository-level record so that it shows up on UI.
     PostsubmitReport(
@@ -89,11 +140,11 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
         revision=commit.id,
         commit_position=change_log.commit_position,
         commit_timestamp=change_log.committer.time,
-        summary_metrics=data.get('summaries', repo_summaries),
-        gs_url=gs_url,
+        summary_metrics=data.get('summaries'),
+        gs_url='%s/index.html' % full_gs_dir,
         build_id=build_id).put()
 
-  def _ProcessCLPatchData(self, patch, data, gs_url, build_id):
+  def _ProcessCLPatchData(self, patch, data, full_gs_dir, build_id):
     CoverageData.Create(patch.host, '%s-%s' % (patch.change, patch.patchset),
                         'patch', 'ALL', data).put()
     PresubmitReport(
@@ -104,7 +155,7 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
         project=patch.project,
         change=patch.change,
         patchset=patch.patchset,
-        gs_url=gs_url,
+        gs_url='%s/index.html' % full_gs_dir,
         build_id=build_id).put()
 
   def _processCodeCoverageData(self, build_id):
@@ -122,36 +173,21 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
     gs_bucket = properties['coverage_gs_bucket']
     gs_path = properties['coverage_metadata_gs_path']
 
-    gs_url = 'https://storage.googleapis.com/%s/%s/compressed.json.gz' % (
+    full_gs_dir = 'https://storage.googleapis.com/%s/%s' % (
         gs_bucket, gs_path)
-    status, content, _ = FinditHttpClient().Get(gs_url)
-    if status != 200:
-      return BaseHandler.CreateError(
-          'Can not retrieve the coverage data: %s' % gs_url, 500)
 
-    logging.info('Decompressing and loading coverage data...')
-    decompressed_data = zlib.decompress(content)
-    del content
-    data = json.loads(decompressed_data)
-    del decompressed_data
-    logging.info('Finished decompressing and loading coverage data.')
-
-    # Validate that the data is in good format.
-    logging.info('Validating coverage data...')
-    report = CoverageReport()
-    json_format.ParseDict(data, report, ignore_unknown_fields=True)
-    # Explicitly delete the proto message to release memory.
-    del report
-    logging.info('Finished validating coverage data...')
+    gs_url = '%s/all.json.gz' % full_gs_dir
+    data = _GetValidatedData(gs_url)
 
     # Save the data in json.
     patches = build.input.gerrit_changes
     if patches:  # For a CL/patch, we save the entire data in one entity.
       patch = patches[0]  # Assume there is only 1 patch which is true in CQ.
-      self._ProcessCLPatchData(patch, data['files'], gs_url, build_id)
+      self._ProcessCLPatchData(patch, data['files'], full_gs_dir, build_id)
     else:  # For a commit, we save the data by file and directory.
-      self._ProcessFullRepositoryData(build.input.gitiles_commit, data, gs_url,
-                                      build_id)
+      assert build.input.gitiles_commit is not None, 'Expect a commit'
+      self._ProcessFullRepositoryData(build.input.gitiles_commit, data,
+                                      full_gs_dir, build_id)
 
   def HandlePost(self):
     """Loads the data from GS bucket, and dumps them into ndb."""
@@ -268,7 +304,6 @@ class ServeCodeCoverageData(BaseHandler):
     elif project:
       logging.info('Servicing coverage data for postsubmit')
       if not revision:
-        logging.info('Repo-level data')
         query = PostsubmitReport.query(
             PostsubmitReport.server_host == host, PostsubmitReport.project ==
             project).order(-PostsubmitReport.commit_position).order(
@@ -276,11 +311,11 @@ class ServeCodeCoverageData(BaseHandler):
         entities, _, _ = query.fetch_page(100)
         data = [e._to_dict() for e in entities]
       else:
-        logging.info('Repo-level data')
         if data_type in ('dirs', 'files'):
           path = path or '//'
         elif data_type == 'components':
           path = path or '>>'
+        assert data_type, 'Unknown data_type'
 
         code_revision_index = '%s-%s' % (project, revision)
         entity = CoverageData.Get(host, code_revision_index, data_type, path)
