@@ -109,7 +109,12 @@ def RunSteps(api, source_repo, target_repo):
   # resulting list of executed steps more readable.
   with api.step.nest('Add gitlinks'):
     for path, entry in deps.iteritems():
+      # Filter out any DEPS that point outside of the repo, as there's no way to
+      # represent this with submodules.
       if not path.startswith(source_checkout_name):
+        continue
+      # Filter out the root repo itself, which shows up for some reason.
+      if path == source_checkout_name:
         continue
       path = str(path[len(source_checkout_name):])
 
@@ -148,6 +153,10 @@ fake_src_deps = """
   "src-internal": {
     "url": "https://chromi-internal.googlesource.com/chrome/src-internal.git",
     "rev": "34b7d6a218430e7ff716b81854743a30cfbd3967"
+  },
+  "src/": {
+    "url": "https://chromium.googlesource.com/chromium/src.git",
+    "rev": null
   }
 }
 """
