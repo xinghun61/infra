@@ -1,5 +1,6 @@
 // Constants shared between the different elements.
 export const timeFormat = 'y-MM-dd HH:mm ZZZZ';
+export const durationFormat = 'd days hh hours mm minutes';
 export const zone = 'America/Los_Angeles';
 export const Shifts = {
   fromAttribute: (value) => {

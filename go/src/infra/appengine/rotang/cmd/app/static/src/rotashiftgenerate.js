@@ -64,10 +64,10 @@ class RotaShiftGenerate extends LitElement {
           'Content-Type': 'application/json',
         },
       });
-      if (res.ok) {
-        window.location.reload(true);
-        return;
+      if (!res.ok) {
+        throw res;
       }
+      window.location.reload(true);
       this.updateState = html`<small class="fail">res.statusText</small>`;
     } catch (err) {
       console.log(err);
@@ -76,6 +76,9 @@ class RotaShiftGenerate extends LitElement {
   }
 
   selectOnCallers(ss, shift) {
+    if (!shift.OnCall) {
+      return;
+    }
     return shift.OnCall.map((oncall, oncallIdx) => html`
      <select name="shiftMember">
        <option value="${oncall.Email}">${oncall.Email}</option>

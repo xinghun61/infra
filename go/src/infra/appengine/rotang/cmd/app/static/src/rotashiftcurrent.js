@@ -51,7 +51,21 @@ class RotaShiftCurrent extends LitElement {
     this.requestUpdate();
   }
 
+  fixComments() {
+    for (let i = 0; i < this.shifts.SplitShifts.length; i++) {
+      for (let j = 0; j < this.shifts.SplitShifts[i].Shifts.length; j++) {
+        this.shifts.SplitShifts[i].Shifts[j].Comment =
+          this.shadowRoot.getElementById(this.commentID(i, j)).value;
+      }
+    }
+  }
+
+  commentID(splitIDX, shiftIDX) {
+    return `shiftComment_${splitIDX}-${shiftIDX}`;
+  }
+
   async sendJSON() {
+    fixComments();
     try {
       const res = await fetch('shiftsupdate', {
         method: 'POST',
@@ -60,14 +74,12 @@ class RotaShiftCurrent extends LitElement {
           'Content-Type': 'application/json',
         },
       });
-      if (res.ok) {
-        this.updateState = html`<small class="ok">(Shifts updated)</small>`;
-        return;
+      if (!res.ok) {
+        throw res;
       }
-      this.updateState = html`<small class="fail">(res.statusText)</small>`;
+      this.updateState = html`<small class="ok">(Shifts updated)</small>`;
     } catch (err) {
-      console.log(err);
-      this.updateState = html`<small class="fail">${err}</small>`;
+      this.updateState = html`<small class="fail">${err.text()}</small>`;
     }
   }
 
@@ -125,7 +137,8 @@ class RotaShiftCurrent extends LitElement {
         value="${i.EndTime.toFormat(constants.timeFormat)}" readonly>
         </td>
         <td>
-          <input type=text name="shiftComment" value="${i.Comment}">
+          <input type=text id="${this.commentID(splitIdx, shiftIdx)}"
+          value="${i.Comment}">
         </td>
         <td>
           <button type="button" @click=

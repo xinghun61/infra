@@ -3,7 +3,7 @@ import {DateTime} from 'luxon';
 import * as constants from './constants';
 import humanizeDuration from 'humanize-duration';
 
-const ShiftonCall = {
+const ShiftOnCall = {
   fromAttribute: (value) => {
     let result;
     try {
@@ -33,7 +33,7 @@ const Rotas = {
 class RotaonCall extends LitElement {
   static get properties() {
     return {
-      onCall: {type: ShiftonCall},
+      onCall: {type: ShiftOnCall},
       rotas: {type: Rotas},
       user: {},
       now: {},
@@ -195,7 +195,6 @@ class RotaonCall extends LitElement {
       </tbody>
     </table>`
     ;
-  }
-}
+  } }
 
-customElements.define('rota-oncall', RotaonCall);
+customElements.define('rota-oncall', RotaOnCall);
