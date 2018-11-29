@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"context"
+
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/router"
 
@@ -245,6 +246,10 @@ func eventsToShifts(ctx context.Context, events *gcal.Events, name string, shift
 		nm := strings.Split(e.Summary, nameShiftSeparator)
 		if len(nm) > 1 {
 			shift = nm[len(nm)-1]
+		}
+		// b/118075231, Q is not exact match.
+		if nm[0] != name {
+			continue
 		}
 		if e.Start == nil {
 			logging.Warningf(ctx, "Start for e.Start: %v rota: %q is nil, evt: %v", e.Start, name, e)
