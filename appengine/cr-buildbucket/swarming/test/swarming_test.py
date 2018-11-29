@@ -1961,6 +1961,20 @@ class SwarmingTest(BaseTest):
           },
       }, 'luci.chromium.ci', 'linux-rel').get_result()
 
+  @mock.patch('swarming.isolate.fetch_async')
+  def test_load_build_run_result_async_not_found(self, fetch_isolate_async):
+    fetch_isolate_async.return_value = future(None)
+    run_result, error = swarming._load_build_run_result_async({
+        'id': 'taskid',
+        'outputs_ref': {
+            'isolatedserver': 'https://isolate.example.com',
+            'namespace': 'default-gzip',
+            'isolated': 'badcoffee',
+        },
+    }, 'luci.chromium.ci', 'linux-rel').get_result()
+    self.assertEqual(error, swarming._BUILD_RUN_RESULT_CORRUPTED)
+    self.assertIsNone(run_result)
+
   def test_generate_build_url(self):
     build = mkBuild(
         parameters={model.BUILDER_PARAMETER: 'linux_chromium_rel_ng'},

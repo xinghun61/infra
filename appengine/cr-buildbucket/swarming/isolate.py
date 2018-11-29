@@ -43,6 +43,8 @@ def fetch_async(loc):
 
   Warning: will buffer entire file in process memory.
   Do not call for large files.
+
+  Returns None if the file is not found.
   """
   try:
     res = yield net.json_request_async(
@@ -54,6 +56,8 @@ def fetch_async(loc):
         },
         scopes=net.EMAIL_SCOPE,
     )
+  except net.NotFoundError:
+    raise ndb.Return(None)
   except net.Error as ex:
     raise Error('Could not fetch %s: %s' % (loc.human_url, ex))
 

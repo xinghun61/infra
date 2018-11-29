@@ -44,6 +44,12 @@ class IsolateTest(testing.AppengineTestCase):
     with self.assertRaises(isolate.Error):
       isolate.fetch_async(self.loc).get_result()
 
+  def test_fetch_not_found_error(self):
+    net.json_request_async.side_effect = net.NotFoundError(
+        'HTTP 404', 404, None
+    )
+    self.assertIsNone(isolate.fetch_async(self.loc).get_result())
+
   def test_fetch_content_not_base64(self):
     net.json_request_async.return_value = future({
         'content': 'sdfsfsd',

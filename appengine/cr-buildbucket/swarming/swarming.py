@@ -1060,12 +1060,13 @@ def _load_build_run_result_async(task_result, bucket_id, builder):
 
   @ndb.tasklet
   def fetch_json_async(loc):
-    try:
-      raw = yield isolate.fetch_async(loc)
-      raise ndb.Return(json.loads(raw))
-    except ValueError:
-      logging.exception('could not load %s', isolated_loc.human_url)
-      raise ndb.Return(None)
+    raw = yield isolate.fetch_async(loc)
+    if raw is not None:
+      try:
+        raise ndb.Return(json.loads(raw))
+      except ValueError:
+        logging.exception('invalid JSON in %s', isolated_loc.human_url)
+    raise ndb.Return(None)
 
   isolated_loc = isolate.Location(
       hostname, outputs_ref['namespace'], outputs_ref['isolated']
