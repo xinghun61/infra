@@ -7,6 +7,7 @@
 <link rel="import" href="/elements/chdir/mr-profile-page/mr-profile-page.html?version=[app_version]" nonce="[nonce]">
 [else]
 <link rel="import" href="/elements/chdir/mr-profile-page/mr-profile-page.vulcanized.html?version=[app_version]" nonce="[nonce]">
+<script src="/elements/chdir/mr-profile-page/mr-profile-page.vulcanized.js?version=[app_version]" nonce="[nonce]"></script>
 [end]
 
 <mr-profile-page
