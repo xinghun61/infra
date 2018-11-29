@@ -1675,3 +1675,128 @@ class IssuesServicerTest(unittest.TestCase):
     manual_verdicts = self.services.spam.manual_verdicts_by_comment_id
     self.assertNotIn(comment.id, comment_reports[self.issue_1.issue_id])
     self.assertEqual({}, manual_verdicts[comment.id])
+
+  def testListIssuePermissions_Normal(self):
+    issue_1 = fake.MakeTestIssue(
+        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
+    self.services.issue.TestAddIssue(issue_1)
+
+    request = issues_pb2.ListIssuePermissionsRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1))
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='user@example.com')
+
+    response = self.CallWrapped(
+        self.issues_svcr.ListIssuePermissions, mc, request)
+    self.assertEqual(
+        issues_pb2.ListIssuePermissionsResponse(
+            permissions=[
+               'addissuecomment',
+               'createissue',
+               'deleteown',
+               'flagspam',
+               'setstar',
+               'view']),
+        response)
+
+  def testListIssuePermissions_DeletedIssue(self):
+    issue_1 = fake.MakeTestIssue(
+        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
+    issue_1.deleted = True
+    self.services.issue.TestAddIssue(issue_1)
+
+    request = issues_pb2.ListIssuePermissionsRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1))
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='approver2@example.com')
+
+    response = self.CallWrapped(
+        self.issues_svcr.ListIssuePermissions, mc, request)
+    self.assertEqual(
+        issues_pb2.ListIssuePermissionsResponse(permissions=[]),
+        response)
+
+  def testListIssuePermissions_CanViewDeletedIssue(self):
+    issue_1 = fake.MakeTestIssue(
+        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
+    issue_1.deleted = True
+    self.services.issue.TestAddIssue(issue_1)
+
+    request = issues_pb2.ListIssuePermissionsRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1))
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+
+    response = self.CallWrapped(
+        self.issues_svcr.ListIssuePermissions, mc, request)
+    self.assertEqual(
+        issues_pb2.ListIssuePermissionsResponse(permissions=[
+            'deleteissue',
+            'view']),
+        response)
+
+  def testListIssuePermissions_IssueRestrictions(self):
+    issue_1 = fake.MakeTestIssue(
+        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
+    issue_1.labels = ['Restrict-SetStar-CustomPerm']
+    self.services.issue.TestAddIssue(issue_1)
+
+    request = issues_pb2.ListIssuePermissionsRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1))
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='approver2@example.com')
+
+    response = self.CallWrapped(
+        self.issues_svcr.ListIssuePermissions, mc, request)
+    self.assertEqual(
+        issues_pb2.ListIssuePermissionsResponse(
+            permissions=[
+               'addissuecomment',
+               'createissue',
+               'deleteown',
+               'flagspam',
+               'verdictspam',
+               'view']),
+        response)
+
+  def testListIssuePermissions_IssueGrantedPerms(self):
+    self.services.config.CreateFieldDef(
+        self.cnxn, 789, 'Field Name', 'USER_TYPE', None, None, None, None,
+        None, None, None, None, None, None, 'CustomPerm', None, None,
+        'Docstring', [])
+
+    issue_1 = fake.MakeTestIssue(
+        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
+    issue_1.labels = ['Restrict-SetStar-CustomPerm']
+    issue_1.field_values = [tracker_pb2.FieldValue(user_id=222L, field_id=123)]
+    self.services.issue.TestAddIssue(issue_1)
+
+    request = issues_pb2.ListIssuePermissionsRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1))
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='approver2@example.com')
+
+    response = self.CallWrapped(
+        self.issues_svcr.ListIssuePermissions, mc, request)
+    self.assertEqual(
+        issues_pb2.ListIssuePermissionsResponse(
+            permissions=[
+               'addissuecomment',
+               'createissue',
+               'customperm',
+               'deleteown',
+               'flagspam',
+               'setstar',
+               'verdictspam',
+               'view']),
+        response)

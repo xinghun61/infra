@@ -36,6 +36,7 @@ service Issues {
   rpc DeleteAttachment (DeleteAttachmentRequest) returns (DeleteAttachmentResponse) {}
   rpc FlagIssues (FlagIssuesRequest) returns (FlagIssuesResponse) {}
   rpc FlagComment (FlagCommentRequest) returns (FlagCommentResponse) {}
+  rpc ListIssuePermissions (ListIssuePermissionsRequest) returns (ListIssuePermissionsResponse) {}
 }
 
 
@@ -370,4 +371,17 @@ message FlagCommentRequest {
 
 // Next available tag: 1
 message FlagCommentResponse {
+}
+
+
+// Next available tag: 3
+message ListIssuePermissionsRequest {
+  RequestTrace trace = 1;
+  IssueRef issue_ref = 2;
+}
+
+
+// Next available tag: 2
+message ListIssuePermissionsResponse {
+  repeated string permissions = 1;
 }

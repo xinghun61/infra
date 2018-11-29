@@ -18,6 +18,7 @@ from features import filterrules_helpers
 from features import savedqueries_helpers
 from framework import exceptions
 from framework import framework_views
+from framework import permissions
 from proto import tracker_pb2
 from search import searchpipeline
 from tracker import tracker_bizobj
@@ -530,3 +531,15 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
 
     result = issues_pb2.FlagCommentResponse()
     return result
+
+  @monorail_servicer.PRPCMethod
+  def ListIssuePermissions(self, mc, request):
+    """List the permissions for the current user in the given issue."""
+    project, issue, config = self._GetProjectIssueAndConfig(
+        mc, request.issue_ref, use_cache=False, view_deleted=True)
+
+    perms = permissions.UpdateIssuePermissions(
+        mc.perms, project, issue, config, mc.auth.effective_ids)
+
+    return issues_pb2.ListIssuePermissionsResponse(
+        permissions=sorted(perms.perm_names))
