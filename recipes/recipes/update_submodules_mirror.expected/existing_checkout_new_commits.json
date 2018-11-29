@@ -200,7 +200,7 @@
       "-c",
       "user.name=Submodules bot",
       "-c",
-      "user.email=nobody@chromium.org",
+      "user.email=infra-codesearch@chops-service-accounts.iam.gserviceaccount.com",
       "commit",
       "-m",
       "Synthetic commit for submodules"
@@ -215,7 +215,7 @@
       "push",
       "--all",
       "--force",
-      "https://chromium.googlesource.com/_direct/codesearch/src_mirror"
+      "https://chromium.googlesource.com/codesearch/src_mirror"
     ],
     "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
     "infra_step": true,

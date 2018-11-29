@@ -29,13 +29,11 @@ PROPERTIES = {
 }
 
 COMMIT_USERNAME = 'Submodules bot'
+COMMIT_EMAIL_ADDRESS = \
+    'infra-codesearch@chops-service-accounts.iam.gserviceaccount.com'
 
 def RunSteps(api, source_repo, target_repo):
   _, source_project = api.gitiles.parse_repo_url(source_repo)
-  target_host, target_project = api.gitiles.parse_repo_url(target_repo)
-  # This must be on googlesource.com, as we depend on the _direct endpoint for
-  # force pushed.
-  assert target_host.endswith('googlesource.com')
 
   # NOTE: This name must match the definition in cr-buildbucket.cfg. Do not
   # change without adjusting that config to match.
@@ -135,14 +133,13 @@ def RunSteps(api, source_repo, target_repo):
   api.git('add', '.gitmodules')
 
   api.git('-c', 'user.name=%s' % COMMIT_USERNAME,
-          '-c', 'user.email=nobody@chromium.org',
+          '-c', 'user.email=%s' % COMMIT_EMAIL_ADDRESS,
           'commit', '-m', 'Synthetic commit for submodules',
           name='git commit')
 
   # We've effectively deleted the commit that was at HEAD before. This means
   # that we've diverged from the remote repo, and hence must do a force push.
-  api.git('push', '--all', '--force',
-          'https://%s/_direct/%s' % (target_host, target_project))
+  api.git('push', '--all', '--force', target_repo)
 
 
 fake_src_deps = """
