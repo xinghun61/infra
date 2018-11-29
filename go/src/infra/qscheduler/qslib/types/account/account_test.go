@@ -93,12 +93,11 @@ func TestVectorCompare(t *testing.T) {
 	c := *vector.New(0, 1, 1)
 	d := *vector.New(1, 0, 0)
 
-	type tuple struct {
+	expects := []struct {
 		A      vector.Vector
 		B      vector.Vector
 		Expect bool
-	}
-	expects := []tuple{
+	}{
 		{a, a, false},
 		{b, a, false},
 		{a, b, true},
