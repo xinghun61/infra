@@ -6,9 +6,13 @@
 package inventory
 
 import (
+	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
 	"go.chromium.org/luci/common/errors"
@@ -31,28 +35,29 @@ func LoadLab(dataDir string) (*Lab, error) {
 }
 
 // WriteLab writes lab inventory information to the inventory data directory.
+//
+// WriteLab serializes the proto in a format that can be loaded from both
+// golang and python protobuf libraries.
 func WriteLab(lab *Lab, dataDir string) error {
-	f, err := ioutil.TempFile(dataDir, labFilename)
-	if err != nil {
-		return errors.Annotate(err, "write lab inventory %s", dataDir).Err()
+	lab = proto.Clone(lab).(*Lab)
+	if lab != nil {
+		sortLab(lab)
 	}
-	defer func() {
-		if f != nil {
-			_ = os.Remove(f.Name())
-		}
-	}()
-	defer f.Close()
 	m := proto.TextMarshaler{}
-	if err := m.Marshal(f, lab); err != nil {
+	var b bytes.Buffer
+	if err := m.Marshal(&b, lab); err != nil {
 		return errors.Annotate(err, "write lab inventory %s", dataDir).Err()
 	}
-	if err := f.Close(); err != nil {
+
+	if err := oneShotWriteFile(dataDir, labFilename, rewriteMarshaledTextProtoForPython(b.Bytes())); err != nil {
 		return errors.Annotate(err, "write lab inventory %s", dataDir).Err()
 	}
-	if err := os.Rename(f.Name(), filepath.Join(dataDir, labFilename)); err != nil {
-		return errors.Annotate(err, "write lab inventory %s", dataDir).Err()
+	// oneShotWriteFile is a hacky translation of protos to python library
+	// friendly format. At least make sure we can load the proto back in to
+	// catch obvious corruption.
+	if _, err := LoadLab(dataDir); err != nil {
+		return errors.Annotate(err, "validate lab inventory written to %s", dataDir).Err()
 	}
-	f = nil
 	return nil
 }
 
@@ -74,9 +79,59 @@ func LoadInfrastructure(dataDir string) (*Infrastructure, error) {
 
 // WriteInfrastructure writes infrastructure information to the inventory data directory.
 func WriteInfrastructure(infrastructure *Infrastructure, dataDir string) error {
-	f, err := ioutil.TempFile(dataDir, infraFilename)
-	if err != nil {
+	m := proto.TextMarshaler{}
+	var b bytes.Buffer
+	if err := m.Marshal(&b, infrastructure); err != nil {
 		return errors.Annotate(err, "write infrastructure inventory %s", dataDir).Err()
+	}
+	return oneShotWriteFile(dataDir, infraFilename, rewriteMarshaledTextProtoForPython(b.Bytes()))
+}
+
+var suffixReplacements = map[string]string{
+	": <": " {",
+	">":   "}",
+}
+
+// rewriteMarshaledTextProtoForPython rewrites the serialized prototext similar
+// to how python proto library output format.
+//
+// prototext format is not unique. Go's proto serializer and python's proto
+// serializer output slightly different formats. They can each parse the other
+// library's output. Since our tools are currently split between python and go,
+// the different output formats creates trivial diffs each time a tool from a
+// different language is used. This function is a hacky post-processing step to
+// make the serialized prototext look similar to what the python library would
+// output.
+func rewriteMarshaledTextProtoForPython(data []byte) []byte {
+	// python proto library does not (de)serialize None.
+	// Promote nil value to an empty proto.
+	if string(data) == "<nil>" {
+		return []byte("")
+	}
+
+	ls := strings.Split(string(data), "\n")
+	rls := make([]string, 0, len(ls))
+	for _, l := range ls {
+		for k, v := range suffixReplacements {
+			if strings.HasSuffix(l, k) {
+				l = strings.TrimSuffix(l, k)
+				l = fmt.Sprintf("%s%s", l, v)
+			}
+		}
+		rls = append(rls, l)
+	}
+	return []byte(strings.Join(rls, "\n"))
+}
+
+// oneShotWriteFile writes data to dataDir/fileName.
+//
+// This function ensures that the original file is left unmodified in case of
+// write errors.
+func oneShotWriteFile(dataDir, fileName string, data []byte) error {
+	fp := filepath.Join(dataDir, fileName)
+	f, err := ioutil.TempFile(dataDir, fileName)
+	if err != nil {
+		return errors.Annotate(err, "write inventory %s", fp).Err()
 	}
 	defer func() {
 		if f != nil {
@@ -84,16 +139,88 @@ func WriteInfrastructure(infrastructure *Infrastructure, dataDir string) error {
 		}
 	}()
 	defer f.Close()
-	m := proto.TextMarshaler{}
-	if err := m.Marshal(f, infrastructure); err != nil {
-		return errors.Annotate(err, "write infrastructure inventory %s", dataDir).Err()
+	if err := ioutil.WriteFile(f.Name(), data, 0600); err != nil {
+		return errors.Annotate(err, "write inventory %s", fp).Err()
 	}
 	if err := f.Close(); err != nil {
-		return errors.Annotate(err, "write infrastructure inventory %s", dataDir).Err()
+		return errors.Annotate(err, "write inventory %s", fp).Err()
 	}
-	if err := os.Rename(f.Name(), filepath.Join(dataDir, infraFilename)); err != nil {
-		return errors.Annotate(err, "write infrastructure inventory %s", dataDir).Err()
+	if err := os.Rename(f.Name(), fp); err != nil {
+		return errors.Annotate(err, "write inventory %s", fp).Err()
 	}
 	f = nil
 	return nil
+}
+
+// sortLab deep sorts lab in place.
+func sortLab(lab *Lab) {
+	for _, d := range lab.Duts {
+		sortCommonDeviceSpecs(d.GetCommon())
+	}
+	sort.SliceStable(lab.Duts, func(i, j int) bool {
+		return strings.ToLower(lab.Duts[i].GetCommon().GetHostname()) <
+			strings.ToLower(lab.Duts[j].GetCommon().GetHostname())
+	})
+
+	for _, d := range lab.ServoHosts {
+		sortCommonDeviceSpecs(d.GetCommon())
+	}
+	sort.SliceStable(lab.ServoHosts, func(i, j int) bool {
+		return strings.ToLower(lab.ServoHosts[i].GetCommon().GetHostname()) <
+			strings.ToLower(lab.ServoHosts[j].GetCommon().GetHostname())
+	})
+
+	for _, d := range lab.Chamelons {
+		sortCommonDeviceSpecs(d.GetCommon())
+	}
+	sort.SliceStable(lab.Chamelons, func(i, j int) bool {
+		return strings.ToLower(lab.Chamelons[i].GetCommon().GetHostname()) <
+			strings.ToLower(lab.Chamelons[j].GetCommon().GetHostname())
+	})
+
+	sort.SliceStable(lab.ServoHostConnections, func(i, j int) bool {
+		x := lab.ServoHostConnections[i]
+		y := lab.ServoHostConnections[j]
+		switch {
+		case x.GetServoHostId() < y.GetServoHostId():
+			return true
+		case x.GetServoHostId() > y.GetServoHostId():
+			return false
+		default:
+			// Check next key
+		}
+		switch {
+		case x.GetDutId() < y.GetDutId():
+			return true
+		case x.GetDutId() > y.GetDutId():
+			return false
+		default:
+			// Check next key
+		}
+		return x.GetServoPort() < y.GetServoPort()
+	})
+
+	// ChamelwonConnections are unused and schema is untenable.
+	// Sort not implemented yet.
+}
+
+func sortCommonDeviceSpecs(c *CommonDeviceSpecs) {
+	if c == nil {
+		return
+	}
+
+	sort.SliceStable(c.DeviceLocks, func(i, j int) bool {
+		return c.DeviceLocks[i].GetId() < c.DeviceLocks[j].GetId()
+	})
+	sort.SliceStable(c.Attributes, func(i, j int) bool {
+		return strings.ToLower(c.Attributes[i].GetKey()) < strings.ToLower(c.Attributes[j].GetKey())
+	})
+
+	sl := c.Labels
+	if sl != nil {
+		sort.SliceStable(sl.CriticalPools, func(i, j int) bool {
+			return sl.CriticalPools[i] < sl.CriticalPools[j]
+		})
+		sort.Strings(sl.SelfServePools)
+	}
 }
