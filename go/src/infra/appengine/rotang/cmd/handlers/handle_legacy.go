@@ -34,6 +34,7 @@ func (h *State) HandleLegacy(ctx *router.Context) {
 	}
 
 	item := memcache.NewItem(ctx.Context, name)
+	doCORS(ctx)
 	if err := memcache.Get(ctx.Context, item); err != nil {
 		logging.Warningf(ctx.Context, "%q not in the cache", name)
 		val, err := vf(ctx, name)
@@ -44,7 +45,6 @@ func (h *State) HandleLegacy(ctx *router.Context) {
 		fmt.Fprint(ctx.Writer, val)
 		return
 	}
-	doCORS(ctx)
 	fmt.Fprint(ctx.Writer, string(item.Value()))
 }
 
