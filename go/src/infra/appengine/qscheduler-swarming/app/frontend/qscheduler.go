@@ -119,6 +119,10 @@ func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.Noti
 			return err
 		}
 
+		if sp.config == nil {
+			return errors.Errorf("Scheduler with id %s has nil config.", r.SchedulerId)
+		}
+
 		for _, n := range r.Notifications {
 			var t reconciler.TaskUpdate_Type
 			var ok bool

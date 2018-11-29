@@ -32,7 +32,11 @@ func TestAssignTasks(t *testing.T) {
 		poolID := "Pool1"
 		admin := &QSchedulerAdminServerImpl{}
 		sch := &QSchedulerServerImpl{}
-		admin.CreateSchedulerPool(ctx, &qscheduler.CreateSchedulerPoolRequest{PoolId: poolID})
+		_, err := admin.CreateSchedulerPool(ctx, &qscheduler.CreateSchedulerPoolRequest{
+			PoolId: poolID,
+			Config: &qscheduler.SchedulerPoolConfig{},
+		})
+		So(err, ShouldBeNil)
 
 		Convey("with an idle task that has been notified", func() {
 			taskID := "Task1"

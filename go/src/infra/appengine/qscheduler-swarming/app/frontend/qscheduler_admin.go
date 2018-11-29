@@ -18,6 +18,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"go.chromium.org/gae/service/datastore"
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
 
@@ -30,11 +32,14 @@ type QSchedulerAdminServerImpl struct{}
 
 // CreateSchedulerPool implements QSchedulerAdminServer.
 func (s *QSchedulerAdminServerImpl) CreateSchedulerPool(ctx context.Context, r *qscheduler.CreateSchedulerPoolRequest) (*qscheduler.CreateSchedulerPoolResponse, error) {
+	if r.Config == nil {
+		return nil, errors.Errorf("Missing config.")
+	}
 	sp := QSchedulerState{
 		schedulerID: r.PoolId,
 		reconciler:  reconciler.New(),
 		scheduler:   scheduler.New(time.Now()),
-		config:      &qscheduler.SchedulerPoolConfig{},
+		config:      r.Config,
 	}
 	if err := save(ctx, &sp); err != nil {
 		return nil, err

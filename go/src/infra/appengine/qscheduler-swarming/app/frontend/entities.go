@@ -25,6 +25,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
 	"infra/qscheduler/qslib/reconciler"
 	"infra/qscheduler/qslib/scheduler"
 )
@@ -53,7 +54,7 @@ type qschedulerStateEntity struct {
 
 // save persists the given SchdulerPool to datastore.
 func save(ctx context.Context, q *QSchedulerState) error {
-	var sd, rd []byte
+	var sd, rd, cd []byte
 	var err error
 	if sd, err = proto.Marshal(q.scheduler); err != nil {
 		e := errors.Wrap(err, "unable to marshal Scheduler")
@@ -65,10 +66,16 @@ func save(ctx context.Context, q *QSchedulerState) error {
 		return status.Error(codes.Internal, e.Error())
 	}
 
+	if cd, err = proto.Marshal(q.config); err != nil {
+		e := errors.Wrap(err, "unable to marshal Config")
+		return status.Error(codes.Internal, e.Error())
+	}
+
 	entity := &qschedulerStateEntity{
 		QSPoolID:       q.schedulerID,
 		SchedulerData:  sd,
 		ReconcilerData: rd,
+		ConfigData:     cd,
 	}
 
 	if err := datastore.Put(ctx, entity); err != nil {
@@ -89,16 +96,21 @@ func load(ctx context.Context, poolID string) (*QSchedulerState, error) {
 
 	r := new(reconciler.State)
 	s := new(scheduler.Scheduler)
+	c := new(qscheduler.SchedulerPoolConfig)
 	if err := proto.Unmarshal(dst.ReconcilerData, r); err != nil {
 		return nil, errors.Wrap(err, "unable to unmarshal Reconciler")
 	}
 	if err := proto.Unmarshal(dst.SchedulerData, s); err != nil {
 		return nil, errors.Wrap(err, "unable to unmarshal Scheduler")
 	}
+	if err := proto.Unmarshal(dst.ConfigData, c); err != nil {
+		return nil, errors.Wrap(err, "unable to unmarshal Config")
+	}
 
 	return &QSchedulerState{
 		schedulerID: dst.QSPoolID,
 		reconciler:  r,
 		scheduler:   s,
+		config:      c,
 	}, nil
 }

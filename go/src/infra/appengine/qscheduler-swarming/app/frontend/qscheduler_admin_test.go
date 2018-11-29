@@ -30,12 +30,27 @@ func TestCreateScheduler(t *testing.T) {
 	Convey("Given an admin server running in a test context", t, func() {
 		ctx := gaetesting.TestingContext()
 		admin := &QSchedulerAdminServerImpl{}
-		Convey("when CreateSchedulerPool is called with a pool id", func() {
-			req := qscheduler.CreateSchedulerPoolRequest{
-				PoolId: "Pool 1",
-			}
+		poolID := "Pool 1"
+		req := qscheduler.CreateSchedulerPoolRequest{
+			PoolId: poolID,
+		}
+
+		Convey("when CreateSchedulerPool is called with no config", func() {
 			resp, err := admin.CreateSchedulerPool(ctx, &req)
-			Convey("then response is error-free.", func() {
+			Convey("then an error is returned.", func() {
+				So(resp, ShouldBeNil)
+				So(err, ShouldNotBeNil)
+			})
+		})
+
+		Convey("when CreateSchedulerPool is called with a valid config", func() {
+			config := &qscheduler.SchedulerPoolConfig{
+				Labels: []string{"Label 1"},
+			}
+			req.Config = config
+
+			resp, err := admin.CreateSchedulerPool(ctx, &req)
+			Convey("then it returns without errors.", func() {
 				So(resp, ShouldNotBeNil)
 				So(err, ShouldBeNil)
 			})
@@ -79,8 +94,11 @@ func TestCreateListAccount(t *testing.T) {
 		Convey("with a scheduler pool", func() {
 			req := qscheduler.CreateSchedulerPoolRequest{
 				PoolId: poolID,
+				Config: &qscheduler.SchedulerPoolConfig{},
 			}
-			admin.CreateSchedulerPool(ctx, &req)
+			_, err := admin.CreateSchedulerPool(ctx, &req)
+			So(err, ShouldBeNil)
+
 			Convey("when ListAccounts is called for that pool", func() {
 				req := qscheduler.ListAccountsRequest{
 					PoolId: poolID,
