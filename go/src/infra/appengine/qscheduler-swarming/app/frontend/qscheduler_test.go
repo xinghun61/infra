@@ -39,7 +39,7 @@ func TestAssignTasks(t *testing.T) {
 			req := swarming.NotifyTasksRequest{
 				SchedulerId: poolID,
 				Notifications: []*swarming.NotifyTasksItem{
-					&swarming.NotifyTasksItem{
+					{
 						Time: tutils.TimestampProto(time.Now()),
 						Task: &swarming.TaskSpec{
 							Id:    taskID,
@@ -55,7 +55,7 @@ func TestAssignTasks(t *testing.T) {
 					SchedulerId: poolID,
 					Time:        tutils.TimestampProto(time.Now()),
 					IdleBots: []*swarming.IdleBot{
-						&swarming.IdleBot{BotId: botID},
+						{BotId: botID},
 					},
 				}
 				resp, err := sch.AssignTasks(ctx, &req)

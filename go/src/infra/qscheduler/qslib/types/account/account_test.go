@@ -99,11 +99,11 @@ func TestVectorCompare(t *testing.T) {
 		Expect bool
 	}
 	expects := []tuple{
-		tuple{a, a, false},
-		tuple{b, a, false},
-		tuple{a, b, true},
-		tuple{c, a, true},
-		tuple{d, a, false},
+		{a, a, false},
+		{b, a, false},
+		{a, b, true},
+		{c, a, true},
+		{d, a, false},
 	}
 	for _, expect := range expects {
 		if expect.A.Less(expect.B) != expect.Expect {

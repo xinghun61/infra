@@ -244,14 +244,14 @@ func assertStateEqual(t *testing.T, desc string, got *State, want *State) {
 func TestApplyIdleAssignment(t *testing.T) {
 	t.Parallel()
 	state := &State{
-		QueuedRequests: map[string]*TaskRequest{"t1": &TaskRequest{}},
+		QueuedRequests: map[string]*TaskRequest{"t1": {}},
 		Workers:        map[string]*Worker{"w1": NewWorker()},
 	}
 
 	expect := &State{
 		QueuedRequests: map[string]*TaskRequest{},
 		Workers: map[string]*Worker{
-			"w1": &Worker{RunningTask: &TaskRun{
+			"w1": {RunningTask: &TaskRun{
 				RequestId: "t1",
 				Priority:  1,
 				Request:   &TaskRequest{},
@@ -281,7 +281,7 @@ func TestApplyPreempt(t *testing.T) {
 			"t2": NewRequest("a2", nil, tm),
 		},
 		Workers: map[string]*Worker{
-			"w1": &Worker{RunningTask: &TaskRun{
+			"w1": {RunningTask: &TaskRun{
 				Cost:      vector.New(1),
 				Priority:  2,
 				Request:   NewRequest("a1", nil, tm),
@@ -297,7 +297,7 @@ func TestApplyPreempt(t *testing.T) {
 		},
 		QueuedRequests: map[string]*TaskRequest{},
 		Workers: map[string]*Worker{
-			"w1": &Worker{RunningTask: &TaskRun{
+			"w1": {RunningTask: &TaskRun{
 				Cost:      vector.New(1),
 				Priority:  1,
 				Request:   NewRequest("a2", nil, tm),

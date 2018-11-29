@@ -177,12 +177,12 @@ func addRunningRequest(ctx context.Context, s *Scheduler, rid string, wid string
 func TestForPriority(t *testing.T) {
 	t.Parallel()
 	pRequests := orderedRequests([]prioritizedRequest{
-		prioritizedRequest{Priority: 0},
-		prioritizedRequest{Priority: 0},
-		prioritizedRequest{Priority: 1},
-		prioritizedRequest{Priority: 3},
-		prioritizedRequest{Priority: 3},
-		prioritizedRequest{Priority: 4},
+		{Priority: 0},
+		{Priority: 0},
+		{Priority: 1},
+		{Priority: 3},
+		{Priority: 3},
+		{Priority: 4},
 	})
 
 	expecteds := []orderedRequests{

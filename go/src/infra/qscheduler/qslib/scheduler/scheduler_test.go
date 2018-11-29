@@ -49,8 +49,8 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 			Convey("then both jobs should be matched, with provisionable label used as tie-breaker", func() {
 				tmproto := tutils.TimestampProto(tm)
 				expects := []*Assignment{
-					&Assignment{Type: Assignment_IDLE_WORKER, Priority: 0, RequestId: "t1", WorkerId: "w1", Time: tmproto},
-					&Assignment{Type: Assignment_IDLE_WORKER, Priority: 0, RequestId: "t2", WorkerId: "w0", Time: tmproto},
+					{Type: Assignment_IDLE_WORKER, Priority: 0, RequestId: "t1", WorkerId: "w1", Time: tmproto},
+					{Type: Assignment_IDLE_WORKER, Priority: 0, RequestId: "t2", WorkerId: "w0", Time: tmproto},
 				}
 				So(muts, shouldResemblePretty, expects)
 			})
@@ -232,7 +232,7 @@ func TestUpdateBalance(t *testing.T) {
 			},
 			&Config{
 				AccountConfigs: map[string]*account.Config{
-					"a2": &account.Config{ChargeRate: vector.New(1), MaxChargeSeconds: 2},
+					"a2": {ChargeRate: vector.New(1), MaxChargeSeconds: 2},
 				},
 			},
 			epoch.Add(1 * time.Second),
@@ -251,7 +251,7 @@ func TestUpdateBalance(t *testing.T) {
 				Balances: map[string]*vector.Vector{"a1": vector.New()},
 				Workers: map[string]*Worker{
 					// Worker running a task.
-					"w1": &Worker{
+					"w1": {
 						RunningTask: &TaskRun{
 							Cost:     vector.New(1),
 							Priority: 1,
@@ -259,14 +259,14 @@ func TestUpdateBalance(t *testing.T) {
 						},
 					},
 					// Worker running a task with uninitialized Cost.
-					"w2": &Worker{
+					"w2": {
 						RunningTask: &TaskRun{
 							Priority: 2,
 							Request:  NewRequest("a1", nil, epoch),
 						},
 					},
 					// Worker running a task with invalid account.
-					"w3": &Worker{
+					"w3": {
 						RunningTask: &TaskRun{
 							Priority: account.FreeBucket,
 							Request:  NewRequest("a2", nil, epoch),
@@ -277,7 +277,7 @@ func TestUpdateBalance(t *testing.T) {
 			},
 			&Config{
 				AccountConfigs: map[string]*account.Config{
-					"a1": &account.Config{ChargeRate: vector.New(1), MaxChargeSeconds: 1},
+					"a1": {ChargeRate: vector.New(1), MaxChargeSeconds: 1},
 				},
 			},
 			epoch.Add(2 * time.Second),
@@ -285,21 +285,21 @@ func TestUpdateBalance(t *testing.T) {
 				Balances:       map[string]*vector.Vector{"a1": vector.New(1, -2, -2)},
 				LastUpdateTime: t2,
 				Workers: map[string]*Worker{
-					"w1": &Worker{
+					"w1": {
 						RunningTask: &TaskRun{
 							Cost:     vector.New(1, 2),
 							Priority: 1,
 							Request:  NewRequest("a1", nil, epoch),
 						},
 					},
-					"w2": &Worker{
+					"w2": {
 						RunningTask: &TaskRun{
 							Cost:     vector.New(0, 0, 2),
 							Priority: 2,
 							Request:  NewRequest("a1", nil, epoch),
 						},
 					},
-					"w3": &Worker{
+					"w3": {
 						RunningTask: &TaskRun{
 							Cost:     vector.New(),
 							Priority: account.FreeBucket,
