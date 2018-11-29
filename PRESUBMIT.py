@@ -51,6 +51,84 @@ JSHINT_PROJECTS_BLACKLIST = THIRD_PARTY_DIRS
 NOFORK_PATHS = []
 
 
+def CommandInGoEnv(input_api, output_api, name, cmd, kwargs):
+  """Returns input_api.Command that wraps |cmd| with invocation to go/env.py.
+
+  env.py makes golang tools available in PATH. It also bootstraps Golang dev
+  environment if necessary.
+  """
+  if input_api.is_committing:
+    error_type = output_api.PresubmitError
+  else:
+    error_type = output_api.PresubmitPromptWarning
+  full_cmd = [
+    input_api.python_executable,
+    input_api.os_path.join(input_api.change.RepositoryRoot(), 'go', 'env.py'),
+  ]
+  full_cmd.extend(cmd)
+  return input_api.Command(
+      name=name,
+      cmd=full_cmd,
+      kwargs=kwargs,
+      message=error_type)
+
+
+def GoCheckers(input_api, output_api):
+  affected_files = sorted([
+    f.AbsoluteLocalPath()
+    for f in input_api.AffectedFiles(include_deletes=False)
+    if f.AbsoluteLocalPath().endswith('.go') and
+    not any(f.AbsoluteLocalPath().endswith(x) for x in ('.pb.go', '.gen.go'))
+  ])
+  if not affected_files:
+    return []
+  stdin = '\n'.join(affected_files)
+
+  tool_names = ["gofmt", "govet", "golint"]
+  ret = []
+  for tool_name in tool_names:
+    cmd = [
+      input_api.python_executable,
+      input_api.os_path.join(input_api.change.RepositoryRoot(),
+                             'go', 'check.py'),
+      tool_name,
+    ]
+    if input_api.verbose:
+      cmd.append("--verbose")
+    ret.append(
+      CommandInGoEnv(
+          input_api, output_api,
+          name='Check %s (%d files)' % (tool_name, len(affected_files)),
+          cmd=cmd,
+          kwargs={'stdin': stdin}),
+    )
+  return ret
+
+
+def GoPackageImportsCheck(input_api, output_api):
+  all_files = input_api.change.AffectedFiles(include_deletes=False)
+  trigger_on = [
+    'DEPS',
+    'go/check_deps.py',
+    'go/check_deps.whitelist',
+    'go/deps.lock',
+    'go/deps.yaml',
+  ]
+  for f in all_files:
+    lp = f.LocalPath()
+    if lp.endswith('.go') or lp in trigger_on:
+      check_script = input_api.os_path.join(
+        input_api.change.RepositoryRoot(), 'go', 'check_deps.py')
+      return [
+        CommandInGoEnv(
+          input_api, output_api,
+          name='Check Go Imports',
+          cmd=[input_api.python_executable, check_script],
+          kwargs={}),
+      ]
+  return []
+
+
 # Forked from depot_tools/presubmit_canned_checks._FetchAllFiles
 def FetchAllFiles(input_api, white_list, black_list):
   import datetime
@@ -348,13 +426,44 @@ def NoTypescriptCheck(input_api, output_api):  # pragma: no cover
 
 def CommonChecks(input_api, output_api):  # pragma: no cover
   output = []
+
+  # Collect all potential Go tests
+  tests = GoCheckers(input_api, output_api)
+  tests += GoPackageImportsCheck(input_api, output_api)
+  if tests:
+    # depot_tools runs tests in parallel. If go env is not setup, each test will
+    # attempt to bootstrap it simultaneously, which doesn't currently work
+    # correctly.
+    #
+    # Because we use RunTests here, this will run immediately. The actual go
+    # tests will run after this, assuming the bootstrap is successful.
+    output = input_api.RunTests([
+      input_api.Command(
+        name='bootstrap go env',
+        cmd=[
+          input_api.python_executable,
+          input_api.os_path.join(
+            input_api.change.RepositoryRoot(), 'go', 'bootstrap.py')
+        ],
+        kwargs={},
+        message=output_api.PresubmitError)
+    ])
+    if any(x.fatal for x in output):
+      return output
+
+  # Add non-go tests
+  tests += JshintChecks(input_api, output_api)
+
+  # Run all the collected tests
+  if tests:
+    output.extend(input_api.RunTests(tests))
+
   output.extend(NoTypescriptCheck(input_api, output_api))
-  output.extend(input_api.RunTests(JshintChecks(input_api, output_api)))
   output.extend(BrokenLinksChecks(input_api, output_api))
 
   third_party_filter = lambda path: input_api.FilterSourceFile(
       path, black_list=THIRD_PARTY_DIRS)
-  output.extend( input_api.canned_checks.CheckGenderNeutral(
+  output.extend(input_api.canned_checks.CheckGenderNeutral(
       input_api, output_api, source_file_filter=third_party_filter))
 
   return output

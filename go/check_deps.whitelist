@@ -1,0 +1,63 @@
+# Google packages
+cloud.google.com/
+go.chromium.org/
+go.starlark.net/
+golang.org/x/
+google.golang.org/
+
+# Chrome Infra packages
+infra/
+
+# Chrome related github packages
+github.com/danjacques/gofslock/fslock
+github.com/luci/
+github.com/maruel/subcommands
+
+# Chrome related github packages
+github.com/chromedp/chromedp
+
+# Google-related github packages
+github.com/bradfitz/gomemcache/memcache
+github.com/docker/
+github.com/golang/mock/gomock
+github.com/golang/protobuf/
+github.com/google/uuid
+github.com/googleapis/gax-go
+github.com/GoogleCloudPlatform/
+github.com/pkg/errors
+
+# Microsoft related github packages
+github.com/Microsoft/go-winio
+
+# gopkg.in
+gopkg.in/fsnotify.v1
+gopkg.in/yaml.v2
+
+# Other github packages
+github.com/andygrunwald/go-gerrit
+github.com/aryann/difflib
+github.com/DATA-DOG/go-sqlmock
+github.com/dustin/go-humanize
+github.com/go-sql-driver/mysql
+github.com/google/go-cmp/cmp
+github.com/gorhill/cronexpr
+github.com/julienschmidt/httprouter
+github.com/kr/pretty
+github.com/kylelemons/godebug/pretty
+github.com/Masterminds/squirrel
+github.com/mattes/migrate
+github.com/mitchellh/go-homedir
+github.com/op/go-logging
+github.com/pmezard/go-difflib/difflib
+github.com/sergi/go-diff/diffmatchpatch
+github.com/shirou/gopsutil/
+github.com/smartystreets/
+github.com/StackExchange/wmi
+github.com/VividCortex/mysqlerr
+github.com/waigani/diffparser
+github.com/xeipuuv/gojsonschema
+github.com/xtgo/set
+github.com/yosuke-furukawa/json5/encoding/json5
+
+# Other stuff
+howett.net/plist
