@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"go.chromium.org/luci/common/data/stringset"
 	"log"
 	"os"
 	"os/exec"
@@ -19,6 +18,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"go.chromium.org/luci/common/data/stringset"
 
 	"infra/tricium/api/v1"
 )
@@ -158,11 +159,16 @@ func gosecWorker(jobs chan GosecRunJob, wg *sync.WaitGroup) {
 		cmdArgs = append(cmdArgs, filepath.Join(*inputDir, job.File.Path))
 		cmd := exec.Command(cmdName, cmdArgs...)
 
-		stdoutReader, err := cmd.StdoutPipe()
+		abspath, _ := filepath.Abs(*inputDir)
+		log.Printf("setting GOPATH=%s", abspath)
+		cmd.Env = append(os.Environ(),
+			fmt.Sprintf("GOPATH=%s", abspath))
+
+		stdoutReader, _ := cmd.StdoutPipe()
 
 		// Run the command.
 		log.Printf("Executing command: %s %v", cmdName, cmdArgs)
-		err = cmd.Start()
+		err := cmd.Start()
 		if err != nil {
 			log.Printf("Error running command %v: %v", cmd, err)
 		}

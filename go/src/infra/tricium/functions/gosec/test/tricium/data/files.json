@@ -1,6 +1,6 @@
 {
 	"files": [
-		{ "path": "example.go" },
-		{ "path": "example2.go" }
+		{ "path": "src/example/example.go" },
+		{ "path": "src/example/example2.go" }
 	]
 }
