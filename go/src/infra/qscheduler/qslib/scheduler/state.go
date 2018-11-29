@@ -76,7 +76,7 @@ func (s *State) markIdle(workerID string, labels LabelSet, t time.Time) {
 	s.deleteRequest(previousRequestID)
 }
 
-// notifyRequest that implements Scheduler.NotifyRequest for a given State.
+// notifyRequest implements Scheduler.NotifyRequest for a given State.
 func (s *State) notifyRequest(requestID string, workerID string, t time.Time) {
 	if requestID == "" {
 		panic("Must supply a requestID.")
@@ -90,6 +90,18 @@ func (s *State) notifyRequest(requestID string, workerID string, t time.Time) {
 		// The request didn't exist, but the notification might be more up to date
 		// that our information about the worker, in which case delete the worker.
 		s.deleteWorkerIfOlder(workerID, t)
+	}
+}
+
+// abortRequest implements Scheduler.AbortRequest for a given State.
+func (s *State) abortRequest(requestID string, t time.Time) {
+	// Reuse the notifyRequest logic. First, notify that task is not running. Then, remove
+	// the request from queue if it is present.
+	s.notifyRequest(requestID, "", t)
+	if req, ok := s.getRequest(requestID); ok {
+		if !t.Before(tutils.Timestamp(req.ConfirmedTime)) {
+			s.deleteRequest(requestID)
+		}
 	}
 }
 

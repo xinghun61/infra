@@ -227,6 +227,59 @@ func TestNotifyRequest(t *testing.T) {
 	})
 }
 
+func TestAbortRequest(t *testing.T) {
+	tm0 := time.Unix(0, 0)
+	tm1 := time.Unix(1, 0)
+	tm2 := time.Unix(2, 0)
+	reqID := "request1"
+	wID := "worker1"
+	Convey("Given a state with one request and one idle worker", t, func() {
+		state := NewState(tm0)
+		state.addRequest(reqID, NewRequest("", nil, tm1), tm1)
+		state.markIdle(wID, []string{}, tm1)
+		stateBefore := state.Clone()
+		Convey("when AbortRequest with forward time is called for that request", func() {
+			state.abortRequest(reqID, tm2)
+			Convey("then the request is deleted, the worker is unmodified.", func() {
+				So(state.QueuedRequests, ShouldNotContainKey, reqID)
+				So(state.Workers, ShouldHaveLength, 1)
+			})
+		})
+		Convey("when AbortRequest with backward time is called for that request", func() {
+			state.abortRequest(reqID, tm0)
+			Convey("then nothing happens.", func() {
+				So(state, shouldResemblePretty, stateBefore)
+			})
+		})
+	})
+
+	Convey("Given a state with a request running on a worker", t, func() {
+		state := NewState(tm0)
+		state.addRequest(reqID, NewRequest("", nil, tm1), tm1)
+		state.markIdle(wID, []string{}, tm1)
+		a := &Assignment{
+			Type:      Assignment_IDLE_WORKER,
+			WorkerId:  wID,
+			RequestId: reqID,
+		}
+		state.applyAssignment(a)
+		stateBefore := state.Clone()
+		Convey("when AbortRequest with forward time is called for that request", func() {
+			state.abortRequest(reqID, tm2)
+			Convey("then the request and worker are deleted.", func() {
+				So(state.QueuedRequests, ShouldBeEmpty)
+				So(state.Workers, ShouldBeEmpty)
+			})
+		})
+		Convey("when AbortRequest with backward time is called for that request", func() {
+			state.abortRequest(reqID, tm0)
+			Convey("then nothing happens.", func() {
+				So(state, shouldResemblePretty, stateBefore)
+			})
+		})
+	})
+}
+
 // Helper method to assert that two State instances are deeply equal.
 func assertStateEqual(t *testing.T, desc string, got *State, want *State) {
 	t.Helper()

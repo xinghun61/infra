@@ -190,6 +190,16 @@ func (s *Scheduler) NotifyRequest(ctx context.Context, requestID string, workerI
 	return nil
 }
 
+// AbortRequest informs the scheduler authoritatively that the given request
+// is stopped (not running on a worker, and not in the queue) at the given time.
+//
+// Supplied requestID must not be "".
+func (s *Scheduler) AbortRequest(ctx context.Context, requestID string, t time.Time) error {
+	s.ensureMaps()
+	s.State.abortRequest(requestID, t)
+	return nil
+}
+
 // RunOnce performs a single round of the quota scheduler algorithm
 // on a given state and config, and returns a slice of state mutations.
 //

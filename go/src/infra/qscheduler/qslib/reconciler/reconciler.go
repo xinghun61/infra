@@ -93,6 +93,12 @@ type Scheduler interface {
 	//
 	// Note: calls to NotifyRequest come from task update pubsub messages from swarming.
 	NotifyRequest(ctx context.Context, requestID string, workerID string, t time.Time) error
+
+	// AbortRequest informs the scheduler authoritatively that the given request
+	// is stopped (not running on a worker, and not in the queue) at the given time.
+	//
+	// Supplied requestID must not be "".
+	AbortRequest(ctx context.Context, requestID string, t time.Time) error
 }
 
 // AssignTasks accepts one or more idle workers, and returns tasks to be assigned
