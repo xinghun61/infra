@@ -74,7 +74,9 @@ class FLTConvertTask(unittest.TestCase):
     # Set up Objects
     project_info = fltconversion.ProjectInfo(
         self.config, 'q=query', self.approval_values, self.phases,
-        11, 12, 13, 14, 15)
+        11, 12, 13, 14, 15, fltconversion.BROWSER_PHASE_MAP,
+        fltconversion.BROWSER_APPROVALS_TO_LABELS,
+        fltconversion.BROWSER_M_LABELS_RE)
 
     self.config.field_defs = [
         tracker_pb2.FieldDef(field_id=7, field_name='Chrome-UX',
@@ -357,7 +359,7 @@ class FLTConvertTask(unittest.TestCase):
         self.task.FetchAndAssertProjectInfo, mr)
 
     self.config.field_defs = [
-        tracker_pb2.FieldDef(field_id=1, field_name='Chrome-Enterprise',
+        tracker_pb2.FieldDef(field_id=1, field_name='ChromeOS-Enterprise',
                              field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE),
         tracker_pb2.FieldDef(field_id=2, field_name='Chrome-UX',
                              field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE),
@@ -367,7 +369,7 @@ class FLTConvertTask(unittest.TestCase):
 
     # test approvals not in config's approval_defs
     self.assertRaisesRegexp(
-        AssertionError, 'one or more approvals no in config.approval_defs',
+        AssertionError, 'one or more approvals not in config.approval_defs',
         self.task.FetchAndAssertProjectInfo, mr)
 
     self.config.approval_defs = [
@@ -423,7 +425,10 @@ class FLTConvertTask(unittest.TestCase):
         self.task.FetchAndAssertProjectInfo(mr),
         fltconversion.ProjectInfo(
             self.config, fltconversion.QUERY_MAP['default'],
-            template.approval_values, template.phases, 4, 5, 6, 7, 8))
+            template.approval_values, template.phases, 4, 5, 6, 7, 8,
+            fltconversion.BROWSER_PHASE_MAP,
+            fltconversion.BROWSER_APPROVALS_TO_LABELS,
+            fltconversion.BROWSER_M_LABELS_RE))
 
     # FINCH special case
     # test approvals for Finch not required
@@ -439,7 +444,80 @@ class FLTConvertTask(unittest.TestCase):
         self.task.FetchAndAssertProjectInfo(mr),
         fltconversion.ProjectInfo(
             self.config, fltconversion.QUERY_MAP['finch'],
-            template.approval_values, template.phases, 4, 5, 6, 7, 8))
+            template.approval_values, template.phases, 4, 5, 6, 7, 8,
+            fltconversion.BROWSER_PHASE_MAP,
+            fltconversion.BROWSER_APPROVALS_TO_LABELS,
+            fltconversion.BROWSER_M_LABELS_RE))
+
+  def testFetchAndAssertProjectInfo_OS(self):
+    self.task.services.project.GetProjectByName = mock.Mock()
+    self.task.services.config.GetProjectConfig = mock.Mock(
+        return_value=self.config)
+
+    mr = testing_helpers.MakeMonorailRequest(path='url/url?launch=os')
+    template = tracker_bizobj.MakeIssueTemplate(
+        'template', 'sum', 'New', 111L, 'content', [], [], [], [])
+    self.task.services.template.GetTemplateByName = mock.Mock(
+        return_value=template)
+
+    # test phases not recognized
+    template.phases = [tracker_pb2.Phase(name='Chrome-Test')]
+    template.approval_values = [tracker_pb2.ApprovalValue()]
+    self.assertRaisesRegexp(
+        AssertionError, 'one or more phases not recognized',
+        self.task.FetchAndAssertProjectInfo, mr)
+
+    template.phases = [tracker_pb2.Phase(name='feature freeze'),
+                       tracker_pb2.Phase(name='branch')]
+    template.approval_values = [
+        tracker_pb2.ApprovalValue(approval_id=1),
+        tracker_pb2.ApprovalValue(approval_id=2),
+        tracker_pb2.ApprovalValue(approval_id=3)]
+
+    # test approvals not recognized
+    self.assertRaisesRegexp(
+        AssertionError, 'one or more approvals not recognized',
+        self.task.FetchAndAssertProjectInfo, mr)
+
+    self.config.field_defs = [
+        tracker_pb2.FieldDef(field_id=1, field_name='ChromeOS-Enterprise',
+                             field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE),
+        tracker_pb2.FieldDef(field_id=2, field_name='ChromeOS-UX',
+                             field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE),
+        tracker_pb2.FieldDef(field_id=3, field_name='ChromeOS-Privacy',
+                             field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE)
+    ]
+
+    # Skip remaining checks. No different from Browser process.
+    self.config.approval_defs = [
+        tracker_pb2.ApprovalDef(approval_id=1),
+        tracker_pb2.ApprovalDef(approval_id=2),
+        tracker_pb2.ApprovalDef(approval_id=3)]
+
+    self.config.field_defs.extend([
+      tracker_pb2.FieldDef(field_id=4, field_name='PM',
+                           field_type=tracker_pb2.FieldTypes.USER_TYPE),
+      tracker_pb2.FieldDef(field_id=5, field_name='TL',
+                           field_type=tracker_pb2.FieldTypes.USER_TYPE),
+      tracker_pb2.FieldDef(field_id=6, field_name='TE',
+                           field_type=tracker_pb2.FieldTypes.USER_TYPE)
+    ])
+    self.config.field_defs.extend([
+        tracker_pb2.FieldDef(
+            field_id=7, field_name='M-Target', is_phase_field=True,
+            is_multivalued=True, field_type=tracker_pb2.FieldTypes.INT_TYPE),
+        tracker_pb2.FieldDef(
+            field_id=8, field_name='M-Approved', is_phase_field=True,
+            is_multivalued=True, field_type=tracker_pb2.FieldTypes.INT_TYPE)
+    ])
+
+    self.assertEqual(
+        self.task.FetchAndAssertProjectInfo(mr),
+        fltconversion.ProjectInfo(
+            self.config, fltconversion.QUERY_MAP['os'],
+            template.approval_values, template.phases, 4, 5, 6, 7, 8,
+            fltconversion.OS_PHASE_MAP, fltconversion.OS_APPROVALS_TO_LABELS,
+            fltconversion.OS_M_LABELS_RE))
 
   @mock.patch('time.time')
   def testExecuteIssueChanges(self, mockTime):
@@ -570,6 +648,9 @@ class ConvertMLabels(unittest.TestCase):
     self.stable_phase = tracker_pb2.Phase(phase_id=2, name='StAbLe')
     self.stable_full_phase = tracker_pb2.Phase(phase_id=3, name='stable-FULL')
     self.stable_exp_phase = tracker_pb2.Phase(phase_id=4, name='STABLE-exp')
+    self.feature_freeze_phase = tracker_pb2.Phase(
+        phase_id=5, name='FEATURE Freeze')
+    self.branch_phase = tracker_pb2.Phase(phase_id=6, name='bRANCH')
 
   def testConvertMLabels_NormalFinch(self):
 
@@ -589,7 +670,8 @@ class ConvertMLabels(unittest.TestCase):
         'irrelevant label-weird',  # ignore
     ]
     actual_fvs = fltconversion.ConvertMLabels(
-        labels, phases, self.target_id, self.approved_id)
+        labels, phases, self.target_id, self.approved_id,
+        fltconversion.BROWSER_M_LABELS_RE, fltconversion.BROWSER_PHASE_MAP)
 
     expected_fvs = [
       tracker_pb2.FieldValue(
@@ -613,6 +695,39 @@ class ConvertMLabels(unittest.TestCase):
       tracker_pb2.FieldValue(
           field_id=self.approved_id, int_value=73,
           phase_id=self.stable_full_phase.phase_id, derived=False)
+    ]
+
+    self.assertEqual(actual_fvs, expected_fvs)
+
+  def testConvertMLabels_OS(self):
+    phases = [self.feature_freeze_phase, self.branch_phase]
+    labels = [
+        'launch-m-approved-81-beta',  # ignore
+        'launch-m-target-80-stable-car',  # ignore
+        'a-Launch-M-Target-80-Stable-car',  # ignore
+        'launch-m-target-70-Stable',  # branch:M-Target=70
+        'LAUNCH-M-TARGET-71-STABLE',  # branch:M-Target=71
+        'launch-m-target-70-stable-exp',  # ignore
+        'launch-M-APPROVED-70-Stable-Exp',  # ignore
+        'launch-m-approved-73-stable',  # branch:M-Approved-73
+        'launch-m-error-73-stable',  # ignore
+        'launch-m-approved-8-stable',  #ignore
+        'irrelevant label-weird',  # ignore
+        ]
+    actual_fvs = fltconversion.ConvertMLabels(
+        labels, phases, self.target_id, self.approved_id,
+        fltconversion.OS_M_LABELS_RE, fltconversion.OS_PHASE_MAP)
+
+    expected_fvs = [
+      tracker_pb2.FieldValue(
+          field_id=self.target_id, int_value=70,
+          phase_id=self.branch_phase.phase_id, derived=False,),
+      tracker_pb2.FieldValue(
+          field_id=self.target_id, int_value=71,
+          phase_id=self.branch_phase.phase_id, derived=False),
+      tracker_pb2.FieldValue(
+          field_id=self.approved_id, int_value=73,
+          phase_id=self.branch_phase.phase_id, derived=False)
     ]
 
     self.assertEqual(actual_fvs, expected_fvs)
@@ -641,7 +756,8 @@ class ConvertLaunchLabels(unittest.TestCase):
     labels = [
         'Launch-UX-NotReviewed', 'Launch-Privacy-Yes', 'Launch-NotRelevant']
     actual = fltconversion.ConvertLaunchLabels(
-        labels, self.approvals, self.project_fds)
+        labels, self.approvals, self.project_fds,
+        fltconversion.BROWSER_APPROVALS_TO_LABELS)
     expected = [
       tracker_pb2.ApprovalValue(
           approval_id=2, status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW),
@@ -656,7 +772,8 @@ class ConvertLaunchLabels(unittest.TestCase):
         'Launch-Security-Yes',  # Extra, no matching approval in given approvals
         'Launch-UI-Yes']  # Missing Launch-Privacy
     actual = fltconversion.ConvertLaunchLabels(
-        labels, self.approvals, self.project_fds)
+        labels, self.approvals, self.project_fds,
+        fltconversion.BROWSER_APPROVALS_TO_LABELS)
     expected = [
         tracker_pb2.ApprovalValue(
             approval_id=2, status=tracker_pb2.ApprovalStatus.APPROVED),

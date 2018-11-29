@@ -19,6 +19,7 @@ from proto import tracker_pb2
 from tracker import template_helpers
 from tracker import tracker_bizobj
 
+# TODO(jojwang): convert ux- labels too.
 PM_PREFIX = 'pm-'
 TL_PREFIX = 'tl-'
 TEST_PREFIX = 'test-'
@@ -31,7 +32,7 @@ MAPPROVED_FIELD = 'm-approved'
 
 CONVERSION_COMMENT = 'Automatic generating of FLT Launch data.'
 
-APPROVALS_TO_LABELS = {
+BROWSER_APPROVALS_TO_LABELS = {
     'Chrome-Accessibility': 'Launch-Accessibility-',
     'Chrome-Leadership-Exp': 'Launch-Exp-Leadership-',
     'Chrome-Leadership-Full': 'Launch-Leadership-',
@@ -40,6 +41,17 @@ APPROVALS_TO_LABELS = {
     'Chrome-Security': 'Launch-Security-',
     'Chrome-Test': 'Launch-Test-',
     'Chrome-UX': 'Launch-UI-',
+    }
+
+OS_APPROVALS_TO_LABELS = {
+    'ChromeOS-Accessibility': 'Launch-Accessibility-',
+    'ChromeOS-Leadership-Exp': 'Launch-Exp-Leadership-',
+    'ChromeOS-Leadership-Full': 'Launch-Leadership-',
+    'ChromeOS-Legal': 'Launch-Legal-',
+    'ChromeOS-Privacy': 'Launch-Privacy-',
+    'ChromeOS-Security': 'Launch-Security-',
+    'ChromeOS-Test': 'Launch-Test-',
+    'ChromeOS-UX': 'Launch-UI-',
     }
 
 # 'NotReviewed' not included because this should be converted to
@@ -55,23 +67,32 @@ VALUE_TO_STATUS = {
     'Started': tracker_pb2.ApprovalStatus.REVIEW_STARTED,
 }
 
+# This works in the Browser and OS process because
+# BROWSER_APPROVALS_TO_LABELS and OS_APPROVALS_TO_LABELS have the same values.
 # Adding '^' before each label prefix to ensure Blah-Launch-UI-Yes is ignored
-REVIEW_LABELS_RE = re.compile('^' + '|^'.join(APPROVALS_TO_LABELS.values()))
+REVIEW_LABELS_RE = re.compile('^' + '|^'.join(OS_APPROVALS_TO_LABELS.values()))
 
 # Maps template phases to channel names in 'Launch-M-Target-80-[Channel]' labels
-PHASE_MAP = {
+BROWSER_PHASE_MAP = {
     'beta': 'beta',
     'stable': 'stable',
     'stable-full': 'stable',
     'stable-exp': 'stable-exp',
     }
 
-PHASE_PAT = '$|'.join(PHASE_MAP.values())
+PHASE_PAT = '$|'.join(BROWSER_PHASE_MAP.values())
 # Matches launch milestone labels, eg. Launch-M-Target-70-Stable-Exp
-M_LABELS_RE = re.compile(
+BROWSER_M_LABELS_RE = re.compile(
     r'^Launch-M-(?P<type>Approved|Target)-(?P<m>\d\d)-'
     r'(?P<channel>%s$)' % PHASE_PAT,
     re.IGNORECASE)
+
+OS_PHASE_MAP = {'feature freeze': '',
+                 'branch': 'stable'}
+# We only care about Launch-M-<type>-<m>-Stable labels for OS.
+OS_M_LABELS_RE = re.compile(
+    r'^Launch-M-(?P<type>Approved|Target)-(?P<m>\d\d)-'
+    r'(?P<channel>Stable$)', re.IGNORECASE)
 
 CAN = 2  # Query for open issues only
 # Ensure empty group_by_spec and sort_spec so issues are sorted by 'ID'.
@@ -86,14 +107,19 @@ VERIFY_NUM = 400
 QUERY_MAP = {
     'default':
     'Type=Launch Rollout-Type=Default OS=Windows,Mac,Linux,Android,iOS',
-    'finch': 'Type=Launch Rollout-Type=Finch OS=Windows,Mac,Linux,Android,iOS'}
+    'finch': 'Type=Launch Rollout-Type=Finch OS=Windows,Mac,Linux,Android,iOS',
+    'os': 'Type=Launch OS=Chrome -OS=Windows,Mac,Linux,Android,iOS'}
+
 TEMPLATE_MAP = {
     'default': 'Chrome Launch - Default',
-    'finch': 'Chrome Launch - Experimental'}
+    'finch': 'Chrome Launch - Experimental',
+    'os': 'Chrome OS Launch',
+}
 
 ProjectInfo = collections.namedtuple(
     'ProjectInfo', 'config, q, approval_values, phases, '
-    'pm_fid, tl_fid, te_fid, m_target_id, m_approved_id')
+    'pm_fid, tl_fid, te_fid, m_target_id, m_approved_id, '
+    'phase_map, approvals_to_labels, labels_re')
 
 
 class FLTConvertTask(jsonfeed.InternalTask):
@@ -147,7 +173,7 @@ class FLTConvertTask(jsonfeed.InternalTask):
     project = self.services.project.GetProjectByName(mr.cnxn, 'chromium')
     config = self.services.config.GetProjectConfig(mr.cnxn, project.project_id)
     approval_names = {fd.field_id: fd.field_name for fd in config.field_defs
-                      if fd.field_name in APPROVALS_TO_LABELS.keys()}
+                      if fd.field_name in BROWSER_APPROVALS_TO_LABELS.keys()}
     pm_id = tracker_bizobj.FindFieldDef('PM', config).field_id
     tl_id = tracker_bizobj.FindFieldDef('TL', config).field_id
     te_id = tracker_bizobj.FindFieldDef('TE', config).field_id
@@ -176,7 +202,7 @@ class FLTConvertTask(jsonfeed.InternalTask):
       # Check approval_values
       for av in issue.approval_values:
         name = approval_names.get(av.approval_id)
-        label_pre = APPROVALS_TO_LABELS.get(name)
+        label_pre = BROWSER_APPROVALS_TO_LABELS.get(name)
         if not label_pre:
           # either name was None or not found in APPROVALS_TO_LABELS
           problems.append((issue.local_id, 'approval %s not recognized' % name))
@@ -211,7 +237,7 @@ class FLTConvertTask(jsonfeed.InternalTask):
       phase_dict = {
           phase.name.lower(): phase.phase_id for phase in issue.phases}
       for label in issue.labels:
-        match = re.match(M_LABELS_RE, label)
+        match = re.match(BROWSER_M_LABELS_RE, label)
         if match:
           channel = match.group('channel')
           if (channel.lower() == 'stable-exp'
@@ -264,10 +290,11 @@ class FLTConvertTask(jsonfeed.InternalTask):
           mr.cnxn, possible_stale_issue.issue_id, use_cache=False)
       new_approvals = ConvertLaunchLabels(
           issue.labels, template_avs,
-          project_info.config.field_defs)
+          project_info.config.field_defs, project_info.approvals_to_labels)
       m_fvs = ConvertMLabels(
           issue.labels, template_phases,
-          project_info.m_target_id, project_info.m_approved_id)
+          project_info.m_target_id, project_info.m_approved_id,
+          project_info.labels_re, project_info.phase_map)
       people_fvs = self.ConvertPeopleLabels(
           mr, issue.labels,
           project_info.pm_fid, project_info.tl_fid, project_info.te_fid)
@@ -308,6 +335,12 @@ class FLTConvertTask(jsonfeed.InternalTask):
     template_name = TEMPLATE_MAP.get(launch)
     assert q and template_name, 'bad launch type: %s' % launch
 
+    phase_map = OS_PHASE_MAP if launch == 'os' else BROWSER_PHASE_MAP
+    approvals_to_labels = (
+        OS_APPROVALS_TO_LABELS if launch == 'os'
+        else BROWSER_APPROVALS_TO_LABELS)
+    m_labels_re = OS_M_LABELS_RE if launch == 'os' else BROWSER_M_LABELS_RE
+
     # Get project, config, template, assert template in project
     project = self.services.project.GetProjectByName(mr.cnxn, 'chromium')
     config = self.services.config.GetProjectConfig(mr.cnxn, project.project_id)
@@ -320,7 +353,7 @@ class FLTConvertTask(jsonfeed.InternalTask):
         template.approval_values, template.phases, config)
     assert approval_values and phases, (
         'no approvals or phases in %s' % template_name)
-    assert all(phase.name.lower() in PHASE_MAP.keys() for phase in phases), (
+    assert all(phase.name.lower() in phase_map.keys() for phase in phases), (
         'one or more phases not recognized')
     if launch == 'finch':
       assert all(
@@ -330,13 +363,13 @@ class FLTConvertTask(jsonfeed.InternalTask):
     approval_fds = {fd.field_id: fd.field_name for fd in config.field_defs
                     if fd.field_type is tracker_pb2.FieldTypes.APPROVAL_TYPE}
     assert all(
-        approval_fds.get(av.approval_id) in APPROVALS_TO_LABELS.keys()
+        approval_fds.get(av.approval_id) in approvals_to_labels.keys()
         for av in approval_values
-        if approval_fds.get(av.approval_id) != 'Chrome-Enterprise'), (
+        if approval_fds.get(av.approval_id) != 'ChromeOS-Enterprise'), (
             'one or more approvals not recognized')
     approval_def_ids = [ad.approval_id for ad in config.approval_defs]
     assert all(av.approval_id in approval_def_ids for av in approval_values), (
-        'one or more approvals no in config.approval_defs')
+        'one or more approvals not in config.approval_defs')
 
     # Get relevant USER_TYPE FieldDef ids and assert they exist
     user_fds = {fd.field_name.lower(): fd.field_id for fd in config.field_defs
@@ -362,7 +395,8 @@ class FLTConvertTask(jsonfeed.InternalTask):
     assert m_approved_id, 'project has no FieldDef %s' % MAPPROVED_FIELD
 
     return ProjectInfo(config, q, approval_values, phases, pm_fid, tl_fid,
-                       te_fid, m_target_id, m_approved_id)
+                       te_fid, m_target_id, m_approved_id, phase_map,
+                       approvals_to_labels, m_labels_re)
 
   # TODO(jojwang): mr needs to be passed in as arg and
   # all self.mr should be changed to mr
@@ -434,10 +468,11 @@ class FLTConvertTask(jsonfeed.InternalTask):
         field_id, None, None, user_id, None, None, False)
 
 
-def ConvertMLabels(labels, phases, m_target_id, m_approved_id):
+def ConvertMLabels(
+    labels, phases, m_target_id, m_approved_id, labels_re, phase_map):
   field_values = []
   for label in labels:
-    match = re.match(M_LABELS_RE, label)
+    match = re.match(labels_re, label)
     if match:
       milestone = match.group('m')
       m_type = match.group('type')
@@ -445,8 +480,8 @@ def ConvertMLabels(labels, phases, m_target_id, m_approved_id):
       for phase in phases:
         # We know get(phase) will return something because
         # we're checking before ConvertMLabels, that all phases
-        # exist in PHASE_MAP
-        if PHASE_MAP.get(phase.name.lower()) == channel.lower():
+        # exist in BROWSER_PHASE_MAP or OS_PHASE_MAP
+        if phase_map.get(phase.name.lower()) == channel.lower():
           field_id = m_target_id if (
               m_type.lower() == 'target') else m_approved_id
           field_values.append(tracker_bizobj.MakeFieldValue(
@@ -456,7 +491,7 @@ def ConvertMLabels(labels, phases, m_target_id, m_approved_id):
   return field_values
 
 
-def ConvertLaunchLabels(labels, approvals, project_fds):
+def ConvertLaunchLabels(labels, approvals, project_fds, approvals_to_labels):
   """Converts 'Launch-[Review]' values into statuses for given approvals."""
   label_values = {}
   for label in labels:
@@ -469,7 +504,7 @@ def ConvertLaunchLabels(labels, approvals, project_fds):
   field_names_dict = {fd.field_id: fd.field_name for fd in project_fds}
   for approval in approvals:
     approval_name = field_names_dict.get(approval.approval_id, '')
-    old_prefix = APPROVALS_TO_LABELS.get(approval_name)
+    old_prefix = approvals_to_labels.get(approval_name)
     label_value = label_values.get(old_prefix, '')
     # if label_value not found in VALUE_TO_STATUS, use current status.
     approval.status = VALUE_TO_STATUS.get(label_value, approval.status)
