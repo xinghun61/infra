@@ -539,7 +539,8 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
         mc, request.issue_ref, use_cache=False, view_deleted=True)
 
     perms = permissions.UpdateIssuePermissions(
-        mc.perms, project, issue, config, mc.auth.effective_ids)
+        mc.perms, project, issue, mc.auth.effective_ids,
+        tracker_bizobj.GetGrantedPerms(issue, mc.auth.effective_ids, config))
 
     return issues_pb2.ListIssuePermissionsResponse(
         permissions=sorted(perms.perm_names))

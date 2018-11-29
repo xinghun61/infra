@@ -410,7 +410,8 @@ def GetPermissions(user, effective_ids, project):
       effective_perms, consider_restrictions=consider_restrictions)
 
 
-def UpdateIssuePermissions(perms, project, issue, config, effective_ids):
+def UpdateIssuePermissions(
+    perms, project, issue, effective_ids, granted_perms=None):
   """Update the PermissionSet for an specific issue.
 
   Take into account granted permissions and label restrictions to filter the
@@ -421,13 +422,20 @@ def UpdateIssuePermissions(perms, project, issue, config, effective_ids):
     perms: The PermissionSet to update.
     project: The Project PB for the issue project.
     issue: The Issue PB.
-    config: The Config PB for the project.
     effective_ids: Set of int user IDs for the current user and all user
         groups that s/he is a member of.  This will be an empty set for
         anonymous users.
+    granted_perms: optional list of strings of permissions that the user is
+        granted only within the scope of one issue, e.g., by being named in
+        a user-type custom field that grants permissions.
   """
-  granted_perms = tracker_bizobj.GetGrantedPerms(issue, effective_ids, config)
+  granted_perms = granted_perms or []
   restrictions = GetRestrictions(issue)
+
+  # If the user has no permission to view the project, it has no permissions on
+  # this issue.
+  if not perms.HasPerm(VIEW, None, None):
+    return EMPTY_PERMISSIONSET
 
   # Apply the issue restriction labels.
   new_perms = set(
@@ -440,11 +448,11 @@ def UpdateIssuePermissions(perms, project, issue, config, effective_ids):
 
   # The VIEW perm might have been removed due to restrictions, but the issue
   # owner, reporter, cc and approvers can always be an issue.
-  allowed_ids = (
+  allowed_ids = set(
       tracker_bizobj.GetCcIds(issue)
       + tracker_bizobj.GetApproverIds(issue)
       + [issue.reporter_id, tracker_bizobj.GetOwnerId(issue)])
-  if effective_ids and not effective_ids.isdisjoint(allowed_ids):
+  if effective_ids and not allowed_ids.isdisjoint(effective_ids):
     new_perms.add(VIEW)
 
   # If the issue is deleted, only the VIEW and DELETE_ISSUE permissions are
@@ -452,7 +460,7 @@ def UpdateIssuePermissions(perms, project, issue, config, effective_ids):
   if issue.deleted and VIEW.lower() in new_perms:
     if DELETE_ISSUE.lower() in new_perms:
       return PermissionSet([VIEW, DELETE_ISSUE], perms.consider_restrictions)
-    return PermissionSet([], perms.consider_restrictions)
+    return PermissionSet([VIEW], perms.consider_restrictions)
 
   # The EDIT_ISSUE permission might have been removed due to restrictions, but
   # the owner has always permission to edit it.
@@ -909,38 +917,11 @@ def CanViewIssue(
     True iff the user can view the specified issue.
   """
   if issue.deleted and not allow_viewing_deleted:
-    # No one can view a deleted issue.  If the user can undelete, that
-    # goes through the custom 404 page.
     return False
 
-  # Check to see if the user can view anything in the project.
-  if not perms.CanUsePerm(VIEW, effective_ids, project, []):
-    return False
-
-  if not HasRestrictions(issue):
-    return True
-
-  return CanViewRestrictedIssueInVisibleProject(
-      effective_ids, perms, project, issue, granted_perms=granted_perms)
-
-
-def CanViewRestrictedIssueInVisibleProject(
-    effective_ids, perms, project, issue, granted_perms=None):
-  """Return True if the user can view this issue. Assumes project is OK."""
-  # The reporter, owner, and CC'd users can always see the issue.
-  # In effect, these fields override artifact restriction labels.
-  if effective_ids:
-    if (issue.reporter_id in effective_ids or
-        tracker_bizobj.GetOwnerId(issue) in effective_ids or
-        not effective_ids.isdisjoint(
-            tracker_bizobj.GetCcIds(issue) +
-            tracker_bizobj.GetApproverIds(issue))):
-      return True
-
-  # Otherwise, apply the usual permission checking.
-  return CanView(
-      effective_ids, perms, project, GetRestrictions(issue),
-      granted_perms=granted_perms)
+  perms = UpdateIssuePermissions(
+      perms, project, issue, effective_ids, granted_perms=granted_perms)
+  return perms.HasPerm(VIEW, None, None)
 
 
 def CanEditIssue(effective_ids, perms, project, issue, granted_perms=None):
@@ -959,21 +940,9 @@ def CanEditIssue(effective_ids, perms, project, issue, granted_perms=None):
   Returns:
     True iff the user can edit the specified issue.
   """
-  # TODO(jrobbins): We need to actually grant View+EditIssue in most cases.
-  # So, always grant View whenever there is any granted perm.
-  if not CanViewIssue(
-      effective_ids, perms, project, issue, granted_perms=granted_perms):
-    return False
-
-  # The issue owner can always edit the issue.
-  if effective_ids:
-    if tracker_bizobj.GetOwnerId(issue) in effective_ids:
-      return True
-
-  # Otherwise, apply the usual permission checking.
-  return perms.CanUsePerm(
-      EDIT_ISSUE, effective_ids, project, GetRestrictions(issue),
-      granted_perms=granted_perms)
+  perms = UpdateIssuePermissions(
+      perms, project, issue, effective_ids, granted_perms=granted_perms)
+  return perms.HasPerm(EDIT_ISSUE, None, None)
 
 
 def CanCommentIssue(effective_ids, perms, project, issue, granted_perms=None):

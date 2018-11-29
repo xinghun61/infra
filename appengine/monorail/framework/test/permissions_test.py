@@ -892,12 +892,11 @@ class IssuePermissionsTest(unittest.TestCase):
   RESTRICTED_ISSUE3.labels.append('Restrict-EditIssue-Foo')
 
   PROJECT = project_pb2.Project()
-  CONFIG = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
 
   def testUpdateIssuePermissions_Normal(self):
     perms = permissions.UpdateIssuePermissions(
         permissions.COMMITTER_ACTIVE_PERMISSIONSET, self.PROJECT,
-        self.REGULAR_ISSUE, self.CONFIG, {})
+        self.REGULAR_ISSUE, {})
 
     self.assertEqual(
         ['addissuecomment',
@@ -917,39 +916,37 @@ class IssuePermissionsTest(unittest.TestCase):
   def testUpdateIssuePermissions_Deleted(self):
     perms = permissions.UpdateIssuePermissions(
         permissions.COMMITTER_ACTIVE_PERMISSIONSET, self.PROJECT,
-        self.DELETED_ISSUE, self.CONFIG, {})
-    self.assertEqual(frozenset(), perms.perm_names)
+        self.DELETED_ISSUE, {})
+    self.assertEqual(['view'], sorted(perms.perm_names))
 
   def testUpdateIssuePermissions_ViewDeleted(self):
     perms = permissions.UpdateIssuePermissions(
         permissions.OWNER_ACTIVE_PERMISSIONSET, self.PROJECT,
-        self.DELETED_ISSUE, self.CONFIG, {})
+        self.DELETED_ISSUE, {})
     self.assertEqual(['deleteissue', 'view'], sorted(perms.perm_names))
 
   def testUpdateIssuePermissions_ViewRestrictions(self):
     perms = permissions.UpdateIssuePermissions(
-        permissions.USER_PERMISSIONSET, self.PROJECT, self.RESTRICTED_ISSUE,
-        self.CONFIG, {})
+        permissions.USER_PERMISSIONSET, self.PROJECT, self.RESTRICTED_ISSUE, {})
     self.assertNotIn('view', perms.perm_names)
 
   def testUpdateIssuePermissions_RolesBypassViewRestrictions(self):
     for role in {OWNER_ID, REPORTER_ID, CC_ID, APPROVER_ID}:
       perms = permissions.UpdateIssuePermissions(
           permissions.USER_PERMISSIONSET, self.PROJECT, self.RESTRICTED_ISSUE,
-          self.CONFIG, {role})
+          {role})
       self.assertIn('view', perms.perm_names)
 
   def testUpdateIssuePermissions_EditRestrictions(self):
     perms = permissions.UpdateIssuePermissions(
         permissions.COMMITTER_ACTIVE_PERMISSIONSET, self.PROJECT,
-        self.RESTRICTED_ISSUE3, self.CONFIG,
-        {REPORTER_ID, CC_ID, APPROVER_ID})
+        self.RESTRICTED_ISSUE3, {REPORTER_ID, CC_ID, APPROVER_ID})
     self.assertNotIn('editissue', perms.perm_names)
 
   def testUpdateIssuePermissions_OwnerBypassEditRestrictions(self):
     perms = permissions.UpdateIssuePermissions(
         permissions.COMMITTER_ACTIVE_PERMISSIONSET, self.PROJECT,
-        self.RESTRICTED_ISSUE3, self.CONFIG, {OWNER_ID})
+        self.RESTRICTED_ISSUE3, {OWNER_ID})
     self.assertIn('editissue', perms.perm_names)
 
   def testUpdateIssuePermissions_CustomPermissionGrantsEditPermission(self):
@@ -958,17 +955,15 @@ class IssuePermissionsTest(unittest.TestCase):
         project_pb2.Project.ExtraPerms(member_id=111L, perms=['Foo']))
     perms = permissions.UpdateIssuePermissions(
         permissions.COMMITTER_ACTIVE_PERMISSIONSET, self.PROJECT,
-        self.RESTRICTED_ISSUE3, self.CONFIG, {111L})
+        self.RESTRICTED_ISSUE3, {111L})
     self.assertIn('editissue', perms.perm_names)
 
   def testUpdateIssuePermissions_GrantedViewPermission(self):
-    self.CONFIG.field_defs.append(
-        tracker_pb2.FieldDef(field_id=123, grants_perm='Commit'))
     self.RESTRICTED_ISSUE.field_values.append(
         tracker_pb2.FieldValue(user_id=111L, field_id=123))
     perms = permissions.UpdateIssuePermissions(
         permissions.USER_PERMISSIONSET, self.PROJECT, self.RESTRICTED_ISSUE,
-        self.CONFIG, {111L})
+        {111L}, ['Commit'])
     self.assertIn('view', perms.perm_names)
 
   def testCanViewIssue_Deleted(self):

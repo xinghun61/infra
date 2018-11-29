@@ -1717,7 +1717,7 @@ class IssuesServicerTest(unittest.TestCase):
     response = self.CallWrapped(
         self.issues_svcr.ListIssuePermissions, mc, request)
     self.assertEqual(
-        issues_pb2.ListIssuePermissionsResponse(permissions=[]),
+        issues_pb2.ListIssuePermissionsResponse(permissions=['view']),
         response)
 
   def testListIssuePermissions_CanViewDeletedIssue(self):

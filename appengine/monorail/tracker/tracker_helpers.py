@@ -722,7 +722,7 @@ def FilterOutNonViewableIssues(
       config = config_dict.get(issue.project_id, config_dict.get('harmonized'))
       granted_perms = tracker_bizobj.GetGrantedPerms(
           issue, effective_ids, config)
-      may_view = permissions.CanViewRestrictedIssueInVisibleProject(
+      may_view = permissions.CanViewIssue(
           effective_ids, perms, project, issue, granted_perms=granted_perms)
 
     if may_view:
