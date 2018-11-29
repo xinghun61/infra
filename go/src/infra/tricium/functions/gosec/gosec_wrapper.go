@@ -86,6 +86,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	absInputDir, err := filepath.Abs(*inputDir)
+	if err != nil {
+		log.Fatalf("Unable to calculate absolute path for %s, err: %v", *inputDir, err)
+		os.Exit(1)
+	}
+
 	output := &tricium.Data_Results{}
 	for _, issue := range issues {
 		codeLine, err := strconv.Atoi(issue.Line)
@@ -99,10 +105,18 @@ func main() {
 			log.Printf("Error during int to int32 conversion of code line: %d", codeLine)
 			continue
 		}
+
+		// Calculate the file path relative to the input directory.
+		relpath, err := filepath.Rel(absInputDir, issue.File)
+		if err != nil {
+			log.Printf("Error while calculating relative path, base: %s, file: %s, err: %v",
+				absInputDir, issue.File, err)
+			continue
+		}
 		comment := &tricium.Data_Comment{
 			Category:  fmt.Sprintf("Gosec/%s", issue.RuleID),
 			Message:   issue.Details,
-			Path:      issue.File,
+			Path:      relpath,
 			Url:       "https://github.com/securego/gosec/blob/master/rules/rulelist.go",
 			StartLine: line,
 			StartChar: 0,
