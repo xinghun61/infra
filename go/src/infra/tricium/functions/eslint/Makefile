@@ -16,4 +16,4 @@ test: eslint_parser
 	./eslint_parser -input=test -output=out
 
 clean:
-	rm -rf eslint_parser eslint node out eslint.tar.gz node.tar.gz
+	rm -rf eslint_parser node node_modules node.tar.gz out

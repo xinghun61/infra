@@ -21,7 +21,7 @@ import (
 // Paths to the required resources relative to the executable directory.
 const (
 	nodePath   = "node/bin/node"
-	eslintPath = "eslint/bin/eslint.js"
+	eslintPath = "node_modules/eslint/bin/eslint.js"
 )
 
 var severityLevels = []string{"warning", "error"}
