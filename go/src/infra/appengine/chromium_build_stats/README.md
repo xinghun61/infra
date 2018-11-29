@@ -66,3 +66,8 @@ $ bq --project_id=$PROJECT mk --time_partitioning_type=DAY \
 ```
 $ make update-prod # or `make update-staging`
 ```
+
+## ninja log upload from user
+
+Ninja log is uploaded from user too.
+Upload script is located in [depot_tools](https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/master/ninjalog_uploader.py).
