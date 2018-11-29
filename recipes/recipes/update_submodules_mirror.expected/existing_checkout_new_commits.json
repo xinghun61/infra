@@ -44,6 +44,17 @@
     "name": "git fetch"
   },
   {
+    "cmd": [
+      "git",
+      "reset",
+      "--hard",
+      "origin/master"
+    ],
+    "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
+    "infra_step": true,
+    "name": "git reset"
+  },
+  {
     "cmd": [],
     "name": "Check for new commits"
   },
@@ -196,7 +207,7 @@
     ],
     "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
     "infra_step": true,
-    "name": "git -c"
+    "name": "git commit"
   },
   {
     "cmd": [

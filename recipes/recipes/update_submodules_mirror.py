@@ -65,8 +65,12 @@ def RunSteps(api, source_repo, target_repo):
   # This is implicitly used as the cwd by all the git steps below.
   api.m.path['checkout'] = source_checkout_dir
 
-  # This will do a force update, removing any synthetic commits we may have.
+  # '--all' to pull all branches and tags, so they'll appear in the mirror. We
+  # want the mirror to look just like the source.
   api.git('fetch', '--all')
+
+  # Discard any commits from previous runs.
+  api.git('reset', '--hard', 'origin/master')
 
   with api.step.nest('Check for new commits') as step:
     commits, _ = api.gitiles.log(target_repo, 'master', limit=2,
@@ -132,7 +136,8 @@ def RunSteps(api, source_repo, target_repo):
 
   api.git('-c', 'user.name=%s' % COMMIT_USERNAME,
           '-c', 'user.email=nobody@chromium.org',
-          'commit', '-m', 'Synthetic commit for submodules')
+          'commit', '-m', 'Synthetic commit for submodules',
+          name='git commit')
 
   # We've effectively deleted the commit that was at HEAD before. This means
   # that we've diverged from the remote repo, and hence must do a force push.
