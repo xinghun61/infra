@@ -102,7 +102,7 @@ func main() {
 	// Prepare to parse the ESLint output in a separate goroutine in case it is
 	// very large.
 	done := make(chan bool)
-	go scanEslintOutput(scanner, output, done)
+	go scanEslintOutput(scanner, filepath.Join(exPath, *inputDir), output, done)
 
 	err = cmd.Start()
 	if err != nil {
@@ -126,7 +126,7 @@ func main() {
 //
 // It must notify the calling function when it is done by sending true into the
 // done channel.
-func scanEslintOutput(scanner *bufio.Scanner, results *tricium.Data_Results, done chan bool) {
+func scanEslintOutput(scanner *bufio.Scanner, basePath string, results *tricium.Data_Results, done chan bool) {
 	// Read line by line, adding comments to the output.
 	scanner.Scan()
 	if err := scanner.Err(); err != nil {
@@ -143,9 +143,14 @@ func scanEslintOutput(scanner *bufio.Scanner, results *tricium.Data_Results, don
 	}
 
 	for _, fileOutput := range output {
-		filePath := fileOutput.FilePath
+		// The JSON format of eslint produces absolute paths,
+		// but for Tricium comments we require relative paths.
+		path, err := filepath.Rel(basePath, fileOutput.FilePath)
+		if err != nil {
+			log.Fatalf("Failed to get relative path from %q to %q: %v", basePath, fileOutput.FilePath, err)
+		}
 		for _, message := range fileOutput.Messages {
-			if comment := makeCommentForMessage(filePath, message); comment != nil {
+			if comment := makeCommentForMessage(path, message); comment != nil {
 				results.Comments = append(results.Comments, comment)
 			}
 		}

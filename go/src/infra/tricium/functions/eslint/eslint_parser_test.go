@@ -19,21 +19,21 @@ func TestEslintParsingFunctions(t *testing.T) {
 	Convey("scanEslintOutput", t, func() {
 
 		Convey("Parsing empty file gives no warnings", func() {
-			buf := strings.NewReader(`[{"filePath":"test.js", "messages":[]}]`)
+			buf := strings.NewReader(`[{"filePath":"/abs/path/to/input/test.js", "messages":[]}]`)
 			s := bufio.NewScanner(buf)
 			So(s, ShouldNotBeNil)
 
 			results := &tricium.Data_Results{}
-			scanEslintOutput(s, results, nil)
+			scanEslintOutput(s, "/abs/path/to/input", results, nil)
 			So(results.Comments, ShouldBeEmpty)
 		})
 
 		Convey("Parsing normal eslint output generates the appropriate comments", func() {
-			output := `[{"filePath":"/var/lib/test.js",` +
+			output := `[{"filePath":"/x/y/in/test.js",` +
 				`"messages":[{"ruleId":"no-unused-vars","severity":2,"message":"'addOne' is defined but never used.",` +
 				`"line":1,"column":10,"nodeType":"Identifier","endLine":1,"endColumn":16}],` +
 				`"errorCount":1,"warningCount":0,"fixableErrorCount":0,"fixableWarningCount":0},` +
-				`{"filePath":"/var/lib/test2.js",` +
+				`{"filePath":"/x/y/in/test2.js",` +
 				`"messages":[{"ruleId":"camelcase","severity":2,"message":"Identifier 'rabbit_hole' is not in camelcase.",` +
 				`"line":2,"column":1,"nodeType":"Identifier","endLine":2,"endColumn":12}],` +
 				`"errorCount":1,"warningCount":0,"fixableErrorCount":0,"fixableWarningCount":0}` +
@@ -42,7 +42,7 @@ func TestEslintParsingFunctions(t *testing.T) {
 			expected := &tricium.Data_Results{
 				Comments: []*tricium.Data_Comment{
 					{
-						Path:      "/var/lib/test.js",
+						Path:      "test.js",
 						Category:  "ESLint/error/no-unused-vars",
 						Message:   "'addOne' is defined but never used.\nTo disable, add: // eslint-disable-line no-unused-vars",
 						StartLine: 1,
@@ -51,7 +51,7 @@ func TestEslintParsingFunctions(t *testing.T) {
 						EndChar:   16,
 					},
 					{
-						Path:      "/var/lib/test2.js",
+						Path:      "test2.js",
 						Category:  "ESLint/error/camelcase",
 						Message:   "Identifier 'rabbit_hole' is not in camelcase.\nTo disable, add: // eslint-disable-line camelcase",
 						StartLine: 2,
@@ -63,7 +63,7 @@ func TestEslintParsingFunctions(t *testing.T) {
 			}
 
 			results := &tricium.Data_Results{}
-			scanEslintOutput(bufio.NewScanner(strings.NewReader(output)), results, nil)
+			scanEslintOutput(bufio.NewScanner(strings.NewReader(output)), "/x/y/in", results, nil)
 			So(results, ShouldResemble, expected)
 		})
 	})
