@@ -274,9 +274,7 @@ def update_build_async(req, ctx, _mask):
       )
     to_put = [build]
 
-    if 'build.steps' not in update_paths:
-      build_steps = yield model.BuildSteps.key_for(build.key).get_async()
-    else:
+    if 'build.steps' in update_paths:
       # Update build steps.
       build_steps = model.BuildSteps(
           key=model.BuildSteps.key_for(build.key),
