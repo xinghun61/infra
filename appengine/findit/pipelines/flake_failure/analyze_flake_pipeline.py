@@ -55,6 +55,7 @@ from pipelines.report_event_pipeline import ReportAnalysisEventPipeline
 from pipelines.report_event_pipeline import ReportEventInput
 from services import swarmed_test_util
 from services.flake_failure import confidence_score_util
+from services.actions import flake_analysis_actions
 from services.flake_failure import flake_analysis_util
 
 
@@ -159,7 +160,9 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
           culprit_urlsafe_key=culprit.key.urlsafe(),
           result_status=result_status.FOUND_UNTRIAGED)
 
-      # TODO(crbug.com/893787): Auto actions to live outside of analysis.
+      # TODO(crbug.com/905754): Call auto actions as an async taskqueue task.
+      flake_analysis_actions.OnCulpritIdentified(analysis_urlsafe_key)
+
       with pipeline.InOrder():
         if flake_analysis_util.ShouldTakeAutoAction(
             analysis, parameters.rerun):  # pragma: no branch

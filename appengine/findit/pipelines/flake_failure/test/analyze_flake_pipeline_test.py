@@ -61,6 +61,7 @@ from pipelines.flake_failure.update_monorail_bug_pipeline import (
 from pipelines.report_event_pipeline import ReportAnalysisEventPipeline
 from pipelines.report_event_pipeline import ReportEventInput
 from services import swarmed_test_util
+from services.actions import flake_analysis_actions
 from services.flake_failure import confidence_score_util
 from services.flake_failure import flake_analysis_util
 from waterfall.test.wf_testcase import WaterfallTestCase
@@ -69,7 +70,9 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 class AnalyzeFlakePipelineTest(WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  def testAnalyzeFlakePipelineAnalysisFinishedNoFindings(self):
+  @mock.patch.object(flake_analysis_actions, 'OnCulpritIdentified')
+  def testAnalyzeFlakePipelineAnalysisFinishedNoFindings(
+      self, mocked_culprit_identified):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
 
@@ -96,6 +99,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     self.assertIsNone(analysis.culprit_urlsafe_key)
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
     self.assertEqual(result_status.NOT_FOUND_UNTRIAGED, analysis.result_status)
+    mocked_culprit_identified.assert_not_called()
 
   @mock.patch.object(
       flake_analysis_util, 'ShouldTakeAutoAction', return_value=True)
@@ -103,9 +107,10 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
   @mock.patch.object(flake_analysis_util, 'UpdateCulprit')
   @mock.patch.object(confidence_score_util, 'CalculateCulpritConfidenceScore')
   @mock.patch.object(swarmed_test_util, 'GetTestLocation')
+  @mock.patch.object(flake_analysis_actions, 'OnCulpritIdentified')
   def testAnalyzeFlakePipelineAnalysisFinishedWithCulprit(
-      self, mocked_test_location, mocked_confidence, mocked_culprit,
-      mocked_revision, _):
+      self, mocked_culprit_identified, mocked_test_location, mocked_confidence,
+      mocked_culprit, mocked_revision, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -184,6 +189,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
     self.assertEqual(result_status.FOUND_UNTRIAGED, analysis.result_status)
     mocked_revision.assert_called_once_with(mock.ANY, 999)
+    mocked_culprit_identified.assert_called_once_with(analysis.key.urlsafe())
 
   @mock.patch.object(
       flake_analysis_util, 'ShouldTakeAutoAction', return_value=False)
@@ -191,9 +197,10 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
   @mock.patch.object(flake_analysis_util, 'UpdateCulprit')
   @mock.patch.object(confidence_score_util, 'CalculateCulpritConfidenceScore')
   @mock.patch.object(swarmed_test_util, 'GetTestLocation')
+  @mock.patch.object(flake_analysis_actions, 'OnCulpritIdentified')
   def testAnalyzeFlakePipelineAnalysisFinishedWithCulpritNoAutoAction(
-      self, mocked_test_location, mocked_confidence, mocked_culprit,
-      mocked_revision, _):
+      self, mocked_culprit_identified, mocked_test_location, mocked_confidence,
+      mocked_culprit, mocked_revision, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -246,6 +253,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     self.assertEqual(confidence_score, analysis.confidence_in_culprit)
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
     self.assertEqual(result_status.FOUND_UNTRIAGED, analysis.result_status)
+    mocked_culprit_identified.assert_called_once_with(analysis.key.urlsafe())
 
   @mock.patch.object(
       flake_analysis_util, 'CanStartAnalysisImmediately', return_value=True)

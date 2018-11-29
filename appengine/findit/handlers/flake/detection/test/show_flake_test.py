@@ -103,6 +103,8 @@ class ShowFlakeTest(WaterfallTestCase):
 
     flake_dict = {
         'flake_issue': {
+            'flake_culprit_key':
+                None,
             'issue_id':
                 900,
             'issue_link': ('https://monorail-prod.appspot.com/p/chromium/issues'

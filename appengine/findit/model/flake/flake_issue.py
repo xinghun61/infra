@@ -20,6 +20,9 @@ class FlakeIssue(ndb.Model):
   # The issue id.
   issue_id = ndb.IntegerProperty(required=True)
 
+  # The key to the associated culprit identified by flake analysis, if any.
+  flake_culprit_key = ndb.KeyProperty(kind='FlakeCulprit')
+
   # Track the last time this issue was created or updated by Flake Detection.
   # This field is needed because Flake Detection can only create/update an issue
   # at most once every 24 hours.

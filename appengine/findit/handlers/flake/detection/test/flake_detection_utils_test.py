@@ -140,6 +140,8 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
         'flake_score_last_week':
             0,
         'flake_issue': {
+            'flake_culprit_key':
+                None,
             'monorail_project':
                 'chromium',
             'issue_id':

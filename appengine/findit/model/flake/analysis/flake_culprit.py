@@ -17,6 +17,10 @@ class FlakeCulprit(BaseSuspectedCL):
   # corresponding culprit to as confirmed by try jobs.
   flake_analysis_urlsafe_keys = ndb.StringProperty(indexed=False, repeated=True)
 
+  # The key to the associated FlakeIssue. Should be set only once, as subsequent
+  # analyses that identify this same culprit should merge issues into this one.
+  flake_issue_key = ndb.KeyProperty('FlakeIssue')
+
   # Arguments number differs from overridden method - pylint: disable=W0221
   @classmethod
   def Create(cls, repo_name, revision, commit_position, url=None):
