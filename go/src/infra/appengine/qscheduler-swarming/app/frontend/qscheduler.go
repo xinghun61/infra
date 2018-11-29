@@ -20,8 +20,11 @@ import (
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
 	"infra/swarming"
 
-	"github.com/pkg/errors"
+	// This import will be restored once TODO in NotifyTasks is addressed.
+	_ "github.com/pkg/errors"
+
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/logging"
 
 	"infra/qscheduler/qslib/reconciler"
 	"infra/qscheduler/qslib/scheduler"
@@ -117,19 +120,13 @@ func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.Noti
 
 		for _, n := range r.Notifications {
 			var t reconciler.TaskUpdate_Type
-			switch n.Task.State {
-			case swarming.TaskState_PENDING:
-				t = reconciler.TaskUpdate_NEW
-			case swarming.TaskState_RUNNING:
-				t = reconciler.TaskUpdate_ASSIGNED
-			default:
-				return errors.Errorf("unknown or not handleable swarming state %s", n.Task.State)
+			var ok bool
+			if t, ok = toTaskState(n.Task.State); !ok {
+				// TODO(akeshet): Return an error about unknown notification state.
+				logging.Warningf(ctx, "Received notification with unhandled state %s.", n.Task.State)
+				continue
 			}
-			if n.Task.State == swarming.TaskState_PENDING {
-				t = reconciler.TaskUpdate_NEW
-			} else if n.Task.State == swarming.TaskState_RUNNING {
-				t = reconciler.TaskUpdate_ASSIGNED
-			}
+
 			// TODO(akeshet): Validate that new tasks have dimensions that match the
 			// worker pool dimensions for this scheduler pool.
 			update := &reconciler.TaskUpdate{
@@ -149,7 +146,9 @@ func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.Noti
 			if err := sp.reconciler.Notify(ctx, sp.scheduler, update); err != nil {
 				return err
 			}
+			logging.Debugf(ctx, "To scheduler with id %s, applied task update %+v", r.SchedulerId, update)
 		}
+		logState(ctx, sp.scheduler.State)
 		return save(ctx, sp)
 	}
 
@@ -157,4 +156,39 @@ func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.Noti
 		return nil, err
 	}
 	return &swarming.NotifyTasksResponse{}, nil
+}
+
+func toTaskState(s swarming.TaskState) (reconciler.TaskUpdate_Type, bool) {
+	// These cases appear in the same order as they are defined in swarming/proto/tasks.proto
+	// If you add any cases here, please preserve their in-order appearance.
+	switch s {
+	case swarming.TaskState_RUNNING:
+		return reconciler.TaskUpdate_ASSIGNED, true
+	case swarming.TaskState_PENDING:
+		return reconciler.TaskUpdate_NEW, true
+	// The following states all translate to "ABORTED", because they are all equivalent
+	// to the task being neither running nor enqueued.
+	case swarming.TaskState_EXPIRED:
+		fallthrough
+	case swarming.TaskState_TIMED_OUT:
+		fallthrough
+	case swarming.TaskState_BOT_DIED:
+		fallthrough
+	case swarming.TaskState_CANCELED:
+		fallthrough
+	case swarming.TaskState_COMPLETED:
+		fallthrough
+	case swarming.TaskState_KILLED:
+		fallthrough
+	case swarming.TaskState_NO_RESOURCE:
+		return reconciler.TaskUpdate_ABORTED, true
+
+	// Invalid state.
+	default:
+		return reconciler.TaskUpdate_NULL, false
+	}
+}
+
+func logState(ctx context.Context, s *scheduler.State) {
+	logging.Debugf(ctx, "Scheduler has %d queued tasks, %d workers.", len(s.QueuedRequests), len(s.Workers))
 }
