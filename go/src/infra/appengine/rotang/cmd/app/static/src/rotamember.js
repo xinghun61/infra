@@ -71,7 +71,7 @@ class RotaMember extends LitElement {
     this.requestUpdate();
   }
 
-  addOOO() {
+  addOOOInput() {
     const from = DateTime.fromISO(this.shadowRoot.getElementById('from').value)
       .setZone(constants.zone).plus({days: 1}).startOf('day');
     const to = DateTime.fromISO(this.shadowRoot.getElementById('to').value)
@@ -107,7 +107,7 @@ class RotaMember extends LitElement {
           <td><input type="date" id="from"></td>
           <td><input type="date" id="to"></td>
           <td><input type="text" id="comment"></td>
-          <td><button type="button" @click=${() => this.addOOO()}>Add</td>
+          <td><button type="button" @click=${() => this.addOOOInput()}>Add</td>
         </tbody>
       </table>
     </form>

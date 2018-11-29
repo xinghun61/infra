@@ -7,6 +7,7 @@ class RotaShiftGenerate extends LitElement {
     return {
       shifts: {type: constants.Shifts},
       rota: {type: String},
+      generators: {type: constants.Shifts},
       updateState: {},
     };
   }
@@ -105,6 +106,19 @@ class RotaShiftGenerate extends LitElement {
       </table>`);
   }
 
+  fillGenerators() {
+    if (!this.generators) {
+      return;
+    }
+    return html`
+      <select name="generator" id="generator">
+        ${this.generators.map((g) => html`
+          <option value=${g}>${g}</option>
+        `)};
+      </select>
+    `;
+  }
+
   shiftsTemplate(ss) {
     return ss.Shifts.map((i, shiftIdx) => html`
       <tr>
@@ -168,7 +182,9 @@ class RotaShiftGenerate extends LitElement {
             <tr>
               <td>StartDate:<input type="date" id="start"></td>
               <td>ShiftsToSchedule:<input type="number" id="nrToSchedule"></td>
-              <td>Generator:<input type="text" id="generator" value="Fair"></td>
+              <td>Generator:
+                ${this.fillGenerators()}
+              </td>
             </tr>
           </tbody>
         </table>

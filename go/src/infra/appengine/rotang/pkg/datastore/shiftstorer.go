@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"context"
+
 	"go.chromium.org/gae/service/datastore"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -283,6 +284,7 @@ func (s *Store) ShiftsFromTo(ctx context.Context, rota string, from, to time.Tim
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
+	from, to = from.UTC(), to.UTC()
 	dsShifts := DsShifts{
 		Key:  rootKey(ctx),
 		Name: rota,

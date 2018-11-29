@@ -46,18 +46,20 @@ class RotaShiftSwap extends LitElement {
   }
 
   fixComments() {
-    let i = 0;
-    for (i = 0; i < this.shifts.SplitShifts.length; i++) {
-      let j = 0;
-      for (j = 0; j < this.shifts.SplitShifts[i].Shifts.length; j++) {
+    for (let i = 0; i < this.shifts.SplitShifts.length; i++) {
+      for (let j = 0; j < this.shifts.SplitShifts[i].Shifts.length; j++) {
         this.shifts.SplitShifts[i].Shifts[j].Comment =
-          this.shadowRoot.getElementById('shiftComment_'+$(i)+'-'+$(j)).value;
+          this.shadowRoot.getElementById(this.commentID(i, j)).value;
       }
     }
   }
 
+  commentID(splitIDX, shiftIDX) {
+    return `shiftComment_${splitIDX}-${shiftIDX}`;
+  }
+
   async sendJSON() {
-    fixComments();
+    this.fixComments();
     try {
       const res = await fetch('/shiftswap', {
         method: 'POST',
@@ -114,17 +116,11 @@ class RotaShiftSwap extends LitElement {
         <th>Oncallers</th>
         <th>Start</th>
         <th>End</th>
-        <th>Comment</th>
+       <th>Comment</th>
       <thead>
       <tbody>
         ${this.shiftTemplate(s, splitIdx)}
       </tbody>
-        <br>
-          <button type="button" @click=${() => this.sendJSON()}>
-          Swap Shifts</button>
-          <small>${this.updateState && this.updateState}</small>
-      </table>
-
       `);
   }
 
@@ -135,8 +131,8 @@ class RotaShiftSwap extends LitElement {
           ${this.selectOnCallers(splitIdx, shiftIdx, i, ss.Members)}
           <button type="button" @click=
             ${() => this.addMember(splitIdx, shiftIdx)}>
-            <small>+</small>
-          </button>
+        <small>+</small>
+        </button>
         </td>
         <td>
           <input type="text" name="shiftStart" class="roInput"
@@ -147,7 +143,7 @@ class RotaShiftSwap extends LitElement {
         value="${i.EndTime.toFormat(constants.timeFormat)}" readonly>
         </td>
         <td>
-          <input type=text id="shiftComment_${splitIdx}-${shiftIdx}"
+          <input type=text id="${this.commentID(splitIdx, shiftIdx)}"
           value="${i.Comment}">
         </td>
       </tr>`);
@@ -201,6 +197,11 @@ class RotaShiftSwap extends LitElement {
         <fieldset>
           <legend>Current shifts</legend>
           ${this.currentShifts()}
+            <br>
+              <button type="button" @click=${() => this.sendJSON()}>
+              Swap Shifts</button>
+              <small>${this.updateState && this.updateState}</small>
+          </table>
         </fieldset>
       </form>
       `;

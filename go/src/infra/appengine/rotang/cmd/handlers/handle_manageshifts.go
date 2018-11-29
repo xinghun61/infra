@@ -89,7 +89,7 @@ func (h *State) manageShiftsGET(ctx *router.Context, t time.Time) (templates.Arg
 		SplitShifts: current,
 	}
 
-	var hBuf, cBuf bytes.Buffer
+	var hBuf, cBuf, gBuf bytes.Buffer
 	hEnc := json.NewEncoder(&hBuf)
 	if err := hEnc.Encode(hRota); err != nil {
 		return nil, err
@@ -98,11 +98,23 @@ func (h *State) manageShiftsGET(ctx *router.Context, t time.Time) (templates.Arg
 	if err := cEnc.Encode(cRota); err != nil {
 		return nil, err
 	}
+	generators := h.generators.List()
+	for i := range generators {
+		if generators[i] == rota.Config.Shifts.Generator {
+			generators[0], generators[i] = generators[i], generators[0]
+		}
+	}
+
+	gEnc := json.NewEncoder(&gBuf)
+	if err := gEnc.Encode(generators); err != nil {
+		return nil, err
+	}
 
 	return templates.Args{
-		"Rota":    rota.Config.Name,
-		"History": hBuf.String(),
-		"Current": cBuf.String(),
+		"Rota":       rota.Config.Name,
+		"History":    hBuf.String(),
+		"Current":    cBuf.String(),
+		"Generators": gBuf.String(),
 	}, nil
 }
 
@@ -223,7 +235,8 @@ func (h *State) handleGeneratedShifts(ctx *router.Context, cfg *rotang.Configura
 	if err != nil {
 		return err
 	}
-	for _, s := range resShifts {
+	for i, s := range shifts {
+		s.EvtID = resShifts[i].EvtID
 		if err := shiftStorer.UpdateShift(ctx.Context, cfg.Config.Name, &s); err != nil {
 			return err
 		}
@@ -251,14 +264,17 @@ func (h *State) handleUpdatedShifts(ctx *router.Context, cfg *rotang.Configurati
 	var lastShift time.Time
 	for _, split := range ss.SplitShifts {
 		for _, shift := range split.Shifts {
-			us := &shift
 			if cfg.Config.Enabled {
-				var err error
-				if us, err = h.calendar.UpdateEvent(ctx, cfg, &shift); err != nil {
+				cshift, err := h.calendar.UpdateEvent(ctx, cfg, &shift)
+				if err != nil && status.Code(err) != codes.NotFound {
 					return err
 				}
+				if err == nil {
+					shift.EvtID = cshift.EvtID
+				}
 			}
-			if err := shiftStorer.UpdateShift(ctx.Context, cfg.Config.Name, us); err != nil {
+			if err := shiftStorer.UpdateShift(ctx.Context, cfg.Config.Name, &shift); err != nil {
+				logging.Errorf(ctx.Context, "After UpdateShift, shift: %v, err: %v", shift, err)
 				return err
 			}
 			if lastShift.After(shift.StartTime) {
@@ -270,6 +286,7 @@ func (h *State) handleUpdatedShifts(ctx *router.Context, cfg *rotang.Configurati
 
 	as, err := shiftStorer.ShiftsFromTo(ctx.Context, cfg.Config.Name, lastShift, time.Time{})
 	if err != nil {
+		logging.Errorf(ctx.Context, "After ShiftsFromTo, lastShift: %v, err: %v", lastShift, err)
 		return err
 	}
 	for _, s := range as {
@@ -278,7 +295,10 @@ func (h *State) handleUpdatedShifts(ctx *router.Context, cfg *rotang.Configurati
 		}
 		if cfg.Config.Enabled {
 			if err := h.calendar.DeleteEvent(ctx, cfg, &s); err != nil {
-				return err
+				if status.Code(err) != codes.NotFound {
+					return err
+				}
+				logging.Warningf(ctx.Context, "deleting calendar event for shift: %v, not found", s)
 			}
 		}
 	}

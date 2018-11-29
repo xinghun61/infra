@@ -30,7 +30,7 @@ const Rotas = {
 };
 
 
-class RotaonCall extends LitElement {
+class RotaOnCall extends LitElement {
   static get properties() {
     return {
       onCall: {type: ShiftOnCall},
@@ -96,18 +96,18 @@ class RotaonCall extends LitElement {
   }
 
   shiftonCall(s) {
-    if (!s.Shift.onCall) {
+    if (!s.Shift.OnCall) {
       return;
     }
-    return s.Shift.onCall.map((o) => html`
-      <div>
+    return s.Shift.OnCall.map((o) => html`
+      <div class='item'>
         ${this.handleUser(o)}
       </div>
     `);
   }
 
   onCallEntries(s) {
-    if (!s.Shift.onCall) {
+    if (!s.Shift.OnCall) {
       return html`
       <td>
       </td>
@@ -151,6 +151,11 @@ class RotaonCall extends LitElement {
     <style>
       .flex-container {
         display: flex;
+        margin: 0 -4px;
+      }
+
+      .item {
+        margin: 0 4px;
       }
 
       .oncallers {
@@ -195,6 +200,7 @@ class RotaonCall extends LitElement {
       </tbody>
     </table>`
     ;
-  } }
+  }
+}
 
 customElements.define('rota-oncall', RotaOnCall);

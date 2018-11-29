@@ -448,7 +448,10 @@ func TestShiftChanges(t *testing.T) {
 			}
 			defer h.shiftStore(ctx).DeleteAllShifts(ctx, tst.cfg.Config.Name)
 
-			err := h.shiftChanges(ctx, tst.cfg, tst.ss, tst.usr)
+			err := h.shiftChanges(&router.Context{
+				Context: ctx,
+				Request: httptest.NewRequest("GET", "/cron/email", nil),
+			}, tst.cfg, tst.ss, tst.usr)
 			if got, want := (err != nil), tst.fail; got != want {
 				t.Fatalf("%s: shiftChanges(ctx, _, _, _) = %t want: %t, err: %v", tst.name, got, want, err)
 			}

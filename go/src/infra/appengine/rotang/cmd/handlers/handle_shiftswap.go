@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"infra/appengine/rotang"
 	"net/http"
@@ -37,7 +36,7 @@ func (h *State) HandleShiftSwap(ctx *router.Context) {
 		http.Error(ctx.Writer, "not a rotation member", http.StatusForbidden)
 		return
 	}
-	if err := h.shiftChanges(ctx.Context, cfg, shifts, member); err != nil {
+	if err := h.shiftChanges(ctx, cfg, shifts, member); err != nil {
 		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -68,7 +67,7 @@ func (h *State) swapSetup(ctx *router.Context) (*rotang.Configuration, *RotaShif
 	return rotas[0], &res, nil
 }
 
-func (h *State) shiftChanges(ctx context.Context, cfg *rotang.Configuration, ss *RotaShifts, usr *rotang.ShiftMember) error {
+func (h *State) shiftChanges(ctx *router.Context, cfg *rotang.Configuration, ss *RotaShifts, usr *rotang.ShiftMember) error {
 	if ss == nil || cfg == nil || usr == nil {
 		return status.Errorf(codes.InvalidArgument, "cfg, ss and usr must be set.")
 	}
@@ -80,19 +79,28 @@ func (h *State) shiftChanges(ctx context.Context, cfg *rotang.Configuration, ss 
 		}
 	}
 
-	shiftStore := h.shiftStore(ctx)
+	shiftStore := h.shiftStore(ctx.Context)
 	for _, s := range us {
-		origShift, err := shiftStore.Shift(ctx, cfg.Config.Name, s.StartTime)
+		origShift, err := shiftStore.Shift(ctx.Context, cfg.Config.Name, s.StartTime)
 		if err != nil {
 			return err
 		}
 		s.EvtID = origShift.EvtID
-		logging.Infof(ctx, "origShift: %v, update: %v, origUTC: %v,updateUTC: %v", origShift, s, origShift.EndTime.UTC(), s.EndTime.UTC())
+		logging.Infof(ctx.Context, "origShift: %v, update: %v, origUTC: %v,updateUTC: %v", origShift, s, origShift.EndTime.UTC(), s.EndTime.UTC())
 		if shiftUserDiff(origShift, &s, *usr) {
 			if s.Comment == "" {
 				return status.Errorf(codes.InvalidArgument, "please provide a comment")
 			}
-			if err := shiftStore.UpdateShift(ctx, cfg.Config.Name, &s); err != nil {
+			if cfg.Config.Enabled {
+				us, err := h.calendar.UpdateEvent(ctx, cfg, &s)
+				if err != nil && status.Code(err) != codes.NotFound {
+					return err
+				}
+				if err == nil {
+					s.EvtID = us.EvtID
+				}
+			}
+			if err := shiftStore.UpdateShift(ctx.Context, cfg.Config.Name, &s); err != nil {
 				return err
 			}
 		}
