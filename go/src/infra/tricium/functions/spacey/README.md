@@ -15,7 +15,7 @@ Local testing:
 
 ```
 $ go build
-$ ./spacey --input=test --output=output
+$ ./spacey --input=test --output=out
 ```
 
 ## Deployment

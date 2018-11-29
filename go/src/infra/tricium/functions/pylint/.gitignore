@@ -1,4 +1,4 @@
 /out
-/python
 /pylint
-pylint_parser
+/pylint_parser
+/python

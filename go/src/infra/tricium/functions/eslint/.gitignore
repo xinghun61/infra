@@ -1,6 +1,6 @@
-/out
-/node
 /eslint
-eslint_parser
-eslint.tar.gz
-node.tar.gz
+/eslint_parser
+/eslint.tar.gz
+/node
+/node.tar.gz
+/out

@@ -8,7 +8,7 @@ Local testing:
 
 ```
 $ go build -o isolator
-$ ./isolator --input=test --output=output
+$ ./isolator --input=test --output=out
 ```
 
 ## Deployment
