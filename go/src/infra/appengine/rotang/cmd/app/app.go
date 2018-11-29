@@ -52,15 +52,20 @@ var errStatus = func(c context.Context, w http.ResponseWriter, status int, msg s
 	w.Write([]byte(msg))
 }
 
-func requireGoogler(c *router.Context, next router.Handler) {
-	isGoogler, err := auth.IsMember(c.Context, authGroup)
+func requireGoogler(ctx *router.Context, next router.Handler) {
+	isGoogler, err := auth.IsMember(ctx.Context, authGroup)
 	switch {
 	case err != nil:
-		errStatus(c.Context, c.Writer, http.StatusInternalServerError, err.Error())
+		errStatus(ctx.Context, ctx.Writer, http.StatusInternalServerError, err.Error())
 	case !isGoogler:
-		errStatus(c.Context, c.Writer, http.StatusForbidden, "Access denied")
+		url, err := auth.LoginURL(ctx.Context, ctx.Params.ByName("path"))
+		if err != nil {
+			errStatus(ctx.Context, ctx.Writer, http.StatusForbidden, "Access denied err:"+err.Error())
+			return
+		}
+		errStatus(ctx.Context, ctx.Writer, http.StatusForbidden, "Access denied <a href="+url+">login</a>")
 	default:
-		next(c)
+		next(ctx)
 	}
 }
 
