@@ -26,7 +26,7 @@ import (
 // for it (based on quota account balance, max fanout for that account, and
 // FIFO ordering).
 type prioritizedRequest struct {
-	RequestId string
+	RequestID string
 	Priority  int32
 	Request   *TaskRequest
 	// Flag used within scheduler to indicate that a request is already handled.
@@ -61,7 +61,7 @@ func (s *Scheduler) prioritizeRequests() orderedRequests {
 		requests = append(requests, prioritizedRequest{
 			Priority:  p,
 			Request:   req,
-			RequestId: id,
+			RequestID: id,
 		})
 	}
 

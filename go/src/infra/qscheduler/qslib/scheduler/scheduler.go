@@ -162,7 +162,7 @@ func (s *Scheduler) UpdateTime(ctx context.Context, t time.Time) error {
 // IdleWorker describes a worker that is idle, along with
 // the provisionable labels that it possesses.
 type IdleWorker struct {
-	WorkerId string
+	WorkerID string
 	Labels   LabelSet
 }
 
@@ -248,7 +248,7 @@ func matchIdleBotsWithLabels(state *State, requestsAtP orderedRequests) []*Assig
 				m := &Assignment{
 					Type:      Assignment_IDLE_WORKER,
 					WorkerId:  wid,
-					RequestId: request.RequestId,
+					RequestId: request.RequestID,
 					Priority:  request.Priority,
 					Time:      state.LastUpdateTime,
 				}
@@ -291,7 +291,7 @@ func matchIdleBots(state *State, requestsAtP []prioritizedRequest) []*Assignment
 		m := &Assignment{
 			Type:      Assignment_IDLE_WORKER,
 			WorkerId:  wid,
-			RequestId: request.RequestId,
+			RequestId: request.RequestID,
 			Priority:  request.Priority,
 			Time:      state.LastUpdateTime,
 		}
@@ -353,7 +353,7 @@ func reprioritizeRunningTasks(state *State, config *Config, priority int32) {
 
 // doDemote is a helper function used by reprioritizeRunningTasks
 // which demotes some jobs (selected from candidates) from priority to priority + 1.
-func doDemote(state *State, candidates []workerWithId, chargeRate float64, priority int32) {
+func doDemote(state *State, candidates []workerWithID, chargeRate float64, priority int32) {
 	sortAscendingCost(candidates)
 
 	numberToDemote := minInt(len(candidates), int(math.Ceil(-chargeRate)))
@@ -365,7 +365,7 @@ func doDemote(state *State, candidates []workerWithId, chargeRate float64, prior
 // doPromote is a helper function use by reprioritizeRunningTasks
 // which promotes some jobs (selected from candidates) from any level > priority
 // to priority.
-func doPromote(state *State, candidates []workerWithId, chargeRate float64, priority int32) {
+func doPromote(state *State, candidates []workerWithID, chargeRate float64, priority int32) {
 	sortDescendingCost(candidates)
 
 	numberToPromote := minInt(len(candidates), int(math.Ceil(chargeRate)))
@@ -376,13 +376,13 @@ func doPromote(state *State, candidates []workerWithId, chargeRate float64, prio
 
 // workersAt is a helper function that returns the workers with a given
 // account id and running.
-func workersAt(ws map[string]*Worker, priority int32, accountID string) []workerWithId {
-	ans := make([]workerWithId, 0, len(ws))
+func workersAt(ws map[string]*Worker, priority int32, accountID string) []workerWithID {
+	ans := make([]workerWithID, 0, len(ws))
 	for wid, worker := range ws {
 		if !worker.isIdle() &&
 			worker.RunningTask.Request.AccountId == accountID &&
 			worker.RunningTask.Priority == priority {
-			ans = append(ans, workerWithId{worker, wid})
+			ans = append(ans, workerWithID{worker, wid})
 		}
 	}
 	return ans
@@ -390,13 +390,13 @@ func workersAt(ws map[string]*Worker, priority int32, accountID string) []worker
 
 // workersBelow is a helper function that returns the workers with a given
 // account id and below a given running.
-func workersBelow(ws map[string]*Worker, priority int32, accountID string) []workerWithId {
-	ans := make([]workerWithId, 0, len(ws))
+func workersBelow(ws map[string]*Worker, priority int32, accountID string) []workerWithID {
+	ans := make([]workerWithID, 0, len(ws))
 	for wid, worker := range ws {
 		if !worker.isIdle() &&
 			worker.RunningTask.Request.AccountId == accountID &&
 			worker.RunningTask.Priority > priority {
-			ans = append(ans, workerWithId{worker, wid})
+			ans = append(ans, workerWithID{worker, wid})
 		}
 	}
 	return ans
@@ -407,7 +407,7 @@ func workersBelow(ws map[string]*Worker, priority int32, accountID string) []wor
 // the account that had been charged for the task.
 func preemptRunningTasks(state *State, jobsAtP []prioritizedRequest, priority int32) []*Assignment {
 	var output []*Assignment
-	candidates := make([]workerWithId, 0, len(state.Workers))
+	candidates := make([]workerWithID, 0, len(state.Workers))
 	// Accounts that are already running a lower priority job are not
 	// permitted to preempt jobs at this priority. This is to prevent a type
 	// of thrashing that may occur if an account is unable to promote jobs to
@@ -416,7 +416,7 @@ func preemptRunningTasks(state *State, jobsAtP []prioritizedRequest, priority in
 	bannedAccounts := make(map[string]bool)
 	for wid, worker := range state.Workers {
 		if !worker.isIdle() && worker.RunningTask.Priority > priority {
-			candidates = append(candidates, workerWithId{worker, wid})
+			candidates = append(candidates, workerWithID{worker, wid})
 			bannedAccounts[worker.RunningTask.Request.AccountId] = true
 		}
 	}
@@ -441,7 +441,7 @@ func preemptRunningTasks(state *State, jobsAtP []prioritizedRequest, priority in
 		mut := &Assignment{
 			Type:        Assignment_PREEMPT_WORKER,
 			Priority:    priority,
-			RequestId:   request.RequestId,
+			RequestId:   request.RequestID,
 			TaskToAbort: candidate.worker.RunningTask.RequestId,
 			WorkerId:    candidate.id,
 			Time:        state.LastUpdateTime,

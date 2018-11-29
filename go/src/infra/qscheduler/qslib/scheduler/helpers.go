@@ -18,14 +18,14 @@ import (
 	"sort"
 )
 
-// workerWithId is a (Worker, Id) tuple.
-type workerWithId struct {
+// workerWithID is a (Worker, Id) tuple.
+type workerWithID struct {
 	worker *Worker
 	id     string
 }
 
 // sortAscendingCost sorts a slice in-place by ascending cost.
-func sortAscendingCost(ws []workerWithId) {
+func sortAscendingCost(ws []workerWithID) {
 	less := func(i, j int) bool {
 		return ws[i].worker.RunningTask.Cost.Less(*ws[j].worker.RunningTask.Cost)
 	}
@@ -33,7 +33,7 @@ func sortAscendingCost(ws []workerWithId) {
 }
 
 // sortDescendingCost sorts a slice in-place by descending cost.
-func sortDescendingCost(ws []workerWithId) {
+func sortDescendingCost(ws []workerWithID) {
 	less := func(i, j int) bool {
 		return ws[j].worker.RunningTask.Cost.Less(*ws[i].worker.RunningTask.Cost)
 	}

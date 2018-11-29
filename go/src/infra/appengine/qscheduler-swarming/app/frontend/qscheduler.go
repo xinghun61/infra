@@ -28,6 +28,7 @@ import (
 	"infra/qscheduler/qslib/tutils"
 )
 
+// QSchedulerState encapsulates the state of a scheduler.
 type QSchedulerState struct {
 	schedulerID string
 	scheduler   *scheduler.Scheduler

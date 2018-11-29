@@ -72,7 +72,7 @@ func TestPrioritizeOne(t *testing.T) {
 					got := s.prioritizeRequests()
 					Convey(fmt.Sprintf("then the request gets priority %d.", c.expectedPriority), func() {
 						So(got[0].Priority, ShouldEqual, c.expectedPriority)
-						So(got[0].RequestId, ShouldEqual, rid)
+						So(got[0].RequestID, ShouldEqual, rid)
 					})
 				})
 			})
@@ -83,7 +83,7 @@ func TestPrioritizeOne(t *testing.T) {
 				got := s.prioritizeRequests()
 				Convey("then the request is put in free bucket priority.", func() {
 					So(got[0].Priority, ShouldEqual, account.FreeBucket)
-					So(got[0].RequestId, ShouldEqual, rid)
+					So(got[0].RequestID, ShouldEqual, rid)
 				})
 			})
 		})
