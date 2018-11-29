@@ -16,14 +16,15 @@ package frontend
 
 import (
 	"context"
+	"sort"
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
 	"infra/swarming"
 
-	// This import will be restored once TODO in NotifyTasks is addressed.
-	_ "github.com/pkg/errors"
+	"github.com/pkg/errors"
 
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/data/stringset"
 	"go.chromium.org/luci/common/logging"
 
 	"infra/qscheduler/qslib/reconciler"
@@ -127,6 +128,16 @@ func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.Noti
 				continue
 			}
 
+			var provisionableLabels []string
+			// ProvisionableLabels attribute only matters for TaskUpdate_NEW type
+			// updates, because these are tasks that are in the queue (scheduler
+			// pays no attention to labels of already-running tasks).
+			if t == reconciler.TaskUpdate_NEW {
+				if provisionableLabels, err = getProvisionableLabels(n); err != nil {
+					return err
+				}
+			}
+
 			// TODO(akeshet): Validate that new tasks have dimensions that match the
 			// worker pool dimensions for this scheduler pool.
 			update := &reconciler.TaskUpdate{
@@ -134,10 +145,8 @@ func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.Noti
 				AccountId: "",
 				// TODO(akeshet): implement me properly. This should be a separate field
 				// of the task state, not the notification time.
-				EnqueueTime: n.Time,
-				// TODO(akeshet): implement me properly. This should be determined by the
-				// difference between the first and last task slice of the task.
-				ProvisionableLabels: []string{},
+				EnqueueTime:         n.Time,
+				ProvisionableLabels: provisionableLabels,
 				RequestId:           n.Task.Id,
 				Time:                n.Time,
 				Type:                t,
@@ -156,6 +165,30 @@ func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.Noti
 		return nil, err
 	}
 	return &swarming.NotifyTasksResponse{}, nil
+}
+
+// getProvisionableLabels determines the provisionable labels for a given task,
+// based on the dimensions of its slices.
+func getProvisionableLabels(n *swarming.NotifyTasksItem) ([]string, error) {
+	switch len(n.Task.Slices) {
+	case 1:
+		return []string{}, nil
+	case 2:
+		s1 := stringset.NewFromSlice(n.Task.Slices[0].Dimensions...)
+		s2 := stringset.NewFromSlice(n.Task.Slices[1].Dimensions...)
+		// s2 must be a subset of s1 (i.e. the first slice must be more specific about dimensions than the second one)
+		// otherwise this is an error.
+		if flaws := s2.Difference(s1); flaws.Len() != 0 {
+			return nil, errors.Errorf("Invalid slice dimensions; task's 2nd slice dimensions are not a subset of 1st slice dimensions.")
+		}
+
+		var provisionable sort.StringSlice
+		provisionable = s1.Difference(s2).ToSlice()
+		provisionable.Sort()
+		return provisionable, nil
+	default:
+		return nil, errors.Errorf("Invalid slice count %d; quotascheduler only supports 1-slice or 2-slice tasks.", len(n.Task.Slices))
+	}
 }
 
 func toTaskState(s swarming.TaskState) (reconciler.TaskUpdate_Type, bool) {
