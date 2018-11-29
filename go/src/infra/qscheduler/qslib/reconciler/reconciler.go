@@ -234,6 +234,20 @@ func (state *State) Notify(ctx context.Context, s Scheduler, updates ...*TaskUpd
 					delete(state.WorkerQueues, wid)
 				}
 			}
+
+		// TODO(akeshet): This handler is mostly copy-pasted from the INTERRUPTED case. They can
+		// probably be unified. Also, the same TODO from the INTERRUPTED case applies here.
+		case TaskUpdate_ABORTED:
+			rid := update.RequestId
+			updateTime := tutils.Timestamp(update.Time)
+			s.AbortRequest(ctx, rid, updateTime)
+			// TODO(akeshet): Add an inverse map from aborting request -> previous
+			// worker to avoid the need for this iteration through all workers.
+			for wid, q := range state.WorkerQueues {
+				if q.TaskToAbort == rid && tutils.Timestamp(q.EnqueueTime).Before(updateTime) {
+					delete(state.WorkerQueues, wid)
+				}
+			}
 		}
 	}
 	return nil

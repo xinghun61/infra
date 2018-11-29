@@ -20,12 +20,6 @@ import "google/protobuf/timestamp.proto";
 // creation of a new task.
 message TaskUpdate {
 
-	// TODO: Determine which of these other update types we need:
-	// - CANCELLED: a queued task is removed from the queue without running
-	// - ABORTED: a running task is moved off of worker but not returned to queue
-	//   (and worker is not marked as idle, nor is it running a chargeable
-        //   task).
-
 	enum Type {
 		// Invalid update type.
 		NULL = 0;
@@ -39,6 +33,10 @@ message TaskUpdate {
 		// A task that was previously assigned to a worker has been interrupted and
 		// reenqueued.
 		INTERRUPTED = 3;
+
+		// A task (whether previously running or enqueued) has been stopped and not
+		// reenqueud.
+		ABORTED = 4;
 	}
 
 
