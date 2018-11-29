@@ -52,7 +52,8 @@ queue:
     task_retry_limit: 0
 
 - name: code-coverage-process-data
-  rate: 5/s
+  rate: 20/s
   max_concurrent_requests: 20
+  target: code-coverage
   retry_parameters:
     task_retry_limit: 5

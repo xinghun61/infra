@@ -87,11 +87,10 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
           return entries, total
 
         ndb.put_multi(entries)
-
         total += len(entries)
-
         logging.info('Dumped %d CoverageData entries of type %s', total,
                      actual_data_type)
+
         return [], total
 
       def IterateOverFileShards(file_shards):
@@ -168,13 +167,24 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
           'Could not retrieve build #%d from buildbucket, retry' % build_id,
           404)
 
+    # Only process Chromium coverage bots.
+    if (build.builder.project != 'chromium'
+        or build.builder.bucket not in ('ci', 'try')
+        or build.builder.builder not in (
+            'linux-code-coverage', 'linux-coverage-rel')):
+      return
+
     # Convert the Struct to standard dict, to use .get, .iteritems etc.
     properties = dict(build.output.properties.items())
     gs_bucket = properties['coverage_gs_bucket']
     gs_path = properties['coverage_metadata_gs_path']
 
-    full_gs_dir = 'https://storage.googleapis.com/%s/%s' % (
-        gs_bucket, gs_path)
+    # Ensure that the coverage data is ready.
+    if not gs_bucket or not gs_path:
+      logging.info('coverage GS bucket info not available in %r', build.id)
+      return
+
+    full_gs_dir = 'https://storage.googleapis.com/%s/%s' % (gs_bucket, gs_path)
 
     gs_url = '%s/all.json.gz' % full_gs_dir
     data = _GetValidatedData(gs_url)

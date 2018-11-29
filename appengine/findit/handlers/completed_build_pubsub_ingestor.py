@@ -49,30 +49,21 @@ class CompletedBuildPubsubIngestor(BaseHandler):
       logging.debug('Post body: %s', self.request.body)
       return
 
-    if build['status'] == 'COMPLETED' and build['project'] == 'chromium':
-      return _IngestProto(int(build_id))
+    if build['status'] == 'COMPLETED':
+      _HandlePossibleCodeCoverageBuild(int(build_id))  # TODO: revert.
+      if build['project'] == 'chromium':
+        return _IngestProto(int(build_id))
     # We don't care about pending or non-chromium builds, so we accept the
     # notification by returning 200, and prevent pubsub from retrying it.
 
 
-def _HandleCodeCoverageBuilds(build, properties):  # pragma: no cover
+def _HandlePossibleCodeCoverageBuild(build_id):  # pragma: no cover
   """Schedules a taskqueue task to process the code coverage data."""
-  if (build.builder.project != 'chromium'
-      or build.builder.bucket not in ('ci', 'try')
-      or build.builder.builder not in (
-          'linux-code-coverage', 'linux-coverage-rel')):
-    return
-
-  coverage_metadata_gs_path = properties.get('coverage_metadata_gs_path')
-  coverage_gs_bucket = properties.get('coverage_gs_bucket')
-  if not coverage_metadata_gs_path or not coverage_gs_bucket:
-    logging.info('coverage GS bucket info not available in %r', build.id)
-    return
-
+  # https://cloud.google.com/appengine/docs/standard/python/taskqueue/push/creating-tasks#target
   taskqueue.add(
       url='/coverage/task/process-data',
-      payload=json.dumps({'build_id': build.id}),
-      target=appengine_util.GetTargetNameForModule('code-coverage'),
+      payload=json.dumps({'build_id': build_id}),
+      target='code-coverage',  # Always use the default version.
       queue_name='code-coverage-process-data')
 
 
@@ -109,9 +100,6 @@ def _IngestProto(build_id):
 
   # Convert the Struct to standard dict, to use .get, .iteritems etc.
   properties = dict(properties_struct.items())
-
-  # TODO: revert.
-  _HandleCodeCoverageBuilds(build, properties)
 
   swarm_hashes_properties = {}
   for k, v in properties.iteritems():

@@ -29,7 +29,7 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
       debug=True)
 
   @mock.patch.object(completed_build_pubsub_ingestor,
-                     '_HandleCodeCoverageBuilds')
+                     '_HandlePossibleCodeCoverageBuild')
   @mock.patch.object(FinditHttpClient, 'Post')
   def testSucessfulPushCIBuild(self, mock_post, *_):
     mock_build = Build()
@@ -79,7 +79,7 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     self.assertEqual(1, len(json.loads(response.body)['created_rows']))
 
   @mock.patch.object(completed_build_pubsub_ingestor,
-                     '_HandleCodeCoverageBuilds')
+                     '_HandlePossibleCodeCoverageBuild')
   @mock.patch.object(FinditHttpClient, 'Post')
   def testPushNoBuild(self, mock_post, *_):
     mock_headers = {'X-Prpc-Grpc-Code': '5'}
@@ -105,7 +105,7 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     self.assertEqual(404, response.status_int)
 
   @mock.patch.object(completed_build_pubsub_ingestor,
-                     '_HandleCodeCoverageBuilds')
+                     '_HandlePossibleCodeCoverageBuild')
   @mock.patch.object(FinditHttpClient, 'Post')
   def testPushPendingBuild(self, mock_post, *_):
     request_body = json.dumps({
@@ -129,7 +129,7 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     self.assertEqual(200, response.status_int)
 
   @mock.patch.object(completed_build_pubsub_ingestor,
-                     '_HandleCodeCoverageBuilds')
+                     '_HandlePossibleCodeCoverageBuild')
   @mock.patch.object(FinditHttpClient, 'Post')
   def testSucessfulPushBadFormat(self, mock_post, *_):
     request_body = json.dumps({
@@ -141,7 +141,7 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     self.assertEqual(200, response.status_int)
 
   @mock.patch.object(completed_build_pubsub_ingestor,
-                     '_HandleCodeCoverageBuilds')
+                     '_HandlePossibleCodeCoverageBuild')
   @mock.patch.object(FinditHttpClient, 'Post')
   def testNonIsolateBuild(self, mock_post, *_):
     # This build does not isolate any targets.
@@ -182,7 +182,7 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     self.assertNotIn('created_rows', response.body)
 
   @mock.patch.object(completed_build_pubsub_ingestor,
-                     '_HandleCodeCoverageBuilds')
+                     '_HandlePossibleCodeCoverageBuild')
   @mock.patch.object(FinditHttpClient, 'Post')
   def testNoMasternameBuild(self, mock_post, *_):
     mock_build = Build()
@@ -224,7 +224,7 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     self.assertNotIn('created_rows', response.body)
 
   @mock.patch.object(completed_build_pubsub_ingestor,
-                     '_HandleCodeCoverageBuilds')
+                     '_HandlePossibleCodeCoverageBuild')
   @mock.patch.object(FinditHttpClient, 'Post')
   def testSucessfulPushTryJob(self, mock_post, *_):
     mock_build = Build()
@@ -285,7 +285,7 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     self.assertEqual('linux_chromium_compile_dbg_ng', entry.builder_name)
 
   @mock.patch.object(completed_build_pubsub_ingestor,
-                     '_HandleCodeCoverageBuilds')
+                     '_HandlePossibleCodeCoverageBuild')
   @mock.patch.object(FinditHttpClient, 'Post')
   def testPushIgnoreV2Push(self, mock_post, *_):
     request_body = json.dumps({
