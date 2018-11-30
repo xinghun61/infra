@@ -1,1 +1,7 @@
-This directory contains chrome-infra's configs for its own services.
+The infra.git global config files have moved!
+
+They now live at:
+
+  https://chromium.googlesource.com/infra/infra/+/master/infra/config/global/
+
+Please update any links that brought you here!

@@ -1,7 +1,0 @@
-Renders steps.
-
-<ol>
-{{range $s := .Steps}}
-  <li>{{$s.Name}}</li>
-{{end}}
-</ol>
