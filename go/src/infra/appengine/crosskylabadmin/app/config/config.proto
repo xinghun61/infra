@@ -26,6 +26,10 @@ message Config {
 
     // Cron contains the configuration data specific to cron jobs on this app.
     Cron cron = 4;
+
+    // Inventory contains configuration information about skylab inventory
+    // repo.
+    Inventory inventory = 5;
 }
 
 // Swarming contains information about the Swarming instance that hosts the bots
@@ -79,4 +83,31 @@ message Cron {
     // RepairAttemptDelayDuration is the time between successive attempts at
     // repairing repair failed bots in the fleet.
     google.protobuf.Duration repair_attempt_delay_duration = 4;
+}
+
+// Skylab inventory is stored in a git project. A Gitiles server as well as
+// Gerrit review server are used by this app to view and update the inventory
+// data.
+message Inventory {
+    // Gitiles server hosting inventory project.
+    // e.g. chromium.googlesource.com
+    string gitiles_host = 1;
+
+    // Gerrit code review server hosting inventory project.
+    // e.g. chromium-review.googlesource.com
+    string gerrit_host = 2;
+
+    // Git project containing the inventory data.
+    string project = 3;
+
+    // Git branch from the inventory project to be used.
+    string branch = 4;
+
+    // Path to the inventory data file within the git project.
+    // e.g. data/skylab/lab.textpb
+    string data_path = 5;
+
+    // Inventory environment managed by this instance of the app.
+    // e.g. ENVIRONMENT_STAGING
+    string environment = 6;
 }
