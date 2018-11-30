@@ -27,11 +27,16 @@ func LoadLab(dataDir string) (*Lab, error) {
 		return nil, errors.Annotate(err, "load lab inventory %s", dataDir).Err()
 	}
 	lab := Lab{}
-	if err := proto.UnmarshalText(string(b), &lab); err != nil {
+	if err := LoadLabFromString(string(b), &lab); err != nil {
 		return nil, errors.Annotate(err, "load lab inventory %s", dataDir).Err()
 	}
 	return &lab, nil
 
+}
+
+// LoadLabFromString loads lab inventory information from the given string.
+func LoadLabFromString(text string, lab *Lab) error {
+	return proto.UnmarshalText(text, lab)
 }
 
 // WriteLab writes lab inventory information to the inventory data directory.
@@ -39,26 +44,33 @@ func LoadLab(dataDir string) (*Lab, error) {
 // WriteLab serializes the proto in a format that can be loaded from both
 // golang and python protobuf libraries.
 func WriteLab(lab *Lab, dataDir string) error {
+	labStr, err := WriteLabToString(lab)
+	if err != nil {
+		return errors.Annotate(err, "write lab inventory %s", dataDir).Err()
+	}
+	// rewriteMarshaledTextProtoForPython is a hacky translation of protos to
+	// python library friendly format. At least make sure we can load the proto
+	// back in to catch obvious corruption.
+	var relab Lab
+	if err := LoadLabFromString(labStr, &relab); err != nil {
+		return errors.Annotate(err, "validate lab inventory written to %s", dataDir).Err()
+	}
+	if err := oneShotWriteFile(dataDir, labFilename, labStr); err != nil {
+		return errors.Annotate(err, "write lab inventory %s", dataDir).Err()
+	}
+	return nil
+}
+
+// WriteLabToString marshals lab inventory information into a string.
+func WriteLabToString(lab *Lab) (string, error) {
 	lab = proto.Clone(lab).(*Lab)
 	if lab != nil {
 		sortLab(lab)
 	}
 	m := proto.TextMarshaler{}
 	var b bytes.Buffer
-	if err := m.Marshal(&b, lab); err != nil {
-		return errors.Annotate(err, "write lab inventory %s", dataDir).Err()
-	}
-
-	if err := oneShotWriteFile(dataDir, labFilename, rewriteMarshaledTextProtoForPython(b.Bytes())); err != nil {
-		return errors.Annotate(err, "write lab inventory %s", dataDir).Err()
-	}
-	// oneShotWriteFile is a hacky translation of protos to python library
-	// friendly format. At least make sure we can load the proto back in to
-	// catch obvious corruption.
-	if _, err := LoadLab(dataDir); err != nil {
-		return errors.Annotate(err, "validate lab inventory written to %s", dataDir).Err()
-	}
-	return nil
+	err := m.Marshal(&b, lab)
+	return string(rewriteMarshaledTextProtoForPython(b.Bytes())), err
 }
 
 const infraFilename = "server_db.textpb"
@@ -84,7 +96,8 @@ func WriteInfrastructure(infrastructure *Infrastructure, dataDir string) error {
 	if err := m.Marshal(&b, infrastructure); err != nil {
 		return errors.Annotate(err, "write infrastructure inventory %s", dataDir).Err()
 	}
-	return oneShotWriteFile(dataDir, infraFilename, rewriteMarshaledTextProtoForPython(b.Bytes()))
+	text := string(rewriteMarshaledTextProtoForPython(b.Bytes()))
+	return oneShotWriteFile(dataDir, infraFilename, text)
 }
 
 var suffixReplacements = map[string]string{
@@ -127,7 +140,7 @@ func rewriteMarshaledTextProtoForPython(data []byte) []byte {
 //
 // This function ensures that the original file is left unmodified in case of
 // write errors.
-func oneShotWriteFile(dataDir, fileName string, data []byte) error {
+func oneShotWriteFile(dataDir, fileName string, data string) error {
 	fp := filepath.Join(dataDir, fileName)
 	f, err := ioutil.TempFile(dataDir, fileName)
 	if err != nil {
@@ -139,7 +152,7 @@ func oneShotWriteFile(dataDir, fileName string, data []byte) error {
 		}
 	}()
 	defer f.Close()
-	if err := ioutil.WriteFile(f.Name(), data, 0600); err != nil {
+	if err := ioutil.WriteFile(f.Name(), []byte(data), 0600); err != nil {
 		return errors.Annotate(err, "write inventory %s", fp).Err()
 	}
 	if err := f.Close(); err != nil {
@@ -200,7 +213,7 @@ func sortLab(lab *Lab) {
 		return x.GetServoPort() < y.GetServoPort()
 	})
 
-	// ChamelwonConnections are unused and schema is untenable.
+	// ChameleonConnections are unused and schema is untenable.
 	// Sort not implemented yet.
 }
 
