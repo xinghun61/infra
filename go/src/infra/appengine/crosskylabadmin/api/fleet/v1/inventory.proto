@@ -39,9 +39,11 @@ message EnsurePoolHealthyRequest {
   // max_unhealthy_duts is the maximum number of DUTs that may be unhealthy in
   // the target pool before any action is taken.
   //
+  // max_unhealthy_duts is meaningful only when it has a positive value (> 0).
+  //
   // If the total number of unhealthy DUTs is above this threshold,
-  // EnsurePoolHealthy does not change DUT pools and returns an error.
-  // TODO: FILL IN ERRROR INFO.
+  // EnsurePoolHealthy does not change DUT pools and returns a
+  // NOT_ENOUGH_HEALTHY_SPARES failure.
   int32 max_unhealthy_duts = 4;
 
   message Options {
@@ -59,6 +61,11 @@ message EnsurePoolHealthyResponse {
     // Target pool had more than max_unhealthy_duts unhealthy duts before any
     // action was taken.
     TOO_MANY_UNHEALTHY_DUTS = 1;
+
+    // Spare pool did not have enough healthy DUTs to make sure all DUTs in
+    // target pool are healthy. In this failure mode, the available healthy
+    // spare DUTs do get transferred to the target pool.
+    NOT_ENOUGH_HEALTHY_SPARES = 2;
   }
 
   // Failures encountered during pool balancing.
