@@ -937,6 +937,12 @@ class IssuePermissionsTest(unittest.TestCase):
           {role})
       self.assertIn('view', perms.perm_names)
 
+  def testUpdateIssuePermissions_GrantedViewPermission(self):
+    perms = permissions.UpdateIssuePermissions(
+        permissions.USER_PERMISSIONSET, self.PROJECT, self.RESTRICTED_ISSUE,
+        {}, ['commit'])
+    self.assertIn('view', perms.perm_names)
+
   def testUpdateIssuePermissions_EditRestrictions(self):
     perms = permissions.UpdateIssuePermissions(
         permissions.COMMITTER_ACTIVE_PERMISSIONSET, self.PROJECT,
@@ -950,21 +956,14 @@ class IssuePermissionsTest(unittest.TestCase):
     self.assertIn('editissue', perms.perm_names)
 
   def testUpdateIssuePermissions_CustomPermissionGrantsEditPermission(self):
-    self.PROJECT.committer_ids.append(111L)
-    self.PROJECT.extra_perms.append(
-        project_pb2.Project.ExtraPerms(member_id=111L, perms=['Foo']))
+    project = project_pb2.Project()
+    project.committer_ids.append(999L)
+    project.extra_perms.append(
+        project_pb2.Project.ExtraPerms(member_id=999L, perms=['Foo']))
     perms = permissions.UpdateIssuePermissions(
-        permissions.COMMITTER_ACTIVE_PERMISSIONSET, self.PROJECT,
-        self.RESTRICTED_ISSUE3, {111L})
+        permissions.COMMITTER_ACTIVE_PERMISSIONSET, project,
+        self.RESTRICTED_ISSUE3, {999L})
     self.assertIn('editissue', perms.perm_names)
-
-  def testUpdateIssuePermissions_GrantedViewPermission(self):
-    self.RESTRICTED_ISSUE.field_values.append(
-        tracker_pb2.FieldValue(user_id=111L, field_id=123))
-    perms = permissions.UpdateIssuePermissions(
-        permissions.USER_PERMISSIONSET, self.PROJECT, self.RESTRICTED_ISSUE,
-        {111L}, ['Commit'])
-    self.assertIn('view', perms.perm_names)
 
   def testCanViewIssue_Deleted(self):
     self.assertFalse(permissions.CanViewIssue(
