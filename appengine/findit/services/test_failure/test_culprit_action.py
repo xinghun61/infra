@@ -50,7 +50,7 @@ def CanAutoCreateRevert(culprit, parameters):
 
   action_settings = waterfall_config.GetActionSettings()
   # Auto revert has been turned off.
-  if not bool(action_settings.get('auto_create_revert_test')):
+  if not bool(action_settings.get('auto_create_revert')):
     return False
 
   auto_create_revert_daily_threshold_test = action_settings.get(
@@ -87,8 +87,8 @@ def CanAutoCommitRevertByFindit():
     3. Culprit author has not landed another change yet.
   """
   action_settings = waterfall_config.GetActionSettings()
-  if (not bool(action_settings.get('auto_commit_revert_test')) or
-      not bool(action_settings.get('auto_create_revert_test'))):
+  if (not bool(action_settings.get('auto_commit_revert')) or
+      not bool(action_settings.get('auto_create_revert'))):
     return False
 
   auto_commit_revert_daily_threshold_test = action_settings.get(

@@ -40,7 +40,7 @@ def CanAutoCreateRevert():
   """
   action_settings = waterfall_config.GetActionSettings()
   # Auto revert has been turned off.
-  if not bool(action_settings.get('auto_create_revert_compile')):
+  if not bool(action_settings.get('auto_create_revert')):
     return False
 
   auto_create_revert_daily_threshold_compile = action_settings.get(
@@ -76,8 +76,8 @@ def CanAutoCommitRevertByFindit():
       daily limit;
   """
   action_settings = waterfall_config.GetActionSettings()
-  if (not bool(action_settings.get('auto_commit_revert_compile')) or
-      not bool(action_settings.get('auto_create_revert_compile'))):
+  if (not bool(action_settings.get('auto_commit_revert')) or
+      not bool(action_settings.get('auto_create_revert'))):
     return False
 
   auto_commit_revert_daily_threshold_compile = action_settings.get(

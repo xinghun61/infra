@@ -45,7 +45,7 @@ class TrooperTest(wf_testcase.WaterfallTestCase):
     redirect_url = '/trooper'
     self.assertTrue(response.headers.get('Location', '').endswith(redirect_url))
     self.assertFalse(
-        waterfall_config.GetActionSettings().get('auto_commit_revert_compile'))
+        waterfall_config.GetActionSettings().get('auto_commit_revert'))
 
   @mock.patch.object(token, 'ValidateAuthToken', return_value=(True, False))
   def testNonAdminCouldTurnOffCodeCoverage(self, _):
@@ -97,7 +97,7 @@ class TrooperTest(wf_testcase.WaterfallTestCase):
   def testAdminCouldTurnOnAutoCommit(self, _):
     self.mock_current_user(user_email='test@google.com', is_admin=True)
     self.UpdateUnitTestConfigSettings('action_settings',
-                                      {'auto_commit_revert_compile': False})
+                                      {'auto_commit_revert': False})
 
     params = {
         'xsrf_token': 'token',
@@ -109,7 +109,7 @@ class TrooperTest(wf_testcase.WaterfallTestCase):
     response = self.test_app.post('/trooper', params=params, status=302)
     self.assertTrue(response.headers.get('Location', '').endswith('/trooper'))
     self.assertTrue(
-        waterfall_config.GetActionSettings().get('auto_commit_revert_compile'))
+        waterfall_config.GetActionSettings().get('auto_commit_revert'))
 
   @mock.patch.object(token, 'ValidateAuthToken', return_value=(True, False))
   def testAdminCouldTurnOnCodeCoverage(self, _):
@@ -133,7 +133,7 @@ class TrooperTest(wf_testcase.WaterfallTestCase):
   def testAutoCommitAlreadyTurnedOn(self, _):
     self.mock_current_user(user_email='test@google.com', is_admin=True)
     self.UpdateUnitTestConfigSettings('action_settings',
-                                      {'auto_commit_revert_compile': True})
+                                      {'auto_commit_revert': True})
 
     params = {
         'xsrf_token': 'token',
@@ -196,25 +196,3 @@ class TrooperTest(wf_testcase.WaterfallTestCase):
     response = self.test_app.post('/trooper', params=params, status=400)
     self.assertEqual('Please enter the reason.',
                      response.json_body.get('error_message'))
-
-  @mock.patch.object(token, 'ValidateAuthToken', return_value=(True, False))
-  def testTurnOffAutoCommitForBothFailureTypes(self, _):
-    self.mock_current_user(user_email='test@google.com', is_admin=True)
-    self.UpdateUnitTestConfigSettings('action_settings', {
-        'auto_commit_revert_compile': False,
-        'auto_commit_revert_test': True
-    })
-
-    params = {
-        'xsrf_token': 'token',
-        'auto_commit_revert': 'false',
-        'update_reason': 'reason',
-        'format': 'json',
-    }
-
-    response = self.test_app.post('/trooper', params=params, status=302)
-    self.assertTrue(response.headers.get('Location', '').endswith('/trooper'))
-    self.assertFalse(
-        waterfall_config.GetActionSettings().get('auto_commit_revert_compile'))
-    self.assertFalse(
-        waterfall_config.GetActionSettings().get('auto_commit_revert_test'))

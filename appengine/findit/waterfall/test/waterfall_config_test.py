@@ -122,6 +122,10 @@ class MastersTest(wf_testcase.WaterfallTestCase):
 
   def testGetActionSettings(self):
     self.assertEqual({
+        'auto_commit_revert':
+            True,
+        'auto_create_revert':
+            True,
         'cr_notification_build_threshold':
             2,
         'cr_notification_latency_limit_minutes':
@@ -130,18 +134,10 @@ class MastersTest(wf_testcase.WaterfallTestCase):
             True,
         'culprit_commit_limit_hours':
             24,
-        'auto_create_revert_compile':
-            True,
-        'auto_commit_revert_compile':
-            True,
         'auto_commit_revert_daily_threshold_compile':
             4,
         'auto_create_revert_daily_threshold_compile':
             10,
-        'auto_create_revert_test':
-            True,
-        'auto_commit_revert_test':
-            True,
         'auto_commit_revert_daily_threshold_test':
             4,
         'auto_create_revert_daily_threshold_test':

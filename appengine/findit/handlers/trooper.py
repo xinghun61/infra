@@ -23,9 +23,7 @@ class Trooper(BaseHandler):
   @token.AddXSRFToken(action_id='config')
   def HandleGet(self):
     action_settings = waterfall_config.GetActionSettings()
-    auto_commit_revert_is_on = (
-        action_settings.get('auto_commit_revert_compile', False) or
-        action_settings.get('auto_commit_revert_test', False))
+    auto_commit_revert_is_on = action_settings.get('auto_commit_revert', False)
 
     code_coverage_settings = waterfall_config.GetCodeCoverageSettings()
     code_coverage_is_on = (
@@ -53,17 +51,11 @@ class Trooper(BaseHandler):
       A bool indicates whether the update is successful.
     """
     action_settings = waterfall_config.GetActionSettings()
-    if ((auto_commit_revert_is_on == action_settings.get(
-        'auto_commit_revert_compile')) and
-        (auto_commit_revert_is_on == action_settings.get(
-            'auto_commit_revert_test'))):
+    if auto_commit_revert_is_on == action_settings.get('auto_commit_revert'):
       return False
 
     updated_action_settings = copy.deepcopy(action_settings)
-    updated_action_settings[
-        'auto_commit_revert_compile'] = auto_commit_revert_is_on
-    updated_action_settings[
-        'auto_commit_revert_test'] = auto_commit_revert_is_on
+    updated_action_settings['auto_commit_revert'] = auto_commit_revert_is_on
     return wf_config.FinditConfig.Get().Update(
         user,
         acl.IsPrivilegedUser(user.email(), users.is_current_user_admin()),

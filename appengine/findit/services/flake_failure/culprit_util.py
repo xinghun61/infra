@@ -89,6 +89,12 @@ def AbortCreateAndSubmitRevert(parameters, runner_id):
     culprit.put()
 
 
+def IsAutorevertEnabled():
+  action_settings = waterfall_config.GetActionSettings()
+  return (action_settings.get('auto_commit_revert', False) and
+          action_settings.get('auto_create_revert', False))
+
+
 def CreateAndSubmitRevert(parameters, runner_id):
   """Wraps the creation and submission of autoreverts for flaky tests."""
   analysis = ndb.Key(urlsafe=parameters.analysis_urlsafe_key).get()
@@ -98,6 +104,10 @@ def CreateAndSubmitRevert(parameters, runner_id):
 
   # TODO(crbug.com/907675): Create, but not auto commit reverts for some
   # culprits.
+
+  if not IsAutorevertEnabled():
+    analysis.LogInfo('Autorevert is disabled.')
+    return False
 
   if not UnderLimitForAutorevert():
     analysis.LogInfo('Not autoreverting since limit has been reached.')

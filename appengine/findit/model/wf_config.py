@@ -109,15 +109,13 @@ class FinditConfig(VersionedConfig):
 
   # A dict containing action settings for identified culprits or suspects.
   # {
+  #     'auto_commit_revert': True,
+  #     'auto_create_revert': True,
   #     'cr_notification_build_threshold': 2,
   #     'cr_notification_latency_limit_minutes': 30,
   #     'culprit_commit_limit_hours': 24,
-  #     'auto_create_revert_compile': True,
-  #     'auto_commit_revert_compile': False,
   #     'auto_create_revert_daily_threshold_compile': 4,
   #     'auto_commit_revert_daily_threshold_compile': 10,
-  #     'auto_create_revert_test': True,
-  #     'auto_commit_revert_test': False,
   #     'auto_create_revert_daily_threshold_test': 10,
   #     'auto_commit_revert_daily_threshold_test': 4,
   #     'auto_reate_revert_daily_threshold_flake': 10,

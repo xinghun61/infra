@@ -136,16 +136,14 @@ _DEFAULT_DOWNLOAD_BUILD_DATA_SETTINGS = {
 }
 
 _DEFAULT_ACTION_SETTINGS = {
+    'auto_commit_revert': True,
+    'auto_create_revert': True,
     'cr_notification_build_threshold': 2,
     'cr_notification_latency_limit_minutes': 30,
     'cr_notification_should_notify_flake_culprit': True,
     'culprit_commit_limit_hours': 24,
-    'auto_create_revert_compile': True,
-    'auto_commit_revert_compile': True,
     'auto_commit_revert_daily_threshold_compile': 4,
     'auto_create_revert_daily_threshold_compile': 10,
-    'auto_create_revert_test': True,
-    'auto_commit_revert_test': True,
     'auto_commit_revert_daily_threshold_test': 4,
     'auto_create_revert_daily_threshold_test': 10,
     'auto_create_revert_daily_threshold_flake': 10,

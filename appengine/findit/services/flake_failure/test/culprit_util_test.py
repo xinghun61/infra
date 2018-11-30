@@ -31,6 +31,32 @@ from waterfall.test import wf_testcase
 
 class CulpritUtilTest(wf_testcase.WaterfallTestCase):
 
+  def testIsAutorevertEnabled(self):
+    self.UpdateUnitTestConfigSettings('action_settings', {
+        'auto_commit_revert': True,
+        'auto_create_revert': True,
+    })
+    self.assertTrue(culprit_util.IsAutorevertEnabled())
+
+  def testIsAutorevertEnabledNotEnabled(self):
+    self.UpdateUnitTestConfigSettings('action_settings', {
+        'auto_commit_revert': True,
+        'auto_create_revert': False,
+    })
+    self.assertFalse(culprit_util.IsAutorevertEnabled())
+
+    self.UpdateUnitTestConfigSettings('action_settings', {
+        'auto_commit_revert': False,
+        'auto_create_revert': True,
+    })
+    self.assertFalse(culprit_util.IsAutorevertEnabled())
+
+    self.UpdateUnitTestConfigSettings('action_settings', {
+        'auto_commit_revert': False,
+        'auto_create_revert': False,
+    })
+    self.assertFalse(culprit_util.IsAutorevertEnabled())
+
   def testAbortCreateAndSubmitRevertNothingMatchesNothingChanged(self):
     pipeline_id = 'foobar'
     build_key = 'buildid'
