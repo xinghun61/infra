@@ -56,6 +56,50 @@ def _GetValidatedData(gs_url):
   return data
 
 
+def _DecompressLines(line_ranges):
+  """Decompress the lines data to a flat format.
+
+  For example:
+  [
+    {
+      "count": 1,
+      "first": 165, // inclusive
+      "last": 166 // inclusive
+    }
+  ]
+
+  After decompressing, it becomes:
+  [
+    {
+      "line": 165,
+      "count": 1
+    },
+    {
+      "line": 166,
+      "count": 1
+    }
+  ]
+
+  Args:
+    line_ranges: A list of dict, with format
+                 [{"first": int, "last": int, "count": int}, ...], and note that
+                 the [first, last] are both inclusive.
+
+  Returns:
+    A list of dict, with format
+    [{"line": int, "count": int}].
+  """
+  decompressed_lines = []
+  for line_range in line_ranges:
+    for line_num in range(line_range['first'], line_range['last'] + 1):
+      decompressed_lines.append({
+          'line': line_num,
+          'count': line_range['count']
+      })
+
+  return decompressed_lines
+
+
 class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
   PERMISSION_LEVEL = Permission.ADMIN
 
@@ -124,11 +168,11 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
       FlushEntries(entities, total, last=True)
 
     if component_summaries:
-      CoverageData.Create(
-          commit.host, code_revision_index, actual_data_type, '>>', {
-          'dirs': component_summaries,
-          'path': '>>'
-      }).put()
+      CoverageData.Create(commit.host, code_revision_index, actual_data_type,
+                          '>>', {
+                              'dirs': component_summaries,
+                              'path': '>>'
+                          }).put()
 
     # Create a repository-level record so that it shows up on UI.
     PostsubmitReport(
@@ -158,6 +202,8 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
         build_id=build_id).put()
 
   def _processCodeCoverageData(self, build_id):
+    print build_id
+
     build = GetV2Build(
         build_id,
         fields=FieldMask(paths=['id', 'output.properties', 'input', 'builder']))
@@ -168,10 +214,10 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
           404)
 
     # Only process Chromium coverage bots.
-    if (build.builder.project != 'chromium'
-        or build.builder.bucket not in ('ci', 'try')
-        or build.builder.builder not in (
-            'linux-code-coverage', 'linux-coverage-rel')):
+    if (build.builder.project != 'chromium' or
+        build.builder.bucket not in ('ci', 'try') or
+        build.builder.builder not in ('linux-code-coverage',
+                                      'linux-coverage-rel')):
       return
 
     # Convert the Struct to standard dict, to use .get, .iteritems etc.
@@ -185,7 +231,6 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
       return
 
     full_gs_dir = 'https://storage.googleapis.com/%s/%s' % (gs_bucket, gs_path)
-
     gs_url = '%s/all.json.gz' % full_gs_dir
     data = _GetValidatedData(gs_url)
 
@@ -268,46 +313,24 @@ class ServeCodeCoverageData(BaseHandler):
             allowed_origin='*',
             **kwargs)
 
-      presubmit_reports = PresubmitReport.query(
-          PresubmitReport.server_host == host,
-          PresubmitReport.change == int(change),
-          PresubmitReport.patchset == int(patchset)).fetch()
-      if not presubmit_reports:
-        return BaseHandler.CreateError(
-            'Requested coverage data is not found.', 404, allowed_origin='*')
+      code_revision_index = '%s-%s' % (change, patchset)
+      entity = CoverageData.Get(host, code_revision_index, 'patch', 'ALL')
+      data = entity.data
 
-      compressed_data_gs_url = presubmit_reports[0].gs_url
-      if not compressed_data_gs_url.endswith('compressed.json.gz'):
-        return BaseHandler.CreateError(
-            'Gs url: "%s" for compressed data is not in expected format.' %
-            compressed_data_gs_url, 500)
+      formatted_data = {'files': []}
+      for file_data in data:
+        formatted_data['files'].append({
+            'path': file_data['path'],
+            'lines': _DecompressLines(file_data['lines'])
+        })
 
-      rebased_data_gs_url = compressed_data_gs_url.replace(
-          'compressed.json.gz', 'rebased_flat.json')
-
-      @Cached(PickledMemCache(), expire_time=48 * 60 * 60)
-      def _GetGcsData(url):
-        status, content, _ = FinditHttpClient().Get(url)
-        if status != 200:
-          return None
-
-        return content
-
-      content = _GetGcsData(rebased_data_gs_url)
-      if not content:
-        return BaseHandler.CreateError(
-            'Can not retrieve the coverage data: %s' % rebased_data_gs_url,
-            500,
-            allowed_origin='*')
-
-      data = json.loads(content)
       return {
           'data': {
               'host': host,
               'project': project,
               'change': change,
               'patchset': patchset,
-              'data': data,
+              'data': formatted_data,
           },
           'allowed_origin': '*'
       }
