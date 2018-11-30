@@ -1,0 +1,18 @@
+*.pyc
+.coverage
+.expect_tests_coverage*
+ENV
+.wheelcache
+luci
+appengine
+bootstrap
+/cipd/*
+.DS_Store
+go/.vendor
+/node/runtimes
+# build_cache is used by infra.services.builder_alerts
+build_cache
+go/src/github.com
+recipes-py
+!/cipd/README.md
+reasons.sqlite
