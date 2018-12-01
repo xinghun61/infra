@@ -736,13 +736,12 @@ class IssueServiceTest(unittest.TestCase):
   def SetUpUpdateIssuesApprovals(self, av_rows=None, approver_rows=None):
     av_rows = av_rows or []
     approver_rows = approver_rows or []
-    approval_ids = [row[0] for row in av_rows]
     self.services.issue.issue2approvalvalue_tbl.Delete(
         self.cnxn, issue_id=78901, commit=False)
     self.services.issue.issue2approvalvalue_tbl.InsertRows(
         self.cnxn, issue_svc.ISSUE2APPROVALVALUE_COLS, av_rows, commit=False)
     self.services.issue.issueapproval2approver_tbl.Delete(
-        self.cnxn, issue_id=78901, approval_id=approval_ids, commit=False)
+        self.cnxn, issue_id=78901, commit=False)
     self.services.issue.issueapproval2approver_tbl.InsertRows(
         self.cnxn, issue_svc.ISSUEAPPROVAL2APPROVER_COLS, approver_rows,
         commit=False)

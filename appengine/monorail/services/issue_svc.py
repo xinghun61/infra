@@ -1284,9 +1284,7 @@ class IssueService(object):
       approver_rows.extend([(av.approval_id, approver_id, issue.issue_id)
                             for approver_id in av.approver_ids])
     self.issueapproval2approver_tbl.Delete(
-        cnxn, issue_id=issue.issue_id,
-        approval_id=[av.approval_id for av in issue.approval_values],
-        commit=commit)
+        cnxn, issue_id=issue.issue_id, commit=commit)
     self.issueapproval2approver_tbl.InsertRows(
         cnxn, ISSUEAPPROVAL2APPROVER_COLS, approver_rows, commit=commit)
 
