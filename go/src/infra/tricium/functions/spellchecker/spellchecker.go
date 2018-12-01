@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"unicode"
 
 	"infra/tricium/api/v1"
 )
@@ -24,6 +25,12 @@ type commentFormat struct {
 	LineStart  string `json:"line_start"`
 	BlockStart string `json:"block_start"`
 	BlockEnd   string `json:"block_end"`
+}
+
+// wordSegment contains the individual word and its starting index in parent word.
+type wordSegment struct {
+	word       string
+	startIndex int
 }
 
 const (
@@ -219,8 +226,8 @@ func analyzeWords(commentWord, stopPattern string,
 
 	// A single word (delimited by whitespace) could have multiple words delimited by
 	// comment characters, so we split it by said characters and check the words individually.
-	for _, wordToCheckRange := range justWord.FindAllStringIndex(commentWord, -1) {
-		wordToCheck := commentWord[wordToCheckRange[0]:wordToCheckRange[1]]
+	for _, wordToCheckSplit := range splitComment(commentWord) {
+		wordToCheck := wordToCheckSplit.word
 
 		// Words that are all upper-case are likely to be initialisms,
 		// which are more likely to be false positives because they usually
@@ -228,10 +235,15 @@ func analyzeWords(commentWord, stopPattern string,
 		if wordToCheck == strings.ToUpper(wordToCheck) {
 			continue
 		}
-		if fixes, ok := dict[strings.ToLower(wordToCheck)]; ok && !inSlice(wordToCheck, ignoredWords) {
-			if c := buildMisspellingComment(wordToCheck, fixes, startChar+wordToCheckRange[0],
-				lineno, filePath); c != nil {
-				*comments = append(*comments, c)
+
+		// Split at uppercase letters to handle camel cased words
+		for _, currentWordSegment := range splitCamelCase(wordToCheck) {
+			word := currentWordSegment.word
+			if fixes, ok := dict[strings.ToLower(word)]; ok && !inSlice(word, ignoredWords) {
+				if c := buildMisspellingComment(word, fixes,
+					startChar+wordToCheckSplit.startIndex+currentWordSegment.startIndex, lineno, filePath); c != nil {
+					*comments = append(*comments, c)
+				}
 			}
 		}
 	}
@@ -394,4 +406,37 @@ func inSlice(word string, arr []string) bool {
 		}
 	}
 	return false
+}
+
+// Splits comment word by special characters into individual words and returns an array of wordSegments.
+func splitComment(commentWord string) []wordSegment {
+	var splitIndexes []wordSegment
+
+	for _, wordIndex := range justWord.FindAllStringIndex(commentWord, -1) {
+		splitIndexes = append(splitIndexes,
+			wordSegment{commentWord[wordIndex[0]:wordIndex[1]], wordIndex[0]})
+	}
+
+	return splitIndexes
+}
+
+// Splits camel cased word into individual words and returns an array of wordSegments.
+func splitCamelCase(word string) []wordSegment {
+	var (
+		splitIndexes []wordSegment
+		wordStart    int
+		wordEnd      int
+		letter       rune
+	)
+
+	wordStart = 0
+	for wordEnd, letter = range word {
+		if wordEnd != 0 && unicode.IsUpper(letter) {
+			splitIndexes = append(splitIndexes, wordSegment{word[wordStart:wordEnd], wordStart})
+			wordStart = wordEnd
+		}
+	}
+	splitIndexes = append(splitIndexes, wordSegment{word[wordStart:], wordStart})
+
+	return splitIndexes
 }

@@ -13,5 +13,6 @@ correct
 /*iminent
 wanna*/
 
+//camelCaseExmaple comment
 //weird//case//carreer//clsoe//normal
 an/*exmaple*//*of*//*colunns*//*normal*/

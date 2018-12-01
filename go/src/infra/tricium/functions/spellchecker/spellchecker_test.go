@@ -524,6 +524,43 @@ func TestSpellCheckerAnalyzeFiles(t *testing.T) {
 		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.c", false, cp[".c"], results)
 		So(results, ShouldResemble, expected)
 	})
+
+	Convey("Words joined in camelcase should be checked individually", t, func() {
+		fileContent := "//camelCaseExmaple comment"
+
+		expected := &tricium.Data_Results{
+			Comments: []*tricium.Data_Comment{
+				{
+					Path:      "test.c",
+					Message:   `"Exmaple" is a possible misspelling of "Example".`,
+					Category:  "SpellChecker",
+					StartLine: 1,
+					EndLine:   1,
+					StartChar: 11,
+					EndChar:   18,
+					Suggestions: []*tricium.Data_Suggestion{
+						{
+							Description: "Misspelling fix suggestion",
+							Replacements: []*tricium.Data_Replacement{
+								{
+									Path:        "test.c",
+									Replacement: "Example",
+									StartLine:   1,
+									EndLine:     1,
+									StartChar:   11,
+									EndChar:     18,
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		results := &tricium.Data_Results{}
+		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.c", false, cp[".c"], results)
+		So(results, ShouldResemble, expected)
+	})
 }
 
 func TestGettingCommentFormat(t *testing.T) {
