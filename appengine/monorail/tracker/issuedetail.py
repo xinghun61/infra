@@ -478,11 +478,6 @@ class IssueDetail(issuepeek.IssuePeek):
 
     for i, desc in enumerate(descriptions):
       desc.description_num = str(i + 1)
-    visible_descriptions = [d for d in descriptions
-                            if d.id in visible_comment_ids]
-    desc_comments = [d for d in visible_comments if d.id in description_ids]
-    for i, comment in enumerate(desc_comments):
-      comment.description_num = visible_descriptions[i].description_num
 
     return descriptions, visible_comments, pagination
 
