@@ -512,10 +512,18 @@ class FLTConvertTask(unittest.TestCase):
 
     template.phases = [tracker_pb2.Phase(name='feature freeze'),
                        tracker_pb2.Phase(name='branch')]
+
+    # test template not set up correctly
     template.approval_values = [
         tracker_pb2.ApprovalValue(approval_id=1),
         tracker_pb2.ApprovalValue(approval_id=2),
         tracker_pb2.ApprovalValue(approval_id=3)]
+    self.assertRaisesRegexp(
+        AssertionError, 'os template not set up correctly',
+        self.task.FetchAndAssertProjectInfo, mr)
+
+    for av in template.approval_values:
+      av.status = tracker_pb2.ApprovalStatus.NEEDS_REVIEW
 
     # test approvals not recognized
     self.assertRaisesRegexp(

@@ -379,10 +379,11 @@ class FLTConvertTask(jsonfeed.InternalTask):
         'no approvals or phases in %s' % template_name)
     assert all(phase.name.lower() in phase_map.keys() for phase in phases), (
         'one or more phases not recognized')
-    if launch == 'finch':
+    if launch in ['finch', 'os']:
       assert all(
           av.status is tracker_pb2.ApprovalStatus.NEEDS_REVIEW
-          for av in approval_values), 'finch template not set up correctly'
+          for av in approval_values
+      ), '%s template not set up correctly' % launch
 
     approval_fds = {fd.field_id: fd.field_name for fd in config.field_defs
                     if fd.field_type is tracker_pb2.FieldTypes.APPROVAL_TYPE}
