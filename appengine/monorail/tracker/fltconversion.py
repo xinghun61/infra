@@ -172,8 +172,12 @@ class FLTConvertTask(jsonfeed.InternalTask):
 
     project = self.services.project.GetProjectByName(mr.cnxn, 'chromium')
     config = self.services.config.GetProjectConfig(mr.cnxn, project.project_id)
-    approval_names = {fd.field_id: fd.field_name for fd in config.field_defs
-                      if fd.field_name in BROWSER_APPROVALS_TO_LABELS.keys()}
+    browser_approval_names = {fd.field_id: fd.field_name for fd
+                              in config.field_defs if fd.field_name in
+                              BROWSER_APPROVALS_TO_LABELS.keys()}
+    os_approval_names = {fd.field_id: fd.field_name for fd in config.field_defs
+                         if (fd.field_name in OS_APPROVALS_TO_LABELS.keys())
+                         or fd.field_name == 'ChromeOS-Enterprise'}
     pm_id = tracker_bizobj.FindFieldDef('PM', config).field_id
     tl_id = tracker_bizobj.FindFieldDef('TL', config).field_id
     te_id = tracker_bizobj.FindFieldDef('TE', config).field_id
@@ -185,24 +189,46 @@ class FLTConvertTask(jsonfeed.InternalTask):
       issue = self.services.issue.GetIssue(
           mr.cnxn, possible_stale_issue.issue_id, use_cache=False)
       # Check correct template used
-      if 'Rollout-Type-Default' in issue.labels:
+      approval_names = browser_approval_names
+      approvals_to_labels = BROWSER_APPROVALS_TO_LABELS
+      m_labels_re = BROWSER_M_LABELS_RE
+      label_channel_to_phase_id = {
+          phase.name.lower(): phase.phase_id for phase in issue.phases}
+      if [l.lower() for l in issue.labels if
+          l.lower().startswith('os-')] == ['os-chrome']:  # OS only launch
+        approval_names = os_approval_names
+        approvals_to_labels = OS_APPROVALS_TO_LABELS
+        m_labels_re = OS_M_LABELS_RE
+        label_channel_to_phase_id = {'stable': phase.phase_id for
+                                     phase in issue.phases
+                                     if phase.name.lower() == 'branch'}
+        if not all(phase.name.lower() in ['feature freeze', 'branch']
+                   for phase in issue.phases):
+          problems.append((
+              issue.local_id, 'incorrect phases for OS only launch.'))
+      elif 'Rollout-Type-Default' in issue.labels:  # Browser default launch
         if not all(phase.name.lower() in ['beta', 'stable']
                    for phase in issue.phases):
           problems.append((
               issue.local_id, 'incorrect phases for Default rollout'))
-      elif 'Rollout-Type-Finch' in issue.labels:
+      elif 'Rollout-Type-Finch' in issue.labels:  # Browser finch launch
         if not all(phase.name.lower() in ['beta', 'stable-exp', 'stable-full']
                    for phase in issue.phases):
           problems.append((
               issue.local_id, 'incorrect phases for Finch rollout'))
       else:
         problems.append((
-            issue.local_id, 'no rollout-type; should not have been converted'))
+            issue.local_id,
+            'no rollout-type and not OS-only; should not have been converted'))
 
       # Check approval_values
       for av in issue.approval_values:
         name = approval_names.get(av.approval_id)
-        label_pre = BROWSER_APPROVALS_TO_LABELS.get(name)
+        if name == 'ChromeOS-Enterprise':
+          if av.status != tracker_pb2.ApprovalStatus.NEEDS_REVIEW:
+            problems.append((issue.local_id, 'bad ChromeOS-Enterprise status'))
+          continue
+        label_pre = approvals_to_labels.get(name)
         if not label_pre:
           # either name was None or not found in APPROVALS_TO_LABELS
           problems.append((issue.local_id, 'approval %s not recognized' % name))
@@ -234,10 +260,8 @@ class FLTConvertTask(jsonfeed.InternalTask):
           problems.append((issue.local_id, 'missing a field for %s' % role))
 
       # Check M phase field_values
-      phase_dict = {
-          phase.name.lower(): phase.phase_id for phase in issue.phases}
       for label in issue.labels:
-        match = re.match(BROWSER_M_LABELS_RE, label)
+        match = re.match(m_labels_re, label)
         if match:
           channel = match.group('channel')
           if (channel.lower() == 'stable-exp'
@@ -247,8 +271,8 @@ class FLTConvertTask(jsonfeed.InternalTask):
           milestone = match.group('m')
           m_type = match.group('type')
           m_id = mapproved_id if m_type == 'Approved' else mtarget_id
-          phase_id = phase_dict.get(
-              channel.lower(), phase_dict.get('stable-full', None))
+          phase_id = label_channel_to_phase_id.get(
+              channel.lower(), label_channel_to_phase_id.get('stable-full'))
           if not next((
               fv for fv in issue.field_values
               if fv.phase_id == phase_id and fv.field_id == m_id and

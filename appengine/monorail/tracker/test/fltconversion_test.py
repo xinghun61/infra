@@ -48,7 +48,17 @@ class FLTConvertTask(unittest.TestCase):
         789, 2, 'sum', 'New', 111L, issue_id=78902,
         labels=[
             'Launch-M-Target-71-Stable', 'Launch-M-Approved-70-Beta',
-            'pm-jojwang', 'tl-annajo', 'Type-Launch'])
+            'pm-jojwang', 'tl-annajo', 'OS-Chrome', 'OS-Android',
+            'Type-Launch'])
+    self.issue3 = fake.MakeTestIssue(
+        789, 3, 'sum', 'New', 111L, issue_id=78903,
+        labels=['Launch-M-Approved-71-Stable', 'Launch-M-Target-70-Beta',
+                'Launch-M-Target-70-Stable', 'Launch-UI-Yes',
+                'Launch-Exp-Leadership-Yes', 'pm-annajo', 'tl-jojwang',
+                'OS-Chrome', 'Type-Launch'])
+    self.issue4 = fake.MakeTestIssue(
+        789, 4, 'sum', 'New', 111L, issue_id=78904,
+        labels=['Launch-UI-Yes', 'OS-Chrome', 'Type-Launch'])
 
     self.approval_values = [
         tracker_pb2.ApprovalValue(
@@ -270,6 +280,30 @@ class FLTConvertTask(unittest.TestCase):
         tracker_bizobj.MakeFieldValue(5, None, None, 111L, None, None, False),
         ]
 
+    self.issue3.phases = [tracker_pb2.Phase(name='Feature Freeze', phase_id=4),
+                          tracker_pb2.Phase(name='Branch', phase_id=5)]
+    self.issue3.approval_values = [
+      tracker_pb2.ApprovalValue(
+          approval_id=9, status=tracker_pb2.ApprovalStatus.APPROVED),
+      tracker_pb2.ApprovalValue(
+          approval_id=10, status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)]
+    # problem = no phase field label Launch-M-Target-70-Stable
+    # problem = missing a field for TL
+    self.issue3.field_values = [
+        tracker_pb2.FieldValue(field_id=8, int_value=71, phase_id=5),
+        tracker_bizobj.MakeFieldValue(4, None, None, 111L, None, None, False)
+    ]
+
+    # problem = incorrect phases for OS only launch
+    self.issue4.phases = [tracker_pb2.Phase(name='Branch', phase_id=5),
+                          tracker_pb2.Phase(name='Stable', phase_id=2)]
+    # problem = approval ChromeOS-UX has status 'NEEDS_REVIEW'
+    # for label value Yes
+    self.issue4.approval_values = [
+      tracker_pb2.ApprovalValue(
+          approval_id=9, status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)]
+
+
     self.config.field_defs = [
         tracker_pb2.FieldDef(field_id=1, field_name='Chrome-Test'),
         tracker_pb2.FieldDef(field_id=2, field_name='Chrome-UX'),
@@ -279,31 +313,40 @@ class FLTConvertTask(unittest.TestCase):
         tracker_pb2.FieldDef(field_id=6, field_name='TE'),
         tracker_pb2.FieldDef(field_id=7, field_name='M-Target'),
         tracker_pb2.FieldDef(field_id=8, field_name='M-Approved'),
+        tracker_pb2.FieldDef(field_id=9, field_name='ChromeOS-UX'),
+        tracker_pb2.FieldDef(field_id=10, field_name='ChromeOS-Enterprise'),
     ]
 
     # Set up mocks
     patcher = mock.patch(
         'search.frontendsearchpipeline.FrontendSearchPipeline',
-        spec=True, allowed_results=[self.issue1, self.issue2])
+        spec=True, allowed_results=[
+            self.issue1, self.issue2, self.issue3, self.issue4])
     mockPipeline = patcher.start()
     self.task.services.project.GetProjectByName = mock.Mock()
     self.task.services.config.GetProjectConfig = mock.Mock(
         return_value=self.config)
     self.task.services.issue.GetIssue = mock.Mock(
-        side_effect=[self.issue1, self.issue2])
+        side_effect=[self.issue1, self.issue2, self.issue3, self.issue4])
     self.task.services.user.LookupUserID = mock.Mock(return_value=111L)
     with self.work_env as we:
       we.ListIssues = mock.Mock(return_value=mockPipeline)
 
     # Assert
     json = self.task.VerifyConversion(self.mr)
-    self.assertEqual(json['issues verified'], ['issue 1', 'issue 2'])
+    self.assertEqual(json['issues verified'],
+                     ['issue 1', 'issue 2', 'issue 3', 'issue 4'])
     problems = json['problems found']
     expected_problems = [
         'issue 1: missing a field for TL',
         'issue 2: approval Chrome-Privacy has status \'APPROVED\' for '
         'label value None',
         'issue 2: no phase field for label Launch-M-Approved-70-Beta',
+        'issue 3: missing a field for TL',
+        'issue 3: no phase field for label Launch-M-Target-70-Stable',
+                'issue 4: incorrect phases for OS only launch.',
+        'issue 4: approval ChromeOS-UX has status \'NEEDS_REVIEW\' for '
+        'label value Yes'
     ]
     self.assertEqual(problems, expected_problems)
     patcher.stop()
