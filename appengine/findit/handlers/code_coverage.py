@@ -103,7 +103,8 @@ def _DecompressLines(line_ranges):
 class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
   PERMISSION_LEVEL = Permission.APP_SELF
 
-  def _ProcessFullRepositoryData(self, commit, data, full_gs_dir, build_id):
+  def _ProcessFullRepositoryData(self, commit, data, full_gs_dir, bucket_name,
+                                 source_and_report_gs_path, build_id):
     # Load the commit log first so that we could fail fast before redo all.
     repo_url = 'https://%s/%s' % (commit.host, commit.project)
     change_log = CachedGitilesRepository(FinditHttpClient(),
@@ -184,10 +185,14 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
         commit_position=change_log.commit_position,
         commit_timestamp=change_log.committer.time,
         summary_metrics=data.get('summaries'),
+        bucket_name=bucket_name,
         gs_url='%s/index.html' % full_gs_dir,
+        source_and_report_gs_path=source_and_report_gs_path,
         build_id=build_id).put()
 
-  def _ProcessCLPatchData(self, patch, data, full_gs_dir, build_id):
+  def _ProcessCLPatchData(self, patch, data, full_gs_dir, bucket_name,
+                          source_and_report_gs_path, build_id):
+    # For a CL/patch, we save the entire data in one entity.
     CoverageData.Create(patch.host, '%s-%s' % (patch.change, patch.patchset),
                         'patch', 'ALL', data).put()
     PresubmitReport(
@@ -198,12 +203,12 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
         project=patch.project,
         change=patch.change,
         patchset=patch.patchset,
+        bucket_name=bucket_name,
         gs_url='%s/index.html' % full_gs_dir,
+        source_and_report_gs_path=source_and_report_gs_path,
         build_id=build_id).put()
 
   def _processCodeCoverageData(self, build_id):
-    print build_id
-
     build = GetV2Build(
         build_id,
         fields=FieldMask(paths=['id', 'output.properties', 'input', 'builder']))
@@ -224,9 +229,10 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
     properties = dict(build.output.properties.items())
     gs_bucket = properties['coverage_gs_bucket']
     gs_path = properties['coverage_metadata_gs_path']
+    source_and_report_gs_path = properties['coverage_source_and_report_gs_path']
 
     # Ensure that the coverage data is ready.
-    if not gs_bucket or not gs_path:
+    if not gs_bucket or not gs_path or not source_and_report_gs_path:
       logging.info('coverage GS bucket info not available in %r', build.id)
       return
 
@@ -235,14 +241,17 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
     data = _GetValidatedData(gs_url)
 
     # Save the data in json.
-    patches = build.input.gerrit_changes
-    if patches:  # For a CL/patch, we save the entire data in one entity.
-      patch = patches[0]  # Assume there is only 1 patch which is true in CQ.
-      self._ProcessCLPatchData(patch, data['files'], full_gs_dir, build_id)
+    if build.builder.bucket == 'try':
+      # Assume there is only 1 patch which is true in CQ.
+      assert len(build.input.gerrit_changes) == 1, 'Expect only one patchset'
+      patch = build.input.gerrit_changes[0]
+      self._ProcessCLPatchData(patch, data['files'], full_gs_dir, gs_bucket,
+                               source_and_report_gs_path, build_id)
     else:  # For a commit, we save the data by file and directory.
       assert build.input.gitiles_commit is not None, 'Expect a commit'
       self._ProcessFullRepositoryData(build.input.gitiles_commit, data,
-                                      full_gs_dir, build_id)
+                                      full_gs_dir, gs_bucket,
+                                      source_and_report_gs_path, build_id)
 
   def HandlePost(self):
     """Loads the data from GS bucket, and dumps them into ndb."""
@@ -365,3 +374,50 @@ class ServeCodeCoverageData(BaseHandler):
       }
     else:
       return BaseHandler.CreateError('Invalid request', 400)
+
+
+class GetCoverageFile(BaseHandler):
+  PERMISSION_LEVEL = Permission.ANYONE
+
+  def HandleGet(self):
+    host = self.request.get('host', 'chromium.googlesource.com')
+
+    project = self.request.get('project', 'chromium/src')
+    revision = self.request.get('revision')
+
+    change = self.request.get('change')
+    patchset = self.request.get('patchset')
+    build_id = self.request.get('buildid')
+
+    if project and revision:
+      key = ndb.Key(PostsubmitReport, '%s$%s$%s' % (host, project, revision))
+    else:
+      key = ndb.Key(PresubmitReport,
+                    '%s$%s$%s$%s' % (host, change, patchset, build_id))
+    report = key.get()
+    if not report:
+      return BaseHandler.CreateError('Report record not found', 404)
+
+    file_name = self.request.get('file')
+    is_html = self.request.get('html') == '1'
+    if is_html:
+      file_name = file_name + '.html'
+      content_type = 'text/html'
+    else:
+      content_type = 'text/plain'
+
+    bucket_name = report.bucket_name
+    source_and_report_gs_path = report.source_and_report_gs_path
+    gs_url = 'https://storage.googleapis.com/%s/%s/coverage/%s' % (
+        bucket_name, source_and_report_gs_path, file_name)
+
+    @Cached(PickledMemCache(), expire_time=48 * 60 * 60)
+    def RetrieveFile(url):
+      logging.info('Fetching file %s', url)
+      status, content, _ = FinditHttpClient().Get(url)
+      if status == 404:
+        return None  # This is not cached.
+      assert status == 200, 'Can not retrieve file: %s' % url
+      return content  # This is cached.
+
+    return {'data': RetrieveFile(gs_url), 'content_type': content_type}

@@ -14,6 +14,7 @@ from handlers import code_coverage
 code_coverage_handler_mappings = [
     ('/coverage/task/process-data', code_coverage.ProcessCodeCoverageData),
     ('/coverage/api/coverage-data', code_coverage.ServeCodeCoverageData),
+    ('/coverage/api/get-coverage-file', code_coverage.GetCoverageFile),
 ]
 code_coverage_web_application = webapp2.WSGIApplication(
     code_coverage_handler_mappings, debug=False)

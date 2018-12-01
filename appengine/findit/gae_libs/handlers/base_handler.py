@@ -142,6 +142,7 @@ class BaseHandler(webapp2.RequestHandler):
                     template,
                     data,
                     return_code,
+                    content_type,
                     cache_expiry=None,
                     allowed_origin=None):
     """Sends the response to the client in json or html as requested.
@@ -150,6 +151,7 @@ class BaseHandler(webapp2.RequestHandler):
       template: the template file to use.
       data: the data to feed the template or as the response if no template.
       return_code: the http status code for the response.
+      content_type: the type of the response content.
       cache_expiry: (optional) max-age for public cache-control in seconds.
       allowed_origin: a string representing the origin that the response can
                       be shared with, and the value is exactly one of '*',
@@ -188,8 +190,6 @@ class BaseHandler(webapp2.RequestHandler):
     elif isinstance(data, (list, dict)):
       content_type = 'application/json'
       data = _DumpJson(data)
-    else:
-      content_type = 'text/html'
 
     if cache_expiry is not None:
       self.response.headers['cache-control'] = (
@@ -208,6 +208,7 @@ class BaseHandler(webapp2.RequestHandler):
 
   def _Handle(self, handler_func):
     try:
+      content_type = 'text/html'
       if not self._HasPermission():
         logging.info('Current user has no permission to access the endpoint.')
         template = 'error.html'
@@ -223,11 +224,12 @@ class BaseHandler(webapp2.RequestHandler):
         result = handler_func() or {}
         redirect_url = result.get('redirect_url')
 
-        template = result.get('template', None)
+        template = result.get('template')
         data = result.get('data', {})
         return_code = result.get('return_code', 200)
-        cache_expiry = result.get('cache_expiry', None)
-        allowed_origin = result.get('allowed_origin', None)
+        content_type = result.get('content_type', content_type)
+        cache_expiry = result.get('cache_expiry')
+        allowed_origin = result.get('allowed_origin')
 
     except Exception as e:
       user_agent = self.request.headers.get('user-agent')
@@ -257,7 +259,7 @@ class BaseHandler(webapp2.RequestHandler):
             'site',
             data.get('user_info', {}).get('email'))
 
-    self._SendResponse(template, data, return_code, cache_expiry,
+    self._SendResponse(template, data, return_code, content_type, cache_expiry,
                        allowed_origin)
 
   def get(self):

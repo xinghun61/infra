@@ -7,7 +7,19 @@ import hashlib
 from google.appengine.ext import ndb
 
 
-class PostsubmitReport(ndb.Model):
+class ReportBase(ndb.Model):
+  """Holds shared info for both postsubmit and presubmit reports."""
+
+  bucket_name = ndb.StringProperty(indexed=False)
+
+  gs_url = ndb.StringProperty(indexed=False)
+
+  source_and_report_gs_path = ndb.StringProperty(indexed=False)
+
+  build_id = ndb.IntegerProperty(indexed=False)
+
+
+class PostsubmitReport(ReportBase):
   """Represents a postsubmit code coverage report."""
 
   server_host = ndb.StringProperty(indexed=True)
@@ -22,10 +34,6 @@ class PostsubmitReport(ndb.Model):
 
   summary_metrics = ndb.JsonProperty(indexed=False)
 
-  gs_url = ndb.StringProperty(indexed=False)
-
-  build_id = ndb.IntegerProperty(indexed=False)
-
 
 class PresubmitReport(ndb.Model):
   """Represents a presubmit code coverage report."""
@@ -37,10 +45,6 @@ class PresubmitReport(ndb.Model):
   change = ndb.IntegerProperty(indexed=True)
 
   patchset = ndb.IntegerProperty(indexed=True)
-
-  gs_url = ndb.StringProperty(indexed=False)
-
-  build_id = ndb.IntegerProperty(indexed=False)
 
 
 class CoverageData(ndb.Model):
@@ -58,16 +62,15 @@ class CoverageData(ndb.Model):
 
   @staticmethod
   def _CreateKey(server_host, code_revision_index, data_type, path):
-    return hashlib.sha1(
-        '%s$%s$%s$%s' % (server_host, code_revision_index, data_type, path)
-        ).hexdigest()
+    return hashlib.sha1('%s$%s$%s$%s' % (server_host, code_revision_index,
+                                         data_type, path)).hexdigest()
 
   @classmethod
   def Create(cls, server_host, code_revision_index, data_type, path, data):
     return cls(
-        key=ndb.Key(cls,
-                    cls._CreateKey(
-                        server_host, code_revision_index, data_type, path)),
+        key=ndb.Key(
+            cls,
+            cls._CreateKey(server_host, code_revision_index, data_type, path)),
         server_host=server_host,
         code_revision_index=code_revision_index,
         path=path,
@@ -76,5 +79,5 @@ class CoverageData(ndb.Model):
   @classmethod
   def Get(cls, server_host, code_revision_index, data_type, path):
     return ndb.Key(
-        cls,
-        cls._CreateKey(server_host, code_revision_index, data_type, path)).get()
+        cls, cls._CreateKey(server_host, code_revision_index, data_type,
+                            path)).get()
