@@ -8,17 +8,17 @@ package codecoverage;
 
 // Represents the code coverage for multiple full lines in the file.
 message LineRange {
-  // The first line in the range.
+  // The first line in the range. Inclusive.
   int32 first = 1;
 
-  // The last line in the range.
+  // The last line in the range. Inclusive.
   // If not set, it is the same as `first` above.
   int32 last = 2;
 
   // Meaning of values:
   // * positive: the lines are covered.
   // * zero: the lines are instrumented but not covered by tests.
-  // * negative: this is not impossible.
+  // * negative: if the lines are uncoverable or uninstrumented
   //
   // If the coverage tool doesn't support counting how many times a line was
   // executed, the value could only be 1 or 0; otherwise the value could be
@@ -36,18 +36,18 @@ message LineRange {
 }
 
 
-// Represents the code of a column range within the same line.
+// Represents the code of an uncovered column range within the same line.
 message ColumnRange {
-  // The first column of the code block.
+  // The first column of the code block. Inclusive.
   int32 first = 1;
 
-  // The last column of the code block.
+  // The last column of the code block. Inclusive.
   // If not set, it is the same as `first` above.
   int32 last = 2;
 }
 
 
-// Represents multiple code ranges of a line.
+// Represents multiple uncovered column ranges of a line.
 message ColumnRanges {
   // The line number of the code block.
   int32 line = 1;
@@ -119,7 +119,7 @@ message CoverageSummary {
   string path = 2;
 
   // The metrics for the file or directory.
-  repeated Metric summaries= 3;
+  repeated Metric summaries = 3;
 }
 
 
@@ -175,7 +175,7 @@ message GerritPatch {
   int32 patch = 3;
 
   // Project name of the CL, e.g. chromium/src.
-  // since the cl number is unique in a Gerrit server.
+  // Optional, since the cl number is unique in a Gerrit server.
   string project = 4;
 }
 
