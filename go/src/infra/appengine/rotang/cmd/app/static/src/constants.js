@@ -14,3 +14,9 @@ export const Shifts = {
     return result;
   },
 };
+export const TimeZones = [
+  {name: 'America/Los_Angeles', description: 'Mountain View'},
+  {name: 'America/New_York', description: 'New York'},
+  {name: 'Asia/Tokyo', description: 'Tokyo'},
+  {name: 'Australia/Sydney', description: 'Sydney'},
+];
