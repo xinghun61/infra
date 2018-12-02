@@ -24,6 +24,8 @@
   </style>
 </head>
 <body>
+<script src="/static/dist/bundle.js"></script>
+<nav-bar page="shiftimport"></nav-bar>
 
   <h2>{{with .Submitted}}Shifts imported to datastore{{else}}Shifts found in Calendar{{end}}</h2>
   {{with .Submitted}}{{else}}
