@@ -404,29 +404,28 @@ import:
   version: v4.7.0
   repo: https://chromium.googlesource.com/external/github.com/src-d/go-git.git
 
-# TODO(ayatane): Mirror crbug.com/894278
 - package: github.com/emirpasic/gods
   version: master
-  repo: https://github.com/emirpasic/gods.git
+  repo: https://chromium.googlesource.com/external/github.com/emirpasic/gods.git
 - package: github.com/jbenet/go-context
   version: master
-  repo: https://github.com/jbenet/go-context.git
+  repo: https://chromium.googlesource.com/external/github.com/jbenet/go-context.git
 - package: github.com/kevinburke/ssh_config
   version: master
-  repo: https://github.com/kevinburke/ssh_config.git
+  repo: https://chromium.googlesource.com/external/github.com/kevinburke/ssh_config.git
 - package: github.com/src-d/gcfg
   version: master
-  repo: https://github.com/src-d/gcfg.git
+  repo: https://chromium.googlesource.com/external/github.com/src-d/gcfg.git
 - package: github.com/pelletier/go-buffruneio
   version: master
-  repo: https://github.com/pelletier/go-buffruneio.git
+  repo: https://chromium.googlesource.com/external/github.com/pelletier/go-buffruneio.git
 - package: github.com/xanzy/ssh-agent
   version: master
-  repo: https://github.com/xanzy/ssh-agent.git
+  repo: https://chromium.googlesource.com/external/github.com/xanzy/ssh-agent.git
 
 - package: gopkg.in/src-d/go-billy.v4
   version: master
-  repo: https://github.com/src-d/go-billy.git
+  repo: https://chromium.googlesource.com/external/github.com/src-d/go-billy.git
 - package: gopkg.in/warnings.v0
   version: master
-  repo: https://github.com/go-warnings/warnings.git
+  repo: https://chromium.googlesource.com/external/github.com/go-warnings/warnings.git

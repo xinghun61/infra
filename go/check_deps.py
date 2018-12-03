@@ -8,6 +8,9 @@
 import os
 import subprocess
 import sys
+import urlparse
+
+import deps
 
 
 # This lists the go packages to scan. Can be any package pattern accepted
@@ -93,7 +96,30 @@ def load_whitelist(path):
   return set(ret)
 
 
-def main():
+def check_all_googlesource_mirrors():
+  ret = []
+
+  with open(os.path.join(SCRIPT_DIR, 'deps.lock')) as f:
+    lock_file = deps.parse_glide_lock(f.read())
+
+  bad_urls = {}
+  for imp in lock_file['imports']:
+    repo = urlparse.urlparse(imp['repo'])
+    if not repo.netloc.endswith('.googlesource.com'):
+      bad_urls[imp['name']] = '%s/%s' % (repo.scheme, repo.netloc)
+
+  if bad_urls:
+    ret.append('Non-googlesource.com dep repos:')
+    for name, url in sorted(bad_urls.items()):
+      ret.append('  %s: %s' % (name, url))
+    ret.append('')
+
+  return ret
+
+
+def check_only_whitelisted_deps():
+  ret = []
+
   whitelist = load_whitelist(os.path.join(SCRIPT_DIR, 'check_deps.whitelist'))
   import_to_users = read_and_merge(*map(scan_os_async, GOOS_TO_CHECK))
 
@@ -105,19 +131,33 @@ def main():
       for pkg in pkg_users:
         pkg_to_bad_imports.setdefault(pkg, []).append(bad_import)
 
-    print 'Invalid Go package dependencies:'
-    for pkg, bad_imports in sorted(pkg_to_bad_imports.items()):
-      print '  in %s' % pkg
+    ret.append('Invalid Go package dependencies:')
+    for i, (pkg, bad_imports) in enumerate(sorted(pkg_to_bad_imports.items())):
+      if i != 0:
+        ret.append('')
+      ret.append('  in %s' % pkg)
       for imp in bad_imports:
-        print '    - %s' % imp
-      print
+        ret.append('    - %s' % imp)
+    ret.append('')
 
   if unused_whitelist:
-    print 'Unused whitelist entries:'
+    ret.append('Unused whitelist entries:')
     for entry in sorted(unused_whitelist):
-      print '  %s' % entry
+      ret.append('  %s' % entry)
+    ret.append('')
 
-  if import_to_users or unused_whitelist:
+  return ret
+
+
+def main():
+  lines = []
+  lines += check_all_googlesource_mirrors()
+  lines += check_only_whitelisted_deps()
+
+  for l in lines:
+    print l
+
+  if lines:
     sys.exit(1)
 
 
