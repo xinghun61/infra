@@ -178,8 +178,10 @@
   },
   {
     "failure": {
-      "failure": {
-        "step": "git diff-index"
+      "exception": {
+        "traceback": [
+          "<omitted by recipe engine>"
+        ]
       },
       "humanReason": "Infra Failure: Step('git diff-index') returned 2"
     },
