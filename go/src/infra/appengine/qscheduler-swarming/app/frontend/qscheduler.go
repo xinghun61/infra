@@ -16,6 +16,7 @@ package frontend
 
 import (
 	"context"
+	"fmt"
 	"sort"
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
@@ -132,18 +133,28 @@ func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.Noti
 			var t reconciler.TaskUpdate_Type
 			var ok bool
 			if t, ok = toTaskState(n.Task.State); !ok {
-				// TODO(akeshet): Return an error about unknown notification state.
-				logging.Warningf(ctx, "Received notification with unhandled state %s.", n.Task.State)
+				err := fmt.Sprintf("Invalid notification with unhandled state %s.", n.Task.State)
+				logging.Warningf(ctx, err)
+				sp.reconciler.TaskError(n.Task.Id, err)
 				continue
 			}
 
 			var provisionableLabels []string
+			var accountID string
 			// ProvisionableLabels attribute only matters for TaskUpdate_NEW type
 			// updates, because these are tasks that are in the queue (scheduler
 			// pays no attention to labels of already-running tasks).
 			if t == reconciler.TaskUpdate_NEW {
 				if provisionableLabels, err = getProvisionableLabels(n); err != nil {
-					return err
+					logging.Warningf(ctx, err.Error())
+					sp.reconciler.TaskError(n.Task.Id, err.Error())
+					continue
+				}
+
+				if accountID, err = getAccountID(n); err != nil {
+					logging.Warningf(ctx, err.Error())
+					sp.reconciler.TaskError(n.Task.Id, err.Error())
+					continue
 				}
 			}
 
@@ -151,7 +162,7 @@ func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.Noti
 			// worker pool dimensions for this scheduler pool.
 			update := &reconciler.TaskUpdate{
 				// TODO(akeshet): implement me. This will be based upon task tags.
-				AccountId: "",
+				AccountId: accountID,
 				// TODO(akeshet): implement me properly. This should be a separate field
 				// of the task state, not the notification time.
 				EnqueueTime:         n.Time,
@@ -162,9 +173,11 @@ func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.Noti
 				WorkerId:            n.Task.BotId,
 			}
 			if err := sp.reconciler.Notify(ctx, sp.scheduler, update); err != nil {
-				return err
+				sp.reconciler.TaskError(n.Task.Id, err.Error())
+				logging.Warningf(ctx, err.Error())
+				continue
 			}
-			logging.Debugf(ctx, "To scheduler with id %s, applied task update %+v", r.SchedulerId, update)
+			logging.Debugf(ctx, "Scheduler with id %s successfully applied task update %+v", r.SchedulerId, update)
 		}
 		logState(ctx, sp.scheduler.State)
 		return save(ctx, sp)
