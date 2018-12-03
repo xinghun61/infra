@@ -161,6 +161,12 @@ func (state *State) AssignTasks(ctx context.Context, s Scheduler, t time.Time, w
 	return assignments, nil
 }
 
+// TaskError marks a given task as having failed due to an error, and in need of cancellation.
+func (state *State) TaskError(requestID string, err string) {
+	state.ensureMaps()
+	state.TaskErrors[requestID] = err
+}
+
 // Cancellation represents a scheduler-initated operation to cancel a task on a worker.
 // The worker should be aborted if and only if it is currently running the given task.
 //
@@ -171,16 +177,23 @@ type Cancellation struct {
 
 	// RequestID is the id of the task that we should request.
 	RequestID string
+
+	// ErrorMessage is a description of the error that caused the task to be
+	// cancelled, if it was cancelled due to error.
+	ErrorMessage string
 }
 
 // Cancellations returns the set of workers and tasks that should be cancelled.
 func (state *State) Cancellations(ctx context.Context) []Cancellation {
 	state.ensureMaps()
-	c := make([]Cancellation, 0, len(state.WorkerQueues))
+	c := make([]Cancellation, 0, len(state.WorkerQueues)+len(state.TaskErrors))
 	for wid, q := range state.WorkerQueues {
 		if q.TaskToAbort != "" {
 			c = append(c, Cancellation{RequestID: q.TaskToAbort, WorkerID: wid})
 		}
+	}
+	for tid, err := range state.TaskErrors {
+		c = append(c, Cancellation{RequestID: tid, ErrorMessage: err})
 	}
 	return c
 }
@@ -221,6 +234,7 @@ func (state *State) Notify(ctx context.Context, s Scheduler, updates ...*TaskUpd
 				}
 			}
 
+		// TODO(akeshet): delete this case, and delete this update type entirely.
 		case TaskUpdate_INTERRUPTED:
 			rid := update.RequestId
 			updateTime := tutils.Timestamp(update.Time)
@@ -248,6 +262,7 @@ func (state *State) Notify(ctx context.Context, s Scheduler, updates ...*TaskUpd
 					delete(state.WorkerQueues, wid)
 				}
 			}
+			delete(state.TaskErrors, rid)
 		}
 	}
 	return nil
@@ -259,5 +274,8 @@ func (state *State) Notify(ctx context.Context, s Scheduler, updates ...*TaskUpd
 func (state *State) ensureMaps() {
 	if state.WorkerQueues == nil {
 		state.WorkerQueues = make(map[string]*WorkerQueue)
+	}
+	if state.TaskErrors == nil {
+		state.TaskErrors = make(map[string]string)
 	}
 }

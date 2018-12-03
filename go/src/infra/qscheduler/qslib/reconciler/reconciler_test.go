@@ -346,3 +346,42 @@ func TestPreemption(t *testing.T) {
 		})
 	})
 }
+
+func TestTaskError(t *testing.T) {
+	Convey("Given an empty reconciler and scheduler state", t, func() {
+		t0 := time.Unix(0, 0)
+		r := New()
+		s := scheduler.New(t0)
+		ctx := context.Background()
+
+		Convey("when TaskError is called for a new task", func() {
+			taskID := "Task1"
+			err := "An frabjous error occurred."
+			r.TaskError(taskID, err)
+
+			Convey("when GetCancellations is called", func() {
+				c := r.Cancellations(ctx)
+				Convey("then it returns the error'ed task.", func() {
+					So(c, ShouldHaveLength, 1)
+					So(c[0].RequestID, ShouldEqual, taskID)
+					So(c[0].WorkerID, ShouldEqual, "")
+					So(c[0].ErrorMessage, ShouldEqual, err)
+				})
+			})
+			Convey("when NotifyRequest is called to abort the task", func() {
+				u := &TaskUpdate{
+					RequestId: taskID,
+					Type:      TaskUpdate_ABORTED,
+					Time:      tutils.TimestampProto(t0),
+				}
+				r.Notify(ctx, s, u)
+				Convey("when GetCancellations is called", func() {
+					c := r.Cancellations(ctx)
+					Convey("then it returns nothing.", func() {
+						So(c, ShouldBeEmpty)
+					})
+				})
+			})
+		})
+	})
+}
