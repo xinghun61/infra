@@ -149,3 +149,51 @@ func TestGetProvisionableLabels(t *testing.T) {
 		})
 	}
 }
+
+func TestGetAccountId(t *testing.T) {
+	cases := []struct {
+		name            string
+		tags            []string
+		expectedAccount string
+		errorExpected   bool
+	}{
+		{
+			"nil tags",
+			nil,
+			"",
+			false,
+		},
+		{
+			"no relevant tags",
+			[]string{"foo:1", "foo:2"},
+			"",
+			false,
+		},
+		{
+			"one account tag",
+			[]string{"qs_account:foo", "foo:2"},
+			"foo",
+			false,
+		},
+		{
+			"two account tags",
+			[]string{"qs_account:foo", "qs_account:bar"},
+			"",
+			true,
+		},
+	}
+	for _, c := range cases {
+		Convey("When a task has "+c.name, t, func() {
+			Convey("then getAccountID returns the correct value / error.", func() {
+				i := &swarming.NotifyTasksItem{Task: &swarming.TaskSpec{Tags: c.tags}}
+				a, err := getAccountID(i)
+				So(a, ShouldEqual, c.expectedAccount)
+				if c.errorExpected {
+					So(err, ShouldNotBeNil)
+				} else {
+					So(err, ShouldBeNil)
+				}
+			})
+		})
+	}
+}

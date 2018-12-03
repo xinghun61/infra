@@ -25,12 +25,17 @@ import (
 
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/data/stringset"
+	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/logging"
 
 	"infra/qscheduler/qslib/reconciler"
 	"infra/qscheduler/qslib/scheduler"
 	"infra/qscheduler/qslib/tutils"
 )
+
+// AccountIDTagKey is the key used in Task tags to specify which quotascheduler
+// account the task should be charged to.
+const AccountIDTagKey = "qs_account"
 
 // QSchedulerState encapsulates the state of a scheduler.
 type QSchedulerState struct {
@@ -192,6 +197,20 @@ func getProvisionableLabels(n *swarming.NotifyTasksItem) ([]string, error) {
 		return provisionable, nil
 	default:
 		return nil, errors.Errorf("Invalid slice count %d; quotascheduler only supports 1-slice or 2-slice tasks.", len(n.Task.Slices))
+	}
+}
+
+// getAccountID determines the account id for a given task, based on its tags.
+func getAccountID(n *swarming.NotifyTasksItem) (string, error) {
+	m := strpair.ParseMap(n.Task.Tags)
+	accounts := m[AccountIDTagKey]
+	switch len(accounts) {
+	case 0:
+		return "", nil
+	case 1:
+		return accounts[0], nil
+	default:
+		return "", errors.Errorf("Too many account tags.")
 	}
 }
 
