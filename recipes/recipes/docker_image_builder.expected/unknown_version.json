@@ -82,15 +82,14 @@
       "which",
       "docker"
     ],
-    "name": "Find docker bin",
-    "stdout": "/path/to/tmp/"
+    "name": "ensure docker installed"
   },
   {
     "cmd": [
-      "/usr/bin/docker",
+      "docker",
       "version"
     ],
-    "name": "Get docker version",
+    "name": "docker version",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_TEXT@Version unknown?@@@"
@@ -98,17 +97,17 @@
   },
   {
     "cmd": [],
-    "name": "Clear all local images"
+    "name": "clear old images"
   },
   {
     "cmd": [
-      "/usr/bin/docker",
+      "docker",
       "images",
       "-q",
       "-f",
       "reference=swarm_docker:*"
     ],
-    "name": "Clear all local images.Get images",
+    "name": "clear old images.list images",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -116,12 +115,12 @@
   },
   {
     "cmd": [
-      "/usr/bin/docker",
+      "docker",
       "rmi",
       "-f",
       "img1"
     ],
-    "name": "Clear all local images.Delete image img1",
+    "name": "clear old images.delete image img1",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -131,7 +130,7 @@
       "/bin/bash",
       "[START_DIR]/infra/docker/swarm_docker/build.sh"
     ],
-    "name": "Build image"
+    "name": "build image"
   },
   {
     "cmd": [
@@ -164,20 +163,24 @@
   },
   {
     "cmd": [
-      "/usr/bin/docker",
+      "docker",
+      "--config",
+      "[CLEANUP]/.docker",
       "tag",
       "swarm_docker:latest",
       "gcr.io/chromium-container-registry/swarm_docker:2012-05-14-12-53"
     ],
-    "name": "Tag image"
+    "name": "docker tag"
   },
   {
     "cmd": [
-      "/usr/bin/docker",
+      "docker",
+      "--config",
+      "[CLEANUP]/.docker",
       "push",
       "gcr.io/chromium-container-registry/swarm_docker:2012-05-14-12-53"
     ],
-    "name": "Push image",
+    "name": "docker push",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_TEXT@image = swarm_docker:1-2-3: digest: sha256:deadbeef size:123@@@"

@@ -30,49 +30,22 @@ def RunSteps(api):
   api.gclient.set_config('infra')
   api.bot_update.ensure_checkout()
   api.gclient.runhooks()
+  api.docker.ensure_installed()
+  api.docker.get_version()
 
-  # Ensure docker is installed.
-  # FIXME: Move docker logic here into its own module if it's ever worth it.
-  try:
-    find_docker_step = api.step(
-        'Find docker bin', ['which', 'docker'], stdout=api.raw_io.output(),
-        step_test_data=lambda: api.raw_io.test_api.stream_output(
-            '/usr/bin/docker'))
-  except api.step.StepFailure as f:
-    f.result.presentation.step_text = (
-        'Error: is docker installed on this machine?')
-    raise
-  docker_bin = find_docker_step.stdout.strip()
-
-  # Get version.
-  docker_version_step = api.step(
-      'Get docker version', [docker_bin, 'version'], stdout=api.raw_io.output(),
-      step_test_data=lambda: api.raw_io.test_api.stream_output(
-          'Version: 1.2.3'))
-  for line in docker_version_step.stdout.splitlines():
-    if 'Version' in line:
-      docker_version_step.presentation.step_text = line.strip()
-      break
-  else:
-    docker_version_step.presentation.step_text = 'Version unknown?'
-
-  # To prevent images from accumulating over time on the slave, dumbly delete
-  # all local images. This has the unfortunate side effect of making every build
-  # a full clobber, but this recipe shouldn't be run too frequently and doesn't
-  # require fast cycle times.
-  # TODO(bpastene): Be smarter about this.
+  # To prevent images from accumulating over time on the slave, delete old
+  # images for the same container name.
   container_name = api.properties['container_name']
-  with api.step.nest('Clear all local images'):
-    get_images_step = api.step(
-        'Get images',
-        [docker_bin, 'images', '-q', '-f', 'reference=%s:*' % container_name],
-        stdout=api.raw_io.output(),
+  with api.step.nest('clear old images'):
+    get_images_step = api.docker(
+        'images', '-q', '-f', 'reference=%s:*' % container_name,
+        step_name='list images', stdout=api.raw_io.output(),
         step_test_data=lambda: api.raw_io.test_api.stream_output('img1'))
-    for image_id in get_images_step.stdout.splitlines():
+    image_ids = [line.strip() for line in get_images_step.stdout.splitlines()]
+    for image_id in set(image_ids):
       try:
-        api.step(
-            'Delete image %s' % image_id,
-            [docker_bin, 'rmi', '-f', image_id.strip()])
+        api.docker(
+          'rmi', '-f', image_id.strip(), step_name='delete image %s' % image_id)
       except api.step.StepFailure as f:
         f.result.presentation.status = api.step.WARNING
 
@@ -80,7 +53,7 @@ def RunSteps(api):
   # with 'latest'.
   dir_name = api.properties.get('dir_name', container_name)
   build_script = api.path['checkout'].join('docker', dir_name, 'build.sh')
-  api.step('Build image', ['/bin/bash', build_script])
+  api.step('build image', ['/bin/bash', build_script])
 
   creds = api.service_account.from_credentials_json(
       _CONTAINER_REGISTRY_CREDENTIAL_PATH) if not api.runtime.is_luci else None
@@ -92,17 +65,11 @@ def RunSteps(api):
   registry_url = 'gcr.io/%s' % _CONTAINER_REGISTRY_PROJECT
   date_tag = api.time.utcnow().strftime('%Y-%m-%d-%H-%M')
   registry_image_name = '%s/%s:%s' % (registry_url, container_name, date_tag)
-  tag_cmd = [
-      docker_bin,
-      'tag',
-      '%s:latest' % container_name,
-      registry_image_name
-  ]
-  api.step('Tag image', tag_cmd)
+  api.docker('tag', '%s:latest' % container_name, registry_image_name)
 
   # Push the image to the registry.
-  upload_step = api.step(
-      'Push image', [docker_bin, 'push', registry_image_name],
+  upload_step = api.docker(
+      'push', registry_image_name,
       stdout=api.raw_io.output(),
       step_test_data=lambda: api.raw_io.test_api.stream_output(
           '1-2-3: digest: sha256:deadbeef size:123'))
@@ -131,15 +98,15 @@ def GenTests(api):
   )
   yield (
       api.test('no_docker') +
-      api.step_data('Find docker bin', retcode=1)
+      api.step_data('ensure docker installed', retcode=1)
   )
   yield (
       api.test('unknown_version') +
       api.properties(container_name='swarm_docker') +
-      api.step_data('Get docker version', stdout=api.raw_io.output(''))
+      api.step_data('docker version', stdout=api.raw_io.output(''))
   )
   yield (
       api.test('failed_image_deletion') +
       api.properties(container_name='swarm_docker') +
-      api.step_data('Clear all local images.Delete image img1', retcode=1)
+      api.step_data('clear old images.delete image img1', retcode=1)
   )

@@ -82,20 +82,19 @@
       "which",
       "docker"
     ],
-    "name": "Find docker bin",
-    "stdout": "/path/to/tmp/",
+    "name": "ensure docker installed",
     "~followup_annotations": [
       "step returned non-zero exit code: 1",
-      "@@@STEP_TEXT@Error: is docker installed on this machine?@@@",
+      "@@@STEP_TEXT@Error: is docker not installed or not in the PATH@@@",
       "@@@STEP_FAILURE@@@"
     ]
   },
   {
     "failure": {
       "failure": {
-        "step": "Find docker bin"
+        "step": "ensure docker installed"
       },
-      "humanReason": "Step('Find docker bin') failed with return_code 1"
+      "humanReason": "Step('ensure docker installed') failed with return_code 1"
     },
     "name": "$result"
   }
