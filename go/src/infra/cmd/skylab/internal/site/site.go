@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"go.chromium.org/luci/auth"
+	"go.chromium.org/luci/grpc/prpc"
 )
 
 // Environment contains environment specific values.
@@ -51,6 +52,12 @@ var DefaultAuthOptions = auth.Options{
 	ClientSecret: "uBfbay2KCy9t4QveJ-dOqHtp",
 	SecretsDir:   SecretsDir(),
 }
+
+// DefaultPRPCOptions is used for PRPC clients.  If it is nil, the
+// default value is used.  See prpc.Options for details.
+//
+// This is provided so it can be overridden for testing.
+var DefaultPRPCOptions *prpc.Options
 
 // SecretsDir returns an absolute path to a directory (in $HOME) to keep secret
 // files in (e.g. OAuth refresh tokens) or an empty string if $HOME can't be

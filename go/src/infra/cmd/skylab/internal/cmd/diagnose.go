@@ -56,8 +56,9 @@ func (c *diagnoseRun) innerRun(a subcommands.Application, args []string, env sub
 	}
 	e := c.envFlags.Env()
 	tc := fleet.NewTrackerPRPCClient(&prpc.Client{
-		C:    hc,
-		Host: e.AdminService,
+		C:       hc,
+		Host:    e.AdminService,
+		Options: site.DefaultPRPCOptions,
 	})
 	ids, err := refreshBotsByName(ctx, tc, args)
 	if err != nil {
