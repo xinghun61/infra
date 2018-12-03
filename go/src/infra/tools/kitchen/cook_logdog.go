@@ -268,7 +268,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if err := bu.Run(procCtx); err != nil {
+			if err := bu.Run(procCtx); err != nil && errors.Unwrap(err) != context.Canceled {
 				// TODO(nodir): fail the build run when this happens.
 				log.WithError(err).Errorf(ctx, "build updater crashed")
 			}
