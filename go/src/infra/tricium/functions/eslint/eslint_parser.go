@@ -168,8 +168,8 @@ func makeCommentForMessage(path string, message Message) *tricium.Data_Comment {
 		Message:   fmt.Sprintf("%s\nTo disable, add: // eslint-disable-line %s", message.Message, message.RuleID),
 		Category:  fmt.Sprintf("ESLint/%s/%s", severityLevels[message.Severity-1], message.RuleID),
 		StartLine: message.Line,
-		StartChar: message.Column,
-		EndChar:   message.EndColumn,
+		StartChar: message.Column - 1,
+		EndChar:   message.EndColumn - 1,
 		EndLine:   message.EndLine,
 	}
 }
