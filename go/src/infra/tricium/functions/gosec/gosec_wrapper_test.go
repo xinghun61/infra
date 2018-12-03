@@ -138,7 +138,7 @@ func TestGosecWrapper(t *testing.T) {
 			},
 		}
 
-		So(len(postProcess(results, input)), ShouldResemble, 2)
+		So(len(postProcess(results, input, false)), ShouldResemble, 2)
 	})
 
 }

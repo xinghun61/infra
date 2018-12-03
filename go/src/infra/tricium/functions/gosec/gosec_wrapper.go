@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -21,7 +22,7 @@ import (
 
 	"go.chromium.org/luci/common/data/stringset"
 
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 )
 
 // Paths to the required resources relative to the executable directory.
@@ -31,8 +32,8 @@ const (
 )
 
 var (
-	inputDir  = flag.String("input", "", "Path to root of Tricium input")
-	outputDir = flag.String("output", "", "Path to root of Tricium output")
+	inputDir  = flag.String("input", "./", "Path to root of Tricium input")
+	outputDir = flag.String("output", "./", "Path to root of Tricium output")
 	disable   = flag.String("disable", "", "Comma-separated list of checks "+
 		"or categories of checks to disable.")
 	enable = flag.String("enable", "", "Comma-separated checks "+
@@ -68,28 +69,47 @@ type GosecResult struct {
 
 // GosecRunJob specifies the required parameters to run gosec in a worker.
 type GosecRunJob struct {
-	File   *tricium.Data_File
-	Result *GosecResult
+	File        *tricium.Data_File
+	Result      *GosecResult
+	Gopath      string
+	PackagesDir string
 }
 
 func main() {
+	os.Exit(run())
+}
+
+func run() int {
 
 	flag.Parse()
 	if flag.NArg() != 0 {
 		log.Fatalf("Unexpected argument")
 	}
+	log.Printf("invoked with args: %v", flag.Args())
 
-	log.Printf("Running gosec in parallel with %d workers", maxWorkers)
-	issues, err := runGosecParallel(maxWorkers)
+	// Getting the absolute input path is important since gosec exec is going to chdir.
+	var err error
+	*inputDir, err = filepath.Abs(*inputDir)
 	if err != nil {
-		log.Fatal(err)
-		os.Exit(1)
+		log.Fatalf("Unable to get absolute input dir")
 	}
 
-	absInputDir, err := filepath.Abs(*inputDir)
+	// Prepare src/packages/... to simulate Gopath directory structure needed for Gosec.
+	envDir, _, packagesDir, err := prepareEnv(*inputDir)
 	if err != nil {
-		log.Fatalf("Unable to calculate absolute path for %s, err: %v", *inputDir, err)
-		os.Exit(1)
+		log.Fatalf("Unable to setup gosec environment: %v", err)
+	}
+	defer func() {
+		if err := cleanupEnv(envDir); err != nil {
+			log.Fatalf("Unable to clean up gosec environment: %v", err)
+		}
+	}()
+
+	log.Printf("Running gosec in parallel with %d workers", maxWorkers)
+	issues, err := runGosecParallel(maxWorkers, envDir, packagesDir)
+	if err != nil {
+		log.Fatal(err)
+		return 1
 	}
 
 	output := &tricium.Data_Results{}
@@ -107,10 +127,10 @@ func main() {
 		}
 
 		// Calculate the file path relative to the input directory.
-		relpath, err := filepath.Rel(absInputDir, issue.File)
+		relpath, err := filepath.Rel(*inputDir, issue.File)
 		if err != nil {
 			log.Printf("Error while calculating relative path, base: %s, file: %s, err: %v",
-				absInputDir, issue.File, err)
+				*inputDir, issue.File, err)
 			continue
 		}
 		comment := &tricium.Data_Comment{
@@ -131,7 +151,48 @@ func main() {
 		log.Fatalf("Failed to write analyzer results: %v", err)
 	}
 	log.Printf("Analyzer results written to %s", path)
-	os.Exit(0)
+	return 0
+}
+
+// prepareEnv sets up a src/packages/ directory structure to point GOPATH at it since
+// Gosec requires the analysis targets to be within a valid GOPATH structure.
+func prepareEnv(baseDir string) (envDir, srcDir, packages string, err error) {
+	files, err := ioutil.ReadDir(baseDir)
+	if err != nil {
+		log.Printf("Reading basedir content: %s", baseDir)
+		return "", "", "", err
+	}
+	envDir, err = ioutil.TempDir(baseDir, "gosec_env")
+	if err != nil {
+		log.Printf("Creating tempdir")
+		return "", "", "", err
+	}
+	srcDir = filepath.Join(envDir, "src")
+	err = os.Mkdir(srcDir, 0744)
+	if err != nil {
+		log.Printf("Creating src dir")
+		return "", "", "", err
+	}
+
+	packages = filepath.Join(srcDir, "packages")
+	err = os.Mkdir(packages, 0744)
+	if err != nil {
+		log.Printf("Creating packages dir")
+		return "", "", "", err
+	}
+	for _, file := range files {
+		orig := filepath.Join(baseDir, file.Name())
+		link := filepath.Join(packages, file.Name())
+		if err = os.Symlink(orig, link); err != nil {
+			log.Printf("Creating symlink: %s", link)
+			return "", "", "", err
+		}
+	}
+	return envDir, srcDir, packages, nil
+}
+
+func cleanupEnv(envDir string) (result error) {
+	return os.RemoveAll(envDir)
 }
 
 func getExecutableDir() string {
@@ -170,15 +231,17 @@ func gosecWorker(jobs chan GosecRunJob, wg *sync.WaitGroup) {
 		if *enable != "" {
 			cmdArgs = append(cmdArgs, fmt.Sprintf("-include=%s", *enable))
 		}
-		cmdArgs = append(cmdArgs, filepath.Join(*inputDir, job.File.Path))
+		cmdArgs = append(cmdArgs, job.File.Path)
 		cmd := exec.Command(cmdName, cmdArgs...)
-
-		abspath, _ := filepath.Abs(*inputDir)
-		log.Printf("setting GOPATH=%s", abspath)
 		cmd.Env = append(os.Environ(),
-			fmt.Sprintf("GOPATH=%s", abspath))
+			fmt.Sprintf("GOPATH=%s", job.Gopath))
+		cmd.Dir = job.PackagesDir
+
+		log.Printf("setting PWD=%s", job.PackagesDir)
+		log.Printf("setting GOPATH=%s", job.Gopath)
 
 		stdoutReader, _ := cmd.StdoutPipe()
+		stderrReader, _ := cmd.StderrPipe()
 
 		// Run the command.
 		log.Printf("Executing command: %s %v", cmdName, cmdArgs)
@@ -189,6 +252,10 @@ func gosecWorker(jobs chan GosecRunJob, wg *sync.WaitGroup) {
 
 		if err := json.NewDecoder(stdoutReader).Decode(job.Result); err != nil {
 			log.Printf("Error decoding gosec json output: %v", err)
+			buf := new(bytes.Buffer)
+			buf.ReadFrom(stderrReader)
+			log.Printf("gosec stderr: %s", buf.String())
+			continue
 		}
 
 		// Calculate hashes.
@@ -208,7 +275,7 @@ func min(a, b int) int {
 	return b
 }
 
-func postProcess(results []GosecResult, input []*tricium.Data_File) []Issue {
+func postProcess(results []GosecResult, input []*tricium.Data_File, evalSymlinks bool) []Issue {
 	// Create unique set of issues based on hash value.
 	makeUnique := func(results []GosecResult) map[[sha256.Size]byte]Issue {
 		ctr := 0
@@ -243,9 +310,14 @@ func postProcess(results []GosecResult, input []*tricium.Data_File) []Issue {
 
 		for _, issue := range issues {
 			ctr++
+			if evalSymlinks {
+				issue.File, _ = filepath.EvalSymlinks(issue.File)
+			}
 			if abspaths.Has(issue.File) {
 				filtered = append(filtered, issue)
 				log.Printf("Found issue in %s", issue.File)
+			} else {
+				log.Printf("Not found, %s, %v", issue.File, abspaths)
 			}
 		}
 
@@ -257,7 +329,7 @@ func postProcess(results []GosecResult, input []*tricium.Data_File) []Issue {
 
 }
 
-func runGosecParallel(maxWorkers int) ([]Issue, error) {
+func runGosecParallel(maxWorkers int, envDir, packagesDir string) ([]Issue, error) {
 	input := &tricium.Data_Files{}
 	if err := tricium.ReadDataType(*inputDir, input); err != nil {
 		return nil, err
@@ -285,14 +357,14 @@ func runGosecParallel(maxWorkers int) ([]Issue, error) {
 	// Distribute jobs into queue.
 	for c, file := range files {
 		log.Printf("Distributing analysis job for file: %s", file.Path)
-		jobs <- GosecRunJob{File: file, Result: &results[c]}
+		jobs <- GosecRunJob{File: file, Result: &results[c], Gopath: envDir, PackagesDir: packagesDir}
 	}
 	close(jobs)
 
 	// Wait until all workers are finished.
 	wg.Wait()
 
-	issues := postProcess(results, files)
+	issues := postProcess(results, files, true)
 	for _, issue := range issues {
 		log.Printf("Issue: %v", issue)
 	}
