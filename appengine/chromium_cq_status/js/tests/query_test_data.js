@@ -160,7 +160,6 @@ var query_test_data = {
         "jobs": {
           "JOB_SUCCEEDED": [
             {
-              "build_id": "9043261822262727792",
               "parent_name": null,
               "tests": [
                 "defaulttests"
@@ -246,7 +245,6 @@ var query_test_data = {
         "jobs": {
           "JOB_RUNNING": [
             {
-              "build_id": "9043261822262727792",
               "parent_name": null,
               "tests": [
                 "defaulttests"
@@ -316,7 +314,6 @@ var query_test_data = {
         "jobs": {
           "JOB_PENDING": [
             {
-              "build_id": "9043261822262727792",
               "parent_name": null,
               "tests": [
                 "defaulttests"

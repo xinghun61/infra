@@ -186,8 +186,9 @@ class AttemptJobTracker(object):
       for job_info in jobs:
         build_number = job_info.get('buildnumber')
         if not build_number:  # pragma: no cover
-          # Early exit: CQ is now scheduling with buildbucket,
-          # which means first events won't have a buildnumber, just build_id.
+          # NOTE: this is outdated assumption. In LUCI world, many try builds
+          # don't have buildnumber ever. It apperas this app assumes buildnumber
+          # to exist, but since this is deprecated, this is a NOTE, not a FIXME.
           continue
         master = job_info.get('master')
         builder = job_info.get('builder')

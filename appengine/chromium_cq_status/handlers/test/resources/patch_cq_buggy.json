@@ -60,7 +60,6 @@
 			"jobs": {
 				"JOB_RUNNING": [
 					{
-						"build_id": "9042920998742054880",
 						"parent_name": null,
 						"tests": [
 							"defaulttests"
@@ -131,7 +130,6 @@
 			"jobs": {
 				"JOB_SUCCEEDED": [
 					{
-						"build_id": "9042920998742054880",
 						"parent_name": null,
 						"tests": [
 							"defaulttests"

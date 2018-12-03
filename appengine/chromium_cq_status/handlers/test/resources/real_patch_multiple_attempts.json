@@ -183,7 +183,6 @@
         "jobs": {
           "JOB_SUCCEEDED": [
             {
-              "build_id": "9042910820670988896",
               "parent_name": null,
               "tests": [
                 "defaulttests"
@@ -280,7 +279,6 @@
         "jobs": {
           "JOB_RUNNING": [
             {
-              "build_id": "9042910820670988896",
               "parent_name": null,
               "tests": [
                 "defaulttests"
@@ -551,7 +549,6 @@
         "jobs": {
           "JOB_FAILED": [
             {
-              "build_id": "9042911558976078416",
               "parent_name": null,
               "tests": [
                 "defaulttests"
@@ -604,7 +601,6 @@
               "revision": ""
             },
             {
-              "build_id": "9042911597017018688",
               "parent_name": null,
               "tests": [
                 "defaulttests"
@@ -750,7 +746,6 @@
         "jobs": {
           "JOB_FAILED": [
             {
-              "build_id": "9042911597017018688",
               "parent_name": null,
               "tests": [
                 "defaulttests"
@@ -1037,7 +1032,6 @@
         "jobs": {
           "JOB_FAILED": [
             {
-              "build_id": "9042911812291890496",
               "parent_name": null,
               "tests": [
                 "defaulttests"
@@ -1090,7 +1084,6 @@
               "revision": ""
             },
             {
-              "build_id": "9042911846484820928",
               "parent_name": null,
               "tests": [
                 "defaulttests"
@@ -1236,7 +1229,6 @@
         "jobs": {
           "JOB_FAILED": [
             {
-              "build_id": "9042911846484820928",
               "parent_name": null,
               "tests": [
                 "defaulttests"
