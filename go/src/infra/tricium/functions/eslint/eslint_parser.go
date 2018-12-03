@@ -5,15 +5,15 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"infra/tricium/api/v1"
 )
@@ -45,7 +45,7 @@ type FileErrors struct {
 	WarningCount int32
 }
 
-// TODO(crbug/873202): This parser is almost identical to the pylint parser,
+// TODO(crbug/873202): This parser is almost identical to the Pylint parser;
 // some common parts might be extracted.
 func main() {
 	inputDir := flag.String("input", "", "Path to root of Tricium input")
@@ -57,7 +57,7 @@ func main() {
 		log.Fatalf("Unexpected argument")
 	}
 
-	// Retrieve the path name for the executable that started the current process.
+	// Retrieve the path of the executable that started the current process.
 	ex, err := os.Executable()
 	if err != nil {
 		panic(err)
@@ -89,61 +89,46 @@ func main() {
 	cmd := exec.Command(cmdName, cmdArgs...)
 	log.Printf("Command: %#v; args: %#v", cmdName, cmdArgs)
 
-	stdoutReader, err := cmd.StdoutPipe()
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error creating StdoutPipe for Cmd", err)
-		os.Exit(1)
+		log.Fatalf("StdoutPipe failed: %v", err)
+	}
+	if err := cmd.Start(); err != nil {
+		log.Fatalf("Command Start failed: %v", err)
 	}
 
-	// Creates a scanner from ESLint's output to stdout.
-	scanner := bufio.NewScanner(stdoutReader)
-	output := &tricium.Data_Results{}
-
-	// Prepare to parse the ESLint output in a separate goroutine in case it is
-	// very large.
-	done := make(chan bool)
-	go scanEslintOutput(scanner, filepath.Join(exPath, *inputDir), output, done)
-
-	err = cmd.Start()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error starting Cmd", err)
-		os.Exit(1)
-	}
-
-	<-done
+	// Parse the output and convert to Tricium results.
+	inputPath := filepath.Join(exPath, *inputDir)
+	results := readESLintOutput(stdout, inputPath)
 
 	cmd.Wait()
 
 	// Write Tricium RESULTS data.
-	path, err := tricium.WriteDataType(*outputDir, output)
+	path, err := tricium.WriteDataType(*outputDir, results)
 	if err != nil {
 		log.Fatalf("Failed to write RESULTS data: %v", err)
 	}
-	log.Printf("Wrote RESULTS data, path: %q, value: %+v\n", path, output)
+	log.Printf("Wrote RESULTS data, path: %q, value: %+v\n", path, results)
 }
 
-// scanEslintOutput reads ESLint output and populates results.
+// readESLintOutput reads the output JSON from ESLint and populates results.
 //
 // It must notify the calling function when it is done by sending true into the
 // done channel.
-func scanEslintOutput(scanner *bufio.Scanner, basePath string, results *tricium.Data_Results, done chan bool) {
-	// Read line by line, adding comments to the output.
-	scanner.Scan()
-	if err := scanner.Err(); err != nil {
+func readESLintOutput(r io.Reader, basePath string) *tricium.Data_Results {
+	results := &tricium.Data_Results{}
+	bytes, err := ioutil.ReadAll(r)
+	if err != nil {
 		log.Fatalf("Failed to read command output: %v", err)
 	}
 
-	jsonOutput := strings.TrimSpace(scanner.Text())
 	var output []FileErrors
-
-	fmt.Println(jsonOutput)
-
-	if err := json.Unmarshal([]byte(jsonOutput), &output); err != nil {
+	if err := json.Unmarshal(bytes, &output); err != nil {
 		log.Fatalf("Failed to parse JSON output: %v", err)
 	}
 
 	for _, fileOutput := range output {
-		// The JSON format of eslint produces absolute paths,
+		// The JSON format of ESLint produces absolute paths,
 		// but for Tricium comments we require relative paths.
 		path, err := filepath.Rel(basePath, fileOutput.FilePath)
 		if err != nil {
@@ -155,10 +140,7 @@ func scanEslintOutput(scanner *bufio.Scanner, basePath string, results *tricium.
 			}
 		}
 	}
-
-	if done != nil {
-		done <- true
-	}
+	return results
 }
 
 // makeCommentForMessage constructs a Tricium comment from one message.

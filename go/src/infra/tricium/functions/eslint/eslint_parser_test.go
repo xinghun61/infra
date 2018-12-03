@@ -5,7 +5,6 @@
 package main
 
 import (
-	"bufio"
 	"strings"
 	"testing"
 
@@ -16,15 +15,11 @@ import (
 
 func TestEslintParsingFunctions(t *testing.T) {
 
-	Convey("scanEslintOutput", t, func() {
+	Convey("readESLintOutput", t, func() {
 
 		Convey("Parsing empty file gives no warnings", func() {
-			buf := strings.NewReader(`[{"filePath":"/abs/path/to/input/test.js", "messages":[]}]`)
-			s := bufio.NewScanner(buf)
-			So(s, ShouldNotBeNil)
-
-			results := &tricium.Data_Results{}
-			scanEslintOutput(s, "/abs/path/to/input", results, nil)
+			r := strings.NewReader(`[{"filePath":"/abs/path/to/input/test.js", "messages":[]}]`)
+			results := readESLintOutput(r, "/abs/path/to/input")
 			So(results.Comments, ShouldBeEmpty)
 		})
 
@@ -62,8 +57,7 @@ func TestEslintParsingFunctions(t *testing.T) {
 				},
 			}
 
-			results := &tricium.Data_Results{}
-			scanEslintOutput(bufio.NewScanner(strings.NewReader(output)), "/x/y/in", results, nil)
+			results := readESLintOutput(strings.NewReader(output), "/x/y/in")
 			So(results, ShouldResemble, expected)
 		})
 	})
