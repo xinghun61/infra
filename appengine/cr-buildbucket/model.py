@@ -228,6 +228,8 @@ class Build(ndb.Model):
   logdog_project = ndb.StringProperty()
   logdog_prefix = ndb.StringProperty()
 
+  recipe = datastore_utils.ProtobufProperty(build_pb2.BuildInfra.Recipe)
+
   def _pre_put_hook(self):
     """Checks Build invariants before putting."""
     super(Build, self)._pre_put_hook()

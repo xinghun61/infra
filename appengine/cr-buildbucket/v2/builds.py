@@ -36,6 +36,7 @@ def build_to_v2(build, build_steps=None):
   May raise MalformedBuild.
   """
   result_details = build.result_details or {}
+  out_props = result_details.get('properties') or {}
   params = (
       build.parameters_actual
       if build.parameters_actual is not None else build.parameters
@@ -43,7 +44,7 @@ def build_to_v2(build, build_steps=None):
   ret = build_pb2.Build(
       id=build.key.id(),
       builder=_get_builder_id(build),
-      number=int(result_details.get('properties', {}).get('buildnumber') or 0),
+      number=int(out_props.get('buildnumber') or 0),
       created_by=build.created_by.to_bytes(),
       create_time=_dt2ts(build.create_time),
       start_time=_dt2ts(build.start_time),
@@ -55,9 +56,7 @@ def build_to_v2(build, build_steps=None):
           experimental=build.experimental,
           gitiles_commit=build.input_gitiles_commit,
       ),
-      output=build_pb2.Build.Output(
-          properties=_dict_to_struct(result_details.get('properties')),
-      ),
+      output=build_pb2.Build.Output(properties=_dict_to_struct(out_props)),
       infra=build_pb2.BuildInfra(
           buildbucket=build_pb2.BuildInfra.Buildbucket(canary=build.canary),
           swarming=build_pb2.BuildInfra.Swarming(
@@ -70,6 +69,7 @@ def build_to_v2(build, build_steps=None):
               project=build.logdog_project,
               prefix=build.logdog_prefix,
           ),
+          recipe=build.recipe,
       ),
   )
   status_to_v2(build, ret)

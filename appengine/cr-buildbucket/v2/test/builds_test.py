@@ -101,6 +101,10 @@ class V2BuildsTest(unittest.TestCase):
         logdog_project='chromium',
         logdog_prefix='buildbucket/cr-buildbucket.example.com/81271231ba012',
         url='https://ci.example.com/build',
+        recipe=build_pb2.BuildInfra.Recipe(
+            cipd_package='recipe_bundles/build',
+            name='chromium',
+        ),
     )
     steps = [
         step_pb2.Step(name='step_a', status=common_pb2.SUCCESS),
@@ -154,6 +158,10 @@ class V2BuildsTest(unittest.TestCase):
                 hostname='logs.chromium.org',
                 project='chromium',
                 prefix='buildbucket/cr-buildbucket.example.com/81271231ba012',
+            ),
+            recipe=build_pb2.BuildInfra.Recipe(
+                cipd_package='recipe_bundles/build',
+                name='chromium',
             ),
         ),
         created_by='user:john@example.com',

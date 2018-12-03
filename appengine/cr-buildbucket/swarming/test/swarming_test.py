@@ -430,6 +430,10 @@ class SwarmingTest(BaseTest):
 
     task_def = swarming.prepare_task_def_async(build).get_result()
 
+    self.assertEqual(
+        build.recipe.cipd_package,
+        'infra/recipe_bundles/chromium.googlesource.com/chromium/tools/build'
+    )
     self.assertIn(
         {
             'package_name': (
@@ -908,6 +912,7 @@ class SwarmingTest(BaseTest):
     self.assertEqual(
         build.parameters_actual['properties']['predefined-property'], 'x'
     )
+    self.assertEqual(build.recipe.name, 'recipe')
 
     # Test delegation token params.
     self.assertEqual(

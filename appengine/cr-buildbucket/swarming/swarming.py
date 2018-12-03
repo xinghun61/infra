@@ -526,11 +526,15 @@ def _create_task_def_async(
 def _setup_recipes(build, builder_cfg, build_number, params):
   """Initializes a build request using recipes.
 
-  Mutates params.
+  Mutates build and params.
 
   Returns:
     extra_swarming_tags, extra_cipd_packages, extra_task_template_params
   """
+  build.recipe = build.recipe or build_pb2.BuildInfra.Recipe()
+  build.recipe.cipd_package = builder_cfg.recipe.cipd_package
+  build.recipe.name = builder_cfg.recipe.name
+
   # Properties specified in build parameters must override those in builder
   # config.
   build_properties = flatten_swarmingcfg.read_properties(builder_cfg.recipe)
