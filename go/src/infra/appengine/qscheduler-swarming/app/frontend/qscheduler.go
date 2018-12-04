@@ -130,9 +130,9 @@ func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.Noti
 		}
 
 		for _, n := range r.Notifications {
-			var t reconciler.TaskUpdate_Type
+			var t reconciler.TaskInstant_State
 			var ok bool
-			if t, ok = toTaskState(n.Task.State); !ok {
+			if t, ok = toTaskInstantState(n.Task.State); !ok {
 				err := fmt.Sprintf("Invalid notification with unhandled state %s.", n.Task.State)
 				logging.Warningf(ctx, err)
 				sp.reconciler.TaskError(n.Task.Id, err)
@@ -141,10 +141,10 @@ func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.Noti
 
 			var provisionableLabels []string
 			var accountID string
-			// ProvisionableLabels attribute only matters for TaskUpdate_NEW type
-			// updates, because these are tasks that are in the queue (scheduler
-			// pays no attention to labels of already-running tasks).
-			if t == reconciler.TaskUpdate_NEW {
+			// ProvisionableLabels attribute only matters for TaskInstant_WAITING state,
+			// because the scheduler pays no attention to label or RUNNING or ABSENT
+			// tasks.
+			if t == reconciler.TaskInstant_WAITING {
 				if provisionableLabels, err = getProvisionableLabels(n); err != nil {
 					logging.Warningf(ctx, err.Error())
 					sp.reconciler.TaskError(n.Task.Id, err.Error())
@@ -160,7 +160,7 @@ func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.Noti
 
 			// TODO(akeshet): Validate that new tasks have dimensions that match the
 			// worker pool dimensions for this scheduler pool.
-			update := &reconciler.TaskUpdate{
+			update := &reconciler.TaskInstant{
 				// TODO(akeshet): implement me. This will be based upon task tags.
 				AccountId: accountID,
 				// TODO(akeshet): implement me properly. This should be a separate field
@@ -169,7 +169,7 @@ func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.Noti
 				ProvisionableLabels: provisionableLabels,
 				RequestId:           n.Task.Id,
 				Time:                n.Time,
-				Type:                t,
+				State:               t,
 				WorkerId:            n.Task.BotId,
 			}
 			if err := sp.reconciler.Notify(ctx, sp.scheduler, update); err != nil {
@@ -227,16 +227,16 @@ func getAccountID(n *swarming.NotifyTasksItem) (string, error) {
 	}
 }
 
-func toTaskState(s swarming.TaskState) (reconciler.TaskUpdate_Type, bool) {
+func toTaskInstantState(s swarming.TaskState) (reconciler.TaskInstant_State, bool) {
 	// These cases appear in the same order as they are defined in swarming/proto/tasks.proto
 	// If you add any cases here, please preserve their in-order appearance.
 	switch s {
 	case swarming.TaskState_RUNNING:
-		return reconciler.TaskUpdate_ASSIGNED, true
+		return reconciler.TaskInstant_RUNNING, true
 	case swarming.TaskState_PENDING:
-		return reconciler.TaskUpdate_NEW, true
-	// The following states all translate to "ABORTED", because they are all equivalent
-	// to the task being neither running nor enqueued.
+		return reconciler.TaskInstant_WAITING, true
+	// The following states all translate to "ABSENT", because they are all equivalent
+	// to the task being neither running nor waiting.
 	case swarming.TaskState_EXPIRED:
 		fallthrough
 	case swarming.TaskState_TIMED_OUT:
@@ -250,11 +250,11 @@ func toTaskState(s swarming.TaskState) (reconciler.TaskUpdate_Type, bool) {
 	case swarming.TaskState_KILLED:
 		fallthrough
 	case swarming.TaskState_NO_RESOURCE:
-		return reconciler.TaskUpdate_ABORTED, true
+		return reconciler.TaskInstant_ABSENT, true
 
 	// Invalid state.
 	default:
-		return reconciler.TaskUpdate_NULL, false
+		return reconciler.TaskInstant_NULL, false
 	}
 }
 

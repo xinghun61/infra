@@ -207,16 +207,16 @@ func (state *State) Cancellations(ctx context.Context) []Cancellation {
 // scheduler operations have been completed (otherwise: subsequent AssignTasks or
 // Cancellations will return stale data until internal timeouts within reconciler
 // expire).
-func (state *State) Notify(ctx context.Context, s Scheduler, updates ...*TaskUpdate) error {
+func (state *State) Notify(ctx context.Context, s Scheduler, updates ...*TaskInstant) error {
 	state.ensureMaps()
 	for _, update := range updates {
-		switch update.Type {
-		case TaskUpdate_NEW:
+		switch update.State {
+		case TaskInstant_WAITING:
 			req := scheduler.NewRequest(update.AccountId, update.ProvisionableLabels,
 				tutils.Timestamp(update.EnqueueTime))
 			s.AddRequest(ctx, update.RequestId, req, tutils.Timestamp(update.Time))
 
-		case TaskUpdate_ASSIGNED:
+		case TaskInstant_RUNNING:
 			wid := update.WorkerId
 			rid := update.RequestId
 			updateTime := tutils.Timestamp(update.Time)
@@ -234,24 +234,9 @@ func (state *State) Notify(ctx context.Context, s Scheduler, updates ...*TaskUpd
 				}
 			}
 
-		// TODO(akeshet): delete this case, and delete this update type entirely.
-		case TaskUpdate_INTERRUPTED:
-			rid := update.RequestId
-			updateTime := tutils.Timestamp(update.Time)
-			// This NotifyRequest call ensures scheduler state consistency with
-			// the latest update.
-			s.NotifyRequest(ctx, rid, "", updateTime)
-			// TODO(akeshet): Add an inverse map from aborting request -> previous
-			// worker to avoid the need for this iteration through all workers.
-			for wid, q := range state.WorkerQueues {
-				if q.TaskToAbort == rid && tutils.Timestamp(q.EnqueueTime).Before(updateTime) {
-					delete(state.WorkerQueues, wid)
-				}
-			}
-
 		// TODO(akeshet): This handler is mostly copy-pasted from the INTERRUPTED case. They can
 		// probably be unified. Also, the same TODO from the INTERRUPTED case applies here.
-		case TaskUpdate_ABORTED:
+		case TaskInstant_ABSENT:
 			rid := update.RequestId
 			updateTime := tutils.Timestamp(update.Time)
 			s.AbortRequest(ctx, rid, updateTime)

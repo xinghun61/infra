@@ -63,11 +63,11 @@ func TestOneAssignment(t *testing.T) {
 			aid := "Account1"
 			labels := []string{"Label1"}
 			rid := "Request1"
-			taskUpdate := &TaskUpdate{
+			taskUpdate := &TaskInstant{
 				AccountId:           aid,
 				ProvisionableLabels: labels,
 				RequestId:           rid,
-				Type:                TaskUpdate_NEW,
+				State:               TaskInstant_WAITING,
 				Time:                tutils.TimestampProto(t0),
 				EnqueueTime:         tutils.TimestampProto(t0),
 			}
@@ -110,10 +110,10 @@ func TestOneAssignment(t *testing.T) {
 				}
 				for _, c := range matchingNotifyCases {
 					Convey(fmt.Sprintf("when the task is notified on the worker %s", c.desc), func() {
-						taskUpdate := &TaskUpdate{
+						taskUpdate := &TaskInstant{
 							RequestId: rid,
 							WorkerId:  wid,
-							Type:      TaskUpdate_ASSIGNED,
+							State:     TaskInstant_RUNNING,
 							Time:      tutils.TimestampProto(c.t),
 						}
 						r.Notify(ctx, s, taskUpdate)
@@ -129,10 +129,10 @@ func TestOneAssignment(t *testing.T) {
 
 				Convey("when a different task is notified on the worker", func() {
 					rid2 := "Request2"
-					taskUpdate := &TaskUpdate{
+					taskUpdate := &TaskInstant{
 						RequestId: rid2,
 						WorkerId:  wid,
-						Type:      TaskUpdate_ASSIGNED,
+						State:     TaskInstant_RUNNING,
 						Time:      tutils.TimestampProto(t1),
 					}
 					r.Notify(ctx, s, taskUpdate)
@@ -147,10 +147,10 @@ func TestOneAssignment(t *testing.T) {
 
 				Convey("when the task is notified on a different worker", func() {
 					wid2 := "Worker2"
-					taskUpdate := &TaskUpdate{
+					taskUpdate := &TaskInstant{
 						RequestId: rid,
 						WorkerId:  wid2,
-						Type:      TaskUpdate_ASSIGNED,
+						State:     TaskInstant_RUNNING,
 						Time:      tutils.TimestampProto(t1),
 					}
 					r.Notify(ctx, s, taskUpdate)
@@ -184,12 +184,12 @@ func TestQueuedAssignment(t *testing.T) {
 			r.AssignTasks(ctx, s, t0, &IdleWorker{wid, labels})
 			Convey("given a request is enqueued with that label", func() {
 				rid := "Request1"
-				taskUpdate := &TaskUpdate{
+				taskUpdate := &TaskInstant{
 					EnqueueTime:         tutils.TimestampProto(t0),
 					Time:                tutils.TimestampProto(t0),
 					ProvisionableLabels: labels,
 					RequestId:           rid,
-					Type:                TaskUpdate_NEW,
+					State:               TaskInstant_WAITING,
 				}
 				r.Notify(ctx, s, taskUpdate)
 				Convey("when a different worker without that label calls AssignTasks", func() {
@@ -223,11 +223,11 @@ func TestPreemption(t *testing.T) {
 
 		Convey("given a task and an idle worker, and that AssignTasks has been called and the worker is running that task", func() {
 			oldRequest := "Request1"
-			taskUpdate := &TaskUpdate{
+			taskUpdate := &TaskInstant{
 				EnqueueTime: tutils.TimestampProto(t0),
 				Time:        tutils.TimestampProto(t0),
 				RequestId:   oldRequest,
-				Type:        TaskUpdate_NEW,
+				State:       TaskInstant_WAITING,
 			}
 			r.Notify(ctx, s, taskUpdate)
 
@@ -243,12 +243,12 @@ func TestPreemption(t *testing.T) {
 				s.AddAccount(ctx, aid, account.NewConfig(0, 0, vector.New()), vector.New(1))
 				t1 := time.Unix(1, 0)
 				newRequest := "Request2"
-				taskUpdate := &TaskUpdate{
+				taskUpdate := &TaskInstant{
 					AccountId:   aid,
 					EnqueueTime: tutils.TimestampProto(t1),
 					Time:        tutils.TimestampProto(t1),
 					RequestId:   newRequest,
-					Type:        TaskUpdate_NEW,
+					State:       TaskInstant_WAITING,
 				}
 				r.Notify(ctx, s, taskUpdate)
 
@@ -270,10 +270,10 @@ func TestPreemption(t *testing.T) {
 
 					Convey("when Notify is called to inform that the old request is cancelled", func() {
 						t2 := time.Unix(2, 0)
-						taskUpdate := &TaskUpdate{
+						taskUpdate := &TaskInstant{
 							Time:      tutils.TimestampProto(t2),
 							RequestId: oldRequest,
-							Type:      TaskUpdate_INTERRUPTED,
+							State:     TaskInstant_ABSENT,
 						}
 						r.Notify(ctx, s, taskUpdate)
 						Convey("when GetCancellations is called", func() {
@@ -306,11 +306,11 @@ func TestPreemption(t *testing.T) {
 					Convey("when the cancellation is ACKed", func() {
 						t2 := time.Unix(2, 0)
 
-						taskUpdate := &TaskUpdate{
+						taskUpdate := &TaskInstant{
 							EnqueueTime: tutils.TimestampProto(t0),
 							Time:        tutils.TimestampProto(t0),
 							RequestId:   oldRequest,
-							Type:        TaskUpdate_NEW,
+							State:       TaskInstant_WAITING,
 						}
 						r.Notify(ctx, s, taskUpdate)
 
@@ -369,9 +369,9 @@ func TestTaskError(t *testing.T) {
 				})
 			})
 			Convey("when NotifyRequest is called to abort the task", func() {
-				u := &TaskUpdate{
+				u := &TaskInstant{
 					RequestId: taskID,
-					Type:      TaskUpdate_ABORTED,
+					State:     TaskInstant_ABSENT,
 					Time:      tutils.TimestampProto(t0),
 				}
 				r.Notify(ctx, s, u)

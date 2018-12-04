@@ -41,8 +41,8 @@ func Example() {
 	accountID := "Account1"
 	labels := []string{"Label1"}
 	t := tutils.TimestampProto(time.Now())
-	taskUpdate := &reconciler.TaskUpdate{
-		Type:                reconciler.TaskUpdate_NEW,
+	taskUpdate := &reconciler.TaskInstant{
+		State:               reconciler.TaskInstant_WAITING,
 		AccountId:           accountID,
 		RequestId:           requestID,
 		ProvisionableLabels: labels,
@@ -67,8 +67,8 @@ func Example() {
 
 	// Acknowledge the that request is running on the worker.
 	t = tutils.TimestampProto(time.Now())
-	taskUpdate = &reconciler.TaskUpdate{
-		Type:      reconciler.TaskUpdate_ASSIGNED,
+	taskUpdate = &reconciler.TaskInstant{
+		State:     reconciler.TaskInstant_RUNNING,
 		RequestId: requestID,
 		WorkerId:  workerID,
 		Time:      t,
