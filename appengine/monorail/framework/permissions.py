@@ -446,6 +446,10 @@ def UpdateIssuePermissions(
   # Add any granted permissions.
   new_perms.update(p.lower() for p in granted_perms)
 
+  # And extra permissions for the project for all of the effective IDs.
+  for effective_id in effective_ids:
+    new_perms.update(GetExtraPerms(project, effective_id))
+
   # The VIEW perm might have been removed due to restrictions, but the issue
   # owner, reporter, cc and approvers can always be an issue.
   allowed_ids = set(

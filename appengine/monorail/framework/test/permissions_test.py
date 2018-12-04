@@ -913,6 +913,16 @@ class IssuePermissionsTest(unittest.TestCase):
          'viewquota'],
         sorted(perms.perm_names))
 
+  def testUpdateIssuePermissions_ExtraPerms(self):
+    project = project_pb2.Project()
+    project.committer_ids.append(999L)
+    project.extra_perms.append(
+        project_pb2.Project.ExtraPerms(member_id=999L, perms=['EditIssue']))
+    perms = permissions.UpdateIssuePermissions(
+        permissions.USER_PERMISSIONSET, project,
+        self.REGULAR_ISSUE, {999L})
+    self.assertIn('editissue', perms.perm_names)
+
   def testUpdateIssuePermissions_Deleted(self):
     perms = permissions.UpdateIssuePermissions(
         permissions.COMMITTER_ACTIVE_PERMISSIONSET, self.PROJECT,
