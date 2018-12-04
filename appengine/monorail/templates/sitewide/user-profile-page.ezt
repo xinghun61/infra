@@ -52,6 +52,22 @@
   </p>
 [end]
 
+[if-any linked_parent]
+  <p>
+  <b>Linked parent account:</b>
+    [include "../framework/user-link.ezt" linked_parent]
+  </p>
+[end]
+
+[if-any linked_children]
+  <p>
+  <b>Linked child accounts:</b>
+  [for linked_children]
+    [include "../framework/user-link.ezt" linked_children][if-index linked_children last][else], [end]
+  [end]
+  </p>
+[end]
+
 [if-any user_stars_enabled]
 <p>
 <b>Starred developers:</b>

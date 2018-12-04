@@ -60,6 +60,19 @@ class UserProfile(servlet.Servlet):
       user_group_views = sorted(
           user_group_views.values(), key=lambda ugv: ugv.email)
 
+    with mr.profiler.Phase('Getting linked accounts'):
+      linked_parent = None
+      linked_children = []
+      linked_views = framework_views.MakeAllUserViews(
+          mr.cnxn, self.services.user,
+          [viewed_user.linked_parent_id],
+          viewed_user.linked_child_ids)
+      if viewed_user.linked_parent_id:
+        linked_parent = linked_views[viewed_user.linked_parent_id]
+      if viewed_user.linked_child_ids:
+        linked_children = [
+          linked_views[child_id] for child_id in viewed_user.linked_child_ids]
+
     viewed_user_display_name = framework_views.GetViewedUserDisplayName(mr)
 
     with work_env.WorkEnv(mr, self.services) as we:
@@ -150,6 +163,8 @@ class UserProfile(servlet.Servlet):
         'ban_token': ban_token,
         'ban_spammer_token': ban_spammer_token,
         'user_groups': user_group_views,
+        'linked_parent': linked_parent,
+        'linked_children': linked_children,
         }
 
     settings = framework_helpers.UserSettings.GatherUnifiedSettingsPageData(

@@ -196,3 +196,39 @@ class UserProfileTest(unittest.TestCase):
     self.mock_guspd.assert_called_once_with(
         111L, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb)
 
+  def testGatherPageData_NoLinkedAccounts(self):
+    """An account with no linked accounts should not show anything linked."""
+    mr = MakeReqInfo(
+        self.regular_user, REGULAR_USER_ID, self.other_user,
+        OTHER_USER_ID, 'other@xyz.com')
+
+    page_data = self.servlet.GatherPageData(mr)
+
+    self.assertIsNone(page_data['linked_parent'])
+    self.assertEquals([], page_data['linked_children'])
+
+  def testGatherPageData_ParentAccounts(self):
+    """An account with a parent linked account should show it."""
+    self.other_user.linked_parent_id = REGULAR_USER_ID
+    mr = MakeReqInfo(
+        self.regular_user, REGULAR_USER_ID, self.other_user,
+        OTHER_USER_ID, 'other@xyz.com')
+
+    page_data = self.servlet.GatherPageData(mr)
+
+    self.assertEquals('111@gmail.com', page_data['linked_parent'].email)
+    self.assertEquals([], page_data['linked_children'])
+
+  def testGatherPageData_ChildAccounts(self):
+    """An account with a child linked account should show them."""
+    self.other_user.linked_child_ids = [REGULAR_USER_ID, ADMIN_USER_ID]
+    mr = MakeReqInfo(
+        self.regular_user, REGULAR_USER_ID, self.other_user,
+        OTHER_USER_ID, 'other@xyz.com')
+
+    page_data = self.servlet.GatherPageData(mr)
+
+    self.assertEquals(None, page_data['linked_parent'])
+    self.assertEquals(
+        ['111@gmail.com', '222@gmail.com'],
+        [uv.email for uv in page_data['linked_children']])
