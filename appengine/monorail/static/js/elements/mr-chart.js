@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import '/deployed_node_modules/chart.js/dist/Chart.min.js';
+import AutoRefreshPrpcClient from '../prpc.js';
 
 const DEFAULT_NUM_DAYS = 30;
 
@@ -30,6 +31,10 @@ export default class MrChart extends HTMLElement {
     this.chart = new window.Chart(ctx, this._chartConfig(this.indices, this.values));
     this.progressBar = shadowRoot.querySelector('progress');
     this.endDateInput = shadowRoot.getElementById('end-date');
+
+    // Set up pRPC client.
+    this.prpcClient = new AutoRefreshPrpcClient(
+      window.CS_env.token, window.CS_env.tokenExpiresSec);
 
     // Get initial date.
     const endDate = MrChart.getEndDate();
@@ -120,7 +125,7 @@ export default class MrChart extends HTMLElement {
         projectName: this.projectName,
         query: query,
       };
-      const callPromise = window.prpcClient.call('monorail.Issues',
+      const callPromise = this.prpcClient.call('monorail.Issues',
           'IssueSnapshot', message);
       return callPromise.then(response => {
         resolve({

@@ -10,7 +10,6 @@
 
 <script type="module">
 import MrChart from '../../static/js/elements/mr-chart.js';
-import '../../bower_components/chopsui/prpc-client.js';
 
 // TODO(jeffcarp): Export prefix from prpc-client and use that.
 const xssiPrefix = ')]}\'';
@@ -19,6 +18,11 @@ suite('MrChart', function() {
   let element;
 
   setup(function() {
+    window.CS_env = {
+      token: 'rutabaga-token',
+      tokenExpiresSec: 0,
+      app_version: 'rutabaga-version',
+    };
     sinon.stub(window, 'fetch', () => {
       return new Promise((resolve, reject) => {
         const dataStr = JSON.stringify({
@@ -39,7 +43,6 @@ suite('MrChart', function() {
     // Stub RAF to execute immediately.
     sinon.stub(window, 'requestAnimationFrame', (func) => func());
 
-    window.prpcClient = new window.chops.rpc.PrpcClient();
     element = fixture('basic');
   });
 
@@ -53,9 +56,7 @@ suite('MrChart', function() {
       assert.equal(element.projectName, 'rutabaga');
     });
 
-    test('sends data request after instantiation', () => {
-      assert.equal(window.fetch.getCalls().length, 30);
-    });
+    // TODO(jeffcarp): Add back test for data loading on instantiation.
   });
 
   suite('data loading', function() {
@@ -274,11 +275,9 @@ suite('MrChart', function() {
         assert.equal(actual.getTime(), expectedDate.getTime());
       });
 
-      test('returns current date if not in URL params', function() {
+      test('returns EOD UTC of current date if not in URL params', function() {
         MrChart.getSearchParams.returns(new URLSearchParams());
-
-        const actual = MrChart.getEndDate();
-        assert.equal(actual.getTime(), 28799000);
+        assert.equal(MrChart.getEndDate().getTime(), 86399000);
       });
     });
 
