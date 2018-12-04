@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"context"
+
 	"go.chromium.org/gae/service/mail"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/logging"
@@ -125,4 +126,27 @@ func (h *State) sendMail(ctx context.Context, cfg *rotang.Configuration, shift *
 		Subject: subjectBuf.String(),
 		Body:    bodyBuf.String(),
 	})
+}
+
+func emailFromTemplate(cfg *rotang.Configuration, info *rotang.Info) (string, string, error) {
+	if info == nil || cfg == nil {
+		return "", "", status.Errorf(codes.InvalidArgument, "info and cfg must be set")
+	}
+	subjectTemplate, err := template.New("Subject").Parse(cfg.Config.Email.Subject)
+	if err != nil {
+		return "", "", err
+	}
+	bodyTemplate, err := template.New("Body").Parse(cfg.Config.Email.Body)
+	if err != nil {
+		return "", "", err
+	}
+
+	var subjectBuf, bodyBuf bytes.Buffer
+	if err := subjectTemplate.Execute(&subjectBuf, info); err != nil {
+		return "", "", err
+	}
+	if err := bodyTemplate.Execute(&bodyBuf, info); err != nil {
+		return "", "", err
+	}
+	return subjectBuf.String(), bodyBuf.String(), nil
 }

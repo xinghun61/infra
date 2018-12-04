@@ -27,7 +27,7 @@ type jsonRota struct {
 	Members []jsonMember
 }
 
-// HandleRotaCreate handler creation of new rotations.
+// HandleRotaCreate handles creation of new rotations.
 func (h *State) HandleRotaCreate(ctx *router.Context) {
 	if err := ctx.Context.Err(); err != nil {
 		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
@@ -159,57 +159,12 @@ func (h *State) HandleRotaModify(ctx *router.Context) {
 
 	switch ctx.Request.Method {
 	case "GET":
-		rotaName := ctx.Request.FormValue("name")
-		if rotaName == "" {
-			http.Error(ctx.Writer, "`name` not set", http.StatusBadRequest)
-			return
-		}
-		rotas, err := h.configStore(ctx.Context).RotaConfig(ctx.Context, rotaName)
+		args, err := h.modifyRotation(ctx)
 		if err != nil {
 			http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		if len(rotas) != 1 {
-			http.Error(ctx.Writer, "Unexpected number of rotations returned", http.StatusInternalServerError)
-			return
-		}
-		rota := rotas[0]
-
-		if !adminOrOwner(ctx, rota) {
-			http.Error(ctx.Writer, "not in the rotation owners", http.StatusForbidden)
-			return
-		}
-
-		var members []jsonMember
-		ms := h.memberStore(ctx.Context)
-		for _, rm := range rota.Members {
-			m, err := ms.Member(ctx.Context, rm.Email)
-			if err != nil {
-				http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			members = append(members, jsonMember{
-				Name:  m.Name,
-				Email: m.Email,
-				TZ:    m.TZ.String(),
-			})
-		}
-
-		var resBuf bytes.Buffer
-		if err := json.NewEncoder(&resBuf).Encode(&jsonRota{
-			Cfg:     *rota,
-			Members: members,
-		}); err != nil {
-			http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		var genBuf bytes.Buffer
-		if err := json.NewEncoder(&genBuf).Encode(h.generators.List()); err != nil {
-			http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		templates.MustRender(ctx.Context, ctx.Writer, "pages/rotamodify.html", templates.Args{"Config": resBuf.String(), "Generators": genBuf.String()})
+		templates.MustRender(ctx.Context, ctx.Writer, "pages/rotamodify.html", args)
 		return
 	case "POST":
 		var res jsonRota

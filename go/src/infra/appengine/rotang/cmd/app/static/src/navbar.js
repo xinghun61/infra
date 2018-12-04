@@ -33,6 +33,13 @@ class NavBar extends LitElement {
     return html`<li><a href="/oncall">Oncall</a></li>`;
   };
 
+  migrate() {
+    if (this.page === 'migrate') {
+      return html`<li><a class="active" href="/switchlist">Migrate</a></li>`;
+    }
+    return html`<li><a href="/switchlist">Migrate</a></li>`;
+  };
+
   bug() {
     return html`<li class="bug">
         <a style="background-color:#00d3f3"
@@ -80,6 +87,7 @@ class NavBar extends LitElement {
       ${this.home()}
       ${this.rota()}
       ${this.oncall()}
+      ${this.migrate()}
       ${this.bug()}
     </ul>
     `;

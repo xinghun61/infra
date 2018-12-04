@@ -54,5 +54,5 @@ func (h *State) HandleEnableDisable(ctx *router.Context) {
 		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(ctx.Writer, ctx.Request, "/managerota", http.StatusOK)
+	http.Redirect(ctx.Writer, ctx.Request, "/managerota", http.StatusFound)
 }

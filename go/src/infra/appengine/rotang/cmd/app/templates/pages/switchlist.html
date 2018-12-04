@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+  <title>Switch Rotation</title>
+</head>
+<body>
+<script src="/static/dist/bundle.js"></script>
+<nav-bar page="migrate"></nav-bar>
+
+{{if not .Rotas}}
+<i>No rotas managed</i>
+{{end}}
+
+{{with .Rotas}}
+<h3>Rotations</h3>
+<table class="table">
+  <thead>
+    <tr>
+      <th align="left">Name</th>
+     </tr>
+  </thead>
+  <tbody>
+  {{range $c := .}}
+     <tr>
+       <td>{{$c.Config.Name}}</td>
+       <td>
+         <form action="switchrota">
+           {{if $c.Config.Enabled}}<small><i><em>migrated</em></i></small>{{else}}
+            <button type="submit" name="name" value="{{$c.Config.Name}}">Migrate</button>
+           {{end}}
+         </form>
+       </td>
+     </tr>
+   {{end}}
+  </tbody>
+</table>
+{{end}}
+</body>
+</html>

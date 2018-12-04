@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"context"
+
 	"github.com/kylelemons/godebug/pretty"
 	"go.chromium.org/luci/auth/identity"
 	"go.chromium.org/luci/server/auth"
@@ -462,7 +463,7 @@ func TestHandleShiftImport(t *testing.T) {
 
 			h.calendar.(*fakeCal).Set(tst.shifts, tst.calFail, false, 0)
 
-			h.HandleShiftImport(tst.ctx)
+			h.HandleShiftImportJSON(tst.ctx)
 			defer h.shiftStore(ctx).DeleteAllShifts(ctx, tst.rotaName)
 
 			recorder := tst.ctx.Writer.(*httptest.ResponseRecorder)
@@ -476,7 +477,7 @@ func TestHandleShiftImport(t *testing.T) {
 			if err != nil && status.Code(err) != codes.NotFound {
 				t.Fatalf("%s: AllShifts(ctx, %q) failed: %v", tst.name, tst.rotaName, err)
 			}
-			if diff := pretty.Compare(shifts, tst.want); diff != "" {
+			if diff := pretty.Compare(tst.want, shifts); diff != "" {
 				t.Fatalf("%s: HandleShiftImport(ctx) differ -want +got, %s", tst.name, diff)
 			}
 		})

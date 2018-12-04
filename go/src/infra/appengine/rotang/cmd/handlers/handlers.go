@@ -5,6 +5,8 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
 	"infra/appengine/rotang"
 	"infra/appengine/rotang/pkg/algo"
 	"net/http"
@@ -14,6 +16,7 @@ import (
 
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
+	"go.chromium.org/luci/server/templates"
 	"google.golang.org/appengine"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -45,10 +48,113 @@ func adminOrOwner(ctx *router.Context, cfg *rotang.Configuration) bool {
 	return false
 }
 
+// listRotations generates a list of rotations owned by current user.
+// If the current user is an admin all rotations will be listed.
+func (h *State) listRotations(ctx *router.Context) (templates.Args, error) {
+	if err := ctx.Context.Err(); err != nil {
+		return nil, err
+	}
+	usr := auth.CurrentUser(ctx.Context)
+	if usr == nil || usr.Email == "" {
+		return nil, status.Errorf(codes.PermissionDenied, "not logged in")
+	}
+
+	rotas, err := h.configStore(ctx.Context).RotaConfig(ctx.Context, "")
+	if err != nil && status.Code(err) != codes.NotFound {
+		return nil, err
+	}
+
+	if !aeuser.IsAdmin(appengine.NewContext(ctx.Request)) {
+		var permRotas []*rotang.Configuration
+		for _, rota := range rotas {
+			for _, m := range rota.Config.Owners {
+				if usr.Email == m {
+					permRotas = append(permRotas, rota)
+				}
+			}
+		}
+	}
+	return templates.Args{"Rotas": rotas}, nil
+}
+
+// modifyRotations generates the configuration and generators list used by the
+// rota-create element.
+func (h *State) modifyRotation(ctx *router.Context) (templates.Args, error) {
+	rotaName := ctx.Request.FormValue("name")
+	if rotaName == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "`name` not set")
+	}
+	rotas, err := h.configStore(ctx.Context).RotaConfig(ctx.Context, rotaName)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(rotas) != 1 {
+		return nil, status.Errorf(codes.Internal, "unexpected number of rotations returned")
+	}
+	rota := rotas[0]
+
+	if !adminOrOwner(ctx, rota) {
+		return nil, status.Errorf(codes.PermissionDenied, "not in the rotation owners")
+	}
+
+	var members []jsonMember
+	ms := h.memberStore(ctx.Context)
+	for _, rm := range rota.Members {
+		m, err := ms.Member(ctx.Context, rm.Email)
+		if err != nil {
+			return nil, err
+		}
+		members = append(members, jsonMember{
+			Name:  m.Name,
+			Email: m.Email,
+			TZ:    m.TZ.String(),
+		})
+	}
+
+	var resBuf bytes.Buffer
+	if err := json.NewEncoder(&resBuf).Encode(&jsonRota{
+		Cfg:     *rota,
+		Members: members,
+	}); err != nil {
+		return nil, err
+	}
+	var genBuf bytes.Buffer
+	if err := json.NewEncoder(&genBuf).Encode(h.generators.List()); err != nil {
+		return nil, err
+	}
+	return templates.Args{"Rota": rotaName, "Config": rota, "ConfigJSON": resBuf.String(), "Generators": genBuf.String()}, nil
+}
+
+// rota authenticates the request and fetches the rotation configuration.
+func (h *State) rota(ctx *router.Context) (*rotang.Configuration, error) {
+	if err := ctx.Context.Err(); err != nil {
+		return nil, err
+	}
+
+	rotaName := ctx.Request.FormValue("name")
+	if rotaName == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "no rota provied")
+	}
+	rota, err := h.configStore(ctx.Context).RotaConfig(ctx.Context, rotaName)
+	if err != nil {
+		return nil, err
+	}
+	if len(rota) != 1 {
+		return nil, status.Errorf(codes.Internal, "expected only one rota to be returned")
+	}
+
+	if !adminOrOwner(ctx, rota[0]) {
+		return nil, status.Errorf(codes.PermissionDenied, "not rotation owner")
+	}
+	return rota[0], nil
+}
+
 func buildLegacyMap(h *State) map[string]func(ctx *router.Context, file string) (string, error) {
 	return map[string]func(ctx *router.Context, file string) (string, error){
 		// Trooper files.
 		"trooper.js":           h.legacyTrooper,
+		"trooper.json":         h.legacyTrooper,
 		"current_trooper.json": h.legacyTrooper,
 		"current_trooper.txt":  h.legacyTrooper,
 		// Sheriff files.

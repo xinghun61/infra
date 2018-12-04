@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"context"
+
 	"github.com/kylelemons/godebug/pretty"
 	"go.chromium.org/luci/auth/identity"
 	"go.chromium.org/luci/server/auth"
@@ -171,10 +172,10 @@ func TestHandleDeleteRota(t *testing.T) {
 			h.HandleDeleteRota(tst.ctx)
 
 			recorder := tst.ctx.Writer.(*httptest.ResponseRecorder)
-			if got, want := (recorder.Code != http.StatusOK), tst.fail; got != want {
+			if got, want := (recorder.Code != http.StatusFound), tst.fail; got != want {
 				t.Fatalf("%s: HandleDeleteRota(ctx) = %t want: %t , res: %v", tst.name, got, want, recorder.Body)
 			}
-			if recorder.Code != http.StatusOK {
+			if recorder.Code != http.StatusFound {
 				return
 			}
 

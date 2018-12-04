@@ -21,3 +21,4 @@ export const TimeZones = [
   {name: 'Asia/Tokyo', description: 'Tokyo'},
   {name: 'Australia/Sydney', description: 'Sydney'},
 ];
+export const BugList = 'https://bugs.chromium.org/p/chromium/issues/list?can=2&q=component%3AInfra%3ESheriffing%3ERotations+&colspec=ID+Pri+M+Stars+ReleaseBlock+Component+Status+Owner+Summary+OS+Modified&x=m&y=releaseblock&cells=ids';

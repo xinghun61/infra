@@ -170,10 +170,10 @@ func TestHandleEnableDisable(t *testing.T) {
 			h.HandleEnableDisable(tst.ctx)
 
 			recorder := tst.ctx.Writer.(*httptest.ResponseRecorder)
-			if got, want := (recorder.Code != http.StatusOK), tst.fail; got != want {
+			if got, want := (recorder.Code != http.StatusFound), tst.fail; got != want {
 				t.Fatalf("%s: HandleEnableDisable(ctx) = %t want: %t, res: %v", tst.name, got, want, recorder.Body)
 			}
-			if recorder.Code != http.StatusOK {
+			if recorder.Code != http.StatusFound {
 				return
 			}
 

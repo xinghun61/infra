@@ -1,0 +1,374 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Switch to RotaNG</title>
+    <style>
+      .site {
+        max-width: 960px;
+        margin: auto;
+      }
+
+      .codeblock {
+        display: block;
+        white-space: pre-wrap;
+      }
+
+      .collapsible {
+        background-color: #f3f3f3;
+        color: black;
+        cursor: pointer;
+        padding: 4px;
+        width: 100%;
+        border: none;
+        text-align: left;
+        outline: none;
+        font-size: 14px;
+      }
+
+      .active, .collapsible:hover {
+        background-color: #f1f1f1;
+      }
+
+      .collapsible:after {
+        content: '\002B';
+        color: black;
+        font-weight: bold;
+        float: right;
+        margin-left: 5px;
+      }
+
+      .active:after {
+        content: "\2212";
+      }
+
+      p, span, li {
+        font-size: 14px;
+      }
+
+      code {
+        font-size: 12px;
+        color: green;
+      }
+
+      .content {
+        padding: 0 4px;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.2s ease-out;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="/static/dist/bundle.js"></script>
+    <nav-bar page="migrate"></nav-bar>
+    <h2> Switch from rotations.py to RotaNG</h2>
+      This page describes the steps needed to migrate over from
+      the legacy Chrome Sheriff tooling to RotaNG.
+
+
+    <h4>- Fix Calendar Permissions</h4>
+    <p>
+      RotaNG similar to the legacy rotation needs access to the
+      shared Google calendars to manipulate events.<br>For this to
+      work the shared calendar needs to be shared with the RotaNG
+      service account <br><br><b>rota-ng@appspot.gserviceaccount.com</b>.
+    </p>
+    <p>
+      Additionally to not have duplicate emails and or shifts
+      scheduled the legacy tooling needs to have its permissoins
+      removed.
+    </p>
+    <p>
+      Steps:
+      <ol>
+        <li>Make sure you're the owner of the calendar<br>
+          <span>
+            <button class="collapsible">Check ownership</button>
+            <div class="content">
+              <ul>
+                <li>Go to Google <a href="https://calendar.google.com" targets="_blank">Calendar</a></li>
+                <li>In the <code>"Add Calendar"</code> field put: <code>{{.Config.Config.Calendar}}</code></li>
+                <li>Go to <code>"Options > Settings and sharing"</code> for the newly added calendar.</li>
+                <li>Under "<code>Share with specific people</code>" if you see "<code>ADD PEOPLE</code>" and can set
+                  "<code>Make changes to events</code>" you're fine.<br>
+                    <span>
+                      <em>If you can't find an owner for the calendar, file a bug under <b>Infra>Sheriffing>Rotations</b></em>
+                    </span>
+                </li>
+              </ul>
+            </div>
+          </span>
+        </li>
+        <li>Share the Calendar<br>
+          <span>
+            <button class="collapsible">Give RotaNG permissions</button>
+            <div class="content">
+            <ul>
+              <li> In the Calendar "Settings > Share with specific people".</li>
+              <li> <code>ADD PEOPLE</code>  -> <code>rota-ng@appspot.gserviceaccount.com</code> -> <code>Make changes to events</code>
+            </ul>
+            </div>
+          </span>
+        </li>
+        <li>Remove permissions for the legacy service<br>
+          <span>
+            <button class="collapsible">Remove RotaNG permissions</button>
+            <div class="content">
+            <ul>
+              <li> In the Calendar "Settings > Share with specific people".</li>
+              <li> Remove <code>chromiumcalendar@gmail.com</code>
+            </ul>
+            </div>
+          </span>
+        </li>
+      </ol>
+    </p>
+
+    <h5>Check permission changes:</h5>
+
+    <rota-testcal rota={{.Rota}}></rota-testcal>
+    <h4>- Import Shifts</h4>
+    <p>
+      With the permissions in place, the next step is to import the legacy schedules.<br>
+      Import the shifts by clicking the <b>Import Shifts</b> button below.<br>
+      if everything looks in order, <b>Submit</b> the shifts.
+    <br><br>
+    </p>
+      <rota-shiftimport rota="{{.Rota}}"></rota-shiftimport>
+      <br>
+      <br>
+      <p>
+        To mange shifts in the new service, follow the link below.
+      </p>
+      <a href="/manageshifts?name={{.Rota}}" target="_blank">
+        Manage imported shifts
+      </a>
+    <h4>- Check Configuration</h4>
+    <p>
+      Update your rotation configuration if needed.
+    </p>
+    <button class="collapsible">Configuration</button>
+    <div class="content">
+      <rota-create config="{{.ConfigJSON}}" generators="{{.Generators}}">
+      </rota-create>
+    </div>
+    <button class="collapsible">Documentation</button>
+    <div class="content">
+      <ul>
+        <ul>
+          <li>
+            <p>
+              <strong>Rotation Name</strong>
+            </p>
+            <p>
+              <em>Changing the name of a rotation creates a copy of the current rotation with the specified name</em>
+            </p>
+            <p>This field is also used when creating calendar entries.</p>
+          </li>
+          <li>
+            <p>
+              <strong>Description</strong>
+            </p>
+            <p>Describes the rotation. Also used for the summary of calendar events.
+              See the Email templates for more information about how to fill out this field.
+            </p>
+          </li>
+          <li>
+            <p>
+              <strong>Calendar</strong>
+            </p>
+            <p>This should contain the id of the team shared calendar.
+            </p>
+            <p>Eg. <code>{{.Config.Config.Calendar}}</code>
+            </p>
+          </li>
+          <li>
+            <p>
+            <strong>Owners</strong>
+            </p>
+            <p>A comma separated list of rotation owners.
+            </p>
+            <p>Note: <em>This will be changed to use mdb groups shortly</em>
+            </p>
+          </li>
+          <li>
+            <p><strong>Expiration</strong>
+            </p>
+            <p>This specifies when to automatically schedule new shifts. Setting this to 0 gives no automatic shifts will be scheduled.</p>
+            <p>Note: <em>Nothing will be scheduled before the rotation is enabled</em>
+            </p>
+          </li>
+          <li>
+            <p><strong>Shifts To Schedule</strong></p>
+            <p>Defines how many shifts to be scheduled when Expired.</p>
+          </li>
+          <li>
+            <p><strong>Email Subject Template</strong></p>
+            <p>The subject of the emails sent from the rotation service to upcoming oncallers.</p>
+            <p>This uses <a href="https://godoc.org/text/template">Go templates</a> to generated the final message.</p>
+            <p>The structures used to feed the template looks like this.</p>
+            <code class="codeblock">
+              type Info struct {
+                RotaName    string
+                ShiftConfig ShiftConfig
+                ShiftEntry  ShiftEntry
+                Member      Member
+                MemberURL   string
+              }
+
+              type ShiftConfig struct {
+                // StartTime represents the start-time of the first shift.
+                // Only the Time of day is considered.
+                // Defaults to 00:00 PDT.
+                StartTime time.Time
+                // Length sets the number of days a shift lasts.
+                Length int
+                // Skip defines a number of days with no oncalls.
+                Skip int
+                // Shifts represents the shifts over a 24hour period.
+                Shifts []Shift
+                // ShiftMembers specifides number of members per shift.
+                ShiftMembers int
+                // Generator used to schedule new shifts.
+                Generator string
+              }
+
+              type ShiftEntry struct {
+                // Name of the Shift this entry belongs to.
+                Name string
+                // OnCall are the members on-call for this shift.
+                OnCall    []ShiftMember
+                StartTime time.Time
+                EndTime   time.Time
+                // Comment is an optional comment where the rota algo
+                // can add some extra information.
+                Comment string
+                // EvtID can be used to match an event to a calendar event.
+                EvtID string
+              }
+
+              type Member struct {
+                Name        string
+                Email       string
+                TZ          time.Location
+                OOO         []OOO
+                Preferences []Preference
+              }
+          </code>
+          <p>This gives that you can have any information from the <code>Info</code> struct inserted in your message.</p>
+          <p>Eg.</p>
+          <code>Upcoming On-call shift for rotation: {{.RotaName}} {{.ShiftEntry.StartTime.In .Member.TZ}} to {{.ShiftEntry.EndTime.In .Member.TZ}}
+            </code>
+            <p>Will produce:</p>
+            <code>Upcoming On-call shift for rotation: Name of rota 2006-04-05 17:00:00 -0700 PDT to 2006-04-06 17:00:00 -0700 PDT</code>
+            <p>For a member with a US Pacific TZ.</p>
+            <p><strong>Note</strong>: The current %s format replacement will not work. You could replace the %s with {{.RotaName}} for something similar.</p>
+          </li>
+          <li>
+            <p><strong>Email Body Template</strong></p>
+            <p>See Email Subject Template.</p>
+          </li>
+          <li><p><strong>Email Days Before Notify</strong></p>
+            <p>Number of days before an on-call shift to send mails out.</p>
+            <p>Note: <em>No mails will be produced until the rotation is enabled.</em></p>
+          </li>
+          <li>
+            <p><strong>Members</strong></p>
+            <p>Manage members of the rotation.</p>
+          </li>
+          <li><p><strong>Shift StartTime</strong></p>
+            <p>Specifies the start in MTV time of the first shift.</p>
+          </li>
+          <li>
+            <p><strong>Length</strong></p>
+            <p>Number of days a shift spans.</p>
+          </li>
+          <li>
+            <p><strong>Skip</strong></p>
+            <p>Skip in the shift schedule. Eg. if you rotation is weekdays only you'd set this to Length/Skip: 5/2</p>
+          </li>
+          <li>
+            <p><strong>ShiftMembers</strong></p>
+            <p>Number of members to schedule per shift.</p>
+          </li>
+          <li>
+            <p><strong>Generator</strong></p>
+            <p>Specifies what Generator to use when scheduling shifts</p>
+            <ul>
+              <li><p><strong>Fair</strong></p>
+                <p>Takes previous shifts into account when scheduling shifts. If there are no previous shifts it'll fall back to random.</p>
+              </li>
+              <li><p><strong>Random</strong></p></li>
+              <li><p><strong>Legacy</strong></p><p>Tries to emulate the current scheduler.</p></li>
+            </ul>
+          </li>
+          <li><p><strong>Shifts</strong></p>
+            <p>The service supports split shifts so you can have follow the sun kind of configurations with MTV -&gt; SYD -&gt; EU.</p>
+            <p>This would be configured as 3 shifts.</p>
+            <code class="codeblock">
+                  Name: MTV OnCall  Duration: 8
+                  Name: SYD OnCall  Duration: 8
+                  Name: EU OnCall   Duration: 8
+            </code>
+            <p>When scheduling the RotaMembers <code>ShiftsName</code> would be used to figure out which users to put into which shift.</p>
+            <p>It's also OK to have empty splits Eg.</p>
+            <code class="codeblock">
+                  Name: MTV Office      Duration: 6
+                  Name: MTV-&gt;SYD no-one Duration: 2
+                  Name: SYD Office      Duration: 6
+                  Name: SYD-&gt;EU no-one  Duration: 2
+                  Name: EU Office       Duration: 6
+                  Name: EU-&gt;MTV no-one  Duration: 2
+            </code>
+            <p>The calendar entries created will have the Shift name added to the description.</p>
+            <p>Note: <em>The sum of the shift durations should always be 24</em></p>
+          </li>
+        </ul>
+      </ul>
+    </div>
+    <h4>- Test Email</h4>
+    <p>
+      Test out the Email templates.
+    </p>
+    <p>
+    <em>Note: No emails are sent, just templates expanded.</em>
+    <em>Note: Update configuration in the previous step and test again if it does not look as expected.</em>
+    </p>
+    <rota-testemail rota={{.Rota}}></rota-testemail>
+    <h4>- Enable Rotation</h4>
+    <p>
+      Enabling a rotation makes the new service start scheduling shifts and sending emails for upcoming shifts.
+    </p>
+    <button class="collapsible">To Rollback</button>
+    <div class="content">
+      <ul>
+        <li>Add back <code>chromiumcalendar@gmail.com</code> to <code>{{.Config.Config.Calendar}}</code></li>
+        <li>Give permisson <code>Make changes to events</code></li>
+        <li>Disable the rotation at <a href="/managerota">https://rota-ng.appspot.com/managerota</a></li>
+        <li>File a bug in <b>Infra>Sheriffing>Rotations</b>
+      </ul>
+    </div>
+    <br>
+    <form action="enabledisable" method="post">
+      <button type="submit" name="name" value="{{.Rota}}">Enable Rotation</button>
+    </form>
+
+    <script>
+      var coll = document.getElementsByClassName("collapsible");
+      var i;
+
+      for (i = 0; i < coll.length; i++) {
+        coll[i].addEventListener("click", function() {
+          this.classList.toggle("active");
+          var content = this.nextElementSibling;
+          if (content.style.maxHeight){
+            content.style.maxHeight = null;
+          } else {
+            content.style.maxHeight = content.scrollHeight + "px";
+          }
+        });
+      }
+      </script>
+  </body>
+</html>

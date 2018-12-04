@@ -306,7 +306,19 @@ func TestLegacyTroopers(t *testing.T) {
 		file:       "current_trooper.json",
 		oncallers:  []string{"primary1", "secondary1", "secondary2"},
 		updateTime: midnight,
-		want: `{"primary":"primary1","secondary":["secondary1","secondary2"],"updated_unix_timestamp":1143936000}
+		want: `{"primary":"primary1","secondaries":["secondary1","secondary2"],"updated_unix_timestamp":1143936000}
+`,
+	}, {
+		name: "Success trooper.json",
+		ctx: &router.Context{
+			Context: ctx,
+			Writer:  httptest.NewRecorder(),
+			Request: httptest.NewRequest("GET", "/legacy", nil),
+		},
+		file:       "current_trooper.json",
+		oncallers:  []string{"primary1", "secondary1", "secondary2"},
+		updateTime: midnight,
+		want: `{"primary":"primary1","secondaries":["secondary1","secondary2"],"updated_unix_timestamp":1143936000}
 `,
 	}, {
 		name: "Success txt",

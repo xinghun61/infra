@@ -59,7 +59,7 @@ const (
 
 type trooperJSON struct {
 	Primary   string   `json:"primary"`
-	Secondary []string `json:"secondary"`
+	Secondary []string `json:"secondaries"`
 	UnixTS    int64    `json:"updated_unix_timestamp"`
 }
 
@@ -79,9 +79,9 @@ func (h *State) legacyTrooper(ctx *router.Context, file string) (string, error) 
 			}
 		}
 		return "document.write('" + str + "');", nil
-	case "current_trooper.json":
+	case "current_trooper.json", "trooper.json":
 		primary := "None"
-		var secondary []string
+		secondary := make([]string, 0)
 		if len(oc) > 0 {
 			primary = oc[0]
 			if len(oc) > 1 {

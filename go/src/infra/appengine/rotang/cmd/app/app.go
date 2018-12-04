@@ -63,7 +63,8 @@ func requireGoogler(ctx *router.Context, next router.Handler) {
 			errStatus(ctx.Context, ctx.Writer, http.StatusForbidden, "Access denied err:"+err.Error())
 			return
 		}
-		errStatus(ctx.Context, ctx.Writer, http.StatusForbidden, "Access denied <a href="+url+">login</a>")
+		http.Redirect(ctx.Writer, ctx.Request, url, http.StatusFound)
+		return
 	default:
 		next(ctx)
 	}
@@ -164,12 +165,16 @@ func init() {
 	r.GET("/createrota", protected, h.HandleRotaCreate)
 	r.GET("/managerota", protected, h.HandleManageRota)
 	r.GET("/modifyrota", protected, h.HandleRotaModify)
-	r.GET("/importshifts", protected, h.HandleShiftImport)
+	r.GET("/importshiftsjson", protected, h.HandleShiftImportJSON)
 	r.GET("/manageshifts", protected, h.HandleManageShifts)
 	r.GET("/legacy/:name", tmw, h.HandleLegacy)
 	r.GET("/oncall", protected, h.HandleOncall)
 	r.GET("/oncall/:name", protected, h.HandleOncall)
 	r.GET("/memberjson", protected, h.HandleMember)
+	r.GET("/switchlist", protected, h.HandleRotaSwitchList)
+	r.GET("/switchrota", protected, h.HandleRotaSwitch)
+	r.GET("/caltest", protected, h.HandleCalTest)
+	r.GET("/emailtest", protected, h.HandleEmailTestJSON)
 
 	r.POST("/oncalljson", protected, h.HandleOncallJSON)
 	r.POST("/shiftsupdate", protected, h.HandleShiftUpdate)
