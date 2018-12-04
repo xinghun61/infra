@@ -19,14 +19,15 @@ from proto import tracker_pb2
 from tracker import template_helpers
 from tracker import tracker_bizobj
 
-# TODO(jojwang): convert ux- labels too.
 PM_PREFIX = 'pm-'
 TL_PREFIX = 'tl-'
 TEST_PREFIX = 'test-'
+UX_PREFIX = 'ux-'
 
 PM_FIELD = 'pm'
 TL_FIELD = 'tl'
 TE_FIELD = 'te'
+UX_FIELD = 'ux'
 MTARGET_FIELD = 'm-target'
 MAPPROVED_FIELD = 'm-approved'
 
@@ -118,7 +119,7 @@ TEMPLATE_MAP = {
 
 ProjectInfo = collections.namedtuple(
     'ProjectInfo', 'config, q, approval_values, phases, '
-    'pm_fid, tl_fid, te_fid, m_target_id, m_approved_id, '
+    'pm_fid, tl_fid, te_fid, ux_fid, m_target_id, m_approved_id, '
     'phase_map, approvals_to_labels, labels_re')
 
 
@@ -181,6 +182,7 @@ class FLTConvertTask(jsonfeed.InternalTask):
     pm_id = tracker_bizobj.FindFieldDef('PM', config).field_id
     tl_id = tracker_bizobj.FindFieldDef('TL', config).field_id
     te_id = tracker_bizobj.FindFieldDef('TE', config).field_id
+    ux_id = tracker_bizobj.FindFieldDef('UX', config).field_id
     mapproved_id = tracker_bizobj.FindFieldDef('M-Approved', config).field_id
     mtarget_id = tracker_bizobj.FindFieldDef('M-Target', config).field_id
 
@@ -248,13 +250,15 @@ class FLTConvertTask(jsonfeed.InternalTask):
 
       # Check people field_values
       expected_people_fvs = self.ConvertPeopleLabels(
-          mr, issue.labels, pm_id, tl_id, te_id)
+          mr, issue.labels, pm_id, tl_id, te_id, ux_id)
       for people_fv in expected_people_fvs:
         if people_fv not in issue.field_values:
           if people_fv.field_id == tl_id:
             role = 'TL'
           elif people_fv.field_id == pm_id:
             role = 'PM'
+          elif people_fv.field_id == ux_id:
+            role = 'UX'
           else:
             role = 'TE'
           problems.append((issue.local_id, 'missing a field for %s' % role))
@@ -321,7 +325,8 @@ class FLTConvertTask(jsonfeed.InternalTask):
           project_info.labels_re, project_info.phase_map)
       people_fvs = self.ConvertPeopleLabels(
           mr, issue.labels,
-          project_info.pm_fid, project_info.tl_fid, project_info.te_fid)
+          project_info.pm_fid, project_info.tl_fid, project_info.te_fid,
+          project_info.ux_fid)
       amendments = self.ExecuteIssueChanges(
           project_info.config, issue, new_approvals,
           template_phases, m_fvs + people_fvs)
@@ -406,6 +411,8 @@ class FLTConvertTask(jsonfeed.InternalTask):
     assert tl_fid, 'project has no FieldDef %s' % TL_FIELD
     te_fid = user_fds.get(TE_FIELD)
     assert te_fid, 'project has no FieldDef %s' % TE_FIELD
+    ux_fid = user_fds.get(UX_FIELD)
+    assert ux_fid, 'project has no FieldDef %s' % UX_FIELD
 
     # Get relevant M Phase INT_TYPE FieldDef ids and assert they exist
     phase_int_fds = {fd.field_name.lower(): fd.field_id
@@ -420,7 +427,7 @@ class FLTConvertTask(jsonfeed.InternalTask):
     assert m_approved_id, 'project has no FieldDef %s' % MAPPROVED_FIELD
 
     return ProjectInfo(config, q, approval_values, phases, pm_fid, tl_fid,
-                       te_fid, m_target_id, m_approved_id, phase_map,
+                       te_fid, ux_fid, m_target_id, m_approved_id, phase_map,
                        approvals_to_labels, m_labels_re)
 
   # TODO(jojwang): mr needs to be passed in as arg and
@@ -460,9 +467,9 @@ class FLTConvertTask(jsonfeed.InternalTask):
     return amendments
 
   def ConvertPeopleLabels(
-      self, mr, labels, pm_field_id, tl_field_id, te_field_id):
+      self, mr, labels, pm_field_id, tl_field_id, te_field_id, ux_field_id):
     field_values = []
-    pm_ldap, tl_ldap, test_ldaps = ExtractLabelLDAPs(labels)
+    pm_ldap, tl_ldap, test_ldaps, ux_ldaps = ExtractLabelLDAPs(labels)
 
     pm_fv = self.CreateUserFieldValue(mr, pm_ldap, pm_field_id)
     if pm_fv:
@@ -476,6 +483,11 @@ class FLTConvertTask(jsonfeed.InternalTask):
       te_fv = self.CreateUserFieldValue(mr, test_ldap, te_field_id)
       if te_fv:
         field_values.append(te_fv)
+
+    for ux_ldap in ux_ldaps:
+      ux_fv = self.CreateUserFieldValue(mr, ux_ldap, ux_field_id)
+      if ux_fv:
+        field_values.append(ux_fv)
     return field_values
 
   def CreateUserFieldValue(self, mr, ldap, field_id):
@@ -538,11 +550,12 @@ def ConvertLaunchLabels(labels, approvals, project_fds, approvals_to_labels):
 
 
 def ExtractLabelLDAPs(labels):
-  """Extracts LDAPs from labels 'PM-', 'TL-', and 'test-'"""
+  """Extracts LDAPs from labels 'PM-', 'TL-', 'UX-', and 'test-'"""
 
   pm_ldap = None
   tl_ldap = None
   test_ldaps = []
+  ux_ldaps = []
   for label in labels:
     label = label.lower()
     if label.startswith(PM_PREFIX):
@@ -553,4 +566,8 @@ def ExtractLabelLDAPs(labels):
       ldap = label[len(TEST_PREFIX):]
       if ldap:
         test_ldaps.append(ldap)
-  return pm_ldap, tl_ldap, test_ldaps
+    elif label.startswith(UX_PREFIX):
+      ldap = label[len(UX_PREFIX):]
+      if ldap:
+        ux_ldaps.append(ldap)
+  return pm_ldap, tl_ldap, test_ldaps, ux_ldaps

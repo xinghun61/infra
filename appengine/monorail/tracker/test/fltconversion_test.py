@@ -43,7 +43,7 @@ class FLTConvertTask(unittest.TestCase):
         labels=[
             'Launch-M-Approved-71-Stable', 'Launch-M-Target-70-Beta',
             'Launch-UI-Yes', 'Launch-Privacy-NeedInfo',
-            'pm-jojwang', 'tl-annajo', 'Type-Launch'])
+            'pm-jojwang', 'tl-annajo', 'ux-shiba', 'Type-Launch'])
     self.issue2 = fake.MakeTestIssue(
         789, 2, 'sum', 'New', 111L, issue_id=78902,
         labels=[
@@ -84,7 +84,7 @@ class FLTConvertTask(unittest.TestCase):
     # Set up Objects
     project_info = fltconversion.ProjectInfo(
         self.config, 'q=query', self.approval_values, self.phases,
-        11, 12, 13, 14, 15, fltconversion.BROWSER_PHASE_MAP,
+        11, 12, 13, 16, 14, 15, fltconversion.BROWSER_PHASE_MAP,
         fltconversion.BROWSER_APPROVALS_TO_LABELS,
         fltconversion.BROWSER_M_LABELS_RE)
 
@@ -114,6 +114,8 @@ class FLTConvertTask(unittest.TestCase):
         return 111L
       if email == 'annajo@google.com':
         return 222L
+      if email == 'shiba@google.com':
+        return 333L
       raise exceptions.NoSuchUserException
     self.task.services.user.LookupUserID = mock.Mock(side_effect=side_effect)
 
@@ -142,7 +144,12 @@ class FLTConvertTask(unittest.TestCase):
           11, None, None, 111L, None, None, False),
       # TL field
       tracker_bizobj.MakeFieldValue(
-          12, None, None, 222L, None, None, False)]
+          12, None, None, 222L, None, None, False),
+      # UX field
+      tracker_bizobj.MakeFieldValue(
+          16, None, None, 333L, None, None, False)
+    ]
+
 
     new_approvals2 = [
         tracker_pb2.ApprovalValue(
@@ -194,7 +201,8 @@ class FLTConvertTask(unittest.TestCase):
     self.config.field_defs = [
         tracker_pb2.FieldDef(field_id=11, field_name='PM'),
         tracker_pb2.FieldDef(field_id=12, field_name='TL'),
-        tracker_pb2.FieldDef(field_id=13, field_name='TE')]
+        tracker_pb2.FieldDef(field_id=13, field_name='TE'),
+        tracker_pb2.FieldDef(field_id=16, field_name='UX')]
     # Make element edits made during conversion that should be undone.
     issue1.labels.extend(['Type-FLT-Launch', 'FLT-Conversion'])
     issue1.labels.remove('Type-Launch')
@@ -311,6 +319,7 @@ class FLTConvertTask(unittest.TestCase):
         tracker_pb2.FieldDef(field_id=4, field_name='PM'),
         tracker_pb2.FieldDef(field_id=5, field_name='TL'),
         tracker_pb2.FieldDef(field_id=6, field_name='TE'),
+        tracker_pb2.FieldDef(field_id=12, field_name='UX'),
         tracker_pb2.FieldDef(field_id=7, field_name='M-Target'),
         tracker_pb2.FieldDef(field_id=8, field_name='M-Approved'),
         tracker_pb2.FieldDef(field_id=9, field_name='ChromeOS-UX'),
@@ -339,6 +348,7 @@ class FLTConvertTask(unittest.TestCase):
     problems = json['problems found']
     expected_problems = [
         'issue 1: missing a field for TL',
+        'issue 1: missing a field for UX',
         'issue 2: approval Chrome-Privacy has status \'APPROVED\' for '
         'label value None',
         'issue 2: no phase field for label Launch-M-Approved-70-Beta',
@@ -430,6 +440,8 @@ class FLTConvertTask(unittest.TestCase):
                            field_type=tracker_pb2.FieldTypes.USER_TYPE),
       tracker_pb2.FieldDef(field_id=5, field_name='TL',
                            field_type=tracker_pb2.FieldTypes.USER_TYPE),
+      tracker_pb2.FieldDef(field_id=9, field_name='UX',
+                           field_type=tracker_pb2.FieldTypes.USER_TYPE),
       tracker_pb2.FieldDef(field_id=6, field_name='TE')
     ])
 
@@ -468,7 +480,7 @@ class FLTConvertTask(unittest.TestCase):
         self.task.FetchAndAssertProjectInfo(mr),
         fltconversion.ProjectInfo(
             self.config, fltconversion.QUERY_MAP['default'],
-            template.approval_values, template.phases, 4, 5, 6, 7, 8,
+            template.approval_values, template.phases, 4, 5, 6, 9, 7, 8,
             fltconversion.BROWSER_PHASE_MAP,
             fltconversion.BROWSER_APPROVALS_TO_LABELS,
             fltconversion.BROWSER_M_LABELS_RE))
@@ -487,7 +499,7 @@ class FLTConvertTask(unittest.TestCase):
         self.task.FetchAndAssertProjectInfo(mr),
         fltconversion.ProjectInfo(
             self.config, fltconversion.QUERY_MAP['finch'],
-            template.approval_values, template.phases, 4, 5, 6, 7, 8,
+            template.approval_values, template.phases, 4, 5, 6, 9, 7, 8,
             fltconversion.BROWSER_PHASE_MAP,
             fltconversion.BROWSER_APPROVALS_TO_LABELS,
             fltconversion.BROWSER_M_LABELS_RE))
@@ -551,6 +563,8 @@ class FLTConvertTask(unittest.TestCase):
       tracker_pb2.FieldDef(field_id=5, field_name='TL',
                            field_type=tracker_pb2.FieldTypes.USER_TYPE),
       tracker_pb2.FieldDef(field_id=6, field_name='TE',
+                           field_type=tracker_pb2.FieldTypes.USER_TYPE),
+      tracker_pb2.FieldDef(field_id=9, field_name='UX',
                            field_type=tracker_pb2.FieldTypes.USER_TYPE)
     ])
     self.config.field_defs.extend([
@@ -566,7 +580,7 @@ class FLTConvertTask(unittest.TestCase):
         self.task.FetchAndAssertProjectInfo(mr),
         fltconversion.ProjectInfo(
             self.config, fltconversion.QUERY_MAP['os'],
-            template.approval_values, template.phases, 4, 5, 6, 7, 8,
+            template.approval_values, template.phases, 4, 5, 6, 9, 7, 8,
             fltconversion.OS_PHASE_MAP, fltconversion.OS_APPROVALS_TO_LABELS,
             fltconversion.OS_M_LABELS_RE))
 
@@ -638,15 +652,18 @@ class FLTConvertTask(unittest.TestCase):
         comment=fltconversion.CONVERSION_COMMENT)
 
   def testConvertPeopleLabels(self):
-    self.task.services.user.LookupUserID = mock.Mock(side_effect=[1, 2, 3, 4])
+    self.task.services.user.LookupUserID = mock.Mock(
+        side_effect=[1, 2, 3, 4, 5, 6])
     labels = [
-        'pm-u1', 'pm-u2', 'tl-u2', 'test-3', 'test-4']
-    fvs = self.task.ConvertPeopleLabels(self.mr, labels, 11, 12, 13)
+        'pm-u1', 'pm-u2', 'tl-u2', 'test-3', 'test-4', 'ux-u5', 'ux-6']
+    fvs = self.task.ConvertPeopleLabels(self.mr, labels, 11, 12, 13, 14)
     expected = [
         tracker_bizobj.MakeFieldValue(11, None, None, 1, None, None, False),
         tracker_bizobj.MakeFieldValue(12, None, None, 2, None, None, False),
         tracker_bizobj.MakeFieldValue(13, None, None, 3, None, None, False),
         tracker_bizobj.MakeFieldValue(13, None, None, 4, None, None, False),
+        tracker_bizobj.MakeFieldValue(14, None, None, 5, None, None, False),
+        tracker_bizobj.MakeFieldValue(14, None, None, 6, None, None, False),
         ]
     self.assertEqual(fvs, expected)
 
@@ -656,7 +673,7 @@ class FLTConvertTask(unittest.TestCase):
     labels = []
     self.task.services.user.LookupUserID = mock.Mock(side_effect=side_effect)
     self.assertFalse(
-        len(self.task.ConvertPeopleLabels(self.mr, labels, 11, 12, 13)))
+        len(self.task.ConvertPeopleLabels(self.mr, labels, 11, 12, 13, 14)))
 
   def testCreateUserFieldValue_Chromium(self):
     self.task.services.user.LookupUserID = mock.Mock(return_value=1)
@@ -844,14 +861,19 @@ class ExtractLabelLDAPs(unittest.TestCase):
         'PM-USER3',
         'pm',
         'test-user5',
-        'test-']
-    actual_pm, actual_tl, actual_tests = fltconversion.ExtractLabelLDAPs(labels)
+        'test-',
+        'ux-user9']
+    (actual_pm, actual_tl, actual_tests,
+     actual_ux) = fltconversion.ExtractLabelLDAPs(labels)
     self.assertEqual(actual_pm, 'user3')
     self.assertEqual(actual_tl, 'user2')
     self.assertEqual(actual_tests, ['user4', 'user5'])
+    self.assertEqual(actual_ux, ['user9'])
 
   def testExtractLabelLDAPs_NoLabels(self):
-    actual_pm, actual_tl, actual_tests = fltconversion.ExtractLabelLDAPs([])
+    (actual_pm, actual_tl, actual_tests,
+     actual_ux) = fltconversion.ExtractLabelLDAPs([])
     self.assertIsNone(actual_pm)
     self.assertIsNone(actual_tl)
     self.assertFalse(len(actual_tests))
+    self.assertFalse(len(actual_ux))
