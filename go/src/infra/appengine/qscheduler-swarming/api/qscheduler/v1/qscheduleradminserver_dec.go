@@ -67,3 +67,18 @@ func (s *DecoratedQSchedulerAdmin) ListAccounts(c context.Context, req *ListAcco
 	}
 	return
 }
+
+func (s *DecoratedQSchedulerAdmin) InspectPool(c context.Context, req *InspectPoolRequest) (rsp *InspectPoolResponse, err error) {
+	var newCtx context.Context
+	if s.Prelude != nil {
+		newCtx, err = s.Prelude(c, "InspectPool", req)
+	}
+	if err == nil {
+		c = newCtx
+		rsp, err = s.Service.InspectPool(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "InspectPool", rsp, err)
+	}
+	return
+}

@@ -77,3 +77,29 @@ func (s *QSchedulerAdminServerImpl) ListAccounts(ctx context.Context, r *qschedu
 	}
 	return resp, nil
 }
+
+// InspectPool implements QSchedulerAdminServer.
+func (s *QSchedulerAdminServerImpl) InspectPool(ctx context.Context, r *qscheduler.InspectPoolRequest) (*qscheduler.InspectPoolResponse, error) {
+	sp, err := load(ctx, r.PoolId)
+	if err != nil {
+		return nil, err
+	}
+
+	running, idle := 0, 0
+	for _, w := range sp.scheduler.State.Workers {
+		if w.RunningTask != nil {
+			running++
+		} else {
+			idle++
+		}
+	}
+
+	resp := &qscheduler.InspectPoolResponse{
+		WaitingTasks:    int32(len(sp.scheduler.State.QueuedRequests)),
+		IdleBots:        int32(idle),
+		RunningTasks:    int32(running),
+		AccountBalances: sp.scheduler.State.Balances,
+	}
+
+	return resp, nil
+}

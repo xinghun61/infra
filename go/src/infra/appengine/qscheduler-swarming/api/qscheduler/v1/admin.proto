@@ -7,6 +7,7 @@ syntax = "proto3";
 package qscheduler;
 
 import "infra/qscheduler/qslib/types/account/account.proto";
+import "infra/qscheduler/qslib/types/vector/vector.proto";
 
 // This API is under development and subject to compatibility-breaking changes.
 // Do not use for production.
@@ -25,6 +26,10 @@ service QSchedulerAdmin {
 
     // ListAccounts returns the set of accounts for a given scheduler.
     rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse);
+
+    // InspectPool returns a description of the state of a scheduler, for debugging
+    // or diagnostic purposes.
+    rpc InspectPool(InspectPoolRequest) returns (InspectPoolResponse);
 }
 
 message CreateSchedulerPoolRequest {
@@ -71,4 +76,22 @@ message SchedulerPoolConfig{
     // to swarming.ExternalSchedulerConfig.dimensionsions; it is the minimal set
     // of dimensions for tasks or bots that will use this scheduler.
     repeated string labels = 1;
+}
+
+message InspectPoolRequest {
+    string pool_id = 1;
+}
+
+message InspectPoolResponse {
+    // WaitingTasks is the number of waiting tasks.
+    int32 waiting_tasks = 1;
+
+    // RunningTasks is the number of running tasks.
+    int32 running_tasks = 2;
+
+    // IdleBots is the number of idle bots.
+    int32 idle_bots = 3;
+
+    // AccountBalances is the set of balances for all accounts.
+    map<string, vector.Vector> account_balances = 4;
 }
