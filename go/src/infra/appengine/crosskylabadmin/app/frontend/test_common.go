@@ -66,6 +66,7 @@ func newTestFixtureWithContext(c context.Context, t *testing.T) (testFixture, fu
 	tf := testFixture{T: t, C: c}
 
 	mc := gomock.NewController(t)
+
 	tf.MockSwarming = mock.NewMockSwarmingClient(mc)
 	tf.Tracker = &TrackerServerImpl{
 		SwarmingFactory: func(context.Context, string) (clients.SwarmingClient, error) {

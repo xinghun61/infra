@@ -19,6 +19,7 @@ package frontend
 import (
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
+	"infra/appengine/crosskylabadmin/app/frontend/inventory"
 
 	"github.com/golang/protobuf/proto"
 	"go.chromium.org/luci/appengine/gaeauth/server"
@@ -47,7 +48,7 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 		Prelude: checkAccess,
 	})
 	fleet.RegisterInventoryServer(&api, &fleet.DecoratedInventory{
-		Service: &InventoryServerImpl{},
+		Service: &inventory.ServerImpl{TrackerFactory: trackerFactory},
 		Prelude: checkAccess,
 	})
 
@@ -74,4 +75,13 @@ func checkAccess(c context.Context, _ string, _ proto.Message) (context.Context,
 		return c, status.Errorf(codes.PermissionDenied, "permission denied")
 	}
 	return c, nil
+}
+
+var cachedTracker fleet.TrackerServer
+
+func trackerFactory() fleet.TrackerServer {
+	if cachedTracker == nil {
+		cachedTracker = &TrackerServerImpl{}
+	}
+	return cachedTracker
 }
