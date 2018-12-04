@@ -1,8 +1,8 @@
 hash: 37539b192791121ebaeddc717278074b40854995f1fa5b9178d4aa69793d90a5
-updated: 2018-12-03T11:04:22.705233-08:00
+updated: 2018-12-03T16:48:55.046967-08:00
 imports:
 - name: cloud.google.com/go
-  version: 56d3f5bc07d0a73b6643844c715d22ff2d097797
+  version: 48f90e82b521609d016f2b99269f38fc9489bcc3
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -22,7 +22,7 @@ imports:
   version: e206f873d14a916d3d26c40ab667bca123f365a3
   repo: https://chromium.googlesource.com/external/github.com/aryann/difflib.git
 - name: github.com/aws/aws-sdk-go
-  version: 88388f1dcec6c6c6548dab2149b22d36ef2f5e08
+  version: 4ea06c7022cc6ad23d2a62361a1935f49f5168b3
   repo: https://chromium.googlesource.com/external/github.com/aws/aws-sdk-go.git
 - name: github.com/bradfitz/gomemcache
   version: bc664df9673713a0ccf26e3b55a673ec7301088b
@@ -78,7 +78,7 @@ imports:
   subpackages:
   - golint
 - name: github.com/golang/mock
-  version: df19b5a75c145c48e393bba02e49b13a52fe271e
+  version: 362bc29cc0ef16f851852b678766e854778eed4c
   repo: https://chromium.googlesource.com/external/github.com/golang/mock.git
   subpackages:
   - gomock
@@ -105,7 +105,7 @@ imports:
   version: 9b3b1e0f5f99ae461456d768e7d301a7acdaa2d8
   repo: https://chromium.googlesource.com/external/github.com/google/uuid.git
 - name: github.com/googleapis/gax-go
-  version: 8036c1dd8603c04641633190283bdefebb17b371
+  version: 289fb28c333ea06e7d38a6e7b47b7c234198a6c2
   repo: https://chromium.googlesource.com/external/github.com/googleapis/gax-go.git
 - name: github.com/GoogleCloudPlatform/google-cloud-go-testing
   version: c774a015af41977b2403b1ad566642e6653c2945
@@ -299,7 +299,7 @@ imports:
   subpackages:
   - plugin/grpc
 - name: go.starlark.net
-  version: 5eb2bffb512a476426ca2447144f0b670efa1313
+  version: 5c7d5aa7ed56b35691775864b8a5e97329a916e5
   repo: https://chromium.googlesource.com/external/github.com/google/starlark-go.git
 - name: golang.org/x/build
   version: 1cf306ea29af714ae6f446eda4fc3ac8abb37e6d
@@ -352,7 +352,7 @@ imports:
   version: 6f44c5a2ea40ee3593d98cdcc905cc1fdaa660e2
   repo: https://go.googlesource.com/text.git
 - name: golang.org/x/tools
-  version: ee45598d2ff288037f53f9e13ae0b1a6e2165ad5
+  version: e5f3ab76ea4b26ebea349e4994ee72d38250c9b0
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -365,7 +365,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: af4fc4062c262223ddc2d92f5f35a93690db383a
+  version: 6142e720c068c6cd71f2258e007ff1991572e1d5
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - bigquery/v2
@@ -380,7 +380,7 @@ imports:
   - support/bundler
   - taskqueue/v1beta2
 - name: google.golang.org/appengine
-  version: 4a4468ece617fc8205e99368fa2200e9d1fad421
+  version: a37df1387b4521194676d88c79230c613610d5f4
   repo: https://chromium.googlesource.com/external/github.com/golang/appengine.git
   subpackages:
   - cmd/aedeploy
