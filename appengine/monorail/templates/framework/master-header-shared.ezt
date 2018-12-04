@@ -72,10 +72,8 @@
       href="https://fonts.googleapis.com/icon?family=Material+Icons"
       media="none"
       id="icons-stylesheet">
-    <script type="text/javascript" nonce="[nonce]">
-      document.getElementById('icons-stylesheet').onload = function () {
-        this.media = 'all';
-      };
+    <script type="module" async defer nonce="[nonce]">
+      document.getElementById('icons-stylesheet').media = 'all';
     </script>
 
     [if-any category_css]
