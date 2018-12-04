@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package frontend
+package entities
 
 import (
 	"context"
@@ -29,6 +29,14 @@ import (
 	"infra/qscheduler/qslib/reconciler"
 	"infra/qscheduler/qslib/scheduler"
 )
+
+// QSchedulerState encapsulates the state of a scheduler.
+type QSchedulerState struct {
+	SchedulerID string
+	Scheduler   *scheduler.Scheduler
+	Reconciler  *reconciler.State
+	Config      *qscheduler.SchedulerPoolConfig
+}
 
 const stateEntityKind = "qschedulerStateEntity"
 
@@ -52,27 +60,27 @@ type qschedulerStateEntity struct {
 	ConfigData []byte `gae:",noindex"`
 }
 
-// save persists the given SchdulerPool to datastore.
-func save(ctx context.Context, q *QSchedulerState) error {
+// Save persists the given SchdulerPool to datastore.
+func Save(ctx context.Context, q *QSchedulerState) error {
 	var sd, rd, cd []byte
 	var err error
-	if sd, err = proto.Marshal(q.scheduler); err != nil {
+	if sd, err = proto.Marshal(q.Scheduler); err != nil {
 		e := errors.Wrap(err, "unable to marshal Scheduler")
 		return status.Error(codes.Internal, e.Error())
 	}
 
-	if rd, err = proto.Marshal(q.reconciler); err != nil {
+	if rd, err = proto.Marshal(q.Reconciler); err != nil {
 		e := errors.Wrap(err, "unable to marshal Reconciler")
 		return status.Error(codes.Internal, e.Error())
 	}
 
-	if cd, err = proto.Marshal(q.config); err != nil {
+	if cd, err = proto.Marshal(q.Config); err != nil {
 		e := errors.Wrap(err, "unable to marshal Config")
 		return status.Error(codes.Internal, e.Error())
 	}
 
 	entity := &qschedulerStateEntity{
-		QSPoolID:       q.schedulerID,
+		QSPoolID:       q.SchedulerID,
 		SchedulerData:  sd,
 		ReconcilerData: rd,
 		ConfigData:     cd,
@@ -86,8 +94,8 @@ func save(ctx context.Context, q *QSchedulerState) error {
 	return nil
 }
 
-// load loads the SchedulerPool with the given id from datastore and returns it.
-func load(ctx context.Context, poolID string) (*QSchedulerState, error) {
+// Load loads the SchedulerPool with the given id from datastore and returns it.
+func Load(ctx context.Context, poolID string) (*QSchedulerState, error) {
 	dst := &qschedulerStateEntity{QSPoolID: poolID}
 	if err := datastore.Get(ctx, dst); err != nil {
 		e := errors.Wrap(err, "unable to get state entity")
@@ -108,9 +116,9 @@ func load(ctx context.Context, poolID string) (*QSchedulerState, error) {
 	}
 
 	return &QSchedulerState{
-		schedulerID: dst.QSPoolID,
-		reconciler:  r,
-		scheduler:   s,
-		config:      c,
+		SchedulerID: dst.QSPoolID,
+		Reconciler:  r,
+		Scheduler:   s,
+		Config:      c,
 	}, nil
 }

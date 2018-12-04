@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"sort"
 
-	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
+	"infra/appengine/qscheduler-swarming/app/entities"
 	"infra/swarming"
 
 	"github.com/pkg/errors"
@@ -38,14 +38,6 @@ import (
 // account the task should be charged to.
 const AccountIDTagKey = "qs_account"
 
-// QSchedulerState encapsulates the state of a scheduler.
-type QSchedulerState struct {
-	schedulerID string
-	scheduler   *scheduler.Scheduler
-	reconciler  *reconciler.State
-	config      *qscheduler.SchedulerPoolConfig
-}
-
 // QSchedulerServerImpl implements the QSchedulerServer interface.
 type QSchedulerServerImpl struct {
 	// TODO(akeshet): Implement in-memory cache of SchedulerPool struct, so that
@@ -60,7 +52,7 @@ func (s *QSchedulerServerImpl) AssignTasks(ctx context.Context, r *swarming.Assi
 	var response *swarming.AssignTasksResponse
 
 	doAssign := func(ctx context.Context) error {
-		sp, err := load(ctx, r.SchedulerId)
+		sp, err := entities.Load(ctx, r.SchedulerId)
 		if err != nil {
 			return err
 		}
@@ -75,7 +67,7 @@ func (s *QSchedulerServerImpl) AssignTasks(ctx context.Context, r *swarming.Assi
 			}
 		}
 
-		a, err := sp.reconciler.AssignTasks(ctx, sp.scheduler, tutils.Timestamp(r.Time), idles...)
+		a, err := sp.Reconciler.AssignTasks(ctx, sp.Scheduler, tutils.Timestamp(r.Time), idles...)
 		if err != nil {
 			return nil
 		}
@@ -87,7 +79,7 @@ func (s *QSchedulerServerImpl) AssignTasks(ctx context.Context, r *swarming.Assi
 				TaskId: v.RequestID,
 			}
 		}
-		if err := save(ctx, sp); err != nil {
+		if err := entities.Save(ctx, sp); err != nil {
 			return err
 		}
 		response = &swarming.AssignTasksResponse{Assignments: assignments}
@@ -103,12 +95,12 @@ func (s *QSchedulerServerImpl) AssignTasks(ctx context.Context, r *swarming.Assi
 
 // GetCancellations implements QSchedulerServer.
 func (s *QSchedulerServerImpl) GetCancellations(ctx context.Context, r *swarming.GetCancellationsRequest) (*swarming.GetCancellationsResponse, error) {
-	sp, err := load(ctx, r.SchedulerId)
+	sp, err := entities.Load(ctx, r.SchedulerId)
 	if err != nil {
 		return nil, err
 	}
 
-	c := sp.reconciler.Cancellations(ctx)
+	c := sp.Reconciler.Cancellations(ctx)
 	rc := make([]*swarming.GetCancellationsResponse_Cancellation, len(c))
 	for i, v := range c {
 		rc[i] = &swarming.GetCancellationsResponse_Cancellation{BotId: v.WorkerID, TaskId: v.RequestID}
@@ -120,12 +112,12 @@ func (s *QSchedulerServerImpl) GetCancellations(ctx context.Context, r *swarming
 func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.NotifyTasksRequest) (*swarming.NotifyTasksResponse, error) {
 
 	doNotify := func(ctx context.Context) error {
-		sp, err := load(ctx, r.SchedulerId)
+		sp, err := entities.Load(ctx, r.SchedulerId)
 		if err != nil {
 			return err
 		}
 
-		if sp.config == nil {
+		if sp.Config == nil {
 			return errors.Errorf("Scheduler with id %s has nil config.", r.SchedulerId)
 		}
 
@@ -135,7 +127,7 @@ func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.Noti
 			if t, ok = toTaskInstantState(n.Task.State); !ok {
 				err := fmt.Sprintf("Invalid notification with unhandled state %s.", n.Task.State)
 				logging.Warningf(ctx, err)
-				sp.reconciler.TaskError(n.Task.Id, err)
+				sp.Reconciler.TaskError(n.Task.Id, err)
 				continue
 			}
 
@@ -147,13 +139,13 @@ func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.Noti
 			if t == reconciler.TaskInstant_WAITING {
 				if provisionableLabels, err = getProvisionableLabels(n); err != nil {
 					logging.Warningf(ctx, err.Error())
-					sp.reconciler.TaskError(n.Task.Id, err.Error())
+					sp.Reconciler.TaskError(n.Task.Id, err.Error())
 					continue
 				}
 
 				if accountID, err = getAccountID(n); err != nil {
 					logging.Warningf(ctx, err.Error())
-					sp.reconciler.TaskError(n.Task.Id, err.Error())
+					sp.Reconciler.TaskError(n.Task.Id, err.Error())
 					continue
 				}
 			}
@@ -172,15 +164,15 @@ func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.Noti
 				State:               t,
 				WorkerId:            n.Task.BotId,
 			}
-			if err := sp.reconciler.Notify(ctx, sp.scheduler, update); err != nil {
-				sp.reconciler.TaskError(n.Task.Id, err.Error())
+			if err := sp.Reconciler.Notify(ctx, sp.Scheduler, update); err != nil {
+				sp.Reconciler.TaskError(n.Task.Id, err.Error())
 				logging.Warningf(ctx, err.Error())
 				continue
 			}
 			logging.Debugf(ctx, "Scheduler with id %s successfully applied task update %+v", r.SchedulerId, update)
 		}
-		logState(ctx, sp.scheduler.State)
-		return save(ctx, sp)
+		logState(ctx, sp.Scheduler.State)
+		return entities.Save(ctx, sp)
 	}
 
 	if err := datastore.RunInTransaction(ctx, doNotify, nil); err != nil {

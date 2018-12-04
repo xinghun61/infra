@@ -22,6 +22,7 @@ import (
 
 	"go.chromium.org/gae/service/datastore"
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
+	"infra/appengine/qscheduler-swarming/app/entities"
 
 	"infra/qscheduler/qslib/reconciler"
 	"infra/qscheduler/qslib/scheduler"
@@ -35,13 +36,13 @@ func (s *QSchedulerAdminServerImpl) CreateSchedulerPool(ctx context.Context, r *
 	if r.Config == nil {
 		return nil, errors.Errorf("Missing config.")
 	}
-	sp := QSchedulerState{
-		schedulerID: r.PoolId,
-		reconciler:  reconciler.New(),
-		scheduler:   scheduler.New(time.Now()),
-		config:      r.Config,
+	sp := entities.QSchedulerState{
+		SchedulerID: r.PoolId,
+		Reconciler:  reconciler.New(),
+		Scheduler:   scheduler.New(time.Now()),
+		Config:      r.Config,
 	}
-	if err := save(ctx, &sp); err != nil {
+	if err := entities.Save(ctx, &sp); err != nil {
 		return nil, err
 	}
 	return &qscheduler.CreateSchedulerPoolResponse{}, nil
@@ -50,14 +51,14 @@ func (s *QSchedulerAdminServerImpl) CreateSchedulerPool(ctx context.Context, r *
 // CreateAccount implements QSchedulerAdminServer.
 func (s *QSchedulerAdminServerImpl) CreateAccount(ctx context.Context, r *qscheduler.CreateAccountRequest) (*qscheduler.CreateAccountResponse, error) {
 	do := func(ctx context.Context) error {
-		sp, err := load(ctx, r.PoolId)
+		sp, err := entities.Load(ctx, r.PoolId)
 		if err != nil {
 			return err
 		}
-		if err := sp.scheduler.AddAccount(ctx, r.AccountId, r.Config, nil); err != nil {
+		if err := sp.Scheduler.AddAccount(ctx, r.AccountId, r.Config, nil); err != nil {
 			return err
 		}
-		return save(ctx, sp)
+		return entities.Save(ctx, sp)
 	}
 
 	if err := datastore.RunInTransaction(ctx, do, nil); err != nil {
@@ -68,12 +69,12 @@ func (s *QSchedulerAdminServerImpl) CreateAccount(ctx context.Context, r *qsched
 
 // ListAccounts implements QSchedulerAdminServer.
 func (s *QSchedulerAdminServerImpl) ListAccounts(ctx context.Context, r *qscheduler.ListAccountsRequest) (*qscheduler.ListAccountsResponse, error) {
-	sp, err := load(ctx, r.PoolId)
+	sp, err := entities.Load(ctx, r.PoolId)
 	if err != nil {
 		return nil, err
 	}
 	resp := &qscheduler.ListAccountsResponse{
-		Accounts: sp.scheduler.Config.AccountConfigs,
+		Accounts: sp.Scheduler.Config.AccountConfigs,
 	}
 	return resp, nil
 }
