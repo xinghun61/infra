@@ -197,7 +197,9 @@ class FLTConvertTask(unittest.TestCase):
         tracker_bizobj.MakeFieldValue(
             11, None, None, 222L, None, None, False),
         tracker_bizobj.MakeFieldValue(
-            12, None, None, 111L, None, None, False)]
+            12, None, None, 111L, None, None, False),
+        tracker_bizobj.MakeFieldValue(
+            16, None, None, 111L, None, None, False)]
     self.config.field_defs = [
         tracker_pb2.FieldDef(field_id=11, field_name='PM'),
         tracker_pb2.FieldDef(field_id=12, field_name='TL'),

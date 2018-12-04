@@ -143,6 +143,7 @@ class FLTConvertTask(jsonfeed.InternalTask):
     pm_id = tracker_bizobj.FindFieldDef('PM', config).field_id
     tl_id = tracker_bizobj.FindFieldDef('TL', config).field_id
     te_id = tracker_bizobj.FindFieldDef('TE', config).field_id
+    ux_id = tracker_bizobj.FindFieldDef('UX', config).field_id
     for possible_stale_issue in pipeline.visible_results:
       issue = self.services.issue.GetIssue(
           mr.cnxn, possible_stale_issue.issue_id, use_cache=False)
@@ -153,7 +154,7 @@ class FLTConvertTask(jsonfeed.InternalTask):
                             if fv.phase_id is None]
       issue.field_values = [fv for fv in issue.field_values
                             if fv.field_id not in
-                            [pm_id, tl_id, te_id]]
+                            [pm_id, tl_id, te_id, ux_id]]
       issue.labels.remove('Type-FLT-Launch')
       issue.labels.remove('FLT-Conversion')
       issue.labels.append('Type-Launch')
