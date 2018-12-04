@@ -16,6 +16,7 @@ package entities
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -38,6 +39,16 @@ type QSchedulerState struct {
 	Config      *qscheduler.SchedulerPoolConfig
 }
 
+// New returns a new QSchedulerState instance.
+func New(id string, t time.Time) *QSchedulerState {
+	return &QSchedulerState{
+		SchedulerID: id,
+		Scheduler:   scheduler.New(t),
+		Reconciler:  reconciler.New(),
+		Config:      &qscheduler.SchedulerPoolConfig{},
+	}
+}
+
 const stateEntityKind = "qschedulerStateEntity"
 
 // qschedulerStateEntity is the datastore entity used to store state for a given
@@ -58,6 +69,21 @@ type qschedulerStateEntity struct {
 	// ConfigData is the SchedulerPoolConfig object, serialized to protobuf
 	// binary format.
 	ConfigData []byte `gae:",noindex"`
+}
+
+// List returns the full list of scheduler ids.
+func List(ctx context.Context) ([]string, error) {
+	query := datastore.NewQuery(stateEntityKind).KeysOnly(true)
+	dst := []*datastore.Key{}
+	if err := datastore.GetAll(ctx, query, &dst); err != nil {
+		return nil, errors.Wrap(err, "unable to query for all scheduler keys")
+	}
+
+	ids := make([]string, 0, len(dst))
+	for _, item := range dst {
+		ids = append(ids, item.StringID())
+	}
+	return ids, nil
 }
 
 // Save persists the given SchdulerPool to datastore.
