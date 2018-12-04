@@ -19,18 +19,18 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type TaskInstant_State int32
 
 const (
 	// Invalid update type, do not use.
 	TaskInstant_NULL TaskInstant_State = 0
-	// The Task is waiting for a worker.
+	// The task is waiting for a worker.
 	TaskInstant_WAITING TaskInstant_State = 1
-	// The Task is running on a worker.
+	// The task is running on a worker.
 	TaskInstant_RUNNING TaskInstant_State = 2
-	// The Task is neither waiting for a worker nor running on a worker.
+	// The task is neither waiting for a worker nor running on a worker.
 	TaskInstant_ABSENT TaskInstant_State = 3
 )
 
