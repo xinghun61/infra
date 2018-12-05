@@ -148,3 +148,5 @@ blacklist:
     description: someone sending lots of HEAD requests 2018-08-10 and 11
   - subnet: 156.38.148.90
     description: someone crawling us 2018-11-27
+  - subnet: 31.192.108.122
+    description: someone repeatedly posting to detail.do 2018-12-05
