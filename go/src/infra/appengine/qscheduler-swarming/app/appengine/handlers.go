@@ -20,6 +20,7 @@ import (
 	"net/http"
 
 	"infra/appengine/qscheduler-swarming/app/config"
+	"infra/appengine/qscheduler-swarming/app/cron"
 	"infra/appengine/qscheduler-swarming/app/frontend"
 
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
@@ -39,6 +40,7 @@ func init() {
 	// Install auth, config and tsmon handlers.
 	standard.InstallHandlers(r)
 	frontend.InstallHandlers(r, mwBase)
+	cron.InstallHandlers(r, mwBase)
 
 	config.SetupValidation()
 
