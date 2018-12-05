@@ -103,7 +103,9 @@ func Get(ctx context.Context, sels []*fleet.BotSelector) ([]*Entity, error) {
 	return GetByDutID(ctx, dutIDs)
 }
 
-// GetByDutID gets Entities from datastore by DUT ID.
+// GetByDutID gets Entities from datastore by DUT ID.  Missing DUT IDs
+// are ignored.  Successfully fetched Entities are returned even if
+// others encountered errors.
 func GetByDutID(ctx context.Context, dutIDs []string) ([]*Entity, error) {
 	es := make([]*Entity, 0, len(dutIDs))
 	for _, id := range dutIDs {
@@ -113,30 +115,28 @@ func GetByDutID(ctx context.Context, dutIDs []string) ([]*Entity, error) {
 	case nil:
 		return es, nil
 	case errors.MultiError:
-		return filterNotFoundEntities(es, err)
+		if len(es) != len(err) {
+			panic(fmt.Sprintf("bot summary length %d != multierror %d",
+				len(es), len(err)))
+		}
+		es = removeErroredEntities(es, err)
+		if datastore.IsErrNoSuchEntity(err) {
+			return es, nil
+		}
+		return es, err
 	default:
 		return nil, err
 	}
 }
 
-func filterNotFoundEntities(es []*Entity, merr errors.MultiError) ([]*Entity, error) {
-	if len(es) != len(merr) {
-		panic(fmt.Sprintf("Length of bot summary (%d) does not match length of multierror (%d)", len(es), len(merr)))
-	}
-	filtered := make([]*Entity, 0, len(es))
-	errs := make(errors.MultiError, 0, len(merr))
+// removeErroredEntities returns a slice of Entities without the ones
+// with errors.
+func removeErroredEntities(es []*Entity, merr errors.MultiError) []*Entity {
+	ok := make([]*Entity, 0, len(es))
 	for i, e := range es {
-		err := merr[i]
-		if err != nil {
-			if !datastore.IsErrNoSuchEntity(err) {
-				errs = append(errs, err)
-			}
-			continue
+		if merr[i] == nil {
+			ok = append(ok, e)
 		}
-		filtered = append(filtered, e)
 	}
-	if errs.First() != nil {
-		return nil, errs
-	}
-	return filtered, nil
+	return ok
 }
