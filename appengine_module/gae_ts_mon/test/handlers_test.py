@@ -10,6 +10,7 @@ import gae_ts_mon
 import mock
 import webapp2
 
+from google.appengine.api.runtime import runtime
 from test_support import test_case
 
 from infra_libs.ts_mon import config
@@ -46,6 +47,11 @@ class HandlersTest(test_case.TestCase):
     self.mock_state = interface.State(target=target)
     mock.patch('infra_libs.ts_mon.common.interface.state',
         new=self.mock_state).start()
+    # Workaround the fact that 'system' module is not mocked.
+    class _memory_usage(object):
+      def current(self):
+        return 10.0
+    self.mock(runtime, 'memory_usage', _memory_usage)
 
   def tearDown(self):
     mock.patch.stopall()
@@ -98,6 +104,7 @@ class HandlersTest(test_case.TestCase):
 
     self.assertEqual(response.status_int, 200)
     callback_mock.assert_called_once_with()
+
 
 class TSMonJSHandlerTest(test_case.TestCase):
   def setUp(self):
