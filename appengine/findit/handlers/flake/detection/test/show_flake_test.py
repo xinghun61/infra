@@ -114,7 +114,13 @@ class ShowFlakeTest(WaterfallTestCase):
             'monorail_project':
                 'chromium',
             'merge_destination_key':
-                None
+                None,
+            'last_updated_time_in_monorail':
+                None,
+            'priority':
+                None,
+            'status':
+                None,
         },
         'flake_issue_key':
             flake_issue.key,

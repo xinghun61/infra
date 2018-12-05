@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
 import mock
 
 from google.appengine.api import app_identity
@@ -40,8 +41,8 @@ class FlakeIssueTest(TestCase):
     monorail_project = 'chromium'
     issue_id = 12345
     self.assertEqual(
-        'https://monorail-staging.appspot.com/p/chromium/issues/detail?id=12345',  # pylint: disable=line-too-long
-        FlakeIssue.GetLinkForIssue(monorail_project, issue_id))
+        ('https://monorail-staging.appspot.com/p/chromium/issues/detail?'
+         'id=12345'), FlakeIssue.GetLinkForIssue(monorail_project, issue_id))
 
   @mock.patch.object(
       app_identity, 'get_application_id', return_value='findit-for-me')
@@ -77,3 +78,24 @@ class FlakeIssueTest(TestCase):
     flake_issue.put()
 
     self.assertEqual(flake_issue, flake_issue.GetMostUpdatedIssue())
+
+  def testUpdate(self):
+    monorail_project = 'chromium'
+    issue_id = 12345
+    updated_time = datetime(2018, 12, 4, 0, 0, 0)
+    status = 'Assigned'
+    priority = 1
+
+    flake_issue = FlakeIssue.Create(
+        monorail_project=monorail_project, issue_id=issue_id)
+    flake_issue.put()
+
+    flake_issue.Update(
+        last_updated_time_in_monorail=updated_time,
+        status=status,
+        priority=priority)
+    flake_issue = flake_issue.key.get()
+
+    self.assertEqual(status, flake_issue.status)
+    self.assertEqual(priority, flake_issue.priority)
+    self.assertEqual(updated_time, flake_issue.last_updated_time_in_monorail)

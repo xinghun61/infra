@@ -37,6 +37,17 @@ class FlakeIssue(ndb.Model):
   # Puts FlakeIssue in quotes because the key refers to the same data model.
   merge_destination_key = ndb.KeyProperty(kind='FlakeIssue', indexed=True)
 
+  # The most recent updated time the issue was updated in Monorail. Indexed for
+  # querying by timestamp.
+  last_updated_time_in_monorail = ndb.DateTimeProperty(indexed=True)
+
+  # The status of the issue in monorail, e.g. 'Assigned'. Indexed for querying
+  # by status.
+  status = ndb.StringProperty(indexed=True)
+
+  # The priority of the bug.
+  priority = ndb.IntegerProperty(indexed=False)
+
   @staticmethod
   def _CreateKey(monorail_project, issue_id):  # pragma: no cover
     return ndb.Key(FlakeIssue, '%s@%d' % (monorail_project, issue_id))
@@ -91,3 +102,16 @@ class FlakeIssue(ndb.Model):
 
   def GetMostUpdatedIssue(self):
     return self.GetMergeDestination() or self
+
+  def Update(self, **kwargs):
+    """Updates arbitrary fields as specified in kwargs."""
+    any_changes = False
+
+    for arg, value in kwargs.iteritems():
+      current_value = getattr(self, arg, None)
+      if current_value != value:
+        setattr(self, arg, value)
+        any_changes = True
+
+    if any_changes:
+      self.put()

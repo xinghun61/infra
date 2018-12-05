@@ -151,7 +151,13 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             'issue_link': ('https://monorail-prod.appspot.com/p/chromium/'
                            'issues/detail?id=900'),
             'merge_destination_key':
-                None
+                None,
+            'last_updated_time_in_monorail':
+                None,
+            'priority':
+                None,
+            'status':
+                None,
         },
         'component':
             'Mock>Component',
