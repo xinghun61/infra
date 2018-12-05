@@ -82,13 +82,7 @@ func Insert(ctx context.Context, bsm map[string]*fleet.BotSummary) (dutIDs []str
 func Get(ctx context.Context, sels []*fleet.BotSelector) ([]*Entity, error) {
 	// No selectors implies summarize all bots.
 	if len(sels) == 0 {
-		es := []*Entity{}
-		q := datastore.NewQuery(botSummaryKind)
-		err := datastore.GetAll(ctx, q, &es)
-		if err != nil {
-			return nil, errors.Annotate(err, "failed to get all bots from datastore").Err()
-		}
-		return es, nil
+		return GetAll(ctx)
 	}
 
 	dutIDs := make([]string, 0, len(sels))
@@ -101,6 +95,17 @@ func Get(ctx context.Context, sels []*fleet.BotSelector) ([]*Entity, error) {
 		dutIDs = append(dutIDs, s.DutId)
 	}
 	return GetByDutID(ctx, dutIDs)
+}
+
+// GetAll gets all Entities from the datastore.
+func GetAll(ctx context.Context) ([]*Entity, error) {
+	var es []*Entity
+	q := datastore.NewQuery(botSummaryKind)
+	err := datastore.GetAll(ctx, q, &es)
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to get all bots from datastore").Err()
+	}
+	return es, nil
 }
 
 // GetByDutID gets Entities from datastore by DUT ID.  Missing DUT IDs
