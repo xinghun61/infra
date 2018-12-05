@@ -296,7 +296,7 @@ func TestShiftsFromTo(t *testing.T) {
 				EndTime:   midnight.Add(2 * 8 * time.Hour),
 			},
 		},
-		to: midnight.Add(2 * 8 * time.Hour),
+		to: midnight.Add(8 * time.Hour),
 	}, {
 		name: "From and To set",
 		ctx:  ctx,

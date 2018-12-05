@@ -64,8 +64,12 @@ class RotaShiftCurrent extends LitElement {
     return `shiftComment_${splitIDX}-${shiftIDX}`;
   }
 
+  shiftMemberID(splitIdx, shiftIdx, oncallIdx) {
+    return `shiftMember_${splitIdx}_${shiftIdx}_${oncallIdx}`;
+  }
+
   async sendJSON() {
-    fixComments();
+    this.fixComments();
     try {
       const res = await fetch('shiftsupdate', {
         method: 'POST',
@@ -83,12 +87,19 @@ class RotaShiftCurrent extends LitElement {
     }
   }
 
+  setMember(splitIdx, shiftIdx, oncallIdx) {
+    this.shifts.SplitShifts[splitIdx].Shifts[shiftIdx].OnCall[oncallIdx].Email =
+      this.shadowRoot.getElementById(
+        this.shiftMemberID(splitIdx, shiftIdx, oncallIdx)).value;
+  }
+
   selectOnCallers(splitIdx, shiftIdx, shift, members) {
     if (!shift.OnCall) {
       return;
     }
     return shift.OnCall.map((oncall, oncallIdx) => html`
-    <select name="shiftMember">
+    <select id="${this.shiftMemberID(splitIdx, shiftIdx, oncallIdx)}"
+      @change=${() => this.setMember(splitIdx, shiftIdx, oncallIdx)}>
       <option value="${oncall.Email}">${oncall.Email}</option>
       ${members.map((o) => html`<option value=${o}>${o}</option>`)}
     </select>

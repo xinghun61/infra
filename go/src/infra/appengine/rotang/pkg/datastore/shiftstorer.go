@@ -303,11 +303,11 @@ func (s *Store) ShiftsFromTo(ctx context.Context, rota string, from, to time.Tim
 	case to.IsZero() && from.IsZero():
 		return s.AllShifts(ctx, rota)
 	case from.IsZero():
-		if err := datastore.GetAll(ctx, query.Lt("StartTime", to), &dsEntries); err != nil {
+		if err := datastore.GetAll(ctx, query.Lte("StartTime", to), &dsEntries); err != nil {
 			return nil, err
 		}
 	case to.IsZero():
-		if err := datastore.GetAll(ctx, query.Gte("EndTime", from), &dsEntries); err != nil {
+		if err := datastore.GetAll(ctx, query.Gt("EndTime", from), &dsEntries); err != nil {
 			return nil, err
 		}
 	default:
@@ -316,7 +316,7 @@ func (s *Store) ShiftsFromTo(ctx context.Context, rota string, from, to time.Tim
 		// To work around this the From time is queried with datastore and to is filtered
 		// out manually.
 		var tmpEntries []DsShiftEntry
-		if err := datastore.GetAll(ctx, query.Gte("EndTime", from), &tmpEntries); err != nil {
+		if err := datastore.GetAll(ctx, query.Gt("EndTime", from), &tmpEntries); err != nil {
 			return nil, err
 		}
 		sort.Slice(dsEntries, func(i, j int) bool {

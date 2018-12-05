@@ -274,7 +274,6 @@ func (h *State) handleUpdatedShifts(ctx *router.Context, cfg *rotang.Configurati
 				}
 			}
 			if err := shiftStorer.UpdateShift(ctx.Context, cfg.Config.Name, &shift); err != nil {
-				logging.Errorf(ctx.Context, "After UpdateShift, shift: %v, err: %v", shift, err)
 				return err
 			}
 			if lastShift.After(shift.StartTime) {
@@ -286,10 +285,13 @@ func (h *State) handleUpdatedShifts(ctx *router.Context, cfg *rotang.Configurati
 
 	as, err := shiftStorer.ShiftsFromTo(ctx.Context, cfg.Config.Name, lastShift, time.Time{})
 	if err != nil {
-		logging.Errorf(ctx.Context, "After ShiftsFromTo, lastShift: %v, err: %v", lastShift, err)
 		return err
 	}
+
 	for _, s := range as {
+		if s.StartTime.Equal(lastShift) {
+			continue
+		}
 		if err := shiftStorer.DeleteShift(ctx.Context, cfg.Config.Name, s.StartTime); err != nil {
 			return err
 		}

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"context"
+
 	"github.com/kylelemons/godebug/pretty"
 	"go.chromium.org/luci/auth/identity"
 	"go.chromium.org/luci/server/auth"
@@ -487,6 +488,17 @@ func TestHandleUpdatedShifts(t *testing.T) {
 						Email:     "syd1@oncall.com",
 					},
 				},
+			}, {
+				Name:      "MTV Half Day",
+				StartTime: midnight.Add(2 * fullDay),
+				EndTime:   midnight.Add(3 * fullDay),
+				OnCall: []rotang.ShiftMember{
+					{
+						ShiftName: "MTV Half Day",
+						Email:     "mtv2@oncall.com",
+					},
+				},
+				Comment: "After Update",
 			},
 		},
 	}}
