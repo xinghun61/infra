@@ -78,7 +78,7 @@ func Insert(ctx context.Context, bsm map[string]*fleet.BotSummary) (dutIDs []str
 	return updated, nil
 }
 
-// Get gets Entites from datastore.
+// Get gets Entities from datastore.
 func Get(ctx context.Context, sels []*fleet.BotSelector) ([]*Entity, error) {
 	// No selectors implies summarize all bots.
 	if len(sels) == 0 {
@@ -91,29 +91,32 @@ func Get(ctx context.Context, sels []*fleet.BotSelector) ([]*Entity, error) {
 		return es, nil
 	}
 
-	// For now, each selector can only yield 0 or 1 BotSummary.
-	es := make([]*Entity, 0, len(sels))
+	dutIDs := make([]string, 0, len(sels))
 	for _, s := range sels {
 		// datastore rejects search for empty key with InvalidKey.
 		// For us, this is simply an impossible filter.
 		if s.DutId == "" {
 			continue
 		}
-
-		es = append(es, &Entity{
-			DutID: s.DutId,
-		})
+		dutIDs = append(dutIDs, s.DutId)
 	}
+	return GetByDutID(ctx, dutIDs)
+}
 
-	if err := datastore.Get(ctx, es); err != nil {
-		switch err := err.(type) {
-		case errors.MultiError:
-			return filterNotFoundEntities(es, err)
-		default:
-			return nil, err
-		}
+// GetByDutID gets Entities from datastore by DUT ID.
+func GetByDutID(ctx context.Context, dutIDs []string) ([]*Entity, error) {
+	es := make([]*Entity, 0, len(dutIDs))
+	for _, id := range dutIDs {
+		es = append(es, &Entity{DutID: id})
 	}
-	return es, nil
+	switch err := datastore.Get(ctx, es); err := err.(type) {
+	case nil:
+		return es, nil
+	case errors.MultiError:
+		return filterNotFoundEntities(es, err)
+	default:
+		return nil, err
+	}
 }
 
 func filterNotFoundEntities(es []*Entity, merr errors.MultiError) ([]*Entity, error) {
