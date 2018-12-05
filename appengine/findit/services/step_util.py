@@ -382,8 +382,14 @@ def GetStepLogForLuciBuild(build_id,
     logging.exception('Error retrieving buildbucket build id: %s' % build_id)
     return None
 
-  data = logdog_util.GetLogFromViewUrl(
-      _GetStepLogViewUrl(build, full_step_name, log_type), http_client)
+  log_view_url = _GetStepLogViewUrl(build, full_step_name, log_type)
+  if not log_view_url:
+    logging.exception(
+        'Didn\'t retrieve log_view_url at build: %s for %s of %s.' % (
+            build_id, log_type, full_step_name))
+    return None
+
+  data = logdog_util.GetLogFromViewUrl(log_view_url, http_client)
 
   return _ParseStepLogIfAppropriate(data, log_type)
 
