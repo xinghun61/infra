@@ -59,20 +59,20 @@ func (e *Entity) Decode() (*fleet.BotSummary, error) {
 // Insert inserts fleet.BotSummary into datastore.
 func Insert(ctx context.Context, bsm map[string]*fleet.BotSummary) (dutIDs []string, err error) {
 	updated := make([]string, 0, len(bsm))
-	bses := make([]*Entity, 0, len(bsm))
+	es := make([]*Entity, 0, len(bsm))
 	for bid, bs := range bsm {
 		data, err := proto.Marshal(bs)
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to marshal BotSummary for dut %q", bs.DutId).Err()
 		}
-		bses = append(bses, &Entity{
+		es = append(es, &Entity{
 			DutID: bs.DutId,
 			BotID: bid,
 			Data:  data,
 		})
 		updated = append(updated, bs.DutId)
 	}
-	if err := datastore.Put(ctx, bses); err != nil {
+	if err := datastore.Put(ctx, es); err != nil {
 		return nil, errors.Annotate(err, "failed to put BotSummaries").Err()
 	}
 	return updated, nil
@@ -82,17 +82,17 @@ func Insert(ctx context.Context, bsm map[string]*fleet.BotSummary) (dutIDs []str
 func Get(ctx context.Context, sels []*fleet.BotSelector) ([]*Entity, error) {
 	// No selectors implies summarize all bots.
 	if len(sels) == 0 {
-		bses := []*Entity{}
+		es := []*Entity{}
 		q := datastore.NewQuery(botSummaryKind)
-		err := datastore.GetAll(ctx, q, &bses)
+		err := datastore.GetAll(ctx, q, &es)
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to get all bots from datastore").Err()
 		}
-		return bses, nil
+		return es, nil
 	}
 
 	// For now, each selector can only yield 0 or 1 BotSummary.
-	bses := make([]*Entity, 0, len(sels))
+	es := make([]*Entity, 0, len(sels))
 	for _, s := range sels {
 		// datastore rejects search for empty key with InvalidKey.
 		// For us, this is simply an impossible filter.
@@ -100,29 +100,29 @@ func Get(ctx context.Context, sels []*fleet.BotSelector) ([]*Entity, error) {
 			continue
 		}
 
-		bses = append(bses, &Entity{
+		es = append(es, &Entity{
 			DutID: s.DutId,
 		})
 	}
 
-	if err := datastore.Get(ctx, bses); err != nil {
+	if err := datastore.Get(ctx, es); err != nil {
 		switch err := err.(type) {
 		case errors.MultiError:
-			return filterNotFoundEntities(bses, err)
+			return filterNotFoundEntities(es, err)
 		default:
 			return nil, err
 		}
 	}
-	return bses, nil
+	return es, nil
 }
 
-func filterNotFoundEntities(bses []*Entity, merr errors.MultiError) ([]*Entity, error) {
-	if len(bses) != len(merr) {
-		panic(fmt.Sprintf("Length of bot summary (%d) does not match length of multierror (%d)", len(bses), len(merr)))
+func filterNotFoundEntities(es []*Entity, merr errors.MultiError) ([]*Entity, error) {
+	if len(es) != len(merr) {
+		panic(fmt.Sprintf("Length of bot summary (%d) does not match length of multierror (%d)", len(es), len(merr)))
 	}
-	filtered := make([]*Entity, 0, len(bses))
+	filtered := make([]*Entity, 0, len(es))
 	errs := make(errors.MultiError, 0, len(merr))
-	for i, bse := range bses {
+	for i, e := range es {
 		err := merr[i]
 		if err != nil {
 			if !datastore.IsErrNoSuchEntity(err) {
@@ -130,7 +130,7 @@ func filterNotFoundEntities(bses []*Entity, merr errors.MultiError) ([]*Entity, 
 			}
 			continue
 		}
-		filtered = append(filtered, bse)
+		filtered = append(filtered, e)
 	}
 	if errs.First() != nil {
 		return nil, errs
