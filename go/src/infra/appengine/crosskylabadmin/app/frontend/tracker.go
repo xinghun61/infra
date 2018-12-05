@@ -18,9 +18,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/duration"
-	"go.chromium.org/gae/service/datastore"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
@@ -31,6 +29,7 @@ import (
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
 	"infra/appengine/crosskylabadmin/app/config"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/datastore/botsummary"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/diagnosis"
 )
 
@@ -72,7 +71,7 @@ func (tsi *TrackerServerImpl) RefreshBots(ctx context.Context, req *fleet.Refres
 	if err := addTaskInfoToSummaries(ctx, sc, bsm); err != nil {
 		return nil, errors.Annotate(err, "failed to set idle time for bots").Err()
 	}
-	updated, err := insertBotSummary(ctx, bsm)
+	updated, err := botsummary.Insert(ctx, bsm)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to insert bots").Err()
 	}
@@ -87,7 +86,7 @@ func (tsi *TrackerServerImpl) SummarizeBots(ctx context.Context, req *fleet.Summ
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	bses, err := getBotSummariesFromDatastore(ctx, req.Selectors)
+	bses, err := botsummary.Get(ctx, req.Selectors)
 	if err != nil {
 		return nil, err
 	}
@@ -285,28 +284,6 @@ func getIdleDuration(ctx context.Context, sc clients.SwarmingClient, botID strin
 	return d, nil
 }
 
-// insertBotSummary returns the dut_ids of bots inserted.
-func insertBotSummary(ctx context.Context, bsm map[string]*fleet.BotSummary) ([]string, error) {
-	updated := make([]string, 0, len(bsm))
-	bses := make([]*fleetBotSummaryEntity, 0, len(bsm))
-	for bid, bs := range bsm {
-		data, err := proto.Marshal(bs)
-		if err != nil {
-			return nil, errors.Annotate(err, "failed to marshal BotSummary for dut %q", bs.DutId).Err()
-		}
-		bses = append(bses, &fleetBotSummaryEntity{
-			DutID: bs.DutId,
-			BotID: bid,
-			Data:  data,
-		})
-		updated = append(updated, bs.DutId)
-	}
-	if err := datastore.Put(ctx, bses); err != nil {
-		return nil, errors.Annotate(err, "failed to put BotSummaries").Err()
-	}
-	return updated, nil
-}
-
 func swarmingDimensionsMap(sdims []*swarming.SwarmingRpcsStringListPair) strpair.Map {
 	dims := make(strpair.Map)
 	for _, sdim := range sdims {
@@ -328,63 +305,4 @@ func extractSingleValuedDimension(dims strpair.Map, key string) (string, error) 
 	default:
 		return "", fmt.Errorf("multiple values for dimension %s", key)
 	}
-}
-
-func getBotSummariesFromDatastore(ctx context.Context, sels []*fleet.BotSelector) ([]*fleetBotSummaryEntity, error) {
-	// No selectors implies summarize all bots.
-	if len(sels) == 0 {
-		bses := []*fleetBotSummaryEntity{}
-		q := datastore.NewQuery(botSummaryKind)
-		err := datastore.GetAll(ctx, q, &bses)
-		if err != nil {
-			return nil, errors.Annotate(err, "failed to get all bots from datastore").Err()
-		}
-		return bses, nil
-	}
-
-	// For now, each selector can only yield 0 or 1 BotSummary.
-	bses := make([]*fleetBotSummaryEntity, 0, len(sels))
-	for _, s := range sels {
-		// datastore rejects search for empty key with InvalidKey.
-		// For us, this is simply an impossible filter.
-		if s.DutId == "" {
-			continue
-		}
-
-		bses = append(bses, &fleetBotSummaryEntity{
-			DutID: s.DutId,
-		})
-	}
-
-	if err := datastore.Get(ctx, bses); err != nil {
-		switch err := err.(type) {
-		case errors.MultiError:
-			return filterNotFoundEntities(bses, err)
-		default:
-			return nil, err
-		}
-	}
-	return bses, nil
-}
-
-func filterNotFoundEntities(bses []*fleetBotSummaryEntity, merr errors.MultiError) ([]*fleetBotSummaryEntity, error) {
-	if len(bses) != len(merr) {
-		panic(fmt.Sprintf("Length of bot summary (%d) does not match length of multierror (%d)", len(bses), len(merr)))
-	}
-	filtered := make([]*fleetBotSummaryEntity, 0, len(bses))
-	errs := make(errors.MultiError, 0, len(merr))
-	for i, bse := range bses {
-		err := merr[i]
-		if err != nil {
-			if !datastore.IsErrNoSuchEntity(err) {
-				errs = append(errs, err)
-			}
-			continue
-		}
-		filtered = append(filtered, bse)
-	}
-	if errs.First() != nil {
-		return nil, errs
-	}
-	return filtered, nil
 }

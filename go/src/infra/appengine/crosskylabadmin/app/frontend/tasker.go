@@ -31,6 +31,7 @@ import (
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
 	"infra/appengine/crosskylabadmin/app/config"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/datastore/botsummary"
 )
 
 const (
@@ -79,16 +80,16 @@ func (tsi *TaskerServerImpl) TriggerRepairOnIdle(ctx context.Context, req *fleet
 		return nil, errors.Annotate(err, "failed to obtain Swarming client").Err()
 	}
 
-	bses, err := getBotSummariesFromDatastore(ctx, req.Selectors)
+	bses, err := botsummary.Get(ctx, req.Selectors)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to obtain requested bots from datastore").Err()
 	}
-	return createTasksPerBot(bses, func(bse *fleetBotSummaryEntity) (*fleet.TaskerBotTasks, error) {
+	return createTasksPerBot(bses, func(bse *botsummary.Entity) (*fleet.TaskerBotTasks, error) {
 		return triggerRepairOnIdleForBot(ctx, sc, req, bse)
 	})
 }
 
-func triggerRepairOnIdleForBot(ctx context.Context, sc clients.SwarmingClient, req *fleet.TriggerRepairOnIdleRequest, bse *fleetBotSummaryEntity) (*fleet.TaskerBotTasks, error) {
+func triggerRepairOnIdleForBot(ctx context.Context, sc clients.SwarmingClient, req *fleet.TriggerRepairOnIdleRequest, bse *botsummary.Entity) (*fleet.TaskerBotTasks, error) {
 	cfg := config.Get(ctx)
 	// TODO(ayatane): This should use the cached info from the
 	// Tracker rather than talk to Swarming directly with
@@ -147,16 +148,16 @@ func (tsi *TaskerServerImpl) TriggerRepairOnRepairFailed(ctx context.Context, re
 		return nil, errors.Annotate(err, "failed to obtain Swarming client").Err()
 	}
 
-	bses, err := getBotSummariesFromDatastore(ctx, req.Selectors)
+	bses, err := botsummary.Get(ctx, req.Selectors)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to obtain requested bots from datastore").Err()
 	}
-	return createTasksPerBot(bses, func(bse *fleetBotSummaryEntity) (*fleet.TaskerBotTasks, error) {
+	return createTasksPerBot(bses, func(bse *botsummary.Entity) (*fleet.TaskerBotTasks, error) {
 		return triggerRepairOnRepairFailedForBot(ctx, sc, req, bse)
 	})
 }
 
-func triggerRepairOnRepairFailedForBot(ctx context.Context, sc clients.SwarmingClient, req *fleet.TriggerRepairOnRepairFailedRequest, bse *fleetBotSummaryEntity) (*fleet.TaskerBotTasks, error) {
+func triggerRepairOnRepairFailedForBot(ctx context.Context, sc clients.SwarmingClient, req *fleet.TriggerRepairOnRepairFailedRequest, bse *botsummary.Entity) (*fleet.TaskerBotTasks, error) {
 	cfg := config.Get(ctx)
 	bs, err := bse.Decode()
 	if err != nil {
@@ -216,7 +217,7 @@ func (tsi *TaskerServerImpl) EnsureBackgroundTasks(ctx context.Context, req *fle
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	bses, err := getBotSummariesFromDatastore(ctx, req.Selectors)
+	bses, err := botsummary.Get(ctx, req.Selectors)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to obtain requested bots from datastore").Err()
 	}
@@ -226,7 +227,7 @@ func (tsi *TaskerServerImpl) EnsureBackgroundTasks(ctx context.Context, req *fle
 		return nil, errors.Annotate(err, "failed to obtain Swarming client").Err()
 	}
 
-	return createTasksPerBot(bses, func(bse *fleetBotSummaryEntity) (*fleet.TaskerBotTasks, error) {
+	return createTasksPerBot(bses, func(bse *botsummary.Entity) (*fleet.TaskerBotTasks, error) {
 		return ensureBackgroundTasksForBot(ctx, sc, req, bse)
 	})
 }
@@ -237,7 +238,7 @@ var dutStateForTask = map[fleet.TaskType]string{
 	fleet.TaskType_Reset:   "needs_reset",
 }
 
-func ensureBackgroundTasksForBot(ctx context.Context, sc clients.SwarmingClient, req *fleet.EnsureBackgroundTasksRequest, bse *fleetBotSummaryEntity) (*fleet.TaskerBotTasks, error) {
+func ensureBackgroundTasksForBot(ctx context.Context, sc clients.SwarmingClient, req *fleet.EnsureBackgroundTasksRequest, bse *botsummary.Entity) (*fleet.TaskerBotTasks, error) {
 	cfg := config.Get(ctx)
 	ts := make([]*fleet.TaskerTask, 0, req.TaskCount)
 	commonTags := withCommonTags(cfg, fmt.Sprintf("background_task:%s_%s", req.Type.String(), bse.DutID))
@@ -286,9 +287,9 @@ func ensureBackgroundTasksForBot(ctx context.Context, sc clients.SwarmingClient,
 
 // createTasksPerBot uses worker() to create tasks for each bot in bses.
 //
-// worker() must accept a fleetBotSummaryEntity and create tasks for the
+// worker() must accept a botsummary.Entity and create tasks for the
 // corresponding bot.
-func createTasksPerBot(bses []*fleetBotSummaryEntity, worker func(*fleetBotSummaryEntity) (*fleet.TaskerBotTasks, error)) (*fleet.TaskerTasksResponse, error) {
+func createTasksPerBot(bses []*botsummary.Entity, worker func(*botsummary.Entity) (*fleet.TaskerBotTasks, error)) (*fleet.TaskerTasksResponse, error) {
 	// Protects access to botTasks
 	m := &sync.Mutex{}
 	botTasks := make([]*fleet.TaskerBotTasks, 0, len(bses))
