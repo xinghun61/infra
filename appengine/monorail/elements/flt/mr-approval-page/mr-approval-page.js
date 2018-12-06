@@ -96,6 +96,10 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
     });
   }
 
+  _showLoading(issueLoaded, fetchIssueError) {
+    return !issueLoaded && !fetchIssueError;
+  }
+
   _issueIdChanged(id, projectName) {
     if (!id || !projectName || this.fetchingIssue) return;
     // Reload the issue data when the id changes.

@@ -26,9 +26,9 @@ window.__waitForPrpcLoading = new Promise((resolve) => {
 
 // For the time being, Polymer pages must use window.prpcCall.
 window.prpcCall = function(service, method, message) {
-  return new Promise(async (resolve) => {
+  return new Promise(async (resolve, reject) => {
     const client = await window.__waitForPrpcLoading;
-    client.call(service, method, message).then(resolve);
+    client.call(service, method, message).then(resolve, reject);
   });
 };
 </script>
