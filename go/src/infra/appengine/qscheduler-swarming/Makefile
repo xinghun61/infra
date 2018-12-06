@@ -11,6 +11,9 @@ dev:
 up-dev:
 	gae.py upload -A qscheduler-swarming-dev --app-dir $(projdir)/app/appengine
 
+up-prod:
+	gae.py upload -A qscheduler-swarming --app-dir $(projdir)/app/appengine
+
 test:
 	go test ./...
 
