@@ -40,6 +40,21 @@ def OpenBugAlreadyExistsForId(bug_id, project_id='chromium'):
   return existing_bug and existing_bug.open
 
 
+def GetMonorailIssueForIssueId(issue_id, monorail_project='chromium'):
+  """Returns a Monorail Issue object representation given an issue_id.
+
+  Args:
+    issue_id (int): The id to query Monorail with.
+    monorail_project (str): The project name to query Monorail with.
+
+  Returns:
+    (Issue): An Issue object representing what is currently stored on Monorail.
+  """
+  issue_tracker_api = IssueTrackerAPI(
+      monorail_project, use_staging=appengine_util.IsStaging())
+  return issue_tracker_api.getIssue(issue_id)
+
+
 def GetMergedDestinationIssueForId(issue_id, monorail_project='chromium'):
   """Given an id, traverse the merge chain to get the destination issue.
 

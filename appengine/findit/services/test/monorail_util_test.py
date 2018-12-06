@@ -318,3 +318,19 @@ class MonorailUtilTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(mock_create_bug_fn.called)
     mock_update_bug_fn.assert_called_once_with(
         issue, 'comment with previous tracking bug id: 56789.', 'chromium')
+
+  @mock.patch('services.monorail_util.IssueTrackerAPI')
+  def testGetMonorailIssueForIssueId(self, mocked_issue_tracker_api):
+    issue = Issue({
+        'status': 'Available',
+        'summary': 'summary',
+        'description': 'description',
+        'projectId': 'chromium',
+        'labels': [],
+        'fieldValues': [],
+        'state': 'open',
+        'id': '12345'
+    })
+    mocked_issue_tracker_api.return_value.getIssue.return_value = issue
+    self.assertEqual(
+        issue, monorail_util.GetMonorailIssueForIssueId(12345, 'chromium'))
