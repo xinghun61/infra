@@ -152,9 +152,14 @@ class RotaShiftCurrent extends LitElement {
           value="${i.Comment}">
         </td>
         <td>
-          <button type="button" @click=
-            ${() => this.removeShifts(splitIdx, shiftIdx)}>&#x21e3;
-        </button>
+          <div class="tooltip">
+            <span class="tooltiptext">
+              Clear all shifts from this onwards.
+            </span>
+            <button type="button" @click=
+                  ${() => this.removeShifts(splitIdx, shiftIdx)}>&#x21e3;
+            </button>
+          </div>
         </td>
       </tr>`);
   }
@@ -169,6 +174,31 @@ class RotaShiftCurrent extends LitElement {
     }
     return html`
       <style>
+        .tooltip {
+          position: relative;
+          display: inline-block;
+          border-bottom: 1px dotted black;
+        }
+
+        .tooltip .tooltiptext {
+          visibility: hidden;
+          width: 240px;
+          bottom: 100%;
+          left: 50%;
+          mergin-left: -120px;
+          background-color: black;
+          color: #fff;
+          text-align: center;
+          padding: 5px 0;
+          border-radius: 6px;
+          position: absolute;
+          z-index: 1;
+        }
+
+        .tooltip:hover .tooltiptext {
+          visibility: visible;
+        }
+
         #shifts {
           font-size: small;
           border-collapse: collapse;

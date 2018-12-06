@@ -69,19 +69,29 @@ class RotaShiftGenerate extends LitElement {
         throw res;
       }
       window.location.reload(true);
-      this.updateState = html`<small class="fail">res.statusText</small>`;
+      this.updateState = html`<small class="ok">OK</small>`;
     } catch (err) {
-      console.log(err);
       this.updateState = html`<small class="fail">${err}</small>`;
     }
   }
 
-  selectOnCallers(ss, shift) {
+  shiftMemberID(splitIdx, shiftIdx, oncallIdx) {
+    return `shiftMember_${splitIdx}_${shiftIdx}_${oncallIdx}`;
+  }
+
+  setMember(splitIdx, shiftIdx, oncallIdx) {
+    this.shifts.SplitShifts[splitIdx].Shifts[shiftIdx].OnCall[oncallIdx].Email =
+      this.shadowRoot.getElementById(
+        this.shiftMemberID(splitIdx, shiftIdx, oncallIdx)).value;
+  }
+
+  selectOnCallers(splitIdx, shiftIdx, ss, shift) {
     if (!shift.OnCall) {
       return;
     }
     return shift.OnCall.map((oncall, oncallIdx) => html`
-     <select name="shiftMember">
+     <select id="${this.shiftMemberID(splitIdx, shiftIdx, oncallIdx)}"
+        @change=${() => this.setMember(splitIdx, shiftIdx, oncallIdx)})>
        <option value="${oncall.Email}">${oncall.Email}</option>
        ${ss.Members.map((o) => html`<option value=${o}>${o}</option>`)}
      </select>`);
@@ -101,7 +111,7 @@ class RotaShiftGenerate extends LitElement {
         <th>Comment</th>
       <thead>
       <tbody>
-        ${this.shiftsTemplate(s)}
+        ${this.shiftsTemplate(splitIdx, s)}
       </tbody>
       </table>`);
   }
@@ -119,14 +129,14 @@ class RotaShiftGenerate extends LitElement {
     `;
   }
 
-  shiftsTemplate(ss) {
+  shiftsTemplate(splitIdx, ss) {
     return ss.Shifts.map((i, shiftIdx) => html`
       <tr>
         <td>
         <table>
         <tbody>
         <td>
-           ${this.selectOnCallers(ss, i)}
+           ${this.selectOnCallers(splitIdx, shiftIdx, ss, i)}
         </td>
         </tbody>
         </table>
@@ -147,6 +157,31 @@ class RotaShiftGenerate extends LitElement {
     }
     return html`
       <style>
+        .tooltip {
+          position: relative;
+          display: inline-block;
+          border-bottom: 1px dotted black;
+        }
+
+        .tooltip .tooltiptext {
+          visibility: hidden;
+          width: 240px;
+          bottom: 100%;
+          left: 50%;
+          mergin-left: -120px;
+          background-color: black;
+          color: #fff;
+          text-align: center;
+          padding: 5px 0;
+          border-radius: 6px;
+          position: absolute;
+          z-index: 1;
+        }
+
+        .tooltip:hover .tooltiptext {
+          visibility: visible;
+        }
+
         .shifts {
           font-size: small;
           border-collapse: collapse;
@@ -180,8 +215,21 @@ class RotaShiftGenerate extends LitElement {
         <table>
           <tbody>
             <tr>
-              <td>StartDate:<input type="date" id="start"></td>
-              <td>ShiftsToSchedule:<input type="number" id="nrToSchedule"></td>
+              <td>
+                <div class="tooltip">
+                  <span class="tooltiptext">
+                    Leaving this empty will generate from the end of last
+                    current shift.
+                  </span>
+                  StartDate:<input type="date" id="start"></td>
+                </div>
+              <td>
+                <div class="tooltip">
+                  <span class="tooltiptext">
+                    Leaving this empty will use the configuration default.
+                  </span>
+                  ShiftsToSchedule:<input type="number" id="nrToSchedule"></td>
+                </div>
               <td>Generator:
                 ${this.fillGenerators()}
               </td>
