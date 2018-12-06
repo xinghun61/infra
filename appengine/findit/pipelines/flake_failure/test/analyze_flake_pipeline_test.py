@@ -54,10 +54,6 @@ from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
     UpdateFlakeAnalysisDataPointsInput)
 from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
     UpdateFlakeAnalysisDataPointsPipeline)
-from pipelines.flake_failure.update_monorail_bug_pipeline import (
-    UpdateMonorailBugInput)
-from pipelines.flake_failure.update_monorail_bug_pipeline import (
-    UpdateMonorailBugPipeline)
 from pipelines.report_event_pipeline import ReportAnalysisEventPipeline
 from pipelines.report_event_pipeline import ReportEventInput
 from services import swarmed_test_util
@@ -161,8 +157,6 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         test_location=test_location)
     expected_create_and_submit_revert_input = CreateAndSubmitRevertInput(
         analysis_urlsafe_key=analysis.key.urlsafe(), build_key=build_key)
-    expected_update_bug_input = UpdateMonorailBugInput(
-        analysis_urlsafe_key=analysis.key.urlsafe())
     expected_notify_culprit_input = NotifyCulpritInput(
         analysis_urlsafe_key=analysis.key.urlsafe())
     expected_report_event_input = ReportEventInput(
@@ -172,8 +166,6 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
                                expected_create_bug_input, None)
     self.MockGeneratorPipeline(CreateAndSubmitRevertPipeline,
                                expected_create_and_submit_revert_input, True)
-    self.MockGeneratorPipeline(UpdateMonorailBugPipeline,
-                               expected_update_bug_input, True)
     self.MockGeneratorPipeline(NotifyCulpritPipeline,
                                expected_notify_culprit_input, True)
     self.MockGeneratorPipeline(ReportAnalysisEventPipeline,

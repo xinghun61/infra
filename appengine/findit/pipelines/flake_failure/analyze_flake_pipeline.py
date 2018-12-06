@@ -47,10 +47,6 @@ from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
     UpdateFlakeAnalysisDataPointsInput)
 from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
     UpdateFlakeAnalysisDataPointsPipeline)
-from pipelines.flake_failure.update_monorail_bug_pipeline import (
-    UpdateMonorailBugInput)
-from pipelines.flake_failure.update_monorail_bug_pipeline import (
-    UpdateMonorailBugPipeline)
 from pipelines.report_event_pipeline import ReportAnalysisEventPipeline
 from pipelines.report_event_pipeline import ReportEventInput
 from services import swarmed_test_util
@@ -192,12 +188,6 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
                   CreateAndSubmitRevertInput,
                   analysis_urlsafe_key=analysis.key.urlsafe(),
                   build_key=build_key))
-
-          # Update bug with result.
-          yield UpdateMonorailBugPipeline(
-              self.CreateInputObjectInstance(
-                  UpdateMonorailBugInput,
-                  analysis_urlsafe_key=analysis_urlsafe_key))
 
           # Update culprit code review.
           yield NotifyCulpritPipeline(
