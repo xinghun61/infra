@@ -324,8 +324,11 @@ class ServeCodeCoverageData(BaseHandler):
 
       code_revision_index = '%s-%s' % (change, patchset)
       entity = CoverageData.Get(host, code_revision_index, 'patch', 'ALL')
-      data = entity.data
+      if not entity:
+        return BaseHandler.CreateError(
+            'Requested coverage data is not found.', 404, allowed_origin='*')
 
+      data = entity.data
       formatted_data = {'files': []}
       for file_data in data:
         formatted_data['files'].append({
