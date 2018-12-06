@@ -6,6 +6,7 @@ class RotaShiftSwap extends LitElement {
   static get properties() {
     return {
       shifts: {type: constants.Shifts},
+      neededMembers: {},
       updateState: {},
     };
   }
@@ -58,6 +59,10 @@ class RotaShiftSwap extends LitElement {
     return `shiftComment_${splitIDX}-${shiftIDX}`;
   }
 
+  shiftMemberID(splitIdx, shiftIdx, oncallIdx) {
+    return `shiftMember_${splitIdx}_${shiftIdx}_${oncallIdx}`;
+  }
+
   async sendJSON() {
     this.fixComments();
     try {
@@ -77,6 +82,12 @@ class RotaShiftSwap extends LitElement {
     }
   }
 
+  setMember(splitIdx, shiftIdx, oncallIdx) {
+    this.shifts.SplitShifts[splitIdx].Shifts[shiftIdx].OnCall[oncallIdx].Email =
+      this.shadowRoot.getElementById(
+        this.shiftMemberID(splitIdx, shiftIdx, oncallIdx)).value;
+  }
+
   selectOnCallers(splitIdx, shiftIdx, shift, members) {
     if (!shift.OnCall) {
       return;
@@ -94,15 +105,29 @@ class RotaShiftSwap extends LitElement {
       return html`<select name="shiftMember">
         <option value="${oncall.Email}">${oncall.Email}</option>
       </select>
-      <button type="button" @click=${() =>
-    this.removeMember(splitIdx, shiftIdx, oncallIdx)}>
-      <small>-</small></button>
+        ${this.deleteButton(splitIdx, shiftIdx, oncallIdx)}
       `;
     }
-    return html`<select name="shiftMember">
+    return html`<select
+      id="${this.shiftMemberID(splitIdx, shiftIdx, oncallIdx)}"
+      @change=${() => this.setMember(splitIdx, shiftIdx, oncallIdx)}>
       <option value="${oncall.Email}">${oncall.Email}</option>
       <option value=${members[0]}>${members[0]}</option>
     </select>`;
+  }
+
+  deleteButton(splitIdx, shiftIdx, oncallIdx) {
+    if (this.neededMembers != 0 &&
+      this.shifts.SplitShifts[splitIdx].Shifts[shiftIdx].OnCall.length <=
+      this.neededMembers) {
+      return;
+    }
+    return html`
+      <button type="button"
+        @click=${() => this.removeMember(splitIdx, shiftIdx, oncallIdx)}>
+        <small>-</small>
+      </button>
+    `;
   }
 
   currentShifts() {

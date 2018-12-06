@@ -5,7 +5,6 @@ import (
 	"infra/appengine/rotang"
 	"net/http"
 
-	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 	"google.golang.org/grpc/codes"
@@ -86,10 +85,12 @@ func (h *State) shiftChanges(ctx *router.Context, cfg *rotang.Configuration, ss 
 			return err
 		}
 		s.EvtID = origShift.EvtID
-		logging.Infof(ctx.Context, "origShift: %v, update: %v, origUTC: %v,updateUTC: %v", origShift, s, origShift.EndTime.UTC(), s.EndTime.UTC())
 		if shiftUserDiff(origShift, &s, *usr) {
 			if s.Comment == "" {
 				return status.Errorf(codes.InvalidArgument, "please provide a comment")
+			}
+			if (len(origShift.OnCall) > len(s.OnCall)) && (len(s.OnCall) < cfg.Config.Shifts.ShiftMembers) {
+				return status.Errorf(codes.InvalidArgument, "oncall members under the min: %d", cfg.Config.Shifts.ShiftMembers)
 			}
 			if cfg.Config.Enabled {
 				us, err := h.calendar.UpdateEvent(ctx, cfg, &s)

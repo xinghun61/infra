@@ -81,7 +81,7 @@ func (h *State) genSingleRota(ctx *router.Context, email, rota string, at time.T
 	if err := rEnc.Encode([]string{rota}); err != nil {
 		return nil, err
 	}
-	return templates.Args{"User": email, "Rotas": rBuf.String(), "Current": buf.String()}, nil
+	return templates.Args{"User": email, "Rotas": rBuf.String(), "Current": buf.String(), "NumOncall": rt.Config.Shifts.ShiftMembers}, nil
 }
 
 func (h *State) genAllRotas(ctx *router.Context, email string, at time.Time) (templates.Args, error) {

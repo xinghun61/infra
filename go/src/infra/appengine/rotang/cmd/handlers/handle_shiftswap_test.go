@@ -426,6 +426,85 @@ func TestShiftChanges(t *testing.T) {
 				EndTime:   midnight.Add(fullDay),
 			},
 		},
+	}, {
+		name: "Number of oncallers under min",
+		fail: true,
+		cfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Name: "Test Rota",
+				Shifts: rotang.ShiftConfig{
+					ShiftMembers: 2,
+					Shifts: []rotang.Shift{
+						{
+							Name:     "Test All Day",
+							Duration: fullDay,
+						},
+					},
+				},
+			},
+			Members: []rotang.ShiftMember{
+				{
+					Email:     "test@member.com",
+					ShiftName: "Test All Day",
+				}, {
+					Email:     "test2@member.com",
+					ShiftName: "Test All Day",
+				},
+			},
+		},
+		memberPool: []rotang.Member{
+			{
+				Name:  "Test User",
+				Email: "test@member.com",
+			}, {
+				Name:  "Second Test User",
+				Email: "test2@member.com",
+			},
+		},
+		ss: &RotaShifts{
+			Rota: "Test Rota",
+			SplitShifts: []SplitShifts{
+				{
+					Name:    "Test All Day",
+					Members: []string{"test@member.com"},
+					Shifts: []rotang.ShiftEntry{
+						{
+							Name: "Test All Day",
+							OnCall: []rotang.ShiftMember{
+								{
+									Email:     "test2@member.com",
+									ShiftName: "Test All Day",
+								},
+							},
+							StartTime: midnight,
+							EndTime:   midnight.Add(fullDay),
+							Comment:   "Yep yep",
+						},
+					},
+				},
+			},
+		},
+		usr: &rotang.ShiftMember{
+			Email:     "test@member.com",
+			ShiftName: "Test All Day",
+		},
+		shifts: []rotang.ShiftEntry{
+			{
+				Name: "Test All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "test@member.com",
+						ShiftName: "Test All Day",
+					},
+					{
+						Email:     "test2@member.com",
+						ShiftName: "Test All Day",
+					},
+				},
+				StartTime: midnight,
+				EndTime:   midnight.Add(fullDay),
+			},
+		},
 	},
 	}
 
@@ -450,7 +529,7 @@ func TestShiftChanges(t *testing.T) {
 
 			err := h.shiftChanges(&router.Context{
 				Context: ctx,
-				Request: httptest.NewRequest("GET", "/cron/email", nil),
+				Request: httptest.NewRequest("GET", "/shiftswap", nil),
 			}, tst.cfg, tst.ss, tst.usr)
 			if got, want := (err != nil), tst.fail; got != want {
 				t.Fatalf("%s: shiftChanges(ctx, _, _, _) = %t want: %t, err: %v", tst.name, got, want, err)
