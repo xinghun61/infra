@@ -1106,3 +1106,19 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     flake_issue_key.delete()
 
     self.assertIsNone(flake_issue_util.GetFlakeIssue(flake))
+
+  def testUpdateIssueLeaves(self):
+    final_issue = FlakeIssue.Create('chromium', 3)
+    final_issue.put()
+
+    obsolete_merged_issue = FlakeIssue.Create('chromium', 2)
+    obsolete_merged_issue.put()
+
+    flake_issue = FlakeIssue.Create('chromium', 1)
+    flake_issue.merge_destination_key = obsolete_merged_issue.key
+    flake_issue.put()
+
+    flake_issue_util.UpdateIssueLeaves(obsolete_merged_issue.key,
+                                       final_issue.key)
+    flake_issue = flake_issue.key.get()
+    self.assertEqual(flake_issue.merge_destination_key, final_issue.key)

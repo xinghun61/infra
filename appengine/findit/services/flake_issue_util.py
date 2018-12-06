@@ -355,14 +355,29 @@ def _UpdateMergeDestination(flake_issue, merged_issue_id, flake_luci_project):
   flake_issue.merge_destination_key = merged_flake_issue_key
   flake_issue.put()
 
-  # Updates all issues that were merged into this flake_issue before.
+  UpdateIssueLeaves(flake_issue.key, merged_flake_issue_key)
+
+
+def UpdateIssueLeaves(flake_issue_key, merged_flake_issue_key):
+  """Updates all issues that were merged into flake_issue_key.
+
+  Args:
+    flake_issue_key (ndb.Key): The key to the FlakeIssue that is now obsolete.
+    merged_flake_issue_key (ndb.Key): The key to the up-to-date FlakeIssue
+      that should replace flake_issue_key.
+  """
+  if flake_issue_key == merged_flake_issue_key:  # pragma: no cover.
+    # Same key, nothing to do.
+    return
+
   issue_leaves = FlakeIssue.query(
-      FlakeIssue.merge_destination_key == flake_issue.key).fetch()
+      FlakeIssue.merge_destination_key == flake_issue_key).fetch()
   if not issue_leaves:
     return
 
   for issue_leaf in issue_leaves:
     issue_leaf.merge_destination_key = merged_flake_issue_key
+
   ndb.put_multi(issue_leaves)
 
 
