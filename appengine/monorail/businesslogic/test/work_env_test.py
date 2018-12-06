@@ -13,8 +13,10 @@ from mock import Mock, patch
 from google.appengine.api import memcache
 from google.appengine.ext import testbed
 
+import settings
 from businesslogic import work_env
 from framework import exceptions
+from framework import framework_views
 from framework import permissions
 from features import send_notifications
 from proto import project_pb2
@@ -51,6 +53,8 @@ class WorkEnvTest(unittest.TestCase):
         'admin@example.com', 444L)
     self.admin_user.is_site_admin = True
     self.services.user.TestAddUser('user_111@example.com', 111L)
+    self.services.user.TestAddUser('user_222@example.com', 222L)
+    self.services.user.TestAddUser('user_333@example.com', 333L)
     self.mr = testing_helpers.MakeMonorailRequest(project=self.project)
     self.mr.perms = permissions.READ_ONLY_PERMISSIONSET
 
@@ -59,6 +63,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def SignIn(self, user_id=111L):
     self.mr.auth.user_pb = self.services.user.GetUser(self.cnxn, user_id)
+    self.mr.auth.user_view = framework_views.UserView(self.mr.auth.user_pb)
     self.mr.auth.user_id = user_id
     self.mr.auth.effective_ids = {user_id}
     self.mr.perms = permissions.GetPermissions(
@@ -226,7 +231,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def testCheckFieldName_NotAllowedToViewProject(self):
     self.project.access = project_pb2.ProjectAccess.MEMBERS_ONLY
-    self.SignIn(333L)
+    self.SignIn(user_id=333L)
     with self.assertRaises(permissions.PermissionException):
       with self.work_env as we:
         we.CheckFieldName(self.project.project_id, 'Field')
@@ -327,7 +332,7 @@ class WorkEnvTest(unittest.TestCase):
     """We can get the projects in which the user has a role."""
     projects = self.AddUserProjects()
 
-    self.SignIn(222L)
+    self.SignIn(user_id=222L)
     with self.work_env as we:
       owner, member, contrib = we.GetUserRolesInAllProjects({222L})
 
@@ -347,7 +352,7 @@ class WorkEnvTest(unittest.TestCase):
     """We can get the projects in which the user has a role."""
     projects = self.AddUserProjects()
 
-    self.SignIn(444L)
+    self.SignIn(user_id=444L)
     with self.work_env as we:
       owner, member, contrib = we.GetUserRolesInAllProjects({222L})
 
@@ -382,7 +387,7 @@ class WorkEnvTest(unittest.TestCase):
     """Admins should see all projects from other users."""
     projects = self.AddUserProjects()
 
-    self.SignIn(444L)
+    self.SignIn(user_id=444L)
     with self.work_env as we:
       owner, archived, member, contrib = we.GetUserProjects({222L})
 
@@ -395,7 +400,7 @@ class WorkEnvTest(unittest.TestCase):
     """Users should see all own projects."""
     projects = self.AddUserProjects()
 
-    self.SignIn(222L)
+    self.SignIn(user_id=222L)
     with self.work_env as we:
       owner, archived, member, contrib = we.GetUserProjects({222L})
 
@@ -671,7 +676,7 @@ class WorkEnvTest(unittest.TestCase):
         _actual = we.GetIssue(78901)
 
     # ...unless we have permission to see the issue
-    self.SignIn(self.admin_user.user_id)
+    self.SignIn(user_id=self.admin_user.user_id)
     with self.work_env as we:
       actual = we.GetIssue(78901)
     self.assertEqual(issue, actual)
@@ -1533,6 +1538,104 @@ class WorkEnvTest(unittest.TestCase):
       with self.assertRaises(exceptions.InputException):
         self.assertFalse(we.GetUserStarCount(None))
 
+  def testGetPendingLinkInvites_Anon(self):
+    """Anon never had pending linkage invites."""
+    with self.work_env as we:
+      as_parent, as_child = we.GetPendingLinkedInvites()
+    self.assertEqual([], as_parent)
+    self.assertEqual([], as_child)
+
+  def testGetPendingLinkInvites_None(self):
+    """When an account has no invites, we see empty lists."""
+    self.SignIn()
+    with self.work_env as we:
+      as_parent, as_child = we.GetPendingLinkedInvites()
+    self.assertEqual([], as_parent)
+    self.assertEqual([], as_child)
+
+  def testGetPendingLinkInvites_Some(self):
+    """If there are any pending invites for the current user, we get them."""
+    self.SignIn()
+    self.services.user.invite_rows = [(111L, 222L), (333L, 444L), (555L, 111L)]
+    with self.work_env as we:
+      as_parent, as_child = we.GetPendingLinkedInvites()
+    self.assertEqual([222L], as_parent)
+    self.assertEqual([555L], as_child)
+
+  def testInviteLinkedParent_MissingParent(self):
+    """Invited parent must be specified by email."""
+    with self.work_env as we:
+      with self.assertRaises(exceptions.InputException):
+        we.InviteLinkedParent('')
+
+  def testInviteLinkedParent_Anon(self):
+    """Anon cannot invite anyone to link accounts."""
+    with self.work_env as we:
+      with self.assertRaises(permissions.PermissionException):
+        we.InviteLinkedParent('x@example.com')
+
+  def testInviteLinkedParent_NotAMatch(self):
+    """We only allow linkage invites when usernames match."""
+    self.SignIn()
+    with self.work_env as we:
+      with self.assertRaises(exceptions.InputException) as cm:
+        we.InviteLinkedParent('x@example.com')
+      self.assertEqual('Linked account names must match', cm.exception.message)
+
+  @patch('settings.linkable_domains', {'example.com': ['other.com']})
+  def testInviteLinkedParent_BadDomain(self):
+    """We only allow linkage invites between whitelisted domains."""
+    self.SignIn()
+    with self.work_env as we:
+      with self.assertRaises(exceptions.InputException) as cm:
+        we.InviteLinkedParent('user_111@hacker.com')
+      self.assertEqual(
+          'Linked account unsupported domain', cm.exception.message)
+
+  @patch('settings.linkable_domains', {'example.com': ['other.com']})
+  def testInviteLinkedParent_NoSuchParent(self):
+    """Verify that the parent account already exists."""
+    settings.linkable_domains = {'example.com': ['other.com']}
+    self.SignIn()
+    with self.work_env as we:
+      with self.assertRaises(exceptions.NoSuchUserException):
+        we.InviteLinkedParent('user_111@other.com')
+
+  @patch('settings.linkable_domains', {'example.com': ['other.com']})
+  def testInviteLinkedParent_Normal(self):
+    """A child account can invite a matching parent account to link."""
+    self.services.user.TestAddUser('user_111@other.com', 555L)
+    self.SignIn()
+    with self.work_env as we:
+      we.InviteLinkedParent('user_111@other.com')
+      self.assertEqual(
+          [(555L, 111L)], self.services.user.invite_rows)
+
+  def testAcceptLinkedChild_NoInvite(self):
+    """A parent account can only accept an exiting invite."""
+    self.SignIn()
+    self.services.user.invite_rows = [(111L, 222L)]
+    with self.work_env as we:
+      with self.assertRaises(exceptions.InputException):
+        we.AcceptLinkedChild(333L)
+
+    self.SignIn(user_id=222L)
+    self.services.user.invite_rows = [(111L, 333L)]
+    with self.work_env as we:
+      with self.assertRaises(exceptions.InputException):
+        we.AcceptLinkedChild(333L)
+
+  def testAcceptLinkedChild_Normal(self):
+    """A parent account can accept an invite from a child."""
+    self.SignIn()
+    self.services.user.invite_rows = [(111L, 222L)]
+    with self.work_env as we:
+      we.AcceptLinkedChild(222L)
+      self.assertEqual(
+        [(111L, 222L)], self.services.user.linked_account_rows)
+      self.assertEqual(
+        [], self.services.user.invite_rows)
+
   def testUpdateUserSettings(self):
     """We can update the settings of the logged in user."""
     self.SignIn()
@@ -2186,7 +2289,7 @@ class WorkEnvTest(unittest.TestCase):
             owner_ids=[111L], editor_ids=[])
 
     # 333L is not an owner or editor.
-    self.SignIn(333L)
+    self.SignIn(user_id=333L)
     with self.assertRaises(permissions.PermissionException):
       with self.work_env as we:
         we.AddIssuesToHotlists([hotlist.hotlist_id], [1234], None)
@@ -2240,7 +2343,7 @@ class WorkEnvTest(unittest.TestCase):
             self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
             owner_ids=[111L], editor_ids=[])
 
-    self.SignIn(333L)
+    self.SignIn(user_id=333L)
     with self.assertRaises(permissions.PermissionException):
       with self.work_env as we:
         we.UpdateHotlistIssueNote(hotlist.hotlist_id, 78901, 'Note')

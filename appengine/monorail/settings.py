@@ -98,6 +98,16 @@ autolink_numeric_shorthand_hosts = [
     ]
 
 
+# We only allow self-service account linking invites when the child account is
+# linking to a parent account in an allowed domain.
+linkable_domains = {
+  # Child account domain: [parent account domains]
+  'chromium.org': ['google.com'],
+  'google.com': ['chromium.org'],
+  # TODO(jrobbins): webrtc.org, etc.
+}
+
+
 ####
 # Part 2: Settings you would edit on certain occasions.
 

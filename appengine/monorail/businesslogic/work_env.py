@@ -43,13 +43,15 @@ import collections
 import logging
 import time
 
+import settings
 from features import features_constants
 from features import send_notifications
 from features import features_bizobj
 from features import hotlist_helpers
-from framework import framework_bizobj
 from framework import exceptions
+from framework import framework_bizobj
 from framework import framework_helpers
+from framework import framework_views
 from framework import permissions
 from search import frontendsearchpipeline
 from services import project_svc
@@ -1196,12 +1198,12 @@ class WorkEnv(object):
         membered_project_ids).union(contrib_project_ids)
 
     visible_group_ids = []
-    for group_id, settings in settings_by_id.items():
+    for group_id, group_settings in settings_by_id.items():
       member_ids = member_ids_by_ids.get(group_id)
       owner_ids = owner_ids_by_ids.get(group_id)
       if permissions.CanViewGroupMembers(
-          self.mc.perms, self.mc.auth.effective_ids, settings, member_ids,
-          owner_ids, project_ids):
+          self.mc.perms, self.mc.auth.effective_ids, group_settings,
+          member_ids, owner_ids, project_ids):
         visible_group_ids.append(group_id)
 
     return visible_group_ids
@@ -1280,6 +1282,40 @@ class WorkEnv(object):
       # Make sure the user exists.
       self.services.user.LookupUserEmail(self.mc.cnxn, user_id)
       return self.services.user_star.CountItemStars(self.mc.cnxn, user_id)
+
+  def GetPendingLinkedInvites(self):
+    """Return info about the signed in user's linked account invites."""
+    with self.mc.profiler.Phase('checking linked account invites'):
+      result = self.services.user.GetPendingLinkedInvites(
+          self.mc.cnxn, self.mc.auth.user_id)
+      return result
+
+  def InviteLinkedParent(self, parent_email):
+    """Invite a matching account to be my parent."""
+    if not parent_email:
+      raise exceptions.InputException('No parent account specified')
+    if not self.mc.auth.user_id:
+      raise permissions.PermissionException('Anon cannot link accounts')
+    with self.mc.profiler.Phase('Validating proposed parent'):
+      # We only offer self-serve account linking to matching usernames.
+      p_username, p_domain, _ = framework_views.ParseAndObscureAddress(
+          parent_email)
+      c_view = self.mc.auth.user_view
+      if p_username != c_view.username:
+        raise exceptions.InputException('Linked account names must match')
+      allowed_domains = settings.linkable_domains.get(c_view.domain, [])
+      if p_domain not in allowed_domains:
+        raise exceptions.InputException('Linked account unsupported domain')
+      parent_id = self.services.user.LookupUserID(self.mc.cnxn, parent_email)
+    with self.mc.profiler.Phase('Creating linked account invite'):
+      self.services.user.InviteLinkedParent(
+          self.mc.cnxn, parent_id, self.mc.auth.user_id)
+
+  def AcceptLinkedChild(self, child_id):
+    """Accept an invitation from a child account."""
+    with self.mc.profiler.Phase('Accept linked account invite'):
+      self.services.user.AcceptLinkedChild(
+          self.mc.cnxn, self.mc.auth.user_id, child_id)
 
   def UpdateUserSettings(self, **kwargs):
     """Update the preferences of the specified user.

@@ -7,6 +7,7 @@
 
 import unittest
 
+from mock import Mock
 import mox
 import time
 
@@ -42,6 +43,7 @@ def MakeUserService(cache_manager, my_mox):
   user_service.dismissedcues_tbl = my_mox.CreateMock(sql.SQLTableManager)
   user_service.hotlistvisithistory_tbl = my_mox.CreateMock(sql.SQLTableManager)
   user_service.linkedaccount_tbl = my_mox.CreateMock(sql.SQLTableManager)
+  # Account linking invites are done with patch().
   return user_service
 
 
@@ -334,6 +336,96 @@ class UserServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     self.user_service.TrimUserVisitedHotlists(self.cnxn, commit=False)
     self.mox.VerifyAll()
+
+  def testGetPendingLinkedInvites_Anon(self):
+    """An Anon user never has invites to link accounts."""
+    as_parent, as_child = self.user_service.GetPendingLinkedInvites(
+        self.cnxn, 0)
+    self.assertEqual([], as_parent)
+    self.assertEqual([], as_child)
+
+  def testGetPendingLinkedInvites_None(self):
+    """A user who has no link invites gets empty lists."""
+    self.user_service.linkedaccountinvite_tbl = Mock()
+    self.user_service.linkedaccountinvite_tbl.Select.return_value = []
+    as_parent, as_child = self.user_service.GetPendingLinkedInvites(
+        self.cnxn, 111L)
+    self.assertEqual([], as_parent)
+    self.assertEqual([], as_child)
+
+  def testGetPendingLinkedInvites_Some(self):
+    """A user who has link invites can get them."""
+    self.user_service.linkedaccountinvite_tbl = Mock()
+    self.user_service.linkedaccountinvite_tbl.Select.return_value = [
+        (111L, 222L), (111L, 333L), (888L, 999L), (333L, 111L)]
+    as_parent, as_child = self.user_service.GetPendingLinkedInvites(
+        self.cnxn, 111L)
+    self.assertEqual([222L, 333L], as_parent)
+    self.assertEqual([333L], as_child)
+
+  def testAssertNotAlreadyLinked_NotLinked(self):
+    """No exception is raised when accounts are not already linked."""
+    self.user_service.linkedaccount_tbl = Mock()
+    self.user_service.linkedaccount_tbl.Select.return_value = []
+    self.user_service._AssertNotAlreadyLinked(self.cnxn, 111L, 222L)
+
+  def testAssertNotAlreadyLinked_AlreadyLinked(self):
+    """Reject attempt to link any account that is already linked."""
+    self.user_service.linkedaccount_tbl = Mock()
+    self.user_service.linkedaccount_tbl.Select.return_value = [
+        (111L, 222L)]
+    with self.assertRaises(exceptions.InputException):
+      self.user_service._AssertNotAlreadyLinked(self.cnxn, 111L, 333L)
+
+  def testInviteLinkedParent_Anon(self):
+    """Anon cannot invite anyone to link accounts."""
+    with self.assertRaises(exceptions.InputException):
+      self.user_service.InviteLinkedParent(self.cnxn, 0, 0)
+    with self.assertRaises(exceptions.InputException):
+      self.user_service.InviteLinkedParent(self.cnxn, 111L, 0)
+    with self.assertRaises(exceptions.InputException):
+      self.user_service.InviteLinkedParent(self.cnxn, 0, 111L)
+
+  def testInviteLinkedParent_Normal(self):
+    """One account can invite another to link."""
+    self.user_service.linkedaccount_tbl = Mock()
+    self.user_service.linkedaccount_tbl.Select.return_value = []
+    self.user_service.linkedaccountinvite_tbl = Mock()
+    self.user_service.InviteLinkedParent(
+        self.cnxn, 111L, 222L)
+    self.user_service.linkedaccountinvite_tbl.Insert.assert_called_once_with(
+        self.cnxn, parent_id=111L, child_id=222L)
+
+  def testAcceptLinkedChild_Anon(self):
+    """Reject attempts for anon to accept any invite."""
+    with self.assertRaises(exceptions.InputException):
+      self.user_service.AcceptLinkedChild(self.cnxn, 0, 333L)
+    with self.assertRaises(exceptions.InputException):
+      self.user_service.AcceptLinkedChild(self.cnxn, 333L, 0)
+
+  def testAcceptLinkedChild_Missing(self):
+    """Reject attempts to link without a matching invite."""
+    self.user_service.linkedaccountinvite_tbl = Mock()
+    self.user_service.linkedaccountinvite_tbl.Select.return_value = []
+    self.user_service.linkedaccount_tbl = Mock()
+    self.user_service.linkedaccount_tbl.Select.return_value = []
+    with self.assertRaises(exceptions.InputException) as cm:
+      self.user_service.AcceptLinkedChild(self.cnxn, 111L, 333L)
+    self.assertEqual('No such invite', cm.exception.message)
+
+  def testAcceptLinkedChild_Normal(self):
+    """Create linkage between accounts and remove invite."""
+    self.user_service.linkedaccountinvite_tbl = Mock()
+    self.user_service.linkedaccountinvite_tbl.Select.return_value = [
+        (111L, 222L), (333L, 444L)]
+    self.user_service.linkedaccount_tbl = Mock()
+    self.user_service.linkedaccount_tbl.Select.return_value = []
+
+    self.user_service.AcceptLinkedChild(self.cnxn, 111L, 222L)
+    self.user_service.linkedaccount_tbl.Insert.assert_called_once_with(
+        self.cnxn, parent_id=111L, child_id=222L)
+    self.user_service.linkedaccountinvite_tbl.Delete.assert_called_once_with(
+        self.cnxn, parent_id=111L, child_id=222L)
 
   def testUpdateUserSettings(self):
     self.SetUpUpdateUser()

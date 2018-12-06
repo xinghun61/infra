@@ -433,6 +433,8 @@ class UserService(object):
     self.visited_hotlists = {} # user_id:[(hotlist_id, viewed), ...]
     self.user_commits = [("mysha2",  3784859778, 2, "hi", "repo"),
         ("mysha1",  3784859778, 1, "hi", "repo")]
+    self.invite_rows = []
+    self.linked_account_rows = []
 
   def TestAddUser(self, email, user_id, add_user=True, banned=False):
     """Add a user to the fake UserService instance.
@@ -539,6 +541,24 @@ class UserService(object):
         banned_reason=None):
     """Updates the user pb."""
     self.test_users[user_id] = user
+
+  def GetPendingLinkedInvites(self, cnxn, user_id):
+    invite_as_parent = [row[1] for row in self.invite_rows
+                        if row[0] == user_id]
+    invite_as_child = [row[0] for row in self.invite_rows
+                       if row[1] == user_id]
+    return invite_as_parent, invite_as_child
+
+  def InviteLinkedParent(self, cnxn, parent_id, child_id):
+    self.invite_rows.append((parent_id, child_id))
+
+  def AcceptLinkedChild(self, cnxn, parent_id, child_id):
+    if (parent_id, child_id) not in self.invite_rows:
+      raise exceptions.InputException('No such invite')
+    self.linked_account_rows.append((parent_id, child_id))
+    self.invite_rows = [
+        (p_id, c_id) for (p_id, c_id) in self.invite_rows
+        if p_id != parent_id and c_id != child_id]
 
   def UpdateUserSettings(
       self, cnxn, user_id, user, notify=None, notify_starred=None,

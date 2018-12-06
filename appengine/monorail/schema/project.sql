@@ -129,6 +129,17 @@ CREATE TABLE LinkedAccount (
 ) ENGINE=INNODB;
 
 
+CREATE TABLE LinkedAccountInvite (
+  parent_id INT UNSIGNED NOT NULL,
+  child_id INT UNSIGNED NOT NULL,
+
+  KEY (parent_id),
+  UNIQUE KEY (child_id),
+  FOREIGN KEY (parent_id) REFERENCES User(user_id),
+  FOREIGN KEY (child_id) REFERENCES User(user_id)
+) ENGINE=INNODB;
+
+
 CREATE TABLE ExtraPerm (
   project_id SMALLINT UNSIGNED NOT NULL,
   user_id INT UNSIGNED NOT NULL,

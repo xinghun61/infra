@@ -28,6 +28,7 @@ ACTIONLIMIT_TABLE_NAME = 'ActionLimit'
 DISMISSEDCUES_TABLE_NAME = 'DismissedCues'
 HOTLISTVISITHISTORY_TABLE_NAME = 'HotlistVisitHistory'
 LINKEDACCOUNT_TABLE_NAME = 'LinkedAccount'
+LINKEDACCOUNTINVITE_TABLE_NAME = 'LinkedAccountInvite'
 USERCOMMITS_TABLE_NAME = 'UserCommits'
 
 USER_COLS = [
@@ -44,6 +45,7 @@ ACTIONLIMIT_COLS = [
 DISMISSEDCUES_COLS = ['user_id', 'cue']
 HOTLISTVISITHISTORY_COLS = ['hotlist_id', 'user_id', 'viewed']
 LINKEDACCOUNT_COLS = ['parent_id', 'child_id']
+LINKEDACCOUNTINVITE_COLS = ['parent_id', 'child_id']
 
 
 class UserTwoLevelCache(caches.AbstractTwoLevelCache):
@@ -178,6 +180,8 @@ class UserService(object):
     self.hotlistvisithistory_tbl = sql.SQLTableManager(
         HOTLISTVISITHISTORY_TABLE_NAME)
     self.linkedaccount_tbl = sql.SQLTableManager(LINKEDACCOUNT_TABLE_NAME)
+    self.linkedaccountinvite_tbl = sql.SQLTableManager(
+        LINKEDACCOUNTINVITE_TABLE_NAME)
     self.usercommits_tbl = sql.SQLTableManager(USERCOMMITS_TABLE_NAME)
 
     # Like a dictionary {user_id: email}
@@ -518,6 +522,72 @@ class UserService(object):
          self.hotlistvisithistory_tbl.Delete(
              cnxn, user_id=user_id, where=[('viewed < %s', [cut_off_date])],
              commit=commit)
+
+
+  ### Linked account invites
+
+  def GetPendingLinkedInvites(self, cnxn, user_id):
+    """Return lists of accounts that have invited this account."""
+    if not user_id:
+      return [], []
+    invite_rows = self.linkedaccountinvite_tbl.Select(
+        cnxn, cols=LINKEDACCOUNTINVITE_COLS, parent_id=user_id,
+        child_id=user_id, or_where_conds=True)
+    invite_as_parent = [row[1] for row in invite_rows
+                        if row[0] == user_id]
+    invite_as_child = [row[0] for row in invite_rows
+                       if row[1] == user_id]
+    return invite_as_parent, invite_as_child
+
+  def _AssertNotAlreadyLinked(self, cnxn, parent_id, child_id):
+    """Check constraints on our linked account graph."""
+    # Our linked account graph should be no more than one level deep.
+    parent_is_already_a_child = self.linkedaccount_tbl.Select(
+        cnxn, cols=LINKEDACCOUNT_COLS, child_id=parent_id)
+    if parent_is_already_a_child:
+      raise exceptions.InputException('Parent account is already a child')
+    child_is_already_a_parent = self.linkedaccount_tbl.Select(
+        cnxn, cols=LINKEDACCOUNT_COLS, parent_id=child_id)
+    if child_is_already_a_parent:
+      raise exceptions.InputException('Child account is already a parent')
+
+    # A child account can only be linked to one parent.
+    child_is_already_a_child = self.linkedaccount_tbl.Select(
+        cnxn, cols=LINKEDACCOUNT_COLS, child_id=child_id)
+    if child_is_already_a_child:
+      raise exceptions.InputException('Child account is already linked')
+
+  def InviteLinkedParent(self, cnxn, parent_id, child_id):
+    """Child stores an invite for the proposed parent user to consider."""
+    if not parent_id:
+      raise exceptions.InputException('Parent account is missing')
+    if not child_id:
+      raise exceptions.InputException('Child account is missing')
+    self._AssertNotAlreadyLinked(cnxn, parent_id, child_id)
+    self.linkedaccountinvite_tbl.Insert(
+        cnxn, parent_id=parent_id, child_id=child_id)
+
+  def AcceptLinkedChild(self, cnxn, parent_id, child_id):
+    """Parent accepts an invite from a child account."""
+    if not parent_id:
+      raise exceptions.InputException('Parent account is missing')
+    if not child_id:
+      raise exceptions.InputException('Child account is missing')
+    # Check that the child has previously created an invite for this parent.
+    invite_rows = self.linkedaccountinvite_tbl.Select(
+        cnxn, cols=LINKEDACCOUNTINVITE_COLS,
+        parent_id=parent_id, child_id=child_id)
+    if not invite_rows:
+      raise exceptions.InputException('No such invite')
+
+    self._AssertNotAlreadyLinked(cnxn, parent_id, child_id)
+
+    self.linkedaccount_tbl.Insert(
+        cnxn, parent_id=parent_id, child_id=child_id)
+    self.linkedaccountinvite_tbl.Delete(
+        cnxn, parent_id=parent_id, child_id=child_id)
+
+  ### User settings
 
   def UpdateUserSettings(
       self, cnxn, user_id, user, notify=None, notify_starred=None,
