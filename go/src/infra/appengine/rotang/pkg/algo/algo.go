@@ -109,8 +109,7 @@ func PersonalOutage(shiftStart time.Time, shiftDays int, shiftDuration time.Dura
 			todayStart := shiftStart.Add(time.Duration(i) * fullDay)
 			todayEnd := todayStart.Add(shiftDuration)
 			outageEnd := outage.Start.Add(outage.Duration)
-			if outage.Start.After(todayStart) && outage.Start.Before(todayEnd) ||
-				outageEnd.Before(todayEnd) && outageEnd.After(todayStart) {
+			if todayStart.Before(outageEnd) && (todayEnd.After(outage.Start) || todayEnd.Equal(outage.Start)) {
 				return true
 			}
 		}

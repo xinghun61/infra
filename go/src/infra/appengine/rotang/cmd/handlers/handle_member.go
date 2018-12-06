@@ -84,6 +84,7 @@ func (h *State) memberPOST(ctx *router.Context, member *rotang.Member) error {
 		if res.OOO[i].Comment == "" {
 			return status.Errorf(codes.InvalidArgument, "comment needs to be set")
 		}
+		logging.Infof(ctx.Context, "res.OOO[i}", res.OOO[i])
 	}
 	return h.memberStore(ctx.Context).UpdateMember(ctx.Context, &res)
 }

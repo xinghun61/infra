@@ -584,6 +584,93 @@ func TestHandleShiftMembers(t *testing.T) {
 	}
 }
 
+func TestPersonalOutage(t *testing.T) {
+	timeFormat := "2006-01-02 15:04:05 -0700 MST"
+	start, err := time.Parse(timeFormat, "2018-12-21 08:00:00 +0000 UTC")
+	if err != nil {
+		t.Fatalf("time.Parse() failed: %v", err)
+	}
+	end, err := time.Parse(timeFormat, "2019-09-17 08:00:00 +0000 UTC")
+	if err != nil {
+		t.Fatalf("time.Parse() failed: %v", err)
+	}
+
+	tests := []struct {
+		name     string
+		start    time.Time
+		days     int
+		duration time.Duration
+		member   *rotang.Member
+		want     bool
+	}{{
+		name:     "olakar@google.com irl",
+		want:     true,
+		duration: fullDay,
+		member: &rotang.Member{
+			Name:  "Ola Karlsson",
+			Email: "olakar@google.com",
+			OOO: []rotang.OOO{
+				{
+					Start:    start,
+					Duration: end.Sub(start),
+					Comment:  "Something",
+				},
+			},
+		},
+	}, {
+		name:     "Outage after shift",
+		duration: fullDay,
+		member: &rotang.Member{
+			Name:  "Ola Karlsson",
+			Email: "olakar@google.com",
+			OOO: []rotang.OOO{
+				{
+					Start:    start.Add(6 * fullDay),
+					Duration: end.Sub(start),
+					Comment:  "Something",
+				},
+			},
+		},
+	}, {
+		name:     "Outage between shifts",
+		duration: 12 * time.Hour,
+		member: &rotang.Member{
+			Name:  "Ola Karlsson",
+			Email: "olakar@google.com",
+			OOO: []rotang.OOO{
+				{
+					Start:    start.Add(14 * time.Hour),
+					Duration: 6 * time.Hour,
+					Comment:  "Something",
+				},
+			},
+		},
+	}, {
+		name:     "Outage inside single shift",
+		want:     true,
+		duration: 12 * time.Hour,
+		member: &rotang.Member{
+			Name:  "Ola Karlsson",
+			Email: "olakar@google.com",
+			OOO: []rotang.OOO{
+				{
+					Start:    start.Add(4 * time.Hour),
+					Duration: 6 * time.Hour,
+					Comment:  "Something",
+				},
+			},
+		},
+	},
+	}
+
+	for _, tst := range tests {
+		res := PersonalOutage(start.Add(-4*fullDay), 5, tst.duration, *tst.member)
+		if got, want := res, tst.want; got != want {
+			t.Errorf("%s: PersonalOutage() = %t, want: %t", tst.name, got, want)
+		}
+	}
+}
+
 func TestMakeShifts(t *testing.T) {
 	tests := []struct {
 		name       string

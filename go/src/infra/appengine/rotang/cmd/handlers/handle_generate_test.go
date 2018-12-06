@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"context"
+
 	"go.chromium.org/luci/auth/identity"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/authtest"
@@ -101,7 +102,7 @@ func TestHandleGenerate(t *testing.T) {
 			},
 		},
 		values: url.Values{
-			"rota":      {"Test Rota"},
+			"name":      {"Test Rota"},
 			"nrShifts":  {"2"},
 			"generator": {"Fair"},
 			"startTime": {"2018-10-03"},
@@ -274,7 +275,7 @@ func TestHandleGenerate(t *testing.T) {
 			},
 		},
 		values: url.Values{
-			"rota":      {"wrong"},
+			"name":      {"wrong"},
 			"nrShifts":  {"2"},
 			"generator": {"Fair"},
 			"startTime": {"2018-10-03"},
@@ -361,7 +362,7 @@ func TestHandleGenerate(t *testing.T) {
 			},
 		},
 		values: url.Values{
-			"rota":      {"Test Rota"},
+			"name":      {"Test Rota"},
 			"nrShifts":  {"2"},
 			"generator": {"Fair"},
 			"startTime": {"2018-10-03"},
@@ -447,7 +448,7 @@ func TestHandleGenerate(t *testing.T) {
 			},
 		},
 		values: url.Values{
-			"rota":      {"Test Rota"},
+			"name":      {"Test Rota"},
 			"nrShifts":  {"2"},
 			"generator": {"Fair"},
 		},
