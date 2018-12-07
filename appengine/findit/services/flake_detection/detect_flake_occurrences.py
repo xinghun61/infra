@@ -328,6 +328,8 @@ def _UpdateTestLocationAndTags(flake, occurrences, component_mapping,
     all_tags.add('source::%s' % file_path)
 
     if component:
+      flake.component = component
+
       all_tags.add('component::%s' % component)
       all_tags.add('parent_component::%s' % component)
       index = len(component)

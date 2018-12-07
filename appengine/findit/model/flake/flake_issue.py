@@ -95,13 +95,26 @@ class FlakeIssue(ndb.Model):
 
     return url_template % (suffix, monorail_project, issue_id)
 
-  def GetMergeDestination(self):
-    """Gets the FlakeIssue entity of this issue's final merged destination."""
+  def GetMergeDestination(self, key_only=False):
+    """Gets the FlakeIssue entity of this issue's final merged destination.
+
+    Args:
+      key_only (bool): True if just need the key to the destination issue, False
+        if need the entity.
+    """
+    if key_only:
+      return self.merge_destination_key
+
     return self.merge_destination_key.get(
     ) if self.merge_destination_key else None
 
-  def GetMostUpdatedIssue(self):
-    return self.GetMergeDestination() or self
+  def GetMostUpdatedIssue(self, key_only=False):
+    destination_issue = self.GetMergeDestination(key_only)
+
+    if destination_issue:
+      return destination_issue
+
+    return self.key if key_only else self
 
   def Update(self, **kwargs):
     """Updates arbitrary fields as specified in kwargs."""

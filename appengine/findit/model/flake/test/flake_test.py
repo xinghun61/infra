@@ -233,3 +233,44 @@ class FlakeTest(wf_testcase.WaterfallTestCase):
         test_label_name=test_label_name)
 
     self.assertIsNone(flake.GetIssue())
+
+  def testGetFlakeIssueDataInconsistent(self):
+    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
+    flake_issue.put()
+    flake_issue_key = flake_issue.key
+    flake = Flake.Create(
+        luci_project='chromium',
+        normalized_step_name='step',
+        normalized_test_name='suite.test',
+        test_label_name='*/suite.test/*')
+    flake.flake_issue_key = flake_issue_key
+    flake.put()
+
+    flake_issue_key.delete()
+
+    self.assertIsNone(flake.GetIssue())
+
+  def testGetFlakeIssueNoIssueKey(self):
+    flake = Flake.Create(
+        luci_project='chromium',
+        normalized_step_name='step',
+        normalized_test_name='suite.test',
+        test_label_name='*/suite.test/*')
+    flake.put()
+
+    self.assertIsNone(flake.GetIssue())
+
+  def testGetFlakeIssue(self):
+    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
+    flake_issue.put()
+    flake_issue_key = flake_issue.key
+    flake = Flake.Create(
+        luci_project='chromium',
+        normalized_step_name='step',
+        normalized_test_name='suite.test',
+        test_label_name='*/suite.test/*')
+    flake.flake_issue_key = flake_issue_key
+    flake.put()
+
+    self.assertEqual(flake_issue_key,
+                     flake.GetIssue(up_to_date=True, key_only=True))

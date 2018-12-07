@@ -188,6 +188,12 @@ indexes:
   - name: time_happened
     direction: desc
 
+# For flake report to get distinct impacted CLs
+- kind: FlakeOccurrence
+  properties:
+  - name: time_happened
+  - name: gerrit_cl_id
+
 # For cron to update Flake counts.
 - kind: Flake
   properties:

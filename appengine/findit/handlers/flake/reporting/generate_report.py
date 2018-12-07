@@ -4,7 +4,6 @@
 
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
-from libs import time_util
 from services.flake_reporting import component
 
 
@@ -14,4 +13,4 @@ class PrepareFlakinessReport(BaseHandler):
   PERMISSION_LEVEL = Permission.APP_SELF
 
   def HandleGet(self):
-    component.Report(*time_util.PreviousISOWeek())
+    component.Report()

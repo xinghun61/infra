@@ -2,9 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 import datetime
+import mock
 
+from libs import time_util
 from model.flake.detection.flake_occurrence import FlakeOccurrence
 from model.flake.flake import Flake
+from model.flake.flake import FlakeCountsByType
+from model.flake.flake_issue import FlakeIssue
 from model.flake.flake_type import FlakeType
 from model.flake.reporting.report import ComponentFlakinessReport
 from model.flake.reporting.report import TestFlakinessReport
@@ -13,75 +17,233 @@ from services.flake_reporting import component as component_report
 from waterfall.test import wf_testcase
 
 
-def _PutData(test, component, cl, week, hour):
+def _GetOrCreateFlakeIssue(bug_id):
+  monorail_project = 'chromium'
+  issue = FlakeIssue.Get(monorail_project, bug_id)
+  if issue:
+    return issue
+
+  issue = FlakeIssue.Create(monorail_project, bug_id)
+  issue.put()
+  return issue
+
+
+def _CreateFlake(flake_data):
+
+  luci_project = 'chromium'
+  normalized_step_name = 'normalized_step_name'
+
+  flake_issue = _GetOrCreateFlakeIssue(flake_data['bug_id'])
 
   flake = Flake.Create(
-      normalized_test_name=test,
-      luci_project='chromium',
-      normalized_step_name='normalized_step_name',
+      normalized_test_name=flake_data['test'],
+      luci_project=luci_project,
+      normalized_step_name=normalized_step_name,
       test_label_name='test_label')
 
-  flake.component = component
+  flake.component = flake_data['component']
+  flake.flake_issue_key = flake_issue.key
+  flake.flake_counts_last_week = []
+  for flake_type, counts in flake_data['counts'].iteritems():
+    flake.flake_counts_last_week.append(
+        FlakeCountsByType(
+            flake_type=flake_type,
+            occurrence_count=counts[0],
+            impacted_cl_count=counts[1]))
+  flake.last_occurred_time = datetime.datetime.strptime(
+      flake_data['last_occurred_time'], '%Y-W%W-%w')
   flake.put()
 
-  time_happened = datetime.datetime.strptime('2018-W%d-4' % week, '%Y-W%W-%w')
-  time_happened += datetime.timedelta(hours=hour)
-  occurrence = FlakeOccurrence.Create(
-      flake_type=FlakeType.CQ_FALSE_REJECTION,
-      build_id=123 + hour,
-      step_ui_name='step',
-      test_name=test,
-      luci_project='chromium',
-      luci_bucket='try',
-      luci_builder='builder',
-      legacy_master_name='master',
-      legacy_build_number=42,
-      time_happened=time_happened,
-      gerrit_cl_id=cl,
-      parent_flake_key=flake.key)
-  occurrence.put()
+  for occurrence_data in flake_data['occurrences']:
+    time_happened = datetime.datetime.strptime(
+        '2018-W%d-4' % occurrence_data[2], '%Y-W%W-%w')
+    hour = occurrence_data[3]
+    time_happened += datetime.timedelta(hours=hour)
+    occurrence = FlakeOccurrence.Create(
+        flake_type=occurrence_data[0],
+        build_id=123 + hour,
+        step_ui_name='step',
+        test_name=flake.normalized_test_name,
+        luci_project='chromium',
+        luci_bucket='try',
+        luci_builder='builder',
+        legacy_master_name='master',
+        legacy_build_number=42,
+        time_happened=time_happened,
+        gerrit_cl_id=occurrence_data[1],
+        parent_flake_key=flake.key)
+    occurrence.put()
 
 
 class ReportTest(wf_testcase.WaterfallTestCase):
 
-  def testBasicReport(self):
-    hits = [
-        ('testA', 'ComponentA', 1001, 34, 0),
-        ('testB', 'ComponentA', 1002, 35, 1),
-        ('testB', 'ComponentA', 1003, 35, 2),
-        ('testC', 'ComponentB', 1005, 35, 3),
-        ('testD', 'ComponentA', 1005, 35, 4),
-        ('testD', 'ComponentA', 1005, 35, 5),
-        ('testE', 'ComponentA', 1005, 35, 6),
-        ('testF', 'Unknown', 1005, 35, 6),
-        ('testG', 'ComponentA', 1007, 36, 7),
+  @mock.patch.object(
+      time_util, 'GetPreviousISOWeek', return_value=(2018, 35, 1))
+  def testBasicReport(self, _):
+    flakes_data = [
+        {
+            'test':
+                'testA',
+            'component':
+                'ComponentA',
+            'bug_id':
+                123456,
+            'last_occurred_time':
+                '2018-W34-4',
+            'counts': {
+                FlakeType.CQ_FALSE_REJECTION: (1, 1)
+            },
+            'occurrences': [
+                # flake_type, gerrit_cl_id, week, hour
+                (FlakeType.CQ_FALSE_REJECTION, 1001, 34, 0)
+            ]
+        },
+        {
+            'test':
+                'testB',
+            'component':
+                'ComponentA',
+            'bug_id':
+                123457,
+            'last_occurred_time':
+                '2018-W35-4',
+            'counts': {
+                FlakeType.CQ_FALSE_REJECTION: (2, 2)
+            },
+            'occurrences': [(FlakeType.CQ_FALSE_REJECTION, 1002, 35, 1),
+                            (FlakeType.CQ_FALSE_REJECTION, 1003, 35, 2)]
+        },
+        {
+            'test': 'testC',
+            'component': 'ComponentB',
+            'bug_id': 123458,
+            'last_occurred_time': '2018-W35-4',
+            'counts': {
+                FlakeType.CQ_FALSE_REJECTION: (1, 1)
+            },
+            'occurrences': [(FlakeType.CQ_FALSE_REJECTION, 1005, 35, 3)]
+        },
+        {
+            'test':
+                'testD',
+            'component':
+                'ComponentA',
+            'bug_id':
+                123457,
+            'last_occurred_time':
+                '2018-W35-4',
+            'counts': {
+                FlakeType.CQ_FALSE_REJECTION: (1, 1),
+                FlakeType.RETRY_WITH_PATCH: (1, 0)
+            },
+            'occurrences': [(FlakeType.CQ_FALSE_REJECTION, 1002, 35, 1),
+                            (FlakeType.RETRY_WITH_PATCH, 1002, 35, 2)]
+        },
+        {
+            'test': 'testE',
+            'component': 'ComponentA',
+            'bug_id': 123460,
+            'last_occurred_time': '2018-W35-4',
+            'counts': {
+                FlakeType.CQ_FALSE_REJECTION: (1, 1)
+            },
+            'occurrences': [(FlakeType.CQ_FALSE_REJECTION, 1005, 35, 6)]
+        },
+        {
+            'test': 'testF',
+            'component': 'Unknown',
+            'bug_id': 123460,
+            'last_occurred_time': '2018-W35-4',
+            'counts': {
+                FlakeType.CQ_FALSE_REJECTION: (1, 1)
+            },
+            'occurrences': [(FlakeType.CQ_FALSE_REJECTION, 1005, 35, 6)]
+        },
+        {
+            'test': 'testG',
+            'component': 'ComponentA',
+            'bug_id': 123470,
+            'last_occurred_time': '2018-W35-4',
+            'counts': {
+                FlakeType.CQ_FALSE_REJECTION: (1, 1)
+            },
+            'occurrences': [(FlakeType.CQ_FALSE_REJECTION, 1007, 36, 7)]
+        }
     ]
-    for occurrence in hits:
-      _PutData(*occurrence)
 
-    component_report.Report(2018, 35)
+    for flake_data in flakes_data:
+      _CreateFlake(flake_data)
+
+    component_report.Report()
     with self.assertRaises(component_report.ReportExistsException):
-      component_report.Report(2018, 35)
+      component_report.Report()
 
-    report = TotalFlakinessReport.Get(2018, 35)
-    self.assertEqual(report.cq_false_rejection_occurrence_count, 7)
-    self.assertEqual(report.cl_count, 3)
-    self.assertEqual(report.test_count, 5)
+    report = TotalFlakinessReport.Get(2018, 35, 1)
+    self.assertEqual(6, report.test_count)
+    self.assertEqual(4, report.bug_count)
+
+    expected_report_counts = {
+        FlakeType.CQ_FALSE_REJECTION: (7, 3),
+        FlakeType.RETRY_WITH_PATCH: (1, 0)
+    }
+
+    for occurrence_count in report.occurrence_counts:
+      self.assertEqual(expected_report_counts[occurrence_count.flake_type][0],
+                       occurrence_count.count)
+
+    for cl_count in report.impacted_cl_counts:
+      self.assertEqual(expected_report_counts[cl_count.flake_type][1],
+                       cl_count.count)
 
     component_report_A = ComponentFlakinessReport.Get(report.key, 'ComponentA')
-    self.assertEqual(component_report_A.cq_false_rejection_occurrence_count, 5)
-    self.assertEqual(component_report_A.cl_count, 3)
-    self.assertEqual(component_report_A.test_count, 3)
+    self.assertEqual(4, component_report_A.test_count)
+    self.assertEqual(3, component_report_A.bug_count)
+
+    expected_A_counts = {
+        FlakeType.CQ_FALSE_REJECTION: (5, 3),
+        FlakeType.RETRY_WITH_PATCH: (1, 0)
+    }
+
+    for occurrence_count in component_report_A.occurrence_counts:
+      self.assertEqual(expected_A_counts[occurrence_count.flake_type][0],
+                       occurrence_count.count)
+
+    for cl_count in component_report_A.impacted_cl_counts:
+      self.assertEqual(expected_A_counts[cl_count.flake_type][1],
+                       cl_count.count)
 
     component_report_unknown = ComponentFlakinessReport.Get(
         report.key, 'Unknown')
-    self.assertEqual(
-        component_report_unknown.cq_false_rejection_occurrence_count, 1)
-    self.assertEqual(component_report_unknown.cl_count, 1)
-    self.assertEqual(component_report_unknown.test_count, 1)
+    self.assertEqual(1, component_report_unknown.test_count)
+    self.assertEqual(1, component_report_unknown.bug_count)
+
+    expected_Unknown_counts = {
+        FlakeType.CQ_FALSE_REJECTION: (1, 1),
+        FlakeType.RETRY_WITH_PATCH: (0, 0)
+    }
+
+    for occurrence_count in component_report_unknown.occurrence_counts:
+      self.assertEqual(expected_Unknown_counts[occurrence_count.flake_type][0],
+                       occurrence_count.count)
+
+    for cl_count in component_report_unknown.impacted_cl_counts:
+      self.assertEqual(expected_Unknown_counts[cl_count.flake_type][1],
+                       cl_count.count)
 
     component_test_report_A_B = TestFlakinessReport.Get(component_report_A.key,
                                                         'testB')
-    self.assertEqual(
-        component_test_report_A_B.cq_false_rejection_occurrence_count, 2)
-    self.assertEqual(component_test_report_A_B.cl_count, 2)
+    self.assertEqual(1, component_test_report_A_B.test_count)
+    self.assertEqual(1, component_test_report_A_B.bug_count)
+
+    expected_A_B_counts = {
+        FlakeType.CQ_FALSE_REJECTION: (2, 2),
+        FlakeType.RETRY_WITH_PATCH: (0, 0)
+    }
+
+    for occurrence_count in component_test_report_A_B.occurrence_counts:
+      self.assertEqual(expected_A_B_counts[occurrence_count.flake_type][0],
+                       occurrence_count.count)
+
+    for cl_count in component_test_report_A_B.impacted_cl_counts:
+      self.assertEqual(expected_A_B_counts[cl_count.flake_type][1],
+                       cl_count.count)

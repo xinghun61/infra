@@ -23,17 +23,34 @@ normalized test name.
 import collections
 
 from google.appengine.ext import ndb
+from google.appengine.ext.ndb import msgprop
+
+from model.flake.flake_type import FlakeType
+
+_TAG_DELIMITER = '::'
+
+
+class _TypeCount(ndb.Model):
+  """Counts for a specific flake type."""
+  flake_type = msgprop.EnumProperty(FlakeType, required=True)
+  count = ndb.IntegerProperty(default=0)
 
 
 class ReportRow(ndb.Model):
   """Base class for report elements."""
   # Aggregate counts for a subset of flake occurrences."""
-  cq_false_rejection_occurrence_count = ndb.IntegerProperty()
+  bug_count = ndb.IntegerProperty()
+  impacted_cl_counts = ndb.StructuredProperty(_TypeCount, repeated=True)
+  occurrence_counts = ndb.StructuredProperty(_TypeCount, repeated=True)
   test_count = ndb.IntegerProperty()
-  cl_count = ndb.IntegerProperty()
+
+  generated_time = ndb.DateTimeProperty(auto_now_add=True)
+
+  # Tags of a report row to ease queries.
+  tags = ndb.StringProperty(repeated=True)
 
   @classmethod
-  def FromTallies(cls, parent, d):
+  def FromTallies(cls, parent, d, year, week, day):
     """Create a report element from sets of values in a dict.
 
     The values in the tally may be counts, which will be used directly; or sets,
@@ -48,11 +65,62 @@ class ReportRow(ndb.Model):
     return cls(
         parent=parent,
         id=d['_id'],
-        cq_false_rejection_occurrence_count=CountIfCollection(
-            d.get('_cq_false_rejection_occurrences', 0)),
+        bug_count=CountIfCollection(d.get('_bugs', 0)),
+        impacted_cl_counts=[
+            _TypeCount(flake_type=flake_type, count=CountIfCollection(cl_ids))
+            for flake_type, cl_ids in d.get('_impacted_cls', {}).iteritems()
+        ],
+        occurrence_counts=[
+            _TypeCount(flake_type=flake_type, count=count)
+            for flake_type, count in d.get('_occurrences', {}).iteritems()
+        ],
         test_count=CountIfCollection(d.get('_tests', 0)),
-        cl_count=CountIfCollection(d.get('_cls', 0)),
-    )
+        tags=cls.GenerateTagList(d, year, week, day))
+
+  @staticmethod
+  def GenerateTag(tag_name, tag_value):
+    return '{}{}{}'.format(tag_name, _TAG_DELIMITER, tag_value)
+
+  @staticmethod
+  def GenerateTagList(d, year, week, day):  # pylint: disable=unused-argument
+    return [
+        ReportRow.GenerateTag('year', year),
+        ReportRow.GenerateTag('week', week),
+        ReportRow.GenerateTag('day', day),
+    ]
+
+  @staticmethod
+  def GetTagDelimiter():
+    return _TAG_DELIMITER
+
+  def GetTotalOccurrenceCount(self):
+    return sum([
+        occurrence_count.count
+        for occurrence_count in self.occurrence_counts or []
+    ])
+
+  def GetTotalCLCount(self):
+    return sum([cl_count.count for cl_count in self.impacted_cl_counts or []])
+
+  def ToSerializable(self):
+    impacted_cl_summary = {}
+    for cl_count in self.impacted_cl_counts:
+      impacted_cl_summary[cl_count.flake_type.name.lower()] = cl_count.count
+    impacted_cl_summary['total'] = self.GetTotalCLCount()
+
+    occurrence_summary = {}
+    for occurrence_count in self.occurrence_counts:
+      occurrence_summary[occurrence_count.flake_type.name
+                         .lower()] = occurrence_count.count
+    occurrence_summary['total'] = self.GetTotalOccurrenceCount()
+
+    return {
+        'id': self.key.id(),
+        'bug_count': self.bug_count,
+        'impacted_cl_counts': impacted_cl_summary,
+        'occurrence_counts': occurrence_summary,
+        'test_count': self.test_count,
+    }
 
 
 class TotalFlakinessReport(ReportRow):
@@ -62,13 +130,13 @@ class TotalFlakinessReport(ReportRow):
   # the next Monday at the same time.
 
   @staticmethod
-  def MakeId(year, week_number):
+  def MakeId(year, week, day):
     # Compose a string like '2018-W02' to use as id for the report.
-    return '%d-W%02d' % (year, week_number)
+    return '%d-W%02d-%d' % (year, week, day)
 
   @classmethod
-  def Get(cls, year, week_number):
-    return ndb.Key(cls, cls.MakeId(year, week_number)).get()
+  def Get(cls, year, week, day):
+    return ndb.Key(cls, cls.MakeId(year, week, day)).get()
 
 
 class ComponentFlakinessReport(ReportRow):
@@ -78,6 +146,13 @@ class ComponentFlakinessReport(ReportRow):
   def Get(cls, report_key, component):
     key = ndb.Key(report_key.kind(), report_key.id(), cls, component)
     return key.get()
+
+  @staticmethod
+  def GenerateTagList(d, year, week, day):
+    tags = super(ComponentFlakinessReport,
+                 ComponentFlakinessReport).GenerateTagList(d, year, week, day)
+    tags.append(ComponentFlakinessReport.GenerateTag('component', d['_id']))
+    return tags
 
 
 class TestFlakinessReport(ReportRow):
@@ -90,3 +165,10 @@ class TestFlakinessReport(ReportRow):
         component_report_key.parent().id(), component_report_key.kind(),
         component_report_key.id(), cls, test)
     return key.get()
+
+  @staticmethod
+  def GenerateTagList(d, year, week, day):
+    tags = super(TestFlakinessReport, TestFlakinessReport).GenerateTagList(
+        d, year, week, day)
+    tags.append(TestFlakinessReport.GenerateTag('test', d['_id']))
+    return tags

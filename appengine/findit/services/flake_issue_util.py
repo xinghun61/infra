@@ -128,18 +128,10 @@ def GetFlakeIssue(flake):
     A FlakeIssue entity if it exists, otherwise None. This entity should be the
       final merging destination issue.
   """
-  if not flake or not flake.flake_issue_key:
+  if not flake:
     return None
 
-  flake_issue = flake.flake_issue_key.get()
-  if not flake_issue:
-    # Data is inconsistent, reset the key to allow a new FlakeIssue to be
-    # attached later.
-    flake.flake_issue_key = None
-    flake.put()
-    return None
-
-  return flake_issue.GetMostUpdatedIssue()
+  return flake.GetIssue(up_to_date=True)
 
 
 def _FlakeHasEnoughOccurrences(unreported_occurrences):

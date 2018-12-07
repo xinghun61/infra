@@ -253,6 +253,26 @@ class Flake(ndb.Model):
     return test_name_util.ReplaceAllPrefixesFromGtestNameWithMask(
         test_name_util.ReplaceParametersFromGtestNameWithMask(test_name))
 
-  def GetIssue(self):
-    """Returns the associated FlakeIssue."""
-    return self.flake_issue_key.get() if self.flake_issue_key else None
+  def GetIssue(self, up_to_date=False, key_only=False):
+    """Returns the associated FlakeIssue.
+
+    Args:
+      up_to_date (bool): True if want to get the most up-to-date FlakeIssue,
+        otherwise False.
+      key_only (bool): True if just need the key to the destination issue, False
+        if need the entity.
+    """
+    if not self.flake_issue_key:
+      return None
+
+    flake_issue = self.flake_issue_key.get()
+    if not flake_issue:
+      # Data is inconsistent, reset the key to allow a new FlakeIssue to be
+      # attached later.
+      self.flake_issue_key = None
+      self.put()
+      return None
+
+    if flake_issue and up_to_date:
+      return flake_issue.GetMostUpdatedIssue(key_only)
+    return self.flake_issue_key if key_only else flake_issue

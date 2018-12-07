@@ -69,7 +69,7 @@ class FlakeIssueTest(TestCase):
 
     self.assertEqual(merge_issue, flake_issue.GetMostUpdatedIssue())
 
-  def testGetMostUpdatedIssueNoMerge(self):
+  def testGetMostUpdatedIssueNoMergeKeyOnly(self):
     monorail_project = 'chromium'
     issue_id = 12345
 
@@ -77,7 +77,8 @@ class FlakeIssueTest(TestCase):
         monorail_project=monorail_project, issue_id=issue_id)
     flake_issue.put()
 
-    self.assertEqual(flake_issue, flake_issue.GetMostUpdatedIssue())
+    self.assertEqual(flake_issue.key,
+                     flake_issue.GetMostUpdatedIssue(key_only=True))
 
   def testUpdate(self):
     monorail_project = 'chromium'
