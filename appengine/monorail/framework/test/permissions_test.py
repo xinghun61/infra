@@ -436,6 +436,194 @@ class PermissionsTest(unittest.TestCase):
     self.assertFalse(permissions.CanDelete(
         111L, {111L}, perms, 222L, 222L, None, []))
 
+  def testCanDeleteComment_NoPermissionSet(self):
+    """Test that if no PermissionSet is given, we can't delete comments."""
+    comment = tracker_pb2.IssueComment()
+    commenter = user_pb2.User()
+    # If no PermissionSet is given, the user cannot delete the comment.
+    self.assertFalse(permissions.CanDeleteComment(
+        comment, commenter, 111L, None))
+    # Same, with no user specified.
+    self.assertFalse(permissions.CanDeleteComment(
+        comment, commenter, framework_constants.NO_USER_SPECIFIED, None))
+
+  def testCanDeleteComment_AnonUsersCannotDelete(self):
+    """Test that anon users can't delete comments."""
+    comment = tracker_pb2.IssueComment()
+    commenter = user_pb2.User()
+    perms = permissions.PermissionSet([permissions.DELETE_ANY])
+
+    # No logged in user, even with perms from somewhere.
+    self.assertFalse(permissions.CanDeleteComment(
+        comment, commenter, framework_constants.NO_USER_SPECIFIED, perms))
+
+    # No logged in user, even if artifact was already deleted.
+    comment.deleted_by = 111L
+    self.assertFalse(permissions.CanDeleteComment(
+        comment, commenter, framework_constants.NO_USER_SPECIFIED, perms))
+
+  def testCanDeleteComment_DeleteAny(self):
+    """Test that users with DeleteAny permission can delete any comment.
+
+    Except for spam comments or comments by banned users.
+    """
+    comment = tracker_pb2.IssueComment(user_id=111L)
+    commenter = user_pb2.User()
+    perms = permissions.PermissionSet([permissions.DELETE_ANY])
+
+    # Users with DeleteAny permission can delete their own comments.
+    self.assertTrue(permissions.CanDeleteComment(
+        comment, commenter, 111L, perms))
+
+    # And also comments by other users
+    comment.user_id = 999L
+    self.assertTrue(permissions.CanDeleteComment(
+        comment, commenter, 111L, perms))
+
+    # As well as undelete comments they deleted.
+    comment.deleted_by = 111L
+    self.assertTrue(permissions.CanDeleteComment(
+        comment, commenter, 111L, perms))
+
+    # Or that other users deleted.
+    comment.deleted_by = 222L
+    self.assertTrue(permissions.CanDeleteComment(
+        comment, commenter, 111L, perms))
+
+  def testCanDeleteComment_DeleteOwn(self):
+    """Test that users with DeleteOwn permission can delete any comment.
+
+    Except for spam comments or comments by banned users.
+    """
+    comment = tracker_pb2.IssueComment(user_id=111L)
+    commenter = user_pb2.User()
+    perms = permissions.PermissionSet([permissions.DELETE_OWN])
+
+    # Users with DeleteOwn permission can delete their own comments.
+    self.assertTrue(permissions.CanDeleteComment(
+        comment, commenter, 111L, perms))
+
+    # But not comments by other users
+    comment.user_id = 999L
+    self.assertFalse(permissions.CanDeleteComment(
+        comment, commenter, 111L, perms))
+
+    # They can undelete comments they deleted.
+    comment.user_id = 111L
+    comment.deleted_by = 111L
+    self.assertTrue(permissions.CanDeleteComment(
+        comment, commenter, 111L, perms))
+
+    # But not comments that other users deleted.
+    comment.deleted_by = 222L
+    self.assertFalse(permissions.CanDeleteComment(
+        comment, commenter, 111L, perms))
+
+  def testCanDeleteComment_CannotDeleteSpamComments(self):
+    """Test that nobody can (un)delete comments marked as spam."""
+    comment = tracker_pb2.IssueComment(user_id=111L, is_spam=True)
+    commenter = user_pb2.User()
+
+    # Nobody can delete comments marked as spam.
+    self.assertFalse(permissions.CanDeleteComment(
+        comment, commenter, 111L,
+        permissions.PermissionSet([permissions.DELETE_OWN])))
+    self.assertFalse(permissions.CanDeleteComment(
+        comment, commenter, 222L,
+        permissions.PermissionSet([permissions.DELETE_ANY])))
+
+    # Nobody can undelete comments marked as spam.
+    comment.deleted_by = 222L
+    self.assertFalse(permissions.CanDeleteComment(
+        comment, commenter, 111L,
+        permissions.PermissionSet([permissions.DELETE_OWN])))
+    self.assertFalse(permissions.CanDeleteComment(
+        comment, commenter, 222L,
+        permissions.PermissionSet([permissions.DELETE_ANY])))
+
+  def testCanDeleteComment_CannotDeleteCommentsByBannedUser(self):
+    """Test that nobody can (un)delete comments by banned users."""
+    comment = tracker_pb2.IssueComment(user_id=111L)
+    commenter = user_pb2.User(banned='Some reason')
+
+    # Nobody can delete comments by banned users.
+    self.assertFalse(permissions.CanDeleteComment(
+        comment, commenter, 111L,
+        permissions.PermissionSet([permissions.DELETE_OWN])))
+    self.assertFalse(permissions.CanDeleteComment(
+        comment, commenter, 222L,
+        permissions.PermissionSet([permissions.DELETE_ANY])))
+
+    # Nobody can undelete comments by banned users.
+    comment.deleted_by = 222L
+    self.assertFalse(permissions.CanDeleteComment(
+        comment, commenter, 111L,
+        permissions.PermissionSet([permissions.DELETE_OWN])))
+    self.assertFalse(permissions.CanDeleteComment(
+        comment, commenter, 222L,
+        permissions.PermissionSet([permissions.DELETE_ANY])))
+
+  def testCanViewComment_Normal(self):
+    """Test that we can view comments."""
+    comment = tracker_pb2.IssueComment()
+    commenter = user_pb2.User()
+    # We assume that CanViewIssue was already called. There are no further
+    # restrictions to view this comment.
+    self.assertTrue(permissions.CanViewComment(
+        comment, commenter, 111L, None))
+
+  def testCanViewComment_CannotViewCommentsByBannedUser(self):
+    """Test that nobody can view comments by banned users."""
+    comment = tracker_pb2.IssueComment(user_id=111L)
+    commenter = user_pb2.User(banned='Some reason')
+
+    # Nobody can view comments by banned users.
+    self.assertFalse(permissions.CanViewComment(
+        comment, commenter, 111L, permissions.ADMIN_PERMISSIONSET))
+
+  def testCanViewComment_OnlyModeratorsCanViewSpamComments(self):
+    """Test that only users with VerdictSpam can view spam comments."""
+    comment = tracker_pb2.IssueComment(user_id=111L, is_spam=True)
+    commenter = user_pb2.User()
+
+    # Users with VerdictSpam permission can view comments marked as spam.
+    self.assertTrue(permissions.CanViewComment(
+        comment, commenter, 222L,
+        permissions.PermissionSet([permissions.VERDICT_SPAM])))
+
+    # Other users cannot view comments marked as spam, even if it is their own
+    # comment.
+    self.assertFalse(permissions.CanViewComment(
+        comment, commenter, 111L,
+        permissions.PermissionSet([
+            permissions.FLAG_SPAM, permissions.DELETE_ANY,
+            permissions.DELETE_OWN])))
+
+  def testCanViewComment_DeletedComment(self):
+    """Test that for deleted comments, only the users that can undelete it can
+    view it.
+    """
+    comment = tracker_pb2.IssueComment(user_id=111L, deleted_by=222L)
+    commenter = user_pb2.User()
+
+    # Users with DeleteAny permission can view all deleted comments.
+    self.assertTrue(permissions.CanViewComment(
+        comment, commenter, 333L,
+        permissions.PermissionSet([permissions.DELETE_ANY])))
+
+    # Users with DeleteOwn permissions can only see their own comments if they
+    # deleted them.
+    comment.user_id = comment.deleted_by = 333L
+    self.assertTrue(permissions.CanViewComment(
+        comment, commenter, 333L,
+        permissions.PermissionSet([permissions.DELETE_OWN])))
+
+    # But not comments they didn't delete.
+    comment.deleted_by = 111L
+    self.assertFalse(permissions.CanViewComment(
+        comment, commenter, 333L,
+        permissions.PermissionSet([permissions.DELETE_OWN])))
+
   def testCanViewNormalArifact(self):
     # Anyone can view a non-restricted artifact.
     self.assertTrue(permissions.CanView(

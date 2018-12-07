@@ -638,7 +638,7 @@ def IsExpired(project, expired_before=None):
 
 def CanDelete(logged_in_user_id, effective_ids, perms, deleted_by_user_id,
               creator_user_id, project, restrictions, granted_perms=None):
-  """Returns true if user has delete permission.
+  """[DEPRECATED] Returns true if user has delete permission.
 
   Args:
     logged_in_user_id: int user id of the logged in user.
@@ -681,6 +681,77 @@ def CanDelete(logged_in_user_id, effective_ids, perms, deleted_by_user_id,
     return True
 
   return False
+
+
+def CanDeleteComment(comment, commenter, user_id, perms):
+  """Returns true if the user can (un)delete the given comment.
+
+  UpdateIssuePermissions must have been called first.
+
+  Args:
+    comment: An IssueComment PB object.
+    commenter: An User PB object with the user who created the comment.
+    user_id: The ID of the user whose permission we want to check.
+    perms: The PermissionSet with the issue permissions.
+
+  Returns:
+    True if the user can (un)delete the comment."""
+
+  # User is not logged in or has no permissions.
+  if not user_id or not perms:
+    return False
+
+  # Nobody can (un)delete comments by banned users or spam comments, which
+  # should be un-flagged instead.
+  if commenter.banned or comment.is_spam:
+    return False
+
+  # Site admin or project owners can delete any comment.
+  permit_delete_any = perms.HasPerm(DELETE_ANY, None, None, [])
+  if permit_delete_any:
+    return True
+
+  # Users cannot undelete unless they deleted.
+  if comment.deleted_by and comment.deleted_by != user_id:
+    return False
+
+  # Users can delete their own items.
+  permit_delete_own = perms.HasPerm(DELETE_OWN, None, None, [])
+  if permit_delete_own and comment.user_id == user_id:
+    return True
+
+  return False
+
+
+def CanViewComment(comment, commenter, user_id, perms):
+  """Returns true if the user can view the given comment.
+
+  UpdateIssuePermissions must have been called first.
+  Assumes that the user has permission to view the issue.
+
+  Args:
+    comment: An IssueComment PB object.
+    commenter: An User PB object with the user who created the comment.
+    user_id: The ID of the user whose permission we want to check.
+    perms: The PermissionSet with the issue permissions.
+
+  Returns:
+    True if the user can view the comment."""
+
+  # Nobody can view comments by banned users.
+  if commenter.banned:
+    return False
+
+  # Only users with VERDICT_SPAM permission can view spam comments.
+  if comment.is_spam:
+    return perms.HasPerm(VERDICT_SPAM, None, None, [])
+
+  # Only users with the permission to un-delete comments can view deleted
+  # comments.
+  if comment.deleted_by:
+    return CanDeleteComment(comment, commenter, user_id, perms)
+
+  return True
 
 
 def CanView(effective_ids, perms, project, restrictions, granted_perms=None):
