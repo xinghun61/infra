@@ -19,13 +19,14 @@ class MrCommentContent extends ReduxMixin(Polymer.Element) {
         value: () => new Map(),
         statePath: 'commentReferences',
       },
+      isDeleted: Boolean,
       projectName: {
         type: String,
         statePath: 'projectName',
       },
       _textRuns: {
         type: Array,
-        computed: '_computeTextRuns(content, commentReferences, projectName)',
+        computed: '_computeTextRuns(isDeleted, content, commentReferences, projectName)',
       },
     };
   }
@@ -34,9 +35,15 @@ class MrCommentContent extends ReduxMixin(Polymer.Element) {
     return tag == str;
   }
 
-  _computeTextRuns(content, commentReferences, projectName) {
+  _computeTextRuns(isDeleted, content, commentReferences, projectName) {
+    console.log(isDeleted);
     return window.__autolink.markupAutolinks(
         content, commentReferences, projectName);
+  }
+
+  _computeDeletedClass(isDeleted) {
+    console.log(isDeleted ? 'deleted-comment-content' : '');
+    return isDeleted ? 'deleted-comment-content' : '';
   }
 }
 customElements.define(MrCommentContent.is, MrCommentContent);

@@ -558,7 +558,7 @@ class ConverterFunctionsTest(unittest.TestCase):
 
     # Normal comment.
     actual = converters.ConvertComment(
-        issue, comment, self.users_by_id, self.config, {}, None)
+        issue, comment, self.users_by_id, self.config, {})
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
         commenter=common_pb2.UserRef(
@@ -566,10 +566,10 @@ class ConverterFunctionsTest(unittest.TestCase):
         timestamp=now, content='a comment', is_spam=False)
     self.assertEqual(expected, actual)
 
-    # Comment that was deleted and now viewed by comment author.
+    # Deleted Comment.
     comment.deleted_by = 111L
     actual = converters.ConvertComment(
-        issue, comment, self.users_by_id, self.config, {}, 111L)
+        issue, comment, self.users_by_id, self.config, {})
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=True,
         commenter=common_pb2.UserRef(
@@ -577,19 +577,11 @@ class ConverterFunctionsTest(unittest.TestCase):
         timestamp=now, content='a comment', is_spam=False)
     self.assertEqual(expected, actual)
 
-    # Comment that was deleted and now viewed by some other user.
-    actual = converters.ConvertComment(
-        issue, comment, self.users_by_id, self.config, {}, 222L)
-    expected = issue_objects_pb2.Comment(
-        project_name='proj', local_id=1, sequence_num=12, is_deleted=True,
-        timestamp=now, is_spam=False)
-    self.assertEqual(expected, actual)
-    comment.deleted_by = None
-
     # Description.
     comment.is_description = True
+    comment.deleted_by = None
     actual = converters.ConvertComment(
-        issue, comment, self.users_by_id, self.config, {101: 1}, None)
+        issue, comment, self.users_by_id, self.config, {101: 1})
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
         commenter=common_pb2.UserRef(
@@ -607,7 +599,7 @@ class ConverterFunctionsTest(unittest.TestCase):
         approval_id=11, approver_ids=[111L], survey='survey 1'))
     comment.approval_id = 11
     actual = converters.ConvertComment(
-        issue, comment, self.users_by_id, self.config, {}, None)
+        issue, comment, self.users_by_id, self.config, {})
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
         commenter=common_pb2.UserRef(
@@ -635,7 +627,7 @@ class ConverterFunctionsTest(unittest.TestCase):
 
     actual = converters.ConvertCommentList(
         issue, [comment_0, comment_1, comment_2, comment_3], self.users_by_id,
-        self.config, 222L)
+        self.config)
 
     expected_0 = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=0, is_deleted=False,

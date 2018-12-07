@@ -11,13 +11,19 @@
       .strike-through {
         text-decoration: line-through;
       }
+      .deleted-comment-content {
+        color: #888;
+        font-style: italic;
+      }
     </style>
-    <template is="dom-repeat" items="[[_textRuns]]" as="run">
-      <b class="line" hidden$="[[!_isTagEqual(run.tag, 'b')]]">[[run.content]]</b>
-      <br hidden$="[[!_isTagEqual(run.tag, 'br')]]"/>
-      <a class="line" hidden$="[[!_isTagEqual(run.tag, 'a')]]" href$="[[run.href]]" class$="[[run.css]]">[[run.content]]</a>
-      <span class="line" hidden$="[[run.tag]]">[[run.content]]</span>
-    </template>
+    <span class$="[[_computeDeletedClass(isDeleted)]]">
+      <template is="dom-repeat" items="[[_textRuns]]" as="run">
+        <b class="line" hidden$="[[!_isTagEqual(run.tag, 'b')]]">[[run.content]]</b>
+        <br hidden$="[[!_isTagEqual(run.tag, 'br')]]"/>
+        <a class="line" hidden$="[[!_isTagEqual(run.tag, 'a')]]" href$="[[run.href]]" class$="[[run.css]]">[[run.content]]</a>
+        <span class="line" hidden$="[[run.tag]]">[[run.content]]</span>
+      </template>
+    </span>
   </template>
   <script src="./mr-comment-content.js"></script>
 <dom-module>

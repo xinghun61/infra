@@ -229,7 +229,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
 
     with mc.profiler.Phase('converting to response objects'):
       converted_comments = converters.ConvertCommentList(
-          issue, comments, users_by_id, config, mc.auth.user_id)
+          issue, comments, users_by_id, config)
       response = issues_pb2.ListCommentsResponse(comments=converted_comments)
 
     return response
@@ -267,8 +267,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
             issue, c,
             users_by_id,
             config_dict.get(issue.project_id),
-            {c.id: 1} if c.is_description else {},
-            mc.auth.user_id)
+            {c.id: 1} if c.is_description else {})
         converted_comments.append(result)
       converted_issues = [issue_objects_pb2.IssueSummary(
           project_name=issue.project_name, local_id=issue.local_id,

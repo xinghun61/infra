@@ -1780,7 +1780,13 @@ class IssueService(object):
       delete=True, reindex=False, is_spam=False):
     print "Soft deleting", comment
     pid = comment.project_id
-    by_iid_idx = self.comments_by_iid[issue.issue_id].index(comment)
+    # Find the original comment by the sequence number.
+    c = None
+    by_iid_idx = -1
+    for by_iid_idx, c in enumerate(self.comments_by_iid[issue.issue_id]):
+      if c.sequence == comment.sequence:
+        break
+    comment = c
     by_project_idx = (
         self.comments_by_project[pid][issue.local_id].index(comment))
     comment.is_spam = is_spam
