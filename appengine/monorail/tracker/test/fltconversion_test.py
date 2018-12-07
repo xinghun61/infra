@@ -52,13 +52,21 @@ class FLTConvertTask(unittest.TestCase):
             'Type-Launch'])
     self.issue3 = fake.MakeTestIssue(
         789, 3, 'sum', 'New', 111L, issue_id=78903,
-        labels=['Launch-M-Approved-71-Stable', 'Launch-M-Target-70-Beta',
+        labels=['Launch-M-Approved-71-Stable',
+                'Launch-M-Approved-79-Stable-Exp', 'Launch-M-Target-70-Beta',
                 'Launch-M-Target-70-Stable', 'Launch-UI-Yes',
                 'Launch-Exp-Leadership-Yes', 'pm-annajo', 'tl-jojwang',
                 'OS-Chrome', 'Type-Launch'])
     self.issue4 = fake.MakeTestIssue(
         789, 4, 'sum', 'New', 111L, issue_id=78904,
         labels=['Launch-UI-Yes', 'OS-Chrome', 'Type-Launch'])
+    self.issue5 = fake.MakeTestIssue(
+        789, 5, 'sum', 'New', 111L, issue_id=78905,
+        labels=['Launch-M-Approved-71-Stable',
+                'Launch-M-Approved-79-Stable-Exp', 'Launch-M-Target-70-Beta',
+                'Launch-M-Target-70-Stable', 'Launch-UI-Yes',
+                'Launch-Privacy-NeedInfo', 'Launch-Exp-Leadership-Yes',
+                'pm-annajo', 'tl-jojwang', 'OS-Chrome', 'Type-Launch'])
 
     self.approval_values = [
         tracker_pb2.ApprovalValue(
@@ -269,8 +277,7 @@ class FLTConvertTask(unittest.TestCase):
         tracker_pb2.FieldValue(field_id=8, int_value=71, phase_id=2),
     ]
 
-    self.issue2.labels.extend(
-        ['Rollout-Type-Finch'])
+    self.issue2.labels.extend(['Rollout-Type-Finch'])
     self.issue2.phases = [tracker_pb2.Phase(name='Beta', phase_id=1),
                           tracker_pb2.Phase(name='Stable-Full', phase_id=2),
                           tracker_pb2.Phase(name='Stable-Exp', phase_id=3)]
@@ -290,8 +297,10 @@ class FLTConvertTask(unittest.TestCase):
         tracker_bizobj.MakeFieldValue(5, None, None, 111L, None, None, False),
         ]
 
+    self.issue3.labels.extend(['Rollout-Type-Default'])
     self.issue3.phases = [tracker_pb2.Phase(name='Feature Freeze', phase_id=4),
-                          tracker_pb2.Phase(name='Branch', phase_id=5)]
+                          tracker_pb2.Phase(name='Branch', phase_id=5),
+                          tracker_pb2.Phase(name='Stable', phase_id=6)]
     self.issue3.approval_values = [
       tracker_pb2.ApprovalValue(
           approval_id=9, status=tracker_pb2.ApprovalStatus.APPROVED),
@@ -300,19 +309,44 @@ class FLTConvertTask(unittest.TestCase):
     # problem = no phase field label Launch-M-Target-70-Stable
     # problem = missing a field for TL
     self.issue3.field_values = [
-        tracker_pb2.FieldValue(field_id=8, int_value=71, phase_id=5),
+        tracker_pb2.FieldValue(field_id=8, int_value=71, phase_id=6),
         tracker_bizobj.MakeFieldValue(4, None, None, 111L, None, None, False)
     ]
 
-    # problem = incorrect phases for OS only launch
+    self.issue4.labels.extend(['Rollout-Type-Default'])
+    # problem = incorrect phases for OS default launch
     self.issue4.phases = [tracker_pb2.Phase(name='Branch', phase_id=5),
-                          tracker_pb2.Phase(name='Stable', phase_id=2)]
+                          tracker_pb2.Phase(name='Stable-Exp', phase_id=7)]
     # problem = approval ChromeOS-UX has status 'NEEDS_REVIEW'
     # for label value Yes
     self.issue4.approval_values = [
       tracker_pb2.ApprovalValue(
           approval_id=9, status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)]
 
+    self.issue5.labels.extend(['Rollout-Type-Finch'])
+    self.issue5.phases = [tracker_pb2.Phase(name='Branch', phase_id=5),
+                          tracker_pb2.Phase(name='Feature Freeze', phase_id=4),
+                          tracker_pb2.Phase(name='Stable-Exp', phase_id=7),
+                          tracker_pb2.Phase(name='Stable-Full', phase_id=8)]
+    self.issue5.approval_values = [
+        tracker_pb2.ApprovalValue(
+            approval_id=9, status=tracker_pb2.ApprovalStatus.APPROVED),
+        # problem = approval ChromeOS-Privacy has status 'REVIEW_REQUESTED'
+        # for label value NeedInfo
+        tracker_pb2.ApprovalValue(
+            approval_id=11, status=tracker_pb2.ApprovalStatus.REVIEW_REQUESTED),
+        # problem = approval ChromeOS-Leadership-Exp has status 'NA' for label
+        # value Yes.
+        tracker_pb2.ApprovalValue(
+            approval_id=13, status=tracker_pb2.ApprovalStatus.NA)
+    ]
+
+    # problem = no phase field for label Launch-M-Approved-79-Stable-Exp
+    # problem = no phase field for label Launch-M-Target-70-Stable
+    self.issue5.field_values = [
+        tracker_pb2.FieldValue(field_id=8, int_value=71, phase_id=8),
+        tracker_bizobj.MakeFieldValue(4, None, None, 111L, None, None, False),
+        tracker_bizobj.MakeFieldValue(5, None, None, 111L, None, None, False)]
 
     self.config.field_defs = [
         tracker_pb2.FieldDef(field_id=1, field_name='Chrome-Test'),
@@ -326,19 +360,22 @@ class FLTConvertTask(unittest.TestCase):
         tracker_pb2.FieldDef(field_id=8, field_name='M-Approved'),
         tracker_pb2.FieldDef(field_id=9, field_name='ChromeOS-UX'),
         tracker_pb2.FieldDef(field_id=10, field_name='ChromeOS-Enterprise'),
+        tracker_pb2.FieldDef(field_id=11, field_name='ChromeOS-Privacy'),
+        tracker_pb2.FieldDef(field_id=13, field_name='ChromeOS-Leadership-Exp')
     ]
 
     # Set up mocks
     patcher = mock.patch(
         'search.frontendsearchpipeline.FrontendSearchPipeline',
         spec=True, allowed_results=[
-            self.issue1, self.issue2, self.issue3, self.issue4])
+            self.issue1, self.issue2, self.issue3, self.issue4, self.issue5])
     mockPipeline = patcher.start()
     self.task.services.project.GetProjectByName = mock.Mock()
     self.task.services.config.GetProjectConfig = mock.Mock(
         return_value=self.config)
     self.task.services.issue.GetIssue = mock.Mock(
-        side_effect=[self.issue1, self.issue2, self.issue3, self.issue4])
+        side_effect=[
+            self.issue1, self.issue2, self.issue3, self.issue4, self.issue5])
     self.task.services.user.LookupUserID = mock.Mock(return_value=111L)
     with self.work_env as we:
       we.ListIssues = mock.Mock(return_value=mockPipeline)
@@ -346,7 +383,7 @@ class FLTConvertTask(unittest.TestCase):
     # Assert
     json = self.task.VerifyConversion(self.mr)
     self.assertEqual(json['issues verified'],
-                     ['issue 1', 'issue 2', 'issue 3', 'issue 4'])
+                     ['issue 1', 'issue 2', 'issue 3', 'issue 4', 'issue 5'])
     problems = json['problems found']
     expected_problems = [
         'issue 1: missing a field for TL',
@@ -356,9 +393,15 @@ class FLTConvertTask(unittest.TestCase):
         'issue 2: no phase field for label Launch-M-Approved-70-Beta',
         'issue 3: missing a field for TL',
         'issue 3: no phase field for label Launch-M-Target-70-Stable',
-                'issue 4: incorrect phases for OS only launch.',
+        'issue 4: incorrect phases for OS default launch.',
         'issue 4: approval ChromeOS-UX has status \'NEEDS_REVIEW\' for '
-        'label value Yes'
+        'label value Yes',
+        'issue 5: approval ChromeOS-Privacy has status \'REVIEW_REQUESTED\' '
+        'for label value NeedInfo',
+        'issue 5: approval ChromeOS-Leadership-Exp has status \'NA\' for label '
+        'value Yes',
+        'issue 5: no phase field for label Launch-M-Approved-79-Stable-Exp',
+        'issue 5: no phase field for label Launch-M-Target-70-Stable',
     ]
     self.assertEqual(problems, expected_problems)
     patcher.stop()
@@ -770,16 +813,16 @@ class ConvertMLabels(unittest.TestCase):
     self.assertEqual(actual_fvs, expected_fvs)
 
   def testConvertMLabels_OS(self):
-    phases = [self.feature_freeze_phase, self.branch_phase]
+    phases = [self.feature_freeze_phase, self.branch_phase, self.stable_phase]
     labels = [
         'launch-m-approved-81-beta',  # ignore
         'launch-m-target-80-stable-car',  # ignore
         'a-Launch-M-Target-80-Stable-car',  # ignore
-        'launch-m-target-70-Stable',  # branch:M-Target=70
-        'LAUNCH-M-TARGET-71-STABLE',  # branch:M-Target=71
+        'launch-m-target-70-Stable',  # stable:M-Target=70
+        'LAUNCH-M-TARGET-71-STABLE',  # stable:M-Target=71
         'launch-m-target-70-stable-exp',  # ignore
         'launch-M-APPROVED-70-Stable-Exp',  # ignore
-        'launch-m-approved-73-stable',  # branch:M-Approved-73
+        'launch-m-approved-73-stable',  # stable:M-Approved-73
         'launch-m-error-73-stable',  # ignore
         'launch-m-approved-8-stable',  #ignore
         'irrelevant label-weird',  # ignore
@@ -791,13 +834,13 @@ class ConvertMLabels(unittest.TestCase):
     expected_fvs = [
       tracker_pb2.FieldValue(
           field_id=self.target_id, int_value=70,
-          phase_id=self.branch_phase.phase_id, derived=False,),
+          phase_id=self.stable_phase.phase_id, derived=False,),
       tracker_pb2.FieldValue(
           field_id=self.target_id, int_value=71,
-          phase_id=self.branch_phase.phase_id, derived=False),
+          phase_id=self.stable_phase.phase_id, derived=False),
       tracker_pb2.FieldValue(
           field_id=self.approved_id, int_value=73,
-          phase_id=self.branch_phase.phase_id, derived=False)
+          phase_id=self.stable_phase.phase_id, derived=False)
     ]
 
     self.assertEqual(actual_fvs, expected_fvs)

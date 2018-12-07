@@ -89,11 +89,14 @@ BROWSER_M_LABELS_RE = re.compile(
     re.IGNORECASE)
 
 OS_PHASE_MAP = {'feature freeze': '',
-                 'branch': 'stable'}
-# We only care about Launch-M-<type>-<m>-Stable labels for OS.
+                 'branch': '',
+                'stable': 'stable',
+                'stable-full': 'stable',
+                'stable-exp': 'stable-exp',}
+# We only care about Launch-M-<type>-<m>-Stable|Stable-Exp labels for OS.
 OS_M_LABELS_RE = re.compile(
     r'^Launch-M-(?P<type>Approved|Target)-(?P<m>\d\d)-'
-    r'(?P<channel>Stable$)', re.IGNORECASE)
+    r'(?P<channel>Stable$|Stable-Exp$)', re.IGNORECASE)
 
 CAN = 2  # Query for open issues only
 # Ensure empty group_by_spec and sort_spec so issues are sorted by 'ID'.
@@ -109,12 +112,16 @@ QUERY_MAP = {
     'default':
     'Type=Launch Rollout-Type=Default OS=Windows,Mac,Linux,Android,iOS',
     'finch': 'Type=Launch Rollout-Type=Finch OS=Windows,Mac,Linux,Android,iOS',
-    'os': 'Type=Launch OS=Chrome -OS=Windows,Mac,Linux,Android,iOS'}
+    'os': 'Type=Launch OS=Chrome -OS=Windows,Mac,Linux,Android,iOS'
+    ' Rollout-Type=Default',
+    'os-finch': 'Type=Launch OS=Chrome -OS=Windows,Mac,Linux,Android,iOS'
+    ' Rollout-Type=Finch'}
 
 TEMPLATE_MAP = {
     'default': 'Chrome Launch - Default',
     'finch': 'Chrome Launch - Experimental',
-    'os': 'Chrome OS Launch',
+    'os': 'Chrome OS Launch - Default',
+    'os-finch': 'Chrome OS Launch - Experimental',
 }
 
 ProjectInfo = collections.namedtuple(
@@ -197,24 +204,35 @@ class FLTConvertTask(jsonfeed.InternalTask):
       m_labels_re = BROWSER_M_LABELS_RE
       label_channel_to_phase_id = {
           phase.name.lower(): phase.phase_id for phase in issue.phases}
-      if [l.lower() for l in issue.labels if
-          l.lower().startswith('os-')] == ['os-chrome']:  # OS only launch
+      if [l for l in issue.labels if l.startswith('OS-')] == ['OS-Chrome']:
         approval_names = os_approval_names
-        approvals_to_labels = OS_APPROVALS_TO_LABELS
         m_labels_re = OS_M_LABELS_RE
-        label_channel_to_phase_id = {'stable': phase.phase_id for
-                                     phase in issue.phases
-                                     if phase.name.lower() == 'branch'}
-        if not all(phase.name.lower() in ['feature freeze', 'branch']
-                   for phase in issue.phases):
+        approvals_to_labels = OS_APPROVALS_TO_LABELS
+        # OS default launch
+        if 'Rollout-Type-Default' in issue.labels:
+          if not all(phase.name in ['Feature Freeze', 'Branch', 'Stable']
+                     for phase in issue.phases):
+            problems.append((
+                issue.local_id, 'incorrect phases for OS default launch.'))
+        # OS finch launch
+        elif 'Rollout-Type-Finch' in issue.labels:
+          if not all(phase.name in (
+              'Feature Freeze', 'Branch', 'Stable-Exp', 'Stable-Full')
+                     for phase in issue.phases):
+            problems.append((
+                issue.local_id, 'incorrect phases for OS finch launch.'))
+        else:
           problems.append((
-              issue.local_id, 'incorrect phases for OS only launch.'))
-      elif 'Rollout-Type-Default' in issue.labels:  # Browser default launch
+              issue.local_id,
+              'no rollout-type; should not have been converted'))
+      # Browser default launch
+      elif 'Rollout-Type-Default' in issue.labels:
         if not all(phase.name.lower() in ['beta', 'stable']
                    for phase in issue.phases):
           problems.append((
               issue.local_id, 'incorrect phases for Default rollout'))
-      elif 'Rollout-Type-Finch' in issue.labels:  # Browser finch launch
+      # Browser finch launch
+      elif 'Rollout-Type-Finch' in issue.labels:
         if not all(phase.name.lower() in ['beta', 'stable-exp', 'stable-full']
                    for phase in issue.phases):
           problems.append((
@@ -222,7 +240,7 @@ class FLTConvertTask(jsonfeed.InternalTask):
       else:
         problems.append((
             issue.local_id,
-            'no rollout-type and not OS-only; should not have been converted'))
+            'no rollout-type; should not have been converted'))
 
       # Check approval_values
       for av in issue.approval_values:
@@ -365,11 +383,13 @@ class FLTConvertTask(jsonfeed.InternalTask):
     template_name = TEMPLATE_MAP.get(launch)
     assert q and template_name, 'bad launch type: %s' % launch
 
-    phase_map = OS_PHASE_MAP if launch == 'os' else BROWSER_PHASE_MAP
+    phase_map = (
+        OS_PHASE_MAP if launch in ['os', 'os-finch'] else BROWSER_PHASE_MAP)
     approvals_to_labels = (
-        OS_APPROVALS_TO_LABELS if launch == 'os'
+        OS_APPROVALS_TO_LABELS if launch in ['os', 'os-finch']
         else BROWSER_APPROVALS_TO_LABELS)
-    m_labels_re = OS_M_LABELS_RE if launch == 'os' else BROWSER_M_LABELS_RE
+    m_labels_re = (
+        OS_M_LABELS_RE if launch in ['os', 'os-finch'] else BROWSER_M_LABELS_RE)
 
     # Get project, config, template, assert template in project
     project = self.services.project.GetProjectByName(mr.cnxn, 'chromium')
@@ -385,7 +405,7 @@ class FLTConvertTask(jsonfeed.InternalTask):
         'no approvals or phases in %s' % template_name)
     assert all(phase.name.lower() in phase_map.keys() for phase in phases), (
         'one or more phases not recognized')
-    if launch in ['finch', 'os']:
+    if launch in ['finch', 'os', 'os-finch']:
       assert all(
           av.status is tracker_pb2.ApprovalStatus.NEEDS_REVIEW
           for av in approval_values
