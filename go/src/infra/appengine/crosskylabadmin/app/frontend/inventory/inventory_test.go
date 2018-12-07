@@ -16,6 +16,7 @@ package inventory
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"golang.org/x/net/context"
@@ -23,23 +24,16 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/golang/mock/gomock"
+	"github.com/golang/protobuf/proto"
+	"github.com/kylelemons/godebug/pretty"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
+	"infra/libs/skylab/inventory"
 
 	. "github.com/smartystreets/goconvey/convey"
 	. "go.chromium.org/luci/common/testing/assertions"
 )
-
-func TestEnsurePoolHealthyFailsWithoutDryrun(t *testing.T) {
-	Convey("EnsurePoolHealthy fails without dryrun", t, func() {
-		tf, validate := newTestFixture(t)
-		defer validate()
-
-		_, err := tf.Inventory.EnsurePoolHealthy(tf.C, &fleet.EnsurePoolHealthyRequest{})
-		So(err, ShouldErrLike, status.Errorf(codes.Unimplemented, ""))
-	})
-}
 
 func TestEnsurePoolHealthyDryrun(t *testing.T) {
 	Convey("EnsurePoolHealthy(dryrun) fails with no DutSelector", t, func() {
@@ -338,13 +332,76 @@ func TestEnsurePoolHealthyDryrun(t *testing.T) {
 		So(resp.Changes, ShouldHaveLength, 0)
 		So(resp.Failures, ShouldResemble, []fleet.EnsurePoolHealthyResponse_Failure{fleet.EnsurePoolHealthyResponse_TOO_MANY_UNHEALTHY_DUTS})
 	})
-
 }
 
 type testInventoryDut struct {
 	id    string
 	model string
 	pool  string
+}
+
+func TestEnsurePoolHealthyCommit(t *testing.T) {
+	Convey("EnsurePoolHealthy commits expected changes to gerrit", t, func(c C) {
+		tf, validate := newTestFixture(t)
+		defer validate()
+
+		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
+			{"link_cq_unhealthy", "link", "DUT_POOL_CQ"},
+			{"link_suites_healthy", "link", "DUT_POOL_SUITES"},
+		})
+		So(err, ShouldBeNil)
+		expectDutsWithHealth(tf.MockTracker, map[string]fleet.Health{
+			"link_cq_unhealthy":   fleet.Health_Unhealthy,
+			"link_suites_healthy": fleet.Health_Healthy,
+		})
+
+		_, err = tf.Inventory.EnsurePoolHealthy(tf.C, &fleet.EnsurePoolHealthyRequest{
+			DutSelector: &fleet.DutSelector{
+				Model: "link",
+			},
+			SparePool:  "DUT_POOL_SUITES",
+			TargetPool: "DUT_POOL_CQ",
+		})
+		So(err, ShouldBeNil)
+
+		changes := tf.FakeGerrit.Changes
+		So(changes, ShouldHaveLength, 1)
+		change := changes[0]
+		So(change.Path, ShouldEqual, "data/skylab/lab.textpb")
+		var actualLab inventory.Lab
+		err = inventory.LoadLabFromString(change.Content, &actualLab)
+		So(err, ShouldBeNil)
+		var expectedLab inventory.Lab
+		expectedLabStr := `
+		duts {
+			common {
+				id: "link_cq_unhealthy"
+				hostname: "link_cq_unhealthy"
+				labels {
+					model: "link"
+					critical_pools: DUT_POOL_SUITES
+				}
+				environment: ENVIRONMENT_STAGING,
+			}
+		}
+		duts {
+			common {
+				id: "link_suites_healthy"
+				hostname: "link_suites_healthy"
+				labels {
+					model: "link"
+					critical_pools: DUT_POOL_CQ
+				}
+				environment: ENVIRONMENT_STAGING,
+			}
+		}`
+		err = inventory.LoadLabFromString(expectedLabStr, &expectedLab)
+		So(err, ShouldBeNil)
+		if !proto.Equal(&actualLab, &expectedLab) {
+			prettyPrintLabDiff(c, &expectedLab, &actualLab)
+			So(proto.Equal(&actualLab, &expectedLab), ShouldBeTrue)
+		}
+	})
 }
 
 func setupLabInventoryArchive(c context.Context, g *fakeGitilesClient, duts []testInventoryDut) error {
@@ -380,4 +437,10 @@ func poolChangeMap(pcs []*fleet.PoolChange) map[string]*fleet.PoolChange {
 		mc[c.DutId] = c
 	}
 	return mc
+}
+
+func prettyPrintLabDiff(c C, want, got *inventory.Lab) {
+	w, _ := inventory.WriteLabToString(want)
+	g, _ := inventory.WriteLabToString(got)
+	c.Printf("submitted incorrect lab -want +got: %s", pretty.Compare(strings.Split(w, "\n"), strings.Split(g, "\n")))
 }

@@ -15,8 +15,11 @@
 package inventory
 
 import (
+	"fmt"
+
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/proto/gerrit"
 	"go.chromium.org/luci/common/proto/gitiles"
 	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
@@ -29,6 +32,9 @@ import (
 	"infra/libs/skylab/inventory"
 )
 
+// GerritFactory is a contsructor for a GerritClient
+type GerritFactory func(c context.Context, host string) (gerrit.GerritClient, error)
+
 // GitilesFactory is a contsructor for a GerritClient
 type GitilesFactory func(c context.Context, host string) (gitiles.GitilesClient, error)
 
@@ -37,6 +43,11 @@ type TrackerFactory func() fleet.TrackerServer
 
 // ServerImpl implements the fleet.InventoryServer interface.
 type ServerImpl struct {
+	// GerritFactory is an optional factory function for creating gerrit client.
+	//
+	// If GerritFactory is nil, clients.NewGerritClient is used.
+	GerritFactory GerritFactory
+
 	// GitilesFactory is an optional factory function for creating gitiles client.
 	//
 	// If GitilesFactory is nil, clients.NewGitilesClient is used.
@@ -47,6 +58,13 @@ type ServerImpl struct {
 	// TODO(pprabhu) Move tracker/tasker to individual sub-packages and inject
 	// dependencies directly (instead of factory functions).
 	TrackerFactory TrackerFactory
+}
+
+func (is *ServerImpl) newGerritClient(c context.Context, host string) (gerrit.GerritClient, error) {
+	if is.GerritFactory != nil {
+		return is.GerritFactory(c, host)
+	}
+	return clients.NewGerritClient(c, host)
 }
 
 func (is *ServerImpl) newGitilesClient(c context.Context, host string) (gitiles.GitilesClient, error) {
@@ -63,10 +81,6 @@ func (is *ServerImpl) EnsurePoolHealthy(ctx context.Context, req *fleet.EnsurePo
 	}()
 
 	inventoryConfig := config.Get(ctx).Inventory
-
-	if !req.GetOptions().GetDryrun() {
-		return nil, status.Errorf(codes.Unimplemented, "options.dryrun not set")
-	}
 
 	if err := req.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -96,8 +110,7 @@ func (is *ServerImpl) EnsurePoolHealthy(ctx context.Context, req *fleet.EnsurePo
 	logging.Debugf(ctx, "Pool balancer initial state: %+v", pb)
 
 	changes, failures := pb.EnsureTargetHealthy(int(req.MaxUnhealthyDuts))
-
-	return &fleet.EnsurePoolHealthyResponse{
+	ret := &fleet.EnsurePoolHealthyResponse{
 		Failures: failures,
 		TargetPoolStatus: &fleet.PoolStatus{
 			Size:         int32(len(pb.Target)),
@@ -108,7 +121,28 @@ func (is *ServerImpl) EnsurePoolHealthy(ctx context.Context, req *fleet.EnsurePo
 			HealthyCount: int32(pb.SpareHealthyCount()),
 		},
 		Changes: changes,
-	}, nil
+	}
+	if req.GetOptions().GetDryrun() {
+		return ret, nil
+	}
+
+	if len(changes) == 0 {
+		// No inventory changes are required.
+		// TODO(pprabhu) add a unittest enforcing this.
+		return ret, nil
+	}
+
+	if err := applyChanges(lab, changes); err != nil {
+		return ret, errors.Annotate(err, "apply balance pool changes").Err()
+	}
+
+	gerritC, err := is.newGerritClient(ctx, inventoryConfig.GerritHost)
+	if err != nil {
+		return nil, errors.Annotate(err, "create gerrit client").Err()
+	}
+	u, err := commitInventory(ctx, gerritC, lab)
+	ret.Url = u
+	return ret, err
 }
 
 func selectDutsFromInventory(lab *inventory.Lab, sel *fleet.DutSelector, env string) []*inventory.DeviceUnderTest {
@@ -120,4 +154,38 @@ func selectDutsFromInventory(lab *inventory.Lab, sel *fleet.DutSelector, env str
 		}
 	}
 	return duts
+}
+
+func applyChanges(lab *inventory.Lab, changes []*fleet.PoolChange) error {
+	oldPool := make(map[string]inventory.SchedulableLabels_DUTPool)
+	newPool := make(map[string]inventory.SchedulableLabels_DUTPool)
+	for _, c := range changes {
+		oldPool[c.DutId] = inventory.SchedulableLabels_DUTPool(inventory.SchedulableLabels_DUTPool_value[c.OldPool])
+		newPool[c.DutId] = inventory.SchedulableLabels_DUTPool(inventory.SchedulableLabels_DUTPool_value[c.NewPool])
+	}
+
+	for _, d := range lab.Duts {
+		id := d.GetCommon().GetId()
+		if np, ok := newPool[id]; ok {
+			ls := d.GetCommon().GetLabels().GetCriticalPools()
+			if ls == nil {
+				return fmt.Errorf("critical pools missing for dut %s", id)
+			}
+			ls = removeOld(ls, oldPool[id])
+			ls = append(ls, np)
+			d.GetCommon().GetLabels().CriticalPools = ls
+		}
+	}
+	return nil
+}
+
+func removeOld(ls []inventory.SchedulableLabels_DUTPool, old inventory.SchedulableLabels_DUTPool) []inventory.SchedulableLabels_DUTPool {
+	for i, l := range ls {
+		if l == old {
+			copy(ls[i:], ls[i+1:])
+			ls[len(ls)-1] = inventory.SchedulableLabels_DUT_POOL_INVALID
+			return ls[:len(ls)-1]
+		}
+	}
+	return ls
 }

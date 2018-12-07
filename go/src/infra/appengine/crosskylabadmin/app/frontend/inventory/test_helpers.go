@@ -24,10 +24,12 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/golang/protobuf/ptypes/empty"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/appengine/gaetesting"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/logging/gologger"
+	"go.chromium.org/luci/common/proto/gerrit"
 	"go.chromium.org/luci/common/proto/gitiles"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -39,6 +41,7 @@ type testFixture struct {
 
 	Inventory fleet.InventoryServer
 
+	FakeGerrit  *fakeGerritClient
 	FakeGitiles *fakeGitilesClient
 	MockTracker *fleet.MockTrackerServer
 }
@@ -53,11 +56,15 @@ type testFixture struct {
 func newTestFixture(t *testing.T) (testFixture, func()) {
 	tf := testFixture{T: t, C: testingContext()}
 
+	tf.FakeGerrit = &fakeGerritClient{}
 	tf.FakeGitiles = &fakeGitilesClient{
 		ArchiveDir: "testdata",
 		Archived:   make(map[string][]byte),
 	}
 	tf.Inventory = &ServerImpl{
+		GerritFactory: func(context.Context, string) (gerrit.GerritClient, error) {
+			return tf.FakeGerrit, nil
+		},
 		GitilesFactory: func(context.Context, string) (gitiles.GitilesClient, error) {
 			return tf.FakeGitiles, nil
 		},
@@ -168,4 +175,101 @@ func (t *trackerPartialFake) SummarizeBots(c context.Context, req *fleet.Summari
 		summaries = append(summaries, &fleet.BotSummary{DutId: s.DutId, Health: h})
 	}
 	return &fleet.SummarizeBotsResponse{Bots: summaries}, nil
+}
+
+type fakeGerritClient struct {
+	nextNumber int64
+	Changes    []*fakeChange
+}
+
+type fakeChange struct {
+	gerrit.ChangeInfo
+	fakeChangeEdit
+	IsSubmitted bool
+}
+
+type fakeChangeEdit struct {
+	Path        string
+	Content     string
+	IsPublished bool
+	IsAbandoned bool
+}
+
+func (gc *fakeGerritClient) GetChange(ctx context.Context, in *gerrit.GetChangeRequest, opts ...grpc.CallOption) (*gerrit.ChangeInfo, error) {
+	for _, c := range gc.Changes {
+		if in.Number == c.Number {
+			ret := c.ChangeInfo
+			return &ret, nil
+		}
+	}
+	return nil, fmt.Errorf("No change for %+v", in)
+}
+
+func (gc *fakeGerritClient) CreateChange(ctx context.Context, in *gerrit.CreateChangeRequest, opts ...grpc.CallOption) (*gerrit.ChangeInfo, error) {
+	c := &fakeChange{
+		ChangeInfo: gerrit.ChangeInfo{
+			Number:          gc.nextNumber,
+			Project:         in.Project,
+			Ref:             in.Ref,
+			Status:          gerrit.ChangeInfo_NEW,
+			CurrentRevision: "patch_set_1",
+		},
+	}
+	gc.nextNumber++
+	gc.Changes = append(gc.Changes, c)
+
+	// return a copy
+	ret := c.ChangeInfo
+	return &ret, nil
+}
+
+func (gc *fakeGerritClient) ChangeEditFileContent(ctx context.Context, in *gerrit.ChangeEditFileContentRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+	for _, c := range gc.Changes {
+		if in.Number == c.Number {
+			c.fakeChangeEdit.Path = in.FilePath
+			c.fakeChangeEdit.Content = string(in.Content)
+			return &empty.Empty{}, nil
+		}
+	}
+	return &empty.Empty{}, fmt.Errorf("No change edit for %+v", in)
+}
+
+func (gc *fakeGerritClient) ChangeEditPublish(ctx context.Context, in *gerrit.ChangeEditPublishRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+	for _, c := range gc.Changes {
+		if in.Number == c.Number {
+			c.fakeChangeEdit.IsPublished = true
+			return &empty.Empty{}, nil
+		}
+	}
+	return &empty.Empty{}, fmt.Errorf("No change edit for %+v", in)
+}
+
+func (gc *fakeGerritClient) SetReview(ctx context.Context, in *gerrit.SetReviewRequest, opts ...grpc.CallOption) (*gerrit.ReviewResult, error) {
+	// Not needed for tests.
+	return &gerrit.ReviewResult{}, nil
+}
+
+func (gc *fakeGerritClient) SubmitChange(ctx context.Context, in *gerrit.SubmitChangeRequest, opts ...grpc.CallOption) (*gerrit.ChangeInfo, error) {
+	for _, c := range gc.Changes {
+		if in.Number == c.Number {
+			c.IsSubmitted = true
+			c.ChangeInfo.Status = gerrit.ChangeInfo_MERGED
+			// return a copy
+			ret := c.ChangeInfo
+			return &ret, nil
+		}
+	}
+	return nil, fmt.Errorf("No change for %+v", in)
+}
+
+func (gc *fakeGerritClient) AbandonChange(ctx context.Context, in *gerrit.AbandonChangeRequest, opts ...grpc.CallOption) (*gerrit.ChangeInfo, error) {
+	for _, c := range gc.Changes {
+		if in.Number == c.Number {
+			c.IsAbandoned = true
+			// return a copy
+			ret := c.ChangeInfo
+			return &ret, nil
+		}
+	}
+	return nil, fmt.Errorf("No change for %+v", in)
 }
