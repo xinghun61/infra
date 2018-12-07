@@ -1,0 +1,16 @@
+package: infra/tools/bqupload/${platform}
+description: Uploads rows to BigQuery via Streaming Inserts API
+platforms:
+  - linux-386
+  - linux-amd64
+  - linux-arm64
+  - linux-armv6l
+  - mac-amd64
+  - windows-386
+  - windows-amd64
+go_packages:
+  - infra/cmd/bqupload
+root: ../../go/bin
+data:
+  - file: bqupload${exe_suffix}
+  - version_file: .versions/bqupload${exe_suffix}.cipd_version
