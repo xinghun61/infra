@@ -988,12 +988,12 @@ wheel: <
 
 ## **infra_libs**
 
-### 1.4.1
+### 1.4.3
 
 ```protobuf
 wheel: <
   name: "infra/python/wheels/infra_libs-py2"
-  version: "version:1.4.1"
+  version: "version:1.4.3"
 >
 ```
 
@@ -1078,6 +1078,24 @@ wheel: <
 * *manylinux-x64-ucs2*
 * *manylinux-x86*
 * *manylinux-x86-ucs2*
+* *windows-x64*
+* *windows-x86*
+
+## **lxml**
+
+### 4.2.5
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/lxml/${vpython_platform}"
+  version: "version:4.2.5"
+>
+```
+
+
+* *mac-x64*
+* *manylinux-x64*
+* *manylinux-x86*
 * *windows-x64*
 * *windows-x86*
 
