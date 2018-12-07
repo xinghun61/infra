@@ -1,4 +1,13 @@
 #!/usr/bin/env node
+'use strict';
+/*
+Copyright 2018 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+
+This script runs WCT tests and istanbul coverage.
+*/
+/* eslint-disable no-console */
 
 const puppeteer = require('puppeteer');
 const pti = require('puppeteer-to-istanbul');
@@ -11,19 +20,39 @@ const yargs = require('yargs');
 
 const { html, render } = require('@popeindustries/lit-html-server');
 
+function isLibrary(path) {
+  return path.includes('bower_components') || path.includes('node_modules');
+}
+
 async function main() {
-  const argv = yargs.boolean('debug')
-    .describe('debug', 'keeps the browser instance running instead of exiting')
-    .string('chrome')
-    .describe('chrome', 'binary location for chrome executable')
-    .demandOption(['chrome'])
-    .argv;
+  const argv = yargs.options({
+    debug: {
+      type: 'boolean',
+      default: false,
+      describe: 'keep the browser open',
+    },
+    base: {
+      type: 'string',
+      default: '.',
+      describe: 'source base directory',
+    },
+    prefix: {
+      type: 'string',
+      default: '.',
+      describe: 'subdirectory of base containing tests',
+    },
+    dep: {
+      type: 'array',
+      default: [],
+      describe: 'list of dependency directories',
+    },
+  }).argv;
 
   const app = connect();
   let passes = 0;
   let failures = 0;
 
-  app.use('/result', function(req, res, next){
+  app.use('/result', function(req, res, next) {
     let body = [];
     req.on('error', (err) => {
       console.error(err);
@@ -32,13 +61,17 @@ async function main() {
       body.push(chunk);
     }).on('end', () => {
       body = Buffer.concat(body).toString();
-      parsedResult = JSON.parse(body)
-      if (parsedResult.state != 'passed') {
+      const parsedResult = JSON.parse(body);
+      const msg = (`[${parsedResult.state}] ` +
+                   `File: ${parsedResult.file} ` +
+                   `Suite: ${parsedResult.suite} ` +
+                   `Test: ${parsedResult.test}`);
+      if (parsedResult.state !== 'passed') {
         failures++;
-        console.error(`[${parsedResult.state}] File: ${parsedResult.file} Suite: ${parsedResult.suite} Test: ${parsedResult.test}`);
+        console.error(msg);
       } else {
         passes++;
-        console.log(`[${parsedResult.state}] File: ${parsedResult.file} Suite: ${parsedResult.suite} Test: ${parsedResult.test}`);
+        console.log(msg);
       }
 
       res.on('error', (err) => {
@@ -53,19 +86,28 @@ async function main() {
 
   app.use('/wct-loader', function(req, res, next) {
     res.writeHead(200, { 'Content-Type': 'text/html' });
-    const testFiles = glob.sync('**/*-test.html').filter(f => {
-        return f.indexOf('bower_components') == -1 && f.indexOf('node_modules') == -1;
-    }).map(f => `/${f}`);
+    const testFiles = [];
+    for (const f of glob.sync(`${argv.base}/${argv.prefix}/**/*-test.html`)) {
+      if (isLibrary(f)) continue;
+      testFiles.push(f.substr(argv.base.length));
+    }
     const output = loaderPage(testFiles);
     res.write(output);
     res.end();
   });
 
-  const serverStat = serveStatic('.');
+  const serverStat = serveStatic(argv.base);
   app.use(serverStat);
+  for (const dep of argv.dep) {
+    app.use(serveStatic(dep));
+  }
 
   const httpServer = http.createServer(app);
   app.use('/done', async function(req, res, next) {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.write('ok');
+    res.end();
+
     console.log('stopping JS, CSS overage reporting...');
     const [jsCoverage, cssCoverage] = await Promise.all([
       page.coverage.stopJSCoverage(),
@@ -74,22 +116,22 @@ async function main() {
 
     console.log('writing coverage report...');
     // Writes to .nyc_output/out.json
-    const allCoverage = [...jsCoverage, ...cssCoverage].filter(entry => {
-      // Coverage by default includes everything loaded in the page, eg tests themselves and
-      // all dependencies. We only care about coverage of the code under test, so filter out
-      // everything else.
-      return entry.url.indexOf('bower_components') == -1 && entry.url.indexOf('node_modules') == -1 &&
-        entry.url.indexOf('-test.html') == -1;
-    });
+    // Coverage by default includes everything loaded in the page, eg tests
+    // themselves and all dependencies. We only care about coverage of the code
+    // under test, so filter out everything else.
+    const allCoverage = [...jsCoverage, ...cssCoverage].filter(entry =>
+      !isLibrary(entry.url) && !entry.url.includes('-test.html'));
 
-    // TODO: collapse entries whose URLS end with -NNN.js? NNN appears to be which pass executed the code.
-    // So if three tests exercise code.js there will be code-NNN.js code-NNX.js code-NNY.js in
-    // the profiler output. /shrug.
+    // TODO: collapse entries whose URLS end with -NNN.js? NNN appears to be
+    // which pass executed the code.  So if three tests exercise code.js there
+    // will be code-NNN.js code-NNX.js code-NNY.js in the profiler output.
 
-    // TODO: Map entry urls with '*.htmlpuppeteerTemp-inline-*.js' in them to just the *.html part.
-    // These are elements defined entirely inside html files, no separate js file.
+    // TODO: Map entry urls with '*.htmlpuppeteerTemp-inline-*.js' in them to
+    // just the *.html part.  These are elements defined entirely inside html
+    // files, no separate js file.
 
     await pti.write(allCoverage);
+    console.log('...wrote coverage report');
 
     if (!argv.debug) {
       console.log('shutting down browser and http server...');
@@ -106,13 +148,10 @@ async function main() {
   const port = httpServer.address().port;
   console.log('listening on ' + port);
 
-  const launchOptions = {
-    executablePath: argv.chromeBinary
-  };
-
+  const launchOptions = {};
   if (argv.debug) {
-   launchOptions.devtools = true;
-   launchOptions.headless = false;
+    launchOptions.devtools = true;
+    launchOptions.headless = false;
   }
 
   const browser = await puppeteer.launch(launchOptions);
@@ -125,72 +164,69 @@ async function main() {
   ]);
 
   page.goto('http://127.0.0.1:' + port + '/wct-loader');
-  page.focus('*');
 }
 
 function loaderPage(testFiles) {
-  const tmpl = html`
-<script src="/bower_components/webcomponentsjs/webcomponents-loader.js"></script>
-<script src="/bower_components/web-component-tester/browser.js"></script>
+  return html`
+    <script src="/bower_components/webcomponentsjs/webcomponents-loader.js">
+    </script>
+    <script src="/bower_components/web-component-tester/browser.js"></script>
 
-<script>
-'use strict';
-(() => {
-  // The following two functions are sort of a hack to work around WCT's
-  // current lack of event listening hooks for things like "test finished" and
-  // "suite finished". They exist in order to report test results back to
-  // the go app that spawned the chromedriver that runs these tests.
-  let end = function() {
-    let passes = WCT._reporter.stats.passes;
-    let failures = WCT._reporter.stats.failures;
-    fetch('/done', {
-        method: 'POST',
-        body: JSON.stringify({
-            'passes': passes,
-            'failures': failures,
-            // TODO(seanmccullough): Report timeouts, other exceptions?
-        }),
-    }).then(function(resp) {
-      window.console.log('done response', resp);
-    }).catch(function(exp) {
-      window.console.log('done exception', exp);
-    });
-  };
+    <script>
+    'use strict';
+    (() => {
+      // The following two functions are sort of a hack to work around WCT's
+      // current lack of event listening hooks for things like "test finished"
+      // and "suite finished". They exist in order to report test results back
+      // to the go app that spawned the chromedriver that runs these tests.
+      let end = function() {
+        let passes = WCT._reporter.stats.passes;
+        let failures = WCT._reporter.stats.failures;
+        fetch('/done', {
+            method: 'POST',
+            body: JSON.stringify({
+                'passes': passes,
+                'failures': failures,
+                // TODO(seanmccullough): Report timeouts, other exceptions?
+            }),
+        }).then(function(resp) {
+          window.console.log('done response', resp);
+        }).catch(function(exp) {
+          window.console.log('done exception', exp);
+        });
+      };
 
-  let testEnd = function() {
-    let file = WCT._reporter.currentRunner.currentRunner.suite.parent.title;
-    let suite = WCT._reporter.currentRunner.currentRunner.suite.title;
-    let test = WCT._reporter.currentRunner.currentRunner.test.title;
-    let state = WCT._reporter.currentRunner.currentRunner.test.state;
+      let testEnd = function() {
+        let file = WCT._reporter.currentRunner.currentRunner.suite.parent.title;
+        let suite = WCT._reporter.currentRunner.currentRunner.suite.title;
+        let test = WCT._reporter.currentRunner.currentRunner.test.title;
+        let state = WCT._reporter.currentRunner.currentRunner.test.state;
 
-    fetch('/result', {
-        method: 'POST',
-        body: JSON.stringify({
-            'file': file,
-            'suite': suite,
-            'test': test,
-            'state': state,
-            // TODO(seanmccullough): Indicate if dom=shadow for this run.
-        }),
-    }).then(function(resp) {
-      window.console.log('result response', resp);
-    }).catch(function(exp) {
-      window.console.log('result exception', exp);
-    });
-  };
+        fetch('/result', {
+            method: 'POST',
+            body: JSON.stringify({
+                'file': file,
+                'suite': suite,
+                'test': test,
+                'state': state,
+                // TODO(seanmccullough): Indicate if dom=shadow for this run.
+            }),
+        }).then(function(resp) {
+          window.console.log('result response', resp);
+        }).catch(function(exp) {
+          window.console.log('result exception', exp);
+        });
+      };
 
-  document.addEventListener('DOMContentLoaded', function() {
-    WCT._reporter.on('test end', testEnd);
-    WCT._reporter.on('end', end);
-  });
-})();
+      document.addEventListener('DOMContentLoaded', function() {
+        WCT._reporter.on('test end', testEnd);
+        WCT._reporter.on('end', end);
+      });
+    })();
 
-WCT.loadSuites([${testFiles.map((file)=>{ return html`"${file}",`})}]);
-</script>
-    `;
-  return tmpl;
+    WCT.loadSuites([${testFiles.map(file => html`"${file}",`)}]);
+    </script>
+  `;
 }
 
-(async () => {
-  await main();
-})();
+main();
