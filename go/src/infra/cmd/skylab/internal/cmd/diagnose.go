@@ -60,11 +60,7 @@ func (c *diagnoseRun) innerRun(a subcommands.Application, args []string, env sub
 		Host:    e.AdminService,
 		Options: site.DefaultPRPCOptions,
 	})
-	ids, err := refreshBotsByName(ctx, tc, args)
-	if err != nil {
-		return err
-	}
-	bots, err := summarizeBots(ctx, tc, ids)
+	bots, err := summarizeBots(ctx, tc, args)
 	if err != nil {
 		return err
 	}
@@ -72,28 +68,12 @@ func (c *diagnoseRun) innerRun(a subcommands.Application, args []string, env sub
 	return nil
 }
 
-// refreshBotsByName calls RefreshBots using DUT names and returns the
-// corresponding DUT IDs.
-func refreshBotsByName(ctx context.Context, c fleet.TrackerClient, n []string) ([]string, error) {
-	req := fleet.RefreshBotsRequest{}
-	for _, n := range n {
+// summarizeBots calls SummarizeBots using DUT IDs.
+func summarizeBots(ctx context.Context, c fleet.TrackerClient, dutNames []string) ([]*fleet.BotSummary, error) {
+	req := fleet.SummarizeBotsRequest{}
+	for _, n := range dutNames {
 		req.Selectors = append(req.Selectors, &fleet.BotSelector{
 			Dimensions: &fleet.BotDimensions{DutName: n},
-		})
-	}
-	res, err := c.RefreshBots(ctx, &req)
-	if err != nil {
-		return nil, errors.Annotate(err, "failed to call RefreshBots").Err()
-	}
-	return res.GetDutIds(), nil
-}
-
-// summarizeBots calls SummarizeBots using DUT IDs.
-func summarizeBots(ctx context.Context, c fleet.TrackerClient, ids []string) ([]*fleet.BotSummary, error) {
-	req := fleet.SummarizeBotsRequest{}
-	for _, id := range ids {
-		req.Selectors = append(req.Selectors, &fleet.BotSelector{
-			DutId: id,
 		})
 	}
 	res, err := c.SummarizeBots(ctx, &req)
