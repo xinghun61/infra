@@ -18,17 +18,20 @@ import (
 	"net/http"
 
 	gerritapi "go.chromium.org/luci/common/api/gerrit"
-	"go.chromium.org/luci/common/api/gitiles"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/proto/gerrit"
 	"go.chromium.org/luci/server/auth"
 	"golang.org/x/net/context"
 )
 
+// NewGerritClient returns a new gerrit client.
+//
+// This function is intended to be used within the context of an RPC to this
+// app. The returned gerrit client forwards the oauth token used for the
+// original RPC. In particular, this means that the original oauth credentials
+// must include the gerrit OAuth 2.0 scope.
 func NewGerritClient(c context.Context, host string) (gerrit.GerritClient, error) {
-	// gerrit service is not part of LUCI stack, so there is no way to forward
-	// our caller's credentials to the gerrit service (See doc for auth.AsUser).
-	t, err := auth.GetRPCTransport(c, auth.AsSelf, auth.WithScopes(gitiles.OAuthScope))
+	t, err := auth.GetRPCTransport(c, auth.AsCredentialsForwarder)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to get RPC transport").Err()
 	}

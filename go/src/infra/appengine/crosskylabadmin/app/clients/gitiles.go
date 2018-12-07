@@ -24,17 +24,14 @@ import (
 	"golang.org/x/net/context"
 )
 
-// NewGitilesClient returns a new gitiles client authenticated with the app
-// service account's credentials.
+// NewGitilesClient returns a new gitiles client.
 //
-// TODO(pprabhu) Forward this app's users' credentials instead of minting our
-// own. This will let gerrit decide whether the user has access to the repo.
-//
-// gitiles service is not part of LUCI stack, so there is currently no way to
-// forward our caller's credentials to the gerrit service (See doc for
-// auth.AsUser).
+// This function is intended to be used within the context of an RPC to this
+// app. The returned gitiles client forwards the oauth token used for the
+// original RPC. In particular, this means that the original oauth credentials
+// must include the gerrit OAuth 2.0 scope.
 func NewGitilesClient(c context.Context, host string) (gitiles.GitilesClient, error) {
-	t, err := auth.GetRPCTransport(c, auth.AsSelf)
+	t, err := auth.GetRPCTransport(c, auth.AsCredentialsForwarder)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to get RPC transport").Err()
 	}
