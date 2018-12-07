@@ -60,5 +60,21 @@ func TestEslintParsingFunctions(t *testing.T) {
 			results := readESLintOutput(strings.NewReader(output), "/x/y/in")
 			So(results, ShouldResemble, expected)
 		})
+
+		Convey("ESLint message with no rule gives comment with no disable message", func() {
+			output := `[{"filePath":"/x/y/in/test.js",` +
+				`"messages":[{"severity":2,"message":"Parser error, eslint could not continue"}]}]`
+			results := readESLintOutput(strings.NewReader(output), "/x/y/in")
+			expected := &tricium.Data_Results{
+				Comments: []*tricium.Data_Comment{
+
+					{
+						Path:     "test.js",
+						Category: "ESLint/error",
+						Message:  "Parser error, eslint could not continue",
+					},
+				}}
+			So(results, ShouldResemble, expected)
+		})
 	})
 }

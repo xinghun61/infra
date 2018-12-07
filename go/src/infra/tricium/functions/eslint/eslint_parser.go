@@ -7,7 +7,6 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -24,9 +23,8 @@ const (
 	eslintPath = "node_modules/eslint/bin/eslint.js"
 )
 
-var severityLevels = []string{"warning", "error"}
-
-// Message is the structure of ESLint error messages.
+// Message is the structure of ESLint error messages. See:
+// https://eslint.org/docs/developer-guide/working-with-custom-formatters#the-message-object
 type Message struct {
 	RuleID    string
 	Message   string
@@ -145,13 +143,34 @@ func readESLintOutput(r io.Reader, basePath string) *tricium.Data_Results {
 
 // makeCommentForMessage constructs a Tricium comment from one message.
 func makeCommentForMessage(path string, message Message) *tricium.Data_Comment {
-	return &tricium.Data_Comment{
+	commentMessage := message.Message
+	category := "ESLint/" + severityLevel(message.Severity)
+	if message.RuleID != "" {
+		commentMessage += "\nTo disable, add: // eslint-disable-line " + message.RuleID
+		category += "/" + message.RuleID
+	}
+	comment := &tricium.Data_Comment{
 		Path:      path,
-		Message:   fmt.Sprintf("%s\nTo disable, add: // eslint-disable-line %s", message.Message, message.RuleID),
-		Category:  fmt.Sprintf("ESLint/%s/%s", severityLevels[message.Severity-1], message.RuleID),
+		Message:   commentMessage,
+		Category:  category,
 		StartLine: message.Line,
-		StartChar: message.Column - 1,
-		EndChar:   message.EndColumn - 1,
 		EndLine:   message.EndLine,
+	}
+	if message.Column != 0 {
+		// ESLint uses 1-based columns, Tricium uses 0-based columns.
+		comment.StartChar = message.Column - 1
+		comment.EndChar = message.EndColumn - 1
+	}
+	return comment
+}
+
+func severityLevel(severity int32) string {
+	switch severity {
+	case 1:
+		return "warning"
+	case 2:
+		return "error"
+	default:
+		return "unknown"
 	}
 }

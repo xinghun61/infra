@@ -13,14 +13,15 @@ import 'foo.js';
 // use strict are enabled.
 'use strict';
 
+// Functions marked as async should not result in parser errors.
+async function foo() {
+    return Promise.resolve('yes');
+}
+
 // This function is formatted weirdly and
 // also has the wrong indentation.
 var func_var = function (){
     console.log('printed text');
 }
-
 func_var()  // Missing semicolon.
-
-var unused_var = 0;
-
-customElements.define(SomeError.is, SomeError);
+const unusedVar = 0;
