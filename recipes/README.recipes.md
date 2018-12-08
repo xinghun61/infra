@@ -786,9 +786,9 @@ staging and prod environments.
 &mdash; **def [RunSteps](/recipes/recipe_modules/infra_system/examples/full.py#13)(api):**
 ### *recipes* / [infra\_wct\_tester](/recipes/recipes/infra_wct_tester.py)
 
-[DEPS](/recipes/recipes/infra_wct_tester.py#5): [build/wct][build/recipe_modules/wct], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipes/infra_wct_tester.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipes/infra_wct_tester.py#14)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/infra_wct_tester.py#15)(api):**
 ### *recipes* / [lkgr\_finder](/recipes/recipes/lkgr_finder.py)
 
 [DEPS](/recipes/recipes/lkgr_finder.py#9): [build/chromium\_checkout][build/recipe_modules/chromium_checkout], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
@@ -1099,7 +1099,6 @@ Runs a step which adds a link to the current CL if there is one.
 [build/recipe_modules/luci_config]: https://chromium.googlesource.com/chromium/tools/build.git/+/b565c8bf4cb6317e9794d95944f8490c8557b053/scripts/slave/README.recipes.md#recipe_modules-luci_config
 [build/recipe_modules/puppet_service_account]: https://chromium.googlesource.com/chromium/tools/build.git/+/b565c8bf4cb6317e9794d95944f8490c8557b053/scripts/slave/README.recipes.md#recipe_modules-puppet_service_account
 [build/recipe_modules/trigger]: https://chromium.googlesource.com/chromium/tools/build.git/+/b565c8bf4cb6317e9794d95944f8490c8557b053/scripts/slave/README.recipes.md#recipe_modules-trigger
-[build/recipe_modules/wct]: https://chromium.googlesource.com/chromium/tools/build.git/+/b565c8bf4cb6317e9794d95944f8490c8557b053/scripts/slave/README.recipes.md#recipe_modules-wct
 [build/recipe_modules/zip]: https://chromium.googlesource.com/chromium/tools/build.git/+/b565c8bf4cb6317e9794d95944f8490c8557b053/scripts/slave/README.recipes.md#recipe_modules-zip
 [depot_tools/recipe_modules/bot_update]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/4be60eeb2259d04ab82a1f8648b8827134c3e453/recipes/README.recipes.md#recipe_modules-bot_update
 [depot_tools/recipe_modules/cipd]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/4be60eeb2259d04ab82a1f8648b8827134c3e453/recipes/README.recipes.md#recipe_modules-cipd

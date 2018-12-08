@@ -84,55 +84,39 @@
       "-root",
       "[START_DIR]/packages",
       "-ensure-file",
-      "dart/browsers/chrome/linux-amd64 b6b434ed592da55513d813b2cfb3422008fb280d\ninfra/nodejs/nodejs/linux-amd64 node_version:8.9.4\ninfra/testing/wct/linux-amd64 prod",
+      "infra/nodejs/nodejs/${platform} node_version:8.9.4",
       "-json-output",
       "/path/to/tmp/json"
     ],
     "name": "ensure_installed",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"b6b434ed592da55513d813b2cfb3422008fb280d\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"package\": \"dart/browsers/chrome/linux-amd64\"@@@",
-      "@@@STEP_LOG_LINE@json.output@    }, @@@",
-      "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-node_version:8.9\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/nodejs/nodejs/linux-amd64\"@@@",
-      "@@@STEP_LOG_LINE@json.output@    }, @@@",
-      "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-prod------------\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/testing/wct/linux-amd64\"@@@",
-      "@@@STEP_LOG_LINE@json.output@    }@@@",
-      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@      {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"instance_id\": \"resolved-instance_id-of-node_version:8.9\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"package\": \"infra/nodejs/nodejs/resolved-platform\"@@@",
+      "@@@STEP_LOG_LINE@json.output@      }@@@",
+      "@@@STEP_LOG_LINE@json.output@    ]@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
     ]
   },
   {
     "cmd": [
-      "[START_DIR]/packages/chrome/chrome",
-      "--version"
+      "npm",
+      "install"
     ],
+    "cwd": "[START_DIR]/infra/crdx/chopsui",
     "env": {
       "PATH": "[START_DIR]/packages/bin:<PATH>"
     },
-    "name": "Print chrome version"
+    "name": "chopsui npm install"
   },
   {
     "cmd": [
-      "[START_DIR]/packages/bin/npm",
-      "install",
-      "-g",
-      "bower"
-    ],
-    "env": {
-      "PATH": "[START_DIR]/packages/bin:<PATH>"
-    },
-    "name": "Install bower"
-  },
-  {
-    "cmd": [
+      "npx",
       "bower",
       "install"
     ],
@@ -140,50 +124,49 @@
     "env": {
       "PATH": "[START_DIR]/packages/bin:<PATH>"
     },
-    "name": "Install bower packages"
+    "name": "chopsui bower install"
   },
   {
     "cmd": [
-      "xvfb-run",
-      "-a",
-      "[START_DIR]/packages/wct",
-      "--base",
-      "[START_DIR]/infra/crdx/chopsui",
-      "--chrome",
-      "[START_DIR]/packages/chrome/chrome",
+      "npx",
+      "run-wct",
       "--prefix",
-      "test/"
+      "test",
+      "--dep",
+      "bower_components"
     ],
     "cwd": "[START_DIR]/infra/crdx/chopsui",
     "env": {
       "PATH": "[START_DIR]/packages/bin:<PATH>"
     },
-    "name": "ChOpsUI WCT Tests"
+    "name": "chopsui run-wct"
   },
   {
     "cmd": [
-      "[START_DIR]/packages/chrome/chrome",
-      "--version"
+      "npx",
+      "nyc",
+      "report"
     ],
+    "cwd": "[START_DIR]/infra/crdx/chopsui",
     "env": {
       "PATH": "[START_DIR]/packages/bin:<PATH>"
     },
-    "name": "Print chrome version (2)"
+    "name": "chopsui generate js coverage report"
   },
   {
     "cmd": [
-      "[START_DIR]/packages/bin/npm",
-      "install",
-      "-g",
-      "bower"
+      "npm",
+      "install"
     ],
+    "cwd": "[START_DIR]/infra/appengine/monorail",
     "env": {
       "PATH": "[START_DIR]/packages/bin:<PATH>"
     },
-    "name": "Install bower (2)"
+    "name": "monorail npm install"
   },
   {
     "cmd": [
+      "npx",
       "bower",
       "install"
     ],
@@ -191,50 +174,45 @@
     "env": {
       "PATH": "[START_DIR]/packages/bin:<PATH>"
     },
-    "name": "Install bower packages (2)"
+    "name": "monorail bower install"
   },
   {
     "cmd": [
-      "xvfb-run",
-      "-a",
-      "[START_DIR]/packages/wct",
-      "--base",
-      "[START_DIR]/infra/appengine/monorail",
-      "--chrome",
-      "[START_DIR]/packages/chrome/chrome",
-      "--prefix",
-      "elements/test"
+      "npx",
+      "run-wct"
     ],
     "cwd": "[START_DIR]/infra/appengine/monorail",
     "env": {
       "PATH": "[START_DIR]/packages/bin:<PATH>"
     },
-    "name": "Monorail WCT Tests"
+    "name": "monorail run-wct"
   },
   {
     "cmd": [
-      "[START_DIR]/packages/chrome/chrome",
-      "--version"
+      "npx",
+      "nyc",
+      "report"
     ],
+    "cwd": "[START_DIR]/infra/appengine/monorail",
     "env": {
       "PATH": "[START_DIR]/packages/bin:<PATH>"
     },
-    "name": "Print chrome version (3)"
+    "name": "monorail generate js coverage report"
   },
   {
     "cmd": [
-      "[START_DIR]/packages/bin/npm",
-      "install",
-      "-g",
-      "bower"
+      "npm",
+      "install"
     ],
+    "cwd": "[START_DIR]/infra/go/src/infra/appengine/sheriff-o-matic/frontend",
     "env": {
       "PATH": "[START_DIR]/packages/bin:<PATH>"
     },
-    "name": "Install bower (3)"
+    "name": "sheriff-o-matic npm install"
   },
   {
     "cmd": [
+      "npx",
       "bower",
       "install"
     ],
@@ -242,25 +220,30 @@
     "env": {
       "PATH": "[START_DIR]/packages/bin:<PATH>"
     },
-    "name": "Install bower packages (3)"
+    "name": "sheriff-o-matic bower install"
   },
   {
     "cmd": [
-      "xvfb-run",
-      "-a",
-      "[START_DIR]/packages/wct",
-      "--base",
-      "[START_DIR]/infra/go/src/infra/appengine/sheriff-o-matic/frontend",
-      "--chrome",
-      "[START_DIR]/packages/chrome/chrome",
-      "--prefix",
-      "test/"
+      "npx",
+      "run-wct"
     ],
     "cwd": "[START_DIR]/infra/go/src/infra/appengine/sheriff-o-matic/frontend",
     "env": {
       "PATH": "[START_DIR]/packages/bin:<PATH>"
     },
-    "name": "SoM WCT Tests"
+    "name": "sheriff-o-matic run-wct"
+  },
+  {
+    "cmd": [
+      "npx",
+      "nyc",
+      "report"
+    ],
+    "cwd": "[START_DIR]/infra/go/src/infra/appengine/sheriff-o-matic/frontend",
+    "env": {
+      "PATH": "[START_DIR]/packages/bin:<PATH>"
+    },
+    "name": "sheriff-o-matic generate js coverage report"
   },
   {
     "jsonResult": null,
