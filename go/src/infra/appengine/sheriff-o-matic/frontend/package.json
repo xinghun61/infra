@@ -14,6 +14,7 @@
     "vulcanize": "~1.14.8"
   },
   "devDependencies": {
+    "bower": "^1.8.4",
     "chops-wct-runner": "file:../../../../../../crdx/packages/wct-runner",
     "istanbul": "^0.4.4",
     "web-component-tester": "^5.0.0",

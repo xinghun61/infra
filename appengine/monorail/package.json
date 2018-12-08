@@ -4,12 +4,16 @@
   "description": "polymer monorail skeleton",
   "directories": {},
   "devDependencies": {
+    "bower": "^1.8.4",
+    "chops-wct-runner": "file:../../crdx/packages/wct-runner",
     "crisper": "~2.0.2",
     "eslint": "^4.19.1",
     "eslint-config-google": "^0.9.1",
     "vulcanize": "^1.14.12"
   },
-  "scripts": {},
+  "scripts": {
+    "preinstall": "npm install ../../crdx/packages/wct-runner --save-dev"
+  },
   "author": "",
   "license": "ISC",
   "dependencies": {

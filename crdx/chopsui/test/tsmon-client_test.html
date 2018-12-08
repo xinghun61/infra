@@ -229,19 +229,19 @@
     });
   });
 
-  test('disableAfterNextFlush stops sending metrics', function() {
-    chai.assert.isTrue(tsm._continueSendingMetrics);
-    chai.assert.isOk(tsm._flushTimer);
-
-    tsm.disableAfterNextFlush();
-    tsm._onFlush();
-
-    chai.assert.isFalse(tsm._continueSendingMetrics);
-    chai.assert.isNull(tsm._flushTimer);
-    chai.assert.isTrue(window.fetch.called);
-  });
-
   suite('flush', function() {
+   test('disableAfterNextFlush stops sending metrics', function() {
+     chai.assert.isTrue(tsm._continueSendingMetrics);
+     chai.assert.isOk(tsm._flushTimer);
+
+      tsm.disableAfterNextFlush();
+      tsm._onFlush();
+
+      chai.assert.isFalse(tsm._continueSendingMetrics);
+      chai.assert.isNull(tsm._flushTimer);
+      chai.assert.isTrue(window.fetch.called);
+    });
+
     test('cumulative distribution', function() {
       let fields = new Map(Object.entries({
         "foo_field": TSMonClient.stringField('foo_field'),

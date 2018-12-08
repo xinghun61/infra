@@ -8,9 +8,11 @@ help:
 	@echo "Available commands:"
 	@sed -n '/^[a-zA-Z0-9_]*:/s/:.*//p' <Makefile
 
-deps:
+node_deps:
 	npm install
-	bower install
+
+bower_deps: node_deps
+	npx bower install
 
 format:
 	clang-format -i elements/**/*.js -style=file
@@ -18,14 +20,14 @@ format:
 lint:
 	polylint -i elements/som-app/som-app.html
 
-build: deps
+build: bower_deps
 	$(VULCANIZE_PATH) elements/som-app/som-app.html -o elements/som-app/som-app.vulcanized.html --inline-scripts
 
 clean:
 	rm elements/som-app/som-app.vulcanized.html
 
-wct: deps
-	xvfb-run go run $(WCT_GO) -chrome=google-chrome
+wct: bower_deps
+	npx run-wct
 
-wct_debug: deps
-	go run $(WCT_GO) -chrome=google-chrome -persist
+wct_debug: bower_deps
+	npx run-wct --debug

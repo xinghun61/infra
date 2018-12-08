@@ -87,7 +87,7 @@ async function main() {
   app.use('/wct-loader', function(req, res, next) {
     res.writeHead(200, { 'Content-Type': 'text/html' });
     const testFiles = [];
-    for (const f of glob.sync(`${argv.base}/${argv.prefix}/**/*-test.html`)) {
+    for (const f of glob.sync(`${argv.base}/${argv.prefix}/**/*test.html`)) {
       if (isLibrary(f)) continue;
       testFiles.push(f.substr(argv.base.length));
     }
@@ -154,7 +154,13 @@ async function main() {
     launchOptions.headless = false;
   }
 
+  console.log('using chrome binary ' + puppeteer.executablePath());
+  // TODO: Allow chrome version pinning using the API:
+  // https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#class-browserfetcher
+
   const browser = await puppeteer.launch(launchOptions);
+  console.log('chrome version: ' + await browser.version());
+
   const pages = await browser.pages();
   const page = pages[0];
 

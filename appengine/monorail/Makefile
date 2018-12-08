@@ -104,15 +104,17 @@ clean_vulcanized:
 clean_deps:
 	rm -rf bower_components
 
+node_deps:
+	npm install
 
-WCT_DIR = ../../go/src/infra/tools/wct
-WCT_GO = $(WCT_DIR)/wct.go $(WCT_DIR)/loader.go
+bower_deps: node_deps
+	npx bower install
 
-wct: deps
-	xvfb-run go run $(WCT_GO) -prefix=elements -chrome=google-chrome
+wct: bower_deps
+	npx run-wct
 
-wct_debug: deps
-	go run $(WCT_GO) -prefix=elements -chrome=google-chrome -persist
+wct_debug: bower_deps
+	npx run-wct --debug
 
 pylint:
 	pylint -f parseable *py {$(PY_DIRS)}{/,/test/}*py
