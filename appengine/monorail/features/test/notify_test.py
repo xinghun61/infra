@@ -344,9 +344,8 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     self.assertItemsEqual(
         ['user@example.com', 'approver_old@example.com',
          'approver_new@example.com', 'TL@example.com',
-         'approvalTL@example.com', 'approver_group@example.com',
-         'group_mem1@example.com', 'group_mem2@example.com',
-         'group_mem3@example.com'],
+         'approvalTL@example.com', 'group_mem1@example.com',
+         'group_mem2@example.com', 'group_mem3@example.com'],
         result['notified'])
 
     # Test no approvers/groups notified
