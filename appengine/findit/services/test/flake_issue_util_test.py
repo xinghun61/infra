@@ -70,13 +70,18 @@ class TestIssueGenerator(FlakyTestIssueGenerator):
 
 class FlakeReportUtilTest(WaterfallTestCase):
 
-  def _CreateFlake(self, normalized_step_name, normalized_test_name,
-                   test_label_name):
+  def _CreateFlake(self,
+                   normalized_step_name,
+                   normalized_test_name,
+                   test_label_name,
+                   test_suite_name=None):
     flake = Flake.Create(
         luci_project='chromium',
         normalized_step_name=normalized_step_name,
         normalized_test_name=normalized_test_name,
         test_label_name=test_label_name)
+    if test_suite_name:
+      flake.tags.append('suite::%s' % test_suite_name)
     flake.put()
     return flake
 
@@ -96,6 +101,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
         legacy_build_number=999,
         time_happened=datetime.datetime.utcnow())
     flake_occurrence.put()
+    return flake_occurrence
 
   def _GetDatetimeHoursAgo(self, hours):
     """Returns the utc datetime of some hours ago."""
@@ -110,16 +116,17 @@ class FlakeReportUtilTest(WaterfallTestCase):
     self.addCleanup(patcher.stop)
     patcher.start()
 
-    flake = self._CreateFlake('step', 'test', 'test_label')
-    self._CreateFlakeOccurrence(111, 'step1', 'test1', 98765, flake.key)
-    self._CreateFlakeOccurrence(222, 'step2', 'test2', 98764, flake.key)
-    self._CreateFlakeOccurrence(333, 'step3', 'test3', 98763, flake.key)
+    self.flake = self._CreateFlake('step', 'test', 'test_label')
+    self._CreateFlakeOccurrence(111, 'step1', 'test1', 98765, self.flake.key)
+    self._CreateFlakeOccurrence(222, 'step2', 'test2', 98764, self.flake.key)
+    self._CreateFlakeOccurrence(333, 'step3', 'test3', 98763, self.flake.key)
 
   # This test tests that getting flakes with enough occurrences works properly.
   def testGetFlakesWithEnoughOccurrences(self):
     flakes_with_occurrences = flake_issue_util.GetFlakesWithEnoughOccurrences()
     self.assertEqual(1, len(flakes_with_occurrences))
     self.assertEqual(3, len(flakes_with_occurrences[0][1]))
+    self.assertIsNone(flakes_with_occurrences[0][2])
 
   # This test tests that in order for a flake to have enough occurrences, there
   # needs to be at least 3 (_MIN_REQUIRED_FALSELY_REJECTED_CLS_24H) occurrences
@@ -195,6 +202,26 @@ class FlakeReportUtilTest(WaterfallTestCase):
 
     flakes_with_occurrences = flake_issue_util.GetFlakesWithEnoughOccurrences()
     self.assertEqual(0, len(flakes_with_occurrences))
+
+  # This test tests a flake has some unreported occurrences.
+  def testFlakeHasUnreportedOccurrences(self):
+    flake = Flake.query().fetch()[0]
+    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=900)
+    flake_issue.last_updated_time_by_flake_detection = (
+        self._GetDatetimeHoursAgo(30))
+    flake_issue.put()
+    flake.flake_issue_key = flake_issue.key
+    flake.put()
+
+    occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
+    for occurrence in occurrences:
+      occurrence.time_detected = self._GetDatetimeHoursAgo(10)
+      occurrence.put()
+
+    flakes_with_occurrences = flake_issue_util.GetFlakesWithEnoughOccurrences()
+    self.assertEqual(1, len(flakes_with_occurrences))
+    self.assertEqual(flake_issue, flakes_with_occurrences[0][2])
 
   # This test tests that if the feature to create and update bugs is disabled,
   # flakes will NOT be reported to Monorail.
@@ -1110,6 +1137,159 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     flake_issue_key.delete()
 
     self.assertIsNone(flake_issue_util.GetFlakeIssue(flake))
+
+  @mock.patch.object(flake_issue_util, 'GetAndUpdateMergedIssue')
+  def testGetFlakeGroupsForActionsOnBugs(self, mock_get_merged_issue):
+    # New flake, no linked issue.
+    flake1 = self._CreateFlake('s1', 'suite1.t1', 'suite1.t1', 'suite1')
+    occurrences1 = [
+        self._CreateFlakeOccurrence(1, 's1', 'suite1.t1', 12345, flake1.key),
+        self._CreateFlakeOccurrence(2, 's1', 'suite1.t1', 12346, flake1.key)
+    ]
+    # New flake, no linked issue, same group as flake1.
+    flake2 = self._CreateFlake('s1', 'suite1.t2', 'suite1.t2', 'suite1')
+    occurrences2 = [
+        self._CreateFlakeOccurrence(1, 's1', 'suite1.t2', 12345, flake2.key),
+        self._CreateFlakeOccurrence(2, 's1', 'suite1.t2', 12346, flake2.key)
+    ]
+    # New flake, no linked issue, same step and suite as flake1&2,
+    # but different occurrences.
+    flake3 = self._CreateFlake('s3', 'suite1.t3', 'suite1.t3', 'suite1')
+    occurrences3 = [
+        self._CreateFlakeOccurrence(1, 's1', 'suite1.t3', 12345, flake3.key),
+        self._CreateFlakeOccurrence(3, 's1', 'suite1.t3', 12347, flake3.key)
+    ]
+    # New flake, no linked issue, different step and suite.
+    flake4 = self._CreateFlake('s2', 'suite2.t4', 'suite2.t4', 'suite2')
+    occurrences4 = [
+        self._CreateFlakeOccurrence(1, 's2', 'suite2.t4', 12345, flake4.key),
+        self._CreateFlakeOccurrence(2, 's2', 'suite2.t4', 12346, flake4.key)
+    ]
+    # Old flake, with issue.
+    flake_issue1 = FlakeIssue.Create(
+        monorail_project='chromium', issue_id=56789)
+    flake_issue1.put()
+    flake5 = self._CreateFlake('s2', 'suite2.t5', 'suite2.t5')
+    flake5.flake_issue_key = flake_issue1.key
+    flake5.put()
+    occurrences5 = [
+        self._CreateFlakeOccurrence(1, 's2', 'suite2.t4', 12345, flake5.key),
+        self._CreateFlakeOccurrence(2, 's2', 'suite2.t4', 12346, flake5.key)
+    ]
+    # Old flake, with same issue as flake5.
+    flake6 = self._CreateFlake('s3', 'suite3.t6', 'suite3.t6')
+    flake6.flake_issue_key = flake_issue1.key
+    flake6.put()
+    occurrences6 = [
+        self._CreateFlakeOccurrence(3, 's3', 'suite3.t6', 34467, flake6.key),
+        self._CreateFlakeOccurrence(4, 's3', 'suite3.t6', 35546, flake6.key),
+        self._CreateFlakeOccurrence(5, 's3', 'suite3.t6', 67543, flake6.key)
+    ]
+    # Old flake, different issue.
+    flake_issue2 = FlakeIssue.Create(
+        monorail_project='chromium', issue_id=67890)
+    flake_issue2.put()
+    flake7 = self._CreateFlake('s3', 'suite3.t7', 'suite3.t7')
+    flake7.flake_issue_key = flake_issue2.key
+    flake7.put()
+    occurrences7 = [
+        self._CreateFlakeOccurrence(1, 's3', 'suite3.t7', 12345, flake7.key),
+        self._CreateFlakeOccurrence(2, 's3', 'suite3.t7', 12346, flake7.key)
+    ]
+
+    flake_group1 = flake_issue_util.FlakeGroupByOccurrences(
+        flake1, occurrences1)
+    flake_group1.AddFlakeIfBelong(flake2, occurrences2)
+
+    flake_group2 = flake_issue_util.FlakeGroupByOccurrences(
+        flake3, occurrences3)
+    flake_group3 = flake_issue_util.FlakeGroupByOccurrences(
+        flake4, occurrences4)
+
+    flake_group4 = flake_issue_util.FlakeGroupByFlakeIssue(
+        flake_issue1, flake5, occurrences5, flake_issue1)
+    flake_group4.AddFlakeIfBelong(flake6, occurrences6)
+
+    flake_group5 = flake_issue_util.FlakeGroupByFlakeIssue(
+        flake_issue2, flake7, occurrences7, flake_issue2)
+
+    flake_tuples_to_report = [(flake1, occurrences1, None),
+                              (flake2, occurrences2, None),
+                              (flake3, occurrences3, None),
+                              (flake4, occurrences4, None),
+                              (flake5, occurrences5, flake_issue1),
+                              (flake6, occurrences6, flake_issue1),
+                              (flake7, occurrences7, flake_issue2)]
+
+    mock_get_merged_issue.return_value.open = True
+
+    flake_groups_without_issue, flake_groups_with_issue = (
+        flake_issue_util.GetFlakeGroupsForActionsOnBugs(flake_tuples_to_report))
+
+    self.assertItemsEqual(
+        [flake_group1.ToDict(),
+         flake_group2.ToDict(),
+         flake_group3.ToDict()],
+        [group.ToDict() for group in flake_groups_without_issue])
+
+    self.assertItemsEqual(
+        [flake_group4.ToDict(), flake_group5.ToDict()],
+        [group.ToDict() for group in flake_groups_with_issue])
+
+  # This test is for when the issue linked to flakes is closed, should not
+  # group flakes by issue in this case.
+  @mock.patch.object(flake_issue_util, 'GetAndUpdateMergedIssue')
+  def testGetFlakeGroupsForActionsOnBugsIssueClosed(self,
+                                                    mock_get_merged_issue):
+    mock_get_merged_issue.return_value.open = False
+    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=56789)
+    flake_issue.put()
+    flake = self._CreateFlake('s2', 'suite2.t5', 'suite2.t5')
+    flake.flake_issue_key = flake_issue.key
+    flake.put()
+    occurrences = [
+        self._CreateFlakeOccurrence(1, 's2', 'suite2.t4', 12345, flake.key),
+        self._CreateFlakeOccurrence(2, 's2', 'suite2.t4', 12346, flake.key)
+    ]
+
+    flake_group = flake_issue_util.FlakeGroupByOccurrences(flake, occurrences)
+
+    flake_groups_without_issue, flake_groups_with_issue = (
+        flake_issue_util.GetFlakeGroupsForActionsOnBugs([(flake, occurrences,
+                                                          flake_issue)]))
+    self.assertEqual([flake_group.ToDict()],
+                     [group.ToDict() for group in flake_groups_without_issue])
+    self.assertEqual([], flake_groups_with_issue)
+
+  # This test is for when the issue linked to flakes is merged to an open bug.
+  @mock.patch.object(monorail_util, 'GetMergedDestinationIssueForId')
+  def testGetFlakeGroupsForActionsOnBugsIssueNewMergeIssue(
+      self, mock_get_merged_issue):
+    mock_get_merged_issue.return_value.open = True
+    mock_get_merged_issue.return_value.id = 54321
+    flake_issue1 = FlakeIssue.Create(
+        monorail_project='chromium', issue_id=56789)
+    flake_issue1.put()
+    flake_issue2 = FlakeIssue.Create(
+        monorail_project='chromium', issue_id=54321)
+    flake_issue2.put()
+    flake = self._CreateFlake('s2', 'suite2.t5', 'suite2.t5')
+    flake.flake_issue_key = flake_issue1.key
+    flake.put()
+    occurrences = [
+        self._CreateFlakeOccurrence(1, 's2', 'suite2.t4', 12345, flake.key),
+        self._CreateFlakeOccurrence(2, 's2', 'suite2.t4', 12346, flake.key)
+    ]
+
+    flake_group = flake_issue_util.FlakeGroupByFlakeIssue(
+        flake_issue2, flake, occurrences, flake_issue1)
+
+    flake_groups_without_issue, flake_groups_with_issue = (
+        flake_issue_util.GetFlakeGroupsForActionsOnBugs([(flake, occurrences,
+                                                          flake_issue1)]))
+    self.assertEqual([], flake_groups_without_issue)
+    self.assertEqual([flake_group.ToDict()],
+                     [group.ToDict() for group in flake_groups_with_issue])
 
   def testUpdateIssueLeaves(self):
     final_issue = FlakeIssue.Create('chromium', 3)

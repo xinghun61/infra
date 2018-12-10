@@ -234,6 +234,21 @@ class FlakeTest(wf_testcase.WaterfallTestCase):
 
     self.assertIsNone(flake.GetIssue())
 
+  def testGetTestSuiteName(self):
+    luci_project = 'chromium'
+    normalized_step_name = 'normalized_step'
+    normalized_test_name = 'a/b.html'
+    test_label_name = 'test_label'
+
+    flake = Flake.Create(
+        luci_project=luci_project,
+        normalized_step_name=normalized_step_name,
+        normalized_test_name=normalized_test_name,
+        test_label_name=test_label_name)
+    flake.tags.append('suite::a')
+    flake.put()
+    self.assertEqual('a', flake.GetTestSuiteName())
+
   def testGetFlakeIssueDataInconsistent(self):
     flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
     flake_issue.put()
