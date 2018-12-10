@@ -107,31 +107,31 @@ def RunSteps(api, source_repo, target_repo):
                                   stdout=api.raw_io.output_text()).stdout)
 
   gitmodules_entries = []
-  # The "api.git" call below generates a step. This will be executed once per
-  # entry in DEPS, so we tuck it away inside this parent step to make the
-  # resulting list of executed steps more readable.
-  with api.step.nest('Add gitlinks'):
-    for path, entry in deps.iteritems():
-      # Filter out any DEPS that point outside of the repo, as there's no way to
-      # represent this with submodules.
-      #
-      # Note that source_checkout_name has a slash on the end, so this will
-      # correctly filter out any path which has the checkout name as a prefix.
-      # For example, src-internal in the src DEPS file.
-      if not path.startswith(source_checkout_name):
-        continue
-      # Filter out the root repo itself, which shows up for some reason.
-      if path == source_checkout_name:
-        continue
-      # json.loads returns unicode but the recipe framework can only handle str.
-      path = str(path[len(source_checkout_name):])
+  update_index_entries = []
+  for path, entry in deps.iteritems():
+    # Filter out any DEPS that point outside of the repo, as there's no way to
+    # represent this with submodules.
+    #
+    # Note that source_checkout_name has a slash on the end, so this will
+    # correctly filter out any path which has the checkout name as a prefix.
+    # For example, src-internal in the src DEPS file.
+    if not path.startswith(source_checkout_name):
+      continue
+    # Filter out the root repo itself, which shows up for some reason.
+    if path == source_checkout_name:
+      continue
+    # json.loads returns unicode but the recipe framework can only handle str.
+    path = str(path[len(source_checkout_name):])
 
-      gitmodules_entries.append('[submodule "%s"]\n\tpath = %s\n\turl = %s'
-                                % (path, path, str(entry['url'])))
-      # This adds a submodule entry to the index without cloning the underlying
-      # repository.
-      api.git('update-index', '--add', '--cacheinfo', '160000', entry['rev'],
-              path, name='Add %s gitlink' % path)
+    update_index_entries.extend(
+        ['--cacheinfo', '160000,%s,%s' % (entry['rev'], path)])
+
+    gitmodules_entries.append('[submodule "%s"]\n\tpath = %s\n\turl = %s'
+                              % (path, path, str(entry['url'])))
+
+  # This adds submodule entries to the index without cloning the underlying
+  # repository.
+  api.git('update-index', '--add', *update_index_entries, name='Add gitlinks')
 
   api.file.write_text('Write .gitmodules file',
                       source_checkout_dir.join('.gitmodules'),

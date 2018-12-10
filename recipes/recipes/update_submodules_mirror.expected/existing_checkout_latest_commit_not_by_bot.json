@@ -112,42 +112,18 @@
     "stdout": "/path/to/tmp/"
   },
   {
-    "cmd": [],
+    "cmd": [
+      "git",
+      "update-index",
+      "--add",
+      "--cacheinfo",
+      "160000,4ad2459561d76217c9b7aff412c5c086b491078a,v8",
+      "--cacheinfo",
+      "160000,13a00f110ef910a25763346d6538b60f12845656,buildtools"
+    ],
+    "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
+    "infra_step": true,
     "name": "Add gitlinks"
-  },
-  {
-    "cmd": [
-      "git",
-      "update-index",
-      "--add",
-      "--cacheinfo",
-      "160000",
-      "4ad2459561d76217c9b7aff412c5c086b491078a",
-      "v8"
-    ],
-    "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
-    "infra_step": true,
-    "name": "Add gitlinks.Add v8 gitlink",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "git",
-      "update-index",
-      "--add",
-      "--cacheinfo",
-      "160000",
-      "13a00f110ef910a25763346d6538b60f12845656",
-      "buildtools"
-    ],
-    "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
-    "infra_step": true,
-    "name": "Add gitlinks.Add buildtools gitlink",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
   },
   {
     "cmd": [
