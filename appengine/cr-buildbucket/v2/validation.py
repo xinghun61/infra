@@ -120,21 +120,33 @@ def validate_tags(string_pairs, mode):
 # The order of functions must match the order of messages in common.proto.
 
 
-def validate_builder_id(builder_id):
+def validate_builder_id(builder_id, require_bucket=True, require_builder=True):
   """Validates build_pb2.BuilderID."""
-  _check_truth(builder_id, 'project', 'bucket', 'builder')
+  assert require_bucket or not require_builder
+  _check_truth(builder_id, 'project')
+  if require_bucket:
+    _check_truth(builder_id, 'bucket')
+  if require_builder:
+    _check_truth(builder_id, 'builder')
+
   with _enter('project'), _handle_invalid_input_error():
     config.validate_project_id(builder_id.project)
+
   with _enter('bucket'), _handle_invalid_input_error():
-    config.validate_bucket_name(builder_id.bucket)
-    parts = builder_id.bucket.split('.')
-    if len(parts) >= 3 and parts[0] == 'luci':
-      _err(
-          'invalid usage of v1 bucket format in v2 API; use %r instead',
-          parts[2]
-      )
+    if builder_id.bucket:
+      config.validate_bucket_name(builder_id.bucket)
+      parts = builder_id.bucket.split('.')
+      if len(parts) >= 3 and parts[0] == 'luci':
+        _err(
+            'invalid usage of v1 bucket format in v2 API; use %r instead',
+            parts[2]
+        )
+    elif builder_id.builder:
+      _err('required by .builder field')
+
   with _enter('builder'), _handle_invalid_input_error():
-    errors.validate_builder_name(builder_id.builder)
+    if builder_id.builder:
+      errors.validate_builder_name(builder_id.builder)
 
 
 ################################################################################
@@ -336,9 +348,9 @@ def validate_build_predicate(predicate):
   """Validates rpc_pb2.BuildPredicate."""
   if predicate.HasField('builder'):
     with _enter('builder'):
-      _check_truth(predicate.builder, 'project')
-      if predicate.builder.builder and not predicate.builder.bucket:
-        _enter_err('bucket', 'required by .builder field')
+      validate_builder_id(
+          predicate.builder, require_bucket=False, require_builder=False
+      )
 
   _check_repeated(predicate, 'gerrit_changes', validate_gerrit_change)
 
