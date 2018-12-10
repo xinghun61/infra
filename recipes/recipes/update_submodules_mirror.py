@@ -47,13 +47,16 @@ def RunSteps(api, source_repo, target_repo):
   #
   # We want to keep the final component equal to the below, as gclient/DEPS can
   # be sensitive to the name of the directory a repo is checked out to.
+  #
+  # The slash on the end doesn't make a difference for source_checkout_dir. But
+  # it's necessary for the other uses for source_checkout_name, below.
   source_checkout_name = source_project[source_project.rfind('/') + 1:] + '/'
   source_checkout_dir = checkout_dir.join(source_checkout_name)
 
   # TODO: less hacky way of checking if the dir exists?
   glob = api.m.file.glob_paths('Check for existing source checkout dir',
                                checkout_dir, source_checkout_name)
-  if glob == []:
+  if not glob:
     # We don't depend on any particular cwd, as source_checkout_dir is absolute.
     # But we must supply *some* valid path, or it will fail to spawn the
     # process.
@@ -63,9 +66,7 @@ def RunSteps(api, source_repo, target_repo):
   # This is implicitly used as the cwd by all the git steps below.
   api.m.path['checkout'] = source_checkout_dir
 
-  # '--all' to pull all branches and tags, so they'll appear in the mirror. We
-  # want the mirror to look just like the source.
-  api.git('fetch', '--all')
+  api.git('fetch')
 
   # Discard any commits from previous runs.
   api.git('reset', '--hard', 'origin/master')
@@ -73,7 +74,7 @@ def RunSteps(api, source_repo, target_repo):
   with api.step.nest('Check for new commits') as step:
     commits, _ = api.gitiles.log(target_repo, 'master', limit=2,
                                  step_name='Find latest commit to target repo')
-    if commits != [] and commits[0]['author']['name'] == COMMIT_USERNAME:
+    if commits and commits[0]['author']['name'] == COMMIT_USERNAME:
       latest_real_commit_in_target = commits[1]['commit']
       latest_commit_in_source = api.git(
           'rev-parse', 'master',
@@ -113,11 +114,16 @@ def RunSteps(api, source_repo, target_repo):
     for path, entry in deps.iteritems():
       # Filter out any DEPS that point outside of the repo, as there's no way to
       # represent this with submodules.
+      #
+      # Note that source_checkout_name has a slash on the end, so this will
+      # correctly filter out any path which has the checkout name as a prefix.
+      # For example, src-internal in the src DEPS file.
       if not path.startswith(source_checkout_name):
         continue
       # Filter out the root repo itself, which shows up for some reason.
       if path == source_checkout_name:
         continue
+      # json.loads returns unicode but the recipe framework can only handle str.
       path = str(path[len(source_checkout_name):])
 
       gitmodules_entries.append('[submodule "%s"]\n\tpath = %s\n\turl = %s'
