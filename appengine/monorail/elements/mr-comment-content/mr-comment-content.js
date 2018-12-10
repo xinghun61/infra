@@ -36,13 +36,11 @@ class MrCommentContent extends ReduxMixin(Polymer.Element) {
   }
 
   _computeTextRuns(isDeleted, content, commentReferences, projectName) {
-    console.log(isDeleted);
     return window.__autolink.markupAutolinks(
         content, commentReferences, projectName);
   }
 
   _computeDeletedClass(isDeleted) {
-    console.log(isDeleted ? 'deleted-comment-content' : '');
     return isDeleted ? 'deleted-comment-content' : '';
   }
 }

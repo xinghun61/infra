@@ -129,7 +129,6 @@
       flush(() => {
         Polymer.dom(element.root).querySelector(
           '#enumFieldInput').setValue(['one', 'two']);
-        console.log(JSON.stringify(element.getDelta()));
         assert.deepEqual(element.getDelta(), {
           fieldValuesAdded: [
             {
