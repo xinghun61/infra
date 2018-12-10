@@ -231,7 +231,7 @@ func oncallerFromSummary(in, match string) ([]string, error) {
 }
 
 // nameShiftSeparator is used to separate the ShiftName from the rota name in Calendar Events.
-const nameShiftSeparator = " - "
+const nameShiftSeparator = " ~s~ "
 
 func eventsToShifts(ctx context.Context, events *gcal.Events, name string, shifts *rotang.ShiftConfig) ([]rotang.ShiftEntry, error) {
 	if events == nil || shifts == nil || name == "" {

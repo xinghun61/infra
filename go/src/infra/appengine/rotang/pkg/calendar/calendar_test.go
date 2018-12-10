@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"context"
+
 	"github.com/kylelemons/godebug/pretty"
 	"go.chromium.org/luci/appengine/gaetesting"
 	"go.chromium.org/luci/server/router"
@@ -836,11 +837,108 @@ func TestEventsToShifts(t *testing.T) {
 				},
 			},
 		},
+		want: []rotang.ShiftEntry{
+			{
+				Name:    "Test all day",
+				Comment: "Generated from calendar event",
+				OnCall: []rotang.ShiftMember{
+					{
+						ShiftName: "Test all day",
+						Email:     "test1@test.com",
+					}, {
+						ShiftName: "Test all day",
+						Email:     "test2@test.com",
+					}, {
+						ShiftName: "Test all day",
+						Email:     "test3@test.com",
+					},
+				},
+				StartTime: timeMustParse("2017-10-16"),
+				EndTime:   timeMustParse("2017-10-23"),
+				EvtID:     "Test ID1",
+			}, {
+				Name:    "Test all day",
+				Comment: "Generated from calendar event",
+				OnCall: []rotang.ShiftMember{
+					{
+						ShiftName: "Test all day",
+						Email:     "test1@test.com",
+					}, {
+						ShiftName: "Test all day",
+						Email:     "test2@test.com",
+					}, {
+						ShiftName: "Test all day",
+						Email:     "test3@test.com",
+					},
+				},
+				StartTime: timeMustParse("2017-10-23"),
+				EndTime:   timeMustParse("2017-10-30"),
+				EvtID:     "Test ID2",
+			},
+		},
 		shiftCfg: &rotang.ShiftConfig{
 			Shifts: []rotang.Shift{
 				{
 					Name:     "Test all day",
 					Duration: 24 * time.Hour,
+				},
+			},
+		},
+	}, {
+		name: "Rotation name with '-'",
+		rota: "Sheriff-o - Matic Bug Triage",
+		event: &gcal.Events{
+			Items: []*gcal.Event{
+				{
+					Attendees: []*gcal.EventAttendee{
+						{
+							Email:          "test1@test.com",
+							ResponseStatus: "accepted",
+						}, {
+							Email:          "test2@test.com",
+							ResponseStatus: "accepted",
+						}, {
+							Email:          "test3@test.com",
+							ResponseStatus: "accepted",
+						},
+					},
+					Id:      "Test ID1",
+					Summary: "Sheriff-o - Matic Bug Triage",
+					Start: &gcal.EventDateTime{
+						Date:     "2017-10-16",
+						DateTime: "",
+						TimeZone: "",
+					},
+					End: &gcal.EventDateTime{
+						Date:     "2017-10-23",
+						DateTime: "",
+						TimeZone: "",
+					},
+				}, {
+					Attendees: []*gcal.EventAttendee{
+						{
+							Email:          "test1@test.com",
+							ResponseStatus: "accepted",
+						}, {
+							Email:          "test2@test.com",
+							ResponseStatus: "accepted",
+						}, {
+							Email:          "test3@test.com",
+							ResponseStatus: "accepted",
+						},
+					},
+					Id:      "Test ID2",
+					Summary: "Sheriff-o - Matic Bug Triage",
+					Start: &gcal.EventDateTime{
+						Date:     "2017-10-23",
+						DateTime: "",
+						TimeZone: "",
+					},
+					End: &gcal.EventDateTime{
+						Date:     "2017-10-30",
+						DateTime: "",
+						TimeZone: "",
+					},
 				},
 			},
 		},
@@ -881,6 +979,14 @@ func TestEventsToShifts(t *testing.T) {
 				StartTime: timeMustParse("2017-10-23"),
 				EndTime:   timeMustParse("2017-10-30"),
 				EvtID:     "Test ID2",
+			},
+		},
+		shiftCfg: &rotang.ShiftConfig{
+			Shifts: []rotang.Shift{
+				{
+					Name:     "Test all day",
+					Duration: 24 * time.Hour,
+				},
 			},
 		},
 	}, {
@@ -983,7 +1089,7 @@ func TestEventsToShifts(t *testing.T) {
 						},
 					},
 					Id:      "Test ID1",
-					Summary: "Test Rota - Shift1",
+					Summary: "Test Rota" + nameShiftSeparator + "Shift1",
 					Start: &gcal.EventDateTime{
 						Date:     "2017-10-16",
 						DateTime: "",
@@ -1005,7 +1111,7 @@ func TestEventsToShifts(t *testing.T) {
 						},
 					},
 					Id:      "Test ID2",
-					Summary: "Test Rota - Shift2",
+					Summary: "Test Rota" + nameShiftSeparator + "Shift2",
 					Start: &gcal.EventDateTime{
 						Date:     "2017-10-23",
 						DateTime: "",
@@ -1080,7 +1186,7 @@ func TestEventsToShifts(t *testing.T) {
 						},
 					},
 					Id:      "Test ID1",
-					Summary: "Test Rota - Shift1",
+					Summary: "Test Rota" + nameShiftSeparator + "Shift1",
 					Start: &gcal.EventDateTime{
 						Date:     "2017-10-16",
 						DateTime: "",
@@ -1102,7 +1208,7 @@ func TestEventsToShifts(t *testing.T) {
 						},
 					},
 					Id:      "Test ID2",
-					Summary: "Test Rota - Shift2",
+					Summary: "Test Rota" + nameShiftSeparator + "Shift2",
 					Start: &gcal.EventDateTime{
 						Date:     "2017-10-23",
 						DateTime: "",
@@ -1133,7 +1239,7 @@ func TestEventsToShifts(t *testing.T) {
 						},
 					},
 					Id:      "Test ID1",
-					Summary: "Test Rota - Shift1",
+					Summary: "Test Rota" + nameShiftSeparator + "Shift1",
 					Start: &gcal.EventDateTime{
 						Date:     "2017-10-16",
 						DateTime: "",
@@ -1155,7 +1261,7 @@ func TestEventsToShifts(t *testing.T) {
 						},
 					},
 					Id:      "Test ID2",
-					Summary: "Test Rota - Shift2",
+					Summary: "Test Rota" + nameShiftSeparator + "Shift2",
 					Start: &gcal.EventDateTime{
 						Date:     "2017-10-23",
 						DateTime: "",

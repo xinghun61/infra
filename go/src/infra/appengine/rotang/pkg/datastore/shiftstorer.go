@@ -359,6 +359,9 @@ func (s *Store) Shift(ctx context.Context, rota string, start time.Time) (*rotan
 		ID: start.Unix(),
 	}
 	if err := datastore.Get(ctx, &entry); err != nil {
+		if err == datastore.ErrNoSuchEntity {
+			return nil, status.Errorf(codes.NotFound, "shift not found")
+		}
 		return nil, err
 	}
 	return &rotang.ShiftEntry{

@@ -113,7 +113,7 @@
         </li>
         <li>Remove permissions for the legacy service<br>
           <span>
-            <button class="collapsible">Remove RotaNG permissions</button>
+            <button class="collapsible">Remove legacy service permissions</button>
             <div class="content">
             <ul>
               <li> In the Calendar "Settings > Share with specific people".</li>
@@ -258,12 +258,12 @@
           </code>
           <p>This gives that you can have any information from the <code>Info</code> struct inserted in your message.</p>
           <p>Eg.</p>
-          <code>Upcoming On-call shift for rotation: {{.RotaName}} {{.ShiftEntry.StartTime.In .Member.TZ}} to {{.ShiftEntry.EndTime.In .Member.TZ}}
+          <code>Upcoming On-call shift for rotation: {{"{{.RotaName}}"}} {{"{{.ShiftEntry.StartTime.In .Member.TZ}}"}} to {{"{{.ShiftEntry.EndTime.In .Member.TZ}}"}}
             </code>
             <p>Will produce:</p>
             <code>Upcoming On-call shift for rotation: Name of rota 2006-04-05 17:00:00 -0700 PDT to 2006-04-06 17:00:00 -0700 PDT</code>
             <p>For a member with a US Pacific TZ.</p>
-            <p><strong>Note</strong>: The current %s format replacement will not work. You could replace the %s with {{.RotaName}} for something similar.</p>
+            <p><strong>Note</strong>: The current <code>%s</code> format replacement will not work. You could replace the <code>%s</code> with <code>{{"{{.RotaName}}"}}</code> for something similar.</p>
           </li>
           <li>
             <p><strong>Email Body Template</strong></p>

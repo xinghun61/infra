@@ -134,7 +134,7 @@ func (h *State) rota(ctx *router.Context) (*rotang.Configuration, error) {
 
 	rotaName := ctx.Request.FormValue("name")
 	if rotaName == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "no rota provied")
+		return nil, status.Errorf(codes.InvalidArgument, "no rota provided")
 	}
 	rota, err := h.configStore(ctx.Context).RotaConfig(ctx.Context, rotaName)
 	if err != nil {

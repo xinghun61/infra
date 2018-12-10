@@ -77,6 +77,16 @@ func (h *State) validateConfig(ctx *router.Context, jr *jsonRota) error {
 		return status.Errorf(codes.PermissionDenied, "not admin or owner")
 	}
 
+	// To not create empty Owners entries.
+	var cleanOwners []string
+	for _, o := range jr.Cfg.Config.Owners {
+		if o == "" {
+			continue
+		}
+		cleanOwners = append(cleanOwners, o)
+	}
+	jr.Cfg.Config.Owners = cleanOwners
+
 	if dur, ok := checkShiftDuration(&jr.Cfg); !ok {
 		return status.Errorf(codes.InvalidArgument, "shift durations does not add up to 24h,got %v", dur)
 	}
@@ -91,10 +101,13 @@ func (h *State) createRota(ctx *router.Context, jr *jsonRota) error {
 	return h.configStore(ctx.Context).CreateRotaConfig(ctx.Context, &jr.Cfg)
 }
 
-func (h *State) modifyRota(ctx *router.Context, jr *jsonRota) error {
+func (h *State) modifyRota(ctx *router.Context, cfg *rotang.Configuration, jr *jsonRota) error {
 	if err := h.validateConfig(ctx, jr); err != nil {
 		return err
 	}
+	// Want to keep the Enabled state of the config before.
+	// Enable/Disable of the configuration is handled elsewhere.
+	jr.Cfg.Config.Enabled = cfg.Config.Enabled
 	return h.configStore(ctx.Context).UpdateRotaConfig(ctx.Context, &jr.Cfg)
 }
 
@@ -172,7 +185,7 @@ func (h *State) HandleRotaModify(ctx *router.Context) {
 			http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		_, err := h.configStore(ctx.Context).RotaConfig(ctx.Context, res.Cfg.Config.Name)
+		rotas, err := h.configStore(ctx.Context).RotaConfig(ctx.Context, res.Cfg.Config.Name)
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
 				if err := h.createRota(ctx, &res); err != nil {
@@ -183,7 +196,7 @@ func (h *State) HandleRotaModify(ctx *router.Context) {
 			http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if err := h.modifyRota(ctx, &res); err != nil {
+		if err := h.modifyRota(ctx, rotas[0], &res); err != nil {
 			http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 			return
 		}

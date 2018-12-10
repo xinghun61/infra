@@ -7,12 +7,11 @@ import (
 	"text/template"
 	"time"
 
-	"context"
-
 	"go.chromium.org/gae/service/mail"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/router"
+	"google.golang.org/appengine"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -35,33 +34,34 @@ func (h *State) JobEmail(ctx *router.Context) {
 		return
 	}
 	for _, cfg := range configs {
-		if err := h.notifyEmail(ctx.Context, cfg, now); err != nil {
+		if err := h.notifyEmail(ctx, cfg, now); err != nil {
 			logging.Warningf(ctx.Context, "notifyEmail(ctx, _,%v) for rota: %q failed: %v", now, cfg.Config.Name, err)
 		}
 	}
 }
 
 // notifyEmail figures out if a notification should be sent for the specified shift.
-func (h *State) notifyEmail(ctx context.Context, cfg *rotang.Configuration, t time.Time) error {
+func (h *State) notifyEmail(ctx *router.Context, cfg *rotang.Configuration, t time.Time) error {
 	if cfg.Config.Email.DaysBeforeNotify == 0 || !cfg.Config.Enabled {
 		return nil
 	}
 	t = t.UTC().Add(time.Duration(cfg.Config.Email.DaysBeforeNotify) * fullDay)
 	ss := cfg.Config.Shifts.StartTime.UTC()
 	for _, s := range cfg.Config.Shifts.Shifts {
-		// Only care about the date of the `t`time and then use the StartTime from the ShiftConfiguration to set
-		// the start of the shift.
-		ct := time.Date(t.Year(), t.Month(), t.Day(), ss.Hour(), ss.Minute(), ss.Second(), ss.Nanosecond(), time.UTC)
-		shift, err := h.shiftStore(ctx).Shift(ctx, cfg.Config.Name, ct)
+		shifts, err := h.shiftStore(ctx.Context).ShiftsFromTo(ctx.Context, cfg.Config.Name, t, t.Add(s.Duration))
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
 				continue
 			}
 			return err
 		}
-		for _, m := range shift.OnCall {
-			if err := h.sendMail(ctx, cfg, shift, m.Email); err != nil {
-				return err
+		for _, shift := range shifts {
+			if (t.After(shift.StartTime) || t.Equal(shift.StartTime)) && t.Before(shift.StartTime.Add(s.Duration)) {
+				for _, m := range shifts[0].OnCall {
+					if err := h.sendMail(ctx, cfg, &shifts[0], m.Email); err != nil {
+						return err
+					}
+				}
 			}
 		}
 		ss, t = ss.Add(s.Duration), t.Add(s.Duration)
@@ -80,8 +80,8 @@ const (
 const stagingEmail = "rotang-staging@google.com"
 
 // sendMail executes the subject/body templates and sends the mail out.
-func (h *State) sendMail(ctx context.Context, cfg *rotang.Configuration, shift *rotang.ShiftEntry, email string) error {
-	m, err := h.memberStore(ctx).Member(ctx, email)
+func (h *State) sendMail(ctx *router.Context, cfg *rotang.Configuration, shift *rotang.ShiftEntry, email string) error {
+	m, err := h.memberStore(ctx.Context).Member(ctx.Context, email)
 	if err != nil {
 		return err
 	}
@@ -110,17 +110,19 @@ func (h *State) sendMail(ctx context.Context, cfg *rotang.Configuration, shift *
 	}
 
 	sender := h.mailAddress
+	if h.IsStaging() {
+		email = stagingEmail
+		if sender == "" {
+			sender = stagingEmail
+		}
+	}
+
 	if sender == "" {
 		// https://cloud.google.com/appengine/docs/standard/go/mail/
-		sender = emailSender + "@" + h.projectID(ctx) + emailDomain
+		sender = emailSender + "@" + h.projectID(appengine.NewContext(ctx.Request)) + emailDomain
 	}
 
-	if h.IsStaging() {
-		logging.Infof(ctx, "running in the staging env. sending email to: g/rotang-staging")
-		email = stagingEmail
-	}
-
-	return h.mailSender.Send(ctx, &mail.Message{
+	return h.mailSender.Send(ctx.Context, &mail.Message{
 		Sender:  sender,
 		To:      []string{email},
 		Subject: subjectBuf.String(),

@@ -32,6 +32,8 @@ func (h *State) JobSchedule(ctx *router.Context) {
 	}
 }
 
+const genComment = "auto extended"
+
 func (h *State) scheduleShifts(ctx *router.Context, cfg *rotang.Configuration, t time.Time) error {
 	if cfg.Config.Expiration == 0 || !cfg.Config.Enabled {
 		logging.Infof(ctx.Context, "scheduling of shifts for rota: %q disabled.", cfg.Config.Name)
@@ -71,9 +73,11 @@ func (h *State) scheduleShifts(ctx *router.Context, cfg *rotang.Configuration, t
 
 	shiftStore := h.shiftStore(ctx.Context)
 	for _, s := range resShifts {
+		s.Comment = genComment
 		if err := shiftStore.UpdateShift(ctx.Context, cfg.Config.Name, &s); err != nil {
 			return err
 		}
 	}
+	logging.Infof(ctx.Context, "scheduling of shifts for rota: %q successful", cfg.Config.Name)
 	return nil
 }

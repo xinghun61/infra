@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"context"
+
 	"github.com/kylelemons/godebug/pretty"
 	"go.chromium.org/gae/service/mail"
 	"go.chromium.org/luci/common/clock"
@@ -238,7 +239,7 @@ This is  a friendly reminder that you're oncall for Test Rota from 2006-04-05 17
 		},
 	}, {
 		name: "Only send Email for the first day of the shift",
-		time: midnight.Add(1 * 24 * time.Hour),
+		time: midnight.Add(2 * fullDay),
 		ctx: &router.Context{
 			Context: ctx,
 			Writer:  httptest.NewRecorder(),

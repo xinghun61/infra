@@ -34,7 +34,7 @@ class RotaShiftGenerate extends LitElement {
     const numberElement = this.shadowRoot.getElementById('nrToSchedule').value;
     const generatorElement = this.shadowRoot.getElementById('generator').value;
     let formBody = new URLSearchParams();
-    formBody.append('rota', this.rota);
+    formBody.append('name', this.rota);
     formBody.append('nrShifts', numberElement);
     formBody.append('startTime', startElement);
     formBody.append('generator', generatorElement);

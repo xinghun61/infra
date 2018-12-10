@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"context"
+
 	"github.com/kylelemons/godebug/pretty"
 	"go.chromium.org/luci/server/router"
 )
@@ -387,6 +388,7 @@ func TestScheduleShifts(t *testing.T) {
 				StartTime: midnight.Add(7 * fullDay),
 				EndTime:   midnight.Add(12 * fullDay),
 				EvtID:     "0",
+				Comment:   genComment,
 			}, {
 				Name: "MTV All Day",
 				OnCall: []rotang.ShiftMember{
@@ -398,6 +400,7 @@ func TestScheduleShifts(t *testing.T) {
 				StartTime: midnight.Add(14 * fullDay),
 				EndTime:   midnight.Add(19 * fullDay),
 				EvtID:     "1",
+				Comment:   genComment,
 			},
 		},
 	}, {
@@ -479,6 +482,7 @@ func TestScheduleShifts(t *testing.T) {
 				StartTime: midnight.Add(14 * fullDay),
 				EndTime:   midnight.Add(19 * fullDay),
 				EvtID:     "0",
+				Comment:   genComment,
 			}, {
 				Name: "MTV All Day",
 				OnCall: []rotang.ShiftMember{
@@ -490,6 +494,7 @@ func TestScheduleShifts(t *testing.T) {
 				StartTime: midnight.Add(21 * fullDay),
 				EndTime:   midnight.Add(26 * fullDay),
 				EvtID:     "1",
+				Comment:   genComment,
 			},
 		},
 	}, {
@@ -644,6 +649,7 @@ func TestScheduleShifts(t *testing.T) {
 				StartTime: midnight.Add(2 * weekDuration),
 				EndTime:   midnight.Add(4*fullDay + 8*time.Hour + 2*weekDuration),
 				EvtID:     "0",
+				Comment:   genComment,
 			}, {
 				Name: "SYD Shift",
 				OnCall: []rotang.ShiftMember{
@@ -655,6 +661,7 @@ func TestScheduleShifts(t *testing.T) {
 				StartTime: midnight.Add(8*time.Hour + 2*weekDuration),
 				EndTime:   midnight.Add(4*fullDay + 16*time.Hour + 2*weekDuration),
 				EvtID:     "1",
+				Comment:   genComment,
 			}, {
 				Name: "EU Shift",
 				OnCall: []rotang.ShiftMember{
@@ -666,6 +673,7 @@ func TestScheduleShifts(t *testing.T) {
 				StartTime: midnight.Add(16*time.Hour + 2*weekDuration),
 				EndTime:   midnight.Add(5*fullDay + 2*weekDuration),
 				EvtID:     "2",
+				Comment:   genComment,
 			},
 			{
 				Name: "MTV Shift",
@@ -678,6 +686,7 @@ func TestScheduleShifts(t *testing.T) {
 				StartTime: midnight.Add(3 * weekDuration),
 				EndTime:   midnight.Add(4*fullDay + 8*time.Hour + 3*weekDuration),
 				EvtID:     "3",
+				Comment:   genComment,
 			}, {
 				Name: "SYD Shift",
 				OnCall: []rotang.ShiftMember{
@@ -689,6 +698,7 @@ func TestScheduleShifts(t *testing.T) {
 				StartTime: midnight.Add(8*time.Hour + 3*weekDuration),
 				EndTime:   midnight.Add(4*fullDay + 16*time.Hour + 3*weekDuration),
 				EvtID:     "4",
+				Comment:   genComment,
 			}, {
 				Name: "EU Shift",
 				OnCall: []rotang.ShiftMember{
@@ -700,6 +710,7 @@ func TestScheduleShifts(t *testing.T) {
 				StartTime: midnight.Add(16*time.Hour + 3*weekDuration),
 				EndTime:   midnight.Add(5*fullDay + 3*weekDuration),
 				EvtID:     "5",
+				Comment:   genComment,
 			},
 		},
 	},
