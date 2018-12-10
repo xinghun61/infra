@@ -35,7 +35,7 @@ class PostsubmitReport(ReportBase):
   summary_metrics = ndb.JsonProperty(indexed=False)
 
 
-class PresubmitReport(ndb.Model):
+class PresubmitReport(ReportBase):
   """Represents a presubmit code coverage report."""
 
   server_host = ndb.StringProperty(indexed=True)
