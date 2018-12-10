@@ -67,7 +67,7 @@ message Attachment {
 }
 
 
-// Next available tag: 14
+// Next available tag: 15
 message Comment {
   string project_name = 1;
   uint32 local_id = 2;
@@ -83,8 +83,7 @@ message Comment {
   // If set, this comment is an issue description.
   uint32 description_num = 12;
   bool is_spam = 13;
-  // TODO(jrobbins): How do we tell the client which comments the user
-  // is allowed to undelete without exposing who deleted it?
+  bool can_delete = 14;
 }
 
 

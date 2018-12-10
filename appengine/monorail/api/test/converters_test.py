@@ -18,6 +18,7 @@ from api.api_proto import issue_objects_pb2
 from api.api_proto import issues_pb2
 from api.api_proto import users_pb2
 from framework import exceptions
+from framework import permissions
 from proto import tracker_pb2
 from proto import user_pb2
 from testing import fake
@@ -548,7 +549,7 @@ class ConverterFunctionsTest(unittest.TestCase):
         download_url='attachment?aid=1&signed_aid=2')
     self.assertEqual(expected, actual)
 
-  def testConvertComment(self):
+  def testConvertComment_Normal(self):
     """We can convert a protorpc IssueComment to a protoc Comment."""
     now = 1234567890
     issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
@@ -556,9 +557,9 @@ class ConverterFunctionsTest(unittest.TestCase):
         id=101, project_id=789, user_id=111L, timestamp=now,
         content='a comment', sequence=12)
 
-    # Normal comment.
     actual = converters.ConvertComment(
-        issue, comment, self.users_by_id, self.config, {})
+        issue, comment, self.users_by_id, self.config, {}, 111L,
+        permissions.PermissionSet([]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
         commenter=common_pb2.UserRef(
@@ -566,22 +567,63 @@ class ConverterFunctionsTest(unittest.TestCase):
         timestamp=now, content='a comment', is_spam=False)
     self.assertEqual(expected, actual)
 
-    # Deleted Comment.
-    comment.deleted_by = 111L
+  def testConvertComment_DeletedComment(self):
+    """We can convert a protorpc IssueComment to a protoc Comment."""
+    now = 1234567890
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    comment = tracker_pb2.IssueComment(
+        id=101, project_id=789, user_id=111L, timestamp=now,
+        content='a comment', sequence=12, deleted_by=111L)
     actual = converters.ConvertComment(
-        issue, comment, self.users_by_id, self.config, {})
+        issue, comment, self.users_by_id, self.config, {}, 111L,
+        permissions.PermissionSet([permissions.DELETE_OWN]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=True,
         commenter=common_pb2.UserRef(
             user_id=111L, display_name='one@example.com'),
-        timestamp=now, content='a comment', is_spam=False)
+        timestamp=now, content='a comment', can_delete=True)
     self.assertEqual(expected, actual)
 
-    # Description.
-    comment.is_description = True
-    comment.deleted_by = None
+  def testConvertComment_DeletedCommentCantView(self):
+    """We can convert a protorpc IssueComment to a protoc Comment."""
+    now = 1234567890
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    comment = tracker_pb2.IssueComment(
+        id=101, project_id=789, user_id=111L, timestamp=now,
+        content='a comment', sequence=12, deleted_by=111L)
     actual = converters.ConvertComment(
-        issue, comment, self.users_by_id, self.config, {101: 1})
+        issue, comment, self.users_by_id, self.config, {}, 111L,
+        permissions.PermissionSet([]))
+    expected = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=12, is_deleted=True,
+        timestamp=now)
+    self.assertEqual(expected, actual)
+
+  def testConvertComment_CommentByBannedUser(self):
+    """We can convert a protorpc IssueComment to a protoc Comment."""
+    now = 1234567890
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    comment = tracker_pb2.IssueComment(
+        id=101, project_id=789, user_id=333L, timestamp=now,
+        content='a comment', sequence=12)
+    actual = converters.ConvertComment(
+        issue, comment, self.users_by_id, self.config, {}, 111L,
+        permissions.PermissionSet([]))
+    expected = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=12, is_deleted=True,
+        timestamp=now)
+    self.assertEqual(expected, actual)
+
+  def testConvertComment_Description(self):
+    """We can convert a protorpc IssueComment to a protoc Comment."""
+    now = 1234567890
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    comment = tracker_pb2.IssueComment(
+        id=101, project_id=789, user_id=111L, timestamp=now,
+        content='a comment', sequence=12, is_description=True)
+    actual = converters.ConvertComment(
+        issue, comment, self.users_by_id, self.config, {101: 1}, 111L,
+        permissions.PermissionSet([]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
         commenter=common_pb2.UserRef(
@@ -590,6 +632,13 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual(expected, actual)
     comment.is_description = False
 
+  def testConvertComment_Approval(self):
+    """We can convert a protorpc IssueComment to a protoc Comment."""
+    now = 1234567890
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    comment = tracker_pb2.IssueComment(
+        id=101, project_id=789, user_id=111L, timestamp=now,
+        content='a comment', sequence=12, approval_id=11)
     # Comment on an approval.
     self.config.field_defs.append(tracker_pb2.FieldDef(
         field_id=11, project_id=789, field_name='Accessibility',
@@ -597,15 +646,70 @@ class ConverterFunctionsTest(unittest.TestCase):
         applicable_type='Launch'))
     self.config.approval_defs.append(tracker_pb2.ApprovalDef(
         approval_id=11, approver_ids=[111L], survey='survey 1'))
-    comment.approval_id = 11
+
     actual = converters.ConvertComment(
-        issue, comment, self.users_by_id, self.config, {})
+        issue, comment, self.users_by_id, self.config, {}, 111L,
+        permissions.PermissionSet([]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
         commenter=common_pb2.UserRef(
             user_id=111L, display_name='one@example.com'),
         timestamp=now, content='a comment', is_spam=False,
         approval_ref=common_pb2.FieldRef(field_name='Accessibility'))
+    self.assertEqual(expected, actual)
+
+  def testConvertComment_ViewOwnInboundMessage(self):
+    """Users can view their own inbound messages."""
+    now = 1234567890
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    comment = tracker_pb2.IssueComment(
+        id=101, project_id=789, user_id=111L, timestamp=now,
+        content='a comment', sequence=12, inbound_message='inbound message')
+
+    actual = converters.ConvertComment(
+        issue, comment, self.users_by_id, self.config, {}, 111L,
+        permissions.PermissionSet([]))
+    expected = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
+        commenter=common_pb2.UserRef(
+            user_id=111L, display_name='one@example.com'),
+        timestamp=now, content='a comment', inbound_message='inbound message')
+    self.assertEqual(expected, actual)
+
+  def testConvertComment_ViewInboundMessageWithPermission(self):
+    """Users can view their own inbound messages."""
+    now = 1234567890
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    comment = tracker_pb2.IssueComment(
+        id=101, project_id=789, user_id=111L, timestamp=now,
+        content='a comment', sequence=12, inbound_message='inbound message')
+
+    actual = converters.ConvertComment(
+        issue, comment, self.users_by_id, self.config, {}, 222L,
+        permissions.PermissionSet([permissions.VIEW_INBOUND_MESSAGES]))
+    expected = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
+        commenter=common_pb2.UserRef(
+            user_id=111L, display_name='one@example.com'),
+        timestamp=now, content='a comment', inbound_message='inbound message')
+    self.assertEqual(expected, actual)
+
+  def testConvertComment_NotAllowedToViewInboundMessage(self):
+    """Users can view their own inbound messages."""
+    now = 1234567890
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    comment = tracker_pb2.IssueComment(
+        id=101, project_id=789, user_id=111L, timestamp=now,
+        content='a comment', sequence=12, inbound_message='inbound message')
+
+    actual = converters.ConvertComment(
+        issue, comment, self.users_by_id, self.config, {}, 222L,
+        permissions.PermissionSet([]))
+    expected = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
+        commenter=common_pb2.UserRef(
+            user_id=111L, display_name='one@example.com'),
+        timestamp=now, content='a comment')
     self.assertEqual(expected, actual)
 
   def testConvertCommentList(self):
@@ -627,7 +731,7 @@ class ConverterFunctionsTest(unittest.TestCase):
 
     actual = converters.ConvertCommentList(
         issue, [comment_0, comment_1, comment_2, comment_3], self.users_by_id,
-        self.config)
+        self.config, 222L, permissions.PermissionSet([permissions.DELETE_OWN]))
 
     expected_0 = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=0, is_deleted=False,
@@ -639,12 +743,10 @@ class ConverterFunctionsTest(unittest.TestCase):
         project_name='proj', local_id=1, sequence_num=1, is_deleted=False,
         commenter=common_pb2.UserRef(
             user_id=222L, display_name='two@example.com'),
-        timestamp=now, content='a comment', is_spam=False)
+        timestamp=now, content='a comment', is_spam=False, can_delete=True)
     expected_2 = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=2, is_deleted=True,
-        commenter=common_pb2.UserRef(
-            user_id=222L, display_name='two@example.com'),
-        timestamp=now, content='deleted comment', is_spam=False)
+        timestamp=now)
     expected_3 = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=3, is_deleted=False,
         commenter=common_pb2.UserRef(

@@ -624,6 +624,23 @@ class PermissionsTest(unittest.TestCase):
         comment, commenter, 333L,
         permissions.PermissionSet([permissions.DELETE_OWN])))
 
+  def testCanViewInboundMessage(self):
+    comment = tracker_pb2.IssueComment(user_id=111L)
+
+    # Users can view their own inbound messages
+    self.assertTrue(permissions.CanViewInboundMessage(
+        comment, 111L, permissions.EMPTY_PERMISSIONSET))
+
+    # Users with the ViewInboundMessages permissions can view inbound messages.
+    self.assertTrue(permissions.CanViewInboundMessage(
+        comment, 333L,
+        permissions.PermissionSet([permissions.VIEW_INBOUND_MESSAGES])))
+
+    # Other users cannot view inbound messages.
+    self.assertFalse(permissions.CanViewInboundMessage(
+        comment, 333L,
+        permissions.PermissionSet([permissions.VIEW])))
+
   def testCanViewNormalArifact(self):
     # Anyone can view a non-restricted artifact.
     self.assertTrue(permissions.CanView(
@@ -1100,6 +1117,16 @@ class IssuePermissionsTest(unittest.TestCase):
          'viewinboundmessages',
          'viewquota'],
         sorted(perms.perm_names))
+
+  def testUpdateIssuePermissions_FromConfig(self):
+    config = tracker_pb2.ProjectIssueConfig(
+        field_defs=[tracker_pb2.FieldDef(field_id=123L, grants_perm='Granted')])
+    issue = tracker_pb2.Issue(
+        field_values=[tracker_pb2.FieldValue(field_id=123L, user_id=111L)])
+    perms = permissions.UpdateIssuePermissions(
+        permissions.USER_PERMISSIONSET, self.PROJECT, issue, {111L},
+        config=config)
+    self.assertIn('granted', perms.perm_names)
 
   def testUpdateIssuePermissions_ExtraPerms(self):
     project = project_pb2.Project()

@@ -24,6 +24,7 @@ from api.api_proto import users_pb2
 from framework import exceptions
 from framework import filecontent
 from framework import framework_constants
+from framework import permissions
 from services import features_svc
 from tracker import attachment_helpers
 from tracker import field_helpers
@@ -357,25 +358,39 @@ def ConvertAttachment(attach, project_name):
 
 
 def ConvertComment(
-    issue, comment, users_by_id, config, description_nums):
+    issue, comment, users_by_id, config, description_nums, user_id, perms):
   """Convert a protorpc IssueComment to a protoc Comment."""
-  # TODO(jrobbins): Tell client which comments the current user can delete.
+  commenter = users_by_id[comment.user_id]
+  is_deleted = bool(comment.deleted_by or comment.is_spam or commenter.banned)
+
+  can_delete = permissions.CanDeleteComment(
+      comment, commenter, user_id, perms)
+  can_view = permissions.CanViewComment(
+      comment, commenter, user_id, perms)
+  can_view_inbound_message = permissions.CanViewInboundMessage(
+      comment, user_id, perms)
+
   result = issue_objects_pb2.Comment(
       project_name=issue.project_name,
       local_id=issue.local_id,
       sequence_num=comment.sequence,
-      is_deleted=bool(comment.deleted_by),
+      is_deleted=is_deleted,
+      can_delete=can_delete,
       timestamp=comment.timestamp,
-      is_spam=comment.is_spam,
-      commenter=ConvertUserRef(comment.user_id, None, users_by_id),
-      content=comment.content,
-      inbound_message=comment.inbound_message,
-      amendments=[
-          ConvertAmendment(amend, users_by_id)
-          for amend in comment.amendments],
-      attachments=[
-          ConvertAttachment(attach, issue.project_name)
-          for attach in comment.attachments])
+      is_spam=comment.is_spam)
+
+  if can_view:
+    result.commenter.CopyFrom(
+        ConvertUserRef(comment.user_id, None, users_by_id))
+    result.content = comment.content
+    if comment.inbound_message and can_view_inbound_message:
+      result.inbound_message = comment.inbound_message
+    result.amendments.extend([
+        ConvertAmendment(amend, users_by_id)
+        for amend in comment.amendments])
+    result.attachments.extend([
+        ConvertAttachment(attach, issue.project_name)
+        for attach in comment.attachments])
 
   if comment.id in description_nums:
     result.description_num = description_nums[comment.id]
@@ -387,7 +402,7 @@ def ConvertComment(
   return result
 
 
-def ConvertCommentList(issue, comments, users_by_id, config):
+def ConvertCommentList(issue, comments, users_by_id, config, user_id, perms):
   """Convert a list of protorpc IssueComments to protoc Comments."""
   description_nums = {}
   for comment in comments:
@@ -395,7 +410,8 @@ def ConvertCommentList(issue, comments, users_by_id, config):
       description_nums[comment.id] = len(description_nums) + 1
 
   result = [
-    ConvertComment(issue, c, users_by_id, config, description_nums)
+    ConvertComment(
+       issue, c, users_by_id, config, description_nums, user_id, perms)
     for c in comments]
   return result
 

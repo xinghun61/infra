@@ -1192,44 +1192,6 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual('sum', actual_comments[0].content)
     self.assertEqual('more info', actual_comments[1].content)
 
-  def testGetIssueComments_DeletedComment(self):
-    """We can get an existing issue by project_id and local_id."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
-    self.services.issue.TestAddIssue(issue)
-    comment = tracker_pb2.IssueComment(
-        project_id=789, content='more info', user_id=111L,
-        issue_id=issue.issue_id, deleted_by=111L)
-    self.services.issue.TestAddComment(comment, 1)
-
-    with self.work_env as we:
-      actual_comments = we.ListIssueComments(issue)
-
-    self.assertEqual(2, len(actual_comments))
-    self.assertEqual('sum', actual_comments[0].content)
-    self.assertIsNone(actual_comments[1].content)
-    self.assertEqual(0, actual_comments[1].user_id)
-    self.assertEqual([], actual_comments[1].amendments)
-    self.assertEqual([], actual_comments[1].attachments)
-    self.assertEqual('', actual_comments[1].inbound_message)
-
-  def testGetIssueComments_CanViewDeletedComment(self):
-    """We can get an existing issue by project_id and local_id."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
-    self.services.issue.TestAddIssue(issue)
-    comment = tracker_pb2.IssueComment(
-        project_id=789, content='more info', user_id=111L,
-        issue_id=issue.issue_id, deleted_by=111L)
-    self.services.issue.TestAddComment(comment, 1)
-
-    self.SignIn()
-    with self.work_env as we:
-      actual_comments = we.ListIssueComments(issue)
-
-    self.assertEqual(2, len(actual_comments))
-    self.assertEqual('sum', actual_comments[0].content)
-    self.assertEqual('more info', actual_comments[1].content)
-    self.assertEqual(111L, actual_comments[1].user_id)
-
   # FUTURE: UpdateComment()
 
   def testDeleteComment_Normal(self):

@@ -228,8 +228,10 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
       framework_views.RevealAllEmailsToMembers(mc.auth, project, users_by_id)
 
     with mc.profiler.Phase('converting to response objects'):
+      issue_perms = permissions.UpdateIssuePermissions(
+          mc.perms, project, issue, mc.auth.effective_ids, config=config)
       converted_comments = converters.ConvertCommentList(
-          issue, comments, users_by_id, config)
+          issue, comments, users_by_id, config, mc.auth.user_id, issue_perms)
       response = issues_pb2.ListCommentsResponse(comments=converted_comments)
 
     return response
@@ -252,6 +254,11 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
         mc.auth.effective_ids, user, project_dict,
         config_dict, issues)
     issue_dict = {issue.issue_id: issue for issue in allowed_issues}
+    issue_perms_dict = {
+        issue.issue_id: permissions.UpdateIssuePermissions(
+            mc.perms, project_dict[issue.project_id], issue,
+            mc.auth.effective_ids, config=config_dict[issue.project_id])
+        for issue in allowed_issues}
     comments = [
         c for c in comments if c.issue_id in issue_dict]
     users_by_id = framework_views.MakeAllUserViews(
@@ -263,11 +270,13 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
       converted_comments = []
       for c in comments:
         issue = issue_dict.get(c.issue_id)
+        issue_perms = issue_perms_dict.get(c.issue_id)
         result = converters.ConvertComment(
             issue, c,
             users_by_id,
             config_dict.get(issue.project_id),
-            {c.id: 1} if c.is_description else {})
+            {c.id: 1} if c.is_description else {},
+            mc.auth.user_id, issue_perms)
         converted_comments.append(result)
       converted_issues = [issue_objects_pb2.IssueSummary(
           project_name=issue.project_name, local_id=issue.local_id,

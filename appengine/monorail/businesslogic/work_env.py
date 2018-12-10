@@ -141,16 +141,13 @@ class WorkEnv(object):
       raise permissions.PermissionException(
         'User lacks permission %r in issue' % perm)
 
-  def _UserCanDeleteComment(self, issue, comment):
+  def _AssertUserCanDeleteComment(self, issue, comment):
     project, granted_perms = self._AssertUserCanViewIssue(
         issue, allow_viewing_deleted=True)
-    return permissions.CanDelete(
+    permitted = permissions.CanDelete(
         self.mc.auth.user_id, self.mc.auth.effective_ids, self.mc.perms,
         comment.deleted_by, comment.user_id, project,
         permissions.GetRestrictions(issue), granted_perms=granted_perms)
-
-  def _AssertUserCanDeleteComment(self, issue, comment):
-    permitted = self._UserCanDeleteComment(issue, comment)
     if not permitted:
       raise permissions.PermissionException('Cannot delete comment')
 
@@ -1083,20 +1080,6 @@ class WorkEnv(object):
     with self.mc.profiler.Phase('getting comments for %r' % issue.issue_id):
       comments = self.services.issue.GetCommentsForIssue(
           self.mc.cnxn, issue.issue_id)
-
-    with self.mc.profiler.Phase('filtering comments for %r' % issue.issue_id):
-      can_view_inbound_message = self._UserCanUsePermInIssue(
-          issue, permissions.VIEW_INBOUND_MESSAGES)
-      for comment in comments:
-        can_delete = self._UserCanDeleteComment(issue, comment)
-        if comment.deleted_by and not can_delete:
-          comment.user_id = None
-          comment.content = None
-          comment.amendments = []
-          comment.attachments = []
-          comment.inbound_message = ''
-        if not can_view_inbound_message:
-          comment.inbound_message = ''
 
     return comments
 

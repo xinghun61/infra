@@ -411,7 +411,7 @@ def GetPermissions(user, effective_ids, project):
 
 
 def UpdateIssuePermissions(
-    perms, project, issue, effective_ids, granted_perms=None):
+    perms, project, issue, effective_ids, granted_perms=None, config=None):
   """Update the PermissionSet for an specific issue.
 
   Take into account granted permissions and label restrictions to filter the
@@ -428,8 +428,16 @@ def UpdateIssuePermissions(
     granted_perms: optional list of strings of permissions that the user is
         granted only within the scope of one issue, e.g., by being named in
         a user-type custom field that grants permissions.
+    config: optional ProjectIssueConfig PB where granted perms should be
+        extracted from, if granted_perms is not given.
   """
-  granted_perms = granted_perms or []
+  if granted_perms is None:
+    if config:
+      granted_perms = tracker_bizobj.GetGrantedPerms(
+          issue, effective_ids, config)
+    else:
+      granted_perms = []
+
   restrictions = GetRestrictions(issue)
 
   # If the user has no permission to view the project, it has no permissions on
@@ -444,7 +452,7 @@ def UpdateIssuePermissions(
           p, effective_ids, project, restrictions, granted_perms))
 
   # Add any granted permissions.
-  new_perms.update(p.lower() for p in granted_perms)
+  new_perms.update(granted_perms)
 
   # And extra permissions for the project for all of the effective IDs.
   for effective_id in effective_ids:
@@ -695,8 +703,8 @@ def CanDeleteComment(comment, commenter, user_id, perms):
     perms: The PermissionSet with the issue permissions.
 
   Returns:
-    True if the user can (un)delete the comment."""
-
+    True if the user can (un)delete the comment.
+  """
   # User is not logged in or has no permissions.
   if not user_id or not perms:
     return False
@@ -736,8 +744,8 @@ def CanViewComment(comment, commenter, user_id, perms):
     perms: The PermissionSet with the issue permissions.
 
   Returns:
-    True if the user can view the comment."""
-
+    True if the user can view the comment.
+  """
   # Nobody can view comments by banned users.
   if commenter.banned:
     return False
@@ -752,6 +760,25 @@ def CanViewComment(comment, commenter, user_id, perms):
     return CanDeleteComment(comment, commenter, user_id, perms)
 
   return True
+
+
+def CanViewInboundMessage(comment, user_id, perms):
+  """Returns true if the user can view the given comment's inbound message.
+
+  UpdateIssuePermissions must have been called first.
+  Assumes that the user has permission to view the comment.
+
+  Args:
+    comment: An IssueComment PB object.
+    commenter: An User PB object with the user who created the comment.
+    user_id: The ID of the user whose permission we want to check.
+    perms: The PermissionSet with the issue permissions.
+
+  Returns:
+    True if the user can view the comment's inbound message.
+  """
+  return (perms.HasPerm(VIEW_INBOUND_MESSAGES, None, None, [])
+          or comment.user_id == user_id)
 
 
 def CanView(effective_ids, perms, project, restrictions, granted_perms=None):
