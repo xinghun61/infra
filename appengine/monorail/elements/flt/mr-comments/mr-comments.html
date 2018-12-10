@@ -2,7 +2,6 @@
 
 <link rel="import" href="../../../bower_components/chopsui/chops-timestamp.html">
 
-<link rel="import" href="../../redux/redux-mixin.html">
 <link rel="import" href="../../mr-comment-content/mr-comment-content.html">
 
 
@@ -85,7 +84,7 @@
           <chops-timestamp timestamp="[[comment.timestamp]]"></chops-timestamp>
           <div class="comment-options">
             <button on-click="_deleteComment" class="toggle"
-                    hidden$="[[!_offerDelete(issuePermissions, comment, user)]]"
+                    hidden$="[[!comment.canDelete]]"
                     data-project-name$="[[comment.projectName]]"
                     data-local-id$="[[comment.localId]]"
                     data-sequence-num$="[[comment.sequenceNum]]"
@@ -94,12 +93,12 @@
             </a>
           </div>
         </span>
-        <template is="dom-if" if="[[_computeDeletedCommentHidden(_deletedCommentsHidden, issuePermissions, comment, user)]]">
+        <template is="dom-if" if="[[_hideDeletedComment(_deletedCommentsHidden, comment)]]">
           <span class="deleted-comment-notice">
             Deleted comment
           </span>
         </template>
-        <template is="dom-if" if="[[!_computeDeletedCommentHidden(_deletedCommentsHidden, issuePermissions, comment, user)]]">
+        <template is="dom-if" if="[[!_hideDeletedComment(_deletedCommentsHidden, comment)]]">
           <template is="dom-if" if="[[_showDiff(comment)]]">
             <div class="issue-diff">
               <template is="dom-repeat" items="[[comment.amendments]]" as="delta">

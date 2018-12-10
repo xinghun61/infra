@@ -26,10 +26,6 @@ class MrComments extends ReduxMixin(Polymer.Element) {
         type: Number,
         value: 4,
       },
-      issuePermissions: {
-        type: Array,
-        statePath: 'issuePermissions',
-      },
       user: {
         type: String,
         statePath: 'user',
@@ -54,7 +50,7 @@ class MrComments extends ReduxMixin(Polymer.Element) {
       _hideDeletedToggle: {
         type: Boolean,
         value: false,
-        computed: '_computeHideDeletedToggle(issuePermissions, comments, user)',
+        computed: '_computeHideDeletedToggle(comments)',
       },
     };
   }
@@ -83,32 +79,18 @@ class MrComments extends ReduxMixin(Polymer.Element) {
     this._deletedCommentsHidden = !this._deletedCommentsHidden;
   }
 
-  _computeDeletedCommentHidden(deletedCommentsHidden, issuePermissions, comment, user) {
-    return comment.isDeleted && (
-      deletedCommentsHidden || !this._offerDelete(issuePermissions, comment, user));
+  _hideDeletedComment(deletedCommentsHidden, comment) {
+    return comment.isDeleted && (deletedCommentsHidden || !comment.canDelete);
   }
 
   _computeDeleteCommentVerb(comment) {
     return comment.isDeleted ? 'Undelete' : 'Delete';
   }
 
-  _computeHideDeletedToggle(issuePermissions, comments, user) {
+  _computeHideDeletedToggle(comments) {
     return !comments.some((comment) => {
-      return comment.isDeleted && this._offerDelete(
-        issuePermissions, comment, user);
+      return comment.isDeleted && comment.canDelete;
     });
-  }
-
-  _offerDelete(issuePermissions, comment, user) {
-    issuePermissions = issuePermissions || [];
-    if (issuePermissions.includes('deleteany')) {
-      return true;
-    }
-    if (user && issuePermissions.includes('deleteown')
-        && comment.commenter.displayName === user.email) {
-      return true;
-    }
-    return false;
   }
 
   _pluralize(count, baseWord, pluralWord) {
