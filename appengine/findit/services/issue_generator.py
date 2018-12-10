@@ -85,10 +85,16 @@ Findit has detected {num_occurrences} new flake occurrences of this test. List
 of all flake occurrences can be found at:
 {flake_url}.
 
-Since this test is still flaky, this issue has been moved back onto the Sheriff
-Bug Queue if it's not already there.
+{back_onto_sheriff_queue_message}
 {previous_tracking_bug_text}
 {footer}""")
+
+_FLAKE_DETECTION_WRONG_RESULTS_BUG_LINK = (
+    'https://bugs.chromium.org/p/chromium/issues/entry?'
+    'status=Unconfirmed&labels=Pri-1,Test-Findit-Wrong&'
+    'components=Tools%3ETest%3EFindit%3EFlakiness&'
+    'summary=%5BFindit%5D%20Flake%20Detection%20-%20Wrong%20result%3A%20'
+    '{summary}&comment=Link%20to%20flake%20details%3A%20{flake_link}')
 
 _FLAKE_DETECTION_PREVIOUS_TRACKING_BUG = (
     '\nThis flaky test was previously tracked in bug {}.\n')
@@ -99,12 +105,42 @@ _FLAKE_DETECTION_FOOTER_TEMPLATE = textwrap.dedent(
 
 Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).""")
 
-_FLAKE_DETECTION_WRONG_RESULTS_BUG_LINK = (
-    'https://bugs.chromium.org/p/chromium/issues/entry?'
-    'status=Unconfirmed&labels=Pri-1,Test-Findit-Wrong&'
-    'components=Tools%3ETest%3EFindit%3EFlakiness&'
-    'summary=%5BFindit%5D%20Flake%20Detection%20-%20Wrong%20result%20for%20{}&'
-    'comment=Link%20to%20flake%20occurrences%3A%20{}')
+############### Below are bug templates for flake groups. ###############
+# Bug template for a group of detected flakes.
+_FLAKE_DETECTION_GROUP_BUG_DESCRIPTION = textwrap.dedent("""
+{test_suite_name}* in {normalized_step_name} is flaky.
+
+Findit has detected {num_occurrences} flake occurrences of tests below within
+the past 24 hours:
+
+{flake_list}
+
+Please try to find and revert the culprit if the culprit is obvious.
+Otherwise please find an appropriate owner.
+{previous_tracking_bug_text}
+""")
+
+# Template for the comment immediately after the bug is created.
+_FLAKE_DETECTION_GROUP_BUG_LINK_COMMENT = textwrap.dedent("""
+List of all flake occurrences can be found at:
+{flakes_url}.
+
+{footer}""")
+
+_BACK_ONTO_SHERIFF_QUEUE_MESSAGE = (
+    'Since these tests are still flaky, this issue has been moved back onto the'
+    ' Sheriff Bug Queue if it hasn\'t already.')
+
+_FLAKE_DETECTION_GROUP_BUG_COMMENT = textwrap.dedent("""
+Findit has detected {num_occurrences} new flake occurrences of tests in this bug
+within the past 24 hours.
+
+List of all flake occurrences can be found at:
+{flake_url}.
+
+{back_onto_sheriff_queue_message}
+{previous_tracking_bug_text}
+{footer}""")
 
 
 def _GenerateAnalysisLink(analysis):
@@ -178,42 +214,15 @@ def _GenerateMessageText(analysis):
       analysis_link=analysis_link)
 
 
-class FlakyTestIssueGenerator(object):
+class BaseFlakeIssueGenerator(object):
   """Encapsulates details needed to create or update a Monorail issue."""
   __metaclass__ = abc.ABCMeta
 
   def __init__(self):
-    """Initiates a FlakyTestIssueGenerator object."""
+    """Initiates a BaseFlakeIssueGenerator object."""
 
     # Id of the previous issue that was tracking this flaky test.
     self._previous_tracking_bug_id = None
-
-  @abc.abstractmethod
-  def GetStepName(self):
-    """Gets the name of the step to create or update issue for.
-
-    Returns:
-      A String representing the step name.
-    """
-    return
-
-  @abc.abstractmethod
-  def GetTestName(self):
-    """Gets a name that can be used to identify a flaky test.
-
-    Returns:
-      A string representing the test name.
-    """
-    return
-
-  @abc.abstractmethod
-  def GetTestLabelName(self):
-    """Gets a label of the test that is used for display purpose.
-
-    Returns:
-      A label for the flaky test.
-    """
-    return
 
   @abc.abstractmethod
   def GetDescription(self):
@@ -277,13 +286,23 @@ class FlakyTestIssueGenerator(object):
     """
     return 'Untriaged'
 
+  @abc.abstractmethod
   def GetSummary(self):
     """Gets summary for the issue to be created.
 
     Returns:
       A string representing the summary.
     """
-    return '%s is flaky' % self.GetTestLabelName()
+    return
+
+  @abc.abstractmethod
+  def GetFlakyTestCustomizedField(self):
+    """Gets customized fields for the issue to be created.
+
+    Returns:
+      A CustomizedField field.
+    """
+    return
 
   def GetPriority(self):
     """Gets priority for the issue to be created.
@@ -294,15 +313,6 @@ class FlakyTestIssueGenerator(object):
       A string representing the priority of the issue. (e.g Pri-1, Pri-2)
     """
     return 'Pri-1'
-
-  def GetFlakyTestCustomizedField(self):
-    """Gets Flaky-Test customized fields for the issue to be created.
-
-    Returns:
-      A CustomizedField field whose value is the test name.
-    """
-    return CustomizedField(issue_constants.FLAKY_TEST_CUSTOMIZED_FIELD,
-                           self.GetTestName())
 
   def GetMonorailProject(self):
     """Gets the name of the Monorail project the issue is for.
@@ -335,6 +345,55 @@ class FlakyTestIssueGenerator(object):
   def OnIssueUpdated(self):
     """Called when an issue was updated successfully."""
     return
+
+
+class FlakyTestIssueGenerator(BaseFlakeIssueGenerator):
+  """Encapsulates details needed to create or update a Monorail issue."""
+  __metaclass__ = abc.ABCMeta
+
+  @abc.abstractmethod
+  def GetStepName(self):
+    """Gets the name of the step to create or update issue for.
+
+    Returns:
+      A String representing the step name.
+    """
+    return
+
+  @abc.abstractmethod
+  def GetTestName(self):
+    """Gets a name that can be used to identify a flaky test.
+
+    Returns:
+      A string representing the test name.
+    """
+    return
+
+  @abc.abstractmethod
+  def GetTestLabelName(self):
+    """Gets a label of the test that is used for display purpose.
+
+    Returns:
+      A label for the flaky test.
+    """
+    return
+
+  def GetSummary(self):
+    """Gets summary for the issue to be created.
+
+    Returns:
+      A string representing the summary.
+    """
+    return '%s is flaky' % self.GetTestLabelName()
+
+  def GetFlakyTestCustomizedField(self):
+    """Gets Flaky-Test customized fields for the issue to be created.
+
+    Returns:
+      A CustomizedField field whose value is the test name.
+    """
+    return CustomizedField(issue_constants.FLAKY_TEST_CUSTOMIZED_FIELD,
+                           self.GetTestName())
 
 
 class FlakeAnalysisIssueGenerator(FlakyTestIssueGenerator):
@@ -432,6 +491,7 @@ class FlakeDetectionIssueGenerator(FlakyTestIssueGenerator):
         test_name=self._flake.test_label_name,
         num_occurrences=self._num_occurrences,
         flake_url=self._GetLinkForFlake(),
+        back_onto_sheriff_queue_message=_BACK_ONTO_SHERIFF_QUEUE_MESSAGE,
         previous_tracking_bug_text=previous_tracking_bug_text,
         footer=self._GetFooter())
 
@@ -471,6 +531,168 @@ class FlakeDetectionIssueGenerator(FlakyTestIssueGenerator):
       A string representing footer.
     """
     wrong_results_bug_link = _FLAKE_DETECTION_WRONG_RESULTS_BUG_LINK.format(
-        self._flake.normalized_test_name, self._GetLinkForFlake())
+        summary=self._flake.normalized_test_name,
+        flake_link=self._GetLinkForFlake())
     return _FLAKE_DETECTION_FOOTER_TEMPLATE.format(
         wrong_results_bug_link=wrong_results_bug_link)
+
+
+class FlakeDetectionGroupIssueGenerator(BaseFlakeIssueGenerator):
+  """Encapsulates the details of issues filed by Flake Detection for a flake
+    group.
+
+  This issue_generator can be used for 2 cases:
+    1. A group of new flakes are detected, and we want to create a bug for this
+      group. In this case, by our heuristic rules, all flakes are in the same
+      binary name and test suite, and all happen in the same builds (meaning
+      they have the same occurrence_count).
+    2. A group of old flakes are still happening so we want to update their bug.
+      In this case, all our heuristic rules may not apply since other flakes may
+      be merged together to one bug automatically or manually.
+  """
+
+  def __init__(self,
+               flakes,
+               num_occurrences,
+               normalized_step_name=None,
+               test_suite_name=None,
+               flake_issue=None,
+               flakes_with_same_occurrences=True):
+    """
+    Args:
+      flakes (list): a list of Flake entities in the same group for one bug.
+      num_occurrences (int): Number of occurrence for each flake.
+        1. If create a bug for a group, by heuristic rule the occurrence should
+          be the same for all flakes.
+        2. If updating a bug, numbers might be different, in that case we will
+          use the smallest number(but still qualified to update the bug) of
+          occurrences within the group.
+      normalized_step_name (str): The flakes in a group should be in the same
+        binary name.
+      test_suite_name (str): The flakes in a group should be in the same test
+        suite.
+      flake_issue (FlakeIssue): The FlakeIssue entity for the shared bug of the
+        group.
+      flakes_with_same_occurrences (bool): Flag for if flakes in the group have
+        the same occurrences count. Bug comment should be adjusted based on the
+        value of this flag.
+    """
+    super(FlakeDetectionGroupIssueGenerator, self).__init__()
+    self._flakes = flakes
+    self._num_occurrences = num_occurrences
+    self._normalized_step_name = normalized_step_name
+    self._test_suite_name = test_suite_name
+    self._flake_issue = flake_issue
+    self._flakes_with_same_occurrences = flakes_with_same_occurrences
+
+  def _GenerateFlakeList(self):
+    return '\n'.join([flake.test_label_name for flake in self._flakes])
+
+  def _GetNumOccurrences(self):
+    """Returns processed num occurrences.
+
+    If self._flakes_with_same_occurrences, we can simply use the
+      self._num_occurrences; otherwise self._num_occurrences should be the
+      smallest count within the group.
+    """
+    return (self._num_occurrences if self._flakes_with_same_occurrences else
+            '%d+' % self._num_occurrences)
+
+  def _GetLinkForFlakes(self):
+    """Given a FlakeIssue, gets a link to all the flake linked to the bug on
+      flake detection UI.
+    """
+    assert self._flake_issue, (
+        'FlakeIssue required to generate a comment on a group bug.')
+    url_template = (
+        'https://findit-for-me%s.appspot.com/ranked-flakes?bug_id=%d')
+    if self._flake_issue.monorail_project != 'chromium':
+      url_template = '{}&monorail_project={}'.format(
+          url_template, self._flake_issue.monorail_project)
+    suffix = '-staging' if IsStaging() else ''
+    return url_template % (suffix, self._flake_issue.issue_id)
+
+  def _GetIssueSummaryForWrongResultLink(self):
+    if self._normalized_step_name and self._test_suite_name:
+      return '%s* in %s' % (self._test_suite_name, self._normalized_step_name)
+    return self._flake_issue.issue_id if self._flake_issue else None
+
+  def _GetFooter(self):
+    """Gets the footer for the bug description of comment.
+
+    Returns:
+      A string representing footer.
+    """
+    wrong_results_bug_link = _FLAKE_DETECTION_WRONG_RESULTS_BUG_LINK.format(
+        summary=self._GetIssueSummaryForWrongResultLink(),
+        flake_link=self._GetLinkForFlakes())
+    return _FLAKE_DETECTION_FOOTER_TEMPLATE.format(
+        wrong_results_bug_link=wrong_results_bug_link)
+
+  def GetMonorailProject(self):
+    return FlakeIssue.GetMonorailProjectFromLuciProject(
+        self._flakes[0].luci_project)
+
+  def GetSummary(self):
+    return 'Flakes are found in {test_suite_name} in {normalized_step_name}.' \
+           ''.format(test_suite_name=self._test_suite_name,
+                     normalized_step_name=self._normalized_step_name)
+
+  def GetDescription(self):
+    previous_tracking_bug_id = self.GetPreviousTrackingBugId()
+    previous_tracking_bug_text = _FLAKE_DETECTION_PREVIOUS_TRACKING_BUG.format(
+        previous_tracking_bug_id) if previous_tracking_bug_id else ''
+    return _FLAKE_DETECTION_GROUP_BUG_DESCRIPTION.format(
+        normalized_step_name=self._normalized_step_name,
+        test_suite_name=self._test_suite_name,
+        num_occurrences=self._GetNumOccurrences(),
+        flake_list=self._GenerateFlakeList(),
+        previous_tracking_bug_text=previous_tracking_bug_text)
+
+  def GetFirstCommentWhenBugJustCreated(self):
+    """Generates the first comment we'll post to the newly created bug.
+
+    In order to provide a url to grouped flakes, an issue id is needed to query
+    for Flakes with FlakeIssues with that same id which is unavailable at bug
+    creation time.
+    """
+    return _FLAKE_DETECTION_GROUP_BUG_LINK_COMMENT.format(
+        flakes_url=self._GetLinkForFlakes(), footer=self._GetFooter())
+
+  def GetComment(self):
+    previous_tracking_bug_id = self.GetPreviousTrackingBugId()
+    previous_tracking_bug_text = _FLAKE_DETECTION_PREVIOUS_TRACKING_BUG.format(
+        previous_tracking_bug_id) if previous_tracking_bug_id else ''
+
+    return _FLAKE_DETECTION_GROUP_BUG_COMMENT.format(
+        num_occurrences=self._GetNumOccurrences(),
+        flake_url=self._GetLinkForFlakes(),
+        back_onto_sheriff_queue_message=_BACK_ONTO_SHERIFF_QUEUE_MESSAGE,
+        previous_tracking_bug_text=previous_tracking_bug_text,
+        footer=self._GetFooter())
+
+  def GetFlakyTestCustomizedField(self):
+    if self._test_suite_name:
+      return CustomizedField(issue_constants.FLAKY_TEST_GROUP_CUSTOMIZED_FIELD,
+                             self._test_suite_name)
+    return None
+
+  def SetFlakeIssue(self, flake_issue):
+    """Sets flake_issue for the group when the bug has been created."""
+    self._flake_issue = flake_issue
+
+  def ShouldRestoreChromiumSheriffLabel(self):
+    # Flake Detection always requires Chromium Sheriff's attentions to disable
+    # flaky tests when new occurrences are detected.
+    return True
+
+  def GetLabels(self):
+    flaky_test_labels = self._GetCommonFlakyTestLabel()
+    flaky_test_labels.append(issue_constants.FLAKE_DETECTION_LABEL_TEXT)
+    return flaky_test_labels
+
+  def OnIssueCreated(self):
+    monitoring.OnFlakeDetectionCreateOrUpdateIssues('create')
+
+  def OnIssueUpdated(self):
+    monitoring.OnFlakeDetectionCreateOrUpdateIssues('updated')

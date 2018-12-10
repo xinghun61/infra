@@ -34,3 +34,10 @@ FLAKY_TEST_SUMMARY_KEYWORDS = ['flake', 'flaky', 'flakiness']
 
 # Query used to search for flaky test in summary.
 FLAKY_TEST_SUMMARY_QUERY_TEMPLATE = 'summary:{} is:open'
+
+# Customized field for flaky test.
+FLAKY_TEST_GROUP_CUSTOMIZED_FIELD = 'Flaky-Test-Suite'
+
+# Query used to search for flaky test suite in customized field.
+FLAKY_TEST_GROUP_CUSTOMIZED_FIELD_QUERY_TEMPLATE = (
+    '%s={} is:open' % FLAKY_TEST_GROUP_CUSTOMIZED_FIELD)

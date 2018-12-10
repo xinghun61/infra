@@ -231,7 +231,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
         'https://bugs.chromium.org/p/chromium/issues/entry?status=Unconfirmed&'
         'labels=Pri-1,Test-Findit-Wrong&components=Tools%3ETest%3EFindit%3E'
         'Flakiness&summary=%5BFindit%5D%20Flake%20Detection%20-%20Wrong%20'
-        'result%20for%20test&comment=Link%20to%20flake%20occurrences%3A%20'
+        'result%3A%20test&comment=Link%20to%20flake%20details%3A%20'
         'https://findit-for-me.appspot.com/flake/occurrences?key={}').format(
             flake.key.urlsafe())
 
@@ -329,9 +329,13 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
         'https://bugs.chromium.org/p/chromium/issues/entry?status=Unconfirmed&'
         'labels=Pri-1,Test-Findit-Wrong&components=Tools%3ETest%3EFindit%3E'
         'Flakiness&summary=%5BFindit%5D%20Flake%20Detection%20-%20Wrong%20'
-        'result%20for%20test&comment=Link%20to%20flake%20occurrences%3A%20'
+        'result%3A%20test&comment=Link%20to%20flake%20details%3A%20'
         'https://findit-for-me.appspot.com/flake/occurrences?key={}').format(
             flake.key.urlsafe())
+
+    sheriff_queue_message = (
+        'Since these tests are still flaky, this issue has been moved back onto'
+        ' the Sheriff Bug Queue if it hasn\'t already.')
 
     expected_comment = textwrap.dedent("""
 test_label is flaky.
@@ -340,14 +344,14 @@ Findit has detected 3 new flake occurrences of this test. List
 of all flake occurrences can be found at:
 https://findit-for-me.appspot.com/flake/occurrences?key={}.
 
-Since this test is still flaky, this issue has been moved back onto the Sheriff
-Bug Queue if it's not already there.
+{}
 
 If the result above is wrong, please file a bug using this link:
 {}
 
 Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
                                       ).format(flake.key.urlsafe(),
+                                               sheriff_queue_message,
                                                expected_wrong_result_link)
 
     self.assertFalse(mock_create_bug_fn.called)
