@@ -26,7 +26,7 @@ dispatch:
   - url: "*/waterfall/*"
     module: frontend
 
-  - url: "*/coverage/*"
+  - url: "*/coverage*"
     module: code-coverage
 
   - url: "*/trooper"

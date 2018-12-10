@@ -34,6 +34,8 @@ class CompletedBuildPubsubIngestor(BaseHandler):
 
   def HandlePost(self):
     build_id = None
+    status = None
+    project = None
     try:
       envelope = json.loads(self.request.body)
       build_id = envelope['message']['attributes']['build_id']
@@ -42,6 +44,8 @@ class CompletedBuildPubsubIngestor(BaseHandler):
         logging.info('Ignoring versions other than v1')
         return
       build = json.loads(base64.b64decode(envelope['message']['data']))['build']
+      status = build['status']
+      project = build['project']
     except (ValueError, KeyError) as e:
       # Ignore requests with invalid message.
       logging.debug('build_id: %r', build_id)
@@ -49,9 +53,9 @@ class CompletedBuildPubsubIngestor(BaseHandler):
       logging.debug('Post body: %s', self.request.body)
       return
 
-    if build['status'] == 'COMPLETED':
+    if status == 'COMPLETED':
       _HandlePossibleCodeCoverageBuild(int(build_id))  # TODO: revert.
-      if build['project'] == 'chromium':
+      if project == 'chromium':
         return _IngestProto(int(build_id))
     # We don't care about pending or non-chromium builds, so we accept the
     # notification by returning 200, and prevent pubsub from retrying it.
@@ -60,11 +64,14 @@ class CompletedBuildPubsubIngestor(BaseHandler):
 def _HandlePossibleCodeCoverageBuild(build_id):  # pragma: no cover
   """Schedules a taskqueue task to process the code coverage data."""
   # https://cloud.google.com/appengine/docs/standard/python/taskqueue/push/creating-tasks#target
-  taskqueue.add(
-      url='/coverage/task/process-data',
-      payload=json.dumps({'build_id': build_id}),
-      target='code-coverage',  # Always use the default version.
-      queue_name='code-coverage-process-data')
+  try:
+    taskqueue.add(
+        name='coveragedata-%s' % build_id,  # Avoid duplicate tasks.
+        url='/coverage/task/process-data/build/%s' % build_id,
+        target='code-coverage',  # Always use the default version.
+        queue_name='code-coverage-process-data')
+  except (taskqueue.TombstonedTaskError, taskqueue.TaskAlreadyExistsError):
+    logging.warning('Build %s was already scheduled to be processed', build_id)
 
 
 def _DecodeSwarmingHashesPropertyName(prop):

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<head>
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <title>Coverage for {{project}}</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/common.css">
+  <style>
+    .coverage-header {
+      padding: 5px 10px;
+      border-bottom: 1px solid #DBDBDB;
+      background-color: #EEE;
+      line-height: 30px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 24px;
+    }
+  </style>
+  <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="/ui/elements/findit-app.html">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script>
+    $(function() {
+      document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
+    });
+  </script>
+</head>
+
+<body>
+  <findit-app id="app" page-header="Code Coverage">
+    <div>
+      <table>
+        <thead>
+          <tr class="coverage-header">
+            <th colspan="6">{{project}}</th>
+          </tr>
+          <tr>
+            <th>Revision</th>
+            <th>Report</th>
+            <th>Line</th>
+            <th>Function</th>
+            <th>Region</th>
+            <th>Data Source</th>
+          </tr>
+        </thead>
+
+        <tbody>
+        {% for datum in data %}
+          <tr>
+            <td>
+              <a href="https://crrev.com/{{datum.revision}}">{{datum.commit_position}}</a>
+            </td>
+            <td><a href="./coverage?host={{host}}&project={{project}}&revision={{datum.revision}}&path=//">Tests</a></td>
+            {% for name in ('line', 'function', 'region') %}
+              {% set found = False %}
+              <td>
+              {% for metric in datum.summary_metrics %}
+                {% if not found and metric.name == name %}
+                  {% set found = True %}
+                  {{ '{0:.2f}%'.format(metric.covered*100.0/metric.total) }} ({{metric.covered}}/{{metric.total}})
+                {% endif %}
+              {% endfor %}
+              </td>
+            {% endfor %}
+            <td>
+              <a href="https://ci.chromium.org/b/{{datum.build_id}}">Build</a>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </findit-app>
+</body>
