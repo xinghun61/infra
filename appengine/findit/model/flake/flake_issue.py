@@ -45,8 +45,8 @@ class FlakeIssue(ndb.Model):
   # by status.
   status = ndb.StringProperty(indexed=True)
 
-  # The priority of the bug.
-  priority = ndb.IntegerProperty(indexed=False)
+  # The bug's labels, e.g. ['Type-Bug', 'Pri-2']. Useful for display purposes.
+  labels = ndb.StringProperty(repeated=True)
 
   @staticmethod
   def _CreateKey(monorail_project, issue_id):  # pragma: no cover

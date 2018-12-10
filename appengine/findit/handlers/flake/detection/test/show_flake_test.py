@@ -117,8 +117,7 @@ class ShowFlakeTest(WaterfallTestCase):
                 None,
             'last_updated_time_in_monorail':
                 None,
-            'priority':
-                None,
+            'labels': [],
             'status':
                 None,
         },

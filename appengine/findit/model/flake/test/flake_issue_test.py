@@ -85,7 +85,7 @@ class FlakeIssueTest(TestCase):
     issue_id = 12345
     updated_time = datetime(2018, 12, 4, 0, 0, 0)
     status = 'Assigned'
-    priority = 1
+    labels = ['Type-Bug', 'Pri-1']
 
     flake_issue = FlakeIssue.Create(
         monorail_project=monorail_project, issue_id=issue_id)
@@ -94,9 +94,9 @@ class FlakeIssueTest(TestCase):
     flake_issue.Update(
         last_updated_time_in_monorail=updated_time,
         status=status,
-        priority=priority)
+        labels=labels)
     flake_issue = flake_issue.key.get()
 
     self.assertEqual(status, flake_issue.status)
-    self.assertEqual(priority, flake_issue.priority)
+    self.assertEqual(labels, flake_issue.labels)
     self.assertEqual(updated_time, flake_issue.last_updated_time_in_monorail)
