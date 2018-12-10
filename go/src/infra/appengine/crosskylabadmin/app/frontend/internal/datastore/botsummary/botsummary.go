@@ -43,6 +43,10 @@ type Entity struct {
 	DutID string `gae:"$id"`
 	// BotID is the unique ID of the swarming bot.
 	BotID string
+	// The following are embedded from fleet.BotDimensions.
+	Pools   []string
+	Model   string
+	DutName string
 	// Data is the fleet.BotSummary object serialized to protobuf binary format.
 	Data []byte `gae:",noindex"`
 }
@@ -66,9 +70,12 @@ func Insert(ctx context.Context, bsm map[string]*fleet.BotSummary) (dutIDs []str
 			return nil, errors.Annotate(err, "failed to marshal BotSummary for dut %q", bs.DutId).Err()
 		}
 		es = append(es, &Entity{
-			DutID: bs.DutId,
-			BotID: bid,
-			Data:  data,
+			DutID:   bs.DutId,
+			BotID:   bid,
+			Pools:   bs.Dimensions.Pools,
+			Model:   bs.Dimensions.Model,
+			DutName: bs.Dimensions.DutName,
+			Data:    data,
 		})
 		updated = append(updated, bs.DutId)
 	}
@@ -78,7 +85,10 @@ func Insert(ctx context.Context, bsm map[string]*fleet.BotSummary) (dutIDs []str
 	return updated, nil
 }
 
-// Get gets Entities from datastore.
+// Get gets Entities from datastore.  If no BotSelectors are provided,
+// this function is equivalent to GetAll.  This function ignores the
+// Dimensions of BotSelectors with DutId.  Some successfully fetched
+// Entities may be returned even if others encountered errors.
 func Get(ctx context.Context, sels []*fleet.BotSelector) ([]*Entity, error) {
 	// No selectors implies summarize all bots.
 	if len(sels) == 0 {
@@ -86,15 +96,27 @@ func Get(ctx context.Context, sels []*fleet.BotSelector) ([]*Entity, error) {
 	}
 
 	dutIDs := make([]string, 0, len(sels))
+	dims := make([]*fleet.BotDimensions, 0, len(sels))
 	for _, s := range sels {
-		// datastore rejects search for empty key with InvalidKey.
-		// For us, this is simply an impossible filter.
-		if s.DutId == "" {
-			continue
+		if s.DutId != "" {
+			dutIDs = append(dutIDs, s.DutId)
+		} else if s.Dimensions != nil {
+			dims = append(dims, s.Dimensions)
 		}
-		dutIDs = append(dutIDs, s.DutId)
 	}
-	return GetByDutID(ctx, dutIDs)
+
+	es, err := GetByDutID(ctx, dutIDs)
+	if err != nil {
+		return es, err
+	}
+	for _, d := range dims {
+		es2, err := GetByDimensions(ctx, d)
+		es = append(es, es2...)
+		if err != nil {
+			return es, err
+		}
+	}
+	return es, nil
 }
 
 // GetAll gets all Entities from the datastore.
@@ -132,6 +154,25 @@ func GetByDutID(ctx context.Context, dutIDs []string) ([]*Entity, error) {
 	default:
 		return nil, err
 	}
+}
+
+// GetByDimensions gets Entities from datastore by dimensions.
+func GetByDimensions(ctx context.Context, d *fleet.BotDimensions) ([]*Entity, error) {
+	q := datastore.NewQuery(botSummaryKind)
+	if d.Pools != nil {
+		q = q.Eq("Pools", d.Pools)
+	}
+	if d.Model != "" {
+		q = q.Eq("Model", d.Model)
+	}
+	if d.DutName != "" {
+		q = q.Eq("DutName", d.DutName)
+	}
+	var es []*Entity
+	if err := datastore.GetAll(ctx, q, &es); err != nil {
+		return nil, errors.Annotate(err, "botsummary.GetByDimensions %#v", d).Err()
+	}
+	return es, nil
 }
 
 // removeErroredEntities returns a slice of Entities without the ones
