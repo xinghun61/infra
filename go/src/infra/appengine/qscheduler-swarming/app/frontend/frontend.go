@@ -29,6 +29,7 @@ import (
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 	"golang.org/x/net/context"
+	"google.golang.org/appengine"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -63,6 +64,9 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 
 // checkAdminAccess verifies that the request is from an authorized admin.
 func checkAdminAccess(c context.Context, _ string, _ proto.Message) (context.Context, error) {
+	if appengine.IsDevAppServer() {
+		return c, nil
+	}
 	a := config.Get(c).Auth
 	if a == nil {
 		return c, status.Errorf(codes.PermissionDenied, "no auth configured: permission denied")
@@ -79,6 +83,9 @@ func checkAdminAccess(c context.Context, _ string, _ proto.Message) (context.Con
 
 // checkUserAccess verifies that the request is from an authorized user.
 func checkUserAccess(c context.Context, _ string, _ proto.Message) (context.Context, error) {
+	if appengine.IsDevAppServer() {
+		return c, nil
+	}
 	a := config.Get(c).Auth
 	if a == nil {
 		return c, status.Errorf(codes.PermissionDenied, "no auth configured: permission denied")
