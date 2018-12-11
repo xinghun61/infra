@@ -119,10 +119,14 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 		return 1
 	}
 
-	arc := mkArchiver(ctx, isoFlags, authClient)
+	isoClient, err := newIsolatedClient(ctx, isoFlags, authClient)
+	if err != nil {
+		errors.Log(ctx, err)
+		return 1
+	}
 
 	logging.Infof(ctx, "building swarming task")
-	st, err := jd.GetSwarmingNewTask(ctx, uid, arc)
+	st, err := jd.GetSwarmingNewTask(ctx, uid, isoClient)
 	if err != nil {
 		errors.Log(ctx, err)
 		return 1

@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	"golang.org/x/net/context"
 
@@ -40,84 +39,7 @@ func combineIsolates(ctx context.Context, arc *archiver.Archiver, isoHashes ...i
 	return promise.Digest(), arc.Close()
 }
 
-func isolateDirectory(ctx context.Context, arc *archiver.Archiver, dir string) (isolated.HexDigest, error) {
-	// TODO(iannucci): Replace this entire function with exparchvive library when
-	// it's available.
-
-	iso := isolated.New()
-	type datum struct {
-		path    string
-		promise *archiver.PendingItem
-	}
-	isoData := []datum{}
-	i := int64(0)
-	err := filepath.Walk(dir, func(fullPath string, fi os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if fi.IsDir() {
-			return nil
-		}
-
-		relPath, err := filepath.Rel(dir, fullPath)
-		if err != nil {
-			return errors.Annotate(err, "relpath of %q", fullPath).Err()
-		}
-
-		if fi.Mode().IsRegular() {
-			isoData = append(isoData, datum{
-				relPath, arc.PushFile(relPath, fullPath, i)})
-			i++
-			iso.Files[relPath] = isolated.BasicFile("", int(fi.Mode()), fi.Size())
-			return nil
-		}
-		if (fi.Mode() & os.ModeSymlink) != 0 {
-			val, err := os.Readlink(fullPath)
-			if err != nil {
-				return errors.Annotate(err, "reading link of %q", fullPath).Err()
-			}
-			iso.Files[relPath] = isolated.SymLink(val)
-			return nil
-		}
-
-		return errors.Reason("don't know how to process: %s", fi).Err()
-	})
-	if err != nil {
-		return "", err
-	}
-
-	for _, d := range isoData {
-		itm := iso.Files[d.path]
-		d.promise.WaitForHashed()
-		itm.Digest = d.promise.Digest()
-		iso.Files[d.path] = itm
-	}
-
-	isolated, err := json.Marshal(iso)
-	if err != nil {
-		return "", errors.Annotate(err, "encoding ISOLATED.json").Err()
-	}
-
-	promise := arc.Push("ISOLATED.json", isolatedclient.NewBytesSource(isolated), 0)
-	promise.WaitForHashed()
-
-	return promise.Digest(), arc.Close()
-}
-
-func mkAuthClient(ctx context.Context, authOpts auth.Options) (*http.Client, error) {
-	authenticator := auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts)
-	return authenticator.Client()
-}
-
-func mkArchiver(ctx context.Context, isolatedFlags isolatedclient.Flags, authClient *http.Client) *archiver.Archiver {
-	logging.Debugf(ctx, "making archiver for %s : %s", isolatedFlags.ServerURL, isolatedFlags.Namespace)
-	isoClient := isolatedclient.New(
-		nil, authClient,
-		isolatedFlags.ServerURL, isolatedFlags.Namespace,
-		retry.Default,
-		nil,
-	)
-
+func mkArchiver(ctx context.Context, isoClient *isolatedclient.Client) *archiver.Archiver {
 	// The archiver is pretty noisy at Info level, so we skip giving it
 	// a logging-enabled context unless the user actually requseted verbose.
 	arcCtx := context.Background()
@@ -128,11 +50,37 @@ func mkArchiver(ctx context.Context, isolatedFlags isolatedclient.Flags, authCli
 	return archiver.New(arcCtx, isoClient, os.Stderr)
 }
 
-func isolate(ctx context.Context, bundlePath string, isolatedFlags isolatedclient.Flags, authOpts auth.Options) (isolated.HexDigest, error) {
-	authClient, err := mkAuthClient(ctx, authOpts)
+func isolateDirectory(ctx context.Context, isoClient *isolatedclient.Client, dir string) (isolated.HexDigest, error) {
+	checker := archiver.NewChecker(ctx, isoClient, 32)
+	uploader := archiver.NewUploader(ctx, isoClient, 8)
+	arc := archiver.NewTarringArchiver(checker, uploader)
+
+	summary, err := arc.Archive([]string{dir}, dir, isolated.New(), nil, "")
 	if err != nil {
-		return "", err
+		return "", errors.Annotate(err, "isolating directory").Err()
 	}
-	return isolateDirectory(ctx, mkArchiver(ctx, isolatedFlags, authClient),
-		bundlePath)
+
+	if err := checker.Close(); err != nil {
+		return "", errors.Annotate(err, "closing checker").Err()
+	}
+
+	if err := uploader.Close(); err != nil {
+		return "", errors.Annotate(err, "closing uploader").Err()
+	}
+
+	return summary.Digest, nil
+}
+
+func mkAuthClient(ctx context.Context, authOpts auth.Options) (*http.Client, error) {
+	authenticator := auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts)
+	return authenticator.Client()
+}
+
+func newIsolatedClient(ctx context.Context, isolatedFlags isolatedclient.Flags, authClient *http.Client) (*isolatedclient.Client, error) {
+	return isolatedclient.New(
+		nil, authClient,
+		isolatedFlags.ServerURL, isolatedFlags.Namespace,
+		retry.Default,
+		nil,
+	), nil
 }

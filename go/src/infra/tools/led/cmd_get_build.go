@@ -70,12 +70,12 @@ func (c *cmdGetBuild) validateFlags(ctx context.Context, args []string) (authOpt
 		return
 	}
 
-	buildIdStr := args[0]
-	if strings.HasPrefix(buildIdStr, "b") {
+	buildIDStr := args[0]
+	if strings.HasPrefix(buildIDStr, "b") {
 		// Milo URL structure prefixes buildbucket builds id with "b".
-		buildIdStr = args[0][1:]
+		buildIDStr = args[0][1:]
 	}
-	if c.buildID, err = strconv.ParseInt(buildIdStr, 10, 64); err != nil {
+	if c.buildID, err = strconv.ParseInt(buildIDStr, 10, 64); err != nil {
 		err = errors.Annotate(err, "bad <buildbucket_build_id>").Err()
 		return
 	}

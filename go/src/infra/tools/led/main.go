@@ -118,6 +118,9 @@ The spec (as it is) for JobDefinition is at:
 			editRecipeBundleCmd(authDefaults),
 			editCrCLCmd(authDefaults),
 
+			// commands to edit the raw isolated files.
+			editIsolated(authDefaults),
+
 			// commands to launch swarming tasks.
 			launchCmd(authDefaults),
 			// TODO(iannucci): launch-local to launch locally

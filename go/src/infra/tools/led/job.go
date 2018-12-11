@@ -16,6 +16,7 @@ import (
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/data/rand/cryptorand"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/isolatedclient"
 	logdog_types "go.chromium.org/luci/logdog/common/types"
 
 	"infra/tools/kitchen/cookflags"
@@ -182,7 +183,9 @@ func (js *JobSlice) gen(ctx context.Context, uid string, logPrefix logdog_types.
 
 // GetSwarmingNewTask builds a usable SwarmingRpcsNewTaskRequest from the
 // JobDefinition, incorporating all of the extra bits of the JobDefinition.
-func (jd *JobDefinition) GetSwarmingNewTask(ctx context.Context, uid string, arc *archiver.Archiver) (*swarming.SwarmingRpcsNewTaskRequest, error) {
+func (jd *JobDefinition) GetSwarmingNewTask(ctx context.Context, uid string, isoClient *isolatedclient.Client) (*swarming.SwarmingRpcsNewTaskRequest, error) {
+	arc := mkArchiver(ctx, isoClient)
+
 	st := &swarming.SwarmingRpcsNewTaskRequest{}
 	jd.TopLevel.apply(st)
 	prefix, err := generateLogdogStream(ctx, uid)

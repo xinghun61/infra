@@ -250,7 +250,7 @@ func (c *cmdEditRecipeBundle) Run(a subcommands.Application, args []string, env 
 	logging.Infof(ctx, "bundling recipes: done")
 
 	err = editMode(ctx, func(jd *JobDefinition) error {
-		_, _, swarm, err := newSwarmClient(ctx, authOpts, jd.SwarmingHostname)
+		_, authClient, swarm, err := newSwarmClient(ctx, authOpts, jd.SwarmingHostname)
 		if err != nil {
 			return err
 		}
@@ -261,7 +261,12 @@ func (c *cmdEditRecipeBundle) Run(a subcommands.Application, args []string, env 
 		}
 
 		logging.Infof(ctx, "isolating recipes")
-		hash, err := isolate(ctx, bundlePath, isoFlags, authOpts)
+		isoClient, err := newIsolatedClient(ctx, isoFlags, authClient)
+		if err != nil {
+			return err
+		}
+
+		hash, err := isolateDirectory(ctx, isoClient, bundlePath)
 		if err != nil {
 			return err
 		}
