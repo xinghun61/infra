@@ -49,6 +49,6 @@ class UpdateFlakeAnalysisDataPointsPipeline(GeneratorPipeline):
                                        constants.CHROMIUM_GIT_REPOSITORY_URL)
     change_log = git_repo.GetChangeLog(flakiness.revision)
     data_point = data_point_util.ConvertFlakinessToDataPoint(flakiness)
-    data_point.commit_position_landed_time = change_log.committer.time
+    data_point.commit_timestamp = change_log.committer.time
     analysis.data_points.append(data_point)
     analysis.put()

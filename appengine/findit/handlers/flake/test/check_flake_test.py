@@ -506,7 +506,11 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     data_point1.commit_position = 12345
     data_point1.iterations = 100
     data_point1.git_hash = 'hash1'
-    data_point1.commit_position_landed_time = datetime.datetime(2016, 12, 31)
+    data_point1.commit_timestamp = datetime.datetime(2016, 12, 31)
+    data_point1.legacy_master_name = master_name
+    data_point1.builder_name = builder_name
+    data_point1.step_name = step_name
+    data_point1.test_name = test_name
     analysis.data_points.append(data_point1)
     data_point2 = DataPoint()
     data_point2.build_number = 100
@@ -514,6 +518,10 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     data_point2.task_ids = ['task_id2']
     data_point2.commit_position = 12340
     data_point2.git_hash = 'hash2'
+    data_point2.legacy_master_name = master_name
+    data_point2.builder_name = builder_name
+    data_point2.step_name = step_name
+    data_point2.test_name = test_name
     analysis.data_points.append(data_point2)
     analysis.status = analysis_status.RUNNING
     analysis.suspected_flake_build_number = 100
@@ -605,7 +613,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'elapsed_seconds': 0,
             'pass_count': 90,
             'iterations': 100,
-            'commit_position_landed_time': '2016-12-31 00:00:00',
+            'commit_timestamp': '2016-12-31 00:00:00',
             'task_ids': ['task_id1'],
             'swarm_task': 'task_id1',
             'build_number': 101,
@@ -615,6 +623,12 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'status': None,
             'pipeline_status_path': None,
             'can_check_recent_flakiness': False,
+            'legacy_master_name': master_name,
+            'gitiles_project': None,
+            'bucket': None,
+            'step_name': step_name,
+            'builder_name': builder_name,
+            'test_name': test_name,
         },
     }
 

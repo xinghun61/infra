@@ -64,7 +64,7 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(WaterfallTestCase):
         git_hash=revision,
         try_job_url=None,
         task_ids=['task_id'],
-        commit_position_landed_time=expected_time)
+        commit_timestamp=expected_time)
 
     update_data_points_input = UpdateFlakeAnalysisDataPointsInput(
         analysis_urlsafe_key=analysis.key.urlsafe(), flakiness=flakiness)

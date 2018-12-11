@@ -220,16 +220,16 @@ def _GetDurationForAnalysis(analysis):
 def _GetDataPointInfo(data_point):
   """Converts a DataPoint into a form consumable on the template side."""
   data_point_dict = data_point.to_dict()
-  commit_position_landed_time = data_point_dict['commit_position_landed_time']
-  # Convert commit_position_landed_time from a datetime to string before passing
+  commit_timestamp = data_point_dict['commit_timestamp']
+  # Convert commit_timestamp from a datetime to string before passing
   # to the template.
-  data_point_dict['commit_position_landed_time'] = (
-      str(commit_position_landed_time) if commit_position_landed_time else None)
+  data_point_dict['commit_timestamp'] = (
+      str(commit_timestamp) if commit_timestamp else None)
 
   # Include the age of the commit as a string.
   data_point_dict['committed_days_ago'] = (
-      str(time_util.GetUTCNow() - commit_position_landed_time).split('.')[0]
-      if commit_position_landed_time else '')
+      str(time_util.GetUTCNow() - commit_timestamp).split('.')[0]
+      if commit_timestamp else '')
 
   # Include the best representative swarming task for display purposes.
   data_point_dict['swarm_task'] = data_point.GetSwarmingTaskId()

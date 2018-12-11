@@ -36,6 +36,6 @@ class SaveFlakinessVerificationPipeline(GeneratorPipeline):
     change_log = git_repo.GetChangeLog(parameters.flakiness.revision)
     flakiness = parameters.flakiness
     data_point = data_point_util.ConvertFlakinessToDataPoint(flakiness)
-    data_point.commit_position_landed_time = change_log.committer.time
+    data_point.commit_timestamp = change_log.committer.time
     analysis.flakiness_verification_data_points.append(data_point)
     analysis.put()
