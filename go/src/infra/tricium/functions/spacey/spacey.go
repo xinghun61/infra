@@ -24,7 +24,7 @@ const (
 )
 
 var (
-	mixedWhitespaceBlacklist = []string{".mk", "makefile", "Makefile", ".patch"}
+	mixedWhitespaceBlacklist = []string{".go", "makefile", "Makefile", ".mk", ".patch"}
 	trailingSpaceBlacklist   = []string{".patch", ".pdf"}
 )
 
