@@ -84,9 +84,7 @@ def GoCheckers(input_api, output_api):
     return []
   stdin = '\n'.join(affected_files)
 
-  # TODO(iannucci): re-add golint after it behaves properly for foo_test/foo
-  # mixed package directives in the same dir.
-  tool_names = ["gofmt", "govet"]
+  tool_names = ["gofmt", "govet", "golint"]
   ret = []
   for tool_name in tool_names:
     cmd = [
