@@ -181,7 +181,7 @@ class SwarmbucketApi(remote.Service):
       build_request = api.put_request_message_to_build_request(
           request.build_request
       )
-      build_request = build_request.normalize()
+      build_request.validate()
 
       identity = auth.get_current_identity()
       build = build_request.create_build(1, identity, utils.utcnow())

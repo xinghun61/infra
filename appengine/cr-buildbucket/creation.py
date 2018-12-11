@@ -67,7 +67,7 @@ class BuildRequest(_BuildRequestBase):
       project (str): project ID for the destination bucket. Required, but may
         be None.
       bucket (str): destination bucket. Required.
-      tags (model.Tags): build tags.
+      tags (list of string]): build tags.
       parameters (dict): arbitrary build parameters. Cannot be changed after
         build creation.
       lease_expiration_date (datetime.datetime): if not None, the build is
@@ -90,13 +90,8 @@ class BuildRequest(_BuildRequestBase):
     )
     return self
 
-  def normalize(self):
-    """Returns a validated and normalized BuildRequest.
-
-    Raises:
-      errors.InvalidInputError if arguments are invalid.
-    """
-    # Validate.
+  def validate(self):
+    """Raises an errors.InvalidInputError if the request is invalid."""
     if not isinstance(self.canary_preference, model.CanaryPreference):
       raise errors.InvalidInputError(
           'invalid canary_preference %r' % self.canary_preference
@@ -122,15 +117,6 @@ class BuildRequest(_BuildRequestBase):
           'gitiles_commit is not a common_pb2.GitilesCommit'
       )
 
-    # Normalize.
-    normalized_tags = sorted(set(self.tags or []))
-    return BuildRequest(
-        self.project, self.bucket, normalized_tags, self.parameters,
-        self.lease_expiration_date, self.client_operation_id,
-        self.pubsub_callback, self.retry_of, self.canary_preference,
-        self.experimental, self.gitiles_commit
-    )
-
   def _client_op_memcache_key(self, identity=None):
     if self.client_operation_id is None:  # pragma: no cover
       return None
@@ -148,11 +134,12 @@ class BuildRequest(_BuildRequestBase):
 
   def create_build(self, build_id, created_by, now):
     """Converts the request to a build."""
+    tags = sorted(set(self.tags or []))
     build = model.Build(
         id=build_id,
         bucket_id=self.bucket_id,
-        initial_tags=self.tags,
-        tags=self.tags,
+        initial_tags=tags,
+        tags=tags,
         parameters=self.parameters or {},
         status=model.BuildStatus.SCHEDULED,
         created_by=created_by,
@@ -238,14 +225,14 @@ def add_many_async(build_request_list):
       if results[i] is None:
         yield i, r
 
-  def validate_and_normalize():
-    """Validates and normalizes requests.
+  def validate_reqs():
+    """Validates requests.
 
     For each invalid request, mark it as done and save the exception in results.
     """
     for i, r in pending_reqs():
       try:
-        build_request_list[i] = r.normalize()
+        r.validate()
       except errors.InvalidInputError as ex:
         build_request_list[i] = None
         results[i] = (None, ex)
@@ -419,7 +406,7 @@ def add_many_async(build_request_list):
             b.swarming_task_id
         )
 
-  validate_and_normalize()
+  validate_reqs()
   yield check_access_async()
   yield check_cached_builds_async()
   create_new_builds()
