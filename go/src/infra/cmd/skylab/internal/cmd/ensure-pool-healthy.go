@@ -54,16 +54,29 @@ type posArgs struct {
 	Target string
 }
 
+type userError struct {
+	error
+}
+
+func (c *ensurePoolHealthyRun) printError(err error) {
+	fmt.Fprintf(os.Stderr, "%s\n\n", err)
+	switch err.(type) {
+	case userError:
+		c.Flags.Usage()
+	default:
+		// Nothing more to say
+	}
+}
+
 func (c *ensurePoolHealthyRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	pa, err := c.parseArgs(args)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n\n", err)
-		c.Flags.Usage()
+		c.printError(err)
 		return 1
 	}
 
 	if err := c.innerRun(a, pa, env); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
+		c.printError(err)
 		return 1
 	}
 	return 0
@@ -143,7 +156,7 @@ func (c *ensurePoolHealthyRun) printEnsurePoolHealthyResult(model, target string
 
 func (*ensurePoolHealthyRun) parseArgs(args []string) (*posArgs, error) {
 	if len(args) < 2 {
-		return nil, fmt.Errorf("want at least 2 arguments, have %d", len(args))
+		return nil, userError{fmt.Errorf("want at least 2 arguments, have %d", len(args))}
 	}
 	return &posArgs{
 		Target: args[0],
