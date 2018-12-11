@@ -1,3 +1,31 @@
+# Release Notes sheriff-o-matic 2018-12-10
+
+- 8 commits, 2 bugs affected since c189064 (2018-11-08T23:59:53Z)
+- 6 Authors:
+  - vadimsh@chromium.org
+  - nodir@chromium.org
+  - seanmccullough@chromium.org
+  - crouleau@chromium.org
+  - tkent@chromium.org
+  - olakar@chromium.org
+
+## Changes in this release
+
+- [[various FEs] updates to make tests work with puppeteer-based run-wct](https://chromium-review.googlesource.com/c/1368491) (seanmccullough@chromium.org)
+- [[SOM] s/milstone/milestone](https://chromium-review.googlesource.com/c/1351390) (crouleau@chromium.org)
+- [findit, som: Move WebKit/LayoutTests to blink/web_tests](https://chromium-review.googlesource.com/c/1331192) (tkent@chromium.org)
+- [[crdx] Add a puppeteer-based wct runner that runs coverage reports.](https://chromium-review.googlesource.com/c/1337541) (seanmccullough@chromium.org)
+- [[rotang] Link changes to the chromium_infra repository.](https://chromium-review.googlesource.com/c/1279984) (olakar@chromium.org)
+- [[go] Reland "Stop enforcing code coverage, stop using *.infra_testing files".](https://chromium-review.googlesource.com/c/1330974) (vadimsh@chromium.org)
+- [Revert "[go] Stop enforcing code coverage, stop using *.infra_testing files."](https://chromium-review.googlesource.com/c/1330948) (nodir@chromium.org)
+- [[go] Stop enforcing code coverage, stop using *.infra_testing files.](https://chromium-review.googlesource.com/c/1330095) (vadimsh@chromium.org)
+
+## Bugs updated, by author
+- olakar@chromium.org:
+  -  [https://crbug.com/889221](https://crbug.com/889221)
+
+- tkent@chromium.org:
+  -  [https://crbug.com/843412](https://crbug.com/843412)
 
 # Release Notes sheriff-o-matic 2018-11-08
 
