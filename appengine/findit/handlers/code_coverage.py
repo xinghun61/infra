@@ -433,9 +433,12 @@ class ServeCodeCoverageData(BaseHandler):
       data = entity.data
       formatted_data = {'files': []}
       for file_data in data:
+        path = file_data['path']
+        if path.startswith('//'):  # Check for safe. Old data don't have '//'.
+          path = path[2:]
         formatted_data['files'].append({
-            'path': file_data['path'],
-            'lines': _DecompressLines(file_data['lines'])
+            'path': path,
+            'lines': _DecompressLines(file_data['lines']),
         })
 
       return {
