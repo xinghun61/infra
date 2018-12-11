@@ -394,6 +394,7 @@ class ApiV1HelpersTest(unittest.TestCase):
     """Test convert_comment."""
     mar = mock.Mock()
     mar.cnxn = None
+    mar.perms = permissions.PermissionSet([])
     issue = fake.MakeTestIssue(project_id=12345, local_id=1, summary='sum',
                                status='New', owner_id=1001)
 
@@ -422,6 +423,7 @@ class ApiV1HelpersTest(unittest.TestCase):
     """Test convert_approval_comment."""
     mar = mock.Mock()
     mar.cnxn = None
+    mar.perms = permissions.PermissionSet([])
     issue = fake.MakeTestIssue(project_id=12345, local_id=1, summary='sum',
                                status='New', owner_id=1001)
     comment = tracker_pb2.IssueComment(

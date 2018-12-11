@@ -383,59 +383,6 @@ class PermissionsTest(unittest.TestCase):
         [],
         permissions.GetExtraPerms(project, 333L))
 
-  def testAnonUsersCannotDelete(self):
-    perms = permissions.PermissionSet([permissions.DELETE_ANY])
-    # No logged in user, no perms specfied.
-    self.assertFalse(permissions.CanDelete(
-        framework_constants.NO_USER_SPECIFIED, set(), None, 0, 0, None, []))
-    # No logged in user, even with perms from somewhere.
-    self.assertFalse(permissions.CanDelete(
-        framework_constants.NO_USER_SPECIFIED, set(), perms, 0, 0, None, []))
-    # No logged in user, even if artifact was already deleted.
-    self.assertFalse(permissions.CanDelete(
-        framework_constants.NO_USER_SPECIFIED, set(), perms,
-        111L, 111L, None, []))
-    # No logged in user, even if artifact was already deleted by project owner.
-    self.assertFalse(permissions.CanDelete(
-        framework_constants.NO_USER_SPECIFIED, set(), perms,
-        111L, 222L, None, []))
-
-  def testProjectOwnerCanDeleteAnyArtifact(self):
-    perms = permissions.PermissionSet([permissions.DELETE_ANY])
-    # No artifact owner, and not already deleted.
-    self.assertTrue(permissions.CanDelete(
-        111L, {111L}, perms, 0, 0, None, []))
-    # I already deleted, can undelete.
-    self.assertTrue(permissions.CanDelete(
-        111L, {111L}, perms, 111L, 0, None, []))
-    # I can delete my own thing.
-    self.assertTrue(permissions.CanDelete(
-        111L, {111L}, perms, 0, 111L, None, []))
-    # I can also delete another user's artifacts, because I have DELETE_ANY.
-    self.assertTrue(permissions.CanDelete(
-        111L, {111L}, perms, 0, 222L, None, []))
-    # I can always undelete, even if another PO deleted it.
-    self.assertTrue(permissions.CanDelete(
-        111L, {111L}, perms, 333L, 222L, None, []))
-
-  def testUserCanDeleteTheirOwnStuff(self):
-    perms = permissions.PermissionSet([permissions.DELETE_OWN])
-    # I can delete/withdraw my artifact or comment.
-    self.assertTrue(permissions.CanDelete(
-        111L, {111L}, perms, 0, 111L, None, []))
-    # I can undelete what I deleted.
-    self.assertTrue(permissions.CanDelete(
-        111L, {111L}, perms, 111L, 111L, None, []))
-    # I cannot undelete if someone else deleted my spam.
-    self.assertFalse(permissions.CanDelete(
-        111L, {111L}, perms, 222L, 111L, None, []))
-    # I cannot delete other people's stuff.
-    self.assertFalse(permissions.CanDelete(
-        111L, {111L}, perms, 0, 222L, None, []))
-    # I cannot undelete what other people withdrew.
-    self.assertFalse(permissions.CanDelete(
-        111L, {111L}, perms, 222L, 222L, None, []))
-
   def testCanDeleteComment_NoPermissionSet(self):
     """Test that if no PermissionSet is given, we can't delete comments."""
     comment = tracker_pb2.IssueComment()

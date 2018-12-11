@@ -49,6 +49,7 @@ class IssueattachmentTest(unittest.TestCase):
     self.project = services.project.TestAddProject('proj')
     self.servlet = issueattachment.AttachmentPage(
         'req', webapp2.Response(), services=services)
+    services.user.TestAddUser('commenter@example.com', 111L)
     self.issue = fake.MakeTestIssue(
         self.project.project_id, 1, 'summary', 'New', 111L)
     services.issue.TestAddIssue(self.issue)

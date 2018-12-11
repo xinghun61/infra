@@ -71,7 +71,7 @@ class IssuePeekTest(unittest.TestCase):
 
     # No comments yet.
     descriptions, visible_comments, pagination = issuepeek.PaginateComments(
-        mr, issue, issuecomment_list, config)
+        mr, issue, issuecomment_list, config, self.services)
     self.assertEqual([issuecomment_list[0]], descriptions)
     self.assertEqual(issuecomment_list[1:], visible_comments)
     self.assertFalse(pagination.visible)
@@ -80,7 +80,7 @@ class IssuePeekTest(unittest.TestCase):
     for _ in range(5):
       issuecomment_list.append(tracker_pb2.IssueComment())
     description, visible_comments, pagination = issuepeek.PaginateComments(
-        mr, issue, issuecomment_list, config)
+        mr, issue, issuecomment_list, config, self.services)
     self.assertEqual([issuecomment_list[0]], description)
     self.assertEqual(issuecomment_list[1:], visible_comments)
     self.assertFalse(pagination.visible)
@@ -88,7 +88,7 @@ class IssuePeekTest(unittest.TestCase):
     # 5 comments, 1 of them deleted.
     issuecomment_list[1].deleted_by = 123
     description, visible_comments, pagination = issuepeek.PaginateComments(
-        mr, issue, issuecomment_list, config)
+        mr, issue, issuecomment_list, config, self.services)
     self.assertEqual([issuecomment_list[0]], description)
     self.assertEqual(issuecomment_list[2:], visible_comments)
     self.assertFalse(pagination.visible)
@@ -102,7 +102,7 @@ class IssuePeekTest(unittest.TestCase):
     for _ in range(framework_constants.DEFAULT_COMMENTS_PER_PAGE):
       issuecomment_list.append(tracker_pb2.IssueComment())
     description, visible_comments, pagination = issuepeek.PaginateComments(
-        mr, issue, issuecomment_list, config)
+        mr, issue, issuecomment_list, config, self.services)
     self.assertEqual([issuecomment_list[0]], description)
     self.assertEqual(issuecomment_list[1:], visible_comments)
     self.assertFalse(pagination.visible)
@@ -110,7 +110,7 @@ class IssuePeekTest(unittest.TestCase):
     # One comment on second page, none deleted.
     issuecomment_list.append(tracker_pb2.IssueComment())
     description, visible_comments, pagination = issuepeek.PaginateComments(
-        mr, issue, issuecomment_list, config)
+        mr, issue, issuecomment_list, config, self.services)
     self.assertEqual([issuecomment_list[0]], description)
     self.assertEqual(issuecomment_list[2:], visible_comments)
     self.assertTrue(pagination.visible)
@@ -121,7 +121,7 @@ class IssuePeekTest(unittest.TestCase):
     # One comment on second page, 1 of them deleted.
     issuecomment_list[1].deleted_by = 123
     description, visible_comments, pagination = issuepeek.PaginateComments(
-        mr, issue, issuecomment_list, config)
+        mr, issue, issuecomment_list, config, self.services)
     self.assertEqual([issuecomment_list[0]], description)
     self.assertEqual(issuecomment_list[2:], visible_comments)
     self.assertFalse(pagination.visible)

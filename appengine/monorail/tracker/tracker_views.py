@@ -355,22 +355,16 @@ class IssueCommentView(template_helpers.PBProxy):
     self.is_deleted = (comment_pb.deleted_by or
                        (self.creator and self.creator.banned))
     self.can_delete = False
+
+    # TODO(jrobbins): pass through config to get granted permissions.
+    perms = permissions.UpdateIssuePermissions(
+        mr.perms, mr.project, issue, mr.auth.effective_ids)
     if mr.auth.user_id and mr.project:
-      # TODO(jrobbins): pass through config, then I can do:
-      # granted_perms = tracker_bizobj.GetGrantedPerms(
-      # issue, mr.auth.effective_ids, config)
-      self.can_delete = permissions.CanDelete(
-          mr.auth.user_id, mr.auth.effective_ids, mr.perms,
-          comment_pb.deleted_by, comment_pb.user_id,
-          mr.project, permissions.GetRestrictions(issue))
+      self.can_delete = permissions.CanDeleteComment(
+          comment_pb, self.creator, mr.auth.user_id, perms)
 
-      # Prevent spammers from undeleting their own comments, but
-      # allow people with permission to undelete their own comments.
-      if comment_pb.is_spam and comment_pb.user_id == mr.auth.user_id:
-        self.can_delete = mr.perms.HasPerm(permissions.MODERATE_SPAM,
-            mr.auth.user_id, mr.project)
-
-    self.visible = self.can_delete or not self.is_deleted
+    self.visible = permissions.CanViewComment(
+        comment_pb, self.creator, mr.auth.user_id, perms)
 
 
 _TEMPLATE_TEXT_RE = re.compile('^(<b>[^<]+</b>)', re.MULTILINE)

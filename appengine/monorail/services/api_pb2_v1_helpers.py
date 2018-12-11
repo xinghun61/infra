@@ -312,10 +312,12 @@ def convert_issue(cls, issue, mar, services):
 def convert_comment(issue, comment, mar, services, granted_perms):
   """Convert Monorail IssueComment PB to API IssueCommentWrapper."""
 
-  can_delete = permissions.CanDelete(
-      mar.auth.user_id, mar.auth.effective_ids, mar.perms,
-      comment.deleted_by, comment.user_id, mar.project,
-      permissions.GetRestrictions(issue), granted_perms=granted_perms)
+  perms = permissions.UpdateIssuePermissions(
+      mar.perms, mar.project, issue, mar.auth.effective_ids,
+      granted_perms=granted_perms)
+  commenter = services.user.GetUser(mar.cnxn, comment.user_id)
+  can_delete = permissions.CanDeleteComment(
+      comment, commenter, mar.auth.user_id, perms)
 
   return api_pb2_v1.IssueCommentWrapper(
       attachments=[convert_attachment(a) for a in comment.attachments],
@@ -332,10 +334,12 @@ def convert_comment(issue, comment, mar, services, granted_perms):
       is_description=comment.is_description)
 
 def convert_approval_comment(issue, comment, mar, services, granted_perms):
-  can_delete = permissions.CanDelete(
-      mar.auth.user_id, mar.auth.effective_ids, mar.perms,
-      comment.deleted_by, comment.user_id, mar.project,
-      permissions.GetRestrictions(issue), granted_perms=granted_perms)
+  perms = permissions.UpdateIssuePermissions(
+      mar.perms, mar.project, issue, mar.auth.effective_ids,
+      granted_perms=granted_perms)
+  commenter = services.user.GetUser(mar.cnxn, comment.user_id)
+  can_delete = permissions.CanDeleteComment(
+      comment, commenter, mar.auth.user_id, perms)
 
   return api_pb2_v1.ApprovalCommentWrapper(
       attachments=[convert_attachment(a) for a in comment.attachments],

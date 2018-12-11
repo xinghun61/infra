@@ -644,53 +644,6 @@ def IsExpired(project, expired_before=None):
   return project.delete_time and project.delete_time < expired_before
 
 
-def CanDelete(logged_in_user_id, effective_ids, perms, deleted_by_user_id,
-              creator_user_id, project, restrictions, granted_perms=None):
-  """[DEPRECATED] Returns true if user has delete permission.
-
-  Args:
-    logged_in_user_id: int user id of the logged in user.
-    effective_ids: set of int user IDs for the user (including any groups),
-        or an empty set if user is not signed in.
-    perms: instance of PermissionSet describing the current user's permissions.
-    deleted_by_user_id: int user ID of the user having previously deleted this
-        comment, or None, if the comment has never been deleted.
-    creator_user_id: int user ID of the user having created this comment.
-    project: Project PB for the project being accessed, or None if not
-        in a project.
-    restrictions: list of strings that restrict permission usage.
-    granted_perms: optional list of strings of permissions that the user is
-        granted only within the scope of one issue, e.g., by being named in
-        a user-type custom field that grants permissions.
-
-  Returns:
-    True if the logged in user has delete permissions.
-  """
-
-  # User is not logged in or has no permissions.
-  if not logged_in_user_id or not perms:
-    return False
-
-  # Site admin or project owners can delete any comment.
-  permit_delete_any = perms.CanUsePerm(
-      DELETE_ANY, effective_ids, project, restrictions,
-      granted_perms=granted_perms)
-  if permit_delete_any:
-    return True
-
-  # Users cannot undelete unless they deleted.
-  if deleted_by_user_id and deleted_by_user_id != logged_in_user_id:
-    return False
-
-  # Users can delete their own items.
-  permit_delete_own = perms.CanUsePerm(
-      DELETE_OWN, effective_ids, project, restrictions)
-  if permit_delete_own and creator_user_id == logged_in_user_id:
-    return True
-
-  return False
-
-
 def CanDeleteComment(comment, commenter, user_id, perms):
   """Returns true if the user can (un)delete the given comment.
 

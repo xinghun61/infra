@@ -126,7 +126,7 @@ class NotifyIssueChangeTask(notify_helpers.NotifyTaskBase):
       tasks = self._MakeEmailTasks(
           mr.cnxn, project, issue, config, old_owner_id, users_by_id,
           all_comments, comment, starrer_ids, contributor_could_view,
-          hostport, omit_ids)
+          hostport, omit_ids, mr.perms)
 
     notified = notify_helpers.AddAllEmailTasks(tasks)
 
@@ -138,7 +138,7 @@ class NotifyIssueChangeTask(notify_helpers.NotifyTaskBase):
   def _MakeEmailTasks(
       self, cnxn, project, issue, config, old_owner_id,
       users_by_id, all_comments, comment, starrer_ids,
-      contributor_could_view, hostport, omit_ids):
+      contributor_could_view, hostport, omit_ids, perms):
     """Formulate emails to be sent."""
     detail_url = framework_helpers.IssueCommentURL(
         hostport, project, issue.local_id, seq_num=comment.sequence)
@@ -147,6 +147,7 @@ class NotifyIssueChangeTask(notify_helpers.NotifyTaskBase):
     mr = monorailrequest.MonorailRequest(self.services)
     mr.project_name = project.project_name
     mr.project = project
+    mr.perms = perms
 
     # We do not autolink in the emails, so just use an empty
     # registry of autolink rules.
@@ -733,7 +734,7 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
     if send_email:
       tasks = self._MakeApprovalEmailTasks(
           hostport, issue, project, approval_value, comment, users_by_id,
-          list(field_user_ids))
+          list(field_user_ids), mr.perms)
 
     notified = notify_helpers.AddAllEmailTasks(tasks)
 
@@ -745,7 +746,7 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
 
   def _MakeApprovalEmailTasks(
       self, hostport, issue, project, approval_value, comment, users_by_id,
-      user_ids_from_fields):
+      user_ids_from_fields, perms):
     """Formulate emails to be sent."""
 
     # TODO(jojwang): avoid need to make MonorailRequest and autolinker
@@ -754,6 +755,7 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
     mr = monorailrequest.MonorailRequest(self.services)
     mr.project_name = project.project_name
     mr.project = project
+    mr.perms = perms
     autolinker = autolink.Autolink()
 
     approval_url = framework_helpers.IssueCommentURL(

@@ -39,11 +39,12 @@ class IssueOriginal(servlet.Servlet):
 
     can_view_inbound_message = self.CheckPerm(
         mr, permissions.VIEW_INBOUND_MESSAGES, art=issue)
-    can_delete = permissions.CanDelete(
-        mr.auth.user_id, mr.auth.effective_ids, mr.perms,
-        comment.deleted_by, comment.user_id,
-        mr.project, permissions.GetRestrictions(issue))
-    if not can_view_inbound_message and not can_delete:
+    issue_perms = permissions.UpdateIssuePermissions(
+        mr.perms, mr.project, issue, mr.auth.effective_ids)
+    commenter = self.services.user.GetUser(mr.cnxn, comment.user_id)
+    can_view_comment = permissions.CanViewComment(
+        comment, commenter, mr.auth.user_id, issue_perms)
+    if not can_view_inbound_message or not can_view_comment:
       raise permissions.PermissionException(
           'Only project members may view original email text')
 

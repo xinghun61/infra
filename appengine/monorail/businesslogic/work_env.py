@@ -110,29 +110,29 @@ class WorkEnv(object):
     config = self.GetProjectConfig(issue.project_id)
     granted_perms = tracker_bizobj.GetGrantedPerms(
         issue, self.mc.auth.effective_ids, config)
+    issue_perms = permissions.UpdateIssuePermissions(
+        self.mc.perms, project, issue, self.mc.auth.effective_ids,
+        granted_perms=granted_perms)
     permit_view = permissions.CanViewIssue(
         self.mc.auth.effective_ids, self.mc.perms, project, issue,
         allow_viewing_deleted=allow_viewing_deleted,
         granted_perms=granted_perms)
-    return project, granted_perms, permit_view
+    return issue_perms, permit_view
 
   def _AssertUserCanViewIssue(self, issue, allow_viewing_deleted=False):
     """Make sure the user may view the issue."""
-    project, granted_perms, permit_view = self._UserCanViewIssue(
+    issue_perms, permit_view = self._UserCanViewIssue(
         issue, allow_viewing_deleted)
     if not permit_view:
       raise permissions.PermissionException(
           'User is not allowed to view this issue')
-    return project, granted_perms
+    return issue_perms
 
   def _UserCanUsePermInIssue(self, issue, perm):
     """Test if the user may use perm on the given issue."""
-    project, granted_perms = self._AssertUserCanViewIssue(
+    issue_perms = self._AssertUserCanViewIssue(
         issue, allow_viewing_deleted=True)
-    permitted = self.mc.perms.CanUsePerm(
-        perm, self.mc.auth.effective_ids, project,
-        permissions.GetRestrictions(issue), granted_perms=granted_perms)
-    return permitted
+    return issue_perms.HasPerm(perm, None, None, [])
 
   def _AssertPermInIssue(self, issue, perm):
     """Make sure the user may use perm on the given issue."""
@@ -142,12 +142,11 @@ class WorkEnv(object):
         'User lacks permission %r in issue' % perm)
 
   def _AssertUserCanDeleteComment(self, issue, comment):
-    project, granted_perms = self._AssertUserCanViewIssue(
-        issue, allow_viewing_deleted=True)
-    permitted = permissions.CanDelete(
-        self.mc.auth.user_id, self.mc.auth.effective_ids, self.mc.perms,
-        comment.deleted_by, comment.user_id, project,
-        permissions.GetRestrictions(issue), granted_perms=granted_perms)
+    issue_perms = self._AssertUserCanViewIssue(
+       issue, allow_viewing_deleted=True)
+    commenter = self.services.user.GetUser(self.mc.cnxn, comment.user_id)
+    permitted = permissions.CanDeleteComment(
+        comment, commenter, self.mc.auth.user_id, issue_perms)
     if not permitted:
       raise permissions.PermissionException('Cannot delete comment')
 
@@ -1180,6 +1179,13 @@ class WorkEnv(object):
         label_prefix=label_prefix, query=query, canned_query=canned_query)
 
   ### User methods
+
+  def GetUser(self, user_id):
+    """Return the user with the given ID."""
+    # Make sure the requested user exists.
+    with self.mc.profiler.Phase('getting user %s' % user_id):
+      self.services.user.LookupUserEmail(self.mc.cnxn, user_id)
+      return self.services.user.GetUser(self.mc.cnxn, user_id)
 
   def GetMemberships(self, user_id):
     """Return the user group ids for the given user visible to the requester."""

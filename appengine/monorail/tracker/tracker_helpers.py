@@ -855,13 +855,13 @@ def GetAttachmentIfAllowed(mr, services):
     raise permissions.PermissionException('Cannot view attachment\'s issue')
 
   comment = services.issue.GetComment(mr.cnxn, cid)
-  can_delete = False
-  if mr.auth.user_id and mr.project:
-    can_delete = permissions.CanDelete(
-        mr.auth.user_id, mr.auth.effective_ids, mr.perms,
-        comment.deleted_by, comment.user_id, mr.project,
-        permissions.GetRestrictions(issue), granted_perms=granted_perms)
-  if comment.deleted_by and not can_delete:
+  commenter = services.user.GetUser(mr.cnxn, comment.user_id)
+  issue_perms = permissions.UpdateIssuePermissions(
+      mr.perms, mr.project, issue, mr.auth.effective_ids,
+      granted_perms=granted_perms)
+  can_view_comment = permissions.CanViewComment(
+      comment, commenter, mr.auth.user_id, issue_perms)
+  if not can_view_comment:
     raise permissions.PermissionException('Cannot view attachment\'s comment')
 
   return attachment, issue

@@ -41,6 +41,8 @@ class IssueAttachmentTextTest(unittest.TestCase):
     self.servlet = issueattachmenttext.AttachmentText(
         'req', 'res', services=services)
 
+    services.user.TestAddUser('commenter@example.com', 111L)
+
     self.issue = tracker_pb2.Issue()
     self.issue.local_id = 1
     self.issue.issue_id = 1
@@ -51,8 +53,10 @@ class IssueAttachmentTextTest(unittest.TestCase):
 
     self.comment0 = tracker_pb2.IssueComment()
     self.comment0.content = 'this is the description'
+    self.comment0.user_id = 111L
     self.comment1 = tracker_pb2.IssueComment()
     self.comment1.content = 'this is a comment'
+    self.comment1.user_id = 111L
 
     self.attach0 = tracker_pb2.Attachment(
         attachment_id=4567, filename='b.txt', mimetype='text/plain',
@@ -85,7 +89,7 @@ class IssueAttachmentTextTest(unittest.TestCase):
     self.testbed.deactivate()
     cloudstorage.open = self._old_gcs_open
 
-  def testGatherPageData_CommentDeleteed(self):
+  def testGatherPageData_CommentDeleted(self):
     """If the attachment's comment was deleted, give a 403."""
     _request, mr = testing_helpers.GetRequestObjects(
         project=self.project,

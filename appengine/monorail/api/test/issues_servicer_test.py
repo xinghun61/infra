@@ -549,7 +549,8 @@ class IssuesServicerTest(unittest.TestCase):
         project_id=789, issue_id=self.issue_1.issue_id, content='one')
     self.services.issue.TestAddComment(comment_1, 1)
     comment_2 = tracker_pb2.IssueComment(
-        project_id=789, issue_id=self.issue_1.issue_id, content='two')
+        project_id=789, issue_id=self.issue_1.issue_id, content='two',
+        user_id=222L)
     self.services.issue.TestAddComment(comment_2, 1)
 
     # Delete a comment.
@@ -576,7 +577,8 @@ class IssuesServicerTest(unittest.TestCase):
   def testDeleteComment_Denied(self, fake_softdeletecomment):
     """An unauthorized user cannot delete a comment."""
     comment_1 = tracker_pb2.IssueComment(
-        project_id=789, issue_id=self.issue_1.issue_id, content='one')
+        project_id=789, issue_id=self.issue_1.issue_id, content='one',
+        user_id=222L)
     self.services.issue.TestAddComment(comment_1, 1)
 
     request = issues_pb2.DeleteCommentRequest(

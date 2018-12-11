@@ -47,6 +47,7 @@ class IssueOriginalTest(unittest.TestCase):
     summary = 'System wont boot'
     status = 'New'
     cnxn = 'fake connection'
+    self.services.user.TestAddUser('commenter@example.com', 222L)
     self.local_id_1, _ = self.services.issue.CreateIssue(
         cnxn, self.services,
         789, summary, status, 111L, [], [], [], [], 111L,

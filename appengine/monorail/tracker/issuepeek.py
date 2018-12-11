@@ -67,7 +67,7 @@ class IssuePeek(servlet.Servlet):
       comments = we.ListIssueComments(issue)
 
     descriptions, visible_comments, cmnt_pagination = PaginateComments(
-        mr, issue, comments, config)
+        mr, issue, comments, config, self.services)
 
     with mr.profiler.Phase('making user proxies'):
       involved_user_ids = tracker_bizobj.UsersInvolvedInIssues([issue])
@@ -306,7 +306,7 @@ class IssuePeek(servlet.Servlet):
         ts=int(time.time()))
 
 
-def PaginateComments(mr, issue, issuecomment_list, config):
+def PaginateComments(mr, issue, issuecomment_list, config, services):
   """Filter and paginate the IssueComment PBs for the given issue.
 
   Unlike most pagination, this one starts at the end of the whole
@@ -319,6 +319,7 @@ def PaginateComments(mr, issue, issuecomment_list, config):
     issuecomment_list: list of IssueComment PBs for the viewed issue,
         the zeroth item in this list is the initial issue description.
     config: ProjectIssueConfig for the project that contains this issue.
+    services: Connections to backend services.
 
   Returns:
     A tuple (descriptions, visible_comments, pagination), where descriptions
@@ -336,16 +337,17 @@ def PaginateComments(mr, issue, issuecomment_list, config):
       [issuecomment_list[0]] +
       [comment for comment in issuecomment_list[1:] if comment.is_description])
   comments = issuecomment_list[1:]
-  allowed_comments = []
-  restrictions = permissions.GetRestrictions(issue)
-  granted_perms = tracker_bizobj.GetGrantedPerms(
-      issue, mr.auth.effective_ids, config)
-  for c in comments:
-    can_delete = permissions.CanDelete(
-        mr.auth.user_id, mr.auth.effective_ids, mr.perms, c.deleted_by,
-        c.user_id, mr.project, restrictions, granted_perms=granted_perms)
-    if can_delete or not c.deleted_by:
-      allowed_comments.append(c)
+
+  issue_perms = permissions.UpdateIssuePermissions(
+      mr.perms, mr.project, issue, mr.auth.effective_ids, config=config)
+
+  commenter_ids = set(c.user_id for c in comments)
+  commenters = services.user.GetUsersByIDs(mr.cnxn, commenter_ids)
+
+  allowed_comments = [
+    c for c in comments
+    if permissions.CanViewComment(
+        c, commenters[c.user_id], mr.auth.user_id, issue_perms)]
 
   pagination_url = '%s?id=%d' % (urls.ISSUE_DETAIL, issue.local_id)
   url_params = [(name, mr.GetParam(name)) for name in

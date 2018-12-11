@@ -330,10 +330,13 @@ class MonorailApi(remote.Service):
               'The issue %s:%d does not have comment %d.' %
               (mar.project_name, request.issueId, request.commentId))
 
-      if not permissions.CanDelete(
-          mar.auth.user_id, mar.auth.effective_ids, mar.perms,
-          issue_comment.deleted_by, issue_comment.user_id, mar.project,
-          permissions.GetRestrictions(issue), mar.granted_perms):
+      issue_perms = permissions.UpdateIssuePermissions(
+          mar.perms, mar.project, issue, mar.auth.effective_ids,
+          granted_perms=mar.granted_perms)
+      commenter = we.GetUser(issue_comment.user_id)
+
+      if not permissions.CanDeleteComment(
+          issue_comment, commenter, mar.auth.user_id, issue_perms):
         raise permissions.PermissionException(
               'User is not allowed to %s the comment %d of issue %s:%d' %
               (action_name, request.commentId, mar.project_name,
@@ -576,10 +579,12 @@ class MonorailApi(remote.Service):
           comment.user_id, send_email=True, old_owner_id=old_owner_id,
           comment_id=comment.id)
 
-    can_delete = permissions.CanDelete(
-      mar.auth.user_id, mar.auth.effective_ids, mar.perms,
-      comment.deleted_by, comment.user_id, mar.project,
-      permissions.GetRestrictions(issue), granted_perms=mar.granted_perms)
+    issue_perms = permissions.UpdateIssuePermissions(
+        mar.perms, mar.project, issue, mar.auth.effective_ids,
+        granted_perms=mar.granted_perms)
+    commenter = self._services.user.GetUser(mar.cnxn, comment.user_id)
+    can_delete = permissions.CanDeleteComment(
+        comment, commenter, mar.auth.user_id, issue_perms)
     return api_pb2_v1.IssuesCommentsInsertResponse(
         id=seq,
         kind='monorail#issueComment',
@@ -736,10 +741,12 @@ class MonorailApi(remote.Service):
           issue.issue_id, approval.approval_id,
           framework_helpers.GetHostPort(), comment.id, send_email=True)
 
-    can_delete = permissions.CanDelete(
-        mar.auth.user_id, mar.auth.effective_ids, mar.perms,
-        comment.deleted_by, comment.user_id, mar.project,
-        permissions.GetRestrictions(issue), granted_perms=mar.granted_perms)
+    issue_perms = permissions.UpdateIssuePermissions(
+        mar.perms, mar.project, issue, mar.auth.effective_ids,
+        granted_perms=mar.granted_perms)
+    commenter = self._services.user.GetUser(mar.cnxn, comment.user_id)
+    can_delete = permissions.CanDeleteComment(
+        comment, commenter, mar.auth.user_id, issue_perms)
     return api_pb2_v1.ApprovalsCommentsInsertResponse(
         id=seq,
         kind='monorail#approvalComment',

@@ -984,7 +984,7 @@ class WorkEnvTest(unittest.TestCase):
   @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testUpdateIssue_PermissionDenied(self, fake_pasicn):
     """We reject attempts to update an issue when the user lacks permission."""
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 555L)
     self.services.issue.TestAddIssue(issue)
     delta = tracker_pb2.IssueDelta(
         owner_id=222L, summary='New summary', cc_ids_add=[333L])
@@ -1138,7 +1138,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def testRerankBlockedOnIssues_CantEditIssue(self):
     parent_issue = fake.MakeTestIssue(
-        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
+        789, 1, 'sum', 'New', 555L, project_name='proj', issue_id=1001)
     parent_issue.labels = ['Restrict-EditIssue-Foo']
     self.services.issue.TestAddIssue(parent_issue)
 
@@ -1226,7 +1226,7 @@ class WorkEnvTest(unittest.TestCase):
       mockSoftDeleteComment.assert_not_called()
 
   @patch('services.issue_svc.IssueService.SoftDeleteComment')
-  @patch('framework.permissions.CanDelete')
+  @patch('framework.permissions.CanDeleteComment')
   def testDeleteComment_UndeletablePermissions(self, mockCanDelete,
                                                mockSoftDeleteComment):
     """Throws exception when deleter doesn't have permission to do so."""
@@ -1264,7 +1264,7 @@ class WorkEnvTest(unittest.TestCase):
       self.assertFalse(attachment.deleted)
 
   @patch('services.issue_svc.IssueService.SoftDeleteComment')
-  @patch('framework.permissions.CanDelete')
+  @patch('framework.permissions.CanDeleteComment')
   def testDeleteAttachment_UndeletablePermissions(
       self, mockCanDelete, mockSoftDeleteComment):
     """Throws exception when deleter doesn't have permission to do so."""
@@ -1418,6 +1418,19 @@ class WorkEnvTest(unittest.TestCase):
       # Now, star an issue as that other user.
       we.StarIssue(issue1, True)
       self.assertEqual([issue1.issue_id], we.ListStarredIssueIDs())
+
+  def testGetUser(self):
+    """We return the User PB for the given existing user id."""
+    expected = self.services.user.TestAddUser('test5@example.com', 555L)
+    with self.work_env as we:
+      actual = we.GetUser(555L)
+      self.assertEqual(expected, actual)
+
+  def testGetUser_DoesntExist(self):
+    """We reject attempts to get an user that doesn't exist."""
+    with self.assertRaises(exceptions.NoSuchUserException):
+      with self.work_env as we:
+        we.GetUser(555L)
 
   def setUpUserGroups(self):
     self.services.user.TestAddUser('test5@example.com', 555L)
