@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"infra/appengine/rotang"
 	"net/http"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -57,10 +58,68 @@ const (
 	matchSummary = "CCI-Trooper:"
 )
 
+var trooperRotationNamePattern = regexp.MustCompile("(chrome-ops-([[:word:]]|-)+).json")
+var matchSummaryByRotation = map[string]string{
+	"chrome-ops-client-infra": "CCI-Trooper:",
+	"chrome-ops-devx":         "DevX-Trooper:",
+	"chrome-ops-foundation":   "Foundation-Trooper:",
+	"chrome-ops-sre":          "SRE-Trooper:",
+}
+
 type trooperJSON struct {
 	Primary   string   `json:"primary"`
 	Secondary []string `json:"secondaries"`
 	UnixTS    int64    `json:"updated_unix_timestamp"`
+}
+
+func (h *State) legacyTrooperByRotation(ctx *router.Context, file string) (string, error) {
+	patternMatches := trooperRotationNamePattern.FindStringSubmatch(file)
+	if len(patternMatches) == 0 {
+		return "", status.Errorf(codes.NotFound, "Invalid trooper rotation name.")
+	}
+
+	rotation := patternMatches[1]
+	summary, ok := matchSummaryByRotation[rotation]
+	if !ok {
+		return "", status.Errorf(codes.InvalidArgument, rotation)
+	}
+
+	// look up entries until it finds at least one trooper shift
+	// in the following 7 days.
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	start := clock.Now(ctx.Context)
+	end := start.Add(fullDay * 8)
+	shifts, err := h.legacyCalendar.TrooperShifts(ctx, trooperCal, summary, start, end)
+	if err != nil && status.Code(err) != codes.NotFound {
+		return "", err
+	}
+	for _, shift := range shifts {
+		members := shift.OnCall
+		if len(members) > 0 {
+			var secondaries []string
+			for _, secondary := range members[1:] {
+				secondaries = append(secondaries, secondary.Email)
+			}
+
+			if err := enc.Encode(&trooperJSON{
+				Primary:   members[0].Email,
+				Secondary: secondaries,
+				UnixTS:    shift.StartTime.Unix(),
+			}); err != nil {
+				return "", err
+			}
+			return buf.String(), nil
+		}
+	}
+	primary := "None"
+	secondary := []string{}
+	enc.Encode(&trooperJSON{
+		Primary:   primary,
+		Secondary: secondary,
+		UnixTS:    start.Unix(),
+	})
+	return buf.String(), nil
 }
 
 func (h *State) legacyTrooper(ctx *router.Context, file string) (string, error) {

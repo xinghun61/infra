@@ -157,6 +157,13 @@ func buildLegacyMap(h *State) map[string]func(ctx *router.Context, file string) 
 		"trooper.json":         h.legacyTrooper,
 		"current_trooper.json": h.legacyTrooper,
 		"current_trooper.txt":  h.legacyTrooper,
+
+		// Trooper files by rotations.
+		"chrome-ops-devx.json":         h.legacyTrooperByRotation,
+		"chrome-ops-foundation.json":   h.legacyTrooperByRotation,
+		"chrome-ops-client-infra.json": h.legacyTrooperByRotation,
+		"chrome-ops-sre.json":          h.legacyTrooperByRotation,
+
 		// Sheriff files.
 		"sheriff.js":                     h.legacySheriff,
 		"sheriff_cros_mtv.js":            h.legacySheriff,
