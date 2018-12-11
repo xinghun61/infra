@@ -20,6 +20,7 @@ or a special constant defined below.  Likewise for access level.
 """
 
 import bisect
+import collections
 import logging
 import time
 
@@ -431,32 +432,45 @@ def UpdateIssuePermissions(
     config: optional ProjectIssueConfig PB where granted perms should be
         extracted from, if granted_perms is not given.
   """
-  if granted_perms is None:
-    if config:
-      granted_perms = tracker_bizobj.GetGrantedPerms(
-          issue, effective_ids, config)
-    else:
-      granted_perms = []
-
-  restrictions = GetRestrictions(issue)
+  if config:
+    granted_perms = tracker_bizobj.GetGrantedPerms(
+        issue, effective_ids, config)
+  elif granted_perms is None:
+    granted_perms = []
 
   # If the user has no permission to view the project, it has no permissions on
   # this issue.
   if not perms.HasPerm(VIEW, None, None):
     return EMPTY_PERMISSIONSET
 
-  # Apply the issue restriction labels.
-  new_perms = set(
-      p for p in perms.perm_names
-      if perms.CanUsePerm(
-          p, effective_ids, project, restrictions, granted_perms))
+  # Compute the restrictions for the given issue and store them in a dictionary
+  # of {perm: set(needed_perms)}.
+  restrictions = collections.defaultdict(set)
+  if perms.consider_restrictions:
+    for label in GetRestrictions(issue):
+      label = label.lower()
+      # format: Restrict-Action-ToThisPerm
+      _, requested_perm, needed_perm = label.split('-', 2)
+      restrictions[requested_perm.lower()].add(needed_perm.lower())
+
+  # Store the user permissions, and the extra permissions of all effective IDs
+  # in the given project.
+  all_perms = set(perms.perm_names)
+  for effective_id in effective_ids:
+    all_perms.update(p.lower() for p in GetExtraPerms(project, effective_id))
+
+  # And filter them applying the restriction labels.
+  filtered_perms = set()
+  for perm_name in all_perms:
+    perm_name = perm_name.lower()
+    restricted = any(
+        restriction not in all_perms and restriction not in granted_perms
+        for restriction in restrictions.get(perm_name, []))
+    if not restricted:
+      filtered_perms.add(perm_name)
 
   # Add any granted permissions.
-  new_perms.update(granted_perms)
-
-  # And extra permissions for the project for all of the effective IDs.
-  for effective_id in effective_ids:
-    new_perms.update(GetExtraPerms(project, effective_id))
+  filtered_perms.update(granted_perms)
 
   # The VIEW perm might have been removed due to restrictions, but the issue
   # owner, reporter, cc and approvers can always be an issue.
@@ -465,21 +479,23 @@ def UpdateIssuePermissions(
       + tracker_bizobj.GetApproverIds(issue)
       + [issue.reporter_id, tracker_bizobj.GetOwnerId(issue)])
   if effective_ids and not allowed_ids.isdisjoint(effective_ids):
-    new_perms.add(VIEW)
+    filtered_perms.add(VIEW.lower())
 
   # If the issue is deleted, only the VIEW and DELETE_ISSUE permissions are
   # relevant.
-  if issue.deleted and VIEW.lower() in new_perms:
-    if DELETE_ISSUE.lower() in new_perms:
+  if issue.deleted:
+    if VIEW.lower() not in filtered_perms:
+      return EMPTY_PERMISSIONSET
+    if DELETE_ISSUE.lower() in filtered_perms:
       return PermissionSet([VIEW, DELETE_ISSUE], perms.consider_restrictions)
     return PermissionSet([VIEW], perms.consider_restrictions)
 
   # The EDIT_ISSUE permission might have been removed due to restrictions, but
   # the owner has always permission to edit it.
   if effective_ids and tracker_bizobj.GetOwnerId(issue) in effective_ids:
-    new_perms.add(EDIT_ISSUE)
+    filtered_perms.add(EDIT_ISSUE.lower())
 
-  return PermissionSet(new_perms, perms.consider_restrictions)
+  return PermissionSet(filtered_perms, perms.consider_restrictions)
 
 
 def _LookupPermset(role, status, access):

@@ -1085,13 +1085,54 @@ class IssuePermissionsTest(unittest.TestCase):
         self.REGULAR_ISSUE, {999L})
     self.assertIn('editissue', perms.perm_names)
 
-  def testUpdateIssuePermissions_Deleted(self):
+  def testUpdateIssuePermissions_ExtraPermsAreSubjectToRestrictions(self):
+    project = project_pb2.Project()
+    project.committer_ids.append(999L)
+    project.extra_perms.append(
+        project_pb2.Project.ExtraPerms(member_id=999L, perms=['EditIssue']))
+    perms = permissions.UpdateIssuePermissions(
+        permissions.USER_PERMISSIONSET, project,
+        self.RESTRICTED_ISSUE3, {999L})
+    self.assertNotIn('editissue', perms.perm_names)
+
+  def testUpdateIssuePermissions_GrantedPermsAreNotSubjectToRestrictions(self):
+    perms = permissions.UpdateIssuePermissions(
+        permissions.USER_PERMISSIONSET, self.PROJECT, self.RESTRICTED_ISSUE3,
+        {}, granted_perms=['EditIssue'])
+    self.assertIn('editissue', perms.perm_names)
+
+  def testUpdateIssuePermissions_RespectConsiderRestrictions(self):
+    perms = permissions.UpdateIssuePermissions(
+        permissions.ADMIN_PERMISSIONSET, self.PROJECT, self.RESTRICTED_ISSUE3,
+        {})
+    self.assertIn('editissue', perms.perm_names)
+
+  def testUpdateIssuePermissions_RestrictionsAreConsideredIndividually(self):
+    issue = tracker_pb2.Issue(
+        labels=[
+            'Restrict-Perm1-Perm2',
+            'Restrict-Perm2-Perm3'])
+    perms = permissions.UpdateIssuePermissions(
+        permissions.PermissionSet(['Perm1', 'Perm2', 'View']),
+        self.PROJECT, issue, {})
+    self.assertIn('perm1', perms.perm_names)
+    self.assertNotIn('perm2', perms.perm_names)
+
+  def testUpdateIssuePermissions_DeletedNoPermissions(self):
+    issue = tracker_pb2.Issue(
+        labels=['Restrict-View-Foo'],
+        deleted=True)
+    perms = permissions.UpdateIssuePermissions(
+        permissions.COMMITTER_ACTIVE_PERMISSIONSET, self.PROJECT, issue, {})
+    self.assertEqual([], sorted(perms.perm_names))
+
+  def testUpdateIssuePermissions_ViewDeleted(self):
     perms = permissions.UpdateIssuePermissions(
         permissions.COMMITTER_ACTIVE_PERMISSIONSET, self.PROJECT,
         self.DELETED_ISSUE, {})
     self.assertEqual(['view'], sorted(perms.perm_names))
 
-  def testUpdateIssuePermissions_ViewDeleted(self):
+  def testUpdateIssuePermissions_ViewAndDeleteDeleted(self):
     perms = permissions.UpdateIssuePermissions(
         permissions.OWNER_ACTIVE_PERMISSIONSET, self.PROJECT,
         self.DELETED_ISSUE, {})
@@ -1107,6 +1148,19 @@ class IssuePermissionsTest(unittest.TestCase):
       perms = permissions.UpdateIssuePermissions(
           permissions.USER_PERMISSIONSET, self.PROJECT, self.RESTRICTED_ISSUE,
           {role})
+      self.assertIn('view', perms.perm_names)
+
+  def testUpdateIssuePermissions_RolesAllowViewingDeleted(self):
+    issue = tracker_pb2.Issue(
+        reporter_id=REPORTER_ID,
+        owner_id=OWNER_ID,
+        cc_ids=[CC_ID],
+        approval_values=[tracker_pb2.ApprovalValue(approver_ids=[APPROVER_ID])],
+        labels=['Restrict-View-Foo'],
+        deleted=True)
+    for role in {OWNER_ID, REPORTER_ID, CC_ID, APPROVER_ID}:
+      perms = permissions.UpdateIssuePermissions(
+          permissions.USER_PERMISSIONSET, self.PROJECT, issue, {role})
       self.assertIn('view', perms.perm_names)
 
   def testUpdateIssuePermissions_GrantedViewPermission(self):
