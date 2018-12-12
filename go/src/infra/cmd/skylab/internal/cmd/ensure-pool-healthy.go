@@ -49,11 +49,6 @@ type ensurePoolHealthyRun struct {
 	spare  string
 }
 
-type posArgs struct {
-	Models []string
-	Target string
-}
-
 type userError struct {
 	error
 }
@@ -77,7 +72,11 @@ func (c *ensurePoolHealthyRun) Run(a subcommands.Application, args []string, env
 }
 
 func (c *ensurePoolHealthyRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
-	pa, err := c.parseArgs(args)
+	target, err := c.getTargetPool(args)
+	if err != nil {
+		return nil
+	}
+	models, err := c.getModels(args)
 	if err != nil {
 		return err
 	}
@@ -98,8 +97,8 @@ func (c *ensurePoolHealthyRun) innerRun(a subcommands.Application, args []string
 	if c.dryrun {
 		fmt.Printf("DRYRUN: These changes are recommendations. Rerun without dryrun to apply changes.\n")
 	}
-	for _, m := range pa.Models {
-		if err := c.ensurePoolForModel(ctx, ic, pa.Target, m); err != nil {
+	for _, m := range models {
+		if err := c.ensurePoolForModel(ctx, ic, target, m); err != nil {
 			return err
 		}
 	}
@@ -153,12 +152,16 @@ func (c *ensurePoolHealthyRun) printEnsurePoolHealthyResult(model, target string
 	fmt.Fprintf(w, "\n")
 }
 
-func (*ensurePoolHealthyRun) parseArgs(args []string) (*posArgs, error) {
+func (*ensurePoolHealthyRun) getTargetPool(args []string) (string, error) {
+	if len(args) < 1 {
+		return "", userError{errors.New("want at least 1 arguments, have none")}
+	}
+	return args[0], nil
+}
+
+func (c *ensurePoolHealthyRun) getModels(args []string) ([]string, error) {
 	if len(args) < 2 {
 		return nil, userError{fmt.Errorf("want at least 2 arguments, have %d", len(args))}
 	}
-	return &posArgs{
-		Target: args[0],
-		Models: args[1:],
-	}, nil
+	return args[1:], nil
 }
