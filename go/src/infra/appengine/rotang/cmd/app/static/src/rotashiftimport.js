@@ -12,21 +12,24 @@ class RotaShiftImport extends LitElement {
   }
 
   async getJSON() {
+    const rota = encodeURIComponent(this.rota);
     try {
-      const res = await fetch(encodeURI(`/importshiftsjson?name=${this.rota}`));
+      const res = await fetch(`/importshiftsjson?name=${rota}`);
       if (!res.ok) {
         throw res;
       }
       this.shifts = await res.json();
-      this.importStatus = html`<small class="ok">(ok)</small>`;
+      this.importStatus = html`<small class="ok">Fetch ok</small>`;
     } catch (err) {
       this.importStatus = html`<small class="fail">${err.text()}</small>`;
     }
   }
 
   async storeShifts() {
+    const rota = encodeURIComponent(this.rota);
     try {
-      const res = await fetch(encodeURI(`/importshiftsjson?name=${this.rota}&store=true`));
+      const res = await fetch(
+        `/importshiftsjson?name=${rota}&store=true`);
       if (!res.ok) {
         throw res;
       }

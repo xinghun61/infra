@@ -10,8 +10,9 @@ class RotaTestCal extends LitElement {
   }
 
   async getJSON() {
+    const rota = encodeURIComponent(this.rota);
     try {
-      const res = await fetch(encodeURI(`/caltest?name=${this.rota}`));
+      const res = await fetch(`/caltest?name=${rota}`);
       if (!res.ok) {
         throw res;
       }

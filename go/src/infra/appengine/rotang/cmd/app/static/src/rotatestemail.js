@@ -10,8 +10,10 @@ class RotaTestEmail extends LitElement {
   }
 
   async getJSON() {
+    const rota = encodeURIComponent(this.rota);
     try {
-      const res = await fetch(encodeURI(`/emailtest?name=${this.rota}`));
+      const res = await fetch(
+        `/emailtest?name=${rota}`);
       if (!res.ok) {
         throw res;
       }

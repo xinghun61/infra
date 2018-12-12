@@ -598,10 +598,12 @@ class RotaCreate extends LitElement {
       Members: this.buildMembers(),
     };
     if (await this.sendJSON(membersAndConfig)) {
+      const rota = encodeURIComponent(membersAndConfig.Cfg.Config.Name);
       if (!this.configFixed) {
         await this.sleep(2000);
         window.location.replace(
-          encodeURI('/modifyrota?name='+membersAndConfig.Cfg.Config.Name));
+          `/modifyrota?name=${rota}`
+        );
       }
     }
   }

@@ -82,31 +82,16 @@ func (h *State) submitShifts(ctx *router.Context, rota *rotang.Configuration, sh
 }
 
 func (h *State) importShifts(ctx *router.Context) (*rotang.Configuration, []rotang.ShiftEntry, error) {
-	if err := ctx.Context.Err(); err != nil {
-		return nil, nil, err
-	}
-
-	rotaName := ctx.Request.FormValue("name")
-	if rotaName == "" {
-		return nil, nil, status.Errorf(codes.InvalidArgument, "no rota provied")
-	}
-	rota, err := h.configStore(ctx.Context).RotaConfig(ctx.Context, rotaName)
+	rota, err := h.rota(ctx)
 	if err != nil {
 		return nil, nil, err
-	}
-	if len(rota) != 1 {
-		return nil, nil, status.Errorf(codes.Internal, "expected only one rota to be returned")
-	}
-
-	if !adminOrOwner(ctx, rota[0]) {
-		return nil, nil, status.Errorf(codes.PermissionDenied, "not rotation owner")
 	}
 
 	// Adding in a year to the end just to make sure we get all events.
 	// Presuming nobody would schedule for longar than that.
-	shifts, err := h.calendar.Events(ctx, rota[0], time.Now().Add(-importDuration), time.Now().Add(importDuration))
+	shifts, err := h.calendar.Events(ctx, rota, time.Now().Add(-importDuration), time.Now().Add(importDuration))
 	if err != nil {
 		return nil, nil, err
 	}
-	return rota[0], shifts, nil
+	return rota, shifts, nil
 }
