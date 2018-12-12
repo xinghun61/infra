@@ -4,7 +4,7 @@
 
 """Manages the generation and uploading of Python wheel CIPD packages.
 
-== A Note on Universiality ==
+== A Note on Universality ==
 
 Our wheel generation uses CIPD package naming to represent the platform,
 architecture, and ABI of generated wheels. Because of that, we offload the

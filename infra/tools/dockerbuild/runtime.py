@@ -26,7 +26,7 @@ class MissingToolsError(RuntimeError):
 
 
 class System(object):
-  """Represents the local system facillities."""
+  """Represents the local system facilities."""
 
   _Tools = collections.namedtuple('_Tools', ('cipd',))
 
@@ -152,7 +152,7 @@ class System(object):
 
   def run(self, args, cwd=None, env=None, stdout=subprocess.PIPE,
           stderr=subprocess.STDOUT, stdin=_devnull, retcodes=None):
-    # Fold enviornment augmentations into the default system environment.
+    # Fold environment augmentations into the default system environment.
     cwd = cwd or os.getcwd()
     util.LOGGER.debug('Running command: %s (env=%s; cwd=%s)', args, env, cwd)
 

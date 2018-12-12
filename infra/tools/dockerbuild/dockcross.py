@@ -82,7 +82,7 @@ class Builder(object):
     """Unpack our sources in the expected Docker system layout. Populate our
     Docker template with the result.
 
-    Since all of our Dockerfiles use the same build enviornment, we only need
+    Since all of our Dockerfiles use the same build environment, we only need
     to do this once per bulk build.
     """
     repo = self._system.repo
@@ -277,7 +277,7 @@ class Image(collections.namedtuple('_Image', (
     'system', # The toolchain instance.
     'platform', # The platform that this image represents.
     'bin', # Path to the "dockcross" wrapper script.
-    'docker_image', # The builder's Docker iamge.
+    'docker_image', # The builder's Docker image.
     ))):
 
   def exists(self):
@@ -298,7 +298,7 @@ class Image(collections.namedtuple('_Image', (
     # paths within the work directory.
     args = []
     if self.docker_image:
-      # Have to handle envvars specially
+      # Have to handle env vars specially
       env = kwargs.pop('env', None) or {}
 
       # Build arguments to run within "dockcross" image.
@@ -323,7 +323,7 @@ class Image(collections.namedtuple('_Image', (
 
       for k, v in env.iteritems():
         v = v.replace(work_dir, '/work/')
-        assert ' ' not in v, 'BUG: spaces in envvars not supported correctly'
+        assert ' ' not in v, 'BUG: spaces in env vars not supported correctly'
         run_args.extend(['-e', '%s=%s' % (k, v)])
 
       # Run the process within the working directory.

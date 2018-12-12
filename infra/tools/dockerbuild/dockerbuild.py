@@ -157,7 +157,7 @@ def _main_run(args, system):
   assert args.cwd.startswith(args.workdir), (
     'workdir %r does not contain cwd %r' % (args.workdir, args.cwd))
 
-  # Pass through envvars.
+  # Pass through env vars.
   env = {}
   affixes = {}
   for var, value in args.env:
@@ -290,6 +290,6 @@ def run(args):
   rc = args.func(args, system)
   if system.repo.missing_sources:
     util.LOGGER.warning('Some missing sources were identified. Please upload '
-                        'them to CIPD to ensure a reproducable build with '
+                        'them to CIPD to ensure a reproducible build with '
                         '--upload-sources.')
   return rc

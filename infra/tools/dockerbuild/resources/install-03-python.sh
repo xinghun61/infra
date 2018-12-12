@@ -45,7 +45,7 @@ cd $(get_archive_dir ${ARCHIVE_PATH})
 
 toggle_host
 
-# We use the same Unicode spec as our cross-compile enviornment b/c wheel
+# We use the same Unicode spec as our cross-compile environment b/c wheel
 # building looks at the *build* compiler's spec, not the target platform's
 # spec, to determine what the unicode size is :(
 ./configure \

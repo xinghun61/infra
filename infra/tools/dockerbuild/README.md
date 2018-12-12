@@ -64,7 +64,7 @@ them to CIPD.
 
 Windows and Mac support are gated on the ability to have a fully-functioning
 Windows and Mac build toolchain running in a Linux (i.e., Docker) environment.
-This may be possible with a combinaton of `wine` and/or a Mac cross-compiler,
+This may be possible with a combination of `wine` and/or a Mac cross-compiler,
 but this is not currently explored or implemented.
 
 ## Lifecycle
@@ -98,7 +98,7 @@ acquires them, and creates CIPD packages for them. Run `sources` with the
 
 If new sources are added, or sources without CIPD packages are identified,
 a warning message will be printed at the end of DockerBuild operation
-encouraging the user to upload source CIPD packages for future reprocible
+encouraging the user to upload source CIPD packages for future reproducible
 builds.
 
 ### Subcommand: docker-mirror
@@ -110,7 +110,7 @@ store them in our Google Cloud Docker image registry.
 
 `docker-mirror` can be run to synchronize and/or update the local images. All
 DockerBuild images are generated from the local images, not the upstream images,
-so an explicit synchronizaton step is required to update their `dockcross`
+so an explicit synchronization step is required to update their `dockcross`
 bases.
 
 ### Subcommand: docker-generate
@@ -144,7 +144,7 @@ to be evaluated on a case-by-base basis, sadly.
 
 DockerBuild offers an entry point into a DockerBuild image's toolchain
 environment through its `run` subcommand. `run` will mount the specified
-directory inside of the DockerBuild enviornment and execute the specified
+directory inside of the DockerBuild environment and execute the specified
 command against that directory.
 
 `run` can be used to cross-compile software (e.g., `git`) for other Infra
@@ -175,8 +175,15 @@ cipd auth-info
 cipd auth-login
 ```
 
-Second, file http://crbug.com/ ticket in Infra>Platform>Admin component to add
-you to this group.
+Second, [file a bug with the Infra\>Platform\>Admin component](https://bugs.chromium.org/p/chromium/issues/entry?components=Infra%3EPlatform%3EAdmin) to add you to this group.
+
+### Got permission denied while downloading docker image
+
+When running commands that require docker images, such as the
+`docker-generate` subcommand, you need to be authenticated.
+It is recommended to use gcloud to handle this; try running
+`gcloud auth configure-docker`. Authenticating with a google.com
+account using `gcloud auth login` may be necessary.
 
 ### Error response from daemon: squash is only supported with experimental mode
 
@@ -235,7 +242,7 @@ platform to support.
 ### Cross-compile Python
 
 To cross-compile Python for the "linux-armv6" platform, download the Python
-source, then configure it for the cross-compile enviornment and build.
+source, then configure it for the cross-compile environment and build.
 ```bash
 wget https://github.com/python/cpython/archive/v2.7.13.tar.gz
 cd cpython-2.7.13
@@ -249,4 +256,4 @@ cd cpython-2.7.13
 - Note that the install prefix is `/work/PREFIX`. This will install into the
   working directory, but all paths will have `/work/PREFIX` hard-coded as their
   prefix. More specific `./configure` options can be used to ensure that the
-  configured environment matches the target system environmnet.
+  configured environment matches the target system environment.

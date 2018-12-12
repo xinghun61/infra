@@ -89,7 +89,7 @@ class Wheel(_Wheel):
 
   def universal_filename(self):
     """This is a universal filename for the wheel, regardless of whether it's
-    binary or truly univrsal. See "A Note on Univeriality" at the top for
+    binary or truly universal. See "A Note on Universality" at the top for
     details on why we'd ever want to do this.
     """
     wheel = self._replace(spec=self.spec.to_universal())

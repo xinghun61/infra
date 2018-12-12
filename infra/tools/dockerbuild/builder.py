@@ -23,7 +23,7 @@ class Builder(object):
     """Initializes a new wheel Builder.
 
     spec (Spec): The wheel specification.
-    build_fn (callable): Callable build function, used to generate the acutal
+    build_fn (callable): Callable build function, used to generate the actual
         wheel.
     arch_map (dict or None): Naming map for architectures. If the current
         platform has an entry in this map, the generated wheel will use the
@@ -100,7 +100,7 @@ class Builder(object):
     # Create a CIPD package for the wheel. Give the wheel a universal filename
     # within the CIPD package.
     #
-    # See "A Note on Universiality" at the top.
+    # See "A Note on Universality" at the top.
     util.LOGGER.info('Creating CIPD package: %r => %r', wheel_paths, pkg_path)
     with system.temp_subdir('cipd_%s_%s' % wheel.spec.tuple) as tdir:
       for w in built_wheels:

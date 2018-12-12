@@ -16,7 +16,7 @@ set -e
 #    must be deployed alongside each other. Ensuring this is left to the user,
 #    but we must establish this dependency during build for the build to work.
 #
-# This script is higly influenced by the "opencv-python" project and its
+# This script is highly influenced by the "opencv-python" project and its
 # documentation. However, since we want to build for an expanded set of
 # platforms and for additional versions ("opencv-python" supports OpenCV3+
 # only), and want to build without Travis CI, we perform the build here in our
@@ -52,7 +52,7 @@ NUMPY_WHEEL_PATH=$1; shift
 # not have writability.
 chmod -R u+w "${PY_OPENCV_ROOT}"
 
-# Create a VirutalEnv with our "numpy" wheel installed.
+# Create a VirtualEnv with our "numpy" wheel installed.
 #
 # We clear our PYTHONPATH here because it forces a local system path.
 export PYTHONPATH=
@@ -62,7 +62,7 @@ VENV_ROOT="${WORKDIR}/venv"
 # Add that VirtualEnv to our PATH.
 source "${VENV_ROOT}/bin/activate"
 
-# Install "numpy" into the VirutalEnv.
+# Install "numpy" into the VirtualEnv.
 python -m pip install "${NUMPY_WHEEL_PATH}"
 
 # To satisfy (1) and (2), we will use a submodule-recursive "opencv-python"
@@ -91,7 +91,7 @@ print(numpy.version.version)\
 echo "Python version string: $PYTHON_VERSION_STRING"
 echo "Python include path: $PYTHON_INCLUDE_PATH"
 echo "Python packages path: $PYTHON_PACKAGES_PATH"
-echo "Python numpy incude dirs: $PYTHON_NUMPY_INCLUDE_DIRS"
+echo "Python numpy include dirs: $PYTHON_NUMPY_INCLUDE_DIRS"
 echo "Python numpy version: $PYTHON_NUMPY_VERSION"
 
 # Begin build

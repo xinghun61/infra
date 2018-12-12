@@ -18,7 +18,7 @@ RUN /bin/bash -c "\
 
 # Setup cross-compile parameters.
 #
-# Link "lib64" to "lib" in our cross-compile enviornment so we only have to care
+# Link "lib64" to "lib" in our cross-compile environment so we only have to care
 # about one "lib" path.
 ENV CROSS_PREFIX="${cross_prefix}"
 ENV \
@@ -40,7 +40,7 @@ ENV LOCAL_PREFIX="/usr/host"
 ENV PATH=$${LOCAL_PREFIX}/bin:$${PATH}
 
 # Configure our setup script root. We copy install-util to / in order to allow
-# other users of the final container to use it (specifially for
+# other users of the final container to use it (specifically for
 # toggle_host+toggle_cross functionality when using this container for cross
 # compiling other tools).
 COPY ${resources_relpath}/install-util.sh /
@@ -64,7 +64,7 @@ RUN ARCHIVE_PATH=$$(basename ${perl5_relpath}) \
 # Build libraries for the cross-compiled environment.
 #
 # - libffi: Our cross-compiled Python needs to link against this.
-# - zlib: Useful for cross-compiled enviornments.
+# - zlib: Useful for cross-compiled environments.
 # - ncurses: Used for MySQL client library
 WORKDIR $${SETUP_ROOT}/x-lib
 COPY ${resources_relpath}/install-02-cross-lib.sh ./
@@ -125,7 +125,7 @@ RUN \
     --prefix="$$LOCAL_PREFIX"
 
 # Part of Python's binary distribution directly calls "cc", ignoring the
-# enviornment variable overrides. We will use the alternatives system to set
+# environment variable overrides. We will use the alternatives system to set
 # this to be the cross-compiling CC by default.
 RUN update-alternatives --install /usr/bin/cc cc $$CC 100 && \
     update-alternatives --install /usr/bin/gcc gcc $$CC 100

@@ -8,7 +8,7 @@ set -e
 set -x
 set -o pipefail
 
-# Ensure that our mandatory enviornment variables are set:
+# Ensure that our mandatory environment variables are set:
 #
 # - LOCAL_PREFIX is the prefix to use for host installation.
 # - CROSS_TRIPLE is the cross-compile host triple.

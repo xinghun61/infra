@@ -17,7 +17,7 @@ fix_env_paths() {
     local var="${line%%=*}"
     local value="${line#*=}"
     if [[ $var == DOCKERBUILD_* ]]; then
-      local target=""                    # the envvar we plan to modify
+      local target=""                    # the env var we plan to modify
       value="$(base64 -id <<<"$value")"  # decode the value as base64
       if [[ $var == DOCKERBUILD_APPEND_* ]]; then
         target=${var#DOCKERBUILD_APPEND_}
