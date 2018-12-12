@@ -98,13 +98,15 @@ func printBotDiagnosis(w io.Writer, e site.Environment, bots []*fleet.BotSummary
 }
 
 func printDiagnosisTask(w io.Writer, e site.Environment, t *fleet.Task) {
-	var ts string
-	if tm, err := ptypes.Timestamp(t.GetStartedTs()); err == nil {
-		ts = tm.Format(time.RFC1123Z)
-	} else {
-		ts = "Unknown"
-	}
+	ts := getTaskTimeString(t)
 	fmt.Fprintf(w, "\t%s\t%s\t%s -> %s\t%s\t\n",
 		t.GetName(), ts, t.GetStateBefore(), t.GetStateAfter(),
 		swarmingTaskURL(e, t.GetId()))
+}
+
+func getTaskTimeString(t *fleet.Task) string {
+	if tm, err := ptypes.Timestamp(t.GetStartedTs()); err == nil {
+		return tm.Format(time.RFC1123Z)
+	}
+	return "Unknown"
 }
