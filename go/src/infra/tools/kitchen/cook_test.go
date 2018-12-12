@@ -103,7 +103,6 @@ func TestCook(t *testing.T) {
 			cacheDirPath := filepath.Join(tdir, "cache-dir")
 
 			env := environ.System()
-			mode := "swarming"
 
 			// Prepare recipe dir.
 			So(setupRecipeRepo(c, env, recipeRepoDir), ShouldBeNil)
@@ -133,7 +132,6 @@ func TestCook(t *testing.T) {
 				})
 				So(err, ShouldBeNil)
 				args := []string{
-					"-mode", mode,
 					"-repository", "file://" + recipeRepoDir,
 					"-recipe", "kitchen_test",
 					"-properties", string(propertiesJSON),
@@ -211,55 +209,43 @@ func TestCook(t *testing.T) {
 				return r
 			}
 
-			tests := func() {
-				Convey("recipe success", func() {
-					recipeResult := &recipe_engine.Result{
-						OneofResult: &recipe_engine.Result_JsonResult{
-							JsonResult: `{"foo": "bar"}`,
-						},
-					}
-					result := run(recipeResult, 0)
-					result.Annotations = nil
-					So(cleanResult(result), ShouldResemble, &build.BuildRunResult{
-						RecipeExitCode: &build.OptionalInt32{Value: 0},
-						RecipeResult:   recipeResult,
-						AnnotationUrl:  "logdog://logdog.example.com/chromium/prefix/+/annotations",
-					})
+			env.Set("SWARMING_TASK_ID", "task")
+			env.Set("SWARMING_BOT_ID", "bot")
+
+			Convey("recipe success", func() {
+				recipeResult := &recipe_engine.Result{
+					OneofResult: &recipe_engine.Result_JsonResult{
+						JsonResult: `{"foo": "bar"}`,
+					},
+				}
+				result := run(recipeResult, 0)
+				result.Annotations = nil
+				So(cleanResult(result), ShouldResemble, &build.BuildRunResult{
+					RecipeExitCode: &build.OptionalInt32{Value: 0},
+					RecipeResult:   recipeResult,
+					AnnotationUrl:  "logdog://logdog.example.com/chromium/prefix/+/annotations",
 				})
-				Convey("recipe step failed", func() {
-					recipeResult := &recipe_engine.Result{
-						OneofResult: &recipe_engine.Result_Failure{
-							Failure: &recipe_engine.Failure{
-								HumanReason: "step failed",
-								FailureType: &recipe_engine.Failure_Failure{
-									Failure: &recipe_engine.StepFailure{
-										Step: "bot_update",
-									},
+			})
+			Convey("recipe step failed", func() {
+				recipeResult := &recipe_engine.Result{
+					OneofResult: &recipe_engine.Result_Failure{
+						Failure: &recipe_engine.Failure{
+							HumanReason: "step failed",
+							FailureType: &recipe_engine.Failure_Failure{
+								Failure: &recipe_engine.StepFailure{
+									Step: "bot_update",
 								},
 							},
 						},
-					}
-					result := run(recipeResult, 1)
-					result.Annotations = nil
-					So(cleanResult(result), ShouldResemble, &build.BuildRunResult{
-						RecipeExitCode: &build.OptionalInt32{Value: 1},
-						RecipeResult:   recipeResult,
-						AnnotationUrl:  "logdog://logdog.example.com/chromium/prefix/+/annotations",
-					})
+					},
+				}
+				result := run(recipeResult, 1)
+				result.Annotations = nil
+				So(cleanResult(result), ShouldResemble, &build.BuildRunResult{
+					RecipeExitCode: &build.OptionalInt32{Value: 1},
+					RecipeResult:   recipeResult,
+					AnnotationUrl:  "logdog://logdog.example.com/chromium/prefix/+/annotations",
 				})
-			}
-			Convey("swarming mode", func() {
-				env.Remove("BUILDBOT_SLAVENAME")
-				env.Set("SWARMING_TASK_ID", "task")
-				env.Set("SWARMING_BOT_ID", "bot")
-				tests()
-			})
-			Convey("buildbot mode", func() {
-				mode = "buildbot"
-				env.Set("BUILDBOT_SLAVENAME", "bot")
-				env.Remove("SWARMING_TASK_ID")
-				env.Remove("SWARMING_BOT_ID")
-				tests()
 			})
 		})
 	})

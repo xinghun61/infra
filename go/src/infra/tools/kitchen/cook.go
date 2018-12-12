@@ -24,7 +24,6 @@ import (
 	log "go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/proto/milo"
 	"go.chromium.org/luci/common/system/environ"
-	"go.chromium.org/luci/common/system/exitcode"
 	"go.chromium.org/luci/common/system/filesystem"
 	"go.chromium.org/luci/lucictx"
 
@@ -60,7 +59,6 @@ type cookRun struct {
 
 	cookflags.CookFlags
 
-	mode         cookMode
 	engine       recipeEngine
 	kitchenProps *kitchenProperties
 
@@ -86,7 +84,6 @@ func (c *cookRun) normalizeFlags() error {
 		return err
 	}
 
-	c.mode = cookModeSelector[c.Mode]
 	c.engine.workDir = c.WorkDir
 	c.engine.recipeName = c.RecipeName
 
@@ -180,31 +177,12 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 	recipeEnv := c.recipeAuth.ExportIntoEnv(env)
 
 	rv := 0
-	if c.CookFlags.LogDogFlags.Active() {
-		result.AnnotationUrl = c.CookFlags.LogDogFlags.AnnotationURL.String()
-		rv, result.Annotations, err = c.runWithLogdogButler(ctx, &c.engine, recipeEnv)
-		if err != nil {
-			return fail(errors.Annotate(err, "failed to run recipe").Err())
-		}
-		setAnnotationText(result.Annotations)
-	} else {
-		// This code is reachable only in buildbot mode.
-		recipeCmd, err := c.engine.commandRun(ctx, filepath.Join(c.TempDir, "rr"), recipeEnv)
-		if err != nil {
-			return fail(errors.Annotate(err, "failed to build recipe run command").Err())
-		}
-		printCommand(ctx, recipeCmd)
-
-		recipeCmd.Stdout = os.Stdout
-		recipeCmd.Stderr = os.Stderr
-
-		err = recipeCmd.Run()
-		var hasRV bool
-		rv, hasRV = exitcode.Get(err)
-		if !hasRV {
-			return fail(errors.Annotate(err, "failed to run recipe").Err())
-		}
+	result.AnnotationUrl = c.CookFlags.LogDogFlags.AnnotationURL.String()
+	rv, result.Annotations, err = c.runWithLogdogButler(ctx, &c.engine, recipeEnv)
+	if err != nil {
+		return fail(errors.Annotate(err, "failed to run recipe").Err())
 	}
+	setAnnotationText(result.Annotations)
 	result.RecipeExitCode = &build.OptionalInt32{Value: int32(rv)}
 
 	// Now read the recipe result file.
@@ -318,12 +296,11 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, *k
 	// https://chromium.googlesource.com/chromium/tools/depot_tools/+/master/recipes/recipe_modules/infra_paths/
 	props["path_config"] = "generic"
 
-	if err := c.mode.addProperties(props, env); err != nil {
-		return nil, nil, errors.Annotate(err, "chosen mode could not add properties").Err()
+	botID, ok := env.Get("SWARMING_BOT_ID")
+	if !ok {
+		return nil, nil, inputError("no Swarming bot ID in $SWARMING_BOT_ID")
 	}
-	if _, ok := props[PropertyBotID]; !ok {
-		return nil, nil, errors.Reason("chosen mode didn't add %s property", PropertyBotID).Err()
-	}
+	props["bot_id"] = botID
 
 	// Extract "$kitchen" properties into more usable struct.
 	kitchenProps := &kitchenProperties{
@@ -425,36 +402,6 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 		return fail(err)
 	}
 
-	// If we're not using LogDog, send out annotations.
-	bootstrapSuccess := false
-	if c.CookFlags.LogDogFlags.ShouldEmitAnnotations() {
-		// This code is reachable only in buildbot mode.
-
-		annotate := func(args ...string) {
-			fmt.Printf("@@@%s@@@\n", strings.Join(args, "@"))
-		}
-		annotate("SEED_STEP", BootstrapStepName)
-		annotate("STEP_CURSOR", BootstrapStepName)
-		annotate("STEP_STARTED")
-		defer func() {
-			annotate("STEP_CURSOR", BootstrapStepName)
-			if bootstrapSuccess {
-				annotate("STEP_CLOSED")
-			} else {
-				annotate("STEP_EXCEPTION")
-			}
-		}()
-
-		for k, v := range c.engine.properties {
-			// Order is not stable, but that is okay.
-			jv, err := json.Marshal(v)
-			if err != nil {
-				return fail(errors.Annotate(err, "").Err())
-			}
-			annotate("SET_BUILD_PROPERTY", k, string(jv))
-		}
-	}
-
 	if err := c.updateEnv(&env); err != nil {
 		return fail(errors.Annotate(err, "failed to update the environment").Err())
 	}
@@ -485,7 +432,6 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 	// Run the recipe.
 	result := c.ensureAndRunRecipe(ctx, env)
 
-	bootstrapSuccess = result.InfraFailure == nil
 	return result
 }
 
@@ -550,41 +496,12 @@ func (c *cookRun) reportProperties(ctx context.Context, realm string, props inte
 // setupAuth prepares systemAuth and recipeAuth contexts based on incoming
 // environment and command line flags.
 func (c *cookRun) setupAuth(ctx context.Context, enableGitAuth, enableDevShell, enableDockerAuth, enableFirebaseAuth bool) error {
-	// Don't mess with git authentication in Buildbot mode, it won't work without
-	// proper LUCI_CONTEXT environment.
-	if enableGitAuth && !c.mode.allowCustomGitAuth() {
-		log.Warningf(ctx, "Git authentication is not supported in the current mode")
-		enableGitAuth = false
-	}
-
-	// The same for DevShell, don't use it in Buildbot mode.
-	if enableDevShell && !c.mode.allowDevShell() {
-		log.Warningf(ctx, "DevShell authentication is not supported in the current mode")
-		enableDevShell = false
-	}
-
-	// The same for Docker, don't use it in Buildbot mode.
-	if enableDockerAuth && !c.mode.allowDockerAuth() {
-		log.Warningf(ctx, "Docker authentication is not supported in the current mode")
-		enableDockerAuth = false
-	}
-
-	// The same for Firebase, don't use it in Buildbot mode.
-	if enableFirebaseAuth && !c.mode.allowFirebaseAuth() {
-		log.Warningf(ctx, "Firebase authentication is not supported in the current mode")
-		enableFirebaseAuth = false
-	}
-
-	// If we are explicitly given a system account JSON key, use it for Kitchen.
-	// This happens when Kitchen is used from BuildBot ("LUCI Emulation Mode").
+	// If we are given -luci-system-account flag, use the corresponding logical
+	// account if it's in the LUCI_CONTEXT (fail if not).
 	//
-	// Otherwise, if we are given -luci-system-account flag, use the corresponding
-	// logical account if it's in the LUCI_CONTEXT (fail if not). This is what's
-	// used on Swarming.
-	//
-	// And if neither are given run Kitchen with whatever is default account now
-	// (don't switch to a system one). Happens when running Kitchen manually
-	// locally. It picks up the developer account.
+	// Otherwise, we run Kitchen with whatever is default account now (don't
+	// switch to a system one). Happens when running Kitchen manually locally. It
+	// picks up the developer account.
 	systemAuth := &AuthContext{
 		ID:                 "system",
 		EnableGitAuth:      enableGitAuth,
@@ -594,11 +511,6 @@ func (c *cookRun) setupAuth(ctx context.Context, enableGitAuth, enableDevShell, 
 		KnownGerritHosts:   c.KnownGerritHost,
 	}
 	switch {
-	case c.SystemAccountJSON != "":
-		if c.SystemAccount != "" {
-			return errors.New("-luci-system-account and -luci-system-account-json shouldn't be used together")
-		}
-		systemAuth.ServiceAccountJSONPath = c.SystemAccountJSON
 	case c.SystemAccount != "":
 		la := lucictx.GetLocalAuth(ctx)
 		if la == nil {

@@ -6,6 +6,7 @@ package main
 
 import (
 	"io"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sync"
@@ -88,9 +89,21 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 	if c.BuildURL != "" {
 		globalTags[logDogViewerURLTag] = c.BuildURL
 	}
-	if err := c.mode.addLogDogGlobalTags(globalTags, eng.properties, env); err != nil {
-		return 0, nil, errors.Annotate(err, "failed to add global tags").Err()
+
+	// SWARMING_SERVER is the full URL: https://example.com
+	// We want just the hostname.
+	if v, ok := env.Get("SWARMING_SERVER"); ok {
+		if u, err := url.Parse(v); err == nil && u.Host != "" {
+			globalTags["swarming.host"] = u.Host
+		}
 	}
+	if v, ok := env.Get("SWARMING_TASK_ID"); ok {
+		globalTags["swarming.run_id"] = v
+	}
+	if v, ok := env.Get("SWARMING_BOT_ID"); ok {
+		globalTags["bot_id"] = v
+	}
+
 	for k, v := range flags.GlobalTags {
 		globalTags[k] = v
 	}
@@ -175,7 +188,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 		MaxBufferAge: butler.DefaultMaxBufferAge,
 		GlobalTags:   globalTags,
 	}
-	if flags.LogDogOnly && (flags.LogDogSendIOKeepAlives || c.mode.needsIOKeepAlive()) {
+	if flags.LogDogSendIOKeepAlives {
 		// If we're not teeing, we need to issue keepalives so our executor doesn't
 		// kill us due to lack of I/O.
 		butlerCfg.IOKeepAliveInterval = 5 * time.Minute
@@ -251,8 +264,6 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 		AnnotationSubpath:      annoSubpath,
 		Client:                 localclient.New(b),
 		Execution:              annotation.ProbeExecution(proc.Args, proc.Env, proc.Dir),
-		TeeText:                !flags.LogDogOnly,
-		TeeAnnotations:         !flags.LogDogOnly || c.mode.alwaysForwardAnnotations(),
 		MetadataUpdateInterval: 30 * time.Second,
 		Offline:                false,
 		CloseSteps:             true,
@@ -274,13 +285,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 			}
 		}()
 	}
-	if c.mode.shouldEmitLogDogLinks() {
-		annoteeOpts.LinkGenerator = &annotee.CoordinatorLinkGenerator{
-			Host:    flags.AnnotationURL.Host,
-			Project: flags.AnnotationURL.Project,
-			Prefix:  prefix,
-		}
-	}
+
 	annoteeProcessor := annotee.New(ncCtx, annoteeOpts)
 	defer func() {
 		as := annoteeProcessor.Finish()
@@ -293,16 +298,14 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 	// If we're teeing, we will tee the full stream, including annotations.
 	streams := []*annotee.Stream{
 		{
-			Reader:           stdout,
-			Name:             annotee.STDOUT,
-			Annotate:         true,
-			StripAnnotations: !flags.LogDogOnly,
+			Reader:   stdout,
+			Name:     annotee.STDOUT,
+			Annotate: true,
 		},
 		{
-			Reader:           stderr,
-			Name:             annotee.STDERR,
-			Annotate:         true,
-			StripAnnotations: !flags.LogDogOnly,
+			Reader:   stderr,
+			Name:     annotee.STDERR,
+			Annotate: true,
 		},
 	}
 	if annoteeOpts.TeeText || annoteeOpts.TeeAnnotations {

@@ -20,8 +20,6 @@ const (
 type CookFlags struct {
 	// For field documentation see the flags that these flags are bound to.
 
-	Mode CookMode `json:"mode"`
-
 	RepositoryURL string `json:"repository_url"`
 	Revision      string `json:"revision"`
 	CheckoutDir   string `json:"checkout_dir"`
@@ -39,8 +37,7 @@ type CookFlags struct {
 	RecipeName string `json:"recipe_name"`
 	WorkDir    string `json:"work_dir"`
 
-	SystemAccount     string `json:"system_account"`
-	SystemAccountJSON string `json:"system_account_json"`
+	SystemAccount string `json:"system_account"`
 
 	KnownGerritHost stringlistflag.Flag `json:"known_gerrit_host"`
 
@@ -53,9 +50,7 @@ type CookFlags struct {
 
 // Register the CookFlags with the provided FlagSet.
 func (c *CookFlags) Register(fs *flag.FlagSet) {
-	fs.Var(&c.Mode,
-		"mode",
-		"Build environment mode for Kitchen. Options are ["+cookModeFlagEnum.Choices()+"].")
+	_ = fs.String("mode", "swarming", "deprecated, ignored")
 
 	fs.StringVar(
 		&c.RepositoryURL,
@@ -139,11 +134,10 @@ func (c *CookFlags) Register(fs *flag.FlagSet) {
 		"luci-system-account",
 		"",
 		"If present, use this LUCI context logical account for system-level operations. Will likely be 'system'.")
-	fs.StringVar(
-		&c.SystemAccountJSON,
+	fs.String(
 		"luci-system-account-json",
 		"",
-		"Explicitly authenticate system operations using this service account JSON file.")
+		"deprecated, ignored")
 
 	fs.Var(
 		&c.KnownGerritHost,
@@ -168,7 +162,7 @@ func (c *CookFlags) Register(fs *flag.FlagSet) {
 		false,
 		"Whether to call buildbucket.v2.Builds.UpdateBuild RPC "+
 			"while build is running. "+
-			"Requires -buildbucket-hostname, -buildbucket-build-id and -mode=swarming. ")
+			"Requires -buildbucket-hostname, -buildbucket-build-id. ")
 
 	c.LogDogFlags.register(fs)
 }
@@ -177,7 +171,6 @@ func (c *CookFlags) Register(fs *flag.FlagSet) {
 func (c *CookFlags) Dump() []string {
 	ret := flagDumper{}
 
-	ret.str("mode", c.Mode.String())
 	ret.strDefault("workdir", c.WorkDir, defaultWorkDir)
 	ret.str("repository", c.RepositoryURL)
 	ret.str("revision", c.Revision)
@@ -194,7 +187,6 @@ func (c *CookFlags) Dump() []string {
 	ret.str("recipe", c.RecipeName)
 
 	ret.str("luci-system-account", c.SystemAccount)
-	ret.str("luci-system-account-json", c.SystemAccountJSON)
 	ret.list("known-gerrit-host", c.KnownGerritHost)
 	ret.str("buildbucket-hostname", c.BuildbucketHostname)
 	if c.BuildbucketBuildID != 0 {

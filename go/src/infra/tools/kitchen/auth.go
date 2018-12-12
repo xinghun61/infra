@@ -74,25 +74,7 @@ type AuthContext struct {
 	//
 	// In particular it defines what logical account (e.g. "system" or "task") to
 	// use by default in this context.
-	//
-	// May be nil, in which case the subprocesses won't use LUCI_CONTEXT auth
-	// mechanism at all and instead will rely on existing cached refresh tokens or
-	// other predeployed credentials. This happens in Buildbot mode.
 	LocalAuth *lucictx.LocalAuth
-
-	// ServiceAccountJSONPath is path to a service account private key to use.
-	//
-	// Exists for legacy Buildbot mode. When set, overrides LUCI_CONTEXT-based
-	// authentication.
-	//
-	// Subprocesses do not inherit this authentication context: it affects only
-	// Kitchen itself (e.g. logdog and bigquery auth, not git).
-	//
-	// TODO(vadimsh): It is possible to make subprocesses inherit this (by
-	// launching local auth server in Kitchen and exposing it via LUCI_CONTEXT),
-	// but it is not needed currently on Buildbot, so not implemented. This would
-	// be needed for full "LUCI Emulation Mode" if it ever happens.
-	ServiceAccountJSONPath string
 
 	// EnableGitAuth enables authentication for git subprocesses.
 	//
@@ -163,11 +145,9 @@ func (ac *AuthContext) Launch(ctx context.Context, tempDir string) (err error) {
 	}
 
 	// Construct authentication with default set of scopes to be used through out
-	// Kitchen. Note: ServiceAccountJSONPath (if given) takes precedence over
-	// ambient LUCI_CONTEXT authentication carried through ac.ctx.
+	// Kitchen.
 	authOpts := infraenv.DefaultAuthOptions()
 	authOpts.Scopes = OAuthScopes
-	authOpts.ServiceAccountJSONPath = ac.ServiceAccountJSONPath
 	ac.authenticator = auth.NewAuthenticator(ac.ctx, auth.SilentLogin, authOpts)
 
 	// Figure out what email is associated with this account (if any).

@@ -23,130 +23,30 @@ var flagTestCases = []struct {
 	errValidate interface{}
 }{
 	{
-		errValidate: "missing mode",
-	},
-
-	{
-		flags:    []string{"-mode", "derpwat"},
-		errParse: `invalid value "derpwat"`,
-	},
-
-	{
-		flags:       []string{"-mode", "swarming"},
+		flags:       []string{},
 		errValidate: "-repository not specified",
 	},
 
 	{
-		flags: []string{
-			"-mode", "swarming", "-revision", "refs/cool/awesome",
-		},
+		flags:       []string{"-revision", "refs/cool/awesome"},
 		errValidate: "-revision must also be unspecified",
 	},
 
 	{
 		flags: []string{
-			"-mode", "swarming", "-repository", "whatever", "-recipe", "yep",
+			"-repository", "whatever", "-recipe", "yep",
 			"-properties", `{"some": "thing"}`, "-properties-file", "bar",
 		},
 		errValidate: "only one of -properties or -properties-file",
 	},
 
 	{
-		flags: []string{
-			"-mode", "buildbot",
-			"-repository", "something",
-			"-revision", "hats",
-		},
-		errValidate: `invalid revision "hats"`,
-	},
-
-	{
-		flags: []string{
-			"-mode", "buildbot",
-			"-checkout-dir", "",
-		},
-		errValidate: "empty -checkout-dir",
-	},
-
-	{
-		flags:       []string{"-mode", "buildbot", "-repository", "meep"},
-		errValidate: "-recipe is required",
-	},
-
-	{
-		flags:       []string{"-mode", "swarming", "-workdir", ""},
+		flags:       []string{"-workdir", ""},
 		errValidate: "-workdir is required",
 	},
 
 	{
 		flags: []string{
-			"-mode", "buildbot",
-			"-repository", "meep",
-			"-properties", `{"something":"awesome"}`,
-			"-recipe", "cool_recipe",
-		},
-		cf: CookFlags{
-			Mode:          CookBuildBot,
-			RepositoryURL: "meep",
-			RecipeName:    "cool_recipe",
-			Revision:      "HEAD",
-			WorkDir:       "kitchen-workdir",
-			CheckoutDir:   "kitchen-checkout",
-			Properties: PropertyFlag{
-				"something": "awesome",
-			},
-		},
-	},
-
-	{
-		flags: []string{
-			"-mode", "buildbot",
-			"-repository", "meep",
-			"-recipe", "cool_recipe",
-			"-known-gerrit-host", "zzz zzz zzz",
-		},
-		errValidate: `invalid gerrit hostname "zzz zzz zzz"`,
-	},
-
-	{
-		flags: []string{
-			"-mode", "buildbot",
-			"-repository", "meep",
-			"-properties", `{"something":"awesome"}`,
-			"-temp-dir", "tmp",
-			"-recipe", "cool_recipe",
-			"-known-gerrit-host", "abc.googlesource.com",
-			"-known-gerrit-host", "def.googlesource.com",
-			"-logdog-tag", "A=B",
-			"-logdog-tag", "Roffle=Copter",
-		},
-		cf: CookFlags{
-			Mode:          CookBuildBot,
-			RepositoryURL: "meep",
-			RecipeName:    "cool_recipe",
-			Revision:      "HEAD",
-			WorkDir:       "kitchen-workdir",
-			CheckoutDir:   "kitchen-checkout",
-			TempDir:       "$CWD/tmp",
-			LogDogFlags: LogDogFlags{
-				GlobalTags: map[string]string{
-					"A":      "B",
-					"Roffle": "Copter",
-				},
-			},
-			Properties: PropertyFlag{
-				"something": "awesome",
-			},
-			KnownGerritHost: []string{
-				"abc.googlesource.com",
-				"def.googlesource.com",
-			},
-		},
-	},
-
-	{
-		flags: []string{
-			"-mode", "swarming",
 			"-repository", "meep",
 			"-recipe", "cool_recipe",
 			"-call-update-build",
@@ -155,25 +55,12 @@ var flagTestCases = []struct {
 	},
 	{
 		flags: []string{
-			"-mode", "swarming",
 			"-repository", "meep",
 			"-recipe", "cool_recipe",
 			"-buildbucket-hostname", "buildbucket.example.com",
 			"-call-update-build",
 		},
 		errValidate: `-call-update-build requires a valid -buildbucket-build-id`,
-	},
-
-	{
-		flags: []string{
-			"-mode", "buildbot",
-			"-repository", "meep",
-			"-recipe", "cool_recipe",
-			"-buildbucket-hostname", "buildbucket.example.com",
-			"-buildbucket-build-id", "42",
-			"-call-update-build",
-		},
-		errValidate: `-call-update-build requires -mode=swarming`,
 	},
 }
 

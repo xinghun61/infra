@@ -37,10 +37,6 @@ func inputError(format string, args ...interface{}) error {
 // Normalize normalizes the contents of CookFlags, returning non-nil if there is
 // an error.
 func (c *CookFlags) Normalize() error {
-	if c.Mode == InvalidCookMode {
-		return inputError("missing mode (-mode)")
-	}
-
 	if c.WorkDir == "" {
 		return inputError("-workdir is required")
 	}
@@ -98,10 +94,7 @@ func (c *CookFlags) Normalize() error {
 		if c.BuildbucketBuildID <= 0 {
 			return inputError("-call-update-build requires a valid -buildbucket-build-id")
 		}
-		if c.Mode != CookSwarming {
-			return inputError("-call-update-build requires -mode=swarming")
-		}
 	}
 
-	return c.LogDogFlags.setupAndValidate(c.Mode)
+	return c.LogDogFlags.setupAndValidate()
 }

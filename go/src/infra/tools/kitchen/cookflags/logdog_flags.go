@@ -15,7 +15,6 @@ import (
 type LogDogFlags struct {
 	AnnotationURL          types.StreamAddr   `json:"annotation_url"`
 	GlobalTags             streamproto.TagMap `json:"global_tags"`
-	LogDogOnly             bool               `json:"logdog_only"`
 	LogDogSendIOKeepAlives bool               `json:"send_io_keepalives"`
 
 	FilePath string `json:"file_path"`
@@ -27,11 +26,10 @@ func (p *LogDogFlags) register(fs *flag.FlagSet) {
 		"logdog-annotation-url",
 		"The URL of the LogDog annotation stream to use (logdog://host/project/prefix/+/name). The LogDog "+
 			"project and prefix will be extracted from this URL. This can include Swarmbucket template parameters.")
-	fs.BoolVar(
-		&p.LogDogOnly,
+	fs.Bool(
 		"logdog-only",
-		false,
-		"Send all output and annotations through LogDog. Implied by swarming mode.")
+		true,
+		"deprecated, ignored")
 	fs.BoolVar(
 		&p.LogDogSendIOKeepAlives,
 		"logdog-send-io-keepalives",
@@ -49,36 +47,9 @@ func (p *LogDogFlags) register(fs *flag.FlagSet) {
 			"be specified multiple times.")
 }
 
-// Active returns true iff LogDog is active for this run.
-func (p *LogDogFlags) Active() bool {
-	return !p.AnnotationURL.IsZero() || p.FilePath != ""
-}
-
-// ShouldEmitAnnotations returns true if the cook command should emit additional
-// annotations.
-//
-// If we're streaming solely to LogDog, it makes no sense to emit extra
-// annotations, since nothing will consume them; however, if we're tee-ing, we
-// will continue to emit additional annotations in case something is looking
-// at the tee'd output.
-//
-// Note that this could create an incongruity between the LogDog-emitted
-// annotations and the annotations in the STDOUT stream.
-func (p *LogDogFlags) ShouldEmitAnnotations() bool {
-	return !(p.LogDogOnly && p.Active())
-}
-
-func (p *LogDogFlags) setupAndValidate(mode CookMode) error {
-	// Adjust some flags according to the chosen mode.
-	if mode.onlyLogDog() {
-		p.LogDogOnly = true
-	}
-
-	if !p.Active() {
-		if p.LogDogOnly {
-			return inputError("LogDog flag (-logdog-only) requires -logdog-annotation-url or -logdog-debug-out-file")
-		}
-		return nil
+func (p *LogDogFlags) setupAndValidate() error {
+	if p.AnnotationURL.IsZero() && p.FilePath == "" {
+		return inputError("LogDog flag (-logdog-only) requires -logdog-annotation-url or -logdog-debug-out-file")
 	}
 	if p.AnnotationURL.IsZero() {
 		return inputError("-logdog-debug-out-file requires -logdog-annotation-url")
@@ -94,7 +65,6 @@ func (p *LogDogFlags) Dump() []string {
 		ret = append(ret, "-logdog-annotation-url", p.AnnotationURL.String())
 	}
 	ret.stringMap("logdog-tag", p.GlobalTags)
-	ret.boolean("logdog-only", p.LogDogOnly)
 	ret.boolean("logdog-send-io-keepalives", p.LogDogSendIOKeepAlives)
 	ret.str("logdog-debug-out-file", p.FilePath)
 	return ret
