@@ -1590,3 +1590,8 @@ class ConverterFunctionsTest(unittest.TestCase):
          common_pb2.ValueAndWhy(why='Why what?'),
          common_pb2.ValueAndWhy()],
         actual)
+
+  def testRedistributeEnumFieldsIntoLabels(self):
+    # function called and tests covered by
+    # IngestIssueDelta and IngestApprovalDelta
+    pass

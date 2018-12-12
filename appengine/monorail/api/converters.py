@@ -520,29 +520,10 @@ def IngestIssueDelta(
   labels_add = [lab_ref.label for lab_ref in delta.label_refs_add]
   labels_remove = [lab_ref.label for lab_ref in delta.label_refs_remove]
 
-  field_val_strs_add = {}
-  for field_val in delta.field_vals_add:
-    field_val_strs_add.setdefault(field_val.field_ref.field_id, []).append(
-        field_val.value)
-
-  field_val_strs_remove = {}
-  for field_val in delta.field_vals_remove:
-    field_val_strs_remove.setdefault(field_val.field_ref.field_id, []).append(
-        field_val.value)
-
-  field_helpers.ShiftEnumFieldsIntoLabels(
-      labels_add, labels_remove, field_val_strs_add, field_val_strs_remove,
+  field_vals_add, field_vals_remove = _RedistributeEnumFieldsIntoLabels(
+      labels_add, labels_remove,
+      delta.field_vals_add, delta.field_vals_remove,
       config)
-
-  # Filter out the fields that were shifted into labels
-  field_vals_add = [
-      fv
-      for fv in delta.field_vals_add
-      if fv.field_ref.field_id in field_val_strs_add]
-  field_vals_remove = [
-      fv
-      for fv in delta.field_vals_remove
-      if fv.field_ref.field_id in field_val_strs_remove]
 
   field_vals_add = IngestFieldValues(
       cnxn, services.user, field_vals_add, config, phases=phases)
@@ -901,3 +882,48 @@ def ConvertValueAndWhy(value_and_why):
 
 def ConvertValueAndWhyList(value_and_why_list):
   return [ConvertValueAndWhy(vnw) for vnw in value_and_why_list]
+
+
+def _RedistributeEnumFieldsIntoLabels(
+    labels_add, labels_remove, field_vals_add, field_vals_remove, config):
+  """Look at the custom field values and treat enum fields as labels.
+
+  Args:
+    labels_add: list of labels to add/set on the issue.
+    labels_remove: list of labels to remove from the issue.
+    field_val_add: list of protoc FieldValues to be added.
+    field_val_remove: list of protoc FieldValues to be removed.
+        remove.
+    config: ProjectIssueConfig PB including custom field definitions.
+
+  Returns:
+    Two revised lists of protoc FieldValues to be added and removed,
+      without enum_types.
+
+  SIDE-EFFECT: the labels and labels_remove lists will be extended with
+  key-value labels corresponding to the enum field values.  Those field
+  entries will be removed from field_vals and field_vals_remove.
+  """
+  field_val_strs_add = {}
+  for field_val in field_vals_add:
+    field_val_strs_add.setdefault(field_val.field_ref.field_id, []).append(
+        field_val.value)
+
+  field_val_strs_remove = {}
+  for field_val in field_vals_remove:
+    field_val_strs_remove.setdefault(field_val.field_ref.field_id, []).append(
+        field_val.value)
+
+  field_helpers.ShiftEnumFieldsIntoLabels(
+      labels_add, labels_remove, field_val_strs_add, field_val_strs_remove,
+      config)
+
+  # Filter out the fields that were shifted into labels
+  updated_field_vals_add = [
+      fv for fv in field_vals_add
+      if fv.field_ref.field_id in field_val_strs_add]
+  updated_field_vals_remove = [
+      fv for fv in field_vals_remove
+      if fv.field_ref.field_id in field_val_strs_remove]
+
+  return updated_field_vals_add, updated_field_vals_remove
