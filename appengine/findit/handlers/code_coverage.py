@@ -131,7 +131,6 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
     # Save the file-level, directory-level and line-level coverage data.
     code_revision_index = '%s-%s' % (commit.project, commit.id)
 
-    component_summaries = []
     for data_type in ('dirs', 'components', 'files', 'file_shards'):
       sub_data = data.get(data_type)
       if not sub_data:
@@ -169,11 +168,13 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
       entities = []
       total = 0
 
+      component_summaries = []
       for dataset in data_iterator:
         for group_data in dataset:
           if actual_data_type == 'components':
             component_summaries.append({
                 'name': group_data['path'],
+                'path': group_data['path'],
                 'summaries': group_data['summaries'],
             })
 
@@ -185,12 +186,15 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
         del dataset  # Explicitly release memory.
       FlushEntries(entities, total, last=True)
 
-    if component_summaries:
-      CoverageData.Create(commit.host, code_revision_index, actual_data_type,
-                          '>>', {
-                              'dirs': component_summaries,
-                              'path': '>>'
-                          }).put()
+      if component_summaries:
+        component_summaries.sort(key=lambda x: x['path'])
+        CoverageData.Create(commit.host, code_revision_index, 'components',
+                            '>>', {
+                                'dirs': component_summaries,
+                                'path': '>>'
+                            }).put()
+        component_summaries = []
+        logging.info('Summary of all components are saved to datastore.')
 
     # Create a repository-level record so that it shows up on UI.
     PostsubmitReport(

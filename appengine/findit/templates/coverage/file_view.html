@@ -8,10 +8,10 @@
       padding: 5px 10px;
       border-bottom: 1px solid #DBDBDB;
       background-color: #EEE;
-      line-height: 30px;
+      line-height: 24px;
       text-align: center;
       font-weight: bold;
-      font-size: 24px;
+      font-size: 18px;
     }
     table {
       border-collapse: collapse;
@@ -101,6 +101,7 @@
 
     $(function() {
       document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
+
       $('#toggle-llvm-report').click(function() {
         CheckShowLLVMReport();
       });
@@ -119,7 +120,12 @@
 
 <body>
   <findit-app id="app" page-header="Code Coverage">
-    <table style="width:100%">
+    <div style="font-size:18px">
+    Switch to <a href="./coverage?host={{host}}&project={{project}}&revision={{revision}}&path=>>">Component View</a>
+    <br>
+    <br>
+    </div>
+    <table>
       <thead>
         <tr class="coverage-header">
           <th colspan="4">
@@ -132,9 +138,11 @@
           <th>Line</th>
           <th>Count</th>
           <th></th>
+          {% if user_info.is_admin %}
           <th style="width:100%">
             <input type="checkbox" id="toggle-llvm-report">Compare Metadata-based with llvm-generated HTML Report (For Debugging)
           </th>
+          {% endif %}
         </tr>
       </thead>
 
@@ -169,7 +177,7 @@
           <td></td>
           <td class="incoverable-code"><pre>{{info.line}}</pre></td>
           {% endif %}
-          {% if num == 1%}
+          {% if num == 1 and user_info.is_admin %}
           <td rowspan="{{ data.line_to_data | length}}">
             <iframe src="" id="llvm-report" style="border:0px;display:block;width:100%!important; height:100%!important;"></iframe>
           </td>

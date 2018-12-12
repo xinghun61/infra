@@ -4,12 +4,12 @@ body {
 
 table {
   border-collapse: collapse;
-  border: 1px solid gray;
+  border: 1px solid #EEE;
 }
 
 table td, table th {
   padding: 5px;
-  border: 1px solid gray;
+  border: 1px solid #EEE;
 }
 
 .triage-area {
