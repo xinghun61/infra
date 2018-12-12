@@ -8,8 +8,8 @@ import random
 from components import auth
 from components import datastore_utils
 from google.appengine.ext import ndb
-
 from google.appengine.ext.ndb import msgprop
+from google.protobuf import struct_pb2
 from protorpc import messages
 
 from proto import build_pb2
@@ -176,6 +176,9 @@ class Build(ndb.Model):
       common_pb2.GitilesCommit
   )
 
+  # Stores buildbucket.v2.Build.input.properties.
+  input_properties = datastore_utils.ProtobufProperty(struct_pb2.Struct)
+
   # Lease-time attributes.
 
   # current lease expiration date.
@@ -296,7 +299,7 @@ class BuildDetailEntity(ndb.Model):
 
 
 class BuildSteps(BuildDetailEntity):
-  """Stores buildbucket.v2.Steps of a build, if available."""
+  """Stores buildbucket.v2.Build.steps."""
 
   # max length of steps attribute, uncompressed.
   MAX_STEPS_LEN = 1024 * 1024

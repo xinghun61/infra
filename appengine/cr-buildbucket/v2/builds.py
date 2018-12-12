@@ -37,10 +37,13 @@ def build_to_v2(build, build_steps=None):
   """
   result_details = build.result_details or {}
   out_props = result_details.get('properties') or {}
+
+  # TODO(nodir): remove params when all builds have input_properties.
   params = (
       build.parameters_actual
       if build.parameters_actual is not None else build.parameters
   )
+
   ret = build_pb2.Build(
       id=build.key.id(),
       builder=_get_builder_id(build),
@@ -52,7 +55,10 @@ def build_to_v2(build, build_steps=None):
       update_time=_dt2ts(build.update_time),
       cancel_reason=build.cancel_reason_v2,
       input=build_pb2.Build.Input(
-          properties=_dict_to_struct(params.get('properties')),
+          properties=(
+              build.input_properties or
+              _dict_to_struct(params.get('properties'))
+          ),
           experimental=build.experimental,
           gitiles_commit=build.input_gitiles_commit,
       ),

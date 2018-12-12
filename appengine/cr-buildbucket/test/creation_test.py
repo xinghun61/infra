@@ -14,7 +14,7 @@ import mock
 from proto import common_pb2
 from proto.config import service_config_pb2
 from test import config_test
-from test.test_util import future, future_exception
+from test.test_util import future, future_exception, msg_to_dict
 import config
 import creation
 import errors
@@ -123,10 +123,20 @@ class CreationTest(testing.AppengineTestCase):
     )
     self.assertIsNotNone(build.key)
     self.assertIsNotNone(build.key.id())
+    build = build.key.get()
     self.assertEqual(build.bucket_id, 'chromium/try')
     self.assertEqual(build.parameters, params)
     self.assertEqual(build.created_by, auth.get_current_identity())
     self.assertEqual(build.canary_preference, model.CanaryPreference.CANARY)
+
+  def test_add_with_properties(self):
+    props = {'foo': 'bar', 'qux': 1}
+    build = self.add(parameters={model.PROPERTIES_PARAMETER: props})
+    self.assertEqual(msg_to_dict(build.input_properties), props)
+
+  def test_add_with_properties_not_dict(self):
+    with self.assertRaisesRegexp(errors.InvalidInputError, r'must be a dict'):
+      self.add(parameters={model.PROPERTIES_PARAMETER: 1})
 
   def test_add_with_gitiles_commit(self):
     gitiles_commit = common_pb2.GitilesCommit(

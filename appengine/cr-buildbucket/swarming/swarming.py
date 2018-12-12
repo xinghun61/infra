@@ -46,6 +46,7 @@ from google.appengine.api import memcache
 from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 from google.protobuf import json_format
+from google.protobuf import struct_pb2
 import webapp2
 
 from third_party import annotations_pb2
@@ -528,6 +529,8 @@ def _setup_recipes(build, builder_cfg, build_number, params):
 
   Mutates build and params.
 
+  TODO(nodir): remove params, update build.input_properties.
+
   Returns:
     extra_swarming_tags, extra_cipd_packages, extra_task_template_params
   """
@@ -607,6 +610,9 @@ def _setup_recipes(build, builder_cfg, build_number, params):
     extra_swarming_tags.append(
         'recipe_repository:' + builder_cfg.recipe.repository
     )
+
+  build.input_properties = build.input_properties or struct_pb2.Struct()
+  build.input_properties.update(build_properties)
   return extra_swarming_tags, extra_cipd_packages, extra_task_template_params
 
 

@@ -10,6 +10,7 @@ import logging
 import random
 
 from google.appengine.ext import ndb
+from google.protobuf import struct_pb2
 
 from components import auth
 from components import net
@@ -102,8 +103,14 @@ class BuildRequest(_BuildRequestBase):
         'new',
         builder=(self.parameters or {}).get(model.BUILDER_PARAMETER)
     )
-    if self.parameters is not None and not isinstance(self.parameters, dict):
-      raise errors.InvalidInputError('parameters must be a dict or None')
+    if self.parameters is not None:
+      if not isinstance(self.parameters, dict):
+        raise errors.InvalidInputError('parameters must be a dict or None')
+      props = self.parameters.get(model.PROPERTIES_PARAMETER)
+      if props is not None and not isinstance(props, dict):
+        raise errors.InvalidInputError(
+            '"properties" parameter must be a dict or None'
+        )
     errors.validate_lease_expiration_date(self.lease_expiration_date)
     if self.client_operation_id is not None:
       if not isinstance(self.client_operation_id,
@@ -141,6 +148,7 @@ class BuildRequest(_BuildRequestBase):
         initial_tags=tags,
         tags=tags,
         parameters=self.parameters or {},
+        input_properties=struct_pb2.Struct(),
         status=model.BuildStatus.SCHEDULED,
         created_by=created_by,
         create_time=now,
@@ -151,6 +159,11 @@ class BuildRequest(_BuildRequestBase):
         experimental=self.experimental,
         input_gitiles_commit=self.gitiles_commit,
     )
+
+    build.input_properties.update(
+        build.parameters.get(model.PROPERTIES_PARAMETER) or {}
+    )
+
     if self.lease_expiration_date is not None:
       build.lease_expiration_date = self.lease_expiration_date
       build.leasee = created_by
