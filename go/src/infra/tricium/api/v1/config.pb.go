@@ -18,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // Roles relevant to Tricium.
 type Acl_Role int32
@@ -361,78 +361,12 @@ func (m *RepoDetails) GetWhitelistedGroup() []string {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*RepoDetails) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _RepoDetails_OneofMarshaler, _RepoDetails_OneofUnmarshaler, _RepoDetails_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*RepoDetails) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*RepoDetails_GerritProject)(nil),
 		(*RepoDetails_GitRepo)(nil),
 	}
-}
-
-func _RepoDetails_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*RepoDetails)
-	// source
-	switch x := m.Source.(type) {
-	case *RepoDetails_GerritProject:
-		b.EncodeVarint(4<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.GerritProject); err != nil {
-			return err
-		}
-	case *RepoDetails_GitRepo:
-		b.EncodeVarint(5<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.GitRepo); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("RepoDetails.Source has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _RepoDetails_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*RepoDetails)
-	switch tag {
-	case 4: // source.gerrit_project
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(GerritProject)
-		err := b.DecodeMessage(msg)
-		m.Source = &RepoDetails_GerritProject{msg}
-		return true, err
-	case 5: // source.git_repo
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(GitRepo)
-		err := b.DecodeMessage(msg)
-		m.Source = &RepoDetails_GitRepo{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _RepoDetails_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*RepoDetails)
-	// source
-	switch x := m.Source.(type) {
-	case *RepoDetails_GerritProject:
-		s := proto.Size(x.GerritProject)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *RepoDetails_GitRepo:
-		s := proto.Size(x.GitRepo)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 // Specifies a Gerrit project and its corresponding git repo.
@@ -741,70 +675,12 @@ func (m *Config) GetValueJ() string {
 	return ""
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*Config) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _Config_OneofMarshaler, _Config_OneofUnmarshaler, _Config_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*Config) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*Config_Value)(nil),
 		(*Config_ValueJ)(nil),
 	}
-}
-
-func _Config_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*Config)
-	// value_type
-	switch x := m.ValueType.(type) {
-	case *Config_Value:
-		b.EncodeVarint(2<<3 | proto.WireBytes)
-		b.EncodeStringBytes(x.Value)
-	case *Config_ValueJ:
-		b.EncodeVarint(3<<3 | proto.WireBytes)
-		b.EncodeStringBytes(x.ValueJ)
-	case nil:
-	default:
-		return fmt.Errorf("Config.ValueType has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _Config_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*Config)
-	switch tag {
-	case 2: // value_type.value
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.ValueType = &Config_Value{x}
-		return true, err
-	case 3: // value_type.value_j
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.ValueType = &Config_ValueJ{x}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _Config_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*Config)
-	// value_type
-	switch x := m.ValueType.(type) {
-	case *Config_Value:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.Value)))
-		n += len(x.Value)
-	case *Config_ValueJ:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.ValueJ)))
-		n += len(x.ValueJ)
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 func init() {

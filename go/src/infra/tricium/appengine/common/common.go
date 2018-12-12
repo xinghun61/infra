@@ -8,8 +8,7 @@ package common
 import (
 	"net/http"
 
-	"golang.org/x/net/context"
-
+	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/appengine/gaeauth/server"
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/auth/identity"
@@ -17,30 +16,29 @@ import (
 	"go.chromium.org/luci/grpc/prpc"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
+	"golang.org/x/net/context"
+	"google.golang.org/appengine"
 )
 
+// Task queue names.
 const (
-	// TriciumDevServer is the App ID of the Tricium dev server.
-	TriciumDevServer = "tricium-dev"
-
-	// TriciumProdServer is the App ID of the Tricium prod server.
-	TriciumProdServer = "tricium-prod"
-
-	// AnalyzeQueue is the name of the analyze task queue.
-	AnalyzeQueue = "analyze-queue"
-
-	// LauncherQueue is the name of the launcher task queue.
-	LauncherQueue = "launcher-queue"
-
-	// DriverQueue is the name of the driver task queue.
-	DriverQueue = "driver-queue"
-
-	// TrackerQueue is the name of the tracker task queue.
-	TrackerQueue = "tracker-queue"
-
-	// GerritReporterQueue is the name of the Gerrit reporter task queue.
+	AnalyzeQueue        = "analyze-queue"
+	DriverQueue         = "driver-queue"
 	GerritReporterQueue = "gerrit-reporter-queue"
+	LauncherQueue       = "launcher-queue"
+	PollProjectQueue    = "poll-project-queue"
+	TrackerQueue        = "tracker-queue"
 )
+
+// AppID returns the current App ID.
+//
+// The dev instance name is used for local dev app servers.
+func AppID(c context.Context) string {
+	if appengine.IsDevAppServer() {
+		return "tricium-dev"
+	}
+	return info.AppID(c)
+}
 
 // TODO(emso): Use string IDs every where and use a ID translation scheme between
 // the key visible to users and the ID used to store in datastore. This removes the

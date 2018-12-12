@@ -6,14 +6,11 @@ package config
 
 import (
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
-	"google.golang.org/appengine"
-
-	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
 	luciConfig "go.chromium.org/luci/config"
+	"golang.org/x/net/context"
 
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
@@ -21,8 +18,12 @@ import (
 
 // UpdateAllConfigs updates all configs.
 //
-// This includes updating and removing project configs
-// when necessary and updating the service config if necessary.
+// This includes updating and removing project configs when necessary and
+// updating the service config if necessary.
+//
+// TODO(qyearsley): Validate configs upon ingestion. Apart from validating each
+// project config independently, we can also check whether any two projects
+// contain the same repo URL.
 func UpdateAllConfigs(c context.Context) error {
 	return parallel.FanOutIn(func(taskC chan<- func() error) {
 		taskC <- func() error {
@@ -139,7 +140,7 @@ func fetchProjectConfigRevisions(c context.Context) (map[string]string, error) {
 // fetchProjectConfig fetches a single project config.
 func fetchProjectConfig(c context.Context, name string) (*tricium.ProjectConfig, string, error) {
 	set := luciConfig.ProjectSet(name)
-	cfg, err := fetchConfig(c, set, serviceName(c)+".cfg", false)
+	cfg, err := fetchConfig(c, set, common.AppID(c)+".cfg", false)
 	if err != nil {
 		return nil, "", errors.Annotate(err, "fetching config; set %q", set).Err()
 	}
@@ -152,7 +153,7 @@ func fetchProjectConfig(c context.Context, name string) (*tricium.ProjectConfig,
 }
 
 func fetchServiceConfigRevision(c context.Context) (string, error) {
-	set := luciConfig.ServiceSet(serviceName(c))
+	set := luciConfig.ServiceSet(common.AppID(c))
 	cfg, err := fetchConfig(c, set, "service.cfg", true)
 	if err != nil {
 		return "", errors.Annotate(err, "fetching config revision; set %q", set).Err()
@@ -161,7 +162,7 @@ func fetchServiceConfigRevision(c context.Context) (string, error) {
 }
 
 func fetchServiceConfig(c context.Context) (*tricium.ServiceConfig, string, error) {
-	set := luciConfig.ServiceSet(serviceName(c))
+	set := luciConfig.ServiceSet(common.AppID(c))
 	cfg, err := fetchConfig(c, set, "service.cfg", false)
 	if err != nil {
 		return nil, "", errors.Annotate(err, "fetching config; set %q", set).Err()
@@ -171,13 +172,6 @@ func fetchServiceConfig(c context.Context) (*tricium.ServiceConfig, string, erro
 		return nil, "", errors.Annotate(err, "unmarshaling config; set %q", set).Err()
 	}
 	return sc, cfg.Revision, nil
-}
-
-func serviceName(c context.Context) string {
-	if appengine.IsDevAppServer() {
-		return common.TriciumDevServer
-	}
-	return info.AppID(c)
 }
 
 func fetchConfig(c context.Context, set luciConfig.Set, path string, metaOnly bool) (*luciConfig.Config, error) {
@@ -193,7 +187,7 @@ func fetchProjectConfigMeta(c context.Context) ([]luciConfig.Config, error) {
 	if service == nil {
 		return nil, errors.New("no config service")
 	}
-	return service.GetProjectConfigs(c, serviceName(c)+".cfg", true)
+	return service.GetProjectConfigs(c, common.AppID(c)+".cfg", true)
 }
 
 // configInterfaceKey is used for storing the config interface in context.

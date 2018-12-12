@@ -24,6 +24,7 @@ import (
 	gr "golang.org/x/build/gerrit"
 	"golang.org/x/net/context"
 
+	"infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/track"
@@ -92,8 +93,12 @@ func (*mockConfigProvider) GetServiceConfig(c context.Context) (*tricium.Service
 	return nil, nil // not used by the poller
 }
 
-func (*mockConfigProvider) GetProjectConfig(c context.Context, p string) (*tricium.ProjectConfig, error) {
-	return nil, nil // not used by the poller
+func (m *mockConfigProvider) GetProjectConfig(c context.Context, p string) (*tricium.ProjectConfig, error) {
+	pc, ok := m.Projects[p]
+	if !ok {
+		return nil, fmt.Errorf("nonexistent project")
+	}
+	return pc, nil
 }
 
 // GetAllProjectConfigs implements the ProviderAPI.
@@ -105,7 +110,57 @@ func numEnqueuedAnalyzeRequests(ctx context.Context) int {
 	return len(tq.GetTestable(ctx).GetScheduledTasks()[common.AnalyzeQueue])
 }
 
-func TestPollBasicBehavior(t *testing.T) {
+func TestPollAllProjectsBehavior(t *testing.T) {
+	Convey("Test Environment", t, func() {
+		ctx := triciumtest.Context()
+
+		cp := &mockConfigProvider{
+			Projects: map[string]*tricium.ProjectConfig{
+				"a-project": {
+					Repos: []*tricium.RepoDetails{
+						{
+							Source: &tricium.RepoDetails_GerritProject{
+								GerritProject: &tricium.GerritProject{
+									Host:    host,
+									Project: "infra",
+									GitUrl:  "https://repo-host.com/infra",
+								},
+							},
+						},
+					},
+				},
+				"b-project": {
+					Repos: []*tricium.RepoDetails{
+						{
+							Source: &tricium.RepoDetails_GerritProject{
+								GerritProject: &tricium.GerritProject{
+									Host:    host,
+									Project: "project/tricium-gerrit",
+									GitUrl:  "https://repo-host.com/playground",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		Convey("Poll puts a poll project request in the task queue for each project", func() {
+			So(poll(ctx, cp), ShouldBeNil)
+			tasks := tq.GetTestable(ctx).GetScheduledTasks()[common.PollProjectQueue]
+			var projects []string
+			for _, task := range tasks {
+				request := &admin.PollProjectRequest{}
+				So(proto.Unmarshal(task.Payload, request), ShouldBeNil)
+				projects = append(projects, request.Project)
+			}
+			sort.Strings(projects)
+			So(projects, ShouldResemble, []string{"a-project", "b-project"})
+		})
+	})
+}
+
+func TestPollProjectBasicBehavior(t *testing.T) {
 
 	Convey("Test Environment", t, func() {
 		ctx := triciumtest.Context()
@@ -140,31 +195,6 @@ func TestPollBasicBehavior(t *testing.T) {
 						},
 					},
 				},
-				"playground": {
-					Repos: []*tricium.RepoDetails{
-						{
-							Source: &tricium.RepoDetails_GerritProject{
-								GerritProject: &tricium.GerritProject{
-									Host:    host,
-									Project: "project/tricium-gerrit/demo",
-									GitUrl:  "https://repo-host.com/demo",
-								},
-							},
-						},
-						// The repo below is a duplicate
-						// and will be ignored in poll().
-						{
-							Source: &tricium.RepoDetails_GerritProject{
-								GerritProject: &tricium.GerritProject{
-									Host:    host,
-									Project: "project/tricium-gerrit",
-									GitUrl:  "https://repo-host.com/playground",
-								},
-							},
-						},
-					},
-				},
-				"non-gerrit": {},
 			},
 		}
 		projects, err := cp.GetAllProjectConfigs(ctx)
@@ -173,12 +203,11 @@ func TestPollBasicBehavior(t *testing.T) {
 		gerritProjects := []*tricium.GerritProject{
 			projects["infra"].Repos[0].GetGerritProject(),
 			projects["infra"].Repos[1].GetGerritProject(),
-			projects["playground"].Repos[0].GetGerritProject(),
 		}
 
 		Convey("First poll, no changes", func() {
 			api := &mockPollRestAPI{}
-			So(poll(ctx, api, cp), ShouldBeNil)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
 			Convey("Creates tracking entries for Gerrit projects", func() {
 				for _, gd := range gerritProjects {
 					p := &Project{ID: gerritProjectID(gd.Host, gd.Project)}
@@ -192,7 +221,7 @@ func TestPollBasicBehavior(t *testing.T) {
 
 		Convey("Second poll, no changes", func() {
 			api := &mockPollRestAPI{}
-			So(poll(ctx, api, cp), ShouldBeNil)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
 			// Store last poll timestamps from first poll.
 			lastPolls := make(map[string]time.Time)
 			for _, gd := range gerritProjects {
@@ -200,7 +229,7 @@ func TestPollBasicBehavior(t *testing.T) {
 				So(ds.Get(ctx, p), ShouldBeNil)
 				lastPolls[p.ID] = p.LastPoll
 			}
-			So(poll(ctx, api, cp), ShouldBeNil)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
 			Convey("Does not update timestamp of last poll", func() {
 				for _, gd := range gerritProjects {
 					p := &Project{ID: gerritProjectID(gd.Host, gd.Project)}
@@ -227,7 +256,7 @@ func TestPollBasicBehavior(t *testing.T) {
 					},
 				})
 			}
-			So(poll(ctx, api, cp), ShouldBeNil)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
 			Convey("Does not enqueue analyze requests", func() {
 				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, 0)
 			})
@@ -253,9 +282,9 @@ func TestPollBasicBehavior(t *testing.T) {
 					},
 				})
 			}
-			So(poll(ctx, api, cp), ShouldBeNil)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
 			tc.Add(time.Second)
-			So(poll(ctx, api, cp), ShouldBeNil)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
 			Convey("Updates last poll timestamp to last change timestamp", func() {
 				for _, gd := range gerritProjects {
 					p := &Project{ID: gerritProjectID(gd.Host, gd.Project)}
@@ -263,7 +292,7 @@ func TestPollBasicBehavior(t *testing.T) {
 					So(lastChangeTs.Equal(p.LastPoll), ShouldBeTrue)
 				}
 			})
-			Convey("Enqueues analyze requests for each project/repo", func() {
+			Convey("Enqueues analyze requests for each repo in the project", func() {
 				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, len(gerritProjects))
 				tasks := tq.GetTestable(ctx).GetScheduledTasks()[common.AnalyzeQueue]
 				var projects []string
@@ -274,11 +303,9 @@ func TestPollBasicBehavior(t *testing.T) {
 					projects = append(projects, ar.Project)
 					repos = append(repos, ar.GetGerritRevision().GitUrl)
 				}
-				sort.Strings(projects)
-				So(projects, ShouldResemble, []string{"infra", "infra", "playground"})
+				So(projects, ShouldResemble, []string{"infra", "infra"})
 				sort.Strings(repos)
 				So(repos, ShouldResemble, []string{
-					"https://repo-host.com/demo",
 					"https://repo-host.com/infra",
 					"https://repo-host.com/playground",
 				})
@@ -320,9 +347,9 @@ func TestPollBasicBehavior(t *testing.T) {
 					},
 				})
 			}
-			So(poll(ctx, api, cp), ShouldBeNil)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
 			tc.Add(time.Second)
-			So(poll(ctx, api, cp), ShouldBeNil)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
 			Convey("Enqueued analyze requests do not include deleted files", func() {
 				tasks := tq.GetTestable(ctx).GetScheduledTasks()[common.AnalyzeQueue]
 				So(len(tasks), ShouldEqual, len(gerritProjects))
@@ -372,9 +399,9 @@ func TestPollBasicBehavior(t *testing.T) {
 					},
 				})
 			}
-			So(poll(ctx, api, cp), ShouldBeNil)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
 			tc.Add(time.Second)
-			So(poll(ctx, api, cp), ShouldBeNil)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
 			Convey("Does not enqueue analyze requests", func() {
 				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, 0)
 			})
@@ -383,7 +410,7 @@ func TestPollBasicBehavior(t *testing.T) {
 		Convey("Poll with many changes, so paging is used", func() {
 			api := &mockPollRestAPI{}
 			// The first poll stores the timestamp.
-			So(poll(ctx, api, cp), ShouldBeNil)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
 			tc.Add(time.Second)
 
 			// Fill up each project with multiple changes.
@@ -413,7 +440,7 @@ func TestPollBasicBehavior(t *testing.T) {
 				api.addChanges(gd.Host, gd.Project, changes)
 
 			}
-			So(poll(ctx, api, cp), ShouldBeNil)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
 			Convey("Enqueues analyze requests", func() {
 				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, len(gerritProjects)*numChanges)
 			})
@@ -431,7 +458,7 @@ func TestPollBasicBehavior(t *testing.T) {
 	})
 }
 
-func TestPollWhitelistBehavior(t *testing.T) {
+func TestPollProjectWhitelistBehavior(t *testing.T) {
 
 	Convey("Test Environment", t, func() {
 		ctx := triciumtest.Context()
@@ -512,9 +539,9 @@ func TestPollWhitelistBehavior(t *testing.T) {
 					Owner:           &gr.AccountInfo{Email: "whitelisteduser@example.com"},
 				},
 			})
-			So(poll(ctx, api, cp), ShouldBeNil)
+			So(pollProject(ctx, noWhitelistProject, api, cp), ShouldBeNil)
 			tc.Add(time.Second)
-			So(poll(ctx, api, cp), ShouldBeNil)
+			So(pollProject(ctx, noWhitelistProject, api, cp), ShouldBeNil)
 			Convey("Enqueues an analyze request", func() {
 				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, 1)
 			})
@@ -537,9 +564,9 @@ func TestPollWhitelistBehavior(t *testing.T) {
 					Owner:           &gr.AccountInfo{Email: "whitelisteduser@example.com"},
 				},
 			})
-			So(poll(ctx, api, cp), ShouldBeNil)
+			So(pollProject(ctx, whitelistProject, api, cp), ShouldBeNil)
 			tc.Add(time.Second)
-			So(poll(ctx, api, cp), ShouldBeNil)
+			So(pollProject(ctx, whitelistProject, api, cp), ShouldBeNil)
 			Convey("Does not enqueue analyze requests", func() {
 				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, 1)
 			})
@@ -562,9 +589,9 @@ func TestPollWhitelistBehavior(t *testing.T) {
 					Owner:           &gr.AccountInfo{Email: "somebody-else@example.com"},
 				},
 			})
-			So(poll(ctx, api, cp), ShouldBeNil)
+			So(pollProject(ctx, whitelistProject, api, cp), ShouldBeNil)
 			tc.Add(time.Second)
-			So(poll(ctx, api, cp), ShouldBeNil)
+			So(pollProject(ctx, whitelistProject, api, cp), ShouldBeNil)
 			Convey("Does not enqueue analyze requests", func() {
 				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, 0)
 			})

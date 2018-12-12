@@ -18,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // Tricium functions; isolators and analyzers.
 type Function_Type int32
@@ -387,78 +387,12 @@ func (m *Impl) GetDeadline() int32 {
 	return 0
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*Impl) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _Impl_OneofMarshaler, _Impl_OneofUnmarshaler, _Impl_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*Impl) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*Impl_Recipe)(nil),
 		(*Impl_Cmd)(nil),
 	}
-}
-
-func _Impl_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*Impl)
-	// impl
-	switch x := m.Impl.(type) {
-	case *Impl_Recipe:
-		b.EncodeVarint(5<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Recipe); err != nil {
-			return err
-		}
-	case *Impl_Cmd:
-		b.EncodeVarint(6<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Cmd); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("Impl.Impl has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _Impl_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*Impl)
-	switch tag {
-	case 5: // impl.recipe
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Recipe)
-		err := b.DecodeMessage(msg)
-		m.Impl = &Impl_Recipe{msg}
-		return true, err
-	case 6: // impl.cmd
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Cmd)
-		err := b.DecodeMessage(msg)
-		m.Impl = &Impl_Cmd{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _Impl_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*Impl)
-	// impl
-	switch x := m.Impl.(type) {
-	case *Impl_Recipe:
-		s := proto.Size(x.Recipe)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Impl_Cmd:
-		s := proto.Size(x.Cmd)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 // Specification of a recipe for a recipe-based analyzer.

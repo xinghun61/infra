@@ -3,10 +3,12 @@
 
 package admin
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import v1 "infra/tricium/api/v1"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	v1 "infra/tricium/api/v1"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -17,7 +19,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // Tricium workflow configuration.
 //
@@ -42,16 +44,17 @@ func (m *Workflow) Reset()         { *m = Workflow{} }
 func (m *Workflow) String() string { return proto.CompactTextString(m) }
 func (*Workflow) ProtoMessage()    {}
 func (*Workflow) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_28154b2947c55db6, []int{0}
+	return fileDescriptor_7764f5c4faf0fbd9, []int{0}
 }
+
 func (m *Workflow) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Workflow.Unmarshal(m, b)
 }
 func (m *Workflow) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Workflow.Marshal(b, m, deterministic)
 }
-func (dst *Workflow) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Workflow.Merge(dst, src)
+func (m *Workflow) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Workflow.Merge(m, src)
 }
 func (m *Workflow) XXX_Size() int {
 	return xxx_messageInfo_Workflow.Size(m)
@@ -144,16 +147,17 @@ func (m *Worker) Reset()         { *m = Worker{} }
 func (m *Worker) String() string { return proto.CompactTextString(m) }
 func (*Worker) ProtoMessage()    {}
 func (*Worker) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_28154b2947c55db6, []int{1}
+	return fileDescriptor_7764f5c4faf0fbd9, []int{1}
 }
+
 func (m *Worker) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Worker.Unmarshal(m, b)
 }
 func (m *Worker) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Worker.Marshal(b, m, deterministic)
 }
-func (dst *Worker) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Worker.Merge(dst, src)
+func (m *Worker) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Worker.Merge(m, src)
 }
 func (m *Worker) XXX_Size() int {
 	return xxx_messageInfo_Worker.Size(m)
@@ -163,27 +167,6 @@ func (m *Worker) XXX_DiscardUnknown() {
 }
 
 var xxx_messageInfo_Worker proto.InternalMessageInfo
-
-type isWorker_Impl interface {
-	isWorker_Impl()
-}
-
-type Worker_Cmd struct {
-	Cmd *v1.Cmd `protobuf:"bytes,10,opt,name=cmd,proto3,oneof"`
-}
-type Worker_Recipe struct {
-	Recipe *v1.Recipe `protobuf:"bytes,12,opt,name=recipe,proto3,oneof"`
-}
-
-func (*Worker_Cmd) isWorker_Impl()    {}
-func (*Worker_Recipe) isWorker_Impl() {}
-
-func (m *Worker) GetImpl() isWorker_Impl {
-	if m != nil {
-		return m.Impl
-	}
-	return nil
-}
 
 func (m *Worker) GetName() string {
 	if m != nil {
@@ -248,6 +231,29 @@ func (m *Worker) GetCipdPackages() []*v1.CipdPackage {
 	return nil
 }
 
+type isWorker_Impl interface {
+	isWorker_Impl()
+}
+
+type Worker_Cmd struct {
+	Cmd *v1.Cmd `protobuf:"bytes,10,opt,name=cmd,proto3,oneof"`
+}
+
+type Worker_Recipe struct {
+	Recipe *v1.Recipe `protobuf:"bytes,12,opt,name=recipe,proto3,oneof"`
+}
+
+func (*Worker_Cmd) isWorker_Impl() {}
+
+func (*Worker_Recipe) isWorker_Impl() {}
+
+func (m *Worker) GetImpl() isWorker_Impl {
+	if m != nil {
+		return m.Impl
+	}
+	return nil
+}
+
 func (m *Worker) GetCmd() *v1.Cmd {
 	if x, ok := m.GetImpl().(*Worker_Cmd); ok {
 		return x.Cmd
@@ -269,78 +275,12 @@ func (m *Worker) GetDeadline() int32 {
 	return 0
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*Worker) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _Worker_OneofMarshaler, _Worker_OneofUnmarshaler, _Worker_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*Worker) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*Worker_Cmd)(nil),
 		(*Worker_Recipe)(nil),
 	}
-}
-
-func _Worker_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*Worker)
-	// impl
-	switch x := m.Impl.(type) {
-	case *Worker_Cmd:
-		b.EncodeVarint(10<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Cmd); err != nil {
-			return err
-		}
-	case *Worker_Recipe:
-		b.EncodeVarint(12<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Recipe); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("Worker.Impl has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _Worker_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*Worker)
-	switch tag {
-	case 10: // impl.cmd
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(v1.Cmd)
-		err := b.DecodeMessage(msg)
-		m.Impl = &Worker_Cmd{msg}
-		return true, err
-	case 12: // impl.recipe
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(v1.Recipe)
-		err := b.DecodeMessage(msg)
-		m.Impl = &Worker_Recipe{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _Worker_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*Worker)
-	// impl
-	switch x := m.Impl.(type) {
-	case *Worker_Cmd:
-		s := proto.Size(x.Cmd)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Worker_Recipe:
-		s := proto.Size(x.Recipe)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 func init() {
@@ -349,10 +289,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("infra/tricium/api/admin/v1/workflow.proto", fileDescriptor_workflow_28154b2947c55db6)
+	proto.RegisterFile("infra/tricium/api/admin/v1/workflow.proto", fileDescriptor_7764f5c4faf0fbd9)
 }
 
-var fileDescriptor_workflow_28154b2947c55db6 = []byte{
+var fileDescriptor_7764f5c4faf0fbd9 = []byte{
 	// 512 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x93, 0xdd, 0x6e, 0xd3, 0x30,
 	0x14, 0xc7, 0xd7, 0xf5, 0x63, 0xed, 0xe9, 0xd7, 0x30, 0x0c, 0xa2, 0x5e, 0x40, 0x35, 0x84, 0x96,

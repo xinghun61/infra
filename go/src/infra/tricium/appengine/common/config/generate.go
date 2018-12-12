@@ -221,11 +221,11 @@ func createWorker(s *tricium.Selection, sc *tricium.ServiceConfig, f *tricium.Fu
 		}
 		properties["ref"] = gitRef
 		properties["repository"] = gitURL
-		properties_bytes, err := json.Marshal(properties)
+		bytes, err := json.Marshal(properties)
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to marshal").Err()
 		}
-		recipe.Properties = string(properties_bytes)
+		recipe.Properties = string(bytes)
 		w.Impl = &admin.Worker_Recipe{Recipe: ii.Recipe}
 	case *tricium.Impl_Cmd:
 		cmd := ii.Cmd

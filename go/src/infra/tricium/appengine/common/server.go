@@ -17,6 +17,7 @@ import (
 // ResultState contains the current status of a given task.
 type ResultState int
 
+// Constants for describing the result of a task.
 const (
 	Pending ResultState = iota
 	Success

@@ -25,7 +25,7 @@ var (
 		Data:        "eyJ0YXNrX2lkIjoiMzQ5ZjBkODQ5MjI3Y2QxMCIsInVzZXJkYXRhIjoiQ0lDQWdJQ0E2TjBLRWdkaFltTmxaR1puR2hoSVpXeHNiMTlWWW5WdWRIVXhOQzR3TkY5NE9EWXROalE9In0=",
 	}
 	taskID = "349f0d849227cd10" // matches the above pubsub message
-	msg_bb = &pubsub.PubsubMessage{
+	msgBB  = &pubsub.PubsubMessage{
 		MessageId:   "58708071417623",
 		PublishTime: "2017-02-28T19:39:28.104Z",
 		Data:        "eyJidWlsZCI6eyJpZCI6IjEyMzQifSwidXNlcmRhdGEiOiJDSUNBZ0lDQTZOMEtFZ2RoWW1ObFpHWm5HaGhJWld4c2IxOVZZblZ1ZEhVeE5DNHdORjk0T0RZdE5qUT0ifQ==",
@@ -60,7 +60,7 @@ func TestHandlePubSubMessage(t *testing.T) {
 			So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.DriverQueue]), ShouldEqual, 0)
 			received := &ReceivedPubSubMessage{ID: fmt.Sprintf("%d:%d", buildID, runID)}
 			So(ds.Get(ctx, received), ShouldEqual, ds.ErrNoSuchEntity)
-			err := handlePubSubMessage(ctx, msg_bb)
+			err := handlePubSubMessage(ctx, msgBB)
 			So(err, ShouldBeNil)
 			So(ds.Get(ctx, received), ShouldBeNil)
 			So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.DriverQueue]), ShouldEqual, 1)

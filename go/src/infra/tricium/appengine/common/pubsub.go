@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 
-	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/common/errors"
 	gcps "go.chromium.org/luci/common/gcloud/pubsub"
 	"golang.org/x/net/context"
@@ -145,7 +144,7 @@ func isHTTP409(err error) bool {
 // with a hostname suffix. For app engine instances, the app ID is used when
 // composing the topic.
 func topic(c context.Context) string {
-	t := gcps.NewTopic(serverName(c), name+nameSuffix())
+	t := gcps.NewTopic(AppID(c), name+nameSuffix())
 	return t.String()
 }
 
@@ -154,7 +153,7 @@ func topic(c context.Context) string {
 // On the dev server, the subscription has a hostname suffix and the push URL
 // is set to "" to indicate pull subscription.
 func subscription(c context.Context) string {
-	s := gcps.NewSubscription(serverName(c), name+nameSuffix())
+	s := gcps.NewSubscription(AppID(c), name+nameSuffix())
 	return s.String()
 }
 
@@ -162,7 +161,7 @@ func pushURL(c context.Context) string {
 	if appengine.IsDevAppServer() {
 		return ""
 	}
-	return fmt.Sprintf(pushURLFormat, serverName(c))
+	return fmt.Sprintf(pushURLFormat, AppID(c))
 }
 
 // A suffix to add to the end of topic and subscription names.
@@ -174,13 +173,6 @@ func nameSuffix() string {
 		return "-" + hostname()
 	}
 	return ""
-}
-
-func serverName(c context.Context) string {
-	if appengine.IsDevAppServer() {
-		return TriciumDevServer
-	}
-	return info.AppID(c)
 }
 
 // Cache the hostname to prevent unnecessary os calls.

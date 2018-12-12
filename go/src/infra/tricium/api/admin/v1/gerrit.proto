@@ -1,0 +1,22 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+
+package admin;
+
+// Gerrit implements the internal gerrit poll API of the Tricium service.
+service Gerrit {
+  // PollProject polls Gerrit for changes to analyze.
+  rpc PollProject(PollProjectRequest) returns (PollProjectResponse);
+}
+
+// PollProjectRequest is a request to poll one project.
+message PollProjectRequest {
+  // The name of the project in luci-config.
+  string project = 1;
+}
+
+message PollProjectResponse {
+}

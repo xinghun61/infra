@@ -23,14 +23,45 @@ type gerritReporter struct{}
 
 var reporter = &gerritReporter{}
 
+// pollHandler triggers poll requests for each project for this service.
+//
+// This handler should be called periodically by a cron job.
 func pollHandler(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
-	if err := poll(c, GerritServer, config.LuciConfigServer); err != nil {
+	if err := poll(c, config.LuciConfigServer); err != nil {
 		logging.WithError(err).Errorf(c, "failed to poll")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	logging.Debugf(c, "[gerrit] Successfully completed poll")
+	w.WriteHeader(http.StatusOK)
+}
+
+// pollProjectHandler polls Gerrit for each applicable repo for one project.
+//
+// This handler should handle tasks on a push task queue.
+func pollProjectHandler(ctx *router.Context) {
+	c, r, w := ctx.Context, ctx.Request, ctx.Writer
+	defer r.Body.Close()
+	logging.Debugf(c, "[gerrit] Received request from poll project queue.")
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		logging.WithError(err).Errorf(c, "[gerrit] Failed to read request body.")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	request := &admin.PollProjectRequest{}
+	if err = proto.Unmarshal(body, request); err != nil {
+		logging.WithError(err).Errorf(c, "[gerrit] Failed to unmarshal request.")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err = pollProject(c, request.Project, GerritServer, config.LuciConfigServer); err != nil {
+		logging.WithError(err).Errorf(c, "failed to poll project")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	logging.Debugf(c, "[gerrit] Successfully completed poll project")
 	w.WriteHeader(http.StatusOK)
 }
 

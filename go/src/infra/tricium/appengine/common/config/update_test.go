@@ -7,12 +7,12 @@ package config
 import (
 	"testing"
 
+	. "github.com/smartystreets/goconvey/convey"
 	"go.chromium.org/luci/config"
 	"go.chromium.org/luci/config/impl/memory"
 
-	. "github.com/smartystreets/goconvey/convey"
-
 	"infra/tricium/api/v1"
+	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/triciumtest"
 )
 
@@ -90,7 +90,7 @@ func TestUpdateConfigs(t *testing.T) {
 		ctx := triciumtest.Context()
 		ctx = WithConfigService(ctx, memory.New(exampleConfig))
 
-		So(serviceName(ctx), ShouldEqual, "app")
+		So(common.AppID(ctx), ShouldEqual, "app")
 
 		Convey("Configs are not present before updating", func() {
 			configs, err := getAllProjectConfigs(ctx)

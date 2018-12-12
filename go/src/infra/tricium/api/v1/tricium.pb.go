@@ -6,9 +6,9 @@ package tricium
 import prpc "go.chromium.org/luci/grpc/prpc"
 
 import (
+	context "context"
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
-	context "golang.org/x/net/context"
 	grpc "google.golang.org/grpc"
 	math "math"
 )
@@ -22,7 +22,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type State int32
 
@@ -175,78 +175,12 @@ func (m *AnalyzeRequest) GetGitCommit() *GitCommit {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*AnalyzeRequest) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _AnalyzeRequest_OneofMarshaler, _AnalyzeRequest_OneofUnmarshaler, _AnalyzeRequest_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*AnalyzeRequest) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*AnalyzeRequest_GerritRevision)(nil),
 		(*AnalyzeRequest_GitCommit)(nil),
 	}
-}
-
-func _AnalyzeRequest_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*AnalyzeRequest)
-	// source
-	switch x := m.Source.(type) {
-	case *AnalyzeRequest_GerritRevision:
-		b.EncodeVarint(7<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.GerritRevision); err != nil {
-			return err
-		}
-	case *AnalyzeRequest_GitCommit:
-		b.EncodeVarint(8<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.GitCommit); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("AnalyzeRequest.Source has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _AnalyzeRequest_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*AnalyzeRequest)
-	switch tag {
-	case 7: // source.gerrit_revision
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(GerritRevision)
-		err := b.DecodeMessage(msg)
-		m.Source = &AnalyzeRequest_GerritRevision{msg}
-		return true, err
-	case 8: // source.git_commit
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(GitCommit)
-		err := b.DecodeMessage(msg)
-		m.Source = &AnalyzeRequest_GitCommit{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _AnalyzeRequest_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*AnalyzeRequest)
-	// source
-	switch x := m.Source.(type) {
-	case *AnalyzeRequest_GerritRevision:
-		s := proto.Size(x.GerritRevision)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *AnalyzeRequest_GitCommit:
-		s := proto.Size(x.GitCommit)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 // Information uniquely identifying a Gerrit patch set, including
@@ -539,59 +473,11 @@ func (m *ProgressRequest) GetGerritRevision() *GerritRevision {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*ProgressRequest) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _ProgressRequest_OneofMarshaler, _ProgressRequest_OneofUnmarshaler, _ProgressRequest_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*ProgressRequest) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*ProgressRequest_GerritRevision)(nil),
 	}
-}
-
-func _ProgressRequest_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*ProgressRequest)
-	// source
-	switch x := m.Source.(type) {
-	case *ProgressRequest_GerritRevision:
-		b.EncodeVarint(4<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.GerritRevision); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("ProgressRequest.Source has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _ProgressRequest_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*ProgressRequest)
-	switch tag {
-	case 4: // source.gerrit_revision
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(GerritRevision)
-		err := b.DecodeMessage(msg)
-		m.Source = &ProgressRequest_GerritRevision{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _ProgressRequest_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*ProgressRequest)
-	// source
-	switch x := m.Source.(type) {
-	case *ProgressRequest_GerritRevision:
-		s := proto.Size(x.GerritRevision)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type ProgressResponse struct {

@@ -29,8 +29,9 @@ func Context() context.Context {
 	ctx := memory.Use(memlogger.Use(context.Background()))
 	ctx, _ = testclock.UseTime(ctx, testclock.TestTimeUTC.Round(time.Millisecond))
 	tq.GetTestable(ctx).CreateQueue(common.AnalyzeQueue)
-	tq.GetTestable(ctx).CreateQueue(common.LauncherQueue)
 	tq.GetTestable(ctx).CreateQueue(common.DriverQueue)
+	tq.GetTestable(ctx).CreateQueue(common.LauncherQueue)
+	tq.GetTestable(ctx).CreateQueue(common.PollProjectQueue)
 	tq.GetTestable(ctx).CreateQueue(common.TrackerQueue)
 	ds.GetTestable(ctx).Consistent(true)
 	return ctx

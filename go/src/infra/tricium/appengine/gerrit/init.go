@@ -20,6 +20,7 @@ func init() {
 	base := common.MiddlewareForInternal()
 
 	r.GET("/gerrit/internal/poll", base, pollHandler)
+	r.GET("/gerrit/internal/poll-project", base, pollProjectHandler)
 	r.POST("/gerrit/internal/report-results", base, resultsHandler)
 
 	// Configure pRPC server.

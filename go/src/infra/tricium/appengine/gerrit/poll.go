@@ -14,7 +14,6 @@ import (
 	tq "go.chromium.org/gae/service/taskqueue"
 	"go.chromium.org/luci/auth/identity"
 	"go.chromium.org/luci/common/clock"
-	"go.chromium.org/luci/common/data/stringset"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
@@ -25,6 +24,7 @@ import (
 
 	"google.golang.org/appengine"
 
+	"infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/config"
@@ -76,68 +76,72 @@ func (c byUpdatedTime) Len() int           { return len(c) }
 func (c byUpdatedTime) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
 func (c byUpdatedTime) Less(i, j int) bool { return c[i].Updated.Time().Before(c[i].Updated.Time()) }
 
-// poll queries Gerrit for changes since the last poll.
-//
-// GerritChange queries are done on a per project basis for project with configured
-// Gerrit details.
-//
-// This function will be called periodically by a cron job, but may also be
-// invoked directly. That is, it may run concurrently and two parallel runs may
-// query Gerrit using the same last poll. This scenario would lead to duplicate
-// tasks in the service queue. This is OK because the service queue handler
-// will check for existing active runs for a change before moving tasks further
-// along the pipeline.
-func poll(c context.Context, gerrit API, cp config.ProviderAPI) error {
+// poll adds a task to poll Gerrit for each project.
+func poll(c context.Context, cp config.ProviderAPI) error {
 	projects, err := cp.GetAllProjectConfigs(c)
 	if err != nil {
 		return errors.Annotate(err, "failed to get all service configs").Err()
 	}
 
-	// Sort the names so that we can iterate through them in a
-	// deterministic order.
+	// Sort the names so that they are processed in a deterministic order.
 	names := make([]string, 0, len(projects))
 	for name := range projects {
 		names = append(names, name)
 	}
 	sort.Strings(names)
 
-	// We don't want to poll the same repo for two different projects,
-	// so we keep track of which repos we've seen before.
-	return parallel.FanOutIn(func(taskC chan<- func() error) {
-		seen := stringset.New(len(projects))
-		for _, name := range names {
-			name := name // Make a separate variable for use in the closure below
-			pc := projects[name]
-			for _, repo := range pc.Repos {
-				repo := repo // Again, a new variable for the closure below
-				repoURL := tricium.RepoURL(repo)
-				if seen.Has(repoURL) {
+	var tasks []*tq.Task
+	for _, name := range names {
+		task := tq.NewPOSTTask("/internal/gerrit/poll-project", nil)
+		bytes, err := proto.Marshal(&admin.PollProjectRequest{Project: name})
+		if err != nil {
+			return errors.Annotate(err, "failed to marshal PollProjectRequest").Err()
+		}
+		task.Payload = bytes
+		tasks = append(tasks, task)
+	}
+	if err := tq.Add(c, common.PollProjectQueue, tasks...); err != nil {
+		return errors.Annotate(err, "failed to enqueue poll project requests").Err()
+	}
+	return nil
+}
 
-					logging.Fields{
-						"project name": name,
-						"repo URL":     repoURL,
-					}.Errorf(c, "Found duplicate repository URL.")
-					continue
-				}
-				seen.Add(repoURL)
-				if repo.GetGerritProject() != nil {
-					taskC <- func() error {
-						return pollProject(c, name, repo, gerrit)
-					}
+// pollProject polls for new changes for all repos in one LUCI project.
+func pollProject(c context.Context, name string, gerrit API, cp config.ProviderAPI) error {
+	// Separate repos in one project can be processed in parallel in one request.
+	pc, err := cp.GetProjectConfig(c, name)
+	if err != nil {
+		return errors.Annotate(err, "failed to get project config for %q", name).Err()
+	}
+	return parallel.FanOutIn(func(taskC chan<- func() error) {
+		for _, repo := range pc.Repos {
+			repo := repo // Make a separate variable for use in the closure below.
+			if repo.GetGerritProject() != nil {
+				taskC <- func() error {
+					return pollGerritProject(c, name, repo, gerrit)
 				}
 			}
 		}
 	})
 }
 
-// pollProject polls for changes for one Gerrit project.
+// pollGerritProject polls for changes for one Gerrit project.
+//
+// One Gerrit project corresponds to one repo; however one LUCI project
+// (with one Tricium project config) may include multiple Gerrit projects.
+//
+// This function could be run concurrently and two parallel runs may query
+// Gerrit using the same last poll time. This scenario would lead to duplicate
+// analyze tasks. This is OK because the analyze task queue handler will check
+// for existing active runs for a change before moving tasks further along the
+// pipeline.
 //
 // Each poll to a Gerrit host and project is logged with a timestamp and last
 // seen revisions (within the same second). The timestamp of the most recent
-// change in the last poll is used in the next poll, as the value of 'after'
+// change in the last poll is used in the next poll, as the value of "after"
 // in the query string. If no previous poll has been logged, then a time
 // corresponding to zero is used (time.Time{}).
-func pollProject(c context.Context, triciumProject string, repo *tricium.RepoDetails, gerrit API) error {
+func pollGerritProject(c context.Context, luciProject string, repo *tricium.RepoDetails, gerrit API) error {
 	gerritProject := repo.GetGerritProject()
 
 	// Get last poll data for the given host/project.
@@ -154,7 +158,7 @@ func pollProject(c context.Context, triciumProject string, repo *tricium.RepoDet
 		p.Project = gerritProject.Project
 	}
 
-	// If no previous poll, store current time and return.
+	// If there is no previous poll, store current time and return.
 	if p.LastPoll.IsZero() {
 		logging.Infof(c, "No previous poll for %s/%s. Storing current timestamp and stopping.",
 			gerritProject.Host, gerritProject.Project)
@@ -177,7 +181,7 @@ func pollProject(c context.Context, triciumProject string, repo *tricium.RepoDet
 	// down will be processed. Too many changes to process could cause the
 	// transaction to fail due to the number of entries touched; a failed
 	// transaction will cause the same poll pointer to be used at the next
-	// poll, and the same problem will happen again.
+	// poll, and the same problem will happen again. See crbug.com/908636.
 
 	// Query for changes updated since last poll. Account for the fact
 	// that results may be truncated and we may need to send several
@@ -202,7 +206,7 @@ func pollProject(c context.Context, triciumProject string, repo *tricium.RepoDet
 
 	// No changes found.
 	if len(changes) == 0 {
-		logging.Infof(c, "Poll done for %q. No changes found.", triciumProject)
+		logging.Infof(c, "Poll done for %q. No changes found.", luciProject)
 		return nil
 	}
 
@@ -262,13 +266,13 @@ func pollProject(c context.Context, triciumProject string, repo *tricium.RepoDet
 	}, &ds.TransactionOptions{XG: true}); err != nil {
 		return err
 	}
-	logging.Infof(c, "Poll done for %q. Processed %d change(s).", triciumProject, len(changes))
+	logging.Infof(c, "Poll done for %q. Processed %d change(s).", luciProject, len(changes))
 
 	// Convert diff to Analyze requests.
 	//
 	// Running after the transaction because each seen change will result in one
 	// enqueued task and there is a limit on the number of action in a transaction.
-	return enqueueAnalyzeRequests(c, triciumProject, repo, diff)
+	return enqueueAnalyzeRequests(c, luciProject, repo, diff)
 }
 
 // extractUpdates extracts change updates, which determines what to analyze.
@@ -361,12 +365,12 @@ func isOpen(change gr.ChangeInfo) bool {
 // Changes that shouldn't be analyzed will be skipped; this includes changes by
 // owners that aren't whitelisted, as well as empty changes, such as those
 // containing only deleted files.
-func enqueueAnalyzeRequests(c context.Context, triciumProject string, repo *tricium.RepoDetails, changes []gr.ChangeInfo) error {
+func enqueueAnalyzeRequests(c context.Context, luciProject string, repo *tricium.RepoDetails, changes []gr.ChangeInfo) error {
 	if len(changes) == 0 {
 		return nil
 	}
 	logging.Infof(c, "Preparing to enqueue Analyze requests for %d changes for project %q.",
-		len(changes), triciumProject)
+		len(changes), luciProject)
 	gerritProject := repo.GetGerritProject()
 	changes = filterByWhitelist(c, repo.WhitelistedGroup, changes)
 	var tasks []*tq.Task
@@ -397,7 +401,7 @@ func enqueueAnalyzeRequests(c context.Context, triciumProject string, repo *tric
 			return files[i].Path < files[j].Path
 		})
 		req := &tricium.AnalyzeRequest{
-			Project: triciumProject,
+			Project: luciProject,
 			Files:   files,
 			Source: &tricium.AnalyzeRequest_GerritRevision{
 				GerritRevision: &tricium.GerritRevision{
