@@ -128,9 +128,9 @@ func (c *ensurePoolHealthyRun) printEnsurePoolHealthyResult(model, target string
 
 	fmt.Fprintf(w, "### Model: %s, Target: %s, Spare: %s\n", model, target, c.spare)
 	tp := res.GetTargetPoolStatus()
-	fmt.Fprintf(w, "New target pool status: %d/%d healthy\n", tp.HealthyCount, tp.Size)
+	fmt.Fprintf(w, "New target pool status: %d/%d healthy\n", tp.GetHealthyCount(), tp.GetSize())
 	sp := res.GetSparePoolStatus()
-	fmt.Fprintf(w, "New spare pool status: %d/%d healthy\n", sp.HealthyCount, sp.Size)
+	fmt.Fprintf(w, "New spare pool status: %d/%d healthy\n", sp.GetHealthyCount(), sp.GetSize())
 	if len(res.GetChanges()) > 0 {
 		fmt.Fprintf(w, "\n")
 		fmt.Fprintf(w, "Inventory changes:\n")
