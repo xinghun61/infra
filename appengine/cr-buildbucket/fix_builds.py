@@ -63,4 +63,4 @@ def _fix_build_async(build_key):  # pragma: no cover
         )
     )
 
-  yield ndb.put_multi(to_put)
+  yield ndb.put_multi_async(to_put)
