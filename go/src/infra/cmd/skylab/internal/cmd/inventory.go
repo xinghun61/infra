@@ -23,7 +23,7 @@ import (
 
 // Inventory subcommand: Print host inventory.
 var Inventory = &subcommands.Command{
-	UsageLine: "inventory",
+	UsageLine: "inventory [-dev]",
 	ShortDesc: "Print host inventory",
 	LongDesc:  "Print host inventory.",
 	CommandRun: func() subcommands.CommandRun {
