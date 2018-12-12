@@ -69,20 +69,19 @@ func (c *ensurePoolHealthyRun) printError(err error) {
 }
 
 func (c *ensurePoolHealthyRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
-	pa, err := c.parseArgs(args)
-	if err != nil {
-		c.printError(err)
-		return 1
-	}
-
-	if err := c.innerRun(a, pa, env); err != nil {
+	if err := c.innerRun(a, args, env); err != nil {
 		c.printError(err)
 		return 1
 	}
 	return 0
 }
 
-func (c *ensurePoolHealthyRun) innerRun(a subcommands.Application, pa *posArgs, env subcommands.Env) error {
+func (c *ensurePoolHealthyRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
+	pa, err := c.parseArgs(args)
+	if err != nil {
+		return err
+	}
+
 	ctx := cli.GetContext(a, c, env)
 	hc, err := httpClient(ctx, &c.authFlags)
 	if err != nil {
