@@ -1,7 +1,11 @@
 cron:
-- description: "legacy cache"
+- description: "Legacy cache"
   url: /cron/joblegacy
   schedule: every 10 minutes
+
+- description: "Update Events"
+  url: /cron/eventupdate
+  schedule: every 1 hours
 
 - description: "Daily Cloud Datastore Export"
   url: /cron/backup

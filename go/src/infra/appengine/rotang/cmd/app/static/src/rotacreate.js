@@ -628,7 +628,7 @@ class RotaCreate extends LitElement {
       if (!res.ok) {
         throw res;
       }
-      this.updateState = html`<small class="ok">(Shifts updated)</small>`;
+      this.updateState = html`<small class="ok">(Rotation updated)</small>`;
       return true;
     } catch (err) {
       this.updateState = html`<small class="fail">${err.text()}</small>`;

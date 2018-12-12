@@ -46,7 +46,6 @@ func (h *State) notifyEmail(ctx *router.Context, cfg *rotang.Configuration, t ti
 		return nil
 	}
 	t = t.UTC().Add(time.Duration(cfg.Config.Email.DaysBeforeNotify) * fullDay)
-	ss := cfg.Config.Shifts.StartTime.UTC()
 	for _, s := range cfg.Config.Shifts.Shifts {
 		shifts, err := h.shiftStore(ctx.Context).ShiftsFromTo(ctx.Context, cfg.Config.Name, t, t.Add(s.Duration))
 		if err != nil {
@@ -64,7 +63,7 @@ func (h *State) notifyEmail(ctx *router.Context, cfg *rotang.Configuration, t ti
 				}
 			}
 		}
-		ss, t = ss.Add(s.Duration), t.Add(s.Duration)
+		t = t.Add(s.Duration)
 	}
 	return nil
 }

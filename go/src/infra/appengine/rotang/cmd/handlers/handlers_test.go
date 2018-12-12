@@ -95,7 +95,10 @@ func (f *fakeCal) Event(_ *router.Context, _ *rotang.Configuration, shift *rotan
 	if f.fail {
 		return nil, status.Errorf(codes.Internal, "fake is failing as requested")
 	}
-	sp := f.events[shift.StartTime]
+	sp, ok := f.events[shift.StartTime]
+	if !ok {
+		return nil, status.Errorf(codes.NotFound, "fake entry not found")
+	}
 	if f.changeID {
 		sp.EvtID = strconv.Itoa(f.id)
 		f.id++

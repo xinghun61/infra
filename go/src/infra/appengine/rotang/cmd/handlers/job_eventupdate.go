@@ -33,7 +33,7 @@ func (h *State) JobEventUpdate(ctx *router.Context) {
 }
 
 func (h *State) eventUpdate(ctx *router.Context, cfg *rotang.Configuration, t time.Time) error {
-	if cfg.Config.Expiration == 0 || !cfg.Config.Enabled {
+	if !cfg.Config.Enabled {
 		logging.Infof(ctx.Context, "updating of shifts for rota: %q disabled.", cfg.Config.Name)
 		return nil
 	}
@@ -49,16 +49,24 @@ func (h *State) eventUpdate(ctx *router.Context, cfg *rotang.Configuration, t ti
 	for _, s := range shifts {
 		resShift, err := h.calendar.Event(ctx, cfg, &s)
 		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				if err := h.createNonExists(ctx, cfg, s); err != nil {
+					return err
+				}
+				logging.Infof(ctx.Context, "Calendar entry for shift: %v created in calendar due to not existing", s)
+				continue
+			}
 			return err
 		}
 		if shiftsEqual(s, *resShift) {
 			continue
 		}
+		resShift.Comment = s.Comment
 		if err = h.shiftStore(ctx.Context).UpdateShift(ctx.Context, cfg.Config.Name, resShift); err != nil {
 			return err
 		}
+		logging.Infof(ctx.Context, "shift: %v updated from calendar, updated shift: %v", s, *resShift)
 	}
-
 	return nil
 }
 
@@ -76,4 +84,15 @@ func shiftsEqual(a, b rotang.ShiftEntry) bool {
 		}
 	}
 	return true
+}
+
+func (h *State) createNonExists(ctx *router.Context, cfg *rotang.Configuration, shift rotang.ShiftEntry) error {
+	shifts, err := h.calendar.CreateEvent(ctx, cfg, []rotang.ShiftEntry{shift})
+	if err != nil {
+		return err
+	}
+	if len(shifts) != 1 {
+		return status.Errorf(codes.Internal, "wrong number of shifts returned, got: %c expected: %d", len(shifts), 1)
+	}
+	return nil
 }

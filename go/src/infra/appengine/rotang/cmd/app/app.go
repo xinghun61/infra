@@ -193,6 +193,7 @@ func init() {
 	r.GET("/cron/backup", tmw, h.JobBackup)
 	r.GET("/cron/email", tmw, h.JobEmail)
 	r.GET("/cron/schedule", tmw, h.JobSchedule)
+	r.GET("/cron/eventupdate", tmw, h.JobEventUpdate)
 
 	http.DefaultServeMux.Handle("/", r)
 }
