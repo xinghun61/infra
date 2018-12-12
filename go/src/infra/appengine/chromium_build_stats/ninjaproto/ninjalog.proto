@@ -27,10 +27,14 @@ message NinjaTask {
   int64 jobs = 3;
 
   // Build directory (e.g. C:/src/chromium/src/out/Default).
-  string build_dir = 9;
+  // We cannot collect build directory since it might contain PII.
+  reserved 9;
+  reserved "build_dir";
 
-  // hostname of machine.
-  string hostname = 10;
+  // hostname of machine. (Do not use hostname)
+  // We cannot collect hostname since it might contain PII.
+  reserved 10;
+  reserved "hostname";
 
   // OS.
   enum OS {
@@ -44,7 +48,7 @@ message NinjaTask {
   // The number of cpu cores.
   int32 cpu_core = 12;
 
-  // Content of args.gn.
+  // Content of whitelisted args.gn.
   message KeyValue {
     string key = 1;
     string value = 2;

@@ -570,8 +570,6 @@ func ToProto(info *NinjaLog) []*npb.NinjaTask {
 			Targets:      targets,
 			StepName:     info.Metadata.StepName,
 			Jobs:         int64(info.Metadata.Jobs),
-			BuildDir:     info.Metadata.Cwd,
-			Hostname:     info.Metadata.Hostname,
 			Os:           os,
 			CpuCore:      info.Metadata.CPUCore,
 			BuildConfigs: buildConfigs,
