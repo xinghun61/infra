@@ -7,7 +7,9 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
+	"text/tabwriter"
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
@@ -64,7 +66,9 @@ func (c *diagnoseRun) innerRun(a subcommands.Application, args []string, env sub
 	if err != nil {
 		return err
 	}
-	printBotDiagnosis(e, bots)
+	tw := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+	printBotDiagnosis(tw, e, bots)
+	_ = tw.Flush()
 	return nil
 }
 
@@ -83,24 +87,24 @@ func summarizeBots(ctx context.Context, c fleet.TrackerClient, dutNames []string
 	return res.GetBots(), nil
 }
 
-func printBotDiagnosis(e site.Environment, bots []*fleet.BotSummary) {
+func printBotDiagnosis(w io.Writer, e site.Environment, bots []*fleet.BotSummary) {
 	for _, b := range bots {
-		fmt.Printf("%s\t%s\t%s\n", b.GetDimensions().GetDutName(), b.GetDutState(), b.GetDutId())
+		fmt.Fprintf(w, "---\t%s\t%s\t%s\t\n", b.GetDimensions().GetDutName(), b.GetDutId(), b.GetDutState())
 		for _, t := range b.Diagnosis {
-			printDiagnosisTask(e, t)
+			printDiagnosisTask(w, e, t)
 		}
-		fmt.Println()
+		fmt.Fprintln(w)
 	}
 }
 
-func printDiagnosisTask(e site.Environment, t *fleet.Task) {
+func printDiagnosisTask(w io.Writer, e site.Environment, t *fleet.Task) {
 	var ts string
 	if tm, err := ptypes.Timestamp(t.GetStartedTs()); err == nil {
 		ts = tm.Format(time.RFC1123Z)
 	} else {
 		ts = "Unknown"
 	}
-	fmt.Printf("%s\t%s\t%s -> %s\t%s\n",
+	fmt.Fprintf(w, "\t%s\t%s\t%s -> %s\t%s\t\n",
 		t.GetName(), ts, t.GetStateBefore(), t.GetStateAfter(),
 		swarmingTaskURL(e, t.GetId()))
 }
