@@ -10,6 +10,7 @@ import (
 	"fmt"
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/cmd/skylab/internal/site"
+	"net/http"
 	"os"
 	"strings"
 
@@ -23,7 +24,7 @@ import (
 
 // EnsurePoolHealthy subcommand: Balance DUT pools
 var EnsurePoolHealthy = &subcommands.Command{
-	UsageLine: "ensure-pool-healthy [-dryrun] [-s spare] target model [model...]",
+	UsageLine: "ensure-pool-healthy [-dryrun] [-all-models] [-s spare] target [model...]",
 	ShortDesc: "Ensure DUT pool is healthy",
 	LongDesc: `
 Ensure that given models' target pool contains healthy DUTs.
@@ -35,6 +36,7 @@ If needed, swap in healthy DUTs from spare pool.`,
 		c.envFlags.Register(&c.Flags)
 
 		c.Flags.BoolVar(&c.dryrun, "dryrun", false, "Dryrun mode -- do not commit inventory changes")
+		c.Flags.BoolVar(&c.allModels, "all-models", false, "Ensure pool health for all known models")
 		c.Flags.StringVar(&c.spare, "spare", "DUT_POOL_SUITES", "DUT pool to swap in healthy DUTs from")
 		return c
 	},
@@ -45,8 +47,9 @@ type ensurePoolHealthyRun struct {
 	authFlags authcli.Flags
 	envFlags  envFlags
 
-	dryrun bool
-	spare  string
+	dryrun    bool
+	allModels bool
+	spare     string
 }
 
 type userError struct {
@@ -72,21 +75,21 @@ func (c *ensurePoolHealthyRun) Run(a subcommands.Application, args []string, env
 }
 
 func (c *ensurePoolHealthyRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
-	target, err := c.getTargetPool(args)
-	if err != nil {
-		return nil
-	}
-	models, err := c.getModels(args)
-	if err != nil {
-		return err
-	}
-
 	ctx := cli.GetContext(a, c, env)
 	hc, err := httpClient(ctx, &c.authFlags)
 	if err != nil {
 		return err
 	}
 	e := c.envFlags.Env()
+
+	target, err := c.getTargetPool(args)
+	if err != nil {
+		return nil
+	}
+	models, err := c.getModels(ctx, hc, args)
+	if err != nil {
+		return err
+	}
 
 	ic := fleet.NewInventoryPRPCClient(&prpc.Client{
 		C:       hc,
@@ -159,9 +162,42 @@ func (*ensurePoolHealthyRun) getTargetPool(args []string) (string, error) {
 	return args[0], nil
 }
 
-func (c *ensurePoolHealthyRun) getModels(args []string) ([]string, error) {
-	if len(args) < 2 {
-		return nil, userError{fmt.Errorf("want at least 2 arguments, have %d", len(args))}
+func (c *ensurePoolHealthyRun) getModels(ctx context.Context, hc *http.Client, args []string) ([]string, error) {
+	numModelPosArgs := len(args) - 1
+	if c.allModels {
+		if numModelPosArgs > 0 {
+			return []string{}, userError{fmt.Errorf("want no model postional arguments with -all-models, got %d", numModelPosArgs)}
+		}
+		return c.getAllModels(ctx, hc)
+	}
+
+	if numModelPosArgs < 1 {
+		return []string{}, userError{fmt.Errorf("want at least 1 model positional argument, have %d", numModelPosArgs)}
 	}
 	return args[1:], nil
+}
+
+func (c *ensurePoolHealthyRun) getAllModels(ctx context.Context, hc *http.Client) ([]string, error) {
+	// TODO(pprabhu) Consider implementing an RPC directly to ensure pool health
+	// for all models.
+	e := c.envFlags.Env()
+	tc := fleet.NewTrackerPRPCClient(&prpc.Client{
+		C:       hc,
+		Host:    e.AdminService,
+		Options: site.DefaultPRPCOptions,
+	})
+	res, err := tc.SummarizeBots(ctx, &fleet.SummarizeBotsRequest{})
+	if err != nil {
+		return []string{}, err
+	}
+	r := compileInventoryReport(res.GetBots())
+	return modelsFromInventory(r.models), nil
+}
+
+func modelsFromInventory(ics []*inventoryCount) []string {
+	ms := make([]string, 0, len(ics))
+	for _, ic := range ics {
+		ms = append(ms, ic.name)
+	}
+	return ms
 }
