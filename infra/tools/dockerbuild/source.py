@@ -232,7 +232,7 @@ Repository._DOWNLOAD_MAP['url'] = _download_url
 def _download_pypi_archive(fd, meta):
   name, version = meta
 
-  url = 'http://pypi.python.org/pypi/%s/%s/json' % (name, version)
+  url = 'https://pypi.org/pypi/%s/%s/json' % (name, version)
   content = util.download_json(url)
   release = content.get('releases', {}).get(version)
   if not release:
