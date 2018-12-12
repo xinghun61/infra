@@ -48,10 +48,11 @@ func (c *updateRun) innerRun(a subcommands.Application, args []string, env subco
 	if err != nil {
 		return err
 	}
-	if !isCIPDRootDir(d) {
-		return errors.Reason("could not find CIPD root directory (not installed via CIPD?)").Err()
+	root, err := findCIPDRootDir(d)
+	if err != nil {
+		return err
 	}
-	cmd := exec.Command("cipd", "ensure", "-root", d, "-ensure-file", "-")
+	cmd := exec.Command("cipd", "ensure", "-root", root, "-ensure-file", "-")
 	cmd.Stdin = strings.NewReader("chromiumos/infra/skylab/${platform} latest")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -66,6 +67,19 @@ func executableDir() (string, error) {
 		return "", errors.Annotate(err, "get executable directory").Err()
 	}
 	return filepath.Dir(p), nil
+}
+
+func findCIPDRootDir(dir string) (string, error) {
+	a, err := filepath.Abs(dir)
+	if err != nil {
+		return "", errors.Annotate(err, "find CIPD root dir").Err()
+	}
+	for d := a; d != "/"; d = filepath.Dir(d) {
+		if isCIPDRootDir(d) {
+			return d, nil
+		}
+	}
+	return "", errors.Reason("find CIPD root dir: no CIPD root above %s", dir).Err()
 }
 
 func isCIPDRootDir(dir string) bool {
