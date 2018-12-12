@@ -92,7 +92,7 @@ func poll(c context.Context, cp config.ProviderAPI) error {
 
 	var tasks []*tq.Task
 	for _, name := range names {
-		task := tq.NewPOSTTask("/internal/gerrit/poll-project", nil)
+		task := tq.NewPOSTTask("/gerrit/internal/poll-project", nil)
 		bytes, err := proto.Marshal(&admin.PollProjectRequest{Project: name})
 		if err != nil {
 			return errors.Annotate(err, "failed to marshal PollProjectRequest").Err()

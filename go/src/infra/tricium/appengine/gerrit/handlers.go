@@ -57,7 +57,7 @@ func pollProjectHandler(ctx *router.Context) {
 		return
 	}
 	if err = pollProject(c, request.Project, GerritServer, config.LuciConfigServer); err != nil {
-		logging.WithError(err).Errorf(c, "failed to poll project")
+		logging.WithError(err).Errorf(c, "[gerrit] failed to poll project")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
