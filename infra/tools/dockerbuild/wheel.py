@@ -390,6 +390,7 @@ SPECS = {s.spec.tag: s for s in (
                   pypi_name='google-compute-engine'),
   UniversalSource('googleapis-common-protos', '1.5.3'),
 
+  Universal('html5lib', '1.0.1'),
   UniversalSource('httplib2', '0.10.3'),
   Universal('idna', '2.5'),
   UniversalSource('inotify_simple', '1.1.7'),
@@ -400,6 +401,10 @@ SPECS = {s.spec.tag: s for s in (
   Universal('mccabe', '0.6.1'),
   Universal('mock', '2.0.0'),
   Universal('more-itertools', '4.1.0'),
+  Universal('mozdebug', '0.1.1'),
+  UniversalSource('mozinfo', '0.10'),
+  Universal('mozlog', '3.8'),
+  Universal('mozprocess', '0.26'),
   UniversalSource('mox', '0.5.3'),
   Universal('nose', '1.3.7'),
   UniversalSource('oauth2client', '3.0.0'),

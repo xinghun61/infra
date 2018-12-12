@@ -958,6 +958,20 @@ wheel: <
 * *windows-x64*
 * *windows-x86*
 
+## **html5lib**
+
+### 1.0.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/html5lib-py2_py3"
+  version: "version:1.0.1"
+>
+```
+
+
+* *universal*
+
 ## **httplib2**
 
 ### 0.10.3
@@ -1149,6 +1163,62 @@ wheel: <
 wheel: <
   name: "infra/python/wheels/mox-py2_py3"
   version: "version:0.5.3"
+>
+```
+
+
+* *universal*
+
+## **mozdebug**
+
+### 0.1.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/mozdebug-py2_py3"
+  version: "version:0.1.1"
+>
+```
+
+
+* *universal*
+
+## **mozinfo**
+
+### 0.10
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/mozinfo-py2_py3"
+  version: "version:0.10"
+>
+```
+
+
+* *universal*
+
+## **mozlog**
+
+### 3.8
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/mozlog-py2_py3"
+  version: "version:3.8"
+>
+```
+
+
+* *universal*
+
+## **mozprocess**
+
+### 0.26
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/mozprocess-py2_py3"
+  version: "version:0.26"
 >
 ```
 
