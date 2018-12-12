@@ -10,6 +10,7 @@ from google.appengine.api import taskqueue
 from google.appengine.api import modules
 from google.appengine.ext import deferred
 from google.appengine.ext import ndb
+from google.protobuf import struct_pb2
 
 from components import auth
 from components import utils
@@ -366,6 +367,18 @@ def heartbeat_batch(heartbeats):
   return [get_result(h, f) for h, f in futures]
 
 
+@ndb.tasklet
+def _put_output_properties_async(build_key, legacy_result_details):
+  prop_dict = (legacy_result_details or {}).get('properties')
+  if isinstance(prop_dict, dict):
+    props = struct_pb2.Struct()
+    props.update(prop_dict)
+    yield model.BuildOutputProperties(
+        key=model.BuildOutputProperties.key_for(build_key),
+        properties=props,
+    ).put_async()
+
+
 def _complete(
     build_id,
     lease_key,
@@ -406,7 +419,12 @@ def _complete(
       build.tags.extend(new_tags)
       build.tags = sorted(set(build.tags))
     build.clear_lease()
-    _fut_results(build.put_async(), events.on_build_completing_async(build))
+
+    _fut_results(
+        build.put_async(),
+        events.on_build_completing_async(build),
+        _put_output_properties_async(build.key, result_details),
+    )
     return True, build
 
   updated, build = txn()
@@ -508,7 +526,11 @@ def cancel(build_id, human_reason=None, result_details=None):
     )
     build.complete_time = now
     build.clear_lease()
-    futs = [build.put_async(), events.on_build_completing_async(build)]
+    futs = [
+        build.put_async(),
+        events.on_build_completing_async(build),
+        _put_output_properties_async(build.key, result_details),
+    ]
     if build.swarming_hostname and build.swarming_task_id is not None:
       futs.append(
           swarming.cancel_task_transactionally_async(

@@ -298,6 +298,11 @@ class BuildDetailEntity(ndb.Model):
     return ndb.Key(cls, 1, parent=build_key)
 
 
+class BuildOutputProperties(BuildDetailEntity):
+  """Stores buildbucket.v2.Build.output.properties."""
+  properties = datastore_utils.ProtobufProperty(struct_pb2.Struct)
+
+
 class BuildSteps(BuildDetailEntity):
   """Stores buildbucket.v2.Build.steps."""
 

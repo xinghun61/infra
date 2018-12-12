@@ -355,6 +355,11 @@ class UpdateBuildTests(BaseTestCase):
           build.result_details[model.PROPERTIES_PARAMETER], expected_props
       )
 
+      out_props = model.BuildOutputProperties.key_for(build.key).get()
+      self.assertEqual(
+          test_util.msg_to_dict(out_props.properties), expected_props
+      )
+
   def test_missing_token(self):
     build = build_pb2.Build(
         id=123,

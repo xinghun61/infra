@@ -14,7 +14,7 @@ import mock
 
 from proto import build_pb2
 from proto.config import service_config_pb2
-from test.test_util import future
+from test.test_util import future, msg_to_dict
 from test import config_test
 import config
 import errors
@@ -541,11 +541,14 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_succeed(self):
     self.lease()
     self.start()
-    self.succeed()
+    self.succeed(result_details={model.PROPERTIES_PARAMETER: {'foo': 'bar',}})
     self.assertEqual(self.test_build.status, model.BuildStatus.COMPLETED)
     self.assertEqual(self.test_build.status_changed_time, utils.utcnow())
     self.assertEqual(self.test_build.result, model.BuildResult.SUCCESS)
     self.assertIsNotNone(self.test_build.complete_time)
+
+    out_props = model.BuildOutputProperties.key_for(self.test_build.key).get()
+    self.assertEqual(msg_to_dict(out_props.properties), {'foo': 'bar'})
 
   def test_succeed_timed_out_build(self):
     self.test_build.status = model.BuildStatus.COMPLETED

@@ -275,7 +275,6 @@ def update_build_async(req, ctx, _mask):
     to_put = [build]
 
     if 'build.steps' in update_paths:
-      # Update build steps.
       build_steps = model.BuildSteps(
           key=model.BuildSteps.key_for(build.key),
           step_container=build_pb2.Build(steps=build_proto.steps),
@@ -283,8 +282,13 @@ def update_build_async(req, ctx, _mask):
       to_put.append(build_steps)
 
     if 'build.output.properties' in update_paths:
-      # TODO(nodir): persist it in a separate entity, in Struct binary format.
-      # The following is inefficient.
+      to_put.append(
+          model.BuildOutputProperties(
+              key=model.BuildOutputProperties.key_for(build.key),
+              properties=build_proto.output.properties,
+          )
+      )
+      # TODO(nodir): remove code below.
       build.result_details = build.result_details or {}
       build.result_details[model.PROPERTIES_PARAMETER] = json.loads(
           json_format.MessageToJson(build_proto.output.properties)
