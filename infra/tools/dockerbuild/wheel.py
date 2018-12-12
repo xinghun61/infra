@@ -418,6 +418,7 @@ SPECS = {s.spec.tag: s for s in (
   Universal('ply', '3.11'),
   Universal('portend', '2.2'),
   Universal('protobuf', '3.2.0'),
+  Universal('protobuf', '3.6.0'),
   Universal('py', '1.5.3'),
   Universal('pyasn1', '0.2.3'),
   Universal('pyasn1_modules', '0.0.8'),
