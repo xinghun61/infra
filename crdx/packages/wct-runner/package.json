@@ -1,5 +1,5 @@
 {
-  "name": "chops-wct-runner",
+  "name": "@chopsui/wct-runner",
   "version": "0.0.1",
   "description": "A WCT runner for chops frontend apps.",
   "bin": {

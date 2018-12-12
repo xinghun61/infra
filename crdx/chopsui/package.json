@@ -7,13 +7,12 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "preinstall": "npm install ../../crdx/packages/wct-runner --save-dev"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "bower": "^1.8.4",
-    "chops-wct-runner": "file:../packages/wct-runner"
+    "@chopsui/wct-runner": "0.0.1"
   }
 }
