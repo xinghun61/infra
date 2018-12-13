@@ -90,7 +90,7 @@ func summarizeBots(ctx context.Context, c fleet.TrackerClient, dutNames []string
 func printBotDiagnosis(w io.Writer, e site.Environment, bots []*fleet.BotSummary) {
 	for _, b := range bots {
 		fmt.Fprintf(w, "---\t%s\t%s\t%s\t\n", b.GetDimensions().GetDutName(), b.GetDutId(), b.GetDutState())
-		for _, t := range b.Diagnosis {
+		for _, t := range b.GetDiagnosis() {
 			printDiagnosisTask(w, e, t)
 		}
 		fmt.Fprintln(w)
