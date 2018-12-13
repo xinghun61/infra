@@ -480,14 +480,15 @@ class ServeCodeCoverageData(BaseHandler):
         elif data_type == 'components':
           path = path or '>>'
         else:
-          if path.startswith('//'):
-            # For file, the path in datastore doesn't start with '//'.
-            path = path[2:]
           template = 'coverage/file_view.html'
         assert data_type, 'Unknown data_type'
 
         code_revision_index = '%s-%s' % (project, revision)
         entity = CoverageData.Get(host, code_revision_index, data_type, path)
+        if not entity and path.startswith('//'):
+          # For legacy data, the path in datastore doesn't start with '//'.
+          path = path[2:]
+          entity = CoverageData.Get(host, code_revision_index, data_type, path)
         metadata = entity.data if entity else None
         data = {
             'commit_position': report.commit_position,
@@ -498,23 +499,29 @@ class ServeCodeCoverageData(BaseHandler):
         if data_type == 'files':
           line_to_data = collections.defaultdict(dict)
 
+          if path.startswith('//'):
+            path = path[2:]
           file_content = _GetFileContentFromGS(report, 'coverage/%s' % path)
+
           if not file_content:
             line_to_data[1]['line'] = '!!!!No source code available!!!!'
+            line_to_data[1]['count'] = 0
           else:
             file_lines = file_content.splitlines()
             for i, line in enumerate(file_lines):
               line_to_data[i + 1]['line'] = line
               line_to_data[i + 1]['count'] = -1
 
-          for line in metadata['lines']:
-            for i in range(line['first'], line['last'] + 1):
-              line_to_data[i]['count'] = line['count']
+            for line in metadata['lines']:
+              for i in range(line['first'], line['last'] + 1):
+                line_to_data[i]['count'] = line['count']
+
           line_to_data = list(line_to_data.iteritems())
           line_to_data.sort(key=lambda x: x[0])
           data['line_to_data'] = line_to_data
 
-          path = '//' + path
+          if not path.startswith('//'):
+            path = '//' + path
 
       # Compute the mapping of the name->path mappings in order.
       path_parts = _GetNameToPathSeparator(path, data_type)
