@@ -205,7 +205,7 @@ func analyzeBuilder(c *router.Context, builder *storage.Builder) error {
 }
 
 // getMiloNum gets the latest known build number from Milo.
-// This could be either a Buildbot or Buildbucket build number.
+// This is always a buildbot build number.
 func getMiloNum(c context.Context, h *http.Client, master, builder string) (int, error) {
 	client := miloAPI.NewBuildbotPRPCClient(&prpc.Client{
 		C:    h,
@@ -218,6 +218,7 @@ func getMiloNum(c context.Context, h *http.Client, master, builder string) (int,
 			Builder:        builder,
 			Limit:          1,
 			IncludeCurrent: true,
+			NoEmulation:    true,
 		})
 	if err != nil || len(builds.Builds) == 0 {
 		return 0, err
