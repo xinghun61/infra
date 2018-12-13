@@ -43,7 +43,7 @@
     </td>
   </tr>
 
-  <tr class="js-make_subfield">
+  <tr class="js-make_phase_subfield">
     <th>Issue Gate field:</th>
     <td>
       <input id="phase_input" type="checkbox" name="is_phase_field" class="acob"
@@ -53,7 +53,7 @@
   </tr>
 
   [if-any approval_names]
-  <tr class="js-make_subfield">
+  <tr class="js-make_approval_subfield">
     <th>Parent Approval:</th>
     <td>
       <select id="parent_input" name="parent_approval_name">
@@ -256,11 +256,18 @@ runOnLoad(function() {
     let choices_row = document.getElementById('choices_row');
     choices_row.style.display = (new_type == 'enum_type') ? '' : 'none';
 
-    // For now, phases and approvals cannot have labels.
-    let flt_display = (new_type == 'enum_type' || new_type == 'approval_type') ? 'none' : '';
-    let subfield_rows = document.getElementsByClassName('js-make_subfield');
-    Array.prototype.forEach.call(subfield_rows, row => {
-      row.style.display = flt_display;
+    // Approval fields cannot be subfields of approvals.
+    let approval_subfield_display = (new_type == 'approval_type') ? 'none' : '';
+    let approval_subfield_rows = document.getElementsByClassName('js-make_approval_subfield');
+    Array.prototype.forEach.call(approval_subfield_rows, row => {
+      row.style.display = approval_subfield_display;
+    });
+
+    // Enum and Approval fields cannot be gate subfields.
+    let gate_subfield_display = (new_type == 'enum_type' || new_type == 'approval_type') ? 'none': '';
+    let phase_subfield_rows = document.getElementsByClassName('js-make_phase_subfield');
+    Array.prototype.forEach.call(phase_subfield_rows, row => {
+      row.style.display = gate_subfield_display;
     });
 
     // Prevent users from making a field a Gate and Approval subfield.
