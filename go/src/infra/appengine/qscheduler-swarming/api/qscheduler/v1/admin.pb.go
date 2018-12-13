@@ -8,11 +8,12 @@ import prpc "go.chromium.org/luci/grpc/prpc"
 import (
 	context "context"
 	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
-	grpc "google.golang.org/grpc"
 	account "infra/qscheduler/qslib/types/account"
 	vector "infra/qscheduler/qslib/types/vector"
 	math "math"
+
+	proto "github.com/golang/protobuf/proto"
+	grpc "google.golang.org/grpc"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
