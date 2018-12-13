@@ -158,11 +158,14 @@ class FlakeReportUtilTest(WaterfallTestCase):
   @mock.patch.object(flake_issue_util, 'CreateOrUpdateIssue')
   def testCreateOrUpdateIssuesPerDayLimit(self, mock_update_or_create_bug):
     flakes_with_occurrences = flake_issue_util.GetFlakesWithEnoughOccurrences()
+    groups_wo_issue, groups_w_issue = (
+        flake_issue_util.GetFlakeGroupsForActionsOnBugs(flakes_with_occurrences)
+    )
     self.assertEqual(1, len(flakes_with_occurrences))
     self.assertEqual(3, len(flakes_with_occurrences[0][1]))
     self.UpdateUnitTestConfigSettings('action_settings',
                                       {'max_flake_bug_updates_per_day': 0})
-    flake_issue_util.ReportFlakesToMonorail(flakes_with_occurrences)
+    flake_issue_util.ReportFlakesToMonorail(groups_wo_issue, groups_w_issue)
     self.assertFalse(mock_update_or_create_bug.called)
 
   # This test tests that flakes that were updated within 24h are ignored.
@@ -235,7 +238,10 @@ class FlakeReportUtilTest(WaterfallTestCase):
     flake = Flake.query().fetch()[0]
     occurrences = FlakeOccurrence.query(
         FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
-    flake_issue_util.ReportFlakesToMonorail([(flake, occurrences)])
+    groups_wo_issue, groups_w_issue = (
+        flake_issue_util.GetFlakeGroupsForActionsOnBugs([(flake, occurrences,
+                                                          None)]))
+    flake_issue_util.ReportFlakesToMonorail(groups_wo_issue, groups_w_issue)
     self.assertFalse(mock_create_bug_fn.called)
     self.assertFalse(mock_update_bug_fn.called)
 
@@ -249,7 +255,10 @@ class FlakeReportUtilTest(WaterfallTestCase):
     flake = Flake.query().fetch()[0]
     occurrences = FlakeOccurrence.query(
         FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
-    flake_issue_util.ReportFlakesToMonorail([(flake, occurrences)])
+    groups_wo_issue, groups_w_issue = (
+        flake_issue_util.GetFlakeGroupsForActionsOnBugs([(flake, occurrences,
+                                                          None)]))
+    flake_issue_util.ReportFlakesToMonorail(groups_wo_issue, groups_w_issue)
 
     expected_status = 'Untriaged'
     expected_summary = 'test_label is flaky'
@@ -306,34 +315,6 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     self.assertEqual(fetched_flakes[0].flake_issue_key,
                      fetched_flake_issues[0].key)
 
-  # This test tests that when a flake has a flake issue attached but the issue
-  # was closed, it creates a new issue with a previous tracking issue id and
-  # attach it to the flake.
-  @mock.patch.object(
-      flake_issue_util, 'SearchOpenIssueIdForFlakyTest', return_value=None)
-  @mock.patch.object(monorail_util, 'GetMergedDestinationIssueForId')
-  @mock.patch.object(monorail_util, 'UpdateBug')
-  @mock.patch.object(monorail_util, 'CreateBug', return_value=66666)
-  def testCreateIssueWithPreviousTrackingBugId(
-      self, mock_create_bug_fn, mock_update_bug_fn, mock_get_merged_issue, _):
-    flake = Flake.query().fetch()[0]
-    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
-    flake_issue.put()
-    flake.flake_issue_key = flake_issue.key
-    flake.put()
-    occurrences = FlakeOccurrence.query(
-        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
-    mock_get_merged_issue.return_value.id = 12345
-    mock_get_merged_issue.return_value.open = False
-
-    flake_issue_util.ReportFlakesToMonorail([(flake, occurrences)])
-
-    expected_previous_bug_description = (
-        '\n\nThis flaky test was previously tracked in bug 12345.\n\n')
-    issue = mock_create_bug_fn.call_args_list[0][0][0]
-    self.assertIn(expected_previous_bug_description, issue.description)
-    self.assertFalse(mock_update_bug_fn.called)
-
   # This test tests that when a flake has a flake issue attached and the issue
   # is still open, it directly updates the issue.
   @mock.patch.object(monorail_util, 'GetMergedDestinationIssueForId')
@@ -350,7 +331,10 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
         FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
     mock_get_merged_issue.return_value.id = 12345
     mock_get_merged_issue.return_value.open = True
-    flake_issue_util.ReportFlakesToMonorail([(flake, occurrences)])
+    groups_wo_issue, groups_w_issue = (
+        flake_issue_util.GetFlakeGroupsForActionsOnBugs([(flake, occurrences,
+                                                          flake_issue)]))
+    flake_issue_util.ReportFlakesToMonorail(groups_wo_issue, groups_w_issue)
 
     expected_wrong_result_link = (
         'https://bugs.chromium.org/p/chromium/issues/entry?status=Unconfirmed&'
@@ -388,14 +372,14 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
 
     fetched_flakes = Flake.query().fetch()
     fetched_flake_issues = FlakeIssue.query().fetch()
+    flake_issue = FlakeIssue.Get('chromium', 12345)
     self.assertEqual(1, len(fetched_flakes))
     self.assertEqual(1, len(fetched_flake_issues))
     self.assertEqual(12345, fetched_flake_issues[0].issue_id)
     self.assertEqual(
         datetime.datetime(2018, 1, 2),
-        fetched_flake_issues[0].last_updated_time_by_flake_detection)
-    self.assertEqual(fetched_flakes[0].flake_issue_key,
-                     fetched_flake_issues[0].key)
+        flake_issue.last_updated_time_by_flake_detection)
+    self.assertEqual(fetched_flakes[0].flake_issue_key, flake_issue.key)
 
   # This test tests that when a flake has a flake issue attached and the issue
   # was merged to another open bug, it updates the destination bug with
@@ -414,7 +398,10 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
         FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
     mock_get_merged_issue.return_value.id = 56789
     mock_get_merged_issue.return_value.open = True
-    flake_issue_util.ReportFlakesToMonorail([(flake, occurrences)])
+    groups_wo_issue, groups_w_issue = (
+        flake_issue_util.GetFlakeGroupsForActionsOnBugs([(flake, occurrences,
+                                                          flake_issue)]))
+    flake_issue_util.ReportFlakesToMonorail(groups_wo_issue, groups_w_issue)
 
     expected_previous_bug_description = (
         '\n\nThis flaky test was previously tracked in bug 12345.\n\n')
@@ -445,8 +432,10 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     occurrences2 = FlakeOccurrence.query(ancestor=flake2.key).filter(
         FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
 
-    flake_issue_util.ReportFlakesToMonorail([(flake1, occurrences1),
-                                             (flake2, occurrences2)])
+    groups_wo_issue, groups_w_issue = (
+        flake_issue_util.GetFlakeGroupsForActionsOnBugs(
+            [(flake1, occurrences1, None), (flake2, occurrences2, None)]))
+    flake_issue_util.ReportFlakesToMonorail(groups_wo_issue, groups_w_issue)
 
   # This test tests that if the feature to report flakes to Flake Analyzer is
   # disabled, flakes will NOT be reported.
@@ -1290,6 +1279,64 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     self.assertEqual([], flake_groups_without_issue)
     self.assertEqual([flake_group.ToDict()],
                      [group.ToDict() for group in flake_groups_with_issue])
+
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 1, 2))
+  @mock.patch.object(
+      monorail_util, 'CreateIssueWithIssueGenerator', return_value=234567)
+  def testCreateIssueForAGroup(self, *_):
+    flake1 = self._CreateFlake('s1', 'suite1.t1', 'suite1.t1')
+    occurrences1 = [
+        self._CreateFlakeOccurrence(1, 's1', 'suite1.t1', 12345, flake1.key),
+        self._CreateFlakeOccurrence(2, 's1', 'suite1.t1', 12346, flake1.key)
+    ]
+    flake2 = self._CreateFlake('s1', 'suite1.t2', 'suite1.t2')
+    occurrences2 = [
+        self._CreateFlakeOccurrence(1, 's1', 'suite1.t2', 12345, flake2.key),
+        self._CreateFlakeOccurrence(2, 's1', 'suite1.t2', 12346, flake2.key)
+    ]
+    flake_group = flake_issue_util.FlakeGroupByOccurrences(flake1, occurrences1)
+    flake_group.AddFlakeIfBelong(flake2, occurrences2)
+
+    flake_issue_util._CreateIssuesForFlakes([flake_group])
+
+    flake_issue = flake_issue_util.GetFlakeIssue(flake1)
+    self.assertEqual(234567, flake_issue.issue_id)
+    self.assertEqual(
+        datetime.datetime(2018, 1, 2),
+        flake_issue.last_updated_time_by_flake_detection)
+
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 1, 2))
+  @mock.patch.object(monorail_util, 'UpdateIssueWithIssueGenerator')
+  def testUpdateIssueForAGroup(self, *_):
+    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=56789)
+    flake_issue.put()
+    flake5 = self._CreateFlake('s2', 'suite2.t5', 'suite2.t5')
+    flake5.flake_issue_key = flake_issue.key
+    flake5.put()
+    occurrences5 = [
+        self._CreateFlakeOccurrence(1, 's2', 'suite2.t4', 12345, flake5.key),
+        self._CreateFlakeOccurrence(2, 's2', 'suite2.t4', 12346, flake5.key)
+    ]
+    # Old flake, with same issue as flake5.
+    flake6 = self._CreateFlake('s3', 'suite3.t6', 'suite3.t6')
+    flake6.flake_issue_key = flake_issue.key
+    flake6.put()
+    occurrences6 = [
+        self._CreateFlakeOccurrence(3, 's3', 'suite3.t6', 34467, flake6.key),
+        self._CreateFlakeOccurrence(4, 's3', 'suite3.t6', 35546, flake6.key),
+        self._CreateFlakeOccurrence(5, 's3', 'suite3.t6', 67543, flake6.key)
+    ]
+    flake_group = flake_issue_util.FlakeGroupByFlakeIssue(
+        flake_issue, flake5, occurrences5, flake_issue)
+    flake_group.AddFlakeIfBelong(flake6, occurrences6)
+
+    flake_issue_util._UpdateIssuesForFlakes([flake_group])
+    flake_issue = flake_issue_util.GetFlakeIssue(flake6)
+    self.assertEqual(
+        datetime.datetime(2018, 1, 2),
+        flake_issue.last_updated_time_by_flake_detection)
 
   def testUpdateIssueLeaves(self):
     final_issue = FlakeIssue.Create('chromium', 3)

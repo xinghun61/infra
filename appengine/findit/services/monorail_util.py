@@ -127,14 +127,19 @@ def CreateIssueWithIssueGenerator(issue_generator):
   """
   labels = issue_generator.GetLabels()
   labels.append(issue_generator.GetPriority())
-  issue = Issue({
+
+  issue_info = {
       'status': issue_generator.GetStatus(),
       'summary': issue_generator.GetSummary(),
       'description': issue_generator.GetDescription(),
       'projectId': issue_generator.GetMonorailProject(),
-      'labels': labels,
-      'fieldValues': [issue_generator.GetFlakyTestCustomizedField()]
-  })
+      'labels': labels
+  }
+  field_value = issue_generator.GetFlakyTestCustomizedField()
+  if field_value:
+    issue_info['fieldValues'] = [field_value]
+
+  issue = Issue(issue_info)
 
   issue_id = CreateBug(issue, issue_generator.GetMonorailProject())
   if issue_id:
@@ -165,7 +170,9 @@ def UpdateIssueWithIssueGenerator(issue_id, issue_generator):
     if label not in issue.labels:
       issue.labels.append(label)
 
-  issue.field_values.append(issue_generator.GetFlakyTestCustomizedField())
+  field_value = issue_generator.GetFlakyTestCustomizedField()
+  if field_value:
+    issue.field_values.append(field_value)
   UpdateBug(issue, issue_generator.GetComment(),
             issue_generator.GetMonorailProject())
   issue_generator.OnIssueUpdated()

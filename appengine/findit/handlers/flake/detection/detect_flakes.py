@@ -38,7 +38,10 @@ class DetectCQFalseRejectionFlakes(BaseHandler):
     detect_flake_occurrences.QueryAndStoreFlakes(FlakeType.CQ_FALSE_REJECTION)
     detect_flake_occurrences.QueryAndStoreFlakes(FlakeType.RETRY_WITH_PATCH)
     flake_tuples_to_report = flake_issue_util.GetFlakesWithEnoughOccurrences()
-    flake_issue_util.ReportFlakesToMonorail(flake_tuples_to_report)
+    flake_groups_without_bug, flake_groups_with_bug = (
+        flake_issue_util.GetFlakeGroupsForActionsOnBugs(flake_tuples_to_report))
+    flake_issue_util.ReportFlakesToMonorail(flake_groups_without_bug,
+                                            flake_groups_with_bug)
 
     # Reporting to Flake Analyzer needs to come after reporting to Monorail
     # because it makes Flake Analyzer's job easier if it can reuse the issues

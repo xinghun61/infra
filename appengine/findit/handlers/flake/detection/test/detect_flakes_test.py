@@ -43,12 +43,14 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
                                        debug=True)
 
   @mock.patch.object(BaseHandler, 'IsRequestFromAppSelf', return_value=True)
+  @mock.patch.object(
+      flake_issue_util, 'GetFlakeGroupsForActionsOnBugs', return_value=([], []))
   @mock.patch.object(flake_issue_util, 'ReportFlakesToFlakeAnalyzer')
   @mock.patch.object(flake_issue_util, 'ReportFlakesToMonorail')
   @mock.patch.object(flake_issue_util, 'GetFlakesWithEnoughOccurrences')
   @mock.patch.object(detect_flake_occurrences, 'QueryAndStoreFlakes')
   def testFlakesDetected(self, mock_detect, mock_get_flakes, mock_bug,
-                         mock_analysis, _):
+                         mock_analysis, mock_groups, _):
     mock_get_flakes.return_value = []
     response = self.test_app.get(
         '/flake/detection/task/detect-cq-false-rejection-flakes', status=200)
@@ -58,5 +60,6 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
         mock.call(FlakeType.CQ_FALSE_REJECTION),
         mock.call(FlakeType.RETRY_WITH_PATCH)
     ])
-    mock_bug.assert_called_once_with([])
+    mock_bug.assert_called_once_with([], [])
     mock_analysis.assert_called_once_with([])
+    mock_groups.assert_called_once_with([])

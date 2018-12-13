@@ -20,15 +20,16 @@ from services import monorail_util
 from services.apis import AnalyzeDetectedFlakeOccurrence
 from services.flake_failure import flake_constants
 from services.issue_generator import FlakeDetectionIssueGenerator
+from services.issue_generator import FlakeDetectionGroupIssueGenerator
 from waterfall import waterfall_config
 
 
 class FlakeGroup(object):
 
-  def __init__(self, occurrences, flake_luci_project):
+  def __init__(self, occurrences, luci_project):
     self.flakes = []
     self.num_occurrences = len(occurrences)
-    self.luci_project = flake_luci_project
+    self.luci_project = luci_project
 
   def AddFlakeIfBelong(self, flake, occurrences):
     """Tries to add a flake to group if it can belong.
@@ -371,9 +372,9 @@ def GetAndUpdateMergedIssue(flake_issue):
   return merged_issue
 
 
-def _AddFlakeToGroupWithIssue(flake_groups_with_issue, flake_issue, flake,
+def _AddFlakeToGroupWithIssue(flake_groups_to_update_issue, flake_issue, flake,
                               occurrences):
-  flake_group = flake_groups_with_issue.get(flake_issue.issue_id)
+  flake_group = flake_groups_to_update_issue.get(flake_issue.issue_id)
 
   if flake_group:
     flake_group.AddFlakeIfBelong(flake, occurrences)
@@ -389,25 +390,24 @@ def _AddFlakeToGroupWithIssue(flake_groups_with_issue, flake_issue, flake,
 
   flake_group = FlakeGroupByFlakeIssue(updated_flake_issue, flake, occurrences,
                                        flake_issue)
-  flake_groups_with_issue[updated_flake_issue.issue_id] = flake_group
+  flake_groups_to_update_issue[updated_flake_issue.issue_id] = flake_group
   return True
 
 
-def _AddFlakeToGroupWithoutIssue(flake_groups_without_issue, flake,
-                                 occurrences):
+def _AddFlakeToGroupWithoutIssue(flake_groups_to_add_issue, flake, occurrences):
   basic_group_key = '{}@{}@{}'.format(flake.luci_project,
                                       flake.normalized_step_name,
                                       flake.GetTestSuiteName())
 
   grouped = False
-  for flake_group in flake_groups_without_issue[basic_group_key]:
+  for flake_group in flake_groups_to_add_issue[basic_group_key]:
     grouped = flake_group.AddFlakeIfBelong(flake, occurrences)
     if grouped:
       break
 
   if not grouped:
     flake_group = FlakeGroupByOccurrences(flake, occurrences)
-    flake_groups_without_issue[basic_group_key].append(flake_group)
+    flake_groups_to_add_issue[basic_group_key].append(flake_group)
 
 
 def GetFlakeGroupsForActionsOnBugs(flake_tuples_to_report):
@@ -440,41 +440,44 @@ def GetFlakeGroupsForActionsOnBugs(flake_tuples_to_report):
   # Since we will group flakes only when they happen in the same builds,
   # it's possible to have different FlakeGroupByOccurrences with the same key,
   # so use a list to save them.
-  flake_groups_without_issue = defaultdict(list)
+  flake_groups_to_add_issue = defaultdict(list)
   # Groups of flakes that are already linked to open issues.
-  flake_groups_with_issue = {}
+  flake_groups_to_update_issue = {}
 
   for flake, occurrences, flake_issue in flake_tuples_to_report:
     if flake_issue:
       added_to_group = _AddFlakeToGroupWithIssue(
-          flake_groups_with_issue, flake_issue, flake, occurrences)
+          flake_groups_to_update_issue, flake_issue, flake, occurrences)
       if added_to_group:
         continue
 
     # Group by heuristic for flakes not linked to any issue or the issue has
     # been closed.
-    _AddFlakeToGroupWithoutIssue(flake_groups_without_issue, flake, occurrences)
+    _AddFlakeToGroupWithoutIssue(flake_groups_to_add_issue, flake, occurrences)
 
-  flake_groups_without_issue_list = []
-  for heuristic_groups in flake_groups_without_issue.values():
-    flake_groups_without_issue_list.extend(heuristic_groups)
+  flake_groups_to_add_issue_list = []
+  for heuristic_groups in flake_groups_to_add_issue.values():
+    flake_groups_to_add_issue_list.extend(heuristic_groups)
 
-  return flake_groups_without_issue_list, flake_groups_with_issue.values()
+  return flake_groups_to_add_issue_list, flake_groups_to_update_issue.values()
 
 
 # TODO(crbug.com/903459): Move ReportFlakesToMonorail and
 #  ReportFlakesToFlakeAnalyzer to auto action layer.
-def ReportFlakesToMonorail(flake_tuples_to_report):
+def ReportFlakesToMonorail(flake_groups_to_add_issue,
+                           flake_groups_to_update_issue):
   """Reports newly detected flakes and occurrences to Monorail.
 
   ONLY create or update a bug if:
     rule 1. Has NOT reached the maximum configured bug update limit within 24h.
-    rule 2. The bug wasn't created or updated within the past 24h.
+    rule 2. The bug wasn't created or updated within the past 24h (has been
+      fulfilled when getting flake groups).
 
   Args:
-    flake_tuples_to_report: A list of tuples whose first element is a Flake
-                            entity and second element is a list of corresponding
-                            occurrences to report.
+    flake_groups_to_add_issue([FlakeGroupByOccurrences]]): A list of flake
+      groups that are not yet linked with a FlakeIssue.
+    flake_groups_to_update_issue([FlakeGroupByFlakeIssue(list]): A list of
+      flake groups that have been linked with a FlakeIssue.
   """
   action_settings = waterfall_config.GetActionSettings()
   limit = action_settings.get('max_flake_bug_updates_per_day',
@@ -488,32 +491,25 @@ def ReportFlakesToMonorail(flake_tuples_to_report):
 
   if num_updated_issues_24h >= limit:
     logging.info('Issues created or updated during the past 24 hours has '
-                 'reached the limit.')
+                 'reached the limit, no issues could be created.')
     return
 
-  num_of_flakes_to_report = min(
-      len(flake_tuples_to_report), limit - num_updated_issues_24h)
-  flake_tuples_to_report = flake_tuples_to_report[:num_of_flakes_to_report]
-  logging.info('There are %d flakes whose issues will be created or updated.' %
-               num_of_flakes_to_report)
+  total_remaining_issue_num = limit - num_updated_issues_24h
+  # Fulfills the needs of creating bugs first, then updating bugs.
+  num_of_issues_to_create = min(
+      len(flake_groups_to_add_issue), total_remaining_issue_num)
+  _CreateIssuesForFlakes(flake_groups_to_add_issue[:num_of_issues_to_create])
 
-  for flake, occurrences in flake_tuples_to_report:
-    issue_generator = FlakeDetectionIssueGenerator(flake, len(occurrences))
-    try:
-      CreateOrUpdateIssue(issue_generator, flake.luci_project)
-      # Update FlakeIssue's last_updated_time_by_flake_detection property. This
-      # property is only applicable to Flake Detection because Flake Detection
-      # can update an issue at most once every 24 hours.
-      flake_issue = GetFlakeIssue(flake)
-      flake_issue.last_updated_time_by_flake_detection = time_util.GetUTCNow()
-      flake_issue.put()
-    except HttpError as error:
-      # benign exceptions (HttpError 403) may happen when FindIt tries to
-      # update an issue that it doesn't have permission to. Do not raise
-      # exception so that the for loop can move on to create or update next
-      # issues.
-      logging.warning('Failed to create or update issue due to error: %s',
-                      error)
+  remaining_issue_num_update = (
+      total_remaining_issue_num - num_of_issues_to_create)
+  if remaining_issue_num_update <= 0:
+    logging.info('Issues created or updated during the past 24 hours has '
+                 'reached the limit, no issues could be updated.')
+    return
+
+  num_of_issues_to_update = min(
+      len(flake_groups_to_update_issue), remaining_issue_num_update)
+  _UpdateIssuesForFlakes(flake_groups_to_update_issue[:num_of_issues_to_update])
 
 
 def _IsReportFlakesToFlakeAnalyzerEnabled():
@@ -637,6 +633,7 @@ def CreateOrUpdateIssue(issue_generator, luci_project='chromium'):
 
   monorail_project = issue_generator.GetMonorailProject()
   flake_issue = GetFlakeIssue(target_flake)
+
   previous_tracking_bug_id = None
 
   if flake_issue:
@@ -655,11 +652,20 @@ def CreateOrUpdateIssue(issue_generator, luci_project='chromium'):
           issue_id=merged_issue.id, issue_generator=issue_generator)
       return merged_issue.id
 
-    previous_tracking_bug_id = merged_issue.id
-
   logging.info(
       'flake %s has no issue attached or the attached issue was closed.' %
       target_flake.key)
+
+  return _CreateIssueForFlake(issue_generator, target_flake)
+
+
+def _CreateIssueForFlake(issue_generator, target_flake):
+  """Creates a monorail bug for a single flake.
+
+  This function is used to create bugs for detected flakes and flake analysis
+  results.
+  """
+  monorail_project = issue_generator.GetMonorailProject()
 
   # Re-use an existing open bug if possible.
   issue_id = SearchOpenIssueIdForFlakyTest(target_flake.normalized_test_name,
@@ -671,20 +677,149 @@ def CreateOrUpdateIssue(issue_generator, luci_project='chromium'):
         FlakeIssue.GetLinkForIssue(monorail_project, issue_id),
         target_flake.key)
     _AssignIssueToFlake(issue_id, target_flake)
-    issue_generator.SetPreviousTrackingBugId(previous_tracking_bug_id)
     monorail_util.UpdateIssueWithIssueGenerator(
         issue_id=issue_id, issue_generator=issue_generator)
     return issue_id
 
   logging.info('No existing open issue was found, create a new one.')
-  issue_generator.SetPreviousTrackingBugId(previous_tracking_bug_id)
   issue_id = monorail_util.CreateIssueWithIssueGenerator(
       issue_generator=issue_generator)
+
+  if not issue_id:
+    logging.warning('Failed to create monorail bug for flake: %s.',
+                    target_flake.key)
+    return None
   logging.info('%s was created for flake: %s.',
                FlakeIssue.GetLinkForIssue(monorail_project, issue_id),
                target_flake.key)
   _AssignIssueToFlake(issue_id, target_flake)
   return issue_id
+
+
+def _CreateIssueForFlakeGroup(flake_group):
+  """Creates an issue for a flake group.
+
+  Args:
+    flake_group (FlakeGroupByOccurrences): A flake group without an issue.
+
+  Returns:
+    Id of the issue that was eventually created or linked.
+  """
+
+  assert isinstance(flake_group, FlakeGroupByOccurrences), (
+      'flake_group is not a FlakeGroupByOccurrences instance.')
+
+  issue_generator = FlakeDetectionGroupIssueGenerator(
+      flake_group.flakes,
+      flake_group.num_occurrences,
+      normalized_step_name=flake_group.normalized_step_name,
+      test_suite_name=flake_group.test_suite_name)
+  issue_id = monorail_util.CreateIssueWithIssueGenerator(
+      issue_generator=issue_generator)
+  if not issue_id:
+    logging.warning('Failed to create monorail bug for flake group: %s@%s.',
+                    flake_group.normalized_step_name,
+                    flake_group.test_suite_name)
+    return None
+  logging.info(
+      '%s was created for flake_group: %s@%s.',
+      FlakeIssue.GetLinkForIssue(issue_generator.GetMonorailProject(),
+                                 issue_id), flake_group.normalized_step_name,
+      flake_group.test_suite_name)
+  for flake in flake_group.flakes:
+    _AssignIssueToFlake(issue_id, flake)
+  return issue_id
+
+
+def _CreateIssuesForFlakes(flake_groups_to_create_issue):
+  """Creates monorail bugs.
+
+  Args:
+    flake_groups_to_create_issue([FlakeGroupByOccurrences]]): A list of flake
+      groups that are not yet linked with a FlakeIssue.
+  """
+  for flake_group in flake_groups_to_create_issue:
+    try:
+      if len(flake_group.flakes) == 1:
+        # A single flake in group, uses this flake's info to create the bug.
+        issue_generator = FlakeDetectionIssueGenerator(
+            flake_group.flakes[0], flake_group.num_occurrences)
+        _CreateIssueForFlake(issue_generator, flake_group.flakes[0])
+      else:
+        _CreateIssueForFlakeGroup(flake_group)
+      # Update FlakeIssue's last_updated_time_by_flake_detection property. This
+      # property is only applicable to Flake Detection because Flake Detection
+      # can update an issue at most once every 24 hours.
+      flake_issue = GetFlakeIssue(flake_group.flakes[0])
+      flake_issue.last_updated_time_by_flake_detection = time_util.GetUTCNow()
+      flake_issue.put()
+    except HttpError as error:
+      # Benign exceptions (HttpError 403) may happen when FindIt tries to
+      # update an issue that it doesn't have permission to. Do not raise
+      # exception so that the for loop can move on to create or update next
+      # issues.
+      logging.warning('Failed to create or update issue due to error: %s',
+                      error)
+
+
+def _UpdateFlakeIssueForFlakeGroup(flake_group):
+  """Updates an issue for a flake group.
+
+  Args:
+    flake_group (FlakeGroupByFlakeIssue): A flake group with an issue.
+
+  Returns:
+    Id of the issue that was eventually created or linked.
+  """
+  assert isinstance(flake_group, FlakeGroupByFlakeIssue), (
+      'flake_group is not a FlakeGroupByFlakeIssue instance.')
+  issue_generator = FlakeDetectionGroupIssueGenerator(
+      flake_group.flakes,
+      flake_group.num_occurrences,
+      flake_issue=flake_group.flake_issue,
+      flakes_with_same_occurrences=flake_group.flakes_with_same_occurrences)
+
+  flake_issue = flake_group.flake_issue
+  monorail_util.UpdateIssueWithIssueGenerator(
+      issue_id=flake_issue.issue_id, issue_generator=issue_generator)
+  return flake_issue.issue_id
+
+
+def _UpdateIssuesForFlakes(flake_groups_to_update_issue):
+  """Creates monorail bugs.
+
+  The issues have been updated when generating flake groups, so in this function
+  directly updates the issues.
+
+  Args:
+    flake_groups_to_update_issue ([FlakeGroupByFlakeIssue]): A list of flake
+      groups with bugs.
+  """
+  for flake_group in flake_groups_to_update_issue:
+    try:
+      if len(flake_group.flakes) == 1:
+        # A single flake in group, updates the bug using this flake's info.
+        issue_generator = FlakeDetectionIssueGenerator(
+            flake_group.flakes[0], flake_group.num_occurrences)
+        issue_generator.SetPreviousTrackingBugId(flake_group.previous_issue_id)
+        monorail_util.UpdateIssueWithIssueGenerator(
+            issue_id=flake_group.flake_issue.issue_id,
+            issue_generator=issue_generator)
+      else:
+        _UpdateFlakeIssueForFlakeGroup(flake_group)
+      # Update FlakeIssue's last_updated_time_by_flake_detection property. This
+      # property is only applicable to Flake Detection because Flake Detection
+      # can update an issue at most once every 24 hours.
+      flake_issue = flake_group.flake_issue
+      flake_issue.last_updated_time_by_flake_detection = time_util.GetUTCNow()
+      flake_issue.put()
+    except HttpError as error:
+      # Benign exceptions (HttpError 403) may happen when FindIt tries to
+      # update an issue that it doesn't have permission to. Do not raise
+      # exception so that the for loop can move on to create or update next
+      # issues.
+      logging.warning('Failed to create or update issue due to error: %s',
+                      error)
 
 
 def _AssignIssueToFlake(issue_id, flake):
