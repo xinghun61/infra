@@ -573,3 +573,19 @@ class CreationTest(testing.AppengineTestCase):
   def test_retry_not_found(self):
     with self.assertRaises(errors.BuildNotFoundError):
       creation.retry(2)
+
+  def test_find_integer_property_paths(self):
+    props = {
+        'str': '',
+        'int': 0,
+        'obj': {'int': 0,},
+        'list': ['', 0, {'int': 0}],
+    }
+    expected = {
+        ('int',),
+        ('obj', 'int'),
+        ('list', 1),
+        ('list', 2, 'int'),
+    }
+    actual = creation._find_integer_property_paths(props)
+    self.assertEqual(expected, actual)
