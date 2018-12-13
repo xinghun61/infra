@@ -280,6 +280,11 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
             '', '', False, False, False, None, None, None, False, '',
             None, tracker_pb2.NotifyTriggers.ANY_COMMENT, 'no_action',
             'TL on another approvers team', False, approval_id=4),
+        tracker_bizobj.MakeFieldDef(
+            3, 12345, 'Goat-Approval', tracker_pb2.FieldTypes.APPROVAL_TYPE,
+            '', '', False, False, False, None, None, None, False, '',
+            None, tracker_pb2.NotifyTriggers.NEVER, 'no_action',
+            'Get Approval from Goats', False)
     ]
     self.services.config.StoreConfig('cnxn', config)
 
@@ -341,6 +346,8 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     result = task.HandleRequest(mr)
     self.assertTrue('just a comment' in result['tasks'][0]['body'])
     self.assertTrue('Approvers: -approver' in result['tasks'][0]['body'])
+    self.assertTrue(
+        'Updates for approval Goat-Approval:' in result['tasks'][0]['body'])
     self.assertItemsEqual(
         ['user@example.com', 'approver_old@example.com',
          'approver_new@example.com', 'TL@example.com',

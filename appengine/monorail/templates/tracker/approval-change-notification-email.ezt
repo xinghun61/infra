@@ -4,7 +4,7 @@
 Please check the issue and take appropriate action.
 
 [if-any comment.amendments][#
-  ]Updates:
+  ]Updates for approval [approval_name]:
 [#][for comment.amendments]      [comment.amendments.field_name]: [format "raw"][comment.amendments.newvalue][end]
 [#][end][end]
 

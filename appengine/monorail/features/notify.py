@@ -711,6 +711,10 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
     project = self.services.project.GetProject(mr.cnxn, issue.project_id)
     config = self.services.config.GetProjectConfig(mr.cnxn, issue.project_id)
 
+    approval_fd = tracker_bizobj.FindFieldDefByID(approval_id, config)
+    if approval_fd is None:
+      raise exceptions.NoSuchFieldDefException()
+
     try:
       comment = self.services.issue.GetCommentsByID(
           mr.cnxn, [comment_id], collections.defaultdict(int))[0]
@@ -733,8 +737,8 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
     tasks = []
     if send_email:
       tasks = self._MakeApprovalEmailTasks(
-          hostport, issue, project, approval_value, comment, users_by_id,
-          list(field_user_ids), mr.perms)
+          hostport, issue, project, approval_value, approval_fd.field_name,
+          comment, users_by_id, list(field_user_ids), mr.perms)
 
     notified = notify_helpers.AddAllEmailTasks(tasks)
 
@@ -745,8 +749,8 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
         }
 
   def _MakeApprovalEmailTasks(
-      self, hostport, issue, project, approval_value, comment, users_by_id,
-      user_ids_from_fields, perms):
+      self, hostport, issue, project, approval_value, approval_name,
+      comment, users_by_id, user_ids_from_fields, perms):
     """Formulate emails to be sent."""
 
     # TODO(jojwang): avoid need to make MonorailRequest and autolinker
@@ -767,6 +771,7 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
     commenter_view = users_by_id[comment.user_id]
     email_data = {
         'approval_url': approval_url,
+        'approval_name': approval_name,
         'commenter': commenter_view,
         'comment': comment_view,
         }
