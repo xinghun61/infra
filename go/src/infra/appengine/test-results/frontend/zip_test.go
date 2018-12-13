@@ -81,28 +81,31 @@ func TestGetZipHandler(t *testing.T) {
 			So(w.Code, ShouldEqual, http.StatusNotFound)
 		})
 
-		Convey("redirect to zip", func() {
-			ctx.Params[2].Value = "layout-test-results.zip"
+		Convey("redirect", func() {
+			filePaths := map[string]string{
+				"zip":                      "layout-test-results.zip",
+				"zip with step name":       "site_per_process_webkit_layout_tests (with patch)/layout-test-results.zip",
+				"retry summary":            "retry_summary.json",
+				"retry with patch summary": "retry_with_patch_summary.json",
+			}
 
-			Convey("normal", func() {
-				zipRes = nil
-				getZipHandler(ctx)
-				bytes, err := ioutil.ReadAll(w.Body)
-				So(err, ShouldBeNil)
-				So(string(bytes), ShouldResemble, "<a href=\"https://storage.googleapis.com/chromium-layout-test-archives/test_builder/123/layout-test-results.zip\">Permanent Redirect</a>.\n\n")
-				So(w.Code, ShouldEqual, http.StatusPermanentRedirect)
-			})
+			for name, filePath := range filePaths {
+				Convey(name, func() {
+					ctx.Params[2].Value = filePath
+					zipRes = nil
+					getZipHandler(ctx)
 
-			Convey("with step name", func() {
-				ctx.Params[2].Value = "site_per_process_webkit_layout_tests (with patch)/layout-test-results.zip"
-				zipRes = nil
-				getZipHandler(ctx)
-
-				bytes, err := ioutil.ReadAll(w.Body)
-				So(err, ShouldBeNil)
-				So(string(bytes), ShouldResemble, "<a href=\"https://storage.googleapis.com/chromium-layout-test-archives/test_builder/123/site_per_process_webkit_layout_tests (with patch)/layout-test-results.zip\">Permanent Redirect</a>.\n\n")
-				So(w.Code, ShouldEqual, http.StatusPermanentRedirect)
-			})
+					bytes, err := ioutil.ReadAll(w.Body)
+					So(err, ShouldBeNil)
+					So(string(bytes), ShouldResemble,
+						fmt.Sprintf(
+							"<a href=\"https://storage.googleapis.com/chromium-layout-test-archives/test_builder/123/%s\">Permanent Redirect</a>.\n\n",
+							filePath,
+						),
+					)
+					So(w.Code, ShouldEqual, http.StatusPermanentRedirect)
+				})
+			}
 		})
 
 		Convey("success", func() {

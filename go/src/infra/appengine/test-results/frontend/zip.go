@@ -38,8 +38,10 @@ func getZipHandler(ctx *router.Context) {
 	buildNum := p.ByName("buildnum")
 	filepath := strings.Trim(p.ByName("filepath"), "/")
 
-	// Special case, since this isn't the zip file.
-	if strings.HasSuffix(filepath, "layout-test-results.zip") {
+	// Special cases outside of the zip file
+	if strings.HasSuffix(filepath, "layout-test-results.zip") ||
+		strings.HasSuffix(filepath, "retry_summary.json") ||
+		strings.HasSuffix(filepath, "retry_with_patch_summary.json") {
 		newURL := fmt.Sprintf("https://storage.googleapis.com/chromium-layout-test-archives/%s/%s/%s", builder, buildNum, filepath)
 		http.Redirect(w, r, newURL, http.StatusPermanentRedirect)
 		return
