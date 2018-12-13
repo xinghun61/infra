@@ -12,6 +12,9 @@ const APPROVED_PHASE_MILESTONE_MAP = {
   'Stable-Full': 'stable_date',
 };
 
+// monorail:4692, remove later
+const PHASES_WITH_MILESTONES = ['Beta', 'Stable', 'Stable-Exp', 'Stable-Full'];
+
 /**
  * `<mr-phase>`
  *
@@ -184,6 +187,8 @@ class MrPhase extends MetadataMixin(ReduxMixin(Polymer.Element)) {
   }
 
   _computeSetPhaseFields(fieldDefs, fieldValueMap, phaseName) {
+    // monorail:4692, remove later
+    if (!PHASES_WITH_MILESTONES.includes(phaseName)) return [];
     if (!fieldDefs || !fieldValueMap) return [];
     return fieldDefs.filter((fd) => fieldValueMap.has(
       this._makeFieldValueMapKey(fd.fieldRef.fieldName, phaseName)
