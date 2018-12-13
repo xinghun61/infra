@@ -1069,6 +1069,29 @@ class WorkEnvTest(unittest.TestCase):
       with self.work_env as we:
         we.FlagIssues([issue], False)
 
+  def testLookupIssueFlaggers_Normal(self):
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    comment_1 = tracker_pb2.IssueComment(
+        project_id=789, content='lorem ipsum', user_id=111L,
+        issue_id=issue.issue_id)
+    comment_2 = tracker_pb2.IssueComment(
+        project_id=789, content='dolor sit amet', user_id=111L,
+        issue_id=issue.issue_id)
+    self.services.issue.TestAddComment(comment_1, 1)
+    self.services.issue.TestAddComment(comment_2, 2)
+
+    self.SignIn(user_id=222L)
+    with self.work_env as we:
+      we.FlagIssues([issue], True)
+
+    self.SignIn(user_id=111L)
+    with self.work_env as we:
+      we.FlagComment(issue, comment_2, True)
+      issue_reporters, comment_reporters = we.LookupIssueFlaggers(issue)
+      self.assertEqual([222L], issue_reporters)
+      self.assertEqual({comment_2.id: [111L]}, comment_reporters)
+
   def testRerankBlockedOnIssues_SplitBelow(self):
     parent_issue = fake.MakeTestIssue(
         789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
