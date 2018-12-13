@@ -77,6 +77,10 @@ class ConverterFunctionsTest(unittest.TestCase):
         field_name='PhaseField', field_id=6,
         field_type=tracker_pb2.FieldTypes.INT_TYPE,
         applicable_type='', is_phase_field=True)
+    self.fd_7 = tracker_pb2.FieldDef(
+        field_name='ApprovalEnum', field_id=7,
+        field_type=tracker_pb2.FieldTypes.ENUM_TYPE,
+        applicable_type='', approval_id=self.fd_3.field_id)
 
     self.services.user.TestAddUser('owner@example.com', 111L)
     self.services.user.TestAddUser('editor@example.com', 222L)
@@ -1039,7 +1043,8 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.services.user.TestAddUser('user1@example.com', 111L)
     self.services.user.TestAddUser('user2@example.com', 222L)
 
-    self.config.field_defs = [self.fd_1, self.fd_2, self.fd_3, self.fd_4]
+    self.config.field_defs = [
+        self.fd_1, self.fd_2, self.fd_3, self.fd_4, self.fd_7]
 
     approval_delta = issues_pb2.ApprovalDelta(
         status=issue_objects_pb2.APPROVED,
@@ -1048,13 +1053,20 @@ class ConverterFunctionsTest(unittest.TestCase):
         field_vals_add=[
             issue_objects_pb2.FieldValue(
                 value='string', field_ref=common_pb2.FieldRef(
-                    field_name='FirstField'))],
+                    field_id=1, field_name='FirstField')),
+            issue_objects_pb2.FieldValue(
+                value='choice1', field_ref=common_pb2.FieldRef(
+                    field_id=7, field_name='ApprovalEnum')),
+        ],
         field_vals_remove=[
             issue_objects_pb2.FieldValue(
                 value='34', field_ref=common_pb2.FieldRef(
-                    field_name='SecField'))],
-        fields_clear=[common_pb2.FieldRef(field_name='FirstField')]
-        )
+                    field_id=2, field_name='SecField')),
+            issue_objects_pb2.FieldValue(
+                value='choice2', field_ref=common_pb2.FieldRef(
+                    field_id=7, field_name='ApprovalEnum')),
+        ],
+        fields_clear=[common_pb2.FieldRef(field_name='FirstField')])
 
     actual = converters.IngestApprovalDelta(
         self.cnxn, self.services.user, approval_delta, 333L, self.config)
@@ -1068,6 +1080,8 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual(actual.subfield_vals_remove, [tracker_pb2.FieldValue(
         int_value=34, field_id=2, derived=False)])
     self.assertEqual(actual.subfields_clear, [1])
+    self.assertEqual(actual.labels_add, ['ApprovalEnum-choice1'])
+    self.assertEqual(actual.labels_remove, ['ApprovalEnum-choice2'])
 
     # test a NOT_SET status is registered as None.
     approval_delta.status = issue_objects_pb2.NOT_SET

@@ -2567,8 +2567,14 @@ class IssueService(object):
         issue, config, approval_delta.subfield_vals_add,
         approval_delta.subfield_vals_remove, approval_delta.subfields_clear)
     amendments.extend(fv_amendments)
-    if(fv_amendments):
-     self._UpdateIssuesFields(cnxn, [issue], commit=False)
+    if fv_amendments:
+      self._UpdateIssuesFields(cnxn, [issue], commit=False)
+
+    label_amendment = tracker_bizobj.ApplyLabelChanges(
+        issue, config, approval_delta.labels_add, approval_delta.labels_remove)
+    if label_amendment:
+      amendments.append(label_amendment)
+      self._UpdateIssuesLabels(cnxn, [issue], commit=False)
 
     comment_pb = self.CreateIssueComment(
         cnxn, issue, modifier_id, comment_content, amendments=amendments,

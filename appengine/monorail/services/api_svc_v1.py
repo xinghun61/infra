@@ -726,8 +726,10 @@ class MonorailApi(remote.Service):
     approval_delta = tracker_bizobj.MakeApprovalDelta(
         updates_dict.get('status'), mar.auth.user_id,
         updates_dict.get('approver_ids_add', []),
-        updates_dict.get('approver_ids_remove', []), [], [], [])
+        updates_dict.get('approver_ids_remove', []), [], [], [],
+        [], [])
     # TODO(jojwang): monorail:4229, add fieldValue changes
+    # TODO(jojwang): monorail:4673, add enum fieldValue/label changes
     comment = self._services.issue.DeltaUpdateIssueApproval(
         mar.cnxn, mar.auth.user_id, mar.config, issue, approval, approval_delta,
         comment_content=request.content,

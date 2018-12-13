@@ -967,7 +967,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     response = self.call_api('approvals_comments_insert', request).json_body
     approval_delta = tracker_bizobj.MakeApprovalDelta(
         tracker_pb2.ApprovalStatus.REVIEW_REQUESTED, 1, [], [], [], [], [],
-        set_on=test_time)
+        [], [], set_on=test_time)
     self.services.issue.DeltaUpdateIssueApproval.assert_called_with(
         None, 1, self.config, issue, approval, approval_delta,
         comment_content=None, is_description=None)
@@ -1017,7 +1017,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
     approval_delta = tracker_bizobj.MakeApprovalDelta(
         tracker_pb2.ApprovalStatus.APPROVED, 1, [], [], [], [], [],
-        set_on=test_time)
+        [], [], set_on=test_time)
     self.services.issue.DeltaUpdateIssueApproval.assert_called_with(
         None, 1, self.config, issue, approval, approval_delta,
         comment_content=None, is_description=None)
@@ -1070,7 +1070,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     response = self.call_api('approvals_comments_insert', request).json_body
 
     approval_delta = tracker_bizobj.MakeApprovalDelta(
-        None, 1, [2], [123], [], [], [], set_on=test_time)
+        None, 1, [2], [123], [], [], [], [], [], set_on=test_time)
     self.services.issue.DeltaUpdateIssueApproval.assert_called_with(
         None, 1, self.config, issue, approval, approval_delta,
         comment_content=None, is_description=None)
@@ -1104,7 +1104,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     response = self.call_api('approvals_comments_insert', request).json_body
 
     approval_delta = tracker_bizobj.MakeApprovalDelta(
-        None, 1, [], [], [], [], [], set_on=test_time)
+        None, 1, [], [], [], [], [], [], [], set_on=test_time)
     self.services.issue.DeltaUpdateIssueApproval.assert_called_with(
         None, 1, self.config, issue, approval, approval_delta,
         comment_content='updated survey', is_description=True)
@@ -1140,7 +1140,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
         issue.issue_id, approval.approval_id, ANY, comment.id, send_email=True)
 
     approval_delta = tracker_bizobj.MakeApprovalDelta(
-        None, 1, [], [], [], [], [], set_on=test_time)
+        None, 1, [], [], [], [], [], [], [], set_on=test_time)
     self.services.issue.DeltaUpdateIssueApproval.assert_called_with(
         None, 1, self.config, issue, approval, approval_delta,
         comment_content=comment.content, is_description=None)

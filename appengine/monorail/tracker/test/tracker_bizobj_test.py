@@ -936,15 +936,20 @@ class BizobjTest(unittest.TestCase):
     removed_fv = tracker_bizobj.MakeFieldValue(
       1, None, 'removed str', None, None, None, False)
     clear_fvs = [24]
+    labels_add = ['ittly-bittly', 'piggly-wiggly']
+    labels_remove = ['golly-goops', 'whoopsie']
     actual = tracker_bizobj.MakeApprovalDelta(
         tracker_pb2.ApprovalStatus.APPROVED, 111L, [222L], [],
-        [added_fv], [removed_fv], clear_fvs, set_on=1234)
+        [added_fv], [removed_fv], clear_fvs, labels_add, labels_remove,
+        set_on=1234)
     self.assertEqual(actual.status, tracker_pb2.ApprovalStatus.APPROVED)
     self.assertEqual(actual.setter_id, 111L)
     self.assertEqual(actual.set_on, 1234)
     self.assertEqual(actual.subfield_vals_add, [added_fv])
     self.assertEqual(actual.subfield_vals_remove, [removed_fv])
     self.assertEqual(actual.subfields_clear, clear_fvs)
+    self.assertEqual(actual.labels_add, labels_add)
+    self.assertEqual(actual.labels_remove, labels_remove)
 
   def testMakeApprovalDelta_WithNones(self):
     added_fv = tracker_bizobj.MakeFieldValue(
@@ -952,9 +957,12 @@ class BizobjTest(unittest.TestCase):
     removed_fv = tracker_bizobj.MakeFieldValue(
       1, None, 'removed str', None, None, None, False)
     clear_fields = [2]
+    labels_add = ['ittly-bittly', 'piggly-wiggly']
+    labels_remove = ['golly-goops', 'whoopsie']
     actual = tracker_bizobj.MakeApprovalDelta(
         None, 111L, [222L], [],
-        [added_fv], [removed_fv], clear_fields)
+        [added_fv], [removed_fv], clear_fields,
+        labels_add, labels_remove)
     self.assertIsNone(actual.status)
     self.assertIsNone(actual.setter_id)
     self.assertIsNone(actual.set_on)

@@ -1729,7 +1729,7 @@ class IssueServiceTest(unittest.TestCase):
         self.services.issue.GetIssueApproval,
         self.cnxn, issue_1.issue_id, 24)
 
-  def testUpdateIssueApproval(self):
+  def testDeltaUpdateIssueApproval(self):
     config = self.services.config.GetProjectConfig(
         self.cnxn, 789)
     config.field_defs = [
@@ -1746,18 +1746,22 @@ class IssueServiceTest(unittest.TestCase):
 
     issue = fake.MakeTestIssue(
         project_id=789, local_id=1, summary='summary', status='New',
-        owner_id=999L, issue_id=78901)
+        owner_id=999L, issue_id=78901, labels=['noodle-puppies'])
     av = tracker_pb2.ApprovalValue(approval_id=23)
     final_av = tracker_pb2.ApprovalValue(
         approval_id=23, setter_id=111L, set_on=1234,
         status=tracker_pb2.ApprovalStatus.REVIEW_REQUESTED,
         approver_ids=[222L, 444L])
+    labels_add = ['snakes-are']
+    label_id = 1001
+    labels_remove = ['noodle-puppies']
     amendments = [
         tracker_bizobj.MakeApprovalStatusAmendment(
             tracker_pb2.ApprovalStatus.REVIEW_REQUESTED),
         tracker_bizobj.MakeApprovalApproversAmendment([222L, 444L], []),
         tracker_bizobj.MakeFieldAmendment(1, config, [4], []),
-        tracker_bizobj.MakeFieldClearedAmendment(2, config)
+        tracker_bizobj.MakeFieldClearedAmendment(2, config),
+        tracker_bizobj.MakeLabelsAmendment(labels_add, labels_remove)
     ]
     approval_delta = tracker_pb2.ApprovalDelta(
         status=tracker_pb2.ApprovalStatus.REVIEW_REQUESTED,
@@ -1765,6 +1769,8 @@ class IssueServiceTest(unittest.TestCase):
         subfield_vals_add=[
           tracker_bizobj.MakeFieldValue(1, 4, None, None, None, None, False)
           ],
+        labels_add=labels_add,
+        labels_remove=labels_remove,
         subfields_clear=[2]
     )
 
@@ -1773,9 +1779,13 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.issueapproval2approver_tbl.InsertRows = Mock()
     self.services.issue.issue2fieldvalue_tbl.Delete = Mock()
     self.services.issue.issue2fieldvalue_tbl.InsertRows = Mock()
+    self.services.issue.issue2label_tbl.Delete = Mock()
+    self.services.issue.issue2label_tbl.InsertRows = Mock()
     self.services.issue.CreateIssueComment = Mock()
+    self.services.config.LookupLabelID = Mock(return_value=label_id)
     shard = issue.issue_id % settings.num_logical_shards
     fv_rows = [(78901, 1, 4, None, None, None, None, False, None, shard)]
+    label_rows = [(78901, label_id, False, shard)]
 
     self.services.issue.DeltaUpdateIssueApproval(
         self.cnxn, 111L, config, issue, av, approval_delta, 'some comment',
@@ -1801,11 +1811,18 @@ class IssueServiceTest(unittest.TestCase):
         InsertRows.assert_called_once_with(
             self.cnxn, issue_svc.ISSUE2FIELDVALUE_COLS + ['issue_shard'],
             fv_rows, commit=False)
+    self.services.issue.issue2label_tbl.\
+        Delete.assert_called_once_with(
+            self.cnxn, issue_id=[78901], commit=False)
+    self.services.issue.issue2label_tbl.\
+        InsertRows.assert_called_once_with(
+            self.cnxn, issue_svc.ISSUE2LABEL_COLS + ['issue_shard'],
+            label_rows, ignore=True, commit=False)
     self.services.issue.CreateIssueComment.assert_called_once_with(
         self.cnxn, issue, 111L, 'some comment', amendments=amendments,
         approval_id=23, is_description=False, attachments=[], commit=False)
 
-  def testUpdateIssueApproval_IsDescription(self):
+  def testDeltaUpdateIssueApproval_IsDescription(self):
     config = self.services.config.GetProjectConfig(
         self.cnxn, 789)
     issue = fake.MakeTestIssue(

@@ -573,10 +573,17 @@ def IngestApprovalDelta(cnxn, user_service, approval_delta, setter_id, config):
       cnxn, approval_delta.approver_refs_add, user_service, autocreate=True)
   approver_ids_remove = IngestUserRefs(
       cnxn, approval_delta.approver_refs_remove, user_service, autocreate=True)
-  sub_fvs_add = IngestFieldValues(
-      cnxn, user_service, approval_delta.field_vals_add, config)
+
+  labels_add, labels_remove = [], []
+  # TODO(jojwang): monorail:4673, validate enum values all belong to approval.
+  field_vals_add, field_vals_remove = _RedistributeEnumFieldsIntoLabels(
+      labels_add, labels_remove,
+      approval_delta.field_vals_add, approval_delta.field_vals_remove,
+      config)
+
+  sub_fvs_add = IngestFieldValues(cnxn, user_service, field_vals_add, config)
   sub_fvs_remove = IngestFieldValues(
-      cnxn, user_service, approval_delta.field_vals_remove, config)
+      cnxn, user_service, field_vals_remove, config)
   sub_fields_clear = [fids_by_name.get(clear.field_name.lower()) for
                       clear in approval_delta.fields_clear
                       if clear.field_name.lower() in fids_by_name]
@@ -591,7 +598,7 @@ def IngestApprovalDelta(cnxn, user_service, approval_delta, setter_id, config):
 
   return tracker_bizobj.MakeApprovalDelta(
       status, setter_id, approver_ids_add, approver_ids_remove,
-      sub_fvs_add, sub_fvs_remove, sub_fields_clear)
+      sub_fvs_add, sub_fvs_remove, sub_fields_clear, labels_add, labels_remove)
 
 
 def IngestApprovalStatus(approval_status):

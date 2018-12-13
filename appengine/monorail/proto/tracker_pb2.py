@@ -61,6 +61,9 @@ class ApprovalDelta(messages.Message):
   subfield_vals_add = messages.MessageField(FieldValue, 6, repeated=True)
   subfield_vals_remove = messages.MessageField(FieldValue, 7, repeated=True)
   subfields_clear = messages.IntegerField(8, repeated=True)
+  # Stores Approval's Enum subfield changes.
+  labels_add = messages.StringField(9, repeated=True)
+  labels_remove = messages.StringField(10, repeated=True)
 
 
 class Phase(messages.Message):
