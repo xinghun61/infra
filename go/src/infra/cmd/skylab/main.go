@@ -30,7 +30,7 @@ func getApplication() *cli.Application {
 		Commands: []*subcommands.Command{
 			subcommands.CmdHelp,
 			authcli.SubcommandInfo(site.DefaultAuthOptions, "whoami", false),
-			authcli.SubcommandLogin(cmd.WithGerritScope(site.DefaultAuthOptions), "login", false),
+			authcli.SubcommandLogin(site.DefaultAuthOptions, "login", false),
 			authcli.SubcommandLogout(site.DefaultAuthOptions, "logout", false),
 
 			// Main commands.
