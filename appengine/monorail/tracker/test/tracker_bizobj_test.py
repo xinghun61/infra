@@ -999,6 +999,30 @@ class BizobjTest(unittest.TestCase):
     self.assertIsNone(actual.merged_into)
     self.assertIsNone(actual.summary)
 
+  def testApplyLabelChanges_RemoveAndAdd(self):
+    issue = tracker_pb2.Issue(labels=['tobe-removed', 'tobe-notremoved'])
+    amendment = tracker_bizobj.ApplyLabelChanges(
+        issue, self.config, [u'tobe-added'], [u'tobe-removed'])
+    self.assertEqual(amendment, tracker_bizobj.MakeLabelsAmendment(
+        ['tobe-added'], ['tobe-removed']))
+
+  def testApplyLabelChanges_RemoveInvalidLabel(self):
+    issue = tracker_pb2.Issue(labels=[])
+    amendment = tracker_bizobj.ApplyLabelChanges(
+        issue, self.config, [], [u'lost-car'])
+    self.assertIsNone(amendment)
+
+  def testApplyLabelChanges_NoChangesAfterMerge(self):
+    issue = tracker_pb2.Issue(labels=['lost-car'])
+    amendment = tracker_bizobj.ApplyLabelChanges(
+        issue, self.config, [u'lost-car'], [])
+    self.assertIsNone(amendment)
+
+  def testApplyLabelChanges_Empty(self):
+    issue = tracker_pb2.Issue(labels=[])
+    amendment = tracker_bizobj.ApplyLabelChanges(issue, self.config, [], [])
+    self.assertIsNone(amendment)
+
   def testApplyIssueDelta_NoChange(self):
     """A delta with no change should change nothing."""
     issue = tracker_pb2.Issue(

@@ -835,6 +835,26 @@ def MakeIssueDelta(
   return delta
 
 
+def ApplyLabelChanges(issue, config, labels_add, labels_remove):
+  """Updates the PB issue's labels and returns the amendment or None."""
+  canon_labels_add = [framework_bizobj.CanonicalizeLabel(l)
+                      for l in labels_add]
+  canon_labels_add = [l for l in canon_labels_add if l]
+  canon_labels_remove = [framework_bizobj.CanonicalizeLabel(l)
+                         for l in labels_remove]
+  labels_remove = [l for l in canon_labels_remove if l]
+
+  (labels, update_labels_add,
+   update_labels_remove) = framework_bizobj.MergeLabels(
+       issue.labels, labels_add, labels_remove, config)
+
+  if update_labels_add or update_labels_remove:
+    issue.labels = labels
+    return MakeLabelsAmendment(
+          update_labels_add, update_labels_remove)
+  return None
+
+
 def ApplyFieldValueChanges(issue, config, fvs_add, fvs_remove, fields_clear):
   """Updates the PB issue's field_values and returns an amendments list."""
   (field_vals, update_fields_add,
@@ -942,21 +962,10 @@ def ApplyIssueDelta(cnxn, issue_service, issue, delta, config):
         comp_ids_add, comp_ids_remove, config))
 
   # compute the set of labels added and removed
-  labels_add = [framework_bizobj.CanonicalizeLabel(l)
-                for l in delta.labels_add]
-  labels_add = [l for l in labels_add if l]
-  labels_remove = [framework_bizobj.CanonicalizeLabel(l)
-                   for l in delta.labels_remove]
-  labels_remove = [l for l in labels_remove if l]
-
-  (labels, update_labels_add,
-   update_labels_remove) = framework_bizobj.MergeLabels(
-       issue.labels, labels_add, labels_remove, config)
-
-  if update_labels_add or update_labels_remove:
-    issue.labels = labels
-    amendments.append(MakeLabelsAmendment(
-        update_labels_add, update_labels_remove))
+  label_amendment = ApplyLabelChanges(
+      issue, config, delta.labels_add, delta.labels_remove)
+  if label_amendment:
+    amendments.append(label_amendment)
 
   # compute the set of custom fields added and removed
   fv_amendments = ApplyFieldValueChanges(
