@@ -24,21 +24,21 @@ func workflowLaunchedHandler(ctx *router.Context) {
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "[tracker] Workflow launched queue handler failed to read request body.")
+		logging.WithError(err).Errorf(c, "Failed to read request body.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	wr := &admin.WorkflowLaunchedRequest{}
 	if err := proto.Unmarshal(body, wr); err != nil {
-		logging.WithError(err).Errorf(c, "[tracker] Workflow launched queue handler failed to unmarshal request.")
+		logging.WithError(err).Errorf(c, "Failed to unmarshal request.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	logging.Fields{
-		"run ID": wr.RunId,
-	}.Infof(c, "[tracker] Workflow launched request received.")
+		"runID": wr.RunId,
+	}.Infof(c, "Request received.")
 	if _, err := server.WorkflowLaunched(c, wr); err != nil {
-		logging.WithError(err).Errorf(c, "[tracker] Failed to call Tracker.WorkflowLaunched.")
+		logging.WithError(err).Errorf(c, "Failed to call WorkflowLaunched.")
 		switch grpc.Code(err) {
 		case codes.InvalidArgument:
 			w.WriteHeader(http.StatusBadRequest)
@@ -47,7 +47,6 @@ func workflowLaunchedHandler(ctx *router.Context) {
 		}
 		return
 	}
-	logging.Infof(c, "[tracker] Successfully tracked workflow launched.")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -56,22 +55,22 @@ func workerLaunchedHandler(ctx *router.Context) {
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "[tracker] Worker launched queue handler failed to read request body.")
+		logging.WithError(err).Errorf(c, "Failed to read request body.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	wr := &admin.WorkerLaunchedRequest{}
 	if err := proto.Unmarshal(body, wr); err != nil {
-		logging.WithError(err).Errorf(c, "[tracker] Worker launched queue handler failed to unmarshal request.")
+		logging.WithError(err).Errorf(c, "Failed to unmarshal request.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	logging.Fields{
-		"run ID": wr.RunId,
+		"runID":  wr.RunId,
 		"worker": wr.Worker,
-	}.Infof(c, "[tracker] Worker launched request received.")
+	}.Infof(c, "Request received.")
 	if _, err := server.WorkerLaunched(c, wr); err != nil {
-		logging.WithError(err).Errorf(c, "[tracker] Failed to call Tracker.WorkerLaunched.")
+		logging.WithError(err).Errorf(c, "Failed to call WorkerLaunched.")
 		switch grpc.Code(err) {
 		case codes.InvalidArgument:
 			w.WriteHeader(http.StatusBadRequest)
@@ -80,7 +79,6 @@ func workerLaunchedHandler(ctx *router.Context) {
 		}
 		return
 	}
-	logging.Infof(c, "[tracker] Successfully tracked worker launched.")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -89,22 +87,22 @@ func workerDoneHandler(ctx *router.Context) {
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "[tracker] Worker done queue handler failed to read request body.")
+		logging.WithError(err).Errorf(c, "Failed to read request body.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	wr := &admin.WorkerDoneRequest{}
 	if err := proto.Unmarshal(body, wr); err != nil {
-		logging.WithError(err).Errorf(c, "[tracker] Worker done queue handler failed to unmarshal request.")
+		logging.WithError(err).Errorf(c, "Failed to unmarshal request.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	logging.Fields{
-		"run ID": wr.RunId,
+		"runID":  wr.RunId,
 		"worker": wr.Worker,
-	}.Infof(c, "[tracker] Worker done request received")
+	}.Infof(c, "Request received.")
 	if _, err := server.WorkerDone(c, wr); err != nil {
-		logging.WithError(err).Errorf(c, "[tracker] Failed to call Tracker.WorkerDone.")
+		logging.WithError(err).Errorf(c, "Failed to call WorkerDone.")
 		switch grpc.Code(err) {
 		case codes.InvalidArgument:
 			w.WriteHeader(http.StatusBadRequest)
@@ -113,6 +111,5 @@ func workerDoneHandler(ctx *router.Context) {
 		}
 		return
 	}
-	logging.Infof(c, "[tracker] Successfully tracked worker completion.")
 	w.WriteHeader(http.StatusOK)
 }

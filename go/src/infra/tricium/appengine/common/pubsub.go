@@ -62,7 +62,7 @@ func (pubsubServer) Setup(c context.Context) error {
 		"topic":        topic,
 		"subscription": subscription,
 		"pushURL":      pushURL,
-	}.Infof(c, "Pubsub set up.")
+	}.Infof(c, "PubSub set up.")
 	transport, err := auth.GetRPCTransport(c, auth.AsSelf, auth.WithScopes(pubsub.PubsubScope))
 	if err != nil {
 		return errors.Annotate(err, "failed to create HTTP transport").Err()

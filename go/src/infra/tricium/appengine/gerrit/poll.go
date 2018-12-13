@@ -151,7 +151,7 @@ func pollGerritProject(c context.Context, luciProject string, repo *tricium.Repo
 			return errors.Annotate(err, "failed to get Project entity").Err()
 		}
 		logging.Fields{
-			"gerrit project ID": p.ID,
+			"gerritProject": p.ID,
 		}.Infof(c, "Found no previous poll for gerrit project.")
 		err = nil
 		p.Instance = gerritProject.Host
@@ -390,7 +390,7 @@ func enqueueAnalyzeRequests(c context.Context, luciProject string, repo *tricium
 		}
 		if len(files) == 0 {
 			logging.Fields{
-				"change ID": change.ID,
+				"changeID": change.ID,
 			}.Infof(c, "Not making Analyze request for change; changes has no files.")
 			continue
 		}

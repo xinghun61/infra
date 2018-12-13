@@ -33,22 +33,22 @@ func triggerHandler(ctx *router.Context) {
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "[driver] Trigger queue handler failed to read request body.")
+		logging.WithError(err).Errorf(c, "Failed to read request body.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	tr := &admin.TriggerRequest{}
 	if err := proto.Unmarshal(body, tr); err != nil {
-		logging.WithError(err).Errorf(c, "[driver] Trigger queue handler failed to unmarshal request.")
+		logging.WithError(err).Errorf(c, "Failed to unmarshal request.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	logging.Fields{
-		"run ID": tr.RunId,
+		"runID":  tr.RunId,
 		"worker": tr.Worker,
-	}.Infof(c, "[driver] Trigger request received.")
+	}.Infof(c, "Request received.")
 	if _, err := server.Trigger(c, tr); err != nil {
-		logging.WithError(err).Errorf(c, "[driver] Failed to call Driver.Trigger.")
+		logging.WithError(err).Errorf(c, "Failed to call Trigger.")
 		switch grpc.Code(err) {
 		case codes.InvalidArgument:
 			w.WriteHeader(http.StatusBadRequest)
@@ -57,7 +57,6 @@ func triggerHandler(ctx *router.Context) {
 		}
 		return
 	}
-	logging.Infof(c, "[driver] Successfully completed trigger.")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -66,22 +65,22 @@ func collectHandler(ctx *router.Context) {
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "[driver] Collect queue handler failed to read request body.")
+		logging.WithError(err).Errorf(c, "Failed to read request body.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	cr := &admin.CollectRequest{}
 	if err := proto.Unmarshal(body, cr); err != nil {
-		logging.WithError(err).Errorf(c, "[driver] Collect queue handler failed to unmarshal request.")
+		logging.WithError(err).Errorf(c, "Failed to unmarshal request.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	logging.Fields{
-		"run ID": cr.RunId,
+		"runID":  cr.RunId,
 		"worker": cr.Worker,
-	}.Infof(c, "[driver] Collect request received.")
+	}.Infof(c, "Request received.")
 	if _, err := server.Collect(c, cr); err != nil {
-		logging.WithError(err).Errorf(c, "[driver] Failed to call Driver.Collect.")
+		logging.WithError(err).Errorf(c, "Failed to call Collect.")
 		switch grpc.Code(err) {
 		case codes.InvalidArgument:
 			w.WriteHeader(http.StatusBadRequest)
@@ -90,7 +89,6 @@ func collectHandler(ctx *router.Context) {
 		}
 		return
 	}
-	logging.Infof(c, "[driver] Successfully completed collect.")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -99,7 +97,6 @@ func collectHandler(ctx *router.Context) {
 // the two rather than handling them in the same function.
 func pubsubPushHandler(ctx *router.Context) {
 	c, r, w := ctx.Context, ctx.Request, ctx.Writer
-	logging.Infof(c, "[driver] Received PubSub push message.")
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		logging.WithError(err).Errorf(c, "Failed to read PubSub message body.")
@@ -120,7 +117,6 @@ func pubsubPushHandler(ctx *router.Context) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	logging.Infof(c, "[driver] Successfully processed PubSub push notification.")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -140,18 +136,17 @@ func pubsubPullHandler(ctx *router.Context) {
 		return
 	}
 	if msg == nil {
-		logging.Infof(c, "[driver] Found no PubSub message.")
+		logging.Infof(c, "Found no PubSub message.")
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	logging.Infof(c, "[driver] Pulled PubSub message.")
+	logging.Infof(c, "Pulled PubSub message.")
 	// Process PubSub message.
 	if err := handlePubSubMessage(c, msg); err != nil {
 		logging.WithError(err).Errorf(c, "Failed to handle PubSub messages.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	logging.Infof(c, "[driver] Successfully completed PubSub pull.")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -166,18 +161,18 @@ type ReceivedPubSubMessage struct {
 
 func handlePubSubMessage(c context.Context, msg *pubsub.PubsubMessage) error {
 	logging.Fields{
-		"message ID":   msg.MessageId,
-		"publish time": msg.PublishTime,
-	}.Infof(c, "[driver] PubSub message received.")
+		"messageID":   msg.MessageId,
+		"publishTime": msg.PublishTime,
+	}.Infof(c, "PubSub message received.")
 	tr, taskID, buildID, err := decodePubsubMessage(c, msg)
 	if err != nil {
 		return errors.Annotate(err, "failed to decode PubSub message").Err()
 	}
 	logging.Fields{
-		"build ID":       buildID,
-		"task ID":        taskID,
+		"buildID":        buildID,
+		"taskID":         taskID,
 		"TriggerRequest": tr,
-	}.Infof(c, "[driver] Unwrapped PubSub message.")
+	}.Infof(c, "Unwrapped PubSub message.")
 	// Check if message was already received.
 	received := &ReceivedPubSubMessage{}
 	if taskID != "" {
@@ -198,9 +193,9 @@ func handlePubSubMessage(c context.Context, msg *pubsub.PubsubMessage) error {
 		}
 	} else {
 		logging.Fields{
-			"build ID": buildID,
-			"task ID":  taskID,
-		}.Infof(c, "[driver] Skipping processing of PubSub message.")
+			"buildID": buildID,
+			"taskID":  taskID,
+		}.Infof(c, "Skipping processing of PubSub message.")
 		// Message has already been processed, return and ack the
 		// PubSub message with no further action.
 		return nil
@@ -217,9 +212,9 @@ func handlePubSubMessage(c context.Context, msg *pubsub.PubsubMessage) error {
 		return err
 	}
 	logging.Fields{
-		"run ID": tr.RunId,
+		"runID":  tr.RunId,
 		"worker": tr.Worker,
-	}.Infof(c, "[driver] Enqueued collect request.")
+	}.Infof(c, "Enqueued collect request.")
 	return nil
 }
 
@@ -251,7 +246,7 @@ func decodePubsubMessage(c context.Context, msg *pubsub.PubsubMessage) (*admin.T
 	}
 
 	p := struct {
-		Build struct { 
+		Build struct {
 			ID int64 `json:"id,string"`
 		} `json:"build"`
 		TaskID              string `json:"task_id"`

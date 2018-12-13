@@ -43,7 +43,6 @@ func mainPageHandler(ctx *router.Context) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	logging.Infof(c, "[frontend] Successfully rendered frontend UI.")
 }
 
 func templateArgs(c context.Context, r *http.Request) (map[string]interface{}, error) {
@@ -75,29 +74,30 @@ func templateArgs(c context.Context, r *http.Request) (map[string]interface{}, e
 func analyzeHandler(ctx *router.Context) {
 	c, r, w := ctx.Context, ctx.Request, ctx.Writer
 	defer r.Body.Close()
-	logging.Debugf(c, "[frontend] Received Analyze request from analyze queue.")
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "[frontend] Failed to read request body.")
+		logging.WithError(err).Errorf(c, "Failed to read request body.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	ar := &tricium.AnalyzeRequest{}
 	if err := proto.Unmarshal(body, ar); err != nil {
-		logging.WithError(err).Errorf(c, "[frontend] Failed to unmarshal request.")
+		logging.WithError(err).Errorf(c, "Failed to unmarshal request.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	if err = validateAnalyzeRequest(c, ar); err != nil {
-		logging.WithError(err).Errorf(c, "[frontend] Got invalid Analyze request.")
+		logging.WithError(err).Errorf(c, "Got an invalid Analyze request.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	logging.Infof(c, "[frontend] Analyze request: %+v", ar)
 	runID, err := analyze(c, ar, config.LuciConfigServer)
+	logging.Fields{
+		"runID": runID,
+	}.Infof(c, "Received request.")
 	if err != nil {
-		logging.WithError(err).Errorf(c, "[frontend] Failed to call analyze.")
+		logging.WithError(err).Errorf(c, "Analyze failed.")
 		switch grpc.Code(err) {
 		case codes.InvalidArgument:
 			w.WriteHeader(http.StatusBadRequest)
@@ -106,8 +106,5 @@ func analyzeHandler(ctx *router.Context) {
 		}
 		return
 	}
-	logging.Fields{
-		"run ID": runID,
-	}.Infof(c, "[frontend] Successfully completed Analyze.")
 	w.WriteHeader(http.StatusOK)
 }

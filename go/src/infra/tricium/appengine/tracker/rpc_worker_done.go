@@ -57,10 +57,10 @@ func validateWorkerDoneRequest(req *admin.WorkerDoneRequest) error {
 
 func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common.IsolateAPI) error {
 	logging.Fields{
-		"run ID":             req.RunId,
-		"worker":             req.Worker,
-		"isolated output":    req.IsolatedOutputHash,
-		"buildbucket output": req.BuildbucketOutput,
+		"runID":             req.RunId,
+		"worker":            req.Worker,
+		"isolatedOutput":    req.IsolatedOutputHash,
+		"buildbucketOutput": req.BuildbucketOutput,
 	}.Infof(c, "[tracker] Worker done request received.")
 
 	// Get keys for entities.
@@ -184,12 +184,12 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	}
 
 	logging.Fields{
-		"worker":         req.Worker,
-		"worker state":   req.State,
-		"function":       functionName,
-		"function state": functionState,
-		"run ID":         req.RunId,
-		"run state":      runState,
+		"worker":        req.Worker,
+		"workerState":   req.State,
+		"function":      functionName,
+		"functionState": functionState,
+		"runID":         req.RunId,
+		"runState":      runState,
 	}.Infof(c, "Updating state.")
 
 	// Now that all prerequisite data was loaded, run the mutations in a transaction.
@@ -252,9 +252,9 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 					fr.State = functionState
 					fr.NumComments = functionNumComments
 					logging.Fields{
-						"function":     fr.Name,
-						"num comments": fr.NumComments,
-					}.Debugf(c, "[tracker] Updating state of function.")
+						"function":    fr.Name,
+						"numComments": fr.NumComments,
+					}.Debugf(c, "Updating state of FunctionRunResult.")
 					if err := ds.Put(c, fr); err != nil {
 						return errors.Annotate(err, "failed to update FunctionRunResult").Err()
 					}

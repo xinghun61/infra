@@ -5,8 +5,6 @@
 package launcher
 
 import (
-	"encoding/json"
-
 	"github.com/golang/protobuf/proto"
 	ds "go.chromium.org/gae/service/datastore"
 	tq "go.chromium.org/gae/service/taskqueue"
@@ -32,8 +30,8 @@ func (r *launcherServer) Launch(c context.Context, req *admin.LaunchRequest) (re
 		err = grpcutil.GRPCifyAndLogErr(c, err)
 	}()
 	logging.Fields{
-		"run ID": req.RunId,
-	}.Infof(c, "[launcher] Launch request received.")
+		"runID": req.RunId,
+	}.Infof(c, "Request received.")
 	if err := validateLaunchRequest(req); err != nil {
 		return nil, errors.Annotate(err, "invalid request").
 			Tag(grpcutil.InvalidArgumentTag).Err()
@@ -73,7 +71,7 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 	// in the request; if so stop here.
 	w := &config.Workflow{ID: req.RunId}
 	if err := ds.Get(c, w); err != ds.ErrNoSuchEntity {
-		logging.Infof(c, "[launcher] Launch request for already-launched workflow")
+		logging.Infof(c, "Launch request for already-launched workflow")
 		return nil
 	}
 
@@ -86,11 +84,9 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 	if err != nil {
 		return errors.Annotate(err, "failed to get project config").Err()
 	}
-	configJSON, _ := json.Marshal(pc)
 	logging.Fields{
 		"project": req.Project,
-		"config":  string(configJSON),
-	}.Debugf(c, "Got project config")
+	}.Debugf(c, "Got project config.")
 	wf, err := config.Generate(sc, pc, req.Files, req.GitRef, req.GitUrl)
 	if err != nil {
 		return errors.Annotate(err, "failed to generate workflow config for project %q", req.Project).Err()
@@ -161,15 +157,15 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 			}
 		}()
 		go func() {
-			// Mark workflow as launched. Processing of this
-			// request needs the stored workflow config.
+			// Mark workflow as launched. Processing of this request needs the
+			// stored workflow config.
 			if err := tq.Add(c, common.TrackerQueue, wfTask); err != nil {
 				done <- errors.Annotate(err, "failed to enqueue workflow launched track request").Err()
 			}
 			done <- nil
 		}()
-		// Trigger root workers. Processing of this request needs the
-		// stored workflow config.
+		// Trigger root workers. Processing of this request needs the stored
+		// workflow config.
 		if err := tq.Add(c, common.DriverQueue, wTasks...); err != nil {
 			return errors.Annotate(err, "failed to enqueue trigger request(s) for root worker(s)").Err()
 		}

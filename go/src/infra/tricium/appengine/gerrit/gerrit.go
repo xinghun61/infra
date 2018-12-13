@@ -290,7 +290,7 @@ func (gerritServer) setReview(c context.Context, host, change, revision string, 
 		return errors.Annotate(err, "failed to marshal ReviewInput").Err()
 	}
 	url := fmt.Sprintf("https://%s/a/changes/%s/revisions/%s/review", host, change, common.PatchSetNumber(revision))
-	logging.Debugf(c, "Using set review URL %q.", url)
+	logging.Debugf(c, "Posting comments using URL %q.", url)
 	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
 	if err != nil {
 		return errors.Annotate(err, "failed to create POST request").Err()

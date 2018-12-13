@@ -21,8 +21,8 @@ func (r *TriciumServer) ReportNotUseful(c context.Context, req *tricium.ReportNo
 		err = grpcutil.GRPCifyAndLogErr(c, err)
 	}()
 	logging.Fields{
-		"comment ID": req.CommentId,
-	}.Infof(c, "[frontend] Report not useful request received.")
+		"commentID": req.CommentId,
+	}.Infof(c, "Request received.")
 	if err := validateReportRequest(c, req); err != nil {
 		return nil, err
 	}

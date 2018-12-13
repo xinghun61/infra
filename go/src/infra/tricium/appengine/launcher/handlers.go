@@ -23,18 +23,18 @@ func launchHandler(ctx *router.Context) {
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "[launcher] Queue handler failed to read request body")
+		logging.WithError(err).Errorf(c, "Failed to read request body.")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	lr := &admin.LaunchRequest{}
 	if err := proto.Unmarshal(body, lr); err != nil {
-		logging.WithError(err).Errorf(c, "[launcher] Queue handler failed to unmarshal launch request")
+		logging.WithError(err).Errorf(c, "Failed to unmarshal launch request.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	if _, err := server.Launch(c, lr); err != nil {
-		logging.WithError(err).Errorf(c, "[launcher] Failed to call Launcher.Launch")
+		logging.WithError(err).Errorf(c, "Launch failed.")
 		switch grpc.Code(err) {
 		case codes.InvalidArgument:
 			w.WriteHeader(http.StatusBadRequest)
@@ -43,6 +43,5 @@ func launchHandler(ctx *router.Context) {
 		}
 		return
 	}
-	logging.Infof(c, "[launcher] Successfully completed")
 	w.WriteHeader(http.StatusOK)
 }

@@ -46,15 +46,14 @@ func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) 
 	if err := validateAnalyzeRequest(c, req); err != nil {
 		return nil, err
 	}
-	logging.Infof(c, "[frontend] Analyze request received and validated.")
 	runID, err := analyzeWithAuth(c, req, config.LuciConfigServer)
 	if err != nil {
 		return nil, errors.Annotate(err, "invalid request").
 			Tag(grpcutil.InvalidArgumentTag).Err()
 	}
 	logging.Fields{
-		"run ID": runID,
-	}.Infof(c, "[frontend] Analyze request processed without error.")
+		"runID": runID,
+	}.Infof(c, "Analyze request processed.")
 	return &tricium.AnalyzeResponse{RunId: runID}, nil
 }
 

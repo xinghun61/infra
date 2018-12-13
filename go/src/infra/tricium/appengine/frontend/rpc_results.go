@@ -24,8 +24,8 @@ func (r *TriciumServer) Results(c context.Context, req *tricium.ResultsRequest) 
 		err = grpcutil.GRPCifyAndLogErr(c, err)
 	}()
 	logging.Fields{
-		"run ID": req.RunId,
-	}.Infof(c, "[frontend] Results request received.")
+		"runID": req.RunId,
+	}.Infof(c, "Request received.")
 	if req.RunId == "" {
 		return nil, errors.Reason("missing run ID").Tag(grpcutil.InvalidArgumentTag).Err()
 	}
@@ -37,7 +37,9 @@ func (r *TriciumServer) Results(c context.Context, req *tricium.ResultsRequest) 
 	if err != nil {
 		return nil, errors.Annotate(err, "results request failed").Tag(grpcutil.InternalTag).Err()
 	}
-	logging.Infof(c, "[frontend] Results request completed: %v", results)
+	logging.Fields{
+		"results": results,
+	}.Infof(c, "Request completed.")
 	return &tricium.ResultsResponse{Results: results, IsMerged: isMerged}, nil
 }
 

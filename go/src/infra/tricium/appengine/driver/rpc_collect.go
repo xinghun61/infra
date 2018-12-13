@@ -24,10 +24,10 @@ func (*driverServer) Collect(c context.Context, req *admin.CollectRequest) (res 
 		err = grpcutil.GRPCifyAndLogErr(c, err)
 	}()
 	logging.Fields{
-		"run ID":  req.RunId,
-		"worker":  req.Worker,
-		"task ID": req.TaskId,
-	}.Infof(c, "[driver] Collect request received.")
+		"runID":  req.RunId,
+		"worker": req.Worker,
+		"taskID": req.TaskId,
+	}.Infof(c, "Collect request received.")
 	if err := validateCollectRequest(req); err != nil {
 		return nil, errors.Annotate(err, "invalid request").
 			Tag(grpcutil.InvalidArgumentTag).Err()
@@ -95,8 +95,8 @@ func collect(c context.Context, req *admin.CollectRequest,
 	workerState := tricium.State_SUCCESS
 	if result.State == common.Failure {
 		logging.Fields{
-			"task ID":  req.TaskId,
-			"build ID": req.BuildId,
+			"taskID":  req.TaskId,
+			"buildID": req.BuildId,
 		}.Infof(c, "Swarming task failed.")
 		workerState = tricium.State_FAILURE
 	}
@@ -123,7 +123,7 @@ func collect(c context.Context, req *admin.CollectRequest,
 	if workerState == tricium.State_FAILURE {
 		logging.Fields{
 			"worker": req.Worker,
-			"run ID": req.RunId,
+			"runID":  req.RunId,
 		}.Warningf(c, "Execution of worker failed.")
 		var tasks []*tq.Task
 		for _, worker := range wf.GetWithDescendants(req.Worker) {

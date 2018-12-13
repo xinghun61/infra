@@ -29,12 +29,11 @@ func (r *TriciumServer) ProjectProgress(c context.Context, req *tricium.ProjectP
 	}
 	logging.Fields{
 		"project": project,
-	}.Infof(c, "[frontend] Project progress request received and validated.")
+	}.Infof(c, "Request validated.")
 	runProgress, err := projectProgress(c, project, config.LuciConfigServer)
 	if err != nil {
 		return nil, err
 	}
-	logging.Infof(c, "[frontend] Project progress completed.")
 	return &tricium.ProjectProgressResponse{
 		RunProgress: runProgress,
 	}, nil

@@ -29,11 +29,10 @@ var reporter = &gerritReporter{}
 func pollHandler(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
 	if err := poll(c, config.LuciConfigServer); err != nil {
-		logging.WithError(err).Errorf(c, "failed to poll")
+		logging.WithError(err).Errorf(c, "Failed to poll.")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	logging.Debugf(c, "[gerrit] Successfully completed poll")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -43,49 +42,47 @@ func pollHandler(ctx *router.Context) {
 func pollProjectHandler(ctx *router.Context) {
 	c, r, w := ctx.Context, ctx.Request, ctx.Writer
 	defer r.Body.Close()
-	logging.Debugf(c, "[gerrit] Received request from poll project queue.")
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "[gerrit] Failed to read request body.")
+		logging.WithError(err).Errorf(c, "Failed to read request body.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	request := &admin.PollProjectRequest{}
 	if err = proto.Unmarshal(body, request); err != nil {
-		logging.WithError(err).Errorf(c, "[gerrit] Failed to unmarshal request.")
+		logging.WithError(err).Errorf(c, "Failed to unmarshal request.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	if err = pollProject(c, request.Project, GerritServer, config.LuciConfigServer); err != nil {
-		logging.WithError(err).Errorf(c, "[gerrit] failed to poll project")
+		logging.WithError(err).Errorf(c, "Failed to poll project.")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	logging.Debugf(c, "[gerrit] Successfully completed poll project")
 	w.WriteHeader(http.StatusOK)
 }
 
-func resultsHandler(ctx *router.Context) {
+func reportResultsHandler(ctx *router.Context) {
 	c, r, w := ctx.Context, ctx.Request, ctx.Writer
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "[gerrit] Results queue handler failed to read request body")
+		logging.WithError(err).Errorf(c, "Failed to read request body.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	rr := &admin.ReportResultsRequest{}
 	if err := proto.Unmarshal(body, rr); err != nil {
-		logging.WithError(err).Errorf(c, "[gerrit] Results queue handler failed to unmarshal request")
+		logging.WithError(err).Errorf(c, "Failed to unmarshal request.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	logging.Fields{
-		"run ID":   rr.RunId,
+		"runID":    rr.RunId,
 		"analyzer": rr.Analyzer,
-	}.Infof(c, "[gerrit] Report results request received")
+	}.Infof(c, "Request received.")
 	if _, err := reporter.ReportResults(c, rr); err != nil {
-		logging.WithError(err).Errorf(c, "[gerrit] Failed to call Gerrit.ReportResults")
+		logging.WithError(err).Errorf(c, "ReportResults failed.")
 		switch grpc.Code(err) {
 		case codes.InvalidArgument:
 			w.WriteHeader(http.StatusBadRequest)

@@ -25,10 +25,10 @@ func (r *TriciumServer) Feedback(c context.Context, req *tricium.FeedbackRequest
 		err = grpcutil.GRPCifyAndLogErr(c, err)
 	}()
 	logging.Fields{
-		"category":   req.Category,
-		"start_time": req.StartTime,
-		"end_time":   req.EndTime,
-	}.Infof(c, "[frontend] Feedback request received.")
+		"category":  req.Category,
+		"startTime": req.StartTime,
+		"endTime":   req.EndTime,
+	}.Infof(c, "Request received.")
 	if req.Category == "" {
 		return nil, errors.New("missing category", grpcutil.InvalidArgumentTag)
 	}
@@ -83,9 +83,9 @@ func feedback(c context.Context, category string, stime, etime time.Time) (int, 
 	}
 	if len(comments) == 0 {
 		logging.Fields{
-			"category":   category,
-			"start time": stime.String(),
-			"end time":   etime.String(),
+			"category":  category,
+			"startTime": stime.String(),
+			"endTime":   etime.String(),
 		}.Infof(c, "Found no comments.")
 	}
 	var entities []interface{}

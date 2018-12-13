@@ -46,12 +46,12 @@ func (*trackerServer) WorkerLaunched(c context.Context, req *admin.WorkerLaunche
 
 func workerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) error {
 	logging.Fields{
-		"run ID":         req.RunId,
-		"worker":         req.Worker,
-		"task ID":        req.SwarmingTaskId,
-		"build ID":       req.BuildbucketBuildId,
-		"isolated input": req.IsolatedInputHash,
-	}.Infof(c, "[tracker] Worker launched request received.")
+		"runID":         req.RunId,
+		"worker":        req.Worker,
+		"taskID":        req.SwarmingTaskId,
+		"buildID":       req.BuildbucketBuildId,
+		"isolatedInput": req.IsolatedInputHash,
+	}.Infof(c, "Request received.")
 	// Compute needed keys.
 	requestKey := ds.NewKey(c, "AnalyzeRequest", "", req.RunId, nil)
 	runKey := ds.NewKey(c, "WorkflowRun", "", 1, requestKey)
@@ -79,7 +79,7 @@ func workerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) error {
 					}
 				} else {
 					logging.Fields{
-						"run ID": req.RunId,
+						"runID":  req.RunId,
 						"worker": req.Worker,
 					}.Warningf(c, "Worker not in PENDING state when launched.")
 				}

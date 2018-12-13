@@ -21,7 +21,7 @@ func init() {
 
 	r.GET("/gerrit/internal/poll", base, pollHandler)
 	r.POST("/gerrit/internal/poll-project", base, pollProjectHandler)
-	r.POST("/gerrit/internal/report-results", base, resultsHandler)
+	r.POST("/gerrit/internal/report-results", base, reportResultsHandler)
 
 	// Configure pRPC server.
 	s := common.NewRPCServer()

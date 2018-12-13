@@ -24,8 +24,8 @@ func (r *TriciumServer) Progress(c context.Context, req *tricium.ProgressRequest
 	}()
 	runID, err := validateProgressRequest(c, req)
 	logging.Fields{
-		"run ID": runID,
-	}.Infof(c, "[frontend] Progress request received.")
+		"runID": runID,
+	}.Infof(c, "Request received.")
 
 	if err != nil {
 		return nil, err
@@ -83,8 +83,8 @@ func validateProgressRequest(c context.Context, req *tricium.ProgressRequest) (i
 		if err := ds.Get(c, g); err != nil {
 			if err == ds.ErrNoSuchEntity {
 				logging.Fields{
-					"gerrit mapping ID": g.ID,
-				}.Infof(c, "No GerritChangeToRunID found in datastore.")
+					"gerritMappingID": g.ID,
+				}.Infof(c, "No run found in datastore.")
 				return 0, errors.Reason("no run ID found for Gerrit change").
 					Tag(grpcutil.NotFoundTag).Err()
 			}

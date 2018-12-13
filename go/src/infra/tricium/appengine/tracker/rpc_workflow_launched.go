@@ -29,8 +29,8 @@ func (*trackerServer) WorkflowLaunched(c context.Context, req *admin.WorkflowLau
 		err = grpcutil.GRPCifyAndLogErr(c, err)
 	}()
 	logging.Fields{
-		"run ID": req.RunId,
-	}.Infof(c, "[tracker] Received workflow launched request.")
+		"runID": req.RunId,
+	}.Infof(c, "Received workflow launched request.")
 	if req.RunId == 0 {
 		return nil, errors.Reason("missing run ID").Tag(grpcutil.InvalidArgumentTag).Err()
 	}

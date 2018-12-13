@@ -27,9 +27,6 @@ func (r *gerritReporter) ReportResults(c context.Context, req *admin.ReportResul
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(c, err)
 	}()
-	logging.Fields{
-		"run ID": req.RunId,
-	}.Infof(c, "[gerrit] ReportResults request received.")
 	if req.RunId == 0 {
 		return nil, errors.New("missing run ID", grpcutil.InvalidArgumentTag)
 	}
@@ -103,8 +100,8 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 	}
 	if len(includedComments) > maxComments {
 		logging.Fields{
-			"num comments": len(includedComments),
-			"max comments": maxComments,
+			"numComments": len(includedComments),
+			"maxComments": maxComments,
 		}.Infof(c, "Too many comments, not reporting results.")
 		return nil
 	}

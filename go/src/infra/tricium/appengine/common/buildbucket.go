@@ -60,7 +60,7 @@ func (s buildbucketServer) Trigger(c context.Context, params *TriggerParameters)
 		"bucket": req.Bucket,
 		"tags":   req.Tags,
 		"params": req.ParametersJson,
-	}.Infof(c, "[buildbucket] Trigger request.")
+	}.Infof(c, "Making Buildbucket Trigger request.")
 	res, err := buildbucketService.Put(req).Context(c).Do()
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to trigger buildbucket build").Err()
@@ -73,7 +73,7 @@ func (s buildbucketServer) Trigger(c context.Context, params *TriggerParameters)
 	if err != nil {
 		return nil, errors.Annotate(err, "could not marshal JSON response").Err()
 	}
-	logging.Infof(c, "scheduled new build: %s", resJSON)
+	logging.Infof(c, "Scheduled new build: %s", resJSON)
 	return &TriggerResult{BuildID: res.Build.Id}, nil
 }
 
@@ -110,8 +110,8 @@ func (s buildbucketServer) Collect(c context.Context, params *CollectParameters)
 	result.BuildbucketOutput = build.GetOutput().GetProperties().GetFields()["tricium"].GetStringValue()
 	if result.BuildbucketOutput == "" {
 		logging.Fields{
-			"build ID":    params.BuildID,
-			"build state": result.State,
+			"buildID":    params.BuildID,
+			"buildState": result.State,
 		}.Warningf(c, "Result had no output.")
 	}
 	return result, nil

@@ -91,11 +91,11 @@ func (s swarmingServer) Trigger(c context.Context, params *TriggerParameters) (*
 		return nil, errors.Annotate(err, "failed to trigger swarming task").Err()
 	}
 	logging.Fields{
-		"task ID":       res.TaskId,
-		"worker":        params.Worker.Name,
-		"dimensions":    dims,
-		"pubsub topic":  pubsubTopic,
-		"input isolate": params.WorkerIsolate,
+		"taskID":       res.TaskId,
+		"worker":       params.Worker.Name,
+		"dimensions":   dims,
+		"pubsubTopic":  pubsubTopic,
+		"inputIsolate": params.WorkerIsolate,
 	}.Infof(c, "Worker triggered")
 	return &TriggerResult{TaskID: res.TaskId}, nil
 }
@@ -121,9 +121,9 @@ func (s swarmingServer) Collect(c context.Context, params *CollectParameters) (*
 	result := &CollectResult{}
 	if taskResult.OutputsRef == nil || taskResult.OutputsRef.Isolated == "" {
 		logging.Fields{
-			"task ID":    params.TaskID,
-			"task state": result.State,
-		}.Warningf(c, "Task had no output.")
+			"taskID":    params.TaskID,
+			"taskState": result.State,
+		}.Infof(c, "Task had no output.")
 	} else {
 		result.IsolatedOutputHash = taskResult.OutputsRef.Isolated
 	}

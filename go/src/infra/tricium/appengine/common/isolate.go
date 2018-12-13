@@ -256,8 +256,8 @@ func (s isolateServer) fetchIsolated(c context.Context, serverURL, digest string
 	iso := &isolated.Isolated{}
 	json.Unmarshal(buf.Bytes(), iso)
 	logging.Fields{
-		"isolated contents": string(buf.Bytes()),
-		"isolated":          iso,
+		"isolatedContents": string(buf.Bytes()),
+		"isolated":         iso,
 	}.Infof(c, "Fetched isolated.")
 	return iso, nil
 }

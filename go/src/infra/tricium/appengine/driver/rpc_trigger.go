@@ -66,7 +66,9 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCac
 		return errors.Annotate(err, "failed to marshal PubSub user data for swarming task").Err()
 	}
 	userdata := base64.StdEncoding.EncodeToString(b)
-	logging.Infof(c, "[driver] PubSub userdata for trigger: %q", userdata)
+	logging.Fields{
+		"userdata": userdata,
+	}.Infof(c, "PubSub userdata created.")
 
 	result := &common.TriggerResult{}
 	switch wi := worker.Impl.(type) {
@@ -88,7 +90,9 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCac
 		if err != nil {
 			return errors.Annotate(err, "failed to isolate command for trigger").Err()
 		}
-		logging.Infof(c, "[driver] Created worker isolate, hash: %q", workerIsolate)
+		logging.Fields{
+			"workerIsolate": workerIsolate,
+		}.Infof(c, "Created worker isolate.")
 		// Trigger worker.
 		result, err = sw.Trigger(c, &common.TriggerParameters{
 			Server:           workflow.SwarmingServer,
@@ -130,7 +134,7 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCac
 func getTags(c context.Context, worker string, runID int64, patch common.PatchDetails) []string {
 	function, platform, err := track.ExtractFunctionPlatform(worker)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "failed to split worker name: %s", worker)
+		logging.WithError(err).Errorf(c, "Failed to split worker name: %s", worker)
 		return nil
 	}
 	tags := []string{
@@ -155,7 +159,7 @@ func fetchPatchDetails(c context.Context, runID int64) common.PatchDetails {
 	var patch common.PatchDetails
 	request := &track.AnalyzeRequest{ID: runID}
 	if err := ds.Get(c, request); err != nil {
-		logging.WithError(err).Errorf(c, "failed to get request for run ID: %d", runID)
+		logging.WithError(err).Errorf(c, "Failed to get request for run ID: %d", runID)
 		return patch
 	}
 	patch.GitilesHost = request.GitURL
