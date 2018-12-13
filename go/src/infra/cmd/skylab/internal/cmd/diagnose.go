@@ -25,13 +25,14 @@ import (
 
 // Diagnose subcommand: Diagnose DUT status.
 var Diagnose = &subcommands.Command{
-	UsageLine: "diagnose [HOST...]",
+	UsageLine: "diagnose [-dev] [-short] [HOST...]",
 	ShortDesc: "Diagnose DUT status",
 	LongDesc:  "Diagnose DUT status.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &diagnoseRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
+		c.Flags.BoolVar(&c.short, "short", false, "Print short diagnosis")
 		return c
 	},
 }
@@ -40,6 +41,8 @@ type diagnoseRun struct {
 	subcommands.CommandRunBase
 	authFlags authcli.Flags
 	envFlags  envFlags
+
+	short bool
 }
 
 func (c *diagnoseRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -67,7 +70,11 @@ func (c *diagnoseRun) innerRun(a subcommands.Application, args []string, env sub
 		return err
 	}
 	tw := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	printBotDiagnosis(tw, e, bots)
+	if c.short {
+		printBotDiagnosisShort(tw, e, bots)
+	} else {
+		printBotDiagnosis(tw, e, bots)
+	}
 	_ = tw.Flush()
 	return nil
 }
@@ -85,6 +92,18 @@ func summarizeBots(ctx context.Context, c fleet.TrackerClient, dutNames []string
 		return nil, errors.Annotate(err, "failed to call SummarizeBots").Err()
 	}
 	return res.GetBots(), nil
+}
+
+func printBotDiagnosisShort(w io.Writer, e site.Environment, bots []*fleet.BotSummary) {
+	for _, b := range bots {
+		var url string
+		ts := "Unknown"
+		if ds := b.GetDiagnosis(); len(ds) > 0 {
+			url = swarmingTaskURL(e, ds[0].GetId())
+			ts = getTaskTimeString(ds[0])
+		}
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", b.GetDimensions().GetDutName(), b.GetDutState(), ts, url)
+	}
 }
 
 func printBotDiagnosis(w io.Writer, e site.Environment, bots []*fleet.BotSummary) {
