@@ -45,22 +45,21 @@ def _fix_build_async(build_key):  # pragma: no cover
   if not build:
     return
 
-  to_put = []
+  futs = []
 
   if not build.input_properties:
     params = build.parameters_actual or build.parameters or {}
     build.input_properties = struct_pb2.Struct()
     build.input_properties.update(params.get('properties') or {})
-    to_put.append(build)
+    futs.append(build.put_async())
 
   if not out_props:
     props = struct_pb2.Struct()
     props.update((build.result_details or {}).get('properties') or {})
-    to_put.append(
-        model.BuildOutputProperties(
-            key=model.BuildOutputProperties.key_for(build_key),
-            properties=props,
-        )
+    out_props = model.BuildOutputProperties(
+        key=model.BuildOutputProperties.key_for(build_key),
+        properties=props,
     )
+    futs.append(out_props.put_async())
 
-  yield ndb.put_multi_async(to_put)
+  yield futs
