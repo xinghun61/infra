@@ -134,13 +134,29 @@ class RankFlakesTest(WaterfallTestCase):
                 '',
             'bug_id':
                 '',
-            'monorail_project': '',
+            'monorail_project':
+                '',
             'error_message':
                 None,
             'flake_weights': [('cq false rejection', 100),
                               ('cq retry with patch', 10)]
         },
                    default=str), response.body)
+
+  @mock.patch.object(Flake, 'NormalizeTestName', return_value='suite.test1')
+  def testSearchRedirectOldFlake(self, _):
+    response = self.test_app.get(
+        '/ranked-flakes?flake_filter=suite.test1',
+        params={
+            'format': 'json',
+        },
+        status=302)
+
+    expected_url_suffix = (
+        '/flake/occurrences?key=%s' % self.flake2.key.urlsafe())
+
+    self.assertTrue(
+        response.headers.get('Location', '').endswith(expected_url_suffix))
 
   @mock.patch.object(Flake, 'NormalizeTestName', return_value='suite.test2')
   def testSearchRedirect(self, _):
@@ -182,7 +198,8 @@ class RankFlakesTest(WaterfallTestCase):
                 'suite::suite',
             'bug_id':
                 '',
-            'monorail_project': '',
+            'monorail_project':
+                '',
             'error_message':
                 None,
             'flake_weights': [('cq false rejection', 100),
@@ -216,7 +233,8 @@ class RankFlakesTest(WaterfallTestCase):
                 'test_type::flavored_tests@-test_type::tests',
             'bug_id':
                 '',
-            'monorail_project': '',
+            'monorail_project':
+                '',
             'error_message':
                 None,
             'flake_weights': [('cq false rejection', 100),
@@ -250,7 +268,8 @@ class RankFlakesTest(WaterfallTestCase):
                 '',
             'bug_id':
                 bug_id,
-            'monorail_project': '',
+            'monorail_project':
+                '',
             'error_message':
                 None,
             'flake_weights': [('cq false rejection', 100),
@@ -284,7 +303,8 @@ class RankFlakesTest(WaterfallTestCase):
                 '',
             'bug_id':
                 bug_id,
-            'monorail_project': '',
+            'monorail_project':
+                '',
             'error_message':
                 None,
             'flake_weights': [('cq false rejection', 100),

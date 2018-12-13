@@ -8,7 +8,6 @@ from gae_libs import dashboard_util
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 from libs import time_util
-from model import entity_util
 from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
 from model.flake.flake_type import FLAKE_TYPE_DESCRIPTIONS
@@ -49,8 +48,6 @@ def _GetFlakesByFilter(flake_filter, luci_project):
     # Search for a specific test.
     flakes = Flake.query(Flake.normalized_test_name == Flake.NormalizeTestName(
         flake_filter)).filter(Flake.luci_project == luci_project).fetch()
-    flakes = [f for f in flakes if f.flake_score_last_week]
-
     return flakes, grouping_search, error_message
 
   grouping_search = True
