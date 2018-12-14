@@ -38,6 +38,8 @@ This document describes the structure of the RotaNG code.
     * The `static` folder contains the JS elements used by the rota service.
     * The `templates` folder contains html templates used by the handlers to generate the Web UI pages.
   * *handlers*; Contains all the HTTP handlers.
+    * `handler_.*.go` <- HTTP handlers used for external requests to the service.
+    * `job_.*.go` <- Appengine cron handlers. Recurring jobs.
 
   The cmd folder should contain application code, something using the packages in the **pkg** folder.
 
