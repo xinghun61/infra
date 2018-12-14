@@ -578,6 +578,7 @@ class CreationTest(testing.AppengineTestCase):
     props = {
         'str': '',
         'int': 0,
+        'bool': True,
         'obj': {'int': 0,},
         'list': ['', 0, {'int': 0}],
     }

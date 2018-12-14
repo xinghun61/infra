@@ -163,9 +163,6 @@ class BuildRequest(_BuildRequestBase):
     build.input_properties.update(
         build.parameters.get(model.PROPERTIES_PARAMETER) or {}
     )
-    _log_integer_properties(
-        build.parameters.get(model.PROPERTIES_PARAMETER) or {}
-    )
 
     if self.lease_expiration_date is not None:
       build.lease_expiration_date = self.lease_expiration_date
@@ -394,6 +391,10 @@ def add_many_async(build_request_list):
     yield ndb.put_multi_async(new_builds.values())
     memcache_sets = []
     for i, b in new_builds.iteritems():
+      _log_integer_properties(
+          b.parameters.get(model.PROPERTIES_PARAMETER) or {}
+      )
+
       events.on_build_created(b)
       results[i] = (b, None)
 
@@ -519,16 +520,7 @@ def _log_integer_properties(props):
   Needed to evaluate the impact of switching to google.protobuf.Struct where
   all numbers are floats.
   """
-  to_report = _find_integer_property_paths(props)
-  # Remove known paths.
-  to_report -= {
-      ('issue',),
-      ('patchset',),
-      ('patch_issue',),
-      ('patch_set',),
-      ('$infra/goma', 'jobs'),
-  }
-  for p in sorted(to_report):
+  for p in sorted(_find_integer_property_paths(props)):
     logging.warning('integer property: %s', '.'.join(map(str, p)))
 
 
@@ -547,6 +539,8 @@ def _find_integer_property_paths(props):
         path.append(i)
         visit(v)
         path.pop()
+    elif isinstance(value, bool):
+      pass  # a bool is an int
     elif isinstance(value, int):
       ret.add(tuple(path))
 
