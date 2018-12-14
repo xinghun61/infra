@@ -14,7 +14,7 @@ Issues detected:
 * IncorrectCopyright: Incorrect copyright text
 * OutOfDateCopyright: Out of date text (with a (c) in the old Chromium standard)
 
-Consumes Tricium FILES and producs Tricium RESULTS comments.
+Consumes Tricium FILES and produces Tricium RESULTS comments.
 
 ## Development and Testing
 

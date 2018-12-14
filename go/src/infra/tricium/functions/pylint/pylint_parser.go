@@ -42,7 +42,7 @@ func main() {
 		"The enable list overrides the disable list.")
 	flag.Parse()
 	if flag.NArg() != 0 {
-		log.Fatalf("Unexpected argument")
+		log.Fatalf("Unexpected argument.")
 	}
 
 	// Retrieve the path name for the executable that started the current process.
@@ -51,14 +51,14 @@ func main() {
 		panic(err)
 	}
 	exPath := filepath.Dir(ex)
-	log.Printf("Using executable path: %s", exPath)
+	log.Printf("Using executable path %q.", exPath)
 
 	// Read Tricium input FILES data.
 	input := &tricium.Data_Files{}
 	if err := tricium.ReadDataType(*inputDir, input); err != nil {
 		log.Fatalf("Failed to read FILES data: %v", err)
 	}
-	log.Printf("Read FILES data: %#v", input)
+	log.Printf("Read FILES data.")
 
 	// Filter the files to include only .py files.
 	files, err := tricium.FilterFiles(input.Files, "*.py")
@@ -89,7 +89,7 @@ func main() {
 		cmdArgs = append(cmdArgs, filepath.Join(*inputDir, file.Path))
 	}
 	cmd := exec.Command(cmdName, cmdArgs...)
-	log.Printf("Command: %#v; args: %#v", cmdName, cmdArgs)
+	log.Printf("Command: %s", cmd.Args)
 
 	// Set PYTHONPATH for the command to run so that the bundled version of
 	// pylint and its dependencies are used.
@@ -116,7 +116,7 @@ func main() {
 	// scanner.
 	err = cmd.Start()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error starting Cmd", err)
+		fmt.Fprintln(os.Stderr, "Error starting Cmd.", err)
 		os.Exit(1)
 	}
 
@@ -134,7 +134,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to write RESULTS data: %v", err)
 	}
-	log.Printf("Wrote RESULTS data, path: %q, value: %+v\n", path, output)
+	log.Printf("Wrote RESULTS data to path %q.", path)
 }
 
 // scanPylintOutput reads Pylint output line by line and populates results.

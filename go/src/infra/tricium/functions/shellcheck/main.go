@@ -71,7 +71,7 @@ func run(r *runner.Runner, inputDir, outputDir, pathFilters string) {
 	if err := tricium.ReadDataType(inputDir, input); err != nil {
 		log.Fatalf("Failed to read FILES data: %v", err)
 	}
-	log.Printf("Read FILES data: %#v", input)
+	log.Printf("Read FILES data.")
 
 	filtered, err := tricium.FilterFiles(input.Files, strings.Split(pathFilters, ",")...)
 	if err != nil {
@@ -118,7 +118,7 @@ func run(r *runner.Runner, inputDir, outputDir, pathFilters string) {
 	if err != nil {
 		log.Fatalf("Failed to write RESULTS data: %v", err)
 	}
-	log.Printf("Wrote RESULTS data, path: %q, value: %+v\n", path, results)
+	log.Printf("Wrote RESULTS data to path %q.", path)
 }
 
 func findShellCheckBin() string {

@@ -61,14 +61,14 @@ func main() {
 		panic(err)
 	}
 	exPath := filepath.Dir(ex)
-	log.Printf("Using executable path: %s", exPath)
+	log.Printf("Using executable path %q.", exPath)
 
 	// Read Tricium input FILES data.
 	input := &tricium.Data_Files{}
 	if err := tricium.ReadDataType(*inputDir, input); err != nil {
 		log.Fatalf("Failed to read FILES data: %v", err)
 	}
-	log.Printf("Read FILES data: %#v", input)
+	log.Printf("Read FILES data.")
 
 	// Filter the files to include only .js files.
 	files, err := tricium.FilterFiles(input.Files, "*.js")
@@ -85,7 +85,7 @@ func main() {
 		cmdArgs = append(cmdArgs, filepath.Join(*inputDir, file.Path))
 	}
 	cmd := exec.Command(cmdName, cmdArgs...)
-	log.Printf("Command: %#v; args: %#v", cmdName, cmdArgs)
+	log.Printf("Command: %s", cmd.Args)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -106,7 +106,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to write RESULTS data: %v", err)
 	}
-	log.Printf("Wrote RESULTS data, path: %q, value: %+v\n", path, results)
+	log.Printf("Wrote RESULTS data to path %q.", path)
 }
 
 // readESLintOutput reads the output JSON from ESLint and populates results.

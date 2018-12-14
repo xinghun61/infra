@@ -41,7 +41,7 @@ func main() {
 	outputDir := flag.String("output", "", "Path to root of Tricium output")
 	flag.Parse()
 	if flag.NArg() != 0 {
-		log.Fatalf("Unexpected argument")
+		log.Fatalf("Unexpected argument.")
 	}
 
 	// Read Tricium input FILES data.
@@ -49,17 +49,17 @@ func main() {
 	if err := tricium.ReadDataType(*inputDir, input); err != nil {
 		log.Fatalf("Failed to read FILES data: %v", err)
 	}
-	log.Printf("Read FILES data: %+v", input)
+	log.Printf("Read FILES data.")
 
 	// Create RESULTS data.
 	output := &tricium.Data_Results{}
 	for _, file := range input.Files {
 		if file.IsBinary {
-			log.Printf("Not performing Copyright checks on binary file: %s", file.Path)
+			log.Printf("Skipping binary file %q.", file.Path)
 			continue
 		}
 		if !isWhitelisted(file.Path) {
-			log.Printf("Not emitting comments for file: %s", file.Path)
+			log.Printf("Skipping file: %q.", file.Path)
 			continue
 		}
 		if c := checkCopyright(filepath.Join(*inputDir, file.Path)); c != nil {
@@ -72,7 +72,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to write RESULTS data: %v", err)
 	}
-	log.Printf("Wrote RESULTS data, path: %q, value: %v\n", path, output)
+	log.Printf("Wrote RESULTS data to %q.", path)
 }
 
 func isWhitelisted(path string) bool {
@@ -100,7 +100,6 @@ func checkCopyright(path string) *tricium.Data_Comment {
 	} else if oldCopyrightRegexp.MatchString(header) {
 		return oldCopyrightComment(path)
 	} else if !bsdCopyrightRegexp.MatchString(header) && !mitCopyrightRegexp.MatchString(header) {
-		fmt.Printf("%s\n", header)
 		return incorrectCopyrightComment(path)
 	}
 	return nil

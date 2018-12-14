@@ -36,7 +36,7 @@ func main() {
 	// when invoking cpplint, so that these can be specified project repos.
 	flag.Parse()
 	if flag.NArg() != 0 {
-		log.Fatalf("Unexpected argument")
+		log.Fatalf("Unexpected argument.")
 	}
 
 	// Retrieve the path name for the executable that started the current
@@ -46,14 +46,14 @@ func main() {
 		log.Fatal(err)
 	}
 	exPath := filepath.Dir(ex)
-	log.Printf("Using executable path: %s", exPath)
+	log.Printf("Using executable path %q.", exPath)
 
 	// Read Tricium input FILES data.
 	input := &tricium.Data_Files{}
 	if err := tricium.ReadDataType(*inputDir, input); err != nil {
 		log.Fatalf("Failed to read FILES data: %v", err)
 	}
-	log.Printf("Read FILES data: %#v", input)
+	log.Printf("Read FILES data.")
 
 	filters := []string{
 		"-whitespace",
@@ -69,12 +69,12 @@ func main() {
 		cmdArgs = append(cmdArgs, filepath.Join(*inputDir, file.Path))
 	}
 	cmd := exec.Command(cmdName, cmdArgs...)
-	log.Printf("Command: %#v; args: %#v", cmdName, cmdArgs)
+	log.Printf("Command: %s", cmd.Args)
 
 	// Cpplint prints warnings to stderr.
 	stderrReader, err := cmd.StderrPipe()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error creating stderr for Cmd", err)
+		fmt.Fprintln(os.Stderr, "Error creating stderr for Cmd.", err)
 		os.Exit(1)
 	}
 
@@ -98,7 +98,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to write RESULTS data: %v", err)
 	}
-	log.Printf("Wrote RESULTS data, path: %q, value: %+v\n", path, output)
+	log.Printf("Wrote RESULTS data to %q.", path)
 }
 
 //  Reads cpplint's output line by line and populates results.

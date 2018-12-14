@@ -79,7 +79,7 @@ func main() {
 	outputDir := flag.String("output", "", "Path to root of Tricium output")
 	flag.Parse()
 	if flag.NArg() != 0 {
-		log.Fatalf("Unexpected argument")
+		log.Fatalf("Unexpected argument.")
 	}
 	cp := loadCommentsJSONFile()
 	dict = loadDictionaryFile()
@@ -89,18 +89,16 @@ func main() {
 	if err := tricium.ReadDataType(*inputDir, input); err != nil {
 		log.Fatalf("Failed to read FILES data: %v", err)
 	}
-	log.Printf("Read FILES data: %#v", input)
+	log.Printf("Read FILES data.")
 
 	results := &tricium.Data_Results{}
 
 	for _, file := range input.Files {
 		if !file.IsBinary {
 			fileExt := filepath.Ext(file.Path)
-			log.Printf("File ext: %q, path: %q\n", fileExt, file.Path)
 			// The analyzer should check every word if the file is a text document.
 			checkEveryWord := inSlice(fileExt, textFileExts)
 			commentPatterns := cp[fileExt]
-			log.Printf("Comment patterns: %+v\n", commentPatterns)
 			if commentPatterns == nil && !checkEveryWord {
 				// If the file type is unknown, skip the file, since there may be
 				// unknown source types that potentially have false positives.
@@ -119,7 +117,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to write RESULTS data: %v", err)
 	}
-	log.Printf("Wrote RESULTS data, path: %q, value: %+v\n", path, results)
+	log.Printf("Wrote RESULTS data to path %q.", path)
 }
 
 // Analyzes file line by line to find misspellings within comments.

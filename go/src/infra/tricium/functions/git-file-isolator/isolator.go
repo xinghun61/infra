@@ -27,7 +27,7 @@ func main() {
 	if err := tricium.ReadDataType(*inputDir, input); err != nil {
 		log.Fatalf("Failed to read GIT_FILE_DETAILS data: %v", err)
 	}
-	log.Printf("Read GIT_FILE_DETAILS data: %+v", input)
+	log.Printf("Read GIT_FILE_DETAILS data.")
 
 	// Set up temporary directory.
 	tempDir, err := ioutil.TempDir("", "git-file-isolator")
@@ -38,10 +38,10 @@ func main() {
 	// Clean up.
 	defer func() {
 		if err := os.RemoveAll(tempDir); err != nil {
-			log.Fatalf("Failed to clean up temporary directory, dir: %s, %v", tempDir, err)
+			log.Fatalf("Failed to clean up temporary directory %q: %v", tempDir, err)
 		}
 	}()
-	log.Printf("Created temporary directory: %s", tempDir)
+	log.Printf("Created temporary directory %q.", tempDir)
 
 	// Check out files from the given git ref.
 	cmds := []*exec.Cmd{
@@ -82,7 +82,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to write FILES data: %v", err)
 	}
-	log.Printf("Wrote FILES data, path: %q, value: %+v\n", path, output)
+	log.Printf("Wrote RESULTS data to path %q.", path)
 }
 
 // copyFiles copies over all files that we want to analyze.

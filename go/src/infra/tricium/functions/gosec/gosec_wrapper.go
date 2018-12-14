@@ -80,18 +80,17 @@ func main() {
 }
 
 func run() int {
-
 	flag.Parse()
 	if flag.NArg() != 0 {
-		log.Fatalf("Unexpected argument")
+		log.Fatalf("Unexpected argument.")
 	}
-	log.Printf("invoked with args: %v", flag.Args())
+	log.Printf("Invoked with args: %v", flag.Args())
 
 	// Getting the absolute input path is important since gosec exec is going to chdir.
 	var err error
 	*inputDir, err = filepath.Abs(*inputDir)
 	if err != nil {
-		log.Fatalf("Unable to get absolute input dir")
+		log.Fatalf("Unable to get absolute input dir.")
 	}
 
 	// Prepare src/packages/... to simulate Gopath directory structure needed for Gosec.
@@ -105,7 +104,7 @@ func run() int {
 		}
 	}()
 
-	log.Printf("Running gosec in parallel with %d workers", maxWorkers)
+	log.Printf("Running gosec in parallel with %d workers.", maxWorkers)
 	issues, err := runGosecParallel(maxWorkers, envDir, packagesDir)
 	if err != nil {
 		log.Fatal(err)
@@ -150,7 +149,7 @@ func run() int {
 	if err != nil {
 		log.Fatalf("Failed to write analyzer results: %v", err)
 	}
-	log.Printf("Analyzer results written to %s", path)
+	log.Printf("Wrote RESULTS data to path %q.", path)
 	return 0
 }
 
@@ -244,7 +243,7 @@ func gosecWorker(jobs chan GosecRunJob, wg *sync.WaitGroup) {
 		stderrReader, _ := cmd.StderrPipe()
 
 		// Run the command.
-		log.Printf("Executing command: %s %v", cmdName, cmdArgs)
+		log.Printf("Running command: %s", cmd.Args)
 		err := cmd.Start()
 		if err != nil {
 			log.Printf("Error running command %v: %v", cmd, err)
@@ -335,12 +334,12 @@ func runGosecParallel(maxWorkers int, envDir, packagesDir string) ([]Issue, erro
 		return nil, err
 	}
 
-	log.Printf("Filtering relevant files")
+	log.Printf("Filtering relevant files.")
 	files, err := tricium.FilterFiles(input.Files, "*.go")
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("Identified %d files to process", len(files))
+	log.Printf("Identified %d files to process.", len(files))
 
 	results := make([]GosecResult, len(files))
 	jobs := make(chan GosecRunJob, len(files))
@@ -348,16 +347,21 @@ func runGosecParallel(maxWorkers int, envDir, packagesDir string) ([]Issue, erro
 
 	// Create workers.
 	for i := 0; i < min(maxWorkers, len(files)); i++ {
-		log.Printf("Starting worker %d", i)
+		log.Printf("Starting worker %d.", i)
 		wg.Add(1)
 		go gosecWorker(jobs, &wg)
 	}
-	log.Printf("Spawned all workers\n")
+	log.Printf("Spawned all workers.")
 
 	// Distribute jobs into queue.
 	for c, file := range files {
-		log.Printf("Distributing analysis job for file: %s", file.Path)
-		jobs <- GosecRunJob{File: file, Result: &results[c], Gopath: envDir, PackagesDir: packagesDir}
+		log.Printf("Distributing analysis job for file %q.", file.Path)
+		jobs <- GosecRunJob{
+			File:        file,
+			Result:      &results[c],
+			Gopath:      envDir,
+			PackagesDir: packagesDir,
+		}
 	}
 	close(jobs)
 

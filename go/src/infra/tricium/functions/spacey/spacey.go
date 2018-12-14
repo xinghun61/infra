@@ -33,7 +33,7 @@ func main() {
 	outputDir := flag.String("output", "", "Path to root of Tricium output")
 	flag.Parse()
 	if flag.NArg() != 0 {
-		log.Fatalf("Unexpected argument")
+		log.Fatalf("Unexpected argument.")
 	}
 
 	// Read Tricium input FILES data.
@@ -41,25 +41,25 @@ func main() {
 	if err := tricium.ReadDataType(*inputDir, input); err != nil {
 		log.Fatalf("Failed to read FILES data: %v", err)
 	}
-	log.Printf("Read FILES data: %+v", input)
+	log.Printf("Read FILES data.")
 
 	// Create RESULTS data.
 	output := &tricium.Data_Results{}
 	for _, file := range input.Files {
 		if file.IsBinary {
-			log.Printf("Not performing Spacey checks on binary file: %s", file.Path)
+			log.Printf("Skipping binary file %q.", file.Path)
 			continue
 		}
 		p := file.Path
 		file, err := os.Open(filepath.Join(*inputDir, p))
 		if err != nil {
-			log.Fatalf("Failed to open file: %v, path: %s", err, p)
+			log.Fatalf("Failed to open file %q: %v", p, err)
 		}
 		comments := analyzeFile(bufio.NewScanner(file), p)
 		commentFreqs := organizeCommentsByCategory(comments)
 		output.Comments = mergeComments(commentFreqs, p)
 		if err := file.Close(); err != nil {
-			log.Fatalf("Failed to close file: %v, path: %s", err, p)
+			log.Fatalf("Failed to close file %q: %v", p, err)
 		}
 	}
 
@@ -68,7 +68,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to write RESULTS data: %v", err)
 	}
-	log.Printf("Wrote RESULTS data, path: %q, value: %v\n", path, output)
+	log.Printf("Wrote RESULTS data to path %q.", path)
 }
 
 // Checks the whole file for whitespace issues.
@@ -85,7 +85,7 @@ func analyzeFile(fileScanner *bufio.Scanner, path string) []*tricium.Data_Commen
 			end = lineNum
 			adjacentEmptyLines++
 		} else {
-			start, end = lineNum, lineNum // Reset
+			start, end = lineNum, lineNum // Reset.
 			adjacentEmptyLines = 0
 		}
 
