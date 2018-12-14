@@ -48,9 +48,11 @@ def _fix_build_async(build_key):  # pragma: no cover
   futs = []
 
   if not build.input_properties:
-    params = build.parameters_actual or build.parameters or {}
     build.input_properties = struct_pb2.Struct()
-    build.input_properties.update(params.get('properties') or {})
+    params = build.parameters_actual or build.parameters or {}
+    src = params.get('properties')
+    if isinstance(src, dict):
+      build.input_properties.update(src)
     futs.append(build.put_async())
 
   if not out_props:
