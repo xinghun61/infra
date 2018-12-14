@@ -227,8 +227,13 @@ func (h *State) legacySheriff(ctx *router.Context, file string) (string, error) 
 		cfg.Config.Name = rota[1]
 	}
 
+	cal := h.legacyCalendar
+	if cfg.Config.Enabled {
+		cal = h.calendar
+	}
+
 	updated := clock.Now(ctx.Context)
-	events, err := h.legacyCalendar.Events(ctx, cfg, updated.Add(-week), updated.Add(week))
+	events, err := cal.Events(ctx, cfg, updated.Add(-week), updated.Add(week))
 	if err != nil {
 		return "", err
 	}
@@ -355,7 +360,11 @@ func (h *State) legacyAllRotations(ctx *router.Context, _ string) (string, error
 		if v[1] != "" {
 			cfg.Config.Name = v[1]
 		}
-		shifts, err := h.legacyCalendar.Events(ctx, cfg, start, end)
+		cal := h.legacyCalendar
+		if cfg.Config.Enabled {
+			cal = h.calendar
+		}
+		shifts, err := cal.Events(ctx, cfg, start, end)
 		if err != nil {
 			logging.Errorf(ctx.Context, "Fetching calendar events for: %q failed: %v", v[0], err)
 			continue

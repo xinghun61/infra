@@ -94,5 +94,6 @@ func (h *State) createNonExists(ctx *router.Context, cfg *rotang.Configuration, 
 	if len(shifts) != 1 {
 		return status.Errorf(codes.Internal, "wrong number of shifts returned, got: %c expected: %d", len(shifts), 1)
 	}
-	return nil
+	shift.EvtID = shifts[0].EvtID
+	return h.shiftStore(ctx.Context).UpdateShift(ctx.Context, cfg.Config.Name, &shift)
 }
