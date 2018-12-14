@@ -106,7 +106,6 @@ def GoCheckers(input_api, output_api):
 
 
 def GoPackageImportsCheck(input_api, output_api):
-  all_files = input_api.change.AffectedFiles(include_deletes=False)
   trigger_on = [
     'DEPS',
     'go/check_deps.py',
@@ -114,7 +113,7 @@ def GoPackageImportsCheck(input_api, output_api):
     'go/deps.lock',
     'go/deps.yaml',
   ]
-  for f in all_files:
+  for f in input_api.change.AffectedFiles(include_deletes=True):
     lp = f.LocalPath()
     if lp.endswith('.go') or lp in trigger_on:
       check_script = input_api.os_path.join(
