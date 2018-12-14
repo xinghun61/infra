@@ -15,3 +15,4 @@
 package account
 
 //go:generate cproto
+//go:generate goimports -w .

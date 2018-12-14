@@ -5,11 +5,12 @@ package scheduler
 
 import (
 	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
-	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	_ "infra/qscheduler/qslib/types/account"
 	_ "infra/qscheduler/qslib/types/vector"
 	math "math"
+
+	proto "github.com/golang/protobuf/proto"
+	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

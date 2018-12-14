@@ -15,3 +15,4 @@
 package scheduler
 
 //go:generate cproto
+//go:generate goimports -w .
