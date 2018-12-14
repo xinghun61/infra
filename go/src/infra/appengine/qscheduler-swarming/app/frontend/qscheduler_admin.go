@@ -86,19 +86,26 @@ func (s *QSchedulerAdminServerImpl) InspectPool(ctx context.Context, r *qschedul
 		return nil, err
 	}
 
-	running, idle := 0, 0
-	for _, w := range sp.Scheduler.State.Workers {
+	runningCount, idleCount := 0, 0
+	running := make([]*qscheduler.InspectPoolResponse_RunningTask, 0, len(sp.Scheduler.State.Workers))
+	for wid, w := range sp.Scheduler.State.Workers {
 		if w.RunningTask != nil {
-			running++
+			runningCount++
+			running = append(running, &qscheduler.InspectPoolResponse_RunningTask{
+				BotId:    wid,
+				Id:       w.RunningTask.RequestId,
+				Priority: w.RunningTask.Priority,
+			})
 		} else {
-			idle++
+			idleCount++
 		}
 	}
 
 	resp := &qscheduler.InspectPoolResponse{
-		WaitingTasks:    int32(len(sp.Scheduler.State.QueuedRequests)),
-		IdleBots:        int32(idle),
-		RunningTasks:    int32(running),
+		NumWaitingTasks: int32(len(sp.Scheduler.State.QueuedRequests)),
+		NumIdleBots:     int32(idleCount),
+		NumRunningTasks: int32(runningCount),
+		RunningTasks:    running,
 		AccountBalances: sp.Scheduler.State.Balances,
 	}
 

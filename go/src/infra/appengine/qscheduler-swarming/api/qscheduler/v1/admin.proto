@@ -83,15 +83,31 @@ message InspectPoolRequest {
 }
 
 message InspectPoolResponse {
-    // WaitingTasks is the number of waiting tasks.
-    int32 waiting_tasks = 1;
+    // NumWaitingTasks is the number of waiting tasks.
+    int32 num_waiting_tasks = 1;
 
-    // RunningTasks is the number of running tasks.
-    int32 running_tasks = 2;
+    // NumRunningTasks is the number of running tasks.
+    int32 num_running_tasks = 2;
 
     // IdleBots is the number of idle bots.
-    int32 idle_bots = 3;
+    int32 num_idle_bots = 3;
 
     // AccountBalances is the set of balances for all accounts.
     map<string, vector.Vector> account_balances = 4;
+
+    message RunningTask {
+        // Id is the id of the request.
+        string id = 1;
+
+        // BotId is the id of the bot running the request.
+        string bot_id = 2;
+
+        // Priority is the current quotascheduler priority that the task is
+        // running at.
+        int32 priority = 3;
+    }
+
+    // RunningTasks is a description of the running tasks according to
+    // quotascheduler.
+    repeated RunningTask running_tasks = 5;
 }
