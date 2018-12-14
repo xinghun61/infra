@@ -74,15 +74,29 @@ func TestOneAssignment(t *testing.T) {
 
 			r.Notify(ctx, s, taskUpdate)
 
-			Convey("when AssignTasks is called for a worker", func() {
+			Convey("when AssignTasks is called for a worker that has the task's provisionable label", func() {
 				wid := "Worker1"
-				as, _ := r.AssignTasks(ctx, s, t0, &IdleWorker{ID: wid})
+				as, _ := r.AssignTasks(ctx, s, t0, &IdleWorker{ID: wid, ProvisionableLabels: labels})
 
-				Convey("then it is given the assigned task.", func() {
+				Convey("then it is given the assigned task with no provision required.", func() {
 					So(as, ShouldHaveLength, 1)
 					a := as[0]
 					So(a.RequestID, ShouldEqual, rid)
 					So(a.WorkerID, ShouldEqual, wid)
+					So(a.ProvisionRequired, ShouldBeFalse)
+				})
+			})
+
+			Convey("when AssignTasks is called for a worker that doesn't have task's provisionable label", func() {
+				wid := "Worker1"
+				as, _ := r.AssignTasks(ctx, s, t0, &IdleWorker{ID: wid})
+
+				Convey("then it is given the assigned task with provision required.", func() {
+					So(as, ShouldHaveLength, 1)
+					a := as[0]
+					So(a.RequestID, ShouldEqual, rid)
+					So(a.WorkerID, ShouldEqual, wid)
+					So(a.ProvisionRequired, ShouldBeTrue)
 				})
 
 				Convey("when AssignTasks is called again for the same worker", func() {
@@ -205,6 +219,7 @@ func TestQueuedAssignment(t *testing.T) {
 							So(as, ShouldHaveLength, 1)
 							So(as[0].RequestID, ShouldEqual, rid)
 							So(as[0].WorkerID, ShouldEqual, wid)
+							So(as[0].ProvisionRequired, ShouldBeFalse)
 						})
 					})
 				})

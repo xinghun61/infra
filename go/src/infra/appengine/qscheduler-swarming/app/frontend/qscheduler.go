@@ -153,7 +153,6 @@ func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.Noti
 			// TODO(akeshet): Validate that new tasks have dimensions that match the
 			// worker pool dimensions for this scheduler pool.
 			update := &reconciler.TaskInstant{
-				// TODO(akeshet): implement me. This will be based upon task tags.
 				AccountId: accountID,
 				// TODO(akeshet): implement me properly. This should be a separate field
 				// of the task state, not the notification time.

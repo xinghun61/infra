@@ -242,6 +242,11 @@ func (s *Scheduler) RunOnce(ctx context.Context) ([]*Assignment, error) {
 	return output, nil
 }
 
+// GetRequest returns the (waiting or running) request for a given ID.
+func (s *Scheduler) GetRequest(rid string) (req *TaskRequest, ok bool) {
+	return s.State.getRequest(rid)
+}
+
 // matchIdleBotsWithLabels matches requests with idle workers that already
 // share all of that request's provisionable labels.
 func matchIdleBotsWithLabels(state *State, requestsAtP orderedRequests) []*Assignment {

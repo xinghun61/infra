@@ -19,6 +19,8 @@ import (
 	"time"
 
 	"infra/qscheduler/qslib/tutils"
+
+	"go.chromium.org/luci/common/data/stringset"
 )
 
 // LabelSet represents a set of provisionable labels.
@@ -64,6 +66,17 @@ func (a LabelSet) Equal(b LabelSet) bool {
 	}
 
 	return true
+}
+
+// Contains returns true iff the left set contains all elements of the right set.
+func (a LabelSet) Contains(b LabelSet) bool {
+	// Most LabelSets are of size 1, so make those calculations efficient and simple.
+	if len(a) == len(b) {
+		return a.Equal(b)
+	}
+
+	s := stringset.NewFromSlice(a...)
+	return s.HasAll(b...)
 }
 
 // NewRequest creates a new TaskRequest.

@@ -61,6 +61,11 @@ type Assignment struct {
 
 	// RequestID is the ID of the task request that is being assigned.
 	RequestID string
+
+	// ProvisionRequired indicates whether the worker needs to be provisioned (in other
+	// words, it is true if the worker does not possess the request's provisionable
+	// labels.)
+	ProvisionRequired bool
 }
 
 // Scheduler is the interface with which reconciler interacts with a scheduler.
@@ -93,6 +98,9 @@ type Scheduler interface {
 	//
 	// Note: calls to NotifyRequest come from task update pubsub messages from swarming.
 	NotifyRequest(ctx context.Context, requestID string, workerID string, t time.Time) error
+
+	// GetRequest returns the (waiting or running) request for a given ID.
+	GetRequest(rid string) (req *scheduler.TaskRequest, ok bool)
 
 	// AbortRequest informs the scheduler authoritatively that the given request
 	// is stopped (not running on a worker, and not in the queue) at the given time.
@@ -151,7 +159,17 @@ func (state *State) AssignTasks(ctx context.Context, s Scheduler, t time.Time, w
 	assignments := make([]Assignment, 0, len(workers))
 	for _, w := range workers {
 		if q, ok := state.WorkerQueues[w.ID]; ok {
-			assignments = append(assignments, Assignment{RequestID: q.TaskToAssign, WorkerID: w.ID})
+			// Note: We determine whether provision is needed here rather than
+			// using the determination used within the Scheduler, because we have the
+			// newest info about worker dimensions here.
+			r, _ := s.GetRequest(q.TaskToAssign)
+			provisionRequired := !w.ProvisionableLabels.Contains(r.Labels)
+
+			assignments = append(assignments, Assignment{
+				RequestID:         q.TaskToAssign,
+				WorkerID:          w.ID,
+				ProvisionRequired: provisionRequired,
+			})
 			// TODO: If q was a preempt-type assignment, then turn it into assign_idle
 			// type assignment now (as the worker already became idle) and log that
 			// we no longer need to abort the previous task.

@@ -14,7 +14,11 @@
 
 package scheduler
 
-import "testing"
+import (
+	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
+)
 
 // TestLabelSetEquals tests that LabelSet Equal behaves correctly (setwise equality).
 func TestLabelSetEquals(t *testing.T) {
@@ -37,4 +41,22 @@ func TestLabelSetEquals(t *testing.T) {
 			t.Errorf("Equal(%v, %v) = %v, want %v", test.a, test.b, actual, test.expect)
 		}
 	}
+}
+
+// TestLabelContains tests the Contains method.
+func TestLabelContains(t *testing.T) {
+	Convey("Various set comparisons should be correct.", t, func() {
+		a := LabelSet{"foo", "bar"}
+		b := LabelSet{"bar", "foo"}
+		c := LabelSet{"bar", "foo", "baz"}
+		So(a.Contains(b), ShouldBeTrue)
+		So(c.Contains(a), ShouldBeTrue)
+		So(b.Contains(c), ShouldBeFalse)
+
+		d := LabelSet{"a"}
+		e := LabelSet{"a"}
+		f := LabelSet{"b"}
+		So(d.Contains(e), ShouldBeTrue)
+		So(f.Contains(d), ShouldBeFalse)
+	})
 }
