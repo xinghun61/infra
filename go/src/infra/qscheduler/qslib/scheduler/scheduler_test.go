@@ -58,6 +58,35 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 	})
 }
 
+// TestMatchProvisionableLabel tests that scheduler correctly matches provisionable
+// label, even when a worker has more provisionable labels than tasks.
+func TestMatchProvisionableLabel(t *testing.T) {
+	ctx := context.Background()
+	Convey("Given 500 tasks with label 'a' and 1 task with label 'b'", t, func() {
+		tm := time.Unix(0, 0)
+		s := New(tm)
+		for i := 0; i < 500; i++ {
+			id := fmt.Sprintf("t%d", i)
+			s.AddRequest(ctx, id, NewRequest("", []string{"a"}, tm), tm)
+		}
+		s.AddRequest(ctx, "tb", NewRequest("", []string{"b"}, tm), tm)
+
+		Convey("and an idle worker with labels 'b' and 'c'", func() {
+			s.MarkIdle(ctx, "wb", []string{"b", "c"}, tm)
+
+			Convey("when scheduling jobs", func() {
+				muts, _ := s.RunOnce(ctx)
+
+				Convey("then worker is matched to the task with label 'b'.", func() {
+					So(muts, ShouldHaveLength, 1)
+					So(muts[0].RequestId, ShouldEqual, "tb")
+					So(muts[0].WorkerId, ShouldEqual, "wb")
+				})
+			})
+		})
+	})
+}
+
 // TestReprioritize tests that the scheduler correctly changes the priority
 // of running jobs (promote or demote) if the account balance makes that
 // necessary.

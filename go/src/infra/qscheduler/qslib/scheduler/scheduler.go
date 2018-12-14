@@ -259,7 +259,7 @@ func matchIdleBotsWithLabels(state *State, requestsAtP orderedRequests) []*Assig
 			continue
 		}
 		for wid, worker := range state.Workers {
-			if worker.isIdle() && LabelSet(worker.Labels).Equal(request.Request.Labels) {
+			if worker.isIdle() && LabelSet(worker.Labels).Contains(request.Request.Labels) {
 				m := &Assignment{
 					Type:      Assignment_IDLE_WORKER,
 					WorkerId:  wid,
