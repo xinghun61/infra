@@ -74,9 +74,14 @@ func (s *QSchedulerServerImpl) AssignTasks(ctx context.Context, r *swarming.Assi
 
 		assignments := make([]*swarming.TaskAssignment, len(a))
 		for i, v := range a {
+			slice := int32(0)
+			if v.ProvisionRequired {
+				slice = 1
+			}
 			assignments[i] = &swarming.TaskAssignment{
-				BotId:  v.WorkerID,
-				TaskId: v.RequestID,
+				BotId:       v.WorkerID,
+				TaskId:      v.RequestID,
+				SliceNumber: slice,
 			}
 		}
 		if err := entities.Save(ctx, sp); err != nil {
