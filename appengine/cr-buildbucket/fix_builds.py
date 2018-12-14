@@ -45,15 +45,13 @@ def _fix_build_async(build_key):  # pragma: no cover
   if not build:
     return
 
-  futs = []
-
   if not build.input_properties:
     build.input_properties = struct_pb2.Struct()
     params = build.parameters_actual or build.parameters or {}
     src = params.get('properties')
     if isinstance(src, dict):
       build.input_properties.update(src)
-    futs.append(build.put_async())
+    yield build.put_async()
 
   if not out_props:
     src = (build.result_details or {}).get('properties') or {}
@@ -64,6 +62,4 @@ def _fix_build_async(build_key):  # pragma: no cover
           key=model.BuildOutputProperties.key_for(build_key),
           properties=dest,
       )
-      futs.append(out_props.put_async())
-
-  yield futs
+      yield out_props.put_async()
