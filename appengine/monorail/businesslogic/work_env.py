@@ -1182,14 +1182,13 @@ class WorkEnv(object):
       label_prefix (str): Required for label queries. Only returns results
         with the supplied prefix.
       query (str, optional): If supplied, will parse & apply query conditions.
-      canned_query (str, optional): Value derived from the can= query parameter.
+      canned_query (str, optional): Parsed canned query.
 
     Returns:
       1. A dict of {name: count} for each item in group_by.
       2. A list of any unsupported query conditions in query.
     """
     # This returns counts of viewable issues.
-
     with self.mc.profiler.Phase('querying snapshot counts'):
       return self.services.chart.QueryIssueSnapshots(
         self.mc.cnxn, self.services, timestamp, self.mc.auth.effective_ids,

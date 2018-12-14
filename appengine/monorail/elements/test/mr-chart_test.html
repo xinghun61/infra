@@ -10,12 +10,13 @@
 
 <script type="module">
 import MrChart from '../../static/js/elements/mr-chart.js';
+import AutoRefreshPrpcClient from '../../static/js/prpc.js';
 
 // TODO(jeffcarp): Export prefix from prpc-client and use that.
 const xssiPrefix = ')]}\'';
 
 suite('MrChart', function() {
-  let element;
+  let dataLoadedPromise, element;
 
   setup(function() {
     window.CS_env = {
@@ -23,6 +24,7 @@ suite('MrChart', function() {
       tokenExpiresSec: 0,
       app_version: 'rutabaga-version',
     };
+    sinon.stub(AutoRefreshPrpcClient, 'isTokenExpired', () => false);
     sinon.stub(window, 'fetch', () => {
       return new Promise((resolve, reject) => {
         const dataStr = JSON.stringify({
@@ -49,6 +51,7 @@ suite('MrChart', function() {
   teardown(function() {
     window.fetch.restore();
     window.requestAnimationFrame.restore();
+    AutoRefreshPrpcClient.isTokenExpired.restore();
   });
 
   suite('constructor', function() {
@@ -60,11 +63,13 @@ suite('MrChart', function() {
   });
 
   suite('data loading', function() {
-
     setup(() => {
+      window.fetch.reset();
+
       sinon.stub(MrChart, 'getSearchParams');
       const searchParams = new URLSearchParams();
       searchParams.set('q', 'owner:rutabaga@chromium.org');
+      searchParams.set('can', '8');
       MrChart.getSearchParams.returns(searchParams);
 
       // Stub MrChart.makeTimestamps to return 6, not 30 data points.
@@ -72,25 +77,31 @@ suite('MrChart', function() {
       sinon.stub(MrChart, 'makeTimestamps', (endDate) => {
         return originalMakeTimestamps(endDate, 6);
       });
+      sinon.stub(MrChart, 'getEndDate', () => {
+        return new Date(Date.UTC(2018, 10, 3, 23, 59, 59))
+      });
+
+      element = fixture('basic');
+      dataLoadedPromise = new Promise((resolve) => {
+        element.addEventListener('allDataLoaded', resolve);
+      });
     });
 
     teardown(() => {
       MrChart.getSearchParams.restore();
       MrChart.makeTimestamps.restore();
+      MrChart.getEndDate.restore();
     });
 
     test('makes a series of XHR calls', async () => {
-      window.fetch.reset();
-
-      const endDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
-      await element._fetchData(endDate);
+      await dataLoadedPromise;
 
       const actualTimestamps = fetch.getCalls().map(call => (
         JSON.parse(call.args[1].body).timestamp
       ));
       assert.deepEqual(actualTimestamps, [
         1540857599, 1541289599, 1541116799, 1540943999, 1541203199, 1541030399,
-      ])
+      ]);
 
       const queries = fetch.getCalls().map(call => (
         JSON.parse(call.args[1].body).query
@@ -99,7 +110,12 @@ suite('MrChart', function() {
         'owner:rutabaga@chromium.org', 'owner:rutabaga@chromium.org',
         'owner:rutabaga@chromium.org', 'owner:rutabaga@chromium.org',
         'owner:rutabaga@chromium.org', 'owner:rutabaga@chromium.org',
-      ])
+      ]);
+
+      const cannedQueries = fetch.getCalls().map(call => (
+        JSON.parse(call.args[1].body).cannedQuery
+      ));
+      assert.deepEqual(cannedQueries, ['8', '8', '8', '8', '8', '8']);
 
       const projectNames = fetch.getCalls().map(call => (
         JSON.parse(call.args[1].body).projectName
@@ -118,9 +134,13 @@ suite('MrChart', function() {
         [1541203199, 4],
         [1541289599, 5],
       ]);
-      sinon.stub(element, '_fetchDataAtTimestamp', (ts) => ({
+      sinon.stub(MrChart.prototype, '_fetchDataAtTimestamp', async (ts) => ({
         issues: timestampMap.get(ts),
       }));
+      element = fixture('basic');
+      await new Promise((resolve) => {
+        element.addEventListener('allDataLoaded', resolve);
+      });
 
       const endDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
       await element._fetchData(endDate);
@@ -130,11 +150,43 @@ suite('MrChart', function() {
         '11/1/2018', '11/2/2018', '11/3/2018',
       ]);
       assert.deepEqual(element.values, [0, 1, 2, 3, 4, 5]);
+
+      MrChart.prototype._fetchDataAtTimestamp.restore();
+    });
+
+    test('if issue count is null, defaults to 0', async () => {
+      window.fetch.restore();
+      sinon.stub(window, 'fetch', () => {
+        return new Promise((resolve, reject) => {
+          const dataStr = JSON.stringify({
+            snapshotCount: [{}],
+          });
+          const responseBody = new Blob([xssiPrefix + dataStr]);
+          resolve(new Response(responseBody, {
+            status: 201,
+            headers: {
+              'Content-type': 'application/json',
+              'X-Prpc-Grpc-Code': 0,
+            },
+          }));
+        });
+      });
+      MrChart.makeTimestamps.restore();
+      sinon.stub(MrChart, 'makeTimestamps', (endDate) => {
+        return [1234567, 2345678, 3456789];
+      });
+
+      element = fixture('basic');
+      await new Promise((resolve) => {
+        element.addEventListener('allDataLoaded', resolve);
+      });
+
+      await element._fetchData(new Date());
+      assert.deepEqual(element.values, [0, 0, 0]);
     });
   });
 
   suite('end date change detection', function() {
-
     setup(() => {
       sinon.spy(window.history, 'pushState');
       sinon.spy(element, '_fetchData');
@@ -152,7 +204,7 @@ suite('MrChart', function() {
 
       sinon.assert.calledOnce(history.pushState);
       sinon.assert.calledWith(history.pushState, {}, '',
-        sinon.match('/elements/test/mr-chart_test.html?wct=go&end_date=2017-10-02'));
+        sinon.match('end_date=2017-10-02'));
 
       sinon.assert.calledOnce(element._fetchData);
       const endDate = new Date(Date.UTC(2017, 9, 2, 23, 59, 59));
@@ -228,10 +280,8 @@ suite('MrChart', function() {
 
       test('returns a new Date at EOD UTC', function() {
         const actualDate = MrChart.dateStringToDate('2018-11-03');
-
         const expectedDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
-        // Time sanity check.
-        assert.equal(expectedDate.getTime(), 1541289599000);
+        assert.equal(expectedDate.getTime(), 1541289599000, 'Sanity check.');
 
         assert.equal(actualDate.getTime(), expectedDate.getTime());
       });

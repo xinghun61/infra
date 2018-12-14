@@ -786,7 +786,31 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertEqual(123, response.snapshot_count[0].count)
     self.assertEqual(0, len(response.unsupported_field))
     mockSnapshotCountsQuery.assert_called_once_with(self.project, 1531334109,
-        '', '', '', None)
+      '', query=None, canned_query=None, label_prefix='')
+
+  @patch('businesslogic.work_env.WorkEnv.SnapshotCountsQuery')
+  @patch('search.searchpipeline.ReplaceKeywordsWithUserIDs')
+  @patch('features.savedqueries_helpers.SavedQueryIDToCond')
+  def testSnapshotCounts_ReplacesKeywords(self, mockSavedQueryIDToCond,
+                                          mockReplaceKeywordsWithUserIDs,
+                                          mockSnapshotCountsQuery):
+    """Tests that canned query is unpacked and keywords in query and canned
+    query are replaced with user IDs."""
+    request = issues_pb2.IssueSnapshotRequest(timestamp=1531334109,
+        project_name='proj', query='owner:me', canned_query=3)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mockSavedQueryIDToCond.return_value = 'cc:me'
+    mockReplaceKeywordsWithUserIDs.side_effect = [
+        ('cc:2345', []), ('owner:1234', [])]
+    mockSnapshotCountsQuery.return_value = ({'total': 789}, [])
+
+    response = self.CallWrapped(self.issues_svcr.IssueSnapshot, mc, request)
+
+    self.assertEqual(789, response.snapshot_count[0].count)
+    self.assertEqual(0, len(response.unsupported_field))
+    mockSnapshotCountsQuery.assert_called_once_with(self.project, 1531334109,
+      '', query='owner:1234', canned_query='cc:2345', label_prefix='')
 
   @patch('businesslogic.work_env.WorkEnv.SnapshotCountsQuery')
   def testSnapshotCounts_GroupByLabel(self, mockSnapshotCountsQuery):
@@ -812,7 +836,8 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertEqual(1, len(response.unsupported_field))
     self.assertEqual('rutabaga', response.unsupported_field[0])
     mockSnapshotCountsQuery.assert_called_once_with(self.project, 1531334109,
-        'label', 'Type', 'rutabaga:rutabaga', None)
+        'label', label_prefix='Type', query='rutabaga:rutabaga',
+        canned_query=None)
 
   @patch('businesslogic.work_env.WorkEnv.SnapshotCountsQuery')
   def testSnapshotCounts_GroupByComponent(self, mockSnapshotCountsQuery):
@@ -836,7 +861,8 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertEqual(1, len(response.unsupported_field))
     self.assertEqual('rutabaga', response.unsupported_field[0])
     mockSnapshotCountsQuery.assert_called_once_with(self.project, 1531334109,
-        'component', '', 'rutabaga:rutabaga', 'is:open')
+        'component', label_prefix='', query='rutabaga:rutabaga',
+        canned_query='is:open')
 
   def AddField(self, name, field_type_str):
     kwargs = {

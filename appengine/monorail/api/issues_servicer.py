@@ -358,11 +358,18 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     else:
       canned_query = None
 
+    if request.query:
+      query, warnings = searchpipeline.ReplaceKeywordsWithUserIDs(
+          [mc.auth.user_id], request.query)
+    else:
+      query = None
+
     with work_env.WorkEnv(mc, self.services) as we:
       project = we.GetProjectByName(request.project_name)
       results, unsupported_fields = we.SnapshotCountsQuery(
-          project, request.timestamp, request.group_by, request.label_prefix,
-          request.query, canned_query)
+          project, request.timestamp, request.group_by,
+          label_prefix=request.label_prefix, query=query,
+          canned_query=canned_query)
 
     snapshot_counts = [
       issues_pb2.IssueSnapshotCount(dimension=key, count=result)

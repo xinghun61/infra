@@ -74,24 +74,20 @@ class ChartService(object):
         only labels with the specified prefix (for example 'Pri').
       query (str, optional): A query string from the request to apply to
         the snapshot query.
-      canned_query (str, optional): Derived from the can= query parameter,
-        applied to the query scope.
+      canned_query (str, optional): Parsed canned query applied to the query
+        scope.
 
     Returns:
       1. A dict of {'2nd dimension or "total"': number of occurences}.
       2. A list of any unsupported query conditions in query.
     """
-    if query:
-      project_config = services.config.GetProjectConfig(cnxn,
-          project.project_id)
-      try:
-        query_left_joins, query_where, unsupported_conds = self._QueryToWhere(
-            cnxn, services, project_config, query, canned_query, project)
-      except ast2select.NoPossibleResults:
-        return {}, ['Invalid query.']
-
-    else:
-      unsupported_conds = []
+    project_config = services.config.GetProjectConfig(cnxn,
+        project.project_id)
+    try:
+      query_left_joins, query_where, unsupported_conds = self._QueryToWhere(
+          cnxn, services, project_config, query, canned_query, project)
+    except ast2select.NoPossibleResults:
+      return {}, ['Invalid query.']
 
     restricted_label_ids = search_helpers.GetPersonalAtRiskLabelIDs(
       cnxn, None, self.config_service, effective_ids, project, perms)
@@ -120,7 +116,6 @@ class ChartService(object):
       ('IssueSnapshot.period_start <= %s', [unixtime]),
       ('IssueSnapshot.period_end > %s', [unixtime]),
       ('IssueSnapshot.project_id = %s', [project.project_id]),
-      ('IssueSnapshot.is_open = %s', [True]),
       ('Issue.is_spam = %s', [False]),
       ('Issue.deleted = %s', [False]),
     ]
@@ -175,8 +170,10 @@ class ChartService(object):
     else:
       raise ValueError('`group_by` must be label, component, or None.')
 
-    if query:
+    if query_left_joins:
       left_joins.extend(query_left_joins)
+
+    if query_where:
       where.extend(query_where)
 
     promises = []
@@ -312,13 +309,11 @@ class ChartService(object):
       2. A list of WHERE clases for the SQL query.
       3. A list of query conditions that are unsupported with snapshots.
     """
-    if not query:
+    if not (query or canned_query):
       return [], [], []
 
-    if canned_query:
-      scope = canned_query
-    else:
-      scope = ''
+    query = query or ''
+    scope = canned_query or ''
 
     query_ast = query2ast.ParseUserQuery(query, scope,
         query2ast.BUILTIN_ISSUE_FIELDS, project_config)

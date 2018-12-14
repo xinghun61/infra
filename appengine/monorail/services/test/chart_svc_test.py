@@ -76,6 +76,9 @@ class ChartServiceTest(unittest.TestCase):
     search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
         self.config_service, [10L, 20L], project,
         perms).AndReturn([91, 81])
+    self.services.chart._QueryToWhere(mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg()).AndReturn(([], [], []))
 
     self.mox.ReplayAll()
     with self.assertRaises(ValueError):
@@ -91,6 +94,9 @@ class ChartServiceTest(unittest.TestCase):
     search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
         self.config_service, [10L, 20L], project,
         perms).AndReturn([91, 81])
+    self.services.chart._QueryToWhere(mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg()).AndReturn(([], [], []))
 
     self.mox.ReplayAll()
     with self.assertRaises(ValueError):
@@ -127,7 +133,6 @@ class ChartServiceTest(unittest.TestCase):
       ('IssueSnapshot.period_start <= %s', [1514764800]),
       ('IssueSnapshot.period_end > %s', [1514764800]),
       ('IssueSnapshot.project_id = %s', [789]),
-      ('IssueSnapshot.is_open = %s', [True]),
       ('Issue.is_spam = %s', [False]),
       ('Issue.deleted = %s', [False]),
       ('(Issue.reporter_id IN (%s,%s)'
@@ -140,6 +145,9 @@ class ChartServiceTest(unittest.TestCase):
     ]
     group_by = ['Comp.path']
 
+    self.services.chart._QueryToWhere(mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg()).AndReturn(([], [], []))
     self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn, cols=cols,
       group_by=group_by, left_joins=left_joins, shard_id=0, where=where)
 
@@ -179,7 +187,6 @@ class ChartServiceTest(unittest.TestCase):
       ('IssueSnapshot.period_start <= %s', [1514764800]),
       ('IssueSnapshot.period_end > %s', [1514764800]),
       ('IssueSnapshot.project_id = %s', [789]),
-      ('IssueSnapshot.is_open = %s', [True]),
       ('Issue.is_spam = %s', [False]),
       ('Issue.deleted = %s', [False]),
       ('(Issue.reporter_id IN (%s,%s)'
@@ -193,6 +200,9 @@ class ChartServiceTest(unittest.TestCase):
     ]
     group_by = ['Lab.label']
 
+    self.services.chart._QueryToWhere(mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg()).AndReturn(([], [], []))
     self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn, cols=cols,
       group_by=group_by, left_joins=left_joins, shard_id=0, where=where)
 
@@ -228,7 +238,6 @@ class ChartServiceTest(unittest.TestCase):
       ('IssueSnapshot.period_start <= %s', [1514764800]),
       ('IssueSnapshot.period_end > %s', [1514764800]),
       ('IssueSnapshot.project_id = %s', [789]),
-      ('IssueSnapshot.is_open = %s', [True]),
       ('Issue.is_spam = %s', [False]),
       ('Issue.deleted = %s', [False]),
       ('(Issue.reporter_id IN (%s,%s)'
@@ -241,6 +250,9 @@ class ChartServiceTest(unittest.TestCase):
     ]
     group_by = None
 
+    self.services.chart._QueryToWhere(mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg()).AndReturn(([], [], []))
     self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn, cols=cols,
       group_by=group_by, left_joins=left_joins, shard_id=0, where=where)
 
@@ -280,7 +292,6 @@ class ChartServiceTest(unittest.TestCase):
       ('IssueSnapshot.period_start <= %s', [1514764800]),
       ('IssueSnapshot.period_end > %s', [1514764800]),
       ('IssueSnapshot.project_id = %s', [789]),
-      ('IssueSnapshot.is_open = %s', [True]),
       ('Issue.is_spam = %s', [False]),
       ('Issue.deleted = %s', [False]),
       ('Forbidden_label.label_id IS NULL', []),
@@ -289,6 +300,10 @@ class ChartServiceTest(unittest.TestCase):
     ]
     group_by = ['Lab.label']
 
+
+    self.services.chart._QueryToWhere(mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg()).AndReturn(([], [], []))
     self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn, cols=cols,
       group_by=group_by, left_joins=left_joins, shard_id=0, where=where)
 
@@ -325,7 +340,6 @@ class ChartServiceTest(unittest.TestCase):
       ('IssueSnapshot.period_start <= %s', [1514764800]),
       ('IssueSnapshot.period_end > %s', [1514764800]),
       ('IssueSnapshot.project_id = %s', [789]),
-      ('IssueSnapshot.is_open = %s', [True]),
       ('Issue.is_spam = %s', [False]),
       ('Issue.deleted = %s', [False]),
       ('(Issue.reporter_id IN (%s,%s)'
@@ -338,6 +352,9 @@ class ChartServiceTest(unittest.TestCase):
     ]
     group_by = ['Lab.label']
 
+    self.services.chart._QueryToWhere(mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg()).AndReturn(([], [], []))
     self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn, cols=cols,
       group_by=group_by, left_joins=left_joins, shard_id=0, where=where)
 
@@ -473,7 +490,7 @@ class ChartServiceTest(unittest.TestCase):
     self.services.chart.StoreIssueSnapshots(self.cnxn, [issue_2], commit=False)
     self.mox.VerifyAll()
 
-  def testQueryIssueSnapshots_WithQueryString(self):
+  def testQueryIssueSnapshots_WithQueryStringAndCannedQuery(self):
     """Test the query param is parsed and used."""
     project = fake.Project(project_id=789)
     perms = permissions.USER_PERMISSIONSET
@@ -500,7 +517,6 @@ class ChartServiceTest(unittest.TestCase):
       ('IssueSnapshot.period_start <= %s', [1514764800]),
       ('IssueSnapshot.period_end > %s', [1514764800]),
       ('IssueSnapshot.project_id = %s', [789]),
-      ('IssueSnapshot.is_open = %s', [True]),
       ('Issue.is_spam = %s', [False]),
       ('Issue.deleted = %s', [False]),
       ('(Issue.reporter_id IN (%s,%s)'
@@ -510,6 +526,7 @@ class ChartServiceTest(unittest.TestCase):
       ),
       ('LOWER(Lab.label) LIKE %s', ['foo-%']),
       ('Cond0.label_id IS NULL', []),
+      ('IssueSnapshot.is_open = %s', [True]),
       ('IssueSnapshot.shard = %s', [0]),
     ]
     group_by = ['Lab.label']
@@ -518,7 +535,10 @@ class ChartServiceTest(unittest.TestCase):
         'IssueSnapshot2Label AS Cond0 '
         'ON IssueSnapshot.id = Cond0.issuesnapshot_id '
         'AND Cond0.label_id = %s', [15L])]
-    query_where = [('Cond0.label_id IS NULL', [])]
+    query_where = [
+      ('Cond0.label_id IS NULL', []),
+      ('IssueSnapshot.is_open = %s', [True]),
+    ]
     unsupported_field_names = ['ownerbouncing']
 
     unsupported_conds = [
@@ -532,7 +552,6 @@ class ChartServiceTest(unittest.TestCase):
         mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
         mox.IgnoreArg()).AndReturn((query_left_joins, query_where,
         unsupported_conds))
-
     self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn, cols=cols,
       group_by=group_by, left_joins=left_joins, shard_id=0, where=where)
 
@@ -541,8 +560,8 @@ class ChartServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     _, unsupported = self.services.chart.QueryIssueSnapshots(self.cnxn,
         self.services, unixtime=1514764800, effective_ids=[10L, 20L],
-        project=project, perms=perms, group_by='label',
-        query='-label:Performance%20is:ownerbouncing', label_prefix='Foo')
+        project=project, perms=perms, group_by='label', label_prefix='Foo',
+        query='-label:Performance%20is:ownerbouncing', canned_query='is:open')
     self.mox.VerifyAll()
 
     self.assertEqual(unsupported_field_names, unsupported)

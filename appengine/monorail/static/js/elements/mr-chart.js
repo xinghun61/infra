@@ -106,6 +106,8 @@ export default class MrChart extends HTMLElement {
     });
 
     const chartData = await Promise.all(fetchPromises);
+    this.dispatchEvent(new Event('allDataLoaded'));
+
     const flatUnsupportedFields = chartData.reduce((acc, datum) => {
       if (datum.unsupportedField) {
         acc = acc.concat(datum.unsupportedField);
@@ -120,17 +122,19 @@ export default class MrChart extends HTMLElement {
     return new Promise((resolve, reject) => {
       const params = MrChart.getSearchParams();
       const query = params.get('q');
+      const cannedQuery = params.get('can');
       const message = {
         timestamp: timestamp,
         projectName: this.projectName,
         query: query,
+        cannedQuery: cannedQuery,
       };
       const callPromise = this.prpcClient.call('monorail.Issues',
           'IssueSnapshot', message);
-      return callPromise.then(response => {
+      return callPromise.then((response) => {
         resolve({
           date: timestamp * 1000,
-          issues: response.snapshotCount[0].count,
+          issues: response.snapshotCount[0].count || 0,
           unsupportedField: response.unsupportedField,
         });
       });
