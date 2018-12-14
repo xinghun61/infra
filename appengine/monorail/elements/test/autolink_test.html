@@ -298,15 +298,44 @@
            {content: ').'}]
       );
     });
-      test('Replace URL existing http', function() {
+
+    test('Replace URL existing http', function() {
       const match = refRegs[3].exec('link here: (https://website.net/other="here").');
-      refRegs[2].lastIndex = 0;
+      refRegs[3].lastIndex = 0;
       const actualTextRuns = replacer(match);
       assert.deepEqual(
           actualTextRuns,
           [{tag: 'a',
             href: 'https://website.net/other="here"',
             content: 'https://website.net/other="here"',
+           },
+           {content: ').'}]
+      );
+    });
+
+    test('Replace short-link plain text', function() {
+      const match = refRegs[0].exec('link here: (who/me).');
+      refRegs[0].lastIndex = 0;
+      const actualTextRuns = replacer(match);
+      assert.deepEqual(
+          actualTextRuns,
+          [{tag: 'a',
+            href: 'http://who/me',
+            content: 'who/me',
+           },
+           {content: ').'}]
+      );
+    });
+
+    test('Replace URL existing http', function() {
+      const match = refRegs[0].exec('link here: (http://who/me).');
+      refRegs[0].lastIndex = 0;
+      const actualTextRuns = replacer(match);
+      assert.deepEqual(
+          actualTextRuns,
+          [{tag: 'a',
+            href: 'http://who/me',
+            content: 'http://who/me',
            },
            {content: ').'}]
       );
@@ -434,13 +463,12 @@
     test('multilined bolds are not bolded', function() {
       const plainString = '<b>no multiline bolding \nnot allowed go/survey is still linked</b>';
       const actualTextRuns = markupAutolinks(plainString, componentRefs);
-
       assert.deepEqual(
           actualTextRuns, [
             {content: '<b>no multiline bolding '},
             {tag: 'br'},
             {content: 'not allowed '},
-            {content: 'go/survey', tag: 'a', href: 'https://go/survey'},
+            {content: 'go/survey', tag: 'a', href: 'http://go/survey'},
             {content: ' is still linked</b>'},
           ]);
 

@@ -37,6 +37,7 @@
     ["'", "'"],
     ['"', '"'],
   ];
+  const GOOG_SHORT_LINK_RE = /^(go|g|shortn|who|teams)\/.*/gi;
 
   const Components = new Map();
   Components.set(
@@ -225,9 +226,17 @@
     let lowerHref = href.toLowerCase();
     if (!lowerHref.startsWith('http') && !lowerHref.startsWith('ftp') &&
         !lowerHref.startsWith('mailto')) {
-      href = 'https://' + href;
+      // Prepend google-internal short links with http to
+      // prevent HTTPS error interstitial.
+      // SHORT_LINK_RE should not be used here as it might be
+      // in the middle of another match() process in an outer loop.
+      if (GOOG_SHORT_LINK_RE.test(lowerHref)) {
+        href = 'http://' + href;
+      } else {
+        href = 'https://' + href;
+      }
+      GOOG_SHORT_LINK_RE.lastIndex = 0;
     }
-
     let textRuns = [{content: content, tag: 'a', href: href}]
     if (trailing.length) {
       textRuns.push({content: trailing});
