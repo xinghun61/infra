@@ -224,8 +224,9 @@ func analyzeWords(commentWord, stopPattern string,
 		return stopIdx
 	}
 
-	// A single word (delimited by whitespace) could have multiple words delimited by
-	// comment characters, so we split it by said characters and check the words individually.
+	// A single word (delimited by whitespace) could have multiple words
+	// delimited by comment characters, so we split it by said characters and
+	// check the words individually.
 	for _, wordToCheckSplit := range splitComment(commentWord) {
 		wordToCheck := wordToCheckSplit.word
 
@@ -408,35 +409,26 @@ func inSlice(word string, arr []string) bool {
 	return false
 }
 
-// Splits comment word by special characters into individual words and returns an array of wordSegments.
+// Splits word which may be delimited by punctuation into individual words.
 func splitComment(commentWord string) []wordSegment {
-	var splitIndexes []wordSegment
-
+	var segments []wordSegment
 	for _, wordIndex := range justWord.FindAllStringIndex(commentWord, -1) {
-		splitIndexes = append(splitIndexes,
+		segments = append(segments,
 			wordSegment{commentWord[wordIndex[0]:wordIndex[1]], wordIndex[0]})
 	}
-
-	return splitIndexes
+	return segments
 }
 
-// Splits camel cased word into individual words and returns an array of wordSegments.
+// Splits a camel-cased word into individual words.
 func splitCamelCase(word string) []wordSegment {
-	var (
-		splitIndexes []wordSegment
-		wordStart    int
-		wordEnd      int
-		letter       rune
-	)
-
-	wordStart = 0
-	for wordEnd, letter = range word {
+	var segments []wordSegment
+	wordStart := 0
+	for wordEnd, letter := range word {
 		if wordEnd != 0 && unicode.IsUpper(letter) {
-			splitIndexes = append(splitIndexes, wordSegment{word[wordStart:wordEnd], wordStart})
+			segments = append(segments, wordSegment{word[wordStart:wordEnd], wordStart})
 			wordStart = wordEnd
 		}
 	}
-	splitIndexes = append(splitIndexes, wordSegment{word[wordStart:], wordStart})
-
-	return splitIndexes
+	segments = append(segments, wordSegment{word[wordStart:], wordStart})
+	return segments
 }
