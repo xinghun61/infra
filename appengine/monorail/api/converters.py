@@ -358,17 +358,21 @@ def ConvertAttachment(attach, project_name):
 
 
 def ConvertComment(
-    issue, comment, users_by_id, config, description_nums, user_id, perms):
+    issue, comment, config, users_by_id, comment_reporters, description_nums,
+    user_id, perms):
   """Convert a protorpc IssueComment to a protoc Comment."""
   commenter = users_by_id[comment.user_id]
-  is_deleted = bool(comment.deleted_by or comment.is_spam or commenter.banned)
 
   can_delete = permissions.CanDeleteComment(
       comment, commenter, user_id, perms)
+  can_flag, is_flagged = permissions.CanFlagComment(
+      comment, commenter, comment_reporters, user_id, perms)
   can_view = permissions.CanViewComment(
       comment, commenter, user_id, perms)
   can_view_inbound_message = permissions.CanViewInboundMessage(
       comment, user_id, perms)
+
+  is_deleted = bool(comment.deleted_by or is_flagged or commenter.banned)
 
   result = issue_objects_pb2.Comment(
       project_name=issue.project_name,
@@ -376,8 +380,9 @@ def ConvertComment(
       sequence_num=comment.sequence,
       is_deleted=is_deleted,
       can_delete=can_delete,
-      timestamp=comment.timestamp,
-      is_spam=comment.is_spam)
+      is_spam=is_flagged,
+      can_flag=can_flag,
+      timestamp=comment.timestamp)
 
   if can_view:
     result.commenter.CopyFrom(
@@ -402,7 +407,8 @@ def ConvertComment(
   return result
 
 
-def ConvertCommentList(issue, comments, users_by_id, config, user_id, perms):
+def ConvertCommentList(
+    issue, comments, config, users_by_id, comment_reporters, user_id, perms):
   """Convert a list of protorpc IssueComments to protoc Comments."""
   description_nums = {}
   for comment in comments:
@@ -411,7 +417,8 @@ def ConvertCommentList(issue, comments, users_by_id, config, user_id, perms):
 
   result = [
     ConvertComment(
-       issue, c, users_by_id, config, description_nums, user_id, perms)
+       issue, c, config, users_by_id, comment_reporters.get(c.id, []),
+       description_nums, user_id, perms)
     for c in comments]
   return result
 

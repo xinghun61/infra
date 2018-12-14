@@ -700,6 +700,48 @@ def CanDeleteComment(comment, commenter, user_id, perms):
   return False
 
 
+def CanFlagComment(comment, commenter, comment_reporters, user_id, perms):
+  """Returns true if the user can flag the given comment.
+
+  UpdateIssuePermissions must have been called first.
+  Assumes that the user has permission to view the issue.
+
+  Args:
+    comment: An IssueComment PB object.
+    commenter: An User PB object with the user who created the comment.
+    perms: The PermissionSet with the issue permissions.
+
+  Returns:
+    A tuple (can_flag, is_flagged).
+    can_flag is True if the user can flag the comment. and is_flagged is True
+    if the user sees the comment marked as spam.
+  """
+  # Nobody can flag comments by banned users.
+  if commenter.banned:
+    return False, comment.is_spam
+
+  # If a comment was deleted for a reason other than being spam, nobody can
+  # flag or un-flag it.
+  if comment.deleted_by and not comment.is_spam:
+    return False, comment.is_spam
+
+  # A user with the VerdictSpam permission sees whether the comment is flagged
+  # as spam or not, and can mark it as flagged or un-flagged.
+  # If the comment is flagged as spam, all users see it as flagged, but only
+  # those with the VerdictSpam can un-flag it.
+  permit_verdict_spam = perms.HasPerm(VERDICT_SPAM, None, None, [])
+  if permit_verdict_spam or comment.is_spam:
+    return permit_verdict_spam, comment.is_spam
+
+  # Otherwise, the comment is not marked as flagged and the user doesn't have
+  # the VerdictSpam permission.
+  # They are able to report a comment as spam if they have the FlagSpam
+  # permission, and they see the comment as flagged if the have previously
+  # reported it as spam.
+  permit_flag_spam = perms.HasPerm(FLAG_SPAM, None, None, [])
+  return permit_flag_spam, user_id in comment_reporters
+
+
 def CanViewComment(comment, commenter, user_id, perms):
   """Returns true if the user can view the given comment.
 
@@ -719,9 +761,13 @@ def CanViewComment(comment, commenter, user_id, perms):
   if commenter.banned:
     return False
 
-  # Only users with VERDICT_SPAM permission can view spam comments.
+  # Only users with the permission to un-flag comments can view flagged
+  # comments.
   if comment.is_spam:
-    return perms.HasPerm(VERDICT_SPAM, None, None, [])
+    # If the comment is marked as spam, whether the user can un-flag the comment
+    # or not doesn't depend on who reported it as spam.
+    can_flag, _ = CanFlagComment(comment, commenter, [], user_id, perms)
+    return can_flag
 
   # Only users with the permission to un-delete comments can view deleted
   # comments.

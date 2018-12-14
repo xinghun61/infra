@@ -489,12 +489,12 @@ class IssuesServicerTest(unittest.TestCase):
         commenter=common_pb2.UserRef(
             user_id=111L, display_name='owner@example.com'),
         timestamp=self.NOW, content='sum', is_spam=False,
-        description_num=1, can_delete=True)
+        description_num=1, can_delete=True, can_flag=True)
     expected_1 = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=1, is_deleted=False,
         commenter=common_pb2.UserRef(
             user_id=111L, display_name='owner@example.com'),
-        timestamp=self.NOW, content='second', can_delete=True)
+        timestamp=self.NOW, content='second', can_delete=True, can_flag=True)
     self.assertEqual(expected_0, actual_0)
     self.assertEqual(expected_1, actual_1)
 
@@ -522,7 +522,7 @@ class IssuesServicerTest(unittest.TestCase):
         commenter=common_pb2.UserRef(
             user_id=111L, display_name='owner@example.com'),
         timestamp=self.NOW, content='sum', is_spam=False,
-        description_num=1, can_delete=True)
+        description_num=1, can_delete=True, can_flag=True)
     expected_1 = issue_objects_pb2.IssueSummary(project_name='proj', local_id=1,
         summary='sum')
     self.assertEqual(expected_0, actual_0)

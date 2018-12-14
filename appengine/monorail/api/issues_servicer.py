@@ -219,6 +219,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
         mc, request.issue_ref)
     with work_env.WorkEnv(mc, self.services) as we:
       comments = we.ListIssueComments(issue)
+      _, comment_reporters = we.LookupIssueFlaggers(issue)
 
     with mc.profiler.Phase('making user views'):
       users_involved_in_comments = tracker_bizobj.UsersInvolvedInCommentList(
@@ -231,7 +232,8 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
       issue_perms = permissions.UpdateIssuePermissions(
           mc.perms, project, issue, mc.auth.effective_ids, config=config)
       converted_comments = converters.ConvertCommentList(
-          issue, comments, users_by_id, config, mc.auth.user_id, issue_perms)
+          issue, comments, config, users_by_id, comment_reporters,
+          mc.auth.user_id, issue_perms)
       response = issues_pb2.ListCommentsResponse(comments=converted_comments)
 
     return response
@@ -266,6 +268,12 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     for project in project_dict.values():
       framework_views.RevealAllEmailsToMembers(mc.auth, project, users_by_id)
 
+    with work_env.WorkEnv(mc, self.services) as we:
+      comment_reporters = {}
+      for issue in issues:
+        _, reporters = we.LookupIssueFlaggers(issue)
+        comment_reporters.update(reporters)
+
     with mc.profiler.Phase('converting to response objects'):
       converted_comments = []
       for c in comments:
@@ -273,8 +281,9 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
         issue_perms = issue_perms_dict.get(c.issue_id)
         result = converters.ConvertComment(
             issue, c,
-            users_by_id,
             config_dict.get(issue.project_id),
+            users_by_id,
+            comment_reporters.get(c.id, []),
             {c.id: 1} if c.is_description else {},
             mc.auth.user_id, issue_perms)
         converted_comments.append(result)

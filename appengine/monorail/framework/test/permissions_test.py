@@ -510,6 +510,157 @@ class PermissionsTest(unittest.TestCase):
         comment, commenter, 222L,
         permissions.PermissionSet([permissions.DELETE_ANY])))
 
+  def testCanFlagComment_FlagSpamCanReport(self):
+    """Test that users with FlagSpam permissions can report comments."""
+    comment = tracker_pb2.IssueComment()
+    commenter = user_pb2.User()
+
+    can_flag, is_flagged = permissions.CanFlagComment(
+        comment, commenter, [], 111L,
+        permissions.PermissionSet([permissions.FLAG_SPAM]))
+
+    self.assertTrue(can_flag)
+    self.assertFalse(is_flagged)
+
+  def testCanFlagComment_FlagSpamCanUnReportOwn(self):
+    """Test that users with FlagSpam permission can un-report comments they
+    previously reported."""
+    comment = tracker_pb2.IssueComment()
+    commenter = user_pb2.User()
+
+    can_flag, is_flagged = permissions.CanFlagComment(
+        comment, commenter, [111L], 111L,
+        permissions.PermissionSet([permissions.FLAG_SPAM]))
+
+    self.assertTrue(can_flag)
+    self.assertTrue(is_flagged)
+
+  def testCanFlagComment_FlagSpamCannotUnReportOthers(self):
+    """Test that users with FlagSpam permission doesn't know if other users have
+    reported a comment as spam."""
+    comment = tracker_pb2.IssueComment()
+    commenter = user_pb2.User()
+
+    can_flag, is_flagged = permissions.CanFlagComment(
+        comment, commenter, [222L], 111L,
+        permissions.PermissionSet([permissions.FLAG_SPAM]))
+
+    self.assertTrue(can_flag)
+    self.assertFalse(is_flagged)
+
+  def testCanFlagComment_FlagSpamCannotUnFlag(self):
+    comment = tracker_pb2.IssueComment(is_spam=True)
+    commenter = user_pb2.User()
+
+    can_flag, is_flagged = permissions.CanFlagComment(
+        comment, commenter, [111L], 111L,
+        permissions.PermissionSet([permissions.FLAG_SPAM]))
+
+    self.assertFalse(can_flag)
+    self.assertTrue(is_flagged)
+
+  def testCanFlagComment_VerdictSpamCanFlag(self):
+    """Test that users with FlagSpam permissions can flag comments."""
+    comment = tracker_pb2.IssueComment()
+    commenter = user_pb2.User()
+
+    can_flag, is_flagged = permissions.CanFlagComment(
+        comment, commenter, [], 111L,
+        permissions.PermissionSet([permissions.VERDICT_SPAM]))
+
+    self.assertTrue(can_flag)
+    self.assertFalse(is_flagged)
+
+  def testCanFlagComment_VerdictSpamCanUnFlag(self):
+    """Test that users with FlagSpam permissions can un-flag comments."""
+    comment = tracker_pb2.IssueComment(is_spam=True)
+    commenter = user_pb2.User()
+
+    can_flag, is_flagged = permissions.CanFlagComment(
+        comment, commenter, [], 111L,
+        permissions.PermissionSet([permissions.VERDICT_SPAM]))
+
+    self.assertTrue(can_flag)
+    self.assertTrue(is_flagged)
+
+  def testCanFlagComment_CannotFlagNoPermission(self):
+    """Test that users without permission cannot flag comments."""
+    comment = tracker_pb2.IssueComment()
+    commenter = user_pb2.User()
+
+    can_flag, is_flagged = permissions.CanFlagComment(
+        comment, commenter, [], 111L,
+        permissions.PermissionSet([permissions.DELETE_ANY]))
+
+    self.assertFalse(can_flag)
+    self.assertFalse(is_flagged)
+
+  def testCanFlagComment_CannotUnFlagNoPermission(self):
+    """Test that users without permission cannot un-flag comments."""
+    comment = tracker_pb2.IssueComment(is_spam=True)
+    commenter = user_pb2.User()
+
+    can_flag, is_flagged = permissions.CanFlagComment(
+        comment, commenter, [], 111L,
+        # Users need the VerdictSpam permission to be able to un-flag comments.
+        permissions.PermissionSet([
+            permissions.DELETE_ANY, permissions.FLAG_SPAM]))
+
+    self.assertFalse(can_flag)
+    self.assertTrue(is_flagged)
+
+  def testCanFlagComment_CannotFlagCommentByBannedUser(self):
+    """Test that nobady can flag comments by banned users."""
+    comment = tracker_pb2.IssueComment()
+    commenter = user_pb2.User(banned='Some reason')
+
+    can_flag, is_flagged = permissions.CanFlagComment(
+        comment, commenter, [], 111L,
+        permissions.PermissionSet([
+            permissions.FLAG_SPAM, permissions.VERDICT_SPAM]))
+
+    self.assertFalse(can_flag)
+    self.assertFalse(is_flagged)
+
+  def testCanFlagComment_CannotUnFlagCommentByBannedUser(self):
+    """Test that nobady can un-flag comments by banned users."""
+    comment = tracker_pb2.IssueComment(is_spam=True)
+    commenter = user_pb2.User(banned='Some reason')
+
+    can_flag, is_flagged = permissions.CanFlagComment(
+        comment, commenter, [], 111L,
+        permissions.PermissionSet([
+            permissions.FLAG_SPAM, permissions.VERDICT_SPAM]))
+
+    self.assertFalse(can_flag)
+    self.assertTrue(is_flagged)
+
+  def testCanFlagComment_CanUnFlagDeletedSpamComment(self):
+    """Test that we can un-flag a deleted comment that is spam."""
+    comment = tracker_pb2.IssueComment(is_spam=True, deleted_by=111L)
+    commenter = user_pb2.User()
+
+    can_flag, is_flagged = permissions.CanFlagComment(
+        comment, commenter, [], 222L,
+        permissions.PermissionSet([permissions.VERDICT_SPAM]))
+
+    self.assertTrue(can_flag)
+    self.assertTrue(is_flagged)
+
+  def testCanFlagComment_CannotFlagDeletedComment(self):
+    """Test that nobody can flag a deleted comment that is not spam."""
+    comment = tracker_pb2.IssueComment(deleted_by=111L)
+    commenter = user_pb2.User()
+
+    can_flag, is_flagged = permissions.CanFlagComment(
+        comment, commenter, [], 111L,
+        permissions.PermissionSet([
+            permissions.FLAG_SPAM, permissions.VERDICT_SPAM,
+            permissions.DELETE_ANY, permissions.DELETE_OWN]))
+
+    self.assertFalse(can_flag)
+    self.assertFalse(is_flagged)
+
   def testCanViewComment_Normal(self):
     """Test that we can view comments."""
     comment = tracker_pb2.IssueComment()

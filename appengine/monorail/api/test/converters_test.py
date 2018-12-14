@@ -562,13 +562,98 @@ class ConverterFunctionsTest(unittest.TestCase):
         content='a comment', sequence=12)
 
     actual = converters.ConvertComment(
-        issue, comment, self.users_by_id, self.config, {}, 111L,
+        issue, comment, self.config, self.users_by_id, [], {}, 111L,
         permissions.PermissionSet([]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
         commenter=common_pb2.UserRef(
             user_id=111L, display_name='one@example.com'),
         timestamp=now, content='a comment', is_spam=False)
+    self.assertEqual(expected, actual)
+
+  def testConvertComment_CanReportComment(self):
+    now = 1234567890
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    comment = tracker_pb2.IssueComment(
+        id=101, project_id=789, user_id=111L, timestamp=now,
+        content='a comment', sequence=12)
+
+    actual = converters.ConvertComment(
+        issue, comment, self.config, self.users_by_id, [], {}, 111L,
+        permissions.PermissionSet([permissions.FLAG_SPAM]))
+    expected = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=12,
+        commenter=common_pb2.UserRef(
+            user_id=111L, display_name='one@example.com'),
+        timestamp=now, content='a comment', can_flag=True)
+    self.assertEqual(expected, actual)
+
+  def testConvertComment_CanUnReportComment(self):
+    now = 1234567890
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    comment = tracker_pb2.IssueComment(
+        id=101, project_id=789, user_id=111L, timestamp=now,
+        content='a comment', sequence=12)
+
+    actual = converters.ConvertComment(
+        issue, comment, self.config, self.users_by_id, [111L], {}, 111L,
+        permissions.PermissionSet([permissions.FLAG_SPAM]))
+    expected = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=12,
+        commenter=common_pb2.UserRef(
+            user_id=111L, display_name='one@example.com'),
+        timestamp=now, content='a comment', is_spam=True, is_deleted=True,
+        can_flag=True)
+    self.assertEqual(expected, actual)
+
+  def testConvertComment_CantUnFlagCommentWithoutVerdictSpam(self):
+    now = 1234567890
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    comment = tracker_pb2.IssueComment(
+        id=101, project_id=789, user_id=111L, timestamp=now,
+        content='a comment', sequence=12, is_spam=True)
+
+    actual = converters.ConvertComment(
+        issue, comment, self.config, self.users_by_id, [111L], {}, 111L,
+        permissions.PermissionSet([permissions.FLAG_SPAM]))
+    expected = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=12,
+        timestamp=now, is_spam=True, is_deleted=True)
+    self.assertEqual(expected, actual)
+
+  def testConvertComment_CanFlagSpamComment(self):
+    now = 1234567890
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    comment = tracker_pb2.IssueComment(
+        id=101, project_id=789, user_id=111L, timestamp=now,
+        content='a comment', sequence=12)
+
+    actual = converters.ConvertComment(
+        issue, comment, self.config, self.users_by_id, [], {}, 111L,
+        permissions.PermissionSet([permissions.VERDICT_SPAM]))
+    expected = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=12,
+        commenter=common_pb2.UserRef(
+            user_id=111L, display_name='one@example.com'),
+        timestamp=now, content='a comment', can_flag=True)
+    self.assertEqual(expected, actual)
+
+  def testConvertComment_CanUnFlagSpamComment(self):
+    now = 1234567890
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    comment = tracker_pb2.IssueComment(
+        id=101, project_id=789, user_id=111L, timestamp=now,
+        content='a comment', sequence=12, is_spam=True)
+
+    actual = converters.ConvertComment(
+        issue, comment, self.config, self.users_by_id, [222L], {}, 111L,
+        permissions.PermissionSet([permissions.VERDICT_SPAM]))
+    expected = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=12,
+        commenter=common_pb2.UserRef(
+            user_id=111L, display_name='one@example.com'),
+        timestamp=now, content='a comment', is_spam=True, is_deleted=True,
+        can_flag=True)
     self.assertEqual(expected, actual)
 
   def testConvertComment_DeletedComment(self):
@@ -579,7 +664,7 @@ class ConverterFunctionsTest(unittest.TestCase):
         id=101, project_id=789, user_id=111L, timestamp=now,
         content='a comment', sequence=12, deleted_by=111L)
     actual = converters.ConvertComment(
-        issue, comment, self.users_by_id, self.config, {}, 111L,
+        issue, comment, self.config, self.users_by_id, [], {}, 111L,
         permissions.PermissionSet([permissions.DELETE_OWN]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=True,
@@ -596,7 +681,7 @@ class ConverterFunctionsTest(unittest.TestCase):
         id=101, project_id=789, user_id=111L, timestamp=now,
         content='a comment', sequence=12, deleted_by=111L)
     actual = converters.ConvertComment(
-        issue, comment, self.users_by_id, self.config, {}, 111L,
+        issue, comment, self.config, self.users_by_id, [], {}, 111L,
         permissions.PermissionSet([]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=True,
@@ -611,7 +696,7 @@ class ConverterFunctionsTest(unittest.TestCase):
         id=101, project_id=789, user_id=333L, timestamp=now,
         content='a comment', sequence=12)
     actual = converters.ConvertComment(
-        issue, comment, self.users_by_id, self.config, {}, 111L,
+        issue, comment, self.config, self.users_by_id, [], {}, 111L,
         permissions.PermissionSet([]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=True,
@@ -626,7 +711,7 @@ class ConverterFunctionsTest(unittest.TestCase):
         id=101, project_id=789, user_id=111L, timestamp=now,
         content='a comment', sequence=12, is_description=True)
     actual = converters.ConvertComment(
-        issue, comment, self.users_by_id, self.config, {101: 1}, 111L,
+        issue, comment, self.config, self.users_by_id, [], {101: 1}, 111L,
         permissions.PermissionSet([]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
@@ -652,7 +737,7 @@ class ConverterFunctionsTest(unittest.TestCase):
         approval_id=11, approver_ids=[111L], survey='survey 1'))
 
     actual = converters.ConvertComment(
-        issue, comment, self.users_by_id, self.config, {}, 111L,
+        issue, comment, self.config, self.users_by_id, [], {}, 111L,
         permissions.PermissionSet([]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
@@ -671,7 +756,7 @@ class ConverterFunctionsTest(unittest.TestCase):
         content='a comment', sequence=12, inbound_message='inbound message')
 
     actual = converters.ConvertComment(
-        issue, comment, self.users_by_id, self.config, {}, 111L,
+        issue, comment, self.config, self.users_by_id, [], {}, 111L,
         permissions.PermissionSet([]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
@@ -689,7 +774,7 @@ class ConverterFunctionsTest(unittest.TestCase):
         content='a comment', sequence=12, inbound_message='inbound message')
 
     actual = converters.ConvertComment(
-        issue, comment, self.users_by_id, self.config, {}, 222L,
+        issue, comment, self.config, self.users_by_id, [], {}, 222L,
         permissions.PermissionSet([permissions.VIEW_INBOUND_MESSAGES]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
@@ -707,7 +792,7 @@ class ConverterFunctionsTest(unittest.TestCase):
         content='a comment', sequence=12, inbound_message='inbound message')
 
     actual = converters.ConvertComment(
-        issue, comment, self.users_by_id, self.config, {}, 222L,
+        issue, comment, self.config, self.users_by_id, [], {}, 222L,
         permissions.PermissionSet([]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
@@ -734,8 +819,9 @@ class ConverterFunctionsTest(unittest.TestCase):
         content='another desc', sequence=3, is_description=True)
 
     actual = converters.ConvertCommentList(
-        issue, [comment_0, comment_1, comment_2, comment_3], self.users_by_id,
-        self.config, 222L, permissions.PermissionSet([permissions.DELETE_OWN]))
+        issue, [comment_0, comment_1, comment_2, comment_3], self.config,
+        self.users_by_id, {}, 222L,
+        permissions.PermissionSet([permissions.DELETE_OWN]))
 
     expected_0 = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=0, is_deleted=False,
