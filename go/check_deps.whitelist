@@ -13,9 +13,6 @@ github.com/danjacques/gofslock/fslock
 github.com/luci/
 github.com/maruel/subcommands
 
-# Chrome related github packages
-github.com/chromedp/chromedp
-
 # Google-related github packages
 github.com/bradfitz/gomemcache/memcache
 github.com/docker/
