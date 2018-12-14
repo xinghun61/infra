@@ -52,7 +52,9 @@
           </tr>
           <template is="dom-repeat" items="{{flake_json.culprits}}" as="culprit">
               <tr>
-                  <td rowspan$="[[flake_json.culprits.length]]">Culprit:</td>
+                  <template is="dom-if" if="[[_isFirstElement(index)]]">
+                    <td rowspan$="[[flake_json.culprits.length]]">Culprit:</td>
+                  </template>
                   <td> <a href$="[[_getCulpritPageLink(culprit.culprit_key)]]" target="_blank">[[_getCulpritIdentifier(culprit)]]</a>
               </tr>
           </template>
@@ -131,6 +133,10 @@
 
         _getAnalysisLink(analysis_key) {
             return '/waterfall/flake?key=' + analysis_key;
+        },
+
+        _isFirstElement: function (index) {
+           return index == 0;
         },
 
         // Event handlers.

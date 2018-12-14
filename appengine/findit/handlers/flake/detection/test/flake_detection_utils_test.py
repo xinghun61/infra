@@ -101,20 +101,24 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
     occurrence3.time_detected = datetime(2018, 1, 2, 2)
     occurrence3.put()
 
-    culprit = FlakeCulprit.Create('chromium', 'rev', 123456, 'culprit_url')
-    culprit.put()
+    culprit1 = FlakeCulprit.Create('chromium', 'rev1', 123456, 'culprit_url')
+    culprit1.put()
 
     analysis = MasterFlakeAnalysis.Create(legacy_master_name, luci_builder,
                                           legacy_build_number, step_ui_name,
                                           test_name)
     analysis.bug_id = 900
-    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
+    analysis.culprit_urlsafe_key = culprit1.key.urlsafe()
+    analysis.confidence_in_culprit = 0.98
     analysis.put()
 
+    culprit2 = FlakeCulprit.Create('chromium', 'rev2', 123457, 'culprit_url')
+    culprit2.put()
     analysis_1 = MasterFlakeAnalysis.Create(legacy_master_name, luci_builder,
                                             legacy_build_number - 1,
                                             step_ui_name, test_name)
     analysis_1.bug_id = 900
+    analysis_1.culprit_urlsafe_key = culprit2.key.urlsafe()
     analysis_1.put()
 
     expected_flake_dict = {
@@ -166,9 +170,9 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
         },
         'tags': [],
         'culprits': [{
-            'revision': 'rev',
-            'commit_position': 123456,
-            'culprit_key': culprit.key.urlsafe()
+            'revision': 'rev1',
+            'commit_position': culprit1.commit_position,
+            'culprit_key': culprit1.key.urlsafe()
         }],
         'sample_analysis':
             None,

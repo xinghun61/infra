@@ -15,6 +15,8 @@ from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
 from model.flake.flake_type import FlakeType
 from model.flake.flake_type import FLAKE_TYPE_DESCRIPTIONS
+from services.flake_failure.flake_bug_util import (
+    GetMinimumConfidenceToUpdateBugs)
 from services.flake_issue_util import GetFlakeIssue
 
 
@@ -142,10 +144,12 @@ def _GetFlakeAnalysesResults(bug_id):
   if not analyses:
     return [], None
 
+  # Only shows culprits if they have high enough confidence.
   culprit_urlsafe_keys = set([
       analysis.culprit_urlsafe_key
       for analysis in analyses
-      if analysis.culprit_urlsafe_key
+      if analysis.culprit_urlsafe_key and analysis.confidence_in_culprit and
+      analysis.confidence_in_culprit >= GetMinimumConfidenceToUpdateBugs()
   ])
 
   if culprit_urlsafe_keys:
