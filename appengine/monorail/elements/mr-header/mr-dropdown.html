@@ -10,7 +10,7 @@
         display: inline-block;
         cursor: pointer;
         height: 100%;
-        --iron-icon-fill-color: hsl(0, 0%, 66%);
+        --iron-icon-fill-color: hsl(0, 0%, 39%);
       }
       :host(:not([opened])) .menu {
         display: none;
@@ -28,7 +28,6 @@
         display: block;
         background: white;
         border: 1px solid hsl(0, 0%, 80%);
-        min-height: 50px;
         z-index: 10;
         box-shadow: 2px 3px 8px 0px hsla(0, 0%, 0%, 0.3);
       }
@@ -42,6 +41,8 @@
       .menu a {
         box-sizing: border-box;
         text-decoration: none;
+        font-size: 16px;
+        white-space: nowrap;
         display: block;
         width: 100%;
         padding: 0.25em 8px;
@@ -52,13 +53,14 @@
       }
     </style>
     <div class="anchor" on-click="toggle">
-      <iron-icon class="expand-icon" icon="expand-more"></iron-icon>
+      <iron-icon class="expand-icon" icon$="[[icon]]"></iron-icon>
       [[text]]
     </div>
     <div class="menu">
       <template is="dom-repeat" items="[[items]]">
         <hr hidden$="[[!item.separator]]" />
-        <a href$="[[item.url]]" hidden$="[[item.separator]]">
+        <a href$="[[item.url]]" hidden$="[[item.separator]]"
+           on-click="_onClick" data-idx$="[[item.idx]]">
           [[item.text]]
         </a>
       </template>

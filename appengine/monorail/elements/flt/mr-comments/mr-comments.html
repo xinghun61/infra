@@ -50,7 +50,6 @@
         display: block;
       }
       .comment-options {
-        color: #888;
         float: right;
         font-size: 0.9em;
         text-align: right;
@@ -74,7 +73,7 @@
       [[_computeCommentToggleVerb(_commentsHidden)]] [[_commentsHiddenCount]] older [[_pluralize(_commentsHiddenCount, 'comment')]].
     </button>
     <button on-click="toggleDeletedComments" class="toggle" hidden$="[[_hideDeletedToggle]]">
-      [[_computeCommentToggleVerb(_deletedCommentsHidden)]] deleted comments.
+      [[_computeCommentToggleVerb(_deletedCommentsHidden)]] deleted and flagged comments.
     </button>
     <template is="dom-repeat" items="[[comments]]" as="comment">
       <div class="card-comment" hidden$=[[_computeCommentHidden(_commentsHidden,_commentsHiddenCount,index)]]>
@@ -82,16 +81,11 @@
           Comment [[comment.sequenceNum]] by
           <mr-user-link display-name="[[comment.commenter.displayName]]" user-id="[[comment.commenter.userId]]"></mr-user-link> on
           <chops-timestamp timestamp="[[comment.timestamp]]"></chops-timestamp>
-          <div class="comment-options">
-            <button on-click="_deleteComment" class="toggle"
-                    hidden$="[[!comment.canDelete]]"
-                    data-project-name$="[[comment.projectName]]"
-                    data-local-id$="[[comment.localId]]"
-                    data-sequence-num$="[[comment.sequenceNum]]"
-                    data-is-deleted$="[[comment.isDeleted]]">
-              [[_computeDeleteCommentVerb(comment)]]
-            </a>
-          </div>
+          <template is="dom-if" if=[[_offerCommentOptions(comment)]]>
+            <div class="comment-options">
+              <mr-dropdown items="[[_getCommentOptions(comment)]]" icon="more-vert"></mr-dropdown>
+            </div>
+          </template>
         </span>
         <template is="dom-if" if="[[_hideDeletedComment(_deletedCommentsHidden, comment)]]">
           <span class="deleted-comment-notice">

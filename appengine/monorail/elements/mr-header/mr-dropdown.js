@@ -17,6 +17,7 @@ class MrDropdown extends Polymer.Element {
     return {
       text: String,
       items: Array,
+      icon: String,
       opened: {
         type: Boolean,
         value: false,
@@ -29,6 +30,14 @@ class MrDropdown extends Polymer.Element {
         },
       },
     };
+  }
+
+  _onClick(e) {
+    const idx = e.target.dataset.idx;
+    if (idx !== undefined && this.items[idx].handle) {
+      this.items[idx].handle();
+    }
+    this.close();
   }
 
   connectedCallback() {

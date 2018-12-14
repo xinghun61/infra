@@ -55,6 +55,66 @@ class MrComments extends ReduxMixin(Polymer.Element) {
     };
   }
 
+  _deleteComment(comment) {
+    const issueRef = {
+      projectName: comment.projectName,
+      localId: comment.localId,
+    };
+    window.prpcCall('monorail.Issues', 'DeleteIssueComment', {
+      issueRef,
+      sequenceNum: comment.sequenceNum,
+      delete: comment.isDeleted === undefined,
+    }).then((resp) => {
+      actionCreator.fetchComments(this.dispatch.bind(this), {issueRef});
+    });
+  }
+
+  _flagComment(comment) {
+    const issueRef = {
+      projectName: comment.projectName,
+      localId: comment.localId,
+    };
+    window.prpcCall('monorail.Issues', 'FlagComment', {
+      issueRef,
+      sequenceNum: comment.sequenceNum,
+      flag: comment.isSpam === undefined,
+    }).then((resp) => {
+      actionCreator.fetchComments(this.dispatch.bind(this), {issueRef});
+    });
+  }
+
+  _offerCommentOptions(comment) {
+    return comment.canDelete || comment.canFlag;
+  }
+
+  _canExpandDeletedComment(comment) {
+    return ((comment.isSpam && comment.canFlag)
+            || (comment.isDeleted && comment.canDelete));
+  }
+
+  _getCommentOptions(comment) {
+    const options = [];
+    if (comment.canDelete) {
+      const text = (comment.isDeleted ? 'Undelete' : 'Delete') + ' comment';
+      options.push({
+        url: '#',
+        text: text,
+        handle: this._deleteComment.bind(this, comment),
+        idx: options.length,
+      });
+    }
+    if (comment.canFlag) {
+      const text = (comment.isSpam ? 'Unflag' : 'Flag') + ' comment';
+      options.push({
+        url: '#',
+        text: text,
+        handle: this._flagComment.bind(this, comment),
+        idx: options.length,
+      });
+    }
+    return options;
+  }
+
   toggleComments() {
     this._commentsHidden = !this._commentsHidden;
   }
@@ -80,11 +140,16 @@ class MrComments extends ReduxMixin(Polymer.Element) {
   }
 
   _hideDeletedComment(deletedCommentsHidden, comment) {
-    return comment.isDeleted && (deletedCommentsHidden || !comment.canDelete);
-  }
-
-  _computeDeleteCommentVerb(comment) {
-    return comment.isDeleted ? 'Undelete' : 'Delete';
+    // If the comment is flagged/deleted and we have permission to
+    // un-flag/un-delete it, then expand it if requested.
+    if (!comment.isDeleted) {
+      return false;
+    }
+    if (this._canExpandDeletedComment(comment)) {
+      return deletedCommentsHidden;
+    }
+    // Otherwise, it should always be hidden.
+    return true;
   }
 
   _computeHideDeletedToggle(comments) {
@@ -100,20 +165,6 @@ class MrComments extends ReduxMixin(Polymer.Element) {
 
   _showDiff(comment) {
     return comment.descriptionNum || comment.amendments;
-  }
-
-  _deleteComment(e) {
-    const issueRef = {
-      projectName: e.target.dataset.projectName,
-      localId: e.target.dataset.localId,
-    };
-    window.prpcCall('monorail.Issues', 'DeleteIssueComment', {
-      issueRef,
-      sequenceNum: e.target.dataset.sequenceNum,
-      delete: e.target.dataset.isDeleted === undefined,
-    }).then((resp) => {
-      actionCreator.fetchComments(this.dispatch.bind(this), {issueRef});
-    });
   }
 }
 customElements.define(MrComments.is, MrComments);

@@ -26,7 +26,7 @@
         <slot name="subheader"></slot>
       </span>
       <template is="dom-if" if="[[user]]">
-        <mr-dropdown text="[[user]]" items="[[_userMenuItems]]"></mr-dropdown>
+        <mr-dropdown text="[[user]]" items="[[_userMenuItems]]" icon="expand-more"></mr-dropdown>
       </template>
       <a href$="[[loginUrl]]" hidden$="[[user]]">Sign in</a>
     </chops-header>
