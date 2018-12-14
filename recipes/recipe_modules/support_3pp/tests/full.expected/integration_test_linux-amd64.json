@@ -534,7 +534,7 @@
       "-pkg-def",
       "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"3pp/deps/bottom_dep/linux-amd64\", \"root\": \"[START_DIR]/3pp/wd/bottom_dep/linux-amd64/1.0/out\"}",
       "-out",
-      "[TMP_BASE]/tmp_tmp_1",
+      "[CLEANUP]/tmp_tmp_1",
       "-hash-algo",
       "sha256",
       "-json-output",
@@ -594,7 +594,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "move",
-      "[TMP_BASE]/tmp_tmp_1",
+      "[CLEANUP]/tmp_tmp_1",
       "[CACHE]/3pp_cipd/3pp/deps/bottom_dep/linux-amd64/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
@@ -831,7 +831,7 @@
       "-pkg-def",
       "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"3pp/deps/deep_dep/linux-amd64\", \"root\": \"[START_DIR]/3pp/wd/deep_dep/linux-amd64/1.0.0/checkout\"}",
       "-out",
-      "[TMP_BASE]/tmp_tmp_2",
+      "[CLEANUP]/tmp_tmp_2",
       "-hash-algo",
       "sha256",
       "-json-output",
@@ -891,7 +891,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "move",
-      "[TMP_BASE]/tmp_tmp_2",
+      "[CLEANUP]/tmp_tmp_2",
       "[CACHE]/3pp_cipd/3pp/deps/deep_dep/linux-amd64/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
@@ -1135,7 +1135,7 @@
       "-pkg-def",
       "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"3pp/tools/fetch_and_package\", \"root\": \"[START_DIR]/3pp/wd/fetch_and_package/linux-amd64/2.0.0/checkout\"}",
       "-out",
-      "[TMP_BASE]/tmp_tmp_3",
+      "[CLEANUP]/tmp_tmp_3",
       "-hash-algo",
       "sha256",
       "-json-output",
@@ -1195,7 +1195,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "move",
-      "[TMP_BASE]/tmp_tmp_3",
+      "[CLEANUP]/tmp_tmp_3",
       "[CACHE]/3pp_cipd/3pp/tools/fetch_and_package/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
@@ -1478,7 +1478,7 @@
       "/path/to/tmp/json",
       "copy",
       "[START_DIR]/3pp/wd/posix_tool/linux-amd64/1.2.0/checkout/archive.tgz",
-      "[TMP_BASE]/tmp_tmp_4/archive.tgz"
+      "[CLEANUP]/tmp_tmp_4/archive.tgz"
     ],
     "env": {
       "GOARCH": "amd64",
@@ -1524,7 +1524,7 @@
       "-u",
       "RECIPE_MODULE[recipe_engine::archive]/resources/extract.py",
       "--json-input",
-      "{\"archive_file\": \"[TMP_BASE]/tmp_tmp_4/archive.tgz\", \"output\": \"[START_DIR]/3pp/wd/posix_tool/linux-amd64/1.2.0/checkout\", \"safe_mode\": true}",
+      "{\"archive_file\": \"[CLEANUP]/tmp_tmp_4/archive.tgz\", \"output\": \"[START_DIR]/3pp/wd/posix_tool/linux-amd64/1.2.0/checkout\", \"safe_mode\": true}",
       "--json-output",
       "/path/to/tmp/json"
     ],
@@ -1711,7 +1711,7 @@
       "-pkg-def",
       "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"3pp/tools/posix_tool/linux-amd64\", \"root\": \"[START_DIR]/3pp/wd/posix_tool/linux-amd64/1.2.0/out\"}",
       "-out",
-      "[TMP_BASE]/tmp_tmp_5",
+      "[CLEANUP]/tmp_tmp_5",
       "-hash-algo",
       "sha256",
       "-json-output",
@@ -1771,7 +1771,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "move",
-      "[TMP_BASE]/tmp_tmp_5",
+      "[CLEANUP]/tmp_tmp_5",
       "[CACHE]/3pp_cipd/3pp/tools/posix_tool/linux-amd64/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
@@ -2146,7 +2146,7 @@
       "-pkg-def",
       "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"3pp/tools/windows_experiment/linux-amd64\", \"root\": \"[START_DIR]/3pp/wd/windows_experiment/linux-amd64/2.0.0/out\"}",
       "-out",
-      "[TMP_BASE]/tmp_tmp_6",
+      "[CLEANUP]/tmp_tmp_6",
       "-hash-algo",
       "sha256",
       "-json-output",
@@ -2206,7 +2206,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "move",
-      "[TMP_BASE]/tmp_tmp_6",
+      "[CLEANUP]/tmp_tmp_6",
       "[CACHE]/3pp_cipd/3pp/tools/windows_experiment/linux-amd64/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
@@ -2813,7 +2813,7 @@
       "-pkg-def",
       "{\"data\": [{\"dir\": \".\", \"exclude\": []}, {\"version_file\": \".versions/tool.cipd_version\"}], \"install_mode\": \"copy\", \"package\": \"3pp/build_tools/tool/linux-amd64\", \"root\": \"[START_DIR]/3pp/wd/tool/linux-amd64/1.5.0-rc1/out\"}",
       "-out",
-      "[TMP_BASE]/tmp_tmp_7",
+      "[CLEANUP]/tmp_tmp_7",
       "-hash-algo",
       "sha256",
       "-json-output",
@@ -2875,7 +2875,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "move",
-      "[TMP_BASE]/tmp_tmp_7",
+      "[CLEANUP]/tmp_tmp_7",
       "[CACHE]/3pp_cipd/3pp/build_tools/tool/linux-amd64/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
@@ -3564,7 +3564,7 @@
       "-pkg-def",
       "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"3pp/deps/dep/linux-amd64\", \"root\": \"[START_DIR]/3pp/wd/dep/linux-amd64/1.0.0/out\"}",
       "-out",
-      "[TMP_BASE]/tmp_tmp_8",
+      "[CLEANUP]/tmp_tmp_8",
       "-hash-algo",
       "sha256",
       "-json-output",
@@ -3624,7 +3624,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "move",
-      "[TMP_BASE]/tmp_tmp_8",
+      "[CLEANUP]/tmp_tmp_8",
       "[CACHE]/3pp_cipd/3pp/deps/dep/linux-amd64/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {
@@ -4119,7 +4119,7 @@
       "-pkg-def",
       "{\"data\": [{\"dir\": \".\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"3pp/tools/pkg/linux-amd64\", \"root\": \"[START_DIR]/3pp/wd/pkg/linux-amd64/2.0.0/out\"}",
       "-out",
-      "[TMP_BASE]/tmp_tmp_9",
+      "[CLEANUP]/tmp_tmp_9",
       "-hash-algo",
       "sha256",
       "-json-output",
@@ -4179,7 +4179,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "move",
-      "[TMP_BASE]/tmp_tmp_9",
+      "[CLEANUP]/tmp_tmp_9",
       "[CACHE]/3pp_cipd/3pp/tools/pkg/linux-amd64/40-chars-fake-of-the-package-instance_id"
     ],
     "env": {

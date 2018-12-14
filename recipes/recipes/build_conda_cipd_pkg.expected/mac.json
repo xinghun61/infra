@@ -22,14 +22,14 @@
       "--status-json",
       "/path/to/tmp/json",
       "--outfile",
-      "[TMP_BASE]/conda_tmp_1/Miniconda2-3.18.3-MacOSX-x86_64.sh"
+      "[CLEANUP]/conda_tmp_1/Miniconda2-3.18.3-MacOSX-x86_64.sh"
     ],
     "name": "fetch miniconda installer"
   },
   {
     "cmd": [
       "/bin/bash",
-      "[TMP_BASE]/conda_tmp_1/Miniconda2-3.18.3-MacOSX-x86_64.sh",
+      "[CLEANUP]/conda_tmp_1/Miniconda2-3.18.3-MacOSX-x86_64.sh",
       "-b",
       "-p",
       "[START_DIR]/conda_staging_dir"
@@ -47,7 +47,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "rmtree",
-      "[TMP_BASE]/conda_tmp_1"
+      "[CLEANUP]/conda_tmp_1"
     ],
     "infra_step": true,
     "name": "remove miniconda installer"

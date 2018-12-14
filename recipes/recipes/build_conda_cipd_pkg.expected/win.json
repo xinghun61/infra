@@ -22,13 +22,13 @@
       "--status-json",
       "/path/to/tmp/json",
       "--outfile",
-      "[TMP_BASE]\\conda_tmp_1\\Miniconda2-3.18.3-Windows-x86_64.exe"
+      "[CLEANUP]\\conda_tmp_1\\Miniconda2-3.18.3-Windows-x86_64.exe"
     ],
     "name": "fetch miniconda installer"
   },
   {
     "cmd": [
-      "[TMP_BASE]\\conda_tmp_1\\Miniconda2-3.18.3-Windows-x86_64.exe",
+      "[CLEANUP]\\conda_tmp_1\\Miniconda2-3.18.3-Windows-x86_64.exe",
       "/InstallationType=JustMe",
       "/AddToPath=0",
       "/RegisterPython=0",
@@ -48,7 +48,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "rmtree",
-      "[TMP_BASE]\\conda_tmp_1"
+      "[CLEANUP]\\conda_tmp_1"
     ],
     "infra_step": true,
     "name": "remove miniconda installer"
