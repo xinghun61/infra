@@ -32,10 +32,13 @@ package reconciler
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"infra/qscheduler/qslib/scheduler"
 	"infra/qscheduler/qslib/tutils"
+
+	"go.chromium.org/luci/common/logging"
 )
 
 // New returns a new initialized State instance.
@@ -227,7 +230,16 @@ func (state *State) Cancellations(ctx context.Context) []Cancellation {
 // expire).
 func (state *State) Notify(ctx context.Context, s Scheduler, updates ...*TaskInstant) error {
 	state.ensureMaps()
+	sort.Slice(updates, func(i, j int) bool {
+		return tutils.Timestamp(updates[i].Time).Before(tutils.Timestamp(updates[j].Time))
+	})
+
 	for _, update := range updates {
+		updateTime := tutils.Timestamp(update.Time)
+		if err := s.UpdateTime(ctx, updateTime); err != nil {
+			logging.Warningf(ctx, "ignoring UpdateTime error: %s", err.Error())
+		}
+
 		switch update.State {
 		case TaskInstant_WAITING:
 			req := scheduler.NewRequest(update.AccountId, update.ProvisionableLabels,
