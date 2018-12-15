@@ -18,6 +18,7 @@ package botsummary
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	"go.chromium.org/gae/service/datastore"
@@ -49,6 +50,8 @@ type Entity struct {
 	DutName string
 	// Data is the fleet.BotSummary object serialized to protobuf binary format.
 	Data []byte `gae:",noindex"`
+	// Updated is the time the Entity was last updated.
+	Updated time.Time
 }
 
 // Decode converts the Entity into a fleet.BotSummary.
@@ -76,6 +79,7 @@ func Insert(ctx context.Context, bsm map[string]*fleet.BotSummary) (dutIDs []str
 			Model:   bs.Dimensions.Model,
 			DutName: bs.Dimensions.DutName,
 			Data:    data,
+			Updated: time.Now().UTC(),
 		})
 		updated = append(updated, bs.DutId)
 	}
