@@ -34,8 +34,8 @@ import (
 // TestMatchWithIdleWorkers tests that the scheduler correctly matches
 // requests with idle workers, if they are available.
 func TestMatchWithIdleWorkers(t *testing.T) {
-	ctx := context.Background()
 	Convey("Given 2 tasks and 2 idle workers", t, func() {
+		ctx := context.Background()
 		tm := time.Unix(0, 0)
 		s := New(tm)
 		s.MarkIdle(ctx, "w0", []string{}, tm)
@@ -61,8 +61,8 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 // TestMatchProvisionableLabel tests that scheduler correctly matches provisionable
 // label, even when a worker has more provisionable labels than tasks.
 func TestMatchProvisionableLabel(t *testing.T) {
-	ctx := context.Background()
 	Convey("Given 500 tasks with label 'a' and 1 task with label 'b'", t, func() {
+		ctx := context.Background()
 		tm := time.Unix(0, 0)
 		s := New(tm)
 		for i := 0; i < 500; i++ {
@@ -91,10 +91,10 @@ func TestMatchProvisionableLabel(t *testing.T) {
 // of running jobs (promote or demote) if the account balance makes that
 // necessary.
 func TestSchedulerReprioritize(t *testing.T) {
-	ctx := context.Background()
 	// Prepare a situation in which one P0 job (out of 2 running) will be
 	// demoted, and a separate P2 job will be promoted to P1.
 	Convey("Given two running requests with different costs for an account that needs 1 demotion from P0, and supports 1 additional P1 job", t, func() {
+		ctx := context.Background()
 		tm0 := time.Unix(0, 0)
 		s := New(tm0)
 		aid := "a1"
@@ -137,8 +137,8 @@ func TestSchedulerReprioritize(t *testing.T) {
 // TestPreempt tests that the scheduler correctly preempts lower priority jobs
 // running on a worker, when a higher priority job appears to take its place.
 func TestSchedulerPreempt(t *testing.T) {
-	ctx := context.Background()
 	Convey("Given a state with two running P1 tasks", t, func() {
+		ctx := context.Background()
 		tm0 := time.Unix(0, 0)
 		s := New(tm0)
 		s.AddAccount(ctx, "a1", account.NewConfig(0, 0, vector.New(1, 1, 1)), vector.New(0.5*account.PromoteThreshold, 1))

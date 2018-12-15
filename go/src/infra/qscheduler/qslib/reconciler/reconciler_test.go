@@ -51,8 +51,8 @@ func assertAssignments(t *testing.T, description string,
 // worker is correctly assigned, and that subsequent calls after Notify
 // return the correct results.
 func TestOneAssignment(t *testing.T) {
-	ctx := context.Background()
 	Convey("Given an empty scheduler and reconciler state", t, func() {
+		ctx := context.Background()
 		t0 := time.Unix(0, 0)
 		t1 := time.Unix(1, 0)
 		t2 := time.Unix(2, 0)
@@ -187,8 +187,8 @@ func TestOneAssignment(t *testing.T) {
 // TestQueuedAssignment tests that a scheduler assignment is queued until
 // the relevant worker calls AssignTasks.
 func TestQueuedAssignment(t *testing.T) {
-	ctx := context.Background()
 	Convey("Given an empty scheduler and reconciler state", t, func() {
+		ctx := context.Background()
 		t0 := time.Unix(0, 0)
 		r := New()
 		s := scheduler.New(t0)
@@ -230,8 +230,8 @@ func TestQueuedAssignment(t *testing.T) {
 }
 
 func TestPreemption(t *testing.T) {
-	ctx := context.Background()
 	Convey("Given an empty scheduler and reconciler state", t, func() {
+		ctx := context.Background()
 		t0 := time.Unix(0, 0)
 		r := New()
 		s := scheduler.New(t0)
@@ -364,10 +364,10 @@ func TestPreemption(t *testing.T) {
 
 func TestTaskError(t *testing.T) {
 	Convey("Given an empty reconciler and scheduler state", t, func() {
+		ctx := context.Background()
 		t0 := time.Unix(0, 0)
 		r := New()
 		s := scheduler.New(t0)
-		ctx := context.Background()
 
 		Convey("when TaskError is called for a new task", func() {
 			taskID := "Task1"

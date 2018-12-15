@@ -39,11 +39,11 @@ import (
 // TestPrioritizeOne tests that PrioritizeRequests behaves correctly
 // for a single request.
 func TestPrioritizeOne(t *testing.T) {
-	ctx := context.Background()
 	aid := "a1"
 	rid := "r1"
 
 	Convey("Given a scheduler, with a request for account", t, func() {
+		ctx := context.Background()
 		tm := time.Unix(0, 0)
 		s := New(tm)
 		accountCases := []struct {
@@ -93,10 +93,10 @@ func TestPrioritizeOne(t *testing.T) {
 // TestPrioritizeMany tests that PrioritizeRequests behaves correctly
 // for a number of requests.
 func TestPrioritizeMany(t *testing.T) {
-	ctx := context.Background()
 	nReqs := 10
 	aid := "a1"
 	Convey("Given requests with different enqueue times, but inserted in random order", t, func() {
+		ctx := context.Background()
 		s := New(time.Unix(0, 0))
 		// Use a fixed seed, so the test is reproducible and the request order is
 		// pseudo-random.
