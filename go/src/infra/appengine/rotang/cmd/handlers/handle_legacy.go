@@ -297,7 +297,7 @@ var rotaToName = map[string][2]string{
 	"chromeos":                {"Chrome OS Build Sheriff", ""},
 	"chrome":                  {"Build Sheriff", ""},
 	"android":                 {"Chrome on Android Build Sheriff", ""},
-	"android_stability":       {"Chrome on Android Stability Sheriff", "Clank Stability Sheriff"},
+	"android_stability":       {"Chrome on Android Stability Sheriff", "Clank Stability Sheriff (go/clankss)"},
 	"codesearch":              {"ChOps DevX Codesearch Triage Rotation", ""},
 	"ecosystem_infra":         {"Ecosystem Infra rotation", ""},
 	"fizzlon_bugcop":          {"Fizz London Bug Cop", ""},
