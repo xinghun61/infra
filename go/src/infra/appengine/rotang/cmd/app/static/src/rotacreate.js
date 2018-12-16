@@ -58,9 +58,8 @@ class RotaCreate extends LitElement {
               Description:
             </td>
             <td>
-              <input type="text" id="description" name="Description"
-                value="${this.config.Cfg.Config.Description}"
-              required>
+              <textarea id="description" class="text" cols="40" rows="4"
+              >${this.config.Cfg.Config.Description}</textarea>
             </td>
           </tr>
           <tr>
@@ -159,8 +158,8 @@ class RotaCreate extends LitElement {
             Description:
           </td>
           <td>
-            <input type="text" id="description" name="Description"
-            required>
+            <textarea id="description" class="text" cols="40" rows="4"
+            ></textarea>
           </td>
         </tr>
         <tr>
@@ -437,6 +436,27 @@ class RotaCreate extends LitElement {
     `;
   }
 
+  fillGenerators() {
+    if (!this.configFixed) {
+      return html`
+        <select id="shiftGenerator" name="generator">
+          ${this.generators && this.generators.map((g) => html`
+            <option value="${g}" title="${g}">${g}</option>
+            `)}
+        </select>
+      `;
+    }
+    return html`
+      <select id="shiftGenerator" name="generator">
+          <option value="${this.config.Cfg.Config.Shifts.Generator}">
+          ${this.config.Cfg.Config.Shifts.Generator}</option>
+        ${this.generators && this.generators.map((g) => html`
+          <option value="${g}" title="${g}">${g}</option>
+          `)}
+      </select>
+    `;
+  }
+
   shiftConfig() {
     return html`
       <table>
@@ -491,11 +511,7 @@ class RotaCreate extends LitElement {
             </td>
           <tr><td>Generator:</td>
             <td>
-              <select id="shiftGenerator" name="generator">
-                ${this.generators && this.generators.map((g) => html`
-                  <option value="${g}" title="${g}">${g}</option>
-                  `)}
-              </select>
+              ${this.fillGenerators()}
             </td>
           </tr>
         </tbody>
