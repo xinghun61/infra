@@ -698,8 +698,21 @@ class MonorailApi(remote.Service):
 
     updates_dict = {}
     if request.approvalUpdates:
-      # TODO(jojwang): When field value changes are allowed.
-      # make sure all belong to approval fieldvalues.
+      if request.approvalUpdates.fieldValues:
+        # Block updating field values that don't belong to the approval.
+        approvals_fds_by_name = {
+            fd.field_name.lower():fd for fd in mar.config.field_defs
+            if fd.approval_id == approval_fd.field_id}
+        for fv in request.approvalUpdates.fieldValues:
+          if approvals_fds_by_name.get(fv.fieldName.lower()) is None:
+            raise endpoints.BadRequestException(
+              'Field defition for %s not found in %s subfields.' %
+              (fv.fieldName, request.approvalName))
+        (updates_dict['field_vals_add'], updates_dict['field_vals_remove'],
+         updates_dict['fields_clear'], updates_dict['fields_labels_add'],
+         updates_dict['fields_labels_remove']) = (
+             api_pb2_v1_helpers.convert_field_values(
+                 request.approvalUpdates.fieldValues, mar, self._services))
       if request.approvalUpdates.approvers:
         if not permissions.CanUpdateApprovers(
             mar.auth.effective_ids, mar.perms, mar.project,
@@ -726,10 +739,12 @@ class MonorailApi(remote.Service):
     approval_delta = tracker_bizobj.MakeApprovalDelta(
         updates_dict.get('status'), mar.auth.user_id,
         updates_dict.get('approver_ids_add', []),
-        updates_dict.get('approver_ids_remove', []), [], [], [],
-        [], [])
-    # TODO(jojwang): monorail:4229, add fieldValue changes
-    # TODO(jojwang): monorail:4673, add enum fieldValue/label changes
+        updates_dict.get('approver_ids_remove', []),
+        updates_dict.get('field_vals_add', []),
+        updates_dict.get('field_vals_remove', []),
+        updates_dict.get('fields_clear', []),
+        updates_dict.get('fields_labels_add', []),
+        updates_dict.get('fields_labels_remove', []))
     comment = self._services.issue.DeltaUpdateIssueApproval(
         mar.cnxn, mar.auth.user_id, mar.config, issue, approval, approval_delta,
         comment_content=request.content,

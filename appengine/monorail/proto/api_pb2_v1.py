@@ -141,7 +141,7 @@ class ApprovalUpdate(messages.Message):
   approvers = messages.StringField(1, repeated=True)
   status = messages.StringField(2)
   kind = messages.StringField(3)
-  # TODO(jojwang): monorail:4229, add fieldValues
+  fieldValues = messages.MessageField(FieldValue, 4, repeated=True)
 
 
 class ProjectIssueConfig(messages.Message):

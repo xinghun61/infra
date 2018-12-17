@@ -943,6 +943,85 @@ class MonorailApiTest(testing.EndpointsTestCase):
     with self.call_should_fail(400):
       self.call_api('approvals_comments_insert', request)
 
+  def testApprovalsCommentsInsert_FieldValueChanges_NotFound(self):
+    """Approval's subfield value not found."""
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[2],
+        project_id=12345)
+    approval = tracker_pb2.ApprovalValue(approval_id=1)
+
+    request, _issue = self.approvalRequest(
+        approval,
+        request_fields={
+            'approvalUpdates': {
+                'fieldValues': [
+                    {'fieldName': 'DoesNotExist', 'fieldValue': 'cow'}]
+            },
+        })
+    with self.call_should_fail(400):
+      self.call_api('approvals_comments_insert', request)
+
+    # Test field belongs to another approval
+    self.config.field_defs.append(
+        tracker_bizobj.MakeFieldDef(
+            2, 12345, 'DoesNotExist', tracker_pb2.FieldTypes.STR_TYPE,
+            '', '', False, False, False, None, None, None, False,
+            None, '', tracker_pb2.NotifyTriggers.NEVER, 'no_action',
+            'parent approval is wrong', False, approval_id=4))
+    with self.call_should_fail(400):
+      self.call_api('approvals_comments_insert', request)
+
+  @patch('time.time')
+  def testApprovalCommentsInsert_FieldValueChanges(self, mock_time):
+    """Field value changes are properly processed."""
+    test_time = 6789
+    mock_time.return_value = test_time
+    comment = tracker_pb2.IssueComment(
+        id=123, issue_id=10001,
+        project_id=12345, user_id=1,
+        content='cows moo',
+        timestamp=143770000)
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[2], project_id=12345)
+    approval = tracker_pb2.ApprovalValue(
+        approval_id=1, approver_ids=[444L])
+
+    request, issue = self.approvalRequest(
+        approval,
+        request_fields={'approvalUpdates': {
+            'fieldValues': [
+                {'fieldName': 'CowLayerName', 'fieldValue': 'cow'},
+                {'fieldName': 'CowType', 'fieldValue': 'skim'},
+                {'fieldName': 'CowType', 'fieldValue': 'milk'},
+                {'fieldName': 'CowType', 'fieldValue': 'chocolate',
+                 'operator': 'remove'}]
+        }},
+        comment=comment)
+    self.config.field_defs.extend(
+        [tracker_bizobj.MakeFieldDef(
+            2, 12345, 'CowLayerName', tracker_pb2.FieldTypes.STR_TYPE,
+            '', '', False, False, False, None, None, None, False,
+            None, '', tracker_pb2.NotifyTriggers.NEVER, 'no_action',
+            'sub field value of approval 1', False, approval_id=1),
+        tracker_bizobj.MakeFieldDef(
+            3, 12345, 'CowType', tracker_pb2.FieldTypes.ENUM_TYPE,
+            '', '', False, False, True, None, None, None, False,
+            None, '', tracker_pb2.NotifyTriggers.NEVER, 'no_action',
+            'enum sub field value of approval 1', False, approval_id=1)])
+
+    response = self.call_api('approvals_comments_insert', request).json_body
+    fvs_add = [tracker_bizobj.MakeFieldValue(
+        2, None, 'cow', None, None, None, False)]
+    labels_add = ['CowType-skim', 'CowType-milk']
+    labels_remove = ['CowType-chocolate']
+    approval_delta = tracker_bizobj.MakeApprovalDelta(
+        None, 1, [], [], fvs_add, [], [],
+        labels_add, labels_remove, set_on=test_time)
+    self.services.issue.DeltaUpdateIssueApproval.assert_called_with(
+        None, 1, self.config, issue, approval, approval_delta,
+        comment_content=None, is_description=None)
+    self.assertEqual(response['content'], comment.content)
+
   @patch('time.time')
   def testApprovalsCommentsInsert_StatusChanges_Normal(self, mock_time):
     test_time = 6789
