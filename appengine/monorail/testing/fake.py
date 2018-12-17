@@ -1245,6 +1245,9 @@ class IssueService(object):
           issue = self.issues_by_iid[value.issue_id]
           if issue.project_id in project_ids:
             comments.append(value)
+      elif user_ids is not None:
+        if value.user_id in user_ids:
+          comments.append(value)
       else:
         comments.append(value)
     return comments
@@ -1842,10 +1845,14 @@ class SpamService(object):
     self.manual_verdicts_by_issue_id = collections.defaultdict(dict)
     self.manual_verdicts_by_comment_id = collections.defaultdict(dict)
 
+  def LookupIssuesFlaggers(self, cnxn, issue_ids):
+    return {
+        issue_id: (self.reports_by_issue_id.get(issue_id, []),
+                   self.comment_reports_by_issue_id.get(issue_id, {}))
+        for issue_id in issue_ids}
+
   def LookupIssueFlaggers(self, cnxn, issue_id):
-    issue_reporters = self.reports_by_issue_id.get(issue_id, [])
-    comment_reporters = self.comment_reports_by_issue_id.get(issue_id, {})
-    return issue_reporters, comment_reporters
+    return self.LookupIssuesFlaggers(cnxn, [issue_id])[issue_id]
 
   def FlagIssues(self, cnxn, issue_service, issues, user_id, flagged_spam):
     for issue in issues:

@@ -1069,6 +1069,41 @@ class WorkEnvTest(unittest.TestCase):
       with self.work_env as we:
         we.FlagIssues([issue], False)
 
+  def testLookupIssuesFlaggers_Normal(self):
+    issue_1 = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue_1)
+    comment_1_1 = tracker_pb2.IssueComment(
+        project_id=789, content='lorem ipsum', user_id=111L,
+        issue_id=issue_1.issue_id)
+    comment_1_2 = tracker_pb2.IssueComment(
+        project_id=789, content='dolor sit amet', user_id=111L,
+        issue_id=issue_1.issue_id)
+    self.services.issue.TestAddComment(comment_1_1, 1)
+    self.services.issue.TestAddComment(comment_1_2, 1)
+
+    issue_2 = fake.MakeTestIssue(789, 2, 'sum', 'New', 111L, issue_id=78902)
+    self.services.issue.TestAddIssue(issue_2)
+    comment_2_1 = tracker_pb2.IssueComment(
+        project_id=789, content='lorem ipsum', user_id=111L,
+        issue_id=issue_2.issue_id)
+    self.services.issue.TestAddComment(comment_2_1, 2)
+
+
+    self.SignIn(user_id=222L)
+    with self.work_env as we:
+      we.FlagIssues([issue_1], True)
+
+    self.SignIn(user_id=111L)
+    with self.work_env as we:
+      we.FlagComment(issue_1, comment_1_2, True)
+      we.FlagComment(issue_2, comment_2_1, True)
+
+      reporters = we.LookupIssuesFlaggers([issue_1, issue_2])
+      self.assertEqual({
+          issue_1.issue_id: ([222L], {comment_1_2.id: [111L]}),
+          issue_2.issue_id: ([], {comment_2_1.id: [111L]}),
+      }, reporters)
+
   def testLookupIssueFlaggers_Normal(self):
     issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
     self.services.issue.TestAddIssue(issue)

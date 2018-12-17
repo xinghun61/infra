@@ -45,10 +45,28 @@ class SpamServiceTest(unittest.TestCase):
     self.mox.UnsetStubs()
     self.mox.ResetAll()
 
-  def testLookupFlaggers(self):
+  def testLookupIssuesFlaggers(self):
     self.mock_report_tbl.Select(
-        self.cnxn, cols=['user_id', 'comment_id'],
-        issue_id=234).AndReturn([[111L, None], [222L, 1]])
+        self.cnxn, cols=['issue_id', 'user_id', 'comment_id'],
+        issue_id=[234, 567, 890]).AndReturn([
+            [234, 111L, None],
+            [234, 222L, 1],
+            [567, 333L, None]])
+    self.mox.ReplayAll()
+
+    reporters = (
+        self.spam_service.LookupIssuesFlaggers(self.cnxn, [234, 567, 890]))
+    self.mox.VerifyAll()
+    self.assertEqual({
+        234: ([111L], {1: [222L]}),
+        567: ([333L], {}),
+    }, reporters)
+
+  def testLookupIssueFlaggers(self):
+    self.mock_report_tbl.Select(
+        self.cnxn, cols=['issue_id', 'user_id', 'comment_id'],
+        issue_id=[234]).AndReturn(
+            [[234, 111L, None], [234, 222L, 1]])
     self.mox.ReplayAll()
 
     issue_reporters, comment_reporters = (

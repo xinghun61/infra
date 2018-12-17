@@ -500,33 +500,92 @@ class IssuesServicerTest(unittest.TestCase):
 
   def testListActivities_Normal(self):
     """We can get issue activity."""
-    comment = tracker_pb2.IssueComment(
-        user_id=111L, timestamp=self.NOW, content='sum',
-        project_id=789, issue_id=self.issue_1.issue_id, sequence=1)
-    self.services.issue.TestAddComment(comment, self.issue_1.local_id)
-    self.services.issue.TestAddIssue(self.issue_1)
-    request = issues_pb2.ListActivitiesRequest()
-    request.user_ref.user_id = 111L
-    config = tracker_pb2.ProjectIssueConfig(project_id=789,
+    self.services.user.TestAddUser('user@example.com', 444L)
+
+    config = tracker_pb2.ProjectIssueConfig(
+        project_id=789,
         field_defs=[self.fd_1])
     self.services.config.StoreConfig(self.cnxn, config)
-    mc = monorailcontext.MonorailContext(
-        self.services, cnxn=self.cnxn, requester='owner@example.com')
-    mc.LookupLoggedInUserPerms(self.project)
 
+    comment = tracker_pb2.IssueComment(
+        user_id=444L, timestamp=self.NOW, content='c1',
+        project_id=789, issue_id=self.issue_1.issue_id, sequence=1)
+    self.services.issue.TestAddComment(comment, self.issue_1.local_id)
+
+    self.services.project.TestAddProject(
+        'proj2', project_id=790, owner_ids=[111L], contrib_ids=[222L, 333L])
+    issue_2 = fake.MakeTestIssue(
+        790, 1, 'sum', 'New', 444L, project_name='proj2',
+        opened_timestamp=self.NOW, issue_id=2001)
+    comment_2 = tracker_pb2.IssueComment(
+        user_id=444L, timestamp=self.NOW, content='c2',
+        project_id=790, issue_id=issue_2.issue_id, sequence=1)
+    self.services.issue.TestAddComment(comment_2, issue_2.local_id)
+    self.services.issue.TestAddIssue(issue_2)
+
+    issue_3 = fake.MakeTestIssue(
+        790, 2, 'sum', 'New', 111L, project_name='proj2',
+        opened_timestamp=self.NOW, issue_id=2002, labels=['Restrict-View-Foo'])
+    comment_3 = tracker_pb2.IssueComment(
+        user_id=444L, timestamp=self.NOW, content='c3',
+        project_id=790, issue_id=issue_3.issue_id, sequence=1)
+    self.services.issue.TestAddComment(comment_3, issue_3.local_id)
+    self.services.issue.TestAddIssue(issue_3)
+
+    request = issues_pb2.ListActivitiesRequest()
+    request.user_ref.user_id = 444L
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='user@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
     response = self.CallWrapped(self.issues_svcr.ListActivities, mc, request)
-    actual_0 = response.comments[0]
-    actual_1 = response.issue_summaries[0]
-    expected_0 = issue_objects_pb2.Comment(
-        project_name='proj', local_id=1, sequence_num=0, is_deleted=False,
-        commenter=common_pb2.UserRef(
-            user_id=111L, display_name='owner@example.com'),
-        timestamp=self.NOW, content='sum', is_spam=False,
-        description_num=1, can_delete=True, can_flag=True)
-    expected_1 = issue_objects_pb2.IssueSummary(project_name='proj', local_id=1,
-        summary='sum')
-    self.assertEqual(expected_0, actual_0)
-    self.assertEqual(expected_1, actual_1)
+
+    self.maxDiff = None
+    self.assertEqual([
+        issue_objects_pb2.Comment(
+            project_name='proj',
+            local_id=1,
+            commenter=common_pb2.UserRef(
+                user_id=444L, display_name='user@example.com'),
+            timestamp=self.NOW,
+            content='c1',
+            sequence_num=1,
+            can_delete=True,
+            can_flag=True),
+        issue_objects_pb2.Comment(
+            project_name='proj2',
+            local_id=1,
+            commenter=common_pb2.UserRef(
+                user_id=444L, display_name='user@example.com'),
+            timestamp=self.NOW,
+            content='sum',
+            description_num=1,
+            can_delete=True,
+            can_flag=True),
+        issue_objects_pb2.Comment(
+            project_name='proj2',
+            local_id=1,
+            commenter=common_pb2.UserRef(
+                user_id=444L, display_name='user@example.com'),
+            timestamp=self.NOW,
+            content='c2',
+            sequence_num=1,
+            can_delete=True,
+            can_flag=True)],
+        sorted(
+            response.comments,
+            key=lambda c: (c.project_name, c.local_id, c.sequence_num)))
+    self.assertEqual([
+        issue_objects_pb2.IssueSummary(
+            project_name='proj',
+            local_id=1,
+            summary='sum'),
+        issue_objects_pb2.IssueSummary(
+            project_name='proj2',
+            local_id=1,
+            summary='sum')],
+        sorted(
+            response.issue_summaries,
+            key=lambda issue: (issue.project_name, issue.local_id)))
 
   @patch('testing.fake.IssueService.SoftDeleteComment')
   def testDeleteComment_Invalid(self, fake_softdeletecomment):

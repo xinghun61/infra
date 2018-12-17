@@ -62,6 +62,34 @@ class SpamService(object):
     # ML Engine library is lazy loaded below.
     self.ml_engine = None
 
+  def LookupIssuesFlaggers(self, cnxn, issue_ids):
+    """Returns users who've reported the issues or their comments as spam.
+
+    Returns a dictionary {issue_id: (issue_reporters, comment_reporters)}
+    issue_reportes is a list of users who flagged the issue;
+    comment_reporters element is a dictionary {comment_id: [user_ids]} where
+    user_ids are the users who flagged that comment.
+    """
+    rows = self.report_tbl.Select(
+        cnxn, cols=['issue_id', 'user_id', 'comment_id'],
+        issue_id=issue_ids)
+
+    reporters = collections.defaultdict(
+        # Return a tuple of (issue_reporters, comment_reporters) as described
+        # above.
+        lambda: ([], collections.defaultdict(list)))
+
+    for row in rows:
+      issue_id = long(row[0])
+      user_id = row[1]
+      if row[2]:
+        comment_id = row[2]
+        reporters[issue_id][1][comment_id].append(user_id)
+      else:
+        reporters[issue_id][0].append(user_id)
+
+    return reporters
+
   def LookupIssueFlaggers(self, cnxn, issue_id):
     """Returns users who've reported the issue or its comments as spam.
 
@@ -69,19 +97,7 @@ class SpamService(object):
     second element is a dictionary of comment id to a list of users who flagged
     that comment.
     """
-    rows = self.report_tbl.Select(
-        cnxn, cols=['user_id', 'comment_id'],
-        issue_id=issue_id)
-
-    issue_reporters = []
-    comment_reporters = collections.defaultdict(list)
-    for row in rows:
-      if row[1]:
-        comment_reporters[row[1]].append(row[0])
-      else:
-        issue_reporters.append(row[0])
-
-    return issue_reporters, comment_reporters
+    return self.LookupIssuesFlaggers(cnxn, [issue_id])[issue_id]
 
   def LookupIssueFlagCounts(self, cnxn, issue_ids):
     """Returns a map of issue_id to flag counts"""

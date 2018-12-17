@@ -256,23 +256,36 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
         mc.auth.effective_ids, user, project_dict,
         config_dict, issues)
     issue_dict = {issue.issue_id: issue for issue in allowed_issues}
-    issue_perms_dict = {
-        issue.issue_id: permissions.UpdateIssuePermissions(
-            mc.perms, project_dict[issue.project_id], issue,
-            mc.auth.effective_ids, config=config_dict[issue.project_id])
-        for issue in allowed_issues}
     comments = [
         c for c in comments if c.issue_id in issue_dict]
+
     users_by_id = framework_views.MakeAllUserViews(
         mc.cnxn, self.services.user, [request.user_ref.user_id])
     for project in project_dict.values():
       framework_views.RevealAllEmailsToMembers(mc.auth, project, users_by_id)
 
-    with work_env.WorkEnv(mc, self.services) as we:
-      comment_reporters = {}
-      for issue in issues:
-        _, reporters = we.LookupIssueFlaggers(issue)
-        comment_reporters.update(reporters)
+    issues_by_project = {}
+    for issue in allowed_issues:
+      issues_by_project.setdefault(issue.project_id, []).append(issue)
+
+    # A dictionary {issue_id: perms} of the PermissionSet for the current user
+    # on each of the issues.
+    issue_perms_dict = {}
+    # A dictionary {comment_id: [reporter_id]} of users who have reported the
+    # comment as spam.
+    comment_reporters = {}
+    for project_id, project_issues in issues_by_project.iteritems():
+      mc.LookupLoggedInUserPerms(project_dict[project_id])
+      issue_perms_dict.update({
+          issue.issue_id: permissions.UpdateIssuePermissions(
+              mc.perms, project_dict[issue.project_id], issue,
+              mc.auth.effective_ids, config=config_dict[issue.project_id])
+          for issue in project_issues})
+
+      with work_env.WorkEnv(mc, self.services) as we:
+        project_issue_reporters = we.LookupIssuesFlaggers(project_issues)
+        for _, issue_comment_reporters in project_issue_reporters.itervalues():
+          comment_reporters.update(issue_comment_reporters)
 
     with mc.profiler.Phase('converting to response objects'):
       converted_comments = []

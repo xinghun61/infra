@@ -1011,23 +1011,39 @@ class WorkEnv(object):
             self.mc.cnxn, self.services.issue, issues, self.mc.auth.user_id,
             flag)
 
+  def LookupIssuesFlaggers(self, issues):
+    """Returns users who've reported the issue or its comments as spam.
+
+    Args:
+      issues: the list of issues to query.
+    Returns:
+      A dictionary
+        {issue_id: ([issue_reporters], {comment_id: [comment_reporters]})}
+      For each issue id, a tuple with the users who have flagged the issue;
+      and a dictionary of users who have flagged a comment for each comment id.
+    """
+    for issue in issues:
+      self._AssertUserCanViewIssue(issue)
+
+    issue_ids = [issue.issue_id for issue in issues]
+    with self.mc.profiler.Phase('Looking up flaggers for %s' % issue_ids):
+      reporters = self.services.spam.LookupIssuesFlaggers(
+          self.mc.cnxn, issue_ids)
+
+    return reporters
+
   def LookupIssueFlaggers(self, issue):
     """Returns users who've reported the issue or its comments as spam.
 
     Args:
       issue: the issue to query.
     Returns:
-      A tuple (issue_reporters, comment_reporters).
-      issue_reporters is a list of users who flagged the issue;
-      comment_reporters is a dictionary of comment id to a list of users who
-      flagged that comment.
+      A tuple
+        ([issue_reporters], {comment_id: [comment_reporters]})
+      With the users who have flagged the issue; and a dictionary of users who
+      have flagged a comment for each comment id.
     """
-    self._AssertUserCanViewIssue(issue)
-    with self.mc.profiler.Phase('Looking up flaggers for %s' % issue.issue_id):
-      issue_reporters, comment_reporters = (
-          self.services.spam.LookupIssueFlaggers(self.mc.cnxn, issue.issue_id))
-
-    return issue_reporters, comment_reporters
+    return self.LookupIssuesFlaggers([issue])[issue.issue_id]
 
   # TODO(jrobbins): This method also requires self.mc to be a MonorailRequest.
   def GetIssuePositionInHotlist(self, current_issue, hotlist):
