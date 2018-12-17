@@ -1,5 +1,8 @@
+<link rel="import" href="/bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="/bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
 <link rel="import" href="/bower_components/polymer/polymer.html">
-
+<link rel="import" href="/ui/elements/flake_report/top_components.html">
 
 <dom-module id="flake-report">
   <template>
@@ -14,7 +17,7 @@
         white-space: nowrap;
       }
 
-      .main-header {
+      .main-header, #plain-tabs {
         color: #FFF;
         background-color: #4285F4;
       }
@@ -44,38 +47,69 @@
         background-color: #FFF;
       }
 
+      #tabs-container {
+        background-color: #1F78B4;
+        width: 90vw;
+        height: 60px;
+      }
+
+      #plain-tabs {
+        font-size: 16px;
+        width: calc(90vw - 3px);
+      }
+
+      .rank_by {
+        background-color: #1F78B4;
+        color: #ffff8d;
+        font-size: 18px;
+      }
+
+      paper-tab:not(:first-child) {
+        border-left: 2px solid white;
+      }
+
+      .table-separator {
+        height: 2px;
+      }
+
     </style>
-    <table width="95%">
+    <table width="98%" id="total-report-table">
       <tr>
         <th class="main-header" colspan="2">Component</th>
-        <th class="main-header">Flaky Test Count</th>
-        <th class="main-header">Bug Count</th>
-        <th class="main-header">Falsely Rejected CL Count</th>
+        <th class="main-header rank_by" id="rank_test">
+          <paper-button noink id="0" on-tap="selectRankBy">Flaky Tests
+            <iron-icon id="0" icon="arrow-downward"></iron-icon></paper-button>
+          <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Rank top flakes by number of flaky tests.</paper-tooltip>
+        </th>
+        <th class="main-header" id="rank_bug">
+          <paper-button noink id="1" on-tap="selectRankBy">Bugs
+            <iron-icon id="1" icon="arrow-downward"></iron-icon></paper-button>
+          <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Rank top flakes by number of flaky bugs.</paper-tooltip>
+        </th>
+        <th class="main-header" id="rank_false_rejection">
+          <paper-button noink id="2" on-tap="selectRankBy">Falsely Rejected CLs
+            <iron-icon id="2" icon="arrow-downward"></iron-icon></paper-button>
+          <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Rank top flakes by number of falsely rejected CLs.</paper-tooltip>
+        </th>
         <th class="main-header">Total Impacted CLs</th>
         <th class="main-header">Total Flake Occurrences</th>
       </tr>
       <tr>
           <th class="sub-header" colspan="2">Total</th>
-          <td><b>[[total_report.test_count]]</b></td>
-          <td><b>[[total_report.bug_count]]</b></td>
-          <td><b>[[total_report.impacted_cl_counts.cq_false_rejection]]</b></td>
-          <td><b>[[total_report.impacted_cl_counts.total]]</b></td>
-          <td><b>[[total_report.occurrence_counts.total]]</b></td>
+          <td width="14%"><b>[[total_report.test_count]]</b></td>
+          <td width="14%"><b>[[total_report.bug_count]]</b></td>
+          <td width="14%"><b>[[total_report.impacted_cl_counts.cq_false_rejection]]</b></td>
+          <td width="14%"><b>[[total_report.impacted_cl_counts.total]]</b></td>
+          <td width="14%"><b>[[total_report.occurrence_counts.total]]</b></td>
       </tr>
-      <template is="dom-repeat" items="[[top_components]]" as="component">
-        <tr>
-          <template is="dom-if" if="[[_isFirstElement(index)]]">
-            <th class="sub-header" rowspan$="[[_getNumComponents(top_components)]]">Top Components</th>
-          </template>
-          <th class="sub-header"><a target="_blank" href="report/component?component=[[component.id]]">[[component.id]]</a></th>
-          <td>[[component.test_count]]</td>
-          <td>[[component.bug_count]]</td>
-          <td>[[component.impacted_cl_counts.cq_false_rejection]]</td>
-          <td>[[component.impacted_cl_counts.total]]</td>
-          <td>[[component.occurrence_counts.total]]</td>
-        </tr>
-      </template>
     </table>
+    <iron-pages selected="{{selected}}">
+      <template is="dom-repeat" items="[[top_components]]">
+        <div>
+          <top-components rank_by="{{item.rank_by}}" top_components="{{item.components}}"></top-components>
+        </div>
+      </template>
+    </iron-pages>
   </template>
   <script>
     (function () {
@@ -93,29 +127,25 @@
             type: Array
           },
 
-          rank_by: {
-            type: String
+          selected: {
+            type: Number,
+            value: 0
           }
         },
 
-        _isFirstElement: function (index) {
-           return index == 0;
+        // Event handlers.
+        selectRankBy: function (e) {
+          this.selected = e.target.id;
+
+          // Resets all headers.
+          this.$.rank_test.classList.remove("rank_by");
+          this.$.rank_bug.classList.remove("rank_by");
+          this.$.rank_false_rejection.classList.remove("rank_by");
+
+          // Highlights the selected header.
+          e.target.closest('th').classList.add("rank_by");
         },
 
-        _getNumComponents: function (top_components) {
-           return top_components.length;
-        },
-
-        _getRankBy: function (rank_by) {
-           switch(rank_by) {
-             case 'bug_count':
-               return 'Flake Bugs';
-             case 'false_rejected_cl_count':
-               return 'Distinct Falsely Rejected CLs';
-             default:
-               return 'Flaky Tests';
-           }
-        }
       });
     })();
   </script>

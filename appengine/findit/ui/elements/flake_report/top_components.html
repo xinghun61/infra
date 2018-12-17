@@ -1,0 +1,96 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+
+<dom-module id="top-components">
+  <template>
+    <style>
+      table {
+        border-collapse: collapse;
+        border: 3px solid #1F78B4;
+      }
+
+      table th {
+        padding: 5px;
+        white-space: nowrap;
+      }
+
+      .sub-header {
+        color: #1A73E8;
+        background-color: #D2E3FC;
+        border: 1px solid gray;
+      }
+
+      table td {
+        max-width: 0;
+        padding: 2px;
+        padding-right: 10px;
+        height: 30px;
+        vertical-align: top;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-align: center;
+      }
+
+      tr:nth-child(odd) {
+        background-color: #E8F0FE;
+      }
+
+      tr:nth-child(even) {
+        background-color: #FFF;
+      }
+
+      .main-cell {
+        font-weight: bold;
+        color: #1F78B4;
+      }
+
+    </style>
+        <table width="98%">
+          <template is="dom-repeat" items="[[top_components]]" as="component">
+            <tr>
+              <template is="dom-if" if="[[_isFirstElement(index)]]">
+                <th class="sub-header" rowspan$="[[_getNumComponents(top_components)]]" width="10%">Top Components</th>
+              </template>
+              <th class="sub-header"><a target="_blank" href="report/component?component=[[component.id]]">[[component.id]]</a></th>
+              <td class$="[[isRankedBy(rank_by, 'test_count')]]" width="14%">[[component.test_count]]</td>
+              <td class$="[[isRankedBy(rank_by, 'bug_count')]]" width="14%">[[component.bug_count]]</td>
+              <td class$="[[isRankedBy(rank_by, 'false_rejected_cl_count')]]" width="14%">[[component.impacted_cl_counts.cq_false_rejection]]</td>
+              <td width="14%">[[component.impacted_cl_counts.total]]</td>
+              <td width="14%">[[component.occurrence_counts.total]]</td>
+            </tr>
+          </template>
+        </table>
+  </template>
+  <script>
+    (function () {
+      "use strict";
+
+      Polymer({
+        is: "top-components",
+        properties: {
+          // A list of component report objects.
+          top_components: {
+            type: Array
+          },
+
+          rank_by: {
+            type:String
+          }
+        },
+
+        isRankedBy: function (rank_by, cell_content) {
+          if (rank_by == cell_content) return 'main-cell';
+          return 'normal-cell';
+        },
+
+        _isFirstElement: function (index) {
+           return index == 0;
+        },
+
+        _getNumComponents: function (top_components) {
+           return top_components.length;
+        },
+
+      });
+    })();
+  </script>
+</dom-module>

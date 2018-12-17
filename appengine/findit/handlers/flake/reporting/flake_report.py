@@ -9,43 +9,52 @@ from model.flake.reporting.report import ComponentFlakinessReport
 from model.flake.reporting.report import TotalFlakinessReport
 
 # Default number of top n components.
-_DEFAULT_TOP_N = 10
+_DEFAULT_TOP_COMPONENT_NUM = 10
 
 _DEFAULT_RANK_BY = 'test_count'
 
-_RANK_PROPERTY_MAP = {
-    'test_count': ComponentFlakinessReport.test_count,
-    'bug_count': ComponentFlakinessReport.bug_count,
-    'false_rejected_cl_count': ComponentFlakinessReport.false_rejected_cl_count
-}
+# Uses a list of tuples to ensure sequence of tabs on UI.
+_RANK_PROPERTY_TUPLES = [('test_count', ComponentFlakinessReport.test_count),
+                         ('bug_count', ComponentFlakinessReport.bug_count),
+                         ('false_rejected_cl_count',
+                          ComponentFlakinessReport.false_rejected_cl_count)]
 
 
-def _QueryTopComponents(total_report_key, rank_by):
+def _QueryTopComponents(total_report_key):
   """Queries previous week's flake report and return the top n components.
 
   Returns:
-    [ComponentFlakinessReport]: Top n components in the previous week.
+    A list of top n components in the previous week ranked by various criteria.
+    [{
+      'rank_by': 'rank_by',
+      'components': [ComponentFlakinessReport.ToSerializable()]
+    }]
   """
   component_report_query = ComponentFlakinessReport.query(
       ancestor=total_report_key)
-  return component_report_query.order(-_RANK_PROPERTY_MAP.get(
-      rank_by, ComponentFlakinessReport.test_count)).fetch(_DEFAULT_TOP_N)
+
+  top_components = []
+  for rank_by, rank_property in _RANK_PROPERTY_TUPLES:
+    components = component_report_query.order(-rank_property).fetch(
+        _DEFAULT_TOP_COMPONENT_NUM)
+    query_result = {
+        'rank_by': rank_by,
+        'components': [component.ToSerializable() for component in components]
+    }
+
+    top_components.append(query_result)
+  return top_components
 
 
 class FlakeReport(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
   def HandleGet(self):
-    rank_by = self.request.get('rank_by').strip() or _DEFAULT_RANK_BY
     component = self.request.get('component_filter').strip()
 
-    data = {
-        'rank_by': rank_by if rank_by != _DEFAULT_RANK_BY else '',
-        'component': component
-    }
+    data = {'component': component}
 
     if component:
-      print component
       return self.CreateRedirect(
           '/flake/component-report?component=%s' % component)
 
@@ -59,9 +68,6 @@ class FlakeReport(BaseHandler):
       data['top_components'] = []
     else:
       data['total_report'] = total_flakiness_report.ToSerializable()
-      top_components = _QueryTopComponents(total_flakiness_report.key, rank_by)
-      data['top_components'] = [
-          component.ToSerializable() for component in top_components
-      ]
+      data['top_components'] = _QueryTopComponents(total_flakiness_report.key)
 
     return {'template': 'flake/report/flake_report.html', 'data': data}

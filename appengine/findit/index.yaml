@@ -192,6 +192,7 @@ indexes:
 - kind: FlakeOccurrence
   properties:
   - name: time_happened
+  - name: flake_type
   - name: gerrit_cl_id
 
 # For cron to update Flake counts.

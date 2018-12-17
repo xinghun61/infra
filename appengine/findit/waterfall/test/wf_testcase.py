@@ -303,13 +303,15 @@ SAMPLE_FLAKE_REPORT_DATA = {
         '_bugs': {'chromium@123458'},
         '_impacted_cls': {
             FlakeType.RETRY_WITH_PATCH: {},
-            FlakeType.CQ_FALSE_REJECTION: {1005}
+            FlakeType.CQ_FALSE_REJECTION: {1005, 1006}
         },
         '_occurrences': {
             FlakeType.RETRY_WITH_PATCH: 0,
             FlakeType.CQ_FALSE_REJECTION: 1
         },
-        '_tests': {'testC'},
+        '_tests': {
+            'testA', 'testB', 'testC', 'testD', 'testCE', 'testF', 'testG'
+        },
         'testC': {
             '_id': 'testC',
             '_bugs': {'chromium@123458'},
@@ -326,7 +328,10 @@ SAMPLE_FLAKE_REPORT_DATA = {
     },
     'Unknown': {
         '_id': 'Unknown',
-        '_bugs': {'chromium@123460'},
+        '_bugs': {
+            'chromium@123460', 'chromium@123461', 'chromium@123462',
+            'chromium@123463', 'chromium@123464', 'chromium@123465'
+        },
         '_impacted_cls': {
             FlakeType.RETRY_WITH_PATCH: {},
             FlakeType.CQ_FALSE_REJECTION: {1005}

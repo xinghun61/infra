@@ -35,7 +35,6 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
         'total_report': {},
         'top_components': [],
         'component': '',
-        'rank_by': ''
     }, json.loads(response.body))
 
   @mock.patch.object(
@@ -45,6 +44,54 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
         '/flake/report', params={
             'format': 'json',
         }, status=200)
+
+    component_a_dict = {
+        'id': 'ComponentA',
+        'test_count': 4,
+        'bug_count': 3,
+        'impacted_cl_counts': {
+            'cq_false_rejection': 3,
+            'retry_with_patch': 0,
+            'total': 3
+        },
+        'occurrence_counts': {
+            'cq_false_rejection': 5,
+            'retry_with_patch': 1,
+            'total': 6
+        }
+    }
+
+    component_b_dict = {
+        'id': 'ComponentB',
+        'test_count': 7,
+        'bug_count': 1,
+        'impacted_cl_counts': {
+            'cq_false_rejection': 2,
+            'retry_with_patch': 0,
+            'total': 2
+        },
+        'occurrence_counts': {
+            'cq_false_rejection': 1,
+            'retry_with_patch': 0,
+            'total': 1
+        }
+    }
+
+    unknown_dict = {
+        'id': 'Unknown',
+        'test_count': 1,
+        'bug_count': 6,
+        'impacted_cl_counts': {
+            'cq_false_rejection': 1,
+            'retry_with_patch': 0,
+            'total': 1
+        },
+        'occurrence_counts': {
+            'cq_false_rejection': 1,
+            'retry_with_patch': 0,
+            'total': 1
+        }
+    }
 
     expected_reports = {
         'total_report': {
@@ -62,53 +109,26 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
                 'total': 8
             }
         },
-        'top_components': [{
-            'id': 'ComponentA',
-            'test_count': 4,
-            'bug_count': 3,
-            'impacted_cl_counts': {
-                'cq_false_rejection': 3,
-                'retry_with_patch': 0,
-                'total': 3
+        'top_components': [
+            {
+                'rank_by': 'test_count',
+                'components': [
+                    component_b_dict, component_a_dict, unknown_dict
+                ]
             },
-            'occurrence_counts': {
-                'cq_false_rejection': 5,
-                'retry_with_patch': 1,
-                'total': 6
+            {
+                'rank_by': 'bug_count',
+                'components': [
+                    unknown_dict, component_a_dict, component_b_dict
+                ]
+            },
+            {
+                'rank_by': 'false_rejected_cl_count',
+                'components': [
+                    component_a_dict, component_b_dict, unknown_dict
+                ]
             }
-        },
-                           {
-                               'id': 'ComponentB',
-                               'test_count': 1,
-                               'bug_count': 1,
-                               'impacted_cl_counts': {
-                                   'cq_false_rejection': 1,
-                                   'retry_with_patch': 0,
-                                   'total': 1
-                               },
-                               'occurrence_counts': {
-                                   'cq_false_rejection': 1,
-                                   'retry_with_patch': 0,
-                                   'total': 1
-                               }
-                           },
-                           {
-                               'id': 'Unknown',
-                               'test_count': 1,
-                               'bug_count': 1,
-                               'impacted_cl_counts': {
-                                   'cq_false_rejection': 1,
-                                   'retry_with_patch': 0,
-                                   'total': 1
-                               },
-                               'occurrence_counts': {
-                                   'cq_false_rejection': 1,
-                                   'retry_with_patch': 0,
-                                   'total': 1
-                               }
-                           }],
-        'rank_by':
-            '',
+        ],
         'component':
             ''
     }
@@ -120,8 +140,6 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
 
     self.assertItemsEqual(expected_reports['top_components'],
                           response_body_data['top_components'])
-
-    self.assertEqual(expected_reports['rank_by'], response_body_data['rank_by'])
 
   def testSearchRedirect(self):
     response = self.test_app.get(
