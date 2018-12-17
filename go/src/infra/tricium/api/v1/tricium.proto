@@ -183,6 +183,11 @@ message FunctionProgress {
   string buildbucket_host = 7;
 
   // The ID of the buildbucket build triggered for the function worker.
+  //
+  // TODO(qyearsley): Use string in the API instead of int. Reason: a number
+  // may be converted to float when serialized as JSON, whereupon they may be
+  // processed incorrectly. Also, the ID is not something that the user might
+  // do arithmetic on, it should be treated as an opaque ID.
   int64 buildbucket_build_id = 8;
 }
 

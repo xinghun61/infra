@@ -76,7 +76,6 @@ func (m *ValidateRequest) GetServiceConfig() *v1.ServiceConfig {
 	return nil
 }
 
-// TODO(emso): Return structured errors for invalid configs.
 type ValidateResponse struct {
 	// The config used for validation.
 	//
@@ -265,12 +264,14 @@ type ConfigClient interface {
 	// Validates a Tricium config.
 	//
 	// The config to validate is specified in the request.
-	// TODO(emso): Make this RPC public to let users validate configs when they
-	// want, or via luci-config.
 	Validate(ctx context.Context, in *ValidateRequest, opts ...grpc.CallOption) (*ValidateResponse, error)
-	// Generates a workflow config from a Tricium config.
+	// Generates a workflow -- decides which Tricium functions to run.
 	//
-	// The Tricium config to generate for is specified by the request.
+	// The Tricium config to generate for is specified by the project and list of
+	// files in the request.
+	//
+	// GenerateWorkflow is in "Config" just because generating a workflow
+	// requires a valid project config and service config combination.
 	GenerateWorkflow(ctx context.Context, in *GenerateWorkflowRequest, opts ...grpc.CallOption) (*GenerateWorkflowResponse, error)
 }
 type configPRPCClient struct {
@@ -330,12 +331,14 @@ type ConfigServer interface {
 	// Validates a Tricium config.
 	//
 	// The config to validate is specified in the request.
-	// TODO(emso): Make this RPC public to let users validate configs when they
-	// want, or via luci-config.
 	Validate(context.Context, *ValidateRequest) (*ValidateResponse, error)
-	// Generates a workflow config from a Tricium config.
+	// Generates a workflow -- decides which Tricium functions to run.
 	//
-	// The Tricium config to generate for is specified by the request.
+	// The Tricium config to generate for is specified by the project and list of
+	// files in the request.
+	//
+	// GenerateWorkflow is in "Config" just because generating a workflow
+	// requires a valid project config and service config combination.
 	GenerateWorkflow(context.Context, *GenerateWorkflowRequest) (*GenerateWorkflowResponse, error)
 }
 

@@ -564,6 +564,11 @@ type FunctionProgress struct {
 	// Host for the buildbucket server running tasks for the workers of the function.
 	BuildbucketHost string `protobuf:"bytes,7,opt,name=buildbucket_host,json=buildbucketHost,proto3" json:"buildbucket_host,omitempty"`
 	// The ID of the buildbucket build triggered for the function worker.
+	//
+	// TODO(qyearsley): Use string in the API instead of int. Reason: a number
+	// may be converted to float when serialized as JSON, whereupon they may be
+	// processed incorrectly. Also, the ID is not something that the user might
+	// do arithmetic on, it should be treated as an opaque ID.
 	BuildbucketBuildId   int64    `protobuf:"varint,8,opt,name=buildbucket_build_id,json=buildbucketBuildId,proto3" json:"buildbucket_build_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`

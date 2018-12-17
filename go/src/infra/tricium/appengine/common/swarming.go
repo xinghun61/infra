@@ -61,7 +61,7 @@ func (s swarmingServer) Trigger(c context.Context, params *TriggerParameters) (*
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create swarming client").Err()
 	}
-	// TODO(emso): Read timeouts from the analyzer config.
+	// TODO(qyearsley): Read timeouts from the analyzer config.
 	// Prepare properties.
 	props := &swarming.SwarmingRpcsTaskProperties{
 		Dimensions:           dims,

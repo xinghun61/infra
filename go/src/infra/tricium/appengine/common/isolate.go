@@ -124,7 +124,7 @@ func (s isolateServer) IsolateGitFileDetails(c context.Context, serverURL string
 
 // IsolateWorker implements the IsolateAPI interface.
 func (s isolateServer) IsolateWorker(c context.Context, serverURL string, worker *admin.Worker, isolatedInput string) (string, error) {
-	// TODO(emso): Include command deadline.
+	// TODO(qyearsley): Include command deadline.
 	mode := 0444
 	iso := isolated.New()
 	switch wi := worker.Impl.(type) {
@@ -202,7 +202,7 @@ func (s isolateServer) FetchIsolatedResults(c context.Context, serverURL, isolat
 	if err := s.fetch(c, serverURL, string(resultsFile.Digest), buf); err != nil {
 		return "", errors.Annotate(err, "failed to fetch result file").Err()
 	}
-	// TODO(emso): Switch to io.Reader to avoid keeping the whole buffer in memory.
+	// TODO(qyearsley): Switch to io.Reader to avoid keeping the whole buffer in memory.
 	return string(buf.Bytes()), nil
 }
 
@@ -271,7 +271,6 @@ func (s isolateServer) createIsolateClient(c context.Context, serverURL string) 
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to setup anonymous transport for isolate client").Err()
 	}
-	// TODO(emso): Add check of devserver/dev instance or prod and select isolate server accordingly.
 	return isolatedclient.New(&http.Client{Transport: anonTransport}, &http.Client{Transport: authTransport},
 		serverURL, isolatedclient.DefaultNamespace, nil, nil), nil
 }

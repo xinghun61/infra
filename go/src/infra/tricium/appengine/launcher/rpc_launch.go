@@ -127,9 +127,7 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 	}
 	logging.Infof(c, "[launcher] Isolated git file details, hash: %q", inputHash)
 
-	// TODO(emso): select dev/prod swarming/isolate serve based on
-	// devserver and dev/prod tricium instance. Prepare trigger requests
-	// for root workers.
+	// Prepare trigger requests for root workers.
 	wTasks := []*tq.Task{}
 	for _, worker := range wf.RootWorkers() {
 		b, err := proto.Marshal(&admin.TriggerRequest{

@@ -57,8 +57,6 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCac
 	}
 	patch := fetchPatchDetails(c, req.RunId)
 	tags := getTags(c, req.Worker, req.RunId, patch)
-	// TODO(emso): Auth check.
-	// TODO(emso): Runtime type check.
 
 	// Create PubSub userdata for trigger request.
 	b, err := proto.Marshal(req)

@@ -71,8 +71,8 @@ func Validate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig) (*tricium.Pr
 // Errors:
 //  - change of data dependency in service config is not allowed
 func mergeFunctions(function string, sc *tricium.ServiceConfig, sa, pa *tricium.Function) (*tricium.Function, error) {
-	// TODO(emso): extract nil checks an similar out of this function and
-	// let if focus on only merging.
+	// TODO(qyearsley): Extract nil checks out of this function so that
+	// it is more focused on merging.
 	if sa == nil && pa == nil {
 		return nil, errors.Reason("unknown function %s", function).Err()
 	}

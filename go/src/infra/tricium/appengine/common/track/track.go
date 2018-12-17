@@ -260,7 +260,6 @@ type Comment struct {
 	// Comment encoded as JSON.
 	//
 	// The comment must be an encoded tricium.Data_Comment JSON message
-	// TODO(emso): Consider storing structured comment data.
 	Comment []byte `gae:",noindex"`
 	// Analyzer function name.
 	//
@@ -305,7 +304,8 @@ type CommentFeedback struct {
 	ID     int64   `gae:"$id"`
 	Parent *ds.Key `gae:"$parent"`
 	// Number of 'not useful' clicks.
-	// TODO(emso): store information to prevent multiple clicks by the same user.
+	// TODO(qyearsley): Store information to prevent multiple clicks by the
+	// same user.
 	NotUsefulReports int
 }
 

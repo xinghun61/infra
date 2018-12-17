@@ -40,10 +40,6 @@ func AppID(c context.Context) string {
 	return info.AppID(c)
 }
 
-// TODO(emso): Use string IDs every where and use a ID translation scheme between
-// the key visible to users and the ID used to store in datastore. This removes the
-// temptation for users to try things like ID+1.
-
 // ReportServerError reports back a server error (http code 500).
 func ReportServerError(c *router.Context, err error) {
 	logging.WithError(err).Errorf(c.Context, "HTTP 500")

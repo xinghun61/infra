@@ -179,8 +179,8 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 		ID:    1,
 		State: tricium.State_PENDING,
 	}
-	// TODO(diegomtzg): Consider changing variable names to reflect
-	// the difference between track.AnalyzeRequest and tricium.AnalyzeRequest
+	// TODO(qyearsley): Clarify variable names to reflect the difference
+	// between track.AnalyzeRequest and tricium.AnalyzeRequest.
 	lr := &admin.LaunchRequest{
 		Project: req.Project,
 		Files:   req.Files,

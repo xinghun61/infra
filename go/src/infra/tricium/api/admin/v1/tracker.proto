@@ -20,8 +20,6 @@ service Tracker {
 
   // WorkerDone marks the specified worker as done.
   rpc WorkerDone(WorkerDoneRequest) returns (WorkerDoneResponse);
-
-  // TODO(emso): Add RPC for collection of results.
 }
 
 // WorkflowLaunchedRequest specified details need to mark a workflow as
