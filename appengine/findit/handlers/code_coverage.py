@@ -248,9 +248,10 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
 
     # Convert the Struct to standard dict, to use .get, .iteritems etc.
     properties = dict(build.output.properties.items())
-    gs_bucket = properties['coverage_gs_bucket']
-    gs_path = properties['coverage_metadata_gs_path']
-    source_and_report_gs_path = properties['coverage_source_and_report_gs_path']
+    gs_bucket = properties.get('coverage_gs_bucket')
+    gs_path = properties.get('coverage_metadata_gs_path')
+    source_and_report_gs_path = properties.get(
+        'coverage_source_and_report_gs_path')
 
     # Ensure that the coverage data is ready.
     if not gs_bucket or not gs_path or not source_and_report_gs_path:
