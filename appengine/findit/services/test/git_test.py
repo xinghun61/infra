@@ -195,26 +195,20 @@ class GitTest(wf_testcase.WaterfallTestCase):
                      git.GetCommitsBetweenRevisionsInOrder('r0', 'r4', False))
 
   def testCountRecentCommitsFew(self):
-    self.mock(
-        GitilesRepository,
-        'GetNChangeLogs',
-        self._GenerateGetNChangeLogsMock(timedelta(minutes=25)))
+    self.mock(GitilesRepository, 'GetNChangeLogs',
+              self._GenerateGetNChangeLogsMock(timedelta(minutes=25)))
     self.mock(time_util, 'GetUTCNow', lambda: SOME_TIME)
     self.assertEqual(3, git.CountRecentCommits('url'))
 
   def testCountRecentCommitsMany(self):
-    self.mock(
-        GitilesRepository,
-        'GetNChangeLogs',
-        self._GenerateGetNChangeLogsMock(timedelta(minutes=1)))
+    self.mock(GitilesRepository, 'GetNChangeLogs',
+              self._GenerateGetNChangeLogsMock(timedelta(minutes=1)))
     self.mock(time_util, 'GetUTCNow', lambda: SOME_TIME)
     self.assertTrue(10 <= git.CountRecentCommits('url'))
 
   def testCountRecentCommitsNormal(self):
-    self.mock(
-        GitilesRepository,
-        'GetNChangeLogs',
-        self._GenerateGetNChangeLogsMock(timedelta(minutes=10)))
+    self.mock(GitilesRepository, 'GetNChangeLogs',
+              self._GenerateGetNChangeLogsMock(timedelta(minutes=10)))
     self.mock(time_util, 'GetUTCNow', lambda: SOME_TIME)
     self.assertEqual(7, git.CountRecentCommits('url'))
 
@@ -231,7 +225,7 @@ class GitTest(wf_testcase.WaterfallTestCase):
     self.mock(time_util, 'GetUTCNow', lambda: SOME_TIME)
     self.assertEqual(0, git.CountRecentCommits('url'))
 
-  @mock.patch.object(git, '_GetAuthor')
+  @mock.patch.object(git, 'GetAuthor')
   def testIsAuthoredByNoAutoRevertAccount(self, mock_author):
     author = Contributor(
         'author@abc.com', 'author@abc.com',
@@ -240,7 +234,7 @@ class GitTest(wf_testcase.WaterfallTestCase):
 
     self.assertFalse(git.IsAuthoredByNoAutoRevertAccount('rev1'))
 
-  @mock.patch.object(git, '_GetAuthor', return_value=None)
+  @mock.patch.object(git, 'GetAuthor', return_value=None)
   def testIsAuthoredByNoAutoRevertAccountNoAuthor(self, _):
     self.assertFalse(git.IsAuthoredByNoAutoRevertAccount('rev'))
 
@@ -358,4 +352,4 @@ class GitTest(wf_testcase.WaterfallTestCase):
     mock_change_log.return_value = self._MockGetChangeLog(revision)
     self.assertEqual(
         Contributor('author', 'author@abc.com', '2018-05-17 00:49:48'),
-        git._GetAuthor(revision))
+        git.GetAuthor(revision))

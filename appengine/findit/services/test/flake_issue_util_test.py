@@ -805,6 +805,8 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     self.assertEqual(fetched_flakes[0].flake_issue_key, new_flake_issue.key)
 
   @mock.patch.object(
+      FlakeAnalysisIssueGenerator, 'GetAutoAssignOwner', return_value=None)
+  @mock.patch.object(
       MasterFlakeAnalysis,
       'GetRepresentativeSwarmingTaskId',
       return_value='task_id')

@@ -8,10 +8,12 @@ import textwrap
 from google.appengine.ext import ndb
 
 from gae_libs.appengine_util import IsStaging
+from model import entity_util
 from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
 from monorail_api import CustomizedField
 from services import build_url
+from services import git
 from services import issue_constants
 from services import monitoring
 from services import swarming
@@ -33,7 +35,8 @@ _RESULT_WITH_CULPRIT_TEMPLATE = textwrap.dedent("""
 Findit identified the culprit r{commit_position} as introducing flaky test(s)
 summarized in {culprit_link}
 
-Please revert the culprit, or disable the test(s) and find the appropriate owner to fix or delete.
+Please revert the culprit or disable the test(s) asap. If you are the owner,
+please fix!
 
 If the culprit above is wrong, please file a bug using this link:
 {wrong_result_link}
@@ -214,6 +217,42 @@ def _GenerateMessageText(analysis):
       analysis_link=analysis_link)
 
 
+def _GetAutoAssignOwner(analysis):
+  """Determines the best owner for the culprit of an analysis.
+
+    Rules for determining an owner:
+    1. None if no culprit.
+    2. Return the culprit CL author if @chromium.org or @google.com
+    3. TODO(crbug.com913032): Fallback to the reviewer(s) and check for
+       @chromium.org or @google.com.
+
+  Args:
+    analysis (MasterFlakeAnalysis): The analysis for whose results are to be
+      used to update the bug with.
+
+  Returns:
+    owner (str): The best-guess owner or None if not determined.
+  """
+  if not analysis.culprit_urlsafe_key:
+    # No culprit, so no owner.
+    return None
+
+  culprit = entity_util.GetEntityFromUrlsafeKey(analysis.culprit_urlsafe_key)
+  assert culprit, (
+      'Culprit missing unexpectedly when trying to get owner for bug!')
+
+  author = git.GetAuthor(culprit.revision)
+
+  if not author:
+    return None
+
+  email = author.email
+  if email.endswith('@chromium.org') or email.endswith('@google.com'):
+    return email
+
+  return None
+
+
 class BaseFlakeIssueGenerator(object):
   """Encapsulates details needed to create or update a Monorail issue."""
   __metaclass__ = abc.ABCMeta
@@ -277,6 +316,13 @@ class BaseFlakeIssueGenerator(object):
         issue_constants.SHERIFF_CHROMIUM_LABEL, issue_constants.TYPE_BUG_LABEL,
         issue_constants.FLAKY_TEST_LABEL
     ]
+
+  def GetAutoAssignOwner(self):
+    """Gets the owner to assign the issue to.
+
+      Can be None, in which case the owner field should not be affected.
+    """
+    return None
 
   def GetStatus(self):
     """Gets status for the issue to be created.
@@ -402,6 +448,9 @@ class FlakeAnalysisIssueGenerator(FlakyTestIssueGenerator):
   def __init__(self, analysis):
     super(FlakeAnalysisIssueGenerator, self).__init__()
     self._analysis = analysis
+
+  def GetAutoAssignOwner(self):
+    return _GetAutoAssignOwner(self._analysis)
 
   def GetStepName(self):
     return Flake.NormalizeStepName(

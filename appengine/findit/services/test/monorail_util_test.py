@@ -180,11 +180,14 @@ class MonorailUtilTest(wf_testcase.WaterfallTestCase):
 
   # This test tests that creating issue via issue generator without previous
   # tracking bug id works properly.
+  @mock.patch.object(TestIssueGenerator, 'GetAutoAssignOwner')
   @mock.patch.object(monorail_util, 'UpdateBug')
   @mock.patch.object(monorail_util, 'CreateBug', return_value=12345)
   def testCreateIssueWithIssueGenerator(self, mock_create_bug_fn,
-                                        mock_update_bug_fn):
+                                        mock_update_bug_fn, mock_owner):
+    owner = 'owner@chromium.org'
     test_issue_generator = TestIssueGenerator()
+    mock_owner.return_value = owner
     issue_id = monorail_util.CreateIssueWithIssueGenerator(
         issue_generator=test_issue_generator)
 
@@ -192,6 +195,7 @@ class MonorailUtilTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(mock_update_bug_fn.called)
     self.assertEqual(12345, issue_id)
     issue = mock_create_bug_fn.call_args_list[0][0][0]
+    self.assertEqual(owner, issue.owner)
     self.assertEqual('Untriaged', issue.status)
     self.assertEqual('*/suite.test/* is flaky', issue.summary)
     self.assertEqual('description without previous tracking bug id.',
@@ -229,11 +233,13 @@ class MonorailUtilTest(wf_testcase.WaterfallTestCase):
 
   # This test tests that updating issue via issue generator without previous
   # tracking bug id works properly.
+  @mock.patch.object(TestIssueGenerator, 'GetAutoAssignOwner')
   @mock.patch.object(monorail_util, 'GetMergedDestinationIssueForId')
   @mock.patch.object(monorail_util, 'UpdateBug')
   @mock.patch.object(monorail_util, 'CreateBug')
-  def testUpdateIssueWithIssueGenerator(
-      self, mock_create_bug_fn, mock_update_bug_fn, mock_get_merged_issue):
+  def testUpdateIssueWithIssueGenerator(self, mock_create_bug_fn,
+                                        mock_update_bug_fn,
+                                        mock_get_merged_issue, mock_owner):
     issue_id = 12345
     issue = Issue({
         'status': 'Available',
@@ -245,6 +251,47 @@ class MonorailUtilTest(wf_testcase.WaterfallTestCase):
         'state': 'open',
     })
     mock_get_merged_issue.return_value = issue
+    owner = 'owner@chromium.org'
+    mock_owner.return_value = owner
+    test_issue_generator = TestIssueGenerator()
+    monorail_util.UpdateIssueWithIssueGenerator(
+        issue_id=issue_id, issue_generator=test_issue_generator)
+
+    self.assertFalse(mock_create_bug_fn.called)
+    mock_update_bug_fn.assert_called_once_with(
+        issue, 'comment without previous tracking bug id.', 'chromium')
+    issue = mock_update_bug_fn.call_args_list[0][0][0]
+    self.assertEqual(owner, issue.owner)
+    self.assertEqual(['label1'], issue.labels)
+    self.assertEqual(1, len(issue.field_values))
+    self.assertEqual('Flaky-Test', issue.field_values[0].to_dict()['fieldName'])
+    self.assertEqual('suite.test',
+                     issue.field_values[0].to_dict()['fieldValue'])
+
+  @mock.patch.object(TestIssueGenerator, 'GetAutoAssignOwner')
+  @mock.patch.object(monorail_util, 'GetMergedDestinationIssueForId')
+  @mock.patch.object(monorail_util, 'UpdateBug')
+  @mock.patch.object(monorail_util, 'CreateBug')
+  def testUpdateIssueWithIssueGeneratorWithExistingOwner(
+      self, mock_create_bug_fn, mock_update_bug_fn, mock_get_merged_issue,
+      mock_owner):
+    existing_owner = 'owner@chromium.org'
+    cl_owner = 'wrong_owner@chromium.org'
+    mock_owner.return_value = cl_owner
+    issue_id = 12345
+    issue = Issue({
+        'status': 'Available',
+        'summary': 'summary',
+        'description': 'description',
+        'projectId': 'chromium',
+        'labels': [],
+        'fieldValues': [],
+        'state': 'open',
+        'owner': {
+            'name': existing_owner
+        }
+    })
+    mock_get_merged_issue.return_value = issue
 
     test_issue_generator = TestIssueGenerator()
     monorail_util.UpdateIssueWithIssueGenerator(
@@ -254,6 +301,7 @@ class MonorailUtilTest(wf_testcase.WaterfallTestCase):
     mock_update_bug_fn.assert_called_once_with(
         issue, 'comment without previous tracking bug id.', 'chromium')
     issue = mock_update_bug_fn.call_args_list[0][0][0]
+    self.assertEqual(existing_owner, issue.owner)
     self.assertEqual(['label1'], issue.labels)
     self.assertEqual(1, len(issue.field_values))
     self.assertEqual('Flaky-Test', issue.field_values[0].to_dict()['fieldName'])

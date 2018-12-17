@@ -45,6 +45,7 @@ class UpdateMonorailPipelineTestShouldNotUpdate(WaterfallTestCase):
       monorail_util, 'GetMergedDestinationIssueForId', return_value=None)
   @mock.patch(
       'pipelines.flake_failure.update_monorail_bug_pipeline.IssueTrackerAPI')
+  @mock.patch.object(issue_generator, '_GetAutoAssignOwner', return_value=None)
   def testUpdateMonorailBugPipelineWithCulpritBugNotFound(self, mocked_api, *_):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.culprit_urlsafe_key = 'c'
@@ -83,6 +84,7 @@ class UpdateMonorailPipelineTestShouldNotUpdate(WaterfallTestCase):
     self.assertFalse(pipeline_job.outputs.default.value)
     mocked_api.assert_called_once()
 
+  @mock.patch.object(issue_generator, '_GetAutoAssignOwner', return_value=None)
   @mock.patch.object(appengine_util, 'IsStaging', return_value=False)
   @mock.patch.object(
       flake_bug_util, 'ShouldUpdateBugForAnalysis', return_value=True)

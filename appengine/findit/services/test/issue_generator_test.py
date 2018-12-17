@@ -10,6 +10,7 @@ from model.flake.analysis.data_point import DataPoint
 from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
+from services import git
 from services import issue_generator
 from waterfall.test.wf_testcase import WaterfallTestCase
 
@@ -197,3 +198,55 @@ class IssueGeneratorTest(WaterfallTestCase):
 
   def testGetMonorailProjectGroup(self):
     self.assertEqual('chromium', self._GetIssueGenertor().GetMonorailProject())
+
+  def testGetAutoAssignOwnerNoCulprit(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.Save()
+    self.assertIsNone(issue_generator._GetAutoAssignOwner(analysis))
+
+  @mock.patch.object(git, 'GetAuthor')
+  def testGetAutoAssignOwnerNonChromiumAccount(self, mock_author):
+    revision = 'r'
+    culprit = FlakeCulprit.Create('c', revision, 123, 'http://')
+    culprit.put()
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
+    analysis.Save()
+
+    author = mock.MagicMock()
+    author.email = 'author@something_else.com'
+    mock_author.return_value = author
+
+    self.assertIsNone(issue_generator._GetAutoAssignOwner(analysis))
+
+  @mock.patch.object(git, 'GetAuthor')
+  def testGetAutoAssignOwnerChromiumAccount(self, mock_author):
+    revision = 'r'
+    culprit = FlakeCulprit.Create('c', revision, 123, 'http://')
+    culprit.put()
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
+    analysis.Save()
+
+    author = mock.MagicMock()
+    author.email = 'author@chromium.org'
+    mock_author.return_value = author
+
+    self.assertEqual(author.email,
+                     issue_generator._GetAutoAssignOwner(analysis))
+
+  @mock.patch.object(git, 'GetAuthor')
+  def testGetAutoAssignOwnerGoogleAccount(self, mock_author):
+    revision = 'r'
+    culprit = FlakeCulprit.Create('c', revision, 123, 'http://')
+    culprit.put()
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
+    analysis.Save()
+
+    author = mock.MagicMock()
+    author.email = 'author@google.com'
+    mock_author.return_value = author
+
+    self.assertEqual(author.email,
+                     issue_generator._GetAutoAssignOwner(analysis))

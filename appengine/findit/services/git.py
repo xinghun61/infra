@@ -168,7 +168,7 @@ def CountRecentCommits(repo_url,
   return count
 
 
-def _GetAuthor(revision):
+def GetAuthor(revision):
   git_repo = CachedGitilesRepository(FinditHttpClient(),
                                      CHROMIUM_GIT_REPOSITORY_URL)
   change_log = git_repo.GetChangeLog(revision)
@@ -181,7 +181,7 @@ def IsAuthoredByNoAutoRevertAccount(revision):
     - the change is an auto-committed change by an author whose changes should
       not be auto-reverted.
   """
-  author = _GetAuthor(revision)
+  author = GetAuthor(revision)
   if not author:
     return False
 

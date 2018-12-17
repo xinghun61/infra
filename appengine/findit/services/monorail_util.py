@@ -140,8 +140,9 @@ def CreateIssueWithIssueGenerator(issue_generator):
     issue_info['fieldValues'] = [field_value]
 
   issue = Issue(issue_info)
-
+  issue.owner = issue_generator.GetAutoAssignOwner()
   issue_id = CreateBug(issue, issue_generator.GetMonorailProject())
+
   if issue_id:
     issue_generator.OnIssueCreated()
 
@@ -173,6 +174,11 @@ def UpdateIssueWithIssueGenerator(issue_id, issue_generator):
   field_value = issue_generator.GetFlakyTestCustomizedField()
   if field_value:
     issue.field_values.append(field_value)
+
+  if not issue.owner:
+    # Assign a potential owner if one is not already set.
+    issue.owner = issue_generator.GetAutoAssignOwner()
+
   UpdateBug(issue, issue_generator.GetComment(),
             issue_generator.GetMonorailProject())
   issue_generator.OnIssueUpdated()
