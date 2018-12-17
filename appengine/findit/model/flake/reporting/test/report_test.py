@@ -42,6 +42,7 @@ class ReportTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(4, component_report_A.test_count)
     self.assertEqual(6, component_report_A.GetTotalOccurrenceCount())
     self.assertEqual(3, component_report_A.GetTotalCLCount())
+    self.assertEqual(3, component_report_A.false_rejected_cl_count)
 
     reports_queried_by_component = ComponentFlakinessReport.query(
         ComponentFlakinessReport.tags == 'component::ComponentA').fetch()

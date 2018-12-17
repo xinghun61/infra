@@ -174,6 +174,22 @@ class ComponentFlakinessReport(ReportRow):
     tags.append(ComponentFlakinessReport.GenerateTag('component', d['_id']))
     return tags
 
+  @ndb.ComputedProperty
+  def false_rejected_cl_count(self):
+    for cl_count in self.impacted_cl_counts:
+      if cl_count.flake_type == FlakeType.CQ_FALSE_REJECTION:
+        return cl_count.count
+    return 0
+
+  def GetReportYearWeek(self):
+    """Gets the year and week of the report.
+
+    Key to a ComponentFlakinessReport:
+      Key(TotalFlakinessReport, '{year}-W{week}-{day}',
+          ComponentFlakinessReport, '{component}')
+    """
+    return self.key.pairs()[0][1][:-2]
+
 
 class TestFlakinessReport(ReportRow):
   """Report entry for a given component/test combination"""

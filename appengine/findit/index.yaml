@@ -372,3 +372,21 @@ indexes:
   - name: tags
   - name: generated_time
     direction: desc
+
+- kind: ComponentFlakinessReport
+  ancestor: yes
+  properties:
+  - name: bug_count
+    direction: desc
+
+- kind: ComponentFlakinessReport
+  ancestor: yes
+  properties:
+  - name: test_count
+    direction: desc
+
+- kind: ComponentFlakinessReport
+  ancestor: yes
+  properties:
+  - name: false_rejected_cl_count
+    direction: desc

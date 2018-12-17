@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<head>
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <title>Flake Report</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/common.css">
+  <script src="/ui/js/common.js"></script>
+  <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="/ui/elements/findit-app.html">
+  <link rel="import" href="/ui/elements/flake_report/flake_report.html">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <style type="text/css">
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    table, tr, td {
+      border: 0px;
+    }
+
+    .previous, .next {
+      color: #1A73EB;
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      border-bottom:1px solid #1A73EB;
+      cursor: pointer;
+    }
+
+    .disabled {
+      color: #9AA0A6;
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      border-bottom:1px solid #9AA0A6;
+      cursor: pointer;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .paging {
+      padding: 5px;
+    }
+
+    #footer {
+      margin-top: 10px;
+    }
+  </style>
+  <script>
+
+    function submitForm() {
+      // Removes the empty parameters from the url.
+      $('form').find(":input").filter(function(){ return !this.value; }).attr("disabled", "disabled");
+      $('form').submit();
+    }
+
+    function requestFilteredResults(e) {
+      var key = e.which;
+      if (key == 13) {
+        submitForm();
+      }
+    };
+
+    $(function() {
+      $('form').find( ":input" ).prop( "disabled", false );
+
+      $(document).on('keydown', function(event){
+        if (event.key == '?') {
+          event.preventDefault();
+          displayMessage(600);
+        }
+      });
+
+      $('#component_filter').keypress(requestFilteredResults);
+
+      document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
+    });
+  </script>
+</head>
+<body>
+  <findit-app id="app" page-header="Flake Report of Previous Week">
+    <form method="get" action="/flake/report">
+      <input type="text" name="rank_by" id="rank_by" class="hidden" value="{{rank_by}}">
+      <input type="text" name="component_filter" id="component_filter" size="200" placeholder="Enter component to search" value="{{ component_filter }}"/>
+    </form>
+    <br>
+    <flake-report total_report='{{total_report | tojson}}' top_components='{{top_components | tojson}}' rank_by='{{rank_by}}'>
+  </findit-app>
+</body>

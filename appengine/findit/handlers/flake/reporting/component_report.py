@@ -47,7 +47,7 @@ class ComponentReport(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
   def HandleGet(self):
-    component = self.request.get('component')
+    component = self.request.get('component').strip()
     if not component:
       return self.CreateError(
           'component is required to show component flake report.',
