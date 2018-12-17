@@ -36,6 +36,17 @@ const STATUS_CLASS_MAP = {
   'NotApproved': 'status-rejected',
 };
 
+const STATUS_DOCSTRING_MAP = {
+  'NotSet': '',
+  'NeedsReview': 'Approval gate needs work',
+  'NA': 'Approval gate not required',
+  'ReviewRequested': 'Approval requested',
+  'ReviewStarted': 'Approval in progress',
+  'NeedInfo': 'Approval review needs more information',
+  'Approved': 'Approved for Launch',
+  'NotApproved': 'Not Approved for Launch',
+};
+
 const CLASS_ICON_MAP = {
   'status-notset': 'remove',
   'status-pending': 'autorenew',
@@ -117,7 +128,8 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
         type: Array,
         value: () => {
           return Object.keys(STATUS_CLASS_MAP).map(
-            (status) => ({status, rank: 1}));
+            (status) => (
+              {status, docstring: STATUS_DOCSTRING_MAP[status], rank: 1}));
         },
       },
       updatingApproval: {
