@@ -175,33 +175,18 @@ func pollGerritProject(c context.Context, luciProject string, repo *tricium.Repo
 
 	logging.Debugf(c, "Last poll for %q: %s", p.ID, p.LastPoll)
 
-	// TODO(qyearsley): Add a limit for how many entries that will be processed
-	// in a poll. If, for instance, the service is restarted after some
-	// down time, all changes since the last poll before the service went
-	// down will be processed. Too many changes to process could cause the
-	// transaction to fail due to the number of entries touched; a failed
-	// transaction will cause the same poll pointer to be used at the next
-	// poll, and the same problem will happen again. See crbug.com/908636.
-
-	// Query for changes updated since last poll. Account for the fact
-	// that results may be truncated and we may need to send several
-	// queries to get the full list of changes.
-	var changes []gr.ChangeInfo
-	// Use this counter to skip already seen changes when more than one page
-	// of results is requested.
-	s := 0
-	for {
-		chgs, more, err := gerrit.QueryChanges(c, p.Instance, p.Project, p.LastPoll, s)
-		if err != nil {
-			return errors.Annotate(err, "failed to query for change").Err()
-		}
-		s += len(chgs)
-		changes = append(changes, chgs...)
-		// Check if we need to query for more changes, that is, if the
-		// results were truncated.
-		if !more {
-			break
-		}
+	// Query for changes updated since last poll. Even though Gerrit supports
+	// pagination, we only make one request for a list of changes to avoid using
+	// too much memory and time. During super-busy times, this may occasionally
+	// mean that some revisions are skipped.
+	// TODO(crbug.com/915842): We could add another task to the task queue to poll
+	// for the next page, to avoid skipping revisions.
+	changes, more, err := gerrit.QueryChanges(c, p.Instance, p.Project, p.LastPoll)
+	if err != nil {
+		return errors.Annotate(err, "failed to query for change").Err()
+	}
+	if more {
+		logging.Warningf(c, "There were changes beyond the limit %d. Some will be skipped.", maxChanges)
 	}
 
 	// No changes found.

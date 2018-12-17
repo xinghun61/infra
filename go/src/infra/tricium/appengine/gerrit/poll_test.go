@@ -32,8 +32,7 @@ import (
 )
 
 const (
-	queryChangeLimit = 2
-	host             = "https://chromium-review.googlesource.com"
+	host = "https://chromium-review.googlesource.com"
 )
 
 // mockPollRestAPI allows for modification of change state returned by QueryChanges.
@@ -42,7 +41,7 @@ type mockPollRestAPI struct {
 	changes map[string][]gr.ChangeInfo
 }
 
-func (m *mockPollRestAPI) QueryChanges(c context.Context, host, project string, ts time.Time, offset int) ([]gr.ChangeInfo, bool, error) {
+func (m *mockPollRestAPI) QueryChanges(c context.Context, host, project string, ts time.Time) ([]gr.ChangeInfo, bool, error) {
 	m.Lock()
 	defer m.Unlock()
 
@@ -51,15 +50,7 @@ func (m *mockPollRestAPI) QueryChanges(c context.Context, host, project string, 
 	}
 	id := gerritProjectID(host, project)
 	changes, _ := m.changes[id]
-	more := false
-	if len(changes) > queryChangeLimit {
-		m.changes[id] = changes[queryChangeLimit:] // move the tail of changes not returned to the front
-		changes = changes[0:queryChangeLimit]      // return the first chunk of changes
-		more = true
-	} else {
-		m.changes[id] = make([]gr.ChangeInfo, 0) // replace with empty slice
-	}
-	return changes, more, nil
+	return changes, false, nil
 }
 
 func (*mockPollRestAPI) PostRobotComments(c context.Context, host, change, revision string, runID int64, comments []*track.Comment) error {

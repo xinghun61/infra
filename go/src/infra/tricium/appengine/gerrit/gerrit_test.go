@@ -27,8 +27,8 @@ func TestComposeChangesQueryURL(t *testing.T) {
 		So(err, ShouldBeNil)
 		formattedTime := "2016-10-01+10%3A00%3A05.640000000"
 		Convey("First page of poll", func() {
-			So(composeChangesQueryURL(host, project, time, 0), ShouldEqual,
-				fmt.Sprintf("https://%s/a/changes/?o=CURRENT_REVISION&o=CURRENT_FILES&o=DETAILED_ACCOUNTS&q=project%%3A%s+after%%3A%%22%s%%22&start=0",
+			So(composeChangesQueryURL(host, project, time), ShouldEqual,
+				fmt.Sprintf("https://%s/a/changes/?n=60&o=CURRENT_REVISION&o=CURRENT_FILES&o=DETAILED_ACCOUNTS&q=project%%3A%s+after%%3A%%22%s%%22",
 					host, formattedProject, formattedTime))
 		})
 	})

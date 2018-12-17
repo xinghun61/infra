@@ -30,24 +30,30 @@ import (
 )
 
 const (
-	scope         = "https://www.googleapis.com/auth/gerritcodereview"
+	scope = "https://www.googleapis.com/auth/gerritcodereview"
+	// Timeout for waiting for a response from Gerrit.
 	gerritTimeout = 60 * time.Second
+	// Max number of changes to request from Gerrit.
+	//
+	// This should be a number small enough so that it can be handled in one
+	// request, but also large enough to avoid skipping over changes.
+	maxChanges = 60
 )
 
 // API specifies the Gerrit REST API tuned to the needs of Tricium.
 type API interface {
-	// QueryChanges sends one query for changes to Gerrit using the
-	// provided poll data and offset.
+	// QueryChanges sends one query for changes to Gerrit using the provided
+	// poll data.
 	//
-	// The poll data is assumed to correspond to the last seen change
-	// before this poll. Within one poll, the offset is used to handle
-	// consecutive calls to this function. A list of changes is returned
-	// in the same order as they were returned by Gerrit. The result tuple
-	// includes a boolean value to indicate if the result was truncated and
-	// more queries should be sent to get the full list of changes. For new
-	// queries within the same poll, this function should be called again
-	// with an increased offset.
-	QueryChanges(c context.Context, host, project string, lastTimestamp time.Time, offset int) ([]gr.ChangeInfo, bool, error)
+	// The poll data is assumed to correspond to the last seen change before
+	// this poll. Even though Gerrit supports paging, we only make one request
+	// to Gerrit because polling too many changes can quickly use up too much
+	// memory and time.
+	//
+	// A list of changes is returned in the same order as they were returned by
+	// Gerrit. The result tuple includes a boolean value to indicate if the
+	// result was truncated.
+	QueryChanges(c context.Context, host, project string, lastTimestamp time.Time) ([]gr.ChangeInfo, bool, error)
 	// PostRobotComments posts robot comments to a change.
 	PostRobotComments(c context.Context, host, change, revision string, runID int64, comments []*track.Comment) error
 	// GetChangedLines requests the diff info for all files for a
@@ -106,10 +112,10 @@ type replacement struct {
 	Range       *commentRange `json:"range,omitempty"`
 }
 
-func (gerritServer) QueryChanges(c context.Context, host, project string, lastTimestamp time.Time, offset int) ([]gr.ChangeInfo, bool, error) {
+func (gerritServer) QueryChanges(c context.Context, host, project string, lastTimestamp time.Time) ([]gr.ChangeInfo, bool, error) {
 	var changes []gr.ChangeInfo
 	// Compose, connect, and send.
-	url := composeChangesQueryURL(host, project, lastTimestamp, offset)
+	url := composeChangesQueryURL(host, project, lastTimestamp)
 	body, err := fetchResponse(c, url, map[string]string{
 		"Content-Disposition": "application/json",
 		"Content-Type":        "application/json",
@@ -262,16 +268,13 @@ func composeRunURL(c context.Context, runID int64) string {
 	return fmt.Sprintf("https://%s/run/%d", info.DefaultVersionHostname(c), runID)
 }
 
-// composeChangesQueryURL composes the URL used to query Gerrit for updated
-// changes.
+// composeChangesQueryURL composes the URL to query Gerrit for updated changes.
 //
 // The provided GerritProject object provides Gerrit host, project, and
-// timestamp of last poll. The offset is used to handle paging and should be
-// incremented during a poll to get all results.
-func composeChangesQueryURL(host, project string, lastTimestamp time.Time, offset int) string {
+// timestamp of last poll attempt.
+func composeChangesQueryURL(host, project string, lastTimestamp time.Time) string {
 	ts := lastTimestamp.Format(timeStampLayout)
 	v := url.Values{}
-	v.Add("start", strconv.Itoa(offset))
 	// We only ask for the latest patch set because we don't want to
 	// analyze any previous patch sets. Including the list of files is
 	// necessary to create an analyze request.
@@ -281,6 +284,7 @@ func composeChangesQueryURL(host, project string, lastTimestamp time.Time, offse
 	// on the whitelisted_groups field of the project config.
 	v.Add("o", "DETAILED_ACCOUNTS")
 	v.Add("q", fmt.Sprintf("project:%s after:\"%s\"", project, ts))
+	v.Add("n", strconv.Itoa(maxChanges))
 	return fmt.Sprintf("https://%s/a/changes/?%s", host, v.Encode())
 }
 
@@ -336,7 +340,7 @@ type mockRestAPI struct {
 	ChangedLines ChangedLinesInfo
 }
 
-func (*mockRestAPI) QueryChanges(c context.Context, host, project string, ts time.Time, offset int) ([]gr.ChangeInfo, bool, error) {
+func (*mockRestAPI) QueryChanges(c context.Context, host, project string, ts time.Time) ([]gr.ChangeInfo, bool, error) {
 	return []gr.ChangeInfo{}, false, nil
 }
 
