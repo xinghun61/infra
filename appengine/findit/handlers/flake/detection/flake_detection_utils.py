@@ -15,9 +15,13 @@ from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
 from model.flake.flake_type import FlakeType
 from model.flake.flake_type import FLAKE_TYPE_DESCRIPTIONS
+from services.flake_detection.detect_flake_occurrences import SUPPORTED_TAGS
+from services.flake_detection.detect_flake_occurrences import TAG_SEPARATOR
 from services.flake_failure.flake_bug_util import (
     GetMinimumConfidenceToUpdateBugs)
 from services.flake_issue_util import GetFlakeIssue
+
+DEFAULT_PAGE_SIZE = 100
 
 
 def _GetOccurrenceInformation(occurrence):
@@ -267,3 +271,157 @@ def GetFlakeInformation(flake, max_occurrence_count, with_occurrences=True):
     flake_dict['culprits'], flake_dict['sample_analysis'] = (
         _GetFlakeAnalysesResults(flake_issue.issue_id))
   return flake_dict
+
+
+def GetFlakesByFilter(flake_filter, luci_project, limit=None):
+  """Gets flakes by the given filter, then sorts them by the flake score.
+
+  Args:
+    flake_filter (str): It could be a test name, or a tag-based filter in the
+      following forms:
+      * tag::value
+      * tag1::value1@tag2::value2
+      * tag1::value1@-tag2:value2
+    luci_project (str): The Luci project that the flakes are for.
+    limit (int): Limit of results required.
+
+  Returns:
+    (flakes, grouping_search, error_message)
+    flakes (list): A list of Flake that are in descending order of flake score.
+    grouping_search (bool): Whether it is a group searching.
+    error_message (str): An error message if there is one; otherwise None.
+  """
+  logging.info('Searching filter: %s', flake_filter)
+
+  flakes = []
+  grouping_search = False
+  error_message = None
+
+  if TAG_SEPARATOR not in flake_filter:
+    # Search for a specific test.
+    flakes = Flake.query(Flake.normalized_test_name == Flake.NormalizeTestName(
+        flake_filter)).filter(Flake.luci_project == luci_project).fetch()
+    return flakes, grouping_search, error_message
+
+  grouping_search = True
+  filters = [f.strip() for f in flake_filter.split('@') if f.strip()]
+
+  # The resulted flakes are those:
+  # * Match all of positive filters
+  # * Not match any of negative filters
+  positive_filters = []
+  negative_filters = []
+  invalid_filters = []
+  for f in filters:
+    parts = [p.strip() for p in f.split(TAG_SEPARATOR)]
+    if len(parts) != 2 or not parts[1]:
+      invalid_filters.append(f)
+      continue
+
+    negative = False
+    if parts[0][0] == '-':
+      parts[0] = parts[0][1:]
+      negative = True
+
+    if parts[0] not in SUPPORTED_TAGS:
+      invalid_filters.append(f)
+      continue
+
+    if negative:
+      negative_filters.append(TAG_SEPARATOR.join(parts))
+    else:
+      positive_filters.append(TAG_SEPARATOR.join(parts))
+
+  if invalid_filters:
+    error_message = 'Unsupported tag filters: %s' % ', '.join(invalid_filters)
+    return flakes, grouping_search, error_message
+
+  if not positive_filters:
+    # At least one positive filter should be given.
+    error_message = 'At least one positive filter required'
+    return flakes, grouping_search, error_message
+
+  logging.info('Positive filters: %r', positive_filters)
+  logging.info('Negative filters: %r', negative_filters)
+
+  query = Flake.query(Flake.luci_project == luci_project)
+  for tag in positive_filters:
+    query = query.filter(Flake.tags == tag)
+
+  cursor = None
+  more = True
+  while more:
+    results, cursor, more = query.fetch_page(
+        DEFAULT_PAGE_SIZE, start_cursor=cursor)
+
+    for result in results:
+      if not result.flake_score_last_week:
+        continue
+      if negative_filters and any(t in result.tags for t in negative_filters):
+        continue
+      flakes.append(result)
+
+  logging.info('Search got %d flakes', len(flakes))
+  flakes.sort(key=lambda flake: flake.flake_score_last_week, reverse=True)
+
+  limit = limit or len(flakes)
+  return flakes[:limit], grouping_search, error_message
+
+
+def _GetFlakeCountsList(flake_counts_last_week):
+  """Gets flake counts for all flake types, even if there's no
+    occurrences for some of the types.
+
+  Args:
+    flake_counts_last_week(list): A list of FlakeCountsByType.
+  """
+  flake_counts_last_week_dict = {}
+  for flake_type, type_desc in FLAKE_TYPE_DESCRIPTIONS.iteritems():
+    flake_counts_last_week_dict[flake_type] = {
+        'flake_type': type_desc,
+        'impacted_cl_count': 0,
+        'occurrence_count': 0
+    }
+
+  for flake_count in flake_counts_last_week:
+    flake_counts_last_week_dict[flake_count.flake_type][
+        'impacted_cl_count'] = flake_count.impacted_cl_count
+    flake_counts_last_week_dict[flake_count.flake_type][
+        'occurrence_count'] = flake_count.occurrence_count
+
+  return [
+      flake_counts_last_week_dict[flake_type]
+      for flake_type in sorted(FLAKE_TYPE_DESCRIPTIONS)
+  ]
+
+
+def GenerateFlakesData(flakes):
+  """Processes flakes data to make them ready to be displayed on pages.
+
+  Args:
+    flakes ([Flake]): A list of Flake objects.
+
+  Returns:
+    [dict]: A list of dicts containing each flake's data.
+  """
+  flakes_data = []
+  for flake in flakes:
+    flake_dict = flake.to_dict()
+
+    # Tries to use merge_destination first, then falls back to the bug that
+    # directly associates to the flake.
+    flake_issue = GetFlakeIssue(flake)
+    if flake_issue:  # pragma: no branch.
+      flake_dict['flake_issue'] = flake_issue.to_dict()
+      flake_dict['flake_issue']['issue_link'] = FlakeIssue.GetLinkForIssue(
+          flake_issue.monorail_project, flake_issue.issue_id)
+
+    flake_dict['flake_urlsafe_key'] = flake.key.urlsafe()
+    flake_dict['time_delta'] = time_util.FormatTimedelta(
+        time_util.GetUTCNow() - flake.last_occurred_time, with_days=True)
+
+    flake_dict['flake_counts_last_week'] = _GetFlakeCountsList(
+        flake.flake_counts_last_week)
+
+    flakes_data.append(flake_dict)
+  return flakes_data

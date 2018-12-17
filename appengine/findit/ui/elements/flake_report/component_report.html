@@ -35,6 +35,19 @@
         background-color: #FFF;
       }
 
+      .sub-header {
+        font-size: 22px;
+        font-weight: bold;
+      }
+
+      .str-cell {
+        text-align: left;
+      }
+
+      .num-cell {
+        text-align: right;
+      }
+
     </style>
     <table width="95%">
       <tr>
@@ -57,6 +70,27 @@
         </tr>
       </template>
     </table>
+    <br><br>
+    <font class="sub-header">Top Flakes in the component</font>&nbsp;(<a target="_blank" href="/ranked-flakes?flake_filter=component::[[component]]">All Flakes</a>)
+    <br><br>
+    <table width="95%">
+      <tr>
+        <th class="num-cell">Flake Score</th>
+        <th class="str-cell">Test Name</th>
+        <th class="num-cell">Bug</th>
+      </tr>
+      <template is="dom-repeat" items="[[top_flakes]]" as="flake">
+        <tr>
+          <td class="num-cell" width="10%">[[flake.flake_score_last_week]]</td>
+          <td class="str-cell" width="80%"><a target="_blank" href="/flake/occurrences?key=[[flake.flake_urlsafe_key]]">[[flake.test_label_name]]</a></td>
+          <td class="num-cell">
+            <template is="dom-if" if="[[hasBug(flake)]]">
+              <a href="[[flake.flake_issue.issue_link]]">[[flake.flake_issue.issue_id]]</a>
+            </template>
+          </td>
+        </tr>
+      </template>
+    </table>
   </template>
   <script>
     (function () {
@@ -65,10 +99,22 @@
       Polymer({
         is: "component-report",
         properties: {
+          component: {
+            type: String
+          },
           // A list of component report objects.
           component_reports: {
             type: Array
           },
+          // A list of flake objects.
+          top_flakes: {
+            type: Array
+          }
+        },
+
+        hasBug: function (flake) {
+          return (flake.flake_issue != null &&
+          flake.flake_issue.issue_id != null);
         },
       })
     })();

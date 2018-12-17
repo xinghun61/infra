@@ -4,11 +4,15 @@
 
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
+from handlers.flake.detection import flake_detection_utils
 from model.flake.reporting.report import ComponentFlakinessReport
 from model.flake.reporting.report import GetReportDateString
 
 # Default to show reports for 12 weeks of data.
 _DEFAULT_MAX_ROW_NUM = 12
+_DEFAULT_TOP_FLAKE_NUM = 10
+
+_DEFAULT_LUCI_PROJECT = 'chromium'
 
 
 def _GenerateComponentReportJson(component_reports):
@@ -48,6 +52,8 @@ class ComponentReport(BaseHandler):
 
   def HandleGet(self):
     component = self.request.get('component').strip()
+    luci_project = self.request.get(
+        'luci_project').strip() or _DEFAULT_LUCI_PROJECT
     if not component:
       return self.CreateError(
           'component is required to show component flake report.',
@@ -60,8 +66,14 @@ class ComponentReport(BaseHandler):
 
     component_report_json = _GenerateComponentReportJson(component_reports)
 
+    top_flakes, _, _ = flake_detection_utils.GetFlakesByFilter(
+        'component::{}'.format(component), luci_project, _DEFAULT_TOP_FLAKE_NUM)
+
+    flakes_data = flake_detection_utils.GenerateFlakesData(top_flakes)
+
     data = {
         'component_report_json': component_report_json,
-        'component': component
+        'component': component,
+        'top_flakes': flakes_data
     }
     return {'template': 'flake/report/component_report.html', 'data': data}
