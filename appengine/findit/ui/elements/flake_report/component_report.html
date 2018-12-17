@@ -1,3 +1,7 @@
+<!--TODO(crbug/905380): migrate away from HTML imports.-->
+<link rel="import" href="/bower_components/google-chart/google-chart.html">
+<link rel="import" href="/bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="/bower_components/paper-tabs/paper-tabs.html">
 <link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
 <link rel="import" href="/bower_components/polymer/polymer.html">
 
@@ -48,49 +52,117 @@
         text-align: right;
       }
 
+      #flake-report-display {
+        width: 95vw;
+      }
+
+      .flake-report-table {
+        width: 95%;
+        margin: 20px;
+      }
+
+      #flake-trend-chart {
+        margin-left: 0 auto;
+        height: 460px;
+        width: 100%;
+      }
+
+      #tabs-container {
+        background-color: #1F78B4;
+        width: 50vw;
+        height: 60px;
+        margin-left: 3vw;
+      }
+
+      #display-tabs {
+        color: #FFF;
+        background-color: #4285F4;
+      }
+
+      paper-tab.iron-selected {
+        background-color: #1F78B4;
+        color: #ffff8d;
+        font-size: 18px;
+      }
+
+
+      #top-flakes-container {
+        width: 95vw;
+        max-height: calc(100vh - 740px);
+        overflow-y: auto;
+      }
+
+      iron-pages {
+        border: 3px solid #1F78B4;
+        width: 92vw;
+        height: 470px;
+        margin-left: 3vw;
+        margin-right: 3vw;
+      }
+
     </style>
-    <table width="95%">
-      <tr>
-        <th>Week of
-        <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Each report contains one week of data, Monday to Sunday.</paper-tooltip></th>
-        <th>Flaky Tests</th>
-        <th>Bugs</th>
-        <th>Falsely Rejected CLs</th>
-        <th>Total Impacted CLs</th>
-        <th>Flake Occurrences</th>
-      </tr>
-      <template is="dom-repeat" items="[[component_reports]]" as="report">
-        <tr>
-          <td>[[report.report_time]]</td>
-          <td>[[report.test_count]]</td>
-          <td>[[report.bug_count]]</td>
-          <td>[[report.impacted_cl_counts.cq_false_rejection]]</td>
-          <td>[[report.impacted_cl_counts.total]]</td>
-          <td>[[report.occurrence_counts.total]]</td>
-        </tr>
-      </template>
-    </table>
-    <br><br>
+    <div id="tabs-container">
+      <paper-tabs id="display-tabs" selected="{{selected}}">
+        <paper-tab>Report in Graph</paper-tab>
+        <paper-tab>Report in Table</paper-tab>
+      </paper-tabs>
+    </div>
+    <iron-pages selected="{{selected}}">
+      <div id="flake-report-graph-div">
+        <google-chart
+          id="flake-trend-chart"
+          type="combo"
+          options='{{_generateChartOptions(component)}}'
+          data = '{{_getChartDataFromFlake(component_reports)}}'>
+        </google-chart>
+      </div>
+      <div id="flake-report-table-div">
+        <table class="flake-report-table">
+          <tr>
+            <th>Week of
+              <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Each report contains one week of data, Monday to Sunday.</paper-tooltip>
+            </th>
+            <th>Flaky Test Count</th>
+            <th>Bug Count</th>
+            <th>Falsely Rejected CL Count</th>
+            <th>Total Impacted CLs</th>
+            <th>Total Flake Occurrences</th>
+          </tr>
+          <template is="dom-repeat" items="[[component_reports]]" as="report">
+            <tr>
+              <td>[[report.report_time]]</td>
+              <td>[[report.test_count]]</td>
+              <td>[[report.bug_count]]</td>
+              <td>[[report.impacted_cl_counts.cq_false_rejection]]</td>
+              <td>[[report.impacted_cl_counts.total]]</td>
+              <td>[[report.occurrence_counts.total]]</td>
+            </tr>
+          </template>
+        </table>
+      </div>
+    </iron-pages>
+    <br><br><br>
     <font class="sub-header">Top Flakes in the component</font>&nbsp;(<a target="_blank" href="/ranked-flakes?flake_filter=component::[[component]]">All Flakes</a>)
-    <br><br>
-    <table width="95%">
-      <tr>
-        <th class="num-cell">Flake Score</th>
-        <th class="str-cell">Test Name</th>
-        <th class="num-cell">Bug</th>
-      </tr>
-      <template is="dom-repeat" items="[[top_flakes]]" as="flake">
+    <div id="top-flakes-container">
+      <table class="flake-report-table">
         <tr>
-          <td class="num-cell" width="10%">[[flake.flake_score_last_week]]</td>
-          <td class="str-cell" width="80%"><a target="_blank" href="/flake/occurrences?key=[[flake.flake_urlsafe_key]]">[[flake.test_label_name]]</a></td>
-          <td class="num-cell">
-            <template is="dom-if" if="[[hasBug(flake)]]">
-              <a href="[[flake.flake_issue.issue_link]]">[[flake.flake_issue.issue_id]]</a>
-            </template>
-          </td>
+          <th class="num-cell">Flake Score</th>
+          <th class="str-cell">Test Name</th>
+          <th class="num-cell">Bug</th>
         </tr>
-      </template>
-    </table>
+        <template is="dom-repeat" items="[[top_flakes]]" as="flake">
+          <tr>
+            <td class="num-cell" width="10%">[[flake.flake_score_last_week]]</td>
+            <td class="str-cell" width="80%"><a target="_blank" href="/flake/occurrences?key=[[flake.flake_urlsafe_key]]">[[flake.test_label_name]]</a></td>
+            <td class="num-cell" width="10%">
+              <template is="dom-if" if="[[_hasBug(flake)]]">
+                <a href="[[flake.flake_issue.issue_link]]">[[flake.flake_issue.issue_id]]</a>
+              </template>
+            </td>
+          </tr>
+        </template>
+      </table>
+    </div>
   </template>
   <script>
     (function () {
@@ -109,13 +181,79 @@
           // A list of flake objects.
           top_flakes: {
             type: Array
+          },
+          selected: {
+            type: Number,
+            value: 0
           }
         },
 
-        hasBug: function (flake) {
+        _hasBug: function (flake) {
           return (flake.flake_issue != null &&
           flake.flake_issue.issue_id != null);
         },
+
+        _generateChartOptions: function (component) {
+          return {
+              title: 'Weekly flake trend on ' + component,
+              hAxes: { 0: { title: 'Weeks' } },
+              vAxes: { 0: { title: 'Counts' } },
+              chartArea: {
+                  right: '20%',
+                  width: '70%',
+                  height: '70%'
+              },
+              vAxis: { baseline: 0 },
+              seriesType: 'line',
+              pointSize: 5,
+              series: {
+                0: {
+                  color: '#174ea6',
+                  type: 'area'},
+                1: {
+                  color: '#1a73e8',
+                  type: 'area'},
+                2: {
+                  color: '#0d652d'
+                },
+                3: {
+                  color: '#dc3912'
+                },
+                4: {
+                  color: '#e37400'}}
+          }
+        },
+
+        _getReversedComponentReports(component_reports) {
+            let component_reports_copy = component_reports.slice(0);
+            return component_reports_copy.reverse();
+        },
+
+        _getChartDataFromFlake: function (component_reports) {
+            let data = [];
+
+            // Declares columns.
+            data.push([
+              'Week',
+              'False Rejected CL',
+              'Distinct Impacted CL',
+              'Occurrences',
+              'Bug',
+              'Flaky Test'
+            ]);
+            for (let report of this._getReversedComponentReports(component_reports)) {
+              let row = [
+                report.report_time,
+                report.impacted_cl_counts.cq_false_rejection,
+                report.impacted_cl_counts.total,
+                report.occurrence_counts.total,
+                report.bug_count,
+                report.test_count
+              ];
+              data.push(row);
+             }
+            return data;
+        }
       })
     })();
   </script>
