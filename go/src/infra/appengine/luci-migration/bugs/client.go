@@ -22,6 +22,7 @@ import (
 	"infra/monorail/monorailtest"
 )
 
+// NewClient creates a new monorail client.
 func NewClient(httpClient *http.Client, hostname string) monorail.MonorailClient {
 	return monorail.NewEndpointsClient(
 		httpClient,

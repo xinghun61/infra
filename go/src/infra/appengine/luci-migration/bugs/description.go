@@ -50,7 +50,7 @@ Migration app will close this bug when the builder is entirely migrated from Bui
 `)))
 
 // DescriptionVersion is the current version of bug description.
-const DescriptionVersion = 1
+const DescriptionVersion = 2
 
 func bugDescription(c context.Context, builder *storage.Builder) (string, error) {
 	master := config.Get(c).FindMaster(builder.ID.Master)

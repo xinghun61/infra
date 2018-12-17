@@ -38,7 +38,7 @@ import (
 	"go.chromium.org/luci/common/retry/transient"
 	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/grpc/prpc"
-	"go.chromium.org/luci/milo/api/proto"
+	milo "go.chromium.org/luci/milo/api/proto"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/xsrf"
 	"go.chromium.org/luci/server/router"
@@ -111,12 +111,10 @@ func cronUpdateBugDescriptions(c *router.Context) error {
 	// Note: in practice, this code needs to run a constant number of times
 	// so don't bother with concurrency of two queries.
 	var toUpdate []*storage.Builder
-	baseQ := datastore.NewQuery(storage.BuilderKind).KeysOnly(true)
-	err = datastore.GetAll(c.Context, baseQ.Eq("IssueDescriptionVersion", nil), &toUpdate)
-	if err != nil {
-		return err
-	}
-	err = datastore.GetAll(c.Context, baseQ.Lt("IssueDescriptionVersion", bugs.DescriptionVersion), &toUpdate)
+	q := datastore.NewQuery(storage.BuilderKind).
+		Lt("IssueDescriptionVersion", bugs.DescriptionVersion).
+		KeysOnly(true)
+	err = datastore.GetAll(c.Context, q, &toUpdate)
 	if err != nil {
 		return err
 	}
