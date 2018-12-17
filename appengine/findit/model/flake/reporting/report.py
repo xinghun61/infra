@@ -108,6 +108,24 @@ class ReportRow(ndb.Model):
   def GetTagDelimiter():
     return _TAG_DELIMITER
 
+  @ndb.ComputedProperty
+  def false_rejected_cl_count(self):
+    for cl_count in self.impacted_cl_counts:
+      if cl_count.flake_type == FlakeType.CQ_FALSE_REJECTION:
+        return cl_count.count
+    return 0
+
+  def GetReportYearWeek(self):
+    """Gets the year and week of the report.
+
+    Key to a ComponentFlakinessReport:
+      Key(TotalFlakinessReport, '{year}-W{week}-{day}')
+    Key to a ComponentFlakinessReport:
+      Key(TotalFlakinessReport, '{year}-W{week}-{day}',
+          ComponentFlakinessReport, '{component}')
+    """
+    return self.key.pairs()[0][1][:-2]
+
   def GetTotalOccurrenceCount(self):
     return sum([
         occurrence_count.count
@@ -173,22 +191,6 @@ class ComponentFlakinessReport(ReportRow):
                  ComponentFlakinessReport).GenerateTagList(d, year, week, day)
     tags.append(ComponentFlakinessReport.GenerateTag('component', d['_id']))
     return tags
-
-  @ndb.ComputedProperty
-  def false_rejected_cl_count(self):
-    for cl_count in self.impacted_cl_counts:
-      if cl_count.flake_type == FlakeType.CQ_FALSE_REJECTION:
-        return cl_count.count
-    return 0
-
-  def GetReportYearWeek(self):
-    """Gets the year and week of the report.
-
-    Key to a ComponentFlakinessReport:
-      Key(TotalFlakinessReport, '{year}-W{week}-{day}',
-          ComponentFlakinessReport, '{component}')
-    """
-    return self.key.pairs()[0][1][:-2]
 
 
 class TestFlakinessReport(ReportRow):

@@ -12,9 +12,11 @@ from waterfall.test import wf_testcase
 
 class ReportTest(wf_testcase.WaterfallTestCase):
 
-  def testReport(self):
+  def setUp(self):
+    super(ReportTest, self).setUp()
     SaveReportToDatastore(wf_testcase.SAMPLE_FLAKE_REPORT_DATA, 2018, 35, 1)
 
+  def testReport(self):
     report = TotalFlakinessReport.Get(2018, 35, 1)
     self.assertEqual(6, report.test_count)
     self.assertEqual(8, report.GetTotalOccurrenceCount())
@@ -63,3 +65,11 @@ class ReportTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(report_date, GetReportDateString(component_report_A))
     self.assertEqual(report_date,
                      GetReportDateString(component_test_report_A_B))
+
+  def testGetReportYearWeek(self):
+    report = TotalFlakinessReport.Get(2018, 35, 1)
+    self.assertEqual('2018-W35', report.GetReportYearWeek())
+
+  def testGetFalseRejectedCLCount(self):
+    report = TotalFlakinessReport.Get(2018, 35, 1)
+    self.assertEqual(3, report.false_rejected_cl_count)

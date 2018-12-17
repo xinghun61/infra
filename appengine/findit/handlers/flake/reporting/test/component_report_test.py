@@ -28,8 +28,10 @@ class ComponentReportTest(wf_testcase.WaterfallTestCase):
             'format': 'json',
         }, status=404)
 
-    self.assertEqual('component is required to show component flake report.',
-                     response.json_body.get('error_message'))
+    self.assertEqual(
+        'A component is required to show its flake report, or add'
+        ' total=1 to show total numbers.',
+        response.json_body.get('error_message'))
 
   def testComponentWithNoReportForComponent(self):
     response = self.test_app.get(
@@ -129,7 +131,7 @@ class ComponentReportTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual('ComponentA', response_body_data['component'])
 
-    for report in response_body_data['component_report_json']:
+    for report in response_body_data['report_json']:
       self.assertEqual(expected_component_reports['test_count'],
                        report['test_count'])
       self.assertEqual(expected_component_reports['bug_count'],
@@ -143,3 +145,38 @@ class ComponentReportTest(wf_testcase.WaterfallTestCase):
       self.assertEqual(
           json.dumps(expected_flakes[i], sort_keys=True, default=str),
           json.dumps(response_body_data['top_flakes'][i], sort_keys=True))
+
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 10, 2, 1))
+  def testTotalReport(self, _):
+    SaveReportToDatastore(wf_testcase.SAMPLE_FLAKE_REPORT_DATA, 2018, 35, 1)
+    response = self.test_app.get(
+        '/flake/report/component?total=1',
+        params={
+            'format': 'json',
+        },
+        status=200)
+
+    response_body_data = json.loads(response.body)
+    self.assertEqual('1', response_body_data['total'])
+    self.assertEqual('All', response_body_data['component'])
+    self.assertEqual([], response_body_data['top_flakes'])
+
+    expected_report_json = {
+        'bug_count': 4,
+        'test_count': 6,
+        'impacted_cl_counts': {
+            'cq_false_rejection': 3,
+            'retry_with_patch': 0,
+            'total': 3
+        },
+        'occurrence_counts': {
+            'cq_false_rejection': 7,
+            'retry_with_patch': 1,
+            'total': 8
+        },
+        'id': '2018-W35-1',
+        'report_time': '2018-08-27'
+    }
+
+    self.assertEqual(expected_report_json, response_body_data['report_json'][0])

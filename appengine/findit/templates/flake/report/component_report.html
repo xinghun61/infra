@@ -18,7 +18,8 @@
   <findit-app id="app" page-header="Flake Report for {{component}}">
     <component-report
       component='{{component}}'
-      component_reports='{{component_report_json | tojson}}'
-      top_flakes='{{top_flakes | tojson}}'>
+      component_reports='{{report_json | tojson}}'
+      top_flakes='{{top_flakes | tojson}}'
+      total='{{total}}'>
   </findit-app>
 </body>
