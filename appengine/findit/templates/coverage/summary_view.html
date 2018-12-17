@@ -166,7 +166,14 @@
                     {% set css_class = 'low-coverage' %}
                   {% endif %}
                   <td class="{{css_class}}">
-                    {{ '{0:.2f}%'.format(percentage) }} ({{metric.covered}}/{{metric.total}})
+                    {% set percent = metric.covered*100.0/metric.total %}
+                    {% if percent > 99.999999 %}
+                      {{ '{0:.2f}%'.format(percent) }} ({{metric.covered}}/{{metric.total}})
+                    {% elif percent > 9.999999 %}
+                      &nbsp;{{ '{0:.2f}%'.format(percent) }} ({{metric.covered}}/{{metric.total}})
+                    {% else %}
+                      &nbsp;&nbsp;{{ '{0:.2f}%'.format(percent) }} ({{metric.covered}}/{{metric.total}})
+                    {% endif %}
                   </td>
                 {% endif %}
               {% endfor %}
@@ -189,7 +196,14 @@
               {% set css_class = 'low-coverage' %}
             {% endif %}
             <td class="{{css_class}}">
-              {{ '{0:.2f}%'.format(percentage) }} ({{metric.covered}}/{{metric.total}})
+              {% set percent = metric.covered*100.0/metric.total %}
+              {% if percent > 99.999999 %}
+                {{ '{0:.2f}%'.format(percent) }} ({{metric.covered}}/{{metric.total}})
+              {% elif percent > 9.999999 %}
+                &nbsp;{{ '{0:.2f}%'.format(percent) }} ({{metric.covered}}/{{metric.total}})
+              {% else %}
+                &nbsp;&nbsp;{{ '{0:.2f}%'.format(percent) }} ({{metric.covered}}/{{metric.total}})
+              {% endif %}
             </td>
             {% endfor %}
           </tr>
