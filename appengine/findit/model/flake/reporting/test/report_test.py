@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from model.flake.reporting.report import ComponentFlakinessReport
+from model.flake.reporting.report import GetReportDateString
 from model.flake.reporting.report import TestFlakinessReport
 from model.flake.reporting.report import TotalFlakinessReport
 from services.flake_reporting.component import SaveReportToDatastore
@@ -55,3 +56,9 @@ class ReportTest(wf_testcase.WaterfallTestCase):
     reports_queried_by_test = TestFlakinessReport.query(
         TestFlakinessReport.tags == 'test::testB').fetch()
     self.assertEqual(component_test_report_A_B, reports_queried_by_test[0])
+
+    report_date = '2018-08-27'
+    self.assertEqual(report_date, GetReportDateString(report))
+    self.assertEqual(report_date, GetReportDateString(component_report_A))
+    self.assertEqual(report_date,
+                     GetReportDateString(component_test_report_A_B))

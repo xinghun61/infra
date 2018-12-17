@@ -21,13 +21,28 @@ is obviated to 1. These will be children of the above and identified by the
 normalized test name.
 """
 import collections
+import re
 
 from google.appengine.ext import ndb
 from google.appengine.ext.ndb import msgprop
 
+from libs import time_util
 from model.flake.flake_type import FlakeType
 
 _TAG_DELIMITER = '::'
+_REPORT_TIME_PATTERN = re.compile(r'\d+-W\d+-\d')
+
+
+def GetReportDateString(report):
+  """Gets the report time in a string to represent the data.
+
+  Args:
+    report (subclass of ReportRow).
+  """
+  report_time_iso_str = report.key.pairs()[0][1]
+  assert _REPORT_TIME_PATTERN.match(report_time_iso_str), (
+      'Cannot get date string if the time string is not for an ISO tuple.')
+  return time_util.ConvertISOWeekStringToUTCDateString(report_time_iso_str)
 
 
 class _TypeCount(ndb.Model):
@@ -137,6 +152,11 @@ class TotalFlakinessReport(ReportRow):
   @classmethod
   def Get(cls, year, week, day):
     return ndb.Key(cls, cls.MakeId(year, week, day)).get()
+
+  def GetReportTime(self):
+    """Gets the start and end date of the time range of the report."""
+    report_time_iso_str = self.key.pairs()[0][1]
+    return time_util.ConvertISOWeekStringToUTCDateString(report_time_iso_str)
 
 
 class ComponentFlakinessReport(ReportRow):

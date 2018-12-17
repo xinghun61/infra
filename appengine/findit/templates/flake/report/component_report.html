@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <title>Flake Report For {{component}}</title>
+  <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="/ui/elements/findit-app.html">
+  <link rel="import" href="/ui/elements/flake_report/component_report.html">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script>
+    $(function() {
+      document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
+    });
+  </script>
+  </script>
+</head>
+<body>
+  <findit-app id="app" page-header="Flake Report for {{component}}">
+    <component-report
+      component_reports='{{component_report_json | tojson}}'>
+  </findit-app>
+</body>

@@ -51,6 +51,10 @@ handlers:
   secure: always
 
 # Web UI pages.
+- url: /flake/report/component
+  script: frontend_main.flake_detection_frontend_web_application
+  secure: always
+
 - url: /flake/occurrences
   script: frontend_main.flake_detection_frontend_web_application
   secure: always

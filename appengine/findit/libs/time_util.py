@@ -43,14 +43,28 @@ def GetPreviousISOWeek():
   return year, week, day
 
 
-def ConvertISOWeekToUTCDatetime(year, week_number, day):
-  """Convert an ISO Year/Week/Day tuple to a UTC datetime @ Sun->Mon PST
-    Midnight."""
-  iso_week_string = '%d-W%d-%d' % (year, week_number, day)
+def _ConvertISOWeekStringToUTCDatetime(iso_week_string):
+  """Convert a string representing an ISO Year/Week/Day tuple to a UTC datetime
+    @ Sun->Mon PST Midnight."""
+  # iso_week_string = '%d-W%d-%d' % (year, week_number, day)
   naive_midnight = datetime.strptime(iso_week_string, '%Y-W%W-%w')
   # This is effectively 8AM on Monday of the given week as a naive datetime.
   utc_equivalent = ConvertPSTToUTC(naive_midnight)
   return utc_equivalent
+
+
+def ConvertISOWeekToUTCDatetime(year, week_number, day):
+  """Convert an ISO Year/Week/Day tuple to a UTC datetime @ Sun->Mon PST
+    Midnight."""
+  iso_week_string = '%d-W%d-%d' % (year, week_number, day)
+  return _ConvertISOWeekStringToUTCDatetime(iso_week_string)
+
+
+def ConvertISOWeekStringToUTCDateString(iso_week_string):
+  """Convert a string representing an ISO Year/Week/Day tuple to a string
+    representing a date."""
+  utc_equivalent = _ConvertISOWeekStringToUTCDatetime(iso_week_string)
+  return FormatDatetime(utc_equivalent, day_only=True)
 
 
 def RemoveMicrosecondsFromDelta(delta):
@@ -86,12 +100,13 @@ def FormatTimedelta(delta, with_days=False):
   return '%d days, %s' % (days, base_string)
 
 
-def FormatDatetime(date):
+def FormatDatetime(date, day_only=False):
   """Returns a string representing the given UTC datetime."""
   if not date:
     return None
-  else:
-    return date.strftime('%Y-%m-%d %H:%M:%S UTC')
+  if day_only:
+    return date.strftime('%Y-%m-%d')
+  return date.strftime('%Y-%m-%d %H:%M:%S UTC')
 
 
 def DatetimeFromString(date):

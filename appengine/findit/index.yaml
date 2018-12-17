@@ -365,3 +365,10 @@ indexes:
     direction: desc
   - name: commit_timestamp
     direction: desc
+
+# For Flake report
+- kind: ComponentFlakinessReport
+  properties:
+  - name: tags
+  - name: generated_time
+    direction: desc

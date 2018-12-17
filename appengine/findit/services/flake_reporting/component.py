@@ -218,4 +218,5 @@ def SaveReportToDatastore(counters, year, week_number, day):
       entities.append(
           TestFlakinessReport.FromTallies(component_row.key, t_counters, year,
                                           week_number, day))
+
   ndb.transaction(lambda: ndb.put_multi(entities))

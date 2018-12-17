@@ -1,0 +1,76 @@
+<link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
+<link rel="import" href="/bower_components/polymer/polymer.html">
+
+
+<dom-module id="component-report">
+  <template>
+    <style>
+      table {
+        border-collapse: collapse;
+        border: 1px solid gray;
+      }
+
+      table th {
+        padding: 5px;
+        color: #FFF;
+        background-color: #4285F4;
+        white-space: nowrap;
+      }
+      table td {
+        max-width: 0;
+        padding: 2px;
+        padding-right: 10px;
+        height: 30px;
+        vertical-align: top;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-align: center;
+      }
+
+      tr:nth-child(odd) {
+        background-color: #E8F0FE;
+      }
+
+      tr:nth-child(even) {
+        background-color: #FFF;
+      }
+
+    </style>
+    <table width="95%">
+      <tr>
+        <th>Week of
+        <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Each report contains one week of data, Monday to Sunday.</paper-tooltip></th>
+        <th>Flaky Tests</th>
+        <th>Bugs</th>
+        <th>Falsely Rejected CLs</th>
+        <th>Total Impacted CLs</th>
+        <th>Flake Occurrences</th>
+      </tr>
+      <template is="dom-repeat" items="[[component_reports]]" as="report">
+        <tr>
+          <td>[[report.report_time]]</td>
+          <td>[[report.test_count]]</td>
+          <td>[[report.bug_count]]</td>
+          <td>[[report.impacted_cl_counts.cq_false_rejection]]</td>
+          <td>[[report.impacted_cl_counts.total]]</td>
+          <td>[[report.occurrence_counts.total]]</td>
+        </tr>
+      </template>
+    </table>
+  </template>
+  <script>
+    (function () {
+      "use strict";
+
+      Polymer({
+        is: "component-report",
+        properties: {
+          // A list of component report objects.
+          component_reports: {
+            type: Array
+          },
+        },
+      })
+    })();
+  </script>
+</dom-module>

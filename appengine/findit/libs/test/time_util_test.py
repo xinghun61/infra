@@ -18,6 +18,11 @@ class TimeUtilTest(unittest.TestCase):
     dt = time_util.ConvertISOWeekToUTCDatetime(2018, 52, 1)
     self.assertEqual(dt, datetime(2018, 12, 24, 8, 0, 0))
 
+  def testConvertISOWeekStringToUTCDateString(self):
+    self.assertEqual(
+        '2018-08-27',
+        time_util.ConvertISOWeekStringToUTCDateString('2018-W35-1'))
+
   def testConvertToTimestamp(self):
     self.assertEqual(
         1490918400, time_util.ConvertToTimestamp(
@@ -52,6 +57,9 @@ class TimeUtilTest(unittest.TestCase):
     self.assertEqual(
         time_util.FormatDatetime(datetime(2016, 1, 2, 1, 2, 3)),
         '2016-01-02 01:02:03 UTC')
+    self.assertEqual(
+        time_util.FormatDatetime(datetime(2016, 1, 2, 1, 2, 3), day_only=True),
+        '2016-01-02')
 
   def testFormatDuration(self):
     date1 = datetime(2016, 5, 1, 1, 1, 1)
