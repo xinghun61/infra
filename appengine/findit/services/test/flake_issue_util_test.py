@@ -14,6 +14,7 @@ from model.flake.detection.flake_occurrence import FlakeOccurrence
 from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
 from model.flake.flake_type import FlakeType
+from monorail_api import Issue
 from services import flake_issue_util
 from services import monorail_util
 from services.issue_generator import FlakeAnalysisIssueGenerator
@@ -251,7 +252,15 @@ class FlakeReportUtilTest(WaterfallTestCase):
       flake_issue_util, 'SearchOpenIssueIdForFlakyTest', return_value=None)
   @mock.patch.object(monorail_util, 'UpdateBug')
   @mock.patch.object(monorail_util, 'CreateBug', return_value=66666)
-  def testCreateIssue(self, mock_create_bug_fn, mock_update_bug_fn, _):
+  @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
+  def testCreateIssue(self, mock_issue, mock_create_bug_fn, mock_update_bug_fn,
+                      _):
+    mock_issue.return_value = Issue({
+        'status': 'Untriaged',
+        'priority': 1,
+        'updated': '2018-12-07T17:52:45',
+        'id': '666666',
+    })
     flake = Flake.query().fetch()[0]
     occurrences = FlakeOccurrence.query(
         FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
@@ -387,13 +396,21 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
   @mock.patch.object(monorail_util, 'GetMergedDestinationIssueForId')
   @mock.patch.object(monorail_util, 'UpdateBug')
   @mock.patch.object(monorail_util, 'CreateBug')
+  @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
   def testUpdateIssueWithPreviousTrackingBugId(
-      self, mock_create_bug_fn, mock_update_bug_fn, mock_get_merged_issue):
+      self, mock_issue, mock_create_bug_fn, mock_update_bug_fn,
+      mock_get_merged_issue):
     flake = Flake.query().fetch()[0]
     flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=12345)
     flake_issue.put()
     flake.flake_issue_key = flake_issue.key
     flake.put()
+    mock_issue.return_value = Issue({
+        'status': 'Available',
+        'labels': ['Type-Bug', 'Pri-1'],
+        'updated': '2018-12-07T17:52:45',
+        'id': '56789',
+    })
     occurrences = FlakeOccurrence.query(
         FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
     mock_get_merged_issue.return_value.id = 56789
@@ -776,8 +793,9 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
   @mock.patch.object(monorail_util, 'UpdateIssueWithIssueGenerator')
   @mock.patch.object(
       monorail_util, 'CreateIssueWithIssueGenerator', return_value=66666)
+  @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
   def testHasFlakeAndFlakeIssueAndBugIsClosed(
-      self, mock_create_with_issue_generator_fn,
+      self, mock_issue, mock_create_with_issue_generator_fn,
       mock_update_with_issue_generator_fn, mock_get_merged_issue, _):
     flake = Flake.Create(
         luci_project='chromium',
@@ -789,6 +807,12 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     flake.flake_issue_key = flake_issue.key
     flake.put()
 
+    mock_issue.return_value = Issue({
+        'status': 'Available',
+        'priority': 1,
+        'updated': '2018-12-07T17:52:45',
+        'id': '56789',
+    })
     mock_get_merged_issue.return_value.id = 12345
     mock_get_merged_issue.return_value.open = False
 
@@ -815,8 +839,9 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
       flake_issue_util, 'SearchOpenIssueIdForFlakyTest', return_value=None)
   @mock.patch.object(monorail_util, 'UpdateBug')
   @mock.patch.object(monorail_util, 'CreateBug', return_value=66666)
-  def testCreateIssueWhenFlakeAndIssueDoesNotExist(self, mock_create_bug_fn,
-                                                   mock_update_bug_fn, *_):
+  @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
+  def testCreateIssueWhenFlakeAndIssueDoesNotExist(
+      self, mock_issue, mock_create_bug_fn, mock_update_bug_fn, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -835,6 +860,13 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     analysis.culprit_urlsafe_key = culprit.key.urlsafe()
     analysis.confidence_in_culprit = .5
     analysis.Save()
+
+    mock_issue.return_value = Issue({
+        'status': 'Untriaged',
+        'priority': 1,
+        'updated': '2018-12-07T17:52:45',
+        'id': '66666',
+    })
 
     issue_generator = FlakeAnalysisIssueGenerator(analysis)
     description = issue_generator.GetDescription()
@@ -909,13 +941,19 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
       flake_issue_util, 'SearchOpenIssueIdForFlakyTest', return_value=99999)
   @mock.patch.object(monorail_util, 'UpdateIssueWithIssueGenerator')
   @mock.patch.object(monorail_util, 'CreateIssueWithIssueGenerator')
+  @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
   def testHasNoFlakeAndFoundAnExistingOpenIssue(
-      self, mock_create_with_issue_generator_fn,
+      self, mock_issue, mock_create_with_issue_generator_fn,
       mock_update_with_issue_generator_fn, _):
     step_name = 'step_2'
     test_name = 'test_2'
     test_issue_generator = TestIssueGenerator(
         step_name=step_name, test_name=test_name)
+    mock_issue.return_value = Issue({
+        'status': 'Available',
+        'priority': 1,
+        'updated': '2018-12-07T17:52:45',
+    })
     flake_issue_util.CreateOrUpdateIssue(test_issue_generator)
 
     self.assertFalse(mock_create_with_issue_generator_fn.called)
@@ -934,9 +972,16 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
   @mock.patch.object(monorail_util, 'GetMergedDestinationIssueForId')
   @mock.patch.object(monorail_util, 'UpdateIssueWithIssueGenerator')
   @mock.patch.object(monorail_util, 'CreateIssueWithIssueGenerator')
+  @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
   def testHasFlakeAndFlakeAndBugIsClosedButFoundAnExistingOpenIssue(
-      self, mock_create_with_issue_generator_fn,
+      self, mock_issue, mock_create_with_issue_generator_fn,
       mock_update_with_issue_generator_fn, mock_get_merged_issue, _):
+    mock_issue.return_value = Issue({
+        'status': 'Available',
+        'priority': 1,
+        'updated': '2018-12-07T17:52:45',
+        'id': '99999',
+    })
     flake = Flake.Create(
         luci_project='chromium',
         normalized_step_name='step',
@@ -976,8 +1021,9 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
   @mock.patch.object(monorail_util, 'UpdateIssueWithIssueGenerator')
   @mock.patch.object(
       monorail_util, 'CreateIssueWithIssueGenerator', return_value=66666)
+  @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
   def testHasFlakeAndFlakeIssueAndBugWasMergedToAClosedBug(
-      self, mock_create_with_issue_generator_fn,
+      self, mock_issue, mock_create_with_issue_generator_fn,
       mock_update_with_issue_generator_fn, mock_get_merged_issue, _):
     flake = Flake.Create(
         luci_project='chromium',
@@ -989,6 +1035,12 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     flake.flake_issue_key = flake_issue.key
     flake.put()
 
+    mock_issue.return_value = Issue({
+        'status': 'Available',
+        'priority': 1,
+        'updated': '2018-12-07T17:52:45',
+        'id': '56789',
+    })
     # Merged issue is already in data store.
     FlakeIssue.Create(monorail_project='chromium', issue_id=56789).put()
 
@@ -1018,11 +1070,18 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
   @mock.patch.object(monorail_util, 'UpdateIssueWithIssueGenerator')
   @mock.patch.object(
       monorail_util, 'CreateIssueWithIssueGenerator', return_value=66666)
+  @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
   def testHasNoFlakeAndNoExistingOpenIssue(
-      self, mock_create_with_issue_generator_fn,
+      self, mock_issue, mock_create_with_issue_generator_fn,
       mock_update_with_issue_generator_fn, _):
     step_name = 'step_1'
     test_name = 'test_1'
+    mock_issue.return_value = Issue({
+        'status': 'Available',
+        'priority': 1,
+        'updated': '2018-12-07T17:52:45',
+        'id': '66666',
+    })
     test_issue_generator = TestIssueGenerator(
         step_name=step_name, test_name=test_name)
     flake_issue_util.CreateOrUpdateIssue(test_issue_generator)
@@ -1043,8 +1102,9 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
   @mock.patch.object(monorail_util, 'UpdateIssueWithIssueGenerator')
   @mock.patch.object(
       monorail_util, 'CreateIssueWithIssueGenerator', return_value=66666)
+  @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
   def testHasFlakeButNoFlakeIssueAndNoExistingOpenIssue(
-      self, mock_create_with_issue_generator_fn,
+      self, mock_issue, mock_create_with_issue_generator_fn,
       mock_update_with_issue_generator_fn, _):
     flake = Flake.Create(
         luci_project='chromium',
@@ -1052,6 +1112,13 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
         normalized_test_name='suite.test',
         test_label_name='*/suite.test/*')
     flake.put()
+
+    mock_issue.return_value = Issue({
+        'status': 'Available',
+        'priority': 1,
+        'updated': '2018-12-07T17:52:45',
+        'id': '66666',
+    })
     test_issue_generator = TestIssueGenerator()
     flake_issue_util.CreateOrUpdateIssue(test_issue_generator)
 
@@ -1073,8 +1140,9 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
   @mock.patch.object(monorail_util, 'GetMergedDestinationIssueForId')
   @mock.patch.object(monorail_util, 'UpdateIssueWithIssueGenerator')
   @mock.patch.object(monorail_util, 'CreateIssueWithIssueGenerator')
+  @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
   def testHasFlakeAndFlakeIssueAndBugWasMergedToAnOpenBug(
-      self, mock_create_with_issue_generator_fn,
+      self, mock_issue, mock_create_with_issue_generator_fn,
       mock_update_with_issue_generator_fn, mock_get_merged_issue):
     flake = Flake.Create(
         luci_project='chromium',
@@ -1085,6 +1153,13 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     flake_issue.put()
     flake.flake_issue_key = flake_issue.key
     flake.put()
+
+    mock_issue.return_value = Issue({
+        'status': 'Available',
+        'labels': ['Type-Bug', 'Pri-1'],
+        'updated': '2018-12-07T17:52:45',
+        'id': '45678',
+    })
 
     leaf_flake_issue = FlakeIssue.Create(
         monorail_project='chromium', issue_id=67890)
@@ -1286,6 +1361,15 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 1, 2))
   @mock.patch.object(
       monorail_util, 'CreateIssueWithIssueGenerator', return_value=234567)
+  @mock.patch.object(
+      monorail_util,
+      'GetMonorailIssueForIssueId',
+      return_value=Issue({
+          'status': 'Untriaged',
+          'priority': 1,
+          'updated': '2018-12-07T17:52:45',
+          'id': '234567',
+      }))
   def testCreateIssueForAGroup(self, *_):
     flake1 = self._CreateFlake('s1', 'suite1.t1', 'suite1.t1')
     occurrences1 = [
@@ -1340,6 +1424,47 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
         datetime.datetime(2018, 1, 2),
         flake_issue.last_updated_time_by_flake_detection)
 
+  def testUpdateFlakeIssueWithMonorailIssue(self):
+    flake_issue = FlakeIssue.Create('chromium', 1)
+    flake_issue.put()
+    monorail_issue = Issue({
+        'id': '1',
+        'labels': ['Type-Bug', 'Pri-2'],
+        'status': 'Assigned',
+        'updated': '2018-12-10T0:0:0',
+    })
+
+    flake_issue_util._UpdateFlakeIssueWithMonorailIssue(flake_issue,
+                                                        monorail_issue)
+    self.assertEqual('Assigned', flake_issue.status)
+    self.assertEqual(
+        datetime.datetime(2018, 12, 10),
+        flake_issue.last_updated_time_in_monorail)
+    self.assertEqual(['Type-Bug', 'Pri-2'], flake_issue.labels)
+
+  def testGetOrCreateFlakeIssueExisting(self):
+    flake_issue = FlakeIssue.Create('chromium', 1)
+    flake_issue.put()
+    self.assertEqual(flake_issue,
+                     flake_issue_util._GetOrCreateFlakeIssue(1, 'chromium'))
+
+  @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
+  def testGetOrCreateFlakeIssueNewIssue(self, mocked_issue):
+    mocked_issue.return_value = Issue({
+        'id': '2',
+        'labels': ['Type-Bug', 'Pri-2'],
+        'status': 'Assigned',
+        'updated': '2018-12-10T0:0:0',
+    })
+    expected_flake_issue = FlakeIssue.Create('chromium', 2)
+    expected_flake_issue.status = 'Assigned'
+    expected_flake_issue.last_updated_time_in_monorail = datetime.datetime(
+        2018, 12, 10)
+    expected_flake_issue.labels = ['Type-Bug', 'Pri-2']
+
+    self.assertEqual(expected_flake_issue,
+                     flake_issue_util._GetOrCreateFlakeIssue(2, 'chromium'))
+
   def testUpdateIssueLeaves(self):
     final_issue = FlakeIssue.Create('chromium', 3)
     final_issue.put()
@@ -1355,3 +1480,96 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
                                        final_issue.key)
     flake_issue = flake_issue.key.get()
     self.assertEqual(flake_issue.merge_destination_key, final_issue.key)
+
+  def testGetIssueStatusesNeedingUpdating(self):
+    self.assertEqual([
+        None, 'Assigned', 'Available', 'ExternalDependency'
+        'Started', 'Unconfirmed', 'Untriaged'
+    ], flake_issue_util._GetIssueStatusesNeedingUpdating())
+
+  def testGetFlakeIssuesNeedingUpdating(self):
+    open_flake_issue = FlakeIssue.Create('chromium', 1)
+    open_flake_issue.status = 'Assigned'
+    open_flake_issue.put()
+
+    closed_flake_issue = FlakeIssue.Create('chromium', 2)
+    closed_flake_issue.status = 'Verified'
+    closed_flake_issue.put()
+
+    self.assertEqual([open_flake_issue],
+                     flake_issue_util._GetFlakeIssuesNeedingUpdating())
+
+  @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
+  @mock.patch.object(monorail_util, 'GetMergedDestinationIssueForId')
+  def testSyncOpenFlakeIssuesWithMonorail(self, mocked_merged_issue,
+                                          mocked_issue):
+    # Scenario:
+    # 1. FlakeIssue 1 is a duplicate of FlakeIssue 2, and already has
+    #    |merge_destination_key| pointing to 2.
+    # 2. FlakeIssue 2 status is 'Available'.
+    # 3. Bug 2 in monorail was manually merged into bug 3, which is to be
+    #    detected and updated accordingly.
+    #
+    # Expected result:
+    # 1. FlakeIssue 3 is created and set to 'Assigned'.
+    # 2. FlakeIssue 2's status is set to 'Duplicate'.
+    # 3. FlakeIssue 2's |merge_destination_key| is set to FlakeIssue3's key.
+    # 4. FlakeIssue 1's |merge_destination_key| is set to FlakeIssue3's key.
+
+    # |flake_issue_2| is what's active according to Findit, but is out of date
+    # with Monorail.
+    flake_issue_2 = FlakeIssue.Create('chromium', 2)
+    flake_issue_2.status = 'Available'
+    flake_issue_2.put()
+
+    # |flake_issue_1| was previously updated to be a duplicate of
+    # |flake_issue_2|, but that too is now outdated.
+    flake_issue_1 = FlakeIssue.Create('chromium', 1)
+    flake_issue_1.status = 'Duplicate'
+    flake_issue_1.merge_destination_key = flake_issue_2.key
+    flake_issue_1.put()
+
+    expected_labels = ['Type-Bug', 'Pri-2']
+    expected_last_updated_time = datetime.datetime(2018, 12, 10)
+
+    monorail_issue_2 = Issue({
+        'id': '2',
+        'labels': expected_labels,
+        'merged_into': '3',
+        'status': 'Duplicate',
+        'updated': '2018-12-10T0:0:0',
+    })
+
+    monorail_issue_3 = Issue({
+        'id': '3',
+        'labels': expected_labels,
+        'status': 'Assigned',
+        'updated': '2018-12-10T0:0:0',
+    })
+
+    def MockedGetMonorailIssueForIssueId(issue_id, _):
+      if issue_id == 2:
+        return monorail_issue_2
+      return monorail_issue_3
+
+    mocked_issue.side_effect = MockedGetMonorailIssueForIssueId
+    mocked_merged_issue.return_value = monorail_issue_3
+
+    flake_issue_util.SyncOpenFlakeIssuesWithMonorail()
+    flake_issue_1 = flake_issue_1.key.get()
+    flake_issue_2 = flake_issue_2.key.get()
+    flake_issue_3 = FlakeIssue.Get('chromium', 3)
+
+    self.assertEqual(flake_issue_1.merge_destination_key, flake_issue_3.key)
+
+    self.assertEqual(expected_last_updated_time,
+                     flake_issue_2.last_updated_time_in_monorail)
+    self.assertEqual('Duplicate', flake_issue_2.status)
+    self.assertEqual(expected_labels, flake_issue_2.labels)
+    self.assertEqual(flake_issue_3.key, flake_issue_2.merge_destination_key)
+
+    self.assertIsNotNone(flake_issue_3)
+    self.assertEqual('Assigned', flake_issue_3.status)
+    self.assertEqual(expected_labels, flake_issue_3.labels)
+    self.assertEqual(expected_last_updated_time,
+                     flake_issue_3.last_updated_time_in_monorail)

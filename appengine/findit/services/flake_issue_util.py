@@ -23,6 +23,9 @@ from services.issue_generator import FlakeDetectionIssueGenerator
 from services.issue_generator import FlakeDetectionGroupIssueGenerator
 from waterfall import waterfall_config
 
+# The default number of entities to query for at a time should paging be needed.
+_PAGE_SIZE = 1000
+
 
 class FlakeGroup(object):
 
@@ -367,7 +370,7 @@ def GetAndUpdateMergedIssue(flake_issue):
         ' all issues were merged into it.',
         FlakeIssue.GetLinkForIssue(monorail_project, flake_issue.issue_id),
         FlakeIssue.GetLinkForIssue(monorail_project, merged_issue.id))
-    _UpdateMergeDestination(flake_issue, merged_issue.id)
+    _UpdateMergeDestinationAndIssueLeaves(flake_issue, merged_issue)
 
   return merged_issue
 
@@ -543,6 +546,34 @@ def ReportFlakesToFlakeAnalyzer(flake_tuples_to_report):
       AnalyzeDetectedFlakeOccurrence(flake, occurrence, issue_id)
 
 
+# TODO(crbug.com/916278): Transactional
+def _UpdateFlakeIssueWithMonorailIssue(flake_issue, monorail_issue):
+  """Updates a FlakeIssue with its corresponding Monorail issue."""
+  issue_id = flake_issue.issue_id
+  monorail_project = flake_issue.monorail_project
+  issue_link = FlakeIssue.GetLinkForIssue(monorail_project, issue_id)
+
+  assert monorail_issue.status is not None, (
+      'Failed to get issue.status from {}'.format(issue_link))
+  assert monorail_issue.updated or monorail_issue.closed, (
+      'Failed to get updated time from {}'.format(issue_link))
+
+  if monorail_issue.status == 'Duplicate':
+    # Impacted |merge_destination_key|s need to be updated.
+    merged_monorail_issue = monorail_util.GetMergedDestinationIssueForId(
+        issue_id, monorail_project)
+    assert merged_monorail_issue.id, (
+        'Failed to get merged monorail issue {}'.format(issue_link))
+
+    _UpdateMergeDestinationAndIssueLeaves(flake_issue, merged_monorail_issue)
+
+  flake_issue.Update(
+      status=monorail_issue.status,
+      labels=monorail_issue.labels,
+      last_updated_time_in_monorail=(monorail_issue.closed or
+                                     monorail_issue.updated))
+
+
 def _GetOrCreateFlakeIssue(issue_id, monorail_project):
   """Gets or creates a FlakeIssue entity for the monorail issue.
 
@@ -558,19 +589,23 @@ def _GetOrCreateFlakeIssue(issue_id, monorail_project):
 
   flake_issue = FlakeIssue.Create(monorail_project, issue_id)
   flake_issue.put()
+  monorail_issue = monorail_util.GetMonorailIssueForIssueId(
+      issue_id, monorail_project)
+
+  _UpdateFlakeIssueWithMonorailIssue(flake_issue, monorail_issue)
   return flake_issue
 
 
-def _UpdateMergeDestination(flake_issue, merged_issue_id):
+def _UpdateMergeDestinationAndIssueLeaves(flake_issue, merged_monorail_issue):
   """Updates flake_issue and all other issues that are merged into it to
     store the new merging_destination.
 
   Args:
     flake_issue (FlakeIssue): A FlakeIssue to update.
-    merged_issue_id (int): Id of the merged_issue.
+    merged_monorail_issue (Issue): The merged Monorail issue.
   """
-  merged_flake_issue = _GetOrCreateFlakeIssue(merged_issue_id,
-                                              flake_issue.monorail_project)
+  merged_flake_issue = _GetOrCreateFlakeIssue(
+      int(merged_monorail_issue.id), flake_issue.monorail_project)
   assert merged_flake_issue, (
       'Failed to get or create FlakeIssue for merged_issue %s' %
       FlakeIssue.GetLinkForIssue(flake_issue.monorail_project, merged_issue_id))
@@ -838,3 +873,60 @@ def _AssignIssueToFlake(issue_id, flake):
   flake_issue = _GetOrCreateFlakeIssue(issue_id, monorail_project)
   flake.flake_issue_key = flake_issue.key
   flake.put()
+
+
+def _GetIssueStatusesNeedingUpdating():
+  """Returns a list of statuses to check for that might need updating.
+
+    Issues that have been closed are assumed not to need further updates to
+    prevent the number of FlakeIssues needing updates to increase monotonically.
+  """
+  statuses = [None]
+  statuses.extend(issue_constants.OPEN_STATUSES)
+  return statuses
+
+
+def _GetFlakeIssuesNeedingUpdating():
+  """Returns a list of all FlakeIssue entities needing updating."""
+  issue_statuses_needing_updates = _GetIssueStatusesNeedingUpdating()
+
+  # Query and update issues by oldest first that's still open in case there are
+  # exceptions when trying to update issues.
+  flake_issues_query = FlakeIssue.query().filter(
+      FlakeIssue.status.IN(issue_statuses_needing_updates)).order(
+          FlakeIssue.last_updated_time_in_monorail, FlakeIssue.key)
+
+  flake_issues_needing_updating = []
+  cursor = None
+  more = True
+
+  while more:
+    flake_issues, cursor, more = flake_issues_query.fetch_page(
+        _PAGE_SIZE, start_cursor=cursor)
+    flake_issues_needing_updating.extend(flake_issues)
+
+  return flake_issues_needing_updating
+
+
+def SyncOpenFlakeIssuesWithMonorail():
+  """Updates open FlakeIssues to reflect the latest state in Monorail."""
+  flake_issues_needing_updating = _GetFlakeIssuesNeedingUpdating()
+
+  for flake_issue in flake_issues_needing_updating:
+    issue_id = flake_issue.issue_id
+    monorail_project = flake_issue.monorail_project
+
+    # TODO(crbug.com/914160): Monorail has a maximum of 300 requests per minute
+    # within any 5 minute window. Should the limit be exceeded, requests will
+    # result in 4xx errors and exponential backoff should be used.
+    monorail_issue = monorail_util.GetMonorailIssueForIssueId(
+        issue_id, monorail_project)
+
+    if (not monorail_issue or monorail_issue.id is None or
+        int(monorail_issue.id) != issue_id):  # pragma: no cover
+      # No cover due to being unexpected, but log a warning regardless and skip.
+      link = FlakeIssue.GetLinkForIssue(monorail_project, issue_id)
+      logging.warning('Failed to get issue %s', link)
+      continue
+
+    _UpdateFlakeIssueWithMonorailIssue(flake_issue, monorail_issue)
