@@ -260,7 +260,8 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
         c for c in comments if c.issue_id in issue_dict]
 
     users_by_id = framework_views.MakeAllUserViews(
-        mc.cnxn, self.services.user, [request.user_ref.user_id])
+        mc.cnxn, self.services.user, [request.user_ref.user_id],
+        tracker_bizobj.UsersInvolvedInCommentList(comments))
     for project in project_dict.values():
       framework_views.RevealAllEmailsToMembers(mc.auth, project, users_by_id)
 

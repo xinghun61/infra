@@ -34,6 +34,7 @@ from search import frontendsearchpipeline
 from proto import tracker_pb2
 from proto import project_pb2
 from testing import fake
+from tracker import tracker_bizobj
 from services import service_manager
 from proto import tracker_pb2
 
@@ -581,6 +582,52 @@ class IssuesServicerTest(unittest.TestCase):
             summary='sum'),
         issue_objects_pb2.IssueSummary(
             project_name='proj2',
+            local_id=1,
+            summary='sum')],
+        sorted(
+            response.issue_summaries,
+            key=lambda issue: (issue.project_name, issue.local_id)))
+
+  def testListActivities_Amendment(self):
+    self.services.user.TestAddUser('user@example.com', 444L)
+
+    comment = tracker_pb2.IssueComment(
+        user_id=444L,
+        timestamp=self.NOW,
+        amendments=[tracker_bizobj.MakeOwnerAmendment(111L, 222L)],
+        project_id=789,
+        issue_id=self.issue_1.issue_id,
+        content='',
+        sequence=1)
+    self.services.issue.TestAddComment(comment, self.issue_1.local_id)
+
+    request = issues_pb2.ListActivitiesRequest()
+    request.user_ref.user_id = 444L
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='user@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.issues_svcr.ListActivities, mc, request)
+
+    self.assertEqual([
+        issue_objects_pb2.Comment(
+            project_name='proj',
+            local_id=1,
+            commenter=common_pb2.UserRef(
+                user_id=444L, display_name='user@example.com'),
+            timestamp=self.NOW,
+            content='',
+            sequence_num=1,
+            amendments=[issue_objects_pb2.Amendment(
+                field_name="Owner",
+                new_or_delta_value="ow...@example.com")],
+            can_delete=True,
+            can_flag=True)],
+        sorted(
+            response.comments,
+            key=lambda c: (c.project_name, c.local_id, c.sequence_num)))
+    self.assertEqual([
+        issue_objects_pb2.IssueSummary(
+            project_name='proj',
             local_id=1,
             summary='sum')],
         sorted(
