@@ -86,12 +86,7 @@ func (is *ServerImpl) EnsurePoolHealthy(ctx context.Context, req *fleet.EnsurePo
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	gc, err := is.newGitilesClient(ctx, inventoryConfig.GitilesHost)
-	if err != nil {
-		return nil, errors.Annotate(err, "create gitiles client").Err()
-	}
-
-	lab, err := fetchLabInventory(ctx, gc)
+	lab, err := is.fetchLabInventory(ctx, inventoryConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -103,8 +98,8 @@ func (is *ServerImpl) EnsurePoolHealthy(ctx context.Context, req *fleet.EnsurePo
 		return &fleet.EnsurePoolHealthyResponse{}, nil
 	}
 
-	pb, err := newPoolBalancer(duts, req.TargetPool, req.SparePool)
-	if err := setDutHealths(ctx, is.TrackerFactory(), pb); err != nil {
+	pb, err := is.initializedPoolBalancer(ctx, req, duts)
+	if err != nil {
 		return nil, err
 	}
 	logging.Debugf(ctx, "Pool balancer initial state: %+v", pb)
@@ -122,27 +117,51 @@ func (is *ServerImpl) EnsurePoolHealthy(ctx context.Context, req *fleet.EnsurePo
 		},
 		Changes: changes,
 	}
-	if req.GetOptions().GetDryrun() {
-		return ret, nil
-	}
 
+	if !req.GetOptions().GetDryrun() {
+		u, err := is.commitChanges(ctx, inventoryConfig, lab, changes)
+		if err != nil {
+			return nil, err
+		}
+		ret.Url = u
+	}
+	return ret, nil
+}
+
+func (is *ServerImpl) fetchLabInventory(ctx context.Context, inventoryConfig *config.Inventory) (*inventory.Lab, error) {
+	gc, err := is.newGitilesClient(ctx, inventoryConfig.GitilesHost)
+	if err != nil {
+		return nil, errors.Annotate(err, "create gitiles client").Err()
+	}
+	return fetchLabInventory(ctx, gc)
+}
+
+func (is *ServerImpl) initializedPoolBalancer(ctx context.Context, req *fleet.EnsurePoolHealthyRequest, duts []*inventory.DeviceUnderTest) (*poolBalancer, error) {
+	pb, err := newPoolBalancer(duts, req.TargetPool, req.SparePool)
+	if err != nil {
+		return nil, err
+	}
+	if err := setDutHealths(ctx, is.TrackerFactory(), pb); err != nil {
+		return nil, err
+	}
+	return pb, err
+}
+
+func (is *ServerImpl) commitChanges(ctx context.Context, inventoryConfig *config.Inventory, lab *inventory.Lab, changes []*fleet.PoolChange) (string, error) {
 	if len(changes) == 0 {
 		// No inventory changes are required.
 		// TODO(pprabhu) add a unittest enforcing this.
-		return ret, nil
+		return "", nil
 	}
 
 	if err := applyChanges(lab, changes); err != nil {
-		return ret, errors.Annotate(err, "apply balance pool changes").Err()
+		return "", errors.Annotate(err, "apply balance pool changes").Err()
 	}
-
 	gerritC, err := is.newGerritClient(ctx, inventoryConfig.GerritHost)
 	if err != nil {
-		return nil, errors.Annotate(err, "create gerrit client").Err()
+		return "", errors.Annotate(err, "create gerrit client").Err()
 	}
-	u, err := commitInventory(ctx, gerritC, lab)
-	ret.Url = u
-	return ret, err
+	return commitInventory(ctx, gerritC, lab)
 }
 
 func selectDutsFromInventory(lab *inventory.Lab, sel *fleet.DutSelector, env string) []*inventory.DeviceUnderTest {
