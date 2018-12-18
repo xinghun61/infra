@@ -11,6 +11,7 @@ from dto.test_location import TestLocation as DTOTestLocation
 from model.flake.detection.flake_occurrence import BuildConfiguration
 from model.flake.detection.flake_occurrence import FlakeOccurrence
 from model.flake.flake import Flake
+from model.flake.flake import TAG_DELIMITER
 from model.flake.flake import TestLocation as NDBTestLocation
 from model.flake.flake_type import FlakeType
 from waterfall.test.wf_testcase import WaterfallTestCase
@@ -446,7 +447,7 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     ])
 
     for tag in flake.tags:
-      name = tag.split(detect_flake_occurrences.TAG_SEPARATOR)[0]
+      name = tag.split(TAG_DELIMITER)[0]
       self.assertTrue(name in detect_flake_occurrences.SUPPORTED_TAGS)
 
     self.assertTrue(

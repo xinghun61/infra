@@ -27,9 +27,9 @@ from google.appengine.ext import ndb
 from google.appengine.ext.ndb import msgprop
 
 from libs import time_util
+from model.flake.flake import TAG_DELIMITER
 from model.flake.flake_type import FlakeType
 
-_TAG_DELIMITER = '::'
 _REPORT_TIME_PATTERN = re.compile(r'\d+-W\d+-\d')
 
 
@@ -94,7 +94,7 @@ class ReportRow(ndb.Model):
 
   @staticmethod
   def GenerateTag(tag_name, tag_value):
-    return '{}{}{}'.format(tag_name, _TAG_DELIMITER, tag_value)
+    return '{}{}{}'.format(tag_name, TAG_DELIMITER, tag_value)
 
   @staticmethod
   def GenerateTagList(d, year, week, day):  # pylint: disable=unused-argument
@@ -103,10 +103,6 @@ class ReportRow(ndb.Model):
         ReportRow.GenerateTag('week', week),
         ReportRow.GenerateTag('day', day),
     ]
-
-  @staticmethod
-  def GetTagDelimiter():
-    return _TAG_DELIMITER
 
   @ndb.ComputedProperty
   def false_rejected_cl_count(self):
@@ -191,6 +187,14 @@ class ComponentFlakinessReport(ReportRow):
                  ComponentFlakinessReport).GenerateTagList(d, year, week, day)
     tags.append(ComponentFlakinessReport.GenerateTag('component', d['_id']))
     return tags
+
+  def GetComponent(self):
+    """Gets component of the report from key.
+
+    Key to a ComponentFlakinessReport should be
+    Key(TotalFlakinessReport, '2018-W50-1', ComponentFlakinessReport, component)
+    """
+    return self.key.pairs()[1][1]
 
 
 class TestFlakinessReport(ReportRow):

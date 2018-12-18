@@ -5,6 +5,7 @@
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 from libs import time_util
+from model.flake.flake import DEFAULT_COMPONENT
 from model.flake.reporting.report import ComponentFlakinessReport
 from model.flake.reporting.report import TotalFlakinessReport
 
@@ -38,8 +39,13 @@ def _QueryTopComponents(total_report_key):
     components = component_report_query.order(-rank_property).fetch(
         _DEFAULT_TOP_COMPONENT_NUM)
     query_result = {
-        'rank_by': rank_by,
-        'components': [component.ToSerializable() for component in components]
+        'rank_by':
+            rank_by,
+        'components': [
+            component.ToSerializable()
+            for component in components
+            if component.GetComponent() != DEFAULT_COMPONENT
+        ]
     }
 
     top_components.append(query_result)
@@ -56,7 +62,7 @@ class FlakeReport(BaseHandler):
 
     if component:
       return self.CreateRedirect(
-          '/flake/component-report?component=%s' % component)
+          '/flake/report/component?component=%s' % component)
 
     year, week, _ = time_util.GetPreviousISOWeek()
     # The report is a weekly report, though we may generate reports more

@@ -45,7 +45,6 @@ _COMPONENT_MAPPING_URL = ('https://storage.googleapis.com/chromium-owners/'
 
 # The tags used to filter flakes.
 # TODO(crbug.com/907688): find a way to keep the list updated.
-TAG_SEPARATOR = '::'
 SUPPORTED_TAGS = (
     'gerrit_project',
     'luci_project',

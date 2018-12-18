@@ -12,11 +12,11 @@ from model import entity_util
 from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from model.flake.detection.flake_occurrence import FlakeOccurrence
 from model.flake.flake import Flake
+from model.flake.flake import TAG_DELIMITER
 from model.flake.flake_issue import FlakeIssue
 from model.flake.flake_type import FlakeType
 from model.flake.flake_type import FLAKE_TYPE_DESCRIPTIONS
 from services.flake_detection.detect_flake_occurrences import SUPPORTED_TAGS
-from services.flake_detection.detect_flake_occurrences import TAG_SEPARATOR
 from services.flake_failure.flake_bug_util import (
     GetMinimumConfidenceToUpdateBugs)
 from services.flake_issue_util import GetFlakeIssue
@@ -297,7 +297,7 @@ def GetFlakesByFilter(flake_filter, luci_project, limit=None):
   grouping_search = False
   error_message = None
 
-  if TAG_SEPARATOR not in flake_filter:
+  if TAG_DELIMITER not in flake_filter:
     # Search for a specific test.
     flakes = Flake.query(Flake.normalized_test_name == Flake.NormalizeTestName(
         flake_filter)).filter(Flake.luci_project == luci_project).fetch()
@@ -313,7 +313,7 @@ def GetFlakesByFilter(flake_filter, luci_project, limit=None):
   negative_filters = []
   invalid_filters = []
   for f in filters:
-    parts = [p.strip() for p in f.split(TAG_SEPARATOR)]
+    parts = [p.strip() for p in f.split(TAG_DELIMITER)]
     if len(parts) != 2 or not parts[1]:
       invalid_filters.append(f)
       continue
@@ -328,9 +328,9 @@ def GetFlakesByFilter(flake_filter, luci_project, limit=None):
       continue
 
     if negative:
-      negative_filters.append(TAG_SEPARATOR.join(parts))
+      negative_filters.append(TAG_DELIMITER.join(parts))
     else:
-      positive_filters.append(TAG_SEPARATOR.join(parts))
+      positive_filters.append(TAG_DELIMITER.join(parts))
 
   if invalid_filters:
     error_message = 'Unsupported tag filters: %s' % ', '.join(invalid_filters)

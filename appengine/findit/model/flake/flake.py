@@ -12,6 +12,11 @@ from model.flake.flake_issue import FlakeIssue
 from model.flake.flake_type import FlakeType
 from services import step_util
 
+TAG_DELIMITER = '::'
+
+# Default component if component of a flake is unknown.
+DEFAULT_COMPONENT = 'Unknown'
+
 
 class FlakeCountsByType(ndb.Model):
   """Counts for a specific flake type."""
@@ -284,3 +289,13 @@ class Flake(ndb.Model):
     if flake_issue and up_to_date:
       return flake_issue.GetMostUpdatedIssue(key_only)
     return self.flake_issue_key if key_only else flake_issue
+
+  def GetComponent(self):
+    if self.component:
+      return self.component
+
+    for tag in self.tags or []:
+      if tag.startswith('component{separator}'.format(separator=TAG_DELIMITER)):
+        return tag.split(TAG_DELIMITER)[1]
+
+    return DEFAULT_COMPONENT

@@ -289,3 +289,22 @@ class FlakeTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(flake_issue_key,
                      flake.GetIssue(up_to_date=True, key_only=True))
+
+  def testGetComponent(self):
+    flake = Flake.Create(
+        luci_project='chromium',
+        normalized_step_name='step',
+        normalized_test_name='suite.test',
+        test_label_name='*/suite.test/*')
+    flake.put()
+    self.assertEqual('Unknown', flake.GetComponent())
+
+    flake.tags = ['component::ComponentA']
+    flake.put()
+    self.assertEqual('ComponentA', flake.GetComponent())
+
+    # Just for test purpose, flake.component should be the same as its component
+    # tag.
+    flake.component = 'ComponentB'
+    flake.put()
+    self.assertEqual('ComponentB', flake.GetComponent())

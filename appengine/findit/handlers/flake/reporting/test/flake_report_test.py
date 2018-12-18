@@ -77,22 +77,6 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    unknown_dict = {
-        'id': 'Unknown',
-        'test_count': 1,
-        'bug_count': 6,
-        'impacted_cl_counts': {
-            'cq_false_rejection': 1,
-            'retry_with_patch': 0,
-            'total': 1
-        },
-        'occurrence_counts': {
-            'cq_false_rejection': 1,
-            'retry_with_patch': 0,
-            'total': 1
-        }
-    }
-
     expected_reports = {
         'total_report': {
             'id': '2018-W35-1',
@@ -112,21 +96,15 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
         'top_components': [
             {
                 'rank_by': 'test_count',
-                'components': [
-                    component_b_dict, component_a_dict, unknown_dict
-                ]
+                'components': [component_b_dict, component_a_dict]
             },
             {
                 'rank_by': 'bug_count',
-                'components': [
-                    unknown_dict, component_a_dict, component_b_dict
-                ]
+                'components': [component_a_dict, component_b_dict]
             },
             {
                 'rank_by': 'false_rejected_cl_count',
-                'components': [
-                    component_a_dict, component_b_dict, unknown_dict
-                ]
+                'components': [component_a_dict, component_b_dict]
             }
         ],
         'component':
@@ -149,7 +127,7 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
         },
         status=302)
 
-    expected_url_suffix = ('/flake/component-report?component=ComponentA')
+    expected_url_suffix = ('/flake/report/component?component=ComponentA')
 
     self.assertTrue(
         response.headers.get('Location', '').endswith(expected_url_suffix))

@@ -48,7 +48,7 @@
           <template is="dom-repeat" items="[[top_components]]" as="component">
             <tr>
               <template is="dom-if" if="[[_isFirstElement(index)]]">
-                <th class="sub-header" rowspan$="[[_getNumComponents(top_components)]]" width="10%">Top Components</th>
+                <th class="sub-header" rowspan$="[[_getNumComponents(top_components)]]" width="5%">Top Components</th>
               </template>
               <th class="sub-header"><a target="_blank" href="report/component?component=[[component.id]]">[[component.id]]</a></th>
               <td class$="[[isRankedBy(rank_by, 'test_count')]]" width="14%">[[component.test_count]]</td>
