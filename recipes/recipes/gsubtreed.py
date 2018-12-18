@@ -11,6 +11,7 @@ code.
 
 import urlparse
 
+from recipe_engine.config import Single
 from recipe_engine.recipe_api import Property
 
 
@@ -30,10 +31,10 @@ PROPERTIES = {
       kind=str,
       help='Which repo to work with. Required.'),
   'cycle_time_sec': Property(
-      default=10*60, kind=int,
+      default=10*60, kind=Single((int, float)),
       help='How long to run gsubtreed for.'),
   'max_error_count': Property(
-      default=5, kind=int,
+      default=5, kind=Single((int, float)),
       help='How many consecutive errors are tolerated before gsubtreed '
            'quits with error'),
 }
@@ -41,8 +42,8 @@ PROPERTIES = {
 
 def RunSteps(api, target_repo, cycle_time_sec, max_error_count):
   assert target_repo
-  cycle_time_sec = max(0, cycle_time_sec)
-  max_error_count = max(0, max_error_count)
+  cycle_time_sec = max(0, int(cycle_time_sec))
+  max_error_count = max(0, int(max_error_count))
 
   # Checkout infra/infra solution.
   solution_path = api.path['cache'].join('builder', 'solution')

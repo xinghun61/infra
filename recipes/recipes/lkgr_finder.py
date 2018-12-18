@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from recipe_engine import post_process
+from recipe_engine.config import Single
 from recipe_engine.recipe_api import Property
 from recipe_engine.types import freeze
 
@@ -70,7 +71,8 @@ PROPERTIES = {
       help='Google storage path to which LKGR status reports will be uploaded.',
   ),
   'allowed_lag': Property(
-      kind=int, default=None,
+      kind=Single((int, float)),
+      default=None,
       help='Hours before an LKGR is considered out of date.',
   ),
 }

@@ -17,6 +17,7 @@ This recipe uses the dataflow-launcher service account. That account must have
 the permission to schedule a Dataflow job for your project.
 """
 
+from recipe_engine.config import Single
 from recipe_engine.recipe_api import Property
 
 DEPS = [
@@ -32,22 +33,32 @@ DEPS = [
 
 PROPERTIES = {
   'workflow': Property(
-      kind=str, help=('Path to the dataflow workflow you would like to '
-                      'execute. Will be appended to the infra checkout path. '
-                      'The path should begin with "packages/dataflow".')),
+      kind=str,
+      help=('Path to the dataflow workflow you would like to '
+            'execute. Will be appended to the infra checkout path. '
+            'The path should begin with "packages/dataflow".')),
   'job_name': Property(
-      kind=str, help=('Name that appears on the Dataflow console. Must match '
-                      'the regular expression [a-z]([-a-z0-9]{0,38}[a-z0-9])')),
+      kind=str,
+      help=('Name that appears on the Dataflow console. Must match '
+            'the regular expression [a-z]([-a-z0-9]{0,38}[a-z0-9])')),
   'gcp_project_id': Property(
-      kind=str, help=('Name of Google Cloud Project under which the Dataflow '
-                      'job will be executed.')),
+      kind=str,
+      help=('Name of Google Cloud Project under which the Dataflow '
+            'job will be executed.')),
   'num_workers': Property(
-      kind=int, default=3, help=('Number of GCE instances used to run job.')),
+      kind=Single((int, float)),
+      default=3,
+      help=('Number of GCE instances used to run job.')),
   'timeout': Property(
-      kind=int, default=300, help=('Timeout, in seconds.')),
+      kind=Single((int, float)),
+      default=300,
+      help=('Timeout, in seconds.')),
 }
 
 def RunSteps(api, workflow, job_name, gcp_project_id, num_workers, timeout):
+  num_workers = int(num_workers)
+  timeout = int(timeout)
+
   api.gclient.set_config('infra')
   bot_update_step = api.bot_update.ensure_checkout()
   api.gclient.runhooks()
