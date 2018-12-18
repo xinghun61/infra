@@ -92,12 +92,11 @@ func runLuciferCommand(b *swarming.Bot, i *harness.Info, w io.Writer, cmd *exec.
 			log.Printf("Got host event '%s', set host state to %s", e, s)
 			i.BotInfo.HostState = s
 		default:
-			log.Printf("Skipping lucifer event: %s", e)
 		}
 	}
 	err := event.RunCommand(cmd, f)
-	annotations.BuildStep(w, "Finalization")
-	annotations.StepLink(w, "Stainless results", resultsURL(b))
+	annotations.BuildStep(w, "Epilog")
+	annotations.StepLink(w, "Task results (Stainless)", resultsURL(b))
 	annotations.StepClosed(w)
 	return r, err
 }
