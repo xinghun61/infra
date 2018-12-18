@@ -1,0 +1,10 @@
+{
+  "name": "@chopsui/chops-header",
+  "version": "0.0.2",
+  "description": "A shared header element for Chops.",
+  "author": "Chrome Operations team",
+  "license": "ISC",
+  "dependencies": {
+    "@polymer/lit-element": "^0.6.4"
+  }
+}

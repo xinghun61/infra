@@ -1,16 +1,43 @@
 {
-  "name": "chopsui",
-  "version": "0.0.1",
-  "description": "Shared Chops frontend elements.",
+  "description": "Common elements for ChOps Frontends",
+  "keywords": [
+    "chopsui",
+    "chops-ui"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://chromium.googlesource.com/infra/infra/crdx/chopsui-npm.git"
+  },
+  "scripts": {
+    "start": "webpack-dev-server --progress --hot",
+    "build": "webpack"
+  },
+  "version": "",
+  "resolutions": {
+    "inherits": "2.0.3",
+    "samsam": "1.1.3",
+    "supports-color": "3.1.2",
+    "type-detect": "1.0.0",
+    "@webcomponents/webcomponentsjs": "2.0.0-beta.2"
+  },
+  "author": "ChopsUI Team",
+  "license": "MIT",
   "dependencies": {
-    "@polymer/lit-element": "^0.6.3",
-    "@webcomponents/webcomponentsjs": "^2.2.0"
+    "@webcomponents/webcomponentsjs": "^2.0.0"
   },
   "devDependencies": {
+    "chai": "^4.2.0",
+    "copy-webpack-plugin": "^4.6.0",
     "eslint": "^5.9.0",
     "eslint-config-google": "^0.11.0",
-    "lerna": "^2.11.0"
-  },
-  "author": "Chrome Operations team",
-  "license": "ISC"
+    "karma": "^3.1.3",
+    "karma-chrome-launcher": "^2.2.0",
+    "karma-firefox-launcher": "^1.1.0",
+    "karma-mocha": "^1.3.0",
+    "karma-webpack": "^3.0.5",
+    "mocha": "^5.2.0",
+    "wct-browser-legacy": "^0.0.1-pre.11",
+    "web-component-tester": "^6.9.0",
+    "webpack": "^4.27.1"
+  }
 }
