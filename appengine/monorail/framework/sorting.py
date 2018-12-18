@@ -442,10 +442,13 @@ def _IndexOrLexicalList(wk_values, fd_list, col_name, users_by_id):
     sort key.
   """
   well_known_value_indexes = _PrecomputeSortIndexes(wk_values, col_name)
+  approval_fds = [fd for fd in fd_list if
+                  fd.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE]
 
   def Accessor(art):
     """Custom-made function to return a sort value for any issue."""
     idx_or_lex_list = (
+        _SortableApprovalStatusValues(art, approval_fds) +
         _SortableFieldValues(art, fd_list, users_by_id) +
         _SortableLabelValues(art, col_name, well_known_value_indexes))
     if not idx_or_lex_list:
@@ -453,6 +456,20 @@ def _IndexOrLexicalList(wk_values, fd_list, col_name, users_by_id):
     return sorted(idx_or_lex_list)
 
   return Accessor
+
+
+def _SortableApprovalStatusValues(art, fd_list):
+  """Return a list of approval statuses relevant to one UI table column."""
+  sortable_value_list = []
+  for fd in fd_list:
+    for av in art.approval_values:
+      if av.approval_id == fd.field_id:
+        # Order approval statuses by life cycle.
+        # NOT_SET == 8 but should be before all other statuses.
+        sortable_value_list.append(
+            0 if av.status.number == 8 else av.status.number)
+
+  return sortable_value_list
 
 
 def _SortableFieldValues(art, fd_list, users_by_id):

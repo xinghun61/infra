@@ -28,7 +28,7 @@ class BizobjTest(unittest.TestCase):
     self.config.field_defs = [
         tracker_pb2.FieldDef(
             field_id=1, project_id=789, field_name='EstDays',
-            field_type=tracker_pb2.FieldTypes.INT_TYPE),
+            field_type=tracker_pb2.FieldTypes.INT_TYPE)
         ]
     self.config.component_defs = [
         tracker_pb2.ComponentDef(component_id=1, project_id=789, path='UI'),
@@ -727,6 +727,26 @@ class BizobjTest(unittest.TestCase):
         ('Pri-4', '', False)])
     c2.default_sort_spec = 'Pri -status'
 
+    c1.approval_defs = [
+        tracker_pb2.ApprovalDef(approval_id=1),
+        tracker_pb2.ApprovalDef(approval_id=3),
+    ]
+    c1.field_defs = [
+      tracker_pb2.FieldDef(
+          field_id=1, project_id=789, field_name='CowApproval',
+          field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE),
+      tracker_pb2.FieldDef(
+          field_id=3, project_id=789, field_name='MooApproval',
+          field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE)
+    ]
+    c2.approval_defs = [
+        tracker_pb2.ApprovalDef(approval_id=2),
+    ]
+    c2.field_defs = [
+        tracker_pb2.FieldDef(
+            field_id=2, project_id=788, field_name='CowApproval',
+            field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE),
+    ]
     harmonized = tracker_bizobj.HarmonizeConfigs([c1, c2])
     result_statuses = [stat.status
                        for stat in harmonized.well_known_statuses]
@@ -743,6 +763,10 @@ class BizobjTest(unittest.TestCase):
          'Pri-4'],
         result_labels[:result_labels.index('OpSys-All')])
     self.assertEqual('Pri -status', harmonized.default_sort_spec.strip())
+    self.assertItemsEqual(c1.field_defs + c2.field_defs,
+                          harmonized.field_defs)
+    self.assertItemsEqual(c1.approval_defs + c2.approval_defs,
+                          harmonized.approval_defs)
 
   def testHarmonizeConfigs_DeletedCustomField(self):
     """Only non-deleted custom fields in configs are included."""

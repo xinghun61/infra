@@ -653,6 +653,23 @@ class TableCellCustom(TableCell):
   def ExtractValue(self, fv, _users_by_id):
     return 'field-id-%d-not-implemented-yet' % fv.field_id
 
+class TableCellApprovalStatus(TableCell):
+  """Abstract TableCell subclass specifically for showing approval fields."""
+
+  def __init__(self, art, col=None, config=None, **_kw):
+    cell_type = CELL_TYPE_ATTR
+    explicit_values = []
+    for av in art.approval_values:
+      fd = tracker_bizobj.FindFieldDef(col, config)
+      ad = tracker_bizobj.FindApprovalDef(col, config)
+      if not (ad and fd):
+        logging.warn('Issue ID %r has undefined field value %r',
+                     art.issue_id, av)
+      elif av.approval_id == fd.field_id:
+        explicit_values.append(av.status.name)
+
+    TableCell.__init__(self, cell_type, explicit_values)
+
 
 def ChooseCellFactory(col, cell_factories, config):
   """Return the CellFactory to use for the given column."""
@@ -663,8 +680,15 @@ def ChooseCellFactory(col, cell_factories, config):
     return CompositeColTableCell(col.split('/'), cell_factories, config)
 
   fd = tracker_bizobj.FindFieldDef(col, config)
-  if fd and fd.field_type != tracker_pb2.FieldTypes.ENUM_TYPE:
-    return CompositeFactoryTableCell(
-        [(TableCellCustom, col), (TableCellKeyLabels, col)])
+  if fd:
+    # We cannot assume that non-enum_type field defs do not share their
+    # names with label prefixes. So we need to group them with
+    # TableCellKeyLabels to make sure we catch appropriate labels values.
+    if fd.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE:
+      return CompositeFactoryTableCell(
+          [(TableCellApprovalStatus, col), (TableCellKeyLabels, col)])
+    elif fd.field_type != tracker_pb2.FieldTypes.ENUM_TYPE:
+      return CompositeFactoryTableCell(
+          [(TableCellCustom, col), (TableCellKeyLabels, col)])
 
   return TableCellKeyLabels

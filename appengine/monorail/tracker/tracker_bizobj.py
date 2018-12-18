@@ -576,6 +576,7 @@ def HarmonizeConfigs(config_list):
     result_config.field_defs.extend(
       list(fd for fd in config.field_defs if not fd.is_deleted))
     result_config.component_defs.extend(config.component_defs)
+    result_config.approval_defs.extend(config.approval_defs)
 
   return result_config
 

@@ -77,6 +77,24 @@ class TableCellTest(unittest.TestCase):
         MakeTestIssue(4, 4, '<b>bold</b> "summary".'), **self.table_cell_kws)
     self.assertEqual(cell.values[0].item,'<b>bold</b> "summary".')
 
+  def testTableCellApprovalStatus(self):
+    """TableCellApprovalStatus stores the status of an ApprovalValue."""
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    config.field_defs = [
+        tracker_bizobj.MakeFieldDef(
+            3, 789, 'Approval', tracker_pb2.FieldTypes.APPROVAL_TYPE,
+            None, None, False, False, False, None, None, None, False, None,
+            None, None, None, 'Tracks review from cows', False)
+    ]
+    config.approval_defs = [tracker_pb2.ApprovalDef(approval_id=3)]
+    test_issue = MakeTestIssue(4, 4, 'sum')
+    test_issue.approval_values = [
+        tracker_pb2.ApprovalValue(approval_id=3)]
+    cell = table_view_helpers.TableCellApprovalStatus(
+        test_issue, 'Approval', config)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
+    self.assertEqual(cell.values[0].item, 'NOT_SET')
+
   # TODO(jrobbins): TableCellProject, TableCellStars
 
 
@@ -504,7 +522,12 @@ class TableViewHelpersTest(unittest.TestCase):
         2, 789, 'deadline', tracker_pb2.FieldTypes.DATE_TYPE, None, None, False,
         False, False, None, None, None, False, None, None, None, None,
         'Deadline to resolve issue', False)
-    self.config.field_defs = [os_fd, deadline_fd]
+    approval_fd = tracker_bizobj.MakeFieldDef(
+        3, 789, 'CowApproval', tracker_pb2.FieldTypes.APPROVAL_TYPE,
+        None, None, False,
+        False, False, None, None, None, False, None, None, None, None,
+        'Tracks reviews from cows', False)
+    self.config.field_defs = [os_fd, deadline_fd, approval_fd]
 
     # The column is defined in cell_factories.
     actual = table_view_helpers.ChooseCellFactory(
@@ -528,6 +551,14 @@ class TableViewHelpersTest(unittest.TestCase):
       [(table_view_helpers.TableCellCustom, 'deadline'),
        (table_view_helpers.TableCellKeyLabels, 'deadline')],
       actual.factory_col_list)
+
+    # The column is an approval custom field.
+    actual = table_view_helpers.ChooseCellFactory(
+        'CowApproval', cell_factories, self.config)
+    self.assertEqual(
+        [(table_view_helpers.TableCellApprovalStatus, 'CowApproval'),
+         (table_view_helpers.TableCellKeyLabels, 'CowApproval')],
+        actual.factory_col_list)
 
     # Column that don't match one of the other cases is assumed to be a label.
     actual = table_view_helpers.ChooseCellFactory(
