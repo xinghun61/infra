@@ -28,7 +28,11 @@ def _GetOrCreateFlakeIssue(bug_id):
   return issue
 
 
-def _CreateFlake(flake_data):
+def _CreateFlake(flake_data, with_component=True):
+  """
+  Args:
+    with_component (bool): Sets flake.component if True, otherwise sets tags.
+  """
 
   luci_project = 'chromium'
   normalized_step_name = 'normalized_step_name'
@@ -41,7 +45,10 @@ def _CreateFlake(flake_data):
       normalized_step_name=normalized_step_name,
       test_label_name='test_label')
 
-  flake.component = flake_data['component']
+  if with_component:
+    flake.component = flake_data['component']
+  else:
+    flake.tags = ['component::{}'.format(flake_data['component'])]
   flake.flake_issue_key = flake_issue.key
   flake.flake_counts_last_week = []
   for flake_type, counts in flake_data['counts'].iteritems():
@@ -171,8 +178,10 @@ class ReportTest(wf_testcase.WaterfallTestCase):
         }
     ]
 
-    for flake_data in flakes_data:
-      _CreateFlake(flake_data)
+    for i in xrange(len(flakes_data)):
+      flake_data = flakes_data[i]
+      with_component = True if i % 2 else False
+      _CreateFlake(flake_data, with_component)
 
     component_report.Report()
     with self.assertRaises(component_report.ReportExistsException):

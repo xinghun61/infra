@@ -125,7 +125,7 @@ def _AddFlakesToCounters(counters, flake_info_dict, start):
     for flake in flakes:
       _AddFlakeToTally(counters, flake)
 
-      component = flake.component
+      component = flake.GetComponent()
       test = flake.normalized_test_name
       flake_info_dict[flake.key] = {'component': component, 'test': test}
 
@@ -219,4 +219,4 @@ def SaveReportToDatastore(counters, year, week_number, day):
           TestFlakinessReport.FromTallies(component_row.key, t_counters, year,
                                           week_number, day))
 
-  ndb.transaction(lambda: ndb.put_multi(entities))
+  ndb.put_multi(entities)
