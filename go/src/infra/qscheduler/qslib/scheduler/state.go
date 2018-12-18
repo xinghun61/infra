@@ -15,6 +15,7 @@
 package scheduler
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -110,11 +111,11 @@ type worker struct {
 
 // AddRequest enqueues a new task request with the given time, (or if the task
 // exists already, notifies that the task was idle at the given time).
-func (s *state) addRequest(requestID string, r *TaskRequest, t time.Time) {
+func (s *state) addRequest(ctx context.Context, requestID string, r *TaskRequest, t time.Time) {
 	if _, ok := s.getRequest(requestID); ok {
 		// Request already exists, simply notify that it should be idle at the
 		// given time.
-		s.notifyRequest(requestID, "", t)
+		s.notifyRequest(ctx, requestID, "", t)
 	} else {
 		rr := &request{
 			accountID:     r.AccountId,
@@ -169,14 +170,14 @@ func (s *state) markIdle(workerID string, labels LabelSet, t time.Time) {
 }
 
 // notifyRequest implements Scheduler.NotifyRequest for a given State.
-func (s *state) notifyRequest(requestID string, workerID string, t time.Time) {
+func (s *state) notifyRequest(ctx context.Context, requestID string, workerID string, t time.Time) {
 	if requestID == "" {
 		panic("Must supply a requestID.")
 	}
 
 	if request, ok := s.getRequest(requestID); ok {
 		if !t.Before(request.confirmedTime) {
-			s.updateRequest(requestID, workerID, t, request)
+			s.updateRequest(ctx, requestID, workerID, t, request)
 		}
 	} else {
 		// The request didn't exist, but the notification might be more up to date
@@ -186,10 +187,10 @@ func (s *state) notifyRequest(requestID string, workerID string, t time.Time) {
 }
 
 // abortRequest implements Scheduler.AbortRequest for a given State.
-func (s *state) abortRequest(requestID string, t time.Time) {
+func (s *state) abortRequest(ctx context.Context, requestID string, t time.Time) {
 	// Reuse the notifyRequest logic. First, notify that task is not running. Then, remove
 	// the request from queue if it is present.
-	s.notifyRequest(requestID, "", t)
+	s.notifyRequest(ctx, requestID, "", t)
 	if req, ok := s.getRequest(requestID); ok {
 		if !t.Before(req.confirmedTime) {
 			s.deleteRequest(requestID)
@@ -212,7 +213,7 @@ func (s *state) getRequest(requestID string) (r *request, ok bool) {
 // updateRequest fixes stale opinion about the given request. This method should
 // only be called for requests that were already determined to be stale relative
 // to time t.
-func (s *state) updateRequest(requestID string, workerID string, t time.Time,
+func (s *state) updateRequest(ctx context.Context, requestID string, workerID string, t time.Time,
 	r *request) {
 	s.ensureCache()
 	allegedWorkerID, isRunning := s.runningRequestsCache[requestID]

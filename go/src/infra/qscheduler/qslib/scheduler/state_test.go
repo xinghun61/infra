@@ -15,6 +15,7 @@
 package scheduler
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -31,6 +32,7 @@ func TestMarkIdle(t *testing.T) {
 	tm1 := time.Unix(1, 0)
 	tm2 := time.Unix(2, 0)
 	Convey("Given an empty state", t, func() {
+		ctx := context.Background()
 		state := newState(tm0)
 		workerID := "w1"
 		Convey("when a worker marked idle at t=1", func() {
@@ -56,7 +58,7 @@ func TestMarkIdle(t *testing.T) {
 
 		Convey("given a worker running a task at t=1", func() {
 			state.markIdle(workerID, []string{}, tm1)
-			state.addRequest("r1", NewRequest("", nil, tm1), tm1)
+			state.addRequest(ctx, "r1", NewRequest("", nil, tm1), tm1)
 			state.applyAssignment(&Assignment{Type: Assignment_IDLE_WORKER, RequestId: "r1", WorkerId: workerID})
 			Convey("when marking idle again with newer time t=2", func() {
 				state.markIdle(workerID, []string{}, tm2)
@@ -77,15 +79,16 @@ func TestMarkIdle(t *testing.T) {
 	})
 }
 
-func TestNotifyRequest(t *testing.T) {
+func TestnotifyRequest(ctx, t *testing.T) {
 	tm0 := time.Unix(0, 0)
 	tm1 := time.Unix(1, 0)
 	tm2 := time.Unix(2, 0)
 	tm3 := time.Unix(3, 0)
 	tm4 := time.Unix(4, 0)
 	Convey("Given a state with a request(t=1) and idle worker(t=3) and a match between them", t, func() {
+		ctx := context.Background()
 		state := newState(tm0)
-		state.addRequest("r1", NewRequest("", nil, tm1), tm1)
+		state.addRequest(ctx, "r1", NewRequest("", nil, tm1), tm1)
 		state.markIdle("w1", []string{}, tm3)
 		a := &Assignment{
 			Type:      Assignment_IDLE_WORKER,
@@ -94,7 +97,7 @@ func TestNotifyRequest(t *testing.T) {
 		}
 		state.applyAssignment(a)
 		Convey("when notifying (idle request) with an older time t=0", func() {
-			state.notifyRequest("r1", "", tm0)
+			state.notifyRequest(ctx, "r1", "", tm0)
 			Convey("then the update is ignored.", func() {
 				So(state.queuedRequests, ShouldHaveLength, 0)
 				So(state.workers, ShouldContainKey, "w1")
@@ -103,7 +106,7 @@ func TestNotifyRequest(t *testing.T) {
 			})
 		})
 		Convey("when notifying (idle request) with an intermediate time (between current request and worker time) t=1", func() {
-			state.notifyRequest("r1", "", tm2)
+			state.notifyRequest(ctx, "r1", "", tm2)
 			Convey("then the update is ignored.", func() {
 				So(state.queuedRequests, ShouldHaveLength, 0)
 				So(state.workers, ShouldContainKey, "w1")
@@ -112,7 +115,7 @@ func TestNotifyRequest(t *testing.T) {
 			})
 		})
 		Convey("when notifying (idle request) with newer time t=4", func() {
-			state.notifyRequest("r1", "", tm4)
+			state.notifyRequest(ctx, "r1", "", tm4)
 			Convey("then the worker is deleted.", func() {
 				So(state.workers, ShouldNotContainKey, "w1")
 			})
@@ -124,7 +127,7 @@ func TestNotifyRequest(t *testing.T) {
 			})
 		})
 		Convey("when notifying (idle request) with the same time as the worker", func() {
-			state.notifyRequest("r1", "", tm3)
+			state.notifyRequest(ctx, "r1", "", tm3)
 			Convey("then the worker is deleted.", func() {
 				So(state.workers, ShouldNotContainKey, "w1")
 			})
@@ -137,7 +140,7 @@ func TestNotifyRequest(t *testing.T) {
 		})
 
 		Convey("when notifying (correct match) with older time t=0", func() {
-			state.notifyRequest("r1", "w1", tm0)
+			state.notifyRequest(ctx, "r1", "w1", tm0)
 			Convey("then the update is ignored.", func() {
 				So(state.queuedRequests, ShouldHaveLength, 0)
 				So(state.workers, ShouldContainKey, "w1")
@@ -146,13 +149,13 @@ func TestNotifyRequest(t *testing.T) {
 			})
 		})
 		Convey("when notifying (correct match) with intermediate time t=2", func() {
-			state.notifyRequest("r1", "w1", tm2)
+			state.notifyRequest(ctx, "r1", "w1", tm2)
 			Convey("then the request time is updated.", func() {
 				So(state.workers["w1"].runningTask.request.confirmedTime, ShouldEqual, tm2)
 			})
 		})
 		Convey("when notifying (correct match) with newer time t=4", func() {
-			state.notifyRequest("r1", "w1", tm4)
+			state.notifyRequest(ctx, "r1", "w1", tm4)
 			Convey("then the request time is updated.", func() {
 				So(state.workers["w1"].runningTask.request.confirmedTime, ShouldEqual, tm4)
 			})
@@ -163,8 +166,9 @@ func TestNotifyRequest(t *testing.T) {
 	})
 
 	Convey("Given a state with a matched request and worker both at t=1 and a separate idle worker at t=3", t, func() {
+		ctx := context.Background()
 		state := newState(tm0)
-		state.addRequest("r1", NewRequest("", nil, tm1), tm1)
+		state.addRequest(ctx, "r1", NewRequest("", nil, tm1), tm1)
 		state.markIdle("w1", []string{}, tm1)
 		state.markIdle("w2", []string{}, tm3)
 		a := &Assignment{
@@ -174,7 +178,7 @@ func TestNotifyRequest(t *testing.T) {
 		}
 		state.applyAssignment(a)
 		Convey("when notifying (contradictory match) with an older time t=0", func() {
-			state.notifyRequest("r1", "w2", tm0)
+			state.notifyRequest(ctx, "r1", "w2", tm0)
 			Convey("then the update is ignored.", func() {
 				So(state.workers, ShouldContainKey, "w1")
 				So(state.workers["w1"].runningTask, ShouldNotBeNil)
@@ -184,7 +188,7 @@ func TestNotifyRequest(t *testing.T) {
 			})
 		})
 		Convey("when notifying (contradictory match) with a time newer than match but older than idle worker t=2", func() {
-			state.notifyRequest("r1", "w2", tm2)
+			state.notifyRequest(ctx, "r1", "w2", tm2)
 			Convey("then the matching worker and request are deleted.", func() {
 				So(state.queuedRequests, ShouldNotContainKey, "r1")
 				So(state.workers, ShouldNotContainKey, "w1")
@@ -192,7 +196,7 @@ func TestNotifyRequest(t *testing.T) {
 		})
 
 		Convey("when notifying (contradictory match) with a newer time t=4", func() {
-			state.notifyRequest("r1", "w2", tm4)
+			state.notifyRequest(ctx, "r1", "w2", tm4)
 			Convey("then the request and both workers are deleted.", func() {
 				So(state.workers, ShouldBeEmpty)
 				So(state.queuedRequests, ShouldBeEmpty)
@@ -202,10 +206,11 @@ func TestNotifyRequest(t *testing.T) {
 	})
 
 	Convey("Given a state with an idle worker(t=1), and a notify call with a match to an unknown request for that worker", t, func() {
+		ctx := context.Background()
 		state := newState(tm0)
 		state.markIdle("w1", []string{}, tm1)
 		Convey("when notifying (unknown request for worker) with older time t=0", func() {
-			state.notifyRequest("r1", "w1", tm0)
+			state.notifyRequest(ctx, "r1", "w1", tm0)
 			Convey("then the update is ignored.", func() {
 				So(state.queuedRequests, ShouldBeEmpty)
 				So(state.workers, ShouldContainKey, "w1")
@@ -213,13 +218,13 @@ func TestNotifyRequest(t *testing.T) {
 			})
 		})
 		Convey("when notifying (unknown request for worker) with equal time t=1", func() {
-			state.notifyRequest("r1", "w1", tm1)
+			state.notifyRequest(ctx, "r1", "w1", tm1)
 			Convey("then the worker is deleted.", func() {
 				So(state.workers, ShouldNotContainKey, "w1")
 			})
 		})
 		Convey("when notifying (unknown request for worker) with newer time t=2", func() {
-			state.notifyRequest("r1", "w1", tm2)
+			state.notifyRequest(ctx, "r1", "w1", tm2)
 			Convey("then the worker is deleted.", func() {
 				So(state.workers, ShouldNotContainKey, "w1")
 			})
@@ -227,25 +232,26 @@ func TestNotifyRequest(t *testing.T) {
 	})
 }
 
-func TestAbortRequest(t *testing.T) {
+func TestabortRequest(ctx, t *testing.T) {
 	tm0 := time.Unix(0, 0)
 	tm1 := time.Unix(1, 0)
 	tm2 := time.Unix(2, 0)
 	reqID := "request1"
 	wID := "worker1"
 	Convey("Given a state with one request and one idle worker", t, func() {
+		ctx := context.Background()
 		state := newState(tm0)
-		state.addRequest(reqID, NewRequest("", nil, tm1), tm1)
+		state.addRequest(ctx, reqID, NewRequest("", nil, tm1), tm1)
 		state.markIdle(wID, []string{}, tm1)
 		Convey("when AbortRequest with forward time is called for that request", func() {
-			state.abortRequest(reqID, tm2)
+			state.abortRequest(ctx, reqID, tm2)
 			Convey("then the request is deleted, the worker is unmodified.", func() {
 				So(state.queuedRequests, ShouldNotContainKey, reqID)
 				So(state.workers, ShouldHaveLength, 1)
 			})
 		})
 		Convey("when AbortRequest with backward time is called for that request", func() {
-			state.abortRequest(reqID, tm0)
+			state.abortRequest(ctx, reqID, tm0)
 			Convey("then request and worker should remain.", func() {
 				So(state.queuedRequests, ShouldContainKey, reqID)
 				So(state.workers, ShouldHaveLength, 1)
@@ -254,8 +260,9 @@ func TestAbortRequest(t *testing.T) {
 	})
 
 	Convey("Given a state with a request running on a worker", t, func() {
+		ctx := context.Background()
 		state := newState(tm0)
-		state.addRequest(reqID, NewRequest("", nil, tm1), tm1)
+		state.addRequest(ctx, reqID, NewRequest("", nil, tm1), tm1)
 		state.markIdle(wID, []string{}, tm1)
 		a := &Assignment{
 			Type:      Assignment_IDLE_WORKER,
@@ -264,14 +271,14 @@ func TestAbortRequest(t *testing.T) {
 		}
 		state.applyAssignment(a)
 		Convey("when AbortRequest with forward time is called for that request", func() {
-			state.abortRequest(reqID, tm2)
+			state.abortRequest(ctx, reqID, tm2)
 			Convey("then the request and worker are deleted.", func() {
 				So(state.queuedRequests, ShouldBeEmpty)
 				So(state.workers, ShouldBeEmpty)
 			})
 		})
 		Convey("when AbortRequest with backward time is called for that request", func() {
-			state.abortRequest(reqID, tm0)
+			state.abortRequest(ctx, reqID, tm0)
 			Convey("then request should remain running on the worker.", func() {
 				So(state.queuedRequests, ShouldBeEmpty)
 				So(state.workers, ShouldHaveLength, 1)
@@ -285,9 +292,10 @@ func TestAbortRequest(t *testing.T) {
 // TestApplyIdleAssignment tests that Apply for IDLE_WORKER behaves correctly.
 func TestApplyIdleAssignment(t *testing.T) {
 	Convey("Given a state with a task and a worker", t, func() {
+		ctx := context.Background()
 		s := newState(time.Unix(0, 0))
 		tp := tutils.TimestampProto(time.Unix(0, 0))
-		s.addRequest("t1", &TaskRequest{ConfirmedTime: tp, EnqueueTime: tp}, time.Unix(0, 0))
+		s.addRequest(ctx, "t1", &TaskRequest{ConfirmedTime: tp, EnqueueTime: tp}, time.Unix(0, 0))
 		s.markIdle("w1", []string{}, time.Unix(0, 0))
 
 		Convey("when an idle-worker-assignment is applied with a given priority", func() {

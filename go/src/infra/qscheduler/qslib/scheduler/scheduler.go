@@ -90,7 +90,7 @@ func (s *Scheduler) AddAccount(ctx context.Context, id string, config *AccountCo
 // AddRequest enqueues a new task request.
 func (s *Scheduler) AddRequest(ctx context.Context, requestID string, request *TaskRequest, t time.Time) error {
 	s.ensureMaps()
-	s.state.addRequest(requestID, request, t)
+	s.state.addRequest(ctx, requestID, request, t)
 	return nil
 }
 
@@ -191,7 +191,7 @@ func (s *Scheduler) MarkIdle(ctx context.Context, workerID string, labels LabelS
 // Note: calls to NotifyRequest come from task update pubsub messages from swarming.
 func (s *Scheduler) NotifyRequest(ctx context.Context, requestID string, workerID string, t time.Time) error {
 	s.ensureMaps()
-	s.state.notifyRequest(requestID, workerID, t)
+	s.state.notifyRequest(ctx, requestID, workerID, t)
 	return nil
 }
 
@@ -201,7 +201,7 @@ func (s *Scheduler) NotifyRequest(ctx context.Context, requestID string, workerI
 // Supplied requestID must not be "".
 func (s *Scheduler) AbortRequest(ctx context.Context, requestID string, t time.Time) error {
 	s.ensureMaps()
-	s.state.abortRequest(requestID, t)
+	s.state.abortRequest(ctx, requestID, t)
 	return nil
 }
 
