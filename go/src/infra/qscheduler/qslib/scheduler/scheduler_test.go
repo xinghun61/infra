@@ -98,36 +98,36 @@ func TestSchedulerReprioritize(t *testing.T) {
 		tm0 := time.Unix(0, 0)
 		s := New(tm0)
 		aid := "a1"
-		s.Config.AccountConfigs[aid] = &account.Config{ChargeRate: vector.New(1.1, 0.9)}
-		s.State.Balances[aid] = vector.New(2*account.DemoteThreshold, 2*account.PromoteThreshold, 0)
+		s.config.AccountConfigs[aid] = &account.Config{ChargeRate: vector.New(1.1, 0.9)}
+		s.state.Balances[aid] = vector.New(2*account.DemoteThreshold, 2*account.PromoteThreshold, 0)
 
 		for _, i := range []int{1, 2} {
 			rid := fmt.Sprintf("r%d", i)
 			wid := fmt.Sprintf("w%d", i)
 			addRunningRequest(ctx, s, rid, wid, aid, 0, tm0)
 		}
-		s.State.Workers["w2"].RunningTask.Cost = vector.New(1)
+		s.state.Workers["w2"].RunningTask.Cost = vector.New(1)
 
 		Convey("given both requests running at P0", func() {
 			Convey("when scheduling", func() {
 				s.RunOnce(ctx)
 				Convey("then the cheaper request should be demoted.", func() {
-					So(s.State.Workers["w1"].RunningTask.Priority, ShouldEqual, 1)
-					So(s.State.Workers["w2"].RunningTask.Priority, ShouldEqual, 0)
+					So(s.state.Workers["w1"].RunningTask.Priority, ShouldEqual, 1)
+					So(s.state.Workers["w2"].RunningTask.Priority, ShouldEqual, 0)
 				})
 			})
 		})
 
 		Convey("given both requests running at P2", func() {
 			for _, wid := range []string{"w1", "w2"} {
-				s.State.Workers[wid].RunningTask.Priority = 2
+				s.state.Workers[wid].RunningTask.Priority = 2
 			}
 			Convey("when scheduling", func() {
 
 				s.RunOnce(ctx)
 				Convey("then the more expensive should be promoted.", func() {
-					So(s.State.Workers["w1"].RunningTask.Priority, ShouldEqual, 2)
-					So(s.State.Workers["w2"].RunningTask.Priority, ShouldEqual, 1)
+					So(s.state.Workers["w1"].RunningTask.Priority, ShouldEqual, 2)
+					So(s.state.Workers["w2"].RunningTask.Priority, ShouldEqual, 1)
 				})
 			})
 		})
@@ -147,14 +147,14 @@ func TestSchedulerPreempt(t *testing.T) {
 			wid := fmt.Sprintf("w%d", i)
 			s.AddRequest(ctx, rid, NewRequest("a1", nil, tm0), tm0)
 			s.MarkIdle(ctx, wid, []string{}, tm0)
-			s.State.applyAssignment(&Assignment{RequestId: rid, WorkerId: wid, Type: Assignment_IDLE_WORKER, Priority: 1})
+			s.state.applyAssignment(&Assignment{RequestId: rid, WorkerId: wid, Type: Assignment_IDLE_WORKER, Priority: 1})
 		}
-		s.State.Workers["w1"].RunningTask.Cost = vector.New(0, 1)
+		s.state.Workers["w1"].RunningTask.Cost = vector.New(0, 1)
 		Convey("given a new P0 request from a different account", func() {
 			s.AddAccount(ctx, "a2", account.NewConfig(0, 0, vector.New()), vector.New())
 			s.AddRequest(ctx, "r3", NewRequest("a2", nil, tm0), tm0)
 			Convey("given sufficient balance", func() {
-				s.State.Balances["a2"] = vector.New(1)
+				s.state.Balances["a2"] = vector.New(1)
 				Convey("when scheduling", func() {
 					tm1 := time.Unix(1, 0)
 					s.UpdateTime(ctx, tm1)
@@ -166,12 +166,12 @@ func TestSchedulerPreempt(t *testing.T) {
 				})
 			})
 			Convey("given insufficient balance", func() {
-				stateBefore := s.State.Clone()
+				stateBefore := s.state.Clone()
 				Convey("when scheduling", func() {
 					got, _ := s.RunOnce(ctx)
 					Convey("then nothing happens.", func() {
 						So(got, ShouldBeEmpty)
-						So(s.State, shouldResemblePretty, stateBefore)
+						So(s.state, shouldResemblePretty, stateBefore)
 					})
 				})
 			})
@@ -179,12 +179,12 @@ func TestSchedulerPreempt(t *testing.T) {
 
 		Convey("given a new P0 request from the same account", func() {
 			s.AddRequest(ctx, "r3", NewRequest("a1", nil, tm0), tm0)
-			stateBefore := s.State.Clone()
+			stateBefore := s.state.Clone()
 			Convey("when scheduling", func() {
 				got, _ := s.RunOnce(ctx)
 				Convey("then nothing happens.", func() {
 					So(got, ShouldBeEmpty)
-					So(s.State, shouldResemblePretty, stateBefore)
+					So(s.state, shouldResemblePretty, stateBefore)
 				})
 			})
 		})
@@ -202,8 +202,8 @@ func TestUpdateErrors(t *testing.T) {
 	}{
 		{
 			&Scheduler{
-				State:  &State{},
-				Config: &Config{},
+				state:  &State{},
+				config: &Config{},
 			},
 			time.Unix(0, 0),
 			errors.New("timestamp: nil Timestamp"),
@@ -212,16 +212,16 @@ func TestUpdateErrors(t *testing.T) {
 			// Force UTC time representation, so that we get a predictable error
 			// message that we can assert on.
 			&Scheduler{
-				State:  NewState(time.Unix(100, 0).UTC()),
-				Config: NewConfig(),
+				state:  NewState(time.Unix(100, 0).UTC()),
+				config: NewConfig(),
 			},
 			time.Unix(0, 0).UTC(),
 			&UpdateOrderError{Next: time.Unix(0, 0).UTC(), Previous: time.Unix(100, 0).UTC()},
 		},
 		{
 			&Scheduler{
-				State:  NewState(time.Unix(0, 0)),
-				Config: NewConfig(),
+				state:  NewState(time.Unix(0, 0)),
+				config: NewConfig(),
 			},
 			time.Unix(1, 0),
 			nil,
@@ -342,7 +342,7 @@ func TestUpdateBalance(t *testing.T) {
 
 	for i, test := range cases {
 		actual := test.State
-		(&Scheduler{State: test.State, Config: test.Config}).UpdateTime(ctx, test.T)
+		(&Scheduler{state: test.State, config: test.Config}).UpdateTime(ctx, test.T)
 		if diff := pretty.Compare(actual, test.Expect); diff != "" {
 			t.Errorf(fmt.Sprintf("Case %d unexpected mutations diff (-got +want): %s", i, diff))
 		}
@@ -356,7 +356,7 @@ func TestAddRequest(t *testing.T) {
 	s := New(tm)
 	r := NewRequest("a1", nil, tm)
 	s.AddRequest(ctx, "r1", r, tm)
-	if s.State.QueuedRequests["r1"] != r {
+	if s.state.QueuedRequests["r1"] != r {
 		t.Errorf("AddRequest did not enqueue request.")
 	}
 }

@@ -90,7 +90,7 @@ func List(ctx context.Context) ([]string, error) {
 func Save(ctx context.Context, q *QSchedulerState) error {
 	var sd, rd, cd []byte
 	var err error
-	if sd, err = proto.Marshal(q.Scheduler); err != nil {
+	if sd, err = proto.Marshal(q.Scheduler.ToProto()); err != nil {
 		e := errors.Wrap(err, "unable to marshal Scheduler")
 		return status.Error(codes.Internal, e.Error())
 	}
@@ -129,7 +129,7 @@ func Load(ctx context.Context, poolID string) (*QSchedulerState, error) {
 	}
 
 	r := new(reconciler.State)
-	s := new(scheduler.Scheduler)
+	s := new(scheduler.SchedulerProto)
 	c := new(qscheduler.SchedulerPoolConfig)
 	if err := proto.Unmarshal(dst.ReconcilerData, r); err != nil {
 		return nil, errors.Wrap(err, "unable to unmarshal Reconciler")
@@ -144,7 +144,7 @@ func Load(ctx context.Context, poolID string) (*QSchedulerState, error) {
 	return &QSchedulerState{
 		SchedulerID: dst.QSPoolID,
 		Reconciler:  r,
-		Scheduler:   s,
+		Scheduler:   scheduler.NewFromProto(s),
 		Config:      c,
 	}, nil
 }

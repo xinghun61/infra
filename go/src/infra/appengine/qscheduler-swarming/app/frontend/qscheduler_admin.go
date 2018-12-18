@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
 	"go.chromium.org/gae/service/datastore"
+
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
 	"infra/appengine/qscheduler-swarming/app/entities"
 
@@ -73,8 +73,10 @@ func (s *QSchedulerAdminServerImpl) ListAccounts(ctx context.Context, r *qschedu
 	if err != nil {
 		return nil, err
 	}
+	// TODO(akeshet): Add API to Scheduler so we can decouple from the proto representation.
+	sProto := sp.Scheduler.ToProto()
 	resp := &qscheduler.ListAccountsResponse{
-		Accounts: sp.Scheduler.Config.AccountConfigs,
+		Accounts: sProto.Config.AccountConfigs,
 	}
 	return resp, nil
 }
@@ -86,9 +88,11 @@ func (s *QSchedulerAdminServerImpl) InspectPool(ctx context.Context, r *qschedul
 		return nil, err
 	}
 
+	// TODO(akeshet): Add API to Scheduler so we can decouple from the proto representation.
+	sProto := sp.Scheduler.ToProto()
 	runningCount, idleCount := 0, 0
-	running := make([]*qscheduler.InspectPoolResponse_RunningTask, 0, len(sp.Scheduler.State.Workers))
-	for wid, w := range sp.Scheduler.State.Workers {
+	running := make([]*qscheduler.InspectPoolResponse_RunningTask, 0, len(sProto.State.Workers))
+	for wid, w := range sProto.State.Workers {
 		if w.RunningTask != nil {
 			runningCount++
 			running = append(running, &qscheduler.InspectPoolResponse_RunningTask{
@@ -102,11 +106,11 @@ func (s *QSchedulerAdminServerImpl) InspectPool(ctx context.Context, r *qschedul
 	}
 
 	resp := &qscheduler.InspectPoolResponse{
-		NumWaitingTasks: int32(len(sp.Scheduler.State.QueuedRequests)),
+		NumWaitingTasks: int32(len(sProto.State.QueuedRequests)),
 		NumIdleBots:     int32(idleCount),
 		NumRunningTasks: int32(runningCount),
 		RunningTasks:    running,
-		AccountBalances: sp.Scheduler.State.Balances,
+		AccountBalances: sProto.State.Balances,
 	}
 
 	return resp, nil

@@ -169,7 +169,7 @@ func TestPrioritizeMany(t *testing.T) {
 func addRunningRequest(ctx context.Context, s *Scheduler, rid string, wid string, aid string, pri int32, tm time.Time) {
 	s.AddRequest(ctx, rid, NewRequest(aid, []string{}, tm), tm)
 	s.MarkIdle(ctx, wid, []string{}, tm)
-	s.State.applyAssignment(&Assignment{Priority: pri, RequestId: rid, WorkerId: wid, Type: Assignment_IDLE_WORKER})
+	s.state.applyAssignment(&Assignment{Priority: pri, RequestId: rid, WorkerId: wid, Type: Assignment_IDLE_WORKER})
 }
 
 // TestForPriority tests that ForPriority method returns the correct

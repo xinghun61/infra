@@ -30,7 +30,6 @@ import (
 	"go.chromium.org/luci/common/logging"
 
 	"infra/qscheduler/qslib/reconciler"
-	"infra/qscheduler/qslib/scheduler"
 	"infra/qscheduler/qslib/tutils"
 )
 
@@ -175,7 +174,6 @@ func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.Noti
 			}
 			logging.Debugf(ctx, "Scheduler with id %s successfully applied task update %+v", r.SchedulerId, update)
 		}
-		logState(ctx, sp.Scheduler.State)
 		return entities.Save(ctx, sp)
 	}
 
@@ -252,8 +250,4 @@ func toTaskInstantState(s swarming.TaskState) (reconciler.TaskInstant_State, boo
 	default:
 		return reconciler.TaskInstant_NULL, false
 	}
-}
-
-func logState(ctx context.Context, s *scheduler.State) {
-	logging.Debugf(ctx, "Scheduler has %d queued tasks, %d workers.", len(s.QueuedRequests), len(s.Workers))
 }

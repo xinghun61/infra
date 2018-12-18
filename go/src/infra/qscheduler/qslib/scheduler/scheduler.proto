@@ -17,10 +17,10 @@ package scheduler;
 import "infra/qscheduler/qslib/scheduler/state.proto";
 import "infra/qscheduler/qslib/scheduler/config.proto";
 
-// Scheduler encapsulates the state and configuration of a running
+// SchedulerProto encapsulates the state and configuration of a running
 // quotascheduler for a single pool, and its methods provide an implementation
 // of the quotascheduler algorithm.
-message Scheduler {
+message SchedulerProto {
   // State is the state of the scheduler.
   State state = 1;
 
