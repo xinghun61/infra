@@ -56,7 +56,12 @@ func (c *updateRun) innerRun(a subcommands.Application, args []string, env subco
 	cmd.Stdin = strings.NewReader("chromiumos/infra/skylab/${platform} latest")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	fmt.Fprintf(os.Stderr, "%s: You may need to run skylab login again after the update\n", progName)
+	fmt.Fprintf(os.Stderr, "%s: Run skylab whoami to check login status\n", progName)
+	return nil
 }
 
 // executableDir returns the directory the current executable came

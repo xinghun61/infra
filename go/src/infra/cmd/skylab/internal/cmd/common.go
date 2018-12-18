@@ -12,7 +12,6 @@ import (
 
 	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/auth/client/authcli"
-	"go.chromium.org/luci/common/api/gitiles"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/errors"
 
@@ -64,12 +63,4 @@ func newSwarmingService(service string, c *http.Client) (*swarming.Service, erro
 
 func swarmingTaskURL(e site.Environment, taskID string) string {
 	return fmt.Sprintf("%stask?id=%s", e.SwarmingService, taskID)
-}
-
-// WithGerritScope returns the default auth options used by this toolset for
-// subcommands that need Gerrit OAuth 2.0 scopes.
-func WithGerritScope(auth.Options) auth.Options {
-	o := site.DefaultAuthOptions
-	o.Scopes = append(o.Scopes, gitiles.OAuthScope)
-	return o
 }

@@ -8,11 +8,12 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
-	"infra/cmd/skylab/internal/site"
 	"net/http"
 	"os"
 	"strings"
+
+	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/cmd/skylab/internal/site"
 
 	"github.com/maruel/subcommands"
 
@@ -31,8 +32,6 @@ Ensure that given models' target pool contains healthy DUTs.
 If needed, swap in healthy DUTs from spare pool.`,
 	CommandRun: func() subcommands.CommandRun {
 		c := &ensurePoolHealthyRun{}
-		c.authFlags.RegisterScopesFlag = true
-		c.authFlags.Register(&c.Flags, WithGerritScope(site.DefaultAuthOptions))
 		c.envFlags.Register(&c.Flags)
 
 		c.Flags.BoolVar(&c.dryrun, "dryrun", false, "Dryrun mode -- do not commit inventory changes")
