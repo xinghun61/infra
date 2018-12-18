@@ -29,10 +29,6 @@ import (
 
 	"github.com/kylelemons/godebug/pretty"
 
-	"infra/qscheduler/qslib/tutils"
-	"infra/qscheduler/qslib/types/account"
-	"infra/qscheduler/qslib/types/vector"
-
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -47,27 +43,27 @@ func TestPrioritizeOne(t *testing.T) {
 		tm := time.Unix(0, 0)
 		s := New(tm)
 		accountCases := []struct {
-			accountBalance   *vector.Vector
-			expectedPriority int32
+			accountBalance   balance
+			expectedPriority int
 		}{
 			{
-				vector.New(1),
+				balance{1, 0, 0},
 				0,
 			},
 			{
-				vector.New(0, 1),
+				balance{0, 1, 0},
 				1,
 			},
 			{
-				vector.New(),
-				account.FreeBucket,
+				balance{},
+				FreeBucket,
 			},
 		}
 
 		s.AddRequest(ctx, rid, NewRequest(aid, nil, tm), tm)
 		for _, c := range accountCases {
-			Convey(fmt.Sprintf("given account balance is %v", c.accountBalance.Values), func() {
-				s.AddAccount(ctx, aid, &account.Config{}, c.accountBalance)
+			Convey(fmt.Sprintf("given account balance is %v", c.accountBalance), func() {
+				s.AddAccount(ctx, aid, &AccountConfig{}, c.accountBalance[:])
 				Convey("when prioritizing", func() {
 					got := s.prioritizeRequests()
 					Convey(fmt.Sprintf("then the request gets priority %d.", c.expectedPriority), func() {
@@ -82,7 +78,7 @@ func TestPrioritizeOne(t *testing.T) {
 			Convey("when prioritizing", func() {
 				got := s.prioritizeRequests()
 				Convey("then the request is put in free bucket priority.", func() {
-					So(got[0].Priority, ShouldEqual, account.FreeBucket)
+					So(got[0].Priority, ShouldEqual, FreeBucket)
 					So(got[0].RequestID, ShouldEqual, rid)
 				})
 			})
@@ -113,7 +109,7 @@ func TestPrioritizeMany(t *testing.T) {
 				Convey("then requests are prioritized by enqueue time.", func() {
 					times := make([]time.Time, nReqs)
 					for i, g := range got {
-						times[i] = tutils.Timestamp(g.Request.EnqueueTime)
+						times[i] = g.Request.enqueueTime
 					}
 					So(times, ShouldBeChronological)
 					So(got, ShouldHaveLength, nReqs)
@@ -122,13 +118,13 @@ func TestPrioritizeMany(t *testing.T) {
 		})
 
 		Convey("given an account with no maximum fanout", func() {
-			s.AddAccount(ctx, aid, account.NewConfig(0, 0, vector.New()), nil)
+			s.AddAccount(ctx, aid, NewAccountConfig(0, 0, nil), nil)
 			Convey("when prioritizing", func() {
 				got := s.prioritizeRequests()
 				Convey("then requests are prioritized by enqueue time.", func() {
 					times := make([]time.Time, nReqs)
 					for i, g := range got {
-						times[i] = tutils.Timestamp(g.Request.EnqueueTime)
+						times[i] = g.Request.enqueueTime
 					}
 					So(times, ShouldBeChronological)
 					So(got, ShouldHaveLength, nReqs)
@@ -138,7 +134,7 @@ func TestPrioritizeMany(t *testing.T) {
 
 		Convey("given the account specifices a maximum fanout and some requests for that account are already running", func() {
 			maxFanout := 5
-			s.AddAccount(ctx, aid, &account.Config{MaxFanout: int32(maxFanout)}, vector.New(0, 1))
+			s.AddAccount(ctx, aid, &AccountConfig{MaxFanout: int32(maxFanout)}, []float64{0, 1})
 
 			// Two requests are already running.
 			addRunningRequest(ctx, s, "11", "11", aid, 1, time.Unix(0, 0))
@@ -149,10 +145,10 @@ func TestPrioritizeMany(t *testing.T) {
 				Convey("then requests beyond the maximum fanout are put in the free bucket priority.", func() {
 					// First three get the account's available bucket (P1), the remaining
 					// ones get the free bucket.
-					fb := account.FreeBucket
-					expectedPriorities := []int32{1, 1, 1, fb, fb, fb, fb, fb, fb, fb}
+					fb := FreeBucket
+					expectedPriorities := []int{1, 1, 1, fb, fb, fb, fb, fb, fb, fb}
 
-					actualPriorities := make([]int32, nReqs)
+					actualPriorities := make([]int, nReqs)
 					for i := 0; i < nReqs; i++ {
 						actualPriorities[i] = got[i].Priority
 					}
@@ -194,7 +190,7 @@ func TestForPriority(t *testing.T) {
 		pRequests[6:6],
 	}
 
-	for p := int32(0); p < 6; p++ {
+	for p := 0; p < 6; p++ {
 		actual := pRequests.forPriority(p)
 		expected := expecteds[p]
 		if diff := pretty.Compare(actual, expected); diff != "" {

@@ -15,25 +15,13 @@
 package scheduler
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
-	"github.com/kylelemons/godebug/pretty"
-
 	"infra/qscheduler/qslib/tutils"
-	"infra/qscheduler/qslib/types/vector"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
-
-func shouldResemblePretty(actual interface{}, expected ...interface{}) string {
-	diff := pretty.Compare(actual, expected[0])
-	if diff != "" {
-		return fmt.Sprintf("Unexpected diff (-got +want): %s", diff)
-	}
-	return ""
-}
 
 // TestMarkIdle tests that a new worker is marked idle by MarkIdle, and that
 // a subsequent updates to it are only respected if their timestamp is newer
@@ -43,47 +31,46 @@ func TestMarkIdle(t *testing.T) {
 	tm1 := time.Unix(1, 0)
 	tm2 := time.Unix(2, 0)
 	Convey("Given an empty state", t, func() {
-		state := NewState(tm0)
+		state := newState(tm0)
+		workerID := "w1"
 		Convey("when a worker marked idle at t=1", func() {
-			state.markIdle("w1", []string{"old_label"}, tm1)
+			label1 := []string{"old_label"}
+			state.markIdle(workerID, label1, tm1)
 			Convey("then the worker is added to the state.", func() {
-				want := NewState(tm0)
-				want.Workers["w1"] = &Worker{Labels: []string{"old_label"}, ConfirmedTime: tutils.TimestampProto(tm1)}
-				So(state, shouldResemblePretty, want)
+				So(state.workers, ShouldContainKey, workerID)
+				So(state.workers[workerID].labels, ShouldResemble, label1)
 			})
 			Convey("when marking idle again with newer time t=2", func() {
-				state.markIdle("w1", []string{"new_label"}, tm2)
+				state.markIdle(workerID, []string{"new_label"}, tm2)
 				Convey("then the update is applied.", func() {
-					So(tutils.Timestamp(state.Workers["w1"].ConfirmedTime), ShouldEqual, tm2)
-					So(state.Workers["w1"].Labels, ShouldResemble, []string{"new_label"})
+					So(state.workers[workerID].labels, ShouldResemble, []string{"new_label"})
 				})
 			})
 			Convey("when marking idle again with older time t=0", func() {
-				state.markIdle("w1", []string{"new_label"}, tm0)
+				state.markIdle(workerID, []string{"new_label"}, tm0)
 				Convey("then the update is ignored.", func() {
-					So(tutils.Timestamp(state.Workers["w1"].ConfirmedTime), ShouldEqual, tm1)
-					So(state.Workers["w1"].Labels, ShouldResemble, []string{"old_label"})
+					So(state.workers[workerID].labels, ShouldResemble, label1)
 				})
 			})
 		})
 
 		Convey("given a worker running a task at t=1", func() {
-			state.markIdle("w1", []string{}, tm1)
+			state.markIdle(workerID, []string{}, tm1)
 			state.addRequest("r1", NewRequest("", nil, tm1), tm1)
-			state.applyAssignment(&Assignment{Type: Assignment_IDLE_WORKER, RequestId: "r1", WorkerId: "w1"})
+			state.applyAssignment(&Assignment{Type: Assignment_IDLE_WORKER, RequestId: "r1", WorkerId: workerID})
 			Convey("when marking idle again with newer time t=2", func() {
-				state.markIdle("w1", []string{}, tm2)
+				state.markIdle(workerID, []string{}, tm2)
 				Convey("then the update is applied.", func() {
-					So(state.Workers["w1"].isIdle(), ShouldBeTrue)
-					So(tutils.Timestamp(state.Workers["w1"].ConfirmedTime), ShouldEqual, tm2)
+					So(state.workers[workerID].isIdle(), ShouldBeTrue)
+					So(state.workers[workerID].confirmedTime, ShouldEqual, tm2)
 				})
 			})
 
 			Convey("when marking idle again with older time t=0", func() {
-				state.markIdle("w1", []string{}, tm0)
+				state.markIdle(workerID, []string{}, tm0)
 				Convey("then the update is ignored.", func() {
-					So(state.Workers["w1"].isIdle(), ShouldBeFalse)
-					So(tutils.Timestamp(state.Workers["w1"].ConfirmedTime), ShouldEqual, tm1)
+					So(state.workers[workerID].isIdle(), ShouldBeFalse)
+					So(state.workers[workerID].confirmedTime, ShouldEqual, tm1)
 				})
 			})
 		})
@@ -97,7 +84,7 @@ func TestNotifyRequest(t *testing.T) {
 	tm3 := time.Unix(3, 0)
 	tm4 := time.Unix(4, 0)
 	Convey("Given a state with a request(t=1) and idle worker(t=3) and a match between them", t, func() {
-		state := NewState(tm0)
+		state := newState(tm0)
 		state.addRequest("r1", NewRequest("", nil, tm1), tm1)
 		state.markIdle("w1", []string{}, tm3)
 		a := &Assignment{
@@ -106,69 +93,77 @@ func TestNotifyRequest(t *testing.T) {
 			RequestId: "r1",
 		}
 		state.applyAssignment(a)
-		stateBeforeNotification := state.Clone()
 		Convey("when notifying (idle request) with an older time t=0", func() {
 			state.notifyRequest("r1", "", tm0)
 			Convey("then the update is ignored.", func() {
-				So(state, shouldResemblePretty, stateBeforeNotification)
+				So(state.queuedRequests, ShouldHaveLength, 0)
+				So(state.workers, ShouldContainKey, "w1")
+				So(state.workers["w1"].runningTask, ShouldNotBeNil)
+				So(state.workers["w1"].runningTask.requestID, ShouldEqual, "r1")
 			})
 		})
 		Convey("when notifying (idle request) with an intermediate time (between current request and worker time) t=1", func() {
+			state.notifyRequest("r1", "", tm2)
 			Convey("then the update is ignored.", func() {
-				state.notifyRequest("r1", "", tm2)
-				So(state, shouldResemblePretty, stateBeforeNotification)
+				So(state.queuedRequests, ShouldHaveLength, 0)
+				So(state.workers, ShouldContainKey, "w1")
+				So(state.workers["w1"].runningTask, ShouldNotBeNil)
+				So(state.workers["w1"].runningTask.requestID, ShouldEqual, "r1")
 			})
 		})
 		Convey("when notifying (idle request) with newer time t=4", func() {
 			state.notifyRequest("r1", "", tm4)
 			Convey("then the worker is deleted.", func() {
-				So(state.Workers, ShouldNotContainKey, "w1")
+				So(state.workers, ShouldNotContainKey, "w1")
 			})
 			Convey("then the request is deleted.", func() {
-				So(state.QueuedRequests, ShouldContainKey, "r1")
+				So(state.queuedRequests, ShouldContainKey, "r1")
 			})
 			Convey("then the request time is updated.", func() {
-				So(tutils.Timestamp(state.QueuedRequests["r1"].ConfirmedTime), ShouldEqual, tm4)
+				So(state.queuedRequests["r1"].confirmedTime, ShouldEqual, tm4)
 			})
 		})
 		Convey("when notifying (idle request) with the same time as the worker", func() {
 			state.notifyRequest("r1", "", tm3)
 			Convey("then the worker is deleted.", func() {
-				So(state.Workers, ShouldNotContainKey, "w1")
+				So(state.workers, ShouldNotContainKey, "w1")
 			})
 			Convey("then the request is deleted.", func() {
-				So(state.QueuedRequests, ShouldContainKey, "r1")
+				So(state.queuedRequests, ShouldContainKey, "r1")
 			})
 			Convey("then the request time is updated.", func() {
-				So(tutils.Timestamp(state.QueuedRequests["r1"].ConfirmedTime), ShouldEqual, tm3)
+				So(state.queuedRequests["r1"].confirmedTime, ShouldEqual, tm3)
 			})
 		})
 
 		Convey("when notifying (correct match) with older time t=0", func() {
 			state.notifyRequest("r1", "w1", tm0)
 			Convey("then the update is ignored.", func() {
-				So(state, shouldResemblePretty, stateBeforeNotification)
+				So(state.queuedRequests, ShouldHaveLength, 0)
+				So(state.workers, ShouldContainKey, "w1")
+				So(state.workers["w1"].runningTask, ShouldNotBeNil)
+				So(state.workers["w1"].runningTask.requestID, ShouldEqual, "r1")
 			})
 		})
 		Convey("when notifying (correct match) with intermediate time t=2", func() {
 			state.notifyRequest("r1", "w1", tm2)
 			Convey("then the request time is updated.", func() {
-				So(tutils.Timestamp(state.Workers["w1"].RunningTask.Request.ConfirmedTime), ShouldEqual, tm2)
+				So(state.workers["w1"].runningTask.request.confirmedTime, ShouldEqual, tm2)
 			})
 		})
 		Convey("when notifying (correct match) with newer time t=4", func() {
 			state.notifyRequest("r1", "w1", tm4)
 			Convey("then the request time is updated.", func() {
-				So(tutils.Timestamp(state.Workers["w1"].RunningTask.Request.ConfirmedTime), ShouldEqual, tm4)
+				So(state.workers["w1"].runningTask.request.confirmedTime, ShouldEqual, tm4)
 			})
 			Convey("then the worker time is updated.", func() {
-				So(tutils.Timestamp(state.Workers["w1"].ConfirmedTime), ShouldEqual, tm4)
+				So(state.workers["w1"].confirmedTime, ShouldEqual, tm4)
 			})
 		})
 	})
 
 	Convey("Given a state with a matched request and worker both at t=1 and a separate idle worker at t=3", t, func() {
-		state := NewState(tm0)
+		state := newState(tm0)
 		state.addRequest("r1", NewRequest("", nil, tm1), tm1)
 		state.markIdle("w1", []string{}, tm1)
 		state.markIdle("w2", []string{}, tm3)
@@ -178,50 +173,55 @@ func TestNotifyRequest(t *testing.T) {
 			RequestId: "r1",
 		}
 		state.applyAssignment(a)
-		stateBefore := state.Clone()
 		Convey("when notifying (contradictory match) with an older time t=0", func() {
 			state.notifyRequest("r1", "w2", tm0)
 			Convey("then the update is ignored.", func() {
-				So(state, shouldResemblePretty, stateBefore)
+				So(state.workers, ShouldContainKey, "w1")
+				So(state.workers["w1"].runningTask, ShouldNotBeNil)
+				So(state.workers["w1"].runningTask.requestID, ShouldEqual, "r1")
+				So(state.workers, ShouldContainKey, "w2")
+				So(state.workers["w2"].runningTask, ShouldBeNil)
 			})
 		})
 		Convey("when notifying (contradictory match) with a time newer than match but older than idle worker t=2", func() {
 			state.notifyRequest("r1", "w2", tm2)
 			Convey("then the matching worker and request are deleted.", func() {
-				So(state.QueuedRequests, ShouldNotContainKey, "r1")
-				So(state.Workers, ShouldNotContainKey, "w1")
+				So(state.queuedRequests, ShouldNotContainKey, "r1")
+				So(state.workers, ShouldNotContainKey, "w1")
 			})
 		})
 
 		Convey("when notifying (contradictory match) with a newer time t=4", func() {
 			state.notifyRequest("r1", "w2", tm4)
 			Convey("then the request and both workers are deleted.", func() {
-				So(state, shouldResemblePretty, NewState(tm0))
+				So(state.workers, ShouldBeEmpty)
+				So(state.queuedRequests, ShouldBeEmpty)
 			})
 		})
 
 	})
 
 	Convey("Given a state with an idle worker(t=1), and a notify call with a match to an unknown request for that worker", t, func() {
-		state := NewState(tm0)
+		state := newState(tm0)
 		state.markIdle("w1", []string{}, tm1)
-		stateBefore := state.Clone()
 		Convey("when notifying (unknown request for worker) with older time t=0", func() {
 			state.notifyRequest("r1", "w1", tm0)
 			Convey("then the update is ignored.", func() {
-				So(state, shouldResemblePretty, stateBefore)
+				So(state.queuedRequests, ShouldBeEmpty)
+				So(state.workers, ShouldContainKey, "w1")
+				So(state.workers["w1"].runningTask, ShouldBeNil)
 			})
 		})
 		Convey("when notifying (unknown request for worker) with equal time t=1", func() {
 			state.notifyRequest("r1", "w1", tm1)
 			Convey("then the worker is deleted.", func() {
-				So(state, shouldResemblePretty, NewState(tm0))
+				So(state.workers, ShouldNotContainKey, "w1")
 			})
 		})
 		Convey("when notifying (unknown request for worker) with newer time t=2", func() {
 			state.notifyRequest("r1", "w1", tm2)
 			Convey("then the worker is deleted.", func() {
-				So(state, shouldResemblePretty, NewState(tm0))
+				So(state.workers, ShouldNotContainKey, "w1")
 			})
 		})
 	})
@@ -234,27 +234,27 @@ func TestAbortRequest(t *testing.T) {
 	reqID := "request1"
 	wID := "worker1"
 	Convey("Given a state with one request and one idle worker", t, func() {
-		state := NewState(tm0)
+		state := newState(tm0)
 		state.addRequest(reqID, NewRequest("", nil, tm1), tm1)
 		state.markIdle(wID, []string{}, tm1)
-		stateBefore := state.Clone()
 		Convey("when AbortRequest with forward time is called for that request", func() {
 			state.abortRequest(reqID, tm2)
 			Convey("then the request is deleted, the worker is unmodified.", func() {
-				So(state.QueuedRequests, ShouldNotContainKey, reqID)
-				So(state.Workers, ShouldHaveLength, 1)
+				So(state.queuedRequests, ShouldNotContainKey, reqID)
+				So(state.workers, ShouldHaveLength, 1)
 			})
 		})
 		Convey("when AbortRequest with backward time is called for that request", func() {
 			state.abortRequest(reqID, tm0)
-			Convey("then nothing happens.", func() {
-				So(state, shouldResemblePretty, stateBefore)
+			Convey("then request and worker should remain.", func() {
+				So(state.queuedRequests, ShouldContainKey, reqID)
+				So(state.workers, ShouldHaveLength, 1)
 			})
 		})
 	})
 
 	Convey("Given a state with a request running on a worker", t, func() {
-		state := NewState(tm0)
+		state := newState(tm0)
 		state.addRequest(reqID, NewRequest("", nil, tm1), tm1)
 		state.markIdle(wID, []string{}, tm1)
 		a := &Assignment{
@@ -263,107 +263,82 @@ func TestAbortRequest(t *testing.T) {
 			RequestId: reqID,
 		}
 		state.applyAssignment(a)
-		stateBefore := state.Clone()
 		Convey("when AbortRequest with forward time is called for that request", func() {
 			state.abortRequest(reqID, tm2)
 			Convey("then the request and worker are deleted.", func() {
-				So(state.QueuedRequests, ShouldBeEmpty)
-				So(state.Workers, ShouldBeEmpty)
+				So(state.queuedRequests, ShouldBeEmpty)
+				So(state.workers, ShouldBeEmpty)
 			})
 		})
 		Convey("when AbortRequest with backward time is called for that request", func() {
 			state.abortRequest(reqID, tm0)
-			Convey("then nothing happens.", func() {
-				So(state, shouldResemblePretty, stateBefore)
+			Convey("then request should remain running on the worker.", func() {
+				So(state.queuedRequests, ShouldBeEmpty)
+				So(state.workers, ShouldHaveLength, 1)
+				So(state.workers[wID].runningTask, ShouldNotBeNil)
+				So(state.workers[wID].runningTask.requestID, ShouldEqual, reqID)
 			})
 		})
 	})
 }
 
-// Helper method to assert that two State instances are deeply equal.
-func assertStateEqual(t *testing.T, desc string, got *StateProto, want *StateProto) {
-	t.Helper()
-	// TODO(akeshet): eliminate this call to got.regenCache() and update tests
-	// accordingly, so that we can test that cache is updated correctly by
-	// the various state mutations.
-	got.regenCache()
-	want.regenCache()
-	if diff := pretty.Compare(got, want); diff != "" {
-		t.Errorf(fmt.Sprintf("Case [%s] unexpected state diff (-got +want): %s", desc, diff))
-	}
-}
-
 // TestApplyIdleAssignment tests that Apply for IDLE_WORKER behaves correctly.
 func TestApplyIdleAssignment(t *testing.T) {
-	t.Parallel()
-	state := &StateProto{
-		QueuedRequests: map[string]*TaskRequest{"t1": {}},
-		Workers:        map[string]*Worker{"w1": NewWorker()},
-	}
+	Convey("Given a state with a task and a worker", t, func() {
+		s := newState(time.Unix(0, 0))
+		tp := tutils.TimestampProto(time.Unix(0, 0))
+		s.addRequest("t1", &TaskRequest{ConfirmedTime: tp, EnqueueTime: tp}, time.Unix(0, 0))
+		s.markIdle("w1", []string{}, time.Unix(0, 0))
 
-	expect := &StateProto{
-		QueuedRequests: map[string]*TaskRequest{},
-		Workers: map[string]*Worker{
-			"w1": {RunningTask: &TaskRun{
-				RequestId: "t1",
-				Priority:  1,
-				Request:   &TaskRequest{},
-				Cost:      vector.New()}},
-		},
-		RunningRequestsCache: map[string]string{"t1": "w1"},
-	}
+		Convey("when an idle-worker-assignment is applied with a given priority", func() {
+			mut := &Assignment{Type: Assignment_IDLE_WORKER, Priority: 1, RequestId: "t1", WorkerId: "w1"}
+			s.applyAssignment(mut)
+			Convey("then the state is updated as expected.", func() {
+				So(s.queuedRequests, ShouldBeEmpty)
+				rt := s.workers["w1"].runningTask
+				So(rt, ShouldNotBeNil)
+				So(rt.requestID, ShouldEqual, "t1")
+				So(rt.priority, ShouldEqual, 1)
 
-	mut := &Assignment{Type: Assignment_IDLE_WORKER, Priority: 1, RequestId: "t1", WorkerId: "w1"}
-	state.applyAssignment(mut)
-
-	if diff := pretty.Compare(state, expect); diff != "" {
-		t.Errorf(fmt.Sprintf("Unexpected state diff (-got +want): %s", diff))
-	}
+			})
+		})
+	})
 }
 
 // TestApplyPreempt tests that Apply for PREEMPT_WORKER behaves correctly.
 func TestApplyPreempt(t *testing.T) {
-	t.Parallel()
 	tm := time.Unix(0, 0)
-	state := &StateProto{
-		Balances: map[string]*vector.Vector{
-			"a1": vector.New(),
-			"a2": vector.New(2),
-		},
-		QueuedRequests: map[string]*TaskRequest{
-			"t2": NewRequest("a2", nil, tm),
-		},
-		Workers: map[string]*Worker{
-			"w1": {RunningTask: &TaskRun{
-				Cost:      vector.New(1),
-				Priority:  2,
-				Request:   NewRequest("a1", nil, tm),
-				RequestId: "t1",
-			}},
-		},
-	}
-
-	expect := &StateProto{
-		Balances: map[string]*vector.Vector{
-			"a1": vector.New(1),
-			"a2": vector.New(1),
-		},
-		QueuedRequests: map[string]*TaskRequest{},
-		Workers: map[string]*Worker{
-			"w1": {RunningTask: &TaskRun{
-				Cost:      vector.New(1),
-				Priority:  1,
-				Request:   NewRequest("a2", nil, tm),
-				RequestId: "t2",
+	Convey("Given a state with a running request, a queued request, and two accounts", t, func() {
+		s := newState(tm)
+		s.workers["w1"] = &worker{}
+		s.workers["w1"].runningTask = &taskRun{
+			cost:     balance{1},
+			priority: 2,
+			request: &request{
+				accountID: "a1",
 			},
-			}},
-		RunningRequestsCache: map[string]string{"t2": "w1"},
-	}
+			requestID: "t1",
+		}
+		s.queuedRequests["t2"] = &request{
+			accountID: "a2",
+		}
+		s.balances["a1"] = balance{1}
+		s.balances["a2"] = balance{2}
 
-	mut := &Assignment{Type: Assignment_PREEMPT_WORKER, Priority: 1, RequestId: "t2", WorkerId: "w1", TaskToAbort: "t1"}
-	state.applyAssignment(mut)
+		Convey("when a preemption assignment is applied", func() {
+			mut := &Assignment{Type: Assignment_PREEMPT_WORKER, Priority: 1, RequestId: "t2", WorkerId: "w1", TaskToAbort: "t1"}
+			s.applyAssignment(mut)
 
-	if diff := pretty.Compare(state, expect); diff != "" {
-		t.Errorf(fmt.Sprintf("Unexpected state diff (-got +want): %s", diff))
-	}
+			Convey("then task queue, worker, and accounts are updated accordingly", func() {
+				So(s.queuedRequests, ShouldBeEmpty)
+				rt := s.workers["w1"].runningTask
+				So(rt, ShouldNotBeNil)
+				So(rt.cost, ShouldResemble, balance{1})
+				So(rt.requestID, ShouldEqual, "t2")
+				So(s.balances["a1"], ShouldResemble, balance{2})
+				So(s.balances["a2"], ShouldResemble, balance{1})
+			})
+		})
+	})
+
 }

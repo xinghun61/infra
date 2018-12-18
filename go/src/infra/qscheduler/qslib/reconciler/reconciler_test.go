@@ -22,8 +22,6 @@ import (
 
 	"infra/qscheduler/qslib/scheduler"
 	"infra/qscheduler/qslib/tutils"
-	"infra/qscheduler/qslib/types/account"
-	"infra/qscheduler/qslib/types/vector"
 
 	"github.com/kylelemons/godebug/pretty"
 
@@ -255,7 +253,7 @@ func TestPreemption(t *testing.T) {
 
 			Convey("given a new request with higher priority", func() {
 				aid := "Account1"
-				s.AddAccount(ctx, aid, account.NewConfig(0, 0, vector.New()), vector.New(1))
+				s.AddAccount(ctx, aid, scheduler.NewAccountConfig(0, 0, nil), []float64{1})
 				t1 := time.Unix(1, 0)
 				newRequest := "Request2"
 				taskUpdate := &TaskInstant{

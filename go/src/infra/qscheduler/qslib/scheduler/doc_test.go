@@ -20,8 +20,6 @@ import (
 	"time"
 
 	"infra/qscheduler/qslib/scheduler"
-	"infra/qscheduler/qslib/types/account"
-	"infra/qscheduler/qslib/types/vector"
 )
 
 func HandleAssignments([]*scheduler.Assignment) {}
@@ -37,7 +35,7 @@ func Example() {
 	s := scheduler.New(time.Now())
 
 	// Create a quota account with no initial balance.
-	accountConfig := account.NewConfig(0, 1, vector.New(1, 2, 3))
+	accountConfig := scheduler.NewAccountConfig(0, 1, []float64{1, 2, 3})
 	accountID := "Account1"
 	s.AddAccount(ctx, accountID, accountConfig, nil)
 

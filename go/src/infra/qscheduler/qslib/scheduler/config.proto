@@ -14,11 +14,35 @@
 syntax = "proto3";
 package scheduler;
 
-import "infra/qscheduler/qslib/types/account/account.proto";
-
 // Config represents configuration information about the behavior of accounts
 // for this quota scheduler pool.
 message Config {
   // Configuration for a given account, keyed by account id.
-  map<string, account.Config> account_configs = 1;
+  map<string, AccountConfig> account_configs = 1;
+}
+
+// AccountConfig represents per-quota-account configuration information, such
+// as the recharge parameters. This does not represent anything about the
+// current state of an account.
+message AccountConfig {
+  // ChargeRate is the rates (per second) at which per-priority accounts grow.
+  //
+  // Conceptually this is the time-averaged number of workers that this account
+  // may use, at each priority level.
+  repeated double charge_rate = 1;
+
+  // MaxChargeSeconds is the maximum amount of time over which this account can
+  // accumulate quota before hitting its cap.
+  //
+  // Conceptually this sets the time window over which the time averaged
+  // utilization by this account is measured. Very bursty clients will need to
+  // use a wider window, whereas very consistent clients will use a narrow one.
+  double max_charge_seconds = 2;
+
+  // MaxFanout is the maximum number of concurrent paid jobs that this account
+  // will pay for (0 = no limit).
+  //
+  // Additional jobs beyond this may run if there is idle capacity, but they
+  // will run in the FreeBucket priority level.
+  int32 max_fanout = 3;
 }

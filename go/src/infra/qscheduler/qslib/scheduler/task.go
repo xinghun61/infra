@@ -82,9 +82,10 @@ func (a LabelSet) Contains(b LabelSet) bool {
 // NewRequest creates a new TaskRequest.
 func NewRequest(accountID string, labels []string, enqueueTime time.Time) *TaskRequest {
 	return &TaskRequest{
-		AccountId:   accountID,
-		EnqueueTime: tutils.TimestampProto(enqueueTime),
-		Labels:      labels,
+		AccountId:     accountID,
+		ConfirmedTime: tutils.TimestampProto(enqueueTime),
+		EnqueueTime:   tutils.TimestampProto(enqueueTime),
+		Labels:        labels,
 	}
 }
 
@@ -92,8 +93,8 @@ func NewRequest(accountID string, labels []string, enqueueTime time.Time) *TaskR
 // is consistent with authoritative source as of this time). The update is
 // only applied if it is a forward-in-time update or if the existing time
 // was undefined.
-func (r *TaskRequest) confirm(t time.Time) {
-	if r.ConfirmedTime == nil || tutils.Timestamp(r.ConfirmedTime).Before(t) {
-		r.ConfirmedTime = tutils.TimestampProto(t)
+func (r *request) confirm(t time.Time) {
+	if r.confirmedTime.Before(t) {
+		r.confirmedTime = t
 	}
 }

@@ -15,7 +15,6 @@ syntax = "proto3";
 package scheduler;
 
 import "google/protobuf/timestamp.proto";
-import "infra/qscheduler/qslib/types/vector/vector.proto";
 
 // TaskRequest represents a requested task in the queue, and refers to the
 // quota account to run it against. This representation intentionally
@@ -40,7 +39,7 @@ message TaskRequest {
 // now running.
 message TaskRun {
   // Cost is the total cost that has been incurred on this task while running.
-  vector.Vector cost = 1;
+  repeated double cost = 1;
 
   // Request is the request that this running task corresponds to.
   TaskRequest request = 2;

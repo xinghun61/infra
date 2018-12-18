@@ -12,18 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/*
-Package account implements a quota account, as part of the quota scheduler
-algorithm.
-*/
-package account
-
-import "infra/qscheduler/qslib/types/vector"
+package scheduler
 
 const (
 	// FreeBucket is the free priority bucket, where jobs may run even if they have
 	// no quota account or have an empty quota account.
-	FreeBucket int32 = vector.NumPriorities
+	FreeBucket int = NumPriorities
 
 	// PromoteThreshold is the account balance at which the scheduler will consider
 	// promoting jobs.
@@ -39,42 +33,43 @@ const (
 //
 // If the account is out of quota, or if the supplied balance is a nil
 // pointer, then this returns FreeBucket.
-func BestPriorityFor(balance *vector.Vector) int32 {
-	if balance == nil {
-		return FreeBucket
-	}
-	for priority, value := range balance.Values {
+func BestPriorityFor(b balance) int {
+	for priority, value := range b {
 		if value > 0 {
-			return int32(priority)
+			return int(priority)
 		}
 	}
 	return FreeBucket
 }
 
-// NextBalance calculates and returns the new balance of a quota account.
+// nextBalance calculates and returns the new balance of a quota account.
 //
 // The new balance calculation is based on the account's recharge rate,
 // maximum balance, and the number of currently running jobs per priority
 // bucket for that account.
-func NextBalance(balance *vector.Vector, c *Config, elapsedSecs float64, runningJobs *vector.IntVector) *vector.Vector {
-	v := vector.New()
-	for priority := int32(0); priority < vector.NumPriorities; priority++ {
-		val := balance.At(priority)
+func nextBalance(before balance, c *AccountConfig, elapsedSecs float64, runningJobs []int) balance {
+	b := balance{}
+	for priority := 0; priority < NumPriorities; priority++ {
+		val := before[priority]
 		val -= elapsedSecs * float64(runningJobs[priority])
-		maxBalance := c.ChargeRate.At(priority) * c.MaxChargeSeconds
+		var chargeRate float64
+		if len(c.ChargeRate) > priority {
+			chargeRate = c.ChargeRate[priority]
+		}
+		maxBalance := chargeRate * c.MaxChargeSeconds
 		// Check for value overflow prior to recharging or capping, because
 		// if the account value is already above cap we want to leave it there.
 		// It likley got over cap due to preemption reimbursement.
 		if val < maxBalance {
-			val += elapsedSecs * c.ChargeRate.At(priority)
+			val += elapsedSecs * c.ChargeRate[priority]
 			if val > maxBalance {
 				val = maxBalance
 			}
 		}
-		v.Values[priority] = val
+		b[priority] = val
 	}
 
-	return v
+	return b
 }
 
 // TODO(akeshet): Consider removing the NewConfig helper, as it is not really
@@ -82,10 +77,10 @@ func NextBalance(balance *vector.Vector, c *Config, elapsedSecs float64, running
 // On the other hand, it does make tests and example code more compact and
 // readable.
 
-// NewConfig creates a new Config instance.
-func NewConfig(fanout int, chargeSeconds float64, chargeRate *vector.Vector) *Config {
-	return &Config{
-		ChargeRate:       chargeRate.Copy(),
+// NewAccountConfig creates a new Config instance.
+func NewAccountConfig(fanout int, chargeSeconds float64, chargeRate []float64) *AccountConfig {
+	return &AccountConfig{
+		ChargeRate:       chargeRate,
 		MaxChargeSeconds: chargeSeconds,
 		MaxFanout:        int32(fanout),
 	}

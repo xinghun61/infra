@@ -16,9 +16,6 @@ package scheduler;
 
 import "google/protobuf/timestamp.proto";
 import "infra/qscheduler/qslib/scheduler/task.proto";
-import "infra/qscheduler/qslib/types/vector/vector.proto";
-import "infra/qscheduler/qslib/types/account/account.proto";
-
 
 // Worker represents a resource that can run 1 task at a time. This corresponds
 // to the swarming concept of a Bot. This representation considers only the
@@ -34,7 +31,7 @@ message Worker {
   // worker.
   TaskRun running_task = 2;
 
-  // ConfirmedIdleTime is the most recent time at which the Worker state was
+  // ConfirmedTime is the most recent time at which the Worker state was
   // directly confirmed as idle by external authority (via a call to MarkIdle or
   // NotifyRequest).
   google.protobuf.Timestamp confirmed_time = 3;

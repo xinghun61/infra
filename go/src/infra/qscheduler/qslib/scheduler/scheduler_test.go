@@ -16,17 +16,12 @@ package scheduler
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"testing"
 	"time"
 
 	"infra/qscheduler/qslib/tutils"
-	"infra/qscheduler/qslib/types/account"
-	"infra/qscheduler/qslib/types/vector"
-
-	"github.com/kylelemons/godebug/pretty"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -42,8 +37,8 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 		s.MarkIdle(ctx, "w1", []string{"label1"}, tm)
 		s.AddRequest(ctx, "t1", NewRequest("a1", []string{"label1"}, tm), tm)
 		s.AddRequest(ctx, "t2", NewRequest("a1", []string{"label2"}, tm), tm)
-		c := account.NewConfig(0, 0, vector.New())
-		s.AddAccount(ctx, "a1", c, vector.New(2, 0, 0))
+		c := NewAccountConfig(0, 0, nil)
+		s.AddAccount(ctx, "a1", c, []float64{2, 0, 0})
 		Convey("when scheduling jobs", func() {
 			muts, _ := s.RunOnce(ctx)
 			Convey("then both jobs should be matched, with provisionable label used as tie-breaker", func() {
@@ -52,7 +47,7 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 					{Type: Assignment_IDLE_WORKER, Priority: 0, RequestId: "t1", WorkerId: "w1", Time: tmproto},
 					{Type: Assignment_IDLE_WORKER, Priority: 0, RequestId: "t2", WorkerId: "w0", Time: tmproto},
 				}
-				So(muts, shouldResemblePretty, expects)
+				So(muts, ShouldResemble, expects)
 			})
 		})
 	})
@@ -98,36 +93,36 @@ func TestSchedulerReprioritize(t *testing.T) {
 		tm0 := time.Unix(0, 0)
 		s := New(tm0)
 		aid := "a1"
-		s.config.AccountConfigs[aid] = &account.Config{ChargeRate: vector.New(1.1, 0.9)}
-		s.state.Balances[aid] = vector.New(2*account.DemoteThreshold, 2*account.PromoteThreshold, 0)
+		s.config.AccountConfigs[aid] = &AccountConfig{ChargeRate: []float64{1.1, 0.9}}
+		s.state.balances[aid] = balance{2 * DemoteThreshold, 2 * PromoteThreshold, 0}
 
 		for _, i := range []int{1, 2} {
 			rid := fmt.Sprintf("r%d", i)
 			wid := fmt.Sprintf("w%d", i)
 			addRunningRequest(ctx, s, rid, wid, aid, 0, tm0)
 		}
-		s.state.Workers["w2"].RunningTask.Cost = vector.New(1)
+		s.state.workers["w2"].runningTask.cost = balance{1, 0, 0}
 
 		Convey("given both requests running at P0", func() {
 			Convey("when scheduling", func() {
 				s.RunOnce(ctx)
 				Convey("then the cheaper request should be demoted.", func() {
-					So(s.state.Workers["w1"].RunningTask.Priority, ShouldEqual, 1)
-					So(s.state.Workers["w2"].RunningTask.Priority, ShouldEqual, 0)
+					So(s.state.workers["w1"].runningTask.priority, ShouldEqual, 1)
+					So(s.state.workers["w2"].runningTask.priority, ShouldEqual, 0)
 				})
 			})
 		})
 
 		Convey("given both requests running at P2", func() {
 			for _, wid := range []string{"w1", "w2"} {
-				s.state.Workers[wid].RunningTask.Priority = 2
+				s.state.workers[wid].runningTask.priority = 2
 			}
 			Convey("when scheduling", func() {
 
 				s.RunOnce(ctx)
 				Convey("then the more expensive should be promoted.", func() {
-					So(s.state.Workers["w1"].RunningTask.Priority, ShouldEqual, 2)
-					So(s.state.Workers["w2"].RunningTask.Priority, ShouldEqual, 1)
+					So(s.state.workers["w1"].runningTask.priority, ShouldEqual, 2)
+					So(s.state.workers["w2"].runningTask.priority, ShouldEqual, 1)
 				})
 			})
 		})
@@ -141,7 +136,7 @@ func TestSchedulerPreempt(t *testing.T) {
 		ctx := context.Background()
 		tm0 := time.Unix(0, 0)
 		s := New(tm0)
-		s.AddAccount(ctx, "a1", account.NewConfig(0, 0, vector.New(1, 1, 1)), vector.New(0.5*account.PromoteThreshold, 1))
+		s.AddAccount(ctx, "a1", NewAccountConfig(0, 0, []float64{1, 1, 1}), []float64{0.5 * PromoteThreshold, 1})
 		for _, i := range []int{1, 2} {
 			rid := fmt.Sprintf("r%d", i)
 			wid := fmt.Sprintf("w%d", i)
@@ -149,29 +144,27 @@ func TestSchedulerPreempt(t *testing.T) {
 			s.MarkIdle(ctx, wid, []string{}, tm0)
 			s.state.applyAssignment(&Assignment{RequestId: rid, WorkerId: wid, Type: Assignment_IDLE_WORKER, Priority: 1})
 		}
-		s.state.Workers["w1"].RunningTask.Cost = vector.New(0, 1)
+		s.state.workers["w1"].runningTask.cost = balance{0, 1, 0}
 		Convey("given a new P0 request from a different account", func() {
-			s.AddAccount(ctx, "a2", account.NewConfig(0, 0, vector.New()), vector.New())
+			s.AddAccount(ctx, "a2", NewAccountConfig(0, 0, nil), nil)
 			s.AddRequest(ctx, "r3", NewRequest("a2", nil, tm0), tm0)
 			Convey("given sufficient balance", func() {
-				s.state.Balances["a2"] = vector.New(1)
+				s.state.balances["a2"] = balance{1}
 				Convey("when scheduling", func() {
 					tm1 := time.Unix(1, 0)
 					s.UpdateTime(ctx, tm1)
 					got, _ := s.RunOnce(ctx)
 					Convey("then the cheaper running job is preempted.", func() {
 						want := &Assignment{Type: Assignment_PREEMPT_WORKER, Priority: 0, WorkerId: "w2", RequestId: "r3", TaskToAbort: "r2", Time: tutils.TimestampProto(tm1)}
-						So(got, shouldResemblePretty, []*Assignment{want})
+						So(got, ShouldResemble, []*Assignment{want})
 					})
 				})
 			})
 			Convey("given insufficient balance", func() {
-				stateBefore := s.state.Clone()
 				Convey("when scheduling", func() {
 					got, _ := s.RunOnce(ctx)
 					Convey("then nothing happens.", func() {
 						So(got, ShouldBeEmpty)
-						So(s.state, shouldResemblePretty, stateBefore)
 					})
 				})
 			})
@@ -179,12 +172,10 @@ func TestSchedulerPreempt(t *testing.T) {
 
 		Convey("given a new P0 request from the same account", func() {
 			s.AddRequest(ctx, "r3", NewRequest("a1", nil, tm0), tm0)
-			stateBefore := s.state.Clone()
 			Convey("when scheduling", func() {
 				got, _ := s.RunOnce(ctx)
 				Convey("then nothing happens.", func() {
 					So(got, ShouldBeEmpty)
-					So(s.state, shouldResemblePretty, stateBefore)
 				})
 			})
 		})
@@ -201,18 +192,10 @@ func TestUpdateErrors(t *testing.T) {
 		Expect error
 	}{
 		{
-			&Scheduler{
-				state:  &StateProto{},
-				config: &Config{},
-			},
-			time.Unix(0, 0),
-			errors.New("timestamp: nil Timestamp"),
-		},
-		{
 			// Force UTC time representation, so that we get a predictable error
 			// message that we can assert on.
 			&Scheduler{
-				state:  NewState(time.Unix(100, 0).UTC()),
+				state:  newState(time.Unix(100, 0).UTC()),
 				config: NewConfig(),
 			},
 			time.Unix(0, 0).UTC(),
@@ -220,7 +203,7 @@ func TestUpdateErrors(t *testing.T) {
 		},
 		{
 			&Scheduler{
-				state:  NewState(time.Unix(0, 0)),
+				state:  newState(time.Unix(0, 0)),
 				config: NewConfig(),
 			},
 			time.Unix(1, 0),
@@ -239,114 +222,67 @@ func TestUpdateErrors(t *testing.T) {
 // TestUpdateBalance tests that UpdateBalance makes the correct modifications
 // to account balances and task run costs.
 func TestUpdateBalance(t *testing.T) {
-	ctx := context.Background()
-	epoch := time.Unix(0, 0)
-	t0 := tutils.TimestampProto(epoch)
-	t1 := tutils.TimestampProto(epoch.Add(1 * time.Second))
-	t2 := tutils.TimestampProto(epoch.Add(2 * time.Second))
+	t0 := time.Unix(0, 0)
+	aID := "accountID"
+	Convey("Given a scheduler with an added account config", t, func() {
+		ctx := context.Background()
+		s := New(t0)
+		maxTime := 2.0
+		s.AddAccount(ctx, aID, NewAccountConfig(0, maxTime, []float64{1, 2, 3}), nil)
 
-	cases := []struct {
-		State  *StateProto
-		Config *Config
-		T      time.Time
-		Expect *StateProto
-	}{
-		// Case 0:
-		// Balances with no account config should be removed ("a1"). New balances
-		// should be created if necessary and incremented appropriately ("a2").
-		{
-			&StateProto{
-				Balances:       map[string]*vector.Vector{"a1": vector.New()},
-				LastUpdateTime: t0,
-			},
-			&Config{
-				AccountConfigs: map[string]*account.Config{
-					"a2": {ChargeRate: vector.New(1), MaxChargeSeconds: 2},
-				},
-			},
-			epoch.Add(1 * time.Second),
-			&StateProto{
-				Balances:       map[string]*vector.Vector{"a2": vector.New(1)},
-				LastUpdateTime: t1,
-			},
-		},
-		// Case 1:
-		// Running jobs should count against the account. Cost of a running job
-		// should be initialized if necessary, and incremented.
-		//
-		// Charges should be proportional to time advanced (2 seconds in this case).
-		{
-			&StateProto{
-				Balances: map[string]*vector.Vector{"a1": vector.New()},
-				Workers: map[string]*Worker{
-					// Worker running a task.
-					"w1": {
-						RunningTask: &TaskRun{
-							Cost:     vector.New(1),
-							Priority: 1,
-							Request:  NewRequest("a1", nil, epoch),
-						},
-					},
-					// Worker running a task with uninitialized Cost.
-					"w2": {
-						RunningTask: &TaskRun{
-							Priority: 2,
-							Request:  NewRequest("a1", nil, epoch),
-						},
-					},
-					// Worker running a task with invalid account.
-					"w3": {
-						RunningTask: &TaskRun{
-							Priority: account.FreeBucket,
-							Request:  NewRequest("a2", nil, epoch),
-						},
-					},
-				},
-				LastUpdateTime: t0,
-			},
-			&Config{
-				AccountConfigs: map[string]*account.Config{
-					"a1": {ChargeRate: vector.New(1), MaxChargeSeconds: 1},
-				},
-			},
-			epoch.Add(2 * time.Second),
-			&StateProto{
-				Balances:       map[string]*vector.Vector{"a1": vector.New(1, -2, -2)},
-				LastUpdateTime: t2,
-				Workers: map[string]*Worker{
-					"w1": {
-						RunningTask: &TaskRun{
-							Cost:     vector.New(1, 2),
-							Priority: 1,
-							Request:  NewRequest("a1", nil, epoch),
-						},
-					},
-					"w2": {
-						RunningTask: &TaskRun{
-							Cost:     vector.New(0, 0, 2),
-							Priority: 2,
-							Request:  NewRequest("a1", nil, epoch),
-						},
-					},
-					"w3": {
-						RunningTask: &TaskRun{
-							Cost:     vector.New(),
-							Priority: account.FreeBucket,
-							Request:  NewRequest("a2", nil, epoch),
-						},
-					},
-				},
-			},
-		},
-	}
+		Convey("then a zeroed balance for that account exists", func() {
+			So(s.state.balances, ShouldContainKey, aID)
+			So(s.state.balances[aID], ShouldResemble, balance{})
+		})
 
-	for i, test := range cases {
-		actual := test.State
-		(&Scheduler{state: test.State, config: test.Config}).UpdateTime(ctx, test.T)
-		if diff := pretty.Compare(actual, test.Expect); diff != "" {
-			t.Errorf(fmt.Sprintf("Case %d unexpected mutations diff (-got +want): %s", i, diff))
-		}
-	}
+		Convey("when updating time forward", func() {
+			t1 := t0.Add(time.Second)
+			s.UpdateTime(ctx, t1)
+			Convey("then account balance should be increased according to charge rate", func() {
+				So(s.state.balances[aID], ShouldResemble, balance{1, 2, 3})
+			})
+		})
+
+		Convey("when updating time forward beyond the account's max charge time", func() {
+			t1 := t0.Add(10 * time.Second)
+			s.UpdateTime(ctx, t1)
+			Convey("then account balance saturates at the maximum charge.", func() {
+				So(s.state.balances[aID], ShouldResemble, balance{2, 4, 6})
+			})
+		})
+
+		Convey("when account config is removed", func() {
+			delete(s.config.AccountConfigs, aID)
+			Convey("when updating time forward", func() {
+				t1 := t0.Add(time.Second)
+				s.UpdateTime(ctx, t1)
+				Convey("then account balance is absent.", func() {
+					So(s.state.balances, ShouldNotContainKey, aID)
+				})
+			})
+		})
+
+		Convey("when 2 tasks for the account are running", func() {
+			r1 := "request 1"
+			r2 := "request 2"
+			s.AddRequest(ctx, r1, newTaskRequest(&request{aID, t0, nil, t0}), t0)
+			s.AddRequest(ctx, r2, newTaskRequest(&request{aID, t0, nil, t0}), t0)
+			s.MarkIdle(ctx, "w1", nil, t0)
+			s.MarkIdle(ctx, "w2", nil, t0)
+			s.state.applyAssignment(&Assignment{Priority: 0, RequestId: r1, WorkerId: "w1", Type: Assignment_IDLE_WORKER})
+			s.state.applyAssignment(&Assignment{Priority: 0, RequestId: r2, WorkerId: "w2", Type: Assignment_IDLE_WORKER})
+			So(s.state.queuedRequests, ShouldBeEmpty)
+			So(s.state.workers, ShouldHaveLength, 2)
+			Convey("when updating time forward", func() {
+				t1 := t0.Add(time.Second)
+				s.UpdateTime(ctx, t1)
+				Convey("then account balance reflects charges for running tasks.", func() {
+					So(s.state.balances[aID], ShouldResemble, balance{-1, 2, 3})
+				})
+			})
+		})
+	})
+
 }
 
 // TestAddRequest ensures that AddRequest enqueues a request.
@@ -356,7 +292,7 @@ func TestAddRequest(t *testing.T) {
 	s := New(tm)
 	r := NewRequest("a1", nil, tm)
 	s.AddRequest(ctx, "r1", r, tm)
-	if s.state.QueuedRequests["r1"] != r {
+	if _, ok := s.state.queuedRequests["r1"]; !ok {
 		t.Errorf("AddRequest did not enqueue request.")
 	}
 }

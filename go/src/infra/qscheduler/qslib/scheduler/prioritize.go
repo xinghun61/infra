@@ -16,10 +16,6 @@ package scheduler
 
 import (
 	"sort"
-
-	"github.com/golang/protobuf/ptypes"
-
-	"infra/qscheduler/qslib/types/account"
 )
 
 // prioritizedRequest represents a request along with the computed priority
@@ -27,8 +23,8 @@ import (
 // FIFO ordering).
 type prioritizedRequest struct {
 	RequestID string
-	Priority  int32
-	Request   *TaskRequest
+	Priority  int
+	Request   *request
 	// Flag used within scheduler to indicate that a request is already handled.
 	Scheduled bool
 }
@@ -54,10 +50,10 @@ func (s *Scheduler) prioritizeRequests() orderedRequests {
 
 	// Initial pass: compute priority for each task based purely on account
 	// balance.
-	requests := make(orderedRequests, 0, len(state.QueuedRequests))
-	for id, req := range state.QueuedRequests {
-		accoutBalance := state.Balances[req.AccountId]
-		p := account.BestPriorityFor(accoutBalance)
+	requests := make(orderedRequests, 0, len(state.queuedRequests))
+	for id, req := range state.queuedRequests {
+		accoutBalance := state.balances[req.accountID]
+		p := BestPriorityFor(accoutBalance)
 		requests = append(requests, prioritizedRequest{
 			Priority:  p,
 			Request:   req,
@@ -84,10 +80,8 @@ func (s *Scheduler) prioritizeRequests() orderedRequests {
 // their enqueue time as tiebreaker.
 func requestsLess(a, b prioritizedRequest) bool {
 	if a.Priority == b.Priority {
-		// Tiebreaker: enqueue time.
-		// Ignore unlikely timestamp parsing error.
-		timeA, _ := ptypes.Timestamp(a.Request.EnqueueTime)
-		timeB, _ := ptypes.Timestamp(b.Request.EnqueueTime)
+		timeA := a.Request.enqueueTime
+		timeB := b.Request.enqueueTime
 		return timeA.Before(timeB)
 	}
 	return a.Priority < b.Priority
@@ -97,7 +91,7 @@ func requestsLess(a, b prioritizedRequest) bool {
 // returns the sub slice of it for the given priority
 // TODO(akeshet): Consider turning this into a generator, so that it can iterate only
 // once through the list rather than once per priority level.
-func (s orderedRequests) forPriority(priority int32) orderedRequests {
+func (s orderedRequests) forPriority(priority int) orderedRequests {
 	start := sort.Search(len(s), func(i int) bool { return s[i].Priority >= priority })
 	end := sort.Search(len(s), func(i int) bool { return s[i].Priority > priority })
 	return s[start:end]
@@ -112,21 +106,21 @@ func (s orderedRequests) forPriority(priority int32) orderedRequests {
 //     it and heap fix it. Rather than modify the slice and re-sort. This should
 //     be a bit faster, because this function is likely to only demote a
 //     fraction of jobs in the slice.
-func demoteTasksBeyondFanout(prioritizedRequests orderedRequests, state *StateProto, config *Config) {
-	tasksPerAccount := make(map[string]int32)
-	for _, w := range state.Workers {
+func demoteTasksBeyondFanout(prioritizedRequests orderedRequests, state *state, config *Config) {
+	tasksPerAccount := make(map[string]int)
+	for _, w := range state.workers {
 		if !w.isIdle() {
-			tasksPerAccount[w.RunningTask.Request.AccountId]++
+			tasksPerAccount[w.runningTask.request.accountID]++
 		}
 	}
 
 	for i, r := range prioritizedRequests {
-		id := r.Request.AccountId
+		id := r.Request.accountID
 		// Jobs without a valid account id / config are already assigned
 		// to the free bucket, so ignore them here.
 		if c, ok := config.AccountConfigs[id]; ok {
-			if c.MaxFanout > 0 && tasksPerAccount[id] >= c.MaxFanout {
-				prioritizedRequests[i].Priority = account.FreeBucket
+			if c.MaxFanout > 0 && tasksPerAccount[id] >= int(c.MaxFanout) {
+				prioritizedRequests[i].Priority = FreeBucket
 			}
 			tasksPerAccount[id]++
 		}
