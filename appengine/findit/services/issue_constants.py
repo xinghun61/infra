@@ -41,3 +41,8 @@ FLAKY_TEST_GROUP_CUSTOMIZED_FIELD = 'Flaky-Test-Suite'
 # Query used to search for flaky test suite in customized field.
 FLAKY_TEST_GROUP_CUSTOMIZED_FIELD_QUERY_TEMPLATE = (
     '%s={} is:open' % FLAKY_TEST_GROUP_CUSTOMIZED_FIELD)
+
+OPEN_STATUSES = [
+    'Assigned', 'Available', 'ExternalDependency'
+    'Started', 'Unconfirmed', 'Untriaged'
+]

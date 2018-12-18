@@ -253,6 +253,11 @@ def _GetAutoAssignOwner(analysis):
   return None
 
 
+def GenerateDuplicateComment(commit_position):
+  return 'This flake has been identified as being introduced in r{}'.format(
+      commit_position)
+
+
 class BaseFlakeIssueGenerator(object):
   """Encapsulates details needed to create or update a Monorail issue."""
   __metaclass__ = abc.ABCMeta

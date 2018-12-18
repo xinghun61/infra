@@ -382,3 +382,12 @@ class MonorailUtilTest(wf_testcase.WaterfallTestCase):
     mocked_issue_tracker_api.return_value.getIssue.return_value = issue
     self.assertEqual(
         issue, monorail_util.GetMonorailIssueForIssueId(12345, 'chromium'))
+
+  @mock.patch.object(monorail_util, 'UpdateBug')
+  def testMergeDuplicateIssues(self, mocked_update_bug):
+    duplicate_issue = Issue({'status': 'Available', 'id': '12344'})
+    merged_issue = Issue({'status': 'Available', 'id': '12345'})
+    monorail_util.MergeDuplicateIssues(duplicate_issue, merged_issue, 'comment')
+    self.assertEqual('Duplicate', duplicate_issue.status)
+    self.assertEqual('12345', duplicate_issue.merged_into)
+    mocked_update_bug.assert_called_once_with(duplicate_issue, 'comment')

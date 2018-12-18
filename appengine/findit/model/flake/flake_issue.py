@@ -5,6 +5,7 @@
 from google.appengine.ext import ndb
 
 from gae_libs.appengine_util import IsStaging
+from services import issue_constants
 
 # Mapping between luci project and monorail project.
 _LUCI_PROJECT_TO_MONORAIL_PROJECT = {'chromium': 'chromium'}
@@ -47,6 +48,11 @@ class FlakeIssue(ndb.Model):
 
   # The bug's labels, e.g. ['Type-Bug', 'Pri-2']. Useful for display purposes.
   labels = ndb.StringProperty(repeated=True)
+
+  @property
+  def closed(self):
+    return (self.status is not None and
+            self.status not in issue_constants.OPEN_STATUSES)
 
   @staticmethod
   def _CreateKey(monorail_project, issue_id):  # pragma: no cover

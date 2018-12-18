@@ -4,6 +4,7 @@
 """Functions for interfacing with Mororail bugs."""
 import logging
 
+from common import constants
 from gae_libs import appengine_util
 from monorail_api import Issue
 from monorail_api import IssueTrackerAPI
@@ -55,6 +56,10 @@ def GetMonorailIssueForIssueId(issue_id, monorail_project='chromium'):
   return issue_tracker_api.getIssue(issue_id)
 
 
+def WasCreatedByFindit(issue):
+  return issue.reporter == constants.DEFAULT_SERVICE_ACCOUNT
+
+
 def GetMergedDestinationIssueForId(issue_id, monorail_project='chromium'):
   """Given an id, traverse the merge chain to get the destination issue.
 
@@ -88,6 +93,19 @@ def GetMergedDestinationIssueForId(issue_id, monorail_project='chromium'):
       break
 
   return issue
+
+
+def MergeDuplicateIssues(duplicate_issue, destination_issue, comment):
+  """Merges duplicate_issue into destination_issue on Monorail.
+
+  Args:
+    duplicate_issue (Issue): Duplicate issue to be merged.
+    destination_issue (Issue): Issue to be merged into.
+    comment (str): The comment to include when merging duplicate_issue.
+  """
+  duplicate_issue.status = 'Duplicate'
+  duplicate_issue.merged_into = destination_issue.id
+  UpdateBug(duplicate_issue, comment)
 
 
 def CreateBug(issue, project_id='chromium'):

@@ -250,3 +250,9 @@ class IssueGeneratorTest(WaterfallTestCase):
 
     self.assertEqual(author.email,
                      issue_generator._GetAutoAssignOwner(analysis))
+
+  def testGenerateDuplicateComment(self):
+    commit_position = 12345
+    self.assertIn(
+        str(commit_position),
+        issue_generator.GenerateDuplicateComment(commit_position))

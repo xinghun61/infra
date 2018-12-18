@@ -582,6 +582,8 @@ def _UpdateMergeDestination(flake_issue, merged_issue_id):
   UpdateIssueLeaves(flake_issue.key, merged_flake_issue_key)
 
 
+# TODO(crbug.com/916278): Update issue leaves in a transaction as multiple
+# services may attempt to update at the same time.
 def UpdateIssueLeaves(flake_issue_key, merged_flake_issue_key):
   """Updates all issues that were merged into flake_issue_key.
 
