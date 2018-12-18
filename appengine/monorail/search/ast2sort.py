@@ -42,6 +42,10 @@ FIELDS_TO_COLUMNS = {
     'componentmodified': 'component_modified',
     }
 
+APPROVAL_STATUS_SORT_ORDER = [
+    '\'not_set\'', '\'needs_review\'', '\'na\'', '\'review_requested\'',
+    '\'review_started\'', '\'need_info\'', '\'approved\'', '\'not_approved\'']
+
 
 def BuildSortClauses(
     sort_directives, harmonized_labels, harmonized_statuses,
@@ -237,10 +241,36 @@ def _ProcessCustomAndLabelSD(
     left_joins.extend(int_left_joins + str_left_joins + user_left_joins)
     order_by.extend(int_order_by + str_order_by + user_order_by)
 
+  approval_fd_list = [fd for fd in fd_list if
+                      fd.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE]
+  if approval_fd_list:
+    approval_left_joins, approval_order_by = _ApprovalStatusSortClauses(
+        approval_fd_list, fmt)
+    left_joins.extend(approval_left_joins)
+    order_by.extend(approval_order_by)
+
   label_left_joinss, label_order_by = _LabelSortClauses(
       sd, harmonized_labels, fmt)
   left_joins.extend(label_left_joinss)
   order_by.extend(label_order_by)
+
+  return left_joins, order_by
+
+
+def _ApprovalStatusSortClauses(approval_fd_list, fmt):
+  """Give LEFT JOIN and ORDER BY terms for approval status sort directives."""
+  left_joins = [(
+      fmt('Issue2ApprovalValue AS {alias} ON Issue.id = {alias}.issue_id '
+          'AND {alias}.approval_id IN ({approval_id_ph})',
+          approval_id_ph=sql.PlaceHolders(approval_fd_list)),
+      [fd.field_id for fd in approval_fd_list]
+  )]
+
+  order_by = [(
+      fmt('FIELD({alias}.status, {approval_status_ph}) {rev_sort_dir}',
+          approval_status_ph=sql.PlaceHolders(APPROVAL_STATUS_SORT_ORDER)),
+      APPROVAL_STATUS_SORT_ORDER
+  )]
 
   return left_joins, order_by
 
