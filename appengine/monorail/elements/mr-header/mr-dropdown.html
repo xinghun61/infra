@@ -59,10 +59,11 @@
     <div class="menu">
       <template is="dom-repeat" items="[[items]]">
         <hr hidden$="[[!item.separator]]" />
-        <a href$="[[item.url]]" hidden$="[[item.separator]]"
-           on-click="_onClick" data-idx$="[[item.idx]]">
-          [[item.text]]
-        </a>
+        <template is="dom-if" if="[[!item.separator]]">
+          <a href$="[[item.url]]" on-click="_onClick" data-idx$="[[item.idx]]">
+            [[item.text]]
+          </a>
+        </template>
       </template>
     </div>
   </template>

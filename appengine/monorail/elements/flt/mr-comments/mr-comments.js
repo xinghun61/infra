@@ -38,19 +38,14 @@ class MrComments extends ReduxMixin(Polymer.Element) {
         type: Number,
         computed: '_computeCommentsHiddenCount(commentsShownCount, comments.length)',
       },
-      _deletedCommentsHidden: {
-        type: Boolean,
-        value: true,
-      },
       _hideToggle: {
         type: Boolean,
         value: false,
         computed: '_computeHideToggle(_commentsHiddenCount)',
       },
-      _hideDeletedToggle: {
-        type: Boolean,
-        value: false,
-        computed: '_computeHideDeletedToggle(comments)',
+      _expandedDeletedComments: {
+        type: Object,
+        value: {},
       },
     };
   }
@@ -83,6 +78,12 @@ class MrComments extends ReduxMixin(Polymer.Element) {
     });
   }
 
+  _toggleHideDeletedComment(comment, shouldExpand) {
+    const expandComment = Object.assign({}, this._expandDeletedComments);
+    expandComment[comment.sequenceNum] = shouldExpand;
+    this._expandedDeletedComments = expandComment;
+  }
+
   _offerCommentOptions(comment) {
     return comment.canDelete || comment.canFlag;
   }
@@ -92,8 +93,24 @@ class MrComments extends ReduxMixin(Polymer.Element) {
             || (comment.isDeleted && comment.canDelete));
   }
 
-  _getCommentOptions(comment) {
+  _hideDeletedComment(expandedDeletedComments, comment) {
+    return (comment.isDeleted
+            && !expandedDeletedComments[comment.sequenceNum]);
+  }
+
+  _getCommentOptions(expandedDeletedComments, comment) {
     const options = [];
+    if (this._canExpandDeletedComment(comment)) {
+      const expanded = expandedDeletedComments[comment.sequenceNum];
+      const text = (expanded ? 'Hide' : 'Show') + ' comment content';
+      options.push({
+        url: '#',
+        text: text,
+        handle: this._toggleHideDeletedComment.bind(this, comment, !expanded),
+        idx: options.length,
+      });
+      options.push({separator: true});
+    }
     if (comment.canDelete) {
       const text = (comment.isDeleted ? 'Undelete' : 'Delete') + ' comment';
       options.push({
@@ -133,29 +150,6 @@ class MrComments extends ReduxMixin(Polymer.Element) {
 
   _computeCommentToggleVerb(commentsHidden) {
     return commentsHidden ? 'Show' : 'Hide';
-  }
-
-  toggleDeletedComments() {
-    this._deletedCommentsHidden = !this._deletedCommentsHidden;
-  }
-
-  _hideDeletedComment(deletedCommentsHidden, comment) {
-    // If the comment is flagged/deleted and we have permission to
-    // un-flag/un-delete it, then expand it if requested.
-    if (!comment.isDeleted) {
-      return false;
-    }
-    if (this._canExpandDeletedComment(comment)) {
-      return deletedCommentsHidden;
-    }
-    // Otherwise, it should always be hidden.
-    return true;
-  }
-
-  _computeHideDeletedToggle(comments) {
-    return !comments.some((comment) => {
-      return comment.isDeleted && comment.canDelete;
-    });
   }
 
   _pluralize(count, baseWord, pluralWord) {

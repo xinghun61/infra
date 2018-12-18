@@ -72,9 +72,6 @@
     <button on-click="toggleComments" class="toggle" hidden$="[[_hideToggle]]">
       [[_computeCommentToggleVerb(_commentsHidden)]] [[_commentsHiddenCount]] older [[_pluralize(_commentsHiddenCount, 'comment')]].
     </button>
-    <button on-click="toggleDeletedComments" class="toggle" hidden$="[[_hideDeletedToggle]]">
-      [[_computeCommentToggleVerb(_deletedCommentsHidden)]] deleted and flagged comments.
-    </button>
     <template is="dom-repeat" items="[[comments]]" as="comment">
       <div class="card-comment" hidden$=[[_computeCommentHidden(_commentsHidden,_commentsHiddenCount,index)]]>
         <span role="heading" aria-level$="[[headingLevel]]" class="comment-header">
@@ -83,16 +80,16 @@
           <chops-timestamp timestamp="[[comment.timestamp]]"></chops-timestamp>
           <template is="dom-if" if=[[_offerCommentOptions(comment)]]>
             <div class="comment-options">
-              <mr-dropdown items="[[_getCommentOptions(comment)]]" icon="more-vert"></mr-dropdown>
+              <mr-dropdown items="[[_getCommentOptions(_expandedDeletedComments, comment)]]" icon="more-vert"></mr-dropdown>
             </div>
           </template>
         </span>
-        <template is="dom-if" if="[[_hideDeletedComment(_deletedCommentsHidden, comment)]]">
+        <template is="dom-if" if="[[_hideDeletedComment(_expandedDeletedComments, comment)]]">
           <span class="deleted-comment-notice">
             Deleted comment
           </span>
         </template>
-        <template is="dom-if" if="[[!_hideDeletedComment(_deletedCommentsHidden, comment)]]">
+        <template is="dom-if" if="[[!_hideDeletedComment(_expandedDeletedComments, comment)]]">
           <template is="dom-if" if="[[_showDiff(comment)]]">
             <div class="issue-diff">
               <template is="dom-repeat" items="[[comment.amendments]]" as="delta">
