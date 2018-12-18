@@ -24,7 +24,7 @@ import (
 
 // AddRequest enqueues a new task request with the given time, (or if the task
 // exists already, notifies that the task was idle at the given time).
-func (s *State) addRequest(requestID string, request *TaskRequest, t time.Time) {
+func (s *StateProto) addRequest(requestID string, request *TaskRequest, t time.Time) {
 	if _, ok := s.getRequest(requestID); ok {
 		// Request already exists, simply notify that it should be idle at the
 		// given time.
@@ -36,7 +36,7 @@ func (s *State) addRequest(requestID string, request *TaskRequest, t time.Time) 
 }
 
 // markIdle implements MarkIdle for a given state.
-func (s *State) markIdle(workerID string, labels LabelSet, t time.Time) {
+func (s *StateProto) markIdle(workerID string, labels LabelSet, t time.Time) {
 	worker, ok := s.Workers[workerID]
 	if !ok {
 		// This is a new worker, create it and return.
@@ -77,7 +77,7 @@ func (s *State) markIdle(workerID string, labels LabelSet, t time.Time) {
 }
 
 // notifyRequest implements Scheduler.NotifyRequest for a given State.
-func (s *State) notifyRequest(requestID string, workerID string, t time.Time) {
+func (s *StateProto) notifyRequest(requestID string, workerID string, t time.Time) {
 	if requestID == "" {
 		panic("Must supply a requestID.")
 	}
@@ -94,7 +94,7 @@ func (s *State) notifyRequest(requestID string, workerID string, t time.Time) {
 }
 
 // abortRequest implements Scheduler.AbortRequest for a given State.
-func (s *State) abortRequest(requestID string, t time.Time) {
+func (s *StateProto) abortRequest(requestID string, t time.Time) {
 	// Reuse the notifyRequest logic. First, notify that task is not running. Then, remove
 	// the request from queue if it is present.
 	s.notifyRequest(requestID, "", t)
@@ -108,7 +108,7 @@ func (s *State) abortRequest(requestID string, t time.Time) {
 // getRequest looks up the given requestID among either the running or queued
 // tasks, and returns (the request if it exists, boolean indication if
 // request exists).
-func (s *State) getRequest(requestID string) (r *TaskRequest, ok bool) {
+func (s *StateProto) getRequest(requestID string) (r *TaskRequest, ok bool) {
 	s.ensureCache()
 	if wid, ok := s.RunningRequestsCache[requestID]; ok {
 		return s.Workers[wid].RunningTask.Request, true
@@ -120,7 +120,7 @@ func (s *State) getRequest(requestID string) (r *TaskRequest, ok bool) {
 // updateRequest fixes stale opinion about the given request. This method should
 // only be called for requests that were already determined to be stale relative
 // to time t.
-func (s *State) updateRequest(requestID string, workerID string, t time.Time,
+func (s *StateProto) updateRequest(requestID string, workerID string, t time.Time,
 	r *TaskRequest) {
 	s.ensureCache()
 	allegedWorkerID, isRunning := s.RunningRequestsCache[requestID]
@@ -179,7 +179,7 @@ func (s *State) updateRequest(requestID string, workerID string, t time.Time,
 // deleteWorkerIfOlder deletes the worker with the given ID (along with any
 // request it was running) if its confirmed time and that of any
 // request it is running is older than t.
-func (s *State) deleteWorkerIfOlder(workerID string, t time.Time) {
+func (s *StateProto) deleteWorkerIfOlder(workerID string, t time.Time) {
 	if worker, ok := s.Workers[workerID]; ok {
 		if !t.Before(worker.latestConfirmedTime()) {
 			s.deleteWorker(workerID)
@@ -188,7 +188,7 @@ func (s *State) deleteWorkerIfOlder(workerID string, t time.Time) {
 }
 
 // applyAssignment applies the given Assignment to state.
-func (s *State) applyAssignment(m *Assignment) {
+func (s *StateProto) applyAssignment(m *Assignment) {
 	s.validateAssignment(m)
 
 	// Nil here will be treated as 0 cost by startRunning call below.
@@ -216,7 +216,7 @@ func (s *State) applyAssignment(m *Assignment) {
 
 // validateAssignment ensures that all the expected preconditions of the given
 // Assignment are true, and panics otherwise.
-func (s *State) validateAssignment(m *Assignment) {
+func (s *StateProto) validateAssignment(m *Assignment) {
 	// Assignment-type-agnostic checks.
 	if _, ok := s.QueuedRequests[m.RequestId]; !ok {
 		panic(fmt.Sprintf("No request with id %s.", m.RequestId))
@@ -253,7 +253,7 @@ func (s *State) validateAssignment(m *Assignment) {
 
 // refundAccount applies a cost-sized refund to account with given id (if it
 // exists).
-func (s *State) refundAccount(accountID string, cost vector.Vector) {
+func (s *StateProto) refundAccount(accountID string, cost vector.Vector) {
 	if _, ok := s.Balances[accountID]; ok {
 		bal := s.Balances[accountID].Plus(cost)
 		s.Balances[accountID] = &bal
@@ -262,7 +262,7 @@ func (s *State) refundAccount(accountID string, cost vector.Vector) {
 
 // chargeAccount applies a cost-sized charge to the account with given id (if it
 // exists).
-func (s *State) chargeAccount(accountID string, cost vector.Vector) {
+func (s *StateProto) chargeAccount(accountID string, cost vector.Vector) {
 	if _, ok := s.Balances[accountID]; ok {
 		bal := s.Balances[accountID].Minus(cost)
 		s.Balances[accountID] = &bal
@@ -272,7 +272,7 @@ func (s *State) chargeAccount(accountID string, cost vector.Vector) {
 // startRunning starts the given requestID on the given workerID.
 // It does not validate inputs, so it should only be called if that worker
 // and request currently exist and are idle.
-func (s *State) startRunning(requestID string, workerID string,
+func (s *StateProto) startRunning(requestID string, workerID string,
 	priority int32, initialCost *vector.Vector) {
 	if initialCost == nil {
 		initialCost = vector.New()
@@ -293,7 +293,7 @@ func (s *State) startRunning(requestID string, workerID string,
 
 // deleteWorker deletes the worker with the given ID (along with any task
 // it is running).
-func (s *State) deleteWorker(workerID string) {
+func (s *StateProto) deleteWorker(workerID string) {
 	if worker, ok := s.Workers[workerID]; ok {
 		if !worker.isIdle() {
 			s.ensureCache()
@@ -305,7 +305,7 @@ func (s *State) deleteWorker(workerID string) {
 
 // deleteRequest deletes the request with the given ID, whether it is running
 // or queued. If the request is neither running nor enqueued, it does nothing.
-func (s *State) deleteRequest(requestID string) {
+func (s *StateProto) deleteRequest(requestID string) {
 	// TODO(akeshet): eliminate most of these calls to ensureCache() by
 	// by adding a getWorkerForRequest method.
 	s.ensureCache()
@@ -321,14 +321,14 @@ func (s *State) deleteRequest(requestID string) {
 // ensureCache ensures that the running request cache exists and regenerates it
 // if necessary. It should be called before attempting to access
 // RunningRequestCache.
-func (s *State) ensureCache() {
+func (s *StateProto) ensureCache() {
 	if s.RunningRequestsCache == nil {
 		s.regenCache()
 	}
 }
 
 // regenCache recomputes and stores the RunningRequestsCache.
-func (s *State) regenCache() {
+func (s *StateProto) regenCache() {
 	s.RunningRequestsCache = make(map[string]string)
 	for wid, w := range s.Workers {
 		if w.isIdle() {

@@ -41,7 +41,7 @@ import (
 // quotascheduler for a single pool, and its methods provide an implementation
 // of the quotascheduler algorithm.
 type Scheduler struct {
-	state  *State
+	state  *StateProto
 	config *Config
 }
 
@@ -270,7 +270,7 @@ func (s *Scheduler) GetRequest(rid string) (req *TaskRequest, ok bool) {
 
 // matchIdleBotsWithLabels matches requests with idle workers that already
 // share all of that request's provisionable labels.
-func matchIdleBotsWithLabels(state *State, requestsAtP orderedRequests) []*Assignment {
+func matchIdleBotsWithLabels(state *StateProto, requestsAtP orderedRequests) []*Assignment {
 	var output []*Assignment
 	for i, request := range requestsAtP {
 		if request.Scheduled {
@@ -299,7 +299,7 @@ func matchIdleBotsWithLabels(state *State, requestsAtP orderedRequests) []*Assig
 }
 
 // matchIdleBots matches requests with any idle workers.
-func matchIdleBots(state *State, requestsAtP []prioritizedRequest) []*Assignment {
+func matchIdleBots(state *StateProto, requestsAtP []prioritizedRequest) []*Assignment {
 	var output []*Assignment
 
 	// TODO(akeshet): Use maybeIdle to communicate back to caller that there is no need
@@ -353,7 +353,7 @@ func matchIdleBots(state *State, requestsAtP []prioritizedRequest) []*Assignment
 //
 // Running tasks are promoted if their quota account has a sufficiently positive
 // balance and a recharge rate that can sustain them at this level.
-func reprioritizeRunningTasks(state *State, config *Config, priority int32) {
+func reprioritizeRunningTasks(state *StateProto, config *Config, priority int32) {
 	// TODO(akeshet): jobs that are currently running, but have no corresponding account,
 	// should be demoted immediately to the FreeBucket (probably their account
 	// was deleted while running).
@@ -389,7 +389,7 @@ func reprioritizeRunningTasks(state *State, config *Config, priority int32) {
 
 // doDemote is a helper function used by reprioritizeRunningTasks
 // which demotes some jobs (selected from candidates) from priority to priority + 1.
-func doDemote(state *State, candidates []workerWithID, chargeRate float64, priority int32) {
+func doDemote(state *StateProto, candidates []workerWithID, chargeRate float64, priority int32) {
 	sortAscendingCost(candidates)
 
 	numberToDemote := minInt(len(candidates), int(math.Ceil(-chargeRate)))
@@ -401,7 +401,7 @@ func doDemote(state *State, candidates []workerWithID, chargeRate float64, prior
 // doPromote is a helper function use by reprioritizeRunningTasks
 // which promotes some jobs (selected from candidates) from any level > priority
 // to priority.
-func doPromote(state *State, candidates []workerWithID, chargeRate float64, priority int32) {
+func doPromote(state *StateProto, candidates []workerWithID, chargeRate float64, priority int32) {
 	sortDescendingCost(candidates)
 
 	numberToPromote := minInt(len(candidates), int(math.Ceil(chargeRate)))
@@ -441,7 +441,7 @@ func workersBelow(ws map[string]*Worker, priority int32, accountID string) []wor
 // preemptRunningTasks interrupts lower priority already-running tasks, and
 // replaces them with higher priority tasks. When doing so, it also reimburses
 // the account that had been charged for the task.
-func preemptRunningTasks(state *State, jobsAtP []prioritizedRequest, priority int32) []*Assignment {
+func preemptRunningTasks(state *StateProto, jobsAtP []prioritizedRequest, priority int32) []*Assignment {
 	var output []*Assignment
 	candidates := make([]workerWithID, 0, len(state.Workers))
 	// Accounts that are already running a lower priority job are not

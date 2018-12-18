@@ -22,7 +22,7 @@ import "infra/qscheduler/qslib/scheduler/config.proto";
 // of the quotascheduler algorithm.
 message SchedulerProto {
   // State is the state of the scheduler.
-  State state = 1;
+  StateProto state = 1;
 
   // Config is the config of the scheduler.
   Config config = 2;

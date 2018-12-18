@@ -19,11 +19,11 @@ import "infra/qscheduler/qslib/scheduler/task.proto";
 import "infra/qscheduler/qslib/scheduler/worker.proto";
 import "infra/qscheduler/qslib/types/vector/vector.proto";
 
-// State represents the overall state of a quota scheduler worker pool,
+// StateProto represents the overall state of a quota scheduler worker pool,
 // account set, and task queue. This is represented separately from
 // configuration information. The state is expected to be updated frequently,
 // on each scheduler tick.
-message State {
+message StateProto {
   // QueuedRequests is the set of Requests that are waiting to be assigned to a
   // worker, keyed by request id.
   map<string, TaskRequest> queued_requests = 1;

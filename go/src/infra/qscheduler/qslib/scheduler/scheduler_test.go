@@ -202,7 +202,7 @@ func TestUpdateErrors(t *testing.T) {
 	}{
 		{
 			&Scheduler{
-				state:  &State{},
+				state:  &StateProto{},
 				config: &Config{},
 			},
 			time.Unix(0, 0),
@@ -246,16 +246,16 @@ func TestUpdateBalance(t *testing.T) {
 	t2 := tutils.TimestampProto(epoch.Add(2 * time.Second))
 
 	cases := []struct {
-		State  *State
+		State  *StateProto
 		Config *Config
 		T      time.Time
-		Expect *State
+		Expect *StateProto
 	}{
 		// Case 0:
 		// Balances with no account config should be removed ("a1"). New balances
 		// should be created if necessary and incremented appropriately ("a2").
 		{
-			&State{
+			&StateProto{
 				Balances:       map[string]*vector.Vector{"a1": vector.New()},
 				LastUpdateTime: t0,
 			},
@@ -265,7 +265,7 @@ func TestUpdateBalance(t *testing.T) {
 				},
 			},
 			epoch.Add(1 * time.Second),
-			&State{
+			&StateProto{
 				Balances:       map[string]*vector.Vector{"a2": vector.New(1)},
 				LastUpdateTime: t1,
 			},
@@ -276,7 +276,7 @@ func TestUpdateBalance(t *testing.T) {
 		//
 		// Charges should be proportional to time advanced (2 seconds in this case).
 		{
-			&State{
+			&StateProto{
 				Balances: map[string]*vector.Vector{"a1": vector.New()},
 				Workers: map[string]*Worker{
 					// Worker running a task.
@@ -310,7 +310,7 @@ func TestUpdateBalance(t *testing.T) {
 				},
 			},
 			epoch.Add(2 * time.Second),
-			&State{
+			&StateProto{
 				Balances:       map[string]*vector.Vector{"a1": vector.New(1, -2, -2)},
 				LastUpdateTime: t2,
 				Workers: map[string]*Worker{

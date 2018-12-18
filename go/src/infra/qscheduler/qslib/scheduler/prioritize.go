@@ -112,7 +112,7 @@ func (s orderedRequests) forPriority(priority int32) orderedRequests {
 //     it and heap fix it. Rather than modify the slice and re-sort. This should
 //     be a bit faster, because this function is likely to only demote a
 //     fraction of jobs in the slice.
-func demoteTasksBeyondFanout(prioritizedRequests orderedRequests, state *State, config *Config) {
+func demoteTasksBeyondFanout(prioritizedRequests orderedRequests, state *StateProto, config *Config) {
 	tasksPerAccount := make(map[string]int32)
 	for _, w := range state.Workers {
 		if !w.isIdle() {

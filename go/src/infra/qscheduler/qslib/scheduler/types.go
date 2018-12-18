@@ -32,8 +32,8 @@ func NewConfig() *Config {
 }
 
 // NewState creates an returns a new State instance with all maps initialized.
-func NewState(t time.Time) *State {
-	return &State{
+func NewState(t time.Time) *StateProto {
+	return &StateProto{
 		Balances:       map[string]*vector.Vector{},
 		QueuedRequests: map[string]*TaskRequest{},
 		Workers:        map[string]*Worker{},
@@ -42,7 +42,7 @@ func NewState(t time.Time) *State {
 }
 
 // Clone returns a deep copy of the given state.
-func (s *State) Clone() *State {
+func (s *StateProto) Clone() *StateProto {
 	// Merge clone into intiated state, to ensure that any empty maps are preserved
 	// as empty maps rather than turned into nil maps as proto.Clone would do
 	// on its own.

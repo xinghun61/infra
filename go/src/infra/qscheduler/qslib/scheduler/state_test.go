@@ -281,7 +281,7 @@ func TestAbortRequest(t *testing.T) {
 }
 
 // Helper method to assert that two State instances are deeply equal.
-func assertStateEqual(t *testing.T, desc string, got *State, want *State) {
+func assertStateEqual(t *testing.T, desc string, got *StateProto, want *StateProto) {
 	t.Helper()
 	// TODO(akeshet): eliminate this call to got.regenCache() and update tests
 	// accordingly, so that we can test that cache is updated correctly by
@@ -296,12 +296,12 @@ func assertStateEqual(t *testing.T, desc string, got *State, want *State) {
 // TestApplyIdleAssignment tests that Apply for IDLE_WORKER behaves correctly.
 func TestApplyIdleAssignment(t *testing.T) {
 	t.Parallel()
-	state := &State{
+	state := &StateProto{
 		QueuedRequests: map[string]*TaskRequest{"t1": {}},
 		Workers:        map[string]*Worker{"w1": NewWorker()},
 	}
 
-	expect := &State{
+	expect := &StateProto{
 		QueuedRequests: map[string]*TaskRequest{},
 		Workers: map[string]*Worker{
 			"w1": {RunningTask: &TaskRun{
@@ -325,7 +325,7 @@ func TestApplyIdleAssignment(t *testing.T) {
 func TestApplyPreempt(t *testing.T) {
 	t.Parallel()
 	tm := time.Unix(0, 0)
-	state := &State{
+	state := &StateProto{
 		Balances: map[string]*vector.Vector{
 			"a1": vector.New(),
 			"a2": vector.New(2),
@@ -343,7 +343,7 @@ func TestApplyPreempt(t *testing.T) {
 		},
 	}
 
-	expect := &State{
+	expect := &StateProto{
 		Balances: map[string]*vector.Vector{
 			"a1": vector.New(1),
 			"a2": vector.New(1),
