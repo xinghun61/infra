@@ -17,6 +17,7 @@ from proto import build_pb2
 from proto import step_pb2
 from v2 import builds
 from test import test_util
+import bbutil
 import model
 
 
@@ -65,12 +66,12 @@ class V2BuildsTest(unittest.TestCase):
     dt2 = datetime.datetime(2018, 1, 1, 2)
     ts2 = timestamp_pb2.Timestamp(seconds=1514772000)
 
-    input_properties = {
+    input_properties = bbutil.dict_to_struct({
         'str': 'a',
         'num': 1,
         'obj': {'str': 'b'},
         'arr': [1, 2],
-    }
+    })
     output_properties = {'x': 1}
     build = mkbuild(
         create_time=dt0,
@@ -80,9 +81,7 @@ class V2BuildsTest(unittest.TestCase):
         tags=['a:b', 'c:d'],
         status=model.BuildStatus.COMPLETED,
         result=model.BuildResult.SUCCESS,
-        parameters={
-            'properties': input_properties,
-        },
+        input_properties=input_properties,
         result_details={
             'properties': output_properties,
             'swarming': {
@@ -133,11 +132,11 @@ class V2BuildsTest(unittest.TestCase):
             common_pb2.StringPair(key='c', value='d'),
         ],
         input=build_pb2.Build.Input(
-            properties=builds._dict_to_struct(input_properties),
+            properties=input_properties,
             experimental=True,
         ),
         output=build_pb2.Build.Output(
-            properties=builds._dict_to_struct(output_properties),
+            properties=bbutil.dict_to_struct(output_properties),
         ),
         infra=build_pb2.BuildInfra(
             buildbucket=build_pb2.BuildInfra.Buildbucket(canary=False,),
@@ -382,6 +381,5 @@ def mkbuild(**kwargs):
       created_by=auth.Identity('user', 'john@example.com'),
   )
   args['parameters'].update(kwargs.pop('parameters', {}))
-  args['parameters_actual'] = args['parameters']
   args.update(kwargs)
   return model.Build(**args)

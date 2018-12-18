@@ -11,6 +11,7 @@ from google.protobuf import timestamp_pb2
 
 from proto import build_pb2
 from proto import common_pb2
+import bbutil
 import buildtags
 import config
 import model
@@ -38,12 +39,6 @@ def build_to_v2(build, build_steps=None):
   result_details = build.result_details or {}
   out_props = result_details.get('properties') or {}
 
-  # TODO(nodir): remove params when all builds have input_properties.
-  params = (
-      build.parameters_actual
-      if build.parameters_actual is not None else build.parameters
-  )
-
   ret = build_pb2.Build(
       id=build.key.id(),
       builder=_get_builder_id(build),
@@ -55,14 +50,13 @@ def build_to_v2(build, build_steps=None):
       update_time=_dt2ts(build.update_time),
       cancel_reason=build.cancel_reason_v2,
       input=build_pb2.Build.Input(
-          properties=(
-              build.input_properties or
-              _dict_to_struct(params.get('properties'))
-          ),
+          properties=build.input_properties,
           experimental=build.experimental,
           gitiles_commit=build.input_gitiles_commit,
       ),
-      output=build_pb2.Build.Output(properties=_dict_to_struct(out_props)),
+      output=build_pb2.Build.Output(
+          properties=bbutil.dict_to_struct(out_props)
+      ),
       infra=build_pb2.BuildInfra(
           buildbucket=build_pb2.BuildInfra.Buildbucket(canary=build.canary),
           swarming=build_pb2.BuildInfra.Swarming(
@@ -253,14 +247,6 @@ def status_to_v1(src, dest):
 
   if dest.status is None:  # pragma: no cover
     raise MalformedBuild('invalid status in src %d' % src.id)
-
-
-def _dict_to_struct(d):
-  if d is None:
-    return None
-  s = struct_pb2.Struct()
-  s.update(d)
-  return s
 
 
 def _dt2ts(dt):

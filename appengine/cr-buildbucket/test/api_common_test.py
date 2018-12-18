@@ -126,3 +126,23 @@ class ToBucketIDTest(testing.AppengineTestCase):
 
   def test_convert_bucket_resolution_fails(self):
     self.assertIsNone(self.to_bucket_id('master.x'))
+
+
+class PropertiesToJson(testing.AppengineTestCase):
+
+  def test_basic(self):
+    expected = json.dumps(
+        {
+            'a': 'b',
+            'buildnumber': 1,
+            'another number': 1.0,
+        },
+        sort_keys=True,
+    )
+
+    actual = api_common.properties_to_json({
+        'a': 'b',
+        'buildnumber': 1,
+        'another number': 1,
+    })
+    self.assertEqual(expected, actual)

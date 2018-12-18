@@ -9,7 +9,6 @@ import datetime
 
 from google.appengine.ext import ndb
 from google.protobuf import field_mask_pb2
-from google.protobuf import timestamp_pb2
 from google.protobuf import text_format
 from google.rpc import status_pb2
 
@@ -21,21 +20,17 @@ from components.prpc import context as prpc_context
 from testing_utils import testing
 import mock
 
-from third_party import annotations_pb2
-
 from proto import build_pb2
 from proto import common_pb2
 from proto import rpc_pb2
 from proto import step_pb2
 from test import test_util
 from v2 import api
-from v2 import tokens
 from v2 import validation
-import annotations
+import bbutil
 import buildtags
 import model
 import search
-import service
 
 future = test_util.future
 
@@ -137,7 +132,7 @@ class RpcImplTests(BaseTestCase):
   @mock.patch('service.get_async', autospec=True)
   def test_trimming_exclude(self, get_async):
     get_async.return_value = future(
-        self.new_build_v1(parameters={model.PROPERTIES_PARAMETER: {'a': 'b'}})
+        self.new_build_v1(input_properties=bbutil.dict_to_struct({'a': 'b'})),
     )
     req = rpc_pb2.GetBuildRequest(id=1)
     res = self.call(self.api.GetBuild, req)
@@ -146,9 +141,7 @@ class RpcImplTests(BaseTestCase):
   @mock.patch('service.get_async', autospec=True)
   def test_trimming_include(self, get_async):
     get_async.return_value = future(
-        self.new_build_v1(parameters={
-            model.PROPERTIES_PARAMETER: {'a': 'b'},
-        }),
+        self.new_build_v1(input_properties=bbutil.dict_to_struct({'a': 'b'})),
     )
     req = rpc_pb2.GetBuildRequest(
         id=1, fields=field_mask_pb2.FieldMask(paths=['input.properties'])
@@ -309,7 +302,6 @@ class UpdateBuildTests(BaseTestCase):
         created_by=auth.Identity('user', 'foo@google.com'),
         create_time=utils.utcnow(),
         start_time=utils.utcnow(),
-        parameters_actual=dict(),
     )
     build.put()
     yield build

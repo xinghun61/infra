@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import base64
 import datetime
 import json
 
@@ -10,10 +9,10 @@ from components import auth
 from components import auth_testing
 from testing_utils import testing
 
-from proto import launcher_pb2
 from swarming import swarmbucket_api
 from test import config_test
 from test.test_util import future
+import api_common
 import config
 import model
 import sequence
@@ -272,30 +271,27 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
             u'-recipe',
             u'presubmit',
             u'-properties',
-            json.dumps(
-                {
-                    'buildbucket': {
-                        'hostname': 'cr-buildbucket.appspot.com',
-                        'build': {
-                            'project': 'chromium',
-                            'bucket': 'luci.chromium.try',
-                            'created_by': 'anonymous:anonymous',
-                            'created_ts': 1448841600000000,
-                            'id': '1',
-                            'tags': [],
-                        },
+            api_common.properties_to_json({
+                'buildbucket': {
+                    'hostname': 'cr-buildbucket.appspot.com',
+                    'build': {
+                        'project': 'chromium',
+                        'bucket': 'luci.chromium.try',
+                        'created_by': 'anonymous:anonymous',
+                        'created_ts': 1448841600000000,
+                        'id': '1',
+                        'tags': [],
                     },
-                    '$recipe_engine/runtime': {
-                        'is_experimental': False,
-                        'is_luci': True,
-                    },
-                    'foo': 'bar',
-                    'baz': 1,
-                    'buildername': 'linux_chromium_rel_ng',
-                    'buildnumber': 0,
                 },
-                sort_keys=True,
-            ),
+                '$recipe_engine/runtime': {
+                    'is_experimental': False,
+                    'is_luci': True,
+                },
+                'foo': 'bar',
+                'baz': 1,
+                'buildername': 'linux_chromium_rel_ng',
+                'buildnumber': 0,
+            }),
             u'-logdog-project',
             u'chromium',
         ],

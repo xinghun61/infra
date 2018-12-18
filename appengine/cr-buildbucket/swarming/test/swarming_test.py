@@ -34,6 +34,8 @@ from proto.config import service_config_pb2
 from swarming import isolate
 from swarming import swarming
 from test.test_util import future, future_exception, ununicide
+import api_common
+import bbutil
 import errors
 import model
 import user
@@ -44,6 +46,7 @@ LINUX_CHROMIUM_REL_NG_CACHE_NAME = (
 
 
 class BaseTest(testing.AppengineTestCase):
+  maxDiff = None
 
   def setUp(self):
     super(BaseTest, self).setUp()
@@ -82,7 +85,6 @@ class SwarmingTest(BaseTest):
 
     self.json_response = None
     self.net_err_response = None
-    self.maxDiff = None
 
     def json_request_async(*_, **__):
       if self.net_err_response is not None:
@@ -671,10 +673,10 @@ class SwarmingTest(BaseTest):
     )
 
     build = mkBuild(
+        input_properties=bbutil.dict_to_struct({'a': 'b'}),
         parameters={
             model.BUILDER_PARAMETER:
                 'linux_chromium_rel_ng',
-            'properties': {'a': 'b'},
             'changes': [{
                 'author': {'email': 'bob@example.com'},
                 'repo_url': 'https://chromium.googlesource.com/chromium/src',
@@ -744,44 +746,35 @@ class SwarmingTest(BaseTest):
             '-recipe',
             'recipe',
             '-properties',
-            json.dumps(
-                {
-                    'a':
-                        'b',
-                    'blamelist': ['bob@example.com'],
-                    'buildbucket': {
-                        'hostname': 'cr-buildbucket.appspot.com',
-                        'build': {
-                            'project':
-                                'chromium',
-                            'bucket':
-                                'luci.chromium.try',
-                            'created_by':
-                                'user:john@example.com',
-                            'created_ts':
-                                utils.datetime_to_timestamp(build.create_time),
-                            'id':
-                                '1',
-                            'tags': [],
-                        },
-                    },
-                    'buildername':
-                        'linux_chromium_rel_ng',
-                    'buildnumber':
-                        1,
-                    'predefined-property':
-                        'x',
-                    'predefined-property-bool':
-                        True,
-                    'repository':
-                        'https://chromium.googlesource.com/chromium/src',
-                    '$recipe_engine/runtime': {
-                        'is_experimental': False,
-                        'is_luci': True,
+            api_common.properties_to_json({
+                'a': 'b',
+                'blamelist': ['bob@example.com'],
+                'buildbucket': {
+                    'hostname': 'cr-buildbucket.appspot.com',
+                    'build': {
+                        'project':
+                            'chromium',
+                        'bucket':
+                            'luci.chromium.try',
+                        'created_by':
+                            'user:john@example.com',
+                        'created_ts':
+                            utils.datetime_to_timestamp(build.create_time),
+                        'id':
+                            '1',
+                        'tags': [],
                     },
                 },
-                sort_keys=True,
-            ),
+                'buildername': 'linux_chromium_rel_ng',
+                'buildnumber': 1,
+                'predefined-property': 'x',
+                'predefined-property-bool': True,
+                'repository': 'https://chromium.googlesource.com/chromium/src',
+                '$recipe_engine/runtime': {
+                    'is_experimental': False,
+                    'is_luci': True,
+                },
+            }),
             '-logdog-project',
             'chromium',
         ],
@@ -909,9 +902,7 @@ class SwarmingTest(BaseTest):
     self.assertEqual(
         build.logdog_prefix, 'buildbucket/cr-buildbucket.appspot.com/1'
     )
-    self.assertEqual(
-        build.parameters_actual['properties']['predefined-property'], 'x'
-    )
+    self.assertEqual(build.input_properties['predefined-property'], 'x')
     self.assertEqual(build.recipe.name, 'recipe')
 
     # Test delegation token params.
@@ -1188,34 +1179,31 @@ class SwarmingTest(BaseTest):
             '-recipe',
             'recipe',
             '-properties',
-            json.dumps(
-                {
-                    'buildbucket': {
-                        'hostname': 'cr-buildbucket.appspot.com',
-                        'build': {
-                            'project':
-                                'chromium',
-                            'bucket':
-                                'luci.chromium.try',
-                            'created_by':
-                                'user:john@example.com',
-                            'created_ts':
-                                utils.datetime_to_timestamp(build.create_time),
-                            'id':
-                                '1',
-                            'tags': [],
-                        },
+            api_common.properties_to_json({
+                'buildbucket': {
+                    'hostname': 'cr-buildbucket.appspot.com',
+                    'build': {
+                        'project':
+                            'chromium',
+                        'bucket':
+                            'luci.chromium.try',
+                        'created_by':
+                            'user:john@example.com',
+                        'created_ts':
+                            utils.datetime_to_timestamp(build.create_time),
+                        'id':
+                            '1',
+                        'tags': [],
                     },
-                    '$recipe_engine/runtime': {
-                        'is_experimental': False,
-                        'is_luci': True,
-                    },
-                    'buildername': 'linux_chromium_rel_ng',
-                    'predefined-property': 'x',
-                    'predefined-property-bool': True,
                 },
-                sort_keys=True,
-            ),
+                '$recipe_engine/runtime': {
+                    'is_experimental': False,
+                    'is_luci': True,
+                },
+                'buildername': 'linux_chromium_rel_ng',
+                'predefined-property': 'x',
+                'predefined-property-bool': True,
+            }),
             '-logdog-project',
             'chromium',
         ],

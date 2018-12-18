@@ -5,10 +5,13 @@
 import json
 
 from google.appengine.ext import ndb
+from google.protobuf import json_format
+from google.protobuf import struct_pb2
 from protorpc import messages
 
 from components import utils
 
+import bbutil
 import config
 import logging
 import model
@@ -108,6 +111,44 @@ def legacy_bucket_name(bucket_id, is_luci):
 
   _, bucket_name = config.parse_bucket_id(bucket_id)
   return bucket_name
+
+
+# List of deprecated properties that are converted from float to int for
+# backward compatibility.
+# TODO(crbug.com/877161): remove this list.
+INTEGER_PROPERTIES = [
+    'buildnumber',
+    'issue',
+    'patchset',
+    'patch_issue',
+    'patch_set',
+]
+
+
+def properties_to_json(properties):
+  """Converts properties to JSON.
+
+  properties should be struct_pb2.Struct, but for convenience in tests
+  a dict is also accepted.
+
+  CAUTION: in general converts all numbers to floats,
+  because JSON format does not distinguish floats and ints.
+  For backward compatibility, temporarily (crbug.com/877161) renders widely
+  used, deprecated properties as integers, see INTEGER_PROPERTIES.
+  """
+  assert isinstance(properties, (dict, struct_pb2.Struct)), properties
+  if isinstance(properties, dict):  # pragma: no branch
+    properties = bbutil.dict_to_struct(properties)
+
+  # Note: this dict does not necessarily equal the original one.
+  # In particular, an int may turn into a float.
+  as_dict = json_format.MessageToDict(properties)
+
+  for p in INTEGER_PROPERTIES:
+    if isinstance(as_dict.get(p), float):
+      as_dict[p] = int(as_dict[p])
+
+  return json.dumps(as_dict, sort_keys=True)
 
 
 def build_to_message(build, include_lease_key=False):

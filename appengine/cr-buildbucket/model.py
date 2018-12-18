@@ -159,8 +159,6 @@ class Build(ndb.Model):
   tags = ndb.StringProperty(repeated=True)
   # immutable arbitrary build parameters.
   parameters = datastore_utils.DeterministicJsonProperty(json_type=dict)
-  # like parameters, but includes server-computed values.
-  parameters_actual = datastore_utils.DeterministicJsonProperty(json_type=dict)
   # PubSub message parameters for build status change notifications.
   pubsub_callback = ndb.StructuredProperty(PubSubCallback, indexed=False)
   # id of the original build that this build was derived from.

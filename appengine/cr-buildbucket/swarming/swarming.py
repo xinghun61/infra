@@ -60,6 +60,7 @@ from proto.config import project_config_pb2
 from v2 import tokens
 import annotations
 import api_common
+import bbutil
 import buildtags
 import config
 import errors
@@ -217,7 +218,7 @@ def validate_build_parameters(builder_name, params):
         bad('change author email not specified')
 
   properties = params.pop(_PARAM_PROPERTIES, None)
-  if properties is not None:
+  if properties is not None:  # pragma: no cover. TODO(nodir): remove this code.
     assert_object('properties', properties)
     if properties.pop('buildername', builder_name) != builder_name:
       bad('inconsistent builder name')
@@ -434,9 +435,7 @@ def _create_task_def_async(
   assert isinstance(build_number,
                     int) or build_number is None, type(build_number)
   assert isinstance(fake_build, bool), type(fake_build)
-  params = copy.deepcopy(build.parameters) or {}
-  build.parameters_actual = params
-  # params is an alias for build.parameters_actual.
+  params = build.parameters or {}
   validate_build_parameters(builder_cfg.name, params)
   swarming_param = params.get(_PARAM_SWARMING) or {}
 
@@ -527,9 +526,7 @@ def _create_task_def_async(
 def _setup_recipes(build, builder_cfg, build_number, params):
   """Initializes a build request using recipes.
 
-  Mutates build and params.
-
-  TODO(nodir): remove params, update build.input_properties.
+  Mutates build.
 
   Returns:
     extra_swarming_tags, extra_cipd_packages, extra_task_template_params
@@ -540,26 +537,28 @@ def _setup_recipes(build, builder_cfg, build_number, params):
 
   # Properties specified in build parameters must override those in builder
   # config.
-  build_properties = flatten_swarmingcfg.read_properties(builder_cfg.recipe)
-  build_properties.update(params.get(_PARAM_PROPERTIES) or {})
-  params[_PARAM_PROPERTIES] = build_properties
-  # build_properties is an alias for params[_PARAM_PROPERTIES]
+  props = struct_pb2.Struct()
+  props.update(flatten_swarmingcfg.read_properties(builder_cfg.recipe))
+  bbutil.update_struct(props, build.input_properties or struct_pb2.Struct())
 
   # In order to allow some builders to behave like other builders, we allow
   # builders to explicitly set buildername.
-  if 'buildername' not in build_properties:
-    build_properties['buildername'] = builder_cfg.name
+  if 'buildername' not in props:
+    props['buildername'] = builder_cfg.name
 
-  build_properties.update(buildbucket=_buildbucket_property(build),)
+  # TODO(nodir): use v2 format here.
+  props['buildbucket'] = _buildbucket_property(build)
+
   assert isinstance(build.experimental, bool)
-  build_properties.setdefault('$recipe_engine/runtime', {}).update(
-      is_luci=True,
-      is_experimental=build.experimental,
-  )
+  props.get_or_create_struct('$recipe_engine/runtime').update({
+      'is_luci': True,
+      'is_experimental': build.experimental,
+  })
 
   if build_number is not None:  # pragma: no branch
-    build_properties['buildnumber'] = build_number
+    props['buildnumber'] = build_number
 
+  # TODO(nodir): remove changes support. This is legacy.
   changes = params.get(_PARAM_CHANGES)
   if changes:  # pragma: no branch
     # Buildbucket-Buildbot integration passes repo_url of the first change in
@@ -572,16 +571,16 @@ def _setup_recipes(build, builder_cfg, build_number, params):
     # swarmbucket.
     repo_url = changes[0].get('repo_url')
     if repo_url:  # pragma: no branch
-      build_properties['repository'] = repo_url
+      props['repository'] = repo_url
 
     # Buildbot-Buildbucket integration converts emails in changes to blamelist
     # property.
     emails = [c.get('author', {}).get('email') for c in changes]
-    build_properties['blamelist'] = filter(None, emails)
+    props['blamelist'] = filter(None, emails)
 
   extra_task_template_params = {
       'recipe': builder_cfg.recipe.name,
-      'properties_json': json.dumps(build_properties, sort_keys=True),
+      'properties_json': api_common.properties_to_json(props),
       'checkout_dir': _KITCHEN_CHECKOUT,
   }
   extra_swarming_tags = [
@@ -611,8 +610,7 @@ def _setup_recipes(build, builder_cfg, build_number, params):
         'recipe_repository:' + builder_cfg.recipe.repository
     )
 
-  build.input_properties = build.input_properties or struct_pb2.Struct()
-  build.input_properties.update(build_properties)
+  build.input_properties = props
   return extra_swarming_tags, extra_cipd_packages, extra_task_template_params
 
 
