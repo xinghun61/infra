@@ -36,7 +36,5 @@ cron:
 
 - description: Prepare weekly flakiness report by component and test from flake occurrences
   url: /flake/detection/cron/generate-flakiness-report
-  # Dummy schedule, only while testing this by hand. Real schedule below.
-  schedule: 3rd monday of aug 00:00
-  # Mondays at 4AM PST expressed in UTC.
-  # schedule: every monday 14:00
+  # Everyday at 12AM PST expressed in UTC.
+  schedule: every day 08:00
