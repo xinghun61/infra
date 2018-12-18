@@ -3,9 +3,9 @@
 
 Please check the issue and take appropriate action.
 
+Updates for approval [approval_name]:
 [if-any comment.amendments][#
-  ]Updates for approval [approval_name]:
-[#][for comment.amendments]      [comment.amendments.field_name]: [format "raw"][comment.amendments.newvalue][end]
+  ][for comment.amendments]      [comment.amendments.field_name]: [format "raw"][comment.amendments.newvalue][end]
 [#][end][end]
 
 [if-any comment.content][#
