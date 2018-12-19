@@ -18,7 +18,7 @@ package frontend
 import (
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
 	"infra/appengine/qscheduler-swarming/app/config"
-	"infra/swarming"
+	swarming "infra/swarming"
 
 	"github.com/golang/protobuf/proto"
 	"go.chromium.org/luci/appengine/gaeauth/server"

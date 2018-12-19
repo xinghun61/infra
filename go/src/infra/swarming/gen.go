@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package swarming
+// Code generated but not really. DO NOT EDIT.
+// That's not really true but we need to silence golint.
 
-//go:generate cproto -proto-path ../../../../luci/appengine/swarming/proto ../../../../luci/appengine/swarming/proto
+package swarming_v1
+
+//go:generate cproto -proto-path ../../../../luci/appengine/swarming/proto/api ../../../../luci/appengine/swarming/proto/api
 //go:generate svcdec -type ExternalSchedulerServer

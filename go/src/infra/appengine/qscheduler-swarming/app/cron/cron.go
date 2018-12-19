@@ -21,7 +21,7 @@ import (
 
 	"infra/appengine/qscheduler-swarming/app/entities"
 	"infra/appengine/qscheduler-swarming/app/frontend"
-	"infra/swarming"
+	swarming "infra/swarming"
 
 	"github.com/pkg/errors"
 

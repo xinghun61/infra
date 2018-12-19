@@ -20,7 +20,7 @@ import (
 	"sort"
 
 	"infra/appengine/qscheduler-swarming/app/entities"
-	"infra/swarming"
+	swarming "infra/swarming"
 
 	"github.com/pkg/errors"
 
@@ -235,7 +235,7 @@ func toTaskInstantState(s swarming.TaskState) (reconciler.TaskInstant_State, boo
 		fallthrough
 	case swarming.TaskState_TIMED_OUT:
 		fallthrough
-	case swarming.TaskState_BOT_DIED:
+	case swarming.TaskState_INTERNAL_FAILURE:
 		fallthrough
 	case swarming.TaskState_CANCELED:
 		fallthrough

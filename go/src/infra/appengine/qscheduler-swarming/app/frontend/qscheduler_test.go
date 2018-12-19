@@ -23,7 +23,7 @@ import (
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
 	"infra/qscheduler/qslib/tutils"
-	"infra/swarming"
+	swarming "infra/swarming"
 )
 
 func TestAssignTasks(t *testing.T) {

@@ -1,3 +1,0 @@
-This directory contains golang bindings for protos from the swarming project.
-The proto files themselves live alongside python code in the python repo.
-
