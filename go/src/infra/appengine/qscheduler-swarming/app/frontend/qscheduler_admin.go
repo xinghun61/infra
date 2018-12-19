@@ -31,6 +31,9 @@ import (
 // QSchedulerAdminServerImpl implements QSchedulerAdminServer.
 type QSchedulerAdminServerImpl struct{}
 
+// QSchedulerViewServerImpl implements QSchedulerViewServer.
+type QSchedulerViewServerImpl struct{}
+
 // CreateSchedulerPool implements QSchedulerAdminServer.
 func (s *QSchedulerAdminServerImpl) CreateSchedulerPool(ctx context.Context, r *qscheduler.CreateSchedulerPoolRequest) (*qscheduler.CreateSchedulerPoolResponse, error) {
 	if r.Config == nil {
@@ -68,7 +71,7 @@ func (s *QSchedulerAdminServerImpl) CreateAccount(ctx context.Context, r *qsched
 }
 
 // ListAccounts implements QSchedulerAdminServer.
-func (s *QSchedulerAdminServerImpl) ListAccounts(ctx context.Context, r *qscheduler.ListAccountsRequest) (*qscheduler.ListAccountsResponse, error) {
+func (s *QSchedulerViewServerImpl) ListAccounts(ctx context.Context, r *qscheduler.ListAccountsRequest) (*qscheduler.ListAccountsResponse, error) {
 	sp, err := entities.Load(ctx, r.PoolId)
 	if err != nil {
 		return nil, err
@@ -82,7 +85,7 @@ func (s *QSchedulerAdminServerImpl) ListAccounts(ctx context.Context, r *qschedu
 }
 
 // InspectPool implements QSchedulerAdminServer.
-func (s *QSchedulerAdminServerImpl) InspectPool(ctx context.Context, r *qscheduler.InspectPoolRequest) (*qscheduler.InspectPoolResponse, error) {
+func (s *QSchedulerViewServerImpl) InspectPool(ctx context.Context, r *qscheduler.InspectPoolRequest) (*qscheduler.InspectPoolResponse, error) {
 	sp, err := entities.Load(ctx, r.PoolId)
 	if err != nil {
 		return nil, err

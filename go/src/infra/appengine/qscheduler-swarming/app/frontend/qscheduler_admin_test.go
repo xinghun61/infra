@@ -63,6 +63,7 @@ func TestCreateListAccount(t *testing.T) {
 	Convey("Given an admin server running in a test context", t, func() {
 		ctx := gaetesting.TestingContext()
 		admin := &QSchedulerAdminServerImpl{}
+		view := &QSchedulerViewServerImpl{}
 		Convey("when CreateAccount is called with a nonexistent pool", func() {
 			req := qscheduler.CreateAccountRequest{
 				PoolId: poolID,
@@ -81,7 +82,7 @@ func TestCreateListAccount(t *testing.T) {
 			req := qscheduler.ListAccountsRequest{
 				PoolId: poolID,
 			}
-			resp, err := admin.ListAccounts(ctx, &req)
+			resp, err := view.ListAccounts(ctx, &req)
 			Convey("then an error with code notFound is returned.", func() {
 				So(resp, ShouldBeNil)
 				So(err, ShouldNotBeNil)
@@ -103,7 +104,7 @@ func TestCreateListAccount(t *testing.T) {
 				req := qscheduler.ListAccountsRequest{
 					PoolId: poolID,
 				}
-				resp, err := admin.ListAccounts(ctx, &req)
+				resp, err := view.ListAccounts(ctx, &req)
 				Convey("then it returns no results.", func() {
 					So(resp, ShouldResemble, &qscheduler.ListAccountsResponse{})
 					So(err, ShouldBeNil)
@@ -125,7 +126,7 @@ func TestCreateListAccount(t *testing.T) {
 					req := qscheduler.ListAccountsRequest{
 						PoolId: poolID,
 					}
-					resp, err := admin.ListAccounts(ctx, &req)
+					resp, err := view.ListAccounts(ctx, &req)
 					Convey("then it returns a list with that account.", func() {
 						So(err, ShouldBeNil)
 						So(resp.Accounts, ShouldContainKey, accountID)

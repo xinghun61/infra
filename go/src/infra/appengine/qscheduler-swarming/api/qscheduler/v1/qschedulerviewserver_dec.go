@@ -8,9 +8,9 @@ import (
 	proto "github.com/golang/protobuf/proto"
 )
 
-type DecoratedQSchedulerAdmin struct {
+type DecoratedQSchedulerView struct {
 	// Service is the service to decorate.
-	Service QSchedulerAdminServer
+	Service QSchedulerViewServer
 	// Prelude is called for each method before forwarding the call to Service.
 	// If Prelude returns an error, then the call is skipped and the error is
 	// processed via the Postlude (if one is defined), or it is returned directly.
@@ -23,36 +23,36 @@ type DecoratedQSchedulerAdmin struct {
 	Postlude func(c context.Context, methodName string, rsp proto.Message, err error) error
 }
 
-func (s *DecoratedQSchedulerAdmin) CreateSchedulerPool(c context.Context, req *CreateSchedulerPoolRequest) (rsp *CreateSchedulerPoolResponse, err error) {
+func (s *DecoratedQSchedulerView) ListAccounts(c context.Context, req *ListAccountsRequest) (rsp *ListAccountsResponse, err error) {
 	if s.Prelude != nil {
 		var newCtx context.Context
-		newCtx, err = s.Prelude(c, "CreateSchedulerPool", req)
+		newCtx, err = s.Prelude(c, "ListAccounts", req)
 		if err == nil {
 			c = newCtx
 		}
 	}
 	if err == nil {
-		rsp, err = s.Service.CreateSchedulerPool(c, req)
+		rsp, err = s.Service.ListAccounts(c, req)
 	}
 	if s.Postlude != nil {
-		err = s.Postlude(c, "CreateSchedulerPool", rsp, err)
+		err = s.Postlude(c, "ListAccounts", rsp, err)
 	}
 	return
 }
 
-func (s *DecoratedQSchedulerAdmin) CreateAccount(c context.Context, req *CreateAccountRequest) (rsp *CreateAccountResponse, err error) {
+func (s *DecoratedQSchedulerView) InspectPool(c context.Context, req *InspectPoolRequest) (rsp *InspectPoolResponse, err error) {
 	if s.Prelude != nil {
 		var newCtx context.Context
-		newCtx, err = s.Prelude(c, "CreateAccount", req)
+		newCtx, err = s.Prelude(c, "InspectPool", req)
 		if err == nil {
 			c = newCtx
 		}
 	}
 	if err == nil {
-		rsp, err = s.Service.CreateAccount(c, req)
+		rsp, err = s.Service.InspectPool(c, req)
 	}
 	if s.Postlude != nil {
-		err = s.Postlude(c, "CreateAccount", rsp, err)
+		err = s.Postlude(c, "InspectPool", rsp, err)
 	}
 	return
 }

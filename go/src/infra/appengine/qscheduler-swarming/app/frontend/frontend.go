@@ -47,6 +47,11 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 		Service: &QSchedulerAdminServerImpl{},
 		Prelude: checkAdminAccess,
 	})
+	qscheduler.RegisterQSchedulerViewServer(&apiServer, &qscheduler.DecoratedQSchedulerView{
+		Service: &QSchedulerViewServerImpl{},
+		// TODO(akeshet): Separate view access from admin access.
+		Prelude: checkAdminAccess,
+	})
 
 	discovery.Enable(&apiServer)
 

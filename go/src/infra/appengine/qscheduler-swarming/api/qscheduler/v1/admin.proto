@@ -14,8 +14,6 @@ import "infra/qscheduler/qslib/scheduler/state.proto";
 
 // QSchedulerAdmin is the administrative API for a quotascheduler.
 service QSchedulerAdmin {
-    // Administrative endpoints.
-
     // CreateSchedulerPool creates a scheduler, with the given configuration
     // options.
     rpc CreateSchedulerPool(CreateSchedulerPoolRequest) returns (CreateSchedulerPoolResponse);
@@ -23,7 +21,11 @@ service QSchedulerAdmin {
     // CreateAccount creates a quota account within a scheduler, with the
     // given configuration options.
     rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse);
+}
 
+// QSchedulerView is a inspection / viewing API for quotascheduler. All calls
+// are read-only.
+service QSchedulerView {
     // ListAccounts returns the set of accounts for a given scheduler.
     rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse);
 

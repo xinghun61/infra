@@ -14,6 +14,7 @@
 
 //go:generate cproto
 //go:generate svcdec -type QSchedulerAdminServer
+//go:generate svcdec -type QSchedulerViewServer
 //go:generate goimports -w .
 
 // Package qscheduler contains service definitions for the qscheduler app.
