@@ -40,5 +40,5 @@ cron:
   schedule: every day 08:00
 
 - description: Update open FlakeIssue entities to reflect on what's in Monorail.
-  url: /auto_action/cron/update-open-flake-issues
+  url: /auto-action/cron/update-open-flake-issues
   schedule: every 2 hours

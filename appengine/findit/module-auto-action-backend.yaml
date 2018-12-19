@@ -11,7 +11,7 @@ basic_scaling:
 
 handlers:
 # For cron jobs and task queues, enforce admin permission.
-- url: /auto_action/(cron|task)/.*
+- url: /auto-action/(cron|task)/.*
   script: backend_main.auto_action_backend_web_application
   secure: always
   login: admin

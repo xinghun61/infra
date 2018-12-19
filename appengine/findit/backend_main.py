@@ -64,9 +64,9 @@ if appengine_util.IsInProductionApp():
 
 # "auto-action-backend" module.
 auto_action_backend_web_pages_handler_mappings = [
-    ('auto_action/cron/update-open-flake-issues',
+    ('/auto-action/cron/update-open-flake-issues',
      update_open_flake_issues.UpdateOpenFlakeIssuesCron),
-    ('auto_action/task/update-open-flake-issues',
+    ('/auto-action/task/update-open-flake-issues',
      update_open_flake_issues.UpdateOpenFlakeIssuesTask),
 ]
 auto_action_backend_web_application = webapp2.WSGIApplication(

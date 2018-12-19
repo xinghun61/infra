@@ -8,10 +8,10 @@ dispatch:
   - url: "*/flake/detection/task/*"
     module: flake-detection-backend
 
-  - url: "*/auto_action/cron/*"
+  - url: "*/auto-action/cron/*"
     module: auto-action-backend
 
-  - url: "*/auto_action/task/*"
+  - url: "*/auto-action/task/*"
     module: auto-action-backend
 
   - url: "*/flake/detection/*"

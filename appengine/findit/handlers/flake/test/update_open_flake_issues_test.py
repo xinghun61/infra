@@ -13,14 +13,14 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 
 class UpdateOpenFlakeIssuesTest(WaterfallTestCase):
   app_module = webapp2.WSGIApplication([
-      ('/auto_action/cron/update-open-flake-issues',
+      ('/auto-action/cron/update-open-flake-issues',
        update_open_flake_issues.UpdateOpenFlakeIssuesCron),
   ],
                                        debug=True)
 
   def setUp(self):
     super(UpdateOpenFlakeIssuesTest, self).setUp()
-    self.url = '/auto_action/cron/update-open-flake-issues'
+    self.url = '/auto-action/cron/update-open-flake-issues'
 
   @mock.patch.object(BaseHandler, 'IsRequestFromAppSelf', return_value=True)
   def testTaskAddedToQueue(self, mocked_is_request_from_appself):
@@ -37,7 +37,7 @@ class UpdateOpenFlakeIssuesTest(WaterfallTestCase):
 
 class UpdateOpenFlakeIssuesTaskTest(WaterfallTestCase):
   app_module = webapp2.WSGIApplication([
-      ('/auto_action/task/update-open-flake-issues',
+      ('/auto-action/task/update-open-flake-issues',
        update_open_flake_issues.UpdateOpenFlakeIssuesTask),
   ],
                                        debug=True)
@@ -46,7 +46,7 @@ class UpdateOpenFlakeIssuesTaskTest(WaterfallTestCase):
   @mock.patch.object(flake_issue_util, 'SyncOpenFlakeIssuesWithMonorail')
   def testUpdateOpenFlakeIssuesTask(self, mocked_service,
                                     mocked_is_request_from_appself):
-    response = self.test_app.get('/auto_action/task/update-open-flake-issues')
+    response = self.test_app.get('/auto-action/task/update-open-flake-issues')
     self.assertEqual(200, response.status_int)
     self.assertTrue(mocked_service.called)
     self.assertTrue(mocked_is_request_from_appself.called)
