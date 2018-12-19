@@ -46,6 +46,9 @@ type QSchedulerServerImpl struct {
 	// solution for in-memory caching like this.
 }
 
+// TODO(akeshet): Here, and in qscheduler_admin, and generally in all rpc handlers, add a
+// GRPCifyAndLogErr call.
+
 // AssignTasks implements QSchedulerServer.
 func (s *QSchedulerServerImpl) AssignTasks(ctx context.Context, r *swarming.AssignTasksRequest) (*swarming.AssignTasksResponse, error) {
 	var response *swarming.AssignTasksResponse
