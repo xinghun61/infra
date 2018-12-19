@@ -28,11 +28,11 @@ import (
 func TestClone(t *testing.T) {
 	Convey("Given a state with some balances, accounts, and requests", t, func() {
 		s := &state{
-			balances: map[string]balance{
+			balances: map[AccountID]balance{
 				"account1": {1, 2, 3},
 				"account2": {3, 4, 5},
 			},
-			workers: map[string]*worker{
+			workers: map[WorkerID]*worker{
 				"worker1": {runningTask: &taskRun{cost: balance{11, 12, 13}, requestID: "r1", request: &request{}}},
 				"worker2": {runningTask: &taskRun{cost: balance{13, 14, 15}, requestID: "r2", request: &request{}}},
 			},

@@ -80,9 +80,9 @@ func (a LabelSet) Contains(b LabelSet) bool {
 }
 
 // NewRequest creates a new TaskRequest.
-func NewRequest(accountID string, labels []string, enqueueTime time.Time) *TaskRequest {
+func NewRequest(accountID AccountID, labels []string, enqueueTime time.Time) *TaskRequest {
 	return &TaskRequest{
-		AccountId:     accountID,
+		AccountId:     string(accountID),
 		ConfirmedTime: tutils.TimestampProto(enqueueTime),
 		EnqueueTime:   tutils.TimestampProto(enqueueTime),
 		Labels:        labels,

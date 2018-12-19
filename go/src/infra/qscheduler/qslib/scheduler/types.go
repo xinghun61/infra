@@ -30,9 +30,9 @@ func NewConfig() *Config {
 // newState creates an returns a new State instance with all maps initialized.
 func newState(t time.Time) *state {
 	return &state{
-		balances:       map[string]balance{},
-		queuedRequests: map[string]*request{},
-		workers:        map[string]*worker{},
+		balances:       map[AccountID]balance{},
+		queuedRequests: map[RequestID]*request{},
+		workers:        map[WorkerID]*worker{},
 		lastUpdateTime: t,
 	}
 }
@@ -40,18 +40,18 @@ func newState(t time.Time) *state {
 func newStateFromProto(sp *StateProto) *state {
 	s := &state{}
 	s.lastUpdateTime = tutils.Timestamp(sp.LastUpdateTime)
-	s.queuedRequests = make(map[string]*request, len(sp.QueuedRequests))
+	s.queuedRequests = make(map[RequestID]*request, len(sp.QueuedRequests))
 	for rid, req := range sp.QueuedRequests {
-		s.queuedRequests[rid] = &request{
-			accountID:     req.AccountId,
+		s.queuedRequests[RequestID(rid)] = &request{
+			accountID:     AccountID(req.AccountId),
 			confirmedTime: tutils.Timestamp(req.ConfirmedTime),
 			enqueueTime:   tutils.Timestamp(req.EnqueueTime),
 			labels:        req.Labels,
 		}
 	}
 
-	s.runningRequestsCache = make(map[string]string, len(sp.Workers))
-	s.workers = make(map[string]*worker, len(sp.Workers))
+	s.runningRequestsCache = make(map[RequestID]WorkerID, len(sp.Workers))
+	s.workers = make(map[WorkerID]*worker, len(sp.Workers))
 	for wid, w := range sp.Workers {
 		var tr *taskRun
 		if w.RunningTask != nil {
@@ -61,27 +61,27 @@ func newStateFromProto(sp *StateProto) *state {
 				cost:     cost,
 				priority: int(w.RunningTask.Priority),
 				request: &request{
-					accountID:     w.RunningTask.Request.AccountId,
+					accountID:     AccountID(w.RunningTask.Request.AccountId),
 					confirmedTime: tutils.Timestamp(w.RunningTask.Request.ConfirmedTime),
 					enqueueTime:   tutils.Timestamp(w.RunningTask.Request.EnqueueTime),
 					labels:        w.RunningTask.Request.Labels,
 				},
-				requestID: w.RunningTask.RequestId,
+				requestID: RequestID(w.RunningTask.RequestId),
 			}
-			s.runningRequestsCache[w.RunningTask.RequestId] = wid
+			s.runningRequestsCache[RequestID(w.RunningTask.RequestId)] = WorkerID(wid)
 		}
-		s.workers[wid] = &worker{
+		s.workers[WorkerID(wid)] = &worker{
 			confirmedTime: tutils.Timestamp(w.ConfirmedTime),
 			labels:        w.Labels,
 			runningTask:   tr,
 		}
 	}
 
-	s.balances = make(map[string]balance, len(sp.Balances))
+	s.balances = make(map[AccountID]balance, len(sp.Balances))
 	for aid, bal := range sp.Balances {
 		newBal := balance{}
 		copy(newBal[:], bal.Value)
-		s.balances[aid] = newBal
+		s.balances[AccountID(aid)] = newBal
 	}
 
 	return s
@@ -91,12 +91,12 @@ func (s *state) toProto() *StateProto {
 	balances := make(map[string]*StateProto_Balance, len(s.balances))
 	for aid, bal := range s.balances {
 		bCopy := bal
-		balances[aid] = &StateProto_Balance{Value: bCopy[:]}
+		balances[string(aid)] = &StateProto_Balance{Value: bCopy[:]}
 	}
 
 	queuedRequests := make(map[string]*TaskRequest, len(s.queuedRequests))
 	for rid, rq := range s.queuedRequests {
-		queuedRequests[rid] = newTaskRequest(rq)
+		queuedRequests[string(rid)] = newTaskRequest(rq)
 	}
 
 	workers := make(map[string]*Worker, len(s.workers))
@@ -108,10 +108,10 @@ func (s *state) toProto() *StateProto {
 				Cost:      costCopy[:],
 				Priority:  int32(w.runningTask.priority),
 				Request:   newTaskRequest(w.runningTask.request),
-				RequestId: w.runningTask.requestID,
+				RequestId: string(w.runningTask.requestID),
 			}
 		}
-		workers[wid] = &Worker{
+		workers[string(wid)] = &Worker{
 			ConfirmedTime: tutils.TimestampProto(w.confirmedTime),
 			Labels:        w.labels,
 			RunningTask:   rt,

@@ -26,22 +26,22 @@ import (
 type state struct {
 	// queuedRequests is the set of Requests that are waiting to be assigned to a
 	// worker, keyed by request id.
-	queuedRequests map[string]*request
+	queuedRequests map[RequestID]*request
 
 	// balance of all quota accounts for this pool, keyed by account id.
 	// TODO(akeshet): Turn this into map[string]*balance, and then get rid of a bunch of
 	// unnecessary array copying.
-	balances map[string]balance
+	balances map[AccountID]balance
 
 	// workers that may run tasks, and their states, keyed by worker id.
-	workers map[string]*worker
+	workers map[WorkerID]*worker
 
 	lastUpdateTime time.Time
 
 	// runningRequestsCache is logically the inverse of Workers, a map from request id
 	// to worker id for running tasks. This is used to optimize certain lookups, however
 	// workers is the authoritative source.
-	runningRequestsCache map[string]string
+	runningRequestsCache map[RequestID]WorkerID
 
 	// TODO(akeshet): Add a store of (completed request id, timestamp) that will
 	// allow us to remember all the tasks that were completed within the last
@@ -52,7 +52,7 @@ type state struct {
 // request represents a queued or running task request.
 type request struct {
 	// accountID is the id of the account that this request charges to.
-	accountID string
+	accountID AccountID
 
 	// enqueueTime is the time at which the request was enqueued.
 	enqueueTime time.Time
@@ -68,7 +68,7 @@ type request struct {
 
 func newTaskRequest(r *request) *TaskRequest {
 	return &TaskRequest{
-		AccountId:     r.accountID,
+		AccountId:     string(r.accountID),
 		ConfirmedTime: tutils.TimestampProto(r.confirmedTime),
 		EnqueueTime:   tutils.TimestampProto(r.enqueueTime),
 		Labels:        r.labels,
@@ -87,7 +87,7 @@ type taskRun struct {
 
 	// requestID is the request id of the request that this running task
 	// corresponds to.
-	requestID string
+	requestID RequestID
 
 	// priority is the current priority level of the running task.
 	priority int
@@ -111,14 +111,14 @@ type worker struct {
 
 // AddRequest enqueues a new task request with the given time, (or if the task
 // exists already, notifies that the task was idle at the given time).
-func (s *state) addRequest(ctx context.Context, requestID string, r *TaskRequest, t time.Time) {
+func (s *state) addRequest(ctx context.Context, requestID RequestID, r *TaskRequest, t time.Time) {
 	if _, ok := s.getRequest(requestID); ok {
 		// Request already exists, simply notify that it should be idle at the
 		// given time.
 		s.notifyRequest(ctx, requestID, "", t)
 	} else {
 		rr := &request{
-			accountID:     r.AccountId,
+			accountID:     AccountID(r.AccountId),
 			confirmedTime: tutils.Timestamp(r.ConfirmedTime),
 			enqueueTime:   tutils.Timestamp(r.EnqueueTime),
 			labels:        r.Labels,
@@ -129,7 +129,7 @@ func (s *state) addRequest(ctx context.Context, requestID string, r *TaskRequest
 }
 
 // markIdle implements MarkIdle for a given state.
-func (s *state) markIdle(workerID string, labels LabelSet, t time.Time) {
+func (s *state) markIdle(workerID WorkerID, labels LabelSet, t time.Time) {
 	w, ok := s.workers[workerID]
 	if !ok {
 		// This is a new worker, create it and return.
@@ -170,7 +170,7 @@ func (s *state) markIdle(workerID string, labels LabelSet, t time.Time) {
 }
 
 // notifyRequest implements Scheduler.NotifyRequest for a given State.
-func (s *state) notifyRequest(ctx context.Context, requestID string, workerID string, t time.Time) {
+func (s *state) notifyRequest(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time) {
 	if requestID == "" {
 		panic("Must supply a requestID.")
 	}
@@ -187,7 +187,7 @@ func (s *state) notifyRequest(ctx context.Context, requestID string, workerID st
 }
 
 // abortRequest implements Scheduler.AbortRequest for a given State.
-func (s *state) abortRequest(ctx context.Context, requestID string, t time.Time) {
+func (s *state) abortRequest(ctx context.Context, requestID RequestID, t time.Time) {
 	// Reuse the notifyRequest logic. First, notify that task is not running. Then, remove
 	// the request from queue if it is present.
 	s.notifyRequest(ctx, requestID, "", t)
@@ -201,7 +201,7 @@ func (s *state) abortRequest(ctx context.Context, requestID string, t time.Time)
 // getRequest looks up the given requestID among either the running or queued
 // tasks, and returns (the request if it exists, boolean indication if
 // request exists).
-func (s *state) getRequest(requestID string) (r *request, ok bool) {
+func (s *state) getRequest(requestID RequestID) (r *request, ok bool) {
 	s.ensureCache()
 	if wid, ok := s.runningRequestsCache[requestID]; ok {
 		return s.workers[wid].runningTask.request, true
@@ -213,7 +213,7 @@ func (s *state) getRequest(requestID string) (r *request, ok bool) {
 // updateRequest fixes stale opinion about the given request. This method should
 // only be called for requests that were already determined to be stale relative
 // to time t.
-func (s *state) updateRequest(ctx context.Context, requestID string, workerID string, t time.Time,
+func (s *state) updateRequest(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time,
 	r *request) {
 	s.ensureCache()
 	allegedWorkerID, isRunning := s.runningRequestsCache[requestID]
@@ -272,7 +272,7 @@ func (s *state) updateRequest(ctx context.Context, requestID string, workerID st
 // deleteWorkerIfOlder deletes the worker with the given ID (along with any
 // request it was running) if its confirmed time and that of any
 // request it is running is older than t.
-func (s *state) deleteWorkerIfOlder(workerID string, t time.Time) {
+func (s *state) deleteWorkerIfOlder(workerID WorkerID, t time.Time) {
 	if worker, ok := s.workers[workerID]; ok {
 		if !t.Before(worker.latestConfirmedTime()) {
 			s.deleteWorker(workerID)
@@ -347,7 +347,7 @@ func (s *state) validateAssignment(m *Assignment) {
 // exists).
 // TODO(akeshet): Update this and the related methods to accept a *balance argument
 // rather than balance, to avoid a lot of unneeded array copying.
-func (s *state) refundAccount(accountID string, cost balance) {
+func (s *state) refundAccount(accountID AccountID, cost balance) {
 	if _, ok := s.balances[accountID]; ok {
 		bal := s.balances[accountID].Plus(cost)
 		s.balances[accountID] = bal
@@ -356,7 +356,7 @@ func (s *state) refundAccount(accountID string, cost balance) {
 
 // chargeAccount applies a cost-sized charge to the account with given id (if it
 // exists).
-func (s *state) chargeAccount(accountID string, cost balance) {
+func (s *state) chargeAccount(accountID AccountID, cost balance) {
 	if _, ok := s.balances[accountID]; ok {
 		bal := s.balances[accountID].Minus(cost)
 		s.balances[accountID] = bal
@@ -366,7 +366,7 @@ func (s *state) chargeAccount(accountID string, cost balance) {
 // startRunning starts the given requestID on the given workerID.
 // It does not validate inputs, so it should only be called if that worker
 // and request currently exist and are idle.
-func (s *state) startRunning(requestID string, workerID string, priority int, initialCost balance) {
+func (s *state) startRunning(requestID RequestID, workerID WorkerID, priority int, initialCost balance) {
 	s.ensureCache()
 
 	rt := &taskRun{
@@ -382,7 +382,7 @@ func (s *state) startRunning(requestID string, workerID string, priority int, in
 
 // deleteWorker deletes the worker with the given ID (along with any task
 // it is running).
-func (s *state) deleteWorker(workerID string) {
+func (s *state) deleteWorker(workerID WorkerID) {
 	if worker, ok := s.workers[workerID]; ok {
 		if !worker.isIdle() {
 			s.ensureCache()
@@ -394,7 +394,7 @@ func (s *state) deleteWorker(workerID string) {
 
 // deleteRequest deletes the request with the given ID, whether it is running
 // or queued. If the request is neither running nor enqueued, it does nothing.
-func (s *state) deleteRequest(requestID string) {
+func (s *state) deleteRequest(requestID RequestID) {
 	// TODO(akeshet): eliminate most of these calls to ensureCache() by
 	// by adding a getWorkerForRequest method.
 	s.ensureCache()
@@ -418,7 +418,7 @@ func (s *state) ensureCache() {
 
 // regenCache recomputes and stores the RunningRequestsCache.
 func (s *state) regenCache() {
-	s.runningRequestsCache = make(map[string]string)
+	s.runningRequestsCache = make(map[RequestID]WorkerID)
 	for wid, w := range s.workers {
 		if w.isIdle() {
 			continue

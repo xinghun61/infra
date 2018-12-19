@@ -39,6 +39,15 @@ type Scheduler struct {
 	config *Config
 }
 
+// AccountID (a string) identifies an account.
+type AccountID string
+
+// WorkerID (a string) identifies a worker.
+type WorkerID string
+
+// RequestID (a string) identifies a request.
+type RequestID string
+
 // AssignmentType is an enum of scheduler assignment types.
 type AssignmentType int
 
@@ -57,14 +66,14 @@ type Assignment struct {
 
 	// WorkerID of the worker to assign a new task to (and to preempt the previous
 	// task of, if this is a AssignmentPreemptWorker mutator).
-	WorkerID string
+	WorkerID WorkerID
 
 	// RequestID of the task to assign to that worker.
-	RequestID string
+	RequestID RequestID
 
 	// TaskToAbort is relevant only for the AssignmentPreemptWorker type.
 	// It is the request ID of the task that should be preempted.
-	TaskToAbort string
+	TaskToAbort RequestID
 
 	// Priority at which the task will run.
 	Priority int
@@ -110,9 +119,9 @@ func (e *UpdateOrderError) Error() string {
 // (or zero balance if nil).
 //
 // If an account with that id already exists, then it is overwritten.
-func (s *Scheduler) AddAccount(ctx context.Context, id string, config *AccountConfig, initialBalance []float64) error {
+func (s *Scheduler) AddAccount(ctx context.Context, id AccountID, config *AccountConfig, initialBalance []float64) error {
 	s.ensureMaps()
-	s.config.AccountConfigs[id] = config
+	s.config.AccountConfigs[string(id)] = config
 	bal := balance{}
 	copy(bal[:], initialBalance)
 	s.state.balances[id] = bal
@@ -120,7 +129,7 @@ func (s *Scheduler) AddAccount(ctx context.Context, id string, config *AccountCo
 }
 
 // AddRequest enqueues a new task request.
-func (s *Scheduler) AddRequest(ctx context.Context, requestID string, request *TaskRequest, t time.Time) error {
+func (s *Scheduler) AddRequest(ctx context.Context, requestID RequestID, request *TaskRequest, t time.Time) error {
 	s.ensureMaps()
 	s.state.addRequest(ctx, requestID, request, t)
 	return nil
@@ -128,7 +137,7 @@ func (s *Scheduler) AddRequest(ctx context.Context, requestID string, request *T
 
 // IsAssigned returns whether the given request is currently assigned to the
 // given worker. It is provided for a consistency checks.
-func (s *Scheduler) IsAssigned(requestID string, workerID string) bool {
+func (s *Scheduler) IsAssigned(requestID RequestID, workerID WorkerID) bool {
 	s.ensureMaps()
 	if w, ok := s.state.workers[workerID]; ok {
 		if !w.isIdle() {
@@ -157,7 +166,7 @@ func (s *Scheduler) UpdateTime(ctx context.Context, t time.Time) error {
 	//
 	// Since we are iterating over all running tasks, also use this
 	// opportunity to update the accumulate cost of running tasks.
-	jobsPerAcct := make(map[string][]int)
+	jobsPerAcct := make(map[AccountID][]int)
 
 	for _, w := range state.workers {
 		if !w.isIdle() {
@@ -179,15 +188,16 @@ func (s *Scheduler) UpdateTime(ctx context.Context, t time.Time) error {
 
 	// Determine the new account balance for each
 	// TODO(akeshet): Update balance in-place rather than creating all new map.
-	newBalances := make(map[string]balance)
+	newBalances := make(map[AccountID]balance)
 	for id, acct := range config.AccountConfigs {
-		before := state.balances[id]
-		runningJobs := jobsPerAcct[id]
+		accountID := AccountID(id)
+		before := state.balances[accountID]
+		runningJobs := jobsPerAcct[accountID]
 		if runningJobs == nil {
 			runningJobs = make([]int, NumPriorities)
 		}
 		after := nextBalance(before, acct, elapsedSecs, runningJobs)
-		newBalances[id] = after
+		newBalances[accountID] = after
 	}
 	state.balances = newBalances
 
@@ -208,7 +218,7 @@ type IdleWorker struct {
 // of state, then it does nothing.
 //
 // Note: calls to MarkIdle come from bot reap calls from swarming.
-func (s *Scheduler) MarkIdle(ctx context.Context, workerID string, labels LabelSet, t time.Time) error {
+func (s *Scheduler) MarkIdle(ctx context.Context, workerID WorkerID, labels LabelSet, t time.Time) error {
 	s.ensureMaps()
 	s.state.markIdle(workerID, labels, t)
 	return nil
@@ -221,7 +231,7 @@ func (s *Scheduler) MarkIdle(ctx context.Context, workerID string, labels LabelS
 // Supplied requestID must not be "".
 //
 // Note: calls to NotifyRequest come from task update pubsub messages from swarming.
-func (s *Scheduler) NotifyRequest(ctx context.Context, requestID string, workerID string, t time.Time) error {
+func (s *Scheduler) NotifyRequest(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time) error {
 	s.ensureMaps()
 	s.state.notifyRequest(ctx, requestID, workerID, t)
 	return nil
@@ -231,7 +241,7 @@ func (s *Scheduler) NotifyRequest(ctx context.Context, requestID string, workerI
 // is stopped (not running on a worker, and not in the queue) at the given time.
 //
 // Supplied requestID must not be "".
-func (s *Scheduler) AbortRequest(ctx context.Context, requestID string, t time.Time) error {
+func (s *Scheduler) AbortRequest(ctx context.Context, requestID RequestID, t time.Time) error {
 	s.ensureMaps()
 	s.state.abortRequest(ctx, requestID, t)
 	return nil
@@ -280,7 +290,7 @@ func (s *Scheduler) RunOnce(ctx context.Context) ([]*Assignment, error) {
 }
 
 // GetRequest returns the (waiting or running) request for a given ID.
-func (s *Scheduler) GetRequest(rid string) (req *TaskRequest, ok bool) {
+func (s *Scheduler) GetRequest(rid RequestID) (req *TaskRequest, ok bool) {
 	if r, ok := s.state.getRequest(rid); ok {
 		return newTaskRequest(r), ok
 	}
@@ -328,7 +338,7 @@ func matchIdleBots(state *state, requestsAtP []prioritizedRequest) []*Assignment
 	maybeIdle := false
 	var _ = maybeIdle // Drop this once maybeIdle is used.
 
-	idleWorkersIds := make([]string, 0, len(state.workers))
+	idleWorkersIds := make([]WorkerID, 0, len(state.workers))
 	for wid, worker := range state.workers {
 		if worker.isIdle() {
 			idleWorkersIds = append(idleWorkersIds, wid)
@@ -378,7 +388,7 @@ func reprioritizeRunningTasks(state *state, config *Config, priority int) {
 	// was deleted while running).
 	for accountID, fullBalance := range state.balances {
 		// TODO(akeshet): move the body of this loop to own function.
-		accountConfig, ok := config.AccountConfigs[accountID]
+		accountConfig, ok := config.AccountConfigs[string(accountID)]
 		if !ok {
 			panic(fmt.Sprintf("There was a balance for unknown account %s", accountID))
 		}
@@ -431,7 +441,7 @@ func doPromote(state *state, candidates []workerWithID, chargeRate float64, prio
 
 // workersAt is a helper function that returns the workers with a given
 // account id and running.
-func workersAt(ws map[string]*worker, priority int, accountID string) []workerWithID {
+func workersAt(ws map[WorkerID]*worker, priority int, accountID AccountID) []workerWithID {
 	ans := make([]workerWithID, 0, len(ws))
 	for wid, worker := range ws {
 		if !worker.isIdle() &&
@@ -445,7 +455,7 @@ func workersAt(ws map[string]*worker, priority int, accountID string) []workerWi
 
 // workersBelow is a helper function that returns the workers with a given
 // account id and below a given running.
-func workersBelow(ws map[string]*worker, priority int, accountID string) []workerWithID {
+func workersBelow(ws map[WorkerID]*worker, priority int, accountID AccountID) []workerWithID {
 	ans := make([]workerWithID, 0, len(ws))
 	for wid, worker := range ws {
 		if !worker.isIdle() &&
@@ -468,7 +478,7 @@ func preemptRunningTasks(state *state, jobsAtP []prioritizedRequest, priority in
 	// of thrashing that may occur if an account is unable to promote jobs to
 	// this priority (because that would push it over its charge rate)
 	// but still has positive quota at this priority.
-	bannedAccounts := make(map[string]bool)
+	bannedAccounts := make(map[AccountID]bool)
 	for wid, worker := range state.workers {
 		if !worker.isIdle() && worker.runningTask.priority > priority {
 			candidates = append(candidates, workerWithID{worker, wid})
@@ -519,13 +529,13 @@ func (s *Scheduler) ensureMaps() {
 		s.config.AccountConfigs = make(map[string]*AccountConfig)
 	}
 	if s.state.balances == nil {
-		s.state.balances = make(map[string]balance)
+		s.state.balances = make(map[AccountID]balance)
 	}
 	if s.state.queuedRequests == nil {
-		s.state.queuedRequests = make(map[string]*request)
+		s.state.queuedRequests = make(map[RequestID]*request)
 	}
 	if s.state.workers == nil {
-		s.state.workers = make(map[string]*worker)
+		s.state.workers = make(map[WorkerID]*worker)
 	}
 }
 

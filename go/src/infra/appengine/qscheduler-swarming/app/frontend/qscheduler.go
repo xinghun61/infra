@@ -30,8 +30,18 @@ import (
 	"go.chromium.org/luci/common/logging"
 
 	"infra/qscheduler/qslib/reconciler"
+	"infra/qscheduler/qslib/scheduler"
 	"infra/qscheduler/qslib/tutils"
 )
+
+// WorkerID is a type alias for WorkerID
+type WorkerID = scheduler.WorkerID
+
+// RequestID is a type alias for RequestID
+type RequestID = scheduler.RequestID
+
+// AccountID is a type alias for AccountID
+type AccountID = scheduler.AccountID
 
 // AccountIDTagKey is the key used in Task tags to specify which quotascheduler
 // account the task should be charged to.
@@ -62,27 +72,27 @@ func (s *QSchedulerServerImpl) AssignTasks(ctx context.Context, r *swarming.Assi
 		idles := make([]*reconciler.IdleWorker, len(r.IdleBots))
 		for i, v := range r.IdleBots {
 			idles[i] = &reconciler.IdleWorker{
-				ID: v.BotId,
+				ID: WorkerID(v.BotId),
 				// TODO(akeshet): Compute provisionable labels properly. This should actually
 				// be the workers label set minus the scheduler pool's label set.
 				ProvisionableLabels: v.Dimensions,
 			}
 		}
 
-		a, err := sp.Reconciler.AssignTasks(ctx, sp.Scheduler, tutils.Timestamp(r.Time), idles...)
+		schedulerAssignments, err := sp.Reconciler.AssignTasks(ctx, sp.Scheduler, tutils.Timestamp(r.Time), idles...)
 		if err != nil {
 			return nil
 		}
 
-		assignments := make([]*swarming.TaskAssignment, len(a))
-		for i, v := range a {
+		assignments := make([]*swarming.TaskAssignment, len(schedulerAssignments))
+		for i, v := range schedulerAssignments {
 			slice := int32(0)
 			if v.ProvisionRequired {
 				slice = 1
 			}
 			assignments[i] = &swarming.TaskAssignment{
-				BotId:       v.WorkerID,
-				TaskId:      v.RequestID,
+				BotId:       string(v.WorkerID),
+				TaskId:      string(v.RequestID),
 				SliceNumber: slice,
 			}
 		}

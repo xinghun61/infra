@@ -21,7 +21,7 @@ import (
 // workerWithID is a (Worker, Id) tuple.
 type workerWithID struct {
 	worker *worker
-	id     string
+	id     WorkerID
 }
 
 // sortAscendingCost sorts a slice in-place by ascending cost.

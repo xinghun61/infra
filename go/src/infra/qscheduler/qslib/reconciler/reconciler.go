@@ -48,10 +48,19 @@ func New() *State {
 	}
 }
 
+// WorkerID is a type alias for WorkerID
+type WorkerID = scheduler.WorkerID
+
+// RequestID is a type alias for RequestID
+type RequestID = scheduler.RequestID
+
+// AccountID is a type alias for AccountID
+type AccountID = scheduler.AccountID
+
 // IdleWorker represents a worker that is idle and wants to have a task assigned.
 type IdleWorker struct {
 	// ID is the ID of the idle worker.
-	ID string
+	ID WorkerID
 
 	// ProvisionableLabels is the set of provisionable labels of the idle worker.
 	ProvisionableLabels scheduler.LabelSet
@@ -60,10 +69,10 @@ type IdleWorker struct {
 // Assignment represents a scheduler-initated operation to assign a task to a worker.
 type Assignment struct {
 	// WorkerID is the ID the worker that is being assigned a task.
-	WorkerID string
+	WorkerID WorkerID
 
 	// RequestID is the ID of the task request that is being assigned.
-	RequestID string
+	RequestID RequestID
 
 	// ProvisionRequired indicates whether the worker needs to be provisioned (in other
 	// words, it is true if the worker does not possess the request's provisionable
@@ -80,18 +89,18 @@ type Scheduler interface {
 
 	// MarkIdle informs the scheduler that a given worker is idle, with
 	// given labels.
-	MarkIdle(ctx context.Context, workerID string, labels scheduler.LabelSet, t time.Time) error
+	MarkIdle(ctx context.Context, workerID WorkerID, labels scheduler.LabelSet, t time.Time) error
 
 	// RunOnce runs through one round of the scheduling algorithm, and determines
 	// and returns work assignments.
 	RunOnce(ctx context.Context) ([]*scheduler.Assignment, error)
 
 	// AddRequest adds a task request to the queue.
-	AddRequest(ctx context.Context, requestID string, request *scheduler.TaskRequest, t time.Time) error
+	AddRequest(ctx context.Context, requestID RequestID, request *scheduler.TaskRequest, t time.Time) error
 
 	// IsAssigned returns whether the given request is currently assigned to the
 	// given worker.
-	IsAssigned(requestID string, workerID string) bool
+	IsAssigned(requestID RequestID, workerID WorkerID) bool
 
 	// NotifyRequest informs the scheduler authoritatively that the given request
 	// was running on the given worker (or was idle, for workerID = "") at the
@@ -100,16 +109,16 @@ type Scheduler interface {
 	// Supplied requestID must not be "".
 	//
 	// Note: calls to NotifyRequest come from task update pubsub messages from swarming.
-	NotifyRequest(ctx context.Context, requestID string, workerID string, t time.Time) error
+	NotifyRequest(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time) error
 
 	// GetRequest returns the (waiting or running) request for a given ID.
-	GetRequest(rid string) (req *scheduler.TaskRequest, ok bool)
+	GetRequest(rid RequestID) (req *scheduler.TaskRequest, ok bool)
 
 	// AbortRequest informs the scheduler authoritatively that the given request
 	// is stopped (not running on a worker, and not in the queue) at the given time.
 	//
 	// Supplied requestID must not be "".
-	AbortRequest(ctx context.Context, requestID string, t time.Time) error
+	AbortRequest(ctx context.Context, requestID RequestID, t time.Time) error
 }
 
 // AssignTasks accepts one or more idle workers, and returns tasks to be assigned
@@ -129,12 +138,12 @@ func (state *State) AssignTasks(ctx context.Context, s Scheduler, t time.Time, w
 	//    subtleties.
 	for _, w := range workers {
 		wid := w.ID
-		q, ok := state.WorkerQueues[wid]
-		if !ok || !s.IsAssigned(q.TaskToAssign, wid) {
+		q, ok := state.WorkerQueues[string(wid)]
+		if !ok || !s.IsAssigned(RequestID(q.TaskToAssign), wid) {
 			if err := s.MarkIdle(ctx, wid, w.ProvisionableLabels, t); err != nil {
 				return nil, err
 			}
-			delete(state.WorkerQueues, wid)
+			delete(state.WorkerQueues, string(wid))
 		}
 	}
 
@@ -151,25 +160,25 @@ func (state *State) AssignTasks(ctx context.Context, s Scheduler, t time.Time, w
 		}
 		// TODO(akeshet): Log if there was a previous WorkerQueue that we are
 		// overwriting.
-		state.WorkerQueues[a.WorkerID] = &WorkerQueue{
+		state.WorkerQueues[string(a.WorkerID)] = &WorkerQueue{
 			EnqueueTime:  tutils.TimestampProto(a.Time),
-			TaskToAssign: a.RequestID,
-			TaskToAbort:  a.TaskToAbort,
+			TaskToAssign: string(a.RequestID),
+			TaskToAbort:  string(a.TaskToAbort),
 		}
 	}
 
 	// Yield from worker queues.
 	assignments := make([]Assignment, 0, len(workers))
 	for _, w := range workers {
-		if q, ok := state.WorkerQueues[w.ID]; ok {
+		if q, ok := state.WorkerQueues[string(w.ID)]; ok {
 			// Note: We determine whether provision is needed here rather than
 			// using the determination used within the Scheduler, because we have the
 			// newest info about worker dimensions here.
-			r, _ := s.GetRequest(q.TaskToAssign)
+			r, _ := s.GetRequest(RequestID(q.TaskToAssign))
 			provisionRequired := !w.ProvisionableLabels.Contains(r.Labels)
 
 			assignments = append(assignments, Assignment{
-				RequestID:         q.TaskToAssign,
+				RequestID:         RequestID(q.TaskToAssign),
 				WorkerID:          w.ID,
 				ProvisionRequired: provisionRequired,
 			})
@@ -242,20 +251,21 @@ func (state *State) Notify(ctx context.Context, s Scheduler, updates ...*TaskIns
 
 		switch update.State {
 		case TaskInstant_WAITING:
-			req := scheduler.NewRequest(update.AccountId, update.ProvisionableLabels,
+			req := scheduler.NewRequest(AccountID(update.AccountId), update.ProvisionableLabels,
 				tutils.Timestamp(update.EnqueueTime))
-			s.AddRequest(ctx, update.RequestId, req, tutils.Timestamp(update.Time))
+			// TODO(akeshet): Handle error from AddRequest.
+			s.AddRequest(ctx, RequestID(update.RequestId), req, tutils.Timestamp(update.Time))
 
 		case TaskInstant_RUNNING:
-			wid := update.WorkerId
-			rid := update.RequestId
+			wid := WorkerID(update.WorkerId)
+			rid := RequestID(update.RequestId)
 			updateTime := tutils.Timestamp(update.Time)
 			// This NotifyRequest call ensures scheduler state consistency with
 			// the latest update.
 			s.NotifyRequest(ctx, rid, wid, updateTime)
-			if q, ok := state.WorkerQueues[wid]; ok {
+			if q, ok := state.WorkerQueues[string(wid)]; ok {
 				if !updateTime.Before(tutils.Timestamp(q.EnqueueTime)) {
-					delete(state.WorkerQueues, wid)
+					delete(state.WorkerQueues, string(wid))
 					// TODO(akeshet): Log or handle "unexpected request on worker" here.
 				} else {
 					// TODO(akeshet): Consider whether we should delete from workerqueue
@@ -267,17 +277,17 @@ func (state *State) Notify(ctx context.Context, s Scheduler, updates ...*TaskIns
 		// TODO(akeshet): This handler is mostly copy-pasted from the INTERRUPTED case. They can
 		// probably be unified. Also, the same TODO from the INTERRUPTED case applies here.
 		case TaskInstant_ABSENT:
-			rid := update.RequestId
+			rid := RequestID(update.RequestId)
 			updateTime := tutils.Timestamp(update.Time)
 			s.AbortRequest(ctx, rid, updateTime)
 			// TODO(akeshet): Add an inverse map from aborting request -> previous
 			// worker to avoid the need for this iteration through all workers.
 			for wid, q := range state.WorkerQueues {
-				if q.TaskToAbort == rid && tutils.Timestamp(q.EnqueueTime).Before(updateTime) {
+				if q.TaskToAbort == string(rid) && tutils.Timestamp(q.EnqueueTime).Before(updateTime) {
 					delete(state.WorkerQueues, wid)
 				}
 			}
-			delete(state.TaskErrors, rid)
+			delete(state.TaskErrors, string(rid))
 		}
 	}
 	return nil

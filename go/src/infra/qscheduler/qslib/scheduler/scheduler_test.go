@@ -58,7 +58,7 @@ func TestMatchProvisionableLabel(t *testing.T) {
 		tm := time.Unix(0, 0)
 		s := New(tm)
 		for i := 0; i < 500; i++ {
-			id := fmt.Sprintf("t%d", i)
+			id := RequestID(fmt.Sprintf("t%d", i))
 			s.AddRequest(ctx, id, NewRequest("", []string{"a"}, tm), tm)
 		}
 		s.AddRequest(ctx, "tb", NewRequest("", []string{"b"}, tm), tm)
@@ -89,13 +89,13 @@ func TestSchedulerReprioritize(t *testing.T) {
 		ctx := context.Background()
 		tm0 := time.Unix(0, 0)
 		s := New(tm0)
-		aid := "a1"
-		s.config.AccountConfigs[aid] = &AccountConfig{ChargeRate: []float64{1.1, 0.9}}
+		aid := AccountID("a1")
+		s.config.AccountConfigs[string(aid)] = &AccountConfig{ChargeRate: []float64{1.1, 0.9}}
 		s.state.balances[aid] = balance{2 * DemoteThreshold, 2 * PromoteThreshold, 0}
 
 		for _, i := range []int{1, 2} {
-			rid := fmt.Sprintf("r%d", i)
-			wid := fmt.Sprintf("w%d", i)
+			rid := RequestID(fmt.Sprintf("r%d", i))
+			wid := WorkerID(fmt.Sprintf("w%d", i))
 			addRunningRequest(ctx, s, rid, wid, aid, 0, tm0)
 		}
 		s.state.workers["w2"].runningTask.cost = balance{1, 0, 0}
@@ -111,7 +111,7 @@ func TestSchedulerReprioritize(t *testing.T) {
 		})
 
 		Convey("given both requests running at P2", func() {
-			for _, wid := range []string{"w1", "w2"} {
+			for _, wid := range []WorkerID{"w1", "w2"} {
 				s.state.workers[wid].runningTask.priority = 2
 			}
 			Convey("when scheduling", func() {
@@ -135,8 +135,8 @@ func TestSchedulerPreempt(t *testing.T) {
 		s := New(tm0)
 		s.AddAccount(ctx, "a1", NewAccountConfig(0, 0, []float64{1, 1, 1}), []float64{0.5 * PromoteThreshold, 1})
 		for _, i := range []int{1, 2} {
-			rid := fmt.Sprintf("r%d", i)
-			wid := fmt.Sprintf("w%d", i)
+			rid := RequestID(fmt.Sprintf("r%d", i))
+			wid := WorkerID(fmt.Sprintf("w%d", i))
 			s.AddRequest(ctx, rid, NewRequest("a1", nil, tm0), tm0)
 			s.MarkIdle(ctx, wid, []string{}, tm0)
 			s.state.applyAssignment(&Assignment{RequestID: rid, WorkerID: wid, Type: AssignmentIdleWorker, Priority: 1})
@@ -220,7 +220,7 @@ func TestUpdateErrors(t *testing.T) {
 // to account balances and task run costs.
 func TestUpdateBalance(t *testing.T) {
 	t0 := time.Unix(0, 0)
-	aID := "accountID"
+	aID := AccountID("accountID")
 	Convey("Given a scheduler with an added account config", t, func() {
 		ctx := context.Background()
 		s := New(t0)
@@ -249,7 +249,7 @@ func TestUpdateBalance(t *testing.T) {
 		})
 
 		Convey("when account config is removed", func() {
-			delete(s.config.AccountConfigs, aID)
+			delete(s.config.AccountConfigs, string(aID))
 			Convey("when updating time forward", func() {
 				t1 := t0.Add(time.Second)
 				s.UpdateTime(ctx, t1)
@@ -260,8 +260,8 @@ func TestUpdateBalance(t *testing.T) {
 		})
 
 		Convey("when 2 tasks for the account are running", func() {
-			r1 := "request 1"
-			r2 := "request 2"
+			r1 := RequestID("request 1")
+			r2 := RequestID("request 2")
 			s.AddRequest(ctx, r1, newTaskRequest(&request{aID, t0, nil, t0}), t0)
 			s.AddRequest(ctx, r2, newTaskRequest(&request{aID, t0, nil, t0}), t0)
 			s.MarkIdle(ctx, "w1", nil, t0)

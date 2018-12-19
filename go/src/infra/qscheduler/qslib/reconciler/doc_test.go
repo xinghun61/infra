@@ -24,7 +24,14 @@ import (
 	"infra/qscheduler/qslib/tutils"
 )
 
-type Dummy struct{}
+// WorkerID is a type alias for WorkerID
+type WorkerID = scheduler.WorkerID
+
+// RequestID is a type alias for RequestID
+type RequestID = scheduler.RequestID
+
+// AccountID is a type alias for AccountID
+type AccountID = scheduler.AccountID
 
 func Example() {
 	ctx := context.Background()
@@ -53,7 +60,7 @@ func Example() {
 
 	// Notify the reconciler of a new idle worker, and fetch an assignment
 	// for it. This will fetch Request1 to run on it.
-	workerID := "Worker1"
+	workerID := WorkerID("Worker1")
 	idleWorker := &reconciler.IdleWorker{ID: workerID, ProvisionableLabels: labels}
 	a, _ := r.AssignTasks(ctx, s, time.Now(), idleWorker)
 
@@ -70,7 +77,7 @@ func Example() {
 	taskUpdate = &reconciler.TaskInstant{
 		State:     reconciler.TaskInstant_RUNNING,
 		RequestId: requestID,
-		WorkerId:  workerID,
+		WorkerId:  string(workerID),
 		Time:      t,
 	}
 	r.Notify(ctx, s, taskUpdate)

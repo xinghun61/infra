@@ -60,7 +60,7 @@ func (s *QSchedulerAdminServerImpl) CreateAccount(ctx context.Context, r *qsched
 		if err != nil {
 			return err
 		}
-		if err := sp.Scheduler.AddAccount(ctx, r.AccountId, r.Config, nil); err != nil {
+		if err := sp.Scheduler.AddAccount(ctx, AccountID(r.AccountId), r.Config, nil); err != nil {
 			return err
 		}
 		return entities.Save(ctx, sp)

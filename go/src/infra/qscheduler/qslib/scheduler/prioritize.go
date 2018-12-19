@@ -22,7 +22,7 @@ import (
 // for it (based on quota account balance, max fanout for that account, and
 // FIFO ordering).
 type prioritizedRequest struct {
-	RequestID string
+	RequestID RequestID
 	Priority  int
 	Request   *request
 	// Flag used within scheduler to indicate that a request is already handled.
@@ -107,7 +107,7 @@ func (s orderedRequests) forPriority(priority int) orderedRequests {
 //     be a bit faster, because this function is likely to only demote a
 //     fraction of jobs in the slice.
 func demoteTasksBeyondFanout(prioritizedRequests orderedRequests, state *state, config *Config) {
-	tasksPerAccount := make(map[string]int)
+	tasksPerAccount := make(map[AccountID]int)
 	for _, w := range state.workers {
 		if !w.isIdle() {
 			tasksPerAccount[w.runningTask.request.accountID]++
@@ -118,7 +118,7 @@ func demoteTasksBeyondFanout(prioritizedRequests orderedRequests, state *state, 
 		id := r.Request.accountID
 		// Jobs without a valid account id / config are already assigned
 		// to the free bucket, so ignore them here.
-		if c, ok := config.AccountConfigs[id]; ok {
+		if c, ok := config.AccountConfigs[string(id)]; ok {
 			if c.MaxFanout > 0 && tasksPerAccount[id] >= int(c.MaxFanout) {
 				prioritizedRequests[i].Priority = FreeBucket
 			}

@@ -34,7 +34,7 @@ func TestMarkIdle(t *testing.T) {
 	Convey("Given an empty state", t, func() {
 		ctx := context.Background()
 		state := newState(tm0)
-		workerID := "w1"
+		workerID := WorkerID("w1")
 		Convey("when a worker marked idle at t=1", func() {
 			label1 := []string{"old_label"}
 			state.markIdle(workerID, label1, tm1)
@@ -236,8 +236,8 @@ func TestabortRequest(ctx, t *testing.T) {
 	tm0 := time.Unix(0, 0)
 	tm1 := time.Unix(1, 0)
 	tm2 := time.Unix(2, 0)
-	reqID := "request1"
-	wID := "worker1"
+	reqID := RequestID("request1")
+	wID := WorkerID("worker1")
 	Convey("Given a state with one request and one idle worker", t, func() {
 		ctx := context.Background()
 		state := newState(tm0)
