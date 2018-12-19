@@ -4,6 +4,7 @@ class RotaTestCal extends LitElement {
   static get properties() {
     return {
       rota: {},
+      safe: {},
       calRes: {},
       calStatus: {},
     };
@@ -45,6 +46,18 @@ class RotaTestCal extends LitElement {
     return this.fail(this.calRes.Service.Message);
   }
 
+  legacyTest() {
+    if (this.safe == 'false') {
+      return html``;
+    }
+    return html`
+    <tr>
+      <td>Legacy calendar permissions</td>
+      ${this.legacyState()}
+    </tr>
+    `;
+  }
+
   legacyState() {
     if (!this.calRes) {
       return html`<td><small><i>not yet tested</i></small></td>`;
@@ -74,8 +87,7 @@ class RotaTestCal extends LitElement {
           <td>RotaNG calendar permissions</td>
           ${this.serviceState()}
         </tr>
-          <td>Legacy calendar permissions</td>
-          ${this.legacyState()}
+          ${this.legacyTest()}
       </tbody>
     </table>
     <button type="button" @click=${() => this.getJSON()}>Test</button>

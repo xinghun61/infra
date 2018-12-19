@@ -68,17 +68,13 @@
 
 
     <h4>- Fix Calendar Permissions</h4>
-    <p>
-      RotaNG similar to the legacy rotation needs access to the
-      shared Google calendars to manipulate events.<br>For this to
-      work the shared calendar needs to be shared with the RotaNG
-      service account <br><br><b>rota-ng@appspot.gserviceaccount.com</b>.
-    </p>
-    <p>
-      Additionally to not have duplicate emails and or shifts
-      scheduled the legacy tooling needs to have its permissions
-      removed.
-    </p>
+      <p>
+        RotaNG similar to the legacy rotation needs access to the
+        rotations calendars to manipulate events.<br>For this to
+        work the rotations calendar needs to be shared with the RotaNG
+        service account <br><br><b>rota-ng@appspot.gserviceaccount.com</b>.
+      </p>
+      <p>
     <p>
       Steps:
       <ol>
@@ -87,6 +83,17 @@
             <button class="collapsible">Check ownership</button>
             <div class="content">
               <ul>
+                {{if not .safe}}
+                <p>
+                  <strong>
+                    Note: <code>{{.Rota}}</code> shares calendar with other rotations, permissions might already be fixed.
+                    <br>
+                    Click the <code>Test</code> button below to check.
+                    <br>
+                    If Test passes, skip to step 3.
+                  </strong>
+                </p>
+                {{end}}
                 <li>Go to Google <a href="https://calendar.google.com" targets="_blank">Calendar</a></li>
                 <li>In the <code>"Add Calendar"</code> field put: <code>{{.Config.Config.Calendar}}</code></li>
                 <li>Go to <code>"Options > Settings and sharing"</code> for the newly added calendar.</li>
@@ -105,29 +112,58 @@
             <button class="collapsible">Give RotaNG permissions</button>
             <div class="content">
             <ul>
+              {{if not .safe}}
+                <li>
+                  <em>
+                    {{.Rota}} shares calendar with other rotations, the permissions might already be fixed.
+                    Click the Test button below to check.
+                  </em>
+                </li>
+              {{end}}
               <li> In the Calendar "Settings > Share with specific people".</li>
               <li> <code>ADD PEOPLE</code>  -> <code>rota-ng@appspot.gserviceaccount.com</code> -> <code>Make changes to events</code>
             </ul>
             </div>
           </span>
         </li>
-        <li>Remove permissions for the legacy service<br>
-          <span>
-            <button class="collapsible">Remove legacy service permissions</button>
-            <div class="content">
-            <ul>
-              <li> In the Calendar "Settings > Share with specific people".</li>
-              <li> Remove <code>chromiumcalendar@gmail.com</code>
-            </ul>
-            </div>
-          </span>
-        </li>
+        {{if .safe}}
+          <li>Remove calendar permissions for the legacy service<br>
+            <span>
+              <button class="collapsible">Remove RotaNG permissions</button>
+              <div class="content">
+              <ul>
+                <li> In the Calendar "Settings > Share with specific people".</li>
+                <li> Remove <code>chromiumcalendar@gmail.com</code>
+              </ul>
+              </div>
+            </span>
+          </li>
+        {{else}}
+          <li>Avoid duplicate emails<br>
+            <span>
+              <button class="collapsible">Disable RotaNG nag emails</button>
+              <div class="content">
+                Until <a href="https://bugs.chromium.org/p/chromium/issues/detail?id=889221">crbug/889221</a> is resolved the legacy
+                service will keep sending nag e-mails.<br>
+                To avoid duplicate e-mails the RotaNG emails can be disabled until the legacy email cron job is removed.
+                <p>
+                  <em>With crbug/889221 resolved this will be set back to the original value.</em>
+                </p>
+              <ul>
+                <li> Click <a href="/modifyrota?name={{.Rota}}" target="_blank">Modify {{.Rota}}</a></li>
+                <li> Set <code>Email Days Before Notify</code> to <code>0</code></li>
+                <li> Submit</li>
+              </ul>
+              </div>
+            </span>
+          </li>
+        {{end}}
       </ol>
     </p>
 
     <h5>Check permission changes:</h5>
 
-    <rota-testcal rota={{.Rota}}></rota-testcal>
+    <rota-testcal rota={{.Rota}} safe={{.safe}}></rota-testcal>
     <h4>- Import Shifts</h4>
     <p>
       With the permissions in place, the next step is to import the legacy schedules.<br>
@@ -345,10 +381,15 @@
     <button class="collapsible">To Rollback</button>
     <div class="content">
       <ul>
-        <li>Add back <code>chromiumcalendar@gmail.com</code> to <code>{{.Config.Config.Calendar}}</code></li>
-        <li>Give permisson <code>Make changes to events</code></li>
-        <li>Disable the rotation at <a href="/managerota">https://rota-ng.appspot.com/managerota</a></li>
-        <li>File a bug in <b>Infra>Sheriffing>Rotations</b>
+        {{if .safe}}
+          <li>Add back <code>chromiumcalendar@gmail.com</code> to <code>{{.Config.Config.Calendar}}</code></li>
+          <li>Give permisson <code>Make changes to events</code></li>
+          <li>Disable the rotation at <a href="/managerota" target="_blank">https://rota-ng.appspot.com/managerota</a></li>
+          <li>File a <a href="https://bugs.chromium.org/p/chromium/issues/list?can=2&q=component%3AInfra%3ESheriffing%3ERotations+&colspec=ID+Pri+M+Stars+ReleaseBlock+Component+Status+Owner+Summary+OS+Modified&x=m&y=releaseblock&cells=ids">bug</a> in Component <b>Infra>Sheriffing>Rotations</b>
+        {{else}}
+          <li>Disable the rotation at <a href="/managerota" target="_blank">https://rota-ng.appspot.com/managerota</a></li>
+          <li>File a <a href="https://bugs.chromium.org/p/chromium/issues/list?can=2&q=component%3AInfra%3ESheriffing%3ERotations+&colspec=ID+Pri+M+Stars+ReleaseBlock+Component+Status+Owner+Summary+OS+Modified&x=m&y=releaseblock&cells=ids">bug</a> in Component <b>Infra>Sheriffing>Rotations</b>
+        {{end}}
       </ul>
     </div>
     <br>
