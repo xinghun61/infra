@@ -41,6 +41,4 @@ cron:
 
 - description: Update open FlakeIssue entities to reflect on what's in Monorail.
   url: /flake/cron/update-open-flake-issues
-  # Business hours PDT expressed in UTC.
-  schedule: every 2 hours mon,tue,wed,thu,fri from 16:00 to 00:00
-            every 6 hours sat,sun
+  schedule: every 2 hours
