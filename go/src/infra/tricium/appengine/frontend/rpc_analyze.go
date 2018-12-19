@@ -146,7 +146,6 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 	request := &track.AnalyzeRequest{
 		Received: clock.Now(c).UTC(),
 		Project:  req.Project,
-		Paths:    paths, // TODO(qyearsley): Remove crbug.com/870389
 		Files:    files,
 	}
 	repo := tricium.LookupRepoDetails(pc, req)
