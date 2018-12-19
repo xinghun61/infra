@@ -8,6 +8,8 @@ import imp
 import os
 import sys
 
+from . import utils
+
 # Adds third_party to sys.path so the packages inside work.  Do not
 # import third_party directly - it mysteriously flakes on GAE under
 # heavy load.
@@ -28,8 +30,8 @@ if 'infra_libs' not in sys.modules:  # pragma: no cover
 
 sys.modules['infra_libs'].ts_mon = sys.modules[__package__]
 sys.modules['infra_libs.ts_mon'] = sys.modules[__package__]
-sys.modules['infra_libs'].utils = sys.modules[__package__]
-sys.modules['infra_libs.utils'] = sys.modules[__package__]
+sys.modules['infra_libs'].utils = utils
+sys.modules['infra_libs.utils'] = utils
 
 # Put the httplib2_utils package into infra_lib directly.
 import infra_libs.ts_mon.httplib2_utils

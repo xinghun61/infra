@@ -201,7 +201,7 @@
     'version': '1.4.3',
     'build': '0',
     'repo': 'infra/infra/packages/infra_libs',
-    'rev': 'f9a2140b4f15745b8e9609618cfaecdf5e24b56b',
+    'rev': '5972d0e09a2c6fa4a90cce194eb09f4f1d607e46',
   },
   'ipaddress': {
     'version': '1.0.16',
