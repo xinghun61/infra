@@ -5,6 +5,7 @@
 .*\.swp
 .*\#.*
 .*@.*
+.nyc_output
 index\.yaml
 REVISION
 .coverage
