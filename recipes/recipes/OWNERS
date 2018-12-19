@@ -2,6 +2,8 @@ per-file android_docker_image_builder.py=bpastene@chromium.org
 
 per-file build_*.py=vadimsh@chromium.org
 
+per-file cros_flash*=bpastene@chromium.org
+
 per-file depot_tools_builder.py=iannucci@chromium.org
 
 per-file gae_sdk_cipd_packager.py=tandrii@chromium.org
