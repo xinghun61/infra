@@ -201,6 +201,12 @@ indexes:
   - name: flake_score_last_week
   - name: last_occurred_time
 
+# For cron to update FlakeIssues.
+- kind: FlakeIssue
+  properties:
+  - name: status
+  - name: last_updated_time_in_monorail
+
 # For ranked flakes dashboard forward paging.
 - kind: Flake
   properties:
