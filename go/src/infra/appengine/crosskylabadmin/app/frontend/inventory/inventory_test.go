@@ -131,14 +131,12 @@ func TestEnsurePoolHealthyDryrun(t *testing.T) {
 		So(resp.GetTargetPoolStatus().GetHealthyCount(), ShouldEqual, 1)
 
 		mc := poolChangeMap(resp.Changes)
-		So(mc, ShouldResemble, map[string]*fleet.PoolChange{
+		So(mc, ShouldResemble, map[string]*partialPoolChange{
 			"link_cq_unhealthy": {
-				DutId:   "link_cq_unhealthy",
 				OldPool: "DUT_POOL_CQ",
 				NewPool: "DUT_POOL_SUITES",
 			},
 			"link_suites_healthy": {
-				DutId:   "link_suites_healthy",
 				OldPool: "DUT_POOL_SUITES",
 				NewPool: "DUT_POOL_CQ",
 			},
@@ -181,20 +179,17 @@ func TestEnsurePoolHealthyDryrun(t *testing.T) {
 
 		So(resp.Changes, ShouldHaveLength, 2)
 		mc := poolChangeMap(resp.Changes)
-		So(mc["link_suites_healthy"], ShouldResemble, &fleet.PoolChange{
-			DutId:   "link_suites_healthy",
+		So(mc["link_suites_healthy"], ShouldResemble, &partialPoolChange{
 			OldPool: "DUT_POOL_SUITES",
 			NewPool: "DUT_POOL_CQ",
 		})
 		if d, ok := mc["link_cq_unhealthy_1"]; ok {
-			So(d, ShouldResemble, &fleet.PoolChange{
-				DutId:   "link_cq_unhealthy_1",
+			So(d, ShouldResemble, &partialPoolChange{
 				OldPool: "DUT_POOL_CQ",
 				NewPool: "DUT_POOL_SUITES",
 			})
 		} else if d, ok := mc["link_cq_unhealthy_2"]; ok {
-			So(d, ShouldResemble, &fleet.PoolChange{
-				DutId:   "link_cq_unhealthy_2",
+			So(d, ShouldResemble, &partialPoolChange{
 				OldPool: "DUT_POOL_CQ",
 				NewPool: "DUT_POOL_SUITES",
 			})
@@ -234,14 +229,12 @@ func TestEnsurePoolHealthyDryrun(t *testing.T) {
 		So(resp.GetTargetPoolStatus().GetHealthyCount(), ShouldEqual, 1)
 
 		mc := poolChangeMap(resp.Changes)
-		So(mc, ShouldResemble, map[string]*fleet.PoolChange{
+		So(mc, ShouldResemble, map[string]*partialPoolChange{
 			"link_cq_unknown": {
-				DutId:   "link_cq_unknown",
 				OldPool: "DUT_POOL_CQ",
 				NewPool: "DUT_POOL_SUITES",
 			},
 			"link_suites_healthy": {
-				DutId:   "link_suites_healthy",
 				OldPool: "DUT_POOL_SUITES",
 				NewPool: "DUT_POOL_CQ",
 			},
@@ -431,10 +424,27 @@ func expectDutsWithHealth(t *fleet.MockTrackerServer, dutHealths map[string]flee
 	t.EXPECT().SummarizeBots(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(ft.SummarizeBots)
 }
 
-func poolChangeMap(pcs []*fleet.PoolChange) map[string]*fleet.PoolChange {
-	mc := make(map[string]*fleet.PoolChange)
+// partialPoolChange contains a subset of the fleet.PoolChange fields.
+//
+// This struct is used for easy validation of relevant fields of
+// fleet.PoolChange values returned from API responses.
+type partialPoolChange struct {
+	NewPool string
+	OldPool string
+}
+
+// poolChangeMap converts a list of fleet.PoolChanges to a map from DutId to
+// partialPoolChange.
+//
+// The returned map is more convenient for comparison with ShouldResemble
+// assertions than the original list.
+func poolChangeMap(pcs []*fleet.PoolChange) map[string]*partialPoolChange {
+	mc := make(map[string]*partialPoolChange)
 	for _, c := range pcs {
-		mc[c.DutId] = c
+		mc[c.DutId] = &partialPoolChange{
+			NewPool: c.NewPool,
+			OldPool: c.OldPool,
+		}
 	}
 	return mc
 }
