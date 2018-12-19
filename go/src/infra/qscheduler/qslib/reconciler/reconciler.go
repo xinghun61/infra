@@ -146,14 +146,14 @@ func (state *State) AssignTasks(ctx context.Context, s Scheduler, t time.Time, w
 	}
 
 	for _, a := range newAssignments {
-		if a.TaskToAbort != "" && a.Type != scheduler.Assignment_PREEMPT_WORKER {
+		if a.TaskToAbort != "" && a.Type != scheduler.AssignmentPreemptWorker {
 			panic(fmt.Sprintf("Received a non-preempt assignment specifing a task to abort %s.", a.TaskToAbort))
 		}
 		// TODO(akeshet): Log if there was a previous WorkerQueue that we are
 		// overwriting.
-		state.WorkerQueues[a.WorkerId] = &WorkerQueue{
-			EnqueueTime:  a.Time,
-			TaskToAssign: a.RequestId,
+		state.WorkerQueues[a.WorkerID] = &WorkerQueue{
+			EnqueueTime:  tutils.TimestampProto(a.Time),
+			TaskToAssign: a.RequestID,
 			TaskToAbort:  a.TaskToAbort,
 		}
 	}

@@ -59,7 +59,7 @@ func TestMarkIdle(t *testing.T) {
 		Convey("given a worker running a task at t=1", func() {
 			state.markIdle(workerID, []string{}, tm1)
 			state.addRequest(ctx, "r1", NewRequest("", nil, tm1), tm1)
-			state.applyAssignment(&Assignment{Type: Assignment_IDLE_WORKER, RequestId: "r1", WorkerId: workerID})
+			state.applyAssignment(&Assignment{Type: AssignmentIdleWorker, RequestID: "r1", WorkerID: workerID})
 			Convey("when marking idle again with newer time t=2", func() {
 				state.markIdle(workerID, []string{}, tm2)
 				Convey("then the update is applied.", func() {
@@ -91,9 +91,9 @@ func TestnotifyRequest(ctx, t *testing.T) {
 		state.addRequest(ctx, "r1", NewRequest("", nil, tm1), tm1)
 		state.markIdle("w1", []string{}, tm3)
 		a := &Assignment{
-			Type:      Assignment_IDLE_WORKER,
-			WorkerId:  "w1",
-			RequestId: "r1",
+			Type:      AssignmentIdleWorker,
+			WorkerID:  "w1",
+			RequestID: "r1",
 		}
 		state.applyAssignment(a)
 		Convey("when notifying (idle request) with an older time t=0", func() {
@@ -172,9 +172,9 @@ func TestnotifyRequest(ctx, t *testing.T) {
 		state.markIdle("w1", []string{}, tm1)
 		state.markIdle("w2", []string{}, tm3)
 		a := &Assignment{
-			Type:      Assignment_IDLE_WORKER,
-			WorkerId:  "w1",
-			RequestId: "r1",
+			Type:      AssignmentIdleWorker,
+			WorkerID:  "w1",
+			RequestID: "r1",
 		}
 		state.applyAssignment(a)
 		Convey("when notifying (contradictory match) with an older time t=0", func() {
@@ -265,9 +265,9 @@ func TestabortRequest(ctx, t *testing.T) {
 		state.addRequest(ctx, reqID, NewRequest("", nil, tm1), tm1)
 		state.markIdle(wID, []string{}, tm1)
 		a := &Assignment{
-			Type:      Assignment_IDLE_WORKER,
-			WorkerId:  wID,
-			RequestId: reqID,
+			Type:      AssignmentIdleWorker,
+			WorkerID:  wID,
+			RequestID: reqID,
 		}
 		state.applyAssignment(a)
 		Convey("when AbortRequest with forward time is called for that request", func() {
@@ -299,7 +299,7 @@ func TestApplyIdleAssignment(t *testing.T) {
 		s.markIdle("w1", []string{}, time.Unix(0, 0))
 
 		Convey("when an idle-worker-assignment is applied with a given priority", func() {
-			mut := &Assignment{Type: Assignment_IDLE_WORKER, Priority: 1, RequestId: "t1", WorkerId: "w1"}
+			mut := &Assignment{Type: AssignmentIdleWorker, Priority: 1, RequestID: "t1", WorkerID: "w1"}
 			s.applyAssignment(mut)
 			Convey("then the state is updated as expected.", func() {
 				So(s.queuedRequests, ShouldBeEmpty)
@@ -334,7 +334,7 @@ func TestApplyPreempt(t *testing.T) {
 		s.balances["a2"] = balance{2}
 
 		Convey("when a preemption assignment is applied", func() {
-			mut := &Assignment{Type: Assignment_PREEMPT_WORKER, Priority: 1, RequestId: "t2", WorkerId: "w1", TaskToAbort: "t1"}
+			mut := &Assignment{Type: AssignmentPreemptWorker, Priority: 1, RequestID: "t2", WorkerID: "w1", TaskToAbort: "t1"}
 			s.applyAssignment(mut)
 
 			Convey("then task queue, worker, and accounts are updated accordingly", func() {

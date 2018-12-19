@@ -21,8 +21,6 @@ import (
 	"testing"
 	"time"
 
-	"infra/qscheduler/qslib/tutils"
-
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -42,10 +40,9 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 		Convey("when scheduling jobs", func() {
 			muts, _ := s.RunOnce(ctx)
 			Convey("then both jobs should be matched, with provisionable label used as tie-breaker", func() {
-				tmproto := tutils.TimestampProto(tm)
 				expects := []*Assignment{
-					{Type: Assignment_IDLE_WORKER, Priority: 0, RequestId: "t1", WorkerId: "w1", Time: tmproto},
-					{Type: Assignment_IDLE_WORKER, Priority: 0, RequestId: "t2", WorkerId: "w0", Time: tmproto},
+					{Type: AssignmentIdleWorker, Priority: 0, RequestID: "t1", WorkerID: "w1", Time: tm},
+					{Type: AssignmentIdleWorker, Priority: 0, RequestID: "t2", WorkerID: "w0", Time: tm},
 				}
 				So(muts, ShouldResemble, expects)
 			})
@@ -74,8 +71,8 @@ func TestMatchProvisionableLabel(t *testing.T) {
 
 				Convey("then worker is matched to the task with label 'b'.", func() {
 					So(muts, ShouldHaveLength, 1)
-					So(muts[0].RequestId, ShouldEqual, "tb")
-					So(muts[0].WorkerId, ShouldEqual, "wb")
+					So(muts[0].RequestID, ShouldEqual, "tb")
+					So(muts[0].WorkerID, ShouldEqual, "wb")
 				})
 			})
 		})
@@ -142,7 +139,7 @@ func TestSchedulerPreempt(t *testing.T) {
 			wid := fmt.Sprintf("w%d", i)
 			s.AddRequest(ctx, rid, NewRequest("a1", nil, tm0), tm0)
 			s.MarkIdle(ctx, wid, []string{}, tm0)
-			s.state.applyAssignment(&Assignment{RequestId: rid, WorkerId: wid, Type: Assignment_IDLE_WORKER, Priority: 1})
+			s.state.applyAssignment(&Assignment{RequestID: rid, WorkerID: wid, Type: AssignmentIdleWorker, Priority: 1})
 		}
 		s.state.workers["w1"].runningTask.cost = balance{0, 1, 0}
 		Convey("given a new P0 request from a different account", func() {
@@ -155,7 +152,7 @@ func TestSchedulerPreempt(t *testing.T) {
 					s.UpdateTime(ctx, tm1)
 					got, _ := s.RunOnce(ctx)
 					Convey("then the cheaper running job is preempted.", func() {
-						want := &Assignment{Type: Assignment_PREEMPT_WORKER, Priority: 0, WorkerId: "w2", RequestId: "r3", TaskToAbort: "r2", Time: tutils.TimestampProto(tm1)}
+						want := &Assignment{Type: AssignmentPreemptWorker, Priority: 0, WorkerID: "w2", RequestID: "r3", TaskToAbort: "r2", Time: tm1}
 						So(got, ShouldResemble, []*Assignment{want})
 					})
 				})
@@ -269,8 +266,8 @@ func TestUpdateBalance(t *testing.T) {
 			s.AddRequest(ctx, r2, newTaskRequest(&request{aID, t0, nil, t0}), t0)
 			s.MarkIdle(ctx, "w1", nil, t0)
 			s.MarkIdle(ctx, "w2", nil, t0)
-			s.state.applyAssignment(&Assignment{Priority: 0, RequestId: r1, WorkerId: "w1", Type: Assignment_IDLE_WORKER})
-			s.state.applyAssignment(&Assignment{Priority: 0, RequestId: r2, WorkerId: "w2", Type: Assignment_IDLE_WORKER})
+			s.state.applyAssignment(&Assignment{Priority: 0, RequestID: r1, WorkerID: "w1", Type: AssignmentIdleWorker})
+			s.state.applyAssignment(&Assignment{Priority: 0, RequestID: r2, WorkerID: "w2", Type: AssignmentIdleWorker})
 			So(s.state.queuedRequests, ShouldBeEmpty)
 			So(s.state.workers, ShouldHaveLength, 2)
 			Convey("when updating time forward", func() {

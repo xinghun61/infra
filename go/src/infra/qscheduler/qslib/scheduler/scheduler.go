@@ -29,8 +29,6 @@ import (
 	"fmt"
 	"math"
 	"time"
-
-	"infra/qscheduler/qslib/tutils"
 )
 
 // Scheduler encapsulates the state and configuration of a running
@@ -39,6 +37,40 @@ import (
 type Scheduler struct {
 	state  *state
 	config *Config
+}
+
+// AssignmentType is an enum of scheduler assignment types.
+type AssignmentType int
+
+const (
+	// AssignmentIdleWorker indicates assigning a task to a currently idle worker.
+	AssignmentIdleWorker AssignmentType = iota
+
+	// AssignmentPreemptWorker indicates preempting a running task on a worker with a new task.
+	AssignmentPreemptWorker
+)
+
+// An Assignment represents a scheduler decision to assign a task to a worker.
+type Assignment struct {
+	// Type describes which kind of assignment this represents.
+	Type AssignmentType
+
+	// WorkerID of the worker to assign a new task to (and to preempt the previous
+	// task of, if this is a AssignmentPreemptWorker mutator).
+	WorkerID string
+
+	// RequestID of the task to assign to that worker.
+	RequestID string
+
+	// TaskToAbort is relevant only for the AssignmentPreemptWorker type.
+	// It is the request ID of the task that should be preempted.
+	TaskToAbort string
+
+	// Priority at which the task will run.
+	Priority int
+
+	// Time is the time at which this Assignment was determined.
+	Time time.Time
 }
 
 // New returns a newly initialized Scheduler.
@@ -269,11 +301,11 @@ func matchIdleBotsWithLabels(s *state, requestsAtP orderedRequests) []*Assignmen
 		for wid, worker := range s.workers {
 			if worker.isIdle() && LabelSet(worker.labels).Contains(request.Request.labels) {
 				m := &Assignment{
-					Type:      Assignment_IDLE_WORKER,
-					WorkerId:  wid,
-					RequestId: request.RequestID,
-					Priority:  int32(request.Priority),
-					Time:      tutils.TimestampProto(s.lastUpdateTime),
+					Type:      AssignmentIdleWorker,
+					WorkerID:  wid,
+					RequestID: request.RequestID,
+					Priority:  request.Priority,
+					Time:      s.lastUpdateTime,
 				}
 				output = append(output, m)
 				s.applyAssignment(m)
@@ -312,11 +344,11 @@ func matchIdleBots(state *state, requestsAtP []prioritizedRequest) []*Assignment
 			continue
 		}
 		m := &Assignment{
-			Type:      Assignment_IDLE_WORKER,
-			WorkerId:  wid,
-			RequestId: request.RequestID,
-			Priority:  int32(request.Priority),
-			Time:      tutils.TimestampProto(state.lastUpdateTime),
+			Type:      AssignmentIdleWorker,
+			WorkerID:  wid,
+			RequestID: request.RequestID,
+			Priority:  request.Priority,
+			Time:      state.lastUpdateTime,
 		}
 		output = append(output, m)
 		state.applyAssignment(m)
@@ -462,12 +494,12 @@ func preemptRunningTasks(state *state, jobsAtP []prioritizedRequest, priority in
 			continue
 		}
 		mut := &Assignment{
-			Type:        Assignment_PREEMPT_WORKER,
-			Priority:    int32(priority),
-			RequestId:   request.RequestID,
+			Type:        AssignmentPreemptWorker,
+			Priority:    priority,
+			RequestID:   request.RequestID,
 			TaskToAbort: candidate.worker.runningTask.requestID,
-			WorkerId:    candidate.id,
-			Time:        tutils.TimestampProto(state.lastUpdateTime),
+			WorkerID:    candidate.id,
+			Time:        state.lastUpdateTime,
 		}
 		output = append(output, mut)
 		state.applyAssignment(mut)

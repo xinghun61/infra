@@ -288,14 +288,14 @@ func (s *state) applyAssignment(m *Assignment) {
 
 	// If preempting, determine initial cost, and apply and preconditions
 	// to starting the new task run.
-	if m.Type == Assignment_PREEMPT_WORKER {
-		worker := s.workers[m.WorkerId]
+	if m.Type == AssignmentPreemptWorker {
+		worker := s.workers[m.WorkerID]
 		cost = worker.runningTask.cost
 		// Refund the cost of the preempted task.
 		s.refundAccount(worker.runningTask.request.accountID, cost)
 
 		// Charge the preempting account for the cost of the preempted task.
-		s.chargeAccount(s.queuedRequests[m.RequestId].accountID, cost)
+		s.chargeAccount(s.queuedRequests[m.RequestID].accountID, cost)
 
 		// Remove the preempted job from worker.
 		oldRequestID := worker.runningTask.requestID
@@ -303,43 +303,43 @@ func (s *state) applyAssignment(m *Assignment) {
 	}
 
 	// Start the new task run.
-	s.startRunning(m.RequestId, m.WorkerId, int(m.Priority), cost)
+	s.startRunning(m.RequestID, m.WorkerID, int(m.Priority), cost)
 }
 
 // validateAssignment ensures that all the expected preconditions of the given
 // Assignment are true, and panics otherwise.
 func (s *state) validateAssignment(m *Assignment) {
 	// Assignment-type-agnostic checks.
-	if _, ok := s.queuedRequests[m.RequestId]; !ok {
-		panic(fmt.Sprintf("No request with id %s.", m.RequestId))
+	if _, ok := s.queuedRequests[m.RequestID]; !ok {
+		panic(fmt.Sprintf("No request with id %s.", m.RequestID))
 	}
 
-	worker, ok := s.workers[m.WorkerId]
+	worker, ok := s.workers[m.WorkerID]
 	if !ok {
-		panic(fmt.Sprintf("No worker with id %s", m.WorkerId))
+		panic(fmt.Sprintf("No worker with id %s", m.WorkerID))
 	}
 
 	// Assignment-type-specific checks.
 	switch m.Type {
-	case Assignment_IDLE_WORKER:
+	case AssignmentIdleWorker:
 		if !worker.isIdle() {
 			panic(fmt.Sprintf("Worker %s is not idle, it is running task %s.",
-				m.WorkerId, worker.runningTask.requestID))
+				m.WorkerID, worker.runningTask.requestID))
 		}
 
-	case Assignment_PREEMPT_WORKER:
+	case AssignmentPreemptWorker:
 		if worker.isIdle() {
 			panic(fmt.Sprintf("Worker %s is idle, expected running task %s.",
-				m.WorkerId, m.TaskToAbort))
+				m.WorkerID, m.TaskToAbort))
 		}
 		runningID := worker.runningTask.requestID
 		if runningID != m.TaskToAbort {
-			panic(fmt.Sprintf("Worker %s is running task %s, expected %s.", m.WorkerId,
+			panic(fmt.Sprintf("Worker %s is running task %s, expected %s.", m.WorkerID,
 				runningID, m.TaskToAbort))
 		}
 
 	default:
-		panic(fmt.Sprintf("Unknown assignment type %s.", m.Type))
+		panic(fmt.Sprintf("Unknown assignment type %d.", m.Type))
 	}
 }
 
