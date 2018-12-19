@@ -222,28 +222,21 @@ func getAccountID(n *swarming.NotifyTasksItem) (string, error) {
 }
 
 func toTaskInstantState(s swarming.TaskState) (reconciler.TaskInstant_State, bool) {
-	// These cases appear in the same order as they are defined in swarming/proto/tasks.proto
-	// If you add any cases here, please preserve their in-order appearance.
-	switch s {
-	case swarming.TaskState_RUNNING:
-		return reconciler.TaskInstant_RUNNING, true
-	case swarming.TaskState_PENDING:
+	cInt := int(s) &^ int(swarming.TaskStateCategory_TASK_STATE_MASK)
+	category := swarming.TaskStateCategory(cInt)
+
+	// These category cases occur in the same order as they are defined in
+	// swarming.proto. Please preserve that when adding new cases.
+	switch category {
+	case swarming.TaskStateCategory_CATEGORY_PENDING:
 		return reconciler.TaskInstant_WAITING, true
-	// The following states all translate to "ABSENT", because they are all equivalent
-	// to the task being neither running nor waiting.
-	case swarming.TaskState_EXPIRED:
-		fallthrough
-	case swarming.TaskState_TIMED_OUT:
-		fallthrough
-	case swarming.TaskState_INTERNAL_FAILURE:
-		fallthrough
-	case swarming.TaskState_CANCELED:
-		fallthrough
-	case swarming.TaskState_COMPLETED:
-		fallthrough
-	case swarming.TaskState_KILLED:
-		fallthrough
-	case swarming.TaskState_NO_RESOURCE:
+	case swarming.TaskStateCategory_CATEGORY_RUNNING:
+		return reconciler.TaskInstant_RUNNING, true
+	// The following categories all translate to "ABSENT", because they are all
+	// equivalent to the task being neither running nor waiting.
+	case swarming.TaskStateCategory_CATEGORY_TRANSIENT_DONE,
+		swarming.TaskStateCategory_CATEGORY_EXECUTION_DONE,
+		swarming.TaskStateCategory_CATEGORY_NEVER_RAN_DONE:
 		return reconciler.TaskInstant_ABSENT, true
 
 	// Invalid state.
