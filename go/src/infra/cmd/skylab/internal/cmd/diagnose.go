@@ -73,7 +73,8 @@ func (c *diagnoseRun) innerRun(a subcommands.Application, args []string, env sub
 	if c.short {
 		printBotDiagnosisShort(tw, e, bots)
 	} else {
-		printBotDiagnosis(tw, e, bots)
+		ds := prepareDiagnosis(bots)
+		printBotDiagnosis(tw, e, ds)
 	}
 	_ = tw.Flush()
 	return nil
@@ -106,9 +107,55 @@ func printBotDiagnosisShort(w io.Writer, e site.Environment, bots []*fleet.BotSu
 	}
 }
 
-func printBotDiagnosis(w io.Writer, e site.Environment, bots []*fleet.BotSummary) {
-	for _, b := range bots {
-		fmt.Fprintf(w, "---\t%s\t%s\t%s\t\n", b.GetDimensions().GetDutName(), b.GetDutId(), b.GetDutState())
+type diagnosis struct {
+	summary     *fleet.BotSummary
+	statusSince time.Time
+}
+
+func prepareDiagnosis(bots []*fleet.BotSummary) []diagnosis {
+	ds := make([]diagnosis, len(bots))
+	for i, b := range bots {
+		ds[i].summary = b
+		if b.GetDutState() == fleet.DutState_RepairFailed {
+			ds[i].statusSince = getFirstFailedTime(b)
+		}
+	}
+	return ds
+}
+
+// getFirstFailedTime returns the time the bot first failed.  If the
+// time cannot be determined, returns the zero time value.
+func getFirstFailedTime(b *fleet.BotSummary) time.Time {
+	for _, t := range b.GetDiagnosis() {
+		if !isInitialFailureTask(t) {
+			continue
+		}
+		tm, err := ptypes.Timestamp(t.GetStartedTs())
+		if err != nil {
+			return time.Time{}
+		}
+		return tm
+	}
+	return time.Time{}
+}
+
+// isInitialFailureTask returns true if the task transitioned the bot
+// state to failed.
+func isInitialFailureTask(t *fleet.Task) bool {
+	if t.GetStateAfter() != fleet.DutState_RepairFailed {
+		return false
+	}
+	return t.GetStateBefore() != fleet.DutState_RepairFailed
+}
+
+func printBotDiagnosis(w io.Writer, e site.Environment, ds []diagnosis) {
+	for _, d := range ds {
+		b := d.summary
+		var sinceMsg string
+		if !d.statusSince.IsZero() {
+			sinceMsg = fmt.Sprintf("since %s", d.statusSince.Local().Format(time.RFC1123Z))
+		}
+		fmt.Fprintf(w, "---\t%s\t%s\t%s\t\t\n", b.GetDimensions().GetDutName(), b.GetDutState(), sinceMsg)
 		for _, t := range b.GetDiagnosis() {
 			printDiagnosisTask(w, e, t)
 		}
@@ -118,14 +165,14 @@ func printBotDiagnosis(w io.Writer, e site.Environment, bots []*fleet.BotSummary
 
 func printDiagnosisTask(w io.Writer, e site.Environment, t *fleet.Task) {
 	ts := getTaskTimeString(t)
-	fmt.Fprintf(w, "\t%s\t%s\t%s -> %s\t%s\t\n",
-		t.GetName(), ts, t.GetStateBefore(), t.GetStateAfter(),
+	fmt.Fprintf(w, "\t%s\t%s <- %s\t%s\t%s\t\n",
+		t.GetName(), t.GetStateAfter(), t.GetStateBefore(), ts,
 		swarmingTaskURL(e, t.GetId()))
 }
 
 func getTaskTimeString(t *fleet.Task) string {
 	if tm, err := ptypes.Timestamp(t.GetStartedTs()); err == nil {
-		return tm.Format(time.RFC1123Z)
+		return tm.Local().Format(time.RFC1123Z)
 	}
 	return "Unknown"
 }
