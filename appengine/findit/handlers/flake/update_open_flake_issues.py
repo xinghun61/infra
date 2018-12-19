@@ -19,7 +19,7 @@ class UpdateOpenFlakeIssuesCron(BaseHandler):
         method='GET',
         queue_name=constants.AUTO_ACTION_QUEUE,
         target=constants.AUTO_ACTION_BACKEND,
-        url='/flake/task/update-open-flake-issues')
+        url='/auto_action/task/update-open-flake-issues')
     return {'return_code': 200}
 
 
