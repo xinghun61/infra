@@ -122,7 +122,7 @@ func (m inventoryMap) slice() []*inventoryCount {
 	for _, ic := range m.m {
 		s = append(s, ic)
 	}
-	sort.Slice(s, func(i, j int) bool { return s[i].name < s[j].name })
+	sort.Slice(s, func(i, j int) bool { return s[i].available() < s[j].available() })
 	return s
 }
 
