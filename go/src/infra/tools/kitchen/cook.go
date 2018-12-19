@@ -18,7 +18,7 @@ import (
 	"github.com/maruel/subcommands"
 	"golang.org/x/net/context"
 
-	"go.chromium.org/luci/buildbucket/proto"
+	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 	log "go.chromium.org/luci/common/logging"
@@ -571,7 +571,7 @@ func parseProperties(properties map[string]interface{}, propertiesFile string) (
 			err = inputError("could not read properties file %s\n%s", propertiesFile, err)
 			return nil, err
 		}
-		err = unmarshalJSONWithNumber(b, &result)
+		err = json.Unmarshal(b, &result)
 		if err != nil {
 			err = inputError("could not parse JSON from file %s\n%s\n%s",
 				propertiesFile, b, err)

@@ -5,7 +5,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -35,14 +34,6 @@ func encodeJSONToPath(path string, obj interface{}) (err error) {
 		return errors.Annotate(err, "failed to write encoded object").Err()
 	}
 	return nil
-}
-
-// unmarshalJSONWithNumber unmarshals JSON, where numbers are unmarshaled as
-// json.Number.
-func unmarshalJSONWithNumber(data []byte, dest interface{}) error {
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.UseNumber()
-	return decoder.Decode(dest)
 }
 
 // ensureDir ensures dir at path exists.
