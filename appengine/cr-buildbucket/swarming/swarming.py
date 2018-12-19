@@ -1018,6 +1018,7 @@ def cancel_task(hostname, task_id):
   cancel_task_async(hostname, task_id).get_result()
 
 
+@ndb.tasklet
 def cancel_task_transactionally_async(hostname, task_id):  # pragma: no cover
   """Transactionally schedules a push task to cancel a swarming task.
 
@@ -1028,7 +1029,8 @@ def cancel_task_transactionally_async(hostname, task_id):  # pragma: no cover
       (hostname, task_id)
   )
   task = taskqueue.Task(url=url)
-  return task.add_async(queue_name='backend-default', transactional=True)
+  res = yield task.add_async(queue_name='backend-default', transactional=True)
+  raise ndb.Return(res)
 
 
 ################################################################################
