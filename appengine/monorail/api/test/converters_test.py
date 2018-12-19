@@ -857,7 +857,7 @@ class ConverterFunctionsTest(unittest.TestCase):
 
   def testIngestUserRef_NoSuchUser(self):
     """We reject a malformed UserRef.display_name."""
-    ref = common_pb2.UserRef(display_name='Bob')
+    ref = common_pb2.UserRef(display_name='Bob@gmail.com')
     with self.assertRaises(exceptions.NoSuchUserException):
       converters.IngestUserRef(self.cnxn, ref, self.services.user)
 
@@ -903,11 +903,17 @@ class ConverterFunctionsTest(unittest.TestCase):
 
   def testIngestUserRefs_ByMalformedEmail(self):
     """We ignore malformed user emails."""
-    ref = common_pb2.UserRef(display_name='Bob')
-    converters.IngestUserRefs(
-        self.cnxn, [ref], self.services.user, autocreate=True)
-    with self.assertRaises(exceptions.NoSuchUserException):
-      self.services.user.LookupUserID(self.cnxn, 'Bob')
+    self.services.user.TestAddUser('user1@example.com', 111L)
+    self.services.user.TestAddUser('user3@example.com', 333L)
+    refs = [
+        common_pb2.UserRef(user_id=0),
+        common_pb2.UserRef(display_name='not-a-valid-email'),
+        common_pb2.UserRef(user_id=333L),
+        common_pb2.UserRef(display_name='user1@example.com')
+        ]
+    actual = converters.IngestUserRefs(
+        self.cnxn, refs, self.services.user, autocreate=True)
+    self.assertEqual(actual, [0, 333L, 111L])
 
   def testIngestUserRefs_MixOfIDAndEmail(self):
     """Requests can specify some users by ID and others by email."""

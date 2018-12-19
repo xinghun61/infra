@@ -25,6 +25,7 @@ from framework import exceptions
 from framework import filecontent
 from framework import framework_constants
 from framework import permissions
+from framework import validate
 from services import features_svc
 from tracker import attachment_helpers
 from tracker import field_helpers
@@ -425,12 +426,27 @@ def ConvertCommentList(
 
 def IngestUserRef(cnxn, user_ref, user_service, autocreate=False):
   """Return ID of specified user or raise NoSuchUserException."""
-  return IngestUserRefs(
-      cnxn, [user_ref], user_service, autocreate=autocreate)[0]
+  try:
+    return IngestUserRefs(
+        cnxn, [user_ref], user_service, autocreate=autocreate)[0]
+  except IndexError:
+    # user_ref.display_name was not a valid email.
+    raise exceptions.NoSuchUserException
 
 
 def IngestUserRefs(cnxn, user_refs, user_service, autocreate=False):
   """Return IDs of specified users or raise NoSuchUserException."""
+
+  # Filter out user_refs with invalid display_names.
+  # Invalid emails won't get auto-created in LookupUserIds, but un-specified
+  # user_ref.user_id values have the zero-value 0. So invalid user_ref's
+  # need to be filtered out here to prevent these resulting in '0's in
+  # the 'result' array.
+  if autocreate:
+    user_refs = [user_ref for user_ref in user_refs
+                 if (not user_ref.display_name) or
+                 validate.IsValidEmail(user_ref.display_name)]
+
   # 1. Verify that all specified user IDs actually match existing users.
   user_ids_to_verify = [user_ref.user_id for user_ref in user_refs
                         if user_ref.user_id]
@@ -442,7 +458,8 @@ def IngestUserRefs(cnxn, user_refs, user_service, autocreate=False):
   emails_to_ids = user_service.LookupUserIDs(
       cnxn, needed_emails, autocreate=autocreate)
 
-  # 3. Build the result.
+  # 3. Build the result from emails_to_ids or straight from user_ref's
+  # user_id.
   # Note: user_id can be specified as 0 to clear the issue owner.
   result = [emails_to_ids.get(user_ref.display_name, user_ref.user_id)
             for user_ref in user_refs]
