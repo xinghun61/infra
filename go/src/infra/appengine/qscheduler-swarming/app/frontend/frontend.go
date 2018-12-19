@@ -34,6 +34,14 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+type role int
+
+const (
+	roleAdmin role = iota
+	roleSwarming
+	roleView
+)
+
 // InstallHandlers installs the handlers implemented by the frontend package.
 func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 	apiServer := prpc.Server{
@@ -41,16 +49,15 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 	}
 	swarming.RegisterExternalSchedulerServer(&apiServer, &swarming.DecoratedExternalScheduler{
 		Service: &QSchedulerServerImpl{},
-		Prelude: checkUserAccess,
+		Prelude: accessChecker(roleSwarming),
 	})
 	qscheduler.RegisterQSchedulerAdminServer(&apiServer, &qscheduler.DecoratedQSchedulerAdmin{
 		Service: &QSchedulerAdminServerImpl{},
-		Prelude: checkAdminAccess,
+		Prelude: accessChecker(roleAdmin),
 	})
 	qscheduler.RegisterQSchedulerViewServer(&apiServer, &qscheduler.DecoratedQSchedulerView{
 		Service: &QSchedulerViewServerImpl{},
-		// TODO(akeshet): Separate view access from admin access.
-		Prelude: checkAdminAccess,
+		Prelude: accessChecker(roleView, roleAdmin),
 	})
 
 	discovery.Enable(&apiServer)
@@ -64,43 +71,54 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 	apiServer.InstallHandlers(r, mwAuthenticated)
 }
 
-// TODO(akeshet): Remove the code duplication between these various access
-// check functions.
-
-// checkAdminAccess verifies that the request is from an authorized admin.
-func checkAdminAccess(c context.Context, _ string, _ proto.Message) (context.Context, error) {
-	if appengine.IsDevAppServer() {
-		return c, nil
+// groupFor determines the configured group name for a given role.
+func groupFor(r role, auth *config.Auth) (group string) {
+	switch r {
+	case roleAdmin:
+		return auth.AdminGroup
+	case roleSwarming:
+		return auth.SwarmingGroup
+	case roleView:
+		return auth.ViewGroup
+	default:
+		return ""
 	}
-	a := config.Get(c).Auth
-	if a == nil {
-		return c, status.Errorf(codes.PermissionDenied, "no auth configured: permission denied")
-	}
-
-	switch allow, err := auth.IsMember(c, a.AdminGroup); {
-	case err != nil:
-		return c, status.Errorf(codes.Internal, "can't check ACL - %s", err)
-	case !allow:
-		return c, status.Errorf(codes.PermissionDenied, "permission denied")
-	}
-	return c, nil
 }
 
-// checkUserAccess verifies that the request is from an authorized user.
-func checkUserAccess(c context.Context, _ string, _ proto.Message) (context.Context, error) {
-	if appengine.IsDevAppServer() {
-		return c, nil
+// groupsFor determined configured group names for the given roles.
+func groupsFor(rs []role, auth *config.Auth) []string {
+	groups := make([]string, 0, len(rs))
+	for _, r := range rs {
+		groups = append(groups, groupFor(r, auth))
 	}
-	a := config.Get(c).Auth
-	if a == nil {
-		return c, status.Errorf(codes.PermissionDenied, "no auth configured: permission denied")
-	}
+	return groups
+}
 
-	switch allow, err := auth.IsMember(c, a.SwarmingGroup); {
-	case err != nil:
-		return c, status.Errorf(codes.Internal, "can't check ACL - %s", err)
-	case !allow:
+// accessChecker returns a Prelude function that ensures the the caller is granted
+// one of the given roles.
+func accessChecker(allowedRoles ...role) func(context.Context, string, proto.Message) (context.Context, error) {
+	checker := func(c context.Context, _ string, _ proto.Message) (context.Context, error) {
+		if appengine.IsDevAppServer() {
+			return c, nil
+		}
+		a := config.Get(c).Auth
+		if a == nil {
+			return c, status.Errorf(codes.PermissionDenied, "no auth configured: permission denied")
+		}
+
+		groups := groupsFor(allowedRoles, a)
+		allow, err := auth.IsMember(c, groups...)
+
+		if err != nil {
+			return c, status.Errorf(codes.Internal, "can't check ACL - %s", err)
+		}
+
+		if allow {
+			return c, nil
+		}
+
 		return c, status.Errorf(codes.PermissionDenied, "permission denied")
 	}
-	return c, nil
+
+	return checker
 }

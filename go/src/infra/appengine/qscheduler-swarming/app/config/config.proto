@@ -24,11 +24,17 @@ message Config {
 message Auth {
   // AdminGroup is the luci-auth group controlling access to the administrative
   // endpoints of this server (the QSchedulerAdmin API).
+  //
+  // Members of this group also receive QSchedulerView access.
   string admin_group = 1;
 
   // SwarmingGroup is the luci-auth group controlling access to the scheduler
   // endpoints of this server (the swarming.ExternalScheduler API).
   string swarming_group = 2;
+
+  // ViewGroup is the luci-auth group controlloing access to the qscheduler view
+  // endpoints of the server (QSchedulerView API).
+  string view_group = 3;
 }
 
 // QuotaScheduler contains configuration information for the QuotaScheduler app.
