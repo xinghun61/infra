@@ -357,47 +357,213 @@ func TestEnsurePoolHealthyCommit(t *testing.T) {
 		})
 		So(err, ShouldBeNil)
 
-		changes := tf.FakeGerrit.Changes
-		So(changes, ShouldHaveLength, 1)
-		change := changes[0]
-		So(change.Path, ShouldEqual, "data/skylab/lab.textpb")
-		var actualLab inventory.Lab
-		err = inventory.LoadLabFromString(change.Content, &actualLab)
-		So(err, ShouldBeNil)
-		var expectedLab inventory.Lab
-		expectedLabStr := `
-		duts {
-			common {
-				id: "link_cq_unhealthy"
-				hostname: "link_cq_unhealthy"
-				labels {
-					model: "link"
-					critical_pools: DUT_POOL_SUITES
-				}
-				environment: ENVIRONMENT_STAGING,
-			}
-		}
-		duts {
-			common {
-				id: "link_suites_healthy"
-				hostname: "link_suites_healthy"
-				labels {
-					model: "link"
-					critical_pools: DUT_POOL_CQ
-				}
-				environment: ENVIRONMENT_STAGING,
-			}
-		}`
-		err = inventory.LoadLabFromString(expectedLabStr, &expectedLab)
-		So(err, ShouldBeNil)
-		if !proto.Equal(&actualLab, &expectedLab) {
-			prettyPrintLabDiff(c, &expectedLab, &actualLab)
-			So(proto.Equal(&actualLab, &expectedLab), ShouldBeTrue)
-		}
+		assertInventoryChange(c, tf.FakeGerrit, []testInventoryDut{
+			{"link_cq_unhealthy", "link", "DUT_POOL_SUITES"},
+			{"link_suites_healthy", "link", "DUT_POOL_CQ"},
+		})
 	})
 }
 
+func TestResizePool(t *testing.T) {
+	Convey("With 0 DUTs in target pool and 0 DUTs in spare pool", t, func(c C) {
+		tf, validate := newTestFixture(t)
+		defer validate()
+
+		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{})
+		So(err, ShouldBeNil)
+
+		Convey("ResizePool to 0 DUTs in target pool makes no changes", func() {
+			resp, err := tf.Inventory.ResizePool(tf.C, &fleet.ResizePoolRequest{
+				DutSelector: &fleet.DutSelector{
+					Model: "link",
+				},
+				SparePool:      "DUT_POOL_SUITES",
+				TargetPool:     "DUT_POOL_CQ",
+				TargetPoolSize: 0,
+			})
+			So(err, ShouldBeNil)
+			So(resp.Url, ShouldEqual, "")
+			So(resp.Changes, ShouldHaveLength, 0)
+		})
+
+		Convey("ResizePool to 1 DUTs in target pool fails", func() {
+			_, err := tf.Inventory.ResizePool(tf.C, &fleet.ResizePoolRequest{
+				DutSelector: &fleet.DutSelector{
+					Model: "link",
+				},
+				SparePool:      "DUT_POOL_SUITES",
+				TargetPool:     "DUT_POOL_CQ",
+				TargetPoolSize: 1,
+			})
+			So(err, ShouldNotBeNil)
+		})
+	})
+
+	Convey("With 0 DUTs in target pool and 4 DUTs in spare pool", t, func(c C) {
+		tf, validate := newTestFixture(t)
+		defer validate()
+
+		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
+			{"link_suites_0", "link", "DUT_POOL_SUITES"},
+			{"link_suites_1", "link", "DUT_POOL_SUITES"},
+			{"link_suites_2", "link", "DUT_POOL_SUITES"},
+			{"link_suites_3", "link", "DUT_POOL_SUITES"},
+		})
+		So(err, ShouldBeNil)
+
+		Convey("ResizePool to 0 DUTs in target pool makes no changes", func() {
+			resp, err := tf.Inventory.ResizePool(tf.C, &fleet.ResizePoolRequest{
+				DutSelector: &fleet.DutSelector{
+					Model: "link",
+				},
+				SparePool:      "DUT_POOL_SUITES",
+				TargetPool:     "DUT_POOL_CQ",
+				TargetPoolSize: 0,
+			})
+			So(err, ShouldBeNil)
+			So(resp.Url, ShouldEqual, "")
+			So(resp.Changes, ShouldHaveLength, 0)
+		})
+
+		Convey("ResizePool to 3 DUTs in target pool expands target pool", func() {
+			resp, err := tf.Inventory.ResizePool(tf.C, &fleet.ResizePoolRequest{
+				DutSelector: &fleet.DutSelector{
+					Model: "link",
+				},
+				SparePool:      "DUT_POOL_SUITES",
+				TargetPool:     "DUT_POOL_CQ",
+				TargetPoolSize: 3,
+			})
+			So(err, ShouldBeNil)
+			So(resp.Url, ShouldNotEqual, "")
+			So(resp.Changes, ShouldHaveLength, 3)
+			mc := poolChangeMap(resp.Changes)
+			So(poolChangeCount(mc, "DUT_POOL_SUITES", "DUT_POOL_CQ"), ShouldEqual, 3)
+		})
+
+		Convey("ResizePool to 5 DUTs in target pool fails", func() {
+			_, err := tf.Inventory.ResizePool(tf.C, &fleet.ResizePoolRequest{
+				DutSelector: &fleet.DutSelector{
+					Model: "link",
+				},
+				SparePool:      "DUT_POOL_SUITES",
+				TargetPool:     "DUT_POOL_CQ",
+				TargetPoolSize: 5,
+			})
+			So(err, ShouldNotBeNil)
+		})
+	})
+
+	Convey("With 4 DUTs in target pool and 0 DUTs in spare pool", t, func(c C) {
+		tf, validate := newTestFixture(t)
+		defer validate()
+
+		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
+			{"link_suites_0", "link", "DUT_POOL_CQ"},
+			{"link_suites_1", "link", "DUT_POOL_CQ"},
+			{"link_suites_2", "link", "DUT_POOL_CQ"},
+			{"link_suites_3", "link", "DUT_POOL_CQ"},
+		})
+		So(err, ShouldBeNil)
+
+		Convey("ResizePool to 4 DUTs in target pool makes no changes", func() {
+			resp, err := tf.Inventory.ResizePool(tf.C, &fleet.ResizePoolRequest{
+				DutSelector: &fleet.DutSelector{
+					Model: "link",
+				},
+				SparePool:      "DUT_POOL_SUITES",
+				TargetPool:     "DUT_POOL_CQ",
+				TargetPoolSize: 4,
+			})
+			So(err, ShouldBeNil)
+			So(resp.Url, ShouldEqual, "")
+			So(resp.Changes, ShouldHaveLength, 0)
+		})
+
+		Convey("ResizePool to 3 DUTs in target pool contracts target pool", func() {
+			resp, err := tf.Inventory.ResizePool(tf.C, &fleet.ResizePoolRequest{
+				DutSelector: &fleet.DutSelector{
+					Model: "link",
+				},
+				SparePool:      "DUT_POOL_SUITES",
+				TargetPool:     "DUT_POOL_CQ",
+				TargetPoolSize: 3,
+			})
+			So(err, ShouldBeNil)
+			So(resp.Url, ShouldNotEqual, "")
+			So(resp.Changes, ShouldHaveLength, 1)
+			mc := poolChangeMap(resp.Changes)
+			So(poolChangeCount(mc, "DUT_POOL_CQ", "DUT_POOL_SUITES"), ShouldEqual, 1)
+		})
+	})
+}
+
+func TestResizePoolCommit(t *testing.T) {
+	Convey("With 0 DUTs in target pool and 1 DUTs in spare pool", t, func(c C) {
+		tf, validate := newTestFixture(t)
+		defer validate()
+
+		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
+			{"link_suites_0", "link", "DUT_POOL_SUITES"},
+		})
+		So(err, ShouldBeNil)
+
+		Convey("ResizePool to 1 DUTs in target pool commits changes", func() {
+			_, err := tf.Inventory.ResizePool(tf.C, &fleet.ResizePoolRequest{
+				DutSelector: &fleet.DutSelector{
+					Model: "link",
+				},
+				SparePool:      "DUT_POOL_SUITES",
+				TargetPool:     "DUT_POOL_CQ",
+				TargetPoolSize: 1,
+			})
+			So(err, ShouldBeNil)
+			assertInventoryChange(c, tf.FakeGerrit, []testInventoryDut{
+				{"link_suites_0", "link", "DUT_POOL_CQ"},
+			})
+		})
+
+		Convey("ResizePool does not commit changes on error", func() {
+			_, err := tf.Inventory.ResizePool(tf.C, &fleet.ResizePoolRequest{
+				DutSelector: &fleet.DutSelector{
+					Model: "link",
+				},
+				SparePool:      "DUT_POOL_SUITES",
+				TargetPool:     "DUT_POOL_CQ",
+				TargetPoolSize: 4,
+			})
+			So(err, ShouldNotBeNil)
+			So(tf.FakeGerrit.Changes, ShouldHaveLength, 0)
+		})
+	})
+}
+
+// setupLabInventoryArchive sets up fake gitiles to return the inventory of
+// duts provided.
 func setupLabInventoryArchive(c context.Context, g *fakeGitilesClient, duts []testInventoryDut) error {
+	return g.addArchive(config.Get(c).Inventory, []byte(labInventoryStrFromDuts(duts)))
+}
+
+// assertInventoryChange verifies that the CL uploaded to gerrit contains the
+// inventory of duts provided.
+func assertInventoryChange(c C, fg *fakeGerritClient, duts []testInventoryDut) {
+	changes := fg.Changes
+	So(changes, ShouldHaveLength, 1)
+	change := changes[0]
+	So(change.Path, ShouldEqual, "data/skylab/lab.textpb")
+	var actualLab inventory.Lab
+	err := inventory.LoadLabFromString(change.Content, &actualLab)
+	So(err, ShouldBeNil)
+	var expectedLab inventory.Lab
+	err = inventory.LoadLabFromString(labInventoryStrFromDuts(duts), &expectedLab)
+	So(err, ShouldBeNil)
+	if !proto.Equal(&actualLab, &expectedLab) {
+		prettyPrintLabDiff(c, &expectedLab, &actualLab)
+		So(proto.Equal(&actualLab, &expectedLab), ShouldBeTrue)
+	}
+}
+
+func labInventoryStrFromDuts(duts []testInventoryDut) string {
 	ptext := ""
 	for _, dut := range duts {
 		ptext = fmt.Sprintf(`%s
@@ -416,7 +582,7 @@ func setupLabInventoryArchive(c context.Context, g *fakeGitilesClient, duts []te
 			dut.id, dut.id, dut.model, dut.pool,
 		)
 	}
-	return g.addArchive(config.Get(c).Inventory, []byte(ptext))
+	return ptext
 }
 
 func expectDutsWithHealth(t *fleet.MockTrackerServer, dutHealths map[string]fleet.Health) {
@@ -447,6 +613,18 @@ func poolChangeMap(pcs []*fleet.PoolChange) map[string]*partialPoolChange {
 		}
 	}
 	return mc
+}
+
+// poolChangeCount counts the number of partialPoolChanges in the map that move
+// a DUT from oldPool to newPool.
+func poolChangeCount(pcs map[string]*partialPoolChange, oldPool, newPool string) int {
+	c := 0
+	for _, pc := range pcs {
+		if pc.OldPool == oldPool && pc.NewPool == newPool {
+			c++
+		}
+	}
+	return c
 }
 
 func prettyPrintLabDiff(c C, want, got *inventory.Lab) {

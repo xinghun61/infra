@@ -128,6 +128,48 @@ func (is *ServerImpl) EnsurePoolHealthy(ctx context.Context, req *fleet.EnsurePo
 	return ret, nil
 }
 
+// ResizePool implements the method from fleet.InventoryServer interface.
+func (is *ServerImpl) ResizePool(ctx context.Context, req *fleet.ResizePoolRequest) (resp *fleet.ResizePoolResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+
+	inventoryConfig := config.Get(ctx).Inventory
+
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	lab, err := is.fetchLabInventory(ctx, inventoryConfig)
+	if err != nil {
+		return nil, err
+	}
+	duts := selectDutsFromInventory(lab, req.DutSelector, inventoryConfig.Environment)
+	changes, err := resizePool(duts, req.TargetPool, int(req.TargetPoolSize), req.SparePool)
+	if err != nil {
+		return nil, err
+	}
+	u, err := is.commitChanges(ctx, inventoryConfig, lab, changes)
+	if err != nil {
+		return nil, err
+	}
+	return &fleet.ResizePoolResponse{
+		Url:     u,
+		Changes: changes,
+	}, nil
+}
+
+func selectDutsFromInventory(lab *inventory.Lab, sel *fleet.DutSelector, env string) []*inventory.DeviceUnderTest {
+	m := sel.GetModel()
+	duts := []*inventory.DeviceUnderTest{}
+	for _, d := range lab.Duts {
+		if d.GetCommon().GetEnvironment().String() == env && d.GetCommon().GetLabels().GetModel() == m {
+			duts = append(duts, d)
+		}
+	}
+	return duts
+}
+
 func (is *ServerImpl) fetchLabInventory(ctx context.Context, inventoryConfig *config.Inventory) (*inventory.Lab, error) {
 	gc, err := is.newGitilesClient(ctx, inventoryConfig.GitilesHost)
 	if err != nil {
@@ -162,17 +204,6 @@ func (is *ServerImpl) commitChanges(ctx context.Context, inventoryConfig *config
 		return "", errors.Annotate(err, "create gerrit client").Err()
 	}
 	return commitInventory(ctx, gerritC, lab)
-}
-
-func selectDutsFromInventory(lab *inventory.Lab, sel *fleet.DutSelector, env string) []*inventory.DeviceUnderTest {
-	m := sel.GetModel()
-	duts := []*inventory.DeviceUnderTest{}
-	for _, d := range lab.Duts {
-		if d.GetCommon().GetEnvironment().String() == env && d.GetCommon().GetLabels().GetModel() == m {
-			duts = append(duts, d)
-		}
-	}
-	return duts
 }
 
 func applyChanges(lab *inventory.Lab, changes []*fleet.PoolChange) error {

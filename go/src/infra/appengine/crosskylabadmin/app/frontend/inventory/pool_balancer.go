@@ -18,6 +18,8 @@ import (
 	"fmt"
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/libs/skylab/inventory"
+
+	"go.chromium.org/luci/common/errors"
 )
 
 // poolBalancer encapsulates the pool balancing algorithm.
@@ -97,6 +99,42 @@ func (pb *poolBalancer) EnsureTargetHealthy(maxUnhealthyDUTs int) ([]*fleet.Pool
 		})
 	}
 	return changes, failures
+}
+
+func resizePool(duts []*inventory.DeviceUnderTest, targetPool string, targetSize int, sparePool string) ([]*fleet.PoolChange, error) {
+	errStr := fmt.Sprintf("resizePool %s pool to %d DUTs using %s spare pool", targetPool, targetSize, sparePool)
+	dp, err := mapPoolsToDUTs(duts)
+	if err != nil {
+		return []*fleet.PoolChange{}, errors.Annotate(err, errStr).Err()
+	}
+
+	ts := dp[targetPool]
+	ss := dp[sparePool]
+	switch {
+	case len(ts) < targetSize:
+		want := targetSize - len(ts)
+		if want > len(ss) {
+			return []*fleet.PoolChange{}, fmt.Errorf("%s: insufficient spares (want %d, have %d)", errStr, want, len(ss))
+		}
+		return changeDUTPools(ss[:want], sparePool, targetPool), nil
+	case len(ts) > targetSize:
+		return changeDUTPools(ts[:len(ts)-targetSize], targetPool, sparePool), nil
+	default:
+		// targetPool is already the right size.
+		return []*fleet.PoolChange{}, nil
+	}
+}
+
+func changeDUTPools(duts []string, oldPool, newPool string) []*fleet.PoolChange {
+	cs := make([]*fleet.PoolChange, 0, len(duts))
+	for _, d := range duts {
+		cs = append(cs, &fleet.PoolChange{
+			DutId:   d,
+			OldPool: oldPool,
+			NewPool: newPool,
+		})
+	}
+	return cs
 }
 
 func mapPoolsToDUTs(duts []*inventory.DeviceUnderTest) (map[string][]string, error) {

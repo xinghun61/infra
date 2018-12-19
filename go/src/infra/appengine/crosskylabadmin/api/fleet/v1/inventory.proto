@@ -18,10 +18,21 @@ service Inventory {
   // healthy DUTs from a spare pool.
   rpc EnsurePoolHealthy(EnsurePoolHealthyRequest) returns
       (EnsurePoolHealthyResponse);
+
+  // ResizePool changes the size of the target DUT pool.
+  //
+  // ResizePool borrows or returns extra DUTs from the spare pool.
+  //
+  // ResizePool does not consider DUT health. Clients should usually call
+  // EnsurePoolHealthy following a ResizePool operation.
+  //
+  // ResizePool never makes partial changes. In case of an error, no inventory
+  // changes are made.
+  rpc ResizePool(ResizePoolRequest) returns (ResizePoolResponse);
 }
 
 message EnsurePoolHealthyRequest {
-  // dut_selectors filters the set of DUTs considered by EnsurePoolHealhy.
+  // dut_selectors filters the set of DUTs considered by EnsurePoolHealthy.
   //
   // All pool changes occurs within this selected set of DUTs.
   // It is an error to omit dut_selector because that would allow
@@ -97,6 +108,37 @@ message EnsurePoolHealthyResponse {
   // changes correspond to the proposed or executed pool changes to ensure
   // inventory in response to various API methods calls.
   repeated PoolChange changes = 5;
+}
+
+message ResizePoolRequest {
+  // dut_selectors filters the set of DUTs considered by ResizePool.
+  //
+  // All pool changes occurs within this selected set of DUTs.
+  // It is an error to omit dut_selector because that would allow
+  // unconstrained DUT reallocation between pools, disregarding all other
+  // labels.
+  DutSelector dut_selector = 1;
+
+  // target_pool is the pool that should contain healthy DUTs.
+  string target_pool = 2;
+
+  // target_pool_size is the requested size for the target_pool.
+  int32 target_pool_size = 3;
+
+  // spare_pool is the pool to borrow needed DUTs from and return extra DUTs to.
+  string spare_pool = 4;
+}
+
+message ResizePoolResponse {
+  // url is an opaque URL for this inventory change.
+  //
+  // It is intended to be the gerrit CL corresponding to the change, or the
+  // gitiles path for a committed changelist for the change.
+  string url = 1;
+
+  // changes correspond to the proposed or executed pool changes to inventory in
+  // response to the ResizePool RPC.
+  repeated PoolChange changes = 2;
 }
 
 message DutSelector {
