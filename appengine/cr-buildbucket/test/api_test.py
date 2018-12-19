@@ -14,6 +14,7 @@ sys.path.insert(
     0, os.path.join(REPO_ROOT_DIR, 'luci', 'appengine', 'third_party_local')
 )
 
+from google.protobuf import struct_pb2
 from google.protobuf import text_format
 
 from components import auth
@@ -60,8 +61,9 @@ class V1ApiTest(testing.EndpointsTestCase):
         bucket_id='chromium/try',
         create_time=datetime.datetime(2017, 1, 1),
         parameters={
-            'buildername': 'linux_rel',
+            model.BUILDER_PARAMETER: 'linux_rel',
         },
+        input_properties=struct_pb2.Struct(),
         swarming_hostname='swarming.example.com',
         swarming_task_id='deadbeef',
     )
@@ -99,7 +101,11 @@ class V1ApiTest(testing.EndpointsTestCase):
     self.assertEqual(resp['build']['lease_expiration_ts'], self.future_ts)
     self.assertEqual(resp['build']['status'], 'SCHEDULED')
     self.assertEqual(
-        resp['build']['parameters_json'], '{"buildername": "linux_rel"}'
+        json.loads(resp['build']['parameters_json']),
+        {
+            model.BUILDER_PARAMETER: 'linux_rel',
+            model.PROPERTIES_PARAMETER: {},
+        },
     )
 
   @mock.patch('service.get_async', autospec=True)
@@ -149,12 +155,16 @@ class V1ApiTest(testing.EndpointsTestCase):
   @mock.patch('creation.add_async', autospec=True)
   def test_put_with_parameters(self, add_async):
     add_async.return_value = future(self.test_build)
+    parameters = {
+        model.BUILDER_PARAMETER: 'linux_rel',
+        model.PROPERTIES_PARAMETER: {},
+    }
     req = {
         'bucket': 'luci.chromium.try',
-        'parameters_json': json.dumps(self.test_build.parameters),
+        'parameters_json': json.dumps(parameters),
     }
     resp = self.call_api('put', req).json_body
-    self.assertEqual(resp['build']['parameters_json'], req['parameters_json'])
+    self.assertEqual(json.loads(resp['build']['parameters_json']), parameters)
 
   @mock.patch('creation.add_async', autospec=True)
   def test_put_with_leasing(self, add_async):
@@ -197,6 +207,7 @@ class V1ApiTest(testing.EndpointsTestCase):
     build = model.Build(
         bucket_id='chromium/try',
         parameters={model.BUILDER_PARAMETER: 'debug'},
+        input_properties=struct_pb2.Struct(),
         tags=['a:b'],
         retry_of=2,
         swarming_hostname='swarming.example.com',
@@ -227,7 +238,10 @@ class V1ApiTest(testing.EndpointsTestCase):
     self.assertEqual(resp['build']['id'], str(build.key.id()))
     self.assertEqual(resp['build']['bucket'], 'luci.chromium.try')
     self.assertEqual(
-        json.loads(resp['build']['parameters_json']), build.parameters
+        json.loads(resp['build']['parameters_json']), {
+            model.BUILDER_PARAMETER: 'debug',
+            model.PROPERTIES_PARAMETER: {},
+        }
     )
     self.assertEqual(resp['build']['retry_of'], '2')
 
@@ -246,6 +260,7 @@ class V1ApiTest(testing.EndpointsTestCase):
         id=2,
         bucket_id='chromium/ci',
         swarming_hostname=self.test_build.swarming_hostname,
+        input_properties=struct_pb2.Struct(),
     )
     config.put_bucket(
         'chromium',
@@ -508,6 +523,7 @@ class V1ApiTest(testing.EndpointsTestCase):
         id=2,
         bucket_id='chromium/try',
         lease_expiration_date=self.future_date,
+        input_properties=struct_pb2.Struct(),
     )
 
     heartbeat_batch.return_value = [

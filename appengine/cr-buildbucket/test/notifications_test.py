@@ -5,7 +5,11 @@
 import datetime
 import json
 
+from components import utils
+utils.fix_protobuf_package()
+
 from google.appengine.ext import ndb
+from google.protobuf import struct_pb2
 
 import webtest
 
@@ -62,6 +66,7 @@ class NotificationsTest(testing.AppengineTestCase):
             user_data='hello',
             auth_token='secret',
         ),
+        input_properties=struct_pb2.Struct(),
     )
 
     @ndb.transactional
@@ -134,6 +139,7 @@ class NotificationsTest(testing.AppengineTestCase):
         id=1,
         bucket_id='chromium/try',
         create_time=datetime.datetime(2017, 1, 1),
+        input_properties=struct_pb2.Struct(),
     )
 
     @ndb.transactional

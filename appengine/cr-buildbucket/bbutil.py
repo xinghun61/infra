@@ -7,6 +7,7 @@
 Has "bb" prefix to avoid confusion with components.utils.
 """
 
+from google.protobuf import json_format
 from google.protobuf import struct_pb2
 
 
@@ -15,6 +16,11 @@ def dict_to_struct(d):  # pragma: no cover
   s = struct_pb2.Struct()
   s.update(d)
   return s
+
+
+def struct_to_dict(s):  # pragma: no cover
+  """Converts a google.protobuf.Struct to dict."""
+  return json_format.MessageToDict(s)
 
 
 def update_struct(dest, src):  # pragma: no cover

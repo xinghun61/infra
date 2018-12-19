@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import copy
 import json
 
 from google.appengine.ext import ndb
@@ -136,6 +137,11 @@ def properties_to_json(properties):
   For backward compatibility, temporarily (crbug.com/877161) renders widely
   used, deprecated properties as integers, see INTEGER_PROPERTIES.
   """
+  return json.dumps(_properties_to_dict(properties), sort_keys=True)
+
+
+def _properties_to_dict(properties):
+  """Implements properties_to_json."""
   assert isinstance(properties, (dict, struct_pb2.Struct)), properties
   if isinstance(properties, dict):  # pragma: no branch
     properties = bbutil.dict_to_struct(properties)
@@ -148,7 +154,7 @@ def properties_to_json(properties):
     if isinstance(as_dict.get(p), float):
       as_dict[p] = int(as_dict[p])
 
-  return json.dumps(as_dict, sort_keys=True)
+  return as_dict
 
 
 def build_to_message(build, include_lease_key=False):
@@ -159,12 +165,15 @@ def build_to_message(build, include_lease_key=False):
 
   project_id, _ = config.parse_bucket_id(build.bucket_id)
 
+  v1_parameters = copy.deepcopy(build.parameters or {})
+  v1_parameters['properties'] = _properties_to_dict(build.input_properties)
+
   msg = BuildMessage(
       id=build.key.id(),
       project=project_id,
       bucket=legacy_bucket_name(build.bucket_id, build.is_luci),
       tags=build.tags,
-      parameters_json=json.dumps(build.parameters or {}, sort_keys=True),
+      parameters_json=json.dumps(v1_parameters, sort_keys=True),
       status=build.status,
       result=build.result,
       result_details_json=json.dumps(build.result_details),

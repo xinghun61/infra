@@ -71,7 +71,6 @@ import model
 import user
 
 _PUBSUB_TOPIC = 'swarming'
-_PARAM_PROPERTIES = 'properties'
 _PARAM_SWARMING = 'swarming'
 _PARAM_CHANGES = 'changes'
 
@@ -185,14 +184,14 @@ def _get_task_template_async(canary, canary_required=True):
   raise ndb.Return(revision, template, canary)
 
 
-def validate_build_parameters(builder_name, params):
+def validate_build_parameters(params):
   """Raises errors.InvalidInputError if build parameters are invalid."""
   params = copy.deepcopy(params)
 
   def bad(fmt, *args):
     raise errors.InvalidInputError(fmt % args)
 
-  params.pop(model.BUILDER_PARAMETER)  # already validated
+  params.pop(model.BUILDER_PARAMETER, None)  # already validated
 
   def assert_object(name, value):
     if not isinstance(value, dict):
@@ -216,23 +215,6 @@ def validate_build_parameters(builder_name, params):
         bad('change author email must be a string')
       if not email:
         bad('change author email not specified')
-
-  properties = params.pop(_PARAM_PROPERTIES, None)
-  if properties is not None:  # pragma: no cover. TODO(nodir): remove this code.
-    assert_object('properties', properties)
-    if properties.pop('buildername', builder_name) != builder_name:
-      bad('inconsistent builder name')
-    expected_emails = [c['author']['email'] for c in (changes or [])]
-    if properties.pop('blamelist', None) not in (None, expected_emails):
-      bad(
-          'inconsistent blamelist property; blamelist must not be set or '
-          'it must match the emails in the "changes" build parameter'
-      )
-    # Validate the rest of the properties using common logic.
-    ctx = validation.Context.raise_on_error(exc_type=errors.InvalidInputError)
-    for k, v in properties.iteritems():
-      with ctx.prefix('property %r:', k):
-        swarmingcfg_module.validate_recipe_property(k, v, ctx)
 
   swarming = params.pop(_PARAM_SWARMING, None)
   if swarming is not None:
@@ -269,6 +251,14 @@ def validate_build_parameters(builder_name, params):
 
     if swarming:
       bad('unrecognized keys in swarming param: %r', swarming.keys())
+
+
+def validate_input_properties(properties):
+  """Raises errors.InvalidInputError if properties are invalid."""
+  ctx = validation.Context.raise_on_error(exc_type=errors.InvalidInputError)
+  for k, v in sorted(bbutil.struct_to_dict(properties).iteritems()):
+    with ctx.prefix('property %r:', k):
+      swarmingcfg_module.validate_recipe_property(k, v, ctx)
 
 
 # Mocked in tests.
@@ -374,18 +364,22 @@ def _is_migrating_builder_prod_async(builder_cfg, build):
 
   If unknown, returns None.
   On failures, logs them and returns None.
+
+  TODO(nodir): remove this function when Buildbot is turned down.
   """
   ret = None
 
   master = None
   props_list = (
-      build.parameters.get(_PARAM_PROPERTIES) or {},
-      flatten_swarmingcfg.read_properties(builder_cfg.recipe),
+      build.input_properties,
+      bbutil.dict_to_struct(
+          flatten_swarmingcfg.read_properties(builder_cfg.recipe)
+      ),
   )
   for prop_name in ('luci_migration_master_name', 'mastername'):
     for props in props_list:
-      master = props.get(prop_name)
-      if master:
+      if prop_name in props:
+        master = props[prop_name]
         break
     if master:  # pragma: no branch
       break
@@ -436,7 +430,8 @@ def _create_task_def_async(
                     int) or build_number is None, type(build_number)
   assert isinstance(fake_build, bool), type(fake_build)
   params = build.parameters or {}
-  validate_build_parameters(builder_cfg.name, params)
+  validate_build_parameters(params)
+  validate_input_properties(build.input_properties)
   swarming_param = params.get(_PARAM_SWARMING) or {}
 
   # Use canary template?
