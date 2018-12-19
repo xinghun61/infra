@@ -465,7 +465,7 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     flake = Flake.query().fetch()[0]
     occurrences = FlakeOccurrence.query(
         FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
-    flake_issue_util.ReportFlakesToFlakeAnalyzer([(flake, occurrences)])
+    flake_issue_util.ReportFlakesToFlakeAnalyzer([(flake, occurrences, None)])
     self.assertFalse(mock_analyze_flake_occurrence.called)
 
   @mock.patch.object(flake_issue_util, 'AnalyzeDetectedFlakeOccurrence')
@@ -478,7 +478,8 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     occurrences = FlakeOccurrence.query(
         FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
 
-    flake_issue_util.ReportFlakesToFlakeAnalyzer([(flake, occurrences)])
+    flake_issue_util.ReportFlakesToFlakeAnalyzer([(flake, occurrences,
+                                                   flake_issue)])
     self.assertEqual(3, mock_analyze_flake_occurrence.call_count)
     expected_call_args = []
     for occurrence in occurrences:

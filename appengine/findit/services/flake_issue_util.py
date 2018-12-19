@@ -417,6 +417,12 @@ def GetFlakeGroupsForActionsOnBugs(flake_tuples_to_report):
   """Groups the flakes either by heuristic rules (if they linked to no issue)
     or by issue (if they have linked to an open issue).
 
+  Args:
+  flake_tuples_to_report: A list of tuples whose first element is a Flake
+                          entity and second element is a list of corresponding
+                          occurrences to report and the third element is
+                          the linked FlakeIssue entity.
+
   Cases:
     1. Flake1 and Flake2 don't link to any FlakeIssue. They have the same
       luci_project, normalized_step_name and test_suite_name, and they failed
@@ -532,15 +538,15 @@ def ReportFlakesToFlakeAnalyzer(flake_tuples_to_report):
   Args:
     flake_tuples_to_report: A list of tuples whose first element is a Flake
                             entity and second element is a list of corresponding
-                            occurrences to report.
+                            occurrences to report and the third element is
+                            the linked FlakeIssue entity.
   """
   if not _IsReportFlakesToFlakeAnalyzerEnabled():
     logging.info('Skip reporting flakes to Flake Analyzer because the feature '
                  'is disabled.')
     return
 
-  for flake, occurrences in flake_tuples_to_report:
-    flake_issue = GetFlakeIssue(flake)
+  for flake, occurrences, flake_issue in flake_tuples_to_report:
     issue_id = flake_issue.issue_id if flake_issue else None
     for occurrence in occurrences:
       AnalyzeDetectedFlakeOccurrence(flake, occurrence, issue_id)
