@@ -84,9 +84,8 @@ def _CreateFlake(flake_data, with_component=True):
 
 class ReportTest(wf_testcase.WaterfallTestCase):
 
-  @mock.patch.object(
-      time_util, 'GetPreviousISOWeek', return_value=(2018, 35, 1))
-  def testBasicReport(self, _):
+  def setUp(self):
+    super(ReportTest, self).setUp()
     flakes_data = [
         {
             'test':
@@ -183,7 +182,11 @@ class ReportTest(wf_testcase.WaterfallTestCase):
       with_component = True if i % 2 else False
       _CreateFlake(flake_data, with_component)
 
-    component_report.Report()
+  @mock.patch.object(
+      time_util, 'GetPreviousISOWeek', return_value=(2018, 35, 1))
+  def testBasicReport(self, _):
+
+    component_report.Report(save_test_report=True)
     with self.assertRaises(component_report.ReportExistsException):
       component_report.Report()
 
@@ -255,4 +258,62 @@ class ReportTest(wf_testcase.WaterfallTestCase):
 
     for cl_count in component_test_report_A_B.impacted_cl_counts:
       self.assertEqual(expected_A_B_counts[cl_count.flake_type][1],
+                       cl_count.count)
+
+  @mock.patch.object(
+      time_util, 'GetPreviousISOWeek', return_value=(2018, 35, 1))
+  def testBasicReportNoTestReports(self, _):
+
+    component_report.Report()
+
+    report = TotalFlakinessReport.Get(2018, 35, 1)
+    self.assertEqual(6, report.test_count)
+    self.assertEqual(4, report.bug_count)
+
+    expected_report_counts = {
+        FlakeType.CQ_FALSE_REJECTION: (7, 3),
+        FlakeType.RETRY_WITH_PATCH: (1, 0)
+    }
+
+    for occurrence_count in report.occurrence_counts:
+      self.assertEqual(expected_report_counts[occurrence_count.flake_type][0],
+                       occurrence_count.count)
+
+    for cl_count in report.impacted_cl_counts:
+      self.assertEqual(expected_report_counts[cl_count.flake_type][1],
+                       cl_count.count)
+
+    component_report_A = ComponentFlakinessReport.Get(report.key, 'ComponentA')
+    self.assertEqual(4, component_report_A.test_count)
+    self.assertEqual(3, component_report_A.bug_count)
+
+    expected_A_counts = {
+        FlakeType.CQ_FALSE_REJECTION: (5, 3),
+        FlakeType.RETRY_WITH_PATCH: (1, 0)
+    }
+
+    for occurrence_count in component_report_A.occurrence_counts:
+      self.assertEqual(expected_A_counts[occurrence_count.flake_type][0],
+                       occurrence_count.count)
+
+    for cl_count in component_report_A.impacted_cl_counts:
+      self.assertEqual(expected_A_counts[cl_count.flake_type][1],
+                       cl_count.count)
+
+    component_report_unknown = ComponentFlakinessReport.Get(
+        report.key, 'Unknown')
+    self.assertEqual(1, component_report_unknown.test_count)
+    self.assertEqual(1, component_report_unknown.bug_count)
+
+    expected_Unknown_counts = {
+        FlakeType.CQ_FALSE_REJECTION: (1, 1),
+        FlakeType.RETRY_WITH_PATCH: (0, 0)
+    }
+
+    for occurrence_count in component_report_unknown.occurrence_counts:
+      self.assertEqual(expected_Unknown_counts[occurrence_count.flake_type][0],
+                       occurrence_count.count)
+
+    for cl_count in component_report_unknown.impacted_cl_counts:
+      self.assertEqual(expected_Unknown_counts[cl_count.flake_type][1],
                        cl_count.count)

@@ -14,7 +14,12 @@ class ReportTest(wf_testcase.WaterfallTestCase):
 
   def setUp(self):
     super(ReportTest, self).setUp()
-    SaveReportToDatastore(wf_testcase.SAMPLE_FLAKE_REPORT_DATA, 2018, 35, 1)
+    SaveReportToDatastore(
+        wf_testcase.SAMPLE_FLAKE_REPORT_DATA,
+        2018,
+        35,
+        1,
+        save_test_report=True)
 
   def testReport(self):
     report = TotalFlakinessReport.Get(2018, 35, 1)

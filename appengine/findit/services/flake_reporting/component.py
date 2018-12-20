@@ -15,7 +15,7 @@ class ReportExistsException(Exception):
   pass
 
 
-def Report():
+def Report(save_test_report=False):
   """Creates report data for a given week.
 
   Iterates over flakes have happened in the week, and adds information we can
@@ -26,6 +26,11 @@ def Report():
     query to lower latency and cost) to count distinct impacted CLs.
 
   After the totals are accummulated, persists the entities to datastore.
+
+  Args:
+    save_test_report (bool): True if save TestFlakinessReport entries, otherwise
+      False. Noted: an error "too much contention on these datastore entities"
+      may fire when also save TestFlakinessReport entries.
   """
   year, week_number, day = time_util.GetPreviousISOWeek()
   if TotalFlakinessReport.Get(year, week_number, day):
@@ -82,9 +87,10 @@ def Report():
   start = time_util.ConvertISOWeekToUTCDatetime(year, week_number, day)
   end = start + datetime.timedelta(days=7)
 
-  _AddFlakesToCounters(counters, flake_info_dict, start)
-  _AddDistinctCLsToCounters(counters, flake_info_dict, start, end)
-  SaveReportToDatastore(counters, year, week_number, day)
+  _AddFlakesToCounters(counters, flake_info_dict, start, save_test_report)
+  _AddDistinctCLsToCounters(counters, flake_info_dict, start, end,
+                            save_test_report)
+  SaveReportToDatastore(counters, year, week_number, day, save_test_report)
 
 
 def _NewTally(id_string):
@@ -111,7 +117,7 @@ def _AddFlakeToTally(tally, flake):
                           .flake_type] += flake_count.occurrence_count
 
 
-def _AddFlakesToCounters(counters, flake_info_dict, start):
+def _AddFlakesToCounters(counters, flake_info_dict, start, save_test_report):
   """Queries all flakes that have happened after start time and adds their info
     to counters.
   """
@@ -133,9 +139,10 @@ def _AddFlakesToCounters(counters, flake_info_dict, start):
         counters[component] = _NewTally(component)
       _AddFlakeToTally(counters[component], flake)
 
-      if test not in counters[component]:  # pragma: no branch.
-        counters[component][test] = _NewTally(test)
-      _AddFlakeToTally(counters[component][test], flake)
+      if save_test_report:  # pragma: no branch.
+        if test not in counters[component]:
+          counters[component][test] = _NewTally(test)
+        _AddFlakeToTally(counters[component][test], flake)
 
 
 def _UpdateDuplicatedClsBetweenTypes(counters):
@@ -169,7 +176,8 @@ def _UpdateDuplicatedClsBetweenTypes(counters):
       UpdateTallyCLs(t_counters)
 
 
-def _AddDistinctCLsToCounters(counters, flake_info_dict, start, end):
+def _AddDistinctCLsToCounters(counters, flake_info_dict, start, end,
+                              save_test_report):
   occurrences_query = FlakeOccurrence.query(
       projection=[FlakeOccurrence.flake_type, FlakeOccurrence.gerrit_cl_id
                  ]).filter(
@@ -186,21 +194,28 @@ def _AddDistinctCLsToCounters(counters, flake_info_dict, start, end):
       flake_key = occurrence.key.parent()
       component = flake_info_dict.get(flake_key, {}).get('component')
       test = flake_info_dict.get(flake_key, {}).get('test')
-      if (not component or not test or not counters.get(component) or
-          not counters[component].get(test)):
-        # Broken data, bails out on this occurrence.
+
+      # Broken data, bails out on this occurrence.
+      if not component or not counters.get(component):
+        continue
+      if save_test_report and (not test or not counters[component].get(test)):
         continue
 
       flake_type = occurrence.flake_type
       cl = occurrence.gerrit_cl_id
       counters['_impacted_cls'][flake_type].add(cl)
       counters[component]['_impacted_cls'][flake_type].add(cl)
-      counters[component][test]['_impacted_cls'][flake_type].add(cl)
+      if save_test_report:
+        counters[component][test]['_impacted_cls'][flake_type].add(cl)
 
   _UpdateDuplicatedClsBetweenTypes(counters)
 
 
-def SaveReportToDatastore(counters, year, week_number, day):
+def SaveReportToDatastore(counters,
+                          year,
+                          week_number,
+                          day,
+                          save_test_report=False):
   # The entities to persist.
   entities = []
   report = TotalFlakinessReport.FromTallies(None, counters, year, week_number,
@@ -212,6 +227,8 @@ def SaveReportToDatastore(counters, year, week_number, day):
     component_row = ComponentFlakinessReport.FromTallies(
         report.key, c_counters, year, week_number, day)
     entities.append(component_row)
+    if not save_test_report:
+      continue
     for test, t_counters in c_counters.iteritems():
       if test.startswith('_'):
         continue
@@ -220,3 +237,4 @@ def SaveReportToDatastore(counters, year, week_number, day):
                                           week_number, day))
 
   ndb.put_multi(entities)
+
