@@ -209,6 +209,51 @@
         </td>
       </tr>
     </template>
+
+    <template is="dom-if" if="[[hotlistsByRole.user.length]]">
+      <tr>
+        <th>Your Hotlists:</th>
+        <td>
+          <template is="dom-repeat" items="[[hotlistsByRole.user]]">
+            <a href$="/u/[[item.ownerRef.userId]]/hotlists/[[item.name]]"
+              title$="[[item.name]] - [[item.summary]]">
+              [[item.name]]
+            </a>
+            <br />
+          </template>
+        </td>
+      </tr>
+    </template>
+
+    <template is="dom-if" if="[[hotlistsByRole.participants.length]]">
+      <tr>
+        <th>Participant's Hotlists:</th>
+        <td>
+          <template is="dom-repeat" items="[[hotlistsByRole.participants]]">
+            <a href$="/u/[[item.ownerRef.userId]]/hotlists/[[item.name]]"
+              title$="[[item.name]] - [[item.summary]]">
+              [[item.name]]
+            </a>
+            <br />
+          </template>
+        </td>
+      </tr>
+    </template>
+
+    <template is="dom-if" if="[[hotlistsByRole.others.length]]">
+      <tr>
+        <th>Other Hotlists:</th>
+        <td>
+          <template is="dom-repeat" items="[[hotlistsByRole.others]]">
+            <a href$="/u/[[item.ownerRef.userId]]/hotlists/[[item.name]]"
+              title$="[[item.name]] - [[item.summary]]">
+              [[item.name]]
+            </a>
+            <br />
+          </template>
+        </td>
+      </tr>
+    </template>
   </template>
   <script src="./mr-metadata.js"></script>
 <dom-module>

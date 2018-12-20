@@ -21,6 +21,10 @@ class MrIssueMetadata extends ReduxMixin(Polymer.Element) {
         type: Object,
         statePath: 'issueId',
       },
+      issueHotlists: {
+        type: Array,
+        statePath: 'issueHotlists',
+      },
       projectName: {
         type: Object,
         statePath: 'projectName',

@@ -19,6 +19,10 @@
       FETCH_ISSUE_SUCCESS: 'FETCH_ISSUE_SUCCESS',
       FETCH_ISSUE_FAILURE: 'FETCH_ISSUE_FAILURE',
 
+      FETCH_ISSUE_HOTLISTS_START: 'FETCH_ISSUE_HOTLISTS_START',
+      FETCH_ISSUE_HOTLISTS_SUCCESS: 'FETCH_ISSUE_HOTLISTS_SUCCESS',
+      FETCH_ISSUE_HOTLISTS_FAILURE: 'FETCH_ISSUE_HOTLISTS_FAILURE',
+
       STAR_ISSUE_START: 'STAR_ISSUE_START',
       STAR_ISSUE_SUCCESS: 'STAR_ISSUE_SUCCESS',
       STAR_ISSUE_FAILURE: 'STAR_ISSUE_FAILURE',
@@ -127,9 +131,33 @@
           });
 
           actionCreator.fetchBlockerReferences(dispatch, resp.issue);
+          actionCreator.fetchIssueHotlists(dispatch, message);
         }, (error) => {
           dispatch({
             type: actionType.FETCH_ISSUE_FAILURE,
+            error,
+          });
+        });
+      },
+      fetchIssueHotlists: (dispatch, message) => {
+        dispatch({type: actionType.FETCH_ISSUE_HOTLISTS_START});
+
+        const getIssueHotlists = window.prpcCall(
+          'monorail.Features', 'ListHotlistsByIssue',
+          {issue: message.issueRef});
+
+        getIssueHotlists.then((resp) => {
+          const hotlists = (resp.hotlists || []);
+          hotlists.sort((hotlistA, hotlistB) => {
+            return hotlistA.name.localeCompare(hotlistB.name);
+          });
+          dispatch({
+            type: actionType.FETCH_ISSUE_HOTLISTS_SUCCESS,
+            hotlists,
+          });
+        }, (error) => {
+          dispatch({
+            type: actionType.FETCH_ISSUE_HOTLISTS_FAILURE,
             error,
           });
         });
@@ -208,6 +236,7 @@
 
       projectConfig: {},
       issue: {},
+      issueHotlists: [],
       comments: [],
       commentReferences: new Map(),
       blockerReferences: new Map(),
@@ -219,6 +248,9 @@
       issueLoaded: false,
       fetchingIssue: false,
       fetchIssueError: null,
+
+      fetchingIssueHotlists: false,
+      fetchIssueHotlistsError: null,
 
       fetchingProjectConfig: false,
       fetchProjectConfigError: null,
@@ -322,6 +354,23 @@
           return Object.assign({}, state, {
             fetchIssueError: action.error,
             fetchingIssue: false,
+          });
+
+        // Request for getting an issue's hotlists.
+        case actionType.FETCH_ISSUE_HOTLISTS_START:
+          return Object.assign({}, state, {
+            fetchIssueHotlistsError: null,
+            fetchingIssueHotlists: true,
+          });
+        case actionType.FETCH_ISSUE_HOTLISTS_SUCCESS:
+          return Object.assign({}, state, {
+            issueHotlists: action.hotlists,
+            fetchingIssueHotlists: false,
+          });
+        case actionType.FETCH_ISSUE_HOTLISTS_FAILURE:
+          return Object.assign({}, state, {
+            fetchIssueHotlistsError: action.error,
+            fetchingIssueHotlists: false,
           });
 
         // Request for starring an issue.
