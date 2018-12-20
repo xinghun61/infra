@@ -18,13 +18,11 @@ class PlatformNotSupported(Exception):
 
 class Builder(object):
 
-  def __init__(self, spec, build_fn, arch_map=None, abi_map=None,
-               only_plat=None, skip_plat=None, version_fn=None):
+  def __init__(self, spec, arch_map=None, abi_map=None,
+               only_plat=None, skip_plat=None):
     """Initializes a new wheel Builder.
 
     spec (Spec): The wheel specification.
-    build_fn (callable): Callable build function, used to generate the actual
-        wheel.
     arch_map (dict or None): Naming map for architectures. If the current
         platform has an entry in this map, the generated wheel will use the
         value as the "platform" field.
@@ -43,12 +41,36 @@ class Builder(object):
         'arch_map must map str->seq[str]')
 
     self._spec = spec
-    self._build_fn = build_fn
     self._arch_map = arch_map or {}
     self._abi_map = abi_map or {}
     self._only_plat = frozenset(only_plat or ())
     self._skip_plat = frozenset(skip_plat or ())
-    self._version_fn = version_fn or (lambda _system: self._spec.version)
+
+  def build_fn(self, system, wheel):
+    """Must be overridden by the subclass.
+
+    Args:
+      system (runtime.System)
+      wheel (types.Wheel) - The wheel we're attempting to build.
+
+    Returns:
+      None - The `wheel` argument will be uploaded in the CIPD package; the
+        build_fn was expected to produce the wheel indicated by
+        `wheel.filename`.
+      list[types.Wheel] - This list of wheels will be uploaded in the CIPD
+        package, instead of `wheel`.
+    """
+    raise NotImplementedError('Subclasses must implement build_fn')
+
+  def version_fn(self, system):  # pylint: disable=unused-argument
+    """Optionally overridden by the subclass.
+
+    Returns:
+      str - The version of the wheel to upload. By default this is
+      `spec.version`.
+    """
+    return self._spec.version
+
 
   @property
   def spec(self):
@@ -56,7 +78,7 @@ class Builder(object):
 
   def wheel(self, system, plat):
     wheel = Wheel(
-        spec=self._spec._replace(version=self._version_fn(system)),
+        spec=self._spec._replace(version=self.version_fn(system)),
         plat=plat,
         # Only support Python 2.7 for now, can augment later.
         pyversion='27',
@@ -120,7 +142,7 @@ class Builder(object):
     wheel_path = wheel.path(system)
     if rebuild or not os.path.isfile(wheel_path):
       # The build_fn may return an alternate list of wheels.
-      built_wheels = self._build_fn(system, wheel) or built_wheels
+      built_wheels = self.build_fn(system, wheel) or built_wheels
     else:
       util.LOGGER.info('Wheel is already built: %s', wheel_path)
     return built_wheels
