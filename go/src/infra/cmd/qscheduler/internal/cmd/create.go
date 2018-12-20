@@ -11,6 +11,7 @@ import (
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
 	"go.chromium.org/luci/common/cli"
+	"go.chromium.org/luci/common/data/strpair"
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
 	"infra/cmd/qscheduler/internal/site"
@@ -25,7 +26,11 @@ var Create = &subcommands.Command{
 		c := &createRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
-		c.Flags.StringVar(&c.poolID, "id", "", "usage")
+		c.Flags.StringVar(&c.poolID, "id", "", "Scheduler ID to create.")
+		c.Flags.Var(MultiArg(&c.labels), "label",
+			"Label that will be used by all tasks and bots for this scheduler, specified in "+
+				"the form foo:bar. May be specified multiple times.")
+
 		return c
 	},
 }
@@ -36,10 +41,24 @@ type createRun struct {
 	envFlags  envFlags
 
 	poolID string
+	labels []string
 }
 
 func (c *createRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	ctx := cli.GetContext(a, c, env)
+
+	if c.poolID == "" {
+		fmt.Fprintf(os.Stderr, "Must specify id.\n")
+		return 1
+	}
+
+	for _, l := range c.labels {
+		_, v := strpair.Parse(l)
+		if v == "" {
+			fmt.Fprintf(os.Stderr, "Incorrectly formatted label %s.\n", l)
+			return 1
+		}
+	}
 
 	adminService, err := newAdminClient(ctx, &c.authFlags, &c.envFlags)
 	if err != nil {
@@ -49,9 +68,7 @@ func (c *createRun) Run(a subcommands.Application, args []string, env subcommand
 
 	req := &qscheduler.CreateSchedulerPoolRequest{
 		PoolId: c.poolID,
-		// TODO(akeshet): Add a labels command line argument, parse it, and use it to construct
-		// this config.
-		Config: &qscheduler.SchedulerPoolConfig{},
+		Config: &qscheduler.SchedulerPoolConfig{Labels: c.labels},
 	}
 
 	_, err = adminService.CreateSchedulerPool(ctx, req)
