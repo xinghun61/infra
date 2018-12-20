@@ -112,6 +112,15 @@ test: clean-expect_tests
 	$(INFRAPYTHON) ../../test.py test appengine/findit \
 	  --html-report $(TMPDIR)/coverage
 
+node_deps:
+	npm install
+
+wct: node_deps
+	npx run-wct --base ui/ --dep third_party
+
+wct_debug: node_deps
+	npx run-wct --base ui/ --dep third_party --debug
+
 ##### TMP ###
 TMPDIR := $(shell mkdir -p .tmp 2> /dev/null && realpath .tmp)
 ifndef TMPDIR

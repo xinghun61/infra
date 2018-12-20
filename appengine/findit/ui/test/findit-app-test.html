@@ -1,0 +1,25 @@
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/elements/findit-app.html">
+<test-fixture id="basic">
+  <template>
+    <findit-app></findit-app>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+  let element;
+  setup(function() {
+    element = fixture('basic');
+  });
+  teardown(function() {
+  });
+  suite('basic tests', function() {
+    test('renders bare minimum', function() {
+      expect(element.$.content).be.visible;
+    });
+  });
+})();
+</script>

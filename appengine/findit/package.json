@@ -1,0 +1,19 @@
+{
+  "name": "findit",
+  "version": "1.0.0",
+  "description": "The Current Working Directory is $SRC_ROOT/infra/appengine/findit, i.e. the directory that contains this file. Please `cd` into it for the commands below to work.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "test"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "chops-wct-runner": "0.0.1"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
