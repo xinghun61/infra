@@ -214,6 +214,20 @@ wheel: <
 
 * *universal*
 
+## **argparse**
+
+### 1.4.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/argparse-py2_py3"
+  version: "version:1.4.0"
+>
+```
+
+
+* *universal*
+
 ## **asn1crypto**
 
 ### 0.22.0
