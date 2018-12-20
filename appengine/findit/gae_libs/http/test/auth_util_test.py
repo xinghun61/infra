@@ -45,6 +45,12 @@ class AuthUtilTest(unittest.TestCase):
     self.assertEqual({
         'Authorization': 'Bearer abc'
     }, authenticator.GetHttpHeadersFor('https://cr-buildbucket.appspot.com/p'))
+    self.assertEqual({
+        'Authorization': 'Bearer abc'
+    }, authenticator.GetHttpHeadersFor('https://storage.googleapis.com/xyz'))
+    self.assertEqual({
+        'Authorization': 'Bearer abc'
+    }, authenticator.GetHttpHeadersFor('https://isolateserver.appspot.com/123'))
 
   @mock.patch.object(
       auth_util.users,
