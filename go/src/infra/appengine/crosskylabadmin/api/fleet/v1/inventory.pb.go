@@ -550,6 +550,364 @@ func (m *PoolChange) GetNewPool() string {
 	return ""
 }
 
+type RemoveDutsFromDronesRequest struct {
+	// removals is the set of Duts to remove.
+	Removals             []*RemoveDutsFromDronesRequest_Item `protobuf:"bytes,1,rep,name=removals,proto3" json:"removals,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                            `json:"-"`
+	XXX_unrecognized     []byte                              `json:"-"`
+	XXX_sizecache        int32                               `json:"-"`
+}
+
+func (m *RemoveDutsFromDronesRequest) Reset()         { *m = RemoveDutsFromDronesRequest{} }
+func (m *RemoveDutsFromDronesRequest) String() string { return proto.CompactTextString(m) }
+func (*RemoveDutsFromDronesRequest) ProtoMessage()    {}
+func (*RemoveDutsFromDronesRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6ebb6f101f23e24c, []int{7}
+}
+
+func (m *RemoveDutsFromDronesRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RemoveDutsFromDronesRequest.Unmarshal(m, b)
+}
+func (m *RemoveDutsFromDronesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RemoveDutsFromDronesRequest.Marshal(b, m, deterministic)
+}
+func (m *RemoveDutsFromDronesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RemoveDutsFromDronesRequest.Merge(m, src)
+}
+func (m *RemoveDutsFromDronesRequest) XXX_Size() int {
+	return xxx_messageInfo_RemoveDutsFromDronesRequest.Size(m)
+}
+func (m *RemoveDutsFromDronesRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_RemoveDutsFromDronesRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RemoveDutsFromDronesRequest proto.InternalMessageInfo
+
+func (m *RemoveDutsFromDronesRequest) GetRemovals() []*RemoveDutsFromDronesRequest_Item {
+	if m != nil {
+		return m.Removals
+	}
+	return nil
+}
+
+type RemoveDutsFromDronesRequest_Item struct {
+	// dut_id is the id of a dut to be removed.
+	DutId string `protobuf:"bytes,1,opt,name=dut_id,json=dutId,proto3" json:"dut_id,omitempty"`
+	// drone_hostname is the drone to remove the dut from (if specified); if unspecified
+	// dut will be removed regardless of current drone.
+	DroneHostname        string   `protobuf:"bytes,2,opt,name=drone_hostname,json=droneHostname,proto3" json:"drone_hostname,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *RemoveDutsFromDronesRequest_Item) Reset()         { *m = RemoveDutsFromDronesRequest_Item{} }
+func (m *RemoveDutsFromDronesRequest_Item) String() string { return proto.CompactTextString(m) }
+func (*RemoveDutsFromDronesRequest_Item) ProtoMessage()    {}
+func (*RemoveDutsFromDronesRequest_Item) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6ebb6f101f23e24c, []int{7, 0}
+}
+
+func (m *RemoveDutsFromDronesRequest_Item) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RemoveDutsFromDronesRequest_Item.Unmarshal(m, b)
+}
+func (m *RemoveDutsFromDronesRequest_Item) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RemoveDutsFromDronesRequest_Item.Marshal(b, m, deterministic)
+}
+func (m *RemoveDutsFromDronesRequest_Item) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RemoveDutsFromDronesRequest_Item.Merge(m, src)
+}
+func (m *RemoveDutsFromDronesRequest_Item) XXX_Size() int {
+	return xxx_messageInfo_RemoveDutsFromDronesRequest_Item.Size(m)
+}
+func (m *RemoveDutsFromDronesRequest_Item) XXX_DiscardUnknown() {
+	xxx_messageInfo_RemoveDutsFromDronesRequest_Item.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RemoveDutsFromDronesRequest_Item proto.InternalMessageInfo
+
+func (m *RemoveDutsFromDronesRequest_Item) GetDutId() string {
+	if m != nil {
+		return m.DutId
+	}
+	return ""
+}
+
+func (m *RemoveDutsFromDronesRequest_Item) GetDroneHostname() string {
+	if m != nil {
+		return m.DroneHostname
+	}
+	return ""
+}
+
+type RemoveDutsFromDronesResponse struct {
+	// removed is the set of Duts that were removed.
+	Removed              []*RemoveDutsFromDronesResponse_Item `protobuf:"bytes,1,rep,name=removed,proto3" json:"removed,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                             `json:"-"`
+	XXX_unrecognized     []byte                               `json:"-"`
+	XXX_sizecache        int32                                `json:"-"`
+}
+
+func (m *RemoveDutsFromDronesResponse) Reset()         { *m = RemoveDutsFromDronesResponse{} }
+func (m *RemoveDutsFromDronesResponse) String() string { return proto.CompactTextString(m) }
+func (*RemoveDutsFromDronesResponse) ProtoMessage()    {}
+func (*RemoveDutsFromDronesResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6ebb6f101f23e24c, []int{8}
+}
+
+func (m *RemoveDutsFromDronesResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RemoveDutsFromDronesResponse.Unmarshal(m, b)
+}
+func (m *RemoveDutsFromDronesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RemoveDutsFromDronesResponse.Marshal(b, m, deterministic)
+}
+func (m *RemoveDutsFromDronesResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RemoveDutsFromDronesResponse.Merge(m, src)
+}
+func (m *RemoveDutsFromDronesResponse) XXX_Size() int {
+	return xxx_messageInfo_RemoveDutsFromDronesResponse.Size(m)
+}
+func (m *RemoveDutsFromDronesResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_RemoveDutsFromDronesResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RemoveDutsFromDronesResponse proto.InternalMessageInfo
+
+func (m *RemoveDutsFromDronesResponse) GetRemoved() []*RemoveDutsFromDronesResponse_Item {
+	if m != nil {
+		return m.Removed
+	}
+	return nil
+}
+
+type RemoveDutsFromDronesResponse_Item struct {
+	// dut_id is the id of a dut that was removed.
+	DutId string `protobuf:"bytes,1,opt,name=dut_id,json=dutId,proto3" json:"dut_id,omitempty"`
+	// drone_hostname is the hostname of the drone that it the Dut was removed from.
+	DroneHostname        string   `protobuf:"bytes,2,opt,name=drone_hostname,json=droneHostname,proto3" json:"drone_hostname,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *RemoveDutsFromDronesResponse_Item) Reset()         { *m = RemoveDutsFromDronesResponse_Item{} }
+func (m *RemoveDutsFromDronesResponse_Item) String() string { return proto.CompactTextString(m) }
+func (*RemoveDutsFromDronesResponse_Item) ProtoMessage()    {}
+func (*RemoveDutsFromDronesResponse_Item) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6ebb6f101f23e24c, []int{8, 0}
+}
+
+func (m *RemoveDutsFromDronesResponse_Item) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RemoveDutsFromDronesResponse_Item.Unmarshal(m, b)
+}
+func (m *RemoveDutsFromDronesResponse_Item) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RemoveDutsFromDronesResponse_Item.Marshal(b, m, deterministic)
+}
+func (m *RemoveDutsFromDronesResponse_Item) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RemoveDutsFromDronesResponse_Item.Merge(m, src)
+}
+func (m *RemoveDutsFromDronesResponse_Item) XXX_Size() int {
+	return xxx_messageInfo_RemoveDutsFromDronesResponse_Item.Size(m)
+}
+func (m *RemoveDutsFromDronesResponse_Item) XXX_DiscardUnknown() {
+	xxx_messageInfo_RemoveDutsFromDronesResponse_Item.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RemoveDutsFromDronesResponse_Item proto.InternalMessageInfo
+
+func (m *RemoveDutsFromDronesResponse_Item) GetDutId() string {
+	if m != nil {
+		return m.DutId
+	}
+	return ""
+}
+
+func (m *RemoveDutsFromDronesResponse_Item) GetDroneHostname() string {
+	if m != nil {
+		return m.DroneHostname
+	}
+	return ""
+}
+
+type AssignDutsToDronesRequest struct {
+	// assignments is the set of Duts to assign.
+	Assignments          []*AssignDutsToDronesRequest_Item `protobuf:"bytes,1,rep,name=assignments,proto3" json:"assignments,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                          `json:"-"`
+	XXX_unrecognized     []byte                            `json:"-"`
+	XXX_sizecache        int32                             `json:"-"`
+}
+
+func (m *AssignDutsToDronesRequest) Reset()         { *m = AssignDutsToDronesRequest{} }
+func (m *AssignDutsToDronesRequest) String() string { return proto.CompactTextString(m) }
+func (*AssignDutsToDronesRequest) ProtoMessage()    {}
+func (*AssignDutsToDronesRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6ebb6f101f23e24c, []int{9}
+}
+
+func (m *AssignDutsToDronesRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AssignDutsToDronesRequest.Unmarshal(m, b)
+}
+func (m *AssignDutsToDronesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AssignDutsToDronesRequest.Marshal(b, m, deterministic)
+}
+func (m *AssignDutsToDronesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AssignDutsToDronesRequest.Merge(m, src)
+}
+func (m *AssignDutsToDronesRequest) XXX_Size() int {
+	return xxx_messageInfo_AssignDutsToDronesRequest.Size(m)
+}
+func (m *AssignDutsToDronesRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_AssignDutsToDronesRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AssignDutsToDronesRequest proto.InternalMessageInfo
+
+func (m *AssignDutsToDronesRequest) GetAssignments() []*AssignDutsToDronesRequest_Item {
+	if m != nil {
+		return m.Assignments
+	}
+	return nil
+}
+
+type AssignDutsToDronesRequest_Item struct {
+	// dut_id is the id of a dut to assign to a drone.
+	DutId string `protobuf:"bytes,1,opt,name=dut_id,json=dutId,proto3" json:"dut_id,omitempty"`
+	// drone_hostname is the drone to assign the dut to (if specified); if unspecified
+	// then admin service will use its own heuristics to pick drone.
+	DroneHostname        string   `protobuf:"bytes,2,opt,name=drone_hostname,json=droneHostname,proto3" json:"drone_hostname,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *AssignDutsToDronesRequest_Item) Reset()         { *m = AssignDutsToDronesRequest_Item{} }
+func (m *AssignDutsToDronesRequest_Item) String() string { return proto.CompactTextString(m) }
+func (*AssignDutsToDronesRequest_Item) ProtoMessage()    {}
+func (*AssignDutsToDronesRequest_Item) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6ebb6f101f23e24c, []int{9, 0}
+}
+
+func (m *AssignDutsToDronesRequest_Item) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AssignDutsToDronesRequest_Item.Unmarshal(m, b)
+}
+func (m *AssignDutsToDronesRequest_Item) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AssignDutsToDronesRequest_Item.Marshal(b, m, deterministic)
+}
+func (m *AssignDutsToDronesRequest_Item) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AssignDutsToDronesRequest_Item.Merge(m, src)
+}
+func (m *AssignDutsToDronesRequest_Item) XXX_Size() int {
+	return xxx_messageInfo_AssignDutsToDronesRequest_Item.Size(m)
+}
+func (m *AssignDutsToDronesRequest_Item) XXX_DiscardUnknown() {
+	xxx_messageInfo_AssignDutsToDronesRequest_Item.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AssignDutsToDronesRequest_Item proto.InternalMessageInfo
+
+func (m *AssignDutsToDronesRequest_Item) GetDutId() string {
+	if m != nil {
+		return m.DutId
+	}
+	return ""
+}
+
+func (m *AssignDutsToDronesRequest_Item) GetDroneHostname() string {
+	if m != nil {
+		return m.DroneHostname
+	}
+	return ""
+}
+
+type AssignDutsToDronesResponse struct {
+	// assigned is the set of Duts that were removed.
+	Assigned             []*AssignDutsToDronesResponse_Item `protobuf:"bytes,1,rep,name=assigned,proto3" json:"assigned,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                           `json:"-"`
+	XXX_unrecognized     []byte                             `json:"-"`
+	XXX_sizecache        int32                              `json:"-"`
+}
+
+func (m *AssignDutsToDronesResponse) Reset()         { *m = AssignDutsToDronesResponse{} }
+func (m *AssignDutsToDronesResponse) String() string { return proto.CompactTextString(m) }
+func (*AssignDutsToDronesResponse) ProtoMessage()    {}
+func (*AssignDutsToDronesResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6ebb6f101f23e24c, []int{10}
+}
+
+func (m *AssignDutsToDronesResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AssignDutsToDronesResponse.Unmarshal(m, b)
+}
+func (m *AssignDutsToDronesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AssignDutsToDronesResponse.Marshal(b, m, deterministic)
+}
+func (m *AssignDutsToDronesResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AssignDutsToDronesResponse.Merge(m, src)
+}
+func (m *AssignDutsToDronesResponse) XXX_Size() int {
+	return xxx_messageInfo_AssignDutsToDronesResponse.Size(m)
+}
+func (m *AssignDutsToDronesResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_AssignDutsToDronesResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AssignDutsToDronesResponse proto.InternalMessageInfo
+
+func (m *AssignDutsToDronesResponse) GetAssigned() []*AssignDutsToDronesResponse_Item {
+	if m != nil {
+		return m.Assigned
+	}
+	return nil
+}
+
+type AssignDutsToDronesResponse_Item struct {
+	// dut_id is the id of a dut that was assigned to a drone.
+	DutId string `protobuf:"bytes,1,opt,name=dut_id,json=dutId,proto3" json:"dut_id,omitempty"`
+	// drone_hostname is the drone the dut was assigned to.
+	DroneHostname        string   `protobuf:"bytes,2,opt,name=drone_hostname,json=droneHostname,proto3" json:"drone_hostname,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *AssignDutsToDronesResponse_Item) Reset()         { *m = AssignDutsToDronesResponse_Item{} }
+func (m *AssignDutsToDronesResponse_Item) String() string { return proto.CompactTextString(m) }
+func (*AssignDutsToDronesResponse_Item) ProtoMessage()    {}
+func (*AssignDutsToDronesResponse_Item) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6ebb6f101f23e24c, []int{10, 0}
+}
+
+func (m *AssignDutsToDronesResponse_Item) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AssignDutsToDronesResponse_Item.Unmarshal(m, b)
+}
+func (m *AssignDutsToDronesResponse_Item) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AssignDutsToDronesResponse_Item.Marshal(b, m, deterministic)
+}
+func (m *AssignDutsToDronesResponse_Item) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AssignDutsToDronesResponse_Item.Merge(m, src)
+}
+func (m *AssignDutsToDronesResponse_Item) XXX_Size() int {
+	return xxx_messageInfo_AssignDutsToDronesResponse_Item.Size(m)
+}
+func (m *AssignDutsToDronesResponse_Item) XXX_DiscardUnknown() {
+	xxx_messageInfo_AssignDutsToDronesResponse_Item.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AssignDutsToDronesResponse_Item proto.InternalMessageInfo
+
+func (m *AssignDutsToDronesResponse_Item) GetDutId() string {
+	if m != nil {
+		return m.DutId
+	}
+	return ""
+}
+
+func (m *AssignDutsToDronesResponse_Item) GetDroneHostname() string {
+	if m != nil {
+		return m.DroneHostname
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterEnum("crosskylabadmin.fleet.EnsurePoolHealthyResponse_Failure", EnsurePoolHealthyResponse_Failure_name, EnsurePoolHealthyResponse_Failure_value)
 	proto.RegisterType((*EnsurePoolHealthyRequest)(nil), "crosskylabadmin.fleet.EnsurePoolHealthyRequest")
@@ -560,6 +918,14 @@ func init() {
 	proto.RegisterType((*DutSelector)(nil), "crosskylabadmin.fleet.DutSelector")
 	proto.RegisterType((*PoolStatus)(nil), "crosskylabadmin.fleet.PoolStatus")
 	proto.RegisterType((*PoolChange)(nil), "crosskylabadmin.fleet.PoolChange")
+	proto.RegisterType((*RemoveDutsFromDronesRequest)(nil), "crosskylabadmin.fleet.RemoveDutsFromDronesRequest")
+	proto.RegisterType((*RemoveDutsFromDronesRequest_Item)(nil), "crosskylabadmin.fleet.RemoveDutsFromDronesRequest.Item")
+	proto.RegisterType((*RemoveDutsFromDronesResponse)(nil), "crosskylabadmin.fleet.RemoveDutsFromDronesResponse")
+	proto.RegisterType((*RemoveDutsFromDronesResponse_Item)(nil), "crosskylabadmin.fleet.RemoveDutsFromDronesResponse.Item")
+	proto.RegisterType((*AssignDutsToDronesRequest)(nil), "crosskylabadmin.fleet.AssignDutsToDronesRequest")
+	proto.RegisterType((*AssignDutsToDronesRequest_Item)(nil), "crosskylabadmin.fleet.AssignDutsToDronesRequest.Item")
+	proto.RegisterType((*AssignDutsToDronesResponse)(nil), "crosskylabadmin.fleet.AssignDutsToDronesResponse")
+	proto.RegisterType((*AssignDutsToDronesResponse_Item)(nil), "crosskylabadmin.fleet.AssignDutsToDronesResponse.Item")
 }
 
 func init() {
@@ -567,49 +933,61 @@ func init() {
 }
 
 var fileDescriptor_6ebb6f101f23e24c = []byte{
-	// 671 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x55, 0x51, 0x4f, 0xdb, 0x3a,
-	0x14, 0xbe, 0x69, 0x29, 0x6d, 0x4f, 0xb9, 0x10, 0x7c, 0x2f, 0xf7, 0xb6, 0x4c, 0x68, 0x25, 0xbc,
-	0x74, 0xd2, 0xd4, 0x6c, 0xdd, 0xc3, 0x26, 0x6d, 0x2f, 0x1d, 0x0d, 0x6b, 0x25, 0x68, 0x99, 0xdb,
-	0x4e, 0x82, 0x97, 0xc8, 0x34, 0x06, 0xa2, 0xa5, 0x76, 0x16, 0x3b, 0x40, 0xf9, 0x6d, 0x7b, 0xdc,
-	0xfe, 0xca, 0x7e, 0xc7, 0x14, 0x27, 0xa1, 0x19, 0x50, 0x0d, 0x5e, 0xf6, 0x16, 0x9f, 0xef, 0xf8,
-	0xf3, 0x39, 0xdf, 0xe7, 0xe3, 0xc0, 0x3b, 0x97, 0x9d, 0x06, 0xc4, 0x24, 0xbe, 0x4f, 0xd9, 0x99,
-	0xcb, 0xa8, 0x39, 0x09, 0xb8, 0x10, 0x9f, 0x67, 0x1e, 0x39, 0x21, 0xce, 0xd4, 0x65, 0x26, 0xf1,
-	0x5d, 0xf3, 0xd4, 0xa3, 0x54, 0x9a, 0x17, 0x2f, 0x4d, 0x97, 0x5d, 0x50, 0x26, 0x79, 0x30, 0x6b,
-	0xfa, 0x01, 0x97, 0x1c, 0x6d, 0xdc, 0xca, 0x6e, 0xaa, 0x4c, 0xe3, 0x7b, 0x0e, 0xaa, 0x16, 0x13,
-	0x61, 0x40, 0x0f, 0x39, 0xf7, 0xba, 0x94, 0x78, 0xf2, 0x7c, 0x86, 0xe9, 0x97, 0x90, 0x0a, 0x89,
-	0x2c, 0x58, 0x71, 0x42, 0x69, 0x0b, 0xea, 0xd1, 0x89, 0xe4, 0x41, 0x55, 0xab, 0x6b, 0x8d, 0x4a,
-	0xcb, 0x68, 0xde, 0x4b, 0xd5, 0xec, 0x84, 0x72, 0x98, 0x64, 0xe2, 0x8a, 0x33, 0x5f, 0xa0, 0xa7,
-	0x50, 0x91, 0x24, 0x38, 0xa3, 0xd2, 0xf6, 0x39, 0xf7, 0xaa, 0xb9, 0xba, 0xd6, 0x28, 0x63, 0x88,
-	0x43, 0xd1, 0xa9, 0x68, 0x0b, 0x40, 0xf8, 0x24, 0xa0, 0x31, 0x9e, 0x57, 0x78, 0x59, 0x45, 0x14,
-	0xfc, 0x1c, 0xd0, 0x94, 0x5c, 0xd9, 0x21, 0x3b, 0x8f, 0xcb, 0xb3, 0x9d, 0x50, 0x8a, 0xea, 0x52,
-	0x5d, 0x6b, 0x14, 0xb0, 0x3e, 0x25, 0x57, 0xe3, 0x14, 0xe8, 0x84, 0x52, 0xa0, 0x8f, 0x50, 0xe4,
-	0xbe, 0x74, 0x39, 0x13, 0xd5, 0x82, 0xaa, 0xf7, 0xf5, 0x82, 0x7a, 0x17, 0xb5, 0xdd, 0x1c, 0xc4,
-	0xdb, 0x71, 0xca, 0xb3, 0xb9, 0x0d, 0xc5, 0x24, 0x86, 0xfe, 0x83, 0x65, 0x27, 0x98, 0x05, 0x21,
-	0x53, 0x62, 0x94, 0x70, 0xb2, 0x32, 0xbe, 0xe6, 0xa1, 0x76, 0x0f, 0xa1, 0xf0, 0x39, 0x13, 0x14,
-	0x8d, 0xa0, 0x74, 0x4a, 0x5c, 0x2f, 0x0c, 0xa8, 0xa8, 0x6a, 0xf5, 0x7c, 0x63, 0xb5, 0xf5, 0xe6,
-	0xe1, 0x45, 0xc5, 0x1c, 0xcd, 0xbd, 0x98, 0x00, 0xdf, 0x30, 0xa1, 0x01, 0xa0, 0x8c, 0xae, 0xb6,
-	0x90, 0x44, 0x86, 0x42, 0xc9, 0x5b, 0x69, 0x6d, 0x2f, 0xe0, 0x8f, 0x98, 0x87, 0x2a, 0x11, 0xeb,
-	0x73, 0x07, 0xe2, 0x08, 0x3a, 0x80, 0xf5, 0xb9, 0x0f, 0x29, 0x5f, 0xfe, 0xa1, 0x7c, 0x6b, 0x37,
-	0x8e, 0x25, 0x74, 0x3a, 0xe4, 0xc3, 0xc0, 0x53, 0x46, 0x95, 0x71, 0xf4, 0x89, 0xde, 0x42, 0x71,
-	0x72, 0x4e, 0xd8, 0x19, 0x8d, 0xbc, 0xc9, 0xff, 0x86, 0x76, 0x57, 0x65, 0xe2, 0x74, 0x87, 0x71,
-	0x0c, 0xc5, 0x44, 0x03, 0xf4, 0x0f, 0xac, 0xed, 0xb5, 0x7b, 0xfb, 0x63, 0x6c, 0xd9, 0xbd, 0xfe,
-	0xa7, 0xf6, 0x7e, 0xaf, 0xa3, 0xff, 0x85, 0x9e, 0xc0, 0xff, 0xa3, 0xc1, 0xc0, 0x3e, 0x68, 0xf7,
-	0x8f, 0xec, 0x71, 0xbf, 0x6b, 0xb5, 0xf7, 0x47, 0xdd, 0x23, 0xbb, 0x33, 0x1e, 0x0d, 0x75, 0x0d,
-	0x6d, 0x41, 0xad, 0x3f, 0x18, 0xd9, 0x56, 0x7f, 0x30, 0xfe, 0xd0, 0xb5, 0x53, 0x70, 0x78, 0xd8,
-	0xc6, 0xd6, 0x50, 0xcf, 0x19, 0xdf, 0x34, 0x58, 0xc7, 0x54, 0xb8, 0xd7, 0xaa, 0xfe, 0x3f, 0x7d,
-	0xff, 0x1b, 0xa0, 0xff, 0x62, 0xa4, 0x7b, 0x4d, 0x95, 0xec, 0x05, 0xbc, 0x9a, 0xf1, 0xc8, 0xbd,
-	0xa6, 0xb7, 0x26, 0x65, 0xe9, 0xd6, 0xa4, 0x18, 0x13, 0x40, 0xd9, 0x2e, 0x92, 0xdb, 0x97, 0xf8,
-	0xa0, 0xdd, 0xeb, 0x43, 0xee, 0xd1, 0x3e, 0xec, 0x40, 0x25, 0xd3, 0x2a, 0xfa, 0x17, 0x0a, 0x53,
-	0xee, 0xd0, 0x94, 0x3f, 0x5e, 0x18, 0x16, 0x40, 0xe6, 0x26, 0x20, 0x58, 0x52, 0x4d, 0x69, 0xaa,
-	0x29, 0xf5, 0x8d, 0x76, 0xe0, 0xef, 0x74, 0x9e, 0x27, 0x3c, 0x64, 0x52, 0xe9, 0x52, 0xc0, 0x2b,
-	0x49, 0x70, 0x37, 0x8a, 0x19, 0x47, 0x31, 0x4d, 0x5c, 0x02, 0xda, 0x80, 0xe5, 0xc8, 0x0f, 0xd7,
-	0x49, 0xcf, 0x72, 0x42, 0xd9, 0x73, 0x50, 0x0d, 0x4a, 0xdc, 0x73, 0xb2, 0xe2, 0x16, 0xb9, 0xe7,
-	0x28, 0x65, 0x6b, 0x50, 0x62, 0xf4, 0x32, 0xfb, 0xae, 0x14, 0x19, 0xbd, 0x8c, 0xa0, 0xd6, 0x0f,
-	0x0d, 0xca, 0xbd, 0xf4, 0x91, 0x44, 0x17, 0xb0, 0x7e, 0x67, 0xf4, 0x90, 0xf9, 0xc8, 0x97, 0x63,
-	0xf3, 0xc5, 0x63, 0xa7, 0x1a, 0x11, 0x80, 0xb9, 0x63, 0xa8, 0xb1, 0x60, 0xff, 0x9d, 0xab, 0xb9,
-	0xf9, 0xec, 0x01, 0x99, 0xf1, 0x11, 0xef, 0x8b, 0xc7, 0x05, 0x85, 0x9d, 0x2c, 0xab, 0x3f, 0xc1,
-	0xab, 0x9f, 0x01, 0x00, 0x00, 0xff, 0xff, 0x4f, 0xbf, 0xe9, 0x3b, 0x49, 0x06, 0x00, 0x00,
+	// 863 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x56, 0x51, 0x8f, 0xdb, 0x44,
+	0x10, 0xc6, 0x97, 0xcb, 0x39, 0x37, 0x69, 0xaf, 0xb9, 0xa5, 0x85, 0x24, 0xa5, 0xe2, 0xea, 0x0a,
+	0x29, 0x48, 0x28, 0x69, 0x53, 0x01, 0x95, 0xe0, 0x25, 0x34, 0x39, 0x12, 0xe9, 0x9a, 0x94, 0x4d,
+	0x02, 0xba, 0xbe, 0x58, 0xdb, 0x78, 0x2f, 0xb1, 0xb0, 0x77, 0x8d, 0x77, 0x9d, 0x36, 0xf7, 0xc2,
+	0xbf, 0x42, 0x08, 0xf1, 0x08, 0x7f, 0x84, 0x5f, 0x82, 0xbc, 0xb6, 0x13, 0x37, 0x17, 0xc3, 0x19,
+	0x9d, 0x78, 0x8b, 0x67, 0xc6, 0xdf, 0x7c, 0xf3, 0x7d, 0xb3, 0xeb, 0xc0, 0xd7, 0x36, 0xbb, 0xf0,
+	0x49, 0x8b, 0x78, 0x1e, 0x65, 0x73, 0x9b, 0xd1, 0xd6, 0xcc, 0xe7, 0x42, 0xfc, 0xb8, 0x72, 0xc8,
+	0x6b, 0x62, 0xb9, 0x36, 0x6b, 0x11, 0xcf, 0x6e, 0x5d, 0x38, 0x94, 0xca, 0xd6, 0xf2, 0x49, 0xcb,
+	0x66, 0x4b, 0xca, 0x24, 0xf7, 0x57, 0x4d, 0xcf, 0xe7, 0x92, 0xa3, 0x7b, 0x5b, 0xd5, 0x4d, 0x55,
+	0x69, 0xfc, 0xb9, 0x07, 0xd5, 0x1e, 0x13, 0x81, 0x4f, 0x5f, 0x72, 0xee, 0xf4, 0x29, 0x71, 0xe4,
+	0x62, 0x85, 0xe9, 0x4f, 0x01, 0x15, 0x12, 0xf5, 0xe0, 0x96, 0x15, 0x48, 0x53, 0x50, 0x87, 0xce,
+	0x24, 0xf7, 0xab, 0xda, 0x89, 0xd6, 0x28, 0xb7, 0x8d, 0xe6, 0x4e, 0xa8, 0x66, 0x37, 0x90, 0xe3,
+	0xb8, 0x12, 0x97, 0xad, 0xcd, 0x03, 0xfa, 0x18, 0xca, 0x92, 0xf8, 0x73, 0x2a, 0x4d, 0x8f, 0x73,
+	0xa7, 0xba, 0x77, 0xa2, 0x35, 0x0e, 0x31, 0x44, 0xa1, 0xb0, 0x2b, 0x7a, 0x00, 0x20, 0x3c, 0xe2,
+	0xd3, 0x28, 0x5f, 0x50, 0xf9, 0x43, 0x15, 0x51, 0xe9, 0xcf, 0x00, 0xb9, 0xe4, 0xad, 0x19, 0xb0,
+	0x45, 0x44, 0xcf, 0xb4, 0x02, 0x29, 0xaa, 0xfb, 0x27, 0x5a, 0xa3, 0x88, 0x2b, 0x2e, 0x79, 0x3b,
+	0x4d, 0x12, 0xdd, 0x40, 0x0a, 0xf4, 0x1d, 0xe8, 0xdc, 0x93, 0x36, 0x67, 0xa2, 0x5a, 0x54, 0x7c,
+	0xbf, 0xcc, 0xe0, 0x9b, 0x35, 0x76, 0x73, 0x14, 0xbd, 0x8e, 0x13, 0x9c, 0xfa, 0x43, 0xd0, 0xe3,
+	0x18, 0xfa, 0x00, 0x0e, 0x2c, 0x7f, 0xe5, 0x07, 0x4c, 0x89, 0x51, 0xc2, 0xf1, 0x93, 0xf1, 0x7b,
+	0x01, 0x6a, 0x3b, 0x00, 0x85, 0xc7, 0x99, 0xa0, 0x68, 0x02, 0xa5, 0x0b, 0x62, 0x3b, 0x81, 0x4f,
+	0x45, 0x55, 0x3b, 0x29, 0x34, 0x8e, 0xda, 0xcf, 0xae, 0x4f, 0x2a, 0xc2, 0x68, 0x9e, 0x46, 0x00,
+	0x78, 0x8d, 0x84, 0x46, 0x80, 0x52, 0xba, 0x9a, 0x42, 0x12, 0x19, 0x08, 0x25, 0x6f, 0xb9, 0xfd,
+	0x30, 0x03, 0x3f, 0x44, 0x1e, 0xab, 0x42, 0x5c, 0xd9, 0x38, 0x10, 0x45, 0xd0, 0x0b, 0x38, 0xde,
+	0xf8, 0x90, 0xe0, 0x15, 0xae, 0x8b, 0x77, 0x67, 0xed, 0x58, 0x0c, 0x57, 0x81, 0x42, 0xe0, 0x3b,
+	0xca, 0xa8, 0x43, 0x1c, 0xfe, 0x44, 0x5f, 0x81, 0x3e, 0x5b, 0x10, 0x36, 0xa7, 0xa1, 0x37, 0x85,
+	0x7f, 0x81, 0x7d, 0xae, 0x2a, 0x71, 0xf2, 0x86, 0xf1, 0x0a, 0xf4, 0x58, 0x03, 0xf4, 0x3e, 0xdc,
+	0x39, 0xed, 0x0c, 0xce, 0xa6, 0xb8, 0x67, 0x0e, 0x86, 0xdf, 0x77, 0xce, 0x06, 0xdd, 0xca, 0x7b,
+	0xe8, 0x3e, 0x7c, 0x38, 0x19, 0x8d, 0xcc, 0x17, 0x9d, 0xe1, 0xb9, 0x39, 0x1d, 0xf6, 0x7b, 0x9d,
+	0xb3, 0x49, 0xff, 0xdc, 0xec, 0x4e, 0x27, 0xe3, 0x8a, 0x86, 0x1e, 0x40, 0x6d, 0x38, 0x9a, 0x98,
+	0xbd, 0xe1, 0x68, 0xfa, 0x6d, 0xdf, 0x4c, 0x92, 0xe3, 0x97, 0x1d, 0xdc, 0x1b, 0x57, 0xf6, 0x8c,
+	0x3f, 0x34, 0x38, 0xc6, 0x54, 0xd8, 0x97, 0x8a, 0xff, 0xff, 0xbd, 0xff, 0x0d, 0xa8, 0xbc, 0x63,
+	0xa4, 0x7d, 0x49, 0x95, 0xec, 0x45, 0x7c, 0x94, 0xf2, 0xc8, 0xbe, 0xa4, 0x5b, 0x27, 0x65, 0x7f,
+	0xeb, 0xa4, 0x18, 0x33, 0x40, 0xe9, 0x29, 0xe2, 0xed, 0x8b, 0x7d, 0xd0, 0x76, 0xfa, 0xb0, 0x97,
+	0xdb, 0x87, 0x47, 0x50, 0x4e, 0x8d, 0x8a, 0xee, 0x42, 0xd1, 0xe5, 0x16, 0x4d, 0xf0, 0xa3, 0x07,
+	0xa3, 0x07, 0x90, 0xda, 0x04, 0x04, 0xfb, 0x6a, 0x28, 0x4d, 0x0d, 0xa5, 0x7e, 0xa3, 0x47, 0x70,
+	0x3b, 0x39, 0xcf, 0x33, 0x1e, 0x30, 0xa9, 0x74, 0x29, 0xe2, 0x5b, 0x71, 0xf0, 0x79, 0x18, 0x33,
+	0xce, 0x23, 0x98, 0x88, 0x02, 0xba, 0x07, 0x07, 0xa1, 0x1f, 0xb6, 0x95, 0xf4, 0xb2, 0x02, 0x39,
+	0xb0, 0x50, 0x0d, 0x4a, 0xdc, 0xb1, 0xd2, 0xe2, 0xea, 0xdc, 0xb1, 0x94, 0xb2, 0x35, 0x28, 0x31,
+	0xfa, 0x26, 0x7d, 0xaf, 0xe8, 0x8c, 0xbe, 0x51, 0x5a, 0xfd, 0xaa, 0xc1, 0x7d, 0x4c, 0x5d, 0xbe,
+	0xa4, 0xe1, 0xb5, 0x71, 0xea, 0x73, 0xb7, 0xeb, 0x73, 0x46, 0x45, 0x62, 0xfe, 0x18, 0x4a, 0x7e,
+	0x98, 0x26, 0x4e, 0x74, 0x66, 0xb3, 0x2f, 0x92, 0x7f, 0x40, 0x69, 0x0e, 0x24, 0x75, 0xf1, 0x1a,
+	0xa8, 0xde, 0x85, 0xfd, 0x30, 0x92, 0x35, 0xc9, 0x27, 0x70, 0x64, 0x85, 0xaf, 0x9b, 0x0b, 0x2e,
+	0x24, 0x23, 0x2e, 0x8d, 0xe7, 0xb9, 0xad, 0xa2, 0xfd, 0x38, 0x18, 0x52, 0xff, 0x68, 0x77, 0xd3,
+	0xd8, 0x71, 0x0c, 0xba, 0x6a, 0x49, 0xad, 0x98, 0xfa, 0xb3, 0x5c, 0xd4, 0xe3, 0x1b, 0x47, 0x71,
+	0x4f, 0x80, 0x6e, 0x88, 0xfa, 0x6f, 0x1a, 0xd4, 0x3a, 0x42, 0xd8, 0x73, 0x16, 0x36, 0x9d, 0xf0,
+	0x77, 0x35, 0xff, 0x01, 0xca, 0x44, 0x25, 0x5d, 0xca, 0x64, 0x22, 0xfb, 0xe7, 0x19, 0xdc, 0x33,
+	0x61, 0x22, 0xe2, 0x69, 0xa4, 0x1b, 0x22, 0xff, 0x8b, 0x06, 0xf5, 0x5d, 0x5d, 0xd7, 0xaa, 0x97,
+	0xa2, 0x9e, 0x6b, 0xd9, 0xbf, 0xc8, 0x41, 0x3d, 0x2d, 0xfa, 0x1a, 0xe7, 0x66, 0x88, 0xb7, 0xff,
+	0x2a, 0xc0, 0xe1, 0x20, 0xf9, 0x43, 0x80, 0x96, 0x70, 0x7c, 0xe5, 0x33, 0x83, 0x5a, 0x39, 0xbf,
+	0x92, 0xf5, 0xc7, 0x79, 0xbf, 0x60, 0x88, 0x00, 0x6c, 0x6e, 0x27, 0xd4, 0xc8, 0x5c, 0xc9, 0xad,
+	0x6b, 0xb8, 0xfe, 0xe9, 0x35, 0x2a, 0xe3, 0x16, 0x3f, 0xc3, 0xdd, 0x5d, 0x2b, 0x8d, 0xda, 0xf9,
+	0x8f, 0x6e, 0xfd, 0xe9, 0x7f, 0x38, 0x33, 0x68, 0x05, 0xe8, 0xaa, 0xb9, 0xe8, 0x71, 0xde, 0x15,
+	0xae, 0x3f, 0xc9, 0xbd, 0x39, 0xdf, 0xe8, 0xaf, 0x8a, 0xaa, 0xe6, 0xf5, 0x81, 0xfa, 0xc7, 0xf7,
+	0xf4, 0xef, 0x00, 0x00, 0x00, 0xff, 0xff, 0x35, 0x66, 0x9f, 0x9e, 0x31, 0x0a, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -639,6 +1017,10 @@ type InventoryClient interface {
 	// ResizePool never makes partial changes. In case of an error, no inventory
 	// changes are made.
 	ResizePool(ctx context.Context, in *ResizePoolRequest, opts ...grpc.CallOption) (*ResizePoolResponse, error)
+	// RemoveDutsFromDrones removes the given duts from drones.
+	RemoveDutsFromDrones(ctx context.Context, in *RemoveDutsFromDronesRequest, opts ...grpc.CallOption) (*RemoveDutsFromDronesResponse, error)
+	// AssignDutsToDrones assigns the given duts to drones.
+	AssignDutsToDrones(ctx context.Context, in *AssignDutsToDronesRequest, opts ...grpc.CallOption) (*AssignDutsToDronesResponse, error)
 }
 type inventoryPRPCClient struct {
 	client *prpc.Client
@@ -660,6 +1042,24 @@ func (c *inventoryPRPCClient) EnsurePoolHealthy(ctx context.Context, in *EnsureP
 func (c *inventoryPRPCClient) ResizePool(ctx context.Context, in *ResizePoolRequest, opts ...grpc.CallOption) (*ResizePoolResponse, error) {
 	out := new(ResizePoolResponse)
 	err := c.client.Call(ctx, "crosskylabadmin.fleet.Inventory", "ResizePool", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *inventoryPRPCClient) RemoveDutsFromDrones(ctx context.Context, in *RemoveDutsFromDronesRequest, opts ...grpc.CallOption) (*RemoveDutsFromDronesResponse, error) {
+	out := new(RemoveDutsFromDronesResponse)
+	err := c.client.Call(ctx, "crosskylabadmin.fleet.Inventory", "RemoveDutsFromDrones", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *inventoryPRPCClient) AssignDutsToDrones(ctx context.Context, in *AssignDutsToDronesRequest, opts ...grpc.CallOption) (*AssignDutsToDronesResponse, error) {
+	out := new(AssignDutsToDronesResponse)
+	err := c.client.Call(ctx, "crosskylabadmin.fleet.Inventory", "AssignDutsToDrones", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -692,6 +1092,24 @@ func (c *inventoryClient) ResizePool(ctx context.Context, in *ResizePoolRequest,
 	return out, nil
 }
 
+func (c *inventoryClient) RemoveDutsFromDrones(ctx context.Context, in *RemoveDutsFromDronesRequest, opts ...grpc.CallOption) (*RemoveDutsFromDronesResponse, error) {
+	out := new(RemoveDutsFromDronesResponse)
+	err := c.cc.Invoke(ctx, "/crosskylabadmin.fleet.Inventory/RemoveDutsFromDrones", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *inventoryClient) AssignDutsToDrones(ctx context.Context, in *AssignDutsToDronesRequest, opts ...grpc.CallOption) (*AssignDutsToDronesResponse, error) {
+	out := new(AssignDutsToDronesResponse)
+	err := c.cc.Invoke(ctx, "/crosskylabadmin.fleet.Inventory/AssignDutsToDrones", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InventoryServer is the server API for Inventory service.
 type InventoryServer interface {
 	// EnsurePoolHealthy ensures that a target pool has only healthy DUTs.
@@ -709,6 +1127,10 @@ type InventoryServer interface {
 	// ResizePool never makes partial changes. In case of an error, no inventory
 	// changes are made.
 	ResizePool(context.Context, *ResizePoolRequest) (*ResizePoolResponse, error)
+	// RemoveDutsFromDrones removes the given duts from drones.
+	RemoveDutsFromDrones(context.Context, *RemoveDutsFromDronesRequest) (*RemoveDutsFromDronesResponse, error)
+	// AssignDutsToDrones assigns the given duts to drones.
+	AssignDutsToDrones(context.Context, *AssignDutsToDronesRequest) (*AssignDutsToDronesResponse, error)
 }
 
 func RegisterInventoryServer(s prpc.Registrar, srv InventoryServer) {
@@ -751,6 +1173,42 @@ func _Inventory_ResizePool_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Inventory_RemoveDutsFromDrones_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveDutsFromDronesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InventoryServer).RemoveDutsFromDrones(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/crosskylabadmin.fleet.Inventory/RemoveDutsFromDrones",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InventoryServer).RemoveDutsFromDrones(ctx, req.(*RemoveDutsFromDronesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Inventory_AssignDutsToDrones_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AssignDutsToDronesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InventoryServer).AssignDutsToDrones(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/crosskylabadmin.fleet.Inventory/AssignDutsToDrones",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InventoryServer).AssignDutsToDrones(ctx, req.(*AssignDutsToDronesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Inventory_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "crosskylabadmin.fleet.Inventory",
 	HandlerType: (*InventoryServer)(nil),
@@ -762,6 +1220,14 @@ var _Inventory_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ResizePool",
 			Handler:    _Inventory_ResizePool_Handler,
+		},
+		{
+			MethodName: "RemoveDutsFromDrones",
+			Handler:    _Inventory_RemoveDutsFromDrones_Handler,
+		},
+		{
+			MethodName: "AssignDutsToDrones",
+			Handler:    _Inventory_AssignDutsToDrones_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

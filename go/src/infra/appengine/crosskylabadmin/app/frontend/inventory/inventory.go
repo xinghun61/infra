@@ -239,3 +239,19 @@ func removeOld(ls []inventory.SchedulableLabels_DUTPool, old inventory.Schedulab
 	}
 	return ls
 }
+
+// RemoveDutsFromDrones implements the method from fleet.InventoryServer interface.
+func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.RemoveDutsFromDronesRequest) (resp *fleet.RemoveDutsFromDronesResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+	return nil, status.Error(codes.Unimplemented, "")
+}
+
+// AssignDutsToDrones implements the method from fleet.InventoryServer interface.
+func (is *ServerImpl) AssignDutsToDrones(ctx context.Context, req *fleet.AssignDutsToDronesRequest) (resp *fleet.AssignDutsToDronesResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+	return nil, status.Error(codes.Unimplemented, "")
+}

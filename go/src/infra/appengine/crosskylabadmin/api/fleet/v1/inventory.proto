@@ -29,6 +29,14 @@ service Inventory {
   // ResizePool never makes partial changes. In case of an error, no inventory
   // changes are made.
   rpc ResizePool(ResizePoolRequest) returns (ResizePoolResponse);
+
+  // RemoveDutsFromDrones removes the given duts from drones.
+  rpc RemoveDutsFromDrones(RemoveDutsFromDronesRequest) returns (RemoveDutsFromDronesResponse);
+
+  // AssignDutsToDrones assigns the given duts to drones.
+  rpc AssignDutsToDrones(AssignDutsToDronesRequest) returns (AssignDutsToDronesResponse);
+
+  // TODO(akeshet): Add a ListDrones rpc.
 }
 
 message EnsurePoolHealthyRequest {
@@ -163,4 +171,62 @@ message PoolChange {
 
   // new_pool is the pool the DUT was moved to.
   string new_pool = 3;
+}
+
+message RemoveDutsFromDronesRequest {
+
+  message Item {
+    // dut_id is the id of a dut to be removed.
+    string dut_id = 1;
+
+    // drone_hostname is the drone to remove the dut from (if specified); if unspecified
+    // dut will be removed regardless of current drone.
+    string drone_hostname = 2;
+  }
+
+  // removals is the set of Duts to remove.
+  repeated Item removals = 1;
+}
+
+message RemoveDutsFromDronesResponse {
+
+  message Item {
+    // dut_id is the id of a dut that was removed.
+    string dut_id = 1;
+
+    // drone_hostname is the hostname of the drone that it the Dut was removed from.
+    string drone_hostname = 2;
+  }
+
+  // removed is the set of Duts that were removed.
+  repeated Item removed = 1;
+}
+
+message AssignDutsToDronesRequest {
+
+  message Item {
+    // dut_id is the id of a dut to assign to a drone.
+    string dut_id = 1;
+
+    // drone_hostname is the drone to assign the dut to (if specified); if unspecified
+    // then admin service will use its own heuristics to pick drone.
+    string drone_hostname = 2;
+  }
+
+  // assignments is the set of Duts to assign.
+  repeated Item assignments = 1;
+}
+
+message AssignDutsToDronesResponse {
+
+  message Item {
+    // dut_id is the id of a dut that was assigned to a drone.
+    string dut_id = 1;
+
+    // drone_hostname is the drone the dut was assigned to.
+    string drone_hostname = 2;
+  }
+
+  // assigned is the set of Duts that were removed.
+  repeated Item assigned = 1;
 }

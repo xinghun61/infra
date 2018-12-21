@@ -56,3 +56,37 @@ func (s *DecoratedInventory) ResizePool(c context.Context, req *ResizePoolReques
 	}
 	return
 }
+
+func (s *DecoratedInventory) RemoveDutsFromDrones(c context.Context, req *RemoveDutsFromDronesRequest) (rsp *RemoveDutsFromDronesResponse, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "RemoveDutsFromDrones", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.RemoveDutsFromDrones(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "RemoveDutsFromDrones", rsp, err)
+	}
+	return
+}
+
+func (s *DecoratedInventory) AssignDutsToDrones(c context.Context, req *AssignDutsToDronesRequest) (rsp *AssignDutsToDronesResponse, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "AssignDutsToDrones", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.AssignDutsToDrones(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "AssignDutsToDrones", rsp, err)
+	}
+	return
+}

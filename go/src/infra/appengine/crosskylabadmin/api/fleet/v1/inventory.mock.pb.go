@@ -71,6 +71,42 @@ func (mr *MockInventoryClientMockRecorder) ResizePool(ctx, in interface{}, opts 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResizePool", reflect.TypeOf((*MockInventoryClient)(nil).ResizePool), varargs...)
 }
 
+// RemoveDutsFromDrones mocks base method
+func (m *MockInventoryClient) RemoveDutsFromDrones(ctx context.Context, in *RemoveDutsFromDronesRequest, opts ...grpc.CallOption) (*RemoveDutsFromDronesResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "RemoveDutsFromDrones", varargs...)
+	ret0, _ := ret[0].(*RemoveDutsFromDronesResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RemoveDutsFromDrones indicates an expected call of RemoveDutsFromDrones
+func (mr *MockInventoryClientMockRecorder) RemoveDutsFromDrones(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveDutsFromDrones", reflect.TypeOf((*MockInventoryClient)(nil).RemoveDutsFromDrones), varargs...)
+}
+
+// AssignDutsToDrones mocks base method
+func (m *MockInventoryClient) AssignDutsToDrones(ctx context.Context, in *AssignDutsToDronesRequest, opts ...grpc.CallOption) (*AssignDutsToDronesResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "AssignDutsToDrones", varargs...)
+	ret0, _ := ret[0].(*AssignDutsToDronesResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AssignDutsToDrones indicates an expected call of AssignDutsToDrones
+func (mr *MockInventoryClientMockRecorder) AssignDutsToDrones(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AssignDutsToDrones", reflect.TypeOf((*MockInventoryClient)(nil).AssignDutsToDrones), varargs...)
+}
+
 // MockInventoryServer is a mock of InventoryServer interface
 type MockInventoryServer struct {
 	ctrl     *gomock.Controller
@@ -118,4 +154,30 @@ func (m *MockInventoryServer) ResizePool(arg0 context.Context, arg1 *ResizePoolR
 // ResizePool indicates an expected call of ResizePool
 func (mr *MockInventoryServerMockRecorder) ResizePool(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResizePool", reflect.TypeOf((*MockInventoryServer)(nil).ResizePool), arg0, arg1)
+}
+
+// RemoveDutsFromDrones mocks base method
+func (m *MockInventoryServer) RemoveDutsFromDrones(arg0 context.Context, arg1 *RemoveDutsFromDronesRequest) (*RemoveDutsFromDronesResponse, error) {
+	ret := m.ctrl.Call(m, "RemoveDutsFromDrones", arg0, arg1)
+	ret0, _ := ret[0].(*RemoveDutsFromDronesResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RemoveDutsFromDrones indicates an expected call of RemoveDutsFromDrones
+func (mr *MockInventoryServerMockRecorder) RemoveDutsFromDrones(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveDutsFromDrones", reflect.TypeOf((*MockInventoryServer)(nil).RemoveDutsFromDrones), arg0, arg1)
+}
+
+// AssignDutsToDrones mocks base method
+func (m *MockInventoryServer) AssignDutsToDrones(arg0 context.Context, arg1 *AssignDutsToDronesRequest) (*AssignDutsToDronesResponse, error) {
+	ret := m.ctrl.Call(m, "AssignDutsToDrones", arg0, arg1)
+	ret0, _ := ret[0].(*AssignDutsToDronesResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AssignDutsToDrones indicates an expected call of AssignDutsToDrones
+func (mr *MockInventoryServerMockRecorder) AssignDutsToDrones(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AssignDutsToDrones", reflect.TypeOf((*MockInventoryServer)(nil).AssignDutsToDrones), arg0, arg1)
 }
