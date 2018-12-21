@@ -8,11 +8,13 @@
 <link rel="import" href="../../mr-bug-link/mr-bug-link.html">
 <link rel="import" href="../../mr-user-link/mr-user-link.html">
 <link rel="import" href="../shared/metadata-mixin.html">
+<link rel="import" href="../shared/mr-flt-styles.html">
 <link rel="import" href="../mr-metadata/mr-field-values.html">
+<link rel="import" href="./mr-update-issue-hotlists.html">
 
 <dom-module id="mr-metadata">
   <template>
-    <style>
+    <style include="mr-flt-styles">
       :host {
         display: table;
         table-layout: fixed;
@@ -210,20 +212,37 @@
       </tr>
     </template>
 
-    <template is="dom-if" if="[[hotlistsByRole.user.length]]">
+    <template is="dom-if" if="[[user]]">
       <tr>
-        <th>Your Hotlists:</th>
+        <th>
+          Your Hotlists:
+        </th>
         <td>
-          <template is="dom-repeat" items="[[hotlistsByRole.user]]">
-            <a href$="/u/[[item.ownerRef.userId]]/hotlists/[[item.name]]"
-              title$="[[item.name]] - [[item.summary]]">
-              [[item.name]]
-            </a>
-            <br />
+          <template is="dom-if" if="[[hotlistsByRole.user.length]]">
+            <template is="dom-repeat" items="[[hotlistsByRole.user]]">
+              <a href$="/u/[[item.ownerRef.userId]]/hotlists/[[item.name]]"
+                title$="[[item.name]] - [[item.summary]]">
+                [[item.name]]
+              </a>
+              <br />
+            </template>
           </template>
+          <chops-button
+            on-click="openUpdateHotlists">
+            <iron-icon icon="create"></iron-icon>
+            &nbsp;Edit your hotlists.
+          </chops-button>
         </td>
       </tr>
     </template>
+    <chops-dialog id="updateHotlistsDialog">
+      <mr-update-issue-hotlists
+        id="updateHotlistsForm"
+        on-discard="closeUpdateHotlists"
+        on-save="saveUpdateHotlists"
+      >
+      </mr-update-issue-hotlists>
+    </chops-dialog>
 
     <template is="dom-if" if="[[hotlistsByRole.participants.length]]">
       <tr>

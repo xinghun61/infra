@@ -27,6 +27,10 @@ class MrMetadata extends MetadataMixin(Polymer.Element) {
         type: String,
         statePath: 'projectName',
       },
+      issueId: {
+        type: Number,
+        statePath: 'issueId',
+      },
       user: {
         type: Object,
         statePath: 'user',
@@ -41,7 +45,10 @@ class MrMetadata extends MetadataMixin(Polymer.Element) {
         reflectToAttribute: true,
         readOnly: true,
       },
-      issueHotlists: Array,
+      issueHotlists: {
+        type: Array,
+        statePath: 'issueHotlists',
+      },
       hotlistsByRole: {
         type: Object,
         computed: '_splitIssueHotlistsByRole(issueHotlists, user, owner, cc)',
@@ -93,6 +100,59 @@ class MrMetadata extends MetadataMixin(Polymer.Element) {
       }
     });
     return hotlists;
+  }
+
+  openUpdateHotlists() {
+    this.$.updateHotlistsForm.reset();
+    this.$.updateHotlistsDialog.open();
+  }
+
+  closeUpdateHotlists() {
+    this.$.updateHotlistsDialog.close();
+  }
+
+  saveUpdateHotlists() {
+    const changes = this.$.updateHotlistsForm.changes;
+    const issueRef = {
+      projectName: this.projectName,
+      localId: this.issueId,
+    };
+
+    const promises = [];
+    if (changes.added.length) {
+      promises.push(window.prpcCall(
+        'monorail.Features', 'AddIssuesToHotlists', {
+          hotlistRefs: changes.added,
+          issueRefs: [issueRef],
+        }
+      ));
+    }
+    if (changes.removed.length) {
+      promises.push(window.prpcCall(
+        'monorail.Features', 'RemoveIssuesFromHotlists', {
+          hotlistRefs: changes.removed,
+          issueRefs: [issueRef],
+        }
+      ));
+    }
+    if (changes.created) {
+      promises.push(window.prpcCall(
+        'monorail.Features', 'CreateHotlist', {
+          name: changes.created.name,
+          summary: changes.created.summary,
+          issueRefs: [issueRef],
+        }
+      ));
+    }
+
+    Promise.all(promises).then((results) => {
+      actionCreator.fetchIssueHotlists(this.dispatch.bind(this), issueRef);
+      actionCreator.fetchUserHotlists(
+        this.dispatch.bind(this), this.user.email);
+      this.$.updateHotlistsDialog.close();
+    }, (error) => {
+      this.$.updateHotlistsForm.error = error.description;
+    });
   }
 }
 

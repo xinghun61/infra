@@ -15,6 +15,10 @@
       FETCH_USER_SUCCESS: 'FETCH_USER_SUCCESS',
       FETCH_USER_FAILURE: 'FETCH_USER_FAILURE',
 
+      FETCH_USER_HOTLISTS_START: 'FETCH_USER_HOTLISTS_START',
+      FETCH_USER_HOTLISTS_SUCCESS: 'FETCH_USER_HOTLISTS_SUCCESS',
+      FETCH_USER_HOTLISTS_FAILURE: 'FETCH_USER_HOTLISTS_FAILURE',
+
       FETCH_ISSUE_START: 'FETCH_ISSUE_START',
       FETCH_ISSUE_SUCCESS: 'FETCH_ISSUE_SUCCESS',
       FETCH_ISSUE_FAILURE: 'FETCH_ISSUE_FAILURE',
@@ -131,7 +135,7 @@
           });
 
           actionCreator.fetchBlockerReferences(dispatch, resp.issue);
-          actionCreator.fetchIssueHotlists(dispatch, message);
+          actionCreator.fetchIssueHotlists(dispatch, message.issueRef);
         }, (error) => {
           dispatch({
             type: actionType.FETCH_ISSUE_FAILURE,
@@ -139,12 +143,11 @@
           });
         });
       },
-      fetchIssueHotlists: (dispatch, message) => {
+      fetchIssueHotlists: (dispatch, issue) => {
         dispatch({type: actionType.FETCH_ISSUE_HOTLISTS_START});
 
         const getIssueHotlists = window.prpcCall(
-          'monorail.Features', 'ListHotlistsByIssue',
-          {issue: message.issueRef});
+          'monorail.Features', 'ListHotlistsByIssue', {issue});
 
         getIssueHotlists.then((resp) => {
           const hotlists = (resp.hotlists || []);
@@ -158,6 +161,29 @@
         }, (error) => {
           dispatch({
             type: actionType.FETCH_ISSUE_HOTLISTS_FAILURE,
+            error,
+          });
+        });
+      },
+      fetchUserHotlists: (dispatch, user) => {
+        dispatch({type: actionType.FETCH_USER_HOTLISTS_START});
+
+        const getUserHotlists = window.prpcCall(
+          'monorail.Features', 'ListHotlistsByUser',
+          {user: {displayName: user}});
+
+        getUserHotlists.then((resp) => {
+          const hotlists = (resp.hotlists || []);
+          hotlists.sort((hotlistA, hotlistB) => {
+            return hotlistA.name.localeCompare(hotlistB.name);
+          });
+          dispatch({
+            type: actionType.FETCH_USER_HOTLISTS_SUCCESS,
+            hotlists,
+          });
+        }, (error) => {
+          dispatch({
+            type: actionType.FETCH_USER_HOTLISTS_FAILURE,
             error,
           });
         });
@@ -237,6 +263,7 @@
       projectConfig: {},
       issue: {},
       issueHotlists: [],
+      userHotlists: [],
       comments: [],
       commentReferences: new Map(),
       blockerReferences: new Map(),
@@ -244,6 +271,9 @@
 
       fetchingUser: false,
       fetchUserError: null,
+
+      fetchingUserHotlists: false,
+      fetchUserHotlistsError: null,
 
       issueLoaded: false,
       fetchingIssue: false,
@@ -336,6 +366,23 @@
           return Object.assign({}, state, {
             fetchUserError: action.error,
             fetchingUser: false,
+          });
+
+        // Request for getting a user's hotlists.
+        case actionType.FETCH_USER_HOTLISTS_START:
+          return Object.assign({}, state, {
+            fetchUserHotlistsError: null,
+            fetchingUserHotlists: true,
+          });
+        case actionType.FETCH_USER_HOTLISTS_SUCCESS:
+          return Object.assign({}, state, {
+            userHotlists: action.hotlists,
+            fetchingUserHotlists: false,
+          });
+        case actionType.FETCH_USER_HOTLISTS_FAILURE:
+          return Object.assign({}, state, {
+            fetchUserHotlistsError: action.error,
+            fetchingUserHotlists: false,
           });
 
         // Request for getting an issue.

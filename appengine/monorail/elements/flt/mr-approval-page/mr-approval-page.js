@@ -149,6 +149,7 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
         user: resp[0],
         groups: resp[1].groupRefs,
       });
+      actionCreator.fetchUserHotlists(this.dispatch.bind(this), user);
     }, (error) => {
       this.dispatch({
         type: actionType.FETCH_USER_FAILURE,
