@@ -337,6 +337,20 @@ wheel: <
 * *windows-x64*
 * *windows-x86*
 
+## **blessings**
+
+### 1.7
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/blessings-py2_py3"
+  version: "version:1.7"
+>
+```
+
+
+* *universal*
+
 ## **boto**
 
 ### 2.48.0
@@ -1197,6 +1211,20 @@ wheel: <
 
 * *universal*
 
+## **mozfile**
+
+### 2.0.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/mozfile-py2_py3"
+  version: "version:2.0.0"
+>
+```
+
+
+* *universal*
+
 ## **mozinfo**
 
 ### 0.10
@@ -1233,6 +1261,20 @@ wheel: <
 wheel: <
   name: "infra/python/wheels/mozprocess-py2_py3"
   version: "version:0.26"
+>
+```
+
+
+* *universal*
+
+## **mozterm**
+
+### 1.0.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/mozterm-py2_py3"
+  version: "version:1.0.0"
 >
 ```
 
@@ -2155,6 +2197,20 @@ wheel: <
 wheel: <
   name: "infra/python/wheels/urllib3-py2_py3"
   version: "version:1.22"
+>
+```
+
+
+* *universal*
+
+## **webencodings**
+
+### 0.5.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/webencodings-py2_py3"
+  version: "version:0.5.1"
 >
 ```
 
