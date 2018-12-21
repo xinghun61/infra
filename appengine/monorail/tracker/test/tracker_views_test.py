@@ -15,6 +15,7 @@ from third_party import ezt
 
 from framework import framework_views
 from framework import gcs_helpers
+from framework import permissions
 from framework import template_helpers
 from framework import urls
 from proto import project_pb2
@@ -511,6 +512,123 @@ class FieldValueViewTest(unittest.TestCase):
     estdays_fvv = tracker_views.FieldValueView(
         self.estdays_fd, self.config, [], [], ['enhancement'])
     self.assertTrue(estdays_fvv.display)
+
+
+class BulkAVVFunctionsTest(unittest.TestCase):
+
+  def setUp(self):
+    self.config = tracker_pb2.ProjectIssueConfig()
+    self.est_fd = tracker_bizobj.MakeFieldDef(
+        1, 789, 'EstDays', tracker_pb2.FieldTypes.INT_TYPE, None,
+        None, False, False, False, 3, 99, None, False, None, None,
+        None, 'no_action', 'descriptive docstring', False, None, False)
+    self.legal_afd = tracker_bizobj.MakeFieldDef(
+        2, 789, 'Legal', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
+        None, False, False, False, None, None, None, False, None, None,
+        None, 'no_action', 'descriptive docstring', False, None, False)
+    self.dog_afd = tracker_bizobj.MakeFieldDef(
+        3, 789, 'DogApproval', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
+        None, False, False, False, None, None, None, False, None, None,
+        None, 'no_action', 'descriptive docstring', False, None, False)
+    self.cat_afd = tracker_bizobj.MakeFieldDef(
+        4, 789, 'CatApproval', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
+        None, False, False, False, None, None, None, False, None, None,
+        None, 'no_action', 'descriptive docstring', False, None, False)
+    self.config.field_defs = [
+        self.est_fd, self.legal_afd, self.dog_afd, self.cat_afd]
+    self.project = project_pb2.Project()
+    self.issue1 = _Issue('proj', 1, 'not too long summary', 'New')
+    self.issue2 = _Issue('proj', 2, 'sum 2', '')
+    self.issue3 = _Issue('proj', 3, 'sum 3', '')
+
+    self.issue1.approval_values = [
+        tracker_pb2.ApprovalValue(approval_id=2, approver_ids=[222L])]
+    self.issue2.approval_values = [
+        tracker_pb2.ApprovalValue(approval_id=3, approver_ids=[333L, 444L]),
+        tracker_pb2.ApprovalValue(approval_id=2, approver_ids=[222L]),
+        tracker_pb2.ApprovalValue(approval_id=4, approver_ids=[444L]),
+    ]
+    self.issue3.approval_values = [
+      tracker_pb2.ApprovalValue(approval_id=4, approver_ids=[333L])]
+    self.issue_views = [tracker_views.IssueView(self.issue1, {}, self.config),
+                   tracker_views.IssueView(self.issue2, {}, self.config),
+                   tracker_views.IssueView(self.issue3, {}, self.config)]
+
+    self.non_restricted_choices = [
+        name for (status, name) in tracker_views.APPROVAL_STATUS_NAMES.items()
+        if status not in permissions.RESTRICTED_APPROVAL_STATUSES]
+
+
+  def testMakeAllBulkApprovalValueViews_ApproverForAll(self):
+    perms = permissions.PermissionSet([permissions.EDIT_ISSUE])
+    effective_ids = {222L, 333L}
+
+    av_views = tracker_views.MakeAllBulkApprovalValueViews(
+        self.config, self.project, self.issue_views, perms, effective_ids)
+    self.assertEqual(3, len(av_views))
+
+    legal_av = next(av for av in av_views if av.approval_id == 2)
+    self.assertEqual(legal_av.approval_name, 'Legal')
+    self.assertEqual(len(legal_av.issues), 2)
+    self.assertTrue(legal_av.has_approver_privileges)
+    self.assertEqual(
+        legal_av.status_choices, tracker_views.APPROVAL_STATUS_NAMES.values())
+
+    dog_av = next(av for av in av_views if av.approval_id == 3)
+    self.assertEqual(dog_av.approval_name, 'DogApproval')
+    self.assertEqual(len(dog_av.issues), 1)
+    self.assertTrue(dog_av.has_approver_privileges)
+    self.assertEqual(
+        dog_av.status_choices, tracker_views.APPROVAL_STATUS_NAMES.values())
+
+    cat_av = next(av for av in av_views if av.approval_id == 4)
+    self.assertEqual(cat_av.approval_name, 'CatApproval')
+    self.assertEqual(len(cat_av.issues), 2)
+    self.assertFalse(cat_av.has_approver_privileges)
+    self.assertEqual(
+        cat_av.status_choices, self.non_restricted_choices)
+
+
+  def testMakeAllBulkApprovalValueViews_Admin(self):
+    perms = permissions.ADMIN_PERMISSIONSET
+    effective_ids = {888L}
+
+    av_views = tracker_views.MakeAllBulkApprovalValueViews(
+        self.config, self.project, self.issue_views, perms, effective_ids)
+    self.assertEqual(3, len(av_views))
+
+    legal_av = next(av for av in av_views if av.approval_id == 2)
+    self.assertEqual(legal_av.approval_name, 'Legal')
+    self.assertEqual(len(legal_av.issues), 2)
+    self.assertTrue(legal_av.has_approver_privileges)
+    self.assertEqual(
+        legal_av.status_choices, tracker_views.APPROVAL_STATUS_NAMES.values())
+
+    dog_av = next(av for av in av_views if av.approval_id == 3)
+    self.assertEqual(dog_av.approval_name, 'DogApproval')
+    self.assertEqual(len(dog_av.issues), 1)
+    self.assertTrue(dog_av.has_approver_privileges)
+    self.assertEqual(
+        dog_av.status_choices, tracker_views.APPROVAL_STATUS_NAMES.values())
+
+    cat_av = next(av for av in av_views if av.approval_id == 4)
+    self.assertEqual(cat_av.approval_name, 'CatApproval')
+    self.assertEqual(len(cat_av.issues), 2)
+    self.assertTrue(cat_av.has_approver_privileges)
+    self.assertEqual(
+        cat_av.status_choices, tracker_views.APPROVAL_STATUS_NAMES.values())
+
+  def testMakeAllBulkApprovalValueViews_Empty(self):
+    '''Handles missing config fds.'''
+    perms = permissions.ADMIN_PERMISSIONSET
+    effective_ids = {888L}
+
+    # Remove all field_defs
+    self.config.field_defs = []
+
+    av_views = tracker_views.MakeAllBulkApprovalValueViews(
+        self.config, self.project, self.issue_views, perms, effective_ids)
+    self.assertEqual([], av_views)
 
 
 class FVVFunctionsTest(unittest.TestCase):
