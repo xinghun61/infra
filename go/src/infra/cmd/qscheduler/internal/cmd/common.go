@@ -49,17 +49,33 @@ func httpClient(ctx context.Context, f *authcli.Flags) (*http.Client, error) {
 	return c, nil
 }
 
-func newAdminClient(ctx context.Context, a *authcli.Flags, e *envFlags) (qscheduler.QSchedulerAdminClient, error) {
+func prpcClient(ctx context.Context, a *authcli.Flags, e *envFlags) (*prpc.Client, error) {
 	h, err := httpClient(ctx, a)
 	if err != nil {
 		return nil, err
 	}
 
-	p := &prpc.Client{
+	return &prpc.Client{
 		C:       h,
 		Host:    e.Env().QSchedulerHost,
 		Options: site.DefaultPRPCOptions,
+	}, nil
+}
+
+func newAdminClient(ctx context.Context, a *authcli.Flags, e *envFlags) (qscheduler.QSchedulerAdminClient, error) {
+	p, err := prpcClient(ctx, a, e)
+	if err != nil {
+		return nil, err
 	}
 
 	return qscheduler.NewQSchedulerAdminPRPCClient(p), nil
+}
+
+func newViewClient(ctx context.Context, a *authcli.Flags, e *envFlags) (qscheduler.QSchedulerViewClient, error) {
+	p, err := prpcClient(ctx, a, e)
+	if err != nil {
+		return nil, err
+	}
+
+	return qscheduler.NewQSchedulerViewPRPCClient(p), nil
 }

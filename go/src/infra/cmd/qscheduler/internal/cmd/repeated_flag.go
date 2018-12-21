@@ -7,13 +7,14 @@ package cmd
 import (
 	"flag"
 	"fmt"
+	"strconv"
 )
 
 // TODO(akeshet): Promote this to a shared library.
 
-// MultiArg is a flag.Value implementation for an underling []string, that
+// MultiString is a flag.Value implementation for an underling []string, that
 // can be specified multiple times on the command line.
-func MultiArg(output *[]string) flag.Value {
+func MultiString(output *[]string) flag.Value {
 	return &multiArg{
 		vals: output,
 	}
@@ -29,5 +30,30 @@ func (m *multiArg) Set(s string) error {
 }
 
 func (m *multiArg) String() string {
+	return fmt.Sprintf("%v", m.vals)
+}
+
+// MultiFloat is a flag.Value implementation for an underling []float64, that
+// can be specified multiple times on the command line.
+func MultiFloat(output *[]float64) flag.Value {
+	return &multiFloat{
+		vals: output,
+	}
+}
+
+type multiFloat struct {
+	vals *[]float64
+}
+
+func (m *multiFloat) Set(s string) error {
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return err
+	}
+	*m.vals = append(*m.vals, f)
+	return nil
+}
+
+func (m *multiFloat) String() string {
 	return fmt.Sprintf("%v", m.vals)
 }

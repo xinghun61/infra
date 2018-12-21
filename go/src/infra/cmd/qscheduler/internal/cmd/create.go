@@ -27,7 +27,7 @@ var Create = &subcommands.Command{
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
 		c.Flags.StringVar(&c.poolID, "id", "", "Scheduler ID to create.")
-		c.Flags.Var(MultiArg(&c.labels), "label",
+		c.Flags.Var(MultiString(&c.labels), "label",
 			"Label that will be used by all tasks and bots for this scheduler, specified in "+
 				"the form foo:bar. May be specified multiple times.")
 
@@ -45,8 +45,6 @@ type createRun struct {
 }
 
 func (c *createRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
-	ctx := cli.GetContext(a, c, env)
-
 	if c.poolID == "" {
 		fmt.Fprintf(os.Stderr, "Must specify id.\n")
 		return 1
@@ -59,6 +57,8 @@ func (c *createRun) Run(a subcommands.Application, args []string, env subcommand
 			return 1
 		}
 	}
+
+	ctx := cli.GetContext(a, c, env)
 
 	adminService, err := newAdminClient(ctx, &c.authFlags, &c.envFlags)
 	if err != nil {

@@ -35,6 +35,8 @@ func getApplication() *cli.Application {
 
 			// Main commands.
 			cmd.Create,
+			cmd.AddAccount,
+			cmd.Inspect,
 		},
 	}
 }
