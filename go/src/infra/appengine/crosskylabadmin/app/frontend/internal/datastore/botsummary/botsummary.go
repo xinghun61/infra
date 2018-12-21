@@ -120,6 +120,7 @@ func Get(ctx context.Context, sels []*fleet.BotSelector) ([]*Entity, error) {
 			return es, err
 		}
 	}
+	es = removeStale(es)
 	return es, nil
 }
 
@@ -131,6 +132,7 @@ func GetAll(ctx context.Context) ([]*Entity, error) {
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to get all bots from datastore").Err()
 	}
+	es = removeStale(es)
 	return es, nil
 }
 
@@ -144,12 +146,14 @@ func GetByDutID(ctx context.Context, dutIDs []string) ([]*Entity, error) {
 	}
 	switch err := datastore.Get(ctx, es); err := err.(type) {
 	case nil:
+		es = removeStale(es)
 		return es, nil
 	case errors.MultiError:
 		if len(es) != len(err) {
 			panic(fmt.Sprintf("bot summary length %d != multierror %d",
 				len(es), len(err)))
 		}
+		es = removeStale(es)
 		es = removeErroredEntities(es, err)
 		if datastore.IsErrNoSuchEntity(err) {
 			return es, nil
@@ -176,6 +180,7 @@ func GetByDimensions(ctx context.Context, d *fleet.BotDimensions) ([]*Entity, er
 	if err := datastore.GetAll(ctx, q, &es); err != nil {
 		return nil, errors.Annotate(err, "botsummary.GetByDimensions %#v", d).Err()
 	}
+	es = removeStale(es)
 	return es, nil
 }
 
@@ -189,4 +194,25 @@ func removeErroredEntities(es []*Entity, merr errors.MultiError) []*Entity {
 		}
 	}
 	return ok
+}
+
+// freshDuration is the duration in which updated Entities are not
+// considered stale.
+const freshDuration = 1 * time.Hour
+
+// removeStale returns a slice without the stale Entities.  Entities
+// are considered stale if they were updated more than freshDuration
+// ago.
+func removeStale(es []*Entity) []*Entity {
+	return removeOlderThan(es, time.Now().Add(-freshDuration))
+}
+
+func removeOlderThan(es []*Entity, t time.Time) []*Entity {
+	new := make([]*Entity, 0, len(es))
+	for _, e := range es {
+		if e.Updated.After(t) {
+			new = append(new, e)
+		}
+	}
+	return new
 }
