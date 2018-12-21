@@ -6,9 +6,10 @@ package fleet
 
 import (
 	context "context"
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
-	reflect "reflect"
 )
 
 // MockInventoryClient is a mock of InventoryClient interface
