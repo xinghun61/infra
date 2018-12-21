@@ -35,13 +35,14 @@ feedback_email = 'jrobbins+monorail.feedback@chromium.org'
 # For debugging when running in staging: send all outbound
 # email to this address rather than to the actual address that
 # it would normally be sent to.
-send_all_email_to = 'jrobbins+all+%(user)s+%(domain)s@chromium.org'
+send_all_email_to = 'monorail-staging-emails+all+%(user)s+%(domain)s@google.com'
 
 # For debugging when running the dev server locally: send all outbound
 # email to this address rather than to the actual address that
 # it would normally be sent to.
-send_dev_email_to = (send_all_email_to or
-                     'jrobbins+dev+%(user)s+%(domain)s@chromium.org')
+send_dev_email_to = (
+    send_all_email_to or
+    'monorail-staging-emails+dev+%(user)s+%(domain)s@google.com')
 
 # User to send emails from Monorail as. The reply_to sections of emails will be
 # set to appspotmail addresses.
