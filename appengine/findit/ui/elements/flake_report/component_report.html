@@ -1,6 +1,7 @@
 <!--TODO(crbug/905380): migrate away from HTML imports.-->
 <link rel="import" href="/bower_components/google-chart/google-chart.html">
 <link rel="import" href="/bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="/bower_components/paper-button/paper-button.html">
 <link rel="import" href="/bower_components/paper-tabs/paper-tabs.html">
 <link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
 <link rel="import" href="/bower_components/polymer/polymer.html">
@@ -39,8 +40,8 @@
         background-color: #FFF;
       }
 
-      .sub-header {
-        font-size: 22px;
+      .all-flake-font {
+        font-size: 14px;
         font-weight: bold;
       }
 
@@ -58,12 +59,14 @@
 
       .flake-report-table {
         width: 95%;
-        margin: 20px;
+        margin-left: 20px;
+        margin-right: 20px;
       }
 
       #flake-trend-chart {
         margin-left: 0 auto;
-        height: 360px;
+        height: 60vh;
+        max-height: calc(100vh - 310px);
         width: 100%;
       }
 
@@ -85,89 +88,108 @@
         font-size: 18px;
       }
 
-      #flake-report-table-div {
+      .table-div {
         width: 95vw;
-        max-height: 350px;
-        overflow-y: auto;
-      }
-
-      #top-flakes-container {
-        width: 95vw;
-        max-height: calc(100vh - 640px);
+        max-height: calc(100vh - 310px);
         overflow-y: auto;
       }
 
       iron-pages {
         border: 3px solid #1F78B4;
         width: 92vw;
-        height: 370px;
+        height: 70vh;
+        max-height: calc(100vh - 210px);
         margin-left: 3vw;
         margin-right: 3vw;
       }
 
+      #all-flake-span {
+        padding-right: 5%;
+        padding-bottom: 20px;
+        float: right;
+      }
+
+      paper-button {
+        color: #fff;
+        background: #4285F4;
+        float: right;
+        margin: 20px;
+      }
+
+      .title {
+        font-size: 22px;
+        font-weight: bold;
+      }
+
     </style>
+    <br><font class="title">Flake Report for {{component}}</font><br><br>
     <div id="tabs-container">
       <paper-tabs id="display-tabs" selected="{{selected}}">
-        <paper-tab>Report in Graph</paper-tab>
-        <paper-tab>Report in Table</paper-tab>
+        <paper-tab>Weekly Report</paper-tab>
+        <paper-tab>Top Flakes in {{component}}</paper-tab>
       </paper-tabs>
     </div>
     <iron-pages selected="{{selected}}">
-      <div id="flake-report-graph-div">
-        <google-chart
-          id="flake-trend-chart"
-          type="combo"
-          options='{{_generateChartOptions(component)}}'
-          data = '{{_getChartDataFromFlake(component_reports)}}'>
-        </google-chart>
-      </div>
-      <div id="flake-report-table-div">
-        <table class="flake-report-table">
-          <tr>
-            <th>Week of
-              <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Each report contains one week of data, Monday to Sunday.</paper-tooltip>
-            </th>
-            <th>Flaky Test Count</th>
-            <th>Bug Count</th>
-            <th>Falsely Rejected CL Count</th>
-            <th>Total Impacted CLs</th>
-            <th>Total Flake Occurrences</th>
-          </tr>
-          <template is="dom-repeat" items="[[component_reports]]" as="report">
+      <div>
+        <paper-button noink id="btn_toggle" on-tap="toggleReportDisplay">
+          <template is="dom-if" if="[[show_graph]]">show report table</template>
+          <template is="dom-if" if="[[!show_graph]]">show report graph</template>
+        </paper-button>
+        <div id="flake-report-graph-div" hidden="[[!show_graph]]">
+          <google-chart
+            id="flake-trend-chart"
+            type="combo"
+            options='{{_generateChartOptions(component)}}'
+            data = '{{_getChartDataFromFlake(component_reports)}}'>
+          </google-chart>
+        </div>
+        <div id="flake-report-table-div" class="table-div"  hidden="[[show_graph]]">
+          <table class="flake-report-table">
             <tr>
-              <td>[[report.report_time]]</td>
-              <td>[[report.test_count]]</td>
-              <td>[[report.bug_count]]</td>
-              <td>[[report.impacted_cl_counts.cq_false_rejection]]</td>
-              <td>[[report.impacted_cl_counts.total]]</td>
-              <td>[[report.occurrence_counts.total]]</td>
+              <th>Week of
+                <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Each report contains one week of data, Monday to Sunday.</paper-tooltip>
+              </th>
+              <th>Flaky Test Count</th>
+              <th>Bug Count</th>
+              <th>Falsely Rejected CL Count</th>
+              <th>Total Impacted CLs</th>
+              <th>Total Flake Occurrences</th>
             </tr>
-          </template>
-        </table>
-      </div>
+            <template is="dom-repeat" items="[[component_reports]]" as="report">
+              <tr>
+                <td>[[report.report_time]]</td>
+                <td>[[report.test_count]]</td>
+                <td>[[report.bug_count]]</td>
+                <td>[[report.impacted_cl_counts.cq_false_rejection]]</td>
+                <td>[[report.impacted_cl_counts.total]]</td>
+                <td>[[report.occurrence_counts.total]]</td>
+              </tr>
+            </template>
+          </table>
+          </div>
+        </div>
+        <div id="top-flakes-container" class="table-div">
+          <br><span id="all-flake-span"><a target="_blank" href$="{{_getLinkToFlakeDashboard()}}"><font class="all-flake-font">All Flakes</font></a></span><br>
+          <table class="flake-report-table">
+            <tr>
+              <th class="num-cell">Flake Score</th>
+              <th class="str-cell">Test Name</th>
+              <th class="num-cell">Bug</th>
+            </tr>
+            <template is="dom-repeat" items="[[top_flakes]]" as="flake">
+              <tr>
+                <td class="num-cell" width="10%">[[flake.flake_score_last_week]]</td>
+                <td class="str-cell" width="80%"><a target="_blank" href="/flake/occurrences?key=[[flake.flake_urlsafe_key]]">[[flake.test_label_name]]</a></td>
+                <td class="num-cell" width="10%">
+                  <template is="dom-if" if="[[_hasBug(flake)]]">
+                    <a href="[[flake.flake_issue.issue_link]]">[[flake.flake_issue.issue_id]]</a>
+                  </template>
+                </td>
+              </tr>
+            </template>
+          </table>
+        </div>
     </iron-pages>
-    <br><br>
-    <font class="sub-header">Top Flakes in the component</font>&nbsp;(<a target="_blank" href$="{{_getLinkToFlakeDashboard()}}">All Flakes</a>)
-    <div id="top-flakes-container">
-      <table class="flake-report-table">
-        <tr>
-          <th class="num-cell">Flake Score</th>
-          <th class="str-cell">Test Name</th>
-          <th class="num-cell">Bug</th>
-        </tr>
-        <template is="dom-repeat" items="[[top_flakes]]" as="flake">
-          <tr>
-            <td class="num-cell" width="10%">[[flake.flake_score_last_week]]</td>
-            <td class="str-cell" width="80%"><a target="_blank" href="/flake/occurrences?key=[[flake.flake_urlsafe_key]]">[[flake.test_label_name]]</a></td>
-            <td class="num-cell" width="10%">
-              <template is="dom-if" if="[[_hasBug(flake)]]">
-                <a href="[[flake.flake_issue.issue_link]]">[[flake.flake_issue.issue_id]]</a>
-              </template>
-            </td>
-          </tr>
-        </template>
-      </table>
-    </div>
   </template>
   <script>
     (function () {
@@ -193,6 +215,10 @@
           selected: {
             type: Number,
             value: 0
+          },
+          show_graph: {
+            type: Boolean,
+            value: true
           }
         },
 
@@ -266,6 +292,11 @@
               data.push(row);
              }
             return data;
+        },
+
+        // Event handlers.
+        toggleReportDisplay: function (e) {
+          this.show_graph = !this.show_graph;
         }
       })
     })();
