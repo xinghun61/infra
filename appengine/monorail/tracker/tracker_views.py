@@ -32,16 +32,6 @@ from tracker import tracker_constants
 from tracker import tracker_helpers
 
 
-APPROVAL_STATUS_NAMES = {
-    tracker_pb2.ApprovalStatus.NEEDS_REVIEW: 'NeedsReview',
-    tracker_pb2.ApprovalStatus.NA: 'Na',
-    tracker_pb2.ApprovalStatus.REVIEW_REQUESTED: 'ReviewRequested',
-    tracker_pb2.ApprovalStatus.NEED_INFO: 'NeedInfo',
-    tracker_pb2.ApprovalStatus.APPROVED: 'Approved',
-    tracker_pb2.ApprovalStatus.NOT_APPROVED: 'NotApproved',
-    }
-
-
 class IssueView(template_helpers.PBProxy):
   """Wrapper class that makes it easier to display an Issue via EZT."""
 
@@ -508,50 +498,6 @@ class ComponentValueView(object):
     self.docstring = cd.docstring
     self.docstring_short = template_helpers.FitUnsafeText(cd.docstring, 60)
     self.derived = ezt.boolean(derived)
-
-
-class BulkApprovalValueView(object):
-  """Wrapper class that makes it easier to display an approval value."""
-
-  def __init__(self, fd, approval_values, issue_views, config, project,
-               perms, effective_ids):
-    self.field_def = FieldDefView(fd, config)
-    self.approval_id = fd.field_id
-    self.approval_name = fd.field_name
-    self.issues = issue_views
-    self.has_approver_privileges = all([permissions.CanUpdateApprovers(
-        effective_ids, perms, project, av.approver_ids)
-                                        for av in approval_values])
-    if self.has_approver_privileges:
-      self.status_choices = APPROVAL_STATUS_NAMES.values()
-    else:
-      self.status_choices = [name for (approval, name) in
-                             APPROVAL_STATUS_NAMES.items()
-                             if approval not in
-                             permissions.RESTRICTED_APPROVAL_STATUSES]
-
-
-def MakeAllBulkApprovalValueViews(
-    config, project, issue_views, granted_perms, effective_ids):
-  """Return a list of BulkApprovalValueViews for approvals in given issues."""
-  approval_views = []
-  approval_fd_issues = {}
-  approval_fd_avs = {}
-  for issue in issue_views:
-    for av in issue.approval_values:
-      approval_fd_issues.setdefault(av.approval_id, []).append(issue)
-      approval_fd_avs.setdefault(av.approval_id, []).append(av)
-
-  for fd in config.field_defs:
-    if fd.field_type != tracker_pb2.FieldTypes.APPROVAL_TYPE:
-      continue
-    avs = approval_fd_avs.get(fd.field_id)
-    issue_views = approval_fd_issues.get(fd.field_id)
-    if avs and issue_views:
-      approval_views.append(BulkApprovalValueView(
-          fd, avs, issue_views, config, project, granted_perms, effective_ids))
-
-  return approval_views
 
 
 class FieldValueView(object):
