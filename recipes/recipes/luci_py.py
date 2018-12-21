@@ -13,7 +13,7 @@ DEPS = [
 def RunSteps(api):
   api.gclient.set_config('luci_py')
   api.bot_update.ensure_checkout()
-  # TODO(tandrii): trigger tests without PRESUBMIT.py .
+  # TODO(tandrii): trigger tests without PRESUBMIT.py; https://crbug.com/917479
 
 
 def GenTests(api):
