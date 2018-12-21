@@ -176,17 +176,51 @@ def InsertRequest(client, project_id, dataset_id, table_id, rows):
   return True
 
 
-def ExecuteQuery(project_id, query):  # pragma: no cover
-  return QueryRequest(_GetBigqueryClient(), project_id, query)
+def _GenerateQueryParameters(parameters):
+  """Generates query parameters using parameters.
+
+  Reference: https://goo.gl/SyALkb.
+
+  Currently this function only supports parameters of a single value. To support
+  struct or array parameters, please refer to the link above.
+
+  Args:
+    parameters ([tuples]): A list of parameter tuples in the format:
+      [(name, type, value)]
+  """
+  if not parameters:
+    return None
+
+  query_params = []
+  for name, p_type, value in parameters:
+    query_params.append({
+        'name': name,
+        'parameterType': {
+            'type': p_type
+        },
+        'parameterValue': {
+            'value': value
+        }
+    })
+  return query_params
 
 
-def QueryRequest(client, project_id, query, timeout=_TIMEOUT_MS):
+def ExecuteQuery(project_id, query, parameters=None):  # pragma: no cover
+  return QueryRequest(_GetBigqueryClient(), project_id, query, parameters)
+
+
+def QueryRequest(client,
+                 project_id,
+                 query,
+                 parameters=None,
+                 timeout=_TIMEOUT_MS):
   """Inserts the given rows into a bigquery table.
 
   Args:
     client (apiclient.dicovery): Bigquery client.
     project_id (str): Project Id in google cloud.
     query (str): query to run.
+    parameters ([tuple]): parameters to be used in parameterized queries.
   Returns:
     (boolean, [dict]) Boolean to indicate success/failure, and the rows that
         match the query.
@@ -197,7 +231,7 @@ def QueryRequest(client, project_id, query, timeout=_TIMEOUT_MS):
       'timeoutMs': timeout,
       'useLegacySql': False,
       'parameterMode': 'NAMED',
-      'queryParameters': []
+      'queryParameters': _GenerateQueryParameters(parameters) or []
   }
   request = client.jobs().query(projectId=project_id, body=body)
   response = request.execute(num_retries=_REQUEST_RETRIES)

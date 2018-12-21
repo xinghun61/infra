@@ -197,13 +197,14 @@ class BigqueryHelperTest(unittest.TestCase):
         'f3': 'tryserver.chromium.mac',
         'f4': False,
         'f5': _UTC_DATETIME_OF_START_TIME
-    }, {
-        'f1': '321',
-        'f2': 200,
-        'f3': 'fryserver.chromium.mac',
-        'f4': True,
-        'f5': _UTC_DATETIME_OF_YEAR_TWO_THOUSAND
-    }])
+    },
+                                   {
+                                       'f1': '321',
+                                       'f2': 200,
+                                       'f3': 'fryserver.chromium.mac',
+                                       'f4': True,
+                                       'f5': _UTC_DATETIME_OF_YEAR_TWO_THOUSAND
+                                   }])
 
   def testBigqueryInsertRequest(self):
     mock_client = mock.Mock()
@@ -281,6 +282,21 @@ class BigqueryHelperTest(unittest.TestCase):
     self.assertTrue(mock_client.jobs().query().execute.called)
     self.assertFalse(success)
     self.assertEqual(rows, [])
+
+  def testBigqueryQueryRequestWithParameters(self):
+    parameters = [('name', 'type', 'value')]
+    expected_query_params = [{
+        'name': 'name',
+        'parameterType': {
+            'type': 'type'
+        },
+        'parameterValue': {
+            'value': 'value'
+        }
+    }]
+    self.assertEqual(expected_query_params,
+                     bigquery_helper._GenerateQueryParameters(parameters))
+    self.assertIsNone(bigquery_helper._GenerateQueryParameters(None))
 
   @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
   @mock.patch.object(json_format, 'MessageToJson')
