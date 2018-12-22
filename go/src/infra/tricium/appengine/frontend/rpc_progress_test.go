@@ -139,8 +139,8 @@ func TestProgress(t *testing.T) {
 				},
 			}
 			response, err := server.Progress(ctx, request)
-			So(response, ShouldBeNil)
-			So(err, ShouldNotBeNil)
+			So(response, ShouldResemble, &tricium.ProgressResponse{})
+			So(err, ShouldBeNil)
 		})
 
 		Convey("Validate request with valid run ID", func() {
@@ -195,7 +195,7 @@ func TestProgress(t *testing.T) {
 			}
 			id, err := validateProgressRequest(ctx, request)
 			So(id, ShouldEqual, 0)
-			So(grpcutil.Code(err), ShouldEqual, codes.NotFound)
+			So(grpcutil.Code(err), ShouldEqual, codes.OK)
 		})
 
 		Convey("Validate request with missing Gerrit change ID", func() {

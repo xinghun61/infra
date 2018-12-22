@@ -14,6 +14,7 @@ import (
 	"golang.org/x/net/context"
 
 	"infra/tricium/api/v1"
+	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/track"
 )
 
@@ -26,10 +27,14 @@ func (r *TriciumServer) Progress(c context.Context, req *tricium.ProgressRequest
 	logging.Fields{
 		"runID": runID,
 	}.Infof(c, "Request received.")
-
 	if err != nil {
 		return nil, err
 	}
+	// There is no run (yet) for the requested change.
+	if runID == 0 {
+		return &tricium.ProgressResponse{}, nil
+	}
+
 	runState, functionProgress, err := progress(c, runID)
 	if err != nil {
 		return nil, err
@@ -43,8 +48,8 @@ func (r *TriciumServer) Progress(c context.Context, req *tricium.ProgressRequest
 
 // validateProgressRequest both validates the request and parses out the run ID.
 //
-// If the request is valid, it returns a run ID and nil; if invalid, it returns
-// zero and a grpc error.
+// If the request is invalid, an error is returned. If the request is valid, it
+// also returns a run ID, or zero if there is no run.
 func validateProgressRequest(c context.Context, req *tricium.ProgressRequest) (int64, error) {
 	switch source := req.Source.(type) {
 	case *tricium.ProgressRequest_GerritRevision:
@@ -76,17 +81,20 @@ func validateProgressRequest(c context.Context, req *tricium.ProgressRequest) (i
 			return 0, errors.Reason("missing Gerrit git ref").
 				Tag(grpcutil.InvalidArgumentTag).Err()
 		}
-		// Look up the run ID with the provided Gerrit change details.
+		// Check if there is an existing run for the provided Gerrit change
+		// details. If so, return the run ID, otherwise return zero.
+		// No run ID is a very common case; it may mean that Tricium isn't
+		// enabled for this particular repo, or that the owner is not
+		// whitelisted, or just that the run hasn't started yet.
 		g := &GerritChangeToRunID{
 			ID: gerritMappingID(gr.Host, gr.Project, gr.Change, gr.GitRef),
 		}
 		if err := ds.Get(c, g); err != nil {
 			if err == ds.ErrNoSuchEntity {
 				logging.Fields{
-					"gerritMappingID": g.ID,
-				}.Infof(c, "No run found in datastore.")
-				return 0, errors.Reason("no run ID found for Gerrit change").
-					Tag(grpcutil.NotFoundTag).Err()
+					"url": common.GerritURL(gr.Host, gr.GitRef),
+				}.Infof(c, "No run found.")
+				return 0, nil
 			}
 			return 0, errors.Annotate(err, "failed to fetch run ID").
 				Tag(grpcutil.InternalTag).Err()
@@ -136,7 +144,6 @@ func progress(c context.Context, runID int64) (tricium.State, []*tricium.Functio
 			workerResults = append(workerResults, &track.WorkerRunResult{ID: 1, Parent: workerKey})
 		}
 	}
-	logging.Debugf(c, "Reading worker results for %v.", workerResults)
 	if err := ds.Get(c, workerResults); err != nil && err != ds.ErrNoSuchEntity {
 		return tricium.State_PENDING, nil, errors.Annotate(err, "failed to get WorkerRunResults").
 			Tag(grpcutil.InternalTag).Err()
