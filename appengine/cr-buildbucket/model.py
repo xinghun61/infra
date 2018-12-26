@@ -20,6 +20,9 @@ import config
 BEGINING_OF_THE_WORLD = datetime.datetime(2010, 1, 1, 0, 0, 0, 0)
 BUILD_TIMEOUT = datetime.timedelta(days=2)
 
+# For how long to store builds.
+BUILD_STORAGE_DURATION = datetime.timedelta(days=30 * 18)  # ~18mo
+
 # If builds weren't scheduled for this duration on a given builder, the
 # Builder entity is deleted.
 BUILDER_EXPIRATION_DURATION = datetime.timedelta(weeks=4)
@@ -322,6 +325,14 @@ class BuildSteps(BuildDetailEntity):
     """Checks BuildSteps invariants before putting."""
     super(BuildSteps, self)._pre_put_hook()
     assert self.step_container is not None
+
+
+# Tuple of classes representing entity kinds that living under Build entity.
+# Such entities must be deleted if Build entity is deleted.
+BUILD_CHILD_CLASSES = (
+    BuildOutputProperties,
+    BuildSteps,
+)
 
 
 class Builder(ndb.Model):

@@ -98,6 +98,8 @@ def get_backend_routes():  # pragma: no cover
                     expiration.CronExpireBuildLeases),
       webapp2.Route(r'/internal/cron/buildbucket/expire_builds',
                     expiration.CronExpireBuilds),
+      webapp2.Route(r'/internal/cron/buildbucket/delete_builds',
+                    expiration.CronDeleteBuilds),
       webapp2.Route(r'/internal/cron/buildbucket/update_buckets',
                     CronUpdateBuckets),
       webapp2.Route(r'/internal/cron/buildbucket/bq-export-prod',

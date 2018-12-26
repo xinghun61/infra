@@ -7,9 +7,11 @@
 This includes:
 - expiration of leases
 - expiration of builds after a hard timeout
+- deletion of very old builds
 """
 
 import datetime
+import logging
 
 from google.appengine.ext import ndb
 
@@ -113,3 +115,35 @@ def expire_builds():
       model.Build.status.IN(expected_statuses),
   )
   q.map_async(update_async, keys_only=True).get_result()
+
+
+class CronDeleteBuilds(webapp2.RequestHandler):  # pragma: no cover
+
+  @decorators.require_cronjob
+  def get(self):
+    delete_builds()
+
+
+@ndb.tasklet
+def delete_builds():
+  """Finds very old builds and deletes them and their children.
+
+  Very old is defined by model.BUILD_STORAGE_DURATION.
+  """
+
+  @ndb.transactional_tasklet
+  def txn_async(build_key):
+    to_delete = [build_key]
+    for clazz in model.BUILD_CHILD_CLASSES:
+      keys = yield clazz.query(ancestor=build_key).fetch_async(keys_only=True)
+      to_delete.extend(keys)
+    yield ndb.delete_multi_async(to_delete)
+
+  # Utilize time-based build keys.
+  id_low, _ = model.build_id_range(
+      None,
+      utils.utcnow() - model.BUILD_STORAGE_DURATION
+  )
+  q = model.Build.query(model.Build.key > ndb.Key(model.Build, id_low))
+  nones = q.map_async(txn_async, keys_only=True, limit=1000).get_result()
+  logging.info('Deleted %d builds', len(nones))

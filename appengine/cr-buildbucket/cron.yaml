@@ -10,6 +10,11 @@ cron:
   url: /internal/cron/buildbucket/expire_builds
   schedule: every 1 minutes
 
+- description: delete builds
+  target: backend
+  url: /internal/cron/buildbucket/delete_builds
+  schedule: every 1 minutes
+
 - description: update buckets
   target: backend
   url: /internal/cron/buildbucket/update_buckets

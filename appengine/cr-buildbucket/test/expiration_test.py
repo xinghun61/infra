@@ -4,11 +4,14 @@
 
 import datetime
 
+from google.appengine.ext import ndb
+
 from components import auth
 from components import utils
 from testing_utils import testing
 
 from test.test_util import future
+from proto import build_pb2
 import expiration
 import model
 
@@ -75,3 +78,29 @@ class ExpireBuildTests(testing.AppengineTestCase):
     self.assertEqual(build.result, model.BuildResult.CANCELED)
     self.assertEqual(build.cancelation_reason, model.CancelationReason.TIMEOUT)
     self.assertIsNone(build.lease_key)
+
+  def test_delete_builds(self):
+    old_build_time = utils.utcnow() - model.BUILD_STORAGE_DURATION * 2
+    old_build = model.Build(
+        id=model.create_build_ids(old_build_time, 1)[0],
+        bucket_id='chromium/try',
+        create_time=old_build_time,
+    )
+    old_build_steps = model.BuildSteps(
+        key=model.BuildSteps.key_for(old_build.key),
+        step_container=build_pb2.Build(),
+    )
+
+    new_build_time = utils.utcnow() - model.BUILD_STORAGE_DURATION / 2
+    new_build = model.Build(
+        id=model.create_build_ids(new_build_time, 1)[0],
+        bucket_id='chromium/try',
+        create_time=new_build_time,
+    )
+
+    ndb.put_multi([old_build, old_build_steps, new_build])
+
+    expiration.delete_builds()
+    self.assertIsNone(old_build.key.get())
+    self.assertIsNone(old_build_steps.key.get())
+    self.assertIsNotNone(new_build.key.get())
