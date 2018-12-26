@@ -1,35 +1,14 @@
 # Buildbucket
 
-[go/buildbucket]
-
 Buildbucket is a generic build queue. A build requester can schedule a build
-and wait for a result. A building system, such as Buildbot, can lease it, build
+and wait for a result. A building system, such as Swarming, can lease it, build
 it and report a result back.
 
-*   [Documentation](doc/index.md)
-*   Design doc: [go/buildbucket-design], explains API.
+*   Documentation: [go/buildbucket](http://go/buildbucket).
+    TODO(nodir): add a link to exported public doc when available.
+*   Original design doc and V1 API documentation: [go/buildbucket-design](http://go/buildbucket-design)
 *   Deployments:
-    *   Prod: [cr-buildbucket.appspot.com](https://cr-buildbucket.appspot.com) [[APIv2](https://cr-buildbucket.appspot.com/rpcexplorer/services/buildbucket.v2.Builds/)] [[API](https://cr-buildbucket.appspot.com/_ah/api/explorer)]
-    *   Dev: [cr-buildbucket-dev.appspot.com](https://cr-buildbucket-dev.appspot.com) [[APIv2](https://cr-buildbucket-dev.appspot.com/rpcexplorer/services/buildbucket.v2.Builds/)] [[API](https://cr-buildbucket-dev.appspot.com/_ah/api/explorer)]
-*   Bugs: [Infra>Platform>BuildBucket component](https://crbug.com?q=component:Infra>Platform>Buildbucket)
-*   Owner: nodir@
-
-## Swarmbucket
-
-Buildbucket has native integration with Swarming and Recipes.
-A bucket can define builders and a buildbucket build in such bucket is converted
-to a swarming task that runs a recipe.
-The results are reported back to buildbucket when the task completes.
-See [Swarming](doc/swarming.md).
-
-## Buildbot
-
-Buildbucket is integrated with buildbot. You can schedule, cancel, search for
-buildbot builds and check their results using buildbucket API.
-
-[go/buildbucket-design]: http://go/buildbucket-design
-[go/buildbucket]: http://go/buildbucket
-
-## See also
-
-* [FAQ](doc/faq.md)
+    *   Prod: [cr-buildbucket.appspot.com](https://cr-buildbucket.appspot.com) [[API](https://cr-buildbucket.appspot.com/rpcexplorer/services/buildbucket.v2.Builds/)]
+    *   Dev: [cr-buildbucket-dev.appspot.com](https://cr-buildbucket-dev.appspot.com) [[API](https://cr-buildbucket-dev.appspot.com/rpcexplorer/services/buildbucket.v2.Builds/)]
+*   Bugs: [Infra>Platform>Buildbucket component](https://crbug.com?q=component:Infra>Platform>Buildbucket)
+*   Contact: nodir@
