@@ -616,39 +616,6 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   ########################## RESET EXPIRED BUILDS ##############################
 
-  def test_reschedule_expired_builds(self):
-    self.test_build.lease_expiration_date = utils.utcnow()
-    self.test_build.lease_key = 1
-    self.test_build.leasee = self.current_identity
-    self.test_build.put()
-
-    service.check_expired_builds()
-    build = self.test_build.key.get()
-    self.assertEqual(build.status, model.BuildStatus.SCHEDULED)
-    self.assertIsNone(build.lease_key)
-
-  def test_completed_builds_are_not_reset(self):
-    self.test_build.status = model.BuildStatus.COMPLETED
-    self.test_build.result = model.BuildResult.SUCCESS
-    self.test_build.complete_time = utils.utcnow()
-    self.test_build.put()
-    service.check_expired_builds()
-    build = self.test_build.key.get()
-    self.assertEqual(build.status, model.BuildStatus.COMPLETED)
-
-  def test_build_timeout(self):
-    self.test_build.create_time = utils.utcnow() - datetime.timedelta(days=365)
-    self.test_build.put()
-
-    service.check_expired_builds()
-    build = self.test_build.key.get()
-    self.assertEqual(build.status, model.BuildStatus.COMPLETED)
-    self.assertEqual(build.result, model.BuildResult.CANCELED)
-    self.assertEqual(build.cancelation_reason, model.CancelationReason.TIMEOUT)
-    self.assertIsNone(build.lease_key)
-
-  ########################## RESET EXPIRED BUILDS ##############################
-
   def test_delete_many_scheduled_builds(self):
     self.test_build.put()
     completed_build = mkBuild(

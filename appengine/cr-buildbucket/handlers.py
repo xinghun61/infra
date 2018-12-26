@@ -2,22 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import collections
-import datetime
-import json
-import logging
-import math
-import posixpath
-
-from google.appengine.api import taskqueue
-from google.appengine.ext import ndb
-
 from components import auth
 from components import config as config_api
 from components import decorators
 from components import endpoints_webapp2
 from components import prpc
-from components import utils
 
 import webapp2
 
@@ -28,9 +17,8 @@ import api
 import bq
 import bulkproc
 import config
-import model
+import expiration
 import notifications
-import search
 import service
 import swarming
 
@@ -45,14 +33,6 @@ class MainHandler(webapp2.RequestHandler):  # pragma: no cover
 
   def get(self):
     return self.redirect(README_MD)
-
-
-class CronCheckExpiredBuilds(webapp2.RequestHandler):
-  """Resets expired builds."""
-
-  @decorators.require_cronjob
-  def get(self):
-    service.check_expired_builds()
 
 
 class CronUpdateBuckets(webapp2.RequestHandler):  # pragma: no cover
@@ -112,10 +92,12 @@ def get_frontend_routes():  # pragma: no cover
   return routes
 
 
-def get_backend_routes():
+def get_backend_routes():  # pragma: no cover
   return [  # pragma: no branch
-      webapp2.Route(r'/internal/cron/buildbucket/check_expired_builds',
-                    CronCheckExpiredBuilds),
+      webapp2.Route(r'/internal/cron/buildbucket/expire_build_leases',
+                    expiration.CronExpireBuildLeases),
+      webapp2.Route(r'/internal/cron/buildbucket/expire_builds',
+                    expiration.CronExpireBuilds),
       webapp2.Route(r'/internal/cron/buildbucket/update_buckets',
                     CronUpdateBuckets),
       webapp2.Route(r'/internal/cron/buildbucket/bq-export-prod',

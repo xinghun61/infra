@@ -179,6 +179,9 @@ class Build(ndb.Model):
 
   # Lease-time attributes.
 
+  # TODO(nodir): move lease to a separate entity under Build.
+  # It would be more efficient.
+
   # current lease expiration date.
   # The moment the build is leased, |lease_expiration_date| is set to
   # (utcnow + lease_duration).

@@ -1,8 +1,13 @@
 cron:
 
-- description: check expired builds
+- description: expire build leases
   target: backend
-  url: /internal/cron/buildbucket/check_expired_builds
+  url: /internal/cron/buildbucket/expire_build_leases
+  schedule: every 1 minutes
+
+- description: expire builds
+  target: backend
+  url: /internal/cron/buildbucket/expire_builds
   schedule: every 1 minutes
 
 - description: update buckets
