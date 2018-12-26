@@ -292,7 +292,7 @@ def _prepare_builder_config(builder_cfg, swarming_param):
   override_builder_cfg_data = swarming_param.get('override_builder_cfg', {})
   if override_builder_cfg_data:
     override_builder_cfg = project_config_pb2.Builder()
-    protoutil.merge_dict(override_builder_cfg_data, result)
+    protoutil.merge_dict(override_builder_cfg_data, override_builder_cfg)
     ctx = validation.Context.raise_on_error(
         exc_type=errors.InvalidInputError,
         prefix='swarming.override_builder_cfg parameter: '
