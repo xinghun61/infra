@@ -213,7 +213,7 @@ test('htmlForSingleTestRow', 1, function() {
     test.rawTimes = [[1, 0], [2, 5]];
     var expected = '<tr builder="dummyMaster:dummyBuilder" test="foo/exists.html">' +
         '<td class="test-link"><span class="link" onclick="g_history.setQueryParameter(\'tests\',\'foo/exists.html\');">foo/exists.html</span>' +
-        '<td class=options-container><a class="file-new-bug" href="https://code.google.com/p/chromium/issues/entry?template=Layout%20Test%20Failure&summary=Layout%20Test%20foo%2Fexists.html%20is%20failing&comment=The%20following%20layout%20test%20is%20failing%20on%20%5Binsert%20platform%5D%0A%0Afoo%2Fexists.html%0A%0AProbable%20cause%3A%0A%0A%5Binsert%20probable%20cause%5D">File new bug</a>' +
+        '<td class=options-container><a class="file-new-bug" href="https://code.google.com/p/chromium/issues/entry?template=Web%20Test%20Failure&summary=Web%20Test%20foo%2Fexists.html%20is%20failing&comment=The%20following%20web%20test%20is%20failing%20on%20%5Binsert%20platform%5D%0A%0Afoo%2Fexists.html%0A%0AProbable%20cause%3A%0A%0A%5Binsert%20probable%20cause%5D">File new bug</a>' +
         '<td class=options-container>' +
         '<td>' +
         '<td class="results-container">' +
@@ -235,7 +235,7 @@ test('htmlForSingleTestRowWithFlakyResult', 1, function() {
     test.rawTimes = [[1, 0], [2, 5]];
     var expected = '<tr builder="dummyMaster:dummyBuilder" test="foo/exists.html">' +
         '<td class="test-link"><span class="link" onclick="g_history.setQueryParameter(\'tests\',\'foo/exists.html\');">foo/exists.html</span>' +
-        '<td class=options-container><a class="file-new-bug" href="https://code.google.com/p/chromium/issues/entry?template=Layout%20Test%20Failure&summary=Layout%20Test%20foo%2Fexists.html%20is%20failing&comment=The%20following%20layout%20test%20is%20failing%20on%20%5Binsert%20platform%5D%0A%0Afoo%2Fexists.html%0A%0AProbable%20cause%3A%0A%0A%5Binsert%20probable%20cause%5D">File new bug</a>' +
+        '<td class=options-container><a class="file-new-bug" href="https://code.google.com/p/chromium/issues/entry?template=Web%20Test%20Failure&summary=Web%20Test%20foo%2Fexists.html%20is%20failing&comment=The%20following%20web%20test%20is%20failing%20on%20%5Binsert%20platform%5D%0A%0Afoo%2Fexists.html%0A%0AProbable%20cause%3A%0A%0A%5Binsert%20probable%20cause%5D">File new bug</a>' +
         '<td class=options-container>' +
         '<td>' +
         '<td class="results-container">' +

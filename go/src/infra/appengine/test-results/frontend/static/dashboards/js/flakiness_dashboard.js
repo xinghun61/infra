@@ -743,12 +743,12 @@ function shouldShowTest(testResult)
 function createBugHTML(test)
 {
     var symptom = test.isFlaky ? 'flaky' : 'failing';
-    var title = encodeURIComponent('Layout Test ' + test.test + ' is ' + symptom);
-    var description = encodeURIComponent('The following layout test is ' + symptom + ' on ' +
+    var title = encodeURIComponent('Web Test ' + test.test + ' is ' + symptom);
+    var description = encodeURIComponent('The following web test is ' + symptom + ' on ' +
         '[insert platform]\n\n' + test.test + '\n\nProbable cause:\n\n' +
         '[insert probable cause]');
 
-    url = 'https://code.google.com/p/chromium/issues/entry?template=Layout%20Test%20Failure&summary=' + title + '&comment=' + description;
+    url = 'https://code.google.com/p/chromium/issues/entry?template=Web%20Test%20Failure&summary=' + title + '&comment=' + description;
     return '<a class="file-new-bug" href="' + url + '">File new bug</a>';
 }
 
