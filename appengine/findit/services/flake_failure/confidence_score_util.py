@@ -87,8 +87,9 @@ def CalculateCulpritConfidenceScore(analysis, culprit_commit_position):
       flake_constants.REQUIRED_NUMBER_OF_STABLE_POINTS_BEFORE_CULPRIT) and
       not pass_rate_util.IsStableDefaultThresholds(
           culprit_data_point.pass_rate)):
-    return max(steppiness_confidence_score,
-               flake_constants.DEFAULT_MINIMUM_CONFIDENCE_SCORE_TO_UPDATE_CR)
+    return max(
+        steppiness_confidence_score,
+        flake_constants.DEFAULT_MINIMUM_CONFIDENCE_SCORE_TO_UPDATE_ENDPOINTS)
 
   # TODO(crbug.com/807947): Implement more heuristics for smarter confidence
   # score before falling back to steppiness.

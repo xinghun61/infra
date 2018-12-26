@@ -122,6 +122,8 @@ class FinditConfig(VersionedConfig):
   #     'auto_commit_revert_daily_threshold_flake': 4,
   #     'rotations_url': 'rotations_url',
   #     'max_flake_bug_updates_per_day': 30,
+  #     'minimum_confidence_to_update_endpoints': 0.7,
+  #     'minimum_confidence_to_revert_flake_culprit': 1.0,
   # }
   action_settings = ndb.JsonProperty(indexed=False, default={})
 
@@ -139,7 +141,6 @@ class FinditConfig(VersionedConfig):
   #     'iterations_to_run_after_timeout': 10,
   #     'max_iterations_per_task': 200,
   #     'throttle_flake_analyses': False,
-  #     'minimum_confidence_to_create_bug': .9
   # }
   check_flake_settings = ndb.JsonProperty(indexed=False, default={})
 

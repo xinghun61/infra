@@ -416,7 +416,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
 
   def testGetMinimumConfidenceToNotifyCulprits(self):
     self.assertEqual(
-        flake_constants.DEFAULT_MINIMUM_CONFIDENCE_SCORE_TO_UPDATE_CR,
+        flake_constants.DEFAULT_MINIMUM_CONFIDENCE_SCORE_TO_UPDATE_ENDPOINTS,
         culprit_util.GetMinimumConfidenceToNotifyCulprits())
 
   def testIsConfiguredToNotifyCulpritsFalse(self):

@@ -18,7 +18,7 @@ from model.flake.flake_type import FlakeType
 from model.flake.flake_type import FLAKE_TYPE_DESCRIPTIONS
 from services.flake_detection.detect_flake_occurrences import SUPPORTED_TAGS
 from services.flake_failure.flake_bug_util import (
-    GetMinimumConfidenceToUpdateBugs)
+    GetMinimumConfidenceToUpdateEndpoints)
 from services.flake_issue_util import GetFlakeIssue
 
 DEFAULT_PAGE_SIZE = 100
@@ -153,7 +153,7 @@ def _GetFlakeAnalysesResults(bug_id):
       analysis.culprit_urlsafe_key
       for analysis in analyses
       if analysis.culprit_urlsafe_key and analysis.confidence_in_culprit and
-      analysis.confidence_in_culprit >= GetMinimumConfidenceToUpdateBugs()
+      analysis.confidence_in_culprit >= GetMinimumConfidenceToUpdateEndpoints()
   ])
 
   if culprit_urlsafe_keys:

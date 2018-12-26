@@ -34,8 +34,8 @@ def ShouldFileBugForAnalysis(analysis):
         'There has already been an attempt at filing a bug, aborting.')
     return False
 
-  if not HasSufficientConfidenceInCulprit(analysis,
-                                          GetMinimumConfidenceToFileBugs()):
+  if not HasSufficientConfidenceInCulprit(
+      analysis, GetMinimumConfidenceToUpdateEndpoints()):
     analysis.LogInfo('''Analysis has confidence {:.2%}
         which isn\'t high enough to file a bug.'''.format(
         analysis.confidence_in_culprit))
@@ -75,7 +75,7 @@ def ShouldUpdateBugForAnalysis(analysis):
     return False
 
   if (analysis.culprit_urlsafe_key and not HasSufficientConfidenceInCulprit(
-      analysis, GetMinimumConfidenceToUpdateBugs())):
+      analysis, GetMinimumConfidenceToUpdateEndpoints())):
     # There is a culprit, but insufficient confidence.
     monitoring.OnFlakeCulprit('culprit-identified', 'none',
                               'insufficient-confidence')
@@ -116,16 +116,10 @@ def HasSufficientConfidenceInCulprit(analysis, required_confidence):
           required_confidence)
 
 
-def GetMinimumConfidenceToUpdateBugs():
-  return waterfall_config.GetCheckFlakeSettings().get(
-      'minimum_confidence_to_update_cr',
-      flake_constants.DEFAULT_MINIMUM_CONFIDENCE_SCORE_TO_UPDATE_CR)
-
-
-def GetMinimumConfidenceToFileBugs():
-  return waterfall_config.GetCheckFlakeSettings().get(
-      'minimum_confidence_to_create_bug',
-      flake_constants.DEFAULT_MINIMUM_CONFIDENCE_TO_CREATE_BUG)
+def GetMinimumConfidenceToUpdateEndpoints():
+  return waterfall_config.GetActionSettings().get(
+      'minimum_confidence_to_update_endpoints',
+      flake_constants.DEFAULT_MINIMUM_CONFIDENCE_SCORE_TO_UPDATE_ENDPOINTS)
 
 
 def HasPreviousAttempt(analysis):

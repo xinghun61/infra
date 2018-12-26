@@ -16,15 +16,11 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 
 class FlakeBugUtilTest(WaterfallTestCase):
 
-  def testGetMinimumConfidenceToFileBugs(self):
-    self.UpdateUnitTestConfigSettings('check_flake_settings',
-                                      {'minimum_confidence_to_create_bug': 0.9})
-    self.assertEqual(0.9, flake_bug_util.GetMinimumConfidenceToFileBugs())
-
-  def testGetMinimumConfidenceToUpdateBugs(self):
-    self.UpdateUnitTestConfigSettings('check_flake_settings',
-                                      {'minimum_confidence_to_update_cr': 0.8})
-    self.assertEqual(0.8, flake_bug_util.GetMinimumConfidenceToUpdateBugs())
+  def testGetMinimumConfidenceToUpdateEndpoints(self):
+    self.UpdateUnitTestConfigSettings(
+        'action_settings', {'minimum_confidence_to_update_endpoints': 0.9})
+    self.assertEqual(0.9,
+                     flake_bug_util.GetMinimumConfidenceToUpdateEndpoints())
 
   @mock.patch.object(flake_bug_util, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(flake_bug_util, 'HasPreviousAttempt', return_value=False)
@@ -171,7 +167,8 @@ class FlakeBugUtilTest(WaterfallTestCase):
     analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
     analysis.confidence_in_culprit = 0.9
     self.UpdateUnitTestConfigSettings(
-        'check_flake_settings', {'minimum_confidence_score_to_update_cr': 0.6})
+        'action_settings',
+        {'minimum_confidence_score_to_update_endpoints': 0.6})
 
     self.assertFalse(flake_bug_util.ShouldUpdateBugForAnalysis(analysis))
 
@@ -192,7 +189,7 @@ class FlakeBugUtilTest(WaterfallTestCase):
     analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
     analysis.confidence_in_culprit = 0.9
     self.UpdateUnitTestConfigSettings(
-        'check_flake_settings', {'minimum_confidence_score_to_update_cr': 0.6})
+        'action_settings', {'minimum_confidence_to_update_endpoints': 0.6})
 
     self.assertFalse(flake_bug_util.ShouldUpdateBugForAnalysis(analysis))
 
@@ -203,7 +200,8 @@ class FlakeBugUtilTest(WaterfallTestCase):
     analysis.bug_id = 123
     analysis.confidence_in_culprit = 0.9
     self.UpdateUnitTestConfigSettings(
-        'check_flake_settings', {'minimum_confidence_score_to_update_cr': 0.6})
+        'action_settings',
+        {'minimum_confidence_score_to_update_endpoints': 0.6})
 
     self.assertFalse(flake_bug_util.ShouldUpdateBugForAnalysis(analysis))
 
@@ -218,7 +216,8 @@ class FlakeBugUtilTest(WaterfallTestCase):
     analysis.culprit_urlsafe_key = 'c'
 
     self.UpdateUnitTestConfigSettings(
-        'check_flake_settings', {'minimum_confidence_score_to_update_cr': 0.6})
+        'action_settings',
+        {'minimum_confidence_score_to_update_endpoints': 0.6})
 
     self.assertFalse(flake_bug_util.ShouldUpdateBugForAnalysis(analysis))
 
@@ -229,7 +228,8 @@ class FlakeBugUtilTest(WaterfallTestCase):
     analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
     analysis.confidence_in_culprit = 0.9
     self.UpdateUnitTestConfigSettings(
-        'check_flake_settings', {'minimum_confidence_score_to_update_cr': 0.6})
+        'action_settings',
+        {'minimum_confidence_score_to_update_endpoints': 0.6})
 
     self.assertTrue(flake_bug_util.ShouldUpdateBugForAnalysis(analysis))
 

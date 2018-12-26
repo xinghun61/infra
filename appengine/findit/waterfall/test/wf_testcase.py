@@ -150,6 +150,8 @@ _DEFAULT_ACTION_SETTINGS = {
     'auto_commit_revert_daily_threshold_flake': 4,
     'rotations_url': ('https://rota-ng.appspot.com/legacy/all_rotations.js'),
     'max_flake_bug_updates_per_day': 30,
+    'minimum_confidence_to_update_endpoints': 0.7,
+    'minimum_confidence_to_revert_flake_culprit': 1.0,
 }
 
 _DEFAULT_CHECK_FLAKE_SETTINGS = {
@@ -158,8 +160,6 @@ _DEFAULT_CHECK_FLAKE_SETTINGS = {
     'max_commit_positions_to_look_back': 5000,
     'max_iterations_per_task': 200,
     'max_iterations_to_rerun': 400,
-    'minimum_confidence_to_create_bug': 0.7,
-    'minimum_confidence_to_update_cr': 0.7,
     'per_iteration_timeout_seconds': 60,
     'swarming_task_cushion': 2,
     'swarming_task_retries_per_build': 3,

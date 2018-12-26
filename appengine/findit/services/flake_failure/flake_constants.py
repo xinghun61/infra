@@ -58,14 +58,8 @@ DEFAULT_MAX_SWARMING_TASK_RETRIES_PER_DATA_POINT = 3
 # by a specific uncommitted CL.
 DEFAULT_MINIMUM_REQUIRED_IMPACTED_CLS_PER_DAY = 3
 
-# Default minimum confidence score to run try jobs.
-DEFAULT_MINIMUM_CONFIDENCE_SCORE = 0.6
-
-# The minimum confidence required to create a bug.
-DEFAULT_MINIMUM_CONFIDENCE_TO_CREATE_BUG = 0.9
-
 # Default minimum confidence score to post notifications to code reviews.
-DEFAULT_MINIMUM_CONFIDENCE_SCORE_TO_UPDATE_CR = 0.7
+DEFAULT_MINIMUM_CONFIDENCE_SCORE_TO_UPDATE_ENDPOINTS = 0.7
 
 # Default number of bots on swarming needed to trigger tasks immediately.
 DEFAULT_MINIMUM_NUMBER_AVAILABLE_BOTS = 5

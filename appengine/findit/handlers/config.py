@@ -322,6 +322,8 @@ _CONFIG_SPEC = {  # yapf: disable
         'culprit_commit_limit_hours': int,
         'rotations_url': str,
         'max_flake_bug_updates_per_day': int,
+        'minimum_confidence_to_update_endpoints': float,
+        'minimum_confidence_to_revert_flake_culprit': float,
     }),
     'builders_to_trybots': (dict, True, _ValidateTrybotMapping),
     'check_flake_settings': (dict, True, {
@@ -330,8 +332,6 @@ _CONFIG_SPEC = {  # yapf: disable
         'max_commit_positions_to_look_back': int,
         'max_iterations_per_task': int,
         'max_iterations_to_rerun': int,
-        'minimum_confidence_to_create_bug': float,
-        'minimum_confidence_to_update_cr': float,
         'per_iteration_timeout_seconds': int,
         'swarming_task_cushion': float,
         'swarming_task_retries_per_build': int,

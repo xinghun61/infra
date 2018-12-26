@@ -230,10 +230,10 @@ def CulpritAddedNewFlakyTest(analysis, culprit_commit_position):
 
 
 def GetMinimumConfidenceToNotifyCulprits():
-  check_flake_settings = waterfall_config.GetCheckFlakeSettings()
-  return check_flake_settings.get(
-      'minimum_confidence_to_update_cr',
-      flake_constants.DEFAULT_MINIMUM_CONFIDENCE_SCORE_TO_UPDATE_CR)
+  action_settings = waterfall_config.GetActionSettings()
+  return action_settings.get(
+      'minimum_confidence_to_update_endpoints',
+      flake_constants.DEFAULT_MINIMUM_CONFIDENCE_SCORE_TO_UPDATE_ENDPOINTS)
 
 
 def IsConfiguredToNotifyCulprits():
