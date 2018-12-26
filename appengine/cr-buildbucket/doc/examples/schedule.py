@@ -5,7 +5,7 @@ import apiclient
 import json
 
 DISCOVERY_URL = (
-    'https://cr-buildbucket-test.appspot.com/_ah/api/discovery/v1/apis/'
+    'https://cr-buildbucket.appspot.com/_ah/api/discovery/v1/apis/'
     '{api}/{apiVersion}/rest'
 )
 AUTH_SCOPE = 'email'

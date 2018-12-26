@@ -10,7 +10,6 @@ it and report a result back.
 *   Design doc: [go/buildbucket-design], explains API.
 *   Deployments:
     *   Prod: [cr-buildbucket.appspot.com](https://cr-buildbucket.appspot.com) [[APIv2](https://cr-buildbucket.appspot.com/rpcexplorer/services/buildbucket.v2.Builds/)] [[API](https://cr-buildbucket.appspot.com/_ah/api/explorer)]
-    *   Test: [cr-buildbucket-test.appspot.com](https://cr-buildbucket-test.appspot.com) [[APIv2](https://cr-buildbucket-test.appspot.com/rpcexplorer/services/buildbucket.v2.Builds/)] [[API](https://cr-buildbucket-test.appspot.com/_ah/api/explorer)]
     *   Dev: [cr-buildbucket-dev.appspot.com](https://cr-buildbucket-dev.appspot.com) [[APIv2](https://cr-buildbucket-dev.appspot.com/rpcexplorer/services/buildbucket.v2.Builds/)] [[API](https://cr-buildbucket-dev.appspot.com/_ah/api/explorer)]
 *   Bugs: [Infra>Platform>BuildBucket component](https://crbug.com?q=component:Infra>Platform>Buildbucket)
 *   Owner: nodir@
