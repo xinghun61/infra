@@ -61,10 +61,11 @@ class ExpireBuildTests(testing.AppengineTestCase):
     self.assertEqual(build.status, model.BuildStatus.COMPLETED)
 
   def test_expire_builds(self):
+    build_time = utils.utcnow() - datetime.timedelta(days=365)
     build = model.Build(
-        id=model.create_build_ids(utils.utcnow(), 1)[0],
+        id=model.create_build_ids(build_time, 1)[0],
         bucket_id='chromium/try',
-        create_time=utils.utcnow() - datetime.timedelta(days=365),
+        create_time=build_time,
     )
     build.put()
 

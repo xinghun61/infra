@@ -105,9 +105,10 @@ def expire_builds():
     if updated:  # pragma: no branch
       events.on_build_completed(build)
 
-  too_long_ago = utils.utcnow() - model.BUILD_TIMEOUT
+  # Utilize time-based build keys.
+  id_low, _ = model.build_id_range(None, utils.utcnow() - model.BUILD_TIMEOUT)
   q = model.Build.query(
-      model.Build.create_time < too_long_ago,
+      model.Build.key > ndb.Key(model.Build, id_low),
       # Cannot use >1 inequality filters per query.
       model.Build.status.IN(expected_statuses),
   )
