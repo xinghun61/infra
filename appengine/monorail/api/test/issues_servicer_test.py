@@ -100,6 +100,18 @@ class IssuesServicerTest(unittest.TestCase):
   def CallWrapped(self, wrapped_handler, *args, **kwargs):
     return wrapped_handler.wrapped(self.issues_svcr, *args, **kwargs)
 
+  def testGetProjectIssueIDsAndConfig(self):
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    project, issue_ids, config = self.issues_svcr._GetProjectIssueIDsAndConfig(
+        mc, 'proj', [1, 2])
+    self.assertEqual(project, self.project)
+    self.assertEqual(issue_ids, [self.issue_1.issue_id, self.issue_2.issue_id])
+    self.assertEqual(
+        config,
+        self.services.config.GetProjectConfig(
+            self.cnxn, self.project.project_id))
+
   def testCreateIssue_Normal(self):
     """We can create an issue."""
     request = issues_pb2.CreateIssueRequest(
@@ -857,12 +869,14 @@ class IssuesServicerTest(unittest.TestCase):
     with self.assertRaises(permissions.PermissionException):
       self.CallWrapped(self.issues_svcr.BulkUpdateApprovals, mc, request)
 
+  @patch('time.time')
   @patch('businesslogic.work_env.WorkEnv.BulkUpdateIssueApprovals')
   @patch('businesslogic.work_env.WorkEnv.GetIssueRefs')
   def testBulkUpdateApprovals_Normal(
-      self, mockGetIssueRefs, mockBulkUpdateIssueApprovals):
+      self, mockGetIssueRefs, mockBulkUpdateIssueApprovals, mockTime):
     """Issue approvals that can be updated are updated and returned."""
-    mockGetIssueRefs.return_value = {78901: ('proj', 1), 78902: ('proj', 2)}
+    mockTime.return_value = 12345
+    mockGetIssueRefs.return_value = {1001: ('proj', 1), 1002: ('proj', 2)}
     config = tracker_pb2.ProjectIssueConfig(
         project_id=789,
         field_defs=[self.fd_3])
@@ -886,9 +900,10 @@ class IssuesServicerTest(unittest.TestCase):
                         common_pb2.IssueRef(project_name='proj', local_id=2)]))
 
     approval_delta = tracker_pb2.ApprovalDelta(
-        status=tracker_pb2.ApprovalStatus.APPROVED)
-    mockBulkUpdateIssueApprovals.assert_called_once(
-        [78901, 78902], 3, self.project, approval_delta,
+        status=tracker_pb2.ApprovalStatus.APPROVED,
+        setter_id=444L, set_on=12345)
+    mockBulkUpdateIssueApprovals.assert_called_once_with(
+        [1001, 1002], 3, self.project, approval_delta,
         'new bulk comment', send_email=False)
 
   @patch('businesslogic.work_env.WorkEnv.BulkUpdateIssueApprovals')
@@ -896,7 +911,7 @@ class IssuesServicerTest(unittest.TestCase):
   def testBulkUpdateApprovals_EmptyDelta(
       self, mockGetIssueRefs, mockBulkUpdateIssueApprovals):
     """Bulk update approval requests don't fail with an empty approval delta."""
-    mockGetIssueRefs.return_value = {78901: ('proj', 1)}
+    mockGetIssueRefs.return_value = {1001: ('proj', 1)}
     config = tracker_pb2.ProjectIssueConfig(
         project_id=789,
         field_defs=[self.fd_3])
@@ -913,8 +928,8 @@ class IssuesServicerTest(unittest.TestCase):
         self.issues_svcr.BulkUpdateApprovals, mc, request)
 
     approval_delta = tracker_pb2.ApprovalDelta()
-    mockBulkUpdateIssueApprovals.assert_called_once(
-        [78901, 78902], 3, self.project, approval_delta,
+    mockBulkUpdateIssueApprovals.assert_called_once_with(
+        [1001], 3, self.project, approval_delta,
         'new bulk comment', send_email=True)
 
 
@@ -1021,8 +1036,6 @@ class IssuesServicerTest(unittest.TestCase):
         issue_ref=issue_ref, field_ref=field_ref, approval_delta=approval_delta,
         comment_content='Better response.', is_description=True)
 
-    request.issue_ref.project_name = 'proj'
-    request.issue_ref.local_id = 1
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='approver3@example.com',
         auth=self.auth)
@@ -1052,6 +1065,47 @@ class IssuesServicerTest(unittest.TestCase):
         u'Better response.', True, attachments=[], send_email=False)
     self.assertEqual(expected, actual)
 
+  @patch('businesslogic.work_env.WorkEnv.UpdateIssueApproval')
+  @patch('features.send_notifications.PrepareAndSendApprovalChangeNotification')
+  def testUpdateApproval_EmptyDelta(
+      self, _mockPrepareAndSend, mockUpdateIssueApproval):
+    self.issue_1.approval_values = [tracker_pb2.ApprovalValue(approval_id=3)]
+
+    config = self.services.config.GetProjectConfig(self.cnxn, 789)
+    config.field_defs = [self.fd_3]
+    self.services.config.StoreConfig(self.cnxn, config)
+
+    issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
+    field_ref = common_pb2.FieldRef(field_name='LegalApproval')
+
+    request = issues_pb2.UpdateApprovalRequest(
+        issue_ref=issue_ref, field_ref=field_ref,
+        comment_content='Better response.', is_description=True)
+
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='approver3@example.com',
+        auth=self.auth)
+
+    mockUpdateIssueApproval.return_value = [
+        tracker_pb2.ApprovalValue(approval_id=3), 'comment_pb']
+
+    actual = self.CallWrapped(self.issues_svcr.UpdateApproval, mc, request)
+
+    approval_value = issue_objects_pb2.Approval(
+        field_ref=common_pb2.FieldRef(
+            field_id=3,
+            field_name='LegalApproval',
+            type=common_pb2.APPROVAL_TYPE),
+        setter_ref=common_pb2.UserRef(display_name='----'),
+        phase_ref=issue_objects_pb2.PhaseRef()
+    )
+    expected = issues_pb2.UpdateApprovalResponse(approval=approval_value)
+    self.assertEqual(expected, actual)
+
+    mockUpdateIssueApproval.assert_called_once_with(
+        self.issue_1.issue_id, 3,
+        tracker_pb2.ApprovalDelta(),
+        u'Better response.', True, attachments=[], send_email=False)
 
   @patch('businesslogic.work_env.WorkEnv.SnapshotCountsQuery')
   def testSnapshotCounts_RequiredFields(self, mockSnapshotCountsQuery):
