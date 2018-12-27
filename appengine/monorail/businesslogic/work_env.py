@@ -892,6 +892,36 @@ class WorkEnv(object):
       logging.info('related_iids is %r', related_iids)
       return self.services.issue.LookupIssueRefs(self.mc.cnxn, related_iids)
 
+  def GetIssueRefs(self, issue_ids):
+    """Return a dict {iid: (project_name, local_id)} for all issue_ids."""
+    return self.services.issue.LookupIssueRefs(self.mc.cnxn, issue_ids)
+
+  def BulkUpdateIssueApprovals(self, issue_ids, approval_id, project,
+                               approval_delta, comment_content,
+                               send_email):
+    """Update all given issues' specified approval."""
+    # Anon users and users with no permission to view the project
+    # will get permission denied. Missing permissions to update
+    # individual issues will not throw exceptions. Issues will just not be
+    # updated.
+    if not self.mc.auth.user_id:
+      raise permissions.PermissionException('Anon cannot make changes')
+    if not self._UserCanViewProject(project):
+      raise permissions.PermissionException('User cannot view project')
+    updated_issue_ids = []
+    for issue_id in issue_ids:
+      try:
+        self.UpdateIssueApproval(
+            issue_id, approval_id, approval_delta, comment_content, False,
+            send_email=False)
+        updated_issue_ids.append(issue_id)
+      except permissions.PermissionException as e:
+        logging.info('Skipping issue %s, update not allowed: %s', issue_id, e)
+    # TODO(jojwang): send bulk approval update email if send_email
+    if send_email:
+      pass
+    return updated_issue_ids
+
   def UpdateIssueApproval(self, issue_id, approval_id, approval_delta,
                           comment_content, is_description, attachments=None,
                           send_email=True):

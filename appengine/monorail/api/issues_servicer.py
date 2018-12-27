@@ -51,6 +51,19 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
             allow_viewing_deleted=view_deleted)
     return project, issue, config
 
+  def _GetProjectIssueIDsAndConfig(
+      self, mc, project_name, local_ids, use_cache=True):
+    """Get info from a single project for repeated issue_refs requests."""
+    with work_env.WorkEnv(mc, self.services, phase='getting P, I ids, C') as we:
+      project = we.GetProjectByName(project_name, use_cache=use_cache)
+      mc.LookupLoggedInUserPerms(project)
+      config = we.GetProjectConfig(project.project_id, use_cache=use_cache)
+      project_local_id_pairs = [(project.project_id, local_id)
+                                for local_id in local_ids]
+    issue_ids = self.services.issue.LookupIssueIDs(
+        mc.cnxn, project_local_id_pairs)
+    return project, issue_ids, config
+
   @monorail_servicer.PRPCMethod
   def CreateIssue(self, _mc, request):
     response = issue_objects_pb2.Issue()
@@ -324,25 +337,67 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     return empty_pb2.Empty()
 
   @monorail_servicer.PRPCMethod
+  def BulkUpdateApprovals(self, mc, request):
+    """Update multiple issues' approval and return the updated issue_refs."""
+    if not request.issue_refs:
+      raise exceptions.InputException('Param `issue_refs` empty.')
+    # Check all issue_refs have the same project_name
+    project_names = {ref.project_name for ref in request.issue_refs
+                     if ref.project_name}
+    if not project_names:
+      raise exceptions.InputException('Param `project_name` required.')
+    if len(project_names) != 1:
+      raise exceptions.InputException(
+          'Cross-project bulk approval updating is not supported.')
+
+    project_name = project_names.pop()
+    local_ids = [ref.local_id for ref in request.issue_refs]
+    project, issue_ids, config = self._GetProjectIssueIDsAndConfig(
+        mc, project_name, local_ids)
+
+    approval_fd = tracker_bizobj.FindFieldDef(
+        request.field_ref.field_name, config)
+    if not approval_fd:
+      raise exceptions.NoSuchFieldDefException()
+    if request.HasField('approval_delta'):
+      approval_delta = converters.IngestApprovalDelta(
+          mc.cnxn, self.services.user, request.approval_delta,
+          mc.auth.user_id, config)
+    else:
+      approval_delta = tracker_pb2.ApprovalDelta()
+    # No bulk adding approval attachments for now.
+
+    with work_env.WorkEnv(mc, self.services, phase='updating approvals') as we:
+      updated_issue_ids = we.BulkUpdateIssueApprovals(
+          issue_ids, approval_fd.field_id, project, approval_delta,
+          request.comment_content, send_email=request.send_email)
+      with mc.profiler.Phase('converting to response objects'):
+        issue_ref_pairs = we.GetIssueRefs(updated_issue_ids)
+        issue_refs = [converters.ConvertIssueRef(pair)
+                      for pair in issue_ref_pairs.values()]
+        response = issues_pb2.BulkUpdateApprovalsResponse(issue_refs=issue_refs)
+
+    return response
+
+  @monorail_servicer.PRPCMethod
   def UpdateApproval(self, mc, request):
     """Update an approval and return the updated approval in a reponse proto."""
     project, issue, config = self._GetProjectIssueAndConfig(
         mc, request.issue_ref, use_cache=False)
 
-    with work_env.WorkEnv(mc, self.services) as we:
-      approval_fd = tracker_bizobj.FindFieldDef(
-          request.field_ref.field_name, config)
-      if not approval_fd:
-        raise exceptions.NoSuchFieldDefException()
-      if request.HasField('approval_delta'):
-        approval_delta = converters.IngestApprovalDelta(
-            mc.cnxn, self.services.user, request.approval_delta,
-            mc.auth.user_id, config)
-      else:
-        approval_delta = tracker_pb2.IssueApprovalDelta()
-      attachments = converters.IngestAttachmentUploads(request.uploads)
+    approval_fd = tracker_bizobj.FindFieldDef(
+        request.field_ref.field_name, config)
+    if not approval_fd:
+      raise exceptions.NoSuchFieldDefException()
+    if request.HasField('approval_delta'):
+      approval_delta = converters.IngestApprovalDelta(
+          mc.cnxn, self.services.user, request.approval_delta,
+          mc.auth.user_id, config)
+    else:
+      approval_delta = tracker_pb2.ApprovalDelta()
+    attachments = converters.IngestAttachmentUploads(request.uploads)
 
-    with mc.profiler.Phase('updating approval'):
+    with work_env.WorkEnv(mc, self.services) as we:
       av, _comment = we.UpdateIssueApproval(
           issue.issue_id, approval_fd.field_id, approval_delta,
           request.comment_content, request.is_description,

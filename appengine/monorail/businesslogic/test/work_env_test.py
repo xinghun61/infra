@@ -8,7 +8,7 @@
 import logging
 import sys
 import unittest
-from mock import Mock, patch
+import mock
 
 from google.appengine.api import memcache
 from google.appengine.ext import testbed
@@ -45,7 +45,7 @@ class WorkEnvTest(unittest.TestCase):
         hotlist_star=fake.HotlistStarService(),
         features=fake.FeaturesService(),
         usergroup=fake.UserGroupService(),
-        template=Mock(spec=template_svc.TemplateService),
+        template=mock.Mock(spec=template_svc.TemplateService),
         spam=fake.SpamService())
     self.project = self.services.project.TestAddProject(
         'proj', project_id=789, committer_ids=[111L])
@@ -559,8 +559,10 @@ class WorkEnvTest(unittest.TestCase):
   # FUTURE: project saved queries.
   # FUTURE: GetProjectPermissionsForUser()
 
-  @patch('features.send_notifications.PrepareAndSendIssueBlockingNotification')
-  @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueBlockingNotification')
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testCreateIssue_Normal(self, fake_pasicn, fake_pasibn):
     """We can create an issue."""
     self.SignIn(user_id=111L)
@@ -598,8 +600,10 @@ class WorkEnvTest(unittest.TestCase):
     fake_pasibn.assert_called_once_with(
         actual_issue.issue_id, hostport, [], 111L)
 
-  @patch('features.send_notifications.PrepareAndSendIssueBlockingNotification')
-  @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueBlockingNotification')
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testCreateIssue_DontSendEmail(self, fake_pasicn, fake_pasibn):
     """We can create an issue, without queueing notification tasks."""
     self.SignIn(user_id=111L)
@@ -824,11 +828,77 @@ class WorkEnvTest(unittest.TestCase):
          merged_into.issue_id: ('proj', 6)},
         actual)
 
-  @patch('features.send_notifications.PrepareAndSendApprovalChangeNotification')
+  def testGetIssueRefs(self):
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj1')
+    issue2 = fake.MakeTestIssue(789, 3, 'sum', 'New', 111L, project_name='proj')
+    issue3 = fake.MakeTestIssue(789, 5, 'sum', 'New', 111L, project_name='proj')
+
+    self.services.issue.TestAddIssue(issue)
+    self.services.issue.TestAddIssue(issue2)
+    self.services.issue.TestAddIssue(issue3)
+
+    with self.work_env as we:
+      actual = we.GetIssueRefs(
+          [issue.issue_id, issue2.issue_id, issue3.issue_id])
+
+    self.assertEqual(
+        {issue.issue_id: ('proj1', 1),
+         issue2.issue_id: ('proj', 3),
+         issue3.issue_id: ('proj', 5)},
+        actual)
+
+  @mock.patch('businesslogic.work_env.WorkEnv.UpdateIssueApproval')
+  def testBulkUpdateIssueApproval(self, mockUpdateIssueApproval):
+    updated_issues = [78901, 78902]
+    def side_effect(issue_id, *_args, **_kwargs):
+      if issue_id not in updated_issues:
+        raise permissions.PermissionException
+    mockUpdateIssueApproval.side_effect = side_effect
+
+    self.SignIn()
+
+    approval_delta = tracker_pb2.ApprovalDelta()
+    issue_ids = self.work_env.BulkUpdateIssueApprovals(
+        [78901, 78902, 78903, 78904, 78905], 24, self.project, approval_delta,
+        'comment', send_email=True)
+    self.assertEqual(issue_ids, updated_issues)
+    updateIssueApprovalCalls = [
+        mock.call(
+            78901, 24, approval_delta, 'comment', False, send_email=False),
+        mock.call(
+            78902, 24, approval_delta, 'comment', False, send_email=False),
+        mock.call(
+            78903, 24, approval_delta, 'comment', False, send_email=False),
+        mock.call(
+            78904, 24, approval_delta, 'comment', False, send_email=False),
+        mock.call(
+            78905, 24, approval_delta, 'comment', False, send_email=False),
+    ]
+    mockUpdateIssueApproval.assert_has_calls(updateIssueApprovalCalls)
+
+  def testBulkUpdateIssueApproval_AnonUser(self):
+    approval_delta = tracker_pb2.ApprovalDelta()
+    with self.assertRaises(permissions.PermissionException):
+      self.work_env.BulkUpdateIssueApprovals(
+          [], 24, self.project, approval_delta,
+          'comment', send_email=True)
+
+  def testBulkUpdateIssueApproval_UserLacksViewPerms(self):
+    approval_delta = tracker_pb2.ApprovalDelta()
+    self.SignIn(222L)
+    self.project.access = project_pb2.ProjectAccess.MEMBERS_ONLY
+    with self.assertRaises(permissions.PermissionException):
+      self.work_env.BulkUpdateIssueApprovals(
+          [], 24, self.project, approval_delta,
+          'comment', send_email=True)
+
+
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendApprovalChangeNotification')
   def testUpdateIssueApproval(self, _mockPrepareAndSend):
     """We can update an issue's approval_value."""
 
-    self.services.issue.DeltaUpdateIssueApproval = Mock()
+    self.services.issue.DeltaUpdateIssueApproval = mock.Mock()
 
     self.SignIn()
 
@@ -852,11 +922,12 @@ class WorkEnvTest(unittest.TestCase):
         self.mr.cnxn, 111L, config, issue, av_24, delta,
         comment_content='please review', is_description=False, attachments=None)
 
-  @patch('features.send_notifications.PrepareAndSendApprovalChangeNotification')
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendApprovalChangeNotification')
   def testUpdateIssueApproval_IsDescription(self, _mockPrepareAndSend):
     """We can update an issue's approval survey."""
 
-    self.services.issue.DeltaUpdateIssueApproval = Mock()
+    self.services.issue.DeltaUpdateIssueApproval = mock.Mock()
 
     self.SignIn()
 
@@ -876,10 +947,11 @@ class WorkEnvTest(unittest.TestCase):
         comment_content='better response', is_description=True,
         attachments=None)
 
-  @patch('features.send_notifications.PrepareAndSendApprovalChangeNotification')
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendApprovalChangeNotification')
   def testUpdateIssueApproval_Attachments(self, _mockPrepareAndSend):
     """We can attach files as we many an approval change."""
-    self.services.issue.DeltaUpdateIssueApproval = Mock()
+    self.services.issue.DeltaUpdateIssueApproval = mock.Mock()
 
     self.SignIn()
 
@@ -905,7 +977,8 @@ class WorkEnvTest(unittest.TestCase):
         comment_content='please review', is_description=False,
         attachments=attachments)
 
-  @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testUpdateIssue_Normal(self, fake_pasicn):
     """We can update an issue."""
     self.SignIn()
@@ -928,7 +1001,8 @@ class WorkEnvTest(unittest.TestCase):
         issue.issue_id, 'testing-app.appspot.com', 111L, send_email=True,
         old_owner_id=111L, comment_id=comment_pb.id)
 
-  @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testUpdateIssue_Attachments(self, fake_pasicn):
     """We can attach files as we make a change."""
     self.SignIn()
@@ -962,7 +1036,8 @@ class WorkEnvTest(unittest.TestCase):
     comment_pb = comments[-1]
     self.assertEqual(2, len(comment_pb.attachments))
 
-  @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testUpdateIssue_Description(self, fake_pasicn):
     """We can update an issue's description."""
     self.SignIn()
@@ -981,7 +1056,8 @@ class WorkEnvTest(unittest.TestCase):
         issue.issue_id, 'testing-app.appspot.com', 111L, send_email=True,
         old_owner_id=111L, comment_id=comment_pb.id)
 
-  @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testUpdateIssue_PermissionDenied(self, fake_pasicn):
     """We reject attempts to update an issue when the user lacks permission."""
     issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 555L)
@@ -1173,7 +1249,7 @@ class WorkEnvTest(unittest.TestCase):
 
     self.assertEqual([1003, 1002, 1004, 1005], new_parent_issue.blocked_on_iids)
 
-  @patch('tracker.rerank_helpers.MAX_RANKING', 1)
+  @mock.patch('tracker.rerank_helpers.MAX_RANKING', 1)
   def testRerankBlockedOnIssues_NoRoom(self):
     parent_issue = fake.MakeTestIssue(
         789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
@@ -1267,7 +1343,7 @@ class WorkEnvTest(unittest.TestCase):
       we.DeleteComment(issue, comment, False)
       self.assertEqual(None, comment.deleted_by)
 
-  @patch('services.issue_svc.IssueService.SoftDeleteComment')
+  @mock.patch('services.issue_svc.IssueService.SoftDeleteComment')
   def testDeleteComment_UndeleteableSpam(self, mockSoftDeleteComment):
     """Throws exception when comment is spam and owner is deleting."""
     self.SignIn(user_id=111L)
@@ -1283,8 +1359,8 @@ class WorkEnvTest(unittest.TestCase):
       self.assertEqual(None, comment.deleted_by)
       mockSoftDeleteComment.assert_not_called()
 
-  @patch('services.issue_svc.IssueService.SoftDeleteComment')
-  @patch('framework.permissions.CanDeleteComment')
+  @mock.patch('services.issue_svc.IssueService.SoftDeleteComment')
+  @mock.patch('framework.permissions.CanDeleteComment')
   def testDeleteComment_UndeletablePermissions(self, mockCanDelete,
                                                mockSoftDeleteComment):
     """Throws exception when deleter doesn't have permission to do so."""
@@ -1321,8 +1397,8 @@ class WorkEnvTest(unittest.TestCase):
           issue, comment, attachment.attachment_id, False)
       self.assertFalse(attachment.deleted)
 
-  @patch('services.issue_svc.IssueService.SoftDeleteComment')
-  @patch('framework.permissions.CanDeleteComment')
+  @mock.patch('services.issue_svc.IssueService.SoftDeleteComment')
+  @mock.patch('framework.permissions.CanDeleteComment')
   def testDeleteAttachment_UndeletablePermissions(
       self, mockCanDelete, mockSoftDeleteComment):
     """Throws exception when deleter doesn't have permission to do so."""
@@ -1653,7 +1729,7 @@ class WorkEnvTest(unittest.TestCase):
         we.InviteLinkedParent('x@example.com')
       self.assertEqual('Linked account names must match', cm.exception.message)
 
-  @patch('settings.linkable_domains', {'example.com': ['other.com']})
+  @mock.patch('settings.linkable_domains', {'example.com': ['other.com']})
   def testInviteLinkedParent_BadDomain(self):
     """We only allow linkage invites between whitelisted domains."""
     self.SignIn()
@@ -1663,7 +1739,7 @@ class WorkEnvTest(unittest.TestCase):
       self.assertEqual(
           'Linked account unsupported domain', cm.exception.message)
 
-  @patch('settings.linkable_domains', {'example.com': ['other.com']})
+  @mock.patch('settings.linkable_domains', {'example.com': ['other.com']})
   def testInviteLinkedParent_NoSuchParent(self):
     """Verify that the parent account already exists."""
     settings.linkable_domains = {'example.com': ['other.com']}
@@ -1672,7 +1748,7 @@ class WorkEnvTest(unittest.TestCase):
       with self.assertRaises(exceptions.NoSuchUserException):
         we.InviteLinkedParent('user_111@other.com')
 
-  @patch('settings.linkable_domains', {'example.com': ['other.com']})
+  @mock.patch('settings.linkable_domains', {'example.com': ['other.com']})
   def testInviteLinkedParent_Normal(self):
     """A child account can invite a matching parent account to link."""
     self.services.user.TestAddUser('user_111@other.com', 555L)

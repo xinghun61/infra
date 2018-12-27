@@ -59,6 +59,7 @@ class IssuesServicerTest(unittest.TestCase):
     self.user_1 = self.services.user.TestAddUser('owner@example.com', 111L)
     self.user_2 = self.services.user.TestAddUser('approver2@example.com', 222L)
     self.user_3 = self.services.user.TestAddUser('approver3@example.com', 333L)
+    self.user_4 = self.services.user.TestAddUser('nonmember@example.com', 444L)
     self.issue_1 = fake.MakeTestIssue(
         789, 1, 'sum', 'New', 111L, project_name='proj',
         opened_timestamp=self.NOW, issue_id=1001)
@@ -716,6 +717,150 @@ class IssuesServicerTest(unittest.TestCase):
 
     with self.assertRaises(exceptions.NoSuchFieldDefException):
       self.CallWrapped(self.issues_svcr.UpdateApproval, mc, request)
+
+  def testBulkUpdateApprovals_EmptyIssueRefs(self):
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    request = issues_pb2.BulkUpdateApprovalsRequest(
+        field_ref=common_pb2.FieldRef(field_name='LegalApproval'),
+        approval_delta=issues_pb2.ApprovalDelta())
+    with self.assertRaises(exceptions.InputException):
+      self.CallWrapped(self.issues_svcr.BulkUpdateApprovals, mc, request)
+
+  def testBulkUpdateApprovals_NoProjectName(self):
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    issue_refs = [common_pb2.IssueRef(local_id=1),
+                  common_pb2.IssueRef(local_id=2)]
+    request = issues_pb2.BulkUpdateApprovalsRequest(
+        issue_refs=issue_refs,
+        field_ref=common_pb2.FieldRef(field_name='LegalApproval'),
+        approval_delta=issues_pb2.ApprovalDelta())
+    with self.assertRaises(exceptions.InputException):
+      self.CallWrapped(self.issues_svcr.BulkUpdateApprovals, mc, request)
+
+  def testBulkUpdateApprovals_CrossProjectRequest(self):
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    issue_refs = [common_pb2.IssueRef(project_name='p1', local_id=1),
+                  common_pb2.IssueRef(project_name='p2', local_id=2)]
+    request = issues_pb2.BulkUpdateApprovalsRequest(
+        issue_refs=issue_refs,
+        field_ref=common_pb2.FieldRef(field_name='LegalApproval'),
+        approval_delta=issues_pb2.ApprovalDelta())
+    with self.assertRaises(exceptions.InputException):
+      self.CallWrapped(self.issues_svcr.BulkUpdateApprovals, mc, request)
+
+  def testBulkUpdateApprovals_NoSuchFieldDef(self):
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    issue_refs = [common_pb2.IssueRef(project_name='proj', local_id=1),
+                  common_pb2.IssueRef(project_name='proj', local_id=2)]
+    request = issues_pb2.BulkUpdateApprovalsRequest(
+        issue_refs=issue_refs,
+        field_ref=common_pb2.FieldRef(field_name='LegalApproval'),
+        approval_delta=issues_pb2.ApprovalDelta())
+    with self.assertRaises(exceptions.NoSuchFieldDefException):
+      self.CallWrapped(self.issues_svcr.BulkUpdateApprovals, mc, request)
+
+  def testBulkUpdateApprovals_AnonDenied(self):
+    """Anon user cannot make any updates"""
+    config = tracker_pb2.ProjectIssueConfig(
+        project_id=789,
+        field_defs=[self.fd_3])
+    self.services.config.StoreConfig(self.cnxn, config)
+    field_ref = common_pb2.FieldRef(field_name='LegalApproval')
+    approval_delta = issues_pb2.ApprovalDelta()
+    issue_refs = [common_pb2.IssueRef(project_name='proj', local_id=1),
+                  common_pb2.IssueRef(project_name='proj', local_id=2)]
+    request = issues_pb2.BulkUpdateApprovalsRequest(
+        issue_refs=issue_refs, field_ref=field_ref,
+        approval_delta=approval_delta)
+
+    mc = monorailcontext.MonorailContext(self.services, cnxn=self.cnxn)
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.issues_svcr.BulkUpdateApprovals, mc, request)
+
+  def testBulkUpdateApprovals_UserLacksViewPerms(self):
+    """User who cannot view issue cannot update issue."""
+    config = tracker_pb2.ProjectIssueConfig(
+        project_id=789,
+        field_defs=[self.fd_3])
+    self.services.config.StoreConfig(self.cnxn, config)
+    field_ref = common_pb2.FieldRef(field_name='LegalApproval')
+    approval_delta = issues_pb2.ApprovalDelta()
+    issue_refs = [common_pb2.IssueRef(project_name='proj', local_id=1),
+                  common_pb2.IssueRef(project_name='proj', local_id=2)]
+    request = issues_pb2.BulkUpdateApprovalsRequest(
+        issue_refs=issue_refs, field_ref=field_ref,
+        approval_delta=approval_delta)
+
+    self.project.access = project_pb2.ProjectAccess.MEMBERS_ONLY
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='nonmember@example.com')
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.issues_svcr.BulkUpdateApprovals, mc, request)
+
+  @patch('businesslogic.work_env.WorkEnv.BulkUpdateIssueApprovals')
+  @patch('businesslogic.work_env.WorkEnv.GetIssueRefs')
+  def testBulkUpdateApprovals_Normal(
+      self, mockGetIssueRefs, mockBulkUpdateIssueApprovals):
+    """Issue approvals that can be updated are updated and returned."""
+    mockGetIssueRefs.return_value = {78901: ('proj', 1), 78902: ('proj', 2)}
+    config = tracker_pb2.ProjectIssueConfig(
+        project_id=789,
+        field_defs=[self.fd_3])
+    self.services.config.StoreConfig(self.cnxn, config)
+    field_ref = common_pb2.FieldRef(field_name='LegalApproval')
+    issue_refs = [common_pb2.IssueRef(project_name='proj', local_id=1),
+                  common_pb2.IssueRef(project_name='proj', local_id=2)]
+    request = issues_pb2.BulkUpdateApprovalsRequest(
+        issue_refs=issue_refs, field_ref=field_ref,
+        approval_delta=issues_pb2.ApprovalDelta(
+            status=issue_objects_pb2.APPROVED),
+        comment_content='new bulk comment')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='nonmember@example.com')
+    response = self.CallWrapped(
+        self.issues_svcr.BulkUpdateApprovals, mc, request)
+    self.assertEqual(
+        response,
+        issues_pb2.BulkUpdateApprovalsResponse(
+            issue_refs=[common_pb2.IssueRef(project_name='proj', local_id=1),
+                        common_pb2.IssueRef(project_name='proj', local_id=2)]))
+
+    approval_delta = tracker_pb2.ApprovalDelta(
+        status=tracker_pb2.ApprovalStatus.APPROVED)
+    mockBulkUpdateIssueApprovals.assert_called_once(
+        [78901, 78902], 3, self.project, approval_delta,
+        'new bulk comment', send_email=False)
+
+  @patch('businesslogic.work_env.WorkEnv.BulkUpdateIssueApprovals')
+  @patch('businesslogic.work_env.WorkEnv.GetIssueRefs')
+  def testBulkUpdateApprovals_EmptyDelta(
+      self, mockGetIssueRefs, mockBulkUpdateIssueApprovals):
+    """Bulk update approval requests don't fail with an empty approval delta."""
+    mockGetIssueRefs.return_value = {78901: ('proj', 1)}
+    config = tracker_pb2.ProjectIssueConfig(
+        project_id=789,
+        field_defs=[self.fd_3])
+    self.services.config.StoreConfig(self.cnxn, config)
+    field_ref = common_pb2.FieldRef(field_name='LegalApproval')
+    issue_refs = [common_pb2.IssueRef(project_name='proj', local_id=1)]
+    request = issues_pb2.BulkUpdateApprovalsRequest(
+        issue_refs=issue_refs, field_ref=field_ref,
+        comment_content='new bulk comment',
+        send_email=True)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='nonmember@example.com')
+    self.CallWrapped(
+        self.issues_svcr.BulkUpdateApprovals, mc, request)
+
+    approval_delta = tracker_pb2.ApprovalDelta()
+    mockBulkUpdateIssueApprovals.assert_called_once(
+        [78901, 78902], 3, self.project, approval_delta,
+        'new bulk comment', send_email=True)
+
 
   @patch('businesslogic.work_env.WorkEnv.UpdateIssueApproval')
   @patch('features.send_notifications.PrepareAndSendApprovalChangeNotification')

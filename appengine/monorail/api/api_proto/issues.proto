@@ -27,6 +27,7 @@ service Issues {
   rpc ListComments (ListCommentsRequest) returns (ListCommentsResponse) {}
   rpc ListActivities (ListActivitiesRequest) returns (ListActivitiesResponse) {}
   rpc DeleteComment (DeleteCommentRequest) returns (google.protobuf.Empty) {}
+  rpc BulkUpdateApprovals (BulkUpdateApprovalsRequest) returns (BulkUpdateApprovalsResponse) {}
   rpc UpdateApproval (UpdateApprovalRequest) returns (UpdateApprovalResponse) {}
   rpc IssueSnapshot (IssueSnapshotRequest) returns (IssueSnapshotResponse) {}
   rpc PresubmitIssue (PresubmitIssueRequest) returns (PresubmitIssueResponse) {}
@@ -209,6 +210,26 @@ message IssueDelta {
   repeated IssueRef blocking_refs_remove = 15;
   IssueRef merged_into_ref = 16;
   google.protobuf.StringValue summary = 17;
+}
+
+
+// TODO: Consider eventually replacing calls to UpdateApprovalRequest
+// with BulkUpdateApprovalsRequest.
+// TODO: For now, block bulk attaching uploads and survey editing.
+// Next available tag: 7
+message BulkUpdateApprovalsRequest {
+  RequestTrace trace = 1;
+  repeated IssueRef issue_refs = 2;
+  FieldRef field_ref = 3;
+  ApprovalDelta approval_delta = 4;
+  string comment_content = 5;
+  bool send_email = 6;
+}
+
+
+// Next available tag: 2
+message BulkUpdateApprovalsResponse {
+  repeated IssueRef issue_refs = 1;
 }
 
 
