@@ -18,6 +18,7 @@ from components.prpc import context
 from components.prpc import server
 
 from api import issues_servicer
+from api import converters
 from api.api_proto import common_pb2
 from api.api_proto import issues_pb2
 from api.api_proto import issue_objects_pb2
@@ -90,6 +91,10 @@ class IssuesServicerTest(unittest.TestCase):
     self.fd_4 = tracker_pb2.FieldDef(
         field_name='UserField', field_id=4,
         field_type=tracker_pb2.FieldTypes.USER_TYPE,
+        applicable_type='')
+    self.fd_5 = tracker_pb2.FieldDef(
+        field_name='DogApproval', field_id=5,
+        field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE,
         applicable_type='')
 
   def CallWrapped(self, wrapped_handler, *args, **kwargs):
@@ -226,6 +231,57 @@ class IssuesServicerTest(unittest.TestCase):
         self.services, cnxn=self.cnxn, requester='owner@example.com')
     with self.assertRaises(exceptions.InputException):
       self.CallWrapped(self.issues_svcr.ListReferencedIssues, mc, request)
+
+  def testListApplicableFieldDefs_EmptyIssueRefs(self):
+    request = issues_pb2.ListApplicableFieldDefsRequest()
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.issues_svcr.ListApplicableFieldDefs, mc, request)
+    self.assertEqual(response, issues_pb2.ListApplicableFieldDefsResponse())
+
+  def testListApplicableFieldDefs_CrossProjectRequest(self):
+    issue_refs = [common_pb2.IssueRef(project_name='proj', local_id=1),
+                  common_pb2.IssueRef(project_name='proj2', local_id=2)]
+    request = issues_pb2.ListApplicableFieldDefsRequest(issue_refs=issue_refs)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    with self.assertRaises(exceptions.InputException):
+      self.CallWrapped(self.issues_svcr.ListApplicableFieldDefs, mc, request)
+
+  def testListApplicableFieldDefs_MissingProjectName(self):
+    issue_refs = [common_pb2.IssueRef(local_id=1),
+                  common_pb2.IssueRef(local_id=2)]
+    request = issues_pb2.ListApplicableFieldDefsRequest(issue_refs=issue_refs)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    with self.assertRaises(exceptions.InputException):
+      self.CallWrapped(self.issues_svcr.ListApplicableFieldDefs, mc, request)
+
+  def testListApplicableFieldDefs_Normal(self):
+    self.issue_1.labels = ['Type-Feedback']
+    self.issue_2.approval_values = [
+        tracker_pb2.ApprovalValue(approval_id=self.fd_3.field_id)]
+    self.fd_1.applicable_type = 'Defect'  # not applicable
+    self.fd_2.applicable_type = 'feedback'  # applicable
+    self.fd_3.applicable_type = 'ignored'  # is APPROVAL_TYPE, applicable
+    self.fd_4.applicable_type = ''  # applicable
+    self.fd_5.applicable_type = ''  # is APPROVAl_TYPE, not applicable
+    config = tracker_pb2.ProjectIssueConfig(
+        project_id=789,
+        field_defs=[self.fd_1, self.fd_2, self.fd_3, self.fd_4, self.fd_5])
+    self.services.config.StoreConfig(self.cnxn, config)
+    issue_refs = [common_pb2.IssueRef(project_name='proj', local_id=1),
+                  common_pb2.IssueRef(project_name='proj', local_id=2)]
+    request = issues_pb2.ListApplicableFieldDefsRequest(issue_refs=issue_refs)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.issues_svcr.ListApplicableFieldDefs, mc, request)
+    converted_field_defs = [converters.ConvertFieldDef(fd, [], {}, config, True)
+                            for fd in [self.fd_2, self.fd_3, self.fd_4]]
+    self.assertEqual(response, issues_pb2.ListApplicableFieldDefsResponse(
+        field_defs=converted_field_defs))
 
   def testUpdateIssue_Denied(self):
     """We reject requests to update an issue when the user lacks perms."""

@@ -60,6 +60,7 @@ from tracker import rerank_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_constants
 from tracker import tracker_helpers
+from proto import tracker_pb2
 from proto import project_pb2
 
 
@@ -847,6 +848,28 @@ class WorkEnv(object):
         tracker_helpers.GetAllowedOpenedAndClosedIssues(
             self.mc, issue_ids, self.services))
     return open_issues, closed_issues
+
+  def ListApplicableFieldDefs(self, issue_ids, config):
+    """Return the applicable FieldDefs for the given issue_ids."""
+    issues_dict = self.GetIssuesDict(issue_ids)
+    issue_labels = []
+    issue_approval_ids = []
+    for issue in issues_dict.values():
+      issue_labels.extend(issue.labels)
+      issue_approval_ids.extend(
+          [approval.approval_id for approval in issue.approval_values])
+    labels_by_prefix = tracker_bizobj.LabelsByPrefix(
+        list(set(issue_labels)), [])
+    types = set(labels_by_prefix.get('type', []))
+    types_lower = [t.lower() for t in types]
+    applicable_fds = []
+    for fd in config.field_defs:
+      if fd.field_id in issue_approval_ids:
+        applicable_fds.append(fd)
+      elif fd.field_type != tracker_pb2.FieldTypes.APPROVAL_TYPE and (
+          not fd.applicable_type or fd.applicable_type.lower() in types_lower):
+          applicable_fds.append(fd)
+    return applicable_fds
 
   def GetIssueByLocalID(
       self, project_id, local_id, use_cache=True,

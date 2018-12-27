@@ -737,6 +737,58 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual(expected_open, actual_open)
     self.assertEqual(expected_closed, actual_closed)
 
+  def testListApplicableFieldDefs(self):
+    issue_1 = fake.MakeTestIssue(
+        789, 1, 'sum', 'New', 111L, issue_id=78901,
+        labels=['type-defect', 'other-label'])
+    issue_2 = fake.MakeTestIssue(
+        789, 2, 'sum', 'New', 111L, issue_id=78902,
+        labels=['type-feedback', 'other-label1'])
+    issue_3 = fake.MakeTestIssue(
+        789, 3, 'sum', 'New', 111L, issue_id=78903,
+        labels=['type-defect'],
+        approval_values=[tracker_pb2.ApprovalValue(approval_id=3),
+                         tracker_pb2.ApprovalValue(approval_id=5)])
+    issue_4 = fake.MakeTestIssue(
+        789, 4, 'sum', 'New', 111L, issue_id=78904)  # test no labels at all
+    issue_5 = fake.MakeTestIssue(
+        789, 5, 'sum', 'New', 111L, issue_id=78905,
+        labels=['type'],  # test labels ignored
+        approval_values=[tracker_pb2.ApprovalValue(approval_id=5)])
+    self.services.issue.TestAddIssue(issue_1)
+    self.services.issue.TestAddIssue(issue_2)
+    self.services.issue.TestAddIssue(issue_3)
+    self.services.issue.TestAddIssue(issue_4)
+    self.services.issue.TestAddIssue(issue_5)
+    fd_1 = tracker_pb2.FieldDef(field_name='FirstField', field_id=1,
+                                field_type=tracker_pb2.FieldTypes.STR_TYPE,
+                                applicable_type='feedback')  # applicable
+    fd_2 = tracker_pb2.FieldDef(field_name='SecField', field_id=2,
+                                field_type=tracker_pb2.FieldTypes.INT_TYPE,
+                                applicable_type='no')  # not applicable
+    fd_3 = tracker_pb2.FieldDef(field_name='LegalApproval', field_id=3,
+                                field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE,
+                                applicable_type='')  # applicable
+    fd_4 = tracker_pb2.FieldDef(field_name='UserField', field_id=4,
+                                field_type=tracker_pb2.FieldTypes.USER_TYPE,
+                                applicable_type='')  # applicable
+    fd_5 = tracker_pb2.FieldDef(field_name='DogApproval', field_id=5,
+                                field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE,
+                                applicable_type='')  # applicable
+    fd_6 = tracker_pb2.FieldDef(field_name='SixthField', field_id=6,
+                                field_type=tracker_pb2.FieldTypes.INT_TYPE,
+                                applicable_type='Defect')  # applicable
+    fd_7 = tracker_pb2.FieldDef(field_name='CatApproval', field_id=7,
+                                field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE,
+                                applicable_type='')  # not applicable
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    config.field_defs = [fd_1, fd_2, fd_3, fd_4, fd_5, fd_6, fd_7]
+    issue_ids = [issue_1.issue_id, issue_2.issue_id, issue_3.issue_id,
+                 issue_4.issue_id, issue_5.issue_id]
+    with self.work_env as we:
+      actual_fds = we.ListApplicableFieldDefs(issue_ids, config)
+    self.assertEqual(actual_fds, [fd_1, fd_3, fd_4, fd_5, fd_6])
+
   def testGetIssueByLocalID_Normal(self):
     """We can get an existing issue by project_id and local_id."""
     issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)

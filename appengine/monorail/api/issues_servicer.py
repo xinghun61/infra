@@ -60,7 +60,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
       config = we.GetProjectConfig(project.project_id, use_cache=use_cache)
       project_local_id_pairs = [(project.project_id, local_id)
                                 for local_id in local_ids]
-    issue_ids = self.services.issue.LookupIssueIDs(
+    issue_ids, _misses = self.services.issue.LookupIssueIDs(
         mc.cnxn, project_local_id_pairs)
     return project, issue_ids, config
 
@@ -161,6 +161,40 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
           open_refs=converted_open_issues, closed_refs=converted_closed_issues)
 
     return response
+
+  @monorail_servicer.PRPCMethod
+  def ListApplicableFieldDefs(self, mc, request):
+    """Returns specified issues' applicable field refs in a response proto."""
+    if not request.issue_refs:
+      return issues_pb2.ListApplicableFieldDefsResponse()
+
+    # TODO(jojwang): Check cross-project issue_refs in separate function.
+    # Check all issue_refs have the same project_name
+    project_names = {ref.project_name for ref in request.issue_refs
+                     if ref.project_name}
+    if not project_names:
+      raise exceptions.InputException('Param `project_name` required.')
+    if len(project_names) != 1:
+      raise exceptions.InputException(
+          'Cross-project applicable FieldDef listing is not supported.')
+
+    project_name = project_names.pop()
+    local_ids = [ref.local_id for ref in request.issue_refs]
+    _project, issue_ids, config = self._GetProjectIssueIDsAndConfig(
+        mc, project_name, local_ids)
+    with work_env.WorkEnv(mc, self.services) as we:
+      fds = we.ListApplicableFieldDefs(issue_ids, config)
+
+    users_by_id = {}
+    with mc.profiler.Phase('converting to response objects'):
+      users_involved = tracker_bizobj.UsersInvolvedInConfig(config)
+      users_by_id.update(framework_views.MakeAllUserViews(
+          mc.cnxn, self.services.user, users_involved))
+      field_defs = [
+          converters.ConvertFieldDef(fd, [], users_by_id, config, True)
+          for fd in fds]
+
+    return issues_pb2.ListApplicableFieldDefsResponse(field_defs=field_defs)
 
   @monorail_servicer.PRPCMethod
   def UpdateIssue(self, mc, request):

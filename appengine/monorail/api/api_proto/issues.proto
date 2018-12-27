@@ -11,6 +11,7 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/wrappers.proto";
 import "api/api_proto/common.proto";
 import "api/api_proto/issue_objects.proto";
+import "api/api_proto/project_objects.proto";
 
 
 service Issues {
@@ -18,6 +19,7 @@ service Issues {
   rpc GetIssue (GetIssueRequest) returns (IssueResponse) {}
   rpc ListIssues (ListIssuesRequest) returns (ListIssuesResponse) {}
   rpc ListReferencedIssues(ListReferencedIssuesRequest) returns (ListReferencedIssuesResponse) {}
+  rpc ListApplicableFieldRefs(ListApplicableFieldDefsRequest) returns (ListApplicableFieldDefsResponse) {}
   rpc UpdateIssue (UpdateIssueRequest) returns (IssueResponse) {}
   rpc StarIssue (StarIssueRequest) returns (StarIssueResponse) {}
   rpc IsIssueStarred (IsIssueStarredRequest) returns (IsIssueStarredResponse) {}
@@ -101,6 +103,19 @@ message ListReferencedIssuesResponse {
   // refs.
   repeated Issue open_refs = 1;
   repeated Issue closed_refs = 2;
+}
+
+
+// Next available tag: 3
+message ListApplicableFieldDefsRequest {
+  RequestTrace trace = 1;
+  repeated IssueRef issue_refs = 2;
+}
+
+
+// Next available tag: 2
+message ListApplicableFieldDefsResponse {
+  repeated FieldDef field_defs = 1;
 }
 
 
