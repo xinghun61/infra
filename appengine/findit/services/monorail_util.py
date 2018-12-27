@@ -104,7 +104,7 @@ def MergeDuplicateIssues(duplicate_issue, destination_issue, comment):
     comment (str): The comment to include when merging duplicate_issue.
   """
   duplicate_issue.status = 'Duplicate'
-  duplicate_issue.merged_into = destination_issue.id
+  duplicate_issue.merged_into = str(destination_issue.id)
   UpdateBug(duplicate_issue, comment)
 
 
