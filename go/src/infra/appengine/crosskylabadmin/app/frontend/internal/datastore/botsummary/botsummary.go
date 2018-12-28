@@ -73,15 +73,15 @@ func Insert(ctx context.Context, bsm map[string]*fleet.BotSummary) (dutIDs []str
 			return nil, errors.Annotate(err, "failed to marshal BotSummary for dut %q", bs.DutId).Err()
 		}
 		es = append(es, &Entity{
-			DutID:   bs.DutId,
+			DutID:   bs.GetDutId(),
 			BotID:   bid,
-			Pools:   bs.Dimensions.Pools,
-			Model:   bs.Dimensions.Model,
-			DutName: bs.Dimensions.DutName,
+			Pools:   bs.GetDimensions().GetPools(),
+			Model:   bs.GetDimensions().GetModel(),
+			DutName: bs.GetDimensions().GetDutName(),
 			Data:    data,
 			Updated: time.Now().UTC(),
 		})
-		updated = append(updated, bs.DutId)
+		updated = append(updated, bs.GetDutId())
 	}
 	if err := datastore.Put(ctx, es); err != nil {
 		return nil, errors.Annotate(err, "failed to put BotSummaries").Err()
