@@ -19,7 +19,7 @@ service Issues {
   rpc GetIssue (GetIssueRequest) returns (IssueResponse) {}
   rpc ListIssues (ListIssuesRequest) returns (ListIssuesResponse) {}
   rpc ListReferencedIssues(ListReferencedIssuesRequest) returns (ListReferencedIssuesResponse) {}
-  rpc ListApplicableFieldRefs(ListApplicableFieldDefsRequest) returns (ListApplicableFieldDefsResponse) {}
+  rpc ListApplicableFieldDefs(ListApplicableFieldDefsRequest) returns (ListApplicableFieldDefsResponse) {}
   rpc UpdateIssue (UpdateIssueRequest) returns (IssueResponse) {}
   rpc StarIssue (StarIssueRequest) returns (StarIssueResponse) {}
   rpc IsIssueStarred (IsIssueStarredRequest) returns (IsIssueStarredResponse) {}
