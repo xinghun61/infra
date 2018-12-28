@@ -32,6 +32,7 @@ Ensure that given models' target pool contains healthy DUTs.
 If needed, swap in healthy DUTs from spare pool.`,
 	CommandRun: func() subcommands.CommandRun {
 		c := &ensurePoolHealthyRun{}
+		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
 
 		c.Flags.BoolVar(&c.dryrun, "dryrun", false, "Dryrun mode -- do not commit inventory changes")
