@@ -5,6 +5,7 @@ import datetime
 import mock
 
 from libs import time_util
+from monorail_api import Comment
 from monorail_api import Issue
 from monorail_api import IssueTrackerAPI
 from services import issue_generator
@@ -391,3 +392,18 @@ class MonorailUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('Duplicate', duplicate_issue.status)
     self.assertEqual('12345', duplicate_issue.merged_into)
     mocked_update_bug.assert_called_once_with(duplicate_issue, 'comment')
+
+  @mock.patch.object(IssueTrackerAPI, 'getComments')
+  def testGetCommnets(self, mock_comments):
+    comment = Comment({
+        'author': {
+            'name': 'name'
+        },
+        'content': '',
+        'published': None,
+        'id': '12345',
+    })
+    expected_comments = [comment]
+    mock_comments.return_value = expected_comments
+    self.assertEqual(expected_comments, monorail_util.GetComments(12345))
+    mock_comments.assert_called_once_with(12345)

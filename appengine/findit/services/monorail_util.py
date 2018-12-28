@@ -108,6 +108,13 @@ def MergeDuplicateIssues(duplicate_issue, destination_issue, comment):
   UpdateBug(duplicate_issue, comment)
 
 
+def GetComments(issue_id, monorail_project='chromium'):
+  """Returns a list of Monorail Comment objects given an issue id."""
+  issue_tracker_api = IssueTrackerAPI(
+      monorail_project, use_staging=appengine_util.IsStaging())
+  return issue_tracker_api.getComments(issue_id)
+
+
 def CreateBug(issue, project_id='chromium'):
   """Creates a bug with the given information.
 

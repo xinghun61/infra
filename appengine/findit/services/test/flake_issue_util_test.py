@@ -1574,3 +1574,22 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     self.assertEqual(expected_labels, flake_issue_3.labels)
     self.assertEqual(expected_last_updated_time,
                      flake_issue_3.last_updated_time_in_monorail)
+
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 12, 20))
+  def testGetRemainingDailyUpdatesCount(self, _):
+    self.UpdateUnitTestConfigSettings('action_settings',
+                                      {'max_flake_bug_updates_per_day': 5})
+    flake_issue_1 = FlakeIssue.Create('chromium', 12345)
+    flake_issue_1.last_updated_time_by_flake_detection = datetime.datetime(
+        2018, 12, 19, 12, 0, 0)  # Updated within 24 hours.
+    flake_issue_1.put()
+    flake_issue_2 = FlakeIssue.Create('chromium', 12346)
+    flake_issue_2.last_updated_time_with_analysis_results = datetime.datetime(
+        2018, 12, 19, 12, 1, 0)  # Already commented with analysis results.
+    flake_issue_2.put()
+    flake_issue_3 = FlakeIssue.Create('chromium', 12347)
+    flake_issue_3.last_updated_time_by_flake_detection = datetime.datetime(
+        2018, 12, 18, 12, 0, 0)  # Over 24 hours old.
+    flake_issue_3.put()
+    self.assertEqual(3, flake_issue_util.GetRemainingDailyUpdatesCount())

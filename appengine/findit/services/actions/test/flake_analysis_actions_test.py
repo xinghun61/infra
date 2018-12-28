@@ -8,6 +8,7 @@ from model.flake.analysis.flake_culprit import FlakeCulprit
 from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
+from monorail_api import Comment
 from monorail_api import Issue
 from services import flake_issue_util
 from services import monorail_util
@@ -39,7 +40,9 @@ class FlakeAnalysisActionsTest(WaterfallTestCase):
 
   @mock.patch.object(flake_analysis_actions, 'MergeOrSplitFlakeIssueByCulprit')
   @mock.patch.object(flake_issue_util, 'UpdateIssueLeaves')
-  def testOnCulpritIdentified(self, mocked_update_issues, mocked_merge):
+  @mock.patch.object(flake_analysis_actions, 'UpdateMonorailBugWithCulprit')
+  def testOnCulpritIdentified(self, mocked_update_monorail,
+                              mocked_update_issues, mocked_merge):
     project = 'chromium'
     master_name = 'm'
     builder_name = 'b'
@@ -72,6 +75,7 @@ class FlakeAnalysisActionsTest(WaterfallTestCase):
                                           build_number, step_name, test_name)
     analysis.flake_key = flake.key
     analysis.culprit_urlsafe_key = culprit.key.urlsafe()
+    analysis.confidence_in_culprit = 0.9
     analysis.put()
 
     flake_analysis_actions.OnCulpritIdentified(analysis.key.urlsafe())
@@ -79,6 +83,7 @@ class FlakeAnalysisActionsTest(WaterfallTestCase):
     mocked_merge.assert_called_once_with(issue.key, culprit.key)
     mocked_update_issues.assert_called_once_with(issue.key,
                                                  issue.merge_destination_key)
+    mocked_update_monorail.assert_called_once_with(analysis.key.urlsafe())
 
   @mock.patch.object(
       monorail_util, 'WasCreatedByFindit', side_effect=[True, False])
@@ -292,3 +297,48 @@ class FlakeAnalysisActionsTest(WaterfallTestCase):
     self.assertEqual(flake_issue.key, duplicate)
     self.assertEqual(destination_issue.key, destination)
     self.assertEqual(destination_issue.key, flake_issue.merge_destination_key)
+
+  @mock.patch.object(
+      flake_issue_util, 'GetRemainingDailyUpdatesCount', return_value=1)
+  @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
+  @mock.patch.object(monorail_util, 'GetComments')
+  @mock.patch.object(monorail_util, 'UpdateIssueWithIssueGenerator')
+  def testUpdateMonorailBugWithCulprit(self, mock_update, mock_comments,
+                                       mock_get_issue, *_):
+    project = 'chromium'
+    bug_id = 12345
+    step_name = 's'
+    test_name = 't'
+    label = 'l'
+
+    flake_issue = FlakeIssue.Create(project, bug_id)
+    flake_issue.put()
+
+    flake = Flake.Create(project, step_name, test_name, label)
+    flake.flake_issue_key = flake_issue.key
+    flake.put()
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.flake_key = flake.key
+    analysis.put()
+
+    mock_comments.return_value = [
+        Comment({
+            'author': {
+                'name': 'someone@chromium.org'
+            },
+            'content': '',
+            'published': None,
+            'id': '12345',
+        }),
+    ]
+    mock_get_issue.return_value = Issue({
+        'status': 'Available',
+        'projectId': 'chromium',
+        'id': str(bug_id),
+        'state': 'open'
+    })
+    flake_analysis_actions.UpdateMonorailBugWithCulprit(analysis.key.urlsafe())
+
+    mock_update.assert_called_once_with(bug_id, mock.ANY)
+    self.assertIsNotNone(flake_issue.last_updated_time_with_analysis_results)

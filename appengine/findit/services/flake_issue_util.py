@@ -471,6 +471,23 @@ def GetFlakeGroupsForActionsOnBugs(flake_tuples_to_report):
   return flake_groups_to_add_issue_list, flake_groups_to_update_issue.values()
 
 
+def GetRemainingDailyUpdatesCount():
+  """Returns how many FlakeIssue updates can be made within the daily limit."""
+  action_settings = waterfall_config.GetActionSettings()
+  limit = action_settings.get('max_flake_bug_updates_per_day',
+                              flake_constants.DEFAULT_MAX_BUG_UPDATES_PER_DAY)
+
+  utc_one_day_ago = time_util.GetUTCNow() - datetime.timedelta(days=1)
+  num_updated_issues_24h = (
+      FlakeIssue.query(
+          ndb.OR(
+              FlakeIssue.last_updated_time_by_flake_detection > utc_one_day_ago,
+              (FlakeIssue.last_updated_time_with_analysis_results >
+               utc_one_day_ago))).count())
+
+  return limit - num_updated_issues_24h
+
+
 # TODO(crbug.com/903459): Move ReportFlakesToMonorail and
 #  ReportFlakesToFlakeAnalyzer to auto action layer.
 def ReportFlakesToMonorail(flake_groups_to_add_issue,
@@ -488,22 +505,12 @@ def ReportFlakesToMonorail(flake_groups_to_add_issue,
     flake_groups_to_update_issue([FlakeGroupByFlakeIssue(list]): A list of
       flake groups that have been linked with a FlakeIssue.
   """
-  action_settings = waterfall_config.GetActionSettings()
-  limit = action_settings.get('max_flake_bug_updates_per_day',
-                              flake_constants.DEFAULT_MAX_BUG_UPDATES_PER_DAY)
-
-  utc_one_day_ago = time_util.GetUTCNow() - datetime.timedelta(days=1)
-  num_updated_issues_24h = (
-      FlakeIssue.query(
-          FlakeIssue.last_updated_time_by_flake_detection > utc_one_day_ago)
-      .count())
-
-  if num_updated_issues_24h >= limit:
+  total_remaining_issue_num = GetRemainingDailyUpdatesCount()
+  if total_remaining_issue_num <= 0:
     logging.info('Issues created or updated during the past 24 hours has '
                  'reached the limit, no issues could be created.')
     return
 
-  total_remaining_issue_num = limit - num_updated_issues_24h
   # Fulfills the needs of creating bugs first, then updating bugs.
   num_of_issues_to_create = min(
       len(flake_groups_to_add_issue), total_remaining_issue_num)

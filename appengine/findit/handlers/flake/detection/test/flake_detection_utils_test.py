@@ -158,6 +158,8 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
                 None,
             'last_updated_time_in_monorail':
                 None,
+            'last_updated_time_with_analysis_results':
+                None,
             'labels': [],
             'status':
                 None,

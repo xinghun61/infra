@@ -29,6 +29,9 @@ class FlakeIssue(ndb.Model):
   # at most once every 24 hours.
   last_updated_time_by_flake_detection = ndb.DateTimeProperty()
 
+  # Track the last time this issue was updated with results of analysis, if any.
+  last_updated_time_with_analysis_results = ndb.DateTimeProperty(default=None)
+
   # Key to the FINAL destination of merging chain that this issue is a part of.
   # For example, if FlakeIssueA merged into FlakeIssueB (FlakeIssueB is not
   # merged into any other issue), the value would be key to FlakeIssueB;

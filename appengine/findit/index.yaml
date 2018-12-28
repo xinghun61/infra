@@ -207,6 +207,12 @@ indexes:
   - name: status
   - name: last_updated_time_in_monorail
 
+# For query to update FlakeIssues in auto actions.
+- kind: FlakeIssue
+  properties:
+  - name: last_updated_time_by_flake_detection
+  - name: last_updated_time_with_analysis_results
+
 # For ranked flakes dashboard forward paging.
 - kind: Flake
   properties:

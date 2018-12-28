@@ -7,10 +7,15 @@ import logging
 
 from google.appengine.ext import ndb
 
+from common import monitoring
 from googleapiclient.errors import HttpError
+from libs import time_util
+from model import entity_util
+from model.flake.flake_issue import FlakeIssue
 from services import flake_issue_util
 from services import issue_generator
 from services import monorail_util
+from services.flake_failure import flake_bug_util
 
 
 def _GetFlakeIssueAndCulpritKeys(analysis_urlsafe_key):
@@ -176,8 +181,73 @@ def MergeOrSplitFlakeIssueByCulprit(flake_issue_key, flake_culprit_key):
   return None, None
 
 
+def UpdateMonorailBugWithCulprit(analysis_urlsafe_key):
+  """Updates a bug in monorail with the culprit of a MasterFlakeAnalsyis"""
+  analysis = entity_util.GetEntityFromUrlsafeKey(analysis_urlsafe_key)
+  assert analysis, 'Analysis missing unexpectedly!'
+
+  if not analysis.flake_key:  # pragma: no cover.
+    logging.warning('Analysis has no flake key. Bug updates should only be '
+                    'routed through Flake and FlakeIssue')
+    return
+
+  flake = analysis.flake_key.get()
+  assert flake, 'Analysis\' associated Flake {} missing unexpectedly!'.format(
+      analysis.flake_key)
+
+  if not flake.flake_issue_key:  # pragma: no cover.
+    logging.warning('FlakeIssue has no flake key. Bug updates should only be '
+                    'routed through Flake and FlakeIssue')
+    return
+
+  flake_issue = flake.flake_issue_key.get()
+  assert flake_issue, 'Flake issue {} missing unexpectedly!'.format(
+      flake.flake_issue_key)
+
+  # Only comment on the latest flake issue.
+  flake_issue_to_update = flake_issue.GetMostUpdatedIssue()
+  issue_link = FlakeIssue.GetLinkForIssue(
+      flake_issue_to_update.monorail_project, flake_issue_to_update.issue_id)
+
+  # Don't comment if the issue is closed.
+  latest_merged_monorail_issue = monorail_util.GetMonorailIssueForIssueId(
+      flake_issue_to_update.issue_id)
+  if not latest_merged_monorail_issue.open:
+    logging.info('Skipping updating issue %s which is closed', issue_link)
+    return
+
+  # Don't comment if there are existing updates by Findit to prevent spamming.
+  if flake_issue_to_update.last_updated_time_with_analysis_results:
+    logging.info('Skipping updating issue %s as it has already been updated',
+                 issue_link)
+    return
+
+  # Don't comment if Findit has filled the daily quota of monorail updates.
+  if flake_issue_util.GetRemainingDailyUpdatesCount() <= 0:
+    logging.info(
+        'Skipping updating issue %s due to maximum daily bug limit being '
+        'reached', issue_link)
+    return
+
+  # Comment with link to FlakeCulprit.
+  monorail_util.UpdateIssueWithIssueGenerator(
+      flake_issue_to_update.issue_id,
+      issue_generator.FlakeAnalysisIssueGenerator(analysis))
+  flake_issue_to_update.last_updated_time_with_analysis_results = (
+      time_util.GetUTCNow())
+  flake_issue_to_update.put()
+
+  monitoring.flake_analyses.increment({
+      'result': 'culprit-identified',
+      'action_taken': 'bug-updated',
+      'reason': ''
+  })
+
+
 def OnCulpritIdentified(analysis_urlsafe_key):
   """All operations to perform when a culprit is identified.
+
+    Should only be called for results with high confidence.
 
   Args:
     analysis_urlafe_key (str): The urlsafe-key to the MasterFlakeAnalysis to
@@ -186,6 +256,16 @@ def OnCulpritIdentified(analysis_urlsafe_key):
     commit_position (int): The culprit's commit position.
     project (str): The name of the project/repo the culprit is in.
   """
+  analysis = entity_util.GetEntityFromUrlsafeKey(analysis_urlsafe_key)
+  assert analysis, 'Analysis missing unexpectedly!'
+
+  if not flake_bug_util.HasSufficientConfidenceInCulprit(
+      analysis, flake_bug_util.GetMinimumConfidenceToUpdateEndpoints()):
+    analysis.LogInfo(
+        'Skipping auto actions due to insufficient confidence {}'.format(
+            analysis.confidence_in_culprit))
+    return
+
   flake_issue_key, flake_culprit_key = _GetFlakeIssueAndCulpritKeys(
       analysis_urlsafe_key)
 
@@ -202,3 +282,4 @@ def OnCulpritIdentified(analysis_urlsafe_key):
                                        destination_flake_issue_key)
 
   # TODO(crbug.com/893787): Other auto actions based on outcome.
+  UpdateMonorailBugWithCulprit(analysis_urlsafe_key)
