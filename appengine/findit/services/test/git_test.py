@@ -226,6 +226,21 @@ class GitTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(0, git.CountRecentCommits('url'))
 
   @mock.patch.object(git, 'GetAuthor')
+  def testIsAuthoredByAutoRevertAccount(self, mock_author):
+    emails = [
+      'chromium-internal-autoroll@skia-corp.google.com.iam.gserviceaccount.com',
+      'chromium-autoroll@skia-public.iam.gserviceaccount.com',
+      'v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com'
+    ]
+
+    for email in emails:
+      author = Contributor(
+        'autoroller', email,
+        datetime.strptime('Wed Jun 11 19:35:32 2014', '%a %b %d %H:%M:%S %Y'))
+      mock_author.return_value = author
+      self.assertTrue(git.IsAuthoredByNoAutoRevertAccount('rev1'))
+
+  @mock.patch.object(git, 'GetAuthor')
   def testIsAuthoredByNoAutoRevertAccount(self, mock_author):
     author = Contributor(
         'author@abc.com', 'author@abc.com',

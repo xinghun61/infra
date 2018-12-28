@@ -68,10 +68,11 @@ NO_AUTO_COMMIT_REVERT_ACCOUNTS = [  # yapf: disable
     'chromeos-commit-bot@chromium.org',
     'ios-autoroll@chromium.org',
     'v8-autoroll@chromium.org',
+    'v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com',
 ] + NO_BLAME_ACTION_ACCOUNTS
 
 AUTO_ROLLER_ACCOUNT_PATTERN = re.compile(
-    r'.*-chromium-autoroll@skia-buildbots\.google\.com\.iam\.'
+    r'.*chromium.*-autoroll@skia-(corp|public|buildbots)(\.google\.com)?\.iam\.'
     r'gserviceaccount\.com')
 
 SUPPORTED_ISOLATED_SCRIPT_TESTS = ['webkit_layout_tests']
