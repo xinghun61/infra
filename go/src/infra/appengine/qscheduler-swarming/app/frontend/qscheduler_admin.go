@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/grpc/grpcutil"
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
 	"infra/appengine/qscheduler-swarming/app/entities"
@@ -37,7 +38,11 @@ type QSchedulerAdminServerImpl struct{}
 type QSchedulerViewServerImpl struct{}
 
 // CreateSchedulerPool implements QSchedulerAdminServer.
-func (s *QSchedulerAdminServerImpl) CreateSchedulerPool(ctx context.Context, r *qscheduler.CreateSchedulerPoolRequest) (*qscheduler.CreateSchedulerPoolResponse, error) {
+func (s *QSchedulerAdminServerImpl) CreateSchedulerPool(ctx context.Context, r *qscheduler.CreateSchedulerPoolRequest) (resp *qscheduler.CreateSchedulerPoolResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+
 	if r.Config == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "missing config")
 	}
@@ -54,7 +59,11 @@ func (s *QSchedulerAdminServerImpl) CreateSchedulerPool(ctx context.Context, r *
 }
 
 // CreateAccount implements QSchedulerAdminServer.
-func (s *QSchedulerAdminServerImpl) CreateAccount(ctx context.Context, r *qscheduler.CreateAccountRequest) (*qscheduler.CreateAccountResponse, error) {
+func (s *QSchedulerAdminServerImpl) CreateAccount(ctx context.Context, r *qscheduler.CreateAccountRequest) (resp *qscheduler.CreateAccountResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+
 	do := func(ctx context.Context) error {
 		sp, err := entities.Load(ctx, r.PoolId)
 		if err != nil {
@@ -73,21 +82,29 @@ func (s *QSchedulerAdminServerImpl) CreateAccount(ctx context.Context, r *qsched
 }
 
 // ListAccounts implements QSchedulerAdminServer.
-func (s *QSchedulerViewServerImpl) ListAccounts(ctx context.Context, r *qscheduler.ListAccountsRequest) (*qscheduler.ListAccountsResponse, error) {
+func (s *QSchedulerViewServerImpl) ListAccounts(ctx context.Context, r *qscheduler.ListAccountsRequest) (resp *qscheduler.ListAccountsResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+
 	sp, err := entities.Load(ctx, r.PoolId)
 	if err != nil {
 		return nil, err
 	}
 	// TODO(akeshet): Add API to Scheduler so we can decouple from the proto representation.
 	sProto := sp.Scheduler.ToProto()
-	resp := &qscheduler.ListAccountsResponse{
+	resp = &qscheduler.ListAccountsResponse{
 		Accounts: sProto.Config.AccountConfigs,
 	}
 	return resp, nil
 }
 
 // InspectPool implements QSchedulerAdminServer.
-func (s *QSchedulerViewServerImpl) InspectPool(ctx context.Context, r *qscheduler.InspectPoolRequest) (*qscheduler.InspectPoolResponse, error) {
+func (s *QSchedulerViewServerImpl) InspectPool(ctx context.Context, r *qscheduler.InspectPoolRequest) (resp *qscheduler.InspectPoolResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+
 	sp, err := entities.Load(ctx, r.PoolId)
 	if err != nil {
 		return nil, err
@@ -110,7 +127,7 @@ func (s *QSchedulerViewServerImpl) InspectPool(ctx context.Context, r *qschedule
 		}
 	}
 
-	resp := &qscheduler.InspectPoolResponse{
+	resp = &qscheduler.InspectPoolResponse{
 		NumWaitingTasks: int32(len(sProto.State.QueuedRequests)),
 		NumIdleBots:     int32(idleCount),
 		NumRunningTasks: int32(runningCount),

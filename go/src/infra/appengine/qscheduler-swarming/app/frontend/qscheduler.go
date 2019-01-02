@@ -28,6 +28,7 @@ import (
 	"go.chromium.org/luci/common/data/stringset"
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/grpc/grpcutil"
 
 	"infra/qscheduler/qslib/reconciler"
 	"infra/qscheduler/qslib/scheduler"
@@ -60,7 +61,11 @@ type QSchedulerServerImpl struct {
 // GRPCifyAndLogErr call.
 
 // AssignTasks implements QSchedulerServer.
-func (s *QSchedulerServerImpl) AssignTasks(ctx context.Context, r *swarming.AssignTasksRequest) (*swarming.AssignTasksResponse, error) {
+func (s *QSchedulerServerImpl) AssignTasks(ctx context.Context, r *swarming.AssignTasksRequest) (resp *swarming.AssignTasksResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+
 	var response *swarming.AssignTasksResponse
 
 	doAssign := func(ctx context.Context) error {
@@ -111,7 +116,11 @@ func (s *QSchedulerServerImpl) AssignTasks(ctx context.Context, r *swarming.Assi
 }
 
 // GetCancellations implements QSchedulerServer.
-func (s *QSchedulerServerImpl) GetCancellations(ctx context.Context, r *swarming.GetCancellationsRequest) (*swarming.GetCancellationsResponse, error) {
+func (s *QSchedulerServerImpl) GetCancellations(ctx context.Context, r *swarming.GetCancellationsRequest) (resp *swarming.GetCancellationsResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+
 	sp, err := entities.Load(ctx, r.SchedulerId)
 	if err != nil {
 		return nil, err
@@ -126,7 +135,10 @@ func (s *QSchedulerServerImpl) GetCancellations(ctx context.Context, r *swarming
 }
 
 // NotifyTasks implements QSchedulerServer.
-func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.NotifyTasksRequest) (*swarming.NotifyTasksResponse, error) {
+func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.NotifyTasksRequest) (resp *swarming.NotifyTasksResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
 
 	doNotify := func(ctx context.Context) error {
 		sp, err := entities.Load(ctx, r.SchedulerId)
