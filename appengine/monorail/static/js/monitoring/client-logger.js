@@ -100,11 +100,14 @@ export default class ClientLogger {
     const startEvent = this.startedEvents[eventName];
 
     if (!startEvent) {
-      throw `logPause called for event with no logStart: ${eventName}`;
+      console.warn(`logPause called for event with no logStart: ${eventName}`);
+      return;
     }
 
     if (!startEvent.labels[eventLabel]) {
-      throw `logPause called for event label with no logStart: ${eventName}.${eventLabel}`;
+      console.warn(`logPause called for event label with no logStart: ` +
+        `${eventName}.${eventLabel}`);
+      return;
     }
 
     let elapsed = new Date().getTime() - startEvent.labels[eventLabel];
@@ -129,12 +132,15 @@ export default class ClientLogger {
     const startEvent = this.startedEvents[eventName];
 
     if (!startEvent) {
-      throw `logResume called for event with no logStart: ${eventName}`;
+      console.warn(`logResume called for event with no logStart: ${eventName}`);
+      return;
     }
 
     if (!startEvent.hasOwnProperty('elapsed')
         || !startEvent.elapsed.hasOwnProperty(eventLabel)) {
-      throw `logResume called for event that was never paused: ${eventName}.${eventLabel}`;
+      console.warn(`logResume called for event that was never paused:` +
+        `${eventName}.${eventLabel}`);
+      return;
     }
 
     // TODO(jeffcarp): Throw if an event is resumed twice.
@@ -149,15 +155,17 @@ export default class ClientLogger {
     const startEvent = this.startedEvents[eventName];
 
     if (!startEvent) {
-      throw `logEnd called for event with no logStart: ${eventName}`;
+      console.warn(`logEnd called for event with no logStart: ${eventName}`);
+      return;
     }
 
     // If they've specified a label, report the elapsed since the start
     // of that label.
     if (eventLabel) {
       if (!startEvent.labels.hasOwnProperty(eventLabel)) {
-        throw `logEnd called for event + label with no logStart: ` +
-          `${eventName}/${eventLabel}`;
+        console.warn(`logEnd called for event + label with no logStart: ` +
+          `${eventName}/${eventLabel}`);
+        return;
       }
 
       this._sendTiming(startEvent, eventName, eventLabel, maxThresholdMs);

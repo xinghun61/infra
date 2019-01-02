@@ -216,16 +216,16 @@ suite('ClientLogger', () => {
       }, 'event with no label');
     });
 
-    test('throws if no start event exists', () => {
-      assert.throws(() => {
-        c.logPause('bogus', 'fogus');
-      }, 'event with no logStart');
+    test('exits early if no start event exists', () => {
+      const originalStartedEvents = Object.assign(c.startedEvents, {});
+      c.logPause('bogus', 'fogus');
+      assert.deepEqual(c.startedEvents, originalStartedEvents);
     });
 
-    test('throws if no start event label exists', () => {
-      assert.throws(() => {
-        c.logPause('event-name', 'fogus');
-      }, 'event label with no logStart');
+    test('exits early if no label exists', () => {
+      const originalStartedEvents = Object.assign(c.startedEvents, {});
+      c.logPause('event-name', 'fogus');
+      assert.deepEqual(c.startedEvents, originalStartedEvents);
     });
 
     test('adds elapsed time to start event', () => {
@@ -281,13 +281,13 @@ suite('ClientLogger', () => {
       }, 'no label');
     });
 
-    test('throws if no start event exists', () => {
-      assert.throws(() => {
-        c.logResume('bogus', 'fogus');
-      }, 'no logStart');
+    test('exits early if no start event exists', () => {
+      const originalStartedEvents = Object.assign(c.startedEvents, {});
+      c.logResume('bogus', 'fogus');
+      assert.deepEqual(c.startedEvents, originalStartedEvents);
     });
 
-    test('throws if the label was never paused', () => {
+    test('exits early if the label was never paused', () => {
       c.startedEvents['event-name'] = {
         time: startTimeEvent,
         labels: {
@@ -296,9 +296,9 @@ suite('ClientLogger', () => {
         elapsed: {},
       };
 
-      assert.throws(() => {
-        c.logResume('event-name', 'event-label');
-      }, 'never paused');
+      const originalStartedEvents = Object.assign(c.startedEvents, {});
+      c.logResume('event-name', 'event-label');
+      assert.deepEqual(c.startedEvents, originalStartedEvents);
     });
 
     test('sets start event time to current time', () => {
@@ -348,13 +348,22 @@ suite('ClientLogger', () => {
       clock.restore();
     });
 
-    test('throws an error if no event was started', () => {
+    test('returns early if no event was started', () => {
       c.startedEvents = {someEvent: {}};
-      assert.throws(() => {
-        c.logEnd('bogus');
-      });
+      const originalStartedEvents = Object.assign(c.startedEvents, {});
+      c.logEnd('bogus');
       sinon.assert.notCalled(window.ga);
       assert.isNull(sessionStorage.getItem(startedKey));
+      assert.deepEqual(c.startedEvents, originalStartedEvents);
+    });
+
+    test('returns early if label was not started', () => {
+      c.startedEvents = {someEvent: { labels: {}}};
+      const originalStartedEvents = Object.assign(c.startedEvents, {});
+      c.logEnd('someEvent', 'bogus');
+      sinon.assert.notCalled(window.ga);
+      assert.isNull(sessionStorage.getItem(startedKey));
+      assert.deepEqual(c.startedEvents, originalStartedEvents);
     });
 
     test('does not log non-labeled events over threshold', () => {
