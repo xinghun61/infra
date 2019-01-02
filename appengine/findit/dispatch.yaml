@@ -2,6 +2,12 @@ dispatch:
   - url: "*/robots.txt"
     module: default
 
+  - url: "*/coverage/cron/*"
+    module: code-coverage-backend
+
+  - url: "*/coverage/task/*"
+    module: code-coverage-backend
+
   - url: "*/flake/detection/cron/*"
     module: flake-detection-backend
 
@@ -39,7 +45,7 @@ dispatch:
     module: frontend
 
   - url: "*/coverage*"
-    module: code-coverage
+    module: code-coverage-frontend
 
   - url: "*/trooper"
     module: frontend

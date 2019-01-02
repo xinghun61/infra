@@ -1,0 +1,37 @@
+application: findit-for-me-staging
+module: code-coverage-frontend
+version: 1
+runtime: python27
+api_version: 1
+threadsafe: true
+instance_class: F2  # 256MB memory, 1.2GHz CPU.
+automatic_scaling:
+  min_idle_instances: 6
+  max_concurrent_requests: 25
+
+handlers:
+- url: /coverage.*
+  script: coverage_main.code_coverage_frontend_web_application
+  secure: always
+
+skip_files:
+- ^(.*/)?#.*#$
+- ^(.*/)?.*~$
+- ^(.*/)?.*\.py[co]$
+- ^(.*/)?.*_test\.py$
+- ^(.*/)?tests\.py$
+- ^(.*/)?\..*$
+- ^(.*/)?.*\.md$
+- ^(.*/)?Makefile$
+- ^(.*/)?README$
+- ^(.*/)?util_scripts/.*$
+
+libraries:
+- name: webapp2
+  version: latest
+- name: jinja2
+  version: latest
+- name: pycrypto
+  version: latest
+- name: numpy
+  version: 1.6.1

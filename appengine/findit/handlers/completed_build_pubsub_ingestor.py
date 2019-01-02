@@ -68,7 +68,7 @@ def _HandlePossibleCodeCoverageBuild(build_id):  # pragma: no cover
     taskqueue.add(
         name='coveragedata-%s' % build_id,  # Avoid duplicate tasks.
         url='/coverage/task/process-data/build/%s' % build_id,
-        target='code-coverage',  # Always use the default version.
+        target='code-coverage-backend',  # Always use the default version.
         queue_name='code-coverage-process-data')
   except (taskqueue.TombstonedTaskError, taskqueue.TaskAlreadyExistsError):
     logging.warning('Build %s was already scheduled to be processed', build_id)
