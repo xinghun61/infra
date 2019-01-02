@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"text/tabwriter"
 	"time"
 
@@ -47,7 +46,7 @@ type diagnoseRun struct {
 
 func (c *diagnoseRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	if err := c.innerRun(a, args, env); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
+		fmt.Fprintf(a.GetErr(), "%s\n", err)
 		return 1
 	}
 	return 0
@@ -69,7 +68,7 @@ func (c *diagnoseRun) innerRun(a subcommands.Application, args []string, env sub
 	if err != nil {
 		return err
 	}
-	tw := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+	tw := tabwriter.NewWriter(a.GetOut(), 0, 0, 3, ' ', 0)
 	if c.short {
 		printBotDiagnosisShort(tw, e, bots)
 	} else {

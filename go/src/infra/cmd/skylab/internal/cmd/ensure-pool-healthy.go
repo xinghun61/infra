@@ -8,8 +8,8 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
-	"os"
 	"strings"
 	"text/tabwriter"
 
@@ -57,8 +57,8 @@ type userError struct {
 	error
 }
 
-func (c *ensurePoolHealthyRun) printError(err error) {
-	fmt.Fprintf(os.Stderr, "%s\n\n", err)
+func (c *ensurePoolHealthyRun) printError(w io.Writer, err error) {
+	fmt.Fprintf(w, "%s\n\n", err)
 	switch err.(type) {
 	case userError:
 		c.Flags.Usage()
@@ -69,7 +69,7 @@ func (c *ensurePoolHealthyRun) printError(err error) {
 
 func (c *ensurePoolHealthyRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	if err := c.innerRun(a, args, env); err != nil {
-		c.printError(err)
+		c.printError(a.GetErr(), err)
 		return 1
 	}
 	return 0
@@ -99,17 +99,18 @@ func (c *ensurePoolHealthyRun) innerRun(a subcommands.Application, args []string
 	})
 
 	if c.dryrun {
-		fmt.Printf("DRYRUN: These changes are recommendations. Rerun without dryrun to apply changes.\n")
+		fmt.Fprintf(a.GetOut(), "DRYRUN: These changes are recommendations. Rerun without dryrun to apply changes.\n")
 	}
+	out := a.GetOut()
 	for _, m := range models {
-		if err := c.ensurePoolForModel(ctx, ic, target, m); err != nil {
+		if err := c.ensurePoolForModel(ctx, out, ic, target, m); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (c *ensurePoolHealthyRun) ensurePoolForModel(ctx context.Context, ic fleet.InventoryClient, target, model string) error {
+func (c *ensurePoolHealthyRun) ensurePoolForModel(ctx context.Context, w io.Writer, ic fleet.InventoryClient, target, model string) error {
 	res, err := ic.EnsurePoolHealthy(
 		ctx,
 		&fleet.EnsurePoolHealthyRequest{
@@ -124,16 +125,16 @@ func (c *ensurePoolHealthyRun) ensurePoolForModel(ctx context.Context, ic fleet.
 	if err != nil {
 		return errors.Annotate(err, "ensure pool for %s", model).Err()
 	}
-	c.printEnsurePoolHealthyResult(model, target, res)
+	c.printEnsurePoolHealthyResult(w, model, target, res)
 	return nil
 }
 
-func (c *ensurePoolHealthyRun) printEnsurePoolHealthyResult(model, target string, res *fleet.EnsurePoolHealthyResponse) {
-	w := bufio.NewWriter(os.Stdout)
-	defer w.Flush()
+func (c *ensurePoolHealthyRun) printEnsurePoolHealthyResult(w io.Writer, model, target string, res *fleet.EnsurePoolHealthyResponse) {
+	bw := bufio.NewWriter(w)
+	defer bw.Flush()
 
 	// Align summary output
-	tw := tabwriter.NewWriter(w, 0, 2, 2, ' ', 0)
+	tw := tabwriter.NewWriter(bw, 0, 2, 2, ' ', 0)
 	defer tw.Flush()
 	fmt.Fprintf(tw, "Model:\t%s\t\n", model)
 	fmt.Fprintf(tw, "Target:\t%s\t\n", target)
@@ -155,12 +156,12 @@ func (c *ensurePoolHealthyRun) printEnsurePoolHealthyResult(model, target string
 
 	// Do not align inventory changes with the summary output.
 	if len(res.GetChanges()) > 0 {
-		fmt.Fprintf(w, "Inventory changes:\n")
+		fmt.Fprintf(bw, "Inventory changes:\n")
 		for _, c := range res.GetChanges() {
-			fmt.Fprintf(w, "\t%s: %s\t->\t%s\n", c.DutId, c.OldPool, c.NewPool)
+			fmt.Fprintf(bw, "\t%s: %s\t->\t%s\n", c.DutId, c.OldPool, c.NewPool)
 		}
 	}
-	fmt.Fprintf(w, "\n")
+	fmt.Fprintf(bw, "\n")
 }
 
 func (*ensurePoolHealthyRun) getTargetPool(args []string) (string, error) {

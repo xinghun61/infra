@@ -7,7 +7,6 @@ package cmd
 import (
 	"fmt"
 	"io"
-	"os"
 	"sort"
 	"strings"
 	"text/tabwriter"
@@ -46,7 +45,7 @@ type inventoryRun struct {
 
 func (c *inventoryRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	if err := c.innerRun(a, args, env); err != nil {
-		fmt.Fprintf(os.Stderr, "%s: %s\n", progName, err)
+		fmt.Fprintf(a.GetErr(), "%s: %s\n", progName, err)
 		return 1
 	}
 	return 0
@@ -70,7 +69,7 @@ func (c *inventoryRun) innerRun(a subcommands.Application, args []string, env su
 	}
 	bs := res.GetBots()
 	r := compileInventoryReport(c.filterBots(bs))
-	_ = printInventory(os.Stdout, r)
+	_ = printInventory(a.GetOut(), r)
 	return nil
 }
 

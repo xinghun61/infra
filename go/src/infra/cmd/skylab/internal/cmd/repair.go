@@ -7,7 +7,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -41,7 +40,7 @@ type repairRun struct {
 
 func (c *repairRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	if err := c.innerRun(a, args, env); err != nil {
-		fmt.Fprintf(os.Stderr, "%s: %s\n", progName, err)
+		fmt.Fprintf(a.GetErr(), "%s: %s\n", progName, err)
 		return 1
 	}
 	return 0
@@ -63,7 +62,7 @@ func (c *repairRun) innerRun(a subcommands.Application, args []string, env subco
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Created Swarming task %s for host %s\n", swarmingTaskURL(e, id), host)
+		fmt.Fprintf(a.GetOut(), "Created Swarming task %s for host %s\n", swarmingTaskURL(e, id), host)
 	}
 	return nil
 }
