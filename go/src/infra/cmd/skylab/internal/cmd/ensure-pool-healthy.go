@@ -115,6 +115,9 @@ func (c *ensurePoolHealthyRun) ensurePoolForModel(ctx context.Context, ic fleet.
 			DutSelector: &fleet.DutSelector{Model: model},
 			TargetPool:  target,
 			SparePool:   c.spare,
+			Options: &fleet.EnsurePoolHealthyRequest_Options{
+				Dryrun: c.dryrun,
+			},
 		},
 	)
 	if err != nil {
