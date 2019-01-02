@@ -91,7 +91,7 @@ func testingContext() context.Context {
 			GerritHost:  "some-gerrit-host",
 			Project:     "some-project",
 			Branch:      "master",
-			DataPath:    "data/skylab/lab.textpb",
+			LabDataPath: "data/skylab/lab.textpb",
 			Environment: "ENVIRONMENT_STAGING",
 		},
 	})
@@ -136,7 +136,7 @@ func (g *fakeGitilesClient) addArchive(ic *config.Inventory, data []byte) error 
 	tw := tar.NewWriter(gw)
 
 	if err := tw.WriteHeader(&tar.Header{
-		Name: ic.DataPath,
+		Name: ic.LabDataPath,
 		Mode: 0777,
 		Size: int64(len(data)),
 	}); err != nil {

@@ -55,7 +55,7 @@ func fetchLabInventoryData(ctx context.Context, gc gitiles.GitilesClient) (strin
 	}
 	logging.Debugf(ctx, "Gitiles archive %+v size: %s", req, humanize.Bytes(uint64(len(a.Contents))))
 
-	return extractGitilesArchive(ctx, a.Contents, ic.DataPath)
+	return extractGitilesArchive(ctx, a.Contents, ic.LabDataPath)
 }
 
 // extractGitilesArchive extracts file at path filePath from the given

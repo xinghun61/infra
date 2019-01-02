@@ -39,9 +39,9 @@ func TestFakeGitilesArchive(t *testing.T) {
 		defer validate()
 
 		ic := &config.Inventory{
-			Project:  "fakeproject",
-			Branch:   "master",
-			DataPath: "some/dir",
+			Project:     "fakeproject",
+			Branch:      "master",
+			LabDataPath: "some/dir",
 		}
 		So(tf.FakeGitiles.addArchive(ic, []byte("some test data")), ShouldBeNil)
 		_, err := tf.FakeGitiles.Archive(tf.C, &gitiles.ArchiveRequest{

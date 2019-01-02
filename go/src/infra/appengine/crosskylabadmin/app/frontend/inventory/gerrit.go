@@ -63,7 +63,7 @@ func commitInventoryStr(ctx context.Context, client gerrit.GerritClient, lab str
 	if _, err = client.ChangeEditFileContent(ctx, &gerrit.ChangeEditFileContentRequest{
 		Number:   changeInfo.Number,
 		Project:  changeInfo.Project,
-		FilePath: inventoryConfig.DataPath,
+		FilePath: inventoryConfig.LabDataPath,
 		Content:  []byte(lab),
 	}); err != nil {
 		return "", err

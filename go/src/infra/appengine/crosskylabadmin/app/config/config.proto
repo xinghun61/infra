@@ -103,11 +103,7 @@ message Inventory {
     // Git branch from the inventory project to be used.
     string branch = 4;
 
-    // Path to the lab inventory data file within the git project.
-    // e.g. data/skylab/lab.textpb
-    //
-    // This field will be deprecated soon, in favor of lab_data_path.
-    string data_path = 5;
+    string data_path = 5 [deprecated=true];
 
     // Inventory environment managed by this instance of the app.
     // e.g. ENVIRONMENT_STAGING
@@ -117,8 +113,6 @@ message Inventory {
     // e.g. data/skylab/server_db.textpb
     string infrastructure_data_path = 7;
 
-    // Reserved and not yet used. Will relace data_path when that field is deprecated.
-    //
     // Path to the lab inventory data file within the git project.
     // e.g. data/skylab/lab.textpb
     string lab_data_path = 8;
