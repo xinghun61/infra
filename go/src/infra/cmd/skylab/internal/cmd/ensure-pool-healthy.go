@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"text/tabwriter"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/cmd/skylab/internal/site"
@@ -131,29 +132,33 @@ func (c *ensurePoolHealthyRun) printEnsurePoolHealthyResult(model, target string
 	w := bufio.NewWriter(os.Stdout)
 	defer w.Flush()
 
-	fmt.Fprintf(w, "### Model: %s, Target: %s, Spare: %s\n", model, target, c.spare)
+	// Align summary output
+	tw := tabwriter.NewWriter(w, 0, 2, 2, ' ', 0)
+	defer tw.Flush()
+	fmt.Fprintf(tw, "Model:\t%s\t\n", model)
+	fmt.Fprintf(tw, "Target:\t%s\t\n", target)
+	fmt.Fprintf(tw, "Spare:\t%s\t\n", c.spare)
 	tp := res.GetTargetPoolStatus()
-	fmt.Fprintf(w, "New target pool status: %d/%d healthy\n", tp.GetHealthyCount(), tp.GetSize())
+	fmt.Fprintf(tw, "New target pool status:\t%d/%d healthy\t\n", tp.GetHealthyCount(), tp.GetSize())
 	sp := res.GetSparePoolStatus()
-	fmt.Fprintf(w, "New spare pool status: %d/%d healthy\n", sp.GetHealthyCount(), sp.GetSize())
-	if len(res.GetChanges()) > 0 {
-		fmt.Fprintf(w, "\n")
-		fmt.Fprintf(w, "Inventory changes:\n")
-		for _, c := range res.GetChanges() {
-			fmt.Fprintf(w, "  %s: %s --> %s\n", c.DutId, c.OldPool, c.NewPool)
-		}
-	}
+	fmt.Fprintf(tw, "New spare pool status:\t%d/%d healthy\t\n", sp.GetHealthyCount(), sp.GetSize())
 	if len(res.GetFailures()) > 0 {
 		fs := make([]string, 0, len(res.Failures))
 		for _, f := range res.Failures {
 			fs = append(fs, f.String())
 		}
-		fmt.Fprintf(w, "\n")
-		fmt.Fprintf(w, "Failures encountered: %s\n", strings.Join(fs, ", "))
+		fmt.Fprintf(tw, "Failures encountered:\t%s\t\n", strings.Join(fs, ", "))
 	}
 	if res.GetUrl() != "" {
-		fmt.Fprintf(w, "\n")
-		fmt.Fprintf(w, "Inventory changes commited at: %s\n", res.GetUrl())
+		fmt.Fprintf(tw, "Inventory changes commited at:\t%s\t\n", res.GetUrl())
+	}
+
+	// Do not align inventory changes with the summary output.
+	if len(res.GetChanges()) > 0 {
+		fmt.Fprintf(w, "Inventory changes:\n")
+		for _, c := range res.GetChanges() {
+			fmt.Fprintf(w, "\t%s: %s\t->\t%s\n", c.DutId, c.OldPool, c.NewPool)
+		}
 	}
 	fmt.Fprintf(w, "\n")
 }
