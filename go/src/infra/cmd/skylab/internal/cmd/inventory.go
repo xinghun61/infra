@@ -19,6 +19,7 @@ import (
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/cmd/skylab/internal/site"
+	"infra/libs/skylab/inventory"
 )
 
 // Inventory subcommand: Print host inventory.
@@ -164,8 +165,9 @@ func addBotCount(ic *inventoryCount, b *fleet.BotSummary) {
 // isSuites returns true if the bot is in the suites pool
 func isSuites(b *fleet.BotSummary) bool {
 	ps := b.GetDimensions().GetPools()
+	suitesPool := inventory.SchedulableLabels_DUT_POOL_SUITES.String()
 	for _, p := range ps {
-		if p == "suites" {
+		if p == suitesPool {
 			return true
 		}
 	}
