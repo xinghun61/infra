@@ -68,6 +68,7 @@ export default class MonorailTSMon extends TSMonClient {
         ['client_id', TSMonClient.stringField('client_id')],
         ['host_name', TSMonClient.stringField('host_name')],
         ['template_name', TSMonClient.stringField('template_name')],
+        ['document_visible', TSMonClient.boolField('document_visible')],
       ]))
     );
     this.recordPageLoadTiming();
@@ -116,6 +117,7 @@ export default class MonorailTSMon extends TSMonClient {
         ['client_id', this.clientId],
         ['host_name', window.CS_env.app_version],
         ['template_name', pageType],
+        ['document_visible', MonorailTSMon.isPageVisible()],
       ]);
       this.pageLoadMetric.add(domContentLoadedMs, metricFields);
     }
@@ -173,5 +175,10 @@ export default class MonorailTSMon extends TSMonClient {
     const randomvalues = new Uint32Array(1);
     window.crypto.getRandomValues(randomvalues);
     return randomvalues[0].toString(32);
+  }
+
+  // Returns a Boolean, true if document is visible.
+  static isPageVisible(path) {
+    return document.visibilityState === 'visible';
   }
 }

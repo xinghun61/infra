@@ -39,10 +39,13 @@ AUTOCOMPLETE_POPULATE_LATENCY_METRIC = ts_mon.CumulativeDistributionMetric(
     'Latency between page load and autocomplete options loading.'
   ), field_spec=STANDARD_FIELDS,
   units=ts_mon.MetricsDataUnits.MILLISECONDS)
+DOM_CONTENT_LOADED_EXTRA_FIELDS = [
+    ts_mon.StringField('template_name'),
+    ts_mon.BooleanField('document_visible')]
 DOM_CONTENT_LOADED_METRIC = ts_mon.CumulativeDistributionMetric(
   'frontend/dom_content_loaded', (
     'domContentLoaded performance timing.'
-  ), field_spec=STANDARD_FIELDS + [ts_mon.StringField('template_name')],
+  ), field_spec=STANDARD_FIELDS + DOM_CONTENT_LOADED_EXTRA_FIELDS,
   units=ts_mon.MetricsDataUnits.MILLISECONDS)
 
 
