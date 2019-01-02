@@ -18,19 +18,21 @@ import (
 	"go.chromium.org/luci/grpc/prpc"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/cmd/skylab/internal/flagx"
 	"infra/cmd/skylab/internal/site"
 	"infra/libs/skylab/inventory"
 )
 
 // Inventory subcommand: Print host inventory.
 var Inventory = &subcommands.Command{
-	UsageLine: "inventory [-dev]",
+	UsageLine: "inventory [-dev] [-labs N]",
 	ShortDesc: "Print host inventory",
 	LongDesc:  "Print host inventory.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &inventoryRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
+		c.Flags.Var(flagx.NewCommaList(&c.labs), "labs", "Restrict results to chromeos labs, e.g. 2,4,6")
 		return c
 	},
 }
@@ -39,6 +41,7 @@ type inventoryRun struct {
 	subcommands.CommandRunBase
 	authFlags authcli.Flags
 	envFlags  envFlags
+	labs      []string
 }
 
 func (c *inventoryRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -65,9 +68,43 @@ func (c *inventoryRun) innerRun(a subcommands.Application, args []string, env su
 	if err != nil {
 		return err
 	}
-	r := compileInventoryReport(res.GetBots())
+	bs := res.GetBots()
+	r := compileInventoryReport(c.filterBots(bs))
 	_ = printInventory(os.Stdout, r)
 	return nil
+}
+
+func (c *inventoryRun) filterBots(bs []*fleet.BotSummary) []*fleet.BotSummary {
+	if len(c.labs) == 0 {
+		return bs
+	}
+	labs := make(map[string]bool, len(c.labs))
+	for _, lab := range c.labs {
+		labs[lab] = true
+	}
+	var new []*fleet.BotSummary
+	for _, b := range bs {
+		name := b.GetDimensions().GetDutName()
+		if n := getBotLabNumber(name); labs[n] {
+			new = append(new, b)
+		}
+	}
+	return new
+}
+
+// getBotLabNumber returns the lab number for the DUT name as a
+// string.  For example, "4" for "chromeos4" DUTs.  The empty string
+// is returned if the lab cannot be determined.
+func getBotLabNumber(n string) string {
+	if !strings.HasPrefix(n, "chromeos") {
+		return ""
+	}
+	i := len("chromeos")
+	j := strings.IndexByte(n[i:], '-')
+	if j == -1 {
+		return ""
+	}
+	return n[i : i+j]
 }
 
 // inventoryReport contains the compiled status of the inventory
