@@ -325,9 +325,15 @@ suite('MrChart', function() {
         assert.equal(actual.getTime(), expectedDate.getTime());
       });
 
-      test('returns EOD UTC of current date if not in URL params', function() {
+      test('returns EOD of current date if not in URL params', function() {
         MrChart.getSearchParams.returns(new URLSearchParams());
-        assert.equal(MrChart.getEndDate().getTime(), 86399000);
+
+        const expectedDate = new Date();
+        expectedDate.setHours(23);
+        expectedDate.setMinutes(59);
+        expectedDate.setSeconds(59);
+
+        assert.equal(MrChart.getEndDate().getTime(), expectedDate.getTime());
       });
     });
 
