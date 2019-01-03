@@ -938,6 +938,8 @@ class WorkEnv(object):
             issue_id, approval_id, approval_delta, comment_content, False,
             send_email=False)
         updated_issue_ids.append(issue_id)
+      except exceptions.NoSuchIssueApprovalException as e:
+        logging.info('Skipping issue %s, no approval: %s', issue_id, e)
       except permissions.PermissionException as e:
         logging.info('Skipping issue %s, update not allowed: %s', issue_id, e)
     # TODO(jojwang): send bulk approval update email if send_email

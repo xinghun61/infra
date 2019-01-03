@@ -903,8 +903,10 @@ class WorkEnvTest(unittest.TestCase):
   def testBulkUpdateIssueApproval(self, mockUpdateIssueApproval):
     updated_issues = [78901, 78902]
     def side_effect(issue_id, *_args, **_kwargs):
-      if issue_id not in updated_issues:
+      if issue_id in [78903]:
         raise permissions.PermissionException
+      if issue_id in [78904, 78905]:
+        raise exceptions.NoSuchIssueApprovalException
     mockUpdateIssueApproval.side_effect = side_effect
 
     self.SignIn()
@@ -943,7 +945,6 @@ class WorkEnvTest(unittest.TestCase):
       self.work_env.BulkUpdateIssueApprovals(
           [], 24, self.project, approval_delta,
           'comment', send_email=True)
-
 
   @mock.patch(
       'features.send_notifications.PrepareAndSendApprovalChangeNotification')
