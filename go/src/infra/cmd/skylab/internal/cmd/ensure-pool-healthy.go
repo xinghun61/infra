@@ -85,7 +85,7 @@ func (c *ensurePoolHealthyRun) innerRun(a subcommands.Application, args []string
 
 	target, err := c.getTargetPool(args)
 	if err != nil {
-		return nil
+		return err
 	}
 	models, err := c.getModels(ctx, hc, args)
 	if err != nil {
