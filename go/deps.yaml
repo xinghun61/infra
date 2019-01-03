@@ -154,6 +154,9 @@ import:
 - package: gopkg.in/natefinch/npipe.v2
   version: v2
   repo: https://chromium.googlesource.com/external/github.com/natefinch/npipe.git
+- package: github.com/shurcooL/sanitized_anchor_name
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/shurcooL/sanitized_anchor_name.git
 - package: gopkg.in/russross/blackfriday.v2
   version: v2
   repo: https://chromium.googlesource.com/external/github.com/russross/blackfriday.git
