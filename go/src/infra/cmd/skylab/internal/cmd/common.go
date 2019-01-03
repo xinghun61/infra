@@ -8,8 +8,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
 
+	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/auth/client/authcli"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
@@ -19,6 +22,22 @@ import (
 )
 
 const progName = "skylab"
+
+type commonFlags struct {
+	debug bool
+}
+
+func (f *commonFlags) Register(fl *flag.FlagSet) {
+	fl.BoolVar(&f.debug, "debug", false, "Enable debug output")
+}
+
+func (f commonFlags) DebugLogger(a subcommands.Application) *log.Logger {
+	out := ioutil.Discard
+	if f.debug {
+		out = a.GetErr()
+	}
+	return log.New(out, progName, log.LstdFlags|log.Lshortfile)
+}
 
 type envFlags struct {
 	dev bool
