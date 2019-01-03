@@ -452,15 +452,20 @@ func filterByWhitelist(c context.Context, whitelistedGroups []string, changes []
 				logging.WithError(err).Errorf(c, "Failed to create identity for %q.", email)
 				continue
 			}
-			authOK, err := authDB.IsMember(c, ident, whitelistedGroups)
+			memberGroups, err := authDB.CheckMembership(c, ident, whitelistedGroups)
 			if err != nil {
 				logging.WithError(err).Errorf(c, "Failed to check auth for %q.", email)
 			}
-			whitelisted = authOK
+			logging.Fields{
+				"identity":      ident,
+				"memberGroups":  memberGroups,
+				"checkedGroups": whitelistedGroups,
+			}.Debugf(c, "Checked membership.")
+			whitelisted = len(memberGroups) > 0
 			if !whitelisted {
 				logging.Fields{
-					"email":  email,
-					"groups": whitelistedGroups,
+					"email":             email,
+					"whitelistedGroups": whitelistedGroups,
 				}.Infof(c, "Owner not whitelisted; skipping Analyze.")
 			}
 			owners[email] = whitelisted
