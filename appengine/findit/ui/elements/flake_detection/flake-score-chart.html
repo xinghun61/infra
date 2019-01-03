@@ -6,24 +6,18 @@
 <dom-module id="flake-score-chart">
   <template>
     <style>
-        #dialog {
-            width: 500px;
-        }
-
         #selection-chart {
             margin-left: 0 auto;
             height: 220px;
         }
     </style>
     <paper-dialog id="dialog" opened=[[opened]]>
-      <div id="chart-div">
         <google-chart
           id="selection-chart"
           type="column"
-          options='{{_generateChartOptions()}}'
+          options='{{_generateChartOptions(weights)}}'
           data = '{{_getChartDataFromFlake(flake, weights)}}'>
         </google-chart>
-      </div>
       <div class="buttons">
         <paper-button dialog-dismiss>Close</paper-button>
       </div>
@@ -46,6 +40,8 @@
         },
 
         toggleDialog: function () {
+          let dialog_width = 200 * this.weights.length;
+          this.$.dialog.updateStyles({'width': dialog_width+'px'});
           this.$.dialog.toggle();
         },
 
@@ -58,10 +54,10 @@
           return -1;
         },
 
-        _generateChartOptions: function () {
+        _generateChartOptions: function (weights) {
           return {
               title: 'Flake Occurrences in past 7 days',
-              width: 400,
+              width: 180 * weights.length,
               height: 200,
               vAxes: { 0: { title: 'Counts' } },
               chartArea: {
@@ -82,7 +78,7 @@
                 'Impacted CLs', { 'role': 'annotation'}]);
             for (let count of flake.flake_counts_last_week) {
                 let row = [
-                    count.flake_type + ' (W=' + this._getWeight(count.flake_type, weights) +')',
+                    count.flake_type + '\n(W=' + this._getWeight(count.flake_type, weights) +')',
                     count.occurrence_count, 'Occ (' + count.occurrence_count +')',
                     count.impacted_cl_count, 'CL (' + count.impacted_cl_count +')'];
                 data.push(row);

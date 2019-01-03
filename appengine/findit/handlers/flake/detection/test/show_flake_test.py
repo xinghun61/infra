@@ -141,7 +141,18 @@ class ShowFlakeTest(WaterfallTestCase):
             0,
         'impacted_cl_count_last_week':
             0,
-        'flake_counts_last_week': [],
+        'flake_counts_last_week': [
+            {
+                'flake_type': 'cq false rejection',
+                'impacted_cl_count': 0,
+                'occurrence_count': 0
+            },
+            {
+                'flake_type': 'cq retry with patch',
+                'impacted_cl_count': 0,
+                'occurrence_count': 0
+            },
+        ],
         'flake_score_last_week':
             0,
         'component':
@@ -179,9 +190,14 @@ class ShowFlakeTest(WaterfallTestCase):
 
     self.assertEqual(
         json.dumps({
-            'flake_json': flake_dict,
-            'key': flake.key.urlsafe(),
-            'show_all_occurrences': ''
+            'flake_json':
+                flake_dict,
+            'key':
+                flake.key.urlsafe(),
+            'show_all_occurrences':
+                '',
+            'weights': [('cq false rejection', 100),
+                        ('cq retry with patch', 10)]
         },
                    default=str,
                    sort_keys=True,

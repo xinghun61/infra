@@ -140,7 +140,18 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             0,
         'impacted_cl_count_last_week':
             0,
-        'flake_counts_last_week': [],
+        'flake_counts_last_week': [
+            {
+                'flake_type': 'cq false rejection',
+                'impacted_cl_count': 0,
+                'occurrence_count': 0
+            },
+            {
+                'flake_type': 'cq retry with patch',
+                'impacted_cl_count': 0,
+                'occurrence_count': 0
+            },
+        ],
         'flake_score_last_week':
             0,
         'flake_issue': {
@@ -316,7 +327,18 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             0,
         'impacted_cl_count_last_week':
             0,
-        'flake_counts_last_week': [],
+        'flake_counts_last_week': [
+            {
+                'flake_type': 'cq false rejection',
+                'impacted_cl_count': 0,
+                'occurrence_count': 0
+            },
+            {
+                'flake_type': 'cq retry with patch',
+                'impacted_cl_count': 0,
+                'occurrence_count': 0
+            },
+        ],
         'flake_score_last_week':
             0,
         'component':

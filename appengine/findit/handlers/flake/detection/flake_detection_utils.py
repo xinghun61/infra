@@ -261,6 +261,8 @@ def GetFlakeInformation(flake, max_occurrence_count, with_occurrences=True):
   occurrences.sort(key=lambda x: x.time_happened, reverse=True)
   flake_dict = flake.to_dict()
   flake_dict['occurrences'] = _GetGroupedOccurrencesByBuilder(occurrences)
+  flake_dict['flake_counts_last_week'] = _GetFlakeCountsList(
+      flake.flake_counts_last_week)
 
   flake_issue = GetFlakeIssue(flake)
   if flake_issue:

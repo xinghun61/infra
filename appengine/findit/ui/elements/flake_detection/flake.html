@@ -1,5 +1,6 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
 <link rel="import" href="/bower_components/paper-button/paper-button.html">
+<link rel="import" href="/ui/elements/flake_detection/flake-score-chart.html">
 <link rel="import" href="/ui/elements/flake_detection/grouped-occurrences.html">
 
 
@@ -25,13 +26,21 @@
       }
 
       paper-button {
+        horizontal-align: left;
         color: #4285F4;
-        float: right;
+        float: left;
+        display: table-cell;
       }
 
       .hidden {
           display: none;
-        }
+       }
+
+      .graph-button {
+        padding: 0px;
+        margin: 0px;
+        color: #00f;
+      }
     </style>
     <form id="occurrences_form" action="/flake/occurrences">
         <input type="text" name="key" id="key" class="hidden" value="{{key}}">
@@ -42,7 +51,13 @@
           <td>Test Name:</td>
           <td>[[flake_json.test_label_name]]</td>
         </tr>
-
+        <tr>
+          <td>Flake Score:</td>
+          <td>
+            <paper-button class="graph-button" on-tap="_showDialog"><u>[[flake_json.flake_score_last_week]]</u></paper-button>
+            <flake-score-chart class="flake_dialog" flake={{flake_json}} weights=[[weights]]></flake-score-chart>
+          </td>
+        </tr>
         <template is="dom-if" if="[[hasBug(flake_json)]]">
           <tr>
               <td>Bug:</td>
@@ -108,6 +123,9 @@
           },
           show_all_occurrences: {
             type: String
+          },
+          weights: {
+            type: Array
           }
         },
 
@@ -147,6 +165,10 @@
         _showAllOccurrences: function (e) {
             this.show_all_occurrences = '1';
             this.$.occurrences_form.submit();
+        },
+
+        _showDialog: function (e) {
+          this.shadowRoot.querySelector('.flake_dialog').toggleDialog();
         }
       });
     })();
