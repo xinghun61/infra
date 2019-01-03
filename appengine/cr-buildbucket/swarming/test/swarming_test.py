@@ -9,11 +9,14 @@ import datetime
 import json
 import logging
 
+from parameterized import parameterized
+
 from components import utils
 utils.fix_protobuf_package()
 
 from google import protobuf
 from google.protobuf import json_format
+from google.protobuf import struct_pb2
 
 from components import auth
 from components import net
@@ -256,35 +259,21 @@ class SwarmingTest(BaseTest):
         return_value='cr-buildbucket.appspot.com'
     )
 
-  def test_validate_build_parameters(self):
-    bad = [
-        {'properties': []},
-        {'properties': {'buildername': 'bar'}},
-        {'properties': {'blamelist': ['a@example.com']}},
-        {'changes': 0},
-        {'changes': [0]},
-        {'changes': [{'author': 0}]},
-        {'changes': [{'author': {}}]},
-        {'changes': [{'author': {'email': 0}}]},
-        {'changes': [{'author': {'email': ''}}]},
-        {'changes': [{'author': {'email': 'a@example.com'}, 'repo_url': 0}]},
-        {'swarming': []},
-        {'swarming': {'junk': 1}},
-        {'swarming': {'recipe': []}},
-    ]
-    for p in bad:
-      logging.info('testing %s', p)
-      p[model.BUILDER_PARAMETER] = 'foo'
-      with self.assertRaises(errors.InvalidInputError):
-        swarming.validate_build_parameters(p[model.BUILDER_PARAMETER], p)
-
-    swarming.validate_build_parameters(
-        'foo', {
-            model.BUILDER_PARAMETER: 'foo',
-            'properties': {'blamelist': ['a@example.com']},
-            'changes': [{'author': {'email': 'a@example.com'}}],
-        }
-    )
+  @parameterized.expand([
+      ({'changes': 0},),
+      ({'changes': [0]},),
+      ({'changes': [{'author': 0}]},),
+      ({'changes': [{'author': {}}]},),
+      ({'changes': [{'author': {'email': 0}}]},),
+      ({'changes': [{'author': {'email': ''}}]},),
+      ({'changes': [{'author': {'email': 'a@example.com'}, 'repo_url': 0}]},),
+      ({'swarming': []},),
+      ({'swarming': {'junk': 1}},),
+      ({'swarming': {'recipe': []}},),
+  ])
+  def test_validate_build_parameters(self, parameters):
+    with self.assertRaises(errors.InvalidInputError):
+      swarming.validate_build_parameters(parameters)
 
   def test_shared_cache(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
@@ -468,12 +457,6 @@ class SwarmingTest(BaseTest):
         '120'
     )
 
-    builder_cfg.execution_timeout_secs = 60
-    task_def = swarming.prepare_task_def_async(build).get_result()
-    self.assertEqual(
-        task_def['task_slices'][0]['properties']['execution_timeout_secs'], '60'
-    )
-
   def test_expiration(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.expiration_secs = 120
@@ -488,11 +471,6 @@ class SwarmingTest(BaseTest):
     task_def = swarming.prepare_task_def_async(build).get_result()
 
     self.assertEqual(2, len(task_def['task_slices']))
-    self.assertEqual(task_def['task_slices'][0]['expiration_secs'], '60')
-    self.assertEqual(task_def['task_slices'][1]['expiration_secs'], '60')
-
-    builder_cfg.expiration_secs = 60
-    task_def = swarming.prepare_task_def_async(build).get_result()
     self.assertEqual(task_def['task_slices'][0]['expiration_secs'], '60')
     self.assertEqual(task_def['task_slices'][1]['expiration_secs'], '60')
 
@@ -518,8 +496,18 @@ class SwarmingTest(BaseTest):
         ]
     )
 
-    # But don't override if "builder" dimension is already set.
+  def test_auto_builder_dimension_already_set(self):
+    builder_cfg = self.bucket_cfg.swarming.builders[0]
+    builder_cfg.auto_builder_dimension = project_config_pb2.YES
     builder_cfg.dimensions.append('builder:custom')
+
+    build = mkBuild(
+        parameters={
+            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
+        },
+        tags=['builder:linux_chromium_rel_ng'],
+    )
+
     task_def = swarming.prepare_task_def_async(build).get_result()
     self.assertEqual(
         task_def['task_slices'][0]['properties']['dimensions'], [
@@ -561,7 +549,9 @@ class SwarmingTest(BaseTest):
   def test_is_migrating_builder_prod_async_no_host(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     build = mkBuild(
-        parameters={'properties': {'mastername': 'tryserver.chromium.linux'}}
+        input_properties=bbutil.dict_to_struct({
+            'mastername': 'tryserver.chromium.linux'
+        }),
     )
     self.assertIsNone(
         swarming._is_migrating_builder_prod_async(builder_cfg,
@@ -573,7 +563,9 @@ class SwarmingTest(BaseTest):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.luci_migration_host = 'migration.example.com'
     build = mkBuild(
-        parameters={'properties': {'mastername': 'tryserver.chromium.linux'}}
+        input_properties=bbutil.dict_to_struct({
+            'mastername': 'tryserver.chromium.linux'
+        }),
     )
     self.json_response = {'luci_is_prod': True, 'bucket': 'luci.chromium.try'}
     self.assertTrue(
@@ -600,12 +592,10 @@ class SwarmingTest(BaseTest):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.luci_migration_host = 'migration.example.com'
     build = mkBuild(
-        parameters={
-            'properties': {
-                'luci_migration_master_name': 'custom_master',
-                'mastername': 'ordinary_mastername',
-            },
-        }
+        input_properties=bbutil.dict_to_struct({
+            'luci_migration_master_name': 'custom_master',
+            'mastername': 'ordinary_mastername',
+        }),
     )
     self.json_response = {'luci_is_prod': True, 'bucket': 'luci.chromium.try'}
     self.assertTrue(
@@ -619,7 +609,9 @@ class SwarmingTest(BaseTest):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.luci_migration_host = 'migration.example.com'
     build = mkBuild(
-        parameters={'properties': {'mastername': 'tryserver.chromium.linux'}}
+        input_properties=bbutil.dict_to_struct({
+            'mastername': 'tryserver.chromium.linux'
+        }),
     )
 
     self.net_err_response = net.NotFoundError('nope', 404, 'can\'t find it')
@@ -632,7 +624,9 @@ class SwarmingTest(BaseTest):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.luci_migration_host = 'migration.example.com'
     build = mkBuild(
-        parameters={'properties': {'mastername': 'tryserver.chromium.linux'}}
+        input_properties=bbutil.dict_to_struct({
+            'mastername': 'tryserver.chromium.linux'
+        }),
     )
 
     self.net_err_response = net.Error('BOOM', 500, 'IT\'S BAD')
@@ -645,7 +639,9 @@ class SwarmingTest(BaseTest):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.luci_migration_host = 'migration.example.com'
     build = mkBuild(
-        parameters={'properties': {'mastername': 'tryserver.chromium.linux'}}
+        input_properties=bbutil.dict_to_struct({
+            'mastername': 'tryserver.chromium.linux'
+        }),
     )
 
     self.net_err_response = None
@@ -2479,6 +2475,7 @@ def mkBuild(**kwargs):
       created_by=auth.Identity('user', 'john@example.com'),
       canary_preference=model.CanaryPreference.PROD,
       parameters={},
+      input_properties=struct_pb2.Struct(),
   )
   args.update(kwargs)
   return model.Build(**args)
