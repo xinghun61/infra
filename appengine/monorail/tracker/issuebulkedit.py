@@ -122,6 +122,7 @@ class IssueBulkEdit(servlet.Servlet):
     return {
         'issue_tab_mode': 'issueBulkEdit',
         'issues': issue_views,
+        'local_ids_str': ','.join([str(issue.local_id) for issue in issues]),
         'num_issues': len(issue_views),
         'show_progress': ezt.boolean(num_seconds > self._SLOWNESS_THRESHOLD),
         'num_seconds': num_seconds,

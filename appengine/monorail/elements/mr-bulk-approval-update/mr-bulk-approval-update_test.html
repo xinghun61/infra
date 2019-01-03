@@ -1,0 +1,176 @@
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<script src="/bower_components/chai/chai.js"></script>
+<script src="/bower_components/chai-dom/chai-dom.js"></script>
+<link rel="import" href="/elements/mr-bulk-approval-update/mr-bulk-approval-update.html">
+
+<test-fixture id="basic">
+  <template>
+    <mr-bulk-approval-update></mr-bulk-approval-update>
+  </template>
+</test-fixture>
+
+<script type="module">
+  import AutoRefreshPrpcClient from '../../static/js/prpc.js';
+  suite('basic tests', function() {
+    let el;
+    let prpcStub;
+    let root;
+
+    setup(function() {
+      el = fixture('basic');
+      root = el.shadowRoot;
+
+      window.CS_env = {
+        token: 'rutabaga-token',
+        tokenExpiresSec: 1234,
+        app_version: 'rutabaga-version',
+      };
+      window.prpcClient = new AutoRefreshPrpcClient(
+        CS_env.token, CS_env.tokenExpiresSec);
+      prpcStub = sinon.stub(window.prpcClient, 'call');
+    });
+
+    teardown(function() {
+      prpcStub.restore();
+    });
+
+    test('_computeIssueRefs: missing information', function() {
+      el.projectName = 'chromium';
+      assert.equal(el.issueRefs.length, 0);
+
+      el.projectName = null;
+      el.localIdsStr = '1,2,3,5';
+      assert.equal(el.issueRefs.length, 0);
+
+      el.localIdsStr = null;
+      assert.equal(el.issueRefs.length, 0);
+    });
+
+    test('_computeIssueRefs: normal', function() {
+      let project = 'chromium';
+      el.projectName = project;
+      el.localIdsStr = '1,2,3';
+      assert.deepEqual(el.issueRefs, [
+        {projectName: project, localId: '1'},
+        {projectName: project, localId: '2'},
+        {projectName: project, localId: '3'},
+      ]);
+    });
+
+    test('fetchApprovals: applicable fields exist', function(done) {
+      let responseFieldDefs = [
+        {fieldRef: {type: 'INT_TYPE'}},
+        {fieldRef: {type: 'APPROVAL_TYPE'}},
+        {fieldRef: {type: 'APPROVAL_TYPE'}},
+      ];
+      prpcStub.returns(Promise.resolve({fieldDefs: responseFieldDefs}));
+      root.querySelector('.js-showApprovals').click();
+      // Wait for promise in fetchApprovals to resolve.
+      flush(() => {
+        assert.deepEqual(responseFieldDefs.slice(1), el.approvals);
+        assert.equal(null, el.errorMessage);
+        done();
+      });
+    });
+
+    test('fetchApprovals: applicable fields dont exist', function(done) {
+      prpcStub.returns(Promise.resolve({fieldDefs: []}));
+      root.querySelector('.js-showApprovals').click();
+      flush(() => {
+        assert.equal(el.approvals.length, 0);
+        assert.equal(NO_APPROVALS_MESSAGE, el.errorMessage);
+        done();
+      });
+    });
+
+    test('save: normal', function(done) {
+      prpcStub.returns(
+          Promise.resolve({issueRefs: [{localId: '1'}, {localId: '3'}]}));
+      let fieldDefs = [
+        {fieldRef: {fieldName: 'Approval-One', type: 'APPROVAL_TYPE'}},
+        {fieldRef: {fieldName: 'Approval-Two', type: 'APPROVAL_TYPE'}},
+      ];
+      el.set('approvals', fieldDefs);
+      el.projectName = 'chromium';
+      el.localIdsStr = '1,2,3';
+      // Wait for dom-if template stamping.
+      flush(() => {
+        root.querySelector('#commentText').value = 'comment';
+        root.querySelector('#statusInput').value = 'NotApproved';
+        root.querySelector('.js-save').click();
+        // Wait for promise in save() to resolve.
+        flush(() => {
+          // Assert messages correct
+          assert.equal(
+              true,
+              el.responseMessage.includes(
+                  'Updated Approval-One in issues: 1, 3 (2 of 3).'));
+          assert.equal('', el.errorMessage);
+
+          // Assert all inputs not disabled.
+          root.querySelectorAll('input, textarea, select').forEach(input => {
+            assert.equal(input.disabled, false);
+          });
+
+          // Assert all inputs cleared.
+          root.querySelectorAll('input, textarea').forEach(input => {
+            assert.equal(input.value, '');
+          });
+          root.querySelectorAll('select').forEach(select => {
+            assert.equal(select.selectedIndex, 0);
+          });
+
+          // Assert BulkUpdateApprovals correctly called.
+          let expectedMessage = {
+            approvalDelta: {status: "NOT_APPROVED"},
+            commentContent: "comment",
+            fieldRef: fieldDefs[0].fieldRef,
+            issueRefs: el.issueRefs,
+            send_email: true,
+          };
+          sinon.assert.calledWith(
+              prpcStub,
+              'monorail.Issues',
+              'BulkUpdateApprovals',
+              expectedMessage);
+          done();
+        });
+      });
+    });
+
+    test('save: no updates', function(done) {
+      prpcStub.returns(Promise.resolve({issueRefs: []}));
+      let fieldDefs = [
+        {fieldRef: {fieldName: 'Approval-One', type: 'APPROVAL_TYPE'}},
+        {fieldRef: {fieldName: 'Approval-Two', type: 'APPROVAL_TYPE'}},
+      ];
+      el.set('approvals', fieldDefs);
+      el.projectName = 'chromium';
+      el.localIdsStr = '1,2,3';
+      // Wait for dom-if template stamping.
+      flush(() => {
+        root.querySelector('#commentText').value = 'comment';
+        root.querySelector('#statusInput').value = 'NotApproved';
+        root.querySelector('.js-save').click();
+        // Wait for promise in save() to resolve
+        flush(() => {
+          // Assert messages correct.
+          assert.equal('', el.responseMessage);
+          assert.equal(NO_UPDATES_MESSAGE, el.errorMessage);
+
+          // Assert inputs not cleared.
+          assert.equal(root.querySelector('#commentText').value, 'comment');
+          assert.equal(root.querySelector('#statusInput').value, 'NotApproved');
+
+          // Assert inputs not disabled.
+          root.querySelectorAll('input, textarea, select').forEach(input => {
+            assert.equal(input.disabled, false);
+          });
+          done();
+        });
+      });
+    });
+  });
+</script>

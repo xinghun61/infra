@@ -6,6 +6,13 @@
 [if-any read_only][include "../framework/read-only-rejection.ezt"]
 [else]
 
+[if-any dev_mode]
+<link rel="import" href="/elements/mr-bulk-approval-update/mr-bulk-approval-update.html?version=[app_version]" nonce="[nonce]">
+[else]
+<link rel="import" href="/elements/mr-bulk-approval-update/mr-bulk-approval-update.vulcanized.html?version=[app_version]" nonce="[nonce]">
+<script src="/elements/mr-bulk-approval-update/mr-bulk-approval-update.vulcanized.js?version=[app_version]" nonce="[nonce]"></script>
+[end]
+
 <div style="margin-top: 0; padding: 3px;" class="closed">
  <form action="bulkedit.do" method="POST" style="margin: 0; padding: 0" enctype="multipart/form-data"
        id="bulk_form">
@@ -288,6 +295,11 @@
 
  </form>
 </div>
+
+<mr-bulk-approval-update
+  project-name="[projectname]"
+  local-ids-str="[local_ids_str]"
+></mr-bulk-approval-update>
 
 [include "../framework/footer-script.ezt"]
 

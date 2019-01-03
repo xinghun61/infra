@@ -1,0 +1,92 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../flt/mr-edit-metadata/mr-edit-field.html">
+<link rel="import" href="../mr-error/mr-error.html">
+
+<dom-module id="mr-bulk-approval-update">
+  <template>
+    <style>
+      :host {
+          display: block;
+          margin-top: 30px;
+          position: relative;
+      }
+      button.clickable-text {
+          background: none;
+          border: 0;
+          color: hsl(0, 0%, 39%);
+          cursor: pointer;
+          text-decoration: underline;
+      }
+      .hidden {
+          display: none; !important;
+      }
+      .message {
+          background-color: beige;
+          width: 500px;
+      }
+      .note {
+          color: hsl(0, 0%, 25%);
+          font-size: 0.85em;
+          font-style: italic;
+      }
+      table {
+          border: 1px dotted black;
+          cellspacing: 0;
+          cellpadding: 3;
+      }
+    </style>
+    <button class="js-showApprovals clickable-text" on-click="fetchApprovals">Show Approvals</button>
+    <template is="dom-if" if="[[approvals.length]]">
+      <form>
+        <table>
+          <tr>
+            <th><label for="approvalSelect">Approval:</label></th>
+            <td>
+              <select id="approvalSelect">
+                <template is="dom-repeat" items="[[approvals]]" as="approval">
+                  <option value="[[approval.fieldRef.fieldName]]">[[  approval.fieldRef.fieldName  ]]</option>
+                </template>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <th><label for="approversInput">Approvers:</label></th>
+            <td>
+              <mr-edit-field
+                id="approversInput"
+                type="USER_TYPE"
+                multi
+                ></mr-edit-field>
+            </td>
+          </tr>
+          <tr><th><label for="statusInput">Status:</label></th>
+            <td>
+              <select id="statusInput">
+                <option>---</option>
+                <template is="dom-repeat" items="[[statusOptions]]" as="status">
+                  <option value="[[status]]">[[  status  ]]</option>
+                </template>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <th><label for="commentText">Comment:</label></th>
+            <td colspan="4"><textarea cols="30" rows="3" id="commentText" placeholder="Add an approval comment"></textarea></td>
+          </tr>
+          <tr>
+            <td><button class="js-save" on-click="save">Update Approvals only</button></td>
+            <td><span class="note">Note: Some approvals may not be updated if you lack approver perms.</span></td>
+          </tr>
+        </table>
+      </form>
+    </template>
+    <div class="message">
+      <template is="dom-if" if="[[responseMessage]]">[[  responseMessage  ]]</template>
+      <template is="dom-if" if="[[errorMessage]]">
+        <mr-error>[[  errorMessage  ]]</mr-error>
+      </template>
+    </div>
+  </template>
+  <script src="./mr-bulk-approval-update.js"></script>
+</dom-module>
