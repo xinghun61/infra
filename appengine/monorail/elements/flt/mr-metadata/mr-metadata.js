@@ -53,7 +53,54 @@ class MrMetadata extends MetadataMixin(Polymer.Element) {
         type: Object,
         computed: '_splitIssueHotlistsByRole(issueHotlists, user, owner, cc)',
       },
+      sortedBlockedOn: {
+        type: Array,
+        computed: '_sortBlockedOn(blockerReferences, blockedOn)',
+      },
+      blockedOnTableColumns: {
+        type: Array,
+        value: ['Issue', 'Summary'],
+      },
+      blockedOnTableRows: {
+        type: Array,
+        computed: '_blockedOnTableRows(blockerReferences, sortedBlockedOn)',
+      },
     };
+  }
+
+  _blockedOnTableRows(blockerReferences, blockedOn) {
+    return (blockedOn || []).map((blockerRef) => {
+      const issue = this._getIssueForRef(blockerReferences, blockerRef);
+      const isClosed = this._getIsClosedForRef(blockerReferences, blockerRef);
+      const row = {
+        cells: [
+          {
+            type: 'issue',
+            projectName: this.projectName,
+            issue: this._getIssueForRef(blockerReferences, blockerRef),
+            isClosed: Boolean(isClosed),
+          },
+          {
+            type: 'text',
+            content: issue.summary,
+          },
+        ],
+      };
+      return row;
+    });
+  }
+
+  _sortBlockedOn(blockerReferences, blockedOn) {
+    const open = [];
+    const closed = [];
+    (blockedOn || []).forEach((ref) => {
+      if (this._getIsClosedForRef(blockerReferences, ref)) {
+        closed.push(ref);
+      } else {
+        open.push(ref);
+      }
+    });
+    return open.concat(closed);
   }
 
   _makeIssueStrKey(issueRef) {
@@ -153,6 +200,10 @@ class MrMetadata extends MetadataMixin(Polymer.Element) {
     }, (error) => {
       this.$.updateHotlistsForm.error = error.description;
     });
+  }
+
+  openViewBlockedOn() {
+    this.$.viewBlockedOnDialog.open();
   }
 }
 
