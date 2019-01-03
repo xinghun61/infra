@@ -79,6 +79,7 @@ suite('MonorailTSMon', () => {
     let getPageTypeFromPathStub;
     setup(() => {
       getPageTypeFromPathStub = sinon.stub(MonorailTSMon, 'getPageTypeFromPath');
+      mts.pageLoadMetric = {add: sinon.spy()};
     });
 
     teardown(() => {
@@ -86,12 +87,12 @@ suite('MonorailTSMon', () => {
     });
 
     test('records page load on issue list page', () => {
-      mts.pageLoadMetric = {add: sinon.spy()};
       getPageTypeFromPathStub.returns(PAGE_TYPES.ISSUE_LIST);
       mts.recordPageLoadTiming();
       sinon.assert.calledOnce(mts.pageLoadMetric.add);
       assert.isNumber(mts.pageLoadMetric.add.getCall(0).args[0]);
-      assert.isString(mts.pageLoadMetric.add.getCall(0).args[1].get('client_id'));
+      assert.isString(mts.pageLoadMetric.add.getCall(0).args[1].get(
+        'client_id'));
       assert.equal(mts.pageLoadMetric.add.getCall(0).args[1].get(
         'host_name'), 'rutabaga-version');
       assert.equal(mts.pageLoadMetric.add.getCall(0).args[1].get(
@@ -99,12 +100,12 @@ suite('MonorailTSMon', () => {
     });
 
     test('records page load on issue detail page', () => {
-      mts.pageLoadMetric = {add: sinon.spy()};
       getPageTypeFromPathStub.returns(PAGE_TYPES.ISSUE_DETAIL);
       mts.recordPageLoadTiming();
       sinon.assert.calledOnce(mts.pageLoadMetric.add);
       assert.isNumber(mts.pageLoadMetric.add.getCall(0).args[0]);
-      assert.isString(mts.pageLoadMetric.add.getCall(0).args[1].get('client_id'));
+      assert.isString(mts.pageLoadMetric.add.getCall(0).args[1].get(
+        'client_id'));
       assert.equal(mts.pageLoadMetric.add.getCall(0).args[1].get(
         'host_name'), 'rutabaga-version');
       assert.equal(mts.pageLoadMetric.add.getCall(0).args[1].get(
@@ -112,17 +113,47 @@ suite('MonorailTSMon', () => {
     });
 
     test('does not record page load timing on other pages', () => {
-      mts.pageLoadMetric = {add: sinon.spy()};
       getPageTypeFromPathStub.returns('rutabaga');
       mts.recordPageLoadTiming();
       sinon.assert.notCalled(mts.pageLoadMetric.add);
     });
 
     test('does not record page load timing if no page type found', () => {
-      mts.pageLoadMetric = {add: sinon.spy()};
       getPageTypeFromPathStub.returns(null);
       mts.recordPageLoadTiming();
       sinon.assert.notCalled(mts.pageLoadMetric.add);
+    });
+
+    test('does not record page load timing if over max threshold', () => {
+      getPageTypeFromPathStub.returns(PAGE_TYPES.ISSUE_DETAIL);
+      window.performance = {
+        timing: {
+          navigationStart: 1000,
+          domContentLoadedEventEnd: 2001,
+        },
+      };
+      mts.recordPageLoadTiming(1000);
+      sinon.assert.notCalled(mts.pageLoadMetric.add);
+    });
+
+    test('records page load on issue detail page if under threshold', () => {
+      getPageTypeFromPathStub.returns(PAGE_TYPES.ISSUE_DETAIL);
+      window.performance = {
+        timing: {
+          navigationStart: 1000,
+          domContentLoadedEventEnd: 1999,
+        },
+      };
+      mts.recordPageLoadTiming(1000);
+      sinon.assert.calledOnce(mts.pageLoadMetric.add);
+      assert.isNumber(mts.pageLoadMetric.add.getCall(0).args[0]);
+      assert.equal(mts.pageLoadMetric.add.getCall(0).args[0], 999);
+      assert.isString(mts.pageLoadMetric.add.getCall(0).args[1].get(
+        'client_id'));
+      assert.equal(mts.pageLoadMetric.add.getCall(0).args[1].get(
+        'host_name'), 'rutabaga-version');
+      assert.equal(mts.pageLoadMetric.add.getCall(0).args[1].get(
+        'template_name'), 'issue_detail');
     });
   });
 

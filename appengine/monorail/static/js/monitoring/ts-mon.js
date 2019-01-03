@@ -8,6 +8,7 @@ import AutoRefreshPrpcClient from '../prpc.js';
 
 const TS_MON_JS_PATH = '/_/jstsmon.do';
 const TS_MON_CLIENT_GLOBAL_NAME = '__tsMonClient';
+const PAGE_LOAD_MAX_THRESHOLD = 60000;
 export const PAGE_TYPES = Object.freeze({
   ISSUE_DETAIL: 'issue_detail',
   ISSUE_LIST: 'issue_list',
@@ -71,7 +72,7 @@ export default class MonorailTSMon extends TSMonClient {
         ['document_visible', TSMonClient.boolField('document_visible')],
       ]))
     );
-    this.recordPageLoadTiming();
+    this.recordPageLoadTiming(PAGE_LOAD_MAX_THRESHOLD);
   }
 
   fetchImpl(rawMetricValues) {
@@ -101,7 +102,7 @@ export default class MonorailTSMon extends TSMonClient {
     }
   }
 
-  recordPageLoadTiming() {
+  recordPageLoadTiming(maxThresholdMs=null) {
     // See timing definitions here:
     // https://developer.mozilla.org/en-US/docs/Web/API/PerformanceNavigationTiming
     const t = window.performance.timing;
@@ -113,6 +114,9 @@ export default class MonorailTSMon extends TSMonClient {
     ]);
     const pageType = MonorailTSMon.getPageTypeFromPath(window.location.pathname);
     if (measurePageTypes.has(pageType)) {
+      if (maxThresholdMs !== null && domContentLoadedMs > maxThresholdMs) {
+        return;
+      }
       const metricFields = new Map([
         ['client_id', this.clientId],
         ['host_name', window.CS_env.app_version],
