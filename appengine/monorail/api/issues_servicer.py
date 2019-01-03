@@ -52,8 +52,23 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     return project, issue, config
 
   def _GetProjectIssueIDsAndConfig(
-      self, mc, project_name, local_ids, use_cache=True):
+      self, mc, issue_refs, use_cache=True):
     """Get info from a single project for repeated issue_refs requests."""
+    project_names = set()
+    local_ids = []
+    for issue_ref in issue_refs:
+      if not issue_ref.local_id:
+        raise exceptions.InputException('Param `local_id` required.')
+      local_ids.append(issue_ref.local_id)
+      if issue_ref.project_name:
+        project_names.add(issue_ref.project_name)
+
+    if not project_names:
+      raise exceptions.InputException('Param `project_name` required.')
+    if len(project_names) != 1:
+      raise exceptions.InputException(
+          'This method does not support cross-project issue_refs.')
+    project_name = project_names.pop()
     with work_env.WorkEnv(mc, self.services, phase='getting P, I ids, C') as we:
       project = we.GetProjectByName(project_name, use_cache=use_cache)
       mc.LookupLoggedInUserPerms(project)
@@ -168,20 +183,8 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     if not request.issue_refs:
       return issues_pb2.ListApplicableFieldDefsResponse()
 
-    # TODO(jojwang): Check cross-project issue_refs in separate function.
-    # Check all issue_refs have the same project_name
-    project_names = {ref.project_name for ref in request.issue_refs
-                     if ref.project_name}
-    if not project_names:
-      raise exceptions.InputException('Param `project_name` required.')
-    if len(project_names) != 1:
-      raise exceptions.InputException(
-          'Cross-project applicable FieldDef listing is not supported.')
-
-    project_name = project_names.pop()
-    local_ids = [ref.local_id for ref in request.issue_refs]
     _project, issue_ids, config = self._GetProjectIssueIDsAndConfig(
-        mc, project_name, local_ids)
+        mc, request.issue_refs)
     with work_env.WorkEnv(mc, self.services) as we:
       fds = we.ListApplicableFieldDefs(issue_ids, config)
 
@@ -375,19 +378,9 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     """Update multiple issues' approval and return the updated issue_refs."""
     if not request.issue_refs:
       raise exceptions.InputException('Param `issue_refs` empty.')
-    # Check all issue_refs have the same project_name
-    project_names = {ref.project_name for ref in request.issue_refs
-                     if ref.project_name}
-    if not project_names:
-      raise exceptions.InputException('Param `project_name` required.')
-    if len(project_names) != 1:
-      raise exceptions.InputException(
-          'Cross-project bulk approval updating is not supported.')
 
-    project_name = project_names.pop()
-    local_ids = [ref.local_id for ref in request.issue_refs]
     project, issue_ids, config = self._GetProjectIssueIDsAndConfig(
-        mc, project_name, local_ids)
+        mc, request.issue_refs)
 
     approval_fd = tracker_bizobj.FindFieldDef(
         request.field_ref.field_name, config)
@@ -625,19 +618,12 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
   @monorail_servicer.PRPCMethod
   def FlagIssues(self, mc, request):
     """Flag or unflag the given issues as spam."""
-    project_names = {ref.project_name for ref in request.issue_refs}
-    if len(project_names) != 1:
-      raise exceptions.InputException(
-          'Cross-project spam flagging is not supported.')
+    if not request.issue_refs:
+      raise exceptions.InputException('Param `issue_refs` empty.')
 
-    project_name = project_names.pop()
+    _project, issue_ids, _config = self._GetProjectIssueIDsAndConfig(
+        mc, request.issue_refs)
     with work_env.WorkEnv(mc, self.services) as we:
-      # Set the permissions for the project.
-      project = we.GetProjectByName(project_name)
-      mc.LookupLoggedInUserPerms(project)
-
-      issue_ids = converters.IngestIssueRefs(
-          mc.cnxn, request.issue_refs, self.services)
       issues_by_id = we.GetIssuesDict(issue_ids, use_cache=False)
       we.FlagIssues(issues_by_id.values(), request.flag)
 

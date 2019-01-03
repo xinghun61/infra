@@ -100,17 +100,52 @@ class IssuesServicerTest(unittest.TestCase):
   def CallWrapped(self, wrapped_handler, *args, **kwargs):
     return wrapped_handler.wrapped(self.issues_svcr, *args, **kwargs)
 
-  def testGetProjectIssueIDsAndConfig(self):
+  def testGetProjectIssueIDsAndConfig_OnlyOneProjectName(self):
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
+    issue_refs = [
+        common_pb2.IssueRef(project_name='proj', local_id=1),
+        common_pb2.IssueRef(local_id=2),
+        common_pb2.IssueRef(project_name='proj', local_id=3),
+    ]
     project, issue_ids, config = self.issues_svcr._GetProjectIssueIDsAndConfig(
-        mc, 'proj', [1, 2])
+        mc, issue_refs)
     self.assertEqual(project, self.project)
     self.assertEqual(issue_ids, [self.issue_1.issue_id, self.issue_2.issue_id])
     self.assertEqual(
         config,
         self.services.config.GetProjectConfig(
             self.cnxn, self.project.project_id))
+
+  def testGetProjectIssueIDsAndConfig_NoProjectName(self):
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    issue_refs = [
+        common_pb2.IssueRef(local_id=2),
+        common_pb2.IssueRef(local_id=3),
+    ]
+    with self.assertRaises(exceptions.InputException):
+      self.issues_svcr._GetProjectIssueIDsAndConfig(mc, issue_refs)
+
+  def testGetProjectIssueIDsAndConfig_MultipleProjectNames(self):
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    issue_refs = [
+        common_pb2.IssueRef(project_name='proj', local_id=2),
+        common_pb2.IssueRef(project_name='proj2', local_id=3),
+    ]
+    with self.assertRaises(exceptions.InputException):
+      self.issues_svcr._GetProjectIssueIDsAndConfig(mc, issue_refs)
+
+  def testGetProjectIssueIDsAndConfig_MissingLocalId(self):
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    issue_refs = [
+        common_pb2.IssueRef(project_name='proj'),
+        common_pb2.IssueRef(project_name='proj', local_id=3),
+    ]
+    with self.assertRaises(exceptions.InputException):
+      self.issues_svcr._GetProjectIssueIDsAndConfig(mc, issue_refs)
 
   def testCreateIssue_Normal(self):
     """We can create an issue."""
@@ -1764,7 +1799,7 @@ class IssuesServicerTest(unittest.TestCase):
       self.CallWrapped(
           self.issues_svcr.DeleteAttachment, mc, request)
 
-  def testFlagIssue_Normal(self):
+  def testFlagIssues_Normal(self):
     """Test that an user can flag an issue as spam."""
     self.services.user.TestAddUser('user@example.com', 999L)
 
@@ -1793,7 +1828,7 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertNotIn(
         999L, self.services.spam.manual_verdicts_by_issue_id[issue_id2])
 
-  def testFlagIssue_Unflag(self):
+  def testFlagIssues_Unflag(self):
     """Test that we can un-flag an issue as spam."""
     self.services.spam.FlagIssues(
         self.cnxn, self.services.issue, [self.issue_1], 111L, True)
@@ -1815,7 +1850,7 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertFalse(
         self.services.spam.manual_verdicts_by_issue_id[issue_id][111L])
 
-  def testFlagIssue_OwnerAutoVerdict(self):
+  def testFlagIssues_OwnerAutoVerdict(self):
     """Test that an owner can flag an issue as spam and it is a verdict."""
     request = issues_pb2.FlagIssuesRequest(
         issue_refs=[
@@ -1833,7 +1868,7 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertTrue(
         self.services.spam.manual_verdicts_by_issue_id[issue_id][111L])
 
-  def testFlagIssue_CommitterAutoVerdict(self):
+  def testFlagIssues_CommitterAutoVerdict(self):
     """Test that an owner can flag an issue as spam and it is a verdict."""
     self.services.user.TestAddUser('committer@example.com', 999L)
     self.services.project.TestAddProjectMembers(
@@ -1855,7 +1890,7 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertTrue(
         self.services.spam.manual_verdicts_by_issue_id[issue_id][999L])
 
-  def testFlagIssue_ContributorAutoVerdict(self):
+  def testFlagIssues_ContributorAutoVerdict(self):
     """Test that an owner can flag an issue as spam and it is a verdict."""
     request = issues_pb2.FlagIssuesRequest(
         issue_refs=[
@@ -1873,7 +1908,7 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertTrue(
         self.services.spam.manual_verdicts_by_issue_id[issue_id][222L])
 
-  def testFlagIssue_NotAllowed(self):
+  def testFlagIssues_NotAllowed(self):
     """Test that anon users cannot flag issues as spam."""
     request = issues_pb2.FlagIssuesRequest(
         issue_refs=[
@@ -1889,7 +1924,7 @@ class IssuesServicerTest(unittest.TestCase):
         [], self.services.spam.reports_by_issue_id[self.issue_1.issue_id])
     self.assertEqual({}, self.services.spam.manual_verdicts_by_issue_id)
 
-  def testFlagIssue_CrossProjectNotAllowed(self):
+  def testFlagIssues_CrossProjectNotAllowed(self):
     """Test that cross-project requests are rejected."""
     request = issues_pb2.FlagIssuesRequest(
         issue_refs=[
@@ -1907,6 +1942,12 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertEqual(
         [], self.services.spam.reports_by_issue_id[self.issue_1.issue_id])
     self.assertEqual({}, self.services.spam.manual_verdicts_by_issue_id)
+
+  def testFlagIssues_MissingIssueRefs(self):
+    request = issues_pb2.FlagIssuesRequest(flag=True)
+    mc = monorailcontext.MonorailContext(self.services, cnxn=self.cnxn)
+    with self.assertRaises(exceptions.InputException):
+      self.CallWrapped(self.issues_svcr.FlagIssues, mc, request)
 
   def testFlagComment_InvalidSequenceNumber(self):
     """Test that we reject requests with invalid sequence numbers."""
