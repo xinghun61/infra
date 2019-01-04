@@ -43,7 +43,7 @@ func TestFakeGitilesArchive(t *testing.T) {
 			Branch:      "master",
 			LabDataPath: "some/dir",
 		}
-		So(tf.FakeGitiles.addArchive(ic, []byte("some test data")), ShouldBeNil)
+		So(tf.FakeGitiles.addArchive(ic, []byte("some test data"), nil), ShouldBeNil)
 		_, err := tf.FakeGitiles.Archive(tf.C, &gitiles.ArchiveRequest{
 			Project: "fakeproject",
 			Ref:     "master",

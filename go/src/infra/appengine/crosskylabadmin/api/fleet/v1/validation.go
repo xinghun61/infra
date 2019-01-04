@@ -67,3 +67,14 @@ func (r *ResizePoolRequest) Validate() error {
 	}
 	return nil
 }
+
+// Validate returns an error if r is invalid.
+// TODO(akeshet): Implement me.
+func (r *RemoveDutsFromDronesRequest) Validate() error {
+	return nil
+}
+
+// Validate returns an error if r is invalid.
+func (r *AssignDutsToDronesRequest) Validate() error {
+	return nil
+}

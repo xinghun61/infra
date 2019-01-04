@@ -200,6 +200,12 @@ message RemoveDutsFromDronesResponse {
 
   // removed is the set of Duts that were removed.
   repeated Item removed = 1;
+
+  // url is an opaque URL for this inventory change.
+  //
+  // It is intended to be the gerrit CL corresponding to the change, or the
+  // gitiles path for a committed changelist for the change.
+  string url = 2;
 }
 
 message AssignDutsToDronesRequest {
@@ -229,4 +235,10 @@ message AssignDutsToDronesResponse {
 
   // assigned is the set of Duts that were removed.
   repeated Item assigned = 1;
+
+  // url is an opaque URL for this inventory change.
+  //
+  // It is intended to be the gerrit CL corresponding to the change, or the
+  // gitiles path for a committed changelist for the change.
+  string url = 2;
 }

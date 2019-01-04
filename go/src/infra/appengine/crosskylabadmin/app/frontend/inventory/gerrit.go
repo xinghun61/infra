@@ -28,20 +28,47 @@ import (
 	"golang.org/x/net/context"
 )
 
-func commitInventory(ctx context.Context, client gerrit.GerritClient, lab *inventory.Lab) (string, error) {
+func commitLabInventory(ctx context.Context, client gerrit.GerritClient, lab *inventory.Lab) (url string, err error) {
 	ls, err := inventory.WriteLabToString(lab)
 	if err != nil {
-		return "", errors.Annotate(err, "commit inventory changes").Err()
+		return "", errors.Annotate(err, "commit lab inventory changes").Err()
 	}
 
-	cu, err := commitInventoryStr(ctx, client, ls)
+	cu, err := commitLabInventoryStr(ctx, client, ls)
 	if err != nil {
-		return "", errors.Annotate(err, "commit inventory changes").Err()
+		return "", errors.Annotate(err, "commit lab inventory changes").Err()
 	}
 	return cu, nil
 }
 
-func commitInventoryStr(ctx context.Context, client gerrit.GerritClient, lab string) (string, error) {
+func commitLabInventoryStr(ctx context.Context, client gerrit.GerritClient, lab string) (url string, err error) {
+	inventoryConfig := config.Get(ctx).Inventory
+	path := inventoryConfig.LabDataPath
+	return commitStringToFile(ctx, client, lab, path)
+}
+
+func commitInfraInventory(ctx context.Context, client gerrit.GerritClient, infra *inventory.Infrastructure) (url string, err error) {
+	is, err := inventory.WriteInfrastructureToString(infra)
+	if err != nil {
+		return "", errors.Annotate(err, "commit infra inventory changes").Err()
+	}
+
+	cu, err := commitInfraInventoryStr(ctx, client, is)
+	if err != nil {
+		return "", errors.Annotate(err, "commit infra inventory changes").Err()
+	}
+	return cu, nil
+}
+
+func commitInfraInventoryStr(ctx context.Context, client gerrit.GerritClient, infra string) (url string, err error) {
+	inventoryConfig := config.Get(ctx).Inventory
+	path := inventoryConfig.InfrastructureDataPath
+	return commitStringToFile(ctx, client, infra, path)
+}
+
+func commitStringToFile(ctx context.Context, client gerrit.GerritClient, contents string, path string) (url string, err error) {
+	inventoryConfig := config.Get(ctx).Inventory
+
 	var changeInfo *gerrit.ChangeInfo
 	defer func() {
 		if changeInfo != nil {
@@ -49,9 +76,7 @@ func commitInventoryStr(ctx context.Context, client gerrit.GerritClient, lab str
 		}
 	}()
 
-	inventoryConfig := config.Get(ctx).Inventory
-
-	changeInfo, err := client.CreateChange(ctx, &gerrit.CreateChangeRequest{
+	changeInfo, err = client.CreateChange(ctx, &gerrit.CreateChangeRequest{
 		Project: inventoryConfig.Project,
 		Ref:     inventoryConfig.Branch,
 		Subject: changeSubject(ctx),
@@ -63,8 +88,8 @@ func commitInventoryStr(ctx context.Context, client gerrit.GerritClient, lab str
 	if _, err = client.ChangeEditFileContent(ctx, &gerrit.ChangeEditFileContentRequest{
 		Number:   changeInfo.Number,
 		Project:  changeInfo.Project,
-		FilePath: inventoryConfig.LabDataPath,
-		Content:  []byte(lab),
+		FilePath: path,
+		Content:  []byte(contents),
 	}); err != nil {
 		return "", err
 	}

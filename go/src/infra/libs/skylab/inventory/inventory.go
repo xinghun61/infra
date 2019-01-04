@@ -86,7 +86,11 @@ func LoadInfrastructure(dataDir string) (*Infrastructure, error) {
 		return nil, errors.Annotate(err, "load infrastructure inventory %s", dataDir).Err()
 	}
 	return &infrastructure, nil
+}
 
+// LoadInfrastructureFromString loads infrastructure inventory information from the given string.
+func LoadInfrastructureFromString(text string, infra *Infrastructure) error {
+	return proto.UnmarshalText(text, infra)
 }
 
 // WriteInfrastructure writes infrastructure information to the inventory data directory.
@@ -98,6 +102,19 @@ func WriteInfrastructure(infrastructure *Infrastructure, dataDir string) error {
 	}
 	text := string(rewriteMarshaledTextProtoForPython(b.Bytes()))
 	return oneShotWriteFile(dataDir, infraFilename, text)
+}
+
+// WriteInfrastructureToString marshals infrastructure inventory information into a string.
+func WriteInfrastructureToString(infra *Infrastructure) (string, error) {
+	infra = proto.Clone(infra).(*Infrastructure)
+
+	// TODO(akeshet): Add a sortInfra() to deep sort infra prior to writing
+	// (similar to sortLab usage in WriteLabToString above).
+
+	m := proto.TextMarshaler{}
+	var b bytes.Buffer
+	err := m.Marshal(&b, infra)
+	return string(rewriteMarshaledTextProtoForPython(b.Bytes())), err
 }
 
 var suffixReplacements = map[string]string{
