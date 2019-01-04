@@ -20,6 +20,8 @@ import (
 	"infra/libs/skylab/inventory"
 
 	"go.chromium.org/luci/common/errors"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // poolBalancer encapsulates the pool balancing algorithm.
@@ -114,7 +116,7 @@ func resizePool(duts []*inventory.DeviceUnderTest, targetPool string, targetSize
 	case len(ts) < targetSize:
 		want := targetSize - len(ts)
 		if want > len(ss) {
-			return []*fleet.PoolChange{}, fmt.Errorf("%s: insufficient spares (want %d, have %d)", errStr, want, len(ss))
+			return []*fleet.PoolChange{}, status.Errorf(codes.ResourceExhausted, "%s: insufficient spares (want %d, have %d)", errStr, want, len(ss))
 		}
 		return changeDUTPools(ss[:want], sparePool, targetPool), nil
 	case len(ts) > targetSize:
