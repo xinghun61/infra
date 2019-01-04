@@ -391,10 +391,6 @@ def add_many_async(build_request_list):
     yield ndb.put_multi_async(new_builds.values())
     memcache_sets = []
     for i, b in new_builds.iteritems():
-      _log_integer_properties(
-          b.parameters.get(model.PROPERTIES_PARAMETER) or {}
-      )
-
       events.on_build_created(b)
       results[i] = (b, None)
 
@@ -512,37 +508,3 @@ def retry(
       canary_preference=build.canary_preference or model.CanaryPreference.AUTO,
   )
   return add_async(req).get_result()
-
-
-def _log_integer_properties(props):
-  """Logs paths of unexpected integer properties.
-
-  Needed to evaluate the impact of switching to google.protobuf.Struct where
-  all numbers are floats.
-  """
-  for p in sorted(_find_integer_property_paths(props)):
-    logging.warning('integer property: %s', '.'.join(map(str, p)))
-
-
-def _find_integer_property_paths(props):
-  path = []
-  ret = set()
-
-  def visit(value):
-    if isinstance(value, dict):
-      for k, v in value.iteritems():
-        path.append(k)
-        visit(v)
-        path.pop()
-    elif isinstance(value, list):
-      for i, v in enumerate(value):
-        path.append(i)
-        visit(v)
-        path.pop()
-    elif isinstance(value, bool):
-      pass  # a bool is an int
-    elif isinstance(value, int):
-      ret.add(tuple(path))
-
-  visit(props)
-  return ret
