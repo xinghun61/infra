@@ -77,11 +77,6 @@ class StepParser(object):
     if ann_step.failure_details.text:
       summary_paragraph_lines.append([ann_step.failure_details.text])
 
-    # Parse links.
-    link_lines, logs = self._parse_links(ann_step)
-    summary_paragraph_lines.append(link_lines)
-    ret.logs.extend(logs)
-
     # Parse step text.
     # Although annotation.proto says each line in step_text is a consecutive
     # line and should not contain newlines, in practice they are in HTML format
@@ -92,6 +87,11 @@ class StepParser(object):
     # HTML is valid Markdown, so use it as is.
     if ann_step.text:
       summary_paragraph_lines.append([' '.join(ann_step.text)])
+
+    # Parse links, place them below the step text.
+    link_lines, logs = self._parse_links(ann_step)
+    summary_paragraph_lines.append(link_lines)
+    ret.logs.extend(logs)
 
     # Compile collected summary.
     assert all(isinstance(lines, list) for lines in summary_paragraph_lines)
