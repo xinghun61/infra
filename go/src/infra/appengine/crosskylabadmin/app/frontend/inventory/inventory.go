@@ -292,8 +292,7 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 			continue
 		}
 
-		removed := removeDutFromServer(server, removal.DutId)
-		if !removed {
+		if !removeDutFromServer(server, removal.DutId) {
 			continue
 		}
 

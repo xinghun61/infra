@@ -16,6 +16,7 @@ package fleet
 
 import (
 	"errors"
+	"fmt"
 )
 
 // Validate returns an error if r is invalid.
@@ -69,13 +70,27 @@ func (r *ResizePoolRequest) Validate() error {
 }
 
 // Validate returns an error if r is invalid.
-// TODO(akeshet): Implement me.
 func (r *RemoveDutsFromDronesRequest) Validate() error {
+	for _, item := range r.Removals {
+		if item.DutId == "" {
+			return errors.New("must specify DutId")
+		}
+	}
 	return nil
 }
 
 // Validate returns an error if r is invalid.
 // TODO(akeshet): Implement me.
 func (r *AssignDutsToDronesRequest) Validate() error {
+	for _, item := range r.Assignments {
+		if item.DutId == "" {
+			return errors.New("must specify DutId")
+		}
+		// TODO(akeshet): Implement a heuristic for determining drone when not
+		// specified, then remove this check.
+		if item.DroneHostname == "" {
+			return fmt.Errorf("must specify DroneHostname (not specified for Dut %s)", item.DutId)
+		}
+	}
 	return nil
 }
