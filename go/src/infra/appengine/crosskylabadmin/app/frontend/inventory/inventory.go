@@ -371,5 +371,48 @@ func (is *ServerImpl) AssignDutsToDrones(ctx context.Context, req *fleet.AssignD
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	return nil, status.Error(codes.Unimplemented, "")
+	inventoryConfig := config.Get(ctx).Inventory
+
+	infra, err := is.fetchInfrastructureInventory(ctx, inventoryConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	resp = &fleet.AssignDutsToDronesResponse{
+		Assigned: make([]*fleet.AssignDutsToDronesResponse_Item, 0, len(req.Assignments)),
+	}
+
+	for _, assignment := range req.Assignments {
+		dutToAssign := assignment.DutId
+		serverToAssign := assignment.DroneHostname
+		if server, ok := findDutServer(infra.Servers, dutToAssign); ok {
+			return nil, status.Error(codes.InvalidArgument,
+				fmt.Sprintf("dut %s is already assigned to drone %s", dutToAssign, server.GetHostname()))
+		}
+
+		server, ok := findNamedServer(infra.Servers, serverToAssign)
+		if !ok {
+			return nil, status.Error(codes.NotFound,
+				fmt.Sprintf("drone %s does not exist", serverToAssign))
+		}
+
+		server.DutUids = append(server.DutUids, dutToAssign)
+		resp.Assigned = append(resp.Assigned,
+			&fleet.AssignDutsToDronesResponse_Item{
+				DroneHostname: serverToAssign,
+				DutId:         dutToAssign,
+			})
+	}
+
+	// TODO(akeshet): Move client creation and infra committing to helper method.
+	gerritClient, err := is.newGerritClient(ctx, inventoryConfig.GerritHost)
+	if err != nil {
+		return nil, errors.Annotate(err, "create gerrit client").Err()
+	}
+	resp.Url, err = commitInfraInventory(ctx, gerritClient, infra)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }

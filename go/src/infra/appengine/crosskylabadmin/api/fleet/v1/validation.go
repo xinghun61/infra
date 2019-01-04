@@ -75,6 +75,7 @@ func (r *RemoveDutsFromDronesRequest) Validate() error {
 }
 
 // Validate returns an error if r is invalid.
+// TODO(akeshet): Implement me.
 func (r *AssignDutsToDronesRequest) Validate() error {
 	return nil
 }

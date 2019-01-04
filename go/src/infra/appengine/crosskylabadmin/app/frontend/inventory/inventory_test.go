@@ -581,6 +581,74 @@ func TestRemoveDutsFromDrones(t *testing.T) {
 	})
 }
 
+func TestAssignDutsToDrones(t *testing.T) {
+	Convey("With 1 DUT assigned to a drone", t, func() {
+		tf, validate := newTestFixture(t)
+		defer validate()
+
+		existingDutID := "dut_id_1"
+		serverID := "server_id"
+		err := setupInfraInventoryArchive(tf.C, tf.FakeGitiles, []testDutOnServer{
+			{existingDutID, serverID},
+		})
+		So(err, ShouldBeNil)
+
+		Convey("AssignDutsToDrones with an already assigned dut should return an appropriate error.", func() {
+			req := &fleet.AssignDutsToDronesRequest{
+				Assignments: []*fleet.AssignDutsToDronesRequest_Item{
+					{DutId: existingDutID, DroneHostname: serverID},
+				},
+			}
+			resp, err := tf.Inventory.AssignDutsToDrones(tf.C, req)
+			So(resp, ShouldBeNil)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldContainSubstring, "already assigned")
+		})
+
+		newDutID := "dut_id_2"
+
+		Convey("AssignDutsToDrones with a nonexistant drone should return an appropriate error.", func() {
+			req := &fleet.AssignDutsToDronesRequest{
+				Assignments: []*fleet.AssignDutsToDronesRequest_Item{
+					{DutId: newDutID, DroneHostname: "foo_host"},
+				},
+			}
+			resp, err := tf.Inventory.AssignDutsToDrones(tf.C, req)
+			So(resp, ShouldBeNil)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldContainSubstring, "does not exist")
+		})
+
+		Convey("AssignDutsToDrones with a new dut and existing drone assigns that dut.", func() {
+			req := &fleet.AssignDutsToDronesRequest{
+				Assignments: []*fleet.AssignDutsToDronesRequest_Item{
+					{DutId: newDutID, DroneHostname: serverID},
+				},
+			}
+			resp, err := tf.Inventory.AssignDutsToDrones(tf.C, req)
+			So(err, ShouldBeNil)
+			So(resp, ShouldNotBeNil)
+			So(resp.Assigned, ShouldHaveLength, 1)
+			So(resp.Assigned[0].DroneHostname, ShouldEqual, serverID)
+			So(resp.Assigned[0].DutId, ShouldEqual, newDutID)
+
+			So(tf.FakeGerrit.Changes, ShouldHaveLength, 1)
+			change := tf.FakeGerrit.Changes[0]
+			So(change.Path, ShouldEqual, "data/skylab/server_db.textpb")
+
+			contents := change.Content
+			infra := &inventory.Infrastructure{}
+			err = inventory.LoadInfrastructureFromString(contents, infra)
+			So(err, ShouldBeNil)
+			So(infra.Servers, ShouldHaveLength, 1)
+			So(infra.Servers[0].DutUids, ShouldContain, existingDutID)
+			So(infra.Servers[0].DutUids, ShouldContain, newDutID)
+		})
+	})
+}
+
+// setupLabInventoryArchive sets up fake gitiles to return the inventory of
+// duts provided.
 func setupInfraInventoryArchive(c context.Context, g *fakeGitilesClient, duts []testDutOnServer) error {
 	return g.addArchive(config.Get(c).Inventory, nil, []byte(infraInventoryStrFromDuts(duts)))
 }

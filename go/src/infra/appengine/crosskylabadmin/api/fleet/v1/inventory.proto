@@ -214,8 +214,10 @@ message AssignDutsToDronesRequest {
     // dut_id is the id of a dut to assign to a drone.
     string dut_id = 1;
 
-    // drone_hostname is the drone to assign the dut to (if specified); if unspecified
-    // then admin service will use its own heuristics to pick drone.
+    // drone_hostname is the drone to assign the dut to.
+    //
+    // [not yet implemented] if absent, inventory service will use a heuristic to select
+    // drone.
     string drone_hostname = 2;
   }
 
