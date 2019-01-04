@@ -53,23 +53,9 @@ type ensurePoolHealthyRun struct {
 	spare     string
 }
 
-type userError struct {
-	error
-}
-
-func (c *ensurePoolHealthyRun) printError(w io.Writer, err error) {
-	fmt.Fprintf(w, "%s\n\n", err)
-	switch err.(type) {
-	case userError:
-		c.Flags.Usage()
-	default:
-		// Nothing more to say
-	}
-}
-
 func (c *ensurePoolHealthyRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	if err := c.innerRun(a, args, env); err != nil {
-		c.printError(a.GetErr(), err)
+		PrintError(a.GetErr(), err)
 		return 1
 	}
 	return 0
@@ -164,9 +150,9 @@ func (c *ensurePoolHealthyRun) printEnsurePoolHealthyResult(w io.Writer, model, 
 	fmt.Fprintf(bw, "\n")
 }
 
-func (*ensurePoolHealthyRun) getTargetPool(args []string) (string, error) {
+func (c *ensurePoolHealthyRun) getTargetPool(args []string) (string, error) {
 	if len(args) < 1 {
-		return "", userError{errors.New("want at least 1 arguments, have none")}
+		return "", NewUsageError(c.Flags, "want at least 1 arguments, have none")
 	}
 	return args[0], nil
 }
@@ -175,13 +161,13 @@ func (c *ensurePoolHealthyRun) getModels(ctx context.Context, hc *http.Client, a
 	numModelPosArgs := len(args) - 1
 	if c.allModels {
 		if numModelPosArgs > 0 {
-			return []string{}, userError{fmt.Errorf("want no model postional arguments with -all-models, got %d", numModelPosArgs)}
+			return []string{}, NewUsageError(c.Flags, "want no model postional arguments with -all-models, got %d", numModelPosArgs)
 		}
 		return c.getAllModels(ctx, hc)
 	}
 
 	if numModelPosArgs < 1 {
-		return []string{}, userError{fmt.Errorf("want at least 1 model positional argument, have %d", numModelPosArgs)}
+		return []string{}, NewUsageError(c.Flags, "want at least 1 model positional argument, have %d", numModelPosArgs)
 	}
 	return args[1:], nil
 }

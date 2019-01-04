@@ -8,6 +8,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -82,4 +83,43 @@ func newSwarmingService(service string, c *http.Client) (*swarming.Service, erro
 
 func swarmingTaskURL(e site.Environment, taskID string) string {
 	return fmt.Sprintf("%stask?id=%s", e.SwarmingService, taskID)
+}
+
+// UserErrorReporter reports a detailed error message to the user.
+//
+// PrintError() uses a UserErrorReporter to print multi-line user error details
+// along with the actual error.
+type UserErrorReporter interface {
+	// Report a user-friendly error through w.
+	ReportUserError(w io.Writer)
+}
+
+// PrintError reports errors back to the user.
+//
+// Detailed error information is printed if err is a UserErrorReporter.
+func PrintError(w io.Writer, err error) {
+	if u, ok := err.(UserErrorReporter); ok {
+		u.ReportUserError(w)
+	} else {
+		fmt.Fprintf(w, "%s\n", err)
+	}
+}
+
+// NewUsageError creates a new error that also reports flags usage error
+// details.
+func NewUsageError(flags flag.FlagSet, format string, a ...interface{}) error {
+	return &usageError{
+		error: fmt.Errorf(format, a...),
+		flags: flags,
+	}
+}
+
+type usageError struct {
+	error
+	flags flag.FlagSet
+}
+
+func (e *usageError) ReportUserError(w io.Writer) {
+	fmt.Fprintf(w, "%s\n", e.error)
+	e.flags.Usage()
 }
