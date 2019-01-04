@@ -16,59 +16,23 @@ package inventory
 
 import (
 	"fmt"
-	"infra/appengine/crosskylabadmin/app/config"
-	"infra/libs/skylab/inventory"
 	"net/url"
 
 	"go.chromium.org/gae/service/info"
-	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/proto/gerrit"
 	"go.chromium.org/luci/server/auth"
 	"golang.org/x/net/context"
 )
 
-func commitLabInventory(ctx context.Context, client gerrit.GerritClient, lab *inventory.Lab) (url string, err error) {
-	ls, err := inventory.WriteLabToString(lab)
-	if err != nil {
-		return "", errors.Annotate(err, "commit lab inventory changes").Err()
-	}
-
-	cu, err := commitLabInventoryStr(ctx, client, ls)
-	if err != nil {
-		return "", errors.Annotate(err, "commit lab inventory changes").Err()
-	}
-	return cu, nil
-}
-
-func commitLabInventoryStr(ctx context.Context, client gerrit.GerritClient, lab string) (url string, err error) {
-	inventoryConfig := config.Get(ctx).Inventory
-	path := inventoryConfig.LabDataPath
-	return commitStringToFile(ctx, client, lab, path)
-}
-
-func commitInfraInventory(ctx context.Context, client gerrit.GerritClient, infra *inventory.Infrastructure) (url string, err error) {
-	is, err := inventory.WriteInfrastructureToString(infra)
-	if err != nil {
-		return "", errors.Annotate(err, "commit infra inventory changes").Err()
-	}
-
-	cu, err := commitInfraInventoryStr(ctx, client, is)
-	if err != nil {
-		return "", errors.Annotate(err, "commit infra inventory changes").Err()
-	}
-	return cu, nil
-}
-
-func commitInfraInventoryStr(ctx context.Context, client gerrit.GerritClient, infra string) (url string, err error) {
-	inventoryConfig := config.Get(ctx).Inventory
-	path := inventoryConfig.InfrastructureDataPath
-	return commitStringToFile(ctx, client, infra, path)
-}
-
-func commitStringToFile(ctx context.Context, client gerrit.GerritClient, contents string, path string) (url string, err error) {
-	inventoryConfig := config.Get(ctx).Inventory
-
+// commitFileContents commits given files via gerrit.
+//
+// project is the git project to commit to.
+// branch is the git branch to commit to.
+// fileContents maps file paths in the repo to the new contents at those paths.
+//
+// commitFileContents returns the gerrit change number for the commit.
+func commitFileContents(ctx context.Context, client gerrit.GerritClient, project string, branch string, fileContents map[string]string) (int, error) {
 	var changeInfo *gerrit.ChangeInfo
 	defer func() {
 		if changeInfo != nil {
@@ -76,28 +40,30 @@ func commitStringToFile(ctx context.Context, client gerrit.GerritClient, content
 		}
 	}()
 
-	changeInfo, err = client.CreateChange(ctx, &gerrit.CreateChangeRequest{
-		Project: inventoryConfig.Project,
-		Ref:     inventoryConfig.Branch,
+	changeInfo, err := client.CreateChange(ctx, &gerrit.CreateChangeRequest{
+		Project: project,
+		Ref:     branch,
 		Subject: changeSubject(ctx),
 	})
 	if err != nil {
-		return "", err
+		return -1, err
 	}
 
-	if _, err = client.ChangeEditFileContent(ctx, &gerrit.ChangeEditFileContentRequest{
-		Number:   changeInfo.Number,
-		Project:  changeInfo.Project,
-		FilePath: path,
-		Content:  []byte(contents),
-	}); err != nil {
-		return "", err
+	for path, contents := range fileContents {
+		if _, err = client.ChangeEditFileContent(ctx, &gerrit.ChangeEditFileContentRequest{
+			Number:   changeInfo.Number,
+			Project:  changeInfo.Project,
+			FilePath: path,
+			Content:  []byte(contents),
+		}); err != nil {
+			return -1, err
+		}
 	}
 	if _, err = client.ChangeEditPublish(ctx, &gerrit.ChangeEditPublishRequest{
 		Number:  changeInfo.Number,
 		Project: changeInfo.Project,
 	}); err != nil {
-		return "", err
+		return -1, err
 	}
 
 	ci, err := client.GetChange(ctx, &gerrit.GetChangeRequest{
@@ -105,7 +71,7 @@ func commitStringToFile(ctx context.Context, client gerrit.GerritClient, content
 		Options: []gerrit.QueryOption{gerrit.QueryOption_CURRENT_REVISION},
 	})
 	if err != nil {
-		return "", err
+		return -1, err
 	}
 
 	if _, err = client.SetReview(ctx, &gerrit.SetReviewRequest{
@@ -117,32 +83,29 @@ func commitStringToFile(ctx context.Context, client gerrit.GerritClient, content
 			"Verified":    1,
 		},
 	}); err != nil {
-		return "", err
+		return -1, err
 	}
 
 	if _, err := client.SubmitChange(ctx, &gerrit.SubmitChangeRequest{
 		Number:  changeInfo.Number,
 		Project: changeInfo.Project,
 	}); err != nil {
-		return "", err
+		return -1, err
 	}
 
-	cu, err := changeURL(inventoryConfig.GerritHost, changeInfo)
-	if err != nil {
-		return "", err
-	}
-
+	cn := int(changeInfo.Number)
 	// Successful: do not abandon change beyond this point.
 	changeInfo = nil
-	return cu, nil
+	return cn, nil
 }
 
-func changeURL(host string, ci *gerrit.ChangeInfo) (string, error) {
-	p, err := url.PathUnescape(ci.Project)
+// changeURL returns a URL to the gerrit change give the gerrit host, project and changeNumber.
+func changeURL(host string, project string, changeNumber int) (string, error) {
+	p, err := url.PathUnescape(project)
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("https://%s/c/%s/+/%d", host, p, ci.Number), nil
+	return fmt.Sprintf("https://%s/c/%s/+/%d", host, p, changeNumber), nil
 }
 
 func changeSubject(ctx context.Context) string {

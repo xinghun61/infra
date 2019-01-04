@@ -123,7 +123,7 @@ func (is *ServerImpl) EnsurePoolHealthy(ctx context.Context, req *fleet.EnsurePo
 	}
 
 	if !req.GetOptions().GetDryrun() {
-		u, err := is.commitChanges(ctx, store, changes)
+		u, err := is.commitLabChanges(ctx, store, changes)
 		if err != nil {
 			return nil, err
 		}
@@ -158,7 +158,7 @@ func (is *ServerImpl) ResizePool(ctx context.Context, req *fleet.ResizePoolReque
 	if err != nil {
 		return nil, err
 	}
-	u, err := is.commitChanges(ctx, store, changes)
+	u, err := is.commitLabChanges(ctx, store, changes)
 	if err != nil {
 		return nil, err
 	}
@@ -192,14 +192,6 @@ func (is *ServerImpl) newStore(ctx context.Context) (*GitStore, error) {
 	return NewGitStore(gerritC, gitilesC), nil
 }
 
-func (is *ServerImpl) fetchInfrastructureInventory(ctx context.Context, inventoryConfig *config.Inventory) (*inventory.Infrastructure, error) {
-	gc, err := is.newGitilesClient(ctx, inventoryConfig.GitilesHost)
-	if err != nil {
-		return nil, errors.Annotate(err, "create gitiles client").Err()
-	}
-	return fetchInfrastructureInventory(ctx, gc)
-}
-
 func (is *ServerImpl) initializedPoolBalancer(ctx context.Context, req *fleet.EnsurePoolHealthyRequest, duts []*inventory.DeviceUnderTest) (*poolBalancer, error) {
 	pb, err := newPoolBalancer(duts, req.TargetPool, req.SparePool)
 	if err != nil {
@@ -211,7 +203,7 @@ func (is *ServerImpl) initializedPoolBalancer(ctx context.Context, req *fleet.En
 	return pb, err
 }
 
-func (is *ServerImpl) commitChanges(ctx context.Context, store *GitStore, changes []*fleet.PoolChange) (string, error) {
+func (is *ServerImpl) commitLabChanges(ctx context.Context, store *GitStore, changes []*fleet.PoolChange) (string, error) {
 	if len(changes) == 0 {
 		// No inventory changes are required.
 		// TODO(pprabhu) add a unittest enforcing this.
@@ -267,10 +259,11 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	inventoryConfig := config.Get(ctx).Inventory
-
-	infra, err := is.fetchInfrastructureInventory(ctx, inventoryConfig)
+	store, err := is.newStore(ctx)
 	if err != nil {
+		return nil, err
+	}
+	if err := store.Refresh(ctx); err != nil {
 		return nil, err
 	}
 
@@ -284,9 +277,9 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 		var ok bool
 		var server *inventory.Server
 		if serverToRemove == "" {
-			server, ok = findDutServer(infra.Servers, removal.DutId)
+			server, ok = findDutServer(store.Infrastructure.GetServers(), removal.DutId)
 		} else {
-			server, ok = findNamedServer(infra.Servers, removal.DutId)
+			server, ok = findNamedServer(store.Infrastructure.GetServers(), removal.DutId)
 		}
 		if !ok {
 			continue
@@ -307,16 +300,7 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 		return resp, nil
 	}
 
-	// TODO(akeshet): Move client creation and infra committing to helper method.
-	gerritC, err := is.newGerritClient(ctx, inventoryConfig.GerritHost)
-	if err != nil {
-		return nil, errors.Annotate(err, "create gerrit client").Err()
-	}
-	resp.Url, err = commitInfraInventory(ctx, gerritC, infra)
-	if err != nil {
-		return nil, err
-	}
-
+	resp.Url, err = store.Commit(ctx)
 	return resp, nil
 }
 
@@ -370,10 +354,11 @@ func (is *ServerImpl) AssignDutsToDrones(ctx context.Context, req *fleet.AssignD
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	inventoryConfig := config.Get(ctx).Inventory
-
-	infra, err := is.fetchInfrastructureInventory(ctx, inventoryConfig)
+	store, err := is.newStore(ctx)
 	if err != nil {
+		return nil, err
+	}
+	if err := store.Refresh(ctx); err != nil {
 		return nil, err
 	}
 
@@ -384,12 +369,12 @@ func (is *ServerImpl) AssignDutsToDrones(ctx context.Context, req *fleet.AssignD
 	for _, assignment := range req.Assignments {
 		dutToAssign := assignment.DutId
 		serverToAssign := assignment.DroneHostname
-		if server, ok := findDutServer(infra.Servers, dutToAssign); ok {
+		if server, ok := findDutServer(store.Infrastructure.GetServers(), dutToAssign); ok {
 			return nil, status.Error(codes.InvalidArgument,
 				fmt.Sprintf("dut %s is already assigned to drone %s", dutToAssign, server.GetHostname()))
 		}
 
-		server, ok := findNamedServer(infra.Servers, serverToAssign)
+		server, ok := findNamedServer(store.Infrastructure.GetServers(), serverToAssign)
 		if !ok {
 			return nil, status.Error(codes.NotFound,
 				fmt.Sprintf("drone %s does not exist", serverToAssign))
@@ -403,15 +388,6 @@ func (is *ServerImpl) AssignDutsToDrones(ctx context.Context, req *fleet.AssignD
 			})
 	}
 
-	// TODO(akeshet): Move client creation and infra committing to helper method.
-	gerritClient, err := is.newGerritClient(ctx, inventoryConfig.GerritHost)
-	if err != nil {
-		return nil, errors.Annotate(err, "create gerrit client").Err()
-	}
-	resp.Url, err = commitInfraInventory(ctx, gerritClient, infra)
-	if err != nil {
-		return nil, err
-	}
-
+	resp.Url, err = store.Commit(ctx)
 	return resp, nil
 }

@@ -18,8 +18,6 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
-	"infra/appengine/crosskylabadmin/app/config"
-	"infra/libs/skylab/inventory"
 	"io"
 
 	humanize "github.com/dustin/go-humanize"
@@ -29,64 +27,26 @@ import (
 	"golang.org/x/net/context"
 )
 
-// fetchLabInventory fetches and parses the inventory data from gitiles.
-func fetchLabInventory(ctx context.Context, gc gitiles.GitilesClient) (*inventory.Lab, error) {
-	lData, err := fetchLabInventoryData(ctx, gc)
+// fetchFilesFromGitiles fetches file contents from gitiles
+//
+// project is the git project to fetch from.
+// branch is the git branch to fetch from.
+// paths lists the paths inside the git project to fetch contents for.
+//
+// fetchFilesFromGitiles returns a map from path in the git project to the
+// contents of the file at that path for each requested path.
+func fetchFilesFromGitiles(ctx context.Context, gc gitiles.GitilesClient, project string, branch string, paths []string) (map[string]string, error) {
+	contents, err := obtainGitilesBytes(ctx, gc, project, branch)
 	if err != nil {
-		return nil, err
+		return make(map[string]string), err
 	}
-	var lab inventory.Lab
-	if err := inventory.LoadLabFromString(lData, &lab); err != nil {
-		return nil, err
-	}
-	return &lab, nil
+	return extractGitilesArchive(ctx, contents, paths)
 }
 
-// fetchInfrastructureInventory fetches and parses the inventory data from gitiles.
-func fetchInfrastructureInventory(ctx context.Context, gc gitiles.GitilesClient) (*inventory.Infrastructure, error) {
-	lData, err := fetchInfraInventoryData(ctx, gc)
-	if err != nil {
-		return nil, err
-	}
-	var lab inventory.Infrastructure
-	if err := inventory.LoadInfrastructureFromString(lData, &lab); err != nil {
-		return nil, err
-	}
-	return &lab, nil
-}
-
-func fetchLabInventoryData(ctx context.Context, gc gitiles.GitilesClient) (string, error) {
-	ic := config.Get(ctx).Inventory
-	if ic.LabDataPath == "" {
-		return "", errors.New("no lab data file path provided in config")
-	}
-
-	contents, err := obtainGitilesBytes(ctx, gc, ic)
-	if err != nil {
-		return "", err
-	}
-
-	return extractGitilesArchive(ctx, contents, ic.LabDataPath)
-}
-
-func fetchInfraInventoryData(ctx context.Context, gc gitiles.GitilesClient) (string, error) {
-	ic := config.Get(ctx).Inventory
-	if ic.InfrastructureDataPath == "" {
-		return "", errors.New("no infrastructure data file path provided in config")
-	}
-
-	contents, err := obtainGitilesBytes(ctx, gc, ic)
-	if err != nil {
-		return "", err
-	}
-
-	return extractGitilesArchive(ctx, contents, ic.InfrastructureDataPath)
-}
-
-func obtainGitilesBytes(ctx context.Context, gc gitiles.GitilesClient, ic *config.Inventory) (contents []byte, err error) {
+func obtainGitilesBytes(ctx context.Context, gc gitiles.GitilesClient, project string, branch string) (contents []byte, err error) {
 	req := &gitiles.ArchiveRequest{
-		Project: ic.Project,
-		Ref:     ic.Branch,
+		Project: project,
+		Ref:     branch,
 		Format:  gitiles.ArchiveRequest_GZIP,
 	}
 	a, err := gc.Archive(ctx, req)
@@ -98,16 +58,25 @@ func obtainGitilesBytes(ctx context.Context, gc gitiles.GitilesClient, ic *confi
 	return a.Contents, nil
 }
 
-// extractGitilesArchive extracts file at path filePath from the given
+// extractGitilesArchive extracts file at each path in paths from the given
 // gunzipped tarfile.
+//
+// extractGitilesArchive returns a map from path to the content of the file at
+// that path in the archives for each requested path found in the archive.
 //
 // This function takes ownership of data. Caller should not use the byte array
 // concurrent to / after this call. See io.Reader interface for more details.
-func extractGitilesArchive(ctx context.Context, data []byte, filePath string) (string, error) {
+func extractGitilesArchive(ctx context.Context, data []byte, paths []string) (map[string]string, error) {
+	res := make(map[string]string)
+	pmap := make(map[string]bool)
+	for _, p := range paths {
+		pmap[p] = true
+	}
+
 	abuf := bytes.NewBuffer(data)
 	gr, err := gzip.NewReader(abuf)
 	if err != nil {
-		return "", errors.Annotate(err, "gunzip gitiles archive").Err()
+		return res, errors.Annotate(err, "extract gitiles archive").Err()
 	}
 	defer gr.Close()
 
@@ -116,21 +85,22 @@ func extractGitilesArchive(ctx context.Context, data []byte, filePath string) (s
 		h, err := tr.Next()
 		switch {
 		case err == io.EOF:
-			return "", errors.New("lab inventory data not found in gitiles archive")
+			// Scanned all files.
+			return res, nil
 		case err != nil:
-			return "", errors.Annotate(err, "read gitiles archive tarfile").Err()
+			return res, errors.Annotate(err, "extract gitiles archive").Err()
 		default:
-			// good case
+			// good case.
 		}
-		if h.Name != filePath {
+		if found := pmap[h.Name]; !found {
 			continue
 		}
 
 		logging.Debugf(ctx, "Inventory data file %s size %s", h.Name, humanize.Bytes(uint64(h.Size)))
-		lData := make([]byte, h.Size)
-		if _, err := io.ReadFull(tr, lData); err != nil {
-			return string(lData), errors.Annotate(err, "extract inventory archive").Err()
+		data := make([]byte, h.Size)
+		if _, err := io.ReadFull(tr, data); err != nil {
+			return res, errors.Annotate(err, "extract gitiles archive").Err()
 		}
-		return string(lData), nil
+		res[h.Name] = string(data)
 	}
 }

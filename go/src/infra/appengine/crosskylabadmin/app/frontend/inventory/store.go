@@ -15,6 +15,7 @@
 package inventory
 
 import (
+	"infra/appengine/crosskylabadmin/app/config"
 	"infra/libs/skylab/inventory"
 
 	"go.chromium.org/luci/common/errors"
@@ -35,6 +36,7 @@ import (
 // GitStore.Commit(), to re-validate the store.
 type GitStore struct {
 	*inventory.Lab
+	*inventory.Infrastructure
 
 	gerritC  gerrit.GerritClient
 	gitilesC gitiles.GitilesClient
@@ -53,27 +55,90 @@ func NewGitStore(gerritC gerrit.GerritClient, gitilesC gitiles.GitilesClient) *G
 }
 
 // Commit commits the current inventory data in the store to git.
+//
+// Successful Commit() invalidates the data cached in GitStore().
+// To continue using the store, call Refresh() again.
 func (g *GitStore) Commit(ctx context.Context) (string, error) {
 	if !g.valid {
 		return "", errors.New("can not commit invalid store")
 	}
-	u, err := commitLabInventory(ctx, g.gerritC, g.Lab)
-	if err == nil {
-		// Successful commit implies our refreshed data is not longer current, so
-		// the store cache is invalid.
-		g.valid = false
-		g.Lab = nil
+
+	ls, err := inventory.WriteLabToString(g.Lab)
+	if err != nil {
+		return "", errors.Annotate(err, "gitstore commit").Err()
 	}
+
+	is, err := inventory.WriteInfrastructureToString(g.Infrastructure)
+	if err != nil {
+		return "", errors.Annotate(err, "gitstore commit").Err()
+	}
+
+	ic := config.Get(ctx).Inventory
+	cn, err := commitFileContents(ctx, g.gerritC, ic.Project, ic.Branch, map[string]string{
+		ic.LabDataPath:            ls,
+		ic.InfrastructureDataPath: is,
+	})
+	if err != nil {
+		return "", errors.Annotate(err, "gitstore commit").Err()
+	}
+
+	u, err := changeURL(ic.GerritHost, ic.Project, cn)
+	if err != nil {
+		return "", errors.Annotate(err, "gitstore commit").Err()
+	}
+
+	// Successful commit implies our refreshed data is not longer current, so
+	// the store cache is invalid.
+	g.clear()
 	return u, err
 }
 
 // Refresh populates inventory data in the store from git.
-func (g *GitStore) Refresh(ctx context.Context) error {
-	l, err := fetchLabInventory(ctx, g.gitilesC)
+func (g *GitStore) Refresh(ctx context.Context) (rerr error) {
+	defer func() {
+		if rerr != nil {
+			g.clear()
+		}
+	}()
+
+	ic := config.Get(ctx).Inventory
+	// TODO(pprabhu) Replace these checks with config validation.
+	if ic.LabDataPath == "" {
+		return errors.New("no lab data file path provided in config")
+	}
+	if ic.InfrastructureDataPath == "" {
+		return errors.New("no infrastructure data file path provided in config")
+	}
+
+	files, err := fetchFilesFromGitiles(ctx, g.gitilesC, ic.Project, ic.Branch, []string{ic.LabDataPath, ic.InfrastructureDataPath})
 	if err != nil {
 		return errors.Annotate(err, "gitstore refresh").Err()
 	}
-	g.Lab = l
+
+	data, ok := files[ic.LabDataPath]
+	if !ok {
+		return errors.New("No lab data in inventory")
+	}
+	g.Lab = &inventory.Lab{}
+	if err := inventory.LoadLabFromString(data, g.Lab); err != nil {
+		return errors.Annotate(err, "gitstore refresh").Err()
+	}
+
+	data, ok = files[ic.InfrastructureDataPath]
+	if !ok {
+		return errors.New("No infrastructure data in inventory")
+	}
+	g.Infrastructure = &inventory.Infrastructure{}
+	if err := inventory.LoadInfrastructureFromString(data, g.Infrastructure); err != nil {
+		return errors.Annotate(err, "gitstore refresh").Err()
+	}
+
 	g.valid = true
 	return nil
+}
+
+func (g *GitStore) clear() {
+	g.Lab = nil
+	g.Infrastructure = nil
+	g.valid = false
 }

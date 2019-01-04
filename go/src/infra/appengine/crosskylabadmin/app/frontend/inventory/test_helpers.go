@@ -178,7 +178,7 @@ type testInventoryDut struct {
 // setupLabInventoryArchive sets up fake gitiles to return the inventory of
 // duts provided.
 func setupLabInventoryArchive(c context.Context, g *fakeGitilesClient, duts []testInventoryDut) error {
-	return g.addArchive(config.Get(c).Inventory, []byte(labInventoryStrFromDuts(duts)), nil)
+	return g.addArchive(config.Get(c).Inventory, []byte(labInventoryStrFromDuts(duts)), []byte{})
 }
 
 func projectRefKey(project, ref string) string {
@@ -215,8 +215,8 @@ type fakeChange struct {
 }
 
 type fakeChangeEdit struct {
-	Path        string
-	Content     string
+	// Maps file path to new contents of the file.
+	Files       map[string]string
 	IsPublished bool
 	IsAbandoned bool
 }
@@ -241,6 +241,7 @@ func (gc *fakeGerritClient) CreateChange(ctx context.Context, in *gerrit.CreateC
 			CurrentRevision: "patch_set_1",
 		},
 	}
+	c.fakeChangeEdit.Files = make(map[string]string)
 	gc.nextNumber++
 	gc.Changes = append(gc.Changes, c)
 
@@ -252,8 +253,7 @@ func (gc *fakeGerritClient) CreateChange(ctx context.Context, in *gerrit.CreateC
 func (gc *fakeGerritClient) ChangeEditFileContent(ctx context.Context, in *gerrit.ChangeEditFileContentRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
 	for _, c := range gc.Changes {
 		if in.Number == c.Number {
-			c.fakeChangeEdit.Path = in.FilePath
-			c.fakeChangeEdit.Content = string(in.Content)
+			c.fakeChangeEdit.Files[in.FilePath] = string(in.Content)
 			return &empty.Empty{}, nil
 		}
 	}

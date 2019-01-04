@@ -559,9 +559,10 @@ func TestRemoveDutsFromDrones(t *testing.T) {
 
 			So(tf.FakeGerrit.Changes, ShouldHaveLength, 1)
 			change := tf.FakeGerrit.Changes[0]
-			So(change.Path, ShouldEqual, "data/skylab/server_db.textpb")
+			p := "data/skylab/server_db.textpb"
+			So(change.Files, ShouldContainKey, p)
 
-			contents := change.Content
+			contents := change.Files[p]
 			infra := &inventory.Infrastructure{}
 			err = inventory.LoadInfrastructureFromString(contents, infra)
 			So(err, ShouldBeNil)
@@ -634,9 +635,10 @@ func TestAssignDutsToDrones(t *testing.T) {
 
 			So(tf.FakeGerrit.Changes, ShouldHaveLength, 1)
 			change := tf.FakeGerrit.Changes[0]
-			So(change.Path, ShouldEqual, "data/skylab/server_db.textpb")
+			p := "data/skylab/server_db.textpb"
+			So(change.Files, ShouldContainKey, p)
 
-			contents := change.Content
+			contents := change.Files[p]
 			infra := &inventory.Infrastructure{}
 			err = inventory.LoadInfrastructureFromString(contents, infra)
 			So(err, ShouldBeNil)
@@ -650,18 +652,19 @@ func TestAssignDutsToDrones(t *testing.T) {
 // setupLabInventoryArchive sets up fake gitiles to return the inventory of
 // duts provided.
 func setupInfraInventoryArchive(c context.Context, g *fakeGitilesClient, duts []testDutOnServer) error {
-	return g.addArchive(config.Get(c).Inventory, nil, []byte(infraInventoryStrFromDuts(duts)))
+	return g.addArchive(config.Get(c).Inventory, []byte{}, []byte(infraInventoryStrFromDuts(duts)))
 }
 
 // assertLabInventoryChange verifies that the CL uploaded to gerrit contains the
 // inventory of duts provided.
 func assertLabInventoryChange(c C, fg *fakeGerritClient, duts []testInventoryDut) {
+	p := "data/skylab/lab.textpb"
 	changes := fg.Changes
 	So(changes, ShouldHaveLength, 1)
 	change := changes[0]
-	So(change.Path, ShouldEqual, "data/skylab/lab.textpb")
+	So(change.Files, ShouldContainKey, p)
 	var actualLab inventory.Lab
-	err := inventory.LoadLabFromString(change.Content, &actualLab)
+	err := inventory.LoadLabFromString(change.Files[p], &actualLab)
 	So(err, ShouldBeNil)
 	var expectedLab inventory.Lab
 	err = inventory.LoadLabFromString(labInventoryStrFromDuts(duts), &expectedLab)
