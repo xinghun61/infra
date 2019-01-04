@@ -168,6 +168,19 @@ func (g *fakeGitilesClient) addArchive(ic *config.Inventory, labData []byte, inv
 	return nil
 }
 
+// testInventoryDut contains a subset of inventory fields for a DUT.
+type testInventoryDut struct {
+	id    string
+	model string
+	pool  string
+}
+
+// setupLabInventoryArchive sets up fake gitiles to return the inventory of
+// duts provided.
+func setupLabInventoryArchive(c context.Context, g *fakeGitilesClient, duts []testInventoryDut) error {
+	return g.addArchive(config.Get(c).Inventory, []byte(labInventoryStrFromDuts(duts)), nil)
+}
+
 func projectRefKey(project, ref string) string {
 	return fmt.Sprintf("%s::%s", project, ref)
 }
@@ -285,4 +298,26 @@ func (gc *fakeGerritClient) AbandonChange(ctx context.Context, in *gerrit.Abando
 		}
 	}
 	return nil, fmt.Errorf("No change for %+v", in)
+}
+
+func labInventoryStrFromDuts(duts []testInventoryDut) string {
+	ptext := ""
+	for _, dut := range duts {
+		ptext = fmt.Sprintf(`%s
+			duts {
+				common {
+					id: "%s"
+					hostname: "%s"
+					labels {
+						model: "%s"
+						critical_pools: %s
+					}
+					environment: ENVIRONMENT_STAGING
+				}
+			}`,
+			ptext,
+			dut.id, dut.id, dut.model, dut.pool,
+		)
+	}
+	return ptext
 }

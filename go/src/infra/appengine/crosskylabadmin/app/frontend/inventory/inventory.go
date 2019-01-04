@@ -86,12 +86,16 @@ func (is *ServerImpl) EnsurePoolHealthy(ctx context.Context, req *fleet.EnsurePo
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	lab, err := is.fetchLabInventory(ctx, inventoryConfig)
+	store, err := is.newStore(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	duts := selectDutsFromInventory(lab, req.DutSelector, inventoryConfig.Environment)
+	if err := store.Refresh(ctx); err != nil {
+		return nil, err
+	}
+
+	duts := selectDutsFromInventory(store.Lab, req.DutSelector, inventoryConfig.Environment)
 	if len(duts) == 0 {
 		// Technically correct: No DUTs were selected so both target and spare are
 		// empty and healthy and no changes were required.
@@ -119,7 +123,7 @@ func (is *ServerImpl) EnsurePoolHealthy(ctx context.Context, req *fleet.EnsurePo
 	}
 
 	if !req.GetOptions().GetDryrun() {
-		u, err := is.commitChanges(ctx, inventoryConfig, lab, changes)
+		u, err := is.commitChanges(ctx, store, changes)
 		if err != nil {
 			return nil, err
 		}
@@ -140,16 +144,21 @@ func (is *ServerImpl) ResizePool(ctx context.Context, req *fleet.ResizePoolReque
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	lab, err := is.fetchLabInventory(ctx, inventoryConfig)
+	store, err := is.newStore(ctx)
 	if err != nil {
 		return nil, err
 	}
-	duts := selectDutsFromInventory(lab, req.DutSelector, inventoryConfig.Environment)
+
+	if err := store.Refresh(ctx); err != nil {
+		return nil, err
+	}
+
+	duts := selectDutsFromInventory(store.Lab, req.DutSelector, inventoryConfig.Environment)
 	changes, err := resizePool(duts, req.TargetPool, int(req.TargetPoolSize), req.SparePool)
 	if err != nil {
 		return nil, err
 	}
-	u, err := is.commitChanges(ctx, inventoryConfig, lab, changes)
+	u, err := is.commitChanges(ctx, store, changes)
 	if err != nil {
 		return nil, err
 	}
@@ -170,12 +179,17 @@ func selectDutsFromInventory(lab *inventory.Lab, sel *fleet.DutSelector, env str
 	return duts
 }
 
-func (is *ServerImpl) fetchLabInventory(ctx context.Context, inventoryConfig *config.Inventory) (*inventory.Lab, error) {
-	gc, err := is.newGitilesClient(ctx, inventoryConfig.GitilesHost)
+func (is *ServerImpl) newStore(ctx context.Context) (*GitStore, error) {
+	inventoryConfig := config.Get(ctx).Inventory
+	gerritC, err := is.newGerritClient(ctx, inventoryConfig.GerritHost)
 	if err != nil {
-		return nil, errors.Annotate(err, "create gitiles client").Err()
+		return nil, errors.Annotate(err, "create git store").Err()
 	}
-	return fetchLabInventory(ctx, gc)
+	gitilesC, err := is.newGitilesClient(ctx, inventoryConfig.GitilesHost)
+	if err != nil {
+		return nil, errors.Annotate(err, "create git store").Err()
+	}
+	return NewGitStore(gerritC, gitilesC), nil
 }
 
 func (is *ServerImpl) fetchInfrastructureInventory(ctx context.Context, inventoryConfig *config.Inventory) (*inventory.Infrastructure, error) {
@@ -197,21 +211,16 @@ func (is *ServerImpl) initializedPoolBalancer(ctx context.Context, req *fleet.En
 	return pb, err
 }
 
-func (is *ServerImpl) commitChanges(ctx context.Context, inventoryConfig *config.Inventory, lab *inventory.Lab, changes []*fleet.PoolChange) (string, error) {
+func (is *ServerImpl) commitChanges(ctx context.Context, store *GitStore, changes []*fleet.PoolChange) (string, error) {
 	if len(changes) == 0 {
 		// No inventory changes are required.
 		// TODO(pprabhu) add a unittest enforcing this.
 		return "", nil
 	}
-
-	if err := applyChanges(lab, changes); err != nil {
+	if err := applyChanges(store.Lab, changes); err != nil {
 		return "", errors.Annotate(err, "apply balance pool changes").Err()
 	}
-	gerritC, err := is.newGerritClient(ctx, inventoryConfig.GerritHost)
-	if err != nil {
-		return "", errors.Annotate(err, "create gerrit client").Err()
-	}
-	return commitLabInventory(ctx, gerritC, lab)
+	return store.Commit(ctx)
 }
 
 func applyChanges(lab *inventory.Lab, changes []*fleet.PoolChange) error {
