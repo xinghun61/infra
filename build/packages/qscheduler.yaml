@@ -1,0 +1,10 @@
+package: infra/tools/luci/qscheduler/${platform}
+description: QScheduler command line tool.
+platforms:
+  - linux-amd64
+go_packages:
+  - infra/cmd/qscheduler
+root: ../../go/bin
+data:
+  - file: qscheduler${exe_suffix}
+  - version_file: .versions/qscheduler${exe_suffix}.cipd_version
