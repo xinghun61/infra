@@ -40,27 +40,57 @@
         border-right: 1px solid #fff;
         border-top: 1px solid #fff;
       }
+      tr.dragged td {
+        background: #eee;
+      }
+      .draggable {
+        cursor: grab;
+      }
+      .error {
+        max-width: 100%;
+        color: red;
+        margin-bottom: 1em;
+      }
     </style>
     <h3 class="medium-heading">Blocked on issues</h3>
-    <br />
+    <template is="dom-if" if="[[error]]">
+      <div class="error">[[error]]</div>
+    </template>
     <table>
       <tr>
+        <th></th>
         <template is="dom-repeat" items="[[columns]]" as="column">
           <th>[[column]]</th>
         </template>
       </tr>
-      <template is="dom-repeat" items="[[rows]]" as="row">
-        <tr>
+      <template is="dom-repeat" items="[[renderRows]]" as="row">
+        <tr
+          class$="[[_getClass(index, srcIndex)]]"
+          data-index$="[[index]]"
+          draggable="[[row.draggable]]"
+          on-dragstart="_dragstart"
+          on-dragend="_dragend"
+          on-dragover="_dragover"
+          on-drop="_dragdrop"
+        >
+          <td>
+            <template is="dom-if" if="[[row.draggable]]">
+              <iron-icon
+                icon="reorder"
+                class="draggable"
+              ></iron-icon>
+            </template>
+          </td>
           <template is="dom-repeat" items="[[row.cells]]" as="cell">
             <td>
-              <template is="dom-if" if="[[isIssue(cell)]]">
+              <template is="dom-if" if="[[_isIssue(cell)]]">
                 <mr-bug-link
                   project-name="[[cell.projectName]]"
                   issue="[[cell.issue]]"
                   is-closed="[[cell.isClosed]]"
                 ></mr-bug-link>
               </template>
-              <template is="dom-if" if="[[isText(cell)]]">
+              <template is="dom-if" if="[[_isText(cell)]]">
                 [[cell.content]]
               </template>
             </td>

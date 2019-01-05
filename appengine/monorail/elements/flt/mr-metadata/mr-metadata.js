@@ -73,6 +73,7 @@ class MrMetadata extends MetadataMixin(Polymer.Element) {
       const issue = this._getIssueForRef(blockerReferences, blockerRef);
       const isClosed = this._getIsClosedForRef(blockerReferences, blockerRef);
       const row = {
+        draggable: !isClosed,
         cells: [
           {
             type: 'issue',
@@ -203,7 +204,42 @@ class MrMetadata extends MetadataMixin(Polymer.Element) {
   }
 
   openViewBlockedOn() {
+    this.$.viewBlockedOnTable.reset();
     this.$.viewBlockedOnDialog.open();
+  }
+
+  reorderBlockedOn(e) {
+    const src = e.detail.src.cells[0].issue;
+    const target = e.detail.target.cells[0].issue;
+
+    const reorderRequest = window.prpcCall(
+      'monorail.Issues', 'RerankBlockedOnIssues', {
+        issueRef: {
+          projectName: this.projectName,
+          localId: this.issueId,
+        },
+        movedRef: {
+          projectName: src.projectName,
+          localId: src.localId,
+        },
+        targetRef: {
+          projectName: target.projectName,
+          localId: target.localId,
+        },
+        splitAbove: e.detail.above,
+      });
+
+    reorderRequest.then((response) => {
+      actionCreator.fetchIssue(this.dispatch.bind(this), {
+        issueRef: {
+          projectName: this.projectName,
+          localId: this.issueId,
+        },
+      });
+    }, (error) => {
+      this.$.viewBlockedOnTable.reset();
+      this.$.viewBlockedOnTable.error = error.description;
+    });
   }
 }
 

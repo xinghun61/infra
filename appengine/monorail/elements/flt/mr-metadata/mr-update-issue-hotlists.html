@@ -61,6 +61,7 @@
       .error {
         max-width: 100%;
         color: red;
+        margin-bottom: 1px;
       }
     </style>
     <h3 class="medium-heading">Add issue to hotlists</h3>
@@ -88,7 +89,6 @@
       <br />
       <template is="dom-if" if="[[error]]">
         <div class="error">[[error]]</div>
-        <br />
       </template>
       <div class="edit-actions">
         <chops-button

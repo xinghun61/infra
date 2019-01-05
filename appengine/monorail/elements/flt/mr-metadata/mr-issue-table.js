@@ -18,16 +18,93 @@ class MrIssueTable extends ReduxMixin(Polymer.Element) {
       rows: {
         type: Array,
         value: [],
+        observer: 'reset',
+      },
+      renderRows: {
+        type: Array,
+        value: [],
+      },
+      error: {
+        String,
+        value: '',
+      },
+      srcIndex: {
+        type: Number,
+        value: null,
       },
     };
   }
 
-  isIssue(item) {
+  reset() {
+    this.error = null;
+    this.srcIndex = null;
+    this.renderRows = this.rows.slice();
+  }
+
+  _isIssue(item) {
     return item.type === 'issue';
   }
 
-  isText(item) {
+  _isText(item) {
     return item.type === 'text';
+  }
+
+  _getClass(index, srcIndex) {
+    if (index === srcIndex) {
+      return 'dragged';
+    }
+    return '';
+  }
+
+  _dragstart(e) {
+    this.srcIndex = Number(e.target.dataset.index);
+    e.dataTransfer.setDragImage(new Image(), 0, 0);
+  }
+
+  _dragover(e) {
+    if (e.currentTarget.draggable) {
+      e.preventDefault();
+      const targetIndex = Number(e.currentTarget.dataset.index);
+      this._reorderRows(this.srcIndex, targetIndex);
+      this.srcIndex = targetIndex;
+    }
+  }
+
+  _dragend(e) {
+    if (this.srcIndex !== null) {
+      this.reset();
+    }
+  }
+
+  _dragdrop(e) {
+    const detail = {
+      src: this.renderRows[this.srcIndex],
+    };
+    if (this.srcIndex > 0) {
+      detail.target = this.renderRows[this.srcIndex-1];
+      detail.above = false;
+      this.dispatchEvent(new CustomEvent('reorder', {detail}));
+    } else if (this.srcIndex === 0 &&
+               this.renderRows[1] && this.renderRows[1].draggable) {
+      detail.target = this.renderRows[1];
+      detail.above = true;
+      this.dispatchEvent(new CustomEvent('reorder', {detail}));
+    }
+    this.srcIndex = null;
+  }
+
+  _reorderRows(srcIndex, toIndex) {
+    if (srcIndex <= toIndex) {
+      this.renderRows = this.renderRows.slice(0, srcIndex).concat(
+        this.renderRows.slice(srcIndex + 1, toIndex + 1),
+        [this.renderRows[srcIndex]],
+        this.renderRows.slice(toIndex + 1));
+    } else {
+      this.renderRows = this.renderRows.slice(0, toIndex).concat(
+        [this.renderRows[srcIndex]],
+        this.renderRows.slice(toIndex, srcIndex),
+        this.renderRows.slice(srcIndex + 1));
+    }
   }
 }
 
