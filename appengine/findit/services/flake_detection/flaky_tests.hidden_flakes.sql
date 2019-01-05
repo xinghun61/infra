@@ -78,8 +78,18 @@ WITH
       build.patch_project,
       build.gitiles_repository,
       build.gitiles_revision_cp,
-      build.steps  # TODO: optimize to filter out non-test steps.
-      ) AS build
+      ARRAY(
+        SELECT AS STRUCT
+          REGEXP_REPLACE(
+            step.name, '(\\(with patch|without patch|retry with patch\\)).*', '\\1'
+          ) AS normalized_step_name,
+          step.name
+        FROM
+          UNNEST(build.steps) as step
+        WHERE
+          REGEXP_CONTAINS(step.name, '(\\(with patch|without patch|retry with patch\\))')
+      ) as steps
+    ) AS build
   FROM
     patchset_groups AS pg
   CROSS JOIN
@@ -129,6 +139,9 @@ WITH
     SELECT
       # Convert build_id to integer for better performance in joining.
       CAST(build_id AS INT64) AS build_id,
+      REGEXP_REPLACE(
+        step_name, '(\\(with patch|without patch|retry with patch\\)).*', '\\1'
+      ) AS normalized_step_name,
       step_name,
       # path is the full test name.
       path AS test_name,
@@ -232,7 +245,7 @@ SELECT
   flake.buildbot_info.master_name AS legacy_master_name,
   flake.buildbot_info.build_number AS legacy_build_number,
   # Info about the test.
-  step.name,
+  step.name as step_ui_name,
   flake.test_name,
   flake.start_time AS test_start_msec,
   flake.num_expected_runs,
@@ -245,4 +258,4 @@ FROM
   INNER JOIN hidden_flakes AS flake
   ON
     build.build.build_id = flake.build_id
-    AND step.name = flake.step_name
+    AND step.normalized_step_name = flake.normalized_step_name

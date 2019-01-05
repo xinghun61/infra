@@ -1,21 +1,26 @@
-# To detect flaky tests causing Chromium CQ to retry failed steps in the past
-# 1 days.
+# To detect flaky tests causing builds to retry failed steps in the past 1 day.
 #
 # Assumptions for the flake detection in this query are:
-# 1. In the same build of the same CL/patchset/builder_id (a bulider id is a
-#    tuple of <luci_project_name, buildbucket_name, builder_name>), if a test
-#    failed (with patch), it will get retried (without patch), and if the test
-#    passed the (without patch), it will get retried again in
-#    (retry with patch).
-# 2. In a test step, the last try of a failed test (with retries) should not be
-#    a PASS or an expected failure.
-# 3. For disabled tests, they should not be run at all and have an empty list or
+# 1. In the same CQ build of a given CL/patchset, if a test failed (with patch),
+#    it will get retried (without patch), and if the test passed the (without
+#    patch), it will get retried again in (retry with patch).
+# 2. In a test step (with patch), a test is a failure if its first run and ALL
+#    retries are failures (not PASS and not any expected result).
+#    https://chromium.googlesource.com/chromium/tools/build/+/917f9c6/scripts/slave/recipe_modules/test_utils/api.py#328
+# 3. In a test step (without patch) and (retry with patch), a test is a failure
+#    if its first run or any retry is a failure (not PASS and not any expected
+#    result).
+#    https://chromium.googlesource.com/chromium/tools/build/+/917f9c6/scripts/slave/recipe_modules/test_utils/api.py#349
+#    https://chromium.googlesource.com/chromium/tools/build/+/917f9c6/scripts/slave/recipe_modules/test_utils/api.py#369
+#    https://chromium.googlesource.com/chromium/tools/build/+/917f9c6/scripts/slave/recipe_modules/test_utils/util.py#285
+# 4. For disabled tests, they should not be run at all and have an empty list or
 #    just ['SKIP'] for run.actual of test-results-hrd:events.test_results
 #    https://bigquery.cloud.google.com/table/test-results-hrd:events.test_results
 #
-# A flaky test causing step retries within recipe is a test that failed
-# (with patch) in a build, passed (without patch), and passed the matching
-# (retry with patch) step.
+# A flaky test causing step retries in the same build is a test that:
+#   * failed the "test step (with patch)"
+#   * passed the "test step (without patch)"
+#   * passed the "test step (retry with patch)"
 #
 # The easiest way to detect such flaky tests is to directly look for the
 # succeeded tests in the (retry with patch) test steps, and the correctness is
