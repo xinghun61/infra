@@ -29,6 +29,7 @@ import (
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
 	"infra/appengine/crosskylabadmin/app/config"
+	"infra/appengine/crosskylabadmin/app/frontend/inventory/internal/dutpool"
 	"infra/libs/skylab/inventory"
 )
 
@@ -154,7 +155,7 @@ func (is *ServerImpl) ResizePool(ctx context.Context, req *fleet.ResizePoolReque
 	}
 
 	duts := selectDutsFromInventory(store.Lab, req.DutSelector, inventoryConfig.Environment)
-	changes, err := resizePool(duts, req.TargetPool, int(req.TargetPoolSize), req.SparePool)
+	changes, err := dutpool.Resize(duts, req.TargetPool, int(req.TargetPoolSize), req.SparePool)
 	if err != nil {
 		return nil, err
 	}
@@ -192,8 +193,8 @@ func (is *ServerImpl) newStore(ctx context.Context) (*GitStore, error) {
 	return NewGitStore(gerritC, gitilesC), nil
 }
 
-func (is *ServerImpl) initializedPoolBalancer(ctx context.Context, req *fleet.EnsurePoolHealthyRequest, duts []*inventory.DeviceUnderTest) (*poolBalancer, error) {
-	pb, err := newPoolBalancer(duts, req.TargetPool, req.SparePool)
+func (is *ServerImpl) initializedPoolBalancer(ctx context.Context, req *fleet.EnsurePoolHealthyRequest, duts []*inventory.DeviceUnderTest) (*dutpool.Balancer, error) {
+	pb, err := dutpool.NewBalancer(duts, req.TargetPool, req.SparePool)
 	if err != nil {
 		return nil, err
 	}

@@ -16,13 +16,14 @@ package inventory
 
 import (
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/appengine/crosskylabadmin/app/frontend/inventory/internal/dutpool"
 
 	"go.chromium.org/luci/common/errors"
 	"golang.org/x/net/context"
 )
 
 // setDutHealths updates DUTs in pb with their health retrieved from tasker.
-func setDutHealths(ctx context.Context, tr fleet.TrackerServer, pb *poolBalancer) error {
+func setDutHealths(ctx context.Context, tr fleet.TrackerServer, pb *dutpool.Balancer) error {
 	if err := setDutHealthsForPool(ctx, tr, pb.Target); err != nil {
 		return err
 	}
