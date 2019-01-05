@@ -7,7 +7,6 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -16,11 +15,13 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     name='launcher.proto',
     package='buildbucket.v2',
     syntax='proto3',
+    serialized_options=_b(
+        'Z4go.chromium.org/luci/buildbucket/proto;buildbucketpb'
+    ),
     serialized_pb=_b(
         '\n\x0elauncher.proto\x12\x0e\x62uildbucket.v2\"#\n\x0c\x42uildSecrets\x12\x13\n\x0b\x62uild_token\x18\x01 \x01(\tB6Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3'
     )
 )
-_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 _BUILDSECRETS = _descriptor.Descriptor(
     name='BuildSecrets',
@@ -44,13 +45,14 @@ _BUILDSECRETS = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None
+            serialized_options=None,
+            file=DESCRIPTOR
         ),
     ],
     extensions=[],
     nested_types=[],
     enum_types=[],
-    options=None,
+    serialized_options=None,
     is_extendable=False,
     syntax='proto3',
     extension_ranges=[],
@@ -60,6 +62,7 @@ _BUILDSECRETS = _descriptor.Descriptor(
 )
 
 DESCRIPTOR.message_types_by_name['BuildSecrets'] = _BUILDSECRETS
+_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 BuildSecrets = _reflection.GeneratedProtocolMessageType(
     'BuildSecrets',
@@ -72,9 +75,5 @@ BuildSecrets = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(BuildSecrets)
 
-DESCRIPTOR.has_options = True
-DESCRIPTOR._options = _descriptor._ParseOptions(
-    descriptor_pb2.FileOptions(),
-    _b('Z4go.chromium.org/luci/buildbucket/proto;buildbucketpb')
-)
+DESCRIPTOR._options = None
 # @@protoc_insertion_point(module_scope)

@@ -8,7 +8,6 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -19,6 +18,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     name='common.proto',
     package='buildbucket.v2',
     syntax='proto3',
+    serialized_options=_b(
+        'Z4go.chromium.org/luci/buildbucket/proto;buildbucketpb'
+    ),
     serialized_pb=_b(
         '\n\x0c\x63ommon.proto\x12\x0e\x62uildbucket.v2\x1a\x1fgoogle/protobuf/timestamp.proto\"O\n\x0cGerritChange\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x0f\n\x07project\x18\x02 \x01(\t\x12\x0e\n\x06\x63hange\x18\x03 \x01(\x03\x12\x10\n\x08patchset\x18\x04 \x01(\x03\"Y\n\rGitilesCommit\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x0f\n\x07project\x18\x02 \x01(\t\x12\n\n\x02id\x18\x03 \x01(\t\x12\x0b\n\x03ref\x18\x04 \x01(\t\x12\x10\n\x08position\x18\x05 \x01(\r\"(\n\nStringPair\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"i\n\tTimeRange\x12.\n\nstart_time\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12,\n\x08\x65nd_time\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp*\x87\x01\n\x06Status\x12\x16\n\x12STATUS_UNSPECIFIED\x10\x00\x12\r\n\tSCHEDULED\x10\x01\x12\x0b\n\x07STARTED\x10\x02\x12\x0e\n\nENDED_MASK\x10\x04\x12\x0b\n\x07SUCCESS\x10\x0c\x12\x0b\n\x07\x46\x41ILURE\x10\x14\x12\x11\n\rINFRA_FAILURE\x10$\x12\x0c\n\x08\x43\x41NCELED\x10\x44*%\n\x07Trinary\x12\t\n\x05UNSET\x10\x00\x12\x07\n\x03YES\x10\x01\x12\x06\n\x02NO\x10\x02\x42\x36Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3'
     ),
@@ -26,7 +28,6 @@ DESCRIPTOR = _descriptor.FileDescriptor(
         google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,
     ]
 )
-_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 _STATUS = _descriptor.EnumDescriptor(
     name='Status',
@@ -38,33 +39,61 @@ _STATUS = _descriptor.EnumDescriptor(
             name='STATUS_UNSPECIFIED',
             index=0,
             number=0,
-            options=None,
+            serialized_options=None,
             type=None
         ),
         _descriptor.EnumValueDescriptor(
-            name='SCHEDULED', index=1, number=1, options=None, type=None
+            name='SCHEDULED',
+            index=1,
+            number=1,
+            serialized_options=None,
+            type=None
         ),
         _descriptor.EnumValueDescriptor(
-            name='STARTED', index=2, number=2, options=None, type=None
+            name='STARTED',
+            index=2,
+            number=2,
+            serialized_options=None,
+            type=None
         ),
         _descriptor.EnumValueDescriptor(
-            name='ENDED_MASK', index=3, number=4, options=None, type=None
+            name='ENDED_MASK',
+            index=3,
+            number=4,
+            serialized_options=None,
+            type=None
         ),
         _descriptor.EnumValueDescriptor(
-            name='SUCCESS', index=4, number=12, options=None, type=None
+            name='SUCCESS',
+            index=4,
+            number=12,
+            serialized_options=None,
+            type=None
         ),
         _descriptor.EnumValueDescriptor(
-            name='FAILURE', index=5, number=20, options=None, type=None
+            name='FAILURE',
+            index=5,
+            number=20,
+            serialized_options=None,
+            type=None
         ),
         _descriptor.EnumValueDescriptor(
-            name='INFRA_FAILURE', index=6, number=36, options=None, type=None
+            name='INFRA_FAILURE',
+            index=6,
+            number=36,
+            serialized_options=None,
+            type=None
         ),
         _descriptor.EnumValueDescriptor(
-            name='CANCELED', index=7, number=68, options=None, type=None
+            name='CANCELED',
+            index=7,
+            number=68,
+            serialized_options=None,
+            type=None
         ),
     ],
     containing_type=None,
-    options=None,
+    serialized_options=None,
     serialized_start=387,
     serialized_end=522,
 )
@@ -78,17 +107,17 @@ _TRINARY = _descriptor.EnumDescriptor(
     file=DESCRIPTOR,
     values=[
         _descriptor.EnumValueDescriptor(
-            name='UNSET', index=0, number=0, options=None, type=None
+            name='UNSET', index=0, number=0, serialized_options=None, type=None
         ),
         _descriptor.EnumValueDescriptor(
-            name='YES', index=1, number=1, options=None, type=None
+            name='YES', index=1, number=1, serialized_options=None, type=None
         ),
         _descriptor.EnumValueDescriptor(
-            name='NO', index=2, number=2, options=None, type=None
+            name='NO', index=2, number=2, serialized_options=None, type=None
         ),
     ],
     containing_type=None,
-    options=None,
+    serialized_options=None,
     serialized_start=524,
     serialized_end=561,
 )
@@ -129,7 +158,8 @@ _GERRITCHANGE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None
+            serialized_options=None,
+            file=DESCRIPTOR
         ),
         _descriptor.FieldDescriptor(
             name='project',
@@ -146,7 +176,8 @@ _GERRITCHANGE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None
+            serialized_options=None,
+            file=DESCRIPTOR
         ),
         _descriptor.FieldDescriptor(
             name='change',
@@ -163,7 +194,8 @@ _GERRITCHANGE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None
+            serialized_options=None,
+            file=DESCRIPTOR
         ),
         _descriptor.FieldDescriptor(
             name='patchset',
@@ -180,13 +212,14 @@ _GERRITCHANGE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None
+            serialized_options=None,
+            file=DESCRIPTOR
         ),
     ],
     extensions=[],
     nested_types=[],
     enum_types=[],
-    options=None,
+    serialized_options=None,
     is_extendable=False,
     syntax='proto3',
     extension_ranges=[],
@@ -217,7 +250,8 @@ _GITILESCOMMIT = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None
+            serialized_options=None,
+            file=DESCRIPTOR
         ),
         _descriptor.FieldDescriptor(
             name='project',
@@ -234,7 +268,8 @@ _GITILESCOMMIT = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None
+            serialized_options=None,
+            file=DESCRIPTOR
         ),
         _descriptor.FieldDescriptor(
             name='id',
@@ -251,7 +286,8 @@ _GITILESCOMMIT = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None
+            serialized_options=None,
+            file=DESCRIPTOR
         ),
         _descriptor.FieldDescriptor(
             name='ref',
@@ -268,7 +304,8 @@ _GITILESCOMMIT = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None
+            serialized_options=None,
+            file=DESCRIPTOR
         ),
         _descriptor.FieldDescriptor(
             name='position',
@@ -285,13 +322,14 @@ _GITILESCOMMIT = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None
+            serialized_options=None,
+            file=DESCRIPTOR
         ),
     ],
     extensions=[],
     nested_types=[],
     enum_types=[],
-    options=None,
+    serialized_options=None,
     is_extendable=False,
     syntax='proto3',
     extension_ranges=[],
@@ -322,7 +360,8 @@ _STRINGPAIR = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None
+            serialized_options=None,
+            file=DESCRIPTOR
         ),
         _descriptor.FieldDescriptor(
             name='value',
@@ -339,13 +378,14 @@ _STRINGPAIR = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None
+            serialized_options=None,
+            file=DESCRIPTOR
         ),
     ],
     extensions=[],
     nested_types=[],
     enum_types=[],
-    options=None,
+    serialized_options=None,
     is_extendable=False,
     syntax='proto3',
     extension_ranges=[],
@@ -376,7 +416,8 @@ _TIMERANGE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None
+            serialized_options=None,
+            file=DESCRIPTOR
         ),
         _descriptor.FieldDescriptor(
             name='end_time',
@@ -393,13 +434,14 @@ _TIMERANGE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None
+            serialized_options=None,
+            file=DESCRIPTOR
         ),
     ],
     extensions=[],
     nested_types=[],
     enum_types=[],
-    options=None,
+    serialized_options=None,
     is_extendable=False,
     syntax='proto3',
     extension_ranges=[],
@@ -419,6 +461,7 @@ DESCRIPTOR.message_types_by_name['StringPair'] = _STRINGPAIR
 DESCRIPTOR.message_types_by_name['TimeRange'] = _TIMERANGE
 DESCRIPTOR.enum_types_by_name['Status'] = _STATUS
 DESCRIPTOR.enum_types_by_name['Trinary'] = _TRINARY
+_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 GerritChange = _reflection.GeneratedProtocolMessageType(
     'GerritChange',
@@ -464,9 +507,5 @@ TimeRange = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(TimeRange)
 
-DESCRIPTOR.has_options = True
-DESCRIPTOR._options = _descriptor._ParseOptions(
-    descriptor_pb2.FileOptions(),
-    _b('Z4go.chromium.org/luci/buildbucket/proto;buildbucketpb')
-)
+DESCRIPTOR._options = None
 # @@protoc_insertion_point(module_scope)

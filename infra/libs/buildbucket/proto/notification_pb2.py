@@ -7,7 +7,6 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -18,6 +17,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     name='notification.proto',
     package='buildbucket.v2',
     syntax='proto3',
+    serialized_options=_b(
+        'Z4go.chromium.org/luci/buildbucket/proto;buildbucketpb'
+    ),
     serialized_pb=_b(
         '\n\x12notification.proto\x12\x0e\x62uildbucket.v2\x1a\x1fgoogle/protobuf/timestamp.proto\"r\n\x0cNotification\x12-\n\ttimestamp\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x0e\n\x06\x61pp_id\x18\x02 \x01(\t\x12\x10\n\x08\x62uild_id\x18\x03 \x01(\x03\x12\x11\n\tuser_data\x18\x04 \x01(\x0c\"=\n\x12NotificationConfig\x12\x14\n\x0cpubsub_topic\x18\x01 \x01(\t\x12\x11\n\tuser_data\x18\x02 \x01(\x0c\x42\x36Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3'
     ),
@@ -25,7 +27,6 @@ DESCRIPTOR = _descriptor.FileDescriptor(
         google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,
     ]
 )
-_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 _NOTIFICATION = _descriptor.Descriptor(
     name='Notification',
@@ -49,7 +50,8 @@ _NOTIFICATION = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None
+            serialized_options=None,
+            file=DESCRIPTOR
         ),
         _descriptor.FieldDescriptor(
             name='app_id',
@@ -66,7 +68,8 @@ _NOTIFICATION = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None
+            serialized_options=None,
+            file=DESCRIPTOR
         ),
         _descriptor.FieldDescriptor(
             name='build_id',
@@ -83,7 +86,8 @@ _NOTIFICATION = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None
+            serialized_options=None,
+            file=DESCRIPTOR
         ),
         _descriptor.FieldDescriptor(
             name='user_data',
@@ -100,13 +104,14 @@ _NOTIFICATION = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None
+            serialized_options=None,
+            file=DESCRIPTOR
         ),
     ],
     extensions=[],
     nested_types=[],
     enum_types=[],
-    options=None,
+    serialized_options=None,
     is_extendable=False,
     syntax='proto3',
     extension_ranges=[],
@@ -137,7 +142,8 @@ _NOTIFICATIONCONFIG = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None
+            serialized_options=None,
+            file=DESCRIPTOR
         ),
         _descriptor.FieldDescriptor(
             name='user_data',
@@ -154,13 +160,14 @@ _NOTIFICATIONCONFIG = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None
+            serialized_options=None,
+            file=DESCRIPTOR
         ),
     ],
     extensions=[],
     nested_types=[],
     enum_types=[],
-    options=None,
+    serialized_options=None,
     is_extendable=False,
     syntax='proto3',
     extension_ranges=[],
@@ -174,6 +181,7 @@ _NOTIFICATION.fields_by_name[
 ].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
 DESCRIPTOR.message_types_by_name['Notification'] = _NOTIFICATION
 DESCRIPTOR.message_types_by_name['NotificationConfig'] = _NOTIFICATIONCONFIG
+_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 Notification = _reflection.GeneratedProtocolMessageType(
     'Notification',
@@ -197,9 +205,5 @@ NotificationConfig = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(NotificationConfig)
 
-DESCRIPTOR.has_options = True
-DESCRIPTOR._options = _descriptor._ParseOptions(
-    descriptor_pb2.FileOptions(),
-    _b('Z4go.chromium.org/luci/buildbucket/proto;buildbucketpb')
-)
+DESCRIPTOR._options = None
 # @@protoc_insertion_point(module_scope)
