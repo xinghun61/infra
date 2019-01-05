@@ -31,6 +31,7 @@ export default class MrChart extends HTMLElement {
     this.chart = new window.Chart(ctx, this._chartConfig(this.indices, this.values));
     this.progressBar = shadowRoot.querySelector('progress');
     this.endDateInput = shadowRoot.getElementById('end-date');
+    this.unsupportedFieldsEl = shadowRoot.getElementById('unsupported-fields');
 
     // Set up pRPC client.
     this.prpcClient = new AutoRefreshPrpcClient(
@@ -114,8 +115,11 @@ export default class MrChart extends HTMLElement {
       }
       return acc;
     }, []);
-    // TODO(jeffcarp): Re-introduce unsupported fields back into the UI.
-    this.unsupportedFields = Array.from(new Set(flatUnsupportedFields));
+    const uniqueUnsupportedFields = Array.from(new Set(flatUnsupportedFields));
+    if (uniqueUnsupportedFields.length > 0) {
+      this.unsupportedFieldsEl.innerText = 'Unsupported fields: ' +
+        uniqueUnsupportedFields.join(', ');
+    }
   }
 
   _fetchDataAtTimestamp(timestamp) {
@@ -201,10 +205,14 @@ export default class MrChart extends HTMLElement {
           max-width: 800px;
           margin: 0 auto;
         }
-        div#options{
+        div#options {
           max-width: 360px;
           margin: 2em auto;
           text-align: center;
+        }
+        div#options #unsupported-fields {
+          font-weight: bold;
+          color: orange;
         }
         progress {
           background-color: white;
@@ -222,6 +230,7 @@ export default class MrChart extends HTMLElement {
       <div id="container">
         <canvas id="canvas"></canvas>
         <div id="options">
+          <p id="unsupported-fields"></p>
           <progress value="0.05" style="width: 100%; visibility: visible;">Loading chart...</progress>
           <label for="end-date">Choose end date:</label>
           <br />
@@ -284,14 +293,16 @@ export default class MrChart extends HTMLElement {
   static getEndDate() {
     const urlParams = MrChart.getSearchParams();
     if (urlParams.has('end_date')) {
-      return MrChart.dateStringToDate(urlParams.get('end_date'));
-    } else {
-      const today = new Date();
-      today.setHours(23);
-      today.setMinutes(59);
-      today.setSeconds(59);
-      return today;
+      const date = MrChart.dateStringToDate(urlParams.get('end_date'));
+      if (date) {
+        return date;
+      }
     }
+    const today = new Date();
+    today.setHours(23);
+    today.setMinutes(59);
+    today.setSeconds(59);
+    return today;
   }
 
   static makeIndices(timestamps) {

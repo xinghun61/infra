@@ -1,4 +1,7 @@
-<h1>Charts</h1>
+<p><small>
+  Supported query parameters:<br />
+  cc, component, hotlist_id, label, owner, reporter, status
+</small></p>
 
 <mr-chart project-name="[projectname]"></mr-chart>
 

@@ -335,6 +335,19 @@ suite('MrChart', function() {
 
         assert.equal(MrChart.getEndDate().getTime(), expectedDate.getTime());
       });
+
+      test('returns EOD of URL param is empty', function() {
+        const searchParams = new URLSearchParams();
+        searchParams.set('end_date', '');
+        MrChart.getSearchParams.returns(searchParams);
+
+        const expectedDate = new Date();
+        expectedDate.setHours(23);
+        expectedDate.setMinutes(59);
+        expectedDate.setSeconds(59);
+
+        assert.equal(MrChart.getEndDate().getTime(), expectedDate.getTime());
+      });
     });
 
     suite('makeIndices', () => {
