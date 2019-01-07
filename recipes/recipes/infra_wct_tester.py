@@ -30,6 +30,13 @@ def RunSteps(api):
       'PATH': api.path.pathsep.join([str(node_path), '%(PATH)s'])
   }
 
+  cwd = api.path['checkout'].join('appengine', 'findit')
+  with api.context(env=env, cwd=cwd):
+    api.step('findit npm install', ['npm', 'install'])
+    api.step('findit run-wct', ['npx', 'run-wct', '--base', 'ui/',
+        '--dep', 'third_party'])
+    api.step('findit generate js coverage report', ['npx', 'nyc', 'report'])
+
   cwd = api.path['checkout'].join('crdx', 'chopsui')
   with api.context(env=env, cwd=cwd):
     api.step('chopsui npm install', ['npm', 'install'])
@@ -53,6 +60,7 @@ def RunSteps(api):
     api.step('sheriff-o-matic run-wct', ['npx', 'run-wct'])
     api.step('sheriff-o-matic generate js coverage report',
         ['npx', 'nyc', 'report'])
+
 
 def GenTests(api):
   yield api.test('basic')

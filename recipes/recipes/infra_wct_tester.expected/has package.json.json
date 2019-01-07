@@ -108,6 +108,44 @@
       "npm",
       "install"
     ],
+    "cwd": "[START_DIR]/infra/appengine/findit",
+    "env": {
+      "PATH": "[START_DIR]/packages/bin:<PATH>"
+    },
+    "name": "findit npm install"
+  },
+  {
+    "cmd": [
+      "npx",
+      "run-wct",
+      "--base",
+      "ui/",
+      "--dep",
+      "third_party"
+    ],
+    "cwd": "[START_DIR]/infra/appengine/findit",
+    "env": {
+      "PATH": "[START_DIR]/packages/bin:<PATH>"
+    },
+    "name": "findit run-wct"
+  },
+  {
+    "cmd": [
+      "npx",
+      "nyc",
+      "report"
+    ],
+    "cwd": "[START_DIR]/infra/appengine/findit",
+    "env": {
+      "PATH": "[START_DIR]/packages/bin:<PATH>"
+    },
+    "name": "findit generate js coverage report"
+  },
+  {
+    "cmd": [
+      "npm",
+      "install"
+    ],
     "cwd": "[START_DIR]/infra/crdx/chopsui",
     "env": {
       "PATH": "[START_DIR]/packages/bin:<PATH>"
