@@ -58,7 +58,9 @@
     </template>
     <table>
       <tr>
-        <th></th>
+        <template is="dom-if" if="[[rerankEnabled]]">
+          <th></th>
+        </template>
         <template is="dom-repeat" items="[[columns]]" as="column">
           <th>[[column]]</th>
         </template>
@@ -66,21 +68,23 @@
       <template is="dom-repeat" items="[[renderRows]]" as="row">
         <tr
           class$="[[_getClass(index, srcIndex)]]"
+          draggable="[[_canRerank(rerankEnabled, row)]]"
           data-index$="[[index]]"
-          draggable="[[row.draggable]]"
           on-dragstart="_dragstart"
           on-dragend="_dragend"
           on-dragover="_dragover"
           on-drop="_dragdrop"
         >
-          <td>
-            <template is="dom-if" if="[[row.draggable]]">
-              <iron-icon
-                icon="reorder"
-                class="draggable"
-              ></iron-icon>
-            </template>
-          </td>
+          <template is="dom-if" if="[[rerankEnabled]]">
+            <td>
+              <template is="dom-if" if="[[_canRerank(rerankEnabled, row)]]">
+                <iron-icon
+                  icon="reorder"
+                  class="draggable"
+                ></iron-icon>
+              </template>
+            </td>
+          </template>
           <template is="dom-repeat" items="[[row.cells]]" as="cell">
             <td>
               <template is="dom-if" if="[[_isIssue(cell)]]">

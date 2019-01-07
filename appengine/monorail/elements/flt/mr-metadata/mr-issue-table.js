@@ -20,6 +20,10 @@ class MrIssueTable extends ReduxMixin(Polymer.Element) {
         value: [],
         observer: 'reset',
       },
+      rerankEnabled: {
+        type: Boolean,
+        value: false,
+      },
       renderRows: {
         type: Array,
         value: [],
@@ -105,6 +109,10 @@ class MrIssueTable extends ReduxMixin(Polymer.Element) {
         this.renderRows.slice(toIndex, srcIndex),
         this.renderRows.slice(srcIndex + 1));
     }
+  }
+
+  _canRerank(rerankEnabled, row) {
+    return rerankEnabled && row.draggable;
   }
 }
 

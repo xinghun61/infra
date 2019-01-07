@@ -35,6 +35,10 @@ class MrMetadata extends MetadataMixin(Polymer.Element) {
         type: Object,
         statePath: 'user',
       },
+      issuePermissions: {
+        type: Object,
+        statePath: 'issuePermissions',
+      },
       blockerReferences: {
         type: Object,
         statePath: 'blockerReferences',
@@ -64,6 +68,10 @@ class MrMetadata extends MetadataMixin(Polymer.Element) {
       blockedOnTableRows: {
         type: Array,
         computed: '_blockedOnTableRows(blockerReferences, sortedBlockedOn)',
+      },
+      blockedOnIssuesRerankEnabled: {
+        type: Boolean,
+        computed: '_canRerankBlockedOnIssues(issuePermissions)',
       },
     };
   }
@@ -102,6 +110,10 @@ class MrMetadata extends MetadataMixin(Polymer.Element) {
       }
     });
     return open.concat(closed);
+  }
+
+  _canRerankBlockedOnIssues(issuePermissions) {
+    return (issuePermissions || []).includes('editissue');
   }
 
   _makeIssueStrKey(issueRef) {

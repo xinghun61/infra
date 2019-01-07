@@ -27,6 +27,10 @@
       FETCH_ISSUE_HOTLISTS_SUCCESS: 'FETCH_ISSUE_HOTLISTS_SUCCESS',
       FETCH_ISSUE_HOTLISTS_FAILURE: 'FETCH_ISSUE_HOTLISTS_FAILURE',
 
+      FETCH_ISSUE_PERMISSIONS_START: 'FETCH_ISSUE_PERMISSIONS_START',
+      FETCH_ISSUE_PERMISSIONS_SUCCESS: 'FETCH_ISSUE_PERMISSIONS_SUCCESS',
+      FETCH_ISSUE_PERMISSIONS_FAILURE: 'FETCH_ISSUE_PERMISSIONS_FAILURE',
+
       STAR_ISSUE_START: 'STAR_ISSUE_START',
       STAR_ISSUE_SUCCESS: 'STAR_ISSUE_SUCCESS',
       STAR_ISSUE_FAILURE: 'STAR_ISSUE_FAILURE',
@@ -136,6 +140,7 @@
 
           actionCreator.fetchBlockerReferences(dispatch, resp.issue);
           actionCreator.fetchIssueHotlists(dispatch, message.issueRef);
+          actionCreator.fetchIssuePermissions(dispatch, message);
         }, (error) => {
           dispatch({
             type: actionType.FETCH_ISSUE_FAILURE,
@@ -184,6 +189,25 @@
         }, (error) => {
           dispatch({
             type: actionType.FETCH_USER_HOTLISTS_FAILURE,
+            error,
+          });
+        });
+      },
+      fetchIssuePermissions: (dispatch, message) => {
+        dispatch({type: actionType.FETCH_ISSUE_PERMISSIONS_START});
+
+        const getIssuePermissions = window.prpcCall(
+          'monorail.Issues', 'ListIssuePermissions', message
+        );
+
+        getIssuePermissions.then((resp) => {
+          dispatch({
+            type: actionType.FETCH_ISSUE_PERMISSIONS_SUCCESS,
+            permissions: resp.permissions,
+          });
+        }, (error) => {
+          dispatch({
+            type: actionType.FETCH_ISSUE_PERMISSIONS_FAILURE,
             error,
           });
         });
@@ -268,6 +292,7 @@
       commentReferences: new Map(),
       blockerReferences: new Map(),
       isStarred: false,
+      issuePermissions: [],
 
       fetchingUser: false,
       fetchUserError: null,
@@ -281,6 +306,9 @@
 
       fetchingIssueHotlists: false,
       fetchIssueHotlistsError: null,
+
+      fetchingIssuePermissions: false,
+      fetchIssuePermissionsError: null,
 
       fetchingProjectConfig: false,
       fetchProjectConfigError: null,
@@ -418,6 +446,23 @@
           return Object.assign({}, state, {
             fetchIssueHotlistsError: action.error,
             fetchingIssueHotlists: false,
+          });
+
+        // Request for getting issue permissions.
+        case actionType.FETCH_ISSUE_PERMISSIONS_START:
+          return Object.assign({}, state, {
+            fetchIssuePermissionsError: null,
+            fetchingIssuePermissions: true,
+          });
+        case actionType.FETCH_ISSUE_PERMISSIONS_SUCCESS:
+          return Object.assign({}, state, {
+            issuePermissions: action.permissions,
+            fetchingIssuePermissions: false,
+          });
+        case actionType.FETCH_ISSUE_PERMISSIONS_FAILURE:
+          return Object.assign({}, state, {
+            fetchIssuePermissionsError: action.error,
+            fetchingIssuePermissions: false,
           });
 
         // Request for starring an issue.
