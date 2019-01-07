@@ -3,12 +3,14 @@
 const TARGET_PHASE_MILESTONE_MAP = {
   'Beta': 'feature_freeze',
   'Stable-Exp': 'final_beta_cut',
+  'Stable': 'stable_cut',
   'Stable-Full': 'stable_cut',
 };
 
 const APPROVED_PHASE_MILESTONE_MAP = {
   'Beta': 'earliest_beta',
   'Stable-Exp': 'final_beta',
+  'Stable': 'stable_date',
   'Stable-Full': 'stable_date',
 };
 
