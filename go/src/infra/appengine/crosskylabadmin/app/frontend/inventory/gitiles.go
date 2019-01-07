@@ -18,6 +18,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"fmt"
 	"io"
 
 	humanize "github.com/dustin/go-humanize"
@@ -27,26 +28,42 @@ import (
 	"golang.org/x/net/context"
 )
 
-// fetchFilesFromGitiles fetches file contents from gitiles
+// fetchLatestSHA1 fetches the SHA1 for the latest commit on a branch.
+func fetchLatestSHA1(ctx context.Context, gc gitiles.GitilesClient, project string, branch string) (string, error) {
+	resp, err := gc.Log(ctx, &gitiles.LogRequest{
+		Project:    project,
+		Committish: fmt.Sprintf("refs/heads/%s", branch),
+		PageSize:   1,
+	})
+	if err != nil {
+		return "", errors.Annotate(err, "fetch sha1 for %s branch of %s", branch, project).Err()
+	}
+	if len(resp.Log) == 0 {
+		return "", fmt.Errorf("fetch sha1 for %s branch of %s: empty git-log", branch, project)
+	}
+	return resp.Log[0].GetId(), nil
+}
+
+// fetchFilesFromGitiles fetches file contents from gitiles.
 //
 // project is the git project to fetch from.
-// branch is the git branch to fetch from.
+// ref is the git-ref to fetch from.
 // paths lists the paths inside the git project to fetch contents for.
 //
 // fetchFilesFromGitiles returns a map from path in the git project to the
 // contents of the file at that path for each requested path.
-func fetchFilesFromGitiles(ctx context.Context, gc gitiles.GitilesClient, project string, branch string, paths []string) (map[string]string, error) {
-	contents, err := obtainGitilesBytes(ctx, gc, project, branch)
+func fetchFilesFromGitiles(ctx context.Context, gc gitiles.GitilesClient, project string, ref string, paths []string) (map[string]string, error) {
+	contents, err := obtainGitilesBytes(ctx, gc, project, ref)
 	if err != nil {
 		return make(map[string]string), err
 	}
 	return extractGitilesArchive(ctx, contents, paths)
 }
 
-func obtainGitilesBytes(ctx context.Context, gc gitiles.GitilesClient, project string, branch string) (contents []byte, err error) {
+func obtainGitilesBytes(ctx context.Context, gc gitiles.GitilesClient, project string, ref string) (contents []byte, err error) {
 	req := &gitiles.ArchiveRequest{
 		Project: project,
-		Ref:     branch,
+		Ref:     ref,
 		Format:  gitiles.ArchiveRequest_GZIP,
 	}
 	a, err := gc.Archive(ctx, req)

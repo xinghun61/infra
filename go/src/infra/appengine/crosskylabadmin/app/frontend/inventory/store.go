@@ -38,9 +38,9 @@ type GitStore struct {
 	*inventory.Lab
 	*inventory.Infrastructure
 
-	gerritC  gerrit.GerritClient
-	gitilesC gitiles.GitilesClient
-	valid    bool
+	gerritC    gerrit.GerritClient
+	gitilesC   gitiles.GitilesClient
+	latestSHA1 string
 }
 
 // NewGitStore returns a new GitStore.
@@ -50,7 +50,6 @@ func NewGitStore(gerritC gerrit.GerritClient, gitilesC gitiles.GitilesClient) *G
 	return &GitStore{
 		gerritC:  gerritC,
 		gitilesC: gitilesC,
-		valid:    false,
 	}
 }
 
@@ -59,7 +58,7 @@ func NewGitStore(gerritC gerrit.GerritClient, gitilesC gitiles.GitilesClient) *G
 // Successful Commit() invalidates the data cached in GitStore().
 // To continue using the store, call Refresh() again.
 func (g *GitStore) Commit(ctx context.Context) (string, error) {
-	if !g.valid {
+	if g.latestSHA1 == "" {
 		return "", errors.New("can not commit invalid store")
 	}
 
@@ -74,7 +73,7 @@ func (g *GitStore) Commit(ctx context.Context) (string, error) {
 	}
 
 	ic := config.Get(ctx).Inventory
-	cn, err := commitFileContents(ctx, g.gerritC, ic.Project, ic.Branch, map[string]string{
+	cn, err := commitFileContents(ctx, g.gerritC, ic.Project, ic.Branch, g.latestSHA1, map[string]string{
 		ic.LabDataPath:            ls,
 		ic.InfrastructureDataPath: is,
 	})
@@ -110,7 +109,13 @@ func (g *GitStore) Refresh(ctx context.Context) (rerr error) {
 		return errors.New("no infrastructure data file path provided in config")
 	}
 
-	files, err := fetchFilesFromGitiles(ctx, g.gitilesC, ic.Project, ic.Branch, []string{ic.LabDataPath, ic.InfrastructureDataPath})
+	var err error
+	g.latestSHA1, err = fetchLatestSHA1(ctx, g.gitilesC, ic.Project, ic.Branch)
+	if err != nil {
+		return errors.Annotate(err, "gitstore refresh").Err()
+	}
+
+	files, err := fetchFilesFromGitiles(ctx, g.gitilesC, ic.Project, g.latestSHA1, []string{ic.LabDataPath, ic.InfrastructureDataPath})
 	if err != nil {
 		return errors.Annotate(err, "gitstore refresh").Err()
 	}
@@ -133,12 +138,11 @@ func (g *GitStore) Refresh(ctx context.Context) (rerr error) {
 		return errors.Annotate(err, "gitstore refresh").Err()
 	}
 
-	g.valid = true
 	return nil
 }
 
 func (g *GitStore) clear() {
 	g.Lab = nil
 	g.Infrastructure = nil
-	g.valid = false
+	g.latestSHA1 = ""
 }

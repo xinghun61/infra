@@ -21,6 +21,7 @@ import (
 	"fmt"
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
+	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -30,6 +31,7 @@ import (
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/logging/gologger"
 	"go.chromium.org/luci/common/proto/gerrit"
+	"go.chromium.org/luci/common/proto/git"
 	"go.chromium.org/luci/common/proto/gitiles"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -109,8 +111,16 @@ type fakeGitilesClient struct {
 }
 
 // Log implements gitiles.GitilesClient interface.
-func (g *fakeGitilesClient) Log(context.Context, *gitiles.LogRequest, ...grpc.CallOption) (*gitiles.LogResponse, error) {
-	return nil, fmt.Errorf("fakeGitilesClient does not support Log")
+func (g *fakeGitilesClient) Log(ctx context.Context, req *gitiles.LogRequest, opts ...grpc.CallOption) (*gitiles.LogResponse, error) {
+	// Fake a single commit at the given committish iff there is archived data at that commit.
+	if _, ok := g.Archived[projectRefKey(req.Project, req.Committish)]; ok {
+		return &gitiles.LogResponse{
+			Log: []*git.Commit{
+				{Id: req.Committish},
+			},
+		}, nil
+	}
+	return &gitiles.LogResponse{}, nil
 }
 
 // Refs implements gitiles.GitilesClient interface.
@@ -182,7 +192,9 @@ func setupLabInventoryArchive(c context.Context, g *fakeGitilesClient, duts []te
 }
 
 func projectRefKey(project, ref string) string {
-	return fmt.Sprintf("%s::%s", project, ref)
+	// gitiles inconsistently expects the "refs/heads/" prefix. Always strip the
+	// prefix before storing refs.
+	return fmt.Sprintf("%s::%s", project, strings.TrimPrefix(ref, "refs/heads/"))
 }
 
 type trackerPartialFake struct {

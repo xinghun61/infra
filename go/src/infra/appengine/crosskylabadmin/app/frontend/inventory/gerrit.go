@@ -29,10 +29,11 @@ import (
 //
 // project is the git project to commit to.
 // branch is the git branch to commit to.
+// baseCommitSha is the SHA1 of the base commit over which a change should be created.
 // fileContents maps file paths in the repo to the new contents at those paths.
 //
 // commitFileContents returns the gerrit change number for the commit.
-func commitFileContents(ctx context.Context, client gerrit.GerritClient, project string, branch string, fileContents map[string]string) (int, error) {
+func commitFileContents(ctx context.Context, client gerrit.GerritClient, project string, branch string, baseCommitSha string, fileContents map[string]string) (int, error) {
 	var changeInfo *gerrit.ChangeInfo
 	defer func() {
 		if changeInfo != nil {
@@ -41,9 +42,10 @@ func commitFileContents(ctx context.Context, client gerrit.GerritClient, project
 	}()
 
 	changeInfo, err := client.CreateChange(ctx, &gerrit.CreateChangeRequest{
-		Project: project,
-		Ref:     branch,
-		Subject: changeSubject(ctx),
+		Project:    project,
+		Ref:        branch,
+		Subject:    changeSubject(ctx),
+		BaseCommit: baseCommitSha,
 	})
 	if err != nil {
 		return -1, err
