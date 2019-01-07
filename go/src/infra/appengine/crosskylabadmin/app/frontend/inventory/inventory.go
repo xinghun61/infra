@@ -30,6 +30,7 @@ import (
 	"infra/appengine/crosskylabadmin/app/clients"
 	"infra/appengine/crosskylabadmin/app/config"
 	"infra/appengine/crosskylabadmin/app/frontend/inventory/internal/dutpool"
+	"infra/appengine/crosskylabadmin/app/frontend/inventory/internal/store"
 	"infra/libs/skylab/inventory"
 )
 
@@ -180,7 +181,7 @@ func selectDutsFromInventory(lab *inventory.Lab, sel *fleet.DutSelector, env str
 	return duts
 }
 
-func (is *ServerImpl) newStore(ctx context.Context) (*GitStore, error) {
+func (is *ServerImpl) newStore(ctx context.Context) (*store.GitStore, error) {
 	inventoryConfig := config.Get(ctx).Inventory
 	gerritC, err := is.newGerritClient(ctx, inventoryConfig.GerritHost)
 	if err != nil {
@@ -190,7 +191,7 @@ func (is *ServerImpl) newStore(ctx context.Context) (*GitStore, error) {
 	if err != nil {
 		return nil, errors.Annotate(err, "create git store").Err()
 	}
-	return NewGitStore(gerritC, gitilesC), nil
+	return store.NewGitStore(gerritC, gitilesC), nil
 }
 
 func (is *ServerImpl) initializedPoolBalancer(ctx context.Context, req *fleet.EnsurePoolHealthyRequest, duts []*inventory.DeviceUnderTest) (*dutpool.Balancer, error) {
@@ -204,7 +205,7 @@ func (is *ServerImpl) initializedPoolBalancer(ctx context.Context, req *fleet.En
 	return pb, err
 }
 
-func (is *ServerImpl) commitLabChanges(ctx context.Context, store *GitStore, changes []*fleet.PoolChange) (string, error) {
+func (is *ServerImpl) commitLabChanges(ctx context.Context, store *store.GitStore, changes []*fleet.PoolChange) (string, error) {
 	if len(changes) == 0 {
 		// No inventory changes are required.
 		// TODO(pprabhu) add a unittest enforcing this.

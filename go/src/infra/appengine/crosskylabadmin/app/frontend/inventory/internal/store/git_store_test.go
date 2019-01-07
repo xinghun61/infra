@@ -12,45 +12,59 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package inventory
+package store
 
 import (
+	"infra/appengine/crosskylabadmin/app/config"
+	"infra/appengine/crosskylabadmin/app/frontend/inventory/internal/fakes"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
+	"go.chromium.org/luci/appengine/gaetesting"
 )
 
 func TestStoreValidity(t *testing.T) {
 	Convey("With 1 known DUT", t, func() {
-		tf, validate := newTestFixture(t)
-		defer validate()
-
-		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
-			{"link_suites_0", "link", "DUT_POOL_SUITES"},
+		ctx := gaetesting.TestingContextWithAppID("dev~infra-crosskylabadmin")
+		ctx = config.Use(ctx, &config.Config{
+			AccessGroup: "fake-access-group",
+			Inventory: &config.Inventory{
+				GitilesHost:            "some-gitiles-host",
+				GerritHost:             "some-gerrit-host",
+				Project:                "some-project",
+				Branch:                 "master",
+				LabDataPath:            "data/skylab/lab.textpb",
+				InfrastructureDataPath: "data/skylab/server_db.textpb",
+				Environment:            "ENVIRONMENT_STAGING",
+			},
 		})
+		gerritC := &fakes.GerritClient{}
+		gitilesC := fakes.NewGitilesClient()
+
+		err := gitilesC.AddArchive(config.Get(ctx).Inventory, []byte{}, []byte{})
 		So(err, ShouldBeNil)
 
 		Convey("store initially contains no data", func() {
-			store := NewGitStore(tf.FakeGerrit, tf.FakeGitiles)
+			store := NewGitStore(gerritC, gitilesC)
 			So(store.Lab, ShouldBeNil)
 
 			Convey("and initial Commit() fails", func() {
-				_, err := store.Commit(tf.C)
+				_, err := store.Commit(ctx)
 				So(err, ShouldNotBeNil)
 			})
 
 			Convey("on Refresh(), store obtains data", func() {
-				err := store.Refresh(tf.C)
+				err := store.Refresh(ctx)
 				So(err, ShouldBeNil)
 				So(store.Lab, ShouldNotBeNil)
 
 				Convey("on Commit(), store is flushed", func() {
-					_, err := store.Commit(tf.C)
+					_, err := store.Commit(ctx)
 					So(err, ShouldBeNil)
 					So(store.Lab, ShouldBeNil)
 
 					Convey("and invalidated", func() {
-						_, err := store.Commit(tf.C)
+						_, err := store.Commit(ctx)
 						So(err, ShouldNotBeNil)
 					})
 				})
