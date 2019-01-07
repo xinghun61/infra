@@ -96,21 +96,16 @@ var RuleMap = map[string]*RepoConfig{
 		MonorailProject: "chromium",
 		NotifierEmail:   "notifier@cr-audit-commits.appspotmail.com",
 		Rules: map[string]RuleSet{
-			"autoroll-rules-afdo":         AutoRollRulesAFDOVersion("afdo-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
-			"autoroll-rules-angle":        AutoRollRulesDEPS("angle-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
-			"autoroll-rules-catapult":     AutoRollRulesDEPS("catapult-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
-			"autoroll-rules-chromite":     AutoRollRulesDEPS("chromite-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
-			"autoroll-rules-depot-tools":  AutoRollRulesDEPS("depot-tools-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
-			"autoroll-rules-fuchsia-sdk":  AutoRollRulesFuchsiaSDKVersion("fuchsia-sdk-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
-			"autoroll-rules-ios-internal": AutoRollRulesDEPS("ios-internal-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
-			"autoroll-rules-nacl":         AutoRollRulesDEPS("nacl-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
-			"autoroll-rules-pdfium":       AutoRollRulesDEPS("pdfium-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
-			"autoroll-rules-perfetto":     AutoRollRulesDEPS("perfetto-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
-			"autoroll-rules-skia":         AutoRollRulesDEPS("skia-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
-			"autoroll-rules-spirv":        AutoRollRulesDEPS("spirv-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
-			"autoroll-rules-src-internal": AutoRollRulesDEPS("src-internal-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
-			"autoroll-rules-webrtc":       AutoRollRulesDEPS("webrtc-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
-			"autoroll-rules-wpt":          AutoRollRulesLayoutTests("wpt-autoroller@chops-service-accounts.iam.gserviceaccount.com"),
+			"autoroll-rules-chromium": AutoRollRulesForFileList(
+				"chromium-autoroll@skia-public.iam.gserviceaccount.com",
+				[]string{
+					fileAFDO,
+					fileDEPS,
+					fileFuchsiaSDKLinux,
+					fileFuchsiaSDKMac,
+				}),
+			"autoroll-rules-chromium-internal": AutoRollRulesDEPS("chromium-internal-autoroll@skia-corp.google.com.iam.gserviceaccount.com"),
+			"autoroll-rules-wpt":               AutoRollRulesLayoutTests("wpt-autoroller@chops-service-accounts.iam.gserviceaccount.com"),
 			"findit-rules": AccountRules{
 				Account: "findit-for-me@appspot.gserviceaccount.com",
 				Funcs: []RuleFunc{
@@ -167,33 +162,9 @@ var RuleMap = map[string]*RepoConfig{
 		MonorailProject: "chromium",
 		NotifierEmail:   "notifier@cr-audit-commits.appspotmail.com",
 		Rules: map[string]RuleSet{
-			"autoroll-rules-angle":       AutoRollRulesDEPS("angle-skia-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
-			"autoroll-rules-chromium":    AutoRollRulesDEPS("chromium-skia-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
-			"autoroll-rules-skcms":       AutoRollRulesSKCMS("skcms-skia-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
-			"autoroll-rules-swiftshader": AutoRollRulesDEPS("swiftshader-skia-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
-			"bookmaker": AccountRules{
-				Account: "skia-bookmaker@skia-swarming-bots.iam.gserviceaccount.com",
-				Funcs: []RuleFunc{
-					func(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-						return OnlyModifiesDirRule(ctx, ap, rc, cs, "OnlyModifiesAPIDocs", "site/user/api")
-					},
-				},
-				notificationFunction: fileBugForAutoRollViolation,
-			},
-			"recreate-skps": AccountRules{
-				Account: "skia-recreate-skps@skia-swarming-bots.iam.gserviceaccount.com",
-				Funcs: []RuleFunc{
-					func(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-						files := []string{
-							"infra/bots/assets/go_deps/VERSION",
-							"infra/bots/assets/skp/VERSION",
-							"infra/bots/tasks.json",
-						}
-						return OnlyModifiesFilesRule(ctx, ap, rc, cs, "OnlyModifiesVersionFile", files)
-					},
-				},
-				notificationFunction: fileBugForAutoRollViolation,
-			},
+			"autoroll-rules-skia": AutoRollRulesForFilesAndDirs("skia-autoroll@skia-public.iam.gserviceaccount.com", []string{fileDEPS}, []string{dirSKCMS}),
+			"bookmaker":           AutoRollRulesAPIDocs("skia-bookmaker@skia-swarming-bots.iam.gserviceaccount.com"),
+			"recreate-skps":       AutoRollRulesSkiaAssets("skia-recreate-skps@skia-swarming-bots.iam.gserviceaccount.com", []string{"go_deps", "skp"}),
 		},
 	},
 	"skia-lottie-ci": {
@@ -206,8 +177,7 @@ var RuleMap = map[string]*RepoConfig{
 		MonorailProject: "chromium",
 		NotifierEmail:   "notifier@cr-audit-commits.appspotmail.com",
 		Rules: map[string]RuleSet{
-			"autoroll-rules-lottie-web": AutoRollRulesDEPS("lottie-web-lottie-ci-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
-			"autoroll-rules-skia":       AutoRollRulesDEPSAndTasks("skia-lottie-ci-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
+			"autoroll-rules-skia": AutoRollRulesDEPSAndTasks("skia-autoroll@skia-public.iam.gserviceaccount.com"),
 		},
 	},
 	"fuchsia-topaz-master": {
@@ -220,15 +190,7 @@ var RuleMap = map[string]*RepoConfig{
 		MonorailProject: "chromium",
 		NotifierEmail:   "notifier@cr-audit-commits.appspotmail.com",
 		Rules: map[string]RuleSet{
-			"autoroll-rules-skia": AccountRules{
-				Account: "skia-fuchsia-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com",
-				Funcs: []RuleFunc{
-					func(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-						return OnlyModifiesFileRule(ctx, ap, rc, cs, "OnlyModifiesSkiaManifest", "manifest/skia")
-					},
-				},
-				notificationFunction: fileBugForAutoRollViolation,
-			},
+			"autoroll-rules-skia": AutoRollRulesSkiaManifest("skia-fuchsia-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
 		},
 	},
 }

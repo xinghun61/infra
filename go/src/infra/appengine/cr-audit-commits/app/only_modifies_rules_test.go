@@ -144,13 +144,13 @@ func TestOnlyModifiesPaths(t *testing.T) {
 			}, nil)
 			// Run rule
 			rr := OnlyModifiesPathsRule(ctx, ap, rc, testClients, "ruleName", []*Path{
-				&Path{
+				{
 					Name: "a.txt",
-					Type: TYPE_FILE,
+					Type: typeFile,
 				},
-				&Path{
+				{
 					Name: "mydir",
-					Type: TYPE_DIR,
+					Type: typeDir,
 				},
 			})
 			// Check result code
@@ -190,13 +190,13 @@ func TestOnlyModifiesPaths(t *testing.T) {
 			}, nil)
 			// Run rule
 			rr := OnlyModifiesPathsRule(ctx, ap, rc, testClients, "ruleName", []*Path{
-				&Path{
+				{
 					Name: "a.txt",
-					Type: TYPE_FILE,
+					Type: typeFile,
 				},
-				&Path{
+				{
 					Name: "mydir",
-					Type: TYPE_DIR,
+					Type: typeDir,
 				},
 			})
 			// Check result code
@@ -234,13 +234,13 @@ func TestOnlyModifiesPaths(t *testing.T) {
 			}, nil)
 			// Run rule
 			rr := OnlyModifiesPathsRule(ctx, ap, rc, testClients, "ruleName", []*Path{
-				&Path{
+				{
 					Name: "a.txt",
-					Type: TYPE_FILE,
+					Type: typeFile,
 				},
-				&Path{
+				{
 					Name: "mydir",
-					Type: TYPE_DIR,
+					Type: typeDir,
 				},
 			})
 			// Check result code

@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	TYPE_DIR  = "dir"
-	TYPE_FILE = "file"
+	typeDir  = "dir"
+	typeFile = "file"
 )
 
 // OnlyModifiesReleaseFiles is a RuleFunc that verifies that only
@@ -34,9 +34,9 @@ func OnlyModifiesReleaseFiles(ctx context.Context, ap *AuditParams, rc *Relevant
 // that only one file is modified by the audited CL.
 func OnlyModifiesFileRule(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients, ruleName, file string) *RuleResult {
 	return OnlyModifiesPathsRule(ctx, ap, rc, cs, ruleName, []*Path{
-		&Path{
+		{
 			Name: file,
-			Type: TYPE_FILE,
+			Type: typeFile,
 		},
 	})
 }
@@ -48,7 +48,7 @@ func OnlyModifiesFilesRule(ctx context.Context, ap *AuditParams, rc *RelevantCom
 	for _, f := range files {
 		paths = append(paths, &Path{
 			Name: f,
-			Type: TYPE_FILE,
+			Type: typeFile,
 		})
 	}
 	return OnlyModifiesPathsRule(ctx, ap, rc, cs, ruleName, paths)
@@ -58,11 +58,31 @@ func OnlyModifiesFilesRule(ctx context.Context, ap *AuditParams, rc *RelevantCom
 // that only files within the given directory are modified by the audited CL.
 func OnlyModifiesDirRule(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients, ruleName, dir string) *RuleResult {
 	return OnlyModifiesPathsRule(ctx, ap, rc, cs, ruleName, []*Path{
-		&Path{
+		{
 			Name: dir,
-			Type: TYPE_DIR,
+			Type: typeDir,
 		},
 	})
+}
+
+// OnlyModifiesFilesAndDirsRule is a shared implementation for RuleFuncs which
+// verify that only the given files and directories are modified by the audited
+// CL.
+func OnlyModifiesFilesAndDirsRule(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients, ruleName string, files, dirs []string) *RuleResult {
+	paths := make([]*Path, 0, len(files)+len(dirs))
+	for _, f := range files {
+		paths = append(paths, &Path{
+			Name: f,
+			Type: typeFile,
+		})
+	}
+	for _, d := range dirs {
+		paths = append(paths, &Path{
+			Name: d,
+			Type: typeDir,
+		})
+	}
+	return OnlyModifiesPathsRule(ctx, ap, rc, cs, ruleName, paths)
 }
 
 // Path is a struct describing a file or directory within the git repo.
@@ -101,13 +121,13 @@ func OnlyModifiesPathsRule(ctx context.Context, ap *AuditParams, rc *RelevantCom
 	dirs := make([]string, 0, len(paths))
 	files := make(map[string]bool, len(paths))
 	for _, p := range paths {
-		if p.Type == TYPE_DIR {
+		if p.Type == typeDir {
 			name := p.Name
 			if !strings.HasSuffix(name, "/") {
 				name += "/"
 			}
 			dirs = append(dirs, name)
-		} else if p.Type == TYPE_FILE {
+		} else if p.Type == typeFile {
 			files[p.Name] = true
 		}
 	}

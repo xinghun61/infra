@@ -72,7 +72,7 @@ func TestAutoRollRules(t *testing.T) {
 				},
 			}, nil)
 			// Run rule
-			rr := OnlyModifiesDEPSFile(ctx, ap, rc, testClients)
+			rr := AutoRollRulesDEPS(rc.CommitterAccount).Funcs[0](ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 
@@ -108,7 +108,7 @@ func TestAutoRollRules(t *testing.T) {
 					},
 				}, nil)
 				// Run rule
-				rr := OnlyModifiesDEPSFile(ctx, ap, rc, testClients)
+				rr := AutoRollRulesDEPS(rc.CommitterAccount).Funcs[0](ctx, ap, rc, testClients)
 				// Check result code
 				So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			})
@@ -137,7 +137,7 @@ func TestAutoRollRules(t *testing.T) {
 					},
 				}, nil)
 				// Run rule
-				rr := OnlyModifiesDEPSFile(ctx, ap, rc, testClients)
+				rr := AutoRollRulesDEPS(rc.CommitterAccount).Funcs[0](ctx, ap, rc, testClients)
 				// Check result code
 				So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			})

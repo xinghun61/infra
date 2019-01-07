@@ -5,121 +5,101 @@
 package crauditcommits
 
 import (
+	"fmt"
+	"strings"
+
 	"golang.org/x/net/context"
 )
 
-// AutoRollRulesAFDOVersion returns an AccountRules instance for an account
-// which should only modify ``chrome/android/profiles/newest.txt``.
-func AutoRollRulesAFDOVersion(account string) AccountRules {
+const (
+	dirLayoutTests = "third_party/blink/web_tests"
+	dirSKCMS       = "third_party/skcms"
+	dirSkiaAPIDocs = "site/user/api"
+
+	fileAFDO            = "chrome/android/profiles/newest.txt"
+	fileDEPS            = "DEPS"
+	fileFuchsiaSDKLinux = "build/fuchsia/linux.sdk.sha1"
+	fileFuchsiaSDKMac   = "build/fuchsia/mac.sdk.sha1"
+	fileSkiaManifest    = "manifest/skia"
+	fileSkiaTasks       = "infra/bots/tasks.json"
+)
+
+// AutoRollRulesForFilesAndDirs returns an AccountRules instance for an account
+// which should only modify the given set of files and directories.
+func AutoRollRulesForFilesAndDirs(account string, files, dirs []string) AccountRules {
 	return AccountRules{
 		Account: account,
 		Funcs: []RuleFunc{
-			OnlyModifiesAFDOVersion,
+			func(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+				ruleName := fmt.Sprintf("OnlyModifies_%s", strings.Join(append(files, dirs...), "+"))
+				return OnlyModifiesFilesAndDirsRule(ctx, ap, rc, cs, ruleName, files, dirs)
+			},
 		},
 		notificationFunction: fileBugForAutoRollViolation,
 	}
+}
+
+// AutoRollRulesForDirList returns an AccountRules instance for an account
+// which should only modify the given set of directories.
+func AutoRollRulesForDirList(account string, dirs []string) AccountRules {
+	return AutoRollRulesForFilesAndDirs(account, []string{}, dirs)
+}
+
+// AutoRollRulesForFileList returns an AccountRules instance for an account
+// which should only modify the given set of files.
+func AutoRollRulesForFileList(account string, files []string) AccountRules {
+	return AutoRollRulesForFilesAndDirs(account, files, []string{})
 }
 
 // AutoRollRulesDEPS returns an AccountRules instance for an account which should
 // only modify the ``DEPS`` file.
 func AutoRollRulesDEPS(account string) AccountRules {
-	return AccountRules{
-		Account: account,
-		Funcs: []RuleFunc{
-			OnlyModifiesDEPSFile,
-		},
-		notificationFunction: fileBugForAutoRollViolation,
-	}
+	return AutoRollRulesForFileList(account, []string{fileDEPS})
 }
 
 // AutoRollRulesDEPSAndTasks returns an AccountRules instance for an account
 // which should only modify the ``DEPS`` and ``infra/bots/tasks.json`` files.
 func AutoRollRulesDEPSAndTasks(account string) AccountRules {
-	return AccountRules{
-		Account: account,
-		Funcs: []RuleFunc{
-			OnlyModifiesDEPSAndTasks,
-		},
-	}
+	return AutoRollRulesForFileList(account, []string{fileDEPS, fileSkiaTasks})
 }
 
 // AutoRollRulesFuchsiaSDKVersion returns an AccountRules instance for an
 // account which should only modifiy ``build/fuchsia/sdk.sha1``.
 func AutoRollRulesFuchsiaSDKVersion(account string) AccountRules {
-	return AccountRules{
-		Account: account,
-		Funcs: []RuleFunc{
-			OnlyModifiesFuchsiaSDKVersions,
-		},
-		notificationFunction: fileBugForAutoRollViolation,
-	}
+	return AutoRollRulesForFileList(account, []string{fileFuchsiaSDKLinux, fileFuchsiaSDKMac})
 }
 
 // AutoRollRulesSKCMS returns an AccountRules instance for an account which
 // should only modify ``third_party/skcms``.
 func AutoRollRulesSKCMS(account string) AccountRules {
-	return AccountRules{
-		Account: account,
-		Funcs: []RuleFunc{
-			OnlyModifiesSKCMS,
-		},
-		notificationFunction: fileBugForAutoRollViolation,
-	}
+	return AutoRollRulesForDirList(account, []string{dirSKCMS})
 }
 
 // AutoRollRulesLayoutTests returns an AccountRules instance for an account
 // which should only modify ``third_party/blink/web_tests``.
 func AutoRollRulesLayoutTests(account string) AccountRules {
-	return AccountRules{
-		Account: account,
-		Funcs: []RuleFunc{
-			OnlyModifiesLayoutTests,
-		},
-		notificationFunction: fileBugForAutoRollViolation,
+	return AutoRollRulesForDirList(account, []string{dirLayoutTests})
+}
+
+// AutoRollRulesAPIDocs returns an AccountRules instance for an account which
+// should only modify ``site/user/api``.
+func AutoRollRulesAPIDocs(account string) AccountRules {
+	return AutoRollRulesForDirList(account, []string{dirSkiaAPIDocs})
+}
+
+// AutoRollRulesSkiaAssets returns an AccountRules instance for an account which
+// should only modify Skia assets.
+func AutoRollRulesSkiaAssets(account string, assets []string) AccountRules {
+	files := make([]string, 0, len(assets)+1)
+	for _, asset := range assets {
+		files = append(files, fmt.Sprintf("infra/bots/assets/%s/VERSION", asset))
 	}
+	files = append(files, fileSkiaTasks)
+	return AutoRollRulesForFileList(account, files)
 }
 
-// OnlyModifiesDEPSFile is a RuleFunc that verifies that the only file
-// modified by the audited CL is ``DEPS``.
-func OnlyModifiesDEPSFile(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-	return OnlyModifiesFileRule(ctx, ap, rc, cs, "OnlyModifiesDEPSFile", "DEPS")
-}
-
-// OnlyModifiesDEPSAndTasks is a RuleFunc that verifies that the only files
-// modified by the audited CL are ``DEPS`` and ``infra/bots/tasks.json``.
-func OnlyModifiesDEPSAndTasks(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-	files := []string{
-		"DEPS",
-		"infra/bots/tasks.json",
-	}
-	return OnlyModifiesFilesRule(ctx, ap, rc, cs, "OnlyModifiesDEPS+tasks.json", files)
-}
-
-// OnlyModifiesAFDOVersion is a RuleFunc which verifies that the only file
-// modified by the audited CL is ``chrome/android/profiles/newest.txt``.
-func OnlyModifiesAFDOVersion(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-	return OnlyModifiesFileRule(ctx, ap, rc, cs, "OnlyModifiesAFDOVersion", "chrome/android/profiles/newest.txt")
-}
-
-// OnlyModifiesFuchsiaSDKVersions is a RuleFunc which verifies that the only
-// files modified by the audited CL is ``build/fuchsia/linux.sdk.sha1`` and
-// ``build/fuchsia/mac.sdk.sha1``.
-func OnlyModifiesFuchsiaSDKVersions(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-	files := []string{
-		"build/fuchsia/linux.sdk.sha1",
-		"build/fuchsia/mac.sdk.sha1",
-	}
-	return OnlyModifiesFilesRule(ctx, ap, rc, cs, "OnlyModifiesFuchsiaSDKVersions", files)
-}
-
-// OnlyModifiesSKCMS is a RuleFunc which verifies that the audited CL only
-// modifies files in the ``third_party/skcms`` directory.
-func OnlyModifiesSKCMS(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-	return OnlyModifiesDirRule(ctx, ap, rc, cs, "OnlyModifiesSKCMS", "third_party/skcms")
-}
-
-// OnlyModifiesLayoutTests is a RuleFunc which verifies that the audited CL
-// only modifies files in the ``third_party/blink/web_tests`` directory.
-func OnlyModifiesLayoutTests(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-	return OnlyModifiesDirRule(ctx, ap, rc, cs, "OnlyModifiesLayoutTests", "third_party/blink/web_tests")
+// AutoRollRulesSkiaManifest returns an AccountRules instance for an account
+// which should only modify ``manifest/skia``.
+func AutoRollRulesSkiaManifest(account string) AccountRules {
+	return AutoRollRulesForFileList(account, []string{fileSkiaManifest})
 }
