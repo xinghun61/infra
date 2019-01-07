@@ -37,6 +37,7 @@ func (m *MockInventoryClient) EXPECT() *MockInventoryClientMockRecorder {
 
 // EnsurePoolHealthy mocks base method
 func (m *MockInventoryClient) EnsurePoolHealthy(ctx context.Context, in *EnsurePoolHealthyRequest, opts ...grpc.CallOption) (*EnsurePoolHealthyResponse, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -49,12 +50,14 @@ func (m *MockInventoryClient) EnsurePoolHealthy(ctx context.Context, in *EnsureP
 
 // EnsurePoolHealthy indicates an expected call of EnsurePoolHealthy
 func (mr *MockInventoryClientMockRecorder) EnsurePoolHealthy(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnsurePoolHealthy", reflect.TypeOf((*MockInventoryClient)(nil).EnsurePoolHealthy), varargs...)
 }
 
 // ResizePool mocks base method
 func (m *MockInventoryClient) ResizePool(ctx context.Context, in *ResizePoolRequest, opts ...grpc.CallOption) (*ResizePoolResponse, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -67,12 +70,14 @@ func (m *MockInventoryClient) ResizePool(ctx context.Context, in *ResizePoolRequ
 
 // ResizePool indicates an expected call of ResizePool
 func (mr *MockInventoryClientMockRecorder) ResizePool(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResizePool", reflect.TypeOf((*MockInventoryClient)(nil).ResizePool), varargs...)
 }
 
 // RemoveDutsFromDrones mocks base method
 func (m *MockInventoryClient) RemoveDutsFromDrones(ctx context.Context, in *RemoveDutsFromDronesRequest, opts ...grpc.CallOption) (*RemoveDutsFromDronesResponse, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -85,12 +90,14 @@ func (m *MockInventoryClient) RemoveDutsFromDrones(ctx context.Context, in *Remo
 
 // RemoveDutsFromDrones indicates an expected call of RemoveDutsFromDrones
 func (mr *MockInventoryClientMockRecorder) RemoveDutsFromDrones(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveDutsFromDrones", reflect.TypeOf((*MockInventoryClient)(nil).RemoveDutsFromDrones), varargs...)
 }
 
 // AssignDutsToDrones mocks base method
 func (m *MockInventoryClient) AssignDutsToDrones(ctx context.Context, in *AssignDutsToDronesRequest, opts ...grpc.CallOption) (*AssignDutsToDronesResponse, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -103,6 +110,7 @@ func (m *MockInventoryClient) AssignDutsToDrones(ctx context.Context, in *Assign
 
 // AssignDutsToDrones indicates an expected call of AssignDutsToDrones
 func (mr *MockInventoryClientMockRecorder) AssignDutsToDrones(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AssignDutsToDrones", reflect.TypeOf((*MockInventoryClient)(nil).AssignDutsToDrones), varargs...)
 }
@@ -132,6 +140,7 @@ func (m *MockInventoryServer) EXPECT() *MockInventoryServerMockRecorder {
 
 // EnsurePoolHealthy mocks base method
 func (m *MockInventoryServer) EnsurePoolHealthy(arg0 context.Context, arg1 *EnsurePoolHealthyRequest) (*EnsurePoolHealthyResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "EnsurePoolHealthy", arg0, arg1)
 	ret0, _ := ret[0].(*EnsurePoolHealthyResponse)
 	ret1, _ := ret[1].(error)
@@ -140,11 +149,13 @@ func (m *MockInventoryServer) EnsurePoolHealthy(arg0 context.Context, arg1 *Ensu
 
 // EnsurePoolHealthy indicates an expected call of EnsurePoolHealthy
 func (mr *MockInventoryServerMockRecorder) EnsurePoolHealthy(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnsurePoolHealthy", reflect.TypeOf((*MockInventoryServer)(nil).EnsurePoolHealthy), arg0, arg1)
 }
 
 // ResizePool mocks base method
 func (m *MockInventoryServer) ResizePool(arg0 context.Context, arg1 *ResizePoolRequest) (*ResizePoolResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ResizePool", arg0, arg1)
 	ret0, _ := ret[0].(*ResizePoolResponse)
 	ret1, _ := ret[1].(error)
@@ -153,11 +164,13 @@ func (m *MockInventoryServer) ResizePool(arg0 context.Context, arg1 *ResizePoolR
 
 // ResizePool indicates an expected call of ResizePool
 func (mr *MockInventoryServerMockRecorder) ResizePool(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResizePool", reflect.TypeOf((*MockInventoryServer)(nil).ResizePool), arg0, arg1)
 }
 
 // RemoveDutsFromDrones mocks base method
 func (m *MockInventoryServer) RemoveDutsFromDrones(arg0 context.Context, arg1 *RemoveDutsFromDronesRequest) (*RemoveDutsFromDronesResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RemoveDutsFromDrones", arg0, arg1)
 	ret0, _ := ret[0].(*RemoveDutsFromDronesResponse)
 	ret1, _ := ret[1].(error)
@@ -166,11 +179,13 @@ func (m *MockInventoryServer) RemoveDutsFromDrones(arg0 context.Context, arg1 *R
 
 // RemoveDutsFromDrones indicates an expected call of RemoveDutsFromDrones
 func (mr *MockInventoryServerMockRecorder) RemoveDutsFromDrones(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveDutsFromDrones", reflect.TypeOf((*MockInventoryServer)(nil).RemoveDutsFromDrones), arg0, arg1)
 }
 
 // AssignDutsToDrones mocks base method
 func (m *MockInventoryServer) AssignDutsToDrones(arg0 context.Context, arg1 *AssignDutsToDronesRequest) (*AssignDutsToDronesResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AssignDutsToDrones", arg0, arg1)
 	ret0, _ := ret[0].(*AssignDutsToDronesResponse)
 	ret1, _ := ret[1].(error)
@@ -179,5 +194,6 @@ func (m *MockInventoryServer) AssignDutsToDrones(arg0 context.Context, arg1 *Ass
 
 // AssignDutsToDrones indicates an expected call of AssignDutsToDrones
 func (mr *MockInventoryServerMockRecorder) AssignDutsToDrones(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AssignDutsToDrones", reflect.TypeOf((*MockInventoryServer)(nil).AssignDutsToDrones), arg0, arg1)
 }

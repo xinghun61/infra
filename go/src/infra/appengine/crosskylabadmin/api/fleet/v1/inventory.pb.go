@@ -784,8 +784,10 @@ func (m *AssignDutsToDronesRequest) GetAssignments() []*AssignDutsToDronesReques
 type AssignDutsToDronesRequest_Item struct {
 	// dut_id is the id of a dut to assign to a drone.
 	DutId string `protobuf:"bytes,1,opt,name=dut_id,json=dutId,proto3" json:"dut_id,omitempty"`
-	// drone_hostname is the drone to assign the dut to (if specified); if unspecified
-	// then admin service will use its own heuristics to pick drone.
+	// drone_hostname is the drone to assign the dut to.
+	//
+	// [not yet implemented] if absent, inventory service will use a heuristic to select
+	// drone.
 	DroneHostname        string   `protobuf:"bytes,2,opt,name=drone_hostname,json=droneHostname,proto3" json:"drone_hostname,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`

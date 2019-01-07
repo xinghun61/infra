@@ -39,6 +39,7 @@ func (m *MockSwarmingClient) EXPECT() *MockSwarmingClientMockRecorder {
 
 // ListAliveBotsInPool mocks base method
 func (m *MockSwarmingClient) ListAliveBotsInPool(arg0 context.Context, arg1 string, arg2 strpair.Map) ([]*v1.SwarmingRpcsBotInfo, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListAliveBotsInPool", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]*v1.SwarmingRpcsBotInfo)
 	ret1, _ := ret[1].(error)
@@ -47,11 +48,13 @@ func (m *MockSwarmingClient) ListAliveBotsInPool(arg0 context.Context, arg1 stri
 
 // ListAliveBotsInPool indicates an expected call of ListAliveBotsInPool
 func (mr *MockSwarmingClientMockRecorder) ListAliveBotsInPool(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAliveBotsInPool", reflect.TypeOf((*MockSwarmingClient)(nil).ListAliveBotsInPool), arg0, arg1, arg2)
 }
 
 // ListBotTasks mocks base method
 func (m *MockSwarmingClient) ListBotTasks(id string) clients.BotTasksCursor {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListBotTasks", id)
 	ret0, _ := ret[0].(clients.BotTasksCursor)
 	return ret0
@@ -59,11 +62,13 @@ func (m *MockSwarmingClient) ListBotTasks(id string) clients.BotTasksCursor {
 
 // ListBotTasks indicates an expected call of ListBotTasks
 func (mr *MockSwarmingClientMockRecorder) ListBotTasks(id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBotTasks", reflect.TypeOf((*MockSwarmingClient)(nil).ListBotTasks), id)
 }
 
 // ListRecentTasks mocks base method
 func (m *MockSwarmingClient) ListRecentTasks(c context.Context, tags []string, state string, limit int) ([]*v1.SwarmingRpcsTaskResult, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListRecentTasks", c, tags, state, limit)
 	ret0, _ := ret[0].([]*v1.SwarmingRpcsTaskResult)
 	ret1, _ := ret[1].(error)
@@ -72,11 +77,13 @@ func (m *MockSwarmingClient) ListRecentTasks(c context.Context, tags []string, s
 
 // ListRecentTasks indicates an expected call of ListRecentTasks
 func (mr *MockSwarmingClientMockRecorder) ListRecentTasks(c, tags, state, limit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRecentTasks", reflect.TypeOf((*MockSwarmingClient)(nil).ListRecentTasks), c, tags, state, limit)
 }
 
 // ListSortedRecentTasksForBot mocks base method
 func (m *MockSwarmingClient) ListSortedRecentTasksForBot(c context.Context, botID string, limit int) ([]*v1.SwarmingRpcsTaskResult, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListSortedRecentTasksForBot", c, botID, limit)
 	ret0, _ := ret[0].([]*v1.SwarmingRpcsTaskResult)
 	ret1, _ := ret[1].(error)
@@ -85,11 +92,13 @@ func (m *MockSwarmingClient) ListSortedRecentTasksForBot(c context.Context, botI
 
 // ListSortedRecentTasksForBot indicates an expected call of ListSortedRecentTasksForBot
 func (mr *MockSwarmingClientMockRecorder) ListSortedRecentTasksForBot(c, botID, limit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSortedRecentTasksForBot", reflect.TypeOf((*MockSwarmingClient)(nil).ListSortedRecentTasksForBot), c, botID, limit)
 }
 
 // CreateTask mocks base method
 func (m *MockSwarmingClient) CreateTask(c context.Context, name string, args *clients.SwarmingCreateTaskArgs) (string, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateTask", c, name, args)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
@@ -98,6 +107,7 @@ func (m *MockSwarmingClient) CreateTask(c context.Context, name string, args *cl
 
 // CreateTask indicates an expected call of CreateTask
 func (mr *MockSwarmingClientMockRecorder) CreateTask(c, name, args interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTask", reflect.TypeOf((*MockSwarmingClient)(nil).CreateTask), c, name, args)
 }
 
@@ -126,6 +136,7 @@ func (m *MockBotTasksCursor) EXPECT() *MockBotTasksCursorMockRecorder {
 
 // Next mocks base method
 func (m *MockBotTasksCursor) Next(arg0 context.Context, arg1 int64) ([]*v1.SwarmingRpcsTaskResult, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Next", arg0, arg1)
 	ret0, _ := ret[0].([]*v1.SwarmingRpcsTaskResult)
 	ret1, _ := ret[1].(error)
@@ -134,5 +145,6 @@ func (m *MockBotTasksCursor) Next(arg0 context.Context, arg1 int64) ([]*v1.Swarm
 
 // Next indicates an expected call of Next
 func (mr *MockBotTasksCursorMockRecorder) Next(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Next", reflect.TypeOf((*MockBotTasksCursor)(nil).Next), arg0, arg1)
 }
