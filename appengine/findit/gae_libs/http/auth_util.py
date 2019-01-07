@@ -26,7 +26,7 @@ _HOST_PATH_REGEX_TO_SCOPES = [
     (re.compile(r'^isolateserver\.appspot\.com$'), None,
      _EMAIL_SCOPE),  # Isolate.
     (re.compile(r'^storage\.googleapis\.com$'),
-     re.compile(r'^/cr-coverage-profile-data/.*$'),
+     re.compile(r'^/(cr-coverage-profile-data|code-coverage-data)/.*$'),
      'https://www.googleapis.com/auth/devstorage.read_only'),  # GS buckets.
 ]
 

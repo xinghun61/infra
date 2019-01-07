@@ -49,6 +49,10 @@ class AuthUtilTest(unittest.TestCase):
         'Authorization': 'Bearer abc'
     }, authenticator.GetHttpHeadersFor(
         'https://storage.googleapis.com/cr-coverage-profile-data/xyz'))
+    self.assertEqual({
+        'Authorization': 'Bearer abc'
+    }, authenticator.GetHttpHeadersFor(
+        'https://storage.googleapis.com/code-coverage-data/xyz'))
     self.assertEqual({}, authenticator.GetHttpHeadersFor(
         'https://storage.googleapis.com/isolateserver/default-gzip/3f77c750'))
     self.assertEqual({
