@@ -28,6 +28,7 @@ import (
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
+	"infra/appengine/crosskylabadmin/app/frontend/inventory/internal/fakes"
 	"infra/libs/skylab/inventory"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -270,7 +271,7 @@ func TestEnsurePoolHealthyDryrun(t *testing.T) {
 				}
 			}
 		`
-		So(tf.FakeGitiles.addArchive(config.Get(tf.C).Inventory, []byte(ptext), nil), ShouldBeNil)
+		So(tf.FakeGitiles.AddArchive(config.Get(tf.C).Inventory, []byte(ptext), nil), ShouldBeNil)
 		expectDutsWithHealth(tf.MockTracker, map[string]fleet.Health{
 			"dut_in_env":    fleet.Health_Healthy,
 			"dut_no_in_env": fleet.Health_Healthy,
@@ -651,13 +652,13 @@ func TestAssignDutsToDrones(t *testing.T) {
 
 // setupLabInventoryArchive sets up fake gitiles to return the inventory of
 // duts provided.
-func setupInfraInventoryArchive(c context.Context, g *fakeGitilesClient, duts []testDutOnServer) error {
-	return g.addArchive(config.Get(c).Inventory, []byte{}, []byte(infraInventoryStrFromDuts(duts)))
+func setupInfraInventoryArchive(c context.Context, g *fakes.GitilesClient, duts []testDutOnServer) error {
+	return g.AddArchive(config.Get(c).Inventory, []byte{}, []byte(infraInventoryStrFromDuts(duts)))
 }
 
 // assertLabInventoryChange verifies that the CL uploaded to gerrit contains the
 // inventory of duts provided.
-func assertLabInventoryChange(c C, fg *fakeGerritClient, duts []testInventoryDut) {
+func assertLabInventoryChange(c C, fg *fakes.GerritClient, duts []testInventoryDut) {
 	p := "data/skylab/lab.textpb"
 	changes := fg.Changes
 	So(changes, ShouldHaveLength, 1)

@@ -12,22 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package inventory
+package fakes
 
 import (
 	"infra/appengine/crosskylabadmin/app/config"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
+	"go.chromium.org/luci/appengine/gaetesting"
 	"go.chromium.org/luci/common/proto/gitiles"
 )
 
 func TestFakeGitilesArchive(t *testing.T) {
 	Convey("FakeGitilesClient.Archive errors on missing testdata", t, func() {
-		tf, validate := newTestFixture(t)
-		defer validate()
+		ctx := gaetesting.TestingContextWithAppID("dev~infra-crosskylabadmin")
+		gitilesC := NewGitilesClient()
 
-		_, err := tf.FakeGitiles.Archive(tf.C, &gitiles.ArchiveRequest{
+		_, err := gitilesC.Archive(ctx, &gitiles.ArchiveRequest{
 			Project: "fakeproject",
 			Ref:     "master",
 		})
@@ -35,16 +36,16 @@ func TestFakeGitilesArchive(t *testing.T) {
 	})
 
 	Convey("FakeGitilesClient.Archive does not return error with correct testdata", t, func() {
-		tf, validate := newTestFixture(t)
-		defer validate()
+		ctx := gaetesting.TestingContextWithAppID("dev~infra-crosskylabadmin")
+		gitilesC := NewGitilesClient()
 
 		ic := &config.Inventory{
 			Project:     "fakeproject",
 			Branch:      "master",
 			LabDataPath: "some/dir",
 		}
-		So(tf.FakeGitiles.addArchive(ic, []byte("some test data"), nil), ShouldBeNil)
-		_, err := tf.FakeGitiles.Archive(tf.C, &gitiles.ArchiveRequest{
+		So(gitilesC.AddArchive(ic, []byte("some test data"), nil), ShouldBeNil)
+		_, err := gitilesC.Archive(ctx, &gitiles.ArchiveRequest{
 			Project: "fakeproject",
 			Ref:     "master",
 		})
