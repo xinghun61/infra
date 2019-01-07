@@ -28,6 +28,7 @@ github.com/Microsoft/go-winio
 
 # gopkg.in
 gopkg.in/fsnotify.v1
+gopkg.in/russross/blackfriday.v2
 gopkg.in/yaml.v2
 
 # Other github packages
