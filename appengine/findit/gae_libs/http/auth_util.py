@@ -13,15 +13,20 @@ from google.appengine.api.app_identity import app_identity
 from libs.http.interceptor import LoggingInterceptor
 
 _EMAIL_SCOPE = 'https://www.googleapis.com/auth/userinfo.email'
-_HOST_REGEX_TO_SCOPES = [
-    (re.compile(r'^.*\.googlesource\.com$'),
+# host regex, path regex, scope
+_HOST_PATH_REGEX_TO_SCOPES = [
+    (re.compile(r'^.*\.googlesource\.com$'), None,
      'https://www.googleapis.com/auth/gerritcodereview'),  # Gerrit.
-    (re.compile(r'^chromium\-swarm\.appspot\.com$'), _EMAIL_SCOPE),  # Swarming.
-    (re.compile(r'^codereview\.chromium\.org$'), _EMAIL_SCOPE),  # Rietveld.
-    (re.compile(r'^cr\-buildbucket\.appspot\.com$'),
+    (re.compile(r'^chromium\-swarm\.appspot\.com$'), None,
+     _EMAIL_SCOPE),  # Swarming.
+    (re.compile(r'^codereview\.chromium\.org$'), None,
+     _EMAIL_SCOPE),  # Rietveld.
+    (re.compile(r'^cr\-buildbucket\.appspot\.com$'), None,
      _EMAIL_SCOPE),  # Buildbucket.
-    (re.compile(r'^isolateserver\.appspot\.com$'), _EMAIL_SCOPE),  # Isolate.
+    (re.compile(r'^isolateserver\.appspot\.com$'), None,
+     _EMAIL_SCOPE),  # Isolate.
     (re.compile(r'^storage\.googleapis\.com$'),
+     re.compile(r'^/cr-coverage-profile-data/.*$'),
      'https://www.googleapis.com/auth/devstorage.read_only'),  # GS buckets.
 ]
 
@@ -40,8 +45,9 @@ class Authenticator(object):
     if result.scheme != 'https':
       return {}
 
-    for host_regex, scope in _HOST_REGEX_TO_SCOPES:
-      if host_regex.match(result.netloc):
+    for host_regex, path_regex, scope in _HOST_PATH_REGEX_TO_SCOPES:
+      if (host_regex.match(result.netloc) and
+          (not path_regex or path_regex.match(result.path))):
         logging.debug('Authorization header of scope %s was created for %s',
                       scope, url)
         return {'Authorization': 'Bearer %s' % GetAuthToken(scope)}
