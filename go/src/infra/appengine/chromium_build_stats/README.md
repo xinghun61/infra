@@ -57,8 +57,9 @@ $ bq --project_id=$PROJECT mk --time_partitioning_type=DAY \
     --time_partitioning_expiration=$((3600 * 24 * 365 * 2)) ninjalog.ninjalog
 
 # This is for log table from chromium developer.
+# Set ***540 days*** expiration.
 $ bq --project_id=$PROJECT mk --time_partitioning_type=DAY \
-    --time_partitioning_expiration=$((3600 * 24 * 365 * 2)) ninjalog.user
+    --time_partitioning_expiration=$((3600 * 24 * 30 * 18)) ninjalog.user
 ```
 
 3. Update schema
