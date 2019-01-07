@@ -39,7 +39,7 @@ import (
 	"go.chromium.org/luci/hardcoded/chromeinfra"
 )
 
-const userAgent = "bqupload v1.0"
+const userAgent = "bqupload v1.1"
 
 func usage() {
 	fmt.Fprintf(os.Stderr,
@@ -140,6 +140,15 @@ func run(ctx context.Context) error {
 			fmt.Fprintf(os.Stderr, "  luci-auth login -scopes %q\n", strings.Join(defaults.Scopes, " "))
 		}
 		return err
+	}
+
+	// Report who we are running as, helps when debugging permissions. Carry on
+	// on errors (there shouldn't be any anyway).
+	email, err := authenticator.GetEmail()
+	if err != nil {
+		logging.Warningf(ctx, "Can't get an email of the active account - %s", err)
+	} else {
+		logging.Infof(ctx, "Running as %s", email)
 	}
 
 	return upload(ctx, &bqOpts)
