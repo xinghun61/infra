@@ -29,13 +29,17 @@ func getApplication() *cli.Application {
 		},
 		Commands: []*subcommands.Command{
 			subcommands.CmdHelp,
+
+			subcommands.Section("Auth"),
 			authcli.SubcommandInfo(site.DefaultAuthOptions, "whoami", false),
 			authcli.SubcommandLogin(site.DefaultAuthOptions, "login", false),
 			authcli.SubcommandLogout(site.DefaultAuthOptions, "logout", false),
 
-			// Main commands.
+			subcommands.Section("Administration"),
 			cmd.Create,
 			cmd.AddAccount,
+
+			subcommands.Section("View"),
 			cmd.Inspect,
 		},
 	}
