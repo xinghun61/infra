@@ -34,8 +34,9 @@ def _GenerateComponentReportJson(component_reports):
 
 
 def _QueryTotalReports(limit=_DEFAULT_MAX_ROW_NUM):
-  return TotalFlakinessReport.query().order(
-      -ComponentFlakinessReport.generated_time).fetch(limit)
+  return TotalFlakinessReport.query(
+      TotalFlakinessReport.tags == TotalFlakinessReport.GenerateTag(
+          'day', 1)).order(-TotalFlakinessReport.generated_time).fetch(limit)
 
 
 def _QueryComponentReports(component, limit=_DEFAULT_MAX_ROW_NUM):
