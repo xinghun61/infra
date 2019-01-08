@@ -7,6 +7,8 @@
 
 <dom-module id="mr-issue-table">
   <template>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+          rel="stylesheet">
     <style include="mr-flt-styles">
       :host {
         display: block;
@@ -16,7 +18,6 @@
         width: 100%;
       }
       tr {
-        font-size: 90%;
         font-weight: normal;
         text-align: left;
         margin: 0 auto;
@@ -78,10 +79,7 @@
           <template is="dom-if" if="[[rerankEnabled]]">
             <td>
               <template is="dom-if" if="[[_canRerank(rerankEnabled, row)]]">
-                <iron-icon
-                  icon="reorder"
-                  class="draggable"
-                ></iron-icon>
+                <i class="material-icons draggable">drag_indicator</i>
               </template>
             </td>
           </template>

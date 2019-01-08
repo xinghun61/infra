@@ -12,6 +12,8 @@
 
 <dom-module id="mr-phase">
   <template>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+          rel="stylesheet">
     <style include="mr-flt-styles">
       :host {
         display: block;
@@ -65,7 +67,7 @@
         </span>
       </span>
       <chops-button hidden$="[[_isEmpty(phaseName)]]" on-click="edit" class="de-emphasized phase-edit">
-        <iron-icon icon="create"></iron-icon>
+        <i class="material-icons">create</i>
         Edit
       </chops-button>
     </h2>

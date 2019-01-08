@@ -1,6 +1,5 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../../bower_components/chopsui/chops-button.html">
-<link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
 <link rel="import" href="../../../bower_components/vaadin-upload/vaadin-upload.html">
 <link rel="import" href="../../../bower_components/vaadin-upload/theme/lumo/vaadin-upload.html">
 
@@ -11,6 +10,8 @@
 
 <dom-module id="mr-edit-metadata">
   <template>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+          rel="stylesheet">
     <style include="mr-flt-styles">
       :host {
         display: block;
@@ -113,7 +114,7 @@
     <form id="editForm">
       <textarea id="commentText" placeholder="Add a comment"></textarea>
       <vaadin-upload files="{{_newAttachments}}" no-auto hidden$="[[disableAttachments]]">
-        <iron-icon slot="drop-label-icon" icon="cloud-upload"></iron-icon>
+        <i class="material-icons" slot="drop-label-icon">cloud_upload</i>
       </vaadin-upload>
       <div class="input-grid">
         <template is="dom-if" if="[[!isApproval]]">
@@ -281,11 +282,11 @@
           class="de-emphasized discard-button"
           disabled="[[disabled]]"
         >
-          <iron-icon icon="close"></iron-icon>
+          <i class="material-icons">close</i>
           Discard changes
         </chops-button>
         <chops-button on-click="save" class="emphasized" disabled="[[disabled]]">
-          <iron-icon icon="create"></iron-icon>
+          <i class="material-icons">create</i>
           Save changes
         </chops-button>
       </div>

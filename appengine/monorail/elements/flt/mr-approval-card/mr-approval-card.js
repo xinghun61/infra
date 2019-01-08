@@ -302,9 +302,9 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
 
   _computeExpandIcon(opened) {
     if (opened) {
-      return 'expand-less';
+      return 'expand_less';
     }
-    return 'expand-more';
+    return 'expand_more';
   }
 
   _computeStatus(statusEnum) {

@@ -2,8 +2,6 @@
 
 <link rel="import" href="../../../bower_components/chopsui/chops-dialog.html">
 <link rel="import" href="../../../bower_components/chopsui/chops-timestamp.html">
-<link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
-<link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
 
 <link rel="import" href="../../mr-bug-link/mr-bug-link.html">
 <link rel="import" href="../../mr-user-link/mr-user-link.html">
@@ -15,6 +13,8 @@
 
 <dom-module id="mr-metadata">
   <template>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+          rel="stylesheet">
     <style include="mr-flt-styles">
       :host {
         display: table;
@@ -185,7 +185,7 @@
           </template>
           <chops-button
             on-click="openViewBlockedOn">
-            <iron-icon icon="view-list"></iron-icon>
+            <i class="material-icons">view_list</i>
             &nbsp;View details
           </chops-button>
         </td>
@@ -245,8 +245,8 @@
           </template>
           <chops-button
             on-click="openUpdateHotlists">
-            <iron-icon icon="create"></iron-icon>
-            &nbsp;Edit your hotlists.
+            <i class="material-icons">create</i>
+            Update your hotlists
           </chops-button>
         </td>
       </tr>

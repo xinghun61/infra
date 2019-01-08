@@ -6,6 +6,8 @@
 
 <dom-module id="mr-update-issue-hotlists">
   <template>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+          rel="stylesheet">
     <style include="mr-flt-styles">
       :host {
         padding: 1em;
@@ -96,11 +98,11 @@
           class="de-emphasized discard-button"
           disabled="[[disabled]]"
         >
-          <iron-icon icon="close"></iron-icon>
+          <i class="material-icons">close</i>
           Discard changes
         </chops-button>
         <chops-button on-click="save" class="emphasized" disabled="[[disabled]]">
-          <iron-icon icon="create"></iron-icon>
+          <i class="material-icons">create</i>
           Save changes
         </chops-button>
       </div>

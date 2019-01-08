@@ -7,7 +7,6 @@
 
 <link rel="import" href="../mr-edit-metadata/mr-edit-issue.html">
 <link rel="import" href="../mr-inline-editor/mr-inline-editor.html">
-<link rel="import" href="../mr-issue-details/mr-attachment-gallery.html">
 <link rel="import" href="../shared/mr-flt-styles.html">
 
 <dom-module id="mr-issue-details">
@@ -29,16 +28,11 @@
       h3 {
         margin-top: 1em;
       }
-      mr-attachment-gallery {
-        margin-bottom: 0.5em;
-        box-sizing: border-box;
-      }
       .comments-section{
         box-sizing: border-box;
         padding: 0.25em 8px;
       }
     </style>
-    <mr-attachment-gallery hidden></mr-attachment-gallery>
     <mr-inline-editor
       heading-level=2
       content="[[_description.content]]"

@@ -1,24 +1,31 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
-<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
-<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
 
 <dom-module id="mr-dropdown">
   <template>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+          rel="stylesheet">
     <style>
       :host {
         position: relative;
         display: inline-block;
         cursor: pointer;
         height: 100%;
-        --iron-icon-fill-color: hsl(0, 0%, 39%);
       }
       :host(:not([opened])) .menu {
         display: none;
         visibility: hidden;
       }
+      i.material-icons {
+        display: inline-block;
+        color: hsl(0, 0%, 39%);
+        margin: 2px;
+      }
       .anchor {
         width: 100%;
         height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
       .menu {
         position: absolute;
@@ -53,7 +60,7 @@
       }
     </style>
     <div class="anchor" on-click="toggle">
-      <iron-icon class="expand-icon" icon$="[[icon]]"></iron-icon>
+      <i class="material-icons expand-icon">[[icon]]</i>
       [[text]]
     </div>
     <div class="menu">

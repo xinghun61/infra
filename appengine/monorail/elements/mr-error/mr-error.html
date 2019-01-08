@@ -1,8 +1,9 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
-<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
 
 <dom-module id="mr-error">
   <template>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+          rel="stylesheet">
     <style>
       :host {
         display: flex;
@@ -20,11 +21,11 @@
       :host([hidden]) {
         display: none;
       }
-      iron-icon {
-        --iron-icon-fill-color: #B71C1C;
+      i.material-icons {
+        color: #B71C1C;
       }
     </style>
-    <iron-icon icon="close"></iron-icon>
+    <i class="material-icons">close</i>
     <slot></slot>
   </template>
   <script src="./mr-error.js"></script>
