@@ -111,6 +111,8 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 		Removed: make([]*fleet.RemoveDutsFromDronesResponse_Item, 0, len(req.Removals)),
 	}
 
+	env := config.Get(ctx).Inventory.Environment
+
 	for _, removal := range req.Removals {
 		serverToRemove := removal.DroneHostname
 
@@ -122,6 +124,9 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 			server, ok = findNamedServer(store.Infrastructure.GetServers(), removal.DutId)
 		}
 		if !ok {
+			continue
+		}
+		if server.GetEnvironment().String() != env {
 			continue
 		}
 
@@ -147,7 +152,7 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 	return resp, nil
 }
 
-// findNamedServer finds the server with the given hostname, if it exists.
+// findNamedServer finds the server with the given hostname.
 //
 // Servers should each have unique hostnames; this function only returns the first matching occurrence.
 func findNamedServer(servers []*inventory.Server, hostname string) (server *inventory.Server, ok bool) {
@@ -209,18 +214,26 @@ func (is *ServerImpl) AssignDutsToDrones(ctx context.Context, req *fleet.AssignD
 		Assigned: make([]*fleet.AssignDutsToDronesResponse_Item, 0, len(req.Assignments)),
 	}
 
+	env := config.Get(ctx).Inventory.Environment
+
 	for _, assignment := range req.Assignments {
 		dutToAssign := assignment.DutId
 		serverToAssign := assignment.DroneHostname
 		if server, ok := findDutServer(store.Infrastructure.GetServers(), dutToAssign); ok {
-			return nil, status.Error(codes.InvalidArgument,
-				fmt.Sprintf("dut %s is already assigned to drone %s", dutToAssign, server.GetHostname()))
+			return nil, status.Errorf(codes.InvalidArgument,
+				"dut %s is already assigned to drone %s in environment %s",
+				dutToAssign, server.GetHostname(), server.GetEnvironment())
 		}
 
 		server, ok := findNamedServer(store.Infrastructure.GetServers(), serverToAssign)
 		if !ok {
 			return nil, status.Error(codes.NotFound,
 				fmt.Sprintf("drone %s does not exist", serverToAssign))
+		}
+		if server.GetEnvironment().String() != env {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"drone %s is in environment %s instead of %s",
+				server.GetHostname(), server.GetEnvironment().String(), env)
 		}
 
 		server.DutUids = append(server.DutUids, dutToAssign)

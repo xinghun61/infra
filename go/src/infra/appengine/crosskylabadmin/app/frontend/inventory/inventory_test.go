@@ -328,8 +328,9 @@ func TestEnsurePoolHealthyDryrun(t *testing.T) {
 }
 
 type testDutOnServer struct {
-	id     string
-	server string
+	id          string
+	server      string
+	environment inventory.Environment
 }
 
 func TestEnsurePoolHealthyCommit(t *testing.T) {
@@ -538,18 +539,21 @@ func TestResizePoolCommit(t *testing.T) {
 }
 
 func TestRemoveDutsFromDrones(t *testing.T) {
-	Convey("With 1 DUT assigned to a drone", t, func() {
+	Convey("With 2 DUTs assigned to drones (1 in prod, 1 in staging)", t, func() {
 		tf, validate := newTestFixture(t)
 		defer validate()
 
 		dutID := "dut_id"
 		serverID := "server_id"
+		wrongEnvDutID := "wrong_env_dut"
+		wrongEnvServer := "wrong_env_server"
 		err := setupInfraInventoryArchive(tf.C, tf.FakeGitiles, []testDutOnServer{
-			{dutID, serverID},
+			{dutID, serverID, inventory.Environment_ENVIRONMENT_STAGING},
+			{wrongEnvDutID, wrongEnvServer, inventory.Environment_ENVIRONMENT_PROD},
 		})
 		So(err, ShouldBeNil)
 
-		Convey("DeactivateDut for that dut removes it from drone.", func() {
+		Convey("DeactivateDut for the staging dut removes it from drone.", func() {
 			req := &fleet.RemoveDutsFromDronesRequest{
 				Removals: []*fleet.RemoveDutsFromDronesRequest_Item{{DutId: dutID}},
 			}
@@ -567,9 +571,17 @@ func TestRemoveDutsFromDrones(t *testing.T) {
 			infra := &inventory.Infrastructure{}
 			err = inventory.LoadInfrastructureFromString(contents, infra)
 			So(err, ShouldBeNil)
-			So(infra.Servers, ShouldHaveLength, 1)
-			So(infra.Servers[0].DutUids, ShouldBeEmpty)
 			So(change.Subject, ShouldStartWith, "remove DUTs")
+			So(infra.Servers, ShouldHaveLength, 2)
+
+			var server *inventory.Server
+			for _, s := range infra.Servers {
+				if s.GetHostname() == serverID {
+					server = s
+					break
+				}
+			}
+			So(server.DutUids, ShouldBeEmpty)
 		})
 
 		Convey("DeactivateDut for a nonexistant dut returns no results.", func() {
@@ -581,22 +593,35 @@ func TestRemoveDutsFromDrones(t *testing.T) {
 			So(resp.Removed, ShouldBeEmpty)
 			So(resp.Url, ShouldEqual, "")
 		})
+
+		Convey("DeactivateDut for prod dut returns no results.", func() {
+			req := &fleet.RemoveDutsFromDronesRequest{
+				Removals: []*fleet.RemoveDutsFromDronesRequest_Item{{DutId: wrongEnvDutID}},
+			}
+			resp, err := tf.Inventory.RemoveDutsFromDrones(tf.C, req)
+			So(err, ShouldBeNil)
+			So(resp.Removed, ShouldBeEmpty)
+			So(resp.Url, ShouldEqual, "")
+		})
 	})
 }
 
 func TestAssignDutsToDrones(t *testing.T) {
-	Convey("With 1 DUT assigned to a drone", t, func() {
+	Convey("With 2 DUT assigned to drones (1 in prod, 1 in staging)", t, func() {
 		tf, validate := newTestFixture(t)
 		defer validate()
 
 		existingDutID := "dut_id_1"
 		serverID := "server_id"
+		wrongEnvDutID := "wrong_env_dut"
+		wrongEnvServer := "wrong_env_server"
 		err := setupInfraInventoryArchive(tf.C, tf.FakeGitiles, []testDutOnServer{
-			{existingDutID, serverID},
+			{existingDutID, serverID, inventory.Environment_ENVIRONMENT_STAGING},
+			{wrongEnvDutID, wrongEnvServer, inventory.Environment_ENVIRONMENT_PROD},
 		})
 		So(err, ShouldBeNil)
 
-		Convey("AssignDutsToDrones with an already assigned dut should return an appropriate error.", func() {
+		Convey("AssignDutsToDrones with an already assigned dut in current environment should return an appropriate error.", func() {
 			req := &fleet.AssignDutsToDronesRequest{
 				Assignments: []*fleet.AssignDutsToDronesRequest_Item{
 					{DutId: existingDutID, DroneHostname: serverID},
@@ -606,6 +631,20 @@ func TestAssignDutsToDrones(t *testing.T) {
 			So(resp, ShouldBeNil)
 			So(err, ShouldNotBeNil)
 			So(err.Error(), ShouldContainSubstring, "already assigned")
+			So(err.Error(), ShouldContainSubstring, inventory.Environment_ENVIRONMENT_STAGING.String())
+		})
+
+		Convey("AssignDutsToDrones with an already assigned dut in other environment should return an appropriate error.", func() {
+			req := &fleet.AssignDutsToDronesRequest{
+				Assignments: []*fleet.AssignDutsToDronesRequest_Item{
+					{DutId: wrongEnvDutID, DroneHostname: serverID},
+				},
+			}
+			resp, err := tf.Inventory.AssignDutsToDrones(tf.C, req)
+			So(resp, ShouldBeNil)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldContainSubstring, "already assigned")
+			So(err.Error(), ShouldContainSubstring, inventory.Environment_ENVIRONMENT_PROD.String())
 		})
 
 		newDutID := "dut_id_2"
@@ -644,10 +683,18 @@ func TestAssignDutsToDrones(t *testing.T) {
 			infra := &inventory.Infrastructure{}
 			err = inventory.LoadInfrastructureFromString(contents, infra)
 			So(err, ShouldBeNil)
-			So(infra.Servers, ShouldHaveLength, 1)
-			So(infra.Servers[0].DutUids, ShouldContain, existingDutID)
-			So(infra.Servers[0].DutUids, ShouldContain, newDutID)
 			So(change.Subject, ShouldStartWith, "assign DUTs")
+			So(infra.Servers, ShouldHaveLength, 2)
+
+			var server *inventory.Server
+			for _, s := range infra.Servers {
+				if s.GetHostname() == serverID {
+					server = s
+					break
+				}
+			}
+			So(server.DutUids, ShouldContain, existingDutID)
+			So(server.DutUids, ShouldContain, newDutID)
 		})
 	})
 }
@@ -686,7 +733,7 @@ func infraInventoryStrFromDuts(duts []testDutOnServer) string {
 	for _, d := range duts {
 		server, ok := serversByName[d.server]
 		if !ok {
-			server = dutTestServer(d.server)
+			server = dutTestServer(d.server, d.environment)
 			serversByName[d.server] = server
 		}
 		server.DutUids = append(server.DutUids, d.id)
@@ -699,8 +746,7 @@ func infraInventoryStrFromDuts(duts []testDutOnServer) string {
 	return proto.MarshalTextString(infra)
 }
 
-func dutTestServer(serverName string) *inventory.Server {
-	env := inventory.Environment_ENVIRONMENT_STAGING
+func dutTestServer(serverName string, env inventory.Environment) *inventory.Server {
 	status := inventory.Server_STATUS_PRIMARY
 	return &inventory.Server{
 		Hostname:    &serverName,
