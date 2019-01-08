@@ -1,0 +1,27 @@
+package: infra/tools/luci/lucicfg/${platform}
+description: LUCI config generator and service client
+platforms:
+  - linux-386
+  - linux-amd64
+  - linux-arm64
+  - linux-armv6l
+  - linux-mipsle
+  - linux-mips64
+  - linux-mips64le
+  - linux-ppc64
+  - linux-ppc64le
+  - linux-s390x
+  - mac-amd64
+  - windows-386
+  - windows-amd64
+go_build_environ:
+  CGO_ENABLED:
+    darwin:  1  # native Go DNS resolved is buggy on OSX (crbug.com/803673)
+    linux:   0  # to avoid linking to system dynamic libraries
+    windows: 0  # we have no cgo toolchain on Windows
+go_packages:
+  - go.chromium.org/luci/lucicfg/cmd/lucicfg
+root: ../../go/bin
+data:
+  - file: lucicfg${exe_suffix}
+  - version_file: .versions/lucicfg${exe_suffix}.cipd_version
