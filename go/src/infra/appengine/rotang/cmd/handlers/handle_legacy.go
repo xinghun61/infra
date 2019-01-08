@@ -288,7 +288,6 @@ func (h *State) legacySheriff(ctx *router.Context, file string) (string, error) 
 
 var rotaToName = map[string][2]string{
 	"angle":                   {"The ANGLE Wrangle", ""},
-	"arc":                     {"ARC Sheriff+Release duty", ""},
 	"ios_internal_roll":       {"Bling Piper Roll", ""},
 	"bling":                   {"Chrome iOS Build Sheriff", ""},
 	"blink_bug_triage":        {"Blink Bug Triage", ""},
