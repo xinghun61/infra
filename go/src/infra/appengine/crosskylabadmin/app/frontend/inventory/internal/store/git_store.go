@@ -57,7 +57,7 @@ func NewGitStore(gerritC gerrit.GerritClient, gitilesC gitiles.GitilesClient) *G
 //
 // Successful Commit() invalidates the data cached in GitStore().
 // To continue using the store, call Refresh() again.
-func (g *GitStore) Commit(ctx context.Context) (string, error) {
+func (g *GitStore) Commit(ctx context.Context, reason string) (string, error) {
 	if g.latestSHA1 == "" {
 		return "", errors.New("can not commit invalid store")
 	}
@@ -73,7 +73,7 @@ func (g *GitStore) Commit(ctx context.Context) (string, error) {
 	}
 
 	ic := config.Get(ctx).Inventory
-	cn, err := commitFileContents(ctx, g.gerritC, ic.Project, ic.Branch, g.latestSHA1, map[string]string{
+	cn, err := commitFileContents(ctx, g.gerritC, ic.Project, ic.Branch, g.latestSHA1, reason, map[string]string{
 		ic.LabDataPath:            ls,
 		ic.InfrastructureDataPath: is,
 	})

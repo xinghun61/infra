@@ -44,6 +44,7 @@ type GerritChangeEdit struct {
 	Files       map[string]string
 	IsPublished bool
 	IsAbandoned bool
+	Subject     string
 }
 
 // GetChange implements the gerrit.GerritClient interface.
@@ -69,6 +70,7 @@ func (gc *GerritClient) CreateChange(ctx context.Context, in *gerrit.CreateChang
 		},
 	}
 	c.GerritChangeEdit.Files = make(map[string]string)
+	c.GerritChangeEdit.Subject = in.Subject
 	gc.nextNumber++
 	gc.Changes = append(gc.Changes, c)
 

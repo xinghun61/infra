@@ -125,7 +125,7 @@ func (is *ServerImpl) EnsurePoolHealthy(ctx context.Context, req *fleet.EnsurePo
 	}
 
 	if !req.GetOptions().GetDryrun() {
-		u, err := is.commitLabChanges(ctx, store, changes)
+		u, err := is.commitBalancePoolChanges(ctx, store, changes)
 		if err != nil {
 			return nil, err
 		}
@@ -160,7 +160,7 @@ func (is *ServerImpl) ResizePool(ctx context.Context, req *fleet.ResizePoolReque
 	if err != nil {
 		return nil, err
 	}
-	u, err := is.commitLabChanges(ctx, store, changes)
+	u, err := is.commitBalancePoolChanges(ctx, store, changes)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +205,7 @@ func (is *ServerImpl) initializedPoolBalancer(ctx context.Context, req *fleet.En
 	return pb, err
 }
 
-func (is *ServerImpl) commitLabChanges(ctx context.Context, store *store.GitStore, changes []*fleet.PoolChange) (string, error) {
+func (is *ServerImpl) commitBalancePoolChanges(ctx context.Context, store *store.GitStore, changes []*fleet.PoolChange) (string, error) {
 	if len(changes) == 0 {
 		// No inventory changes are required.
 		// TODO(pprabhu) add a unittest enforcing this.
@@ -214,7 +214,7 @@ func (is *ServerImpl) commitLabChanges(ctx context.Context, store *store.GitStor
 	if err := applyChanges(store.Lab, changes); err != nil {
 		return "", errors.Annotate(err, "apply balance pool changes").Err()
 	}
-	return store.Commit(ctx)
+	return store.Commit(ctx, "balance pool")
 }
 
 func applyChanges(lab *inventory.Lab, changes []*fleet.PoolChange) error {
@@ -302,7 +302,7 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 		return resp, nil
 	}
 
-	if resp.Url, err = store.Commit(ctx); err != nil {
+	if resp.Url, err = store.Commit(ctx, "remove DUTs"); err != nil {
 		return nil, err
 	}
 
@@ -393,7 +393,7 @@ func (is *ServerImpl) AssignDutsToDrones(ctx context.Context, req *fleet.AssignD
 			})
 	}
 
-	if resp.Url, err = store.Commit(ctx); err != nil {
+	if resp.Url, err = store.Commit(ctx, "assign DUTs"); err != nil {
 		return nil, err
 	}
 

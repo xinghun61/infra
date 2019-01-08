@@ -569,6 +569,7 @@ func TestRemoveDutsFromDrones(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(infra.Servers, ShouldHaveLength, 1)
 			So(infra.Servers[0].DutUids, ShouldBeEmpty)
+			So(change.Subject, ShouldStartWith, "remove DUTs")
 		})
 
 		Convey("DeactivateDut for a nonexistant dut returns no results.", func() {
@@ -646,6 +647,7 @@ func TestAssignDutsToDrones(t *testing.T) {
 			So(infra.Servers, ShouldHaveLength, 1)
 			So(infra.Servers[0].DutUids, ShouldContain, existingDutID)
 			So(infra.Servers[0].DutUids, ShouldContain, newDutID)
+			So(change.Subject, ShouldStartWith, "assign DUTs")
 		})
 	})
 }

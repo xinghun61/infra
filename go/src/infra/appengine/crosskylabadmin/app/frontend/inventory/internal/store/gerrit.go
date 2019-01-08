@@ -30,10 +30,11 @@ import (
 // project is the git project to commit to.
 // branch is the git branch to commit to.
 // baseCommitSha is the SHA1 of the base commit over which a change should be created.
+// reason is the short human readable reason for this change, to be used in commit message description; e.g. "balance pool"
 // fileContents maps file paths in the repo to the new contents at those paths.
 //
 // commitFileContents returns the gerrit change number for the commit.
-func commitFileContents(ctx context.Context, client gerrit.GerritClient, project string, branch string, baseCommitSha string, fileContents map[string]string) (int, error) {
+func commitFileContents(ctx context.Context, client gerrit.GerritClient, project string, branch string, baseCommitSha string, reason string, fileContents map[string]string) (int, error) {
 	var changeInfo *gerrit.ChangeInfo
 	defer func() {
 		if changeInfo != nil {
@@ -44,7 +45,7 @@ func commitFileContents(ctx context.Context, client gerrit.GerritClient, project
 	changeInfo, err := client.CreateChange(ctx, &gerrit.CreateChangeRequest{
 		Project:    project,
 		Ref:        branch,
-		Subject:    changeSubject(ctx),
+		Subject:    changeSubject(ctx, reason),
 		BaseCommit: baseCommitSha,
 	})
 	if err != nil {
@@ -110,20 +111,20 @@ func changeURL(host string, project string, changeNumber int) (string, error) {
 	return fmt.Sprintf("https://%s/c/%s/+/%d", host, p, changeNumber), nil
 }
 
-func changeSubject(ctx context.Context) string {
+func changeSubject(ctx context.Context, reason string) string {
 	user := "anonymous"
 	as := auth.GetState(ctx)
 	if as != nil {
 		user = string(as.User().Identity)
 	}
-	return fmt.Sprintf("balance pool by %s for %s", info.AppID(ctx), user)
+	return fmt.Sprintf("%s by %s for %s", reason, info.AppID(ctx), user)
 }
 
 func abandonChange(ctx context.Context, client gerrit.GerritClient, ci *gerrit.ChangeInfo) {
 	if _, err := client.AbandonChange(ctx, &gerrit.AbandonChangeRequest{
 		Number:  ci.Number,
 		Project: ci.Project,
-		Message: "balance-pool: cleanup on error",
+		Message: "CL cleanup on error",
 	}); err != nil {
 		logging.Errorf(ctx, "Failed to abandon change %v on error", ci)
 	}

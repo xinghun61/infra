@@ -49,7 +49,7 @@ func TestStoreValidity(t *testing.T) {
 			So(store.Lab, ShouldBeNil)
 
 			Convey("and initial Commit() fails", func() {
-				_, err := store.Commit(ctx)
+				_, err := store.Commit(ctx, "no reason")
 				So(err, ShouldNotBeNil)
 			})
 
@@ -59,12 +59,12 @@ func TestStoreValidity(t *testing.T) {
 				So(store.Lab, ShouldNotBeNil)
 
 				Convey("on Commit(), store is flushed", func() {
-					_, err := store.Commit(ctx)
+					_, err := store.Commit(ctx, "no reason")
 					So(err, ShouldBeNil)
 					So(store.Lab, ShouldBeNil)
 
 					Convey("and invalidated", func() {
-						_, err := store.Commit(ctx)
+						_, err := store.Commit(ctx, "no reason")
 						So(err, ShouldNotBeNil)
 					})
 				})
