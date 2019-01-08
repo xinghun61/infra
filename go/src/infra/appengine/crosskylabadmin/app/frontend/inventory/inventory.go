@@ -302,7 +302,10 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 		return resp, nil
 	}
 
-	resp.Url, err = store.Commit(ctx)
+	if resp.Url, err = store.Commit(ctx); err != nil {
+		return nil, err
+	}
+
 	return resp, nil
 }
 
@@ -390,6 +393,9 @@ func (is *ServerImpl) AssignDutsToDrones(ctx context.Context, req *fleet.AssignD
 			})
 	}
 
-	resp.Url, err = store.Commit(ctx)
+	if resp.Url, err = store.Commit(ctx); err != nil {
+		return nil, err
+	}
+
 	return resp, nil
 }
