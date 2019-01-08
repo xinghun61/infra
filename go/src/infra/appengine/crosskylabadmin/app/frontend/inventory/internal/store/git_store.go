@@ -38,19 +38,22 @@ type GitStore struct {
 	*inventory.Lab
 	*inventory.Infrastructure
 
-	gerritC    gerrit.GerritClient
-	gitilesC   gitiles.GitilesClient
-	latestSHA1 string
+	gerritC     gerrit.GerritClient
+	gitilesC    gitiles.GitilesClient
+	latestFiles map[string]string
+	latestSHA1  string
 }
 
 // NewGitStore returns a new GitStore.
 //
 // The returned store is not refreshed, hence all inventory data is empty.
 func NewGitStore(gerritC gerrit.GerritClient, gitilesC gitiles.GitilesClient) *GitStore {
-	return &GitStore{
+	store := &GitStore{
 		gerritC:  gerritC,
 		gitilesC: gitilesC,
 	}
+	store.clear()
+	return store
 }
 
 // Commit commits the current inventory data in the store to git.
@@ -62,21 +65,30 @@ func (g *GitStore) Commit(ctx context.Context, reason string) (string, error) {
 		return "", errors.New("can not commit invalid store")
 	}
 
+	ic := config.Get(ctx).Inventory
+	changed := make(map[string]string)
+
 	ls, err := inventory.WriteLabToString(g.Lab)
 	if err != nil {
 		return "", errors.Annotate(err, "gitstore commit").Err()
+	}
+	if ls != g.latestFiles[ic.LabDataPath] {
+		changed[ic.LabDataPath] = ls
 	}
 
 	is, err := inventory.WriteInfrastructureToString(g.Infrastructure)
 	if err != nil {
 		return "", errors.Annotate(err, "gitstore commit").Err()
 	}
+	if is != g.latestFiles[ic.InfrastructureDataPath] {
+		changed[ic.InfrastructureDataPath] = is
+	}
 
-	ic := config.Get(ctx).Inventory
-	cn, err := commitFileContents(ctx, g.gerritC, ic.Project, ic.Branch, g.latestSHA1, reason, map[string]string{
-		ic.LabDataPath:            ls,
-		ic.InfrastructureDataPath: is,
-	})
+	if len(changed) == 0 {
+		return "", errors.New("gitstore commit: nothing to commit")
+	}
+
+	cn, err := commitFileContents(ctx, g.gerritC, ic.Project, ic.Branch, g.latestSHA1, reason, changed)
 	if err != nil {
 		return "", errors.Annotate(err, "gitstore commit").Err()
 	}
@@ -115,12 +127,12 @@ func (g *GitStore) Refresh(ctx context.Context) (rerr error) {
 		return errors.Annotate(err, "gitstore refresh").Err()
 	}
 
-	files, err := fetchFilesFromGitiles(ctx, g.gitilesC, ic.Project, g.latestSHA1, []string{ic.LabDataPath, ic.InfrastructureDataPath})
+	g.latestFiles, err = fetchFilesFromGitiles(ctx, g.gitilesC, ic.Project, g.latestSHA1, []string{ic.LabDataPath, ic.InfrastructureDataPath})
 	if err != nil {
 		return errors.Annotate(err, "gitstore refresh").Err()
 	}
 
-	data, ok := files[ic.LabDataPath]
+	data, ok := g.latestFiles[ic.LabDataPath]
 	if !ok {
 		return errors.New("No lab data in inventory")
 	}
@@ -129,7 +141,7 @@ func (g *GitStore) Refresh(ctx context.Context) (rerr error) {
 		return errors.Annotate(err, "gitstore refresh").Err()
 	}
 
-	data, ok = files[ic.InfrastructureDataPath]
+	data, ok = g.latestFiles[ic.InfrastructureDataPath]
 	if !ok {
 		return errors.New("No infrastructure data in inventory")
 	}
@@ -145,4 +157,5 @@ func (g *GitStore) clear() {
 	g.Lab = nil
 	g.Infrastructure = nil
 	g.latestSHA1 = ""
+	g.latestFiles = make(map[string]string)
 }

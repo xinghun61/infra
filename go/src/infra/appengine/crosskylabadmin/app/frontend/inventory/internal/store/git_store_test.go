@@ -17,6 +17,7 @@ package store
 import (
 	"infra/appengine/crosskylabadmin/app/config"
 	"infra/appengine/crosskylabadmin/app/frontend/inventory/internal/fakes"
+	"infra/libs/skylab/inventory"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -58,7 +59,24 @@ func TestStoreValidity(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(store.Lab, ShouldNotBeNil)
 
-				Convey("on Commit(), store is flushed", func() {
+				Convey("Commit() without changes fails", func() {
+					_, err := store.Commit(ctx, "no reason")
+					So(err, ShouldNotBeNil)
+				})
+
+				Convey("Commit() with changes succeeds", func() {
+					fi := "fake_id"
+					fh := "fake_hostname"
+					store.Lab = &inventory.Lab{
+						Duts: []*inventory.DeviceUnderTest{
+							{
+								Common: &inventory.CommonDeviceSpecs{
+									Id:       &fi,
+									Hostname: &fh,
+								},
+							},
+						},
+					}
 					_, err := store.Commit(ctx, "no reason")
 					So(err, ShouldBeNil)
 					So(store.Lab, ShouldBeNil)
