@@ -403,3 +403,9 @@ indexes:
   properties:
   - name: false_rejected_cl_count
     direction: desc
+
+- kind: TotalFlakinessReport
+  properties:
+  - name: tags
+  - name: generated_time
+    direction: desc
