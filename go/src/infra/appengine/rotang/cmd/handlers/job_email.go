@@ -43,27 +43,32 @@ func (h *State) JobEmail(ctx *router.Context) {
 // notifyEmail figures out if a notification should be sent for the specified shift.
 func (h *State) notifyEmail(ctx *router.Context, cfg *rotang.Configuration, t time.Time) error {
 	if cfg.Config.Email.DaysBeforeNotify == 0 || !cfg.Config.Enabled {
+		msg := "config not Enabled"
+		if cfg.Config.Enabled {
+			msg = "DaysBeforeNotify set to 0"
+		}
+		logging.Infof(ctx.Context, "notifyEmail: %q not considered due to %s", cfg.Config.Name, msg)
 		return nil
 	}
-	t = t.UTC().Add(time.Duration(cfg.Config.Email.DaysBeforeNotify) * fullDay)
-	for _, s := range cfg.Config.Shifts.Shifts {
-		shifts, err := h.shiftStore(ctx.Context).ShiftsFromTo(ctx.Context, cfg.Config.Name, t, t.Add(s.Duration))
-		if err != nil {
-			if status.Code(err) == codes.NotFound {
-				continue
-			}
-			return err
+	expTime := t.Add(time.Duration(cfg.Config.Email.DaysBeforeNotify) * fullDay).UTC()
+	shifts, err := h.shiftStore(ctx.Context).ShiftsFromTo(ctx.Context, cfg.Config.Name, expTime, expTime.Add(fullDay))
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil
 		}
-		for _, shift := range shifts {
-			if (t.After(shift.StartTime) || t.Equal(shift.StartTime)) && t.Before(shift.StartTime.Add(s.Duration)) {
-				for _, m := range shifts[0].OnCall {
-					if err := h.sendMail(ctx, cfg, &shifts[0], m.Email); err != nil {
-						return err
-					}
+		return err
+	}
+	for _, s := range shifts {
+		logging.Debugf(ctx.Context, "notifyEmail: %q considering shift: %v with expTime: %v", cfg.Config.Name, s, expTime)
+		if (s.StartTime.After(expTime) || s.StartTime.Equal(expTime)) && s.StartTime.Before(expTime.Add(fullDay)) {
+			logging.Debugf(ctx.Context, "notifyEmail: %q matched shift: %v with expTime: %v", cfg.Config.Name, s, expTime)
+			for _, m := range s.OnCall {
+				if err := h.sendMail(ctx, cfg, &s, m.Email); err != nil {
+					return err
 				}
+				logging.Infof(ctx.Context, "notifyEmail: mail sent out to: %q, rota: %q", m.Email, cfg.Config.Name)
 			}
 		}
-		t = t.Add(s.Duration)
 	}
 	return nil
 }
@@ -84,30 +89,28 @@ func (h *State) sendMail(ctx *router.Context, cfg *rotang.Configuration, shift *
 	if err != nil {
 		return err
 	}
-	info := rotang.Info{
+
+	subject, body, err := emailFromTemplate(cfg, &rotang.Info{
 		RotaName:    cfg.Config.Name,
 		ShiftConfig: cfg.Config.Shifts,
 		ShiftEntry:  *shift,
 		Member:      *m,
-	}
-
-	subjectTemplate, err := template.New("Subject").Parse(cfg.Config.Email.Subject)
-	if err != nil {
-		return err
-	}
-	bodyTemplate, err := template.New("Body").Parse(cfg.Config.Email.Body)
+	})
 	if err != nil {
 		return err
 	}
 
-	var subjectBuf, bodyBuf bytes.Buffer
-	if err := subjectTemplate.Execute(&subjectBuf, &info); err != nil {
-		return err
-	}
-	if err := bodyTemplate.Execute(&bodyBuf, &info); err != nil {
-		return err
-	}
+	to, sender := h.setSender(ctx, email)
 
+	return h.mailSender.Send(ctx.Context, &mail.Message{
+		Sender:  sender,
+		To:      []string{to},
+		Subject: subject,
+		Body:    body,
+	})
+}
+
+func (h *State) setSender(ctx *router.Context, email string) (string, string) {
 	sender := h.mailAddress
 	if h.IsStaging() {
 		email = stagingEmail
@@ -120,13 +123,7 @@ func (h *State) sendMail(ctx *router.Context, cfg *rotang.Configuration, shift *
 		// https://cloud.google.com/appengine/docs/standard/go/mail/
 		sender = emailSender + "@" + h.projectID(appengine.NewContext(ctx.Request)) + emailDomain
 	}
-
-	return h.mailSender.Send(ctx.Context, &mail.Message{
-		Sender:  sender,
-		To:      []string{email},
-		Subject: subjectBuf.String(),
-		Body:    bodyBuf.String(),
-	})
+	return email, sender
 }
 
 func emailFromTemplate(cfg *rotang.Configuration, info *rotang.Info) (string, string, error) {

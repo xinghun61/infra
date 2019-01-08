@@ -174,7 +174,9 @@ func init() {
 	r.GET("/switchlist", protected, h.HandleRotaSwitchList)
 	r.GET("/switchrota", protected, h.HandleRotaSwitch)
 	r.GET("/caltest", protected, h.HandleCalTest)
-	r.GET("/emailtest", protected, h.HandleEmailTestJSON)
+	r.GET("/emailtest", protected, h.HandleEmailTest)
+	r.GET("/emailjsontest", protected, h.HandleEmailTestJSON)
+	r.GET("/emailsendtest", protected, h.HandleEmailTestSend)
 
 	r.POST("/oncalljson", protected, h.HandleOncallJSON)
 	r.POST("/shiftsupdate", protected, h.HandleShiftUpdate)

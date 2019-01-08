@@ -6,6 +6,7 @@ class RotaTestEmail extends LitElement {
       rota: {},
       email: {},
       emailStatus: {},
+      sendStatus: {},
     };
   }
 
@@ -13,7 +14,7 @@ class RotaTestEmail extends LitElement {
     const rota = encodeURIComponent(this.rota);
     try {
       const res = await fetch(
-        `/emailtest?name=${rota}`);
+        `/emailjsontest?name=${rota}`);
       if (!res.ok) {
         throw res;
       }
@@ -23,6 +24,21 @@ class RotaTestEmail extends LitElement {
       this.emailStatus = html`<small class="fail">${err.text()}</small>`;
     }
   }
+
+  async testSend() {
+    const rota = encodeURIComponent(this.rota);
+    try {
+      const res = await fetch(
+        `/emailsendtest?name=${rota}`);
+      if (!res.ok) {
+        throw res;
+      }
+      this.sendStatus = html`<small class="ok">(ok)</small>`;
+    } catch (err) {
+      this.sendStatus = html`<small class="fail">${err.text()}</small>`;
+    }
+  }
+
 
   fillEmail() {
     if (!this.email) {
@@ -68,6 +84,9 @@ class RotaTestEmail extends LitElement {
     <br>
     <button type="button" @click=${() => this.getJSON()}>Test</button>
     ${this.emailStatus && this.emailStatus}
+    ${this.emailStatus && html`<button type="button"
+      @click=${() => this.testSend()}>Send</button>`}
+    ${this.sendStatus && this.sendStatus}
     `;
   };
 }

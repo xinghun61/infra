@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+<head>
+  <title>Test Email</title>
+</head>
+<body>
+<script src="/static/dist/bundle.js"></script>
+<nav-bar page="emailtest"></nav-bar>
+
+<h2>Rotations you own or are a member of</h2>
+
+{{if not .Rotas}}
+<i>Not a member or owner of any rotations</i>
+{{end}}
+
+{{with .Rotas}}
+<table class="table">
+  <tbody>
+  {{range $c := .}}
+     <tr>
+       <td><b>{{$c}}</b><br>
+         <rota-testemail rota={{$c}}></rota-testemail>
+       </td>
+     </tr>
+   {{end}}
+  </tbody>
+</table>
+{{end}}
+
+<br>
+<br>
+
+
+</body>
+</html>
