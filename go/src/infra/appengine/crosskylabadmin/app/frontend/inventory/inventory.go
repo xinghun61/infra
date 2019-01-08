@@ -104,28 +104,13 @@ func (is *ServerImpl) EnsurePoolHealthy(ctx context.Context, req *fleet.EnsurePo
 		return &fleet.EnsurePoolHealthyResponse{}, nil
 	}
 
-	pb, err := is.initializedPoolBalancer(ctx, req, duts)
+	ret, err := ensurePoolHealthyFor(ctx, is.TrackerFactory(), duts, req.TargetPool, req.SparePool, req.MaxUnhealthyDuts)
 	if err != nil {
 		return nil, err
 	}
-	logging.Debugf(ctx, "Pool balancer initial state: %+v", pb)
-
-	changes, failures := pb.EnsureTargetHealthy(int(req.MaxUnhealthyDuts))
-	ret := &fleet.EnsurePoolHealthyResponse{
-		Failures: failures,
-		TargetPoolStatus: &fleet.PoolStatus{
-			Size:         int32(len(pb.Target)),
-			HealthyCount: int32(pb.TargetHealthyCount()),
-		},
-		SparePoolStatus: &fleet.PoolStatus{
-			Size:         int32(len(pb.Spare)),
-			HealthyCount: int32(pb.SpareHealthyCount()),
-		},
-		Changes: changes,
-	}
 
 	if !req.GetOptions().GetDryrun() {
-		u, err := is.commitBalancePoolChanges(ctx, store, changes)
+		u, err := is.commitBalancePoolChanges(ctx, store, ret.Changes)
 		if err != nil {
 			return nil, err
 		}
@@ -194,17 +179,6 @@ func (is *ServerImpl) newStore(ctx context.Context) (*store.GitStore, error) {
 	return store.NewGitStore(gerritC, gitilesC), nil
 }
 
-func (is *ServerImpl) initializedPoolBalancer(ctx context.Context, req *fleet.EnsurePoolHealthyRequest, duts []*inventory.DeviceUnderTest) (*dutpool.Balancer, error) {
-	pb, err := dutpool.NewBalancer(duts, req.TargetPool, req.SparePool)
-	if err != nil {
-		return nil, err
-	}
-	if err := setDutHealths(ctx, is.TrackerFactory(), pb); err != nil {
-		return nil, err
-	}
-	return pb, err
-}
-
 func (is *ServerImpl) commitBalancePoolChanges(ctx context.Context, store *store.GitStore, changes []*fleet.PoolChange) (string, error) {
 	if len(changes) == 0 {
 		// No inventory changes are required.
@@ -215,6 +189,31 @@ func (is *ServerImpl) commitBalancePoolChanges(ctx context.Context, store *store
 		return "", errors.Annotate(err, "apply balance pool changes").Err()
 	}
 	return store.Commit(ctx, "balance pool")
+}
+
+func ensurePoolHealthyFor(ctx context.Context, ts fleet.TrackerServer, duts []*inventory.DeviceUnderTest, target, spare string, maxUnhealthyDUTs int32) (*fleet.EnsurePoolHealthyResponse, error) {
+	pb, err := dutpool.NewBalancer(duts, target, spare)
+	if err != nil {
+		return nil, errors.Annotate(err, "ensure pool healthy").Err()
+	}
+	if err := setDutHealths(ctx, ts, pb); err != nil {
+		return nil, errors.Annotate(err, "ensure pool healthy").Err()
+	}
+	logging.Debugf(ctx, "Pool balancer initial state: %+v", pb)
+
+	changes, failures := pb.EnsureTargetHealthy(int(maxUnhealthyDUTs))
+	return &fleet.EnsurePoolHealthyResponse{
+		Failures: failures,
+		TargetPoolStatus: &fleet.PoolStatus{
+			Size:         int32(len(pb.Target)),
+			HealthyCount: int32(pb.TargetHealthyCount()),
+		},
+		SparePoolStatus: &fleet.PoolStatus{
+			Size:         int32(len(pb.Spare)),
+			HealthyCount: int32(pb.SpareHealthyCount()),
+		},
+		Changes: changes,
+	}, nil
 }
 
 func applyChanges(lab *inventory.Lab, changes []*fleet.PoolChange) error {
