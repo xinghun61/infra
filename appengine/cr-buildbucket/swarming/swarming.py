@@ -26,6 +26,7 @@ that checks task results of all incomplete builds every 10 min.
 """
 
 import base64
+import collections
 import copy
 import datetime
 import hashlib
@@ -718,8 +719,8 @@ def _setup_swarming_props(build, builder_cfg, extra_cipd_packages, props):
   Updates props; a python format of TaskProperties.
 
   Returns:
-    dict {expiration_sec: {key: list(values)}} to support caches. This is
-    different than the format in flatten_swarmingcfg.parse_dimensions().
+    dict {expiration_sec: [{'key': key, 'value': value}]} to support caches.
+    This is different than the format in flatten_swarmingcfg.parse_dimensions().
   """
   props.setdefault('env', []).append({
       'key': 'BUILDBUCKET_EXPERIMENTAL',
@@ -738,13 +739,20 @@ def _setup_swarming_props(build, builder_cfg, extra_cipd_packages, props):
 
   # Reconstruct dims as the actual list of dimensions needed. The challenge here
   # is that repeated values are valid!
-  out = {}
+  out = collections.defaultdict(list)
   for expirations_secs, items in cache_fallbacks.iteritems():
-    out.setdefault(expirations_secs, []).extend(
+    out[expirations_secs].extend(
         {u'key': u'caches', u'value': item} for item in items
     )
-  for key, (value, expirations_secs) in dims.iteritems():
-    out.setdefault(expirations_secs, []).append({u'key': key, u'value': value})
+  for key, entries in dims.iteritems():
+    if entries == {('', 0)}:
+      # This is a tombstone left from merging.
+      # Skip it.
+      pass
+    else:
+      for value, expiration_secs in entries:
+        assert value
+        out[expiration_secs].append({u'key': key, u'value': value})
 
   props['dimensions'] = out.pop(0, [])
   props[u'dimensions'].sort(key=lambda x: (x[u'key'], x[u'value']))

@@ -8,6 +8,7 @@ from components import utils
 utils.fix_protobuf_package()
 
 from google import protobuf
+from parameterized import parameterized
 
 from components import config as config_component
 from testing_utils import testing
@@ -31,6 +32,9 @@ class ProjectCfgTest(testing.AppengineTestCase):
 
     ctx = config_component.validation.Context()
     swarmingcfg.validate_project_cfg(swarming_cfg, mixins, True, ctx)
+    self.assert_errors(ctx, expected_errors)
+
+  def assert_errors(self, ctx, expected_errors):
     self.assertEqual(
         map(config_test.errmsg, expected_errors),
         ctx.result().messages
@@ -43,6 +47,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
           builder_defaults {
             swarming_tags: "master:master.a"
             dimensions: "cores:8"
+            dimensions: "60:cores:64"
             dimensions: "pool:default"
             dimensions: "cpu:x86-64"
             service_account: "bot"
@@ -216,29 +221,13 @@ class ProjectCfgTest(testing.AppengineTestCase):
           task_template_canary_percentage { value: 102 }
           builder_defaults {
             swarming_tags: "wrong"
-            dimensions: ""
           }
           builders {
             swarming_tags: "wrong2"
-            dimensions: ":"
-            dimensions: "a.b:c"
-            dimensions: "pool:default"
-            dimensions: "0:"
-            dimensions: "-1:b:1"
-            dimensions: "1814400:c:1"  # 21*24*60*60
-            dimensions: "1814401:d:1"  # 21*24*60*60+1
-            dimensions: "1:e:1"
-            dimensions: "60:f:1"
-            dimensions: "120:g:1"
-            dimensions: "180:h:1"
-            dimensions: "240:i:1"
-            dimensions: "300:j:1"
           }
           builders {
             name: "b2"
             swarming_tags: "builder:b2"
-            dimensions: "x:y"
-            dimensions: "x:y2"
             caches {}
             caches { name: "a/b" path: "a" }
             caches { name: "b" path: "a\\c" }
@@ -252,35 +241,11 @@ class ProjectCfgTest(testing.AppengineTestCase):
             'hostname: must not contain "://"',
             'task_template_canary_percentage.value must must be in [0, 100]',
             'builder_defaults: tag #1: does not have ":": wrong',
-            'builder_defaults: dimension #1: does not have ":"',
             'builder #1: tag #1: does not have ":": wrong2',
-            'builder #1: dimension #1: no key',
-            (
-                'builder #1: dimension #2: '
-                'key "a.b" does not match pattern "^[a-zA-Z\_\-]+$"'
-            ),
-            'builder #1: dimension #4: has expiration_secs but missing value',
-            (
-                'builder #1: dimension #5: expiration_secs is outside valid '
-                'range; up to 21 days'
-            ),
-            (
-                'builder #1: dimension #7: expiration_secs is outside valid '
-                'range; up to 21 days'
-            ),
-            (
-                'builder #1: dimension #8: expiration_secs must be a multiple '
-                'of 60 seconds'
-            ),
-            (
-                'builder #1: at most 6 different expiration_secs values can '
-                'be used'
-            ),
             (
                 'builder b2: tag #1: do not specify builder tag; '
                 'it is added by swarmbucket automatically'
             ),
-            'builder b2: dimension #2: duplicate key x',
             'builder b2: cache #1: name: required',
             'builder b2: cache #1: path: required',
             (
@@ -396,6 +361,67 @@ class ProjectCfgTest(testing.AppengineTestCase):
         ],
     )
 
+  @parameterized.expand([
+      (['a:b'], ''),
+      ([''], 'dimension "": does not have ":"'),
+      (['caches:a', 'caches:b'], ''),
+      (
+          ['a:b', 'a:c'],
+          (
+              'dimension "a:c": '
+              'multiple values for non-cache key "a" and expiration 0s'
+          ),
+      ),
+      ([':'], 'dimension ":": no key'),
+      (
+          ['a.b:c'],
+          (
+              'dimension "a.b:c": '
+              r'key "a.b" does not match pattern "^[a-zA-Z\_\-]+$"'
+          ),
+      ),
+      (['0:'], 'dimension "0:": has expiration_secs but missing value'),
+      (['a:', '60:a:b'], 'dimension "60:a:b": mutually exclusive with "a:"'),
+      (
+          ['-1:a:1'],
+          (
+              'dimension "-1:a:1": '
+              'expiration_secs is outside valid range; up to 21 days'
+          ),
+      ),
+      (
+          ['1:a:b'],
+          'dimension "1:a:b": expiration_secs must be a multiple of 60 seconds',
+      ),
+      (
+          ['1814400:a:1'],  # 21*24*60*6
+          '',
+      ),
+      (
+          ['1814401:a:1'],  # 21*24*60*60+
+          (
+              'dimension "1814401:a:1": '
+              'expiration_secs is outside valid range; up to 21 days'
+          ),
+      ),
+      (
+          [
+              '60:a:1',
+              '120:a:1',
+              '180:a:1',
+              '240:a:1',
+              '300:a:1',
+              '360:a:1',
+              '420:a:1',
+          ],
+          'at most 6 different expiration_secs values can be used',
+      ),
+  ])
+  def test_validate_dimensions(self, dimensions, expected_error):
+    ctx = config_component.validation.Context()
+    swarmingcfg._validate_dimensions('dimension', dimensions, ctx)
+    self.assert_errors(ctx, [expected_error] if expected_error else [])
+
   def test_default_recipe(self):
     self.cfg_test(
         '''
@@ -495,6 +521,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
           builder_mixins {
             name: "a"
             dimensions: "a:b"
+            dimensions: "60:a:c"
           }
           builder_mixins {
             name: "b"

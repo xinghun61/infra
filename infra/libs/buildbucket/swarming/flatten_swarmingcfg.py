@@ -13,6 +13,7 @@ verbosity:
 This code exercises those features and produces a flattened config proto.
 """
 
+import collections
 import copy
 import json
 
@@ -34,23 +35,33 @@ def read_properties(recipe):
   return result
 
 
-def parse_dimensions(strings):
-  """Parses dimension strings to a dict {key: (value, expiration_sec)}.
+def parse_dimension(string):
+  """Parses a dimension string to a tuple (key, value, expiration_secs)."""
+  key, value = string.split(':', 1)
+  expiration_secs = 0
+  try:
+    expiration_secs = int(key)
+  except ValueError:
+    pass
+  else:
+    key, value = value.split(':', 1)
+  return key, value, expiration_secs
 
-  Repeated dimension keys are not supported.
-  """
-  out = {}
+
+def parse_dimensions(strings):
+  """Parses dimension strings to a dict {key: {(value, expiration_secs)}."""
+  out = collections.defaultdict(set)
   for s in strings:
-    key, value = s.split(':', 1)
-    expiration_secs = 0
-    try:
-      expiration_secs = int(key)
-    except ValueError:
-      pass
-    else:
-      key, value = value.split(':', 1)
-    out[key] = (value, expiration_secs)
+    key, value, expiration_secs = parse_dimension(s)
+    out[key].add((value, expiration_secs))
   return out
+
+
+def format_dimension(key, value, expiration_secs):
+  """Formats a dimension to a string. Opposite of parse_dimension."""
+  if expiration_secs:
+    return '%d:%s:%s' % (expiration_secs, key, value)
+  return '%s:%s' % (key, value)
 
 
 def format_dimensions(dictionary):
@@ -59,20 +70,15 @@ def format_dimensions(dictionary):
   Opposite of parse_dimensions.
   """
   out = []
-  for key, (value, expiration_secs) in dictionary.iteritems():
-    if expiration_secs:
-      out.append('%d:%s:%s' % (expiration_secs, key, value))
-    else:
-      out.append('%s:%s' % (key, value))
+  for key, entries in dictionary.iteritems():
+    for value, expiration_secs in entries:
+      out.append(format_dimension(key, value, expiration_secs))
   out.sort()
   return out
 
 
 def merge_builder(b1, b2):
-  """Merges Builder message b2 into b1. Expects messages to be valid.
-
-  Repeated dimension keys are not supported.
-  """
+  """Merges Builder message b2 into b1. Expects messages to be valid."""
   assert not b2.mixins, 'do not merge unflattened builders'
 
   dims = parse_dimensions(b1.dimensions)

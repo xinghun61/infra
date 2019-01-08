@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import json
-import logging
 import unittest
 
 from google.protobuf import text_format
@@ -15,14 +13,21 @@ from infra.libs.buildbucket.swarming import flatten_swarmingcfg
 class ProjectCfgTest(unittest.TestCase):
 
   def test_parse_dimensions(self):
-    dims = ['pool:default', '60:cpu:x86-64']
+    dims = ['pool:default', 'cpu:x86-64', '60:cpu:x86']
     actual = flatten_swarmingcfg.parse_dimensions(dims)
-    self.assertEqual({'pool': ('default', 0), 'cpu': ('x86-64', 60)}, actual)
+    expected = {
+        'pool': {('default', 0)},
+        'cpu': {('x86-64', 0), ('x86', 60)},
+    }
+    self.assertEqual(expected, actual)
 
   def test_format_dimensions(self):
-    dims = {'pool': ('default', 0), 'cpu': ('x86-64', 60)}
+    dims = {
+        'pool': {('default', 0)},
+        'cpu': {('x86-64', 0), ('x86', 60)},
+    }
     actual = flatten_swarmingcfg.format_dimensions(dims)
-    self.assertEqual(['60:cpu:x86-64', 'pool:default'], actual)
+    self.assertEqual(['60:cpu:x86', 'cpu:x86-64', 'pool:default'], actual)
 
   def test_flatten_builder(self):
 
@@ -83,7 +88,8 @@ class ProjectCfgTest(unittest.TestCase):
             }
           }
         }
-      ''', '''
+        ''',
+        '''
         name: "builder"
         swarming_tags: "buildertag:yes"
         swarming_tags: "commontag:yes"
@@ -110,7 +116,7 @@ class ProjectCfgTest(unittest.TestCase):
           name: "git_chromium"
           path: "git_cache"
         }
-      '''
+      ''',
     )
 
     # Diamond merge.
@@ -200,7 +206,8 @@ class ProjectCfgTest(unittest.TestCase):
               }
             }
           }
-        ''', '''
+        ''',
+        '''
           name: "builder"
           dimensions: "60:d4:base"
           dimensions: "d1:base"
@@ -234,7 +241,7 @@ class ProjectCfgTest(unittest.TestCase):
             properties_j: "pj2:\\\"first\\\""
             properties_j: "pj3:\\\"second\\\""
           }
-        '''
+        ''',
     )
 
     # builder_defaults, a builder_defaults mixin and a builder mixin.
@@ -266,14 +273,15 @@ class ProjectCfgTest(unittest.TestCase):
               }
             }
           }
-        ''', '''
+        ''',
+        '''
           name: "release"
           dimensions: "pool:builder_mixin"
           recipe {
             repository: "https://x.com"
             name: "foo"
           }
-        '''
+        ''',
     )
     # with auto_builder_dimension and mixins and defaults.
     test(
@@ -295,11 +303,39 @@ class ProjectCfgTest(unittest.TestCase):
               }
             }
           }
-      ''', '''
+        ''',
+        '''
           name: "ng-1000"
           dimensions: "pool:mixed"
           auto_builder_dimension: YES
-      '''
+      ''',
+    )
+
+    # repeated dimension keys
+    test(
+        '''
+          builder_mixins {
+            name: "mixme"
+            dimensions: "cores:8"
+          }
+          buckets {
+            name: "bucket"
+            swarming {
+              builders {
+                name: "ng-1000"
+                mixins: "mixme"
+
+                dimensions: "60:cores:64"
+                dimensions: "cores:16"
+              }
+            }
+          }
+        ''',
+        '''
+          name: "ng-1000"
+          dimensions: "60:cores:64"
+          dimensions: "cores:16"
+      ''',
     )
 
   def test_merge_toggle(self):

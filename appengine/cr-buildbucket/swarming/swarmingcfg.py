@@ -4,6 +4,7 @@
 
 # pylint: disable=line-too-long
 
+import collections
 import copy
 import json
 import re
@@ -45,7 +46,6 @@ def read_dimensions(builder_cfg):  # pragma: no cover
 
   This different from flatten_swarmingcfg.parse_dimensions in that this:
   * Factors in the auto_builder_dimensions field.
-  * Removes empty value fields.
 
   Returns:
     dimensions is returned as dict {key: (value, expiration_secs)}.
@@ -53,10 +53,8 @@ def read_dimensions(builder_cfg):  # pragma: no cover
   dimensions = flatten_swarmingcfg.parse_dimensions(builder_cfg.dimensions)
   if (builder_cfg.auto_builder_dimension == project_config_pb2.YES and
       u'builder' not in dimensions):
-    dimensions[u'builder'] = (builder_cfg.name, 0)
-
-  # Remove empty values.
-  return {k: (v, exp) for k, (v, exp) in dimensions.iteritems() if v}
+    dimensions[u'builder'] = {(builder_cfg.name, 0)}
+  return dimensions
 
 
 def _validate_tag(tag, ctx):
@@ -71,26 +69,15 @@ def _validate_tag(tag, ctx):
     )
 
 
-def _validate_dimension_key(key, known_keys, ctx):
-  if not key:
-    ctx.error('no key')
-    return
-  if not _DIMENSION_KEY_RGX.match(key):
-    ctx.error(
-        'key "%s" does not match pattern "%s"', key, _DIMENSION_KEY_RGX.pattern
-    )
-    return
-  if key in known_keys:
-    ctx.error('duplicate key %s', key)
-    return
-  known_keys.add(key)
-
-
 def _validate_dimensions(field_name, dimensions, ctx):
-  known_keys = set()
+  parsed = collections.defaultdict(set)  # {key: {(value, expiration_secs)}}
   expirations = set()
-  for i, dim in enumerate(dimensions):
-    with ctx.prefix('%s #%d: ', field_name, i + 1):
+
+  # (key, expiration_secs) tuples, where key != 'caches'.
+  non_cache_key_expirations = set()
+
+  for dim in dimensions:
+    with ctx.prefix('%s "%s": ', field_name, dim):
       parts = dim.split(':', 1)
       if len(parts) != 2:
         ctx.error('does not have ":"')
@@ -103,20 +90,57 @@ def _validate_dimensions(field_name, dimensions, ctx):
         pass
       else:
         parts = value.split(':', 1)
-        if len(parts) != 2:
+        if len(parts) != 2 or not parts[1]:
           ctx.error('has expiration_secs but missing value')
           continue
         key, value = parts
+
+      valid_key = False
+      if not key:
+        ctx.error('no key')
+      elif not _DIMENSION_KEY_RGX.match(key):
+        ctx.error(
+            'key "%s" does not match pattern "%s"', key,
+            _DIMENSION_KEY_RGX.pattern
+        )
+      else:
+        valid_key = True
+
+      valid_expiration_secs = False
       if expiration_secs < 0 or expiration_secs > 21 * 24 * 60 * 60:
         ctx.error('expiration_secs is outside valid range; up to 21 days')
-        continue
-      if expiration_secs % 60:
+      elif expiration_secs % 60:
         ctx.error('expiration_secs must be a multiple of 60 seconds')
-        continue
-      expirations.add(expiration_secs)
-      _validate_dimension_key(key, known_keys, ctx)
+      else:
+        expirations.add(expiration_secs)
+        valid_expiration_secs = True
+
+      if valid_key and valid_expiration_secs:
+        parsed[key].add((value, expiration_secs))
+        if key != 'caches':
+          t = (key, expiration_secs)
+          if t not in non_cache_key_expirations:
+            non_cache_key_expirations.add(t)
+          else:
+            ctx.error(
+                'multiple values for non-cache key "%s" and expiration %ds',
+                key, expiration_secs
+            )
+
   if len(expirations) >= 6:
     ctx.error('at most 6 different expiration_secs values can be used')
+
+  # Ensure that tombstones are not mixed with non-tomstones for the same key.
+  TOMBSTONE = ('', 0)
+  for key, entries in parsed.iteritems():
+    if TOMBSTONE not in entries or len(entries) == 1:
+      continue
+    for value, expiration_secs in entries:
+      if (value, expiration_secs) == TOMBSTONE:
+        continue
+      dim = flatten_swarmingcfg.format_dimension(key, value, expiration_secs)
+      with ctx.prefix('%s "%s": ', field_name, dim):
+        ctx.error('mutually exclusive with "%s:"', key)
 
 
 def _validate_relative_path(path, ctx):
