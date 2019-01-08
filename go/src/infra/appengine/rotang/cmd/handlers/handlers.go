@@ -177,6 +177,7 @@ func buildLegacyMap(h *State) map[string]func(ctx *router.Context, file string) 
 		"sheriff_v8.js":                  h.legacySheriff,
 		"sheriff_perfbot.js":             h.legacySheriff,
 		"sheriff_webgl_bug_triage.js":    h.legacySheriff,
+		"sheriff_flutter_engine.js":      h.legacySheriff,
 		"sheriff.json":                   h.legacySheriff,
 		"sheriff_cros_mtv.json":          h.legacySheriff,
 		"sheriff_cros_nonmtv.json":       h.legacySheriff,
@@ -189,6 +190,7 @@ func buildLegacyMap(h *State) map[string]func(ctx *router.Context, file string) 
 		"sheriff_v8.json":                h.legacySheriff,
 		"sheriff_perfbot.json":           h.legacySheriff,
 		"sheriff_webgl_bug_triage.json":  h.legacySheriff,
+		"sheriff_flutter_engine.json":    h.legacySheriff,
 		// All rotations
 		"all_rotations.js": h.legacyAllRotations,
 	}

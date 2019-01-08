@@ -183,6 +183,7 @@ var fileToRota = map[string][2]string{
 	"sheriff_v8.js":                {"V8 Sheriff", ""},
 	"sheriff_perfbot.js":           {"Chromium Perf Bot Sheriff Rotation", ""},
 	"sheriff_webgl_bug_triage.js":  {"WebGL Bug Triage", ""},
+	"sheriff_flutter_engine.js":    {"Flutter Engine Rotation", ""},
 
 	"sheriff.json": {"Build Sheriff", ""},
 	// "sheriff_webkit.json":            "", // In the cron file but does not have a configuration.
@@ -198,6 +199,7 @@ var fileToRota = map[string][2]string{
 	"sheriff_v8.json":                {"V8 Sheriff", ""},
 	"sheriff_perfbot.json":           {"Chromium Perf Bot Sheriff Rotation", ""},
 	"sheriff_webgl_bug_triage.json":  {"WebGL Bug Triage", ""},
+	"sheriff_flutter_engine.json":    {"Flutter Engine Rotation", ""},
 	//"all_rotations.js":               "",
 	//"all_rotations.js":               "",
 }
