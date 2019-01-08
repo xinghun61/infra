@@ -182,6 +182,7 @@ var fileToRota = map[string][2]string{
 	"sheriff_ios.js":               {"Chrome iOS Build Sheriff", ""},
 	"sheriff_v8.js":                {"V8 Sheriff", ""},
 	"sheriff_perfbot.js":           {"Chromium Perf Bot Sheriff Rotation", ""},
+	"sheriff_webgl_bug_triage.js":  {"WebGL Bug Triage", ""},
 
 	"sheriff.json": {"Build Sheriff", ""},
 	// "sheriff_webkit.json":            "", // In the cron file but does not have a configuration.
@@ -196,6 +197,7 @@ var fileToRota = map[string][2]string{
 	"sheriff_ios.json":               {"Chrome iOS Build Sheriff", ""},
 	"sheriff_v8.json":                {"V8 Sheriff", ""},
 	"sheriff_perfbot.json":           {"Chromium Perf Bot Sheriff Rotation", ""},
+	"sheriff_webgl_bug_triage.json":  {"WebGL Bug Triage", ""},
 	//"all_rotations.js":               "",
 	//"all_rotations.js":               "",
 }
@@ -320,6 +322,7 @@ var rotaToName = map[string][2]string{
 	"webview_bugcop": {"WebView Bug Cop", ""},
 	"flutter_engine": {"Flutter Engine Rotation", ""},
 	//"troopers":              {"", ""} // Handled in it's own way.
+	"webgl_bug_triage": {"WebGL Bug Triage", ""},
 }
 
 const (
