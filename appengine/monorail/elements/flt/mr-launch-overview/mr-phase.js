@@ -14,7 +14,8 @@ const APPROVED_PHASE_MILESTONE_MAP = {
   'Stable-Full': 'stable_date',
 };
 
-// monorail:4692, remove later
+// See monorail:4692 and the use of PHASES_WITH_MILESTONES
+// in tracker/issueentry.py
 const PHASES_WITH_MILESTONES = ['Beta', 'Stable', 'Stable-Exp', 'Stable-Full'];
 
 /**

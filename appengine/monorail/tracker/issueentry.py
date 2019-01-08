@@ -33,6 +33,7 @@ from tracker import tracker_views
 from proto import tracker_pb2
 
 PLACEHOLDER_SUMMARY = 'Enter one-line summary'
+PHASES_WITH_MILESTONES = ['Beta', 'Stable', 'Stable-Exp', 'Stable-Full']
 
 
 class IssueEntry(servlet.Servlet):
@@ -262,9 +263,12 @@ class IssueEntry(servlet.Servlet):
      phases) = issue_tmpl_helpers.FilterApprovalsAndPhases(
          template.approval_values or [], template.phases, config)
 
+    # See monorail:4692 and the use of PHASES_WITH_MILESTONES
+    # in elements/flt/mr-launch-overview/mr-phase.js
     field_values = field_helpers.ParseFieldValues(
         mr.cnxn, self.services.user, parsed.fields.vals, config,
-        phase_ids=[phase.phase_id for phase in phases])
+        phase_ids=[phase.phase_id for phase in phases
+                   if phase.name in PHASES_WITH_MILESTONES])
 
     labels = _DiscardUnusedTemplateLabelPrefixes(parsed.labels)
     component_ids = tracker_helpers.LookupComponentIDs(
