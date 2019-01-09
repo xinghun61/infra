@@ -55,7 +55,7 @@ func (c *Calendar) CreateEvent(ctx *router.Context, cfg *rotang.Configuration, s
 
 	var resEvt []*gcal.Event
 	for _, evt := range events {
-		e, err := cal.Events.Insert(cfg.Config.Calendar, evt).Do()
+		e, err := cal.Events.Insert(cfg.Config.Calendar, evt).SendUpdates("all").Do()
 		if err != nil {
 			return nil, err
 		}
