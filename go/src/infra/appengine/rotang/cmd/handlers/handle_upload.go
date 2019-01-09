@@ -75,4 +75,5 @@ func (h *State) HandleUpload(ctx *router.Context) {
 			continue
 		}
 	}
+	http.Redirect(ctx.Writer, ctx.Request, "/managerota", http.StatusFound)
 }

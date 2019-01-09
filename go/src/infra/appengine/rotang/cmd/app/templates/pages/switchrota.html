@@ -164,27 +164,14 @@
     <h5>Check permission changes:</h5>
 
     <rota-testcal rota={{.Rota}} safe={{.safe}}></rota-testcal>
-    <h4>- Import Shifts</h4>
-    <p>
-      With the permissions in place, the next step is to import the legacy schedules.<br>
-      Import the shifts by clicking the <b>Import Shifts</b> button below.<br>
-      if everything looks in order, <b>Submit</b> the shifts.
-    <br><br>
-    </p>
-      <rota-shiftimport rota="{{.Rota}}"></rota-shiftimport>
-      <br>
-      <br>
-      <p>
-        To mange shifts in the new service, follow the link below.
-      </p>
-      <a href="/manageshifts?name={{.Rota}}" target="_blank">
-        Manage imported shifts
-      </a>
-      <br>
-      <em><b>Note:</b> Shifts created before enabling the rotation will not show up immediately; after enabling the rotation it can take up to an hour before the calendar is updated.</em>
     <h4>- Check Configuration</h4>
-    <p>
-      Update your rotation configuration if needed.
+    <p>Update your rotation configuration if needed.</p>
+    <p>Note:
+      <em>
+        If your rotation has made recent changes to the JSON configuration files it might not be reflected in RotaNG.<br>
+        You could either make the changes directly in the RotaNG configuration or
+        <a href="https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/appengine/rotang/DOCUMENTATION.md#update-from-legacy-json-file">re-import</a> the current JSON file to RotaNG.
+      </em>
     </p>
     <button class="collapsible">Configuration</button>
     <div class="content">
@@ -314,6 +301,31 @@
           <li>
             <p><strong>Members</strong></p>
             <p>Manage members of the rotation.</p>
+            <ul>
+              <li>
+                <p><strong>Name</strong></p>
+                <p>The name of the member.</p>
+              </li>
+              <li>
+                <p><strong>Email</strong></p>
+                <p>email address of the member</p>
+              </li>
+              <li>
+                <p><strong>Shift</strong></p>
+                <p>Identifies the member shift</p>
+              </li>
+              <li>
+                <p><strong>TZ</strong></p>
+                <p>Member TimeZone</p>
+                <p>Note:
+                  <em>
+                    When importing members from the legacy JSON configuration files the following applies for members:<br>
+                    - members in <code>rotation_list_pacific</code> - TZ set to <code>America/Los_Angeles</code>.<br>
+                    - members in <code>rotation_list_default</code> - TZ set to <code>UTC</code>.<br>
+                  </em>
+                </p>
+              </li>
+            </ul>
           </li>
           <li><p><strong>Shift StartTime</strong></p>
             <p>Specifies the start in MTV time of the first shift.</p>
@@ -365,6 +377,24 @@
         </ul>
       </ul>
     </div>
+    <h4>- Import Shifts</h4>
+    <p>
+      With the permissions in place, the next step is to import the legacy schedules.<br>
+      Import the shifts by clicking the <b>Import Shifts</b> button below.<br>
+      if everything looks in order, <b>Submit</b> the shifts.
+    <br><br>
+    </p>
+      <rota-shiftimport rota="{{.Rota}}"></rota-shiftimport>
+      <br>
+      <br>
+      <p>
+        To mange shifts in the new service, follow the link below.
+      </p>
+      <a href="/manageshifts?name={{.Rota}}" target="_blank">
+        Manage imported shifts
+      </a>
+      <br>
+      <em><b>Note:</b> Shifts created before enabling the rotation will not show up immediately; after enabling the rotation it can take up to an hour before the calendar is updated.</em>
     <h4>- Test Email</h4>
     <p>
       Test out the Email templates.

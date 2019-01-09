@@ -505,7 +505,7 @@ func TestHandleUpload(t *testing.T) {
 		t.Run(tst.name, func(t *testing.T) {
 			h.HandleUpload(tst.ctx)
 			recorder := tst.ctx.Writer.(*httptest.ResponseRecorder)
-			if got, want := (recorder.Code != http.StatusOK), tst.fail; got != want {
+			if got, want := (recorder.Code != http.StatusFound), tst.fail; got != want {
 				t.Errorf("%s: HandleUpload(ctx) = %t want: %t, status: %v, body: %v", tst.name, got, want, recorder.Code, recorder.Body)
 				return
 			}

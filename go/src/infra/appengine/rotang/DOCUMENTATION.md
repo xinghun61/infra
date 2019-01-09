@@ -12,6 +12,8 @@ This document contains information on how to use the RotaNG web interface.
     - [Copy existing](#copy-existing)
     - [New from scratch](#new-from-scratch)
     - [Configuration Options](#configuration-options)
+    - [From legacy JSON file](#new-from-json)
+    - [Update from legacy JSON file](#update-from-legacy-json-file)
   - [Manage Shifts](#manage-shifts)
     - [History](#history)
     - [Current](#current)
@@ -67,6 +69,19 @@ Already scheduled shifts will be unaffected , you'll have to swap  with someone 
 #### New from scratch
 
 - Follow link [Manage Rotations](https://rota-ng.appspot.com/managerota) and click `Create  new rotation`.
+
+#### New from JSON
+
+- Follow link [Upload Legacy JSON rota configuration](https://rota-ng.appspot.com/upload) and select the legacy JSON file.
+- Submit.
+
+#### Update from legacy JSON file
+
+- Go to [Manage Rotations](https://rota-ng.appspot.com/managerota)
+- Click `Delete` for the rotation to be updated.
+- Confirm deletion.
+- Follow link [Upload Legacy JSON rota configuration](https://rota-ng.appspot.com/upload) and select the legacy JSON file.
+- Submit
 
 #### Configuration Options
 
