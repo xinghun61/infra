@@ -239,7 +239,7 @@ func TestParseLast(t *testing.T) {
 	}
 }
 
-func TestParseMetadata(t *testing.T) {
+func TestParseWithMetadata(t *testing.T) {
 	njl, err := Parse(".ninja_log", strings.NewReader(`# ninja log v5
 1020807	1020916	0	chrome.1	e101fd46be020cfc
 84	9489	0	gen/libraries.cc	9001f3182fa8210e
@@ -668,6 +668,39 @@ func TestGetJobs(t *testing.T) {
 		if got != cmdline.wantJobs {
 			t.Errorf("getJobs(%v)=%v; want=%v", cmdline, got, cmdline.wantJobs)
 		}
+	}
+}
+
+func TestParseMetadata(t *testing.T) {
+	var m Metadata
+	json := `{"jobs": 1000, "platform": "Linux", "cpu_core": 48, "targets": ["chrome"], "build_configs": {"use_goma": "true", "target_cpu": "\"\"", "is_component_build": "true", "symbol_level": "-1", "is_debug": "false", "enable_nacl": "false", "host_cpu": "\"x64\"", "host_os": "\"linux\"", "target_os": "\"\""}}`
+
+	err := parseMetadata([]byte(json), &m)
+
+	if err != nil {
+		t.Errorf("failed to parse medatadata %q: %v", json, err)
+	}
+
+	want := Metadata{
+		Platform: "Linux",
+		CPUCore:  48,
+		BuildConfigs: map[string]string{
+			"use_goma":           "true",
+			"is_component_build": "true",
+			"enable_nacl":        "false",
+			"host_cpu":           "\"x64\"",
+			"target_os":          "\"\"",
+			"target_cpu":         "\"\"",
+			"symbol_level":       "-1",
+			"is_debug":           "false",
+			"host_os":            "\"linux\"",
+		},
+		Jobs:    1000,
+		Targets: []string{"chrome"},
+	}
+
+	if !reflect.DeepEqual(m, want) {
+		t.Errorf("parseMetadata(%q, ...): got %#v, want %#v", json, m, want)
 	}
 }
 

@@ -90,7 +90,7 @@ func (s ByWeightedTime) Less(i, j int) bool {
 	return s.Weighted[s.Steps[i].Out] < s.Weighted[s.Steps[j].Out]
 }
 
-// Metadata is data added by compile.py.
+// Metadata is data added by compile.py or json sent from ninjalog uploader.
 type Metadata struct {
 	// BuildID is identifier of build used in buildbucket api v2 (go/buildbucket-api-v2)
 	// Or some random number representing an invocation of build.
@@ -133,7 +133,10 @@ type Metadata struct {
 	CompilerProxyInfo string `json:"compiler_proxy_info"`
 
 	// Jobs is number of parallel process in a build.
-	Jobs int
+	Jobs int `json:"jobs"`
+
+	// Build target.
+	Targets []string `json:"targets"`
 
 	// Raw is raw string for metadata.
 	Raw string
@@ -274,11 +277,14 @@ func parseMetadata(buf []byte, metadata *Metadata) error {
 	if err := json.Unmarshal(buf, metadata); err != nil {
 		return err
 	}
-	jobs, err := getJobs(metadata.Cmdline)
-	if err != nil {
-		return fmt.Errorf("failed to get jobs: %v", err)
+
+	if metadata.Jobs == 0 {
+		jobs, err := getJobs(metadata.Cmdline)
+		if err != nil {
+			return fmt.Errorf("failed to get jobs: %v", err)
+		}
+		metadata.Jobs = jobs
 	}
-	metadata.Jobs = jobs
 	return nil
 }
 
