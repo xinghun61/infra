@@ -159,12 +159,6 @@ func init() {
 }
 
 func uploadNinjaLogHandler(w http.ResponseWriter, r *http.Request) {
-	if true {
-		// Disable log upload.
-		fmt.Fprintln(w, "OK")
-		return
-	}
-
 	ctx := appengine.NewContext(r)
 
 	// X-AppEngine-Trusted-IP-Request=1 means the request is coming from a corp machine.
