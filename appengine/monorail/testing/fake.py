@@ -559,6 +559,8 @@ class UserService(object):
     self.invite_rows = [
         (p_id, c_id) for (p_id, c_id) in self.invite_rows
         if p_id != parent_id and c_id != child_id]
+    self.GetUser(cnxn, parent_id).linked_child_ids.append(child_id)
+    self.GetUser(cnxn, child_id).linked_parent_id = parent_id
 
   def UpdateUserSettings(
       self, cnxn, user_id, user, notify=None, notify_starred=None,

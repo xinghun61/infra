@@ -205,3 +205,68 @@ class UsersServicerTest(unittest.TestCase):
 
     user = self.services.user.GetUser(self.cnxn, self.user.user_id)
     self.assertFalse(user.keep_people_perms_open)
+
+  def testInviteLinkedParent_NotFound(self):
+    """Reject attempt to invite a user that does not exist."""
+    self.services.user.TestAddUser('user@google.com', 333L)
+    request = users_pb2.InviteLinkedParentRequest(
+        email='who@chromium.org')  # Does not exist.
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='who@google.com')
+    with self.assertRaises(exceptions.NoSuchUserException):
+      self.CallWrapped(self.users_svcr.InviteLinkedParent, mc, request)
+
+  def testInviteLinkedParent_Normal(self):
+    """We can invite accounts to link when all criteria are met."""
+    self.services.user.TestAddUser('user@google.com', 333L)
+    self.services.user.TestAddUser('user@chromium.org', 444L)
+    request = users_pb2.InviteLinkedParentRequest(
+        email='user@google.com')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='user@chromium.org')
+    self.CallWrapped(self.users_svcr.InviteLinkedParent, mc, request)
+
+    (invite_as_parent, invite_as_child
+     ) = self.services.user.GetPendingLinkedInvites(self.cnxn, 333L)
+    self.assertEqual([444L], invite_as_parent)
+    self.assertEqual([], invite_as_child)
+    (invite_as_parent, invite_as_child
+     ) = self.services.user.GetPendingLinkedInvites(self.cnxn, 444L)
+    self.assertEqual([], invite_as_parent)
+    self.assertEqual([333L], invite_as_child)
+
+  def testAcceptLinkedChild_NotFound(self):
+    """Reject attempt to link a user that does not exist."""
+    self.services.user.TestAddUser('user@google.com', 333L)
+    request = users_pb2.AcceptLinkedChildRequest(
+        email='who@chromium.org')  # Does not exist.
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='who@google.com')
+    with self.assertRaises(exceptions.NoSuchUserException):
+      self.CallWrapped(self.users_svcr.AcceptLinkedChild, mc, request)
+
+  def testAcceptLinkedChild_NoInvite(self):
+    """Reject attempt to link accounts when there was no invite."""
+    self.services.user.TestAddUser('user@google.com', 333L)
+    self.services.user.TestAddUser('user@chromium.org', 444L)
+    request = users_pb2.AcceptLinkedChildRequest(
+        email='user@chromium.org')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='user@google.com')
+    with self.assertRaises(exceptions.InputException):
+      self.CallWrapped(self.users_svcr.AcceptLinkedChild, mc, request)
+
+  def testAcceptLinkedChild_Normal(self):
+    """We can linke accounts when all criteria are met."""
+    parent = self.services.user.TestAddUser('user@google.com', 333L)
+    child = self.services.user.TestAddUser('user@chromium.org', 444L)
+    self.services.user.InviteLinkedParent(
+        self.cnxn, parent.user_id, child.user_id)
+    request = users_pb2.AcceptLinkedChildRequest(
+        email='user@chromium.org')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='user@google.com')
+    self.CallWrapped(self.users_svcr.AcceptLinkedChild, mc, request)
+
+    self.assertEqual(parent.user_id, child.linked_parent_id)
+    self.assertIn(child.user_id, parent.linked_child_ids)

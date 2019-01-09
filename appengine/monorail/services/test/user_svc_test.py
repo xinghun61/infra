@@ -393,7 +393,7 @@ class UserServiceTest(unittest.TestCase):
     self.user_service.linkedaccountinvite_tbl = Mock()
     self.user_service.InviteLinkedParent(
         self.cnxn, 111L, 222L)
-    self.user_service.linkedaccountinvite_tbl.Insert.assert_called_once_with(
+    self.user_service.linkedaccountinvite_tbl.InsertRow.assert_called_once_with(
         self.cnxn, parent_id=111L, child_id=222L)
 
   def testAcceptLinkedChild_Anon(self):
@@ -422,7 +422,7 @@ class UserServiceTest(unittest.TestCase):
     self.user_service.linkedaccount_tbl.Select.return_value = []
 
     self.user_service.AcceptLinkedChild(self.cnxn, 111L, 222L)
-    self.user_service.linkedaccount_tbl.Insert.assert_called_once_with(
+    self.user_service.linkedaccount_tbl.InsertRow.assert_called_once_with(
         self.cnxn, parent_id=111L, child_id=222L)
     self.user_service.linkedaccountinvite_tbl.Delete.assert_called_once_with(
         self.cnxn, parent_id=111L, child_id=222L)

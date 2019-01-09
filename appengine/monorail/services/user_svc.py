@@ -564,7 +564,7 @@ class UserService(object):
     if not child_id:
       raise exceptions.InputException('Child account is missing')
     self._AssertNotAlreadyLinked(cnxn, parent_id, child_id)
-    self.linkedaccountinvite_tbl.Insert(
+    self.linkedaccountinvite_tbl.InsertRow(
         cnxn, parent_id=parent_id, child_id=child_id)
 
   def AcceptLinkedChild(self, cnxn, parent_id, child_id):
@@ -582,10 +582,11 @@ class UserService(object):
 
     self._AssertNotAlreadyLinked(cnxn, parent_id, child_id)
 
-    self.linkedaccount_tbl.Insert(
+    self.linkedaccount_tbl.InsertRow(
         cnxn, parent_id=parent_id, child_id=child_id)
     self.linkedaccountinvite_tbl.Delete(
         cnxn, parent_id=parent_id, child_id=child_id)
+    self.user_2lc.InvalidateKeys(cnxn, [parent_id, child_id])
 
   ### User settings
 

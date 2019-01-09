@@ -18,6 +18,8 @@ service Users {
   rpc GetUserStarCount (GetUserStarCountRequest) returns (GetUserStarCountResponse) {}
   rpc StarUser (StarUserRequest) returns (StarUserResponse) {}
   rpc SetExpandPermsPreference (SetExpandPermsPreferenceRequest) returns (SetExpandPermsPreferenceResponse) {}
+  rpc InviteLinkedParent (InviteLinkedParentRequest) returns (InviteLinkedParentResponse) {}
+  rpc AcceptLinkedChild (AcceptLinkedChildRequest) returns (AcceptLinkedChildResponse) {}
 }
 
 
@@ -113,4 +115,28 @@ message SetExpandPermsPreferenceRequest {
 
 // Next available tag: 1
 message SetExpandPermsPreferenceResponse {
+}
+
+
+// Next available tag: 3
+message InviteLinkedParentRequest {
+  RequestTrace trace = 1;
+  string email = 2;
+}
+
+
+// Next available tag: 1
+message InviteLinkedParentResponse {
+}
+
+
+// Next available tag: 3
+message AcceptLinkedChildRequest {
+  RequestTrace trace = 1;
+  string email = 2;
+}
+
+
+// Next available tag: 1
+message AcceptLinkedChildResponse {
 }

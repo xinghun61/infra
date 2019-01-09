@@ -111,3 +111,22 @@ class UsersServicer(monorail_servicer.MonorailServicer):
 
     result = users_pb2.SetExpandPermsPreferenceResponse()
     return result
+
+  @monorail_servicer.PRPCMethod
+  def InviteLinkedParent(self, mc, request):
+    """Create a linked account invite."""
+    with work_env.WorkEnv(mc, self.services) as we:
+      we.InviteLinkedParent(request.email)
+
+    result = users_pb2.InviteLinkedParentResponse()
+    return result
+
+  @monorail_servicer.PRPCMethod
+  def AcceptLinkedChild(self, mc, request):
+    """Link a child account that has invited this account as parent."""
+    child_id = self.services.user.LookupUserID(mc.cnxn, request.email)
+    with work_env.WorkEnv(mc, self.services) as we:
+      we.AcceptLinkedChild(child_id)
+
+    result = users_pb2.AcceptLinkedChildResponse()
+    return result

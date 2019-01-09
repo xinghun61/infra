@@ -11,6 +11,7 @@ import json
 
 from third_party import ezt
 
+import settings
 from businesslogic import work_env
 from framework import framework_helpers
 from framework import framework_views
@@ -49,7 +50,7 @@ class UserProfile(servlet.Servlet):
           mr.cnxn, group_settings.keys())
       friend_project_ids = [] # TODO(issue 4202): implement this.
       visible_group_ids = []
-      for group_id, settings in group_settings.items():
+      for group_id in group_settings:
         if permissions.CanViewGroupMembers(
             mr.perms, mr.auth.effective_ids, group_settings[group_id],
             member_ids[group_id], owner_ids[group_id], friend_project_ids):
@@ -72,6 +73,25 @@ class UserProfile(servlet.Servlet):
       if viewed_user.linked_child_ids:
         linked_children = [
           linked_views[child_id] for child_id in viewed_user.linked_child_ids]
+
+    incoming_invite_users = []
+    outgoing_invite_users = []
+    possible_parent_accounts = []
+    can_edit_invites = mr.auth.user_id == mr.viewed_user_auth.user_id
+    display_link_invites = can_edit_invites or mr.auth.user_pb.is_site_admin
+    # TODO(jrobbins): allow site admin to edit invites for other users.
+    if display_link_invites:
+      with work_env.WorkEnv(mr, self.services, phase='Getting link invites'):
+        incoming_invite_ids, outgoing_invite_ids = we.GetPendingLinkedInvites(
+            user_id=viewed_user.user_id)
+        invite_views = framework_views.MakeAllUserViews(
+          mr.cnxn, self.services.user, incoming_invite_ids, outgoing_invite_ids)
+        incoming_invite_users = [
+            invite_views[uid] for uid in incoming_invite_ids]
+        outgoing_invite_users = [
+            invite_views[uid] for uid in outgoing_invite_ids]
+        possible_parent_accounts = _ComputePossibleParentAccounts(
+            we, mr.viewed_user_auth.user_view, linked_parent, linked_children)
 
     viewed_user_display_name = framework_views.GetViewedUserDisplayName(mr)
 
@@ -165,11 +185,16 @@ class UserProfile(servlet.Servlet):
         'user_groups': user_group_views,
         'linked_parent': linked_parent,
         'linked_children': linked_children,
+        'incoming_invite_users': incoming_invite_users,
+        'outgoing_invite_users': outgoing_invite_users,
+        'possible_parent_accounts': possible_parent_accounts,
+        'can_edit_invites': ezt.boolean(can_edit_invites),
         }
 
-    settings = framework_helpers.UserSettings.GatherUnifiedSettingsPageData(
-        mr.auth.user_id, mr.viewed_user_auth.user_view, viewed_user)
-    page_data.update(settings)
+    user_settings = (
+        framework_helpers.UserSettings.GatherUnifiedSettingsPageData(
+        mr.auth.user_id, mr.viewed_user_auth.user_view, viewed_user))
+    page_data.update(user_settings)
 
     return page_data
 
@@ -191,6 +216,21 @@ class UserProfile(servlet.Servlet):
     return framework_helpers.FormatAbsoluteURL(
         mr, mr.viewed_user_auth.user_view.profile_url, include_project=False,
         saved=1, ts=int(time.time()))
+
+
+def _ComputePossibleParentAccounts(
+    we, user_view, linked_parent, linked_children):
+  """Return a list of email addresses of possible parent accounts."""
+  if not user_view:
+    return []  # Anon user cannot link to any account.
+  if linked_parent or linked_children:
+    return []  # If account is already linked in any way, don't offer.
+  possible_domains = settings.linkable_domains.get(user_view.domain, [])
+  possible_emails = ['%s@%s' % (user_view.username, domain)
+                     for domain in possible_domains]
+  found_users = we.ListReferencedUsers(possible_emails)
+  found_emails = [user.email for user in found_users]
+  return found_emails
 
 
 class UserProfilePolymer(UserProfile):

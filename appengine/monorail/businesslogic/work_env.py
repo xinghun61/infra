@@ -1378,11 +1378,11 @@ class WorkEnv(object):
       self.services.user.LookupUserEmail(self.mc.cnxn, user_id)
       return self.services.user_star.CountItemStars(self.mc.cnxn, user_id)
 
-  def GetPendingLinkedInvites(self):
-    """Return info about the signed in user's linked account invites."""
+  def GetPendingLinkedInvites(self, user_id=None):
+    """Return info about a user's linked account invites."""
     with self.mc.profiler.Phase('checking linked account invites'):
       result = self.services.user.GetPendingLinkedInvites(
-          self.mc.cnxn, self.mc.auth.user_id)
+          self.mc.cnxn, user_id or self.mc.auth.user_id)
       return result
 
   def InviteLinkedParent(self, parent_email):
@@ -1397,9 +1397,12 @@ class WorkEnv(object):
           parent_email)
       c_view = self.mc.auth.user_view
       if p_username != c_view.username:
+        logging.info('Username %r != %r', p_username, c_view.username)
         raise exceptions.InputException('Linked account names must match')
       allowed_domains = settings.linkable_domains.get(c_view.domain, [])
       if p_domain not in allowed_domains:
+        logging.info('parent domain %r is not in list for %r: %r',
+                     p_domain, c_view.domain, allowed_domains)
         raise exceptions.InputException('Linked account unsupported domain')
       parent_id = self.services.user.LookupUserID(self.mc.cnxn, parent_email)
     with self.mc.profiler.Phase('Creating linked account invite'):

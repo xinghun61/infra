@@ -56,6 +56,7 @@
   <p>
   <b>Linked parent account:</b>
     [include "../framework/user-link.ezt" linked_parent]
+    [# TODO(jrobbins): Allow unlinking.]
   </p>
 [end]
 
@@ -67,6 +68,38 @@
   [end]
   </p>
 [end]
+
+[if-any incoming_invite_users]
+  <b>Accept linked sub-account:</b>
+    [for incoming_invite_users]
+      <div>
+        [include "../framework/user-link.ezt" incoming_invite_users]
+        [if-any can_edit_invites][# TODO(jrobbins): allow site admin to accept invites for other users.]
+          <button class="incoming_invite" data-email="[incoming_invite_users.email]">Accept</button>
+          [# TODO(jrobbins): Button to decline invite.]
+        [end]
+      </div>
+    [end]
+[else][if-any outgoing_invite_users]
+  <b>Waiting for acceptance by parent-account:</b>
+    [for outgoing_invite_users]
+      <div>
+        [include "../framework/user-link.ezt" outgoing_invite_users]
+      </div>
+    [end]
+[else][if-any possible_parent_accounts]
+  <b>Link this account to:</b>
+  <select id="parent_to_invite">
+    <option value="" selected="selected">----</option>
+    [for possible_parent_accounts]
+      <option value="[possible_parent_accounts]">[possible_parent_accounts]</option>
+    [end]
+  </select>
+  [if-any can_edit_invites][# TODO(jrobbins): allow site admin to create invites for other users.]
+    <button id="create_linked_account_invite" disabled="disabled">Link</button>
+  [end]
+[end][end][end]
+
 
 [if-any user_stars_enabled]
 <p>
@@ -399,6 +432,8 @@ runOnLoad(function() {
    }
 });
 </script>
+<script type="module" defer src="/static/js/sitewide/linked-accounts.js?version=[app_version]" nonce="[nonce]"></script>
+
 
 [include "../framework/footer-script.ezt"]
 [include "../framework/master-footer.ezt"]
