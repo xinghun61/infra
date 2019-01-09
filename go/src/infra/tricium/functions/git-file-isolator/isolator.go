@@ -73,6 +73,7 @@ func main() {
 	// Copy files to output directory for isolation.
 	// Skip over any files which couldn't be copied and don't
 	// include them in the output.
+	log.Printf("Copying from %q to %q.", tempDir, *outputDir)
 	output := &tricium.Data_Files{
 		Files: copyFiles(tempDir, *outputDir, input.Files),
 	}
@@ -99,7 +100,7 @@ func copyFiles(inputDir, outputDir string, files []*tricium.Data_File) []*triciu
 			log.Printf("Skipping file %q", src)
 			continue
 		}
-		log.Printf("Preparing to copy file %q.", file.Path)
+		log.Printf("Copying %q.", file.Path)
 
 		dest := filepath.Join(outputDir, file.Path)
 		if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
@@ -111,7 +112,6 @@ func copyFiles(inputDir, outputDir string, files []*tricium.Data_File) []*triciu
 		if err != nil {
 			log.Fatalf("Failed to read stderr: %v", err)
 		}
-		log.Printf("Running cmd: %s", cmd.Args)
 		if err := cmd.Start(); err != nil {
 			log.Fatalf("Failed to invoke command: %v", err)
 		}
