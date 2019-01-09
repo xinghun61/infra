@@ -87,11 +87,8 @@ deps:
 	npm install --no-save
 
 	mkdir -p deployed_node_modules/chart.js/dist/
-	ln -sf ../../../node_modules/chart.js/dist/Chart.min.js \
+	cp node_modules/chart.js/dist/Chart.min.js \
 		deployed_node_modules/chart.js/dist/Chart.min.js
-
-	rm -rf bower_components/chopsui
-	ln -sf ../../../crdx/chopsui bower_components/chopsui
 
 vulcanize: clean_vulcanized
 	$(call VULCANIZE, elements/flt/mr-approval-page/mr-approval-page)
