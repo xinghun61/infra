@@ -169,7 +169,6 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 
 	// Tell the recipe to write the result protobuf message to a file and read
 	// it below.
-	c.engine.opArgs.EngineFlags.UseResultProto = true
 	c.engine.outputResultJSONFile = filepath.Join(c.TempDir, "recipe-result.json")
 
 	// Run the recipe in the appropriate auth context by exporting it into the
