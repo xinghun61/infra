@@ -24,7 +24,7 @@ func TestPylintParsingFunctions(t *testing.T) {
 			So(s, ShouldNotBeNil)
 
 			results := &tricium.Data_Results{}
-			scanPylintOutput(s, results, nil)
+			scanPylintOutput(s, results, make(chan bool))
 			So(results.Comments, ShouldBeEmpty)
 		})
 
@@ -102,7 +102,7 @@ func TestPylintParsingFunctions(t *testing.T) {
 			}
 
 			results := &tricium.Data_Results{}
-			scanPylintOutput(bufio.NewScanner(strings.NewReader(output)), results, nil)
+			scanPylintOutput(bufio.NewScanner(strings.NewReader(output)), results, make(chan bool))
 			So(results, ShouldResemble, expected)
 		})
 	})

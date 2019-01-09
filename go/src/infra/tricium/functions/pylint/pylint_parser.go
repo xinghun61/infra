@@ -157,12 +157,6 @@ func scanPylintOutput(scanner *bufio.Scanner, results *tricium.Data_Results, don
 	if err := scanner.Err(); err != nil {
 		log.Fatalf("Failed to read file: %v", err)
 	}
-
-	// Testing may be done without without a valid channel.
-	// TODO(qyearsley): Add valid channel in tests.
-	if done != nil {
-		done <- true
-	}
 }
 
 // parsePylintLine parses one line of Pylint output to produce a comment.

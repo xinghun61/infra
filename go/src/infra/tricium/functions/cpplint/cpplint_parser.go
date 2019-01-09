@@ -118,11 +118,6 @@ func scanCpplintOutput(scanner *bufio.Scanner, results *tricium.Data_Results, do
 	if err := scanner.Err(); err != nil {
 		log.Fatalf("Failed to read file: %v", err)
 	}
-
-	// Testing is done without a valid channel.
-	if done != nil {
-		done <- true
-	}
 }
 
 // Parses one line of cpplint output to produce a comment.
