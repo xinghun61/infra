@@ -61,12 +61,14 @@ class MrIssueTable extends ReduxMixin(Polymer.Element) {
   }
 
   _dragstart(e) {
-    this.srcIndex = Number(e.target.dataset.index);
-    e.dataTransfer.setDragImage(new Image(), 0, 0);
+    if (e.currentTarget.draggable) {
+      this.srcIndex = Number(e.currentTarget.dataset.index);
+      e.dataTransfer.setDragImage(new Image(), 0, 0);
+    }
   }
 
   _dragover(e) {
-    if (e.currentTarget.draggable) {
+    if (e.currentTarget.draggable && this.srcIndex !== null) {
       e.preventDefault();
       const targetIndex = Number(e.currentTarget.dataset.index);
       this._reorderRows(this.srcIndex, targetIndex);
@@ -81,20 +83,22 @@ class MrIssueTable extends ReduxMixin(Polymer.Element) {
   }
 
   _dragdrop(e) {
-    const detail = {
-      src: this.renderRows[this.srcIndex],
-    };
-    if (this.srcIndex > 0) {
-      detail.target = this.renderRows[this.srcIndex-1];
-      detail.above = false;
-      this.dispatchEvent(new CustomEvent('reorder', {detail}));
-    } else if (this.srcIndex === 0 &&
-               this.renderRows[1] && this.renderRows[1].draggable) {
-      detail.target = this.renderRows[1];
-      detail.above = true;
-      this.dispatchEvent(new CustomEvent('reorder', {detail}));
+    if (e.currentTarget.draggable && this.srcIndex !== null) {
+      const detail = {
+        src: this.renderRows[this.srcIndex],
+      };
+      if (this.srcIndex > 0) {
+        detail.target = this.renderRows[this.srcIndex-1];
+        detail.above = false;
+        this.dispatchEvent(new CustomEvent('reorder', {detail}));
+      } else if (this.srcIndex === 0 &&
+                 this.renderRows[1] && this.renderRows[1].draggable) {
+        detail.target = this.renderRows[1];
+        detail.above = true;
+        this.dispatchEvent(new CustomEvent('reorder', {detail}));
+      }
+      this.srcIndex = null;
     }
-    this.srcIndex = null;
   }
 
   _reorderRows(srcIndex, toIndex) {
