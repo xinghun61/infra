@@ -83,4 +83,16 @@ func TestPylintParsingFunctions(t *testing.T) {
 			So(parseCpplintLine("Total errors found: 24"), ShouldBeNil)
 		})
 	})
+
+	Convey("Command line argument helper functions", t, func() {
+		Convey("Building the verbose argument", func() {
+			So(verboseArg("5"), ShouldEqual, "5")
+			So(verboseArg(""), ShouldEqual, "4")
+		})
+
+		Convey("Building the filter argument", func() {
+			So(filterArg("-whitespace/braces"), ShouldEqual, "-whitespace/braces")
+			So(filterArg(""), ShouldEqual, "-whitespace,-build/header_guard")
+		})
+	})
 }

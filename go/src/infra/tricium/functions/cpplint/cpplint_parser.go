@@ -32,8 +32,9 @@ var msgRegex = regexp.MustCompile(`^(.+):([0-9]+):  (.+)  \[(.+)/(.+)\] \[([1-5]
 func main() {
 	inputDir := flag.String("input", "", "Path to root of Tricium input")
 	outputDir := flag.String("output", "", "Path to root of Tricium output")
-	// TODO(qyearsley): Add flags for filter, verbose and root and use them
-	// when invoking cpplint, so that these can be specified project repos.
+	filterFlag := flag.String("filter", "", "Comma-separated list of checks to filter")
+	verboseFlag := flag.String("verbose", "", "Confidence filter, 1-5")
+	rootFlag := flag.String("root", "", "Path to repo root, for header-guard paths")
 	flag.Parse()
 	if flag.NArg() != 0 {
 		log.Fatalf("Unexpected argument.")
@@ -55,22 +56,21 @@ func main() {
 	}
 	log.Printf("Read FILES data.")
 
-	filters := []string{
-		"-whitespace",
-		"-build/header_guard", // --root must be specified for this check.
-	}
+	// Construct Command to run.
 	cmdName := filepath.Join(exPath, pythonPath)
 	cmdArgs := []string{
 		filepath.Join(exPath, cpplintPath),
-		"--verbose=4",
-		"--filter=" + strings.Join(filters, ","),
+		"--filter", filterArg(*filterFlag),
+		"--verbose", verboseArg(*verboseFlag),
+	}
+	if *rootFlag != "" {
+		cmdArgs = append(cmdArgs, "--root", *rootFlag)
 	}
 	for _, file := range input.Files {
 		cmdArgs = append(cmdArgs, filepath.Join(*inputDir, file.Path))
 	}
 	cmd := exec.Command(cmdName, cmdArgs...)
 	log.Printf("Command: %s", cmd.Args)
-
 	// Cpplint prints warnings to stderr.
 	stderrReader, err := cmd.StderrPipe()
 	if err != nil {
@@ -99,6 +99,24 @@ func main() {
 		log.Fatalf("Failed to write RESULTS data: %v", err)
 	}
 	log.Printf("Wrote RESULTS data to %q.", path)
+}
+
+func verboseArg(verboseFlag string) string {
+	if verboseFlag != "" {
+		return verboseFlag
+	}
+	return "4"
+}
+
+func filterArg(filterFlag string) string {
+	if filterFlag != "" {
+		return filterFlag
+	}
+	filters := []string{
+		"-whitespace",
+		"-build/header_guard", // --root must be specified for this check.
+	}
+	return strings.Join(filters, ",")
 }
 
 //  Reads cpplint's output line by line and populates results.
