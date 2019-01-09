@@ -3,9 +3,7 @@
 Recipes are a domain-specific language (embedded in python) for specifying
 sequences of subprocess calls in a cross-platform and testable way.
 
-* [User guide](https://chromium.googlesource.com/external/github.com/luci/recipes-py/+/master/doc/user_guide.md)
-  * **NOTE:** This user guide is badly in need of updating as of August 2017. If
-    you spot something wrong, please submit a CL to fix it.
+* [User guide](https://chromium.googlesource.com/infra/luci/recipes-py/+/master/doc/user_guide.md)
 * Recipe and recipe module documentation:
   * [recipe_engine](https://chromium.googlesource.com/infra/luci/recipes-py.git/+/master/README.recipes.md)
   * [depot_tools](https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/master/recipes/README.recipes.md)
