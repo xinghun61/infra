@@ -261,7 +261,7 @@
     });
 
     test('test implied link regex string', function() {
-      const impliedLinkRE = refRegs[2];
+      const impliedLinkRE = refRegs[3];
       const str = 'incomplete.com .help.com hey.net/other="(blah)"';
       let match;
       let actualMatches = [];
@@ -273,7 +273,7 @@
     });
 
     test('test full link regex string', function() {
-      const isLinkRE = refRegs[3];
+      const isLinkRE = refRegs[2];
       const str = 'https://www.go.com nospacehttps://www.blah.com http://website.net/other="(}])"><)'
       let match;
       let actualMatches = [];
@@ -285,8 +285,8 @@
     });
 
     test('Replace URL plain text', function() {
-      const match = refRegs[2].exec('link here: (website.net/other="here").');
-      refRegs[2].lastIndex = 0;
+      const match = refRegs[3].exec('link here: (website.net/other="here").');
+      refRegs[3].lastIndex = 0;
       const actualTextRuns = replacer(match);
       assert.deepEqual(
           actualTextRuns,
@@ -299,8 +299,8 @@
     });
 
     test('Replace URL existing http', function() {
-      const match = refRegs[3].exec('link here: (https://website.net/other="here").');
-      refRegs[3].lastIndex = 0;
+      const match = refRegs[2].exec('link here: (https://website.net/other="here").');
+      refRegs[2].lastIndex = 0;
       const actualTextRuns = replacer(match);
       assert.deepEqual(
           actualTextRuns,
@@ -424,6 +424,17 @@
             {content: 'test '},
             {content: 'autolinking go/testlink', tag: 'b'},
             {content: ' is not nested'},
+          ]);
+    });
+
+    test('URLs are autolinked', function() {
+      const plainString = 'this http string contains http://google.com for you';
+      const actualTextRuns = markupAutolinks(plainString, componentRefs);
+      assert.deepEqual(
+          actualTextRuns, [
+            {content: 'this http string contains '},
+            {content: 'http://google.com', tag: 'a', href: 'http://google.com'},
+            {content: ' for you'},
           ]);
     });
 
