@@ -19,8 +19,10 @@ import (
 	"net/url"
 
 	"go.chromium.org/gae/service/info"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/proto/gerrit"
+	"go.chromium.org/luci/common/retry/transient"
 	"go.chromium.org/luci/server/auth"
 	"golang.org/x/net/context"
 )
@@ -93,7 +95,10 @@ func commitFileContents(ctx context.Context, client gerrit.GerritClient, project
 		Number:  changeInfo.Number,
 		Project: changeInfo.Project,
 	}); err != nil {
-		return -1, err
+		// Mark this error as transient so that the operation will be retried.
+		// Errors in submit are mostly caused because of conflict with a concurrent
+		// change to the inventory.
+		return -1, errors.Annotate(err, "commit file conents").Tag(transient.Tag).Err()
 	}
 
 	cn := int(changeInfo.Number)

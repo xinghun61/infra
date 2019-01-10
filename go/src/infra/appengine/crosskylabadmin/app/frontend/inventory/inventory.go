@@ -18,10 +18,13 @@ package inventory
 
 import (
 	"fmt"
+	"time"
 
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/proto/gerrit"
 	"go.chromium.org/luci/common/proto/gitiles"
+	"go.chromium.org/luci/common/retry"
+	"go.chromium.org/luci/common/retry/transient"
 	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
@@ -62,6 +65,27 @@ type ServerImpl struct {
 	TrackerFactory TrackerFactory
 }
 
+var transientErrorRetriesTemplate = retry.ExponentialBackoff{
+	Limited: retry.Limited{
+		Delay: 200 * time.Millisecond,
+		// Don't retry too often, leaving some headroom for clients to retry if they wish.
+		Retries: 3,
+	},
+	// Slow down quickly so as to not flood outbound requests on retries.
+	Multiplier: 4,
+	MaxDelay:   5 * time.Second,
+}
+
+// transientErrorRetries returns a retry.Factory to use on transient errors on
+// outbound requests.
+func transientErrorRetries() retry.Factory {
+	next := func() retry.Iterator {
+		it := transientErrorRetriesTemplate
+		return &it
+	}
+	return transient.Only(next)
+}
+
 func (is *ServerImpl) newGerritClient(c context.Context, host string) (gerrit.GerritClient, error) {
 	if is.GerritFactory != nil {
 		return is.GerritFactory(c, host)
@@ -94,11 +118,23 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
-
 	if err := req.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+	err = retry.Retry(
+		ctx,
+		transientErrorRetries(),
+		func() error {
+			var ierr error
+			resp, ierr = is.removeDutsFromDronesNoRetry(ctx, req)
+			return ierr
+		},
+		retry.LogCallback(ctx, "removeDutsFromDronesNoRetry"),
+	)
+	return resp, err
+}
 
+func (is *ServerImpl) removeDutsFromDronesNoRetry(ctx context.Context, req *fleet.RemoveDutsFromDronesRequest) (*fleet.RemoveDutsFromDronesResponse, error) {
 	store, err := is.newStore(ctx)
 	if err != nil {
 		return nil, err
@@ -107,7 +143,7 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 		return nil, err
 	}
 
-	resp = &fleet.RemoveDutsFromDronesResponse{
+	resp := &fleet.RemoveDutsFromDronesResponse{
 		Removed: make([]*fleet.RemoveDutsFromDronesResponse_Item, 0, len(req.Removals)),
 	}
 
@@ -201,7 +237,20 @@ func (is *ServerImpl) AssignDutsToDrones(ctx context.Context, req *fleet.AssignD
 	if err := req.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+	err = retry.Retry(
+		ctx,
+		transientErrorRetries(),
+		func() error {
+			var ierr error
+			resp, ierr = is.assignDutsToDronesNoRetry(ctx, req)
+			return ierr
+		},
+		retry.LogCallback(ctx, "assignDutsToDronesNoRetry"),
+	)
+	return resp, err
+}
 
+func (is *ServerImpl) assignDutsToDronesNoRetry(ctx context.Context, req *fleet.AssignDutsToDronesRequest) (*fleet.AssignDutsToDronesResponse, error) {
 	store, err := is.newStore(ctx)
 	if err != nil {
 		return nil, err
@@ -210,7 +259,7 @@ func (is *ServerImpl) AssignDutsToDrones(ctx context.Context, req *fleet.AssignD
 		return nil, err
 	}
 
-	resp = &fleet.AssignDutsToDronesResponse{
+	resp := &fleet.AssignDutsToDronesResponse{
 		Assigned: make([]*fleet.AssignDutsToDronesResponse_Item, 0, len(req.Assignments)),
 	}
 

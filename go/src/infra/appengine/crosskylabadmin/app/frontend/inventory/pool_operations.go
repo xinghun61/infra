@@ -24,6 +24,7 @@ import (
 
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/retry"
 	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
@@ -36,17 +37,28 @@ func (is *ServerImpl) EnsurePoolHealthy(ctx context.Context, req *fleet.EnsurePo
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	inventoryConfig := config.Get(ctx).Inventory
-
 	if err := req.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+	err = retry.Retry(
+		ctx,
+		transientErrorRetries(),
+		func() error {
+			var ierr error
+			resp, ierr = is.ensurePoolHealthyNoRetry(ctx, req)
+			return ierr
+		},
+		retry.LogCallback(ctx, "ensurePoolHealthyNoRetry"),
+	)
+	return resp, err
+}
 
+func (is *ServerImpl) ensurePoolHealthyNoRetry(ctx context.Context, req *fleet.EnsurePoolHealthyRequest) (*fleet.EnsurePoolHealthyResponse, error) {
+	inventoryConfig := config.Get(ctx).Inventory
 	store, err := is.newStore(ctx)
 	if err != nil {
 		return nil, err
 	}
-
 	if err := store.Refresh(ctx); err != nil {
 		return nil, err
 	}
@@ -58,19 +70,19 @@ func (is *ServerImpl) EnsurePoolHealthy(ctx context.Context, req *fleet.EnsurePo
 		return &fleet.EnsurePoolHealthyResponse{}, nil
 	}
 
-	ret, err := ensurePoolHealthyFor(ctx, is.TrackerFactory(), duts, req.TargetPool, req.SparePool, req.MaxUnhealthyDuts)
+	resp, err := ensurePoolHealthyFor(ctx, is.TrackerFactory(), duts, req.TargetPool, req.SparePool, req.MaxUnhealthyDuts)
 	if err != nil {
 		return nil, err
 	}
 
 	if !req.GetOptions().GetDryrun() {
-		u, err := is.commitBalancePoolChanges(ctx, store, ret.Changes)
+		u, err := is.commitBalancePoolChanges(ctx, store, resp.Changes)
 		if err != nil {
 			return nil, err
 		}
-		ret.Url = u
+		resp.Url = u
 	}
-	return ret, nil
+	return resp, nil
 }
 
 // ResizePool implements the method from fleet.InventoryServer interface.
@@ -79,17 +91,28 @@ func (is *ServerImpl) ResizePool(ctx context.Context, req *fleet.ResizePoolReque
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	inventoryConfig := config.Get(ctx).Inventory
-
 	if err := req.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+	err = retry.Retry(
+		ctx,
+		transientErrorRetries(),
+		func() error {
+			var ierr error
+			resp, ierr = is.resizePoolNoRetry(ctx, req)
+			return ierr
+		},
+		retry.LogCallback(ctx, "resizePoolNoRetry"),
+	)
+	return resp, err
+}
 
+func (is *ServerImpl) resizePoolNoRetry(ctx context.Context, req *fleet.ResizePoolRequest) (*fleet.ResizePoolResponse, error) {
+	inventoryConfig := config.Get(ctx).Inventory
 	store, err := is.newStore(ctx)
 	if err != nil {
 		return nil, err
 	}
-
 	if err := store.Refresh(ctx); err != nil {
 		return nil, err
 	}
