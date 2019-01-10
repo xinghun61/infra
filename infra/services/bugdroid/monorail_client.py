@@ -17,6 +17,8 @@ from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.file import Storage
 from oauth2client.tools import run
 
+from infra.services.bugdroid import creds_service
+
 from infra_libs import httplib2_utils
 
 MONORAIL_PROD_URL = ('https://monorail-prod.appspot.com/_ah/api/discovery/'
@@ -85,14 +87,8 @@ class MonorailClient(object):
     self._credentials = None
 
     if client is None:  # pragma: no cover
-      with open(credential_store) as data_file:
-        creds_data = json.load(data_file)
-
-      self._credentials = OAuth2Credentials(
-          None, creds_data['client_id'], creds_data['client_secret'],
-          creds_data['refresh_token'], None,
-          'https://accounts.google.com/o/oauth2/token',
-          'python-issue-tracker-manager/2.0')
+      self._credentials = creds_service.get_credentials(
+          credential_store, 'python-issue-tracker-manager/2.0')
 
       if self._credentials.invalid:
         raise Exception(
@@ -109,38 +105,6 @@ class MonorailClient(object):
     http = self._credentials.authorize(http)
     http = SSLErrorLoggingHttp(http)
     return apiclient.http.HttpRequest(http, *args, **kwargs)
-
-  def _authenticate(self, storage, service_acct, client_id,
-                    client_secret, api_scope):
-    flow = OAuth2WebServerFlow(
-      client_id=client_id,
-      client_secret=client_secret,
-      scope=api_scope,
-      user_agent='python-issue-tracker-manager/2.0',
-      redirect_uri='urn:ietf:wg:oauth:2.0:oob')
-
-    if service_acct:
-      if not hasattr(oauth2client.client, 'SignedJwtAssertionCredentials'):
-        raise Exception('A version of Python with cryptographic libraries '
-                        'built in is necessary to use service accounts.')
-      credentials = oauth2client.client.SignedJwtAssertionCredentials(
-          client_id, client_secret, scope=api_scope,
-          user_agent='python-issue-tracker-manager/2.0')
-    else:
-      auth_uri = flow.step1_get_authorize_url()
-      print 'Open the following URL in your browser:\n'
-      print auth_uri + '\n'
-      auth_code = raw_input('Enter verification code: ').strip()
-      credentials = flow.step2_exchange(auth_code)
-
-    storage.acquire_lock()
-    try:
-      storage.locked_put(credentials)
-    finally:
-      storage.release_lock()
-
-    credentials.set_store(storage)
-    return credentials
 
   def update_issue(self, project_name, issue, send_email=True):
     if not issue.dirty:

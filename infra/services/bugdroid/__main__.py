@@ -17,6 +17,7 @@ import urlparse
 from infra.libs import git2
 from infra.libs.service_utils import outer_loop
 from infra.services.bugdroid import bugdroid
+from infra.services.bugdroid import creds_service
 from infra_libs import logs
 from infra_libs import ts_mon
 
@@ -68,8 +69,8 @@ def parse_args(args):  # pragma: no cover
   parser.add_argument('-c', '--configfile',
       help='Local JSON poller configuration file to override '
            'config file from luci-config.')
-  parser.add_argument('-d', '--credentials_db', required=True,
-      help='File to use for Monorail OAuth2 credentials storage.')
+  parser.add_argument('-d', '--credentials_db',
+      help='File to use for OAuth2 credentials storage if not running on LUCI.')
   parser.add_argument('--datadir', default=DATADIR,
       help='Directory where persistent app data should be stored.')
 
@@ -98,13 +99,10 @@ def parse_args(args):  # pragma: no cover
   return opts, loop_opts
 
 
-def _create_http(creds_data):
-  credentials = oauth2client.client.OAuth2Credentials(
-      None, creds_data['client_id'], creds_data['client_secret'],
-      creds_data['refresh_token'],
-      datetime.datetime.now() + datetime.timedelta(minutes=15),
-      'https://accounts.google.com/o/oauth2/token',
-      'bugdroid')
+def _create_http(credentials_db):
+  token_expiry = datetime.datetime.now() + datetime.timedelta(minutes=15)
+  credentials = creds_service.get_credentials(
+      credentials_db, 'bugdroid', token_expiry=token_expiry)
 
   http = infra_libs.InstrumentedHttp('gcs')
   http = infra_libs.RetriableHttp(http, retrying_statuses_fn=lambda x: x >= 400)
@@ -119,12 +117,9 @@ def main(args):  # pragma: no cover
     logging.info('Creating data directory.')
     os.makedirs(opts.datadir)
 
-  with open(opts.credentials_db) as data_file:
-    creds_data = json.load(data_file)
-
   # Use local json file
   if not opts.configfile:
-    get_data(_create_http(creds_data))
+    get_data(_create_http(opts.credentials_db))
 
   def outer_loop_iteration():
     return bugdroid.inner_loop(opts)
@@ -136,7 +131,7 @@ def main(args):  # pragma: no cover
 
   # In case local json file is used, do not upload
   if not opts.configfile:
-    update_data(_create_http(creds_data))
+    update_data(_create_http(opts.credentials_db))
 
   logging.info('Outer loop finished with result %r', loop_results.success)
   return 0 if loop_results.success else 1
