@@ -75,6 +75,14 @@ def ComputeUnshownColumns(results, shown_columns, config, built_in_cols):
     if field_lower not in shown_set and field_lower not in unshown_set:
       unshown_list.append(fd.field_name)
       unshown_set.add(field_lower)
+    if fd.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE:
+      approval_lower_approver = (
+          field_lower + framework_constants.APPROVER_COL_SUFFIX)
+      if (approval_lower_approver not in shown_set
+          and approval_lower_approver not in unshown_set):
+        unshown_list.append(
+            fd.field_name + framework_constants.APPROVER_COL_SUFFIX)
+        unshown_set.add(approval_lower_approver)
 
   # The user can add a column for any key-value label or field in the results.
   for r in results:
@@ -657,7 +665,6 @@ class TableCellApprovalStatus(TableCell):
   """Abstract TableCell subclass specifically for showing approval fields."""
 
   def __init__(self, art, col=None, config=None, **_kw):
-    cell_type = CELL_TYPE_ATTR
     explicit_values = []
     for av in art.approval_values:
       fd = tracker_bizobj.FindFieldDef(col, config)
@@ -667,9 +674,30 @@ class TableCellApprovalStatus(TableCell):
                      art.issue_id, av)
       elif av.approval_id == fd.field_id:
         explicit_values.append(av.status.name)
+        break
 
-    TableCell.__init__(self, cell_type, explicit_values)
+    TableCell.__init__(self, CELL_TYPE_ATTR, explicit_values)
 
+
+class TableCellApprovalApprover(TableCell):
+  """TableCell subclass specifically for showing approval approvers."""
+
+  def __init__(self, art, col=None, config=None, users_by_id=None, **_kw):
+    explicit_values = []
+    approval_name = col[:-len(framework_constants.APPROVER_COL_SUFFIX)]
+    for av in art.approval_values:
+      fd = tracker_bizobj.FindFieldDef(approval_name, config)
+      ad = tracker_bizobj.FindApprovalDef(approval_name, config)
+      if not (ad and fd):
+        logging.warn('Issue ID %r has undefined field value %r',
+                     art.issue_id, av)
+      elif av.approval_id == fd.field_id:
+        explicit_values = [users_by_id.get(approver_id).display_name
+                           for approver_id in av.approver_ids
+                           if users_by_id.get(approver_id)]
+        break
+
+    TableCell.__init__(self, CELL_TYPE_ATTR, explicit_values)
 
 def ChooseCellFactory(col, cell_factories, config):
   """Return the CellFactory to use for the given column."""
@@ -679,12 +707,24 @@ def ChooseCellFactory(col, cell_factories, config):
   if '/' in col:
     return CompositeColTableCell(col.split('/'), cell_factories, config)
 
-  fd = tracker_bizobj.FindFieldDef(col, config)
+  is_approver_col = False
+  possible_field_name = col
+  if col.endswith(framework_constants.APPROVER_COL_SUFFIX):
+    possible_field_name = col[:-len(framework_constants.APPROVER_COL_SUFFIX)]
+    is_approver_col = True
+
+  fd = tracker_bizobj.FindFieldDef(possible_field_name, config)
   if fd:
     # We cannot assume that non-enum_type field defs do not share their
     # names with label prefixes. So we need to group them with
     # TableCellKeyLabels to make sure we catch appropriate labels values.
     if fd.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE:
+      if is_approver_col:
+        # Combined cell for 'FieldName-approver' to hold approvers
+        # belonging to FieldName and values belonging to labels with
+        # 'FieldName-approver' as the key.
+        return CompositeFactoryTableCell(
+          [(TableCellApprovalApprover, col), (TableCellKeyLabels, col)])
       return CompositeFactoryTableCell(
           [(TableCellApprovalStatus, col), (TableCellKeyLabels, col)])
     elif fd.field_type != tracker_pb2.FieldTypes.ENUM_TYPE:

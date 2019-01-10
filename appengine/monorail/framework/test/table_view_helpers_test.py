@@ -95,6 +95,31 @@ class TableCellTest(unittest.TestCase):
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(cell.values[0].item, 'NOT_SET')
 
+  def testTableCellApprovalApprover(self):
+    """TableCellApprovalApprover stores the approvers of an ApprovalValue."""
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    config.field_defs = [
+        tracker_bizobj.MakeFieldDef(
+            3, 789, 'Approval', tracker_pb2.FieldTypes.APPROVAL_TYPE,
+            None, None, False, False, False, None, None, None, False, None,
+            None, None, None, 'Tracks review from cows', False)
+    ]
+    config.approval_defs = [tracker_pb2.ApprovalDef(approval_id=3)]
+    test_issue = MakeTestIssue(4, 4, 'sum')
+    test_issue.approval_values = [
+        tracker_pb2.ApprovalValue(
+            approval_id=3, approver_ids=[111L, 222L, 333L])]
+    users_by_id = {
+        111L: framework_views.StuffUserView(111, 'foo@example.com', False),
+        222L: framework_views.StuffUserView(222, 'foo2@example.com', True),
+        }
+    cell = table_view_helpers.TableCellApprovalApprover(
+        test_issue, 'Approval-approver', config, users_by_id)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
+    self.assertEqual(len(cell.values), 2)
+    self.assertItemsEqual([cell.values[0].item, cell.values[1].item],
+                          ['foo@example.com', 'f...@example.com'])
+
   # TODO(jrobbins): TableCellProject, TableCellStars
 
 
@@ -213,7 +238,7 @@ class TableViewHelpersTest(unittest.TestCase):
   def testComputeUnshownColumns_NoBuiltins(self):
     shown_cols = ['a', 'b', 'c']
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
-    config.default_col_spec = 'a b c'
+    config.default_col_spec = ''
     config.well_known_labels = []
     builtin_cols = []
 
@@ -224,6 +249,35 @@ class TableViewHelpersTest(unittest.TestCase):
     unshown = table_view_helpers.ComputeUnshownColumns(
         SEARCH_RESULTS_WITH_LABELS, shown_cols, config, builtin_cols)
     self.assertEquals(unshown, ['Mstone', 'Priority', 'Visibility'])
+
+  def testComputeUnshownColumns_FieldDefs(self):
+    shown_cols = ['a', 'b', 'a1', 'a2-approver', 'f3']
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    config.default_col_spec = ''
+    config.well_known_labels = []
+    config.field_defs = [
+      tracker_bizobj.MakeFieldDef(
+          1, 789, 'a1', tracker_pb2.FieldTypes.APPROVAL_TYPE,
+          None, None, False, False, False, None, None, None, False, None,
+          None, None, None, 'Tracks review from cows', False),
+      tracker_bizobj.MakeFieldDef(
+          2, 789, 'a2', tracker_pb2.FieldTypes.APPROVAL_TYPE,
+          None, None, False, False, False, None, None, None, False, None,
+          None, None, None, 'Tracks review from chickens', False),
+      tracker_bizobj.MakeFieldDef(
+          3, 789, 'f3', tracker_pb2.FieldTypes.STR_TYPE,
+          None, None, False, False, False, None, None, None, False, None,
+          None, None, None, 'cow names', False),
+      tracker_bizobj.MakeFieldDef(
+          4, 789, 'f4', tracker_pb2.FieldTypes.INT_TYPE,
+          None, None, False, False, False, None, None, None, False, None,
+          None, None, None, 'chicken gobbles', False),
+    ]
+    builtin_cols = []
+
+    unshown = table_view_helpers.ComputeUnshownColumns(
+        EMPTY_SEARCH_RESULTS, shown_cols, config, builtin_cols)
+    self.assertEqual(unshown, ['a1-approver', 'a2', 'f4'])
 
   def testExtractUniqueValues_NoColumns(self):
     column_values = table_view_helpers.ExtractUniqueValues(
@@ -558,6 +612,14 @@ class TableViewHelpersTest(unittest.TestCase):
     self.assertEqual(
         [(table_view_helpers.TableCellApprovalStatus, 'CowApproval'),
          (table_view_helpers.TableCellKeyLabels, 'CowApproval')],
+        actual.factory_col_list)
+
+    # The column is an approval custom field with '-approver'.
+    actual = table_view_helpers.ChooseCellFactory(
+        'CowApproval-approver', cell_factories, self.config)
+    self.assertEqual(
+        [(table_view_helpers.TableCellApprovalApprover, 'CowApproval-approver'),
+         (table_view_helpers.TableCellKeyLabels, 'CowApproval-approver')],
         actual.factory_col_list)
 
     # Column that don't match one of the other cases is assumed to be a label.

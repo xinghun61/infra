@@ -277,12 +277,8 @@ def _MakeSingleSortKeyAccessor(
       return accessors[col_name]
 
   # Case 3. Anything else is assumed to be a label prefix or custom field.
-  fd_list = [
-      fd for fd in config.field_defs
-      if (fd.field_name.lower() == col_name and
-          fd.field_type != tracker_pb2.FieldTypes.ENUM_TYPE)]
   return _IndexOrLexicalList(
-      wk_labels, fd_list, col_name, users_by_id)
+      wk_labels, config.field_defs, col_name, users_by_id)
 
 
 IGNORABLE_INDICATOR = -1
@@ -427,13 +423,12 @@ def _IndexListAccessor(wk_values, base_accessor):
   return Accessor
 
 
-def _IndexOrLexicalList(wk_values, fd_list, col_name, users_by_id):
+def _IndexOrLexicalList(wk_values, full_fd_list, col_name, users_by_id):
   """Return an accessor to score an artifact based on a user-defined ordering.
 
   Args:
     wk_values: A list of well-known labels from the config.
-    fd_list: list of FieldDef PBs that match the column name.  These might not
-        all have the same field_type.  Enum-type field are not included.
+    full_fd_list: list of FieldDef PBs that belong to the config.
     col_name: lowercase string name of the column that will be sorted on.
     users_by_id: A dictionary {user_id: user_view}.
 
@@ -442,6 +437,33 @@ def _IndexOrLexicalList(wk_values, fd_list, col_name, users_by_id):
     sort key.
   """
   well_known_value_indexes = _PrecomputeSortIndexes(wk_values, col_name)
+
+  if col_name.endswith(framework_constants.APPROVER_COL_SUFFIX):
+    # Custom field names cannot end with the APPROVER_COL_SUFFIX. So the only
+    # possible relevant values are approvers for an APPROVAL_TYPE named
+    # field_name and any values from labels with the key 'field_name-approvers'.
+    field_name = col_name[:-len(framework_constants.APPROVER_COL_SUFFIX)]
+    approval_fds = [fd for fd in full_fd_list
+                    if (fd.field_name.lower() == field_name and
+                        fd.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE)]
+
+    def ApproverAccessor(art):
+      """Custom-made function to return a sort value or an issue's approvers."""
+      idx_or_lex_list = (
+          _SortableApprovalApproverValues(art, approval_fds, users_by_id) +
+          _SortableLabelValues(art, col_name, well_known_value_indexes))
+      if not idx_or_lex_list:
+        return MAX_STRING  # issues with no value sort to the end of the list.
+      return sorted(idx_or_lex_list)
+
+    return ApproverAccessor
+
+  # Column name does not end with APPROVER_COL_SUFFIX, so relevant values
+  # are Approval statuses or Field Values for fields named col_name and
+  # values from labels with the key equal to col_name.
+  fd_list = [fd for fd in full_fd_list
+             if (fd.field_name.lower() == col_name and
+                 fd.field_type != tracker_pb2.FieldTypes.ENUM_TYPE)]
   approval_fds = [fd for fd in fd_list if
                   fd.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE]
 
@@ -468,6 +490,20 @@ def _SortableApprovalStatusValues(art, fd_list):
         # NOT_SET == 8 but should be before all other statuses.
         sortable_value_list.append(
             0 if av.status.number == 8 else av.status.number)
+
+  return sortable_value_list
+
+
+def _SortableApprovalApproverValues(art, fd_list, users_by_id):
+  """Return a list of approval approvers relevant to one UI table column."""
+  sortable_value_list = []
+  for fd in fd_list:
+    for av in art.approval_values:
+      if av.approval_id == fd.field_id:
+        sortable_value_list.extend(
+          [users_by_id.get(approver_id).email
+           for approver_id in av.approver_ids
+           if users_by_id.get(approver_id)])
 
   return sortable_value_list
 
