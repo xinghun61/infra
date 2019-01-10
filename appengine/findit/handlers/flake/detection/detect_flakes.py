@@ -37,6 +37,7 @@ class DetectCQFalseRejectionFlakes(BaseHandler):
   def HandleGet(self):
     detect_flake_occurrences.QueryAndStoreFlakes(FlakeType.CQ_FALSE_REJECTION)
     detect_flake_occurrences.QueryAndStoreFlakes(FlakeType.RETRY_WITH_PATCH)
+    detect_flake_occurrences.QueryAndStoreFlakes(FlakeType.CQ_HIDDEN_FLAKE)
     flake_tuples_to_report = flake_issue_util.GetFlakesWithEnoughOccurrences()
     flake_groups_without_bug, flake_groups_with_bug = (
         flake_issue_util.GetFlakeGroupsForActionsOnBugs(flake_tuples_to_report))
