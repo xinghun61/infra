@@ -10,14 +10,21 @@
             margin-left: 0 auto;
             height: 220px;
         }
+
+        #formula {
+          text-align: center;
+        }
     </style>
     <paper-dialog id="dialog" opened=[[opened]]>
-        <google-chart
-          id="selection-chart"
-          type="column"
-          options='{{_generateChartOptions(weights)}}'
-          data = '{{_getChartDataFromFlake(flake, weights)}}'>
-        </google-chart>
+      <google-chart
+        id="selection-chart"
+        type="column"
+        options='{{_generateChartOptions(weights)}}'
+        data = '{{_getChartDataFromFlake(flake, weights)}}'>
+      </google-chart>
+      <div id="formula">
+        [[_getFormula(flake, weights)]]
+      </div>
       <div class="buttons">
         <paper-button dialog-dismiss>Close</paper-button>
       </div>
@@ -37,6 +44,18 @@
           weights: {
             type: Array
           }
+        },
+
+        _getFormula: function (flake, weights) {
+          let formula_str = flake.flake_score_last_week + ' = ';
+          for (let i = 0; i < flake.flake_counts_last_week.length; i++) {
+              let count = flake.flake_counts_last_week[i];
+              formula_str += count.impacted_cl_count + ' * ' + this._getWeight(count.flake_type, weights);
+              if (i < flake.flake_counts_last_week.length - 1) {
+                 formula_str += ' + ';
+              }
+          }
+          return formula_str;
         },
 
         toggleDialog: function () {
@@ -78,7 +97,7 @@
                 'Impacted CLs', { 'role': 'annotation'}]);
             for (let count of flake.flake_counts_last_week) {
                 let row = [
-                    count.flake_type + '\n(W=' + this._getWeight(count.flake_type, weights) +')',
+                    count.flake_type + '\n(Weight=' + this._getWeight(count.flake_type, weights) +')',
                     count.occurrence_count, 'Occ (' + count.occurrence_count +')',
                     count.impacted_cl_count, 'CL (' + count.impacted_cl_count +')'];
                 data.push(row);

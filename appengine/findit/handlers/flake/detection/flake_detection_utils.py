@@ -240,7 +240,10 @@ def GetFlakeInformation(flake, max_occurrence_count, with_occurrences=True):
     flake occurrences.
   """
   occurrences = []
-  for flake_type in [FlakeType.CQ_FALSE_REJECTION, FlakeType.RETRY_WITH_PATCH]:
+  for flake_type in [
+      FlakeType.CQ_FALSE_REJECTION, FlakeType.RETRY_WITH_PATCH,
+      FlakeType.CQ_HIDDEN_FLAKE
+  ]:
     typed_occurrences = _FetchFlakeOccurrences(flake, flake_type,
                                                max_occurrence_count)
     occurrences.extend(typed_occurrences)
