@@ -145,7 +145,9 @@ func TestProgress(t *testing.T) {
 
 		Convey("Validate request with valid run ID", func() {
 			request := &tricium.ProgressRequest{
-				RunId: "12345",
+				Source: &tricium.ProgressRequest_RunId{
+					RunId: "12345",
+				},
 			}
 			id, err := validateProgressRequest(ctx, request)
 			So(id, ShouldEqual, 12345)
@@ -154,7 +156,9 @@ func TestProgress(t *testing.T) {
 
 		Convey("Validate request with invalid run ID", func() {
 			request := &tricium.ProgressRequest{
-				RunId: "invalid, not a number",
+				Source: &tricium.ProgressRequest_RunId{
+					RunId: "not a valid run ID",
+				},
 			}
 			_, err := validateProgressRequest(ctx, request)
 			So(err, ShouldNotBeNil)
@@ -219,22 +223,6 @@ func TestProgress(t *testing.T) {
 						Host:    host,
 						Project: project,
 						Change:  "not a change ID",
-						GitRef:  revision,
-					},
-				},
-			}
-			_, err := validateProgressRequest(ctx, request)
-			So(err, ShouldNotBeNil)
-		})
-
-		Convey("Validate request with both Gerrit details run ID", func() {
-			request := &tricium.ProgressRequest{
-				RunId: "76543",
-				Source: &tricium.ProgressRequest_GerritRevision{
-					GerritRevision: &tricium.GerritRevision{
-						Host:    host,
-						Project: project,
-						Change:  fmt.Sprintf("%s~master~%s", project, changeIDFooter),
 						GitRef:  revision,
 					},
 				},

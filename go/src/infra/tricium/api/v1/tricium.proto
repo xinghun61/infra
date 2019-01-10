@@ -106,15 +106,6 @@ message AnalyzeResponse {
 }
 
 message ProgressRequest {
-  // Run ID returned by an analyze request.
-  //
-  // This field must be provided, unless a consumer is provided below.
-  // If nothing else is provided, then all known progress for the run is returned.
-  //
-  // TODO(qyearsley): remove this field and make it one of the choices in
-  // "source", below.
-  string run_id = 1;
-
   // An optional function name.
   //
   // If provided, only progress for the provided function will be returned.
@@ -136,6 +127,7 @@ message ProgressRequest {
   // ID can be used.
   oneof source {
     GerritRevision gerrit_revision = 4;
+    string run_id = 1;
   }
 }
 

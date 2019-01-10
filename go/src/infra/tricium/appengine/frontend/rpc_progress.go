@@ -52,14 +52,14 @@ func (r *TriciumServer) Progress(c context.Context, req *tricium.ProgressRequest
 // also returns a run ID, or zero if there is no run.
 func validateProgressRequest(c context.Context, req *tricium.ProgressRequest) (int64, error) {
 	switch source := req.Source.(type) {
-	case *tricium.ProgressRequest_GerritRevision:
-		if req.RunId != "" {
-			// Either Gerrit details or run ID should be given; if both are
-			// given then they may be conflicting; if the run ID is given
-			// then there should be no need to specify Gerrit details.
-			return 0, errors.Reason("both Gerrit details and run ID given").
+	case *tricium.ProgressRequest_RunId:
+		runID, err := strconv.ParseInt(source.RunId, 10, 64)
+		if err != nil {
+			return 0, errors.Annotate(err, "invalid run ID").
 				Tag(grpcutil.InvalidArgumentTag).Err()
 		}
+		return runID, nil
+	case *tricium.ProgressRequest_GerritRevision:
 		gr := source.GerritRevision
 		if gr.Host == "" {
 			return 0, errors.Reason("missing Gerrit host").
@@ -101,18 +101,10 @@ func validateProgressRequest(c context.Context, req *tricium.ProgressRequest) (i
 		}
 		return g.RunID, nil
 	case nil:
-		if req.RunId == "" {
-			return 0, errors.Reason("missing run ID").
-				Tag(grpcutil.InvalidArgumentTag).Err()
-		}
-		runID, err := strconv.ParseInt(req.RunId, 10, 64)
-		if err != nil {
-			return 0, errors.Annotate(err, "invalid run ID").
-				Tag(grpcutil.InvalidArgumentTag).Err()
-		}
-		return runID, nil
+		return 0, errors.Reason("missing source").
+			Tag(grpcutil.InvalidArgumentTag).Err()
 	default:
-		return 0, errors.Reason("unexpected source type").
+		return 0, errors.Reason("unexpected source").
 			Tag(grpcutil.InvalidArgumentTag).Err()
 	}
 }
