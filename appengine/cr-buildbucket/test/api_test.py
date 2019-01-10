@@ -23,9 +23,12 @@ from testing_utils import testing
 import mock
 import gae_ts_mon
 
+from proto import rpc_pb2
 from test import config_test
 from test.test_util import future, future_exception
 import api
+import api_common
+import bbutil
 import config
 import creation
 import errors
@@ -121,12 +124,18 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   @mock.patch('creation.add_async', autospec=True)
   def test_put(self, add_async):
-    self.test_build.tags = ['owner:ivan']
+    self.test_build.tags = ['a:b']
     add_async.return_value = future(self.test_build)
+    props = {'foo': 'bar'}
+    parameters_json = json.dumps({
+        model.BUILDER_PARAMETER: 'linux',
+        model.PROPERTIES_PARAMETER: props,
+    })
     req = {
         'client_operation_id': '42',
         'bucket': 'luci.chromium.try',
-        'tags': self.test_build.tags,
+        'tags': ['a:b'],
+        'parameters_json': parameters_json,
         'pubsub_callback': {
             'topic': 'projects/foo/topic/bar',
             'user_data': 'hello',
@@ -136,51 +145,57 @@ class V1ApiTest(testing.EndpointsTestCase):
     resp = self.call_api('put', req).json_body
     add_async.assert_called_once_with(
         creation.BuildRequest(
-            project='chromium',
-            bucket='luci.chromium.try',
-            tags=req['tags'],
-            client_operation_id='42',
-            pubsub_callback=model.PubSubCallback(
-                topic='projects/foo/topic/bar',
-                user_data='hello',
-                auth_token='secret',
+            schedule_build_request=rpc_pb2.ScheduleBuildRequest(
+                builder=dict(
+                    project='chromium',
+                    bucket='try',
+                    builder='linux',
+                ),
+                tags=[dict(key='a', value='b')],
+                request_id='42',
+                notify=dict(
+                    pubsub_topic='projects/foo/topic/bar',
+                    user_data='hello',
+                ),
+                properties=bbutil.dict_to_struct(props),
             ),
+            parameters={model.BUILDER_PARAMETER: 'linux'},
+            pubsub_callback_auth_token='secret',
         )
     )
     self.assertEqual(resp['build']['id'], str(self.test_build.key.id()))
     self.assertEqual(resp['build']['bucket'], req['bucket'])
     self.assertEqual(resp['build']['tags'], req['tags'])
 
-  @mock.patch('creation.add_async', autospec=True)
-  def test_put_with_parameters(self, add_async):
-    add_async.return_value = future(self.test_build)
+  def test_put_with_invalid_request(self):
+    req = {
+        'bucket': 'luci.chromium.try',
+        'client_operation_id': 'slash/is/forbidden',
+    }
+    self.expect_error('put', req, 'INVALID_INPUT')
+
+  def test_put_with_non_dict_properties(self):
     parameters = {
-        model.BUILDER_PARAMETER: 'linux_rel',
+        model.PROPERTIES_PARAMETER: [],
     }
     req = {
         'bucket': 'luci.chromium.try',
         'parameters_json': json.dumps(parameters),
     }
-    resp = self.call_api('put', req).json_body
-    self.assertEqual(json.loads(resp['build']['parameters_json']), parameters)
+    self.expect_error('put', req, 'INVALID_INPUT')
 
   @mock.patch('creation.add_async', autospec=True)
   def test_put_with_leasing(self, add_async):
-    self.test_build.lease_expiration_date = self.future_date
+    expiration = utils.utcnow() + datetime.timedelta(hours=1)
+    self.test_build.lease_expiration_date = expiration
     add_async.return_value = future(self.test_build)
     req = {
         'bucket': 'luci.chromium.try',
-        'lease_expiration_ts': self.future_ts,
+        'lease_expiration_ts': str(utils.datetime_to_timestamp(expiration)),
     }
     resp = self.call_api('put', req).json_body
-    add_async.assert_called_once_with(
-        creation.BuildRequest(
-            project='chromium',
-            bucket='luci.chromium.try',
-            lease_expiration_date=self.future_date,
-            tags=[],
-        )
-    )
+    build_req = add_async.call_args[0][0]
+    self.assertEqual(build_req.lease_expiration_date, expiration)
     self.assertEqual(
         resp['build']['lease_expiration_ts'], req['lease_expiration_ts']
     )
@@ -200,18 +215,21 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   ####### RETRY ################################################################
 
-  @mock.patch('creation.retry', autospec=True)
-  def test_retry(self, retry):
+  @mock.patch('creation.add_async', autospec=True)
+  def test_retry(self, add_async):
+    props = {'foo': 'bar'}
     build = model.Build(
         bucket_id='chromium/try',
-        parameters={model.BUILDER_PARAMETER: 'debug'},
-        input_properties=struct_pb2.Struct(),
-        tags=['a:b'],
+        parameters={
+            model.BUILDER_PARAMETER: 'linux',
+            model.PROPERTIES_PARAMETER: props,
+        },
+        initial_tags=['a:b'],
         retry_of=2,
         swarming_hostname='swarming.example.com',
     )
     build.put()
-    retry.return_value = build
+    add_async.return_value = future(build)
 
     req = {
         'id': build.key.id(),
@@ -223,35 +241,47 @@ class V1ApiTest(testing.EndpointsTestCase):
         },
     }
     resp = self.call_api('retry', req).json_body
-    retry.assert_called_once_with(
-        build.key.id(),
-        client_operation_id='42',
-        lease_expiration_date=None,
-        pubsub_callback=model.PubSubCallback(
-            topic='projects/foo/topic/bar',
-            user_data='hello',
-            auth_token='secret',
-        ),
+
+    add_async.assert_called_once_with(
+        creation.BuildRequest(
+            schedule_build_request=rpc_pb2.ScheduleBuildRequest(
+                builder=dict(
+                    project='chromium',
+                    bucket='try',
+                    builder='linux',
+                ),
+                request_id='42',
+                notify=dict(
+                    pubsub_topic='projects/foo/topic/bar',
+                    user_data='hello',
+                ),
+                properties=bbutil.dict_to_struct(props),
+                tags=[dict(key='a', value='b')],
+            ),
+            parameters={model.BUILDER_PARAMETER: 'linux'},
+            lease_expiration_date=None,
+            retry_of=build.key.id(),
+            pubsub_callback_auth_token='secret',
+        )
     )
     self.assertEqual(resp['build']['id'], str(build.key.id()))
     self.assertEqual(resp['build']['bucket'], 'luci.chromium.try')
     self.assertEqual(
         json.loads(resp['build']['parameters_json']), {
-            model.BUILDER_PARAMETER: 'debug',
+            model.BUILDER_PARAMETER: 'linux',
+            model.PROPERTIES_PARAMETER: {'foo': 'bar',},
         }
     )
     self.assertEqual(resp['build']['retry_of'], '2')
 
-  @mock.patch('creation.retry', autospec=True)
-  def test_retry_not_found(self, retry):
-    retry.side_effect = errors.BuildNotFoundError
+  def test_retry_not_found(self):
     self.expect_error('retry', {'id': 42}, 'BUILD_NOT_FOUND')
 
   ####### PUT_BATCH ############################################################
 
   @mock.patch('creation.add_many_async', autospec=True)
   def test_put_batch(self, add_many_async):
-    self.test_build.tags = ['owner:ivan']
+    self.test_build.tags = ['a:b']
 
     build2 = model.Build(
         id=2,
@@ -276,13 +306,13 @@ class V1ApiTest(testing.EndpointsTestCase):
     add_many_async.return_value = future([
         (self.test_build, None),
         (build2, None),
-        (None, errors.InvalidInputError('Just bad')),
+        (None, errors.InvalidInputError('bad')),
     ])
     req = {
         'builds': [
             {
                 'bucket': 'luci.chromium.try',
-                'tags': self.test_build.tags,
+                'tags': ['a:b'],
                 'client_operation_id': '0',
             },
             {
@@ -294,27 +324,38 @@ class V1ApiTest(testing.EndpointsTestCase):
                 'tags': ['bad tag'],
                 'client_operation_id': '2',
             },
+            {
+                'bucket': 'luci.chromium.try',
+                'client_operation_id': '3',
+            },
         ],
     }
     resp = self.call_api('put_batch', req).json_body
     add_many_async.assert_called_once_with([
         creation.BuildRequest(
-            project='chromium',
-            bucket='luci.chromium.try',
-            tags=self.test_build.tags,
-            client_operation_id='0',
+            schedule_build_request=rpc_pb2.ScheduleBuildRequest(
+                builder=dict(project='chromium', bucket='try'),
+                tags=[{'key': 'a', 'value': 'b'}],
+                request_id='0',
+                properties=dict(),
+            ),
+            parameters={},
         ),
         creation.BuildRequest(
-            project='chromium',
-            bucket='luci.chromium.ci',
-            tags=[],
-            client_operation_id='1',
+            schedule_build_request=rpc_pb2.ScheduleBuildRequest(
+                builder=dict(project='chromium', bucket='ci'),
+                request_id='1',
+                properties=dict(),
+            ),
+            parameters={},
         ),
         creation.BuildRequest(
-            project='chromium',
-            bucket='luci.chromium.try',
-            tags=['bad tag'],
-            client_operation_id='2',
+            schedule_build_request=rpc_pb2.ScheduleBuildRequest(
+                builder=dict(project='chromium', bucket='try'),
+                request_id='3',
+                properties=dict(),
+            ),
+            parameters={},
         ),
     ])
 
@@ -333,7 +374,21 @@ class V1ApiTest(testing.EndpointsTestCase):
     self.assertEqual(
         res2, {
             'client_operation_id': '2',
-            'error': {'reason': 'INVALID_INPUT', 'message': 'Just bad'},
+            'error': {
+                'reason': 'INVALID_INPUT',
+                'message': u'Invalid tag "bad tag": does not contain ":"',
+            },
+        }
+    )
+
+    res3 = resp['results'][3]
+    self.assertEqual(
+        res3, {
+            'client_operation_id': '3',
+            'error': {
+                'reason': 'INVALID_INPUT',
+                'message': 'bad',
+            },
         }
     )
 

@@ -101,12 +101,7 @@ class ApiCommonTests(testing.AppengineTestCase):
         'id':
             '1',
         'parameters_json':
-            json.dumps(
-                {
-                    model.BUILDER_PARAMETER: 'linux_rel',
-                },
-                sort_keys=True,
-            ),
+            json.dumps({model.BUILDER_PARAMETER: 'linux_rel'}, sort_keys=True),
         'result':
             'SUCCESS',
         'result_details_json':

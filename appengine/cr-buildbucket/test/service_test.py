@@ -541,7 +541,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_succeed(self):
     self.lease()
     self.start()
-    self.succeed(result_details={model.PROPERTIES_PARAMETER: {'foo': 'bar',}})
+    self.succeed(result_details={'properties': {'foo': 'bar',}})
     self.assertEqual(self.test_build.status, model.BuildStatus.COMPLETED)
     self.assertEqual(self.test_build.status_changed_time, utils.utcnow())
     self.assertEqual(self.test_build.result, model.BuildResult.SUCCESS)

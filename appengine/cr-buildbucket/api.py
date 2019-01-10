@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import contextlib
 import functools
 import json
 import logging
@@ -17,8 +18,13 @@ from components import auth
 from components import utils
 import gae_ts_mon
 
+from v2 import validation
+from proto import build_pb2
+from proto import rpc_pb2
 import api_common
 import backfill_tag_index
+import bbutil
+import buildtags
 import config
 import creation
 import errors
@@ -65,14 +71,13 @@ class PubSubCallbackMessage(messages.Message):
   auth_token = messages.StringField(3)
 
 
-def pubsub_callback_from_message(msg):
-  if msg is None:
-    return None
-  return model.PubSubCallback(
-      topic=msg.topic,
-      user_data=msg.user_data,
-      auth_token=msg.auth_token,
-  )
+def pubsub_callback_to_notification_config(pubsub_callback, notify):
+  """Converts PubSubCallbackMessage to NotificationConfig.
+
+  Ignores auth_token.
+  """
+  notify.pubsub_topic = pubsub_callback.topic
+  notify.user_data = (pubsub_callback.user_data or '').encode('utf-8')
 
 
 class PutRequestMessage(messages.Message):
@@ -100,31 +105,71 @@ class BucketMessage(messages.Message):
   error = messages.MessageField(ErrorMessage, 10)
 
 
-def put_request_message_to_build_request(request):
-  return put_request_messages_to_build_requests([request])[0]
+def put_request_message_to_build_request(put_request):
+  """Converts PutRequest to BuildRequest.
 
+  Raises errors.InvalidInputError if the put_request is invalid.
+  """
+  lease_expiration_date = parse_datetime(put_request.lease_expiration_ts)
+  errors.validate_lease_expiration_date(lease_expiration_date)
 
-def put_request_messages_to_build_requests(requests):
-  bucket_to_project = {}
-  for b in {r.bucket for r in requests}:
-    project_id, _ = config.parse_bucket_id(convert_bucket(b))
-    bucket_to_project[b] = project_id
-  # TODO(nodir): replace BuildRequest with rpc_pb2.ScheduleBuildRequest.
-  return [
-      creation.BuildRequest(
-          project=bucket_to_project[r.bucket],
-          bucket=r.bucket,
-          tags=r.tags,
-          parameters=parse_json_object(r.parameters_json, 'parameters_json'),
-          lease_expiration_date=parse_datetime(r.lease_expiration_ts),
-          client_operation_id=r.client_operation_id,
-          pubsub_callback=pubsub_callback_from_message(r.pubsub_callback),
-          canary_preference=(
-              r.canary_preference or model.CanaryPreference.AUTO
-          ),
-          experimental=r.experimental,
-      ) for r in requests
-  ]
+  # Read parameters.
+  parameters = parse_json_object(put_request.parameters_json, 'parameters_json')
+  parameters = parameters or {}
+  builder = parameters.get(model.BUILDER_PARAMETER) or ''
+
+  # Validate tags.
+  buildtags.validate_tags(put_request.tags, 'new', builder=builder)
+
+  # Read properties. Remove them from parameters.
+  props = parameters.pop(model.PROPERTIES_PARAMETER, None)
+  if props is not None and not isinstance(props, dict):
+    raise errors.InvalidInputError(
+        '"properties" parameter must be a JSON object or null'
+    )
+  props = props or {}
+
+  # Create a v2 request.
+  sbr = rpc_pb2.ScheduleBuildRequest(
+      builder=build_pb2.BuilderID(builder=builder),
+      properties=bbutil.dict_to_struct(props),
+      request_id=put_request.client_operation_id,
+      experimental=bbutil.BOOLISH_TO_TRINARY[put_request.experimental],
+  )
+  sbr.builder.project, sbr.builder.bucket = config.parse_bucket_id(
+      put_request.bucket
+  )
+
+  for t in put_request.tags:
+    key, value = buildtags.parse(t)
+    sbr.tags.add(key=key, value=value)
+
+  # Read PubSub callback.
+  pubsub_callback_auth_token = None
+  if put_request.pubsub_callback:
+    pubsub_callback_auth_token = put_request.pubsub_callback.auth_token
+    pubsub_callback_to_notification_config(
+        put_request.pubsub_callback, sbr.notify
+    )
+
+  # Validate the resulting v2 request before continuing.
+  with _wrap_validation_error():
+    validation.validate_schedule_build_request(
+        sbr,
+        # V1 does not require client_operation_id.
+        require_request_id=False,
+        # V1 does not require "builder" parameter.
+        require_builder=False,
+        # Allow properties that we don't want to see in V2.
+        allow_reserved_properties=True,
+    )
+
+  return creation.BuildRequest(
+      schedule_build_request=sbr,
+      parameters=parameters,
+      lease_expiration_date=lease_expiration_date,
+      pubsub_callback_auth_token=pubsub_callback_auth_token,
+  )
 
 
 def build_to_response_message(build, include_lease_key=False):
@@ -268,6 +313,7 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def put(self, request):
     """Creates a new build."""
+    request.bucket = convert_bucket(request.bucket)
     build_req = put_request_message_to_build_request(request)
     build = creation.add_async(build_req).get_result()
     return build_to_response_message(build, include_lease_key=True)
@@ -296,13 +342,34 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def put_batch(self, request):
     """Creates builds."""
-    results = creation.add_many_async(
-        put_request_messages_to_build_requests(request.builds)
-    ).get_result()
 
+    # Convert buckets to v2.
+    buckets = sorted({b.bucket for b in request.builds})
+    bucket_ids = dict(zip(buckets, convert_bucket_list(buckets)))
+    for b in request.builds:
+      b.bucket = bucket_ids[b.bucket]
+
+    # Prepare response.
     res = self.PutBatchResponseMessage()
-    for req, (build, ex) in zip(request.builds, results):
-      one_res = res.OneResult(client_operation_id=req.client_operation_id)
+    res.results = [
+        res.OneResult(client_operation_id=b.client_operation_id)
+        for b in request.builds
+    ]
+
+    # Try to convert each PutRequest to BuildRequest.
+    build_reqs = []  # [(index, creation.BuildRequest])
+    for i, b in enumerate(request.builds):
+      try:
+        build_reqs.append((i, put_request_message_to_build_request(b)))
+      except errors.Error as ex:
+        res.results[i].error = exception_to_error_message(ex)
+
+    # Try to create builds.
+    results = creation.add_many_async([br for i, br in build_reqs]).get_result()
+
+    # Convert results to messages.
+    for (i, _), (build, ex) in zip(build_reqs, results):
+      one_res = res.results[i]
       if build:
         one_res.build = api_common.build_to_message(
             build, include_lease_key=True
@@ -311,7 +378,7 @@ class BuildBucketApi(remote.Service):
         one_res.error = exception_to_error_message(ex)
       else:
         raise ex
-      res.results.append(one_res)
+
     return res
 
   ####### RETRY ################################################################
@@ -330,12 +397,55 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def retry(self, request):
     """Retries an existing build."""
-    build = creation.retry(
-        request.id,
-        lease_expiration_date=parse_datetime(request.lease_expiration_ts),
-        client_operation_id=request.client_operation_id,
-        pubsub_callback=pubsub_callback_from_message(request.pubsub_callback),
+    lease_expiration_date = parse_datetime(request.lease_expiration_ts)
+    errors.validate_lease_expiration_date(lease_expiration_date)
+
+    build = model.Build.get_by_id(request.id)
+    if not build:
+      raise errors.BuildNotFoundError('Build %s not found' % request.id)
+
+    # Remove properties from parameters.
+    prop_dict = build.parameters.pop(model.PROPERTIES_PARAMETER, {})
+
+    # Prepare v2 request.
+    sbr = rpc_pb2.ScheduleBuildRequest(
+        request_id=request.client_operation_id,
+        canary=model.CANARY_PREFERENCE_TO_TRINARY[
+            (build.canary_preference or model.CanaryPreference.AUTO)],
+        properties=bbutil.dict_to_struct(prop_dict),
     )
+
+    # Read builder id.
+    sbr.builder.project, sbr.builder.bucket = config.parse_bucket_id(
+        build.bucket_id
+    )
+    if model.BUILDER_PARAMETER in build.parameters:  # pragma: no branch
+      sbr.builder.builder = build.parameters[model.BUILDER_PARAMETER]
+
+    # Read tags.
+    for t in build.initial_tags:
+      key, value = buildtags.parse(t)
+      sbr.tags.add(key=key, value=value)
+
+    # Read PubSub callback.
+    pubsub_callback_auth_token = None
+    if request.pubsub_callback:  # pragma: no branch
+      pubsub_callback_auth_token = request.pubsub_callback.auth_token
+      pubsub_callback_to_notification_config(
+          request.pubsub_callback, sbr.notify
+      )
+      with _wrap_validation_error():
+        validation.validate_notification_config(sbr.notify)
+
+    # Create the build.
+    build_req = creation.BuildRequest(
+        schedule_build_request=sbr,
+        parameters=build.parameters,
+        lease_expiration_date=lease_expiration_date,
+        retry_of=request.id,
+        pubsub_callback_auth_token=pubsub_callback_auth_token,
+    )
+    build = creation.add_async(build_req).get_result()
     return build_to_response_message(build, include_lease_key=True)
 
   ####### SEARCH ###############################################################
@@ -785,3 +895,12 @@ class BuildBucketApi(remote.Service):
     """Fixes all builds."""
     fix_builds.launch()
     return message_types.VoidMessage()
+
+
+@contextlib.contextmanager
+def _wrap_validation_error():
+  """Converts validation.Error to errors.InvalidInputError."""
+  try:
+    yield
+  except validation.Error as ex:
+    raise errors.InvalidInputError(ex.message)

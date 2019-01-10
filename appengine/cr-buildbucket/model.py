@@ -28,8 +28,9 @@ BUILD_STORAGE_DURATION = datetime.timedelta(days=30 * 18)  # ~18mo
 BUILDER_EXPIRATION_DURATION = datetime.timedelta(weeks=4)
 
 # Key in Build.parameters that specifies the builder name.
+# TODO(nodir): remove, in favor of a new property in model.Build.
 BUILDER_PARAMETER = 'builder_name'
-PROPERTIES_PARAMETER = 'properties'  # TODO(nodir): move to V1 api.py.
+PROPERTIES_PARAMETER = 'properties'  # TODO(nodir): move to api_common.py.
 
 
 class BuildStatus(messages.Enum):
@@ -75,6 +76,16 @@ class CanaryPreference(messages.Enum):
   PROD = 2
   # Use the canary build infrastructure
   CANARY = 3
+
+
+CANARY_PREFERENCE_TO_TRINARY = {
+    CanaryPreference.AUTO: common_pb2.UNSET,
+    CanaryPreference.PROD: common_pb2.NO,
+    CanaryPreference.CANARY: common_pb2.YES,
+}
+TRINARY_TO_CANARY_PREFERENCE = {
+    v: k for k, v in CANARY_PREFERENCE_TO_TRINARY.iteritems()
+}
 
 
 class PubSubCallback(ndb.Model):
@@ -163,6 +174,7 @@ class Build(ndb.Model):
   # immutable arbitrary build parameters.
   parameters = datastore_utils.DeterministicJsonProperty(json_type=dict)
   # PubSub message parameters for build status change notifications.
+  # TODO(nodir): replace with notification_pb2.NotificationConfig.
   pubsub_callback = ndb.StructuredProperty(PubSubCallback, indexed=False)
   # id of the original build that this build was derived from.
   retry_of = ndb.IntegerProperty()

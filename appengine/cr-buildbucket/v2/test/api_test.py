@@ -27,6 +27,7 @@ from proto import step_pb2
 from test import test_util
 from v2 import api
 from v2 import validation
+import api_common
 import bbutil
 import buildtags
 import model

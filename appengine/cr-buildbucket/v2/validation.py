@@ -172,20 +172,29 @@ def validate_search_builds_request(req):
   _validate_paged_request(req)
 
 
-def validate_schedule_build_request(req):
-  _check_truth(req, 'request_id')
+def validate_schedule_build_request(
+    req,
+    require_request_id=True,
+    require_builder=True,
+    allow_reserved_properties=False,
+):
+  if require_request_id:  # pragma: no branch
+    _check_truth(req, 'request_id')
+  if '/' in req.request_id:  # pragma: no cover
+    _enter_err('request_id', 'must not contain /')
 
   if not req.HasField('builder') and not req.template_build_id:
     _err('builder or template_build_id is required')
 
   if req.HasField('builder'):
     with _enter('builder'):
-      validate_builder_id(req.builder)
+      validate_builder_id(req.builder, require_builder=require_builder)
 
-  with _enter('properties'):
-    for path in RESERVED_PROPERTY_PATHS:
-      if _struct_has_path(req.properties, path):
-        _err('property path %r is reserved', path)
+  if not allow_reserved_properties:  # pragma: no branch
+    with _enter('properties'):
+      for path in RESERVED_PROPERTY_PATHS:
+        if _struct_has_path(req.properties, path):
+          _err('property path %r is reserved', path)
 
   if req.HasField('gitiles_commit'):
     with _enter('gitiles_commit'):
@@ -203,11 +212,13 @@ def validate_schedule_build_request(req):
 
   if req.HasField('notify'):  # pragma: no branch
     with _enter('notify'):
-      _check_truth(req.notify, 'pubsub_topic')
-      if len(req.notify.user_data) > PUBSUB_USER_DATA_MAX_LENGTH:
-        _enter_err(
-            'user_data', 'must be <= %d bytes', PUBSUB_USER_DATA_MAX_LENGTH
-        )
+      validate_notification_config(req.notify)
+
+
+def validate_notification_config(notify):
+  _check_truth(notify, 'pubsub_topic')
+  if len(notify.user_data) > PUBSUB_USER_DATA_MAX_LENGTH:
+    _enter_err('user_data', 'must be <= %d bytes', PUBSUB_USER_DATA_MAX_LENGTH)
 
 
 def validate_update_build_request(req):

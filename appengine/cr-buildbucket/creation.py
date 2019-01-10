@@ -6,6 +6,7 @@
 
 import collections
 import contextlib
+import copy
 import logging
 import random
 
@@ -16,8 +17,8 @@ from components import auth
 from components import net
 from components import utils
 
-from proto import common_pb2
 from proto.config import project_config_pb2
+import bbutil
 import buildtags
 import config
 import errors
@@ -30,139 +31,118 @@ import user
 
 _BuildRequestBase = collections.namedtuple(
     '_BuildRequestBase', [
-        'project',
-        'bucket',
-        'tags',
+        'schedule_build_request',
         'parameters',
         'lease_expiration_date',
-        'client_operation_id',
-        'pubsub_callback',
         'retry_of',
-        'canary_preference',
-        'experimental',
-        'gitiles_commit',
+        'pubsub_callback_auth_token',
     ]
 )
 
 
 class BuildRequest(_BuildRequestBase):
-  """A request to add a new build. Immutable."""
+  """A request to add a new build.
+
+  It is a wrapper around rpb_pb2.ScheduleBuildRequest plus legacy.
+  """
 
   def __new__(
       cls,
-      project,
-      bucket,
-      tags=None,
+      schedule_build_request,
       parameters=None,
       lease_expiration_date=None,
-      client_operation_id=None,
-      pubsub_callback=None,
       retry_of=None,
-      canary_preference=model.CanaryPreference.AUTO,
-      experimental=None,
-      gitiles_commit=None,
+      pubsub_callback_auth_token=None,
   ):
-    """Creates an BuildRequest. Does not perform validation.
+    """Creates an BuildRequest.
+
+    Does not perform complete validation, only basic assertions.
 
     Args:
-      project (str): project ID for the destination bucket. Required, but may
-        be None.
-      bucket (str): destination bucket. Required.
-      tags (list of string]): build tags.
-      parameters (dict): arbitrary build parameters. Cannot be changed after
-        build creation.
+      schedule_build_request (rpc_pb2.ScheduleBuildRequest): the request.
+      parameters (dict): value for model.Build.parameters.
+        Must not have "properties", which moved to model.Build.input_properties,
+        and must be passed as schedule_build_request.properties.
       lease_expiration_date (datetime.datetime): if not None, the build is
         created as leased and its lease_key is not None.
-      client_operation_id (str): client-supplied operation id. If an
-        a build with the same client operation id was added during last minute,
-        it will be returned instead.
-      pubsub_callback (model.PubsubCallback): callback parameters.
       retry_of (int): value for model.Build.retry_of attribute.
-      canary_preference (model.CanaryPreference): specifies whether canary of
-        the build infrastructure should be used.
-      experimental (bool): whether this build is experimental.
-      gitiles_commit (common_pb2.GitilesCommit): value of
-        build_pb2.Build.input.gitiles_commit.
+      pubsub_callback_auth_token (str): value for
+        model.Build.pubsub_callback.auth_token. Allowed iff r.notify is set.
     """
+    assert schedule_build_request
+    assert not parameters or 'properties' not in parameters
+    assert (
+        not pubsub_callback_auth_token or
+        schedule_build_request.HasField('notify')
+    )
+
     self = super(BuildRequest, cls).__new__(
-        cls, project, bucket, tags, parameters, lease_expiration_date,
-        client_operation_id, pubsub_callback, retry_of, canary_preference,
-        experimental, gitiles_commit
+        cls,
+        schedule_build_request,
+        parameters,
+        lease_expiration_date,
+        retry_of,
+        pubsub_callback_auth_token,
     )
     return self
 
-  def validate(self):
-    """Raises an errors.InvalidInputError if the request is invalid."""
-    if not isinstance(self.canary_preference, model.CanaryPreference):
-      raise errors.InvalidInputError(
-          'invalid canary_preference %r' % self.canary_preference
-      )
-    errors.validate_bucket_name(self.bucket)
-    buildtags.validate_tags(
-        self.tags,
-        'new',
-        builder=(self.parameters or {}).get(model.BUILDER_PARAMETER)
-    )
-    if self.parameters is not None:
-      if not isinstance(self.parameters, dict):
-        raise errors.InvalidInputError('parameters must be a dict or None')
-      props = self.parameters.get(model.PROPERTIES_PARAMETER)
-      if props is not None and not isinstance(props, dict):
-        raise errors.InvalidInputError(
-            '"properties" parameter must be a dict or None'
-        )
-    errors.validate_lease_expiration_date(self.lease_expiration_date)
-    if self.client_operation_id is not None:
-      if not isinstance(self.client_operation_id,
-                        basestring):  # pragma: no cover
-        raise errors.InvalidInputError('client_operation_id must be string')
-      if '/' in self.client_operation_id:  # pragma: no cover
-        raise errors.InvalidInputError('client_operation_id must not contain /')
-    if (self.gitiles_commit is not None and
-        not isinstance(self.gitiles_commit, common_pb2.GitilesCommit)):
-      raise errors.InvalidInputError(
-          'gitiles_commit is not a common_pb2.GitilesCommit'
-      )
-
-  def _client_op_memcache_key(self, identity=None):
-    if self.client_operation_id is None:  # pragma: no cover
+  def _request_id_memcache_key(self, identity=None):
+    req_id = self.schedule_build_request.request_id
+    if req_id is None:  # pragma: no cover
       return None
     return (
-        'client_op/%s/%s/add_build' %
-        ((identity or auth.get_current_identity()).to_bytes(),
-         self.client_operation_id)
+        'request_id/%s/%s/add_build' %
+        ((identity or auth.get_current_identity()).to_bytes(), req_id)
     )
 
-  # TODO(crbug.com/851036): accept bucket_id in BuildRequest instead of
-  # project and bucket.
   @property
   def bucket_id(self):
-    return '%s/%s' % (self.project, config.short_bucket_name(self.bucket))
+    bid = self.schedule_build_request.builder
+    return config.format_bucket_id(bid.project, bid.bucket)
 
   def create_build(self, build_id, created_by, now):
-    """Converts the request to a build."""
-    tags = sorted(set(self.tags or []))
+    """Converts the request to a build.
+
+    Assumes self is valid.
+    """
+    sbr = self.schedule_build_request
+    tags = sorted(set(buildtags.unparse(t.key, t.value) for t in sbr.tags))
+
     build = model.Build(
         id=build_id,
         bucket_id=self.bucket_id,
         initial_tags=tags,
         tags=tags,
-        parameters=self.parameters or {},
-        input_properties=struct_pb2.Struct(),
+        input_properties=sbr.properties,
         status=model.BuildStatus.SCHEDULED,
+        parameters=copy.deepcopy(self.parameters or {}),
         created_by=created_by,
         create_time=now,
         never_leased=self.lease_expiration_date is None,
-        pubsub_callback=self.pubsub_callback,
         retry_of=self.retry_of,
-        canary_preference=self.canary_preference,
-        experimental=self.experimental,
-        input_gitiles_commit=self.gitiles_commit,
+        canary_preference=model.TRINARY_TO_CANARY_PREFERENCE[sbr.canary],
+        experimental=bbutil.TRINARY_TO_BOOLISH[sbr.experimental],
+    )
+    if sbr.builder.builder:  # pragma: no branch
+      # TODO(nodir): move to model.Build.proto.builder.builder
+      build.parameters[model.BUILDER_PARAMETER] = sbr.builder.builder
+
+    # TODO(nodir): move to
+    # model.Build.proto.infra.buildbucket.requested_properties
+    build.parameters[model.PROPERTIES_PARAMETER] = bbutil.struct_to_dict(
+        sbr.properties
     )
 
-    build.input_properties.update(
-        build.parameters.get(model.PROPERTIES_PARAMETER) or {}
-    )
+    # Do not assign build.input_gitiles_commit unless it is actually set.
+    if sbr.HasField('gitiles_commit'):
+      build.input_gitiles_commit = sbr.gitiles_commit
+
+    if sbr.HasField('notify'):
+      build.pubsub_callback = model.PubSubCallback(
+          topic=sbr.notify.pubsub_topic,
+          auth_token=self.pubsub_callback_auth_token,
+          user_data=sbr.notify.user_data.decode('utf-8'),
+      )
 
     if self.lease_expiration_date is not None:
       build.lease_expiration_date = self.lease_expiration_date
@@ -171,9 +151,8 @@ class BuildRequest(_BuildRequestBase):
 
     # Auto-add builder tag.
     # Note that we leave build.initial_tags intact.
-    builder = build.parameters.get(model.BUILDER_PARAMETER)
-    if builder:
-      builder_tag = buildtags.builder_tag(builder)
+    if sbr.builder.builder:  # pragma: no branch
+      builder_tag = buildtags.builder_tag(sbr.builder.builder)
       if builder_tag not in build.tags:
         build.tags.append(builder_tag)
 
@@ -238,18 +217,6 @@ def add_many_async(build_request_list):
       if results[i] is None:
         yield i, r
 
-  def validate_reqs():
-    """Validates requests.
-
-    For each invalid request, mark it as done and save the exception in results.
-    """
-    for i, r in pending_reqs():
-      try:
-        r.validate()
-      except errors.InvalidInputError as ex:
-        build_request_list[i] = None
-        results[i] = (None, ex)
-
   @ndb.tasklet
   def check_access_async():
     """For each pending request, check ACLs.
@@ -271,12 +238,12 @@ def add_many_async(build_request_list):
     with the same client operation id is in memcache.
     Mark resolved requests as done and save found builds in results.
     """
-    with_client_op = ((i, r)
-                      for i, r in pending_reqs()
-                      if r.client_operation_id is not None)
+    with_request_id = ((i, r)
+                       for i, r in pending_reqs()
+                       if r.schedule_build_request.request_id)
     fetch_build_ids_results = utils.async_apply(
-        with_client_op,
-        lambda (_, r): ctx.memcache_get(r._client_op_memcache_key()),
+        with_request_id,
+        lambda (_, r): ctx.memcache_get(r._request_id_memcache_key()),
     )
     cached_build_ids = {
         build_id: i for (i, _), build_id in fetch_build_ids_results if build_id
@@ -309,7 +276,7 @@ def add_many_async(build_request_list):
     builder_ids = set()
     for b in new_builds.itervalues():
       builder = b.parameters.get(model.BUILDER_PARAMETER)
-      if builder:
+      if builder:  # pragma: no branch
         project_id, bucket_name = config.parse_bucket_id(b.bucket_id)
         builder_ids.add('%s:%s:%s' % (project_id, bucket_name, builder))
     keys = [ndb.Key(model.Builder, bid) for bid in builder_ids]
@@ -395,9 +362,9 @@ def add_many_async(build_request_list):
       results[i] = (b, None)
 
       r = build_request_list[i]
-      if r.client_operation_id:
+      if r.schedule_build_request.request_id:
         memcache_sets.append(
-            ctx.memcache_set(r._client_op_memcache_key(), b.key.id(), 60)
+            ctx.memcache_set(r._request_id_memcache_key(), b.key.id(), 60)
         )
     yield memcache_sets
 
@@ -419,7 +386,6 @@ def add_many_async(build_request_list):
             b.swarming_task_id
         )
 
-  validate_reqs()
   yield check_access_async()
   yield check_cached_builds_async()
   create_new_builds()
@@ -483,28 +449,3 @@ def _with_swarming_api_error_converter():
       logging.error(msg)
       raise errors.InvalidInputError(msg)
     raise  # pragma: no cover
-
-
-def retry(
-    build_id,
-    lease_expiration_date=None,
-    client_operation_id=None,
-    pubsub_callback=None
-):
-  """Adds a build with same bucket, parameters and tags as the given one."""
-  build = model.Build.get_by_id(build_id)
-  if not build:
-    raise errors.BuildNotFoundError('Build %s not found' % build_id)
-  _, bucket_name = config.parse_bucket_id(build.bucket_id)
-  req = BuildRequest(
-      build.project,
-      bucket_name,
-      tags=build.initial_tags if build.initial_tags is not None else build.tags,
-      parameters=build.parameters,
-      lease_expiration_date=lease_expiration_date,
-      client_operation_id=client_operation_id,
-      pubsub_callback=pubsub_callback,
-      retry_of=build_id,
-      canary_preference=build.canary_preference or model.CanaryPreference.AUTO,
-  )
-  return add_async(req).get_result()

@@ -10,6 +10,15 @@ Has "bb" prefix to avoid confusion with components.utils.
 from google.protobuf import json_format
 from google.protobuf import struct_pb2
 
+from proto import common_pb2
+
+TRINARY_TO_BOOLISH = {
+    common_pb2.UNSET: None,
+    common_pb2.YES: True,
+    common_pb2.NO: False,
+}
+BOOLISH_TO_TRINARY = {v: k for k, v in TRINARY_TO_BOOLISH.iteritems()}
+
 
 def dict_to_struct(d):  # pragma: no cover
   """Converts a dict to google.protobuf.Struct."""

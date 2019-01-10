@@ -96,7 +96,7 @@ def build_to_v2(build, build_steps=None):
 
 
 def _parse_tags(dest_msg, tags):
-  assert not dest_msg.input.HasField('gitiles_commit'), dest_msg
+  saw_gitiles_commit = False
 
   for t in tags:
     # All builds in the datastore have tags that have a colon.
@@ -109,12 +109,14 @@ def _parse_tags(dest_msg, tags):
     if k == buildtags.BUILDSET_KEY:
       m = buildtags.RE_BUILDSET_GITILES_COMMIT.match(v)
       if m:
-        if dest_msg.input.HasField('gitiles_commit'):
+        if saw_gitiles_commit:
           raise MalformedBuild('more than one commits/gitiles/ buildset')
-        dest_msg.input.gitiles_commit.host = m.group(1)
-        dest_msg.input.gitiles_commit.project = m.group(2)
-        dest_msg.input.gitiles_commit.id = m.group(3)
-        continue
+        saw_gitiles_commit = True
+        if not dest_msg.input.HasField('gitiles_commit'):
+          dest_msg.input.gitiles_commit.host = m.group(1)
+          dest_msg.input.gitiles_commit.project = m.group(2)
+          dest_msg.input.gitiles_commit.id = m.group(3)
+        continue  # pragma: no cover | coverage bug
 
       m = buildtags.RE_BUILDSET_GERRIT_CL.match(v)
       if m:

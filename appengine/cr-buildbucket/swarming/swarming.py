@@ -254,12 +254,14 @@ def validate_build_parameters(params):
       bad('unrecognized keys in swarming param: %r', swarming.keys())
 
 
-def validate_input_properties(properties):
+def validate_input_properties(properties, allow_reserved=False):
   """Raises errors.InvalidInputError if properties are invalid."""
   ctx = validation.Context.raise_on_error(exc_type=errors.InvalidInputError)
   for k, v in sorted(bbutil.struct_to_dict(properties).iteritems()):
     with ctx.prefix('property %r:', k):
-      swarmingcfg_module.validate_recipe_property(k, v, ctx)
+      swarmingcfg_module.validate_recipe_property(
+          k, v, ctx, allow_reserved=allow_reserved
+      )
 
 
 # Mocked in tests.
@@ -432,7 +434,9 @@ def _create_task_def_async(
   assert isinstance(fake_build, bool), type(fake_build)
   params = build.parameters or {}
   validate_build_parameters(params)
-  validate_input_properties(build.input_properties)
+  validate_input_properties(
+      build.input_properties, allow_reserved=bool(build.retry_of)
+  )
   swarming_param = params.get(_PARAM_SWARMING) or {}
 
   # Use canary template?
