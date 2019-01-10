@@ -51,8 +51,8 @@ WITH
     UNNEST(ca.contributing_buildbucket_ids) AS build_id
   WHERE
     # cq_events table is not partitioned.
-    ca.attempt_start_usec >= UNIX_MICROS(
-      TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 day))
+    ca.attempt_start_usec >= UNIX_MICROS(@hidden_flake_query_start_time)
+    AND ca.attempt_start_usec < UNIX_MICROS(@hidden_flake_query_end_time)
     AND ca.cq_name IN (
       'chromium/chromium/src'
       #, 'chromium/angle/angle'

@@ -151,6 +151,11 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
                 'impacted_cl_count': 0,
                 'occurrence_count': 0
             },
+            {
+                'flake_type': 'cq hidden flake',
+                'impacted_cl_count': 0,
+                'occurrence_count': 0
+            },
         ],
         'flake_score_last_week':
             0,
@@ -335,6 +340,11 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             },
             {
                 'flake_type': 'cq retry with patch',
+                'impacted_cl_count': 0,
+                'occurrence_count': 0
+            },
+            {
+                'flake_type': 'cq hidden flake',
                 'impacted_cl_count': 0,
                 'occurrence_count': 0
             },

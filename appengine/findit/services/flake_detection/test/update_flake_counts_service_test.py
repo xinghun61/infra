@@ -40,6 +40,7 @@ class UpdateFlakeCountsTest(WaterfallTestCase):
     flake2.last_occurred_time = datetime(2017, 9, 1)
     flake2.false_rejection_count_last_week = 5
     flake2.impacted_cl_count_last_week = 3
+    flake2.flake_score_last_week = 10
     flake2.put()
     flake2_key = flake2.key
 
@@ -53,6 +54,15 @@ class UpdateFlakeCountsTest(WaterfallTestCase):
     flake3.impacted_cl_count_last_week = 3
     flake3.put()
     flake3_key = flake3.key
+
+    flake4 = Flake.Create(
+        luci_project=luci_project,
+        normalized_step_name=normalized_step_name,
+        normalized_test_name='normalized_test_name_4',
+        test_label_name='test_label4')
+    flake4.last_occurred_time = datetime(2018, 9, 1)
+    flake4.put()
+    flake4_key = flake4.key
 
     luci_bucket = 'try'
     luci_builder = 'luci builder'
@@ -164,6 +174,38 @@ class UpdateFlakeCountsTest(WaterfallTestCase):
         parent_flake_key=flake1_key)
     occurrence7.put()
 
+    for i in xrange(98760, 98790):
+      occurrence = FlakeOccurrence.Create(
+          flake_type=FlakeType.CQ_HIDDEN_FLAKE,
+          build_id=i,
+          step_ui_name=step_ui_name,
+          test_name='t1',
+          luci_project=luci_project,
+          luci_bucket=luci_bucket,
+          luci_builder=luci_builder,
+          legacy_master_name=legacy_master_name,
+          legacy_build_number=i,
+          time_happened=datetime(2018, 8, 31),
+          gerrit_cl_id=i,
+          parent_flake_key=flake3_key)
+      occurrence.put()
+
+    for i in xrange(98761, 98765):
+      occurrence = FlakeOccurrence.Create(
+          flake_type=FlakeType.CQ_HIDDEN_FLAKE,
+          build_id=i,
+          step_ui_name=step_ui_name,
+          test_name='t4',
+          luci_project=luci_project,
+          luci_bucket=luci_bucket,
+          luci_builder=luci_builder,
+          legacy_master_name=legacy_master_name,
+          legacy_build_number=i,
+          time_happened=datetime(2018, 8, 31),
+          gerrit_cl_id=i,
+          parent_flake_key=flake4_key)
+      occurrence.put()
+
     UpdateFlakeCounts()
 
     flake1 = flake1_key.get()
@@ -190,6 +232,19 @@ class UpdateFlakeCountsTest(WaterfallTestCase):
         FlakeCountsByType(
             flake_type=FlakeType.CQ_FALSE_REJECTION,
             impacted_cl_count=1,
-            occurrence_count=1)
+            occurrence_count=1),
+        FlakeCountsByType(
+            flake_type=FlakeType.CQ_HIDDEN_FLAKE,
+            impacted_cl_count=29,
+            occurrence_count=30)
     ], flake3.flake_counts_last_week)
-    self.assertEqual(0, flake3.flake_score_last_week)
+    self.assertEqual(129, flake3.flake_score_last_week)
+
+    flake4 = flake4_key.get()
+    self.assertEqual([
+        FlakeCountsByType(
+            flake_type=FlakeType.CQ_HIDDEN_FLAKE,
+            impacted_cl_count=4,
+            occurrence_count=4)
+    ], flake4.flake_counts_last_week)
+    self.assertEqual(0, flake4.flake_score_last_week)

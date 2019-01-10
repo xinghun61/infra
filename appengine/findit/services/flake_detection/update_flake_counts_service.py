@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import copy
+
 from google.appengine.ext import ndb
 
 from libs import time_util
@@ -12,12 +14,17 @@ from model.flake.flake_type import FlakeType
 from model.flake.flake_type import FLAKE_TYPE_WEIGHT
 from services import constants
 
+# Minimum number of distinct impacted CLs for a flake's false rejections or
+# retry with patch occurrences to calculate the flake score.
+_MIN_NON_HIDDEN_DISTINCT_CL_NUMBER = 3
+
 # Minimum number of distinct impacted CLs for a flake to calculate the flake
-# score.
-_MIN_DISTINCT_CL_NUMBER = 3
+# score, including occurrences of false rejection, retry with patch flakes and
+# hidden flakes.
+_MIN_TOTAL_DISTINCT_CL_NUMBER = 20
 
 
-def _GetsTypedFlakeCounts(flake, start_date, flake_type, counted_gerrit_cl_ids):
+def _GetTypedFlakeCounts(flake, start_date, flake_type, counted_gerrit_cl_ids):
   """Gets the counts of a type of occurrences for a flakes within a time range.
 
   Args:
@@ -90,7 +97,7 @@ def _UpdateFlakeCountsAndScore(flake, start_date):
     # Counts the occurrences/impacted CLs of the flake from the type with the
     # highest impact to the type with the lowest impact.
     # So that we don't count the same CL multiple times.
-    typed_counts, counted_gerrit_cl_ids = _GetsTypedFlakeCounts(
+    typed_counts, counted_gerrit_cl_ids = _GetTypedFlakeCounts(
         flake, start_date, flake_type, counted_gerrit_cl_ids)
     if not typed_counts:
       continue
@@ -104,7 +111,17 @@ def _UpdateFlakeCountsAndScore(flake, start_date):
     flake.false_rejection_count_last_week += typed_counts.occurrence_count
     flake.impacted_cl_count_last_week += typed_counts.impacted_cl_count
 
-  if len(counted_gerrit_cl_ids) < _MIN_DISTINCT_CL_NUMBER:
+  # Store CL ids that are impacted by false rejection or retry with patch.
+  non_hidden_flake_gerrit_cl_ids = copy.deepcopy(counted_gerrit_cl_ids)
+
+  # Count hidden flake occurrences.
+  typed_counts, counted_gerrit_cl_ids = _GetTypedFlakeCounts(
+      flake, start_date, FlakeType.CQ_HIDDEN_FLAKE, counted_gerrit_cl_ids)
+  if typed_counts:
+    flake.flake_counts_last_week.append(typed_counts)
+
+  if (len(non_hidden_flake_gerrit_cl_ids) < _MIN_NON_HIDDEN_DISTINCT_CL_NUMBER
+      and len(counted_gerrit_cl_ids) < _MIN_TOTAL_DISTINCT_CL_NUMBER):
     # If there is not enough occurrences for the flake, bail out.
     return
 

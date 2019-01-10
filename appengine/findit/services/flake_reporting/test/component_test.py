@@ -196,7 +196,8 @@ class ReportTest(wf_testcase.WaterfallTestCase):
 
     expected_report_counts = {
         FlakeType.CQ_FALSE_REJECTION: (7, 3),
-        FlakeType.RETRY_WITH_PATCH: (1, 0)
+        FlakeType.RETRY_WITH_PATCH: (1, 0),
+        FlakeType.CQ_HIDDEN_FLAKE: (0, 0)
     }
 
     for occurrence_count in report.occurrence_counts:
@@ -213,7 +214,8 @@ class ReportTest(wf_testcase.WaterfallTestCase):
 
     expected_A_counts = {
         FlakeType.CQ_FALSE_REJECTION: (5, 3),
-        FlakeType.RETRY_WITH_PATCH: (1, 0)
+        FlakeType.RETRY_WITH_PATCH: (1, 0),
+        FlakeType.CQ_HIDDEN_FLAKE: (0, 0)
     }
 
     for occurrence_count in component_report_A.occurrence_counts:
@@ -231,7 +233,8 @@ class ReportTest(wf_testcase.WaterfallTestCase):
 
     expected_Unknown_counts = {
         FlakeType.CQ_FALSE_REJECTION: (1, 1),
-        FlakeType.RETRY_WITH_PATCH: (0, 0)
+        FlakeType.RETRY_WITH_PATCH: (0, 0),
+        FlakeType.CQ_HIDDEN_FLAKE: (0, 0)
     }
 
     for occurrence_count in component_report_unknown.occurrence_counts:
@@ -249,7 +252,8 @@ class ReportTest(wf_testcase.WaterfallTestCase):
 
     expected_A_B_counts = {
         FlakeType.CQ_FALSE_REJECTION: (2, 2),
-        FlakeType.RETRY_WITH_PATCH: (0, 0)
+        FlakeType.RETRY_WITH_PATCH: (0, 0),
+        FlakeType.CQ_HIDDEN_FLAKE: (0, 0)
     }
 
     for occurrence_count in component_test_report_A_B.occurrence_counts:
@@ -272,7 +276,8 @@ class ReportTest(wf_testcase.WaterfallTestCase):
 
     expected_report_counts = {
         FlakeType.CQ_FALSE_REJECTION: (7, 3),
-        FlakeType.RETRY_WITH_PATCH: (1, 0)
+        FlakeType.RETRY_WITH_PATCH: (1, 0),
+        FlakeType.CQ_HIDDEN_FLAKE: (0, 0)
     }
 
     for occurrence_count in report.occurrence_counts:
@@ -289,7 +294,8 @@ class ReportTest(wf_testcase.WaterfallTestCase):
 
     expected_A_counts = {
         FlakeType.CQ_FALSE_REJECTION: (5, 3),
-        FlakeType.RETRY_WITH_PATCH: (1, 0)
+        FlakeType.RETRY_WITH_PATCH: (1, 0),
+        FlakeType.CQ_HIDDEN_FLAKE: (0, 0)
     }
 
     for occurrence_count in component_report_A.occurrence_counts:
@@ -307,7 +313,8 @@ class ReportTest(wf_testcase.WaterfallTestCase):
 
     expected_Unknown_counts = {
         FlakeType.CQ_FALSE_REJECTION: (1, 1),
-        FlakeType.RETRY_WITH_PATCH: (0, 0)
+        FlakeType.RETRY_WITH_PATCH: (0, 0),
+        FlakeType.CQ_HIDDEN_FLAKE: (0, 0)
     }
 
     for occurrence_count in component_report_unknown.occurrence_counts:

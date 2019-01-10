@@ -8,6 +8,7 @@ import mock
 import textwrap
 
 from dto.test_location import TestLocation as DTOTestLocation
+from libs import time_util
 from model.flake.detection.flake_occurrence import BuildConfiguration
 from model.flake.detection.flake_occurrence import FlakeOccurrence
 from model.flake.flake import Flake
@@ -546,3 +547,122 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     flake = flake_key.get()
     self.assertEqual(flake.last_occurred_time, datetime(2018, 1, 1, 2))
     self.assertEqual(flake.tags, ['tag1::v1', 'tag2::v2'])
+
+  @mock.patch.object(detect_flake_occurrences, '_UpdateFlakeMetadata')
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime(2018, 12, 20))
+  @mock.patch.object(bigquery_helper, 'ExecuteQuery')
+  def testDetectCQHiddenFlakesShouldSkip(self, mock_query, *_):
+    flake = Flake.Create(
+        luci_project='luci_project',
+        normalized_step_name='s',
+        normalized_test_name='t',
+        test_label_name='t')
+    flake.put()
+    existing_occurrence = FlakeOccurrence.Create(
+        flake_type=FlakeType.CQ_HIDDEN_FLAKE,
+        build_id=123,
+        step_ui_name='s',
+        test_name='t',
+        luci_project='luci_project',
+        luci_bucket='luci_bucket',
+        luci_builder='luci_builder',
+        legacy_master_name='legacy_master_name',
+        legacy_build_number=123,
+        time_happened=datetime(2018, 12, 19, 23),
+        gerrit_cl_id=654321,
+        parent_flake_key=flake.key,
+        tags=[])
+    existing_occurrence.time_detected = datetime(2018, 12, 19, 23, 30)
+    existing_occurrence.put()
+
+    mock_query.side_effect = [(False, []), (True, [])]
+
+    QueryAndStoreFlakes(FlakeType.CQ_HIDDEN_FLAKE)
+    self.assertIsNone(detect_flake_occurrences._GetLastCQHiddenFlakeQueryTime())
+    QueryAndStoreFlakes(FlakeType.CQ_HIDDEN_FLAKE)
+    self.assertEqual(
+        datetime(2018, 12, 20),
+        detect_flake_occurrences._GetLastCQHiddenFlakeQueryTime())
+    QueryAndStoreFlakes(FlakeType.CQ_HIDDEN_FLAKE)
+
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime(2018, 12, 20))
+  def testDetectCQHiddenFlakesShouldRun(self, _):
+    flake = Flake.Create(
+        luci_project='luci_project',
+        normalized_step_name='s',
+        normalized_test_name='t',
+        test_label_name='t')
+    flake.put()
+    existing_occurrence = FlakeOccurrence.Create(
+        flake_type=FlakeType.CQ_HIDDEN_FLAKE,
+        build_id=123,
+        step_ui_name='s',
+        test_name='t',
+        luci_project='luci_project',
+        luci_bucket='luci_bucket',
+        luci_builder='luci_builder',
+        legacy_master_name='legacy_master_name',
+        legacy_build_number=123,
+        time_happened=datetime(2018, 12, 19, 20),
+        gerrit_cl_id=654321,
+        parent_flake_key=flake.key,
+        tags=[])
+    existing_occurrence.time_detected = datetime(2018, 12, 19, 20)
+    existing_occurrence.put()
+
+    self.assertEqual(('2018-12-19 19:40:00 UTC', '2018-12-19 22:00:00 UTC'),
+                     detect_flake_occurrences._GetCQHiddenFlakeQueryStartTime())
+
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime(2018, 12, 20))
+  @mock.patch.object(
+      detect_flake_occurrences, '_GetTestLocation', return_value=None)
+  @mock.patch.object(
+      detect_flake_occurrences,
+      '_GetChromiumDirectoryToComponentMapping',
+      return_value={})
+  @mock.patch.object(
+      detect_flake_occurrences, '_GetChromiumWATCHLISTS', return_value={})
+  @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
+  def testDetectCQHiddenFlakes(self, mocked_get_client, *_):
+    query_response = self._GetEmptyQueryResponse()
+    test_name1 = 'suite.test'
+    test_name2 = 'suite.test_1'
+
+    self._AddRowToQueryResponse(
+        query_response=query_response,
+        step_ui_name='step_ui_name',
+        test_name=test_name1,
+        gerrit_cl_id='10000')
+
+    self._AddRowToQueryResponse(
+        query_response=query_response,
+        step_ui_name='step_ui_name',
+        test_name=test_name1,
+        gerrit_cl_id='10001',
+        build_id='124',
+        test_start_msec='1')
+
+    self._AddRowToQueryResponse(
+        query_response=query_response,
+        luci_builder='another_builder',
+        step_ui_name='step_ui_name',
+        test_name=test_name1,
+        gerrit_cl_id='10001',
+        build_id='125')
+
+    self._AddRowToQueryResponse(
+        query_response=query_response,
+        step_ui_name='step_ui_name',
+        test_name=test_name2,
+        gerrit_cl_id='10000')
+    mocked_client = mock.Mock()
+    mocked_get_client.return_value = mocked_client
+    mocked_client.jobs().query().execute.return_value = query_response
+
+    QueryAndStoreFlakes(FlakeType.CQ_HIDDEN_FLAKE)
+
+    all_flake_occurrences = FlakeOccurrence.query().fetch()
+    self.assertEqual(4, len(all_flake_occurrences))

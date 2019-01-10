@@ -4,11 +4,14 @@
 
 import ast
 import collections
+from datetime import datetime
+from datetime import timedelta
 import json
 import logging
 import os
 import re
 
+from google.appengine.api import memcache
 from google.appengine.ext import ndb
 
 from common.findit_http_client import FinditHttpClient
@@ -36,7 +39,11 @@ _MAP_FLAKY_TESTS_QUERY_PATH = {
     FlakeType.RETRY_WITH_PATCH:
         os.path.realpath(
             os.path.join(__file__, os.path.pardir,
-                         'flaky_tests.retry_with_patch.sql'))
+                         'flaky_tests.retry_with_patch.sql')),
+    FlakeType.CQ_HIDDEN_FLAKE:
+        os.path.realpath(
+            os.path.join(__file__, os.path.pardir,
+                         'flaky_tests.hidden_flakes.sql'))
 }
 
 # Url to the file with the mapping from the directories to crbug components.
@@ -62,6 +69,15 @@ SUPPORTED_TAGS = (
     'parent_component',
     'source',
 )
+
+# Runs query for cq hidden flakes every 2 hours.
+_CQ_HIDDEN_FLAKE_QUERY_HOUR_INTERVAL = 2
+
+# Roughly estimated max run time of a build.
+_ROUGH_MAX_BUILD_CYCLE_HOURS = 2
+
+# Overlap between queries.
+_CQ_HIDDEN_FLAKE_QUERY_OVERLAP_MINUTES = 20
 
 
 def _CreateFlakeFromRow(row):
@@ -385,16 +401,78 @@ def _UpdateFlakeMetadata(all_occurrences):
       flake.put()
 
 
+def _GetLastCQHiddenFlakeQueryTimeCacheKey(namespace):
+  return '{}-{}'.format(namespace, 'last_cq_hidden_flake_query_time')
+
+
+def _CacheLastCQHiddenFlakeQueryTime(last_cq_hidden_flake_query_time,
+                                     namespace='chromium/src'):
+  """Saves last_cq_hidden_flake_query_time to memcache.
+
+  Once cached, the value will never expires until next time this function is
+  called.
+  """
+  if not last_cq_hidden_flake_query_time or not isinstance(
+      last_cq_hidden_flake_query_time, datetime):
+    return
+  memcache.set(
+      key=_GetLastCQHiddenFlakeQueryTimeCacheKey(namespace),
+      value=last_cq_hidden_flake_query_time)
+
+
+def _GetLastCQHiddenFlakeQueryTime(namespace='chromium/src'):
+  return memcache.get(_GetLastCQHiddenFlakeQueryTimeCacheKey(namespace))
+
+
+def _GetCQHiddenFlakeQueryStartTime():
+  """Gets the latest happen time of cq hidden flakes.
+
+  Uses this time to decide if we should run the query for cq hidden flakes.
+  And also uses this time to decides the start time of the query.
+
+  Returns:
+    (str): String representation of a datetime in the format
+      %Y-%m-%d %H:%M:%S UTC.
+  """
+  last_query_time_right_bourndary = time_util.GetUTCNow() - timedelta(
+      hours=_CQ_HIDDEN_FLAKE_QUERY_HOUR_INTERVAL)
+  hidden_flake_query_start_time = time_util.FormatDatetime(time_util.GetUTCNow(
+  ) - timedelta(
+      hours=_CQ_HIDDEN_FLAKE_QUERY_HOUR_INTERVAL + _ROUGH_MAX_BUILD_CYCLE_HOURS,
+      minutes=_CQ_HIDDEN_FLAKE_QUERY_OVERLAP_MINUTES))
+  hidden_flake_query_end_time = time_util.FormatDatetime(
+      time_util.GetUTCNow() -
+      timedelta(hours=_CQ_HIDDEN_FLAKE_QUERY_HOUR_INTERVAL))
+
+  last_query_time = _GetLastCQHiddenFlakeQueryTime()
+
+  if not last_query_time:
+    # Only before the first time of running the query.
+    return hidden_flake_query_start_time, hidden_flake_query_end_time
+  return ((hidden_flake_query_start_time, hidden_flake_query_end_time) if
+          last_query_time <= last_query_time_right_bourndary else (None, None))
+
+
 def QueryAndStoreFlakes(flake_type_enum):
   """Runs the query to fetch flake occurrences and store them."""
+
+  parameters = None
+  if flake_type_enum == FlakeType.CQ_HIDDEN_FLAKE:
+    start_time_string, end_time_string = _GetCQHiddenFlakeQueryStartTime()
+    if not start_time_string:
+      # Only runs this query every 2 hours.
+      return
+    parameters = [('hidden_flake_query_start_time', 'TIMESTAMP',
+                   start_time_string),
+                  ('hidden_flake_query_end_time', 'TIMESTAMP', end_time_string)]
+
   path = _MAP_FLAKY_TESTS_QUERY_PATH[flake_type_enum]
   flake_type_desc = flake_type.FLAKE_TYPE_DESCRIPTIONS.get(
       flake_type_enum, 'N/A')
   with open(path) as f:
     query = f.read()
-
   success, rows = bigquery_helper.ExecuteQuery(
-      appengine_util.GetApplicationId(), query)
+      appengine_util.GetApplicationId(), query, parameters=parameters)
 
   if not success:
     logging.error('Failed executing the query to detect %s flakes.',
@@ -413,5 +491,10 @@ def QueryAndStoreFlakes(flake_type_enum):
   ]
   new_occurrences = _StoreMultipleLocalEntities(local_flake_occurrences)
   _UpdateFlakeMetadata(new_occurrences)
+
+  if flake_type_enum == FlakeType.CQ_HIDDEN_FLAKE:
+    # Updates memecache for the new last_cq_hidden_flake_query_time.
+    _CacheLastCQHiddenFlakeQueryTime(time_util.GetUTCNow())
+
   monitoring.OnFlakeDetectionDetectNewOccurrences(
       flake_type=flake_type_desc, num_occurrences=len(new_occurrences))

@@ -152,6 +152,11 @@ class ShowFlakeTest(WaterfallTestCase):
                 'impacted_cl_count': 0,
                 'occurrence_count': 0
             },
+            {
+                'flake_type': 'cq hidden flake',
+                'impacted_cl_count': 0,
+                'occurrence_count': 0
+            },
         ],
         'flake_score_last_week':
             0,
@@ -197,7 +202,7 @@ class ShowFlakeTest(WaterfallTestCase):
             'show_all_occurrences':
                 '',
             'weights': [('cq false rejection', 100),
-                        ('cq retry with patch', 10)]
+                        ('cq retry with patch', 10), ('cq hidden flake', 1)]
         },
                    default=str,
                    sort_keys=True,
