@@ -83,6 +83,9 @@ message Cron {
     // RepairAttemptDelayDuration is the time between successive attempts at
     // repairing repair failed bots in the fleet.
     google.protobuf.Duration repair_attempt_delay_duration = 4;
+
+    // Configuration of automatic pool balancing to keep critical pools healthy.
+    PoolBalancer pool_balancer = 5;
 }
 
 // Skylab inventory is stored in a git project. A Gitiles server as well as
@@ -116,4 +119,16 @@ message Inventory {
     // Path to the lab inventory data file within the git project.
     // e.g. data/skylab/lab.textpb
     string lab_data_path = 8;
+}
+
+message PoolBalancer {
+    // Names of the pools to keep healthy automatically via pool balancing.
+    repeated string target_pools = 1;
+
+    // Name of the pool to use as the spare pool for pool balancing.
+    string spare_pool = 2;
+
+    // Maximum number of unhealthy DUTs per model that can be balanced away from
+    // a single target pool.
+    int32 max_unhealthy_duts = 3;
 }
