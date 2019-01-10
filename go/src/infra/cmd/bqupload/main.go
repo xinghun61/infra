@@ -16,6 +16,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/base64"
@@ -39,7 +40,7 @@ import (
 	"go.chromium.org/luci/hardcoded/chromeinfra"
 )
 
-const userAgent = "bqupload v1.1"
+const userAgent = "bqupload v1.2"
 
 func usage() {
 	fmt.Fprintf(os.Stderr,
@@ -206,20 +207,28 @@ func upload(ctx context.Context, opts *uploadOpts) error {
 }
 
 func readInput(r io.Reader, insertIDBase string) (rows []bigquery.ValueSaver, err error) {
-	line := 0
-	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
-		line++
-		if json := strings.TrimSpace(scanner.Text()); json != "" {
-			row, err := parseRow([]byte(json), fmt.Sprintf("%s:%d", insertIDBase, line))
+	buf := bufio.NewReaderSize(r, 32768)
+
+	lineNo := 0
+	for {
+		lineNo++
+
+		line, err := buf.ReadBytes('\n')
+		switch {
+		case err != nil && err != io.EOF:
+			return nil, err // a fatal error
+		case err == io.EOF && len(line) == 0:
+			return rows, nil // read past the last line
+		}
+
+		if line = bytes.TrimSpace(line); len(line) != 0 {
+			row, err := parseRow(line, fmt.Sprintf("%s:%d", insertIDBase, len(rows)))
 			if err != nil {
-				return nil, fmt.Errorf("bad input line %d: %s", line, err)
+				return nil, fmt.Errorf("bad input line %d: %s", lineNo, err)
 			}
 			rows = append(rows, row)
 		}
 	}
-	err = scanner.Err()
-	return
 }
 
 // tableRow implements bigquery.ValueSaver.
