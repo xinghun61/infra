@@ -32,7 +32,7 @@ Borrow required duts from or return extra duts to SPARE pool.`,
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
 
-		c.Flags.StringVar(&c.spare, "spare", "DUT_POOL_SUITES", "Pool to boorrow duts from or return extra duts to")
+		c.Flags.StringVar(&c.spare, "spare", "DUT_POOL_SUITES", "Pool to borrow duts from or return extra duts to")
 		return c
 	},
 }
