@@ -73,8 +73,8 @@ def _validate_dimensions(field_name, dimensions, ctx):
   parsed = collections.defaultdict(set)  # {key: {(value, expiration_secs)}}
   expirations = set()
 
-  # (key, expiration_secs) tuples, where key != 'caches'.
-  non_cache_key_expirations = set()
+  # (key, expiration_secs) tuples.
+  keys_and_expirations = set()
 
   for dim in dimensions:
     with ctx.prefix('%s "%s": ', field_name, dim):
@@ -103,6 +103,11 @@ def _validate_dimensions(field_name, dimensions, ctx):
             'key "%s" does not match pattern "%s"', key,
             _DIMENSION_KEY_RGX.pattern
         )
+      elif key == 'caches':
+        ctx.error(
+            'dimension key must not be "caches"; '
+            'caches must be declared via caches field'
+        )
       else:
         valid_key = True
 
@@ -117,15 +122,15 @@ def _validate_dimensions(field_name, dimensions, ctx):
 
       if valid_key and valid_expiration_secs:
         parsed[key].add((value, expiration_secs))
-        if key != 'caches':
-          t = (key, expiration_secs)
-          if t not in non_cache_key_expirations:
-            non_cache_key_expirations.add(t)
-          else:
-            ctx.error(
-                'multiple values for non-cache key "%s" and expiration %ds',
-                key, expiration_secs
-            )
+
+        t = (key, expiration_secs)
+        if t not in keys_and_expirations:
+          keys_and_expirations.add(t)
+        else:
+          ctx.error(
+              'multiple values for dimension key "%s" and expiration %ds', key,
+              expiration_secs
+          )
 
   if len(expirations) >= 6:
     ctx.error('at most 6 different expiration_secs values can be used')

@@ -364,12 +364,18 @@ class ProjectCfgTest(testing.AppengineTestCase):
   @parameterized.expand([
       (['a:b'], ''),
       ([''], 'dimension "": does not have ":"'),
-      (['caches:a', 'caches:b'], ''),
+      (
+          ['caches:a'],
+          (
+              'dimension "caches:a": dimension key must not be "caches"; '
+              'caches must be declared via caches field'
+          ),
+      ),
       (
           ['a:b', 'a:c'],
           (
               'dimension "a:c": '
-              'multiple values for non-cache key "a" and expiration 0s'
+              'multiple values for dimension key "a" and expiration 0s'
           ),
       ),
       ([':'], 'dimension ":": no key'),
