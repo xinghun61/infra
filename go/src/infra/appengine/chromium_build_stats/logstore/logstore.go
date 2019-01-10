@@ -6,17 +6,17 @@
 package logstore
 
 import (
-	"fmt"
-	"net/url"
+	"context"
 	"strings"
+
+	"google.golang.org/appengine/file"
 )
 
-// URL returns url of the given obj.
-func URL(obj string) (*url.URL, error) {
+// Bucket returns url of the given obj.
+func Bucket(ctx context.Context, obj string) (string, error) {
 	obj = strings.TrimPrefix(obj, "/")
 	if strings.HasPrefix(obj, "upload/") {
-		// https://chromium-build-stats.appspot.com.storage.googleapis.com causes urlfetch: SSL_CERTIFICATE_ERROR.
-		return url.Parse(fmt.Sprintf("https://storage.googleapis.com/chromium-build-stats.appspot.com/%s", obj))
+		return file.DefaultBucketName(ctx)
 	}
-	return url.Parse(fmt.Sprintf("https://chrome-goma-log.storage.googleapis.com/%s", obj))
+	return "chrome-goma-log", nil
 }

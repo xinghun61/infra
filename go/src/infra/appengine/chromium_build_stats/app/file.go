@@ -11,11 +11,9 @@ import (
 	"net/http"
 	"strings"
 
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
+	"cloud.google.com/go/storage"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/log"
-	"google.golang.org/appengine/urlfetch"
 	"google.golang.org/appengine/user"
 
 	"infra/appengine/chromium_build_stats/logstore"
@@ -38,27 +36,28 @@ func fileHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	client := &http.Client{
-		Transport: &oauth2.Transport{
-			Source: google.AppEngineTokenSource(ctx, "https://www.googleapis.com/auth/devstorage.read_only"),
-			Base: &urlfetch.Transport{
-				Context: ctx,
-			},
-		},
-	}
 	path := req.URL.Path
-	resp, err := logstore.Fetch(client, path)
+
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		log.Errorf(ctx, "failed to create storage client: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer client.Close()
+
+	reader, err := logstore.Fetch(ctx, client, path)
 	if err != nil {
 		log.Errorf(ctx, "failed to fetch %s: %v", path, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer resp.Body.Close()
-	copyHeader(w.Header(), resp.Header)
-	w.WriteHeader(resp.StatusCode)
-	_, err = io.Copy(w, resp.Body)
+	defer reader.Close()
+
+	_, err = io.Copy(w, reader)
 	if err != nil {
 		log.Errorf(ctx, "failed to copy %s: %v", path, err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 

@@ -7,9 +7,9 @@ package app
 // ninja_log.go provides /ninja_log endpoints.
 
 import (
-	"bufio"
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/storage"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/log"
 	"google.golang.org/appengine/urlfetch"
@@ -209,15 +210,6 @@ func ninjaLogHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	// should we set access control like /file?
 
-	client := &http.Client{
-		Transport: &oauth2.Transport{
-			Source: google.AppEngineTokenSource(ctx, "https://www.googleapis.com/auth/devstorage.read_only"),
-			Base: &urlfetch.Transport{
-				Context: ctx,
-			},
-		},
-	}
-
 	logPath, outFunc, err := ninjalogPath(req.URL.Path)
 	if err != nil {
 		log.Errorf(ctx, "failed to parse request path: %s: %v", req.URL.Path, err)
@@ -225,7 +217,7 @@ func ninjaLogHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	njl, _, err := ninjalogFetch(client, logPath)
+	njl, err := ninjalogFetch(ctx, logPath)
 	if err != nil {
 		log.Errorf(ctx, "failed to fetch %s: %v", logPath, err)
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -318,19 +310,25 @@ func ninjalogPath(reqPath string) (string, outputFunc, error) {
 	return strings.TrimSuffix(reqPath, "/"), outputFunc(indexPage), nil
 }
 
-func ninjalogFetch(client *http.Client, logPath string) (*ninjalog.NinjaLog, http.Header, error) {
-	resp, err := logstore.Fetch(client, logPath)
+func ninjalogFetch(ctx context.Context, logPath string) (*ninjalog.NinjaLog, error) {
+	client, err := storage.NewClient(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, fmt.Errorf("failed to create storage client: %v", err)
 	}
-	defer resp.Body.Close()
-	const bufsize = 512 * 1024
-	rd, err := gzip.NewReader(bufio.NewReaderSize(resp.Body, bufsize))
+	defer client.Close()
+
+	r, err := logstore.Fetch(ctx, client, logPath)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
+	}
+	defer r.Close()
+
+	rd, err := gzip.NewReader(r)
+	if err != nil {
+		return nil, err
 	}
 	nl, err := ninjalog.Parse(logPath, rd)
-	return nl, resp.Header, err
+	return nl, err
 }
 
 func indexPage(w http.ResponseWriter, logPath string, njl *ninjalog.NinjaLog) error {

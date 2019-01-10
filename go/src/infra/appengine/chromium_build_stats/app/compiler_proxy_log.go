@@ -7,9 +7,10 @@ package app
 // compiler_proxy_log.go provides /compiler_proxy_log endpoints.
 
 import (
-	"bufio"
 	"bytes"
 	"compress/gzip"
+	"context"
+	"fmt"
 	"html/template"
 	"net/http"
 	"path"
@@ -17,11 +18,9 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
+	"cloud.google.com/go/storage"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/log"
-	"google.golang.org/appengine/urlfetch"
 	"google.golang.org/appengine/user"
 
 	"infra/appengine/chromium_build_stats/compilerproxylog"
@@ -124,15 +123,6 @@ func compilerProxyLogHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	client := &http.Client{
-		Transport: &oauth2.Transport{
-			Source: google.AppEngineTokenSource(ctx, "https://www.googleapis.com/auth/devstorage.read_only"),
-			Base: &urlfetch.Transport{
-				Context: ctx,
-			},
-		},
-	}
-
 	basename := path.Base(req.URL.Path)
 	if !strings.HasPrefix(basename, "compiler_proxy.") {
 		log.Errorf(ctx, "wrong path is requested: %q", req.URL.Path)
@@ -141,7 +131,7 @@ func compilerProxyLogHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	logPath := req.URL.Path
 
-	cpl, err := compilerProxyLogFetch(client, logPath)
+	cpl, err := compilerProxyLogFetch(ctx, logPath)
 	if err != nil {
 		log.Errorf(ctx, "failed to fetch %s: %v", logPath, err)
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -155,14 +145,20 @@ func compilerProxyLogHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func compilerProxyLogFetch(client *http.Client, logPath string) (*compilerproxylog.CompilerProxyLog, error) {
-	resp, err := logstore.Fetch(client, logPath)
+func compilerProxyLogFetch(ctx context.Context, logPath string) (*compilerproxylog.CompilerProxyLog, error) {
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create storage client: %v", err)
+	}
+	defer client.Close()
+
+	r, err := logstore.Fetch(ctx, client, logPath)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-	const bufsize = 512 * 1024
-	rd, err := gzip.NewReader(bufio.NewReaderSize(resp.Body, bufsize))
+	defer r.Close()
+
+	rd, err := gzip.NewReader(r)
 	if err != nil {
 		return nil, err
 	}

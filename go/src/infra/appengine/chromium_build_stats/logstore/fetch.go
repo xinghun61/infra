@@ -4,37 +4,20 @@
 
 package logstore
 
-import "net/http"
+import (
+	"context"
+	"fmt"
+
+	"cloud.google.com/go/storage"
+)
 
 // Fetch fetches file from path in logstore.
-func Fetch(client *http.Client, path string) (*http.Response, error) {
-	fileURL, err := URL(path)
+func Fetch(ctx context.Context, client *storage.Client, path string) (*storage.Reader, error) {
+	bkt, err := Bucket(ctx, path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get Bucket name for %s: %v", path, err)
 	}
-	fileReq, err := http.NewRequest("GET", fileURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-	fileReq.Header.Add("Accept-Encoding", "gzip")
+	obj := client.Bucket(bkt).Object(path).ReadCompressed(true)
 
-	resp, err := client.Do(fileReq)
-	if err != nil {
-		return nil, err
-	}
-	for _, h := range hopHeaders {
-		resp.Header.Del(h)
-	}
-	return resp, nil
-}
-
-var hopHeaders = []string{
-	"Connection",
-	"Keep-Alive",
-	"Proxy-Authenticate",
-	"Proxy-Authorization",
-	"Te",
-	"Trailers",
-	"Transfer-Encoding",
-	"Upgrade",
+	return obj.NewReader(ctx)
 }
