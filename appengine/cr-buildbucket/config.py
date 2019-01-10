@@ -14,10 +14,6 @@ import hashlib
 import logging
 import re
 
-from components import utils
-utils.fix_protobuf_package()
-
-from google import protobuf
 from google.appengine.api import app_identity
 from google.appengine.ext import ndb
 
@@ -25,13 +21,14 @@ from components import auth
 from components import config
 from components import datastore_utils
 from components import gitiles
+from components import utils
 from components.config import validation
 
 from proto.config import project_config_pb2
 from proto.config import service_config_pb2
 import errors
 
-CURRENT_BUCKET_SCHEMA_VERSION = 4
+CURRENT_BUCKET_SCHEMA_VERSION = 5
 ACL_SET_NAME_RE = re.compile('^[a-z0-9_]+$')
 
 
@@ -420,7 +417,7 @@ def cron_update_buckets():
       _normalize_acls(bucket_cfg.acls)
 
       if bucket_cfg.HasField('swarming'):
-        # Pull builder defaults out and apply default pool.
+        # Pull builder defaults out and apply defaults.
         defaults = bucket_cfg.swarming.builder_defaults
         bucket_cfg.swarming.ClearField('builder_defaults')
         if not any(d.startswith('pool:') for d in defaults.dimensions):
@@ -428,6 +425,16 @@ def cron_update_buckets():
               'pool:luci.%s.%s' %
               (project_id, short_bucket_name(bucket_cfg.name))
           )
+        defaults.swarming_host = (
+            defaults.swarming_host or bucket_cfg.swarming.hostname
+        )
+
+        f = 'task_template_canary_percentage'
+        if not defaults.HasField(f) and bucket_cfg.swarming.HasField(f):
+          defaults.task_template_canary_percentage.CopyFrom(
+              bucket_cfg.swarming.task_template_canary_percentage
+          )
+
         for b in bucket_cfg.swarming.builders:
           flatten_swarmingcfg.flatten_builder(
               b, defaults, builder_mixins_by_name

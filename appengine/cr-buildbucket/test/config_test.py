@@ -49,8 +49,12 @@ LUCI_CHROMIUM_TRY = parse_bucket_cfg(
       identity: "user:johndoe@example.com"
     }
     swarming {
+      hostname: "swarming.example.com"
+      task_template_canary_percentage { value: 10 }
       builders {
         name: "linux"
+        swarming_host: "swarming.example.com"
+        task_template_canary_percentage { value: 10 }
         dimensions: "os:Linux"
         dimensions: "pool:luci.chromium.try"
         recipe {
@@ -235,6 +239,8 @@ class ConfigTest(testing.AppengineTestCase):
             identity: "johndoe@example.com"
           }
           swarming {
+            hostname: "swarming.example.com"
+            task_template_canary_percentage { value: 10 }
             builder_defaults {
               mixins: "recipe-x"
             }
