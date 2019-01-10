@@ -75,7 +75,9 @@
     <template is="dom-repeat" items="[[comments]]" as="comment">
       <div class="card-comment" hidden$=[[_computeCommentHidden(_commentsHidden,_commentsHiddenCount,index)]]>
         <span role="heading" aria-level$="[[headingLevel]]" class="comment-header">
-          Comment [[comment.sequenceNum]] by
+          <!-- We use indices rather than sequenceNums for comments sequenceNums
+            are global across all comments on the page, which is confusing to users.  -->
+          Comment [[_addOne(index)]] by
           <mr-user-link display-name="[[comment.commenter.displayName]]" user-id="[[comment.commenter.userId]]"></mr-user-link> on
           <chops-timestamp timestamp="[[comment.timestamp]]"></chops-timestamp>
           <template is="dom-if" if=[[_offerCommentOptions(comment)]]>

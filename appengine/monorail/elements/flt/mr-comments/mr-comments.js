@@ -152,6 +152,10 @@ class MrComments extends ReduxMixin(Polymer.Element) {
     return commentsHidden ? 'Show' : 'Hide';
   }
 
+  _addOne(count) {
+    return count + 1;
+  }
+
   _pluralize(count, baseWord, pluralWord) {
     pluralWord = pluralWord || `${baseWord}s`;
     return count == 1 ? baseWord : pluralWord;
