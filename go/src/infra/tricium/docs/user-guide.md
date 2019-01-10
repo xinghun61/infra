@@ -60,3 +60,12 @@ git checkout -t origin/refs/meta/config -b my-edit
 
 See [contribute.md](./contribute.md).
 
+## Selectively disabling Tricium for some files
+
+There are some types of files for which we may never want to run Tricium,
+including generated files such as test expectation files. These can be
+skipped on a per-repo and per-directory basis by specying git attributes.
+
+For example, if we wanted to skip all `.x` files in a directory tree, we
+could add a `.gitattributes` file to that directory tree root with the
+line `*.x -tricium`.
