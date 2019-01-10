@@ -23,11 +23,7 @@ import (
 	"cloud.google.com/go/storage"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/log"
-	"google.golang.org/appengine/urlfetch"
 	"google.golang.org/appengine/user"
-
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 
 	"infra/appengine/chromium_build_stats/logstore"
 	"infra/appengine/chromium_build_stats/ninjalog"
@@ -273,15 +269,8 @@ func ninjalogUpload(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	client := &http.Client{
-		Transport: &oauth2.Transport{
-			Source: google.AppEngineTokenSource(ctx, "https://www.googleapis.com/auth/devstorage.read_only"),
-			Base: &urlfetch.Transport{
-				Context: ctx,
-			},
-		},
-	}
-	logPath, err := logstore.Upload(client, "ninja_log", data.Bytes())
+
+	logPath, err := logstore.Upload(ctx, "ninja_log", data.Bytes())
 	if err != nil {
 		log.Errorf(ctx, "upload error: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
