@@ -879,6 +879,16 @@ class ProjectsServicerTest(unittest.TestCase):
     response = self.CallWrapped(self.projects_svcr.CheckFieldName, mc, request)
     self.assertNotEqual('', response.error)
 
+  def testCheckFieldName_InvalidFieldName_ApproverSuffix(self):
+    request = projects_pb2.CheckFieldNameRequest(
+        project_name='proj',
+        field_name='Foo-aPprOver')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='admin@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.projects_svcr.CheckFieldName, mc, request)
+    self.assertNotEqual('', response.error)
+
   def testCheckFieldName_FieldAlreadyExists(self):
     self.AddField('Foo')
     request = projects_pb2.CheckFieldNameRequest(

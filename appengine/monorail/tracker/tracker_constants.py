@@ -32,6 +32,18 @@ RESERVED_PREFIXES = [
     'derived_label', 'last_comment_by', 'exact_component',
     'explicit_component', 'derived_component', 'alllabels', 'gate']
 
+# Suffix of a column name for an approval's approvers.
+APPROVER_COL_SUFFIX = '-approver'
+APPROVAL_SETTER_COL_SUFFIX = '-setter'
+APPROVAL_SET_ON_COL_SUFFIX = '-on'
+
+# Reserved column name suffixes that field names cannot end with.
+RESERVED_COL_NAME_SUFFIXES = [
+    APPROVER_COL_SUFFIX,
+    APPROVAL_SETTER_COL_SUFFIX,
+    APPROVAL_SET_ON_COL_SUFFIX
+]
+
 # The columns are useless in the grid view, so don't offer them.
 # These are also not used in groupby in the issue list.
 NOT_USED_IN_GRID_AXES = [

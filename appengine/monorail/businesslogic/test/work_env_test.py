@@ -229,6 +229,12 @@ class WorkEnvTest(unittest.TestCase):
       self.assertIsNotNone(we.CheckFieldName(
           self.project.project_id, 'Summary'))
 
+  def testCheckFieldName_ReservedSuffix(self):
+    self.SignIn()
+    with self.work_env as we:
+      self.assertIsNotNone(we.CheckFieldName(
+          self.project.project_id, 'Chicken-ApproveR'))
+
   def testCheckFieldName_NotAllowedToViewProject(self):
     self.project.access = project_pb2.ProjectAccess.MEMBERS_ONLY
     self.SignIn(user_id=333L)

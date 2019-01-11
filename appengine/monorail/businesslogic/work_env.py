@@ -308,6 +308,9 @@ class WorkEnv(object):
         return '"%s" is not a valid field name.' % field_name
       if field_name in tracker_constants.RESERVED_PREFIXES:
         return 'That name is reserved'
+      if field_name.endswith(
+          tuple(tracker_constants.RESERVED_COL_NAME_SUFFIXES)):
+        return 'That suffix is reserved'
       for fd in config.field_defs:
         fn = fd.field_name.lower()
         if field_name == fn:

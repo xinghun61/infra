@@ -179,6 +179,9 @@ def FieldNameErrorMessage(field_name, config):
   field_name_lower = field_name.lower()
   if field_name_lower in tracker_constants.RESERVED_PREFIXES:
     return 'That name is reserved.'
+  if field_name_lower.endswith(
+      tuple(tracker_constants.RESERVED_COL_NAME_SUFFIXES)):
+    return 'That suffix is reserved.'
 
   for fd in config.field_defs:
     fn_lower = fd.field_name.lower()

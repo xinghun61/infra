@@ -160,10 +160,15 @@ class FieldCreateMethodsTest(unittest.TestCase):
     self.assertIsNone(fieldcreate.FieldNameErrorMessage(
         'somefield', self.config))
 
-  def testFieldNameErrorMessage_Reserved(self):
+  def testFieldNameErrorMessage_PrefixReserved(self):
     self.assertEqual(
         'That name is reserved.',
         fieldcreate.FieldNameErrorMessage('owner', self.config))
+
+  def testFieldNameErrorMessage_SuffixReserved(self):
+    self.assertEqual(
+        'That suffix is reserved.',
+        fieldcreate.FieldNameErrorMessage('doh-approver', self.config))
 
   def testFieldNameErrorMessage_AlreadyInUse(self):
     fd = tracker_bizobj.MakeFieldDef(

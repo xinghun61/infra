@@ -230,7 +230,7 @@ runOnLoad(function() {
   var oldName = '';
   fieldname.focus();
 
-  var fieldNameRE = /^[[]a-zA-Z]([[]-_]?[[]a-zA-Z0-9])*$/;
+  var fieldNameRE = /^[[]a-z]([[]-_]?[[]a-z0-9])*$/i;
 
   function checkFieldName() {
     name = fieldname.value;

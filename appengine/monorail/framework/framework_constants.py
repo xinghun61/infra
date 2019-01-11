@@ -8,8 +8,6 @@
 import os
 import re
 
-# Suffix of a column name for an approval's approvers.
-APPROVER_COL_SUFFIX = '-approver'
 
 # Number of seconds in various periods.
 SECS_PER_MINUTE = 60

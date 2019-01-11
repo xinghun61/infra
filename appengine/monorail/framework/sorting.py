@@ -27,6 +27,7 @@ from framework import framework_constants
 from proto import tracker_pb2
 from services import caches
 from tracker import tracker_bizobj
+from tracker import tracker_constants
 
 
 class DescendingValue(object):
@@ -438,11 +439,11 @@ def _IndexOrLexicalList(wk_values, full_fd_list, col_name, users_by_id):
   """
   well_known_value_indexes = _PrecomputeSortIndexes(wk_values, col_name)
 
-  if col_name.endswith(framework_constants.APPROVER_COL_SUFFIX):
+  if col_name.endswith(tracker_constants.APPROVER_COL_SUFFIX):
     # Custom field names cannot end with the APPROVER_COL_SUFFIX. So the only
     # possible relevant values are approvers for an APPROVAL_TYPE named
     # field_name and any values from labels with the key 'field_name-approvers'.
-    field_name = col_name[:-len(framework_constants.APPROVER_COL_SUFFIX)]
+    field_name = col_name[:-len(tracker_constants.APPROVER_COL_SUFFIX)]
     approval_fds = [fd for fd in full_fd_list
                     if (fd.field_name.lower() == field_name and
                         fd.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE)]
