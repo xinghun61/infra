@@ -12,17 +12,6 @@ from libs import time_util
 
 class TimeUtilTest(unittest.TestCase):
 
-  def testConvertISOWeekToUTCDatetime(self):
-    dt = time_util.ConvertISOWeekToUTCDatetime(2018, 1, 1)
-    self.assertEqual(dt, datetime(2018, 1, 1, 8, 0, 0))
-    dt = time_util.ConvertISOWeekToUTCDatetime(2018, 52, 1)
-    self.assertEqual(dt, datetime(2018, 12, 24, 8, 0, 0))
-
-  def testConvertISOWeekStringToUTCDateString(self):
-    self.assertEqual(
-        '2018-08-27',
-        time_util.ConvertISOWeekStringToUTCDateString('2018-W35-1'))
-
   def testConvertToTimestamp(self):
     self.assertEqual(
         1490918400, time_util.ConvertToTimestamp(
@@ -163,3 +152,14 @@ class TimeUtilTest(unittest.TestCase):
   def testGetDateDaysFromNowBefore(self, _):
     self.assertEqual(
         datetime(2017, 4, 26, 8, 0, 0), time_util.GetDateDaysBeforeNow(days=1))
+
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime(2018, 4, 27, 8, 0, 0))
+  def testGetPreviousWeekMonday(self, _):
+    self.assertEqual(
+        datetime(2018, 4, 16, 0, 0, 0), time_util.GetPreviousWeekMonday())
+
+  def testGetMidnight(self):
+    self.assertEqual(
+        datetime(2018, 4, 16, 0, 0, 0),
+        time_util.GetMidnight(datetime(2018, 4, 16, 1, 2, 3)))

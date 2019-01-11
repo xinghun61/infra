@@ -1,7 +1,8 @@
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-import datetime
+from datetime import datetime
+from datetime import timedelta
 import mock
 
 from libs import time_util
@@ -57,15 +58,15 @@ def _CreateFlake(flake_data, with_component=True):
             flake_type=flake_type,
             occurrence_count=counts[0],
             impacted_cl_count=counts[1]))
-  flake.last_occurred_time = datetime.datetime.strptime(
-      flake_data['last_occurred_time'], '%Y-W%W-%w')
+  flake.last_occurred_time = datetime.strptime(flake_data['last_occurred_time'],
+                                               '%Y-W%W-%w')
   flake.put()
 
   for occurrence_data in flake_data['occurrences']:
-    time_happened = datetime.datetime.strptime(
-        '2018-W%d-4' % occurrence_data[2], '%Y-W%W-%w')
+    time_happened = datetime.strptime('2018-%d-4' % occurrence_data[2],
+                                      '%Y-%W-%w')
     hour = occurrence_data[3]
-    time_happened += datetime.timedelta(hours=hour)
+    time_happened += timedelta(hours=hour)
     occurrence = FlakeOccurrence.Create(
         flake_type=occurrence_data[0],
         build_id=123 + hour,
@@ -183,14 +184,14 @@ class ReportTest(wf_testcase.WaterfallTestCase):
       _CreateFlake(flake_data, with_component)
 
   @mock.patch.object(
-      time_util, 'GetPreviousISOWeek', return_value=(2018, 35, 1))
+      time_util, 'GetDateDaysBeforeNow', return_value=datetime(2018, 8, 27))
   def testBasicReport(self, _):
-
+    report_date = datetime(2018, 8, 27)
     component_report.Report(save_test_report=True)
     with self.assertRaises(component_report.ReportExistsException):
       component_report.Report()
 
-    report = TotalFlakinessReport.Get(2018, 35, 1)
+    report = TotalFlakinessReport.Get(report_date, 'chromium')
     self.assertEqual(6, report.test_count)
     self.assertEqual(4, report.bug_count)
 
@@ -265,12 +266,12 @@ class ReportTest(wf_testcase.WaterfallTestCase):
                        cl_count.count)
 
   @mock.patch.object(
-      time_util, 'GetPreviousISOWeek', return_value=(2018, 35, 1))
+      time_util, 'GetDateDaysBeforeNow', return_value=datetime(2018, 8, 27))
   def testBasicReportNoTestReports(self, _):
-
+    report_date = datetime(2018, 8, 27)
     component_report.Report()
 
-    report = TotalFlakinessReport.Get(2018, 35, 1)
+    report = TotalFlakinessReport.Get(report_date, 'chromium')
     self.assertEqual(6, report.test_count)
     self.assertEqual(4, report.bug_count)
 

@@ -41,18 +41,20 @@ class ComponentReportTest(wf_testcase.WaterfallTestCase):
         },
         status=404)
 
-    self.assertEqual('Didn\'t find reports for component component.',
-                     response.json_body.get('error_message'))
+    self.assertEqual(
+        'Didn\'t find reports for project chromium, component component.',
+        response.json_body.get('error_message'))
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 10, 2, 1))
   @mock.patch.object(flake_detection_utils, 'GetFlakesByFilter')
   def testComponentWithReport(self, mock_top_flakes, _):
-    SaveReportToDatastore(wf_testcase.SAMPLE_FLAKE_REPORT_DATA, 2018, 35, 1)
+    SaveReportToDatastore(wf_testcase.SAMPLE_FLAKE_REPORT_DATA,
+                          datetime.datetime(2018, 8, 27))
 
     flake_report_data_36 = copy.deepcopy(wf_testcase.SAMPLE_FLAKE_REPORT_DATA)
-    flake_report_data_36['_id'] = '2018-W36-1'
-    SaveReportToDatastore(flake_report_data_36, 2018, 36, 1)
+    flake_report_data_36['chromium']['_id'] = '2018-09-03@chromium'
+    SaveReportToDatastore(flake_report_data_36, datetime.datetime(2018, 9, 3))
 
     flake_counts_last_week = [
         {
@@ -154,7 +156,8 @@ class ComponentReportTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 10, 2, 1))
   def testTotalReport(self, _):
-    SaveReportToDatastore(wf_testcase.SAMPLE_FLAKE_REPORT_DATA, 2018, 35, 1)
+    SaveReportToDatastore(wf_testcase.SAMPLE_FLAKE_REPORT_DATA,
+                          datetime.datetime(2018, 8, 27))
     response = self.test_app.get(
         '/flake/report/component?total=1',
         params={
@@ -180,7 +183,7 @@ class ComponentReportTest(wf_testcase.WaterfallTestCase):
             'retry_with_patch': 1,
             'total': 8
         },
-        'id': '2018-W35-1',
+        'id': '2018-08-27@chromium',
         'report_time': '2018-08-27'
     }
 

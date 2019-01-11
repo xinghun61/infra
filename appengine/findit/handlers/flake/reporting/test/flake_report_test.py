@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
 import json
 import mock
 import webapp2
@@ -20,9 +21,11 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
 
   def setUp(self):
     super(FlakeReportTest, self).setUp()
-    SaveReportToDatastore(wf_testcase.SAMPLE_FLAKE_REPORT_DATA, 2018, 35, 1)
+    SaveReportToDatastore(wf_testcase.SAMPLE_FLAKE_REPORT_DATA,
+                          datetime(2018, 8, 27))
 
-  @mock.patch.object(time_util, 'GetPreviousISOWeek', return_value=(2018, 1, 2))
+  @mock.patch.object(
+      time_util, 'GetPreviousWeekMonday', return_value=datetime(2018, 1, 2))
   def testNoReport(self, _):
     response = self.test_app.get(
         '/flake/report?component=component',
@@ -35,10 +38,11 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
         'total_report': {},
         'top_components': [],
         'component': '',
+        'luci_project': ''
     }, json.loads(response.body))
 
   @mock.patch.object(
-      time_util, 'GetPreviousISOWeek', return_value=(2018, 35, 2))
+      time_util, 'GetPreviousWeekMonday', return_value=datetime(2018, 8, 27))
   def testReportWithTopComponents(self, _):
     response = self.test_app.get(
         '/flake/report', params={
@@ -79,7 +83,7 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
 
     expected_reports = {
         'total_report': {
-            'id': '2018-W35-1',
+            'id': '2018-08-27@chromium',
             'test_count': 6,
             'bug_count': 4,
             'impacted_cl_counts': {
@@ -108,6 +112,8 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
             }
         ],
         'component':
+            '',
+        'luci_project':
             ''
     }
 

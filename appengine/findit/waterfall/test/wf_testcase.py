@@ -219,132 +219,120 @@ SAMPLE_STEP_METADATA_NOT_SWARMED = {
 }
 
 SAMPLE_FLAKE_REPORT_DATA = {
-    '_id': '2018-W35-1',
-    '_bugs': {
-        'chromium@123458', 'chromium@123470', 'chromium@123460',
-        'chromium@123457'
-    },
-    '_impacted_cls': {
-        FlakeType.RETRY_WITH_PATCH: {},
-        FlakeType.CQ_FALSE_REJECTION: {1002, 1003, 1005}
-    },
-    '_occurrences': {
-        FlakeType.RETRY_WITH_PATCH: 1,
-        FlakeType.CQ_FALSE_REJECTION: 7
-    },
-    '_tests': {'testC', 'testB', 'testE', 'testD', 'testG', 'testF'},
-    'ComponentA': {
-        '_id': 'ComponentA',
-        '_bugs': {'chromium@123470', 'chromium@123460', 'chromium@123457'},
+    'chromium': {
+        '_id': '2018-08-27@chromium',
+        '_bugs': {
+            'chromium@123458', 'chromium@123470', 'chromium@123460',
+            'chromium@123457'
+        },
         '_impacted_cls': {
             FlakeType.RETRY_WITH_PATCH: {},
             FlakeType.CQ_FALSE_REJECTION: {1002, 1003, 1005}
         },
         '_occurrences': {
             FlakeType.RETRY_WITH_PATCH: 1,
-            FlakeType.CQ_FALSE_REJECTION: 5
+            FlakeType.CQ_FALSE_REJECTION: 7
         },
-        '_tests': {'testB', 'testE', 'testD', 'testG'},
-        'testB': {
-            '_id': 'testB',
-            '_bugs': {'chromium@123457'},
+        '_tests': {'testC', 'testB', 'testE', 'testD', 'testG', 'testF'},
+        'ComponentA': {
+            '_id': 'ComponentA',
+            '_bugs': {'chromium@123470', 'chromium@123460', 'chromium@123457'},
             '_impacted_cls': {
                 FlakeType.RETRY_WITH_PATCH: {},
-                FlakeType.CQ_FALSE_REJECTION: {1002, 1003}
-            },
-            '_occurrences': {
-                FlakeType.RETRY_WITH_PATCH: 0,
-                FlakeType.CQ_FALSE_REJECTION: 2
-            },
-            '_tests': {'testB'},
-        },
-        'testD': {
-            '_id': 'testD',
-            '_bugs': {'chromium@123457'},
-            '_impacted_cls': {
-                FlakeType.RETRY_WITH_PATCH: {},
-                FlakeType.CQ_FALSE_REJECTION: {1002}
+                FlakeType.CQ_FALSE_REJECTION: {1002, 1003, 1005}
             },
             '_occurrences': {
                 FlakeType.RETRY_WITH_PATCH: 1,
-                FlakeType.CQ_FALSE_REJECTION: 1
+                FlakeType.CQ_FALSE_REJECTION: 5
             },
-            '_tests': {'testD'},
-        },
-        'testE': {
-            '_id': 'testE',
-            '_bugs': {'chromium@123460'},
-            '_impacted_cls': {
-                FlakeType.RETRY_WITH_PATCH: {},
-                FlakeType.CQ_FALSE_REJECTION: {1005}
+            '_tests': {'testB', 'testE', 'testD', 'testG'},
+            'testB': {
+                '_id': 'testB',
+                '_bugs': {'chromium@123457'},
+                '_impacted_cls': {
+                    FlakeType.RETRY_WITH_PATCH: {},
+                    FlakeType.CQ_FALSE_REJECTION: {1002, 1003}
+                },
+                '_occurrences': {
+                    FlakeType.RETRY_WITH_PATCH: 0,
+                    FlakeType.CQ_FALSE_REJECTION: 2
+                },
+                '_tests': {'testB'},
             },
-            '_occurrences': {
-                FlakeType.RETRY_WITH_PATCH: 0,
-                FlakeType.CQ_FALSE_REJECTION: 1
+            'testD': {
+                '_id': 'testD',
+                '_bugs': {'chromium@123457'},
+                '_impacted_cls': {
+                    FlakeType.RETRY_WITH_PATCH: {},
+                    FlakeType.CQ_FALSE_REJECTION: {1002}
+                },
+                '_occurrences': {
+                    FlakeType.RETRY_WITH_PATCH: 1,
+                    FlakeType.CQ_FALSE_REJECTION: 1
+                },
+                '_tests': {'testD'},
             },
-            '_tests': {'testE'},
-        },
-        'testG': {
-            '_id': 'testG',
-            '_bugs': {'chromium@123470'},
-            '_impacted_cls': {
-                FlakeType.RETRY_WITH_PATCH: {},
-                FlakeType.CQ_FALSE_REJECTION: {}
+            'testE': {
+                '_id': 'testE',
+                '_bugs': {'chromium@123460'},
+                '_impacted_cls': {
+                    FlakeType.RETRY_WITH_PATCH: {},
+                    FlakeType.CQ_FALSE_REJECTION: {1005}
+                },
+                '_occurrences': {
+                    FlakeType.RETRY_WITH_PATCH: 0,
+                    FlakeType.CQ_FALSE_REJECTION: 1
+                },
+                '_tests': {'testE'},
             },
-            '_occurrences': {
-                FlakeType.RETRY_WITH_PATCH: 0,
-                FlakeType.CQ_FALSE_REJECTION: 1
+            'testG': {
+                '_id': 'testG',
+                '_bugs': {'chromium@123470'},
+                '_impacted_cls': {
+                    FlakeType.RETRY_WITH_PATCH: {},
+                    FlakeType.CQ_FALSE_REJECTION: {}
+                },
+                '_occurrences': {
+                    FlakeType.RETRY_WITH_PATCH: 0,
+                    FlakeType.CQ_FALSE_REJECTION: 1
+                },
+                '_tests': {'testG'},
             },
-            '_tests': {'testG'},
         },
-    },
-    'ComponentB': {
-        '_id': 'ComponentB',
-        '_bugs': {'chromium@123458'},
-        '_impacted_cls': {
-            FlakeType.RETRY_WITH_PATCH: {},
-            FlakeType.CQ_FALSE_REJECTION: {1005, 1006}
-        },
-        '_occurrences': {
-            FlakeType.RETRY_WITH_PATCH: 0,
-            FlakeType.CQ_FALSE_REJECTION: 1
-        },
-        '_tests': {
-            'testA', 'testB', 'testC', 'testD', 'testCE', 'testF', 'testG'
-        },
-        'testC': {
-            '_id': 'testC',
+        'ComponentB': {
+            '_id': 'ComponentB',
             '_bugs': {'chromium@123458'},
             '_impacted_cls': {
                 FlakeType.RETRY_WITH_PATCH: {},
-                FlakeType.CQ_FALSE_REJECTION: {1005}
+                FlakeType.CQ_FALSE_REJECTION: {1005, 1006}
             },
             '_occurrences': {
                 FlakeType.RETRY_WITH_PATCH: 0,
                 FlakeType.CQ_FALSE_REJECTION: 1
             },
-            '_tests': {'testC'},
-        }
-    },
-    'Unknown': {
-        '_id': 'Unknown',
-        '_bugs': {
-            'chromium@123460', 'chromium@123461', 'chromium@123462',
-            'chromium@123463', 'chromium@123464', 'chromium@123465'
+            '_tests': {
+                'testA', 'testB', 'testC', 'testD', 'testCE', 'testF', 'testG'
+            },
+            'testC': {
+                '_id': 'testC',
+                '_bugs': {'chromium@123458'},
+                '_impacted_cls': {
+                    FlakeType.RETRY_WITH_PATCH: {},
+                    FlakeType.CQ_FALSE_REJECTION: {1005}
+                },
+                '_occurrences': {
+                    FlakeType.RETRY_WITH_PATCH: 0,
+                    FlakeType.CQ_FALSE_REJECTION: 1
+                },
+                '_tests': {'testC'},
+            }
         },
-        '_impacted_cls': {
-            FlakeType.RETRY_WITH_PATCH: {},
-            FlakeType.CQ_FALSE_REJECTION: {1005}
-        },
-        '_occurrences': {
-            FlakeType.RETRY_WITH_PATCH: 0,
-            FlakeType.CQ_FALSE_REJECTION: 1
-        },
-        '_tests': {'testF'},
-        'testF': {
-            '_tests': {'testF'},
-            '_bugs': {'chromium@123460'},
-            '_id': 'testF',
+        'Unknown': {
+            '_id': 'Unknown',
+            '_bugs': {
+                'chromium@123460', 'chromium@123461', 'chromium@123462',
+                'chromium@123463', 'chromium@123464', 'chromium@123465'
+            },
             '_impacted_cls': {
                 FlakeType.RETRY_WITH_PATCH: {},
                 FlakeType.CQ_FALSE_REJECTION: {1005}
@@ -352,9 +340,23 @@ SAMPLE_FLAKE_REPORT_DATA = {
             '_occurrences': {
                 FlakeType.RETRY_WITH_PATCH: 0,
                 FlakeType.CQ_FALSE_REJECTION: 1
-            }
+            },
+            '_tests': {'testF'},
+            'testF': {
+                '_tests': {'testF'},
+                '_bugs': {'chromium@123460'},
+                '_id': 'testF',
+                '_impacted_cls': {
+                    FlakeType.RETRY_WITH_PATCH: {},
+                    FlakeType.CQ_FALSE_REJECTION: {1005}
+                },
+                '_occurrences': {
+                    FlakeType.RETRY_WITH_PATCH: 0,
+                    FlakeType.CQ_FALSE_REJECTION: 1
+                }
+            },
         },
-    },
+    }
 }
 
 

@@ -383,7 +383,7 @@ indexes:
 - kind: ComponentFlakinessReport
   properties:
   - name: tags
-  - name: generated_time
+  - name: report_time
     direction: desc
 
 - kind: ComponentFlakinessReport

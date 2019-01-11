@@ -55,3 +55,5 @@ REVERTED_BY_SHERIFF = 'Culprit has been reverted by a sheriff or the CL owner.'
 LOG_DATA_BYTE_LIMIT = 4000 * 1024
 
 DAYS_IN_A_WEEK = 7
+
+DEFAULT_LUCI_PROJECT = 'chromium'

@@ -5,16 +5,15 @@
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 from handlers.flake.detection import flake_detection_utils
+from libs import time_util
 from model.flake.flake import Flake
 from model.flake.reporting.report import ComponentFlakinessReport
-from model.flake.reporting.report import GetReportDateString
 from model.flake.reporting.report import TotalFlakinessReport
+from services.constants import DEFAULT_LUCI_PROJECT
 
 # Default to show reports for 12 weeks of data.
 _DEFAULT_MAX_ROW_NUM = 12
 _DEFAULT_TOP_FLAKE_NUM = 10
-
-_DEFAULT_LUCI_PROJECT = 'chromium'
 
 
 def _GenerateComponentReportJson(component_reports):
@@ -27,20 +26,32 @@ def _GenerateComponentReportJson(component_reports):
   for report in component_reports:
     report_data = report.ToSerializable()
 
-    report_data['report_time'] = GetReportDateString(report)
+    report_data['report_time'] = time_util.FormatDatetime(
+        report.report_time, day_only=True)
     component_reports_json.append(report_data)
 
   return component_reports_json
 
 
-def _QueryTotalReports(limit=_DEFAULT_MAX_ROW_NUM):
-  return TotalFlakinessReport.query(
-      TotalFlakinessReport.tags == TotalFlakinessReport.GenerateTag(
-          'day', 1)).order(-TotalFlakinessReport.generated_time).fetch(limit)
-
-
-def _QueryComponentReports(component, limit=_DEFAULT_MAX_ROW_NUM):
+def _QueryTotalReports(luci_project, limit=_DEFAULT_MAX_ROW_NUM):
   tags = [
+      TotalFlakinessReport.GenerateTag('luci_project', luci_project),
+      # Only displays one report per week, though we may generate report more
+      # frequently.
+      TotalFlakinessReport.GenerateTag('day', 1),
+  ]
+
+  query = TotalFlakinessReport.query()
+
+  for tag in tags:
+    query = query.filter(TotalFlakinessReport.tags == tag)
+
+  return query.order(-TotalFlakinessReport.report_time).fetch(limit)
+
+
+def _QueryComponentReports(component, luci_project, limit=_DEFAULT_MAX_ROW_NUM):
+  tags = [
+      ComponentFlakinessReport.GenerateTag('luci_project', luci_project),
       ComponentFlakinessReport.GenerateTag('component', component),
       # Only displays one report per week, though we may generate report more
       # frequently.
@@ -52,7 +63,7 @@ def _QueryComponentReports(component, limit=_DEFAULT_MAX_ROW_NUM):
   for tag in tags:
     query = query.filter(ComponentFlakinessReport.tags == tag)
 
-  return query.order(-ComponentFlakinessReport.generated_time).fetch(limit)
+  return query.order(-ComponentFlakinessReport.report_time).fetch(limit)
 
 
 class ComponentReport(BaseHandler):
@@ -62,7 +73,7 @@ class ComponentReport(BaseHandler):
     total = self.request.get('total').strip()
     component = self.request.get('component').strip()
     luci_project = self.request.get(
-        'luci_project').strip() or _DEFAULT_LUCI_PROJECT
+        'luci_project').strip() or DEFAULT_LUCI_PROJECT
     if not component and not total:
       return self.CreateError(
           'A component is required to show its flake report, or add total=1 to '
@@ -70,18 +81,19 @@ class ComponentReport(BaseHandler):
           return_code=404)
 
     if component:
-      component_reports = _QueryComponentReports(component)
+      component_reports = _QueryComponentReports(component, luci_project)
       if not component_reports:
         return self.CreateError(
-            'Didn\'t find reports for component %s.' % component,
+            'Didn\'t find reports for project {}, component {}.'.format(
+                luci_project, component),
             return_code=404)
       report_json = _GenerateComponentReportJson(component_reports)
       top_flakes, _, _ = flake_detection_utils.GetFlakesByFilter(
-          'component::{}'.format(component), luci_project,
-          _DEFAULT_TOP_FLAKE_NUM)
+          ComponentFlakinessReport.GenerateTag('component', component),
+          luci_project, _DEFAULT_TOP_FLAKE_NUM)
 
     else:
-      total_reports = _QueryTotalReports()
+      total_reports = _QueryTotalReports(luci_project)
       report_json = _GenerateComponentReportJson(total_reports)
       top_flakes = Flake.query().order(-Flake.flake_score_last_week).fetch(
           _DEFAULT_TOP_FLAKE_NUM)
@@ -89,9 +101,15 @@ class ComponentReport(BaseHandler):
     flakes_data = flake_detection_utils.GenerateFlakesData(top_flakes)
 
     data = {
-        'report_json': report_json,
-        'component': component if component else 'All',
-        'top_flakes': flakes_data,
-        'total': total
+        'report_json':
+            report_json,
+        'component':
+            component if component else 'All',
+        'top_flakes':
+            flakes_data,
+        'total':
+            total,
+        'luci_project': (
+            luci_project if luci_project != DEFAULT_LUCI_PROJECT else ''),
     }
     return {'template': 'flake/report/component_report.html', 'data': data}

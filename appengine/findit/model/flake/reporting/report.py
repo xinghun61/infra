@@ -30,20 +30,6 @@ from libs import time_util
 from model.flake.flake import TAG_DELIMITER
 from model.flake.flake_type import FlakeType
 
-_REPORT_TIME_PATTERN = re.compile(r'\d+-W\d+-\d')
-
-
-def GetReportDateString(report):
-  """Gets the report time in a string to represent the data.
-
-  Args:
-    report (subclass of ReportRow).
-  """
-  report_time_iso_str = report.key.pairs()[0][1]
-  assert _REPORT_TIME_PATTERN.match(report_time_iso_str), (
-      'Cannot get date string if the time string is not for an ISO tuple.')
-  return time_util.ConvertISOWeekStringToUTCDateString(report_time_iso_str)
-
 
 class _TypeCount(ndb.Model):
   """Counts for a specific flake type."""
@@ -59,17 +45,25 @@ class ReportRow(ndb.Model):
   occurrence_counts = ndb.StructuredProperty(_TypeCount, repeated=True)
   test_count = ndb.IntegerProperty()
 
-  generated_time = ndb.DateTimeProperty(auto_now_add=True)
+  # Time of the first day of the week for the weekly report.
+  report_time = ndb.DateTimeProperty()
 
   # Tags of a report row to ease queries.
   tags = ndb.StringProperty(repeated=True)
 
   @classmethod
-  def FromTallies(cls, parent, d, year, week, day):
+  def FromTallies(cls, parent, d, report_time, additional_tags=None):
     """Create a report element from sets of values in a dict.
 
     The values in the tally may be counts, which will be used directly; or sets,
     whose cardinality will be used instead.
+
+    Args:
+      parent (Key): Key to the parent object.
+      d (dict): Report data.
+      report_time (datetime): Time of the report start date.
+      additional_tags ([(tag_name, tag_value)]): List of tuples for different
+        tags between different level of reports.
     """
 
     def CountIfCollection(x):
@@ -90,19 +84,27 @@ class ReportRow(ndb.Model):
             for flake_type, count in d.get('_occurrences', {}).iteritems()
         ],
         test_count=CountIfCollection(d.get('_tests', 0)),
-        tags=cls.GenerateTagList(d, year, week, day))
+        tags=cls.GenerateTagList(report_time, additional_tags),
+        report_time=report_time)
 
   @staticmethod
   def GenerateTag(tag_name, tag_value):
     return '{}{}{}'.format(tag_name, TAG_DELIMITER, tag_value)
 
   @staticmethod
-  def GenerateTagList(d, year, week, day):  # pylint: disable=unused-argument
-    return [
+  def GenerateTagList(report_time, additional_tags):
+    year, week, day = report_time.isocalendar()
+    tags = [
         ReportRow.GenerateTag('year', year),
         ReportRow.GenerateTag('week', week),
         ReportRow.GenerateTag('day', day),
     ]
+    if additional_tags:
+      tags.extend([
+          ReportRow.GenerateTag(tag_name, tag_value)
+          for tag_name, tag_value in additional_tags
+      ])
+    return tags
 
   @ndb.ComputedProperty
   def false_rejected_cl_count(self):
@@ -110,17 +112,6 @@ class ReportRow(ndb.Model):
       if cl_count.flake_type == FlakeType.CQ_FALSE_REJECTION:
         return cl_count.count
     return 0
-
-  def GetReportYearWeek(self):
-    """Gets the year and week of the report.
-
-    Key to a ComponentFlakinessReport:
-      Key(TotalFlakinessReport, '{year}-W{week}-{day}')
-    Key to a ComponentFlakinessReport:
-      Key(TotalFlakinessReport, '{year}-W{week}-{day}',
-          ComponentFlakinessReport, '{component}')
-    """
-    return self.key.pairs()[0][1][:-2]
 
   def GetTotalOccurrenceCount(self):
     return sum([
@@ -153,46 +144,48 @@ class ReportRow(ndb.Model):
 
 
 class TotalFlakinessReport(ReportRow):
-  """A weekly report on flakiness occurrences"""
-  # A report is identified by the ISO Week it covers.
+  """A weekly report on flakiness occurrences for a project."""
+  # A report is identified by the start time of the report and project.
   # This is meant to include all flake occurrences between Monday 00:00 PST and
   # the next Monday at the same time.
 
   @staticmethod
-  def MakeId(year, week, day):
-    # Compose a string like '2018-W02' to use as id for the report.
-    return '%d-W%02d-%d' % (year, week, day)
+  def MakeId(report_time, project):
+    return '{}@{}'.format(
+        time_util.FormatDatetime(report_time, day_only=True), project)
 
   @classmethod
-  def Get(cls, year, week, day):
-    return ndb.Key(cls, cls.MakeId(year, week, day)).get()
+  def Get(cls, report_time, project):
+    return ndb.Key(cls, cls.MakeId(report_time, project)).get()
 
-  def GetReportTime(self):
-    """Gets the start and end date of the time range of the report."""
-    report_time_iso_str = self.key.pairs()[0][1]
-    return time_util.ConvertISOWeekStringToUTCDateString(report_time_iso_str)
+  def GetProject(self):
+    """Gets project of the report from key.
+
+    Key to a TotalFlakinessReport should be
+    Key(TotalFlakinessReport, '2018-12-1@chromium')
+    """
+
+    def GetLuciProjectFromKeyString(key_string):
+      """Gets luci_project from key string like 2018-01-01@chromium."""
+      return key_string.split('@')[1]
+
+    return GetLuciProjectFromKeyString(self.key.pairs()[0][1])
 
 
 class ComponentFlakinessReport(ReportRow):
   """Entry for a given component"""
 
   @classmethod
-  def Get(cls, report_key, component):
-    key = ndb.Key(report_key.kind(), report_key.id(), cls, component)
+  def Get(cls, total_report_key, component):
+    key = ndb.Key(total_report_key.kind(), total_report_key.id(), cls,
+                  component)
     return key.get()
-
-  @staticmethod
-  def GenerateTagList(d, year, week, day):
-    tags = super(ComponentFlakinessReport,
-                 ComponentFlakinessReport).GenerateTagList(d, year, week, day)
-    tags.append(ComponentFlakinessReport.GenerateTag('component', d['_id']))
-    return tags
 
   def GetComponent(self):
     """Gets component of the report from key.
 
     Key to a ComponentFlakinessReport should be
-    Key(TotalFlakinessReport, '2018-W50-1', ComponentFlakinessReport, component)
+    Key(TotalFlakinessReport, '2018-12-1', ComponentFlakinessReport, component)
     """
     return self.key.pairs()[1][1]
 
@@ -207,10 +200,3 @@ class TestFlakinessReport(ReportRow):
         component_report_key.parent().id(), component_report_key.kind(),
         component_report_key.id(), cls, test)
     return key.get()
-
-  @staticmethod
-  def GenerateTagList(d, year, week, day):
-    tags = super(TestFlakinessReport, TestFlakinessReport).GenerateTagList(
-        d, year, week, day)
-    tags.append(TestFlakinessReport.GenerateTag('test', d['_id']))
-    return tags

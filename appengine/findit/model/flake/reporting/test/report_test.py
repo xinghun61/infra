@@ -2,8 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
+
 from model.flake.reporting.report import ComponentFlakinessReport
-from model.flake.reporting.report import GetReportDateString
 from model.flake.reporting.report import TestFlakinessReport
 from model.flake.reporting.report import TotalFlakinessReport
 from services.flake_reporting.component import SaveReportToDatastore
@@ -16,19 +17,18 @@ class ReportTest(wf_testcase.WaterfallTestCase):
     super(ReportTest, self).setUp()
     SaveReportToDatastore(
         wf_testcase.SAMPLE_FLAKE_REPORT_DATA,
-        2018,
-        35,
-        1,
+        datetime(2018, 8, 27),
         save_test_report=True)
 
   def testReport(self):
-    report = TotalFlakinessReport.Get(2018, 35, 1)
+    report_time = datetime(2018, 8, 27)
+    report = TotalFlakinessReport.Get(report_time, 'chromium')
     self.assertEqual(6, report.test_count)
     self.assertEqual(8, report.GetTotalOccurrenceCount())
     self.assertEqual(3, report.GetTotalCLCount())
 
     report_data = {
-        'id': '2018-W35-1',
+        'id': '2018-08-27@chromium',
         'test_count': 6,
         'bug_count': 4,
         'impacted_cl_counts': {
@@ -44,6 +44,8 @@ class ReportTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertEqual(report_data, report.ToSerializable())
+    self.assertEqual('chromium', report.GetProject())
+    self.assertIn('luci_project::chromium', report.tags)
 
     component_report_A = ComponentFlakinessReport.Get(report.key, 'ComponentA')
     self.assertEqual(4, component_report_A.test_count)
@@ -65,16 +67,7 @@ class ReportTest(wf_testcase.WaterfallTestCase):
         TestFlakinessReport.tags == 'test::testB').fetch()
     self.assertEqual(component_test_report_A_B, reports_queried_by_test[0])
 
-    report_date = '2018-08-27'
-    self.assertEqual(report_date, GetReportDateString(report))
-    self.assertEqual(report_date, GetReportDateString(component_report_A))
-    self.assertEqual(report_date,
-                     GetReportDateString(component_test_report_A_B))
-
-  def testGetReportYearWeek(self):
-    report = TotalFlakinessReport.Get(2018, 35, 1)
-    self.assertEqual('2018-W35', report.GetReportYearWeek())
-
   def testGetFalseRejectedCLCount(self):
-    report = TotalFlakinessReport.Get(2018, 35, 1)
+    report_time = datetime(2018, 8, 27)
+    report = TotalFlakinessReport.Get(report_time, 'chromium')
     self.assertEqual(3, report.false_rejected_cl_count)

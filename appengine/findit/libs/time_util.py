@@ -33,38 +33,11 @@ def GetUTCNowTimestamp():  # pragma: no cover.
   return ConvertToTimestamp(GetUTCNow())
 
 
-def GetPreviousISOWeek():
-  """Get the a (year, week, day) tuple for the last, fully elapsed week.
-
-  Note that the changeover time for this function is Monday 00:00 PST.
-  """
-  last_week_date = GetPSTNow() - timedelta(weeks=1)
-  year, week, day = last_week_date.isocalendar()
-  return year, week, day
-
-
-def _ConvertISOWeekStringToUTCDatetime(iso_week_string):
-  """Convert a string representing an ISO Year/Week/Day tuple to a UTC datetime
-    @ Sun->Mon PST Midnight."""
-  # iso_week_string = '%d-W%d-%d' % (year, week_number, day)
-  naive_midnight = datetime.strptime(iso_week_string, '%Y-W%W-%w')
-  # This is effectively 8AM on Monday of the given week as a naive datetime.
-  utc_equivalent = ConvertPSTToUTC(naive_midnight)
-  return utc_equivalent
-
-
-def ConvertISOWeekToUTCDatetime(year, week_number, day):
-  """Convert an ISO Year/Week/Day tuple to a UTC datetime @ Sun->Mon PST
-    Midnight."""
-  iso_week_string = '%d-W%d-%d' % (year, week_number, day)
-  return _ConvertISOWeekStringToUTCDatetime(iso_week_string)
-
-
-def ConvertISOWeekStringToUTCDateString(iso_week_string):
-  """Convert a string representing an ISO Year/Week/Day tuple to a string
-    representing a date."""
-  utc_equivalent = _ConvertISOWeekStringToUTCDatetime(iso_week_string)
-  return FormatDatetime(utc_equivalent, day_only=True)
+def GetPreviousWeekMonday():
+  """Gets midnight of previous week Monday."""
+  utc_now = GetUTCNow()
+  current_weekday = utc_now.weekday()
+  return GetMidnight(utc_now - timedelta(days=current_weekday, weeks=1))
 
 
 def RemoveMicrosecondsFromDelta(delta):
@@ -155,6 +128,10 @@ def SecondsToHMS(seconds):
   if seconds is not None:
     return FormatTimedelta(timedelta(seconds=seconds))
   return None
+
+
+def GetMidnight(date):
+  return datetime.combine(date, time.min)
 
 
 def GetMostRecentUTCMidnight():

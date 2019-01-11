@@ -8,6 +8,7 @@ from libs import time_util
 from model.flake.flake import DEFAULT_COMPONENT
 from model.flake.reporting.report import ComponentFlakinessReport
 from model.flake.reporting.report import TotalFlakinessReport
+from services.constants import DEFAULT_LUCI_PROJECT
 
 # Default number of top n components.
 _DEFAULT_TOP_COMPONENT_NUM = 10
@@ -56,19 +57,26 @@ class FlakeReport(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
   def HandleGet(self):
+    luci_project = self.request.get(
+        'luci_project').strip() or DEFAULT_LUCI_PROJECT
     component = self.request.get('component_filter').strip()
-
-    data = {'component': component}
 
     if component:
       return self.CreateRedirect(
           '/flake/report/component?component=%s' % component)
 
-    year, week, _ = time_util.GetPreviousISOWeek()
+    report_time = time_util.GetPreviousWeekMonday()
+
     # The report is a weekly report, though we may generate reports more
     # frequently. Uses the Monday report for the whole week.
-    total_flakiness_report = TotalFlakinessReport.Get(year, week, 1)
+    total_flakiness_report = TotalFlakinessReport.Get(report_time, luci_project)
 
+    data = {
+        'component':
+            component,
+        'luci_project': (
+            luci_project if luci_project != DEFAULT_LUCI_PROJECT else ''),
+    }
     if not total_flakiness_report:
       data['total_report'] = {}
       data['top_components'] = []
