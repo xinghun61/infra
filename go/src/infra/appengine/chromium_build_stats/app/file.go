@@ -54,6 +54,9 @@ func fileHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	defer reader.Close()
 
+	w.Header().Set("Content-Type", reader.ContentType())
+	w.Header().Set("Content-Encoding", reader.ContentEncoding())
+
 	_, err = io.Copy(w, reader)
 	if err != nil {
 		log.Errorf(ctx, "failed to copy %s: %v", path, err)
