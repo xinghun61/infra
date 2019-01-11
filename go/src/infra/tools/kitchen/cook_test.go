@@ -190,7 +190,6 @@ func TestCook(t *testing.T) {
 				So(actualRecipeInput, ShouldResemble, recipeInput{
 					Args: []string{
 						filepath.Join(checkoutPath, "recipes.py"),
-						"--operational-args-path", filepath.Join(kitchenTempDir, "rr", "op_args.json"),
 						"run",
 						"--properties-file", filepath.Join(kitchenTempDir, "rr", "properties.json"),
 						"--workdir", workdirPath,

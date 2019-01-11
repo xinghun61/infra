@@ -14,10 +14,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"infra/tools/kitchen/third_party/recipe_engine"
-
 	"go.chromium.org/luci/common/errors"
-	log "go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/system/environ"
 	"go.chromium.org/luci/common/system/exitcode"
 )
@@ -28,11 +25,10 @@ type recipeEngine struct {
 	// interpreter if necessary.
 	cmdPrefix []string
 
-	recipeName           string                  // name of the recipe
-	properties           map[string]interface{}  // input properties
-	opArgs               recipe_engine.Arguments // operational arguments for the recipe engine
-	workDir              string                  // a directory where to run the recipe
-	outputResultJSONFile string                  // path to the result file
+	recipeName           string                 // name of the recipe
+	properties           map[string]interface{} // input properties
+	workDir              string                 // a directory where to run the recipe
+	outputResultJSONFile string                 // path to the result file
 }
 
 // commandRun prepares a command that runs a recipe.
@@ -50,18 +46,10 @@ func (eng *recipeEngine) commandRun(ctx context.Context, tdir string, env enviro
 		return nil, errors.Annotate(err, "could not write properties file at %q", propertiesPath).Err()
 	}
 
-	// Write our operational arguments.
-	log.Debugf(ctx, "Using operational args: %s", eng.opArgs.String())
-	opArgsPath := filepath.Join(tdir, "op_args.json")
-	if err := encodeJSONToPath(opArgsPath, &eng.opArgs); err != nil {
-		return nil, errors.Annotate(err, "could not write arguments file at %q", opArgsPath).Err()
-	}
-
 	// Build our command (arguments first).
 	args := []string{}
 	args = append(args, eng.cmdPrefix...)
 	args = append(args,
-		"--operational-args-path", opArgsPath,
 		"run",
 		"--properties-file", propertiesPath,
 		"--workdir", eng.workDir,

@@ -44,10 +44,6 @@ var cmdCook = &subcommands.Command{
 	CommandRun: func() subcommands.CommandRun {
 		var c cookRun
 
-		// Initialize our AnnotationFlags operational argument.
-		c.engine.opArgs.AnnotationFlags = &recipe_engine.Arguments_AnnotationFlags{}
-		c.engine.opArgs.EngineFlags = &recipe_engine.Arguments_EngineFlags{}
-
 		c.CookFlags.Register(&c.Flags)
 
 		return &c

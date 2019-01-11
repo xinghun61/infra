@@ -80,9 +80,6 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 	// configured to log debug-level or lower.
 	disableGRPCLogging(ctx)
 
-	// We need to dump initial properties so our annotation stream includes them.
-	eng.opArgs.AnnotationFlags.EmitInitialProperties = true
-
 	// Construct our global tags. We will prefer user-supplied tags to our
 	// generated ones.
 	globalTags := make(map[string]string, len(flags.GlobalTags)+1)

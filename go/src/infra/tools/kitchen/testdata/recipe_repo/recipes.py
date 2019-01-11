@@ -13,7 +13,6 @@ import urllib2
 
 def main():
   parser = argparse.ArgumentParser()
-  parser.add_argument('--operational-args-path')
 
   subparsers = parser.add_subparsers()
   fetch_cmd = subparsers.add_parser('fetch')
