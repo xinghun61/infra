@@ -38,6 +38,7 @@ import (
 	"infra/qscheduler/qslib/scheduler"
 	"infra/qscheduler/qslib/tutils"
 
+	"go.chromium.org/luci/common/data/stringset"
 	"go.chromium.org/luci/common/logging"
 )
 
@@ -63,7 +64,7 @@ type IdleWorker struct {
 	ID WorkerID
 
 	// ProvisionableLabels is the set of provisionable labels of the idle worker.
-	ProvisionableLabels scheduler.LabelSet
+	ProvisionableLabels stringset.Set
 }
 
 // Assignment represents a scheduler-initated operation to assign a task to a worker.
@@ -89,7 +90,7 @@ type Scheduler interface {
 
 	// MarkIdle informs the scheduler that a given worker is idle, with
 	// given labels.
-	MarkIdle(ctx context.Context, workerID WorkerID, labels scheduler.LabelSet, t time.Time) error
+	MarkIdle(ctx context.Context, workerID WorkerID, labels stringset.Set, t time.Time) error
 
 	// RunOnce runs through one round of the scheduling algorithm, and determines
 	// and returns work assignments.
@@ -175,7 +176,7 @@ func (state *State) AssignTasks(ctx context.Context, s Scheduler, t time.Time, w
 			// using the determination used within the Scheduler, because we have the
 			// newest info about worker dimensions here.
 			r, _ := s.GetRequest(RequestID(q.TaskToAssign))
-			provisionRequired := !w.ProvisionableLabels.Contains(r.Labels)
+			provisionRequired := !w.ProvisionableLabels.HasAll(r.Labels...)
 
 			assignments = append(assignments, Assignment{
 				RequestID:         RequestID(q.TaskToAssign),

@@ -22,6 +22,8 @@ import (
 	"infra/qscheduler/qslib/tutils"
 
 	. "github.com/smartystreets/goconvey/convey"
+
+	"go.chromium.org/luci/common/data/stringset"
 )
 
 // TestMarkIdle tests that a new worker is marked idle by MarkIdle, and that
@@ -36,20 +38,20 @@ func TestMarkIdle(t *testing.T) {
 		state := newState(tm0)
 		workerID := WorkerID("w1")
 		Convey("when a worker marked idle at t=1", func() {
-			label1 := []string{"old_label"}
+			label1 := stringset.NewFromSlice("old_label")
 			state.markIdle(workerID, label1, tm1)
 			Convey("then the worker is added to the state.", func() {
 				So(state.workers, ShouldContainKey, workerID)
 				So(state.workers[workerID].labels, ShouldResemble, label1)
 			})
 			Convey("when marking idle again with newer time t=2", func() {
-				state.markIdle(workerID, []string{"new_label"}, tm2)
+				state.markIdle(workerID, stringset.NewFromSlice("new_label"), tm2)
 				Convey("then the update is applied.", func() {
-					So(state.workers[workerID].labels, ShouldResemble, []string{"new_label"})
+					So(state.workers[workerID].labels, ShouldResemble, stringset.NewFromSlice("new_label"))
 				})
 			})
 			Convey("when marking idle again with older time t=0", func() {
-				state.markIdle(workerID, []string{"new_label"}, tm0)
+				state.markIdle(workerID, stringset.NewFromSlice("new_label"), tm0)
 				Convey("then the update is ignored.", func() {
 					So(state.workers[workerID].labels, ShouldResemble, label1)
 				})
@@ -57,11 +59,11 @@ func TestMarkIdle(t *testing.T) {
 		})
 
 		Convey("given a worker running a task at t=1", func() {
-			state.markIdle(workerID, []string{}, tm1)
+			state.markIdle(workerID, stringset.New(0), tm1)
 			state.addRequest(ctx, "r1", NewRequest("", nil, tm1), tm1)
 			state.applyAssignment(&Assignment{Type: AssignmentIdleWorker, RequestID: "r1", WorkerID: workerID})
 			Convey("when marking idle again with newer time t=2", func() {
-				state.markIdle(workerID, []string{}, tm2)
+				state.markIdle(workerID, stringset.New(0), tm2)
 				Convey("then the update is applied.", func() {
 					So(state.workers[workerID].isIdle(), ShouldBeTrue)
 					So(state.workers[workerID].confirmedTime, ShouldEqual, tm2)
@@ -69,7 +71,7 @@ func TestMarkIdle(t *testing.T) {
 			})
 
 			Convey("when marking idle again with older time t=0", func() {
-				state.markIdle(workerID, []string{}, tm0)
+				state.markIdle(workerID, stringset.New(0), tm0)
 				Convey("then the update is ignored.", func() {
 					So(state.workers[workerID].isIdle(), ShouldBeFalse)
 					So(state.workers[workerID].confirmedTime, ShouldEqual, tm1)
@@ -89,7 +91,7 @@ func TestnotifyRequest(ctx, t *testing.T) {
 		ctx := context.Background()
 		state := newState(tm0)
 		state.addRequest(ctx, "r1", NewRequest("", nil, tm1), tm1)
-		state.markIdle("w1", []string{}, tm3)
+		state.markIdle("w1", stringset.New(0), tm3)
 		a := &Assignment{
 			Type:      AssignmentIdleWorker,
 			WorkerID:  "w1",
@@ -169,8 +171,8 @@ func TestnotifyRequest(ctx, t *testing.T) {
 		ctx := context.Background()
 		state := newState(tm0)
 		state.addRequest(ctx, "r1", NewRequest("", nil, tm1), tm1)
-		state.markIdle("w1", []string{}, tm1)
-		state.markIdle("w2", []string{}, tm3)
+		state.markIdle("w1", stringset.New(0), tm1)
+		state.markIdle("w2", stringset.New(0), tm3)
 		a := &Assignment{
 			Type:      AssignmentIdleWorker,
 			WorkerID:  "w1",
@@ -208,7 +210,7 @@ func TestnotifyRequest(ctx, t *testing.T) {
 	Convey("Given a state with an idle worker(t=1), and a notify call with a match to an unknown request for that worker", t, func() {
 		ctx := context.Background()
 		state := newState(tm0)
-		state.markIdle("w1", []string{}, tm1)
+		state.markIdle("w1", stringset.New(0), tm1)
 		Convey("when notifying (unknown request for worker) with older time t=0", func() {
 			state.notifyRequest(ctx, "r1", "w1", tm0)
 			Convey("then the update is ignored.", func() {
@@ -242,7 +244,7 @@ func TestabortRequest(ctx, t *testing.T) {
 		ctx := context.Background()
 		state := newState(tm0)
 		state.addRequest(ctx, reqID, NewRequest("", nil, tm1), tm1)
-		state.markIdle(wID, []string{}, tm1)
+		state.markIdle(wID, stringset.New(0), tm1)
 		Convey("when AbortRequest with forward time is called for that request", func() {
 			state.abortRequest(ctx, reqID, tm2)
 			Convey("then the request is deleted, the worker is unmodified.", func() {
@@ -263,7 +265,7 @@ func TestabortRequest(ctx, t *testing.T) {
 		ctx := context.Background()
 		state := newState(tm0)
 		state.addRequest(ctx, reqID, NewRequest("", nil, tm1), tm1)
-		state.markIdle(wID, []string{}, tm1)
+		state.markIdle(wID, stringset.New(0), tm1)
 		a := &Assignment{
 			Type:      AssignmentIdleWorker,
 			WorkerID:  wID,
@@ -296,7 +298,7 @@ func TestApplyIdleAssignment(t *testing.T) {
 		s := newState(time.Unix(0, 0))
 		tp := tutils.TimestampProto(time.Unix(0, 0))
 		s.addRequest(ctx, "t1", &TaskRequest{ConfirmedTime: tp, EnqueueTime: tp}, time.Unix(0, 0))
-		s.markIdle("w1", []string{}, time.Unix(0, 0))
+		s.markIdle("w1", stringset.New(0), time.Unix(0, 0))
 
 		Convey("when an idle-worker-assignment is applied with a given priority", func() {
 			mut := &Assignment{Type: AssignmentIdleWorker, Priority: 1, RequestID: "t1", WorkerID: "w1"}

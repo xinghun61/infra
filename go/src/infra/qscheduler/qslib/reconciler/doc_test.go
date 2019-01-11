@@ -22,6 +22,8 @@ import (
 	"infra/qscheduler/qslib/reconciler"
 	"infra/qscheduler/qslib/scheduler"
 	"infra/qscheduler/qslib/tutils"
+
+	"go.chromium.org/luci/common/data/stringset"
 )
 
 // WorkerID is a type alias for WorkerID
@@ -46,13 +48,13 @@ func Example() {
 	// Notify the reconciler of a newly enqueued task request.
 	requestID := "Request1"
 	accountID := "Account1"
-	labels := []string{"Label1"}
+	labels := stringset.NewFromSlice("label1")
 	t := tutils.TimestampProto(time.Now())
 	taskUpdate := &reconciler.TaskInstant{
 		State:               reconciler.TaskInstant_WAITING,
 		AccountId:           accountID,
 		RequestId:           requestID,
-		ProvisionableLabels: labels,
+		ProvisionableLabels: labels.ToSlice(),
 		EnqueueTime:         t,
 		Time:                t,
 	}

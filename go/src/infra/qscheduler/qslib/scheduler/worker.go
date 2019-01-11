@@ -16,6 +16,8 @@ package scheduler
 
 import (
 	"time"
+
+	"go.chromium.org/luci/common/data/stringset"
 )
 
 // isIdle returns whether the given worker is currently idle.
@@ -49,6 +51,6 @@ func (w *worker) confirm(t time.Time) {
 // newWorker creates a new worker, with given labels.
 func newWorker(labels ...string) *worker {
 	return &worker{
-		labels: labels,
+		labels: stringset.NewFromSlice(labels...),
 	}
 }

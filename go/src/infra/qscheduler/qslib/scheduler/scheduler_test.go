@@ -22,6 +22,8 @@ import (
 	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
+
+	"go.chromium.org/luci/common/data/stringset"
 )
 
 // TestMatchWithIdleWorkers tests that the scheduler correctly matches
@@ -31,8 +33,8 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 		ctx := context.Background()
 		tm := time.Unix(0, 0)
 		s := New(tm)
-		s.MarkIdle(ctx, "w0", []string{}, tm)
-		s.MarkIdle(ctx, "w1", []string{"label1"}, tm)
+		s.MarkIdle(ctx, "w0", stringset.New(0), tm)
+		s.MarkIdle(ctx, "w1", stringset.NewFromSlice("label1"), tm)
 		s.AddRequest(ctx, "t1", NewRequest("a1", []string{"label1"}, tm), tm)
 		s.AddRequest(ctx, "t2", NewRequest("a1", []string{"label2"}, tm), tm)
 		c := NewAccountConfig(0, 0, nil)
@@ -64,7 +66,7 @@ func TestMatchProvisionableLabel(t *testing.T) {
 		s.AddRequest(ctx, "tb", NewRequest("", []string{"b"}, tm), tm)
 
 		Convey("and an idle worker with labels 'b' and 'c'", func() {
-			s.MarkIdle(ctx, "wb", []string{"b", "c"}, tm)
+			s.MarkIdle(ctx, "wb", stringset.NewFromSlice("b", "c"), tm)
 
 			Convey("when scheduling jobs", func() {
 				muts, _ := s.RunOnce(ctx)
@@ -138,7 +140,7 @@ func TestSchedulerPreempt(t *testing.T) {
 			rid := RequestID(fmt.Sprintf("r%d", i))
 			wid := WorkerID(fmt.Sprintf("w%d", i))
 			s.AddRequest(ctx, rid, NewRequest("a1", nil, tm0), tm0)
-			s.MarkIdle(ctx, wid, []string{}, tm0)
+			s.MarkIdle(ctx, wid, stringset.New(0), tm0)
 			s.state.applyAssignment(&Assignment{RequestID: rid, WorkerID: wid, Type: AssignmentIdleWorker, Priority: 1})
 		}
 		s.state.workers["w1"].runningTask.cost = balance{0, 1, 0}

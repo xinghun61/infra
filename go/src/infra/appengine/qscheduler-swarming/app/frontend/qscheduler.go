@@ -80,7 +80,7 @@ func (s *QSchedulerServerImpl) AssignTasks(ctx context.Context, r *swarming.Assi
 				ID: WorkerID(v.BotId),
 				// TODO(akeshet): Compute provisionable labels properly. This should actually
 				// be the workers label set minus the scheduler pool's label set.
-				ProvisionableLabels: v.Dimensions,
+				ProvisionableLabels: stringset.NewFromSlice(v.Dimensions...),
 			}
 		}
 

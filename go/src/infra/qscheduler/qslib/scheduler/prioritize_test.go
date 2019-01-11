@@ -30,6 +30,8 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 
 	. "github.com/smartystreets/goconvey/convey"
+
+	"go.chromium.org/luci/common/data/stringset"
 )
 
 // TestPrioritizeOne tests that PrioritizeRequests behaves correctly
@@ -164,7 +166,7 @@ func TestPrioritizeMany(t *testing.T) {
 // immediately start it running on a new worker.
 func addRunningRequest(ctx context.Context, s *Scheduler, rid RequestID, wid WorkerID, aid AccountID, pri int, tm time.Time) {
 	s.AddRequest(ctx, rid, NewRequest(aid, []string{}, tm), tm)
-	s.MarkIdle(ctx, wid, []string{}, tm)
+	s.MarkIdle(ctx, wid, stringset.New(0), tm)
 	s.state.applyAssignment(&Assignment{Priority: pri, RequestID: rid, WorkerID: wid, Type: AssignmentIdleWorker})
 }
 

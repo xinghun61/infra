@@ -20,6 +20,8 @@ import (
 	"time"
 
 	"infra/qscheduler/qslib/tutils"
+
+	"go.chromium.org/luci/common/data/stringset"
 )
 
 // state represents the state of quota scheduler.
@@ -57,8 +59,8 @@ type request struct {
 	// enqueueTime is the time at which the request was enqueued.
 	enqueueTime time.Time
 
-	// labels is the set of Provisionable Labels for this task.
-	labels []string
+	// provisionableLabels is the set of Provisionable Labels for this task.
+	provisionableLabels stringset.Set
 
 	// confirmedTime is the most recent time at which the Request state was
 	// provided or confirmed by external authority (via a call to Enforce or
@@ -71,7 +73,7 @@ func newTaskRequest(r *request) *TaskRequest {
 		AccountId:     string(r.accountID),
 		ConfirmedTime: tutils.TimestampProto(r.confirmedTime),
 		EnqueueTime:   tutils.TimestampProto(r.enqueueTime),
-		Labels:        r.labels,
+		Labels:        r.provisionableLabels.ToSlice(),
 	}
 }
 
@@ -97,7 +99,7 @@ type taskRun struct {
 type worker struct {
 	// labels represents the set of provisionable labels that this worker
 	// possesses.
-	labels []string
+	labels stringset.Set
 
 	// runningTask is, if non-nil, the task that is currently running on the
 	// worker.
@@ -118,10 +120,10 @@ func (s *state) addRequest(ctx context.Context, requestID RequestID, r *TaskRequ
 		s.notifyRequest(ctx, requestID, "", t)
 	} else {
 		rr := &request{
-			accountID:     AccountID(r.AccountId),
-			confirmedTime: tutils.Timestamp(r.ConfirmedTime),
-			enqueueTime:   tutils.Timestamp(r.EnqueueTime),
-			labels:        r.Labels,
+			accountID:           AccountID(r.AccountId),
+			confirmedTime:       tutils.Timestamp(r.ConfirmedTime),
+			enqueueTime:         tutils.Timestamp(r.EnqueueTime),
+			provisionableLabels: stringset.NewFromSlice(r.Labels...),
 		}
 		rr.confirm(t)
 		s.queuedRequests[requestID] = rr
@@ -129,7 +131,7 @@ func (s *state) addRequest(ctx context.Context, requestID RequestID, r *TaskRequ
 }
 
 // markIdle implements MarkIdle for a given state.
-func (s *state) markIdle(workerID WorkerID, labels LabelSet, t time.Time) {
+func (s *state) markIdle(workerID WorkerID, labels stringset.Set, t time.Time) {
 	w, ok := s.workers[workerID]
 	if !ok {
 		// This is a new worker, create it and return.

@@ -20,6 +20,8 @@ import (
 	"time"
 
 	"infra/qscheduler/qslib/scheduler"
+
+	"go.chromium.org/luci/common/data/stringset"
 )
 
 // WorkerID is a type alias for WorkerID
@@ -58,7 +60,7 @@ func Example() {
 
 	// Inform the scheduler of the existence of an idle worker.
 	workerID := WorkerID("Worker1")
-	s.MarkIdle(ctx, workerID, []string{"Label2"}, time.Now())
+	s.MarkIdle(ctx, workerID, stringset.NewFromSlice("Label2"), time.Now())
 
 	// False.
 	IsOn(requestID, workerID, s)

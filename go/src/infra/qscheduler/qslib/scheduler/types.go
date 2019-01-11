@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"infra/qscheduler/qslib/tutils"
+
+	"go.chromium.org/luci/common/data/stringset"
 )
 
 // NewConfig creates an returns a new Config instance with all maps initialized.
@@ -43,10 +45,10 @@ func newStateFromProto(sp *StateProto) *state {
 	s.queuedRequests = make(map[RequestID]*request, len(sp.QueuedRequests))
 	for rid, req := range sp.QueuedRequests {
 		s.queuedRequests[RequestID(rid)] = &request{
-			accountID:     AccountID(req.AccountId),
-			confirmedTime: tutils.Timestamp(req.ConfirmedTime),
-			enqueueTime:   tutils.Timestamp(req.EnqueueTime),
-			labels:        req.Labels,
+			accountID:           AccountID(req.AccountId),
+			confirmedTime:       tutils.Timestamp(req.ConfirmedTime),
+			enqueueTime:         tutils.Timestamp(req.EnqueueTime),
+			provisionableLabels: stringset.NewFromSlice(req.Labels...),
 		}
 	}
 
@@ -61,10 +63,10 @@ func newStateFromProto(sp *StateProto) *state {
 				cost:     cost,
 				priority: int(w.RunningTask.Priority),
 				request: &request{
-					accountID:     AccountID(w.RunningTask.Request.AccountId),
-					confirmedTime: tutils.Timestamp(w.RunningTask.Request.ConfirmedTime),
-					enqueueTime:   tutils.Timestamp(w.RunningTask.Request.EnqueueTime),
-					labels:        w.RunningTask.Request.Labels,
+					accountID:           AccountID(w.RunningTask.Request.AccountId),
+					confirmedTime:       tutils.Timestamp(w.RunningTask.Request.ConfirmedTime),
+					enqueueTime:         tutils.Timestamp(w.RunningTask.Request.EnqueueTime),
+					provisionableLabels: stringset.NewFromSlice(w.RunningTask.Request.Labels...),
 				},
 				requestID: RequestID(w.RunningTask.RequestId),
 			}
@@ -72,7 +74,7 @@ func newStateFromProto(sp *StateProto) *state {
 		}
 		s.workers[WorkerID(wid)] = &worker{
 			confirmedTime: tutils.Timestamp(w.ConfirmedTime),
-			labels:        w.Labels,
+			labels:        stringset.NewFromSlice(w.Labels...),
 			runningTask:   tr,
 		}
 	}
@@ -113,7 +115,7 @@ func (s *state) toProto() *StateProto {
 		}
 		workers[string(wid)] = &Worker{
 			ConfirmedTime: tutils.TimestampProto(w.confirmedTime),
-			Labels:        w.labels,
+			Labels:        w.labels.ToSlice(),
 			RunningTask:   rt,
 		}
 	}

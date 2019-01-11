@@ -29,6 +29,8 @@ import (
 	"fmt"
 	"math"
 	"time"
+
+	"go.chromium.org/luci/common/data/stringset"
 )
 
 // Scheduler encapsulates the state and configuration of a running
@@ -210,7 +212,7 @@ func (s *Scheduler) UpdateTime(ctx context.Context, t time.Time) error {
 // the provisionable labels that it possesses.
 type IdleWorker struct {
 	WorkerID string
-	Labels   LabelSet
+	Labels   stringset.Set
 }
 
 // MarkIdle marks the given worker as idle, and with the given provisionable,
@@ -218,7 +220,7 @@ type IdleWorker struct {
 // of state, then it does nothing.
 //
 // Note: calls to MarkIdle come from bot reap calls from swarming.
-func (s *Scheduler) MarkIdle(ctx context.Context, workerID WorkerID, labels LabelSet, t time.Time) error {
+func (s *Scheduler) MarkIdle(ctx context.Context, workerID WorkerID, labels stringset.Set, t time.Time) error {
 	s.ensureMaps()
 	s.state.markIdle(workerID, labels, t)
 	return nil
@@ -309,7 +311,7 @@ func matchIdleBotsWithLabels(s *state, requestsAtP orderedRequests) []*Assignmen
 			continue
 		}
 		for wid, worker := range s.workers {
-			if worker.isIdle() && LabelSet(worker.labels).Contains(request.Request.labels) {
+			if worker.isIdle() && worker.labels.Contains(request.Request.provisionableLabels) {
 				m := &Assignment{
 					Type:      AssignmentIdleWorker,
 					WorkerID:  wid,
