@@ -28,6 +28,7 @@ export default class MonorailTSMon extends TSMonClient {
     const standardFields = new Map([
       ['client_id', TSMonClient.stringField('client_id')],
       ['host_name', TSMonClient.stringField('host_name')],
+      ['document_visible', TSMonClient.boolField('document_visible')],
     ]);
     this._userTimingMetrics = [
       {
@@ -92,6 +93,7 @@ export default class MonorailTSMon extends TSMonClient {
     const metricFields = new Map([
       ['client_id', this.clientId],
       ['host_name', window.CS_env.app_version],
+      ['document_visible', MonorailTSMon.isPageVisible()],
     ]);
     for (let metric of this._userTimingMetrics) {
       if (category === metric.category

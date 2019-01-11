@@ -51,6 +51,7 @@ class MonorailTSMonJSHandlerTest(unittest.TestCase):
           'fields': {
             'client_id': '789',
             'host_name': 'rutabaga',
+            'document_visible': True,
           },
           'start_time': 1537821859 - 60,
         }],

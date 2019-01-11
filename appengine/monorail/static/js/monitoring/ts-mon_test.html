@@ -71,7 +71,7 @@ suite('MonorailTSMon', () => {
       sinon.assert.calledOnce(metric.add);
       assert.equal(metric.add.args[0][0], 1);
       const argsKeys = Array.from(metric.add.args[0][1].keys());
-      assert.deepEqual(argsKeys, ['client_id', 'host_name']);
+      assert.deepEqual(argsKeys, ['client_id', 'host_name', 'document_visible']);
     });
   });
 
@@ -80,10 +80,12 @@ suite('MonorailTSMon', () => {
     setup(() => {
       getPageTypeFromPathStub = sinon.stub(MonorailTSMon, 'getPageTypeFromPath');
       mts.pageLoadMetric = {add: sinon.spy()};
+      sinon.stub(MonorailTSMon, 'isPageVisible', () => (true));
     });
 
     teardown(() => {
       MonorailTSMon.getPageTypeFromPath.restore();
+      MonorailTSMon.isPageVisible.restore();
     });
 
     test('records page load on issue list page', () => {
@@ -97,6 +99,8 @@ suite('MonorailTSMon', () => {
         'host_name'), 'rutabaga-version');
       assert.equal(mts.pageLoadMetric.add.getCall(0).args[1].get(
         'template_name'), 'issue_list');
+      assert.equal(mts.pageLoadMetric.add.getCall(0).args[1].get(
+        'document_visible'), true);
     });
 
     test('records page load on issue detail page', () => {
@@ -110,6 +114,8 @@ suite('MonorailTSMon', () => {
         'host_name'), 'rutabaga-version');
       assert.equal(mts.pageLoadMetric.add.getCall(0).args[1].get(
         'template_name'), 'issue_detail');
+      assert.equal(mts.pageLoadMetric.add.getCall(0).args[1].get(
+        'document_visible'), true);
     });
 
     test('does not record page load timing on other pages', () => {
@@ -138,6 +144,8 @@ suite('MonorailTSMon', () => {
 
     test('records page load on issue detail page if under threshold', () => {
       getPageTypeFromPathStub.returns(PAGE_TYPES.ISSUE_DETAIL);
+      MonorailTSMon.isPageVisible.restore();
+      sinon.stub(MonorailTSMon, 'isPageVisible', () => (false));
       window.performance = {
         timing: {
           navigationStart: 1000,
@@ -154,6 +162,8 @@ suite('MonorailTSMon', () => {
         'host_name'), 'rutabaga-version');
       assert.equal(mts.pageLoadMetric.add.getCall(0).args[1].get(
         'template_name'), 'issue_detail');
+      assert.equal(mts.pageLoadMetric.add.getCall(0).args[1].get(
+        'document_visible'), false);
     });
   });
 

@@ -19,9 +19,11 @@ from infra_libs import ts_mon
 STANDARD_FIELDS = [
   ts_mon.StringField('client_id'),
   ts_mon.StringField('host_name'),
+  ts_mon.BooleanField('document_visible'),
 ]
 
 
+# User action metrics.
 ISSUE_CREATE_LATENCY_METRIC = ts_mon.CumulativeDistributionMetric(
   'monorail/frontend/issue_create_latency', (
     'Latency between Issue Entry form submission and page load of '
@@ -39,9 +41,10 @@ AUTOCOMPLETE_POPULATE_LATENCY_METRIC = ts_mon.CumulativeDistributionMetric(
     'Latency between page load and autocomplete options loading.'
   ), field_spec=STANDARD_FIELDS,
   units=ts_mon.MetricsDataUnits.MILLISECONDS)
+
+# Page load metrics.
 DOM_CONTENT_LOADED_EXTRA_FIELDS = [
-    ts_mon.StringField('template_name'),
-    ts_mon.BooleanField('document_visible')]
+    ts_mon.StringField('template_name')]
 DOM_CONTENT_LOADED_METRIC = ts_mon.CumulativeDistributionMetric(
   'frontend/dom_content_loaded', (
     'domContentLoaded performance timing.'
