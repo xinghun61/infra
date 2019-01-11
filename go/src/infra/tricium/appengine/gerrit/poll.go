@@ -7,6 +7,7 @@ package gerrit
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -189,6 +190,8 @@ func pollGerritProject(c context.Context, luciProject string, repo *tricium.Repo
 		logging.Warningf(c, "There were changes beyond the limit %d. Some will be skipped.", maxChanges)
 	}
 
+	changes = filterChangesWithFlags(changes)
+
 	// No changes found.
 	if len(changes) == 0 {
 		logging.Infof(c, "Poll done for %q. No changes found.", luciProject)
@@ -258,6 +261,34 @@ func pollGerritProject(c context.Context, luciProject string, repo *tricium.Repo
 	// Running after the transaction because each seen change will result in one
 	// enqueued task and there is a limit on the number of action in a transaction.
 	return enqueueAnalyzeRequests(c, luciProject, repo, diff)
+}
+
+// filterChangesWithFlags filters out the changes where the current revision's footer
+// contains the flag that indicates Tricium should be skipped.
+func filterChangesWithFlags(changes []gr.ChangeInfo) []gr.ChangeInfo {
+	var filtered = changes[:0]
+	var falseValues = []string{"disable", "skip", "no", "none", "false"}
+	for _, change := range changes {
+		var flags map[string]string
+
+		if change.Revisions[change.CurrentRevision].Commit != nil {
+			flags = extractFooterFlags(change.Revisions[change.CurrentRevision].Commit.Message)
+		}
+		value, _ := flags["tricium"]
+
+		isFalse := false
+		for _, falseVal := range falseValues {
+			if value == falseVal {
+				isFalse = true
+				break
+			}
+		}
+
+		if !isFalse {
+			filtered = append(filtered, change)
+		}
+	}
+	return filtered
 }
 
 // extractUpdates extracts change updates, which determines what to analyze.
@@ -470,6 +501,29 @@ func filterByWhitelist(c context.Context, whitelistedGroups []string, changes []
 		}
 	}
 	return whitelistedChanges
+}
+
+// extractFooterFlags extracts the Flag: Value and Flag=Value footers from the CL description.
+// returns a map of flag to its value in footer with both flag and value converted to lower-case.
+func extractFooterFlags(commitMessage string) map[string]string {
+	flags := map[string]string{}
+	lines := strings.Split(commitMessage, "\n")
+
+	// Going in reverse to stop as soon as a non flag line is reached.
+	for i := len(lines) - 1; i >= 0; i-- {
+		line := lines[i]
+
+		// Look for the first : or = and split on it.
+		if splitPoint := strings.IndexAny(line, ":="); splitPoint != -1 {
+			flagName := strings.ToLower(strings.TrimSpace(line[:splitPoint]))
+			value := strings.ToLower(strings.TrimSpace(line[splitPoint+1:]))
+			flags[flagName] = value
+		} else {
+			break
+		}
+	}
+
+	return flags
 }
 
 // gerritProjectID constructs the ID used to store information about

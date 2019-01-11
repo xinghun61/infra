@@ -196,6 +196,20 @@ func TestPollProjectBasicBehavior(t *testing.T) {
 			projects["infra"].Repos[1].GetGerritProject(),
 		}
 
+		flaggedRevisions := revisionGenerator(
+			"Hello\nThis is a revision message\nWith some footers\nTricium:disable\nAnother=value",
+		)
+		unflaggedRevisions := revisionGenerator(
+			"Hello\nThis is a revision message\nWith some footers\nSomething: value",
+		)
+		uppercaseFlaggedRevisions := revisionGenerator("TRICIUM: disable")
+		lowercaseFlaggedRevisions := revisionGenerator("tricium: disable")
+		noFlaggedRevisions := revisionGenerator("Tricium: no")
+		noneFlaggedRevisions := revisionGenerator("Tricium: none")
+		skipFlaggedRevisions := revisionGenerator("Tricium: skip")
+		falseFlaggedRevisions := revisionGenerator("Tricium: false")
+		enableFlaggedRevisions := revisionGenerator("Tricium: enable")
+
 		Convey("First poll, no changes", func() {
 			api := &mockPollRestAPI{}
 			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
@@ -446,6 +460,205 @@ func TestPollProjectBasicBehavior(t *testing.T) {
 				}
 			})
 		})
+
+		Convey("Poll when changes have Tricium:disable description flag", func() {
+			api := &mockPollRestAPI{}
+			lastChangeTs := clock.Now(ctx)
+
+			for _, gd := range gerritProjects {
+				api.addChanges(gd.Host, gd.Project, generateChangeInfo(gd.Project, lastChangeTs, flaggedRevisions))
+			}
+
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
+			tc.Add(time.Second)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
+			Convey("Removes all flagged changes", func() {
+				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, 0)
+			})
+		})
+
+		Convey("Poll when changes have tricium:disable description flag", func() {
+			api := &mockPollRestAPI{}
+			lastChangeTs := clock.Now(ctx)
+
+			for _, gd := range gerritProjects {
+				api.addChanges(
+					gd.Host,
+					gd.Project,
+					generateChangeInfo(gd.Project, lastChangeTs, lowercaseFlaggedRevisions),
+				)
+			}
+
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
+			tc.Add(time.Second)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
+			Convey("Removes all flagged changes", func() {
+				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, 0)
+			})
+		})
+
+		Convey("Poll when changes have TRICIUM:disable description flag", func() {
+			api := &mockPollRestAPI{}
+			lastChangeTs := clock.Now(ctx)
+
+			for _, gd := range gerritProjects {
+				api.addChanges(
+					gd.Host,
+					gd.Project,
+					generateChangeInfo(gd.Project, lastChangeTs, uppercaseFlaggedRevisions),
+				)
+			}
+
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
+			tc.Add(time.Second)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
+			Convey("Removes all flagged changes", func() {
+				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, 0)
+			})
+		})
+
+		Convey("Poll when changes have Tricium:no description flag", func() {
+			api := &mockPollRestAPI{}
+			lastChangeTs := clock.Now(ctx)
+
+			for _, gd := range gerritProjects {
+				api.addChanges(
+					gd.Host,
+					gd.Project,
+					generateChangeInfo(gd.Project, lastChangeTs, noFlaggedRevisions),
+				)
+			}
+
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
+			tc.Add(time.Second)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
+			Convey("Removes all flagged changes", func() {
+				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, 0)
+			})
+		})
+
+		Convey("Poll when changes have Tricium:none description flag", func() {
+			api := &mockPollRestAPI{}
+			lastChangeTs := clock.Now(ctx)
+
+			for _, gd := range gerritProjects {
+				api.addChanges(
+					gd.Host,
+					gd.Project,
+					generateChangeInfo(gd.Project, lastChangeTs, noneFlaggedRevisions),
+				)
+			}
+
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
+			tc.Add(time.Second)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
+			Convey("Removes all flagged changes", func() {
+				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, 0)
+			})
+		})
+
+		Convey("Poll when changes have Tricium:false description flag", func() {
+			api := &mockPollRestAPI{}
+			lastChangeTs := clock.Now(ctx)
+
+			for _, gd := range gerritProjects {
+				api.addChanges(
+					gd.Host,
+					gd.Project,
+					generateChangeInfo(gd.Project, lastChangeTs, falseFlaggedRevisions),
+				)
+			}
+
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
+			tc.Add(time.Second)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
+			Convey("Removes all flagged changes", func() {
+				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, 0)
+			})
+		})
+
+		Convey("Poll when changes have Tricium:skip description flag", func() {
+			api := &mockPollRestAPI{}
+			lastChangeTs := clock.Now(ctx)
+
+			for _, gd := range gerritProjects {
+				api.addChanges(
+					gd.Host,
+					gd.Project,
+					generateChangeInfo(gd.Project, lastChangeTs, skipFlaggedRevisions),
+				)
+			}
+
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
+			tc.Add(time.Second)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
+			Convey("Doesn't remove false flagged changes", func() {
+				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, 0)
+			})
+		})
+
+		Convey("Poll when changes have Tricium:enable description flag", func() {
+			api := &mockPollRestAPI{}
+			lastChangeTs := clock.Now(ctx)
+
+			for _, gd := range gerritProjects {
+				api.addChanges(
+					gd.Host,
+					gd.Project,
+					generateChangeInfo(gd.Project, lastChangeTs, enableFlaggedRevisions),
+				)
+			}
+
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
+			tc.Add(time.Second)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
+			Convey("Doesn't remove false flagged changes", func() {
+				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, len(gerritProjects))
+			})
+		})
+
+		Convey("Poll when only one of the two changes have Tricium: disable flag", func() {
+			api := &mockPollRestAPI{}
+			lastChangeTs := clock.Now(ctx)
+			// Add an un-flagged change and a flagged change in each.
+			for _, gd := range gerritProjects {
+				api.addChanges(gd.Host, gd.Project, generateChangeInfo(gd.Project, lastChangeTs, unflaggedRevisions))
+				api.addChanges(gd.Host, gd.Project, generateChangeInfo(gd.Project, lastChangeTs, flaggedRevisions))
+			}
+
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
+			tc.Add(time.Second)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
+			Convey("Keeps all un-flagged changes", func() {
+				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, len(gerritProjects))
+			})
+		})
+
+		Convey("Poll project with alternating tricium:enable and tricium:disable changes", func() {
+			api := &mockPollRestAPI{}
+			numChanges := 10
+			lastChangeTs := clock.Now(ctx)
+			gd := gerritProjects[0]
+
+			for i := 0; i < numChanges; i++ {
+				var changeTemplate []gr.ChangeInfo
+
+				if i%2 == 0 {
+					changeTemplate = generateChangeInfo(gd.Project, lastChangeTs, flaggedRevisions)
+				} else {
+					changeTemplate = generateChangeInfo(gd.Project, lastChangeTs, unflaggedRevisions)
+				}
+
+				api.addChanges(gd.Host, gd.Project, changeTemplate)
+			}
+
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
+			tc.Add(time.Second)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
+			Convey("Keeps all un-flagged changes", func() {
+				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, numChanges/2)
+			})
+		})
 	})
 }
 
@@ -605,4 +818,34 @@ func TestStatusCode(t *testing.T) {
 	Convey("Unknown status means modified", t, func() {
 		So(statusFromCode(ctx, "X"), ShouldEqual, tricium.Data_MODIFIED)
 	})
+}
+
+func generateChangeInfo(project string, lastChangeTs time.Time, revisions map[string]gr.RevisionInfo) []gr.ChangeInfo {
+	return []gr.ChangeInfo{
+		{
+			ID:              "project~branch~Ideadc0de",
+			Project:         project,
+			Status:          "NEW",
+			CurrentRevision: "curRev",
+			Updated:         gr.TimeStamp(lastChangeTs),
+			Revisions:       revisions,
+			Owner:           &gr.AccountInfo{Email: "user@example.com"},
+		},
+	}
+}
+
+// revisionGenerator is a helper function that generates a map of revisionID string
+// to RevisionInfo. It takes commitMessage as input and adds that to the first revision.
+func revisionGenerator(commitMessage string) map[string]gr.RevisionInfo {
+	return map[string]gr.RevisionInfo{
+		"curRev": {
+			Files: map[string]*gr.FileInfo{"README.md": {}},
+			Commit: &gr.CommitInfo{
+				Message: commitMessage,
+			},
+		},
+		"olderRev": {
+			Files: map[string]*gr.FileInfo{"another1.go": {}},
+		},
+	}
 }
