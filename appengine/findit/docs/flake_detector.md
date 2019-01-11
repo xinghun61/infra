@@ -19,7 +19,8 @@ Table of contents:
 
 ## Term Definitions
 Within Flake Detector, a flaky test is defined to be a test failure that could
-cause a CL to be **incorrectly** rejected by [CQ].
+* cause a CL to be **incorrectly** rejected by [CQ].
+* cause an additional 'retry with patch' step in CQ try job.
 
 **Equivalent patchsets**. If two patchsets meet the following requirements, then
 they are considered to be equivalent:
