@@ -10,3 +10,8 @@
 /infra/__init__.py            recipes
 /infra/tools/__init__.py      recipes
 /infra/tools/dockerbuild/**   recipes
+
+# Skip Tricium for recipe expectation files and generated proto files.
+**/*.expected/*.json -tricium
+*.pb.go -tricium
+*_pb2.py -tricium
