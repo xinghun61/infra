@@ -63,7 +63,7 @@ func convert(fname string) ([]ninjalog.Trace, error) {
 		return nil, err
 	}
 	steps := ninjalog.Dedup(njl.Steps)
-	flow := ninjalog.Flow(steps)
+	flow := ninjalog.Flow(steps, false)
 	return ninjalog.ToTraces(flow, 1), nil
 }
 

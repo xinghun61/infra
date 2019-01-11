@@ -38,7 +38,14 @@ var (
 		"table":         outputFunc(table),
 		"metadata.json": outputFunc(metadataJSON),
 		"trace.json":    outputFunc(traceJSON),
-		"trace.html":    outputFunc(traceHTML),
+		"trace.html": outputFunc(
+			func(w http.ResponseWriter, logPath string, njl *ninjalog.NinjaLog) error {
+				return traceHTML(w, logPath, njl, false)
+			}),
+		"trace_sort_by_end.html": outputFunc(
+			func(w http.ResponseWriter, logPath string, njl *ninjalog.NinjaLog) error {
+				return traceHTML(w, logPath, njl, true)
+			}),
 	}
 
 	formTmpl = template.Must(template.New("form").Parse(`
@@ -73,6 +80,7 @@ You need to <a href="{{.Login}}">login</a> to upload .ninja_log file.
  <li><a href="{{.Filename}}/table?dedup=true">.ninja_log in table format</a> (<a href="{{.Filename}}/table">full</a>)
  <li><a href="{{.Filename}}/metadata.json">metadata.json</a>
  <li><a href="{{.Filename}}/trace.html">trace viewer</a> [<a href="{{.Filename}}/trace.json">trace.json</a>]
+ <li><a href="{{.Filename}}/trace_sort_by_end.html">trace viewer (sort_by_end)</a>
 </ul>
 </body>
 </html>
@@ -408,7 +416,7 @@ func metadataJSON(w http.ResponseWriter, logPath string, njl *ninjalog.NinjaLog)
 
 func traceJSON(w http.ResponseWriter, logPath string, njl *ninjalog.NinjaLog) error {
 	steps := ninjalog.Dedup(njl.Steps)
-	flow := ninjalog.Flow(steps)
+	flow := ninjalog.Flow(steps, false)
 	traces := ninjalog.ToTraces(flow, 1)
 	js, err := json.Marshal(traces)
 	if err != nil {
@@ -420,9 +428,9 @@ func traceJSON(w http.ResponseWriter, logPath string, njl *ninjalog.NinjaLog) er
 	return err
 }
 
-func traceHTML(w http.ResponseWriter, logPath string, njl *ninjalog.NinjaLog) error {
+func traceHTML(w http.ResponseWriter, logPath string, njl *ninjalog.NinjaLog, sortByEnd bool) error {
 	steps := ninjalog.Dedup(njl.Steps)
-	flow := ninjalog.Flow(steps)
+	flow := ninjalog.Flow(steps, sortByEnd)
 	traces := ninjalog.ToTraces(flow, 1)
 	b, err := traceViewerTmpl.HTML(logPath, traces)
 	if err != nil {

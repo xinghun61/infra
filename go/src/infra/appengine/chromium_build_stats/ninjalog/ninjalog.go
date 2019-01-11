@@ -344,9 +344,16 @@ func TotalTime(steps []Step) (startupTime, endTime, cpuTime time.Duration) {
 
 // Flow returns concurrent steps by time.
 // steps in every []Step will not have time overlap.
-// steps will be sorted by start time.
-func Flow(steps []Step) [][]Step {
-	sort.Sort(Steps(steps))
+// steps will be sorted by start or end time depends on |sortByEnd|.
+func Flow(steps []Step, sortByEnd bool) [][]Step {
+	if sortByEnd {
+		sort.Slice(steps, func(i, j int) bool {
+			return steps[i].End >= steps[j].End
+		})
+	} else {
+		sort.Sort(Steps(steps))
+	}
+
 	var threads [][]Step
 
 	for _, s := range steps {
@@ -355,9 +362,17 @@ func Flow(steps []Step) [][]Step {
 			if len(th) == 0 {
 				panic(fmt.Errorf("thread %d has no entry", i))
 			}
-			if th[len(th)-1].End <= s.Start {
-				tid = i
-				break
+
+			if sortByEnd {
+				if th[len(th)-1].Start >= s.End {
+					tid = i
+					break
+				}
+			} else {
+				if th[len(th)-1].End <= s.Start {
+					tid = i
+					break
+				}
 			}
 		}
 		if tid == -1 {
@@ -366,6 +381,13 @@ func Flow(steps []Step) [][]Step {
 		}
 		threads[tid] = append(threads[tid], s)
 	}
+
+	if sortByEnd {
+		for _, thread := range threads {
+			Steps(thread).Reverse()
+		}
+	}
+
 	return threads
 }
 

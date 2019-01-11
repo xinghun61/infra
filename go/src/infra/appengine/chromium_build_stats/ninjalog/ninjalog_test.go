@@ -359,9 +359,9 @@ func TestFlow(t *testing.T) {
 		CmdHash: "2ac7111aa1ae86af",
 	})
 
-	flow := Flow(steps)
+	flow := Flow(steps, false)
 
-	want := [][]Step{
+	wantSortByStart := [][]Step{
 		{
 			{
 				Start:   76 * time.Millisecond,
@@ -424,8 +424,76 @@ func TestFlow(t *testing.T) {
 		},
 	}
 
-	if !reflect.DeepEqual(flow, want) {
-		t.Errorf("Flow()=%v; want=%v", flow, want)
+	if !reflect.DeepEqual(flow, wantSortByStart) {
+		t.Errorf("Flow()=\n%#v\n want=\n%#v", flow, wantSortByStart)
+	}
+
+	flow = Flow(steps, true)
+	wantSortByEnd := [][]Step{
+		{
+			{
+				Start:   76 * time.Millisecond,
+				End:     187 * time.Millisecond,
+				Out:     "resources/inspector/devtools_extension_api.js",
+				CmdHash: "75430546595be7c2",
+			},
+			{
+				Start:   187 * time.Millisecond,
+				End:     21304 * time.Millisecond,
+				Out:     "obj/third_party/pdfium/core/src/fpdfdoc/fpdfdoc.doc_formfield.o",
+				CmdHash: "2ac7111aa1ae86af",
+			},
+		},
+		{
+			{
+				Start:   141 * time.Millisecond,
+				End:     287 * time.Millisecond,
+				Out:     "PepperFlash/manifest.json",
+				CmdHash: "324f0a0b77c37ef",
+			},
+			{
+				Start:   287 * time.Millisecond,
+				End:     290 * time.Millisecond,
+				Out:     "obj/third_party/angle/src/copy_scripts.actions_rules_copies.stamp",
+				CmdHash: "b211d373de72f455",
+			},
+		},
+		{
+			{
+				Start:   142 * time.Millisecond,
+				End:     288 * time.Millisecond,
+				Out:     "PepperFlash/libpepflashplayer.so",
+				CmdHash: "1e2c2b7845a4d4fe",
+			},
+		},
+		{
+			{
+				Start:   79 * time.Millisecond,
+				End:     287 * time.Millisecond,
+				Out:     "gen/angle/copy_compiler_dll.bat",
+				CmdHash: "9fb635ad5d2c1109",
+			},
+		},
+		{
+			{
+				Start:   78 * time.Millisecond,
+				End:     286 * time.Millisecond,
+				Out:     "gen/angle/commit_id.py",
+				CmdHash: "4ede38e2c1617d8c",
+			},
+		},
+		{
+			{
+				Start:   80 * time.Millisecond,
+				End:     284 * time.Millisecond,
+				Out:     "gen/autofill_regex_constants.cc",
+				CmdHash: "fa33c8d7ce1d8791",
+			},
+		},
+	}
+
+	if !reflect.DeepEqual(flow, wantSortByEnd) {
+		t.Errorf("Flow()=\n%#v\n want=\n%#v", flow, wantSortByEnd)
 	}
 }
 
@@ -751,7 +819,7 @@ func BenchmarkFlow(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		flowInput := make([]Step, len(steps))
 		copy(flowInput, steps)
-		Flow(flowInput)
+		Flow(flowInput, false)
 	}
 }
 
@@ -766,7 +834,7 @@ func BenchmarkToTraces(b *testing.B) {
 		b.Errorf(`Parse()=_, %v; want=_, <nil>`, err)
 	}
 	steps := Dedup(njl.Steps)
-	flow := Flow(steps)
+	flow := Flow(steps, false)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ToTraces(flow, 1)
@@ -786,7 +854,7 @@ func BenchmarkDedupFlowToTraces(b *testing.B) {
 		}
 
 		steps := Dedup(njl.Steps)
-		flow := Flow(steps)
+		flow := Flow(steps, false)
 		ToTraces(flow, 1)
 	}
 }
