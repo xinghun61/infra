@@ -73,6 +73,9 @@ def parse_args(args):  # pragma: no cover
       help='File to use for OAuth2 credentials storage if not running on LUCI.')
   parser.add_argument('--datadir', default=DATADIR,
       help='Directory where persistent app data should be stored.')
+  parser.add_argument('--dryrun', action='store_true',
+      help='Don\'t update monorail issues or update issues to the bugdroid '
+           'appengine app.')
 
   logs.add_argparse_options(parser)
   ts_mon.add_argparse_options(parser)
@@ -130,7 +133,7 @@ def main(args):  # pragma: no cover
       **loop_opts)
 
   # In case local json file is used, do not upload
-  if not opts.configfile:
+  if not opts.configfile and not opts.dryrun:
     update_data(_create_http(opts.credentials_db))
 
   logging.info('Outer loop finished with result %r', loop_results.success)

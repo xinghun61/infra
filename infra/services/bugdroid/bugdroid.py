@@ -95,6 +95,8 @@ class BugdroidGitPollerHandler(poller_handlers.BasePollerHandler):
             if not self.test_mode:
               self.monorail_client.update_issue(
                   project, issue, log_parser.should_send_email(log_entry.msg))
+            else:
+              self.logger.debug('Test mode, skipping')
           except Exception:
             self.bug_comments_metric.increment(
                 {'project': project, 'status': 'failure'})
@@ -134,10 +136,12 @@ class BugdroidGitPollerHandler(poller_handlers.BasePollerHandler):
 class Bugdroid(object):
   """App to setup and run repository pollers and bug updating handlers."""
 
-  def __init__(self, configfile, credentials_db, run_once, datadir):
+  def __init__(
+      self, configfile, credentials_db, run_once, datadir, dryrun=False):
     self.pollers = []
     self.credentials_db = credentials_db
     self.run_once = run_once
+    self.dryrun = dryrun
 
     if not os.path.isdir(datadir):
       if os.path.exists(datadir):
@@ -224,7 +228,7 @@ class Bugdroid(object):
         logger=logger,
         default_project=default_project,
         public_bugs=config.public_bugs,
-        test_mode=config.test_mode,
+        test_mode=config.test_mode or self.dryrun,
         issues_labels=config.issues_labels,
         no_merge=config.no_merge_refs))
     poller.saved_config = config
@@ -240,7 +244,9 @@ class Bugdroid(object):
 
 
 def inner_loop(opts):
-  Bugdroid(opts.configfile, opts.credentials_db, True, opts.datadir).Execute()
+  bugdroid = Bugdroid(
+      opts.configfile, opts.credentials_db, True, opts.datadir, opts.dryrun)
+  bugdroid.Execute()
   return True
 
 

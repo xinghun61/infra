@@ -87,6 +87,22 @@ class BugdroidGitPollerHandlerTest(unittest.TestCase):
         bugdroid.BugdroidGitPollerHandler.bug_comments_metric.get(
             {'project': 'foo', 'status': 'success'}))
 
+  def test_process_log_entry_test_mode(self):
+    handler = self._make_handler(test_mode=True)
+
+    issue = monorail_client.Issue(1234, [])
+    self.monorail_client.get_issue.return_value = issue
+
+    handler.ProcessLogEntry(self._make_commit('Message\nBug: 1234'))
+
+    self.logger.info.assert_called_once_with(
+        'Processing commit %s : bugs %s', 'abcdef', "{'foo': [1234]}")
+    self.monorail_client.get_issue.assert_called_once_with('foo', 1234)
+    self.assertFalse(self.monorail_client.update_issue.called)
+    self.assertEqual(1,
+        bugdroid.BugdroidGitPollerHandler.bug_comments_metric.get(
+            {'project': 'foo', 'status': 'success'}))
+
   def test_process_log_entry_update_failure(self):
     handler = self._make_handler()
 
@@ -316,6 +332,6 @@ class InnerLoopTest(unittest.TestCase):
   @mock.patch('infra.services.bugdroid.bugdroid.Bugdroid', autospec=True)
   def test_inner_loop(self, mock_bugdroid):
     self.assertTrue(bugdroid.inner_loop(argparse.Namespace(
-        configfile='foo', credentials_db='bar', datadir='baz')))
-    mock_bugdroid.assert_called_once_with('foo', 'bar', True, 'baz')
+        configfile='foo', credentials_db='bar', datadir='baz', dryrun=True)))
+    mock_bugdroid.assert_called_once_with('foo', 'bar', True, 'baz', True)
     mock_bugdroid.return_value.Execute.assert_called_once_with()
