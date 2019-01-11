@@ -57,6 +57,7 @@ CHROMEOS_IMAGE_BUCKET = 'chromeos-image-archive'
 # The name of the builder to which every DUT swarming bot belongs. This builder
 # exists solely so the bots can run the cros_flash recipe.
 DUT_FLASHING_BUILDER = 'cros-dut-flash'
+DUT_FLASHING_BUILDER_BUCKET = 'luci.infra.cron'
 
 PROPERTIES = {
   'swarming_server': Property(
@@ -177,9 +178,9 @@ def get_closest_available_version(api, board, lkgm_base):
   return None, None
 
 
-def trigger_flash(api, bot, pool, gs_image_path):
+def trigger_flash(api, bot, gs_image_path):
   build_req = {
-    'bucket': pool,
+    'bucket': DUT_FLASHING_BUILDER_BUCKET,
     'parameters': {
       'builder_name': DUT_FLASHING_BUILDER,
       'properties': {
@@ -288,7 +289,7 @@ def RunSteps(api, swarming_server, swarming_pool, device_type, bb_host,
   with api.step.nest('flash bots'):
     for bot in bots_to_flash:
       flashing_requests.add(
-          trigger_flash(api, bot, swarming_pool, gs_image_path))
+          trigger_flash(api, bot, gs_image_path))
 
   # Wait for all the flashing jobs. Nest it under a single step since there
   # will be several buildbucket.get_build() step calls.

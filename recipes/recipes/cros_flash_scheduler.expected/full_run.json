@@ -217,7 +217,7 @@
       "put",
       "-host",
       "some-buildbucket-server",
-      "{\"bucket\": \"some-swarming-pool\", \"experimental\": false, \"parameters_json\": \"{\\\"builder_name\\\": \\\"cros-dut-flash\\\", \\\"properties\\\": {\\\"gs_image_bucket\\\": \\\"chromeos-image-archive\\\", \\\"gs_image_path\\\": \\\"some-device-type-full//chromiumos_test_image.tar.xz\\\"}, \\\"swarming\\\": {\\\"override_builder_cfg\\\": {\\\"dimensions\\\": [\\\"id:out_of_date_bot\\\", \\\"device_os:11111\\\"]}}}\", \"tags\": [\"builder:cros-dut-flash\", \"user_agent:recipe\"]}"
+      "{\"bucket\": \"luci.infra.cron\", \"experimental\": false, \"parameters_json\": \"{\\\"builder_name\\\": \\\"cros-dut-flash\\\", \\\"properties\\\": {\\\"gs_image_bucket\\\": \\\"chromeos-image-archive\\\", \\\"gs_image_path\\\": \\\"some-device-type-full//chromiumos_test_image.tar.xz\\\"}, \\\"swarming\\\": {\\\"override_builder_cfg\\\": {\\\"dimensions\\\": [\\\"id:out_of_date_bot\\\", \\\"device_os:11111\\\"]}}}\", \"tags\": [\"builder:cros-dut-flash\", \"user_agent:recipe\"]}"
     ],
     "infra_step": true,
     "name": "flash bots.out_of_date_bot",
