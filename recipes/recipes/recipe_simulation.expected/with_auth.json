@@ -111,7 +111,6 @@
       "[CACHE]/builder/build/build/recipes.py",
       "--package",
       "[CACHE]/builder/build/build/custom/config/dir/recipes.cfg",
-      "--use-bootstrap",
       "test",
       "run"
     ],

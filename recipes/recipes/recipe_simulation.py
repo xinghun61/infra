@@ -66,7 +66,7 @@ def RunSteps(api, project_under_test, auth_with_account):
           '--package', root_dir.join(
               project_under_test,
               *cfg_path.split('/')),
-          '--use-bootstrap', 'test', 'run',
+          'test', 'run',
       ])
 
 

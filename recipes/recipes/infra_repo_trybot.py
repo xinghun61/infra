@@ -61,7 +61,7 @@ def RunSteps(api):
         api.python(
             'recipe test',
             co.path.join('infra', 'recipes', 'recipes.py'),
-            ['--use-bootstrap', 'test', 'run'])
+            ['test', 'run'])
         api.python(
             'recipe lint',
             co.path.join('infra', 'recipes', 'recipes.py'),
