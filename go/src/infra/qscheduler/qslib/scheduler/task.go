@@ -21,12 +21,14 @@ import (
 )
 
 // NewRequest creates a new TaskRequest.
-func NewRequest(accountID AccountID, labels []string, enqueueTime time.Time) *TaskRequest {
+func NewRequest(accountID AccountID, provisionableLabels []string,
+	baseLabels []string, enqueueTime time.Time) *TaskRequest {
 	return &TaskRequest{
-		AccountId:     string(accountID),
-		ConfirmedTime: tutils.TimestampProto(enqueueTime),
-		EnqueueTime:   tutils.TimestampProto(enqueueTime),
-		Labels:        labels,
+		AccountId:           string(accountID),
+		ConfirmedTime:       tutils.TimestampProto(enqueueTime),
+		EnqueueTime:         tutils.TimestampProto(enqueueTime),
+		ProvisionableLabels: provisionableLabels,
+		BaseLabels:          baseLabels,
 	}
 }
 

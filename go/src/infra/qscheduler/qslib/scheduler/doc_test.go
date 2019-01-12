@@ -55,7 +55,7 @@ func Example() {
 
 	// Create a task request, and add it to the scheduler queue.
 	requestID := RequestID("Request1")
-	request := scheduler.NewRequest(accountID, []string{"Label1"}, time.Now())
+	request := scheduler.NewRequest(accountID, []string{"Label1"}, nil, time.Now())
 	s.AddRequest(ctx, requestID, request, time.Now())
 
 	// Inform the scheduler of the existence of an idle worker.

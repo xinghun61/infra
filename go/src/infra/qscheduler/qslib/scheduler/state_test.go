@@ -60,7 +60,7 @@ func TestMarkIdle(t *testing.T) {
 
 		Convey("given a worker running a task at t=1", func() {
 			state.markIdle(workerID, stringset.New(0), tm1)
-			state.addRequest(ctx, "r1", NewRequest("", nil, tm1), tm1)
+			state.addRequest(ctx, "r1", NewRequest("", nil, nil, tm1), tm1)
 			state.applyAssignment(&Assignment{Type: AssignmentIdleWorker, RequestID: "r1", WorkerID: workerID})
 			Convey("when marking idle again with newer time t=2", func() {
 				state.markIdle(workerID, stringset.New(0), tm2)
@@ -90,7 +90,7 @@ func TestnotifyRequest(ctx, t *testing.T) {
 	Convey("Given a state with a request(t=1) and idle worker(t=3) and a match between them", t, func() {
 		ctx := context.Background()
 		state := newState(tm0)
-		state.addRequest(ctx, "r1", NewRequest("", nil, tm1), tm1)
+		state.addRequest(ctx, "r1", NewRequest("", nil, nil, tm1), tm1)
 		state.markIdle("w1", stringset.New(0), tm3)
 		a := &Assignment{
 			Type:      AssignmentIdleWorker,
@@ -170,7 +170,7 @@ func TestnotifyRequest(ctx, t *testing.T) {
 	Convey("Given a state with a matched request and worker both at t=1 and a separate idle worker at t=3", t, func() {
 		ctx := context.Background()
 		state := newState(tm0)
-		state.addRequest(ctx, "r1", NewRequest("", nil, tm1), tm1)
+		state.addRequest(ctx, "r1", NewRequest("", nil, nil, tm1), tm1)
 		state.markIdle("w1", stringset.New(0), tm1)
 		state.markIdle("w2", stringset.New(0), tm3)
 		a := &Assignment{
@@ -243,7 +243,7 @@ func TestabortRequest(ctx, t *testing.T) {
 	Convey("Given a state with one request and one idle worker", t, func() {
 		ctx := context.Background()
 		state := newState(tm0)
-		state.addRequest(ctx, reqID, NewRequest("", nil, tm1), tm1)
+		state.addRequest(ctx, reqID, NewRequest("", nil, nil, tm1), tm1)
 		state.markIdle(wID, stringset.New(0), tm1)
 		Convey("when AbortRequest with forward time is called for that request", func() {
 			state.abortRequest(ctx, reqID, tm2)
@@ -264,7 +264,7 @@ func TestabortRequest(ctx, t *testing.T) {
 	Convey("Given a state with a request running on a worker", t, func() {
 		ctx := context.Background()
 		state := newState(tm0)
-		state.addRequest(ctx, reqID, NewRequest("", nil, tm1), tm1)
+		state.addRequest(ctx, reqID, NewRequest("", nil, nil, tm1), tm1)
 		state.markIdle(wID, stringset.New(0), tm1)
 		a := &Assignment{
 			Type:      AssignmentIdleWorker,

@@ -62,7 +62,7 @@ func TestPrioritizeOne(t *testing.T) {
 			},
 		}
 
-		s.AddRequest(ctx, rid, NewRequest(aid, nil, tm), tm)
+		s.AddRequest(ctx, rid, NewRequest(aid, nil, nil, tm), tm)
 		for _, c := range accountCases {
 			Convey(fmt.Sprintf("given account balance is %v", c.accountBalance), func() {
 				s.AddAccount(ctx, aid, &AccountConfig{}, c.accountBalance[:])
@@ -102,7 +102,7 @@ func TestPrioritizeMany(t *testing.T) {
 		perm := rand.Perm(nReqs)
 		for _, i := range perm {
 			tm := time.Unix(int64(i), 0)
-			s.AddRequest(ctx, RequestID(strconv.Itoa(i)), NewRequest(aid, nil, tm), tm)
+			s.AddRequest(ctx, RequestID(strconv.Itoa(i)), NewRequest(aid, nil, nil, tm), tm)
 		}
 
 		Convey("given no matching account", func() {
@@ -165,7 +165,7 @@ func TestPrioritizeMany(t *testing.T) {
 // addRunningRequest is a test helper to add a new request to a scheduler and
 // immediately start it running on a new worker.
 func addRunningRequest(ctx context.Context, s *Scheduler, rid RequestID, wid WorkerID, aid AccountID, pri int, tm time.Time) {
-	s.AddRequest(ctx, rid, NewRequest(aid, []string{}, tm), tm)
+	s.AddRequest(ctx, rid, NewRequest(aid, []string{}, nil, tm), tm)
 	s.MarkIdle(ctx, wid, stringset.New(0), tm)
 	s.state.applyAssignment(&Assignment{Priority: pri, RequestID: rid, WorkerID: wid, Type: AssignmentIdleWorker})
 }

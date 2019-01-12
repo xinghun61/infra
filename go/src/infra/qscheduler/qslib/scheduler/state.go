@@ -62,6 +62,9 @@ type request struct {
 	// provisionableLabels is the set of Provisionable Labels for this task.
 	provisionableLabels stringset.Set
 
+	// baseLabels is the set of base labels for this task.
+	baseLabels stringset.Set
+
 	// confirmedTime is the most recent time at which the Request state was
 	// provided or confirmed by external authority (via a call to Enforce or
 	// AddRequest).
@@ -70,10 +73,11 @@ type request struct {
 
 func newTaskRequest(r *request) *TaskRequest {
 	return &TaskRequest{
-		AccountId:     string(r.accountID),
-		ConfirmedTime: tutils.TimestampProto(r.confirmedTime),
-		EnqueueTime:   tutils.TimestampProto(r.enqueueTime),
-		Labels:        r.provisionableLabels.ToSlice(),
+		AccountId:           string(r.accountID),
+		ConfirmedTime:       tutils.TimestampProto(r.confirmedTime),
+		EnqueueTime:         tutils.TimestampProto(r.enqueueTime),
+		ProvisionableLabels: r.provisionableLabels.ToSlice(),
+		BaseLabels:          r.baseLabels.ToSlice(),
 	}
 }
 
@@ -97,8 +101,7 @@ type taskRun struct {
 
 // worker represents a running or idle worker capable of running tasks.
 type worker struct {
-	// labels represents the set of provisionable labels that this worker
-	// possesses.
+	// labels represents the set of labels that this worke possesses.
 	labels stringset.Set
 
 	// runningTask is, if non-nil, the task that is currently running on the
@@ -123,7 +126,7 @@ func (s *state) addRequest(ctx context.Context, requestID RequestID, r *TaskRequ
 			accountID:           AccountID(r.AccountId),
 			confirmedTime:       tutils.Timestamp(r.ConfirmedTime),
 			enqueueTime:         tutils.Timestamp(r.EnqueueTime),
-			provisionableLabels: stringset.NewFromSlice(r.Labels...),
+			provisionableLabels: stringset.NewFromSlice(r.ProvisionableLabels...),
 		}
 		rr.confirm(t)
 		s.queuedRequests[requestID] = rr

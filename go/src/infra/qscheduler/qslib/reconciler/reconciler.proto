@@ -49,7 +49,7 @@ message TaskInstant {
 	// TODO(akeshet): Error out if this is specified for non-RUNNING states.
 	string worker_id = 4;
 
-	// ProvisionableLabels is the label set for the new task.
+	// ProvisionableLabels is the set of provisionable labels for the new task.
 	// This field is only relevant and should only be set for WAITING state.
 	repeated string provisionable_labels = 5;
 
@@ -61,6 +61,10 @@ message TaskInstant {
 	// EnqueueTime is the time at which a request was first enqueued. This field
 	// is only relevant for WAITING state.
 	google.protobuf.Timestamp enqueue_time = 7;
+
+	// BaseLabels is the set of base labels for the new task.
+	// This field is only relevant and should only be set for WAITING state.
+	repeated string base_labels = 8;
 }
 
 // WorkerQueue represents the queue of qscheduler operations that are pending

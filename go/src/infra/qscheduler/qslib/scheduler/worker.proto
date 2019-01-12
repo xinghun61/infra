@@ -23,8 +23,7 @@ import "infra/qscheduler/qslib/scheduler/task.proto";
 // because the quota scheduler algorithm is expected to run against a pool of
 // otherwise homogenous workers.
 message Worker {
-  // Labels represents the set of provisionable labels that this worker
-  // possesses.
+  // Labels represents the set of labels that this worker possesses.
   repeated string labels = 1;
 
   // RunningTask is, if non-nil, the task that is currently running on the

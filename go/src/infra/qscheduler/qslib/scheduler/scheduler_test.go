@@ -35,8 +35,8 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 		s := New(tm)
 		s.MarkIdle(ctx, "w0", stringset.New(0), tm)
 		s.MarkIdle(ctx, "w1", stringset.NewFromSlice("label1"), tm)
-		s.AddRequest(ctx, "t1", NewRequest("a1", []string{"label1"}, tm), tm)
-		s.AddRequest(ctx, "t2", NewRequest("a1", []string{"label2"}, tm), tm)
+		s.AddRequest(ctx, "t1", NewRequest("a1", []string{"label1"}, nil, tm), tm)
+		s.AddRequest(ctx, "t2", NewRequest("a1", []string{"label2"}, nil, tm), tm)
 		c := NewAccountConfig(0, 0, nil)
 		s.AddAccount(ctx, "a1", c, []float64{2, 0, 0})
 		Convey("when scheduling jobs", func() {
@@ -61,9 +61,9 @@ func TestMatchProvisionableLabel(t *testing.T) {
 		s := New(tm)
 		for i := 0; i < 500; i++ {
 			id := RequestID(fmt.Sprintf("t%d", i))
-			s.AddRequest(ctx, id, NewRequest("", []string{"a"}, tm), tm)
+			s.AddRequest(ctx, id, NewRequest("", []string{"a"}, nil, tm), tm)
 		}
-		s.AddRequest(ctx, "tb", NewRequest("", []string{"b"}, tm), tm)
+		s.AddRequest(ctx, "tb", NewRequest("", []string{"b"}, nil, tm), tm)
 
 		Convey("and an idle worker with labels 'b' and 'c'", func() {
 			s.MarkIdle(ctx, "wb", stringset.NewFromSlice("b", "c"), tm)
@@ -139,14 +139,14 @@ func TestSchedulerPreempt(t *testing.T) {
 		for _, i := range []int{1, 2} {
 			rid := RequestID(fmt.Sprintf("r%d", i))
 			wid := WorkerID(fmt.Sprintf("w%d", i))
-			s.AddRequest(ctx, rid, NewRequest("a1", nil, tm0), tm0)
+			s.AddRequest(ctx, rid, NewRequest("a1", nil, nil, tm0), tm0)
 			s.MarkIdle(ctx, wid, stringset.New(0), tm0)
 			s.state.applyAssignment(&Assignment{RequestID: rid, WorkerID: wid, Type: AssignmentIdleWorker, Priority: 1})
 		}
 		s.state.workers["w1"].runningTask.cost = balance{0, 1, 0}
 		Convey("given a new P0 request from a different account", func() {
 			s.AddAccount(ctx, "a2", NewAccountConfig(0, 0, nil), nil)
-			s.AddRequest(ctx, "r3", NewRequest("a2", nil, tm0), tm0)
+			s.AddRequest(ctx, "r3", NewRequest("a2", nil, nil, tm0), tm0)
 			Convey("given sufficient balance", func() {
 				s.state.balances["a2"] = balance{1}
 				Convey("when scheduling", func() {
@@ -170,7 +170,7 @@ func TestSchedulerPreempt(t *testing.T) {
 		})
 
 		Convey("given a new P0 request from the same account", func() {
-			s.AddRequest(ctx, "r3", NewRequest("a1", nil, tm0), tm0)
+			s.AddRequest(ctx, "r3", NewRequest("a1", nil, nil, tm0), tm0)
 			Convey("when scheduling", func() {
 				got, _ := s.RunOnce(ctx)
 				Convey("then nothing happens.", func() {
@@ -264,8 +264,8 @@ func TestUpdateBalance(t *testing.T) {
 		Convey("when 2 tasks for the account are running", func() {
 			r1 := RequestID("request 1")
 			r2 := RequestID("request 2")
-			s.AddRequest(ctx, r1, newTaskRequest(&request{aID, t0, nil, t0}), t0)
-			s.AddRequest(ctx, r2, newTaskRequest(&request{aID, t0, nil, t0}), t0)
+			s.AddRequest(ctx, r1, newTaskRequest(&request{aID, t0, nil, nil, t0}), t0)
+			s.AddRequest(ctx, r2, newTaskRequest(&request{aID, t0, nil, nil, t0}), t0)
 			s.MarkIdle(ctx, "w1", nil, t0)
 			s.MarkIdle(ctx, "w2", nil, t0)
 			s.state.applyAssignment(&Assignment{Priority: 0, RequestID: r1, WorkerID: "w1", Type: AssignmentIdleWorker})
@@ -289,7 +289,7 @@ func TestAddRequest(t *testing.T) {
 	ctx := context.Background()
 	tm := time.Unix(0, 0)
 	s := New(tm)
-	r := NewRequest("a1", nil, tm)
+	r := NewRequest("a1", nil, nil, tm)
 	s.AddRequest(ctx, "r1", r, tm)
 	if _, ok := s.state.queuedRequests["r1"]; !ok {
 		t.Errorf("AddRequest did not enqueue request.")

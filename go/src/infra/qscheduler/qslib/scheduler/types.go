@@ -48,7 +48,8 @@ func newStateFromProto(sp *StateProto) *state {
 			accountID:           AccountID(req.AccountId),
 			confirmedTime:       tutils.Timestamp(req.ConfirmedTime),
 			enqueueTime:         tutils.Timestamp(req.EnqueueTime),
-			provisionableLabels: stringset.NewFromSlice(req.Labels...),
+			provisionableLabels: stringset.NewFromSlice(req.ProvisionableLabels...),
+			baseLabels:          stringset.NewFromSlice(req.BaseLabels...),
 		}
 	}
 
@@ -66,7 +67,8 @@ func newStateFromProto(sp *StateProto) *state {
 					accountID:           AccountID(w.RunningTask.Request.AccountId),
 					confirmedTime:       tutils.Timestamp(w.RunningTask.Request.ConfirmedTime),
 					enqueueTime:         tutils.Timestamp(w.RunningTask.Request.EnqueueTime),
-					provisionableLabels: stringset.NewFromSlice(w.RunningTask.Request.Labels...),
+					provisionableLabels: stringset.NewFromSlice(w.RunningTask.Request.ProvisionableLabels...),
+					baseLabels:          stringset.NewFromSlice(w.RunningTask.Request.BaseLabels...),
 				},
 				requestID: RequestID(w.RunningTask.RequestId),
 			}

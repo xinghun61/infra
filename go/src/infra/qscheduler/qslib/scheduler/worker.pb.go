@@ -28,8 +28,7 @@ const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 // because the quota scheduler algorithm is expected to run against a pool of
 // otherwise homogenous workers.
 type Worker struct {
-	// Labels represents the set of provisionable labels that this worker
-	// possesses.
+	// Labels represents the set of labels that this worker possesses.
 	Labels []string `protobuf:"bytes,1,rep,name=labels,proto3" json:"labels,omitempty"`
 	// RunningTask is, if non-nil, the task that is currently running on the
 	// worker.
