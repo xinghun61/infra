@@ -26,6 +26,7 @@ import logging
 
 from framework import sql
 from proto import tracker_pb2
+from tracker import tracker_constants
 
 
 NATIVE_SORTABLE_FIELDS = [
@@ -225,9 +226,29 @@ def _ProcessCustomAndLabelSD(
   """Convert a label or custom field sort directive into SQL."""
   left_joins = []
   order_by = []
+  # If a custom field is an approval_type with no suffix, the
+  # approvals should be sorted by status.
+  approval_suffix = '-status'
 
-  fd_list = [fd for fd in harmonized_fields
-             if fd.field_name.lower() == sd]
+  # Check for reserved suffixes in col_name sd.
+  # TODO(jojwang): check for other suffixes in
+  # tracker_constants.RESERVED_COL_NAME_SUFFIXES
+  if sd.endswith(tracker_constants.APPROVER_COL_SUFFIX):
+    field_name = sd[:-len(tracker_constants.APPROVER_COL_SUFFIX)]
+    fd_list = []
+    approval_fd_list = [fd for fd in harmonized_fields
+                        if fd.field_name.lower() == field_name]
+    approval_suffix = tracker_constants.APPROVER_COL_SUFFIX
+  else:
+    fd_list = [fd for fd in harmonized_fields
+               if fd.field_name.lower() == sd]
+    approval_fd_list = [fd for fd in fd_list if
+                      fd.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE]
+
+  # 'alias' is used for all the CustomField, Approval, and Label sort clauses.
+  # Custom field aliases are alwyas appended by the value_col name.
+  # Approval aliases are always appended with 'approval'.
+  # Label clauses use 'alias' as-is.
   if fd_list:
     int_left_joins, int_order_by = _CustomFieldSortClauses(
         fd_list, tracker_pb2.FieldTypes.INT_TYPE, 'int_value',
@@ -241,11 +262,9 @@ def _ProcessCustomAndLabelSD(
     left_joins.extend(int_left_joins + str_left_joins + user_left_joins)
     order_by.extend(int_order_by + str_order_by + user_order_by)
 
-  approval_fd_list = [fd for fd in fd_list if
-                      fd.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE]
   if approval_fd_list:
-    approval_left_joins, approval_order_by = _ApprovalStatusSortClauses(
-        approval_fd_list, fmt)
+    approval_left_joins, approval_order_by = _ApprovalFieldSortClauses(
+        approval_fd_list, approval_suffix, fmt)
     left_joins.extend(approval_left_joins)
     order_by.extend(approval_order_by)
 
@@ -257,20 +276,39 @@ def _ProcessCustomAndLabelSD(
   return left_joins, order_by
 
 
-def _ApprovalStatusSortClauses(approval_fd_list, fmt):
-  """Give LEFT JOIN and ORDER BY terms for approval status sort directives."""
+def _ApprovalFieldSortClauses(
+    approval_fd_list, approval_suffix, fmt):
+  """Give LEFT JOIN and ORDER BY terms for approval sort directives."""
+  approver_left_joins = None
+  if approval_suffix == tracker_constants.APPROVER_COL_SUFFIX:
+    tbl_name = 'IssueApproval2Approver'
+    approver_left_joins = (
+        fmt('User AS {alias}_approval_user '
+            'ON {alias}_approval.approver_id = {alias}_approval_user.user_id'),
+        [])
+    order_by = [
+        (fmt('ISNULL({alias}_approval_user.email) {sort_dir}'), []),
+        (fmt('{alias}_approval_user.email {sort_dir}'), [])]
+  else:
+    tbl_name = 'Issue2ApprovalValue'
+    order_by = [
+        (fmt('FIELD({alias}_approval.status, {approval_status_ph}) '
+             '{rev_sort_dir}',
+             approval_status_ph=sql.PlaceHolders(APPROVAL_STATUS_SORT_ORDER)),
+         APPROVAL_STATUS_SORT_ORDER
+        )]
+
   left_joins = [(
-      fmt('Issue2ApprovalValue AS {alias} ON Issue.id = {alias}.issue_id '
-          'AND {alias}.approval_id IN ({approval_id_ph})',
-          approval_id_ph=sql.PlaceHolders(approval_fd_list)),
+      fmt('{tbl_name} AS {alias}_approval '
+          'ON Issue.id = {alias}_approval.issue_id '
+          'AND {alias}_approval.approval_id IN ({approval_ids_ph})',
+          approval_ids_ph=sql.PlaceHolders(approval_fd_list),
+          tbl_name=tbl_name),
       [fd.field_id for fd in approval_fd_list]
   )]
 
-  order_by = [(
-      fmt('FIELD({alias}.status, {approval_status_ph}) {rev_sort_dir}',
-          approval_status_ph=sql.PlaceHolders(APPROVAL_STATUS_SORT_ORDER)),
-      APPROVAL_STATUS_SORT_ORDER
-  )]
+  if approver_left_joins:
+    left_joins.append(approver_left_joins)
 
   return left_joins, order_by
 

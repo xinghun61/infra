@@ -163,24 +163,49 @@ class AST2SortTest(unittest.TestCase):
   def testProcessCustomAndLabelSD(self):
     pass  # TODO(jrobbins): fill in this test case
 
-  def testApprovalStatusSortClauses(self):
+  def testApprovalFieldSortClauses_Status(self):
     approval_fd_list = [
         tracker_pb2.FieldDef(field_id=2, project_id=789,
                              field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE),
         tracker_pb2.FieldDef(field_id=4, project_id=788,
                              field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE)
     ]
-    left_joins, order_by = ast2sort._ApprovalStatusSortClauses(
-        approval_fd_list, self.fmt)
+    left_joins, order_by = ast2sort._ApprovalFieldSortClauses(
+        approval_fd_list, '-status', self.fmt)
 
     self.assertEqual(
-        [('Issue2ApprovalValue AS {alias} ON Issue.id = {alias}.issue_id '
-          'AND {alias}.approval_id IN ({approval_id_ph})', [2, 4])],
+        [('{tbl_name} AS {alias}_approval '
+          'ON Issue.id = {alias}_approval.issue_id '
+          'AND {alias}_approval.approval_id IN ({approval_ids_ph})', [2, 4])],
         left_joins)
 
     self.assertEqual(
-        [('FIELD({alias}.status, {approval_status_ph}) {rev_sort_dir}',
+        [('FIELD({alias}_approval.status, {approval_status_ph}) {rev_sort_dir}',
           ast2sort.APPROVAL_STATUS_SORT_ORDER)],
+        order_by)
+
+  def testApprovalFieldSortClauses_Approver(self):
+    approval_fd_list = [
+        tracker_pb2.FieldDef(field_id=2, project_id=789,
+                             field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE),
+        tracker_pb2.FieldDef(field_id=4, project_id=788,
+                             field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE)
+    ]
+    left_joins, order_by = ast2sort._ApprovalFieldSortClauses(
+        approval_fd_list, '-approver', self.fmt)
+
+    self.assertEqual(
+        [('{tbl_name} AS {alias}_approval '
+          'ON Issue.id = {alias}_approval.issue_id '
+          'AND {alias}_approval.approval_id IN ({approval_ids_ph})', [2, 4]),
+         ('User AS {alias}_approval_user '
+          'ON {alias}_approval.approver_id = {alias}_approval_user.user_id',
+          [])],
+        left_joins)
+
+    self.assertEqual(
+        [('ISNULL({alias}_approval_user.email) {sort_dir}', []),
+         ('{alias}_approval_user.email {sort_dir}', [])],
         order_by)
 
   def testLabelSortClauses_NoSuchLabels(self):
