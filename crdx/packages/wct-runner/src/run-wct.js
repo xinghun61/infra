@@ -153,6 +153,9 @@ async function main() {
     launchOptions.devtools = true;
     launchOptions.headless = false;
   }
+  launchOptions.args = [
+    '--disable-blink-features=HTMLImports',
+  ];
 
   console.log('using chrome binary ' + puppeteer.executablePath());
   // TODO: Allow chrome version pinning using the API:
