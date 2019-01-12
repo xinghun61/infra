@@ -14,6 +14,7 @@ from framework import framework_bizobj
 from framework import framework_helpers
 from tracker import field_helpers
 from tracker import tracker_bizobj
+from tracker import tracker_constants
 from tracker import tracker_helpers
 from proto import tracker_pb2
 
@@ -131,8 +132,14 @@ def _GetPhasesAndApprovalsFromParsed(
 
   phases = []
   approvals = []
+  valid_phase_names = []
 
-  valid_phase_names = [name for name in phase_names if name]
+  for name in phase_names:
+    if name:
+      if not tracker_constants.PHASE_NAME_RE.match(name):
+        mr.errors.phase_approvals = 'Invalid gate name(s).'
+        return phases, approvals
+      valid_phase_names.append(name)
   if len(valid_phase_names) != len(
       set(name.lower() for name in valid_phase_names)):
     mr.errors.phase_approvals = 'Duplicate gate names.'

@@ -235,6 +235,19 @@ class TemplateHelpers(unittest.TestCase):
     self.assertEqual(self.mr.errors.phase_approvals,
                      'Duplicate gate names.')
 
+  def testGetPhasesAndApprovalsFromParsed_InvalidPhaseName(self):
+    self.config.field_defs.extend([self.fd_1, self.fd_2])
+    self.config.approval_defs.extend([self.ad_3, self.ad_4, self.ad_5])
+    required_approval_ids = []
+
+    phase_names = ['Canary', 'A B', 'Stable-Exp', '', '', '']
+    approvals_to_phase_idx = {3:0, 4:None, 5:2}
+
+    template_helpers._GetPhasesAndApprovalsFromParsed(
+        self.mr, phase_names, approvals_to_phase_idx, required_approval_ids)
+    self.assertEqual(self.mr.errors.phase_approvals,
+                     'Invalid gate name(s).')
+
   def testGatherApprovalsPageData(self):
     self.fd_3.is_deleted = True
     self.config.field_defs = [self.fd_3, self.fd_4, self.fd_5]

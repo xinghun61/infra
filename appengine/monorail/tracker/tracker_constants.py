@@ -69,6 +69,9 @@ COMPONENT_NAME_RE = re.compile(r'^[a-zA-Z]([-_]?[a-zA-Z0-9])+$')
 # Regular expression used to validate new field names.
 FIELD_NAME_RE = re.compile(r'^[a-zA-Z]([-_]?[a-zA-Z0-9])*$')
 
+# Regular expression used to validate new phase_names.
+PHASE_NAME_RE = re.compile(r'^[a-z]([-_]?[a-z0-9])*$', re.IGNORECASE)
+
 # The next few items are specifications of the defaults for project
 # issue configurations.  These are used for projects that do not have
 # their own config.
