@@ -29,19 +29,22 @@ func getApplication() *cli.Application {
 		},
 		Commands: []*subcommands.Command{
 			subcommands.CmdHelp,
+			cmd.Update,
+			subcommands.Section("Auth"),
 			authcli.SubcommandInfo(site.DefaultAuthOptions, "whoami", false),
 			authcli.SubcommandLogin(site.DefaultAuthOptions, "login", false),
 			authcli.SubcommandLogout(site.DefaultAuthOptions, "logout", false),
-
-			// Main commands.
+			subcommands.Section("Inventory Queries"),
 			cmd.Diagnose,
-			cmd.EnsurePoolHealthy,
 			cmd.Inventory,
-			cmd.Repair,
-			cmd.ResizePool,
+			subcommands.Section("Inventory Operations"),
 			cmd.AssignDuts,
 			cmd.RemoveDuts,
-			cmd.Update,
+			subcommands.Section("Pool Operations"),
+			cmd.EnsurePoolHealthy,
+			cmd.ResizePool,
+			subcommands.Section("Tasks"),
+			cmd.Repair,
 		},
 	}
 }
