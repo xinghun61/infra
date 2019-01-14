@@ -39,6 +39,8 @@ func getApplication() *cli.Application {
 			cmd.Inventory,
 			cmd.Repair,
 			cmd.ResizePool,
+			cmd.AssignDuts,
+			cmd.RemoveDuts,
 			cmd.Update,
 		},
 	}
