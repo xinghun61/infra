@@ -46,6 +46,7 @@ class MrEditField extends Polymer.Element {
       _initialValue: {
         type: String,
         computed: '_joinValues(initialValues)',
+        observer: 'reset',
       },
       // Set to true if a field uses a standard input instead of any sort of
       // fancier edit type.
@@ -64,6 +65,7 @@ class MrEditField extends Polymer.Element {
   }
 
   reset() {
+    if (!this.isConnected) return;
     this.setValue(this.initialValues);
   }
 

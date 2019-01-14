@@ -1,0 +1,96 @@
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/elements/shared/field-types.html">
+<link rel="import" href="/elements/flt/mr-edit-metadata/mr-edit-field.html">
+<test-fixture id="basic">
+  <template>
+    <mr-edit-field></mr-edit-field>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+
+  suite('basic tests', function() {
+    var element;
+
+    setup(function() {
+      element = fixture('basic');
+    });
+
+    test('edit input updates value when initialValues change', function() {
+      element.initialValues = ['hello'];
+
+      assert.equal(element.getValue(), 'hello');
+
+      // Simulate user input.
+      element.shadowRoot.querySelector('#editInput').value = 'jackalope';
+      // User input should not be overridden by the initialValue variable.
+      assert.equal(element.getValue(), 'jackalope');
+      // Initial values should not change based on user input.
+      assert.deepEqual(element.initialValues, ['hello']);
+
+      element.initialValues = ['change values'];
+      assert.equal(element.getValue(), 'change values');
+    });
+
+    test('edit select updates value when initialValues change', function(done) {
+      element.multi = false;
+      element.type = fieldTypes.ENUM_TYPE;
+
+      element.options = [
+        {optionName: 'hello'},
+        {optionName: 'jackalope'},
+        {optionName: 'text'},
+      ];
+
+      flush(() => {
+        element.initialValues = ['hello'];
+        assert.equal(element.getValue(), 'hello');
+
+        // Simulate user input.
+        element.shadowRoot.querySelector('#editSelect').value = 'jackalope';
+        // User input should not be overridden by the initialValue variable.
+        assert.equal(element.getValue(), 'jackalope');
+        // Initial values should not change based on user input.
+        assert.deepEqual(element.initialValues, ['hello']);
+
+        element.initialValues = ['text'];
+        assert.equal(element.getValue(), 'text');
+        done();
+      });
+    });
+
+    test('edit enum updates value when initialValues change', function(done) {
+      element.multi = true;
+      element.type = fieldTypes.ENUM_TYPE;
+      element.options = [
+        {optionName: 'hello'},
+        {optionName: 'world'},
+        {optionName: 'fake'},
+      ];
+
+      flush(() => {
+        element.initialValues = ['hello'];
+        assert.deepEqual(element.getValues(), ['hello']);
+
+        // User checks all boxes.
+        element.shadowRoot.querySelectorAll('.enum-input').forEach(
+          (checkbox) => {
+            checkbox.checked = true;
+          }
+        );
+        // User input should not be overridden by the initialValue variable.
+        assert.deepEqual(element.getValues(), ['hello', 'world', 'fake']);
+        // Initial values should not change based on user input.
+        assert.deepEqual(element.initialValues, ['hello']);
+
+        element.initialValues = ['hello', 'world'];
+        assert.deepEqual(element.getValues(), ['hello', 'world']);
+        done();
+      });
+    });
+  });
+})();
+</script>
