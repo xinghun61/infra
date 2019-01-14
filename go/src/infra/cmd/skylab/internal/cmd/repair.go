@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
@@ -68,7 +67,7 @@ func (c *repairRun) innerRun(a subcommands.Application, args []string, env subco
 }
 
 func createRepairTask(ctx context.Context, s *swarming.Service, e site.Environment, host string) (taskID string, err error) {
-	log := generateLogLocation(e)
+	log := generateAnnotationURL(e)
 	r := &swarming.SwarmingRpcsNewTaskRequest{
 		EvaluateOnly: false,
 		Name:         "admin_repair",
@@ -103,10 +102,4 @@ func createRepairTask(ctx context.Context, s *swarming.Service, e site.Environme
 		return "", errors.Annotate(err, "failed to create task").Err()
 	}
 	return resp.TaskId, nil
-}
-
-func generateLogLocation(e site.Environment) string {
-	u := uuid.New()
-	return fmt.Sprintf("logdog://%s/%s/skylab/%s/+/annotations",
-		e.LogDogHost, e.LUCIProject, u.String())
 }

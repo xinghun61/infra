@@ -13,6 +13,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/auth/client/authcli"
@@ -122,4 +123,12 @@ type usageError struct {
 func (e *usageError) ReportUserError(w io.Writer) {
 	fmt.Fprintf(w, "%s\n", e.error)
 	e.flags.Usage()
+}
+
+// generateAnnotationURL generates a unique logdog url for use as a the logdog annotation endpoint
+// of a skylab swarming task (i.e. the -logdog-annotation-url argument to skylab_swarming_worker).
+func generateAnnotationURL(e site.Environment) string {
+	u := uuid.New()
+	return fmt.Sprintf("logdog://%s/%s/skylab/%s/+/annotations",
+		e.LogDogHost, e.LUCIProject, u.String())
 }
