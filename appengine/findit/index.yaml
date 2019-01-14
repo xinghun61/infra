@@ -407,5 +407,5 @@ indexes:
 - kind: TotalFlakinessReport
   properties:
   - name: tags
-  - name: generated_time
+  - name: report_time
     direction: desc
