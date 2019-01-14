@@ -170,6 +170,17 @@
   {
     "cmd": [
       "git",
+      "branch",
+      "master-original",
+      "HEAD~"
+    ],
+    "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
+    "infra_step": true,
+    "name": "git branch"
+  },
+  {
+    "cmd": [
+      "git",
       "push",
       "--all",
       "--force",
