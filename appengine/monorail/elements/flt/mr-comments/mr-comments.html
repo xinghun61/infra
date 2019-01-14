@@ -69,13 +69,7 @@
     <template is="dom-repeat" items="[[comments]]" as="comment">
       <div class="card-comment" hidden$=[[_computeCommentHidden(_commentsHidden,_commentsHiddenCount,index)]]>
         <span role="heading" aria-level$="[[headingLevel]]" class="comment-header">
-          <!-- We use indices rather than sequenceNums for comments because
-            sequenceNums are global across all comments on the page. This
-            is confusing to users because a page can have multiple lists
-            of comments (ie: within approvals and the main comment list),
-            so using unique sequenceNums causes comments to appear to
-            "skip" numbers when listed out in one section. -->
-          Comment [[_addOne(index)]] by
+          Comment [[comment.sequenceNum]] by
           <mr-user-link display-name="[[comment.commenter.displayName]]" user-id="[[comment.commenter.userId]]"></mr-user-link> on
           <chops-timestamp timestamp="[[comment.timestamp]]"></chops-timestamp>
           <template is="dom-if" if=[[_offerCommentOptions(comment)]]>
