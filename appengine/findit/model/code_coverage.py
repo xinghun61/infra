@@ -7,19 +7,26 @@ import hashlib
 from google.appengine.ext import ndb
 
 
-class ReportBase(ndb.Model):
-  """Holds shared info for both postsubmit and presubmit reports."""
+class DependencyRepository(ndb.Model):
+  # The source absolute path of the checkout into the root repository.
+  # Example: "//third_party/pdfium/" for pdfium in a chromium/src checkout.
+  path = ndb.StringProperty(indexed=False)
 
-  bucket_name = ndb.StringProperty(indexed=False)
+  # The Gitiles hostname, e.g. "pdfium.googlesource.com".
+  server_host = ndb.StringProperty(indexed=False)
 
-  gs_url = ndb.StringProperty(indexed=False)
+  # The Gitiles project name, e.g. "pdfium.git".
+  project = ndb.StringProperty(indexed=False)
 
-  source_and_report_gs_path = ndb.StringProperty(indexed=False)
+  # The commit hash of the revision.
+  revision = ndb.StringProperty(indexed=False)
 
-  build_id = ndb.IntegerProperty(indexed=False)
+  @property
+  def project_url(self):
+    return 'https://%s/%s' % (self.server_host, self.project)
 
 
-class PostsubmitReport(ReportBase):
+class PostsubmitReport(ndb.Model):
   """Represents a postsubmit code coverage report."""
 
   server_host = ndb.StringProperty(indexed=True)
@@ -32,10 +39,17 @@ class PostsubmitReport(ReportBase):
 
   commit_timestamp = ndb.DateTimeProperty(indexed=True)
 
+  # Manifest of all the code checkouts when the coverage report is generated.
+  # In descending order by the length of the relative path in the root checkout.
+  manifest = ndb.LocalStructuredProperty(
+      DependencyRepository, repeated=True, indexed=False)
+
   summary_metrics = ndb.JsonProperty(indexed=False)
 
+  build_id = ndb.IntegerProperty(indexed=False)
 
-class PresubmitReport(ReportBase):
+
+class PresubmitReport(ndb.Model):
   """Represents a presubmit code coverage report."""
 
   server_host = ndb.StringProperty(indexed=True)
@@ -45,6 +59,8 @@ class PresubmitReport(ReportBase):
   change = ndb.IntegerProperty(indexed=True)
 
   patchset = ndb.IntegerProperty(indexed=True)
+
+  build_id = ndb.IntegerProperty(indexed=False)
 
 
 class CoverageData(ndb.Model):

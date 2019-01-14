@@ -23,7 +23,6 @@ if appengine_util.IsInProductionApp():
 code_coverage_frontend_handler_mappings = [
     ('/coverage', code_coverage.ServeCodeCoverageData),
     ('/coverage/api/coverage-data', code_coverage.ServeCodeCoverageData),
-    ('/coverage/api/get-coverage-file/.*', code_coverage.GetCoverageFile),
 ]
 code_coverage_frontend_web_application = webapp2.WSGIApplication(
     code_coverage_frontend_handler_mappings, debug=False)
