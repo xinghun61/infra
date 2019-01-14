@@ -135,13 +135,18 @@ def _UpdateCountsForNewFlake(start_date):
   Args:
     start_date(datetime): Earliest time to check.
   """
-  flakes = Flake.query().filter(Flake.last_occurred_time > start_date).filter(
-      Flake.flake_score_last_week == 0).fetch()
+  more = True
+  cursor = None
 
-  for flake in flakes:
-    _UpdateFlakeCountsAndScore(flake, start_date)
+  while more:
+    flakes, cursor, more = Flake.query().filter(
+        Flake.last_occurred_time > start_date).filter(
+            Flake.flake_score_last_week == 0).fetch_page(
+                200, start_cursor=cursor)
+    for flake in flakes:
+      _UpdateFlakeCountsAndScore(flake, start_date)
 
-  ndb.put_multi(flakes)
+    ndb.put_multi(flakes)
 
 
 def _UpdateCountsForOldFlake(start_date):
@@ -153,12 +158,17 @@ def _UpdateCountsForOldFlake(start_date):
   Args:
     start_date(datetime): Earliest time to check.
   """
-  flakes = Flake.query().filter(Flake.flake_score_last_week > 0).fetch()
+  more = True
+  cursor = None
 
-  for flake in flakes:
-    _UpdateFlakeCountsAndScore(flake, start_date)
+  while more:
+    flakes, cursor, more = Flake.query().filter(
+        Flake.flake_score_last_week > 0).fetch_page(
+            500, start_cursor=cursor)
+    for flake in flakes:
+      _UpdateFlakeCountsAndScore(flake, start_date)
 
-  ndb.put_multi(flakes)
+    ndb.put_multi(flakes)
 
 
 def UpdateFlakeCounts():
