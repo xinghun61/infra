@@ -353,9 +353,9 @@ def RunSteps(api, swarming_server, swarming_pool, device_type, bb_host,
   # flashing the remaining bots. Use this chained triggering instead of a
   # single loop to make the guts of this recipe a bit simpler.
   build_req = {
-    'bucket': 'luci.chromium.ci',
+    'bucket': api.buildbucket.bucket_v1,
     'parameters': {
-      'builder_name': 'cros-dut-flash-scheduler',
+      'builder_name': api.buildbucket.builder_name,
       'properties': {
         'swarming_server': swarming_server,
         'swarming_pool': swarming_pool,
@@ -418,8 +418,11 @@ def GenTests(api):
         swarming_pool='some-swarming-pool',
         device_type='some-device-type',
         bb_host='some-buildbucket-server',
-        random_seed=12345)
-    )
+        random_seed=12345) +
+      api.buildbucket.ci_build(
+        project='infra',
+        bucket='cron',
+        builder='cros-scheduler'))
     if include_lkgm_steps:
       test += (
         api.override_step_data(
