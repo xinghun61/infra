@@ -116,9 +116,9 @@ func ParseBuild(msg *bbapi.ApiCommonBuildMessage) (*Build, error) {
 		}
 	}
 
-	if buildbotIdStr := tags.Get(buildbotBuildIDTagKey); buildbotIdStr != "" {
-		if build.BuildbotBuildID, err = strconv.ParseInt(buildbotIdStr, 10, 64); err != nil {
-			return nil, errors.Annotate(err, "invalid %s tag: %s", buildbotBuildIDTagKey, buildbotIdStr).Err()
+	if buildbotIDStr := tags.Get(buildbotBuildIDTagKey); buildbotIDStr != "" {
+		if build.BuildbotBuildID, err = strconv.ParseInt(buildbotIDStr, 10, 64); err != nil {
+			return nil, errors.Annotate(err, "invalid %s tag: %s", buildbotBuildIDTagKey, buildbotIDStr).Err()
 		}
 	}
 
@@ -151,6 +151,11 @@ func (h *Scheduler) BuildCompleted(c context.Context, build *Build) error {
 // is for a builder that we track. Honors builder's experiment percentage and
 // build creation rate limit.
 func (h *Scheduler) buildbotBuildCompleted(c context.Context, build *Build) error {
+	if build.Change == nil {
+		// Not a useful try build.
+		return nil
+	}
+
 	// Is it a builder that we care about?
 	builder := &storage.Builder{ID: storage.BuilderID{
 		Master:  strings.TrimPrefix(build.Bucket, "master."),
