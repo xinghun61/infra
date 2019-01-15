@@ -150,3 +150,5 @@ blacklist:
     description: someone crawling us 2018-11-27
   - subnet: 31.192.108.122
     description: someone repeatedly posting to detail.do 2018-12-05
+  - subnet: 173.239.232.128
+    description: someone repeatedly posting to template/detail.do 2019-01-13
