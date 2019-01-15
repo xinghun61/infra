@@ -142,7 +142,7 @@ def _UpdateCountsForNewFlake(start_date):
     flakes, cursor, more = Flake.query().filter(
         Flake.last_occurred_time > start_date).filter(
             Flake.flake_score_last_week == 0).fetch_page(
-                200, start_cursor=cursor)
+                100, start_cursor=cursor)
     for flake in flakes:
       _UpdateFlakeCountsAndScore(flake, start_date)
 
@@ -164,7 +164,7 @@ def _UpdateCountsForOldFlake(start_date):
   while more:
     flakes, cursor, more = Flake.query().filter(
         Flake.flake_score_last_week > 0).fetch_page(
-            500, start_cursor=cursor)
+            100, start_cursor=cursor)
     for flake in flakes:
       _UpdateFlakeCountsAndScore(flake, start_date)
 
