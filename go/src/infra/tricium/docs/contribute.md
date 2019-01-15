@@ -47,6 +47,13 @@ dependencies may be fetched using a set-up script that is run at package-build
 time. For example, the [eslint](../functions/eslint/) function uses a script
 called setup.py that is run before building and uploading a CIPD package.
 
+### Building
+
+To build the Go analyzers here, you should first set up the infra Go
+environment; see [The infra Go README.][../../../../go/README.md].
+After the environment is set up, running `go build` in the analyzer
+directory should produce a usable binary.
+
 ### Local testing
 
 Besides writing unit tests, you can also test run your analyzer locally, because

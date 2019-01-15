@@ -64,8 +64,14 @@ See [contribute.md](./contribute.md).
 
 There are some types of files for which we may never want to run Tricium,
 including generated files such as test expectation files. These can be
-skipped on a per-repo and per-directory basis by specying git attributes.
+skipped on a per-repo and per-directory basis by specifying git attributes.
 
 For example, if we wanted to skip all `.x` files in a directory tree, we
 could add a `.gitattributes` file to that directory tree root with the
 line `*.x -tricium`.
+
+## Disabling Tricium for a particular CL
+
+To make Tricium skip a particular change, you can add "Tricium: disable"
+to the CL description. A few alternate words besides "disable" are also
+recognized, including "false", "skip", and "no".
